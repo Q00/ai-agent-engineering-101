@@ -1,0 +1,118 @@
+{
+  "source": "20260921T045727-live-f4040494.jsonl",
+  "trace": {
+    "passed": true,
+    "errors": [],
+    "mode": "live",
+    "peak_calls": 3,
+    "peak_execution_calls": 1,
+    "calls_by_phase": {
+      "propose": 12,
+      "review": 4,
+      "execute": 3,
+      "synthesize": 1
+    },
+    "task_statuses": {
+      "release-review/profitability_review": "succeeded",
+      "release-review/tech_risk_review": "succeeded",
+      "release-review/release_recommendation": "succeeded",
+      "release-review": "succeeded"
+    },
+    "awards": {
+      "release-review": {
+        "requester": "A",
+        "worker": "A",
+        "mode": "delegate",
+        "dependencies": {
+          "profitability_review": [],
+          "tech_risk_review": [],
+          "release_recommendation": [
+            "profitability_review",
+            "tech_risk_review"
+          ]
+        }
+      },
+      "release-review/profitability_review": {
+        "requester": "A",
+        "worker": "C",
+        "mode": "execute",
+        "dependencies": {}
+      },
+      "release-review/tech_risk_review": {
+        "requester": "A",
+        "worker": "C",
+        "mode": "execute",
+        "dependencies": {}
+      },
+      "release-review/release_recommendation": {
+        "requester": "A",
+        "worker": "A",
+        "mode": "execute",
+        "dependencies": {}
+      }
+    },
+    "providers": {
+      "SiliconFlow": 1,
+      "Sail Research": 2,
+      "Morph": 2,
+      "DeepInfra": 3,
+      "Wafer": 2,
+      "StreamLake": 2,
+      "Relace": 1,
+      "Alibaba": 2,
+      "Makora": 1,
+      "Modal": 2,
+      "Fireworks": 1,
+      "DigitalOcean": 1
+    },
+    "models": {
+      "deepseek/deepseek-v4.1-flash": 20
+    },
+    "evaluation": {
+      "passed": true,
+      "checks": {
+        "p_margin": true,
+        "q_margin": true,
+        "p_profit": true,
+        "q_profit": true,
+        "p_break_even": true,
+        "q_break_even": true,
+        "p_low_profit": true,
+        "q_low_profit": true,
+        "p_high_profit": true,
+        "q_high_profit": true,
+        "migration_before_app": true,
+        "can_release": true
+      }
+    }
+  },
+  "configured_max_depth": 5,
+  "observed_max_depth": 1,
+  "task_depths": {
+    "release-review": 0,
+    "release-review/profitability_review": 1,
+    "release-review/tech_risk_review": 1,
+    "release-review/release_recommendation": 1
+  },
+  "status": "succeeded",
+  "evaluation": {
+    "passed": true,
+    "checks": {
+      "p_margin": true,
+      "q_margin": true,
+      "p_profit": true,
+      "q_profit": true,
+      "p_break_even": true,
+      "q_break_even": true,
+      "p_low_profit": true,
+      "q_low_profit": true,
+      "p_high_profit": true,
+      "q_high_profit": true,
+      "migration_before_app": true,
+      "can_release": true
+    }
+  },
+  "depth_bound_respected": true,
+  "elapsed_seconds": 184.9184,
+  "reported_cost_usd": 0.016695269999999998
+}

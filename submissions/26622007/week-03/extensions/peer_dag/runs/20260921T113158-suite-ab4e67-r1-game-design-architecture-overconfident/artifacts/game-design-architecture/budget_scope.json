@@ -1,0 +1,39 @@
+{
+  "status": "succeeded",
+  "worker": "C",
+  "artifact": {
+    "summary": "확정 추정치 기준으로 기본 범위 사람-시간 합계는 160h(이동/턴 24 + seed 기반 맵 24 + 전투 32 + 저장/복원 24 + 화면 20 + 자동 테스트 24 + 접근성 12)이며, 개발 예산 160h와 정확히 일치한다. QA 예산은 40h인데 QA 관련 항목(자동 테스트 24 + 접근성 12 = 36h)이 36h로 4h 여유가 있으나, 통합·회귀·수동 검증 비용은 추정치에 별도 반영되지 않아 실질 여유는 없거나 부족할 수 있다. 협동 포함 범위는 160 + 80 = 240h로 개발 예산 160h를 80h 초과하므로 coop_fits_budget은 false다. 병렬화는 달력 기간만 줄일 뿐 사람-시간 합계는 줄지 않으므로 80h 초과는 해소되지 않는다. 우선순위는 핵심 루프(이동/턴, 전투), 재현성(seed 기반 맵, 저장/복원), 자동 테스트를 우선하고 화면·접근성은 후순위로 조정한다. 제외 범위는 서버·로그인·결제·온라인 협동이다. 불확실성: 추정치 변동, QA 병목, 통합 비용 미반영, 협동 80h의 병렬화 가정.",
+    "facts": {
+      "board_width": 6,
+      "board_height": 6,
+      "max_turns": 12,
+      "developer_hours": 160,
+      "qa_hours": 40,
+      "core_scope_hours": 160,
+      "with_coop_hours": 240,
+      "coop_fits_budget": false,
+      "seeded_replay_required": true,
+      "offline_required": true,
+      "core_scope_vs_dev_budget_delta": 0,
+      "coop_vs_dev_budget_delta": 80,
+      "qa_related_hours": 36,
+      "qa_budget_margin": 4,
+      "parallelism_reduces_person_hours": false,
+      "excluded_scope": "서버, 로그인, 결제, 온라인 협동",
+      "priority_order": "핵심 루프(이동/턴, 전투) > 재현성(seed 기반 맵, 저장/복원) > 자동 테스트 > 화면 > 접근성"
+    },
+    "evidence": [
+      "기본 범위 합계: 24(이동/턴) + 24(seed 기반 맵) + 32(전투) + 24(저장/복원) + 20(화면) + 24(자동 테스트) + 12(접근성) = 160h",
+      "개발 예산: 개발자 2명 × 주 20h × 4주 = 160h",
+      "QA 예산: 1명 × 주 10h × 4주 = 40h",
+      "기본 범위 vs 개발 예산: 160h - 160h = 0h (정확히 일치, 여유 없음)",
+      "QA 관련 항목: 자동 테스트 24h + 접근성 12h = 36h, QA 예산 40h 대비 4h 여유이나 통합·회귀·수동 검증 비용 미반영",
+      "협동 포함 범위: 160h + 80h = 240h",
+      "협동 포함 vs 개발 예산: 240h - 160h = 80h 초과 → coop_fits_budget = false",
+      "병렬화는 달력 기간만 단축하며 사람-시간 합계 240h는 불변",
+      "제외 범위: 서버·로그인·결제·온라인 협동은 기본 범위에 없음",
+      "불확실성: 추정치 변동, QA 병목, 통합 비용 미반영, 협동 80h 병렬화 가정"
+    ]
+  },
+  "error": ""
+}

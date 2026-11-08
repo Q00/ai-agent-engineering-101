@@ -1,0 +1,28 @@
+{
+  "status": "succeeded",
+  "worker": "A",
+  "artifact": {
+    "summary": "[설계 제안 — 실제 구현/테스트 미수행] 결제 중복 사고를 재현 가능한 설계 문제로 분석한 결과.\n\n■ 1. 원인 가설과 확인 증거\nH1(주원인): 두 요청 모두 idempotency_key가 공백이므로 IdempotencyStore가 두 요청을 서로 다른 요청으로 취급 → PG 승인 2건. 확인 증거: PG 승인 로그의 두 승인에 동일 order_id·상이/부재 idempotency_key, DB 완료 1건과의 차액 1건. 반증 조건: PG 로그에 동일 idempotency_key 2건이 존재하면 H1 기각.\nH2: 첫 요청 504는 클라이언트 타임아웃일 뿐 PG는 승인 완료(불확정성). 확인 증거: PG 승인 시각이 첫 요청 타임아웃 이전인지, 재시도 200 응답의 승인 ID가 첫 승인과 다른지. 반증: 첫 요청이 PG에 도달하지 않았다는 게이트웨이 로그.\nH3: 재시도가 새 승인을 생성(멱등 미적용). 확인 증거: 두 승인 ID 상이 + 동일 금액/order_id. 반증: 동일 승인 ID 재사용.\nH4: 웹훅 중복/순서 역전으로 DB 완료 1건만 반영. 확인 증거: 웹훅 수신 로그의 중복 delivery id, 순서 역전 여부. 반증: 웹훅 1건만 수신.\nH5: DB 고유 제약 부재로 중복 완료가 억제되지 않음. 확인 증거: order_id UNIQUE/상태 전이 제약 스키마 확인.\n\n■ 2. 컴포넌트 책임·인터페이스·저장·제약·오류경계 (설계 제안)\n- PaymentCommand: 결제/취소 유스케이스 오케스트레이션. 인터페이스: execute(orderId, amount, idempotencyKey, clientVersion) -> Result{status, pgApprovalId}. 책임: 키 검증(공백 거부), IdempotencyStore 선점, GatewayPort 호출, 결과 기록. 오류경계: 키 공백 시 즉시 400(재시도 불가), 게이트웨이 타임아웃 시 'UNKNOWN' 상태로 기록하고 재시도는 동일 키로만 허용.\n- IdempotencyStore: 저장 스키마 {idempotency_key PK/UNIQUE, order_id, request_hash, state(IN_PROGRESS|SUCCEEDED|FAILED), pg_approval_id, version, created_at, updated_at}. 고유 제약: idempotency_key UNIQUE, (order_id, state) 전이 제약. 책임: 조회/선점(INSERT ... ON CONFLICT), 결과 캐시 반환. 오류경계: 선점 충돌 시 기존 결과 반환(경쟁 요청 안전).\n- GatewayPort: PG 추상화. 인터페이스: authorize(orderId, amount, idempotencyKey) -> {approvalId, status}, cancel(approvalId, idempotencyKey) -> {status}, query(approvalId) -> {status}. 책임: PG 멱등키 전달, 타임아웃 시 UNKNOWN 반환(성공/실패 단정 금지). 오류경계: 타임아웃=불확정, 재시도는 동일 키.\n- WebhookHandler: 웹훅 적용. 인터페이스: handle(eventId, approvalId, orderId, status, sequence). 책임: eventId 중복 무시(멱등 upsert), sequence/version 비교로 순서 역전 방어, 상태 단조성(완료→취소만 허용, 역방향 금지). 오류경계: 미지 approvalId는 보류 큐에 적재 후 대사.\n- ReconciliationJob: PG↔DB 대사. 인터페이스: run(window) -> {mismatches, resolved}. 책임: PG 승인 목록과 DB 완료 목록 대조, 중복 승인 탐지·환불 후보 생성, UNKNOWN 상태 재조회. 오류경계: 자동 환불은 승인 후 수동 승인 필요(미검증).\n\n■ 3. 결제/취소 상태 전이표 (설계 제안)\n결제: INITIATED→IN_PROGRESS→(SUCCEEDED|FAILED|UNKNOWN). UNKNOWN→SUCCEEDED(재조회 확정) 또는 FAILED. SUCCEEDED→CANCEL_REQUESTED→CANCELLED. 금지: CANCELLED→SUCCEEDED, FAILED→SUCCEEDED(동일 키).\n취소: CANCEL_REQUESTED→(CANCELLED|CANCEL_FAILED). 중복 취소는 동일 키로 멱등.\n규칙: (a) 멱등 upsert — eventId/idempotency_key 기준 ON CONFLICT DO NOTHING/UPDATE. (b) 버전/시퀀스 비교 — 낮은 sequence 이벤트는 무시. (c) 상태 단조성 — 진행 방향만 허용, 역행 이벤트는 로그 후 폐기.\n\n■ 4. 코드 디렉터리 구조 (설계 제안)\n/payment/domain/{PaymentCommand, StateMachine, Errors}\n/payment/ports/{GatewayPort, IdempotencyStore, WebhookHandler, ReconciliationJob}\n/payment/adapters/{PgGatewayAdapter, IdempotencyStoreSql, WebhookController, ReconJobCron}\n/payment/migrations/{001_idempotency_unique.sql, 002_state_constraints.sql}\n/payment/tests/{concurrency, ordering, partial_failure}\n\n■ 5. 핵심 처리 의사코드 (설계 제안)\nPaymentCommand.execute(orderId, amount, key):\n  if key is blank: return 400\n  rec = IdempotencyStore.claim(key, orderId, hash)\n  if rec.state == SUCCEEDED: return rec.result\n  resp = GatewayPort.authorize(orderId, amount, key)\n  if resp.status == TIMEOUT: IdempotencyStore.mark(key, UNKNOWN); return 202\n  IdempotencyStore.mark(key, resp.status, resp.approvalId)\n  return resp\nWebhookHandler.handle(evt):\n  if IdempotencyStore.seen(evt.eventId): return 200\n  cur = store.get(evt.orderId)\n  if evt.sequence <= cur.sequence: return 200 (폐기)\n  if not monotonic(cur.state, evt.status): log; return 200\n  store.upsert(evt)\nReconciliationJob.run(window):\n  pg = GatewayPort.list(window); db = store.list(window)\n  for order in union: if pg.approvals>1 or pg!=db: emit mismatch, queue refund candidate\n\n■ 6. 테스트 행렬 (설계 제안, 미실행)\n경쟁 요청: 동일 키 동시 2건 → 1건만 PG 승인. 순서 역전: 완료 후 취소 이벤트 도착 → 상태 유지. 부분 실패: PG 승인 후 DB 기록 실패 → UNKNOWN 후 재조회 확정. 웹훅 중복: 동일 eventId 2회 → 1회 반영. 타임아웃: 504 후 재시도 → 동일 키로 승인 1건.\n\n■ 7. 미검증 항목 (통과로 표기하지 않음)\n롤백, 재시도 결제, 취소 결제 검증은 모두 미완료. 실제 PG·DB 조회, 환불, 배포 미수행. 위 설계는 제안이며 구현/테스트로 검증되지 않음.",
+    "facts": {
+      "backfill_batches": 240,
+      "serial_backfill_seconds": 3600,
+      "two_worker_backfill_seconds": 1800,
+      "downtime_budget_seconds": 1200,
+      "coexistence_hours": 72,
+      "unverified_release_checks": 3,
+      "offline_backfill_fits": false,
+      "can_release": false
+    },
+    "evidence": [
+      "배치 수 = 1,200,000 / 5,000 = 240 배치",
+      "1개 작업자 전체 시간 = 240 × 15초 = 3,600초(60분)",
+      "2개 작업자 전체 시간 = 240 × 15 / 2 = 1,800초(30분)",
+      "중단 허용 = 20분 = 1,200초. 1,800초 > 1,200초이므로 2개 작업자로도 허용 시간 내 일괄 처리는 불가(offline_backfill_fits=false)",
+      "공존 요구 = 72시간(coexistence_hours=72)",
+      "미검증 릴리스 검증 항목 = 롤백, 재시도 결제, 취소 결제 = 3건(unverified_release_checks=3), 모두 미완료이므로 can_release=false",
+      "합성 기록: 첫 요청 504, 2초 뒤 재시도 200, 두 요청 모두 idempotency_key 공백 → PG 승인 2건 vs DB 완료 1건(제공 자료)",
+      "설계 문서·의사코드는 본 summary/evidence 문자열에 포함된 설계 제안이며 실제 구현/테스트는 수행하지 않음"
+    ]
+  },
+  "error": ""
+}

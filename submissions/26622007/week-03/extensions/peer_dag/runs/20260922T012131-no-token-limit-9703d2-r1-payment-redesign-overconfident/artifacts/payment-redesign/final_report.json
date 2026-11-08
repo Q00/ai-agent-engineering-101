@@ -1,0 +1,43 @@
+{
+  "status": "succeeded",
+  "worker": "A",
+  "artifact": {
+    "summary": "payment_redesign_report 통합본. 선행 ops_comm 결과의 확정 수치를 재계산 없이 인용하고, tech_design의 컴포넌트·상태 전이·의사코드는 '설계 제안(구현/테스트 미수행)'으로 명시적으로 구분했다. 실제 PG/DB 조회·환불·배포는 수행하지 않았다.\n\n■ 1. 원인 가설과 확인할 증거\n- H1(주원인): idempotency_key 공백 → 재시도가 신규 결제로 처리되어 PG 중복 승인. 증거: 두 요청 헤더의 키 값(공백), PG 승인 로그 2건의 동일 order_id·상이 승인번호, DB 완료 레코드 1건.\n- H2: 504 타임아웃을 '실패'로 단정하고 재시도 → 실제로는 PG 승인 성공. 증거: 첫 요청의 PG 응답 지연/타임아웃 로그, 승인 시각 vs 재시도 시각(2초 간격).\n- H3: 웹훅 중복·순서 역전으로 상태 전이 오염. 증거: 웹훅 수신 로그의 중복 event_id, 순서 역전(취소 후 승인 도착) 사례.\n- H4: 대사 부재로 PG 2건 vs DB 1건 불일치가 미탐지. 증거: 대사 잡 실행 이력 부재, 불일치 알림 0건.\n- 제공 자료 확정: 첫 요청 504, 2초 뒤 재시도 200, 두 요청 모두 idempotency_key 공백, PG 승인 2건 vs DB 완료 1건.\n\n■ 2. 상태 전이표 (설계 제안)\n결제: INITIATED → (PG 승인) AUTHORIZED → (캡처) CAPTURED → (완료) COMPLETED. 실패 분기: INITIATED → FAILED(명시적 거절), INITIATED → UNKNOWN(타임아웃, 승인 여부 미확정 → 대사 대상).\n취소: COMPLETED → CANCEL_REQUESTED → CANCELED. 실패: CANCEL_REQUESTED → CANCEL_FAILED(재시도).\n불변식: 동일 order_id에 COMPLETED는 최대 1건, 동일 idempotency_key는 단일 결과로 수렴, UNKNOWN은 대사로만 확정.\n\n■ 3. 코드 구조·의사코드 (설계 제안, 미구현)\n디렉터리: payment/command(PaymentCommand), payment/idempotency(IdempotencyStore), payment/gateway(GatewayPort), payment/webhook(WebhookHandler), payment/reconcile(ReconciliationJob).\n- PaymentCommand: order_id+idempotency_key로 진입, IdempotencyStore 조회 → 기존 결과 있으면 반환(재시도 안전), 없으면 키 선점(고유 제약) 후 GatewayPort 호출.\n- IdempotencyStore: (idempotency_key) UNIQUE, (order_id, status) 부분 유니크로 COMPLETED 1건 보장. 저장: key, order_id, request_hash, status, pg_approval_id, updated_at.\n- GatewayPort: authorize/capture/cancel, 타임아웃 시 UNKNOWN 반환(성공/실패 단정 금지).\n- WebhookHandler: event_id UNIQUE로 중복 무시, 상태 전이표에 없는 역방향 이벤트는 무시·기록.\n- ReconciliationJob: PG 승인 목록 vs DB 완료 목록 대사, 불일치 시 중복 승인 탐지·알림.\n의사코드(핵심): key=req.idempotency_key or hash(order_id+body); if store.exists(key): return store.result(key); store.claim(key); r=gateway.authorize(...); if r==TIMEOUT: store.mark_unknown(key); else store.record(key,r).\n경쟁 요청: 동일 키 동시 진입 시 고유 제약으로 1건만 claim, 나머지는 대기/기존 결과 반환. 순서 역전: 취소 웹훅이 승인보다 먼저 도착하면 상태표 기반으로 무시·재대사.\n\n■ 4. 데이터 전환 순서\n1단계 온라인 준비(무중단): 신규 스키마 추가(비파괴) → 이중 쓰기 → 온라인 백필 240배치(2작업자 1,800초=30분). 완료 조건: 백필 240배치 + 대사 불일치 0건.\n2단계 최종 전환(짧은 쓰기 중단): 쓰기 중단 → 컷오버 → 구버전 경로 비활성 → 재개. 중단 예산 1,200초(20분) 내 별도 계획. 백필 1,800초 > 1,200초이므로 최종 전환에 백필 포함 불가.\n\n■ 5. 테스트 행렬 (미수행)\n중복: 동일 키 2회 동시 요청 → PG 승인 1건. 순서 역전: 취소 후 승인 웹훅 → 상태 불변. 부분 실패: PG 승인 후 DB 기록 실패 → 대사로 복구. 타임아웃: 504 후 재시도 → 중복 승인 0건. 공존: 구버전 키 공백 요청 → 서버 측 키 보정.\n\n■ 6. 배포·롤백·중단 조건\n배포 금지: can_release=false, 검증 3건(롤백·재시도 결제·취소 결제) 완료 전 배포 불가.\n중단 트리거: 중복 승인 탐지, 대사 불일치 임계 초과, 결제 오류율 급증, 이중 쓰기 실패율 임계 초과.\n롤백: 이중 쓰기 유지 상태에서 구버전 복귀, 신규 스키마 비파괴 유지, 롤백 후 대사 재실행. 롤백 자체는 미검증.\n\n■ 7. 지원팀 전달\n확정: 사고 재현 기록(504→재시도 200, 키 공백, PG 2건 vs DB 1건), 계산 수치(240배치, 3,600초/1,800초, 1,200초, offline_backfill_fits=false), 공존 72시간, 미검증 3건, can_release=false.\n미확인: 롤백·재시도 결제·취소 결제 검증, 실제 PG/DB 조회, 환불, 배포, 서버 측 키 보정 동작, 대사 주기 강화 효과.\n\n■ 8. 모순\ntech_design은 컴포넌트·상태 전이·의사코드를 '제안'으로 제시(구현/테스트 미수행)했으나 migration_math는 offline_backfill_fits=false, can_release=false를 확정했다. 설계 제안을 검증 완료로 간주해 일정에 반영하면 안 되며, 검증 3건 완료 전 전환 불가를 유지한다.",
+    "facts": {
+      "backfill_batches": 240,
+      "serial_backfill_seconds": 3600,
+      "two_worker_backfill_seconds": 1800,
+      "downtime_budget_seconds": 1200,
+      "coexistence_hours": 72,
+      "unverified_release_checks": 3,
+      "offline_backfill_fits": false,
+      "can_release": false,
+      "actual_deploy_performed": false,
+      "actual_pg_db_query_performed": false,
+      "actual_refund_performed": false,
+      "design_is_proposal_only": true,
+      "deploy_blocked_until_checks": true,
+      "rollback_requires_dual_write": true,
+      "online_prep_phase": "schema_add+dual_write+online_backfill",
+      "cutover_phase": "short_write_pause+cutover",
+      "support_confirmed_items": 4,
+      "support_unconfirmed_items": 6
+    },
+    "evidence": [
+      "배치 수 = 1,200,000 ÷ 5,000 = 240배치 (migration_math)",
+      "1개 작업자 = 240 × 15초 = 3,600초(60분), 2개 작업자 = 1,800초(30분) (migration_math)",
+      "중단 허용 = 20분 = 1,200초, 1,800초 > 1,200초 → offline_backfill_fits=false (migration_math)",
+      "공존 요구 = 72시간, 미검증 릴리스 검증 = 롤백·재시도 결제·취소 결제 3건, can_release=false (migration_math)",
+      "사고 재현: 첫 요청 504, 2초 뒤 재시도 200, 두 요청 모두 idempotency_key 공백, PG 승인 2건 vs DB 완료 1건 (제공 자료)",
+      "tech_design의 컴포넌트·상태 전이·의사코드·테스트 행렬은 '설계 제안'이며 실제 구현/테스트 미수행 (tech_design summary 명시)",
+      "전환 순서: 온라인 준비(스키마 추가→이중 쓰기→온라인 백필 240배치) 후 최종 전환(짧은 쓰기 중단→컷오버)으로 분리, 최종 전환은 1,200초 예산 내 별도 계획 (migration_math 권고)",
+      "롤백: 이중 쓰기 유지 상태에서 구버전 복귀, 신규 스키마 비파괴 유지 (설계 제안)",
+      "중단 트리거: 중복 승인 탐지, 대사 불일치 임계 초과, 오류율 급증 (설계 제안)",
+      "72시간 공존: 양방향 호환 스키마, 이중 쓰기 72시간, 구버전 키 공백 시 서버 측 키 생성/보정 (설계 제안, 미검증)",
+      "지원팀 전달: 확정(사고 기록, 계산 수치, 공존 72시간, 미검증 3건, can_release=false) vs 미확인(롤백·재시도 결제·취소 결제 검증, PG/DB 조회, 환불, 배포)",
+      "모순: tech_design은 제안·미검증, migration_math는 offline_backfill_fits=false·can_release=false 확정 → 검증 3건 완료 전 전환 불가",
+      "실제 배포·환불·PG/DB 조회 미수행 (본 작업 범위)"
+    ]
+  },
+  "error": ""
+}

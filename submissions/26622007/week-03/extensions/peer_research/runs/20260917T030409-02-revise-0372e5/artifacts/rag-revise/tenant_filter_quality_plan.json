@@ -1,0 +1,49 @@
+{
+  "status": "succeeded",
+  "worker": "A",
+  "artifact": {
+    "summary": "## tenant 필터 검색·검색 품질 검증 계획 (tenant_filter_quality_plan, ADR-RAG-7429)\n\n가정: 100만×1536차원 벡터, 30 tenant, tenant 필터 top-10, 일 1% 갱신(약 1만 벡터/일), PostgreSQL 운영 인력 2명, 폐쇄망(외부 관리형 SaaS 불가). 내부 결정 ID **ADR-RAG-7429**, 기존 PostgreSQL 백업 책임 **플랫폼팀**. 실제 벤치마크·복구 작업은 수행하지 않았으므로 모든 성능 수치는 `not_measured`다.\n\n### 1. 공식 근거 비교 (이번 웹 검색으로 확보)\n\n| 항목 | pgvector (PostgreSQL 확장) | Qdrant (자체 호스팅) |\n|---|---|---|\n| 필터 적용 방식 | 근사 인덱스(HNSW/IVFFlat)는 **post-filter**: 인덱스가 후보를 뽑은 뒤 WHERE 조건을 적용. 필터 선택도가 낮으면 결과가 부족해질 수 있음 | **payload 필터가 검색에 통합**. 필터 가능 필드에 payload index를 만들면 HNSW 그래프 탐색 중 조건을 만족하는 이웃만 확장(filterable HNSW) |\n| 필터 보완 | 0.8.0+ **iterative index scan**: `hnsw.iterative_scan`(strict_order/relaxed_order), `hnsw.max_scan_tuples`(기본 20000), `hnsw.ef_search`(기본 40), `ivfflat.probes`/`ivfflat.max_probes` | `hnsw_ef`(검색 시 탐색 폭), `m`, `ef_construct`로 인덱스 파라미터 조정. 필터 조건이 인덱스에 반영되어 recall 손실이 작음 |\n| 다중 tenant | 값 종류가 많으면 **PARTITION BY LIST(tenant_id)** + 파티션별 HNSW 인덱스 권장(공식 README). 30 tenant는 파티셔닝이 현실적 | **multitenancy**: tenant별 컬렉션 분리 또는 단일 컬렉션 + payload index(`tenant_id` keyword). 공식 문서가 두 패턴과 트레이드오프를 설명 |\n| 운영 부담 | 기존 PostgreSQL 백업/PITR 체계 재사용, 신규 stateful 저장소 불필요 | 신규 stateful 서비스 운영 필요(스냅샷/복구 절차 별도), 인력 증원 불가 조건에서 부담 |\n\n핵심 차이: pgvector는 **post-filter 구조**라 tenant 필터 선택도가 낮을 때(예: 30 tenant 균등 분포 → 약 3.3% 선택도) `ef_search=40`으로는 평균 1~2행만 매칭될 수 있어 iterative scan 또는 파티셔닝이 사실상 필수다. Qdrant는 필터가 탐색에 통합되어 이론적으로 유리하지만, 자체 호스팅 시 신규 저장소 운영·백업 부담이 추가된다.\n\n### 2. 검증 실험 설계 (실행 아님, 계획)\n\n**지표**\n- recall@10: 정확한(brute-force) top-10 대비 근사 검색 top-10의 재현율. tenant 필터 적용 후 측정.\n- p50/p95/p99 latency: tenant 필터 포함 top-10 쿼리, 동시성 1/8/32에서 측정.\n- 필터 선택도별 성능: tenant당 벡터 수를 1만/3.3만/10만으로 조정해 선택도 1%/3.3%/10% 구간 측정.\n- 인덱스 빌드 시간 및 일 1만 갱신 후 recall 유지율.\n\n**데이터셋**\n- 100만×1536차원 합성 벡터, 30 tenant에 균등/편향(1개 tenant 50%) 두 분포로 구성.\n- 쿼리셋: tenant별 100개, 총 3000개, 정답은 brute-force로 산출.\n\n**합격 기준(제안)**\n- recall@10 ≥ 0.95 (tenant 필터 적용 후)\n- p95 latency ≤ 100ms (동시성 8 기준)\n- 일 1만 갱신 후 recall 저하 ≤ 2%p\n- pgvector: `hnsw.ef_search` 40→100/200, `hnsw.iterative_scan=relaxed_order`, `hnsw.max_scan_tuples` 상향, tenant LIST 파티셔닝 유무 비교\n- Qdrant: `hnsw_ef` 64/128/256, payload index 유무, tenant별 컬렉션 vs 단일 컬렉션 비교\n\n### 3. 미측정·미해결\n- 실제 latency/recall 벤치마크 미실행 → `measured_latency=not_measured`\n- Qdrant 자체 호스팅 스냅샷/복구 절차의 폐쇄망 적합성은 이번 조사 범위 밖(백업 조사에서 별도 확인 필요)\n- pgvector 파티션별 인덱스 재구축 주기·비용 미검증\n- 관리형 비용 비교 불가(폐쇄망으로 SaaS 배제)\n\n### 4. 체크리스트\n- [x] pgvector post-filter/iterative scan 공식 근거 확보\n- [x] Qdrant payload 필터·multitenancy 공식 근거 확보\n- [x] 30 tenant·top-10·일 1만 갱신 가정 매핑\n- [x] 검증 실험 설계(지표/데이터셋/합격 기준)\n- [ ] 실제 벤치마크 실행 (미실행)\n- [ ] 폐쇄망 백업·복구 검증 (별도 조사 필요)",
+    "facts": {
+      "recommended_storage": "미확정(tenant 필터·품질 검증 결과 및 백업 조사 통합 후 확정)",
+      "internal_decision_id": "ADR-RAG-7429",
+      "backup_owner": "플랫폼팀",
+      "measured_latency": "not_measured",
+      "unresolved": "실제 recall@10·p95 latency 벤치마크 미실행; Qdrant 자체 호스팅 스냅샷/복구의 폐쇄망 적합성 미확인; pgvector 파티션별 인덱스 재구축 주기·비용 미검증; 관리형 비용 비교 불가(폐쇄망); 최종 저장소 확정 보류",
+      "memory_refs": "mem-4a1df38327a7d1de,mem-65823fff470a3d74,mem-228e3524f75d90b1",
+      "external_saas_allowed": false,
+      "pgvector_filter_mode": "post-filter (approximate index), iterative scan since 0.8.0",
+      "pgvector_hnsw_default_ef_search": 40,
+      "pgvector_hnsw_default_m": 16,
+      "pgvector_hnsw_default_ef_construction": 64,
+      "pgvector_hnsw_max_scan_tuples_default": 20000,
+      "pgvector_ivfflat_default_lists": 100,
+      "pgvector_ivfflat_default_probes": 1,
+      "qdrant_filter_mode": "payload filter integrated into HNSW search (filterable HNSW)",
+      "qdrant_multitenancy_patterns": "tenant별 컬렉션 분리 또는 단일 컬렉션 + tenant_id payload index",
+      "tenant_count": 30,
+      "vector_count": 1000000,
+      "dimension": 1536,
+      "daily_update_vectors": 10000,
+      "tenant_filter_selectivity_uniform_pct": 3.3,
+      "recall_target_proposed": 0.95,
+      "p95_latency_target_ms_proposed": 100,
+      "benchmark_executed": false,
+      "qdrant_official_evidence_obtained": true,
+      "cost_figures_fabricated": false
+    },
+    "evidence": [
+      "memory:mem-4a1df38327a7d1de — 이전 실행의 pgvector HNSW 기본값(m=16, ef_construction=64, ef_search=40), IVFFlat 기본값(lists=100), post-filter 구조, iterative scan(0.8.0+) 및 미해결 항목(Qdrant 공식 근거 미확보)을 승계",
+      "memory:mem-65823fff470a3d74 — pgvector PITR/pg_dump는 논리 덤프로 PITR 대체 불가, PITR은 전체 클러스터 단위 복원만 가능, 백업 책임=플랫폼팀",
+      "memory:mem-228e3524f75d90b1 — 이전 통합 결정 문서의 비교 표와 미확정 권고를 승계",
+      "https://github.com/pgvector/pgvector?tab=readme-ov-file — pgvector 공식 README: HNSW/IVFFlat 인덱스, 근사 인덱스의 post-filter 동작, iterative index scan(hnsw.iterative_scan, hnsw.max_scan_tuples 기본 20000), 다중 tenant 시 PARTITION BY LIST + 파티션별 인덱스 권장",
+      "https://github.com/pgvector/pgvector/blob/master/src/hnsw.h — pgvector HNSW 기본 파라미터(m=16, ef_construction=64, ef_search=40) 정의",
+      "https://github.com/pgvector/pgvector/blob/master/src/ivfflat.h — pgvector IVFFlat 기본 파라미터(lists=100, probes=1) 정의",
+      "https://qdrant.tech/documentation/concepts/filtering/ — Qdrant 공식 문서: payload 필터링과 payload index, 필터가 검색에 통합되는 방식",
+      "https://qdrant.tech/documentation/guides/multiple-partitions/ — Qdrant 공식 문서: multitenancy 패턴(tenant별 컬렉션 분리 vs 단일 컬렉션 + tenant_id payload index)과 트레이드오프",
+      "https://qdrant.tech/documentation/concepts/indexing/ — Qdrant 공식 문서: HNSW 인덱스 파라미터(m, ef_construct)와 검색 시 hnsw_ef 조정",
+      "계산: 30 tenant 균등 분포 시 tenant 필터 선택도 = 1/30 ≈ 3.3%; ef_search=40 기준 기대 매칭 행 수 ≈ 40×0.033 ≈ 1.3행으로 top-10 확보에 부족 → iterative scan 또는 파티셔닝 필요",
+      "검증 미실행: recall@10, p50/p95/p99 latency, 인덱스 빌드 시간, 갱신 후 recall 유지율은 실제 측정하지 않았으므로 not_measured로 유지"
+    ]
+  },
+  "error": ""
+}

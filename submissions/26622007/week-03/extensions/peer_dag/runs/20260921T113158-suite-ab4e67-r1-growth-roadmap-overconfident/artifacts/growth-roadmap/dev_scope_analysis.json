@@ -1,0 +1,42 @@
+{
+  "status": "succeeded",
+  "worker": "C",
+  "artifact": {
+    "summary": "공통 필수 범위 4개 항목(요금/청구 64, 조직/좌석 40, 지표 수집 32, 운영 도구 24)을 합산해 common_dev_hours=160을 산출했다. S안은 공통 160 + 셀프 온보딩 64 = 224시간으로 240시간 예산 내 적합(s_fits_budget=true, 여유 16시간). E안은 공통 160 + SSO/감사 기록 96 = 256시간으로 예산을 16시간 초과(e_fits_budget=false, e_budget_shortfall_hours=16). 동시 개발로 총시간이 줄어든다고 가정하지 않았고 추정 시간을 임의로 낮추지 않았다. E안 부족분 16시간은 분기 밖으로 이연할 후보 범위(운영 도구 24시간 중 일부 또는 SSO/감사 기록의 일부 세부 기능)로 명시하되, 이연은 범위 축소가 아니라 일정 이동임을 전제로 했다. 도메인·API·데이터 변경 개요는 요금/청구, 조직/좌석, 지표 수집, 운영 도구, 셀프 온보딩(S), SSO/감사 기록(E) 항목별 설계 제안으로 정리했고, 측정 지표(활성 좌석, 온보딩 완료율, 청구 정확도, 감사 로그 커버리지 등)를 제안했다. 아래 내용은 전부 설계 제안이며 실제 구현·테스트는 수행하지 않았다. 미확인 사항: 실제 개발자 가용 인원/속도, 통합 난이도, 외부 IdP 연동 복잡도, 청구 정산 시스템 제약.",
+    "facts": {
+      "common_dev_hours": 160,
+      "s_total_dev_hours": 224,
+      "e_total_dev_hours": 256,
+      "e_budget_shortfall_hours": 16,
+      "s_fits_budget": true,
+      "e_fits_budget": false,
+      "dev_budget_hours": 240,
+      "s_budget_margin_hours": 16,
+      "common_billing_hours": 64,
+      "common_org_seat_hours": 40,
+      "common_metrics_hours": 32,
+      "common_ops_tool_hours": 24,
+      "s_self_onboarding_hours": 64,
+      "e_sso_audit_hours": 96,
+      "deferral_candidate_ops_tool_hours": 24,
+      "deferral_candidate_sso_audit_hours": 96,
+      "implementation_performed": false,
+      "design_proposal_only": true,
+      "concurrent_dev_time_reduction_assumed": false,
+      "estimate_arbitrarily_reduced": false
+    },
+    "evidence": [
+      "common_dev_hours = 64(요금/청구) + 40(조직/좌석) + 32(지표 수집) + 24(운영 도구) = 160",
+      "s_total_dev_hours = 160(공통) + 64(셀프 온보딩) = 224",
+      "e_total_dev_hours = 160(공통) + 96(SSO/감사 기록) = 256",
+      "s_budget_margin_hours = 240 - 224 = 16 → s_fits_budget = true",
+      "e_budget_shortfall_hours = 256 - 240 = 16 → e_fits_budget = false",
+      "E안 부족분 16시간 이연 후보: 운영 도구 24시간 중 일부(예: 운영 대시보드 고도화) 또는 SSO/감사 기록 96시간 중 일부 세부 기능(예: 감사 로그 보존 정책 자동화). 단, 이연은 분기 밖 일정 이동이며 추정 시간 자체를 낮추지 않음.",
+      "동시 개발로 총 개발 시간이 감소한다는 가정은 사용하지 않음(자료 지시 준수).",
+      "설계 제안(미구현): 요금/청구 - 플랜/가격 도메인, 청구 주기 API, 좌석 기반 과금 데이터 모델. 조직/좌석 - 조직-좌석 매핑, 좌석 할당/회수 API. 지표 수집 - 활성 좌석, 온보딩 완료율, 청구 정확도 이벤트 수집. 운영 도구 - 운영 대시보드, 수동 조정 도구. S안 셀프 온보딩 - 가입→조직 생성→좌석 초대 플로우. E안 SSO/감사 기록 - IdP 연동, 감사 로그 커버리지.",
+      "측정 지표 제안: 활성 좌석 수, 온보딩 완료율, 청구 정확도(정산 오류율), 감사 로그 커버리지, SSO 로그인 성공률.",
+      "미확인 사항: 실제 개발자 가용성, 통합 난이도, 외부 IdP 연동 복잡도, 청구 정산 시스템 제약. 실제 구현/테스트는 수행하지 않았으며 위 수치는 제공된 추정치 기반 계산 결과임."
+    ]
+  },
+  "error": ""
+}

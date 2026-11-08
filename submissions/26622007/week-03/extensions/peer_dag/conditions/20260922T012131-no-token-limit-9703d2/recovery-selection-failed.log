@@ -1,0 +1,17 @@
+test_all_six_recorded_provider_failures_are_selected (__main__.SelectionTests.test_all_six_recorded_provider_failures_are_selected) ... FAIL
+test_content_failure_and_mixed_rejections_are_not_retried (__main__.SelectionTests.test_content_failure_and_mixed_rejections_are_not_retried) ... ok
+test_success_is_never_retried (__main__.SelectionTests.test_success_is_never_retried) ... ok
+
+======================================================================
+FAIL: test_all_six_recorded_provider_failures_are_selected (__main__.SelectionTests.test_all_six_recorded_provider_failures_are_selected)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/junseok/Desktop/AX의 이해와 활용/submissions/26622007/week-03/extensions/peer_dag/conditions/20260922T012131-no-token-limit-9703d2/test_recover_429.py", line 15, in test_all_six_recorded_provider_failures_are_selected
+    self.assertEqual(len(selected), 6, selected)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 1 != 6 : [('growth-roadmap', 'baseline')]
+
+----------------------------------------------------------------------
+Ran 3 tests in 0.001s
+
+FAILED (failures=1)

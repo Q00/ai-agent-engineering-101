@@ -1,0 +1,46 @@
+{
+  "status": "succeeded",
+  "worker": "C",
+  "artifact": {
+    "summary": "개발 예산과 범위 적합성, 저장/재현 수용 기준, 4주 일정, 제외 범위를 확정 추정치로 계산했다. 개발 예산은 개발자 2명×주20시간×4주=160시간, QA 예산은 1명×주10시간×4주=40시간이다. 기본 범위 합계는 24(이동/턴)+24(seed 맵)+32(전투)+24(저장/복원)+20(화면)+24(자동 테스트)+12(접근성)=160시간으로 개발 예산 160시간과 정확히 일치한다. 온라인 협동(+80시간) 포함 시 240시간이 되어 개발 예산 160시간을 80시간 초과하므로 coop_fits_budget=false다. QA 40시간은 자동 테스트(24h)와 접근성(12h) 검증에 배분하고 나머지 4시간은 회귀/재현 테스트에 둔다. 저장 스키마는 saveSchemaVersion=1로 시작하며, 동일 seed·동일 입력 순서·저장/복원 후 동일 결과를 요구하는 재현 테스트를 수용 기준으로 명시한다. 4주 일정은 1주차 도메인/턴·seed 맵, 2주차 전투·보상, 3주차 저장/복원·화면, 4주차 자동 테스트·접근성·통합으로 배분한다. 서버·로그인·결제·온라인 협동은 기본 범위에서 제외한다. 실제 코드 구현이나 테스트 실행은 하지 않았고, 본 결과는 설계/계획 수준이다. 미확인 사항: 실제 개발자별 병렬 분담 세부, QA 4시간의 구체 테스트 케이스 우선순위, 접근성 목표 등급(WCAG 수준)은 미확정이다.",
+    "facts": {
+      "board_width": 6,
+      "board_height": 6,
+      "max_turns": 12,
+      "developer_hours": 160,
+      "qa_hours": 40,
+      "core_scope_hours": 160,
+      "with_coop_hours": 240,
+      "coop_fits_budget": false,
+      "seeded_replay_required": true,
+      "offline_required": true,
+      "save_schema_version": 1,
+      "core_scope_fits_budget": true,
+      "coop_over_budget_hours": 80,
+      "qa_autotest_hours": 24,
+      "qa_accessibility_hours": 12,
+      "qa_regression_hours": 4,
+      "schedule_weeks": 4,
+      "excluded_server": true,
+      "excluded_login": true,
+      "excluded_payment": true,
+      "excluded_online_coop": true,
+      "implementation_done": false,
+      "tests_executed": false
+    },
+    "evidence": [
+      "개발 예산: 개발자 2명 × 주 20시간 × 4주 = 160시간",
+      "QA 예산: QA 1명 × 주 10시간 × 4주 = 40시간",
+      "기본 범위 합계: 24+24+32+24+20+24+12 = 160시간",
+      "협동 포함 합계: 160 + 80 = 240시간",
+      "예산 판정: 기본 160 ≤ 개발 160 → core_scope_fits_budget=true; 협동 240 > 160 → coop_fits_budget=false, 초과 80시간",
+      "QA 배분: 자동 테스트 24h + 접근성 12h + 회귀/재현 4h = 40h",
+      "재현 테스트 기준: 동일 seed·동일 입력 순서·저장/복원 후 동일 GameState/Event 시퀀스",
+      "저장 스키마: saveSchemaVersion=1, 버전 필드 포함 및 마이그레이션 훅 자리 마련",
+      "일정: 1주차 도메인/턴·seed 맵, 2주차 전투·보상, 3주차 저장/복원·화면, 4주차 자동 테스트·접근성·통합",
+      "제외 범위: 서버·로그인·결제·온라인 협동은 기본 범위에서 제외",
+      "미검증: 실제 코드 구현 및 테스트 실행은 수행하지 않음"
+    ]
+  },
+  "error": ""
+}

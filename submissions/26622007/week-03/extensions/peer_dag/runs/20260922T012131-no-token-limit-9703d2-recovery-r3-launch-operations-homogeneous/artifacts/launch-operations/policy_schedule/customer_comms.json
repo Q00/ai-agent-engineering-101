@@ -1,0 +1,50 @@
+{
+  "status": "succeeded",
+  "worker": "C",
+  "artifact": {
+    "summary": "확정 정책('상담 접수 후 영업일 2일 안에 처리 시작', 완료·PG 반영 미보장)을 기준선으로 고정하고, 고객 안내문·FAQ·상담 분류 기준을 작성했다. 모든 문구는 기준문서 v1.0의 허용 표현만 인용하며 '즉시', '자동 환불', '당일 보장' 등 금지 표현을 배제했다. 실제 구현·테스트·외부 연락은 수행하지 않았고 모두 설계 제안이다.\n\n[1] 기준선 고정(기준문서 v1.0)\n- 정책 원문: '상담 접수 후 영업일 2일 안에 처리 시작'. 처리 완료 시간과 PG 반영 시간은 보장하지 않음.\n- 허용 표현: '영업일 2일 내 처리 시작', '처리 시작 후 완료까지 추가 시간 소요 가능', 'PG 반영은 카드사/결제사에 따라 지연될 수 있음'.\n- 금지 표현: '즉시', '자동 환불', '당일 환불 보장', '완료 시각 보장', 'PG 즉시 반영'.\n- 단일 출처 원칙: 광고·상담 스크립트·랜딩·FAQ·안내문의 모든 문구는 기준문서 v1.0 허용 표현만 인용. 개정은 기준문서 담당 승인 후에만 유효.\n\n[2] 고객 안내문(설계 제안, 문자열)\n\"[환불 처리 안내]\\n안녕하세요, 문의해 주셔서 감사합니다.\\n- 접수 확인: 문의가 정상 접수되었습니다.\\n- 처리 시작: 상담 접수 후 영업일 2일 안에 처리를 시작합니다.\\n- 완료·PG 반영: 처리 시작 후 완료까지 추가 시간이 소요될 수 있으며, PG(결제대행사) 반영은 카드사/결제사에 따라 지연될 수 있습니다. 완료 시각과 PG 반영 시각은 보장되지 않습니다.\\n- 문의 채널: 앱/웹 1:1 문의, 고객센터 전화, FAQ를 이용해 주세요.\\n- 문의 폭주 시: 접수 순서와 우선순위에 따라 안내가 지연될 수 있습니다.\\n※ 본 안내는 확정 정책(영업일 2일 내 처리 시작, 완료·PG 반영 미보장)에 따르며, '즉시', '자동 환불', '당일 보장'은 제공되지 않습니다.\"\n\n[3] FAQ(설계 제안, 질문-답변 쌍)\nQ1. 언제 환불되나요? → A. 상담 접수 후 영업일 2일 안에 처리를 시작합니다. 완료까지 추가 시간이 소요될 수 있습니다.\nQ2. 즉시 환불되나요? → A. 아니요. '즉시 자동 환불'은 제공되지 않습니다. 영업일 2일 내 처리 시작 기준입니다.\nQ3. PG 반영은 언제 되나요? → A. PG 반영 시점은 보장하지 않으며 카드사/결제사에 따라 지연될 수 있습니다.\nQ4. 문의가 폭주하면 어떻게 되나요? → A. 접수 순서와 우선순위(결제 오류·중복 청구 우선)에 따라 안내가 지연될 수 있습니다.\nQ5. 상담 인력이 충원되나요? → A. 충원은 아직 승인되지 않았습니다. 승인 전까지는 현재 인력 기준으로 운영되며 대기 안내가 제공될 수 있습니다.\nQ6. 완료 시각을 알 수 있나요? → A. 완료 시각은 보장되지 않습니다. 처리 시작 후 진행 상태를 안내해 드립니다.\n\n[4] 상담 분류 기준(설계 제안)\n- C1 결제 오류·중복 청구(최우선): 증빙(결제ID·시각·금액) 수집, 즉시 에스컬레이션, 처리 시작 기한 안내. 스크립트 요지: \"중복 청구 가능성을 확인 중이며, 접수 후 영업일 2일 내 처리를 시작합니다.\"\n- C2 환불 진행 상태: 접수번호 조회, 처리 시작 여부·단계 안내, 완료·PG 미보장 고지. 스크립트 요지: \"현재 단계는 OO이며, 완료·PG 반영 시점은 보장되지 않습니다.\"\n- C3 일반 문의: FAQ 안내, 셀프서비스 유도.\n- C4 정책 불일치 제보: 광고/랜딩 문구와 확정 정책 불일치 접수, 기준문서 담당에 전달, 금지 표현 발견 시 즉시 보고.\n- 우선순위: C1 > C2 > C4 > C3. 모든 응대는 기준문서 v1.0 허용 표현만 사용.\n\n[5] 단일 기준 문서 연결\n안내문·FAQ·분류 기준 상단에 \"본 문구는 환불 처리 기준 문서 v1.0의 허용 표현만 인용하며, 개정은 기준문서 담당 승인 후에만 유효함\"을 표기. 광고(목 15시)·상담 교육(목 17시)·랜딩(목 18시) 반영 시 동일 기준문서를 참조.\n\n[6] 자체 점검\n- 금지 표현('즉시', '자동 환불', '당일 보장') 미사용 확인.\n- 확정/미확인 사항: 기술 배포 승인·결제 검증·충원 승인은 미제공이므로 완료로 표기하지 않음.\n- immediate_refund_promised=false 유지.\n\n[7] 용량 계산(참고, 가정 기반)\nexpected_contacts = 800 × 0.20 = 160건. four_hour_capacity = 4명 × 5건/시간 × 4시간 = 80건. backlog_without_hiring = 160 − 80 = 80건. required_total_agents = 160 ÷ (5 × 4) = 8명. additional_agents = 8 − 4 = 4명. support_window_hours = 4, launch_hour = 10. 충원 미승인 시 대안: 우선순위 큐(C1 우선), 예상 대기 안내, FAQ 셀프서비스 유도.",
+    "facts": {
+      "expected_contacts": 160,
+      "four_hour_capacity": 80,
+      "backlog_without_hiring": 80,
+      "required_total_agents": 8,
+      "additional_agents": 4,
+      "support_window_hours": 4,
+      "launch_hour": 10,
+      "immediate_refund_promised": false,
+      "policy_processing_start_business_days": 2,
+      "completion_time_guaranteed": false,
+      "pg_reflection_guaranteed": false,
+      "hiring_approved": false,
+      "tech_deploy_approval_provided": false,
+      "payment_verification_provided": false,
+      "invited_users": 800,
+      "first_4h_inquiry_rate": 0.2,
+      "agents_available": 4,
+      "cases_per_agent_per_hour": 5,
+      "ad_copy_deadline_hour": 15,
+      "support_training_deadline_hour": 17,
+      "landing_deadline_hour": 18,
+      "product_spec_delivery_hour": 14,
+      "forbidden_phrase_immediate_used": false,
+      "forbidden_phrase_auto_refund_used": false,
+      "single_source_doc_linked": true,
+      "faq_item_count": 6,
+      "category_count": 4
+    },
+    "evidence": [
+      "확정 정책 원문: '상담 접수 후 영업일 2일 안에 처리 시작', 완료·PG 반영 미보장 (제공 자료)",
+      "광고 초안 '즉시 자동 환불'은 확정 정책과 모순 → immediate_refund_promised=false",
+      "expected_contacts = 800 × 0.20 = 160건 (초대 800명, 첫 4시간 문의율 20% 가정)",
+      "four_hour_capacity = 4명 × 5건/시간 × 4시간 = 80건",
+      "backlog_without_hiring = 160 − 80 = 80건",
+      "required_total_agents = 160 ÷ (5 × 4) = 8명",
+      "additional_agents = 8 − 4 = 4명",
+      "마감 시각: 광고 목 15시, 상담 교육 목 17시, 랜딩 목 18시, 제품 사양 전달 목 14시 (제공 자료)",
+      "미제공: 기술 배포 승인, 결제 검증 결과, 인원 충원 승인 (제공 자료에 없음)",
+      "안내문·FAQ·분류 기준은 기준문서 v1.0 허용 표현만 인용하도록 작성, 금지 표현('즉시','자동 환불','당일 보장') 미사용",
+      "실제 구현·테스트·외부 연락은 수행하지 않음(미검증), 모든 산출물은 설계 제안"
+    ]
+  },
+  "error": ""
+}

@@ -1,0 +1,21 @@
+test_research (unittest.loader._FailedTest.test_research) ... ERROR
+
+======================================================================
+ERROR: test_research (unittest.loader._FailedTest.test_research)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_research
+Traceback (most recent call last):
+  File "/opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/lib/python3.14/unittest/loader.py", line 426, in _find_test_path
+    module = self._get_module_from_name(name)
+  File "/opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/lib/python3.14/unittest/loader.py", line 367, in _get_module_from_name
+    __import__(name)
+    ~~~~~~~~~~^^^^^^
+  File "/Users/junseok/Desktop/AX의 이해와 활용/submissions/26622007/week-03/extensions/peer_research/test_research.py", line 14, in <module>
+    from audit import evaluate
+ImportError: cannot import name 'evaluate' from 'audit' (/Users/junseok/Desktop/AX의 이해와 활용/submissions/26622007/week-03/extensions/peer_dag/audit.py)
+
+
+----------------------------------------------------------------------
+Ran 1 test in 0.000s
+
+FAILED (errors=1)

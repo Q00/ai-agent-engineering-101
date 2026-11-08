@@ -1,0 +1,39 @@
+{
+  "status": "succeeded",
+  "worker": "A",
+  "artifact": {
+    "summary": "결제 중복 사고를 재현 가능한 설계 문제로 정리했다. [원인 가설] 첫 요청이 504로 끝났을 때 클라이언트/서버가 승인 여부를 확정하지 못한 채 2초 뒤 재시도했고, 두 요청 모두 idempotency_key가 비어 있어 PG가 별개 승인 2건을 만들었다. 주문 DB는 완료 1건만 기록해 PG-DB 불일치가 발생했다. 504는 게이트웨이 타임아웃일 뿐 승인 실패를 의미하지 않으므로 타임아웃만으로 승인 여부를 확정하면 안 된다. [확인할 증거] PG 승인 2건의 거래 ID·승인 시각·상태, 주문 DB 결제 레코드와 상태 이력, 두 요청의 헤더/본문(idempotency_key 부재 확인), 웹훅 수신 로그의 이벤트 ID·타임스탬프·순서, 게이트웨이 타임아웃 로그. [컴포넌트 설계] PaymentCommand: 결제 의도(order_id, amount, currency, idempotency_key 필수)를 검증·정규화하고 IdempotencyStore와 GatewayPort를 조율하는 유스케이스. IdempotencyStore: (merchant_id, idempotency_key) UNIQUE 제약으로 키→결제시도 매핑을 저장하고, 동일 키 재요청 시 기존 결과를 반환(진행 중이면 IN_PROGRESS 반환). GatewayPort: authorize/cancel/query 인터페이스, 타임아웃 시 UNKNOWN 반환(성공/실패로 단정 금지), 재시도는 멱등 키 전달. WebhookHandler: 이벤트 ID 기반 중복 제거(processed_events UNIQUE), 순서 역전 대비 상태 머신 적용(늦게 온 이벤트가 최신 상태를 덮어쓰지 않도록 버전/타임스탬프 비교). ReconciliationJob: PG 조회 결과와 주문 DB를 대사해 불일치(승인 2건 vs 완료 1건)를 탐지·보고하고, 자동 취소/환불은 정책 승인 후에만 수행. [상태 전이표] INITIATED→AUTHORIZING→(AUTHORIZED|FAILED|UNKNOWN); UNKNOWN→(조회로 AUTHORIZED|FAILED); AUTHORIZED→(CAPTURED|CANCELED); CAPTURED→(REFUNDED|PARTIALLY_REFUNDED); CANCELED/REFUNDED는 종결. 중복 승인 탐지 시 DUPLICATE_SUSPECTED→RECONCILING→(CANCELED|REFUNDED|RESOLVED). [코드 디렉터리] src/payment/{command,idempotency,gateway,webhook,reconciliation}/, migrations/, tests/{duplicate,out_of_order,partial_failure}/. 핵심 의사코드: PaymentCommand.execute(cmd){ key=cmd.idempotency_key; if(!key) reject; rec=store.getOrCreate(key); if(rec.status==DONE) return rec.result; if(rec.status==IN_PROGRESS) return CONFLICT; rec.status=IN_PROGRESS; r=gateway.authorize(cmd,key); if(r==TIMEOUT) rec.status=UNKNOWN else rec.status=r.status; store.save(rec); return rec.result; }. [데이터 전환] 온라인 준비(스키마 추가, 신규 컬럼 nullable, 이중 쓰기/읽기 검증)와 최종 전환(제약 활성화, 구경로 차단)을 분리한다. 배치 수=1,200,000/5,000=240. 1작업자=240*15=3,600초=60분. 2작업자=1,800초=30분. 중단 허용=20분=1,200초. 30분>20분이므로 오프라인 일괄 전환은 허용 시간 내 불가. 따라서 온라인 백필(중단 없이) 후 짧은 최종 전환(제약 활성화·트래픽 스위치)만 중단 창에 배치해야 한다. [테스트 행렬] 중복 요청(동일 키 동시 2건→1건만 승인), 순서 역전(웹훅 늦은 도착→상태 미덮어쓰기), 부분 실패(승인 후 DB 저장 실패→대사로 복구), 타임아웃 후 재시도(UNKNOWN→조회 확정). [배포·롤백·중단 조건] 카나리 배포, 멱등 키 강제 후 구버전 72시간 공존(coexistence_hours=72). 롤백은 신버전 데이터 스키마 되돌리기와 트래픽 구경로 복귀. 중단 조건: 중복 승인률 임계 초과, 대사 불일치 급증, 롤백 검증 미완료 상태에서 전체 전환. [미검증] 신버전 데이터 롤백·재시도 결제·취소 결제 검증 3건 모두 미완료이므로 can_release=false. 실제 PG·DB 조회, 환불, 배포는 수행하지 않았고 미검증을 통과로 바꾸지 않았다. [지원팀 브리프 통합] 확정 사실: 동일 order_id PG 승인 2건, 주문 DB 완료 1건, 두 요청 모두 idempotency_key 비어 있음, 첫 요청 504 후 2초 뒤 재시도 200. 미확인: 실제 PG 승인 시각·취소 가능 여부, 웹훅 도착 순서, 롤백·재시도·취소 검증. 고객 안내는 중복 청구·환불을 단정하지 않고 '확인 중' 표현과 안내 채널·시점을 명시한다. 상담 질문: 주문번호, 결제 시각, PG 승인 내역 확인 여부, 중복 청구 인지, 환불 요청 여부, 증빙 제공 가능 여부.",
+    "facts": {
+      "backfill_batches": 240,
+      "serial_backfill_seconds": 3600,
+      "two_worker_backfill_seconds": 1800,
+      "downtime_budget_seconds": 1200,
+      "coexistence_hours": 72,
+      "unverified_release_checks": 3,
+      "offline_backfill_fits": false,
+      "can_release": false,
+      "pg_approvals": 2,
+      "db_completed_records": 1,
+      "idempotency_key_present": false,
+      "first_request_status": 504,
+      "retry_delay_seconds": 2,
+      "retry_request_status": 200,
+      "migration_rows": 1200000,
+      "batch_size": 5000,
+      "batch_seconds": 15,
+      "max_workers": 2
+    },
+    "evidence": [
+      "배치 수 = 1,200,000 / 5,000 = 240",
+      "1작업자 시간 = 240 * 15초 = 3,600초 = 60분",
+      "2작업자 시간 = 3,600 / 2 = 1,800초 = 30분",
+      "중단 허용 = 20분 = 1,200초; 2작업자 1,800초 > 1,200초이므로 오프라인 일괄 전환 불가(offline_backfill_fits=false)",
+      "제공 합성 기록: 동일 order_id에 PG 승인 2건, 주문 DB 완료 1건, 두 요청 모두 idempotency_key 비어 있음, 첫 요청 504 후 2초 뒤 재시도 200",
+      "제공 자료: 웹훅은 중복·순서 역전 가능, 네트워크 타임아웃만으로 승인 여부 확정 불가",
+      "제공 자료: 구버전·신버전 앱 72시간 공존 요구(coexistence_hours=72)",
+      "제공 자료: 신버전 데이터 롤백·재시도 결제·취소 결제 검증 모두 미완료 → unverified_release_checks=3, can_release=false",
+      "지원팀 브리프(하위 결과): 확정 사실 4건과 미확인 6건을 구분하고 고객 안내 문구·상담 질문 목록을 포함하며, 실제 PG·DB 조회·환불·배포는 미수행으로 명시"
+    ]
+  },
+  "error": ""
+}

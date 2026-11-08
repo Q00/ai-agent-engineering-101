@@ -1,0 +1,699 @@
+{"created_readable_documents": 44}
+{
+  "report": "/Users/junseok/Desktop/AX의 이해와 활용/submissions/26622007/week-03/extensions/peer_dag/conditions/20260921T113158-suite-ab4e67/FINAL_REPORT.md",
+  "total": {
+    "attempts": 45,
+    "passed": 28,
+    "checks_passed": 290,
+    "checks_total": 486,
+    "status_succeeded": 28,
+    "depths": {
+      "1": 20,
+      "0": 20,
+      "2": 5
+    },
+    "parallel_runs": 20,
+    "same_worker_parallel_runs": 12,
+    "calls": 632,
+    "http_requests": 638,
+    "http_429": 6,
+    "retries": 6,
+    "elapsed_seconds": 2986.7411,
+    "reported_cost_usd": 0.5489667,
+    "awards": {
+      "A": 53,
+      "B": 18,
+      "C": 58
+    },
+    "c_root_awards": 14,
+    "c_high_bids": 61,
+    "c_proposals": 129
+  },
+  "supplementary": {
+    "script_sha": "ad39c576c3e03f71cff4b3235748dc422b185349de444c6243a277452207d9c7",
+    "http_errors": {
+      "429": 6
+    },
+    "response_finish_reasons": {
+      "stop": 615,
+      "length": 17
+    },
+    "rate_limited_logical_calls": 6,
+    "rate_limited_calls_with_http_response": 6,
+    "providers": {
+      "Fireworks": 632
+    },
+    "models": {
+      "deepseek/deepseek-v4.1-flash": 632
+    },
+    "score_tied_awards": {
+      "baseline": 39,
+      "homogeneous": 27,
+      "overconfident": 50
+    },
+    "failures": [
+      {
+        "run_id": "20260921T113158-suite-ab4e67-r1-game-design-architecture-overconfident",
+        "status": "failed",
+        "wrong_or_missing": [
+          "board_width",
+          "board_height",
+          "max_turns",
+          "developer_hours",
+          "qa_hours",
+          "core_scope_hours",
+          "with_coop_hours",
+          "coop_fits_budget",
+          "seeded_replay_required",
+          "offline_required"
+        ],
+        "task_failures": [
+          {
+            "task_id": "game-design-architecture/tech_design/tech_review",
+            "error": "JSONDecodeError: Unterminated string starting at: line 1 column 4486 (char 4485)"
+          },
+          {
+            "task_id": "game-design-architecture/tech_design",
+            "error": "ValueError: child failed or blocked; partial results retained"
+          },
+          {
+            "task_id": "game-design-architecture",
+            "error": "ValueError: child failed or blocked; partial results retained"
+          }
+        ],
+        "response_endings": [
+          {
+            "task_id": "game-design-architecture/tech_design/tech_review",
+            "phase": "execute",
+            "finish_reason": "length",
+            "completion_tokens": 2200
+          }
+        ]
+      },
+      {
+        "run_id": "20260921T113158-suite-ab4e67-r1-payment-redesign-homogeneous",
+        "status": "failed",
+        "wrong_or_missing": [
+          "backfill_batches",
+          "serial_backfill_seconds",
+          "two_worker_backfill_seconds",
+          "downtime_budget_seconds",
+          "offline_backfill_fits",
+          "coexistence_hours",
+          "unverified_release_checks",
+          "can_release"
+        ],
+        "task_failures": [
+          {
+            "task_id": "payment-redesign",
+            "error": "JSONDecodeError: Unterminated string starting at: line 1 column 12 (char 11)"
+          }
+        ],
+        "response_endings": [
+          {
+            "task_id": "payment-redesign",
+            "phase": "execute",
+            "finish_reason": "length",
+            "completion_tokens": 2200
+          }
+        ]
+      },
+      {
+        "run_id": "20260921T113158-suite-ab4e67-r1-payment-redesign-overconfident",
+        "status": "failed",
+        "wrong_or_missing": [
+          "backfill_batches",
+          "serial_backfill_seconds",
+          "two_worker_backfill_seconds",
+          "downtime_budget_seconds",
+          "offline_backfill_fits",
+          "coexistence_hours",
+          "unverified_release_checks",
+          "can_release"
+        ],
+        "task_failures": [
+          {
+            "task_id": "payment-redesign/tech_design",
+            "error": "JSONDecodeError: Unterminated string starting at: line 1 column 12 (char 11)"
+          },
+          {
+            "task_id": "payment-redesign",
+            "error": "ValueError: child failed or blocked; partial results retained"
+          }
+        ],
+        "response_endings": [
+          {
+            "task_id": "payment-redesign/tech_design",
+            "phase": "execute",
+            "finish_reason": "length",
+            "completion_tokens": 2200
+          }
+        ]
+      },
+      {
+        "run_id": "20260921T113158-suite-ab4e67-r1-growth-roadmap-baseline",
+        "status": "failed",
+        "wrong_or_missing": [
+          "s_margin",
+          "e_margin",
+          "s_profit",
+          "e_profit",
+          "s_break_even",
+          "e_break_even",
+          "s_low_profit",
+          "e_low_profit",
+          "s_high_profit",
+          "e_high_profit",
+          "common_dev_hours",
+          "s_total_dev_hours",
+          "e_total_dev_hours",
+          "e_budget_shortfall_hours",
+          "s_fits_budget",
+          "e_fits_budget"
+        ],
+        "task_failures": [
+          {
+            "task_id": "growth-roadmap/ops_readiness",
+            "error": "JSONDecodeError: Unterminated string starting at: line 1 column 3354 (char 3353)"
+          },
+          {
+            "task_id": "growth-roadmap",
+            "error": "ValueError: child failed or blocked; partial results retained"
+          }
+        ],
+        "response_endings": [
+          {
+            "task_id": "growth-roadmap/ops_readiness",
+            "phase": "execute",
+            "finish_reason": "length",
+            "completion_tokens": 2200
+          }
+        ]
+      },
+      {
+        "run_id": "20260921T113158-suite-ab4e67-r1-growth-roadmap-homogeneous",
+        "status": "failed",
+        "wrong_or_missing": [
+          "s_margin",
+          "e_margin",
+          "s_profit",
+          "e_profit",
+          "s_break_even",
+          "e_break_even",
+          "s_low_profit",
+          "e_low_profit",
+          "s_high_profit",
+          "e_high_profit",
+          "common_dev_hours",
+          "s_total_dev_hours",
+          "e_total_dev_hours",
+          "e_budget_shortfall_hours",
+          "s_fits_budget",
+          "e_fits_budget"
+        ],
+        "task_failures": [
+          {
+            "task_id": "growth-roadmap",
+            "error": "JSONDecodeError: Unterminated string starting at: line 1 column 3623 (char 3622)"
+          }
+        ],
+        "response_endings": [
+          {
+            "task_id": "growth-roadmap",
+            "phase": "execute",
+            "finish_reason": "length",
+            "completion_tokens": 2200
+          }
+        ]
+      },
+      {
+        "run_id": "20260921T113158-suite-ab4e67-r1-growth-roadmap-overconfident",
+        "status": "failed",
+        "wrong_or_missing": [
+          "s_margin",
+          "e_margin",
+          "s_profit",
+          "e_profit",
+          "s_break_even",
+          "e_break_even",
+          "s_low_profit",
+          "e_low_profit",
+          "s_high_profit",
+          "e_high_profit",
+          "common_dev_hours",
+          "s_total_dev_hours",
+          "e_total_dev_hours",
+          "e_budget_shortfall_hours",
+          "s_fits_budget",
+          "e_fits_budget"
+        ],
+        "task_failures": [
+          {
+            "task_id": "growth-roadmap/ops_readiness",
+            "error": "JSONDecodeError: Unterminated string starting at: line 1 column 3383 (char 3382)"
+          },
+          {
+            "task_id": "growth-roadmap",
+            "error": "ValueError: child failed or blocked; partial results retained"
+          }
+        ],
+        "response_endings": [
+          {
+            "task_id": "growth-roadmap/ops_readiness",
+            "phase": "execute",
+            "finish_reason": "length",
+            "completion_tokens": 2200
+          }
+        ]
+      },
+      {
+        "run_id": "20260921T113158-suite-ab4e67-r1-launch-operations-baseline",
+        "status": "failed",
+        "wrong_or_missing": [
+          "expected_contacts",
+          "four_hour_capacity",
+          "backlog_without_hiring",
+          "required_total_agents",
+          "additional_agents",
+          "support_window_hours",
+          "immediate_refund_promised",
+          "launch_hour"
+        ],
+        "task_failures": [
+          {
+            "task_id": "launch-operations/policy_consistency",
+            "error": "JSONDecodeError: Unterminated string starting at: line 1 column 3776 (char 3775)"
+          },
+          {
+            "task_id": "launch-operations",
+            "error": "ValueError: child failed or blocked; partial results retained"
+          }
+        ],
+        "response_endings": [
+          {
+            "task_id": "launch-operations/policy_consistency",
+            "phase": "execute",
+            "finish_reason": "length",
+            "completion_tokens": 2200
+          }
+        ]
+      },
+      {
+        "run_id": "20260921T113158-suite-ab4e67-r2-game-design-architecture-overconfident",
+        "status": "failed",
+        "wrong_or_missing": [
+          "board_width",
+          "board_height",
+          "max_turns",
+          "developer_hours",
+          "qa_hours",
+          "core_scope_hours",
+          "with_coop_hours",
+          "coop_fits_budget",
+          "seeded_replay_required",
+          "offline_required"
+        ],
+        "task_failures": [
+          {
+            "task_id": "game-design-architecture/design_spec",
+            "error": "JSONDecodeError: Unterminated string starting at: line 1 column 4248 (char 4247)"
+          },
+          {
+            "task_id": "game-design-architecture",
+            "error": "ValueError: child failed or blocked; partial results retained"
+          }
+        ],
+        "response_endings": [
+          {
+            "task_id": "game-design-architecture/design_spec",
+            "phase": "synthesize",
+            "finish_reason": "length",
+            "completion_tokens": 2200
+          }
+        ]
+      },
+      {
+        "run_id": "20260921T113158-suite-ab4e67-r2-growth-roadmap-homogeneous",
+        "status": "failed",
+        "wrong_or_missing": [
+          "s_margin",
+          "e_margin",
+          "s_profit",
+          "e_profit",
+          "s_break_even",
+          "e_break_even",
+          "s_low_profit",
+          "e_low_profit",
+          "s_high_profit",
+          "e_high_profit",
+          "common_dev_hours",
+          "s_total_dev_hours",
+          "e_total_dev_hours",
+          "e_budget_shortfall_hours",
+          "s_fits_budget",
+          "e_fits_budget"
+        ],
+        "task_failures": [
+          {
+            "task_id": "growth-roadmap",
+            "error": "JSONDecodeError: Unterminated string starting at: line 1 column 3416 (char 3415)"
+          }
+        ],
+        "response_endings": [
+          {
+            "task_id": "growth-roadmap",
+            "phase": "execute",
+            "finish_reason": "length",
+            "completion_tokens": 2200
+          }
+        ]
+      },
+      {
+        "run_id": "20260921T113158-suite-ab4e67-r2-growth-roadmap-baseline",
+        "status": "failed",
+        "wrong_or_missing": [
+          "s_margin",
+          "e_margin",
+          "s_profit",
+          "e_profit",
+          "s_break_even",
+          "e_break_even",
+          "s_low_profit",
+          "e_low_profit",
+          "s_high_profit",
+          "e_high_profit",
+          "common_dev_hours",
+          "s_total_dev_hours",
+          "e_total_dev_hours",
+          "e_budget_shortfall_hours",
+          "s_fits_budget",
+          "e_fits_budget"
+        ],
+        "task_failures": [
+          {
+            "task_id": "growth-roadmap/ops_readiness",
+            "error": "JSONDecodeError: Unterminated string starting at: line 1 column 3499 (char 3498)"
+          },
+          {
+            "task_id": "growth-roadmap",
+            "error": "ValueError: child failed or blocked; partial results retained"
+          }
+        ],
+        "response_endings": [
+          {
+            "task_id": "growth-roadmap/ops_readiness",
+            "phase": "execute",
+            "finish_reason": "length",
+            "completion_tokens": 2200
+          }
+        ]
+      },
+      {
+        "run_id": "20260921T113158-suite-ab4e67-r2-launch-operations-baseline",
+        "status": "failed",
+        "wrong_or_missing": [
+          "expected_contacts",
+          "four_hour_capacity",
+          "backlog_without_hiring",
+          "required_total_agents",
+          "additional_agents",
+          "support_window_hours",
+          "immediate_refund_promised",
+          "launch_hour"
+        ],
+        "task_failures": [
+          {
+            "task_id": "launch-operations/integration",
+            "error": "JSONDecodeError: Unterminated string starting at: line 1 column 4011 (char 4010)"
+          },
+          {
+            "task_id": "launch-operations",
+            "error": "ValueError: child failed or blocked; partial results retained"
+          }
+        ],
+        "response_endings": [
+          {
+            "task_id": "launch-operations/integration",
+            "phase": "execute",
+            "finish_reason": "length",
+            "completion_tokens": 2200
+          }
+        ]
+      },
+      {
+        "run_id": "20260921T113158-suite-ab4e67-r3-payment-redesign-overconfident",
+        "status": "failed",
+        "wrong_or_missing": [
+          "backfill_batches",
+          "serial_backfill_seconds",
+          "two_worker_backfill_seconds",
+          "downtime_budget_seconds",
+          "offline_backfill_fits",
+          "coexistence_hours",
+          "unverified_release_checks",
+          "can_release"
+        ],
+        "task_failures": [
+          {
+            "task_id": "payment-redesign/tech_design",
+            "error": "JSONDecodeError: Unterminated string starting at: line 1 column 4409 (char 4408)"
+          },
+          {
+            "task_id": "payment-redesign",
+            "error": "ValueError: child failed or blocked; partial results retained"
+          }
+        ],
+        "response_endings": [
+          {
+            "task_id": "payment-redesign/tech_design",
+            "phase": "execute",
+            "finish_reason": "length",
+            "completion_tokens": 2200
+          }
+        ]
+      },
+      {
+        "run_id": "20260921T113158-suite-ab4e67-r3-payment-redesign-baseline",
+        "status": "failed",
+        "wrong_or_missing": [
+          "backfill_batches",
+          "serial_backfill_seconds",
+          "two_worker_backfill_seconds",
+          "downtime_budget_seconds",
+          "offline_backfill_fits",
+          "coexistence_hours",
+          "unverified_release_checks",
+          "can_release"
+        ],
+        "task_failures": [
+          {
+            "task_id": "payment-redesign",
+            "error": "JSONDecodeError: Unterminated string starting at: line 1 column 12 (char 11)"
+          }
+        ],
+        "response_endings": [
+          {
+            "task_id": "payment-redesign",
+            "phase": "execute",
+            "finish_reason": "length",
+            "completion_tokens": 2200
+          }
+        ]
+      },
+      {
+        "run_id": "20260921T113158-suite-ab4e67-r3-payment-redesign-homogeneous",
+        "status": "failed",
+        "wrong_or_missing": [
+          "backfill_batches",
+          "serial_backfill_seconds",
+          "two_worker_backfill_seconds",
+          "downtime_budget_seconds",
+          "offline_backfill_fits",
+          "coexistence_hours",
+          "unverified_release_checks",
+          "can_release"
+        ],
+        "task_failures": [
+          {
+            "task_id": "payment-redesign",
+            "error": "JSONDecodeError: Unterminated string starting at: line 1 column 12 (char 11)"
+          }
+        ],
+        "response_endings": [
+          {
+            "task_id": "payment-redesign",
+            "phase": "execute",
+            "finish_reason": "length",
+            "completion_tokens": 2200
+          }
+        ]
+      },
+      {
+        "run_id": "20260921T113158-suite-ab4e67-r3-growth-roadmap-overconfident",
+        "status": "failed",
+        "wrong_or_missing": [
+          "s_margin",
+          "e_margin",
+          "s_profit",
+          "e_profit",
+          "s_break_even",
+          "e_break_even",
+          "s_low_profit",
+          "e_low_profit",
+          "s_high_profit",
+          "e_high_profit",
+          "common_dev_hours",
+          "s_total_dev_hours",
+          "e_total_dev_hours",
+          "e_budget_shortfall_hours",
+          "s_fits_budget",
+          "e_fits_budget"
+        ],
+        "task_failures": [
+          {
+            "task_id": "growth-roadmap/ops_readiness",
+            "error": "JSONDecodeError: Unterminated string starting at: line 1 column 3482 (char 3481)"
+          },
+          {
+            "task_id": "growth-roadmap",
+            "error": "ValueError: child failed or blocked; partial results retained"
+          }
+        ],
+        "response_endings": [
+          {
+            "task_id": "growth-roadmap/ops_readiness",
+            "phase": "execute",
+            "finish_reason": "length",
+            "completion_tokens": 2200
+          }
+        ]
+      },
+      {
+        "run_id": "20260921T113158-suite-ab4e67-r3-growth-roadmap-baseline",
+        "status": "failed",
+        "wrong_or_missing": [
+          "s_margin",
+          "e_margin",
+          "s_profit",
+          "e_profit",
+          "s_break_even",
+          "e_break_even",
+          "s_low_profit",
+          "e_low_profit",
+          "s_high_profit",
+          "e_high_profit",
+          "common_dev_hours",
+          "s_total_dev_hours",
+          "e_total_dev_hours",
+          "e_budget_shortfall_hours",
+          "s_fits_budget",
+          "e_fits_budget"
+        ],
+        "task_failures": [
+          {
+            "task_id": "growth-roadmap/integration",
+            "error": "JSONDecodeError: Unterminated string starting at: line 1 column 4250 (char 4249)"
+          },
+          {
+            "task_id": "growth-roadmap",
+            "error": "ValueError: child failed or blocked; partial results retained"
+          }
+        ],
+        "response_endings": [
+          {
+            "task_id": "growth-roadmap/integration",
+            "phase": "execute",
+            "finish_reason": "length",
+            "completion_tokens": 2200
+          }
+        ]
+      },
+      {
+        "run_id": "20260921T113158-suite-ab4e67-r3-launch-operations-baseline",
+        "status": "failed",
+        "wrong_or_missing": [
+          "expected_contacts",
+          "four_hour_capacity",
+          "backlog_without_hiring",
+          "required_total_agents",
+          "additional_agents",
+          "support_window_hours",
+          "immediate_refund_promised",
+          "launch_hour"
+        ],
+        "task_failures": [
+          {
+            "task_id": "launch-operations/policy_consistency",
+            "error": "JSONDecodeError: Unterminated string starting at: line 1 column 3743 (char 3742)"
+          },
+          {
+            "task_id": "launch-operations",
+            "error": "ValueError: child failed or blocked; partial results retained"
+          }
+        ],
+        "response_endings": [
+          {
+            "task_id": "launch-operations/policy_consistency",
+            "phase": "synthesize",
+            "finish_reason": "length",
+            "completion_tokens": 2200
+          }
+        ]
+      }
+    ],
+    "overconfident_root_exceptions": [
+      {
+        "run_id": "20260921T113158-suite-ab4e67-r3-growth-roadmap-overconfident",
+        "winner": "A",
+        "scores": {
+          "A": {
+            "coverage": 2,
+            "feasibility": 2,
+            "verification": 2
+          },
+          "B": {
+            "coverage": 2,
+            "feasibility": 2,
+            "verification": 2
+          },
+          "C": {
+            "coverage": 1,
+            "feasibility": 2,
+            "verification": 1
+          }
+        },
+        "winning_confidence": 88.0,
+        "c_confidence": 97.0
+      },
+      {
+        "run_id": "20260921T113158-suite-ab4e67-r3-game-design-architecture-overconfident",
+        "winner": "A",
+        "scores": {
+          "A": {
+            "coverage": 2,
+            "feasibility": 2,
+            "verification": 2
+          },
+          "B": {
+            "coverage": 2,
+            "feasibility": 2,
+            "verification": 2
+          },
+          "C": {
+            "coverage": 1,
+            "feasibility": 1,
+            "verification": 1
+          }
+        },
+        "winning_confidence": 88.0,
+        "c_confidence": 97.0
+      }
+    ],
+    "wall_span_seconds": 3671.565772,
+    "qualitative_ratings": {
+      "충족": 9,
+      "부분 충족": 19,
+      "미충족": 17
+    }
+  }
+}

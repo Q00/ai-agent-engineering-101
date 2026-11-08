@@ -1,0 +1,24 @@
+{
+  "status": "succeeded",
+  "worker": "C",
+  "artifact": {
+    "summary": "기술 자료 검토 결과, 새 앱은 price_version을 사용하므로 DB 마이그레이션을 먼저 수행한 뒤 배포해야 한다(migration_before_app=true). 구버전 앱은 마이그레이션 후 읽기가 가능하다는 점만 제공 자료에서 확인된다. 새 앱이 쓴 데이터의 롤백, 재시도 결제, 취소 결제 테스트는 아직 미검증이며, 이번 검토 기준상 이 세 검증이 모두 끝나야 출시 가능하므로 can_release=false로 판단한다. 제공 자료에 없는 로그나 테스트 실행 결과는 생성하지 않았고, 실제 변경이나 고객 연락도 수행하지 않았다.",
+    "facts": {
+      "migration_before_app": true,
+      "can_release": false,
+      "rollback_test_verified": false,
+      "retry_payment_test_verified": false,
+      "cancel_payment_test_verified": false,
+      "required_verifications_count": 3,
+      "verified_verifications_count": 0
+    },
+    "evidence": [
+      "제공 자료: '새 앱은 price_version이 필요해 DB 마이그레이션 뒤 배포해야 한다.' → migration_before_app=true 근거",
+      "제공 자료: '구버전 앱의 마이그레이션 후 읽기는 가능하다.' → 마이그레이션 선행 필요성과 호환성 범위 근거",
+      "제공 자료: '새 앱이 쓴 데이터의 롤백, 재시도 결제, 취소 결제 테스트는 아직 미검증이다.' → 롤백/재시도 결제/취소 결제 3개 항목 모두 미검증",
+      "제공 자료: '이번 검토에서는 이 세 검증이 끝나야 출시 가능하다.' → 세 검증 완료 전 can_release=false",
+      "미검증 항목: 롤백 테스트, 재시도 결제 테스트, 취소 결제 테스트. 해당 로그나 실행 결과는 제공되지 않았으므로 검증 완료로 표시하지 않음"
+    ]
+  },
+  "error": ""
+}

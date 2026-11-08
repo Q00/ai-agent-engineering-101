@@ -1,0 +1,42 @@
+{
+  "status": "succeeded",
+  "worker": "A",
+  "artifact": {
+    "summary": "금요일 10시 출시 통합 운영 패키지(설계 제안). 실제 구현·외부 연락·시스템 변경·테스트는 수행하지 않았으며 모두 미검증 설계안이다.\n\n[1] 용량 계산\n- expected_contacts = 800 × 0.20 = 160건\n- four_hour_capacity = 4명 × 5건/시간 × 4시간 = 80건\n- backlog_without_hiring = 160 − 80 = 80건\n- required_total_agents = ceil(160 / (5×4)) = ceil(8) = 8명\n- additional_agents = 8 − 4 = 4명\n- support_window_hours = 4, launch_hour = 10\n\n[2] 정책 모순\n- 확정 정책: '상담 접수 후 영업일 2일 안에 처리 시작'. 처리 완료·PG 반영 시간 미보장.\n- 광고 초안: '즉시 자동 환불' → 확정 정책과 불일치. immediate_refund_promised = false (광고 문구는 수정 필요, 정책을 새로 결정하지 않음).\n- 조치: 광고 문구를 '접수 후 영업일 2일 내 처리 시작, 완료·PG 반영 시점은 별도 안내'로 교체 요청. 단일 기준 문서(SSoT)에서만 문구 승인.\n\n[3] 단일 기준 문서(SSoT) 및 변경 전달·승인 흐름\n- SSoT: '고객 약속 문구집 v1' (정책/FAQ/광고/랜딩/상담 스크립트의 유일 출처).\n- 흐름: 제품팀(목 14시 확정 사양·제한 전달) → 운영 리드가 SSoT 개정 → 법무/정책 승인 → 광고·랜딩·상담에 동시 배포 → 각 채널 담당이 '반영 완료' 회신 → 운영 리드가 대조 확인.\n- 승인 없는 문구는 게시 금지. 변경은 SSoT 커밋 로그로 추적.\n\n[4] 운영 일정(담당·기한·선행조건)\n- 목 14:00 제품팀: 확정 사양·알려진 제한 전달 (선행: 없음)\n- 목 14:00–15:00 운영 리드: SSoT 개정 (선행: 제품팀 전달)\n- 목 15:00 광고업체: 문구 마감 (선행: SSoT 승인) — 지연 시 비상계획 A\n- 목 17:00 상담팀: 교육 완료 (선행: SSoT·FAQ 확정)\n- 목 18:00 랜딩 담당: 수정 마감 (선행: SSoT 승인)\n- 목 18:00–20:00 운영 리드: 채널 대조 확인\n- 금 09:00 출시 직전 확인표 점검\n- 금 10:00 출시\n- 미확인: 기술 배포 승인, 결제 검증 결과 (미제공 → 출시 전 확인표의 게이트 항목)\n\n[5] 확정/미확인 사항표\n- 확정: 초대 800명, 20% 문의 가정, 상담원 4명, 시간당 5건, 정책 문구, 마감 시각(목 15/17/18시), 제품팀 전달 시각(목 14시), 출시 금 10시.\n- 미확인: 기술 배포 승인(미제공), 결제 검증 결과(미제공), 인원 충원 승인(미승인), PG 반영 시간(미보장).\n\n[6] 고객 안내문·FAQ·상담 분류 기준\n- 안내문: '문의 접수 후 영업일 2일 안에 처리 시작합니다. 처리 완료 및 PG 반영 시점은 별도로 안내됩니다.'\n- FAQ: Q 즉시 환불? A 자동 즉시 환불은 제공되지 않으며 접수 후 영업일 2일 내 처리 시작. Q 완료 시점? A 보장하지 않음.\n- 상담 분류: (a) 환불/결제, (b) 기술 오류, (c) 일반 문의, (d) 불만/에스컬레이션. 우선순위: 결제·기술 오류 > 환불 > 일반.\n\n[7] 충원 불가 시 대안\n- 대기열: 접수 순 + 우선순위 태그. 4시간 내 80건 미처리 예상 → 자동 회신으로 접수 확인 및 예상 처리 시작일 안내.\n- 우선순위: 결제/기술 오류 우선, 일반 문의 후순위.\n- 안내: 셀프서비스 FAQ 링크, 콜백 예약, 처리 시작 예상 시점 공지.\n\n[8] 비상 계획\n- A 광고 지연: SSoT 승인 문구로 대체 게시, 미승인 문구 게시 금지.\n- B 기술 승인 지연: 출시 게이트 미통과 시 출시 보류 또는 제한 오픈, 고객 공지.\n- C 문의 급증: 우선순위·대기열 강화, 추가 인력은 승인 전까지 미배치.\n\n[9] 출시 직전 확인표(금 09:00)\n- SSoT 최종본 승인 여부, 광고/랜딩/상담 문구 일치, 기술 배포 승인 확보, 결제 검증 결과 확보, 상담 인력 배치표, 비상계획 담당 지정.\n\n[10] 코드/문서 구조(설계 제안, 미구현)\n- docs/ssot.md, docs/faq.md, ops/schedule.csv, ops/checklist.md, ops/runbook.md 형태의 텍스트 구조 제안. 실제 파일 생성·테스트는 미수행.",
+    "facts": {
+      "expected_contacts": 160,
+      "four_hour_capacity": 80,
+      "backlog_without_hiring": 80,
+      "required_total_agents": 8,
+      "additional_agents": 4,
+      "support_window_hours": 4,
+      "launch_hour": 10,
+      "immediate_refund_promised": false,
+      "invited_users": 800,
+      "inquiry_rate": 0.2,
+      "agents_current": 4,
+      "cases_per_agent_hour": 5,
+      "policy_processing_start_business_days": 2,
+      "ad_copy_deadline_thursday_hour": 15,
+      "support_training_deadline_thursday_hour": 17,
+      "landing_fix_deadline_thursday_hour": 18,
+      "product_spec_delivery_thursday_hour": 14,
+      "tech_deploy_approval_provided": false,
+      "payment_verification_provided": false,
+      "hiring_approved": false,
+      "implementation_tested": false
+    },
+    "evidence": [
+      "expected_contacts = 800 × 0.20 = 160 (제공: 초대 800명, 20% 문의 가정)",
+      "four_hour_capacity = 4명 × 5건/시간 × 4시간 = 80 (제공: 상담원 4명, 시간당 5건, 첫 4시간)",
+      "backlog_without_hiring = 160 − 80 = 80",
+      "required_total_agents = ceil(160 / (5 × 4)) = ceil(8) = 8",
+      "additional_agents = 8 − 4 = 4",
+      "support_window_hours = 4, launch_hour = 10 (제공: 금요일 10시 출시, 첫 4시간)",
+      "immediate_refund_promised = false: 광고 초안 '즉시 자동 환불'은 확정 정책 '영업일 2일 내 처리 시작'과 불일치",
+      "미확인: 기술 배포 승인·결제 검증 결과 미제공, 인원 충원 미승인, 처리 완료·PG 반영 시간 미보장",
+      "실제 구현·외부 연락·시스템 변경·테스트는 수행하지 않음(설계 제안만)"
+    ]
+  },
+  "error": ""
+}

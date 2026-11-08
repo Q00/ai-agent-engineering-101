@@ -1,0 +1,9 @@
+{
+  "id": "release-review",
+  "goal": "신제품 출시 검토 자료를 작성하라. 요금 후보 P는 월 15000원, 예상 고객 400명, 고객당 변동비 5000원이다. Q는 월 22000원, 예상 고객 260명, 고객당 변동비 6000원이다. 고정비는 둘 다 월 2000000원이며 고객 수는 기준의 75%~125%다. 공헌이익은 고객당 가격-변동비, 월이익은 공헌이익*고객수-고정비, 손익분기 고객수는 고정비/공헌이익의 올림으로 계산한다. 기술 자료: 새 앱은 price_version이 필요해 DB 마이그레이션 뒤 배포해야 한다. 구버전 앱의 마이그레이션 후 읽기는 가능하다. 새 앱이 쓴 데이터의 롤백, 재시도 결제, 취소 결제 테스트는 아직 미검증이다. 이번 검토에서는 이 세 검증이 끝나야 출시 가능하다. 수익성 검토와 기술 위험 검토를 독립 작업으로 나누고, 둘의 결과가 필요한 출시 권고 작업에는 선행 의존성을 반드시 선언하라. 최초 계획은 delegate여야 한다. 하위 작업에서는 주어진 범위의 정보와 입력 결과를 사용하라. 없는 로그나 테스트 실행 결과를 만들지 말라. 실제 변경이나 고객 연락은 하지 말라.",
+  "acceptance": "최종 summary에는 출시 권고와 미확인 사항을 쓴다. facts는 다음 키를 모두 포함한다: p_margin, q_margin, p_profit, q_profit, p_break_even, q_break_even, p_low_profit, q_low_profit, p_high_profit, q_high_profit, migration_before_app, can_release. margin/profit/break_even은 숫자, 마지막 두 키는 boolean. evidence에는 계산식과 제공 자료의 근거를 쓴다. 하위 결과도 summary, facts, evidence 형식으로 반환한다.",
+  "depends_on": [],
+  "reads": [],
+  "writes": ["release_report"],
+  "require_delegate": true
+}

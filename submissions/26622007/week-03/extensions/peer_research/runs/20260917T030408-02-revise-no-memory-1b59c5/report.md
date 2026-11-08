@@ -1,0 +1,80 @@
+# 웹 조사 산출물
+
+실행: `20260917T030408-02-revise-no-memory-1b59c5`
+
+상태: succeeded / 자동 계약 검사: True
+
+## 변경 ADR: 폐쇄망 환경 벡터 저장소 선택 (rag-vector-adoption, rag-revise)
+
+### 1. 이전 대비 변경점
+- **배포 환경이 폐쇄망으로 전환**되어 외부 관리형 SaaS 사용 불가 → `external_saas_allowed=false`. Qdrant Cloud 등 관리형 옵션은 후보에서 제외하고 자체 호스팅만 평가했다.
+- **PostgreSQL은 이미 운영 중**, 신규 stateful 저장소 운영 인력 증원 불가 → 기존 운영 역량 재사용이 최우선 판단 기준이 되었다.
+- personal_memory/handoff_memory가 모두 비어 있어 이전 실행의 **내부 결정 ID·PostgreSQL 백업 담당 팀·기존 규모/품질 목표는 확인 불가** → 추측하지 않고 `internal_decision_id=unknown`, `backup_owner=unknown`으로 반환한다. 이전 추천을 그대로 유지하지 않고 새 제약을 우선 재평가했다.
+
+### 2. 비교 표 (새 제약 우선)
+
+| 항목 | pgvector (PostgreSQL 확장) | 자체 호스팅 Qdrant |
+|---|---|---|
+| 폐쇄망 적합성 | 높음. 기존 인스턴스에 확장 추가, 신규 stateful 서비스 불필요 | 중간. 별도 stateful 서비스(도커/바이너리) 운영 필요 |
+| 외부 SaaS 의존 | 없음 | 없음(자체 호스팅). Qdrant Cloud는 배제 |
+| 백업 | `pg_basebackup` + WAL 연속 아카이빙(PITR), 논리 백업 `pg_dump` | 스냅샷 API(`POST /collections/{name}/snapshots`) 생성·복구 |
+| 복구 | 베이스 백업 + WAL 재생으로 특정 시점 복구 | 스냅샷 파일 복구 API, 새 컬렉션 복원 |
+| 오프라인 설치 | PostgreSQL 패키지/소스 + pgvector 소스 빌드(`make && make install`) 또는 배포판 패키지 | 도커 이미지/바이너리 반입, 사내 레지스트리 미러 필요 |
+| 운영 인력 부담 | 낮음. 기존 DBA/백업 절차 재사용 | 중간~높음. 모니터링·스냅샷 스케줄·복구 절차 신규 수립 |
+| tenant 필터 | 근사 인덱스 스캔 **이후** 필터 적용(사후 필터링) → 선택도 높으면 리콜 저하 위험 | payload index로 **사전** 필터링, 가장 제한적 인덱스 우선 → 필터 리콜 안정성 구조적 우위 |
+| 필터 리콜 완화 | 0.8.0+ iterative index scan(`hnsw.iterative_scan=relaxed_order`, `hnsw.max_scan_tuples`, `ivfflat.max_probes`) | 필터 필드 payload index 사전 생성(가급적 적재 전) |
+| 리콜 튜닝 | IVFFlat: lists(rows/1000, >1M은 sqrt(rows)), probes=sqrt(lists); HNSW: ef_search | HNSW 파라미터 + payload index 설계 |
+
+### 3. 최종 판단
+**pgvector를 잠정 권고한다.** 근거: (1) 폐쇄망에서 신규 stateful 서비스 추가 없이 기존 PostgreSQL 운영·백업(PITR)·권한 체계를 재사용할 수 있어 운영 인력 증원 불가 제약에 부합한다. (2) 백업/복구가 PostgreSQL 표준 도구로 성숙하다. **단, tenant 필터가 선택도 높은 조건이면 pgvector의 사후 필터링으로 리콜이 저하될 수 있으므로**(예: 10% 매칭 + ef_search=40 → 평균 4행) iterative scan 설정과 리콜 회귀 게이트가 필수 전제다. Qdrant는 필터 리콜 안정성이 구조적으로 우수하나 별도 저장소 운영·백업 체계 신규 수립 부담이 있어, 필터 리콜이 실측에서 임계값을 초과 위반할 경우에만 재검토 대안으로 남긴다.
+
+### 4. 배포/복구 체크리스트
+- [ ] pgvector 확장 버전 고정 및 폐쇄망 반입 패키지/소스 빌드 경로 문서화
+- [ ] PostgreSQL `archive_mode=on` + `archive_command` WAL 아카이빙, `pg_basebackup` 정기 실행 확인
+- [ ] PITR 복구 리허설을 폐쇄망 스테이징에서 1회 수행 (**미수행 — 검증 필요**)
+- [ ] tenant_id 등 필터 필드 인덱스(필요 시 partial index) 사전 생성
+- [ ] 골든 쿼리셋 구축 후 recall@k 베이스라인 → tenant 필터 적용 재측정, 저하폭 임계값 회귀 게이트
+- [ ] pgvector iterative scan 파라미터(ef_search, max_scan_tuples, max_probes) 운영값 문서화
+- [ ] (Qdrant 채택 시) 스냅샷 스케줄·보관·복구 절차 신규 수립, 도커 이미지 미러 반입
+- [ ] 모니터링: 검색 지연·리콜 지표, 백업 성공/실패 알림
+
+### 5. 미해결 항목
+- 실제 벤치마크·PITR/스냅샷 복구 리허설 **미실행** → 성능·복구 성공 주장하지 않음(not_measured)
+- internal_decision_id, backup_owner: 메모리 부재로 unknown
+- 기존 벡터 규모·품질 목표(recall@k 목표치): 확인 필요
+- 폐쇄망 패키지 반입·업그레이드 경로: 미조사
+- tenant 필터 리콜 저하 실측치: 미측정
+
+## 기록된 사실
+
+- **recommended_storage**: pgvector (PostgreSQL 기존 운영 재사용, 폐쇄망·백업·운영부담 우위, 잠정)
+- **internal_decision_id**: unknown
+- **backup_owner**: unknown
+- **measured_latency**: not_measured
+- **unresolved**: PITR/스냅샷 복구 리허설 미수행(검증 필요); 기존 규모·품질 목표(recall@k) 확인 필요; tenant 필터 리콜 저하 실측 미측정; 폐쇄망 패키지 반입·업그레이드 경로 미조사; internal_decision_id/backup_owner 메모리 부재로 unknown
+- **memory_refs**: none
+- **external_saas_allowed**: False
+- **benchmark_executed**: False
+- **recovery_test_executed**: False
+- **pgvector_backup_evidence**: PostgreSQL 공식 문서: pg_basebackup 베이스 백업, WAL 연속 아카이빙 PITR, pg_dump 논리 백업. pgvector는 소스 빌드(make && make install) 또는 패키지로 오프라인 설치.
+- **qdrant_backup_evidence**: Qdrant 공식 문서: 스냅샷 API로 컬렉션/전체 스토리지 스냅샷 생성·복구, 자체 호스팅은 도커/바이너리 배포.
+- **pgvector_filter_notes**: 근사 인덱스는 필터를 인덱스 스캔 이후 적용 → 선택도 높은 필터에서 결과 부족(10% 매칭+ef_search=40 → 평균 4행). 0.8.0+ iterative index scan(relaxed_order, max_scan_tuples, max_probes)으로 완화.
+- **qdrant_filter_notes**: payload 필드 인덱스로 사전 필터링, 가급적 적재 전 생성, 복합 조건 시 가장 제한적 인덱스 우선.
+- **quality_validation_plan**: 골든 쿼리셋 구축 → 필터 없이 recall@k 베이스라인 → tenant 필터 적용 재측정 → pgvector iterative scan 파라미터 비교 → Qdrant payload index 전/후 비교 → 임계값 기반 배포 회귀 게이트. ranx로 recall@k/MRR/NDCG@k/Precision@k/MAP 계산 권장.
+- **revisit_condition**: tenant 필터 리콜 저하가 임계값 초과 시 Qdrant 자체 호스팅 재검토
+- **adr_status**: proposed (문서 근거 기반, 실측 미검증)
+
+## 근거
+
+- https://www.postgresql.org/docs/current/continuous-archiving.html — PostgreSQL 공식: WAL 연속 아카이빙 및 PITR 절차 근거
+- https://www.postgresql.org/docs/current/app-pgbasebackup.html — PostgreSQL 공식: pg_basebackup 베이스 백업 생성 근거
+- https://www.postgresql.org/docs/current/app-pgdump.html — PostgreSQL 공식: pg_dump 논리 백업 근거
+- https://github.com/pgvector/pgvector/?tab=readme-ov-file — pgvector 공식 README: IVFFlat 리콜 3요소(lists=rows/1000, probes=sqrt(lists)), 근사 인덱스 사후 필터링 및 iterative scan 근거
+- https://github.com/pgvector/pgvector/blob/master/README.md — pgvector 공식: 0.8.0+ iterative index scan(strict_order/relaxed_order, hnsw.max_scan_tuples, ivfflat.max_probes) 근거
+- https://qdrant.tech/documentation/concepts/snapshots/ — Qdrant 공식: 스냅샷 생성/복구 API 근거
+- https://qdrant.tech/documentation/guides/installation/ — Qdrant 공식: 도커/바이너리 자체 호스팅 배포 근거
+- https://qdrant.tech/documentation/manage-data/payload/ — Qdrant 공식: payload index로 필터 효율 확보, 가장 제한적 인덱스 우선 근거
+- https://qdrant.tech/documentation/search/filtering/ — Qdrant 공식: 필터 대상 필드 payload index 사전 생성, 결정적 슬라이스 샘플링 근거
+- https://qdrant.tech/documentation/improve-search/retrieval-relevance/ — Qdrant 공식: 골든 쿼리셋 + ranx로 recall@k/MRR/NDCG@k/Precision@k/MAP 계산 근거
+- memory:none — personal_memory 및 handoff_memory가 비어 있어 참고한 메모리 ID 없음. internal_decision_id/backup_owner는 unknown으로 반환
+- 계산/판단: 폐쇄망(external_saas_allowed=false) + 운영 인력 증원 불가 + PostgreSQL 기존 운영 조건에서 기존 운영 역량 재사용 가능한 pgvector가 운영·백업 부담 측면 우위. 실제 벤치마크·복구 테스트 미수행으로 measured_latency=not_measured, benchmark_executed=false, recovery_test_executed=false.

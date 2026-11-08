@@ -1,0 +1,3208 @@
+{
+  "batch_id": "20260922T012131-no-token-limit-9703d2",
+  "source_summary_sha256": "c4cd99aa21217e541bb954ce9f1ca95faf07867f4265d9a7e5bb90d060dacea4",
+  "csv_sha256": "98f477096e997732af20a37006f63411bdfc0bb0fa8f0c1accad0f7e207fea32",
+  "definitions": {
+    "run": "one recorded CLI invocation of one case; no fabricated group run IDs",
+    "tasks": "root cases (1 per completed invocation), not recursive subtasks",
+    "allocation": "root award compared with precommitted gold",
+    "messages": "all depths: propose call_start + valid bid=true proposal + award",
+    "excluded_messages": "review, execution, synthesis, refusals, invalid proposals and HTTP retries",
+    "failure": "all five count columns blank; partial observations retained only in note/evidence",
+    "report_blocks": "CSV completed-row sums by original block and condition; one result per original slot",
+    "recovery": "user-requested final-slot estimate includes 429 recovery; original failed attempts remain blank rows"
+  },
+  "groups": [
+    {
+      "block": 1,
+      "condition": "baseline",
+      "attempts": 7,
+      "slots": 5,
+      "completed": 5,
+      "failed": 2,
+      "tasks": 5,
+      "correct": 2,
+      "messages": 133,
+      "unassigned": 0,
+      "misawards": 3
+    },
+    {
+      "block": 1,
+      "condition": "homogeneous",
+      "attempts": 7,
+      "slots": 5,
+      "completed": 5,
+      "failed": 2,
+      "tasks": 5,
+      "correct": 2,
+      "messages": 105,
+      "unassigned": 0,
+      "misawards": 3
+    },
+    {
+      "block": 1,
+      "condition": "overconfident",
+      "attempts": 7,
+      "slots": 5,
+      "completed": 5,
+      "failed": 2,
+      "tasks": 5,
+      "correct": 1,
+      "messages": 189,
+      "unassigned": 0,
+      "misawards": 4
+    },
+    {
+      "block": 2,
+      "condition": "baseline",
+      "attempts": 5,
+      "slots": 5,
+      "completed": 5,
+      "failed": 0,
+      "tasks": 5,
+      "correct": 3,
+      "messages": 119,
+      "unassigned": 0,
+      "misawards": 2
+    },
+    {
+      "block": 2,
+      "condition": "homogeneous",
+      "attempts": 5,
+      "slots": 5,
+      "completed": 5,
+      "failed": 0,
+      "tasks": 5,
+      "correct": 2,
+      "messages": 56,
+      "unassigned": 0,
+      "misawards": 3
+    },
+    {
+      "block": 2,
+      "condition": "overconfident",
+      "attempts": 5,
+      "slots": 5,
+      "completed": 5,
+      "failed": 0,
+      "tasks": 5,
+      "correct": 1,
+      "messages": 119,
+      "unassigned": 0,
+      "misawards": 4
+    },
+    {
+      "block": 3,
+      "condition": "baseline",
+      "attempts": 8,
+      "slots": 5,
+      "completed": 5,
+      "failed": 3,
+      "tasks": 5,
+      "correct": 2,
+      "messages": 119,
+      "unassigned": 0,
+      "misawards": 3
+    },
+    {
+      "block": 3,
+      "condition": "homogeneous",
+      "attempts": 8,
+      "slots": 5,
+      "completed": 5,
+      "failed": 3,
+      "tasks": 5,
+      "correct": 2,
+      "messages": 140,
+      "unassigned": 0,
+      "misawards": 3
+    },
+    {
+      "block": 3,
+      "condition": "overconfident",
+      "attempts": 9,
+      "slots": 5,
+      "completed": 5,
+      "failed": 4,
+      "tasks": 5,
+      "correct": 2,
+      "messages": 154,
+      "unassigned": 0,
+      "misawards": 3
+    }
+  ],
+  "primary": [
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-r1-release-review-baseline",
+      "cohort": "primary",
+      "case": "release-review",
+      "condition": "baseline",
+      "block": 1,
+      "root_award_line": 30,
+      "message_event_lines": {
+        "announcements": [
+          3,
+          4,
+          5,
+          33,
+          34,
+          35,
+          42,
+          49,
+          56,
+          108,
+          109,
+          110
+        ],
+        "bids": [
+          11,
+          17,
+          23,
+          41,
+          48,
+          55,
+          62,
+          77,
+          83,
+          116,
+          122,
+          128
+        ],
+        "awards": [
+          30,
+          69,
+          90,
+          135
+        ]
+      },
+      "observed": {
+        "tasks": 1,
+        "correct": 0,
+        "messages": 28,
+        "unassigned": 0,
+        "misawards": 1
+      },
+      "counts_published": true,
+      "status": "succeeded",
+      "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r1-release-review-baseline.jsonl",
+      "trace_sha256": "b0e5f1f1ecf71093c386f71807e009e637cb3a51be742bddd5092fe2cffcbe4a",
+      "submission_trace": "logs/20260922T012131-no-token-limit-9703d2-r1-release-review-baseline.jsonl",
+      "source_console": "extensions/peer_dag/conditions/20260922T012131-no-token-limit-9703d2/20260922T012131-no-token-limit-9703d2-r1-release-review-baseline.console.log",
+      "console": "logs/20260922T012131-no-token-limit-9703d2-r1-release-review-baseline.console.log",
+      "console_sha256": "eb1cb6a896bfc8a7f729bdd3fdf6bf2da3561edc6fcde0fad91930d15da5f663"
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-r1-release-review-homogeneous",
+      "cohort": "primary",
+      "case": "release-review",
+      "condition": "homogeneous",
+      "block": 1,
+      "root_award_line": 30,
+      "message_event_lines": {
+        "announcements": [
+          3,
+          4,
+          5,
+          33,
+          34,
+          35,
+          42,
+          49,
+          56,
+          108,
+          109,
+          110
+        ],
+        "bids": [
+          11,
+          17,
+          23,
+          41,
+          48,
+          55,
+          62,
+          69,
+          75,
+          116,
+          122,
+          128
+        ],
+        "awards": [
+          30,
+          82,
+          90,
+          135
+        ]
+      },
+      "observed": {
+        "tasks": 1,
+        "correct": 0,
+        "messages": 28,
+        "unassigned": 0,
+        "misawards": 1
+      },
+      "counts_published": true,
+      "status": "succeeded",
+      "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r1-release-review-homogeneous.jsonl",
+      "trace_sha256": "3046b90d37478a1f66bd6b8a9f2dce4ef37a18426a451da0034733922f35b0b1",
+      "submission_trace": "logs/20260922T012131-no-token-limit-9703d2-r1-release-review-homogeneous.jsonl",
+      "source_console": "extensions/peer_dag/conditions/20260922T012131-no-token-limit-9703d2/20260922T012131-no-token-limit-9703d2-r1-release-review-homogeneous.console.log",
+      "console": "logs/20260922T012131-no-token-limit-9703d2-r1-release-review-homogeneous.console.log",
+      "console_sha256": "0a0f7958c8229e4865afba27bacfd2a2ae25de0671b7c4b7c90ffd9ff8b53a02"
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-r1-release-review-overconfident",
+      "cohort": "primary",
+      "case": "release-review",
+      "condition": "overconfident",
+      "block": 1,
+      "root_award_line": 30,
+      "message_event_lines": {
+        "announcements": [
+          3,
+          4,
+          5,
+          33,
+          34,
+          35,
+          42,
+          49,
+          56,
+          108,
+          109,
+          110
+        ],
+        "bids": [
+          11,
+          17,
+          23,
+          41,
+          48,
+          55,
+          62,
+          69,
+          75,
+          116,
+          122,
+          128
+        ],
+        "awards": [
+          30,
+          82,
+          90,
+          135
+        ]
+      },
+      "observed": {
+        "tasks": 1,
+        "correct": 0,
+        "messages": 28,
+        "unassigned": 0,
+        "misawards": 1
+      },
+      "counts_published": true,
+      "status": "succeeded",
+      "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r1-release-review-overconfident.jsonl",
+      "trace_sha256": "1b0c7604773cc83394d2369c5ab92f79d23be3c18c739c5e21407d567904cc6a",
+      "submission_trace": "logs/20260922T012131-no-token-limit-9703d2-r1-release-review-overconfident.jsonl",
+      "source_console": "extensions/peer_dag/conditions/20260922T012131-no-token-limit-9703d2/20260922T012131-no-token-limit-9703d2-r1-release-review-overconfident.console.log",
+      "console": "logs/20260922T012131-no-token-limit-9703d2-r1-release-review-overconfident.console.log",
+      "console_sha256": "1ccbc36678639b6e00cc59d86bdc7ad1ed3deb5a130d5f218d7546003c21587b"
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-r1-game-design-architecture-baseline",
+      "cohort": "primary",
+      "case": "game-design-architecture",
+      "condition": "baseline",
+      "block": 1,
+      "root_award_line": 30,
+      "message_event_lines": {
+        "announcements": [
+          3,
+          4,
+          5
+        ],
+        "bids": [
+          11,
+          17,
+          23
+        ],
+        "awards": [
+          30
+        ]
+      },
+      "observed": {
+        "tasks": 1,
+        "correct": 1,
+        "messages": 7,
+        "unassigned": 0,
+        "misawards": 0
+      },
+      "counts_published": true,
+      "status": "succeeded",
+      "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r1-game-design-architecture-baseline.jsonl",
+      "trace_sha256": "95fa512d690f6b703a5369d4430d2536a28193ed1b4c98c735937535636f1066",
+      "submission_trace": "logs/20260922T012131-no-token-limit-9703d2-r1-game-design-architecture-baseline.jsonl",
+      "source_console": "extensions/peer_dag/conditions/20260922T012131-no-token-limit-9703d2/20260922T012131-no-token-limit-9703d2-r1-game-design-architecture-baseline.console.log",
+      "console": "logs/20260922T012131-no-token-limit-9703d2-r1-game-design-architecture-baseline.console.log",
+      "console_sha256": "084b8c73138cfabee2e08ce51269f0593c69396ef07ff5d3117eb8a1f7eeb81c"
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-r1-game-design-architecture-homogeneous",
+      "cohort": "primary",
+      "case": "game-design-architecture",
+      "condition": "homogeneous",
+      "block": 1,
+      "root_award_line": 30,
+      "message_event_lines": {
+        "announcements": [
+          3,
+          4,
+          5
+        ],
+        "bids": [
+          11,
+          17,
+          23
+        ],
+        "awards": [
+          30
+        ]
+      },
+      "observed": {
+        "tasks": 1,
+        "correct": 1,
+        "messages": 7,
+        "unassigned": 0,
+        "misawards": 0
+      },
+      "counts_published": true,
+      "status": "succeeded",
+      "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r1-game-design-architecture-homogeneous.jsonl",
+      "trace_sha256": "80035f82b7033c775a51475e356e1c8862ab340a672ad091021b7731d77d330e",
+      "submission_trace": "logs/20260922T012131-no-token-limit-9703d2-r1-game-design-architecture-homogeneous.jsonl",
+      "source_console": "extensions/peer_dag/conditions/20260922T012131-no-token-limit-9703d2/20260922T012131-no-token-limit-9703d2-r1-game-design-architecture-homogeneous.console.log",
+      "console": "logs/20260922T012131-no-token-limit-9703d2-r1-game-design-architecture-homogeneous.console.log",
+      "console_sha256": "096c3a13df97015d42834006d8b82ce120a2b5172289bfa31de4a295e8765f14"
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-r1-game-design-architecture-overconfident",
+      "cohort": "primary",
+      "case": "game-design-architecture",
+      "condition": "overconfident",
+      "block": 1,
+      "root_award_line": 30,
+      "message_event_lines": {
+        "announcements": [
+          3,
+          4,
+          5,
+          33,
+          34,
+          35,
+          42,
+          49,
+          56,
+          108,
+          109,
+          110
+        ],
+        "bids": [
+          11,
+          17,
+          23,
+          41,
+          48,
+          55,
+          62,
+          69,
+          83,
+          116,
+          122,
+          128
+        ],
+        "awards": [
+          30,
+          75,
+          90,
+          135
+        ]
+      },
+      "observed": {
+        "tasks": 1,
+        "correct": 0,
+        "messages": 28,
+        "unassigned": 0,
+        "misawards": 1
+      },
+      "counts_published": true,
+      "status": "succeeded",
+      "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r1-game-design-architecture-overconfident.jsonl",
+      "trace_sha256": "d45d2e96b09ed9146bf20cf697e4e4dd0deec7cd98c4e86dbb8e8156d88cc995",
+      "submission_trace": "logs/20260922T012131-no-token-limit-9703d2-r1-game-design-architecture-overconfident.jsonl",
+      "source_console": "extensions/peer_dag/conditions/20260922T012131-no-token-limit-9703d2/20260922T012131-no-token-limit-9703d2-r1-game-design-architecture-overconfident.console.log",
+      "console": "logs/20260922T012131-no-token-limit-9703d2-r1-game-design-architecture-overconfident.console.log",
+      "console_sha256": "c088174935b160696d430634d88a82eb8226e216225b1500015e97117c21472b"
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-r1-payment-redesign-baseline",
+      "cohort": "primary",
+      "case": "payment-redesign",
+      "condition": "baseline",
+      "block": 1,
+      "root_award_line": 30,
+      "message_event_lines": {
+        "announcements": [
+          3,
+          4,
+          5
+        ],
+        "bids": [
+          11,
+          17,
+          23
+        ],
+        "awards": [
+          30
+        ]
+      },
+      "observed": {
+        "tasks": 1,
+        "correct": 1,
+        "messages": 7,
+        "unassigned": 0,
+        "misawards": 0
+      },
+      "counts_published": true,
+      "status": "succeeded",
+      "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r1-payment-redesign-baseline.jsonl",
+      "trace_sha256": "147248e0848a403137cd0404255fe79f82512ec62e675db94d0720383f8e7d06",
+      "submission_trace": "logs/20260922T012131-no-token-limit-9703d2-r1-payment-redesign-baseline.jsonl",
+      "source_console": "extensions/peer_dag/conditions/20260922T012131-no-token-limit-9703d2/20260922T012131-no-token-limit-9703d2-r1-payment-redesign-baseline.console.log",
+      "console": "logs/20260922T012131-no-token-limit-9703d2-r1-payment-redesign-baseline.console.log",
+      "console_sha256": "60b6b6b4f64c478e3d3f6e679950e4670038cf8031c7cb6892a98ba15de8b192"
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-r1-payment-redesign-homogeneous",
+      "cohort": "primary",
+      "case": "payment-redesign",
+      "condition": "homogeneous",
+      "block": 1,
+      "root_award_line": 30,
+      "message_event_lines": {
+        "announcements": [
+          3,
+          4,
+          5
+        ],
+        "bids": [
+          11,
+          17,
+          23
+        ],
+        "awards": [
+          30
+        ]
+      },
+      "observed": {
+        "tasks": 1,
+        "correct": 1,
+        "messages": 7,
+        "unassigned": 0,
+        "misawards": 0
+      },
+      "counts_published": true,
+      "status": "succeeded",
+      "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r1-payment-redesign-homogeneous.jsonl",
+      "trace_sha256": "acd42d552de7fe135580d008c9bfd63fbfdcf59cb2b2404850dcd8ccbdddae85",
+      "submission_trace": "logs/20260922T012131-no-token-limit-9703d2-r1-payment-redesign-homogeneous.jsonl",
+      "source_console": "extensions/peer_dag/conditions/20260922T012131-no-token-limit-9703d2/20260922T012131-no-token-limit-9703d2-r1-payment-redesign-homogeneous.console.log",
+      "console": "logs/20260922T012131-no-token-limit-9703d2-r1-payment-redesign-homogeneous.console.log",
+      "console_sha256": "60dc07b76dc8767283ad9a4a5969de93a0cdf37ffe0c9c7d72fa4f58748920f9"
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-r1-payment-redesign-overconfident",
+      "cohort": "primary",
+      "case": "payment-redesign",
+      "condition": "overconfident",
+      "block": 1,
+      "root_award_line": 30,
+      "message_event_lines": {
+        "announcements": [
+          3,
+          4,
+          5,
+          33,
+          34,
+          35,
+          42,
+          49,
+          56,
+          108,
+          109,
+          110,
+          146,
+          147,
+          148
+        ],
+        "bids": [
+          11,
+          17,
+          23,
+          41,
+          48,
+          55,
+          62,
+          69,
+          83,
+          116,
+          122,
+          128,
+          154,
+          160,
+          166
+        ],
+        "awards": [
+          30,
+          75,
+          90,
+          135,
+          173
+        ]
+      },
+      "observed": {
+        "tasks": 1,
+        "correct": 0,
+        "messages": 35,
+        "unassigned": 0,
+        "misawards": 1
+      },
+      "counts_published": true,
+      "status": "succeeded",
+      "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r1-payment-redesign-overconfident.jsonl",
+      "trace_sha256": "0654c5138e8deb8bc5b68d712f9fd2640f83b73bb89cb17b22f39ba31575c55d",
+      "submission_trace": "logs/20260922T012131-no-token-limit-9703d2-r1-payment-redesign-overconfident.jsonl",
+      "source_console": "extensions/peer_dag/conditions/20260922T012131-no-token-limit-9703d2/20260922T012131-no-token-limit-9703d2-r1-payment-redesign-overconfident.console.log",
+      "console": "logs/20260922T012131-no-token-limit-9703d2-r1-payment-redesign-overconfident.console.log",
+      "console_sha256": "4e77f1a1e070886639723e9d0e6b7a6b964b3b20e1fda0719f84b49bdcb9bd64"
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-r1-growth-roadmap-baseline",
+      "cohort": "primary",
+      "case": "growth-roadmap",
+      "condition": "baseline",
+      "block": 1,
+      "root_award_line": null,
+      "message_event_lines": {
+        "announcements": [
+          3,
+          4,
+          5
+        ],
+        "bids": [
+          14,
+          23,
+          32
+        ],
+        "awards": []
+      },
+      "observed": {
+        "tasks": 1,
+        "correct": 0,
+        "messages": 6,
+        "misawards": 0,
+        "root_unawarded": 1
+      },
+      "counts_published": false,
+      "status": "failed",
+      "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r1-growth-roadmap-baseline.jsonl",
+      "trace_sha256": "2956a549797f989154fa5a57af2a022e7b01a65d4aead4011aa862b663adf4e0",
+      "submission_trace": "logs/20260922T012131-no-token-limit-9703d2-r1-growth-roadmap-baseline.jsonl",
+      "source_console": "extensions/peer_dag/conditions/20260922T012131-no-token-limit-9703d2/20260922T012131-no-token-limit-9703d2-r1-growth-roadmap-baseline.console.log",
+      "console": "logs/20260922T012131-no-token-limit-9703d2-r1-growth-roadmap-baseline.console.log",
+      "console_sha256": "ee74be99a1e8277f574e5fa3b74fa6a34279e083718527b085e1ce75e1303ba1"
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-r1-growth-roadmap-homogeneous",
+      "cohort": "primary",
+      "case": "growth-roadmap",
+      "condition": "homogeneous",
+      "block": 1,
+      "root_award_line": null,
+      "message_event_lines": {
+        "announcements": [
+          3,
+          4,
+          5
+        ],
+        "bids": [],
+        "awards": []
+      },
+      "observed": {
+        "tasks": 1,
+        "correct": 0,
+        "messages": 3,
+        "misawards": 0,
+        "root_unawarded": 1
+      },
+      "counts_published": false,
+      "status": "failed",
+      "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r1-growth-roadmap-homogeneous.jsonl",
+      "trace_sha256": "3bd69e256eba7b6c2173de173af0305190209a6cafc0f56aabd36c212e7a58d4",
+      "submission_trace": "logs/20260922T012131-no-token-limit-9703d2-r1-growth-roadmap-homogeneous.jsonl",
+      "source_console": "extensions/peer_dag/conditions/20260922T012131-no-token-limit-9703d2/20260922T012131-no-token-limit-9703d2-r1-growth-roadmap-homogeneous.console.log",
+      "console": "logs/20260922T012131-no-token-limit-9703d2-r1-growth-roadmap-homogeneous.console.log",
+      "console_sha256": "55c95566814269564107717530b59163a589fdb7a0c994f7883cfae3f6efb79f"
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-r1-growth-roadmap-overconfident",
+      "cohort": "primary",
+      "case": "growth-roadmap",
+      "condition": "overconfident",
+      "block": 1,
+      "root_award_line": null,
+      "message_event_lines": {
+        "announcements": [
+          3,
+          4,
+          5
+        ],
+        "bids": [],
+        "awards": []
+      },
+      "observed": {
+        "tasks": 1,
+        "correct": 0,
+        "messages": 3,
+        "misawards": 0,
+        "root_unawarded": 1
+      },
+      "counts_published": false,
+      "status": "failed",
+      "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r1-growth-roadmap-overconfident.jsonl",
+      "trace_sha256": "17a44e6d211d1a8e66ca12dd8fc3b5cfba258f7141033140ddf4bd9429218452",
+      "submission_trace": "logs/20260922T012131-no-token-limit-9703d2-r1-growth-roadmap-overconfident.jsonl",
+      "source_console": "extensions/peer_dag/conditions/20260922T012131-no-token-limit-9703d2/20260922T012131-no-token-limit-9703d2-r1-growth-roadmap-overconfident.console.log",
+      "console": "logs/20260922T012131-no-token-limit-9703d2-r1-growth-roadmap-overconfident.console.log",
+      "console_sha256": "80094c5222fb3b5b26b476208c7869b2a781656194756449660bb37dde5162db"
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-r1-launch-operations-baseline",
+      "cohort": "primary",
+      "case": "launch-operations",
+      "condition": "baseline",
+      "block": 1,
+      "root_award_line": null,
+      "message_event_lines": {
+        "announcements": [
+          3,
+          4,
+          5
+        ],
+        "bids": [],
+        "awards": []
+      },
+      "observed": {
+        "tasks": 1,
+        "correct": 0,
+        "messages": 3,
+        "misawards": 0,
+        "root_unawarded": 1
+      },
+      "counts_published": false,
+      "status": "failed",
+      "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r1-launch-operations-baseline.jsonl",
+      "trace_sha256": "a5a48b566a1a8bf556029ab4b5ca9fae63500565f131564b433e3db036e50743",
+      "submission_trace": "logs/20260922T012131-no-token-limit-9703d2-r1-launch-operations-baseline.jsonl",
+      "source_console": "extensions/peer_dag/conditions/20260922T012131-no-token-limit-9703d2/20260922T012131-no-token-limit-9703d2-r1-launch-operations-baseline.console.log",
+      "console": "logs/20260922T012131-no-token-limit-9703d2-r1-launch-operations-baseline.console.log",
+      "console_sha256": "69d20c936315de68e8e52b644b922d85a49b617820ec976eab12be7d524ab34a"
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-r1-launch-operations-homogeneous",
+      "cohort": "primary",
+      "case": "launch-operations",
+      "condition": "homogeneous",
+      "block": 1,
+      "root_award_line": null,
+      "message_event_lines": {
+        "announcements": [
+          3,
+          4,
+          5
+        ],
+        "bids": [],
+        "awards": []
+      },
+      "observed": {
+        "tasks": 1,
+        "correct": 0,
+        "messages": 3,
+        "misawards": 0,
+        "root_unawarded": 1
+      },
+      "counts_published": false,
+      "status": "failed",
+      "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r1-launch-operations-homogeneous.jsonl",
+      "trace_sha256": "202880055dcf28267820e1e79aca54c459917801e02380a18e207e6c44d3c37d",
+      "submission_trace": "logs/20260922T012131-no-token-limit-9703d2-r1-launch-operations-homogeneous.jsonl",
+      "source_console": "extensions/peer_dag/conditions/20260922T012131-no-token-limit-9703d2/20260922T012131-no-token-limit-9703d2-r1-launch-operations-homogeneous.console.log",
+      "console": "logs/20260922T012131-no-token-limit-9703d2-r1-launch-operations-homogeneous.console.log",
+      "console_sha256": "64d7ad386c06ef90a62addf69962a99d83f229721093972d73010591a4894ae3"
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-r1-launch-operations-overconfident",
+      "cohort": "primary",
+      "case": "launch-operations",
+      "condition": "overconfident",
+      "block": 1,
+      "root_award_line": null,
+      "message_event_lines": {
+        "announcements": [
+          3,
+          4,
+          5
+        ],
+        "bids": [],
+        "awards": []
+      },
+      "observed": {
+        "tasks": 1,
+        "correct": 0,
+        "messages": 3,
+        "misawards": 0,
+        "root_unawarded": 1
+      },
+      "counts_published": false,
+      "status": "failed",
+      "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r1-launch-operations-overconfident.jsonl",
+      "trace_sha256": "585c2b0a49b0cbf795cad81cc65325ada6ffa199c03c33b2094de3780b3c6671",
+      "submission_trace": "logs/20260922T012131-no-token-limit-9703d2-r1-launch-operations-overconfident.jsonl",
+      "source_console": "extensions/peer_dag/conditions/20260922T012131-no-token-limit-9703d2/20260922T012131-no-token-limit-9703d2-r1-launch-operations-overconfident.console.log",
+      "console": "logs/20260922T012131-no-token-limit-9703d2-r1-launch-operations-overconfident.console.log",
+      "console_sha256": "72f60836d0c3901a0e6d32b07da2bc7c8a576d4804bb76ee382b68e1349f1243"
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-r2-game-design-architecture-homogeneous",
+      "cohort": "primary",
+      "case": "game-design-architecture",
+      "condition": "homogeneous",
+      "block": 2,
+      "root_award_line": 57,
+      "message_event_lines": {
+        "announcements": [
+          3,
+          4,
+          5
+        ],
+        "bids": [
+          20,
+          35,
+          50
+        ],
+        "awards": [
+          57
+        ]
+      },
+      "observed": {
+        "tasks": 1,
+        "correct": 1,
+        "messages": 7,
+        "unassigned": 0,
+        "misawards": 0
+      },
+      "counts_published": true,
+      "status": "succeeded",
+      "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r2-game-design-architecture-homogeneous.jsonl",
+      "trace_sha256": "14c1cf44d5f5ddd2938f8399c4ac7e2aeb0abac0aab677e4f726f73f534cd40f",
+      "submission_trace": "logs/20260922T012131-no-token-limit-9703d2-r2-game-design-architecture-homogeneous.jsonl",
+      "source_console": "extensions/peer_dag/conditions/20260922T012131-no-token-limit-9703d2/20260922T012131-no-token-limit-9703d2-r2-game-design-architecture-homogeneous.console.log",
+      "console": "logs/20260922T012131-no-token-limit-9703d2-r2-game-design-architecture-homogeneous.console.log",
+      "console_sha256": "fce3c3749b323bb2bd2f57a3c9eeab35abe11f122f85bc0509d9acb9fd415612"
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-r2-game-design-architecture-overconfident",
+      "cohort": "primary",
+      "case": "game-design-architecture",
+      "condition": "overconfident",
+      "block": 2,
+      "root_award_line": 39,
+      "message_event_lines": {
+        "announcements": [
+          3,
+          4,
+          5,
+          42,
+          43,
+          44,
+          51,
+          58,
+          65,
+          117,
+          118,
+          119
+        ],
+        "bids": [
+          14,
+          23,
+          32,
+          50,
+          57,
+          64,
+          71,
+          78,
+          84,
+          125,
+          131,
+          137
+        ],
+        "awards": [
+          39,
+          91,
+          99,
+          144
+        ]
+      },
+      "observed": {
+        "tasks": 1,
+        "correct": 0,
+        "messages": 28,
+        "unassigned": 0,
+        "misawards": 1
+      },
+      "counts_published": true,
+      "status": "succeeded",
+      "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r2-game-design-architecture-overconfident.jsonl",
+      "trace_sha256": "7430976b2923aa6201a15b58261a1e86b017130132ecdf006ab1f22228422833",
+      "submission_trace": "logs/20260922T012131-no-token-limit-9703d2-r2-game-design-architecture-overconfident.jsonl",
+      "source_console": "extensions/peer_dag/conditions/20260922T012131-no-token-limit-9703d2/20260922T012131-no-token-limit-9703d2-r2-game-design-architecture-overconfident.console.log",
+      "console": "logs/20260922T012131-no-token-limit-9703d2-r2-game-design-architecture-overconfident.console.log",
+      "console_sha256": "35249cfd498778397755f55fbfc6758d54c867cb75394b988442aee571121732"
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-r2-game-design-architecture-baseline",
+      "cohort": "primary",
+      "case": "game-design-architecture",
+      "condition": "baseline",
+      "block": 2,
+      "root_award_line": 42,
+      "message_event_lines": {
+        "announcements": [
+          3,
+          4,
+          5
+        ],
+        "bids": [
+          14,
+          23,
+          35
+        ],
+        "awards": [
+          42
+        ]
+      },
+      "observed": {
+        "tasks": 1,
+        "correct": 1,
+        "messages": 7,
+        "unassigned": 0,
+        "misawards": 0
+      },
+      "counts_published": true,
+      "status": "succeeded",
+      "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r2-game-design-architecture-baseline.jsonl",
+      "trace_sha256": "5df074d744df2dd18d48bace1873a458785d296e0a075f6a8d13fd36bbcc83de",
+      "submission_trace": "logs/20260922T012131-no-token-limit-9703d2-r2-game-design-architecture-baseline.jsonl",
+      "source_console": "extensions/peer_dag/conditions/20260922T012131-no-token-limit-9703d2/20260922T012131-no-token-limit-9703d2-r2-game-design-architecture-baseline.console.log",
+      "console": "logs/20260922T012131-no-token-limit-9703d2-r2-game-design-architecture-baseline.console.log",
+      "console_sha256": "21a9cdae16f022f5e4bc5b131675578879a34317c5b62a8eb75e9ef0ca5194d3"
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-r2-payment-redesign-homogeneous",
+      "cohort": "primary",
+      "case": "payment-redesign",
+      "condition": "homogeneous",
+      "block": 2,
+      "root_award_line": 33,
+      "message_event_lines": {
+        "announcements": [
+          3,
+          4,
+          5
+        ],
+        "bids": [
+          11,
+          17,
+          26
+        ],
+        "awards": [
+          33
+        ]
+      },
+      "observed": {
+        "tasks": 1,
+        "correct": 1,
+        "messages": 7,
+        "unassigned": 0,
+        "misawards": 0
+      },
+      "counts_published": true,
+      "status": "succeeded",
+      "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r2-payment-redesign-homogeneous.jsonl",
+      "trace_sha256": "6a3e9c12055687f9c8229925eee768b39cc693c93b44ad1e8011662584f55d16",
+      "submission_trace": "logs/20260922T012131-no-token-limit-9703d2-r2-payment-redesign-homogeneous.jsonl",
+      "source_console": "extensions/peer_dag/conditions/20260922T012131-no-token-limit-9703d2/20260922T012131-no-token-limit-9703d2-r2-payment-redesign-homogeneous.console.log",
+      "console": "logs/20260922T012131-no-token-limit-9703d2-r2-payment-redesign-homogeneous.console.log",
+      "console_sha256": "3972310f7ab4dc8c621301f7b0f0d6f6eef24c49ecd5f278894f624f504c2ca6"
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-r2-payment-redesign-overconfident",
+      "cohort": "primary",
+      "case": "payment-redesign",
+      "condition": "overconfident",
+      "block": 2,
+      "root_award_line": 30,
+      "message_event_lines": {
+        "announcements": [
+          3,
+          4,
+          5,
+          33,
+          34,
+          35,
+          42,
+          49,
+          56,
+          108,
+          109,
+          110
+        ],
+        "bids": [
+          11,
+          17,
+          23,
+          41,
+          48,
+          55,
+          62,
+          77,
+          83,
+          122,
+          134,
+          146
+        ],
+        "awards": [
+          30,
+          69,
+          90,
+          153
+        ]
+      },
+      "observed": {
+        "tasks": 1,
+        "correct": 0,
+        "messages": 28,
+        "unassigned": 0,
+        "misawards": 1
+      },
+      "counts_published": true,
+      "status": "succeeded",
+      "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r2-payment-redesign-overconfident.jsonl",
+      "trace_sha256": "42f5561ceee454aa656478aad671830e20b57532982f63b87401f312004191ba",
+      "submission_trace": "logs/20260922T012131-no-token-limit-9703d2-r2-payment-redesign-overconfident.jsonl",
+      "source_console": "extensions/peer_dag/conditions/20260922T012131-no-token-limit-9703d2/20260922T012131-no-token-limit-9703d2-r2-payment-redesign-overconfident.console.log",
+      "console": "logs/20260922T012131-no-token-limit-9703d2-r2-payment-redesign-overconfident.console.log",
+      "console_sha256": "c065123d9162b4ab849c8061c5b73a6c7d535ced697e6bcdffe8a51c0aa032cb"
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-r2-payment-redesign-baseline",
+      "cohort": "primary",
+      "case": "payment-redesign",
+      "condition": "baseline",
+      "block": 2,
+      "root_award_line": 30,
+      "message_event_lines": {
+        "announcements": [
+          3,
+          4,
+          5,
+          33,
+          34,
+          35,
+          42,
+          49,
+          56,
+          114,
+          115,
+          116
+        ],
+        "bids": [
+          11,
+          17,
+          23,
+          41,
+          48,
+          55,
+          62,
+          77,
+          86,
+          122,
+          128,
+          134
+        ],
+        "awards": [
+          30,
+          69,
+          93,
+          141
+        ]
+      },
+      "observed": {
+        "tasks": 1,
+        "correct": 1,
+        "messages": 28,
+        "unassigned": 0,
+        "misawards": 0
+      },
+      "counts_published": true,
+      "status": "succeeded",
+      "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r2-payment-redesign-baseline.jsonl",
+      "trace_sha256": "0f172e7a06de2dfa8f38f905c97f8428cfcf30f5dff4480c54eef872e6b47d9c",
+      "submission_trace": "logs/20260922T012131-no-token-limit-9703d2-r2-payment-redesign-baseline.jsonl",
+      "source_console": "extensions/peer_dag/conditions/20260922T012131-no-token-limit-9703d2/20260922T012131-no-token-limit-9703d2-r2-payment-redesign-baseline.console.log",
+      "console": "logs/20260922T012131-no-token-limit-9703d2-r2-payment-redesign-baseline.console.log",
+      "console_sha256": "fd22989582847ad75291cd4f9de138c585675e8c85ab31003795cb0e9a1a7666"
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-r2-growth-roadmap-homogeneous",
+      "cohort": "primary",
+      "case": "growth-roadmap",
+      "condition": "homogeneous",
+      "block": 2,
+      "root_award_line": 30,
+      "message_event_lines": {
+        "announcements": [
+          3,
+          4,
+          5
+        ],
+        "bids": [
+          11,
+          17,
+          23
+        ],
+        "awards": [
+          30
+        ]
+      },
+      "observed": {
+        "tasks": 1,
+        "correct": 0,
+        "messages": 7,
+        "unassigned": 0,
+        "misawards": 1
+      },
+      "counts_published": true,
+      "status": "succeeded",
+      "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r2-growth-roadmap-homogeneous.jsonl",
+      "trace_sha256": "84e729b640b4815368d7857eb3d66833b19b7451100e664361e7abac8bd9cae0",
+      "submission_trace": "logs/20260922T012131-no-token-limit-9703d2-r2-growth-roadmap-homogeneous.jsonl",
+      "source_console": "extensions/peer_dag/conditions/20260922T012131-no-token-limit-9703d2/20260922T012131-no-token-limit-9703d2-r2-growth-roadmap-homogeneous.console.log",
+      "console": "logs/20260922T012131-no-token-limit-9703d2-r2-growth-roadmap-homogeneous.console.log",
+      "console_sha256": "fa607a4e04bec8f28a48a1ff9f1d06875fad76dad0c8fce2d5d7206914766dcf"
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-r2-growth-roadmap-overconfident",
+      "cohort": "primary",
+      "case": "growth-roadmap",
+      "condition": "overconfident",
+      "block": 2,
+      "root_award_line": 39,
+      "message_event_lines": {
+        "announcements": [
+          3,
+          4,
+          5,
+          42,
+          43,
+          44,
+          51,
+          58,
+          65,
+          117,
+          118,
+          119
+        ],
+        "bids": [
+          14,
+          23,
+          32,
+          50,
+          57,
+          64,
+          71,
+          86,
+          92,
+          125,
+          131,
+          137
+        ],
+        "awards": [
+          39,
+          78,
+          99,
+          144
+        ]
+      },
+      "observed": {
+        "tasks": 1,
+        "correct": 0,
+        "messages": 28,
+        "unassigned": 0,
+        "misawards": 1
+      },
+      "counts_published": true,
+      "status": "succeeded",
+      "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r2-growth-roadmap-overconfident.jsonl",
+      "trace_sha256": "364e7325f6312b7030aec05ec3985584f2a358b53fbed85b228d32c0009e03b4",
+      "submission_trace": "logs/20260922T012131-no-token-limit-9703d2-r2-growth-roadmap-overconfident.jsonl",
+      "source_console": "extensions/peer_dag/conditions/20260922T012131-no-token-limit-9703d2/20260922T012131-no-token-limit-9703d2-r2-growth-roadmap-overconfident.console.log",
+      "console": "logs/20260922T012131-no-token-limit-9703d2-r2-growth-roadmap-overconfident.console.log",
+      "console_sha256": "ad98854ed0716ffee9b3c3a68531097a89529182426eca34fca5d69ac93c4537"
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-r2-growth-roadmap-baseline",
+      "cohort": "primary",
+      "case": "growth-roadmap",
+      "condition": "baseline",
+      "block": 2,
+      "root_award_line": 39,
+      "message_event_lines": {
+        "announcements": [
+          3,
+          4,
+          5,
+          41,
+          42,
+          43,
+          79,
+          80,
+          81,
+          120,
+          121,
+          122
+        ],
+        "bids": [
+          11,
+          20,
+          32,
+          49,
+          55,
+          61,
+          87,
+          93,
+          99,
+          128,
+          134,
+          140
+        ],
+        "awards": [
+          39,
+          68,
+          106,
+          150
+        ]
+      },
+      "observed": {
+        "tasks": 1,
+        "correct": 0,
+        "messages": 28,
+        "unassigned": 0,
+        "misawards": 1
+      },
+      "counts_published": true,
+      "status": "succeeded",
+      "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r2-growth-roadmap-baseline.jsonl",
+      "trace_sha256": "bae8666f5643f41185769de8f9006b66b4b123f5ff7dac29ffe0a55490386e67",
+      "submission_trace": "logs/20260922T012131-no-token-limit-9703d2-r2-growth-roadmap-baseline.jsonl",
+      "source_console": "extensions/peer_dag/conditions/20260922T012131-no-token-limit-9703d2/20260922T012131-no-token-limit-9703d2-r2-growth-roadmap-baseline.console.log",
+      "console": "logs/20260922T012131-no-token-limit-9703d2-r2-growth-roadmap-baseline.console.log",
+      "console_sha256": "8b54275890e7ce33291d8ca38460861e7ac4049135100abf288a48d495417731"
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-r2-launch-operations-homogeneous",
+      "cohort": "primary",
+      "case": "launch-operations",
+      "condition": "homogeneous",
+      "block": 2,
+      "root_award_line": 30,
+      "message_event_lines": {
+        "announcements": [
+          3,
+          4,
+          5
+        ],
+        "bids": [
+          11,
+          17,
+          23
+        ],
+        "awards": [
+          30
+        ]
+      },
+      "observed": {
+        "tasks": 1,
+        "correct": 0,
+        "messages": 7,
+        "unassigned": 0,
+        "misawards": 1
+      },
+      "counts_published": true,
+      "status": "succeeded",
+      "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r2-launch-operations-homogeneous.jsonl",
+      "trace_sha256": "60bedd88e61b30f2a07647a61781fc5dd936d7c0b6fec4aca1980f2a5c00e48c",
+      "submission_trace": "logs/20260922T012131-no-token-limit-9703d2-r2-launch-operations-homogeneous.jsonl",
+      "source_console": "extensions/peer_dag/conditions/20260922T012131-no-token-limit-9703d2/20260922T012131-no-token-limit-9703d2-r2-launch-operations-homogeneous.console.log",
+      "console": "logs/20260922T012131-no-token-limit-9703d2-r2-launch-operations-homogeneous.console.log",
+      "console_sha256": "e6d04daffef871898bacb36f4dfa694c710f8b2edccfbab14e06f6d9b6e707fa"
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-r2-launch-operations-overconfident",
+      "cohort": "primary",
+      "case": "launch-operations",
+      "condition": "overconfident",
+      "block": 2,
+      "root_award_line": 36,
+      "message_event_lines": {
+        "announcements": [
+          3,
+          4,
+          5
+        ],
+        "bids": [
+          11,
+          20,
+          29
+        ],
+        "awards": [
+          36
+        ]
+      },
+      "observed": {
+        "tasks": 1,
+        "correct": 1,
+        "messages": 7,
+        "unassigned": 0,
+        "misawards": 0
+      },
+      "counts_published": true,
+      "status": "succeeded",
+      "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r2-launch-operations-overconfident.jsonl",
+      "trace_sha256": "f6259ff589e5954e4c7a792c39139a00bb77e4df30b14672568253e14d8c487a",
+      "submission_trace": "logs/20260922T012131-no-token-limit-9703d2-r2-launch-operations-overconfident.jsonl",
+      "source_console": "extensions/peer_dag/conditions/20260922T012131-no-token-limit-9703d2/20260922T012131-no-token-limit-9703d2-r2-launch-operations-overconfident.console.log",
+      "console": "logs/20260922T012131-no-token-limit-9703d2-r2-launch-operations-overconfident.console.log",
+      "console_sha256": "4d434b79704e78c7c5612677f292e3c2525e651b0ca15dfea27d07bcc959c3a9"
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-r2-launch-operations-baseline",
+      "cohort": "primary",
+      "case": "launch-operations",
+      "condition": "baseline",
+      "block": 2,
+      "root_award_line": 30,
+      "message_event_lines": {
+        "announcements": [
+          3,
+          4,
+          5,
+          33,
+          34,
+          35,
+          42,
+          49,
+          56,
+          120,
+          121,
+          122
+        ],
+        "bids": [
+          11,
+          17,
+          23,
+          41,
+          48,
+          55,
+          62,
+          69,
+          102,
+          128,
+          134,
+          140
+        ],
+        "awards": [
+          30,
+          78,
+          109,
+          147
+        ]
+      },
+      "observed": {
+        "tasks": 1,
+        "correct": 0,
+        "messages": 28,
+        "unassigned": 0,
+        "misawards": 1
+      },
+      "counts_published": true,
+      "status": "succeeded",
+      "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r2-launch-operations-baseline.jsonl",
+      "trace_sha256": "a4fdb44d9d322922af7a838c73967863cde2d3ed2759d7da0dde31163121f25f",
+      "submission_trace": "logs/20260922T012131-no-token-limit-9703d2-r2-launch-operations-baseline.jsonl",
+      "source_console": "extensions/peer_dag/conditions/20260922T012131-no-token-limit-9703d2/20260922T012131-no-token-limit-9703d2-r2-launch-operations-baseline.console.log",
+      "console": "logs/20260922T012131-no-token-limit-9703d2-r2-launch-operations-baseline.console.log",
+      "console_sha256": "640eec9e2043a05ed53c9c5db115f722c4bb19cc9798adb79c11ef6a7dda3220"
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-r2-release-review-homogeneous",
+      "cohort": "primary",
+      "case": "release-review",
+      "condition": "homogeneous",
+      "block": 2,
+      "root_award_line": 42,
+      "message_event_lines": {
+        "announcements": [
+          3,
+          4,
+          5,
+          45,
+          46,
+          47,
+          54,
+          61,
+          68,
+          120,
+          121,
+          122
+        ],
+        "bids": [
+          14,
+          23,
+          35,
+          53,
+          60,
+          67,
+          74,
+          81,
+          87,
+          128,
+          134,
+          140
+        ],
+        "awards": [
+          42,
+          94,
+          102,
+          147
+        ]
+      },
+      "observed": {
+        "tasks": 1,
+        "correct": 0,
+        "messages": 28,
+        "unassigned": 0,
+        "misawards": 1
+      },
+      "counts_published": true,
+      "status": "succeeded",
+      "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r2-release-review-homogeneous.jsonl",
+      "trace_sha256": "5510cde3fd0dbd05659520c0d01b64b5ba86f5d1748b09275bbe726f9e468206",
+      "submission_trace": "logs/20260922T012131-no-token-limit-9703d2-r2-release-review-homogeneous.jsonl",
+      "source_console": "extensions/peer_dag/conditions/20260922T012131-no-token-limit-9703d2/20260922T012131-no-token-limit-9703d2-r2-release-review-homogeneous.console.log",
+      "console": "logs/20260922T012131-no-token-limit-9703d2-r2-release-review-homogeneous.console.log",
+      "console_sha256": "8b710faee651959c9ff8da6600cf4a34f0c1c92c796cb528ded217703dc0ebd6"
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-r2-release-review-overconfident",
+      "cohort": "primary",
+      "case": "release-review",
+      "condition": "overconfident",
+      "block": 2,
+      "root_award_line": 30,
+      "message_event_lines": {
+        "announcements": [
+          3,
+          4,
+          5,
+          33,
+          34,
+          35,
+          42,
+          49,
+          56,
+          108,
+          109,
+          110
+        ],
+        "bids": [
+          11,
+          17,
+          23,
+          41,
+          48,
+          55,
+          62,
+          69,
+          75,
+          116,
+          122,
+          128
+        ],
+        "awards": [
+          30,
+          82,
+          90,
+          135
+        ]
+      },
+      "observed": {
+        "tasks": 1,
+        "correct": 0,
+        "messages": 28,
+        "unassigned": 0,
+        "misawards": 1
+      },
+      "counts_published": true,
+      "status": "succeeded",
+      "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r2-release-review-overconfident.jsonl",
+      "trace_sha256": "cc6ef113f6279e3cc9ecbe8b561886374ffefa13fc9be069a51051e6cc84241d",
+      "submission_trace": "logs/20260922T012131-no-token-limit-9703d2-r2-release-review-overconfident.jsonl",
+      "source_console": "extensions/peer_dag/conditions/20260922T012131-no-token-limit-9703d2/20260922T012131-no-token-limit-9703d2-r2-release-review-overconfident.console.log",
+      "console": "logs/20260922T012131-no-token-limit-9703d2-r2-release-review-overconfident.console.log",
+      "console_sha256": "dd8ee428c8912a5e62f7b3bfe825395e47a5f381de178f859735f1c74aa0de3e"
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-r2-release-review-baseline",
+      "cohort": "primary",
+      "case": "release-review",
+      "condition": "baseline",
+      "block": 2,
+      "root_award_line": 30,
+      "message_event_lines": {
+        "announcements": [
+          3,
+          4,
+          5,
+          33,
+          34,
+          35,
+          42,
+          49,
+          56,
+          108,
+          109,
+          110
+        ],
+        "bids": [
+          11,
+          17,
+          23,
+          41,
+          48,
+          55,
+          62,
+          69,
+          83,
+          116,
+          122,
+          128
+        ],
+        "awards": [
+          30,
+          75,
+          90,
+          135
+        ]
+      },
+      "observed": {
+        "tasks": 1,
+        "correct": 1,
+        "messages": 28,
+        "unassigned": 0,
+        "misawards": 0
+      },
+      "counts_published": true,
+      "status": "succeeded",
+      "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r2-release-review-baseline.jsonl",
+      "trace_sha256": "9b5f7ae1f7d00d414960a18353adcfaa40d8545eb404c32a403413ca2f5002d6",
+      "submission_trace": "logs/20260922T012131-no-token-limit-9703d2-r2-release-review-baseline.jsonl",
+      "source_console": "extensions/peer_dag/conditions/20260922T012131-no-token-limit-9703d2/20260922T012131-no-token-limit-9703d2-r2-release-review-baseline.console.log",
+      "console": "logs/20260922T012131-no-token-limit-9703d2-r2-release-review-baseline.console.log",
+      "console_sha256": "f843dd889e9bc5351b46ffbbc5f9c04c60ff92f257de60bbf1cf59b99b3f365b"
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-r3-payment-redesign-overconfident",
+      "cohort": "primary",
+      "case": "payment-redesign",
+      "condition": "overconfident",
+      "block": 3,
+      "root_award_line": 30,
+      "message_event_lines": {
+        "announcements": [
+          3,
+          4,
+          5,
+          33,
+          34,
+          35,
+          42,
+          49,
+          56,
+          108,
+          109,
+          110
+        ],
+        "bids": [
+          11,
+          17,
+          23,
+          41,
+          48,
+          55,
+          62,
+          69,
+          83,
+          116,
+          128
+        ],
+        "awards": [
+          30,
+          75,
+          90
+        ]
+      },
+      "observed": {
+        "tasks": 1,
+        "correct": 0,
+        "messages": 26,
+        "misawards": 1,
+        "root_unawarded": 0
+      },
+      "counts_published": false,
+      "status": "failed",
+      "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r3-payment-redesign-overconfident.jsonl",
+      "trace_sha256": "53dca8ca0aad061b6dd0dae634a7c0e0cc6a8615d1d298cb8ea8818e1690c542",
+      "submission_trace": "logs/20260922T012131-no-token-limit-9703d2-r3-payment-redesign-overconfident.jsonl",
+      "source_console": "extensions/peer_dag/conditions/20260922T012131-no-token-limit-9703d2/20260922T012131-no-token-limit-9703d2-r3-payment-redesign-overconfident.console.log",
+      "console": "logs/20260922T012131-no-token-limit-9703d2-r3-payment-redesign-overconfident.console.log",
+      "console_sha256": "7f0cda64eb54c0745ea936a5bbbdda5daf14dc95d63f824e6772c99ba4695f9e"
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-r3-payment-redesign-baseline",
+      "cohort": "primary",
+      "case": "payment-redesign",
+      "condition": "baseline",
+      "block": 3,
+      "root_award_line": null,
+      "message_event_lines": {
+        "announcements": [
+          3,
+          4,
+          5
+        ],
+        "bids": [],
+        "awards": []
+      },
+      "observed": {
+        "tasks": 1,
+        "correct": 0,
+        "messages": 3,
+        "misawards": 0,
+        "root_unawarded": 1
+      },
+      "counts_published": false,
+      "status": "failed",
+      "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r3-payment-redesign-baseline.jsonl",
+      "trace_sha256": "c4074ce11b8c3243258e750374869fa67e065ecbac79d073692db937a0631746",
+      "submission_trace": "logs/20260922T012131-no-token-limit-9703d2-r3-payment-redesign-baseline.jsonl",
+      "source_console": "extensions/peer_dag/conditions/20260922T012131-no-token-limit-9703d2/20260922T012131-no-token-limit-9703d2-r3-payment-redesign-baseline.console.log",
+      "console": "logs/20260922T012131-no-token-limit-9703d2-r3-payment-redesign-baseline.console.log",
+      "console_sha256": "0eec3a9778690fd1b7a2d12ec4c8aba8e4c0321f07f251c8e895b21469d20e35"
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-r3-payment-redesign-homogeneous",
+      "cohort": "primary",
+      "case": "payment-redesign",
+      "condition": "homogeneous",
+      "block": 3,
+      "root_award_line": null,
+      "message_event_lines": {
+        "announcements": [
+          3,
+          4,
+          5
+        ],
+        "bids": [],
+        "awards": []
+      },
+      "observed": {
+        "tasks": 1,
+        "correct": 0,
+        "messages": 3,
+        "misawards": 0,
+        "root_unawarded": 1
+      },
+      "counts_published": false,
+      "status": "failed",
+      "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r3-payment-redesign-homogeneous.jsonl",
+      "trace_sha256": "a77eed9cafa05c2aa0755cb2492f7e3af1ca39d5525318380ab4152429f6607a",
+      "submission_trace": "logs/20260922T012131-no-token-limit-9703d2-r3-payment-redesign-homogeneous.jsonl",
+      "source_console": "extensions/peer_dag/conditions/20260922T012131-no-token-limit-9703d2/20260922T012131-no-token-limit-9703d2-r3-payment-redesign-homogeneous.console.log",
+      "console": "logs/20260922T012131-no-token-limit-9703d2-r3-payment-redesign-homogeneous.console.log",
+      "console_sha256": "aab206794bebdcdcaffc1c7de7bd28e2cd17f90002cbc0c52ce8ec6b62eed27f"
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-r3-growth-roadmap-overconfident",
+      "cohort": "primary",
+      "case": "growth-roadmap",
+      "condition": "overconfident",
+      "block": 3,
+      "root_award_line": null,
+      "message_event_lines": {
+        "announcements": [
+          3,
+          4,
+          5
+        ],
+        "bids": [],
+        "awards": []
+      },
+      "observed": {
+        "tasks": 1,
+        "correct": 0,
+        "messages": 3,
+        "misawards": 0,
+        "root_unawarded": 1
+      },
+      "counts_published": false,
+      "status": "failed",
+      "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r3-growth-roadmap-overconfident.jsonl",
+      "trace_sha256": "95a5914d788a01c52f3df357b7cdb0e35c1003364f062a1e01454677c5af5651",
+      "submission_trace": "logs/20260922T012131-no-token-limit-9703d2-r3-growth-roadmap-overconfident.jsonl",
+      "source_console": "extensions/peer_dag/conditions/20260922T012131-no-token-limit-9703d2/20260922T012131-no-token-limit-9703d2-r3-growth-roadmap-overconfident.console.log",
+      "console": "logs/20260922T012131-no-token-limit-9703d2-r3-growth-roadmap-overconfident.console.log",
+      "console_sha256": "f0a6053357a37a7da5c65d266fee88e68c747e8521bf5119b126c85c5b07e847"
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-r3-growth-roadmap-baseline",
+      "cohort": "primary",
+      "case": "growth-roadmap",
+      "condition": "baseline",
+      "block": 3,
+      "root_award_line": null,
+      "message_event_lines": {
+        "announcements": [
+          3,
+          4,
+          5
+        ],
+        "bids": [],
+        "awards": []
+      },
+      "observed": {
+        "tasks": 1,
+        "correct": 0,
+        "messages": 3,
+        "misawards": 0,
+        "root_unawarded": 1
+      },
+      "counts_published": false,
+      "status": "failed",
+      "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r3-growth-roadmap-baseline.jsonl",
+      "trace_sha256": "82058abad2e68828fbfe738243eeb53d9161ef8121e4b59d311e3d09f804e486",
+      "submission_trace": "logs/20260922T012131-no-token-limit-9703d2-r3-growth-roadmap-baseline.jsonl",
+      "source_console": "extensions/peer_dag/conditions/20260922T012131-no-token-limit-9703d2/20260922T012131-no-token-limit-9703d2-r3-growth-roadmap-baseline.console.log",
+      "console": "logs/20260922T012131-no-token-limit-9703d2-r3-growth-roadmap-baseline.console.log",
+      "console_sha256": "0d24d0f6bf0270dae000b3b3165a45a87222b46f21d123280023f2855f9a931f"
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-r3-growth-roadmap-homogeneous",
+      "cohort": "primary",
+      "case": "growth-roadmap",
+      "condition": "homogeneous",
+      "block": 3,
+      "root_award_line": null,
+      "message_event_lines": {
+        "announcements": [
+          3,
+          4,
+          5
+        ],
+        "bids": [],
+        "awards": []
+      },
+      "observed": {
+        "tasks": 1,
+        "correct": 0,
+        "messages": 3,
+        "misawards": 0,
+        "root_unawarded": 1
+      },
+      "counts_published": false,
+      "status": "failed",
+      "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r3-growth-roadmap-homogeneous.jsonl",
+      "trace_sha256": "3ad1a7bd1201406415ebdc449cc131436ec5552e34bf015ed89aebbbc26e9148",
+      "submission_trace": "logs/20260922T012131-no-token-limit-9703d2-r3-growth-roadmap-homogeneous.jsonl",
+      "source_console": "extensions/peer_dag/conditions/20260922T012131-no-token-limit-9703d2/20260922T012131-no-token-limit-9703d2-r3-growth-roadmap-homogeneous.console.log",
+      "console": "logs/20260922T012131-no-token-limit-9703d2-r3-growth-roadmap-homogeneous.console.log",
+      "console_sha256": "a13447f5e132d08f7bf6fdb063a438e71b1e8ff463edadc79d04f42640c87fd8"
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-r3-launch-operations-overconfident",
+      "cohort": "primary",
+      "case": "launch-operations",
+      "condition": "overconfident",
+      "block": 3,
+      "root_award_line": null,
+      "message_event_lines": {
+        "announcements": [
+          3,
+          4,
+          5
+        ],
+        "bids": [],
+        "awards": []
+      },
+      "observed": {
+        "tasks": 1,
+        "correct": 0,
+        "messages": 3,
+        "misawards": 0,
+        "root_unawarded": 1
+      },
+      "counts_published": false,
+      "status": "failed",
+      "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r3-launch-operations-overconfident.jsonl",
+      "trace_sha256": "986bc78c2bd39e2cc0b739609c6da1ef6ea197fc504e00bdca6911a227f15d11",
+      "submission_trace": "logs/20260922T012131-no-token-limit-9703d2-r3-launch-operations-overconfident.jsonl",
+      "source_console": "extensions/peer_dag/conditions/20260922T012131-no-token-limit-9703d2/20260922T012131-no-token-limit-9703d2-r3-launch-operations-overconfident.console.log",
+      "console": "logs/20260922T012131-no-token-limit-9703d2-r3-launch-operations-overconfident.console.log",
+      "console_sha256": "ec617808609281de0cb25986ce0ff361c65491dce595b1d5c875919d912c144a"
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-r3-launch-operations-baseline",
+      "cohort": "primary",
+      "case": "launch-operations",
+      "condition": "baseline",
+      "block": 3,
+      "root_award_line": null,
+      "message_event_lines": {
+        "announcements": [
+          3,
+          4,
+          5
+        ],
+        "bids": [],
+        "awards": []
+      },
+      "observed": {
+        "tasks": 1,
+        "correct": 0,
+        "messages": 3,
+        "misawards": 0,
+        "root_unawarded": 1
+      },
+      "counts_published": false,
+      "status": "failed",
+      "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r3-launch-operations-baseline.jsonl",
+      "trace_sha256": "62b69bfa380a6a7eae2ae85ae48b46022970d359a7bcacd17afe61a1fd028388",
+      "submission_trace": "logs/20260922T012131-no-token-limit-9703d2-r3-launch-operations-baseline.jsonl",
+      "source_console": "extensions/peer_dag/conditions/20260922T012131-no-token-limit-9703d2/20260922T012131-no-token-limit-9703d2-r3-launch-operations-baseline.console.log",
+      "console": "logs/20260922T012131-no-token-limit-9703d2-r3-launch-operations-baseline.console.log",
+      "console_sha256": "ba290049a8ea905d099afe42b63222eea8f6262142a11ec536d5dd4030a8790c"
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-r3-launch-operations-homogeneous",
+      "cohort": "primary",
+      "case": "launch-operations",
+      "condition": "homogeneous",
+      "block": 3,
+      "root_award_line": null,
+      "message_event_lines": {
+        "announcements": [
+          3,
+          4,
+          5
+        ],
+        "bids": [],
+        "awards": []
+      },
+      "observed": {
+        "tasks": 1,
+        "correct": 0,
+        "messages": 3,
+        "misawards": 0,
+        "root_unawarded": 1
+      },
+      "counts_published": false,
+      "status": "failed",
+      "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r3-launch-operations-homogeneous.jsonl",
+      "trace_sha256": "65891321bcdda9f1a400d103e37e9b77e376cb0e5f48c03e9e5644ef060d9ee1",
+      "submission_trace": "logs/20260922T012131-no-token-limit-9703d2-r3-launch-operations-homogeneous.jsonl",
+      "source_console": "extensions/peer_dag/conditions/20260922T012131-no-token-limit-9703d2/20260922T012131-no-token-limit-9703d2-r3-launch-operations-homogeneous.console.log",
+      "console": "logs/20260922T012131-no-token-limit-9703d2-r3-launch-operations-homogeneous.console.log",
+      "console_sha256": "ac8e4395b3df0170f76e15ed26a65d296bb00a8a791426a3abdee64246e395a8"
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-r3-release-review-overconfident",
+      "cohort": "primary",
+      "case": "release-review",
+      "condition": "overconfident",
+      "block": 3,
+      "root_award_line": null,
+      "message_event_lines": {
+        "announcements": [
+          3,
+          4,
+          5
+        ],
+        "bids": [],
+        "awards": []
+      },
+      "observed": {
+        "tasks": 1,
+        "correct": 0,
+        "messages": 3,
+        "misawards": 0,
+        "root_unawarded": 1
+      },
+      "counts_published": false,
+      "status": "failed",
+      "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r3-release-review-overconfident.jsonl",
+      "trace_sha256": "df9a34674387428bc22c7fcb391819e80b7ca215a8a43d9a2d191eae4d9e91f1",
+      "submission_trace": "logs/20260922T012131-no-token-limit-9703d2-r3-release-review-overconfident.jsonl",
+      "source_console": "extensions/peer_dag/conditions/20260922T012131-no-token-limit-9703d2/20260922T012131-no-token-limit-9703d2-r3-release-review-overconfident.console.log",
+      "console": "logs/20260922T012131-no-token-limit-9703d2-r3-release-review-overconfident.console.log",
+      "console_sha256": "755da6d1a6232e2c206d552e08adb7960ca042becccf5dc75d9c2dbb84109645"
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-r3-release-review-baseline",
+      "cohort": "primary",
+      "case": "release-review",
+      "condition": "baseline",
+      "block": 3,
+      "root_award_line": 75,
+      "message_event_lines": {
+        "announcements": [
+          3,
+          4,
+          5,
+          78,
+          79,
+          80,
+          87,
+          94,
+          101,
+          153,
+          154,
+          155
+        ],
+        "bids": [
+          26,
+          47,
+          68,
+          86,
+          93,
+          100,
+          107,
+          114,
+          120,
+          161,
+          167,
+          173
+        ],
+        "awards": [
+          75,
+          127,
+          135,
+          180
+        ]
+      },
+      "observed": {
+        "tasks": 1,
+        "correct": 0,
+        "messages": 28,
+        "unassigned": 0,
+        "misawards": 1
+      },
+      "counts_published": true,
+      "status": "succeeded",
+      "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r3-release-review-baseline.jsonl",
+      "trace_sha256": "fae8bdca6d2b21dd3a1c1b83d3e08451581719c3af89a02a33018e6befe71f33",
+      "submission_trace": "logs/20260922T012131-no-token-limit-9703d2-r3-release-review-baseline.jsonl",
+      "source_console": "extensions/peer_dag/conditions/20260922T012131-no-token-limit-9703d2/20260922T012131-no-token-limit-9703d2-r3-release-review-baseline.console.log",
+      "console": "logs/20260922T012131-no-token-limit-9703d2-r3-release-review-baseline.console.log",
+      "console_sha256": "86cbdba44737a6711380578edf52269d6aafc0a334d918439aea819330f7f2a0"
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-r3-release-review-homogeneous",
+      "cohort": "primary",
+      "case": "release-review",
+      "condition": "homogeneous",
+      "block": 3,
+      "root_award_line": 36,
+      "message_event_lines": {
+        "announcements": [
+          3,
+          4,
+          5,
+          39,
+          40,
+          41,
+          48,
+          55,
+          62,
+          120,
+          121,
+          122
+        ],
+        "bids": [
+          11,
+          20,
+          29,
+          47,
+          54,
+          61,
+          68,
+          93,
+          102,
+          128,
+          134,
+          140
+        ],
+        "awards": [
+          36,
+          75,
+          109,
+          147
+        ]
+      },
+      "observed": {
+        "tasks": 1,
+        "correct": 0,
+        "messages": 28,
+        "unassigned": 0,
+        "misawards": 1
+      },
+      "counts_published": true,
+      "status": "succeeded",
+      "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r3-release-review-homogeneous.jsonl",
+      "trace_sha256": "5a475b535d03147b89cc12295bd88d3f0ac798955f466ad57b2783a40111197d",
+      "submission_trace": "logs/20260922T012131-no-token-limit-9703d2-r3-release-review-homogeneous.jsonl",
+      "source_console": "extensions/peer_dag/conditions/20260922T012131-no-token-limit-9703d2/20260922T012131-no-token-limit-9703d2-r3-release-review-homogeneous.console.log",
+      "console": "logs/20260922T012131-no-token-limit-9703d2-r3-release-review-homogeneous.console.log",
+      "console_sha256": "4c4268ba52307f7abe1f1dcd38844bc616618f4e24b96a4bedc9f3b5d98036f9"
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-r3-game-design-architecture-overconfident",
+      "cohort": "primary",
+      "case": "game-design-architecture",
+      "condition": "overconfident",
+      "block": 3,
+      "root_award_line": 30,
+      "message_event_lines": {
+        "announcements": [
+          3,
+          4,
+          5,
+          34,
+          35,
+          36,
+          43,
+          50,
+          57,
+          70,
+          83,
+          96,
+          164,
+          165,
+          166
+        ],
+        "bids": [
+          11,
+          17,
+          23,
+          42,
+          49,
+          56,
+          69,
+          82,
+          95,
+          102,
+          117,
+          124,
+          172,
+          178,
+          184
+        ],
+        "awards": [
+          30,
+          109,
+          131,
+          139,
+          191
+        ]
+      },
+      "observed": {
+        "tasks": 1,
+        "correct": 0,
+        "messages": 35,
+        "unassigned": 0,
+        "misawards": 1
+      },
+      "counts_published": true,
+      "status": "succeeded",
+      "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r3-game-design-architecture-overconfident.jsonl",
+      "trace_sha256": "6d810c77591b34dfa3cca6c8297dad8f77e2d8064f5f8deb3e7e3471dd28f240",
+      "submission_trace": "logs/20260922T012131-no-token-limit-9703d2-r3-game-design-architecture-overconfident.jsonl",
+      "source_console": "extensions/peer_dag/conditions/20260922T012131-no-token-limit-9703d2/20260922T012131-no-token-limit-9703d2-r3-game-design-architecture-overconfident.console.log",
+      "console": "logs/20260922T012131-no-token-limit-9703d2-r3-game-design-architecture-overconfident.console.log",
+      "console_sha256": "595bb44a765c8724996f01d043ce02ec5912033de853a980dc934e85a0ee4894"
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-r3-game-design-architecture-baseline",
+      "cohort": "primary",
+      "case": "game-design-architecture",
+      "condition": "baseline",
+      "block": 3,
+      "root_award_line": 42,
+      "message_event_lines": {
+        "announcements": [
+          3,
+          4,
+          5
+        ],
+        "bids": [
+          11,
+          23,
+          35
+        ],
+        "awards": [
+          42
+        ]
+      },
+      "observed": {
+        "tasks": 1,
+        "correct": 1,
+        "messages": 7,
+        "unassigned": 0,
+        "misawards": 0
+      },
+      "counts_published": true,
+      "status": "succeeded",
+      "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r3-game-design-architecture-baseline.jsonl",
+      "trace_sha256": "c054e651dd728cabbd96a1c49754c4c272d375317234608f4961ec69572432fb",
+      "submission_trace": "logs/20260922T012131-no-token-limit-9703d2-r3-game-design-architecture-baseline.jsonl",
+      "source_console": "extensions/peer_dag/conditions/20260922T012131-no-token-limit-9703d2/20260922T012131-no-token-limit-9703d2-r3-game-design-architecture-baseline.console.log",
+      "console": "logs/20260922T012131-no-token-limit-9703d2-r3-game-design-architecture-baseline.console.log",
+      "console_sha256": "854c5d0c3f09105195e1fc9cc5462ea22b9d2a9d02cfe8e7d6821c54b271a829"
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-r3-game-design-architecture-homogeneous",
+      "cohort": "primary",
+      "case": "game-design-architecture",
+      "condition": "homogeneous",
+      "block": 3,
+      "root_award_line": 36,
+      "message_event_lines": {
+        "announcements": [
+          3,
+          4,
+          5,
+          40,
+          41,
+          42,
+          49,
+          56,
+          63,
+          70,
+          77,
+          84,
+          155,
+          156,
+          157
+        ],
+        "bids": [
+          11,
+          20,
+          29,
+          48,
+          55,
+          62,
+          69,
+          76,
+          83,
+          90,
+          105,
+          130,
+          169,
+          181,
+          193
+        ],
+        "awards": [
+          36,
+          97,
+          112,
+          137,
+          200
+        ]
+      },
+      "observed": {
+        "tasks": 1,
+        "correct": 1,
+        "messages": 35,
+        "unassigned": 0,
+        "misawards": 0
+      },
+      "counts_published": true,
+      "status": "succeeded",
+      "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r3-game-design-architecture-homogeneous.jsonl",
+      "trace_sha256": "c257219655da585640b10bdaa8e8a0d69a724412b55e2dc75fda6c868772d686",
+      "submission_trace": "logs/20260922T012131-no-token-limit-9703d2-r3-game-design-architecture-homogeneous.jsonl",
+      "source_console": "extensions/peer_dag/conditions/20260922T012131-no-token-limit-9703d2/20260922T012131-no-token-limit-9703d2-r3-game-design-architecture-homogeneous.console.log",
+      "console": "logs/20260922T012131-no-token-limit-9703d2-r3-game-design-architecture-homogeneous.console.log",
+      "console_sha256": "4c63c0ab81859e553c1cd9012e0f17b56ed2ce84c94bf60c4cde006227cd8322"
+    }
+  ],
+  "recovery": [
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-recovery-r1-growth-roadmap-baseline",
+      "cohort": "recovery",
+      "case": "growth-roadmap",
+      "condition": "baseline",
+      "block": 1,
+      "root_award_line": 30,
+      "message_event_lines": {
+        "announcements": [
+          3,
+          4,
+          5,
+          34,
+          35,
+          36,
+          43,
+          50,
+          57,
+          64,
+          71,
+          78,
+          158,
+          159,
+          160
+        ],
+        "bids": [
+          11,
+          17,
+          23,
+          42,
+          49,
+          56,
+          63,
+          70,
+          77,
+          84,
+          99,
+          133,
+          166,
+          172,
+          178
+        ],
+        "awards": [
+          30,
+          91,
+          119,
+          140,
+          185
+        ]
+      },
+      "observed": {
+        "tasks": 1,
+        "correct": 0,
+        "messages": 35,
+        "unassigned": 0,
+        "misawards": 1
+      },
+      "counts_published": true,
+      "status": "succeeded",
+      "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-recovery-r1-growth-roadmap-baseline.jsonl",
+      "trace_sha256": "83de400c79d5e8635e020bcb56491617e64e44011e004ec12699b7f77f8fdc4a",
+      "submission_trace": "logs/20260922T012131-no-token-limit-9703d2-recovery-r1-growth-roadmap-baseline.jsonl",
+      "source_console": "extensions/peer_dag/conditions/20260922T012131-no-token-limit-9703d2/recovery_429/20260922T012131-no-token-limit-9703d2-recovery-r1-growth-roadmap-baseline.console.log",
+      "console": "logs/20260922T012131-no-token-limit-9703d2-recovery-r1-growth-roadmap-baseline.console.log",
+      "console_sha256": "d8dc60d78ad5e6138a34b036c01d5fec7a52cc15d051f4aceab32958121c7418"
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-recovery-r1-growth-roadmap-homogeneous",
+      "cohort": "recovery",
+      "case": "growth-roadmap",
+      "condition": "homogeneous",
+      "block": 1,
+      "root_award_line": 30,
+      "message_event_lines": {
+        "announcements": [
+          3,
+          4,
+          5
+        ],
+        "bids": [
+          11,
+          17,
+          23
+        ],
+        "awards": [
+          30
+        ]
+      },
+      "observed": {
+        "tasks": 1,
+        "correct": 0,
+        "messages": 7,
+        "unassigned": 0,
+        "misawards": 1
+      },
+      "counts_published": true,
+      "status": "succeeded",
+      "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-recovery-r1-growth-roadmap-homogeneous.jsonl",
+      "trace_sha256": "0657ea983b2d242bab4cf722984cc98325c376af61ba10172651cee5ba960286",
+      "submission_trace": "logs/20260922T012131-no-token-limit-9703d2-recovery-r1-growth-roadmap-homogeneous.jsonl",
+      "source_console": "extensions/peer_dag/conditions/20260922T012131-no-token-limit-9703d2/recovery_429/20260922T012131-no-token-limit-9703d2-recovery-r1-growth-roadmap-homogeneous.console.log",
+      "console": "logs/20260922T012131-no-token-limit-9703d2-recovery-r1-growth-roadmap-homogeneous.console.log",
+      "console_sha256": "53b722f0fcfb2d6bb16c315d389309bf0e9fc83335660a4704584623395d0c56"
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-recovery-r1-growth-roadmap-overconfident",
+      "cohort": "recovery",
+      "case": "growth-roadmap",
+      "condition": "overconfident",
+      "block": 1,
+      "root_award_line": 36,
+      "message_event_lines": {
+        "announcements": [
+          3,
+          4,
+          5,
+          40,
+          41,
+          42,
+          49,
+          56,
+          63,
+          70,
+          77,
+          84,
+          152,
+          153,
+          154
+        ],
+        "bids": [
+          11,
+          17,
+          29,
+          48,
+          55,
+          62,
+          69,
+          76,
+          83,
+          90,
+          105,
+          112,
+          160,
+          166,
+          172
+        ],
+        "awards": [
+          36,
+          97,
+          119,
+          127,
+          179
+        ]
+      },
+      "observed": {
+        "tasks": 1,
+        "correct": 0,
+        "messages": 35,
+        "unassigned": 0,
+        "misawards": 1
+      },
+      "counts_published": true,
+      "status": "succeeded",
+      "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-recovery-r1-growth-roadmap-overconfident.jsonl",
+      "trace_sha256": "54a156fae5d1e5309d899404092444318bbf6f4827aec326ad9b63b2ad7c1ed7",
+      "submission_trace": "logs/20260922T012131-no-token-limit-9703d2-recovery-r1-growth-roadmap-overconfident.jsonl",
+      "source_console": "extensions/peer_dag/conditions/20260922T012131-no-token-limit-9703d2/recovery_429/20260922T012131-no-token-limit-9703d2-recovery-r1-growth-roadmap-overconfident.console.log",
+      "console": "logs/20260922T012131-no-token-limit-9703d2-recovery-r1-growth-roadmap-overconfident.console.log",
+      "console_sha256": "44dda9cddaf9ff9e4daef4feef9f7e91e16df9d1025bdd3f01baa66155a92553"
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-recovery-r1-launch-operations-baseline",
+      "cohort": "recovery",
+      "case": "launch-operations",
+      "condition": "baseline",
+      "block": 1,
+      "root_award_line": 30,
+      "message_event_lines": {
+        "announcements": [
+          3,
+          4,
+          5,
+          33,
+          34,
+          35,
+          42,
+          49,
+          56,
+          94,
+          95,
+          102,
+          109,
+          117,
+          124,
+          131,
+          138,
+          145,
+          213,
+          214,
+          215,
+          260,
+          261,
+          262
+        ],
+        "bids": [
+          11,
+          17,
+          23,
+          41,
+          48,
+          55,
+          62,
+          77,
+          83,
+          101,
+          108,
+          123,
+          130,
+          137,
+          144,
+          151,
+          174,
+          181,
+          221,
+          227,
+          233,
+          268,
+          274,
+          280
+        ],
+        "awards": [
+          30,
+          69,
+          90,
+          158,
+          166,
+          188,
+          240,
+          287
+        ]
+      },
+      "observed": {
+        "tasks": 1,
+        "correct": 0,
+        "messages": 56,
+        "unassigned": 0,
+        "misawards": 1
+      },
+      "counts_published": true,
+      "status": "succeeded",
+      "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-recovery-r1-launch-operations-baseline.jsonl",
+      "trace_sha256": "09b6596afce41efaf683027f49410418c73af0a8b337d30c1dc71e16cd249a00",
+      "submission_trace": "logs/20260922T012131-no-token-limit-9703d2-recovery-r1-launch-operations-baseline.jsonl",
+      "source_console": "extensions/peer_dag/conditions/20260922T012131-no-token-limit-9703d2/recovery_429/20260922T012131-no-token-limit-9703d2-recovery-r1-launch-operations-baseline.console.log",
+      "console": "logs/20260922T012131-no-token-limit-9703d2-recovery-r1-launch-operations-baseline.console.log",
+      "console_sha256": "23a14dcbe7b8cd25ce77bf409813c72cebd95aa1f67bef4ce5c8eb636f1a40b4"
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-recovery-r1-launch-operations-homogeneous",
+      "cohort": "recovery",
+      "case": "launch-operations",
+      "condition": "homogeneous",
+      "block": 1,
+      "root_award_line": 30,
+      "message_event_lines": {
+        "announcements": [
+          3,
+          4,
+          5,
+          34,
+          35,
+          36,
+          43,
+          50,
+          57,
+          64,
+          71,
+          78,
+          124,
+          131,
+          139,
+          146,
+          153,
+          160,
+          206,
+          207,
+          215,
+          260,
+          261,
+          262
+        ],
+        "bids": [
+          11,
+          17,
+          23,
+          42,
+          49,
+          56,
+          63,
+          70,
+          77,
+          84,
+          91,
+          114,
+          130,
+          145,
+          152,
+          159,
+          166,
+          173,
+          221,
+          227,
+          233,
+          268,
+          274,
+          286
+        ],
+        "awards": [
+          30,
+          98,
+          106,
+          121,
+          180,
+          195,
+          240,
+          293
+        ]
+      },
+      "observed": {
+        "tasks": 1,
+        "correct": 0,
+        "messages": 56,
+        "unassigned": 0,
+        "misawards": 1
+      },
+      "counts_published": true,
+      "status": "succeeded",
+      "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-recovery-r1-launch-operations-homogeneous.jsonl",
+      "trace_sha256": "bd9ba646e2c944fd096181ce4c74ab1adca637045d0ed6dc07ec1a950bf653fd",
+      "submission_trace": "logs/20260922T012131-no-token-limit-9703d2-recovery-r1-launch-operations-homogeneous.jsonl",
+      "source_console": "extensions/peer_dag/conditions/20260922T012131-no-token-limit-9703d2/recovery_429/20260922T012131-no-token-limit-9703d2-recovery-r1-launch-operations-homogeneous.console.log",
+      "console": "logs/20260922T012131-no-token-limit-9703d2-recovery-r1-launch-operations-homogeneous.console.log",
+      "console_sha256": "1bbb899d20f4d0dd3caa816fc90cac40165fe895775b8a6612cc381f07fd0def"
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-recovery-r1-launch-operations-overconfident",
+      "cohort": "recovery",
+      "case": "launch-operations",
+      "condition": "overconfident",
+      "block": 1,
+      "root_award_line": 30,
+      "message_event_lines": {
+        "announcements": [
+          3,
+          4,
+          5,
+          34,
+          35,
+          36,
+          43,
+          50,
+          57,
+          64,
+          71,
+          78,
+          110,
+          117,
+          124,
+          131,
+          139,
+          146,
+          153,
+          160,
+          167,
+          251,
+          252,
+          253,
+          298,
+          299,
+          300
+        ],
+        "bids": [
+          11,
+          17,
+          23,
+          42,
+          49,
+          56,
+          63,
+          70,
+          77,
+          84,
+          99,
+          116,
+          123,
+          130,
+          145,
+          152,
+          159,
+          166,
+          173,
+          196,
+          203,
+          259,
+          265,
+          271,
+          309,
+          318,
+          327
+        ],
+        "awards": [
+          30,
+          91,
+          106,
+          180,
+          188,
+          210,
+          218,
+          278,
+          334
+        ]
+      },
+      "observed": {
+        "tasks": 1,
+        "correct": 1,
+        "messages": 63,
+        "unassigned": 0,
+        "misawards": 0
+      },
+      "counts_published": true,
+      "status": "succeeded",
+      "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-recovery-r1-launch-operations-overconfident.jsonl",
+      "trace_sha256": "d36eccd8579f069ad619c0919a18ab88474128b758b8133a4f6122bcdd09e35d",
+      "submission_trace": "logs/20260922T012131-no-token-limit-9703d2-recovery-r1-launch-operations-overconfident.jsonl",
+      "source_console": "extensions/peer_dag/conditions/20260922T012131-no-token-limit-9703d2/recovery_429/20260922T012131-no-token-limit-9703d2-recovery-r1-launch-operations-overconfident.console.log",
+      "console": "logs/20260922T012131-no-token-limit-9703d2-recovery-r1-launch-operations-overconfident.console.log",
+      "console_sha256": "15849c39d5d642927507c61ec8668f610219f6615c314bf710739f035c2eb5d7"
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-recovery-r3-payment-redesign-overconfident",
+      "cohort": "recovery",
+      "case": "payment-redesign",
+      "condition": "overconfident",
+      "block": 3,
+      "root_award_line": 36,
+      "message_event_lines": {
+        "announcements": [
+          3,
+          4,
+          5,
+          40,
+          41,
+          42,
+          49,
+          56,
+          63,
+          70,
+          77,
+          84,
+          152,
+          153,
+          154
+        ],
+        "bids": [
+          11,
+          17,
+          23,
+          48,
+          55,
+          62,
+          69,
+          76,
+          83,
+          90,
+          97,
+          120,
+          160,
+          166,
+          178
+        ],
+        "awards": [
+          36,
+          104,
+          112,
+          127,
+          185
+        ]
+      },
+      "observed": {
+        "tasks": 1,
+        "correct": 1,
+        "messages": 35,
+        "unassigned": 0,
+        "misawards": 0
+      },
+      "counts_published": true,
+      "status": "succeeded",
+      "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-recovery-r3-payment-redesign-overconfident.jsonl",
+      "trace_sha256": "7f3481ea1fa72ed35e87d5085bebb01738a1343f49b81dc529c8f6176890ca65",
+      "submission_trace": "logs/20260922T012131-no-token-limit-9703d2-recovery-r3-payment-redesign-overconfident.jsonl",
+      "source_console": "extensions/peer_dag/conditions/20260922T012131-no-token-limit-9703d2/recovery_429/20260922T012131-no-token-limit-9703d2-recovery-r3-payment-redesign-overconfident.console.log",
+      "console": "logs/20260922T012131-no-token-limit-9703d2-recovery-r3-payment-redesign-overconfident.console.log",
+      "console_sha256": "89d919b90139b1a78439bc9399df326c59a6cbf324261134a5af73dd9e38c89b"
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-recovery-r3-payment-redesign-baseline",
+      "cohort": "recovery",
+      "case": "payment-redesign",
+      "condition": "baseline",
+      "block": 3,
+      "root_award_line": 45,
+      "message_event_lines": {
+        "announcements": [
+          3,
+          4,
+          5
+        ],
+        "bids": [
+          14,
+          26,
+          38
+        ],
+        "awards": [
+          45
+        ]
+      },
+      "observed": {
+        "tasks": 1,
+        "correct": 1,
+        "messages": 7,
+        "unassigned": 0,
+        "misawards": 0
+      },
+      "counts_published": true,
+      "status": "succeeded",
+      "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-recovery-r3-payment-redesign-baseline.jsonl",
+      "trace_sha256": "b6903dbcad0cc8a54ca5e5586e9c6e2c888604ec23b8db3cdcd6ea91a6f48006",
+      "submission_trace": "logs/20260922T012131-no-token-limit-9703d2-recovery-r3-payment-redesign-baseline.jsonl",
+      "source_console": "extensions/peer_dag/conditions/20260922T012131-no-token-limit-9703d2/recovery_429/20260922T012131-no-token-limit-9703d2-recovery-r3-payment-redesign-baseline.console.log",
+      "console": "logs/20260922T012131-no-token-limit-9703d2-recovery-r3-payment-redesign-baseline.console.log",
+      "console_sha256": "862893e552c5708bd2369857e9b41bba5e68613eb95963db20c83fa4103f28f0"
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-recovery-r3-payment-redesign-homogeneous",
+      "cohort": "recovery",
+      "case": "payment-redesign",
+      "condition": "homogeneous",
+      "block": 3,
+      "root_award_line": 30,
+      "message_event_lines": {
+        "announcements": [
+          3,
+          4,
+          5
+        ],
+        "bids": [
+          11,
+          17,
+          23
+        ],
+        "awards": [
+          30
+        ]
+      },
+      "observed": {
+        "tasks": 1,
+        "correct": 1,
+        "messages": 7,
+        "unassigned": 0,
+        "misawards": 0
+      },
+      "counts_published": true,
+      "status": "succeeded",
+      "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-recovery-r3-payment-redesign-homogeneous.jsonl",
+      "trace_sha256": "be2dee593dfe7f463e35eeda3e6db2f5772b68137a2aae816710a4e5ecbd94d0",
+      "submission_trace": "logs/20260922T012131-no-token-limit-9703d2-recovery-r3-payment-redesign-homogeneous.jsonl",
+      "source_console": "extensions/peer_dag/conditions/20260922T012131-no-token-limit-9703d2/recovery_429/20260922T012131-no-token-limit-9703d2-recovery-r3-payment-redesign-homogeneous.console.log",
+      "console": "logs/20260922T012131-no-token-limit-9703d2-recovery-r3-payment-redesign-homogeneous.console.log",
+      "console_sha256": "2a3f8ffdbb3157e1bc29c4ebc8cf338708187a9ff211dd61a26223e2f2a122ee"
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-recovery-r3-growth-roadmap-overconfident",
+      "cohort": "recovery",
+      "case": "growth-roadmap",
+      "condition": "overconfident",
+      "block": 3,
+      "root_award_line": 30,
+      "message_event_lines": {
+        "announcements": [
+          3,
+          4,
+          5,
+          33,
+          34,
+          35,
+          42,
+          49,
+          56,
+          108,
+          109,
+          110
+        ],
+        "bids": [
+          11,
+          17,
+          23,
+          41,
+          48,
+          55,
+          62,
+          77,
+          83,
+          116,
+          122,
+          128
+        ],
+        "awards": [
+          30,
+          69,
+          90,
+          135
+        ]
+      },
+      "observed": {
+        "tasks": 1,
+        "correct": 0,
+        "messages": 28,
+        "unassigned": 0,
+        "misawards": 1
+      },
+      "counts_published": true,
+      "status": "succeeded",
+      "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-recovery-r3-growth-roadmap-overconfident.jsonl",
+      "trace_sha256": "a4ef27d21f41a773fc8c79c71433abb5f2af0ce7b635d1d5ac1c5b06459c5c6d",
+      "submission_trace": "logs/20260922T012131-no-token-limit-9703d2-recovery-r3-growth-roadmap-overconfident.jsonl",
+      "source_console": "extensions/peer_dag/conditions/20260922T012131-no-token-limit-9703d2/recovery_429/20260922T012131-no-token-limit-9703d2-recovery-r3-growth-roadmap-overconfident.console.log",
+      "console": "logs/20260922T012131-no-token-limit-9703d2-recovery-r3-growth-roadmap-overconfident.console.log",
+      "console_sha256": "8f8eb44d1eef8c719ce2c19f4b128f725a9fd54a860ecc778eb97a296fd38ea8"
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-recovery-r3-growth-roadmap-baseline",
+      "cohort": "recovery",
+      "case": "growth-roadmap",
+      "condition": "baseline",
+      "block": 3,
+      "root_award_line": 30,
+      "message_event_lines": {
+        "announcements": [
+          3,
+          4,
+          5,
+          32,
+          33,
+          34,
+          72,
+          73,
+          74,
+          81,
+          88,
+          95,
+          102,
+          109,
+          116,
+          161,
+          168,
+          176,
+          213,
+          214,
+          215
+        ],
+        "bids": [
+          11,
+          17,
+          23,
+          40,
+          46,
+          52,
+          80,
+          87,
+          94,
+          101,
+          108,
+          115,
+          122,
+          137,
+          152,
+          167,
+          189,
+          195,
+          221,
+          227,
+          233
+        ],
+        "awards": [
+          30,
+          59,
+          129,
+          144,
+          159,
+          202,
+          240
+        ]
+      },
+      "observed": {
+        "tasks": 1,
+        "correct": 0,
+        "messages": 49,
+        "unassigned": 0,
+        "misawards": 1
+      },
+      "counts_published": true,
+      "status": "succeeded",
+      "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-recovery-r3-growth-roadmap-baseline.jsonl",
+      "trace_sha256": "c79bbba9fbf8ed387d82ef96cc77cff17ce2671756d89d10e152fd7efd7fdb65",
+      "submission_trace": "logs/20260922T012131-no-token-limit-9703d2-recovery-r3-growth-roadmap-baseline.jsonl",
+      "source_console": "extensions/peer_dag/conditions/20260922T012131-no-token-limit-9703d2/recovery_429/20260922T012131-no-token-limit-9703d2-recovery-r3-growth-roadmap-baseline.console.log",
+      "console": "logs/20260922T012131-no-token-limit-9703d2-recovery-r3-growth-roadmap-baseline.console.log",
+      "console_sha256": "5d568ec315934bc4544fac7bec435c6844b893b4dd83db3c2f4402d27382765f"
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-recovery-r3-growth-roadmap-homogeneous",
+      "cohort": "recovery",
+      "case": "growth-roadmap",
+      "condition": "homogeneous",
+      "block": 3,
+      "root_award_line": 30,
+      "message_event_lines": {
+        "announcements": [
+          3,
+          4,
+          5
+        ],
+        "bids": [
+          11,
+          17,
+          23
+        ],
+        "awards": [
+          30
+        ]
+      },
+      "observed": {
+        "tasks": 1,
+        "correct": 0,
+        "messages": 7,
+        "unassigned": 0,
+        "misawards": 1
+      },
+      "counts_published": true,
+      "status": "succeeded",
+      "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-recovery-r3-growth-roadmap-homogeneous.jsonl",
+      "trace_sha256": "eb7c3c0a6fbfcc2e992733d6626c773a75a008aac2f05286f4b73b932c29553d",
+      "submission_trace": "logs/20260922T012131-no-token-limit-9703d2-recovery-r3-growth-roadmap-homogeneous.jsonl",
+      "source_console": "extensions/peer_dag/conditions/20260922T012131-no-token-limit-9703d2/recovery_429/20260922T012131-no-token-limit-9703d2-recovery-r3-growth-roadmap-homogeneous.console.log",
+      "console": "logs/20260922T012131-no-token-limit-9703d2-recovery-r3-growth-roadmap-homogeneous.console.log",
+      "console_sha256": "b7542dc4dc052c6047b66e4b40f07af74bdd86cfaab96fa85355652b4042ceb7"
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-recovery-r3-launch-operations-overconfident",
+      "cohort": "recovery",
+      "case": "launch-operations",
+      "condition": "overconfident",
+      "block": 3,
+      "root_award_line": 30,
+      "message_event_lines": {
+        "announcements": [
+          3,
+          4,
+          5,
+          33,
+          34,
+          35,
+          42,
+          49,
+          56,
+          126,
+          127,
+          128
+        ],
+        "bids": [
+          11,
+          17,
+          23,
+          41,
+          48,
+          55,
+          65,
+          96,
+          108,
+          134,
+          140,
+          146
+        ],
+        "awards": [
+          30,
+          75,
+          115,
+          153
+        ]
+      },
+      "observed": {
+        "tasks": 1,
+        "correct": 1,
+        "messages": 28,
+        "unassigned": 0,
+        "misawards": 0
+      },
+      "counts_published": true,
+      "status": "succeeded",
+      "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-recovery-r3-launch-operations-overconfident.jsonl",
+      "trace_sha256": "6b1e46b3e384d63dca47871d0248a752b6190f67e6aee8898f79bb9323cdc4dd",
+      "submission_trace": "logs/20260922T012131-no-token-limit-9703d2-recovery-r3-launch-operations-overconfident.jsonl",
+      "source_console": "extensions/peer_dag/conditions/20260922T012131-no-token-limit-9703d2/recovery_429/20260922T012131-no-token-limit-9703d2-recovery-r3-launch-operations-overconfident.console.log",
+      "console": "logs/20260922T012131-no-token-limit-9703d2-recovery-r3-launch-operations-overconfident.console.log",
+      "console_sha256": "0a353140bbfdfdcb251682643115f5305462954d7ab50df38da4d8fe1aa9f07a"
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-recovery-r3-launch-operations-baseline",
+      "cohort": "recovery",
+      "case": "launch-operations",
+      "condition": "baseline",
+      "block": 3,
+      "root_award_line": 36,
+      "message_event_lines": {
+        "announcements": [
+          3,
+          4,
+          5,
+          39,
+          40,
+          41,
+          48,
+          55,
+          62,
+          114,
+          115,
+          116
+        ],
+        "bids": [
+          11,
+          17,
+          23,
+          47,
+          54,
+          61,
+          68,
+          75,
+          89,
+          122,
+          128,
+          134
+        ],
+        "awards": [
+          36,
+          81,
+          96,
+          141
+        ]
+      },
+      "observed": {
+        "tasks": 1,
+        "correct": 0,
+        "messages": 28,
+        "unassigned": 0,
+        "misawards": 1
+      },
+      "counts_published": true,
+      "status": "succeeded",
+      "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-recovery-r3-launch-operations-baseline.jsonl",
+      "trace_sha256": "a0916dac840109841cd6856d6bf912160f8ccec4f191339747989816c925498c",
+      "submission_trace": "logs/20260922T012131-no-token-limit-9703d2-recovery-r3-launch-operations-baseline.jsonl",
+      "source_console": "extensions/peer_dag/conditions/20260922T012131-no-token-limit-9703d2/recovery_429/20260922T012131-no-token-limit-9703d2-recovery-r3-launch-operations-baseline.console.log",
+      "console": "logs/20260922T012131-no-token-limit-9703d2-recovery-r3-launch-operations-baseline.console.log",
+      "console_sha256": "b9e3008157dd57188972dc498f8b5931d4adedba951e8d07a75c1a4ca4b98365"
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-recovery-r3-launch-operations-homogeneous",
+      "cohort": "recovery",
+      "case": "launch-operations",
+      "condition": "homogeneous",
+      "block": 3,
+      "root_award_line": 48,
+      "message_event_lines": {
+        "announcements": [
+          3,
+          4,
+          5,
+          51,
+          52,
+          53,
+          60,
+          67,
+          74,
+          111,
+          112,
+          120,
+          127,
+          134,
+          141,
+          194,
+          195,
+          196,
+          203,
+          210,
+          217,
+          279,
+          280,
+          281,
+          294,
+          307,
+          320
+        ],
+        "bids": [
+          17,
+          29,
+          41,
+          59,
+          66,
+          73,
+          80,
+          87,
+          101,
+          126,
+          133,
+          140,
+          147,
+          154,
+          168,
+          202,
+          209,
+          216,
+          223,
+          230,
+          244,
+          293,
+          306,
+          319,
+          326,
+          333,
+          347
+        ],
+        "awards": [
+          48,
+          93,
+          108,
+          160,
+          175,
+          236,
+          251,
+          339,
+          354
+        ]
+      },
+      "observed": {
+        "tasks": 1,
+        "correct": 0,
+        "messages": 63,
+        "unassigned": 0,
+        "misawards": 1
+      },
+      "counts_published": true,
+      "status": "succeeded",
+      "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-recovery-r3-launch-operations-homogeneous.jsonl",
+      "trace_sha256": "4a33208a48d19898c6c1f234c561551afd2fc3f626219f625ea56a8e43dc5583",
+      "submission_trace": "logs/20260922T012131-no-token-limit-9703d2-recovery-r3-launch-operations-homogeneous.jsonl",
+      "source_console": "extensions/peer_dag/conditions/20260922T012131-no-token-limit-9703d2/recovery_429/20260922T012131-no-token-limit-9703d2-recovery-r3-launch-operations-homogeneous.console.log",
+      "console": "logs/20260922T012131-no-token-limit-9703d2-recovery-r3-launch-operations-homogeneous.console.log",
+      "console_sha256": "9b0ac64771cde9e65f58c867b6884dbe0953d3a452cbbaba651a4fe4e9f72c71"
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-recovery-r3-release-review-overconfident",
+      "cohort": "recovery",
+      "case": "release-review",
+      "condition": "overconfident",
+      "block": 3,
+      "root_award_line": 30,
+      "message_event_lines": {
+        "announcements": [
+          3,
+          4,
+          5,
+          33,
+          34,
+          35,
+          42,
+          49,
+          56,
+          108,
+          109,
+          110
+        ],
+        "bids": [
+          11,
+          17,
+          23,
+          41,
+          48,
+          55,
+          62,
+          69,
+          83,
+          116,
+          122,
+          128
+        ],
+        "awards": [
+          30,
+          75,
+          90,
+          135
+        ]
+      },
+      "observed": {
+        "tasks": 1,
+        "correct": 0,
+        "messages": 28,
+        "unassigned": 0,
+        "misawards": 1
+      },
+      "counts_published": true,
+      "status": "succeeded",
+      "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-recovery-r3-release-review-overconfident.jsonl",
+      "trace_sha256": "a1af37fa14978e41de51f23d43e9c0494d0188acd656f3c84f1a5b91749c1c5e",
+      "submission_trace": "logs/20260922T012131-no-token-limit-9703d2-recovery-r3-release-review-overconfident.jsonl",
+      "source_console": "extensions/peer_dag/conditions/20260922T012131-no-token-limit-9703d2/recovery_429/20260922T012131-no-token-limit-9703d2-recovery-r3-release-review-overconfident.console.log",
+      "console": "logs/20260922T012131-no-token-limit-9703d2-recovery-r3-release-review-overconfident.console.log",
+      "console_sha256": "7047d275a637dca29b8fc17cd79895d256d40923f7482bb245ce4f6dfa2f7958"
+    }
+  ]
+}

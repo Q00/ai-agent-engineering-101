@@ -1,0 +1,762 @@
+{
+  "manifest": {
+    "batch_id": "20260921T051850-f6cc75",
+    "git_commit": "3f0ce0f0f3edfa3dfec3a438535e448281d92554",
+    "source_hashes": {
+      "submissions/26622007/week-03/contract_net.py": "37e4c9bf6f81fa2bb649c64de368906c6e93dfad8b4a3e15d1589e53833e9a34",
+      "submissions/26622007/week-03/extensions/peer_dag/audit.py": "4ee3128fb6adbc32bce7ffba0b9fe403994d95aae99966dca4f969e99fab16a2",
+      "submissions/26622007/week-03/extensions/peer_dag/case.json": "9a736726ad4c473c9b3e7bf41aa64708f7db99a094c3cfb155f8605d69050050",
+      "submissions/26622007/week-03/extensions/peer_dag/cli.py": "7a0ae96faf40f395dc8cb63e624cf3dc1b2f7fbb60b774ebb66eb2a8b6204078",
+      "submissions/26622007/week-03/extensions/peer_dag/condition_study.py": "99873a163584bf923cdeba459844c78a866a9b3b332ec9895fc32f3966edf5b6",
+      "submissions/26622007/week-03/extensions/peer_dag/conditions/PROTOCOL.md": "fff5a16afe5b88615de999d0fa042ca19fc8f297f35279550c3aa73e8e1cc67d",
+      "submissions/26622007/week-03/extensions/peer_dag/config.json": "59a52eb3e7b19a654e988bbb3e4f1df36f88cadda1a43ea6f4ce07a78463ca4d",
+      "submissions/26622007/week-03/extensions/peer_dag/core.py": "482cc5192c1458b1848113fe33d75fae8dc5738be7d78cc3bb1e50a54f5e70b5",
+      "submissions/26622007/week-03/extensions/peer_dag/expected.json": "46b1f137c64a2732e28fba70608f5844a8e27a9e662cf1bc2317d4b2c4459e29",
+      "submissions/26622007/week-03/extensions/peer_dag/fixtures.py": "06928c693f9a16b24d82486a5d7dbba70846fce973349d07ca5e3ac0f19ad692",
+      "submissions/26622007/week-03/extensions/peer_dag/models.py": "f631bee2650c6202a202d74520863ecc930a9f5c02659836953a02a1a173b355",
+      "submissions/26622007/week-03/extensions/peer_dag/test_condition_study.py": "58ac8e2dd9287ba9ea177e9a0aafb78b683dd7dab1ed46c6f765a9e388c65f7a",
+      "submissions/26622007/week-03/extensions/peer_dag/test_conditions.py": "c33fd4a629a335ef3feefbe3bdeceff75add21fc41d39481a803fd9eebae557c",
+      "submissions/26622007/week-03/extensions/peer_dag/test_peer_dag.py": "a12d1e4872b7a3dec82b36a947513f146bf10d2f830276d641b12153e1e1c459",
+      "submissions/26622007/week-03/openrouter_client.py": "3f62bec2254dd6f1ad3af599705af6a9d1bebb85505bddc296168d74361d7acb"
+    },
+    "config": {
+      "max_depth": 5,
+      "max_tasks": 12,
+      "max_steps": 4,
+      "max_calls": 64,
+      "max_parallel": 3,
+      "transport": {
+        "model": "deepseek/deepseek-v4.1-flash",
+        "temperature": 0,
+        "max_tokens": 2200,
+        "reasoning": {
+          "enabled": false
+        },
+        "provider": {
+          "allow_fallbacks": true,
+          "require_parameters": true,
+          "max_price": {
+            "prompt": 0.3,
+            "completion": 1.2
+          }
+        },
+        "timeout_seconds": 30,
+        "max_attempts": 2,
+        "retry_delay_seconds": 2,
+        "max_http_requests": 2
+      }
+    },
+    "deadline_seconds": 600,
+    "parallel_runs_per_block": 3,
+    "schedule": [
+      {
+        "block": 1,
+        "condition": "baseline",
+        "run_id": "20260921T051850-f6cc75-1-baseline"
+      },
+      {
+        "block": 1,
+        "condition": "homogeneous",
+        "run_id": "20260921T051850-f6cc75-1-homogeneous"
+      },
+      {
+        "block": 1,
+        "condition": "overconfident",
+        "run_id": "20260921T051850-f6cc75-1-overconfident"
+      },
+      {
+        "block": 2,
+        "condition": "homogeneous",
+        "run_id": "20260921T051850-f6cc75-2-homogeneous"
+      },
+      {
+        "block": 2,
+        "condition": "overconfident",
+        "run_id": "20260921T051850-f6cc75-2-overconfident"
+      },
+      {
+        "block": 2,
+        "condition": "baseline",
+        "run_id": "20260921T051850-f6cc75-2-baseline"
+      },
+      {
+        "block": 3,
+        "condition": "overconfident",
+        "run_id": "20260921T051850-f6cc75-3-overconfident"
+      },
+      {
+        "block": 3,
+        "condition": "baseline",
+        "run_id": "20260921T051850-f6cc75-3-baseline"
+      },
+      {
+        "block": 3,
+        "condition": "homogeneous",
+        "run_id": "20260921T051850-f6cc75-3-homogeneous"
+      }
+    ]
+  },
+  "integrity": {
+    "all_nine_attempts_present": true,
+    "three_per_condition": true,
+    "same_controls": true,
+    "same_source_snapshot": true,
+    "recorded_conditions_match": true,
+    "all_recorded_prompts_match": true
+  },
+  "conditions": {
+    "baseline": {
+      "attempts": 3,
+      "passed": 3,
+      "checks_passed": 36,
+      "checks_total": 36,
+      "mean_calls": 20.0,
+      "mean_seconds": 201.28453333333334,
+      "reported_cost_usd": 0.0345142296,
+      "runs_with_cost": 3,
+      "awards": {
+        "A": 5,
+        "B": 3,
+        "C": 4
+      },
+      "c_award_share": 0.3333333333333333,
+      "c_root_awards": 0,
+      "depths": [
+        1,
+        1,
+        1
+      ],
+      "distinct_fact_vectors": 1,
+      "runs_with_facts": 3,
+      "proposal_rejections": 2,
+      "c_high_bids": 2,
+      "c_proposals": 11
+    },
+    "homogeneous": {
+      "attempts": 3,
+      "passed": 3,
+      "checks_passed": 36,
+      "checks_total": 36,
+      "mean_calls": 20.0,
+      "mean_seconds": 319.2606333333333,
+      "reported_cost_usd": 0.0412526884,
+      "runs_with_cost": 3,
+      "awards": {
+        "A": 5,
+        "B": 4,
+        "C": 3
+      },
+      "c_award_share": 0.25,
+      "c_root_awards": 0,
+      "depths": [
+        1,
+        1,
+        1
+      ],
+      "distinct_fact_vectors": 1,
+      "runs_with_facts": 3,
+      "proposal_rejections": 2,
+      "c_high_bids": 3,
+      "c_proposals": 11
+    },
+    "overconfident": {
+      "attempts": 3,
+      "passed": 2,
+      "checks_passed": 24,
+      "checks_total": 36,
+      "mean_calls": 18.0,
+      "mean_seconds": 259.5887666666667,
+      "reported_cost_usd": 0.0327400266,
+      "runs_with_cost": 3,
+      "awards": {
+        "C": 9,
+        "B": 1,
+        "A": 1
+      },
+      "c_award_share": 0.8181818181818182,
+      "c_root_awards": 3,
+      "depths": [
+        1,
+        1,
+        1
+      ],
+      "distinct_fact_vectors": 1,
+      "runs_with_facts": 2,
+      "proposal_rejections": 3,
+      "c_high_bids": 11,
+      "c_proposals": 11
+    }
+  },
+  "runs": [
+    {
+      "condition": "baseline",
+      "block": 1,
+      "run_id": "20260921T051850-f6cc75-1-baseline",
+      "exit_code": 0,
+      "timed_out": false,
+      "wall_seconds": 220.1267,
+      "status": "succeeded",
+      "passed": true,
+      "checks_passed": 12,
+      "checks_total": 12,
+      "trace_passed": true,
+      "calls": 20,
+      "http_requests": 20,
+      "tasks": 4,
+      "max_depth": 1,
+      "contract_messages": 28,
+      "proposal_rejections": 0,
+      "valid_refusals": 0,
+      "awards": {
+        "A": 1,
+        "B": 2,
+        "C": 1
+      },
+      "root_award": "A",
+      "c_proposals": 4,
+      "c_high_bids": 1,
+      "reported_cost_usd": 0.012302490800000001,
+      "cost_missing_responses": 0,
+      "elapsed_seconds": 219.9613,
+      "peak_execution_calls": 2,
+      "canonical_facts": {
+        "can_release": false,
+        "migration_before_app": true,
+        "p_break_even": 200.0,
+        "p_high_profit": 3000000.0,
+        "p_low_profit": 1000000.0,
+        "p_margin": 10000.0,
+        "p_profit": 2000000.0,
+        "q_break_even": 125.0,
+        "q_high_profit": 3200000.0,
+        "q_low_profit": 1120000.0,
+        "q_margin": 16000.0,
+        "q_profit": 2160000.0
+      },
+      "prompt_checks": {
+        "checked": 20,
+        "passed": true
+      },
+      "error": "",
+      "providers": {
+        "Relace": 4,
+        "Morph": 3,
+        "Modal": 1,
+        "DeepInfra": 4,
+        "Fireworks": 4,
+        "DigitalOcean": 1,
+        "Alibaba": 1,
+        "Wafer": 2
+      },
+      "models": {
+        "deepseek/deepseek-v4.1-flash": 20
+      },
+      "trace_errors": []
+    },
+    {
+      "condition": "homogeneous",
+      "block": 1,
+      "run_id": "20260921T051850-f6cc75-1-homogeneous",
+      "exit_code": 0,
+      "timed_out": false,
+      "wall_seconds": 268.4388,
+      "status": "succeeded",
+      "passed": true,
+      "checks_passed": 12,
+      "checks_total": 12,
+      "trace_passed": true,
+      "calls": 20,
+      "http_requests": 20,
+      "tasks": 4,
+      "max_depth": 1,
+      "contract_messages": 28,
+      "proposal_rejections": 1,
+      "valid_refusals": 0,
+      "awards": {
+        "A": 2,
+        "B": 2
+      },
+      "root_award": "A",
+      "c_proposals": 4,
+      "c_high_bids": 1,
+      "reported_cost_usd": 0.013964246,
+      "cost_missing_responses": 0,
+      "elapsed_seconds": 268.2785,
+      "peak_execution_calls": 2,
+      "canonical_facts": {
+        "can_release": false,
+        "migration_before_app": true,
+        "p_break_even": 200.0,
+        "p_high_profit": 3000000.0,
+        "p_low_profit": 1000000.0,
+        "p_margin": 10000.0,
+        "p_profit": 2000000.0,
+        "q_break_even": 125.0,
+        "q_high_profit": 3200000.0,
+        "q_low_profit": 1120000.0,
+        "q_margin": 16000.0,
+        "q_profit": 2160000.0
+      },
+      "prompt_checks": {
+        "checked": 20,
+        "passed": true
+      },
+      "error": "",
+      "providers": {
+        "Relace": 3,
+        "Sail Research": 7,
+        "Morph": 4,
+        "AtlasCloud": 1,
+        "Novita": 2,
+        "StreamLake": 1,
+        "Fireworks": 2
+      },
+      "models": {
+        "deepseek/deepseek-v4.1-flash": 20
+      },
+      "trace_errors": []
+    },
+    {
+      "condition": "overconfident",
+      "block": 1,
+      "run_id": "20260921T051850-f6cc75-1-overconfident",
+      "exit_code": 0,
+      "timed_out": false,
+      "wall_seconds": 314.3291,
+      "status": "succeeded",
+      "passed": true,
+      "checks_passed": 12,
+      "checks_total": 12,
+      "trace_passed": true,
+      "calls": 20,
+      "http_requests": 20,
+      "tasks": 4,
+      "max_depth": 1,
+      "contract_messages": 28,
+      "proposal_rejections": 2,
+      "valid_refusals": 0,
+      "awards": {
+        "C": 3,
+        "B": 1
+      },
+      "root_award": "C",
+      "c_proposals": 4,
+      "c_high_bids": 4,
+      "reported_cost_usd": 0.011929969599999996,
+      "cost_missing_responses": 0,
+      "elapsed_seconds": 314.169,
+      "peak_execution_calls": 1,
+      "canonical_facts": {
+        "can_release": false,
+        "migration_before_app": true,
+        "p_break_even": 200.0,
+        "p_high_profit": 3000000.0,
+        "p_low_profit": 1000000.0,
+        "p_margin": 10000.0,
+        "p_profit": 2000000.0,
+        "q_break_even": 125.0,
+        "q_high_profit": 3200000.0,
+        "q_low_profit": 1120000.0,
+        "q_margin": 16000.0,
+        "q_profit": 2160000.0
+      },
+      "prompt_checks": {
+        "checked": 20,
+        "passed": true
+      },
+      "error": "",
+      "providers": {
+        "Fireworks": 2,
+        "DeepInfra": 5,
+        "Morph": 4,
+        "DigitalOcean": 1,
+        "BaseTen": 1,
+        "GMICloud": 1,
+        "Relace": 2,
+        "Wafer": 1,
+        "Sail Research": 3
+      },
+      "models": {
+        "deepseek/deepseek-v4.1-flash": 20
+      },
+      "trace_errors": []
+    },
+    {
+      "condition": "homogeneous",
+      "block": 2,
+      "run_id": "20260921T051850-f6cc75-2-homogeneous",
+      "exit_code": 0,
+      "timed_out": false,
+      "wall_seconds": 284.0557,
+      "status": "succeeded",
+      "passed": true,
+      "checks_passed": 12,
+      "checks_total": 12,
+      "trace_passed": true,
+      "calls": 20,
+      "http_requests": 20,
+      "tasks": 4,
+      "max_depth": 1,
+      "contract_messages": 28,
+      "proposal_rejections": 1,
+      "valid_refusals": 0,
+      "awards": {
+        "A": 2,
+        "C": 2
+      },
+      "root_award": "A",
+      "c_proposals": 3,
+      "c_high_bids": 1,
+      "reported_cost_usd": 0.01458374,
+      "cost_missing_responses": 0,
+      "elapsed_seconds": 283.8908,
+      "peak_execution_calls": 1,
+      "canonical_facts": {
+        "can_release": false,
+        "migration_before_app": true,
+        "p_break_even": 200.0,
+        "p_high_profit": 3000000.0,
+        "p_low_profit": 1000000.0,
+        "p_margin": 10000.0,
+        "p_profit": 2000000.0,
+        "q_break_even": 125.0,
+        "q_high_profit": 3200000.0,
+        "q_low_profit": 1120000.0,
+        "q_margin": 16000.0,
+        "q_profit": 2160000.0
+      },
+      "prompt_checks": {
+        "checked": 20,
+        "passed": true
+      },
+      "error": "",
+      "providers": {
+        "Modal": 1,
+        "AtlasCloud": 1,
+        "Relace": 5,
+        "Fireworks": 1,
+        "Makora": 1,
+        "DeepInfra": 2,
+        "Wafer": 2,
+        "Morph": 3,
+        "BaseTen": 1,
+        "SiliconFlow": 1,
+        "GMICloud": 2
+      },
+      "models": {
+        "deepseek/deepseek-v4.1-flash": 20
+      },
+      "trace_errors": []
+    },
+    {
+      "condition": "overconfident",
+      "block": 2,
+      "run_id": "20260921T051850-f6cc75-2-overconfident",
+      "exit_code": 0,
+      "timed_out": false,
+      "wall_seconds": 251.1675,
+      "status": "succeeded",
+      "passed": true,
+      "checks_passed": 12,
+      "checks_total": 12,
+      "trace_passed": true,
+      "calls": 20,
+      "http_requests": 20,
+      "tasks": 4,
+      "max_depth": 1,
+      "contract_messages": 28,
+      "proposal_rejections": 1,
+      "valid_refusals": 0,
+      "awards": {
+        "C": 4
+      },
+      "root_award": "C",
+      "c_proposals": 4,
+      "c_high_bids": 4,
+      "reported_cost_usd": 0.0146820758,
+      "cost_missing_responses": 0,
+      "elapsed_seconds": 250.9986,
+      "peak_execution_calls": 1,
+      "canonical_facts": {
+        "can_release": false,
+        "migration_before_app": true,
+        "p_break_even": 200.0,
+        "p_high_profit": 3000000.0,
+        "p_low_profit": 1000000.0,
+        "p_margin": 10000.0,
+        "p_profit": 2000000.0,
+        "q_break_even": 125.0,
+        "q_high_profit": 3200000.0,
+        "q_low_profit": 1120000.0,
+        "q_margin": 16000.0,
+        "q_profit": 2160000.0
+      },
+      "prompt_checks": {
+        "checked": 20,
+        "passed": true
+      },
+      "error": "",
+      "providers": {
+        "Fireworks": 3,
+        "Morph": 3,
+        "DeepInfra": 2,
+        "GMICloud": 1,
+        "Wafer": 2,
+        "Makora": 1,
+        "DigitalOcean": 1,
+        "StreamLake": 1,
+        "Relace": 3,
+        "Modal": 2,
+        "AtlasCloud": 1
+      },
+      "models": {
+        "deepseek/deepseek-v4.1-flash": 20
+      },
+      "trace_errors": []
+    },
+    {
+      "condition": "baseline",
+      "block": 2,
+      "run_id": "20260921T051850-f6cc75-2-baseline",
+      "exit_code": 0,
+      "timed_out": false,
+      "wall_seconds": 223.7569,
+      "status": "succeeded",
+      "passed": true,
+      "checks_passed": 12,
+      "checks_total": 12,
+      "trace_passed": true,
+      "calls": 20,
+      "http_requests": 20,
+      "tasks": 4,
+      "max_depth": 1,
+      "contract_messages": 28,
+      "proposal_rejections": 1,
+      "valid_refusals": 0,
+      "awards": {
+        "A": 2,
+        "B": 1,
+        "C": 1
+      },
+      "root_award": "A",
+      "c_proposals": 3,
+      "c_high_bids": 0,
+      "reported_cost_usd": 0.010486860399999999,
+      "cost_missing_responses": 0,
+      "elapsed_seconds": 223.5979,
+      "peak_execution_calls": 2,
+      "canonical_facts": {
+        "can_release": false,
+        "migration_before_app": true,
+        "p_break_even": 200.0,
+        "p_high_profit": 3000000.0,
+        "p_low_profit": 1000000.0,
+        "p_margin": 10000.0,
+        "p_profit": 2000000.0,
+        "q_break_even": 125.0,
+        "q_high_profit": 3200000.0,
+        "q_low_profit": 1120000.0,
+        "q_margin": 16000.0,
+        "q_profit": 2160000.0
+      },
+      "prompt_checks": {
+        "checked": 20,
+        "passed": true
+      },
+      "error": "",
+      "providers": {
+        "Fireworks": 4,
+        "Morph": 5,
+        "DeepInfra": 5,
+        "Wafer": 2,
+        "StreamLake": 2,
+        "Relace": 1,
+        "SiliconFlow": 1
+      },
+      "models": {
+        "deepseek/deepseek-v4.1-flash": 20
+      },
+      "trace_errors": []
+    },
+    {
+      "condition": "overconfident",
+      "block": 3,
+      "run_id": "20260921T051850-f6cc75-3-overconfident",
+      "exit_code": 1,
+      "timed_out": false,
+      "wall_seconds": 213.7694,
+      "status": "failed",
+      "passed": false,
+      "checks_passed": 0,
+      "checks_total": 12,
+      "trace_passed": true,
+      "calls": 14,
+      "http_requests": 14,
+      "tasks": 3,
+      "max_depth": 1,
+      "contract_messages": 21,
+      "proposal_rejections": 0,
+      "valid_refusals": 0,
+      "awards": {
+        "C": 2,
+        "A": 1
+      },
+      "root_award": "C",
+      "c_proposals": 3,
+      "c_high_bids": 3,
+      "reported_cost_usd": 0.0061279812,
+      "cost_missing_responses": 0,
+      "elapsed_seconds": 213.5987,
+      "peak_execution_calls": 2,
+      "canonical_facts": null,
+      "prompt_checks": {
+        "checked": 14,
+        "passed": true
+      },
+      "error": "ValueError: child failed or blocked; partial results retained",
+      "providers": {
+        "Fireworks": 3,
+        "Morph": 5,
+        "Modal": 1,
+        "DeepInfra": 2,
+        "Wafer": 2,
+        "BaseTen": 1
+      },
+      "models": {
+        "deepseek/deepseek-v4.1-flash": 14
+      },
+      "trace_errors": []
+    },
+    {
+      "condition": "baseline",
+      "block": 3,
+      "run_id": "20260921T051850-f6cc75-3-baseline",
+      "exit_code": 0,
+      "timed_out": false,
+      "wall_seconds": 160.4606,
+      "status": "succeeded",
+      "passed": true,
+      "checks_passed": 12,
+      "checks_total": 12,
+      "trace_passed": true,
+      "calls": 20,
+      "http_requests": 20,
+      "tasks": 4,
+      "max_depth": 1,
+      "contract_messages": 28,
+      "proposal_rejections": 1,
+      "valid_refusals": 0,
+      "awards": {
+        "A": 2,
+        "C": 2
+      },
+      "root_award": "A",
+      "c_proposals": 4,
+      "c_high_bids": 1,
+      "reported_cost_usd": 0.011724878399999998,
+      "cost_missing_responses": 0,
+      "elapsed_seconds": 160.2944,
+      "peak_execution_calls": 1,
+      "canonical_facts": {
+        "can_release": false,
+        "migration_before_app": true,
+        "p_break_even": 200.0,
+        "p_high_profit": 3000000.0,
+        "p_low_profit": 1000000.0,
+        "p_margin": 10000.0,
+        "p_profit": 2000000.0,
+        "q_break_even": 125.0,
+        "q_high_profit": 3200000.0,
+        "q_low_profit": 1120000.0,
+        "q_margin": 16000.0,
+        "q_profit": 2160000.0
+      },
+      "prompt_checks": {
+        "checked": 20,
+        "passed": true
+      },
+      "error": "",
+      "providers": {
+        "Fireworks": 4,
+        "Morph": 2,
+        "DeepInfra": 6,
+        "Wafer": 3,
+        "Relace": 1,
+        "SiliconFlow": 1,
+        "Together": 1,
+        "Sail Research": 1,
+        "DigitalOcean": 1
+      },
+      "models": {
+        "deepseek/deepseek-v4.1-flash": 20
+      },
+      "trace_errors": []
+    },
+    {
+      "condition": "homogeneous",
+      "block": 3,
+      "run_id": "20260921T051850-f6cc75-3-homogeneous",
+      "exit_code": 0,
+      "timed_out": false,
+      "wall_seconds": 405.7793,
+      "status": "succeeded",
+      "passed": true,
+      "checks_passed": 12,
+      "checks_total": 12,
+      "trace_passed": true,
+      "calls": 20,
+      "http_requests": 20,
+      "tasks": 4,
+      "max_depth": 1,
+      "contract_messages": 28,
+      "proposal_rejections": 0,
+      "valid_refusals": 0,
+      "awards": {
+        "A": 1,
+        "B": 2,
+        "C": 1
+      },
+      "root_award": "A",
+      "c_proposals": 4,
+      "c_high_bids": 1,
+      "reported_cost_usd": 0.012704702400000002,
+      "cost_missing_responses": 0,
+      "elapsed_seconds": 405.6126,
+      "peak_execution_calls": 2,
+      "canonical_facts": {
+        "can_release": false,
+        "migration_before_app": true,
+        "p_break_even": 200.0,
+        "p_high_profit": 3000000.0,
+        "p_low_profit": 1000000.0,
+        "p_margin": 10000.0,
+        "p_profit": 2000000.0,
+        "q_break_even": 125.0,
+        "q_high_profit": 3200000.0,
+        "q_low_profit": 1120000.0,
+        "q_margin": 16000.0,
+        "q_profit": 2160000.0
+      },
+      "prompt_checks": {
+        "checked": 20,
+        "passed": true
+      },
+      "error": "",
+      "providers": {
+        "DeepInfra": 3,
+        "Wafer": 4,
+        "Morph": 6,
+        "BaseTen": 1,
+        "Novita": 1,
+        "Sail Research": 1,
+        "StreamLake": 2,
+        "Fireworks": 1,
+        "Alibaba": 1
+      },
+      "models": {
+        "deepseek/deepseek-v4.1-flash": 20
+      },
+      "trace_errors": []
+    }
+  ]
+}

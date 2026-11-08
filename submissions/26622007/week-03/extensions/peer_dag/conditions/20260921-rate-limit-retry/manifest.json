@@ -1,0 +1,46 @@
+{
+  "original_failed_run": "20260921T093041-84990d-3-homogeneous",
+  "run_id": "20260921-rate-limit-retry-homogeneous-1",
+  "condition": "homogeneous",
+  "git_commit": "20469397f3bdabe61231089a2244e0a89114d83b",
+  "config": {
+    "max_depth": 5,
+    "max_tasks": 12,
+    "max_steps": 4,
+    "max_calls": 64,
+    "max_parallel": 3,
+    "transport": {
+      "model": "deepseek/deepseek-v4.1-flash",
+      "temperature": 0,
+      "max_tokens": 2200,
+      "reasoning": {
+        "enabled": false
+      },
+      "provider": {
+        "only": [
+          "fireworks"
+        ],
+        "allow_fallbacks": true,
+        "require_parameters": true,
+        "max_price": {
+          "prompt": 0.3,
+          "completion": 1.2
+        }
+      },
+      "timeout_seconds": 30,
+      "response_deadline_seconds": 90,
+      "max_attempts": 2,
+      "retry_delay_seconds": 2,
+      "rate_limit_retry": {
+        "max_attempts": 6,
+        "initial_delay_seconds": 15,
+        "max_delay_seconds": 60,
+        "max_wait_seconds": 300
+      },
+      "max_http_requests": 6
+    }
+  },
+  "protocol": "../RETRY_PROTOCOL.md",
+  "deadline_seconds": 600,
+  "mode": "whole-case rerun with new Runtime"
+}

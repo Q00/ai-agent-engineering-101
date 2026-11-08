@@ -1,0 +1,44 @@
+{
+  "status": "succeeded",
+  "worker": "C",
+  "artifact": {
+    "summary": "확정 추정치를 합산해 기본 범위는 160h, 온라인 협동 포함 범위는 240h로 계산했다. 개발 예산은 2명×20h×4주=160h, QA 예산은 1명×10h×4주=40h이다. 기본 범위 160h는 개발 예산 160h와 정확히 일치하여 초과가 없고(coop_fits_budget은 협동 포함 기준 false), 협동 포함 240h는 개발 예산 대비 80h 초과한다. QA 40h는 자동 테스트·접근성 검증에 배분한다. 4주 일정은 1주차 이동/턴+seed 맵(48h), 2주차 전투+저장/복원(56h), 3주차 화면+자동 테스트(44h), 4주차 접근성+통합/버그픽스(12h+여유)로 배치하고 QA는 2주차부터 재현 테스트·수용 기준 검증을 병행한다. 제외 범위는 서버, 로그인, 결제, 온라인 협동(기본 제외, 추가 시 80h)이다. 같은 seed·같은 입력 순서 재현과 저장/복원 재현이 요구되며 오프라인 동작이 전제이므로 seeded_replay_required=true, offline_required=true로 판정한다. 본 작업은 예산·일정 산정이며 실제 코드 구현이나 테스트 실행은 수행하지 않았다(미검증).",
+    "facts": {
+      "board_width": 6,
+      "board_height": 6,
+      "max_turns": 12,
+      "developer_hours": 160,
+      "qa_hours": 40,
+      "core_scope_hours": 160,
+      "with_coop_hours": 240,
+      "coop_fits_budget": false,
+      "seeded_replay_required": true,
+      "offline_required": true,
+      "core_scope_fits_developer_budget": true,
+      "coop_over_budget_hours": 80,
+      "week1_hours": 48,
+      "week2_hours": 56,
+      "week3_hours": 44,
+      "week4_hours": 12,
+      "qa_parallel_from_week": 2,
+      "excluded_server": true,
+      "excluded_login": true,
+      "excluded_payment": true,
+      "excluded_online_coop_default": true,
+      "implementation_verified": false
+    },
+    "evidence": [
+      "기본 범위 합계: 이동/턴 24 + seed 기반 맵 24 + 전투 32 + 저장/복원 24 + 화면 20 + 자동 테스트 24 + 접근성 12 = 160h (제공된 확정 추정치).",
+      "개발 예산: 개발자 2명 × 주 20h × 4주 = 160h. QA 예산: 1명 × 주 10h × 4주 = 40h.",
+      "기본 범위 판정: core_scope_hours 160h = developer_hours 160h이므로 초과 없음(core_scope_fits_developer_budget=true).",
+      "협동 포함 범위: 160h + 온라인 협동 80h = 240h. 개발 예산 160h 대비 240-160 = 80h 초과이므로 coop_fits_budget=false.",
+      "일정 배치: 1주차 이동/턴 24 + seed 맵 24 = 48h; 2주차 전투 32 + 저장/복원 24 = 56h; 3주차 화면 20 + 자동 테스트 24 = 44h; 4주차 접근성 12h + 통합/버그픽스 여유. 합계 48+56+44+12 = 160h.",
+      "QA 40h는 자동 테스트·접근성 검증에 배분하고 2주차부터 재현 테스트·수용 기준 검증을 병행.",
+      "제외 범위: 서버·로그인·결제·온라인 협동은 기본 범위에서 제외(협동 추가 시 80h).",
+      "재현 요구: 같은 seed와 같은 입력 순서에 동일 시뮬레이션 결과, 저장 후 불러오기 재현 필요 → seeded_replay_required=true. 브라우저 오프라인 동작 전제 → offline_required=true.",
+      "보드 6×6, 최대 12턴은 source goal의 명시 사양에서 확인.",
+      "실제 코드 구현·테스트 실행은 본 작업에서 수행하지 않았으므로 implementation_verified=false(미검증)."
+    ]
+  },
+  "error": ""
+}

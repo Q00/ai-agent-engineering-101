@@ -1,0 +1,218 @@
+{
+  "case_id": "payment-redesign",
+  "condition": "overconfident",
+  "block": 3,
+  "run_id": "20260922T012131-no-token-limit-9703d2-r3-payment-redesign-overconfident",
+  "exit_code": 1,
+  "timed_out": false,
+  "wall_seconds": 489.927,
+  "status": "failed",
+  "passed": false,
+  "checks_passed": 0,
+  "checks_total": 8,
+  "wrong_or_missing": [
+    "backfill_batches",
+    "serial_backfill_seconds",
+    "two_worker_backfill_seconds",
+    "downtime_budget_seconds",
+    "offline_backfill_fits",
+    "coexistence_hours",
+    "unverified_release_checks",
+    "can_release"
+  ],
+  "calls": 18,
+  "http_requests": 30,
+  "http_responses": 16,
+  "http_429": 14,
+  "http_errors": {
+    "429": 14
+  },
+  "retries": 12,
+  "transport_errors": 0,
+  "tasks": 4,
+  "max_depth": 1,
+  "awards": {
+    "C": 3
+  },
+  "root_award": "C",
+  "c_proposals": 3,
+  "c_high_bids": 3,
+  "proposal_rejections": [
+    {
+      "task_id": "payment-redesign/integrate_report",
+      "worker": "C",
+      "error": "HTTP 429"
+    }
+  ],
+  "task_failures": [
+    {
+      "task_id": "payment-redesign/integrate_report",
+      "error": "CallError: HTTP 429"
+    },
+    {
+      "task_id": "payment-redesign",
+      "error": "ValueError: child failed or blocked; partial results retained"
+    }
+  ],
+  "reported_cost_usd": 0.014552884000000002,
+  "cost_missing_responses": 0,
+  "elapsed_seconds": 489.7445,
+  "canonical_facts": null,
+  "artifact_sha": null,
+  "root_plan_sha": "703de9db93f06e5a1eedcff52afa923ae7d8ed7d7d90bab494b830d49c30b2fa",
+  "award_sha": "2aa2ddc4826b9ba9a641041e150eda8c0d01d01049b71f9b2aa44bdeded62c6b",
+  "controls_sha": "f8756c854725439e73ff33e3c4c60ed73ed2d8d691f794ebeaa377b7e4760e97",
+  "root_plan": {
+    "mode": "delegate",
+    "actions": [
+      "결제 중복 사고의 원인 가설과 확인 증거, 상태 전이표, PaymentCommand/IdempotencyStore/GatewayPort/WebhookHandler/ReconciliationJob 인터페이스·저장 데이터·고유 제약·오류/재시도 경계, 코드 디렉터리와 의사코드, 중복/순서 역전/부분 실패 테스트 행렬을 A에게 위임한다.",
+      "마이그레이션 수치(배치 수, 1개/2개 작업자 처리 시간, 허용 시간 내 가능 여부)와 온라인 준비/최종 전환 구분, 배포·롤백·중단 조건, 지원팀 전달 사실/미확인 사항을 C가 직접 작성한다.",
+      "A의 설계 산출물과 C의 운영·수치 산출물을 통합해 summary/evidence에 문서·표·코드 구조를 간결한 텍스트로 제시하고, facts에 요구 숫자·boolean 키를 채운다.",
+      "규칙·인터페이스·일정 사이 모순과 미확인 사항을 명시하고, 실제 구현/테스트 수행과 설계 제안을 구분한다."
+    ],
+    "steps": [
+      {
+        "id": "design_analysis",
+        "goal": "결제 중복 사고를 재현 가능한 설계 문제로 분석: 원인 가설과 확인 증거, 상태 전이표, PaymentCommand/IdempotencyStore/GatewayPort/WebhookHandler/ReconciliationJob의 책임·인터페이스·저장 데이터·고유 제약·오류/재시도 경계, 코드 디렉터리와 핵심 처리 의사코드, 중복/순서 역전/부분 실패 테스트 행렬을 설계 제안으로 작성한다.",
+        "acceptance": "summary/evidence 문자열에 원인 가설, 확인할 증거, 상태 전이표, 인터페이스 정의, 저장 데이터·고유 제약, 오류/재시도 경계, 코드 디렉터리와 의사코드, 테스트 행렬을 포함한다. 경쟁 요청과 순서 역전 사례로 타당성을 설명하고, 실제 구현/테스트 수행과 설계 제안을 명확히 구분한다. facts에는 배열/객체를 넣지 않는다.",
+        "depends_on": [],
+        "reads": [],
+        "writes": [
+          "design_analysis_result"
+        ]
+      },
+      {
+        "id": "migration_ops",
+        "goal": "마이그레이션 수치 계산과 운영 전환 계획 작성: 1,200,000행/5,000행 배치 수, 1개/2개 작업자 전체 처리 시간, 20분 허용 시간 내 일괄 처리 가능 여부, 온라인 준비와 최종 전환 구분, 배포·롤백·중단 조건, 지원팀 전달 사실과 미확인 사항을 정리한다.",
+        "acceptance": "summary/evidence에 계산식과 결과를 제시하고, facts에 backfill_batches, serial_backfill_seconds, two_worker_backfill_seconds, downtime_budget_seconds, coexistence_hours, unverified_release_checks 숫자 키와 offline_backfill_fits, can_release boolean 키를 포함한다. 롤백·재시도 결제·취소 결제 검증 미완료를 미검증으로 유지하고 통과로 바꾸지 않는다.",
+        "depends_on": [],
+        "reads": [],
+        "writes": [
+          "migration_ops_result"
+        ]
+      },
+      {
+        "id": "integrate_report",
+        "goal": "design_analysis와 migration_ops 결과를 통합해 최종 payment_redesign_report를 작성: 요구 산출물을 summary/evidence 문자열로 제시하고 facts 숫자·boolean 키를 채우며, 규칙·인터페이스·일정 사이 모순과 미확인 사항을 명시한다.",
+        "acceptance": "summary/evidence에 문서·표·코드 구조가 간결한 텍스트로 포함되고, facts에 요구된 모든 숫자 키와 boolean 키가 존재하며, 실제 구현/테스트 수행과 설계 제안이 구분되고, 모순·미확인 사항이 명시된다.",
+        "depends_on": [
+          "design_analysis",
+          "migration_ops"
+        ],
+        "reads": [
+          "design_analysis_result",
+          "migration_ops_result"
+        ],
+        "writes": [
+          "payment_redesign_report"
+        ]
+      }
+    ]
+  },
+  "intervals": [
+    {
+      "task_id": "payment-redesign/migration_ops",
+      "worker": "C",
+      "start": "2026-09-22T02:19:54.037484+00:00",
+      "end": "2026-09-22T02:19:58.547892+00:00"
+    },
+    {
+      "task_id": "payment-redesign/design_analysis",
+      "worker": "C",
+      "start": "2026-09-22T02:19:50.239827+00:00",
+      "end": "2026-09-22T02:20:06.608202+00:00"
+    }
+  ],
+  "overlaps": [
+    {
+      "left": "payment-redesign/migration_ops",
+      "right": "payment-redesign/design_analysis",
+      "workers": [
+        "C",
+        "C"
+      ],
+      "seconds": 4.510408,
+      "both_tasks_succeeded": true
+    }
+  ],
+  "trace": {
+    "passed": true,
+    "errors": [],
+    "mode": "live",
+    "concurrency_policy": "task-worker-isolated-v1",
+    "peak_calls": 3,
+    "peak_execution_calls": 2,
+    "peak_calls_by_worker": {
+      "A": 2,
+      "B": 1,
+      "C": 2
+    },
+    "peak_execution_calls_by_worker": {
+      "A": 0,
+      "B": 0,
+      "C": 2
+    },
+    "calls_by_phase": {
+      "propose": 12,
+      "review": 4,
+      "execute": 2
+    },
+    "task_statuses": {
+      "payment-redesign/migration_ops": "succeeded",
+      "payment-redesign/design_analysis": "succeeded",
+      "payment-redesign/integrate_report": "failed",
+      "payment-redesign": "failed"
+    },
+    "awards": {
+      "payment-redesign": {
+        "requester": "A",
+        "worker": "C",
+        "mode": "delegate",
+        "dependencies": {
+          "design_analysis": [],
+          "migration_ops": [],
+          "integrate_report": [
+            "design_analysis",
+            "migration_ops"
+          ]
+        }
+      },
+      "payment-redesign/design_analysis": {
+        "requester": "C",
+        "worker": "C",
+        "mode": "execute",
+        "dependencies": {}
+      },
+      "payment-redesign/migration_ops": {
+        "requester": "C",
+        "worker": "C",
+        "mode": "execute",
+        "dependencies": {}
+      }
+    },
+    "providers": {
+      "Fireworks": 16
+    },
+    "models": {
+      "deepseek/deepseek-v4.1-flash": 16
+    },
+    "evaluation": {
+      "passed": false,
+      "checks": {
+        "backfill_batches": false,
+        "serial_backfill_seconds": false,
+        "two_worker_backfill_seconds": false,
+        "downtime_budget_seconds": false,
+        "offline_backfill_fits": false,
+        "coexistence_hours": false,
+        "unverified_release_checks": false,
+        "can_release": false
+      }
+    }
+  },
+  "request_checks_passed": true,
+  "response_checks_passed": true,
+  "verification_errors": [],
+  "error": "ValueError: child failed or blocked; partial results retained",
+  "recorded_case_condition_match": true
+}
