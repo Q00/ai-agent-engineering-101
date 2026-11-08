@@ -88,6 +88,7 @@ DEAD_MARKUP = 1.02
 # after it arrived, whose cost is at or above what the market pays for its grade (DEAD_GRADE_SHARE of list, 11-06/07 ledger),
 # opens at cost + 2%. The floor stays the cost: nothing goes below it
 DEAD_AGE_HOURS = 12
+C_BEHIND_SHARE = 0.65    # grade C goes after A and B only if an A or B unit costs at most this share of list (find_unit)
 DEAD_FIRST_SHARE = 0.5   # share of asks on a named SKU that offer its old units first (see find_unit)
 DEAD_MIN_LIST = 100_000
 DEAD_GRADE_SHARE = {"A": 0.70, "B": 0.65, "C": 0.60}
@@ -236,7 +237,13 @@ def find_unit(text, taken=()):
     # market: G03d0199f (29 deals/h in the market) had 17 opens, 23 offers and no deal (offer 1,063,595, floor 1,134,642) while
     # its cheaper units waited. Old units now go first on half of the asks (DEAD_FIRST_SHARE); the other half get the cheapest unit
     dead_first = random.random() < DEAD_FIRST_SHARE
-    key = ((lambda u: (u["expires_at"] or float("inf"), not (dead_first and is_dead(u)), is_goods(u) and u.get("grade") == "C", u["cost"],
+    # Claude (2026-11-09 00:23, hourly check): C waits behind A and B only while one of them can sell at the market's price.
+    # Gf6b70da8 had 26 opens and no deal: its two A cost 0.72 and 0.74 of list (market 0.654, best offer 1,596,455 against a
+    # floor of 1,680,818) while five C at 0.25-0.38 of list sat 21-33 h behind them
+    c_last = any(not (is_goods(u) and u.get("grade") == "C") and u["cost"] <= C_BEHIND_SHARE * (u.get("list_price") or 0)
+                 for u in named)
+    key = ((lambda u: (u["expires_at"] or float("inf"), not (dead_first and is_dead(u)),
+                       c_last and is_goods(u) and u.get("grade") == "C", u["cost"],
                        u["supplied_at"])) if named
            else (lambda u: (u["expires_at"] or float("inf"), u["supplied_at"])))
     fit = named or fit                                   # a SKU the buyer named comes first
