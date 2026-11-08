@@ -74,7 +74,9 @@ TRIAL_DEAR_SHARE = 0.78
 TRIAL2_SHARE = 0.73
 # ddolcom (2026-11-07 19:23): goods of grade B and C open closer to what the market pays for that grade (1M+ on 11-06: A 0.726,
 # B 0.671, C 0.622 of list), not at the 78% of grade A. G021aae64 had 11 opens and no deal in an hour with B and C units in stock
-GRADE_OPEN = {"B": 0.72, "C": 0.66}
+# Claude (2026-11-08 14:23, hourly check): C held 124 units at a cost of 46.8M, 20.8M of it unsold 12 h+. Over 6 h on 1M+ goods
+# the market sold 138 C at 0.592 of list and I sold 3 at 0.66 (A: 69 of 939 at 0.704). C costs 0.25-0.45 of list and has no refunds
+GRADE_OPEN = {"B": 0.72, "C": 0.60}
 TRIAL2_RATE = 0.0
 # ddolcom (2026-11-06, the user's instruction): one clearance only, at cost or a little above, to free the cash. These 6
 # units had sat 13-40 h and are the ones the forum post 22459 names. New units never join by age: a rule on age alone also
