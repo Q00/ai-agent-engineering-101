@@ -5,6 +5,7 @@ from datetime import datetime
 from fractions import Fraction
 
 from buyer_policy import buying_terms
+from buyer_selection import value_ratio
 
 
 def exploration_turn(seed):
@@ -104,8 +105,10 @@ def timeout_choice(candidates, *, seed):
         own, reviews = candidate["own_memory"], candidate["reviews"]
         count = reviews["rated_count"]
         public_quality = ((reviews["average_stars"] or 3) - 3) * count / (count + 3)
+        value = value_ratio(candidate)
         return (bool(own["receipt_mismatches"]),
                 own["unsatisfactory_settlements"] / max(1, own["settled"]),
+                value is None, value if value is not None else 0,
                 -(own["satisfactory_settlements"] + own["accepted_tradeoffs"]) / (own["settled"] + 2),
                 reviews["low_star_count"] / (count + 2), -public_quality,
                 rotation(seed, candidate["name"]))
@@ -120,5 +123,7 @@ def timeout_choice(candidates, *, seed):
                         "contract faults and bounded public reviews; purchase checks remain unchanged."}
     if selected["offers"]:
         choice["sku"] = min(selected["offers"],
-                            key=lambda offer: rotation(seed, selected["name"], offer["sku"]))["sku"]
+                            key=lambda offer: (
+                                min((g["price_to_list"] for g in offer.get("price_history", [])), default=float("inf")),
+                                rotation(seed, selected["name"], offer["sku"])))["sku"]
     return choice

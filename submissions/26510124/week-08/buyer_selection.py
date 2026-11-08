@@ -7,7 +7,7 @@ from buyer_policy import buying_terms
 from payment_memory import acceptance_refusal, record_time
 
 
-def shop_evidence(shop, memory):
+def shop_evidence(shop, memory, *, value_evidence=None, seed=""):
     """Keep aggregates and two short excerpts; source logs remain untouched."""
     reviews = [r for r in shop.get("reviews", [])[:10] if isinstance(r, dict)]
     own = [r for r in memory if r["name"] == shop["name"]]
@@ -20,10 +20,24 @@ def shop_evidence(shop, memory):
     recent_bad = next((r for r in reviews if type(r.get("stars")) is int and 1 <= r["stars"] <= 2), None)
     if recent_bad is not None and recent_bad not in excerpts:
         excerpts.append(recent_bad)
+    value_evidence = value_evidence or {}
+    offers = shop.get("offers", [])
+    if value_evidence:
+        # Compare every allowed SKU locally before spending prompt space on five.
+        offers = sorted(offers, key=lambda offer: (
+            value_evidence.get((shop["name"], offer["sku"]), {}).get("best_price_to_list", float("inf")),
+            hashlib.sha256((str(seed) + "\0" + shop["name"] + "\0" + offer["sku"]).encode()).hexdigest()))
+    offers = [{"sku": o["sku"], "name": str(o.get("name", ""))[:80], "qty": o["qty"]}
+              for o in offers[:5]]
+    # Only one SKU's two quality-specific summaries per shop go to the model.
+    for offer in offers:
+        history = value_evidence.get((shop["name"], offer["sku"]))
+        if history:
+            offer["price_history"] = history["groups"]
+            break
     return {
         "name": shop["name"],
-        "offers": [{"sku": o["sku"], "name": str(o.get("name", ""))[:80], "qty": o["qty"]}
-                   for o in shop.get("offers", [])[:5]],
+        "offers": offers,
         "reviews": {
             "count": len(reviews), "rated_count": len(stars),
             "low_star_count": sum(s <= 2 for s in stars),
@@ -47,8 +61,17 @@ def shop_evidence(shop, memory):
     }
 
 
-def shortlist(shops, memory, *, seed, limit=6, round_number=None):
-    """Five evidence slots plus one untested shop, when a safe candidate exists.
+def value_ratio(candidate):
+    """A ranking hint from verified history, never a quote for the current unit."""
+    own = candidate["own_memory"]
+    if own["receipt_mismatches"] or own["unsatisfactory_settlements"]:
+        return None
+    ratios = [g["price_to_list"] for o in candidate["offers"] for g in o.get("price_history", [])]
+    return min(ratios) if ratios else None
+
+
+def shortlist(shops, memory, *, seed, limit=6, round_number=None, value_evidence=None):
+    """Reserve up to two verified value slots and one untested shop.
 
     Review volume only adjusts confidence in the small public sample. It is
     never a direct popularity bonus. Rotation depends on the order, not the
@@ -61,7 +84,8 @@ def shortlist(shops, memory, *, seed, limit=6, round_number=None):
     by_name = {}
     for row in memory:
         by_name.setdefault(row["name"], []).append(row)
-    candidates = [shop_evidence(s, by_name.get(s["name"], [])) for s in shops]
+    candidates = [shop_evidence(s, by_name.get(s["name"], []), value_evidence=value_evidence, seed=seed)
+                  for s in shops]
 
     def rotation(candidate):
         return hashlib.sha256((str(seed) + "\0" + candidate["name"]).encode()).hexdigest()
@@ -80,14 +104,13 @@ def shortlist(shops, memory, *, seed, limit=6, round_number=None):
                   and c["reviews"]["low_star_count"] == 0]
     new = [c for c in unexplored if c["reviews"]["count"] == 0]
     explorer = min(new or unexplored, key=rotation) if unexplored else None
-    if len(ranked) <= limit:
-        selected = ranked
-    elif explorer is not None:
-        selected = [c for c in ranked if c is not explorer][:limit - 1] + [explorer]
-    else:
-        selected = ranked[:limit]
+    values = sorted((c for c in candidates if value_ratio(c) is not None),
+                    key=lambda c: (value_ratio(c), rank(c)))[:min(2, limit - bool(explorer))]
+    selected = values + ([explorer] if explorer is not None and explorer not in values else [])
+    selected += [c for c in ranked if c not in selected][:limit - len(selected)]
     for candidate in selected:
-        candidate["selection_role"] = "exploration" if candidate is explorer else "evidence"
+        candidate["selection_role"] = ("exploration" if candidate is explorer else
+                                       "value" if candidate in values else "evidence")
     return sorted(selected, key=rotation)
 
 
@@ -95,7 +118,9 @@ def offer_fingerprint(shop, sku, terms, round_number):
     """Detect observable stock/review/policy changes, never infer hidden grades."""
     offer = next((o for o in shop.get("offers", []) if o.get("sku") == sku), {})
     snapshot = {
-        "round": round_number, "sku": sku, "qty": offer.get("qty"), "terms": terms,
+        "round": round_number, "sku": sku, "qty": offer.get("qty"),
+        # A reference's advancing age does not fix an unchanged failed offer.
+        "terms": {k: v for k, v in terms.items() if k != "price_reference"},
         "reviews": [{"stars": r.get("stars"), "round": r.get("round"),
                      "review": str(r.get("review", ""))[:400]}
                     for r in shop.get("reviews", [])[:3] if isinstance(r, dict)],

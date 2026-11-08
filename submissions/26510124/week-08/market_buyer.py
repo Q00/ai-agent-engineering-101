@@ -24,6 +24,7 @@ from buyer_policy import buying_terms, checkout_policy, load_policy, negotiation
 from buyer_selection import shortlist, offer_fingerprint, reuse_failures, compatibility_fingerprint
 from buyer_context import compact_dialogue
 from buyer_fast_selection import recent_success_choice, timeout_choice
+from buyer_value_memory import build_value_evidence
 
 
 VERSION_HEADERS = {"A2A-Version": "1.0"}
@@ -86,7 +87,7 @@ def stocked_shops(shops, order):
         offers = [o for o in shop.get("offers", []) if isinstance(o, dict)
                   and o.get("sku") in acceptable and type(o.get("qty")) is int and o["qty"] > 0]
         if offers:
-            result.append({**shop, "offers": offers[:5]})
+            result.append({**shop, "offers": offers})
     if not result:
         raise BuyerError("No shop offers an acceptable SKU in stock")
     return result
@@ -102,9 +103,10 @@ def choose_shop(shops, memory, *, item, budget, deadline, policy=None, order=Non
     seed = order.get("order") or f"{item}:{int(time.time() // 900)}"
     shops, cooldown = reuse_failures(shops, memory, item=item, budget=budget,
                                      config=policy, order=order, catalog=catalog)
+    values = build_value_evidence(memory, catalog=catalog, order=order, budget=budget, config=policy)
     candidates = shortlist(shops, memory, seed=seed,
                            limit=policy.get("selection_max_candidates", 6),
-                           round_number=order.get("round"))
+                           round_number=order.get("round"), value_evidence=values)
     if not candidates:
         raise BuyerError("No eligible candidate shops after current-stock and recent-refusal checks")
     names = {s["name"] for s in candidates}
@@ -125,9 +127,18 @@ def choose_shop(shops, memory, *, item, budget, deadline, policy=None, order=Non
     if type(timeout) is not int or not 1 <= timeout <= 45:
         raise BuyerError("Invalid buyer policy: selection_timeout_seconds")
     context = {"item": item, "budget": budget, "candidates": candidates, "purchase_policy": negotiation_policy(policy)}
+    if isinstance(catalog, dict):
+        # Shared prices avoid repeating catalog values for the same SKU in six shops.
+        context["catalog_prices"] = {
+            offer["sku"]: catalog[offer["sku"]]["list_price"]
+            for candidate in candidates for offer in candidate["offers"]
+            if isinstance(catalog.get(offer["sku"]), dict)
+            and type(catalog[offer["sku"]].get("list_price")) is int
+            and catalog[offer["sku"]]["list_price"] > 0}
     log("SELECTION CONTEXT", {"eligible_shops": len(shops), "candidates": len(candidates),
                               "context_chars": len(json.dumps(context, ensure_ascii=False)),
                               **cooldown,
+                              "value_candidates": [c["name"] for c in candidates if c["selection_role"] == "value"],
                               "exploration": [c["name"] for c in candidates if c["selection_role"] == "exploration"]})
     choice = recent_success_choice(candidates, memory, budget=budget, config=policy,
                                    order=order, catalog=catalog, seed=seed)
@@ -152,7 +163,9 @@ def choose_shop(shops, memory, *, item, budget, deadline, policy=None, order=Non
     log("SELECTION METHOD", {"method": method, "model_timeout_seconds": min(timeout, remaining)})
     log("SHOP SELECTION", choice)
     shop = next(s for s in shops if s["name"] == choice["name"])
-    return {**shop, "selected_sku": choice.get("sku")}, choice["reason"]
+    reference = values.get((shop["name"], choice.get("sku")), {}).get("groups")
+    return {**shop, "selected_sku": choice.get("sku"),
+            "price_reference": reference or []}, choice["reason"]
 
 
 def log(label, value):
@@ -456,6 +469,8 @@ def main(argv=None):
         sku = shop.get("selected_sku") or args.item
         product = catalog.get(sku) if catalog is not None else None
         policy = buying_terms(args.budget, product=product, order=order, config=config)
+        if shop.get("price_reference"):
+            policy["price_reference"] = shop["price_reference"]
         log("PURCHASE POLICY", policy)  # local evidence only; never sent to the shop
         with httpx.Client(trust_env=False) as client:
             result = trade_and_record(shop, item=sku, budget=args.budget,

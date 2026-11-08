@@ -105,10 +105,23 @@ def reconcile(records, payments):
 
 def attach_reviews(records, reviews):
     indexed = {r.get("order"): r for r in reviews if isinstance(r.get("order"), str)}
+    price_proofs = {}
+    for review in reviews:
+        if not isinstance(review.get("order"), str):
+            continue
+        try:
+            signature = json.dumps({k: review.get(k) for k in ("receipt", "settled")},
+                                   sort_keys=True, allow_nan=False)
+        except (TypeError, ValueError):
+            signature = None
+        price_proofs.setdefault(review["order"], set()).add(signature)
     result = []
     for raw in records:
         record = dict(raw)
         record["verified_review"] = False
+        # This derived proof is rebuilt from the correlated settlement every
+        # time. A stale field on an append-only trade row is not authority.
+        record.pop("settled_value_evidence", None)
         row = indexed.get(record.get("order"), {})
         receipt, assessment = row.get("receipt", {}), row.get("assessment", {})
         observed = record.get("observed_receipt") or {}
@@ -128,5 +141,69 @@ def attach_reviews(records, reviews):
                 codes = assessment.get(source)
                 if isinstance(codes, list) and all(isinstance(code, str) for code in codes):
                     record[target] = list(codes)
+            proofs = price_proofs.get(record.get("order"), set())
+            evidence = (_settled_value_evidence(record, row)
+                        if len(proofs) == 1 and None not in proofs else None)
+            if evidence is not None:
+                record["settled_value_evidence"] = evidence
         result.append(record)
     return result
+
+
+def _settled_value_evidence(record, row):
+    """Actual settlement terms for price learning, not requested accept terms.
+
+    The pinned market receipt does not always carry kind; the caller must
+    cross-check the authoritative catalog before using this proof as goods.
+    Existing review/rating behavior remains independent of this stricter path.
+    """
+    def number(value):
+        return type(value) in (int, float) and math.isfinite(value)
+
+    settled, receipt, observed = row.get("settled"), row.get("receipt"), record.get("observed_receipt")
+    if not (record.get("verified_review") is True and record.get("review_issues") == []
+            and isinstance(row.get("assessment"), dict) and row["assessment"].get("issues") == []
+            and all(isinstance(value, dict) for value in (settled, receipt, observed))
+            and type(record.get("round")) is int and record["round"] >= 3
+            and isinstance(record.get("order"), str) and record["order"]
+            and isinstance(record.get("name"), str) and record["name"]
+            and isinstance(record.get("item"), str) and record["item"]
+            and row.get("order") == record["order"]):
+        return None
+    price, value, warranty = record.get("price"), settled.get("value"), settled.get("warranty_hours")
+    if (not number(price) or price <= 0 or price != int(price)
+            or not number(value) or value <= 0
+            or not number(warranty) or not 0 <= warranty <= 8760
+            or settled.get("grade") not in ("A", "B", "C")
+            or settled.get("claim_honest") is not True
+            or settled.get("sku") != record["item"]
+            or observed.get("item") != record["item"]
+            or not isinstance(observed.get("task"), str) or not observed["task"]
+            or receipt.get("task") != observed["task"]
+            or any(not number(r.get("price")) or r["price"] != price for r in (receipt, observed))):
+        return None
+    for key, expected in (("order", record["order"]), ("round", record["round"]),
+                          ("shop_name", record["name"]), ("task", observed["task"]), ("ok", True)):
+        if key in settled and (settled[key] != expected or key in ("round", "ok")
+                               and type(settled[key]) is not type(expected)):
+            return None
+    if "kind" in settled and settled["kind"] not in ("goods", "food"):
+        return None
+    if any(key in settled and (not number(settled[key]) or settled[key] != price)
+           for key in ("price", "amount")):
+        return None
+    for source in (record, settled):
+        for key in ("refund", "refunded", "refund_amount"):
+            if key in source and (not number(source[key]) or source[key] != 0):
+                return None
+        if "refunds" in source and source["refunds"] != []:
+            return None
+    for key in ("unit", "shop"):
+        if key in receipt and key in observed and receipt[key] != observed[key]:
+            return None
+    if "unit" in settled and "unit" in observed and settled["unit"] != observed["unit"]:
+        return None
+    return {"ledger": record["ledger"], "order": record["order"], "shop": record["url"],
+            "sku": record["item"], "task": observed["task"], "price": int(price),
+            "grade": settled["grade"], "warranty_hours": warranty, "kind": settled.get("kind"),
+            "value": value, "claim_honest": True}
