@@ -195,8 +195,8 @@ If no safe evidence-backed improvement is possible, make no changes and explain 
     @staticmethod
     def codex_command(worktree):
         return [str(CODEX),'exec','--ephemeral','--json','--skip-git-repo-check',
-            '--ignore-user-config','-C',str(worktree),'--sandbox','workspace-write',
-            '--approve-for-me','-c','model_reasoning_effort=medium','-']
+            '--ignore-user-config','-C',str(worktree),'--approve-for-me',
+            '-c','model_reasoning_effort=medium','-']
 
     def build(self,cycle_id,role,evidence,base):
         worktree=Path(tempfile.mkdtemp(prefix=f'market-evolve-{cycle_id[:8]}-'))

@@ -54,8 +54,8 @@ class EvolutionDaemonTests(unittest.TestCase):
         command=Evolution.codex_command(Path('/tmp/candidate'))
         joined=' '.join(command)
         self.assertIn('/codex exec',joined)
-        self.assertIn('--sandbox workspace-write',joined)
         self.assertIn('--approve-for-me',joined)
+        self.assertNotIn('--sandbox',joined)
         self.assertNotIn('ouroboros',joined.casefold())
 
     def test_interrupted_pre_live_cycle_retries_without_waiting(self):
