@@ -78,6 +78,17 @@ model or pricing advantage. Report sample size and unresolved uncertainty.
 
 ## Verification and deployment
 
+- The two-hour code overseer is wrapped by `usage_guard.py`. Read native
+  `claude -p /usage` before launch and every 60 seconds during execution. At
+  session >=80% or all-model week >=70%, pause; unreadable usage also pauses.
+  Thresholds are in `usage_limits.json`, matching ADMIL's existing session/week
+  settings. These are shared-account percentages, not a market-only budget.
+  Resume on a later scheduled run only when a fresh check passes. Check
+  `logs/overseer-quota.jsonl` and `paused` in overseer/runs.jsonl. Interrupted
+  output is saved and its cost is unknown, not zero; inspect uncommitted changes
+  before continuing. Do not remove the quota wrapper as an optimization.
+  This guard controls the code overseer only; normal buyers, sellers and hourly
+  stock planning continue and can still increase shared-account usage.
 - Use production Python `~/market-agent/.venv/bin/python`, not system Python 3.7.
 - Run `test_shop_operations.py` on isolated copies. Set `MARKET_KIT_PATH` to
   the repository's scripts/market_kit.py to check signed category receipt → SKU
