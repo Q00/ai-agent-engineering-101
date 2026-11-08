@@ -1,6 +1,6 @@
 import unittest
 from network_reads import retry_read
-from procurement_campaign import choose,allocation_plan,capital_available,supply_result,own_registration,retry_join
+from procurement_campaign import choose,allocation_plan,capital_available,supply_result,own_registration,retry_join,join_current_registration
 class PurchaseTests(unittest.TestCase):
  def setUp(self):
   self.p={'budget':2500000,'cash_floor':500000,'priority':['a','b','c','d']}
@@ -30,6 +30,8 @@ class PurchaseTests(unittest.TestCase):
   plan=allocation_plan(ranked,{'units':[{'sku':'a'}]},900000)
   self.assertEqual(plan[0]['sku'],'a');self.assertGreater(plan[0]['qty'],4)
   self.assertNotIn('b',[r['sku'] for r in plan])
+  aggressive=allocation_plan(ranked,{'units':[{'sku':'a'}]},900000,aggression=3)
+  self.assertGreater(aggressive[0]['qty'],plan[0]['qty'])
  def test_capital_scales_with_balance_but_preserves_floor_liabilities_and_slots(self):
   policy={'cash_floor':500000,'max_inventory_share':.7}
   low={'balance':5000000,'bankrupt_line':500000,'units':[{'cost':1000000}]}
@@ -57,4 +59,14 @@ class PurchaseTests(unittest.TestCase):
    return {'round':3}
   self.assertEqual(retry_join(join,attempts=2,sleep=lambda _:None)['round'],3)
   self.assertEqual(len(attempts),2)
+ def test_join_retry_refreshes_changed_seller_tunnel(self):
+  class Market:
+   def __init__(self):self.urls=[]
+   def join(self,role,name,key,url):
+    self.urls.append(url)
+    if len(self.urls)==1:raise SystemExit('stale tunnel')
+    return {'round':3}
+  market=Market();registrations=iter([{'url':'old'},{'url':'new'}])
+  result=retry_join(lambda:join_current_registration(market,'key',lambda:next(registrations)),attempts=2,sleep=lambda _:None)
+  self.assertEqual(result['round'],3);self.assertEqual(market.urls,['old','new'])
 if __name__=='__main__':unittest.main()

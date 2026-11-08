@@ -32,7 +32,7 @@ def choose(policy,catalog,spent,reserved,balance,exposure,turn,blocked=()):
         if upper<=remaining:return sku,upper
     return None
 
-def allocation_plan(ranked, inventory, available, blocked=(), available_slots=None):
+def allocation_plan(ranked, inventory, available, blocked=(), available_slots=None, aggression=1.0):
     """Allocate by sell-through, holdings, next-window need and contribution.
 
     There is no fixed four-SKU loop or unit cap. Quantity is bounded by the
@@ -45,7 +45,7 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
         if row.get('sku') in blocked or row.get('expected_net',0)<=0:continue
         velocity=row.get('sales_1h',0)+row.get('sales_6h',0)/6
         unmet=row.get('own_stockouts_6h',0)*.5+row.get('own_inquiries_6h',0)*.2
-        forecast=(velocity+unmet)*row.get('estimated_sale_likelihood',0)
+        forecast=(velocity+unmet)*row.get('estimated_sale_likelihood',0)*max(1.0,float(aggression))
         need=max(0,math.ceil(forecast)-holding.get(row['sku'],0))
         if need<=0:continue
         choices.append((-(row.get('score',0)*row['expected_net']/max(1,row['upper_cost'])),row['sku'],need,row))
@@ -79,6 +79,11 @@ def retry_join(operation, report=None, attempts=None, sleep=time.sleep):
         except SystemExit as exc:raise ConnectionError('market join/card check failed') from exc
     return retry_read(guarded,attempts=attempts,report=report,sleep=sleep)
 
+def join_current_registration(market,key,get_registration):
+    """Refresh the seller URL on every retry; tunnels change after restarts."""
+    me=get_registration()
+    return market.join('shop','25512088',key,me['url'])
+
 def main():
     ap=argparse.ArgumentParser();ap.add_argument('--state',default='.market');args=ap.parse_args()
     state=Path(args.state).resolve();policy=settings();state.mkdir(exist_ok=True)
@@ -94,8 +99,7 @@ def main():
     def get_registration():
         response=market.c.get(market.base+'/api/shops');response.raise_for_status()
         return own_registration(response.json())
-    me=retry_read(get_registration, attempts=None, report=log)
-    retry_join(lambda:market.join('shop','25512088',key,me['url']),report=log)
+    retry_join(lambda:join_current_registration(market,key,get_registration),report=log)
     catalog=json.loads((state/'catalog.json').read_text());blocked=set();window=None
     def log(**data):print(json.dumps(dict(ts=time.time(),**data),ensure_ascii=False),flush=True)
     log(event='started',campaign=policy['campaign'],capital_policy=policy['budget_basis'])
@@ -134,11 +138,15 @@ def main():
         ranked=[r for r in ranked if r.get('expected_net',0)>0]
         available=capital_available(policy,inv,exposure,pending)
         slots=max(0,policy.get('max_exposed_units',250)-len(inv.get('units',[])))
-        plan=allocation_plan(ranked,inv,available,blocked,slots)
+        # Starting capital is 5M. More accumulated cash funds more demand
+        # windows, while capital_available still preserves cash/liabilities.
+        aggression=max(1.0,min(policy.get('max_demand_windows',4),inv.get('balance',0)/5_000_000))
+        plan=allocation_plan(ranked,inv,available,blocked,slots,aggression)
         if not plan:
             if blocked:time.sleep(10);continue
             log(event='evidence_or_capacity_wait',lifetime_spent=spent,inventory_cost=inventory_cost,
-                deployable_capital=available,available_slots=slots,protected_liabilities=exposure)
+                deployable_capital=available,available_slots=slots,protected_liabilities=exposure,
+                demand_windows=aggression)
             time.sleep(60);continue
         if not restock.get('open'):
             log(event='waiting_supply',opens_at=restock.get('opens_at'),spent=spent)
@@ -160,7 +168,8 @@ def main():
             log(event='purchased',sku=sku,qty=qty,cost=cost,spent=spent+cost,balance=body.get('balance'),
                 allocation={'holding':sum(u['sku']==sku for u in inv['units']),
                             'sales_1h':selected['evidence'].get('sales_1h'),
-                            'next_window_need':qty,'expected_net':selected['evidence'].get('expected_net')})
+                            'next_window_need':qty,'expected_net':selected['evidence'].get('expected_net'),
+                            'demand_windows':aggression})
         elif outcome in ('uncertain','reconcile'):
             with db:db.execute("UPDATE purchases SET status='uncertain',detail=? WHERE id=?",(str(result.status_code),rid))
             log(event='uncertain_stop' if outcome=='uncertain' else 'reconciliation_stop',sku=sku,status=result.status_code);break
