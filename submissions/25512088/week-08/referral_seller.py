@@ -53,14 +53,16 @@ def credentials(text):
     return values
 
 
-def select_unit(text, units, reserved):
+def select_unit(text, units, reserved, soft_counts=None):
     want = re.sub(r'\b(?:ref|member)=[A-Za-z0-9_-]+', '', text).lower()
     valid = [u for u in units if u['unit'] not in reserved and u.get('grade') != 'expired'
              and (not u.get('expires_at') or u['expires_at'] > time.time())]
     named = [u for u in valid if u['sku'].lower() in want]
     fits = named or [u for u in valid if any(str(v).lower() in want for v in
                     [u.get('name'), u.get('category', '').split('>')[-1]] if v)]
-    return min(fits, key=lambda u: (u.get('expires_at') or float('inf'), u.get('supplied_at', 0)), default=None)
+    soft_counts=soft_counts or {}
+    return min(fits, key=lambda u: (soft_counts.get(u['unit'],0),
+        u.get('expires_at') or float('inf'),u.get('supplied_at',0)),default=None)
 
 
 def stock_miss(text, units, reserved, catalog):
@@ -130,9 +132,12 @@ class Seller(AgentExecutor):
             self.open = {k: v for k, v in self.open.items() if v['until'] > time.time()}
             deal = self.open.get(task.id)
             if not deal:
-                reserved = program.reserved_units() | {v['unit']['unit'] for v in self.open.values()}
+                reserved = program.reserved_units()
+                soft_counts={}
+                for hold in self.open.values():
+                    uid=hold['unit']['unit'];soft_counts[uid]=soft_counts.get(uid,0)+1
                 eligible=list(inv['units'])
-                unit = select_unit(text, eligible, reserved)
+                unit = select_unit(text, eligible, reserved, soft_counts)
                 if not unit:
                     intel.decision('seller_no_stock',dict(task=task.id,**stock_miss(text,inv['units'],reserved,catalog)))
                     available=offers(STATE,program,intel,limit=2)
@@ -155,6 +160,18 @@ class Seller(AgentExecutor):
                 self.open[task.id] = deal
             else:
                 unit = next((u for u in inv['units'] if u['unit'] == deal['unit']['unit']), None)
+                accepted=program.reserved_units()
+                if unit and unit['unit'] in accepted:
+                    alternatives=[u for u in inv['units'] if u['unit'] not in accepted and
+                                  u.get('sku')==unit.get('sku') and u.get('grade')==unit.get('grade') and
+                                  u.get('grade')!='expired' and
+                                  (not u.get('expires_at') or u['expires_at']>time.time())]
+                    unit=min(alternatives,key=lambda u:(u.get('expires_at') or float('inf'),
+                             u.get('supplied_at',0)),default=None)
+                    if unit:
+                        deal['unit']=unit
+                        deal['quote']=sale_quote(unit,catalog,program,intel,
+                            token=deal['credentials']['member'],ref=deal['credentials']['ref'])
                 if not unit or unit.get('grade') == 'expired' or (unit.get('expires_at') and unit['expires_at'] <= time.time()):
                     self.open.pop(task.id, None)
                     await up.reject(say('The quoted stock is no longer available.'))
@@ -228,9 +245,9 @@ class Seller(AgentExecutor):
         finally:
             with program.db:
                 program.db.execute('CREATE TABLE IF NOT EXISTS quote_holds(task TEXT PRIMARY KEY, unit TEXT, until REAL)')
-                program.db.execute('DELETE FROM quote_holds WHERE until<=?',(time.time(),))
-                for tid,hold in self.open.items():
-                    program.db.execute('INSERT OR REPLACE INTO quote_holds VALUES(?,?,?)',(tid,hold['unit']['unit'],hold['until']))
+                # Clear legacy hard holds. Open quotes are intentionally soft and
+                # are distributed in memory; accept() is the only reservation.
+                program.db.execute('DELETE FROM quote_holds')
             program.close()
             intel.close()
             control.close()

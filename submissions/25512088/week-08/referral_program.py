@@ -140,10 +140,9 @@ class Program:
         return secret
 
     def reserved_units(self):
-        held={r[0] for r in self.db.execute('SELECT unit FROM sales')}
-        if self.db.execute("SELECT 1 FROM sqlite_master WHERE name='quote_holds'").fetchone():
-            held.update(r[0] for r in self.db.execute('SELECT unit FROM quote_holds WHERE until>?',(time.time(),)))
-        return held
+        # A quote is not a sale promise. Only atomically accepted receipts reserve
+        # inventory; otherwise abandoned negotiations can hide most live stock.
+        return {r[0] for r in self.db.execute('SELECT unit FROM sales')}
 
     def settle(self, row, shop_urls):
         d = row.get('data', {})

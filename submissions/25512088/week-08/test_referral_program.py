@@ -98,6 +98,12 @@ class ReferralTests(unittest.TestCase):
             self.program.accept('other', 'other-unit', 'sku', 16000, q)
         self.assertIn('pending-unit', self.program.reserved_units())
 
+    def test_unaccepted_quote_holds_never_hide_inventory(self):
+        with self.program.db:
+            self.program.db.execute('CREATE TABLE IF NOT EXISTS quote_holds(task TEXT PRIMARY KEY, unit TEXT, until REAL)')
+            self.program.db.execute("INSERT INTO quote_holds VALUES('quote-only','free-unit',9999999999)")
+        self.assertNotIn('free-unit',self.program.reserved_units())
+
     def test_public_referral_code_cannot_unlock_private_membership(self):
         a, _, _ = self.buy('A')
         code = self.program.status(a)['referral_code']

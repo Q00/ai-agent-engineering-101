@@ -11,6 +11,14 @@ from referral_program import Program
 
 
 class SellerIntegrationTests(unittest.IsolatedAsyncioTestCase):
+    def test_open_quotes_soft_distribute_without_hiding_units(self):
+        units=[dict(unit='u1',sku='G00001',name='item',category='food',grade='A',expires_at=None,supplied_at=1),
+               dict(unit='u2',sku='G00001',name='item',category='food',grade='A',expires_at=None,supplied_at=2)]
+        first=referral_seller.select_unit('G00001',units,set(),{})
+        second=referral_seller.select_unit('G00001',units,set(),{first['unit']:1})
+        self.assertEqual((first['unit'],second['unit']),('u1','u2'))
+        self.assertIsNotNone(referral_seller.select_unit('G00001',units,set(),{'u1':5,'u2':5}))
+
     def test_stock_miss_distinguishes_reserved_without_logging_secrets(self):
         u=dict(unit='u',sku='G00001',name='item',category='food',grade='A',expires_at=None)
         catalog={'G00001':dict(category='food')}
