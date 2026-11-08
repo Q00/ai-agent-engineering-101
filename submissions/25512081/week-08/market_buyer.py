@@ -106,7 +106,20 @@ def choose(shops, item, budget, mine, k=1):
     names = [s["name"] for s in pool]
     learned = lessons.rules("buyer")[:5]
     # the rules are model-written from records that hold shop names other agents chose: data, not system prompt
-    ans = harness.ask(CHOOSE_SYSTEM, (
+    try:
+        ans = _ask_shortlist(pool, names, learned, item, budget, mine, k)
+    except Exception as e:
+        # Nov 7 07:31 - Nov 8 06:59 the model call failed on every order (subscription weekly limit) and the
+        # buyer exited with no result: paid 8-13 of ~150 orders/h (07:00-08:00 after the reset: 81 of 89).
+        # Without the model, rank in code: the lowest share of budget our past deals there cost.
+        log(f"[choose] model unavailable ({str(e)[:120]}); ranking in code")
+        return sorted(pool, key=lambda s: budget_share(s, mine))[:k], "code: lowest past share of budget (model failed)"
+    picked = [n for i, n in enumerate(ans["shops"]) if n in names and n not in ans["shops"][:i]][:k]
+    return [next(s for s in pool if s["name"] == n) for n in picked] or pool[:1], ans["reason"]
+
+
+def _ask_shortlist(pool, names, learned, item, budget, mine, k):
+    return harness.ask(CHOOSE_SYSTEM, (
         f"I need to buy: {item} (my budget: {budget}).\n"
         + (f"Rules I learned from my own past failures: <<<{' / '.join(learned)}>>>\n" if learned else "")
         + "Shops:\n"
@@ -115,9 +128,10 @@ def choose(shops, item, budget, mine, k=1):
         "in one sentence."),
         {"type": "object", "properties": {
             "shops": {"type": "array", "items": {"type": "string", "enum": names}},
-            "reason": {"type": "string"}}, "required": ["shops", "reason"]}, log=log, model=harness.CHEAP, role="choose")
-    picked = [n for i, n in enumerate(ans["shops"]) if n in names and n not in ans["shops"][:i]][:k]
-    return [next(s for s in pool if s["name"] == n) for n in picked] or pool[:1], ans["reason"]
+            "reason": {"type": "string"}}, "required": ["shops", "reason"]}, log=log, model=harness.CHEAP, role="choose",
+        # orders come one at a time (the next ~1 s after the last pays), and this call was 16.6 s of a 35.1 s
+        # mean order gap (Nov 8 09h); --effort low took 13.3 s vs 17.4 s on the same prompt with similar picks
+        effort="low")
 
 
 def remember_need(order):
@@ -153,12 +167,14 @@ def pick_in_code(shops, mine):
     pool = [s for s in shops if s["name"] not in cheats] or shops
     if random.random() < EXPLORE:
         return random.choice(pool)
+    return min(pool, key=lambda s: budget_share(s, mine))
 
-    def cost(s):
-        xs = [m["price"] / m["budget"] for m in mine[-2000:] if m["shop"] == s["name"] and m["outcome"] == "deal"
-              and m.get("price") and m.get("budget")][-30:]
-        return (sum(xs) + 0.86 * 2) / (len(xs) + 2)            # unknown shops start at the Round 2 average
-    return min(pool, key=cost)
+
+def budget_share(s, mine):
+    """Mean share of the budget our last 30 deals at this shop cost; unknown shops start at the Round 2 average."""
+    xs = [m["price"] / m["budget"] for m in mine[-2000:] if m["shop"] == s["name"] and m["outcome"] == "deal"
+          and m.get("price") and m.get("budget")][-30:]
+    return (sum(xs) + 0.86 * 2) / (len(xs) + 2)
 
 
 WARRANTY = re.compile(r"(?i)(\d+(?:\.\d+)?)\s*h(?:ours?)?\b[^.;]{0,30}?warrant|warrant[^.;]{0,30}?(\d+(?:\.\d+)?)\s*h")
