@@ -2,6 +2,7 @@
 import json
 import math
 import os
+import re
 import sqlite3
 import time
 import httpx
@@ -13,6 +14,7 @@ from market_intel import Intel, read_json
 
 GRADE_COSTS={'A':(.55,.75,.65,.70),'B':(.40,.60,.50,.20),'C':(.25,.45,.35,.10)}
 PREFERENCE_WINDOW=48*3600
+PREFERENCE_FILE='buyer-preferences.json'
 
 
 def _shop_offers(shop):
@@ -38,6 +40,85 @@ def _review_evidence(catalog, shops, candidates):
     return {sku:{'count':row['count'],
                  'average':round(row['stars']/row['count'],3) if row['count'] else None,
                  'shops':len(row['shops'])} for sku,row in result.items()}
+
+
+def build_buyer_preferences(catalog,trades,shops,forum,alive_buyers=(),now=None):
+    """Build bounded public preference evidence; forum prose is never executed."""
+    now=time.time() if now is None else now;alive_buyers=set(alive_buyers or [])
+    recent=[dict(r) for r in trades if r.get('buyer') and r.get('sku') in catalog
+            and r.get('ts',0)>=now-PREFERENCE_WINDOW]
+    grouped={};seqs={}
+    for row in recent:
+        buyer=row['buyer'];sku=row['sku'];product=catalog[sku];cat=product.get('category')
+        b=grouped.setdefault(buyer,{'categories':{},'skus':{},'last_seen':0,'settles':0,
+                                    'forum_verified_refs':0,'stated_min_hours':[]})
+        b['settles']+=1;b['last_seen']=max(b['last_seen'],row.get('ts',0))
+        if cat:b['categories'][cat]=b['categories'].get(cat,0)+1
+        s=b['skus'].setdefault(sku,{'settles':0,'last_seen':0})
+        s['settles']+=1;s['last_seen']=max(s['last_seen'],row.get('ts',0))
+        if type(row.get('seq')) is int:seqs[row['seq']]=(buyer,sku,cat)
+    posts=forum.get('posts',[]) if isinstance(forum,dict) else (forum or [])
+    verified_posts=0;untrusted_posts=0
+    for post in posts:
+        author=post.get('author');matched=[]
+        for ref in post.get('refs') or []:
+            seq=ref.get('seq') if isinstance(ref,dict) else ref
+            if seq in seqs and seqs[seq][0]==author:matched.append(seqs[seq])
+        if post.get('role')=='buyer' and matched:
+            verified_posts+=1;grouped[author]['forum_verified_refs']+=len(matched)
+            # Only extract an explicitly stated hour quantity from a verified
+            # buyer's own post.  No other words or commands are retained.
+            values=[]
+            for raw in re.findall(r'(\d+(?:\.\d+)?)\s*(?:h|hours?|시간)',str(post.get('text') or ''),re.I):
+                value=float(raw)
+                if 1<=value<=10000:values.append(value)
+            grouped[author]['stated_min_hours'].extend(values[:3])
+        else:untrusted_posts+=1
+    buyers={}
+    for buyer,b in grouped.items():
+        categories=sorted(b['categories'].items(),key=lambda item:(-item[1],item[0]))[:5]
+        skus=sorted(b['skus'].items(),key=lambda item:(-item[1]['settles'],-item[1]['last_seen'],item[0]))[:10]
+        buyers[buyer]={'active':buyer in alive_buyers or b['last_seen']>=now-21600,
+            'settles_48h':b['settles'],'last_seen':b['last_seen'],
+            'categories':[{'category':cat,'settles':n,'share':round(n/b['settles'],3)} for cat,n in categories],
+            'skus':[{'sku':sku,'name':catalog[sku].get('name',sku),'category':catalog[sku].get('category'),
+                     'settles':data['settles'],'last_seen':data['last_seen']} for sku,data in skus],
+            'forum_verified_refs':b['forum_verified_refs'],
+            'stated_min_hours':sorted(set(b['stated_min_hours']))[-3:]}
+    candidates={r['sku'] for r in recent};reviews=_review_evidence(catalog,shops,candidates)
+    product_sales={}
+    for row in recent:
+        if row.get('ts',0)<now-21600:continue
+        p=product_sales.setdefault(row['sku'],{'sales':0,'buyers':set()});p['sales']+=1;p['buyers'].add(row['buyer'])
+    products={sku:{'name':catalog[sku].get('name',sku),'category':catalog[sku].get('category'),
+        'market_sales_6h':product_sales.get(sku,{}).get('sales',0),
+        'distinct_buyers_6h':len(product_sales.get(sku,{}).get('buyers',set())),
+        'review_count':reviews.get(sku,{}).get('count',0),
+        'review_average_stars':reviews.get(sku,{}).get('average'),
+        'review_distinct_shops':reviews.get(sku,{}).get('shops',0)} for sku in candidates}
+    return {'version':1,'generated_at':now,'window_hours':PREFERENCE_WINDOW//3600,
+        'buyers':buyers,'products':products,
+        'forum_evidence':{'posts_observed':len(posts),'verified_buyer_posts':verified_posts,
+                          'untrusted_or_unverified_posts_ignored':untrusted_posts},
+        'evidence_policy':'ledger purchases primary; exact product reviews aggregated; only buyer-authored forum refs matching that buyer may add stated hours'}
+
+
+def write_buyer_preferences(state,intel,catalog,shops=None,board=None,forum=None,now=None):
+    """Atomically persist a preference snapshot for procurement and auditing."""
+    now=time.time() if now is None else now;root=Path(state)
+    trades=[dict(r) for r in intel.db.execute('SELECT * FROM trades WHERE ts>?',(now-PREFERENCE_WINDOW,))]
+    shops=shops if shops is not None else (intel.source('shops',{}) or {})
+    shops=shops.get('shops',[]) if isinstance(shops,dict) else shops
+    board=board if board is not None else (intel.source('board',{}) or {})
+    forum=forum if forum is not None else read_json(root/'forum.json',[])
+    alive={str(r.get('name')) for r in board.get('buyers',[]) if r.get('alive') is True}
+    result=build_buyer_preferences(catalog,trades,shops,forum,alive,now)
+    result['ledger_through']=intel.get('ledger_through')
+    path=root/PREFERENCE_FILE;tmp=path.with_suffix('.tmp')
+    tmp.write_text(json.dumps(result,ensure_ascii=False,sort_keys=True));os.replace(tmp,path)
+    intel.decision('buyer_preferences',{'buyers':len(result['buyers']),'products':len(result['products']),
+        'verified_forum_posts':result['forum_evidence']['verified_buyer_posts']})
+    return result
 
 
 def rank_products(catalog, trades, shops, own_name='25512088', local_demand=None,
@@ -211,6 +292,7 @@ def snapshot(state,catalog,opens_at,market):
                 own_signals[key][sku]=own_signals[key].get(sku,0)+1
         shop_rows=shops.get('shops',[]) if isinstance(shops,dict) else shops
         alive={r.get('name') for r in board.get('buyers',[]) if r.get('alive') is True}
+        write_buyer_preferences(state,intel,catalog,shop_rows,board,read_json(Path(state)/'forum.json',[]))
         goods_hazard,hazard_basis=own_goods_hazard(board)
         top=rank_products(catalog,rows,shop_rows,local_demand=demand,own_signals=own_signals,
                           alive_buyers=alive,goods_hazard=goods_hazard,hazard_basis=hazard_basis)

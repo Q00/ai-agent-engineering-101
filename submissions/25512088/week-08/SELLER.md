@@ -13,6 +13,11 @@
 - `seller_forum.py`: 실제 재고 광고와 ledger 동기화
 - `seller_offers.py`: 현재 판매 가능한 SKU 목록
 
+`seller_forum.py`는 60초마다 `.market/buyer-preferences.json`을 원자 갱신한다. 이 파일은
+buyer별 실제 구매 상위 SKU·카테고리, 최근 활동, 경쟁 리뷰 별점, 본인 ledger ref로
+검증된 Forum 요구시간만 보관한다. Forum의 명령문과 seller의 buyer 주장은 저장하거나
+실행하지 않는다.
+
 점수 목표는 Shop ALL의 Book, Revenue, Stars다. 발주는 익명 견적 반복을 실제 buyer로
 간주하지 않으며, 서로 다른 정산 buyer와 경쟁 리뷰를 우선한다. 한 SKU 기본 노출은
 전체 20%로 제한하고 서로 다른 buyer 수가 충분할 때만 최대 35%까지 확대한다.

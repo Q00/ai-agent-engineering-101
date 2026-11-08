@@ -143,6 +143,16 @@ def tick(state, key_path, publish=True):
         if path.exists():
             posts = json.loads(path.read_text())
             program.forum(posts if isinstance(posts, list) else posts.get('posts', []))
+        # Refresh the structured preference artifact at most once per minute.
+        if time.time()-program.get('preferences_updated_at',0)>=60:
+            from market_intel import Intel
+            from seller_market import write_buyer_preferences
+            intel=Intel(state)
+            try:
+                catalog_path=Path(state)/'catalog.json'
+                if catalog_path.exists():write_buyer_preferences(state,intel,json.loads(catalog_path.read_text()))
+                program.put('preferences_updated_at',time.time())
+            finally:intel.close()
         if publish and program.get('synced_at', 0) > time.time()-60:
             inv = Path(state) / 'inventory.json'
             if inv.exists():
