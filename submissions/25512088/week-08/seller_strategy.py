@@ -77,7 +77,8 @@ def negotiate(unit, current, offered, catalog, program, token='', ref=''):
     return q if q['price']<current['price'] else current
 
 
-def sale_quote(unit, catalog, program, intel=None, token='', ref=''):
+def sale_quote(unit, catalog, program, intel=None, token='', ref='', *, record=True):
+    """Price stock; discovery previews must not count as buyer quote demand."""
     base=public_price(unit,catalog)  # Also validates expiry and grade.
     hours=(unit['expires_at']-time.time())/3600 if unit.get('expires_at') else None
     warranty=warranty_hours(unit,program)
@@ -115,7 +116,7 @@ def sale_quote(unit, catalog, program, intel=None, token='', ref=''):
     q['warranty_hours']=warranty;q['hazard_probability']=hazard;q['hazard_basis']=hazard_basis
     if q['price']*((1-hazard) if q['warranty_hours'] else 1)-q['reward'] < unit['cost']+math.ceil(unit['cost']*.09):
         raise ValueError('Net margin guard rejected quote')
-    if intel:
+    if intel and record:
         intel.decision('seller_quote',{'sku':unit['sku'],'cost':unit['cost'],'price':q['price'],
                        'reward':q['reward'],'floor':floor,'comparable':comp,'market_adjustment':adjustment,
                        'same_competitor_units':competitors,'substitute_competitor_units':substitutes,
