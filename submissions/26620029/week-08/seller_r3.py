@@ -51,6 +51,10 @@ WARRANTY_LINE = ("Break warranty included at no extra charge: goods can only bre
 # 1,330,855 refunded against 972,322 of margin. 45% of the market's C units sold without a warranty
 NO_WARRANTY = {"C"}
 NO_WARRANTY_LINE = "Refurbished unit sold as is, without a break warranty."
+# ddolcom (2026-11-09 07:45, the user's instruction "c재고에 보증을 한시적으로 붙여서 정리하자"): grade C goods carry the same
+# warranty until C_WARRANTY_UNTIL (24 h) to clear 125 C units (cost 47.6M). C costs about 0.35 of list and the market pays about
+# 0.59 for C, so even at the old 27.7% break rate about 0.08 of list stays after refunds. Buyers that take only A and B still will not pay
+C_WARRANTY_UNTIL = 1794265200          # 2026-11-10 08:00 KST
 # ddolcom (strategy 3): prices come from code. ask = floor + (list price - floor) * STEP ** (buyer offers so far)
 STEP = 0.6                                  # each buyer offer moves the ask 40% of the way down to the floor
 # ddolcom: a buyer that leaves without cancelling kept its unit promised until a restart. On 2026-11-06 after 34 h of
@@ -173,7 +177,7 @@ def is_goods(u):
 
 
 def has_warranty(u):
-    return is_goods(u) and u.get("grade") not in NO_WARRANTY
+    return is_goods(u) and (u.get("grade") not in NO_WARRANTY or (u.get("grade") == "C" and time.time() < C_WARRANTY_UNTIL))
 
 
 def facts(u):
