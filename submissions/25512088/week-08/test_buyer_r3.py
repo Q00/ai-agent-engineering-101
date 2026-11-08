@@ -9,7 +9,7 @@ import httpx
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from cryptography.hazmat.primitives import serialization
 from buyer_memory import Memory
-from buyer_r3 import Buyer, asking, candidates, limit, signed_receipt, exclude_own_shop, quote_rank, execution_order, expected_offer
+from buyer_r3 import Buyer, asking, candidates, limit, deals_cap, signed_receipt, exclude_own_shop, quote_rank, execution_order, expected_offer
 from buyer_review import review
 
 
@@ -128,6 +128,22 @@ class BuyerTests(unittest.TestCase):
     def test_numbers_in_sku_and_expiry_are_not_quotes(self):
         self.assertIsNone(asking('SKU123 10개 48 hours'))
         self.assertEqual(asking('Counteroffer: 7,000.'),7000)
+        self.assertEqual(asking('final total 7,100 KRW'),7100)
+
+    def test_deals_cap_spends_buffer_but_preserves_saved_guard(self):
+        portfolio={'deals':1000,'discount_sum':340.0,'saved':340/1100}
+        cap=deals_cap(self.o,self.cat['SKU1'],'C',portfolio)
+        discount=1-cap/self.cat['SKU1']['list_price']
+        self.assertGreater(cap,limit(self.o,self.cat['SKU1'],'C'))
+        self.assertGreaterEqual((portfolio['discount_sum']+discount)/(portfolio['deals']+101),.305)
+
+    def test_saved_portfolio_uses_only_paid_catalogued_deals(self):
+        with self.m.db:
+            self.m.db.execute("INSERT INTO payments VALUES('p1','s','SKU1',7000,1,1,NULL)")
+            self.m.db.execute("INSERT INTO payments VALUES('p2','s','SKU1',9000,0,2,NULL)")
+        portfolio=self.m.saved_portfolio(self.cat)
+        self.assertEqual(portfolio['deals'],1)
+        self.assertAlmostEqual(portfolio['discount_sum'],.3)
 
     def test_receipt_signature_and_exact_sku(self):
         task={'artifacts':[{'parts':[{'data':self.receipt()}]}]}

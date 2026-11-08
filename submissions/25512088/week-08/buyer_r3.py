@@ -33,6 +33,9 @@ def text_of(task):
 def asking(text):
     # Never interpret a SKU, quantity, expiry, or discount percent as a quote.
     hits = re.findall(r'\b(?:asking price|asking|ask|counteroffer|final price|offer price|price|견적|판매가|가격)\s*[:=]?\s*[₩$]?\s*([0-9][0-9,]*)\b',text,re.I)
+    # Some human sellers use "12,000 KRW/credits/원" without a price label.
+    # A currency suffix is sufficiently narrow; bare numbers remain rejected.
+    hits += re.findall(r'\b([0-9][0-9,]*)\s*(?:KRW|credits?|원)\b',text,re.I)
     return int(hits[-1].replace(',','')) if hits else None
 
 
@@ -72,6 +75,19 @@ def limit(order, product, grade=None):
     rates = {'A':95, 'B':80, 'C':60}
     pct = rates.get(grade, 75 if order.get('kind')=='food' else 60)
     return min(order['budget'], math.floor(product['list_price']*pct/100))
+
+
+SAVED_GUARD=.305
+
+
+def deals_cap(order,product,grade,portfolio,guard=SAVED_GUARD):
+    """Spend the accumulated Saved buffer on Deals without crossing its guard."""
+    conservative=limit(order,product,grade)
+    if not portfolio or portfolio.get('deals',0)<100:return conservative
+    needed=guard*(portfolio['deals']+101)-portfolio['discount_sum']
+    required_discount=max(0.0,min(1.0,needed))
+    portfolio_cap=math.floor(product['list_price']*(1-required_discount))
+    return min(order['budget'],product['list_price'],max(conservative,portfolio_cap))
 
 
 def own_shop_identity():
@@ -199,6 +215,7 @@ class Buyer:
         self.sessions = []
         self.intel = intel
         self.control = control
+        self.portfolio = memory.saved_portfolio(catalog)
         self.deadline = min(time.time()+85, order['expires']-3)
 
     def result(self, session=None, receipt=None, reason='No acceptable deal'):
@@ -279,7 +296,7 @@ class Buyer:
         worker=Buyer(self.o,memory,self.c,self.catalog,control=control)
         worker.deadline=self.deadline
         sku=offer['sku']; product=self.catalog[sku]
-        session=dict(shop=shop,sku=sku,cap=limit(self.o,product),deal_estimate=memory.deal_estimate(shop['url']))
+        session=dict(shop=shop,sku=sku,cap=deals_cap(self.o,product,None,self.portfolio),deal_estimate=memory.deal_estimate(shop['url']))
         try:
             card=self.c.get(shop['url'].rstrip('/')+'/.well-known/agent-card.json',timeout=5)
             card.raise_for_status()
@@ -313,14 +330,22 @@ class Buyer:
             missing=sorted(set(self.o['acceptable'])-offered_skus)
             if missing:
                 self.m.record(self.o['order'],'','',None,'no_stock',details={'skus':missing})
-            # Six concurrent quotes, submitted in ranked waves.  Every pair is
-            # enumerated, but the deadline wins over chasing a long tail.
-            for start in range(0,len(picks),6):
+            # Burst mode: wider quote waves, then transact as soon as four
+            # independently usable quotes exist instead of exhausting the market.
+            for start in range(0,len(picks),12):
                 if time.time()>=self.deadline-5:break
-                wave=picks[start:start+6]
-                with ThreadPoolExecutor(max_workers=min(6,len(wave))) as pool:
+                wave=picks[start:start+12]
+                with ThreadPoolExecutor(max_workers=min(12,len(wave))) as pool:
                     results=list(pool.map(lambda pair:self.open_session(*pair),wave))
                 self.sessions.extend(results)
+                usable=0
+                for candidate in self.sessions:
+                    if candidate.get('error') or not task_state(candidate.get('last',{})).endswith('INPUT_REQUIRED'):continue
+                    fields=quote_fields(candidate['last'])
+                    if not fields['price']:continue
+                    unsuitable=(self.o.get('kind')=='food' and fields['hours'] is not None and fields['hours']<self.o['use_within_hours']) or (self.o.get('kind')!='food' and fields['warranty'] is not None and fields['warranty']<6)
+                    usable+=not unsuitable
+                if usable>=4:break
             for s in self.sessions:
                 shop=s['shop'];sku=s['sku']
                 if s.get('error'):
@@ -328,7 +353,7 @@ class Buyer:
                     self.m.record(self.o['order'],shop['url'],sku,s.get('task'),s['error']+'_error',details={'error':s.get('error_type')})
                     continue
                 task=s['last'];fields=quote_fields(task)
-                s['grade']=fields['grade'];s['cap']=limit(self.o,self.catalog[sku],s['grade'])
+                s['grade']=fields['grade'];s['cap']=deals_cap(self.o,self.catalog[sku],s['grade'],self.portfolio)
                 if task_state(task).endswith('COMPLETED'):
                     # A certificate, not a parsed claim, enforces the actual grade at payment.
                     return self.completed(s)
@@ -349,7 +374,8 @@ class Buyer:
             self.m.record(self.o['order'],'','',None,'selection_v4',details={
                 'eligible_pairs':len(picks),'eligible_shops':len({s['url'] for s,_ in picks}),
                 'eligible_skus':sorted(offered_skus),'quoted_pairs':len(self.sessions),
-                'parallel_limit':6,'deadline_seconds':85,
+                'parallel_limit':12,'early_quote_target':4,'deadline_seconds':85,
+                'saved_guard':SAVED_GUARD,'saved_portfolio':self.portfolio,
                 'breakage_prior':BREAKAGE_PRIORS['food' if self.o.get('kind')=='food' else 'goods'],
                 'ranked_quotes':[{'shop':s['shop']['name'],'sku':s['sku'],'ask':s['ask'],'cap':s['cap'],
                   'deal_estimate':s['deal_estimate'],**s['expected']} for s in quotes]})

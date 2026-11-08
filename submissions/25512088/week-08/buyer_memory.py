@@ -109,6 +109,18 @@ class Memory:
         won=sum(r['paid']==1 and r['shop']==shop for r in rows)
         return {'probability':(won+2)/(len(rows)+4),'trials':len(rows),'wins':won}
 
+    def saved_portfolio(self, catalog):
+        """Rebuild the official-style Saved numerator from settled local payments."""
+        rows=self.db.execute('SELECT sku,price FROM payments WHERE paid=1').fetchall()
+        total=0.0;deals=0
+        for row in rows:
+            product=catalog.get(row['sku'],{})
+            listed=product.get('list_price');price=row['price']
+            if not isinstance(listed,(int,float)) or listed<=0 or not isinstance(price,(int,float)):continue
+            total+=max(0.0,min(1.0,1-price/listed));deals+=1
+        return {'deals':deals,'discount_sum':total,
+            'saved':total/(deals+100) if deals or total else 0.0}
+
     def remember_key(self, shop, key):
         with self.db:
             self.db.execute('INSERT OR REPLACE INTO credentials VALUES(?,?,?)', (shop,key,time.time()))
