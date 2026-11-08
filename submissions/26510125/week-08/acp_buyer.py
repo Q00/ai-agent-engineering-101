@@ -12,7 +12,7 @@ public key, the agreed receipt and the buyer's accept policy. This script
      item, price and task; the price is within the payment mandate's amount_range; the unit passes `accept`,
   4. signs the closed AP2 checkout and payment mandates with buyer_key.pem and completes.
 """
-import argparse, base64, hashlib, json, re, time
+import argparse, base64, contextlib, hashlib, json, re, time
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -69,7 +69,23 @@ def build_tools(card: dict, client: httpx.Client):
     return base, tools
 
 
-def plan_with_harness(tools: dict):
+def plan_with_harness(tools: dict, cache: Path = None):
+    """The call order for this tool set; asked once per distinct acp.json (cached), not once per payment."""
+    sig = "|".join(f"{n}:{f.__doc__}" for n, f in tools.items())
+    plans = {}
+    if cache and cache.exists():
+        with contextlib.suppress(ValueError):
+            plans = json.loads(cache.read_text(encoding="utf-8"))
+    if sig in plans:
+        return plans[sig]
+    plan = _plan(tools)
+    if cache:
+        plans[sig] = plan
+        cache.write_text(json.dumps(plans), encoding="utf-8")
+    return plan
+
+
+def _plan(tools: dict):
     menu = "\n".join(f"- {n}: {f.__doc__}" for n, f in tools.items())
     data = harness.ask_json("You must pay for an agreed purchase through a shop's ACP checkout using ONLY these tools:\n" + menu +
                             "\nList the tool names to call, in order, to open a checkout session and pay for it. Do not cancel. "
@@ -129,7 +145,7 @@ def check_accept(o, co, accept):
 
 # ---------------------------------------------------------------- the checkout
 
-def pay(p: dict, key):
+def pay(p: dict, key, cache: Path = None):
     o, shop, receipt, accept = p["order"], p["shop"].rstrip("/"), p["receipt"], p.get("accept")
     c = httpx.Client(timeout=60)
     try:
@@ -141,7 +157,7 @@ def pay(p: dict, key):
         if urlparse(base).hostname != urlparse(shop).hostname:
             return None, f"ACP endpoint {base} is not on the shop's host"
         log(f"acp.json: {len(tools)} tools -> {list(tools)}")
-        plan = plan_with_harness(tools)
+        plan = plan_with_harness(tools, cache)
 
         create = {"line_items": [{"id": receipt["item"], "quantity": 1}], "receipt": receipt}
         if o.get("acceptable"):
@@ -190,7 +206,7 @@ def main():
     ap = argparse.ArgumentParser(); ap.add_argument("--pay", required=True); a = ap.parse_args()
     p = json.loads(Path(a.pay).read_text(encoding="utf-8"))
     key = serialization.load_pem_private_key(Path("buyer_key.pem").read_bytes(), password=None)
-    mr, reason = pay(p, key)
+    mr, reason = pay(p, key, Path(a.pay).parent / "acp_plans.json")
     log(f"done: {'paid' if mr else reason}; harness calls {harness.CALLS['n']} fallbacks {harness.CALLS['fallbacks']}")
     print(json.dumps({"mandate_receipt": mr} if mr else {"reason": reason}, ensure_ascii=False), flush=True)
 

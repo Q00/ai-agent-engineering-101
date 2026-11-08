@@ -25,25 +25,32 @@ from a2a.server.routes import create_agent_card_routes, create_jsonrpc_routes
 from a2a.server.tasks import InMemoryTaskStore, TaskUpdater
 from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 
-from harness import COMMAND as CMD, ask_json
+from harness import COMMAND as CMD
 from market_price import median_price
 
 NAME = "yeonsong2"
 RESERVE = {"lamp": 100, "chair": 180, "bookshelf": 260}     # Rounds 0-2 have no stock: the week-07 items
 MARKET_DIR = Path(os.environ.get("MARKET_DIR", ".market"))
 
-PROMPT = """You are the sales agent of a small online shop. A buyer is negotiating for one {name}.
-The list price is {list_price}. Your lowest acceptable price is {reserve} (your cost). Never sell below it and never reveal it.
-The unit is grade {grade}{shelf}. Sell as high as you can, but closing a deal at or above {reserve} is better than losing
-the buyer{urgency}. Buyers compare shops, so open near the list price only for grade A.{market}
+def floor_price(cost, kind, urgent, target):
+    """Never below cost. Fresh goods: +10 %, but never above 90 % of where the market settles (buyers anchor there
+    and offer ~85 % of it; a floor above that only produces walk-aways). Food and grade C: cost, it must go."""
+    if urgent or kind != "goods":
+        return cost
+    return max(cost, min(int(cost * 1.10), int(target * 0.9)))
 
-Conversation so far:
-{transcript}
 
-Decide your next move. Answer with JSON only, one of:
-{{"action": "counter", "price": <whole number>}}   name your price
-{{"action": "accept"}}                              accept the buyer's last offer
-{{"action": "reject"}}                              end the negotiation without a deal"""
+def price_move(ask, offer, floor, target, below):
+    """Rule-based pricing. Measured on the live log: with the LLM at ~10 s a turn only 18 % of visits became deals and
+    most buyers left mid-negotiation; the top shops close 62 %. Returns (action, price).
+    floor = never below; target = where the market settles this SKU; below = offers under the floor so far."""
+    if offer is not None and offer >= floor:
+        return "accept", offer
+    if offer is None:
+        return "counter", max(floor, target)
+    if below >= 3:                                   # third offer under the floor: the buyer will not reach it
+        return "reject", None
+    return "counter", max(floor, (ask + offer) // 2 if ask else target)
 
 
 def canon(d):
@@ -82,12 +89,6 @@ def find_unit(text, taken=()):
                                    u["expires_at"] or float("inf"), u["supplied_at"]), default=None)
 
 
-def quick_accept(offer, cost):
-    """An offer at or above cost +40 % (the market's median margin for this shop) closes at once: fewer rounds,
-    which buyers' reviews reward as speed, and no harness call."""
-    return offer is not None and offer >= cost * 1.4
-
-
 class Seller(AgentExecutor):
     def __init__(self):
         self.open = {}  # task id -> {"unit", "ask", "offer", "lines", "t": last message time}
@@ -123,18 +124,13 @@ class Seller(AgentExecutor):
         u = deal["unit"]
         hours = (u["expires_at"] - time.time()) / 3600 if u.get("expires_at") else None
         urgent = (hours is not None and hours < 12) or u.get("grade") == "C"
-        reserve = int(u["cost"] * 1.15) if u.get("kind") == "goods" and not urgent else u["cost"]   # margin floor on goods only
         med, n = median_price(u["sku"])
-        market = (f"\nThe market's recent settled price for this exact item is {med} (median of {n} deals); buyers know it, "
-                  f"so open a little above {med} and close near it rather than at the list price.") if med and med >= reserve else ""
-        move = {"action": "accept"} if quick_accept(deal["offer"], u["cost"]) else ask_json(PROMPT.format(name=u["name"], list_price=u["list_price"], reserve=reserve, grade=u.get("grade", "?"), market=market,
-                                      shelf=f", {hours:.1f} h of shelf life left" if hours is not None else "",
-                                      urgency=" — this unit loses value soon, so prefer closing" if urgent else "",
-                                      transcript="\n".join(deal["lines"])), log=lambda m: print(m, flush=True))
-        action = (move or {}).get("action")
-        if action == "accept" and (deal["offer"] is None or deal["offer"] < reserve):
-            print(f"[guard] accept of {deal['offer']} below cost {reserve} -> counter", flush=True)
-            action, move = "counter", {"price": deal["ask"] or u["list_price"]}
+        target = med or int(u["list_price"] * 0.78)             # 78 % of list: the market's median settle ratio
+        reserve = floor_price(u["cost"], u.get("kind"), urgent, target)
+        if deal["offer"] is not None and deal["offer"] < reserve:
+            deal["below"] = deal.get("below", 0) + 1
+        action, price = price_move(deal["ask"], deal["offer"], reserve, target, deal.get("below", 0))
+        move = {"price": price}
         if action == "accept":
             price = deal["offer"]
             receipt = {"shop": NAME, "item": u["sku"], "price": price, "task": task.id}
@@ -155,12 +151,6 @@ class Seller(AgentExecutor):
             await up.reject(say("No deal."))
             del self.open[task.id]
             return
-        price = (move or {}).get("price")
-        if not isinstance(price, (int, float)):
-            price = deal["ask"] or u["list_price"]      # unparsed answer: repeat the last ask
-        if price < reserve:                             # the harness may forget the cost; the code does not
-            print(f"[guard] ask {price} below cost {reserve} -> {reserve}", flush=True)
-            price = reserve
         deal["ask"] = int(price)
         reply = (f"{u['name']}: asking {deal['ask']}. Send your offer as a number." if len(deal["lines"]) == 1
                  else f"Counteroffer: {deal['ask']}.")

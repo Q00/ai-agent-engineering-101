@@ -137,6 +137,14 @@ def choose(shops: list, mem: dict, item: str, budget: int):
         log(f"[choose] {s['url']}: {s['name']} is the only shop without a warning "
             f"(reviews {n}, avg {avg if avg is None else round(avg, 1)}; {my_history(mem, s['name'])})")
         return s
+    proven = [s for s in keep if len([t for t in mem["shops"].get(s["name"], {}).get("trades", []) if t["status"] == "bought"]) >= 3]
+    if proven:                                     # three deals there already: the memory decides, no harness (~15 s)
+        def paid_ratio(s):
+            b = [t for t in mem["shops"][s["name"]]["trades"] if t["status"] == "bought" and t.get("receipt_price") and t.get("budget")][-5:]
+            return sum(t["receipt_price"] / t["budget"] for t in b) / len(b)
+        s = min(proven, key=paid_ratio)
+        log(f"[choose] {s['url']}: {s['name']} is proven ({my_history(mem, s['name'])}; paid {paid_ratio(s):.0%} of budget), no harness")
+        return s
     rows = []
     for s in keep:
         avg, n, _ = review_summary(s)
@@ -314,13 +322,14 @@ def main():
             log(f"[sku] {offer['sku']} {offer['name']!r} list {catalog.get(offer['sku'], {}).get('list_price')} "
                 f"of {len(shop.get('offers') or [])} offers; broken before: {sorted(broken)[:3]}")
 
-    hint = None
+    hint = med = None
     if offer:
         med, n = median_price(offer["sku"])
         if med:
             hint = f"Other buyers recently paid about {med} for this exact item ({n} settled deals); offer below that first. "
             log(f"[anchor] market median {med} over {n} deals")
-    st = negotiate(shop["url"], args.item, args.budget, request_text=request, shop=shop["name"], hint=hint)
+    st = negotiate(shop["url"], args.item, args.budget, request_text=request, shop=shop["name"], hint=hint,
+                   anchor=med if offer and med else None)
     receipt = st.get("receipt")
     agreed = st["history"][-1][1] if st["history"] else None
     rprice = receipt.get("price") if isinstance(receipt, dict) else None

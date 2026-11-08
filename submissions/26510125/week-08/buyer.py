@@ -111,8 +111,20 @@ def receipt_price(t):
 
 # ---------------------------------------------------------------- the harness decides
 
+def first_move(ask, budget, anchor):
+    """Round 1 without the LLM when the market's settled median is known: take an ask at or under the median
+    (and budget), else offer 85 % of the median. Saves ~12 s an order; later rounds still go to the harness."""
+    if ask <= min(budget, anchor):
+        return "accept", None
+    return "offer", min(budget, int(anchor * 0.85))
+
+
 def decide(st: dict):
     """st: the negotiation's state dict. Returns (action, price)."""
+    if st["rounds"] == 0 and st.get("anchor"):
+        action, price = first_move(st["ask"], st["budget"], st["anchor"])
+        log(f"    [anchor] {action} {price or ''} (median {st['anchor']})")
+        return action, price
     hist = "; ".join(f"ask {a} / my offer {o}" for a, o in st["history"]) or "none"
     data = harness.ask_json(
         f"You are buying a {st['item']} from the shop {st['shop']!r}. Your budget is {st['budget']}: "
@@ -154,16 +166,16 @@ def _int(v):
 
 # ---------------------------------------------------------------- one negotiation
 
-def negotiate(base: str, item: str, budget: int, request_text=None, shop=None, hint=None) -> dict:
+def negotiate(base: str, item: str, budget: int, request_text=None, shop=None, hint=None, anchor=None) -> dict:
     try:
         card = get_card(base)
     except httpx.HTTPError as e:                       # stale tunnel (530), timeout: no deal, not a crash
         log(f"[{item} @ {shop}] unreachable: {type(e).__name__} {str(e)[:80]}")
-        return {"shop": shop, "url": base, "item": item, "budget": budget, "hint": hint, "ask": None, "history": [],
+        return {"shop": shop, "url": base, "item": item, "budget": budget, "hint": hint, "anchor": anchor, "ask": None, "history": [],
                 "rounds": 0, "status": "unreachable", "task_id": None, "price": None}
     url = rpc_url(card, base)
     shop = shop or card.get("name")
-    st = {"shop": shop, "url": url, "item": item, "budget": budget, "hint": hint, "ask": None, "history": [],
+    st = {"shop": shop, "url": url, "item": item, "budget": budget, "hint": hint, "anchor": anchor, "ask": None, "history": [],
           "rounds": 0, "status": "opening", "task_id": None, "price": None}
     log(f"[{item} @ {shop}] card ok, budget {budget}")
     t, err = send(url, request_text or f"I want to buy a {item}")

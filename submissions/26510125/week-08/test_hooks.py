@@ -74,8 +74,23 @@ sl = seller.Seller()
 sl.open = {"fresh": {"unit": {"unit": "a"}, "t": now - 60}, "stale": {"unit": {"unit": "b"}, "t": now - 300},
            "r2": {"unit": {"unit": None}, "t": now}}
 assert sl.held() == {"a"}, sl.held()                                                    # silent 5 min -> released
-assert seller.quick_accept(140, 100) and not seller.quick_accept(139, 100) and not seller.quick_accept(None, 100)
-print("ok: find_unit + held + quick_accept")
+fp = seller.floor_price
+assert fp(80, "goods", False, 101) == 88 and fp(80, "goods", False, 200) == 88 and fp(80, "goods", False, 85) == 80
+assert fp(80, "food", False, 200) == 80 and fp(80, "goods", True, 200) == 80
+pm = seller.price_move
+assert pm(None, None, 115, 150, 0) == ("counter", 150) and pm(None, None, 115, 100, 0) == ("counter", 115)
+assert pm(150, 120, 115, 150, 0) == ("accept", 120) and pm(150, 100, 115, 150, 1) == ("counter", 125)
+assert pm(150, 100, 115, 150, 2) == ("counter", 125) and pm(150, 100, 115, 150, 3) == ("reject", None)
+print("ok: find_unit + held + price_move")
+import buyer
+assert buyer.first_move(100, 120, 110) == ("accept", None) and buyer.first_move(130, 120, 110) == ("offer", 93)
+assert buyer.first_move(100, 90, 110) == ("offer", 90)                                   # budget caps the offer
+pmem = {"shops": {"p": {"trades": [{"status": "bought", "receipt_price": 80, "budget": 100}] * 3, "avoid": False},
+                  "q": {"trades": [{"status": "bought", "receipt_price": 90, "budget": 100}] * 3, "avoid": False}}}
+import harness
+harness.ask_json = lambda *a, **k: (_ for _ in ()).throw(AssertionError("harness must not be called"))
+assert mb.choose([{"name": "p", "url": "u1", "reviews": []}, {"name": "q", "url": "u2", "reviews": []}], pmem, "x", 100)["name"] == "p"
+print("ok: first_move + proven shop")
 
 # ---- acp_buyer: tools built from the kit's acp.json shape, against a mock shop (no market, no LLM)
 import base64, hashlib, httpx
@@ -115,7 +130,10 @@ def mock(req: httpx.Request):
 mock.grade = "A"
 _Client = httpx.Client
 acp_buyer.httpx.Client = lambda **kw: _Client(transport=httpx.MockTransport(mock))
-harness.ask_json = lambda *a, **k: {"plan": ["create_checkout_session", "get_checkout_session", "complete_checkout_session"]}
+calls = []
+harness.ask_json = lambda *a, **k: calls.append(1) or {"plan": ["create_checkout_session", "get_checkout_session", "complete_checkout_session"]}
+_b, tls = acp_buyer.build_tools(card, httpx.Client(transport=httpx.MockTransport(mock)))
+assert acp_buyer.plan_with_harness(tls, md / "plans.json") == acp_buyer.plan_with_harness(tls, md / "plans.json") and len(calls) == 1
 payload = {"order": {"order": "o1", "acceptable": ["G1"], "kind": "goods", "market_pubkey": market_pub, "mandates": {
                "checkout": {"mandate": {"a": 1}}, "payment": {"mandate": {"constraints": [{"type": "payment.amount_range", "max": 300}]}}}},
            "shop": "https://shop.test", "shop_pub": shop_pub, "receipt": receipt, "accept": {"cert": True, "grades": ["A", "B"]}}
