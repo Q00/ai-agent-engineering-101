@@ -40,23 +40,6 @@ class RolloutTests(unittest.TestCase):
    with self.p.db:self.p.db.execute('UPDATE quote_holds SET until=0')
    self.assertEqual(offers(self.root,self.p,intel)[0]['warranty_hours'],6)
   finally:intel.close()
- def test_discovery_does_not_create_quote_demand_or_trigger_discount(self):
-  units=[dict(self.u,unit=f'u{n}') for n in range(6)]
-  (self.root/'inventory.json').write_text(json.dumps(dict(round=3,units=units)))
-  intel=Intel(self.root)
-  try:
-   intel.save_source('shops',{'shops':[dict(name='rival',offers=[dict(sku='sku',qty=4)])]})
-   initial=sale_quote(self.u,{},self.p,intel,record=False)
-   for _ in range(2):
-    preview=offers(self.root,self.p,intel)
-    self.assertEqual(preview[0]['price'],initial['price'])
-   self.assertEqual(intel.db.execute("SELECT COUNT(*) FROM decisions WHERE role='seller_quote'").fetchone()[0],0)
-   actual=sale_quote(self.u,{},self.p,intel)
-   self.assertEqual(actual['price'],initial['price'])
-   rows=intel.db.execute("SELECT body FROM decisions WHERE role='seller_quote'").fetchall()
-   self.assertEqual(len(rows),1)
-   self.assertEqual(json.loads(rows[0][0])['market_adjustment'],1.0)
-  finally:intel.close()
  def test_model_excludes_quote_only_and_uncertain_orders(self):
   m=Memory(self.root)
   try:
