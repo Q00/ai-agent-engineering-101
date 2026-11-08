@@ -129,6 +129,9 @@ def validate(pol):
     mf = sp.get("market_floor_frac")                    # v2.7: A/B goods floor as a share of the SKU market price
     if mf is not None and (isinstance(mf, bool) or not isinstance(mf, (int, float)) or not 0.5 <= mf <= 1.0):
         raise PolicyError(f"shop.market_floor_frac={mf!r} outside [0.5, 1]")
+    gcf = sp.get("goods_cost_frac")                     # v2.8: goods cost / list for the below-market restock check
+    if gcf is not None and (isinstance(gcf, bool) or not isinstance(gcf, (int, float)) or not 0.4 <= gcf <= 0.9):
+        raise PolicyError(f"shop.goods_cost_frac={gcf!r} outside [0.4, 0.9]")
     for blk in list((pol.get("categories") or {}).values()) + [sp]:
         k = blk.get("skus_per_category")
         if k is not None and (isinstance(k, bool) or not isinstance(k, int) or not 1 <= k <= 5):
@@ -741,6 +744,16 @@ GOODS_COST_FRAC = 0.59   # agent.md goods grade mix (A 70%, B 20%, C 10%) x mid 
 FOOD_COST_FRAC = 0.50    # agent.md food grade mix (A 25%, B 50%, C 25%) x the same mid costs
 
 
+def below_market_cost_frac(cost_frac, kind, goods_cf=None):
+    """v2.8 (2026-11-08): expected cost / list for the below-market restock check. Goods use shop.goods_cost_frac when
+    set, food and an unset key keep cost_frac (p75 of our units). The p75 of the units on hand runs high because the
+    units that cost the most sell last: 10:40 labpc cost_frac 0.69-0.70 while our furniture supplied in 48 h cost
+    A 0.66 (69% of units), B 0.52, C 0.33 of list, a mean of 0.60. At 0.69 + 5% margin every sofa whose market
+    median is 0.67-0.68 of list was skipped: 4 sofas and 1 bed never stocked, among them a 3.82M sofa that settled
+    680 times in 24 h at 47 shops with an expected margin of 29만 a unit (our top sofa 30만)."""
+    return float(goods_cf) if goods_cf and kind != "food" else cost_frac
+
+
 def surge_cost_frac(cost_frac, kind, factor):
     """v2.0b (2026-11-05): expected cost / list of a surged SKU for the below-market check = the larger of our units'
     cost_frac and the grade-mix mean x factor. Our units' costs already carry the surges they were bought under
@@ -818,6 +831,7 @@ def restock_plan(inv, demand, catalog, pol, stats=None, rng=None, activity=None,
 
     own_v = own_velocity(activity, catalog, pol, now)
     cost_frac = expected_cost_frac(units, sp) if sp.get("skip_below_market") else None
+    goods_cf = sp.get("goods_cost_frac") if cost_frac else None   # v2.8, see below_market_cost_frac
     surge = surge_factors(inv)                           # v2.0a (Patch 3.2): hot SKUs cost more to restock
 
     prio = [str(x) for x in (sp.get("restock_priority") or [])]      # v1.20a: categories bought first
@@ -873,11 +887,14 @@ def restock_plan(inv, demand, catalog, pol, stats=None, rng=None, activity=None,
             order_ = sorted(near, key=lambda t: (-rate[t[0]], -sold[t[0]], abs(t[1]["list_price"] - med), t[0]))
         if cost_frac:                                    # v1.18: SKUs the market settles under our cost + margin
             low = [t[0] for t in order_
-                   if below_market(t[0], t[1], stats, surge_cost_frac(cost_frac, kind, surge.get(t[0], 1.0)),
+                   if below_market(t[0], t[1], stats,
+                                   surge_cost_frac(below_market_cost_frac(cost_frac, kind, goods_cf), kind,
+                                                   surge.get(t[0], 1.0)),
                                    c["min_margin"])]
             if low:
                 order_ = [t for t in order_ if t[0] not in low]
-                notes.append(f"{cat}: market p50 under cost {cost_frac:.2f} + margin: skip {low[:3]}")
+                notes.append(f"{cat}: market p50 under cost "
+                             f"{below_market_cost_frac(cost_frac, kind, goods_cf):.2f} + margin: skip {low[:3]}")
                 if not order_:
                     continue
         if kind != "food" and any(rate.values()):        # v2.0a

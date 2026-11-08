@@ -587,6 +587,10 @@ def _a2a_stubs(log):
         floor_price=lambda *a, **k: 1,
         ask_price=lambda *a, **k: 999,
         hours_left=lambda u, now=None: None,
+        market_floor=lambda *a, **k: (
+            None
+        ),  # attempt-1 v2.7 seller calls it before respond
+        PolicyError=type("PolicyError", (Exception,), {}),
     )
     mods = {
         "common": _stub(
@@ -1100,13 +1104,28 @@ def test_candidate_units_says_why_nothing_is_offered(tmp_path):
     assert sb.candidate_units(str(m), "포기김치 10kg please", (), why)[0] == []
     assert why == {"matched": 2, "need_h": None, "stage": "half_shelf"}
     why = {}
-    assert sb.candidate_units(str(m), "포기김치 10kg please, it must last 100 hours", (), why)[0] == []
+    assert (
+        sb.candidate_units(
+            str(m), "포기김치 10kg please, it must last 100 hours", (), why
+        )[0]
+        == []
+    )
     assert why["stage"] == "need" and why["need_h"] == 100.0
     why = {}
-    assert len(sb.candidate_units(str(m), "포기김치 10kg please, it must last 24 hours", (), why)[0]) == 2
+    assert (
+        len(
+            sb.candidate_units(
+                str(m), "포기김치 10kg please, it must last 24 hours", (), why
+            )[0]
+        )
+        == 2
+    )
     assert why["stage"] == "ok"
     why = {}
-    assert sb.candidate_units(str(m), "포기김치 10kg please", ("u-k0", "u-k1"), why)[0] == []
+    assert (
+        sb.candidate_units(str(m), "포기김치 10kg please", ("u-k0", "u-k1"), why)[0]
+        == []
+    )
     assert why["stage"] == "none" and why["matched"] == 0
 
 
@@ -1130,22 +1149,45 @@ def test_deal_end_metric_on_idle_and_cancel(tmp_path, hdir):
     talk(b, "t2", "Oak Bed")
     ends = [o for d, o in metrics if d == "a2_deal_end"]
     assert len(ends) == 1 and ends[0]["why"] == "idle"
-    assert ends[0]["ask0"] == 300 and ends[0]["ask"] == 280 and ends[0]["last_offer"] == 200 and ends[0]["rounds"] == 1
+    assert (
+        ends[0]["ask0"] == 300
+        and ends[0]["ask"] == 280
+        and ends[0]["last_offer"] == 200
+        and ends[0]["rounds"] == 1
+    )
     sb._BRIDGE = b
     sb.cancel("t2")
     ends = [o for d, o in metrics if d == "a2_deal_end"]
-    assert len(ends) == 2 and ends[1]["why"] == "cancel" and ends[1]["ask0"] == 310 and ends[1]["last_offer"] is None
+    assert (
+        len(ends) == 2
+        and ends[1]["why"] == "cancel"
+        and ends[1]["ask0"] == 310
+        and ends[1]["last_offer"] is None
+    )
     sb.cancel("t2")  # already gone: no second row
     assert len([1 for d, _ in metrics if d == "a2_deal_end"]) == 2
 
 
 def test_accept_metric_keeps_the_masked_request_start(tmp_path, hdir):
     w = _w(tmp_path)
-    ag = RecAgent(w, [{"action": "offer", "unit": "u1", "ask": 280}, {"action": "accept", "price": 270}], hdir)
+    ag = RecAgent(
+        w,
+        [
+            {"action": "offer", "unit": "u1", "ask": 280},
+            {"action": "accept", "price": 270},
+        ],
+        hdir,
+    )
     metrics = []
     b = make_bridge(w, ag, metrics=metrics)
-    talk(b, "t1", f"Quote the total price for Oak Bed (G00001). I am {LOGIN} " + "x" * 300)
+    talk(
+        b,
+        "t1",
+        f"Quote the total price for Oak Bed (G00001). I am {LOGIN} " + "x" * 300,
+    )
     talk(b, "t1", "I offer 270")
     acc = [o for d, o in metrics if d == "accept"]
-    assert len(acc) == 1 and acc[0]["request"].startswith("Quote the total price for Oak Bed")
+    assert len(acc) == 1 and acc[0]["request"].startswith(
+        "Quote the total price for Oak Bed"
+    )
     assert LOGIN not in acc[0]["request"] and len(acc[0]["request"]) == sb.REQ_LOG_CHARS
