@@ -45,6 +45,9 @@ def test_harsh_styles_from_results(tmp_path, monkeypatch):
     m._ingest(rows)
     stats = m.style_stars(min_n=15)
     assert stats == {"harsh": (20, 3.0), "fair": (20, 5.0)}
+    assert restock_r3.refresh_harsh_styles(m) == {}                             # off by default since 2026-11-08
+    m.put("harsh_at", 0)
+    monkeypatch.setattr(config, "HARSH_MAX_STARS", 3.3)                        # the mechanism, when switched on
     assert restock_r3.refresh_harsh_styles(m) == {"harsh": (20, 3.0)}
     assert restock_r3.refresh_harsh_styles(m) is None                           # rate-limited
     assert json.loads(json.dumps(m.get("harsh_styles"))) == {"harsh": [20, 3.0]}

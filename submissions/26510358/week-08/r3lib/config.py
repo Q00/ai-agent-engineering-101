@@ -101,8 +101,12 @@ LOYALTY_ENABLED = False             # off since 2026-11-04 16:40: 332 codes issu
 LOYALTY_DISCOUNT = 0.03             # a quoted member code takes 3% off the first ask (the floor does not move)
 LOYALTY_PREFIX = "SSD-"
 HARSH_MIN_REVIEWS = 15              # a buyer style needs this many star ratings of our deals before we judge it
-HARSH_MAX_STARS = 3.3               # styles averaging at or below this are declined (2026-11-04: one buyer left 64
+HARSH_MAX_STARS = 0.0               # styles averaging at or below this are declined (2026-11-04: one buyer left 64
 HARSH_EVERY_MIN = 10                #   3-star reviews with an ad for its own shop in each)
+                                    # 3.3 -> 0.0 (off) 2026-11-08: since patch 3.4 stars take one mean per reviewing
+                                    #   account, and a declined buyer rates the refusal anyway: 25620027 (style
+                                    #   5aac87179a37, 3.0 on 15) logged "timed out" 3 stars on all 5 of our timeouts in
+                                    #   1.8 h; 240 declines in 27 h, 0 star gain, every one a lost sale
 
 # --- organisation (r3lib/org): departments over internal signed A2A --------------------------------
 ORG_A2A = True                      # route the restock cycle through the internal A2A server (falls back in-process)
