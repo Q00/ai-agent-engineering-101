@@ -44,11 +44,19 @@ class EvolutionDaemonTests(unittest.TestCase):
             e.control.save_input('rules',{'version':'two'},fetched=10_001)
             changed=e.evidence(10_001)
             self.assertEqual(e.trigger(changed,10_001),'official_rule_changed')
-            seed=e.seed('test','shop',changed,Path(tmp)/'candidate').read_text()
+            prompt=e.codex_prompt('test','shop',changed)
             self.assertNotIn('body',json.dumps(changed));self.assertNotIn('instruction',json.dumps(changed).casefold())
-            self.assertIn('raw forum/log text',seed)
-            self.assertIn(str(Path(tmp)/'candidate'),seed)
+            self.assertIn('raw forum text',prompt)
+            self.assertIn('Target role: shop',prompt)
             e.control.close()
+
+    def test_live_evolution_invokes_codex_directly_without_ouroboros(self):
+        command=Evolution.codex_command(Path('/tmp/candidate'))
+        joined=' '.join(command)
+        self.assertIn('/codex exec',joined)
+        self.assertIn('--sandbox workspace-write',joined)
+        self.assertIn('--approve-for-me',joined)
+        self.assertNotIn('ouroboros',joined.casefold())
 
     def test_interrupted_pre_live_cycle_retries_without_waiting(self):
         with tempfile.TemporaryDirectory() as tmp:
