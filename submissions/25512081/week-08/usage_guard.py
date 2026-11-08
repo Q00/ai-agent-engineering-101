@@ -1,4 +1,4 @@
-"""Guard the two-hour code overseer using native Claude /usage, not token estimates.
+"""Guard the six-hour code overseer using native Claude /usage, not token estimates.
 
 usage_guard.py --check
 usage_guard.py --report /path/to/report.md -- claude -p ...

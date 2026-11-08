@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# server-53, not part of the submission: crontab runs this every 2 hours. One headless Claude Code run reads
+# server-53, not part of the submission: crontab runs this every 6 hours. One headless Claude Code run reads
 # OVERSEER.md, checks the market agent, fixes what the logs justify, commits in ~/market-agent/repo, and writes a
 # report to ~/market-agent/overseer/. usage_guard.py pauses at the configured subscription limits. flock keeps two runs from overlapping; timeout caps one run at 30 minutes.
 exec 9>"$HOME/market-agent/overseer.lock"
