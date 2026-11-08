@@ -82,6 +82,12 @@ def find_unit(text, taken=()):
                                    u["expires_at"] or float("inf"), u["supplied_at"]), default=None)
 
 
+def quick_accept(offer, cost):
+    """An offer at or above cost +40 % (the market's median margin for this shop) closes at once: fewer rounds,
+    which buyers' reviews reward as speed, and no harness call."""
+    return offer is not None and offer >= cost * 1.4
+
+
 class Seller(AgentExecutor):
     def __init__(self):
         self.open = {}  # task id -> {"unit", "ask", "offer", "lines", "t": last message time}
@@ -121,7 +127,7 @@ class Seller(AgentExecutor):
         med, n = median_price(u["sku"])
         market = (f"\nThe market's recent settled price for this exact item is {med} (median of {n} deals); buyers know it, "
                   f"so open a little above {med} and close near it rather than at the list price.") if med and med >= reserve else ""
-        move = ask_json(PROMPT.format(name=u["name"], list_price=u["list_price"], reserve=reserve, grade=u.get("grade", "?"), market=market,
+        move = {"action": "accept"} if quick_accept(deal["offer"], u["cost"]) else ask_json(PROMPT.format(name=u["name"], list_price=u["list_price"], reserve=reserve, grade=u.get("grade", "?"), market=market,
                                       shelf=f", {hours:.1f} h of shelf life left" if hours is not None else "",
                                       urgency=" — this unit loses value soon, so prefer closing" if urgent else "",
                                       transcript="\n".join(deal["lines"])), log=lambda m: print(m, flush=True))

@@ -1093,7 +1093,7 @@ def cmd_join(a):
 
 def card_ok(base):
     try:
-        return httpx.get(base + "/.well-known/agent-card.json", timeout=10).status_code == 200
+        return httpx.get(base + "/.well-known/agent-card.json", timeout=20).status_code == 200
     except Exception:
         return False
 
@@ -1114,7 +1114,7 @@ def watchdog(a, agent, d, market, keys, procs, proxy, sport, pport, state, every
                 continue
             ok = procs[1].poll() is None and card_ok(proxy.public)
             misses = 0 if ok else misses + 1
-            if misses < 3:
+            if misses < 5:                                   # week-08: 28 re-tunnels a day at 3 misses; edge 530s pass in 1-3 min
                 continue
             log(f"[tunnel] {proxy.public} stopped answering, opening a new tunnel")
             stop(procs[1])

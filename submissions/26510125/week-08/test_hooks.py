@@ -70,7 +70,8 @@ sl = seller.Seller()
 sl.open = {"fresh": {"unit": {"unit": "a"}, "t": now - 60}, "stale": {"unit": {"unit": "b"}, "t": now - 300},
            "r2": {"unit": {"unit": None}, "t": now}}
 assert sl.held() == {"a"}, sl.held()                                                    # silent 5 min -> released
-print("ok: find_unit + held")
+assert seller.quick_accept(140, 100) and not seller.quick_accept(139, 100) and not seller.quick_accept(None, 100)
+print("ok: find_unit + held + quick_accept")
 
 # ---- acp_buyer: tools built from the kit's acp.json shape, against a mock shop (no market, no LLM)
 import base64, hashlib, httpx
