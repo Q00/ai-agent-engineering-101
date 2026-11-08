@@ -106,9 +106,13 @@ BUYER_BREAK = {"A": 0.028, "B": 0.136, "C": 0.29}   # our goods' breaks by order
                                                     # matched by product name, which missed most)
 OBJECTIVE_FRESH = 2 * 3600
 SHELF_SAID = re.compile(r"(\d+(?:\.\d+)?)\s*(?:h(?:ours?)?\s+(?:of shelf life|left)|시간\s*(?:남|의\s*유통|이\s*남))", re.I)
-GRADE_WORDS = (" I prefer grade C (refurbished) or B (damaged box) with the warranty, priced for its grade; grade A "
-               "only if you have nothing else. Please state the grade and whether the warranty is included.")         # 11/6 16:40: a deal is worth its list price whatever the grade,
-                                                        # and in 24 h ours kept C 0.417, B 0.309, A 0.237 of list
+GRADE_WORDS = (" I prefer grade B (damaged box) with the warranty, priced for its grade; grade A with the warranty "
+               "otherwise. Please state the grade and whether the warranty is included.")
+# 11/8 23:00 (the person's call): B first, then A, and no ask for C. Over 24 h of the market's goods, with its breakage
+# (a break under the warranty keeps 0, without it -1), the share of list kept is B with the warranty 0.310 (paid 0.648,
+# breaks 12.1%), A with it 0.275, C with it 0.262, C without -0.07. The C-first ask of 11/6 16:40 rested on "C kept
+# 0.417", counted before breaks were matched by order (11/7); since then 1,154 goods talks a day ended on a refurbished
+# unit without the warranty, and goods orders closed 1% (22 of 1,981 paid).
 FOOD_WORDS = " Please say how many hours of shelf life it has left."
                                                         # 11/6 19:10: "the unit nearest its expiry that still lasts that
                                                         # long" (16:40-19:10) made olstjr and choo-chu offer units far short

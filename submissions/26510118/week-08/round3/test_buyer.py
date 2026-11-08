@@ -543,8 +543,10 @@ def test_shop_around():
     check("each shop's share of food agreements refused for shelf life (5 or more to count): O 0.4; Q too few; "
           "a food candidate's trust drops by it", fails == {"O": 0.4}
           and {x["shop"]["name"]: x["trust"] for x in two}["O"] < {x["shop"]["name"]: x["trust"] for x in two}["P"], (fails, two and [(x["shop"]["name"], x["trust"]) for x in two]))
-    check("몫 사냥꾼 ③: goods are asked for as grade C or B with the warranty, A only if nothing else",
-          "I prefer grade C (refurbished) or B" in sent or "warranty" not in sent, sent)
+    check("goods are asked for as grade B with the warranty, then A with it; never C (11/8: B with the warranty keeps the "
+          "most of list once breaks count; the words go with every goods ask that carries the warranty, checked above)",
+          "I prefer grade B (damaged box) with the warranty" in mb.GRADE_WORDS and "grade A with the warranty" in mb.GRADE_WORDS
+          and "grade C" not in mb.GRADE_WORDS and "refurbished" not in mb.GRADE_WORDS, mb.GRADE_WORDS)
     mb.MIN_SHARE, mb.MARKET_SLACK = saved_rules
 
 
