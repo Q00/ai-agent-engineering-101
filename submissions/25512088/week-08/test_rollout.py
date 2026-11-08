@@ -1,7 +1,7 @@
 import json,math,tempfile,time,unittest
 from pathlib import Path
 from referral_program import Program
-from seller_strategy import sale_quote,negotiate,protected_floor
+from seller_strategy import sale_quote,negotiate,protected_floor,observed_hazard
 from buyer_memory import Memory
 from growth_offers import offers
 from market_intel import Intel
@@ -18,6 +18,12 @@ class RolloutTests(unittest.TestCase):
    self.assertLessEqual(n['price'],q['price']);self.assertEqual(n['warranty_hours'],6)
    self.assertGreaterEqual(n['price']*.85-n['reward'],self.u['cost']+math.ceil(self.u['cost']*.09))
   self.assertLess(negotiate(self.u,q,14000,{},self.p)['price'],q['price'])
+ def test_mature_public_breakage_cohort_lowers_floor_without_removing_margin(self):
+  class Evidence:
+   def source(self,*args,**kwargs):return {'shops':[{'name':'25512088','claims':139,'broken':11}]}
+  hazard,basis=observed_hazard(Evidence())
+  self.assertAlmostEqual(hazard,13/143);self.assertIn('139',basis)
+  self.assertLess(protected_floor(self.u,self.p.p,hazard),protected_floor(self.u,self.p.p,.15))
  def test_full_refund_cash_reserved_atomically(self):
   q=sale_quote(self.u,{},self.p);inv=dict(start=1000000,balance=500000+q['price'])
   self.p.accept('one','u','sku',8000,q,inventory=inv)

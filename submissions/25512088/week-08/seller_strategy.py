@@ -34,20 +34,32 @@ def warranty_hours(unit, program=None):
     return 6
 
 
-def protected_floor(unit, policy):
-    # Nocha12's cost + storage + profit / (1-breakage) structure, adapted
-    # to our existing benefits. 15% is an explicit prior from the reference strategy, not measured risk.
+def protected_floor(unit, policy, hazard=.15):
+    # Cost + storage + profit / (1-breakage), using a matured public cohort
+    # when available and the conservative 15% prior otherwise.
     floor=cost_floor(unit['cost'],policy)
     if not warranty_hours(unit):return floor
     cost=unit['cost'];reserve=math.ceil(cost*.09)
     acquisition=policy.get('acquisition_margin_percent',25)/100
     founder=policy.get('founder_percent',5)/100
-    return max(floor,math.ceil((cost+reserve)/(.85*(1-founder))),
-               math.ceil((cost*(1-acquisition)+reserve)/(.85-acquisition)))
+    survival=max(.5,1-max(0,min(.49,hazard)))
+    return max(floor,math.ceil((cost+reserve)/(survival*(1-founder))),
+               math.ceil((cost*(1-acquisition)+reserve)/(survival-acquisition)))
+
+
+def observed_hazard(intel,shop_name='25512088'):
+    if intel:
+        board=intel.source('board',{},max_age=900) or {}
+        row=next((x for x in board.get('shops',[]) if str(x.get('name'))==str(shop_name)),{})
+        claims=row.get('claims');broken=row.get('broken')
+        if isinstance(claims,int) and isinstance(broken,int) and claims>=50 and 0<=broken<=claims:
+            return (broken+2)/(claims+4),f'public-matured:{claims}'
+    return .15,'conservative-unmeasured'
 
 
 def negotiate(unit, current, offered, catalog, program, token='', ref=''):
-    floor=protected_floor(unit,program.p)
+    hazard=current.get('hazard_probability',.15)
+    floor=protected_floor(unit,program.p,hazard)
     minimum=program.quote(floor,unit['cost'],token=token,ref=ref)
     if offered>=minimum['price']:
         lo,hi=floor,current['base']
@@ -59,8 +71,9 @@ def negotiate(unit, current, offered, catalog, program, token='', ref=''):
     else:
         q=program.quote(max(floor,(current['base']+floor)//2),unit['cost'],token=token,ref=ref)
     q['warranty_hours']=warranty_hours(unit,program)
-    if q['price']*(.85 if q['warranty_hours'] else 1)-q['reward'] < unit['cost']+math.ceil(unit['cost']*.09):
+    if q['price']*((1-hazard) if q['warranty_hours'] else 1)-q['reward'] < unit['cost']+math.ceil(unit['cost']*.09):
         return current
+    q['hazard_probability']=hazard;q['hazard_basis']=current.get('hazard_basis','conservative-unmeasured')
     return q if q['price']<current['price'] else current
 
 
@@ -96,10 +109,11 @@ def sale_quote(unit, catalog, program, intel=None, token='', ref=''):
             elif quotes>=5 and sold==0 and competitors+substitutes>0:
                 adjustment=.98
             base=math.ceil(base*adjustment)
-    floor=protected_floor(unit,program.p)
+    hazard,hazard_basis=observed_hazard(intel,program.p.get('shop_name','25512088'))
+    floor=protected_floor(unit,program.p,hazard)
     q=program.quote(max(base,floor),unit['cost'],token=token,ref=ref)
-    q['warranty_hours']=warranty
-    if q['price']*(.85 if q['warranty_hours'] else 1)-q['reward'] < unit['cost']+math.ceil(unit['cost']*.09):
+    q['warranty_hours']=warranty;q['hazard_probability']=hazard;q['hazard_basis']=hazard_basis
+    if q['price']*((1-hazard) if q['warranty_hours'] else 1)-q['reward'] < unit['cost']+math.ceil(unit['cost']*.09):
         raise ValueError('Net margin guard rejected quote')
     if intel:
         intel.decision('seller_quote',{'sku':unit['sku'],'cost':unit['cost'],'price':q['price'],
@@ -107,6 +121,7 @@ def sale_quote(unit, catalog, program, intel=None, token='', ref=''):
                        'same_competitor_units':competitors,'substitute_competitor_units':substitutes,
                        'quotes_6h':quotes,'sales_6h':sold,
                        'warranty_hours':warranty,
+                       'hazard_probability':hazard,'hazard_basis':hazard_basis,
                        'source':'settlement_median' if comp['median'] else 'grade_formula_cost_protected'})
     return q
 
