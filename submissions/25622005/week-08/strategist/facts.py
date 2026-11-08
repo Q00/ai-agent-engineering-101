@@ -37,7 +37,7 @@ PATTERNS = {
     "supply_every_min": (r"[Ss]upply opens for everyone (?:once )?every (\d+) minutes", int, 5, 120),
     "supply_open_min": (r"[Ss]upply opens for everyone (?:once )?every \d+ minutes,? for (\d+) minutes", int, 1, 30),
     "break_window_h": (r"[Gg]oods can break up to (\d+) hours after the sale", int, 1, 48),
-    "storage_pct_day": (r"cost (\d+(?:\.\d+)?)% of their cost per day in storage", float, 0, 10),
+    "storage_pct_day": (r"cost (\d+(?:\.\d+)?)% of their cost per day in storage", float, 0, 100),   # a patch may raise it far past the 1% of 11-05
     "vote_min_deals": (r"at least (\d+) settled deals", int, 0, 100),
 }
 # name -> regex on the normalised text; the fact is True when the sentence is there, None (and an alert) when not:

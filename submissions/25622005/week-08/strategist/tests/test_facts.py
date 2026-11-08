@@ -113,6 +113,13 @@ class Parse(unittest.TestCase):
         self.assertEqual({k: v for k, v in f.items() if k != "break_window_h"},
                          {k: v for k, v in TODAY.items() if k != "break_window_h"})
 
+    def test_a_steep_storage_raise_is_still_read(self):
+        # a patch that makes stock dear must reach the capital numbers, not be dropped as implausible
+        f, alerts = facts.parse(FIXTURE.replace("1% of their cost per day in storage", "15% of their cost per day in storage"))
+        self.assertEqual((f["storage_pct_day"], alerts), (15.0, []))
+        f, alerts = facts.parse(FIXTURE.replace("1% of their cost per day in storage", "150% of their cost per day in storage"))
+        self.assertEqual((f["storage_pct_day"], alerts), (None, ["rules: storage_pct_day 150.0 is outside the plausible 0-100, not used"]))
+
     def test_implausible_value_rejected(self):
         f, alerts = facts.parse(FIXTURE.replace("once every 20 minutes", "once every 0 minutes")
                                 .replace("one post per 5 minutes", "one post per 500 minutes"))
