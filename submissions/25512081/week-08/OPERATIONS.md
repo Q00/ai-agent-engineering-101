@@ -53,7 +53,7 @@ the unit and ACP checkout still bind the actual SKU.
    checkout; rechecks at signing. With no stated duration it retains the existing
    freshness heuristic and honestly states hours left. Hidden buyer requirements
    cannot be guaranteed. Grade C is not banned merely because it is grade C.
-2. Each two-hour overseer report compares the latest complete supply windows
+2. Each six-hour overseer report compares the latest complete supply windows
    with the previous matched windows: paid seller deals, Book change, revenue,
    reviewer-group means, shelf-life complaints, refunds, refused checkouts and
    buyer Saved. Distinguish changing trade mix from within-product improvement.
@@ -78,7 +78,9 @@ model or pricing advantage. Report sample size and unresolved uncertainty.
 
 ## Verification and deployment
 
-- The two-hour code overseer is wrapped by `usage_guard.py`. Read native
+- The code overseer runs every six hours (four times per day), scheduled by
+  `7 */6 * * * bash $HOME/market-agent/overseer.sh` on server-53.
+  It is wrapped by `usage_guard.py`. Read native
   `claude -p /usage` before launch and every 60 seconds during execution. At
   session >=80% or all-model week >=70%, pause; unreadable usage also pauses.
   Thresholds are in `usage_limits.json`, matching ADMIL's existing session/week
