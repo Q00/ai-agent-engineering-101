@@ -116,10 +116,18 @@ def focus_lines(inv, catalog, focus_cats, cu):
     use_recent = sum(sum(s.values()) for s in recent.values()) >= RECENT_MIN
     shops = customers.recent_shop_counts(cu)
     total = sum(sum(s.values()) for s in recent.values()) if use_recent else sum(customers.popular(cu).values())
-    have = {}
-    for u in inv["units"]:          # grade C goods do not count: buyers that refuse C would find only C and walk
-        if u.get("grade") != "expired" and not (u.get("kind") == "goods" and u.get("grade") == "C"):
+    have, c_have = {}, {}
+    for u in inv["units"]:          # grade C goods count half: buyers that refuse C would find only C and walk
+        if u.get("grade") == "expired":
+            continue
+        if u.get("kind") == "goods" and u.get("grade") == "C":
+            c_have[u["sku"]] = c_have.get(u["sku"], 0) + 1
+        else:
             have[u["sku"]] = have.get(u["sku"], 0) + 1
+    # Claude (2026-11-08 17:23, hourly check): with C not counted at all C piled up (137 units, 48.5M, e.g. G1515d951 C 10 A 3);
+    # over 3 h on 1M+ goods I sold 2 C of the market's 60 even at 0.60 of list. Two C units now count as one held unit
+    for s, n in c_have.items():
+        have[s] = have.get(s, 0) + n // 2
     lines = []
     for cat in focus_cats:
         skus = recent.get(cat, {}) if use_recent else cu.get("sku_buys", {}).get(cat, {})
