@@ -1,7 +1,8 @@
 """Round 3 restock hook: python restock.py --state .market  ->  {"buy": [{"sku", "qty"}, ...], "bankrupt": bool}
 
 The kit's default buys random SKUs when stock is low. This one reads demand from the market's ledger
-(what actually settled, market-wide, newest 500 entries) and buys the SKUs that sell, within the balance.
+(what actually settled, market-wide, newest 500 entries) and buys the SKUs with the most settled revenue, within the
+balance, skipping SKUs whose supply price has surged.
 Rules: keep stock under 200 A/B units (storage is 1 %/day of cost), spend at most 5 % of the balance per SKU,
 food only with >= 10 days of shelf life (buyers refuse grade C, and food gets there fast), file for bankruptcy only
 when below the line with nothing left to sell. Also posts a shop notice to the forum at most every 60 min.
@@ -22,7 +23,24 @@ def load(p):
 
 
 def settled_counts():
-    return collections.Counter(d["item"] for d in settled() if d.get("item"))
+    """SKU -> settled revenue (count x price), not count: revenue and Book rank the shop, and a 300k sofa sold once
+    is worth 30 lamps."""
+    c = collections.Counter()
+    for d in settled():
+        if d.get("item"):
+            c[d["item"]] += d.get("amount") or d.get("price") or 1
+    return c
+
+
+def surged(units):
+    """SKUs whose last supplied unit cost more than 75 % of list: above grade A's normal range, so the market's
+    supply surge (+0.2 % per unit over 50 an hour, up to +50 %) is on. Everyone buys the top sellers; we skip
+    them until the price falls back."""
+    last = {}
+    for u in sorted(units, key=lambda u: u.get("supplied_at") or 0):
+        if u.get("list_price"):
+            last[u["sku"]] = u["cost"] / u["list_price"]
+    return {sku for sku, r in last.items() if r > 0.75}
 
 
 def main():
@@ -41,7 +59,8 @@ def main():
             if c.get("kind") == "food":
                 return hot[sku] * 0.5 if shelf >= 240 else 0
             return hot[sku]
-        ranked = [s for s in sorted((s for s in hot if s in cat), key=score, reverse=True) if score(s) > 0][:TOP]
+        hot_now = surged(units)
+        ranked = [s for s in sorted((s for s in hot if s in cat), key=score, reverse=True) if score(s) > 0 and s not in hot_now][:TOP]
         room = MAX_UNITS - sum(1 for u in units if u.get("grade") in ("A", "B"))   # grade C stock is dead weight, not stock
         for sku in ranked:
             if room <= 0:
@@ -50,7 +69,7 @@ def main():
             qty = min(6, room, int(balance * PER_SKU_SHARE / unit_cost)) - have[sku]
             if qty >= 1:
                 out["buy"].append({"sku": sku, "qty": qty}); room -= qty
-        print(f"[restock] balance {balance} units {len(units)} hot={len(hot)} -> buy {out['buy']}", flush=True)
+        print(f"[restock] balance {balance} units {len(units)} hot={len(hot)} surged={sorted(hot_now)[:5]} -> buy {out['buy']}", flush=True)
     # forum: one shop notice per 10 minutes about what we stock
     stamp = md / "last_shop_post"
     if units and time.time() - (stamp.stat().st_mtime if stamp.exists() else 0) > 3600:

@@ -16,6 +16,11 @@ cat = {"F1": {"name": "milk", "category": "food>dairy", "list_price": 100, "kind
 
 # restock: demand-driven, affordable, food with short shelf discounted
 restock.settled_counts = lambda: collections.Counter({"F1": 10, "G1": 4, "G2": 1, "ZZ": 9})
+assert restock.surged([{"sku": "G1", "cost": 240, "list_price": 300, "supplied_at": 1}, {"sku": "G1", "cost": 180, "list_price": 300, "supplied_at": 2},
+                       {"sku": "G2", "cost": 700, "list_price": 900, "supplied_at": 1}]) == {"G2"}       # last G1 unit back to 60 %
+restock.settled = lambda: [{"item": "G1", "amount": 300}, {"item": "G1", "amount": 300}, {"item": "G2", "amount": 900}]
+assert restock.settled_counts() == {"G1": 600, "G2": 900}                                             # revenue, not count
+restock.settled_counts = lambda: collections.Counter({"F1": 10, "G1": 4, "G2": 1, "ZZ": 9})
 sys.argv = ["restock", "--state", str(md)]
 import io, contextlib
 buf = io.StringIO()
