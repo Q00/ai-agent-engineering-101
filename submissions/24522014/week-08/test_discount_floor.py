@@ -82,7 +82,8 @@ class Settings(unittest.TestCase):
         self.assertEqual(self.load('{"discount_floor": {"floor": 0.3, "fault_rates": {"no_warranty": {"A": 0}}}}'), {"floor": .3, "rates": floor.DEFAULT_RATES})
 
     def test_the_file_in_this_folder_gives_a_usable_floor(self):
-        self.assertEqual(floor.load()["floor"], .25)
+        # 11-08: raised from .25 to .30 for Saved (instruction relayed 11-08, user: "특히 BUYER를 개선해줘").
+        self.assertEqual(floor.load()["floor"], .30)
 
 
 class Selection(unittest.TestCase):

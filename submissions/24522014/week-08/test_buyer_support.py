@@ -9,6 +9,7 @@ import unittest
 from unittest.mock import patch
 
 import buyer_support as support
+import discount_floor
 import market_buyer
 from market_state import read, write
 from r3_policy import load_policy
@@ -19,6 +20,8 @@ CFG = {**support.config(), "mode": "research", "max_attempts_per_utc_day": 8,
        "min_attempt_interval_seconds": 3600, "pair_cooldown_seconds": 21600,
        "min_catalogue_value": 30000, "alternative_tolerance_ratio": .02}
 POLICY = load_policy()["buying"]
+# These rules were written at the .25 floor; they test references and rivals, not the floor, so they keep it fixed. The live floor is pinned in test_discount_floor.
+FLOOR_25 = {"floor": .25, "rates": discount_floor.DEFAULT_RATES}
 CAT = {"G1": {"kind": "goods", "list_price": 100000, "category": "goods"}}
 
 
@@ -36,6 +39,10 @@ class SupportRules(unittest.TestCase):
         settings_patch = patch.object(support, "config", return_value=CFG)
         settings_patch.start()
         self.addCleanup(settings_patch.stop)
+        for target in ("buyer_support.load_floor", "r3_selection.load_floor"):
+            floor_patch = patch(target, return_value=FLOOR_25)
+            floor_patch.start()
+            self.addCleanup(floor_patch.stop)
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         self.md = Path(self.tmp.name) / ".market"
@@ -74,6 +81,14 @@ class SupportRules(unittest.TestCase):
         self.assertEqual(self.choose(rows=[price(amount=70000)])[2], 71400)
         result = support.choose([shop()], [], CAT, 60000, POLICY, [], [], self.ctx, self.state, CFG, T)
         self.assertEqual(result[2], 60000)
+
+    def test_at_the_30_floor_a_reference_at_30_off_is_too_dear_for_grade_a_without_warranty(self):
+        # A without warranty needs (.30+.027)/(1-.027) = .3361 off, a ceiling of 66392 on a 100000 list; 70000 plus the 2% premium is above it.
+        with patch("buyer_support.load_floor", return_value=dict(FLOOR_25, floor=.30)), patch("r3_selection.load_floor", return_value=dict(FLOOR_25, floor=.30)):
+            selected, _, _, _, evidence = self.choose(rows=[price(amount=70000)])
+            self.assertIsNone(selected)
+            self.assertEqual(evidence[0]["negotiation_cap"], 66392)
+            self.assertIsNotNone(self.choose(rows=[price(amount=65000)])[0])
 
     def test_comparable_nonleader_preferred_but_not_overpriced_or_unknown(self):
         shops = [shop("leader"), shop("other")]
