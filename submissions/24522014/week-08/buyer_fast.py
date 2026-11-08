@@ -9,7 +9,8 @@ CONFIG = Path(__file__).resolve().parent / "buyer_support.json"
 OFFER_REASON = "Unambiguous current ask within coded value/quality cap; checkout will verify terms."
 
 # Only labels that name this seller's current ask. A bare "price" also fits list, past and median figures.
-LABELED = re.compile(r"(?<![\w])(?:asking price|asking|ask|counter-?offer|offer price|가격|제안가)"
+# "Counteroffer price: M" is a seller's reply to our offer ("N is too low. Counteroffer price: M."); it is tried before "counteroffer".
+LABELED = re.compile(r"(?<![\w])(?:asking price|asking|ask|counter-?offer price|counter-?offer|offer price|가격|제안가)"
                      r"(?:\s+is\b)?\s*[:：=]?\s*(\d[\d,.]*)", re.I)
 WHOLE = re.compile(r"[1-9]\d*|[1-9]\d{0,2}(?:,\d{3})+")
 CURRENCY = re.compile(r"\s*(?:원|KRW\b|won\b)", re.I)
