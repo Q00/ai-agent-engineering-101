@@ -64,6 +64,23 @@ PREMIUM_MAX_UNITS = 36              # premium units on hand at most (2.5M/3 unti
 PREMIUM_HOURS = 12                  # market sales window for picking premium SKUs
 PREMIUM_MIN_SOLD = 10               # a premium SKU needs this many market sales in the window
 
+# --- shop: adaptive stock cap (r3lib/cashflow.py), 2026-11-08 -------------------------------------
+#     Replaces the hand-raised STOCK_BUDGET_MAX / PREMIUM_BUDGET / PREMIUM_MAX_UNITS in the restock plan; those
+#     stay as the starting cap. 25M was at the cap in 218/224 ticks of 24 h with 210M idle; 60M by hand is a guess.
+CAP_STEP_MIN = 60                   # the cap moves at most once an hour, so each step is measured on real sales
+CAP_GROW = 1.25                     # one hour at the cap with demand turned away: +25%
+CAP_SHRINK = 0.85                   # supplied stock that does not sell: -15%
+CAP_AT_SHARE = 0.90                 # stock cost at 90% of the cap counts as at the cap
+CAP_TURNED_PER_H = 1.0              # requests per hour turned away for lack of stock (24 h: mattress 1.8, sofa 1.0)
+CAP_FAST_SELL = 0.70                # or this share of what the market supplied us sold in CAP_SELL_HOURS
+CAP_SLOW_SELL = 0.40                # under this the cap shrinks
+CAP_SELL_HOURS = 12
+CAP_MIN_RECEIVED = 30               # units received before a slow sell-through may shrink the cap
+CAP_MIN = 25_000_000                # not below the cap already proven to sell out, unless the balance says so
+                                    # ceiling: STOCK_BUDGET_SHARE x balance (the rule since 11-04), over CAP_MIN
+PREMIUM_SHARE = 0.50                # premium budget = this share of the cap (30M of 60M as set by hand)
+PREMIUM_UNIT_COST = 833_000         # premium units allowed = premium budget / this (30M / 36 as set by hand)
+
 # --- shop: competitor scout (r3lib/scout.py) ------------------------------------------------------
 SCOUT_MIN_SOLD = 20                 # a category needs this many market settles in 6 h before the scout has an opinion
 SCOUT_LOW_PRESSURE = 0.6            # competitors restock under 60% of what sells: a gap

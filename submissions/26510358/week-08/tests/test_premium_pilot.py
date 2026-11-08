@@ -53,7 +53,7 @@ def test_premium_pilot_respects_held_units_and_cap(tmp_path, monkeypatch):
              "list_price": 1_200_000}]
     lines, why, _ = restock_r3.plan({"balance": 20_000_000, "units": held}, DEMAND, m, now=now)
     assert [ln["sku"] for ln in lines if ln["sku"].startswith("P")] == ["P2"]   # P1 already held
-    monkeypatch.setattr(config, "PREMIUM_MAX_UNITS", 1)
+    monkeypatch.setattr(config, "PREMIUM_UNIT_COST", 10**12)        # adaptive budget: room for 1 unit
     lines, why, _ = restock_r3.plan({"balance": 20_000_000, "units": held}, DEMAND, m, now=now)
     assert not [ln for ln in lines if ln["sku"].startswith("P")]
 

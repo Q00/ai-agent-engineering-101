@@ -28,7 +28,7 @@ from pathlib import Path
 
 from cryptography.hazmat.primitives import serialization
 
-from r3lib import config, market, pricing, scout
+from r3lib import cashflow, config, market, pricing, scout
 from r3lib.memory import Memory
 from r3lib.org import client
 
@@ -169,14 +169,14 @@ def plan(inv, demand_rows, mem, now=None, dry_run=False, adjust=None):
             stock_cost += u["cost"]
             cat_cost[u["category"]] = cat_cost.get(u["category"], 0) + u["cost"]
     balance = inv.get("balance") or 0
-    stock_max = config.stock_budget(balance)
+    stock_max, prem_budget, prem_max, cap_why = cashflow.caps(mem, balance, stock_cost, now, dry_run)
     budget = min(balance - config.CASH_RESERVE, stock_max - stock_cost)
     explore_budget = min(budget, config.EXPLORE_SHARE * config.MAX_STOCK_COST - (mem.get("explore_spent") or 0))
     dem = mem.category_demand(now=now)
     forum = mem.forum_demand_signals()
     view = scout.category_view(mem, now=now)
     stockouts = mem.stockout_rates(now=now)
-    lines, why = [], []
+    lines, why = [], [{"cash_cap": cap_why}]
 
     # 1) evidence: categories that sell, by expected profit per hour
     needs = []
@@ -259,20 +259,20 @@ def plan(inv, demand_rows, mem, now=None, dry_run=False, adjust=None):
     if spent and not dry_run:
         mem.put("explore_spent", (mem.get("explore_spent") or 0) + spent)
 
-    # 3) premium pilot: one unit each of the market's best-selling 800k+ SKUs, under PREMIUM_BUDGET / MAX_UNITS
+    # 3) premium pilot: one unit each of the market's best-selling 800k+ SKUs, under the adaptive premium budget
     cash = balance - config.CASH_RESERVE - sum(unit_cost_estimate(cat[ln["sku"]]) * ln["qty"] for ln in lines)
     held = {u["sku"] for u in prem_units}
     n_prem, prem_est = len(prem_units), prem_cost
     for sku, sold in mem.premium_skus(config.PREMIUM_MIN_LIST, config.PREMIUM_HOURS, config.PREMIUM_MIN_SOLD):
         info = cat.get(sku)
-        if not info or not is_premium(info) or sku in held or len(lines) >= 10 or n_prem >= config.PREMIUM_MAX_UNITS:
+        if not info or not is_premium(info) or sku in held or len(lines) >= 10 or n_prem >= prem_max:
             continue
         ratio, _ = mem.price_ratio(sku=sku, category=info["category"])
         est = unit_cost_estimate(info)
         if ratio is not None and ratio < 0.70:
             why.append({"category": info["category"], "sku": sku, "skip": f"premium: market pays {ratio:.2f} of list"})
             continue
-        if prem_est + est > config.PREMIUM_BUDGET or est > cash:
+        if prem_est + est > prem_budget or est > cash:
             why.append({"category": info["category"], "sku": sku,
                         "skip": f"premium budget: {prem_est:,.0f} held + {est:,.0f} worst case"})
             continue
@@ -281,7 +281,8 @@ def plan(inv, demand_rows, mem, now=None, dry_run=False, adjust=None):
         why.append({"category": info["category"], "sku": sku, "qty": 1, "reason": "premium_pilot",
                     "market_sold": sold, "market_ratio": ratio})
     return lines, why, {"balance": balance, "stock_cost": stock_cost, "stock_budget": stock_max, "units": len(units),
-                        "premium_units": n_prem, "premium_cost": prem_est}
+                        "premium_units": n_prem, "premium_cost": prem_est,
+                        "premium_budget": prem_budget}
 
 
 def main():

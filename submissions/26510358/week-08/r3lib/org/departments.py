@@ -68,7 +68,7 @@ def logistics_health(mem, args, call, now=None):
     expiring = [u for u in units if u.get("kind") == "food" and u.get("expires_at") and u["expires_at"] - now < 6 * 3600]
     aged = [u for u in units if u.get("kind") == "goods" and now - (u.get("supplied_at") or now) > 3 * 86400]
     stock_cost = sum(u["cost"] for u in units)
-    return {"units": len(units), "stock_cost": stock_cost, "stock_budget": config.stock_budget(inv.get("balance")),
+    return {"units": len(units), "stock_cost": stock_cost, "stock_budget": int((mem.get("cash_cap") or {}).get("cap") or config.STOCK_BUDGET_MAX),
             "expiring_6h": {"units": len(expiring), "cost": sum(u["cost"] for u in expiring)},
             "goods_over_3d": {"units": len(aged), "cost": sum(u["cost"] for u in aged)},
             "stockouts_per_h": {market.leaf(k): round(v, 2) for k, v in sorted(
