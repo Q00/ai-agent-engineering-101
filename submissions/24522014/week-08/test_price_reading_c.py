@@ -40,7 +40,7 @@ class Settings(unittest.TestCase):
 
     def test_shipped_value(self):
         section = json.loads(fast.CONFIG.read_text(encoding="utf-8"))["price_reading"]
-        self.assertIs(section["group_c_free_labels"], False)
+        self.assertIs(section["group_c_free_labels"], True)
 
 
 class Reading(unittest.TestCase):
