@@ -29,7 +29,8 @@ from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 from harness import CMD, safe_ask_json
 import httpx
 
-from r3lib import FLOW, MARKET, SALES, SHOP_NAME, append_jsonl, hours_left, inventory, market_now, read_json, read_jsonl
+from r3lib import (FLOW, MARKET, SALES, SHOP_NAME, append_jsonl, endgame, hours_left, inventory, market_now, read_json,
+                   read_jsonl)
 
 KEY_FILE = Path(__file__).resolve().parent / "shop_key.pem"
 RESERVE = {"lamp": 100, "chair": 180, "bookshelf": 260}      # Rounds 0-2: the week-07 items, no stock
@@ -131,6 +132,11 @@ def terms(u):
         floor = min(floor, round(cost * (0.9 if waited > 24 else 1.0)))   # sell down to cost, 90% after a day
     else:
         lift = 0.05
+    phase = endgame()                               # stock left at the end of Round 3 is lost: sell below cost
+    if phase >= 2:
+        lift, floor = -0.10, min(floor, round(cost * 0.5))
+    elif phase == 1 and waited > STALE_HOURS:
+        floor = min(floor, round(cost * 0.7))
     opening = round(lp * (min(0.95, max(0.6, ratio + lift + delta)) if ratio else base + delta))
     floor = max(1, floor)
     return floor, max(opening, floor), quality + ", market certificate included"

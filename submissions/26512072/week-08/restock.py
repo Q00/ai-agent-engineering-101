@@ -29,8 +29,8 @@ import time
 from collections import Counter
 from pathlib import Path
 
-from r3lib import (FLOW_HOURS, HERE, SALES, append_jsonl, catalog, forum_wants, market_flow, market_now, read_json,
-                   read_jsonl, refresh_market_sales)
+from r3lib import (FLOW_HOURS, HERE, SALES, append_jsonl, catalog, endgame, forum_wants, market_flow, market_now,
+                   read_json, read_jsonl, refresh_market_sales)
 
 CASH_FLOOR = 1_000_000
 STOCK_CAP = 6_000_000   # all stock at cost; expensive SKUs only below it
@@ -59,6 +59,10 @@ def main():
     if win and not win.get("open") and (win.get("opens_at") or 0) - market_now() > LEAD:
         print(json.dumps({"buy": []}))                      # window closed: buying now would only be skipped
         return
+    phase = endgame()
+    if phase >= 2:
+        print(json.dumps({"buy": []}))                      # close out: stock left at the end is lost
+        return
     balance = inv.get("balance") or 0
     units = [u for u in inv.get("units", []) if u.get("grade") != "expired"]
     if balance < inv.get("bankrupt_line", 500_000) and not units and (inv.get("bankruptcies_left") or 0) > 0:
@@ -76,6 +80,8 @@ def main():
     room = balance - CASH_FLOOR
     budgets = {True: min(room, CHEAP_CAP - cheap_cost, CHEAP_RUN),
                False: min(room, STOCK_CAP - stock_cost, balance * SPEND_SHARE)}
+    if phase >= 1:
+        budgets[False] = 0                                  # wind down: expensive stock may not sell before the end
     if max(budgets.values()) <= 0:
         print(json.dumps({"buy": []}))
         return

@@ -63,6 +63,19 @@ def inventory():
     return read_json(MD / "inventory.json", {}) or {}
 
 
+# Round 3 end = the midterm PR deadline (the market does not publish it). Stock is not counted in profit, so the
+# shop winds down before it: from WIND_DOWN no expensive buying and old stock sells down to 70% of cost; from
+# CLOSE_OUT no buying at all and everything sells down to 50% of cost (KST, epoch seconds).
+WIND_DOWN = 1794754800      # 2026-11-16 00:00 KST
+CLOSE_OUT = 1794884400      # 2026-11-17 12:00 KST
+
+
+def endgame():
+    """0 = normal, 1 = wind down, 2 = close out."""
+    now = market_now()
+    return 2 if now >= CLOSE_OUT else 1 if now >= WIND_DOWN else 0
+
+
 def round_now():
     return int(inventory().get("round") or 0)
 
