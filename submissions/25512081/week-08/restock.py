@@ -101,7 +101,7 @@ COMP_FRESH = 12 * 3600
 # median ~0.70 and held 15 of them an hour later. A unit costs ~0.6 of list x the factor; we buy only units whose
 # cost stays MIN_MARGIN under what the market paid for that SKU lately (each of our units raises the factor too).
 UNIT_COST = 0.6
-MIN_MARGIN = 0.15
+MIN_MARGIN = 0.05          # 0.15 until Nov 9 06:30: Book counts stock at cost (Patch 3.3), so thin-margin turnover adds revenue (0.3 of shop ALL, ours at the 72nd percentile and falling) while Book still grows; at 0.15 surged popular SKUs (market pays 0.62-0.71 of list) were skipped and 254M of cash sat idle
 SURGE_STEP, SURGE_MAX = 0.002, 1.5
 DEFAULT_PX = 0.78          # grade A median share of list (Nov 4 research) when a SKU has few settles
 
