@@ -312,6 +312,15 @@ def learn(category, arm, deal):
         f"counts {BANDIT['cats'][category]}")
 
 
+STALE_FLOOR = 0.88
+
+
+def market_price(u):
+    """Median price the market paid for this SKU lately (restock_state sku_px, shares of list), or None."""
+    px = sorted((_load("restock_state.json", {}).get("sku_px") or {}).get(u.get("sku")) or [])
+    return int(px[len(px) // 2] * u["list_price"]) if len(px) >= BIG_MIN_SETTLES else None
+
+
 def terms(u):
     """(ask, floor, warranty hours, bandit arm or None) for one unit."""
     if u["unit"] is None:
@@ -326,6 +335,13 @@ def terms(u):
     if end:                                   # sell-off: not a price test either
         share *= end[0]
         floor = max(1, math.ceil(u["cost"] * end[1]))
+    elif u["kind"] != "food" and days >= 1 and (mk := market_price(u)) and floor > mk:
+        # goods held a day or more and bought above what the market now pays (surge cost): sell at the market price,
+        # down to STALE_FLOOR of cost. Nov 9 06:30: 128M of our 146M stock was three SKUs (Downing 21 units at 2.61M
+        # vs market 2.55M, Jangsu bed 27 at 1.62M vs 1.44M, Jakomo 17 at 1.73M vs 1.71M), 37 of 65 units over 24 h,
+        # held by the cost x 1.05 floor. Holding costs storage (1%/day, ~11.5M to Nov 17); selling at the market
+        # costs ~6.5M and returns ~120M of revenue and cash to turn over.
+        floor = max(math.ceil(u["cost"] * STALE_FLOOR), int(mk * 0.99))
     elif u["kind"] == "food" and (hours_left(u) or 0) < CLEARANCE_HOURS:
         share *= 0.8                          # clearance: not a price test, the bandit stays out
         floor = math.ceil(u["cost"] * CLEARANCE_FLOOR)
