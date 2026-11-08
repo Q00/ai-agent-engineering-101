@@ -43,6 +43,7 @@ FREE_TOP = 8
 STOCKOUT_TOP = 6            # big-ticket SKUs that sell and are (nearly) sold out
 SLOW_TOP = 5                # big-ticket SKUs whose units sit
 SLOW_COVER_H = 48           # held / our daily rate above this many hours is a slow line
+HOLD_TOP = 6                # goods lines shown in economics.holding (the losing ones first, by cost)
 BRK_MIN_N = 5               # breakage rows with fewer sales are not rated (memory/query.BRK_MIN_N)
 BRK_TOP = 5
 C_FALLBACK = {"food": 0.51, "goods": 0.61}
@@ -501,7 +502,8 @@ def _economics(tables, own, pol, market, catalog, now):
     unit of stock costs against what it earns. stockouts: big-ticket SKUs we sold in 6 h (o6) and hold at most one
     unit of (their ACP sessions in the window: created, completed), with the market's 6 h settles (s6); demand they
     carried that our shelf cannot serve (sold_out_share: of the big-ticket SKUs we sold, the share sold out); and
-    slow lines (held cost whose cover at our 24 h rate is over SLOW_COVER_H hours, or that sold none)."""
+    slow lines (held cost whose cover at our 24 h rate is over SLOW_COVER_H hours, or that sold none).
+    holding: _holding, every goods line against the storage rule."""
     t = _dict(tables)
     if not t:
         return None
@@ -548,6 +550,8 @@ def _economics(tables, own, pol, market, catalog, now):
     breakage = _breakage(own, units, catalog)
     dem = _demand_model(own, st, now)
     stockouts = _stockouts(big, rows, o24, day_h, _rows(own.get("acp")), catalog, bmax)
+    holding = _holding(units, o24, day_h, capital.get("storage_pct_day"), capital.get("margin_24h"),
+                       (_num(st.get("end_ts")) - now) / 3600 if _num(st.get("end_ts")) is not None else None)
     ok = {k: (v >= EXPAND[k] if k in ("turnover_day", "balance") else v <= EXPAND[k] if k == "unsold_goods_share"
               else v < EXPAND[k]) if v is not None else None for k, v in cond.items()}
     return {"covered_h": _num(t.get("covered_h")),
@@ -559,7 +563,7 @@ def _economics(tables, own, pol, market, catalog, now):
                            "of_budget": round(cost(big) / budget, 3) if budget else None, "share_key": share},
             "surge_free_left": {_name(s): v for s, v in left[:FREE_TOP]},
             "kinds": kinds, "expand": cond, "expand_ok": ok, "expand_all_ok": all(v is True for v in ok.values()),
-            "capital": capital, "stockouts": stockouts, "breakage": breakage, "demand": dem}
+            "capital": capital, "stockouts": stockouts, "holding": holding, "breakage": breakage, "demand": dem}
 
 
 def _demand_model(own, st, now):
@@ -634,6 +638,39 @@ def _capital(units, big, balance, inv_cost, budget, st, market, kinds, day_h, co
             "big_ticket_free": round(budget - cost(big)) if budget is not None else None,
             "storage_pct_day": pct, "storage_cost_day": storage, "margin_24h": margin, "carry_day": carry,
             "hold_vs_margin": hold, "stock_at_cost": _dict(_dict(market).get("facts")).get("book_counts_stock_at_cost")}
+
+
+def _holding(units, o24, day_h, pct, margin, hours_left):
+    """See _economics. The hold test per goods line (SKU): cover_d = held / our 24 h rate in days (a line that
+    sold none is held to the end of the round), capped at the days left; hold_share = cover_d x storage_pct_day /
+    100, the storage the line pays before it is gone as a share of its cost; losing = hold_share above margin_turn,
+    the margin one turn of stock earns (capital.margin_24h). capital.hold_vs_margin is the same test on the whole
+    shelf, which a few slow lines pass while they lose: this is where a storage raise lands line by line. Lines:
+    the losing ones first, then by cost, HOLD_TOP of them. Without the storage fact nothing is judged."""
+    days_left = max(0.0, hours_left / 24) if hours_left is not None else None
+    held, cost = Counter(), Counter()
+    for u in units:
+        if u.get("kind") == "goods":
+            held[u.get("sku")] += 1
+            cost[u.get("sku")] += _num(u.get("cost")) or 0
+    lines = []
+    for s, n in held.items():
+        rd = (o24.get(s) or 0) / day_h * 24 if day_h else None
+        cover = n / rd if rd else days_left
+        if cover is not None and days_left is not None:
+            cover = min(cover, days_left)
+        share = round(cover * pct / 100, 4) if cover is not None and pct is not None else None
+        losing = (share > margin) if share is not None and margin is not None else None
+        lines.append({"sku": _name(s), "held": n, "cost": round(cost[s]), "sold_24h": o24.get(s) or 0,
+                      "cover_d": round(cover, 2) if cover is not None else None, "hold_share": share, "losing": losing})
+    lines.sort(key=lambda x: (not x["losing"], -x["cost"]))
+    losing = [x for x in lines if x["losing"]]
+    goods = sum(cost.values())
+    return {"storage_pct_day": pct, "margin_turn": margin, "days_left": round(days_left, 2) if days_left is not None else None,
+            "goods_lines": len(lines), "losing_lines": len(losing) if pct is not None else None,
+            "losing_cost": round(sum(x["cost"] for x in losing)) if pct is not None else None,
+            "losing_share": round(sum(x["cost"] for x in losing) / goods, 3) if pct is not None and goods else None,
+            "lines": lines[:HOLD_TOP]}
 
 
 def _stockouts(big, rows, o24, day_h, acp, catalog, bmax):

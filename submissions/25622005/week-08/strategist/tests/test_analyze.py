@@ -602,6 +602,31 @@ class EconomicsMixTest(unittest.TestCase):
         self.assertEqual(s["slow_lines"], [{"sku": "GSM", "held": 3, "cost": 1_200_000, "sold_24h": 0, "cover_h": None}])
         self.assertEqual(s["slow_cost"], 1_200_000)
 
+    def test_holding_tests_each_goods_line_against_the_storage_rule(self):
+        # storage 1 % a day, 10 h left: no line pays more than the 0.333 margin of a turn
+        self.MARKET = {"facts": {"supply_every_min": 20, "storage_pct_day": 1.0, "book_counts_stock_at_cost": True},
+                       "supply_prices": {"free": 50}, "surge_units": {}}
+        h = self.brief()["economics"]["holding"]
+        self.assertEqual((h["storage_pct_day"], h["margin_turn"], h["days_left"], h["goods_lines"]), (1.0, 0.333, 0.42, 2))
+        self.assertEqual((h["losing_lines"], h["losing_cost"], h["losing_share"]), (0, 0, 0.0))
+        self.assertEqual(h["lines"], [{"sku": "GBIG", "held": 2, "cost": 600000, "sold_24h": 2, "cover_d": 0.42, "hold_share": 0.0042, "losing": False},
+                                      {"sku": "GSM", "held": 1, "cost": 400000, "sold_24h": 0, "cover_d": 0.42, "hold_share": 0.0042, "losing": False}])
+        # a patch to 10 % a day with 30 days left: GSM sold none, so it pays 30 days of storage (3.0 of its cost);
+        # GBIG turns in a day (0.10): the shelf as a whole (hold_vs_margin) still looks cheap
+        self.MARKET["facts"]["storage_pct_day"] = 10.0
+        self.POL = dict(self.POL, stock=dict(self.POL["stock"], end_ts=NOW + 30 * 86400))
+        e = self.brief()["economics"]
+        h = e["holding"]
+        self.assertEqual((h["losing_lines"], h["losing_cost"], h["losing_share"], h["days_left"]), (1, 400000, 0.4, 30.0))
+        self.assertEqual(h["lines"][0], {"sku": "GSM", "held": 1, "cost": 400000, "sold_24h": 0, "cover_d": 30.0, "hold_share": 3.0, "losing": True})
+        self.assertEqual((h["lines"][1]["sku"], h["lines"][1]["cover_d"], h["lines"][1]["hold_share"], h["lines"][1]["losing"]), ("GBIG", 1.0, 0.1, False))
+        self.assertLess(e["capital"]["hold_vs_margin"], 1)
+        # without the storage fact nothing is judged
+        self.MARKET = None
+        h = self.brief()["economics"]["holding"]
+        self.assertEqual((h["storage_pct_day"], h["losing_lines"], h["losing_cost"], h["losing_share"]), (None, None, None, None))
+        self.assertEqual([(x["sku"], x["hold_share"], x["losing"]) for x in h["lines"]], [("GBIG", None, None), ("GSM", None, None)])
+
     def test_turnover_is_scaled_to_a_day_while_the_sums_span_less(self):
         self.DAY_H = 12                                                 # 1.5M sold in 12 h of a 1M stock: 3 a day
         self.assertEqual(self.brief()["economics"]["expand"]["turnover_day"], 3.0)
