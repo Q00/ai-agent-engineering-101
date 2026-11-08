@@ -34,7 +34,8 @@ BUILD_TIMEOUT=1800
 CANARY_TIMEOUT=7200
 SOURCE_MAX_AGE={'rules':600,'agent':600,'board':90,'shops':90}
 ROLE_FILES={
-    'buyer':{'buyer_r3.py','buyer_publicist.py','rival_feedback.py','shop_copy.py'},
+    'buyer':{'buyer_agent.py','buyer_memory.py','buyer_publicist.py','buyer_r3.py',
+             'buyer_review.py','rival_feedback.py','shop_copy.py'},
     'shop':{'seller.py','seller_strategy.py','seller_market.py','seller_procurement.py',
             'seller_forum.py','seller_ledger.py','seller_offers.py'},
 }
@@ -280,7 +281,9 @@ Work only inside submissions/25512088/week-08. Allowed strategy files: {', '.joi
 You may add or update target-role tests, but do not weaken or delete existing safety tests.
 Never read owner.env, *.pem, secrets, raw forum text, raw logs, or private credentials.
 Never call market APIs, start agents, post, vote, order, pay, sell, restock, or mutate live .market state.
-Preserve idempotency, cash floor, inventory limit 250, no self-trade, honest claims, and fail-closed recovery.
+Preserve idempotency, the official 250 exposed-unit ceiling, no self-trade, honest claims, and fail-closed recovery.
+Do not turn that unit ceiling into a fixed procurement budget: deployable inventory capital must continue
+to scale from current wealth, protected cash floor, liabilities, observed demand, and expiry risk.
 Do not modify files outside the target role allowlist except target-role tests.
 Run focused tests ({tests}) and the complete unittest suite. Use a writable temporary directory if tests require one.
 Leave the tested code changes in this worktree. Do not commit, deploy, or restart anything.

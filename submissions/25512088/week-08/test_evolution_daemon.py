@@ -69,6 +69,16 @@ class EvolutionDaemonTests(unittest.TestCase):
             self.assertIn('missing_shops',blocked['evidence_readiness']['reasons'])
             e.control.close()
 
+    def test_buyer_core_files_and_dynamic_inventory_policy_are_evolvable(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            e=self.make(tmp);prompt=e.codex_prompt('test','buyer',e.evidence())
+            for path in ('buyer_agent.py','buyer_memory.py','buyer_review.py','buyer_r3.py'):
+                self.assertIn(path,prompt)
+            shop_prompt=e.codex_prompt('test','shop',e.evidence())
+            self.assertIn('deployable inventory capital must continue',shop_prompt)
+            self.assertIn('scale from current wealth',shop_prompt)
+            e.control.close()
+
     def test_live_evolution_invokes_codex_directly_without_ouroboros(self):
         command=Evolution.codex_command(Path('/tmp/candidate'))
         joined=' '.join(command)
