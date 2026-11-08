@@ -1,6 +1,7 @@
 """Bound supply deadlines to the market's existing inventory response clock.
 
-Only schedule comparisons use this clock. Local file freshness, logs, payment
+Supply schedules and food review lifetime comparisons use this clock.
+Local file freshness, logs, payment
 signatures and history timestamps retain the host clock. No request is added.
 """
 from email.utils import parsedate_to_datetime

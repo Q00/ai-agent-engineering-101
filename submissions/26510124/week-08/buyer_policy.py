@@ -27,9 +27,11 @@ def load_policy():
     cooldown = config.get("failure_cooldown_seconds", 900)
     if type(cooldown) is not int or not 0 <= cooldown <= 3600:
         raise ValueError("Invalid buyer policy: failure_cooldown_seconds")
-    if (not isinstance(config.get("grades"), list) or not config["grades"]
-            or any(g not in ("A", "B", "C") for g in config["grades"])):
-        raise ValueError("Invalid buyer policy: grades")
+    for key in ("grades", "food_grades"):
+        grades = config.get(key, config.get("grades"))
+        if (not isinstance(grades, list) or not grades
+                or any(g not in ("A", "B", "C") for g in grades)):
+            raise ValueError("Invalid buyer policy: " + key)
     for key in ("goods_warranty_hours", "food_buffer_hours"):
         if type(config.get(key)) not in (int, float) or not math.isfinite(config[key]) or config[key] < 0:
             raise ValueError(f"Invalid buyer policy: {key}")
@@ -64,6 +66,7 @@ def checkout_policy(order, config=None):
     config = config or load_policy()
     accept = {"cert": True, "grades": list(config["grades"])}
     if order.get("kind") == "food":
+        accept["grades"] = list(config.get("food_grades", config["grades"]))
         hours = order.get("use_within_hours")
         if type(hours) not in (int, float) or not math.isfinite(hours) or hours < 0:
             raise ValueError("Invalid food use_within_hours")

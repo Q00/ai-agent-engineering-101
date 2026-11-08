@@ -32,7 +32,8 @@ class BuyerSelectionTests(unittest.TestCase):
                                         "sku": "G00001", "reason": "stock and review evidence"}))
         with patch("market_buyer.decide", side_effect=model) as model:
             result, _ = choose_shop(shops, [], item="chair", budget=100000,
-                                    deadline=time.monotonic() + 10, order={"order": "o1", "round": 3})
+                                    deadline=time.monotonic() + 10,
+                                    order={"order": "o1", "round": 3, "kind": "goods"})
         self.assertEqual(model.call_count, 1)
         self.assertEqual(result["selected_sku"], "G00001")
 

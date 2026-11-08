@@ -10,6 +10,7 @@ from feedback import append_event
 from inventory import read_json
 from payment_memory import recent_jsonl
 from buyer_forum import queue_confirmed_deal
+from market_clock import schedule_now
 
 ROOT = Path(__file__).resolve().parent
 
@@ -27,7 +28,7 @@ def purchase_terms(deal, records):
     return None
 
 
-def review(deal, *, terms=None, now=None):
+def review(deal, *, terms=None, now=None, market_clock=None):
     settled, receipt = deal["settled"], deal["receipt"]
     if type(settled.get("ledger")) is not int or not isinstance(settled.get("sku"), str):
         raise ValueError("Expected the kit's Round 3 settlement receipt")
@@ -42,6 +43,22 @@ def review(deal, *, terms=None, now=None):
     legacy = bool(terms) and preferences is None
     kind = terms.get("kind") if terms else deal["order"].get("kind")
     reasons, notes, ceilings, issues, shortfalls = [], [], [], [], []
+    # `now` remains the local observation timestamp for file freshness/forum
+    # queues. A synchronized market upper bound is separate: the host has been
+    # observed ~13 minutes fast. Never silently use its fallback for food.
+    expiry_now, clock_width, clock_snapshot = now, 0, None
+    if kind == "food" and market_clock is not None:
+        synced = (isinstance(market_clock, dict) and market_clock.get("status") == "synced"
+                  and all(type(market_clock.get(k)) in (int, float)
+                          and math.isfinite(market_clock[k]) for k in ("now", "uncertainty_seconds"))
+                  and market_clock["now"] > 0 and 0 <= market_clock["uncertainty_seconds"] <= 6)
+        if synced:
+            expiry_now, clock_width = market_clock["now"], market_clock["uncertainty_seconds"]
+            clock_snapshot = {"status": "synced", "now": expiry_now,
+                              "uncertainty_seconds": clock_width}
+        else:
+            expiry_now = None
+            clock_snapshot = {"status": "unavailable", "now": None, "uncertainty_seconds": None}
 
     def fault(code, description, ceiling):
         reasons.append(code)
@@ -77,13 +94,23 @@ def review(deal, *, terms=None, now=None):
         expiry = settled.get("expires_at")
         if type(expiry) not in (int, float) or not math.isfinite(expiry):
             fault("expiry_unreported", "The settlement did not report the food's expiry time.", 2)
+        elif expiry_now is None:
+            # An unavailable local observation is not evidence against a shop.
+            reasons.append("expiry_clock_unavailable")
+            notes.append("Food lifetime could not be assessed because a fresh market clock was unavailable.")
+            ceilings.append(3)
         else:
-            remaining = (expiry - now) / 3600
+            remaining = (expiry - expiry_now) / 3600
+            possible_remaining = remaining + clock_width / 3600
             required = accept.get("min_hours_left")
-            if remaining <= 0:
+            if possible_remaining <= 0:
                 fault("expired_at_review", "The food was expired at review time; this does not establish its condition at payment.", 1 if legacy else 2)
-            elif required is not None and remaining < required:
+            elif required is not None and possible_remaining < required:
                 fault("short_shelf_life_at_review", f"Only {remaining:.2f} h remained at review time, below my required margin.", 2)
+            elif remaining <= 0 or (required is not None and remaining < required):
+                reasons.append("expiry_clock_boundary")
+                notes.append("Clock uncertainty overlapped the lifetime limit; a shelf-life violation was not established.")
+                ceilings.append(3)
             elif preferences and remaining < preferences.get("food_min_hours_left", 0):
                 preference("preferred_shelf_life_not_met", "The accepted shelf life was below my preferred margin when reviewed; this does not establish its condition at payment.")
     else:
@@ -117,7 +144,8 @@ def review(deal, *, terms=None, now=None):
     text = f"Settled {settled['sku']} at {price:g}; grade {grade}. " + " ".join(notes) + f" Ledger {settled['ledger']}."
     # No budget, private target amount or price-limit amount appears in public text.
     return {"stars": stars, "review": text, "reasons": reasons, "reviewed_at": now,
-            "issues": issues, "preference_shortfalls": shortfalls}
+            "issues": issues, "preference_shortfalls": shortfalls,
+            **({"market_clock": clock_snapshot} if clock_snapshot is not None else {})}
 
 
 def main():
@@ -126,7 +154,8 @@ def main():
     args = parser.parse_args()
     deal = read_json(args.deal)
     terms = purchase_terms(deal, recent_jsonl(ROOT / "data" / "market-memory.jsonl"))
-    result = review(deal, terms=terms)
+    clock = schedule_now(ROOT / ".market", deal["order"].get("round"))
+    result = review(deal, terms=terms, market_clock=clock)
     # Do not copy private order budget/mandates into review text or shared evidence.
     append_event(ROOT / "logs" / "settled-deals.jsonl", {
         "order": deal["order"]["order"], "receipt": deal["receipt"], "settled": deal["settled"],

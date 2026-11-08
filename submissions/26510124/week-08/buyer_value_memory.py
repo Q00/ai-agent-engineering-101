@@ -9,12 +9,13 @@ from statistics import median
 import time
 
 from buyer_policy import buying_terms
-from payment_memory import record_time
+from payment_memory import MAX_MARKET_EPOCH, record_time
 
 MAX_ROWS = 2000
 MAX_AGE_SECONDS = 6 * 3600
 MIN_SAMPLES = 2
 MAX_GROUPS = 2
+FOOD_FRESHNESS_HOURS = (0, 6, 12, 24, 48, 72, 168, 336, 720)
 
 
 def _number(value):
@@ -26,13 +27,16 @@ def _identity(row):
     fields = ("round", "name", "url", "item", "order", "ledger", "price", "time", "result",
               "verified_review", "review_issues", "observed_receipt", "settled_value_evidence")
     try:
-        return json.dumps({key: row.get(key) for key in fields}, sort_keys=True,
+        facts = {key: row.get(key) for key in fields}
+        policy = row.get("purchase_policy")
+        facts["original_kind"] = policy.get("kind") if isinstance(policy, dict) else None
+        return json.dumps(facts, sort_keys=True,
                           separators=(",", ":"), allow_nan=False)
     except (TypeError, ValueError):
         return None
 
 
-def _actual(row):
+def _actual(row, kind):
     evidence, receipt = row.get("settled_value_evidence"), row.get("observed_receipt")
     if not (row.get("result") == "settled" and row.get("verified_review") is True
             and row.get("review_issues") == []
@@ -52,10 +56,8 @@ def _actual(row):
             or evidence.get("task") != receipt["task"]
             or not _number(evidence.get("price")) or evidence["price"] != price
             or evidence.get("grade") not in ("A", "B", "C")
-            or evidence.get("kind") not in (None, "goods")
-            or evidence.get("claim_honest") is not True
-            or not _number(evidence.get("value")) or evidence["value"] <= 0
-            or not _number(evidence.get("warranty_hours")) or not 0 <= evidence["warranty_hours"] <= 8760):
+            or evidence.get("kind") not in (None, kind)
+            or not _number(evidence.get("value")) or evidence["value"] <= 0):
         return None
     for source in (row, evidence):
         if any(key in source and (not _number(source[key]) or source[key] != 0)
@@ -63,22 +65,45 @@ def _actual(row):
             return None
         if "refunds" in source and source["refunds"] != []:
             return None
+    if kind == "food":
+        policy = row.get("purchase_policy")
+        if (not isinstance(policy, dict) or policy.get("kind") != "food"
+                or evidence.get("claim_honest") is not True and not (
+                    evidence.get("claim_honest") is None and evidence.get("claim_absent") is True)
+                or not _number(evidence.get("expires_at"))
+                or not _number(evidence.get("freshness_reference_at"))
+                or not 0 < evidence["freshness_reference_at"] < evidence["expires_at"] <= MAX_MARKET_EPOCH
+                or evidence.get("freshness_reference_source") not in (
+                    "market_settlement", "market_review_upper_bound")):
+            return None
+    elif (evidence.get("claim_honest") is not True
+          or not _number(evidence.get("warranty_hours"))
+          or not 0 <= evidence["warranty_hours"] <= 8760):
+        return None
     return evidence
 
 
-def build_value_evidence(memory, *, catalog, order, budget, config, now=None):
-    """Map (shop name, SKU) to at most two actual grade/warranty groups.
+def _freshness_bucket(hours):
+    lower = max(bound for bound in FOOD_FRESHNESS_HOURS if bound <= hours)
+    upper = next((bound for bound in FOOD_FRESHNESS_HOURS if bound > hours), None)
+    return lower, upper
 
-    Current-round, six-hour, confirmed and fault-free goods settlements only.
+
+def build_value_evidence(memory, *, catalog, order, budget, config, now=None):
+    """Map (shop name, SKU) to at most two actual comparable quality groups.
+
+    Current-round, six-hour, confirmed and fault-free settlements only.
     Catalog kind supplies the product type absent from the pinned settlement
-    receipt; food freshness and delayed breakage are not inferred here.
+    receipt. Food uses observed expiry and a captured market-time anchor;
+    historical life remaining does not establish any new unit's freshness.
     """
     now = time.time() if now is None else now
     if (not _number(now) or not isinstance(memory, list) or not isinstance(catalog, dict)
             or not isinstance(config, dict) or not config or type(budget) is not int or budget <= 0
             or not isinstance(order, dict) or type(order.get("round")) is not int
-            or order["round"] < 3 or order.get("kind") != "goods"):
+            or order["round"] < 3 or order.get("kind") not in ("goods", "food")):
         return {}
+    kind = order["kind"]
     rows = [row for row in memory[-MAX_ROWS:] if isinstance(row, dict)
             and type(row.get("round")) is int and row["round"] == order["round"]
             and isinstance(row.get("name"), str) and row["name"]
@@ -109,7 +134,7 @@ def build_value_evidence(memory, *, catalog, order, budget, config, now=None):
                 or stamp <= blocked_after.get(key, -math.inf)
                 or isinstance(acceptable, list) and row["item"] not in acceptable):
             continue
-        evidence = _actual(row)
+        evidence = _actual(row, kind)
         if evidence is None:
             continue
         ledger, order_id = row["ledger"], row["order"]
@@ -117,7 +142,7 @@ def build_value_evidence(memory, *, catalog, order, budget, config, now=None):
                 or len(order_ids[order_id]) != 1 or None in order_ids[order_id]):
             continue
         product = catalog.get(row["item"])
-        if not isinstance(product, dict) or product.get("kind") != "goods":
+        if not isinstance(product, dict) or product.get("kind") != kind:
             continue
         try:
             terms = buying_terms(budget, product=product, order=order, config=config)
@@ -125,25 +150,41 @@ def build_value_evidence(memory, *, catalog, order, budget, config, now=None):
             continue
         accept = terms["accept"]
         if (not accept.get("cert") or evidence["grade"] not in accept.get("grades", [])
-                or evidence["warranty_hours"] < accept.get("warranty_hours", 0)
                 or evidence["value"] != terms["list_price"] or row["price"] > terms["price_limit"]):
             continue
+        remaining = None
+        if kind == "food":
+            remaining = (evidence["expires_at"] - evidence["freshness_reference_at"]) / 3600
+            required = accept.get("min_hours_left")
+            if not _number(required) or required < 0 or remaining < required:
+                continue
+            quality = (evidence["grade"], _freshness_bucket(remaining))
+        else:
+            if evidence["warranty_hours"] < accept.get("warranty_hours", 0):
+                continue
+            quality = (evidence["grade"], evidence["warranty_hours"])
         seen.add(ledger)
-        group = groups.setdefault(key, {}).setdefault((evidence["grade"], evidence["warranty_hours"]), [])
-        group.append((int(row["price"]), stamp, terms["list_price"]))
+        group = groups.setdefault(key, {}).setdefault(quality, [])
+        group.append((int(row["price"]), stamp, terms["list_price"], remaining))
     result = {}
     for key, quality_groups in groups.items():
         summaries = []
-        for (grade, warranty), samples in quality_groups.items():
+        for (grade, quality), samples in quality_groups.items():
             if len(samples) < MIN_SAMPLES:
                 continue
             price = math.ceil(median(sample[0] for sample in samples))
-            summaries.append({"kind": "goods", "grade": grade, "warranty_hours": warranty,
+            summary = {"kind": kind, "grade": grade,
+                "warranty_hours": quality if kind == "goods" else None,
                 "sample_count": len(samples), "median_price": price,
                 "price_to_list": round(price / samples[0][2], 6),
-                "age_seconds": math.ceil(now - max(sample[1] for sample in samples))})
+                "age_seconds": math.ceil(now - max(sample[1] for sample in samples))}
+            if kind == "food":
+                summary.update(freshness_bucket_hours=list(quality),
+                    minimum_hours_left=math.floor(min(sample[3] for sample in samples) * 1000000) / 1000000)
+            summaries.append(summary)
         summaries.sort(key=lambda summary: (summary["price_to_list"], -summary["sample_count"],
-                                             summary["age_seconds"], summary["grade"], -summary["warranty_hours"]))
+            summary["age_seconds"], summary["grade"],
+            -(summary["warranty_hours"] if kind == "goods" else summary["minimum_hours_left"])))
         if summaries:
             result[key] = {"groups": summaries[:MAX_GROUPS], "best_price_to_list": summaries[0]["price_to_list"]}
     return result

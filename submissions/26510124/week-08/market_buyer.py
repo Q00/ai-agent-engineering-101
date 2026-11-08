@@ -48,6 +48,10 @@ class ReceiptMismatch(BuyerError):
 class PolicyRefusal(BuyerError):
     """A model choice violates the owner's purchasing limits; no fallback bid."""
 
+    def __init__(self, message, *, reason="unknown"):
+        super().__init__(message)
+        self.reason = reason
+
 
 def read_shops(path):
     shops = json.loads(Path(path).read_text(encoding="utf-8"))
@@ -127,6 +131,8 @@ def choose_shop(shops, memory, *, item, budget, deadline, policy=None, order=Non
     if type(timeout) is not int or not 1 <= timeout <= 45:
         raise BuyerError("Invalid buyer policy: selection_timeout_seconds")
     context = {"item": item, "budget": budget, "candidates": candidates, "purchase_policy": negotiation_policy(policy)}
+    if type(order.get("round")) is int and order["round"] >= 3:
+        context["order_conditions"] = {"kind": order.get("kind"), "accept": checkout_policy(order, policy)}
     if isinstance(catalog, dict):
         # Shared prices avoid repeating catalog values for the same SKU in six shops.
         context["catalog_prices"] = {
@@ -201,13 +207,27 @@ class Buyer:
         self.policy = policy or buying_terms(budget)
         self.price_limit = min(budget, self.policy["price_limit"])
         self.no_deal_reason = ""
-        self.deadline = time.monotonic() + seconds
+        self.started_at = time.monotonic()
+        self.deadline = self.started_at + seconds
+        self.reason_code = "unknown"
+        self.stage = "discovery"
+        self.decisions = 0
+        self.last_parsed_ask = None
+        self.seller_terminal = None
         self.task_id = None
         self.terminal = False
         self.history = []
         self.authorized_price = None
         self.receipt = None
         self.observed_receipt = None
+
+    def diagnostics(self):
+        """Local observations only; seller claims never establish a root cause."""
+        return {"version": 1, "reason": self.reason_code, "stage": self.stage,
+                "decisions": self.decisions, "last_parsed_ask": self.last_parsed_ask,
+                "last_authorized_bid": self.authorized_price,
+                "elapsed_seconds": round(max(0, time.monotonic() - self.started_at), 3),
+                "task_id": self.task_id, "seller_terminal": self.seller_terminal}
 
     def remaining(self):
         seconds = self.deadline - time.monotonic()
@@ -294,11 +314,14 @@ class Buyer:
         if type(price) is not int or not 0 < price <= self.budget:
             raise BuyerError("Harness price must be a positive integer within the budget")
         if price > self.price_limit:
-            raise PolicyRefusal("Model price exceeds the owner's purchasing limit")
+            raise PolicyRefusal("Model price exceeds the owner's purchasing limit", reason="price_limit")
+        exact_ask = last_asking_price(seller_message)
+        accepts_current_ask = exact_ask is not None and price == exact_ask
         if (self.authorized_price is not None
                 and price > self.authorized_price + self.policy["max_concession"]
-                and not (action == "accept" and self.policy.get("allow_accept_above_concession") is True)):
-            raise PolicyRefusal("Model concession exceeds the per-turn limit")
+                and not ((action == "accept" or accepts_current_ask)
+                         and self.policy.get("allow_accept_above_concession") is True)):
+            raise PolicyRefusal("Model concession exceeds the per-turn limit", reason="concession_limit")
         if action == "accept" and price != last_asking_price(seller_message):
             raise BuyerError("Harness acceptance price does not match the seller's ask")
 
@@ -332,6 +355,7 @@ class Buyer:
         try:
             return self.negotiate()
         except PolicyRefusal as exc:
+            self.reason_code = exc.reason
             self.no_deal_reason = str(exc)
             if self.task_id is not None and not self.terminal:
                 try:
@@ -340,7 +364,15 @@ class Buyer:
                     log("CLEANUP ERROR", str(cleanup))
             log("POLICY WALK AWAY", self.no_deal_reason)
             return "no_deal"
-        except (BuyerError, HarnessError):
+        except (BuyerError, HarnessError) as failure:
+            if isinstance(failure, ReceiptMismatch):
+                self.reason_code = "receipt_mismatch"
+            elif isinstance(failure, HarnessError):
+                self.reason_code = ("model_timeout" if str(failure).startswith(
+                    ("Harness timed out;", "Harness deadline expired;")) else "model_error")
+            else:
+                self.reason_code = ("model_error" if self.stage == "decision_validation"
+                                    else "protocol_or_network_error")
             # Ending on an error is not a model's walk-away decision. Report the
             # failure and release a pending Task, but never choose another price.
             if self.task_id is not None and not self.terminal:
@@ -352,31 +384,51 @@ class Buyer:
 
     def negotiate(self):
         self.discover()
+        self.stage = "opening_request"
         task = self.send(f"I want to buy a {self.item}")
         decisions = 0
         while True:
             self.remaining()
             state = task["status"].get("state")
             text = message_text(task)
+            ask = last_asking_price(text)
+            if ask is not None and math.isfinite(ask):
+                self.last_parsed_ask = ask
+            if state in TERMINAL_STATES:
+                self.seller_terminal = {
+                    "state": state, "source": "untrusted_seller",
+                    "reported_tags": [tag for tag, pattern in (
+                        ("stock", r"stock|inventory|재고|품절"),
+                        ("price", r"price|expensive|cheap|가격|비싸|저렴"))
+                        if re.search(pattern, text, re.IGNORECASE)]}
             if text and state == "TASK_STATE_INPUT_REQUIRED":
                 self.history.append({"role": "seller", "text": text})
             if state == "TASK_STATE_COMPLETED":
+                self.stage = "receipt_validation"
                 self.verify_receipt(task)
+                self.reason_code = "receipt_issued"
                 return "receipt_issued"
             if state in {"TASK_STATE_REJECTED", "TASK_STATE_CANCELED"}:
+                self.stage = "seller_terminal"
+                self.reason_code = "seller_rejected" if state == "TASK_STATE_REJECTED" else "seller_cancelled"
                 log("NO DEAL", {"state": state, "taskId": self.task_id})
                 return "no_deal"
             if state in {"TASK_STATE_SUBMITTED", "TASK_STATE_WORKING"}:
+                self.stage = "seller_poll"
                 time.sleep(min(0.25, self.remaining()))
                 task = self.rpc("GetTask", {"id": self.task_id})
                 continue
             if state != "TASK_STATE_INPUT_REQUIRED":
                 raise BuyerError(f"Cannot negotiate in seller state {state}: {text}")
             if decisions >= min(MAX_DECISIONS, self.policy["max_decisions"]):
-                raise PolicyRefusal("Negotiation ended at the owner's turn limit without a satisfactory agreement")
+                self.stage = "decision_limit"
+                raise PolicyRefusal("Negotiation ended at the owner's turn limit without a satisfactory agreement",
+                                    reason="decision_limit")
             compact = compact_dialogue(self.history, text, last_asking_price)
             log("NEGOTIATION CONTEXT", {"decision": decisions + 1,
                                         "context_chars": len(json.dumps(compact, ensure_ascii=False))})
+            self.stage = "model_decision"
+            self.decisions = decisions + 1
             decision = buyer_decision(item=self.item, budget=self.budget,
                                       **compact,
                                       timeout=min(90, self.remaining()), policy=self.policy,
@@ -384,9 +436,12 @@ class Buyer:
                                       decisions_left=min(MAX_DECISIONS, self.policy["max_decisions"]) - decisions)
             decisions += 1
             log("BUYER DECISION", decision)
+            self.stage = "decision_validation"
             self.validate_decision(decision, text)
             self.remaining()
             if decision["action"] == "walk_away":
+                self.stage = "buyer_cancel"
+                self.reason_code = "model_walk_away"
                 self.no_deal_reason = decision["reason"]
                 self.cancel()
                 log("NO DEAL", {"reason": decision["reason"], "taskId": self.task_id})
@@ -394,6 +449,7 @@ class Buyer:
             # The wire contract uses a numeric offer for both acceptance and
             # counteroffers. The model explicitly chooses that action and price.
             self.authorized_price = decision["price"]
+            self.stage = "offer_request"
             task = self.send(str(self.authorized_price))
 
 
@@ -427,6 +483,7 @@ def trade_and_record(shop, *, item, budget, memory_path, reason, seconds, client
         "selection_fingerprint": offer_fingerprint(shop, item, policy, (order or {}).get("round", 2)),
         "compatibility_fingerprint": compatibility_fingerprint(shop, item, policy, (order or {}).get("round", 2)),
         "observed_receipt": buyer.observed_receipt,
+        "negotiation_diagnostics": buyer.diagnostics(),
         "stars": stars, "review": review,
     }
     memory_path.parent.mkdir(parents=True, exist_ok=True)
@@ -448,6 +505,9 @@ def main(argv=None):
         parser.error("--budget must be positive")
     result = {"shop": "", "receipt": None, "stars": 2, "review": "Could not start the trade."}
     exit_code = 0
+    order = {}
+    stage = "selection_setup"
+    trade_started = False
     try:
         deadline = time.monotonic() + RUN_SECONDS
         order = read_json(args.order) if args.order else {}
@@ -463,6 +523,7 @@ def main(argv=None):
             if not isinstance(catalog, dict):
                 raise BuyerError("Market catalog must be a SKU mapping")
             shops = stocked_shops(shops, order)
+        stage = "shop_selection"
         shop, reason = choose_shop(shops, memory, item=args.item, budget=args.budget,
                                    deadline=min(deadline, time.monotonic() + 90), policy=config, order=order, catalog=catalog)
         result["shop"] = shop["url"]
@@ -473,6 +534,7 @@ def main(argv=None):
             policy["price_reference"] = shop["price_reference"]
         log("PURCHASE POLICY", policy)  # local evidence only; never sent to the shop
         with httpx.Client(trust_env=False) as client:
+            trade_started = True
             result = trade_and_record(shop, item=sku, budget=args.budget,
                                       memory_path=args.memory, reason=reason,
                                       seconds=deadline - time.monotonic(), client=client, order=order, policy=policy)
@@ -480,6 +542,25 @@ def main(argv=None):
         result["review"] = f"Buyer could not complete the order: {exc}"
         exit_code = 1
         log("MARKET BUYER ERROR", str(exc))
+        if not trade_started:
+            # Keep selection-only rows out of the name-indexed trading memory.
+            # Optional observability must not alter the trade result.
+            try:
+                events = args.memory.parent / "buyer-events.jsonl"
+                events.parent.mkdir(parents=True, exist_ok=True)
+                reason_code = "unknown"
+                if isinstance(exc, HarnessError):
+                    reason_code = "model_timeout" if str(exc).startswith(
+                        ("Harness timed out;", "Harness deadline expired;")) else "model_error"
+                with events.open("a", encoding="utf-8") as stream:
+                    stream.write(json.dumps({"version": 1, "event": "selection_failure",
+                        "time": datetime.now(timezone.utc).isoformat(),
+                        "order": order.get("order") if isinstance(order, dict) else None,
+                        "round": order.get("round") if isinstance(order, dict) else None,
+                        "stage": stage, "reason": reason_code,
+                        "exception_class": type(exc).__name__}) + "\n")
+            except (OSError, ValueError, TypeError):
+                pass
     print(json.dumps(result, ensure_ascii=False, allow_nan=False), flush=True)
     return exit_code
 

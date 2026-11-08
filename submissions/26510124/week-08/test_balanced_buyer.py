@@ -52,8 +52,9 @@ class BalancedBuyerTests(unittest.TestCase):
         buyer = Buyer(Mock(), url="https://fixture.invalid", item="G00001", budget=100000, policy=self.terms())
         buyer.authorized_price = 75000
         buyer.validate_decision({"action": "accept", "price": 85000, "reason": "acceptable"}, "asking 85000")
+        buyer.validate_decision({"action": "offer", "price": 85000, "reason": "meet ask"}, "asking 85000")
         with self.assertRaises(PolicyRefusal):
-            buyer.validate_decision({"action": "offer", "price": 85000, "reason": "jump"}, "asking 85000")
+            buyer.validate_decision({"action": "offer", "price": 84000, "reason": "jump"}, "asking 85000")
         with self.assertRaises(PolicyRefusal):
             buyer.validate_decision({"action": "accept", "price": 85001, "reason": "over limit"}, "asking 85001")
         with self.assertRaises(BuyerError):
@@ -120,7 +121,7 @@ class BalancedBuyerTests(unittest.TestCase):
     def test_food_required_use_and_original_buffer_are_still_required(self):
         terms = buying_terms(100000, product={"list_price": 100000},
                             order={"round": 3, "kind": "food", "use_within_hours": 4})
-        self.assertEqual(terms["accept"], {"cert": True, "grades": ["A", "B"], "min_hours_left": 5})
+        self.assertEqual(terms["accept"], {"cert": True, "grades": ["A", "B", "C"], "min_hours_left": 5})
         self.assertEqual(terms["review_preferences"]["food_min_hours_left"], 5)
 
 

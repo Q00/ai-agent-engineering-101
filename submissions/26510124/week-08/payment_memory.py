@@ -5,6 +5,8 @@ import re
 from datetime import datetime
 from pathlib import Path
 
+MAX_MARKET_EPOCH = 253402300799  # Last whole second representable in year 9999.
+
 
 def recent_jsonl(path, *, limit=2_000_000, rows=2000):
     try:
@@ -110,7 +112,13 @@ def attach_reviews(records, reviews):
         if not isinstance(review.get("order"), str):
             continue
         try:
-            signature = json.dumps({k: review.get(k) for k in ("receipt", "settled")},
+            facts = {k: review.get(k) for k in ("receipt", "settled")}
+            # A food freshness proof can depend on the captured market clock.
+            # Conflicting copies must not quietly choose whichever came last.
+            assessment = review.get("assessment")
+            if isinstance(assessment, dict) and "market_clock" in assessment:
+                facts["market_clock"] = assessment["market_clock"]
+            signature = json.dumps(facts,
                                    sort_keys=True, allow_nan=False)
         except (TypeError, ValueError):
             signature = None
@@ -150,11 +158,52 @@ def attach_reviews(records, reviews):
     return result
 
 
+def _market_epoch(value):
+    """Market timestamps only; local review/receipt times are not substitutes."""
+    if type(value) in (int, float) and math.isfinite(value) and 0 < value <= MAX_MARKET_EPOCH:
+        return float(value)
+    parsed = record_time(value)
+    return parsed if parsed is not None and parsed > 0 else None
+
+
+def _food_freshness(settled, assessment):
+    expiry = _market_epoch(settled.get("expires_at"))
+    if expiry is None:
+        return None
+    clock = assessment.get("market_clock")
+    clock_valid = (isinstance(clock, dict) and clock.get("status") == "synced"
+                   and type(clock.get("now")) in (int, float)
+                   and _market_epoch(clock["now"]) is not None
+                   and type(clock.get("uncertainty_seconds")) in (int, float)
+                   and math.isfinite(clock["uncertainty_seconds"])
+                   and 0 <= clock["uncertainty_seconds"] <= 6)
+    stamps = [_market_epoch(settled[key]) for key in ("ts", "settled_at") if key in settled]
+    if stamps:
+        if any(stamp is None for stamp in stamps) or max(stamps) - min(stamps) > 1:
+            return None
+        stamp = max(stamps)
+        if clock_valid and stamp > clock["now"]:
+            return None
+        source = "market_settlement"
+    elif clock_valid:
+        # schedule_now supplies an upper bound, already including Date/RTT
+        # uncertainty. Life still left at review is a conservative lower
+        # bound on life left at the earlier completed payment.
+        stamp, source = float(clock["now"]), "market_review_upper_bound"
+    else:
+        return None
+    if expiry <= stamp:
+        return None
+    return {"expires_at": expiry, "freshness_reference_at": stamp,
+            "freshness_reference_source": source}
+
+
 def _settled_value_evidence(record, row):
     """Actual settlement terms for price learning, not requested accept terms.
 
     The pinned market receipt does not always carry kind; the caller must
-    cross-check the authoritative catalog before using this proof as goods.
+    cross-check the authoritative catalog before using this proof. Food also
+    requires an explicit original food order and a verified market-time anchor.
     Existing review/rating behavior remains independent of this stricter path.
     """
     def number(value):
@@ -173,9 +222,7 @@ def _settled_value_evidence(record, row):
     price, value, warranty = record.get("price"), settled.get("value"), settled.get("warranty_hours")
     if (not number(price) or price <= 0 or price != int(price)
             or not number(value) or value <= 0
-            or not number(warranty) or not 0 <= warranty <= 8760
             or settled.get("grade") not in ("A", "B", "C")
-            or settled.get("claim_honest") is not True
             or settled.get("sku") != record["item"]
             or observed.get("item") != record["item"]
             or not isinstance(observed.get("task"), str) or not observed["task"]
@@ -203,7 +250,25 @@ def _settled_value_evidence(record, row):
             return None
     if "unit" in settled and "unit" in observed and settled["unit"] != observed["unit"]:
         return None
+    original_policy = record.get("purchase_policy")
+    food = isinstance(original_policy, dict) and original_policy.get("kind") == "food"
+    extras = {}
+    if food:
+        if settled.get("kind") not in (None, "food"):
+            return None
+        claim_absent = all(source.get("claim") is None for source in (settled, receipt, observed))
+        honest = settled.get("claim_honest")
+        if honest is not True and not (honest is None and claim_absent):
+            return None
+        freshness = _food_freshness(settled, row["assessment"])
+        if freshness is None:
+            return None
+        extras.update(freshness, claim_absent=claim_absent)
+        warranty = None
+    elif (not number(warranty) or not 0 <= warranty <= 8760
+          or settled.get("claim_honest") is not True):
+        return None
     return {"ledger": record["ledger"], "order": record["order"], "shop": record["url"],
             "sku": record["item"], "task": observed["task"], "price": int(price),
             "grade": settled["grade"], "warranty_hours": warranty, "kind": settled.get("kind"),
-            "value": value, "claim_honest": True}
+            "value": value, "claim_honest": settled.get("claim_honest"), **extras}
