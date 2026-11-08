@@ -88,7 +88,9 @@ DEAD_MARKUP = 1.02
 # after it arrived, whose cost is at or above what the market pays for its grade (DEAD_GRADE_SHARE of list, 11-06/07 ledger),
 # opens at cost + 2%. The floor stays the cost: nothing goes below it
 DEAD_AGE_HOURS = 12
-C_BEHIND_SHARE = 0.65    # grade C goes after A and B only if an A or B unit costs at most this share of list (find_unit)
+# Claude (2026-11-09 03:23, hourly check): 0.65 reverted to always (inf). With C first, settles fell to about half of the
+# night before (01 h 50 against 117, 02 h 51 against 128) and no deals per settle rose from 0.37 to 0.78: buyers walked at C
+C_BEHIND_SHARE = float("inf")  # grade C goes after A and B only if an A or B unit costs at most this share of list (find_unit)
 DEAD_FIRST_SHARE = 0.5   # share of asks on a named SKU that offer its old units first (see find_unit)
 DEAD_MIN_LIST = 100_000
 DEAD_GRADE_SHARE = {"A": 0.70, "B": 0.65, "C": 0.60}
