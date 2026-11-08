@@ -41,6 +41,9 @@ assert mb.accept_policy({"kind": "food", "use_within_hours": 5})["min_hours_left
 (md / "payments.jsonl").write_text("\n".join(json.dumps({"shop": "http://bad", "paid": False}) for _ in range(2)) + "\n"
                                    + json.dumps({"shop": "http://ok", "paid": False}) + "\n")
 assert mb.refused_shops(md) == {"http://bad"}
+wmem = {"shops": {"none": {"trades": [{"warranty": 0}, {"warranty": 0}]}, "some": {"trades": [{"warranty": 0}, {"warranty": 6}]},
+                  "once": {"trades": [{"warranty": 0}]}, "food": {"trades": [{}, {}]}}}
+assert [n for n in wmem["shops"] if mb.no_warranty(wmem, n)] == ["none"]
 mb.forum_post(md, "hello"); mb.forum_post(md, "again")
 assert sum(1 for l in (md / "outbox.jsonl").read_text().splitlines() if '"buyer"' in l) == 1   # 5-min limit
 

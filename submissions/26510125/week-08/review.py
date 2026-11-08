@@ -33,16 +33,18 @@ def main():
         stars = min(stars, 2)                     # a false grade claim is never a good review
     elif hours is not None and o.get("use_within_hours") and hours < o["use_within_hours"]:
         stars = min(stars, 2)                     # food that will not last the order's use window
-    if honest is False:                           # feed the buyer's memory: the shop's claim was false on me
-        md = Path(a.deal).parent
-        try:
-            names = {x["url"].rstrip("/"): x["name"] for x in json.loads((md / "shops.json").read_text(encoding="utf-8"))}
-            mem = json.loads(Path("buyer_memory.json").read_text(encoding="utf-8"))
-            trades = mem["shops"][names[str(s.get("shop", "")).rstrip("/")]]["trades"]
-            trades[-1]["dishonest"] = True
-            Path("buyer_memory.json").write_text(json.dumps(mem, ensure_ascii=False, indent=1), encoding="utf-8")
-        except (OSError, ValueError, KeyError, IndexError) as e:
-            print(f"[memory] could not mark the shop dishonest: {type(e).__name__}", flush=True)
+    md = Path(a.deal).parent                      # feed the buyer's memory: was the claim honest, did goods come with a warranty
+    try:
+        names = {x["url"].rstrip("/"): x["name"] for x in json.loads((md / "shops.json").read_text(encoding="utf-8"))}
+        mem = json.loads(Path("buyer_memory.json").read_text(encoding="utf-8"))
+        last = mem["shops"][names[str(s.get("shop", "")).rstrip("/")]]["trades"][-1]
+        if honest is False:
+            last["dishonest"] = True
+        if o.get("kind") == "goods":
+            last["warranty"] = s.get("warranty_hours") or 0
+        Path("buyer_memory.json").write_text(json.dumps(mem, ensure_ascii=False, indent=1), encoding="utf-8")
+    except (OSError, ValueError, KeyError, IndexError) as e:
+        print(f"[memory] could not record the settled deal: {type(e).__name__}", flush=True)
     if s.get("ledger"):                       # forum: a verifiable purchase record (ledger ref), the kind other buyers upvote
         pct = f", 정가 대비 {100 - 100 * price // value}% 저렴" if value and price and value > price else ""
         forum_post(Path(a.deal).parent,

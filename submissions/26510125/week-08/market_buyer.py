@@ -202,6 +202,12 @@ def refused_shops(md: Path):
     return {u for u, n in bad.items() if n >= 2}
 
 
+def no_warranty(mem: dict, shop_name: str) -> bool:
+    """Two or more goods bought there, none with a warranty: a break there is a Saved of -1 with no refund."""
+    w = [t["warranty"] for t in mem["shops"].get(shop_name, {}).get("trades", []) if "warranty" in t]
+    return len(w) >= 2 and not any(w)
+
+
 def pick_sku(shop: dict, order: dict, catalog: dict, broken: set):
     """The acceptable SKU this shop stocks with the highest list price that can land within budget at the market's
     ~75 % of list (patch 3.4: Saved sums the discount RATIO per deal, so a pricier SKU bought under budget scores more)."""
@@ -290,6 +296,11 @@ def main():
             shops = stocked
         else:
             log("[choose] no shop stocks an acceptable SKU; trying the plain item anyway")
+        if order.get("kind") == "goods":           # goods break; a shop that never gave a warranty is last resort
+            covered = [s for s in shops if not no_warranty(mem, s["name"])]
+            if covered and len(covered) < len(shops):
+                log(f"[skip] {len(shops) - len(covered)} shop(s) that sold me goods twice without a warranty")
+                shops = covered
     shop = choose(shops, mem, args.item, args.budget)
     if order.get("acceptable"):
         try:
