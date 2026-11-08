@@ -88,6 +88,7 @@ DEAD_MARKUP = 1.02
 # after it arrived, whose cost is at or above what the market pays for its grade (DEAD_GRADE_SHARE of list, 11-06/07 ledger),
 # opens at cost + 2%. The floor stays the cost: nothing goes below it
 DEAD_AGE_HOURS = 12
+DEAD_FIRST_SHARE = 0.5   # share of asks on a named SKU that offer its old units first (see find_unit)
 DEAD_MIN_LIST = 100_000
 DEAD_GRADE_SHARE = {"A": 0.70, "B": 0.65, "C": 0.60}
 # ddolcom (2026-11-06, the user's instruction): this one unit may go below its cost of 1,650,854. Its cost was above the market's
@@ -231,7 +232,11 @@ def find_unit(text, taken=()):
     # units that can sell: since 22:26 G8095ddd6 had 62 offers and 4 at or above the floor while its grade A at 0.73 of list stood first
     # and units at 0.38 and 0.57 waited. The units of the forum clearance stay first, as the post says. Food still goes by its date
     # Goods of grade C after A and B (02:28-03:23: 6 of 27 grade C goods receipts settled, 70 of 70 A and 21 of 21 B)
-    key = ((lambda u: (u["expires_at"] or float("inf"), not is_dead(u), is_goods(u) and u.get("grade") == "C", u["cost"],
+    # Claude (2026-11-08 20:23, hourly check): old units first on every ask blocked whole SKUs when their cost + 2% sat above the
+    # market: G03d0199f (29 deals/h in the market) had 17 opens, 23 offers and no deal (offer 1,063,595, floor 1,134,642) while
+    # its cheaper units waited. Old units now go first on half of the asks (DEAD_FIRST_SHARE); the other half get the cheapest unit
+    dead_first = random.random() < DEAD_FIRST_SHARE
+    key = ((lambda u: (u["expires_at"] or float("inf"), not (dead_first and is_dead(u)), is_goods(u) and u.get("grade") == "C", u["cost"],
                        u["supplied_at"])) if named
            else (lambda u: (u["expires_at"] or float("inf"), u["supplied_at"])))
     fit = named or fit                                   # a SKU the buyer named comes first
