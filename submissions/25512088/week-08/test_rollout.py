@@ -23,14 +23,14 @@ class RolloutTests(unittest.TestCase):
   self.p.accept('one','u','sku',8000,q,inventory=inv)
   with self.assertRaises(ValueError):self.p.accept('two','v','sku',8000,q,inventory=inv)
   self.assertEqual(self.p.db.execute('select count(*) from warranties').fetchone()[0],1)
- def test_live_quote_holds_excluded_from_offers_expired_holds_clear(self):
+ def test_unaccepted_legacy_quote_holds_never_hide_offers(self):
   (self.root/'inventory.json').write_text(json.dumps(dict(round=3,units=[self.u])))
   with self.p.db:
    self.p.db.execute('CREATE TABLE quote_holds(task TEXT PRIMARY KEY,unit TEXT,until REAL)')
    self.p.db.execute('INSERT INTO quote_holds VALUES(?,?,?)',('q','u',time.time()+60))
   intel=Intel(self.root)
   try:
-   self.assertEqual(offers(self.root,self.p,intel),[])
+   self.assertEqual(offers(self.root,self.p,intel)[0]['warranty_hours'],6)
    with self.p.db:self.p.db.execute('UPDATE quote_holds SET until=0')
    self.assertEqual(offers(self.root,self.p,intel)[0]['warranty_hours'],6)
   finally:intel.close()
