@@ -140,7 +140,7 @@ def main():
         slots=max(0,policy.get('max_exposed_units',250)-len(inv.get('units',[])))
         # Starting capital is 5M. More accumulated cash funds more demand
         # windows, while capital_available still preserves cash/liabilities.
-        aggression=max(1.0,min(policy.get('max_demand_windows',4),inv.get('balance',0)/5_000_000))
+        aggression=max(1.0,min(policy.get('max_demand_windows',4),inv.get('balance',0)/3_000_000))
         plan=allocation_plan(ranked,inv,available,blocked,slots,aggression)
         if not plan:
             if blocked:time.sleep(10);continue

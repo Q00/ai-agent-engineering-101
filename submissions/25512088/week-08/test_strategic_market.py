@@ -1,8 +1,12 @@
 import json,sqlite3,tempfile,time,unittest
 from pathlib import Path
-from strategic_market import rank_products,owned_targets,restrict_order,snapshot
+from strategic_market import rank_products,owned_targets,restrict_order,snapshot,own_goods_hazard
 
 class StrategyTests(unittest.TestCase):
+ def test_mature_own_breakage_cohort_replaces_conservative_prior(self):
+  hazard,basis=own_goods_hazard({'shops':[{'name':'25512088','claims':139,'broken':11}]})
+  self.assertAlmostEqual(hazard,13/143);self.assertIn('139',basis)
+  self.assertEqual(own_goods_hazard({'shops':[{'name':'25512088','claims':10,'broken':0}]})[0],.15)
  def test_selection_waits_until_three_minutes_before_supply(self):
   self.assertIsNone(snapshot('/must-not-be-created',{},time.time()+1000,'https://unused'))
  def test_top10_accepts_evidence_backed_food_and_prefers_short_supply(self):

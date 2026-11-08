@@ -21,7 +21,8 @@ def _shop_offers(shop):
 
 
 def rank_products(catalog, trades, shops, own_name='25512088', local_demand=None,
-                  own_signals=None, alive_buyers=None, now=None):
+                  own_signals=None, alive_buyers=None, now=None, goods_hazard=.15,
+                  hazard_basis='conservative-unmeasured'):
     """Version-3 evidence TOP10: likelihood x net contribution, never price alone."""
     now=time.time() if now is None else now
     local_demand=local_demand or {}
@@ -83,13 +84,13 @@ def rank_products(catalog, trades, shops, own_name='25512088', local_demand=None
             # 15% is a conservative unmeasured warranty hazard prior.  Benefit,
             # capital and referral reserves stay explicit; missing trade price
             # is treated as an unsold unit rather than fabricated demand.
-            hazard=.10 if product.get('kind')=='food' else .15
+            hazard=.10 if product.get('kind')=='food' else goods_hazard
             net=typical*(1-hazard)*.95-cost*1.09-2000 if typical else -cost
             expected+=arrival*net
             scenarios.append(dict(grade=grade,arrival_probability=arrival,
                 acquisition_cost_range=[cost_lo,cost_hi],samples=len(prices),median_6h=typical,
                 mean_cost=cost,net_estimate=net,hazard_probability=hazard,
-                hazard_basis='conservative-unmeasured; replace with matured cohorts'))
+                hazard_basis='food-conservative' if product.get('kind')=='food' else hazard_basis))
         evidence=(len(one_hour)*2+len(observed)+len(active_6h)*1.5+
                   min(inquiries,10)*.35+min(rejected,10)*.5+min(len(category_buyers),10)*.25)
         competition=same_units.get(sku,0)+substitute_units*.35
@@ -110,6 +111,15 @@ def rank_products(catalog, trades, shops, own_name='25512088', local_demand=None
             score=score,upper_cost=math.ceil(product['list_price']*.75)))
     # Negative contribution never becomes a forced purchase. Fewer than ten is valid.
     return sorted((r for r in rows if r['expected_net']>0),key=lambda r:(-r['score'],-r['expected_net'],r['sku']))[:10]
+
+
+def own_goods_hazard(board,own_name='25512088'):
+    """Replace the prior only after our public breakage cohort is mature."""
+    row=next((x for x in board.get('shops',[]) if str(x.get('name'))==str(own_name)),{})
+    claims=row.get('claims');broken=row.get('broken')
+    if not isinstance(claims,int) or not isinstance(broken,int) or claims<50 or not 0<=broken<=claims:
+        return .15,'conservative-unmeasured'
+    return (broken+2)/(claims+4),f'own-public-matured-cohort:{claims}'
 
 
 def snapshot(state,catalog,opens_at,market):
@@ -149,7 +159,9 @@ def snapshot(state,catalog,opens_at,market):
                 own_signals[key][sku]=own_signals[key].get(sku,0)+1
         shop_rows=shops.get('shops',[]) if isinstance(shops,dict) else shops
         alive={r.get('name') for r in board.get('buyers',[]) if r.get('alive') is True}
-        top=rank_products(catalog,rows,shop_rows,local_demand=demand,own_signals=own_signals,alive_buyers=alive)
+        goods_hazard,hazard_basis=own_goods_hazard(board)
+        top=rank_products(catalog,rows,shop_rows,local_demand=demand,own_signals=own_signals,
+                          alive_buyers=alive,goods_hazard=goods_hazard,hazard_basis=hazard_basis)
         feedback=[]
         buyer_db=Path(state)/'buyer.sqlite3'
         if buyer_db.exists():
@@ -159,6 +171,7 @@ def snapshot(state,catalog,opens_at,market):
         result=dict(version=3,buyer_feedback=feedback,opens_at=opens_at,selected_at=time.time(),ledger_through=through,
                     late=time.time()>opens_at-150,top10=top,
                     fetch_bounds={'ledger_after':-1000,'ledger_rows':len(recent),'max_age_seconds':900},
+                    goods_hazard={'probability':goods_hazard,'basis':hazard_basis},
                     demand_basis=('current alive and recently active buyer 1h/6h public purchases; exact grade+6h '
                                   'honest trades; own inquiries/stockouts; own buyer orders are biased personal evidence'))
         path=Path(state)/'strategy.json';tmp=path.with_suffix('.tmp')
