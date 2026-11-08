@@ -38,8 +38,9 @@ def _preceding_word(text, start):
     return found[1].casefold() if found else ""
 
 
-def _token_is_price(token, rest):
-    """Separate a clause-ending mark from a decimal or malformed thousands group."""
+def _token_is_price(token, rest, extra_follower=None):
+    """Separate a clause-ending mark from a decimal or malformed thousands group. extra_follower (group C only) also lets one
+    named word follow the number, as in "asking price 308696 with Safe-Care" or "Asking 25,360 credits."."""
     if RANGE.match(token[len(token.rstrip(".,")):] + rest):
         return False
     final_mark = token[-1] in ".,"
@@ -49,7 +50,8 @@ def _token_is_price(token, rest):
     if final_mark:
         return bool(AFTER_FINAL_MARK.match(rest))
     currency = CURRENCY.match(rest)
-    return bool(FOLLOWER.match(rest[currency.end():] if currency else rest))
+    after = rest[currency.end():] if currency else rest
+    return bool(FOLLOWER.match(after)) or bool(extra_follower and extra_follower.match(after))
 
 
 def _names_another_price(text, price):
@@ -62,8 +64,8 @@ def _names_another_price(text, price):
     return False
 
 
-def parse_ask(text):
-    """Return (price, code); price is set only for one unambiguous current ask."""
+def parse_ask(text, extra_follower=None):
+    """Return (price, code); price is set only for one unambiguous current ask. extra_follower is for group C only."""
     if PAST_LABEL.search(text):
         return None, "non_current_price"
     prices = set()
@@ -73,7 +75,7 @@ def parse_ask(text):
         if _preceding_word(text, match.start()) in NOT_CURRENT:
             return None, "non_current_price"
         token = match[1]
-        if not _token_is_price(token, text[match.end():]):
+        if not _token_is_price(token, text[match.end():], extra_follower):
             return None, "malformed_price"
         prices.add(int(token.rstrip(".,").replace(",", "")))
     if not found:
@@ -95,7 +97,13 @@ ANY_KRW = re.compile(NUMBER + r"\s*(?:KRW\b|won\b|원)", re.I)
 # Words before a "name: 12000 KRW" that make it some other figure than this seller's ask.
 OTHER_FIGURE = NOT_CURRENT | {"elsewhere", "other", "others", "lowest", "highest", "msrp", "rrp", "retail", "compare", "comparable", "shipping", "delivery", "fee", "deposit",
                               "warranty", "refund", "budget", "value", "worth", "cost", "savings", "save", "discount", "off", "stars", "review", "reviews", "다른", "타사", "배송", "보증", "환불", "원가"}
-OFF = {"group_a": False, "lowest_price": False, "colon_krw": False}
+# Group C: labels sellers write in free text. "final price" without our/my; "our price" and "the price" with or without "is".
+FREE_LABELS = (("our_price", re.compile(r"(?<![\w])our price(?:\s+is)?\s*[:：=]?\s*" + NUMBER, re.I)),
+               ("the_price", re.compile(r"(?<![\w])the price(?:\s+is)?\s*[:：=]?\s*" + NUMBER, re.I)),
+               ("final_price_label", re.compile(r"(?<![\w])final price(?:\s+is)?\s*[:：=]?\s*" + NUMBER, re.I)))
+# Group C: the only words that may follow a labelled number that today's parser calls malformed.
+FREE_FOLLOWER = re.compile(r"[ \t]+(?:with|credits?)\b(?![ \t]*(?:\d|each\b))", re.I)
+OFF = {"group_a": False, "lowest_price": False, "colon_krw": False, "free_labels": False}
 
 
 def load_reading(path=CONFIG):
@@ -106,7 +114,8 @@ def load_reading(path=CONFIG):
         return dict(OFF)
     if not isinstance(section, dict):
         return dict(OFF)
-    return {"group_a": section.get("group_a_structured_and_labels") is True, "lowest_price": section.get("group_b_lowest_price") is True, "colon_krw": section.get("group_b_colon_krw") is True}
+    return {"group_a": section.get("group_a_structured_and_labels") is True, "lowest_price": section.get("group_b_lowest_price") is True, "colon_krw": section.get("group_b_colon_krw") is True,
+            "free_labels": section.get("group_c_free_labels") is True}
 
 
 def _clause_before(text, start):
@@ -128,10 +137,15 @@ def structured_ask(metadata):
 def read_ask(text, metadata=None, reading=None):
     """(price, code, how). The current parser always goes first; added readings run only when it found no label at all, and only with the same cautions."""
     price, code = parse_ask(text)
+    if code == "malformed_price" and reading and reading.get("free_labels"):
+        # Group C: the same labels and cautions, with "with" or "credits" allowed after the number. Anything else stays malformed.
+        again, again_code = parse_ask(text, FREE_FOLLOWER)
+        return again, again_code, ("label_follower" if again is not None else None)
     if code != "no_labeled_price" or not reading or not any(reading.get(key) for key in OFF):
         return price, code, None
     found = {}
-    rules = (GROUP_A if reading.get("group_a") else ()) + (LOWEST_PRICE if reading.get("lowest_price") else ()) + (COLON_KRW if reading.get("colon_krw") else ())
+    rules = (GROUP_A if reading.get("group_a") else ()) + (LOWEST_PRICE if reading.get("lowest_price") else ()) + (COLON_KRW if reading.get("colon_krw") else ()) \
+        + (FREE_LABELS if reading.get("free_labels") else ())
     for how, pattern in rules:
         for match in pattern.finditer(text):
             if how == "colon_krw":
