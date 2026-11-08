@@ -37,6 +37,13 @@
     "max_ask_per_cap": 1.18,
     "min_surplus_per_list": 0.1
   },
+  "rule_counter_repeat": {
+    "enabled": false,
+    "max_ask_per_cap": 1.5,
+    "max_rule_counters": 3,
+    "min_surplus_per_list": 0.1,
+    "note": "Same counter at the cap for asks up to 1.50 x cap, at most 3 rule counters per conversation (the 1.18 first counter included), then walk away without a model. over_budget_counter stays as it is."
+  },
   "retry_other_shop": {
     "enabled": true,
     "min_order_seconds_left": 180,

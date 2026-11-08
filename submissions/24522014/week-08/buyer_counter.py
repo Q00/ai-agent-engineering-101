@@ -35,6 +35,42 @@ def load_settings(path=CONFIG):
     return dict(DISABLED)
 
 
+REPEAT_DISABLED = {"enabled": False, "max_ask_per_cap": None, "max_rule_counters": None, "min_surplus_per_list": None}
+REPEAT_REASON = "Ask over the coded cap; the same rule counteroffer at the cap again, no model used."
+
+
+def _valid_repeat(config):
+    count = config.get("max_rule_counters") if isinstance(config, dict) else None
+    return _valid(config) and type(count) is int and 1 <= count <= 3
+
+
+def load_repeat_settings(path=CONFIG):
+    """rule_counter_repeat: the same counter at the cap for asks up to max_ask_per_cap, at most max_rule_counters per conversation.
+    Its own section, so over_budget_counter (the 1.18 first counter) stays as it is. Anything missing or malformed means off."""
+    try:
+        section = json.loads(Path(path).read_text(encoding="utf-8")).get("rule_counter_repeat")
+    except (OSError, ValueError, AttributeError):
+        return dict(REPEAT_DISABLED)
+    if _valid_repeat(section):
+        return {key: section[key] for key in REPEAT_DISABLED}
+    return dict(REPEAT_DISABLED)
+
+
+def evaluate_repeat(ask, cap, list_price, *, counters_so_far, config):
+    """(decision or None, check, exhausted). The same checks as the first counter except 'already used' and 'repeated price':
+    repeating the cap is the point. exhausted is True when the ask would qualify but max_rule_counters is reached."""
+    if not _valid_repeat(config):
+        return None, None, False
+    decision, check = evaluate(ask, cap, list_price, config=config)
+    check["rule_counters_before"] = counters_so_far
+    if decision is None:
+        return None, check, False
+    if counters_so_far >= config["max_rule_counters"]:
+        check.update(reason_code="counter_repeat_exhausted", offer=None)
+        return None, check, True
+    return {"action": "offer", "price": cap, "reason": REPEAT_REASON}, check, False
+
+
 def _exact(value):
     # str() keeps the configured 1.18 instead of its binary approximation, so boundaries are exact.
     return Fraction(str(value))

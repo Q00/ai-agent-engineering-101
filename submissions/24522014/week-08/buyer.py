@@ -12,7 +12,7 @@ from uuid import uuid4
 
 import httpx
 
-from buyer_counter import evaluate as evaluate_counter
+from buyer_counter import evaluate as evaluate_counter, evaluate_repeat
 from buyer_fast import classify, read_ask
 from discount_floor import deal_limit
 from harness import HarnessError, MODELS, parse_response, select_harness
@@ -216,6 +216,9 @@ def record_decision(client, turn, source, reason_code, decision=None, parser_rea
     counter_check = getattr(client, "counter_check", None)
     if counter_check:
         entry["counter_check"] = counter_check
+    repeat_check = getattr(client, "counter_repeat_check", None)
+    if repeat_check:
+        entry["counter_repeat_check"] = repeat_check
     if cancel:
         entry["cancel"] = cancel
     floor_check = getattr(client, "floor_check", None)
@@ -240,7 +243,7 @@ def buyer_decision(client, provider, history, turn, max_turns):
     metadata = seller_metadata(client.task) if reading else None
     client.price_read = read_ask(text, metadata, reading)[2] if reading else None
     accept = getattr(client, "accept_conditions", None)
-    client.counter_check = client.model_route = None
+    client.counter_check = client.model_route = client.counter_repeat_check = None
     client.quote_check = check_quote(client.task, text, accept) if accept else None
     limit = getattr(client, "discount_limit", None)
     client.floor_check = None
@@ -275,6 +278,7 @@ def buyer_decision(client, provider, history, turn, max_turns):
             if counter is not None:
                 validate_buyer_decision(counter, client.budget)
                 client.counter_used = True
+                client.rule_counters = getattr(client, "rule_counters", 0) + 1
                 record_decision(client, turn, "deterministic", "rule_counter_offer", counter, parser_reason)
                 return counter
             relief = getattr(client, "reference_relief", None)
@@ -293,6 +297,21 @@ def buyer_decision(client, provider, history, turn, max_turns):
                     validate_buyer_decision(accepted, client.budget)
                     record_decision(client, turn, "deterministic", REASON_CODE, accepted, parser_reason)
                     return accepted
+        repeat = getattr(client, "counter_repeat", None)
+        if repeat and repeat.get("enabled") and parser_reason == "over_budget":
+            if client.floor_check:
+                repeat = {**repeat, "min_surplus_per_list": max(repeat["min_surplus_per_list"], client.floor_check["required"])}
+            again, client.counter_repeat_check, exhausted = evaluate_repeat(
+                clear_ask, client.budget, getattr(client, "catalog_list_price", None),
+                counters_so_far=getattr(client, "rule_counters", 0), config=repeat)
+            if again is not None:
+                validate_buyer_decision(again, client.budget)
+                client.counter_used = True
+                client.rule_counters = getattr(client, "rule_counters", 0) + 1
+                record_decision(client, turn, "deterministic", "rule_counter_repeat", again, parser_reason)
+                return again
+            if exhausted:
+                return counter_exhausted(client, turn, parser_reason)
     if not any(float(number) > 0 for number in re.findall(r"-?\d+(?:\.\d+)?", text)):
         record_decision(client, turn, "parser", "no_positive_number", None, parser_reason)
         raise BuyerError("Seller input-required message has no valid asking price")
@@ -370,6 +389,18 @@ def cancel_after_turn_limit(client, turn):
     record_decision(client, turn, "turn_limit", "turn_limit_exceeded", cancel=outcome)
 
 
+def counter_exhausted(client, turn, parser_reason=None):
+    """The seller stayed over the cap after the last allowed rule counter: walk away on the rules, never to the model."""
+    walk = {"action": "walk_away", "price": None,
+            "reason": "Seller stayed over the coded cap after the allowed rule counteroffers; no model, no purchase forced."}
+    record_decision(client, turn, "deterministic", "rule_counter_exhausted", walk, parser_reason)
+    return walk
+
+
+def _repeat_on(client):
+    return bool((getattr(client, "counter_repeat", None) or {}).get("enabled"))
+
+
 def run_autonomous(client, provider, *, max_turns=12):
     client.provider = provider
     client.open()
@@ -381,9 +412,15 @@ def run_autonomous(client, provider, *, max_turns=12):
             raise BuyerError("Expected an input-required or terminal task from the seller")
         turn += 1
         if turn > max_turns:
-            cancel_after_turn_limit(client, turn)
-            raise BuyerError("Buyer decision turn limit exceeded")
-        decision = buyer_decision(client, provider, history, turn, max_turns)
+            last = client.decisions[-1].get("reason_code") if client.decisions else None
+            if not (_repeat_on(client) and last in ("rule_counter_offer", "rule_counter_repeat")):
+                cancel_after_turn_limit(client, turn)
+                raise BuyerError("Buyer decision turn limit exceeded")
+            # The last turn went to a rule counter the seller did not take: the same clean walk-away as running out of counters.
+            client.quote_check = client.counter_check = client.floor_check = client.counter_repeat_check = None
+            decision = counter_exhausted(client, turn)
+        else:
+            decision = buyer_decision(client, provider, history, turn, max_turns)
         history.append({"role": "buyer", "decision": decision})
         if decision["action"] == "walk_away":
             client.cancel()

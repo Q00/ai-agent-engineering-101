@@ -155,7 +155,7 @@ def failure_reason(outcome, negotiation, decisions):
     return outcome
 
 
-def trade(shop, item, budget, *, mode="claude", transport=None, requirements=None, decision_context=None, max_turns=6, fast_rules=False, model_gate=None, accept_conditions=None, over_budget_counter=None, catalog_list_price=None, order_item=None, price_reading=None, reference_relief=None, discount_limit=None):
+def trade(shop, item, budget, *, mode="claude", transport=None, requirements=None, decision_context=None, max_turns=6, fast_rules=False, model_gate=None, accept_conditions=None, over_budget_counter=None, counter_repeat=None, catalog_list_price=None, order_item=None, price_reading=None, reference_relief=None, discount_limit=None):
     client = MarketTransport(shop["url"], item, budget, transport=transport, timeout=180)
     client.discount_limit = discount_limit
     client.requirements = requirements
@@ -177,6 +177,7 @@ def trade(shop, item, budget, *, mode="claude", transport=None, requirements=Non
             return cached[0]
         client.model_gate = allow_model
         client.over_budget_counter = over_budget_counter
+        client.counter_repeat = counter_repeat
         client.catalog_list_price = catalog_list_price
     error = negotiation = release = None
     try:
@@ -251,14 +252,14 @@ def trade_attempt(args, order, catalog, pick):
                                         "grades": accept_conditions.get("grades"), "cap_without_floor": selected_evidence.get("cap_without_floor"), "settings": discount_floor.load()}}
     relief_token = None
     if support_decision.get("fast_rules"):
-        from buyer_counter import load_settings
+        from buyer_counter import load_repeat_settings, load_settings
         from buyer_fast import load_reading
         from buyer_support import model_reservation
         import reference_relief
         relief_token = reference_relief.active(args.order.parent, ROOT)
         # One model reservation per order: a retry finds it taken and stays on the rules.
         trade_options.update(fast_rules=True, model_gate=lambda: model_gate(args.order.parent, order["order"], model_reservation),
-                             over_budget_counter=load_settings(), price_reading=load_reading(),
+                             over_budget_counter=load_settings(), counter_repeat=load_repeat_settings(), price_reading=load_reading(),
                              reference_relief={"order_budget": args.budget, "kind": order.get("kind"), "catalog_kind": (catalog.get(selected_item) or {}).get("kind")} if relief_token else None,
                              catalog_list_price=(catalog.get(selected_item) or {}).get("list_price"))
     if order.get("kind") == "goods":
