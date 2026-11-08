@@ -1232,6 +1232,26 @@ def test_objective_model():
     objective.OPTIONS = saved_opts
     check("...a higher threshold within 0.005 of the best counts as tied, so it is taken (no flip on a difference of 0.002)",
           max(s2.values()) - s2[b2] <= objective.BAND and b2 == max(t for t, v in s2.items() if v >= max(s2.values()) - objective.BAND), s2)
+    orders = [{"order": f"m{i}", "min_share": 0.40} for i in range(200)] + [{"order": f"r{i}", "min_share": 0.30} for i in range(100)] \
+        + [{"order": "none", "min_share": None}]
+    bought2 = [{"order": f"m{i}", "list_price": 100, "price": 50} for i in range(40)] \
+        + [{"order": f"r{i}", "list_price": 100, "price": 50} for i in range(20)] \
+        + [{"order": f"r{i}", "list_price": 100, "price": 66} for i in range(20, 50)] + [{"order": "gone", "list_price": 100, "price": 50}]
+    rec2, ou = objective.assigned(bought2, [], orders)
+    check("assigned: each purchase with the threshold its order ran at; an order with none (no shop had the product) and a "
+          "purchase without its order left out", len(rec2) == 90 and len(ou) == 300 and (0.66, 0.34, 0.3) in rec2
+          and (0.5, 0.5, 0.4) in rec2, (len(rec2), len(ou)))
+    saved_opts, objective.OPTIONS = objective.OPTIONS, (0.27, 0.30, 0.33, 0.36, 0.40, 0.45)
+    b3, s3 = objective.choose({"saved": 0.30, "deals": 100}, [(0.35, 300), (0.25, 150), (0.40, 400)], rec2, 100, 12,
+                              orders_u=ou)
+    only_main = [x for x in rec2 if x[2] == 0.4]
+    b4, s4 = objective.choose({"saved": 0.30, "deals": 100}, [(0.35, 300), (0.25, 150), (0.40, 400)], only_main, 100, 12,
+                              orders_u=[0.4] * 200)
+    objective.OPTIONS = saved_opts
+    check("11/8, the probe: a threshold is judged only on orders that ran at it or lower (0.27: none, so not scored; 0.30-0.36: "
+          "the 100 probe orders; 0.40: all 300), its deals per hour scaled to every order; without probe orders nothing "
+          "under the pick is scored (until 11/8 every threshold under it scored the same)",
+          0.27 not in s3 and {0.30, 0.33, 0.36, 0.40} <= set(s3) and 0.30 not in s4 and 0.36 not in s4 and 0.40 in s4, (s3, s4))
     board = {"shops": [{"name": "A", "book": 300, "revenue": 900, "stars_rank": 4.9, "all": 0.0},
                        {"name": "Kiro729", "book": 200, "revenue": 800, "stars_rank": 4.8, "all": 0.0}],
              "buyers": [{"name": "A", "saved": 0.35, "forum": 0.6, "deals": 300, "posts": 5},
@@ -1253,6 +1273,9 @@ def test_objective_model():
         check("...with enough purchases a threshold within CLAMP (0.15-0.45 since 11/6 13:10), and its options",
               o["buyer_min_share"] is not None and objective.CLAMP[0] <= o["buyer_min_share"] <= objective.CLAMP[1]
               and len(o["options"]) == len(objective.OPTIONS), o)
+        check("...and the probe: a third of the orders at 0.10 under the pick (never under CLAMP)",
+              o.get("probe") == {"share": objective.PROBE_SHARE,
+                                 "min_share": round(max(objective.CLAMP[0], o["buyer_min_share"] - objective.PROBE_DROP), 2)}, o.get("probe"))
         objective.MIN_DEALS = saved_min
     finally:
         if kept is None:

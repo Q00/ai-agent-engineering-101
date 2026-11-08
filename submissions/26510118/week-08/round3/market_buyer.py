@@ -470,6 +470,20 @@ def min_share(now: float | None = None) -> float:
     return float(v) if isinstance(v, (int, float)) and 0.1 <= v <= 0.5 else MIN_SHARE
 
 
+def order_share(order_id: str, now: float | None = None) -> tuple[float, bool]:
+    """(the least share this order keeps, whether it is a probe): objective.json's probe ("share" of the orders, by a hash
+    of the order id, run at its "min_share", under the pick) while fresh, else min_share() (11/8: the thresholds under
+    the pick were never seen, so the pick won every tie)."""
+    o = common.read_json(common.MARKET_DIR / "analysis" / "objective.json", None)
+    now = now or time.time()
+    pr = o.get("probe") if isinstance(o, dict) and now - (o.get("at") or 0) < OBJECTIVE_FRESH else None
+    if isinstance(pr, dict) and isinstance(pr.get("min_share"), (int, float)) and 0.1 <= pr["min_share"] <= 0.5 and order_id:
+        h = int.from_bytes(hashlib.sha256(("probe:" + order_id).encode()).digest()[:4], "big") / 2 ** 32
+        if h < float(pr.get("share") or 0):
+            return float(pr["min_share"]), True
+    return min_share(now), False
+
+
 def share_cap(kind, g, covered: bool, lam: float) -> float:
     """The most to pay as a share of list and still keep lam in expectation (see MIN_SHARE)."""
     if kind != "goods":
@@ -509,7 +523,8 @@ async def trade(client: A2A, c: dict, order: dict, catalog: dict, nb: dict, rule
     """One negotiation. Returns the facts the order record, the notebook and the result line need."""
     r = {"deal": False, "receipt": None, "price": None, "asks": [], "offers": [], "error": None, "left": None,
          "switched": None, "warranty": wants_warranty(c, nb, poor, rules), "said": [], "cap": None,
-         "min_share": min_share()}
+         "min_share": None}
+    r["min_share"], r["probe"] = order_share(order.get("order") or "")
     need = order.get("use_within_hours")
     try:
         await client.open(c["shop"]["url"])
@@ -700,6 +715,7 @@ async def shop_around(client, c: dict, poor, cands: list, order: dict, catalog: 
         except asyncio.TimeoutError:
             r = {"deal": False, "receipt": None, "price": None, "asks": [], "offers": [], "error": "TimeoutError",
                  "left": None, "switched": None, "warranty": False, "c": c}
+            r["min_share"], r["probe"] = order_share(order.get("order") or "")     # the order's threshold, as trade() had it
         c = r.pop("c")
         note_outcome(nb, c, r, order)
         if r["deal"] or len(tries) + 1 >= MAX_TRIES or clock() - start > TRY_BUDGET:
@@ -762,7 +778,7 @@ async def amain(a) -> dict:
                   switched=r["switched"], asks=r["asks"], offers=r["offers"], deal=r["deal"], price=r["price"],
                   error=r["error"], left=r["left"], tries=tries, rival=c["shop"]["name"] in rivals,
                   cap=r.get("cap"), market=c.get("market"), said=r.get("said"), grade=r.get("grade"),
-                  min_share=r.get("min_share"), policy=r.get("policy"), haggle=r.get("haggle"),
+                  min_share=r.get("min_share"), probe=r.get("probe"), policy=r.get("policy"), haggle=r.get("haggle"),
                   could_counter=r.get("could_counter"), pushed=r.get("pushed"), asked_hours=r.get("asked_hours"),
                   asked_better=r.get("asked_better"), better=r.get("better"))
     if r["deal"]:

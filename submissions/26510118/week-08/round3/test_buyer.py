@@ -212,6 +212,15 @@ def test_terms():
     common.write_json(common.MARKET_DIR / "analysis" / "objective.json", {"at": time.time(), "buyer_min_share": 0.31})
     check("the share to keep comes from objective.json while it is fresh (0.31), else 0.27",
           mb.min_share() == 0.31 and mb.min_share(time.time() + 3 * 3600) == mb.MIN_SHARE)
+    common.write_json(common.MARKET_DIR / "analysis" / "objective.json",
+                      {"at": time.time(), "buyer_min_share": 0.40, "probe": {"share": 0.33, "min_share": 0.30}})
+    got = [mb.order_share(f"o-{i:04d}") for i in range(600)]
+    probes = sum(1 for s, p in got if p)
+    check("11/8, the probe: about a third of the orders (by a hash of the order id, the same every time) run at 0.30, the "
+          "rest at the pick 0.40; a stale objective.json: no probe",
+          150 <= probes <= 250 and all((s, p) in ((0.30, True), (0.40, False)) for s, p in got)
+          and mb.order_share("o-0007") == mb.order_share("o-0007")
+          and mb.order_share("o-0007", time.time() + 3 * 3600) == (mb.MIN_SHARE, False), probes)
     (common.MARKET_DIR / "analysis" / "objective.json").unlink()
     check("the share a deal must keep: food 1 - 0.27; goods without a warranty pay for the break too (A at 2.8%: 69.3%)",
           round(mb.share_cap("food", None, True, 0.27), 3) == 0.73 and round(mb.share_cap("goods", "A", False, 0.27), 3) == 0.693)
