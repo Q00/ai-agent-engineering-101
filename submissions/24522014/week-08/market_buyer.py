@@ -78,7 +78,13 @@ class MarketTransport(BuyerTransport):
     def open(self):
         # SKU only: a catalog name carries category words, and shops then handed over another item of that category.
         if not self.requirements:
-            return super().open()
+            if not getattr(self, "first_message", None):
+                return super().open()
+            # Food A/B test, conditions arm (first_message_ab); the control arm takes the line above unchanged.
+            if self.task is not None:
+                raise BuyerError("This buyer already has a task")
+            return self._rpc("SendMessage", {"message": {"role": "ROLE_USER", "messageId": str(uuid4()),
+                             "parts": [{"text": self.first_message}]}})
         if self.task is not None:
             raise BuyerError("This buyer already has a task")
         text = f"I want to buy {self.item}. Please include a market certificate. "
@@ -155,9 +161,10 @@ def failure_reason(outcome, negotiation, decisions):
     return outcome
 
 
-def trade(shop, item, budget, *, mode="claude", transport=None, requirements=None, decision_context=None, max_turns=6, fast_rules=False, model_gate=None, accept_conditions=None, over_budget_counter=None, counter_repeat=None, catalog_list_price=None, order_item=None, price_reading=None, reference_relief=None, discount_limit=None):
+def trade(shop, item, budget, *, mode="claude", transport=None, requirements=None, decision_context=None, max_turns=6, fast_rules=False, model_gate=None, accept_conditions=None, over_budget_counter=None, counter_repeat=None, catalog_list_price=None, order_item=None, price_reading=None, reference_relief=None, discount_limit=None, first_message=None):
     client = MarketTransport(shop["url"], item, budget, transport=transport, timeout=180)
     client.discount_limit = discount_limit
+    client.first_message = first_message
     client.requirements = requirements
     client.order_item = order_item
     client.accept_conditions = accept_conditions
@@ -264,7 +271,14 @@ def trade_attempt(args, order, catalog, pick):
                              catalog_list_price=(catalog.get(selected_item) or {}).get("list_price"))
     if order.get("kind") == "goods":
         trade_options["requirements"] = accept_conditions
+    message_arm = None
+    if order.get("kind") == "food":
+        import first_message_ab
+        message_arm = first_message_ab.arm(order.get("order"), first_message_ab.load())
+        if message_arm == "conditions":
+            trade_options["first_message"] = first_message_ab.text(selected_item, accept_conditions)
     result, record = trade(shop, selected_item, pick["budget"], **trade_options)
+    record["first_message_arm"] = message_arm
     record["round"] = 3
     record["order"] = order.get("order")
     record["order_budget"] = args.budget
