@@ -884,6 +884,12 @@ def round3(a, order, shops, mem, started):
     keep, shop, offer, lp = pick["c"]
     sku = offer["sku"]
     cap, low, close_at, row = price_plan(order, pick, rows, book, adv)
+    # HQ 11-08 A/B "deal_push": our saved rate (0.361) leads the class by ~0.04, while deals (0.10 of buyer ALL) trail
+    # #2 by 1,500; lost orders ended at a final ask of ~0.72 of list against our 0.67-0.70 line. Arm B takes a final
+    # ask up to 0.76 of list (within budget); a deal keeping 24%+ moves the saved rate by ~0.00001
+    dp = tactic_arm(order, "deal_push")
+    if dp == "B":
+        close_at = max(close_at, min(order["budget"], int(lp * T.get("deal_push_close", 0.76))))
     pm, note = tactic_arm(order, "price_match2"), None
     book_low = ((book.get("prices") or {}).get(sku) or {}).get("low")
     # MBT TF: a price-match request took 30% off our own first ask. v1 (09:40-11:15) set the opening TO the ledger
@@ -958,7 +964,7 @@ def round3(a, order, shops, mem, started):
     agreed = offers[-1] if outcome == "deal" and offers else None
     remember({"ts": round(time.time(), 1), "shop": shop["name"], "item": sku, "category": order.get("item"),
               "kind": order.get("kind"), "list_price": lp, "budget": order["budget"], "rfq": rfq,
-              "warranty_ab": warranty_arm(order), "tactics": {"price_match2": pm, "pm_used": bool(note)},
+              "warranty_ab": warranty_arm(order), "tactics": {"price_match2": pm, "pm_used": bool(note), "deal_push": dp},
               "enuri_first": adv["ranked"][0]["shop"] if adv else None, "enuri_target": row and row["target"],
               "enuri_walk": row and row["walk_away"], "cap": cap, "close_at": close_at,
               "first_ask": asks[0] if asks else None, "last_ask": asks[-1] if asks else None,

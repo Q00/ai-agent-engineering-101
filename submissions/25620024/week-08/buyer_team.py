@@ -365,6 +365,19 @@ def auto_adopt(now=None, min_orders=40, win=1.10, lose=0.90, rate_drop=0.03):
         if (cfg.get(name) or {}).get("mode", "ab") != "ab" or not a or not b or min(a["orders"], b["orders"]) < min_orders:
             continue
         sa, sb = a["kept_share_per_order"] or 0, b["kept_share_per_order"] or 0
+        if name == "deal_push":   # 11-08: this move trades a little kept share for deals (0.1 of buyer ALL); it wins on
+            kb = (b["kept_share_per_order"] or 0) / b["deal_rate"] if b["deal_rate"] else 0   # deal rate, as long as
+            if b["deal_rate"] >= a["deal_rate"] + 0.05 and kb >= 0.24:                    # each deal keeps 24%+
+                mode = "on"
+            elif b["deal_rate"] < a["deal_rate"] + 0.02 or kb < 0.20:
+                mode = "off"
+            else:
+                continue
+            why = (f"{name} -> {mode}: deal rate B {b['deal_rate']} vs A {a['deal_rate']}, B keeps {kb:.1%} of list "
+                   f"per deal")
+            cfg[name] = {"mode": mode, "since": time.strftime("%m-%d %H:%M"), "why": why}
+            made.append(why)
+            continue
         if sb >= sa * win and b["deal_rate"] >= a["deal_rate"] - rate_drop:
             mode = "on"
         elif sb <= sa * lose or b["deal_rate"] < a["deal_rate"] - 0.05:
