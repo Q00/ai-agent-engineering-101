@@ -309,27 +309,32 @@ def main():
             if covered and len(covered) < len(shops):
                 log(f"[skip] {len(shops) - len(covered)} shop(s) that sold me goods twice without a warranty")
                 shops = covered
-    shop = choose(shops, mem, args.item, args.budget)
-    if order.get("acceptable"):
-        try:
-            catalog = json.loads((md / "catalog.json").read_text(encoding="utf-8"))
-        except (OSError, ValueError):
-            catalog = {}
-        broken = {b["name"] for b in read_jsonl(md / "broken.jsonl")}
-        offer = pick_sku(shop, order, catalog, broken)
+    try:
+        catalog = json.loads((md / "catalog.json").read_text(encoding="utf-8")) if md else {}
+    except (OSError, ValueError):
+        catalog = {}
+    broken = {b["name"] for b in read_jsonl(md / "broken.jsonl")} if md else set()
+    for attempt in (1, 2):                         # "none in stock" (a unit promised to another buyer): one more shop
+        shop = choose(shops, mem, args.item, args.budget)
+        request = None
+        offer = pick_sku(shop, order, catalog, broken) if order.get("acceptable") else None
         if offer:
             request = f"I want to buy {offer['name']} ({offer['sku']})"
             log(f"[sku] {offer['sku']} {offer['name']!r} list {catalog.get(offer['sku'], {}).get('list_price')} "
                 f"of {len(shop.get('offers') or [])} offers; broken before: {sorted(broken)[:3]}")
-
-    hint = med = None
-    if offer:
-        med, n = median_price(offer["sku"])
-        if med:
-            hint = f"Other buyers recently paid about {med} for this exact item ({n} settled deals); offer below that first. "
-            log(f"[anchor] market median {med} over {n} deals")
-    st = negotiate(shop["url"], args.item, args.budget, request_text=request, shop=shop["name"], hint=hint,
-                   anchor=med if offer and med else None)
+        hint = med = None
+        if offer:
+            med, n = median_price(offer["sku"])
+            if med:
+                hint = f"Other buyers recently paid about {med} for this exact item ({n} settled deals); offer below that first. "
+                log(f"[anchor] market median {med} over {n} deals")
+        st = negotiate(shop["url"], args.item, args.budget, request_text=request, shop=shop["name"], hint=hint,
+                       anchor=med if offer and med else None)
+        others = [s for s in shops if s["url"] != shop["url"]]
+        if st["status"] != "no_offer" or attempt == 2 or not others:
+            break
+        log(f"[retry] {shop['name']} had no unit; trying another of {len(others)} shops")
+        shops = others
     receipt = st.get("receipt")
     agreed = st["history"][-1][1] if st["history"] else None
     rprice = receipt.get("price") if isinstance(receipt, dict) else None

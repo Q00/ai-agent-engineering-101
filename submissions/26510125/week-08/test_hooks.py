@@ -15,7 +15,6 @@ cat = {"F1": {"name": "milk", "category": "food>dairy", "list_price": 100, "kind
     {"unit": "u1", "sku": "G1", "name": "lamp", "category": "goods>home", "list_price": 300, "kind": "goods", "cost": 150, "grade": "A", "supplied_at": 0, "expires_at": None, "cert": True}]}))
 
 # restock: demand-driven, affordable, food with short shelf discounted
-restock.settled_counts = lambda: collections.Counter({"F1": 10, "G1": 4, "G2": 1, "ZZ": 9})
 assert restock.surged([{"sku": "G1", "cost": 240, "list_price": 300, "supplied_at": 1}, {"sku": "G1", "cost": 180, "list_price": 300, "supplied_at": 2},
                        {"sku": "G2", "cost": 700, "list_price": 900, "supplied_at": 1}]) == {"G2"}       # last G1 unit back to 60 %
 restock.settled = lambda: [{"item": "G1", "amount": 300}, {"item": "G1", "amount": 300}, {"item": "G2", "amount": 900}]
