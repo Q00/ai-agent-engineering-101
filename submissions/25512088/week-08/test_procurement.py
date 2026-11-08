@@ -32,6 +32,8 @@ class PurchaseTests(unittest.TestCase):
   self.assertNotIn('b',[r['sku'] for r in plan])
   aggressive=allocation_plan(ranked,{'units':[{'sku':'a'}]},900000,aggression=3)
   self.assertGreater(aggressive[0]['qty'],plan[0]['qty'])
+  huge=allocation_plan(ranked,{'units':[]},10000000,aggression=100)
+  self.assertEqual(huge[0]['qty'],20)
  def test_capital_scales_with_balance_but_preserves_floor_liabilities_and_slots(self):
   policy={'cash_floor':500000,'max_inventory_share':.7}
   low={'balance':5000000,'bankrupt_line':500000,'units':[{'cost':1000000}]}

@@ -51,7 +51,9 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
         choices.append((-(row.get('score',0)*row['expected_net']/max(1,row['upper_cost'])),row['sku'],need,row))
     plan=[];slots=(250-len(inventory.get('units',[]))) if available_slots is None else available_slots
     for _,sku,need,row in sorted(choices):
-        qty=min(need,int(available//row['upper_cost']),max(0,slots))
+        # Official supply API accepts at most 20 units per call. Remaining
+        # evidenced need is purchased on subsequent inventory refreshes.
+        qty=min(20,need,int(available//row['upper_cost']),max(0,slots))
         if qty<=0:continue
         plan.append({'sku':sku,'qty':qty,'upper_unit_cost':row['upper_cost'],
                      'capital':qty*row['upper_cost'],'evidence':row})
