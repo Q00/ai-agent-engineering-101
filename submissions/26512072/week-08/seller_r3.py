@@ -96,6 +96,7 @@ def adapt():
 
 _flow = {"at": 0, "prices": {}}
 STALE_HOURS = 6
+OPEN_TTL = 300              # seconds a negotiation may hold its unit (the kit gives a buyer 300 s per order)
 
 
 def market_ratio(u):
@@ -187,6 +188,10 @@ class Seller(AgentExecutor):
             print(f"[ask] {text[:160]}", flush=True)
 
         if deal is None:
+            # a buyer that leaves without CancelTask must not hold its unit forever: after OPEN_TTL the negotiation
+            # is dropped (11-08: 557 asks in 8 h, 17 negotiations; most units were held by abandoned ones)
+            for tid in [t for t, d in self.open.items() if time.time() - d.get("at", 0) > OPEN_TTL]:
+                record(self.open.pop(tid), "abandoned")
             unit = find_unit(text, {d["unit"]["unit"] for d in self.open.values() if d["unit"].get("unit")})
             if unit is None:
                 await up.reject(say("Sorry, we have none of that in stock right now. Thank you for asking."))
@@ -195,7 +200,7 @@ class Seller(AgentExecutor):
                 floor, opening, quality = RESERVE[unit["sku"]], round(RESERVE[unit["sku"]] * 1.2), "new"
             else:
                 floor, opening, quality = terms(unit)
-            deal = self.open[task.id] = {"unit": unit, "ask": None, "offer": None, "lines": [f"buyer: {text}"],
+            deal = self.open[task.id] = {"unit": unit, "ask": None, "offer": None, "lines": [f"buyer: {text}"], "at": time.time(),
                                          "asks": [], "offers": [], "floor": floor, "opening": opening, "quality": quality}
             print(f"[unit] {unit['sku']} {unit['name'][:40]} grade {unit.get('grade')} cost {unit.get('cost')} "
                   f"list {unit.get('list_price')} floor {floor} opening {opening} (adapt: {adapt()[1]})", flush=True)
