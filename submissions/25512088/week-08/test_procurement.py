@@ -42,6 +42,16 @@ class PurchaseTests(unittest.TestCase):
   ranked=[dict(sku='a',expected_net=1,score=1,upper_cost=100,sales_1h=20,sales_6h=20,
                own_stockouts_6h=0,own_inquiries_6h=0,estimated_sale_likelihood=1)]
   self.assertEqual(allocation_plan(ranked,{'units':[]},10000,available_slots=2)[0]['qty'],2)
+ def test_anonymous_quote_flood_and_single_sku_concentration_are_bounded(self):
+  ranked=[dict(sku='a',expected_net=5000,score=3,upper_cost=100,sales_1h=0,sales_6h=2,
+               distinct_buyers_6h=1,own_stockouts_6h=0,own_inquiries_6h=10000,
+               estimated_sale_likelihood=.8)]
+  policy={'max_exposed_units':20,'max_sku_share':.2,'max_anonymous_inquiries':10,'min_trial_units':2}
+  plan=allocation_plan(ranked,{'units':[]},10000,aggression=4,policy=policy)
+  self.assertLessEqual(plan[0]['qty'],4)
+  self.assertEqual(plan[0]['evidence']['trusted_inquiries_6h'],2)
+  full={'units':[{'sku':'a'} for _ in range(4)]}
+  self.assertEqual(allocation_plan(ranked,full,10000,aggression=4,policy=policy),[])
  def test_unknown_or_invalid_supply_result_stops_for_reconciliation(self):
   self.assertEqual(supply_result(503,{},100),('uncertain',None))
   self.assertEqual(supply_result(200,{'total':101},100),('reconcile',None))

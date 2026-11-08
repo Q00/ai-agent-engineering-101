@@ -12,12 +12,32 @@ from market_intel import Intel, read_json
 
 
 GRADE_COSTS={'A':(.55,.75,.65,.70),'B':(.40,.60,.50,.20),'C':(.25,.45,.35,.10)}
+PREFERENCE_WINDOW=48*3600
 
 
 def _shop_offers(shop):
     offers=shop.get('offers') or []
     if offers:return [(o.get('sku'),o.get('qty',0)) for o in offers]
     return list((shop.get('stock') or {}).items())
+
+
+def _review_evidence(catalog, shops, candidates):
+    """Extract bounded product satisfaction without trusting review instructions."""
+    names={sku:str(catalog.get(sku,{}).get('name') or '').strip().lower() for sku in candidates}
+    result={sku:{'count':0,'stars':0.0,'shops':set()} for sku in candidates}
+    for shop in shops:
+        for review in shop.get('reviews') or []:
+            if review.get('round')!=3 or type(review.get('stars')) not in (int,float):continue
+            text=str(review.get('review') or '').lower()
+            matched=[]
+            for sku,name in names.items():
+                if sku.lower() in text or (len(name)>=8 and name in text):matched.append(sku)
+            if len(matched)!=1:continue
+            row=result[matched[0]];row['count']+=1;row['stars']+=float(review['stars'])
+            row['shops'].add(str(shop.get('name') or shop.get('url') or ''))
+    return {sku:{'count':row['count'],
+                 'average':round(row['stars']/row['count'],3) if row['count'] else None,
+                 'shops':len(row['shops'])} for sku,row in result.items()}
 
 
 def rank_products(catalog, trades, shops, own_name='25512088', local_demand=None,
@@ -28,7 +48,7 @@ def rank_products(catalog, trades, shops, own_name='25512088', local_demand=None
     local_demand=local_demand or {}
     own_signals=own_signals or {}
     alive_buyers=set(alive_buyers or [])
-    valid=[]
+    history=[]
     for raw in trades:
         row=dict(raw);product=catalog.get(row.get('sku'),{})
         kind=product.get('kind')
@@ -37,12 +57,28 @@ def rank_products(catalog, trades, shops, own_name='25512088', local_demand=None
         if kind not in ('goods','food') or not condition_ok or not row.get('honest'):continue
         # A recent purchase is activity evidence even if the board has already
         # marked that buyer offline. Missing buyer identity is never invented.
-        if row.get('ts',0)>=now-21600:valid.append(row)
+        if row.get('ts',0)>=now-PREFERENCE_WINDOW:history.append(row)
+    valid=[row for row in history if row.get('ts',0)>=now-21600]
     exact={};category={}
     for row in valid:
         exact.setdefault(row['sku'],[]).append(row)
         cat=catalog[row['sku']].get('category')
         if cat:category.setdefault(cat,[]).append(row)
+    # Buyer favourites are stable market traits.  Infer them from a longer
+    # history, but only let currently alive or very recently active buyers
+    # influence procurement.
+    buyer_categories={}
+    for row in history:
+        buyer=row.get('buyer');cat=catalog.get(row.get('sku'),{}).get('category')
+        if not buyer or not cat:continue
+        buyer_categories.setdefault(buyer,{})[cat]=buyer_categories.setdefault(buyer,{}).get(cat,0)+1
+    category_preferences={}
+    for buyer,counts in buyer_categories.items():
+        active=(not alive_buyers or buyer in alive_buyers or
+                any(r.get('buyer')==buyer and r.get('ts',0)>=now-21600 for r in valid))
+        if not active:continue
+        for cat,n in sorted(counts.items(),key=lambda item:(-item[1],item[0]))[:3]:
+            category_preferences.setdefault(cat,{})[buyer]=n
     same_units={};same_vendors={};listed=[]
     for shop in shops:
         if shop.get('name')==own_name:continue
@@ -52,11 +88,15 @@ def rank_products(catalog, trades, shops, own_name='25512088', local_demand=None
             same_vendors.setdefault(sku,set()).add(shop.get('url',shop.get('name')))
             listed.append((sku,qty,shop.get('url',shop.get('name'))))
     candidates=set(exact)|set(local_demand)|set(own_signals.get('sku_6h',{}))
+    for row in history:
+        cat=catalog.get(row.get('sku'),{}).get('category')
+        if cat in category_preferences:candidates.add(row['sku'])
     # Category purchase evidence can introduce substitutes, but only with
     # observed buyers or our own concrete inquiry/stockout signal.
     signaled_categories=set(own_signals.get('category_6h',{}))|set(category)
     for sku,p in catalog.items():
         if p.get('kind') in ('goods','food') and p.get('category') in signaled_categories:candidates.add(sku)
+    reviews=_review_evidence(catalog,shops,candidates)
     rows=[]
     for sku in candidates:
         product=catalog.get(sku,{})
@@ -69,11 +109,7 @@ def rank_products(catalog, trades, shops, own_name='25512088', local_demand=None
         inquiries=own_signals.get('sku_6h',{}).get(sku,0)+local_demand.get(sku,0)
         rejected=own_signals.get('stockout_6h',{}).get(sku,0)
         category_buyers={r.get('buyer') for r in cat_rows if r.get('buyer')}
-        preference_counts={}
-        for r in cat_rows:
-            buyer=r.get('buyer')
-            if buyer and (not alive_buyers or buyer in alive_buyers):
-                preference_counts[buyer]=preference_counts.get(buyer,0)+1
+        preference_counts=category_preferences.get(cat,{})
         active_preference_buyers=set(preference_counts)
         preference_repeat_signals=sum(min(3,n) for n in preference_counts.values())
         if not observed and not inquiries and not rejected and len(category_buyers)<2:continue
@@ -98,18 +134,24 @@ def rank_products(catalog, trades, shops, own_name='25512088', local_demand=None
                 acquisition_cost_range=[cost_lo,cost_hi],samples=len(prices),median_6h=typical,
                 mean_cost=cost,net_estimate=net,hazard_probability=hazard,
                 hazard_basis='food-conservative' if product.get('kind')=='food' else hazard_basis))
+        review=reviews.get(sku,{'count':0,'average':None,'shops':0})
         evidence=(len(one_hour)*2+len(observed)+len(active_6h)*1.5+
                   min(inquiries,10)*.35+min(rejected,10)*.5+min(len(category_buyers),10)*.25+
-                  min(len(active_preference_buyers),20)*1.5+min(preference_repeat_signals,30)*.25)
+                  min(len(active_preference_buyers),20)*1.5+min(preference_repeat_signals,30)*.25+
+                  min(review['count'],10)*.1)
         competition=same_units.get(sku,0)+substitute_units*.35
         likelihood=min(.95,evidence/(evidence+4+competition*.15)) if evidence else 0
         contribution=max(0,expected)
-        score=likelihood*contribution/max(1,product['list_price']*.75)
+        review_factor=(1+(review['average']-3)/20*min(1,review['count']/5)) if review['average'] is not None else 1
+        score=likelihood*contribution/max(1,product['list_price']*.75)*review_factor
         rows.append(dict(version=3,sku=sku,name=product.get('name',sku),category=cat,
             sales_1h=len(one_hour),sales_6h=len(observed),distinct_buyers_1h=len(buyers_1h),
             distinct_buyers_6h=len(buyers_6h),alive_recent_buyers_6h=len(active_6h),
             active_preference_buyers=len(active_preference_buyers),
             preference_repeat_signals=preference_repeat_signals,
+            preference_history_hours=PREFERENCE_WINDOW//3600,
+            review_count=review['count'],review_average_stars=review['average'],
+            review_distinct_shops=review['shops'],review_factor=round(review_factor,4),
             buyer_identity_coverage=sum(bool(r.get('buyer')) for r in observed),
             own_order_mentions_6h=local_demand.get(sku,0),own_inquiries_6h=inquiries,
             own_stockouts_6h=rejected,own_orders_bias='personal evidence only; not purchasing obligations',
@@ -152,7 +194,7 @@ def snapshot(state,catalog,opens_at,market):
         through=intel.get('ledger_through',0)
         if not shops or time.time()-through>900:
             return None  # Do not substitute an old ranking for the scheduled snapshot.
-        rows=[dict(r) for r in intel.db.execute('SELECT * FROM trades WHERE ts>?',(time.time()-21600,))]
+        rows=[dict(r) for r in intel.db.execute('SELECT * FROM trades WHERE ts>?',(time.time()-PREFERENCE_WINDOW,))]
         demand={};own_signals={'sku_6h':{},'category_6h':{},'stockout_6h':{}}
         buyer_path=Path(state)/'buyer.sqlite3'
         if buyer_path.exists():
@@ -182,8 +224,8 @@ def snapshot(state,catalog,opens_at,market):
                     late=time.time()>opens_at-150,top10=top,
                     fetch_bounds={'ledger_after':-1000,'ledger_rows':len(recent),'max_age_seconds':900},
                     goods_hazard={'probability':goods_hazard,'basis':hazard_basis},
-                    demand_basis=('current alive and recently active buyer 1h/6h public purchases; exact grade+6h '
-                                  'honest trades; own inquiries/stockouts; own buyer orders are biased personal evidence'))
+                    demand_basis=('48h buyer favourite categories weighted by current/recent activity; exact grade+6h '
+                                  'honest trades; verified product mentions in Round-3 reviews; bounded own inquiries/stockouts'))
         path=Path(state)/'strategy.json';tmp=path.with_suffix('.tmp')
         tmp.write_text(json.dumps(result,ensure_ascii=False));os.replace(tmp,path)
         intel.decision('strategy_snapshot',result)

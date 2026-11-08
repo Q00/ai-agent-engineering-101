@@ -32,23 +32,34 @@ def choose(policy,catalog,spent,reserved,balance,exposure,turn,blocked=()):
         if upper<=remaining:return sku,upper
     return None
 
-def allocation_plan(ranked, inventory, available, blocked=(), available_slots=None, aggression=1.0):
+def allocation_plan(ranked, inventory, available, blocked=(), available_slots=None, aggression=1.0, policy=None):
     """Allocate by sell-through, holdings, next-window need and contribution.
 
     There is no fixed four-SKU loop or unit cap. Quantity is bounded by the
     evidence forecast and protected capital, not an arbitrary constant.
     """
-    holding={}
+    policy=policy or settings();holding={}
     for unit in inventory.get('units',[]):holding[unit['sku']]=holding.get(unit['sku'],0)+1
     choices=[]
     for row in ranked:
         if row.get('sku') in blocked or row.get('expected_net',0)<=0:continue
         velocity=row.get('sales_1h',0)+row.get('sales_6h',0)/6
-        unmet=row.get('own_stockouts_6h',0)*.5+row.get('own_inquiries_6h',0)*.2
+        distinct=max(0,row.get('distinct_buyers_6h',0))
+        inquiry_cap=min(policy.get('max_anonymous_inquiries',10),max(2,distinct*2))
+        trusted_inquiries=min(row.get('own_inquiries_6h',0),inquiry_cap)
+        trusted_stockouts=min(row.get('own_stockouts_6h',0),max(2,distinct*2))
+        unmet=trusted_stockouts*.5+trusted_inquiries*.2
         forecast=(velocity+unmet)*row.get('estimated_sale_likelihood',0)*max(1.0,float(aggression))
         need=max(0,math.ceil(forecast)-holding.get(row['sku'],0))
+        exposed=policy.get('max_exposed_units',250)
+        share=policy.get('max_sku_share',.20)
+        if distinct>=10:share=min(.35,share+.01*min(15,distinct-9))
+        sku_ceiling=max(policy.get('min_trial_units',2),math.ceil(exposed*share))
+        need=min(need,max(0,sku_ceiling-holding.get(row['sku'],0)))
         if need<=0:continue
-        choices.append((-(row.get('score',0)*row['expected_net']/max(1,row['upper_cost'])),row['sku'],need,row))
+        evidence=dict(row,trusted_inquiries_6h=trusted_inquiries,
+                      trusted_stockouts_6h=trusted_stockouts,sku_inventory_ceiling=sku_ceiling)
+        choices.append((-(row.get('score',0)*row['expected_net']/max(1,row['upper_cost'])),row['sku'],need,evidence))
     plan=[];slots=(250-len(inventory.get('units',[]))) if available_slots is None else available_slots
     for _,sku,need,row in sorted(choices):
         # Official supply API accepts at most 20 units per call. Remaining
@@ -143,7 +154,7 @@ def main():
         # Starting capital is 5M. More accumulated cash funds more demand
         # windows, while capital_available still preserves cash/liabilities.
         aggression=max(1.0,min(policy.get('max_demand_windows',4),inv.get('balance',0)/3_000_000))
-        plan=allocation_plan(ranked,inv,available,blocked,slots,aggression)
+        plan=allocation_plan(ranked,inv,available,blocked,slots,aggression,policy)
         if not plan:
             if blocked:time.sleep(10);continue
             log(event='evidence_or_capacity_wait',lifetime_spent=spent,inventory_cost=inventory_cost,

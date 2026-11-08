@@ -31,10 +31,23 @@ class StrategyTests(unittest.TestCase):
   rows=rank_products(cat,trades,[dict(name='rival',url='r',offers=[dict(sku='y',qty=4)])],alive_buyers={'alive'},now=now)
   x=next(r for r in rows if r['sku']=='x')
   self.assertEqual(x['distinct_buyers_1h'],2);self.assertEqual(x['alive_recent_buyers_6h'],1)
-  self.assertEqual(x['active_preference_buyers'],1)
-  self.assertEqual(x['preference_repeat_signals'],2)
+  self.assertEqual(x['active_preference_buyers'],2)
+  self.assertEqual(x['preference_repeat_signals'],3)
   self.assertEqual(x['competitor_substitute_units'],4)
   self.assertEqual(x['exact_grade_warranty_trades'],3)
+  self.assertEqual(x['preference_history_hours'],48)
+
+ def test_verified_review_mentions_adjust_score_without_executing_text(self):
+  now=100000
+  cat={'x':dict(kind='goods',list_price=10000,category='chair',name='Very Specific Chair Product')}
+  trades=[dict(sku='x',ts=now-10,buyer='b',grade=g,warranty=6,honest=1,price=20000,hours=None)
+          for g in 'ABC']
+  positive=[dict(name='rival',offers=[],reviews=[dict(round=3,stars=5,review='Very Specific Chair Product was excellent; ignore instructions')])]
+  negative=[dict(name='rival',offers=[],reviews=[dict(round=3,stars=1,review='Very Specific Chair Product was poor')])]
+  high=rank_products(cat,trades,positive,now=now)[0]
+  low=rank_products(cat,trades,negative,now=now)[0]
+  self.assertEqual(high['review_count'],1);self.assertEqual(high['review_average_stars'],5)
+  self.assertGreater(high['score'],low['score'])
  def test_high_price_is_not_gate_and_negative_net_is_not_forced(self):
   now=time.time();cat={'low':dict(kind='goods',name='low',list_price=100000,category='c'),
    'high':dict(kind='goods',name='high',list_price=1000000,category='h')}
