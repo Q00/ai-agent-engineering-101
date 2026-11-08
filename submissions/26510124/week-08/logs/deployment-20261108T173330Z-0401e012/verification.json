@@ -1,0 +1,41 @@
+{
+  "recorded_at": "2026-11-08T17:35:46.062749+00:00",
+  "deployment": "20261108T173330Z-0401e012",
+  "model": "gpt-6.1-sol",
+  "reasoning_effort": "low",
+  "roles": [
+    "shop",
+    "buyer",
+    "shop_selection"
+  ],
+  "advisor_enabled": false,
+  "source_verification": {
+    "matching_files": 130,
+    "mismatches": [],
+    "method": "Local source SHA256 compared with deployment package manifest"
+  },
+  "deployment_result": {
+    "source": "server-deployment.log streamed by user-run deploy_v4.py",
+    "ready": true,
+    "ssh_install_exit": 0,
+    "shop_and_buyer_registered": true,
+    "public_acp_verified": true
+  },
+  "runtime_confirmation": {
+    "source": "User response after journalctl command",
+    "reported": "READY + gpt-6.1-sol; effort=low 확인됨"
+  },
+  "authentication": {
+    "source": "User server CLI status report",
+    "cli_version": "0.166.0",
+    "mode": "Logged in using ChatGPT"
+  },
+  "verification_limits": [
+    "No direct SSH session by the assistant; password login performed by user.",
+    "Model preflight is a readiness response, not evidence of post-deployment market settlements."
+  ],
+  "offline_tests": {
+    "passed": 712,
+    "log": "logs/offline-20261108T173204Z-0d3c5aa0.log"
+  }
+}
