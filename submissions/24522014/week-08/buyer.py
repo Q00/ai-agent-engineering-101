@@ -270,7 +270,7 @@ def buyer_decision(client, provider, history, turn, max_turns):
         settings = getattr(client, "over_budget_counter", None)
         if settings is not None and parser_reason == "over_budget":
             if client.floor_check and settings.get("enabled"):
-                settings = {**settings, "min_surplus_per_list": max(settings["min_surplus_per_list"], client.floor_check["required"])}
+                settings = {**settings, "min_surplus_per_list": max(settings["min_surplus_per_list"], client.floor_check["required_down"])}
             counter, client.counter_check = evaluate_counter(
                 clear_ask, client.budget, getattr(client, "catalog_list_price", None),
                 used=getattr(client, "counter_used", False), last_offer=getattr(client, "last_offer", None),
@@ -300,7 +300,7 @@ def buyer_decision(client, provider, history, turn, max_turns):
         repeat = getattr(client, "counter_repeat", None)
         if repeat and repeat.get("enabled") and parser_reason == "over_budget":
             if client.floor_check:
-                repeat = {**repeat, "min_surplus_per_list": max(repeat["min_surplus_per_list"], client.floor_check["required"])}
+                repeat = {**repeat, "min_surplus_per_list": max(repeat["min_surplus_per_list"], client.floor_check["required_down"])}
             again, client.counter_repeat_check, exhausted = evaluate_repeat(
                 clear_ask, client.budget, getattr(client, "catalog_list_price", None),
                 counters_so_far=getattr(client, "rule_counters", 0), config=repeat)

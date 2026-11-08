@@ -76,5 +76,8 @@ def deal_limit(limit, grade, budget):
     settings = limit["settings"]
     need = required(limit.get("kind"), grade, bool(limit.get("covered")), settings, limit.get("grades"))
     top = ceiling(limit["list_price"], need)
-    return min(budget, top), {"floor": settings["floor"], "required": round(float(need), 6), "grade": grade, "covered": bool(limit.get("covered")), "ceiling": top, "budget_before": budget,
+    # required_down is the exact need rounded down to 6 places, for the counters' surplus check: "required" is rounded to the nearest
+    # and can sit just above the exact need, which refused counters at the ceiling itself. The ceiling, not this figure, bounds the price.
+    return min(budget, top), {"floor": settings["floor"], "required": round(float(need), 6), "required_down": math.floor(need * 10 ** 6) / 10 ** 6,
+                              "grade": grade, "covered": bool(limit.get("covered")), "ceiling": top, "budget_before": budget,
                               "cap_without_floor": limit.get("cap_without_floor")}
