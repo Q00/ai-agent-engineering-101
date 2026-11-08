@@ -52,12 +52,15 @@ def _usage(model, role, out, dt):
     return row
 
 
-def ask(system, prompt, schema, log=None, timeout=150, retries=2, model=None, tools=None, role=None):
+def ask(system, prompt, schema, log=None, timeout=150, retries=2, model=None, tools=None, role=None, effort=None):
     """One harness call -> dict matching `schema`. Raises after `retries` failures.
-    tools = (mcp config path, [allowed tool names]) lets the model call those MCP tools before answering."""
+    tools = (mcp config path, [allowed tool names]) lets the model call those MCP tools before answering.
+    effort = the CLI's --effort level (low ... max); None keeps the CLI default."""
     cmd = ["claude", "-p", "--model", model or MODEL, "--tools", "", "--setting-sources", "",
            "--no-session-persistence", "--output-format", "json",
            "--json-schema", json.dumps(schema), "--system-prompt", system]
+    if effort:
+        cmd += ["--effort", effort]
     if tools:
         cmd += ["--mcp-config", tools[0], "--strict-mcp-config", "--allowedTools", ",".join(tools[1])]
     err = None

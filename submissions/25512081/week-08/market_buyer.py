@@ -128,7 +128,10 @@ def _ask_shortlist(pool, names, learned, item, budget, mine, k):
         "in one sentence."),
         {"type": "object", "properties": {
             "shops": {"type": "array", "items": {"type": "string", "enum": names}},
-            "reason": {"type": "string"}}, "required": ["shops", "reason"]}, log=log, model=harness.CHEAP, role="choose")
+            "reason": {"type": "string"}}, "required": ["shops", "reason"]}, log=log, model=harness.CHEAP, role="choose",
+        # orders come one at a time (the next ~1 s after the last pays), and this call was 16.6 s of a 35.1 s
+        # mean order gap (Nov 8 09h); --effort low took 13.3 s vs 17.4 s on the same prompt with similar picks
+        effort="low")
 
 
 def remember_need(order):
