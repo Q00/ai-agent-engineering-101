@@ -1054,6 +1054,14 @@ class RefusalSkip(unittest.TestCase):
         memory += [dict(memory[-1]) for _ in range(1)]
         self.assertEqual(self.flagged(memory), set())
 
+    def test_refusals_seen_on_a_retry_do_not_count_but_stay_in_the_memory(self):
+        first = self.tries("a", 9)[:9]  # 9 first tries, all refused
+        retry = dict(first[0], retry_attempt=True)  # a refusal on a retry would make it 10 of 10
+        memory = first + [retry]
+        self.assertEqual(self.flagged(memory), set())
+        self.assertEqual(len(memory), 10)
+        self.assertEqual(self.flagged(first + [dict(first[0])]), {"a"})  # the same refusal on a first try still counts
+
     def test_records_without_a_trail_do_not_count(self):
         memory = [{k: v for k, v in row.items() if k != "decision_trail"} for row in self.tries("a", 10)]
         self.assertEqual(self.flagged(memory), set())

@@ -206,6 +206,10 @@ class Main(unittest.TestCase):
         self.assertEqual(json.loads(lines[0])["shop"], "https://shops/a")
         self.assertEqual(log["record"]["retry"]["status"], "retry_no_useful_research")
 
+    def test_the_retry_try_is_marked_in_the_memory_and_the_first_is_not(self):
+        self.run_main(["refused_at_open", "refused_at_open"])
+        self.assertEqual([(m["shop_name"], m.get("retry_attempt")) for m in self.memory()], [("a", None), ("b", True)])
+
     def test_each_attempt_gets_its_own_accept_conditions(self):
         def prepare(md, shops, memory, catalog, budget, policy, portfolio, snapshot, order, retry_of=None):
             chosen = shops[0] if retry_of is None else next(s for s in shops if s["name"] == "b")

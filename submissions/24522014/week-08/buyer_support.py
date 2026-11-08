@@ -144,6 +144,8 @@ def refusing_shops(memory, settings, now):
 
     Only tries with a recorded decision trail count, since older records cannot tell a refusal from other endings.
     Without the periodic retry no new evidence would ever arrive, so a shop could never recover.
+    A try made as the retry at another shop stays in the memory but is left out here: it would otherwise add refusals
+    that the first-try rule never saw, and skip shops that still sell on first tries.
     """
     rule = settings.get("refusal_skip")
     if not isinstance(rule, dict) or rule.get("enabled") is not True:
@@ -153,7 +155,7 @@ def refusing_shops(memory, settings, now):
         return set()
     tries = {}
     for row in memory:
-        if row.get("round") == 3 and row.get("shop_name") and "decision_trail" in row:
+        if row.get("round") == 3 and row.get("shop_name") and "decision_trail" in row and row.get("retry_attempt") is not True:
             tries.setdefault(row["shop_name"], []).append(row)
     flagged = set()
     for name, rows in tries.items():

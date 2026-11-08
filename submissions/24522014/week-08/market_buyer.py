@@ -275,6 +275,8 @@ def trade_attempt(args, order, catalog, pick):
     # Certificate and food-use constraints are enforced by the kit before payment.
     result["accept"] = accept_conditions
     record["selection_reason"] = pick["reason"]
+    if (support_decision or {}).get("retry_of"):
+        record["retry_attempt"] = True  # kept in the memory; refusal_skip leaves it out
     # Observation only: what the public stock said at selection, to compare with what the shop then answered.
     offers = shop.get("offers") or []
     record["selected_offer_qty"] = next((o.get("qty") for o in offers if o.get("sku") == selected_item), None)
