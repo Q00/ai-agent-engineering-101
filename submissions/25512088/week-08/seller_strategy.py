@@ -150,7 +150,10 @@ def sale_quote(unit, catalog, program, intel=None, token='', ref=''):
             # quote conversion and actual sales. Substitute stock counts as competition.
             if quotes>=5 and sold>=2 and sold/quotes>=.2 and competitors+substitutes*.35<=1:
                 adjustment=1.02
-            elif quotes>=5 and sold==0 and competitors+substitutes>0:
+            # A first sale does not establish healthy conversion. Keep the
+            # bounded competition discount below the same 20% threshold used
+            # for scarcity pricing, while preserving the protected floor.
+            elif quotes>=5 and sold/quotes<.2 and competitors+substitutes>0:
                 adjustment=.98
             base=math.ceil(base*adjustment)
     hazard,hazard_basis=observed_hazard(intel,program.p.get('shop_name','25512088'))
