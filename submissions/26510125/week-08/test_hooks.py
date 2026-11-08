@@ -36,10 +36,12 @@ assert (md / "outbox.jsonl").exists() and json.loads((md / "outbox.jsonl").read_
 # market_buyer Round 3 helpers
 order = {"order": "o1", "item": "lamp", "category": "goods>home", "budget": 400, "acceptable": ["G1", "G2"], "kind": "goods"}
 shop = {"name": "s", "url": "http://x", "offers": [{"sku": "G1", "name": "lamp", "qty": 2}, {"sku": "G2", "name": "desk", "qty": 1}]}
+shop2 = dict(shop, offers=[{"sku": "G1", "name": "lamp", "qty": 2}, {"sku": "G2", "name": "desk", "qty": 3}])
 assert mb.pick_sku(shop, order, cat, set())["sku"] == "G1"            # desk: 900*0.75 > 400
-assert mb.pick_sku(shop, dict(order, budget=700), cat, set())["sku"] == "G2"   # 675 <= 700: aim high, pay market
-assert mb.pick_sku(shop, dict(order, budget=1000), cat, set())["sku"] == "G2"
-assert mb.pick_sku(shop, dict(order, budget=1000), cat, {"desk"})["sku"] == "G1"   # broke on me before
+assert mb.pick_sku(shop, dict(order, budget=700), cat, set())["sku"] == "G1"   # desk fits (675 <= 700) but has 1 unit, lamp has 2
+assert mb.pick_sku(shop2, dict(order, budget=700), cat, set())["sku"] == "G2"  # both plentiful: aim high, pay market
+assert mb.pick_sku(shop2, dict(order, budget=1000), cat, set())["sku"] == "G2"
+assert mb.pick_sku(shop2, dict(order, budget=1000), cat, {"desk"})["sku"] == "G1"   # broke on me before
 assert mb.accept_policy(order) == {"cert": True, "grades": ["A", "B"]}
 assert mb.accept_policy({"kind": "food", "use_within_hours": 5})["min_hours_left"] == 5
 (md / "payments.jsonl").write_text("\n".join(json.dumps({"shop": "http://bad", "paid": False}) for _ in range(2)) + "\n"

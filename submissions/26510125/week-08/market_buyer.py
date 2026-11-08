@@ -222,8 +222,8 @@ def pick_sku(shop: dict, order: dict, catalog: dict, broken: set):
     offers = [o for o in shop.get("offers") or [] if o.get("qty", 0) > 0 and o["name"] not in broken]
     offers = offers or list(shop.get("offers") or [])
     afford = [o for o in offers if catalog.get(o["sku"], {}).get("list_price", 0) * 0.75 <= order["budget"]]
-    best = max(afford or offers, key=lambda o: catalog.get(o["sku"], {}).get("list_price", 0), default=None)
-    return best
+    # a single unit is usually promised to another buyer already (273 double "none in stock" in 13 h): two or more first
+    return max(afford or offers, key=lambda o: (o.get("qty", 0) >= 2, catalog.get(o["sku"], {}).get("list_price", 0)), default=None)
 
 
 def accept_policy(order: dict):
@@ -319,7 +319,9 @@ def main():
         request = None
         offer = pick_sku(shop, order, catalog, broken) if order.get("acceptable") else None
         if offer:
-            request = f"I want to buy {offer['name']} ({offer['sku']})"
+            # say what the checkout will refuse anyway (140 of 424 deals died there): the seller picks the unit
+            need = f", at least {order['use_within_hours']} hours of shelf life" if order.get("use_within_hours") else ""
+            request = f"I want to buy {offer['name']} ({offer['sku']}), grade A or B only{need}"
             log(f"[sku] {offer['sku']} {offer['name']!r} list {catalog.get(offer['sku'], {}).get('list_price')} "
                 f"of {len(shop.get('offers') or [])} offers; broken before: {sorted(broken)[:3]}")
         hint = med = None
@@ -333,8 +335,10 @@ def main():
         others = [s for s in shops if s["url"] != shop["url"]]
         if st["status"] != "no_offer" or attempt == 2 or not others:
             break
-        log(f"[retry] {shop['name']} had no unit; trying another of {len(others)} shops")
+        log(f"[retry] {shop['name']} had no unit; trying another of {len(others)} shops, another SKU if it has one")
         shops = others
+        if offer:
+            broken = broken | {offer["name"]}
     receipt = st.get("receipt")
     agreed = st["history"][-1][1] if st["history"] else None
     rprice = receipt.get("price") if isinstance(receipt, dict) else None
