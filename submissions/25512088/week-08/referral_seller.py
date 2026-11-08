@@ -280,7 +280,7 @@ def build(port, publish=True):
         async def loop():
             while True:
                 try:
-                    await asyncio.to_thread(tick, STATE, 'shop_key.pem', False)
+                    await asyncio.to_thread(tick, STATE, 'shop_key.pem', publish)
                 except Exception as exc:
                     print('referral synchronization:', type(exc).__name__, flush=True)
                 await asyncio.sleep(15)
