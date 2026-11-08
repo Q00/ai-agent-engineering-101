@@ -25,6 +25,10 @@ CLAUDE_COMMAND = ["claude", "-p", "--model", "haiku", "--tools", "",
 DISABLED_FEATURES = ("shell_tool", "view_image", "apps", "plugins", "hooks", "multi_agent",
                      "browser_use", "computer_use", "image_generation", "code_mode",
                      "code_mode_host", "memories", "shell_snapshot")
+CODEX_DISABLED_HOST_WARNING = (
+    "Code Mode is unavailable because code-mode host is disabled. "
+    "Code mode will fail closed; enable `features.code_mode_host` and install `codex-code-mode-host`."
+)
 
 
 def load_profile(root=ROOT):
@@ -208,6 +212,7 @@ def answer(profile, result, folder):
     # --json is a lifecycle stream, not the answer. Unexpected tools or failed
     # turns are rejected, even if a plausible final decision was also written.
     complete = False
+    started = False
     for line in result.stdout.splitlines():
         try:
             event = json.loads(line)
@@ -216,15 +221,28 @@ def answer(profile, result, folder):
         if not isinstance(event, dict):
             raise ValueError("Codex emitted a non-object event")
         kind = event.get("type")
-        if kind == "turn.completed":
+        if kind == "turn.started":
+            started = True
+        elif kind == "turn.completed":
             complete = True
         elif kind in ("error", "turn.failed"):
             raise ValueError("Codex reported a failed turn")
         elif kind in ("item.started", "item.updated", "item.completed"):
             item = event.get("item")
-            if not isinstance(item, dict) or item.get("type") not in ("agent_message", "reasoning"):
+            if not isinstance(item, dict):
+                raise ValueError("Codex emitted an invalid item")
+            if item.get("type") == "error":
+                # CLI 0.166 emits this before turn.started even when code_mode
+                # and its host are deliberately disabled. It is a startup
+                # diagnostic, not a tool call or failed model turn. Accept only
+                # the observed exact message/phase; keep the raw event in logs.
+                if (kind == "item.completed" and not started
+                        and item.get("message") == CODEX_DISABLED_HOST_WARNING):
+                    continue
+                raise ValueError("Codex reported an item error; inspect the raw model log")
+            if item.get("type") not in ("agent_message", "reasoning"):
                 raise ValueError("Codex attempted a tool instead of a model decision")
-        elif kind not in ("thread.started", "turn.started"):
+        elif kind != "thread.started":
             raise ValueError("Codex emitted an unsupported event type")
     path = Path(folder) / "answer.json"
     if not complete or path.is_symlink() or not path.is_file() or path.stat().st_size > 65536:
