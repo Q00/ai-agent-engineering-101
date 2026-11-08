@@ -1,6 +1,6 @@
 import unittest
 from network_reads import retry_read
-from procurement_campaign import choose,allocation_plan,capital_available,supply_result,own_registration,retry_join,join_current_registration
+from seller_procurement import choose,allocation_plan,capital_available,supply_result,own_registration,retry_join,join_current_registration
 class PurchaseTests(unittest.TestCase):
  def setUp(self):
   self.p={'budget':2500000,'cash_floor':500000,'priority':['a','b','c','d']}

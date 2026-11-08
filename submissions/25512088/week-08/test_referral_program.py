@@ -4,8 +4,8 @@ import sqlite3
 import tempfile
 import unittest
 from unittest.mock import patch
-from referral_program import Program, policy
-from referral_campaign import queue_post, sync
+from seller_ledger import Program, policy
+from seller_forum import queue_post, sync
 
 
 class ReferralTests(unittest.TestCase):
@@ -136,7 +136,7 @@ class ReferralTests(unittest.TestCase):
         self.program.put('cursor', 0)
         a, _, _ = self.buy('A')
         _, row, _ = self.buy('B', ref=self.program.status(a)['referral_code'])
-        with patch('referral_campaign.fetch', side_effect=[[row], []]), patch('referral_campaign.time.time', return_value=1200):
+        with patch('seller_forum.fetch', side_effect=[[row], []]), patch('seller_forum.time.time', return_value=1200):
             self.assertTrue(sync(self.program, ['https://ours']))
         self.assertEqual(self.program.status(a)['credit'], 400)
 

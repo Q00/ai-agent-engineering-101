@@ -1,5 +1,5 @@
-from procurement_campaign import settings
-"""Fresh, cost-protected product discovery and voluntary sharing."""
+from seller_procurement import settings
+"""Fresh, cost-protected product discovery."""
 import json
 import time
 from seller_strategy import sale_quote
@@ -26,9 +26,8 @@ def offers(state, program, intel, ref='', limit=3):
         if u['sku'] in seen:continue
         seen.add(u['sku'])
         result.append(dict(sku=u['sku'],name=u['name'],grade=u['grade'],price=q['price'],
-            friend_discount=q['base']-q['price'],referrer_credit=q['reward'],
             warranty_hours=q.get('warranty_hours',0),expires_at=u.get('expires_at'),
-            message=f"I want to buy {u['sku']}"+(f' ref={ref}' if ref else ''),
-            conditions='Requote before buying. Direct referrals only; credit after settlement and 6-hour hold. No reward for refunds.'))
+            message=f"I want to buy {u['sku']}",
+            conditions='Requote before buying; verify certificate, grade, shelf life and warranty at checkout.'))
         if len(result)>=limit:break
     return result

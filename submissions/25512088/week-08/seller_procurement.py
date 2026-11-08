@@ -1,8 +1,8 @@
-"""Explicit one-off goods purchase authorization. Durable spend; never retry unknown POSTs."""
+"""Evidence-based seller procurement. Durable spend; never retry unknown POSTs."""
 import argparse,fcntl,importlib.util,json,math,os,sqlite3,time
 from pathlib import Path
 from network_reads import retry_read
-from strategic_market import snapshot
+from seller_market import snapshot
 from market_intel import read_json
 
 ROOT=Path(__file__).resolve().parent

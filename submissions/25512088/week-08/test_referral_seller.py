@@ -6,30 +6,30 @@ import time
 import unittest
 from unittest.mock import patch
 import httpx
-import referral_seller
-from referral_program import Program
+import seller
+from seller_ledger import Program
 
 
 class SellerIntegrationTests(unittest.IsolatedAsyncioTestCase):
     def test_open_quotes_soft_distribute_without_hiding_units(self):
         units=[dict(unit='u1',sku='G00001',name='item',category='food',grade='A',expires_at=None,supplied_at=1),
                dict(unit='u2',sku='G00001',name='item',category='food',grade='A',expires_at=None,supplied_at=2)]
-        first=referral_seller.select_unit('G00001',units,set(),{})
-        second=referral_seller.select_unit('G00001',units,set(),{first['unit']:1})
+        first=seller.select_unit('G00001',units,set(),{})
+        second=seller.select_unit('G00001',units,set(),{first['unit']:1})
         self.assertEqual((first['unit'],second['unit']),('u1','u2'))
-        self.assertIsNotNone(referral_seller.select_unit('G00001',units,set(),{'u1':5,'u2':5}))
+        self.assertIsNotNone(seller.select_unit('G00001',units,set(),{'u1':5,'u2':5}))
 
     def test_stock_miss_distinguishes_reserved_without_logging_secrets(self):
         u=dict(unit='u',sku='G00001',name='item',category='food',grade='A',expires_at=None)
         catalog={'G00001':dict(category='food')}
-        result=referral_seller.stock_miss('G00001 member=SECRET ref=REF-PRIVATE',[u],{'u'},catalog)
+        result=seller.stock_miss('G00001 member=SECRET ref=REF-PRIVATE',[u],{'u'},catalog)
         self.assertEqual(result['reason'],'reserved')
         self.assertEqual(result['skus'],['G00001'])
         self.assertNotIn('SECRET',json.dumps(result))
         self.assertNotIn('REF-PRIVATE',json.dumps(result))
-        hidden=referral_seller.stock_miss('food member=G00001',[],set(),catalog)
+        hidden=seller.stock_miss('food member=G00001',[],set(),catalog)
         self.assertEqual(hidden['skus'],[])
-        missing=referral_seller.stock_miss('food',[],set(),catalog)
+        missing=seller.stock_miss('food',[],set(),catalog)
         self.assertEqual(missing['categories'],['food'])
         self.assertEqual(missing['reason'],'unavailable_or_unmatched')
 
@@ -43,8 +43,8 @@ class SellerIntegrationTests(unittest.IsolatedAsyncioTestCase):
             program = Program(state)
             program.put('cursor', 100)
             program.close()
-            with patch.object(referral_seller, 'STATE', state), patch.object(referral_seller, 'sign', side_effect=lambda r: dict(r, sig_seller='test-only')):
-                app = referral_seller.build(9301, publish=False)
+            with patch.object(seller, 'STATE', state), patch.object(seller, 'sign', side_effect=lambda r: dict(r, sig_seller='test-only')):
+                app = seller.build(9301, publish=False)
                 # ASGI transport deliberately does not run lifespan/network worker.
                 async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url='http://test') as client:
                     async def send(text, task=None):
@@ -90,8 +90,8 @@ class SellerIntegrationTests(unittest.IsolatedAsyncioTestCase):
                 unit='goods-u',sku='G99999',name='chair',category='chair',kind='goods',cost=6000,
                 list_price=20000,grade='B',expires_at=None,supplied_at=time.time())])))
             program=Program(state);program.put('cursor',100);program.close()
-            with patch.object(referral_seller,'STATE',state),patch.object(referral_seller,'sign',side_effect=lambda r:dict(r,sig_seller='test-only')):
-                app=referral_seller.build(9301,publish=False)
+            with patch.object(seller,'STATE',state),patch.object(seller,'sign',side_effect=lambda r:dict(r,sig_seller='test-only')):
+                app=seller.build(9301,publish=False)
                 async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app),base_url='http://test') as c:
                     async def send(text,task=None):
                         msg=dict(role='ROLE_USER',messageId=str(time.time_ns()),parts=[dict(text=text)])
@@ -117,8 +117,8 @@ class SellerIntegrationTests(unittest.IsolatedAsyncioTestCase):
                 unit='goods-u',sku='G99999',name='chair',category='chair',kind='goods',cost=6000,
                 list_price=20000,grade='B',expires_at=None,supplied_at=time.time())])))
             program=Program(state);program.put('cursor',100);program.close()
-            with patch.object(referral_seller,'STATE',state),patch.object(referral_seller,'sign',side_effect=lambda r:dict(r,sig_seller='test-only')):
-                app=referral_seller.build(9301,publish=False)
+            with patch.object(seller,'STATE',state),patch.object(seller,'sign',side_effect=lambda r:dict(r,sig_seller='test-only')):
+                app=seller.build(9301,publish=False)
                 async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app),base_url='http://test') as c:
                     async def send(text,task=None):
                         msg=dict(role='ROLE_USER',messageId=str(time.time_ns()),parts=[dict(text=text)])
@@ -127,7 +127,7 @@ class SellerIntegrationTests(unittest.IsolatedAsyncioTestCase):
                         body=response.json()['result'];return body.get('task',body)
                     quote=await send('G99999')
                     self.assertIn('warranty 6 h',json.dumps(quote))
-                    with patch.object(referral_seller, 'receipt_grade', return_value=None):
+                    with patch.object(seller, 'receipt_grade', return_value=None):
                         done=await send('15000',quote['id'])
                     self.assertIn('REJECTED', done['status']['state'])
                     self.assertNotIn('artifacts', done)

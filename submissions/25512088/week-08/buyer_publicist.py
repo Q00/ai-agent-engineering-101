@@ -6,7 +6,7 @@ import time
 from pathlib import Path
 from statistics import median
 from market_intel import read_json, WINDOW
-from referral_program import Program
+from seller_ledger import Program
 from shop_copy import paid_post
 from adaptive_control import Control
 

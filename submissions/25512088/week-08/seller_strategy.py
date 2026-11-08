@@ -6,9 +6,53 @@ import math
 from pathlib import Path
 from statistics import median
 import time
+from decimal import Decimal, ROUND_CEILING
 from market_intel import Intel, read_json, WINDOW
-from stock_pricing import public_price
-from procurement_campaign import settings
+from seller_procurement import settings
+
+
+RATES={'goods':{'A':95,'B':80,'C':60},'food':{'A':95,'B':75,'C':45}}
+
+
+def receipt_grade(unit,catalog=None,now=None):
+    """Grade at issuance; omit uncertain food claims near a transition."""
+    now=time.time() if now is None else now;product=(catalog or {}).get(unit['sku'],{})
+    kind=unit.get('kind') or product.get('kind') or ('food' if unit.get('expires_at') else 'goods')
+    grade=unit.get('grade')
+    if grade not in ('A','B','C'):return None
+    if kind=='goods':return grade
+    if kind!='food':return None
+    expiry=unit.get('expires_at');shelf=product.get('shelf_hours')
+    if (not isinstance(expiry,(int,float)) or not math.isfinite(expiry) or
+        not isinstance(shelf,(int,float)) or not math.isfinite(shelf) or shelf<=0 or expiry<=now+120):return None
+    def at(ts):
+        fraction=(expiry-ts)/(3600*shelf)
+        return 'A' if fraction>=.8 else 'B' if fraction>=.45 else 'C'
+    current=at(now)
+    if current<grade or at(now+120)!=current:return None
+    return current
+
+
+def public_price(unit,catalog=None,now=None):
+    """Initial grade and freshness price; the protected floor is applied later."""
+    now=time.time() if now is None else now;product=(catalog or {}).get(unit['sku'],{})
+    kind=unit.get('kind') or product.get('kind') or ('food' if unit.get('expires_at') else 'goods')
+    grade=unit.get('grade');price=unit['list_price']
+    if kind not in RATES or grade not in RATES[kind]:raise ValueError('Unknown product kind or grade: cannot quote')
+    if not isinstance(price,(int,float)) or isinstance(price,bool) or not math.isfinite(price) or price<=0:
+        raise ValueError('Invalid list price')
+    freshness=Decimal(1)
+    if kind=='food':
+        expiry=unit.get('expires_at')
+        if not isinstance(expiry,(int,float)) or not math.isfinite(expiry) or expiry<=now:
+            raise ValueError('Expired food or missing expiry: cannot quote')
+        hours=(Decimal(str(expiry))-Decimal(str(now)))/3600;shelf=product.get('shelf_hours')
+        if isinstance(shelf,(int,float)) and math.isfinite(shelf) and shelf>0:
+            fraction=hours/Decimal(str(shelf));calculated='A' if fraction>=Decimal('.8') else 'B' if fraction>=Decimal('.45') else 'C'
+            grade=max(grade,calculated)
+        freshness=Decimal('.2')+Decimal('.8')*min(Decimal(1),hours/24)
+    amount=Decimal(str(price))*RATES[kind][grade]/100*freshness
+    return max(1,int(amount.to_integral_value(rounding=ROUND_CEILING)))
 
 
 def cost_floor(cost, policy):
@@ -170,7 +214,7 @@ def restock_plan(inv,catalog,intel,now=None):
                 exposure=conn.execute('SELECT COALESCE(SUM(w.amount),0) FROM warranties w JOIN sales s ON s.task=w.task WHERE s.refunded=0 AND (s.settled IS NULL OR s.settled>?)',(now-21600,)).fetchone()[0]
     reserve+=exposure
     inventory_cost=sum(u.get('cost',0) for u in stock)
-    from procurement_campaign import capital_available
+    from seller_procurement import capital_available
     budget=capital_available(settings(),inv,exposure)
     if not budget:return {'buy':[],'reason':'inventory_or_cash_limit'}
     if now-intel.get('ledger_through',0)>900:

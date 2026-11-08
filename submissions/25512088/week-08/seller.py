@@ -1,8 +1,7 @@
-"""Round-3 stock seller with deterministic, public-price referral benefits.
+"""Round-3 stock seller with deterministic, evidence-based prices.
 
-PROGRAM explains the program; STATUS member=<secret> returns membership status.
-Purchase: I want to buy <SKU> [ref=<public code>] [member=<private secret>].
-Member keys are bearer credentials: transferable, not account authentication.
+Purchase: I want to buy <SKU>. Existing legacy members may append
+member=<private secret> until the original promise expires. New referral enrollment is closed.
 """
 import argparse
 import asyncio
@@ -25,14 +24,13 @@ from a2a.server.routes import create_agent_card_routes, create_jsonrpc_routes
 from a2a.server.tasks import InMemoryTaskStore, TaskUpdater
 from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 from cryptography.hazmat.primitives import serialization
-from referral_program import Program, policy
-from referral_campaign import tick
-from stock_pricing import public_price, receipt_grade
-from seller_strategy import sale_quote, negotiate
+from seller_ledger import Program, policy
+from seller_forum import tick
+from seller_strategy import sale_quote, negotiate, receipt_grade
 from market_intel import Intel
 from shop_copy import SHOP_DESCRIPTION, SHOP_DISPLAY_NAME
-from growth_offers import offers
-from procurement_campaign import settings
+from seller_offers import offers
+from seller_procurement import settings
 from adaptive_control import Control
 
 STATE = Path(os.environ.get('MARKET_DIR', '.market'))
@@ -261,7 +259,7 @@ def build(port, publish=True):
         if settings().get('external_campaign') and os.environ.get('MARKET_SUPERVISED')!='1':
             root = Path(__file__).resolve().parent
             procurement_log = (root/'logs/procurement-worker-20261104.log').open('a')
-            procurement = subprocess.Popen([sys.executable, str(root/'procurement_campaign.py'), '--state', str(STATE.resolve())], cwd=root, stdin=subprocess.DEVNULL, stdout=procurement_log, stderr=subprocess.STDOUT, start_new_session=True)
+            procurement = subprocess.Popen([sys.executable, str(root/'seller_procurement.py'), '--state', str(STATE.resolve())], cwd=root, stdin=subprocess.DEVNULL, stdout=procurement_log, stderr=subprocess.STDOUT, start_new_session=True)
         async def loop():
             while True:
                 try:

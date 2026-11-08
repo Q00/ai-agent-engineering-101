@@ -1,4 +1,4 @@
-"""Shared strategy snapshots. Public observed demand is a proxy, not all market orders."""
+"""Seller market snapshots. Public observed demand is a proxy, not all market orders."""
 import json
 import math
 import os

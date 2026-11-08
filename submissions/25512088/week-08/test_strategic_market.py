@@ -1,6 +1,6 @@
 import json,sqlite3,tempfile,time,unittest
 from pathlib import Path
-from strategic_market import rank_products,owned_targets,restrict_order,snapshot,own_goods_hazard
+from seller_market import rank_products,owned_targets,restrict_order,snapshot,own_goods_hazard
 
 class StrategyTests(unittest.TestCase):
  def test_mature_own_breakage_cohort_replaces_conservative_prior(self):

@@ -4,9 +4,9 @@ import tempfile
 import time
 import unittest
 from market_intel import Intel
-from referral_program import Program
+from seller_ledger import Program
 from seller_strategy import graded_demand
-from growth_offers import offers
+from seller_offers import offers
 from growth_report import report
 
 
@@ -25,7 +25,7 @@ class GrowthTests(unittest.TestCase):
         self.assertFalse(result['grade_scenarios'][0]['viable'])
         self.assertTrue(result['grade_scenarios'][1]['viable'])
         self.assertEqual(graded_demand('x',dict(kind='goods',list_price=10000),self.i,now)['compatible_sales'],0)
-    def test_public_share_has_no_secret_and_real_discount(self):
+    def test_public_offers_have_no_referral_or_secret_fields(self):
         key=self.p.accept('a','old','x',8000,self.p.quote(12000,8000))
         code=self.p.purchase_code('a')
         self.assertTrue(code.startswith('REF-'));self.assertNotEqual(code,key)
@@ -34,8 +34,9 @@ class GrowthTests(unittest.TestCase):
           dict(unit='u',sku='x',name='item',kind='goods',grade='A',cost=8000,list_price=12000,expires_at=None)])))
         result=offers(self.root,self.p,self.i,ref=code)
         self.assertEqual(len(result),1)
-        self.assertGreater(result[0]['friend_discount'],0)
-        self.assertIn(code,result[0]['message'])
+        self.assertNotIn('friend_discount',result[0])
+        self.assertNotIn('referrer_credit',result[0])
+        self.assertNotIn(code,result[0]['message'])
         self.assertNotIn(key,json.dumps(result))
     def test_measurement_deduplicates_and_excludes_unsettled(self):
         self.assertEqual(report(self.root)['status'],'not_started')

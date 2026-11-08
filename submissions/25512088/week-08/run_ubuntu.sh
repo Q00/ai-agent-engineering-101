@@ -26,7 +26,7 @@ if [[ "$role" == watch ]]; then
 fi
 if [[ "$role" == procurement ]]; then
   cd "$HERE"
-  exec python procurement_campaign.py --state .market
+  exec python seller_procurement.py --state .market
 fi
 if [[ "$role" == monitor ]]; then
   cd "$HERE"

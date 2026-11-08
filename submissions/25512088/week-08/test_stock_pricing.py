@@ -1,5 +1,5 @@
 import unittest
-from stock_pricing import public_price, receipt_grade
+from seller_strategy import public_price, receipt_grade
 
 
 class StockPricingTests(unittest.TestCase):

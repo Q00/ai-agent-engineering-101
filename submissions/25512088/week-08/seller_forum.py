@@ -1,4 +1,4 @@
-from procurement_campaign import settings
+from seller_procurement import settings
 """Read public market evidence and queue shop recruitment posts through kit v4.
 
 No standalone HTTP publishing: the kit owns authentication and forum rate limits.
@@ -13,7 +13,7 @@ from pathlib import Path
 from urllib.request import urlopen
 from network_reads import retry_read
 from cryptography.hazmat.primitives import serialization
-from referral_program import Program
+from seller_ledger import Program
 from adaptive_control import Control
 
 
@@ -55,8 +55,7 @@ def sync(program, urls):
                 raise ValueError('Market ledger is not ordered')
             program.settle(row, urls)
             program.review(row, urls)
-            # No warranty is offered by referral_seller. Still stop maturity if
-            # an unfamiliar refund event appears instead of guessing its schema.
+            # Stop maturity on unfamiliar refund events instead of guessing.
             if 'refund' in str(row.get('kind', '')).lower():
                 d = row.get('data', {})
                 if d.get('shop') in urls and d.get('unit'):

@@ -1,9 +1,9 @@
 import json,math,tempfile,time,unittest
 from pathlib import Path
-from referral_program import Program
+from seller_ledger import Program
 from seller_strategy import sale_quote,negotiate,protected_floor,observed_hazard
 from buyer_memory import Memory
-from growth_offers import offers
+from seller_offers import offers
 from market_intel import Intel
 
 class RolloutTests(unittest.TestCase):

@@ -35,8 +35,8 @@ CANARY_TIMEOUT=7200
 SOURCE_MAX_AGE={'rules':600,'agent':600,'board':90,'shops':90}
 ROLE_FILES={
     'buyer':{'buyer_r3.py','buyer_publicist.py','rival_feedback.py','shop_copy.py'},
-    'shop':{'referral_seller.py','seller_strategy.py','stock_pricing.py','strategic_market.py',
-            'procurement_campaign.py','referral_campaign.py','growth_offers.py'},
+    'shop':{'seller.py','seller_strategy.py','seller_market.py','seller_procurement.py',
+            'seller_forum.py','seller_ledger.py','seller_offers.py'},
 }
 ALWAYS_ALLOWED={'adaptive_control.py','adaptive_stats.py','safety_kernel.py'}
 

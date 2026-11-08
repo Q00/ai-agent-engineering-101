@@ -38,7 +38,7 @@ class DeploymentPipelineTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             p=DeploymentPipeline(tmp,runner=lambda *a:(0,.1,False,'ok'))
             dep=p.create('candidate','shop')
-            p.validate(dep,['referral_seller.py']);p.shadow(dep,0,0,30,'shop');p.canary(dep,'shop',10,0,1)
+            p.validate(dep,['seller.py']);p.shadow(dep,0,0,30,'shop');p.canary(dep,'shop',10,0,1)
             self.assertTrue(p.activate(dep,supervisor_owned=True,board_alive=True,
                 commit_matches=True,checkpoint_valid=True,alive_seconds=90))
             self.assertEqual(p.control.deployment_state(dep),'ACTIVE');p.close()

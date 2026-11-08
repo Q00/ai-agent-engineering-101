@@ -7,7 +7,7 @@ from unittest.mock import patch
 import httpx
 from market_intel import Intel,BUYER_SCORE_WEIGHTS
 from seller_strategy import sale_quote,restock_plan,cost_floor,protected_floor
-from referral_program import Program
+from seller_ledger import Program
 from buyer_publicist import queue_update,publication_policy,forum_strategy,STRATEGY_REVIEW_SECONDS
 from buyer_r3 import Buyer
 from buyer_memory import Memory
