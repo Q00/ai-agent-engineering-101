@@ -87,7 +87,8 @@ class MarketTransport(BuyerTransport):
                              "parts": [{"text": self.first_message}]}})
         if self.task is not None:
             raise BuyerError("This buyer already has a task")
-        text = f"I want to buy {self.item}. Please include a market certificate. "
+        # Goods A/B test (first_message_ab.goods_grade_sentence): the conditions arm adds one sentence; control is unchanged.
+        text = f"I want to buy {self.item}. " + (getattr(self, "grade_sentence", None) or "") + "Please include a market certificate. "
         if self.requirements.get("warranty_hours"):
             text += f"I require {self.requirements['warranty_hours']} hours of warranty in the checkout. "
         else:
@@ -161,10 +162,11 @@ def failure_reason(outcome, negotiation, decisions):
     return outcome
 
 
-def trade(shop, item, budget, *, mode="claude", transport=None, requirements=None, decision_context=None, max_turns=6, fast_rules=False, model_gate=None, accept_conditions=None, over_budget_counter=None, counter_repeat=None, catalog_list_price=None, order_item=None, price_reading=None, reference_relief=None, discount_limit=None, first_message=None):
+def trade(shop, item, budget, *, mode="claude", transport=None, requirements=None, decision_context=None, max_turns=6, fast_rules=False, model_gate=None, accept_conditions=None, over_budget_counter=None, counter_repeat=None, catalog_list_price=None, order_item=None, price_reading=None, reference_relief=None, discount_limit=None, first_message=None, goods_grade_sentence=None):
     client = MarketTransport(shop["url"], item, budget, transport=transport, timeout=180)
     client.discount_limit = discount_limit
     client.first_message = first_message
+    client.grade_sentence = goods_grade_sentence
     client.requirements = requirements
     client.order_item = order_item
     client.accept_conditions = accept_conditions
@@ -277,8 +279,16 @@ def trade_attempt(args, order, catalog, pick):
         message_arm = first_message_ab.arm(order.get("order"), first_message_ab.load())
         if message_arm == "conditions":
             trade_options["first_message"] = first_message_ab.text(selected_item, accept_conditions)
+    goods_arm = None
+    if order.get("kind") == "goods":
+        import first_message_ab
+        goods_arm = first_message_ab.arm(order.get("order"), first_message_ab.load_goods())
+        sentence = first_message_ab.goods_grade_sentence(accept_conditions) if goods_arm == "conditions" else None
+        if sentence:
+            trade_options["goods_grade_sentence"] = sentence
     result, record = trade(shop, selected_item, pick["budget"], **trade_options)
     record["first_message_arm"] = message_arm
+    record["goods_message_arm"] = goods_arm
     record["round"] = 3
     record["order"] = order.get("order")
     record["order_budget"] = args.budget

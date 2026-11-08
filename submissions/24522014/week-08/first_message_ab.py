@@ -22,13 +22,26 @@ def _valid(section):
             and type(section.get("salt")) is str and 0 < len(section["salt"]) <= 64)
 
 
-def load(path=CONFIG):
-    """{"enabled", "share", "salt"}; anything missing, unreadable or malformed means off."""
+FOOD_SECTION = "first_message_conditions"
+GOODS_SECTION = "goods_first_message_grades"
+
+
+def _load(path, name):
     try:
-        section = json.loads(Path(path).read_text(encoding="utf-8")).get("first_message_conditions")
+        section = json.loads(Path(path).read_text(encoding="utf-8")).get(name)
     except (OSError, ValueError, AttributeError):
         return dict(DISABLED)
     return {key: section[key] for key in DISABLED} if _valid(section) else dict(DISABLED)
+
+
+def load(path=CONFIG):
+    """Food test: {"enabled", "share", "salt"}; anything missing, unreadable or malformed means off."""
+    return _load(path, FOOD_SECTION)
+
+
+def load_goods(path=CONFIG):
+    """Goods test (grade sentence), its own section and salt; anything missing, unreadable or malformed means off."""
+    return _load(path, GOODS_SECTION)
 
 
 def arm(order_id, settings):
@@ -67,3 +80,9 @@ def text(item, accept):
     if accept.get("cert") is True:
         parts.append("Please include a market certificate.")
     return " ".join(parts)
+
+
+def goods_grade_sentence(accept):
+    """The goods conditions arm's one added sentence, placed after "I want to buy {item}. "; None without grades."""
+    grades = _grades(accept.get("grades")) if isinstance(accept, dict) else None
+    return f"This order accepts grade {grades}. " if grades else None
