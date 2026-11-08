@@ -170,9 +170,9 @@ def quote(c, unit, code=None, me=None, now=None, stock_n=1, vip=False):
         follow = min(follow, t.get("max_undercut", 0.05))      # finance caps how far under the median we go
     median = None
     if follow is not None:          # 0 means "at the median", not "no follow" (11-04: a 0 cap sent mattresses out at 0.92)
-        median, n = market_model.market_price(c, unit["sku"])
+        median, n = market_model.market_price(c, unit["sku"], grade=unit.get("grade") if lp >= 100000 else None)
         if median:
-            price, why = min(price, median * (1 - follow)), why + [f"follow: {follow:.0%} under the 24 h median {median:.0f} (n={n})"]
+            price, why = min(price, median * (1 - follow)), why + [f"follow: {follow:.0%} under the 24 h {'grade ' + unit.get('grade') + ' ' if lp >= 100000 and unit.get('grade') else ''}median {median:.0f} (n={n})"]
     low = market_model.market_low(c, unit["sku"], me)
     if low and not exclusive and not follow and t.get("hero_undercut", True) and is_hero(c, unit["sku"], t["heroes"]):
         price, why = min(price, low - 1), why + [f"hero under {low}"]
@@ -218,6 +218,10 @@ def quote(c, unit, code=None, me=None, now=None, stock_n=1, vip=False):
         if lp >= t.get("big_follow_list", 500000):   # 11-07: Book counts unsold stock at cost, so a dear unit whose cost
             fm = min(fm, t.get("big_follow_margin", 0.03))   # sits above the market median sells near cost: Book
         floor = min(floor, int(cost * (1 + fm)) + 1)          # keeps +3%, revenue (0.3) gets the whole price
+        if lp >= t.get("big_follow_list", 500000) and median * (1 - follow) < cost:
+            # 11-08: a dear unit bought above its grade's market price costs 1% a day to hold (storage), ~9% to the
+            # round's end, so it goes at the market price now if that loses at most big_loss_max of cost
+            floor = min(floor, int(cost * (1 - t.get("big_loss_max", 0.08))) + 1)
     price = max(int(price), floor)
     least = max(int(price * (1 - t["haggle_room"])), floor)
     return {"price": price, "least": least, "arm": arm if isinstance(arm, str) else f"{arm:.2f}", "floor": floor,

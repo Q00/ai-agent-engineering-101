@@ -239,9 +239,16 @@ def buyer_profile(c, buyer, hours=24):
             "top_shops": sorted(shops.items(), key=lambda kv: -kv[1])[:4]}
 
 
-def market_price(c, sku, hours=24, min_n=3):
-    """The median price other shops settled this SKU at lately, with how many settles: (median, n), or (None, n)."""
+def market_price(c, sku, hours=24, min_n=3, grade=None):
+    """The median price other shops settled this SKU at lately, with how many settles: (median, n), or (None, n).
+    With a grade (11-07): that grade's median when it has min_n settles -- grade A furniture settles 5-9% above B
+    (24 h), and one all-grade median priced our A units over it while B/C units sold under our cost."""
     import statistics
+    if grade:
+        rows = [r[0] for r in c.execute(f"select amount from settles where sku=? and grade=? and ts>? and seq not in "
+                                         f"({ours(c)})", (sku, grade, time.time() - hours * 3600))]
+        if len(rows) >= max(min_n, 10):
+            return statistics.median(rows), len(rows)
     rows = [r[0] for r in c.execute(f"select amount from settles where sku=? and ts>? and seq not in ({ours(c)})",
                                      (sku, time.time() - hours * 3600))]
     return (statistics.median(rows) if len(rows) >= min_n else None), len(rows)

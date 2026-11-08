@@ -209,6 +209,9 @@ def plan(md, c, t, now=None):
 
     low = low_value(c, now, t, cat)
     skipped = set()
+    # 11-07: 214M of furniture at cost sat in stock at 6% quote conversion (cost above the market's price for what
+    # was left: grade A units priced against an all-grade median); no more furniture while the stock is over the cap
+    big_stock = sum(u.get("cost") or 0 for u in units if (u.get("list_price") or 0) >= 500000)
     # patch 3.4 (11-06): over 50 units of a SKU supplied market-wide in the last hour, its cost rises 0.2% a unit (up
     # to 50%). surge >= 15% (125+ units): not bought; >= 5% (75+): half the quantity. HQ orders are exempt.
     n1h = dict(c.execute("select sku, count(*) from supply_units where ts > ? group by sku", (now - 3600,)).fetchall())
@@ -226,6 +229,9 @@ def plan(md, c, t, now=None):
         if not r or qty <= 0 or (r["list_price"] > t["max_list"] and not any_price):
             return
         if sku in low:                                        # HQ 11-04: low ticket and low profit -- not stocked
+            return
+        if r["list_price"] >= 500000 and reason != "HQ order" and big_stock >= t.get("furniture_stock_cap", 120e6):
+            skipped.add(sku)
             return
         # HQ 11-07 "상한은 올리되, 공급가가 급등한 제품은 걸러": skip at +5% or more, half at +2% (was 15% / 5%)
         if reason != "HQ order" and surge(sku) >= t.get("surge_skip", 0.05):
