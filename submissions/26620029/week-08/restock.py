@@ -47,7 +47,9 @@ LINE_SHARE = 0.1            # one line spends at most this share of the balance 
 # bedding 12%. Category counts kept us on one SKU: 5 unsold SS mattresses (G07ec17d5) stopped any purchase of the
 # market's best seller G1515d951 (2,698 deals, about 73,000 margin a unit), which we never stocked
 VALUE_FOCUS = 0.05          # a goods category with this share of the market's sales value is stocked by SKU and first
-FOCUS_SKUS = 15              # SKUs kept per focus category, by value (deals x list price)
+FOCUS_SKUS = 20              # SKUs kept per focus category, by value (deals x list price)
+# Claude (2026-11-08 22:23, hourly check): 15 -> 20. Stock fell from 0.69 of book (17:23) to 0.50 with 116M in cash once grade C
+# counted half; the 80% cap (user's instruction) no longer binds, so more SKUs is what lets the stock grow
 FOCUS_QTY = [(0.02, 5), (0.005, 3)]     # (SKU's share of market deals, units to keep); below these, 2
 FOCUS_DEAR = 500_000        # list price above this: at most FOCUS_DEAR_QTY units, however often it sells
 FOCUS_DEAR_QTY = 5          # was 2 until 2026-11-06 20:23: stock 48.5% of book against the user's 60%, the best seller G24f5f979 sold out
