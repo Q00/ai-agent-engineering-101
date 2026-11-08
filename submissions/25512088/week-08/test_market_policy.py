@@ -13,7 +13,8 @@ class OfficialFactsTests(unittest.TestCase):
         facts=official_facts('rules',raw)
         self.assertEqual(facts['round'],3)
         self.assertEqual(facts['latest_patch']['version'],'3.6')
-        self.assertIn('shop_all',facts['score_formulas'])
+        self.assertEqual(facts['score_formulas']['shop_all'],'0.5 book + 0.3 revenue + 0.2 stars')
+        self.assertEqual(facts['score_formulas']['buyer_all'],'0.5 saved + 0.3 forum + 0.1 deals + 0.1 posts')
         self.assertNotIn('IGNORE',str(facts))
 
 

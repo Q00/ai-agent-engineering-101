@@ -44,10 +44,11 @@ def official_facts(name, raw):
     if round_match:facts['round']=int(round_match.group(1))
     formulas={}
     for label in ('Shop ALL','Buyer ALL'):
-        match=re.search(re.escape(label)+r'\s*=\s*([^\.]{1,240})\.',text,re.I)
+        match=re.search(re.escape(label)+
+            r'\s*=\s*((?:\d+(?:\.\d+)?\s+[A-Za-z]+\s*(?:\+\s*)?){2,5})',text,re.I)
         if match:
             # Only metric names, numbers, spaces and arithmetic punctuation survive.
-            value=re.sub(r'[^A-Za-z0-9 .+*%_-]','',match.group(1)).strip()
+            value=re.sub(r'[^A-Za-z0-9 .+*%_-]','',match.group(1)).strip().rstrip('+').strip()
             formulas[label.lower().replace(' ','_')]=value[:240]
     if formulas:facts['score_formulas']=formulas
     facts['retroactive_round3']='Applies to all of Round 3' in text
