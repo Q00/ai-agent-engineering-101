@@ -369,7 +369,7 @@ class Seller(AgentExecutor):
                       asked_warranty=d["warranty"],
                       warranty=bool(p.get("warranty_hours")), how=d["how"], asks=d["asks"], offers=d["offers"],
                       walk_odds=d.get("walk") or None, taken_early=d.get("early", False), outcome=outcome, price=price,
-                      arm=d.get("arm"), anchored=p.get("anchored"))
+                      arm=d.get("arm"), anchored=p.get("anchored"), at_offer=d.get("at_offer", False))
         print(f"[seller] {u['sku']} {outcome}" + (f" at {price}" if price else ""), flush=True)
         if outcome != "deal" and p.get("solo"):                     # an uncontested product's floor learns from a walk
             path = common.MARKET_DIR / "records" / "solo_floors.json"
@@ -503,6 +503,12 @@ class Seller(AgentExecutor):
             d.setdefault("walk", []).append(odds)
             if odds is not None and odds >= float(common.rules()["seller"].get("walk_threshold", 0.7)):
                 what, new, d["early"] = "sell", offer, True
+        if what == "sell" and d["how"] == "category" and new < offer <= d["unit"]["list_price"] and offer != d.get("budget"):
+            # 11/8 (the person's call): a category buyer's offer over our ask is taken at that offer. Such buyers pay
+            # only a receipt at the price they named: of 501 category deals sold at our lower ask to buyers offering
+            # 82.4% or 85% of list, 7 were paid, while all 21 receipts at those buyers' own price at other shops were
+            # paid. SKU buyers pay a receipt under their offer (106 of 115), so theirs stays at our ask.
+            new, d["at_offer"] = offer, True
         if what == "sell":
             await self.sell(up, say, task.id, new, now)
         elif what == "reject":

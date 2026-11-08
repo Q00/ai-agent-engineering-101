@@ -793,6 +793,16 @@ def main() -> int:
               == [PAKIMCHI], said(t[0]))
         check("a SKU of the category we have but did not show switches the product too", meta(t[1]).get("sku") == GEOTJEORI,
               said(t[1]))
+        t = run(["I want to buy a 김치", "17000"])
+        rec = next((p["data"] for a in t[-1].get("artifacts") or [] for p in a.get("parts") or [] if "data" in p), {})
+        check("a category offer over the ask (at or under the list price) is taken at the offer, the price the buyer pays",
+              meta(t[0]).get("ask") < 17000 and rec.get("price") == 17000, (meta(t[0]).get("ask"), rec))
+        check("the negotiation records a sale at the buyer's offer",
+              any(n.get("at_offer") and n.get("price") == 17000 for n in common.records("negotiations")))
+        t = run([f"I want to buy {CATALOG[KIMCHI]['name']} ({KIMCHI})", "19500"])
+        rec = next((p["data"] for a in t[-1].get("artifacts") or [] for p in a.get("parts") or [] if "data" in p), {})
+        check("a SKU offer over the ask still sells at our ask", rec.get("price") == meta(t[0]).get("ask") < 19500,
+              (meta(t[0]).get("ask"), rec))
         t = run(["Looking for kimchi that lasts 3 days"])
         check("words the code cannot place go to the cheap model, checked against the stock",
               meta(t[0]).get("sku") == KIMCHI and meta(t[0]).get("unit") == "u-k1-b", said(t[0]))
