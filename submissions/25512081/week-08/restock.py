@@ -86,7 +86,7 @@ def scale_caps(inv, stock_cost):
 SHORT_COVER = 1.0
 SHORT_MAX = 15
 SHORT_SHARE = 0.25
-PLANNER_EVERY = 60 * 60    # opus with tools: the costliest call; the code baseline restocks every minute between
+PLANNER_EVERY = 120 * 60   # (60 min until Nov 8 12:45; halved for the shared weekly limit, prices move at most 0.05 a step) opus with tools: the costliest call; the code baseline restocks every minute between
 LESSONS_EVERY = 6 * 3600   # lessons.py: failures of the last day -> rules the manager and the buyer read
 METRICS_EVERY = 5 * 60    # read-only ledger/reviewer diagnostics; no model calls
 PLAN_FRESH = 90 * 60       # plan lines older than this are dropped
