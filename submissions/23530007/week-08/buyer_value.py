@@ -180,6 +180,10 @@ def summarize(st):
         xs = sorted(recent if len(recent) >= MIN_RECENT else [r["x"] for r in rs])
         out[k] = {"n": len(rs), "saved": round(sum(wi * _saved(r, broken) for wi, r in zip(w, rs)) / sw, 4),
                   "p50": round(statistics.median(xs), 4), "p25": round(xs[len(xs) // 4], 4),
+                  # 11-09 (user: 'others take 0.4; look at that, the average only follows the average'): what
+                  # the best quarter of this group's deals saved, the target of the 'aimtop' arm
+                  "saved_top": round(sum(_saved(r, broken) for r in rs if r["x"] <= xs[len(xs) // 4])
+                                     / max(1, sum(1 for r in rs if r["x"] <= xs[len(xs) // 4])), 4),
                   "warranty": round(sum(wi * r["w"] for wi, r in zip(w, rs)) / sw, 3),
                   "broke": round(sum(r["unit"] in broken for r in rs) / len(rs), 4)}
     return out
