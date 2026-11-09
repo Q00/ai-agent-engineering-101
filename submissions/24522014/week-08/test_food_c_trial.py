@@ -44,7 +44,7 @@ class Settings(unittest.TestCase):
         buying = json.loads(food_c_trial.CONFIG.read_text(encoding="utf-8"))["buying"]
         self.assertEqual((buying["c_trial_share"], buying["c_trial_salt"], buying["c_trial_food_penalty"]), (0.5, "fc1", 0.05))
         self.assertEqual(buying["grades"], ["A", "B"])
-        self.assertIs(buying["c_trial_enabled"], False)
+        self.assertIs(buying["c_trial_enabled"], True)
 
     def test_its_hash_is_independent_of_the_standing_ask_hash(self):
         mine = {"enabled": True, "share": .5, "salt": "fc1"}
