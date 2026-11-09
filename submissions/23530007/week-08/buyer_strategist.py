@@ -51,7 +51,8 @@ GLOBAL = {                                    # role, bounds, step
     "food_extra_hours": ((1, 12), 2),         # food must last the order's hours + this (a spoiled deal counts -1)
     "skip_below": ((0.15, 0.33), 0.02),       # skip an order when the best shop's expected saved per deal is under this
     "skip_below_food": ((0.05, 0.33), 0.03),  # the same bar for food orders (user 11-06: take every food order that lasts)
-    "skip_below_goods": ((0.15, 0.4), 0.03),  # the same bar for goods orders (goods ran 0.194 per deal with breaks at -1)
+    "skip_below_goods": ((0.15, 0.4), 0.03),
+    "value_half_life_h": ((0, 6), 1),         # 11-09: weight half-life of market deals in the shop values (0 = flat 6 h)  # the same bar for goods orders (goods ran 0.194 per deal with breaks at -1)
     "conv_weight": ((0.0, 0.3), 0.05),        # shop pick: expected saved + this x our close rate there
     "rival_penalty": ((0.0, 0.1), 0.02),      # shop pick: minus this for a classmate shop ranked above us
     "cap_margin": ((0.0, 0.1), 0.02),         # cap at most (shop's median price / list + this) x list
@@ -247,6 +248,7 @@ def saved_mix(r6):
         deals, broken = st.get("deals") or [], st.get("broken") or {}
         g = defaultdict(lambda: {"food": [], "goods": []})
         hours = defaultdict(list)
+        kh = {"food": defaultdict(list), "goods": defaultdict(list)}
         t1 = max((d["ts"] for d in deals), default=0)
         for d in deals:
             v = _saved(d, broken)
@@ -254,6 +256,7 @@ def saved_mix(r6):
             g[d.get("buyer")][k].append(v)
             g["*market*"][k].append(v)
             hours[int((t1 - d["ts"]) // 3600)].append(v)
+            kh[k][int((t1 - d["ts"]) // 3600)].append(v)
 
         def row(x):
             f, go = x["food"], x["goods"]
@@ -269,6 +272,8 @@ def saved_mix(r6):
             orders[t.get("kind") or "?"][str(t.get("outcome"))[:20]] += 1
         return {"ours": ours, "market": peers.get("*market*"), "best_buyers": top,
                 "market_per_deal_by_hours_ago": {h: round(sum(v) / len(v), 3) for h, v in sorted(hours.items())},
+                "market_by_kind_by_hours_ago": {k: {h: round(sum(v) / len(v), 3) for h, v in sorted(x.items())}
+                                                for k, x in kh.items()},
                 "our_orders_by_kind_6h": {k: dict(v) for k, v in orders.items()},
                 "read": "our all = food_share x food + (1 - food_share) x goods; compare both terms with the buyers "
                         "just above us and say which one is the gap now"}
@@ -352,7 +357,8 @@ food_extra_hours. Evidence "now"/"by_*" count saved as the score does (a break -
 Knobs (only these): global "value_share" (0.65-0.85), "quick_accept" (0.55-0.75), "food_extra_hours" (1-12),
 "skip_below" (0.15-0.33), "skip_below_food" (0.05-0.33) and "skip_below_goods" (0.15-0.4) (per-kind bars that
 replace skip_below; see BUYER_STRATEGY.md 0a2), "conv_weight" (0-0.3), "rival_penalty" (0-0.1), "cap_margin" (0-0.1), "near_cap" (0-0.04),
-"open_offset" (0-0.08), "max_shops" (1-6), and the arms (11-08): "push_share", "push3_share", "cheapfood_share",
+"open_offset" (0-0.08), "max_shops" (1-6), "value_half_life_h" (0-6, default 2: how fast the shop values
+follow the newest market deals; lower when prices are moving, higher when the values look noisy), and the arms (11-08): "push_share", "push3_share", "cheapfood_share",
 "cheapgoods_share", "skubest_share", "wpen_share", "gradeaware_share" (each 0-1, share of orders), "push3_below" (0-0.2), "push_below"
 (0-0.15), "cheapfood_open" (0.2-0.6), "wpen_cost" (0-0.12), "gradeaware_cap_c" (0.65-0.85), "gradeaware_cap_b" (0.62-0.8); per shop (give "shop": name from the evidence) "shop_bias" (-0.1..0.1,
 added to its value score) and "shop_cap" (-0.05..0.05, added to the cap there as a share of list);
@@ -377,8 +383,10 @@ SAVED PER DEAL (user, 11-09: 'keep catching this and keep saved high; that is wh
 run read "saved_mix_vs_peers_6h" before anything else on saved. Our saved per deal = food share x food saved +
 goods share x goods saved. Compare each term with the buyers just above us and the best buyers, say which term is
 our gap now (mix or the goods/food price), find its cause (the orders we get, skips, lost food orders, caps, shops
-chosen) and move the knob that closes it. Watch the market's per-deal saved by hour: when the whole market gets
-cheaper we must get cheaper faster, since saved is scored by rank. Do not wait for the operator to point it out.
+chosen) and move the knob that closes it. Watch the market's per-deal saved by hour and by kind
+("market_by_kind_by_hours_ago"): when the market gets cheaper (the user expects goods to drift up toward food) we
+must get cheaper faster, since saved is scored by rank: shorten "value_half_life_h" so shop values and caps
+follow the newest deals, and lower caps on the kind that is getting cheaper. Do not wait for the operator.
 THE RACE (user, 11-08): what moves our buyer rank is the class buyers just above and below us. Read the curator's
 WATCH.buyer_race (their buyer score, saved, per-deal saved, deals/h, what they buy and where) and say who we pass
 next, who is closing on us, and what they do that we could do.

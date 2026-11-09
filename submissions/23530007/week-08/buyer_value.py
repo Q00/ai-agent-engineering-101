@@ -31,6 +31,9 @@ STATE = HERE / ".market" / "shop_value.json"
 LOCK = HERE / ".market" / "shop_value.lock"
 MARKET = "https://market.ourolabs.ai"
 WINDOW = 6 * 3600          # deals kept
+HALF_LIFE_H = 2.0          # 11-09: default weight half-life of a market deal in the shop values (hours)
+RECENT_PRICE_S = 2 * 3600  # price quantiles from this recent window when it holds MIN_RECENT deals
+MIN_RECENT = 10
 REFRESH = 600              # ledger read at most this often
 PAGES = 20                 # ledger pages per refresh (500 entries each); farther behind: skip to the newest
 FIRST_PAGES = 60           # first build: ~2 h of ledger
@@ -144,6 +147,16 @@ def _saved(r, broken):
     return 1 - r["x"]
 
 
+def half_life():
+    """Hours over which a market deal's weight halves in the shop values (user 11-09: prices drift, follow the
+    newest saved, not the 6 h average). The buyer strategist owns it as global 'value_half_life_h'; 0 = no decay."""
+    try:
+        g = json.loads((HERE / "params_auto_buyer.json").read_text()).get("globals") or {}
+        return float(g.get("value_half_life_h", HALF_LIFE_H))
+    except (OSError, ValueError, TypeError):
+        return HALF_LIFE_H
+
+
 def summarize(st):
     broken = st.get("broken", {})
     groups = defaultdict(list)
@@ -154,12 +167,20 @@ def summarize(st):
         groups[f"*|{kind}"].append(r)
         if r.get("sku"):                                   # 11-08: per shop and SKU, for pick_sku's saved choice
             groups[f"{r['shop']}|sku|{r['sku']}"].append(r)
+    now = max((r["ts"] for r in st["deals"]), default=time.time())
+    hl = half_life()
+    wt = (lambda r: 0.5 ** ((now - r["ts"]) / 3600 / hl)) if hl > 0 else (lambda r: 1.0)
     out = {}
     for k, rs in groups.items():
-        xs = sorted(r["x"] for r in rs)
-        out[k] = {"n": len(rs), "saved": round(sum(_saved(r, broken) for r in rs) / len(rs), 4),
+        # 11-09: weighted toward the newest deals, and price quantiles from the last RECENT_PRICE_S when there
+        # are enough of them, so caps and shop choice follow where the market is now
+        w = [wt(r) for r in rs]
+        sw = sum(w) or 1.0
+        recent = [r["x"] for r in rs if now - r["ts"] <= RECENT_PRICE_S]
+        xs = sorted(recent if len(recent) >= MIN_RECENT else [r["x"] for r in rs])
+        out[k] = {"n": len(rs), "saved": round(sum(wi * _saved(r, broken) for wi, r in zip(w, rs)) / sw, 4),
                   "p50": round(statistics.median(xs), 4), "p25": round(xs[len(xs) // 4], 4),
-                  "warranty": round(sum(r["w"] for r in rs) / len(rs), 3),
+                  "warranty": round(sum(wi * r["w"] for wi, r in zip(w, rs)) / sw, 3),
                   "broke": round(sum(r["unit"] in broken for r in rs) / len(rs), 4)}
     return out
 
