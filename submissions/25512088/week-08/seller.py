@@ -8,6 +8,7 @@ import asyncio
 import subprocess
 import sys
 import base64
+from collections import Counter
 from contextlib import asynccontextmanager
 import json
 import os
@@ -113,6 +114,7 @@ class Seller(AgentExecutor):
                 await up.reject(say('Market synchronization is starting. Please retry shortly.'))
                 return
             inv = json.loads((STATE/'inventory.json').read_text())
+            holdings=Counter(u['sku'] for u in inv.get('units',[]))
             catalog_path = STATE/'catalog.json'
             catalog = json.loads(catalog_path.read_text()) if catalog_path.exists() else {}
             if inv.get('round', 0) != 3:
@@ -134,7 +136,8 @@ class Seller(AgentExecutor):
                     await up.reject(say('No matching stock available. Alternatives: '+json.dumps(available,ensure_ascii=False)))
                     return
                 try:
-                    q = sale_quote(unit, catalog, program, intel, token=cred['member'], ref='')
+                    q = sale_quote(unit, catalog, program, intel, token=cred['member'], ref='',
+                                   holdings=holdings[unit['sku']])
                 except ValueError:
                     await up.reject(say('Cannot verify this stock grade or expiry.'))
                     return
@@ -159,7 +162,8 @@ class Seller(AgentExecutor):
                     if unit:
                         deal['unit']=unit
                         deal['quote']=sale_quote(unit,catalog,program,intel,
-                            token=deal['credentials']['member'],ref='',record=False)
+                            token=deal['credentials']['member'],ref='',record=False,
+                            holdings=holdings[unit['sku']])
                 if not unit or unit.get('grade') == 'expired' or (unit.get('expires_at') and unit['expires_at'] <= time.time()):
                     self.open.pop(task.id, None)
                     await up.reject(say('The quoted stock is no longer available.'))
@@ -168,7 +172,8 @@ class Seller(AgentExecutor):
                     # This inquiry was recorded when its initial quote opened.
                     # Refreshes must not inflate demand or conversion trials.
                     latest = sale_quote(unit, catalog, program, intel,
-                                        token=deal['credentials']['member'], ref='', record=False)
+                                        token=deal['credentials']['member'], ref='', record=False,
+                                        holdings=holdings[unit['sku']])
                 except ValueError:
                     self.open.pop(task.id, None)
                     await up.reject(say('Cannot verify this stock grade or expiry.'))

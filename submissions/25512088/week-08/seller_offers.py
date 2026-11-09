@@ -2,6 +2,7 @@ from seller_procurement import settings
 """Fresh, cost-protected product discovery."""
 import json
 import time
+from collections import Counter
 from seller_strategy import sale_quote
 
 
@@ -13,10 +14,11 @@ def offers(state, program, intel, ref='', limit=3):
     cp=state/'catalog.json'
     catalog=json.loads(cp.read_text()) if cp.exists() else {}
     reserved=program.reserved_units(); ranked=[]
+    holdings=Counter(u['sku'] for u in inv.get('units',[]) if u['unit'] not in reserved)
     for u in inv.get('units',[]):
         if u['unit'] in reserved:continue
         # Stock previews are not buyer inquiries or conversion trials.
-        try:q=sale_quote(u,catalog,program,intel,ref=ref,record=False)
+        try:q=sale_quote(u,catalog,program,intel,ref=ref,record=False,holdings=holdings[u['sku']])
         except ValueError:continue
         hours=(u['expires_at']-time.time())/3600 if u.get('expires_at') else None
         count=intel.comparable(u['sku'],u['grade'],hours,q.get('warranty_hours',0))['count']

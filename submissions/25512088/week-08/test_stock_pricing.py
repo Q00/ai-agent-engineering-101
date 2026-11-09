@@ -1,5 +1,5 @@
 import unittest
-from seller_strategy import public_price, receipt_grade
+from seller_strategy import public_price, receipt_grade, liquidation_discount
 
 
 class StockPricingTests(unittest.TestCase):
@@ -40,6 +40,14 @@ class StockPricingTests(unittest.TestCase):
         self.assertIsNone(receipt_grade(self.unit('C','food',90),cat,now=1000))
         self.assertIsNone(receipt_grade(self.unit('A','food',60),{},now=1000))
         self.assertIsNone(receipt_grade(self.unit('C','food',0),cat,now=1000))
+
+    def test_liquidation_requires_excess_stock_age_and_no_recent_own_sale(self):
+        now=100*3600;u=dict(self.unit(),supplied_at=now-13*3600)
+        self.assertEqual(liquidation_discount(u,66,0,now),.10)
+        self.assertEqual(liquidation_discount(u,7,0,now),0)
+        self.assertEqual(liquidation_discount(u,66,1,now),0)
+        u['supplied_at']=now-5*3600
+        self.assertEqual(liquidation_discount(u,66,0,now),0)
 
 
 if __name__ == '__main__':

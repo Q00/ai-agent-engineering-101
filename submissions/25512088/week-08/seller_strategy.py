@@ -101,6 +101,24 @@ def observed_hazard(intel,shop_name='25512088'):
     return .15,'conservative-unmeasured'
 
 
+def liquidation_discount(unit, holdings, recent_sales_6h, now=None):
+    """Bounded markdown for capital trapped in evidenced excess stock.
+
+    A small or selling cohort is never discounted.  The ladder changes only
+    the asking margin; ``protected_floor`` below still pays every obligation.
+    """
+    now=time.time() if now is None else now
+    supplied=unit.get('supplied_at')
+    if holdings<8 or recent_sales_6h>0 or not isinstance(supplied,(int,float)):
+        return 0.0
+    age=max(0,now-supplied)
+    if age<6*3600:return 0.0
+    if age<12*3600:return .05
+    if age<24*3600:return .10
+    if age<48*3600:return .15
+    return .25
+
+
 def negotiate(unit, current, offered, catalog, program, token='', ref=''):
     hazard=current.get('hazard_probability',.15)
     floor=protected_floor(unit,program.p,hazard)
@@ -121,7 +139,7 @@ def negotiate(unit, current, offered, catalog, program, token='', ref=''):
     return q if q['price']<current['price'] else current
 
 
-def sale_quote(unit, catalog, program, intel=None, token='', ref='', *, record=True):
+def sale_quote(unit, catalog, program, intel=None, token='', ref='', *, record=True, holdings=1):
     base=public_price(unit,catalog)  # Also validates expiry and grade.
     hours=(unit['expires_at']-time.time())/3600 if unit.get('expires_at') else None
     warranty=warranty_hours(unit,program)
@@ -153,10 +171,18 @@ def sale_quote(unit, catalog, program, intel=None, token='', ref='', *, record=T
             elif quotes>=5 and sold==0 and competitors+substitutes>0:
                 adjustment=.98
             base=math.ceil(base*adjustment)
+    recent_sales=program.db.execute(
+        'SELECT COUNT(*) FROM sales WHERE sku=? AND settled>? AND refunded=0',
+        (unit['sku'],time.time()-21600)).fetchone()[0]
+    markdown=liquidation_discount(unit,holdings,recent_sales)
     hazard,hazard_basis=observed_hazard(intel,program.p.get('shop_name','25512088'))
     floor=protected_floor(unit,program.p,hazard)
+    if markdown:
+        base=max(floor,math.ceil(base*(1-markdown)))
     q=program.quote(max(base,floor),unit['cost'],token=token,ref=ref)
     q['warranty_hours']=warranty;q['hazard_probability']=hazard;q['hazard_basis']=hazard_basis
+    q['liquidation']=bool(markdown);q['liquidation_discount']=markdown
+    q['liquidation_basis']='excess_stock_no_own_sale_6h' if markdown else None
     if q['price']*((1-hazard) if q['warranty_hours'] else 1)-q['reward'] < unit['cost']+math.ceil(unit['cost']*.09):
         raise ValueError('Net margin guard rejected quote')
     if intel and record:
@@ -166,6 +192,8 @@ def sale_quote(unit, catalog, program, intel=None, token='', ref='', *, record=T
                        'quotes_6h':quotes,'sales_6h':sold,
                        'warranty_hours':warranty,
                        'hazard_probability':hazard,'hazard_basis':hazard_basis,
+                       'holdings':holdings,'recent_sales_6h':recent_sales,
+                       'liquidation':bool(markdown),'liquidation_discount':markdown,
                        'source':'settlement_median' if comp['median'] else 'grade_formula_cost_protected'})
     return q
 
