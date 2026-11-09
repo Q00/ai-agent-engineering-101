@@ -173,19 +173,28 @@ def start(cmd, cwd, out=subprocess.PIPE):
                             text=True, encoding="utf-8", errors="replace", **kw)
 
 
+def _signal_group(proc, sig):
+    """The process group when proc leads one (shell=True children), else proc alone: cloudflared is opened without
+    a session of its own, so killpg on its pid found no group and every replaced tunnel kept running (2026-11-09)."""
+    try:
+        os.killpg(proc.pid, sig)
+    except (ProcessLookupError, PermissionError):
+        proc.send_signal(sig)
+
+
 def stop(proc):
     if proc is None or proc.poll() is not None:
         return
     try:
         if os.name != "nt":
-            os.killpg(proc.pid, signal.SIGTERM)
+            _signal_group(proc, signal.SIGTERM)
         else:                                       # shell=True: kill cmd.exe and the python under it
             subprocess.run(["taskkill", "/T", "/F", "/PID", str(proc.pid)], capture_output=True)
         proc.wait(timeout=10)
     except Exception:
         try:
             if os.name != "nt":
-                os.killpg(proc.pid, signal.SIGKILL)     # the whole group: the shell and what it started
+                _signal_group(proc, signal.SIGKILL)     # the whole group: the shell and what it started
             else:
                 proc.kill()
             proc.wait(timeout=5)
