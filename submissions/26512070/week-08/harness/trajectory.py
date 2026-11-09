@@ -12,6 +12,7 @@ tool calls join by pid; the seller serves many tasks in one process, so its tool
 T1 adds (registry.call stamps them).
 """
 import json
+import os
 import sys
 import time
 from collections import defaultdict
@@ -42,14 +43,33 @@ def read_day(day, days=1):
         wanted.append(next_day(wanted[-1]))
     for src in ROLE_SOURCES:
         for f in sorted(f for d in wanted for f in (paths.raw() / src).glob(f"*-{d}.jsonl")):
-            with open(f, encoding="utf-8") as fh:
-                for line in fh:
-                    try:
-                        evs.append(json.loads(line))
-                    except ValueError:
-                        continue            # a half-written last line
+            for line in _lines(f):
+                try:
+                    evs.append(json.loads(line))
+                except ValueError:
+                    continue                # a half-written last line
     evs.sort(key=lambda e: e["ts"])
     return evs
+
+
+def _lines(f):
+    """The file's lines. Appenders lock one byte while they write (core.atomic); a writer that never released its
+    lock made every read fail (11/9 00:30-09:20), so a locked file is read piece by piece and the locked 1 KB piece
+    is skipped (the lines it cuts are dropped as broken JSON)."""
+    try:
+        with open(f, encoding="utf-8") as fh:
+            return fh.readlines()
+    except PermissionError:
+        out = []
+        with open(f, "rb", buffering=0) as fh:
+            size = os.fstat(fh.fileno()).st_size
+            for pos in range(0, size, 1024):
+                fh.seek(pos)
+                try:
+                    out.append(fh.read(1024))
+                except PermissionError:
+                    out.append(b"\n")
+        return b"".join(out).decode("utf-8", "replace").splitlines(True)
 
 
 def _new(tid, role, ev):

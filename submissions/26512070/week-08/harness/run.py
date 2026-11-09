@@ -67,10 +67,14 @@ def start_meta():
     lock.write_text(str(time.time()), encoding="utf-8")
     code = "from harness import meta; import pathlib, sys\ntry:\n    meta.cycle()\nfinally:\n" \
            f"    pathlib.Path({str(lock)!r}).unlink(missing_ok=True)"
+    log = open(HERE / "logs" / "meta-console.log", "a", encoding="utf-8")   # 11/9: a silent crash hid 9 h of cycles
+    log.write(f"--- {time.strftime('%m-%d %H:%M:%S')} meta start\n")
+    log.flush()
     p = subprocess.Popen([sys.executable, "-c", code], cwd=HERE, stdin=subprocess.DEVNULL,
-                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                         stdout=log, stderr=log,
                          **({"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP} if os.name == "nt"
                             else {"start_new_session": True}))
+    log.close()
     return {"started": p.pid}
 
 

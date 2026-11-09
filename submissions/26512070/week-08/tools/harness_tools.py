@@ -138,8 +138,8 @@ def model_usage(ctx):
 _REQUEST = {"type": "object", "required": list(wisdom.REQUIRED), "properties": {
     "title": {"type": "string", "minLength": 1, "maxLength": 120}, "urgency": {"enum": ["now", "page"]},
     "change": {"type": "object"}, "why": {"type": "string", "minLength": 1, "maxLength": 1200},
-    "expected": {"type": "object", "required": ["metric", "direction"]},       # size, period_h: filled when
-    "evaluation": {"type": "object", "required": ["method", "success_if"]},    # missing (11:00, 11:30 refusals)
+    "expected": {"type": "object", "required": ["metric"]},    # direction, size, success_if, period_h: filled when
+    "evaluation": {"type": "object", "required": ["method"]},  # missing (11/8: 14 of 23 cycles ended refused on them)
     "risk": {"type": "string", "maxLength": 400}, "undo": {"type": "string", "maxLength": 300}}}
 
 
@@ -154,6 +154,9 @@ def meta_propose(ctx, report, requests):
     from harness import autopilot
     for r in requests:
         r["expected"].setdefault("size", "")
+        si = r["evaluation"].get("success_if")
+        r["expected"].setdefault("direction", si.get("direction", "up") if isinstance(si, dict) else "up")
+        r["evaluation"].setdefault("success_if", {"direction": r["expected"]["direction"], "by": 0.05})
         r["evaluation"].setdefault("period_h", 0.5 if autopilot.on() else 3)   # user 11/8: 30-minute tests
     if len(requests) > 2:                      # core.schema does not check maxItems
         raise Refused(f"{len(requests)} requests; at most 2", "keep the two the evidence supports best")

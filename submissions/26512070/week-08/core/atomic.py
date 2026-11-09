@@ -13,6 +13,7 @@ import contextlib
 import json
 import os
 import tempfile
+import threading
 import time
 from pathlib import Path
 
@@ -107,18 +108,26 @@ class Appender:
 
     def __init__(self):
         self.path, self.f = None, None
+        # 11/9: the seller's threads share one writer; at the day change byte 0 of the new day's file stayed
+        # locked and every reader of it (the meta cycle) failed for 9 h - one thread at a time
+        self.mu = threading.Lock()
 
     def append(self, path, line: str):
         if "\n" in line:
             raise ValueError("append takes a single line")
         path = Path(path)
-        if path != self.path:
-            self.close()
-            path.parent.mkdir(parents=True, exist_ok=True)
-            self.f, self.path = open(path, "a+b"), path
-        _append_locked(self.f, (line + "\n").encode("utf-8"))
+        with self.mu:
+            if path != self.path:
+                self._close()
+                path.parent.mkdir(parents=True, exist_ok=True)
+                self.f, self.path = open(path, "a+b"), path
+            _append_locked(self.f, (line + "\n").encode("utf-8"))
 
     def close(self):
+        with self.mu:
+            self._close()
+
+    def _close(self):
         if self.f is not None:
             self.f.close()
         self.path, self.f = None, None
