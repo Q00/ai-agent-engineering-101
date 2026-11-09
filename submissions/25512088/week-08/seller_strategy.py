@@ -101,7 +101,7 @@ def observed_hazard(intel,shop_name='25512088'):
     return .15,'conservative-unmeasured'
 
 
-def liquidation_discount(unit, holdings, recent_sales_6h, now=None):
+def liquidation_discount(unit, holdings, recent_sales_6h, now=None, failed_quotes_6h=0):
     """Bounded markdown for capital trapped in evidenced excess stock.
 
     A small or selling cohort is never discounted.  The ladder changes only
@@ -113,6 +113,9 @@ def liquidation_discount(unit, holdings, recent_sales_6h, now=None):
         return 0.0
     age=max(0,now-supplied)
     if age<6*3600:return 0.0
+    # Do not wait for the time ladder when buyers have already rejected the
+    # marked-down cohort.  The protected floor below remains the hard bound.
+    if failed_quotes_6h>=2:return .25
     if age<12*3600:return .05
     if age<24*3600:return .10
     if age<48*3600:return .15
@@ -174,7 +177,7 @@ def sale_quote(unit, catalog, program, intel=None, token='', ref='', *, record=T
     recent_sales=program.db.execute(
         'SELECT COUNT(*) FROM sales WHERE sku=? AND settled>? AND refunded=0',
         (unit['sku'],time.time()-21600)).fetchone()[0]
-    markdown=liquidation_discount(unit,holdings,recent_sales)
+    markdown=liquidation_discount(unit,holdings,recent_sales,failed_quotes_6h=quotes)
     hazard,hazard_basis=observed_hazard(intel,program.p.get('shop_name','25512088'))
     floor=protected_floor(unit,program.p,hazard)
     if markdown:
