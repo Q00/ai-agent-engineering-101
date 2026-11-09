@@ -242,7 +242,8 @@ class Settings(unittest.TestCase):
         section = json.loads(Path(standing_ask.ab.CONFIG).read_text(encoding="utf-8"))["standing_ask_at_floor"]
         self.assertEqual((section["share"], section["salt"]), (.8, "sa1"))
         # Installed off at 11:50:26 KST 11-09; switched on in its own commit after the full suite.
-        self.assertIs(section["enabled"], True)
+        # Switched off 11-09 16:06 KST: a test-arm receipt problem (invalid_receipt) is a stop signal.
+        self.assertIs(section["enabled"], False)
 
 
 if __name__ == "__main__":
