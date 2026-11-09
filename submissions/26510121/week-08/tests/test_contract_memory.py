@@ -20,6 +20,11 @@ def test_price_only_reply_retains_grade_and_explicit_zero_warranty():
     assert first['ask'] == 7000 and second['ask'] == 6500
 
 
+def test_null_fields_cannot_erase_known_risk_or_expiration():
+    known={'grade':'C','warranty_hours':0,'expires_at':500}
+    assert retain_quote_terms(known,{'grade':None,'warranty_hours':None,'expires_at':None},100)==known
+
+
 def test_relative_shelf_life_ages_instead_of_refreshing_on_counters():
     first = retain_quote_terms({}, {'unit':'u','hours_left':2}, 100)
     assert retain_quote_terms(first, {'ask':50}, 500)['expires_at'] == 7300
@@ -73,5 +78,7 @@ def test_execute_keeps_c_grade_and_zero_warranty_through_price_only_counter(tmp_
     out=market_buyer.execute({'order':'o','kind':'goods','budget':10000,'acceptable':['G123abc'],'expires':now+120},
         j,Choose(),Peer,cfg(),{'version':1},{candidate['shop']:{'pubkey':pub(key)}},[candidate],
         now+30,{'c':(peer,initial)},1,{'receipt':None})
-    assert peer.calls==2 and observed[:2]==[('C',0),('C',0)]
-    assert out['receipt'] and out['accept']['grades']==['C'] and out['accept']['warranty_hours']==0
+    # Once C/zero coverage is retained, the unchanged above-cap ask has no
+    # useful second counter. The old reset instead accepted and hit final guard.
+    assert peer.calls==1 and observed[:2]==[('C',0),('C',0)]
+    assert out['receipt'] is None and j.events('attempt')[0]['kind']=='no_agreement'

@@ -132,7 +132,7 @@ def retain_quote_terms(previous, current, now=None):
     """
     now = time.time() if now is None else now
     old = dict(previous)
-    new = dict(current)
+    new = {key:value for key,value in current.items() if value is not None}
     if old.get('sku') and new.get('sku') and old['sku'] != new['sku']:
         raise ValueError('quote_sku_mismatch')
     replacement = old.get('unit') and new.get('unit') and old['unit'] != new['unit']
