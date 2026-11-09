@@ -8,6 +8,7 @@ import argparse
 import base64
 import json
 import os
+import sqlite3
 import time
 from pathlib import Path
 from urllib.request import urlopen
@@ -55,6 +56,7 @@ def sync(program, urls):
                 raise ValueError('Market ledger is not ordered')
             program.settle(row, urls)
             program.review(row, urls)
+            program.release_failed(row, urls)
             # Stop maturity on unfamiliar refund events instead of guessing.
             if 'refund' in str(row.get('kind', '')).lower():
                 d = row.get('data', {})
@@ -65,6 +67,33 @@ def sync(program, urls):
             cursor = row['seq']
             program.put('cursor', cursor)
     return False  # Backlog remains: never mature using wall-clock time alone.
+
+
+def recover_failed_sales(program, urls, state):
+    """Replay narrow public-ledger windows around unresolved signed receipts."""
+    pending=program.db.execute('''SELECT s.task,g.ts FROM sales s JOIN growth_events g
+        ON g.task=s.task AND g.event='quote' WHERE s.ledger IS NULL ORDER BY g.ts''').fetchall()
+    intel_path=Path(state)/'market_intel.sqlite3'
+    if not pending or not intel_path.exists():return {'pending':len(pending),'rows':0,'released':0}
+    groups={}
+    for task,ts in pending:groups.setdefault(int(ts//120),[]).append((task,ts))
+    seen=set();scanned=0;released=0
+    with sqlite3.connect('file:'+str(intel_path.resolve())+'?mode=ro',uri=True) as intel:
+        for group in groups.values():
+            lo=min(ts for _,ts in group)-60;hi=max(ts for _,ts in group)+600
+            anchor=intel.execute('SELECT MAX(seq) FROM trades WHERE ts<=?',(lo,)).fetchone()[0]
+            cursor=max(-1,(anchor or 0)-25)
+            for _ in range(5):
+                rows=fetch(program.p['market_url'],'/api/ledger?after='+str(cursor))
+                if not rows:break
+                for row in rows:
+                    seq=row.get('seq')
+                    if type(seq) is int and seq not in seen:
+                        seen.add(seq);scanned+=1
+                        released+=program.release_failed(row,urls)
+                cursor=max(r['seq'] for r in rows if type(r.get('seq')) is int)
+                if len(rows)<500 or max((r.get('ts',0) for r in rows),default=0)>hi:break
+    return {'pending':len(pending),'rows':scanned,'released':released}
 
 
 def campaign_text(program, inventory, rotation=0):
@@ -167,7 +196,13 @@ if __name__ == '__main__':
     ap.add_argument('--key', default='shop_key.pem')
     ap.add_argument('--once', action='store_true')
     ap.add_argument('--no-post', action='store_true')
+    ap.add_argument('--recover-failed', action='store_true')
     args = ap.parse_args()
+    if args.recover_failed:
+        p=Program(args.state)
+        try:print(json.dumps(recover_failed_sales(p,shop_urls(p,args.key),args.state),sort_keys=True))
+        finally:p.close()
+        raise SystemExit(0)
     while True:
         try:
             tick(args.state, args.key, publish=not args.no_post)

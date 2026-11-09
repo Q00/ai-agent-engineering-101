@@ -104,6 +104,31 @@ class ReferralTests(unittest.TestCase):
             self.program.db.execute("INSERT INTO quote_holds VALUES('quote-only','free-unit',9999999999)")
         self.assertNotIn('free-unit',self.program.reserved_units())
 
+    def test_official_failed_result_releases_signed_inventory_and_is_idempotent(self):
+        q=self.program.quote(10000,8000)
+        self.program.accept('failed-task','failed-unit','sku',8000,q,enroll=False)
+        with self.program.db:
+            self.program.db.execute("INSERT INTO warranties VALUES('failed-task',10000,1000)")
+        row=dict(seq=500,ts=1100,kind='result',round=3,data=dict(
+            shop='https://ours',verified=False,checks={'settled':False},
+            receipt=dict(task='failed-task',unit='failed-unit',item='sku',price=10000)))
+        self.assertTrue(self.program.release_failed(row,['https://ours']))
+        self.assertNotIn('failed-unit',self.program.reserved_units())
+        self.assertEqual(self.program.db.execute('SELECT COUNT(*) FROM failed_sales').fetchone()[0],1)
+        self.assertEqual(self.program.db.execute('SELECT COUNT(*) FROM warranties WHERE task=?',('failed-task',)).fetchone()[0],0)
+        self.assertFalse(self.program.release_failed(row,['https://ours']))
+
+    def test_unconfirmed_or_mismatched_result_never_releases_inventory(self):
+        q=self.program.quote(10000,8000)
+        self.program.accept('pending','pending-unit','sku',8000,q,enroll=False)
+        base=dict(seq=501,ts=1100,kind='result',round=3,data=dict(
+            shop='https://ours',verified=False,checks={'settled':True},
+            receipt=dict(task='pending',unit='pending-unit',item='sku',price=10000)))
+        self.assertFalse(self.program.release_failed(base,['https://ours']))
+        base['data']['checks']['settled']=False;base['data']['receipt']['price']=9999
+        self.assertFalse(self.program.release_failed(base,['https://ours']))
+        self.assertIn('pending-unit',self.program.reserved_units())
+
     def test_public_referral_code_cannot_unlock_private_membership(self):
         a, _, _ = self.buy('A')
         code = self.program.status(a)['referral_code']
@@ -139,6 +164,18 @@ class ReferralTests(unittest.TestCase):
         with patch('seller_forum.fetch', side_effect=[[row], []]), patch('seller_forum.time.time', return_value=1200):
             self.assertTrue(sync(self.program, ['https://ours']))
         self.assertEqual(self.program.status(a)['credit'], 400)
+
+    def test_worker_consumes_official_failed_result(self):
+        self.program.put('cursor',0)
+        q=self.program.quote(10000,8000)
+        self.program.accept('failed','failed-unit','sku',8000,q,enroll=False)
+        row=dict(seq=2,ts=1000,kind='result',round=3,data=dict(
+            shop='https://ours',verified=False,checks={'settled':False},
+            receipt=dict(task='failed',unit='failed-unit',item='sku',price=10000)))
+        with patch('seller_forum.fetch',side_effect=[[row],[]]),patch('seller_forum.time.time',return_value=1200):
+            self.assertTrue(sync(self.program,['https://ours']))
+        self.assertNotIn('failed-unit',self.program.reserved_units())
+        self.assertEqual(self.program.db.execute('SELECT COUNT(*) FROM failed_sales').fetchone()[0],1)
 
 
 if __name__ == '__main__':

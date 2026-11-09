@@ -38,6 +38,10 @@ class Program:
         CREATE TABLE IF NOT EXISTS meta(key TEXT PRIMARY KEY, value TEXT);
         CREATE TABLE IF NOT EXISTS growth_events(
           task TEXT, event TEXT, ts REAL, PRIMARY KEY(task,event));
+        CREATE TABLE IF NOT EXISTS failed_sales(
+          task TEXT PRIMARY KEY, unit TEXT, sku TEXT, amount INTEGER, cost INTEGER,
+          result_seq INTEGER UNIQUE, result_ts REAL, reason TEXT);
+        CREATE TABLE IF NOT EXISTS warranties(task TEXT PRIMARY KEY, amount INTEGER, issued REAL);
         ''')
         frozen = self.get('policy_snapshot')
         if frozen is not None and frozen != self.p:
@@ -143,6 +147,29 @@ class Program:
         # A quote is not a sale promise. Only atomically accepted receipts reserve
         # inventory; otherwise abandoned negotiations can hide most live stock.
         return {r[0] for r in self.db.execute('SELECT unit FROM sales')}
+
+    def release_failed(self, row, shop_urls):
+        """Release only a receipt the official ledger finalized as not settled."""
+        d=row.get('data') or {};checks=d.get('checks') or {};receipt=d.get('receipt') or {}
+        if (row.get('kind')!='result' or row.get('round')!=3 or d.get('shop') not in shop_urls
+                or d.get('verified') is not False or checks.get('settled') is not False
+                or not isinstance(receipt,dict)):
+            return False
+        task=receipt.get('task');unit=receipt.get('unit')
+        if not task or not unit:return False
+        with self.db:
+            self.db.execute('BEGIN IMMEDIATE')
+            sale=self.db.execute('SELECT * FROM sales WHERE task=? AND ledger IS NULL',(task,)).fetchone()
+            if (not sale or sale['unit']!=unit or sale['sku']!=receipt.get('item')
+                    or sale['amount']!=receipt.get('price')):
+                return False
+            self.db.execute('''INSERT OR IGNORE INTO failed_sales
+                (task,unit,sku,amount,cost,result_seq,result_ts,reason)
+                VALUES(?,?,?,?,?,?,?,?)''',(sale['task'],sale['unit'],sale['sku'],sale['amount'],sale['cost'],
+                    row.get('seq'),row.get('ts'),'official_result_not_settled'))
+            self.db.execute('DELETE FROM warranties WHERE task=?',(task,))
+            self.db.execute('DELETE FROM sales WHERE task=? AND ledger IS NULL',(task,))
+        return True
 
     def settle(self, row, shop_urls):
         d = row.get('data', {})
