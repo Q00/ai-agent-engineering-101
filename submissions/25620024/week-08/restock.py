@@ -202,7 +202,11 @@ def plan(md, c, t, now=None):
     spent = st.get("spent", 0) if st.get("window") == wid else 0
     cash = min(cash, t["window_budget"] * start - spent)
     n_mkt = dict(c.execute("select sku, count(*) from settles where ts>? group by sku", (now - 24 * 3600,)).fetchall())
-    n_ours = dict(c.execute("select sku, count(*) from quotes where outcome='deal' group by sku").fetchall())
+    # 11-10 bug fix: our deals were counted over all time against the market's last 24 h, so a SKU we had sold for a
+    # week read as a 100% share -- target = the whole market's rate x 24 h (1,025 bedding sets selling 12 a day).
+    # Both now count the same 24 h.
+    n_ours = dict(c.execute("select sku, count(*) from quotes where outcome='deal' and ts>? group by sku",
+                            (now - 24 * 3600,)).fetchall())
     by_sku, by_cat = market_model.rates(c, now=now)
     heroes = [k for k, _ in sorted(by_sku.items(), key=lambda kv: -kv[1])[:t["heroes"]]]
     buy, why = {}, []

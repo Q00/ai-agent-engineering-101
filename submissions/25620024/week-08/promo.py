@@ -163,7 +163,14 @@ def quote(c, unit, code=None, me=None, now=None, stock_n=1, vip=False):
             arm, price, why = o["price_share"], lp * o["price_share"], why + [f"experiment price_share {o['price_share']}"]
         if "undercut" in o:
             follow = o["undercut"]
-    if lp >= t.get("big_follow_list", 500000):  # 11-07: HQ big_follow is the least undercut on furniture, even for SKUs
+    # 11-10: overstock -- a SKU we hold more than 48 h of our own sales of (a share bug bought 1,025 bedding sets that
+    # sell 12 a day) follows the market like furniture: 4% under its grade median, down to 8% under cost
+    over = False
+    if stock_n > 1 and unit.get("kind") == "goods":
+        rate_ = market_model.our_sales(c, unit["sku"])
+        over = (stock_n / rate_ if rate_ > 0 else float("inf")) >= t.get("overstock_h", 48)
+    dear = lp >= t.get("big_follow_list", 500000) or over
+    if dear:                                    # 11-07: HQ big_follow is the least undercut on furniture, even for SKUs
         follow = max(follow or 0, t.get("big_follow", 0.02))   # the sales plan follows at 2%    # 11-07: furniture sells at ~0.70-0.74 of list market-wide; our arms (0.80+)
                                               # would never sell the dear SKUs restock now buys -- follow their median
     if follow is not None:
@@ -215,10 +222,10 @@ def quote(c, unit, code=None, me=None, now=None, stock_n=1, vip=False):
         floor = int(cost * (1 + min(t["min_margin"], t["clear_floor_margin"]))) + 1   # clearing may go lower
     if follow and median:
         fm = t["follow_margin"]
-        if lp >= t.get("big_follow_list", 500000):   # 11-07: Book counts unsold stock at cost, so a dear unit whose cost
+        if dear:                                      # 11-07: Book counts unsold stock at cost, so a dear unit whose cost
             fm = min(fm, t.get("big_follow_margin", 0.03))   # sits above the market median sells near cost: Book
         floor = min(floor, int(cost * (1 + fm)) + 1)          # keeps +3%, revenue (0.3) gets the whole price
-        if lp >= t.get("big_follow_list", 500000) and median * (1 - follow) < cost:
+        if dear and median * (1 - follow) < cost:
             # 11-08: a dear unit bought above its grade's market price costs 1% a day to hold (storage), ~9% to the
             # round's end, so it goes at the market price now if that loses at most big_loss_max of cost
             floor = min(floor, int(cost * (1 - t.get("big_loss_max", 0.08))) + 1)
