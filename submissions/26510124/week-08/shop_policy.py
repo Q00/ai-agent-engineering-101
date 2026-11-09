@@ -28,6 +28,15 @@ def policy_at(root=ROOT):
                 or any(type(n) is not int or not 0 <= n <= upper for n in values.values())):
             raise ValueError("Invalid shop policy: " + field)
     margins = cfg["grade_margin_percent"]
+    trial = cfg.get("b_warranty_trial", {"enabled": False})
+    if not isinstance(trial, dict) or type(trial.get("enabled")) is not bool:
+        raise ValueError("Invalid B warranty trial")
+    for key, low, high in (("min_mature_sales", 5, 100), ("max_refund_percent", 0, 10),
+                           ("reserve_percent", 10, 30), ("min_net_margin_percent", 5, 20)):
+        if trial["enabled"] or key in trial:
+            value = trial.get(key)
+            if type(value) is not int or not low <= value <= high:
+                raise ValueError("Invalid B warranty trial: " + key)
     if not margins["A"] >= margins["B"] >= margins["C"]:
         raise ValueError("Higher grades must not have lower floor margins")
     opening = cfg.get("opening")
@@ -76,12 +85,21 @@ def policy_at(root=ROOT):
         if type(n) is not int or not low <= n <= high:
             raise ValueError("Invalid restock policy: " + key)
     validate_budget(stock)
+    recovery = stock.get("refund_recovery", {"enabled": False})
+    if not isinstance(recovery, dict) or type(recovery.get("enabled")) is not bool:
+        raise ValueError("Invalid refund recovery policy")
+    for key, low, high in (("min_mature_sales", 10, 100), ("max_refund_percent", 1, 10),
+                           ("min_net_margin_percent", 5, 50)):
+        if recovery["enabled"] or key in recovery:
+            value = recovery.get(key)
+            if type(value) is not int or not low <= value <= high:
+                raise ValueError("Invalid refund recovery policy: " + key)
     adaptive = stock.get("adaptive_goods")
     if adaptive is not None:
         if not isinstance(adaptive, dict) or type(adaptive.get("enabled")) is not bool:
             raise ValueError("Invalid adaptive inventory policy")
-        for key, low, high in (("max_candidates", 1, 12), ("max_retained_skus", 6, 32),
-                               ("max_units_per_run", 1, 8), ("low_stock_units", 1, 20),
+        for key, low, high in (("max_candidates", 1, 18), ("max_retained_skus", 6, 32),
+                               ("max_units_per_run", 1, 8), ("low_stock_units", 1, 30),
                                ("minimum_public_sales", 3, 100), ("minimum_public_buyers", 2, 20),
                                ("minimum_public_shops", 2, 20)):
             value = adaptive.get(key)
@@ -218,6 +236,9 @@ def quote_copy(product, price, terms, advice=None, *, final=False):
 def shop_copy(policy, advice=None):
     guarantees = [f"{grade}-grade goods: {hours}-hour breakage warranty"
                   for grade, hours in policy["goods_warranty_hours"].items() if hours]
-    terms = "; ".join(guarantees) + ". Other products have no breakage warranty." if guarantees else "No breakage warranty offered."
+    terms = "; ".join(guarantees) + "." if guarantees else "No standard breakage warranty."
+    if policy.get("b_warranty_trial", {}).get("enabled"):
+        terms += " Selected B-grade goods may carry 6-hour coverage; check the quoted unit's terms."
+    terms += " No warranty unless stated in the quote."
     return ("Inventory shop: ask by SKU. Market certificates and signed receipts. "
             + FOCUS_COPY.get((advice or {}).get("focus"), FOCUS_COPY["clarity"]) + " " + terms)

@@ -113,8 +113,9 @@ def plan(inv, catalog, demand, memory, attempts, cfg, now, public=None, *, lifec
     paused |= {sku for sku, m in lifecycle_stats.items()
                if m["unresolved_cost"] > 0 or m["held_expired_cost"] > 0}
     adaptive_rules = adaptive_config(cfg)
+    candidate_exclusions = {}
     adaptive = (adaptive_candidates(inv, catalog, categories, economics, cfg, now, public, paused=paused,
-                                   allowed=adaptive_control)
+                                   allowed=adaptive_control, diagnostics=candidate_exclusions)
                 if adaptive_rules and len(inv["units"]) < adaptive_rules["low_stock_units"]
                 and stage["allow_exploration"] else {})
     candidates.update({sku: row["product"] for sku, row in adaptive.items()})
@@ -306,6 +307,9 @@ def plan(inv, catalog, demand, memory, attempts, cfg, now, public=None, *, lifec
         "exposure": exposure.summary(), "horizon": stage,
         "focused_goods": focused,
         "adaptive_goods": {"enabled": bool(adaptive_rules),
+            "exclusion_counts": dict(Counter(candidate_exclusions.values())),
+            "excluded_candidates": dict(list(candidate_exclusions.items())[:32]),
+            "excluded_candidates_truncated": len(candidate_exclusions) > 32,
             "max_units_per_run": adaptive_rules["max_units_per_run"] if adaptive_rules else None,
             "low_stock_units": adaptive_rules["low_stock_units"] if adaptive_rules else None,
             "observed_stock_units": len(inv["units"]), "pool": {

@@ -12,6 +12,7 @@ from focused_stock import observe_control, proven
 from market_evidence import demand_profiles
 from stock_budget import StockBudget
 from supply_pricing import surge_factors, worst_cost
+from replenishment_profit import refund_recovery
 
 SKU = re.compile(r"[GF][0-9a-f]{8}\Z")
 
@@ -41,7 +42,7 @@ def depth_evidence(metric, cfg, kind="goods"):
     maximum = rules.get("proven_max_units_per_sku", 1)
     if type(maximum) is not int or not 1 <= maximum <= 2:
         raise ValueError("Invalid adaptive proven depth")
-    if not proven(metric, cfg["min_mature_sales"]):
+    if not (proven(metric, cfg["min_mature_sales"]) or refund_recovery(metric, cfg)):
         return evidence
     baseline = min(maximum, cfg["max_units_per_sku"], 2)
     evidence.update(depth_cap=baseline, depth_reason="proven_baseline")
@@ -66,7 +67,7 @@ def depth_cap(metric, cfg, kind="goods"):
     return depth_evidence(metric, cfg, kind)["depth_cap"]
 
 
-def candidates(inv, catalog, categories, economics, cfg, now, public, *, paused=(), allowed=None):
+def candidates(inv, catalog, categories, economics, cfg, now, public, *, paused=(), allowed=None, diagnostics=None):
     """Return a bounded pool of eligible alternatives, never arbitrary stock."""
     rules = configuration(cfg)
     if not rules:
@@ -85,35 +86,47 @@ def candidates(inv, catalog, categories, economics, cfg, now, public, *, paused=
     turnover_rules = rules.get("turnover_goods", {})
     turnover_enabled = isinstance(turnover_rules, dict) and turnover_rules.get("enabled") is True
     ranked, food_ranked, turnover_ranked = [], [], []
+    def reject(sku, reason):
+        if diagnostics is not None:
+            diagnostics[sku] = reason
     for sku, profile in profiles.items():
         if sku in excluded or allowed is not None and sku not in allowed:
+            reject(sku, "focused_paused_or_control_capacity")
             continue
         product = catalog.get(sku)
         if (not isinstance(sku, str) or not SKU.fullmatch(sku) or not isinstance(product, dict)
                 or product.get("kind") not in ("goods", "food") or product.get("category") not in categories
                 or type(product.get("list_price")) is not int or product["list_price"] <= 0):
+            reject(sku, "catalog_or_category_unavailable")
             continue
         is_food = product["kind"] == "food"
         if is_food and (not food_enabled or product["list_price"] > food_rules["max_list_price"]
                         or not number(product.get("shelf_hours"))
                         or product["shelf_hours"] < food_rules["min_shelf_hours"]):
+            reject(sku, "food_shelf_life_or_price_limit")
             continue
         thresholds = food_rules if is_food else rules
         if (profile["sales"] < thresholds["minimum_public_sales"]
                 or profile["buyers"] < thresholds["minimum_public_buyers"]
                 or profile.get("named_shops", 0) < rules["minimum_public_shops"]
                 or factors.get(sku, 1.0) > rules["max_surge_factor"]):
+            reject(sku, "surge_above_limit" if factors.get(sku, 1.0) > rules["max_surge_factor"]
+                   else "insufficient_fresh_public_demand")
             continue
         own = economics.get(sku, {})
-        if (own.get("unknown", 0) or own.get("refunded", 0)
+        recovered = refund_recovery(own, cfg)
+        if (own.get("unknown", 0) or own.get("refunded", 0) and not recovered
                 or own.get("mature", 0) and own.get("net_estimate", 0) <= 0):
+            reject(sku, "unknown_cost_or_unprofitable_refund_history")
             continue
         depth = depth_evidence(own, cfg, product["kind"])
         cap = depth["depth_cap"]
         if held[sku] >= cap:
+            reject(sku, "held_depth_limit")
             continue
         costed = {**product, "worst_cost": worst_cost(product["list_price"])}
         if costed["worst_cost"] > budget or exposure.reason(sku, costed) is not None:
+            reject(sku, exposure.reason(sku, costed) or "cash_reserve")
             continue
         pressure = profile.get("sample_to_stock_ratio")
         measured = number(pressure) and pressure >= 0
@@ -125,6 +138,7 @@ def candidates(inv, catalog, categories, economics, cfg, now, public, *, paused=
                            if p["grade"] == "A" and p["warranty_hours"] == 6), None)
         quality_price = (comparable["price"] / product["list_price"] if comparable else 0)
         evidence = {"kind": product["kind"], **depth,
+                    "refund_recovery": recovered,
                     "own_mature": own.get("mature", 0), "own_net_estimate": own.get("net_estimate", 0),
                     "sales": profile["sales"], "buyers": profile["buyers"],
                     "named_shops": profile["named_shops"], "observed_shop_urls": profile["shops"],

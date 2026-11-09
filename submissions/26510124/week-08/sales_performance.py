@@ -200,11 +200,12 @@ def sku_metrics(memory, now):
     for s in memory.get("sales", []):
         g = groups.setdefault(s["sku"], {"settled": 0, "mature": 0, "pending": 0, "unknown": 0,
                                        "net_estimate": 0, "speed_score": 0, "hours_sum": 0,
-                                       "refunded": 0})
+                                       "refunded": 0, "mature_revenue": 0})
         g["settled"] += 1
         e = economics(s, now)
         if e["status"] == "mature_estimate":
             g["mature"] += 1
+            g["mature_revenue"] += s["price"]
             g["net_estimate"] += e["net_estimate"]
             g["speed_score"] += e["roi_per_day_estimate"]
             g["hours_sum"] += e["hours_to_sell"]

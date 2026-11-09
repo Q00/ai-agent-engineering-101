@@ -21,6 +21,7 @@ from sales_advisor import AdviceReader, config_at
 from shop_policy import closing_context, policy_at, quote_copy, selling_terms, shop_copy
 from seller_agent import DEFAULT, Seller, bounded_history, build
 from seller_context import inventory_context
+from warranty_trial import WarrantyTrial
 
 ROOT = Path(__file__).resolve().parent
 
@@ -79,6 +80,7 @@ class InventorySeller(Seller):
         self.r3 = {}
         self.policy = cfg.get("shop_policy") or policy_at()
         self.openings = OpeningReader(self.inventory.folder)
+        self.warranty_trial = WarrantyTrial(self.inventory.folder)
         # A retained strategy cache cannot reactivate an intentionally disabled
         # analyst, even if a stale caller still passes advisor_enabled=True.
         self.advisor = (AdviceReader(self.inventory.folder)
@@ -195,7 +197,8 @@ class InventorySeller(Seller):
                                           "round": rnd, "advice": advice,
                                           "product": {k: product.get(k) for k in
                                                       ("unit", "sku", "category", "cost", "kind", "grade", "supplied_at", "expires_at")},
-                                          "terms": selling_terms(product, self.policy)}
+                                          "terms": self.warranty_trial.terms(
+                                              product, selling_terms(product, self.policy), self.policy, rnd, now)}
                 reference = self.openings.for_product(product, deal["terms"]["warranty_hours"], rnd)
                 deal["opening_bounds"] = opening_bounds(product, deal["terms"], reference, self.policy, now, rnd=rnd)
                 self.event(task.id, "opened", product, deal=deal)
