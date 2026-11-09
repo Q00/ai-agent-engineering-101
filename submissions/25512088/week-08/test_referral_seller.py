@@ -100,12 +100,20 @@ class SellerIntegrationTests(unittest.IsolatedAsyncioTestCase):
                         body=response.json()['result'];return body.get('task',body)
                     quote=await send('G99999')
                     self.assertIn('warranty 6 h',json.dumps(quote))
+                    # Repeated messages on one inquiry must not become extra
+                    # procurement demand or failed conversion trials.
+                    for _ in range(5):
+                        refreshed=await send('Please confirm the price',quote['id'])
+                        self.assertIn('INPUT_REQUIRED',refreshed['status']['state'])
                     done=await send('15000',quote['id'])
                     self.assertIn('COMPLETED',done['status']['state'])
                     receipt=done['artifacts'][0]['parts'][0]['data']
                     self.assertEqual(receipt['warranty_hours'],6)
                     self.assertEqual(receipt['price'],15000)
                     self.assertEqual(receipt['claim'],'B')
+                    with sqlite3.connect(state/'market_intel.sqlite3') as db:
+                        self.assertEqual(db.execute(
+                            "SELECT COUNT(*) FROM decisions WHERE role='seller_quote'").fetchone()[0],1)
                     program=Program(state)
                     try:self.assertEqual(program.db.execute('select amount from warranties').fetchone()[0],15000)
                     finally:program.close()
