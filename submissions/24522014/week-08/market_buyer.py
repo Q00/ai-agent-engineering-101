@@ -162,7 +162,7 @@ def failure_reason(outcome, negotiation, decisions):
     return outcome
 
 
-def trade(shop, item, budget, *, mode="claude", transport=None, requirements=None, decision_context=None, max_turns=6, fast_rules=False, model_gate=None, accept_conditions=None, over_budget_counter=None, counter_repeat=None, catalog_list_price=None, order_item=None, price_reading=None, reference_relief=None, discount_limit=None, first_message=None, goods_grade_sentence=None):
+def trade(shop, item, budget, *, mode="claude", transport=None, requirements=None, decision_context=None, max_turns=6, fast_rules=False, model_gate=None, accept_conditions=None, over_budget_counter=None, counter_repeat=None, catalog_list_price=None, order_item=None, price_reading=None, reference_relief=None, discount_limit=None, first_message=None, goods_grade_sentence=None, standing_ask=None):
     client = MarketTransport(shop["url"], item, budget, transport=transport, timeout=180)
     client.discount_limit = discount_limit
     client.first_message = first_message
@@ -176,6 +176,7 @@ def trade(shop, item, budget, *, mode="claude", transport=None, requirements=Non
         from buyer_fast import decision
         client.price_reading = price_reading
         client.reference_relief = reference_relief
+        client.standing_ask = standing_ask
         client.rule_decision = lambda text: decision(text, client.budget, client.last_offer, seller_metadata(client.task) if price_reading else None, price_reading)
         cached = []
         def allow_model():
@@ -227,6 +228,7 @@ def trade(shop, item, budget, *, mode="claude", transport=None, requirements=Non
               "negotiation_outcome": negotiation, "decision_trail": client.decisions,
               "request_format": "sku_only", "receipt_format": receipt_format(receipt, item, order_item), "category_receipt_release": release,
               "reference_relief": getattr(client, "reference_relief_taken", None),
+              "standing_ask": getattr(client, "standing_ask_taken", None),
               "refused_at_open": client.state == "TASK_STATE_REJECTED" and not client.decisions,
               "failure_reason": failure_reason(outcome, negotiation, client.decisions),
               "buyer_log_dir": str(client.log_dir)}
@@ -273,6 +275,11 @@ def trade_attempt(args, order, catalog, pick):
                              catalog_list_price=(catalog.get(selected_item) or {}).get("list_price"))
     if order.get("kind") == "goods":
         trade_options["requirements"] = accept_conditions
+    # Option 1 (standing_ask.py): its own order hash; only the rule path can take a standing ask.
+    import standing_ask
+    standing_arm = standing_ask.arm(order.get("order"))
+    if standing_arm == "standing_ask" and support_decision.get("fast_rules"):
+        trade_options["standing_ask"] = {"order_budget": args.budget}
     message_arm = None
     if order.get("kind") == "food":
         import first_message_ab
@@ -289,6 +296,7 @@ def trade_attempt(args, order, catalog, pick):
     result, record = trade(shop, selected_item, pick["budget"], **trade_options)
     record["first_message_arm"] = message_arm
     record["goods_message_arm"] = goods_arm
+    record["standing_ask_arm"] = standing_arm
     record["round"] = 3
     record["order"] = order.get("order")
     record["order_budget"] = args.budget

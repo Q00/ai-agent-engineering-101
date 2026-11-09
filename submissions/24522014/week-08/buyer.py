@@ -311,12 +311,15 @@ def buyer_decision(client, provider, history, turn, max_turns):
                 record_decision(client, turn, "deterministic", "rule_counter_repeat", again, parser_reason)
                 return again
             if exhausted:
-                return counter_exhausted(client, turn, parser_reason)
+                return standing_ask(client, turn, parser_reason, clear_ask) or counter_exhausted(client, turn, parser_reason)
     if not any(float(number) > 0 for number in re.findall(r"-?\d+(?:\.\d+)?", text)):
         record_decision(client, turn, "parser", "no_positive_number", None, parser_reason)
         raise BuyerError("Seller input-required message has no valid asking price")
     gate = getattr(client, "model_gate", None)
     if gate and not gate():
+        taken = standing_ask(client, turn, parser_reason, clear_ask)
+        if taken:
+            return taken
         reason_code = getattr(client, "model_gate_reason", None) or "model_gate_denied"
         refused = {"action": "walk_away", "price": None,
                    "reason": f"Model negotiation unavailable ({reason_code}); no purchase forced."}
@@ -397,6 +400,63 @@ def counter_exhausted(client, turn, parser_reason=None):
     return walk
 
 
+def standing_ask(client, turn, parser_reason, clear_ask):
+    """Option 1 (standing_ask.py): at a point where this run would walk away from a clear ask over the cap, take that ask once if it
+    is within the grade-adjusted floor ceiling and the order budget and the quote passed. None otherwise, and then nothing changed."""
+    setting = getattr(client, "standing_ask", None)
+    if not setting or getattr(client, "standing_ask_taken", None) or parser_reason != "over_budget":
+        return None
+    check, order_budget = client.floor_check, setting.get("order_budget")
+    if (not check or type(clear_ask) is not int or type(order_budget) is not int or type(client.budget) is not int
+            or clear_ask <= client.budget or clear_ask > check["ceiling"] or clear_ask > order_budget):
+        return None
+    from standing_ask import MIN_SECONDS_LEFT, REASON, REASON_CODE
+    if (client.quote_check or {}).get("reason_code") or client.remaining() < MIN_SECONDS_LEFT:
+        return None
+    accepted = {"action": "offer", "price": clear_ask, "reason": REASON}
+    client.standing_ask_taken = {"ask": clear_ask, "cap_before": client.budget, "ceiling": check["ceiling"], "required": check.get("required"),
+                                 "grade": check.get("grade"), "covered": check.get("covered"), "order_budget": order_budget, "turn": turn}
+    # Only here the deal's limit moves, and only to this ask: the offer and receipt checks then hold it to exactly this price.
+    client.budget = clear_ask
+    validate_buyer_decision(accepted, client.budget)
+    record_decision(client, turn, "deterministic", REASON_CODE, accepted, parser_reason)
+    return accepted
+
+
+
+def standing_ask_after_counters(client, turn):
+    """The turn after the last allowed rule counter: read the seller's reply with the same checks as any turn, then standing_ask.
+    Off, or not taken, leaves the checks cleared exactly as the plain walk-away expects."""
+    if not getattr(client, "standing_ask", None) or getattr(client, "standing_ask_taken", None):
+        return None
+    text = seller_message(client.task)
+    reading = getattr(client, "price_reading", None)
+    metadata = seller_metadata(client.task) if reading else None
+    client.price_read = read_ask(text, metadata, reading)[2] if reading else None
+    accept = getattr(client, "accept_conditions", None)
+    client.quote_check = check_quote(client.task, text, accept) if accept else None
+    limit = getattr(client, "discount_limit", None)
+    budget = client.budget
+    if limit:
+        client.budget, client.floor_check = deal_limit(limit, (client.quote_check or {}).get("grade"), client.budget)
+    _, parser_reason, clear_ask = classify(text, client.budget, getattr(client, "last_offer", None), metadata, reading)
+    taken = standing_ask(client, turn, parser_reason, clear_ask)
+    if taken is None:
+        client.budget = budget
+        client.quote_check = client.counter_check = client.floor_check = client.counter_repeat_check = None
+        client.price_read = None
+    return taken
+
+
+def standing_ask_declined(client, turn):
+    """The seller answered our offer at its own ask with something else: walk away on the rules, as after the last counter."""
+    walk = {"action": "walk_away", "price": None,
+            "reason": "Seller did not settle at its own standing ask; no model, no purchase forced."}
+    from standing_ask import DECLINED_CODE
+    record_decision(client, turn, "deterministic", DECLINED_CODE, walk)
+    return walk
+
+
 def _repeat_on(client):
     return bool((getattr(client, "counter_repeat", None) or {}).get("enabled"))
 
@@ -413,12 +473,17 @@ def run_autonomous(client, provider, *, max_turns=12):
         turn += 1
         if turn > max_turns:
             last = client.decisions[-1].get("reason_code") if client.decisions else None
-            if not (_repeat_on(client) and last in ("rule_counter_offer", "rule_counter_repeat")):
+            if last == "rule_standing_ask":
+                client.quote_check = client.counter_check = client.floor_check = client.counter_repeat_check = None
+                decision = standing_ask_declined(client, turn)
+            elif not (_repeat_on(client) and last in ("rule_counter_offer", "rule_counter_repeat")):
                 cancel_after_turn_limit(client, turn)
                 raise BuyerError("Buyer decision turn limit exceeded")
-            # The last turn went to a rule counter the seller did not take: the same clean walk-away as running out of counters.
-            client.quote_check = client.counter_check = client.floor_check = client.counter_repeat_check = None
-            decision = counter_exhausted(client, turn)
+            else:
+                # The last turn went to a rule counter the seller did not take: the same clean walk-away as running out of counters,
+                # unless the seller's standing ask meets the floor (standing_ask.py).
+                client.quote_check = client.counter_check = client.floor_check = client.counter_repeat_check = None
+                decision = standing_ask_after_counters(client, turn) or counter_exhausted(client, turn)
         else:
             decision = buyer_decision(client, provider, history, turn, max_turns)
         history.append({"role": "buyer", "decision": decision})
