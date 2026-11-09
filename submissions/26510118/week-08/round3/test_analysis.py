@@ -1038,7 +1038,8 @@ def test_discover():
                Gsofa0002={"name": "sofa 2", "category": "가구/침구>가구>소파", "list_price": 1_000_000},
                Gsofa0003={"name": "crowded sofa", "category": "가구/침구>가구>소파", "list_price": 1_500_000},
                Gsofa0004={"name": "cheap sale", "category": "가구/침구>가구>소파", "list_price": 1_500_000},
-               Gmat00001={"name": "mattress", "category": "가구/침구>가구>침대", "list_price": 400_000})
+               Gmat00001={"name": "mattress", "category": "가구/침구>가구>침대", "list_price": 150_000},
+               Gmat00002={"name": "mid mattress", "category": "가구/침구>가구>침대", "list_price": 400_000})
 
     def sold(sku, n, ratio, shops, at=None):
         lp = cat[sku]["list_price"]
@@ -1046,7 +1047,7 @@ def test_discover():
     settles = (sold("Gsofa0001", 30, 0.80, 5) + sold("Gsofa0002", 60, 0.78, 6) + sold("Gsofa0003", 90, 0.80, 14)
                + sold("Gsofa0004", 40, 0.62, 3) + sold("Gmat00001", 200, 0.80, 4) + sold("Gsofa0001", 10, 0.80, 5, at=t - 7 * 3600))
     got = linewatch.discover(settles, {}, cat, {BEDDING: 3}, {}, t)
-    check("picked: dear (500k+), 8+ settles in 6 h, 0.66+ of list (12 and 0.70 until 11/6 15:40), any number of sellers (14 here); "
+    check("picked: 200k+ (500k+ until 11/9), 8+ settles in 6 h, 0.66+ of list (12 and 0.70 until 11/6 15:40), any number of sellers (14 here); "
           "best margin first", list(got) == ["Gsofa0003", "Gsofa0001", "Gsofa0002"] and got["Gsofa0001"]["n"] == 30
           and got["Gsofa0002"]["sellers"] == 6 and got["Gsofa0003"]["sellers"] == 14, got)
     em = {"Gsofa0003": 0.02, "Gsofa0001": 0.08}
@@ -1059,9 +1060,10 @@ def test_discover():
            linewatch.expected_margin("Gx", a_w(0.62), {}), linewatch.expected_margin("Gx", a_w(0.80, 9), {})) == (0.1378, 0.0198, -0.0295, None),
           (linewatch.expected_margin("Gx", a_w(0.80), {}), linewatch.expected_margin("Gx", a_w(0.80), {"Gx": 1.2}),
            linewatch.expected_margin("Gx", a_w(0.62), {})))
-    check("...left out: 0.62 of list, a 400k mattress, settles older than 6 h, our own shop's",
+    check("...left out: 0.62 of list, a 150k mattress, settles older than 6 h, our own shop's; a 400k one comes in since 11/9",
           linewatch.discover(sold("Gsofa0001", 30, 0.8, 5), {"s0": "Kiro729", "s1": "Kiro729", "s2": "Kiro729", "s3": "Kiro729",
-                                                              "s4": "Kiro729"}, cat, {}, {}, t) == {})
+                                                              "s4": "Kiro729"}, cat, {}, {}, t) == {}
+          and list(linewatch.discover(sold("Gmat00002", 20, 0.80, 4), {}, cat, {}, {}, t)) == ["Gmat00002"])
     full = {f"Gx{i}": 2 for i in range(linewatch.LINE_MAX_SKUS - 1)}
     check("only as many as leave the line at 40 products with a cap above 0 (one exited does not count)",
           list(linewatch.discover(settles, {}, cat, dict(full, Gout=2), {"Gout": 0}, t)) == ["Gsofa0003"])

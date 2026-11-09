@@ -78,7 +78,11 @@ STARS_MIN, STARS_REST = 3.50, 2 * 3600   # 4.30 until 11/6 13:10 (the person's c
                                          # the rest almost none (kimauve 1/16); selling less cannot lift stars given
                                          # whatever we sell, so the guard is left for a real fault of the goods
 FIND_WINDOW = 6 * 3600
-FIND_LIST_MIN, FIND_N, FIND_MEDIAN, FIND_SELLERS = 500_000, 8, 0.66, 99    # sellers 12 until 11/6: the margin decides;
+FIND_LIST_MIN, FIND_N, FIND_MEDIAN, FIND_SELLERS = 200_000, 8, 0.66, 99    # sellers 12 until 11/6: the margin decides;
+                         # list 500k until 11/9 23:30 (the person's call): dear goods now settle near their cost (a grade
+                         # A sold 0.690 of list costing 0.651, 1.8% net over 48 h), while our 300-500k goods netted 4.0%
+                         # of list; at 200k the line found 18 products, those with a known margin 4.6-7.5% (Zinus
+                         # mattresses selling 628 and 825 a day); restock's lines otherwise went to food (1.2k a line);
                          # 12 at 0.70 until 11/6 15:40 (29 of 40 line places used; the expected margin still gates);
                          # 20 settles at 0.74 until 11/6 13:10 (the person's call: 281M cash idle against 74M of stock,
                          # 12 buyers in 6 h turned away for want of stock, 59% of talks walked: breadth, not depth);
