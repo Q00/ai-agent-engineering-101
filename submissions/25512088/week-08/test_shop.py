@@ -2,6 +2,7 @@
 import json
 from pathlib import Path
 import tempfile
+import time
 import unittest
 
 from market_intel import Intel
@@ -12,6 +13,49 @@ from seller_strategy import sale_quote
 
 
 class ShopDiscoveryTests(unittest.TestCase):
+    def test_discovery_uses_checkout_preferences_with_existing_fallback_and_floor(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            unit = dict(unit='u', sku='sku', name='chair', grade='B', kind='goods',
+                        list_price=20000, cost=8000, expires_at=None)
+            (root/'inventory.json').write_text(json.dumps(dict(round=3, units=[unit])))
+            prefs = dict(version=3, generated_at=time.time(), buyers={
+                str(i): dict(active=True, skus=[dict(sku='sku', median_paid=12000,
+                                                  price_samples=3)]) for i in range(3)})
+            intel = Intel(root)
+            program = Program(root)
+            try:
+                baseline = sale_quote(unit, {}, program, intel, record=False)
+                for case in ('fresh', 'stale', 'missing', 'malformed', 'below_floor'):
+                    with self.subTest(case=case):
+                        snapshot = json.loads(json.dumps(prefs))
+                        if case == 'stale':
+                            snapshot['generated_at'] -= 181
+                        if case == 'below_floor':
+                            for buyer in snapshot['buyers'].values():
+                                buyer['skus'][0]['median_paid'] = 1
+                        path = root/'buyer-preferences.json'
+                        path.write_text('{' if case == 'malformed' else json.dumps(snapshot))
+                        if case == 'missing':
+                            path.unlink()
+                        expected = sale_quote(unit, {}, program, intel, record=False,
+                            buyer_preferences=snapshot if case not in ('missing', 'malformed') else {})
+                        preview = offers(root, program, intel)[0]
+                        self.assertEqual(preview['price'], expected['price'])
+                        if case == 'fresh':
+                            self.assertEqual(preview['price'], 12000)
+                            self.assertLess(preview['price'], baseline['price'])
+                        elif case in ('stale', 'missing', 'malformed'):
+                            self.assertEqual(preview['price'], baseline['price'])
+                        self.assertGreaterEqual(preview['price']*.85,
+                                                unit['cost']*1.09)
+                self.assertEqual(intel.db.execute(
+                    "SELECT COUNT(*) FROM decisions WHERE role='seller_quote'").fetchone()[0], 0)
+                self.assertEqual(program.db.execute('SELECT COUNT(*) FROM sales').fetchone()[0], 0)
+            finally:
+                program.close()
+                intel.close()
+
     def test_procurement_does_not_value_six_hour_stock_at_long_warranty_prices(self):
         now = 100000
         catalog = {'sku': dict(kind='goods', list_price=100000, category='chairs')}
