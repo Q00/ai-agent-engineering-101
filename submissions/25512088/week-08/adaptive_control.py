@@ -280,7 +280,7 @@ class Control:
         digest=hashlib.sha256(normalized.encode()).hexdigest()
         # The official buyer limit is one post per five minutes (288/day).
         # Keep a small transport/jitter reserve while allowing competitive cadence.
-        limits={'buyer':270,'shop':12};limit=limits.get(role,0)
+        limits={'buyer':270,'shop':12,'shop:c-liquidation-v2':6};limit=limits.get(role,0)
         rows=self.db.execute('SELECT * FROM forum_publications WHERE role=? AND ts>? AND status=?',
                              (role,now-86400,'ACTIVE')).fetchall()
         reason=None

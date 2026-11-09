@@ -20,6 +20,7 @@ from adaptive_control import Control
 SELLER_FORUM_INTERVAL_SECONDS = 4 * 60 * 60
 SELLER_FORUM_MAX_POSTS = 6
 SELLER_FORUM_POLICY = 'c-liquidation-v2'
+SELLER_FORUM_GUARD_ROLE = 'shop:c-liquidation-v2'
 
 
 def fetch(base, path):
@@ -162,7 +163,7 @@ def queue_post(program, state, inventory, now=None):
     text=campaign_text(program,dict(inventory,units=available),rotation=count)
     guard=Control(state)
     try:
-        allowed,_,_=guard.allow_publication('shop',text,refs,now)
+        allowed,_,_=guard.allow_publication(SELLER_FORUM_GUARD_ROLE,text,refs,now)
     finally:guard.close()
     if not allowed:return False
     # This DB transaction is a process lock. Mark before append: a crash may lose
