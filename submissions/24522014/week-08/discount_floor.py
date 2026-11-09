@@ -43,11 +43,22 @@ def fault_rate(grade, covered, settings, allowed=None):
     return max(table[g] for g in (allowed or table) if g in table)
 
 
+def food_penalty(grade, settings, allowed=None):
+    """The grade-C food penalty (food_c_trial.py) when this quote is C, or states no grade while C is allowed; else None."""
+    p = settings.get("food_c_penalty")
+    if not _share(p, .5) or p <= 0:
+        return None
+    if grade == "C" or (grade not in ("A", "B", "C") and "C" in (allowed or ())):
+        return p
+    return None
+
+
 def required(kind, grade, covered, settings, allowed=None):
     """The discount needed, exact. `kind` other than food counts as goods, which needs more."""
     floor = Fraction(str(settings["floor"]))
     if kind == "food":
-        return floor
+        p = food_penalty(grade, settings, allowed)
+        return floor if p is None else (floor+Fraction(str(p)))/(1-Fraction(str(p)))
     p = Fraction(str(fault_rate(grade, covered, settings, allowed)))
     return floor/(1-p) if covered else (floor+p)/(1-p)
 
@@ -66,7 +77,8 @@ def ceiling(list_price, discount):
 def expected_discount(discount, kind, grade, covered, settings, allowed=None):
     """What a deal at this share off list adds to Saved on average."""
     if kind == "food":
-        return discount
+        p = food_penalty(grade, settings, allowed)
+        return discount if p is None else (1-p)*discount-p
     p = fault_rate(grade, covered, settings, allowed)
     return (1-p)*discount if covered else (1-p)*discount-p
 

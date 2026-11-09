@@ -246,13 +246,18 @@ def model_gate(market_dir, order_id, reservation):
 def select_attempt(md, shops, memory, catalog, budget, snapshot, order, retry_of=None):
     """Choose a shop for one attempt; each attempt starts from the order's own accept conditions."""
     accept_conditions = buyer_accept(order)
+    # Option 3 (food_c_trial.py): food orders in the trial arm also accept grade C; the shelf-life rule and certificate stay as they are.
+    import food_c_trial
+    food_c_arm = food_c_trial.arm(order.get("order")) if order.get("kind") == "food" else None
+    if food_c_arm == "grade_c" and "C" not in accept_conditions["grades"]:
+        accept_conditions["grades"] = list(accept_conditions["grades"]) + ["C"]
     shop, selected_item, trade_budget, reason, evidence, support_decision = prepare_support(
         md, shops, memory, catalog, budget, load_policy()["buying"], None, snapshot, order, retry_of=retry_of)
     selected_evidence = next((e for e in evidence if shop and e["shop"] == shop["name"] and e["sku"] == selected_item), {})
     if selected_evidence.get("warranty_required"):
         accept_conditions["warranty_hours"] = selected_evidence["warranty_required"]
     return {"shop": shop, "item": selected_item, "budget": trade_budget, "reason": reason, "evidence": evidence,
-            "decision": support_decision, "selected": selected_evidence, "accept": accept_conditions}
+            "decision": support_decision, "selected": selected_evidence, "accept": accept_conditions, "food_c_arm": food_c_arm}
 
 
 def trade_attempt(args, order, catalog, pick):
@@ -261,6 +266,15 @@ def trade_attempt(args, order, catalog, pick):
                      "max_turns": support_decision["max_turns"], "accept_conditions": accept_conditions, "order_item": order.get("item"),
                      "discount_limit": {"list_price": (catalog.get(selected_item) or {}).get("list_price"), "kind": order.get("kind"), "covered": bool(selected_evidence.get("warranty_required")),
                                         "grades": accept_conditions.get("grades"), "cap_without_floor": selected_evidence.get("cap_without_floor"), "settings": discount_floor.load()}}
+    if pick.get("food_c_arm") == "grade_c" and "C" in (accept_conditions.get("grades") or ()):
+        import food_c_trial
+        trial = food_c_trial.load()
+        # Off since selection, or broken: no penalty means no C is safe, so C is dropped again for this attempt.
+        if trial["enabled"]:
+            trade_options["discount_limit"]["settings"] = {**trade_options["discount_limit"]["settings"], "food_c_penalty": trial["penalty"]}
+        else:
+            accept_conditions["grades"] = [g for g in accept_conditions["grades"] if g != "C"]
+            trade_options["discount_limit"]["grades"] = accept_conditions["grades"]
     relief_token = None
     if support_decision.get("fast_rules"):
         from buyer_counter import load_repeat_settings, load_settings
@@ -297,6 +311,7 @@ def trade_attempt(args, order, catalog, pick):
     record["first_message_arm"] = message_arm
     record["goods_message_arm"] = goods_arm
     record["standing_ask_arm"] = standing_arm
+    record["food_c_arm"] = pick.get("food_c_arm")
     record["round"] = 3
     record["order"] = order.get("order")
     record["order_budget"] = args.budget
