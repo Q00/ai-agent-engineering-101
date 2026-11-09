@@ -1,7 +1,9 @@
 """First-hand sales evidence and explicit inventory-depth alternatives."""
 from collections import Counter
 import math
-from procurement_cost import ceiling as acquisition_ceiling
+from statistics import median
+
+from procurement_cost import ceiling as acquisition_ceiling, estimate_unit_cost
 
 from inventory_observation import (timestamp, evidence, demand_outcomes, conversion_estimate,
                                    expiry_shortfalls)
@@ -15,6 +17,7 @@ NEW_STOCK = 2
 MAINTENANCE_CATEGORY_LIMIT = 24
 MIN_POSITIVE_SALES = 2
 MIDPRICE_MIN = 30_000
+UPPER_MIDPRICE_MIN = 100_000
 MIDPRICE_MAX = 300_000
 SUPPLY_CYCLE_SECONDS = 20*60
 SUPPLY_JITTER_BUFFER_SECONDS = 120
@@ -47,7 +50,15 @@ def sales_evidence(sku, history, now, *, kind=None):
     proven = positive_contributions >= MIN_POSITIVE_SALES and net_scenario > 0
     midprice_contribution = sum(value for price, value in contributions
                                 if MIDPRICE_MIN <= price <= MIDPRICE_MAX)
-    return {'midprice_contribution_12h': round(midprice_contribution, 2),
+    upper_sales = [(paid, value) for paid, value in contributions
+                   if UPPER_MIDPRICE_MIN <= paid <= MIDPRICE_MAX]
+    upper = {
+        'settled_12h': len(upper_sales),
+        'positive_12h': sum(value > 0 for _, value in upper_sales),
+        'contribution_12h': round(sum(value for _, value in upper_sales), 2),
+        'median_paid': median(paid for paid, _ in upper_sales) if upper_sales else None,
+    }
+    return {'midprice_contribution_12h': round(midprice_contribution, 2), 'upper_midprice_sales': upper,
             'confirmed_positive_spread_sales_12h': len(positive), 'confirmed_positive_spread_sales_1h': len(recent),
             'midprice_positive_sales_12h': len(midprice),
             'positive_contribution_sales_12h': positive_contributions,
@@ -59,6 +70,15 @@ def sales_evidence(sku, history, now, *, kind=None):
             'stock_limit': PROVEN_STOCK if proven else NEW_STOCK,
             'caution': 'Contribution deducts estimated accrued goods storage and a goods refund stress allowance. '
                        'It does not identify actual refunds or spoiled unsold inventory.'}
+
+
+def projected_upper_midprice_margin(product, paid, surge_factor, now):
+    """Estimate contribution at today's supply cost and the existing holding horizon."""
+    cost = estimate_unit_cost(product, surge_factor)
+    unit = {'kind': product['kind'], 'cost': cost, 'supplied_at': now}
+    horizon = max(GROWTH_COVERAGE_HOURS[product['kind']])
+    charges = economics(unit, paid, now=now + horizon * 3600, warranty_hours=hours(unit))
+    return round(paid - cost - charges['estimated_accrued_holding'] - charges['refund_allowance'], 2)
 
 
 def protection_hours(inventory, now):
@@ -208,6 +228,8 @@ def replenishment_candidates(catalog, inventory, history, now, blocked=(), trial
     sold_skus = {e.get('sku') for e in history if e.get('event') == 'settled' and e.get('sku')}
     outcomes=demand_outcomes(history,now)
     expiry_demand = expiry_shortfalls(history, catalog, units, now, outcomes=outcomes)
+    surge = {r['sku']: r.get('factor', 1) for r in inventory.get('surge', [])
+             if isinstance(r, dict) and r.get('sku')}
     rows = []
     for sku in sold_skus:
         p = catalog.get(sku)
@@ -256,10 +278,20 @@ def replenishment_candidates(catalog, inventory, history, now, blocked=(), trial
         if not options:
             continue
         options.sort(key=lambda option:option['qty'])
+        upper = signal['upper_midprice_sales']
+        upper_midprice = None
+        if (operating['phase'] == 'growth' and not options[0].get('expiry_trial')
+                and upper['positive_12h'] >= MIN_POSITIVE_SALES and upper['contribution_12h'] > 0
+                and upper['settled_12h'] * 2 >= signal['settled_sales_12h']):
+            margin = projected_upper_midprice_margin(p, upper['median_paid'], surge.get(sku, 1), now)
+            if margin <= 0:
+                continue
+            upper_midprice = {**upper, 'projected_contribution_per_unit': margin}
         rows.append({'sku': sku, 'name': p.get('name', sku), 'kind': p['kind'], 'category': p.get('category'),
                      'midprice_priority': (operating['phase'] == 'growth' and
                                            signal['midprice_contribution_sales_12h'] >= MIN_POSITIVE_SALES and
                                            signal['midprice_contribution_12h'] > 0),
+                     'upper_midprice': upper_midprice,
                      'expiry_demand': expiry,
                      'currently_stocked': stocks[sku], 'pending_stock':reserved,
                      'second_trial':second_trial, 'evidence': signal, 'target_options': options,
@@ -267,7 +299,9 @@ def replenishment_candidates(catalog, inventory, history, now, blocked=(), trial
                      'budget_scope':'replenishment: shared window and cash/risk limits; NOT rolling novel-exploration budget',
                      'assumption':('One additional unit after exactly one positive-contribution settlement; not proven maintenance.'
                                    if second_trial else 'Each target/quantity is forecast-derived; the model approves a candidate or holds.')})
-    rows.sort(key=lambda r: (not r['midprice_priority'],
+    rows.sort(key=lambda r: (not r['upper_midprice'],
+                             -(r['upper_midprice'] or {}).get('contribution_12h', 0),
+                             not r['midprice_priority'],
                              -r['evidence']['midprice_contribution_12h'] if r['midprice_priority'] else 0,
                              -(r['target_options'][-1]['qty']/max(1,r['currently_stocked'])),
                              -r['evidence']['confirmed_positive_spread_sales_1h'],

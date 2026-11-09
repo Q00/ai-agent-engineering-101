@@ -26,7 +26,8 @@ from inventory_observation import timestamp, unserved_exact_stockouts
 from market_memory import record
 from replenishment_plan import MAX_CATEGORY_STOCK, inventory_risk, product_signature, save
 from supply_reconciliation import reconcile, pending_quantity, partial_from_closed_window, reserved_quantity
-from stock_policy import replenishment_candidates, PROVEN_STOCK, MIDPRICE_MAX
+from stock_policy import (MIDPRICE_MAX, PROVEN_STOCK, UPPER_MIDPRICE_MIN,
+                          projected_upper_midprice_margin, replenishment_candidates)
 from capital_policy import (MAX_UNIT_COST, GROWTH_WINDOW_BUDGET, GROWTH_EXPLORATION_BUDGET,
                             operating_policy, target_inventory_cost, WINDOW_MAX_UNITS)
 from seller_warranty import REFUND_SHARE
@@ -41,7 +42,7 @@ WINDOW_BUDGET = GROWTH_WINDOW_BUDGET
 ROLLING_BUDGET = GROWTH_EXPLORATION_BUDGET
 MAX_MAINTAINED_SKUS = 8
 STOCKOUT_TRIAL_CANDIDATES = 3
-POLICY_VERSION = 26
+POLICY_VERSION = 27
 GROWTH_SPEND_SHARE = .50
 DAY = 86400
 INFLOW_MIN_PUBLIC_DEALS = 5
@@ -363,10 +364,12 @@ def _run(inventory, catalog, history, now, model, refresh, rng, path,prepare_onl
     winners = [r for r in winners if r['target_options']]
     # Keep one high-cost unit from consuming the window while affordable
     # repeat midprice sellers still have forecast-backed stock deficits.
-    midprice_focus = any(r.get('midprice_priority') and not r['target_options'][0].get('expiry_trial')
-                         and r['cost_ceiling_per_unit'] <= MIDPRICE_MAX for r in winners)
+    midprice_focus = any(r.get('upper_midprice') or (
+        r.get('midprice_priority') and not r['target_options'][0].get('expiry_trial')
+        and r['cost_ceiling_per_unit'] <= MIDPRICE_MAX) for r in winners)
     if midprice_focus:
-        winners = [r for r in winners if r['cost_ceiling_per_unit'] <= MIDPRICE_MAX]
+        # The band is measured by paid price, not the worst-case cost reservation.
+        winners = [r for r in winners if r.get('upper_midprice') or r['cost_ceiling_per_unit'] <= MIDPRICE_MAX]
     exploration_unit_ceiling = min(exploration_budget, MIDPRICE_MAX) if midprice_focus else exploration_budget
     rows = (candidates(catalog, inventory, history, now, {i['sku'] for i in recent} | set(pending_stocks), rng, max_cost=exploration_unit_ceiling)
             if choice['mode'] == 'explore' and operating['allow_new_skus'] else [])
@@ -452,11 +455,14 @@ def _run(inventory, catalog, history, now, model, refresh, rng, path,prepare_onl
                   'definition':'Growth target is half the smaller of safe cash after buffers/pending and current window capacity. '
                                'Compare estimated_spend_krw at observed surge against this soft target; risk limits use cost ceilings. '
                                'Use sales, exposure, eligible missed demand and holding/expiry risk. '
-                               'In growth, first cover forecast deficits on midprice_priority replenishment SKUs '
-                               '(at least two actual 30,000–300,000 KRW sales with positive contribution in 12h). Prefer '
-                               'several proven SKUs and compatible current purchase requests when feasible. '
-                               'Allocate most discretionary replenishment spend there when eligible deficits justify it; '
-                               'use existing forecast options, caps and margins. If skipping an affordable midprice '
+                               'In growth, cover forecast deficits with upper_midprice evidence first. Their '
+                               'actual paid prices are 100,000–300,000 KRW, with at least two positive contributions '
+                               'in 12h and a positive projected contribution at current supply cost. Prioritize these '
+                               'over cheaper midprice or speculative stock; avoid buying extra beyond listed targets. '
+                               'The general unit cost ceiling here limits exploration and other candidates; an eligible '
+                               'upper_midprice candidate still reserves its full worst-case cost. '
+                               'Then cover profitable midprice_priority deficits across several proven SKUs. '
+                               'If skipping an affordable upper_midprice or midprice '
                                'deficit, explain the concrete constraint in reason. Keep room for required exploration. '
                                'If the feasible forecast-backed basket falls short, name the binding limitation in reason. '
                                'Do not spend to fill the target or infer a sale from a forum post.'},
@@ -586,6 +592,7 @@ def _run(inventory, catalog, history, now, model, refresh, rng, path,prepare_onl
                 raise ValueError('invalid or duplicated replenishment target')
             restock_orders.append({'sku':item['sku'], 'qty':option['qty'],
                                   'midprice_priority':winner.get('midprice_priority', False),
+                                  **({'upper_midprice': winner['upper_midprice']} if winner.get('upper_midprice') else {}),
                                   'target_stock':option['target_stock'],
                                   'forecast_scenario':option['scenario'],
                                   'coverage_hours':option.get('coverage_hours'),
@@ -649,7 +656,8 @@ def _run(inventory, catalog, history, now, model, refresh, rng, path,prepare_onl
                 hold_preparation('invalid_approval_or_no_correction_time')
                 record('portfolio_hold', reason='invalid_approval_or_no_correction_time')
                 return {'buy': []}
-    ordered_restock = sorted(restock_orders, key=lambda r: (bool(r.get('expiry_trial')), not r['midprice_priority']))
+    ordered_restock = sorted(restock_orders, key=lambda r: (
+        bool(r.get('expiry_trial')), not r.get('upper_midprice'), not r['midprice_priority']))
     desired = [{**o, 'kind':'replenishment'} for o in ordered_restock]
     desired += [{**allowed[sku], 'qty':1, 'kind':'exploration'} for sku in skus]
     for row in desired:
@@ -658,7 +666,7 @@ def _run(inventory, catalog, history, now, model, refresh, rng, path,prepare_onl
         estimated_spend_krw=sum(r['qty']*unit_costs[r['sku']] for r in desired),approved_lines=[
         {k:r.get(k) for k in ('sku','kind','qty','target_stock','cost_ceiling','second_trial','midprice_priority',
                              'forecast_scenario','coverage_hours','forecast_mean','demand_basis','forum_request_ids',
-                             'stockout_trial','inflow_trial','expiry_demand','expiry_trial')} for r in desired],
+                             'stockout_trial','inflow_trial','expiry_demand','expiry_trial','upper_midprice')} for r in desired],
         model_choice=answer,allocation_review=answer.get('strategy_review'),
         allocation_behavior={'review_required':review_required,
             'offered_proven_skus':sum(not w['second_trial'] for w in winners),
@@ -743,10 +751,16 @@ def _emit_approved(state,path,desired,answer,window,key,operating,now,slots,budg
     covered_expiry_trials = {u['sku'] for u in owned if u['sku'] in expiry_targets
                              and u.get('expires_at') is not None
                              and u['expires_at'] - at >= expiry_targets[u['sku']] * 3600}
+    surge = {r['sku']: r.get('factor', 1) for r in current.get('surge', [])
+             if isinstance(r, dict) and r.get('sku')}
+    unprofitable_upper_midprice = {
+        r['sku'] for r in desired if r.get('upper_midprice') and projected_upper_midprice_margin(
+            catalog[r['sku']], r['upper_midprice']['median_paid'], surge.get(r['sku'], 1), at) <= 0}
     buy,execution=select_lines(desired,stocks=current_stocks,categories=categories,
         pending_stock=pending_stocks,catalog=catalog,unit_room=free_units,supply_lines=room,budget=cash,
         allow_replenishment=current_operating['allow_replenishment'],allow_new_skus=current_operating['allow_new_skus'],
-        time_limited=time_slots<slots,exploration_budget=rolling_remaining,covered_expiry_trials=covered_expiry_trials)
+        time_limited=time_slots<slots,exploration_budget=rolling_remaining,covered_expiry_trials=covered_expiry_trials,
+        unprofitable_upper_midprice=unprofitable_upper_midprice)
     by_sku={r['sku']:r for r in desired}
     for emitted in buy:
         sku,qty=emitted['sku'],emitted['qty'];row=by_sku[sku]
@@ -758,6 +772,7 @@ def _emit_approved(state,path,desired,answer,window,key,operating,now,slots,budg
                                 **({'stockout_trial': row['stockout_trial']} if row.get('stockout_trial') else {}),
                                 **({'inflow_trial': row['inflow_trial']} if row.get('inflow_trial') else {}),
                                 **({'expiry_trial': row['expiry_trial']} if row.get('expiry_trial') else {}),
+                                **({'upper_midprice': row['upper_midprice']} if row.get('upper_midprice') else {}),
                                 **audit.links(),'intent_id':f"{audit.links()['decision_id']}:{sku}"})
     save(path, state)  # all reservations precede externally executed supply calls
     log_execution(execution,at,execution_supply_lines=room,time_limited_supply_lines=time_slots,
@@ -847,6 +862,12 @@ def execute_prepared(inventory,catalog,history,now,*,refresh,state_path=None,rea
                         or row['kind']=='exploration' and row['qty']!=1
                         or row['kind']=='replenishment' and not 1<=row['target_stock']<=PROVEN_STOCK):
                     raise ValueError('invalid_approved_line')
+                if 'upper_midprice' in row:
+                    basis = row['upper_midprice']
+                    if (row['kind'] != 'replenishment' or not isinstance(basis, dict)
+                            or type(basis.get('median_paid')) not in (int, float)
+                            or not UPPER_MIDPRICE_MIN <= basis['median_paid'] <= MIDPRICE_MAX):
+                        raise ValueError('invalid_upper_midprice_approval')
             if sum(r['qty']*r['cost_ceiling'] for r in desired)>prepared['approved_budget']:
                 raise ValueError('approval_budget_exceeded')
         except (ValueError,KeyError,TypeError) as error:
