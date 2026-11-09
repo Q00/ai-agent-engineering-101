@@ -297,6 +297,9 @@ def voted_down(forum, st):
     return st.get("low", False)
 
 
+FIVE_STAR_SHARE = 0.65   # 11-09: was 0.9; one bar for every shop
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--deal", required=True)
@@ -319,7 +322,9 @@ def main():
         stars = 2
         review = f"Paid {price} for {name}, but it is worth nothing to me (it will not last or it broke)."
     else:
-        stars = 5 if listp and price <= listp * 0.9 else 4
+        # 11-09 (user: rate as strictly as the rest of the market, for every shop alike): 5 only at 65 % of list or
+        # less, else 4. inextro's buyer gave us 4 at 65-73 % of list while we gave every shop 5 under 90 %
+        stars = 5 if listp and price <= listp * FIVE_STAR_SHARE else 4
         review = (f"{name}: {price} ({off}% under list), grade {s.get('grade')}"
                   + (", claim honest" if s.get("claim_honest") else "") + ", certificate checked.")
 
