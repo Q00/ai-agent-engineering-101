@@ -260,7 +260,9 @@ def find_unit(text, taken=()):
     key = ((lambda u: (u["expires_at"] or float("inf"), not (dead_first and is_dead(u)),
                        c_last and is_goods(u) and u.get("grade") == "C", u["cost"],
                        u["supplied_at"])) if named
-           else (lambda u: (u["expires_at"] or float("inf"), u["supplied_at"])))
+           else (lambda u: (u["expires_at"] or float("inf"), is_goods(u) and u.get("grade") == "C", u["supplied_at"])))
+    # Claude (2026-11-10 03:22, hourly check): category requests (no SKU, no name) took the oldest unit, grade C: after the name fix
+    # G00327e80 still opened its 63 h old C 12 times, 9 deals agreed, 0 settled, while two A sat. Goods of grade C now go last here too
     fit = named or fit                                   # a SKU the buyer named comes first
     return min(fit, key=key, default=None)
 
