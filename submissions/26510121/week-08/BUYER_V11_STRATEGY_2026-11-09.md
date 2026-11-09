@@ -38,3 +38,16 @@
 - `logs/shop-registration-restored-20261109T054842687828Z.json`
 - `logs/autonomous-verified-20261109T054943331544Z.json`
 - `logs/autonomous-verified-20261109T060532063554Z.json`
+
+## 배포 결과 — 15:31 KST 확인
+
+- 제안 정책을 합친 전체 검사 **229개 통과**: `logs/buyer-v11-release-tests-20261109T0625.txt`.
+- 15:26:30 Buyer 정책만 교체: `logs/buyer-v11-deployment-20261109T062630318787Z.json`.
+- 다음 새 주문에서 `buyer-v11-evidence-contracts`, strategy version 14 활성화. Shop PID 38184, runtime session, 공개 URL, `shop-v10-patch35-terms` 유지.
+- 실제 공산품 평가에서 성숙한 goods unit 23,078개를 사용. 첫 견적 650,235원은 A등급·6시간 보증 기준 상한 503,673원을 넘어 거래하지 않았다. 이후 공산품 주문은 확인 시점에 진행 중이었다.
+- 실제 새 버전 식품 구매 1건: G200e39a3, B등급, 24,135원, 정가 37,900원, 초기 Saved 기여 0.36319, 정산 ledger 4382762, 결과 제출 verified=true. 첫 식품 주문은 응답 시간 초과로 실패했다. 초기 네 주문 중 결제 완료 1건, 두 건 실패, 한 건 진행 중이므로 전환율이나 공산품 개선 효과를 결론 내릴 표본은 아니다.
+- 최종 공개 board에서 Shop/Buyer 모두 alive=true, card/ACP 모두 HTTP 200, controller observe_and_trade. Shop 거래 6,468건, Book 554,704,520원, 재고 40개. Buyer 거래 8,388건, Saved 0.2965, ALL 0.790.
+
+적용 직후 첫 verifier가 false였던 것은 새 주문 전이라 이전 Buyer revision이 남아 있었기 때문이다. 온라인 조회 자체는 양쪽 true였다. 새 주문 후 검증은 true로 전환됐다.
+
+최종 근거: `logs/buyer-v11-live-20261109T063117901108Z.json`, `logs/autonomous-verified-20261109T063128043086Z.json`. 배포 기록을 실제 장기 성능 향상으로 해석하지 않는다.
