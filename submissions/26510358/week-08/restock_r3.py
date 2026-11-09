@@ -172,10 +172,10 @@ def plan(inv, demand_rows, mem, now=None, dry_run=False, adjust=None):
     stock_max, prem_budget, prem_max, cap_why = cashflow.caps(mem, balance, stock_cost, now, dry_run)
     budget = min(balance - config.CASH_RESERVE, stock_max - stock_cost)
     explore_budget = min(budget, config.EXPLORE_SHARE * config.MAX_STOCK_COST - (mem.get("explore_spent") or 0))
-    dem = mem.category_demand(now=now)
-    forum = mem.forum_demand_signals()
+    dem = mem.category_demand(now=now, premium_min=config.PREMIUM_MIN_LIST)   # this plan never buys premium,
+    forum = mem.forum_demand_signals()                                         # so its demand must not size it
     view = scout.category_view(mem, now=now)
-    stockouts = mem.stockout_rates(now=now)
+    stockouts = mem.stockout_rates(now=now, premium_min=config.PREMIUM_MIN_LIST)
     lines, why = [], [{"cash_cap": cap_why}]
 
     # 1) evidence: categories that sell, by expected profit per hour

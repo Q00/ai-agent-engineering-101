@@ -156,14 +156,18 @@ class Memory:
             return {r["shop_url"] for r in c.execute("SELECT shop_url FROM shops WHERE mine=1")}
 
     # ------------------------------------------------------------------ demand and prices (shop side)
-    def category_demand(self, hours=48, half_life=config.DEMAND_HALF_LIFE_H, now=None):
-        """category -> {rate: decayed settles per hour, n, shops: competitors holding stock}. Market-wide."""
+    def category_demand(self, hours=48, half_life=config.DEMAND_HALF_LIFE_H, now=None, premium_min=None):
+        """category -> {rate: decayed settles per hour, n, shops: competitors holding stock}. Market-wide.
+        premium_min: leave out goods listed at or above it (the normal restock plan never buys those)."""
         now = now or time.time()
         lam = math.log(2) / (half_life * 3600)
         out = {}
+        q, args = "SELECT category, ts FROM settles WHERE ts > ? AND category IS NOT NULL", [now - hours * 3600]
+        if premium_min:
+            q += " AND NOT (kind='goods' AND list_price >= ?)"
+            args.append(premium_min)
         with self.db() as c:
-            for r in c.execute("SELECT category, ts FROM settles WHERE ts > ? AND category IS NOT NULL",
-                               (now - hours * 3600,)):
+            for r in c.execute(q, args):
                 d = out.setdefault(r["category"], {"weight": 0.0, "n": 0})
                 d["weight"] += math.exp(-lam * (now - r["ts"]))
                 d["n"] += 1
@@ -249,14 +253,21 @@ class Memory:
         with self.db() as c:
             c.execute("INSERT INTO stockouts (ts, category, sku) VALUES (?,?,?)", (time.time(), category, sku))
 
-    def stockout_rates(self, hours=None, now=None):
-        """category -> requests per hour our shop turned away for lack of stock."""
+    def stockout_rates(self, hours=None, now=None, premium_min=None):
+        """category -> requests per hour our shop turned away for lack of stock. premium_min: leave out requests
+        for goods SKUs listed at or above it (premium has its own pilot; 2026-11-09 its stockouts sized chairs)."""
         hours = hours or config.STOCKOUT_HOURS
         now = now or time.time()
+        cat = market.catalog() if premium_min else {}
+        out = {}
         with self.db() as c:
-            return {r["category"]: r["n"] / hours for r in c.execute(
-                "SELECT category, COUNT(*) n FROM stockouts WHERE ts>? AND category IS NOT NULL GROUP BY category",
-                (now - hours * 3600,))}
+            for r in c.execute("SELECT category, sku FROM stockouts WHERE ts>? AND category IS NOT NULL",
+                               (now - hours * 3600,)):
+                info = cat.get(r["sku"]) or {}
+                if premium_min and info.get("kind") == "goods" and (info.get("list_price") or 0) >= premium_min:
+                    continue
+                out[r["category"]] = out.get(r["category"], 0) + 1 / hours
+        return out
 
     def own_sales(self, hours=24):
         mine = self.my_shop_urls()

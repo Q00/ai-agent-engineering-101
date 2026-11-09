@@ -76,3 +76,23 @@ def test_marketing_pricing_reports_close_rate_and_premium(tmp_path, monkeypatch)
     out = departments.run("marketing", "pricing", {}, m, None)
     assert out["negotiations"] == 2 and out["close_rate"] == 0.5 and out["first_ask_ratio"] == 0.8
     assert out["ask_room"] == config.ASK_ROOM and out["premium"]["held"] == 0
+
+
+def test_premium_demand_and_stockouts_do_not_size_normal_stock(tmp_path, monkeypatch):
+    """2026-11-09: 86% of sofa-category sales were 800k+ SKUs and 10/h premium stockouts (one held unit busy in a
+    negotiation) were added as 'missed' demand, so the normal plan aimed at 178 sofa units and bought 124 of one
+    296k office chair that sells 0.4/h. The normal plan never buys premium, so premium demand must not size it."""
+    import restock_r3
+    plain, now = pmem(tmp_path / "a", monkeypatch, premium_sales=0)
+    tmp_path.joinpath("b").mkdir()
+    busy, _ = pmem(tmp_path / "b", monkeypatch, premium_sales=200)
+    for _ in range(60):
+        busy.record_stockout(SOFA, "P1")
+    inv = {"balance": 500_000_000, "units": []}
+    need = lambda m: [w for w in restock_r3.plan(inv, DEMAND, m, now=now, dry_run=True)[1]
+                      if w.get("sku") == "G1" and w.get("reason") == "demand"][0]["rule_need"]
+    assert need(busy) == need(plain)                                   # was 577 vs 82
+    plain.record_stockout(SOFA, "G1")                                  # a normal SKU turned away still counts
+    assert busy.stockout_rates(premium_min=config.PREMIUM_MIN_LIST) == {}
+    assert plain.stockout_rates(premium_min=config.PREMIUM_MIN_LIST)[SOFA] > 0
+    assert busy.stockout_rates()[SOFA] > 0                             # the cash cap still sees every stockout
