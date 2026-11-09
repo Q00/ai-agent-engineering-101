@@ -4,6 +4,7 @@ import json
 import time
 from collections import Counter
 from seller_strategy import sale_quote
+from market_intel import read_json
 
 
 def offers(state, program, intel, ref='', limit=3):
@@ -13,12 +14,14 @@ def offers(state, program, intel, ref='', limit=3):
     if inv.get('round')!=3:return []
     cp=state/'catalog.json'
     catalog=json.loads(cp.read_text()) if cp.exists() else {}
+    preferences=read_json(state/'buyer-preferences.json',{})
     reserved=program.reserved_units(); ranked=[]
     holdings=Counter(u['sku'] for u in inv.get('units',[]) if u['unit'] not in reserved)
     for u in inv.get('units',[]):
         if u['unit'] in reserved:continue
         # Stock previews are not buyer inquiries or conversion trials.
-        try:q=sale_quote(u,catalog,program,intel,ref=ref,record=False,holdings=holdings[u['sku']])
+        try:q=sale_quote(u,catalog,program,intel,ref=ref,record=False,holdings=holdings[u['sku']],
+                        buyer_preferences=preferences)
         except ValueError:continue
         hours=(u['expires_at']-time.time())/3600 if u.get('expires_at') else None
         count=intel.comparable(u['sku'],u['grade'],hours,q.get('warranty_hours',0))['count']
