@@ -178,7 +178,10 @@ Supply and depth:
   offered) and buyer_log count our own decision logs; saved takes the buyer's Saved apart (unserved,
   kept_per_deal, window, closing, projection, peers, policy); focus lists the candidate
   SKUs with their gates and price_check; economics has the line budget, turnover, big-ticket budget, surge
-  allowance, p_clear and the expansion conditions; mix has the market's category leaves. A History row's outcome
+  allowance, p_clear and the expansion conditions; mix has the market's category leaves. A History row's applied
+  is what that run changed and rejected what its guard refused, with why: "cooldown" (the key moved within the
+  last cooldown hour; ask again next run, it is not a verdict on the change), "over max_changes", a bound, or
+  "low confidence" (your own confidence was under the gate, so nothing was applied). A row's outcome
   is the check one hour after that change: only buyer.cap_food and buyer.min_surplus_list are reverted
   automatically (on a food conversion drop), every other metric is report only."""
 

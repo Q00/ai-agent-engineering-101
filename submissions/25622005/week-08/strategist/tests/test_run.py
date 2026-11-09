@@ -255,22 +255,19 @@ class ApplyTest(Base):
         self.assertNotIn("focus_max", front["policy"]["stock"])               # not changed: still not in the file
         self.assertEqual(front["policy"]["seller"]["first_ask_list"], 0.8)
 
-    def test_cooldown_across_runs(self):
+    def test_a_key_moves_again_once_its_outcome_check_is_in(self):
         self.answer_with([{"key": "seller.first_ask_list", "value": 0.8}])
         self.assertEqual(self.run_at(NOW)["status"], "applied")
         self.answer_with([{"key": "seller.first_ask_list", "value": 0.75}])
         rec = self.run_at(NOW + 1800)                                   # the next run waits for the outcome check
         self.assertTrue(rec["status"].startswith("waiting for outcome of "), rec["status"])
-        rec = self.run_at(NOW + 5400)                                   # checked: the model is asked again
-        self.assertEqual(rec["status"], "no change")
-        self.assertEqual(rec["rejected"][0]["why"], "cooldown")
-        self.assertEqual([o["result"] for o in rec["outcomes"]], ["report only"])
         self.assertEqual(policy.get(skillfile.read(self.skill)[1]["policy"], "seller.first_ask_list"), 0.8)
-        rec = self.run_at(NOW + 3 * 3600)                               # six runs later
+        rec = self.run_at(NOW + 5400)                                   # checked, and the 1 h cooldown is over
         self.assertEqual(rec["status"], "applied", rec)
+        self.assertEqual([o["result"] for o in rec["outcomes"]], ["report only"])
         self.assertEqual(policy.get(skillfile.read(self.skill)[1]["policy"], "seller.first_ask_list"), 0.75)
         self.assertEqual(len([r for r in self.lines("changes.jsonl") if "diff" in r]), 2)
-        self.assertEqual(len(self.lines("runs.jsonl")), 4)
+        self.assertEqual(len(self.lines("runs.jsonl")), 3)
         # the history the third prompt saw carries the first change
         self.assertIn('"new": 0.8', (self.home / "prompts" / f"{rec['run_id']}.txt").read_text(encoding="utf-8"))
 
@@ -606,7 +603,7 @@ class RulesTest(Base):
         rules = prompt[prompt.index("<market_rules>"):prompt.index("</market_rules>")]
         self.assertIn("one post per 10 minutes", rules)
         self.assertIn("post_gap_min | 10", prompt)
-        self.assertIn("- Change at most 2 keys.", prompt)
+        self.assertIn("- Change at most 3 keys.", prompt)
         rec = self.run_at(NOW + 1800, handler=self.patched_handler)    # in sync now: nothing more to write
         self.assertEqual(rec["applied"], [])
         self.assertTrue(rec["status"].startswith("waiting for outcome of "), rec["status"])
@@ -965,10 +962,10 @@ class ControlTest(Base):
         self.assertIn("- Change at most 4 keys.", prompt)
         self.assertIn("A patch note arrived in the last hours", prompt)
         self.reply([{"key": "stock.cover_min", "value": 55}, {"key": "stock.max_hold", "value": 60},
-                     {"key": "stock.taper_h", "value": 48}])
-        rec = self.run_at(NOW + 5400 + 7 * 3600, handler=handler)       # 7 h later: the usual limits
+                     {"key": "stock.taper_h", "value": 48}, {"key": "seller.first_ask_list", "value": 0.72}])
+        rec = self.run_at(NOW + 5400 + 7 * 3600, handler=handler)       # 7 h later: the usual limits (3 keys)
         self.assertIsNone(rec["patch"])
-        self.assertEqual([a["key"] for a in rec["applied"]], ["stock.cover_min", "stock.max_hold"])
+        self.assertEqual([a["key"] for a in rec["applied"]], ["stock.cover_min", "stock.max_hold", "stock.taper_h"])
         self.assertEqual(rec["rejected"][-1]["why"], "over max_changes")
 
 
@@ -1142,9 +1139,19 @@ class ConfigTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.config({"STRATEGIST_MODE": "yolo"})
 
-    def test_every_30_minutes_with_a_three_hour_cooldown_and_two_keys(self):
+    def test_history_shows_what_the_guard_refused_and_why(self):
+        home = Path(tempfile.mkdtemp(prefix="strat-hist-"))
+        rows = [{"run_id": "r1", "ts": 1.0, "status": "applied", "applied": [{"key": "a", "old": 1, "new": 2, "source": "model", "reason": "x"}],
+                 "rejected": [{"key": "b", "requested": 3, "why": "cooldown"}, "junk"], "confidence": 0.6},
+                {"run_id": "r2", "ts": 2.0, "status": "no change", "applied": [], "confidence": 0.7}]
+        (home / "runs.jsonl").write_text("".join(json.dumps(r) + "\n" for r in rows))
+        h = run._history(home)
+        self.assertEqual([x["rejected"] for x in h], [[{"key": "b", "requested": 3, "why": "cooldown"}], []])
+        self.assertEqual(h[0]["applied"], [{"key": "a", "old": 1, "new": 2, "source": "model"}])
+
+    def test_every_30_minutes_with_a_one_hour_cooldown_and_three_keys(self):
         c = self.config({})
-        self.assertEqual((c.interval_s, c.cooldown_h, c.max_changes), (1800, 3, 2))
+        self.assertEqual((c.interval_s, c.cooldown_h, c.max_changes, c.min_confidence), (1800, 1, 3, 0.5))
         self.assertEqual(run.Config(shop_home=W, home=W).interval_s, 1800)
         self.assertEqual(self.config({"STRATEGIST_INTERVAL_S": "900"}).interval_s, 900)
         self.assertEqual(self.config({"STRATEGIST_INTERVAL_S": "900"}, interval=60).interval_s, 60)

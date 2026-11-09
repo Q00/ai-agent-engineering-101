@@ -67,9 +67,9 @@ class Config:
     interval_s: int = 1800
     first_delay_s: int = 60
     market_url: str = "https://market.ourolabs.ai"
-    min_confidence: float = 0.6
-    max_changes: int = 2                # model changes per run: fewer keys per set, clearer cause and effect
-    cooldown_h: float = 3               # a changed key can move again six runs later
+    min_confidence: float = 0.5         # the model's own 0.55-0.65 answers were coin flips against 0.6
+    max_changes: int = 3                # model changes per run
+    cooldown_h: float = 1               # a changed key can move again two runs later, once its outcome check is in
     patch_h: float = 6                  # after a new patch note on /rules, for this long:
     patch_max_changes: int = 4          #   model changes per run
     patch_cooldown_h: float = 1         #   cooldown
@@ -149,8 +149,10 @@ def _run_id(home, now):
 
 
 def _history(home):
-    """The last runs as the prompt shows them: what was changed, our metrics then, and the outcome check
-    of the run's changes from changes.jsonl (result, metrics base -> after, reverted keys) once it is in."""
+    """The last runs as the prompt shows them: what was changed, what the guard refused and why (so a row
+    the model asked for and did not see applied reads "cooldown", not "never applied"), our metrics then, and
+    the outcome check of the run's changes from changes.jsonl (result, metrics base -> after, reverted keys)
+    once it is in."""
     rows = [r for r in tail_jsonl(home / "runs.jsonl", MAX_HISTORY) if isinstance(r, dict)]
     outs = {o.get("outcome_of"): o for o in tail_jsonl(home / "changes.jsonl", 200)
             if isinstance(o, dict) and o.get("outcome_of")}
@@ -158,6 +160,8 @@ def _history(home):
     for r in rows:
         h = {"run_id": r.get("run_id"), "ts": r.get("ts"), "status": r.get("status"),
              "applied": [{k: a.get(k) for k in ("key", "old", "new", "source")} for a in r.get("applied") or []],
+             "rejected": [{k: x.get(k) for k in ("key", "requested", "why")} for x in r.get("rejected") or []
+                          if isinstance(x, dict)],
              "confidence": r.get("confidence"), "me": r.get("me")}
         o = outs.get(r.get("run_id"))
         if o:
