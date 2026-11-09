@@ -95,6 +95,7 @@ SEEN_TASKS = 1000      # task ids of receipts I received, to catch a replayed re
 WARRANTY_MIN = 6          # goods break within 6 h of the sale: a warranty this long covers every break
 GRADE_C_MEMORY = 6 * 3600   # a shop that offered a grade-C unit of a SKU is not asked for that SKU again for this long
 FAIL_MEMORY = 6 * 3600  # a failed visit keeps a shop out for this long; shops restart and get fixed
+REJECT_SHOP_SECS = 15 * 60   # 11-09: an out-of-stock turn-away keeps the shop out this long (other items)
 TOOLS_SHARE = 0.05         # deals paid through the shop's ACP tools (the model drives ~12 s of checkout);
                            # the kit pays the rest by code, so orders keep flowing
 RIVALS_EVERY = 600         # seconds between Players board reads (user, 11-05: buy from players ranked below us)
@@ -194,12 +195,18 @@ def dishonest_live(entry):
     return isinstance(entry, dict) and time.time() - entry.get("t", 0) < DISHONEST_HOURS * 3600
 
 
-def failed_last(mem, name):
+def failed_last(mem, name, item=None):
     """Why my last visit to `name` failed (error, or a deal with an unsigned receipt), or None."""
     ts = [t for t in mem["trades"] if t["shop"] == name]
     if not ts or time.time() - ts[-1].get("t", 0) > FAIL_MEMORY:
         return None
     last = ts[-1]
+    # 11-09: one 'none of that in stock' kept the whole shop out for 6 h, and with no visit the lock never cleared:
+    # inextro (our best leg, .449 per deal, 248 deals/24 h) got 1 visit in 7 h, and 32 shops were out at once.
+    # An out-of-stock turn-away is about that item: the shop is out for REJECT_SHOP_SECS, the item for FAIL_MEMORY
+    if (last.get("outcome") == "rejected" and not last.get("asks") and last.get("item") != item
+            and time.time() - last.get("t", 0) > REJECT_SHOP_SECS):
+        return None
     if "grade C" in str(last.get("outcome", "")):     # a grade-C unit: only that SKU is skipped (grade_c_skip)
         return None
     if str(last.get("outcome", "")).startswith(("error", "unpaid")):
@@ -217,7 +224,7 @@ def memory_view(mem, name, item):
         return f"CAUGHT CHEATING before: {mem['dishonest'][name]}"
     if not ts:
         return "never traded here"
-    failed = failed_last(mem, name)
+    failed = failed_last(mem, name, item)
     deals = [t for t in ts if t["outcome"] == "deal"]
     same = [t for t in deals if t["item"] == item]
     goods = [t for t in deals if t.get("kind") == "goods"]
@@ -295,7 +302,7 @@ def choose(shops, mem, item, budget, ask_model=True, ctx=None):
     n_reviews = {s["name"]: len(s.get("reviews", [])) for s in shops}
     flagged = {n for n, v in views.items() if v["flags"] or (v["avg"] is not None and v["avg"] <= 2 and n_reviews[n] >= 2)}
     allowed = [s for s in shops if s["name"] not in caught] or shops
-    failed = {s["name"] for s in allowed if failed_last(mem, s["name"])}
+    failed = {s["name"] for s in allowed if failed_last(mem, s["name"], item)}
     allowed = [s for s in allowed if s["name"] not in failed] or allowed
     clean = [s for s in allowed if s["name"] not in flagged]
     allowed = clean or allowed
