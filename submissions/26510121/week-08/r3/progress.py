@@ -29,6 +29,8 @@ def observe(journal,board,inv,capacity,now):
     if not history or now-history[-1]['at']>=240:history.append(current)
     journal.put('championship_board_history',history[-90:])
     from .meta import rank_targets
+    rules=journal.get('market_rules',{})
+    board=dict(board,buyer_forum_metric=rules.get('buyer_forum_metric','percentile'))
     result={'at':now,'ranks':{role:{k:current[role][k] for k in ['rank','population']} for role in ['shop','buyer']},
             'next_thresholds':{role:rank_targets(board,role) for role in ['shop','buyer']},'pace':rates,
             'idle_spendable_fraction':capacity['spendable']/max(1,inv.get('balance',0)),

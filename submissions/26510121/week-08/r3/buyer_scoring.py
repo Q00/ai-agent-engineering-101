@@ -15,8 +15,10 @@ def metric(board, rules=None):
 def state(journal,config):
     board=journal.snapshot('board.json',{})
     own=next((r for r in board.get('buyers',[]) if r.get('name')=='seochanit'),{})
-    saved=config.get('buyer_patch34_enabled') and metric(board,journal.get('market_rules',{}))=='saved'
+    rules=journal.get('market_rules',{})
+    saved=config.get('buyer_patch34_enabled') and metric(board,rules)=='saved'
     return {'metric':'saved' if saved else 'surplus','saved':own.get('saved',0) or 0,
+            'forum_metric':rules.get('buyer_forum_metric',config.get('buyer_forum_metric','percentile')),
             'deals':own.get('deals',0) or 0}
 
 

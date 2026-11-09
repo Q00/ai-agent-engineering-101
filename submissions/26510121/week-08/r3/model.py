@@ -48,7 +48,8 @@ class Chooser:
         if role=='buyer':
             from .buyer_scoring import state
             current=state(self.j,self.config)
-            board=dict(board,buyer_metric=current['metric'],buyer_rank_scope=self.config.get('buyer_rank_scope','everyone'))
+            board=dict(board,buyer_metric=current['metric'],buyer_forum_metric=current['forum_metric'],
+                       buyer_rank_scope=self.config.get('buyer_rank_scope','everyone'))
         checked = self.j.get('board_checked_at')
         if checked is not None and time.time() - checked > 300:
             board = {}  # A stale table cannot be a current optimization target.
@@ -69,11 +70,12 @@ class Chooser:
         def utility(candidate):
             return (candidate.get('objective_utility', 0), candidate.get('score', 0))
         best = max(candidates, key=utility)
-        context = dict(context, objective='maximize Shop ALL + Buyer ALL; percentiles, not raw money',
+        context = dict(context, objective='maximize Shop ALL + Buyer ALL; score each component by its current rule',
                        next_rank_thresholds=rank_targets(board, role),
                        numerical_recommendation=best['id'],
-                       rank_note='midrank approximation plus continuous threshold progress; point forecasts, not official scores')
-        if role=='buyer':context.update(buyer_metric=current['metric'],buyer_rank_scope=board.get('buyer_rank_scope'))
+                       rank_note='percentile components use midrank/continuous surrogates; Patch 3.5 forum uses its raw 0..1 rating')
+        if role=='buyer':context.update(buyer_metric=current['metric'],buyer_forum_metric=current['forum_metric'],
+                                       buyer_rank_scope=board.get('buyer_rank_scope'))
         diagnosis=self.j.get('market_control',{})
         if 0<=time.time()-diagnosis.get('at',0)<900:
             context['market_state']={k:diagnosis.get(k) for k in

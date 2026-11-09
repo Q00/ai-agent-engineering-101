@@ -43,6 +43,7 @@ def status(shadow=False):
                 'shop_expected_revision':cfg.get('shop_strategy_revision'),
                 'shop_championship_enabled':cfg.get('shop_championship_enabled',False),
                 'buyer_championship_enabled':cfg.get('buyer_championship_enabled',False),
+                'buyer_forum_metric':j.get('market_rules',{}).get('buyer_forum_metric',cfg.get('buyer_forum_metric')),
                 'championship_progress':j.get('championship_progress',{}),
                 'buyer_strategy_revision':j.get('buyer_strategy_revision'),
                 'buyer_revision_epoch':j.get('buyer_revision_epoch'),

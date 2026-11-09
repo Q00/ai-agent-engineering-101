@@ -21,16 +21,27 @@ def audit_rules(journal, text, now=None):
     flat=' '.join(text.split())
     buyer_weights_ok=bool(re.search(r'buyers by .*?ALL weighs them 0\.5,\s*0\.3,\s*0\.1,\s*0\.1',flat))
     saved_formula_ok=('divided by deals + 100' in flat and 'counts -1, or 0 if refunded' in flat)
+    forum_mode=('raw' if 'except the forum rating, which counts as itself (0 to 1)' in flat else
+                'unknown' if 'except the forum rating' in flat else 'percentile')
+    paid_power='A dislike with value -N' in flat
+    power_known=(not paid_power or all(s in flat for s in
+                 ['N up to 1000','(N - 1)^2','3%','largest Book','power_fee','next_vote_fee']))
     result = {'at': now, 'sha256': hashlib.sha256(text.encode()).hexdigest(),
               'compatible': understood, 'expected': 'book/revenue/stars; surge<=1.5',
               'source': '/agent.md','buyer_metric':buyer_metric,
-              'buyer_compatible':buyer_weights_ok and (buyer_metric=='surplus' or buyer_metric=='saved' and saved_formula_ok),
+              'buyer_compatible':buyer_weights_ok and forum_mode!='unknown' and
+                  (buyer_metric=='surplus' or buyer_metric=='saved' and saved_formula_ok),
+              'buyer_forum_metric':forum_mode,'paid_dislike_power':paid_power,
+              'paid_dislike_contract_known':power_known,
               'forum_vote_min_deals':50 if 'at least 50 settled deals' in text else 5,
               'stance_scoring':'one stance per' in text,'dislike_costs_shop_cash':'next_dislike_fee' in text}
     previous = journal.get('market_rules', {})
     journal.put('market_rules', result)
     if previous.get('sha256') != result['sha256']:
         journal.add('market_rules_observed', result)
+    if previous.get('buyer_forum_metric')!=forum_mode:
+        journal.add('market_scoring_definition',{'at':now,'before':previous.get('buyer_forum_metric'),
+                    'after':forum_mode,'buyer_metric':buyer_metric,'paid_dislike_power':paid_power})
     return result
 
 

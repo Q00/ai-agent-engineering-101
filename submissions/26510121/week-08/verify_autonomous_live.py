@@ -4,7 +4,7 @@ from datetime import datetime,timezone
 import json
 import sys
 import httpx
-from r3.state import ROOT,read_json
+from r3.state import ROOT,read_json,policy
 from autonomous_status import status
 
 
@@ -31,6 +31,8 @@ def verify():
     good=good and local['objective_revision']==local['policy_version'] and local['control'].get('status')=='observe_and_trade'
     if local.get('buyer_patch34_enabled'):
         good=good and local.get('buyer_strategy_revision')==local.get('buyer_expected_revision')
+        expected=policy().get('buyer_forum_metric')
+        if expected:good=good and local.get('rules',{}).get('buyer_forum_metric')==expected
     if local.get('shop_championship_enabled'):
         good=good and local.get('shop_strategy_revision')==local.get('shop_expected_revision')
         progress=local.get('championship_progress',{})

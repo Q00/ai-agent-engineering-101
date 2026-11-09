@@ -33,7 +33,7 @@ def resale_terms(product,public,journal,config,now):
     if product.get('kind')!='goods':
         if config.get('shop_championship_enabled'):
             terms=[]
-            for grade,weight in [('A',.7),('B',.2),('C',.1)]:
+            for grade,weight in [('A',.25),('B',.5),('C',.25)]:
                 term=next((t for t in public.get('term_prices',[]) if t.get('grade')==grade and
                            not t.get('warranty_hours') and t.get('n',0)>=3),None)
                 terms.append({'grade':grade,'weight':weight,'price':min(product['list_price'],term['median']) if term else base})

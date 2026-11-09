@@ -41,6 +41,14 @@ def finite(value):
     return type(value) in (int, float) and math.isfinite(value)
 
 
+def direct_component(board,role,key):
+    return role=='buyer' and key=='forum' and board.get('buyer_forum_metric')=='raw'
+
+
+def direct_gain(value,delta):
+    return max(0,min(1,value+delta))-max(0,min(1,value))
+
+
 def interpolated_percentile(values, value):
     """A continuous planning surrogate between observed rank thresholds.
 
@@ -69,6 +77,9 @@ def rank_progress(board, role, own_name, delta):
     for key, weight in weights(board,role).items():
         if not finite(own.get(key)) or not finite(delta.get(key, 0)):
             continue
+        if direct_component(board,role,key):
+            gain+=weight*direct_gain(own[key],delta.get(key,0))
+            continue
         values = [r[key] for r in rows if finite(r.get(key))]
         gain += weight * (interpolated_percentile(values, own[key] + delta.get(key, 0)) -
                           interpolated_percentile(values, own[key]))
@@ -87,7 +98,11 @@ def rank_targets(board, role, own_name='seochanit'):
         ahead = sorted(r[key] for r in rows if finite(r.get(key)) and r[key] > own[key])
         result[key] = {'current': own[key], 'next_value': ahead[0] if ahead else None,
                        'gap': ahead[0] - own[key] if ahead else None, 'weight': weight,
-                       'cohort_size': sum(finite(r.get(key)) for r in rows)}
+                       'cohort_size': sum(finite(r.get(key)) for r in rows),
+                       'scale':'raw' if direct_component(board,role,key) else 'percentile'}
+        if direct_component(board,role,key):
+            result[key].update(all_gain_per_0_01=.003,
+                               next_value_is='peer benchmark, not a percentile threshold')
     return result
 
 
@@ -106,6 +121,9 @@ def rank_gain(board, role, own_name, delta):
     metric_weights = weights(board,role)
     gain = 0
     for key, w in metric_weights.items():
+        if direct_component(board,role,key) and finite(own.get(key)) and finite(delta.get(key,0)):
+            gain+=w*direct_gain(own[key],delta.get(key,0))
+            continue
         values = [r[key] for r in rows if r.get('name') != own_name and isinstance(r.get(key), (int, float))]
         if values and isinstance(own.get(key), (int, float)):
             updated = own[key] + delta.get(key, 0)
