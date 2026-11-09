@@ -23,7 +23,7 @@ def floor(unit,now):
                seller_warranty.economics(unit,now=now,warranty_hours=seller_warranty.hours(unit))['price_floor'])
 
 
-def proposals(units,market_dir,now):
+def proposals(units, market_dir, now, *, price_caps=None):
     rows=[]
     for unit in units:
         if unit.get('grade') not in ('A','B','C') or type(unit.get('cost'))is not int or unit['cost']<=0:continue
@@ -33,8 +33,13 @@ def proposals(units,market_dir,now):
         if quality['claim']!=unit['grade']:continue
         if unit.get('kind')=='food' and (unit.get('expires_at') or 0)-now<6*3600:continue
         base=floor(unit,now)
-        for margin in (.10,.20):
-            price=math.ceil(base*(1+margin))
+        if price_caps is None:
+            prices = [(math.ceil(base * (1 + margin)), margin) for margin in (.10, .20)]
+        else:
+            cap = min(price_caps.get(unit['unit'], 0), math.floor(reference * .90))
+            price = min(math.ceil(base * 1.10), cap)
+            prices = [(price, round(price / base - 1, 4))] if price >= math.ceil(base * 1.02) else []
+        for price, margin in prices:
             if price>reference*.90:continue
             digest=hashlib.sha256(f"{unit['unit']}:{unit['grade']}:{price}:{int(now)}".encode()).hexdigest()[:10]
             rows.append({'id':'FO-'+digest,'sku':unit['sku'],'unit':unit['unit'],'name':unit.get('name'),

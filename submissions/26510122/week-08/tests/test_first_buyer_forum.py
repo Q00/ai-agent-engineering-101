@@ -66,12 +66,31 @@ class FirstBuyerForumTests(unittest.TestCase):
         self.assertTrue(post['no_prior_paid_link'])
 
     def test_no_eligible_new_request_posts_one_public_first_checkout_quote(self):
+        forum.save(self.runtime / 'state/counterparty-ledger.json', {'recent_purchases': [
+            {'seq': 42, 'at': self.now - 30, 'buyer': 'buyer-new', 'sku': 'Gdemo', 'price': 38_000,
+             'grade': 'A', 'warranty_hours': 6, 'remaining_seconds': None}]})
         result = forum.run_once(self.runtime, now=self.now, decide=self.model)
         self.assertEqual(result['decision']['campaign'], 'featured')
+        self.assertIn('스탠드 조명 · 최대 ', result['text'].splitlines()[0])
         self.assertIn('견적코드 FO-', result['text'])
         self.assertIn('저희 가게가 처음이라면', result['text'])
         posts = json.loads((self.runtime / 'state/seller-forum.json').read_text())['posts']
         self.assertTrue(posts[0]['first_checkout'])
+
+    def test_checkout_candidate_requires_real_demand_and_safe_comparable_price(self):
+        facts = forum.facts(self.runtime, self.now)
+        market = {'seq': 42, 'at': self.now - 30, 'buyer': 'buyer-new', 'sku': 'Gdemo',
+                  'price': 34_500, 'grade': 'A', 'warranty_hours': 6, 'remaining_seconds': None}
+        facts['recent_market_purchases'] = [market]
+        quote, = forum.first_checkout_quotes(facts, set())
+        self.assertEqual(quote['price'], 34_500)
+        self.assertGreater(quote['price'], quote['price_floor'])
+        self.assertEqual(forum.first_checkout_quotes(facts, {'Gdemo'}), [])
+        facts['recent_market_purchases'] = [market | {'price': 30_000}]
+        self.assertEqual(forum.first_checkout_quotes(facts, set()), [])
+        facts['recent_market_purchases'] = [market]
+        facts['known_paid_buyers'] = {'buyer-new'}
+        self.assertEqual(forum.first_checkout_quotes(facts, set()), [])
 
     def test_purchase_report_is_not_intent_and_first_checkout_comment_can_opt_in(self):
         forum.save(self.runtime / 'state/seller-forum.json', {'posts': [

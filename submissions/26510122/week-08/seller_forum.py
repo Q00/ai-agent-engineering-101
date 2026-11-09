@@ -17,6 +17,7 @@ import os
 from pathlib import Path
 import re
 import sqlite3
+from statistics import median_low
 import time
 import uuid
 
@@ -39,8 +40,8 @@ REPLY_QUOTE_DAILY_CAP = 12
 MIDPRICE_REPLY_DAILY_CAP = 18
 UPSELL_REPLY_DAILY_CAP = 2
 FIRST_BUYER_REPLY_DAILY_CAP = 4
-FIRST_CHECKOUT_DAILY_CAP = 4
-FIRST_CHECKOUT_INTERVAL = 90 * 60
+FIRST_CHECKOUT_DAILY_CAP = 6
+FIRST_CHECKOUT_INTERVAL = 35 * 60
 SKU_COOLDOWN = 90 * 60
 DAILY_CAP = ROOT_DAILY_CAP + REPLY_DAILY_CAP
 SCHEMA = {'type': 'object', 'additionalProperties': False, 'properties': {
@@ -229,6 +230,8 @@ def facts(runtime, now):
             'requests': requests,'sourcing_requests':[r for r in intents if r['id'] not in {q['id'] for q in requests}][:12],
             'featured_quotes':quotes,'featured_capacity_left':max(0,remaining),'available_units':[u for group in groups.values() for u in group],
              'quoted_units':sorted(active_units),
+             'recent_market_purchases': counterparty_memory.load_cache(
+                 runtime/'state/counterparty-ledger.json').get('recent_purchases', []),
             'market_dir':str(runtime/'.market'),'warranty_policy':seller_warranty.DISCLOSURE,
             'capabilities': '가격 제안·협상 가능. 실제 물리 단위의 인증서와 서명 영수증으로 결제. '
                             '등급·최소 잔여 유통기한 요구를 견적과 결제 전에 검증. '+seller_warranty.DISCLOSURE}
@@ -310,7 +313,7 @@ def validate(decision, evidence, history, now):
 def editorial_facts(evidence):
     return {k:v for k,v in evidence.items() if k not in (
         'available_units','market_dir','quoted_units','low_price_buyers','known_paid_buyers',
-        'targeted_quote_threads','first_buyer_threads')}
+        'targeted_quote_threads','first_buyer_threads','recent_market_purchases')}
 
 
 def render(decision, evidence):
@@ -327,7 +330,11 @@ def render(decision, evidence):
                          '(최저판매가 한도 적용). 할인 전후 금액을 견적에 안내합니다. 표시된 가격에 반영되며 중복 자동 할인은 없습니다. 추가 네고 가능.')
     stock = reply_stock(evidence, decision) if decision['campaign'] == 'reply' else evidence['stock']
     quoted = [o for o in quote_options(decision, evidence) if o['id'] in decision.get('offer_ids', [])]
-    for sku in decision['skus']:
+    highlighted = bool(quoted and (evidence.get('first_checkout')
+                       or decision.get('thread_id') in evidence.get('first_buyer_threads', {})))
+    if highlighted:
+        lines = [decision['body']]
+    for sku in (() if highlighted else decision['skus']):
         s = next(s for s in stock if s['sku'] == sku)
         variants = []
         for u in s['units']:
@@ -339,6 +346,17 @@ def render(decision, evidence):
         lines.append(f"{s['name']} ({sku}): " + ', '.join(variants))
     for offer in quoted:
         until=datetime.fromtimestamp(offer['valid_until'],timezone(timedelta(hours=9))).strftime('%m/%d %H:%M')
+        if highlighted:
+            lifetime = ''
+            if offer.get('expires_at') is not None:
+                remaining = math.floor((offer['expires_at'] - evidence['at']) / 3600)
+                lifetime = f' · 잔여 {remaining}시간 이상'
+            lines[0:0] = [
+                f"[{SHOP} · 실물 견적] {offer['name']} · 최대 {offer['price']:,}원",
+                f"{offer['sku']} · {offer['grade']}등급{lifetime} · 견적코드 {offer['id']} · {until} KST까지",
+                '이 단위가 판매되거나 예약되면 제공이 끝납니다. SKU와 견적코드를 함께 보내주세요.',
+            ]
+            continue
         lines.append(f"조건 공개: {offer['sku']} · {offer['grade']}등급 · 새 견적 최대 {offer['price']:,}원 · 정가 {offer['list_price']:,}원 대비 최소 {((offer['list_price']-offer['price'])*1000//offer['list_price'])/10:.1f}% 절약 · 견적코드 {offer['id']} · {until} KST까지. 이 단위가 판매·예약되면 제공 불가. SKU와 견적코드를 함께 보내세요.")
     for ledger in decision['ledger_refs']:
         r = next(r for r in evidence['settled'] if r['ledger'] == ledger)
@@ -415,6 +433,40 @@ def prioritized_requests(evidence, quotes):
     return [r for r in candidates if not priority(r)[0]][:12] or candidates[:12]
 
 
+def first_checkout_quotes(evidence, cooling):
+    """Quote an exact SKU recently bought by an account we have not served."""
+    now = evidence['at']
+    known = set(evidence.get('known_paid_buyers', ())) | {SHOP}
+    demand = defaultdict(list)
+    for sale in evidence.get('recent_market_purchases', []):
+        if (sale['buyer'] not in known
+                and 0 <= now - sale['at'] <= counterparty_memory.RECENT_PURCHASE_SECONDS):
+            demand[sale['sku']].append(sale)
+    quoted_units = set(evidence['quoted_units'])
+    caps, support = {}, {}
+    units = []
+    for unit in evidence['available_units']:
+        sku, identity = unit['sku'], unit['unit']
+        if sku in cooling or identity in quoted_units or not demand.get(sku) or unit['grade'] not in ('A', 'B', 'C'):
+            continue
+        expires = unit.get('expires_at')
+        remaining = (expires - now - seller_featured.TTL - seller_featured.HOLD_SECONDS
+                     if expires is not None else None)
+        compatible = [r for r in demand[sku] if r['grade'] >= unit['grade']
+                      and r['warranty_hours'] <= seller_warranty.hours(unit)
+                      and (r['remaining_seconds'] is None
+                           or remaining is not None and remaining >= r['remaining_seconds'])]
+        if compatible:
+            caps[identity] = median_low(r['price'] for r in compatible)
+            support[identity] = (len({r['buyer'] for r in compatible}), len(compatible),
+                                 max(r['at'] for r in compatible))
+            units.append(unit)
+    quotes = seller_featured.proposals(units, evidence['market_dir'], now, price_caps=caps)
+    quotes.sort(key=lambda o: (*(-v for v in support[o['unit']]), o['grade'], o['price']))
+    return [{**q, 'market_demand': {'buyers': support[q['unit']][0], 'settlements': support[q['unit']][1]}}
+            for q in quotes[:3]]
+
+
 def run_once(runtime, *, dry_run=False, decide=decide_json, now=None, announce_opening=False):
     runtime = Path(runtime).resolve()
     clock = time.time if now is None else lambda: now
@@ -464,13 +516,13 @@ def run_once(runtime, *, dry_run=False, decide=decide_json, now=None, announce_o
         pinned_reply_quotes = first_quotes or (reply_quote_options(evidence, reply_quote_count, targets)
                                                if replies_allowed else {})
         recent_intros = [p['at'] for p in roots if p.get('first_checkout')]
-        first_checkout = bool(not announce_opening and not pinned_reply_quotes and root_due and pinned_quotes
+        first_checkout_due = (not announce_opening and not pinned_reply_quotes and root_due and normal_capacity
                               and len(recent_intros) < FIRST_CHECKOUT_DAILY_CAP
                               and (not recent_intros or now - max(recent_intros) >= FIRST_CHECKOUT_INTERVAL))
+        demand_quotes = first_checkout_quotes(evidence, cooling) if first_checkout_due else []
+        first_checkout = bool(demand_quotes)
         if first_checkout:
-            sold = {r['sku'] for r in evidence['settled']}
-            pinned_quotes = sorted(pinned_quotes, key=lambda o: (
-                o['sku'] not in sold, not is_midprice_quote(o)))[:8]
+            pinned_quotes = demand_quotes
         evidence['featured_quotes'] = pinned_quotes
         evidence['requests'] = prioritized_requests(evidence, pinned_reply_quotes)
         pinned_reply_quotes = {r['id']: pinned_reply_quotes[r['id']] for r in evidence['requests']}
@@ -519,7 +571,8 @@ def run_once(runtime, *, dry_run=False, decide=decide_json, now=None, announce_o
             'root_daily_cap':ROOT_DAILY_CAP,'reply_daily_cap':REPLY_DAILY_CAP,'root_posts_24h':len(roots),
             'reply_posts_24h':len(replies),'root_due':root_due,'eligible_stock_skus':len(root_stock),
             'unanswered_requests':len(evidence['requests']),'eligible_first_buyer_threads':len(first_threads),
-             'first_checkout_due':first_checkout,'allowed_campaigns':allowed}
+             'first_checkout_due':bool(first_checkout_due),
+             'market_demand_quote_options':len(demand_quotes),'allowed_campaigns':allowed}
         save(path,state)
         if not allowed:return {'action':'hold','reason':'no eligible root or reply'}
         if announce_opening and not evidence.get('opening_event'): raise ValueError('opening event is inactive')
@@ -559,7 +612,8 @@ def run_once(runtime, *, dry_run=False, decide=decide_json, now=None, announce_o
             'intake_announcement_due가 참이면 조건 맞춤 매칭 서비스를 알리는 demand_survey를 우선 고려한다. '
             'featured는 도구가 계산한 실제 단위·가격 상한 중 offer_ids로 선택한다. 수익 하한·유효시간은 도구가 지킨다. '
             'featured의 skus는 선택한 견적의 SKU와 같아야 한다. 숫자와 절약률은 도구가 붙인다. '
-             'first_checkout이 참이면 실제 견적 하나를 featured로 고른다. 도구가 첫 거래 안내를 붙인다. '
+             'first_checkout이 참이면 최근 실제 정산과 조건을 대조한 실물 견적 하나를 featured로 고른다. '
+             '구매자가 지금 그 물건을 찾는다고 단정하지 않는다. 도구가 가격과 첫 거래 안내를 앞에 붙인다. '
              '별도 할인, 구매자 이름이나 후기 요청은 쓰지 않는다. '
              'reply_quotes에 적합한 원글이 있으면 견적코드가 있는 reply를 우선 고려한다. '
              '그 원글 ID를 thread_id로 쓰고 해당 원글의 선택지에서 offer_ids 한 개와 같은 SKU 하나를 고른다. '
@@ -637,6 +691,8 @@ def run_once(runtime, *, dry_run=False, decide=decide_json, now=None, announce_o
             entry['upsell_recipient'] = targets[entry['thread']]
         if entry['offer_ids']:
             selected=[o for o in quote_options(decision,latest) if o['id'] in entry['offer_ids']]
+            if first_checkout:
+                entry['market_demand'] = selected[0]['market_demand']
             if entry['thread'] is not None:
                 request = next(r for r in latest['requests'] if r['id'] == entry['thread'])
                 author = request.get('author')

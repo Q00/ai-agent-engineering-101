@@ -7,12 +7,13 @@ stock. Unknown/new ledger shapes are ignored rather than guessed.
 from __future__ import annotations
 
 import json
+import math
 import os
 from pathlib import Path
 import statistics
 import threading
 import time
-from collections import defaultdict
+from collections import Counter, defaultdict
 
 import httpx
 
@@ -22,6 +23,9 @@ from newsvendor_tool import GRADE_ANCHORS
 
 CACHE=Path('state/counterparty-ledger.json')
 POLL_SECONDS=20
+RECENT_PURCHASE_SECONDS = 75 * 60
+RECENT_PURCHASES_PER_BUYER = 20
+RECENT_PURCHASES_LIMIT = 1_200
 WINDOW_DAYS=14
 PROFILE_EVENTS = frozenset({'buyer_link', 'buyer_price_probe'})
 LEDGER_LINK_EVENTS = frozenset({'receipt_signed', 'buyer_link', 'checkout_unpaid'})
@@ -104,6 +108,36 @@ def ingest(rows: list[dict], *, own_name: str,history: list[dict],path: Path=EVE
     return proofs
 
 
+def recent_market_purchases(previous, ledger, now):
+    """Keep a small, per-buyer balanced sample of actual public paid settlements."""
+    by_seq = {r['seq']: r for r in previous if 0 <= now - r['at'] <= RECENT_PURCHASE_SECONDS}
+    for row in ledger:
+        at, data = row.get('ts'), row.get('data')
+        if (row.get('kind') != 'settle' or row.get('round') != 3 or not isinstance(data, dict)
+                or type(at) not in (int, float) or not 0 <= now - at <= RECENT_PURCHASE_SECONDS):
+            continue
+        buyer, sku, price, grade = (data.get(k) for k in ('buyer', 'sku', 'amount', 'grade'))
+        if (not isinstance(buyer, str) or not buyer or not isinstance(sku, str) or not sku
+                or type(price) is not int or price <= 0 or grade not in ('A', 'B', 'C')):
+            continue
+        expiry = data.get('expires_at')
+        remaining = expiry - at if type(expiry) in (int, float) and math.isfinite(expiry) else None
+        warranty = data.get('warranty_hours')
+        by_seq[row['seq']] = {'seq': row['seq'], 'at': at, 'buyer': buyer, 'sku': sku, 'price': price,
+                             'grade': grade, 'remaining_seconds': remaining,
+                             'warranty_hours': warranty if type(warranty) in (int, float) else 0}
+    counts = Counter()
+    sample = []
+    for seq in sorted(by_seq, reverse=True):
+        row = by_seq[seq]
+        if counts[row['buyer']] < RECENT_PURCHASES_PER_BUYER:
+            sample.append(row)
+            counts[row['buyer']] += 1
+        if len(sample) >= RECENT_PURCHASES_LIMIT:
+            break
+    return sample
+
+
 def refresh(own_name: str, *, cache_path=CACHE,event_path=EVENTS,now=None) -> list[dict]:
     now=time.time() if now is None else now
     with _LOCK:
@@ -141,6 +175,8 @@ def refresh(own_name: str, *, cache_path=CACHE,event_path=EVENTS,now=None) -> li
             result_rows={e['seq']:e for e in cache.get('rows',[])+rows
                          if e.get('kind')=='result' and isinstance(e.get('data'),dict)}
             cache['rows']=[result_rows[k] for k in sorted(result_rows)[-512:]]
+            cache['recent_purchases'] = recent_market_purchases(
+                cache.get('recent_purchases', []), latest, now)
         except (httpx.HTTPError,ValueError,KeyError,TypeError):
             pass
         cache_path.parent.mkdir(parents=True,exist_ok=True)
