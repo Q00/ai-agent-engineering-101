@@ -200,6 +200,7 @@ def pick_unit(text, held, now):
 NO_C = re.compile(r"(grade\s*)?A\s*(or|/)\s*B\s*(grade\s*)?only|only\s*grade\s*A|not\s*(buy|pay\s*for|take)\s*grade\s*C|"
                   r"no\s*grade\s*C|grade\s*C\s*(is\s*)?not|A\s*/\s*B\s*only|I buy grade A", re.I)
 ONLY_A = re.compile(r"(only|just)\s*grade\s*A\b|grade\s*A\s*only", re.I)
+WANTS_WARRANTY = re.compile(r"\band warranty\b|include (a |the )?warranty|with (a |the )?warranty|-hour warranty|warranty (covering|required|please)|require[sd]? (a |the )?warranty|\"warranty_hours\": *[1-9]", re.I)
 C_WITH_WARRANTY = re.compile(r"grade\s*C[^.]{0,80}warranty|C\s*\(refurbished\)[^.]{0,80}warranty", re.I)
 
 
@@ -215,6 +216,11 @@ def ok_grades(text):
         return {"A", "B"}
     if C_WITH_WARRANTY.search(text) and "C" not in warranted:
         return {"A", "B"}
+    # 11-09: 'Please quote your best price with market certificate (cert=true) and warranty.' and 'Please include a
+    # warranty' agreed on grade C (no warranty here) and then did not pay: 85 of 119 such C deals in 5 h never
+    # settled (C goods 40 % unpaid, A 0 %). A buyer that asks for a warranty gets only warranted grades
+    if WANTS_WARRANTY.search(text) and warranted:
+        return {"A", "B", "C"} & warranted
     return None
 
 
