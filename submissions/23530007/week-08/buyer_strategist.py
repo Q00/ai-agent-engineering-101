@@ -68,7 +68,7 @@ GLOBAL = {                                    # role, bounds, step
     "cheapfood_share": ((0.0, 1.0), 0.1),     # food: ask for the cheapest unit that lasts and open low
     "cheapfood_open": ((0.2, 0.6), 0.05),     # food opening offer, share of list
     "cheapgoods_share": ((0.0, 1.0), 0.1),
-    "aimtop_share": ((0.0, 1.0), 0.1),        # 11-09: cap at the shop's p25 (what the best buyers pay), not p50    # goods: ask for C/B with a warranty first, A only if nothing else
+    "aimtop_share": ((0.0, 1.0), 0.1),        # 11-09: cap at the shop's p10 (what the best buyers pay), not p50    # goods: ask for C/B with a warranty first, A only if nothing else
     "skubest_share": ((0.0, 1.0), 0.1),       # pick the SKU with the best market saved at the shop (not the dearest)
     "wpen_share": ((0.0, 1.0), 0.1),          # charge shops for goods sold without a warranty
     "wpen_cost": ((0.0, 0.12), 0.02),
@@ -360,7 +360,7 @@ Knobs (only these): global "value_share" (0.65-0.85), "quick_accept" (0.55-0.75)
 replace skip_below; see BUYER_STRATEGY.md 0a2), "conv_weight" (0-0.3), "rival_penalty" (0-0.1), "cap_margin" (0-0.1), "near_cap" (0-0.04),
 "open_offset" (0-0.08), "max_shops" (1-6), "value_half_life_h" (0-6, default 2: how fast the shop values
 follow the newest market deals; lower when prices are moving, higher when the values look noisy), and the arms (11-08): "push_share", "push3_share", "cheapfood_share",
-"cheapgoods_share", "aimtop_share" (cap at the shop's p25, where the best buyers pay), "skubest_share", "wpen_share", "gradeaware_share" (each 0-1, share of orders), "push3_below" (0-0.2), "push_below"
+"cheapgoods_share", "aimtop_share" (cap at the shop's p10, where the best buyers pay), "skubest_share", "wpen_share", "gradeaware_share" (each 0-1, share of orders), "push3_below" (0-0.2), "push_below"
 (0-0.15), "cheapfood_open" (0.2-0.6), "wpen_cost" (0-0.12), "gradeaware_cap_c" (0.65-0.85), "gradeaware_cap_b" (0.62-0.8); per shop (give "shop": name from the evidence) "shop_bias" (-0.1..0.1,
 added to its value score) and "shop_cap" (-0.05..0.05, added to the cap there as a share of list);
 per category "cap" (0.6-0.85, replaces value_share for that category; "category" is the order's item name as in

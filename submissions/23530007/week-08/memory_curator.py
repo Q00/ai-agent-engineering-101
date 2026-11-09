@@ -448,7 +448,7 @@ def breakdown(bs, now):
                                 score_gain_per_order=round(x["deals"] / max(x["orders"], 1)
                                                            * ((x["saved_per_deal"] or 0) - 0.256), 4))
                            for x in cut(lambda r: ("skubest" if r["skubest"] else "base") if "skubest" in r else "other")],
-            # 11-09 A/B "aimtop": cap at the shop's p25 (what the best buyers pay) and shops ranked by their best deals
+            # 11-09 A/B "aimtop": cap at the shop's p10 (what the best buyers pay) and shops ranked by their best deals
             "aimtop_ab": [dict(x, deals_per_order=round(x["deals"] / max(x["orders"], 1), 3),
                                score_gain_per_order=round(x["deals"] / max(x["orders"], 1)
                                                           * ((x["saved_per_deal"] or 0) - 0.287), 4))
