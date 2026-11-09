@@ -60,7 +60,7 @@ WARRANTY_H = 6            # goods break up to 6 h after the sale
 SCOUT = 3                 # shops asked for a first price per order
 SCOUT_WAIT = 20           # seconds; shops that have not answered by then are left out
 FIRST_COUNTER = 0.90      # share of a first ask already within reach that we offer once before accepting
-MAX_RATIO = 0.70          # most we pay, as a share of list: the buyer score became saved per deal (agent.md, Nov 6); saved 0.2391 sat at percentile 0.58 with a mean paid/list of 0.744. Nov 9: a deal above 1 - mean saved lowers the mean; last 9.6 h at .75 kept 90 deals/h at saved .366, at .70 76/h at .383 (deadline projection .342 -> .350)
+MAX_RATIO = 0.68          # most we pay, as a share of list: the buyer score became saved per deal (agent.md, Nov 6); saved 0.2391 sat at percentile 0.58 with a mean paid/list of 0.744. Nov 9: a deal above 1 - mean saved lowers the mean; last 9.6 h at .75 kept 90 deals/h at saved .366, at .70 76/h at .383 (deadline projection .342 -> .350). Nov 10 03:48: 9.8 h, 565 settles: goods paid .68-.70 were 14% of deals; .70 -> .68 projects deadline saved .351 -> .356 for 20916 -> 19380 deals; food deciles top at .652, untouched
 BAD_REVIEW = re.compile(
     r"(overcharg|scam|fraud|cheat|fake|inject|dishonest|lied|avoid|mismatch|did ?n.t match|"
     r"higher than (the price )?(we )?agreed|receipt (said|was|price|showed)|never (sent|delivered))", re.I)
