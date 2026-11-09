@@ -37,7 +37,7 @@ class Settings(unittest.TestCase):
 
     def test_the_shipped_setting(self):
         section = json.loads(Path(ab.CONFIG).read_text(encoding="utf-8"))[ab.LOWER_SECTION]
-        self.assertEqual((section["share"], section["salt"]), (0.8, "lg1"))
+        self.assertEqual((section["share"], section["salt"]), (0.9999, "lg1"))
         # Installed off at 14:44:38 KST 11-09; switched on in its own commit after the full suite.
         self.assertIs(section["enabled"], True)
 
