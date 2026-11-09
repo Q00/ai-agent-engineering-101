@@ -113,6 +113,30 @@ class ShopPolicyTests(unittest.TestCase):
         self.assertNotIn("claim", rec)
         self.assertIn("Food expiry", json.dumps(first))
 
+    def test_b_trial_quote_and_receipt_keep_coverage_after_policy_changes(self):
+        product = unit(grade="B")
+        seller, key = self.seller(product)
+        now = time.time()
+        sold = now - 7 * 3600
+        atomic_json(self.root / "sales-performance.json", {
+            "schema": 1, "round": 3, "updated_at": now, "sales": [
+                {"ledger": i+1, "unit": f"old-{i}", "sku": product["sku"], "category": product["category"],
+                 "kind": "goods", "grade": "B", "cost": 70000, "price": 100000,
+                 "receipt_time": sold-1, "settled_at": sold, "observed_at": sold,
+                 "supplied_at": sold-3600, "warranty_hours": 0} for i in range(5)]})
+        with patch("seller_r3.inventory_decision", side_effect=[
+                {"action": "counter", "price": 90000}, {"action": "accept", "price": 85000}]), \
+                TestClient(build(DEFAULT, seller)) as client:
+            first = send(client, "G00001")
+            self.assertIn("6-hour breakage warranty", json.dumps(first))
+            self.assertGreater(seller.r3[first["id"]]["terms"]["closing_price_floor"], 80000)
+            seller.policy["b_warranty_trial"]["enabled"] = False
+            done = send(client, "85000", first["id"])
+        receipt = done["artifacts"][0]["parts"][0]["data"]
+        receipt["price"] = int(receipt["price"])
+        self.assertEqual(receipt["warranty_hours"], 6)
+        self.assertTrue(kit.verify_seller(kit.pub_b64(key), receipt))
+
     def test_focus_changes_real_card_and_quotes_without_free_text_or_cost_leaks(self):
         product = unit()
         seller, _ = self.seller(product)
