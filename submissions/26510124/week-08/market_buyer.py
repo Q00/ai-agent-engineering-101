@@ -25,6 +25,7 @@ from buyer_selection import shortlist, offer_fingerprint, reuse_failures, compat
 from buyer_context import compact_dialogue
 from buyer_fast_selection import recent_success_choice, timeout_choice
 from buyer_value_memory import build_value_evidence
+from buyer_public_prices import read_public_prices, merge_price_evidence
 
 
 VERSION_HEADERS = {"A2A-Version": "1.0"}
@@ -101,13 +102,18 @@ def acceptance(order):
     return checkout_policy(order)
 
 
-def choose_shop(shops, memory, *, item, budget, deadline, policy=None, order=None, catalog=None):
+def choose_shop(shops, memory, *, item, budget, deadline, policy=None, order=None, catalog=None,
+                market_dir=None):
     order = order or {}
     policy = policy or load_policy()
     seed = order.get("order") or f"{item}:{int(time.time() // 900)}"
     shops, cooldown = reuse_failures(shops, memory, item=item, budget=budget,
                                      config=policy, order=order, catalog=catalog)
     values = build_value_evidence(memory, catalog=catalog, order=order, budget=budget, config=policy)
+    if market_dir is not None:
+        public = read_public_prices(market_dir, shops=shops, catalog=catalog,
+                                    order=order, budget=budget, config=policy)
+        values = merge_price_evidence(values, public)
     candidates = shortlist(shops, memory, seed=seed,
                            limit=policy.get("selection_max_candidates", 6),
                            round_number=order.get("round"), value_evidence=values)
@@ -145,6 +151,9 @@ def choose_shop(shops, memory, *, item, budget, deadline, policy=None, order=Non
                               "context_chars": len(json.dumps(context, ensure_ascii=False)),
                               **cooldown,
                               "value_candidates": [c["name"] for c in candidates if c["selection_role"] == "value"],
+                              "public_price_candidates": sum(any(
+                                  g.get("source") == "public_ledger" for o in c["offers"]
+                                  for g in o.get("price_history", [])) for c in candidates),
                               "exploration": [c["name"] for c in candidates if c["selection_role"] == "exploration"]})
     choice = recent_success_choice(candidates, memory, budget=budget, config=policy,
                                    order=order, catalog=catalog, seed=seed)
@@ -525,7 +534,8 @@ def main(argv=None):
             shops = stocked_shops(shops, order)
         stage = "shop_selection"
         shop, reason = choose_shop(shops, memory, item=args.item, budget=args.budget,
-                                   deadline=min(deadline, time.monotonic() + 90), policy=config, order=order, catalog=catalog)
+                                   deadline=min(deadline, time.monotonic() + 90), policy=config, order=order,
+                                   catalog=catalog, market_dir=args.shops.parent)
         result["shop"] = shop["url"]
         sku = shop.get("selected_sku") or args.item
         product = catalog.get(sku) if catalog is not None else None
