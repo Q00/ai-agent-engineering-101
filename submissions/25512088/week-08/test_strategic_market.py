@@ -64,6 +64,12 @@ class StrategyTests(unittest.TestCase):
   self.assertEqual(result['products']['x']['review_average_stars'],5.0)
   self.assertEqual(result['buyers']['alice']['skus'][0]['verified_review_count'],1)
   self.assertEqual(result['buyers']['alice']['skus'][0]['verified_review_average'],5.0)
+  self.assertEqual(result['buyers']['alice']['skus'][0]['median_paid'],80)
+  self.assertEqual(result['buyers']['alice']['skus'][0]['public_market_median'],80)
+  self.assertEqual(result['buyers']['alice']['skus'][0]['median_paid_to_market'],1.0)
+  self.assertEqual(result['buyers']['alice']['price_preference'],
+                   {'samples':1,'median_paid_to_market':1.0,'estimated_discount_to_market_pct':0.0})
+  self.assertEqual(result['buyers']['alice']['categories'][0]['median_paid_to_market'],1.0)
   self.assertEqual(result['products']['x']['verified_buyer_review_count'],1)
   self.assertEqual(result['products']['x']['verified_buyer_review_average'],5.0)
   self.assertEqual(result['review_evidence']['verified_buyer_product_reviews'],1)
@@ -79,6 +85,18 @@ class StrategyTests(unittest.TestCase):
   sku=result['buyers']['alice']['skus'][0]
   self.assertEqual(sku['verified_review_count'],1);self.assertEqual(sku['verified_review_average'],4.0)
   self.assertEqual(result['review_evidence']['timestamp_unique_matches'],1)
+ def test_buyer_item_price_is_estimated_against_public_market_median(self):
+  now=100000;cat={'x':dict(name='Product X',category='goods',kind='goods',list_price=1000)}
+  trades=[dict(seq=1,sku='x',ts=now-30,buyer='alice',grade='A',hours=None,warranty=6,honest=1,price=80),
+          dict(seq=2,sku='x',ts=now-20,buyer='alice',grade='A',hours=None,warranty=6,honest=1,price=90),
+          dict(seq=3,sku='x',ts=now-10,buyer='bob',grade='A',hours=None,warranty=6,honest=1,price=120)]
+  result=build_buyer_preferences(cat,trades,[],[],{'alice','bob'},now,[])
+  item=result['buyers']['alice']['skus'][0]
+  self.assertEqual(item['public_market_median'],90)
+  self.assertEqual(item['median_paid'],85)
+  self.assertEqual(item['median_paid_to_market'],.9444)
+  self.assertEqual(item['estimated_discount_to_market_pct'],5.56)
+  self.assertEqual(item['price_samples'],2)
  def test_high_price_is_not_gate_and_negative_net_is_not_forced(self):
   now=time.time();cat={'low':dict(kind='goods',name='low',list_price=100000,category='c'),
    'high':dict(kind='goods',name='high',list_price=1000000,category='h')}

@@ -7,6 +7,7 @@ import sqlite3
 import time
 import httpx
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from datetime import datetime, timezone, timedelta
 from network_reads import retry_read
 from pathlib import Path
 from statistics import median
@@ -87,15 +88,31 @@ def build_buyer_preferences(catalog,trades,shops,forum,alive_buyers=(),now=None,
     now=time.time() if now is None else now;alive_buyers=set(alive_buyers or [])
     recent=[dict(r) for r in trades if r.get('buyer') and r.get('sku') in catalog
             and r.get('ts',0)>=now-PREFERENCE_WINDOW]
+    market_prices={}
+    for row in recent:
+        paid=row.get('price')
+        if isinstance(paid,(int,float)) and not isinstance(paid,bool) and paid>0:
+            market_prices.setdefault(row['sku'],[]).append(paid)
+    market_medians={sku:median(prices) for sku,prices in market_prices.items()}
     grouped={};seqs={}
     for row in recent:
         buyer=row['buyer'];sku=row['sku'];product=catalog[sku];cat=product.get('category')
-        b=grouped.setdefault(buyer,{'categories':{},'skus':{},'last_seen':0,'settles':0,
+        b=grouped.setdefault(buyer,{'categories':{},'category_ratios':{},'skus':{},
+                                    'market_ratios':[],'last_seen':0,'settles':0,
                                     'forum_verified_refs':0,'stated_min_hours':[]})
         b['settles']+=1;b['last_seen']=max(b['last_seen'],row.get('ts',0))
         if cat:b['categories'][cat]=b['categories'].get(cat,0)+1
-        s=b['skus'].setdefault(sku,{'settles':0,'last_seen':0,'review_count':0,'review_stars':0.0})
+        s=b['skus'].setdefault(sku,{'settles':0,'last_seen':0,'review_count':0,'review_stars':0.0,
+                                    'prices':[],'market_ratios':[]})
         s['settles']+=1;s['last_seen']=max(s['last_seen'],row.get('ts',0))
+        paid=row.get('price');market_median=market_medians.get(sku)
+        if isinstance(paid,(int,float)) and not isinstance(paid,bool) and paid>0:
+            s['prices'].append(paid)
+            if market_median:
+                ratio=paid/market_median
+                if 0<ratio<=2:
+                    s['market_ratios'].append(ratio);b['market_ratios'].append(ratio)
+                    if cat:b['category_ratios'].setdefault(cat,[]).append(ratio)
         if type(row.get('seq')) is int:seqs[row['seq']]=(buyer,sku,cat)
     # Board reviews carry an author while /api/shops review summaries do not.
     # Review prose is used only for an exact single-product match, and only
@@ -141,9 +158,22 @@ def build_buyer_preferences(catalog,trades,shops,forum,alive_buyers=(),now=None,
         skus=sorted(b['skus'].items(),key=lambda item:(-item[1]['settles'],-item[1]['last_seen'],item[0]))[:10]
         buyers[buyer]={'active':buyer in alive_buyers or b['last_seen']>=now-21600,
             'settles_48h':b['settles'],'last_seen':b['last_seen'],
-            'categories':[{'category':cat,'settles':n,'share':round(n/b['settles'],3)} for cat,n in categories],
+            'price_preference':{'samples':len(b['market_ratios']),
+                'median_paid_to_market':round(median(b['market_ratios']),4) if b['market_ratios'] else None,
+                'estimated_discount_to_market_pct':round((1-median(b['market_ratios']))*100,2)
+                    if b['market_ratios'] else None},
+            'categories':[{'category':cat,'settles':n,'share':round(n/b['settles'],3),
+                           'median_paid_to_market':round(median(b['category_ratios'][cat]),4),
+                           'estimated_discount_to_market_pct':round((1-median(b['category_ratios'][cat]))*100,2)}
+                          for cat,n in categories],
             'skus':[{'sku':sku,'name':catalog[sku].get('name',sku),'category':catalog[sku].get('category'),
                      'settles':data['settles'],'last_seen':data['last_seen'],
+                     'public_market_median':round(market_medians[sku]),
+                     'median_paid':round(median(data['prices'])) if data['prices'] else None,
+                     'median_paid_to_market':round(median(data['market_ratios']),4) if data['market_ratios'] else None,
+                     'estimated_discount_to_market_pct':round((1-median(data['market_ratios']))*100,2)
+                         if data['market_ratios'] else None,
+                     'price_samples':len(data['market_ratios']),
                      'verified_review_count':data['review_count'],
                      'verified_review_average':round(data['review_stars']/data['review_count'],3)
                          if data['review_count'] else None} for sku,data in skus],
@@ -170,14 +200,15 @@ def build_buyer_preferences(catalog,trades,shops,forum,alive_buyers=(),now=None,
         'verified_buyer_reviewers':buyer_review_summary.get(sku,{}).get('buyers',0),
         'verified_buyer_review_average':round(buyer_review_summary[sku]['stars']/buyer_review_summary[sku]['count'],3)
             if buyer_review_summary.get(sku,{}).get('count') else None} for sku in candidates}
-    return {'version':2,'generated_at':now,'window_hours':PREFERENCE_WINDOW//3600,
+    return {'version':3,'generated_at':now,'window_hours':PREFERENCE_WINDOW//3600,
         'buyers':buyers,'products':products,
         'forum_evidence':{'posts_observed':len(posts),'verified_buyer_posts':verified_posts,
                           'untrusted_or_unverified_posts_ignored':untrusted_posts},
         'review_evidence':{'verified_buyer_product_reviews':verified_reviews,
                            'timestamp_unique_matches':timestamp_matched_reviews,
+                           'verified_but_product_unresolved':ignored_reviews,
                            'untrusted_ambiguous_or_unmatched_reviews_ignored':ignored_reviews},
-        'evidence_policy':'ledger purchases primary; exact product reviews aggregated; only buyer-authored forum refs matching that buyer may add stated hours'}
+        'evidence_policy':'verified ledger purchases continuously update buyer SKU, category, and paid-to-public-market-median preferences; exact product reviews add satisfaction only'}
 
 
 def write_buyer_preferences(state,intel,catalog,shops=None,board=None,forum=None,now=None,reviews=None):
@@ -197,6 +228,13 @@ def write_buyer_preferences(state,intel,catalog,shops=None,board=None,forum=None
     result['ledger_through']=intel.get('ledger_through')
     path=root/PREFERENCE_FILE;tmp=path.with_suffix('.tmp')
     tmp.write_text(json.dumps(result,ensure_ascii=False,sort_keys=True));os.replace(tmp,path)
+    # Keep one continuously refreshed snapshot per calendar quarter so the
+    # estimator has an auditable period-to-period history without freezing it.
+    kst=datetime.fromtimestamp(now,timezone(timedelta(hours=9)))
+    period=f'{kst.year}-Q{(kst.month-1)//3+1}'
+    history=root/'buyer-preference-history';history.mkdir(exist_ok=True)
+    historical=history/f'{period}.json';historical_tmp=historical.with_suffix('.tmp')
+    historical_tmp.write_text(json.dumps(result,ensure_ascii=False,sort_keys=True));os.replace(historical_tmp,historical)
     intel.decision('buyer_preferences',{'buyers':len(result['buyers']),'products':len(result['products']),
         'verified_forum_posts':result['forum_evidence']['verified_buyer_posts']})
     return result
