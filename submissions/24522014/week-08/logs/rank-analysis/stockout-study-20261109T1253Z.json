@@ -1,0 +1,232 @@
+{
+ "study": "Shop stock-outs after b+2 (11-09 15:36:01 to about 21:45 KST), read-only. Requested 11-09 21:4x KST.",
+ "note_supply_undercount": "b and d supply counts read after the 11-09 17:16:09 KST kit-log rotation were undercounted (b+2's 6 h checkpoint printed 0 1M+ units supplied; recount 51 over 4 SKUs): the watch's supply parser dated the new market-kit.log from 11-04, so every later [supply] line fell before the period; fixed by dating the archive from 11-04 10:15:50 KST and the current log from 11-09 17:16:09 KST.",
+ "limits": {
+  "ours_restock_capacity_json": {
+   "max_units_per_run": {
+    "value": 12,
+    "validator_max": 12
+   },
+   "max_lines_per_run": {
+    "value": 6,
+    "validator_max": 10
+   },
+   "max_proven_units_per_sku": {
+    "value": 3,
+    "validator_max": 3
+   },
+   "max_unproven_units": {
+    "value": 2,
+    "validator_max": 2
+   },
+   "max_total_units": {
+    "value": 80,
+    "validator_max": 80
+   }
+  },
+  "ours_other": {
+   "run_budget": "computed per run (balance less cash and storage reserves), 12.5M to 13.9M here",
+   "hi_band_worst_cost_cap": "12M worst cost across held and planned 1M+ goods (shop b, both passes)"
+  },
+  "market_or_kit_rules": {
+   "restock_window": "market_restock_window_closed outside the open supply window; about every 19 to 20 min, 2 to 3 runs each",
+   "kit_lines_per_run": "the kit reads at most 10 buy lines a run (buy[:10]); each line is one rate-limited /api/supply call"
+  }
+ },
+ "binding_counts": {
+  "runs": 41,
+  "reasons_since_switch": {
+   "market_restock_window_closed": 221,
+   "bounded_experiment": 41
+  },
+  "ordinary_pass_at_12_units": 36,
+  "ordinary_pass_at_6_lines": 41,
+  "ordinary_6_lines_but_under_12_units": 5,
+  "total_lines_max": 9,
+  "runs_over_10_lines": 0,
+  "budget_max_used_share": 0.723,
+  "budget_bound_runs": 0,
+  "stale_stock_runs": 41,
+  "hi_worst_total_max": 11825978,
+  "hi_within_500k_of_cap_runs": 37
+ },
+ "replay": {
+  "setting": "json",
+  "windows": 19,
+  "runs": 41,
+  "baseline_matches_logged_buys": "33/41",
+  "variants": [
+   {
+    "value": {
+     "max_lines_per_run": 7
+    },
+    "extra_units_per_window": -0.37,
+    "extra_new_skus_per_window": 3.16,
+    "extra_worst_cost_per_window": -102542,
+    "max_hi_worst_any_run": 11825978,
+    "hi_worst_within_12M": true,
+    "runs_over_budget": 0,
+    "windows_with_any_extra": 1
+   },
+   {
+    "value": {
+     "max_lines_per_run": 8
+    },
+    "extra_units_per_window": -0.79,
+    "extra_new_skus_per_window": 6.21,
+    "extra_worst_cost_per_window": -132377,
+    "max_hi_worst_any_run": 11825978,
+    "hi_worst_within_12M": true,
+    "runs_over_budget": 0,
+    "windows_with_any_extra": 2
+   },
+   {
+    "value": {
+     "max_lines_per_run": 10
+    },
+    "extra_units_per_window": -1.26,
+    "extra_new_skus_per_window": 11.68,
+    "extra_worst_cost_per_window": -265785,
+    "max_hi_worst_any_run": 11825978,
+    "hi_worst_within_12M": true,
+    "runs_over_budget": 0,
+    "windows_with_any_extra": 2
+   },
+   {
+    "value": {
+     "max_units_per_run": 14
+    },
+    "extra_units_per_window": 2.74,
+    "extra_new_skus_per_window": 0.05,
+    "extra_worst_cost_per_window": 211149,
+    "max_hi_worst_any_run": 11825978,
+    "hi_worst_within_12M": true,
+    "runs_over_budget": 0,
+    "windows_with_any_extra": 16
+   },
+   {
+    "value": {
+     "max_units_per_run": 16
+    },
+    "extra_units_per_window": 4.26,
+    "extra_new_skus_per_window": 0.11,
+    "extra_worst_cost_per_window": 382095,
+    "max_hi_worst_any_run": 11825978,
+    "hi_worst_within_12M": true,
+    "runs_over_budget": 0,
+    "windows_with_any_extra": 16
+   },
+   {
+    "value": {
+     "max_units_per_run": 18
+    },
+    "extra_units_per_window": 5.0,
+    "extra_new_skus_per_window": 0.11,
+    "extra_worst_cost_per_window": 507138,
+    "max_hi_worst_any_run": 11825978,
+    "hi_worst_within_12M": true,
+    "runs_over_budget": 0,
+    "windows_with_any_extra": 16
+   },
+   {
+    "value": {
+     "max_units_per_run": 18,
+     "max_lines_per_run": 9
+    },
+    "extra_units_per_window": 6.63,
+    "extra_new_skus_per_window": 8.74,
+    "extra_worst_cost_per_window": 569708,
+    "max_hi_worst_any_run": 11825978,
+    "hi_worst_within_12M": true,
+    "runs_over_budget": 0,
+    "windows_with_any_extra": 16
+   },
+   {
+    "value": {
+     "max_proven_units_per_sku": 4
+    },
+    "extra_units_per_window": -0.42,
+    "extra_new_skus_per_window": 0.16,
+    "extra_worst_cost_per_window": 25841,
+    "max_hi_worst_any_run": 14326252,
+    "hi_worst_within_12M": false,
+    "runs_over_budget": 0,
+    "windows_with_any_extra": 2
+   },
+   {
+    "value": {
+     "max_unproven_units": 3
+    },
+    "extra_units_per_window": 0.0,
+    "extra_new_skus_per_window": 0.0,
+    "extra_worst_cost_per_window": 0,
+    "max_hi_worst_any_run": 11825978,
+    "hi_worst_within_12M": true,
+    "runs_over_budget": 0,
+    "windows_with_any_extra": 0
+   }
+  ]
+ },
+ "lost_sales_proxy": {
+  "from_kst": "11-09 15:36",
+  "to_kst": "11-09 21:51",
+  "hours": 6.25,
+  "sample_coverage_of_our_settles": 0.243,
+  "rolling_out_share_24h_sold_set": 0.533,
+  "rolling_sold_set_mean": 81.5,
+  "public_settles_per_h_sampled": {
+   "while_we_had_0": 64.62,
+   "while_we_held": 16.16
+  },
+  "public_settles_per_h_scaled_by_coverage": {
+   "while_we_had_0": 265.4,
+   "while_we_held": 66.3
+  },
+  "our_goods_sales_per_h": 67.82,
+  "skus_with_public_sales_while_we_had_0": 46,
+  "top10_share_of_those_sales": 0.658,
+  "by_hour": {
+   "0": {
+    "public_while_we_had_0": 84,
+    "public_while_we_held": 5,
+    "our_goods_sales": 55
+   },
+   "1": {
+    "public_while_we_had_0": 82,
+    "public_while_we_held": 9,
+    "our_goods_sales": 59
+   },
+   "2": {
+    "public_while_we_had_0": 53,
+    "public_while_we_held": 15,
+    "our_goods_sales": 79
+   },
+   "3": {
+    "public_while_we_had_0": 58,
+    "public_while_we_held": 27,
+    "our_goods_sales": 70
+   },
+   "4": {
+    "public_while_we_had_0": 64,
+    "public_while_we_held": 15,
+    "our_goods_sales": 63
+   },
+   "5": {
+    "public_while_we_had_0": 54,
+    "public_while_we_held": 27,
+    "our_goods_sales": 81
+   },
+   "6": {
+    "public_while_we_had_0": 9,
+    "public_while_we_held": 3,
+    "our_goods_sales": 17
+   }
+  }
+ },
+ "caveats": [
+  "Our seller rejects a request for a SKU it does not hold without logging it, so out-of-stock hits cannot be counted; the proxy is public settles at other shops of SKUs we sold in the previous 24 h while we held 0, which is market demand, not buyers who asked us.",
+  "market-intel samples held 24.3% of our own settles in this window; scaled figures are rough.",
+  "Replay baseline matches logged buys in 33 of 41 runs; within a window a variant's extra units are carried into the next run; more lines per run would also take more window time, which the replay does not model.",
+  "median_watch's .576 out-of-stock share uses a fixed set (goods sold in the 24 h before 11-08 08:49); the rolling 24 h set gives .533."
+ ]
+}
