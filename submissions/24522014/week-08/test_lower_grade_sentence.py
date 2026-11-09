@@ -38,8 +38,8 @@ class Settings(unittest.TestCase):
     def test_the_shipped_setting(self):
         section = json.loads(Path(ab.CONFIG).read_text(encoding="utf-8"))[ab.LOWER_SECTION]
         self.assertEqual((section["share"], section["salt"]), (0.5, "lg1"))
-        # Installed off; switched on only in its own commit after the full suite.
-        self.assertIs(section["enabled"], False)
+        # Installed off at 14:44:38 KST 11-09; switched on in its own commit after the full suite.
+        self.assertIs(section["enabled"], True)
 
     def test_its_own_salt(self):
         orders = [f"o-{i:012x}" for i in range(4000)]

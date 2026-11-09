@@ -52,7 +52,7 @@
     "note": "Food orders only: by order hash, the share in the conditions arm state the order's accepted grades, needed hours of shelf life and certificate in the first message; the control arm sends today's message unchanged. Goods wording is unchanged. Missing, broken or not true means off."
   },
   "food_lower_grade_sentence": {
-    "enabled": false,
+    "enabled": true,
     "share": 0.5,
     "salt": "lg1",
     "note": "Approved 11-09: food orders that send the conditions message; by order hash (its own salt) the share in the test arm add one sentence naming exactly the lower grades the order accepts ('Grade B is fine' or 'Grade B or C is fine if it meets these conditions; price matters more to us than grade.'), so it never invites a quote we would refuse. Control, goods and every check after the first message are unchanged. Missing, broken or not true means off."
