@@ -68,3 +68,16 @@ def test_food_price_projection_uses_food_grade_mix_not_goods_mix(tmp_path):
     result=resale_terms({'kind':'food','list_price':1000},observed,j,
                         dict(policy(),shop_championship_enabled=True),1000)
     assert result['price']==675
+
+
+def test_direct_forum_is_not_double_counted_by_exact_plus_smooth_choice(tmp_path):
+    from r3.state import atomic_json
+    from r3.model import Chooser
+    j=Journal(tmp_path)
+    atomic_json(j.md/'board.json',board())
+    j.put('market_rules',{'buyer_metric':'saved','buyer_forum_metric':'raw'})
+    candidates=[{'id':'better','score':0,'expected_delta':{'forum':.01}},
+                {'id':'same','score':0,'expected_delta':{'forum':0}}]
+    chooser=Chooser(j,dict(policy(),buyer_patch34_enabled=True))
+    assert chooser.choose('buyer',candidates,{'buyer_execution':True})['id']=='better'
+    assert candidates[0]['objective_utility']==pytest.approx(.003)

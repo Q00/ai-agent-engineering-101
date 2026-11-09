@@ -1,0 +1,661 @@
+{
+  "at": "2026-11-09T03:12:12.088310+00:00",
+  "runtime": {
+    "pid": 38184,
+    "session": "f9f684e1c51640b49a9d27fea3a771cb",
+    "started_at": 1794193764.4504054,
+    "launch_id": "auto-join-20261109T030923999515Z"
+  },
+  "minutes_since_restart": 2.7939650853474935,
+  "policy": {
+    "version": "r3-market-observer-book-v6",
+    "market_control_enabled": true,
+    "tunnel_provider": "cloudflare",
+    "market_control_interval_seconds": 300,
+    "shop_growth_v5": true,
+    "shop_strategy_revision": "shop-v10-patch35-terms",
+    "shop_championship_enabled": true,
+    "shop_championship_allocation_enabled": true,
+    "shop_inventory_ceiling": 180,
+    "shop_velocity_enabled": true,
+    "shop_velocity_allocation_enabled": true,
+    "shop_fast_execution_enabled": true,
+    "shop_stock_service_level": 0.9,
+    "shop_supply_slot_capital": 100000,
+    "shop_warranty_liquidity_penalty": 0.02,
+    "warranty_menu_enabled": true,
+    "checkout_recovery_enabled": true,
+    "buyer_patch34_enabled": true,
+    "buyer_strategy_revision": "buyer-v10-patch35-saved",
+    "buyer_forum_metric": "raw",
+    "buyer_championship_enabled": true,
+    "buyer_saved_target_margin": 0.002,
+    "buyer_rank_scope": "everyone",
+    "buyer_forum_post_interval_seconds": 300,
+    "checkout_max_attempts": 2,
+    "buyer_fast_food_enabled": true,
+    "buyer_food_time_seconds": 18,
+    "buyer_goods_time_seconds": 60,
+    "planning_horizon_hours": 6,
+    "storage_reserve_hours": 48,
+    "market_end_at": null,
+    "assortment_coverage_fraction": 0.35,
+    "shop_margin_fraction": 0.02,
+    "food_clearance_hours": 6,
+    "goods_clearance_hours": 96,
+    "actor_model": "gpt-6-luna",
+    "critic_model": "gpt-6-luna",
+    "daily_api_budget_usd": null,
+    "model_timeout_seconds": 18,
+    "critic_cash_fraction": 0.1,
+    "cash_reserve_fraction": 0.2,
+    "cash_floor": 750000,
+    "forum_post_interval_seconds": 600,
+    "supply_cycle_seconds": 1200,
+    "inventory_target_units": 60,
+    "restock_max_lines": 10,
+    "restock_max_qty": 20,
+    "max_sku_capital_fraction": 0.35,
+    "goods_warranty_by_grade": {
+      "A": 3,
+      "B": 3,
+      "C": 6
+    },
+    "quote_compare_min_budget": 100000,
+    "exploration_fraction": 0.1,
+    "max_shop_candidates": 3,
+    "max_negotiation_turns": 4,
+    "checkout_buffer_seconds": 30,
+    "unknown_goods_failure_stress": 0.3,
+    "session_ttl_seconds": 180,
+    "end_at": null,
+    "prices_usd_per_million": {
+      "gpt-6-luna": [
+        0.1,
+        0.5
+      ],
+      "gpt-6.1-terra": [
+        1.0,
+        5.0
+      ]
+    }
+  },
+  "revisions": {
+    "shop": "shop-v10-patch35-terms",
+    "buyer": "buyer-v10-patch35-saved"
+  },
+  "rules": {
+    "at": 1794193762.4812794,
+    "sha256": "e8e63cc2f212ac65c62062760f43c6a335f4ccfbfd78d77d258b476d5575a942",
+    "compatible": true,
+    "expected": "book/revenue/stars; surge<=1.5",
+    "source": "/agent.md",
+    "buyer_metric": "saved",
+    "buyer_compatible": true,
+    "buyer_forum_metric": "raw",
+    "paid_dislike_power": true,
+    "paid_dislike_contract_known": true,
+    "forum_vote_min_deals": 50,
+    "stance_scoring": true,
+    "dislike_costs_shop_cash": true
+  },
+  "buyer_context": {
+    "buyer_metric": "saved",
+    "buyer_forum_metric": "raw",
+    "buyer_rank_scope": "everyone",
+    "rank_note": "percentile components use midrank/continuous surrogates; Patch 3.5 forum uses its raw 0..1 rating"
+  },
+  "strategies": {
+    "shop": {
+      "version": 15,
+      "patch": {
+        "category_weights": {
+          "가구/침구>가구>침대/매트리스": 1.1
+        }
+      },
+      "status": "stable",
+      "since": 1794193764.460078,
+      "cooldown_until": 1794215364.460078
+    },
+    "buyer": {
+      "version": 13,
+      "patch": {},
+      "status": "stable",
+      "since": 1794193838.0866542,
+      "cooldown_until": 1794215438.0866542
+    }
+  },
+  "health": {
+    "checked_at": 1794193930.7533507,
+    "status": "healthy",
+    "url": "https://leasing-point-township-afterwards.trycloudflare.com",
+    "pending_registration": false,
+    "consecutive_probe_failures": 0,
+    "market_visibility": "present",
+    "registry_misses": 0,
+    "probe_interval_seconds": 15,
+    "renewal_seconds": null
+  },
+  "control": {
+    "at": 1794193847.6965938,
+    "epoch": 1793854431.985112,
+    "status": "observe_and_trade",
+    "book": 533599991,
+    "book_peak": 535815660,
+    "book_drawdown": 2215669,
+    "drawdown_brake_until": 0,
+    "brake_drawdown": 0,
+    "capital_fraction": 1,
+    "cash_capacity": {
+      "spendable": 424077528.62,
+      "refund_liability": 2242773,
+      "storage_to_end": 111211.98,
+      "cash_floor": 106607878.4,
+      "remaining_days": 2.0,
+      "reserve_release_schedule": [
+        {
+          "at": 1794205200,
+          "amount": 559885
+        },
+        {
+          "at": 1794216000,
+          "amount": 1682888
+        }
+      ],
+      "discharged_refund_reserve": 0,
+      "reserve_release_before_next_supply": 0
+    },
+    "pause_restock": false,
+    "reasons": [],
+    "own_all": 1.597,
+    "leader_total": 1.731,
+    "leader_gap": 0.134,
+    "sold_known_cost": 4,
+    "below_cost_sales": 0,
+    "shop_evidence_since": 1794193764.460078,
+    "current_shop_known_cost": 0,
+    "current_shop_below_cost": 0,
+    "buyer_payment_failures": {
+      "shelf_life": 17,
+      "stockout": 2,
+      "other": 1
+    },
+    "opportunities": [
+      {
+        "sku": "G74e686be",
+        "arrival_rate_scenario": 4.680555555555555,
+        "competition_sellers_plus_us": 6,
+        "lost_exact_requests": 0,
+        "available_hours_observed": 0
+      },
+      {
+        "sku": "G200e39a3",
+        "arrival_rate_scenario": 3.6127450980392157,
+        "competition_sellers_plus_us": 17,
+        "lost_exact_requests": 0,
+        "available_hours_observed": 0
+      },
+      {
+        "sku": "G67efbcf0",
+        "arrival_rate_scenario": 3.3333333333333335,
+        "competition_sellers_plus_us": 5,
+        "lost_exact_requests": 0,
+        "available_hours_observed": 0
+      },
+      {
+        "sku": "G022ce883",
+        "arrival_rate_scenario": 3.2166666666666663,
+        "competition_sellers_plus_us": 10,
+        "lost_exact_requests": 0,
+        "available_hours_observed": 0
+      },
+      {
+        "sku": "Gef4d3036",
+        "arrival_rate_scenario": 3.1153846153846154,
+        "competition_sellers_plus_us": 13,
+        "lost_exact_requests": 0,
+        "available_hours_observed": 0
+      },
+      {
+        "sku": "Gb2392fa9",
+        "arrival_rate_scenario": 2.8095238095238098,
+        "competition_sellers_plus_us": 7,
+        "lost_exact_requests": 0,
+        "available_hours_observed": 0
+      },
+      {
+        "sku": "G66ded25b",
+        "arrival_rate_scenario": 2.805555555555556,
+        "competition_sellers_plus_us": 15,
+        "lost_exact_requests": 0,
+        "available_hours_observed": 0
+      },
+      {
+        "sku": "G7fa48eaa",
+        "arrival_rate_scenario": 2.727272727272727,
+        "competition_sellers_plus_us": 11,
+        "lost_exact_requests": 0,
+        "available_hours_observed": 0
+      },
+      {
+        "sku": "G1831f2c0",
+        "arrival_rate_scenario": 2.2824074074074074,
+        "competition_sellers_plus_us": 18,
+        "lost_exact_requests": 0,
+        "available_hours_observed": 0
+      },
+      {
+        "sku": "G16dcdc73",
+        "arrival_rate_scenario": 2.1969696969696972,
+        "competition_sellers_plus_us": 11,
+        "lost_exact_requests": 0,
+        "available_hours_observed": 0
+      },
+      {
+        "sku": "G0b0ca441",
+        "arrival_rate_scenario": 2.055555555555556,
+        "competition_sellers_plus_us": 6,
+        "lost_exact_requests": 0,
+        "available_hours_observed": 0
+      },
+      {
+        "sku": "G0d52d508",
+        "arrival_rate_scenario": 1.9375,
+        "competition_sellers_plus_us": 4,
+        "lost_exact_requests": 0,
+        "available_hours_observed": 0
+      },
+      {
+        "sku": "G32bf9a8e",
+        "arrival_rate_scenario": 1.888888888888889,
+        "competition_sellers_plus_us": 12,
+        "lost_exact_requests": 0,
+        "available_hours_observed": 0
+      },
+      {
+        "sku": "G3434758a",
+        "arrival_rate_scenario": 1.8333333333333333,
+        "competition_sellers_plus_us": 18,
+        "lost_exact_requests": 0,
+        "available_hours_observed": 0
+      },
+      {
+        "sku": "G5bdaf222",
+        "arrival_rate_scenario": 1.4761904761904763,
+        "competition_sellers_plus_us": 7,
+        "lost_exact_requests": 0,
+        "available_hours_observed": 0
+      },
+      {
+        "sku": "G06a54b11",
+        "arrival_rate_scenario": 1.4404761904761905,
+        "competition_sellers_plus_us": 7,
+        "lost_exact_requests": 0,
+        "available_hours_observed": 0
+      },
+      {
+        "sku": "G021aae64",
+        "arrival_rate_scenario": 1.431159420289855,
+        "competition_sellers_plus_us": 23,
+        "lost_exact_requests": 0,
+        "available_hours_observed": 0
+      },
+      {
+        "sku": "G51044bd3",
+        "arrival_rate_scenario": 1.3333333333333333,
+        "competition_sellers_plus_us": 2,
+        "lost_exact_requests": 0,
+        "available_hours_observed": 0
+      },
+      {
+        "sku": "Gc68d7191",
+        "arrival_rate_scenario": 1.3055555555555556,
+        "competition_sellers_plus_us": 3,
+        "lost_exact_requests": 0,
+        "available_hours_observed": 0
+      },
+      {
+        "sku": "Gac0c1622",
+        "arrival_rate_scenario": 1.277777777777778,
+        "competition_sellers_plus_us": 6,
+        "lost_exact_requests": 0,
+        "available_hours_observed": 0
+      }
+    ],
+    "suggestions": [
+      {
+        "role": "shop",
+        "field": "assortment_coverage_fraction",
+        "direction": 1,
+        "reason": "observed unserved external requests"
+      },
+      {
+        "role": "shop",
+        "field": "inventory_target_units",
+        "direction": 1,
+        "reason": "limited breadth with deployable capital"
+      }
+    ],
+    "market_summary": {
+      "tracked_skus": 1500,
+      "observed_baskets": 100,
+      "top_unserved_categories": [
+        [
+          "가구/침구>가구>소파/의자/스툴",
+          1.0124224999366787
+        ],
+        [
+          "생활가전>생활가전-대형>냉장/냉동고",
+          0.06710345489100819
+        ],
+        [
+          "식품>야채/과일>신선과일(부패주의)",
+          0.06584154589999465
+        ]
+      ],
+      "exposure_started_at": 1794172287.4679372,
+      "context_note": "own buyer baskets have zero demand weight; external settlements only"
+    },
+    "note": "observational diagnosis; policy trials require mature own evidence and rollback checks",
+    "championship": {
+      "at": 1794193847.6965938,
+      "ranks": {
+        "shop": {
+          "rank": 9,
+          "population": 59
+        },
+        "buyer": {
+          "rank": 10,
+          "population": 56
+        }
+      },
+      "next_thresholds": {
+        "shop": {
+          "book": {
+            "current": 533599991,
+            "next_value": 536844557,
+            "gap": 3244566,
+            "weight": 0.5,
+            "cohort_size": 59,
+            "scale": "percentile"
+          },
+          "revenue": {
+            "current": 3180991347,
+            "next_value": 3224602741,
+            "gap": 43611394,
+            "weight": 0.3,
+            "cohort_size": 59,
+            "scale": "percentile"
+          },
+          "stars_rank": {
+            "current": 4.33,
+            "next_value": 4.34,
+            "gap": 0.009999999999999787,
+            "weight": 0.2,
+            "cohort_size": 59,
+            "scale": "percentile"
+          }
+        },
+        "buyer": {
+          "saved": {
+            "current": 0.2953,
+            "next_value": 0.3073,
+            "gap": 0.01200000000000001,
+            "weight": 0.5,
+            "cohort_size": 56,
+            "scale": "percentile"
+          },
+          "forum": {
+            "current": 0.896,
+            "next_value": 0.897,
+            "gap": 0.0010000000000000009,
+            "weight": 0.3,
+            "cohort_size": 56,
+            "scale": "raw",
+            "all_gain_per_0_01": 0.003,
+            "next_value_is": "peer benchmark, not a percentile threshold"
+          },
+          "deals": {
+            "current": 8284,
+            "next_value": 8395,
+            "gap": 111,
+            "weight": 0.1,
+            "cohort_size": 56,
+            "scale": "percentile"
+          },
+          "posts": {
+            "current": 1153,
+            "next_value": 1174,
+            "gap": 21,
+            "weight": 0.1,
+            "cohort_size": 56,
+            "scale": "percentile"
+          }
+        }
+      },
+      "pace": {
+        "shop": {
+          "metric": "book",
+          "hours": 5.960482758349842,
+          "own_per_hour": -173954.0305770554,
+          "fastest_matched": [
+            {
+              "name": "yms979",
+              "per_hour": 6670353.159616745
+            },
+            {
+              "name": "ddolcom",
+              "per_hour": 5460962.529318925
+            },
+            {
+              "name": "lee-sungsoo",
+              "per_hour": 4433811.164536694
+            }
+          ],
+          "note": "observational pace, not a forecast or causal estimate"
+        },
+        "buyer": {
+          "metric": "saved",
+          "hours": 5.960482758349842,
+          "own_per_hour": 0.00043620627815049674,
+          "fastest_matched": [
+            {
+              "name": "dariaklt",
+              "per_hour": 0.0015938306317037402
+            },
+            {
+              "name": "iyen-dori",
+              "per_hour": 0.000922744049933747
+            },
+            {
+              "name": "choo-chu",
+              "per_hour": 0.0008388582272124972
+            }
+          ],
+          "note": "observational pace, not a forecast or causal estimate"
+        }
+      },
+      "idle_spendable_fraction": 0.7955838442424158,
+      "stock_cost": 5560599,
+      "scope": "everyone; student ranks remain separate in official board"
+    }
+  },
+  "progress": {
+    "at": 1794193847.6965938,
+    "ranks": {
+      "shop": {
+        "rank": 9,
+        "population": 59
+      },
+      "buyer": {
+        "rank": 10,
+        "population": 56
+      }
+    },
+    "next_thresholds": {
+      "shop": {
+        "book": {
+          "current": 533599991,
+          "next_value": 536844557,
+          "gap": 3244566,
+          "weight": 0.5,
+          "cohort_size": 59,
+          "scale": "percentile"
+        },
+        "revenue": {
+          "current": 3180991347,
+          "next_value": 3224602741,
+          "gap": 43611394,
+          "weight": 0.3,
+          "cohort_size": 59,
+          "scale": "percentile"
+        },
+        "stars_rank": {
+          "current": 4.33,
+          "next_value": 4.34,
+          "gap": 0.009999999999999787,
+          "weight": 0.2,
+          "cohort_size": 59,
+          "scale": "percentile"
+        }
+      },
+      "buyer": {
+        "saved": {
+          "current": 0.2953,
+          "next_value": 0.3073,
+          "gap": 0.01200000000000001,
+          "weight": 0.5,
+          "cohort_size": 56,
+          "scale": "percentile"
+        },
+        "forum": {
+          "current": 0.896,
+          "next_value": 0.897,
+          "gap": 0.0010000000000000009,
+          "weight": 0.3,
+          "cohort_size": 56,
+          "scale": "raw",
+          "all_gain_per_0_01": 0.003,
+          "next_value_is": "peer benchmark, not a percentile threshold"
+        },
+        "deals": {
+          "current": 8284,
+          "next_value": 8395,
+          "gap": 111,
+          "weight": 0.1,
+          "cohort_size": 56,
+          "scale": "percentile"
+        },
+        "posts": {
+          "current": 1153,
+          "next_value": 1174,
+          "gap": 21,
+          "weight": 0.1,
+          "cohort_size": 56,
+          "scale": "percentile"
+        }
+      }
+    },
+    "pace": {
+      "shop": {
+        "metric": "book",
+        "hours": 5.960482758349842,
+        "own_per_hour": -173954.0305770554,
+        "fastest_matched": [
+          {
+            "name": "yms979",
+            "per_hour": 6670353.159616745
+          },
+          {
+            "name": "ddolcom",
+            "per_hour": 5460962.529318925
+          },
+          {
+            "name": "lee-sungsoo",
+            "per_hour": 4433811.164536694
+          }
+        ],
+        "note": "observational pace, not a forecast or causal estimate"
+      },
+      "buyer": {
+        "metric": "saved",
+        "hours": 5.960482758349842,
+        "own_per_hour": 0.00043620627815049674,
+        "fastest_matched": [
+          {
+            "name": "dariaklt",
+            "per_hour": 0.0015938306317037402
+          },
+          {
+            "name": "iyen-dori",
+            "per_hour": 0.000922744049933747
+          },
+          {
+            "name": "choo-chu",
+            "per_hour": 0.0008388582272124972
+          }
+        ],
+        "note": "observational pace, not a forecast or causal estimate"
+      }
+    },
+    "idle_spendable_fraction": 0.7955838442424158,
+    "stock_cost": 5560599,
+    "scope": "everyone; student ranks remain separate in official board"
+  },
+  "shop_quality_cohorts": {
+    "at": 1794193630.5180917,
+    "grades": {
+      "C": {
+        "n": 200,
+        "broken": 66,
+        "within3": 27,
+        "unknown_time": 0
+      },
+      "A": {
+        "n": 1233,
+        "broken": 38,
+        "within3": 16,
+        "unknown_time": 0
+      },
+      "B": {
+        "n": 348,
+        "broken": 45,
+        "within3": 19,
+        "unknown_time": 0
+      }
+    }
+  },
+  "own_sales": {
+    "count": 0,
+    "revenue": 0,
+    "gross_margin_before_later_costs": 0,
+    "below_cost_count": 0,
+    "events": []
+  },
+  "buyer_purchases": {
+    "count": 0,
+    "events": []
+  },
+  "restock_plans": [],
+  "successful_supplies": [],
+  "actual_supply_units": 0,
+  "actual_supply_cost": 0,
+  "forum_deliveries": [
+    {
+      "key": "buyer-insight:5980646",
+      "status": 200,
+      "role": "buyer",
+      "_ts": 1794193852.2485483
+    }
+  ],
+  "post_restart_errors": {
+    "market_control_error": [],
+    "forum_error": [],
+    "strategy_error": []
+  },
+  "limits": [
+    "Short post-release observation, not proof of improved ranks or durable profit.",
+    "Supply success is parsed only from this launch console; plans are separate.",
+    "Gross margin excludes subsequent refunds, storage and expiration."
+  ]
+}

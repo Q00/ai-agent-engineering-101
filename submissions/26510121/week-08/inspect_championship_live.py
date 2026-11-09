@@ -22,6 +22,8 @@ def main():
         sales=[r for r in events('shop_settled') if r['strategy_version']==roles['shop']['version']]
         purchases=[r for r in events('purchase') if r['strategy_version']==roles['buyer']['version']]
         plans=events('restock_decision')
+        buyer_predictions=[r for r in events('prediction') if r.get('role')=='buyer']
+        buyer_context=buyer_predictions[-1].get('context',{}) if buyer_predictions else {}
         supplies=[]
         console=watch.get('market_log')
         if console:
@@ -32,6 +34,9 @@ def main():
         result={'at':datetime.fromtimestamp(now,timezone.utc).isoformat(),'runtime':runtime,
                 'minutes_since_restart':(now-start)/60,'policy':policy(),
                 'revisions':{role:kv(role+'_strategy_revision') for role in ['shop','buyer']},
+                'rules':kv('market_rules'),
+                'buyer_context':{k:buyer_context.get(k) for k in
+                                 ['buyer_metric','buyer_forum_metric','buyer_rank_scope','rank_note']},
                 'strategies':roles,'health':read_json(ROOT/'.market/shop-health.json'),
                 'control':kv('market_control'),'progress':kv('championship_progress'),
                 'shop_quality_cohorts':kv('shop_quality_cohorts_v9'),

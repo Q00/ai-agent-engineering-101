@@ -66,6 +66,13 @@ class Chooser:
             candidate['rank_progress_surrogate'] = rank_progress(board, role, 'seochanit', delta)
             candidate['objective_utility'] = ((candidate['rank_gain_approximation'] or 0) +
                                               (candidate['rank_progress_surrogate'] or 0))
+            from .meta import direct_component,direct_gain
+            if direct_component(board,role,'forum'):
+                own=next((r for r in board.get('buyers',[]) if r.get('name')=='seochanit'),None)
+                if own is not None:
+                    # Exact direct effects need no second threshold-progress
+                    # bonus; otherwise the .3 forum term would be counted twice.
+                    candidate['objective_utility']-=.3*direct_gain(own.get('forum') or 0,delta.get('forum',0))
             candidate['objective_utility'] *= candidate.get('capital_efficiency_factor',1)
         def utility(candidate):
             return (candidate.get('objective_utility', 0), candidate.get('score', 0))
