@@ -4,6 +4,7 @@ from copy import deepcopy
 from feedback import number
 from market_evidence import demand_profiles
 from supply_pricing import surge_factors
+from replenishment_profit import refund_recovery
 
 
 def configuration(cfg):
@@ -79,7 +80,8 @@ def gates(inv, candidates, economics, cfg, now, public, control):
     factors = surge_factors(inv)
     eligible, excluded, evidence = {}, {}, {}
     primaries, secondaries = focus["primary_skus"], focus["secondary_skus"]
-    primary_proven = any(proven(economics.get(s, {}), cfg["min_mature_sales"]) for s in primaries)
+    primary_proven = any(proven(economics.get(s, {}), cfg["min_mature_sales"])
+                         or refund_recovery(economics.get(s, {}), cfg) for s in primaries)
     for sku in primaries + secondaries:
         p = candidates.get(sku)
         row = (control or {}).get(sku, {"planned_qty": 0, "settled_qty": 0})
@@ -97,13 +99,14 @@ def gates(inv, candidates, economics, cfg, now, public, control):
             reason = "surge_above_limit"
         elif profile.get("sales", 0) < minimum_sales or profile.get("buyers", 0) < minimum_buyers:
             reason = "insufficient_fresh_public_demand"
-        elif own.get("unknown", 0) or own.get("refunded", 0):
+        elif own.get("unknown", 0) or own.get("refunded", 0) and not refund_recovery(own, cfg):
             reason = "own_cost_unknown_or_refund_observed"
         elif own.get("mature", 0) and own.get("net_estimate", 0) <= 0:
             reason = "own_mature_profit_not_positive"
         elif sku in secondaries and not primary_proven:
             reason = "secondary_needs_mature_primary_profit"
-        cap = 2 if sku in primaries and proven(economics.get(sku, {}), cfg["min_mature_sales"]) else 1
+        cap = 2 if sku in primaries and (proven(own, cfg["min_mature_sales"])
+                                       or refund_recovery(own, cfg)) else 1
         outstanding = max(0, row["planned_qty"] - row["settled_qty"] - row.get("retry_credit", 0))
         if reason is None and outstanding >= cap:
             reason = "awaiting_own_settlement_or_supply_reconciliation"

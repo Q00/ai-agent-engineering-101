@@ -158,14 +158,14 @@ class RestockCoverageTests(unittest.TestCase):
                 decision, _ = self.plan(adaptive_control={CHEAP[0]: base})
                 self.assertEqual(self.quantity(decision, (CHEAP[0],)), expected)
 
-    def test_more_capacity_preserves_total_twenty_stock_and_cash_and_food_exposure(self):
-        for held, expected in ((17, 3), (19, 1), (20, 0)):
+    def test_more_capacity_preserves_total_thirty_stock_and_cash_and_food_exposure(self):
+        for held, expected in ((20, 8), (27, 3), (29, 1), (30, 0)):
             self.inv["units"] = [unit(unit=f"other-{i}", sku=f"Gffff{i:04x}", category="unrelated",
                                       cost=1000, supplied_at=self.now - 10) for i in range(held)]
             with self.subTest(held=held):
                 decision, _ = self.plan()
                 self.assertEqual(sum(row["qty"] for row in decision["buy"]), expected)
-                self.assertLessEqual(held + expected, 20)
+                self.assertLessEqual(held + expected, 30)
         self.inv["units"] = []
         self.inv["balance"] = 2000000
         self.assertEqual(self.plan()[0], {"buy": []})
@@ -220,14 +220,14 @@ class RestockCoverageTests(unittest.TestCase):
                     self.assertLessEqual(sum(row["qty"] for row in decision["buy"]), rows[0]["window_unit_cap"])
 
     def test_current_policy_and_unsupported_broader_limits(self):
-        self.assertEqual((self.cfg["max_units_per_run"], self.cfg["max_stock_units"], self.cfg["max_units_per_sku"]), (8, 20, 4))
-        self.assertEqual((self.rules["max_units_per_run"], self.rules["low_stock_units"], self.rules["proven_max_units_per_sku"]), (8, 20, 2))
+        self.assertEqual((self.cfg["max_units_per_run"], self.cfg["max_stock_units"], self.cfg["max_units_per_sku"]), (8, 30, 4))
+        self.assertEqual((self.rules["max_units_per_run"], self.rules["low_stock_units"], self.rules["proven_max_units_per_sku"]), (8, 30, 2))
         self.assertEqual(self.rules["replenishment"], {"enabled": True, "lookback_seconds": 3600,
             "cover_seconds": 2400, "max_units_per_sku": 4, "distinct_skus_before_depth": 4, "food_priority_units": 1})
         self.assertEqual(self.rules["food_pilots"]["max_units_per_run"], 2)
         with tempfile.TemporaryDirectory(dir=ROOT / ".market") as directory:
             root = Path(directory)
-            for section, key, value in (("adaptive", "max_units_per_run", 9), ("adaptive", "low_stock_units", 21),
+            for section, key, value in (("adaptive", "max_units_per_run", 9), ("adaptive", "low_stock_units", 31),
                     ("replenishment", "max_units_per_sku", 5), ("replenishment", "max_units_per_sku", True),
                     ("replenishment", "cover_seconds", 3601), ("replenishment", "food_priority_units", 2)):
                 candidate = deepcopy(self.policy)

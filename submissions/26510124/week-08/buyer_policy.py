@@ -41,6 +41,12 @@ def load_policy():
             or any(type(v) is not int or not 1 <= v <= 100 for v in targets.values())):
         raise ValueError("Invalid buyer policy: target_list_price_percent")
     preferred = config.get("preferred_goods_warranty_hours")
+    completion = config.get("completion_list_price_percent")
+    if "completion_list_price_percent" in config and (not isinstance(completion, dict)
+            or set(completion) != {"food", "goods"}
+            or any(type(v) is not int or not 1 <= v <= config["list_price_cap_percent"]
+                   or v < (targets or {}).get(k, 0) for k, v in completion.items())):
+        raise ValueError("Invalid buyer policy: completion_list_price_percent")
     if "preferred_goods_warranty_hours" in config and (type(preferred) not in (int, float)
             or not math.isfinite(preferred)
             or not config["goods_warranty_hours"] <= preferred <= 72):
@@ -115,6 +121,11 @@ def buying_terms(budget, *, product=None, order=None, config=None):
     if ref is not None and target_percent is not None:
         # A negotiation goal, never a new checkout authority or compulsory refusal.
         terms["target_price"] = min(terms["target_price"], max(1, ref * target_percent // 100))
+    completion_percent = config.get("completion_list_price_percent", {}).get(terms["kind"])
+    if ref is not None and completion_percent is not None:
+        # Soft completion guidance, not the final checkout authority. Avoid a
+        # fixed live-Saved cutoff or extra board/model calls for every order.
+        terms["completion_price"] = min(limit, max(1, ref * completion_percent // 100))
     if terms["kind"] == "goods" and "preferred_goods_warranty_hours" in config:
         terms["preferred_warranty_hours"] = config["preferred_goods_warranty_hours"]
     if "allow_accept_above_concession" in config:

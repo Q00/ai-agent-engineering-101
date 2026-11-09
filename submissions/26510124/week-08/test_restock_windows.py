@@ -207,7 +207,7 @@ class ProvenDepthTests(unittest.TestCase):
         self.catalog["G00001"]["list_price"] = 500000
         self.assertEqual(self.quantity(), 0)  # Maximum surge now exceeds the old 500k cap.
         self.catalog["G00001"]["list_price"] = 100000
-        self.inv["units"] = [unit(unit=str(i), sku="G00009", category="other") for i in range(19)]
+        self.inv["units"] = [unit(unit=str(i), sku="G00009", category="other") for i in range(29)]
         self.assertEqual(self.quantity(), 1)
         self.inv["units"] = []
         self.catalog["G00001"]["kind"] = "food"

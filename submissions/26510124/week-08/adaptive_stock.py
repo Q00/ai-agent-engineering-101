@@ -186,6 +186,10 @@ def candidates(inv, catalog, categories, economics, cfg, now, public, *, paused=
         selected = affordable + generic + sorted(food_ranked)[:food_slots]
     else:
         selected = sorted(ranked)[:rules["max_candidates"] - food_slots] + sorted(food_ranked)[:food_slots]
+    selected_skus = {sku for _, sku, _ in selected}
+    for _, sku, _ in ranked + food_ranked:
+        if sku not in selected_skus:
+            reject(sku, "candidate_pool_limit")
     return {sku: data for _, sku, data in selected}
 
 

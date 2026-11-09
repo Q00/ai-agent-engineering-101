@@ -18,6 +18,7 @@ class TurnoverCandidateTests(unittest.TestCase):
         self.now = time.time()
         self.cfg = policy_at()["restock"]
         self.rules = self.cfg["adaptive_goods"]
+        self.rules["max_candidates"] = 12  # Preserve the original crowded-pool regression.
         self.rules["turnover_goods"] = {"enabled": True, "max_candidates": 4,
                                          "priority_units_per_run": 2, "max_list_price": 300000}
         self.rules["food_pilots"]["max_candidates"] = 2
