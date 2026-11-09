@@ -69,6 +69,10 @@ SPREAD = True                # the user's choice (2026-11-09 15:40): focus lines
 TIER_HIGH = 1_000_000        # list price above this: high tier
 TIER_LOW = 200_000           # list price up to this: low tier; between: mid
 TIER_SKUS = 25               # best sellers kept per tier (23 high, 45 mid, 42 low SKUs sold at 3+ shops at 15:40)
+HIGH_A_MIN = 0.72            # Claude (2026-11-09 20:22, hourly check): high tier only where the market's grade A sells at this share of list.
+# My A units cost 0.55-0.75 of list (random), the floor is cost, and 1M+ A sold at 0.65-0.75: G24f5f979 (market A 0.676) had 121 offers
+# and 1 deal against my 0.733 floor. Below 0.72 a new dear unit has almost no margin and about 1/3 comes as grade C
+A_MIN_DEALS = 5              # grade A settles seen (customers.py sku_a) before a high-tier SKU is judged; until then it is not bought
 MEMORY = Path("restock_memory.json")
 
 
@@ -142,7 +146,7 @@ def focus_lines(inv, catalog, focus_cats, cu):
     for s, n in c_have.items():
         have[s] = have.get(s, 0) + n // 2
     if use_recent and SPREAD:
-        return spread_lines(recent, catalog, shops, total, have, c_full, balance)
+        return spread_lines(recent, catalog, shops, total, have, c_full, balance, cu.get("sku_a", {}))
     lines = []
     for cat in focus_cats:
         skus = recent.get(cat, {}) if use_recent else cu.get("sku_buys", {}).get(cat, {})
@@ -162,7 +166,13 @@ def tier(list_price):
     return 0 if list_price > TIER_HIGH else 1 if list_price > TIER_LOW else 2
 
 
-def spread_lines(recent, catalog, shops, total, have, c_full, balance):
+def high_ok(sku_a, s):
+    """A high-tier SKU is bought only when grade A sells at HIGH_A_MIN of list or more (A_MIN_DEALS deals seen)."""
+    row = sku_a.get(s)
+    return bool(row) and row[1] >= A_MIN_DEALS and row[0] is not None and row[0] >= HIGH_A_MIN
+
+
+def spread_lines(recent, catalog, shops, total, have, c_full, balance, sku_a=None):
     """ddolcom (2026-11-09 15:40, the user's instruction): every goods SKU of any category that settled at MIN_SHOPS or more
     other shops in the last 3 h, the TIER_SKUS best sellers of each price tier (dear by value, mid and cheap by deals),
     taken in turn high, mid, low so one run's few lines do not all go to sofas. Sold-out SKUs first within the turn."""
@@ -173,6 +183,8 @@ def spread_lines(recent, catalog, shops, total, have, c_full, balance):
             if not c or c.get("kind") != "goods" or s in c_full or shops.get(s, 0) < MIN_SHOPS:
                 continue
             if c["list_price"] * COST_GUESS > UNIT_SHARE * balance:
+                continue
+            if tier(c["list_price"]) == 0 and not high_ok(sku_a or {}, s):
                 continue
             by_tier[tier(c["list_price"])].append((n, s))
     queues = []

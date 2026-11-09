@@ -19,7 +19,8 @@ MARKET = os.environ.get("MARKET_URL", "https://market.ourolabs.ai")
 ME = "ddolcom"                  # the market name (join --name), also the card and receipt name
 PAGES = 20                      # at most 20 x 500 ledger entries per run
 FIRST_LOOKBACK = 5000           # first run: start this many entries before the newest
-PRICE_ALPHA = 0.02              # paid/list per shop: an average over about the last 50 deals
+SKU_A_ALPHA = 0.1               # grade A paid/list per SKU: an average over about the last 10 deals
+PRICE_ALPHA = 0.02             # paid/list per shop: an average over about the last 50 deals
 RECENT_HOURS = 3                # sales the restock looks at to choose focus SKUs, in buckets of RECENT_BUCKET seconds
 RECENT_BUCKET = 600
 RECENT_SEED = "recent_seed.json"    # the last hours of settled deals when "recent" starts, written once from the ledger
@@ -60,6 +61,20 @@ def fold_price(cu, e, catalog):
     row[0] = ratio if row[0] is None else row[0] + (ratio - row[0]) * max(1 / row[1], PRICE_ALPHA)
 
 
+def fold_a_price(cu, e, catalog):
+    """ddolcom (2026-11-09 20:22): cu["sku_a"][sku] = [average paid/list of grade A settles, deals], any shop.
+    restock.py buys a high-tier SKU only when grade A sells high enough over its random cost (0.55-0.75 of list)."""
+    d = e.get("data") or {}
+    item = catalog.get(d.get("sku") or "") or {}
+    if e.get("kind") != "settle" or d.get("grade") != "A" or not item.get("list_price") \
+            or not isinstance(d.get("amount"), (int, float)):
+        return
+    row = cu.setdefault("sku_a", {}).setdefault(d["sku"], [None, 0])
+    ratio = d["amount"] / item["list_price"]
+    row[1] += 1
+    row[0] = ratio if row[0] is None else row[0] + (ratio - row[0]) * max(1 / row[1], SKU_A_ALPHA)
+
+
 def update(mem, catalog, client=None):
     """Read the ledger since the last run and fold the settled deals into mem["customers"]. Never raises."""
     cu = mem.setdefault("customers", {"my_urls": [], "customers": {}, "buys": {}, "sku_buys": {}, "seen": []})
@@ -98,6 +113,7 @@ def update(mem, catalog, client=None):
                 if e.get("kind") == "join" and d.get("role") == "shop" and d.get("name") and d.get("url"):
                     cu.setdefault("url_names", {})[d["url"]] = d["name"]
                 fold_price(cu, e, catalog)
+                fold_a_price(cu, e, catalog)
                 if e.get("kind") == "settle" and d.get("sku"):
                     b = cu["recent"].setdefault(str(int(e["ts"] // RECENT_BUCKET)), {})
                     b[d["sku"]] = b.get(d["sku"], 0) + 1
