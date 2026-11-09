@@ -38,3 +38,20 @@ Buyer 자식 프로세스뿐 아니라 결제 뒤 결과 처리와 Shop 감시�
 - `logs/buyer-v12-reconcile-tests-20261109T0840.txt`
 
 성과 평가는 적용 이후 완료 주문의 처리 시간·결제율·초기 Saved와, 6시간 뒤 성숙한 공산품 고장/환불 결과를 구분한다. 프로파일 개선이나 테스트 통과가 전체 1위를 보장하지 않는다.
+
+## 최종 적용과 실제 실행 — 18:00 KST
+
+최종 코드·정책을 합친 전체 **238개 검증**이 통과했다: `logs/buyer-v12-final-runtime-tests-20261109T0858.txt`. 추가한 maintenance gate는 새 Buyer 자식이 어떤 견적 요청이나 결제도 하기 전에 대기 상태임을 기록한다. 기존 주문이 끝나 이 대기 상태에 도달한 것을 확인한 뒤 운영 프로세스를 종료했다. gate는 만료와 중단 요청을 처리하고 재시작 전에 해제한다. 관련 실제 서명 정산·유지보수 검사도 통과했다.
+
+- 정책 적용: `logs/buyer-v12-deployment-20261109T085512097740Z.json`
+- 결제 전 대기 확인·기존 프로세스 정상 종료: `logs/buyer-v12-drain-20261109T085537634133Z.json`, `logs/autonomous-deploy-before-20261109T085530589037Z.json`
+- 새 프로세스 PID 23592, session b52b0cbb3cca4a6ebe165b8515487575. 기존 shop/buyer 키와 원장은 유지했다.
+- 공개 주소는 `https://dependent-womens-diagnosis-reaction.trycloudflare.com`으로 바뀌었다. 새 Cloudflare DNS가 응답하기까지 약 62초 걸렸고 17:57:28 Shop, 17:57:30 Buyer 등록을 확인했다.
+- `buyer-v12-saved-throughput`, strategy version 15가 17:57:31 새 주문부터 활성화됐다. Shop 전략은 `shop-v10-patch35-terms`, version 15를 유지했다.
+- 첫 식품 주문은 약 3.59초에 verified=true로 완료됐고 초기 Saved 기여는 0.42804였다.
+- 18:00:08까지 완료 주문은 식품 7개·공산품 1개 중 결제 6개(전부 식품), 실패 2개였다. 준비 시간 중앙값 1.55초, 결과 제출까지 중앙값 5.80초, **주문 시작 간격 중앙값은 별도로 20.29초**였다. 새 구매의 초기 Saved 기여 평균은 0.38326이었다. 결과 처리 시간이 곧 다음 주문 시작 간격이라는 뜻은 아니다.
+- 같은 시점 새 Shop에서 실제 정산 3건, 고객 방문 15건을 확인했다. 제어·전략·게시 오류는 0건이었다.
+- 시작 직후 이전 연결 상태를 읽어 일시적 transport_unhealthy 방어 상태가 기록됐다. 새 공개 card·ACP·board와 heartbeat가 정상인 것을 확인하고 공식 제어 갱신을 실행해 observe_and_trade, reasons=[]로 회복했다. 방어 검증을 해제하지 않았다.
+- 공개 검증도 양쪽 alive=true, card/ACP HTTP 200, 기대 revision 일치로 통과했다: `logs/autonomous-verified-20261109T085816346674Z.json`.
+
+실제 거래와 시간 근거는 `logs/buyer-v12-live-20261109T090008851736Z.json`, `logs/championship-live-evidence-20261109T090008971597Z.json`에 있다. 이전 프로파일 구간의 결과 처리 중앙값은 60.75초였으나 서로 다른 주문과 가게의 초기 비교다. 이를 모든 주문의 확정적인 가속률이나 순위 상승 보장으로 사용하지 않는다. 특히 새 공산품 주문 하나의 실패로 공산품 전략 전체를 판단하지 않는다.
