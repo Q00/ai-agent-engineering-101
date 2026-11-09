@@ -1,8 +1,8 @@
 """Market buyer with name-based memory and the week-06 negotiation loop.
 
     python market_buyer.py --shops .market/shops.json --item lamp --budget 120
-The 270-second deadline and 12-decision cap are operational error limits, not a
-negotiation strategy. Hitting either fails visibly rather than inventing an offer.
+The configured four decisions and 270-second deadline are shared across at most
+two shops. A second shop requires a confirmed end without any observed receipt.
 """
 import argparse
 import json
@@ -26,6 +26,7 @@ from buyer_context import compact_dialogue
 from buyer_fast_selection import recent_success_choice, timeout_choice
 from buyer_value_memory import build_value_evidence
 from buyer_public_prices import read_public_prices, merge_price_evidence
+from buyer_retry import remaining_retry_decisions, select_alternative
 
 
 VERSION_HEADERS = {"A2A-Version": "1.0"}
@@ -103,7 +104,7 @@ def acceptance(order):
 
 
 def choose_shop(shops, memory, *, item, budget, deadline, policy=None, order=None, catalog=None,
-                market_dir=None):
+                market_dir=None, selection_state=None):
     order = order or {}
     policy = policy or load_policy()
     seed = order.get("order") or f"{item}:{int(time.time() // 900)}"
@@ -179,6 +180,9 @@ def choose_shop(shops, memory, *, item, budget, deadline, policy=None, order=Non
     log("SHOP SELECTION", choice)
     shop = next(s for s in shops if s["name"] == choice["name"])
     reference = values.get((shop["name"], choice.get("sku")), {}).get("groups")
+    if selection_state is not None:
+        # Local data only: a registry's arbitrary extra fields cannot seed retries.
+        selection_state.update(shops=shops, candidates=candidates, values=values, seed=seed)
     return {**shop, "selected_sku": choice.get("sku"),
             "price_reference": reference or []}, choice["reason"]
 
@@ -225,6 +229,9 @@ class Buyer:
         self.seller_terminal = None
         self.task_id = None
         self.terminal = False
+        self.terminal_state = None
+        self.cancel_confirmed = False
+        self.receipt_seen = False
         self.history = []
         self.authorized_price = None
         self.receipt = None
@@ -236,7 +243,31 @@ class Buyer:
                 "decisions": self.decisions, "last_parsed_ask": self.last_parsed_ask,
                 "last_authorized_bid": self.authorized_price,
                 "elapsed_seconds": round(max(0, time.monotonic() - self.started_at), 3),
-                "task_id": self.task_id, "seller_terminal": self.seller_terminal}
+                "task_id": self.task_id, "seller_terminal": self.seller_terminal,
+                "terminal_state": self.terminal_state, "cancel_confirmed": self.cancel_confirmed,
+                "receipt_seen": self.receipt_seen}
+
+    def observe_task(self, task):
+        """Any artifact/data after an offer makes retry unsafe, even if malformed."""
+        state = task.get("status", {}).get("state")
+        self.terminal_state = state if state in TERMINAL_STATES else None
+        self.terminal = state in TERMINAL_STATES
+        def uncertain_message(message):
+            if not isinstance(message, dict):
+                return True
+            parts = message.get("parts", [])
+            return (not isinstance(parts, list) or len(parts) > 32
+                    or any(not isinstance(p, dict) or "data" in p for p in parts))
+
+        message = task.get("status", {}).get("message") or {}
+        history = task.get("history")
+        history_unknown = history is not None and (not isinstance(history, list)
+            or len(history) > 32 or any(uncertain_message(m) for m in history))
+        artifacts = task.get("artifacts")
+        if (state == "TASK_STATE_COMPLETED" or artifacts
+                or artifacts is not None and not isinstance(artifacts, list)
+                or uncertain_message(message) or history_unknown):
+            self.receipt_seen = True
 
     def remaining(self):
         seconds = self.deadline - time.monotonic()
@@ -293,7 +324,7 @@ class Buyer:
         if self.task_id is not None and self.task_id != task_id:
             raise BuyerError("Seller changed taskId during the negotiation")
         self.task_id = task_id
-        self.terminal = task["status"].get("state") in TERMINAL_STATES
+        self.observe_task(task)
         return task
 
     def send(self, text):
@@ -306,8 +337,10 @@ class Buyer:
 
     def cancel(self, *, cleanup=False):
         task = self.rpc("CancelTask", {"id": self.task_id}, cleanup=cleanup)
-        if task["status"].get("state") != "TASK_STATE_CANCELED":
+        self.observe_task(task)
+        if task.get("id") != self.task_id or task["status"].get("state") != "TASK_STATE_CANCELED":
             raise BuyerError("Seller did not confirm cancellation")
+        self.cancel_confirmed = True
 
     def validate_decision(self, decision, seller_message):
         if not isinstance(decision, dict):
@@ -398,6 +431,7 @@ class Buyer:
         decisions = 0
         while True:
             self.remaining()
+            self.observe_task(task)
             state = task["status"].get("state")
             text = message_text(task)
             ask = last_asking_price(text)
@@ -462,7 +496,8 @@ class Buyer:
             task = self.send(str(self.authorized_price))
 
 
-def trade_and_record(shop, *, item, budget, memory_path, reason, seconds, client, order=None, policy=None):
+def trade_and_record(shop, *, item, budget, memory_path, reason, seconds, client, order=None, policy=None,
+                     attempt_status=None):
     policy = policy or buying_terms(budget, order=order)
     buyer = Buyer(client, url=shop["url"], item=item, budget=budget, seconds=seconds, policy=policy)
     detail = ""
@@ -498,8 +533,30 @@ def trade_and_record(shop, *, item, budget, memory_path, reason, seconds, client
     memory_path.parent.mkdir(parents=True, exist_ok=True)
     with memory_path.open("a", encoding="utf-8") as out:
         out.write(json.dumps(record, ensure_ascii=False, allow_nan=False) + "\n")
+    if attempt_status is not None:
+        attempt_status.update(buyer.diagnostics(), outcome=outcome,
+                              no_deal_only=(outcome == "no_deal" and buyer.receipt is None
+                                            and buyer.observed_receipt is None))
     return {"shop": shop["url"], "receipt": buyer.receipt, "stars": stars, "review": review,
             **({"accept": policy["accept"]} if order and order.get("round", 0) >= 3 else {})}
+
+
+def alternative_shop(selection, primary, order):
+    """Choose once from the original filtered shortlist; never from seller prose."""
+    primary_url = primary["url"].rstrip("/")
+    shops = {s["name"]: s for s in selection.get("shops", [])
+             if s["name"] != primary["name"] and s["url"].rstrip("/") != primary_url}
+    candidates = [c for c in selection.get("candidates", []) if c["name"] in shops]
+    choice = select_alternative(candidates, primary, seed=selection.get("seed", ""))
+    if choice is None:
+        return None
+    shop, sku = shops[choice["name"]], choice.get("sku")
+    if (sku not in order.get("acceptable", []) or not any(
+            o.get("sku") == sku and type(o.get("qty")) is int and o["qty"] > 0
+            for o in shop.get("offers", []))):
+        return None
+    reference = selection.get("values", {}).get((shop["name"], sku), {}).get("groups", [])
+    return {**shop, "selected_sku": sku, "price_reference": reference}, choice["reason"]
 
 
 def main(argv=None):
@@ -533,9 +590,10 @@ def main(argv=None):
                 raise BuyerError("Market catalog must be a SKU mapping")
             shops = stocked_shops(shops, order)
         stage = "shop_selection"
+        selection = {}
         shop, reason = choose_shop(shops, memory, item=args.item, budget=args.budget,
                                    deadline=min(deadline, time.monotonic() + 90), policy=config, order=order,
-                                   catalog=catalog, market_dir=args.shops.parent)
+                                   catalog=catalog, market_dir=args.shops.parent, selection_state=selection)
         result["shop"] = shop["url"]
         sku = shop.get("selected_sku") or args.item
         product = catalog.get(sku) if catalog is not None else None
@@ -545,9 +603,28 @@ def main(argv=None):
         log("PURCHASE POLICY", policy)  # local evidence only; never sent to the shop
         with httpx.Client(trust_env=False) as client:
             trade_started = True
+            attempt_status = {}
             result = trade_and_record(shop, item=sku, budget=args.budget,
                                       memory_path=args.memory, reason=reason,
-                                      seconds=deadline - time.monotonic(), client=client, order=order, policy=policy)
+                                      seconds=deadline - time.monotonic(), client=client, order=order, policy=policy,
+                                      attempt_status=attempt_status)
+            remaining = remaining_retry_decisions(attempt_status,
+                max_decisions=config["max_decisions"], seconds_left=deadline - time.monotonic())
+            alternative = (alternative_shop(selection, shop, order)
+                           if order.get("round", 0) >= 3 and remaining else None)
+            if alternative is not None and deadline - time.monotonic() >= 20:
+                shop, reason = alternative
+                sku = shop["selected_sku"]
+                policy = buying_terms(args.budget, product=catalog.get(sku), order=order, config=config)
+                policy["max_decisions"] = remaining
+                if shop["price_reference"]:
+                    policy["price_reference"] = shop["price_reference"]
+                log("ALTERNATIVE SHOP", {"name": shop["name"], "sku": sku,
+                    "reason": "confirmed_no_receipt_end", "decisions_left": remaining})
+                log("PURCHASE POLICY", policy)
+                result = trade_and_record(shop, item=sku, budget=args.budget,
+                    memory_path=args.memory, reason=reason, seconds=deadline - time.monotonic(),
+                    client=client, order=order, policy=policy)
     except (BuyerError, HarnessError, OSError, ValueError) as exc:
         result["review"] = f"Buyer could not complete the order: {exc}"
         exit_code = 1
