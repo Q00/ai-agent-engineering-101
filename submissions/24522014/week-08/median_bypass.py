@@ -30,8 +30,8 @@ def amount(value):
     return type(value) in (int, float) and math.isfinite(value) and value > 0
 
 
-def confirmed_skus(md, now):
-    """SKUs whose completed sales in (now - 24 h, now] number 3 or more with a positive Book sum.
+def confirmed_counts(md, now):
+    """{sku: (completed sales, Book sum)} in (now - 24 h, now], or None when an offer file does not parse. Before, for the bypass: SKUs whose completed sales in (now - 24 h, now] number 3 or more with a positive Book sum.
     A SKU with any unreadable or incomplete record in the window goes back to the median test; an offer file that does not parse
     could name any SKU, so it sends every SKU back."""
     md = Path(md)
@@ -40,9 +40,9 @@ def confirmed_skus(md, now):
         try:
             offer = json.loads(path.read_text(encoding="utf8"))
         except (OSError, ValueError):
-            return set()
+            return None
         if not isinstance(offer, dict) or not isinstance(offer.get("sku"), str):
-            return set()
+            return None
         sku, expires = offer["sku"], offer.get("expires_at")
         if type(expires) not in (int, float) or not math.isfinite(expires):
             broken.add(sku)
@@ -71,7 +71,15 @@ def confirmed_skus(md, now):
             broken.add(sku)
             continue
         books[sku].append(offer["price"] - offer["cost"])
-    return {sku for sku, rows in books.items() if sku not in broken and len(rows) >= MIN_SALES and sum(rows) > 0}
+    return {sku: (len(rows), sum(rows)) for sku, rows in books.items() if sku not in broken}
+
+
+def confirmed_skus(md, now):
+    """SKUs whose completed sales in (now - 24 h, now] number 3 or more with a positive Book sum; empty when an offer file does not parse."""
+    counts = confirmed_counts(md, now)
+    if counts is None:
+        return set()
+    return {sku for sku, (n, book) in counts.items() if n >= MIN_SALES and book > 0}
 
 
 def for_run(md, now):

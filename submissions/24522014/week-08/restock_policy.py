@@ -31,7 +31,7 @@ def demand_hints(posts, catalog, now):
     return {sku: min(2, len(authors)) for sku, authors in hints.items()}
 
 
-def plan(inventory, catalog, demand, sales, cursor=0, *, hints=None, now=None, intelligence=None, runtime=None, leader_hints=None, own_profitable=None, quality=None, food_trial=None, median_bypass=None):
+def plan(inventory, catalog, demand, sales, cursor=0, *, hints=None, now=None, intelligence=None, runtime=None, leader_hints=None, own_profitable=None, quality=None, food_trial=None, median_bypass=None, hi_band=None):
     now = time.time() if now is None else now
     median_bypass = set(median_bypass or ())
     hints = hints or {}
@@ -63,7 +63,16 @@ def plan(inventory, catalog, demand, sales, cursor=0, *, hints=None, now=None, i
     refund_reserve = max(0, inventory.get("local_refund_reserve", 0))
     reserve = max(500000, inventory.get("start", 5000000) * 0.2) + existing_storage + refund_reserve
     budget = max(0, min(balance * runtime["controls"]["restock_budget_rate"], balance - reserve))
-    if len(units) >= limits["max_total_units"] or not budget:
+    # Shop b (hi_band.py): 1M+ goods with our own recent sales get up to `slots` places outside the total cap, the run's units and
+    # its lines. Off, or with no such SKU, every count below is today's.
+    hb = hi_band if isinstance(hi_band, dict) and hi_band.get("sales") else None
+    def is_hi(sku):
+        product = catalog.get(sku) or {}
+        return bool(hb) and product.get("kind") == "goods" and (product.get("list_price") or 0) >= hb["min_list_price"]
+    reserved_held = min(sum(1 for u in units if is_hi(u.get("sku"))), hb["slots"]) if hb else 0
+    hi_room = hb["slots"] - reserved_held if hb else 0
+    counted = len(units) - reserved_held
+    if (counted >= limits["max_total_units"] and hi_room <= 0) or not budget:
         return [], {"reason": "stock_or_cash_limit", "budget": budget, "capacity": limits}
     categories = {d["category"] for d in demand}
     owned = Counter(u["sku"] for u in units)
@@ -114,7 +123,7 @@ def plan(inventory, catalog, demand, sales, cursor=0, *, hints=None, now=None, i
     # One unit of each new SKU first, so one run spreads across the range before it deepens any shelf.
     planned = Counter()
     # The capped food trial goes first so goods cannot use up its places. Ordinary food stays out below.
-    run_room = min(limits["max_units_per_run"], limits["max_total_units"] - len(units))
+    run_room = min(limits["max_units_per_run"], limits["max_total_units"] - counted)
     trial_skus = []
     bypassed = []
     for pick in food_trial or ():
@@ -125,15 +134,39 @@ def plan(inventory, catalog, demand, sales, cursor=0, *, hints=None, now=None, i
         estimated += pick["estimated_cost"]
         planned_units += 1
         trial_skus.append(pick["sku"])
+    hi_planned, hi_taken = 0, []
+    for sku in (sorted(hb["sales"], key=lambda s: (-hb["sales"][s], s)) if hb else ()):
+        value = catalog.get(sku) or {}
+        if hi_room <= 0:
+            break
+        if not is_hi(sku) or value.get("category") not in categories or (sku in surge and (owned[sku] or planned[sku])):
+            continue
+        worst_cost = value["list_price"] * 0.75 * surge.get(sku, 1)
+        reference = signal(sku).get("median_price")
+        # Our own 24 h sales stand in for the median; a surged unit costs more than they did, so it keeps the test.
+        if sku in surge and reference is not None and reference <= worst_cost * (1 + rate):
+            continue
+        carrying_cost = worst_cost * rate * 7
+        qty = min(sku_limit(sku) - owned[sku] - planned[sku], hi_room, 1 if sku in surge else hi_room)
+        while qty > 0 and estimated + storage_reserve + qty*(worst_cost+carrying_cost) > budget:
+            qty -= 1
+        if qty <= 0:
+            continue
+        planned[sku] += qty
+        estimated += worst_cost * qty
+        storage_reserve += carrying_cost * qty
+        hi_room -= qty
+        hi_planned += qty
+        hi_taken.append(sku)
     new_range = [pair for pair in candidates if owned[pair[0]] == 0 and proven(pair[0])]
     for position, (sku, value) in enumerate(new_range + candidates):
         # Supply draws the grade on arrival; shelf_hours is not a minimum remaining lifetime.
         if value.get("kind") == "food":
             continue
-        if not proven(sku) and (exploration_slots <= 0 or len(units) + planned_units >= UNPROVEN_STOCK_CEILING):
+        if not proven(sku) and (exploration_slots <= 0 or counted + planned_units >= UNPROVEN_STOCK_CEILING):
             continue
         # Lines are kept for range; once they are used, only the SKUs already in the plan deepen.
-        if not planned[sku] and len(planned) >= max_lines:
+        if not planned[sku] and len([s for s in planned if s not in hi_taken]) >= max_lines:
             continue
         # A surged SKU costs more with every unit the market buys, so we hold one at most and price it at the published factor.
         if sku in surge and (owned[sku] or planned[sku]):
@@ -150,7 +183,7 @@ def plan(inventory, catalog, demand, sales, cursor=0, *, hints=None, now=None, i
             blocked_by_median = False
         carrying_cost = worst_cost * rate * 7
         qty = min(sku_limit(sku)-owned[sku]-planned[sku], limits["max_units_per_run"]-planned_units,
-                  limits["max_total_units"]-len(units)-planned_units)
+                  limits["max_total_units"]-counted-planned_units)
         if position < len(new_range):
             qty = min(qty, 1)
         while qty > 0 and estimated + storage_reserve + qty*(worst_cost+carrying_cost) > budget:
@@ -165,10 +198,12 @@ def plan(inventory, catalog, demand, sales, cursor=0, *, hints=None, now=None, i
         planned_units += qty
         if not proven(sku):
             exploration_slots -= qty
-        if planned_units >= min(limits["max_units_per_run"], limits["max_total_units"] - len(units)):
+        if planned_units >= min(limits["max_units_per_run"], limits["max_total_units"] - counted):
             break
     buys = [{"sku": sku, "qty": qty} for sku, qty in planned.items()]
-    return buys, {"reason": "bounded_experiment", "budget": budget,
+    extra = {"hi_band": {"slots": hb["slots"], "held": reserved_held, "planned": hi_planned, "skus": hi_taken, "eligible": dict(hb["sales"])}} if hb else {}
+    planned_units += hi_planned
+    return buys, {"reason": "bounded_experiment", "budget": budget, **extra,
                   "strategy_version": runtime["version"], "strategy_experiment": runtime.get("experiment"),
                   "estimated_max_cost": estimated, "cash_reserve": reserve,
                   "one_day_storage_reserve": storage_reserve/7,
@@ -292,9 +327,11 @@ def main():
     trial_id, trial_state, trial_picks, trial_waiting = food_trial.for_run(md, inv, catalog, snapshot.get("skus", {}), time.time())
     import median_bypass
     bypass = median_bypass.for_run(md, time.time())
+    import hi_band
+    band = hi_band.for_run(md, time.time(), catalog)
     buys, explanation = plan(inv, catalog, demand, memory["sales"], memory["cursor"], hints=hints,
                              intelligence=snapshot.get("skus", {}), runtime=effective(md), leader_hints=leader_hints,
-                             own_profitable=own_profitable, quality=fresh_quality(md), food_trial=trial_picks, median_bypass=bypass)
+                             own_profitable=own_profitable, quality=fresh_quality(md), food_trial=trial_picks, median_bypass=bypass, hi_band=band)
     if trial_state is not None:
         chosen = set(explanation.get("food_trial") or ())
         food_trial.record_plan(trial_state, trial_picks, chosen, time.time())
