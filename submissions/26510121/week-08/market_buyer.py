@@ -3,6 +3,7 @@ import argparse
 import json
 import os
 import time
+import math
 from r3.state import Journal, read_json
 from r3.market_memory import buyer_price_actions, buyer_assessment
 from r3.economy import buyer_candidates
@@ -10,6 +11,20 @@ from r3.model import Chooser
 from r3.protocol import Peer, quote, quote_terms, verify_receipt
 from r3.quote_market import compare_quotes, close_quotes, request_text,clarify
 from r3.adaptive import begin_buyer
+
+
+def receipt_guard(journal,order,candidate,rec,stage,reasons,*,task=None,agreed=None,cap=None):
+    """Diagnostics only: preserve the existing rejection and payment behavior."""
+    def number(value):return value if type(value) in (int,float) and math.isfinite(value) else None
+    def label(value):return value[:128] if isinstance(value,str) else None
+    try:
+        journal.add('buyer_receipt_guard',{'order':order['order'],'shop':candidate['shop'],
+            'sku':candidate['sku'],'stage':stage,'reasons':reasons,
+            'price':number(rec.get('price')),'agreed':number(agreed),'cap':number(cap),
+            'received_sku':label(rec.get('item')),'received_task':label(rec.get('task')),
+            'expected_task':label(task),'grade':rec.get('grade',rec.get('claim')) if rec.get('grade',rec.get('claim')) in ('A','B','C') else None,
+            'warranty_hours':number(rec.get('warranty_hours'))},role='buyer')
+    except Exception:pass  # A diagnostic write must never change rejection semantics.
 
 
 def maintenance_wait(journal,order):
@@ -129,6 +144,7 @@ def execute(order, journal, chooser, peer_factory, cfg, strategy, registry, rank
                     receipts = [p["data"] for a in task.get("artifacts", []) for p in a.get("parts", [])
                                 if isinstance(p.get("data"), dict) and "sig_seller" in p["data"]]
                     if len(receipts) != 1:
+                        receipt_guard(journal,order,c,{},'artifact',['missing_or_multiple_signed_artifacts'],task=task['id'])
                         raise ValueError('receipt_integrity_failure')
                     # Some peers return a signed final offer immediately. It is
                     # still subject to our cap, signature and authoritative checkout.
@@ -139,6 +155,8 @@ def execute(order, journal, chooser, peer_factory, cfg, strategy, registry, rank
                         conditional_requirements=assessment.get('conditional_terms',[])
                         price = receipts[0].get('price')
                         if type(price) not in (int, float) or price > cap:
+                            receipt_guard(journal,order,c,receipts[0],'immediate_offer',
+                                ['invalid_price' if type(price) not in (int,float) else 'price_over_safe_cap'],task=task['id'],cap=cap)
                             raise ValueError('receipt_integrity_failure')
                         agreed = price
                     if cfg.get('buyer_contract_routing_enabled'):
@@ -156,6 +174,11 @@ def execute(order, journal, chooser, peer_factory, cfg, strategy, registry, rank
                         final=buyer_assessment(dict(c['product'],sku=c['sku']),order,final_terms,journal,cfg,shop=c['shop'])
                         price=rec_terms.get('price')
                         if type(price) not in (int,float) or price>agreed or price>final['cap']:
+                            reasons=['invalid_price'] if type(price) not in (int,float) else (
+                                (['price_above_agreement'] if price>agreed else [])+
+                                (['price_over_safe_cap'] if price>final['cap'] else []))
+                            receipt_guard(journal,order,c,rec_terms,'final_terms',reasons,
+                                task=task['id'],agreed=agreed,cap=final['cap'])
                             raise ValueError('receipt_integrity_failure')
                         # A signed lower price is a genuine seller concession.
                         agreed=price
@@ -163,6 +186,15 @@ def execute(order, journal, chooser, peer_factory, cfg, strategy, registry, rank
                         required_warranty=final['required_warranty']
                     if not verify_receipt(receipts[0], pub, task=task["id"],
                             sku=c["sku"], budget=order["budget"], agreed=agreed):
+                        rec_bad=receipts[0];why=[]
+                        if rec_bad.get('task')!=task['id']:why.append('task_mismatch')
+                        if rec_bad.get('item')!=c['sku']:why.append('sku_mismatch')
+                        if type(rec_bad.get('price')) not in (int,float):why.append('invalid_price')
+                        else:
+                            if rec_bad['price']>order['budget']:why.append('price_over_budget')
+                            if rec_bad['price']!=agreed:why.append('price_mismatch')
+                        receipt_guard(journal,order,c,rec_bad,'signature_and_identity',why or ['signature_key_or_required_fields_invalid'],
+                            task=task['id'],agreed=agreed)
                         raise ValueError("receipt_integrity_failure")
                     # A2A protobuf numbers decode as whole-valued floats; the signature canonicalizes integer money.
                     rec = dict(receipts[0], price=int(receipts[0]["price"]))
