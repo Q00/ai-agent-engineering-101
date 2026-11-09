@@ -177,6 +177,8 @@ def plan(inv, demand_rows, mem, now=None, dry_run=False, adjust=None):
     view = scout.category_view(mem, now=now)
     stockouts = mem.stockout_rates(now=now, premium_min=config.PREMIUM_MIN_LIST)
     lines, why = [], [{"cash_cap": cap_why}]
+    prem_cands = list(mem.premium_skus(config.PREMIUM_MIN_LIST, config.PREMIUM_HOURS, config.PREMIUM_MIN_SOLD))
+    max_lines = 10 - (min(config.PREMIUM_LINES, len(prem_cands)) if len(prem_units) < prem_max else 0)
 
     # 1) evidence: categories that sell, by expected profit per hour
     needs = []
@@ -231,7 +233,7 @@ def plan(inv, demand_rows, mem, now=None, dry_run=False, adjust=None):
         while qty > 1 and est > budget:
             qty -= 1
             est = unit_cost_estimate(cat[sku]) * qty
-        if est > budget or len(lines) >= 10:
+        if est > budget or len(lines) >= max_lines:
             continue
         budget -= est
         lines.append({"sku": sku, "qty": qty})
@@ -243,7 +245,7 @@ def plan(inv, demand_rows, mem, now=None, dry_run=False, adjust=None):
     spent = 0
     for row in sorted(demand_rows, key=lambda r: -r.get("skus", 0)):
         k = row["category"]
-        if len(lines) >= 10 or have.get(k) or (dem.get(k) or {}).get("n") or \
+        if len(lines) >= max_lines or have.get(k) or (dem.get(k) or {}).get("n") or \
                 (adjust.get(k) or {}).get("factor", 1.0) == 0:
             continue
         sku = pick_sku(k, info_by_cat, mem, row.get("median_price"), explore=True)
@@ -261,25 +263,31 @@ def plan(inv, demand_rows, mem, now=None, dry_run=False, adjust=None):
 
     # 3) premium pilot: one unit each of the market's best-selling 800k+ SKUs, under the adaptive premium budget
     cash = balance - config.CASH_RESERVE - sum(unit_cost_estimate(cat[ln["sku"]]) * ln["qty"] for ln in lines)
-    held = {u["sku"] for u in prem_units}
+    held = {}
+    for u in prem_units:
+        held[u["sku"]] = held.get(u["sku"], 0) + 1
     n_prem, prem_est = len(prem_units), prem_cost
-    for sku, sold in mem.premium_skus(config.PREMIUM_MIN_LIST, config.PREMIUM_HOURS, config.PREMIUM_MIN_SOLD):
+    for sku, sold in prem_cands:
         info = cat.get(sku)
-        if not info or not is_premium(info) or sku in held or len(lines) >= 10 or n_prem >= prem_max:
+        room = min(config.PREMIUM_PER_SKU - held.get(sku, 0), prem_max - n_prem)
+        if not info or not is_premium(info) or room <= 0 or len(lines) >= 10:
             continue
         ratio, _ = mem.price_ratio(sku=sku, category=info["category"])
         est = unit_cost_estimate(info)
-        if ratio is not None and ratio < 0.70:
+        if ratio is not None and ratio < config.PREMIUM_MIN_RATIO:
             why.append({"category": info["category"], "sku": sku, "skip": f"premium: market pays {ratio:.2f} of list"})
             continue
-        if prem_est + est > prem_budget or est > cash:
+        qty = room
+        while qty > 0 and (prem_est + est * qty > prem_budget or est * qty > cash):
+            qty -= 1
+        if qty <= 0:
             why.append({"category": info["category"], "sku": sku,
                         "skip": f"premium budget: {prem_est:,.0f} held + {est:,.0f} worst case"})
             continue
-        lines.append({"sku": sku, "qty": 1})
-        n_prem, prem_est, cash = n_prem + 1, prem_est + est, cash - est
-        why.append({"category": info["category"], "sku": sku, "qty": 1, "reason": "premium_pilot",
-                    "market_sold": sold, "market_ratio": ratio})
+        lines.append({"sku": sku, "qty": qty})
+        n_prem, prem_est, cash = n_prem + qty, prem_est + est * qty, cash - est * qty
+        why.append({"category": info["category"], "sku": sku, "qty": qty, "reason": "premium_pilot",
+                    "market_sold": sold, "market_ratio": ratio, "held": held.get(sku, 0)})
     return lines, why, {"balance": balance, "stock_cost": stock_cost, "stock_budget": stock_max, "units": len(units),
                         "premium_units": n_prem, "premium_cost": prem_est,
                         "premium_budget": prem_budget}

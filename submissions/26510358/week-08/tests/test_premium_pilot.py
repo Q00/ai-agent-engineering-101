@@ -37,6 +37,7 @@ def test_first_ask_uses_the_wider_room():
 
 def test_premium_pilot_buys_one_unit_each_within_budget(tmp_path, monkeypatch):
     import restock_r3
+    monkeypatch.setattr(config, "PREMIUM_PER_SKU", 1)                  # the rule until 2026-11-09
     m, now = pmem(tmp_path, monkeypatch)
     lines, why, state = restock_r3.plan({"balance": 20_000_000, "units": []}, DEMAND, m, now=now)
     prem = [ln for ln in lines if ln["sku"].startswith("P")]
@@ -48,6 +49,7 @@ def test_premium_pilot_buys_one_unit_each_within_budget(tmp_path, monkeypatch):
 
 def test_premium_pilot_respects_held_units_and_cap(tmp_path, monkeypatch):
     import restock_r3
+    monkeypatch.setattr(config, "PREMIUM_PER_SKU", 1)                  # the rule until 2026-11-09
     m, now = pmem(tmp_path, monkeypatch)
     held = [{"unit": "x1", "sku": "P1", "category": SOFA, "kind": "goods", "grade": "A", "cost": 800_000,
              "list_price": 1_200_000}]
@@ -96,3 +98,32 @@ def test_premium_demand_and_stockouts_do_not_size_normal_stock(tmp_path, monkeyp
     assert busy.stockout_rates(premium_min=config.PREMIUM_MIN_LIST) == {}
     assert plain.stockout_rates(premium_min=config.PREMIUM_MIN_LIST)[SOFA] > 0
     assert busy.stockout_rates()[SOFA] > 0                             # the cash cap still sees every stockout
+
+
+def test_premium_buys_up_to_per_sku_limit_and_below_old_ratio(tmp_path, monkeypatch):
+    """2026-11-09: market pays 0.67-0.69 of list on most premium SKUs, we sell them at 0.70 against 0.60 cost."""
+    import restock_r3
+    m, now = pmem(tmp_path, monkeypatch)
+    monkeypatch.setattr(m, "price_ratio", lambda **kw: (0.68, 50))
+    held = [{"unit": "x1", "sku": "P1", "category": SOFA, "kind": "goods", "grade": "A", "cost": 800_000,
+             "list_price": 1_200_000}]
+    lines, why, state = restock_r3.plan({"balance": 200_000_000, "units": held}, DEMAND, m, now=now)
+    prem = {ln["sku"]: ln["qty"] for ln in lines if ln["sku"].startswith("P")}
+    assert prem == {"P1": 1, "P2": 2}                      # P1 tops up to 2, P2 gets 2
+    monkeypatch.setattr(m, "price_ratio", lambda **kw: (0.64, 50))
+    lines, why, _ = restock_r3.plan({"balance": 200_000_000, "units": held}, DEMAND, m, now=now)
+    assert not [ln for ln in lines if ln["sku"].startswith("P")]
+
+
+def test_normal_lines_leave_room_for_premium(tmp_path, monkeypatch):
+    """42 of 144 ticks filled all 10 lines with normal stock before premium ran."""
+    import restock_r3
+    m, now = pmem(tmp_path, monkeypatch)
+    cats = [f"가구/침구>가구>C{i}" for i in range(12)]
+    pcat = dict(PCAT, **{f"N{i}": {"name": f"n{i}", "category": c, "list_price": 50000, "kind": "goods"}
+                         for i, c in enumerate(cats)})
+    monkeypatch.setattr(market, "_CATALOG", pcat)
+    demand = [{"category": c, "item": "x", "kind": "goods", "skus": 1, "median_price": 50000} for c in cats]
+    lines, why, _ = restock_r3.plan({"balance": 200_000_000, "units": []}, demand, m, now=now)
+    assert len(lines) <= 10, why
+    assert len([ln for ln in lines if ln["sku"].startswith("P")]) == 2, (lines, why)   # both candidates fit in the 3 kept lines
