@@ -73,6 +73,7 @@ POLICY_CACHE = 30                                        # seconds between polic
 MAX_OFFERS = 8
 HOLD_IDLE = 120
 DOOM_HOURS = 24          # food this close to its date goes out first, said plainly and at <= DOOM_ASK of list,
+UNSTATED_NEED = 0.75     # 11-09: a buyer that states no need (buyer-01/02/03) needs 75 % of the shelf life
 DOOM_SHARE = 0.25        # once under DOOM_SHARE of its shelf life is left too (orders ask 10/25/50/75 % of it):
 DOOM_ASK = 0.5           # a fresh 24 h item is under 24 h from the start and must not go at half price
 DEADLINE = float(os.environ.get("SELLER_DEADLINE", "6"))
@@ -169,7 +170,12 @@ def pick_unit(text, held, now):
             # the house buyers, who never state their hours, rated them 2 ("Only 9.8 h of shelf life left; I
             # needed 12.0 h"): buyer-01 4.34 and buyer-02 4.22 over 178 deals, two of ~29 accounts in our star mean.
             # Doomed units now go only to buyers whose stated need they meet (below); food value is tiny, stars are not
-            return max(fit, key=lambda u: u["expires_at"])
+            # 11-09: the freshest still fell short: buyer-01/02 rated 2 ("Only 454.6 h of shelf life left; I needed
+            # 540.0 h", 50 of 220 ratings in 6 h). Their unstated need is 75 % of the SKU's shelf life every time
+            # (540/720, 36/48, 360/480, 180/240), and only paid deals are rated, so no sale beats a 2
+            best = max(fit, key=lambda u: u["expires_at"])
+            shelf = shelf_hours(best["sku"]) or 0
+            return best if not shelf or hours_left(best, now) >= UNSTATED_NEED * shelf + 1 else None
         need = float(m.group(1))
         lasting = [u for u in fit if hours_left(u, now) >= need + 1]
         # none lasts the stated need: no sale. Selling the freshest anyway drew 19 low reviews on 11-05
