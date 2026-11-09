@@ -240,7 +240,10 @@ def find_unit(text, taken=()):
     fit = [u for u in units if u["grade"] != "expired" and u["unit"] not in taken and
            ((u.get("category") or "").split(">")[-1].lower() in want or (u.get("name") or "").lower() in want
             or u["sku"].lower() in want)]
-    named = [u for u in fit if u["sku"].lower() in want]
+    # Claude (2026-11-10 02:22, hourly check): a buyer naming the product, not its SKU code, fell to the oldest unit of the category,
+    # grade C: G00327e80 (the market's top SKU, A at 0.726) opened its C at 1,011,060 21 times since 00:23 with 0 settles, its
+    # two new A (cost 0.60 of list) once. A name match now counts as named, so A and B and the cheapest cost go first
+    named = [u for u in fit if u["sku"].lower() in want or (u.get("name") or "").lower() in want]
     # ddolcom (2026-11-07): a named SKU's cheapest unit first, not its oldest, so a floor above the market's price does not block the
     # units that can sell: since 22:26 G8095ddd6 had 62 offers and 4 at or above the floor while its grade A at 0.73 of list stood first
     # and units at 0.38 and 0.57 waited. The units of the forum clearance stay first, as the post says. Food still goes by its date
