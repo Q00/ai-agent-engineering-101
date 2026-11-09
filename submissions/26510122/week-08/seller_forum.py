@@ -38,6 +38,9 @@ REPLY_DAILY_CAP = 144
 REPLY_QUOTE_DAILY_CAP = 12
 MIDPRICE_REPLY_DAILY_CAP = 18
 UPSELL_REPLY_DAILY_CAP = 2
+FIRST_BUYER_REPLY_DAILY_CAP = 4
+FIRST_CHECKOUT_DAILY_CAP = 4
+FIRST_CHECKOUT_INTERVAL = 90 * 60
 SKU_COOLDOWN = 90 * 60
 DAILY_CAP = ROOT_DAILY_CAP + REPLY_DAILY_CAP
 SCHEMA = {'type': 'object', 'additionalProperties': False, 'properties': {
@@ -129,6 +132,15 @@ def upsell_threads(evidence, recent_quotes):
             if key not in recipients:
                 available[request['id']] = key
     return available
+
+
+def first_buyer_threads(evidence, recent_quotes):
+    sent = {p['first_buyer_recipient'] for p in recent_quotes if p.get('first_buyer_recipient')}
+    if len(sent) >= FIRST_BUYER_REPLY_DAILY_CAP:
+        return {}
+    known = evidence.get('known_paid_buyers', ())
+    return {r['id']: key for r in evidence['requests'] if (author := r.get('author')) and author not in known
+            and (key := hashlib.sha256(author.encode()).hexdigest()) not in sent}
 
 
 def reply_quote_options(evidence, recent_quote_count=0, targeted_threads=()):
@@ -243,6 +255,8 @@ def validate(decision, evidence, history, now):
     offer_ids = decision.get('offer_ids', [])
     if evidence.get('quote_reply_required') and (campaign != 'reply' or len(offer_ids) != 1):
         raise ValueError('choose one verified physical quote for the purchase-request reply')
+    if evidence.get('first_checkout') and (campaign != 'featured' or len(offer_ids) != 1 or refs):
+        raise ValueError('choose one verified physical quote for the first-checkout post')
     if campaign == 'featured' or (campaign == 'reply' and offer_ids):
         if campaign == 'reply' and len(offer_ids) != 1: raise ValueError('one quote per purchase-request reply')
         offers=seller_featured.validate(offer_ids,quote_options(decision,evidence),
@@ -269,10 +283,15 @@ def validate(decision, evidence, history, now):
                 raise ValueError('quoted unit no longer meets the request or already has a quote')
             recent_quotes = quote_replies(history, now)
             targeted = evidence.get('targeted_quote_threads', {}).get(thread)
-            if targeted:
+            first_buyer = evidence.get('first_buyer_threads', {}).get(thread)
+            if first_buyer:
+                if refs or first_buyer_threads(evidence, recent_quotes).get(thread) != first_buyer:
+                    raise ValueError('first-buyer reply is no longer eligible')
+            elif targeted:
                 if refs or not is_midprice_quote(quote) or upsell_threads(evidence, recent_quotes).get(thread) != targeted:
                     raise ValueError('targeted quote is no longer eligible')
-            elif sum(not p.get('upsell_recipient') for p in recent_quotes) >= reply_quote_limit(quote):
+            elif sum(not p.get('upsell_recipient') and not p.get('first_buyer_recipient')
+                     for p in recent_quotes) >= reply_quote_limit(quote):
                 raise ValueError('purchase-request quote reply cap')
     elif thread is not None: raise ValueError('unexpected thread')
     if campaign != 'reply' and any(set(skus) & set(r.get('skus', [])) and now - r['at'] < SKU_COOLDOWN for r in history):
@@ -290,7 +309,8 @@ def validate(decision, evidence, history, now):
 
 def editorial_facts(evidence):
     return {k:v for k,v in evidence.items() if k not in (
-        'available_units','market_dir','quoted_units','low_price_buyers','known_paid_buyers','targeted_quote_threads')}
+        'available_units','market_dir','quoted_units','low_price_buyers','known_paid_buyers',
+        'targeted_quote_threads','first_buyer_threads')}
 
 
 def render(decision, evidence):
@@ -323,6 +343,10 @@ def render(decision, evidence):
     for ledger in decision['ledger_refs']:
         r = next(r for r in evidence['settled'] if r['ledger'] == ledger)
         lines.append(f"과거 정산 #{ledger}: {r['sku']} / {r['grade']}등급 / {r['price']:,}원. 현재 가격은 별도 견적.")
+    if evidence.get('first_checkout') and decision['campaign'] == 'featured':
+        lines.append('저희 가게가 처음이라면 위 SKU와 견적코드를 대화로 보내주세요. '
+                     '다른 물건을 찾으시면 댓글에 품목·예산·등급·식품 최소 잔여시간을 남겨주세요. '
+                     '조건에 맞는 실물 재고로 답하겠습니다.')
     if decision['campaign'] == 'demand_survey':
         lines.append('찾는 품목·희망 등급·예산·식품 최소 잔여시간을 댓글로 알려주세요. 조건에 맞는 현재 재고를 비교해 답합니다. 없으면 매입 판단에 반영하고 실제 확보·조건 확인 후 원글에 답합니다. 입고나 가격을 확약하지 않습니다.')
     if decision['campaign'] == 'reply' and not quoted:
@@ -423,15 +447,36 @@ def run_once(runtime, *, dry_run=False, decide=decide_json, now=None, announce_o
         pinned_quotes=[o for o in pinned_quotes if o['sku'] not in cooling]
         evidence['featured_quotes']=pinned_quotes
         recent_quotes = quote_replies(replies, now)
-        reply_quote_count = sum(not p.get('upsell_recipient') for p in recent_quotes)
-        targets = upsell_threads(evidence, recent_quotes) if not announce_opening else {}
-        pinned_reply_quotes = (reply_quote_options(evidence, reply_quote_count, targets)
-                               if not announce_opening and len(replies) < REPLY_DAILY_CAP
-                               and (reply_quote_count < MIDPRICE_REPLY_DAILY_CAP or targets) else {})
+        reply_quote_count = sum(not p.get('upsell_recipient') and not p.get('first_buyer_recipient')
+                                for p in recent_quotes)
+        replies_allowed = not announce_opening and len(replies) < REPLY_DAILY_CAP
+        first_threads = first_buyer_threads(evidence, recent_quotes) if replies_allowed else {}
+        first_quotes = reply_quote_options(
+            {**evidence, 'requests': [r for r in evidence['requests'] if r['id'] in first_threads]})
+        first_threads = {thread: key for thread, key in first_threads.items() if thread in first_quotes}
+        targets = upsell_threads(evidence, recent_quotes) if replies_allowed else {}
+        # General ads and repeat-buyer replies leave an active slot available
+        # for an exact, eligible request from a buyer we have not served.
+        normal_capacity = max(0, evidence['featured_capacity_left'] - 1)
+        evidence['featured_capacity_left'] = evidence['featured_capacity_left'] if first_quotes else normal_capacity
+        if not normal_capacity:
+            pinned_quotes = []
+        pinned_reply_quotes = first_quotes or (reply_quote_options(evidence, reply_quote_count, targets)
+                                               if replies_allowed else {})
+        recent_intros = [p['at'] for p in roots if p.get('first_checkout')]
+        first_checkout = bool(not announce_opening and not pinned_reply_quotes and root_due and pinned_quotes
+                              and len(recent_intros) < FIRST_CHECKOUT_DAILY_CAP
+                              and (not recent_intros or now - max(recent_intros) >= FIRST_CHECKOUT_INTERVAL))
+        if first_checkout:
+            sold = {r['sku'] for r in evidence['settled']}
+            pinned_quotes = sorted(pinned_quotes, key=lambda o: (
+                o['sku'] not in sold, not is_midprice_quote(o)))[:8]
+        evidence['featured_quotes'] = pinned_quotes
         evidence['requests'] = prioritized_requests(evidence, pinned_reply_quotes)
         pinned_reply_quotes = {r['id']: pinned_reply_quotes[r['id']] for r in evidence['requests']}
-        targets = {thread: key for thread, key in targets.items()
-                   if any(is_midprice_quote(o) for o in pinned_reply_quotes.get(thread, ()))}
+        targets = {thread: key for thread, key in targets.items() if thread not in first_threads
+                   and any(is_midprice_quote(o) for o in pinned_reply_quotes.get(thread, ()))}
+        evidence['first_checkout'] = first_checkout
         evidence['reply_quotes'] = pinned_reply_quotes
         def fresh_facts():
             value = facts(runtime, clock())
@@ -439,6 +484,10 @@ def run_once(runtime, *, dry_run=False, decide=decide_json, now=None, announce_o
             value['reply_quotes'] = pinned_reply_quotes
             value['quote_reply_required'] = bool(pinned_reply_quotes)
             value['targeted_quote_threads'] = targets
+            value['first_buyer_threads'] = first_threads
+            value['first_checkout'] = first_checkout
+            if not first_threads:
+                value['featured_capacity_left'] = max(0, value['featured_capacity_left'] - 1)
             return value
         advertised_refs={ref for p in state['posts'] for ref in p.get('refs',[])}
         root_stock=[s for s in evidence['stock'] if s['sku'] not in cooling]
@@ -469,7 +518,8 @@ def run_once(runtime, *, dry_run=False, decide=decide_json, now=None, announce_o
         state['policy_status']={'at':now,'root_interval_seconds':ROOT_INTERVAL,'market_spacing_seconds':330,
             'root_daily_cap':ROOT_DAILY_CAP,'reply_daily_cap':REPLY_DAILY_CAP,'root_posts_24h':len(roots),
             'reply_posts_24h':len(replies),'root_due':root_due,'eligible_stock_skus':len(root_stock),
-            'unanswered_requests':len(evidence['requests']),'allowed_campaigns':allowed}
+            'unanswered_requests':len(evidence['requests']),'eligible_first_buyer_threads':len(first_threads),
+             'first_checkout_due':first_checkout,'allowed_campaigns':allowed}
         save(path,state)
         if not allowed:return {'action':'hold','reason':'no eligible root or reply'}
         if announce_opening and not evidence.get('opening_event'): raise ValueError('opening event is inactive')
@@ -478,6 +528,10 @@ def run_once(runtime, *, dry_run=False, decide=decide_json, now=None, announce_o
         schema['properties']['offer_ids']['maxItems']=min(2,evidence.get('featured_capacity_left',0))
         announcement = 'opening_discount' if (evidence.get('opening_event') or {}).get('discount_bps') else 'opening_event'
         if announce_opening: schema['properties']['campaign']['enum'] = [announcement]
+        elif first_checkout:
+            schema['properties']['campaign']['enum'] = ['featured']
+            schema['properties']['offer_ids']['maxItems'] = 1
+            schema['properties']['offer_ids']['items']['enum'] = [o['id'] for o in pinned_quotes]
         elif pinned_reply_quotes:
             schema['properties']['campaign']['enum'] = ['reply']
             schema['properties']['offer_ids']['maxItems'] = 1
@@ -505,6 +559,8 @@ def run_once(runtime, *, dry_run=False, decide=decide_json, now=None, announce_o
             'intake_announcement_due가 참이면 조건 맞춤 매칭 서비스를 알리는 demand_survey를 우선 고려한다. '
             'featured는 도구가 계산한 실제 단위·가격 상한 중 offer_ids로 선택한다. 수익 하한·유효시간은 도구가 지킨다. '
             'featured의 skus는 선택한 견적의 SKU와 같아야 한다. 숫자와 절약률은 도구가 붙인다. '
+             'first_checkout이 참이면 실제 견적 하나를 featured로 고른다. 도구가 첫 거래 안내를 붙인다. '
+             '별도 할인, 구매자 이름이나 후기 요청은 쓰지 않는다. '
              'reply_quotes에 적합한 원글이 있으면 견적코드가 있는 reply를 우선 고려한다. '
              '그 원글 ID를 thread_id로 쓰고 해당 원글의 선택지에서 offer_ids 한 개와 같은 SKU 하나를 고른다. '
              '견적 답글만 열려 있으면 조건과 실제 용도가 맞는 선택지의 견적코드를 반드시 고른다. '
@@ -518,7 +574,7 @@ def run_once(runtime, *, dry_run=False, decide=decide_json, now=None, announce_o
                 '날짜와 종료 시각은 도구가 붙인다. opening_event/opening_discount 글은 빈 skus와 ledger_refs를 사용한다. '
                 + ('이번에는 오픈 안내 글만 작성하거나 hold.' if announce_opening else '별도 오픈 공지는 하루 한 번 이내.'),
             'facts': editorial_facts(evidence),
-            'recent_posts': [{k:v for k,v in p.items() if k != 'upsell_recipient'} for p in state['posts'][-6:]],
+            'recent_posts': [{k:v for k,v in p.items() if k not in ('upsell_recipient', 'first_buyer_recipient')} for p in state['posts'][-6:]],
             'evaluation': '좋아요·싫어요는 참고. 이후 판매와의 인과관계로 단정하지 말 것.'}, schema)
         if decision.get('action') == 'post' and decision.get('campaign') not in schema['properties']['campaign']['enum']:raise ValueError('campaign is not currently eligible')
         if decision.get('action') == 'hold':
@@ -550,7 +606,8 @@ def run_once(runtime, *, dry_run=False, decide=decide_json, now=None, announce_o
             'Only a positive active opening_event.discount_bps supports the tool-rendered first-quote discount. '
             'facts.warranty_policy supports only the fixed disclosure of included six-hour coverage on NEW goods quotes, '
             'full market refunds for covered breakage, and no food warranty. Do not reject that supported disclosure. '
-            'Check its cap, minimum-price condition, dates and no-stacking disclosure. '
+            'For an opening discount, check its cap, minimum-price condition, dates and no stacking. '
+            'For a unit-backed quote, the cost floor is internal; the published ceiling is the actual buyer-facing price cap. '
             'facts.featured_quotes supports only the selected unit-backed capped quote, its actual list-price savings, '
             'expiry and provided conditions; it is independent of opening discounts. No cheapest-market claim is supported. '
             'A mattress cover or accessory must not be described as a mattress or the complete appliance. '
@@ -558,7 +615,7 @@ def run_once(runtime, *, dry_run=False, decide=decide_json, now=None, announce_o
             'facts': {**editorial_facts(fresh),'reply_quotes':{},'featured_quotes':[o for o in quote_options(decision,fresh) if o['id'] in decision.get('offer_ids',[])],'stock':[s for s in fresh['stock'] if s['sku'] in decision['skus']],
                 'settled':[r for r in fresh['settled'] if r['ledger'] in decision['ledger_refs']],
                 'requests':[r for r in fresh['requests'] if r['id']==decision.get('thread_id')]},
-            'recent_posts':[{k:v for k,v in p.items() if k != 'upsell_recipient'} for p in state['posts'][-12:]],
+            'recent_posts':[{k:v for k,v in p.items() if k not in ('upsell_recipient', 'first_buyer_recipient')} for p in state['posts'][-12:]],
             'decision': decision, 'rendered_post': text}, CHECK)
         if not check.get('approve') or check.get('unsupported_claims'): raise ValueError(f'copy rejected: {check}')
         latest = fresh_facts()
@@ -572,7 +629,11 @@ def run_once(runtime, *, dry_run=False, decide=decide_json, now=None, announce_o
                  'skus': decision['skus'], 'refs': decision['ledger_refs'], 'thread': decision['thread_id'], 'text': text}
         if latest.get('opening_event'): entry['opening_event_id'] = latest['opening_event']['id']
         entry['offer_ids']=decision.get('offer_ids',[])
-        if entry['thread'] in targets:
+        if first_checkout:
+            entry['first_checkout'] = True
+        if entry['thread'] in first_threads:
+            entry['first_buyer_recipient'] = first_threads[entry['thread']]
+        elif entry['thread'] in targets:
             entry['upsell_recipient'] = targets[entry['thread']]
         if entry['offer_ids']:
             selected=[o for o in quote_options(decision,latest) if o['id'] in entry['offer_ids']]

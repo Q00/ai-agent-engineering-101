@@ -14,6 +14,20 @@ from seller_requirements import initial
 TTL=6*3600
 SHOP='outseop-26510122'
 GENERIC={'기타','식품','가구','용품','제품','상품','생활','주방','세트','기타 가공식품','식품선물세트'}
+BUY_REQUEST = re.compile(
+    r'구해(?:요|\s*주세요|봅니다)|구합니다|찾습니다|찾아[요줘]|삽니다|사고\s*싶|구매\s*(?:희망|하고 싶)|'
+    r'(?:견적|가격)\s*(?:부탁|주세요|알려\s*주)|looking (?:for|to buy)|want to buy|'
+    r'where (?:can|could) (?:I|we) (?:buy|find)', re.I)
+WEAK_REQUEST = re.compile(r'필요합니다|필요해|\bneed\b', re.I)
+PAST_OR_GUIDE = re.compile(
+    r'실제\s*구매\s*기록|구매\s*결과|정산\s*(?:금액|가격|기록|번호|#)|실결제|'
+    r'구매했|샀어요|후속\s*고장|고르는 법|확인 포인트|complaint|\bbought\b|\bpurchased\b', re.I)
+
+
+def is_purchase_request(body, *, intake=False):
+    if BUY_REQUEST.search(body):
+        return True
+    return not PAST_OR_GUIDE.search(body) and (intake or bool(WEAK_REQUEST.search(body)))
 
 
 def connect(path):
@@ -88,11 +102,12 @@ def ingest(runtime,catalog,now):
     except (OSError,ValueError):return {'observed':0,'reason':'forum_unavailable'}
     try:posts=json.loads((runtime/'state/seller-forum.json').read_text()).get('posts',[])
     except (OSError,ValueError):posts=[]
-    surveys={p.get('post_id') for p in posts if p.get('campaign')=='demand_survey' and p.get('status')=='published' and p.get('post_id')}
+    intake_posts = {p['post_id'] for p in posts if p.get('status') == 'published' and p.get('post_id')
+                    and (p.get('campaign') == 'demand_survey' or p.get('first_checkout'))}
     own={r.get('owner') for r in rows if r.get('author')==SHOP and r.get('owner')}
     count=0
     with closing(connect(runtime/'state/seller.sqlite3')) as db:
-        key=str(source.resolve())+':'+hashlib.sha256(json.dumps(sorted(surveys)).encode()).hexdigest()[:12]
+        key=str(source.resolve())+':intent-v2:'+hashlib.sha256(json.dumps(sorted(intake_posts)).encode()).hexdigest()[:12]
         old=db.execute('SELECT mtime,size FROM forum_demand_sync WHERE source=?',(key,)).fetchone()
         if old==(stat.st_mtime_ns,stat.st_size):return {'observed':0,'reason':'unchanged'}
         with db:
@@ -101,13 +116,15 @@ def ingest(runtime,catalog,now):
                 if row.get('author')==SHOP or row.get('owner') in own:continue
                 ts=row.get('ts');post=row.get('id');body=row.get('text')
                 if type(post)is not int or type(ts) not in (int,float) or not math.isfinite(ts) or not 0<=now-ts<=TTL or not isinstance(body,str):continue
-                intake=row.get('thread') in surveys
-                explicit=bool(re.search(r'구해|구합니다|찾습니다|찾아[요줘]|필요합니다|필요해|looking for|\bneed\b|where can',body,re.I))
+                intake = row.get('thread') in intake_posts
+                explicit = is_purchase_request(body)
                 closed=bool(re.search(r'구매\s*완료|구했어요|구했습니다|더\s*필요\s*없|no longer (?:needed|looking)|request closed',body,re.I))
-                if not explicit and not intake and not closed:continue
-                if not explicit and re.search(r'불만|구매했|샀|complaint|bought|purchased|고르는 법|확인 포인트',body,re.I):continue
+                if not closed and not is_purchase_request(body, intake=intake):
+                    continue
                 mapped=matches(body,catalog);requirements=constraints(body)
-                if intake and not explicit and not mapped and not (requirements.get('grades') or requirements['budget_max'] or requirements['min_hours_left']):continue
+                if intake and not explicit and not closed and not mapped and not (
+                        requirements.get('grades') or requirements['budget_max'] or requirements['min_hours_left']):
+                    continue
                 missing=[]
                 if not mapped:missing.append('product')
                 if not requirements.get('grades'):missing.append('grade')
@@ -129,9 +146,14 @@ def active(runtime,now):
     try:
         with closing(sqlite3.connect(f'file:{path.resolve()}?mode=ro',uri=True,timeout=2)) as db:
             rows=db.execute('SELECT post_id,posted_at,author,raw_json,requirements,matches,from_intake,missing,thread FROM forum_demand WHERE is_open=1 AND posted_at>=? AND posted_at<=? ORDER BY posted_at DESC LIMIT 200',(now-TTL,now)).fetchall()
-        return [{'id':r[0],'posted_at':r[1],'author':r[2],'text':json.loads(r[3])['text'][:600],
-                 'requirements':json.loads(r[4]),'catalog_matches':json.loads(r[5]),'from_intake':bool(r[6]),
-                 'missing_fields':json.loads(r[7]),'parent_thread':r[8]} for r in rows]
+        result = []
+        for r in rows:
+            body = json.loads(r[3])['text']
+            if is_purchase_request(body, intake=bool(r[6])):
+                result.append({'id':r[0],'posted_at':r[1],'author':r[2],'text':body[:600],
+                               'requirements':json.loads(r[4]),'catalog_matches':json.loads(r[5]),
+                               'from_intake':bool(r[6]),'missing_fields':json.loads(r[7]),'parent_thread':r[8]})
+        return result
     except (OSError,sqlite3.Error,ValueError):return []
 
 
