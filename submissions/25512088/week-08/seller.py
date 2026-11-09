@@ -60,7 +60,10 @@ def select_unit(text, units, reserved, soft_counts=None):
     fits = named or [u for u in valid if any(str(v).lower() in want for v in
                     [u.get('name'), u.get('category', '').split('>')[-1]] if v)]
     soft_counts=soft_counts or {}
-    return min(fits, key=lambda u: (soft_counts.get(u['unit'],0),
+    # Most market mandates accept A/B far more often than C. Prefer a unit that
+    # can actually settle; only fall back to C when no A/B unit fits.
+    grade_order={'A':0,'B':1,'C':2}
+    return min(fits, key=lambda u: (grade_order.get(u.get('grade'),3),soft_counts.get(u['unit'],0),
         u.get('expires_at') or float('inf'),u.get('supplied_at',0)),default=None)
 
 
