@@ -157,6 +157,48 @@ def board():
     }
 
 
+PARTS = (("book", 0.5), ("revenue", 0.3), ("stars_rank", 0.2))
+
+
+def shop_score_parts(n_hist=12):
+    """User 11-09: 'keep widening the shop gap' (on 11-09 it fell .040 -> .005 in 8 h while the book lead grew:
+    inextro tied our stars_rank and holds revenue 1st). Each part's value, rank and weighted percentile for us and
+    the next 3 shops by board ALL, our margin per part over each, what one rank in each part is worth, and how far
+    we are from the next value up and the rival from the value under ours. Logged to .market/shop_parts.jsonl so the
+    trend of every part is read, not only the total."""
+    try:
+        with urllib.request.urlopen("https://market.ourolabs.ai/api/board?round=3", timeout=30) as r:
+            shops = [s for s in json.load(r)["shops"] if s.get("deals")]
+        n = len(shops)
+
+        def part(s, k):
+            v = s.get(k) or 0
+            vals = sorted({x.get(k) or 0 for x in shops}, reverse=True)
+            i = vals.index(v)
+            return {"value": v, "rank": sum((x.get(k) or 0) > v for x in shops) + 1,
+                    "pct": round(sum((x.get(k) or 0) < v for x in shops) / (n - 1), 4),
+                    "next_up": vals[i - 1] if i else None, "next_down": vals[i + 1] if i + 1 < len(vals) else None}
+        top = sorted(shops, key=lambda s: -(s.get("all") or 0))
+        me = next(s for s in shops if s["name"] == "yms979")
+        rivals = [s for s in top if s["name"] != "yms979"][:3]
+        out = {"shops_with_deals": n, "one_rank_is_worth": {k: round(w / (n - 1), 4) for k, w in PARTS},
+               "us": {"all": me.get("all"), **{k: part(me, k) for k, _ in PARTS}, "stars_raw": me.get("stars")}}
+        for r in rivals:
+            parts = {k: part(r, k) for k, _ in PARTS}
+            out[r["name"]] = {"all": r.get("all"), **parts, "stars_raw": r.get("stars"),
+                              "our_margin_by_part": {k: round(w * (out["us"][k]["pct"] - parts[k]["pct"]), 4)
+                                                     for k, w in PARTS}}
+        rec = {"t": time.time(), "us": {k: out["us"][k]["rank"] for k, _ in PARTS} | {"all": me.get("all")},
+               **{r["name"]: {k: out[r["name"]][k]["rank"] for k, _ in PARTS} | {"all": r.get("all")} for r in rivals}}
+        path = HERE / ".market" / "shop_parts.jsonl"
+        with open(path, "a", encoding="utf-8") as f:
+            f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+        out["history_ranks"] = [json.loads(x) for x in path.read_text(encoding="utf-8").splitlines()[-n_hist:]]
+        return out
+    except Exception as e:
+        return {"error": repr(e)}
+
+
 def evidence(m, mem, b):
     now = time.time()
     inv = read(HERE / ".market" / "inventory.json", {})
@@ -210,6 +252,7 @@ def evidence(m, mem, b):
             "board": b, "skus": [r for _, r in sorted(rows, key=lambda x: -x[0])[:TOP_SKUS]],
             "globals_now": {k: (auto.get("globals") or {}).get(k, current_base(k)) for k in GLOBAL},
             "market_picture": market_picture(), "your_watch_list": w.get("watch", []),
+            "shop_score_parts": shop_score_parts(),
             "settle_health": settle_health(), "lead_guard": read(HERE / ".market" / "warranty_guard.json", {}).get("why"),
             "from_operator": read(HERE / "operator_to_shop.json", {}).get("note") or None,
             "woken_by": w.get("woken_by")}
@@ -317,6 +360,11 @@ right after a kit restart). 11-07/08 night: an 8760 h warranty made the market r
 ('claim_and_warranty_well_formed'); the book stalled for ~10 h, we blamed the market's goods slide and held, and
 a rule toggled the warranty five times. A cause found but outside your knobs goes in notes_for_buyer or a
 request with the numbers; the operator reads them.
+WIDEN THE GAP EVERY RUN (user, 11-09: 'keep widening the shop score gap'): read "shop_score_parts" first. It
+gives each part (book 0.5, revenue 0.3, stars_rank 0.2, each a rank among shops with deals) for us and the next
+shops, our margin per part, what one rank is worth, and the history of ranks. Name the part that decides the gap
+now (on 11-09 11:30: book 1st vs inextro 2nd, revenue 2nd vs its 1st, stars_rank tied, gap .005) and the part a
+rival can take from us next, then move the knobs that win or guard that part. Do not wait for the operator.
 THE SHOP'S GOAL (user, 11-08): a dominant first place in class shop score, i.e. a gap over the 2nd and 3rd shops
 that grows, not just one that holds; the most sales is not the aim. To widen it you must know the rivals: read
 the curator's WATCH.shop_race and "rivals" (the 2nd and 3rd shops' class score and parts, what they sell, at what
