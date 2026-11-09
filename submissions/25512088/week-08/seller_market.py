@@ -6,6 +6,7 @@ import re
 import sqlite3
 import time
 import httpx
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from network_reads import retry_read
 from pathlib import Path
 from statistics import median
@@ -15,6 +16,8 @@ from market_intel import Intel, read_json
 GRADE_COSTS={'A':(.55,.75,.65,.70),'B':(.40,.60,.50,.20),'C':(.25,.45,.35,.10)}
 PREFERENCE_WINDOW=48*3600
 PREFERENCE_FILE='buyer-preferences.json'
+SHOP_REVIEW_FILE='shop-reviews.json'
+SHOP_REVIEW_MAX_AGE=30*60
 
 
 def _shop_offers(shop):
@@ -28,7 +31,9 @@ def _review_evidence(catalog, shops, candidates):
     names={sku:str(catalog.get(sku,{}).get('name') or '').strip().lower() for sku in candidates}
     result={sku:{'count':0,'stars':0.0,'shops':set()} for sku in candidates}
     for shop in shops:
-        for review in shop.get('reviews') or []:
+        shop_reviews=shop.get('reviews')
+        if not isinstance(shop_reviews,list):continue
+        for review in shop_reviews:
             if review.get('round')!=3 or type(review.get('stars')) not in (int,float):continue
             text=str(review.get('review') or '').lower()
             matched=[]
@@ -40,6 +45,41 @@ def _review_evidence(catalog, shops, candidates):
     return {sku:{'count':row['count'],
                  'average':round(row['stars']/row['count'],3) if row['count'] else None,
                  'shops':len(row['shops'])} for sku,row in result.items()}
+
+
+def fetch_shop_reviews(state,market,shops,round_no=3,now=None):
+    """GET every public shop review modal and cache only bounded public fields."""
+    now=time.time() if now is None else now;root=Path(state);path=root/SHOP_REVIEW_FILE
+    cached=read_json(path,{})
+    targets={str(s.get('name')):str(s.get('url') or (s.get('card') or {}).get('url') or '')
+             for s in shops if s.get('name')}
+    names=set(targets)
+    if (cached.get('round')==round_no and now-cached.get('fetched_at',0)<SHOP_REVIEW_MAX_AGE
+            and names.issubset(set((cached.get('by_shop') or {}).keys()))):
+        return [r for rows in cached.get('by_shop',{}).values() for r in rows]
+    previous=cached.get('by_shop',{}) if cached.get('round')==round_no else {}
+    by_shop={};errors=[]
+    def get(name):
+        with httpx.Client(timeout=12) as client:
+            response=client.get(market+'/api/shop-reviews',params={'shop':name,'round':round_no})
+            response.raise_for_status();rows=response.json()
+        if not isinstance(rows,list):raise ValueError('review schema')
+        return name,[{'shop':name,'shop_url':targets.get(name,''),'author':str(r.get('author') or '')[:64],
+                      'stars':r.get('stars'),'ts':r.get('ts'),
+                      'review':str(r.get('review') or '')[:2000]} for r in rows[:40]
+                     if isinstance(r,dict)]
+    with ThreadPoolExecutor(max_workers=6) as pool:
+        futures={pool.submit(get,name):name for name in sorted(names)}
+        for future in as_completed(futures):
+            name=futures[future]
+            try:key,rows=future.result();by_shop[key]=rows
+            except Exception as exc:
+                errors.append({'shop':name,'error':type(exc).__name__})
+                if name in previous:by_shop[name]=previous[name]
+    result={'version':1,'fetched_at':now,'round':round_no,'shops_requested':len(names),
+            'shops_loaded':len(by_shop),'errors':errors,'by_shop':by_shop}
+    tmp=path.with_suffix('.tmp');tmp.write_text(json.dumps(result,ensure_ascii=False,sort_keys=True));os.replace(tmp,path)
+    return [r for rows in by_shop.values() for r in rows]
 
 
 def build_buyer_preferences(catalog,trades,shops,forum,alive_buyers=(),now=None,board_reviews=()):
@@ -60,13 +100,19 @@ def build_buyer_preferences(catalog,trades,shops,forum,alive_buyers=(),now=None,
     # Board reviews carry an author while /api/shops review summaries do not.
     # Review prose is used only for an exact single-product match, and only
     # after the public ledger already proves that author bought that SKU.
-    verified_reviews=0;ignored_reviews=0
+    verified_reviews=0;ignored_reviews=0;timestamp_matched_reviews=0
     recent_pairs={(row['buyer'],row['sku']) for row in recent}
     names={sku:str(product.get('name') or '').strip().lower() for sku,product in catalog.items()}
+    shop_urls={str(s.get('name')):{str(s.get('name')),str(s.get('url'))} for s in shops}
     for review in board_reviews or ():
         author=review.get('author');stars=review.get('stars');text=str(review.get('review') or '').lower()
         matched=[sku for sku,name in names.items()
                  if sku.lower() in text or (len(name)>=8 and name in text)]
+        if len(matched)!=1 and author and isinstance(review.get('ts'),(int,float)) and review.get('shop'):
+            allowed=shop_urls.get(str(review.get('shop')),{str(review.get('shop'))})|{str(review.get('shop_url') or '')}
+            candidates={row['sku'] for row in recent if row['buyer']==author and row.get('shop') in allowed
+                        and abs(row.get('ts',0)-review['ts'])<=300}
+            if len(candidates)==1:matched=list(candidates);timestamp_matched_reviews+=1
         if (type(stars) not in (int,float) or not author or len(matched)!=1
                 or (author,matched[0]) not in recent_pairs):
             ignored_reviews+=1;continue
@@ -119,11 +165,12 @@ def build_buyer_preferences(catalog,trades,shops,forum,alive_buyers=(),now=None,
         'forum_evidence':{'posts_observed':len(posts),'verified_buyer_posts':verified_posts,
                           'untrusted_or_unverified_posts_ignored':untrusted_posts},
         'review_evidence':{'verified_buyer_product_reviews':verified_reviews,
+                           'timestamp_unique_matches':timestamp_matched_reviews,
                            'untrusted_ambiguous_or_unmatched_reviews_ignored':ignored_reviews},
         'evidence_policy':'ledger purchases primary; exact product reviews aggregated; only buyer-authored forum refs matching that buyer may add stated hours'}
 
 
-def write_buyer_preferences(state,intel,catalog,shops=None,board=None,forum=None,now=None):
+def write_buyer_preferences(state,intel,catalog,shops=None,board=None,forum=None,now=None,reviews=None):
     """Atomically persist a preference snapshot for procurement and auditing."""
     now=time.time() if now is None else now;root=Path(state)
     trades=[dict(r) for r in intel.db.execute('SELECT * FROM trades WHERE ts>?',(now-PREFERENCE_WINDOW,))]
@@ -131,8 +178,12 @@ def write_buyer_preferences(state,intel,catalog,shops=None,board=None,forum=None
     shops=shops.get('shops',[]) if isinstance(shops,dict) else shops
     board=board if board is not None else (intel.source('board',{}) or {})
     forum=forum if forum is not None else read_json(root/'forum.json',[])
+    if reviews is None:
+        cache=read_json(root/SHOP_REVIEW_FILE,{})
+        reviews=([r for rows in (cache.get('by_shop') or {}).values() for r in rows]
+                 if now-cache.get('fetched_at',0)<=SHOP_REVIEW_MAX_AGE else board.get('reviews',[]))
     alive={str(r.get('name')) for r in board.get('buyers',[]) if r.get('alive') is True}
-    result=build_buyer_preferences(catalog,trades,shops,forum,alive,now,board.get('reviews',[]))
+    result=build_buyer_preferences(catalog,trades,shops,forum,alive,now,reviews)
     result['ledger_through']=intel.get('ledger_through')
     path=root/PREFERENCE_FILE;tmp=path.with_suffix('.tmp')
     tmp.write_text(json.dumps(result,ensure_ascii=False,sort_keys=True));os.replace(tmp,path)
@@ -311,8 +362,13 @@ def snapshot(state,catalog,opens_at,market):
                 key='stockout_6h' if body.get('reason') else 'sku_6h'
                 own_signals[key][sku]=own_signals[key].get(sku,0)+1
         shop_rows=shops.get('shops',[]) if isinstance(shops,dict) else shops
+        review_shops={str(s.get('name')):s for s in board.get('shops',[]) if s.get('name')}
+        review_shops.update({str(s.get('name')):s for s in shop_rows if s.get('name')})
         alive={r.get('name') for r in board.get('buyers',[]) if r.get('alive') is True}
-        write_buyer_preferences(state,intel,catalog,shop_rows,board,read_json(Path(state)/'forum.json',[]))
+        review_rows=fetch_shop_reviews(state,market,list(review_shops.values()),board.get('round',3))
+        preference_shops=list(review_shops.values())
+        write_buyer_preferences(state,intel,catalog,preference_shops,board,
+                                read_json(Path(state)/'forum.json',[]),reviews=review_rows)
         goods_hazard,hazard_basis=own_goods_hazard(board)
         top=rank_products(catalog,rows,shop_rows,local_demand=demand,own_signals=own_signals,
                           alive_buyers=alive,goods_hazard=goods_hazard,hazard_basis=hazard_basis)
