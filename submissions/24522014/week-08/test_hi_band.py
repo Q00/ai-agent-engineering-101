@@ -146,7 +146,8 @@ class Settings(unittest.TestCase):
     def test_the_shipped_setting(self):
         value = json.loads(hi_band.CONFIG.read_text(encoding="utf-8"))
         self.assertEqual((value["slots"], value["min_list_price"], value["min_own_sales_24h"], value["min_own_sales_window_hours"], value["max_worst_cost_total"]), (10, 1000000, 1, 72, 12000000))
-        self.assertIs(value["enabled"], False)
+        # Installed off 12:06:21 KST 11-09 (cap and window 12:15:31); switched on in its own commit after the full suite.
+        self.assertIs(value["enabled"], True)
 
     def test_for_run_keeps_1m_goods_with_profitable_recent_sales(self):
         counts = {"H": (2, 500), "H2": (1, -10), "c0": (5, 100), "H3": (1, 1)}
