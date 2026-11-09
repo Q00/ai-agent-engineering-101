@@ -15,7 +15,8 @@ def comparison_baskets(winners,rows,*,anchor,minimum,minimum_categories,slots,un
         if categories.get(row['category'],0)+sum(r['category']==row['category'] for r in witness)>=24:continue
         witness.append(row);seen.add(row['category'])
     if len(witness)<minimum or len(seen)<minimum_categories or sum(r['cost_ceiling'] for r in witness)>min(budget,novel_budget):return []
-    ranked=sorted(winners,key=lambda r:(r['second_trial'],not r.get('midprice_priority'),
+    ranked=sorted(winners,key=lambda r:(r['second_trial'], not r.get('midprice_priority'),
+                                      -r.get('evidence', {}).get('midprice_contribution_12h', 0) if r.get('midprice_priority') else 0,
                                       -r['forecast']['sales_rate_per_hour'],r['sku']))
     results=[];fingerprints=set()
     for name,new_count,fraction,goods_h,food_h in (
@@ -34,7 +35,7 @@ def comparison_baskets(winners,rows,*,anchor,minimum,minimum_categories,slots,un
         for winner in ranked:
             if len(picks)>=min(8,slots-len(new)):break
             horizon=goods_h if winner['kind']=='goods' else food_h
-            options=[o for o in winner['target_options'] if not horizon and o['scenario'] in ('low','base','high','second_trial')
+            options=[o for o in winner['target_options'] if not horizon and o['scenario'] in ('low','base','high','second_trial','expiry_match')
                      or horizon and (o.get('coverage_hours',0)<=horizon)]
             options=sorted(options,key=lambda o:o['target_stock'],reverse=True)
             option=next((o for o in options if o['qty']<=free and o['cost_ceiling']<=remaining

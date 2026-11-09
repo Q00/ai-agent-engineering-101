@@ -3,7 +3,8 @@ from collections import Counter
 import math
 from procurement_cost import ceiling as acquisition_ceiling
 
-from inventory_observation import timestamp, evidence, demand_outcomes, conversion_estimate
+from inventory_observation import (timestamp, evidence, demand_outcomes, conversion_estimate,
+                                   expiry_shortfalls)
 from newsvendor_tool import poisson_pmf, recommend_quantity
 from capital_policy import MAX_UNIT_COST, operating_policy, target_inventory_cost
 from market_scoring import continuation
@@ -19,6 +20,7 @@ SUPPLY_CYCLE_SECONDS = 20*60
 SUPPLY_JITTER_BUFFER_SECONDS = 120
 PURCHASE_LEAD_SECONDS = 60
 GROWTH_COVERAGE_HOURS={'goods':(2.,6.),'food':(1.,2.)}
+MAX_EXPIRY_TRIALS = 2
 
 
 def sales_evidence(sku, history, now, *, kind=None):
@@ -43,7 +45,10 @@ def sales_evidence(sku, history, now, *, kind=None):
     net_scenario = sum(value for _, value in contributions)
     positive_contributions = sum(value>0 for _,value in contributions)
     proven = positive_contributions >= MIN_POSITIVE_SALES and net_scenario > 0
-    return {'confirmed_positive_spread_sales_12h': len(positive), 'confirmed_positive_spread_sales_1h': len(recent),
+    midprice_contribution = sum(value for price, value in contributions
+                                if MIDPRICE_MIN <= price <= MIDPRICE_MAX)
+    return {'midprice_contribution_12h': round(midprice_contribution, 2),
+            'confirmed_positive_spread_sales_12h': len(positive), 'confirmed_positive_spread_sales_1h': len(recent),
             'midprice_positive_sales_12h': len(midprice),
             'positive_contribution_sales_12h': positive_contributions,
             'midprice_contribution_sales_12h': sum(MIDPRICE_MIN <= price <= MIDPRICE_MAX and value>0
@@ -191,7 +196,8 @@ def demand_forecast(sku, product, inventory, history, now, *, outcomes=None):
             'Exposure correction describes this shop only, not total market demand.'}
 
 
-def replenishment_candidates(catalog, inventory, history, now, blocked=(), trialed=(), pending=None):
+def replenishment_candidates(catalog, inventory, history, now, blocked=(), trialed=(), pending=None,
+                             *, expiry_trialed=()):
     operating = operating_policy(now)
     if not operating['allow_replenishment']: return []
     units = [u for u in inventory.get('units', []) if u.get('grade') in ('A', 'B', 'C')
@@ -201,6 +207,7 @@ def replenishment_candidates(catalog, inventory, history, now, blocked=(), trial
     categories = Counter(u.get('category') for u in units)
     sold_skus = {e.get('sku') for e in history if e.get('event') == 'settled' and e.get('sku')}
     outcomes=demand_outcomes(history,now)
+    expiry_demand = expiry_shortfalls(history, catalog, units, now, outcomes=outcomes)
     rows = []
     for sku in sold_skus:
         p = catalog.get(sku)
@@ -240,12 +247,20 @@ def replenishment_candidates(catalog, inventory, history, now, blocked=(), trial
                                 'forecast_mean':scenario['forecast_mean'],
                                 'service_level':scenario['service_level'],
                                 'cost_ceiling': acquisition_ceiling(p)*qty})
+        expiry = expiry_demand.get(sku)
+        if (not options and expiry and room and not reserved and sku not in expiry_trialed
+                and operating['phase'] == 'growth' and signal['proven']):
+            options.append({'target_stock': projected + 1, 'qty': 1,
+                            'scenario': 'expiry_match', 'cost_ceiling': acquisition_ceiling(p),
+                            'expiry_trial': expiry})
         if not options:
             continue
         options.sort(key=lambda option:option['qty'])
         rows.append({'sku': sku, 'name': p.get('name', sku), 'kind': p['kind'], 'category': p.get('category'),
                      'midprice_priority': (operating['phase'] == 'growth' and
-                                           signal['midprice_contribution_sales_12h'] >= MIN_POSITIVE_SALES),
+                                           signal['midprice_contribution_sales_12h'] >= MIN_POSITIVE_SALES and
+                                           signal['midprice_contribution_12h'] > 0),
+                     'expiry_demand': expiry,
                      'currently_stocked': stocks[sku], 'pending_stock':reserved,
                      'second_trial':second_trial, 'evidence': signal, 'target_options': options,
                      'cost_ceiling_per_unit': acquisition_ceiling(p), 'forecast':forecast,
@@ -253,13 +268,17 @@ def replenishment_candidates(catalog, inventory, history, now, blocked=(), trial
                      'assumption':('One additional unit after exactly one positive-contribution settlement; not proven maintenance.'
                                    if second_trial else 'Each target/quantity is forecast-derived; the model approves a candidate or holds.')})
     rows.sort(key=lambda r: (not r['midprice_priority'],
+                             -r['evidence']['midprice_contribution_12h'] if r['midprice_priority'] else 0,
                              -(r['target_options'][-1]['qty']/max(1,r['currently_stocked'])),
                              -r['evidence']['confirmed_positive_spread_sales_1h'],
                              -r['evidence']['contribution_after_holding_refund_scenario_12h'], r['sku']))
-    proven = [r for r in rows if not r['second_trial']]
-    trials = [r for r in rows if r['second_trial']]
-    trial_rows = trials[:2]
-    return proven[:12-len(trial_rows)] + trial_rows
+    proven = [r for r in rows if not r['second_trial'] and not r['target_options'][0].get('expiry_trial')]
+    trials = [r for r in rows if r['second_trial']][:2]
+    expiry_trials = sorted((r for r in rows if r['target_options'][0].get('expiry_trial')),
+                           key=lambda r: (-r['expiry_demand']['unserved_tasks_12h'],
+                                          -r['evidence']['contribution_after_holding_refund_scenario_12h'],
+                                          r['sku']))[:MAX_EXPIRY_TRIALS]
+    return proven[:12 - len(trials) - len(expiry_trials)] + expiry_trials + trials
 
 
 def policy_view(sku, product, inventory, history, now):

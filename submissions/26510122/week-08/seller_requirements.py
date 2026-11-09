@@ -123,6 +123,23 @@ def offer(message):
     return found[0] if found and len(set(found)) == 1 else None
 
 
+def expiry_shortfall(units, requested, requirements, now):
+    """An exact food request lost despite an otherwise eligible physical unit."""
+    if len(requested) != 1:
+        return None
+    required = requirements.get('min_hours_left', 0)
+    if type(required) not in (int, float) or not math.isfinite(required) or required <= 0:
+        return None
+    without_lifetime = {**requirements, 'min_hours_left': 0}
+    remaining = [(u['expires_at'] - now) / 3600 for u in units
+                 if u.get('sku') == requested[0] and u.get('kind') == 'food'
+                 and not violations(u, without_lifetime, now)]
+    if remaining and max(remaining) < required:
+        return {'sku': requested[0], 'required_hours': required,
+                'best_available_hours': round(max(remaining), 3)}
+    return None
+
+
 def violations(unit, requirements, now, *, warranty_hours=0):
     errors = []
     expires = unit.get('expires_at')

@@ -75,7 +75,7 @@ def read_inventory() -> dict:
         return {}
 
 
-def find_units(text: str, taken: set[str], inventory: dict) -> list[dict]:
+def find_units(text: str, taken: set[str], inventory: dict, *, limit: int | None = 12) -> list[dict]:
     """Only currently available units; exact SKU requests win over broad categories."""
     want = text.lower()
     if inventory.get("round", 0) < 3:
@@ -98,7 +98,7 @@ def find_units(text: str, taken: set[str], inventory: dict) -> list[dict]:
     if named:
         matches = named
     matches.sort(key=lambda u: (u.get("expires_at") or float("inf"), u.get("supplied_at") or 0))
-    return matches[:12]
+    return matches[:limit]
 
 
 def decision_schema(actions: list[str]) -> dict:
@@ -139,7 +139,7 @@ class Seller(AgentExecutor):
                        role='seller',episode_id=f'seller:{task_id}',decision_id=deal.get('last_decision_id'),
                        reason='negotiation reservation timed out; payment outcome unknown')
 
-    def available(self, text: str) -> list[dict]:
+    def available(self, text: str, *, limit: int | None = 12) -> list[dict]:
         self.expire_negotiations()
         inventory = read_inventory()
         stock = {u.get("unit") for u in inventory.get("units", [])}
@@ -151,7 +151,7 @@ class Seller(AgentExecutor):
         self.holds = {unit: until for unit, until in self.holds.items()
                       if until > now and (not stock or unit in stock)}
         taken = {d["unit"]["unit"] for d in self.open.values()} | set(self.holds) | {r[0] for r in leases}
-        return find_units(text, taken, inventory)
+        return find_units(text, taken, inventory, limit=limit)
 
     async def choose(self, prompt: dict, actions: list[str], fallback: dict) -> dict:
         audit.begin(prompt['phase'], policy_version=prompt.get('market_objective',{}).get('meta_version') or 'operator_default')
@@ -247,7 +247,8 @@ class Seller(AgentExecutor):
                     trace("settlements_imported", count=imported)
             except OSError as error:
                 trace("settlement_sync_error", error=str(error))
-            choices = self.available(public_request['sku'] if public_request else message)
+            lookup = requested[0] if len(requested) == 1 else message
+            choices = self.available(public_request['sku'] if public_request else lookup, limit=None)
             if public_request:choices=[u for u in choices if u['unit']==public_request['unit']]
             else:choices.sort(key=lambda u:not any(o['unit']==u['unit'] for o in public_quotes))
             if not choices:
@@ -255,11 +256,16 @@ class Seller(AgentExecutor):
                 await up.reject(say("Sorry, no matching unit is in stock."))
                 return
             requirements = seller_requirements.initial(message)
-            choices = [u for u in choices if not seller_requirements.violations(u, requirements, time.time(), warranty_hours=seller_warranty.hours(u))]
-            if not choices:
-                record('requirements_unmet', task_id=task.id, requirements=requirements)
+            checked_at = time.time()
+            matching = [u for u in choices if not seller_requirements.violations(
+                u, requirements, checked_at, warranty_hours=seller_warranty.hours(u))]
+            if not matching:
+                shortfall = seller_requirements.expiry_shortfall(choices, requested, requirements, checked_at)
+                record('requirements_unmet', task_id=task.id, requirements=requirements,
+                       requested_skus=requested, expiry_shortfall=shortfall)
                 await up.reject(say('No available unit meets the requested expiry, grade or warranty.'))
                 return
+            choices = matching[:12]
             metadata=context.metadata or MessageToDict(context.message.metadata)
             proofs=counterparty_memory.load_cache().get('proofs',[])
             # The independent worker refreshes this cache. Public-network

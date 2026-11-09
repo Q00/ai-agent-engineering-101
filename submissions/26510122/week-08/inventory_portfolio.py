@@ -41,7 +41,7 @@ WINDOW_BUDGET = GROWTH_WINDOW_BUDGET
 ROLLING_BUDGET = GROWTH_EXPLORATION_BUDGET
 MAX_MAINTAINED_SKUS = 8
 STOCKOUT_TRIAL_CANDIDATES = 3
-POLICY_VERSION = 25
+POLICY_VERSION = 26
 GROWTH_SPEND_SHARE = .50
 DAY = 86400
 INFLOW_MIN_PUBLIC_DEALS = 5
@@ -346,7 +346,9 @@ def _run(inventory, catalog, history, now, model, refresh, rng, path,prepare_onl
                and not partial_from_closed_window(i, now)}
     trialed = {i['sku'] for i in state['intents'] if i.get('second_trial')}
     forecast_inventory=({**inventory,'restock':{**window,'open':True}} if prepare_only else inventory)
-    winners = replenishment_candidates(catalog, forecast_inventory, history, now, blocked, trialed, pending_stocks)
+    expiry_trialed = {i['sku'] for i in recent if i.get('expiry_trial') and reserved_quantity(i)}
+    winners = replenishment_candidates(catalog, forecast_inventory, history, now, blocked, trialed, pending_stocks,
+                                       expiry_trialed=expiry_trialed)
     forum_intents=seller_demand.candidate_context(Path.cwd(),now)
     for winner in winners:
         winner['forum_intent']=forum_intents.get(winner['sku'])
@@ -361,7 +363,8 @@ def _run(inventory, catalog, history, now, model, refresh, rng, path,prepare_onl
     winners = [r for r in winners if r['target_options']]
     # Keep one high-cost unit from consuming the window while affordable
     # repeat midprice sellers still have forecast-backed stock deficits.
-    midprice_focus = any(r.get('midprice_priority') and r['cost_ceiling_per_unit'] <= MIDPRICE_MAX for r in winners)
+    midprice_focus = any(r.get('midprice_priority') and not r['target_options'][0].get('expiry_trial')
+                         and r['cost_ceiling_per_unit'] <= MIDPRICE_MAX for r in winners)
     if midprice_focus:
         winners = [r for r in winners if r['cost_ceiling_per_unit'] <= MIDPRICE_MAX]
     exploration_unit_ceiling = min(exploration_budget, MIDPRICE_MAX) if midprice_focus else exploration_budget
@@ -511,7 +514,11 @@ def _run(inventory, catalog, history, now, model, refresh, rng, path,prepare_onl
               'Compare recent rate, stock exposure, next-window and multi-hour coverage options, and uncertainty. '
               'Forecast windows separate confirmed sales, deduplicated eligible stockout requests and '
               'conversion-weighted expected lost sales. These expected losses are hypotheses, not actual sales. '
-              'Exposure correction and stockout estimates use the larger rate, not their sum; do not add them again. '
+               'Expiry_demand is exact unserved food demand whose requested lifetime current stock cannot cover. '
+               'It is separate from paid forecasts. An expiry_match option is a one-unit trial on a proven seller '
+               'when normal replenishment has no deficit. Consider remaining hours, price, loss risk and '
+               'the random incoming grade; catalog shelf hours are a maximum, not a promise. '
+               'Exposure correction and stockout estimates use the larger rate, not their sum; do not add them again. '
               'Ambiguous category/multi-SKU requests and requests later served or settled do not count as lost SKU sales. '
               'Do not assume every next supply opportunity will succeed. During capital recovery, '
               'compare the listed multi-hour buffers for proven sellers, including their holding cost '
@@ -583,6 +590,8 @@ def _run(inventory, catalog, history, now, model, refresh, rng, path,prepare_onl
                                   'forecast_scenario':option['scenario'],
                                   'coverage_hours':option.get('coverage_hours'),
                                   'forecast_mean':option.get('forecast_mean'),
+                                  'expiry_demand':winner.get('expiry_demand'),
+                                  **({'expiry_trial':option['expiry_trial']} if option.get('expiry_trial') else {}),
                                   'forum_request_ids':(winner.get('forum_intent') or {}).get('request_ids',[]),
                                   'demand_basis':{'sales_rate_per_hour':winner['forecast']['sales_rate_per_hour'],
                                       'contribution_after_holding_refund_scenario_12h':
@@ -640,7 +649,8 @@ def _run(inventory, catalog, history, now, model, refresh, rng, path,prepare_onl
                 hold_preparation('invalid_approval_or_no_correction_time')
                 record('portfolio_hold', reason='invalid_approval_or_no_correction_time')
                 return {'buy': []}
-    desired = [{**o, 'kind':'replenishment'} for o in restock_orders]
+    ordered_restock = sorted(restock_orders, key=lambda r: (bool(r.get('expiry_trial')), not r['midprice_priority']))
+    desired = [{**o, 'kind':'replenishment'} for o in ordered_restock]
     desired += [{**allowed[sku], 'qty':1, 'kind':'exploration'} for sku in skus]
     for row in desired:
         row.setdefault('forum_request_ids',(row.get('forum_intent') or {}).get('request_ids',[]))
@@ -648,7 +658,7 @@ def _run(inventory, catalog, history, now, model, refresh, rng, path,prepare_onl
         estimated_spend_krw=sum(r['qty']*unit_costs[r['sku']] for r in desired),approved_lines=[
         {k:r.get(k) for k in ('sku','kind','qty','target_stock','cost_ceiling','second_trial','midprice_priority',
                              'forecast_scenario','coverage_hours','forecast_mean','demand_basis','forum_request_ids',
-                             'stockout_trial','inflow_trial')} for r in desired],
+                             'stockout_trial','inflow_trial','expiry_demand','expiry_trial')} for r in desired],
         model_choice=answer,allocation_review=answer.get('strategy_review'),
         allocation_behavior={'review_required':review_required,
             'offered_proven_skus':sum(not w['second_trial'] for w in winners),
@@ -728,10 +738,15 @@ def _emit_approved(state,path,desired,answer,window,key,operating,now,slots,budg
     current_stocks = Counter(u.get('sku') for u in owned)
     free_units = WINDOW_MAX_UNITS
     rolling_remaining=max(0,current_operating['rolling_exploration_budget']-reserved)
+    expiry_targets = {r['sku']:r['expiry_trial']['target_remaining_hours']
+                      for r in desired if r.get('expiry_trial')}
+    covered_expiry_trials = {u['sku'] for u in owned if u['sku'] in expiry_targets
+                             and u.get('expires_at') is not None
+                             and u['expires_at'] - at >= expiry_targets[u['sku']] * 3600}
     buy,execution=select_lines(desired,stocks=current_stocks,categories=categories,
         pending_stock=pending_stocks,catalog=catalog,unit_room=free_units,supply_lines=room,budget=cash,
         allow_replenishment=current_operating['allow_replenishment'],allow_new_skus=current_operating['allow_new_skus'],
-        time_limited=time_slots<slots,exploration_budget=rolling_remaining)
+        time_limited=time_slots<slots,exploration_budget=rolling_remaining,covered_expiry_trials=covered_expiry_trials)
     by_sku={r['sku']:r for r in desired}
     for emitted in buy:
         sku,qty=emitted['sku'],emitted['qty'];row=by_sku[sku]
@@ -742,6 +757,7 @@ def _emit_approved(state,path,desired,answer,window,key,operating,now,slots,budg
                                 'forum_request_ids':row.get('forum_request_ids',[]),
                                 **({'stockout_trial': row['stockout_trial']} if row.get('stockout_trial') else {}),
                                 **({'inflow_trial': row['inflow_trial']} if row.get('inflow_trial') else {}),
+                                **({'expiry_trial': row['expiry_trial']} if row.get('expiry_trial') else {}),
                                 **audit.links(),'intent_id':f"{audit.links()['decision_id']}:{sku}"})
     save(path, state)  # all reservations precede externally executed supply calls
     log_execution(execution,at,execution_supply_lines=room,time_limited_supply_lines=time_slots,
@@ -827,6 +843,7 @@ def execute_prepared(inventory,catalog,history,now,*,refresh,state_path=None,rea
                 if (type(row['qty']) is not int or not 1<=row['qty']<=PROVEN_STOCK
                         or row['kind'] not in ('exploration','replenishment')
                         or type(row['cost_ceiling']) is not int or not 0<row['cost_ceiling']<=MAX_UNIT_COST
+                        or row.get('expiry_trial') and (row['kind']!='replenishment' or row['qty']!=1)
                         or row['kind']=='exploration' and row['qty']!=1
                         or row['kind']=='replenishment' and not 1<=row['target_stock']<=PROVEN_STOCK):
                     raise ValueError('invalid_approved_line')

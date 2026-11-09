@@ -24,7 +24,7 @@ POLL_SECONDS=2
 PREPARE_POLL_SECONDS=10
 WATCH_SECONDS=210  # below the kit's 300-second hook timeout
 FORECAST_EVENTS = frozenset({'request_seen', 'no_stock', 'opening', 'rejected', 'cancelled',
-                            'checkout_unpaid', 'inventory_snapshot'})
+                            'checkout_unpaid', 'inventory_snapshot', 'requirements_unmet'})
 
 
 def planning_history(now):

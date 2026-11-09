@@ -35,13 +35,21 @@ class SellerActivityTests(unittest.TestCase):
 
     def test_new_relevant_reply_remains_possible_during_product_ad_cooldown(self):
         self.prior(age=500,thread=42,skus=['s1'])
+        self.units[0].update(cost=4000, list_price=10000, expires_at=self.now+24*3600)
+        (self.root/'.market/catalog.json').write_text(json.dumps(
+            {'s1': {'name': '김치', 'kind': 'food', 'category': '식품', 'shelf_hours': 48, 'list_price': 10000}}))
+        inv = self.root/'.market/inventory.json'
+        inv.write_text(json.dumps({'round': 3, 'units': self.units}))
+        os.utime(inv, (self.now, self.now))
         (self.root/'.market/forum.json').write_text(json.dumps([{'id':43,'role':'buyer','ts':self.now,'text':'김치 구합니다'}]))
         decision=self.copy|{'campaign':'reply','thread_id':43}
         def model(role,prompt,schema):
             if 'checker' in role:return {'approve':True,'unsupported_claims':[]}
             self.assertEqual(prompt['facts']['publication_options']['unanswered_threads'],[43])
             self.assertEqual(prompt['facts']['publication_options']['root_skus'],[])
-            return decision
+            quote = prompt['facts']['reply_quotes'][43][0]
+            self.assertEqual(quote['unit'], 'free')
+            return decision | {'offer_ids': [quote['id']]}
         seller.run_once(self.root,now=self.now,decide=model)
         self.assertEqual(json.loads((self.root/'.market/outbox.jsonl').read_text())['thread'],43)
 

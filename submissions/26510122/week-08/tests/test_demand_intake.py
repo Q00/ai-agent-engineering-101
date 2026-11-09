@@ -40,10 +40,19 @@ class DemandIntakeTests(unittest.TestCase):
         self.assertEqual(forum.facts(self.root,later)['requests'][0]['id'],77)
         decision={'action':'post','campaign':'reply','skus':['s1'],'offer_ids':[],'ledger_refs':[],
                   'thread_id':77,'headline':'찾으신 커피 재고 안내','body':'요청하신 조건을 확인해 안내합니다.','reason':'matching physical arrival'}
-        def model(role,prompt,schema):return {'approve':True,'unsupported_claims':[]} if 'checker' in role else decision
-        forum.run_once(self.root,now=later,decide=model)
-        payload=json.loads((self.root/'.market/outbox.jsonl').read_text())
-        self.assertEqual(payload['thread'],77);self.assertIn('B등급',payload['post']);self.assertIn('400시간',payload['post'])
+        def model(role, prompt, schema):
+            if 'checker' in role:
+                return {'approve': True, 'unsupported_claims': []}
+            self.assertEqual(schema['properties']['campaign']['enum'], ['reply'])
+            quote = prompt['facts']['reply_quotes'][77][0]
+            self.assertEqual(quote['unit'], 'arrived')
+            return decision | {'offer_ids': [quote['id']]}
+        forum.run_once(self.root, now=later, decide=model)
+        payload = json.loads((self.root/'.market/outbox.jsonl').read_text())
+        self.assertEqual(payload['thread'], 77)
+        self.assertIn('B등급', payload['post'])
+        self.assertIn('400시간', payload['post'])
+        self.assertIn('견적코드 FO-', payload['post'])
     def test_survey_reply_without_buy_verb_is_captured(self):
         forum.save(self.root/'state/seller-forum.json',{'posts':[{'campaign':'demand_survey','status':'published','post_id':12,'at':900}]})
         self.feed([self.request(thread=12,text='커피/차 · B급 · 예산 4만원 · 3일 안에 먹어요')])

@@ -35,8 +35,8 @@ INTERVAL = 330
 ROOT_INTERVAL = 10 * 60
 ROOT_DAILY_CAP = 96
 REPLY_DAILY_CAP = 144
-REPLY_QUOTE_DAILY_CAP = 3
-MIDPRICE_REPLY_DAILY_CAP = 6
+REPLY_QUOTE_DAILY_CAP = 12
+MIDPRICE_REPLY_DAILY_CAP = 18
 UPSELL_REPLY_DAILY_CAP = 2
 SKU_COOLDOWN = 90 * 60
 DAILY_CAP = ROOT_DAILY_CAP + REPLY_DAILY_CAP
@@ -184,6 +184,10 @@ def facts(runtime, now):
                           {key: u.get(key) for key in ('unit', 'grade', 'expires_at', 'supplied_at', 'cert')}
                           for u in units]})
     history = events(runtime / 'logs/shop-events.jsonl', kinds={'settled', 'buyer_link'})
+    paid_tasks = {r['task_id'] for r in history if r['event'] == 'settled' and r.get('task_id') and r.get('ledger')}
+    known_paid_buyers = {r['buyer_name'] for r in history if r['event'] == 'buyer_link'
+                         and r.get('source') == 'market_verified_result' and r.get('task_id') in paid_tasks
+                         and r.get('buyer_name')}
     settled = [r for r in history if r['event'] == 'settled' and r.get('ledger') and r.get('sku')][-12:]
     catalog=read_json(runtime/'.market/catalog.json',{}) or {u['sku']:u for group in groups.values() for u in group}
     seller_demand.ingest(runtime,catalog,now)
@@ -209,6 +213,7 @@ def facts(runtime, now):
     return {'at': now, 'stock': stock, 'opening_event': opening_event(runtime, now),
             'settled': [{k: r.get(k) for k in ('ledger', 'sku', 'grade', 'price')} for r in settled],
             'low_price_buyers': counterparty_memory.recent_low_price_buyers(history, now, MIDPRICE_MIN),
+            'known_paid_buyers': known_paid_buyers,
             'requests': requests,'sourcing_requests':[r for r in intents if r['id'] not in {q['id'] for q in requests}][:12],
             'featured_quotes':quotes,'featured_capacity_left':max(0,remaining),'available_units':[u for group in groups.values() for u in group],
              'quoted_units':sorted(active_units),
@@ -236,8 +241,8 @@ def validate(decision, evidence, history, now):
             raise ValueError('opening announcement cooldown')
     if campaign in {'spotlight', 'arrival', 'reply','featured'} and not skus: raise ValueError('missing SKU')
     offer_ids = decision.get('offer_ids', [])
-    if evidence.get('midprice_reply_required') and (campaign != 'reply' or len(offer_ids) != 1):
-        raise ValueError('choose one verified midprice quote for the purchase-request reply')
+    if evidence.get('quote_reply_required') and (campaign != 'reply' or len(offer_ids) != 1):
+        raise ValueError('choose one verified physical quote for the purchase-request reply')
     if campaign == 'featured' or (campaign == 'reply' and offer_ids):
         if campaign == 'reply' and len(offer_ids) != 1: raise ValueError('one quote per purchase-request reply')
         offers=seller_featured.validate(offer_ids,quote_options(decision,evidence),
@@ -285,7 +290,7 @@ def validate(decision, evidence, history, now):
 
 def editorial_facts(evidence):
     return {k:v for k,v in evidence.items() if k not in (
-        'available_units','market_dir','quoted_units','low_price_buyers','targeted_quote_threads')}
+        'available_units','market_dir','quoted_units','low_price_buyers','known_paid_buyers','targeted_quote_threads')}
 
 
 def render(decision, evidence):
@@ -371,6 +376,21 @@ def handoff(runtime, payload):
         temp.unlink(missing_ok=True)
 
 
+def prioritized_requests(evidence, quotes):
+    """Use buyer history only to order relevant offers, never in public copy."""
+    def priority(request):
+        options = quotes[request['id']]
+        exact = {m['sku'] for m in request.get('catalog_matches', [])
+                 if m.get('basis') != 'category_alternatives'}
+        return (not request.get('author') or request['author'] in evidence.get('known_paid_buyers', ()),
+                not any(o['sku'] in exact for o in options),
+                not any(is_midprice_quote(o) for o in options),
+                -request.get('posted_at', 0))
+
+    candidates = sorted((r for r in evidence['requests'] if r['id'] in quotes), key=priority)
+    return [r for r in candidates if not priority(r)[0]][:12] or candidates[:12]
+
+
 def run_once(runtime, *, dry_run=False, decide=decide_json, now=None, announce_opening=False):
     runtime = Path(runtime).resolve()
     clock = time.time if now is None else lambda: now
@@ -406,23 +426,18 @@ def run_once(runtime, *, dry_run=False, decide=decide_json, now=None, announce_o
         reply_quote_count = sum(not p.get('upsell_recipient') for p in recent_quotes)
         targets = upsell_threads(evidence, recent_quotes) if not announce_opening else {}
         pinned_reply_quotes = (reply_quote_options(evidence, reply_quote_count, targets)
-                               if len(replies) < REPLY_DAILY_CAP and (reply_quote_count < MIDPRICE_REPLY_DAILY_CAP or targets) else {})
+                               if not announce_opening and len(replies) < REPLY_DAILY_CAP
+                               and (reply_quote_count < MIDPRICE_REPLY_DAILY_CAP or targets) else {})
+        evidence['requests'] = prioritized_requests(evidence, pinned_reply_quotes)
+        pinned_reply_quotes = {r['id']: pinned_reply_quotes[r['id']] for r in evidence['requests']}
         targets = {thread: key for thread, key in targets.items()
                    if any(is_midprice_quote(o) for o in pinned_reply_quotes.get(thread, ()))}
-        midprice_quotes = {thread: [o for o in options if is_midprice_quote(o)]
-                           for thread, options in pinned_reply_quotes.items()
-                           if (not targets or thread in targets) and any(is_midprice_quote(o) for o in options)}
-        if midprice_quotes and not announce_opening:
-            evidence['requests'] = [r for r in evidence['requests'] if r['id'] in midprice_quotes][:12]
-            pinned_reply_quotes = {r['id']: midprice_quotes[r['id']] for r in evidence['requests']}
-        else:
-            evidence['requests'] = evidence['requests'][-12:]
         evidence['reply_quotes'] = pinned_reply_quotes
         def fresh_facts():
             value = facts(runtime, clock())
             value['featured_quotes'] = pinned_quotes
             value['reply_quotes'] = pinned_reply_quotes
-            value['midprice_reply_required'] = bool(midprice_quotes and not announce_opening)
+            value['quote_reply_required'] = bool(pinned_reply_quotes)
             value['targeted_quote_threads'] = targets
             return value
         advertised_refs={ref for p in state['posts'] for ref in p.get('refs',[])}
@@ -463,7 +478,7 @@ def run_once(runtime, *, dry_run=False, decide=decide_json, now=None, announce_o
         schema['properties']['offer_ids']['maxItems']=min(2,evidence.get('featured_capacity_left',0))
         announcement = 'opening_discount' if (evidence.get('opening_event') or {}).get('discount_bps') else 'opening_event'
         if announce_opening: schema['properties']['campaign']['enum'] = [announcement]
-        elif midprice_quotes:
+        elif pinned_reply_quotes:
             schema['properties']['campaign']['enum'] = ['reply']
             schema['properties']['offer_ids']['maxItems'] = 1
             schema['properties']['offer_ids']['items']['enum'] = sorted({
@@ -492,8 +507,8 @@ def run_once(runtime, *, dry_run=False, decide=decide_json, now=None, announce_o
             'featured의 skus는 선택한 견적의 SKU와 같아야 한다. 숫자와 절약률은 도구가 붙인다. '
              'reply_quotes에 적합한 원글이 있으면 견적코드가 있는 reply를 우선 고려한다. '
              '그 원글 ID를 thread_id로 쓰고 해당 원글의 선택지에서 offer_ids 한 개와 같은 SKU 하나를 고른다. '
-             '중간 가격대 견적 답글만 열려 있으면 실제 용도에 맞는 견적코드를 반드시 고른다. '
-             '조건과 용도가 맞는 경우 가장 최근 요청부터 답하고, 적합한 견적이 없으면 hold한다. '
+             '견적 답글만 열려 있으면 조건과 실제 용도가 맞는 선택지의 견적코드를 반드시 고른다. '
+             '요청 목록은 우선순위대로 정렬되어 있다. 잘 맞는 앞선 요청부터 답하고, 적합한 견적이 없으면 hold한다. '
              '요청에 맞는 상품을 선택지로 짧게 제안한다. 개인의 과거 결제나 구매 습관은 언급하지 않고 구매를 압박하지 않는다. '
              '원글에 제시된 예산이 있으면 도구가 견적 상한을 대조한다. 입고나 재고 확보는 약속하지 않는다. '
             '커버·패드·부속품을 매트리스·본체로 소개하지 말고 상품의 정확한 용도를 지킨다. '
@@ -562,6 +577,9 @@ def run_once(runtime, *, dry_run=False, decide=decide_json, now=None, announce_o
         if entry['offer_ids']:
             selected=[o for o in quote_options(decision,latest) if o['id'] in entry['offer_ids']]
             if entry['thread'] is not None:
+                request = next(r for r in latest['requests'] if r['id'] == entry['thread'])
+                author = request.get('author')
+                entry['no_prior_paid_link'] = bool(author and author not in latest['known_paid_buyers'])
                 selected=[{**o,'source_thread':entry['thread']} for o in selected]
             seller_featured.activate(runtime/'state/seller.sqlite3',selected,entry['id'],latest['at'])
         state['posts'].append(entry); save(path, state)  # Reserve before handing off; uncertain writes are never retried.

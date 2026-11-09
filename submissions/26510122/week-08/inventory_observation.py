@@ -20,6 +20,8 @@ CONVERSION_MATURITY_SECONDS = 900
 CONVERSION_PRIOR_SUCCESSES = 2.
 CONVERSION_PRIOR_FAILURES = 2.
 SKU_CONVERSION_PRIOR_ATTEMPTS = 4.
+EXPIRY_SUPPLY_BUFFER_HOURS = 2.
+EXPIRY_MIN_TASKS = 2
 
 
 def demand_outcomes(history: list[dict], now: float) -> dict:
@@ -111,6 +113,76 @@ def unserved_exact_stockouts(history: list[dict], now: float) -> dict[str, int]:
         if (task, sku) not in outcomes['served_tasks'] and task not in outcomes['settled_tasks'].get(sku, set()):
             tasks[sku].add(task)
     return {sku: len(requests) for sku, requests in tasks.items()}
+
+
+def expiry_shortfalls(history, catalog, units, now, *, outcomes=None):
+    """Distinct unserved exact food requests with a plausible fresh-stock option."""
+    start = now - CONVERSION_WINDOW_HOURS * 3600
+    exact = {}
+    gaps = {}
+    for row in history:
+        event, task = row.get('event'), row.get('task_id')
+        if event not in ('request_seen', 'requirements_unmet') or not task:
+            continue
+        at = timestamp(row.get('at'))
+        if at is None or not start <= at <= now:
+            continue
+        if event == 'request_seen':
+            skus = row.get('requested_skus') or []
+            if len(skus) == 1:
+                exact[task] = skus[0]
+            continue
+        gap = row.get('expiry_shortfall')
+        if isinstance(gap, dict):
+            sku, hours, verified = gap.get('sku'), gap.get('required_hours'), True
+            if (row.get('requested_skus') or []) != [sku]:
+                continue
+        elif 'expiry_shortfall' not in row:
+            # Legacy initial failures have no per-unit reason. Only recover
+            # exact food requests with no other restrictive purchase condition.
+            conditions = row.get('requirements') or {}
+            grades = conditions.get('grades')
+            if (conditions.get('warranty_hours') or conditions.get('cert_required')
+                    or (grades and set(grades) != {'A', 'B', 'C'})):
+                continue
+            sku, hours, verified = exact.get(task), conditions.get('min_hours_left'), False
+        else:
+            continue
+        product = catalog.get(sku, {})
+        shelf = product.get('shelf_hours')
+        if (product.get('kind') != 'food' or type(hours) not in (float, int)
+                or type(shelf) not in (float, int) or not 0 < hours <= shelf - EXPIRY_SUPPLY_BUFFER_HOURS):
+            continue
+        previous = gaps.get(task)
+        if previous is None or (verified, hours) > (previous[2], previous[1]):
+            gaps[task] = (sku, hours, verified)
+
+    if not gaps:
+        return {}
+    outcomes = demand_outcomes(history, now) if outcomes is None else outcomes
+    available = defaultdict(float)
+    for unit in units:
+        expires = unit.get('expires_at')
+        if unit.get('kind') == 'food' and type(expires) in (float, int):
+            sku = unit['sku']
+            available[sku] = max(available[sku], (expires - now) / 3600)
+    by_sku = defaultdict(list)
+    for task, (sku, hours, verified) in gaps.items():
+        if ((task, sku) in outcomes['served_tasks'] or task in outcomes['settled_tasks'].get(sku, ())
+                or available[sku] >= hours):
+            continue
+        by_sku[sku].append((hours, verified))
+    result = {}
+    for sku, rows in by_sku.items():
+        if len(rows) < EXPIRY_MIN_TASKS:
+            continue
+        target = sorted((hours for hours, _ in rows), reverse=True)[EXPIRY_MIN_TASKS - 1]
+        result[sku] = {'unserved_tasks_12h': len(rows),
+                       'confirmed_expiry_shortfalls': sum(verified for _, verified in rows),
+                       'target_remaining_hours': target,
+                       'best_stock_remaining_hours': round(available[sku], 2),
+                       'catalog_shelf_hours': catalog[sku]['shelf_hours']}
+    return result
 
 
 def requested_skus(text: str, catalog: dict) -> list[str]:
