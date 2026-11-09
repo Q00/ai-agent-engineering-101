@@ -25,6 +25,7 @@ def choose(policy,catalog,spent,reserved,balance,exposure,turn,blocked=()):
     # spent is current inventory principal, not lifetime procurement spend.
     remaining=min(policy['budget']-spent-reserved,balance-policy['cash_floor']-exposure)
     priorities=policy['priority'];ordered=priorities[turn%len(priorities):]+priorities[:turn%len(priorities)]
+    blocked=set(blocked)|set(policy.get('blocked_skus',()))
     for sku in ordered:
         product=catalog.get(sku,{})
         if sku in blocked or product.get('kind')!='goods':continue
@@ -35,16 +36,23 @@ def choose(policy,catalog,spent,reserved,balance,exposure,turn,blocked=()):
 def allocation_plan(ranked, inventory, available, blocked=(), available_slots=None, aggression=1.0, policy=None):
     """Allocate by sell-through, holdings, next-window need and contribution.
 
-    There is no fixed four-SKU loop or unit cap. Quantity is bounded by the
-    evidence forecast and protected capital, not an arbitrary constant.
+    Buy small, evidence-backed lots across distinct SKUs. Quantity is bounded
+    by demand, per-SKU unit/capital caps, available cash, and exposure slots.
     """
-    policy=policy or settings();holding={}
-    for unit in inventory.get('units',[]):holding[unit['sku']]=holding.get(unit['sku'],0)+1
+    policy=policy or settings();holding={};holding_cost={}
+    for unit in inventory.get('units',[]):
+        sku=unit['sku'];holding[sku]=holding.get(sku,0)+1
+        holding_cost[sku]=holding_cost.get(sku,0)+unit.get('cost',0)
+    blocked=set(blocked)|set(policy.get('blocked_skus',()))
+    blocked|={sku for sku in policy.get('blocked_until_zero_skus',()) if holding.get(sku,0)>0}
+    portfolio_capital=sum(holding_cost.values())+max(0,available)
     choices=[]
     for row in ranked:
         if row.get('sku') in blocked or row.get('expected_net',0)<=0:continue
         velocity=row.get('sales_1h',0)+row.get('sales_6h',0)/6
         distinct=max(0,row.get('distinct_buyers_6h',0))
+        if row.get('sales_1h',0)<policy.get('require_sales_1h',0):continue
+        if distinct<policy.get('min_distinct_buyers_6h',0):continue
         inquiry_cap=min(policy.get('max_anonymous_inquiries',10),max(2,distinct*2))
         trusted_inquiries=min(row.get('own_inquiries_6h',0),inquiry_cap)
         trusted_stockouts=min(row.get('own_stockouts_6h',0),max(2,distinct*2))
@@ -53,18 +61,23 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
         need=max(0,math.ceil(forecast)-holding.get(row['sku'],0))
         exposed=policy.get('max_exposed_units',250)
         share=policy.get('max_sku_share',.20)
-        if distinct>=10:share=min(.35,share+.01*min(15,distinct-9))
         sku_ceiling=max(policy.get('min_trial_units',2),math.ceil(exposed*share))
+        sku_ceiling=min(policy.get('max_units_per_sku',sku_ceiling),sku_ceiling)
         need=min(need,max(0,sku_ceiling-holding.get(row['sku'],0)))
+        capital_ceiling=max(portfolio_capital*policy.get('max_sku_capital_share',1),
+                            policy.get('initial_trial_units',policy.get('min_trial_units',2))*row['upper_cost'])
+        capital_room=max(0,capital_ceiling-holding_cost.get(row['sku'],0))
+        need=min(need,int(capital_room//max(1,row['upper_cost'])))
         if need<=0:continue
         evidence=dict(row,trusted_inquiries_6h=trusted_inquiries,
                       trusted_stockouts_6h=trusted_stockouts,sku_inventory_ceiling=sku_ceiling)
-        choices.append((-(row.get('score',0)*row['expected_net']/max(1,row['upper_cost'])),row['sku'],need,evidence))
+        diversity=policy.get('new_sku_bonus',1) if not holding.get(row['sku']) else 1
+        choices.append((-(row.get('score',0)*row['expected_net']/max(1,row['upper_cost'])*diversity),row['sku'],need,evidence))
     plan=[];slots=(250-len(inventory.get('units',[]))) if available_slots is None else available_slots
     for _,sku,need,row in sorted(choices):
         # Official supply API accepts at most 20 units per call. Remaining
         # evidenced need is purchased on subsequent inventory refreshes.
-        qty=min(20,need,int(available//row['upper_cost']),max(0,slots))
+        qty=min(policy.get('max_lot_units',20),need,int(available//row['upper_cost']),max(0,slots))
         if qty<=0:continue
         plan.append({'sku':sku,'qty':qty,'upper_unit_cost':row['upper_cost'],
                      'capital':qty*row['upper_cost'],'evidence':row})

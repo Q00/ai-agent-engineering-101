@@ -36,6 +36,7 @@ from seller_procurement import settings
 from adaptive_control import Control
 
 STATE = Path(os.environ.get('MARKET_DIR', '.market'))
+CHECKOUT_CONDITION_BUFFER_SECONDS = 60
 
 
 def sign(receipt):
@@ -53,10 +54,25 @@ def credentials(text):
     return values
 
 
+def required_food_hours(text):
+    match=re.search(r'\bmust\s+last\s+at\s+least\s+(\d+(?:\.\d+)?)\s*hours?\b',text,flags=re.I)
+    if not match:return 0.0
+    try:value=float(match.group(1))
+    except ValueError:return 0.0
+    return value if 0<=value<=8760 else 0.0
+
+
+def is_food(unit):
+    return unit.get('kind')=='food' or unit.get('category','').lower().startswith('food')
+
+
 def select_unit(text, units, reserved, soft_counts=None, prefer_c=False):
     want = re.sub(r'\b(?:ref|member)=[A-Za-z0-9_-]+', '', text).lower()
+    min_hours=required_food_hours(text);now=time.time()
     valid = [u for u in units if u['unit'] not in reserved and u.get('grade') != 'expired'
-             and (not u.get('expires_at') or u['expires_at'] > time.time())]
+             and (not u.get('expires_at') or u['expires_at'] > now)
+             and (not min_hours or not is_food(u) or
+                  (u.get('expires_at') and u['expires_at']-now >= min_hours*3600+CHECKOUT_CONDITION_BUFFER_SECONDS))]
     named = [u for u in valid if u['sku'].lower() in want]
     fits = named or [u for u in valid if any(str(v).lower() in want for v in
                     [u.get('name'), u.get('category', '').split('>')[-1]] if v)]
@@ -157,6 +173,7 @@ class Seller(AgentExecutor):
                 for hold in self.open.values():
                     uid=hold['unit']['unit'];soft_counts[uid]=soft_counts.get(uid,0)+1
                 eligible=list(inv['units'])
+                min_hours=required_food_hours(text)
                 drain_c,c_rate=c_drain_slot(task.id,eligible,reserved)
                 unit = select_unit(text, eligible, reserved, soft_counts, prefer_c=drain_c)
                 if not unit:
@@ -170,7 +187,8 @@ class Seller(AgentExecutor):
                 except ValueError:
                     await up.reject(say('Cannot verify this stock grade or expiry.'))
                     return
-                deal = dict(unit=unit, quote=q, credentials=cred, until=time.time()+120)
+                deal = dict(unit=unit, quote=q, credentials=cred, until=time.time()+120,
+                            required_food_hours=min_hours)
                 arm,digest=control.assign('seller-quote-v1',str(task.id))
                 control.event('seller','quote_created',{
                     'task':task.id,'sku':unit['sku'],'price':q['price'],'cost':unit['cost'],
@@ -187,7 +205,10 @@ class Seller(AgentExecutor):
                     alternatives=[u for u in inv['units'] if u['unit'] not in accepted and
                                   u.get('sku')==unit.get('sku') and u.get('grade')==unit.get('grade') and
                                   u.get('grade')!='expired' and
-                                  (not u.get('expires_at') or u['expires_at']>time.time())]
+                                  (not u.get('expires_at') or u['expires_at']>time.time()) and
+                                  (not deal.get('required_food_hours') or not is_food(u) or
+                                   (u.get('expires_at') and u['expires_at']-time.time()>=
+                                    deal['required_food_hours']*3600+CHECKOUT_CONDITION_BUFFER_SECONDS))]
                     unit=min(alternatives,key=lambda u:(u.get('expires_at') or float('inf'),
                              u.get('supplied_at',0)),default=None)
                     if unit:
@@ -198,6 +219,12 @@ class Seller(AgentExecutor):
                 if not unit or unit.get('grade') == 'expired' or (unit.get('expires_at') and unit['expires_at'] <= time.time()):
                     self.open.pop(task.id, None)
                     await up.reject(say('The quoted stock is no longer available.'))
+                    return
+                if (deal.get('required_food_hours') and is_food(unit) and
+                        (not unit.get('expires_at') or unit['expires_at']-time.time() <
+                         deal['required_food_hours']*3600)):
+                    self.open.pop(task.id,None)
+                    await up.reject(say('Food no longer meets the requested minimum shelf life.'))
                     return
                 try:
                     # This inquiry was recorded when its initial quote opened.

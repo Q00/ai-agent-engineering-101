@@ -22,25 +22,37 @@ class PurchaseTests(unittest.TestCase):
   self.assertEqual(choose(self.p,self.cat,1900000,0,5000000,0,0),('a',300000))
  def test_reward_and_warranty_liabilities_limit_cash(self):
   self.assertIsNone(choose(self.p,self.cat,0,0,1000000,300000,0))
- def test_allocation_uses_sellthrough_holdings_and_positive_net_without_unit_cap(self):
+ def test_allocation_uses_sellthrough_and_small_diversified_lots(self):
   ranked=[dict(sku='a',expected_net=50000,score=3,upper_cost=100000,sales_1h=8,sales_6h=12,
-               own_stockouts_6h=2,own_inquiries_6h=1,estimated_sale_likelihood=.8),
+               distinct_buyers_6h=4,own_stockouts_6h=2,own_inquiries_6h=1,estimated_sale_likelihood=.8),
           dict(sku='b',expected_net=-1,score=99,upper_cost=1,sales_1h=100,sales_6h=100,
-               own_stockouts_6h=0,own_inquiries_6h=0,estimated_sale_likelihood=1)]
+               distinct_buyers_6h=4,own_stockouts_6h=0,own_inquiries_6h=0,estimated_sale_likelihood=1)]
   plan=allocation_plan(ranked,{'units':[{'sku':'a'}]},900000)
-  self.assertEqual(plan[0]['sku'],'a');self.assertGreater(plan[0]['qty'],4)
+  self.assertEqual(plan[0]['sku'],'a');self.assertEqual(plan[0]['qty'],3)
   self.assertNotIn('b',[r['sku'] for r in plan])
   aggressive=allocation_plan(ranked,{'units':[{'sku':'a'}]},900000,aggression=3)
-  self.assertGreater(aggressive[0]['qty'],plan[0]['qty'])
+  self.assertEqual(aggressive[0]['qty'],3)
   huge=allocation_plan(ranked,{'units':[]},10000000,aggression=100)
-  self.assertEqual(huge[0]['qty'],20)
+  self.assertEqual(huge[0]['qty'],3)
+ def test_sofa_is_blocked_until_zero_then_returns_under_normal_cap(self):
+  ranked=[dict(sku='Gc2f7811b',expected_net=999999,score=99,upper_cost=100000,sales_1h=20,sales_6h=20,
+               distinct_buyers_6h=10,estimated_sale_likelihood=1),
+          dict(sku='fresh',expected_net=50000,score=3,upper_cost=100000,sales_1h=8,sales_6h=12,
+               distinct_buyers_6h=4,own_stockouts_6h=0,own_inquiries_6h=0,estimated_sale_likelihood=.8)]
+  inv={'units':[{'sku':'Gc2f7811b','cost':100000}]+[{'sku':'fresh','cost':100000} for _ in range(2)]}
+  plan=allocation_plan(ranked,inv,10000000)
+  self.assertEqual([(x['sku'],x['qty']) for x in plan],[('fresh',3)])
+  inv={'units':[{'sku':'Gc2f7811b','cost':100000}]+[{'sku':'fresh','cost':100000} for _ in range(5)]}
+  self.assertEqual(allocation_plan(ranked,inv,10000000),[])
+  plan=allocation_plan(ranked,{'units':[]},10000000)
+  self.assertEqual((plan[0]['sku'],plan[0]['qty']),('Gc2f7811b',3))
  def test_capital_scales_with_balance_but_preserves_floor_liabilities_and_slots(self):
   policy={'cash_floor':500000,'max_inventory_share':.7}
   low={'balance':5000000,'bankrupt_line':500000,'units':[{'cost':1000000}]}
   high={'balance':11000000,'bankrupt_line':500000,'units':[{'cost':1000000}]}
   self.assertGreater(capital_available(policy,high,300000),capital_available(policy,low,300000))
   ranked=[dict(sku='a',expected_net=1,score=1,upper_cost=100,sales_1h=20,sales_6h=20,
-               own_stockouts_6h=0,own_inquiries_6h=0,estimated_sale_likelihood=1)]
+               distinct_buyers_6h=3,own_stockouts_6h=0,own_inquiries_6h=0,estimated_sale_likelihood=1)]
   self.assertEqual(allocation_plan(ranked,{'units':[]},10000,available_slots=2)[0]['qty'],2)
  def test_anonymous_quote_flood_and_single_sku_concentration_are_bounded(self):
   ranked=[dict(sku='a',expected_net=5000,score=3,upper_cost=100,sales_1h=0,sales_6h=2,

@@ -32,6 +32,19 @@ class SellerIntegrationTests(unittest.IsolatedAsyncioTestCase):
                dict(unit='a',sku='G00001',name='item',category='food',grade='A',expires_at=None,supplied_at=2)]
         self.assertEqual(seller.select_unit('G00001',units,set(),{},prefer_c=True)['unit'],'c')
 
+    def test_food_selection_honors_requested_remaining_hours(self):
+        now=time.time()
+        units=[
+            dict(unit='short',sku='FOOD1',name='food',category='food',kind='food',grade='A',
+                 expires_at=now+24*3600,supplied_at=1),
+            dict(unit='long',sku='FOOD1',name='food',category='food',kind='food',grade='B',
+                 expires_at=now+127*3600,supplied_at=2),
+        ]
+        text='I want to buy food (FOOD1). Must last at least 126.0 hours.'
+        self.assertEqual(seller.required_food_hours(text),126.0)
+        self.assertEqual(seller.select_unit(text,units,set(),{})['unit'],'long')
+        self.assertIsNone(seller.select_unit(text,[units[0]],set(),{}))
+
     def test_c_drain_slot_is_deterministic_and_pressure_bounded(self):
         units=[{'unit':str(i),'grade':'C' if i<5 else 'A'} for i in range(10)]
         first=seller.c_drain_slot('task-1',units,set())
