@@ -17,6 +17,10 @@ from cryptography.hazmat.primitives import serialization
 from seller_ledger import Program
 from adaptive_control import Control
 
+SELLER_FORUM_INTERVAL_SECONDS = 4 * 60 * 60
+SELLER_FORUM_MAX_POSTS = 6
+SELLER_FORUM_POLICY = 'c-liquidation-v2'
+
 
 def fetch(base, path):
     def read():
@@ -98,21 +102,34 @@ def recover_failed_sales(program, urls, state):
 
 def campaign_text(program, inventory, rotation=0):
     from seller_strategy import sale_quote
-    p=program.p;lines=[f"[{p['shop_name']} · 실제 재고 / 시장 인증서]"]
+    p=program.p;units=inventory.get('units',[])
+    promoting_c=any(u.get('grade')=='C' for u in units)
+    title='C등급 실재고 할인' if promoting_c else '실재고 / 시장 인증서'
+    lines=[f"[{p['shop_name']} · {title}]"]
     held=program.reserved_units();seen=set();candidates=[]
-    for u in inventory.get('units',[]):
+    quantities={}
+    for u in units:quantities[u.get('sku')]=quantities.get(u.get('sku'),0)+1
+    for u in units:
         if u.get('unit') in held:continue
         if u.get('sku') in seen:continue
         seen.add(u.get('sku'));candidates.append(u)
     if candidates:
-        offset=(rotation*2)%len(candidates);candidates=candidates[offset:]+candidates[:offset]
+        c=[u for u in candidates if u.get('grade')=='C'];other=[u for u in candidates if u.get('grade')!='C']
+        if c:
+            offset=(rotation*2)%len(c);c=c[offset:]+c[:offset]
+        candidates=c+other
     for u in candidates:
         try:q=sale_quote(u,{},program)
         except (KeyError,ValueError):continue
-        condition=f"보증 {q['warranty_hours']}h" if q.get('warranty_hours') else '식품 남은 기한 문의'
-        lines.append(f"{u['sku']} {u.get('name','')[:24]} · {u['grade']} · {q['price']:,}원 · {condition}")
+        listed=u.get('list_price') or q.get('base') or 0
+        discount=round((1-q['price']/listed)*100) if listed else None
+        if u.get('expires_at'):
+            condition=f"남은 기한 {max(0,int((u['expires_at']-time.time())/3600))}h"
+        else:condition=f"보증 {q['warranty_hours']}h" if q.get('warranty_hours') else '보증 없음'
+        saving=f" · 정가 대비 {discount}% 할인" if discount is not None else ''
+        lines.append(f"{u['sku']} {u.get('name','')[:24]} · {u['grade']} · {q['price']:,}원{saving} · {condition} · 재고 {quantities.get(u.get('sku'),1)}")
         if len(lines)==3:break
-    lines.append("OFFERS로 현재 재고 확인 → SKU 견적 → 숫자로 구매. 시장 인증서·등급·식품 잔여기한·공산품 보증을 견적에서 확인하세요. 재고·가격은 실시간으로 변합니다.")
+    lines.append("첨부 원장은 실제 정산 근거입니다. OFFERS → SKU 견적 → 숫자로 구매. 시장 인증서 제공, 재고·가격은 실시간 변동됩니다.")
     return '\n'.join(lines)
 
 
@@ -124,8 +141,11 @@ def queue_post(program, state, inventory, now=None):
                  and (not u.get('expires_at') or u['expires_at'] > now)]
     if inventory.get('round', 0) < 3 or not available:
         return False
-    day=int(now//86400);count=program.get('post_count_'+str(day),0)
-    if count >= program.p['forum_max_posts'] or now-program.get('last_post', 0) < program.p['forum_interval_seconds']:
+    day=int((now+9*3600)//86400)
+    count_key=SELLER_FORUM_POLICY+'_post_count_'+str(day)
+    last_key=SELLER_FORUM_POLICY+'_last_post'
+    count=program.get(count_key,0);last_post=program.get(last_key)
+    if count >= SELLER_FORUM_MAX_POSTS or (last_post is not None and now-last_post < SELLER_FORUM_INTERVAL_SECONDS):
         return False
     refs=[r[0] for r in program.db.execute(
         'SELECT ledger FROM sales WHERE ledger IS NOT NULL AND refunded=0 ORDER BY ledger DESC LIMIT 2')]
@@ -135,7 +155,10 @@ def queue_post(program, state, inventory, now=None):
     order={r.get('sku'):n for n,r in enumerate(strategy.get('top10',[]))}
     quantities={}
     for unit in available:quantities[unit.get('sku')]=quantities.get(unit.get('sku'),0)+1
-    available.sort(key=lambda u:(order.get(u.get('sku'),10**6),-quantities.get(u.get('sku'),0),u.get('sku','')))
+    # Seller forum is an acquisition channel, not a score-posting channel.
+    # Prefer C liquidation with observed demand; do not burn six posts in the morning.
+    available.sort(key=lambda u:(u.get('grade')!='C',order.get(u.get('sku'),10**6),
+                                 u.get('expires_at') or float('inf'),-quantities.get(u.get('sku'),0),u.get('sku','')))
     text=campaign_text(program,dict(inventory,units=available),rotation=count)
     guard=Control(state)
     try:
@@ -146,11 +169,11 @@ def queue_post(program, state, inventory, now=None):
     # one ad, but cannot cause an endless retry/duplicate-post loop.
     with program.db:
         program.db.execute('BEGIN IMMEDIATE')
-        last = program.get('last_post', 0)
-        count = program.get('post_count_'+str(day), 0)
-        if now-last < program.p['forum_interval_seconds'] or count >= program.p['forum_max_posts']:
+        last = program.get(last_key)
+        count = program.get(count_key, 0)
+        if (last is not None and now-last < SELLER_FORUM_INTERVAL_SECONDS) or count >= SELLER_FORUM_MAX_POSTS:
             return False
-        for k, v in [('last_post', now), ('post_count_'+str(day), count+1)]:
+        for k, v in [(last_key, now), (count_key, count+1)]:
             program.db.execute('INSERT OR REPLACE INTO meta VALUES(?,?)', (k, json.dumps(v)))
     row = {'as': 'shop', 'post': text, 'refs': refs}
     fd = os.open(Path(state) / 'outbox.jsonl', os.O_CREAT | os.O_WRONLY | os.O_APPEND, 0o600)

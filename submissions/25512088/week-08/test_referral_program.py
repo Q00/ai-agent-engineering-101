@@ -5,7 +5,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 from seller_ledger import Program, policy
-from seller_forum import queue_post, sync
+from seller_forum import queue_post, sync, SELLER_FORUM_INTERVAL_SECONDS
 
 
 class ReferralTests(unittest.TestCase):
@@ -178,6 +178,18 @@ class ReferralTests(unittest.TestCase):
         rows = (Path(self.tmp.name)/'outbox.jsonl').read_text().splitlines()
         self.assertEqual(len(rows), 1)
         self.assertEqual(json.loads(rows[0])['as'], 'shop')
+
+    def test_seller_forum_uses_four_hour_c_liquidation_campaign(self):
+        inv={'round':3,'units':[
+            {'unit':'a','sku':'GA','name':'normal','grade':'A','kind':'goods','cost':6000,'list_price':10000},
+            {'unit':'c','sku':'GC','name':'clearance','grade':'C','kind':'goods','cost':3000,'list_price':10000},
+        ]}
+        self.assertTrue(queue_post(self.program,self.tmp.name,inv,now=20000))
+        self.assertFalse(queue_post(self.program,self.tmp.name,inv,now=20000+SELLER_FORUM_INTERVAL_SECONDS-1))
+        post=json.loads((Path(self.tmp.name)/'outbox.jsonl').read_text().splitlines()[0])['post']
+        self.assertIn('C등급 실재고 할인',post)
+        self.assertLess(post.index('GC clearance'),post.index('GA normal'))
+        self.assertIn('정가 대비',post)
 
     def test_worker_replays_after_crash_without_double_award(self):
         self.program.put('cursor', 0)
