@@ -12,6 +12,8 @@ import time
 from datetime import datetime
 from pathlib import Path
 
+RESERVATION_LEASE_SECONDS = 30
+
 
 def policy():
     return json.loads(Path(__file__).with_name('referral_policy.json').read_text())
@@ -41,6 +43,11 @@ class Program:
         CREATE TABLE IF NOT EXISTS failed_sales(
           task TEXT PRIMARY KEY, unit TEXT, sku TEXT, amount INTEGER, cost INTEGER,
           result_seq INTEGER UNIQUE, result_ts REAL, reason TEXT);
+        CREATE TABLE IF NOT EXISTS expired_sales(
+          task TEXT PRIMARY KEY, unit TEXT, sku TEXT, amount INTEGER, cost INTEGER,
+          member TEXT, referrer TEXT, reward INTEGER, spent INTEGER,
+          expired REAL, reason TEXT, late_ledger INTEGER UNIQUE,
+          late_buyer TEXT, late_settled REAL);
         CREATE TABLE IF NOT EXISTS warranties(task TEXT PRIMARY KEY, amount INTEGER, issued REAL);
         ''')
         frozen = self.get('policy_snapshot')
@@ -111,14 +118,16 @@ class Program:
         return result
 
     def accept(self, task, unit, sku, cost, q, inventory=None, enroll=True):
-        """Reserve stock/credit durably before signing. Unknown payment keeps reservation.
+        """Reserve stock/credit for a short checkout lease before signing.
 
-        Returns a provisional bearer credential only for a newly enrolled customer.
-        Duplicate tasks or already-promised units are rejected, including after restart.
+        The signed receipt remains auditable after the lease, but an abandoned
+        checkout must not let an unauthenticated caller hide stock forever.
         """
         secret = None
+        now = time.time()
         with self.db:
             self.db.execute('BEGIN IMMEDIATE')
+            self._expire_stale_locked(now)
             self.db.execute('CREATE TABLE IF NOT EXISTS warranties(task TEXT PRIMARY KEY, amount INTEGER, issued REAL)')
             if q.get('warranty_hours'):
                 if inventory is None:raise ValueError('Missing warranty cash evidence')
@@ -141,12 +150,32 @@ class Program:
             self.db.execute('''INSERT INTO sales(task,unit,sku,amount,cost,member,referrer,reward,spent)
               VALUES(?,?,?,?,?,?,?,?,?)''',
               (task, unit, sku, q['price'], cost, mid, q['referrer'], q['reward'], q['spent']))
+            self.db.execute('INSERT OR IGNORE INTO growth_events VALUES(?,?,?)',(task,'signed',now))
         return secret
 
-    def reserved_units(self):
-        # A quote is not a sale promise. Only atomically accepted receipts reserve
-        # inventory; otherwise abandoned negotiations can hide most live stock.
-        return {r[0] for r in self.db.execute('SELECT unit FROM sales')}
+    def _archive_sale_locked(self, sale, now, reason):
+        self.db.execute('''INSERT OR IGNORE INTO expired_sales
+          (task,unit,sku,amount,cost,member,referrer,reward,spent,expired,reason)
+          VALUES(?,?,?,?,?,?,?,?,?,?,?)''',(sale['task'],sale['unit'],sale['sku'],sale['amount'],
+          sale['cost'],sale['member'],sale['referrer'],sale['reward'],sale['spent'],now,reason))
+        self.db.execute('DELETE FROM sales WHERE task=? AND ledger IS NULL',(sale['task'],))
+
+    def _expire_stale_locked(self, now):
+        stale=self.db.execute('''SELECT s.* FROM sales s LEFT JOIN growth_events g
+          ON g.task=s.task AND g.event='signed' WHERE s.ledger IS NULL
+          AND (g.ts IS NULL OR g.ts<=?)''',(now-RESERVATION_LEASE_SECONDS,)).fetchall()
+        for sale in stale:self._archive_sale_locked(sale,now,'checkout_lease_expired')
+        return len(stale)
+
+    def expire_stale(self, now=None):
+        with self.db:
+            self.db.execute('BEGIN IMMEDIATE')
+            return self._expire_stale_locked(time.time() if now is None else now)
+
+    def reserved_units(self, now=None):
+        # Signed receipts exclusively reserve a unit only during checkout lease.
+        self.expire_stale(now)
+        return {r[0] for r in self.db.execute('SELECT unit FROM sales WHERE ledger IS NULL')}
 
     def release_failed(self, row, shop_urls):
         """Release only a receipt the official ledger finalized as not settled."""
@@ -160,6 +189,10 @@ class Program:
         with self.db:
             self.db.execute('BEGIN IMMEDIATE')
             sale=self.db.execute('SELECT * FROM sales WHERE task=? AND ledger IS NULL',(task,)).fetchone()
+            expired=False
+            if sale is None:
+                sale=self.db.execute('SELECT * FROM expired_sales WHERE task=?',(task,)).fetchone()
+                expired=sale is not None
             if (not sale or sale['unit']!=unit or sale['sku']!=receipt.get('item')
                     or sale['amount']!=receipt.get('price')):
                 return False
@@ -168,7 +201,8 @@ class Program:
                 VALUES(?,?,?,?,?,?,?,?)''',(sale['task'],sale['unit'],sale['sku'],sale['amount'],sale['cost'],
                     row.get('seq'),row.get('ts'),'official_result_not_settled'))
             self.db.execute('DELETE FROM warranties WHERE task=?',(task,))
-            self.db.execute('DELETE FROM sales WHERE task=? AND ledger IS NULL',(task,))
+            self.db.execute('DELETE FROM expired_sales WHERE task=?',(task,)) if expired else self.db.execute(
+                'DELETE FROM sales WHERE task=? AND ledger IS NULL',(task,))
         return True
 
     def settle(self, row, shop_urls):
@@ -179,9 +213,19 @@ class Program:
             return False
         with self.db:
             self.db.execute('BEGIN IMMEDIATE')
-            s = self.db.execute('SELECT * FROM sales WHERE unit=?', (d.get('unit'),)).fetchone()
-            if not s or s['ledger'] is not None or d.get('amount') != s['amount'] or d.get('item') != s['sku']:
-                return False
+            s = self.db.execute('''SELECT * FROM sales WHERE unit=? AND ledger IS NULL
+                AND amount=? AND sku=?''',(d.get('unit'),d.get('amount'),d.get('item'))).fetchone()
+            if s is None:
+                old=self.db.execute('''SELECT * FROM expired_sales WHERE unit=? AND amount=? AND sku=?
+                    ORDER BY expired DESC LIMIT 1''',(d.get('unit'),d.get('amount'),d.get('item'))).fetchone()
+                if old is None:return False
+                conflict=self.db.execute('SELECT * FROM sales WHERE unit=? AND ledger IS NULL',(d.get('unit'),)).fetchone()
+                if conflict:self._archive_sale_locked(conflict,row['ts'],'unit_settled_by_prior_receipt')
+                self.db.execute('''INSERT INTO sales(task,unit,sku,amount,cost,member,referrer,reward,spent)
+                    VALUES(?,?,?,?,?,?,?,?,?)''',(old['task'],old['unit'],old['sku'],old['amount'],old['cost'],
+                    old['member'],old['referrer'],old['reward'],old['spent']))
+                self.db.execute('DELETE FROM expired_sales WHERE task=?',(old['task'],))
+                s=self.db.execute('SELECT * FROM sales WHERE task=?',(old['task'],)).fetchone()
             existing = self.db.execute('SELECT id FROM members WHERE buyer=? AND active=1', (d['buyer'],)).fetchone()
             member = self.db.execute('SELECT * FROM members WHERE id=?', (s['member'],)).fetchone() if s['member'] else None
             # A transferable bearer token cannot prove an account identity. A token

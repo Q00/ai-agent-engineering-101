@@ -98,6 +98,28 @@ class ReferralTests(unittest.TestCase):
             self.program.accept('other', 'other-unit', 'sku', 16000, q)
         self.assertIn('pending-unit', self.program.reserved_units())
 
+    def test_signed_reservation_expires_after_thirty_seconds_and_unit_reopens(self):
+        q=self.program.quote(10000,8000)
+        self.program.accept('old-task','shared-unit','sku',8000,q,enroll=False)
+        signed=self.program.db.execute("SELECT ts FROM growth_events WHERE task='old-task' AND event='signed'").fetchone()[0]
+        self.assertIn('shared-unit',self.program.reserved_units(now=signed+29.999))
+        self.assertNotIn('shared-unit',self.program.reserved_units(now=signed+30.001))
+        self.assertEqual(self.program.db.execute("SELECT reason FROM expired_sales WHERE task='old-task'").fetchone()[0],
+                         'checkout_lease_expired')
+        self.program.accept('new-task','shared-unit','sku',8000,q,enroll=False)
+        self.assertIn('shared-unit',self.program.reserved_units())
+
+    def test_late_official_settlement_restores_expired_receipt(self):
+        q=self.program.quote(10000,8000)
+        self.program.accept('old-task','shared-unit','sku',8000,q,enroll=False)
+        signed=self.program.db.execute("SELECT ts FROM growth_events WHERE task='old-task' AND event='signed'").fetchone()[0]
+        self.program.expire_stale(signed+31)
+        row=dict(seq=998,ts=signed+32,kind='settle',round=3,
+                 data=dict(shop='https://ours',buyer='late',unit='shared-unit',item='sku',amount=10000))
+        self.assertTrue(self.program.settle(row,['https://ours']))
+        self.assertEqual(self.program.db.execute("SELECT ledger FROM sales WHERE task='old-task'").fetchone()[0],998)
+        self.assertEqual(self.program.db.execute("SELECT COUNT(*) FROM expired_sales WHERE task='old-task'").fetchone()[0],0)
+
     def test_unaccepted_quote_holds_never_hide_inventory(self):
         with self.program.db:
             self.program.db.execute('CREATE TABLE IF NOT EXISTS quote_holds(task TEXT PRIMARY KEY, unit TEXT, until REAL)')
