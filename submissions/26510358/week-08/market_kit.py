@@ -765,10 +765,10 @@ def watchdog(a, agent, d, market, keys, procs, proxy, sport, pport, state, every
             procs[1], url = open_tunnel(pport)
             if not wait_card(url, 120):
                 raise RuntimeError(f"the new tunnel {url} did not answer within 120 s")
-            proxy.public = state["own_shop"] = url
-            j = market.join("shop", a.name, keys["shop"], url)
-            log(f"[market] shop registered again as {j['name']} at {url}")
-            misses = 0
+            j = market.join("shop", a.name, keys["shop"], url)  # first: on a refused join keep the URL the
+            proxy.public = state["own_shop"] = url                # market has, misses stays >= 3, retry next loop
+            log(f"[market] shop registered again as {j['name']} at {url}")   # (2026-11-09 21:37: public moved to an
+            misses = 0                                            # unjoined URL, acp.json sent buyers there, 0 settles 1 h 40 m)
         except (Exception, SystemExit) as e:
             log(f"[kit] watchdog: {type(e).__name__}: {e}")
 
