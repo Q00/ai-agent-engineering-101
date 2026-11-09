@@ -122,18 +122,25 @@ def stated_need_hours(text, names=()):
     return max(hs) if hs else None
 
 
-def pick_food(food, need, shelf, now):
+def pick_food(food, need, shelf, now, min_frac=None):
     """v2.1 (24 h to 11-05 13:30 KST: 71 of our 75 two-star food reviews read 'Only N h of shelf life left; I
     needed M h'): ship a unit that lasts the buyer's need. A stated need keeps the units with hours left >=
     need + NEED_MARGIN_H; none -> None (no sale rather than a two-star review). An unknown need is taken as
     UNKNOWN_NEED_SHARE x the catalog shelf_hours; when no unit lasts that long, the unit with the most hours left.
-    Among the units that last, the one that expires first (stock keeps rotating; our grade C food reviews 4.75)."""
+    Among the units that last, the one that expires first (stock keeps rotating; our grade C food reviews 4.75).
+    v2.10 (30 h to 11-09 11:00 KST, unstated-need food sales: under 0.5 of the shelf left 23-44% of reviews read
+    'Only N h of shelf life left', 3.65-4.09 stars; 0.5 and over 0-9%): with min_frac set, the fallback only takes a
+    unit with hours left >= min_frac x shelf_hours; none -> None (no sale)."""
     left = lambda u: P.hours_left(u, now)
     key = lambda u: (left(u), u.get("supplied_at") or 0)
     if need is not None:
         return min((u for u in food if left(u) >= need + NEED_MARGIN_H), key=key, default=None)
     ok = [u for u in food if shelf(u["sku"]) and left(u) >= UNKNOWN_NEED_SHARE * shelf(u["sku"]) + NEED_MARGIN_H]
-    return min(ok, key=key) if ok else max(food, key=lambda u: (left(u), -(u.get("supplied_at") or 0)))
+    if ok:
+        return min(ok, key=key)
+    if min_frac:
+        food = [u for u in food if shelf(u["sku"]) and left(u) >= min_frac * shelf(u["sku"])]
+    return max(food, key=lambda u: (left(u), -(u.get("supplied_at") or 0)), default=None)
 
 
 def sells_at_market(u, pol, stats, inv=None, now=None):
@@ -161,9 +168,12 @@ def find_unit(text, inv, taken=(), pol=None, now=None, shelf=None, why=None, sta
     food = [u for u in fit if u.get("kind") == "food" and u.get("expires_at")]
     if food and len(food) == len(fit):          # v2.1: food by the buyer's shelf-life need (v2.1a: food-only fits)
         need = stated_need_hours(text, [u.get("name") for u in food])
-        u = pick_food(food, need, shelf or shelf_hours, now)
-        if u is None and why is not None:
+        mfr = ((pol or {}).get("shop") or {}).get("food_min_left_frac")   # v2.10
+        u = pick_food(food, need, shelf or shelf_hours, now, min_frac=mfr)
+        if u is None and why is not None and need is not None:
             why["need_h"] = need
+        elif u is None and why is not None:
+            why["short_shelf"] = mfr
         return u
     # goods: ship the unit that expires first among those whose grade is A/B; else the first to expire.
     good = [u for u in fit if u.get("grade") in ("A", "B")]

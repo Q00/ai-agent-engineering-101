@@ -132,6 +132,9 @@ def validate(pol):
     gcf = sp.get("goods_cost_frac")                     # v2.8: goods cost / list for the below-market restock check
     if gcf is not None and (isinstance(gcf, bool) or not isinstance(gcf, (int, float)) or not 0.4 <= gcf <= 0.9):
         raise PolicyError(f"shop.goods_cost_frac={gcf!r} outside [0.4, 0.9]")
+    fml = sp.get("food_min_left_frac")                  # v2.10: unstated-need food needs this share of shelf left
+    if fml is not None and (isinstance(fml, bool) or not isinstance(fml, (int, float)) or not 0.0 <= fml <= 0.9):
+        raise PolicyError(f"shop.food_min_left_frac={fml!r} outside [0, 0.9]")
     for blk in list((pol.get("categories") or {}).values()) + [sp]:
         k = blk.get("skus_per_category")
         if k is not None and (isinstance(k, bool) or not isinstance(k, int) or not 1 <= k <= 5):
