@@ -5,6 +5,9 @@ before committing; the caller still verifies the final signed checkout.
 """
 import concurrent.futures
 import time
+import queue
+import threading
+import math
 from .market_memory import buyer_assessment
 from .protocol import quote, quote_terms
 
@@ -12,10 +15,13 @@ from .protocol import quote, quote_terms
 def request_text(candidate, order):
     text = f"I want to buy {candidate['sku']}. Please quote this exact SKU, certificate, grade and warranty hours."
     if order.get('kind') == 'food':
-        text += f" Food must last at least {order.get('use_within_hours', 0)} hours after payment."
+        required=math.ceil((order.get('use_within_hours',0)+candidate.get('checkout_buffer_seconds',0)/3600)*1000000)/1000000
+        text += f" Food must last at least {required:.6f} hours after payment."
         text += ' State expires_at and the actual available unit. If none meets this shelf-life requirement, report unavailable.'
     else:
         text += ' Prefer a 6-hour warranty covering the full published break horizon; state the actual price and grade.'
+        if candidate.get('execution_seconds'):
+            text+=' Without declared grade my bid requires certified grade A; without declared warranty my bid requires at least 6 hours. This is a quote request, not acceptance.'
     if candidate.get('avoid_units'):
         text += ' Offer a different available unit, not these recently refused units: '+', '.join(candidate['avoid_units'][:4])+'.'
     if candidate.get('paid_task_refs'):
@@ -28,6 +34,7 @@ def clarify(peer,task,candidate,order,journal,config,deadline):
             task.get('status',{}).get('state')!='TASK_STATE_INPUT_REQUIRED' or deadline-time.time()<6):return task
     try:
         terms=quote_terms(task);quote(task)
+        if config.get('buyer_throughput_enabled'):return task
         missing=terms.get('grade') not in ('A','B','C') or terms.get('warranty_hours') is None
     except ValueError as exc:
         if str(exc)!='ambiguous_ask':return task
@@ -45,6 +52,8 @@ def clarify(peer,task,candidate,order,journal,config,deadline):
 
 
 def compare_quotes(order, ranked, registry, journal, config, peer_factory, deadline):
+    if config.get('buyer_throughput_enabled'):
+        return race_quotes(order,ranked,registry,journal,config,peer_factory,deadline)
     enabled=config.get('buyer_patch34_enabled')
     if ((not enabled and (order.get('kind') != 'goods' or order['budget'] < config.get('quote_compare_min_budget', 100000)))
             or deadline - time.time() < (10 if enabled else 45)):
@@ -132,12 +141,105 @@ def compare_quotes(order, ranked, registry, journal, config, peer_factory, deadl
     return prepared, len(selected)
 
 
-def close_quotes(prepared):
-    for peer, task in prepared.values():
+def _close_quote(peer,task):
+    try:
+        if hasattr(peer,'cancel') and task.get('status',{}).get('state')=='TASK_STATE_INPUT_REQUIRED':
+            peer.cancel(task['id'])
+    except Exception:pass
+    finally:peer.close()
+
+
+def close_quotes(prepared,background=False):
+    for peer,task in prepared.values():
+        if background:
+            threading.Thread(target=_close_quote,args=(peer,task),daemon=True).start()
+        else:_close_quote(peer,task)
+
+
+def race_quotes(order,ranked,registry,journal,config,peer_factory,deadline):
+    """Only quote RPCs run concurrently. Payment stays in the strict single path."""
+    selected=[];seen=set()
+    for c in ranked:
+        if c['shop'] in seen or not registry.get(c['shop'],{}).get('pubkey'):continue
+        selected.append(c);seen.add(c['shop'])
+        if len(selected)>=min(2,config['max_shop_candidates']):break
+    if len(selected)<2 or deadline-time.time()<4:return {},0
+    timeout=config.get('buyer_rfq_goods_seconds',5) if order.get('kind')=='goods' else config.get('buyer_rfq_food_seconds',3)
+    messages=queue.Queue();lock=threading.Lock();stopped=threading.Event()
+    def fetch(c):
+        peer=peer_factory();task={};started=time.monotonic()
         try:
-            if hasattr(peer, 'cancel') and task.get('status', {}).get('state') == 'TASK_STATE_INPUT_REQUIRED':
-                peer.cancel(task['id'])
-        except Exception:
-            pass
-        finally:
+            if hasattr(peer,'deadline'):peer.deadline=min(deadline-1,time.time()+timeout)
+            peer.discover(c['shop']);task=peer.send(request_text(c,order))
+            task=clarify(peer,task,c,order,journal,config,min(deadline,time.time()+timeout))
+            seconds=time.monotonic()-started
+            journal.add('buyer_quote_latency',{'order':order['order'],'shop':c['shop'],'sku':c['sku'],'seconds':seconds},role='buyer')
+            from .protocol import observe_quote
+            observe_quote(journal,task,c['shop'],order,'race')
+            with lock:
+                discard=stopped.is_set()
+                if not discard:messages.put((c,peer,task,seconds,None))
+            if discard:_close_quote(peer,task)
+        except Exception as exc:
             peer.close()
+            with lock:
+                if not stopped.is_set():messages.put((c,None,{},time.monotonic()-started,exc))
+    for c in selected:threading.Thread(target=fetch,args=(c,),daemon=True).start()
+    prepared={};received=0;until=min(deadline-1,time.time()+timeout+1);strong=False
+    try:
+        while received<len(selected):
+            left=until-time.time()
+            if left<=0:break
+            try:c,peer,task,seconds,error=messages.get(timeout=left)
+            except queue.Empty:break
+            received+=1
+            if error is not None:
+                c['quote_failed']=True
+                journal.add('attempt',{'order':order['order'],'shop':c['shop'],'sku':c['sku'],
+                    'success':False,'kind':'rfq_failed','error_type':type(error).__name__,
+                    'reason':str(error) if isinstance(error,ValueError) and str(error) in
+                    ['ambiguous_ask','conflicting_ask','conflicting_offer_terms','quote_sku_mismatch'] else None},role='buyer')
+                continue
+            prepared[c['id']]=(peer,task)
+            if task.get('status',{}).get('state')!='TASK_STATE_INPUT_REQUIRED':continue
+            try:
+                terms=quote_terms(task);ask=quote(task)
+                if terms.get('sku') not in (None,c['sku']):raise ValueError('quote_sku_mismatch')
+                from .buyer_scoring import offer_ineligible,contribution,terms_delta
+                reason=offer_ineligible(terms,order,config)
+                if reason:
+                    c['quote_failed']=True
+                    journal.add('buyer_declined_terms',{'order':order['order'],'shop':c['shop'],'sku':c['sku'],'reason':reason,'stage':'rfq'},role='buyer')
+                    continue
+                a=buyer_assessment(dict(c['product'],sku=c['sku']),order,terms,journal,config,shop=c['shop'])
+                if a['cap']<1:
+                    c['quote_failed']=True;continue
+                feasible=ask<=a['cap'] and not a['conditional_terms']
+                price=min(ask,a['cap']);completion=1 if feasible else .35 if ask<=a['cap'] else .25
+                c['score']=completion*contribution(price,c['product']['list_price'],a['failure'],a['covered_failure'])
+                c['expected_delta']=terms_delta(a['saved_state'],price,c['product']['list_price'],a['failure'],a['covered_failure'],completion)
+                c['execution_seconds']=max(1,seconds+2)
+                c['evidence']['live_quote']=dict(a,ask=ask,terms=terms,feasible_at_ask=feasible)
+                journal.add('quote_comparison',{'order':order['order'],'shop':c['shop'],'sku':c['sku'],
+                    'ask':ask,'assessment':a,'feasible_at_ask':feasible,'seconds':seconds},role='buyer')
+                from .buyer_execution import strong_offer
+                if strong_offer(c,a,ask,config):
+                    c['fast_ready']=True
+                    strong=True;until=min(until,time.time()+config.get('buyer_compare_grace_seconds',.35))
+            except ValueError as exc:
+                c['quote_failed']=True
+                journal.add('attempt',{'order':order['order'],'shop':c['shop'],'sku':c['sku'],
+                    'kind':'rfq_failed','success':False,'reason':str(exc) if str(exc) in
+                    ['ambiguous_ask','conflicting_ask','conflicting_offer_terms','quote_sku_mismatch'] else None},role='buyer')
+    finally:
+        with lock:
+            stopped.set();discard=[]
+            while not messages.empty():discard.append(messages.get_nowait())
+        for _,peer,task,_,_ in discard:
+            if peer:threading.Thread(target=_close_quote,args=(peer,task),daemon=True).start()
+    pending={c['id'] for c in selected if c['id'] not in prepared}
+    ranked[:]=[c for c in ranked if not c.get('quote_failed') and c['id'] not in pending]
+    ranked.sort(key=lambda c:c['score']/max(1,c.get('execution_seconds',1)),reverse=True)
+    journal.add('buyer_quote_race',{'order':order['order'],'contacted':len(selected),'received':received,
+        'strong_offer':strong,'pending_discarded':len(pending)},role='buyer')
+    return prepared,len(selected)

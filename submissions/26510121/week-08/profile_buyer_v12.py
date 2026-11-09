@@ -16,6 +16,9 @@ class Probe(ReadJournal):
     def __init__(self,c,now):
         super().__init__(c,now);self.md=ROOT/'.market';self.added=Counter();self.reads=Counter()
     def add(self,kind,data,**kwargs):self.added[kind]+=1;return False
+    def add_batch(self,rows,**kwargs):
+        for kind,*_ in rows:self.added[kind]+=1
+        return 0
     def events(self,kind,limit=500):
         self.reads[kind]+=1;return super().events(kind,limit)
 

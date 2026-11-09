@@ -13,7 +13,10 @@ from r3.adaptive import begin_buyer
 
 
 def buy(order, shops, journal, chooser=None, peer_factory=Peer):
+    started_at=time.time()
     cfg, strategy = begin_buyer(journal, order)
+    if cfg.get('buyer_throughput_enabled'):
+        cfg=dict(cfg,max_shop_candidates=cfg.get('buyer_route_candidates',4))
     journal.reconcile()
     journal.add('buyer_execution', {'order': order['order'], 'strategy_version': strategy['version']},
                 eid='buyer-execution:' + order['order'], role='buyer')
@@ -35,16 +38,20 @@ def buy(order, shops, journal, chooser=None, peer_factory=Peer):
     seconds=cfg.get('buyer_goods_time_seconds',90) if order.get('kind')=='goods' else cfg.get('buyer_food_time_seconds',18)
     session=journal.get('buyer_deadline:'+order['order'])
     if session is None:
-        session=min(order['expires']-cfg['checkout_buffer_seconds'],time.time()+seconds*cfg.get('checkout_max_attempts',2))
+        session=min(order['expires']-cfg['checkout_buffer_seconds'],
+                    (started_at if cfg.get('buyer_throughput_enabled') else time.time())+seconds*cfg.get('checkout_max_attempts',2))
         journal.put('buyer_deadline:'+order['order'],session)
-    deadline = min(order["expires"] - cfg["checkout_buffer_seconds"], session, time.time()+seconds)
+    deadline = min(order["expires"] - cfg["checkout_buffer_seconds"], session,
+                   (started_at if cfg.get('buyer_throughput_enabled') else time.time())+seconds)
+    journal.add('buyer_preparation',{'order':order['order'],'seconds':time.time()-started_at,
+                'candidates':len(ranked),'deadline':deadline,'strategy_version':strategy['version']},role='buyer')
     if deadline<=time.time()+2:return empty
     prepared, contacted = compare_quotes(order, ranked, registry, journal, cfg, peer_factory, deadline)
     try:
         return execute(order, journal, chooser, peer_factory, cfg, strategy, registry, ranked,
                        deadline, prepared, contacted, empty)
     finally:
-        close_quotes(prepared)
+        close_quotes(prepared,background=cfg.get('buyer_throughput_enabled',False))
 
 
 def execute(order, journal, chooser, peer_factory, cfg, strategy, registry, ranked,
@@ -53,6 +60,9 @@ def execute(order, journal, chooser, peer_factory, cfg, strategy, registry, rank
         if not ranked or time.time() >= deadline:
             break
         shortlist=ranked[:8]
+        if cfg.get('buyer_throughput_enabled'):
+            ready=[c for c in ranked if c.get('fast_ready') and c['id'] in prepared]
+            if ready:shortlist=ready
         if order.get('kind')=='food' and cfg.get('buyer_fast_food_enabled') and not cfg.get('buyer_patch34_enabled'):
             c=shortlist[0]
             journal.add('buyer_fast_choice',{'order':order['order'],'sku':c['sku'],'shop':c['shop'],
@@ -72,7 +82,8 @@ def execute(order, journal, chooser, peer_factory, cfg, strategy, registry, rank
             c = ranked.pop(0)
             cached = prepared.pop(c['id'])
         peer = cached[0] if cached else peer_factory()
-        if cfg.get('buyer_patch34_enabled') and hasattr(peer,'deadline'):peer.deadline=deadline
+        if cfg.get('buyer_patch34_enabled') and hasattr(peer,'deadline'):
+            peer.deadline=min(deadline,time.time()+cfg.get('buyer_rpc_timeout_seconds',4)) if cfg.get('buyer_throughput_enabled') else deadline
         if not cached:
             contacted += 1
         started = time.monotonic()
@@ -176,6 +187,11 @@ def execute(order, journal, chooser, peer_factory, cfg, strategy, registry, rank
                 cap, required_warranty, stress = assessment['cap'], assessment['required_warranty'], assessment['failure']
                 required_grade = assessment.get('required_grade',terms.get('grade'))
                 conditional_requirements=assessment.get('conditional_terms',[])
+                if cfg.get('buyer_throughput_enabled'):
+                    from r3.buyer_scoring import offer_ineligible
+                    reason=offer_ineligible(terms,order,cfg)
+                    if reason:raise ValueError('certificate_unavailable' if reason=='certificate_unavailable'
+                                               else 'known_unsuitable_shelf_life')
                 if (product.get('kind') == 'food' and type(terms.get('expires_at')) in (int, float) and
                         terms['expires_at'] < time.time() + order.get('use_within_hours', 0) * 3600 +
                         cfg['checkout_buffer_seconds']):
@@ -187,6 +203,9 @@ def execute(order, journal, chooser, peer_factory, cfg, strategy, registry, rank
                                               assessment['saved_state'] if assessment['saved_state']['metric']=='saved' else None)
                 if not actions:
                     break
+                if cfg.get('buyer_throughput_enabled'):
+                    from r3.buyer_execution import price_times
+                    price_times(actions,c,assessment,cfg)
                 if order.get('kind')=='food' and cfg.get('buyer_fast_food_enabled') and not cfg.get('buyer_patch34_enabled'):
                     move=max(actions,key=lambda a:a['score'])
                 else:
@@ -198,6 +217,8 @@ def execute(order, journal, chooser, peer_factory, cfg, strategy, registry, rank
                 if move['id'] == 'counter':
                     journal.add('buyer_counter', {'order': order['order'], 'shop': c['shop'], 'ask': ask,
                                 'price': agreed, 'strategy_version': strategy['version']}, role='buyer')
+                if cfg.get('buyer_throughput_enabled') and hasattr(peer,'deadline'):
+                    peer.deadline=min(deadline,time.time()+cfg.get('buyer_rpc_timeout_seconds',4))
                 task = peer.send(str(agreed), task["id"])
             journal.add("attempt", {"order": order['order'], "strategy_version": strategy['version'],
                                     "shop": c["shop"], "sku": c["sku"], "success": False,

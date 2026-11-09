@@ -178,6 +178,10 @@ def buyer_candidates(order, shops, catalog, journal, config=None):
     if (config or {}).get('buyer_contract_routing_enabled'):
         from .buyer_routes import context as buyer_route_context
         route_context=buyer_route_context(journal,now)
+    execution_context={}
+    if (config or {}).get('buyer_throughput_enabled'):
+        from .buyer_execution import route_context as execution_route_context
+        execution_context=execution_route_context(journal,now,order)
     for shop in shops:
         for row in shop.get("offers", []):
             sku = row.get("sku")
@@ -185,7 +189,8 @@ def buyer_candidates(order, shops, catalog, journal, config=None):
                 continue
             product = catalog[sku]
             if (product.get('kind')=='food' and product.get('shelf_hours') and
-                    product['shelf_hours']<order.get('use_within_hours',0)):
+                    product['shelf_hours']<order.get('use_within_hours',0)+
+                    ((config or {}).get('checkout_buffer_seconds',30)/3600 if (config or {}).get('buyer_throughput_enabled') else 0)):
                 continue
             counterpart_key = registry.get(shop["url"], {}).get("pubkey")
             own = [x for x in past if 0 <= now - x.get('paid_at', x['_ts']) <= 21600 and (x.get("shop") == shop["url"] or
@@ -230,7 +235,11 @@ def buyer_candidates(order, shops, catalog, journal, config=None):
             if (config or {}).get('buyer_contract_routing_enabled'):
                 from .buyer_routes import adjust
                 adjust(result[-1],order,journal,config,route_context)
-    return sorted(result, key=lambda x: x["score"], reverse=True)
+            if (config or {}).get('buyer_throughput_enabled'):
+                from .buyer_execution import route_adjust
+                route_adjust(result[-1],order,journal,config,execution_context)
+                result[-1]['checkout_buffer_seconds']=config.get('checkout_buffer_seconds',30)
+    return sorted(result, key=lambda x:x['score']/max(1,x.get('execution_seconds',1)),reverse=True)
 
 
 def supply_open(inv, now=None):

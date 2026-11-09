@@ -84,6 +84,17 @@ class Journal:
                              (kind, limit)).fetchall()
         return [dict(json.loads(d), _event_id=i, _ts=t, _role=r) for i, t, r, d in rows]
 
+    def add_batch(self, rows, *, ts=None):
+        """Append idempotent evidence in one transaction, preserving event IDs."""
+        if not rows:return 0
+        at=time.time() if ts is None else ts
+        payload=[(eid,kind,at,role,json.dumps(data,ensure_ascii=False))
+                 for kind,data,eid,role in rows]
+        with self.connect() as c:
+            before=c.total_changes
+            c.executemany('INSERT OR IGNORE INTO events VALUES(?,?,?,?,?)',payload)
+            return c.total_changes-before
+
     def get(self, key, default=None):
         with self.connect() as c:
             row = c.execute("SELECT value FROM kv WHERE key=?", (key,)).fetchone()
@@ -163,25 +174,32 @@ class Journal:
                         continue
                     self.add(kind, data, eid=kind + ":" + identity(data), role="buyer")
                 self.put("offset:" + name, f.tell())
-        ambiguous_orders = set()
+        # Read purchases once. Re-reading and decoding the same 10k rows for
+        # every old break added >20 seconds before each live Buyer decision.
+        purchases=self.events('purchase',10000)
+        by_name={}
+        for item in purchases:by_name.setdefault(item.get('name'),[]).append(item)
+        ambiguous_orders = set();pending=[]
+        broken_orders = {e['order'] for e in self.events('outcome',10000) if e.get('broken')}
         for news in self.events("broken_news"):
-            possible = [e for e in self.events("purchase", 10000)
-                        if e.get("name") == news.get("name") and 0 <= news.get("broke_at", 0) - e["paid_at"] <= 21600]
+            possible = [e for e in by_name.get(news.get('name'),[])
+                        if 0 <= news.get("broke_at", 0) - e["paid_at"] <= 21600]
             if len(possible) == 1:
                 item = possible[0]
                 hours = warranty_hours(item.get('warranty_hours'))
                 covered = hours > 0 and news["broke_at"] - item["paid_at"] <= hours * 3600
-                self.add("outcome", {"order": item["order"], "broken": True, "covered": covered,
+                pending.append(("outcome", {"order": item["order"], "broken": True, "covered": covered,
                                     "surplus": 0 if covered else -item["price"], "source": news["_event_id"],
                                     "refund_status": "expected_by_warranty_rule" if covered else "not_covered"},
-                         eid="broken-outcome:" + item["order"], role="buyer")
+                         "broken-outcome:" + item["order"], "buyer"))
+                broken_orders.add(item['order'])
             elif possible:
                 ambiguous_orders.update(x["order"] for x in possible)
-                self.add("ambiguous_break", {"source": news["_event_id"], "orders": [x["order"] for x in possible]},
-                         eid="ambiguous:" + news["_event_id"], role="buyer")
-        broken_orders = {e["order"] for e in self.events("outcome", 10000) if e.get("broken")}
-        for item in self.events("purchase", 10000):
+                pending.append(("ambiguous_break", {"source": news["_event_id"], "orders": [x["order"] for x in possible]},
+                         "ambiguous:" + news["_event_id"], "buyer"))
+        for item in purchases:
             mature = item.get("kind") == "food" or now >= item["paid_at"] + 21600
             if mature and item["order"] not in broken_orders and item["order"] not in ambiguous_orders:
-                self.add("outcome", {"order": item["order"], "broken": False, "surplus": item["value"] - item["price"],
-                                     "matured": True}, eid="mature:" + item["order"], role="buyer")
+                pending.append(("outcome", {"order": item["order"], "broken": False, "surplus": item["value"] - item["price"],
+                                     "matured": True}, "mature:" + item["order"], "buyer"))
+        self.add_batch(pending,ts=now)

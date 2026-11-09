@@ -146,12 +146,18 @@ class ShopSupervisor:
         self.registration_failures=0
         self.last_registry_probe=-1000
         self.market_visibility='unknown'
+        self.last_board_probe=-1000
+        self.board_offline_checks=0
+        self.last_board_rejoin=-1000
+        self.board_global_outage=False
 
     def snapshot(self, status):
         atomic_json(self.directory / '.market/shop-health.json', {
             'checked_at': time.time(), 'status': status, 'url': self.proxy.public,
             'pending_registration': self.pending_registration, 'consecutive_probe_failures': self.misses,
             'market_visibility':self.market_visibility,'registry_misses':self.registry_misses,
+            'board_offline_checks':self.board_offline_checks,
+            'board_global_outage':self.board_global_outage,
             'probe_interval_seconds': 15, 'renewal_seconds': 3300 if self.provider == 'pinggy' else None})
 
     def tick(self, now=None):
@@ -181,6 +187,25 @@ class ShopSupervisor:
                     self.market_visibility='present' if present else 'market_empty' if not shops else 'absent'
                     self.registry_misses=self.registry_misses+1 if shops and not present else 0
                     if self.registry_misses>=2:self.pending_registration=True
+                    # Registry membership and an answering card can coexist
+                    # with market board alive=false. Require two independent
+                    # observations and active peers before same-address repair.
+                    if present and healthy and now-self.last_board_probe>=60:
+                        self.last_board_probe=now
+                        try:
+                            board_response=self.market.c.get(self.market.base+'/api/board',timeout=4)
+                            if board_response.status_code==200:
+                                rows=board_response.json().get('shops',[])
+                                own=[r for r in rows if r.get('name')==self.args.name]
+                                active_peer=any(r.get('name')!=self.args.name and r.get('alive') is True for r in rows)
+                                self.board_global_outage=bool(rows) and any(r.get('alive') is False for r in rows) and not any(r.get('alive') is True for r in rows)
+                                if self.board_global_outage:self.market_visibility='market_board_outage'
+                                offline=len(own)==1 and own[0].get('alive') is False and active_peer
+                                self.board_offline_checks=self.board_offline_checks+1 if offline else 0
+                                if self.board_offline_checks>=2 and now-self.last_board_rejoin>=120:
+                                    self.pending_registration=True
+                                    self.market_visibility='board_offline'
+                        except Exception:pass
             except Exception:
                 self.market_visibility='unverified'
         expired_soon = self.provider == 'pinggy' and now - self.started >= 3300
@@ -213,7 +238,7 @@ class ShopSupervisor:
             self.registration_failures=0
             self.started, self.misses = now, 0
             kit.log('[tunnel] replacement ready; shop registration pending at ' + url)
-        if self.pending_registration and self.market_visibility!='market_empty':
+        if self.pending_registration and self.market_visibility!='market_empty' and not self.board_global_outage:
             # A one-shot join must be retried even when the new URL is already healthy.
             try:
                 result = self.market.join('shop', self.args.name, self.keys['shop'], self.proxy.public, tries=1)
@@ -226,6 +251,8 @@ class ShopSupervisor:
             self.registration_failures=0
             self.registry_misses=0
             self.market_visibility='present'
+            self.board_offline_checks=0
+            self.last_board_rejoin=now
             kit.log(f"[market] shop registered again as {result['name']} at {self.proxy.public}")
             if self.retired is not None:
                 kit.stop(self.retired)
@@ -233,8 +260,8 @@ class ShopSupervisor:
                     if self.procs[i] is self.retired:
                         self.procs.pop(i)
                 self.retired = None
-        self.snapshot('market_discovery_outage' if self.market_visibility=='market_empty' else
-                      'market_registration_missing' if self.market_visibility=='absent' else
+        self.snapshot('market_discovery_outage' if self.market_visibility in {'market_empty','market_board_outage'} else
+                      'market_registration_missing' if self.market_visibility in {'absent','board_offline'} else
                       'healthy' if healthy or not self.pending_registration and self.misses == 0 else 'probing')
 
 

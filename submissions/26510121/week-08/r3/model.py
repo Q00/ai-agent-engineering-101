@@ -75,6 +75,9 @@ class Chooser:
                     candidate['objective_utility']-=.3*direct_gain(own.get('forum') or 0,delta.get('forum',0))
             candidate['objective_utility'] *= candidate.get('capital_efficiency_factor',1)
         def utility(candidate):
+            if role=='buyer' and context.get('buyer_execution') and self.config.get('buyer_throughput_enabled'):
+                seconds=max(1,candidate.get('execution_seconds',1))
+                return (candidate.get('objective_utility',0)/seconds,candidate.get('score',0)/seconds)
             return (candidate.get('objective_utility', 0), candidate.get('score', 0))
         best = max(candidates, key=utility)
         context = dict(context, objective='maximize Shop ALL + Buyer ALL; score each component by its current rule',
@@ -83,6 +86,8 @@ class Chooser:
                        rank_note='percentile components use midrank/continuous surrogates; Patch 3.5 forum uses its raw 0..1 rating')
         if role=='buyer':context.update(buyer_metric=current['metric'],buyer_forum_metric=current['forum_metric'],
                                        buyer_rank_scope=board.get('buyer_rank_scope'))
+        if role=='buyer' and self.config.get('buyer_throughput_enabled'):
+            context['execution_objective']='expected rank/Saved progress per bounded execution-second scenario; hard caps unchanged'
         diagnosis=self.j.get('market_control',{})
         if 0<=time.time()-diagnosis.get('at',0)<900:
             context['market_state']={k:diagnosis.get(k) for k in
