@@ -1138,6 +1138,40 @@ def test_discover():
             summary_path.write_bytes(kept_summary)
     check("a line product whose expected margin falls under 0.02 of list leaves (A market 0.62: -0.029), said with its number",
           [(c["sku"], c["from"], c["to"]) for c in ch] == [("Gsofa0001", 3, 0)] and "expected margin -0.029" in ch[0]["why"], ch)
+    # 11/9: what a product earned us decides, and the model is shifted by its error on the products that have both
+    sale = lambda sku, i, price, cost, grade="A", w=True: {"sku": sku, "ts": t - 3 * 3600 - i * 600, "price": price, "cost": cost,
+                                                          "list_price": 1_000_000, "grade": grade, "warranty": w}
+    good = [sale("Gsofa0003", i, 700_000, 600_000) for i in range(15)]
+    thin = [sale("Gsofa0002", i, 700_000, 600_000) for i in range(14)]
+    real = linewatch.realized(good + thin, t, {})
+    br = linewatch.pricing.BREAK["A"]
+    check("realized margin: 15 sales at 0.70 of list costing 0.60, each less its expected refund (A breaks "
+          f"{br}): {0.1 - br * 0.7:.4f}; 14 sales are too few; a surge of 1.1 takes 0.06 more",
+          real == {"Gsofa0003": (round(0.1 - br * 0.7, 4), 15)}
+          and linewatch.realized(good, t, {"Gsofa0003": 1.1})["Gsofa0003"][0] == round(0.1 - br * 0.7 - 0.06, 4), real)
+    model = {"G1": 0.01, "G2": 0.02, "G3": 0.00, "G4": None}.get
+    check("calibration: the model's median error on products with both (3 or more), capped at 0.05; fewer: 0",
+          linewatch.calibration({"G1": (0.05, 20), "G2": (0.06, 20), "G3": (0.09, 20), "G4": (0.1, 20)}, model) == 0.04
+          and linewatch.calibration({"G1": (0.05, 20), "G2": (0.06, 20)}, model) == 0.0
+          and linewatch.calibration({"G1": (0.5, 20), "G2": (0.5, 20), "G3": (0.5, 20)}, model) == 0.05)
+    common.write_json(summary_path, {"by_sku": {"Gsofa0003": {"others_6h": {"A_w": {"n": 20, "median": 0.62}}},
+                                                "Gsofa0001": {"others_6h": {"A_w": {"n": 20, "median": 0.62}}}}})
+    back_sales = good + [sale("Gsofa0001", i, 700_000, 600_000) for i in range(15)]
+    common.catalog = lambda *a, **k: cat
+    try:
+        ch = linewatch.run(t + 120 + linewatch.EXIT_REST + 60, settles=[], inv={"units": []}, sales=back_sales,
+                           line={BEDDING: 3}, stars=4.9)
+    finally:
+        common.catalog = saved
+        if kept_summary is None:
+            summary_path.unlink()
+        else:
+            summary_path.write_bytes(kept_summary)
+    caps = common.read_json(MD / "analysis" / "line.json")["skus"]
+    check("...so a product the model puts under 0.02 (A market 0.62) stays when it earned us 0.08 over 36 h, and one out "
+          "for 2 h comes back at cap 3 on the same",
+          caps.get("Gsofa0003") == 3 and [(c["sku"], c["from"], c["to"]) for c in ch] == [("Gsofa0001", 0, 3)]
+          and "back in: our realized margin" in ch[0]["why"], (caps, ch))
     for f in ("line_state.json", "line.json", "line_log.jsonl"):
         (MD / "analysis" / f).unlink(missing_ok=True)
 
