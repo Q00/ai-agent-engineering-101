@@ -12,7 +12,24 @@ from r3.quote_market import compare_quotes, close_quotes, request_text,clarify
 from r3.adaptive import begin_buyer
 
 
+def maintenance_wait(journal,order):
+    """A new child can hold the old parent before any negotiation or payment."""
+    gate=journal.get('buyer_maintenance',{})
+    if not gate.get('token') or gate.get('until',0)<=time.time():return True
+    token=gate['token']
+    journal.put('buyer_maintenance_ready',{'token':token,'order':order['order'],'at':time.time()})
+    while gate.get('token')==token and time.time()<gate.get('until',0):
+        runtime=journal.snapshot('runtime.json',{});stop=journal.snapshot('runtime-stop.json',{})
+        if runtime.get('session') and stop.get('session')==runtime['session'] and stop.get('pid')==runtime.get('pid'):
+            return False  # Let the parent's subprocess wait unblock for cleanup.
+        if time.time()+30>=order['expires']:return False
+        time.sleep(.2);gate=journal.get('buyer_maintenance',{})
+    return True
+
+
 def buy(order, shops, journal, chooser=None, peer_factory=Peer):
+    if not maintenance_wait(journal,order):
+        return {'shop':'','receipt':None,'stars':3,'review':'No settled purchase during runtime maintenance.'}
     started_at=time.time()
     cfg, strategy = begin_buyer(journal, order)
     if cfg.get('buyer_throughput_enabled'):

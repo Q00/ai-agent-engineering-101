@@ -17,6 +17,24 @@ from r3.buyer_execution import route_context,route_adjust
 def config():return dict(policy(),buyer_throughput_enabled=True,buyer_patch34_enabled=True,buyer_counter_ratio=.92)
 
 
+def test_maintenance_gate_precedes_negotiation_and_self_expires(tmp_path,monkeypatch):
+    from market_buyer import maintenance_wait
+    j=Journal(tmp_path);now=time.time()
+    j.put('buyer_maintenance',{'token':'drain','until':now+10})
+    def release(seconds):
+        assert j.get('buyer_maintenance_ready')['order']=='o'
+        assert not j.events('buyer_order') and not j.events('agreement')
+        j.put('buyer_maintenance',{})
+    monkeypatch.setattr('market_buyer.time.sleep',release)
+    assert maintenance_wait(j,{'order':'o','expires':now+300})
+    j.put('buyer_maintenance',{'token':'stop','until':now+10})
+    atomic_json(j.md/'runtime.json',{'session':'s','pid':1})
+    atomic_json(j.md/'runtime-stop.json',{'session':'s','pid':1})
+    assert not maintenance_wait(j,{'order':'o','expires':now+300})
+    j.put('buyer_maintenance',{'token':'expired','until':now-1})
+    assert maintenance_wait(j,{'order':'o','expires':now+300})
+
+
 def test_reconcile_reads_purchases_once_and_preserves_late_break(tmp_path,monkeypatch):
     j=Journal(tmp_path);now=time.time()
     for i in range(30):
