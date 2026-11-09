@@ -7,7 +7,7 @@ from r3.state import Journal,atomic_json,read_json
 from r3.transport_health import refresh
 
 
-def fixture(tmp_path,monkeypatch,*,present=True,card=True,acp=True):
+def fixture(tmp_path,monkeypatch,*,present=True,card=True,acp=True,owner='seochanit'):
     j=Journal(tmp_path)
     atomic_json(j.md/'runtime.json',{'pid':1,'session':'synthetic'})
     atomic_json(j.md/'shop-health.json',{'checked_at':100,'status':'healthy','url':'https://own.example'})
@@ -16,7 +16,7 @@ def fixture(tmp_path,monkeypatch,*,present=True,card=True,acp=True):
         assert kwargs['timeout']==6 and kwargs['trust_env'] is False
         if url.endswith('/api/shops'):
             body={'shops':[{'name':'seochanit','url':'https://own.example' if present else 'https://other.example',
-                             'owner':{'login':'seochanit'}}]}
+                             'owner':{'login':owner} if owner else None}]}
         elif url.endswith('acp.json'):body={'protocol':'acp' if acp else 'wrong'}
         else:body={'name':'Seochanit Shop' if card else 'wrong'}
         return httpx.Response(200,json=body)
@@ -52,4 +52,14 @@ def test_runtime_change_during_probe_cannot_overwrite_new_health(tmp_path,monkey
             return {'pid':len(calls)}
         return original(name,default)
     monkeypatch.setattr(j,'snapshot',snapshot)
+    assert refresh(j,own,1000) is None
+
+
+def test_ownerless_registry_matches_fresh_board_identity_by_name_and_url(tmp_path,monkeypatch):
+    j,own=fixture(tmp_path,monkeypatch,owner=None)
+    assert refresh(j,own,1000)['status']=='healthy'
+
+
+def test_explicit_contradictory_owner_is_rejected(tmp_path,monkeypatch):
+    j,own=fixture(tmp_path,monkeypatch,owner='other-owner')
     assert refresh(j,own,1000) is None

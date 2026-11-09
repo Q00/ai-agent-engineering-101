@@ -23,8 +23,15 @@ def refresh(journal,own,now=None):
            'https://market.ourolabs.ai/api/shops']
     with ThreadPoolExecutor(max_workers=3) as pool:rows=list(pool.map(get,paths))
     name=(own.get('owner') or {}).get('login')
+    # /api/shops publishes name/url/pubkey/stock, not owner. Identity's owner
+    # comes from the fresh official board; an explicit contradictory owner,
+    # when provided, is still rejected.
+    def same_owner(row):
+        owner=row.get('owner')
+        login=owner.get('login') if isinstance(owner,dict) else owner
+        return not name or not login or login==name
     present=any(r.get('name')=='seochanit' and r.get('url','').rstrip('/')==url and
-                (not name or (r.get('owner') or {}).get('login')==name)
+                same_owner(r)
                 for r in rows[2]['data'].get('shops',[]))
     good=(all(r.get('status')==200 for r in rows) and present and
           rows[0]['data'].get('name')=='Seochanit Shop' and rows[1]['data'].get('protocol')=='acp' and
