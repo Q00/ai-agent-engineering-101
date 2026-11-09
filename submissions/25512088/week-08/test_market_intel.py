@@ -6,7 +6,7 @@ import unittest
 from unittest.mock import patch
 import httpx
 from market_intel import Intel,BUYER_SCORE_WEIGHTS
-from seller_strategy import sale_quote,restock_plan,cost_floor,protected_floor
+from seller_strategy import sale_quote,restock_plan,cost_floor,protected_floor,buyer_preference_target
 from seller_ledger import Program
 from buyer_publicist import queue_update,publication_policy,forum_strategy,STRATEGY_REVIEW_SECONDS
 from buyer_r3 import Buyer
@@ -53,6 +53,36 @@ class IntelligenceTests(unittest.TestCase):
         body=json.loads(self.i.db.execute(
             "SELECT body FROM decisions WHERE role='seller_quote' ORDER BY id DESC LIMIT 1").fetchone()[0])
         self.assertEqual(body['pricing_basis'],'exact_condition_p10')
+
+    def test_live_buyer_preferences_lower_first_quote_without_breaking_floor(self):
+        now=time.time()
+        prefs={'version':3,'generated_at':now,'buyers':{
+            f'b{n}':{'active':True,'skus':[{'sku':'x','median_paid':price,'price_samples':100}]}
+            for n,price in enumerate((13000,14000,15000,16000))}}
+        target=buyer_preference_target(prefs,'x',now)
+        self.assertEqual(target,{'price':13000,'buyers':4,'samples':400,
+                                 'basis':'active_buyer_item_lower_quartile'})
+        q=sale_quote(dict(self.u,cost=1000,list_price=20000),{},self.p,self.i,
+                     buyer_preferences=prefs)
+        self.assertEqual(q['price'],13000)
+        body=json.loads(self.i.db.execute(
+            "SELECT body FROM decisions WHERE role='seller_quote' ORDER BY id DESC LIMIT 1").fetchone()[0])
+        self.assertTrue(body['buyer_preference_applied'])
+        self.assertEqual(body['pricing_basis'],'buyer_preference_lower_quartile')
+        expensive=dict(self.u,cost=13000,list_price=20000)
+        protected=sale_quote(expensive,{},self.p,self.i,buyer_preferences=prefs)
+        self.assertGreater(protected['price'],13000)
+
+    def test_buyer_preference_target_requires_three_active_buyers_and_fresh_data(self):
+        now=time.time();base={'version':3,'generated_at':now,'buyers':{
+            'a':{'active':True,'skus':[{'sku':'x','median_paid':100,'price_samples':10}]},
+            'b':{'active':True,'skus':[{'sku':'x','median_paid':110,'price_samples':10}]},
+            'offline':{'active':False,'skus':[{'sku':'x','median_paid':1,'price_samples':10}]}}}
+        self.assertIsNone(buyer_preference_target(base,'x',now))
+        base['buyers']['c']={'active':True,'skus':[{'sku':'x','median_paid':120,'price_samples':10}]}
+        self.assertIsNotNone(buyer_preference_target(base,'x',now))
+        base['generated_at']=now-181
+        self.assertIsNone(buyer_preference_target(base,'x',now))
 
     def test_small_public_loss_is_bounded_by_buyer_cohort_and_budget(self):
         now=time.time();rows=[]

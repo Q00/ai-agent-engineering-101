@@ -17,6 +17,27 @@ LOSS_LEADER_BUDGET=100_000
 LOSS_LEADER_TRIALS_PER_SKU=5
 
 
+def buyer_preference_target(preferences,sku,now=None):
+    """Return an equal-buyer lower-quartile price from the live estimate."""
+    now=time.time() if now is None else now
+    if not isinstance(preferences,dict) or preferences.get('version')!=3:
+        return None
+    generated=preferences.get('generated_at')
+    if not isinstance(generated,(int,float)) or now-generated>180:
+        return None
+    prices=[];samples=0
+    for buyer in (preferences.get('buyers') or {}).values():
+        if not buyer.get('active'):continue
+        item=next((x for x in buyer.get('skus',[]) if x.get('sku')==sku),None)
+        if not item or not isinstance(item.get('median_paid'),(int,float)) or item['median_paid']<=0:
+            continue
+        prices.append(item['median_paid']);samples+=item.get('price_samples',0)
+    if len(prices)<3:return None
+    prices.sort();target=prices[int(.25*(len(prices)-1))]
+    return {'price':math.ceil(target),'buyers':len(prices),'samples':samples,
+            'basis':'active_buyer_item_lower_quartile'}
+
+
 def receipt_grade(unit,catalog=None,now=None):
     """Grade at issuance; omit uncertain food claims near a transition."""
     now=time.time() if now is None else now;product=(catalog or {}).get(unit['sku'],{})
@@ -145,7 +166,8 @@ def negotiate(unit, current, offered, catalog, program, token='', ref=''):
     return q if q['price']<current['price'] else current
 
 
-def sale_quote(unit, catalog, program, intel=None, token='', ref='', *, record=True, holdings=1):
+def sale_quote(unit, catalog, program, intel=None, token='', ref='', *, record=True, holdings=1,
+               buyer_preferences=None):
     base=public_price(unit,catalog)  # Also validates expiry and grade.
     hours=(unit['expires_at']-time.time())/3600 if unit.get('expires_at') else None
     warranty=warranty_hours(unit,program)
@@ -162,6 +184,12 @@ def sale_quote(unit, catalog, program, intel=None, token='', ref='', *, record=T
         base=math.ceil(comp['p10'])
     elif comp['median']:
         base=math.ceil(comp['median']*.99)
+    preference=buyer_preference_target(buyer_preferences,unit['sku'])
+    preference_applied=bool(preference and preference['price']<base)
+    if preference_applied:
+        # Aim at a price already accepted by roughly three quarters of the
+        # active-buyer cohort. The protected floor below remains authoritative.
+        base=min(base,preference['price'])
     adjustment=1.0;competitors=0;substitutes=0;sold=0;quotes=0
     if intel:
         shops=intel.source('shops',None,max_age=180)
@@ -221,8 +249,10 @@ def sale_quote(unit, catalog, program, intel=None, token='', ref='', *, record=T
         intel.decision('seller_quote',{'sku':unit['sku'],'cost':unit['cost'],'price':q['price'],
                        'reward':q['reward'],'floor':floor,'protected_floor':protected,
                        'comparable':comp,'market_adjustment':adjustment,
-                       'pricing_basis':'exact_condition_p10' if acceptance_first else
-                                       ('settlement_median' if comp['median'] else 'grade_formula'),
+                       'buyer_preference_target':preference,'buyer_preference_applied':preference_applied,
+                       'pricing_basis':('buyer_preference_lower_quartile' if preference_applied else
+                           ('exact_condition_p10' if acceptance_first else
+                            ('settlement_median' if comp['median'] else 'grade_formula'))),
                        'same_competitor_units':competitors,'substitute_competitor_units':substitutes,
                        'quotes_6h':quotes,'sales_6h':sold,
                        'warranty_hours':warranty,
@@ -231,8 +261,9 @@ def sale_quote(unit, catalog, program, intel=None, token='', ref='', *, record=T
                        'liquidation':bool(markdown),'liquidation_discount':markdown,
                        'loss_leader':loss_leader,'projected_raw_loss':projected_loss,
                        'loss_budget_remaining':q['loss_budget_remaining'],
-                       'source':'exact_condition_p10' if acceptance_first else
-                                ('settlement_median' if comp['median'] else 'grade_formula_cost_protected')})
+                       'source':('buyer_preference_lower_quartile' if preference_applied else
+                           ('exact_condition_p10' if acceptance_first else
+                            ('settlement_median' if comp['median'] else 'grade_formula_cost_protected')))})
     return q
 
 

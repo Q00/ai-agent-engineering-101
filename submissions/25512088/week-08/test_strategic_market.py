@@ -106,6 +106,13 @@ class StrategyTests(unittest.TestCase):
   self.assertEqual(result['buyer_filter']['official_deals_must_exceed'],1000)
   self.assertEqual(result['buyer_filter']['excluded_observed_buyers'],1)
   self.assertEqual(result['buyers']['active']['skus'][0]['public_market_median'],90)
+ def test_preference_document_keeps_all_verified_buyer_items(self):
+  now=100000;cat={f'x{n}':dict(name=f'Product {n}',category='goods',kind='goods',list_price=1000)
+                  for n in range(12)}
+  trades=[dict(seq=n,sku=f'x{n}',ts=now-n,buyer='active',grade='A',hours=None,
+               warranty=6,honest=1,price=100+n) for n in range(12)]
+  result=build_buyer_preferences(cat,trades,[],[],{'active'},now,[],{'active'})
+  self.assertEqual(len(result['buyers']['active']['skus']),12)
  def test_high_price_is_not_gate_and_negative_net_is_not_forced(self):
   now=time.time();cat={'low':dict(kind='goods',name='low',list_price=100000,category='c'),
    'high':dict(kind='goods',name='high',list_price=1000000,category='h')}

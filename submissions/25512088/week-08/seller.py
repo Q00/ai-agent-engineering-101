@@ -28,7 +28,7 @@ from cryptography.hazmat.primitives import serialization
 from seller_ledger import Program, policy
 from seller_forum import tick
 from seller_strategy import sale_quote, negotiate, receipt_grade
-from market_intel import Intel
+from market_intel import Intel, read_json
 from shop_copy import SHOP_DESCRIPTION, SHOP_DISPLAY_NAME
 from seller_offers import offers
 from seller_procurement import settings
@@ -127,6 +127,7 @@ class Seller(AgentExecutor):
             holdings=Counter(u['sku'] for u in inv.get('units',[]))
             catalog_path = STATE/'catalog.json'
             catalog = json.loads(catalog_path.read_text()) if catalog_path.exists() else {}
+            preferences = read_json(STATE/'buyer-preferences.json',{})
             if inv.get('round', 0) != 3:
                 await up.reject(say('This seller requires Round 3 inventory.'))
                 return
@@ -147,7 +148,7 @@ class Seller(AgentExecutor):
                     return
                 try:
                     q = sale_quote(unit, catalog, program, intel, token=cred['member'], ref='',
-                                   holdings=holdings[unit['sku']])
+                                   holdings=holdings[unit['sku']],buyer_preferences=preferences)
                 except ValueError:
                     await up.reject(say('Cannot verify this stock grade or expiry.'))
                     return
@@ -173,7 +174,7 @@ class Seller(AgentExecutor):
                         deal['unit']=unit
                         deal['quote']=sale_quote(unit,catalog,program,intel,
                             token=deal['credentials']['member'],ref='',record=False,
-                            holdings=holdings[unit['sku']])
+                            holdings=holdings[unit['sku']],buyer_preferences=preferences)
                 if not unit or unit.get('grade') == 'expired' or (unit.get('expires_at') and unit['expires_at'] <= time.time()):
                     self.open.pop(task.id, None)
                     await up.reject(say('The quoted stock is no longer available.'))
@@ -183,7 +184,7 @@ class Seller(AgentExecutor):
                     # Refreshes must not inflate demand or conversion trials.
                     latest = sale_quote(unit, catalog, program, intel,
                                         token=deal['credentials']['member'], ref='', record=False,
-                                        holdings=holdings[unit['sku']])
+                                        holdings=holdings[unit['sku']],buyer_preferences=preferences)
                 except ValueError:
                     self.open.pop(task.id, None)
                     await up.reject(say('Cannot verify this stock grade or expiry.'))

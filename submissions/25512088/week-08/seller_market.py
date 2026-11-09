@@ -158,7 +158,7 @@ def build_buyer_preferences(catalog,trades,shops,forum,alive_buyers=(),now=None,
     buyers={}
     for buyer,b in grouped.items():
         categories=sorted(b['categories'].items(),key=lambda item:(-item[1],item[0]))[:5]
-        skus=sorted(b['skus'].items(),key=lambda item:(-item[1]['settles'],-item[1]['last_seen'],item[0]))[:10]
+        skus=sorted(b['skus'].items(),key=lambda item:(-item[1]['settles'],-item[1]['last_seen'],item[0]))
         buyers[buyer]={'active':buyer in alive_buyers or b['last_seen']>=now-21600,
             'settles_48h':b['settles'],'last_seen':b['last_seen'],
             'price_preference':{'samples':len(b['market_ratios']),
