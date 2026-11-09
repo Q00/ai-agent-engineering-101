@@ -226,16 +226,13 @@ def sale_quote(unit, catalog, program, intel=None, token='', ref='', *, record=T
     loss_used=program.db.execute(
         'SELECT COALESCE(SUM(CASE WHEN cost>amount THEN cost-amount ELSE 0 END),0) FROM sales WHERE refunded=0').fetchone()[0]
     loss_trials=program.db.execute(
-        'SELECT COUNT(*) FROM sales WHERE sku=?',(unit['sku'],)).fetchone()[0]
+        'SELECT COUNT(*) FROM sales WHERE sku=? AND amount<cost',(unit['sku'],)).fetchone()[0]
     cohort_floor=math.ceil(unit['cost']*(1-LOSS_LEADER_RATE))
     if (acceptance_first and not token and not ref and comp['p10']>=cohort_floor
             and loss_used+projected_loss<=LOSS_LEADER_BUDGET
-            and loss_trials<LOSS_LEADER_TRIALS_PER_SKU):
+            and (not projected_loss or loss_trials<LOSS_LEADER_TRIALS_PER_SKU)):
         # A bounded public cohort may trade up to 3% raw principal for direct
         # conversion evidence. Legacy benefits never stack with this experiment.
-        # All own sales consume the SKU trial allowance, including pending and
-        # refunded sales: covering principal alone does not cover warranty risk
-        # or storage, and must not permit an unlimited protected-floor bypass.
         floor=comp['p10'];loss_leader=floor<protected
     if markdown:
         base=max(floor,math.ceil(base*(1-markdown)))
