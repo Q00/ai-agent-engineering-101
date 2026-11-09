@@ -134,6 +134,11 @@ GATE = 10                # our settled sales before stage 2
 MAX_PRICE = 60_000       # stage 1 list prices
 PRICEY_MAX = 400_000     # stage 2, categories with nothing cheaper
 MIN_SHELF = 168          # hours: food that keeps less than a week is not listed
+SHORT_SHELF = 36         # 11/10 00:00 (the person's call): food whose whole shelf life is this or less is bought by no path.
+# Under 24 h left a unit is on clearance (pricing.near_expiry), so such food arrives on clearance and never sells at its
+# price. MIN_SHELF kept it out of the new products but not out of refills, and a clearance sale counted as a sale: over
+# 48 h G67efbcf0 (24 h) sold 1,469 units, none at its price, and lost 4.45M on 96 lines bought 20 at a time. G022ce883
+# (48 h) earned 1.19M and stays.
 SECOND, SECOND_TOP = 0.7, 40
 DEAREST = 0.75           # grade A costs at most 75% of the list price
 # The surge (11/5 15:40, /agent.md): past 50 units of a SKU bought by the whole market in an hour, each further unit
@@ -422,8 +427,9 @@ def plan(inv: dict, catalog: dict, demand: list, summary: dict, sales: list, ref
             targets[s] = 0
         elif cat in focus or cat.split(">")[-1] in focus:
             targets[s] += 1
+    short = {s for s in targets if catalog[s].get("kind") == "food" and 0 < (catalog[s].get("shelf_hours") or 1e9) <= SHORT_SHELF}
     targets = {s: min(MAX_DEPTH if depth.get(s, 0) > MAX_TARGET else MAX_TARGET, t) for s, t in targets.items()
-               if s not in (line or {}) and catalog[s]["list_price"] <= PRICEY_MAX}    # dear goods only through the line
+               if s not in (line or {}) and catalog[s]["list_price"] <= PRICEY_MAX and s not in short}   # dear goods only through the line
     wind_down = to_end < WIND_DOWN
     if wind_down:
         targets = {s: t for s, t in targets.items() if sold_day.get(s, 0) >= FAST}
@@ -481,7 +487,7 @@ def plan(inv: dict, catalog: dict, demand: list, summary: dict, sales: list, ref
             "targets": len(targets), "gaps": len(gaps), "stock": int(value), "wind_down": wind_down, "lines": lines,
             "new": sum(1 for b in buy if b["sku"] not in seen), "deep": sum(1 for b in buy if b["qty"] > MAX_TARGET),
             "line": bought_line, "line_gaps": len(premium), "cap": int(cap),
-            "surge_skipped": skipped, "surged": len(surge)}
+            "surge_skipped": skipped, "surged": len(surge), "short_lived_skipped": sorted(short)}
     return {"buy": buy}, info
 
 

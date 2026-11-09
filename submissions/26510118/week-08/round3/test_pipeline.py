@@ -461,6 +461,14 @@ def test_restock(fake: Fake):
     old = [u for u in shelf if u["sku"] != PAKIMCHI] + [unit_row("u-near", PAKIMCHI, 9000, 10)]
     out, _ = restock.plan(inv(old), CATALOG, DEMAND, {}, [], [], rules, NOW)
     check("food with under a day left does not count: a fresh one is bought", out["buy"] == [{"sku": PAKIMCHI, "qty": 1}], out)
+    lived = dict(CATALOG, Gsauce001=dict(CATALOG[KIMCHI], sku="Gsauce001", name="덮밥 소스", shelf_hours=24),
+                 Gdate0001=dict(CATALOG[KIMCHI], sku="Gdate0001", name="건대추", shelf_hours=48))
+    both = [{"sku": "Gsauce001", "ts": NOW - H}] * 6 + [{"sku": "Gdate0001", "ts": NOW - H}] * 6
+    out, info = restock.plan(inv(shelf, balance=20_000_000), lived, DEMAND, {}, both, [], rules, NOW)
+    got = {b["sku"] for b in out["buy"]}
+    check("11/10: food whose whole shelf life is 36 h or less is bought by no path, even after it sold (a 24 h sauce arrives "
+          "on clearance: 1,469 sold in 48 h, none at its price, -4.45M); a 48 h one still is",
+          "Gsauce001" not in got and "Gdate0001" in got and info["short_lived_skipped"] == ["Gsauce001"], (out["buy"], info.get("short_lived_skipped")))
     heavy = shelf + [unit_row(f"u-h{i}", BED, 200_000) for i in range(250)]                 # 50M held, 4.9M cash
     out, _ = restock.plan(inv(heavy), CATALOG, DEMAND, {}, [], [{"sku": WATER, "ts": NOW - H}], rules, NOW)
     check("stock at the cap (90% of a 55M book, over the 40M floor): buys nothing", out["buy"] == [], out)
