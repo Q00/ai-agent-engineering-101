@@ -64,6 +64,8 @@ class StrategyTests(unittest.TestCase):
   self.assertEqual(result['products']['x']['review_average_stars'],5.0)
   self.assertEqual(result['buyers']['alice']['skus'][0]['verified_review_count'],1)
   self.assertEqual(result['buyers']['alice']['skus'][0]['verified_review_average'],5.0)
+  self.assertEqual(result['products']['x']['verified_buyer_review_count'],1)
+  self.assertEqual(result['products']['x']['verified_buyer_review_average'],5.0)
   self.assertEqual(result['review_evidence']['verified_buyer_product_reviews'],1)
   self.assertEqual(result['review_evidence']['untrusted_ambiguous_or_unmatched_reviews_ignored'],1)
   self.assertEqual(result['forum_evidence']['untrusted_or_unverified_posts_ignored'],1)

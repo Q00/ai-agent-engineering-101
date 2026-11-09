@@ -150,6 +150,12 @@ def build_buyer_preferences(catalog,trades,shops,forum,alive_buyers=(),now=None,
             'forum_verified_refs':b['forum_verified_refs'],
             'stated_min_hours':sorted(set(b['stated_min_hours']))[-3:]}
     candidates={r['sku'] for r in recent};reviews=_review_evidence(catalog,shops,candidates)
+    buyer_review_summary={}
+    for buyer in grouped.values():
+        for sku,data in buyer['skus'].items():
+            if not data['review_count']:continue
+            row=buyer_review_summary.setdefault(sku,{'count':0,'stars':0.0,'buyers':0})
+            row['count']+=data['review_count'];row['stars']+=data['review_stars'];row['buyers']+=1
     product_sales={}
     for row in recent:
         if row.get('ts',0)<now-21600:continue
@@ -159,7 +165,11 @@ def build_buyer_preferences(catalog,trades,shops,forum,alive_buyers=(),now=None,
         'distinct_buyers_6h':len(product_sales.get(sku,{}).get('buyers',set())),
         'review_count':reviews.get(sku,{}).get('count',0),
         'review_average_stars':reviews.get(sku,{}).get('average'),
-        'review_distinct_shops':reviews.get(sku,{}).get('shops',0)} for sku in candidates}
+        'review_distinct_shops':reviews.get(sku,{}).get('shops',0),
+        'verified_buyer_review_count':buyer_review_summary.get(sku,{}).get('count',0),
+        'verified_buyer_reviewers':buyer_review_summary.get(sku,{}).get('buyers',0),
+        'verified_buyer_review_average':round(buyer_review_summary[sku]['stars']/buyer_review_summary[sku]['count'],3)
+            if buyer_review_summary.get(sku,{}).get('count') else None} for sku in candidates}
     return {'version':2,'generated_at':now,'window_hours':PREFERENCE_WINDOW//3600,
         'buyers':buyers,'products':products,
         'forum_evidence':{'posts_observed':len(posts),'verified_buyer_posts':verified_posts,
@@ -194,11 +204,12 @@ def write_buyer_preferences(state,intel,catalog,shops=None,board=None,forum=None
 
 def rank_products(catalog, trades, shops, own_name='25512088', local_demand=None,
                   own_signals=None, alive_buyers=None, now=None, goods_hazard=.15,
-                  hazard_basis='conservative-unmeasured'):
+                  hazard_basis='conservative-unmeasured',buyer_review_preferences=None):
     """Version-3 evidence TOP10: likelihood x net contribution, never price alone."""
     now=time.time() if now is None else now
     local_demand=local_demand or {}
     own_signals=own_signals or {}
+    buyer_review_preferences=buyer_review_preferences or {}
     alive_buyers=set(alive_buyers or [])
     history=[]
     for raw in trades:
@@ -239,7 +250,7 @@ def rank_products(catalog, trades, shops, own_name='25512088', local_demand=None
             same_units[sku]=same_units.get(sku,0)+qty
             same_vendors.setdefault(sku,set()).add(shop.get('url',shop.get('name')))
             listed.append((sku,qty,shop.get('url',shop.get('name'))))
-    candidates=set(exact)|set(local_demand)|set(own_signals.get('sku_6h',{}))
+    candidates=set(exact)|set(local_demand)|set(own_signals.get('sku_6h',{}))|set(buyer_review_preferences)
     for row in history:
         cat=catalog.get(row.get('sku'),{}).get('category')
         if cat in category_preferences:candidates.add(row['sku'])
@@ -287,6 +298,7 @@ def rank_products(catalog, trades, shops, own_name='25512088', local_demand=None
                 mean_cost=cost,net_estimate=net,hazard_probability=hazard,
                 hazard_basis='food-conservative' if product.get('kind')=='food' else hazard_basis))
         review=reviews.get(sku,{'count':0,'average':None,'shops':0})
+        verified_review=buyer_review_preferences.get(sku,{})
         evidence=(len(one_hour)*2+len(observed)+len(active_6h)*1.5+
                   min(inquiries,10)*.35+min(rejected,10)*.5+min(len(category_buyers),10)*.25+
                   min(len(active_preference_buyers),20)*1.5+min(preference_repeat_signals,30)*.25+
@@ -295,7 +307,10 @@ def rank_products(catalog, trades, shops, own_name='25512088', local_demand=None
         likelihood=min(.95,evidence/(evidence+4+competition*.15)) if evidence else 0
         contribution=max(0,expected)
         review_factor=(1+(review['average']-3)/20*min(1,review['count']/5)) if review['average'] is not None else 1
-        score=likelihood*contribution/max(1,product['list_price']*.75)*review_factor
+        verified_average=verified_review.get('verified_buyer_review_average')
+        verified_count=verified_review.get('verified_buyer_review_count',0)
+        verified_factor=(1+(verified_average-3)/40*min(1,verified_count/5)) if verified_average is not None else 1
+        score=likelihood*contribution/max(1,product['list_price']*.75)*review_factor*verified_factor
         rows.append(dict(version=3,sku=sku,name=product.get('name',sku),category=cat,
             sales_1h=len(one_hour),sales_6h=len(observed),distinct_buyers_1h=len(buyers_1h),
             distinct_buyers_6h=len(buyers_6h),alive_recent_buyers_6h=len(active_6h),
@@ -304,6 +319,9 @@ def rank_products(catalog, trades, shops, own_name='25512088', local_demand=None
             preference_history_hours=PREFERENCE_WINDOW//3600,
             review_count=review['count'],review_average_stars=review['average'],
             review_distinct_shops=review['shops'],review_factor=round(review_factor,4),
+            verified_buyer_review_count=verified_count,
+            verified_buyer_review_average=verified_average,
+            verified_buyer_review_factor=round(verified_factor,4),
             buyer_identity_coverage=sum(bool(r.get('buyer')) for r in observed),
             own_order_mentions_6h=local_demand.get(sku,0),own_inquiries_6h=inquiries,
             own_stockouts_6h=rejected,own_orders_bias='personal evidence only; not purchasing obligations',
@@ -367,11 +385,12 @@ def snapshot(state,catalog,opens_at,market):
         alive={r.get('name') for r in board.get('buyers',[]) if r.get('alive') is True}
         review_rows=fetch_shop_reviews(state,market,list(review_shops.values()),board.get('round',3))
         preference_shops=list(review_shops.values())
-        write_buyer_preferences(state,intel,catalog,preference_shops,board,
+        preference_snapshot=write_buyer_preferences(state,intel,catalog,preference_shops,board,
                                 read_json(Path(state)/'forum.json',[]),reviews=review_rows)
         goods_hazard,hazard_basis=own_goods_hazard(board)
         top=rank_products(catalog,rows,shop_rows,local_demand=demand,own_signals=own_signals,
-                          alive_buyers=alive,goods_hazard=goods_hazard,hazard_basis=hazard_basis)
+                          alive_buyers=alive,goods_hazard=goods_hazard,hazard_basis=hazard_basis,
+                          buyer_review_preferences=preference_snapshot.get('products',{}))
         feedback=[]
         buyer_db=Path(state)/'buyer.sqlite3'
         if buyer_db.exists():
