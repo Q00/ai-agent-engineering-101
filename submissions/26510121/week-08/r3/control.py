@@ -75,6 +75,11 @@ def update(journal, config=None, now=None, force=False):
     rules = journal.get('market_rules', {})
     rules_ok = rules.get('compatible') is True and 0 <= now-rules.get('at',0) < 7200
     fresh = 0 <= now-journal.get('board_checked_at', 0) < 300
+    if (cfg.get('shop_championship_enabled') and fresh and health and
+            now-health.get('checked_at',0)>=120 and own.get('alive') is True and
+            (own.get('card') or {}).get('url')):
+        from .transport_health import refresh
+        health=refresh(journal,own,now) or health
     healthy = not health or health.get('status')=='healthy' and 0<=now-health.get('checked_at',0)<120
     drawdown = max(0, peak-current_book)
     breached = drawdown>max(500000,abs(peak)*.15)
