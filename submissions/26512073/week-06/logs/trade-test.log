@@ -1,0 +1,102 @@
+# week-06 trade test, kit v1, 2026-10-17T04:56:48+00:00
+harness: Codex CLI, gpt-6.1-sol
+
+## seller tests: .venv\Scripts\python.exe seller.py --port 61467
+  PASS  seller_card #1: name='Enkhtulga Shop' binding=JSONRPC version=1.0 skills=1
+
+### seller_deal #1: lamp, kit budget 120, reserve 100
+    -> SendMessage "I want to buy a lamp"
+    <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130
+    -> SendMessage "60" taskId=a70c1b9c
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 100
+    -> SendMessage "100" taskId=a70c1b9c
+    <- TASK_STATE_COMPLETED | Deal: lamp at 100
+       artifact receipt [{"seller": "Enkhtulga Shop", "price": 100.0, "item": "lamp"}]
+  PASS  seller_opens #1: first message -> TASK_STATE_INPUT_REQUIRED, ask 130
+  PASS  seller_deal #1: TASK_STATE_COMPLETED, receipt price 100.0, asks [130, 100]
+
+### seller_terminal: one more message to the finished task
+    -> SendMessage "110" taskId=a70c1b9c
+    <- error -32004 Task a70c1b9c-f7ab-44a6-a008-2c074710d966 is in terminal state: TASK_STATE_COMPLETED
+  PASS  seller_terminal #1: error returned
+
+### seller_deal #2: lamp, kit budget 120, reserve 100
+    -> SendMessage "I want to buy a lamp"
+    <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130
+    -> SendMessage "60" taskId=a5831784
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 100
+    -> SendMessage "100" taskId=a5831784
+    <- TASK_STATE_COMPLETED | Deal: lamp at 100
+       artifact receipt [{"seller": "Enkhtulga Shop", "price": 100.0, "item": "lamp"}]
+  PASS  seller_deal #2: TASK_STATE_COMPLETED, receipt price 100.0, asks [130, 100]
+
+### seller_deal #3: lamp, kit budget 120, reserve 100
+    -> SendMessage "I want to buy a lamp"
+    <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130
+    -> SendMessage "60" taskId=b1a211dc
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 100
+    -> SendMessage "100" taskId=b1a211dc
+    <- TASK_STATE_COMPLETED | Deal: lamp at 100
+       artifact receipt [{"seller": "Enkhtulga Shop", "price": 100.0, "item": "lamp"}]
+  PASS  seller_deal #3: TASK_STATE_COMPLETED, receipt price 100.0, asks [130, 100]
+
+### seller_holds_reserve #1: bookshelf, kit budget 230, reserve 260
+    -> SendMessage "I want to buy a bookshelf"
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 338
+    -> SendMessage "140" taskId=96fa7b59
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 260
+    -> SendMessage "170" taskId=96fa7b59
+    <- TASK_STATE_REJECTED | No deal.
+  PASS  seller_holds_reserve #1: TASK_STATE_REJECTED, asks [338, 260]
+
+### seller_holds_reserve #2: bookshelf, kit budget 230, reserve 260
+    -> SendMessage "I want to buy a bookshelf"
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 338
+    -> SendMessage "140" taskId=f2e767bb
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 260
+    -> SendMessage "170" taskId=f2e767bb
+    <- TASK_STATE_REJECTED | No deal.
+  PASS  seller_holds_reserve #2: TASK_STATE_REJECTED, asks [338, 260]
+
+### seller_holds_reserve #3: bookshelf, kit budget 230, reserve 260
+    -> SendMessage "I want to buy a bookshelf"
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 338
+    -> SendMessage "140" taskId=2e31563d
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 260
+    -> SendMessage "170" taskId=2e31563d
+    <- TASK_STATE_REJECTED | No deal.
+  PASS  seller_holds_reserve #3: TASK_STATE_REJECTED, asks [338, 260]
+
+## buyer tests: your buyer against the kit's rule-based seller
+
+### buyer_deal #1: .venv\Scripts\python.exe buyer.py --url http://127.0.0.1:52729 --item lamp --budget 120
+    kit seller saw: offers [100], deals [100], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+  PASS  buyer_deal #1: deals [100] (budget 120)
+  PASS  buyer_protocol_deal #1: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1
+
+### buyer_deal #2: .venv\Scripts\python.exe buyer.py --url http://127.0.0.1:57063 --item lamp --budget 120
+    kit seller saw: offers [100], deals [100], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+  PASS  buyer_deal #2: deals [100] (budget 120)
+  PASS  buyer_protocol_deal #2: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1
+
+### buyer_deal #3: .venv\Scripts\python.exe buyer.py --url http://127.0.0.1:57086 --item lamp --budget 120
+    kit seller saw: offers [100], deals [100], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+  PASS  buyer_deal #3: deals [100] (budget 120)
+  PASS  buyer_protocol_deal #3: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1
+
+### buyer_holds_budget #1: .venv\Scripts\python.exe buyer.py --url http://127.0.0.1:57107 --item bookshelf --budget 230
+    kit seller saw: offers [180, 205, 220, 230], deals [], canceled 1, continued 4, posts without A2A-Version 1.0: 0
+  PASS  buyer_holds_budget #1: deals [] (budget 230 < reserve 260)
+  PASS  buyer_protocol_holds_budget #1: posts 6, without A2A-Version 1.0 0, follow-ups with taskId 4
+
+### buyer_holds_budget #2: .venv\Scripts\python.exe buyer.py --url http://127.0.0.1:57201 --item bookshelf --budget 230
+    kit seller saw: offers [170, 200, 220, 230], deals [], canceled 1, continued 4, posts without A2A-Version 1.0: 0
+  PASS  buyer_holds_budget #2: deals [] (budget 230 < reserve 260)
+  PASS  buyer_protocol_holds_budget #2: posts 6, without A2A-Version 1.0 0, follow-ups with taskId 4
+
+### buyer_holds_budget #3: .venv\Scripts\python.exe buyer.py --url http://127.0.0.1:59585 --item bookshelf --budget 230
+    kit seller saw: offers [170, 200, 220, 230], deals [], canceled 1, continued 4, posts without A2A-Version 1.0: 0
+  PASS  buyer_holds_budget #3: deals [] (budget 230 < reserve 260)
+  PASS  buyer_protocol_holds_budget #3: posts 6, without A2A-Version 1.0 0, follow-ups with taskId 4
+
+21/21 passed -> PASS
