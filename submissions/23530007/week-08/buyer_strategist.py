@@ -229,8 +229,51 @@ def evidence(mem, b, auto, params):
             "our_shop_sells_at_24h": shop_prices(now),
             "market_picture": market_picture(),
             "ab_tests": ab_tests(), "buy_health": buy_health(now),
+            "saved_mix_vs_peers_6h": saved_mix(r6),
             "from_operator": shop.read(OPERATOR_NOTE, {}).get("note") or None,
             "your_watch_list": mem.d["working"].get("watch", [])}
+
+
+def saved_mix(r6):
+    """User 11-09: 'keep catching this and keep saved high; that is what the agent is for.' Saved per deal split
+    into food and goods for us, the market and every buyer with 100+ settles in the 6 h market window (breaks -1,
+    refunded +1), the market's per-deal saved by hour (is everyone getting cheaper?), and our orders by kind with
+    how they ended (why is our food share what it is?). On 11-09 our .371 = food 49% at .413 + goods 51% at .329,
+    while the buyers just above ran .38-.41: half of the gap was the mix, half the goods price."""
+    try:
+        from collections import defaultdict
+        from buyer_value import _saved
+        st = shop.read(HERE / ".market" / "shop_value.json", {})
+        deals, broken = st.get("deals") or [], st.get("broken") or {}
+        g = defaultdict(lambda: {"food": [], "goods": []})
+        hours = defaultdict(list)
+        t1 = max((d["ts"] for d in deals), default=0)
+        for d in deals:
+            v = _saved(d, broken)
+            k = "goods" if d.get("goods") else "food"
+            g[d.get("buyer")][k].append(v)
+            g["*market*"][k].append(v)
+            hours[int((t1 - d["ts"]) // 3600)].append(v)
+
+        def row(x):
+            f, go = x["food"], x["goods"]
+            n = len(f) + len(go)
+            m = lambda v: round(sum(v) / len(v), 3) if v else None
+            return {"n": n, "food_share": round(len(f) / n, 2), "food": m(f), "goods": m(go),
+                    "goods_breaks": sum(1 for v in go if v == -1), "all": m(f + go)}
+        peers = {b: row(x) for b, x in g.items() if b and len(x["food"]) + len(x["goods"]) >= 100}
+        ours = peers.get("yms979") or {}
+        top = dict(sorted(peers.items(), key=lambda kv: -(kv[1]["all"] or 0))[:14])
+        orders = defaultdict(lambda: defaultdict(int))
+        for t in r6:
+            orders[t.get("kind") or "?"][str(t.get("outcome"))[:20]] += 1
+        return {"ours": ours, "market": peers.get("*market*"), "best_buyers": top,
+                "market_per_deal_by_hours_ago": {h: round(sum(v) / len(v), 3) for h, v in sorted(hours.items())},
+                "our_orders_by_kind_6h": {k: dict(v) for k, v in orders.items()},
+                "read": "our all = food_share x food + (1 - food_share) x goods; compare both terms with the buyers "
+                        "just above us and say which one is the gap now"}
+    except Exception as e:
+        return {"error": repr(e)}
 
 
 def ab_tests():
@@ -330,6 +373,12 @@ move and rule out the others: the orders (kind/category mix the market sends), p
 rivals'), terms (grade, warranty, shelf life), our rules (skip bars, caps, the arms in "ab_tests"), plumbing
 ("buy_health": unpaid, refused, too short) and bad data. The A/B arms are yours now: widen an arm that wins on
 score per order, cut one that loses, and say why from "ab_tests".
+SAVED PER DEAL (user, 11-09: 'keep catching this and keep saved high; that is what the agent is for'): every
+run read "saved_mix_vs_peers_6h" before anything else on saved. Our saved per deal = food share x food saved +
+goods share x goods saved. Compare each term with the buyers just above us and the best buyers, say which term is
+our gap now (mix or the goods/food price), find its cause (the orders we get, skips, lost food orders, caps, shops
+chosen) and move the knob that closes it. Watch the market's per-deal saved by hour: when the whole market gets
+cheaper we must get cheaper faster, since saved is scored by rank. Do not wait for the operator to point it out.
 THE RACE (user, 11-08): what moves our buyer rank is the class buyers just above and below us. Read the curator's
 WATCH.buyer_race (their buyer score, saved, per-deal saved, deals/h, what they buy and where) and say who we pass
 next, who is closing on us, and what they do that we could do.
