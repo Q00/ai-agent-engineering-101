@@ -2,6 +2,7 @@
 import json
 from pathlib import Path
 import tempfile
+import time
 import unittest
 
 from market_intel import Intel
@@ -12,6 +13,47 @@ from seller_strategy import sale_quote
 
 
 class ShopDiscoveryTests(unittest.TestCase):
+    def test_discovery_matches_checkout_preference_price_and_protected_floor(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            unit = dict(unit='u', sku='sku', name='chair', grade='B', kind='goods',
+                        list_price=20000, cost=8000, expires_at=None)
+            (root/'inventory.json').write_text(json.dumps(dict(round=3, units=[unit])))
+            intel = Intel(root)
+            program = Program(root)
+            try:
+                baseline = sale_quote(unit, {}, program, intel, record=False)
+                path = root/'buyer-preferences.json'
+                for target, age in ((12000, 0), (1, 0), (12000, 181)):
+                    with self.subTest(target=target, age=age):
+                        preferences = dict(version=3, generated_at=time.time()-age,
+                            buyers={str(i): dict(active=True, skus=[dict(
+                                sku='sku', median_paid=target, price_samples=3)])
+                                for i in range(3)})
+                        path.write_text(json.dumps(preferences))
+                        checkout = sale_quote(unit, {}, program, intel, record=False,
+                                              buyer_preferences=preferences)
+                        preview = offers(root, program, intel, limit=1)[0]
+                        self.assertEqual(preview['price'], checkout['price'])
+                        self.assertEqual(preview['warranty_hours'], checkout['warranty_hours'])
+                        self.assertGreaterEqual(preview['price']*.85,
+                                                unit['cost']*1.09)
+                        if age == 0:
+                            self.assertLess(preview['price'], baseline['price'])
+                        else:
+                            self.assertEqual(preview['price'], baseline['price'])
+                for content in (None, '{invalid'):
+                    if content is None:
+                        path.unlink()
+                    else:
+                        path.write_text(content)
+                    self.assertEqual(offers(root, program, intel)[0]['price'], baseline['price'])
+                self.assertEqual(intel.db.execute(
+                    "SELECT COUNT(*) FROM decisions WHERE role='seller_quote'").fetchone()[0], 0)
+            finally:
+                program.close()
+                intel.close()
+
     def test_procurement_does_not_value_six_hour_stock_at_long_warranty_prices(self):
         now = 100000
         catalog = {'sku': dict(kind='goods', list_price=100000, category='chairs')}
