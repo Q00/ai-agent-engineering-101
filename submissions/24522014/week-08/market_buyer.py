@@ -294,12 +294,17 @@ def trade_attempt(args, order, catalog, pick):
     standing_arm = standing_ask.arm(order.get("order"))
     if standing_arm == "standing_ask" and support_decision.get("fast_rules"):
         trade_options["standing_ask"] = {"order_budget": args.budget}
-    message_arm = None
+    message_arm = lower_arm = None
     if order.get("kind") == "food":
         import first_message_ab
         message_arm = first_message_ab.arm(order.get("order"), first_message_ab.load())
         if message_arm == "conditions":
             trade_options["first_message"] = first_message_ab.text(selected_item, accept_conditions)
+            # Lower-grade A/B (its own salt): one sentence naming exactly the lower grades this order accepts, after any C drop above.
+            lower_arm = {"conditions": "lower_grade", "control": "control"}.get(first_message_ab.arm(order.get("order"), first_message_ab.load_lower()))
+            sentence = first_message_ab.lower_grade_sentence(accept_conditions) if lower_arm == "lower_grade" else None
+            if sentence:
+                trade_options["first_message"] += " " + sentence
     goods_arm = None
     if order.get("kind") == "goods":
         import first_message_ab
@@ -309,6 +314,7 @@ def trade_attempt(args, order, catalog, pick):
             trade_options["goods_grade_sentence"] = sentence
     result, record = trade(shop, selected_item, pick["budget"], **trade_options)
     record["first_message_arm"] = message_arm
+    record["lower_grade_arm"] = lower_arm
     record["goods_message_arm"] = goods_arm
     record["standing_ask_arm"] = standing_arm
     record["food_c_arm"] = pick.get("food_c_arm")

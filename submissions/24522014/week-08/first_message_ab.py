@@ -24,6 +24,8 @@ def _valid(section):
 
 FOOD_SECTION = "first_message_conditions"
 GOODS_SECTION = "goods_first_message_grades"
+# Approved 11-09: food orders that send the conditions message; its own salt (lg1).
+LOWER_SECTION = "food_lower_grade_sentence"
 
 
 def _load(path, name):
@@ -42,6 +44,11 @@ def load(path=CONFIG):
 def load_goods(path=CONFIG):
     """Goods test (grade sentence), its own section and salt; anything missing, unreadable or malformed means off."""
     return _load(path, GOODS_SECTION)
+
+
+def load_lower(path=CONFIG):
+    """Food lower-grade sentence test, its own section and salt; anything missing, unreadable or malformed means off."""
+    return _load(path, LOWER_SECTION)
 
 
 def arm(order_id, settings):
@@ -86,3 +93,11 @@ def goods_grade_sentence(accept):
     """The goods conditions arm's one added sentence, placed after "I want to buy {item}. "; None without grades."""
     grades = _grades(accept.get("grades")) if isinstance(accept, dict) else None
     return f"This order accepts grade {grades}. " if grades else None
+
+
+def lower_grade_sentence(accept):
+    """The lower-grade arm's one added sentence: it names exactly the grades below A that this order accepts, so it never
+    invites a quote the order would refuse; None when the order accepts no grade below A. A fact about our preference only."""
+    grades = accept.get("grades") if isinstance(accept, dict) else None
+    lower = _grades([g for g in grades if g != "A"]) if isinstance(grades, list) else None
+    return f"Grade {lower} is fine if it meets these conditions; price matters more to us than grade." if lower else None

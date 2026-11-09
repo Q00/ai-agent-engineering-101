@@ -153,7 +153,7 @@ class Wiring(unittest.TestCase):
         def fake_trade(shop_, item, budget, **options):
             seen.update(options)
             return {"shop": shop_["url"], "receipt": None, "stars": 3, "review": ""}, {"outcome": "no_deal"}
-        with patch.object(market, "trade", fake_trade), patch.object(ab, "load", lambda path=None: settings), \
+        with patch.object(market, "trade", fake_trade), patch.object(ab, "load", lambda path=None: settings), patch.object(ab, "load_lower", lambda path=None: dict(ab.DISABLED)), \
              patch.object(market, "remember", lambda *a, **k: None):
             _, record = market.trade_attempt(args, order, {}, pick)
         return seen, record
