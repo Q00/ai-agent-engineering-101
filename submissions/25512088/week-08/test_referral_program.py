@@ -191,6 +191,18 @@ class ReferralTests(unittest.TestCase):
         self.assertLess(post.index('GC clearance'),post.index('GA normal'))
         self.assertIn('정가 대비',post)
 
+    def test_seller_forum_excludes_food_with_under_six_hours_left(self):
+        inv={'round':3,'units':[
+            {'unit':'soon','sku':'SOON','name':'soon','grade':'C','kind':'food','cost':3000,
+             'list_price':10000,'expires_at':20000+5*3600},
+            {'unit':'goods','sku':'GOODS','name':'goods','grade':'C','kind':'goods','cost':3000,
+             'list_price':10000},
+        ]}
+        self.assertTrue(queue_post(self.program,self.tmp.name,inv,now=20000))
+        post=json.loads((Path(self.tmp.name)/'outbox.jsonl').read_text().splitlines()[0])['post']
+        self.assertIn('GOODS goods',post)
+        self.assertNotIn('SOON soon',post)
+
     def test_worker_replays_after_crash_without_double_award(self):
         self.program.put('cursor', 0)
         a, _, _ = self.buy('A')

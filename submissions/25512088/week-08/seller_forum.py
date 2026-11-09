@@ -21,6 +21,7 @@ SELLER_FORUM_INTERVAL_SECONDS = 4 * 60 * 60
 SELLER_FORUM_MAX_POSTS = 6
 SELLER_FORUM_POLICY = 'c-liquidation-v2'
 SELLER_FORUM_GUARD_ROLE = 'shop:c-liquidation-v2'
+MIN_PROMOTED_FOOD_HOURS = 6
 
 
 def fetch(base, path):
@@ -101,8 +102,9 @@ def recover_failed_sales(program, urls, state):
     return {'pending':len(pending),'rows':scanned,'released':released}
 
 
-def campaign_text(program, inventory, rotation=0):
+def campaign_text(program, inventory, rotation=0, now=None):
     from seller_strategy import sale_quote
+    now=time.time() if now is None else now
     p=program.p;units=inventory.get('units',[])
     promoting_c=any(u.get('grade')=='C' for u in units)
     title='C등급 실재고 할인' if promoting_c else '실재고 / 시장 인증서'
@@ -125,7 +127,7 @@ def campaign_text(program, inventory, rotation=0):
         listed=u.get('list_price') or q.get('base') or 0
         discount=round((1-q['price']/listed)*100) if listed else None
         if u.get('expires_at'):
-            condition=f"남은 기한 {max(0,int((u['expires_at']-time.time())/3600))}h"
+            condition=f"남은 기한 {max(0,int((u['expires_at']-now)/3600))}h"
         else:condition=f"보증 {q['warranty_hours']}h" if q.get('warranty_hours') else '보증 없음'
         saving=f" · 정가 대비 {discount}% 할인" if discount is not None else ''
         lines.append(f"{u['sku']} {u.get('name','')[:24]} · {u['grade']} · {q['price']:,}원{saving} · {condition} · 재고 {quantities.get(u.get('sku'),1)}")
@@ -140,6 +142,8 @@ def queue_post(program, state, inventory, now=None):
     held=program.reserved_units()
     available = [u for u in inventory.get('units', []) if u.get('unit') not in held and u.get('grade') != 'expired'
                  and (not u.get('expires_at') or u['expires_at'] > now)]
+    available = [u for u in available if not u.get('expires_at')
+                 or u['expires_at']-now >= MIN_PROMOTED_FOOD_HOURS*3600]
     if inventory.get('round', 0) < 3 or not available:
         return False
     day=int((now+9*3600)//86400)
@@ -160,7 +164,7 @@ def queue_post(program, state, inventory, now=None):
     # Prefer C liquidation with observed demand; do not burn six posts in the morning.
     available.sort(key=lambda u:(u.get('grade')!='C',order.get(u.get('sku'),10**6),
                                  u.get('expires_at') or float('inf'),-quantities.get(u.get('sku'),0),u.get('sku','')))
-    text=campaign_text(program,dict(inventory,units=available),rotation=count)
+    text=campaign_text(program,dict(inventory,units=available),rotation=count,now=now)
     guard=Control(state)
     try:
         allowed,_,_=guard.allow_publication(SELLER_FORUM_GUARD_ROLE,text,refs,now)
