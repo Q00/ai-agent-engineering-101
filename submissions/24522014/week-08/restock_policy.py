@@ -135,6 +135,9 @@ def plan(inventory, catalog, demand, sales, cursor=0, *, hints=None, now=None, i
         planned_units += 1
         trial_skus.append(pick["sku"])
     hi_planned, hi_taken = 0, []
+    # Held plus planned 1M+ stock at worst cost stays within the cap (12M at most).
+    hi_worst = sum((catalog.get(u.get("sku")) or {}).get("list_price", 0) * 0.75 * surge.get(u.get("sku"), 1) for u in units if is_hi(u.get("sku"))) if hb else 0
+    hi_cap = hb.get("max_worst_cost_total", 12000000) if hb else 0
     for sku in (sorted(hb["sales"], key=lambda s: (-hb["sales"][s], s)) if hb else ()):
         value = catalog.get(sku) or {}
         if hi_room <= 0:
@@ -148,13 +151,14 @@ def plan(inventory, catalog, demand, sales, cursor=0, *, hints=None, now=None, i
             continue
         carrying_cost = worst_cost * rate * 7
         qty = min(sku_limit(sku) - owned[sku] - planned[sku], hi_room, 1 if sku in surge else hi_room)
-        while qty > 0 and estimated + storage_reserve + qty*(worst_cost+carrying_cost) > budget:
+        while qty > 0 and (estimated + storage_reserve + qty*(worst_cost+carrying_cost) > budget or hi_worst + qty*worst_cost > hi_cap):
             qty -= 1
         if qty <= 0:
             continue
         planned[sku] += qty
         estimated += worst_cost * qty
         storage_reserve += carrying_cost * qty
+        hi_worst += worst_cost * qty
         hi_room -= qty
         hi_planned += qty
         hi_taken.append(sku)
@@ -201,7 +205,8 @@ def plan(inventory, catalog, demand, sales, cursor=0, *, hints=None, now=None, i
         if planned_units >= min(limits["max_units_per_run"], limits["max_total_units"] - counted):
             break
     buys = [{"sku": sku, "qty": qty} for sku, qty in planned.items()]
-    extra = {"hi_band": {"slots": hb["slots"], "held": reserved_held, "planned": hi_planned, "skus": hi_taken, "eligible": dict(hb["sales"])}} if hb else {}
+    extra = {"hi_band": {"slots": hb["slots"], "held": reserved_held, "planned": hi_planned, "skus": hi_taken, "eligible": dict(hb["sales"]),
+                         "worst_cost_total": round(hi_worst), "worst_cost_cap": hi_cap}} if hb else {}
     planned_units += hi_planned
     return buys, {"reason": "bounded_experiment", "budget": budget, **extra,
                   "strategy_version": runtime["version"], "strategy_experiment": runtime.get("experiment"),

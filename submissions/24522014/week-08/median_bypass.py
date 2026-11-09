@@ -30,7 +30,7 @@ def amount(value):
     return type(value) in (int, float) and math.isfinite(value) and value > 0
 
 
-def confirmed_counts(md, now):
+def confirmed_counts(md, now, window=WINDOW):
     """{sku: (completed sales, Book sum)} in (now - 24 h, now], or None when an offer file does not parse. Before, for the bypass: SKUs whose completed sales in (now - 24 h, now] number 3 or more with a positive Book sum.
     A SKU with any unreadable or incomplete record in the window goes back to the median test; an offer file that does not parse
     could name any SKU, so it sends every SKU back."""
@@ -47,7 +47,7 @@ def confirmed_counts(md, now):
         if type(expires) not in (int, float) or not math.isfinite(expires):
             broken.add(sku)
             continue
-        if expires + GRACE < now - WINDOW:
+        if expires + GRACE < now - window:
             continue  # could not have completed inside the window
         try:
             event = json.loads(task_file(md, "checkout-events", offer["task"]).read_text(encoding="utf8")) if isinstance(offer.get("task"), str) else None
@@ -65,7 +65,7 @@ def confirmed_counts(md, now):
         if type(at) not in (int, float) or not math.isfinite(at):
             broken.add(sku)
             continue
-        if not now - WINDOW < at <= now:
+        if not now - window < at <= now:
             continue
         if not (amount(offer.get("price")) and amount(offer.get("cost"))):
             broken.add(sku)

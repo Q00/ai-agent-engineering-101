@@ -38,7 +38,7 @@ def inventory(units=(), surge=None, balance=1000000000):
     return {"round": 3, "balance": balance, "start": 5000000, "storage_per_day": .01, "restock": {"open": True}, "units": list(units), "surge": surge or []}
 
 
-BAND = {"slots": 3, "min_list_price": 1000000, "sales": {"H": 2}}
+BAND = {"slots": 3, "min_list_price": 1000000, "sales": {"H": 2}, "max_worst_cost_total": 12000000}
 
 
 class Plan(unittest.TestCase):
@@ -111,6 +111,16 @@ class Plan(unittest.TestCase):
         buys, _ = self.plan(inventory(surge=[{"sku": "H", "factor": 1.1}]), BAND, intel=intel)
         self.assertEqual({b["sku"]: b["qty"] for b in buys}.get("H"), 1)
 
+    def test_the_worst_cost_of_held_and_planned_1m_stock_stays_under_its_cap(self):
+        # Worst cost of H is 1,500,000 a unit. A 4,000,000 cap leaves room for 2; one held H2 (1,500,000) leaves room for 1.
+        buys, why = self.plan(inventory(), {**BAND, "max_worst_cost_total": 4000000})
+        self.assertEqual({b["sku"]: b["qty"] for b in buys}.get("H"), 2)
+        self.assertEqual(why["hi_band"]["worst_cost_total"], 3000000)
+        buys, _ = self.plan(inventory([unit("H2", 1500000)]), {**BAND, "max_worst_cost_total": 4000000})
+        self.assertEqual({b["sku"]: b["qty"] for b in buys}.get("H"), 1)
+        buys, _ = self.plan(inventory([unit("H2", 1500000)] * 3), {**BAND, "slots": 10, "max_worst_cost_total": 4000000})
+        self.assertNotIn("H", {b["sku"] for b in buys})
+
     def test_the_per_sku_limit_holds(self):
         buys, _ = self.plan(inventory([unit("H", 1500000)]), {**BAND, "slots": 10})
         self.assertEqual({b["sku"]: b["qty"] for b in buys}.get("H"), 2)
@@ -120,31 +130,42 @@ class Settings(unittest.TestCase):
     def test_off_unless_valid(self):
         with TemporaryDirectory() as folder:
             path = Path(folder) / "h.json"
-            good = {"enabled": True, "slots": 10, "min_list_price": 1000000, "min_own_sales_24h": 1}
+            good = {"enabled": True, "slots": 10, "min_list_price": 1000000, "min_own_sales_24h": 1, "min_own_sales_window_hours": 72, "max_worst_cost_total": 12000000}
             path.write_text(json.dumps(good), encoding="utf-8")
-            self.assertEqual(hi_band.settings(path), {"slots": 10, "min_list_price": 1000000, "min_own_sales_24h": 1})
+            self.assertEqual(hi_band.settings(path), {"slots": 10, "min_list_price": 1000000, "min_own_sales_24h": 1, "window_hours": 72, "max_worst_cost_total": 12000000})
+            older = {k: v for k, v in good.items() if k != "min_own_sales_window_hours"}
+            path.write_text(json.dumps(older), encoding="utf-8")
+            self.assertEqual(hi_band.settings(path)["window_hours"], 24)
             for bad in ({**good, "enabled": "true"}, {**good, "enabled": False}, {**good, "slots": 11}, {**good, "slots": 0}, {**good, "min_list_price": 999999},
-                        {**good, "min_own_sales_24h": 0}, {**good, "slots": 10.0}):
+                        {**good, "min_own_sales_24h": 0}, {**good, "slots": 10.0}, {**good, "min_own_sales_window_hours": 73}, {**good, "min_own_sales_window_hours": 23},
+                        {**good, "max_worst_cost_total": 12000001}, {k: v for k, v in good.items() if k != "max_worst_cost_total"}):
                 path.write_text(json.dumps(bad), encoding="utf-8")
                 self.assertIsNone(hi_band.settings(path), bad)
             self.assertIsNone(hi_band.settings(Path(folder) / "missing.json"))
 
     def test_the_shipped_setting(self):
         value = json.loads(hi_band.CONFIG.read_text(encoding="utf-8"))
-        self.assertEqual((value["slots"], value["min_list_price"], value["min_own_sales_24h"]), (10, 1000000, 1))
+        self.assertEqual((value["slots"], value["min_list_price"], value["min_own_sales_24h"], value["min_own_sales_window_hours"], value["max_worst_cost_total"]), (10, 1000000, 1, 72, 12000000))
         self.assertIs(value["enabled"], False)
 
     def test_for_run_keeps_1m_goods_with_profitable_recent_sales(self):
         counts = {"H": (2, 500), "H2": (1, -10), "c0": (5, 100), "H3": (1, 1)}
         cat = {**catalog(), "H3": {"category": "cat", "kind": "food", "list_price": HI_LIST}}
-        with patch.object(hi_band, "settings", return_value={"slots": 10, "min_list_price": 1000000, "min_own_sales_24h": 1}), \
-                patch.object(mb, "confirmed_counts", return_value=counts):
-            self.assertEqual(hi_band.for_run(Path("."), NOW, cat), {"slots": 10, "min_list_price": 1000000, "sales": {"H": 2}})
+        chosen = {"slots": 10, "min_list_price": 1000000, "min_own_sales_24h": 1, "window_hours": 72, "max_worst_cost_total": 12000000}
+        with patch.object(hi_band, "settings", return_value=chosen), patch.object(mb, "confirmed_counts", return_value=counts) as counted:
+            self.assertEqual(hi_band.for_run(Path("."), NOW, cat), {"slots": 10, "min_list_price": 1000000, "sales": {"H": 2}, "max_worst_cost_total": 12000000})
+        self.assertEqual(counted.call_args.kwargs.get("window"), 72 * 3600)
         with patch.object(hi_band, "settings", return_value=None):
             self.assertIsNone(hi_band.for_run(Path("."), NOW, cat))
-        with patch.object(hi_band, "settings", return_value={"slots": 10, "min_list_price": 1000000, "min_own_sales_24h": 1}), \
-                patch.object(mb, "confirmed_counts", side_effect=OSError("x")):
+        with patch.object(hi_band, "settings", return_value=chosen), patch.object(mb, "confirmed_counts", side_effect=OSError("x")):
             self.assertIsNone(hi_band.for_run(Path("."), NOW, cat))
+
+    def test_the_count_window_is_a_parameter_and_the_bypass_keeps_24_h(self):
+        import inspect
+        self.assertEqual(inspect.signature(mb.confirmed_counts).parameters["window"].default, 86400)
+        with patch.object(mb, "confirmed_counts", return_value={}) as counted:
+            mb.confirmed_skus(Path("."), NOW)
+        self.assertNotIn("window", counted.call_args.kwargs)
 
     def test_the_bypass_set_is_unchanged_by_the_shared_count(self):
         with patch.object(mb, "confirmed_counts", return_value={"a": (3, 1), "b": (2, 5), "c": (4, 0)}):
