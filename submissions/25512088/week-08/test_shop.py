@@ -7,10 +7,28 @@ import unittest
 from market_intel import Intel
 from seller_ledger import Program
 from seller_offers import offers
+from seller_market import rank_products
 from seller_strategy import sale_quote
 
 
 class ShopDiscoveryTests(unittest.TestCase):
+    def test_procurement_does_not_value_six_hour_stock_at_long_warranty_prices(self):
+        now = 100000
+        catalog = {'sku': dict(kind='goods', list_price=100000, category='chairs')}
+        short = [dict(sku='sku', grade=grade, price=50000, warranty=6,
+                      honest=1, ts=now-10, buyer='short-'+grade) for grade in 'ABC']
+        premium = [dict(row, price=150000, warranty=hours, buyer=f'premium-{hours}-{i}')
+                   for hours in (24, 48, 72) for i, row in enumerate(short)]
+        # Premium cohorts must not turn unprofitable six-hour stock into a buy.
+        self.assertEqual(rank_products(catalog, short+premium, [], now=now), [])
+        self.assertEqual(rank_products(catalog, premium, [], now=now), [])
+
+        profitable = [dict(row, price=95000) for row in short]
+        baseline = rank_products(catalog, profitable, [], now=now)
+        self.assertEqual(len(baseline), 1)
+        self.assertEqual(rank_products(catalog, profitable+premium, [], now=now), baseline)
+        self.assertEqual(baseline[0]['exact_grade_warranty_trades'], 3)
+
     def test_discovery_does_not_inflate_inquiries_or_trigger_conversion_discount(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

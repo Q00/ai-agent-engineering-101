@@ -265,7 +265,9 @@ def rank_products(catalog, trades, shops, own_name='25512088', local_demand=None
         row=dict(raw);product=catalog.get(row.get('sku'),{})
         kind=product.get('kind')
         condition_ok=(kind=='food' and isinstance(row.get('hours'),(int,float)) and row['hours']>2) or \
-                     (kind=='goods' and row.get('warranty',0)>=6)
+                     (kind=='goods' and row.get('warranty',0)==6)
+        # New goods start with a six-hour warranty. Longer-warranty prices
+        # and volumes do not establish demand for that procurement cohort.
         if kind not in ('goods','food') or not condition_ok or not row.get('honest'):continue
         # A recent purchase is activity evidence even if the board has already
         # marked that buyer offline. Missing buyer identity is never invented.
