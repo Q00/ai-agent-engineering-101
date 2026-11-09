@@ -73,6 +73,7 @@ HIGH_A_MIN = 0.72            # Claude (2026-11-09 20:22, hourly check): high tie
 # My A units cost 0.55-0.75 of list (random), the floor is cost, and 1M+ A sold at 0.65-0.75: G24f5f979 (market A 0.676) had 121 offers
 # and 1 deal against my 0.733 floor. Below 0.72 a new dear unit has almost no margin and about 1/3 comes as grade C
 A_MIN_DEALS = 5              # grade A settles seen (customers.py sku_a) before a high-tier SKU is judged; until then it is not bought
+C_EXEMPT_QTY = 2             # units a run for a high-tier SKU exempt from C_STOP (no A or B in stock, high_ok)
 MEMORY = Path("restock_memory.json")
 
 
@@ -145,8 +146,15 @@ def focus_lines(inv, catalog, focus_cats, cu):
     c_full = {s for s, n in c_have.items() if n >= C_STOP}
     for s, n in c_have.items():
         have[s] = have.get(s, 0) + n // 2
+    # Claude (2026-11-09 23:22, hourly check): the market's top SKU G00327e80 (25.7 deals/h, grade A at 0.734 of list) held only
+    # 3 grade C here, so C_STOP kept A out; 7 C deals agreed in 3 h, none settled. A high-tier SKU that passes high_ok and holds
+    # no A or B goods is exempt from C_STOP, at most C_EXEMPT_QTY units a run
+    ab = {u["sku"] for u in inv["units"] if u.get("kind") == "goods" and u.get("grade") in ("A", "B")}
+    exempt = {s for s in c_full if s not in ab and s in catalog and catalog[s]["list_price"] > TIER_HIGH
+              and high_ok(cu.get("sku_a", {}), s)}
+    c_full -= exempt
     if use_recent and SPREAD:
-        return spread_lines(recent, catalog, shops, total, have, c_full, balance, cu.get("sku_a", {}))
+        return [(s, min(q, C_EXEMPT_QTY) if s in exempt else q) for s, q in spread_lines(recent, catalog, shops, total, have, c_full, balance, cu.get("sku_a", {}))]
     lines = []
     for cat in focus_cats:
         skus = recent.get(cat, {}) if use_recent else cu.get("sku_buys", {}).get(cat, {})
