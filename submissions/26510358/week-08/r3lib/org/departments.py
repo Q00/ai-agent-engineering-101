@@ -196,25 +196,33 @@ def ceo_tick(mem, args, call):
     return {"buy": lines}
 
 
+SHOP_WEIGHTS = {"book": 0.5, "revenue": 0.3, "stars": 0.2}                   # /rules, patch 3.3
+BUYER_WEIGHTS = {"saved": 0.5, "forum": 0.3, "deals": 0.1, "posts": 0.1}       # /rules, patches 3.4 and 3.5
+
+
 def ceo_kpi(mem, args, call, now=None):
     """Board percentiles of our shop and buyer plus each department's report; appended to logs/r3/kpi.jsonl."""
     now = now or time.time()
     board = market.get_json("/api/board") or {}
     snap = {"ts": round(now)}
 
-    def pct(rows, keys):
+    def pct(rows, weights, raw=()):
+        """Our value and percentile per scored field, and parts = weight x percentile (x the value itself for
+        fields in raw), so a fall in ALL can be read off the part that moved."""
         rows = [r for r in rows or [] if r.get("deals")]
         me = next((r for r in rows if r.get("name") in config.MY_NAMES), None)
         if not me:
             return None
-        out = {"all": me.get("all")}
-        for k in keys:
+        out, parts = {"all": me.get("all")}, {}
+        for k, w in weights.items():
             vals = [r.get(k) or 0 for r in rows]
             out[k] = {"value": me.get(k), "pct": round(sum(v < (me.get(k) or 0) for v in vals) / len(vals), 3)}
+            parts[k] = round(w * ((me.get(k) or 0) if k in raw else out[k]["pct"]), 4)
+        out["parts"] = parts
         return out
 
-    snap["shop"] = pct(board.get("shops"), ("profit", "revenue", "stars"))
-    snap["buyer"] = pct(board.get("buyers"), ("surplus", "forum", "deals", "posts"))
+    snap["shop"] = pct(board.get("shops"), SHOP_WEIGHTS)                        # patch 3.3: book, not cash
+    snap["buyer"] = pct(board.get("buyers"), BUYER_WEIGHTS, raw=("forum",))    # 3.4 saved; 3.5 forum as itself
     players = board.get("players") or []
     me = next((i for i, p in enumerate(players) if (p.get("shop") or {}).get("name") in config.MY_NAMES), None)
     if me is not None:
