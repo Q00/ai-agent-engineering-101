@@ -76,6 +76,9 @@ def availability(state, order_id, settings, now, retry_of=None):
 # Failures our own run sees before it returns, so another shop can still be tried for the same order. A grade or shelf life the
 # kit refuses at payment comes after our run has printed its one result; the kit then closes the order, so those are never retried.
 RETRY_REASONS = ("quote_shelf_life_short", "quote_grade_unacceptable")
+# With retry_other_shop.errors_before_offer: an agent or transport error before any offer or accept left this run (approved 11-09).
+# By error type and trail state only, never by shop. An error after an offer, a purchase or a receipt is never retried.
+ERROR_OUTCOMES = ("agent_error", "transport_error")
 
 
 def retry_settings(path=None):
@@ -91,7 +94,17 @@ def retry_settings(path=None):
     # The kit stops a buyer at 300 s and an order lives 600 s.
     if not (number(left) and 60 <= left <= 600 and number(elapsed) and 1 <= elapsed <= 250):
         return None
-    return {"min_order_seconds_left": left, "max_elapsed_seconds": elapsed}
+    chosen = {"min_order_seconds_left": left, "max_elapsed_seconds": elapsed}
+    if section.get("errors_before_offer") is True:
+        chosen["errors_before_offer"] = True
+    return chosen
+
+
+def error_before_offer(record):
+    """An agent or transport error in an attempt whose trail is a list with no offer or accept action."""
+    trail = record.get("decision_trail")
+    return (record.get("outcome") in ERROR_OUTCOMES and isinstance(trail, list)
+            and not any(isinstance(e, dict) and e.get("action") in ("offer", "accept") for e in trail))
 
 
 def should_retry(record, order, elapsed, now, settings):
@@ -101,6 +114,8 @@ def should_retry(record, order, elapsed, now, settings):
     if record.get("outcome") == "purchased" or record.get("receipt"):
         return None, "not_retryable"
     reason = "refused_at_open" if record.get("refused_at_open") is True else record.get("failure_reason") if record.get("failure_reason") in RETRY_REASONS else None
+    if reason is None and settings.get("errors_before_offer") and error_before_offer(record):
+        reason = "error_before_offer"
     if reason is None:
         return None, "not_retryable"
     expires = order.get("expires")
