@@ -1,6 +1,8 @@
-"""One-off repair (11/9 10:50, the person's call): from 11/8 01:49 to 11/9 08:40 linewatch's expected-margin model put 8
-dear line products under EM_EXIT (0.003-0.020 of list) that had earned us 0.028-0.109 of list net over the 36 h before
-(-0.013 for one, Ge5fe0d41, whose refunds ran high); the line now judges a product on what it earned (linewatch.realized).
+"""One-off repair (11/9 10:50, the person's call), NOT RUN: from 11/8 01:49 to 11/9 08:40 linewatch's expected-margin
+model put 8 dear line products under EM_EXIT (0.003-0.020 of list). A first count said they had earned 0.028-0.109 net,
+but it took only the refunds the ledger still held (24 h of breaks); with each warranty sale's expected refund they
+earned 0.011-0.029 over 36 h, close to the model, so the dry run (24 of 26 to restore, on 48 h) was held back for the
+person to decide. The line now judges a product on what it earned (linewatch.realized).
 This puts each product the model took out in the last WINDOW back at the cap it had, when what it earned over WINDOW
 (price - cost - each warranty sale's expected refund, MIN_SOLD sales or more) is EM_EXIT or more: in
 analysis/line_state.json (a product found by linewatch and let go after 12 h out joins `found` again) and

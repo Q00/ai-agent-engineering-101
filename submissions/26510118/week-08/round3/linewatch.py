@@ -90,10 +90,11 @@ REAL_WINDOW, REAL_MIN, CAL_MIN, CAL_MAX = 36 * 3600, 15, 3, 0.05
 # us (price - cost, less each warranty sale's expected refund at pricing.BREAK of its grade, less the surge's extra on
 # a new unit's cost), and the model above is used only for the rest, shifted by its median error on the products that
 # have both (CAL_MIN of them at least, within CAL_MAX). The model put 8 dear products under EM_EXIT from 11/8 01:49 to
-# 11/9 08:40 (0.003-0.020 of list) that had earned 0.028-0.109 net over the 36 h before, 30.9M in all, the units bought
-# and sold in full (received 455, sold 456, none left over); yms979's buyer, half our revenue, then bought those sofas
-# elsewhere, and our share of the market's revenue fell 6.2% -> 3.1% in 6 h. An exited product whose realized margin is
-# EM_FIND or more comes back at FIND_CAP after EXIT_REST.
+# 11/9 08:40 (0.003-0.020 of list); yms979's buyer, half our revenue, then bought those sofas elsewhere, and our share
+# of the market's revenue fell 6.2% -> 3.1% in 6 h. Correction, the same hour: with each warranty sale's expected refund
+# they had earned 0.011-0.029 over the 36 h before, close to the model (its median error +0.0015 over 47 products); the
+# first count, 0.028-0.109, took only the refunds the ledger still held (24 h of breaks). An exited product whose
+# realized margin is EM_FIND or more comes back at FIND_CAP after EXIT_REST.
                          # 0.76 and 10 until 11/5 09:20: the one-hour experiment at 0.74 / 12 / 40 found two products
                          # that sold 52 and 40 units in the next 5 h, 10.6M over cost (its own verdict, on the shop's
                          # hourly margin, had ended it)
