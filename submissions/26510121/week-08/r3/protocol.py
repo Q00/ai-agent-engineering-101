@@ -43,6 +43,22 @@ def task_text(task):
     return " ".join(p.get("text", "") for p in task.get("status", {}).get("message", {}).get("parts", []))
 
 
+def observe_quote(journal,task,shop,order,stage):
+    """Bounded peer wire evidence for parser diagnosis, never policy input."""
+    def clean(value,depth=0):
+        if depth>4:return '[depth limit]'
+        if isinstance(value,dict):
+            return {k:clean(v,depth+1) for k,v in list(value.items())[:24]
+                    if not any(s in k.lower() for s in ['sig','token','auth','key','cert'])}
+        if isinstance(value,list):return [clean(v,depth+1) for v in value[:12]]
+        return value[:2000] if isinstance(value,str) else value
+    state=task.get('status',{})
+    journal.add('buyer_quote_wire',{'order':order['order'],'shop':shop,'stage':stage,
+                'task':task.get('id'),'state':state.get('state'),
+                'metadata':clean(task.get('metadata',{})),
+                'message':clean(state.get('message',{}))},role='buyer')
+
+
 def quote(task):
     holders = (task, task.get("status", {}).get("message", {}))
     values = [money(h["metadata"]["ask"]) for h in holders if "ask" in h.get("metadata", {})]

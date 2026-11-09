@@ -86,6 +86,8 @@ def execute(order, journal, chooser, peer_factory, cfg, strategy, registry, rank
             else:
                 peer.discover(c["shop"])
                 task = peer.send(request_text(c, order))
+                from r3.protocol import observe_quote
+                observe_quote(journal,task,c['shop'],order,'direct')
             agreed = None
             previous_offer = None
             required_warranty = 0

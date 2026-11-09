@@ -54,6 +54,8 @@ def compare_quotes(order, ranked, registry, journal, config, peer_factory, deadl
         for c, future in futures:
             try:
                 peer, task = future.result()
+                from .protocol import observe_quote
+                observe_quote(journal,task,c['shop'],order,'rfq')
                 prepared[c['id']] = (peer, task)
                 if task.get('status', {}).get('state') != 'TASK_STATE_INPUT_REQUIRED':
                     continue  # Final artifacts are verified in the normal receipt path.
@@ -94,7 +96,10 @@ def compare_quotes(order, ranked, registry, journal, config, peer_factory, deadl
             except Exception as exc:
                 # No response bodies: peer-controlled text is not operational evidence.
                 journal.add('attempt', {'order': order['order'], 'shop': c['shop'], 'sku': c['sku'],
-                            'success': False, 'kind': 'rfq_failed', 'error_type': type(exc).__name__}, role='buyer')
+                            'success': False, 'kind': 'rfq_failed', 'error_type': type(exc).__name__,
+                            'reason':str(exc) if isinstance(exc,ValueError) and str(exc) in
+                                {'ambiguous_ask','conflicting_ask','unsupported_a2a','conflicting_offer_terms',
+                                 'quote_sku_mismatch','invalid_money','task_required','peer_rpc_error'} else None}, role='buyer')
                 c['quote_failed'] = True
     ranked[:] = [c for c in ranked if not c.get('quote_failed')]
     ranked.sort(key=lambda c: c['score'], reverse=True)
