@@ -27,7 +27,7 @@ class Settings(unittest.TestCase):
     def test_shipped_section_is_well_formed(self):
         section = json.loads(ab.CONFIG.read_text(encoding="utf-8"))["goods_first_message_grades"]
         self.assertIs(type(section["enabled"]), bool)
-        self.assertEqual((section["share"], section["salt"]), (0.5, "gm1"))
+        self.assertEqual((section["share"], section["salt"]), (0.8, "gm1"))
         self.assertEqual(ab.load_goods()["enabled"], section["enabled"])
 
     def test_valid_section_loads(self):
