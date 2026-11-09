@@ -36,12 +36,12 @@ def load_policy():
         if type(config.get(key)) not in (int, float) or not math.isfinite(config[key]) or config[key] < 0:
             raise ValueError(f"Invalid buyer policy: {key}")
     targets = config.get("target_list_price_percent")
-    if targets is not None and (not isinstance(targets, dict)
+    if "target_list_price_percent" in config and (not isinstance(targets, dict)
             or set(targets) != {"food", "goods"}
             or any(type(v) is not int or not 1 <= v <= 100 for v in targets.values())):
         raise ValueError("Invalid buyer policy: target_list_price_percent")
     preferred = config.get("preferred_goods_warranty_hours")
-    if preferred is not None and (type(preferred) not in (int, float)
+    if "preferred_goods_warranty_hours" in config and (type(preferred) not in (int, float)
             or not math.isfinite(preferred)
             or not config["goods_warranty_hours"] <= preferred <= 72):
         raise ValueError("Invalid buyer policy: preferred_goods_warranty_hours")

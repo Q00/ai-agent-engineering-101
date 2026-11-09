@@ -47,13 +47,13 @@ class SavedPolicyTests(unittest.TestCase):
 
     def test_malformed_optional_preferences_are_rejected(self):
         original = load_policy()
-        for targets in ([], {}, {"food": 60}, {"food": True, "goods": 65},
+        for targets in (None, [], {}, {"food": 60}, {"food": True, "goods": 65},
                         {"food": 60, "goods": 101}, {"food": 60, "goods": 65, "other": 1}):
             config = {**deepcopy(original), "target_list_price_percent": targets}
             with self.subTest(targets=targets), patch("buyer_policy.read_json", return_value=config):
                 with self.assertRaises(ValueError):
                     load_policy()
-        for hours in (True, float("nan"), float("inf"), 2, 73, "6"):
+        for hours in (None, True, float("nan"), float("inf"), 2, 73, "6"):
             config = {**deepcopy(original), "preferred_goods_warranty_hours": hours}
             with self.subTest(hours=hours), patch("buyer_policy.read_json", return_value=config):
                 with self.assertRaises(ValueError):
