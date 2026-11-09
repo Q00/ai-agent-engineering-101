@@ -113,7 +113,7 @@ def quote_terms(task):
         if len(skus)==1:result['sku']=skus.pop()
     if 'warranty_hours' not in result:
         hours=set(re.findall(r'\bwarranty_hours\s*[:=]\s*(\d+(?:\.\d+)?)',text,re.I))
-        if not hours:hours=set(re.findall(r'\b(\d+(?:\.\d+)?)\s*(?:h|hours?)[ -]*warranty\b',text,re.I))
+        if not hours:hours=set(re.findall(r'\b(\d+(?:\.\d+)?)\s*(?:h|hours?)[ -]*(?:full[ -]refund[ -]+)?warranty\b',text,re.I))
         if re.search(r'\bno warranty\b',text,re.I):hours.add('0')
         if len(hours)==1 and 0<=float(next(iter(hours)))<=72:result['warranty_hours']=float(hours.pop())
     if 'hours_left' not in result:
@@ -121,6 +121,40 @@ def quote_terms(task):
         if len(hours)==1:result['hours_left']=float(hours.pop())
     result['declarations_require_checkout_verification']=True
     return result
+
+
+def retain_quote_terms(previous, current, now=None):
+    """Keep declarations on one task; a price-only reply cannot improve quality.
+
+    Unit replacements need fresh unit-specific declarations. Relative shelf life
+    becomes an absolute deadline so repeated counters do not extend freshness.
+    These are still claims: checkout must verify the actual certificate/contract.
+    """
+    now = time.time() if now is None else now
+    old = dict(previous)
+    new = dict(current)
+    if old.get('sku') and new.get('sku') and old['sku'] != new['sku']:
+        raise ValueError('quote_sku_mismatch')
+    replacement = old.get('unit') and new.get('unit') and old['unit'] != new['unit']
+    if replacement:
+        if old.get('grade') in ('A','B','C') and new.get('grade') not in ('A','B','C'):
+            raise ValueError('conflicting_offer_terms')
+        if any(k in old for k in ('hours_left','expires_at')) and not any(
+                type(new.get(k)) in (int,float) for k in ('hours_left','expires_at')):
+            raise ValueError('conflicting_offer_terms')
+        for key in ('grade','hours_left','expires_at','cert','certificate'):
+            old.pop(key, None)
+    if type(new.get('hours_left')) in (int,float):
+        expiry = now + new.pop('hours_left') * 3600
+        if type(new.get('expires_at')) in (int,float):expiry = min(expiry, new['expires_at'])
+        new['expires_at'] = expiry
+    # On an unchanged unit an omitted or repeated relative claim cannot refresh
+    # the previously stated expiration. A new physical unit is handled above.
+    if type(old.get('expires_at')) in (int,float) and type(new.get('expires_at')) in (int,float):
+        new['expires_at'] = min(old['expires_at'], new['expires_at'])
+    old.pop('ask', None)
+    old.update(new)
+    return old
 
 
 class Peer:

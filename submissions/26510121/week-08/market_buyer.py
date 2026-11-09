@@ -269,6 +269,10 @@ def execute(order, journal, chooser, peer_factory, cfg, strategy, registry, rank
                 if cfg.get('buyer_throughput_enabled') and hasattr(peer,'deadline'):
                     peer.deadline=min(deadline,time.time()+cfg.get('buyer_rpc_timeout_seconds',4))
                 task = peer.send(str(agreed), task["id"])
+                try:
+                    from r3.protocol import observe_quote
+                    observe_quote(journal,task,c['shop'],order,'negotiation')
+                except Exception:pass
             journal.add("attempt", {"order": order['order'], "strategy_version": strategy['version'],
                                     "shop": c["shop"], "sku": c["sku"], "success": False,
                                     'use_within_hours':order.get('use_within_hours',0),
