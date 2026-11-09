@@ -546,6 +546,8 @@ def main():
         # best quarter of deals. 11-09: p10 was tried for a few minutes; on 12 h of our haggles it halved deals per
         # order (0.31 vs 0.62) for +0.03 per deal, so the user chose p25
         aimtop = random.random() < bp.get("aimtop_share", 0)
+        # 11-09 A/B "aim15" (user: 'next, try 15%'): within aimtop, the cap sits at the shop's p15 + cap_margin
+        aim15 = aimtop and random.random() < bp.get("aim15_share", 0)
         gradeaware = order.get("kind") == "goods" and random.random() < bp.get("gradeaware_share", 0)
         if order.get("kind") == "food" and order.get("use_within_hours"):
             try:                                   # for our shop's restock: how long buyers need food to last
@@ -565,7 +567,7 @@ def main():
         # 0.04 pushed down the cheap food at Kiro729 for a revenue effect on them our ~70 deals/day barely move
         sbp = dict(bp, conv_weight=bp.get("pricefirst_conv_weight", 0.02), rival_penalty=0) if pricefirst else bp
         vctx = {"stats": value_table(), "kind": order.get("kind") or "goods", "cat": order.get("category"), "bp": sbp,
-                "wpen": wpen, "aimtop": aimtop}
+                "wpen": wpen, "aimtop": aimtop, "aim15": aim15}
         shops = [s for s in shops if pick_sku(s, acceptable, catalog, a.budget, share, cskip)]
         prices = [(catalog.get(k) or {}).get("list_price") or 0 for k in acceptable]
         try:                                       # for our shop's restock: which prices this order accepts,
@@ -607,7 +609,7 @@ def main():
             ev = expected(vctx["stats"], pick["name"], vctx["kind"], vctx["cat"])
             if ev["n"] >= 10:      # do not pay above what this shop usually takes from other buyers
                 p25 = ev["p25"]
-                cap = min(cap, int(want["list_price"] * ((ev["p25"] if aimtop else ev["p50"]) + bp["cap_margin"])))
+                cap = min(cap, int(want["list_price"] * (((ev.get("p15") or ev["p25"]) if aim15 else ev["p25"] if aimtop else ev["p50"]) + bp["cap_margin"])))
             adj = ((bp.get("shop_auto") or {}).get(pick["name"]) or {}).get("shop_cap", 0)   # strategist, per shop
             if adj:
                 cap = max(1, min(a.budget, int(cap + want["list_price"] * adj)))
@@ -869,7 +871,7 @@ def main():
                           "warranty": as_int((rec or {}).get("warranty_hours")) or 0 if outcome == "deal" else 0,
                           "cap": cap, "list": want["list_price"] if acceptable else None,
                           "expected": expected_in(why),      # the shop's expected saved per deal when chosen
-                          "shopsel": "pricefirst" if pricefirst else "base", "wpen": wpen, "cheapfood": cheapfood, "cheapgoods": cheapgoods, "regraded": regraded, "skubest": skubest, "aimtop": aimtop,
+                          "shopsel": "pricefirst" if pricefirst else "base", "wpen": wpen, "cheapfood": cheapfood, "cheapgoods": cheapgoods, "regraded": regraded, "skubest": skubest, "aimtop": aimtop, "aim15": aim15,
                           "gradeaware": gradeaware, "graded": list(graded) if graded else None,
                           "push": (f"{arm}-pushed" if pushed else f"{arm}-arm") if push else "control2"})   # 11-07 A/B
     save_memory(mem)

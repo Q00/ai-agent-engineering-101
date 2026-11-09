@@ -184,6 +184,8 @@ def summarize(st):
                   # the best quarter of this group's deals saved, the target of the 'aimtop' arm
                   # 11-09: p10 kept for reference; aimtop targets the best quarter (user chose p25 over p10)
                   "p10": round(xs[len(xs) // 10], 4),
+                  # 11-09 (user: 'next, try 15%'): the cap of the aim15 arm, between p10 and p25
+                  "p15": round(xs[len(xs) * 15 // 100], 4),
                   "saved_top": round(sum(_saved(r, broken) for r in rs if r["x"] <= xs[len(xs) // 4])
                                      / max(1, sum(1 for r in rs if r["x"] <= xs[len(xs) // 4])), 4),
                   "warranty": round(sum(wi * r["w"] for wi, r in zip(w, rs)) / sw, 3),
