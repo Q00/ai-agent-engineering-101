@@ -263,6 +263,15 @@ def test_pricing():
           and pricing.plan(food, now, catalog=CATALOG, sku_market=own, late=True)["ask"] == 14000)
     check("...the offset comes from the caller when given (an experiment's arm: market - 2%)",
           pricing.plan(food, now, catalog=CATALOG, sku_market=own, ask_over=-0.02)["ask"] == 13200)
+    fm = pricing.plan(food, now, catalog=CATALOG, sku_market=own, food_floor="market")
+    fc = pricing.plan(food, now, catalog=CATALOG, sku_market=own, food_floor="cost")
+    check("11/9, the food-floor experiment: the \"market\" arm holds food at its market less 5% of list (0.63: 12,600) over "
+          "the cost floor (12,240) and says so; the \"cost\" arm, food on clearance and goods keep the cost floor",
+          (fm["floor"], fm["market_floor"], fc["floor"], fc["market_floor"]) == (12600, True, 12240, False)
+          and pricing.plan(dict(food, cost=10000, expires_at=now + 10 * H), now, catalog=CATALOG, sku_market=own,
+                           food_floor="market")["floor"] == 5000
+          and pricing.plan(dict(food, kind="goods"), now, sku_market=own, food_floor="market")["market_floor"] is False,
+          (fm, fc))
     p = pricing.plan(goods_a, now, warranty=True, sku_market={"A": {"n": 30, "median": 0.70}, "A_w": {"n": 12, "median": 0.72}})
     check("with a warranty it is set by the market's warranty settles (0.72 + 2% = 74%)", (p["ask"], p["sku_ref"]) == (29526, 0.72), p)
     check("...and never under the floor (cost + 2% + 2.5%) while the unit is fresh",
@@ -513,7 +522,7 @@ def test_restock(fake: Fake):
     out, info = restock.plan(inv(shelf, balance=8_000_000), cat2, DEMAND, {}, [], [{"sku": WATER, "ts": NOW - H}], rules, NOW, line=many)
     check("the line takes at most 90% of the money above the balance kept and the shelf's 2M (8M: two sofas at 1.5M of 3.15M), the shelf still refills",
           info["line"] == 2 and {"sku": WATER, "qty": 1} in out["buy"], (info["line"], out["buy"]))
-    lots =dict(cat2, **{f"Gsofa{i:04d}": dict(cat2[sofa], sku=f"Gsofa{i:04d}") for i in range(6, 12)})
+    lots = dict(cat2, **{f"Gsofa{i:04d}": dict(cat2[sofa], sku=f"Gsofa{i:04d}") for i in range(6, 12)})
     out, info = restock.plan(inv(shelf, balance=60_000_000), lots, DEMAND, {}, [], [{"sku": WATER, "ts": NOW - H}], rules, NOW,
                              line={s: 1 for s in lots if s.startswith("Gsofa")})
     check("eleven line products and money for all: the line takes 8 of the 10 lines, the shelf keeps 2",

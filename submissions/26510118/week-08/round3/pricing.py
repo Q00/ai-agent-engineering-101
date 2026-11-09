@@ -56,6 +56,12 @@ BREAK = {"A": 0.026, "B": 0.107, "C": 0.30}           # the market's 24 h breaka
 # SOLO asks are off). Before: 53% of our dear grade A talks had a floor above the SKU's market + 0.01 and closed 9-10%
 # (78-81% left without an offer); with the floor at or under it they closed 23-29% at three times the margin a talk.
 ANCHOR, ASK_OVER = True, 0.02
+FOOD_FLOOR_GAP = 0.05
+# 11/9 23:30 (the person's call), an experiment (experiments.food_arm): our food sold 0.06-0.10 of list under other
+# shops' price for the same product and grade (24 h, 2,770 sales: A 0.640 against 0.715, costing 0.676; B 0.551 against
+# 0.637; C 0.452 against 0.580), haggled down toward a floor at cost + MARGIN (22% of food deals within 2% of it). In the
+# "market" arm a food unit anchored to its SKU's market (and not on clearance) is held at that market less
+# FOOD_FLOOR_GAP of list when that is over its cost floor; the seller then says so instead of "only 2% over cost".
 SOLO_ON = False          # the uncontested asks and floors (SOLO_ASK, SOLO_FLOOR, learn_solo): off since 11/6 12:40
 C_WARRANTY = True        # refurbished goods are offered with the warranty only: without one, 49-80% of our agreed C deals
                          # went unpaid (buyers' kits accept A and B only without a warranty)
@@ -204,7 +210,7 @@ def plan(unit: dict, now: float | None = None, warranty: bool = False, adjust: f
          catalog: dict | None = None, extra: dict | None = None, market: dict | None = None,
          late: bool = False, dear_default: bool = False, sku_market: dict | None = None,
          in_line: bool = False, solo: bool = False, solo_floor: float | None = None, ask_over: float | None = None,
-         comp_ask: float | None = None) -> dict:
+         comp_ask: float | None = None, food_floor: str | None = None) -> dict:
     """{ask, floor, grade, hours_left, age_days, at_cost, warranty_hours, ref, late, sku_ref, nudge} for one unit.
     sku_market: the SKU's others_6h; a grade A ask well above it comes down, a grade C ask well under it goes up
     (not for the premium line, in_line, nor on clearance); nudge: by how much (share of list), or None. A premium
@@ -216,7 +222,8 @@ def plan(unit: dict, now: float | None = None, warranty: bool = False, adjust: f
     category's by_grade from market_summary.json; late: the end of the supply cycle (late_in_cycle);
     dear_default: dear goods (default_warranty) get the warranty unasked, except on clearance (unsold a
     week, or the round's last day), where it would lift the clearance floor by its extra.
-    ref: the market median the ask moved toward, or None."""
+    ref: the market median the ask moved toward, or None. food_floor: the talk's arm of the food-floor experiment
+    ("market": see FOOD_FLOOR_GAP; market_floor in the plan says it raised the floor)."""
     extra = extra or WARRANTY_EXTRA
     now = now or time.time()
     lp, cost = unit["list_price"], unit["cost"]
@@ -275,6 +282,11 @@ def plan(unit: dict, now: float | None = None, warranty: bool = False, adjust: f
         floor = min(floor, math.ceil(cost * (1 - STORAGE * max(0.0, to_end) / 24)))
     if w:
         floor += round(lp * extra[g])
+    market_floor = False
+    if food_floor == "market" and not goods and anchored and clearance is None:    # 11/9: the food-floor experiment
+        held = round(lp * (sref - FOOD_FLOOR_GAP))
+        if held > floor:
+            floor, market_floor = held, True
     dead = (anchored and unit.get("kind") == "goods" and clearance is None and not held_down
             and (now - unit.get("supplied_at", now)) >= DEAD_HOURS * 3600 and floor / lp > sref + 0.01)
     if dead:                                                    # at cost (with its expected refund), asked at the market
@@ -290,6 +302,7 @@ def plan(unit: dict, now: float | None = None, warranty: bool = False, adjust: f
     ask = max(floor, round(lp * start))
     return {"ask": ask, "floor": floor, "grade": g, "hours_left": hours_left(unit, now), "age_days": age,
             "at_cost": clearance is None and not held_down and not dead, "dead": dead, "stuck": stuck, "anchored": anchored,
+            "market_floor": market_floor,
             "warranty_hours": WARRANTY_HOURS if w else None, "ref": ref, "late": late,
             "sku_ref": sref, "nudge": nudge, "solo": bool(in_line and solo and SOLO_ON),
             "solo_floor": solo_floor if in_line and solo and SOLO_ON else None}

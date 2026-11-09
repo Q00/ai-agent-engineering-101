@@ -6,6 +6,7 @@ models and the runner's schedule, with a fake ledger, a fake /api/shops and a sc
 No network and no key: every model call goes to a scripted chat function, so what is tested is
 the code around the models -- what they are shown, what the code lets them change, and when.
 """
+import collections
 import json
 import os
 import shutil
@@ -1450,6 +1451,39 @@ def test_stage2():
         else:
             rec_o.write_bytes(kept_o)
 
+    even = {"at": t, "on": True, "weights": {"cost": 0.5, "market": 0.5}}
+    split = collections.Counter(experiments.food_arm(f"task-{i}", t, even) for i in range(600))
+    check("11/9, the food-floor experiment: a talk's arm by a hash of its task id, about half each; a stale file: none",
+          250 <= split["market"] <= 350 and split["cost"] + split["market"] == 600
+          and experiments.food_arm("task-1", t + experiments.FRESH + 60, even) is None, split)
+    rec_n = MD / "records" / "negotiations.jsonl"
+    kept_n = rec_n.read_bytes() if rec_n.exists() else None
+    obj = MD / "analysis" / "objective.json"
+    kept_obj = obj.read_bytes() if obj.exists() else None
+    common.write_json(obj, {"at": t, "lambda": {"book": 1e-9, "revenue": 0.0}})     # the margin alone
+    row = lambda a, **k: dict({"ts": t - 600, "food_floor": a, "list_price": 10_000}, **k)
+    try:
+        with open(rec_n, "w", encoding="utf-8") as f:
+            for r in ([row("cost", outcome="deal", price=5_600, cost=5_000)] * 150 + [row("cost", outcome="walked")] * 50
+                      + [row("market", outcome="deal", price=6_300, cost=5_000)] * 130 + [row("market", outcome="walked")] * 70):
+                f.write(json.dumps(r) + "\n")
+        note = experiments.run_food(t)
+        fl = common.read_json(experiments.food_path())
+        check("...scored per talk per list price: the market floor closes less (0.65 against 0.75) but earns more a talk, "
+              "and once 200 talks each lead by 2+ standard errors it gets 0.8",
+              fl["best"] == "market" and fl["weights"] == {"cost": 0.2, "market": 0.8}
+              and fl["stats"]["market"]["close"] == 0.65 and fl["stats"]["cost"]["close"] == 0.75 and "best market" in note, (fl, note))
+    finally:
+        experiments.food_path().unlink(missing_ok=True)
+        if kept_obj is None:
+            obj.unlink(missing_ok=True)
+        else:
+            obj.write_bytes(kept_obj)
+        if kept_n is None:
+            rec_n.unlink(missing_ok=True)
+        else:
+            rec_n.write_bytes(kept_n)
+
     rnd = random.Random(7)
     shops = [{"name": f"s{i}", "book": rnd.randint(0, 10**8), "revenue": rnd.randint(0, 10**8), "stars_rank": round(rnd.uniform(3, 5), 2),
               "visits": rnd.randint(0, 999), "profit": rnd.randint(-10**7, 10**8)} for i in range(40)]
@@ -1457,7 +1491,7 @@ def test_stage2():
                "deals": rnd.randint(1, 900), "posts": rnd.randint(0, 99), "orders": rnd.randint(0, 999)} for i in range(40)]
     for r in shops:
         r["all"] = None
-    new_w ={"book": 0.4, "revenue": 0.4, "stars_rank": 0.2}
+    new_w = {"book": 0.4, "revenue": 0.4, "stars_rank": 0.2}
     new_s = scoreboard.alls(shops, new_w)
     for r in shops:
         r["all"] = new_s[r["name"]]

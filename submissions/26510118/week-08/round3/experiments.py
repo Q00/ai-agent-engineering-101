@@ -170,6 +170,72 @@ def run_haggle(now: float | None = None) -> str:
     return f"haggling ({why}): {parts}"
 
 
+# The seller's food-floor experiment (11/9 23:30, the person's call): our food sold 0.06-0.10 of list under other shops'
+# price for the same product and grade, its floor at cost + pricing.MARGIN. A talk's arm by a hash of its task id:
+# "cost" keeps that floor, "market" holds an anchored food unit at its SKU's market less pricing.FOOD_FLOOR_GAP. Scored
+# over the food talks that carry an arm like the first-ask arms (reward per talk per list price); the leader by Z gets
+# BEST, until then the weights stay even. analysis/food_floor.json; the seller reads it while FRESH.
+FOOD_ARMS = ("cost", "market")
+FOOD_MIN = 200
+
+
+def food_path():
+    return common.MARKET_DIR / "analysis" / "food_floor.json"
+
+
+def food_arm(task_id: str, now: float | None = None, state: dict | None = None) -> str | None:
+    """"cost" or "market" for this talk, or None (the cost floor, as before) without a fresh food_floor.json."""
+    st_ = state if state is not None else common.read_json(food_path(), None)
+    now = now or time.time()
+    if not isinstance(st_, dict) or not st_.get("on", True) or now - (st_.get("at") or 0) > FRESH:
+        return None
+    arms = sorted((a, float(w)) for a, w in (st_.get("weights") or {}).items() if a in FOOD_ARMS and float(w) > 0)
+    if not arms:
+        return None
+    h = int(hashlib.sha1(("food:" + str(task_id)).encode()).hexdigest()[:8], 16) / 0x100000000
+    total, acc = sum(w for _, w in arms), 0.0
+    for a, w in arms:
+        acc += w / total
+        if h < acc:
+            return a
+    return arms[-1][0]
+
+
+def food_score(rows: list, lam: dict) -> dict:
+    """{arm: {talks, deals, close, margin_per_talk (won), reward_per_talk (per list price), se}} over the food talks
+    that carry an arm and a list price."""
+    lb, lr = lam.get("book"), lam.get("revenue")
+    k = (lr or 0) / lb if lb else 0.0
+    out = {}
+    for a in FOOD_ARMS:
+        rs = [r for r in rows if r.get("food_floor") == a and r.get("list_price")]
+        deal = lambda r: r.get("outcome") == "deal" and r.get("price")
+        vals = [(r["price"] - (r.get("cost") or 0) + k * r["price"]) / r["list_price"] if deal(r) else 0.0 for r in rs]
+        deals = sum(1 for r in rs if deal(r))
+        margin = sum(r["price"] - (r.get("cost") or 0) for r in rs if deal(r))
+        out[a] = {"talks": len(rs), "deals": deals, "close": round(deals / len(rs), 3) if rs else None,
+                  "margin_per_talk": round(margin / len(rs)) if rs else None,
+                  "reward_per_talk": round(sum(vals) / len(vals), 5) if vals else None,
+                  "se": round(st.stdev(vals) / len(vals) ** 0.5, 5) if len(vals) >= 2 else None}
+    return out
+
+
+def run_food(now: float | None = None) -> str:
+    now = now or time.time()
+    old = common.read_json(food_path(), {}) or {}
+    rows = [r for r in common.records("negotiations") if (r.get("ts") or 0) >= now - WINDOW and r.get("food_floor")]
+    lam = (common.read_json(common.MARKET_DIR / "analysis" / "objective.json", {}) or {}).get("lambda") or {}
+    stats = food_score(rows, lam)
+    ready = all((s["talks"] or 0) >= FOOD_MIN for s in stats.values())
+    best, z = leader(stats) if ready else (None, None)
+    weights = {a: (BEST if a == best else round(1 - BEST, 4)) for a in stats} if best else {a: 0.5 for a in stats}
+    common.write_json(food_path(), {"at": int(now), "on": old.get("on", True), "weights": weights, "best": best, "z": z,
+                                    "stats": stats})
+    parts = ", ".join(f"{a}: {s['talks']} talks, close {s['close']}, {s['reward_per_talk']}/talk" for a, s in stats.items())
+    why = f"best {best} by {z} SE" if best else (f"even: no arm {Z} SE ahead (z {z})" if ready else f"even until {FOOD_MIN} each")
+    return f"food floor ({why}): {parts}"
+
+
 def brief(now: float) -> dict | None:
     e = common.read_json(path(), None)
     if not isinstance(e, dict):

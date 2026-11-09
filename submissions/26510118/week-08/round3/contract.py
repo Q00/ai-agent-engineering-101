@@ -51,6 +51,8 @@ FILES = [
     ("analysis/price_map.json", "analysis (shop_model.py)", "seller (pricing.plan's comp_ask)", lambda d: [d], ("at", "skus")),
     ("analysis/experiments.json", "analysis (experiments.py, every 20 min)", "seller (a talk's first-ask arm)", lambda d: [d],
      ("at", "weights")),
+    ("analysis/food_floor.json", "analysis (experiments.run_food, every 20 min)", "seller (a food talk's floor arm)",
+     lambda d: [d], ("at", "weights")),
     ("analysis/formula.json", "scoreboard (a refit after a patch)", "scoreboard, objective (the weights in force)", lambda d: [d],
      ("at", "shop", "buyer")),
     ("analysis/bad_faith.json", "analysis (collect)", "market_buyer (bad-faith owners' shops last)", lambda d: [d], ("at", "shops")),
