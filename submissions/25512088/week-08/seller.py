@@ -77,6 +77,16 @@ def stock_miss(text, units, reserved, catalog):
                 reserved_units=sum(u['unit'] in reserved for u in units))
 
 
+def offer_signal(unit, quote, offered):
+    """Bounded numeric demand evidence; never retain message text or credentials."""
+    listed=unit.get('list_price') or 0;cost=unit.get('cost') or 0
+    return {'sku':unit.get('sku'),'offered':offered,'ask':quote.get('price'),
+            'offer_discount_pct':round((1-offered/listed)*100,2) if listed else None,
+            'ask_discount_pct':round((1-quote.get('price',0)/listed)*100,2) if listed else None,
+            'offer_to_cost':round(offered/cost,4) if cost else None,
+            'accepted_immediately':offered>=quote.get('price',0)}
+
+
 class Seller(AgentExecutor):
     def __init__(self):
         self.open = {}
@@ -182,10 +192,15 @@ class Seller(AgentExecutor):
                 if latest['price'] < deal['quote']['price']:
                     deal['quote'] = latest
                 match = re.fullmatch(r'\s*(?:offer\s*[=:]?\s*)?(\d+)\s*', text, flags=re.I)
-                if match and int(match.group(1)) < deal['quote']['price']:
-                    deal['quote']=negotiate(unit,deal['quote'],int(match.group(1)),catalog,program,
+                offered=int(match.group(1)) if match else None
+                if offered is not None:
+                    signal=offer_signal(unit,deal['quote'],offered)
+                    intel.decision('seller_offer_received',signal)
+                    control.event('seller','offer_received',dict(signal,task=task.id),task.id)
+                if offered is not None and offered < deal['quote']['price']:
+                    deal['quote']=negotiate(unit,deal['quote'],offered,catalog,program,
                         token=deal['credentials']['member'],ref='')
-                if match and int(match.group(1)) >= deal['quote']['price']:
+                if offered is not None and offered >= deal['quote']['price']:
                     q = deal['quote']
                     claim = receipt_grade(unit, catalog)
                     if claim not in ('A', 'B', 'C'):

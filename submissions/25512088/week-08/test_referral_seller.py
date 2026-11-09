@@ -114,6 +114,10 @@ class SellerIntegrationTests(unittest.IsolatedAsyncioTestCase):
                     with sqlite3.connect(state/'market_intel.sqlite3') as db:
                         self.assertEqual(db.execute(
                             "SELECT COUNT(*) FROM decisions WHERE role='seller_quote'").fetchone()[0],1)
+                        signal=json.loads(db.execute(
+                            "SELECT body FROM decisions WHERE role='seller_offer_received'").fetchone()[0])
+                        self.assertEqual(signal['sku'],'G99999');self.assertEqual(signal['offered'],15000)
+                        self.assertEqual(signal['offer_discount_pct'],25.0)
                     program=Program(state)
                     try:self.assertEqual(program.db.execute('select amount from warranties').fetchone()[0],15000)
                     finally:program.close()
