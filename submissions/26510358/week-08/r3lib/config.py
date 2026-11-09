@@ -183,6 +183,9 @@ PROTECT_SELL_THROUGH = 0.9          # a review may not scale a category below 1 
                                     #   review halved mattresses, kimchi, fruit and bedding on a wrong sell-through)
 
 BUYER_GRADES = ["A", "B", "C"]     # goods keep full value unless they break; max_pay already prices the break risk
+BUYER_C_MIN_WARRANTY_H = 6         # grade C goods only with this much warranty (2026-11-09: C broke 35%; a broken deal
+                                   #   without warranty is -1 saved, so our 683 such deals averaged -0.104; breaks
+                                   #   come within 6 h of the sale); without it the kit pays for A and B only
 
 # --- buyer -----------------------------------------------------------------------------------------
 MIN_SURPLUS_RATIO = 0.05            # never pay more than 95% of list price

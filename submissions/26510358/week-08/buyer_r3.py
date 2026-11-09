@@ -34,10 +34,18 @@ def decision_log(row):
         f.write(json.dumps({"ts": round(time.time(), 1), **row}, ensure_ascii=False) + "\n")
 
 
-def accept_policy(order):
+def c_covered(rec):
+    return ((rec or {}).get("warranty_hours") or 0) >= config.BUYER_C_MIN_WARRANTY_H
+
+
+def accept_policy(order, rec=None):
+    """What the kit checks before paying. Goods: grade C only when the receipt carries a warranty long enough to
+    cover a break, so a C unit shipped against an A/B claim without one is not paid for either."""
     if order.get("kind") == "food":
         return {"cert": True, "min_hours_left": float(order.get("use_within_hours") or 0) + config.HOURS_MARGIN}
-    return {"cert": True, "grades": list(config.BUYER_GRADES)}
+    if c_covered(rec):
+        return {"cert": True, "grades": list(config.BUYER_GRADES), "warranty_hours": config.BUYER_C_MIN_WARRANTY_H}
+    return {"cert": True, "grades": [g for g in config.BUYER_GRADES if g != "C"]}
 
 
 def candidates(order, shops, mem, my_urls):
@@ -150,6 +158,8 @@ def valid(rec, c, order):
         return f"receipt item {rec.get('item')} is not acceptable"
     if not isinstance(price, int) or price > order["budget"] or price > c["max_pay"]:
         return f"receipt price {price} above our limit {c['max_pay']}"
+    if order.get("kind") != "food" and rec.get("claim") == "C" and not c_covered(rec):
+        return f"grade C without a {config.BUYER_C_MIN_WARRANTY_H} h warranty (C breaks ~35%, a break counts -1 saved)"
     return None
 
 
@@ -212,7 +222,7 @@ def main():
         say("deal", shop=c["name"], sku=c["sku"], price=rec["price"], list=c["list"], seconds=round(time.time() - started))
         print(json.dumps({"shop": c["shop"], "receipt": rec, "stars": 4,
                           "review": f"Agreed {c['item_name']} at {rec['price']} (list {c['list']}, surplus {surplus}).",
-                          "accept": accept_policy(order)}, ensure_ascii=False))
+                          "accept": accept_policy(order, rec)}, ensure_ascii=False))
         return
     print(json.dumps({"shop": "", "receipt": None, "stars": None, "review": None}))
 
