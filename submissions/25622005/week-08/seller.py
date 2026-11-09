@@ -47,10 +47,15 @@ NAME = "psyoung82"
 RECEIPT_KEYS = ("shop", "item", "price", "task")          # what sig_seller covers (kit L87)
 SKU_RE = re.compile(r"\bG[0-9a-f]{8}\b", re.I)
 NUM = r"(\d{1,3}(?:,\d{3})+|\d+)(?!\d|,\d|\.\d)"
-NOT_PRICE = r"(?!\s*(?:h\b|hrs?\b|hours?\b|%|kg\b|g\b|ml\b|l\b|시간|개|팩))"
-OFFER_RE = re.compile(r"(?:offer|bid|pay|counter(?:offer)?|propose|final|accept|deal|for|at|price)"
+NOT_PRICE = r"(?!\s*(?:h\b|hrs?\b|hours?\b|%|kg\b|g\b|ml\b|l\b|units?\b|pcs\b|시간|개|팩))"
+OFFER_RE = re.compile(r"(?:offer|bid|pay|counter(?:offer)?|propose|final|accept|deal|for|at|price"
+                      r"|(?:can|could|will|would)\s+(?:do|go|pay|give)|settle\s+(?:at|for)|take\s+it\s+(?:at|for)|meet\s+(?:you\s+)?at)"
                       r"(?:\s+(?:is|of|at|your\s+(?:offer|price)|the\s+price))?\s*[:=]?\s*(?:₩|krw|\$)?\s*" + NUM + NOT_PRICE)
 BARE_RE = re.compile(r"(?:₩|krw|\$)?\s*" + NUM + r"\s*(?:won|원|krw|credits)?[.!\s]*")
+# a price that opens the message ("45000. Other shops have it in stock too, ...") or a Korean offer
+# ("20689에 구매할 수 있습니다"); a rival's quote ("25802에 견적을 받고 있어") is neither
+LEAD_RE = re.compile(r"^\s*(?:₩|krw|\$)?\s*" + NUM + r"\s*(?:won|원|krw)?\s*[.,;:!]")
+KO_OFFER_RE = re.compile(NUM + r"\s*원?\s*(?:에|으로|로)\s*(?:구매|구입|드릴|드리|사겠|살\s|살게|결제|제안|하겠|할게|할\s*수|가능|합의|진행|맞추)")
 YES_RE = re.compile(r"\b(?:i\s+accept|accept(?:ed)?|deal|agreed?|yes|ok(?:ay)?|i(?:'ll|\s+will)\s+take\s+it)\b")
 BUDGET_RE = re.compile(r"\bbudget\b\D{0,20}" + NUM)
 NO_RE = re.compile(r"\b(?:not|no|don't|cannot|can't|reject|decline)\b")
@@ -84,7 +89,7 @@ def parse_offer(text, ask=None, strip=(), explicit_only=False):
         return int(m.group(1).replace(",", ""))
     if explicit_only:
         return None
-    m = BARE_RE.fullmatch(low)
+    m = BARE_RE.fullmatch(low) or KO_OFFER_RE.search(low) or LEAD_RE.match(low)
     if m:
         return int(m.group(1).replace(",", ""))
     if ask is not None and YES_RE.search(low) and not NO_RE.search(low):

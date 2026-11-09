@@ -492,6 +492,25 @@ class ParseBuyerText(unittest.TestCase):
         self.assertIsNone(p("My budget is 50000"))
         self.assertIsNone(p("no, I do not accept", ask=85000))
 
+    def test_offers_the_11_09_buyers_wrote(self):
+        """Three forms the rule parser missed on 11-09 (867 'no price' replies a night): a rival's quote is not
+        the offer, the number that opens a sentence is, and the Korean '...에 구매할 수 있습니다' is."""
+        p = seller.parse_offer
+        self.assertEqual(p("That is more than I want to pay. gom31-certified-goods quoted me 55296 for this. I can do 45619."), 45619)
+        self.assertEqual(p("That is more than I want to pay. I can do 50625."), 50625)
+        self.assertEqual(p("I could go 21,000 for it"), 21000)
+        self.assertEqual(p("Let's settle at 30000"), 30000)
+        self.assertEqual(p("45000. On the public ledger a quarter of today's sales of this item went for less."), 45000)
+        self.assertEqual(p("₩45,000. Other shops have it in stock too, so I would like to settle quickly."), 45000)
+        self.assertEqual(p("다른 가게(thisjonghoon)에서도 25802에 견적을 받고 있어, 등급 C와 증명서 내용을 영수증에 적어 주시면 "
+                           "감사하겠습니다. 20689에 구매할 수 있습니다."), 20689)
+        self.assertEqual(p("같은 등급 상품이 최근 시장에서 19000에 거래된 것을 확인했고, 16265에 드릴 수 있습니다."), 16265)
+        self.assertIsNone(p("I can do 6 hours of warranty"))
+        self.assertIsNone(p("I can do 2 units"))
+        self.assertIsNone(p("How many hours of shelf life does this unit have left? It must last at least 24 hours."))
+        self.assertIsNone(p("Then please offer a grade A or B unit of this product instead."))
+        self.assertIsNone(p("45000. I can do that", explicit_only=True))      # the first message: keyword offers only
+
     def test_need_and_warranty(self):
         self.assertEqual(seller.parse_need_hours("It must last at least 24 hours", {}), 24.0)
         self.assertEqual(seller.parse_need_hours("x", {"use_within_hours": 12}), 12.0)
