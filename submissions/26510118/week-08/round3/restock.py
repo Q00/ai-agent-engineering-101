@@ -102,6 +102,11 @@ LINE_LINES = 8           # line products bought in one run at most (4 until 21:4
 LINE_SHARE = 0.9         # LINE_SHARE of the run's lines nor of the balance above RESERVE (0.5 until 21:45, 0.75 until 23:40)
 LINE_SELLABLE_MIN = 2    # 11/7 12:50: units it can sell kept on hand at least (see sellable())
 SELLABLE_SLACK = 0.005
+LINE_STOP_UNSELLABLE = True
+# 11/9 22:40 (the person's call): a line product holding a unit it cannot sell at its market gets no more until that
+# unit goes. A unit's cost is drawn on arrival (A 55-75% of list) and dear goods now settle at 65-68% of list, so many
+# draws land over the market; keeping LINE_SELLABLE_MIN sellable units bought around them: of 184 dear units held, 84
+# (70.9M at cost, median cost 0.71 of list) could not sell at their market, and units held over 6 h rose 80 -> 128 in 6 h.
 LINE_PACE = 3600         # a line product is kept at 1 + what we sold of it in this long (a unit sells out within
                          # minutes, so our sales count supply as much as demand: one more than they asks for more)
 LINE_MAX_UNITS = 24      # 16 until 11/6 15:40 (5 line products sat at 16 selling 5-8 an hour), 12 until 11/6 13:10, 10 until 11/6 (Kiro 2.0: deeper stock of what sells); 5 until 11/4 23:40 (the best seller sold 20 in 1.5 h at a cap of 5; others sold it 90 an hour)
@@ -329,12 +334,14 @@ def sellable(u: dict, summary: dict | None, extra: dict | None = None) -> bool:
 def line_gaps(line: dict | None, catalog: dict, units: list, sales: list, now: float, summary: dict | None = None,
               extra: dict | None = None) -> list:
     """[(sku, units to buy)] for the premium line: 1 + our sales of it in the last LINE_PACE seconds (one unit to
-    start), up to the product's cap; nothing more for one held LINE_STALL seconds with no sale, nor near the end.
+    start), up to the product's cap; nothing more for one held LINE_STALL seconds with no sale, nor for one holding a
+    unit it cannot sell at its market (LINE_STOP_UNSELLABLE), nor near the end.
     (Until 21:45 on 11/4 the pace over 3 hours covered two cycles: 3 sold in half an hour still meant one unit.)"""
     line = {s: n for s, n in (line or {}).items()
             if s in catalog and isinstance(n, int) and not isinstance(n, bool) and 0 < n <= LINE_MAX_UNITS}
     if not line or common.ROUND_END - now <= LINE_STOP:
         return []
+    unsellable = Counter(u["sku"] for u in units if u.get("sku") in line and not sellable(u, summary, extra))
     units = [u for u in units if u.get("sku") not in line or sellable(u, summary, extra)]   # 11/7: what it can sell
     held = Counter(u["sku"] for u in units if u.get("sku") in line)
     recent = Counter(s["sku"] for s in sales if s.get("sku") in line and s.get("ts", 0) >= now - LINE_PACE)
@@ -349,6 +356,8 @@ def line_gaps(line: dict | None, catalog: dict, units: list, sales: list, now: f
     out = []
     for sku, most in line.items():
         if held[sku] and now - alive.get(sku, now) > LINE_STALL:
+            continue
+        if LINE_STOP_UNSELLABLE and unsellable[sku]:      # 11/9: no more around a unit it cannot sell
             continue
         target = min(most, max(LINE_SELLABLE_MIN, 1 + recent[sku]))
         if target > held[sku]:

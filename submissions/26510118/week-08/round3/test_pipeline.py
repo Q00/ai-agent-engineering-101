@@ -477,9 +477,12 @@ def test_restock(fake: Fake):
           out["buy"][0] == {"sku": sofa, "qty": 2}, out["buy"][:2])
     mk = {"by_sku": {sofa: {"others_6h": {"A_w": {"n": 20, "median": 0.70}}}}}
     pricey = [dict(srow(f"u-p{i}"), grade="A", cost=1_480_000, kind="goods") for i in range(3)]       # 0.74 of list
-    check("units it cannot sell (cost 74% of list: floor 78% over its market 70%) count for nothing on the line (11/7)",
+    check("a unit costing 74% of list (floor 78%) cannot sell at its market of 70%, one at 60% can; since 11/9 a line "
+          "product holding a unit it cannot sell gets no more until it goes (11/7 to 11/9: two sellable units were bought "
+          "around them); none held: two; no market known: the three count as sellable",
           not restock.sellable(pricey[0], mk) and restock.sellable(dict(pricey[0], cost=1_200_000), mk)
-          and restock.line_gaps({sofa: 5}, cat2, pricey, [], NOW, mk) == [(sofa, 2)]
+          and restock.line_gaps({sofa: 5}, cat2, pricey, [], NOW, mk) == []
+          and restock.line_gaps({sofa: 5}, cat2, [], [], NOW, mk) == [(sofa, 2)]
           and restock.line_gaps({sofa: 5}, cat2, pricey, [], NOW) == [], restock.line_gaps({sofa: 5}, cat2, pricey, [], NOW, mk))
     market = {"by_sku": {sofa: {"price_ratio": 0.78}}}
     surged = lambda f: dict(rich(shelf), surge=[{"sku": sofa, "units": 150, "factor": f}])
