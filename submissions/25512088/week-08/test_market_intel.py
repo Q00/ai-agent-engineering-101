@@ -34,9 +34,41 @@ class IntelligenceTests(unittest.TestCase):
     def test_price_requires_same_grade_warranty_and_enough_samples(self):
         self.i.ingest(self.rows())
         self.assertEqual(self.i.comparable('x','A')['median'],9500)
+        self.assertIsNone(self.i.comparable('x','A')['p10'])
         self.assertIsNone(self.i.comparable('x','B')['median'])
         self.assertIsNone(self.i.comparable('x','A',warranty=6)['median'])
         self.assertIsNone(self.i.comparable('wrong','A')['median'])
+
+    def test_acceptance_first_quote_uses_exact_condition_lower_tail(self):
+        now=time.time();rows=[]
+        for n,price in enumerate(range(10000,11000,100),1):
+            rows.append(dict(seq=100+n,ts=now,kind='settle',round=3,data=dict(
+                shop='https://shop',sku='x',grade='A',amount=price,
+                warranty_hours=6,claim_honest=True,buyer=f'buyer-{n}')))
+        self.i.ingest(rows)
+        comp=self.i.comparable('x','A',warranty=6)
+        self.assertEqual(comp['p10'],10000)
+        q=sale_quote(dict(self.u,cost=1000,list_price=20000),{},self.p,self.i)
+        self.assertEqual(q['price'],10000)
+        body=json.loads(self.i.db.execute(
+            "SELECT body FROM decisions WHERE role='seller_quote' ORDER BY id DESC LIMIT 1").fetchone()[0])
+        self.assertEqual(body['pricing_basis'],'exact_condition_p10')
+
+    def test_small_public_loss_is_bounded_by_buyer_cohort_and_budget(self):
+        now=time.time();rows=[]
+        for n,price in enumerate(range(10000,11000,100),1):
+            rows.append(dict(seq=200+n,ts=now,kind='settle',round=3,data=dict(
+                shop='https://shop',sku='x',grade='A',amount=price,
+                warranty_hours=6,claim_honest=True,buyer=f'cohort-{n}')))
+        self.i.ingest(rows)
+        unit=dict(self.u,cost=10300,list_price=20000)
+        q=sale_quote(unit,{},self.p,self.i)
+        self.assertEqual(q['price'],10000);self.assertTrue(q['loss_leader'])
+        self.assertEqual(q['loss_budget_remaining'],99700)
+        # A price below the 3% principal-loss bound is never copied.
+        unit['cost']=11000
+        q=sale_quote(unit,{},self.p,self.i)
+        self.assertFalse(q['loss_leader']);self.assertGreater(q['price'],10000)
     def test_food_comparison_life_and_expiry(self):
         self.i.ingest(self.rows(expiry=time.time()+12*3600))
         self.assertEqual(self.i.comparable('x','A',12)['count'],4)

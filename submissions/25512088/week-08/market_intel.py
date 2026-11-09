@@ -125,13 +125,22 @@ class Intel:
     def comparable(self, sku, grade, hours=None, warranty=0):
         rows=self.db.execute('SELECT * FROM trades WHERE sku=? AND grade=? AND ts>?',
                              (sku,grade,time.time()-WINDOW)).fetchall()
-        prices=[]
+        prices=[];by_buyer={}
         for r in rows:
             if hours is None:
                 if r['hours'] is not None or bool(r['warranty']) != bool(warranty):continue
             elif r['hours'] is None or abs(r['hours']-hours)>max(6,hours*.25):continue
             prices.append(r['price'])
-        return {'count':len(prices),'median':int(median(prices)) if len(prices)>=3 else None}
+            if r['buyer']:
+                by_buyer.setdefault(r['buyer'],[]).append(r['price'])
+        prices.sort()
+        buyer_prices=sorted(int(median(values)) for values in by_buyer.values())
+        return {'count':len(prices),'median':int(median(prices)) if len(prices)>=3 else None,
+                'buyers':len(buyer_prices),
+                'buyer_median':int(median(buyer_prices)) if len(buyer_prices)>=3 else None,
+                # One representative price per public buyer prevents a prolific
+                # account from dominating the acceptance threshold.
+                'p10':buyer_prices[int(.10*(len(buyer_prices)-1))] if len(buyer_prices)>=5 else None}
 
     def reliability(self, url):
         rows=self.db.execute('SELECT honest FROM trades WHERE shop=? AND ts>?',(url,time.time()-WINDOW)).fetchall()

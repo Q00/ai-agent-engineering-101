@@ -12,6 +12,9 @@ from seller_procurement import settings
 
 
 RATES={'goods':{'A':95,'B':80,'C':60},'food':{'A':95,'B':75,'C':45}}
+LOSS_LEADER_RATE=.03
+LOSS_LEADER_BUDGET=100_000
+LOSS_LEADER_TRIALS_PER_SKU=5
 
 
 def receipt_grade(unit,catalog=None,now=None):
@@ -146,8 +149,18 @@ def sale_quote(unit, catalog, program, intel=None, token='', ref='', *, record=T
     base=public_price(unit,catalog)  # Also validates expiry and grade.
     hours=(unit['expires_at']-time.time())/3600 if unit.get('expires_at') else None
     warranty=warranty_hours(unit,program)
-    comp=intel.comparable(unit['sku'],unit['grade'],hours,warranty) if intel else {'count':0,'median':None}
-    if comp['median']:
+    comp=intel.comparable(unit['sku'],unit['grade'],hours,warranty) if intel else {'count':0,'median':None,'p10':None}
+    acceptance_first=comp.get('p10') is not None
+    listed=unit.get('list_price') or catalog.get(unit['sku'],{}).get('list_price')
+    if listed and comp.get('buyer_median') is not None:
+        comp['buyer_median_discount_pct']=round((1-comp['buyer_median']/listed)*100,1)
+    if listed and comp.get('p10') is not None:
+        comp['p90_discount_pct']=round((1-comp['p10']/listed)*100,1)
+    if acceptance_first:
+        # A static buyer population has already demonstrated willingness to
+        # pay at or above this exact-condition lower-tail price.
+        base=math.ceil(comp['p10'])
+    elif comp['median']:
         base=math.ceil(comp['median']*.99)
     adjustment=1.0;competitors=0;substitutes=0;sold=0;quotes=0
     if intel:
@@ -169,7 +182,8 @@ def sale_quote(unit, catalog, program, intel=None, token='', ref='', *, record=T
                 if json.loads(row[0]).get('sku')==unit['sku']:quotes+=1
             # Scarcity is never sufficient: an increase also requires observed
             # quote conversion and actual sales. Substitute stock counts as competition.
-            if quotes>=5 and sold>=2 and sold/quotes>=.2 and competitors+substitutes*.35<=1:
+            if (not acceptance_first and quotes>=5 and sold>=2 and sold/quotes>=.2
+                    and competitors+substitutes*.35<=1):
                 adjustment=1.02
             elif quotes>=5 and sold==0 and competitors+substitutes>0:
                 adjustment=.98
@@ -179,25 +193,46 @@ def sale_quote(unit, catalog, program, intel=None, token='', ref='', *, record=T
         (unit['sku'],time.time()-21600)).fetchone()[0]
     markdown=liquidation_discount(unit,holdings,recent_sales,failed_quotes_6h=quotes)
     hazard,hazard_basis=observed_hazard(intel,program.p.get('shop_name','25512088'))
-    floor=protected_floor(unit,program.p,hazard)
+    protected=protected_floor(unit,program.p,hazard);floor=protected;loss_leader=False
+    projected_loss=max(0,unit['cost']-(comp.get('p10') or unit['cost']))
+    loss_used=program.db.execute(
+        'SELECT COALESCE(SUM(CASE WHEN cost>amount THEN cost-amount ELSE 0 END),0) FROM sales WHERE refunded=0').fetchone()[0]
+    loss_trials=program.db.execute(
+        'SELECT COUNT(*) FROM sales WHERE sku=? AND amount<cost',(unit['sku'],)).fetchone()[0]
+    cohort_floor=math.ceil(unit['cost']*(1-LOSS_LEADER_RATE))
+    if (acceptance_first and not token and not ref and comp['p10']>=cohort_floor
+            and loss_used+projected_loss<=LOSS_LEADER_BUDGET
+            and (not projected_loss or loss_trials<LOSS_LEADER_TRIALS_PER_SKU)):
+        # A bounded public cohort may trade up to 3% raw principal for direct
+        # conversion evidence. Legacy benefits never stack with this experiment.
+        floor=comp['p10'];loss_leader=floor<protected
     if markdown:
         base=max(floor,math.ceil(base*(1-markdown)))
     q=program.quote(max(base,floor),unit['cost'],token=token,ref=ref)
     q['warranty_hours']=warranty;q['hazard_probability']=hazard;q['hazard_basis']=hazard_basis
     q['liquidation']=bool(markdown);q['liquidation_discount']=markdown
     q['liquidation_basis']='excess_stock_no_own_sale_6h' if markdown else None
-    if q['price']*((1-hazard) if q['warranty_hours'] else 1)-q['reward'] < unit['cost']+math.ceil(unit['cost']*.09):
+    q['loss_leader']=loss_leader;q['loss_budget_remaining']=max(0,LOSS_LEADER_BUDGET-loss_used-projected_loss)
+    safe_margin=q['price']*((1-hazard) if q['warranty_hours'] else 1)-q['reward'] >= unit['cost']+math.ceil(unit['cost']*.09)
+    bounded_trial=(loss_leader and q['reward']==0 and q['price']>=cohort_floor)
+    if not (safe_margin or bounded_trial):
         raise ValueError('Net margin guard rejected quote')
     if intel and record:
         intel.decision('seller_quote',{'sku':unit['sku'],'cost':unit['cost'],'price':q['price'],
-                       'reward':q['reward'],'floor':floor,'comparable':comp,'market_adjustment':adjustment,
+                       'reward':q['reward'],'floor':floor,'protected_floor':protected,
+                       'comparable':comp,'market_adjustment':adjustment,
+                       'pricing_basis':'exact_condition_p10' if acceptance_first else
+                                       ('settlement_median' if comp['median'] else 'grade_formula'),
                        'same_competitor_units':competitors,'substitute_competitor_units':substitutes,
                        'quotes_6h':quotes,'sales_6h':sold,
                        'warranty_hours':warranty,
                        'hazard_probability':hazard,'hazard_basis':hazard_basis,
                        'holdings':holdings,'recent_sales_6h':recent_sales,
                        'liquidation':bool(markdown),'liquidation_discount':markdown,
-                       'source':'settlement_median' if comp['median'] else 'grade_formula_cost_protected'})
+                       'loss_leader':loss_leader,'projected_raw_loss':projected_loss,
+                       'loss_budget_remaining':q['loss_budget_remaining'],
+                       'source':'exact_condition_p10' if acceptance_first else
+                                ('settlement_median' if comp['median'] else 'grade_formula_cost_protected')})
     return q
 
 
