@@ -124,7 +124,11 @@ Supply and depth:
   last 6 h would pass seller.warranty_cap_6h, the only cause left, and warranted_6h gives that sum, signed and
   paid, with over_cap; near_end), sold, and
   sign_rate by asked x offered (asked_offered vs asked_refused is what the warranty is worth to the sale, against
-  q x price). Levers: seller.warranty_cap_6h, warranty_premium / premium_floor / q_mult; warranty_grades is fixed.
+  q x price). The 1 h sign_rate rows hold tens of replies and flip from run to run; warranted_6h.sign_rate is the
+  same table over 6 h (hundreds of replies): judge the warranty's worth on it, never on one hour. While
+  over_cap, every ask is refused: a raise that leaves the cap under sum_list_signed changes nothing, so take the
+  cap above that sum (the step is 3M), and lower it on refunds, not on one hour's rates. Levers:
+  seller.warranty_cap_6h, warranty_premium / premium_floor / q_mult; warranty_grades is fixed.
 - Surge: the first market.surge_free units of a SKU that the whole market (us included) buys in a rolling hour
   cost the plain price, each further unit adds market.surge_per_unit to the cost factor, up to market.surge_max
   (these three follow /api/supply-prices automatically, not you). A SKU is bought only while its factor is at most

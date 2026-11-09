@@ -317,14 +317,26 @@ class ReadOwnTest(unittest.TestCase):
 
     def test_warranted_signs_of_the_last_6_h_signed_and_paid(self):
         now = time.time()
-        sign = lambda age, unit, lp, wh=6: {"ts": now - age, "kind": "sign", "choice": {"price": 1, "unit": unit, "list_price": lp, "warranty_hours": wh}}
-        self.write("logs/decisions/seller.jsonl", [sign(7 * 3600, "u-old", 5_000_000), sign(3600, "u-gone", 3_000_000),
-                                                   sign(600, "u-held", 4_000_000), sign(60, "u-plain", 9_000_000, 0),
+        sign = lambda age, unit, lp, wh=6, task=None: {"ts": now - age, "kind": "sign", "ref": {"task": task},
+                                                        "choice": {"price": 1, "unit": unit, "list_price": lp, "warranty_hours": wh}}
+        first = lambda age, task, asked, offered, kind="goods": {"ts": now - age, "kind": "quote", "ref": {"task": task},
+                                                                  "choice": {"action": "quote"}, "why": "first reply: fact line and first ask",
+                                                                  "inputs": {"kind": kind, "warranty_req": asked, "warranty_hours": 6 if offered else None}}
+        self.write("logs/decisions/seller.jsonl", [sign(7 * 3600, "u-old", 5_000_000),
+                                                   first(3700, "t1", True, True), sign(3600, "u-gone", 3_000_000, task="t1"),
+                                                   first(3000, "t2", True, False), first(2900, "t3", True, False),
+                                                   first(2800, "t4", False, False, kind="food"),
+                                                   first(700, "t5", False, True), sign(600, "u-held", 4_000_000, task="t5"),
+                                                   first(100, "t6", False, False), sign(60, "u-plain", 9_000_000, 0, task="t6"),
                                                    {"ts": now - 30, "kind": "quote", "choice": {"action": "quote"}}])
         (self.home / ".market").mkdir(parents=True)
         (self.home / ".market" / "inventory.json").write_text(json.dumps({"balance": 1, "units": [{"unit": "u-held", "sku": "G1"}]}))
         w = collect.read_own(self.home, now)["warranted_6h"]
-        self.assertEqual(w, {"h": 6, "n": 2, "sum_list_signed": 7_000_000, "sum_list_paid": 3_000_000, "truncated": False})
+        self.assertEqual(w, {"h": 6, "n": 2, "sum_list_signed": 7_000_000, "sum_list_paid": 3_000_000, "truncated": False,
+                             "sign_rate": {"asked_offered": {"first": 1, "signed": 1, "rate": 1.0},      # food t4 is not counted
+                                           "asked_refused": {"first": 2, "signed": 0, "rate": 0.0},
+                                           "unasked_offered": {"first": 1, "signed": 1, "rate": 1.0},
+                                           "unasked_plain": {"first": 1, "signed": 1, "rate": 1.0}}})
 
     def test_window_filter_and_summary_parts(self):
         now = time.time()
@@ -343,7 +355,7 @@ class ReadOwnTest(unittest.TestCase):
              "seller": {"sold_24h": 4, "stars": [5, 4, None], "regular_cats": list("abcdefghijkl"),
                         "skus": {"big": "x" * 1000}}}))
         own = collect.read_own(self.home, now, window_h=1)
-        self.assertEqual(own["warranted_6h"], {"h": 6, "n": 0, "sum_list_signed": 0, "sum_list_paid": 0, "truncated": False})
+        self.assertEqual(own["warranted_6h"], {"h": 6, "n": 0, "sum_list_signed": 0, "sum_list_paid": 0, "sign_rate": {}, "truncated": False})
         self.assertEqual([r["id"] for r in own["decisions"]["seller"]], ["new"])
         self.assertEqual([r["id"] for r in own["decisions"]["buyer"]], ["b"])
         self.assertEqual(own["decisions"]["restock"], [])

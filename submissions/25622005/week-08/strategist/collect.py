@@ -344,15 +344,31 @@ def _warranted(path, now, inv):
     """The seller's warranted signs of the last WARRANTED_H hours, from the log's tail: n, sum_list_signed (their
     list prices, what seller.warranty_cap_6h is compared with) and sum_list_paid (those whose unit has left the
     inventory, so the sale went through; the seller itself also counts the ones still inside the promise TTL).
-    truncated when the tail did not reach back WARRANTED_H hours."""
+    sign_rate: the goods first replies of those hours by whether the buyer asked for a warranty and whether we
+    offered one (asked_offered, asked_refused, unasked_offered, unasked_plain: first, signed, rate), the signs
+    joined by task; the same table as the brief's 1 h seller.warranty.sign_rate, over hundreds of rows instead
+    of tens. truncated when the tail did not reach back WARRANTED_H hours."""
     rows, cut = _tail(path, 10 ** 6, WARRANTED_TAIL_BYTES)
     since = now - WARRANTED_H * 3600
     held = {u.get("unit") for u in (inv.get("units") or []) if isinstance(u, dict)} if isinstance(inv, dict) else set()
     n = signed = paid = 0
+    firsts, task_key, signs_by = Counter(), {}, Counter()
     for r in rows:
-        if not isinstance(r, dict) or r.get("kind") != "sign" or not isinstance(r.get("ts"), (int, float)) or r["ts"] < since:
+        if not isinstance(r, dict) or not isinstance(r.get("ts"), (int, float)) or r["ts"] < since:
             continue
         c = r.get("choice") if isinstance(r.get("choice"), dict) else {}
+        i = r.get("inputs") if isinstance(r.get("inputs"), dict) else {}
+        task = (r.get("ref") or {}).get("task") if isinstance(r.get("ref"), dict) else None
+        if r.get("kind") == "quote" and c.get("action") == "quote" and i.get("kind") == "goods":
+            k = (bool(i.get("warranty_req")), isinstance(i.get("warranty_hours"), (int, float)) and i["warranty_hours"] > 0)
+            firsts[k] += 1
+            if task:
+                task_key[task] = k
+            continue
+        if r.get("kind") != "sign":
+            continue
+        if task in task_key:
+            signs_by[task_key[task]] += 1
         if not isinstance(c.get("warranty_hours"), (int, float)) or c["warranty_hours"] <= 0:
             continue
         lp = c.get("list_price") if isinstance(c.get("list_price"), (int, float)) else c.get("price")
@@ -362,7 +378,11 @@ def _warranted(path, now, inv):
         if c.get("unit") not in held:
             paid += lp
     first = min((r["ts"] for r in rows if isinstance(r, dict) and isinstance(r.get("ts"), (int, float))), default=None)
-    return {"h": WARRANTED_H, "n": n, "sum_list_signed": signed, "sum_list_paid": paid,
+    names = {(True, True): "asked_offered", (True, False): "asked_refused",
+             (False, True): "unasked_offered", (False, False): "unasked_plain"}
+    rate = {names[k]: {"first": firsts[k], "signed": signs_by[k], "rate": round(signs_by[k] / firsts[k], 4)}
+            for k in names if firsts[k]}
+    return {"h": WARRANTED_H, "n": n, "sum_list_signed": signed, "sum_list_paid": paid, "sign_rate": rate,
             "truncated": bool(cut and (first is None or first > since))}
 
 
