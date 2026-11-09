@@ -28,9 +28,13 @@ OPTIONS = (0.0, 0.15, 0.20, 0.24, 0.27, 0.30, 0.33, 0.36, 0.40, 0.45)   # 0.20-0
 WINDOW = 12 * 3600
 MIN_DEALS = 100          # 200 until 11/6 13:10
 CLAMP = (0.15, 0.45)     # (0.20, 0.36) until 11/6 13:10
-BAND = 0.005             # 11/6 15:40: thresholds within this of the best projected score count as tied and the highest
-                         # of them is taken (saved is half the buyer's score and the others now chase it too); on 11/6
-                         # the pick flipped 0.33 -> 0.15 -> 0.33 on differences of 0.0024
+BAND = 0.005             # 11/6 15:40: thresholds within this of the best projected score count as tied (on 11/6 the pick
+                         # flipped 0.33 -> 0.15 -> 0.33 on differences of 0.0024). Since 11/10 00:00 (the person's call)
+                         # a tie keeps the threshold in force and only a pick BAND better moves it, to the best (pick());
+                         # with none in force the highest of the tied is taken, as from 11/6. The highest-of-tied rule
+                         # sent the pick from 0.27 to 0.36-0.40 now and then, and over 36 h, at each pick against its
+                         # own probe in the same hours, 0.27 paid 57% of orders and added 0.038 a order to saved against
+                         # 28% and 0.029 at 0.36 and 20% and 0.031 at 0.40
 ROUND_START = 1793707260          # 11/3 21:01 KST (1793793660 until 11/6 17:45: a day late; a fallback only)
 PROBE_SHARE, PROBE_DROP, PROBE_MIN = 0.33, 0.10, 80
 # 11/8 (the person's call, "more aggressive"): a third of the orders (by a hash of the order id) run at PROBE_DROP under
@@ -78,7 +82,8 @@ def assigned(purchases: list, breaks: list, orders: list) -> tuple[list, list]:
 
 
 def choose(ours: dict, others: list, recent: list, hours_left: float, window_h: float,
-           w_saved: float = 0.5, w_deals: float = 0.1, orders_u: list | None = None) -> tuple[float | None, dict]:
+           w_saved: float = 0.5, w_deals: float = 0.1, orders_u: list | None = None,
+           current: float | None = None) -> tuple[float | None, dict]:
     """(the best threshold, {t: projected 0.5 saved pct + 0.1 deals pct}). ours: {saved, deals}; others: [(saved_end,
     deals_end)]; recent: [(paid share, kept share)] over window_h hours, or with orders_u (the threshold every order in
     the window ran at) [(paid share, kept share, its order's threshold)]: then t is judged only on the orders that ran at t
@@ -102,15 +107,26 @@ def choose(ours: dict, others: list, recent: list, hours_left: float, window_h: 
         col_s = [x[0] for x in others] + [saved_end]
         col_d = [x[1] for x in others] + [deals_end]
         scores[t] = round(w_saved * pct(col_s, saved_end) + w_deals * pct(col_d, deals_end), 4)
+    return pick(scores, current), scores
+
+
+def pick(scores: dict, current: float | None = None) -> float | None:
+    """The threshold to run: the one in force (current) while its score stays within BAND of the best, else the best;
+    with none in force, the highest within BAND of the best (see BAND)."""
     if not scores:
-        return None, scores
+        return None
     top = max(scores.values())
-    return max(t for t, s in scores.items() if s >= top - BAND), scores
+    cur = next((t for t in scores if current is not None and abs(t - current) < 1e-9), None)
+    if cur is not None:
+        return cur if scores[cur] >= top - BAND else max(scores, key=lambda t: (scores[t], t))
+    return max(t for t, s in scores.items() if s >= top - BAND)
 
 
 def run(now: float | None = None, board: dict | None = None) -> dict:
     """objective.json from the board (fetched when not given), our purchases and the scoreboard history."""
     now = now or time.time()
+    prev = common.read_json(folder() / "objective.json", None)          # the threshold in force (11/10)
+    current = prev.get("buyer_min_share") if isinstance(prev, dict) and now - (prev.get("at") or 0) < 2 * 3600 else None
     if board is None:
         import analysis
         board = analysis.market_get("/api/board") or {}
@@ -152,7 +168,8 @@ def run(now: float | None = None, board: dict | None = None) -> dict:
                         "orders_by_threshold": {str(u): c for u, c in sorted(Counter(orders_u or []).items())}}
         if len(recent) >= MIN_DEALS:
             best, scores = choose({"saved": scoreboard.num(me_b, "saved"), "deals": scoreboard.num(me_b, "deals")},
-                                  others, recent, hours_left, WINDOW / 3600, bw.get("saved", 0), bw.get("deals", 0), orders_u)
+                                  others, recent, hours_left, WINDOW / 3600, bw.get("saved", 0), bw.get("deals", 0), orders_u,
+                                  current)
             out["options"] = {str(t): s for t, s in scores.items()}
             out["buyer_min_share"] = min(CLAMP[1], max(CLAMP[0], best)) if best is not None else None
             if out["buyer_min_share"] is not None:

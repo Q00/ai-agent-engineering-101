@@ -1273,6 +1273,12 @@ def test_objective_model():
     objective.OPTIONS = saved_opts
     check("...a higher threshold within 0.005 of the best counts as tied, so it is taken (no flip on a difference of 0.002)",
           max(s2.values()) - s2[b2] <= objective.BAND and b2 == max(t for t, v in s2.items() if v >= max(s2.values()) - objective.BAND), s2)
+    tie = {0.27: 0.5357, 0.30: 0.5333, 0.36: 0.5333, 0.40: 0.5214}
+    check("11/10: a tie keeps the threshold in force (0.27 against 0.36 within 0.005), only one 0.005 better moves it, "
+          "and to the best (0.27 from 0.40); with none in force the highest of the tied, as since 11/6",
+          objective.pick(tie, 0.27) == 0.27 and objective.pick({**tie, 0.36: 0.5450}, 0.27) == 0.36
+          and objective.pick(tie, 0.40) == 0.27 and objective.pick(tie, None) == 0.36 and objective.pick({}, 0.27) is None,
+          [objective.pick(tie, c) for c in (0.27, 0.40, None)])
     orders = [{"order": f"m{i}", "min_share": 0.40} for i in range(200)] + [{"order": f"r{i}", "min_share": 0.30} for i in range(100)] \
         + [{"order": "none", "min_share": None}]
     bought2 = [{"order": f"m{i}", "list_price": 100, "price": 50} for i in range(40)] \
