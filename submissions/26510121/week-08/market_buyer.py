@@ -8,7 +8,7 @@ from r3.state import Journal, read_json
 from r3.market_memory import buyer_price_actions, buyer_assessment
 from r3.economy import buyer_candidates
 from r3.model import Chooser
-from r3.protocol import Peer, quote, quote_terms, verify_receipt
+from r3.protocol import Peer, quote, quote_terms, retain_quote_terms, verify_receipt
 from r3.quote_market import compare_quotes, close_quotes, request_text,clarify
 from r3.adaptive import begin_buyer
 
@@ -50,7 +50,8 @@ def buy(order, shops, journal, chooser=None, peer_factory=Peer):
     if cfg.get('buyer_throughput_enabled'):
         cfg=dict(cfg,max_shop_candidates=cfg.get('buyer_route_candidates',4))
     journal.reconcile()
-    journal.add('buyer_execution', {'order': order['order'], 'strategy_version': strategy['version']},
+    journal.add('buyer_execution', {'order': order['order'], 'strategy_version': strategy['version'],
+                'contract_revision':'contract-memory-v1'},
                 eid='buyer-execution:' + order['order'], role='buyer')
     empty = {"shop": "", "receipt": None, "stars": 3, "review": "No settled purchase; no seller rating inferred."}
     if cfg.get('buyer_patch34_enabled') and journal.get('market_rules',{}).get('buyer_compatible') is False:
@@ -137,8 +138,12 @@ def execute(order, journal, chooser, peer_factory, cfg, strategy, registry, rank
             required_warranty = 0
             required_grade = None
             conditional_requirements=[]
+            retained_terms={}
+            negotiation_task=task['id']
             max_turns=cfg.get('buyer_negotiation_turns',cfg['max_negotiation_turns'])
             for turn in range(max_turns + 1):
+                if task['id']!=negotiation_task:
+                    raise ValueError('conflicting_offer_terms')
                 state = task["status"]["state"]
                 if state == "TASK_STATE_COMPLETED":
                     receipts = [p["data"] for a in task.get("artifacts", []) for p in a.get("parts", [])
@@ -229,7 +234,8 @@ def execute(order, journal, chooser, peer_factory, cfg, strategy, registry, rank
                     break
                 ask = quote(task)
                 product = c["product"]
-                terms = quote_terms(task)
+                terms = retain_quote_terms(retained_terms,quote_terms(task))
+                retained_terms=terms
                 if terms.get('sku') not in (None, c['sku']):
                     raise ValueError('quote_sku_mismatch')
                 assessment = buyer_assessment(dict(product, sku=c['sku']), order, terms, journal, cfg,shop=c['shop'])
