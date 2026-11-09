@@ -1455,8 +1455,7 @@ def test_stage2():
                "deals": rnd.randint(1, 900), "posts": rnd.randint(0, 99), "orders": rnd.randint(0, 999)} for i in range(40)]
     for r in shops:
         r["all"] = None
-    old_s = scoreboard.alls(shops, scoreboard.SHOP)
-    new_w = {"book": 0.4, "revenue": 0.4, "stars_rank": 0.2}
+    new_w ={"book": 0.4, "revenue": 0.4, "stars_rank": 0.2}
     new_s = scoreboard.alls(shops, new_w)
     for r in shops:
         r["all"] = new_s[r["name"]]

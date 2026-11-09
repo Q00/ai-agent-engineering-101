@@ -17,7 +17,6 @@ that ran at it or lower, so the thresholds under the pick are seen too.
 lambda: what one more unit of each part adds to our total now (the next row's gain over the need, scoreboard.parts),
 for the experiments' reward (a sale: lambda_book x (price - cost) + lambda_revenue x price)."""
 import json
-import os
 import time
 from collections import Counter
 

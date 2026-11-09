@@ -37,8 +37,7 @@ from cryptography.hazmat.primitives import serialization                     # n
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey  # noqa: E402
 
 import common                                                                    # noqa: E402
-import forum                                                                     # noqa: E402
-import ledger                                                                    # noqa: E402
+import ledger                                                                   # noqa: E402
 import market_buyer as mb                                                        # noqa: E402
 import pricing                                                                   # noqa: E402
 import restock                                                                   # noqa: E402
@@ -511,8 +510,7 @@ def test_restock(fake: Fake):
     out, info = restock.plan(inv(shelf, balance=8_000_000), cat2, DEMAND, {}, [], [{"sku": WATER, "ts": NOW - H}], rules, NOW, line=many)
     check("the line takes at most 90% of the money above the balance kept and the shelf's 2M (8M: two sofas at 1.5M of 3.15M), the shelf still refills",
           info["line"] == 2 and {"sku": WATER, "qty": 1} in out["buy"], (info["line"], out["buy"]))
-    many8 = {s: 1 for s in cat2 if s.startswith("Gsofa")}
-    lots = dict(cat2, **{f"Gsofa{i:04d}": dict(cat2[sofa], sku=f"Gsofa{i:04d}") for i in range(6, 12)})
+    lots =dict(cat2, **{f"Gsofa{i:04d}": dict(cat2[sofa], sku=f"Gsofa{i:04d}") for i in range(6, 12)})
     out, info = restock.plan(inv(shelf, balance=60_000_000), lots, DEMAND, {}, [], [{"sku": WATER, "ts": NOW - H}], rules, NOW,
                              line={s: 1 for s in lots if s.startswith("Gsofa")})
     check("eleven line products and money for all: the line takes 8 of the 10 lines, the shelf keeps 2",

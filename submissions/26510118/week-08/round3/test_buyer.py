@@ -514,7 +514,6 @@ def test_shop_around():
     r = asyncio.run(mb.trade(Shops({"http://B.test": late}), cb, bed, CATALOG, {}, dict(RULES, haggle="counter"), False))
     check("...on the last step there is no step left to take an answer: no counter, the ask is taken",
           not r.get("pushed") and (r["deal"] or r["left"]), (r["offers"], r.get("left")))
-    sent = sh.sent["http://B.test"][0]
     t_ = lambda s: {"status": {"message": {"parts": [{"text": s}], "metadata": {}}}}
     check("the shelf life a shop states is read in English or Korean (11/6 19:10: asked for it, so the pre-check leaves "
           "before an offer), and food is no longer asked for the unit nearest its expiry (31 refusals at payment in 1.9 h)",

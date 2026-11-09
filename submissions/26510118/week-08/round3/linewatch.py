@@ -3,14 +3,17 @@ collected, each premium line product (restock.LINE) is judged on the market and 
 analysis/line.json, the caps restock follows, is rewritten. The line went in hard on the user's call; this is
 how it gets out fast when others crowd in.
 
-    exit    cap 0: the market's median paid share for it over the last WINDOW is EXIT_DROP of list or more
-            under its baseline, or we have held a unit of it STALL without selling one
-    shrink  cap - 1, not below 1: the median is SHRINK_DROP or more under the baseline, or it had at least
-            twice the baseline's sellers in WINDOW and CROWD_MORE more
+    exit    cap 0: it earns under EM_EXIT of list (what it earned us over REAL_WINDOW when we sold it REAL_MIN
+            times, else the expected-margin model shifted by its error; see margins()), or we have held a unit of
+            it STALL without selling one (a fall of the market's median under the baseline, EXIT_DROP, only while
+            MARKET_CUTS is on: off since 11/7)
+    shrink  cap - 1, not below 1: it had at least twice the baseline's sellers in WINDOW and CROWD_MORE more (or,
+            with MARKET_CUTS, a median SHRINK_DROP under the baseline)
     grow    up to what we sold of it in the last hour (at least cap + 1), up to restock.LINE_MAX_UNITS: we sold
             GROW_SALES or more of it in the last hour, and the market is not shrinking it
-    back    cap 1 again after an exit, once EXIT_REST has passed, we hold none, and the market (MIN_N settles
-            in WINDOW) still pays REENTRY_MIN of list or more; the baseline is taken again then
+    back    after an exit and EXIT_REST: FIND_CAP when what it earned us over REAL_WINDOW is EM_BACK or more; else
+            cap 1 when we hold none and the market (MIN_N settles in WINDOW) still pays REENTRY_MIN of list or
+            more; the baseline is taken again then
     keep    otherwise
 
 New products (11/4 23:40, the person's call: the line follows unmet demand rather than a list): every run, other
@@ -78,7 +81,10 @@ FIND_WINDOW = 6 * 3600
 FIND_LIST_MIN, FIND_N, FIND_MEDIAN, FIND_SELLERS = 500_000, 8, 0.66, 99    # sellers 12 until 11/6: the margin decides;
                          # 12 at 0.70 until 11/6 15:40 (29 of 40 line places used; the expected margin still gates);
                          # 20 settles at 0.74 until 11/6 13:10 (the person's call: 281M cash idle against 74M of stock,
-                         # 12 buyers in 6 h turned away for want of stock, 59% of talks walked: breadth, not depth)
+                         # 12 buyers in 6 h turned away for want of stock, 59% of talks walked: breadth, not depth);
+                         # 0.76 and 10 until 11/5 09:20: the one-hour experiment at 0.74 / 12 / 40 found two products
+                         # that sold 52 and 40 units in the next 5 h, 10.6M over cost (its own verdict, on the shop's
+                         # hourly margin, had ended it)
 # Expected margin (Kiro 2.0 stage 1, 11/6): a goods product's share of list a unit earns on average, over the supply's
 # grades (A 70%, B 20%, C 10%; mid costs 0.65, 0.50, 0.35 times the surge), sold at its grade's market with the
 # warranty (others_6h "_w" cells, 10+; a missing B or C taken 0.05 / 0.10 under A) less the refunds (pricing.BREAK).
@@ -100,10 +106,7 @@ REAL_WINDOW, REAL_MIN, CAL_MIN, CAL_MAX = 36 * 3600, 15, 3, 0.05
 # they had earned 0.011-0.029 over the 36 h before, close to the model (its median error +0.0015 over 47 products); the
 # first count, 0.028-0.109, took only the refunds the ledger still held (24 h of breaks). An exited product whose
 # realized margin is EM_BACK or more comes back at FIND_CAP after EXIT_REST.
-                         # 0.76 and 10 until 11/5 09:20: the one-hour experiment at 0.74 / 12 / 40 found two products
-                         # that sold 52 and 40 units in the next 5 h, 10.6M over cost (its own verdict, on the shop's
-                         # hourly margin, had ended it)
-FIND_CAP = 3             # 2 until 11/6 13:10
+FIND_CAP = 3            # 2 until 11/6 13:10
 LINE_MAX_SKUS = 40       # 20 until 11/5 01:00, 30 until 09:20
 UNMET_WINDOW, UNMET_MIN, UNMET_LIST_MIN, UNMET_CAP, UNMET_MAX = 12 * 3600, 3, 300_000, 2, 10   # 1 order until 11/6:
                          # overnight 48 products joined on one unmet order each; most left 4 h later unsold

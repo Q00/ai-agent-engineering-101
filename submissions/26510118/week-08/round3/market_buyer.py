@@ -126,8 +126,8 @@ FOOD_WORDS = " Please say how many hours of shelf life it has left."
 # to take the shop's answer); the "accept" arm takes it as before. Both record could_counter, so the experiment
 # compares the orders where the choice arose.
 PUSH = 0.96
-ASK_HOURS = True
-ASK_BETTER = True         # 11/7: a refurbished unit without the warranty: ask once for a grade A or B before leaving          # 11/6 21:30: food quoted without its shelf life is asked for it once before any offer
+ASK_HOURS = True          # 11/6 21:30: food quoted without its shelf life is asked for it once before any offer
+ASK_BETTER = True         # 11/7: a refurbished unit without the warranty: ask once for a grade A or B before leaving
 GRADE_SAID = re.compile(r"\bgrade\s*[:=]?\s*([ABC])\b", re.I)
 # 11/5 03:30 (the person's call: "a lower ceiling, and better negotiating"): 27% of our deals in 12 h paid more than
 # the item's own market (its mean paid / list over 24 h) + 5% of list, 2.48M over that line; 64 paid over 90% of list.
@@ -526,9 +526,8 @@ async def trade(client: A2A, c: dict, order: dict, catalog: dict, nb: dict, rule
                 others: bool = False) -> dict:
     """One negotiation. Returns the facts the order record, the notebook and the result line need."""
     r = {"deal": False, "receipt": None, "price": None, "asks": [], "offers": [], "error": None, "left": None,
-         "switched": None, "warranty": wants_warranty(c, nb, poor, rules), "said": [], "cap": None,
-         "min_share": None}
-    r["min_share"], r["probe"] = order_share(order.get("order") or "")
+         "switched": None, "warranty": wants_warranty(c, nb, poor, rules), "said": [], "cap": None}
+    r["min_share"], r["probe"] = order_share(order.get("order") or "")      # 11/8: a third of the orders probe lower
     need = order.get("use_within_hours")
     try:
         await client.open(c["shop"]["url"])
