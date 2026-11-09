@@ -27,6 +27,19 @@ class SellerIntegrationTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(seller.select_unit('G00001',units,{'a'}, {})['unit'],'b')
         self.assertEqual(seller.select_unit('G00001',units,{'a','b'}, {})['unit'],'c')
 
+    def test_sale_selection_can_use_c_drain_lane(self):
+        units=[dict(unit='c',sku='G00001',name='item',category='food',grade='C',expires_at=None,supplied_at=1),
+               dict(unit='a',sku='G00001',name='item',category='food',grade='A',expires_at=None,supplied_at=2)]
+        self.assertEqual(seller.select_unit('G00001',units,set(),{},prefer_c=True)['unit'],'c')
+
+    def test_c_drain_slot_is_deterministic_and_pressure_bounded(self):
+        units=[{'unit':str(i),'grade':'C' if i<5 else 'A'} for i in range(10)]
+        first=seller.c_drain_slot('task-1',units,set())
+        self.assertEqual(first,seller.c_drain_slot('task-1',units,set()))
+        self.assertGreaterEqual(first[1],.03)
+        self.assertLessEqual(first[1],.15)
+        self.assertEqual(seller.c_drain_slot('task-1',[{'unit':'a','grade':'A'}],set()),(False,0.0))
+
     def test_stock_miss_distinguishes_reserved_without_logging_secrets(self):
         u=dict(unit='u',sku='G00001',name='item',category='food',grade='A',expires_at=None)
         catalog={'G00001':dict(category='food')}

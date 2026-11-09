@@ -11,6 +11,7 @@ import base64
 from collections import Counter
 from contextlib import asynccontextmanager
 import json
+import hashlib
 import os
 from pathlib import Path
 import re
@@ -52,7 +53,7 @@ def credentials(text):
     return values
 
 
-def select_unit(text, units, reserved, soft_counts=None):
+def select_unit(text, units, reserved, soft_counts=None, prefer_c=False):
     want = re.sub(r'\b(?:ref|member)=[A-Za-z0-9_-]+', '', text).lower()
     valid = [u for u in units if u['unit'] not in reserved and u.get('grade') != 'expired'
              and (not u.get('expires_at') or u['expires_at'] > time.time())]
@@ -62,9 +63,22 @@ def select_unit(text, units, reserved, soft_counts=None):
     soft_counts=soft_counts or {}
     # Most market mandates accept A/B far more often than C. Prefer a unit that
     # can actually settle; only fall back to C when no A/B unit fits.
-    grade_order={'A':0,'B':1,'C':2}
+    grade_order=({'C':0,'A':1,'B':2} if prefer_c else {'A':0,'B':1,'C':2})
     return min(fits, key=lambda u: (grade_order.get(u.get('grade'),3),soft_counts.get(u['unit'],0),
         u.get('expires_at') or float('inf'),u.get('supplied_at',0)),default=None)
+
+
+def c_drain_slot(task, units, reserved):
+    """Give C stock a bounded, deterministic share of new quotes."""
+    live=[u for u in units if u.get('unit') not in reserved and u.get('grade') in ('A','B','C')
+          and (not u.get('expires_at') or u['expires_at']>time.time())]
+    c=sum(u.get('grade')=='C' for u in live)
+    if not live or not c:return False,0.0
+    pressure=c/len(live)
+    # Keep discovery alive, but protect total deal conversion from C rejection.
+    rate=min(.15,max(.03,pressure/2))
+    draw=int.from_bytes(hashlib.sha256(str(task).encode()).digest()[:8],'big')/2**64
+    return draw<rate,round(rate,4)
 
 
 def stock_miss(text, units, reserved, catalog):
@@ -143,7 +157,8 @@ class Seller(AgentExecutor):
                 for hold in self.open.values():
                     uid=hold['unit']['unit'];soft_counts[uid]=soft_counts.get(uid,0)+1
                 eligible=list(inv['units'])
-                unit = select_unit(text, eligible, reserved, soft_counts)
+                drain_c,c_rate=c_drain_slot(task.id,eligible,reserved)
+                unit = select_unit(text, eligible, reserved, soft_counts, prefer_c=drain_c)
                 if not unit:
                     intel.decision('seller_no_stock',dict(task=task.id,**stock_miss(text,inv['units'],reserved,catalog)))
                     available=offers(STATE,program,intel,limit=2)
@@ -159,7 +174,9 @@ class Seller(AgentExecutor):
                 arm,digest=control.assign('seller-quote-v1',str(task.id))
                 control.event('seller','quote_created',{
                     'task':task.id,'sku':unit['sku'],'price':q['price'],'cost':unit['cost'],
-                    'kind':unit.get('kind'),'warranty_hours':q.get('warranty_hours',0),
+                    'kind':unit.get('kind'),'grade':unit.get('grade'),
+                    'c_drain_slot':bool(drain_c and unit.get('grade')=='C'),'c_drain_rate':c_rate,
+                    'warranty_hours':q.get('warranty_hours',0),
                     'arm':arm,'assignment_digest':digest},task.id)
                 program.growth_event(task.id,'quote')
                 self.open[task.id] = deal
