@@ -651,6 +651,12 @@ def main():
         # In the "push" arm, an ask still above the shop's lower quartile + push_band gets one more counter
         # (halfway down to that quartile) before we take it; a rejection that names a floor reopens at it below.
         regraded = False
+        # 11-09 (user: raise the buyer score whatever it takes): goods without a warranty ran .202 per deal in 12 h
+        # (15 breaks at -1 in 152), goods with one .387 (34 refunded breaks at +1, none at -1). In the needwarr arm a
+        # goods order asks once for a 6 h warranty when the shop's reply states none, and leaves before agreeing a
+        # price if the shop still states none (half the shops that state nothing do put one on the receipt)
+        needwarr = order.get("kind") == "goods" and random.random() < bp.get("needwarr_share", 0)
+        warr_ok, warr_asked = False, False
         graded = None     # 11-08 gradeaware: (grade, warranty hours) read from the shop's first reply
         short = None    # 11-07: 43 of 69 lost food orders in 6 h agreed a price, then the kit refused to pay (shelf life)
         push = random.random() < bp.get("push_share", 0)
@@ -695,6 +701,21 @@ def main():
                                     "its grade. If not, tell me and we go on with this unit.", tid, ctx)
                     tid, ctx = t.get("id") or tid, t.get("contextId") or ctx
                     continue
+                if needwarr and not warr_ok and acceptable:
+                    if unit_terms(said(t))[1] >= WARRANTY_MIN:
+                        warr_ok = True
+                    elif not warr_asked:
+                        warr_asked = True
+                        log("buyer", f"{pick['name']} states no warranty: asking once for a {WARRANTY_MIN} h one")
+                        t = seller.send(f"Does this unit come with a warranty of at least {WARRANTY_MIN} hours written "
+                                        "on the receipt? I only buy goods with one. If you have a unit with it, offer "
+                                        "that one and its price.", tid, ctx)
+                        tid, ctx = t.get("id") or tid, t.get("contextId") or ctx
+                        continue
+                    else:
+                        log("buyer", f"{pick['name']} still states no warranty: next shop")
+                        seller.cancel(tid)
+                        raise ShortShelf("no warranty")
                 if short is None and acceptable and order.get("kind") == "food" and accept.get("min_hours_left"):
                     hl = shelf_hours(t)
                     short = hl is not None and hl < accept["min_hours_left"]
@@ -820,11 +841,12 @@ def main():
                     "over budget" if low is not None and low > cap else "walked away")
                 seller.cancel(tid)
         except ShortShelf as e:
-            outcome = "grade C claimed" if "grade C" in str(e) else "too short (shelf life)"
+            outcome = ("grade C claimed" if "grade C" in str(e) else "no warranty" if "no warranty" in str(e)
+                       else "too short (shelf life)")
         except (RpcError, Exception) as e:
             log("buyer", f"trade failed: {e!r}")
             outcome = f"error ({type(e).__name__})"
-        turned_away = (outcome == "rejected" and not asks) or outcome.startswith(("error", "grade ", "too short"))
+        turned_away = (outcome == "rejected" and not asks) or outcome.startswith(("error", "grade ", "too short", "no warranty"))
         on_price = vctx is not None and outcome in RETRY_ON_PRICE   # Round 3: the next-best shop may take our price
         others = [s for s in shops if s["name"] != pick["name"]]
         if (turned_away or on_price) and others and attempt < max_shops - 1 and time.time() - start < DEADLINE - 60:
@@ -871,7 +893,7 @@ def main():
                           "warranty": as_int((rec or {}).get("warranty_hours")) or 0 if outcome == "deal" else 0,
                           "cap": cap, "list": want["list_price"] if acceptable else None,
                           "expected": expected_in(why),      # the shop's expected saved per deal when chosen
-                          "shopsel": "pricefirst" if pricefirst else "base", "wpen": wpen, "cheapfood": cheapfood, "cheapgoods": cheapgoods, "regraded": regraded, "skubest": skubest, "aimtop": aimtop, "aim15": aim15,
+                          "shopsel": "pricefirst" if pricefirst else "base", "wpen": wpen, "cheapfood": cheapfood, "cheapgoods": cheapgoods, "regraded": regraded, "skubest": skubest, "aimtop": aimtop, "aim15": aim15, "needwarr": needwarr,
                           "gradeaware": gradeaware, "graded": list(graded) if graded else None,
                           "push": (f"{arm}-pushed" if pushed else f"{arm}-arm") if push else "control2"})   # 11-07 A/B
     save_memory(mem)

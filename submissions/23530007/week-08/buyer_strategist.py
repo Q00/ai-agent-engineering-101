@@ -68,6 +68,7 @@ GLOBAL = {                                    # role, bounds, step
     "cheapfood_share": ((0.0, 1.0), 0.1),     # food: ask for the cheapest unit that lasts and open low
     "cheapfood_open": ((0.2, 0.6), 0.05),     # food opening offer, share of list
     "cheapgoods_share": ((0.0, 1.0), 0.1),
+    "needwarr_share": ((0.0, 1.0), 0.1),      # 11-09 (user): goods orders that require a 6 h warranty before haggling
     "aim15_share": ((0.0, 1.0), 0.1),         # 11-09 (user): of the aimtop orders, the share capped at p15, not p25
     "aimtop_share": ((0.0, 1.0), 0.1),        # 11-09: cap at the shop's p25 (what the best buyers pay), not p50    # goods: ask for C/B with a warranty first, A only if nothing else
     "skubest_share": ((0.0, 1.0), 0.1),       # pick the SKU with the best market saved at the shop (not the dearest)
@@ -290,7 +291,7 @@ def ab_tests():
         import memory_curator as mc
         b = mc.breakdown(sys.modules[__name__], time.time())
         return {k: [x for x in b.get(k, []) if x.get("key") not in ("other", "before_ab")]
-                for k in ("push_ab", "cheapfood_ab_food", "cheapgoods_ab_goods", "skubest_ab", "wpen_ab_goods", "gradeaware_ab_goods", "aimtop_ab", "aim15_ab")}
+                for k in ("push_ab", "cheapfood_ab_food", "cheapgoods_ab_goods", "skubest_ab", "wpen_ab_goods", "gradeaware_ab_goods", "aimtop_ab", "aim15_ab", "needwarr_ab_goods")}
     except Exception as e:
         return {"error": repr(e)}
 
@@ -361,7 +362,7 @@ Knobs (only these): global "value_share" (0.65-0.85), "quick_accept" (0.55-0.75)
 replace skip_below; see BUYER_STRATEGY.md 0a2), "conv_weight" (0-0.3), "rival_penalty" (0-0.1), "cap_margin" (0-0.1), "near_cap" (0-0.04),
 "open_offset" (0-0.08), "max_shops" (1-6), "value_half_life_h" (0-6, default 2: how fast the shop values
 follow the newest market deals; lower when prices are moving, higher when the values look noisy), and the arms (11-08): "push_share", "push3_share", "cheapfood_share",
-"cheapgoods_share", "aimtop_share" (cap at the shop's p25, where the best buyers pay), "aim15_share" (of the aimtop orders, the share capped at p15 instead of p25), "skubest_share", "wpen_share", "gradeaware_share" (each 0-1, share of orders), "push3_below" (0-0.2), "push_below"
+"cheapgoods_share", "aimtop_share" (cap at the shop's p25, where the best buyers pay), "aim15_share" (of the aimtop orders, the share capped at p15 instead of p25), "needwarr_share" (goods orders that ask for a 6 h warranty and leave before a price when the shop has none), "skubest_share", "wpen_share", "gradeaware_share" (each 0-1, share of orders), "push3_below" (0-0.2), "push_below"
 (0-0.15), "cheapfood_open" (0.2-0.6), "wpen_cost" (0-0.12), "gradeaware_cap_c" (0.65-0.85), "gradeaware_cap_b" (0.62-0.8); per shop (give "shop": name from the evidence) "shop_bias" (-0.1..0.1,
 added to its value score) and "shop_cap" (-0.05..0.05, added to the cap there as a share of list);
 per category "cap" (0.6-0.85, replaces value_share for that category; "category" is the order's item name as in

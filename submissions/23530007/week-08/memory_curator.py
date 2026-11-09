@@ -453,6 +453,11 @@ def breakdown(bs, now):
                                score_gain_per_order=round(x["deals"] / max(x["orders"], 1)
                                                           * ((x["saved_per_deal"] or 0) - 0.287), 4))
                           for x in cut(lambda r: ("aimtop" if r["aimtop"] else "base") if "aimtop" in r else "other")],
+            # 11-09 A/B "needwarr" (user: raise the buyer score whatever it takes): goods orders that require a warranty
+            "needwarr_ab_goods": [dict(x, deals_per_order=round(x["deals"] / max(x["orders"], 1), 3),
+                                       score_gain_per_order=round(x["deals"] / max(x["orders"], 1)
+                                                                  * ((x["saved_per_deal"] or 0) - 0.289), 4))
+                                  for x in cut(lambda r: ("needwarr" if r["needwarr"] else "base") if r.get("kind") == "goods" and "needwarr" in r else "other")],
             # 11-09 A/B "aim15" (user: 'next, try 15%'): within aimtop, cap at the shop's p15 instead of p25
             "aim15_ab": [dict(x, deals_per_order=round(x["deals"] / max(x["orders"], 1), 3),
                               score_gain_per_order=round(x["deals"] / max(x["orders"], 1)
