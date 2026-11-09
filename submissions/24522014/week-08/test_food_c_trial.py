@@ -42,7 +42,7 @@ class Settings(unittest.TestCase):
 
     def test_the_shipped_setting(self):
         buying = json.loads(food_c_trial.CONFIG.read_text(encoding="utf-8"))["buying"]
-        self.assertEqual((buying["c_trial_share"], buying["c_trial_salt"], buying["c_trial_food_penalty"]), (0.5, "fc1", 0.05))
+        self.assertEqual((buying["c_trial_share"], buying["c_trial_salt"], buying["c_trial_food_penalty"]), (0.8, "fc1", 0.05))
         self.assertEqual(buying["grades"], ["A", "B"])
         self.assertIs(buying["c_trial_enabled"], True)
 
