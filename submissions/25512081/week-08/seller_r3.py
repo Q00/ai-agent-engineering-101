@@ -221,6 +221,13 @@ def default_need(sku):
     return seen[int(len(seen) * 0.8)] if len(seen) >= 5 else DEFAULT_NEED
 
 
+# Three buyers rate food by grade alone, whatever the price, and each words its food orders its own way
+# (Nov 10 05:10, all shops, 7.3 h of ledger: nohaggle-hero A 4.88 B 4.87 C 3.9 over 845 food reviews, "; I need it";
+# 11im A/B 4 C 3 over 472, ", it must last"; 25620027 A 5 B 4 C 3 over 219, ", need N h"; each wording was that
+# account's in all of our 2,487 logged talks where it showed). For them food ships the best grade first.
+GRADE_FIRST = re.compile(r"\(G[0-9a-f]{8}\)(?:; I need it|, it must last|, need \d)")
+
+
 def find_unit(text, taken=()):
     """The in-stock unit for what the buyer asked (SKU, then name, then category). Among several units of the
     same product: goods ship the best grade, food the one that expires first but still has MIN_FOOD_HOURS."""
@@ -251,6 +258,8 @@ def find_unit(text, taken=()):
                 if not ok:
                     log(f"[quality] no matching food lasts the {'requested' if said is not None else 'usual'} need")
                     return None
+                if GRADE_FIRST.search(text):
+                    return min(ok, key=lambda u: (GRADE_RANK.get(u["grade"], 3), u["expires_at"] or math.inf))
                 return min(ok, key=lambda u: u["expires_at"] or math.inf)
             # a unit whose floor (cost x 1.05) is over the most it may open at (max_share) can only sell above the
             # market, so it goes behind the others (Nov 5 10:27-12:17: 4 surge-cost grade A Zinus Q mattresses
