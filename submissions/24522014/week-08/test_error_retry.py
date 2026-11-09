@@ -70,7 +70,8 @@ class Settings(unittest.TestCase):
 
     def test_the_shipped_setting(self):
         section = json.loads((support.ROOT / "buyer_support.json").read_text(encoding="utf-8"))["retry_other_shop"]
-        self.assertIs(section["errors_before_offer"], False)
+        # Installed off at 12:00:16 KST 11-09; switched on in its own commit after the full suite.
+        self.assertIs(section["errors_before_offer"], True)
 
 
 class Main(unittest.TestCase):

@@ -62,7 +62,8 @@ class Decision(unittest.TestCase):
 
     def test_the_shipped_setting_is_on_with_the_approved_bounds(self):
         # Shipped off at 09:24:40; switched on 09:26:05 KST 11-08 on the orchestrator's decision after the tests.
-        self.assertEqual(support.retry_settings(), ON)
+        # errors_before_offer added and switched on 11-09 (test_error_retry.py).
+        self.assertEqual(support.retry_settings(), {**ON, "errors_before_offer": True})
         section = json.loads((support.ROOT / "buyer_support.json").read_text(encoding="utf-8"))["retry_other_shop"]
         self.assertIs(section["enabled"], True)
 
