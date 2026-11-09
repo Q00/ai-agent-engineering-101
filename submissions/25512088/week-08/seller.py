@@ -159,15 +159,14 @@ class Seller(AgentExecutor):
                     if unit:
                         deal['unit']=unit
                         deal['quote']=sale_quote(unit,catalog,program,intel,
-                            token=deal['credentials']['member'],ref='',record=False)
+                            token=deal['credentials']['member'],ref='')
                 if not unit or unit.get('grade') == 'expired' or (unit.get('expires_at') and unit['expires_at'] <= time.time()):
                     self.open.pop(task.id, None)
                     await up.reject(say('The quoted stock is no longer available.'))
                     return
                 try:
-                    # Repricing an open task is not another buyer inquiry.
                     latest = sale_quote(unit, catalog, program, intel,
-                                        token=deal['credentials']['member'], ref='', record=False)
+                                        token=deal['credentials']['member'], ref='')
                 except ValueError:
                     self.open.pop(task.id, None)
                     await up.reject(say('Cannot verify this stock grade or expiry.'))
