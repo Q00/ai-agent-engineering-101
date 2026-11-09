@@ -59,5 +59,43 @@ class DailyLimitCountsFirstAttempts(unittest.TestCase):
         self.assertEqual(support.availability(s, "new", SETTINGS, DAY + 25), "attempt_cooldown")
 
 
+class RetentionKeepsTheWholeDay(unittest.TestCase):
+    """reserve() keeps 8,640 entries, two per first attempt at the 4,320 cap, so one UTC day's first attempts are never trimmed
+    before they are counted. With 5,000 kept, a day with more entries lost its earliest first attempts and the cap loosened."""
+
+    def setUp(self):
+        import tempfile
+        from pathlib import Path
+        from market_state import write
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.md = Path(self.tmp.name)
+        self.write = write
+
+    def test_a_day_with_more_than_5000_entries_still_counts_every_first_attempt(self):
+        s = state(4318, 1300)
+        self.write(self.md / "buyer-support-state.json", s)
+        now = DAY + 10 * 4318 + 60
+        shop = lambda name: {"name": name, "url": "https://shops/" + name}
+        self.assertEqual(support.reserve(self.md, "n1", shop("x"), "G9", 1, False, SETTINGS, now), "reserved")
+        self.assertEqual(support.reserve(self.md, "n2", shop("y"), "G8", 1, False, SETTINGS, now + 60), "reserved")      # the 4,320th
+        self.assertEqual(support.reserve(self.md, "n3", shop("z"), "G7", 1, False, SETTINGS, now + 120), "daily_attempt_limit")
+        from market_state import read
+        kept = read(self.md / "buyer-support-state.json")["attempts"]
+        self.assertEqual(len(kept), 4320 + 1300)
+        self.assertEqual(sum(not r.get("retry_of") for r in kept), 4320)
+
+    def test_at_most_8640_entries_are_kept(self):
+        s = state(4320, 4320, start=DAY - 86400)
+        s["attempts"] += state(10, 0)["attempts"]
+        self.write(self.md / "buyer-support-state.json", s)
+        shop = {"name": "x", "url": "https://shops/x"}
+        self.assertEqual(support.reserve(self.md, "n1", shop, "G9", 1, False, SETTINGS, DAY + 200), "reserved")
+        from market_state import read
+        kept = read(self.md / "buyer-support-state.json")["attempts"]
+        self.assertEqual(len(kept), 8640)
+        self.assertEqual(kept[-1]["order"], "n1")
+
+
 if __name__ == "__main__":
     unittest.main()

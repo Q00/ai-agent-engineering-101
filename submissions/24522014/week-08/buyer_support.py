@@ -312,7 +312,8 @@ def reserve(md, order_id, shop, sku, cap, rival, settings, now, retry_of=None):
         if any(r["shop"].casefold() == shop["name"].casefold() and r["sku"] == sku
                and now-r["at"] < settings["pair_cooldown_seconds"] for r in state["attempts"]):
             return "pair_attempt_cooldown"
-        state["attempts"] = [r for r in state["attempts"] if 0 <= now-r["at"] <= 7*86400][-4999:]
+        # 8,640 = 4,320 first attempts plus one retry each, so a UTC day is never trimmed before the daily limit counts it.
+        state["attempts"] = [r for r in state["attempts"] if 0 <= now-r["at"] <= 7*86400][-8639:]
         state["attempts"].append({"at": now, "order": order_id, "shop": shop["name"], "url": shop["url"],
                                    "sku": sku, "cap": cap, "rival_at_selection": rival, **({"retry_of": retry_of} if retry_of else {})})
         write(path, state)
