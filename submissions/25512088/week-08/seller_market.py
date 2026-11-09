@@ -42,7 +42,7 @@ def _review_evidence(catalog, shops, candidates):
                  'shops':len(row['shops'])} for sku,row in result.items()}
 
 
-def build_buyer_preferences(catalog,trades,shops,forum,alive_buyers=(),now=None):
+def build_buyer_preferences(catalog,trades,shops,forum,alive_buyers=(),now=None,board_reviews=()):
     """Build bounded public preference evidence; forum prose is never executed."""
     now=time.time() if now is None else now;alive_buyers=set(alive_buyers or [])
     recent=[dict(r) for r in trades if r.get('buyer') and r.get('sku') in catalog
@@ -54,9 +54,24 @@ def build_buyer_preferences(catalog,trades,shops,forum,alive_buyers=(),now=None)
                                     'forum_verified_refs':0,'stated_min_hours':[]})
         b['settles']+=1;b['last_seen']=max(b['last_seen'],row.get('ts',0))
         if cat:b['categories'][cat]=b['categories'].get(cat,0)+1
-        s=b['skus'].setdefault(sku,{'settles':0,'last_seen':0})
+        s=b['skus'].setdefault(sku,{'settles':0,'last_seen':0,'review_count':0,'review_stars':0.0})
         s['settles']+=1;s['last_seen']=max(s['last_seen'],row.get('ts',0))
         if type(row.get('seq')) is int:seqs[row['seq']]=(buyer,sku,cat)
+    # Board reviews carry an author while /api/shops review summaries do not.
+    # Review prose is used only for an exact single-product match, and only
+    # after the public ledger already proves that author bought that SKU.
+    verified_reviews=0;ignored_reviews=0
+    recent_pairs={(row['buyer'],row['sku']) for row in recent}
+    names={sku:str(product.get('name') or '').strip().lower() for sku,product in catalog.items()}
+    for review in board_reviews or ():
+        author=review.get('author');stars=review.get('stars');text=str(review.get('review') or '').lower()
+        matched=[sku for sku,name in names.items()
+                 if sku.lower() in text or (len(name)>=8 and name in text)]
+        if (type(stars) not in (int,float) or not author or len(matched)!=1
+                or (author,matched[0]) not in recent_pairs):
+            ignored_reviews+=1;continue
+        item=grouped[author]['skus'][matched[0]]
+        item['review_count']+=1;item['review_stars']+=float(stars);verified_reviews+=1
     posts=forum.get('posts',[]) if isinstance(forum,dict) else (forum or [])
     verified_posts=0;untrusted_posts=0
     for post in posts:
@@ -82,7 +97,10 @@ def build_buyer_preferences(catalog,trades,shops,forum,alive_buyers=(),now=None)
             'settles_48h':b['settles'],'last_seen':b['last_seen'],
             'categories':[{'category':cat,'settles':n,'share':round(n/b['settles'],3)} for cat,n in categories],
             'skus':[{'sku':sku,'name':catalog[sku].get('name',sku),'category':catalog[sku].get('category'),
-                     'settles':data['settles'],'last_seen':data['last_seen']} for sku,data in skus],
+                     'settles':data['settles'],'last_seen':data['last_seen'],
+                     'verified_review_count':data['review_count'],
+                     'verified_review_average':round(data['review_stars']/data['review_count'],3)
+                         if data['review_count'] else None} for sku,data in skus],
             'forum_verified_refs':b['forum_verified_refs'],
             'stated_min_hours':sorted(set(b['stated_min_hours']))[-3:]}
     candidates={r['sku'] for r in recent};reviews=_review_evidence(catalog,shops,candidates)
@@ -96,10 +114,12 @@ def build_buyer_preferences(catalog,trades,shops,forum,alive_buyers=(),now=None)
         'review_count':reviews.get(sku,{}).get('count',0),
         'review_average_stars':reviews.get(sku,{}).get('average'),
         'review_distinct_shops':reviews.get(sku,{}).get('shops',0)} for sku in candidates}
-    return {'version':1,'generated_at':now,'window_hours':PREFERENCE_WINDOW//3600,
+    return {'version':2,'generated_at':now,'window_hours':PREFERENCE_WINDOW//3600,
         'buyers':buyers,'products':products,
         'forum_evidence':{'posts_observed':len(posts),'verified_buyer_posts':verified_posts,
                           'untrusted_or_unverified_posts_ignored':untrusted_posts},
+        'review_evidence':{'verified_buyer_product_reviews':verified_reviews,
+                           'untrusted_ambiguous_or_unmatched_reviews_ignored':ignored_reviews},
         'evidence_policy':'ledger purchases primary; exact product reviews aggregated; only buyer-authored forum refs matching that buyer may add stated hours'}
 
 
@@ -112,7 +132,7 @@ def write_buyer_preferences(state,intel,catalog,shops=None,board=None,forum=None
     board=board if board is not None else (intel.source('board',{}) or {})
     forum=forum if forum is not None else read_json(root/'forum.json',[])
     alive={str(r.get('name')) for r in board.get('buyers',[]) if r.get('alive') is True}
-    result=build_buyer_preferences(catalog,trades,shops,forum,alive,now)
+    result=build_buyer_preferences(catalog,trades,shops,forum,alive,now,board.get('reviews',[]))
     result['ledger_through']=intel.get('ledger_through')
     path=root/PREFERENCE_FILE;tmp=path.with_suffix('.tmp')
     tmp.write_text(json.dumps(result,ensure_ascii=False,sort_keys=True));os.replace(tmp,path)
