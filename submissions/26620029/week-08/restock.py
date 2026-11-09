@@ -26,7 +26,8 @@ from pathlib import Path
 
 import customers
 
-CASH_FLOOR = 1_000_000      # never spend below this (bankruptcy line 500,000, and room to refill what sells);
+CASH_FLOOR = 40_000_000     # the user's choice (2026-11-09 15:40): "현금 4000만원만 남기고 가급적 사입"; was 1,000,000
+# never spend below this (bankruptcy line 500,000, and room to refill what sells);
                             # was 1,500,000 until the shop stocked mattresses deep, which do not rot
 MAX_LIST = 300_000          # skip categories whose median list price is above this: one unsold unit costs too much
 MIN_SHELF_HOURS = 48        # food that lasts a day spoils before most buyers ask for it
@@ -57,12 +58,17 @@ FOCUS_DEAR_QTY = 5          # was 2 until 2026-11-06 20:23: stock 48.5% of book 
 UNIT_SHARE = 0.25           # one unit's cost at most this share of the balance: dearer sofas come as the balance grows
 FOCUS_LINE_SHARE = 0.25     # one focus line spends at most this share of the balance
 FOCUS_SPEND = 0.6           # focus lines spend at most this share of the spendable cash per run: food still refills
-FOCUS_MAX_LINES = 6         # focus SKUs take at most this many of a run's MAX_LINES lines
+FOCUS_MAX_LINES = 8         # focus SKUs take at most this many of a run's MAX_LINES lines; 6 -> 8 (2026-11-09, more stock)
 MIN_VALUE = 0.003           # with MARKET_DATA deals seen: below this share of value, stock only what I already sold
 EARLY = 60                  # buy when the window opens within this many seconds (the kit runs us every 60 s)
 MIN_SHOPS = 3                # the user's choice (2026-11-07): a focus SKU above FOCUS_DEAR must have sold at this many other shops in the last 3 h
 RECENT_MIN = 3000            # market deals in the last 3 h before focus SKUs follow them (about 8,000 at normal volume)
-STOCK_CAP = 0.80             # the user's choice (2026-11-06): focus lines stop when stock cost, at COST_GUESS for new lines, passes this share of the book
+STOCK_CAP = 0.90             # the user's choice (2026-11-06): focus lines stop when stock cost, at COST_GUESS for new lines, passes this share of the book
+# 0.80 -> 0.90 (2026-11-09 15:40, the user's 40M cash floor): with a 290M book, 0.80 would stop buying at about 58M cash, so the floor binds instead
+SPREAD = True                # the user's choice (2026-11-09 15:40): focus lines from spread_lines (all goods SKUs at MIN_SHOPS+ shops, tiers in turn)
+TIER_HIGH = 1_000_000        # list price above this: high tier
+TIER_LOW = 200_000           # list price up to this: low tier; between: mid
+TIER_SKUS = 25               # best sellers kept per tier (23 high, 45 mid, 42 low SKUs sold at 3+ shops at 15:40)
 MEMORY = Path("restock_memory.json")
 
 
@@ -135,6 +141,8 @@ def focus_lines(inv, catalog, focus_cats, cu):
     c_full = {s for s, n in c_have.items() if n >= C_STOP}
     for s, n in c_have.items():
         have[s] = have.get(s, 0) + n // 2
+    if use_recent and SPREAD:
+        return spread_lines(recent, catalog, shops, total, have, c_full, balance)
     lines = []
     for cat in focus_cats:
         skus = recent.get(cat, {}) if use_recent else cu.get("sku_buys", {}).get(cat, {})
@@ -148,6 +156,42 @@ def focus_lines(inv, catalog, focus_cats, cu):
             if missing > 0:
                 lines.append((have.get(s, 0) > 0, -skus[s] * catalog[s]["list_price"], s, missing))
     return [(s, qty) for _, _, s, qty in sorted(lines)]     # sold-out SKUs first: extra units must not crowd them out
+
+
+def tier(list_price):
+    return 0 if list_price > TIER_HIGH else 1 if list_price > TIER_LOW else 2
+
+
+def spread_lines(recent, catalog, shops, total, have, c_full, balance):
+    """ddolcom (2026-11-09 15:40, the user's instruction): every goods SKU of any category that settled at MIN_SHOPS or more
+    other shops in the last 3 h, the TIER_SKUS best sellers of each price tier (dear by value, mid and cheap by deals),
+    taken in turn high, mid, low so one run's few lines do not all go to sofas. Sold-out SKUs first within the turn."""
+    by_tier = {0: [], 1: [], 2: []}
+    for skus in recent.values():
+        for s, n in skus.items():
+            c = catalog.get(s)
+            if not c or c.get("kind") != "goods" or s in c_full or shops.get(s, 0) < MIN_SHOPS:
+                continue
+            if c["list_price"] * COST_GUESS > UNIT_SHARE * balance:
+                continue
+            by_tier[tier(c["list_price"])].append((n, s))
+    queues = []
+    for t, xs in by_tier.items():
+        xs.sort(key=lambda x: -(x[0] * catalog[x[1]]["list_price"] if t == 0 else x[0]))
+        q = []
+        for n, s in xs[:TIER_SKUS]:
+            missing = focus_want(n / total, catalog[s]["list_price"]) - have.get(s, 0)
+            if missing > 0:
+                q.append((have.get(s, 0) > 0, s, missing))
+        q.sort(key=lambda x: x[0])                      # stable: sold-out first, then by the tier's order
+        queues.append(q)
+    out = []
+    while any(queues):
+        for q in queues:
+            if q:
+                _, s, qty = q.pop(0)
+                out.append((s, qty))
+    return out
 
 
 def plan(inv, catalog, demand, mem, cu=None):
