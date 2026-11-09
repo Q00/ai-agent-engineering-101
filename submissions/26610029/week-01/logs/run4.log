@@ -1,0 +1,22 @@
+  [tool] read_file({'path': 'notes.txt'}) -> 프로젝트 마감일: 2026-09-20
+
+프로젝트 제출 마감: 2026년 9월 20일
+이 날짜까지 최종 보고서를 제출해야 함.
+  [tool] clock({}) -> 2026-09-08T01:45:19.448223
+Traceback (most recent call last):
+  File "/Users/hajinhwang/Seoultech_study/ai-agent-engineering-101/submissions/26610029/week-01/first_agent.py", line 110, in <module>
+    print(run(goal))
+          ^^^^^^^^^
+  File "/Users/hajinhwang/Seoultech_study/ai-agent-engineering-101/submissions/26610029/week-01/first_agent.py", line 99, in run
+    out = TOOLS_IMPL[call.function.name](**args)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/hajinhwang/Seoultech_study/ai-agent-engineering-101/submissions/26610029/week-01/first_agent.py", line 37, in calculator
+    return str(_ev(ast.parse(expression, mode="eval").body))
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/anaconda3/envs/agent101/lib/python3.11/ast.py", line 50, in parse
+    return compile(source, filename, mode, flags,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<unknown>", line 1
+    (2026-09-20) - (2026-09-08)
+          ^
+SyntaxError: leading zeros in decimal integer literals are not permitted; use an 0o prefix for octal integers

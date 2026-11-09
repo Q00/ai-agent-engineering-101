@@ -1,0 +1,5 @@
+{"event": "setup", "run": "20260915T094352-10faa464", "condition": "baseline", "model": "nvidia/nemotron-3.5-lightning:free", "provider": "https://openrouter.ai/api/v1", "temperature": 0}
+{"event": "announcement", "contractor": "arithmetic", "task": {"id": "a1", "desc": "Calculate 17 * 23. Return a JSON number."}}
+{"event": "bid", "task": "a1", "raw": "{\n  \"participate\": true,\n  \"confidence\": 1,\n  \"reason\": \"Arithmetic calculation of 17 multiplied by 23.\"\n}", "participate": true, "confidence": 1, "reason": "Arithmetic calculation of 17 multiplied by 23.", "contractor": "arithmetic"}
+{"event": "announcement", "contractor": "extraction", "task": {"id": "a1", "desc": "Calculate 17 * 23. Return a JSON number."}}
+{"event": "crash", "run": "20260915T094352-10faa464", "condition": "baseline", "tasks": "", "correct": "", "messages": "", "unassigned": "", "misawards": "", "note": "KeyError", "http_status": null}

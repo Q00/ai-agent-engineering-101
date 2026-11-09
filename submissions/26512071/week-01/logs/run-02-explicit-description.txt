@@ -1,0 +1,26 @@
+model: minimax/minimax-m3:free
+base:  https://openrouter.ai/api/v1
+goal:  Read notes.txt, work out how much is still unpaid, and tell me how many days have passed between the memo date and today.
+
+[step 0] [tool] read_file({"path":"notes.txt"}) -> Team dinner settlement memo
+Memo date: 2026-09-01
+
+Attendees: 4
+Pizza budget: 48000
+Drinks: 9500
+Reimbursed so far: 12000
+
+The unpaid amount is the pizza budget plus the drinks, minus what has
+already been reimbursed. Payment was due 14 days after the memo date.
+
+[step 0] [tool] clock({}) -> {"datetime": "2026-09-07T13:13:21+09:00", "date": "2026-09-07", "timezone": "Asia/Seoul", "weekday": "Monday", "day_number": 739866}
+[step 1] [tool] calculator({"expression":"48000 + 9500 - 12000"}) -> 45500
+[step 1] [tool] clock({"date_str":"2026-09-01"}) -> {"date": "2026-09-01", "weekday": "Tuesday", "day_number": 739860}
+[step 2] [tool] calculator({"expression":"739866 - 739860"}) -> 6
+[step 3] final answer
+Here's the summary:
+
+- **Unpaid amount:** 45,500 (Pizza 48,000 + Drinks 9,500 − Reimbursed 12,000)
+- **Days passed since memo date (2026-09-01) → today (2026-09-07):** 6 days
+
+Note: Payment was due 14 days after the memo date, so the deadline (2026-09-15) is still 8 days away.

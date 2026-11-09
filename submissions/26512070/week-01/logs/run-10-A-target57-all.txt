@@ -1,0 +1,15 @@
+  [tool] calculator({'expression': '26 + (26 + 5)'}) -> 57
+  [tool] calculator({'expression': '56 + ((56 + 5) - 60)'}) -> 57
+  [tool] seconds_recorder({'path': 'seconds57.txt', 'at_second': 56}) -> wrote 2 lines to seconds57.txt
+  [tool] read_file({'path': 'seconds57.txt'}) -> time: 56
+time_after_five: 1
+
+  [tool] calculator({'expression': '56 + 1'}) -> 57
+## Summary
+
+**Every second seconds_recorder could run at so the two numbers sum to 57: `26` and `56`**
+
+- At second **26**: records 26 and 31 → sum = 57 ✓
+- At second **56**: records 56 and (56+5 mod 60 = 1) → sum = 57 ✓
+
+**Confirmation at the largest (56):** The file `seconds57.txt` contains `time: 56` and `time_after_five: 1`, and 56 + 1 = **57** ✓

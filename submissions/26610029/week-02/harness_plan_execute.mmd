@@ -1,0 +1,19 @@
+flowchart LR
+    A["Task 입력"] --> B["Planner 호출 (tools 없음)<br/>[axis 1: context = planner 전용, 툴 없음]"]
+    B --> C{"JSON list<br/>파싱 성공?"}
+    C -->|No| Z["plan parse failed로 즉시 종료<br/>[axis 4: 재계획 불가, 바로 실패]"]
+    C -->|Yes| D["Executor 시작<br/>[axis 1: context = executor 전용, 별도 Chat]"]
+    D --> E["Step i 실행 지시"]
+    E --> F["모델 응답"]
+    F --> G{"tool_call<br/>있음?"}
+    G -->|Yes| H["툴 실행 (최대 max_tool_rounds=3)<br/>[axis 2: granularity = step 안에서 여러 라운드]"]
+    H --> F
+    G -->|No| N{"OFF_PLAN<br/>응답?"}
+    N -->|No, 정상 완료| L{"모든 step<br/>실행?"}
+    N -->|Yes| I{"replans <<br/>max_replan(1)?<br/>[axis 4: 재계획 상한]"}
+    I -->|No| K["다음 step으로 그냥 진행"]
+    K --> L
+    I -->|Yes| J["Planner에게 나머지 계획 재요청"]
+    J --> D
+    L -->|No| E
+    L -->|Yes| M["최종 Answer 요청<br/>[axis 3: 종료조건 = 계획 완수]"]

@@ -1,0 +1,106 @@
+"""Week 02 starter — run the A/B experiment and record results.csv.
+
+Usage: python run_ab.py [--runs 3]
+
+Reads the task and the success criterion from TASK.md, runs each harness
+--runs times, judges every run, appends one line per run to results.csv,
+and saves each run's console output under logs/. Failed runs are kept:
+they are data.
+"""
+import argparse
+import csv
+import os
+import re
+import time
+from pathlib import Path
+
+from harness_plan_execute import run_plan_execute
+from harness_react import run_react
+from tools_shared import MODEL, PROVIDER, TOOLSET
+
+HEADER = ["run", "harness", "success", "tokens", "iters", "interventions", "note"]
+
+
+def read_task(path="TASK.md"):
+    text = Path(path).read_text(encoding="utf-8")
+    task = re.search(r"^task:\s*(.+)$", text, flags=re.M)
+    expected = re.search(r"^expected:\s*(.+)$", text, flags=re.M)
+    if not task or not expected:
+        raise SystemExit("TASK.md needs a 'task:' line and an 'expected:' line")
+    return task.group(1).strip(), expected.group(1).strip()
+
+
+def judge(answer: str, expected: str) -> bool:
+    """Success = the expected string appears in the harness's conclusion.
+
+    The conclusion is the last line beginning with 'Answer:'; both harnesses
+    are instructed to emit one. Falling back to the whole response when there
+    is none. Checking the whole response instead would score a run O whenever
+    it merely mentioned the expected hour while concluding otherwise, and the
+    two harnesses do not produce final responses of the same shape, so that
+    bias would not fall equally on them.
+
+    Fixed before the first run. Do not loosen it afterwards.
+    """
+    text = answer or ""
+    lines = [l for l in text.splitlines() if l.strip().lower().startswith("answer:")]
+    target = lines[-1] if lines else text
+    return expected.lower() in target.lower()
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--runs", type=int, default=3)
+    args = ap.parse_args()
+
+    task, expected = read_task()
+    Path("logs").mkdir(exist_ok=True)
+    new_file = not Path("results.csv").exists()
+    run_no = 0
+    if not new_file:
+        with open("results.csv", encoding="utf-8") as f:
+            run_no = sum(1 for _ in f) - 1
+
+    with open("results.csv", "a", newline="", encoding="utf-8") as f:
+        w = csv.writer(f)
+        if new_file:
+            w.writerow(HEADER)
+        for name, fn in (("react", run_react), ("plan_exec", run_plan_execute)):
+            for _ in range(args.runs):
+                run_no += 1
+                lines = []
+
+                def log(msg, _lines=lines):
+                    print(msg)
+                    _lines.append(str(msg))
+
+                t0 = time.time()
+                # Which model produced the row belongs in the row. Mixing two
+                # providers in one results.csv is otherwise unreadable later.
+                note = f"{PROVIDER}:{MODEL} tools={TOOLSET}"
+                try:
+                    out = fn(task, log=log)
+                    answer, meter = out[0], out[1]
+                    if name == "plan_exec":
+                        note += f" replans={out[2]}"
+                except Exception as e:            # a crash is a failed run, not a lost run
+                    answer, meter = "", None
+                    note += f" crash: {type(e).__name__}: {e}"
+                    log(note)
+                success = judge(answer, expected)
+                log(f"[final] {answer.strip()[:300]}")
+                log(f"[judge] expected={expected!r} -> {'O' if success else 'X'} "
+                    f"({time.time() - t0:.1f}s)")
+
+                Path("logs", f"{name}-{run_no:02d}.txt").write_text(
+                    "\n".join(lines) + "\n", encoding="utf-8")
+                w.writerow([run_no, name, "O" if success else "X",
+                            meter.tokens if meter else "",
+                            meter.iters if meter else "",
+                            meter.interventions if meter else "", note])
+                f.flush()
+    print("\nresults.csv updated;", os.path.abspath("results.csv"))
+
+
+if __name__ == "__main__":
+    main()

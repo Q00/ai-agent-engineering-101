@@ -1,0 +1,25 @@
+Traceback (most recent call last):
+  File "C:\Users\gom12\ax_수업\ai-agent-engineering-101\submissions\26512070\week-01\first_agent.py", line 142, in <module>
+    print(run(goal))
+          ~~~^^^^^^
+  File "C:\Users\gom12\ax_수업\ai-agent-engineering-101\submissions\26512070\week-01\first_agent.py", line 118, in run
+    resp = client.chat.completions.create(
+        model=MODEL, tools=TOOLS, messages=messages)
+  File "C:\Users\gom12\AppData\Local\Programs\Python\Python314\Lib\site-packages\openai\_utils\_utils.py", line 298, in wrapper
+    return func(*args, **kwargs)
+  File "C:\Users\gom12\AppData\Local\Programs\Python\Python314\Lib\site-packages\openai\resources\chat\completions\completions.py", line 1296, in create
+    return self._post(
+           ~~~~~~~~~~^
+        "/chat/completions",
+        ^^^^^^^^^^^^^^^^^^^^
+    ...<53 lines>...
+        stream_cls=Stream[ChatCompletionChunk],
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\gom12\AppData\Local\Programs\Python\Python314\Lib\site-packages\openai\_base_client.py", line 1368, in post
+    return cast(ResponseT, self.request(cast_to, opts, stream=stream, stream_cls=stream_cls))
+                           ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gom12\AppData\Local\Programs\Python\Python314\Lib\site-packages\openai\_base_client.py", line 1141, in request
+    raise self._make_status_error_from_response(err.response) from None
+openai.NotFoundError: Error code: 404 - {'error': {'message': '0 endpoints out of 1 requested are available matching your guardrail restrictions and data policy. We removed them for the following reasons (an endpoint may have matched multiple reasons):\nZDR violation (account settings): 1 endpoint excluded; configurable at https://openrouter.ai/settings/privacy', 'code': 404, 'metadata': {'input_endpoint_count': 1, 'ineligibility_reasons': [{'reason': 'zdr-violation-by-account', 'endpoint_count': 1, 'configure_url': 'https://openrouter.ai/settings/privacy'}], 'routing_funnel': [{'step': 'Initial Endpoints', 'endpoint_count': 1}], 'failed_routing_step': 'Filter by Guardrails'}}}

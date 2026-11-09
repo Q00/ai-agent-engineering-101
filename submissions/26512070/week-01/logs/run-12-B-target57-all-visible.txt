@@ -1,0 +1,12 @@
+  [tool] calculator({'expression': '26 + (26+5)'})
+         -> 57
+  [tool] calculator({'expression': '56 + ((56+5) - 60)'})
+         -> 57
+  [tool] seconds_recorder({'path': 'seconds57.txt', 'at_second': 56})
+         -> wrote 2 lines to seconds57.txt
+  [tool] read_file({'path': 'seconds57.txt'})
+         -> time: 56
+time_after_five: 1
+
+  [tool] calculator({'expression': '56 + 1'})
+         -> 57

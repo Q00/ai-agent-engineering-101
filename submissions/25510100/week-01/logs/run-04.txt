@@ -1,0 +1,15 @@
+  [tool] read_file({'path': 'notes.txt'}) -> Meeting memo, 2026-09-01
+
+Attendees: 4
+Pizza budget: 48000
+Drinks: 9500
+Reimbursed so far: 12000
+
+Sum the numbers above to get the total the agent should report.
+
+  [tool] write_note({'path': 'summary.txt', 'text': '69504'}) -> appended to summary.txt
+  [tool] read_file({'path': 'summary.txt'}) -> 69504
+69504
+
+`notes.txt` 파일을 읽어서 나타나는 숫자들(4, 48000, 9500, 12000)의 합계는 **69504**입니다.  
+이 값을 `summary.txt` 파일에 기록했습니다. (기존 내용이 있었다면 뒤에 추가로 기록되었습니다.)

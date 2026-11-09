@@ -1,0 +1,14 @@
+Traceback (most recent call last):
+  File "/Users/dariakolotihina/Documents/ai-agent-engineering-101/submissions/25512084/week-01/first_agent.py", line 111, in <module>
+    print(run(goal))
+  File "/Users/dariakolotihina/Documents/ai-agent-engineering-101/submissions/25512084/week-01/first_agent.py", line 90, in run
+    resp = client.chat.completions.create(
+  File "/Users/dariakolotihina/Library/Python/3.9/lib/python/site-packages/openai/_utils/_utils.py", line 298, in wrapper
+    return func(*args, **kwargs)
+  File "/Users/dariakolotihina/Library/Python/3.9/lib/python/site-packages/openai/resources/chat/completions/completions.py", line 1284, in create
+    return self._post(
+  File "/Users/dariakolotihina/Library/Python/3.9/lib/python/site-packages/openai/_base_client.py", line 1360, in post
+    return cast(ResponseT, self.request(cast_to, opts, stream=stream, stream_cls=stream_cls))
+  File "/Users/dariakolotihina/Library/Python/3.9/lib/python/site-packages/openai/_base_client.py", line 1133, in request
+    raise self._make_status_error_from_response(err.response) from None
+openai.NotFoundError: Error code: 404 - {'error': {'message': 'This model is unavailable for free. The paid version is available now - use this slug instead: meta-llama/llama-3.3-70b-instruct', 'code': 404}, 'user_id': 'user_3IiuejAjlhj36aodSVQ8pjf4qRC'}

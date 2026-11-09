@@ -19,7 +19,7 @@ The assignment submission repository for the Agentic AI course at SeoulTech. Stu
 index.html, week-NN.html        Lecture notes. Read-only.
 roster/<student-id>.md          Student-id to GitHub-id mapping. Created in week-01.
 weeks/week-NN/README.md         The assignment spec for that week. Source of truth for requirements.
-weeks/week-NN/starter/          Starter code. Copy it into submissions/ to begin.
+weeks/week-NN/starter/          Starter code (weeks 01 and 02 only). Copy it into submissions/ to begin.
 submissions/<student-id>/week-NN/   Where the work lives.
 scripts/check_weekNN.py         The same checks CI runs. Run locally first.
 ```
@@ -27,7 +27,7 @@ scripts/check_weekNN.py         The same checks CI runs. Run locally first.
 ## Weekly workflow (identical every week)
 
 1. Read `weeks/week-NN/README.md` for the submission requirements.
-2. Copy `weeks/week-NN/starter/` to `submissions/<student-id>/week-NN/`.
+2. Copy `weeks/week-NN/starter/` to `submissions/<student-id>/week-NN/`. From week-03 on there is no starter: the README states the data contract and the code layout is the student's.
 3. Do the work. **Commit after every unit of work** — each tool added, each fix, each failed attempt gets its own commit. Never batch a whole session into one commit. Save agent run console output as files under `submissions/<student-id>/week-NN/logs/`.
 4. Before submitting, run: `python scripts/check_weekNN.py submissions/<student-id>/week-NN`
 5. When checks pass, commit and push. PR title format: `[week-NN] <student-id>`
