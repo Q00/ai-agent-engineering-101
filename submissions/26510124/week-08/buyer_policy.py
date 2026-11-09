@@ -35,6 +35,16 @@ def load_policy():
     for key in ("goods_warranty_hours", "food_buffer_hours"):
         if type(config.get(key)) not in (int, float) or not math.isfinite(config[key]) or config[key] < 0:
             raise ValueError(f"Invalid buyer policy: {key}")
+    targets = config.get("target_list_price_percent")
+    if targets is not None and (not isinstance(targets, dict)
+            or set(targets) != {"food", "goods"}
+            or any(type(v) is not int or not 1 <= v <= 100 for v in targets.values())):
+        raise ValueError("Invalid buyer policy: target_list_price_percent")
+    preferred = config.get("preferred_goods_warranty_hours")
+    if preferred is not None and (type(preferred) not in (int, float)
+            or not math.isfinite(preferred)
+            or not config["goods_warranty_hours"] <= preferred <= 72):
+        raise ValueError("Invalid buyer policy: preferred_goods_warranty_hours")
     if not isinstance(config.get("version"), str):
         raise ValueError("Buyer policy needs a version")
     if type(config.get("allow_accept_above_concession", False)) is not bool:
@@ -101,6 +111,12 @@ def buying_terms(budget, *, product=None, order=None, config=None):
         "accept": checkout_policy(order, config) if order and order.get("round", 0) >= 3 else {},
         "kind": (order or {}).get("kind"),
     }
+    target_percent = config.get("target_list_price_percent", {}).get(terms["kind"])
+    if ref is not None and target_percent is not None:
+        # A negotiation goal, never a new checkout authority or compulsory refusal.
+        terms["target_price"] = min(terms["target_price"], max(1, ref * target_percent // 100))
+    if terms["kind"] == "goods" and "preferred_goods_warranty_hours" in config:
+        terms["preferred_warranty_hours"] = config["preferred_goods_warranty_hours"]
     if "allow_accept_above_concession" in config:
         terms["allow_accept_above_concession"] = config["allow_accept_above_concession"]
     prefs = config.get("review_preferences")

@@ -24,7 +24,7 @@ class BalancedBuyerTests(unittest.TestCase):
     def test_new_limits_preserve_separate_frozen_ideal_criteria(self):
         terms = self.terms()
         self.assertEqual(terms["price_limit"], 85000)
-        self.assertEqual(terms["target_price"], 76500)
+        self.assertEqual(terms["target_price"], 65000)
         self.assertEqual(terms["review_preferences"]["price_limit"], 65000)
         self.assertEqual(terms["review_preferences"]["excellent_price"], 58500)
         self.assertEqual(self.terms(80000)["price_limit"], 72000)
