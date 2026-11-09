@@ -66,6 +66,11 @@ def plan(inventory, catalog, demand, sales, cursor=0, *, hints=None, now=None, i
     # Shop b (hi_band.py): 1M+ goods with our own recent sales get up to `slots` places outside the total cap, the run's units and
     # its lines. Off, or with no such SKU, every count below is today's.
     hb = hi_band if isinstance(hi_band, dict) and hi_band.get("sales") else None
+    # With shop b on (a valid band, even with no qualifying SKU) its worst-cost cap also bounds 1M+ units from the ordinary pass.
+    band = hi_band if isinstance(hi_band, dict) and type(hi_band.get("min_list_price")) is int else None
+    def over_floor(sku):
+        product = catalog.get(sku) or {}
+        return bool(band) and product.get("kind") == "goods" and (product.get("list_price") or 0) >= band["min_list_price"]
     def is_hi(sku):
         product = catalog.get(sku) or {}
         return bool(hb) and product.get("kind") == "goods" and (product.get("list_price") or 0) >= hb["min_list_price"]
@@ -136,8 +141,8 @@ def plan(inventory, catalog, demand, sales, cursor=0, *, hints=None, now=None, i
         trial_skus.append(pick["sku"])
     hi_planned, hi_taken = 0, []
     # Held plus planned 1M+ stock at worst cost stays within the cap (12M at most).
-    hi_worst = sum((catalog.get(u.get("sku")) or {}).get("list_price", 0) * 0.75 * surge.get(u.get("sku"), 1) for u in units if is_hi(u.get("sku"))) if hb else 0
-    hi_cap = hb.get("max_worst_cost_total", 12000000) if hb else 0
+    hi_worst = sum((catalog.get(u.get("sku")) or {}).get("list_price", 0) * 0.75 * surge.get(u.get("sku"), 1) for u in units if over_floor(u.get("sku"))) if band else 0
+    hi_cap = band.get("max_worst_cost_total", 12000000) if band else 0
     for sku in (sorted(hb["sales"], key=lambda s: (-hb["sales"][s], s)) if hb else ()):
         value = catalog.get(sku) or {}
         if hi_room <= 0:
@@ -190,11 +195,14 @@ def plan(inventory, catalog, demand, sales, cursor=0, *, hints=None, now=None, i
                   limits["max_total_units"]-counted-planned_units)
         if position < len(new_range):
             qty = min(qty, 1)
-        while qty > 0 and estimated + storage_reserve + qty*(worst_cost+carrying_cost) > budget:
+        # Shop b's cap counts both passes: a 1M+ unit here too keeps held plus planned 1M+ stock at worst cost within it.
+        while qty > 0 and (estimated + storage_reserve + qty*(worst_cost+carrying_cost) > budget or (over_floor(sku) and hi_worst + qty*worst_cost > hi_cap)):
             qty -= 1
         if qty <= 0:
             continue
         planned[sku] += qty
+        if over_floor(sku):
+            hi_worst += worst_cost * qty
         if blocked_by_median and sku not in bypassed:
             bypassed.append(sku)
         estimated += worst_cost * qty
