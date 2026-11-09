@@ -196,7 +196,7 @@ def ceo_tick(mem, args, call):
     return {"buy": lines}
 
 
-SHOP_WEIGHTS = {"book": 0.5, "revenue": 0.3, "stars": 0.2}                   # /rules, patch 3.3
+SHOP_WEIGHTS = {"book": 0.5, "revenue": 0.3, "stars_rank": 0.2}   # /rules 3.3; stars_rank is the per-account mean that scores (board "stars" pools reviews)
 BUYER_WEIGHTS = {"saved": 0.5, "forum": 0.3, "deals": 0.1, "posts": 0.1}       # /rules, patches 3.4 and 3.5
 
 
