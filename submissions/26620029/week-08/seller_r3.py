@@ -55,6 +55,9 @@ NO_WARRANTY_LINE = "Refurbished unit sold as is, without a break warranty."
 # warranty until C_WARRANTY_UNTIL (24 h) to clear 125 C units (cost 47.6M). C costs about 0.35 of list and the market pays about
 # 0.59 for C, so even at the old 27.7% break rate about 0.08 of list stays after refunds. Buyers that take only A and B still will not pay
 C_WARRANTY_UNTIL = 1794265200          # 2026-11-10 08:00 KST
+# ddolcom (2026-11-09 16:40, the user's instruction "C 보증을 종결하고, 대신 가격을 많이 할인해서 팔아줘"): ended early. From 08:26
+# 105 C sold with the warranty, 35 broke (33%), 19.9M refunded against about 22.8M of margin; refunds beat C margin two checks running
+C_WARRANTY_UNTIL = 1794210000          # 2026-11-09 16:40 KST: over
 # ddolcom (strategy 3): prices come from code. ask = floor + (list price - floor) * STEP ** (buyer offers so far)
 STEP = 0.6                                  # each buyer offer moves the ask 40% of the way down to the floor
 # ddolcom: a buyer that leaves without cancelling kept its unit promised until a restart. On 2026-11-06 after 34 h of
@@ -81,6 +84,9 @@ TRIAL2_SHARE = 0.73
 # Claude (2026-11-08 14:23, hourly check): C held 124 units at a cost of 46.8M, 20.8M of it unsold 12 h+. Over 6 h on 1M+ goods
 # the market sold 138 C at 0.592 of list and I sold 3 at 0.66 (A: 69 of 939 at 0.704). C costs 0.25-0.45 of list and has no refunds
 GRADE_OPEN = {"B": 0.72, "C": 0.60}
+# ddolcom (2026-11-09 16:40, the same instruction): grade C goods sold as is now open well under the market's C price (about 0.59
+# of list): 0.45, and at every price (not only the "low" arm of 100,000+). The floor stays the cost (C costs about 0.35 of list)
+GRADE_OPEN["C"] = 0.45
 TRIAL2_RATE = 0.0
 # ddolcom (2026-11-06, the user's instruction): one clearance only, at cost or a little above, to free the cash. These 6
 # units had sat 13-40 h and are the ones the forum post 22459 names. New units never join by age: a rule on age alone also
@@ -166,7 +172,7 @@ def ask_price(u, offers, arm=None):
         share = TRIAL2_SHARE
     else:
         share = 1 if arm != "low" else TRIAL_DEAR_SHARE if u["list_price"] >= TRIAL_DEAR_MIN else TRIAL_SHARE
-    if arm == "low" and is_goods(u) and u.get("grade") in GRADE_OPEN:
+    if (arm == "low" or (arm is None and u.get("grade") == "C")) and is_goods(u) and u.get("grade") in GRADE_OPEN:
         share = min(share, GRADE_OPEN[u["grade"]])
     top = max(u["list_price"] * share, floor)
     return int(floor + (top - floor) * STEP ** offers)
