@@ -174,6 +174,10 @@ def buyer_candidates(order, shops, catalog, journal, config=None):
     result = []
     allowed = set(order.get("acceptable") or [])
     registry = journal.snapshot("registry.json", {})
+    route_context={}
+    if (config or {}).get('buyer_contract_routing_enabled'):
+        from .buyer_routes import context as buyer_route_context
+        route_context=buyer_route_context(journal,now)
     for shop in shops:
         for row in shop.get("offers", []):
             sku = row.get("sku")
@@ -223,6 +227,9 @@ def buyer_candidates(order, shops, catalog, journal, config=None):
                                         'budget_feasibility_scenario': affordability,
                                         'route_availability':route,
                                         "price_is_prior": not bool(own) and not bool(observed)}})
+            if (config or {}).get('buyer_contract_routing_enabled'):
+                from .buyer_routes import adjust
+                adjust(result[-1],order,journal,config,route_context)
     return sorted(result, key=lambda x: x["score"], reverse=True)
 
 

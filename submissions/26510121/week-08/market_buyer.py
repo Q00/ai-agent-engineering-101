@@ -8,7 +8,7 @@ from r3.market_memory import buyer_price_actions, buyer_assessment
 from r3.economy import buyer_candidates
 from r3.model import Chooser
 from r3.protocol import Peer, quote, quote_terms, verify_receipt
-from r3.quote_market import compare_quotes, close_quotes, request_text
+from r3.quote_market import compare_quotes, close_quotes, request_text,clarify
 from r3.adaptive import begin_buyer
 
 
@@ -88,11 +88,14 @@ def execute(order, journal, chooser, peer_factory, cfg, strategy, registry, rank
                 task = peer.send(request_text(c, order))
                 from r3.protocol import observe_quote
                 observe_quote(journal,task,c['shop'],order,'direct')
+                task=clarify(peer,task,c,order,journal,cfg,deadline)
             agreed = None
             previous_offer = None
             required_warranty = 0
             required_grade = None
-            for turn in range(cfg["max_negotiation_turns"] + 1):
+            conditional_requirements=[]
+            max_turns=cfg.get('buyer_negotiation_turns',cfg['max_negotiation_turns'])
+            for turn in range(max_turns + 1):
                 state = task["status"]["state"]
                 if state == "TASK_STATE_COMPLETED":
                     receipts = [p["data"] for a in task.get("artifacts", []) for p in a.get("parts", [])
@@ -102,13 +105,34 @@ def execute(order, journal, chooser, peer_factory, cfg, strategy, registry, rank
                     # Some peers return a signed final offer immediately. It is
                     # still subject to our cap, signature and authoritative checkout.
                     if agreed is None:
-                        assessment = buyer_assessment(dict(c['product'], sku=c['sku']), order, receipts[0], journal, cfg)
+                        assessment = buyer_assessment(dict(c['product'], sku=c['sku']), order, receipts[0], journal, cfg,shop=c['shop'])
                         cap, required_warranty = assessment['cap'], assessment['required_warranty']
-                        required_grade = receipts[0].get('grade', receipts[0].get('claim'))
+                        required_grade = assessment.get('required_grade',receipts[0].get('grade',receipts[0].get('claim')))
+                        conditional_requirements=assessment.get('conditional_terms',[])
                         price = receipts[0].get('price')
                         if type(price) not in (int, float) or price > cap:
                             raise ValueError('receipt_integrity_failure')
                         agreed = price
+                    if cfg.get('buyer_contract_routing_enabled'):
+                        rec_terms=receipts[0]
+                        actual_grade=rec_terms.get('grade') or rec_terms.get('claim')
+                        actual_warranty=rec_terms.get('warranty_hours')
+                        if required_grade and actual_grade in ('A','B','C') and actual_grade!=required_grade and 'grade' not in conditional_requirements:
+                            raise ValueError('quote_grade_changed')
+                        if type(actual_warranty) in (int,float) and actual_warranty<required_warranty and 'warranty_hours' not in conditional_requirements:
+                            raise ValueError('quote_warranty_changed')
+                        final_terms=dict(rec_terms)
+                        if actual_grade in ('A','B','C'):final_terms['grade']=actual_grade
+                        final_terms.setdefault('grade',required_grade)
+                        final_terms.setdefault('warranty_hours',required_warranty)
+                        final=buyer_assessment(dict(c['product'],sku=c['sku']),order,final_terms,journal,cfg,shop=c['shop'])
+                        price=rec_terms.get('price')
+                        if type(price) not in (int,float) or price>agreed or price>final['cap']:
+                            raise ValueError('receipt_integrity_failure')
+                        # A signed lower price is a genuine seller concession.
+                        agreed=price
+                        required_grade=final['required_grade']
+                        required_warranty=final['required_warranty']
                     if not verify_receipt(receipts[0], pub, task=task["id"],
                             sku=c["sku"], budget=order["budget"], agreed=agreed):
                         raise ValueError("receipt_integrity_failure")
@@ -146,16 +170,17 @@ def execute(order, journal, chooser, peer_factory, cfg, strategy, registry, rank
                 terms = quote_terms(task)
                 if terms.get('sku') not in (None, c['sku']):
                     raise ValueError('quote_sku_mismatch')
-                assessment = buyer_assessment(dict(product, sku=c['sku']), order, terms, journal, cfg)
+                assessment = buyer_assessment(dict(product, sku=c['sku']), order, terms, journal, cfg,shop=c['shop'])
                 cap, required_warranty, stress = assessment['cap'], assessment['required_warranty'], assessment['failure']
-                required_grade = terms.get('grade')
+                required_grade = assessment.get('required_grade',terms.get('grade'))
+                conditional_requirements=assessment.get('conditional_terms',[])
                 if (product.get('kind') == 'food' and type(terms.get('expires_at')) in (int, float) and
                         terms['expires_at'] < time.time() + order.get('use_within_hours', 0) * 3600 +
                         cfg['checkout_buffer_seconds']):
                     break  # An already unsuitable offer cannot pass the final certificate check.
                 actions = buyer_price_actions(ask, cap, product, c['reference_price'],
                                               cfg['buyer_counter_ratio'], turn,
-                                              cfg['max_negotiation_turns'], previous_offer,
+                                              max_turns, previous_offer,
                                               stress, required_warranty >= 6, assessment['covered_failure'],
                                               assessment['saved_state'] if assessment['saved_state']['metric']=='saved' else None)
                 if not actions:
@@ -182,7 +207,7 @@ def execute(order, journal, chooser, peer_factory, cfg, strategy, registry, rank
             reason = str(exc) if isinstance(exc, ValueError) and str(exc) in {
                 'certificate_unavailable', 'receipt_integrity_failure', 'registered_signing_key_unavailable',
                 'ambiguous_ask', 'conflicting_ask', 'conflicting_offer_terms', 'quote_sku_mismatch', 'invalid_money',
-                'known_unavailable_unit','known_unsuitable_shelf_life'} else None
+                'known_unavailable_unit','known_unsuitable_shelf_life','quote_grade_changed','quote_warranty_changed'} else None
             journal.add("attempt", {"order": order['order'], "strategy_version": strategy['version'],
                                     "shop": c["shop"], "sku": c["sku"], "success": False,
                                     'reason': reason,

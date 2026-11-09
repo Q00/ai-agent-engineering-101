@@ -18,7 +18,30 @@ def request_text(candidate, order):
         text += ' Prefer a 6-hour warranty covering the full published break horizon; state the actual price and grade.'
     if candidate.get('avoid_units'):
         text += ' Offer a different available unit, not these recently refused units: '+', '.join(candidate['avoid_units'][:4])+'.'
+    if candidate.get('paid_task_refs'):
+        text+=' My previously settled tasks at your shop: '+', '.join(candidate['paid_task_refs'][:3])+'. If you offer a repeat-customer discount, quote the actual discounted price.'
     return text
+
+
+def clarify(peer,task,candidate,order,journal,config,deadline):
+    if (not config.get('buyer_contract_routing_enabled') or order.get('kind')!='goods' or
+            task.get('status',{}).get('state')!='TASK_STATE_INPUT_REQUIRED' or deadline-time.time()<6):return task
+    try:
+        terms=quote_terms(task);quote(task)
+        missing=terms.get('grade') not in ('A','B','C') or terms.get('warranty_hours') is None
+    except ValueError as exc:
+        if str(exc)!='ambiguous_ask':return task
+        missing=True
+    if not missing:return task
+    text=(f"Please clarify ONE current offer for {candidate['sku']} on this task: ask, sku, unit, grade "
+          "(A/B/C), warranty_hours. Use a structured data part if possible. I require the market certificate "
+          "at checkout; without a declared grade my offer will be conditional on certified grade A, "
+          "and without stated coverage I will require a minimum 6-hour warranty. This message is not acceptance.")
+    reply=peer.send(text,task['id'])
+    from .protocol import observe_quote
+    observe_quote(journal,reply,candidate['shop'],order,'clarification')
+    journal.add('buyer_terms_clarified',{'order':order['order'],'shop':candidate['shop'],'sku':candidate['sku']},role='buyer')
+    return reply
 
 
 def compare_quotes(order, ranked, registry, journal, config, peer_factory, deadline):
@@ -43,7 +66,8 @@ def compare_quotes(order, ranked, registry, journal, config, peer_factory, deadl
             peer.deadline=deadline-reserve
         try:
             peer.discover(c['shop'])
-            return peer, peer.send(request_text(c, order))
+            task=peer.send(request_text(c,order))
+            return peer,clarify(peer,task,c,order,journal,config,deadline)
         except Exception:
             peer.close()
             raise
@@ -70,18 +94,20 @@ def compare_quotes(order, ranked, registry, journal, config, peer_factory, deadl
                         journal.add('buyer_declined_terms',{'order':order['order'],'shop':c['shop'],
                                     'sku':c['sku'],'reason':reason,'stage':'rfq'},role='buyer')
                         continue
-                assessment = buyer_assessment(dict(c['product'], sku=c['sku']), order, terms, journal, config)
+                assessment = buyer_assessment(dict(c['product'], sku=c['sku']), order, terms, journal, config,shop=c['shop'])
                 q, qc, cap = assessment['failure'], assessment['covered_failure'], assessment['cap']
                 if cap<1:
                     c['quote_failed']=True
                     journal.add('buyer_declined_terms',{'order':order['order'],'sku':c['sku'],
                                                        'reason':'no_safe_saved_price'},role='buyer')
                     continue
-                feasible = ask <= cap
+                price_feasible=ask<=cap
+                conditional=bool(assessment.get('conditional_terms'))
+                feasible = price_feasible and not conditional
                 # A quote above our cap is only a low-confidence negotiation
                 # option; do not pretend the capped price is actually offered.
-                price = ask if feasible else min(cap, int(ask * .92))
-                completion = 1 if feasible else .25
+                price = ask if price_feasible else min(cap, int(ask * .92))
+                completion = 1 if feasible else .35 if price_feasible else .25
                 from .buyer_scoring import contribution,terms_delta
                 current=assessment['saved_state']
                 surplus = max(0, (1-q)*c['product']['list_price'] - (1-qc)*price)

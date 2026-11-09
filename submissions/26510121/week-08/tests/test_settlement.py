@@ -25,11 +25,12 @@ from review import review
 from test_market_contract import unit, pub
 
 
-@pytest.mark.parametrize('championship',[False,True])
-def test_end_to_end_payment_moves_credits_once(tmp_path, monkeypatch,championship):
+@pytest.mark.parametrize('championship,market_cohort',[(False,False),(True,False),(True,True)])
+def test_end_to_end_payment_moves_credits_once(tmp_path, monkeypatch,championship,market_cohort):
     if championship:
         cfg=dict(policy(),shop_championship_enabled=True,buyer_championship_enabled=True,
-                 buyer_patch34_enabled=True,buyer_strategy_revision='championship-synthetic')
+                 buyer_patch34_enabled=True,buyer_strategy_revision='championship-synthetic',
+                 buyer_market_quality_enabled=market_cohort,buyer_contract_routing_enabled=market_cohort)
         for module in ['r3.adaptive','r3.adapter','seller_r3']:
             monkeypatch.setattr(module+'.policy',lambda *a:cfg)
     if not os.environ.get('R3_LIVE_INTEGRATION'):
@@ -39,14 +40,24 @@ def test_end_to_end_payment_moves_credits_once(tmp_path, monkeypatch,championshi
     j = Journal(tmp_path / '.market')
     if championship:
         atomic_json(j.md/'board.json',{'round':3,'buyers':[
-            {'name':'seochanit','saved':.15,'deals':100,'forum':.5,'posts':2}]})
+            {'name':'seochanit','saved':.30 if market_cohort else .15,'deals':100,'forum':.5,'posts':2}]})
         j.put('market_rules',{'buyer_metric':'saved','buyer_compatible':True})
-        j.put('quality_risk_v4',{'at':time.time(),'grades':{'A':{'n':200,'broken':2,'within3':1}}})
+        if not market_cohort:
+            j.put('quality_risk_v4',{'at':time.time(),'grades':{'A':{'n':200,'broken':2,'within3':1}}})
     kit = install(load_kit(), j)
     shop_key, buyer_key, market_key = (Ed25519PrivateKey.generate() for _ in range(3))
     product = {'name': 'synthetic appliance', 'category': 'goods>appliance', 'kind': 'goods', 'list_price': 10000}
     atomic_json(j.md / 'catalog.json', {'G111': product})
     u = unit()
+    if market_cohort:
+        u['cost']=5000
+        now=time.time();j.put('public_feed_caught_up_at',now)
+        for i in range(100):
+            j.add('public_settle',{'sku':'G111','unit':f'mature-{i}','grade':'A',
+                                  'amount':6500,'warranty_hours':0,'shop':'http://other'},ts=now-25000-i)
+        for i in range(3):
+            j.add('public_settle',{'sku':'G111','unit':f'recent-{i}','grade':'A',
+                                  'amount':6500,'warranty_hours':0,'shop':'http://other'},ts=now-30-i)
     u['name'] = product['name']
     cert = {'unit': 'u1', 'sku': 'G111', 'grade': 'A', 'expires_at': None}
     u['cert'] = {'cert': cert, 'sig': base64.b64encode(market_key.sign(kit.canon(cert))).decode()}
@@ -120,6 +131,12 @@ def test_end_to_end_payment_moves_credits_once(tmp_path, monkeypatch,championshi
         result = buy(order, [{'name': 'shop', 'url': url, 'offers': [{'sku': 'G111', 'qty': 1}]}], j)
         assert result['receipt']
         rec = result['receipt']
+        if market_cohort:
+            from r3.market_memory import buyer_assessment
+            assessed=buyer_assessment(dict(product,sku='G111'),order,rec,j,cfg,shop=url)
+            assert assessed['risk_evidence']['mature_samples']==100
+            assert rec['price']<=assessed['cap']
+            assert result['accept']['grades']==['A']
         # Emulate the kit Proxy's authoritative record of what the seller sent.
         acp.terms[rec['task']] = dict(rec)
         mr = kit.acp_pay(order, url, pub(shop_key), rec, buyer_key, result['accept'])

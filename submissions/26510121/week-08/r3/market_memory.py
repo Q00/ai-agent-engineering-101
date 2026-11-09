@@ -27,6 +27,7 @@ def market_book(journal, catalog, now=None):
             continue
         row = grouped.setdefault(sku, {'prices': [], 'external_prices': [], 'buyers': Counter(),
                                       'terms': {}, 'term_refs': {}, 'sellers': set(), 'refs': [], 'grades': {},
+                                      'seller_terms':{},
                                       'latest_at': e['_ts']})
         row['prices'].append(price)
         if e.get('buyer') != 'seochanit':
@@ -34,6 +35,7 @@ def market_book(journal, catalog, now=None):
             row['buyers'][e.get('buyer', 'unknown')] += 1
         term = (e.get('grade'), e.get('warranty_hours') or 0)
         row['terms'].setdefault(term, []).append(price)
+        row['seller_terms'].setdefault((e.get('shop','').rstrip('/'),*term),[]).append(price)
         row['sellers'].add(e.get('shop', 'unknown'))
         row['grades'].setdefault(e.get('grade', 'unknown'), []).append(price)
         # Journal IDs preserve the server sequence. Never invent one from a price.
@@ -52,6 +54,8 @@ def market_book(journal, catalog, now=None):
                        'term_prices': [{'grade': g, 'warranty_hours': w, 'n': len(ps), 'median': statistics.median(ps),
                                         'refs':row['term_refs'].get((g,w),[])}
                                        for (g,w),ps in row['terms'].items()],
+                       'seller_prices':[{'shop':s,'grade':g,'warranty_hours':w,'n':len(ps),'median':statistics.median(ps)}
+                           for (s,g,w),ps in sorted(row['seller_terms'].items(),key=lambda pair:-len(pair[1]))[:60]],
                        'low': prices[0], 'high': prices[-1], 'sellers': len(row['sellers']),
                        'per_seller_per_hour': len(prices) / 6 / max(1, len(row['sellers'])),
                        'refs': row['refs'], 'latest_at': row['latest_at'],
@@ -111,17 +115,25 @@ def buyer_price_actions(ask, cap, product, reference, ratio, turn, max_turns, pr
     return actions
 
 
-def buyer_assessment(product, order, terms, journal, config):
+def buyer_assessment(product, order, terms, journal, config, *, shop=None):
     from .state import warranty_hours
     cap = min(order['budget'], product['list_price'])
     required, stress, covered = 0, 0, 0
     risk = {}
+    conditional=[];declared=None
     if product.get('kind') == 'goods':
         required = min(6, warranty_hours(terms.get('warranty_hours')))
         from .risk import goods_risk
         declared = terms.get('grade', terms.get('claim'))
         declared = declared if declared in ('A', 'B', 'C') else None
+        if config.get('buyer_contract_routing_enabled') and declared is None:
+            declared='A';conditional.append('grade')
+        if config.get('buyer_contract_routing_enabled') and terms.get('warranty_hours') is None:
+            required=6;conditional.append('warranty_hours')
         risk = goods_risk(journal, declared, required, config)
+        if config.get('buyer_market_quality_enabled'):
+            from .buyer_quality import estimate
+            risk=estimate(journal,product,declared,required,shop,config)
         stress, covered = risk['failure_upper'], risk['covered_lower']
         if required < 6:
             cap = min(cap, int(product['list_price'] * (1 - stress) / max(.000001, 1 - covered)))
@@ -133,6 +145,7 @@ def buyer_assessment(product, order, terms, journal, config):
                                                config.get('buyer_saved_target_margin',.002))
         cap=min(cap,normalized_cap)
     return {'cap': cap, 'required_warranty': required, 'failure': stress,
+            'required_grade':declared,'conditional_terms':conditional,
             'covered_failure': covered, 'risk_evidence': risk,'saved_state':current,'target_contribution':target}
 
 

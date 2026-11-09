@@ -4,6 +4,7 @@ import json
 import re
 import uuid
 import time
+import math
 from urllib.parse import urljoin, urlsplit
 import httpx
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
@@ -60,14 +61,12 @@ def observe_quote(journal,task,shop,order,stage):
 
 
 def quote(task):
-    holders = (task, task.get("status", {}).get("message", {}))
-    values = [money(h["metadata"]["ask"]) for h in holders if "ask" in h.get("metadata", {})]
-    if values:
-        if len(set(values)) != 1:
-            raise ValueError("conflicting_ask")
-        return values[0]
+    terms=quote_terms(task)
+    if 'ask' in terms:return terms['ask']
     text = task_text(task)
-    matches = re.findall(r"(?:asking|counteroffer|price|호가|가격)\s*[:=]?\s*([\d,]+)", text, re.I)
+    matches = re.findall(r"(?:\bask(?:ing)?\b|\bcounteroffer\b)\s*[:=]?\s*([\d,]+)",text,re.I)
+    if not matches:
+        matches=re.findall(r"(?:\bprice\b|판매가|호가|가격)\s*[:=]?\s*([\d,]+)",text,re.I)
     if not matches and re.fullmatch(r"\s*[\d,]+\s*", text):
         matches = [text.strip()]
     if len(set(matches)) != 1:
@@ -76,20 +75,51 @@ def quote(task):
 
 
 def quote_terms(task):
-    """Read explicit structured terms; never infer warranty/grade from prose."""
+    """Explicit declarations are conditional terms, never checkout certificates."""
     message = task.get('status', {}).get('message', {})
     sources = [task.get('metadata', {}), task.get('status', {}).get('metadata', {}), message.get('metadata', {})]
-    sources += [p['data']['offer_terms'] for p in message.get('parts', [])
-                if isinstance(p.get('data'), dict) and isinstance(p['data'].get('offer_terms'), dict)]
+    for part in message.get('parts',[]):
+        data=part.get('data')
+        if isinstance(data,dict):
+            sources.append(data)
+            sources.extend(data[k] for k in ['offer_terms','offer','quote'] if isinstance(data.get(k),dict))
     result = {}
+    aliases={'asking_price':'ask','price':'ask','grade_now':'grade','claim':'grade','item':'sku'}
     for source in sources:
         if not isinstance(source, dict):
             continue
-        for key in ('ask', 'sku', 'grade', 'expires_at', 'warranty_hours', 'cert', 'certificate'):
-            if key in source:
-                if key in result and result[key] != source[key]:
+        for original in ('ask','price','asking_price','sku','item','unit','grade','grade_now','claim',
+                         'expires_at','hours_left','warranty_hours','cert','certificate'):
+            if original in source:
+                key=aliases.get(original,original);value=source[original]
+                if key=='sku' and (not isinstance(value,str) or not re.fullmatch(r'G[0-9a-z]+',value,re.I)):continue
+                if key=='grade' and value not in ('A','B','C'):continue
+                if key=='ask':value=money(value)
+                if key in ('warranty_hours','expires_at','hours_left') and value is not None:
+                    if type(value) not in (int,float) or not math.isfinite(value) or value<0:
+                        raise ValueError('conflicting_offer_terms')
+                    if key=='warranty_hours' and value>72:raise ValueError('conflicting_offer_terms')
+                if key in ('cert','certificate') and type(value) is not bool:continue
+                if key in result and result[key] != value:
+                    if key=='ask':raise ValueError('conflicting_ask')
                     raise ValueError('conflicting_offer_terms')
-                result[key] = source[key]
+                result[key] = value
+    text=task_text(task)
+    if 'grade' not in result:
+        grades={g.upper() for g in re.findall(r'\b(?:grade|claim)\s*[:=]?\s*([ABC])\b',text,re.I)}
+        if len(grades)==1:result['grade']=grades.pop()
+    if 'sku' not in result:
+        skus=set(re.findall(r'\bG[0-9a-f]{5,}\b',text,re.I))
+        if len(skus)==1:result['sku']=skus.pop()
+    if 'warranty_hours' not in result:
+        hours=set(re.findall(r'\bwarranty_hours\s*[:=]\s*(\d+(?:\.\d+)?)',text,re.I))
+        if not hours:hours=set(re.findall(r'\b(\d+(?:\.\d+)?)\s*(?:h|hours?)[ -]*warranty\b',text,re.I))
+        if re.search(r'\bno warranty\b',text,re.I):hours.add('0')
+        if len(hours)==1 and 0<=float(next(iter(hours)))<=72:result['warranty_hours']=float(hours.pop())
+    if 'hours_left' not in result:
+        hours=set(re.findall(r'\b(\d+(?:\.\d+)?)\s*(?:h|hours?)\s+(?:of\s+)?shelf life left\b',text,re.I))
+        if len(hours)==1:result['hours_left']=float(hours.pop())
+    result['declarations_require_checkout_verification']=True
     return result
 
 

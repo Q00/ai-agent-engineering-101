@@ -93,7 +93,12 @@ def route_availability(journal,shop,sku,order,now=None):
 def offer_ineligible(terms,order,config,now=None):
     """Reject explicit impossible terms before another negotiation or checkout."""
     now=time.time() if now is None else now
+    if terms.get('cert') is False or terms.get('certificate') is False:return 'certificate_unavailable'
     expiry=terms.get('expires_at')
+    left=terms.get('hours_left')
+    if (order.get('kind')=='food' and type(left) in (int,float) and math.isfinite(left) and
+            left<(order.get('use_within_hours') or 0)+config.get('checkout_buffer_seconds',30)/3600):
+        return 'shelf_life'
     if (order.get('kind')=='food' and type(expiry) in (int,float) and math.isfinite(expiry) and
             expiry<now+order.get('use_within_hours',0)*3600+config.get('checkout_buffer_seconds',30)):
         return 'shelf_life'
