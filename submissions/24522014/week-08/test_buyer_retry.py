@@ -98,10 +98,12 @@ class Reservation(unittest.TestCase):
         self.assertEqual(self.reserve("o3", "a", T + 400, retry_of=None), "reserved")
         self.assertEqual(self.reserve("o3", "b", T + 401, retry_of="a"), "reserved")  # b/G1 last tried at T+1, 400 s ago
 
-    def test_the_retry_counts_against_the_daily_limit(self):
+    def test_the_retry_is_outside_the_daily_limit(self):
+        # The daily limit counts first attempts only, so the one retry of an order already tried neither needs nor uses one.
         settings = dict(CFG, max_attempts_per_utc_day=1)
         self.assertEqual(support.reserve(self.md, "o1", shop("a"), "G1", 80000, False, settings, T), "reserved")
-        self.assertEqual(support.reserve(self.md, "o1", shop("b"), "G1", 80000, False, settings, T + 1, retry_of="a"), "daily_attempt_limit")
+        self.assertEqual(support.reserve(self.md, "o1", shop("b"), "G1", 80000, False, settings, T + 1, retry_of="a"), "reserved")
+        self.assertEqual(support.reserve(self.md, "o2", shop("c"), "G2", 80000, False, settings, T + 60), "daily_attempt_limit")
 
     def test_the_model_is_reserved_at_most_once_per_order(self):
         with patch.object(support, "model_gate_enabled", return_value=True), patch.object(support, "config", return_value=CFG):

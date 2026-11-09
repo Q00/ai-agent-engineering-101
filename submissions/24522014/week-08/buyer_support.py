@@ -49,7 +49,8 @@ def initial():
 
 def availability(state, order_id, settings, now, retry_of=None):
     """One attempt per order, or two when the second is the retry at another shop that names the first.
-    The interval spaces orders, so it does not apply to the retry of the order just tried; the daily limit counts both."""
+    The interval spaces orders, so it does not apply to the retry of the order just tried. The daily limit counts first attempts
+    only: a retry needs an order already tried, so it never uses up a first attempt and the limit does not refuse it."""
     if state.get("schema") != 1 or state.get("round") != 3:
         raise ValueError("Buyer support state must be R3 schema 1")
     if not settings["enabled"]:
@@ -64,7 +65,8 @@ def availability(state, order_id, settings, now, retry_of=None):
     elif not (isinstance(retry_of, str) and len(mine) == 1 and mine[0]["shop"].casefold() == retry_of.casefold() and not mine[0].get("retry_of")):
         return "duplicate_order"
     day = datetime.fromtimestamp(now, timezone.utc).date()
-    if sum(datetime.fromtimestamp(r["at"], timezone.utc).date() == day for r in attempts) >= settings["max_attempts_per_utc_day"]:
+    if retry_of is None and sum(datetime.fromtimestamp(r["at"], timezone.utc).date() == day for r in attempts
+                                if not r.get("retry_of")) >= settings["max_attempts_per_utc_day"]:
         return "daily_attempt_limit"
     if retry_of is None and attempts and now-max(r["at"] for r in attempts) < settings["min_attempt_interval_seconds"]:
         return "attempt_cooldown"
