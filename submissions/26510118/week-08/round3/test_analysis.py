@@ -1149,6 +1149,10 @@ def test_discover():
           f"{br}): {0.1 - br * 0.7:.4f}; 14 sales are too few; a surge of 1.1 takes 0.06 more",
           real == {"Gsofa0003": (round(0.1 - br * 0.7, 4), 15)}
           and linewatch.realized(good, t, {"Gsofa0003": 1.1})["Gsofa0003"][0] == round(0.1 - br * 0.7 - 0.06, 4), real)
+    thin_margin = linewatch.realized([sale("Gsofa0003", i, 700_000, 670_000) for i in range(15)], t, {})["Gsofa0003"][0]
+    check("since 11/9 a product earning about 1.2% of list stays (it leaves under 1%, 2% before): a restock line on it "
+          "earns more than one on food", linewatch.EM_EXIT == 0.01 and thin_margin >= linewatch.EM_EXIT > thin_margin - 0.01,
+          thin_margin)
     model = {"G1": 0.01, "G2": 0.02, "G3": 0.00, "G4": None}.get
     check("calibration: the model's median error on products with both (3 or more), capped at 0.05; fewer: 0",
           linewatch.calibration({"G1": (0.05, 20), "G2": (0.06, 20), "G3": (0.09, 20), "G4": (0.1, 20)}, model) == 0.04

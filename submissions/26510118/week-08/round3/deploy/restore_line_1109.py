@@ -1,12 +1,13 @@
-"""One-off repair (11/9 10:50, the person's call), NOT RUN: from 11/8 01:49 to 11/9 08:40 linewatch's expected-margin
-model put 8 dear line products under EM_EXIT (0.003-0.020 of list). A first count said they had earned 0.028-0.109 net,
-but it took only the refunds the ledger still held (24 h of breaks); with each warranty sale's expected refund they
-earned 0.011-0.029 over 36 h, close to the model, so the dry run (24 of 26 to restore, on 48 h) was held back for the
-person to decide. The line now judges a product on what it earned (linewatch.realized).
-This puts each product the model took out in the last WINDOW back at the cap it had, when what it earned over WINDOW
-(price - cost - each warranty sale's expected refund, MIN_SOLD sales or more) is EM_EXIT or more: in
-analysis/line_state.json (a product found by linewatch and let go after 12 h out joins `found` again) and
-analysis/line.json, logged in line_log.jsonl. Refuses while an analysis pass holds the lock.
+"""One-off repair (11/9 11:30, the person's call): from 11/8 01:49 to 11/9 10:43 linewatch's expected-margin model put
+dear line products under EM_EXIT (then 0.02 of list). Restock's limit is lines (10 a run), not money, and a line earned
+100.6k net on dear goods, 9.8k on other goods and 1.2k on food over 48 h, so a dear product earning 0.01-0.02 of list
+still beats the food that took its lines; EM_EXIT is now 0.01 and a product is judged on what it earned
+(linewatch.margins). This puts each product the model took out in the last WINDOW back at the cap it had, when
+linewatch's own judgment now gives it EM_EXIT or more (so the next pass keeps it): in analysis/line_state.json (a
+product found by linewatch and let go after 12 h out joins `found` again) and analysis/line.json, logged in
+line_log.jsonl. Refuses while an analysis pass holds the lock. (A first draft, 11/9 10:50, judged on 48 h with 5 sales
+and was not run: a first count of these products' margins, 0.028-0.109, had left out most refunds; they earned
+0.011-0.029.)
 
     MARKET_DIR=~/market/round3/.market python deploy/restore_line_1109.py [--dry]
 """
@@ -16,23 +17,13 @@ import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+import breakage  # noqa: E402
 import common  # noqa: E402
 import linewatch  # noqa: E402
 import pricing  # noqa: E402
 import restock  # noqa: E402
 
 WINDOW = 48 * 3600
-MIN_SOLD = 5
-
-
-def earned(sales: list, sku: str) -> tuple:
-    xs = [s for s in sales if s.get("sku") == sku and s.get("list_price") and s.get("cost") is not None]
-    if len(xs) < MIN_SOLD:
-        return None, len(xs)
-    lp = xs[0]["list_price"]
-    net = [(x["price"] - x["cost"] - (pricing.BREAK.get(x.get("grade"), pricing.BREAK["A"]) * x["price"]
-                                      if x.get("warranty") else 0)) / lp for x in xs]
-    return round(sum(net) / len(net), 4), len(xs)
 
 
 def main() -> int:
@@ -41,12 +32,17 @@ def main() -> int:
     if (folder / "lock").exists():
         print("an analysis pass holds the lock; try again in a minute")
         return 1
+    pricing.BREAK.update(breakage.rates(common.read_json(breakage.path(), None), "market", now))
+    summary = common.read_json(common.MARKET_DIR / "market_summary.json", {}) or {}
+    inv = common.market_file("inventory.json", {}) or {}
+    surge = {s.get("sku"): float(s.get("factor") or 1.0) for s in inv.get("surge") or [] if isinstance(s, dict)}
+    margin, real, cal = linewatch.margins(now, summary, surge)
+    print(f"products judged on what they earned: {len(real)}; the model's error {cal:+.4f}")
     log = [r for r in common.read_jsonl(folder / "line_log.jsonl") if (r.get("at") or 0) >= now - WINDOW]
-    cut = {}
+    last = {}
     for r in log:                                       # the last change of each product decides
-        cut[r.get("sku")] = r
-    cut = {s: r for s, r in cut.items() if r.get("to") == 0 and "expected margin" in str(r.get("why") or "")}
-    sales = [s for s in common.records("sales") if (s.get("ts") or 0) >= now - WINDOW]
+        last[r.get("sku")] = r
+    cut = {s: r for s, r in last.items() if r.get("to") == 0 and "expected margin" in str(r.get("why") or "")}
     catalog = common.catalog()
     state = common.read_json(folder / "line_state.json", {}) or {}
     for k in ("caps", "defaults", "exit_at", "found"):
@@ -54,15 +50,15 @@ def main() -> int:
     line = common.read_json(folder / "line.json", None)
     back = []
     for sku, r in sorted(cut.items()):
-        m, n = earned(sales, sku)
-        cap = int(r.get("from") or 0)
+        m, cap = margin(sku), int(r.get("from") or 0)
+        how = f"earned {m:.4f} over {real[sku][1]} sales in 36 h" if sku in real else f"model {m}"
         ok = m is not None and m >= linewatch.EM_EXIT and cap > 0
-        print(f"  {sku}: cut {time.strftime('%m/%d %H:%M', time.gmtime(r['at'] + 9 * 3600))} from {cap} ({r['why'][:40]}); "
-              f"earned {m} over {n} sales -> {'restore at ' + str(cap) if ok else 'leave out'}")
+        print(f"  {sku}: cut {time.strftime('%m/%d %H:%M', time.gmtime(r['at'] + 9 * 3600))} from {cap}; {how} -> "
+              f"{'restore at ' + str(cap) if ok else 'leave out'}")
         if ok:
             back.append({"at": int(now), "sku": sku, "from": 0, "to": cap, "by": "repair",
-                         "why": f"restored: earned {m:.3f} of list over {n} sales in {WINDOW // 3600} h; cut by the "
-                                f"expected-margin model ({r['why'][:40]}), judged on what it earns since 11/9"})
+                         "why": f"restored: {how} (EM_EXIT now {linewatch.EM_EXIT}); cut by the expected-margin model "
+                                f"({str(r.get('why'))[:40]})"})
     print(f"{'would restore' if dry else 'restored'} {len(back)} of {len(cut)} products the model took out")
     if dry or not back:
         return 0

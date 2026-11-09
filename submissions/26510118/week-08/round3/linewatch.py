@@ -83,7 +83,12 @@ FIND_LIST_MIN, FIND_N, FIND_MEDIAN, FIND_SELLERS = 500_000, 8, 0.66, 99    # sel
 # grades (A 70%, B 20%, C 10%; mid costs 0.65, 0.50, 0.35 times the surge), sold at its grade's market with the
 # warranty (others_6h "_w" cells, 10+; a missing B or C taken 0.05 / 0.10 under A) less the refunds (pricing.BREAK).
 # A line product under EM_EXIT leaves; a new one needs EM_FIND. Unknown (no A market of its own): the old rules.
-EM_EXIT, EM_FIND = 0.02, 0.04     # 0.03, 0.05 until 11/6 13:10
+EM_EXIT, EM_FIND, EM_BACK = 0.01, 0.04, 0.02
+# EM_EXIT 0.02 until 11/9 11:30 (the person's call; 0.03 until 11/6 13:10). Restock's limit is lines, not money: at most
+# 10 a run, every 20 minutes, and most runs use all 10. Over 48 h a line earned 100.6k net on dear goods (500k+), 9.8k
+# on other goods and 1.2k on food (expired food counted), and the lines the line gave up went to food (1,238 of 2,585);
+# a dear product earning 0.010-0.019 of list made 18-51k a line, so it leaves only under EM_EXIT, about nothing after
+# noise and storage. An exited product comes back at EM_BACK (0.04, EM_FIND, until then).
 SUPPLY_MIX = {"A": (0.7, 0.65), "B": (0.2, 0.50), "C": (0.1, 0.35)}
 REAL_WINDOW, REAL_MIN, CAL_MIN, CAL_MAX = 36 * 3600, 15, 3, 0.05
 # 11/9 10:50 (the person's call): a product we sold REAL_MIN times or more in REAL_WINDOW is judged on what it earned
@@ -94,7 +99,7 @@ REAL_WINDOW, REAL_MIN, CAL_MIN, CAL_MAX = 36 * 3600, 15, 3, 0.05
 # of the market's revenue fell 6.2% -> 3.1% in 6 h. Correction, the same hour: with each warranty sale's expected refund
 # they had earned 0.011-0.029 over the 36 h before, close to the model (its median error +0.0015 over 47 products); the
 # first count, 0.028-0.109, took only the refunds the ledger still held (24 h of breaks). An exited product whose
-# realized margin is EM_FIND or more comes back at FIND_CAP after EXIT_REST.
+# realized margin is EM_BACK or more comes back at FIND_CAP after EXIT_REST.
                          # 0.76 and 10 until 11/5 09:20: the one-hour experiment at 0.74 / 12 / 40 found two products
                          # that sold 52 and 40 units in the next 5 h, 10.6M over cost (its own verdict, on the shop's
                          # hourly margin, had ended it)
@@ -256,6 +261,22 @@ def realized(sales: list, now: float, surge: dict) -> dict:
     return out
 
 
+def margins(now: float, summary: dict, surge: dict, sales: list | None = None):
+    """(margin(sku) -> share of list or None, realized {sku: (margin, units)}, calibration): what a product earned us
+    over REAL_WINDOW (records/sales.jsonl when sales is None), else the model shifted by its error on the rest."""
+    model = lambda s: expected_margin(s, summary, surge)
+    real = realized(sales if sales is not None else
+                    common.read_jsonl(common.MARKET_DIR / "records" / "sales.jsonl", since=now - REAL_WINDOW), now, surge)
+    cal = calibration(real, model)
+
+    def margin(s):                                      # 11/9: what it earned us, else the model shifted by its error
+        if s in real:
+            return real[s][0]
+        m = model(s)
+        return None if m is None else round(m + cal, 4)
+    return margin, real, cal
+
+
 def calibration(real: dict, model) -> float:
     """The model's median error (realized - expected) over the products that have both, CAL_MIN at least, within
     +-CAL_MAX; else 0."""
@@ -351,16 +372,7 @@ def run(now: float, settles: list | None = None, inv: dict | None = None, sales:
                                f"shop {verdict['rate']:,}/h against {verdict['before']:,}/h before", "market": verdict})
     summary = common.read_json(common.MARKET_DIR / "market_summary.json", {}) or {}
     surge = {s.get("sku"): float(s.get("factor") or 1.0) for s in inv.get("surge") or [] if isinstance(s, dict)}
-    model = lambda s: expected_margin(s, summary, surge)
-    real = realized(given_sales if given_sales is not None else
-                    common.read_jsonl(common.MARKET_DIR / "records" / "sales.jsonl", since=now - REAL_WINDOW), now, surge)
-    cal = calibration(real, model)
-
-    def margin(s):                                      # 11/9: what it earned us, else the model shifted by its error
-        if s in real:
-            return real[s][0]
-        m = model(s)
-        return None if m is None else round(m + cal, 4)
+    margin, real, cal = margins(now, summary, surge, given_sales)
     for sku, info in discover(settles, names, catalog, line, caps, now, unmet, experiment(now), margin).items():
         found[sku], line[sku] = info, info["cap"]
         why = (f"added: others sold it {info['n']} times in {FIND_WINDOW // 3600} h at {info['median']:.3f} of list, {info['sellers']} sellers"
@@ -387,7 +399,7 @@ def run(now: float, settles: list | None = None, inv: dict | None = None, sales:
             new, why = 0, (f"our realized margin {em:.3f} of list over {REAL_WINDOW // 3600} h ({real[sku][1]} sold), under {EM_EXIT}"
                            if sku in real else f"expected margin {em:.3f} of list"
                            + (f" (the model {cal:+.3f} by its error on our sales)" if cal else "") + f", under {EM_EXIT}")
-        elif (new == 0 and caps.get(sku, default) == 0 and sku in real and real[sku][0] >= EM_FIND and not g["hold"]
+        elif (new == 0 and caps.get(sku, default) == 0 and sku in real and real[sku][0] >= EM_BACK and not g["hold"]
               and now - (exits.get(sku) or 0) >= EXIT_REST):
             new, why = FIND_CAP, f"back in: our realized margin {real[sku][0]:.3f} of list over {REAL_WINDOW // 3600} h ({real[sku][1]} sold)"
         if cut and new > 1 and new >= caps.get(sku, default) and not fresh:   # one step down, not on top of a shrink
