@@ -297,7 +297,7 @@ def voted_down(forum, st):
     return st.get("low", False)
 
 
-FIVE_STAR_SHARE = 0.65   # 11-09: was 0.9; one bar for every shop
+FIVE_STAR_SHARE = 0.65   # 11-09: was 0.9; one bar for every shop (over 0.8 of list: two stars off)
 
 
 def main():
@@ -322,11 +322,38 @@ def main():
         stars = 2
         review = f"Paid {price} for {name}, but it is worth nothing to me (it will not last or it broke)."
     else:
-        # 11-09 (user: rate as strictly as the rest of the market, for every shop alike): 5 only at 65 % of list or
-        # less, else 4. inextro's buyer gave us 4 at 65-73 % of list while we gave every shop 5 under 90 %
-        stars = 5 if listp and price <= listp * FIVE_STAR_SHARE else 4
+        # 11-09 (user: rate as strictly as inextro's buyer does - receipt labels, short shelf life, a plain 'deal
+        # agreed' - for every shop alike): start at 5 and take one star per shortfall, two for a dear price
+        stars, why = 5, []
+        order = deal.get("order") or {}
+        if rec.get("item") and s.get("sku") and rec["item"] != s["sku"] \
+                or price and s.get("amount") and int(s["amount"]) != price \
+                or order.get("acceptable") and sku not in order["acceptable"]:
+            stars, why = 2, ["the receipt did not match the order or the settle"]
+        else:
+            x = price / listp if listp else 1
+            if x > 0.8:
+                stars -= 2
+                why.append(f"paid {round(100 * x)}% of list")
+            elif x > FIVE_STAR_SHARE:
+                stars -= 1
+                why.append(f"paid {round(100 * x)}% of list")
+            need = order.get("use_within_hours")
+            if s.get("expires_at") and need:
+                left = (s["expires_at"] - time.time()) / 3600
+                if left < 1.5 * need:
+                    stars -= 1
+                    why.append(f"only {left:.0f} h of shelf life left for a {need:.0f} h need")
+            if not s.get("expires_at") and not (s.get("warranty_hours") or rec.get("warranty_hours")):
+                stars -= 1
+                why.append("no warranty")
+            if s.get("grade") == "C":
+                stars -= 1
+                why.append("grade C")
+            stars = max(1, stars)
         review = (f"{name}: {price} ({off}% under list), grade {s.get('grade')}"
-                  + (", claim honest" if s.get("claim_honest") else "") + ", certificate checked.")
+                  + (", claim honest" if s.get("claim_honest") else "") + ", certificate checked."
+                  + (" Short of 5: " + "; ".join(why) + "." if why else ""))
 
     st = json.loads(STATE.read_text()) if STATE.is_file() else {"last_post": 0}
     now = time.time()
