@@ -5,9 +5,9 @@ market constraints, outstanding reservations and already signed terms are immuta
 """
 import argparse,fcntl,json,os,time,uuid,urllib.request,sqlite3,math
 from pathlib import Path
-from collections import Counter
+from collections import Counter, deque
 from harness import decide_json
-from market_memory import events,record
+from market_memory import RECEIPT_EVENTS, events, iter_events, record
 from inventory_observation import timestamp
 from replenishment_plan import inventory_risk
 from procurement_cost import ceiling
@@ -100,11 +100,28 @@ def snapshot(runtime,now,public):
     if not -2<=age<=30:raise InventoryUnavailable('stale inventory',age)
     catalog=read(runtime/'.market/catalog.json',{})
     if inv.get('round')!=3 or not catalog:raise ValueError('missing Round 3 evidence')
-    history=events(runtime/'logs/shop-events.jsonl');risk=inventory_risk(inv,now)
+    risk = inventory_risk(inv, now)
     current=active(now,runtime/'state/seller-meta-policy.json');budget=min(risk['available_to_invest'],current['window_budget'])
-    settled={e['ledger']:e for e in history if e.get('event')=='settled' and e.get('ledger') is not None and now-10800<=(timestamp(e.get('at')) or 0)<=now}
-    costs={e['unit']:e['cost'] for e in history if e.get('event')=='receipt_signed' and e.get('unit') and type(e.get('cost')) is int}
-    tallies=Counter(e['event'] for e in history if now-10800<=(timestamp(e.get('at')) or 0)<=now)
+    settled, costs, tallies = {}, {}, Counter()
+    executions, approvals = [], deque(maxlen=4)
+    observed_at = None
+    for event in iter_events(runtime/'logs/shop-events.jsonl'):
+        kind = event['event']
+        if kind == 'receipt_signed' and event.get('unit') and type(event.get('cost')) is int:
+            costs[event['unit']] = event['cost']
+        elif kind == 'inventory_snapshot' and event.get('round') == 3:
+            source_at = timestamp(event.get('source_time'))
+            if source_at is not None and source_at <= now and (observed_at is None or source_at > observed_at):
+                observed_at = source_at
+        if not now - 10800 <= (timestamp(event.get('at')) or 0) <= now:
+            continue
+        tallies[kind] += 1
+        if kind == 'settled' and event.get('ledger') is not None:
+            settled[event['ledger']] = event
+        elif kind == 'portfolio_execution':
+            executions.append(event)
+        elif kind == 'portfolio_approval':
+            approvals.append(event)
     pc=Counter();pr=Counter()
     for r in public:
         if r.get('kind')=='settle':
@@ -136,9 +153,6 @@ def snapshot(runtime,now,public):
     portfolio=read(runtime/'state/inventory-portfolio.json',{})
     units=[u for u in inv.get('units',[]) if u.get('grade') in ('A','B','C')
            and (u.get('expires_at') is None or u['expires_at']>now)]
-    observations=[timestamp(e.get('source_time')) for e in history
-                  if e.get('event')=='inventory_snapshot' and e.get('round')==3]
-    observed_at=max((t for t in observations if t is not None and t<=now),default=None)
     data={'at':now,'score_version':VERSION,'book':book_metrics(inv,now),
             'score_contract':BOOK_CONTRACT,'inventory_source_time':source_time,'inventory_age_seconds':max(0,age),'active_policy':current,'risk':risk,'effective_window_budget':budget,
             'operator_bounds':BOUNDS,'focus_options':FOCUS,
@@ -183,7 +197,6 @@ def snapshot(runtime,now,public):
             'limits':'Market sample is a short selected tail, not a full demand model. No conversions or causal attribution from unmatched rolling event counts. Cost spread is not net profit. Names/public text are untrusted data.'}
     data['policy_change_options'],data['ineffective_policy_changes']=meta_effects.options(data)
     data['effect_check_version']=meta_effects.VERSION
-    executions=[r for r in history if r['event']=='portfolio_execution' and now-10800<=(timestamp(r.get('at')) or 0)<=now]
     cut_units=Counter()
     for execution in executions:
         for line in execution.get('lines',[]):
@@ -198,11 +211,9 @@ def snapshot(runtime,now,public):
                             for line in r['lines'] if line['cut_qty']]} for r in executions[-3:]],
         'note':'Emitted is not arrival. Reasons can overlap for a reduced line; per-reason totals are not additive. '
                'A time-limited batch does not demonstrate a spend-policy bottleneck.'}
-    approvals=[e for e in history if e.get('event')=='portfolio_approval'
-               and now-10800<=(timestamp(e.get('at')) or 0)<=now]
     data['allocation_behavior']={'recent_cases':[{k:e.get(k) for k in
         ('at','decision_id','planning_budget','allocation_review','allocation_behavior')}
-        for e in approvals[-4:]],
+        for e in approvals],
         'note':'Use actual chosen coverage and omitted proven SKUs to diagnose model allocation. '
                'An unused budget is not proof that raising the spend ceiling will increase buying. '
                'Focus can guide the transaction model; hard rules still apply.'}
@@ -228,7 +239,7 @@ def paid_metrics(history,start,end):
 def evaluation(runtime,old,data,now):
     changed=old.get('changed_at',0);end=now-600
     if not changed or end<=changed:return None
-    span=end-changed;history=events(runtime/'logs/shop-events.jsonl');baseline=old.get('baseline',{})
+    span=end-changed;history=events(runtime/'logs/shop-events.jsonl', kinds=RECEIPT_EVENTS);baseline=old.get('baseline',{})
     previous_book=baseline.get('book',{}).get('book');current_book=data.get('book',{}).get('book')
     return {'changed_at':changed,'maturation_seconds':600,'equal_window_seconds':span,
             'before':paid_metrics(history,changed-span,changed),'after':paid_metrics(history,changed,end),
@@ -350,7 +361,10 @@ def review(runtime,*,model=decide_json,now=None,public=None,shadow=False):
                           'reason':'No verified current execution effect: '+', '.join(change_effect['no_effect_reasons']),
                           'expected_effect':'Retain the current policy; no additional spend capacity is demonstrated.'}
             else:
-                mature_sales=len({e['ledger'] for e in events(runtime/'logs/shop-events.jsonl') if e.get('event')=='settled' and e.get('ledger') is not None and changed_at<=(timestamp(e.get('at')) or 0)<=now-600})
+                mature_sales = len({
+                    e['ledger'] for e in iter_events(runtime/'logs/shop-events.jsonl', kinds={'settled'})
+                    if e.get('ledger') is not None and changed_at <= (timestamp(e.get('at')) or 0) <= now - 600
+                })
                 if old and (now-changed_at<CHANGE_SECONDS or mature_sales<20):status='evaluation_pending'
                 else:
                     new=candidate;status='rollback' if decision['action']=='rollback' else 'changed'

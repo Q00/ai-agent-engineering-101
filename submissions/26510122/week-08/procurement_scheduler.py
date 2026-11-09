@@ -4,22 +4,45 @@ The worker never calls supply or reserves funds. The hook returns the ordinary
 kit buy protocol, using its existing authenticated supply/rate-limit handling.
 """
 import argparse
+from collections import deque
 import json
 import os
 from pathlib import Path
 import time
 
 from harness import decide_json
-from market_memory import events,record
+from market_memory import events, iter_events, record
 from replenishment_plan import save,product_signature
 import inventory_portfolio as portfolio
-from procurement_monitor import maintain
-from inventory_observation import snapshot as record_inventory_snapshot
+from procurement_monitor import MONITOR_EVENTS, maintain
+from supply_reconciliation import RECONCILIATION_EVENTS
+from inventory_observation import (CONVERSION_WINDOW_HOURS, MAX_SNAPSHOT_GAP,
+                                   snapshot as record_inventory_snapshot, timestamp)
 import seller_demand
 
 POLL_SECONDS=2
 PREPARE_POLL_SECONDS=10
 WATCH_SECONDS=210  # below the kit's 300-second hook timeout
+FORECAST_EVENTS = frozenset({'request_seen', 'no_stock', 'opening', 'rejected', 'cancelled',
+                            'checkout_unpaid', 'inventory_snapshot'})
+
+
+def planning_history(now):
+    # Keep all acquisition responses, receipt costs and settlements for
+    # reconciliation and repeat-sale eligibility. Forecasts have a 12h horizon.
+    start = now - CONVERSION_WINDOW_HOURS * 3600
+    history = []
+    for row in iter_events(kinds=RECONCILIATION_EVENTS | FORECAST_EVENTS):
+        kind = row['event']
+        if kind in RECONCILIATION_EVENTS:
+            history.append(row)
+            continue
+        field = 'source_time' if kind == 'inventory_snapshot' else 'at'
+        at = timestamp(row.get(field))
+        lower = start - MAX_SNAPSHOT_GAP if kind == 'inventory_snapshot' else start
+        if at is not None and lower <= at <= now:
+            history.append(row)
+    return history
 
 
 def snapshot(runtime,now=None,*,observe=False):
@@ -33,7 +56,8 @@ def snapshot(runtime,now=None,*,observe=False):
         if observe and fresh:
             # Read-file mtime belongs to exactly the parsed inventory. Never
             # reconstruct historical exposure from today's inventory.
-            record_inventory_snapshot(inventory,path,events(),now,source_time=mtime)
+            previous = deque(iter_events(kinds={'inventory_snapshot'}), maxlen=1)
+            record_inventory_snapshot(inventory, path, previous, now, source_time=mtime)
         return inventory,catalog,now,fresh
     except (OSError,ValueError):return {},{},now,False
 
@@ -46,7 +70,7 @@ def prepare_once(runtime,*,model=decide_json,now=None,rng=None):
         inv,cat,t,valid=snapshot(runtime,now)
         return inv,t,valid and cat==catalog
     try:
-        portfolio.run(inventory,catalog,events(),at,model=model,refresh=refresh,rng=rng,prepare_only=True)
+        portfolio.run(inventory,catalog,planning_history(at),at,model=model,refresh=refresh,rng=rng,prepare_only=True)
     except BlockingIOError:return 'preparation_busy'
     ready=portfolio.read_ready()
     return ready.get('status','not_ready')
@@ -71,7 +95,7 @@ def execute_once(runtime,*,now=None):
                              and cat[sku].get('category')==product.get('category') for sku,product in catalog.items())
         return inv,t,valid and signatures_match
     try:
-        return portfolio.execute_prepared(inventory,catalog,events(),at,refresh=refresh)
+        return portfolio.execute_prepared(inventory,catalog,events(kinds=RECONCILIATION_EVENTS),at,refresh=refresh)
     except BlockingIOError:return None
 
 
@@ -110,7 +134,7 @@ def main():
                 inv,cat,at,fresh=snapshot(runtime,observe=True)
                 if fresh:
                     seller_demand.ingest(runtime,cat,at)
-                    maintain(inv,events(),at,state_path=portfolio.STATE,ready_path=portfolio.READY)
+                    maintain(inv,events(kinds=MONITOR_EVENTS),at,state_path=portfolio.STATE,ready_path=portfolio.READY)
                     last_maintenance=time.monotonic()
             except BlockingIOError:pass
             except Exception as error:

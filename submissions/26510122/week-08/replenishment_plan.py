@@ -13,10 +13,10 @@ from procurement_cost import ceiling as acquisition_ceiling
 from pathlib import Path
 import uuid
 import time
-from market_memory import events
+from market_memory import RECEIPT_EVENTS, events
 import seller_warranty
 from market_scoring import book_metrics
-from supply_reconciliation import reconcile, pending_quantity
+from supply_reconciliation import RECONCILIATION_EVENTS, reconcile, pending_quantity
 from stock_policy import PROVEN_STOCK, NEW_STOCK, MAINTENANCE_CATEGORY_LIMIT
 from capital_policy import MIN_CASH, INVALID_STATE_EXPOSURE, operating_policy
 
@@ -43,7 +43,7 @@ def pending_exploration_cost(inventory: dict) -> int:
            or i.get('status') not in ('issued_unknown', 'observed_inventory', 'settled')
            for i in state['intents']):
         return MAX_INVENTORY_COST
-    reconcile(state['intents'], inventory, events(), time.time())
+    reconcile(state['intents'], inventory, events(kinds=RECONCILIATION_EVENTS), time.time())
     total = 0
     catalog=load(Path('.market/catalog.json')) or {}
     for intent in state['intents']:
@@ -72,7 +72,7 @@ def inventory_risk(inventory: dict, now: float, pending_cost: int | None = None)
     goods_cost = sum(max(0,int(u.get('cost') or 0)) for u in inventory.get('units',[])
                      if u.get('kind')=='goods' and u.get('grade') in ('A','B','C'))
     storage_reserve = math.ceil(goods_cost*.01*min(14.,policy['hours_to_end']/24))
-    warranty = seller_warranty.exposure(events(),now)
+    warranty = seller_warranty.exposure(events(kinds=RECEIPT_EVENTS), now)
     reserve = max(MIN_BALANCE,int(inventory.get('bankrupt_line') or 500_000)+100_000)+storage_reserve+warranty['cash_reserve']
     limit = int((balance + stock_cost) * policy['inventory_capital_share'])
     cash_room = max(0, balance - reserve)

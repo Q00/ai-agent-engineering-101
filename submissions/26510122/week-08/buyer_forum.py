@@ -2,7 +2,7 @@
 import argparse,fcntl,json,os,re,time,uuid
 from pathlib import Path
 from harness import decide_json
-from market_memory import events,record
+from market_memory import iter_events,record
 from inventory_observation import timestamp
 from seller_forum import handoff,read_json,save
 from market_scoring import BUYER_ALL_CONTRACT
@@ -36,7 +36,8 @@ def events_ack(path):
     return rows
 
 def evidence(runtime,state,now):
-    history=events(runtime/'logs/buyer-events.jsonl');used={x for p in state['posts'] for x in p['refs']}
+    history = iter_events(runtime/'logs/buyer-events.jsonl', kinds={'settled'})
+    used={x for p in state['posts'] for x in p['refs']}
     recent_skus={s for p in state['posts'] if now-p['at']<SKU_COOLDOWN for s in p.get('skus',[])}
     paid={e['ledger']:e for e in history if e.get('event')=='settled' and type(e.get('ledger')) is int
           and type(e.get('price')) is int and e['price']>0 and now-86400<=(timestamp(e.get('at')) or 0)<=now}

@@ -183,7 +183,7 @@ def facts(runtime, now):
                       'kind': units[0]['kind'], 'units': [
                           {key: u.get(key) for key in ('unit', 'grade', 'expires_at', 'supplied_at', 'cert')}
                           for u in units]})
-    history = events(runtime / 'logs/shop-events.jsonl')
+    history = events(runtime / 'logs/shop-events.jsonl', kinds={'settled', 'buyer_link'})
     settled = [r for r in history if r['event'] == 'settled' and r.get('ledger') and r.get('sku')][-12:]
     catalog=read_json(runtime/'.market/catalog.json',{}) or {u['sku']:u for group in groups.values() for u in group}
     seller_demand.ingest(runtime,catalog,now)

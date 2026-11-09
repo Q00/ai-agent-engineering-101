@@ -24,7 +24,8 @@ from a2a.server.tasks import TaskUpdater
 from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 
 from harness import decide_json, trace, MODEL
-from market_memory import compact_context, events, record, sync_settlements
+from market_memory import (RECEIPT_EVENTS, compact_context, events, iter_events, record,
+                           sync_settlements, trade_attempts)
 from newsvendor_tool import quote_candidates
 from inventory_observation import requested_skus
 from context_compaction import MAX_TURNS
@@ -117,8 +118,7 @@ def decision_schema(actions: list[str]) -> dict:
 class Seller(AgentExecutor):
     def __init__(self, state=None) -> None:
         self.state = state or SellerState()
-        history = events()
-        self.state.import_receipt_holds(history, HOLD_SECONDS)
+        self.state.import_receipt_holds(events(kinds=RECEIPT_EVENTS), HOLD_SECONDS)
         self.open: dict[str, dict] = self.state.restore_deals()
         self.holds: dict[str, float] = {}  # signed receipts awaiting checkout/settlement
         self.identity_messages: dict[str,float] = {}
@@ -144,7 +144,7 @@ class Seller(AgentExecutor):
         inventory = read_inventory()
         stock = {u.get("unit") for u in inventory.get("units", [])}
         now = time.monotonic()
-        leases = self.state.active_leases(events())
+        leases = self.state.active_leases(iter_events(kinds={'settled'}))
         for unit, _, kind, until in leases:
             if kind == 'receipt':
                 self.holds[unit] = now + max(0, until-time.time())
@@ -261,7 +261,6 @@ class Seller(AgentExecutor):
                 await up.reject(say('No available unit meets the requested expiry, grade or warranty.'))
                 return
             metadata=context.metadata or MessageToDict(context.message.metadata)
-            history=events()
             proofs=counterparty_memory.load_cache().get('proofs',[])
             # The independent worker refreshes this cache. Public-network
             # latency and backlog must not block a customer's opening quote.
@@ -282,7 +281,10 @@ class Seller(AgentExecutor):
                                             for o in public_quotes if o['unit']==unit['unit']),None)
             keys=list(dict.fromkeys((u['sku'],u['grade']) for u in choices))
             per_key=min(3600,12000//len(keys)-64)
-            memories={f'{sku}:{grade}':compact_context(sku,grade,max_bytes=per_key) for sku,grade in keys}
+            attempts = trade_attempts({sku for sku, _ in keys})
+            memories = {f'{sku}:{grade}': compact_context(sku, grade, max_bytes=per_key, attempts=attempts)
+                        for sku, grade in keys}
+            profile_history = events(kinds=counterparty_memory.PROFILE_EVENTS) if identity['verified'] else ()
             for tool in tools:
                 tool['memory_key']=f"{tool['sku']}:{tool['grade']}"
             profiles={}
@@ -292,11 +294,13 @@ class Seller(AgentExecutor):
                 bucket='unknown' if remaining is None else 'near_expiry' if remaining<=3 else 'not_near_expiry'
                 key=f"{unit['sku']}:{unit['grade']}:{bucket}"
                 if key not in profiles:
-                    profiles[key]=counterparty_memory.profile(identity,unit,history=history,now=now)
+                    profiles[key] = counterparty_memory.profile(
+                        identity, unit, history=profile_history, attempts=attempts, now=now)
                 profiles_by_unit[unit['unit']]=profiles[key]
                 tool['buyer_evidence_key']=key
                 if profiles[key]['eligible_for_price_probe']:
                     tool['buyer_price_candidates']=profiles[key]['price_candidates']
+            del attempts, profile_history
             prompt = {
                 "phase": "opening", "task_id": task.id, "buyer_message": message[:500],
                 'purchase_requirements': requirements,

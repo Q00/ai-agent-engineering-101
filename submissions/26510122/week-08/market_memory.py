@@ -8,6 +8,7 @@ number. No receipt-only result is counted as revenue or conversion.
 from __future__ import annotations
 
 from collections import defaultdict
+from collections.abc import Iterable, Iterator, Set
 from datetime import datetime, timezone
 import json
 import os
@@ -26,19 +27,40 @@ SETTLED = re.compile(r"\[acp\] settled .*? at (?P<price>\d+), ledger #(?P<ledger
                      r"unit (?P<unit>[^\s,]+) grade (?P<grade>[ABC])")
 
 
-def events(path: Path = EVENTS) -> list[dict[str, Any]]:
-    if not path.exists():
-        return []
-    result = []
-    with path.open(encoding="utf-8", errors="replace") as source:
+# record() writes this prefix. Older or differently formatted rows still use
+# the JSON decoder, including rows with a numeric timestamp.
+EVENT_PREFIX = re.compile(rb'^\{"at":"[^"\\]*","event":"([a-z][a-z0-9_]*)"')
+RECEIPT_EVENTS = frozenset({'receipt_signed', 'settled'})
+ATTEMPT_EVENTS = RECEIPT_EVENTS | {
+    'opening', 'offer', 'counter', 'checkout_unpaid', 'rejected', 'cancelled',
+    'negotiation_expired',
+}
+
+
+def iter_events(path: Path = EVENTS, *, kinds: Set[str] | None = None) -> Iterator[dict[str, Any]]:
+    """Read append-only evidence in order without keeping unrelated records."""
+    try:
+        source = path.open('rb')
+    except FileNotFoundError:
+        return
+    encoded = {kind.encode() for kind in kinds} if kinds is not None else None
+    with source:
         for line in source:
+            if encoded is not None:
+                match = EVENT_PREFIX.match(line)
+                if match and match[1] not in encoded:
+                    continue
             try:
-                row = json.loads(line)
+                row = json.loads(line.decode('utf-8', errors='replace'))
             except ValueError:
-                continue                         # interrupted last write is never evidence
-            if isinstance(row, dict) and row.get("event"):
-                result.append(row)
-    return result
+                continue
+            if isinstance(row, dict) and isinstance(kind := row.get('event'), str) and kind:
+                if kinds is None or kind in kinds:
+                    yield row
+
+
+def events(path: Path = EVENTS, *, kinds: Set[str] | None = None) -> list[dict[str, Any]]:
+    return list(iter_events(path, kinds=kinds))
 
 
 def record(event: str, *, path: Path = EVENTS, **fields: Any) -> dict[str, Any]:
@@ -60,12 +82,6 @@ def sync_settlements(kit_log: Path = KIT_LOG, *, event_log: Path = EVENTS,
     """Import only complete new [acp] settlement lines; survive log rotation."""
     if not kit_log.exists():
         return 0
-    old = events(event_log)
-    seen = {int(e["ledger"]) for e in old if e["event"] == "settled" and "ledger" in e}
-    receipts_by_unit = defaultdict(list)
-    for row in old:
-        if row['event']=='receipt_signed' and row.get('unit'):
-            receipts_by_unit[row['unit']].append(row)
     stat = kit_log.stat()
     try:
         cursor = json.loads(cursor_path.read_text(encoding="utf-8"))
@@ -74,6 +90,8 @@ def sync_settlements(kit_log: Path = KIT_LOG, *, event_log: Path = EVENTS,
     offset = (int(cursor["offset"]) if cursor.get("inode") == stat.st_ino
               and 0 <= cursor.get("offset", -1) <= stat.st_size else 0)
     added = 0
+    seen = None
+    receipts_by_unit = defaultdict(list)
     with kit_log.open(encoding="utf-8", errors="replace") as source:
         source.seek(offset)
         while True:
@@ -87,6 +105,15 @@ def sync_settlements(kit_log: Path = KIT_LOG, *, event_log: Path = EVENTS,
             match = SETTLED.search(line)
             if not match:
                 continue
+            if seen is None:
+                # Most requests find no new settlement. Only load the linkage
+                # evidence when the kit actually has a line to import.
+                seen = set()
+                for row in iter_events(event_log, kinds=RECEIPT_EVENTS):
+                    if row['event'] == 'settled' and 'ledger' in row:
+                        seen.add(int(row['ledger']))
+                    elif row['event'] == 'receipt_signed' and row.get('unit'):
+                        receipts_by_unit[row['unit']].append(row)
             ledger = int(match["ledger"])
             if ledger in seen:
                 continue
@@ -112,7 +139,7 @@ def sync_settlements(kit_log: Path = KIT_LOG, *, event_log: Path = EVENTS,
     return added
 
 
-def _attempts(rows: list[dict]) -> list[dict]:
+def _attempts(rows: Iterable[dict], *, skus: Set[str] | None = None) -> list[dict]:
     """Rebuild linked observations; numeric history remains in the event file."""
     attempts: dict[str, dict[str, Any]] = {}
     settled_by_task: dict[str, dict[str, Any]] = {}
@@ -122,6 +149,9 @@ def _attempts(rows: list[dict]) -> list[dict]:
         if kind == "settled" and task:
             settled_by_task[task] = row
         elif kind == "opening" and task:
+            if skus is not None and row.get('sku') not in skus:
+                attempts.pop(task, None)
+                continue
             attempts[task] = {"task_id": task, "sku": row.get("sku"),
                               "grade": row.get("grade"), "category": row.get("category"),
                               "unit": row.get("unit"), "opening_ask": row.get("ask"),
@@ -157,10 +187,17 @@ def _attempts(rows: list[dict]) -> list[dict]:
     return list(attempts.values())
 
 
+def trade_attempts(skus: Set[str], *, path: Path = EVENTS) -> list[dict]:
+    """Build candidate-SKU histories in one pass, including task-only outcomes."""
+    return _attempts(iter_events(path, kinds=ATTEMPT_EVENTS), skus=skus)
+
+
 def compact_context(sku: str, grade: str, *, path: Path = EVENTS,
-                    recent_limit: int = 3, max_bytes: int = SELLER_MEMORY_BYTES) -> dict[str, Any]:
+                    recent_limit: int = 3, max_bytes: int = SELLER_MEMORY_BYTES,
+                    attempts: list[dict] | None = None) -> dict[str, Any]:
     """Exact aggregates plus a few condition-preserving transaction examples."""
-    attempts=_attempts(events(path))
+    if attempts is None:
+        attempts = trade_attempts({sku}, path=path)
     def observed_grade(a):
         return a.get('settled_grade') or a.get('grade_at_receipt') or a.get('grade')
 

@@ -5,9 +5,13 @@ from pathlib import Path
 from inventory_observation import timestamp
 from market_memory import record
 from replenishment_plan import save
-from supply_reconciliation import reconcile,pending_quantity
+from supply_reconciliation import RECONCILIATION_EVENTS, reconcile, pending_quantity
 
 HEALTH=Path('state/procurement-health.json')
+MONITOR_EVENTS = RECONCILIATION_EVENTS | {
+    'portfolio_prepared_reused', 'portfolio_execution', 'procurement_protocol_received',
+    'procurement_request_started', 'procurement_batch_finished',
+}
 
 
 def health(state,ready,history,now):

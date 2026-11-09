@@ -32,6 +32,9 @@ def reserved_quantity(intent):
     return 0 if intent.get('supply_resolution') in ('rejected','not_sent') else intent.get('qty',1)
 
 
+RECONCILIATION_EVENTS = frozenset({'procurement_supply_result', 'receipt_signed', 'settled'})
+
+
 def resolve_responses(intents, history):
     changes=[]
     by_id={i.get('intent_id'):i for i in intents if i.get('intent_id')}

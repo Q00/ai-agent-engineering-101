@@ -17,12 +17,14 @@ from collections import defaultdict
 import httpx
 
 from context_compaction import epoch
-from market_memory import EVENTS,_attempts,events,record
+from market_memory import ATTEMPT_EVENTS, EVENTS, _attempts, events, record
 from newsvendor_tool import GRADE_ANCHORS
 
 CACHE=Path('state/counterparty-ledger.json')
 POLL_SECONDS=20
 WINDOW_DAYS=14
+PROFILE_EVENTS = frozenset({'buyer_link', 'buyer_price_probe'})
+LEDGER_LINK_EVENTS = frozenset({'receipt_signed', 'buyer_link', 'checkout_unpaid'})
 _LOCK=threading.Lock()
 
 
@@ -106,13 +108,15 @@ def refresh(own_name: str, *, cache_path=CACHE,event_path=EVENTS,now=None) -> li
     now=time.time() if now is None else now
     with _LOCK:
         cache=load_cache(cache_path)
-        history=events(event_path)
         # Public result and local receipt can arrive in either order.
-        ingest(cache.get('rows',[]),own_name=own_name,history=history,path=event_path)
-        history=events(event_path)
+        cached_rows = cache.get('rows', [])
+        if cached_rows:
+            ingest(cached_rows, own_name=own_name,
+                   history=events(event_path, kinds=LEDGER_LINK_EVENTS), path=event_path)
         if now-cache.get('polled_at',0)<POLL_SECONDS:
             return cache.get('proofs',[])
         cache['polled_at']=now
+        history = events(event_path, kinds=LEDGER_LINK_EVENTS)
         try:
             def fetch(after):
                 response=httpx.get('https://market.ourolabs.ai/api/ledger',params={'after':after},timeout=5.)
@@ -145,7 +149,7 @@ def refresh(own_name: str, *, cache_path=CACHE,event_path=EVENTS,now=None) -> li
         return cache.get('proofs',[])
 
 
-def profile(identity: dict,unit: dict, *, path=EVENTS,now=None,history=None) -> dict:
+def profile(identity: dict,unit: dict, *, path=EVENTS,now=None,history=None,attempts=None) -> dict:
     now=time.time() if now is None else now
     result={'identity_status':identity.get('status','anonymous'),'buyer_name':identity.get('buyer_name'),
             'eligible_for_price_probe':False,'status':'unverified_identity','confirmed_comparable':0,
@@ -153,9 +157,13 @@ def profile(identity: dict,unit: dict, *, path=EVENTS,now=None,history=None) -> 
             'note':'Past prices are evidence under past conditions, not a private budget or a permanent buyer label.'}
     if not identity.get('verified'):
         return result
-    rows=events(path) if history is None else history
+    if history is None:
+        kinds = PROFILE_EVENTS | ATTEMPT_EVENTS if attempts is None else PROFILE_EVENTS
+        history = events(path, kinds=kinds)
+    rows = history
     names={e['task_id']:e['buyer_name'] for e in rows if e['event']=='buyer_link' and e.get('source')=='market_verified_result'}
-    attempts=_attempts(rows)
+    if attempts is None:
+        attempts = _attempts(rows)
     comparable=[];others=[]
     def bucket(hours):return 'unknown' if hours is None else 'near_expiry' if hours<=3 else 'not_near_expiry'
     current_hours=max(0,(unit['expires_at']-now)/3600) if unit.get('expires_at') is not None else None
