@@ -221,16 +221,16 @@ def default_need(sku):
     return seen[int(len(seen) * 0.8)] if len(seen) >= 5 else DEFAULT_NEED
 
 
-# Three buyers rate food by grade alone, whatever the price, and each words its food orders its own way
-# (Nov 10 05:10, all shops, 7.3 h of ledger: nohaggle-hero A 4.88 B 4.87 C 3.9 over 845 food reviews, "; I need it";
-# 11im A/B 4 C 3 over 472, ", it must last"; 25620027 A 5 B 4 C 3 over 219, ", need N h"; each wording was that
-# account's in all of our 2,487 logged talks where it showed). For them food ships the best grade first.
-GRADE_FIRST = re.compile(r"\(G[0-9a-f]{8}\)(?:; I need it|, it must last|, need \d)")
+# Food ships the best grade first, then the one that expires first. Most buyers rate grade C food lower whatever
+# the price (Nov 10 05:30, 7.3 h of ledger across all shops: buyer-01 C 3.0 / B 4.3 / A 4.8, buyer-02 C 3.2 / B 4.1 /
+# A 4.9, chanarun C 4 / A-B 5, lee-sungsoo C 4 / A-B 5, nohaggle-hero C 3.9 / A-B 4.9, 11im C 3 / A-B 4); only
+# usagi, inextro, buyer-03 and outseop rate cheap C food 5. Our food C was 27% of food reviews at 4.2 vs A-B 4.7-4.8,
+# and all our food stock cost 1.3M, so C units that expire unsold cost little.
 
 
 def find_unit(text, taken=()):
     """The in-stock unit for what the buyer asked (SKU, then name, then category). Among several units of the
-    same product: goods ship the best grade, food the one that expires first but still has MIN_FOOD_HOURS."""
+    same product: goods and food ship the best grade (food: then the one that expires first among those that last)."""
     want = text.lower()
     inv = inventory()
     if inv.get("round", 0) < 3:
@@ -258,9 +258,7 @@ def find_unit(text, taken=()):
                 if not ok:
                     log(f"[quality] no matching food lasts the {'requested' if said is not None else 'usual'} need")
                     return None
-                if GRADE_FIRST.search(text):
-                    return min(ok, key=lambda u: (GRADE_RANK.get(u["grade"], 3), u["expires_at"] or math.inf))
-                return min(ok, key=lambda u: u["expires_at"] or math.inf)
+                return min(ok, key=lambda u: (GRADE_RANK.get(u["grade"], 3), u["expires_at"] or math.inf))
             # a unit whose floor (cost x 1.05) is over the most it may open at (max_share) can only sell above the
             # market, so it goes behind the others (Nov 5 10:27-12:17: 4 surge-cost grade A Zinus Q mattresses
             # G1515d951, cost 380-464k, opened at list 423810 vs a market median 0.825; 15 deals, 3 settled, while 11
