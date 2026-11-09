@@ -83,11 +83,14 @@ def fetch_shop_reviews(state,market,shops,round_no=3,now=None):
     return [r for rows in by_shop.values() for r in rows]
 
 
-def build_buyer_preferences(catalog,trades,shops,forum,alive_buyers=(),now=None,board_reviews=()):
+def build_buyer_preferences(catalog,trades,shops,forum,alive_buyers=(),now=None,board_reviews=(),
+                            eligible_buyers=None):
     """Build bounded public preference evidence; forum prose is never executed."""
     now=time.time() if now is None else now;alive_buyers=set(alive_buyers or [])
-    recent=[dict(r) for r in trades if r.get('buyer') and r.get('sku') in catalog
-            and r.get('ts',0)>=now-PREFERENCE_WINDOW]
+    eligible=None if eligible_buyers is None else {str(x) for x in eligible_buyers}
+    recent_all=[dict(r) for r in trades if r.get('buyer') and r.get('sku') in catalog
+                and r.get('ts',0)>=now-PREFERENCE_WINDOW]
+    recent=[r for r in recent_all if eligible is None or str(r['buyer']) in eligible]
     market_prices={}
     for row in recent:
         paid=row.get('price')
@@ -200,7 +203,11 @@ def build_buyer_preferences(catalog,trades,shops,forum,alive_buyers=(),now=None,
         'verified_buyer_reviewers':buyer_review_summary.get(sku,{}).get('buyers',0),
         'verified_buyer_review_average':round(buyer_review_summary[sku]['stars']/buyer_review_summary[sku]['count'],3)
             if buyer_review_summary.get(sku,{}).get('count') else None} for sku in candidates}
+    excluded={str(r['buyer']) for r in recent_all}-{str(r['buyer']) for r in recent}
     return {'version':3,'generated_at':now,'window_hours':PREFERENCE_WINDOW//3600,
+        'buyer_filter':{'official_deals_must_exceed':1000,
+                        'eligible_board_buyers':len(eligible) if eligible is not None else None,
+                        'excluded_observed_buyers':len(excluded)},
         'buyers':buyers,'products':products,
         'forum_evidence':{'posts_observed':len(posts),'verified_buyer_posts':verified_posts,
                           'untrusted_or_unverified_posts_ignored':untrusted_posts},
@@ -223,8 +230,12 @@ def write_buyer_preferences(state,intel,catalog,shops=None,board=None,forum=None
         cache=read_json(root/SHOP_REVIEW_FILE,{})
         reviews=([r for rows in (cache.get('by_shop') or {}).values() for r in rows]
                  if now-cache.get('fetched_at',0)<=SHOP_REVIEW_MAX_AGE else board.get('reviews',[]))
-    alive={str(r.get('name')) for r in board.get('buyers',[]) if r.get('alive') is True}
-    result=build_buyer_preferences(catalog,trades,shops,forum,alive,now,reviews)
+    board_buyers=board.get('buyers',[])
+    alive={str(r.get('name')) for r in board_buyers if r.get('alive') is True}
+    eligible=({str(r.get('name')) for r in board_buyers
+               if isinstance(r.get('deals'),(int,float)) and not isinstance(r.get('deals'),bool)
+               and r.get('deals')>1000} if board_buyers else None)
+    result=build_buyer_preferences(catalog,trades,shops,forum,alive,now,reviews,eligible)
     result['ledger_through']=intel.get('ledger_through')
     path=root/PREFERENCE_FILE;tmp=path.with_suffix('.tmp')
     tmp.write_text(json.dumps(result,ensure_ascii=False,sort_keys=True));os.replace(tmp,path)

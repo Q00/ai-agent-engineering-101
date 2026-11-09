@@ -97,6 +97,15 @@ class StrategyTests(unittest.TestCase):
   self.assertEqual(item['median_paid_to_market'],.9444)
   self.assertEqual(item['estimated_discount_to_market_pct'],5.56)
   self.assertEqual(item['price_samples'],2)
+ def test_inactive_low_deal_buyers_are_excluded_from_estimation(self):
+  now=100000;cat={'x':dict(name='Product X',category='goods',kind='goods',list_price=1000)}
+  trades=[dict(seq=1,sku='x',ts=now-20,buyer='active',grade='A',hours=None,warranty=6,honest=1,price=90),
+          dict(seq=2,sku='x',ts=now-10,buyer='inactive',grade='A',hours=None,warranty=6,honest=1,price=10)]
+  result=build_buyer_preferences(cat,trades,[],[],{'active'},now,[],{'active'})
+  self.assertEqual(set(result['buyers']),{'active'})
+  self.assertEqual(result['buyer_filter']['official_deals_must_exceed'],1000)
+  self.assertEqual(result['buyer_filter']['excluded_observed_buyers'],1)
+  self.assertEqual(result['buyers']['active']['skus'][0]['public_market_median'],90)
  def test_high_price_is_not_gate_and_negative_net_is_not_forced(self):
   now=time.time();cat={'low':dict(kind='goods',name='low',list_price=100000,category='c'),
    'high':dict(kind='goods',name='high',list_price=1000000,category='h')}
