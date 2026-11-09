@@ -65,7 +65,21 @@ class FirstBuyerForumTests(unittest.TestCase):
         self.assertTrue(post['first_buyer_recipient'])
         self.assertTrue(post['no_prior_paid_link'])
 
-    def test_no_eligible_new_request_posts_one_public_first_checkout_quote(self):
+    def test_verified_first_checkout_quote_takes_priority_over_repeat_buyer_reply(self):
+        history = [
+            {'event': 'settled', 'task_id': 'previous', 'ledger': 41, 'at': self.now - 60},
+            {'event': 'buyer_link', 'task_id': 'previous', 'buyer_name': 'buyer-repeat',
+             'source': 'market_verified_result', 'at': self.now - 60},
+        ]
+        (self.runtime / 'logs/shop-events.jsonl').write_text(
+            ''.join(json.dumps(event) + '\n' for event in history))
+        self.write_market('forum.json', [
+            {'id': 99, 'role': 'buyer', 'author': 'buyer-repeat', 'ts': self.now,
+             'text': 'Gdemo 견적 주세요. 예산 5만원.'},
+        ])
+        evidence = forum.facts(self.runtime, self.now)
+        self.assertEqual(evidence['known_paid_buyers'], {'buyer-repeat'})
+        self.assertIn(99, forum.reply_quote_options(evidence))
         forum.save(self.runtime / 'state/counterparty-ledger.json', {'recent_purchases': [
             {'seq': 42, 'at': self.now - 30, 'buyer': 'buyer-new', 'sku': 'Gdemo', 'price': 38_000,
              'grade': 'A', 'warranty_hours': 6, 'remaining_seconds': None}]})

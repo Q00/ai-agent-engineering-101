@@ -516,13 +516,14 @@ def run_once(runtime, *, dry_run=False, decide=decide_json, now=None, announce_o
         pinned_reply_quotes = first_quotes or (reply_quote_options(evidence, reply_quote_count, targets)
                                                if replies_allowed else {})
         recent_intros = [p['at'] for p in roots if p.get('first_checkout')]
-        first_checkout_due = (not announce_opening and not pinned_reply_quotes and root_due and normal_capacity
+        first_checkout_due = (not announce_opening and not first_quotes and root_due and normal_capacity
                               and len(recent_intros) < FIRST_CHECKOUT_DAILY_CAP
                               and (not recent_intros or now - max(recent_intros) >= FIRST_CHECKOUT_INTERVAL))
         demand_quotes = first_checkout_quotes(evidence, cooling) if first_checkout_due else []
         first_checkout = bool(demand_quotes)
         if first_checkout:
             pinned_quotes = demand_quotes
+            pinned_reply_quotes = {}
         evidence['featured_quotes'] = pinned_quotes
         evidence['requests'] = prioritized_requests(evidence, pinned_reply_quotes)
         pinned_reply_quotes = {r['id']: pinned_reply_quotes[r['id']] for r in evidence['requests']}
