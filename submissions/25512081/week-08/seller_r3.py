@@ -119,7 +119,9 @@ TYPICAL_CLOSE = 0.95      # a deal closes at about this share of the opening ask
 SHARE_BOUNDS = (0.55, 0.97)
 CLEARANCE_HOURS = 12      # food this close to its date opens 20% lower and may go below cost: unsold, it is a full loss
 CLEARANCE_FLOOR = 0.6     # share of cost
-WARRANTY = {"A": 6}       # goods grade -> warranty hours; B and C goods carry none
+WARRANTY = {"A": 72}      # goods grade -> warranty hours; B and C goods carry none
+# 72 h, the rules' maximum, costs the same as 6 h since a unit breaks only in the 6 h after the sale; buyer
+# yeonsong2 took a star off 10 grade A goods reviews for "the 6-hour warranty is unusually brief" (Nov 8-9)
 # A warranty refunds the whole price if the unit breaks within it, and goods break only in the 6 h after the sale,
 # so a 6 h warranty costs (break rate) x price. The market does not publish the rate, but every break is a
 # "broken" entry on the ledger: restock.py counts them per grade against goods settles (.market/break_rates.json).
@@ -243,11 +245,13 @@ def find_unit(text, taken=()):
         if fit:
             if fit[0]["kind"] == "food":
                 ok = [u for u in fresh if match(u)]
-                if not ok and said is not None:
-                    log(f"[quality] no matching food lasts the requested {said:g}h plus checkout buffer")
+                # no shorter unit when the buyer does not say its need either (Nov 7 22:58-Nov 9 22:00: 136 of our
+                # 2,670 reviews were 2 stars "Only 323.2 h of shelf life left; I needed 540.0 h", 38% of the stars
+                # we lost; the needs were 0.25-0.75 of the SKU's shelf_hours, so default_need covers all of them)
+                if not ok:
+                    log(f"[quality] no matching food lasts the {'requested' if said is not None else 'usual'} need")
                     return None
-                return (min(ok, key=lambda u: u["expires_at"] or math.inf) if ok
-                        else max(fit, key=lambda u: u["expires_at"] or 0))
+                return min(ok, key=lambda u: u["expires_at"] or math.inf)
             # a unit whose floor (cost x 1.05) is over the most it may open at (max_share) can only sell above the
             # market, so it goes behind the others (Nov 5 10:27-12:17: 4 surge-cost grade A Zinus Q mattresses
             # G1515d951, cost 380-464k, opened at list 423810 vs a market median 0.825; 15 deals, 3 settled, while 11
@@ -548,7 +552,7 @@ def build(port):
     card = AgentCard(
         name=NAME,
         description=("Real stock, honest grades. Every reply states the unit's true grade, the market "
-                     "certificate, shelf life left (food) and warranty (grade A goods: 6h full refund). "
+                     "certificate, shelf life left (food) and warranty (grade A goods: 72h full refund). "
                      "Prices below list. Answers in milliseconds; send the ask or say ok and the signed "
                      "receipt comes back at once."),
         version="3.0.0",
