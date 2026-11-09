@@ -6,6 +6,7 @@ from market_intel import Intel
 from buyer_memory import Memory
 from buyer_publicist import latest_paid_post
 from shop_copy import price_line, paid_post, SHOP_DESCRIPTION
+from adaptive_control import Control
 
 class CopyTests(unittest.TestCase):
     def test_price_and_conditions_are_not_exaggerated(self):
@@ -30,5 +31,15 @@ class CopyTests(unittest.TestCase):
                 intel.put('posted_purchase_ledgers',[10])
                 self.assertIsNone(latest_paid_post(intel))
             finally:m.close();intel.close()
+
+    def test_verified_purchase_templates_rotate_without_changing_facts(self):
+        posts=[paid_post('상품','X',7000,'B',10000,True,n,6) for n in range(100,180)]
+        self.assertEqual(len(posts),len(set(posts)))
+        for n,text in zip(range(100,180),posts):
+            self.assertIn('실제 구매 기록',text);self.assertIn('7,000원',text)
+            self.assertIn('등급 주장 일치',text);self.assertIn(f'#{n}',text);self.assertIn('보증 6h',text)
+        normalized=[Control.normalize_publication(text)[1] for text in posts]
+        worst=max(len(a&b)/len(a|b) for i,a in enumerate(normalized) for b in normalized[i+1:])
+        self.assertLess(worst,.80)
 
 if __name__=='__main__':unittest.main()
