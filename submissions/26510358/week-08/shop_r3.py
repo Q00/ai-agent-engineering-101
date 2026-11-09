@@ -115,9 +115,15 @@ def find_unit(text, taken):
         return None, inv
     now, need = time.time(), wanted_hours(text)
     if fit[0].get("kind") == "food":
-        lasting = [u for u in fit if not u.get("expires_at") or (u["expires_at"] - now) / 3600 >= need + 1]
-        pool = lasting or fit
-        return min(pool, key=lambda u: (u.get("expires_at") or float("inf"))), inv
+        shelf = (market.catalog().get(fit[0]["sku"]) or {}).get("shelf_hours") or 0
+        # A buyer that states no need still has one: 0.25, 0.5 or 0.75 of the shelf life (2026-11-09: buyers that
+        # never say it rated 38 short-lived units 2.0 against 4.7). Try to cover the longest first.
+        needs = [need] if need or not shelf else [f * shelf for f in config.UNSTATED_NEED_SHARES]
+        for n in needs:
+            lasting = [u for u in fit if not u.get("expires_at") or (u["expires_at"] - now) / 3600 >= n + 1]
+            if lasting:
+                return min(lasting, key=lambda u: (u.get("expires_at") or float("inf"))), inv
+        return min(fit, key=lambda u: (u.get("expires_at") or float("inf"))), inv
     return min(fit, key=lambda u: ("ABC".find(u.get("grade") or "C"), u.get("supplied_at") or 0)), inv
 
 

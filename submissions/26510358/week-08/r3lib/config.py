@@ -104,6 +104,8 @@ ASK_MAX_OVER_MARKET = 0.04          # final first ask (after scarcity, grade, wa
                                     #   +0.12 0.08 / 8k (last 12 h: 38k, 50k, 14k, 8k); 1,100 of 1,840 quotes sat >= +0.08
 MIN_MARGIN = 0.08                   # normal floor: cost * (1 + MIN_MARGIN)
 GRADE_FACTOR = {"food": {"A": 1.0, "B": 0.95, "C": 0.82}, "goods": {"A": 1.0, "B": 0.90, "C": 0.75}}
+UNSTATED_NEED_SHARES = (0.75, 0.5, 0.25)   # food for a buyer that names no need: the soonest unit lasting this share
+                                           #   of shelf life, longest first (orders ask 0.25/0.5/0.75 of it)
 WARRANTY_HOURS = 72                 # goods break only within 6 h of the sale (/rules; ours: max 6.0 h), so 72 h (the
                                     #   market's maximum) costs what 6 h does; 2026-11-09: buyers rated 6 h "concerningly
                                     #   short", and market-wide the same buyer rated 72 h +0.065 over 6 h (24 up, 7 down);
