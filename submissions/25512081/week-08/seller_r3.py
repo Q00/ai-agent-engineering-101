@@ -436,6 +436,46 @@ def receipt_item(text, unit):
     return category if category and category.lower() in want and not named else unit["sku"]
 
 
+
+# Which buyer account a talk comes from is not sent to the seller, and 77% of talks use the same words ("I want to
+# buy <name> (<sku>)", then bare numbers), so the words told the account in only 20% of them (Nov 10 04:30, 3,222
+# talks joined to ledger results by receipt task id). This logs the shape of each talk's first message (field names,
+# id formats, parts, request settings, the text with the item taken out) to see whether the shape tells it instead.
+FINGERPRINTS = MARKET_DIR / "fingerprints.jsonl"
+
+
+def _shape(v):
+    if isinstance(v, dict):
+        return {k: _shape(x) for k, x in sorted(v.items()) if k != "text"}
+    if isinstance(v, list):
+        return [_shape(x) for x in v[:3]]
+    if isinstance(v, str):
+        return re.sub(r"[0-9a-f]", "h", re.sub(r"[A-Za-z]", "a", v))[:40] if len(v) > 6 else v
+    return type(v).__name__
+
+
+def fingerprint(context, text):
+    try:
+        from google.protobuf.json_format import MessageToDict
+        msg = MessageToDict(context.message)
+        conf = MessageToDict(context.configuration) if context.configuration is not None else None
+        hdr = (getattr(context.call_context, "state", None) or {}).get("headers") or {}
+        tmpl = re.sub(r"\(G[0-9a-f]{8}\)", "(SKU)", text)
+        for n in sorted({u.get("name") or "" for u in inventory().get("units", [])}, key=len, reverse=True):
+            if n and n in tmpl:
+                tmpl = tmpl.replace(n, "NAME")
+                break
+        row = {"ts": time.time(), "task": context.current_task.id if context.current_task else context.task_id,
+               "msg": _shape(msg), "conf": _shape(conf), "meta": _shape(MessageToDict(context.metadata))
+               if hasattr(context.metadata, "DESCRIPTOR") else _shape(context.metadata or {}),
+               "hdr": {k: hdr[k] for k in sorted(hdr) if k.lower() in ("a2a-version", "accept", "content-type")},
+               "auth": bool(hdr.get("authorization")), "text": re.sub(r"\d[\d,.]*", "N", tmpl)[:300]}
+        with FINGERPRINTS.open("a", encoding="utf-8") as f:
+            f.write(json.dumps(row, ensure_ascii=False) + "\n")
+    except Exception as e:  # logging must never stop a sale
+        log(f"[fingerprint] {type(e).__name__}: {e}")
+
+
 class Seller(AgentExecutor):
     def __init__(self):
         self.open = {}   # task id -> {"unit", "ask", "floor", "warranty", "rounds"}
@@ -456,6 +496,7 @@ class Seller(AgentExecutor):
 
         deal = self.open.get(task.id)
         if deal is None:
+            fingerprint(context, text)
             # units in an open talk, and units sold in the last SOLD_HOLD seconds: inventory.json can be 10 s old,
             # and on Nov 3 one unit went to two buyers a second apart, so the first buyer's checkout was refused
             now = time.time()
