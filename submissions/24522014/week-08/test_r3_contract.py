@@ -58,7 +58,8 @@ class R3Contract(unittest.TestCase):
             args = ["market_buyer", "--shops", str(root / "shops.json"), "--order", str(root / "order.json"),
                     "--memory", str(root / "memory.jsonl"), "--item", "food", "--budget", "100"]
             output = io.StringIO()
-            with patch("sys.argv", args), patch.object(market_buyer, "ROOT", root), redirect_stdout(output), \
+            # The grade C food trial has its own tests (test_food_c_trial); pin its control arm so this check does not follow the live share.
+            with patch("sys.argv", args), patch.object(market_buyer, "ROOT", root), redirect_stdout(output), patch("food_c_trial.arm", return_value="control"), \
                     patch.object(market_buyer, "trade", return_value=({"shop": "https://example.test", "receipt": None},
                                                                      {"outcome": "no_deal"})) as trade:
                 market_buyer.main()
