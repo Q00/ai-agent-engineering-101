@@ -542,8 +542,9 @@ def main():
         cheapgoods = order.get("kind") == "goods" and random.random() < bp.get("cheapgoods_share", 0)
         skubest = random.random() < bp.get("skubest_share", 0)
         # 11-09 A/B "aimtop" (user: aim at what the best buyers get, not the average): the cap sits at the shop's
-        # 10th-percentile price (p10 + cap_margin; user: 10 %, not 25 %) instead of its median, and shops are ranked
-        # by the saved of their best tenth of deals
+        # lower-quartile price (p25 + cap_margin) instead of its median, and shops are ranked by the saved of their
+        # best quarter of deals. 11-09: p10 was tried for a few minutes; on 12 h of our haggles it halved deals per
+        # order (0.31 vs 0.62) for +0.03 per deal, so the user chose p25
         aimtop = random.random() < bp.get("aimtop_share", 0)
         gradeaware = order.get("kind") == "goods" and random.random() < bp.get("gradeaware_share", 0)
         if order.get("kind") == "food" and order.get("use_within_hours"):
@@ -606,7 +607,7 @@ def main():
             ev = expected(vctx["stats"], pick["name"], vctx["kind"], vctx["cat"])
             if ev["n"] >= 10:      # do not pay above what this shop usually takes from other buyers
                 p25 = ev["p25"]
-                cap = min(cap, int(want["list_price"] * ((ev.get("p10", ev["p25"]) if aimtop else ev["p50"]) + bp["cap_margin"])))
+                cap = min(cap, int(want["list_price"] * ((ev["p25"] if aimtop else ev["p50"]) + bp["cap_margin"])))
             adj = ((bp.get("shop_auto") or {}).get(pick["name"]) or {}).get("shop_cap", 0)   # strategist, per shop
             if adj:
                 cap = max(1, min(a.budget, int(cap + want["list_price"] * adj)))
