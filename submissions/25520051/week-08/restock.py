@@ -51,6 +51,20 @@ TOP_N = 25                      # candidates the harness reads
 # Top-scoring SKUs that need stock, bought before the harness picks: it chose water and snacks while SKUs with score
 # 17-22k stayed at 0 units and 30M+ cash sat idle; then goods alone left 6-8 food units. Food first, it costs little.
 CODE_FIRST = {"food": 3, "goods": 5}
+# Goods held past this many hours of our recent goods sales: no new goods SKUs, only top-ups of SKUs we hold and sell.
+# Nov 9 12:44: 487 goods units held (206M at cost, 255 units >6 h) while we sold 25 goods/h over 6 h (was 36-50/h);
+# with 500M cash the spending limit never binds, so new SKUs kept arriving (164 held) and goods grew ~50 units/h.
+GOODS_HOLD_H = 12
+
+
+def goods_cap(cands: list, have: dict, units: list, sold: dict, now: float) -> tuple[list, str]:
+    """Drop goods SKUs we hold none of while goods stock exceeds GOODS_HOLD_H hours of our goods sales (last 6 h)."""
+    rate = sum(1 for s in sold.values() if s.get("kind") == "goods" and now - s.get("t", 0) < 6 * 3600) / 6
+    held = sum(1 for u in units if u.get("kind") == "goods")
+    if held <= GOODS_HOLD_H * max(rate, 1.0):
+        return cands, ""
+    kept = [c for c in cands if c["kind"] != "goods" or have.get(c["sku"], 0) > 0]
+    return kept, f"goods cap: {held} held > {GOODS_HOLD_H} h x {rate:.1f}/h, {len(cands) - len(kept)} new goods SKUs skipped; "
 
 
 def decay(ts: float, now: float) -> float:
@@ -326,7 +340,9 @@ def main():
     surge = {x["sku"]: float(x["factor"]) for x in inv.get("surge") or [] if isinstance(x, dict) and x.get("sku") and x.get("factor")}
     cands = candidates(cat, rows, shop_mem.get("cats", {}), forum_wants(md, cat), others_stock(), have, now, surge)
     rate, stale = turnover(units, shop_mem.get("sold", {}), now)
+    cands, capped = goods_cap(cands, have, units, shop_mem.get("sold", {}), now)
     lines, why = plan(cands, limit, int(free * LINE_MAX), have, not args.no_harness, rate, stale)
+    why = capped + why
     print(f"[restock] turnover: {len(rate)} SKUs sold in 3 h, {len(stale)} SKUs stale; "
           f"sold units held {sum(s.get('held_h', 0) for s in shop_mem.get('sold', {}).values()):.1f} h in total", flush=True)
     for c in cands[:8]:
