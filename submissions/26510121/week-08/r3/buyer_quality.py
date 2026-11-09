@@ -76,9 +76,11 @@ def estimate(journal,product,grade,warranty,shop,config,now=None):
     # a reason to select whichever pooled cohort gives the lowest bound.
     seller=groups.get(f'seller_category|{shop}|{category}|{grade}',{})
     if seller.get('n',0)>=80:upper=max(upper,min(1,wilson(seller['broken'],seller['n'])+.02))
+    if own['mature_samples']>=20:upper=max(upper,own['failure_upper'])
     covered=upper if warranty>=6 else (wilson(row['within3'],n,False) if warranty>=3 else 0)
     return {'failure_upper':upper,'covered_lower':min(upper,covered),'grade':grade,
             'mature_samples':n,'observed_broken':k,'cohort':key,'shift_buffer':buffer,
             'own_mature_samples':own['mature_samples'],'source':public['source'],
+            'own_risk_crosscheck':own['failure_upper'] if own['mature_samples']>=20 else None,
             'latest_eligible':public.get('latest_eligible'),'checkout_must_verify_grade':True,
             'scenario_not_causal_probability':True}

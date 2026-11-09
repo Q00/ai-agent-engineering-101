@@ -67,7 +67,7 @@ def test_concessions_are_monotone_and_last_turn_accepts_feasible_price():
 def test_uninsured_cap_and_risk_adjusted_surplus_stay_enforced(tmp_path):
     j = Journal(tmp_path)
     product = {'sku': 'G1', 'kind': 'goods', 'list_price': 10000}
-    cap, required, stress = buyer_terms(product, {'budget': 10000}, {}, j, policy())
+    cap, required, stress = buyer_terms(product, {'budget': 10000}, {'warranty_hours':0}, j, policy())
     assert cap == 7000 and required == 0 and stress == .3
     actions = buyer_price_actions(7000, cap, product, 8000, .92, 3, 4,
                                   failure_stress=stress, covered=False)

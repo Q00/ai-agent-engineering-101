@@ -50,14 +50,14 @@ def test_end_to_end_payment_moves_credits_once(tmp_path, monkeypatch,championshi
     atomic_json(j.md / 'catalog.json', {'G111': product})
     u = unit()
     if market_cohort:
-        u['cost']=5000
+        u['cost']=4000
         now=time.time();j.put('public_feed_caught_up_at',now)
         for i in range(100):
             j.add('public_settle',{'sku':'G111','unit':f'mature-{i}','grade':'A',
                                   'amount':6500,'warranty_hours':0,'shop':'http://other'},ts=now-25000-i)
         for i in range(3):
             j.add('public_settle',{'sku':'G111','unit':f'recent-{i}','grade':'A',
-                                  'amount':6500,'warranty_hours':0,'shop':'http://other'},ts=now-30-i)
+                                  'amount':5500,'warranty_hours':0,'shop':'http://other'},ts=now-30-i)
     u['name'] = product['name']
     cert = {'unit': 'u1', 'sku': 'G111', 'grade': 'A', 'expires_at': None}
     u['cert'] = {'cert': cert, 'sig': base64.b64encode(market_key.sign(kit.canon(cert))).decode()}

@@ -10,7 +10,7 @@ from r3.market_memory import buyer_assessment
 from r3.buyer_quality import estimate,cohorts
 
 
-def cfg():return dict(policy(),buyer_market_quality_enabled=True,buyer_contract_routing_enabled=True)
+def cfg():return dict(policy(),buyer_market_quality_enabled=True,buyer_contract_routing_enabled=True,buyer_counter_ratio=.92)
 
 
 def task(data=None,text='',metadata=None):
@@ -125,6 +125,13 @@ def test_stale_feed_and_small_cohorts_cannot_relax_the_unknown_prior(tmp_path):
 def test_mismatched_grade_does_not_borrow_the_a_cohort(tmp_path):
     j=Journal(tmp_path);now=time.time();p=setup(j,now)
     assert estimate(j,p,'B',6,'https://shop.example',cfg(),now)['failure_upper']==.3
+
+
+def test_adverse_mature_own_evidence_is_not_overruled_by_public_pool(tmp_path):
+    j=Journal(tmp_path);now=time.time();p=setup(j,now)
+    j.put('quality_risk_v4',{'at':now,'grades':{'A':{'n':50,'broken':20,'within3':10}}})
+    risk=estimate(j,p,'A',0,'https://shop.example',cfg(),now)
+    assert risk['failure_upper']>=risk['own_risk_crosscheck']>.4
 
 
 def test_partial_cover_never_assumes_all_breaks_are_refunded(tmp_path):

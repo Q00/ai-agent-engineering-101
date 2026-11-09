@@ -162,8 +162,9 @@ def test_buyer_tries_next_shop_when_receipt_explicitly_disables_certificate(tmp_
         def send(self, text, task=None):
             if task is None:
                 return {'id': 't', 'status': {'state': 'TASK_STATE_INPUT_REQUIRED',
-                        'message': {'metadata': {'ask': 8000, 'warranty_hours': 6}}}}
-            rec = {'shop': self.url, 'item': 'G111', 'price': int(text), 'task': 't', 'cert': self.url == 'http://cert'}
+                        'message': {'metadata': {'ask': 8000, 'warranty_hours': 6,'grade':'A'}}}}
+            rec = {'shop': self.url, 'item': 'G111', 'price': int(text), 'task': 't', 'cert': self.url == 'http://cert',
+                   'grade':'A','warranty_hours':6}
             rec['sig_seller'] = base64.b64encode(keys[self.url].sign(canon(signed_body(rec)))).decode()
             return {'id': 't', 'status': {'state': 'TASK_STATE_COMPLETED'}, 'artifacts': [{'parts': [{'data': rec}]}]}
         def close(self): pass

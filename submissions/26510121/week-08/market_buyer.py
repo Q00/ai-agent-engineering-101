@@ -140,8 +140,10 @@ def execute(order, journal, chooser, peer_factory, cfg, strategy, registry, rank
                     rec = dict(receipts[0], price=int(receipts[0]["price"]))
                     if cfg.get('buyer_championship_enabled'):
                         from r3.buyer_scoring import offer_ineligible
-                        if offer_ineligible(rec,order,cfg):
-                            raise ValueError('known_unsuitable_shelf_life')
+                        ineligible=offer_ineligible(rec,order,cfg)
+                        if ineligible:
+                            raise ValueError('certificate_unavailable' if ineligible=='certificate_unavailable'
+                                             else 'known_unsuitable_shelf_life')
                     if cfg.get('buyer_patch34_enabled'):
                         from r3.buyer_scoring import blocked_units
                         if rec.get('unit') in blocked_units(journal,c['shop'],c['sku'],order):
