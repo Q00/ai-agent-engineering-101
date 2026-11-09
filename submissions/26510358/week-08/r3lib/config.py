@@ -104,7 +104,10 @@ ASK_MAX_OVER_MARKET = 0.04          # final first ask (after scarcity, grade, wa
                                     #   +0.12 0.08 / 8k (last 12 h: 38k, 50k, 14k, 8k); 1,100 of 1,840 quotes sat >= +0.08
 MIN_MARGIN = 0.08                   # normal floor: cost * (1 + MIN_MARGIN)
 GRADE_FACTOR = {"food": {"A": 1.0, "B": 0.95, "C": 0.82}, "goods": {"A": 1.0, "B": 0.90, "C": 0.75}}
-WARRANTY_HOURS = 6                  # goods break up to 6 h after the sale (agent.md)
+WARRANTY_HOURS = 72                 # goods break only within 6 h of the sale (/rules; ours: max 6.0 h), so 72 h (the
+                                    #   market's maximum) costs what 6 h does; 2026-11-09: buyers rated 6 h "concerningly
+                                    #   short", and market-wide the same buyer rated 72 h +0.065 over 6 h (24 up, 7 down);
+                                    #   stars_rank +0.06 is +0.06 Shop ALL in today's dense 4.3-4.5 cluster
 WARRANTY_MAX_EXPECTED_COST = 0.5    # offer a warranty while p_break * price stays under half the margin
 WARRANTY_GRADES = ("A", "B")        # never on C: 27% of C goods broke market-wide (A 2.4%, B 9.1%, 2026-11-04)
 WARRANTY_PRICE_IN = True            # a warranty unit's ask carries its expected refund (p_break x ask), like a paid

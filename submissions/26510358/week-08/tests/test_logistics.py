@@ -60,3 +60,9 @@ def test_stockouts_become_our_demand(tmp_path, monkeypatch):
     lines, why, _ = restock_r3.plan({"balance": 5_000_000, "units": []}, demand, m)   # no market settles at all
     assert lines and lines[0]["sku"] == "G1"
     assert any(w.get("stockouts_per_h") for w in why)
+
+
+def test_warranty_is_the_markets_maximum_since_breaks_come_within_6_h():
+    """A break is possible only within 6 h of the sale, so any warranty of 6 h or more costs the same; offer 72 h."""
+    a = {"kind": "goods", "grade": "A", "cost": 50000, "list_price": 100000}
+    assert pricing.warranty_hours_for(a, 80000, 0.03) == 72
