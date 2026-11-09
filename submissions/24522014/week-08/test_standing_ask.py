@@ -241,7 +241,8 @@ class Settings(unittest.TestCase):
     def test_the_shipped_setting(self):
         section = json.loads(Path(standing_ask.ab.CONFIG).read_text(encoding="utf-8"))["standing_ask_at_floor"]
         self.assertEqual((section["share"], section["salt"]), (.5, "sa1"))
-        self.assertIs(section["enabled"], False)
+        # Installed off at 11:50:26 KST 11-09; switched on in its own commit after the full suite.
+        self.assertIs(section["enabled"], True)
 
 
 if __name__ == "__main__":
