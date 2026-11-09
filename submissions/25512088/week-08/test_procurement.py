@@ -28,12 +28,21 @@ class PurchaseTests(unittest.TestCase):
           dict(sku='b',expected_net=-1,score=99,upper_cost=1,sales_1h=100,sales_6h=100,
                distinct_buyers_6h=4,own_stockouts_6h=0,own_inquiries_6h=0,estimated_sale_likelihood=1)]
   plan=allocation_plan(ranked,{'units':[{'sku':'a'}]},900000)
-  self.assertEqual(plan[0]['sku'],'a');self.assertEqual(plan[0]['qty'],3)
+  self.assertEqual(plan[0]['sku'],'a');self.assertEqual(plan[0]['qty'],2)
   self.assertNotIn('b',[r['sku'] for r in plan])
   aggressive=allocation_plan(ranked,{'units':[{'sku':'a'}]},900000,aggression=3)
-  self.assertEqual(aggressive[0]['qty'],3)
+  self.assertEqual(aggressive[0]['qty'],2)
   huge=allocation_plan(ranked,{'units':[]},10000000,aggression=100)
   self.assertEqual(huge[0]['qty'],3)
+ def test_food_is_capped_at_two_units_per_sku(self):
+  ranked=[dict(sku='food',kind='food',expected_net=50000,score=3,upper_cost=100,
+               sales_1h=8,sales_6h=12,distinct_buyers_6h=4,estimated_sale_likelihood=.8)]
+  plan=allocation_plan(ranked,{'units':[]},10000)
+  self.assertEqual(plan[0]['qty'],2)
+  one={'units':[{'sku':'food','kind':'food','cost':100}]}
+  self.assertEqual(allocation_plan(ranked,one,10000)[0]['qty'],1)
+  full={'units':[{'sku':'food','kind':'food','cost':100} for _ in range(2)]}
+  self.assertEqual(allocation_plan(ranked,full,10000),[])
  def test_sofa_is_blocked_until_zero_then_returns_under_normal_cap(self):
   ranked=[dict(sku='Gc2f7811b',expected_net=999999,score=99,upper_cost=100000,sales_1h=20,sales_6h=20,
                distinct_buyers_6h=10,estimated_sale_likelihood=1),
@@ -41,7 +50,7 @@ class PurchaseTests(unittest.TestCase):
                distinct_buyers_6h=4,own_stockouts_6h=0,own_inquiries_6h=0,estimated_sale_likelihood=.8)]
   inv={'units':[{'sku':'Gc2f7811b','cost':100000}]+[{'sku':'fresh','cost':100000} for _ in range(2)]}
   plan=allocation_plan(ranked,inv,10000000)
-  self.assertEqual([(x['sku'],x['qty']) for x in plan],[('fresh',3)])
+  self.assertEqual([(x['sku'],x['qty']) for x in plan],[('fresh',1)])
   inv={'units':[{'sku':'Gc2f7811b','cost':100000}]+[{'sku':'fresh','cost':100000} for _ in range(5)]}
   self.assertEqual(allocation_plan(ranked,inv,10000000),[])
   plan=allocation_plan(ranked,{'units':[]},10000000)

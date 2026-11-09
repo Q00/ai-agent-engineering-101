@@ -363,6 +363,7 @@ def rank_products(catalog, trades, shops, own_name='25512088', local_demand=None
         verified_factor=(1+(verified_average-3)/40*min(1,verified_count/5)) if verified_average is not None else 1
         score=likelihood*contribution/max(1,product['list_price']*.75)*review_factor*verified_factor
         rows.append(dict(version=3,sku=sku,name=product.get('name',sku),category=cat,
+            kind=product.get('kind'),
             sales_1h=len(one_hour),sales_6h=len(observed),distinct_buyers_1h=len(buyers_1h),
             distinct_buyers_6h=len(buyers_6h),alive_recent_buyers_6h=len(active_6h),
             active_preference_buyers=len(active_preference_buyers),

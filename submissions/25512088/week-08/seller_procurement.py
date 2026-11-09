@@ -61,11 +61,14 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
         need=max(0,math.ceil(forecast)-holding.get(row['sku'],0))
         exposed=policy.get('max_exposed_units',250)
         share=policy.get('max_sku_share',.20)
-        sku_ceiling=max(policy.get('min_trial_units',2),math.ceil(exposed*share))
-        sku_ceiling=min(policy.get('max_units_per_sku',sku_ceiling),sku_ceiling)
+        is_food=row.get('kind')=='food'
+        unit_cap=policy.get('max_food_units_per_sku',2) if is_food else policy.get('max_units_per_sku',3)
+        sku_ceiling=min(unit_cap,max(policy.get('min_trial_units',2),math.ceil(exposed*share)))
         need=min(need,max(0,sku_ceiling-holding.get(row['sku'],0)))
+        trial_units=(policy.get('initial_food_trial_units',2) if is_food else
+                     policy.get('initial_trial_units',policy.get('min_trial_units',2)))
         capital_ceiling=max(portfolio_capital*policy.get('max_sku_capital_share',1),
-                            policy.get('initial_trial_units',policy.get('min_trial_units',2))*row['upper_cost'])
+                            trial_units*row['upper_cost'])
         capital_room=max(0,capital_ceiling-holding_cost.get(row['sku'],0))
         need=min(need,int(capital_room//max(1,row['upper_cost'])))
         if need<=0:continue
@@ -158,7 +161,8 @@ def main():
         if strategy.get('opens_at')!=opening or strategy.get('version')!=3:
             log(event='waiting_selection',select_at=opening-180,spent=spent)
             time.sleep(min(20,max(1,opening-180-time.time())));continue
-        ranked=strategy.get('top10',[])
+        ranked=[dict(row,kind=catalog.get(row.get('sku'),{}).get('kind'))
+                for row in strategy.get('top10',[])]
         if not ranked:
             log(event='no_qualified_top10');time.sleep(20);continue
         ranked=[r for r in ranked if r.get('expected_net',0)>0]
