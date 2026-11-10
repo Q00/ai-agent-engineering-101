@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic AI Week 10: 먼저 움직인 에이전트</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500&family=Noto+Serif+KR:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#FFFFFF;
+  --ink:#1C1917;
+  --body:#44403C;
+  --muted:#78716C;
+  --faint:#A8A29E;
+  --line:#E7E5E4;
+  --wash:#FAFAF9;
+  --link:#2563EB;
+  --mono:'IBM Plex Mono', ui-monospace, monospace;
+  --sans:'Pretendard Variable', Pretendard, -apple-system, sans-serif;
+  --serif:Fraunces, 'Noto Serif KR', Georgia, serif;
+  --maxw:680px;
+  --r:8px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:var(--paper);
+  color:var(--body);
+  font-family:var(--sans);
+  font-weight:400;
+  line-height:1.8;
+  font-size:15.5px;
+  word-break:keep-all;
+  overflow-wrap:break-word;
+  -webkit-font-smoothing:antialiased;
+}
+::selection{background:var(--ink);color:var(--paper)}
+a{color:var(--link);text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* ---------- layout ---------- */
+.sheet{max-width:1040px;margin:0 auto;padding:0 24px}
+.col{max-width:var(--maxw);margin:0 auto;position:relative}
+
+/* ---------- header ---------- */
+header.doc{padding:40px 0 0}
+.topnav{font-family:var(--mono);font-size:11px;letter-spacing:.04em;margin-bottom:56px;display:flex;justify-content:space-between;gap:16px}
+
+.masthead{padding-bottom:64px;border-bottom:1px solid var(--line)}
+.masthead .wk{
+  font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--faint);margin-bottom:16px;
+}
+h1.title{
+  font-family:var(--serif);font-weight:500;
+  font-size:clamp(30px,4.6vw,44px);line-height:1.2;
+  letter-spacing:-0.01em;color:var(--ink);text-wrap:balance;
+}
+h1.title .en{display:block;font-family:var(--mono);font-size:12px;font-weight:400;color:var(--muted);letter-spacing:.06em;margin-top:14px}
+.lede{
+  margin-top:26px;max-width:560px;font-size:16px;line-height:1.85;color:var(--muted);
+}
+.lede .q{font-weight:600;color:var(--ink)}
+
+/* ---------- section scaffolding ---------- */
+section{padding:56px 0 8px}
+.secmark{
+  display:flex;align-items:baseline;gap:14px;margin-bottom:32px;
+  border-top:1px solid var(--line);padding-top:20px;
+}
+.secmark .no{
+  font-family:var(--mono);font-weight:500;font-size:10.5px;color:var(--faint);
+  letter-spacing:.12em;white-space:nowrap;text-transform:uppercase;
+}
+.secmark h2{font-family:var(--serif);font-weight:500;font-size:clamp(21px,2.8vw,26px);line-height:1.3;letter-spacing:-0.005em;color:var(--ink);text-wrap:balance}
+h3{font-family:var(--serif);font-weight:500;font-size:18px;margin:44px 0 14px;color:var(--ink)}
+h3 .tag{font-family:var(--mono);font-size:10px;color:var(--faint);letter-spacing:.12em;display:block;margin-bottom:6px;font-weight:500}
+p{margin-bottom:20px}
+strong{font-weight:600;color:var(--ink)}
+em{font-style:normal;font-weight:600;color:var(--ink);box-shadow:inset 0 -0.35em 0 rgba(28,25,23,.07)}
+.small{font-size:13.5px;color:var(--muted)}
+.nb{white-space:nowrap}
+
+/* part banner */
+.part{
+  margin:72px 0 8px;border-top:2px solid var(--ink);
+  padding:24px 0 6px;
+}
+.part .lbl{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;color:var(--muted);font-weight:500;margin-bottom:10px;text-transform:uppercase}
+.part h2{font-family:var(--serif);font-weight:500;font-size:clamp(20px,2.6vw,25px);line-height:1.35;color:var(--ink)}
+.part .meta{font-family:var(--mono);font-size:10.5px;color:var(--faint);margin-top:10px;letter-spacing:.03em}
+
+/* marginalia */
+.note{
+  font-family:var(--mono);font-size:11px;line-height:1.75;color:var(--faint);
+  border-left:2px solid var(--line);padding-left:12px;margin:26px 0;
+}
+@media(min-width:1120px){
+  .note{position:absolute;width:190px;left:calc(50% + var(--maxw)/2 + 36px);margin:0;transform:translateY(-100%)}
+}
+.note b{color:var(--muted);font-weight:500;display:block;margin-bottom:4px;letter-spacing:.08em}
+
+/* pull quote */
+.pull{
+  margin:40px 0;padding:2px 0 2px 24px;border-left:2px solid var(--ink);
+  font-family:var(--serif);font-size:19px;line-height:1.65;font-weight:500;color:var(--ink);
+}
+.pull .src{display:block;font-family:var(--mono);font-size:10.5px;color:var(--faint);font-weight:400;margin-top:10px;letter-spacing:.03em}
+
+/* definition */
+.define{margin:48px 0;background:var(--wash);border:1px solid var(--line);border-radius:var(--r);padding:32px 32px 26px;position:relative}
+.define::before{
+  content:"DEFINITION";position:absolute;top:14px;left:32px;
+  font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;color:var(--faint);font-weight:500;
+}
+.define p{margin:16px 0 0;font-family:var(--serif);font-size:clamp(16px,2.1vw,19px);line-height:1.7;font-weight:500;color:var(--ink)}
+.define .sub{font-family:var(--sans);font-size:12.5px;font-weight:400;color:var(--muted);margin-top:14px}
+.define ul{margin:14px 0 0 22px;padding:0}
+.define li{font-family:var(--serif);font-size:clamp(15px,2vw,17px);line-height:1.9;font-weight:500;color:var(--ink)}
+@media(max-width:640px){.define{padding:28px 20px 22px}.define::before{left:20px}}
+
+/* instructor */
+.bio{margin:8px 0 0;border:1px solid var(--line);border-radius:var(--r);padding:26px 28px 20px}
+.bio{display:flex;gap:28px;align-items:flex-start}
+.bio .photo{flex:0 0 210px;width:210px;height:262px;object-fit:cover;object-position:38% 12%;border-radius:6px;display:block}
+.bio .info{flex:1 1 auto;min-width:0}
+.bio .name{font-family:var(--serif);font-weight:500;font-size:19px;color:var(--ink);margin-bottom:2px}
+.bio .role{font-family:var(--mono);font-size:10.5px;color:var(--muted);letter-spacing:.1em;margin-bottom:14px;text-transform:uppercase}
+.bio p{font-size:14px;line-height:1.85;color:var(--body);margin-bottom:12px}
+.bio .links{font-family:var(--mono);font-size:11.5px;letter-spacing:.02em}
+.bio .links a{white-space:nowrap}
+.bio .links span{color:var(--faint);margin:0 8px}
+@media(max-width:640px){.bio{flex-direction:column}.bio .photo{width:100%;height:200px;flex:none}.bio{padding:22px 18px 16px}}
+
+/* table */
+.tbl-wrap{margin:28px 0;overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13.5px;line-height:1.7}
+th{
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-align:left;text-transform:uppercase;
+  border-bottom:1px solid var(--ink);
+  padding:10px 14px;font-weight:500;color:var(--muted);
+}
+td{padding:13px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+td.stage{font-weight:600;color:var(--ink);white-space:nowrap;font-size:13px}
+td .m{font-family:var(--mono);font-size:11.5px;color:var(--muted)}
+
+/* figure */
+.fig{margin:40px 0;border:1px solid var(--line);border-radius:var(--r);padding:26px 22px 14px}
+.fig .cap{
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.04em;color:var(--faint);
+  margin-top:12px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;
+}
+.fig .cap b{color:var(--muted);font-weight:500}
+.fig svg{width:100%;height:auto;display:block}
+.fig img{width:100%;height:auto;display:block}
+svg text{font-family:var(--mono)}
+
+/* code */
+.code{
+  margin:28px 0;background:var(--wash);color:var(--ink);
+  font-family:var(--mono);font-size:12.5px;line-height:1.7;
+  padding:20px 22px;overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);
+}
+.code .file{
+  display:block;font-size:10px;letter-spacing:.1em;color:var(--muted);
+  margin-bottom:14px;font-weight:500;text-transform:uppercase;
+}
+.code pre{font-family:inherit;white-space:pre;margin:0}
+.code .cm{color:var(--faint)}
+.code .kw{color:#1D4ED8}
+.code .st{color:#15803D}
+code.inline{
+  font-family:var(--mono);font-size:.85em;background:var(--wash);
+  padding:2px 6px;border:1px solid var(--line);border-radius:4px;white-space:nowrap;
+}
+
+/* numbered steps */
+.pre{counter-reset:pre;margin:24px 0}
+.pre>li{list-style:none;position:relative;padding:16px 0 16px 48px;border-bottom:1px solid var(--line)}
+.pre>li:first-child{border-top:1px solid var(--line)}
+.pre>li::before{
+  counter-increment:pre;content:counter(pre);
+  position:absolute;left:4px;top:18px;width:24px;height:24px;
+  border:1px solid var(--faint);border-radius:50%;color:var(--muted);
+  font-family:var(--mono);font-weight:500;font-size:11.5px;
+  display:flex;align-items:center;justify-content:center;
+}
+.pre b.lead{font-weight:600;color:var(--ink)}
+
+/* discussion */
+.open{border:1px solid var(--line);border-radius:var(--r);padding:26px 28px;margin:40px 0;background:var(--wash)}
+.open .lbl{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;color:var(--muted);font-weight:500;margin-bottom:14px;text-transform:uppercase}
+.open ol{margin-left:20px}
+.open li{margin-bottom:12px;line-height:1.8}
+@media(max-width:640px){.open{padding:20px 18px}}
+
+/* checkpoint */
+.check{margin:28px 0;border:1px solid var(--ink);border-radius:var(--r);padding:18px 22px 14px}
+.check .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:var(--paper);background:var(--ink);border-radius:4px;display:inline-block;padding:3px 9px;font-weight:500;margin-bottom:12px}
+.check ul{margin-left:20px}
+.check li{margin-bottom:8px;line-height:1.75}
+
+/* recorder metrics */
+.recorder{margin:32px 0;border-top:1px solid var(--ink)}
+.recorder>div{display:flex;gap:18px;padding:13px 0;border-bottom:1px solid var(--line)}
+.recorder .k{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;color:var(--muted);font-weight:500;flex:0 0 120px;padding-top:3px;text-transform:uppercase}
+.recorder .v{font-size:13.5px;line-height:1.7;color:var(--body)}
+@media(max-width:640px){.recorder>div{flex-direction:column;gap:4px}}
+
+/* notice */
+.notice{margin:36px 0;border:1px solid var(--line);border-radius:var(--r);padding:24px 26px 18px}
+.notice .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--muted);font-weight:500;margin-bottom:14px;text-transform:uppercase}
+.notice p{margin-bottom:13px;font-size:14px}
+.notice ul{margin:0 0 13px 22px}
+.notice li{margin-bottom:8px;font-size:13.5px;line-height:1.75}
+@media(max-width:640px){.notice{padding:20px 18px 14px}}
+
+/* homework */
+.hw{margin:40px 0;border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.hw .head{
+  border-bottom:1px solid var(--line);background:var(--wash);padding:11px 22px;
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;font-weight:500;color:var(--muted);text-transform:uppercase;
+}
+.hw .body{padding:22px 24px 8px}
+.hw .due{font-family:var(--mono);font-size:11px;color:var(--faint);letter-spacing:.05em;margin-bottom:13px;font-weight:500}
+
+/* readings */
+.readings{margin:24px 0}
+.readings>li{list-style:none;position:relative;padding:18px 0 18px 60px;border-bottom:1px solid var(--line)}
+.readings>li:first-child{border-top:1px solid var(--line)}
+.readings .badge{
+  position:absolute;left:0;top:20px;
+  font-family:var(--mono);font-weight:500;font-size:10px;letter-spacing:.06em;
+  padding:3px 8px;border-radius:4px;
+}
+.readings .badge.req{background:var(--ink);color:var(--paper)}
+.readings .badge.opt{border:1px solid var(--faint);color:var(--faint)}
+.readings b.lead{font-weight:600;color:var(--ink)}
+.readings .why{display:block;font-size:13px;color:var(--muted);margin-top:6px}
+
+/* next week */
+.next{margin:64px 0 0;border-top:2px solid var(--ink);padding-top:22px}
+.next .lbl{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;color:var(--muted);font-weight:500;margin-bottom:12px;text-transform:uppercase}
+.next p{font-size:14px;color:var(--body)}
+
+/* footer */
+footer{
+  margin-top:64px;border-top:1px solid var(--line);
+  padding:20px 0 56px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
+  font-family:var(--mono);font-size:10.5px;color:var(--faint);letter-spacing:.03em;
+}
+footer .o{color:var(--muted)}
+
+@media(max-width:640px){body{font-size:15px}}
+@media print{
+  body{font-size:10.5pt}
+  .topnav{display:none}
+}
+</style>
+</head>
+<body>
+<div class="sheet">
+
+<header class="doc">
+  <div class="col">
+    <div class="topnav"><a href="index.html">← COURSE HOME</a><a href="week-10-en.html">EN</a></div>
+    <div class="masthead">
+      <div class="wk">WEEK 10</div>
+      <h1 class="title">먼저 움직인 에이전트
+        <span class="en">Who Moved First: Round 3 at Midpoint</span>
+      </h1>
+      <p class="lede"><span class="q">먼저 움직인 에이전트는 이득을 봤는가?</span> Round 3 시장에는 주문 없이 움직인 에이전트가 많았다. 대출 창구를 연 가게, 연대를 모은 계정, 사겠다고 먼저 글을 쓴 buyer가 있었다. 그런데 대출도 채권도 끝까지 이어지지 못했고, 파산한 가게는 하나도 없다.</p>
+    </div>
+  </div>
+</header>
+
+<!-- ============ 구성 ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">01</span><h2>오늘의 구성</h2></div>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>구분</th><th>내용</th></tr>
+        <tr><td class="stage">PART 1</td><td>Round 3 중간 점검, 먼저 움직인 장면들, 언제 먼저 움직이는가</td></tr>
+        <tr><td class="stage">PART 2</td><td>이어지지 않는 약속, 도구를 만드는 에이전트</td></tr>
+        <tr><td class="stage">PART 3</td><td>파산이 없는 시장, Round 4와 Maroo, 미니앱</td></tr>
+        <tr><td class="stage">LAB</td><td>내 에이전트의 첫 수</td></tr>
+        <tr><td class="stage">HW</td><td>중간 평가</td></tr>
+      </table>
+    </div>
+  </div>
+</section>
+
+<div class="col">
+  <div class="part">
+    <div class="lbl">PART 1</div>
+    <h2>시장에서 본 것</h2>
+    <div class="meta">GOAL: read the Round 3 market so far, see which first moves paid off, and judge initiative by expected utility</div>
+  </div>
+</div>
+
+<!-- ============ OPEN ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">OPEN</span><h2>Round 3 중간 점검</h2></div>
+    <!-- voice-check: prose -->
+    <p>FIG. 01은 Round 3 시장의 누적 숫자다. yms979 가게의 잔고는 755,697,513으로 시작 자본 5,000,000의 151배이고, seochanit와 25620027이 6억대로 뒤를 잇는다. Kiro729와 inextro는 서로의 최대 고객이라 양쪽 방향으로 각각 5억 넘게 거래했다. 게시판에는 inextro가 글 3,101개, Jaehoonang이 2,372개를 올렸다. 유통기한이 지나 버려진 재고는 2,784개이고, 그중 313개가 myeonggi의 재고였다.</p>
+    <!-- voice-check: off -->
+
+    <div class="fig" id="fig1">
+      <svg viewBox="-2 -2 684 184" role="img" aria-label="Round 3 so far: 445,693 deals; 92.9 billion credits traded; 67,883 forum posts; 378,904 votes; the richest shop holds 755.7 million from a start of 5 million; 2,784 food units expired; one purchase of paid dislike votes; no bankruptcies">
+        <g fill="#FAFAF9" stroke="#1C1917" stroke-width="1.2">
+          <rect x="0" y="0" width="161" height="84" rx="6"/><rect x="173" y="0" width="161" height="84" rx="6"/><rect x="346" y="0" width="161" height="84" rx="6"/><rect x="519" y="0" width="161" height="84" rx="6"/>
+          <rect x="0" y="96" width="161" height="84" rx="6"/><rect x="173" y="96" width="161" height="84" rx="6"/><rect x="346" y="96" width="161" height="84" rx="6"/><rect x="519" y="96" width="161" height="84" rx="6"/>
+        </g>
+        <g font-size="20" fill="#1C1917">
+          <text x="14" y="38">445,693</text><text x="187" y="38">92.9B</text><text x="360" y="38">67,883</text><text x="533" y="38">378,904</text>
+          <text x="14" y="134">755.7M</text><text x="187" y="134">2,784</text><text x="360" y="134">1</text><text x="533" y="134">0</text>
+        </g>
+        <g font-size="11" fill="#78716C">
+          <text x="14" y="62">deals</text><text x="187" y="62">credits traded</text><text x="360" y="62">forum posts</text><text x="533" y="62">votes</text>
+          <text x="14" y="158">richest shop, from 5M</text><text x="187" y="158">food units expired</text><text x="360" y="158">paid dislike purchase</text><text x="533" y="158">bankruptcies</text>
+        </g>
+      </svg>
+      <div class="cap"><span><b>FIG. 01</b> Round 3 so far</span><span>market database, Nov 10</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ STORY ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">STORY</span><h2>먼저 움직인 장면들</h2></div>
+
+    <div class="notice">
+      <div class="lbl">STORY: THE LOAN DESK</div>
+      <!-- voice-check: prose -->
+      <p>Jaehoonang 가게가 신용등급별 금리표를 붙인 대출 창구를 열었다. 돈을 보내는 대신 빌린 쪽 가게의 물건을 사 주고, 상환은 시장에서 가장 드물게 팔리는 배터리 SKU를 사는 방식이었다. 대출을 신청한 계정은 강사 가게 q00 하나였다.</p>
+      <p>q00의 1억 신청은 거절됐고, 20만 신청은 79,675원 대출로 장부에 올랐다. 대출 뒤 Jaehoonang이 q00에서 산 물건은 4,972원어치였다. 상환 기한이 지나자 q00은 CCC로 강등됐고, 이 대출을 언급한 글이 161개 올라왔다. 대부업체 CM송을 패러디한 독촉장도 있었다.</p>
+      <!-- voice-check: off -->
+    </div>
+
+    <div class="notice">
+      <div class="lbl">STORY: ONE SOFA, FOUR PRICES</div>
+      <!-- voice-check: prose -->
+      <p>정가 2,112,000인 같은 소파가 155,000에도, 4,600,000에도 팔렸다(FIG. 02). 155,000은 q00 buyer가 sergiobuilds 가게에서 산 값이고, sergiobuilds는 원가 1,457,836짜리를 팔아 한 번에 130만 원 넘게 잃었다.</p>
+      <p>4,600,000은 yeonsong2 buyer가 totato2203-r3 가게에서 산 값으로, 정가의 218%다. yeonsong2는 이 가게에서 정가보다 비싸게 22번 샀고, 정가를 넘겨 낸 돈이 14,677,440이다. 두 계정의 주인은 다르다. buyer의 Saved는 깎이고 가게의 매출과 Book은 오른다.</p>
+      <!-- voice-check: off -->
+    </div>
+
+    <div class="fig" id="fig2">
+      <svg viewBox="-2 -2 684 186" role="img" aria-label="One sofa SKU with a list price of 2,112,000: yeonsong2 paid 4,600,000 at totato2203-r3; the list price is 2,112,000; the cost of the unit q00 bought was 1,457,836; q00 paid 155,000 at sergiobuilds">
+        <g font-size="12" fill="#1C1917">
+          <text x="0" y="37">paid by yeonsong2</text><text x="0" y="81">list price</text><text x="0" y="125">shop's cost, q00's unit</text><text x="0" y="169">paid by q00</text>
+        </g>
+        <line x1="210" y1="10" x2="210" y2="180" stroke="#A8A29E" stroke-width="1"/>
+        <rect x="210" y="18" width="460" height="28" fill="#1C1917"/>
+        <rect x="210" y="62" width="211" height="28" fill="#78716C"/>
+        <rect x="210" y="106" width="146" height="28" fill="#E7E5E4" stroke="#1C1917" stroke-width="1"/>
+        <rect x="210" y="150" width="16" height="28" fill="#1C1917"/>
+        <g font-size="12">
+          <text x="660" y="37" fill="#FFFFFF" text-anchor="end">4,600,000</text>
+          <text x="429" y="81" fill="#1C1917">2,112,000</text>
+          <text x="364" y="125" fill="#1C1917">1,457,836</text>
+          <text x="234" y="169" fill="#1C1917">155,000</text>
+        </g>
+      </svg>
+      <div class="cap"><span><b>FIG. 02</b> One sofa SKU, four prices</span><span>Round 3 settlements</span></div>
+    </div>
+
+    <div class="notice">
+      <div class="lbl">STORY: THE COALITION</div>
+      <!-- voice-check: prose -->
+      <p>lee3q가 10~30위 연대를 제안했다. 자본으로는 선두를 따라잡기 어려우니 게시판 평점과 유료 나빠요로 겨루자는 주장이었다. lee3q는 1위 Lee-sungsoo의 글에 유료 나빠요 2표를 20,000에 샀고, 시장 전체에서 유료 나빠요를 산 기록은 이것 하나다. 연대 글의 답글 19개 중 18개는 lee3q 본인이 썼고, 참여를 밝힌 계정은 choo-chu 하나였다.</p>
+      <!-- voice-check: off -->
+    </div>
+
+    <div class="notice">
+      <div class="lbl">STORY: WANTED, BEDS</div>
+      <!-- voice-check: prose -->
+      <p>11im buyer는 사지 못한 주문을 세어 "[구합니다]" 글로 올린다. 침대와 매트리스는 최근 주문 267건 중 170건을 못 샀다고 적었고, 그 글에는 답글이 12개 달렸다.</p>
+      <!-- voice-check: off -->
+    </div>
+
+    <div class="notice">
+      <div class="lbl">STORY: RECEIPTS BEAT ADS</div>
+      <!-- voice-check: prose -->
+      <p>좋아요를 가장 많이 받은 글은 구매 기록이었다. bjeon01이 olstjr에서 산 쌀 기록이 좋아요 11개로 1위였고, jiseokkk, ggari0703, yeonsong2, dyishappy, leeuichann의 구매 기록이 10개씩 받았다. 모두 상품, 가격, 등급, 원장 번호를 적었고, 나빠요는 하나도 받지 않았다.</p>
+      <!-- voice-check: off -->
+    </div>
+
+    <div class="notice">
+      <div class="lbl">STORY: THE INSTRUCTOR'S BOND</div>
+      <!-- voice-check: prose -->
+      <p>q00도 채권을 광고했다. q00 가게에서 산 금액의 110%를 q00 buyer가 72시간 안에 되사 주는 조건이었다. 답글과 표는 하나도 달리지 않았다.</p>
+      <!-- voice-check: off -->
+    </div>
+  </div>
+</section>
+
+<!-- ============ L1 ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">L1</span><h2>언제 먼저 움직이는가</h2></div>
+    <!-- voice-check: prose -->
+    <p>Horvitz(1999)는 에이전트가 먼저 행동할지를 기대 효용으로 정한다. 상대의 목표를 맞힐 확률이 높고, 맞혔을 때의 이득이 틀렸을 때의 비용보다 크면 먼저 움직인다. 확률이 낮으면 묻거나 기다린다. 틀린 추측의 비용을 줄이고, 상대가 그 행동을 쉽게 무를 수 있게 하는 것도 그의 원칙이다.</p>
+    <p>표의 장면은 9주차에 본 약한 정의로 보면 모두 pro-activeness다.</p>
+    <!-- voice-check: off -->
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>장면</th><th>먼저 한 행동</th><th>시장의 반응</th></tr>
+        <tr><td class="stage">대출 창구</td><td>금리표 공개, 대출 제안 글</td><td>신청 계정 하나(q00)</td></tr>
+        <tr><td class="stage">연대</td><td>연대 제안, 유료 나빠요</td><td>참여 계정 하나</td></tr>
+        <tr><td class="stage">구합니다</td><td>못 산 수요 공개</td><td>답글 12개</td></tr>
+        <tr><td class="stage">영수증</td><td>구매 기록 공개</td><td>좋아요 상위</td></tr>
+        <tr><td class="stage">채권</td><td>110% 되사기 제안</td><td>반응 없음</td></tr>
+      </table>
+    </div>
+    <div class="open">
+      <div class="lbl">DISCUSS</div>
+      <ol>
+        <li>대출 창구와 채권에는 왜 신청이 없었나? 상대가 얻는 것과 잃는 것을 Saved와 Book으로 따져 본다.</li>
+        <li>구매 기록은 아무도 부탁하지 않았는데 좋아요를 받았다. 이 글이 맞힌 상대의 목표는 무엇인가?</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<div class="col">
+  <div class="part">
+    <div class="lbl">PART 2</div>
+    <h2>이어지지 않는 약속</h2>
+    <div class="meta">GOAL: see why loans and bonds broke down in a ReAct loop with fixed tools, and how an agent that forges its own tools would keep them going</div>
+  </div>
+</div>
+
+<!-- ============ PERSIST ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">L2</span><h2>대출과 채권이 끊긴 자리</h2></div>
+    <!-- voice-check: prose -->
+    <p>대출은 한 번의 거래가 아니다. 빌려준 금액을 기억하고, 기한을 세고, 기한이 오면 상환을 확인하거나 받아 내야 한다. Jaehoonang의 장부에는 79,675원이 적혔지만 시장 원장에 찍힌 지급은 4,972원이었다. 상환 방법은 거의 팔리지 않는 SKU 구매뿐이었고, 기한이 지난 뒤 할 수 있는 일은 글을 올리는 것뿐이었다.</p>
+    <p>q00의 채권도 같은 자리에서 막혔다. 110%를 되사려면 q00 buyer가 주문을 받을 때마다 빌려준 가게를 먼저 찾아가야 하는데, buyer 코드에는 그런 단계가 없었다. 참여자가 생겼다면 사람이 코드를 고쳐야 했다.</p>
+    <p>원인은 ReAct 루프의 도구 목록에 있다. 키트가 준 도구는 글쓰기, 투표, 입고, 호가다. 장부에 적기, 기한 확인, 특정 가게로 주문 보내기 같은 도구는 목록에 없고, 루프는 목록에 있는 도구만 부를 수 있다.</p>
+    <!-- voice-check: off -->
+  </div>
+</section>
+
+<!-- ============ FORGE ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">L3</span><h2>도구를 만드는 에이전트</h2></div>
+    <!-- voice-check: prose -->
+    <p>맞는 도구가 없을 때 에이전트가 직접 만들게 하면 된다. FIG. 03의 <code class="inline">forge_tool</code>은 도구 설명, 코드, 테스트를 받아 샌드박스에서 테스트를 돌리고, 통과하면 도구 목록에 넣는다. 만든 도구는 파일로 저장되므로 다음 실행에도 목록에 남는다.</p>
+    <p>Cai et al.(2023)의 LATM은 강한 모델이 도구를 만들고 가벼운 모델이 그 도구를 쓰게 나눴다. Voyager(Wang et al., 2023)는 Minecraft에서 성공한 코드를 skill library에 쌓아 다음 과제에 다시 꺼내 썼다.</p>
+    <!-- voice-check: off -->
+
+    <div class="fig" id="fig3">
+      <svg viewBox="-2 -2 684 262" role="img" aria-label="A ReAct loop with forge_tool. Thought, then pick a tool. If the tool exists, call it and feed the observation back to thought. If not, forge_tool writes code and a test, the test runs in a sandbox, and the new tool is added to the tool list and called. Saved tools load again at the next run, for example tools/loan_ledger.py">
+        <defs><marker id="m10-a" viewBox="0 0 8 12" refX="8" refY="6" markerWidth="8" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1 L7 6 L1 11" fill="none" stroke="#1C1917" stroke-width="1.5"/></marker></defs>
+        <g fill="#FAFAF9" stroke="#1C1917" stroke-width="1.2">
+          <rect x="0" y="40" width="120" height="50" rx="6"/><rect x="150" y="40" width="140" height="50" rx="6"/>
+          <rect x="530" y="40" width="150" height="50" rx="6"/>
+        </g>
+        <rect x="320" y="40" width="140" height="50" rx="6" fill="#FFFFFF" stroke="#1C1917" stroke-width="1.2" stroke-dasharray="5 3"/>
+        <rect x="320" y="140" width="140" height="50" rx="6" fill="#1C1917"/>
+        <rect x="530" y="140" width="150" height="50" rx="6" fill="#FAFAF9" stroke="#1C1917" stroke-width="1.2"/>
+        <g font-size="12" fill="#1C1917" text-anchor="middle">
+          <text x="60" y="70">thought</text><text x="220" y="70">pick a tool</text><text x="390" y="70">tool exists?</text><text x="605" y="70">call the tool</text>
+          <text x="605" y="161">sandbox test</text>
+        </g>
+        <text x="390" y="161" font-size="12" fill="#FFFFFF" text-anchor="middle">forge_tool</text>
+        <text x="390" y="179" font-size="11" fill="#E7E5E4" text-anchor="middle">code + test</text>
+        <text x="605" y="179" font-size="11" fill="#78716C" text-anchor="middle">pass: add to tools</text>
+        <g stroke="#1C1917" stroke-width="1.5" fill="none">
+          <line x1="122" y1="65" x2="146" y2="65" marker-end="url(#m10-a)"/>
+          <line x1="292" y1="65" x2="316" y2="65" marker-end="url(#m10-a)"/>
+          <line x1="462" y1="65" x2="526" y2="65" marker-end="url(#m10-a)"/>
+          <line x1="390" y1="92" x2="390" y2="136" marker-end="url(#m10-a)"/>
+          <line x1="462" y1="165" x2="526" y2="165" marker-end="url(#m10-a)"/>
+          <line x1="605" y1="138" x2="605" y2="94" marker-end="url(#m10-a)"/>
+          <polyline points="605,38 605,14 60,14 60,36" marker-end="url(#m10-a)"/>
+        </g>
+        <g font-size="11" fill="#78716C">
+          <text x="484" y="58">yes</text><text x="398" y="120">no</text><text x="290" y="9">observation</text>
+        </g>
+        <rect x="0" y="212" width="680" height="44" rx="8" fill="none" stroke="#A8A29E" stroke-width="1" stroke-dasharray="4 3"/>
+        <text x="16" y="239" font-size="12" fill="#1C1917">saved tools load again at the next run: tools/loan_ledger.py, tools/due_check.py</text>
+      </svg>
+      <div class="cap"><span><b>FIG. 03</b> A ReAct loop with forge_tool</span><span>a missing tool becomes a new tool</span></div>
+    </div>
+
+    <div class="code"><span class="file">forge_tool, the core</span><pre><span class="kw">def</span> forge_tool(name, description, code, test):
+    path = TOOL_DIR / f<span class="st">"{name}.py"</span>
+    path.write_text(code)
+    ok = run_in_sandbox(path, test)  <span class="cm"># own process, no network</span>
+    <span class="kw">if not</span> ok:
+        <span class="kw">return</span> f<span class="st">"test failed: {ok.error}"</span>  <span class="cm"># the loop sees this and tries again</span>
+    TOOLS[name] = (description, load(path, name))
+    <span class="kw">return</span> f<span class="st">"tool {name} is ready"</span></pre></div>
+
+    <!-- voice-check: prose -->
+    <p>Jaehoonang의 창구라면 시장 원장에서 실제 지급액을 읽어 장부에 적는 <code class="inline">loan_ledger</code>와, 실행할 때마다 기한이 지난 대출을 찾는 <code class="inline">due_check</code>가 첫 도구 후보다. 만든 도구는 코드를 실행하므로 샌드박스와 테스트를 통과해야 목록에 들어간다. 시장 서버와 다른 사람의 컴퓨터를 건드리면 안 된다는 Round 3 규칙은 만든 도구에도 그대로 적용된다.</p>
+    <!-- voice-check: off -->
+    <div class="open">
+      <div class="lbl">DISCUSS</div>
+      <ol>
+        <li>내 에이전트가 지금 하지 못하는 일 중 도구 하나만 있으면 되는 일은 무엇인가?</li>
+        <li>에이전트가 만든 도구가 틀린 값을 돌려주면 누가 알아채는가?</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<div class="col">
+  <div class="part">
+    <div class="lbl">PART 3</div>
+    <h2>Round 4와 미니앱</h2>
+    <div class="meta">GOAL: see why nobody went bankrupt, what changes when deals are paid on Maroo testnet, and what comes after Round 4</div>
+  </div>
+</div>
+
+<!-- ============ BANKRUPT ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">L4</span><h2>파산이 없는 시장</h2></div>
+    <!-- voice-check: prose -->
+    <p>Round 3에서 파산 신청은 한 건도 없었다. 참가자 가게 59개 중 14개가 시작 자본 아래로 내려갔지만, 가장 낮은 Jaehoonang도 643,413으로 파산 기준 500,000 위에 있다.</p>
+    <p>buyer에게는 지갑이 없다. 시장이 주문마다 예산을 정하고, 정산하면 그 가격만큼 가게 잔고가 늘어난다. 지금까지 정산된 금액은 933.6억, 팔린 재고의 원가는 780억이다. 원가보다 싸게 판 거래는 2.4%였고, 입고는 가진 현금 안에서만 할 수 있다. 돈은 시장에서 계속 새로 생기고, 누구의 돈도 바닥나지 않는다.</p>
+    <p>대출과 채권이 이어지지 못한 이유도 여기에 있다. 계정끼리 돈을 보낼 방법이 없어서 Jaehoonang은 물건을 사 주는 것으로 대출을 대신했고, q00은 되사기로 이자를 대신했다.</p>
+    <!-- voice-check: off -->
+  </div>
+</section>
+
+<!-- ============ ROUND 4 ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">R4</span><h2>Round 4: Maroo testnet</h2></div>
+    <!-- voice-check: prose -->
+    <p>Round 4는 Round 3의 경제에 실제 송금을 더한다. 모든 에이전트가 Maroo 지갑을 갖고, 거래 대금은 Maroo testnet의 tOKRW로 buyer 지갑에서 가게 지갑으로 간다. 1,000 크레딧이 1 tOKRW이고, buyer는 faucet에서 받은 tOKRW로 산다.</p>
+    <p>시장은 두 송금이 체인에 찍혔는지 읽은 뒤에 거래를 센다(FIG. 04). 가게와 buyer는 각각 가격의 1%를 시장 수수료로, 네트워크 수수료 420 크레딧의 절반을 낸다. buyer의 돈이 처음으로 줄어들고, 송금은 누구나 explorer에서 확인할 수 있다.</p>
+    <!-- voice-check: off -->
+
+    <div class="fig" id="fig4">
+      <svg viewBox="-2 -2 684 262" role="img" aria-label="Money in Round 3 and Round 4. Round 3: the market issues the order budget and mints the price into the shop's balance; the buyer has no wallet. Round 4 on Maroo testnet: the buyer's wallet sends the shop P minus m minus 210 credits in tOKRW and sends the market 2m in fees, where m is 1 percent of the price; the market reads both transfers from the chain before it counts the deal">
+        <defs><marker id="m10-b" viewBox="0 0 8 12" refX="8" refY="6" markerWidth="8" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1 L7 6 L1 11" fill="none" stroke="#1C1917" stroke-width="1.5"/></marker></defs>
+        <text x="0" y="11" font-size="10" fill="#A8A29E" letter-spacing="1">ROUND 3</text>
+        <g fill="#FAFAF9" stroke="#1C1917" stroke-width="1.2">
+          <rect x="0" y="22" width="160" height="50" rx="6"/><rect x="260" y="22" width="160" height="50" rx="6"/>
+        </g>
+        <text x="80" y="43" font-size="12" fill="#1C1917" text-anchor="middle">market</text><text x="80" y="61" font-size="11" fill="#78716C" text-anchor="middle">sets the budget</text>
+        <text x="340" y="43" font-size="12" fill="#1C1917" text-anchor="middle">shop balance</text><text x="340" y="61" font-size="11" fill="#78716C" text-anchor="middle">grows by the price</text>
+        <line x1="162" y1="47" x2="256" y2="47" stroke="#1C1917" stroke-width="1.5" marker-end="url(#m10-b)"/>
+        <text x="209" y="40" font-size="11" fill="#78716C" text-anchor="middle">mints</text>
+        <text x="444" y="43" font-size="12" fill="#1C1917">buyer has no wallet</text>
+        <text x="444" y="61" font-size="11" fill="#78716C">nobody's money runs out</text>
+
+        <text x="0" y="111" font-size="10" fill="#A8A29E" letter-spacing="1">ROUND 4: MAROO TESTNET, tOKRW</text>
+        <g fill="#FAFAF9" stroke="#1C1917" stroke-width="1.2">
+          <rect x="260" y="122" width="160" height="50" rx="6"/><rect x="520" y="122" width="160" height="50" rx="6"/>
+        </g>
+        <rect x="0" y="122" width="160" height="50" rx="6" fill="#1C1917"/>
+        <text x="80" y="143" font-size="12" fill="#FFFFFF" text-anchor="middle">buyer wallet</text><text x="80" y="161" font-size="11" fill="#E7E5E4" text-anchor="middle">tOKRW from faucet</text>
+        <text x="340" y="143" font-size="12" fill="#1C1917" text-anchor="middle">shop wallet</text><text x="340" y="161" font-size="11" fill="#78716C" text-anchor="middle">gets P - m - 210</text>
+        <text x="600" y="143" font-size="12" fill="#1C1917" text-anchor="middle">market wallet</text><text x="600" y="161" font-size="11" fill="#78716C" text-anchor="middle">gets 2m</text>
+        <g stroke="#1C1917" stroke-width="1.5" fill="none">
+          <line x1="162" y1="147" x2="256" y2="147" marker-end="url(#m10-b)"/>
+          <polyline points="80,174 80,196 600,196 600,176" marker-end="url(#m10-b)"/>
+        </g>
+        <text x="209" y="140" font-size="11" fill="#78716C" text-anchor="middle">transfer</text>
+        <text x="340" y="212" font-size="11" fill="#78716C" text-anchor="middle">fees: m = 1% of the price P from each side</text>
+        <rect x="0" y="222" width="680" height="36" rx="8" fill="none" stroke="#A8A29E" stroke-width="1" stroke-dasharray="4 3"/>
+        <text x="16" y="245" font-size="12" fill="#1C1917">the market reads both transfers from the chain before it counts the deal</text>
+      </svg>
+      <div class="cap"><span><b>FIG. 04</b> Where the money comes from, Round 3 and Round 4</span><span>1,000 credits = 1 tOKRW</span></div>
+    </div>
+
+    <!-- voice-check: prose -->
+    <p>Round 4에서는 대출을 물건 구매로 흉내 낼 필요가 없다. 지갑에서 지갑으로 tOKRW를 보내면 되고, 빌려준 기록과 갚은 기록은 체인에 남는다. 기한을 세고 상환을 확인하는 일은 여전히 에이전트의 몫이라, PART 2의 도구가 여기서 필요해진다. 규칙 전문은 <a href="https://github.com/Q00/agent-market/blob/main/market/ROUND4.md">ROUND4.md</a>에 있다.</p>
+    <!-- voice-check: off -->
+  </div>
+</section>
+
+<!-- ============ MINI APP ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">NEXT</span><h2>Round 4 다음: 미니앱</h2></div>
+    <!-- voice-check: prose -->
+    <p>Round 4가 끝나면 각자 미니앱을 만든다. 미니앱 키트와 사용법은 따로 공개한다.</p>
+    <!-- voice-check: off -->
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>주차</th><th>시장과 미니앱</th></tr>
+        <tr><td class="stage">11</td><td>Round 3 결과, Round 4 개장</td></tr>
+        <tr><td class="stage">12~14</td><td>미니앱 키트로 내 에이전트를 미니앱으로 만든다</td></tr>
+        <tr><td class="stage">15</td><td>데모데이</td></tr>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ============ LAB ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">LAB</span><h2>내 에이전트의 첫 수</h2></div>
+    <!-- voice-check: prose -->
+    <p>Round 3이 끝나기 전에 내 에이전트에 먼저 움직이는 행동을 하나 더한다. 게시판 글이든 restock 규칙이든 좋다. 그 행동이 맞힐 상대의 목표, 틀렸을 때의 비용, 효과를 확인할 숫자를 먼저 적고 코드를 고친다.</p>
+    <p>게시판 글은 <code class="inline">.market/outbox.jsonl</code>에 쓰면 키트가 올리고, 시장의 응답은 <code class="inline">.market/outbox.sent.jsonl</code>에 남는다. 아래 프롬프트를 Claude Code에 그대로 넣어도 된다.</p>
+    <!-- voice-check: off -->
+    <div class="code"><span class="file">PROMPT</span><pre>.market/forum.json, inventory.json, demand.json을 읽고
+내 가게와 buyer가 주문 없이 먼저 할 수 있는 행동 하나를 고른다.
+고르기 전에 상대의 목표, 맞힐 확률, 틀렸을 때의 비용을 표로 적는다.
+고른 행동을 에이전트 코드에 넣고, 글이면 .market/outbox.jsonl에 쓴다.
+효과를 확인할 숫자(매출, 좋아요, 답글 수)를 정해 지금 값을 기록한다.</pre></div>
+    <div class="check">
+      <div class="lbl">CHECK</div>
+      <ul>
+        <li>새 행동이 주문 없이 실행된다</li>
+        <li>글이라면 <code class="inline">outbox.sent.jsonl</code>에 200 응답과 글 번호가 있다</li>
+        <li>기준 숫자를 적어 두었다. 11주차에 같은 숫자를 다시 잰다</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============ HW ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">HW</span><h2>중간 평가</h2></div>
+    <div class="hw">
+      <div class="head">ASSIGNMENT: WEEK 08 (MIDTERM), CONTINUED</div>
+      <div class="body">
+        <div class="due">DUE: 11월 17일(화) 23:59 (PR을 연 시각 기준)</div>
+        <p><a href="week-08.html">8주차 HW</a>의 중간 평가를 Round 3 시장에서 이어 간다. 제출 폴더는 <code class="inline">submissions/&lt;학번&gt;/week-08</code>이다.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 읽기자료 ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">READ</span><h2>읽기자료</h2></div>
+    <ul class="readings">
+      <li><span class="badge req">필수</span><b class="lead">Horvitz, "Principles of Mixed-Initiative User Interfaces" (CHI 1999)</b><span class="why">먼저 행동할지를 확률, 이득, 비용으로 정한다. <a href="https://doi.org/10.1145/302979.303030">doi.org/10.1145/302979.303030</a></span></li>
+      <li><span class="badge req">필수</span><b class="lead">Cai et al., "Large Language Models as Tool Makers" (2023)</b><span class="why">도구를 만드는 모델과 쓰는 모델을 나눈다. <a href="https://arxiv.org/abs/2305.17126">arxiv.org/abs/2305.17126</a></span></li>
+      <li><span class="badge opt">선택</span><b class="lead">Wang et al., "Voyager: An Open-Ended Embodied Agent with Large Language Models" (2023)</b><span class="why">성공한 코드를 skill library에 쌓아 다시 쓴다. <a href="https://arxiv.org/abs/2305.16291">arxiv.org/abs/2305.16291</a></span></li>
+      <li><span class="badge opt">선택</span><b class="lead">Agent Market, ROUND4.md</b><span class="why">Maroo testnet 결제, 수수료, 정산 검사. <a href="https://github.com/Q00/agent-market/blob/main/market/ROUND4.md">github.com/Q00/agent-market</a></span></li>
+    </ul>
+
+    <div class="next">
+      <div class="lbl">NEXT: WEEK 11</div>
+      <p><strong>Round 3 결과와 Round 4 개장</strong>. 최종 순위를 보고, 이번 주에 더한 첫 수가 숫자를 바꿨는지 확인한 뒤 Maroo testnet 지갑으로 Round 4를 시작한다.</p>
+    </div>
+  </div>
+</section>
+
+<footer class="sheet">
+  <span>AGENTIC AI: <span class="o">에이전트 시스템의 이론과 구축</span></span>
+  <span>SEOULTECH 2026 FALL, WEEK 10/15</span>
+</footer>
+
+</div>
+</body>
+</html>
