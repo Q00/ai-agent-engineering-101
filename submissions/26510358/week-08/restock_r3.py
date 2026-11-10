@@ -145,6 +145,24 @@ def covered_skus(units, mem):
             and n >= mem.my_sku_sales(s, hours=config.RESTOCK_SKU_COVER_H)}
 
 
+def price_gate(ratio, outcome, kind):
+    """True when a category is not bought because of what the market pays for it (median price / list, 72 h).
+    Live rule: under RESTOCK_GATE_RATIO (0.65), whatever we earned there.
+    With RESTOCK_GATE_BY_EVIDENCE (off until the human says yes): a category whose own 12-72 h cohorts are large
+    enough is never gated on price, because outcome_factor already cuts or stops it when it loses; without that
+    evidence the line is the expected cost of the grade mix plus MIN_MARGIN (food 0.54, goods 0.64).
+    Why: over the round the ratio did not tell profit from loss. Kimchi at 0.634 earned +32% on spend (26.3M) and
+    ready meals at 0.577 +26%, while fresh vegetables at 0.641 lost 18% and shellfish at 0.653 lost 20%; on
+    2026-11-10 the 0.65 line kept kimchi unbought for 17 h."""
+    if ratio is None:
+        return False
+    if not config.RESTOCK_GATE_BY_EVIDENCE:
+        return ratio < config.RESTOCK_GATE_RATIO
+    if outcome and (outcome.get("sold", 0) + outcome.get("expired", 0)) >= config.OUTCOME_MIN_UNITS:
+        return False
+    return ratio < config.RESTOCK_GATE_NO_EVIDENCE.get(kind, config.RESTOCK_GATE_RATIO)
+
+
 def outcome_factor(o, board=None):
     """Scaling of a category's target from what became of the units we were supplied (Memory.category_outcomes):
     1.0 while they raised Shop ALL (score model: book moved by revenue - spend, revenue by revenue), OUTCOME_CUT
@@ -263,7 +281,7 @@ def plan(inv, demand_rows, mem, now=None, dry_run=False, adjust=None):
         if row.get("kind") == "food" and shelf and min(shelf) < 720:
             target = min(target, math.ceil(exp_h * min(shelf) * config.FOOD_TARGET_SHELF_SHARE * factor))
         ratio, n = mem.price_ratio(category=k)
-        if ratio is not None and ratio < 0.65:
+        if price_gate(ratio, outcomes.get(k), row.get("kind")):
             why.append({"category": k, "skip": f"market pays {ratio:.2f} of list, no margin over cost"})
             continue
         need = target - have.get(k, 0)

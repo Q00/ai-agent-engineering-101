@@ -46,6 +46,9 @@ OUTCOME_MAX_AGE_H = 72
 OUTCOME_MIN_UNITS = 30              # sold + expired units before a category is judged
 OUTCOME_CUT = 0.5                   # a category whose supplied units lowered Shop ALL (score model): half the target
 OUTCOME_STOP_EXPIRED = 0.30         #   and none while this share of what we spent on it expired
+RESTOCK_GATE_RATIO = 0.65           # a category the market pays under this share of list is not bought (the live rule)
+RESTOCK_GATE_BY_EVIDENCE = False    # True: our own cohorts decide instead (restock_r3.price_gate); waits for the human's yes
+RESTOCK_GATE_NO_EVIDENCE = {"food": 0.54, "goods": 0.64}   # under the flag, without cohorts: grade-mix cost x (1 + MIN_MARGIN)
 STOCKOUT_HOURS = 6                  # requests our shop turned away for lack of stock, counted over this window,
                                     #   are demand addressed to us: added to the category's expected sales per hour
 STOP_BUYING_HOURS = 72              # no restock in the last 72 h of the round
