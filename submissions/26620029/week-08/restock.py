@@ -73,6 +73,10 @@ HIGH_A_MIN = 0.72            # Claude (2026-11-09 20:22, hourly check): high tie
 # My A units cost 0.55-0.75 of list (random), the floor is cost, and 1M+ A sold at 0.65-0.75: G24f5f979 (market A 0.676) had 121 offers
 # and 1 deal against my 0.733 floor. Below 0.72 a new dear unit has almost no margin and about 1/3 comes as grade C
 A_MIN_DEALS = 5              # grade A settles seen (customers.py sku_a) before a high-tier SKU is judged; until then it is not bought
+BREAK_MAX = 0.15             # Claude (2026-11-10 19:22, the user's plan step 3): a SKU with BREAK_MIN_SETTLES+ market settles
+BREAK_MIN_SETTLES = 100      # breaking above BREAK_MAX is not bought. 12 h ledger: goods break 0.090 on average and mostly evenly
+#   (chi2 50 on 28 df); only G07ec17d5 (29 of 163, 0.178) and G03cab593 (19 of 117, 0.162) stood out. A broken unit under warranty
+#   refunds the whole price, and a mid-tier A nets about 0.07 of list, so a 0.15+ break rate loses money on every sale
 FOCUS_MIN_QTY = 2            # units kept of a mid or low focus SKU below the FOCUS_QTY shares. 3 at 10:22, back to 2 at
 #   16:22 (2026-11-10): deals/h stayed 53-84 for six hours while 24 h+ stock grew 21.9M -> 32.6M
 C_EXEMPT_QTY = 2            # units a run for a high-tier SKU exempt from C_STOP (no A or B in stock, high_ok)
@@ -159,7 +163,7 @@ def focus_lines(inv, catalog, focus_cats, cu):
               and high_ok(cu.get("sku_a", {}), s, surge)}
     c_full -= exempt
     if use_recent and SPREAD:
-        return [(s, min(q, C_EXEMPT_QTY) if s in exempt else q) for s, q in spread_lines(recent, catalog, shops, total, have, c_full, balance, cu.get("sku_a", {}), surge)]
+        return [(s, min(q, C_EXEMPT_QTY) if s in exempt else q) for s, q in spread_lines(recent, catalog, shops, total, have, c_full, balance, cu.get("sku_a", {}), surge, cu.get("brk"))]
     lines = []
     for cat in focus_cats:
         skus = recent.get(cat, {}) if use_recent else cu.get("sku_buys", {}).get(cat, {})
@@ -190,7 +194,7 @@ def high_ok(sku_a, s, surge=None):
     return bool(row) and row[1] >= A_MIN_DEALS and row[0] is not None and row[0] >= need
 
 
-def spread_lines(recent, catalog, shops, total, have, c_full, balance, sku_a=None, surge=None):
+def spread_lines(recent, catalog, shops, total, have, c_full, balance, sku_a=None, surge=None, brk=None):
     """ddolcom (2026-11-09 15:40, the user's instruction): every goods SKU of any category that settled at MIN_SHOPS or more
     other shops in the last 3 h, the TIER_SKUS best sellers of each price tier (dear by value, mid and cheap by deals),
     taken in turn high, mid, low so one run's few lines do not all go to sofas. Sold-out SKUs first within the turn."""
@@ -203,6 +207,9 @@ def spread_lines(recent, catalog, shops, total, have, c_full, balance, sku_a=Non
             if c["list_price"] * COST_GUESS > UNIT_SHARE * balance:
                 continue
             if not high_ok(sku_a or {}, s, surge):
+                continue
+            nb = (brk or {}).get(s)
+            if nb and nb[0] >= BREAK_MIN_SETTLES and nb[1] / nb[0] > BREAK_MAX:
                 continue
             by_tier[tier(c["list_price"])].append((n, s))
     queues = []

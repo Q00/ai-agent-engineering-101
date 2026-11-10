@@ -24,6 +24,7 @@ PRICE_ALPHA = 0.02             # paid/list per shop: an average over about the l
 RECENT_HOURS = 3                # sales the restock looks at to choose focus SKUs, in buckets of RECENT_BUCKET seconds
 RECENT_BUCKET = 600
 RECENT_SEED = "recent_seed.json"    # the last hours of settled deals when "recent" starts, written once from the ledger
+BREAK_SEED = "logs/break-rate-1110-1928.json"  # break_rate.py output, read once when "brk" starts
 SHOPS_SEED = "recent_shops_seed.json"   # the same for "recent_shops": bucket -> sku -> names of the shops that sold it
 
 
@@ -75,6 +76,22 @@ def fold_a_price(cu, e, catalog):
     row[0] = ratio if row[0] is None else row[0] + (ratio - row[0]) * max(1 / row[1], SKU_A_ALPHA)
 
 
+def fold_break(cu, e):
+    """Claude (2026-11-10 19:22, the user's plan step 3): cu["brk"][sku] = [settles, broken] in the whole market, seeded from
+    BREAK_SEED (12 h of the ledger: 34,810 settles, 1,031 broken). restock.py skips a SKU that breaks far more than the rest."""
+    d = e.get("data") or {}
+    if "brk" not in cu:
+        try:
+            with open(BREAK_SEED, encoding="utf-8") as f:
+                seed = json.load(f)
+            cu["brk"] = {s: [n, seed["broken"].get(s, 0)] for s, n in seed["settles"].items()}
+        except (OSError, ValueError, KeyError):
+            cu["brk"] = {}
+    sku = d.get("sku") if e.get("kind") == "settle" else d.get("item") if e.get("kind") == "broken" else None
+    if sku:
+        cu["brk"].setdefault(sku, [0, 0])[0 if e["kind"] == "settle" else 1] += 1
+
+
 def update(mem, catalog, client=None):
     """Read the ledger since the last run and fold the settled deals into mem["customers"]. Never raises."""
     cu = mem.setdefault("customers", {"my_urls": [], "customers": {}, "buys": {}, "sku_buys": {}, "seen": []})
@@ -114,6 +131,7 @@ def update(mem, catalog, client=None):
                     cu.setdefault("url_names", {})[d["url"]] = d["name"]
                 fold_price(cu, e, catalog)
                 fold_a_price(cu, e, catalog)
+                fold_break(cu, e)
                 if e.get("kind") == "settle" and d.get("sku"):
                     b = cu["recent"].setdefault(str(int(e["ts"] // RECENT_BUCKET)), {})
                     b[d["sku"]] = b.get(d["sku"], 0) + 1
