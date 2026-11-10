@@ -1,7 +1,7 @@
 """Read bounded public goods prices; never fetch, authorize payment or claim stock.
 
 Cache freshness uses the host clock; ledger timestamps use the market clock.
-Food is excluded because the existing cache does not retain expiry evidence.
+Food discovery is separate from price comparables: the cache has no expiry.
 """
 from collections import defaultdict
 import hashlib
@@ -68,7 +68,7 @@ def _signature(row):
         return None
 
 
-def _prices(state, identities, catalog, order, budget, config, market_now):
+def _prices(state, identities, catalog, order, budget, config, market_now, *, food_discovery=False):
     seqs, orders, units = defaultdict(set), defaultdict(set), defaultdict(set)
     broken_units, broken_orders = set(), set()
     events = [row for row in state["events"] if isinstance(row, dict)]
@@ -98,7 +98,7 @@ def _prices(state, identities, catalog, order, budget, config, market_now):
         price, warranty = row.get("price"), row.get("warranty_hours")
         if (row.get("kind") != "settle" or type(seq) is not int or seq <= 0 or seq in seen
                 or len(seqs[seq]) != 1 or None in seqs[seq]
-                or not _number(row.get("ts")) or not 0 <= market_now - row["ts"] <= PRICE_SECONDS
+                or not _number(row.get("ts")) or not 0 <= market_now - row["ts"] <= (900 if food_discovery else PRICE_SECONDS)
                 or "round" in row and (type(row["round"]) is not int or row["round"] != order["round"])
                 or url not in identities or not isinstance(sku, str) or sku not in acceptable
                 or not all(_identifier(value) for value in (order_id, unit, buyer))
@@ -109,7 +109,7 @@ def _prices(state, identities, catalog, order, budget, config, market_now):
                 or not _number(warranty) or not 0 <= warranty <= 72):
             continue
         product = catalog.get(sku)
-        if not isinstance(product, dict) or product.get("kind") != "goods":
+        if not isinstance(product, dict) or product.get("kind") != ("food" if food_discovery else "goods"):
             continue
         if sku not in terms_by_sku:
             try:
@@ -118,7 +118,7 @@ def _prices(state, identities, catalog, order, budget, config, market_now):
                 terms_by_sku[sku] = None
         terms = terms_by_sku[sku]
         if (not terms or row.get("grade") not in terms["accept"]["grades"]
-                or warranty < terms["accept"]["warranty_hours"]):
+                or not food_discovery and warranty < terms["accept"]["warranty_hours"]):
             continue
         seen.add(seq)
         groups[(identities[url], sku, row["grade"], warranty)].append(row)
@@ -136,11 +136,12 @@ def _prices(state, identities, catalog, order, budget, config, market_now):
             continue
         proof = sorted(_signature(row) for row in rows)
         summaries[(name, sku)].append({
-            "kind": "goods", "grade": grade, "warranty_hours": warranty,
+            "kind": "food" if food_discovery else "goods", "grade": grade, "warranty_hours": warranty,
             "sample_count": len(rows), "buyer_count": len(buyers),
             "median_price": price, "price_to_list": round(price / terms["list_price"], 6),
             "age_seconds": math.ceil(market_now - max(row["ts"] for row in rows)),
-            "source": "public_ledger",
+            "source": "public_food_discovery" if food_discovery else "public_ledger",
+            **({"freshness_verified": False} if food_discovery else {}),
             "evidence_id": hashlib.sha256(json.dumps(proof).encode()).hexdigest()[:20]})
     result = {}
     for key, values in summaries.items():
@@ -157,8 +158,24 @@ def read_public_prices(market_dir, *, shops, catalog, order, budget, config, now
     personal successful trade, a current unit's grade, or its warranty coverage.
     Any unavailable/invalid cache or market clock leaves existing buying intact.
     """
+    return _read_prices(market_dir, shops=shops, catalog=catalog, order=order,
+                        budget=budget, config=config, now=now)
+
+
+def read_food_discovery(market_dir, *, shops, catalog, order, budget, config, now=None):
+    """Find recently cheap food sellers locally; NEVER a freshness/price comparable.
+
+    No quote requests, reservations, model calls, or expiry inference. A fresh
+    certificate and the current order's lifetime minimum remain necessary.
+    """
+    return _read_prices(market_dir, shops=shops, catalog=catalog, order=order,
+                        budget=budget, config=config, now=now, food_discovery=True)
+
+
+def _read_prices(market_dir, *, shops, catalog, order, budget, config, now=None, food_discovery=False):
     local_now = time.time() if now is None else now
-    if (not _number(local_now) or not isinstance(order, dict) or order.get("kind") != "goods"
+    if (not _number(local_now) or not isinstance(order, dict)
+            or order.get("kind") != ("food" if food_discovery else "goods")
             or type(order.get("round")) is not int or order["round"] < 3
             or not isinstance(order.get("acceptable"), list)
             or not all(_identifier(sku) for sku in order["acceptable"])
@@ -176,7 +193,7 @@ def read_public_prices(market_dir, *, shops, catalog, order, budget, config, now
         if (not isinstance(state, dict) or type(state.get("schema")) is not int or state["schema"] != 1
                 or type(state.get("round")) is not int or state["round"] != order["round"]
                 or not _number(state.get("updated_at"))
-                or not 0 <= local_now - state["updated_at"] <= CACHE_SECONDS
+                or not 0 <= local_now - state["updated_at"] <= (900 if food_discovery else CACHE_SECONDS)
                 or not isinstance(state.get("events"), list) or len(state["events"]) > MAX_EVENTS):
             return {}
         clock = schedule_now(folder, order["round"], local_now=local_now)
@@ -184,7 +201,8 @@ def read_public_prices(market_dir, *, shops, catalog, order, budget, config, now
                 or not _number(clock.get("uncertainty_seconds"))
                 or not 0 <= clock["uncertainty_seconds"] <= 6):
             return {}
-        return _prices(state, _identities(shops), catalog, order, budget, config, clock["now"])
+        return _prices(state, _identities(shops), catalog, order, budget, config, clock["now"],
+                       food_discovery=food_discovery)
     except (OSError, UnicodeError, ValueError, TypeError, KeyError, OverflowError, RecursionError):
         return {}
 

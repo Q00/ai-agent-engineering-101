@@ -40,16 +40,19 @@ def value_choice(candidates, *, values, budget, config, order, catalog, seed):
                 continue
             terms = buying_terms(budget, product=catalog[sku], order=order, config=config)
             for group in values.get((candidate["name"], sku), {}).get("groups", []):
+                food_hint = group.get("source") == "public_food_discovery"
                 public = group.get("source") == "public_ledger"
                 count, age, price = (group.get(k) for k in ("sample_count", "age_seconds", "median_price"))
-                if (group.get("source") not in (None, "public_ledger")
-                        or type(count) is not int or count < (5 if public else 3)
+                if (group.get("source") not in (None, "public_ledger", "public_food_discovery")
+                        or food_hint and (terms["kind"] != "food" or group.get("freshness_verified") is not False)
+                        or type(count) is not int or count < (2 if food_hint else 5 if public else 3)
                         or type(age) not in (int, float) or not math.isfinite(age) or not 0 <= age <= 900
                         or type(price) is not int or not 0 < price <= terms["target_price"]
                         or group.get("kind") != terms["kind"]
                         or group.get("grade") not in terms["accept"].get("grades", [])):
                     continue
-                if public and (type(group.get("buyer_count")) is not int or group["buyer_count"] < 3):
+                if (public or food_hint) and (type(group.get("buyer_count")) is not int
+                                             or group["buyer_count"] < (2 if food_hint else 3)):
                     continue
                 if terms["kind"] == "goods":
                     warranty = group.get("warranty_hours")
@@ -59,18 +62,22 @@ def value_choice(candidates, *, values, budget, config, order, catalog, seed):
                         continue
                 elif terms["kind"] == "food":
                     life = group.get("minimum_hours_left")
-                    if (public or type(life) not in (int, float) or not math.isfinite(life)
-                            or life < terms["accept"]["min_hours_left"]):
+                    if (public or not food_hint and (type(life) not in (int, float) or not math.isfinite(life)
+                            or life < terms["accept"]["min_hours_left"])):
                         continue
                 else:
                     continue
-                eligible.append((Fraction(price, terms["list_price"]), public, age,
+                eligible.append((Fraction(price, terms["list_price"]), 2 if food_hint else int(public), age,
                                  rotation(seed, candidate["name"], sku), candidate["name"], sku))
     if not eligible:
         return None
-    _, public, _, _, name, sku = min(eligible)
+    _, source, _, _, name, sku = min(eligible)
+    if source == 2:
+        return {"name": name, "sku": sku,
+                "reason": "Recent discounted food settlements identify a seller to ask; current price and "
+                          "expiry are UNKNOWN. Verify certified lifetime against this order before payment."}
     return {"name": name, "sku": sku,
-            "reason": ("Repeated recent public" if public else "Repeated recent own") +
+            "reason": ("Repeated recent public" if source else "Repeated recent own") +
                       " settlements met target price and preferred terms; negotiate and verify this unit anew."}
 
 

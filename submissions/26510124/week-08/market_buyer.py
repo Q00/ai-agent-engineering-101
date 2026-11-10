@@ -25,7 +25,7 @@ from buyer_selection import shortlist, offer_fingerprint, reuse_failures, compat
 from buyer_context import compact_dialogue
 from buyer_fast_selection import recent_success_choice, timeout_choice, value_choice
 from buyer_value_memory import build_value_evidence
-from buyer_public_prices import read_public_prices, merge_price_evidence
+from buyer_public_prices import read_public_prices, read_food_discovery, merge_price_evidence
 from buyer_retry import remaining_retry_decisions, select_alternative
 
 
@@ -111,13 +111,19 @@ def choose_shop(shops, memory, *, item, budget, deadline, policy=None, order=Non
     shops, cooldown = reuse_failures(shops, memory, item=item, budget=budget,
                                      config=policy, order=order, catalog=catalog)
     values = build_value_evidence(memory, catalog=catalog, order=order, budget=budget, config=policy)
+    food_discovery = {}
     if market_dir is not None:
         public = read_public_prices(market_dir, shops=shops, catalog=catalog,
                                     order=order, budget=budget, config=policy)
         values = merge_price_evidence(values, public)
+        if order.get("kind") == "food":
+            food_discovery = read_food_discovery(market_dir, shops=shops, catalog=catalog,
+                                                 order=order, budget=budget, config=policy)
+    # Discovery lacks expiry evidence: selection only, never negotiation references.
+    selection_values = merge_price_evidence(values, food_discovery)
     candidates = shortlist(shops, memory, seed=seed,
                            limit=policy.get("selection_max_candidates", 6),
-                           round_number=order.get("round"), value_evidence=values)
+                           round_number=order.get("round"), value_evidence=selection_values)
     if not candidates:
         raise BuyerError("No eligible candidate shops after current-stock and recent-refusal checks")
     names = {s["name"] for s in candidates}
@@ -151,14 +157,18 @@ def choose_shop(shops, memory, *, item, budget, deadline, policy=None, order=Non
     log("SELECTION CONTEXT", {"eligible_shops": len(shops), "candidates": len(candidates),
                               "context_chars": len(json.dumps(context, ensure_ascii=False)),
                               **cooldown,
+                              "food_discovery_pairs": len(food_discovery),
+                              "stocked_offers_scanned": sum(len(s.get("offers", [])) for s in shops),
                               "value_candidates": [c["name"] for c in candidates if c["selection_role"] == "value"],
                               "public_price_candidates": sum(any(
                                   g.get("source") == "public_ledger" for o in c["offers"]
                                   for g in o.get("price_history", [])) for c in candidates),
                               "exploration": [c["name"] for c in candidates if c["selection_role"] == "exploration"]})
-    choice = value_choice(candidates, values=values, budget=budget, config=policy,
+    choice = value_choice(candidates, values=selection_values, budget=budget, config=policy,
                           order=order, catalog=catalog, seed=seed)
     method = "repeated_value" if choice is not None else "model"
+    if choice is not None and order.get("kind") == "food" and food_discovery:
+        method = "food_bargain_scan"
     if choice is None:
         choice = recent_success_choice(candidates, memory, budget=budget, config=policy,
                                        order=order, catalog=catalog, seed=seed)
