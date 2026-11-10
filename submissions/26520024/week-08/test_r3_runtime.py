@@ -2,6 +2,7 @@
 from pathlib import Path
 import tempfile
 import time
+import subprocess
 import unittest
 from unittest.mock import Mock
 
@@ -40,6 +41,24 @@ class RuntimeTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             choose(self.md, Mock(side_effect=TimeoutError()), '', {}, reject, 'buyer',
                    time.monotonic() + 10, lambda: {'price': 999999})
+
+    def test_subprocess_timeout_and_exit_use_validated_fallback(self):
+        for error in (subprocess.TimeoutExpired('fixture', 20),
+                      subprocess.CalledProcessError(1, 'fixture')):
+            (self.md/'model-circuit.json').unlink(missing_ok=True)
+            result = choose(self.md, Mock(side_effect=error), '', {}, lambda x: x,
+                            'r3-discovery', time.monotonic()+30, lambda: {'safe': True})
+            self.assertEqual(result, {'safe': True})
+            self.assertEqual(read_json(self.md/'model-circuit.json')['reason'], type(error).__name__)
+
+    def test_process_timeout_does_not_empty_discovery_and_restock(self):
+        atomic_json(self.md/'catalog.json', CATALOG)
+        self.write_inventory(inventory())
+        decision = Mock(side_effect=subprocess.TimeoutExpired('fixture', 20))
+        result = plan_restock(self.md, now=NOW, decide_fn=decision)
+        self.assertTrue(result['buy'])
+        self.assertEqual(read_json(self.md/'analysis.json')['status'], 'ok')
+        self.assertEqual(decision.call_count, 1)
 
     def test_model_deadline_is_bounded_and_expired_order_does_not_fallback(self):
         def decision(system, state, validator, purpose, deadline, context):

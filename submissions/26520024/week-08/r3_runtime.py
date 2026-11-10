@@ -1,6 +1,7 @@
 """Bounded model use and explicitly logged, validated degraded operation."""
 from r3_clock import clock as time
 import uuid
+import subprocess
 
 from core import emit
 from r3_common import atomic_json, load_policy, read_json, state_dir
@@ -26,7 +27,8 @@ def choose(md, decision, system, state, validator, purpose, deadline, fallback, 
             if limit <= time.monotonic():
                 raise TimeoutError('No model time remains')
             return validator(call(limit))
-        except (RuntimeError, ValueError, TypeError, KeyError, OSError, TimeoutError) as exc:
+        except (RuntimeError, ValueError, TypeError, KeyError, OSError, TimeoutError,
+                subprocess.SubprocessError) as exc:
             reason = type(exc).__name__
             atomic_json(marker, {'retry_after': time.time() + policy['model_cooldown_seconds'],
                                  'reason': reason, 'purpose': purpose})
