@@ -178,6 +178,12 @@ def find_unit(text, inv, taken=(), pol=None, now=None, shelf=None, why=None, sta
     # goods: ship the unit that expires first among those whose grade is A/B; else the first to expire.
     good = [u for u in fit if u.get("grade") in ("A", "B")]
     pool = good or fit
+    # v2.11 (11-10, book): in shop.c_first_leaves, a request that names no grade gets grade C first. All 18 C
+    # furniture SKUs also had A/B in stock, so C was almost never offered (sofa C 8, bed C 14 sales; 118 units unsold).
+    cfl = ((pol or {}).get("shop") or {}).get("c_first_leaves") or ()
+    cs = [u for u in fit if u.get("grade") == "C" and P.leaf(u.get("category")) in cfl]
+    if cs and not GRADE_WORD_RE.search(text):
+        pool = cs
     if stats is not None and pol is not None:   # v2.6: a unit the market price can reach first
         pool = [u for u in pool if sells_at_market(u, pol, stats, inv, now)] or pool
     return min(pool, key=lambda u: (u.get("expires_at") or float("inf"), u.get("supplied_at") or 0), default=None)
@@ -213,6 +219,7 @@ def refused_units(path=None, now=None, hold_s=REFUSED_HOLD_S, tail=KIT_TAIL_BYTE
 
 
 WARRANTY_RE = re.compile(r"warrant|보증", re.I)
+GRADE_WORD_RE = re.compile(r"\bgrade\b|등급", re.I)   # v2.11: a request that names a grade keeps A/B first
 
 
 def warranty_on_request(text, unit, pol, stats, price, floor):

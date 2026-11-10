@@ -132,6 +132,14 @@ def validate(pol):
     gcf = sp.get("goods_cost_frac")                     # v2.8: goods cost / list for the below-market restock check
     if gcf is not None and (isinstance(gcf, bool) or not isinstance(gcf, (int, float)) or not 0.4 <= gcf <= 0.9):
         raise PolicyError(f"shop.goods_cost_frac={gcf!r} outside [0.4, 0.9]")
+    gfl = sp.get("grade_floor_list")                    # v2.11: goods floor as a share of list, per grade
+    if gfl is not None and (not isinstance(gfl, dict) or any(
+            g not in ("A", "B", "C") or isinstance(v, bool) or not isinstance(v, (int, float)) or not 0.3 <= v <= 0.9
+            for g, v in gfl.items())):
+        raise PolicyError(f"shop.grade_floor_list={gfl!r}: grades A/B/C, shares in [0.3, 0.9]")
+    cfl = sp.get("c_first_leaves")                      # v2.11: leaf categories that offer grade C first
+    if cfl is not None and (not isinstance(cfl, list) or not all(isinstance(x, str) and x for x in cfl)):
+        raise PolicyError(f"shop.c_first_leaves={cfl!r} must be a list of leaf names")
     fml = sp.get("food_min_left_frac")                  # v2.10: unstated-need food needs this share of shelf left
     if fml is not None and (isinstance(fml, bool) or not isinstance(fml, (int, float)) or not 0.0 <= fml <= 0.9):
         raise PolicyError(f"shop.food_min_left_frac={fml!r} outside [0, 0.9]")
@@ -263,8 +271,15 @@ def market_floor(unit, pol, stats, ask=None):
     (shop.ask_quantile, >= 5 settles), never above the ask. None when the key is unset, for food and grade C, or
     when the SKU has too few settles. 24 h to 11-07 20:00 KST: 103 of 326 goods sales went below 0.9 x the same
     SKU and grade's market median, 66 of them after 3+ rounds (the endgame took the cost floor); the gap to 0.9 x
-    market was 4.9M. One curtain SKU: asks 0.75-0.76 of list = market 0.75, sold 0.55-0.66 after 4-5 rounds."""
+    market was 4.9M. One curtain SKU: asks 0.75-0.76 of list = market 0.75, sold 0.55-0.66 after 4-5 rounds.
+    v2.11 (11-10, book): with shop.grade_floor_list[grade] set, a goods unit of that grade floors at that share of its
+    list price instead (never above the ask). Our grade C sofas and beds sold at 0.43-0.47 of list while the market
+    settled grade C at 0.56-0.57; 118 C furniture units (71M at cost) sat unsold."""
     sp = pol.get("shop") or {}
+    gf = (sp.get("grade_floor_list") or {}).get(unit.get("grade"))
+    if gf and unit.get("kind") != "food" and unit.get("list_price"):
+        m = int(math.ceil(int(unit["list_price"]) * float(gf)))
+        return m if ask is None else min(m, int(ask))
     frac = sp.get("market_floor_frac")
     if not frac or unit.get("kind") == "food" or unit.get("grade") not in ("A", "B"):
         return None
