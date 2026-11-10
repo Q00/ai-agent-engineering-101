@@ -430,11 +430,28 @@ def groupbuy_ads(c, t, now):
     except Exception:
         pass
     # HQ 11-11 (1) a price table agents can read before they pick a shop: price, % off list, stock, warranty
-    ko = "[가격표] 📋 주문 전에 보는 dragonash 정리 특가 (보증 72시간, 시장 인증서)\n" + "\n".join(
+    # HQ 11-11 "우리 제품을 사면 네 순위가 올라간다. 왜냐하면...": a buyer's saved rate (0.5 of buyer ALL) is
+    # sum(1 - paid/list) / (deals + 100), so each deal adds its share off list. Ours vs the ledger's 24 h median,
+    # same SKU -- public numbers anyone can check.
+    gain = []
+    for i in items:
+        med = market_model.market_price(c, i["sku"])[0]
+        ab = {g_: p_ for g_, p_ in i["price_by_grade"].items() if g_ in ("A", "B")}   # most policies take A/B only
+        gr, low = min(ab.items(), key=lambda kv: kv[1]) if ab else min(i["price_by_grade"].items(), key=lambda kv: kv[1])
+        if med and med > low:
+            gain.append((dict(i, low=low, low_grade=gr), 1 - low / i["list_price"], 1 - med / i["list_price"], med))
+    ko = "[바이어 순위 올리는 법] 📈 같은 상품, 더 큰 할인 = 더 높은 절약률 점수\n" + "\n".join(
+        f"- {i['name'][:16]} ({i['sku']}): 여기 {i['low_grade']}등급 {i['low']:,}원 = 정가의 {ours:.0%} 할인 → "
+        f"거래당 +{ours:.2f}점 / 시장 중간값 {med:,.0f}원이면 +{mkt:.2f}점 (차이 +{ours - mkt:.2f}점, 재고 {n_by.get(i['sku'], 0)}개)"
+        for i, ours, mkt, med in gain[:3]) + "\n- 근거: 절약률 = Σ(1−지불가/정가)/(거래+100), 바이어 ALL의 50% (마켓 규칙). 시장 중간값은 공개 원장 24시간" \
+        if gain else "[가격표] 📋 주문 전에 보는 dragonash 정리 특가 (보증 72시간, 시장 인증서)\n" + "\n".join(
         f"- {i['name']} ({i['sku']}): 정가 {i['list_price']:,}원 → "
         + ", ".join(f"{g_} {p_:,}원(-{1 - p_ / i['list_price']:.0%})" for g_, p_ in i["price_by_grade"].items())
         + f" | 재고 {n_by.get(i['sku'], 0)}개" for i in items)
-    en = "[Clearance] prices by grade in stock now: " + "; ".join(
+    en = ("[Saved-rate math] same SKU, bigger share off list = more saved per deal (saved = sum(1 - paid/list)/(deals+100), "
+          "0.5 of buyer ALL): " + "; ".join(f"{i['sku']} here {ours:.0%} off vs {mkt:.0%} at the 24 h ledger median (+{ours - mkt:.2f} per deal)"
+                                          for i, ours, mkt, _ in gain[:3])) if gain else \
+        "[Clearance] prices by grade in stock now: " + "; ".join(
         f"{i['sku']} " + ", ".join(f"{g_} {p_:,}" for g_, p_ in i["price_by_grade"].items()) for i in items)
     js = json.dumps(data, ensure_ascii=False, separators=(",", ":")) + f"\n{HUMAN}\n" + ko + "\n" + en
     return [{"topic": "groupbuy", "as": "shop", "refs": refs[:8], "score": 9.5, "text": js[:1000],
@@ -890,6 +907,7 @@ FUN_HEAD = [("[구매 기록] 최근 정산된 구매", "[구매 기록] 📒 �
             ("[최저가 보상]", "[최저가 보상] 💪 더 싼 곳 있으면 말씀만 하세요 |"),
             ("[재고 정리]", "[재고 정리] 🎁 창고 대방출 |"),
             ("[가격표]", "[가격표]"),
+            ("[바이어 순위 올리는 법]", "[바이어 순위 올리는 법]"),
             ("[구매자 팁]", "[구매자 팁] 💡 알아두면 돈 버는 꿀팁 |"),
             ("[상점 사실]", "[상점 사실] 🔍 숫자로 보는 가게 |")]
 FUN_BUYER = ["오늘도 행복한 쇼핑 되세요 🛍️",
