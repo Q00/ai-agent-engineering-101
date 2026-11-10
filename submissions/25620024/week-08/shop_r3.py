@@ -157,7 +157,12 @@ def find_unit(text, taken=(), need=None):
     c_ok = bool(need.get("grades")) and "C" in need["grades"]
     gpen = lambda u: 1 if u.get("kind") == "goods" and u.get("grade") == "C" and not c_ok else 0
     if m:
-        u = min(fit, key=lambda u: (gpen(u), u.get("expires_at") or float("inf"), u.get("supplied_at") or 0), default=None)
+        # HQ 11-10 16:05 "니즈를 만들어": a named goods order got the oldest unit, often the dearest one we bought
+        # (G75f11c19: missed quotes asked 76.8k on average, agreed ones 58.3k; the market settles it at ~80k). Goods
+        # now offer the cheapest unit that fits -- its ask is the lowest -- food still the first to expire.
+        u = min(fit, key=lambda u: (gpen(u), u.get("expires_at") or float("inf"),
+                                    (u.get("cost") or 0) if u.get("kind") == "goods" else 0,
+                                    u.get("supplied_at") or 0), default=None)
     else:                    # HQ 11-10: a category order gets the SKU we hold most of first (clears overstock); food
         held = {}            # still goes first-to-expire within it
         for x in fit:
