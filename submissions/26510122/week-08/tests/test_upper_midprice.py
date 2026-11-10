@@ -39,7 +39,7 @@ class UpperMidpriceTests(unittest.TestCase):
     def test_out_of_band_sales_do_not_build_multi_window_stock(self):
         history = []
         for sku, paid, cost in [('upper', 220_000, 120_000), ('lower', 90_000, 50_000)]:
-            for index in range(10):
+            for index in range(10 if sku == 'upper' else 4):
                 unit = f'{sku}-{index}'
                 at = self.now - 120 - index * 60
                 history += [{'event': 'receipt_signed', 'sku': sku, 'unit': unit, 'cost': cost,

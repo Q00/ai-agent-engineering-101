@@ -290,7 +290,8 @@ def replenishment_candidates(catalog, inventory, history, now, blocked=(), trial
             upper_midprice = {**upper, 'projected_contribution_per_unit': margin,
                               'projected_contribution_12h': round(margin * upper['positive_12h'], 2)}
         elif (operating['phase'] == 'growth' and UPPER_MIDPRICE_MIN <= price <= MIDPRICE_MAX
-              and signal['settled_sales_12h'] >= UPPER_BAND_DEPTH_SAMPLE
+              and (signal['settled_sales_12h'] >= UPPER_BAND_DEPTH_SAMPLE
+                   or (signal['settled_sales_12h'] >= MIN_POSITIVE_SALES and not upper['positive_12h']))
               and upper['positive_12h'] * 2 < signal['settled_sales_12h']):
             # Keep ordinary near-window replenishment. Lower realized prices
             # do not justify a multi-window buffer at the intended price band.
