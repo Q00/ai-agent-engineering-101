@@ -184,17 +184,37 @@ CLERK = ("clerk: no haggling needed, this is our price | need a shelf life, grad
 MATCH_RE = re.compile(r"\bmatch|cheaper|elsewhere|other shop|another shop|lower price|최저가|더 싸|다른 (가게|곳)", re.I)
 
 
-def warranty_for(asked):
+_CLEAR = {"t": 0, "skus": set()}
+
+
+def clearance_skus():
+    if time.time() - _CLEAR["t"] > 300:
+        try:
+            _CLEAR["skus"] = set((json.loads(promo.GROUPBUY.read_text(encoding="utf-8")).get("skus") or {}))
+        except (OSError, ValueError):
+            _CLEAR["skus"] = set()
+        _CLEAR["t"] = time.time()
+    return _CLEAR["skus"]
+
+
+def warranty_for(asked, u=None):
     """HQ 11-04 18:50: a warranty only when the buyer asks for one. With 3 h on every goods sale, 41 of 67 broken units
-    were refunded in full: 7,775,432 out of the balance (ledger 'broken' entries, 11-03 23:23 to 11-04 18:50)."""
+    were refunded in full: 7,775,432 out of the balance (ledger 'broken' entries, 11-03 23:23 to 11-04 18:50).
+    11-10 (team interviews, all five teams: "fix the quote-to-settle leak"): the kit's example buyer policy -- which many
+    buyers copied, ours too -- refuses to pay for goods without 6 h of warranty, and we gave 3 h even when asked. Now a
+    buyer who asks gets 6 h, and the clearance SKUs carry 6 h on every sale (a ~5% refund risk beats an unpaid deal)."""
     w = promo.theta().get("warranty_goods_h") or 0
-    return w if asked or not promo.theta().get("warranty_on_request", True) else 0
+    if u is not None and u.get("kind") == "goods" and u.get("sku") in clearance_skus():
+        return max(w, 6)
+    if asked:
+        return max(w, 6)
+    return w if not promo.theta().get("warranty_on_request", True) else 0
 
 
 def offer_data(u, price, q, vip=None, asked=False):
     """The offer as data, same fields every time."""
     left = round((u["expires_at"] - time.time()) / 3600, 1) if u.get("expires_at") else None
-    w = warranty_for(asked)
+    w = warranty_for(asked, u)
     return {"type": "offer", "shop": NAME, "sku": u["sku"], "name": u.get("name"), "unit": u.get("unit"),
             "grade": u.get("grade"), "grade_claim_is_true_grade": True, "cert": "market-signed",
             "shelf_hours_left": left, "warranty_hours": w if u.get("kind") == "goods" else 0,
@@ -207,7 +227,7 @@ def offer_data(u, price, q, vip=None, asked=False):
 
 
 def warranty_note(u, asked=False):
-    h = warranty_for(asked)
+    h = warranty_for(asked, u)
     if u.get("kind") != "goods":
         return ""
     return f" | warranty={h}h, full refund if it breaks" if h else " | no warranty unless you ask for one"
@@ -349,9 +369,7 @@ class Shop(AgentExecutor):
             receipt = {"shop": NAME, "item": deal.get("asked_cat") or u["sku"], "price": price, "task": task.id}
             if u["unit"]:
                 receipt.update(unit=u["unit"], claim=u.get("grade"))
-            w = q.get("warranty_goods_h", promo.theta()["warranty_goods_h"])   # an experiment may set it per SKU
-            if promo.theta().get("warranty_on_request", True) and not deal.get("warranty_asked"):
-                w = 0                                   # HQ 11-04: no warranty unless the buyer asked
+            w = warranty_for(bool(deal.get("warranty_asked")), u)   # 11-10: one rule for offer and receipt
             if u.get("kind") == "goods" and w:
                 receipt["warranty_hours"] = w
             code = deal["code"] or promo.new_code(task.id)
