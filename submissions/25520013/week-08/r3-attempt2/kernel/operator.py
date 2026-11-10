@@ -98,7 +98,11 @@ class Operator:
 
     # ------------------------------------------------------------ settings and state
     def settings(self):
-        return bounded(c.load_json(os.path.join(self.harness_root, "operator", "settings.json"), {}) or {})
+        s = dict(c.load_json(os.path.join(self.harness_root, "operator", "settings.json"), {}) or {})
+        env = os.environ.get("A2_OPERATOR_INTERVAL_S", "")  # 2026-11-10: the human's interval wins over the harness
+        if env.isdigit():
+            s["interval_s"] = int(env)
+        return bounded(s)
 
     def _state(self):
         st = c.load_json(self.state_path, {})
