@@ -67,11 +67,12 @@ def value_choice(candidates, *, values, budget, config, order, catalog, seed):
                         continue
                 else:
                     continue
-                eligible.append((Fraction(price, terms["list_price"]), 2 if food_hint else int(public), age,
+                eligible.append((not values.get((candidate["name"], sku), {}).get("food_horizon_supported", False),
+                                 Fraction(price, terms["list_price"]), 2 if food_hint else int(public), age,
                                  rotation(seed, candidate["name"], sku), candidate["name"], sku))
     if not eligible:
         return None
-    _, source, _, _, name, sku = min(eligible)
+    _, _, source, _, _, name, sku = min(eligible)
     if source == 2:
         return {"name": name, "sku": sku,
                 "reason": "Recent discounted food settlements identify a seller to ask; current price and "
@@ -173,6 +174,7 @@ def timeout_choice(candidates, *, seed):
         value = value_ratio(candidate)
         return (bool(own["receipt_mismatches"]),
                 own["unsatisfactory_settlements"] / max(1, own["settled"]),
+                not any(o.get("food_horizon_supported") for o in candidate["offers"]),
                 value is None, value if value is not None else 0,
                 -(own["satisfactory_settlements"] + own["accepted_tradeoffs"]) / (own["settled"] + 2),
                 reviews["low_star_count"] / (count + 2), -public_quality,
@@ -189,6 +191,7 @@ def timeout_choice(candidates, *, seed):
     if selected["offers"]:
         choice["sku"] = min(selected["offers"],
                             key=lambda offer: (
+                                not offer.get("food_horizon_supported", False),
                                 min((g["price_to_list"] for g in offer.get("price_history", [])), default=float("inf")),
                                 rotation(seed, selected["name"], offer["sku"])))["sku"]
     return choice

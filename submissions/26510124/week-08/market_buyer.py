@@ -28,6 +28,7 @@ from buyer_value_memory import build_value_evidence
 from buyer_public_prices import read_public_prices, read_food_discovery, merge_price_evidence
 from buyer_retry import remaining_retry_decisions, select_alternative
 from buyer_quote_accept import certified_choice
+from buyer_food_horizon import filter_recent_short_life, prioritize_history
 
 
 VERSION_HEADERS = {"A2A-Version": "1.0"}
@@ -109,6 +110,7 @@ def choose_shop(shops, memory, *, item, budget, deadline, policy=None, order=Non
     order = order or {}
     policy = policy or load_policy()
     seed = order.get("order") or f"{item}:{int(time.time() // 900)}"
+    shops, life_skipped = filter_recent_short_life(shops, memory, order, policy)
     shops, cooldown = reuse_failures(shops, memory, item=item, budget=budget,
                                      config=policy, order=order, catalog=catalog)
     values = build_value_evidence(memory, catalog=catalog, order=order, budget=budget, config=policy)
@@ -122,6 +124,7 @@ def choose_shop(shops, memory, *, item, budget, deadline, policy=None, order=Non
                                                  order=order, budget=budget, config=policy)
     # Discovery lacks expiry evidence: selection only, never negotiation references.
     selection_values = merge_price_evidence(values, food_discovery)
+    selection_values = prioritize_history(selection_values, order, policy)
     candidates = shortlist(shops, memory, seed=seed,
                            limit=policy.get("selection_max_candidates", 6),
                            round_number=order.get("round"), value_evidence=selection_values)
@@ -158,6 +161,7 @@ def choose_shop(shops, memory, *, item, budget, deadline, policy=None, order=Non
     log("SELECTION CONTEXT", {"eligible_shops": len(shops), "candidates": len(candidates),
                               "context_chars": len(json.dumps(context, ensure_ascii=False)),
                               **cooldown,
+                              "certified_short_life_skipped_offers": life_skipped,
                               "food_discovery_pairs": len(food_discovery),
                               "stocked_offers_scanned": sum(len(s.get("offers", [])) for s in shops),
                               "value_candidates": [c["name"] for c in candidates if c["selection_role"] == "value"],
@@ -237,6 +241,8 @@ class Buyer:
         self.policy = policy or buying_terms(budget)
         self.order, self.market_dir, self.shop_name = order or {}, market_dir, shop_name
         self.fast_accepts, self.model_decisions = 0, 0
+        self.fast_accept_skip_reasons = {}
+        self.food_lifetime_observation = None
         self.price_limit = min(budget, self.policy["price_limit"])
         self.no_deal_reason = ""
         self.started_at = time.monotonic()
@@ -260,6 +266,7 @@ class Buyer:
         """Local observations only; seller claims never establish a root cause."""
         return {"version": 1, "reason": self.reason_code, "stage": self.stage,
                 "fast_accepts": self.fast_accepts, "model_decisions": self.model_decisions,
+                "fast_accept_skip_reasons": dict(self.fast_accept_skip_reasons),
                 "decisions": self.decisions, "last_parsed_ask": self.last_parsed_ask,
                 "last_authorized_bid": self.authorized_price,
                 "elapsed_seconds": round(max(0, time.monotonic() - self.started_at), 3),
@@ -492,14 +499,20 @@ class Buyer:
                                         "context_chars": len(json.dumps(compact, ensure_ascii=False))})
             self.stage = "model_decision"
             self.decisions = decisions + 1
+            observation = {}
             decision = certified_choice(task, item=self.item, shop_name=self.shop_name,
                                         order=self.order, policy=self.policy, market_dir=self.market_dir,
-                                        seconds_left=self.remaining())
+                                        seconds_left=self.remaining(), observation=observation)
+            # A later unknown quote clears earlier proof: never infer unchanged units.
+            self.food_lifetime_observation = observation.get("food_lifetime")
             certified_ask = decision["price"] if decision is not None else None
             if decision is not None:
                 self.fast_accepts += 1
                 log("BUYER DECISION SOURCE", "certified_target_quote")
             else:
+                skip_reason = observation.get("reason", "unknown")
+                self.fast_accept_skip_reasons[skip_reason] = self.fast_accept_skip_reasons.get(skip_reason, 0) + 1
+                log("FAST ACCEPT SKIPPED", {"reason": skip_reason})
                 self.model_decisions += 1
                 decision = buyer_decision(item=self.item, budget=self.budget,
                                       **compact,
@@ -557,6 +570,8 @@ def trade_and_record(shop, *, item, budget, memory_path, reason, seconds, client
         "selection_fingerprint": offer_fingerprint(shop, item, policy, (order or {}).get("round", 2)),
         "compatibility_fingerprint": compatibility_fingerprint(shop, item, policy, (order or {}).get("round", 2)),
         "observed_receipt": buyer.observed_receipt,
+        "food_lifetime_observation": buyer.food_lifetime_observation,
+        "observed_stock_qty": next((o.get("qty") for o in shop.get("offers", []) if o.get("sku") == item), None),
         "negotiation_diagnostics": buyer.diagnostics(),
         "stars": stars, "review": review,
     }

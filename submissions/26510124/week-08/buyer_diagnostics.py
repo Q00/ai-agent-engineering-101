@@ -163,6 +163,14 @@ def summarize(root=ROOT, *, hours=24, round_number=3, now=None, byte_limit=4_000
     reasons, stages, seller_reports = Counter(), Counter(), Counter()
     statuses, proofs, durations, decisions = {}, {}, [], []
     decision_sources = {"fast_accepts": [], "model_decisions": []}
+    fast_skips, fast_skip_attempts = Counter(), 0
+    skip_codes = {"not_applicable", "invalid_quote_parts", "structured_quote_missing_or_ambiguous",
+                  "invalid_quote_identity_or_price", "price_above_limit", "price_above_target",
+                  "invalid_quote_metadata", "quote_metadata_conflict", "text_price_missing_or_conflicting",
+                  "certificate_missing_or_invalid", "grade_not_accepted_or_conflicting",
+                  "warranty_missing_or_insufficient", "food_policy_not_supported",
+                  "food_clock_or_expiry_unavailable", "food_lifetime_or_checkout_headroom_insufficient",
+                  "food_expiry_conflict", "unsupported_kind"}
     for key, row in records.items():
         diag = row.get("negotiation_diagnostics")
         valid = isinstance(diag, dict) and type(diag.get("version")) is int and diag["version"] == 1
@@ -171,6 +179,12 @@ def summarize(root=ROOT, *, hours=24, round_number=3, now=None, byte_limit=4_000
         stage = diag.get("stage") if valid else None
         stages[stage if isinstance(stage, str) and stage in STAGES else "unknown"] += 1
         if valid:
+            skips = diag.get("fast_accept_skip_reasons")
+            if isinstance(skips, dict):
+                fast_skip_attempts += 1
+                for code, count in skips.items():
+                    if type(count) is int and count >= 0:
+                        fast_skips[code if code in skip_codes else "unknown"] += count
             for field, counts in decision_sources.items():
                 if type(diag.get(field)) is int and diag[field] >= 0:
                     counts.append(diag[field])
@@ -244,6 +258,8 @@ def summarize(root=ROOT, *, hours=24, round_number=3, now=None, byte_limit=4_000
             "decisions_total": sum(decisions), "attempts_with_decision_count": len(decisions),
             "decision_sources": {field: {"total": sum(counts), "attempts_observed": len(counts)}
                                  for field, counts in decision_sources.items()},
+            "fast_accept_skips": {"reasons": dict(fast_skips), "attempts_observed": fast_skip_attempts,
+                                  "basis": "First blocking check per decision; not unique failed orders. Older rows may lack telemetry."},
             "elapsed_seconds_total": round(sum(durations), 3), "attempts_with_elapsed": len(durations),
             "excluded_rows": dict(excluded), "sources": sources,
             "limits": ["Bounded local tails, not all market orders or lifetime history.",

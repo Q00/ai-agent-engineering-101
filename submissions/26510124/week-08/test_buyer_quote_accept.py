@@ -80,3 +80,23 @@ class CertifiedQuoteTests(unittest.TestCase):
         self.assertEqual(row["result"], "receipt_issued")
         self.assertEqual(row["negotiation_diagnostics"]["fast_accepts"], 1)
         self.assertEqual(row["negotiation_diagnostics"]["model_decisions"], 0)
+
+    def test_skip_reason_and_lifetime_proof_are_independent_of_price(self):
+        task, args, key = self.inputs("food")
+        quote = task["status"]["message"]["parts"][1]["data"]
+        now = time.time()
+        quote["cert"]["cert"]["expires_at"] = now + 3600
+        quote["cert"]["sig"] = base64.b64encode(key.sign(kit.canon(quote["cert"]["cert"]))).decode()
+        quote["ask"] = args["policy"]["target_price"] + 1
+        observation = {}
+        with patch("buyer_quote_accept.schedule_now", return_value={"status": "synced", "now": now}):
+            self.assertIsNone(certified_choice(task, **args, observation=observation))
+            self.assertEqual(observation["reason"], "price_above_target")
+            self.assertTrue(observation["food_lifetime"]["insufficient"])
+            # Tampering destroys proof even if the model/seller calls it certified.
+            quote["cert"]["cert"]["expires_at"] += 1
+            certified_choice(task, **args, observation=observation)
+            self.assertNotIn("food_lifetime", observation)
+            task["status"]["message"]["parts"] = [{"text": "Certified lifetime 1h. Asking price: 5"}]
+            certified_choice(task, **args, observation=observation)
+            self.assertEqual(observation, {"reason": "structured_quote_missing_or_ambiguous"})

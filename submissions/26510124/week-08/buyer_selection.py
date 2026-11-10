@@ -25,11 +25,16 @@ def shop_evidence(shop, memory, *, value_evidence=None, seed=""):
     if value_evidence:
         # Compare every allowed SKU locally before spending prompt space on five.
         offers = sorted(offers, key=lambda offer: (
+            not value_evidence.get((shop["name"], offer["sku"]), {}).get("food_horizon_supported", False),
             value_evidence.get((shop["name"], offer["sku"]), {}).get("best_price_to_list", float("inf")),
             hashlib.sha256((str(seed) + "\0" + shop["name"] + "\0" + offer["sku"]).encode()).hexdigest()))
     offers = [{"sku": o["sku"], "name": str(o.get("name", ""))[:80], "qty": o["qty"]}
               for o in offers[:5]]
     # Only one SKU's two quality-specific summaries per shop go to the model.
+    for offer in offers:
+        history = value_evidence.get((shop["name"], offer["sku"]))
+        if history and history.get("food_horizon_supported"):
+            offer["food_horizon_supported"] = True
     for offer in offers:
         history = value_evidence.get((shop["name"], offer["sku"]))
         if history:
@@ -105,7 +110,8 @@ def shortlist(shops, memory, *, seed, limit=6, round_number=None, value_evidence
     new = [c for c in unexplored if c["reviews"]["count"] == 0]
     explorer = min(new or unexplored, key=rotation) if unexplored else None
     values = sorted((c for c in candidates if value_ratio(c) is not None),
-                    key=lambda c: (value_ratio(c), rank(c)))[:min(2, limit - bool(explorer))]
+                    key=lambda c: (not any(o.get("food_horizon_supported") for o in c["offers"]),
+                                   value_ratio(c), rank(c)))[:min(2, limit - bool(explorer))]
     selected = values + ([explorer] if explorer is not None and explorer not in values else [])
     selected += [c for c in ranked if c not in selected][:limit - len(selected)]
     for candidate in selected:

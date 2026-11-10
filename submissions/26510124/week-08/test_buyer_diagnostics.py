@@ -55,6 +55,7 @@ class NegotiationDiagnosticsTests(unittest.TestCase):
         self.assertEqual(buyer.last_parsed_ask, 80)
         self.assertEqual(calls, 1)
         self.assertIsNone(buyer.seller_terminal)
+        self.assertEqual(buyer.diagnostics()["fast_accept_skip_reasons"], {"not_applicable": 1})
 
     def test_seller_rejection_and_cancellation_are_observed_states(self):
         for state, reason in (("TASK_STATE_REJECTED", "seller_rejected"), ("TASK_STATE_CANCELED", "seller_cancelled")):
@@ -164,6 +165,15 @@ class LocalDiagnosticsTests(unittest.TestCase):
 
     def report(self, **kwargs):
         return summarize(self.root, now=self.NOW, hours=1, **kwargs)
+
+    def test_skip_telemetry_counts_decisions_and_preserves_missing_coverage(self):
+        self.write("memory", [self.record, {**self.record, "order": "o2", "negotiation_diagnostics": {
+            "version": 1, "fast_accept_skip_reasons": {"price_above_target": 2,
+                "structured_quote_missing_or_ambiguous": 1, "untrusted text": 1, "price_above_limit": -1}}}])
+        result = self.report()["fast_accept_skips"]
+        self.assertEqual(result["attempts_observed"], 1)
+        self.assertEqual(result["reasons"], {"price_above_target": 2,
+            "structured_quote_missing_or_ambiguous": 1, "unknown": 1})
 
     def test_duplicate_memory_payments_reviews_count_one_confirmed_sale(self):
         self.write("memory", [self.record, self.record])
