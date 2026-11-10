@@ -15,10 +15,11 @@ from a2a.server.tasks import TaskUpdater
 from feedback import append_event
 from harness import HarnessError, decide, parse_seller
 from inventory import Inventory, StockError, requested_skus
+from market_clock import schedule_now
 from opening_strategy import OpeningReader, bounds as opening_bounds
 from receipt_signing import sign_receipt
 from sales_advisor import AdviceReader, config_at
-from shop_policy import closing_context, policy_at, quote_copy, selling_terms, shop_copy
+from shop_policy import closing_context, policy_at, quote_copy, quote_fields, selling_terms, shop_copy
 from seller_agent import DEFAULT, ModelCapacityError, Seller, bounded_history, build
 from seller_context import inventory_context
 from warranty_trial import WarrantyTrial
@@ -129,7 +130,13 @@ class InventorySeller(Seller):
             pass
         updated = deepcopy(card)
         updated.description = shop_copy(self.policy, advice)
-        updated.skills[0].description = "Ask for a stocked SKU, then send an integer offer. Terms are quoted before checkout."
+        updated.skills[0].description = (
+            "Ask for a stocked SKU. Read the text and JSON quote (ask, list_price, grade, "
+            "warranty_hours, cert; food: expires_at, hours_left). Send an integer offer on "
+            "the same task, or the quoted ask to accept. final=true means no lower price. "
+            "Quotes are not receipts; complete checkout after receiving a signed receipt.")
+        updated.skills[0].tags = ["shopping", "negotiation", "certificate", "signed-receipt", "inventory"]
+        updated.skills[0].examples = ["I want to buy G5cd4ffbc", "150000"]
         return updated
 
     def event(self, task, outcome, product=None, price=None, *, deal=None,
@@ -312,10 +319,14 @@ class InventorySeller(Seller):
                 if action == "counter":
                     # Actual quote is labelled and last; facts never expose unit cost.
                     final = deal["negotiation"]["stage"] == "final_offer"
-                    reply = quote_copy(product, price, deal["terms"], deal["advice"], final=final)
+                    facts = quote_fields(product, price, deal["terms"], final=final,
+                                         clock=schedule_now(self.inventory.folder, deal["round"]))
+                    reply = quote_copy(product, price, deal["terms"], deal["advice"], final=final, facts=facts)
                     deal.update(ask=price, history=bounded_history(history + [{"role": "seller", "text": reply}]),
                                 final_quote=final, touched=time.time())
-                    await up.requires_input(say(reply))
+                    await up.requires_input(up.new_agent_message(
+                        parts=[new_text_part(reply), new_data_part(facts)],
+                        metadata={k: facts[k] for k in ("ask", "sku", "unit", "final")}))
                     self.event(task.id, "final_offer" if final else "quote", product, price, deal=deal)
                 elif action == "accept":
                     receipt = sign_receipt(self.signing_key, shop=self.cfg["name"], item=product["sku"],

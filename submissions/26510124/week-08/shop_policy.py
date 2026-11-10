@@ -217,7 +217,38 @@ def warranty_copy(hours):
             if hours else "No breakage warranty offered.")
 
 
-def quote_copy(product, price, terms, advice=None, *, final=False):
+def quote_fields(product, price, terms, *, final=False, clock=None):
+    """Public quote facts only; a quote is neither a receipt nor a payment approval."""
+    cert = product.get("cert")
+    body = cert.get("cert") if isinstance(cert, dict) else None
+    # Preserve the signed body verbatim; never publish unrelated inventory fields.
+    allowed = {"kind", "shop", "unit", "sku", "grade", "supplied_at", "expires_at"}
+    if (not isinstance(body, dict) or set(body) - allowed
+            or body.get("unit") != product["unit"] or body.get("sku") != product["sku"]
+            or not isinstance(cert.get("sig"), str) or not cert["sig"]):
+        cert = None
+    else:
+        cert = deepcopy({"cert": body, "sig": cert["sig"]})
+    fields = {"sku": product["sku"], "unit": product["unit"], "kind": product["kind"],
+              "ask": price, "list_price": product["list_price"],
+              "grade": product["grade"], "grade_basis": "inventory_snapshot",
+              "warranty_hours": terms["warranty_hours"], "cert": cert,
+              "expires_at": product.get("expires_at") if product["kind"] == "food" else None,
+              "hours_left": None, "quoted_at": None, "final": final}
+    clock = clock or {}
+    now, uncertainty = clock.get("now"), clock.get("uncertainty_seconds")
+    if (clock.get("status") == "synced"
+            and all(type(n) in (int, float) and math.isfinite(n) for n in (now, uncertainty))
+            and 0 <= uncertainty <= 6):
+        fields["quoted_at"] = now
+        expiry = fields["expires_at"]
+        if type(expiry) in (int, float) and math.isfinite(expiry):
+            # Round down and subtract clock uncertainty: never overstate remaining life.
+            fields["hours_left"] = math.floor(max(0, expiry - now - uncertainty) / 36) / 100
+    return fields
+
+
+def quote_copy(product, price, terms, advice=None, *, final=False, facts=None):
     # Only fixed templates and actual inventory fields reach customers, never analyst free text.
     parts = [f"{product['name']} ({product['sku']})."]
     if product["kind"] == "goods":
@@ -226,9 +257,13 @@ def quote_copy(product, price, terms, advice=None, *, final=False):
     else:
         expiry = datetime.fromtimestamp(product["expires_at"], timezone.utc).isoformat()
         parts.append(f"Food expiry: {expiry}; remaining shelf life is confirmed at checkout.")
+        if facts and facts["hours_left"] is not None:
+            parts.append(f"At quote: {facts['hours_left']:.2f} h remaining (conservative estimate).")
+    parts.append(f"Catalog list price: {product['list_price']}.")
     parts.append(warranty_copy(terms["warranty_hours"]))
     parts.append(FOCUS_COPY.get((advice or {}).get("focus"), FOCUS_COPY["clarity"]))
-    parts.append("Market certificate included.")
+    parts.append("Market certificate included." if facts is None or facts["cert"] is not None
+                 else "Certificate unavailable in this quote; verify at checkout.")
     if final:
         parts.append("Final offer: send this asking price to accept; a lower offer ends this negotiation.")
     parts.append(f"Asking price: {price}.")  # Keep the exact, labelled quote last.
@@ -242,5 +277,7 @@ def shop_copy(policy, advice=None):
     if policy.get("b_warranty_trial", {}).get("enabled"):
         terms += " Selected B-grade goods may carry 6-hour coverage; check the quoted unit's terms."
     terms += " No warranty unless stated in the quote."
-    return ("Inventory shop: ask by SKU. Market certificates and signed receipts. "
-            + FOCUS_COPY.get((advice or {}).get("focus"), FOCUS_COPY["clarity"]) + " " + terms)
+    return ("Ask by SKU, then send an integer price offer. Quotes include ask, list_price, grade, "
+            "warranty_hours and the available market certificate; food includes expires_at and "
+            "hours_left when available. Send the quoted ask to accept; signed receipt then checkout. " + terms + " "
+            + FOCUS_COPY.get((advice or {}).get("focus"), FOCUS_COPY["clarity"]))
