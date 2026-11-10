@@ -227,6 +227,7 @@ STRATEGY = {
                     "cost_share": {"type": "number", "minimum": 0.55, "maximum": 0.75}}},
                 "seller": {"type": "object", "properties": {     # 11/4 02:5x: the seller's rules
                     "mode": {"type": "string", "enum": ["rules", "shadow", "agent"]},
+                    "forged": {"type": "string"},        # 11/10: the B arm of a forged tool's A/B (harness.forge)
                     "open_share": {"type": "number", "minimum": 0.5, "maximum": 1.5},
                     "step_share": {"type": "number", "minimum": 0, "maximum": 0.3},
                     "min_margin": {"type": "number", "minimum": 0, "maximum": 1},

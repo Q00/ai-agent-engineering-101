@@ -25,7 +25,7 @@ from core.events import EventWriter  # noqa: E402
 
 LOOP_SECONDS = 30
 EVERY = {"collect": 180, "forum": 300, "health": 300, "benchmark": 1500, "rules": 1800, "score_class": 600,
-         "participant": 1800, "reports": 3600, "capability": 3600, "market": 3600}
+         "participant": 1800, "reports": 3600, "capability": 3600, "market": 3600, "jev": 1800}
 FORUM_TIMEOUT = 300
 META_LOCK_S = 3 * 3600          # a cycle older than this is taken as dead
 
@@ -126,6 +126,9 @@ def once(state, now, shadow=False):
     if due("market"):                           # user 11/6 10:5x: high-list prices and our share, every hour
         from harness import market
         job("market", lambda: len(market.watch(now)))
+    if due("jev"):                              # user 11/10: Jev's tables from the last 2 days of turns
+        from harness import jev
+        job("jev", lambda: jev.fit()["samples"])
     if due("capability"):
         job("capability", lambda: str(capability.write()))
     if not shadow:

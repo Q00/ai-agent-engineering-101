@@ -19,7 +19,7 @@ from agents import loop
 from core import atomic, paths
 from core import card as cardmod
 from core.events import EventWriter
-from tools import act
+from tools import act, trade  # noqa: F401  (trade registers trade.seller_rules)
 from tools import market_files as mf
 from tools.registry import Ctx, call
 
@@ -243,7 +243,10 @@ class SellerCore:
                          "ask": st["ask"], "first_time": st.get("first_time")}
         t0 = time.perf_counter()
         mode = self.playbook(ctx)["mode"]
-        rule = self.rule_decide(ctx, st, ex) if mode in ("rules", "shadow") else None
+        if mode == "rules":
+            rule = self.jev_move(ctx, st, ex, task_id)      # user 11/10: Jev picks the move tool (rules or forged)
+        else:
+            rule = self.rule_decide(ctx, st, ex) if mode == "shadow" else None
         if mode == "rules" and rule is not None:
             d, trace = rule, []
         else:
@@ -264,6 +267,7 @@ class SellerCore:
             d, guard = self.guard(ctx, st), "no valid move from the model: " + "; ".join(
                 str(t["observation"])[:80] for t in trace[-2:])
         self.events.emit("seller.decision", {"action": d["action"], "price": d.get("price"), "unit": d.get("unit"),
+                                             "tool": d.get("tool"),
                                              "ms": round((time.perf_counter() - t0) * 1000), "tool_calls": len(trace),
                                              "guard": guard, "thought": d.get("thought", "")[:200]}, task=task_id)
         if d["action"] == "reject":
@@ -343,6 +347,58 @@ class SellerCore:
         if not r["ok"]:
             return None
         return dict(r["result"], thought="rules")
+
+    def turn_view(self, ctx, st):
+        """(view for harness.jev and forged tools, candidate, unit) or (None, None, None)."""
+        from harness import jev
+        pb = self.playbook(ctx)
+        unit = st["unit"] or (st["candidates"][0]["unit"] if st["candidates"] else None)
+        c = next((c for c in st["candidates"] if c["unit"] == unit), None)
+        if c is None or not c.get("list_price"):
+            return None, None, None
+        floor = max(math.ceil(c["cost"] * (1 + pb["min_margin"])), act.unit_floor(ctx, unit, st.get("first_time")))
+        v = jev.seller_view(c.get("kind"), c["list_price"], st["turns"], st["offer"], st["ask"],
+                            not st.get("first_time"))
+        v.update(cost=c["cost"], floor=floor, ask=st["ask"], offer=st["offer"], max_turns=MAX_TURNS,
+                 name=c.get("name"), turn=st["turns"])
+        return v, c, unit
+
+    def jev_move(self, ctx, st, ex, task_id):
+        """The turn's move through the tool Jev picks: the rules (trade.seller_rules) or a forged tool - the B arm of
+        its A/B on the states it was made for, or an adopted one when Jev expects more from it. Any failure of a
+        forged tool falls back to the rules."""
+        from harness import jev
+        from tools import trade
+        rules = jev.DEFAULT_TOOL["seller"]
+        chosen, note, ans = rules, None, None
+        try:
+            v, c, unit = self.turn_view(ctx, st)
+            if v is not None:
+                testing = self.playbook_raw(ctx).get("forged")
+                reg = trade.registry()
+                if testing and jev.keys(v)[0] in (reg.get(testing) or {}).get("states", []):
+                    chosen, note = testing, "ab"
+                else:
+                    chosen, ans, note = jev.route("seller", v, [rules] + trade.forged(("adopted",)))
+        except Exception as e:                       # the router must never stop a sale
+            v, note = None, f"router failed: {type(e).__name__}"
+        d = None
+        if chosen != rules and v is not None:
+            d = trade.run_forged(chosen, ctx, v, c, unit)
+            if d is None:
+                note, chosen = f"{chosen} gave no move", rules
+        if d is None:
+            ctx.situation["_seller"] = (self, st, ex)
+            r = call(ctx, rules, {})
+            ctx.situation.pop("_seller", None)
+            d = r["result"] if r["ok"] else None
+        self.events.emit("jev.route", {"tool": chosen, "note": note, "state": v and jev.keys(v)[0],
+                                       "answers": ans}, task=task_id)
+        return d and dict(d, tool=chosen)
+
+    @staticmethod
+    def playbook_raw(ctx):
+        return (ctx.strategy.get("playbook") or {}).get("seller") or {}
 
     def guard(self, ctx, st):
         unit = st["unit"] or st["candidates"][0]["unit"]
