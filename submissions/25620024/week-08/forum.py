@@ -137,7 +137,7 @@ def purchase_records(c, t, now, top=3):
         ensure_ascii=False, separators=(",", ":")) + f"\n{HUMAN}\n" + "\n".join(
         f"- {nm(sku)[:18]} {a:,}원/정가 {lp:,}원 ({1 - a / lp:.0%} 절약, {1 - a / lp:.0%} kept), 등급/grade {g}"
         for seq, sku, a, lp, g, h in rows[:3])                                           # JSON on top, then people
-    return [{"topic": f"records:{rows[0][0]}", "as": "buyer", "refs": [r[0] for r in rows], "score": 3.5,
+    return [{"topic": f"records:{rows[0][0]}", "as": "buyer", "refs": [r[0] for r in rows], "score": 9.6,   # 11-11: the liked format
              "text": ko, "texts": {"ko": ko, "en": en, "json": js}, "kind": "records"}]
 
 

@@ -167,6 +167,8 @@ def hits(c, now, t):
                                    group by s.sku""", (now - hours * 3600,)):
             sold.setdefault(sku, {})[hours] = n
     out, econ = [], _ours(c, now)
+    breaks = dict(c.execute("select sku, count(*) from broken where ts > ? group by sku", (now - 86400,)).fetchall())
+    mkt = dict(c.execute("select sku, count(*) from settles where ts > ? group by sku", (now - 86400,)).fetchall())
     for sku, n in sold.items():
         if n.get(24, 0) < t.get("hit_min_24h", 6) and n.get(3, 0) < 3:
             continue                                          # not a hit yet
@@ -176,6 +178,9 @@ def hits(c, now, t):
             * (1.5 if tk and pr / tk >= t.get("hit_good_margin", 0.25) else 1)   # HQ 11-04: sells, ticket, margin
         if tk and pr / tk < t.get("hit_min_margin", 0.10):
             continue                                          # HQ 11-10: thin-margin SKUs are not refilled
+        brk = breaks.get(sku, 0) / max(1, mkt.get(sku, 0))     # HQ 11-11: the market's 24 h break rate; a refund
+        if mkt.get(sku, 0) >= 30 and brk > t.get("hit_max_break", 0.11) and tk and pr / tk < 0.15:   # costs the
+            continue                                          # whole price, so breaky thin lines are not refilled
         target = max(2, math.ceil(per_window * cover))
         cost = tk - pr
         if cost > 0:                                          # no single SKU above hit_max_value at cost
@@ -243,6 +248,9 @@ def plan(md, c, t, now=None):
             return
         if sku in low:                                        # HQ 11-04: low ticket and low profit -- not stocked
             return
+        if reason != "HQ order" and sku in set(t.get("restock_hold") or []):   # HQ 11-11: lines that lose per unit
+            skipped.add(sku)
+            return
         if reason != "HQ order" and stock.get(sku, 0) > 1 and stock.get(sku, 0) / max(our_rate.get(sku, 0), 1 / 48) >= 48:
             skipped.add(sku)                                  # HQ 11-10: no more of a SKU we hold 48 h+ of our sales of
             return
@@ -257,7 +265,9 @@ def plan(md, c, t, now=None):
             qty = max(1, qty // 2)
         qty = min(qty, t["max_qty"] - buy.get(sku, 0))
         if reason != "HQ order":                              # 11-07 furniture opened (max_list 4M): one line holds
-            qty = min(qty, max(1, int(t.get("max_line_value", 8e6) // (r["list_price"] * t["cost_guess"]))))  # <= 8M
+            cap = t.get("max_line_value_hit", t.get("max_line_value", 8e6)) if reason.startswith("hit:") \
+                else t.get("max_line_value", 8e6)       # HQ 11-11: proven earners (hits) may hold a larger line
+            qty = min(qty, max(1, int(cap // (r["list_price"] * t["cost_guess"]))))
         cost = r["list_price"] * t["cost_guess"] * qty
         if qty <= 0 or cost > cash or len(buy) >= t.get("max_skus", 17) and sku not in buy:   # 10 -> 17: a 3-min window fits ~18
                                                                                          # supply calls 10 s apart (week 09)
