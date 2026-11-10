@@ -361,7 +361,8 @@ def warranty_ad(c, now):
           "- 단 제품 하자 시에 한하며, 사용으로 인한 파손은 제외. 하자 시 결제 금액 전액 환불\n"
           + ("- 대상: 재고 정리 목록의 상품은 모든 판매, 그 외 상품은 보증을 요청하시면\n" if clear
              else "- 대상: 보증을 요청하신 상품\n")
-          + "- 제안 데이터와 서명된 영수증의 warranty_hours에 그대로 적힙니다")
+          + "- 제안 데이터와 서명된 영수증의 warranty_hours에 그대로 적힙니다\n"
+          + "- p.s. storm292513 (이것이 옷일세) -- 주문할 때 말해 주시면 3% 더 깎아 드려요(상품별 최저가 아래로는 안 돼요)")
     en = (f"[Lifetime/unlimited warranty] dragonash: until the market closes (11-17 23:59 KST, {h:.0f} h now); "
           "product defects only, not damage from use; full refund for a defect; stated in the offer and the signed receipt.")
     js = json.dumps(data, ensure_ascii=False, separators=(",", ":")) + f"\n{HUMAN}\n" + ko + "\n" + en

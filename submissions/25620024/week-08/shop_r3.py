@@ -228,6 +228,21 @@ def clearance_skus():
     return _CLEAR["skus"]
 
 
+EGG = "storm292513"     # HQ 11-10 easter egg ("292513 = 이것이 옷일세"): say it, get egg_discount more off
+
+
+def egg_off(text, q):
+    """The easter-egg discount: egg_discount (3%) off the price and the least we take, never under the floor."""
+    if EGG not in (text or "").lower():
+        return q, 0
+    d = promo.theta().get("egg_discount", 0.03)
+    price = max(q["floor"], int(q["price"] * (1 - d)))
+    off = q["price"] - price
+    if off <= 0:
+        return q, 0
+    return dict(q, price=price, least=max(q["floor"], int(q["least"] * (1 - d))), why=q["why"] + f"; egg -{off}"), off
+
+
 def warranty_for(asked, u=None):
     """HQ 11-04 18:50: a warranty only when the buyer asks for one. With 3 h on every goods sale, 41 of 67 broken units
     were refunded in full: 7,775,432 out of the balance (ledger 'broken' entries, 11-03 23:23 to 11-04 18:50).
@@ -370,7 +385,9 @@ class Shop(AgentExecutor):
                 if at_cost < q["price"]:
                     q = dict(q, price=at_cost, least=at_cost, floor=at_cost, why=q["why"] + f"; at cost for {big}")
                     credit = None
+            q, egg = egg_off(text, q)
             deal = self.open[task.id] = {"unit": u, "q": q, "ask": q["price"], "turns": 0, "code": code, "vip": vip,
+                                         "egg": bool(egg),
                                          "talk": 0, "credit": credit, "warranty_asked": need["warranty"],
                                          # a buyer that asked by category (no SKU) gets the category on its receipt
                                          "asked_cat": None if SKU_RE.search(text) else
@@ -399,6 +416,11 @@ class Shop(AgentExecutor):
             q = deal["q"] = promo.quote(self.c, u, deal["code"], me=NAME, stock_n=u.get("stock_n", 1), vip=True)
             deal.update(ask=min(q["price"], deal["ask"]), vip=late)
             log(f"{task.id[:8]} VIP {late} named in a reply: ask {deal['ask']} least {q['least']}")
+        if not deal.get("egg") and EGG in text.lower():  # the easter egg said in a reply
+            q, egg = egg_off(text, q)
+            if egg:
+                deal.update(q=q, ask=min(q["price"], deal["ask"]), egg=True)
+                log(f"{task.id[:8]} easter egg: -{egg}, ask {deal['ask']} least {q['least']}")
         if offer is not None and offer < q["least"] and MATCH_RE.search(text):   # the lowest-price guarantee
             low = market_model.market_low(self.c, u["sku"], hours=24)
             floor = int(u["cost"] * (1 + promo.theta().get("match_margin", 0.05))) + 1
@@ -495,7 +517,8 @@ def build(port):
         name=NAME,
         description=(f"Receipts signed with Ed25519 (shop_fp={FP}); every unit ships with the market-signed "
                      "certificate; the grade claimed is the unit's true grade; an ask never goes up. "
-                     "Ask for a SKU: 'I want to buy <name> (<sku>)'. Quote a member code from an earlier deal."),
+                     "Ask for a SKU: 'I want to buy <name> (<sku>)'. Quote a member code from an earlier deal. "
+                     "storm292513 (이것이 옷일세)."),
         version="3.0.0",
         default_input_modes=["text/plain"],
         default_output_modes=["application/json", "text/plain"],
