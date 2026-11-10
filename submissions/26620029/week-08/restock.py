@@ -74,7 +74,10 @@ HIGH_A_MIN = 0.72            # Claude (2026-11-09 20:22, hourly check): high tie
 # and 1 deal against my 0.733 floor. Below 0.72 a new dear unit has almost no margin and about 1/3 comes as grade C
 A_MIN_DEALS = 5              # grade A settles seen (customers.py sku_a) before a high-tier SKU is judged; until then it is not bought
 BREAK_MAX = 0.15             # Claude (2026-11-10 19:22, the user's plan step 3): a SKU with BREAK_MIN_SETTLES+ market settles
-BREAK_MIN_SETTLES = 100      # breaking above BREAK_MAX is not bought. 12 h ledger: goods break 0.090 on average and mostly evenly
+# Claude (2026-11-11 03:22, plan 2 step 3): spread SKUs that pass every filter above (3+ shops, A price x surge, breaks) keep one
+# unit more than focus_want. Goods unsold 24 h+ were 18.4M against the 29.65M the user set as the line to revert at
+SPREAD_BONUS = 1
+BREAK_MIN_SETTLES = 100     # breaking above BREAK_MAX is not bought. 12 h ledger: goods break 0.090 on average and mostly evenly
 #   (chi2 50 on 28 df); only G07ec17d5 (29 of 163, 0.178) and G03cab593 (19 of 117, 0.162) stood out. A broken unit under warranty
 #   refunds the whole price, and a mid-tier A nets about 0.07 of list, so a 0.15+ break rate loses money on every sale
 FOCUS_MIN_QTY = 2            # units kept of a mid or low focus SKU below the FOCUS_QTY shares. 3 at 10:22, back to 2 at
@@ -217,7 +220,10 @@ def spread_lines(recent, catalog, shops, total, have, c_full, balance, sku_a=Non
         xs.sort(key=lambda x: -(x[0] * catalog[x[1]]["list_price"] if t == 0 else x[0]))
         q = []
         for n, s in xs[:TIER_SKUS]:
-            missing = focus_want(n / total, catalog[s]["list_price"]) - have.get(s, 0)
+            want = focus_want(n / total, catalog[s]["list_price"]) + SPREAD_BONUS
+            if catalog[s]["list_price"] > FOCUS_DEAR:
+                want = min(want, FOCUS_DEAR_QTY)
+            missing = want - have.get(s, 0)
             if missing > 0:
                 q.append((have.get(s, 0) > 0, s, missing))
         q.sort(key=lambda x: x[0])                      # stable: sold-out first, then by the tier's order
