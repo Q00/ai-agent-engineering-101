@@ -259,12 +259,17 @@ def warranty_for(asked, u=None):
     costs exactly what 6 h costs; other shops ship 72 h. Our warranty is now theta warranty_long_h (72) wherever we
     give one.
     HQ 11-10 "평생 보증 제도": with theta warranty_until (the round's end, epoch) the warranty runs until the market
-    closes -- the longest we can honour -- and costs what 6 h costs, as every break comes within 6 h."""
+    closes -- the longest we can honour -- and costs what 6 h costs, as every break comes within 6 h.
+    19:05: WITHDRAWN. The market refused to settle every receipt with 175.3 h ('claim_and_warranty_well_formed', 74
+    settles from 16:42 to 19:05: clearance paid 0 in the last hour while 73% agreed). 72 h settles (ours from 16:10,
+    other shops'). The warranty is capped at theta warranty_max_h (72) whatever the other settings say."""
     t = promo.theta()
     w = t.get("warranty_goods_h") or 0
     long_h = max(6, t.get("warranty_long_h", 6))
     if t.get("warranty_until"):
         long_h = max(long_h, round((t["warranty_until"] - time.time()) / 3600, 1))
+    cap = t.get("warranty_max_h", 72)
+    w, long_h = min(w, cap), min(long_h, cap)
     if u is not None and u.get("kind") == "goods" and u.get("sku") in clearance_skus() \
             and t.get("clearance_warranty_all", False):
         return max(w, long_h)
