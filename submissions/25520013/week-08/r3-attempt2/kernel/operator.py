@@ -271,7 +271,8 @@ class Operator:
         out = [
             (name, state["desc"].get(name) or " ".join((fn.__doc__ or "").split())[:160])
             for name, (fn, agents) in tools.TOOLS.items()
-            if "operator" in agents and name not in HARNESS_TOOLS and name not in state["hidden"]
+            if "operator" in agents and name not in HARNESS_TOOLS
+            and (name not in state["hidden"] or name in auditor.CORE_TOOLS)
         ]
         try:
             out += [(n, "(만든 도구) " + str(d)[:160]) for n, d in made_tools.listing(self.root)]
@@ -922,7 +923,10 @@ def main(argv=None):
                 traj.append("operator", "operator_wake", reason=reason, status="crash", error=type(err).__name__)
         if op.compact() and os.environ.get("A2_AUDITOR") == "1" and not a.dry:
             # meta-harness: audits how the operator works, edits its guidance and tool list, never policy
-            auditor.maybe_run(root, terra, traj, c.now_ts(), secrets=secrets, listed=[n for n, _ in op.listed()])
+            try:
+                auditor.maybe_run(root, terra, traj, c.now_ts(), secrets=secrets, listed=[n for n, _ in op.listed()])
+            except Exception:  # the auditor must never stop the operator daemon
+                pass
         if a.once:
             return 0
         time.sleep(POLL_S)

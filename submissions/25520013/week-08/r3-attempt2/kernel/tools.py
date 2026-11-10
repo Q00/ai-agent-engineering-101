@@ -394,7 +394,7 @@ def stockouts(root, hours=1, now=None):
     by_sku, total = Counter(), 0
     for m in c.tail_json(os.path.join(root, ".r3/metrics.jsonl"), 20_000_000, b'"no_stock"'):
         ts = m.get("ts")
-        if m.get("decision") != "no_stock" or not isinstance(ts, (int, float)) or ts < now - hours * 3600:
+        if m.get("decision") != "no_stock" or not isinstance(ts, (int, float)) or ts < now - hours * 3600 or ts > now:
             continue
         total += 1
         o = m.get("outcome") if isinstance(m.get("outcome"), dict) else {}

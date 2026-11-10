@@ -9,6 +9,7 @@ Missing sibling modules (kernel.audit, kernel.made_tools) count as no data. Corr
 """
 
 import json
+import math
 import os
 import re
 import tempfile
@@ -77,8 +78,12 @@ POLICY_KEYS = (
     "step_frac",
     "accept_c",
 )
+# A key with a number attached (only a particle, an operator or a bracket in between) is a value instruction.
+# "price_mult 실험을 3건" is not: the number belongs to another word.
 VALUE_RX = re.compile(
-    r"(?<![A-Za-z_])(?:" + "|".join(POLICY_KEYS) + r")[^\d\n]{0,25}?\d"
+    r"(?<![A-Za-z_])(?:" + "|".join(POLICY_KEYS) + r")(?:\.[A-Za-z](?![A-Za-z_]))?[`'\"\s)\]]*(?:값)?"
+    r"(?:\s*(?:를|을|은|는|이|가|의|=|:|→|->|to))*\s*[(\[]?\s*\.?\d",
+    re.IGNORECASE,
 )
 SCHEMA = """JSON 객체 하나로만 답함. 모든 항목은 선택임:
 {"findings": ["<실수와 근거 숫자>", ... 5개까지],
@@ -111,7 +116,7 @@ def _atomic_json(path, obj):
 
 
 def _num(v):
-    return isinstance(v, (int, float)) and not isinstance(v, bool)
+    return isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v)
 
 
 def _state(root):
@@ -170,7 +175,7 @@ def _ended(root):
 def due(root, now):
     """Reason to run now, or None: first run, interval passed, or VERDICTS_TRIGGER verdicts since the last run."""
     last = _state(root).get("last_run_ts")
-    if not _num(last):
+    if not _num(last) or last > now:  # a missing, non-finite or future stamp must not silence the auditor
         return "첫 감사"
     if now - last >= _interval_s():
         return "주기 감사"
@@ -189,8 +194,11 @@ def _score(root, now, since):
 
 
 def _worse(before, after):
-    bm, am = before.get("mistakes_per_wake") or 0, after.get("mistakes_per_wake") or 0
-    bi, ai = before.get("idle_share") or 0, after.get("idle_share") or 0
+    bm, am, bi, ai = (
+        x if _num(x) else 0
+        for x in (before.get("mistakes_per_wake"), after.get("mistakes_per_wake"),
+                  before.get("idle_share"), after.get("idle_share"))
+    )
     return (
         am > bm * WORSE_MISTAKES_RATIO + WORSE_MISTAKES_SLACK
         or ai > bi + WORSE_IDLE_DELTA
@@ -214,7 +222,8 @@ def judge_guidance(root, now, traj):
     if after is None or wakes < MIN_WAKES:
         return None
     act["after"] = after
-    if _worse(act["before"], after):
+    thin = not _num(act["before"].get("wakes")) or act["before"]["wakes"] < MIN_WAKES  # no baseline to compare with
+    if not thin and _worse(act["before"], after):
         act["status"] = "reverted"
         prev = act.get("prev_text") if isinstance(act.get("prev_text"), str) else ""
         _atomic_write(_path(root, GUIDANCE), prev[:GUIDANCE_CHARS])
@@ -549,6 +558,8 @@ def _apply_tools(root, now, ask, listed, secrets, traj):
                     "why": "설명은 비어 있지 않은 글이어야 함",
                 }
             )
+        elif tells_value(text):
+            refused.append({"op": "describe", "name": name, "why": "policy 키에 숫자를 붙인 값 지시는 설명에 쓸 수 없음"})
         elif room("describe", name):
             desc[name] = c.mask(" ".join(text.split()), secrets)[:DESC_CHARS]
             applied.append({"op": "describe", "name": name})
@@ -624,7 +635,7 @@ def run(
         ans = parse_last_object(
             terra.complete(prompt, agent="auditor", timeout_s=timeout_s, effort=effort)
         )
-    except (ModelRefused, ModelError, ParseError) as e:
+    except Exception as e:  # noqa: BLE001 - any model-side failure ends this audit with nothing applied
         return _finish(
             root,
             traj,
@@ -644,13 +655,18 @@ def run(
     return _finish(root, traj, now, st, dict(out, status="done"))
 
 
+_RETRY_AT = {}  # root -> earliest next try after a crash (the state file may be the thing that is broken)
+
+
 def maybe_run(root, terra, traj, now, secrets=(), listed=None, force=False):
-    """run() when due() or force, else None. Never raises: a crash is returned and logged as an auditor_run row."""
+    """run() when due() or force, else None. Never raises: a crash is returned and logged as an auditor_run row,
+    and the next try waits MIN_GAP_S so a broken state file cannot call the model on every poll."""
     try:
-        if not force and not due(root, now):
+        if not force and (now < _RETRY_AT.get(root, 0) or not due(root, now)):
             return None
         return run(root, terra, traj, now, secrets=secrets, listed=listed)
     except Exception as e:  # noqa: BLE001 - the auditor must never stop the operator daemon
+        _RETRY_AT[root] = now + MIN_GAP_S
         out = {"status": "crash", "error": f"{type(e).__name__}: {str(e)[:200]}"}
         try:
             traj.append("auditor", "auditor_run", **out)

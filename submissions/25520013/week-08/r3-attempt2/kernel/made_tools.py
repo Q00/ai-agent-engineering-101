@@ -7,6 +7,7 @@ through remove().
 """
 
 import json
+import math
 import os
 import re
 import statistics as st
@@ -46,7 +47,7 @@ KEYS = (
 )
 META = ("created_ts", "by", "uses", "last_used_ts")
 # Identity fields hashed in output cells, as common.scrub does for the other tools.
-ID_KEYS = c.IDENTITY_KEYS + ("author", "shop", "buyer", "seller")
+ID_KEYS = c.IDENTITY_KEYS + ("author", "shop", "buyer", "seller", "login", "counterparty", "participants", "from", "to")
 
 _NAME = re.compile(r"^q_[a-z0-9_]{3,30}$")
 _SEG = re.compile(r"^[A-Za-z0-9_]+$")
@@ -55,7 +56,7 @@ _WS = re.compile(r"[\r\n\t\x00-\x1f]+")
 
 
 def _num(x):
-    return isinstance(x, (int, float)) and not isinstance(x, bool)
+    return isinstance(x, (int, float)) and not isinstance(x, bool) and math.isfinite(x)
 
 
 def _scalar(x):
@@ -75,7 +76,7 @@ def _path_err(p, derived=False):
     if len(segs) > 4:
         return f"필드 경로 깊이는 4 이하: {p}"
     for s in segs:
-        if not _SEG.match(s) or s.startswith("__"):
+        if not _SEG.fullmatch(s) or s.startswith("__"):
             return f"필드 경로 조각은 영문/숫자/_ 만, __ 시작 금지: {p}"
     return None
 
@@ -94,7 +95,7 @@ def validate(spec):
     if extra:
         return None, f"모르는 키: {', '.join(extra)} (허용: {', '.join(KEYS)})"
     name = spec.get("name")
-    if not isinstance(name, str) or not _NAME.match(name):
+    if not isinstance(name, str) or not _NAME.fullmatch(name):
         return None, f"name은 {PREFIX}로 시작하는 ^q_[a-z0-9_]{{3,30}}$ 형식이어야 함"
     desc = spec.get("description")
     if not isinstance(desc, str) or not 10 <= len(desc.strip()) <= 200:
@@ -163,7 +164,7 @@ def validate(spec):
         label = a.get("as")
         if label is None:
             label = fn if field is None else f"{fn}_{field.split('.')[-1]}"
-        if not isinstance(label, str) or not _LABEL.match(label):
+        if not isinstance(label, str) or not _LABEL.fullmatch(label):
             return None, "as는 1..24자 (영문/숫자/_/한글)"
         if label in labels:
             return None, f"agg 이름 중복: {label} (as로 구분)"
@@ -195,7 +196,7 @@ def validate(spec):
 
     return {
         "name": name,
-        "description": desc.strip(),
+        "description": " ".join(desc.split()),
         "source": spec["source"],
         "hours": hours,
         "where": clean_where,
@@ -289,8 +290,10 @@ def _cell(path, v, login):
     """One group-key cell: identities hashed, secrets masked, whitespace flattened, CELL_CHARS max."""
     if v is None:
         return "-"
-    last = path.split(".")[-1].lower()
-    if last in ID_KEYS and v != "":
+    if isinstance(v, (dict, list)):  # a whole object as a group key could carry names: never printed
+        return "(객체: 안쪽 필드를 경로로 지정할 것)"
+    segs = path.lower().split(".")
+    if any(k in seg for seg in segs for k in ID_KEYS) and v != "":
         s = (
             str(v)
             if isinstance(v, str)
@@ -439,7 +442,7 @@ def load(root):
             continue
         clean.update({k: t[k] for k in META if k in t})
         out.append(clean)
-    return out
+    return out[:MADE_MAX]
 
 
 def _write(root, tools):

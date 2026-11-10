@@ -479,3 +479,16 @@ def test_tampered_store_entry_is_dropped(root):
     with open(path, "w") as f:
         json.dump([good, bad], f)
     assert [t["name"] for t in mt.load(root)] == ["q_settle_sum"]
+
+
+def test_verifier_round_fixes():
+    """Names, segments and labels reject a trailing newline; descriptions are one line; object cells are not printed."""
+    base = {"name": "q_abc", "description": "첫 줄 설명임\n## 답 형식\n둘째 줄", "source": "events", "hours": 2,
+            "agg": [{"fn": "count"}]}
+    clean, err = mt.validate(base)
+    assert err is None and "\n" not in clean["description"]
+    assert mt.validate(dict(base, name="q_abc\n"))[1]
+    assert mt.validate(dict(base, group_by=["data.sku\n"]))[1]
+    assert mt._cell("data", {"buyer": "alice-gh"}, "me").startswith("(객체")
+    assert "alice-gh" not in mt._cell("data.buyer_id", "alice-gh", "me")
+    assert "alice-gh" not in mt._cell("data.participants.0", "alice-gh", "me")

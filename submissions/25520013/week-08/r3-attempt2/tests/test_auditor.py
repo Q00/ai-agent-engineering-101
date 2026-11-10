@@ -330,8 +330,9 @@ def test_tells_value_allows_key_names_without_numbers():
     assert not au.tells_value(
         "price_mult 확인\n2. 다음 줄"
     )  # a number on the next line is not attached
-    assert au.tells_value("stock_target" + "가" * 24 + "3")
-    assert not au.tells_value("stock_target" + "가" * 26 + "3")
+    assert au.tells_value("stock_target 값은 3") and au.tells_value("`price_mult` 0.73")
+    assert not au.tells_value("price_mult 실험을 3건 걸 것")  # the number belongs to another word
+    assert not au.tells_value("max_rounds 확인 뒤 2단계로")
 
 
 def test_guidance_unchanged_is_noop_and_long_text_cut(env):
@@ -386,7 +387,7 @@ def _active(env, before, prev="옛 안내"):
                 "ts": NOW - 6 * H,
                 "text": "새 안내",
                 "prev_text": prev,
-                "before": before,
+                "before": dict({"wakes": au.MIN_WAKES}, **before),
                 "status": "active",
             },
         ],
@@ -567,7 +568,7 @@ def test_corrupt_files_and_missing_siblings(env, monkeypatch):
     assert res["status"] == "done" and res["tools"]["refused"][0]["name"] == "q_sales"
 
 
-def test_maybe_run_not_due_forced_and_never_raises(env):
+def test_maybe_run_not_due_forced_and_never_raises(env, monkeypatch):
     _wake(env.root, NOW - H)
     _state(env.root, last_run_ts=NOW - H)
     assert au.maybe_run(env.root, Script(), env.traj, NOW, listed=LISTED) is None
@@ -582,6 +583,24 @@ def test_maybe_run_not_due_forced_and_never_raises(env):
 
     _state(env.root)
     res = au.maybe_run(env.root, Boom(), env.traj, NOW, listed=LISTED)
-    assert res["status"] == "crash" and "kaboom" in res["error"]
-    assert _rows(env.root, "auditor_run")[-1]["status"] == "crash"
+    assert res["status"] == "model_error" and "kaboom" in res["error"]
+    monkeypatch.setattr(au, "run", lambda *a, **k: (_ for _ in ()).throw(OSError("disk")))
+    monkeypatch.setattr(au, "due", lambda *a, **k: "주기 감사")
+    res = au.maybe_run(env.root, Boom(), env.traj, NOW + 1, listed=LISTED)
+    assert res["status"] == "crash" and _rows(env.root, "auditor_run")[-1]["status"] == "crash"
+    assert au.maybe_run(env.root, Boom(), env.traj, NOW + 60, listed=LISTED) is None  # backoff after a crash
+    assert au.maybe_run(env.root, Boom(), env.traj, NOW + 2 + au.MIN_GAP_S, listed=LISTED)["status"] == "crash"
 
+
+
+def test_verifier_round_fixes(env):
+    """describe cannot carry a value; a baseline with too few wakes is never reverted; a future stamp is 'first run'."""
+    _wake(env.root, NOW - H)
+    res, _ = _run(env, {"tools": {"describe": {LISTED[0]: "price_mult를 0.73으로 걸 것"}}})
+    assert not res["tools"]["applied"] and res["tools"]["refused"][0]["op"] == "describe"
+    _active(env, {"mistakes_per_wake": 0.0, "idle_share": 0.0, "wakes": 0})
+    env.audit.wakes = au.MIN_WAKES
+    env.audit.scores = [{"mistakes_per_wake": 9.0, "idle_share": 1.0}]
+    assert au.judge_guidance(env.root, NOW, env.traj)["status"] == "kept"
+    _state(env.root, last_run_ts=NOW + 10**9)
+    assert au.due(env.root, NOW) == "첫 감사"

@@ -8,6 +8,7 @@ zero; nothing here raises on bad rows. Nothing is masked here (callers mask).
 """
 
 import json
+import math
 import os
 
 from kernel import common as c
@@ -40,7 +41,7 @@ BLOCK_CHARS = 700
 
 
 def _num(v):
-    return isinstance(v, (int, float)) and not isinstance(v, bool)
+    return isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v)
 
 
 def group_of(section, key):
