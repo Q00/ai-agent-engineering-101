@@ -232,13 +232,20 @@ def warranty_for(asked, u=None):
     11-10 15:30 (HQ contingency): off for clearance unless theta clearance_warranty_all. Measured: clearance paid rate
     after agreement was 75% in the 3 h before 6 h-on-every-sale and 69% in the 3.3 h after (no gain), while our
     clearance units broke inside the 6 h and were refunded in full (3.7M in 2 h; market goods break rate 8.3%).
-    Clearance now follows the general rule: 6 h when the buyer asks."""
-    w = promo.theta().get("warranty_goods_h") or 0
+    Clearance now follows the general rule: 6 h when the buyer asks.
+    15:52: that revert was wrong -- it looked at paid/agreed only. With 6 h on every clearance sale, quote -> agreement
+    went 32% -> 47% and paid deals per hour 24.7 -> 36.6. Back on (theta clearance_warranty_all).
+    16:00: the ledger's 676 breaks in 8 h all came within 6.0 h of the sale (half within 3 h), so a longer warranty
+    costs exactly what 6 h costs; other shops ship 72 h. Our warranty is now theta warranty_long_h (72) wherever we
+    give one."""
+    t = promo.theta()
+    w = t.get("warranty_goods_h") or 0
+    long_h = max(6, t.get("warranty_long_h", 6))
     if u is not None and u.get("kind") == "goods" and u.get("sku") in clearance_skus() \
-            and promo.theta().get("clearance_warranty_all", False):
-        return max(w, 6)
+            and t.get("clearance_warranty_all", False):
+        return max(w, long_h)
     if asked:
-        return max(w, 6)
+        return max(w, long_h)
     return w if not promo.theta().get("warranty_on_request", True) else 0
 
 

@@ -455,10 +455,10 @@ def clearance_groupbuy(c, t, now):
     if not rows or not refs:
         return []
     data = {"type": "group_buy_proposal", "items": rows, "seller": "dragonash", "until": "2026-11-17 23:59 KST",
-            "how": "ask dragonash for the SKU; the offer data shows the price", "warranty": "6 h if you ask for it",
+            "how": "ask dragonash for the SKU; the offer data shows the price and the warranty", "warranty": _clear_w()[0],
             "disclosure": "same owner as this buyer"}
     js = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
-    ko = "[공동구매 제안] 침구 주문이 있는 바이어께: 아래 SKU를 dragonash에서 매 시간 선착순 30개, 원가 수준(보증은 요청 시 6시간). " \
+    ko = "[공동구매 제안] 침구 주문이 있는 바이어께: 아래 SKU를 dragonash에서 매 시간 선착순 30개, 원가 수준(보증: " + _clear_w()[1] + "). " \
          "24시간 시장 체결 건수는 공개 원장 기준. 이 바이어와 dragonash는 같은 주인입니다."
     text = (js + "\n" + HUMAN + "\n" + ko)[:1000]
     return [{"topic": "clearance_groupbuy", "as": "buyer", "kind": "price_data", "refs": refs[:6], "score": 7.8,
@@ -730,12 +730,13 @@ def follow_ads(c, md, now):
         t_ = promo.theta()
         clear = bool((_groupbuy_skus().get(sku) or {}).get("clearance")) and bool(t_.get("clearance_warranty_all", False))
         w0 = t_.get("warranty_goods_h") or 0
+        lh = max(w0, 6, t_.get("warranty_long_h", 6))
         if u.get("kind") != "goods":
             w_en, w_ko = "none", "없음"
         elif clear:
-            w_en, w_ko = f"{max(w0, 6)}h on every sale", f"모든 판매에 {max(w0, 6)}시간"
+            w_en, w_ko = f"{lh}h on every sale (refund if it breaks)", f"모든 판매에 {lh}시간(고장 시 전액 환불)"
         elif t_.get("warranty_on_request", True):
-            w_en, w_ko = f"{max(w0, 6)}h if you ask for it, otherwise none", f"요청하시면 {max(w0, 6)}시간, 요청 없으면 없음"
+            w_en, w_ko = f"{lh}h if you ask for it, otherwise none", f"요청하시면 {lh}시간, 요청 없으면 없음"
         else:
             w_en, w_ko = (f"{w0}h", f"{w0}시간") if w0 else ("none", "없음")
         mm = t_.get("match_margin", 0.05)
@@ -770,6 +771,16 @@ def follow_ads(c, md, now):
                              "order_with": f"I want to buy {u['name'][:20]} ({sku})"},
                     "text": ko})
     return out
+
+
+def _clear_w():
+    """The clearance warranty as the clerk gives it (shop_r3.warranty_for): (English, Korean)."""
+    import promo
+    t = promo.theta()
+    h = max(t.get("warranty_goods_h") or 0, 6, t.get("warranty_long_h", 6))
+    if t.get("clearance_warranty_all", False):
+        return f"{h} h on every sale, full refund if it breaks", f"모든 판매에 {h}시간, 고장 시 전액 환불"
+    return f"{h} h if you ask for it", f"요청 시 {h}시간"
 
 
 def _groupbuy_skus():
