@@ -19,6 +19,7 @@ import time
 
 from kernel import brief as b
 from kernel import common as c
+from kernel import experiments as ex
 from kernel import harness as hz
 from kernel import policy_edit, tools, versions
 from kernel.agent import ParseError, parse_last_object
@@ -43,6 +44,25 @@ BOUNDS = {
     "rank_jump": (1, 50, 3),
     "bankrupt_near_factor": (1.0, 20.0, 2.0),
 }
+# Compact mode (DESIGN 14.2, A2_OPERATOR_COMPACT=1, only while LIVE is off): a small always-on prompt (job text, guide
+# sections 1 and 7, state card, the operator's notes), details through tools, observations kept one step, every policy
+# edit registered as an experiment the kernel judges and reverts (kernel.experiments)
+JOB = os.path.join(HERE, "OPERATOR_JOB.md")
+COMPACT_STEPS = 6  # model calls per wake
+COMPACT_TOOLS = 3  # tool calls per step
+COMPACT_OBS = 6_000  # chars kept of one tool result
+NOTES_CHARS = 2_000
+BUSY_INTERVAL_S = 3600  # heartbeat while an experiment runs; a verdict, a rank jump or an alarm wakes at once
+REV_WEIGHT_MAX = 0.2
+COMPACT_SCHEMA = """한 단계에 JSON 객체 하나로만 답함. 둘 중 하나:
+1. 도구 호출 (한 번에 3개까지): {"tools": [{"tool": "<도구 이름>", "args": {<인자>}}], "keep": "<바로 앞 관찰에서 남길 결론, 300자 안>"}
+2. 끝내기: {"done": {
+  "policy": [{"section": "defaults.food|defaults.goods|<상품군 전체 경로>|shop|buyer.defaults.food|buyer.defaults.goods", "key": "<키>", "value": <수>, "reason": "<근거 숫자>", "expect": "<기대 효과: 어떤 숫자가 어느 쪽으로>", "window_h": <2~8, 생략 가능>}],
+  "forum": [{"post": "<글>", "as": "shop|buyer"}],
+  "notes": "<다음 점검의 네가 읽을 메모 전체, 2,000자 안. 생략하면 그대로 둠>",
+  "note": "<이번 점검 한 줄 요약>"}}
+done의 모든 항목은 선택임. 지금 값과 허용 범위는 policy 도구로 봄.
+policy 키는 항목마다 숫자 하나: 판매 구역은 price_mult, min_margin, concession, max_rounds, stock_target, qty_per_buy, warranty_uplift, fresh_discount.B|C. goods 구역은 warranty_hours.A|B|C도. shop은 grade_floor_list.A|B|C와 c_first_leaves.<잎 이름> (1 넣기, 0 빼기). buyer.defaults.*는 max_pay_frac, open_frac (첫 제시가), step_frac (회차마다 올리는 폭), accept_c.max_pay_frac, accept_c.open_frac. bounds는 사람만 고침."""
 RESERVED_ARGS = ("harness_root", "dry", "now")
 HARNESS_TOOLS = ("versions", "harness_read", "replay_probe")
 
@@ -166,6 +186,8 @@ class Operator:
     def wake_reason(self, now=None):
         """Why the operator should wake now, or None. Flags that cleared are saved so the next onset wakes again."""
         now = c.now_ts() if now is None else now
+        if self.compact():
+            return self._wake_reason_compact(now)
         s, st = self.settings(), self._state()
         ev = self.events_now(s)
         reasons = []
@@ -264,6 +286,8 @@ class Operator:
     def wake(self, reason, now=None):
         """One wake: tool loop until done or max_steps. -> summary dict (also written as an operator_wake row)."""
         now = c.now_ts() if now is None else now
+        if self.compact():
+            return self._wake_compact(reason, now)
         s, st = self.settings(), self._state()
         ev = self.events_now(s)
         st.update(last_wake_ts=now, last_rank=ev["rank"], shop_missing=ev["shop_missing"],
@@ -326,6 +350,201 @@ class Operator:
     def _end(self, reason, steps, status, result):
         self.traj.append("operator", "operator_wake", reason=reason, steps=steps, status=status, result=result)
         return dict(result, status=status, steps=steps)
+
+    # ------------------------------------------------------------ compact mode
+    def compact(self):
+        return os.environ.get("A2_OPERATOR_COMPACT") == "1" and not self.live()
+
+    def _cats(self):
+        return {v.get("category") for v in b._catalog(self.root).values() if isinstance(v, dict) and v.get("category")}
+
+    def _notes(self):
+        try:
+            with open(os.path.join(self.root, "a2/operator_notes.md"), encoding="utf-8") as f:
+                return f.read()[:NOTES_CHARS]
+        except OSError:
+            return ""
+
+    def _rev_weight(self):
+        """What one won of revenue is worth in net-profit won for the shop score, from the newest board: shop all =
+        0.5 pct(book) + 0.3 pct(revenue) + ..., and a won moves a percentile by the density of shops around our
+        value (shops within 25% of it). Capped at REV_WEIGHT_MAX; 0 when the board cannot say."""
+        snaps = b.board_snapshots(self.root)
+        if not snaps:
+            return 0.0
+        shops = [r for r in (c.load_json(snaps[-1][1], {}) or {}).get("shops") or [] if isinstance(r, dict)]
+        me = next((r for r in shops if c.is_mine(r, self.login)), None)
+        if me is None:
+            return 0.0
+
+        def num(v):
+            return isinstance(v, (int, float)) and not isinstance(v, bool)
+
+        def density(k):
+            v = me.get(k)
+            if not num(v) or v <= 0:
+                return None
+            return sum(1 for r in shops if r is not me and num(r.get(k)) and abs(r[k] - v) <= 0.25 * v) / (0.5 * v)
+
+        db, dr = density("book"), density("revenue")
+        if not db or not dr:
+            return 0.0
+        return round(min(REV_WEIGHT_MAX, 0.3 * dr / (0.5 * db)), 4)
+
+    def _wake_reason_compact(self, now):
+        """Compact mode wakes on events: an experiment verdict, a rank jump or an alarm at once; otherwise every
+        interval_s while nothing is being tested and every BUSY_INTERVAL_S while an experiment runs. The experiment
+        ledger is ticked here on every poll (code only, no model call)."""
+        s, st = self.settings(), self._state()
+        ev = self.events_now(s)
+        ended = [e for e in ex.tick(self.root, now, self.traj, categories=self._cats()) if e.get("status") != "running"]
+        reasons = []
+        if ended:
+            reasons.append(f"실험 판정 {len(ended)}건 (상태 카드의 [실험] 줄)")
+        last = st.get("last_wake_ts")
+        gap = max(s["interval_s"], BUSY_INTERVAL_S) if ex.running(self.root) else s["interval_s"]
+        if last is None or now - last >= gap:
+            reasons.append("주기 점검")
+        if ev["rank"] and st.get("last_rank") and abs(ev["rank"] - st["last_rank"]) >= s["rank_jump"]:
+            reasons.append(f"Everyone 순위 {st['last_rank']}위에서 {ev['rank']}위로 바뀜")
+        if ev["shop_missing"] and not st.get("shop_missing"):
+            reasons.append("우리 가게가 가게 목록에서 빠짐")
+        if ev["bankrupt_near"] and not st.get("bankrupt_near"):
+            reasons.append("잔고가 파산선 가까이 내려감")
+        cleared = [k for k in ("shop_missing", "bankrupt_near") if st.get(k) and not ev[k]]
+        if cleared:
+            for k in cleared:
+                st[k] = False
+            self._save_state(st)
+        return ", ".join(reasons) or None
+
+    def _wake_compact(self, reason, now):
+        s, st = self.settings(), self._state()
+        ev = self.events_now(s)
+        st.update(last_wake_ts=now, last_rank=ev["rank"], shop_missing=ev["shop_missing"],
+                  bankrupt_near=ev["bankrupt_near"])
+        last_brief = st.get("last_brief_ts")
+        st["last_brief_ts"] = now
+        self._save_state(st)
+        loaded, _ = self._always_text()  # the harness only routes the call here (effort, timeout); JOB is the job text
+        route = (loaded[0].routing.get("operator.wake") or {}) if loaded else {}
+        try:
+            with open(JOB, encoding="utf-8") as f:
+                job = f.read()
+        except OSError:
+            job = ""
+        base = "\n\n".join(
+            [
+                job,
+                tools.guide_always(),
+                "## 상태 카드 (커널이 모은 사실, 해석 없음)",
+                b.build_compact(self.root, now, last_brief, extra=ex.lines(self.root, now)),
+                "## 네 메모 (지난 점검의 네가 남김)",
+                c.mask(self._notes(), self.secrets) or "없음",
+                "## 깨운 이유",
+                reason,
+                "## 도구",
+                "\n".join(
+                    f"- {name}: {' '.join((fn.__doc__ or '').split())[:160]}"
+                    for name, (fn, agents) in tools.TOOLS.items()
+                    if "operator" in agents and name not in HARNESS_TOOLS
+                ),
+                "## 답 형식",
+                COMPACT_SCHEMA,
+            ]
+        )
+        kept, fresh, chars, calls, step = [], [], 0, 0, 0
+        for step in range(COMPACT_STEPS):
+            last_step = step == COMPACT_STEPS - 1
+            prompt = (
+                base
+                + "\n\n## 남긴 결론\n\n"
+                + ("\n".join(kept) or "없음")
+                + "\n\n## 바로 앞 단계의 관찰 (다음 단계에는 지워짐)\n\n"
+                + ("\n\n".join(fresh) or "없음")
+            )
+            if last_step:
+                prompt += "\n\n도구 단계를 다 씀. 이번 답은 반드시 done 객체여야 함."
+            chars += len(prompt)
+            calls += 1
+            try:
+                act = parse_last_object(self._ask(prompt, route))
+            except (ModelRefused, ModelError) as e:
+                return self._end(reason, step + 1, "model_error",
+                                 {"error": f"{type(e).__name__}: {e}", "prompt_chars": chars, "calls": calls})
+            except ParseError:
+                kept.append(f"[단계 {step + 1}] 형식 오류: JSON 객체 하나로 답해야 함")
+                continue
+            if fresh:
+                keep = act.get("keep")
+                kept.append(
+                    f"[단계 {step}] "
+                    + (c.mask(keep, self.secrets)[:400] if isinstance(keep, str) and keep.strip()
+                       else "(결론을 남기지 않음) " + " / ".join(" ".join(x.split())[:150] for x in fresh))
+                )
+            if isinstance(act.get("done"), dict):
+                result = self._finish_compact(act["done"], now)
+                result.update(prompt_chars=chars, calls=calls)
+                return self._end(reason, step + 1, "done", result)
+            if last_step:
+                break
+            asked = act.get("tools") if isinstance(act.get("tools"), list) else [act] if act.get("tool") else []
+            fresh = []
+            for t in asked[:COMPACT_TOOLS]:
+                if not isinstance(t, dict):
+                    continue
+                obs = c.cap(self._run_tool(t.get("tool"), t.get("args")), COMPACT_OBS)
+                fresh.append(
+                    json.dumps({"tool": t.get("tool"), "args": t.get("args")}, ensure_ascii=False, default=str)[:300]
+                    + "\n" + obs
+                )
+            if not fresh:
+                fresh = ["도구 호출이 없음: tools 목록이나 done 객체로 답해야 함"]
+        return self._end(reason, step + 1, "no_done", {"prompt_chars": chars, "calls": calls})
+
+    def _finish_compact(self, done, now):
+        """Apply a compact done: each policy item that no running experiment blocks is written through policy_edit
+        and registered as an experiment; forum posts are queued; notes replace the operator's notes file."""
+        result = {"note": c.mask(str(done.get("note") or ""), self.secrets)[:500]}
+        items = done.get("policy")
+        if isinstance(items, list) and items:
+            cats, out, n_ok, weight = self._cats(), [], 0, None
+            for i, it in enumerate(items):
+                if not isinstance(it, dict):
+                    out.append({"ok": False, "error": "each policy item must be an object"})
+                    continue
+                if n_ok >= policy_edit.MAX_PER_WAKE:
+                    out.append({"ok": False, "error": f"한 점검에 {policy_edit.MAX_PER_WAKE}개까지"})
+                    continue
+                sec, key = it.get("section"), it.get("key")
+                msg = ex.blocked(self.root, sec, key, now) if isinstance(sec, str) and isinstance(key, str) else None
+                if msg:
+                    out.append({"ok": False, "error": msg})
+                    continue
+                try:  # now + i keeps the backup names of one wake apart
+                    r = policy_edit.apply(self.root, [it], self.traj, now + i, categories=cats)[0]
+                except Exception as e:  # a value the edit code did not expect is a refusal, not a crashed wake
+                    r = {"ok": False, "error": f"{type(e).__name__}: {e}"}
+                if r.get("ok"):
+                    n_ok += 1
+                    weight = self._rev_weight() if weight is None else weight
+                    wh = it.get("window_h")
+                    wh = wh if isinstance(wh, (int, float)) and not isinstance(wh, bool) else None
+                    e = ex.register(self.root, r, it.get("expect") or it.get("reason"), wh, now, self.traj,
+                                    rev_weight=weight)
+                    r = dict(r, experiment=e["id"], eval_kst=c.kst(e["eval_ts"]))
+                out.append(r)
+            result["policy"] = out
+        if "forum" in done:
+            result["forum"] = self._forum(done["forum"])
+        if isinstance(done.get("notes"), str) and done["notes"].strip():
+            path = os.path.join(self.root, "a2/operator_notes.md")
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            with open(path + ".tmp", "w", encoding="utf-8") as f:
+                f.write(c.mask(done["notes"], self.secrets)[:NOTES_CHARS])
+            os.replace(path + ".tmp", path)
+            result["notes_chars"] = min(len(done["notes"]), NOTES_CHARS)
+        return result
 
     # ------------------------------------------------------------ done
     def _apply_edits(self, edits, now):
