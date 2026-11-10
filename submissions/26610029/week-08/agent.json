@@ -1,6 +1,7 @@
 {
-  "harness": "claude -p --model haiku --tools \"\" --setting-sources \"\" --no-session-persistence (Claude Code CLI, headless mode, no tools, no project settings; same model on both sides, matching the README's reference run).",
-  "seller": {"cmd": "python3 seller.py --port {port}"},
+  "harness": "claude -p --model haiku --tools \"\" --setting-sources \"\" --no-session-persistence (Claude Code CLI, headless mode, no tools, no project settings). Round 3: the harness only negotiates on the shop side; picking shops, buyer offers and restock are code over the shared Neon DB.",
+  "seller": {"cmd": "python3 seller_r3.py --port {port}"},
   "buyer": {"cmd": "python3 buyer.py --url {url} --item {item} --budget {budget}"},
-  "market_buyer": {"cmd": "python3 market_buyer.py --shops {shops} --item {item} --budget {budget}"}
+  "market_buyer": {"cmd": "python3 market_buyer.py --shops {shops} --item {item} --budget {budget} --order {order}"},
+  "restock": {"cmd": "python3 restock.py --state {state}"}
 }
