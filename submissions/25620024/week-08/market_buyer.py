@@ -647,7 +647,9 @@ def quote(c):
             rpc(url, "CancelTask", {"id": task["id"]})
             return {"c": c, "error": f"offered unit has {left} h left, need {NEED['hours']} h"}
         wh = (off or {}).get("warranty_hours")
-        if ask and NEED.get("warranty") and wh is not None and wh < NEED["warranty"]:   # warranty A/B, arm W
+        if wh is None and NEED.get("warranty"):          # HQ 11-10 16:20: the warranty is often only in the text --
+            wh = warranty_in_text(status_text(task) or "")   # psyoung82 wrote "no warranty", we agreed, the kit then
+        if ask and NEED.get("warranty") and wh is not None and wh < NEED["warranty"]:   # refused to pay (23 in the log)
             rpc(url, "CancelTask", {"id": task["id"]})
             return {"c": c, "error": f"offered warranty {wh} h, need {NEED['warranty']} h"}
         grade = (off or {}).get("grade")
@@ -737,6 +739,20 @@ def correct_receipt(pick, offer, sku, agreed, ok_items):
 
 
 WARRANTY_H = 6           # goods can break up to 6 h after the sale (agent.md)
+
+
+WARRANTY_NO_RE = re.compile(r"\bno warranty\b|without (a )?warranty|warranty[ =:]*(none|0 ?h?\b)|보증 ?없", re.I)
+WARRANTY_H_RE = re.compile(r"(\d+(?:\.\d+)?)[ -]?(?:h|hours?|hour|시간)[ -]*(?:of )?(?:warranty|보증)|"
+                           r"(?:warranty|보증)[ =:]*(\d+(?:\.\d+)?) ?(?:h|hours?|시간)", re.I)
+
+
+def warranty_in_text(text):
+    """The warranty a seller's offer text states, in hours: 0 for "no warranty", the hours for "24-hour warranty" /
+    "warranty=72h" / "보증 6시간", None when the text says nothing."""
+    m = WARRANTY_H_RE.search(text or "")
+    if m:
+        return float(m.group(1) or m.group(2))
+    return 0.0 if WARRANTY_NO_RE.search(text or "") else None
 
 
 def warranty_arm(order):
