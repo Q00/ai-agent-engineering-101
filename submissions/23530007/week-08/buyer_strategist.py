@@ -33,7 +33,7 @@ import market_probe as probe
 import model_env
 import strategist as shop
 from harness import last_json_object
-from strategist_memory import Memory, market_picture, my_turn, post_board, read_board, read_digest, valid_requests
+from strategist_memory import Memory, buyer_picture, market_picture, operator_note, my_turn, post_board, read_board, read_digest, valid_requests
 
 HERE = Path(__file__).resolve().parent
 AUTO = HERE / "params_auto_buyer.json"
@@ -231,10 +231,10 @@ def evidence(mem, b, auto, params):
             "rules_by_shop_6h": rules_by_shop(r6),
             "throughput": throughput(r6),
             "our_shop_sells_at_24h": shop_prices(now),
-            "market_picture": market_picture(),
+            "market_picture": buyer_picture(market_picture()),
             "ab_tests": ab_tests(), "buy_health": buy_health(now),
             "saved_mix_vs_peers_6h": saved_mix(r6),
-            "from_operator": shop.read(OPERATOR_NOTE, {}).get("note") or None,
+            "from_operator": operator_note(OPERATOR_NOTE, OPERATOR_ANSWER),
             "your_watch_list": mem.d["working"].get("watch", [])}
 
 

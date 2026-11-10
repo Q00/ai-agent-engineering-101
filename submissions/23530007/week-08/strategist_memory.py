@@ -235,6 +235,37 @@ def market_picture():
         return {"error": f"{type(e).__name__}: {e}"}
 
 
+def operator_note(note_file, answer_file, max_age_h=6):
+    """11-10 (user: API budget, trim the prompts): the operator's note goes into a strategist's evidence while it
+    is younger than max_age_h or has no answer written after it; older answered notes stay out (the full history of
+    notes is in operator_notes_archive.jsonl)."""
+    import json as _j
+    try:
+        n = _j.loads(Path(note_file).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    if not n.get("note"):
+        return None
+    try:
+        answered = _j.loads(Path(answer_file).read_text(encoding="utf-8")).get("t", 0) > n.get("t", 0)
+    except (OSError, ValueError):
+        answered = False
+    if answered and time.time() - n.get("t", 0) > max_age_h * 3600:
+        return None
+    return n["note"]
+
+
+def buyer_picture(mp):
+    """11-10 (API budget): the buyer's copy of the market picture without the shop-side parts (what sells, top
+    shops, what buyers asked at our shop); the buyer has its own shop values (market_value_6h, by_shop_24h)."""
+    if not isinstance(mp, dict):
+        return mp
+    out = {k: v for k, v in mp.items() if k not in ("what_sells", "top_shops")}
+    if isinstance(out.get("what_buyers_buy"), dict):
+        out["what_buyers_buy"] = {k: v for k, v in out["what_buyers_buy"].items() if k != "asked_at_our_shop_24h"}
+    return out
+
+
 def post_board(role, read, findings, notes=None, requests=None):
     """Store this strategist's read, findings, notes for the other one and requests to the curator."""
     with _db() as db:

@@ -44,7 +44,7 @@ from pathlib import Path
 import market_probe as probe
 import product_memory as pm
 from harness import last_json_object
-from strategist_memory import Memory, market_picture, my_turn, post_board, read_board, read_digest, valid_requests
+from strategist_memory import Memory, market_picture, my_turn, operator_note, post_board, read_board, read_digest, valid_requests
 
 HERE = Path(__file__).resolve().parent
 AUTO = HERE / "params_auto.json"
@@ -254,7 +254,7 @@ def evidence(m, mem, b):
             "market_picture": market_picture(), "your_watch_list": w.get("watch", []),
             "shop_score_parts": shop_score_parts(),
             "settle_health": settle_health(), "lead_guard": read(HERE / ".market" / "warranty_guard.json", {}).get("why"),
-            "from_operator": read(HERE / "operator_to_shop.json", {}).get("note") or None,
+            "from_operator": operator_note(HERE / "operator_to_shop.json", HERE / "shop_answer_to_operator.json"),
             "woken_by": w.get("woken_by")}
 
 
