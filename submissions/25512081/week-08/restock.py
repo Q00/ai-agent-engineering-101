@@ -469,11 +469,19 @@ def main():
     # food the seller no longer ships to a buyer who does not state its need (under 0.75 of shelf_hours left, seller_r3
     # NEED_SHARE) does not count as held, so the category is bought again (Nov 10 15:48: 116 of 136 food units were
     # under it, many supplied at 0.2-0.7 of their shelf life, restock bought 0 lines and food deals fell from ~65/h to 12/h)
+    # Food under that but with a quarter of its shelf life left still sells to buyers that state a shorter need
+    # (needs were 0.25, 0.5 or 0.75 of shelf_hours), so it counts half: counting it as nothing bought food without
+    # end (Nov 11 03:30: 564 food units, 8.5M, 497 of them under 0.75; units arrive at 0.15-1.0 of their shelf
+    # life at random, mean ~0.55, whatever the SKU).
     def ships(u):
         shelf = (catalog.get(u["sku"]) or {}).get("shelf_hours")
-        return u.get("kind") != "food" or not shelf or not u.get("expires_at") \
-            or (u["expires_at"] - time.time()) / 3600 >= SELL_SHARE * shelf
-    held = Counter(u["category"] for u in units if ships(u))
+        if u.get("kind") != "food" or not shelf or not u.get("expires_at"):
+            return 1.0
+        left = (u["expires_at"] - time.time()) / 3600 / shelf
+        return 1.0 if left >= SELL_SHARE else 0.5 if left >= 0.25 else 0.0
+    held = Counter()
+    for u in units:
+        held[u["category"]] += ships(u)
     stock_cost = sum(u["cost"] for u in units)
     cash = inv.get("balance", 0) - CASH_FLOOR
     scale_caps(inv, stock_cost)
@@ -525,12 +533,12 @@ def main():
             break
         if cat in VALUE_SKU:                         # the revenue budget names the SKU and its units
             sku, n = VALUE_SKU[cat]
-            gap = max(n - held_sku[sku], want.get(cat, 0) - held.get(cat, 0))
+            gap = max(n - held_sku[sku], int(want.get(cat, 0) - held.get(cat, 0)))
             if catalog[sku]["list_price"] >= BIG_TICKET:  # Nov 6 18:00: the category's unit target (15) bought
                 gap = n - held_sku[sku]      # 9 stone beds and 4 Jakomo sofas past their value caps (4 and 6)
                 gap = n - sellable(units, sku, catalog, st)   # units priced out of the market do not fill it
         else:
-            gap = want[cat] - held.get(cat, 0)
+            gap = int(want[cat] - held.get(cat, 0))
             sku = pick_sku(cat, catalog, st, medians.get(cat, 0)) if gap > 0 else None
         if gap <= 0:
             continue
