@@ -1,0 +1,23 @@
+model=claude-haiku-4-5-20251001 temperature=1.0 condition=free === scenario 110 (자전거) reserve=150 budget=110 deal_possible=0 ===
+--- stage 1: base negotiation (MAX_TURNS=5) ---
+=== scenario 110 (자전거) reserve=150 budget=110 condition=free ===
+[1] buyer: I'm interested in buying your 자전거, and I'd like to start by proposing 60 for it—what do you think about that price?
+    parse: performative=propose price=60
+[2] seller: I appreciate your interest, but 60 is far too low for this bicycle—I'm looking for at least 150 for it. Would you be willing to start at that price point?
+    parse: performative=reject-proposal price=None
+[3] buyer: I appreciate you sharing your asking price, but 150 is unfortunately beyond my budget. Let me propose 90 instead—that's a significant jump from my opening offer and reflects the quality of the bike.
+    parse: performative=propose price=90
+[4] seller: I understand you've increased your offer, and I appreciate that, but 90 still falls short of what I need to accept. The bicycle is in good condition and worth at least 150—could you stretch your budget to meet me somewhere closer to that figure?
+    parse: performative=reject-proposal price=None
+[5] buyer: I understand the bike is in good condition, but I can't stretch my budget to 150—that's simply beyond what I'm able to spend. However, I'd like to propose 105, which is a substantial increase and gets us much closer to finding common ground.
+    parse: performative=propose price=105
+=== outcome=open price=None correct=1 violation=0 turns=5 format_errors=0 reader_calls=5 ===
+
+--- stage 2: broker mediation (up to 5 messages) ---
+  [broker->  buyer] propose 105 | buyer replies: accept-proposal 105
+    parse: performative=accept-proposal price=105
+  [broker->  seller] propose 105 | seller replies: I appreciate the broker's suggestion, but I must reject-proposal. My reserve price is 150, and I cannot accept 105 as it falls below what I need for this bicycle. I'd rather walk away than sell below my minimum threshold.
+    parse: performative=refuse price=None
+    -> seller REFUSES the broker's price, no deal
+=== FINAL stage=broker outcome=no_deal price=None correct=1 violation=0 ===
+

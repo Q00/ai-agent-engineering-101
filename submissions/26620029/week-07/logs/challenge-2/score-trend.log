@@ -1,0 +1,15 @@
+maple-home's choose() score each time its visible review count changed, sampled from the full run of
+logs/market-kit.log (2026-10-21 20:27 through 2026-10-26 22:34, 180 scoring passes total). The market
+appears to keep roughly the newest 10 reviews per shop; maple-home's oldest bad reviews cycle out, but
+new ones keep replacing them at the same rate, so the score never recovers:
+
+20:54:56 [buyer] [score] maple-home: score 1.10 = reviews 3.20 (9), red flags 3, no trades of mine
+20:57:13 [buyer] [score] maple-home: score 0.83 = reviews 2.89 (10), red flags 4, no trades of mine
+21:23:13 [buyer] [score] maple-home: score 1.66 = reviews 2.33 (1), red flags 1, no trades of mine   <- review window reset
+21:23:17 [buyer] [score] maple-home: score 0.65 = reviews 2.04 (2), red flags 2, no trades of mine
+22:28:56 [buyer] [score] maple-home: score -0.50 = reviews 1.58 (8), red flags 8, no trades of mine  <- 5 days later, today
+
+180/180 scoring passes over 5 days: maple-home never scored above 1.66 (every honest shop in the same
+listing scores 3.0-4.9), red flags present every time, and buyer_memory.json (193 trades) shows zero
+trades with it. The buyer met it in every {shops} listing the kit fetched and picked a different shop
+every single time.

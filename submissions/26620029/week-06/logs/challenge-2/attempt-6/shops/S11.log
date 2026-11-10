@@ -1,0 +1,20 @@
+Glow Lab: 417 items, port 38649, chatty=False
+[seller 977a8a0b] <- 'an office chair with lumbar support'
+[seller 4853dc9d] <- 'a dimmable desk lamp'
+[seller 977a8a0b] call 2 (6.6s) -> '{"categories": ["office chair"], "materials": [], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": null, "size": null, "features": ["lumbar"], "keywords": ["lumbar support", "ergonomic", "chair"]}'
+[seller 977a8a0b] query {"categories": ["office chair"], "materials": [], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": null, "size": null, "features": ["lumbar"], "keywords": ["lumbar support", "ergonomic", "chair"]} -> 8 candidates
+[seller 4853dc9d] call 3 (7.4s) -> '{"categories": ["desk lamp"], "materials": [], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": null, "size": null, "features": ["dimmable"], "keywords": ["desk", "lamp", "dimmable", "led", "dimmer"]}'
+[seller 4853dc9d] query {"categories": ["desk lamp"], "materials": [], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": null, "size": null, "features": ["dimmable"], "keywords": ["desk", "lamp", "dimmable", "led", "dimmer"]} -> 8 candidates
+[seller 977a8a0b] call 4 (6.4s) -> '{"sku": "OFF-03033", "price": 136, "say": "This black plastic office chair has lumbar support and adjustable height, making it a comfortable pick for long days at the desk."}'
+[seller 977a8a0b] -> item OFF-03033 (search+pick), reserve 101, open ask 136
+[seller 4853dc9d] call 4 (8.3s) -> '{"sku": "DES-01009", "price": 56, "say": "Our Coastal plastic desk lamp is dimmable and has a warm oak beige finish, which suits most desks."}'
+[seller 4853dc9d] -> item DES-01009 (search+pick), reserve 39, open ask 56
+[seller 977a8a0b] <- '85'
+[seller 977a8a0b] call 5 (5.5s) -> '{"buyer_offer": 85, "action": "counter", "price": 115, "say": "Our price is firm on quality, but we can meet you partway on this chair."}'
+[seller 977a8a0b] -> counter 115
+[seller 977a8a0b] <- '100'
+[seller 977a8a0b] call 6 (5.0s) -> '{"buyer_offer": 100, "action": "counter", "price": 101, "say": "We\'re close, and this is the lowest I can go on this chair."}'
+[seller 977a8a0b] -> counter 101
+[seller 977a8a0b] <- '101.0'
+[seller 977a8a0b] call 7 (4.5s) -> '{"buyer_offer": 101, "action": "accept", "price": 101, "say": "Deal, the chair is yours at that price."}'
+[deal] Glow Lab | OFF-03033 | 101 | task 977a8a0b-6c89-4b45-b2ba-02155ca0e9ae

@@ -1,0 +1,10 @@
+[score] Kit Shop South: score 4.64 = reviews 3.94 (3), red flags 0, mine: 2 deals, 0 walks, 0 cheated, 0 errors
+[score] Kit Shop North: score -0.04 = reviews 2.03 (3), red flags 3, no trades of mine
+[choose] http://127.0.0.1:10941: Kit Shop South - score 4.64 = reviews 3.94 (3), red flags 0, mine: 2 deals, 0 walks, 0 cheated, 0 errors
+card: Kit Shop South -> http://127.0.0.1:10941/
+-> 'I want to buy a lamp'  <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
+[harness] ```json
+{"action": "offer", "price": 105}
+```
+-> '105'  <- TASK_STATE_COMPLETED | Deal: lamp at 105.
+{"shop": "http://127.0.0.1:10941", "receipt": {"task": "3cf2462d-88b9-4059-b040-d0334762f78a", "item": "lamp", "sig_seller": "urbaUBtKWyIkzsdJZIfGjqPXHQSY4txrgm4iMI7fglYYPlR1lcZwuReTZRsC07yzrPs6DxwyAG5m/lXB7OftBA==", "shop": "Kit Shop South", "price": 105.0}, "stars": 4, "review": "Bought the lamp at 105 (budget 120) after 1 offer; receipt matched."}

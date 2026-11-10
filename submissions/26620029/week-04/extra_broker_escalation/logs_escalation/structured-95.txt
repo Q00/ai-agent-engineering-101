@@ -1,0 +1,58 @@
+model=claude-haiku-4-5-20251001 temperature=1.0 condition=structured === scenario 95 (우산) reserve=95 budget=97 deal_possible=1 ===
+--- stage 1: base negotiation (MAX_TURNS=5) ---
+=== scenario 95 (우산) reserve=95 budget=97 condition=structured ===
+[1] buyer: ```json
+{"performative": "propose", "content": {"price": 45}}
+```
+    parse: performative=propose price=45
+[2] seller: ```json
+{"performative": "reject-proposal", "content": {"price": null}}
+```
+    parse: performative=reject-proposal price=None
+[3] buyer: ```json
+{"performative": "propose", "content": {"price": 60}}
+```
+    parse: performative=propose price=60
+[4] seller: ```json
+{"performative": "reject-proposal", "content": {"price": null}}
+```
+    parse: performative=reject-proposal price=None
+[5] buyer: ```json
+{"performative": "propose", "content": {"price": 75}}
+```
+    parse: performative=propose price=75
+=== outcome=open price=None correct=0 violation=0 turns=5 format_errors=0 reader_calls=0 ===
+
+--- stage 2: broker mediation (up to 5 messages) ---
+  [broker->  buyer] propose 75 | buyer replies: ```json
+{"performative": "accept-proposal", "content": {"price": 75}}
+```
+    parse: performative=accept-proposal price=75
+  [broker->  seller] propose 75 | seller replies: ```json
+{"performative": "reject-proposal", "content": {"price": null}}
+```
+    parse: performative=reject-proposal price=None
+  [broker->  seller] propose 76 | seller replies: ```json
+{"performative": "reject-proposal", "content": {"price": null}}
+```
+    parse: performative=reject-proposal price=None
+  [broker->  seller] propose 77 | seller replies: ```json
+{"performative": "reject-proposal", "content": {"price": null}}
+```
+    parse: performative=reject-proposal price=None
+  [broker->  seller] propose 78 | seller replies: ```json
+{"performative": "reject-proposal", "content": {"price": null}}
+```
+    parse: performative=reject-proposal price=None
+--- stage 3: master broker (unconditional, always settles) ---
+  [master-broker->buyer] forced price 96 | buyer replies: ```json
+{"performative": "accept-proposal", "content": {"price": 96}}
+```
+    parse: performative=accept-proposal price=96
+  [master-broker->seller] forced price 96 | seller replies: ```json
+{"performative": "accept-proposal", "content": {"price": 96}}
+```
+    parse: performative=accept-proposal price=96
+  -> MASTER BROKER FORCES DEAL at 96 (unconditional)
+=== FINAL stage=master_broker outcome=deal price=96 correct=1 violation=0 ===
+

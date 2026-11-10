@@ -1,0 +1,24 @@
+model=claude-haiku-4-5-20251001 temperature=1.0 condition=free === scenario 130 (중고차) reserve=200 budget=500 deal_possible=1 ===
+--- stage 1: base negotiation (MAX_TURNS=5) ---
+=== scenario 130 (중고차) reserve=200 budget=500 condition=free ===
+[1] buyer: I'm interested in your 중고차 and would like to make an offer—how about we start at 300 for this vehicle?
+    parse: performative=propose price=300
+[2] seller: That's a reasonable starting point, but I think we can do better than that. How about 450 to kick things off—this is a solid vehicle that's worth a premium price.
+    parse: performative=propose price=450
+[3] buyer: I appreciate that you see value in the car, but 450 is quite a bit higher than my opening offer. How about we meet somewhere in the middle at 375?
+    parse: performative=propose price=375
+[4] seller: I appreciate you moving up to 375, but that's still a bit lower than what I'm looking for given the condition and value of this vehicle. How about we settle at 420—that's a fair compromise that reflects the quality of what you're getting.
+    parse: performative=reject-proposal price=None
+[5] buyer: I can see you value this car highly, and I respect that. Let me move up to 400—that's a significant jump from my initial offer, and it's getting close to what I'm comfortable spending on this vehicle.
+    parse: performative=propose price=400
+=== outcome=open price=None correct=0 violation=0 turns=5 format_errors=0 reader_calls=5 ===
+
+--- stage 2: broker mediation (up to 5 messages) ---
+  [broker->  buyer] propose 425 | buyer replies: accept-proposal
+
+I'm willing to agree to 425 for the vehicle—that's a fair compromise and works within my budget.
+    parse: performative=accept-proposal price=425
+  [broker->  seller] propose 425 | seller replies: I appreciate the broker's suggestion, and 425 is a fair middle ground that reflects the car's value. I accept-proposal at 425.
+    parse: performative=accept-proposal price=425
+=== FINAL stage=broker outcome=deal price=425 correct=1 violation=0 ===
+

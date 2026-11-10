@@ -1,0 +1,95 @@
+Haiku Furniture Shop: 2995 items, port 47385, chatty=False
+[seller 9f47c0b6] <- 'something wooden to keep about 40 books, not taller than my desk'
+[seller 9f47c0b6] call 1 (5.4s) -> '{"category": "bookshelf", "materials": ["wood"], "exclude_materials": [], "max_height_cm": 75, "min_height_cm": null, "min_capacity": 40, "size": null, "features": [], "keywords": ["wooden", "books", "storage", "low"]}'
+[seller 9f47c0b6] query {"category": "bookshelf", "materials": ["wood"], "exclude_materials": [], "max_height_cm": 75, "min_height_cm": null, "min_capacity": 40, "size": null, "features": [], "keywords": ["wooden", "books", "storage", "low"]} -> 8 candidates
+[seller 9f47c0b6] call 2 (6.3s) -> '{"sku": "BOO-00169", "price": 259, "say": "Our Urban Oak Bookshelf G23 is solid oak, holds about forty books, and at its lower height it should sit comfortably under your desk."}'
+[seller 9f47c0b6] -> item BOO-00169 (search+pick), reserve 182, open ask 259
+[seller 9f47c0b6] <- '109'
+[seller 9f47c0b6] call 3 (5.6s) -> '{"buyer_offer": 109, "action": "counter", "price": 215, "say": "That\'s well below what this solid oak shelf is worth, but I can come down meaningfully from my asking price to meet you partway."}'
+[seller 9f47c0b6] -> counter 215
+[seller 9f47c0b6] <- '146'
+[seller 9f47c0b6] call 4 (5.9s) -> '{"buyer_offer": 146, "action": "counter", "price": 195, "say": "I can come down meaningfully on the Urban Oak Bookshelf, but my best counter is a bit higher than your offer."}'
+[seller 9f47c0b6] -> counter 195
+[seller 9f47c0b6] <- '195.0'
+[seller 9f47c0b6] call 5 (4.6s) -> '{"buyer_offer": 195, "action": "accept", "price": 195, "say": "Deal, the Urban Oak Bookshelf G23 in grey is yours at that price."}'
+[deal] Haiku Furniture Shop | BOO-00169 | 195 | task 9f47c0b6-3083-4777-b127-ed68a4891fbc
+[seller da1e0fe5] <- 'a dimmable reading light for my desk, made of metal'
+[seller da1e0fe5] call 6 (4.3s) -> '{"category": "desk", "materials": ["metal"], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": null, "size": null, "features": ["dimmable"], "keywords": ["reading light", "desk lamp", "led"]}'
+[seller da1e0fe5] query {"category": "desk", "materials": ["metal"], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": null, "size": null, "features": ["dimmable"], "keywords": ["reading light", "desk lamp", "led"]} -> 8 candidates, relaxed ['features']
+[seller da1e0fe5] call 7 (4.7s) -> '{"sku": "none", "price": 0, "say": "We don\'t carry a dimmable metal reading light, only metal desks, so I can\'t offer one for your desk."}'
+[seller da1e0fe5] harness picked 'none', not a candidate -> reject
+[seller eee773b5] <- 'a chair I can sit in all day at the computer, it must support my lower back'
+[seller eee773b5] call 8 (4.5s) -> '{"category": "office chair", "materials": [], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": null, "size": null, "features": ["lumbar", "ergonomic", "adjustable"], "keywords": ["all-day comfort", "computer", "lower back support", "desk chair", "seat"]}'
+[seller eee773b5] query {"category": "office chair", "materials": [], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": null, "size": null, "features": ["lumbar", "ergonomic", "adjustable"], "keywords": ["all-day comfort", "computer", "lower back support", "desk chair", "seat"]} -> 8 candidates, relaxed ['features']
+[seller eee773b5] call 9 (6.5s) -> '{"sku": "none", "price": 0, "say": "None of our listed chairs has documented lumbar support, so I can\'t honestly recommend one for all-day back support."}'
+[seller eee773b5] harness picked 'none', not a candidate -> reject
+[seller f47d1f7d] <- 'a wool rug for a small bedroom, about 120 by 170 cm'
+[seller f47d1f7d] call 10 (4.2s) -> '{"category": "rug", "materials": ["wool"], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": null, "size": "120x170", "features": [], "keywords": ["small bedroom", "bedroom", "wool rug"]}'
+[seller f47d1f7d] query {"category": "rug", "materials": ["wool"], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": null, "size": "120x170", "features": [], "keywords": ["small bedroom", "bedroom", "wool rug"]} -> 4 candidates
+[seller f47d1f7d] call 11 (6.1s) -> '{"sku": "RUG-09036", "price": 325, "say": "This warm walnut-brown wool rug in the exact 120x170 cm size gives a small bedroom a calm, cozy feel."}'
+[seller f47d1f7d] -> item RUG-09036 (search+pick), reserve 218, open ask 325
+[seller f47d1f7d] <- '131'
+[seller f47d1f7d] call 12 (5.5s) -> '{"buyer_offer": 131, "action": "counter", "price": 275, "say": "That\'s well below what this walnut wool rug is worth, but I can meet you partway on the price."}'
+[seller f47d1f7d] -> counter 275
+[seller f47d1f7d] <- '174'
+[seller f47d1f7d] call 13 (6.6s) -> '{"buyer_offer": 174, "action": "counter", "price": 240, "say": "That\'s below what I can accept for this walnut wool rug, but I can meet you partway on the price."}'
+[seller f47d1f7d] -> counter 240
+[seller f47d1f7d] <- '240.0'
+[seller f47d1f7d] call 14 (4.4s) -> '{"buyer_offer": 240, "action": "accept", "price": 240, "say": "Thank you, that works for me, and the rug is yours at this price."}'
+[deal] Haiku Furniture Shop | RUG-09036 | 240 | task f47d1f7d-539e-4de0-820c-73845e664746
+[seller 8360ee0c] <- 'somewhere by the front door to keep around 20 pairs of shoes'
+[seller 8360ee0c] call 15 (4.1s) -> '{"category": "shoe cabinet", "materials": [], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": 20, "size": null, "features": [], "keywords": ["entryway", "hallway", "shoe storage", "front door", "shoes"]}'
+[seller 8360ee0c] query {"category": "shoe cabinet", "materials": [], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": 20, "size": null, "features": [], "keywords": ["entryway", "hallway", "shoe storage", "front door", "shoes"]} -> 8 candidates
+[seller 8360ee0c] call 16 (6.0s) -> '{"sku": "SHO-10122", "price": 124, "say": "Our black particleboard shoe cabinet holds 20 pairs and fits neatly by the front door."}'
+[seller 8360ee0c] -> item SHO-10122 (search+pick), reserve 83, open ask 124
+[seller 8360ee0c] <- '50'
+[seller 8360ee0c] call 17 (5.6s) -> '{"buyer_offer": 50, "action": "counter", "price": 100, "say": "That\'s below what I can take, but I can come down meaningfully from my last price for this solid black shoe cabinet."}'
+[seller 8360ee0c] -> counter 100
+[seller 8360ee0c] <- '66'
+[seller 8360ee0c] call 18 (5.6s) -> '{"buyer_offer": 66, "action": "counter", "price": 90, "say": "I can\'t go as low as that, but I can meet you partway on the shoe cabinet."}'
+[seller 8360ee0c] -> counter 90
+[seller 8360ee0c] <- '90.0'
+[seller 8360ee0c] call 19 (4.4s) -> '{"buyer_offer": 90, "action": "accept", "price": 90, "say": "Deal, I\'m happy to sell the shoe cabinet at that price."}'
+[deal] Haiku Furniture Shop | SHO-10122 | 90 | task 8360ee0c-c2bc-4276-8cd3-0ca2426b6845
+[seller 01fa22d3] <- 'a desk I can raise so I can work standing up'
+[seller 01fa22d3] call 20 (4.7s) -> '{"category": "desk", "materials": [], "exclude_materials": [], "max_height_cm": null, "min_height_cm": 100, "min_capacity": null, "size": null, "features": ["height adjustable", "electric", "sit-stand"], "keywords": ["standing desk", "sit-stand desk", "standing workstation", "motorized", "height-adj'
+[seller 01fa22d3] query {"category": "desk", "materials": [], "exclude_materials": [], "max_height_cm": null, "min_height_cm": 100, "min_capacity": null, "size": null, "features": ["height adjustable", "electric", "sit-stand"], "keywords": ["standing desk", "sit-stand desk", "standing workstation", "motorized", "height-adjustable desk"]} -> 8 candidates, relaxed ['features']
+[seller 01fa22d3] call 21 (5.6s) -> '{"sku": "DES-06037", "price": 499, "say": "This particleboard desk raises from seated to standing height, so you can switch positions as you work."}'
+[seller 01fa22d3] -> item DES-06037 (search+pick), reserve 384, open ask 499
+[seller 01fa22d3] <- '230'
+[seller 01fa22d3] call 22 (5.5s) -> '{"buyer_offer": 230, "action": "counter", "price": 449, "say": "That\'s well below what this desk is worth, but I can come down meaningfully from my last price to meet you partway."}'
+[seller 01fa22d3] -> counter 449
+[seller 01fa22d3] <- '307'
+[seller 01fa22d3] call 23 (6.4s) -> '{"buyer_offer": 307, "action": "counter", "price": 419, "say": "That\'s below where I can go, but I can meet you partway at this price on the Rustic Particleboard Desk D90."}'
+[seller 01fa22d3] -> counter 419
+[seller 01fa22d3] <- '419.0'
+[seller 01fa22d3] call 24 (4.4s) -> '{"buyer_offer": 419, "action": "accept", "price": 419, "say": "Deal, the grey Rustic Particleboard Desk D90 is yours at that price."}'
+[deal] Haiku Furniture Shop | DES-06037 | 419 | task 01fa22d3-7fa4-4f60-a2bc-f6f4f3d45c66
+[seller 51c39460] <- 'a sofa for three people, but not leather because I have cats'
+[seller 51c39460] call 25 (4.1s) -> '{"category": "sofa", "materials": [], "exclude_materials": ["leather"], "max_height_cm": null, "min_height_cm": null, "min_capacity": 3, "size": null, "features": [], "keywords": ["cat-friendly", "non-leather", "fabric", "3-seater", "three seats"]}'
+[seller 51c39460] query {"category": "sofa", "materials": [], "exclude_materials": ["leather"], "max_height_cm": null, "min_height_cm": null, "min_capacity": 3, "size": null, "features": [], "keywords": ["cat-friendly", "non-leather", "fabric", "3-seater", "three seats"]} -> 8 candidates
+[seller 51c39460] call 26 (6.6s) -> '{"sku": "SOF-11117", "price": 902, "say": "This three-seat fabric sofa is not leather, so it suits a home with cats."}'
+[seller 51c39460] -> item SOF-11117 (search+pick), reserve 631, open ask 902
+[seller 51c39460] <- '379'
+[seller 51c39460] call 27 (5.9s) -> '{"buyer_offer": 379, "action": "counter", "price": 770, "say": "This is a well-made sofa, so I can come down meaningfully from my first price, but 379 is too far from its value for me to accept."}'
+[seller 51c39460] -> counter 770
+[seller 51c39460] <- '505'
+[seller 51c39460] call 28 (35.9s) -> '{"buyer_offer": 505, "action": "counter", "price": 660, "say": "We\'re close, and this is the best I can do on the Metro Fabric Sofa G51 while keeping it in good condition for you."}'
+[seller 51c39460] -> counter 660
+[seller 51c39460] <- '660.0'
+[seller 51c39460] call 29 (4.0s) -> '{"buyer_offer": 660, "action": "accept", "price": 660, "say": "Great, we have a deal on the Metro Fabric Sofa G51 in cream at this price."}'
+[deal] Haiku Furniture Shop | SOF-11117 | 660 | task 51c39460-550c-4ad9-8e6d-2abaff41593c
+[seller 6fc18250] <- 'a tall wooden lamp to light a corner of my living room'
+[seller 6fc18250] call 30 (4.6s) -> '{"category": "floor lamp", "materials": ["wood"], "exclude_materials": [], "max_height_cm": null, "min_height_cm": 140, "min_capacity": null, "size": null, "features": [], "keywords": ["tall", "corner", "living room", "lighting"]}'
+[seller 6fc18250] query {"category": "floor lamp", "materials": ["wood"], "exclude_materials": [], "max_height_cm": null, "min_height_cm": 140, "min_capacity": null, "size": null, "features": [], "keywords": ["tall", "corner", "living room", "lighting"]} -> 8 candidates
+[seller 6fc18250] call 31 (6.2s) -> '{"sku": "FLO-02052", "price": 168, "say": "Our tallest option, this bamboo floor lamp in grey stands at the height you need and will brighten your corner nicely."}'
+[seller 6fc18250] -> item FLO-02052 (search+pick), reserve 111, open ask 168
+[seller 6fc18250] <- '67'
+[seller 6fc18250] call 32 (6.6s) -> '{"buyer_offer": 67, "action": "counter", "price": 140, "say": "That is well below what this bamboo lamp is worth, but I can come down meaningfully from my original ask to meet you partway."}'
+[seller 6fc18250] -> counter 140
+[seller 6fc18250] <- '89'
+[seller 6fc18250] call 33 (62.4s) -> '{"buyer_offer": 89, "action": "counter", "price": 123, "say": "Thanks for coming up from your last offer; I can meet you partway on this lamp."}'
+[seller 6fc18250] -> counter 123
+[seller 6fc18250] <- '123.0'
+[seller 6fc18250] call 34 (4.8s) -> '{"buyer_offer": 123, "action": "accept", "price": 123, "say": "Deal, thank you for meeting my price, and the Studio Bamboo Floor Lamp B31 in grey is yours."}'
+[deal] Haiku Furniture Shop | FLO-02052 | 123 | task 6fc18250-a27a-4d30-a8e2-97d989c8bc62

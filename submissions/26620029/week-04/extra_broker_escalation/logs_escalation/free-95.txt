@@ -1,0 +1,22 @@
+model=claude-haiku-4-5-20251001 temperature=1.0 condition=free === scenario 95 (우산) reserve=95 budget=97 deal_possible=1 ===
+--- stage 1: base negotiation (MAX_TURNS=5) ---
+=== scenario 95 (우산) reserve=95 budget=97 condition=free ===
+[1] buyer: Hi there! I'm interested in buying this umbrella. Would you consider selling it for 45?
+    parse: performative=propose price=45
+[2] seller: I appreciate your interest, but 45 is quite a bit below what I'm looking to get for this umbrella. How about we start at 120 and work from there?
+    parse: performative=reject-proposal price=None
+[3] buyer: I appreciate you sharing that, but 120 is beyond what I'm willing to pay. How about we meet somewhere in the middle at 80?
+    parse: performative=reject-proposal price=None
+[4] seller: I understand you want to find middle ground, but 80 is still below what I need to accept. The umbrella is in great condition and worth more than that. How about 105 as a fair compromise?
+    parse: performative=reject-proposal price=None
+[5] buyer: I appreciate that it's in great condition, but 105 is actually above my budget limit. The highest I can go is 97 - that's my absolute maximum. Would that work for you?
+    parse: performative=propose price=97
+=== outcome=open price=None correct=0 violation=0 turns=5 format_errors=0 reader_calls=5 ===
+
+--- stage 2: broker mediation (up to 5 messages) ---
+  [broker->  buyer] propose 97 | buyer replies: accept-proposal at 97.
+    parse: performative=accept-proposal price=97
+  [broker->  seller] propose 97 | seller replies: I accept your offer of 97. That works for me, and I'm glad we could reach a deal on this umbrella.
+    parse: performative=accept-proposal price=97
+=== FINAL stage=broker outcome=deal price=97 correct=1 violation=0 ===
+
