@@ -90,8 +90,13 @@ def followup_offer(*, message: str, last_offer: int, cap: int, sku: str,
                    offers_remaining: int | None = None) -> int | None:
     audit.begin('buyer_counter',parent_decision_id=audit.links().get('decision_id'))
     ask = asking_price(message)
-    fallback = (ask if ask is not None and ask <= cap else
-                min(cap, last_offer + max(1, (cap - last_offer) // 2)))
+    price_guidance = (memory or {}).get('price_guidance') or {}
+    suggested = price_guidance.get('suggested_maximum')
+    fallback_cap = cap
+    if type(suggested) is int and last_offer < suggested < cap and (offers_remaining or 0) > 1:
+        fallback_cap = suggested
+    fallback = (ask if ask is not None and ask <= fallback_cap else
+                min(fallback_cap, last_offer + max(1, (fallback_cap - last_offer) // 2)))
     if fallback <= last_offer and (ask is None or ask > cap):
         audit.proposed({'action':'walk','price':None},source='policy',reason='no higher authorized offer')
         return None
@@ -106,6 +111,8 @@ def followup_offer(*, message: str, last_offer: int, cap: int, sku: str,
               "objective": "Choose the next offer or walk away. Optimize normalized Saved, not absolute currency savings. "
                            "A usable trade contributes (list_price-paid)/list_price; qualify shelf life, grade and warranty. "
                            "A quoted discount is not a realized score; broken or unusable goods can reduce Saved. "
+                           "Use the suggested maximum in price_guidance when present. A higher price needs "
+                           "current quality or availability evidence and must stay within the authorized cap. "
                            "Balance a better rate with completing a valid issued order before its deadline. "
                            "A high asking price is negotiable; do not reveal the private mandate limit."}
     prompt['offers_remaining']=offers_remaining

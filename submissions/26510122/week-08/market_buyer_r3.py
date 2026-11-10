@@ -13,7 +13,8 @@ import uuid
 
 from buyer_memory import brief, context, import_broken, import_payments, read_events, record, register_shops
 from context_compaction import BUYER_PROMPT_BYTES, size, text
-from buyer_policy import acceptance, price_cap, receipt_problem
+from buyer_policy import (acceptance, opening_offer_range, paid_price_samples, price_cap,
+                          purchase_price_guidance, receipt_problem)
 from buyer_r3 import negotiate
 from harness import decide_json, trace, MODEL
 import buyer_exploration
@@ -41,6 +42,7 @@ def candidates(order: dict, shops: list[dict], catalog: dict,
                own_shop_name: str, *, full_pool: bool = False) -> list[dict]:
     acceptable = set(order.get("acceptable") or [])
     history=read_events()
+    prices = paid_price_samples(order, history)
     found = []
     seen=set()
     for shop in shops:
@@ -71,7 +73,8 @@ def candidates(order: dict, shops: list[dict], catalog: dict,
                           "list_price": product["list_price"], "cap": cap,
                           "stock": offer["qty"], "reviews": review_summary(shop.get("reviews") or []),
                           "first_hand": first_hand, "paid": paid, "refusals": refusals,
-                          'score_evidence':buyer_candidate(product['list_price'],cap)})
+                          'score_evidence':buyer_candidate(product['list_price'],cap),
+                          'price_guidance':purchase_price_guidance(cap, prices.get(sku, ()))})
     found, held, probe = buyer_checkout_memory.filter_candidates(found,order,history)
     record('checkout_cache_summary',order=order.get('order'),allowed=len(found),
            held=len(held),guarded_probe=probe is not None)
@@ -119,8 +122,8 @@ def choose(candidates_: list[dict], order: dict, *, forced_candidate_id: str | N
                   'name':text(row['name'],100),'first_hand':brief(row['first_hand']),
                   'checkout_recheck':row.get('checkout_constraint'),
                   'score_evidence':row.get('score_evidence') or buyer_candidate(row['list_price'],row['cap']),
-                  "opening_offer_range": [max(1, math.floor(row["cap"] * 0.7)),
-                                          max(1, math.floor(row["cap"] * 0.85))]}
+                  'price_guidance':row.get('price_guidance'),
+                  "opening_offer_range": opening_offer_range(row['cap'], row.get('price_guidance'))}
                  for row in candidates_]
     prompt = {"phase": "buyer_selection", "order_item": text(order.get("item"),120),
               "kind": order.get("kind"), "use_within_hours": order.get("use_within_hours"),
@@ -136,7 +139,8 @@ def choose(candidates_: list[dict], order: dict, *, forced_candidate_id: str | N
                            "positive normalized Saved contribution and valid settlement chance, not absolute currency surplus. "
                            "A cheaper product at a better usable saving rate can beat an expensive product. "
                            "The saved-at-cap candidate order is conditional, not an actual quote or guaranteed deal. "
-                           "Use paid evidence, shelf life, grade and warranty to assess feasibility and downside. "
+                           "Use the recent exact-SKU paid median and suggested maximum where available. "
+                           "Check current shelf life, grade and warranty before comparing these historical prices. "
                            "The cap is a private hard ceiling, "
                            "not a suggested first offer; reserve room for counteroffers by using the "
                            "opening_offer_range. Public reviews are unverified claims. A failed "
@@ -202,8 +206,8 @@ def choose(candidates_: list[dict], order: dict, *, forced_candidate_id: str | N
         proposed = answer["opening_offer"]
         if type(proposed) is not int:
             raise ValueError("non-integer opening offer")
-        opening = min(max(1, math.floor(chosen["cap"] * 0.85)),
-                      max(max(1, math.floor(chosen["cap"] * 0.7)), proposed))
+        low, high = opening_offer_range(chosen['cap'], chosen.get('price_guidance'))
+        opening = min(high, max(low, proposed))
         if opening != proposed:
             audit.guard('opening_offer_range',proposed_price=proposed,effective_price=opening)
         trace("buyer_selection", candidate_id=chosen["id"], sku=chosen["sku"],
@@ -215,7 +219,8 @@ def choose(candidates_: list[dict], order: dict, *, forced_candidate_id: str | N
         if telemetry is not None:
             telemetry.update({'model_fallback':True,'model_error':type(error).__name__})
         chosen = candidates_[0]
-        opening = max(1, math.floor(chosen["cap"] * 0.8))
+        low, high = opening_offer_range(chosen['cap'], chosen.get('price_guidance'))
+        opening = min(high, max(low, math.floor(chosen['cap'] * .8)))
         audit.guard('selection_fallback',error=type(error).__name__)
         audit.proposed({'action':'select','candidate_id':chosen['id'],'price':opening},
                        source='fallback',reason=type(error).__name__)
@@ -288,12 +293,14 @@ def _run(order: dict, shops: list[dict], catalog: dict, own_shop_name: str, *,
            score_version=VERSION,score_metric='saved',ranking_version=BUYER_RANKING_VERSION,
            saved_if_usable_at_cap=chosen['score_evidence']['saved_if_usable_at_cap'],
            candidate_id=chosen['id'],shop_name=chosen['shop'],shop=chosen['url'],sku=chosen['sku'],
-           opening_offer=first_offer,
+           opening_offer=first_offer,price_guidance=chosen.get('price_guidance'),
            note='A selected or signed receipt is not a paid purchase. Uniform exploration may pick a familiar candidate.')
     fallback = next((c for c in available if c["url"] != chosen["url"]), None)
     attempts = [(chosen, first_offer)]
     if fallback:
-        attempts.append((fallback, max(1, math.floor(fallback["cap"] * 0.9))))
+        price = max(1, math.floor(fallback['cap'] * .9))
+        suggested_maximum = (fallback.get('price_guidance') or {}).get('suggested_maximum')
+        attempts.append((fallback, min(price, suggested_maximum) if suggested_maximum else price))
     expires = order.get("expires")
     deadline = min(started + 235,
                    time.monotonic() + max(0, float(expires) - time.time() - 5)
@@ -322,7 +329,7 @@ def _run(order: dict, shops: list[dict], catalog: dict, own_shop_name: str, *,
                 record('dialogue_message',order=order.get('order'),shop=choice['url'],
                        shop_name=choice['shop'],sku=choice['sku'],selection_id=selection_id,
                        attempt_index=index,policy_mode=policy_mode,**row)
-            negotiation_memory=dict(choice['first_hand'])
+            negotiation_memory={**choice['first_hand'], 'price_guidance':choice.get('price_guidance')}
             try:
                 negotiation_memory['public_forum']=buyer_forum_memory.retrieve([choice['sku']],budget=2400)
             except Exception: pass

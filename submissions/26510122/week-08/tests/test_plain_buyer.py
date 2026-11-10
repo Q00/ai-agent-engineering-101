@@ -1,14 +1,40 @@
 import json
 from pathlib import Path
 import tempfile
+import time
 import unittest
 
-from buyer_policy import acceptance
-from buyer_r3 import opening_request
+from buyer_policy import acceptance, paid_price_samples, purchase_price_guidance
+from buyer_r3 import followup_offer, opening_request
 from ops import buyer_service
 
 
 class PlainBuyerTests(unittest.TestCase):
+    def test_paid_prices_match_sku_and_order_shelf_life(self):
+        order = {'kind': 'food', 'acceptable': ['F1'], 'use_within_hours': 48}
+        now = 400_000
+        sale = {'event': 'settled', 'at': now - 1, 'sku': 'F1', 'hours_left_at_recording': 72}
+        rows = [{**sale, 'ledger': n, 'price': price}
+                for n, price in enumerate((510, 550, 600), 1)]
+        rows += [rows[1], {**sale, 'ledger': 4, 'price': 100, 'hours_left_at_recording': 24},
+                 {**sale, 'ledger': 5, 'price': 100, 'event': 'payment'},
+                 {**sale, 'ledger': 6, 'price': 100, 'sku': 'F2'},
+                 {**sale, 'ledger': 7, 'price': 100, 'at': now - 73*3600}]
+        samples = paid_price_samples(order, rows, now)['F1']
+        self.assertEqual(samples, (510, 550, 600))
+        result = purchase_price_guidance(850, samples)
+        self.assertEqual(result['opening_offer_range'], [506, 550])
+        self.assertEqual(result['suggested_maximum'], 600)
+        self.assertEqual(purchase_price_guidance(525, samples)['suggested_maximum'], 525)
+        self.assertEqual(purchase_price_guidance(850, samples[:2])['opening_offer_range'], [595, 722])
+
+    def test_buyer_counter_uses_soft_ceiling_then_preserves_authorized_final_offer(self):
+        kwargs = {'message': 'asking 700', 'last_offer': 550, 'cap': 850, 'sku': 'F1',
+                  'list_price': 1000, 'memory': {'price_guidance': {'suggested_maximum': 600}},
+                  'deadline': time.monotonic() + 20}
+        self.assertEqual(followup_offer(**kwargs, offers_remaining=2), 575)
+        self.assertEqual(followup_offer(**kwargs, offers_remaining=1), 700)
+
     def test_food_message_matches_checkout_requirement_without_budget_or_roleplay(self):
         order = {'kind': 'food', 'use_within_hours': 360, 'budget': 98765}
         message = opening_request('Coffee', 'C1', order)
