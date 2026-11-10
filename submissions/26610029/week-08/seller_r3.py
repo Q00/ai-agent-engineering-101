@@ -13,6 +13,7 @@ import argparse
 import asyncio
 import base64
 import json
+import math
 import os
 import re
 import time
@@ -105,7 +106,9 @@ class Market:
         warranty = None
         if u["kind"] == "goods" and self.brk.get(u["grade"], 1) < p["warranty_max_break"]:
             warranty = p["warranty_hours"]
-        return int(floor + 0.999), int(target), int(ask), warranty
+        # ceil all three the same way: target/ask were derived as >= floor at float precision, and
+        # rounding them differently (floor up, the rest down) could let target land one won under floor
+        return math.ceil(floor), math.ceil(target), math.ceil(ask), warranty
 
 
 MARKET = Market()
