@@ -10,6 +10,7 @@ bytes change; its restock hook reads it on every run. Each edit writes one traje
 
 import importlib.util
 import json
+import math
 import os
 import shutil
 import tempfile
@@ -30,7 +31,15 @@ KEYS = {
 }
 # buyer.defaults.<kind> only; the shop-side keys above are refused there
 # accept_c.max_pay_frac caps what our buyer pays for a grade C unit (attempt 1 market_buyer.grade_c_terms)
-BUYER_KEYS = {"max_pay_frac": (0.5, 1.0, 0.05), "accept_c.max_pay_frac": (0.4, 1.0, 0.05)}
+# open_frac and step_frac (11-10): 48 h of our purchases showed 571 of 1,518 struck at the opening offer (0.55 of list),
+# while the top savers paid 0.46-0.55 of list; where the buyer opens and how fast it rises are the operator's to tune
+BUYER_KEYS = {
+    "max_pay_frac": (0.5, 1.0, 0.05),
+    "open_frac": (0.3, 0.7, 0.05),
+    "step_frac": (0.02, 0.15, 0.02),
+    "accept_c.max_pay_frac": (0.4, 1.0, 0.05),
+    "accept_c.open_frac": (0.2, 0.6, 0.05),
+}
 # "<key>.<grade>": one grade's number in a per-grade dict -> (grades, lowest, highest, largest change in one edit)
 GRADE_KEYS = {
     "fresh_discount": (("B", "C"), 0.0, 0.5, 0.06),  # food and goods sections (attempt 1 ask_price has no kind check)
@@ -217,6 +226,43 @@ def apply(root, items, traj, now, categories=(), validate=None):
     return out
 
 
+def _put(pol, sec, key, val):
+    """Write one typed value into pol (the in-memory policy) as attempt 1 reads it."""
+    base = key.split(".", 1)[0]
+    blk = _block(pol, sec, create=True)
+    if base == LEAF_KEY:
+        sub = key.split(".", 1)[1]
+        blk[base] = [x for x in blk.get(base) or [] if x != sub] + ([sub] if val else [])
+    elif key in BUYER_KEYS and "." in key:
+        blk[base] = {**(blk.get(base) or {}), key.split(".", 1)[1]: val}
+    elif base in GRADE_KEYS:
+        # the dict attempt 1 reads now (maybe inherited from defaults or the leaf entry), written here whole
+        # with one grade changed, so the other grades keep their values
+        blk[base] = {**(_resolved(pol, sec).get(base) or {}), key.split(".", 1)[1]: val}
+    else:
+        blk[key] = val
+
+
+def _swap(root, pol, validate, tag):
+    """Write pol to a temp file, check it with attempt 1's validate, keep the live file as a2/policy_bak/policy.json.<tag>
+    and rename the temp over it. -> backup path. Raises on a failed check or write; the live file stays as it was."""
+    os.makedirs(os.path.join(root, BAK_DIR), exist_ok=True)
+    fd, tmp = tempfile.mkstemp(dir=root, prefix=".policy.tmp-")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            json.dump(pol, f, ensure_ascii=False, indent=2)
+            f.write("\n")
+        (validate or attempt1_validate(root))(tmp)
+        bak = os.path.join(root, BAK_DIR, f"policy.json.{tag}")
+        shutil.copy2(path(root), bak)
+        os.replace(tmp, path(root))
+        return bak
+    except Exception:
+        if os.path.exists(tmp):
+            os.unlink(tmp)
+        raise
+
+
 def _one(root, it, traj, now, categories, validate, done_n):
     if not isinstance(it, dict):
         return {"ok": False, "error": "each policy item must be an object"}
@@ -230,15 +276,15 @@ def _one(root, it, traj, now, categories, validate, done_n):
         return {"ok": False, "error": f"한 점검에 {MAX_PER_WAKE}개까지"}
     if sec == "bounds":
         return {"ok": False, "error": "bounds는 사람만 고침 (operator edits refused)"}
-    if _spec(key) is None:
+    if not isinstance(key, str) or _spec(key) is None:
         return {
             "ok": False,
             "error": f"key must be one of {sorted(KEYS) + sorted(BUYER_KEYS)}, "
             f"<{'|'.join(GRADE_KEYS)}>.<grade> or {LEAF_KEY}.<leaf name>",
         }
     base = key.split(".", 1)[0]
-    if isinstance(val, bool) or not isinstance(val, (int, float)):
-        return {"ok": False, "error": "value must be a number"}
+    if isinstance(val, bool) or not isinstance(val, (int, float)) or not math.isfinite(val):
+        return {"ok": False, "error": "value must be a finite number"}
     if base in INT_KEYS:
         if val != int(val):
             return {"ok": False, "error": f"{key} must be a whole number"}
@@ -258,6 +304,9 @@ def _one(root, it, traj, now, categories, validate, done_n):
             "ok": False,
             "error": f"section must be one of {list(fixed)} or a full category path",
         }
+    if sec not in fixed and ">" not in sec:
+        # a leaf-name entry cannot tell food from goods here (_kind reads the path), so only full paths are edited
+        return {"ok": False, "error": f"section must be a full category path (대분류>...>잎), not the leaf name {sec}"}
     if not _fits(sec, key):
         return {"ok": False, "error": f"{key} cannot be edited in {sec}: only in {WHERE[_where(key)]}"}
     lo, hi, step = _spec(key)
@@ -268,7 +317,7 @@ def _one(root, it, traj, now, categories, validate, done_n):
     if not lo <= val <= hi:
         return {"ok": False, "error": f"{key}={val} outside [{lo}, {hi}]"}
     old = effective(pol, sec, key)
-    if key == "accept_c.max_pay_frac" and not old:
+    if key.startswith("accept_c.") and not (_resolved(pol, sec).get("accept_c") or {}).get("max_pay_frac"):
         return {"ok": False, "error": f"{sec} has no accept_c block: grade C buying is off there"}
     if val == 1 and base == LEAF_KEY and old == 0:
         sub = key.split(".", 1)[1]
@@ -296,33 +345,12 @@ def _one(root, it, traj, now, categories, validate, done_n):
             "ok": False,
             "error": f"{sec} {key} was changed less than {COOLDOWN_S // 60} min ago",
         }
-    blk = _block(pol, sec, create=True)
-    if base == LEAF_KEY:
-        sub = key.split(".", 1)[1]
-        blk[base] = [x for x in blk.get(base) or [] if x != sub] + ([sub] if val else [])
-    elif key in BUYER_KEYS and "." in key:
-        blk[base] = {**(blk.get(base) or {}), key.split(".", 1)[1]: val}
-    elif base in GRADE_KEYS:
-        # the dict attempt 1 reads now (maybe inherited from defaults or the leaf entry), written here whole
-        # with one grade changed, so the other grades keep their values
-        blk[base] = {**(_resolved(pol, sec).get(base) or {}), key.split(".", 1)[1]: val}
-    else:
-        blk[key] = val
-    os.makedirs(os.path.join(root, BAK_DIR), exist_ok=True)
-    fd, tmp = tempfile.mkstemp(dir=root, prefix=".policy.tmp-")
+    _put(pol, sec, key, val)
     try:
-        with os.fdopen(fd, "w", encoding="utf-8") as f:
-            json.dump(pol, f, ensure_ascii=False, indent=2)
-            f.write("\n")
-        (validate or attempt1_validate(root))(tmp)
-        bak = os.path.join(root, BAK_DIR, f"policy.json.{int(now)}-{done_n}")
-        shutil.copy2(path(root), bak)
-        os.replace(tmp, path(root))
+        bak = _swap(root, pol, validate, f"{int(now)}-{done_n}")
     except (
         Exception
     ) as e:  # attempt 1's PolicyError or a write error: the live file stays as it was
-        if os.path.exists(tmp):
-            os.unlink(tmp)
         return {"ok": False, "error": f"check failed: {type(e).__name__}: {e}"}
     traj.append(
         "operator",
@@ -340,3 +368,53 @@ def _one(root, it, traj, now, categories, validate, done_n):
         # to a share of list (attempt 1 market_floor), so the result says there was no step limit
         res["note"] = "이 등급은 처음 두는 값이라 한 번에 바꾸는 폭 제한을 적용하지 않음. 이 등급의 최저가가 시장가 기준에서 정가 비율로 바뀜"
     return res
+
+
+def kernel_set(root, section, key, value, traj, now, reason, categories=(), validate=None):
+    """Kernel-only write that restores a value the file held before (kernel.experiments reverts): the same typed write,
+    attempt 1 validate, backup and rename as an operator edit, without the range, step, cooldown and per-wake checks.
+    value None removes the key: a grade_floor_list (or other per-grade) grade, a c_first_leaves leaf or a scalar key
+    the section did not set; a dict or category entry left empty goes too. -> {"ok": True/False, ...}"""
+    if _spec(key) is None or not isinstance(section, str) or section == "bounds":
+        return {"ok": False, "error": f"{section} {key} is not an editable key"}
+    if value is not None and (isinstance(value, bool) or not isinstance(value, (int, float))):
+        return {"ok": False, "error": "value must be a number or None"}
+    base, _, sub = key.partition(".")
+    if value is not None and base in INT_KEYS:
+        value = int(value)
+    try:
+        pol = c.load_json(path(root), None)
+    except ValueError:
+        pol = None
+    if not isinstance(pol, dict):
+        return {"ok": False, "error": "policy.json unreadable"}
+    known = set((pol.get("categories") or {}).keys()) | set(categories)
+    fixed = DEFAULTS + ("shop",) + tuple(s for s in BUYER if _block(pol, s) is not None)
+    if section not in fixed and section not in known or not _fits(section, key):
+        return {"ok": False, "error": f"{key} cannot be set in {section}"}
+    old = effective(pol, section, key)
+    if value is None and base == LEAF_KEY:
+        value = 0
+    if value is None:
+        blk = _block(pol, section) or {}
+        if sub:
+            d = blk.get(base)
+            if isinstance(d, dict):
+                d.pop(sub, None)
+                if not d:
+                    blk.pop(base)
+        else:
+            blk.pop(key, None)
+        cats = pol.get("categories") or {}
+        if section in cats and not cats[section]:
+            del cats[section]
+    else:
+        _put(pol, section, key, value)
+    try:
+        bak = _swap(root, pol, validate, f"{int(now)}-k")
+    except Exception as e:  # attempt 1's PolicyError or a write error: the live file stays as it was
+        return {"ok": False, "error": f"check failed: {type(e).__name__}: {e}"}
+    reason = str(reason or "")[:500]
+    traj.append("operator", "policy_edit", section=section, key=key, old=old, new=value, reason=reason,
+                backup=os.path.relpath(bak, root), by="kernel")
+    return {"ok": True, "section": section, "key": key, "old": old, "new": value}

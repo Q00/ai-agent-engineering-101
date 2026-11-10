@@ -326,3 +326,33 @@ def test_food_fresh_discount_and_grade_c_buy_cap(root, a1):
     assert pol["defaults"]["food"]["fresh_discount"] == {"B": 0.06, "C": 0.25}
     assert pol["buyer"]["defaults"]["goods"]["accept_c"] == {"max_pay_frac": 0.6, "open_frac": 0.35}
     assert "accept_c" in res[2]["error"]
+
+
+def test_buyer_open_and_step_and_bad_inputs(root, a1):
+    """2026-11-10 verifier findings: a non-string key or a non-finite value is refused, not raised; a leaf-name
+    section is refused (it cannot tell food from goods). The buyer's opening offer and step are editable."""
+    before = open(os.path.join(root, "policy.json"), encoding="utf-8").read()
+    res = _edit(
+        root,
+        a1,
+        [
+            _it("defaults.goods", ["price_mult"], 0.9),
+            _it("defaults.goods", "max_rounds", float("nan")),
+            _it("defaults.goods", "price_mult", float("inf")),
+            _it("소파/의자/스툴", "price_mult", 0.75),
+        ],
+    )
+    assert [r["ok"] for r in res] == [False] * 4, res
+    assert open(os.path.join(root, "policy.json"), encoding="utf-8").read() == before
+    res = _edit(
+        root,
+        a1,
+        [
+            _it("buyer.defaults.food", "open_frac", 0.5),
+            _it("buyer.defaults.food", "step_frac", 0.09),
+            _it("buyer.defaults.goods", "open_frac", 0.4),  # more than 0.05 at once
+        ],
+    )
+    assert [r["ok"] for r in res] == [True, True, False], res
+    assert _pol(root)["buyer"]["defaults"]["food"]["open_frac"] == 0.5
+    assert _pol(root)["buyer"]["defaults"]["food"]["step_frac"] == 0.09
