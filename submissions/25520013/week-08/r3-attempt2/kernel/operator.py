@@ -62,6 +62,7 @@ COMPACT_SCHEMA = """한 단계에 JSON 객체 하나로만 답함. 둘 중 하�
   "notes": "<다음 점검의 네가 읽을 메모 전체, 2,000자 안. 생략하면 그대로 둠>",
   "note": "<이번 점검 한 줄 요약>"}}
 done의 모든 항목은 선택임. 지금 값과 허용 범위는 policy 도구로 봄.
+policy 항목은 모두 실험으로 걸림: 판매 쪽 값은 동시 비교(물건 절반에만 새 값, 판정 때 채택 또는 버림), 구매와 재고 값은 전후 비교(바로 적용, 나빠지면 되돌림).
 policy 키는 항목마다 숫자 하나: 판매 구역은 price_mult, min_margin, concession, max_rounds, stock_target, qty_per_buy, warranty_uplift, fresh_discount.B|C. goods 구역은 warranty_hours.A|B|C도. shop은 grade_floor_list.A|B|C와 c_first_leaves.<잎 이름> (1 넣기, 0 빼기). buyer.defaults.*는 max_pay_frac, open_frac (첫 제시가), step_frac (회차마다 올리는 폭), accept_c.max_pay_frac, accept_c.open_frac. bounds는 사람만 고침."""
 RESERVED_ARGS = ("harness_root", "dry", "now")
 HARNESS_TOOLS = ("versions", "harness_read", "replay_probe")
@@ -260,6 +261,8 @@ class Operator:
 
     def _run_tool(self, name, args):
         args = {k: v for k, v in (args if isinstance(args, dict) else {}).items() if k not in RESERVED_ARGS}
+        if name in HARNESS_TOOLS and self.compact():  # not listed in compact mode, so not callable either
+            return "도구 오류: 이 방식에서는 쓸 수 없는 도구"
         if name in HARNESS_TOOLS:
             args["harness_root"] = self.harness_root
         if name == "replay_probe":
@@ -373,7 +376,9 @@ class Operator:
         snaps = b.board_snapshots(self.root)
         if not snaps:
             return 0.0
-        shops = [r for r in (c.load_json(snaps[-1][1], {}) or {}).get("shops") or [] if isinstance(r, dict)]
+        snap = c.load_json(snaps[-1][1], {})
+        rows = snap.get("shops") if isinstance(snap, dict) else None
+        shops = [r for r in (rows if isinstance(rows, list) else []) if isinstance(r, dict)]
         me = next((r for r in shops if c.is_mine(r, self.login)), None)
         if me is None:
             return 0.0
@@ -517,23 +522,19 @@ class Operator:
                 if n_ok >= policy_edit.MAX_PER_WAKE:
                     out.append({"ok": False, "error": f"한 점검에 {policy_edit.MAX_PER_WAKE}개까지"})
                     continue
-                sec, key = it.get("section"), it.get("key")
-                msg = ex.blocked(self.root, sec, key, now) if isinstance(sec, str) and isinstance(key, str) else None
-                if msg:
-                    out.append({"ok": False, "error": msg})
-                    continue
-                try:  # now + i keeps the backup names of one wake apart
-                    r = policy_edit.apply(self.root, [it], self.traj, now + i, categories=cats)[0]
+                try:  # ex.start checks, writes and registers as one step; now + i keeps backup names apart
+                    weight = self._rev_weight() if weight is None else weight
+                    exp = c.mask(str(it.get("expect") or it.get("reason") or ""), self.secrets)[:200]
+                    r = ex.start(self.root, dict(it, expect=exp), now + i, self.traj, rev_weight=weight,
+                                 categories=cats, split_ok=os.environ.get("A2_SPLIT") == "1")
                 except Exception as e:  # a value the edit code did not expect is a refusal, not a crashed wake
-                    r = {"ok": False, "error": f"{type(e).__name__}: {e}"}
+                    r = {"ok": False, "error": f"{type(e).__name__}: {str(e)[:200]}"}
+                if not isinstance(r, dict):
+                    r = {"ok": False, "error": "no result"}
                 if r.get("ok"):
                     n_ok += 1
-                    weight = self._rev_weight() if weight is None else weight
-                    wh = it.get("window_h")
-                    wh = wh if isinstance(wh, (int, float)) and not isinstance(wh, bool) else None
-                    e = ex.register(self.root, r, it.get("expect") or it.get("reason"), wh, now, self.traj,
-                                    rev_weight=weight)
-                    r = dict(r, experiment=e["id"], eval_kst=c.kst(e["eval_ts"]))
+                    if isinstance(r.get("eval_ts"), (int, float)):
+                        r = dict(r, eval_kst=c.kst(r["eval_ts"]))
                 out.append(r)
             result["policy"] = out
         if "forum" in done:
@@ -853,16 +854,27 @@ def main(argv=None):
 
         terra = Terra(traj, cli=a.cli, secrets=secrets)
     op = Operator(root, terra, traj, harness_root=a.harness, dry=a.dry)
+    poll_err = (None, 0.0)
     while True:
-        versions.check_breakage(root, a.harness, traj, op.settings()["breakage_n"])
-        reason = "수동 실행 (--once)" if a.once else op.wake_reason()
+        try:
+            versions.check_breakage(root, a.harness, traj, op.settings()["breakage_n"])
+            if not op.compact():  # compact mode ticks the ledger inside wake_reason; verdicts must not stop elsewhere
+                ex.tick(root, c.now_ts(), traj, categories=op._cats())
+            reason = "수동 실행 (--once)" if a.once else op.wake_reason()
+        except Exception as err:  # one bad poll must not stop the daemon; the same error is logged once an hour
+            if a.once:
+                raise
+            reason, name, t = None, type(err).__name__, time.time()
+            if name != poll_err[0] or t - poll_err[1] >= 3600:
+                poll_err = (name, t)
+                traj.append("operator", "operator_poll", status="crash", error=name, detail=str(err)[:200])
         if reason:
             try:
                 print(json.dumps(op.wake(reason), ensure_ascii=False, default=str), flush=True)
-            except Exception as ex:  # one bad wake must not stop the daemon
+            except Exception as err:  # one bad wake must not stop the daemon
                 if a.once:
                     raise
-                traj.append("operator", "operator_wake", reason=reason, status="crash", error=type(ex).__name__)
+                traj.append("operator", "operator_wake", reason=reason, status="crash", error=type(err).__name__)
         if a.once:
             return 0
         time.sleep(POLL_S)

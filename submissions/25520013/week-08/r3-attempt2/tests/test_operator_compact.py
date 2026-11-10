@@ -112,3 +112,65 @@ def test_verdict_wakes_at_once(o):
 
 def test_rev_weight_from_board(o):
     assert o._rev_weight() == 0.0  # no board
+
+
+def test_split_env_starts_a_concurrent_comparison_and_leaves_policy_json(o, monkeypatch):
+    monkeypatch.setenv("A2_SPLIT", "1")
+    before = open(os.path.join(o.root, "policy.json"), encoding="utf-8").read()
+    o.terra = Script({"done": {"policy": [_item(), _item("max_pay_frac", 0.8, "buyer.defaults.goods")]}})
+    r = o.wake("주기 점검", NOW)
+    rows = {e["key"]: e for e in ex.running(o.root)}
+    assert rows["price_mult"]["mode"] == "split" and rows["max_pay_frac"]["mode"] == "sequential", r
+    arms = json.load(open(os.path.join(o.root, "policy_arms.json"), encoding="utf-8"))["arms"]
+    assert [a["id"] for a in arms] == [rows["price_mult"]["id"]] and arms[0]["value"] == 0.85
+    now = json.load(open(os.path.join(o.root, "policy.json"), encoding="utf-8"))
+    assert now["defaults"]["goods"]["price_mult"] == json.loads(before)["defaults"]["goods"]["price_mult"]
+    assert now["buyer"]["defaults"]["goods"]["max_pay_frac"] == 0.8
+
+
+def test_without_split_env_the_same_key_is_sequential(o, monkeypatch):
+    monkeypatch.delenv("A2_SPLIT", raising=False)
+    o.terra = Script({"done": {"policy": [_item()]}})
+    o.wake("주기 점검", NOW)
+    assert ex.running(o.root)[0]["mode"] == "sequential"
+    assert not os.path.exists(os.path.join(o.root, "policy_arms.json"))
+
+
+def test_bad_item_is_refused_and_nothing_is_left_unregistered(o):
+    before = open(os.path.join(o.root, "policy.json"), encoding="utf-8").read()
+    bad = dict(_item(), window_h=10**400)
+    o.terra = Script({"done": {"policy": [bad, dict(_item(), value=float("inf")), "x"]}})
+    r = o.wake("주기 점검", NOW)
+    after = json.load(open(os.path.join(o.root, "policy.json"), encoding="utf-8"))
+    n_run = len(ex.running(o.root))
+    changed = after["defaults"]["goods"]["price_mult"] != json.loads(before)["defaults"]["goods"]["price_mult"]
+    assert changed == (n_run == 1), r  # an edit is in the file only when its experiment is in the ledger
+
+
+def test_harness_tools_are_refused_in_compact_mode(o):
+    for name in op.HARNESS_TOOLS:
+        assert "쓸 수 없는" in o._run_tool(name, {})
+
+
+def test_expect_is_masked(o):
+    o.secrets = ("secretlogin",)
+    o.terra = Script({"done": {"policy": [dict(_item(), expect="secretlogin 순이익 +1")]}})
+    o.wake("주기 점검", NOW)
+    assert "secretlogin" not in json.dumps(ex.load(o.root), ensure_ascii=False)
+
+
+def test_main_loop_survives_a_failing_poll(o, monkeypatch, tmp_path):
+    calls = {"n": 0}
+
+    def boom(self, now=None):
+        calls["n"] += 1
+        if calls["n"] >= 3:
+            raise KeyboardInterrupt
+        raise RuntimeError("poll broke")
+
+    monkeypatch.setattr(op.Operator, "wake_reason", boom)
+    monkeypatch.setattr(op.time, "sleep", lambda s: None)
+    with pytest.raises(KeyboardInterrupt):
+        op.main(["--root", o.root, "--dry", "--harness", str(tmp_path / "noharness")])
+    rows = [json.loads(x) for x in open(os.path.join(o.root, "a2/trajectory.jsonl"), encoding="utf-8")]
+    assert sum(1 for r in rows if r.get("error") == "RuntimeError") == 1  # the same error is logged once an hour
