@@ -436,8 +436,40 @@ def arm_target(pol, section, key, value):
     else:
         path = ["categories", section, base]
     if sub:
+        cur = pol
+        for k in path:
+            cur = cur.get(k) if isinstance(cur, dict) else None
+        if isinstance(cur, dict):  # the dict is in the file here: arm only the grade, so a later change of another
+            return path + [sub], copy.deepcopy(value)  # grade is not frozen into the arm
         value = {**(pe._resolved(pol, section).get(base) or {}), sub: value}
     return path, copy.deepcopy(value)
+
+
+def seller_has_arms(root):
+    """False when <root>/policy.py (the attempt 1 rule code the seller runs) is there and has no with_arms: a split
+    started against such a seller would compare two identical arms."""
+    try:
+        with open(os.path.join(root, "policy.py"), encoding="utf-8") as f:
+            return "def with_arms(" in f.read()
+    except OSError:
+        return True
+
+
+def sync_arms(root, rows=None):
+    """Make the arms file hold exactly the arms of the running split experiments of the ledger (the ledger is the
+    source of truth): orphan, repeated-id and stale arms go, a lost arm comes back. -> the arms list."""
+    rows = load(root) if rows is None else rows
+    want = [
+        {"id": e["id"], **{k: e["arm"][k] for k in ("path", "value", "share", "until")}}
+        for e in rows
+        if isinstance(e, dict) and e.get("status") == "running" and e.get("mode") == "split"
+        and isinstance(e.get("arm"), dict) and all(k in e["arm"] for k in ("path", "value", "share", "until"))
+    ]
+    raw = c.load_json(arms_path(root), None) if os.path.exists(arms_path(root)) else {"arms": []}
+    if not isinstance(raw, dict) or raw.get("arms") != want:
+        if want or os.path.exists(arms_path(root)):
+            _write_arms(root, want)
+    return want
 
 
 def arm_b(arm_id, unit, share=ARM_SHARE):
@@ -485,7 +517,9 @@ def start(
             return _err(
                 f"{key} cannot be compared concurrently (split keys: {', '.join(SPLIT_KEYS)})"
             )
-        split = mode == "split" or (mode == "auto" and split_ok is True and can_split)
+        split = mode == "split" or (
+            mode == "auto" and split_ok is True and can_split and seller_has_arms(root)
+        )
         msg = blocked(root, sec, key, now, "split" if split else "sequential")
         if msg:
             return _err(msg)
@@ -540,10 +574,26 @@ def _start_sequential(
         pol = None
     present, value = pe.raw_state(pol, sec, key)
     raw = {"base": key.split(".", 1)[0], "present": present, "value": value}
-    r = pe.apply(root, [clean], traj, now, categories=categories, validate=validate)[0]
+    def undo(why):
+        try:
+            now_state = pe.raw_state(c.load_json(pe.path(root), None), sec, key)
+        except Exception:  # noqa: BLE001
+            now_state = None
+        if now_state == (present, value):
+            return "값은 그대로임"
+        back = pe.kernel_restore(
+            root, sec, raw["base"], present, value, traj, now, why, tag=pe.kernel_tag(now), key=key,
+            validate=validate,
+        )
+        return "값은 원래대로 되돌림" if back.get("ok") else f"되돌리기도 실패: {back.get('error')}"
+
+    try:
+        eid = _next_id(load(root))
+        r = pe.apply(root, [clean], traj, now, categories=categories, validate=validate)[0]
+    except Exception as e:  # noqa: BLE001 - a write that failed half way must not leave an unregistered edit
+        return _err(f"수정 실패 ({type(e).__name__}: {e}); " + undo(f"수정 실패로 되돌림 ({type(e).__name__})"))
     if not r.get("ok"):
         return _err(r.get("error"))
-    eid = _next_id(load(root))
     try:
         exp = register(
             root,
@@ -590,7 +640,10 @@ def _start_split(
     r = pe.check(root, clean, traj, now, categories=categories, validate=validate)
     if not r.get("ok"):
         return _err(r.get("error"))
-    arms = load_arms(root)
+    try:
+        arms = sync_arms(root)
+    except Exception as e:  # noqa: BLE001
+        return _err(f"비교 팔 파일을 맞추지 못함 ({type(e).__name__}: {e})")
     if len(arms) >= ARMS_MAX:
         return _err(f"동시 비교는 {ARMS_MAX}개까지 (지금 {len(arms)}개)")
     pol = c.load_json(pe.path(root), None)
@@ -1032,6 +1085,7 @@ def _arm_stats():
         "stars": [],
         "net": 0.0,
         "revenue": 0.0,
+        "sq": 0.0,
     }
 
 
@@ -1066,13 +1120,16 @@ def evaluate_split(root, exp, now, data=None):
         x["net"] += g
         x["revenue"] += s["amount"]
         x["buckets"][idx(s["ts"])] += g + rw * s["amount"]
+        x["sq"] += (g + rw * s["amount"]) ** 2
         r = _stars(data, s)
         if r is not None:
             x["stars"].append(r)
     A, B = arm["a"], arm["b"]
     d = [bb - aa for aa, bb in zip(A["buckets"], B["buckets"])]
     effect = st.mean(d)
-    se = st.stdev(d) / math.sqrt(len(d)) if len(d) >= 2 else None
+    # se of the random assignment: with no true difference each sale lands in a or b by the unit hash, so the
+    # variance of (sum b - sum a) is the sum of squared sale values. Three hourly buckets gave an sd too noisy to trust.
+    se = math.sqrt(A["sq"] + B["sq"]) / hours if A["n"] + B["n"] >= 2 else None
     va, vb = sum(A["buckets"]) / hours, sum(B["buckets"]) / hours
     total = A["n"] + B["n"]
     ck = lambda x: x["n_cost"] / x["n"] if x["n"] else None
@@ -1110,7 +1167,7 @@ def evaluate_split(root, exp, now, data=None):
         v.update(decision="thin", reason="no_unit")
     elif any(x["n"] >= COST_N_MIN and ck(x) < COST_KNOWN_MIN for x in (A, B)):
         v.update(decision="thin", reason="cost_unknown")
-    elif total < SPLIT_THIN_N or not A["n"] or not B["n"]:
+    elif total < SPLIT_THIN_N or A["n"] < THIN_N or B["n"] < THIN_N:
         v.update(decision="thin", reason="thin")
     elif (
         se is not None
@@ -1293,9 +1350,9 @@ def _step_split(root, exp, now, traj, categories, validate):
         # weak final: b only when its point estimate beats a by more than one se; the status quo wins a tie
         v["final"] = "point_estimate"
         adopt = (
-            v["reason"] not in ("no_unit", "cost_unknown")
-            and v["n_a"] > 0
-            and v["n_b"] > 0
+            v["reason"] not in ("no_unit", "cost_unknown", "thin")
+            and v["n_a"] >= THIN_N
+            and v["n_b"] >= THIN_N
             and v["se"] is not None
             and v["effect"] > 0
             and v["effect"] > v["se"]
@@ -1353,6 +1410,11 @@ def tick(root, now, traj, categories=(), validate=None):
     except Exception:  # noqa: BLE001 - an unreadable ledger must not stop the operator wake
         return []
     out, dirty = [], False
+    try:
+        if isinstance(rows, list):
+            sync_arms(root, rows)
+    except Exception:  # noqa: BLE001
+        pass
     for exp in rows:
         try:
             if not isinstance(exp, dict) or exp.get("status") != "running":

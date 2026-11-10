@@ -146,8 +146,11 @@ def test_split_start_per_grade_value_is_the_whole_dict(root, a1):
     r = _start(root, a1, "defaults.goods", "fresh_discount.C", 0.25)
     assert r["ok"] and r["mode"] == "split"
     arms = a1.load_arms(os.path.join(root, "policy.json"), S)
-    assert arms[0]["path"] == ["defaults", "goods", "fresh_discount"]
-    assert arms[0]["value"] == {"B": 0.08, "C": 0.25}
+    assert arms[0]["path"] == ["defaults", "goods", "fresh_discount", "C"]  # the dict is in the file: the grade only
+    assert arms[0]["value"] == 0.25
+    pol2, picked = a1.with_arms(a1.load(os.path.join(root, "policy.json")), arms, "u-b")
+    fd = pol2["defaults"]["goods"]["fresh_discount"]
+    assert fd["B"] == 0.08 and fd["C"] == (0.25 if picked[1] == "b" else _pol(root)["defaults"]["goods"]["fresh_discount"]["C"])
     r = _start(root, a1, "shop", "grade_floor_list.A", 0.5)
     assert (
         r is not None and r["ok"] is False
@@ -263,25 +266,51 @@ def test_auto_mode_picks_split_only_when_allowed(root, a1):
     assert r["ok"] is False  # forced split of a buyer key is refused
 
 
-def test_ninth_arm_is_refused(root, a1):
-    other = [
-        {
-            "id": 100 + i,
-            "path": ["shop", "x"],
-            "value": 1,
-            "share": 0.5,
-            "until": S + 9 * H,
-        }
-        for i in range(8)
-    ]
+def test_ninth_arm_is_refused_and_orphans_are_collected(root, a1):
+    orphan = [{"id": 100 + i, "path": ["shop", "x"], "value": 1, "share": 0.5, "until": S + 9 * H} for i in range(8)]
     with open(ex.arms_path(root), "w") as f:
-        json.dump({"arms": other}, f)
+        json.dump({"arms": orphan}, f)
+    r = _start(root, a1)  # arms with no running ledger row do not count and are dropped
+    assert r["ok"] and [a["id"] for a in ex.load_arms(root)] == [1]
+    rows = ex.load(root)
+    for i in range(2, 9):  # 8 running split rows in the ledger
+        rows.append(dict(rows[0], id=i, section=f"cat{i}", scope=f"leaf:cat{i}"))
+    ex.save(root, rows)
+    ex.tick(root, S + 60, _traj(root), CATS, validate=a1.load)
+    assert [a["id"] for a in ex.load_arms(root)] == list(range(1, 9))
     before = _bytes(root)
+    r = _start(root, a1, "defaults.food", "price_mult", 1.0)
+    assert r["ok"] is False and "8개까지" in r["error"], r
+    assert _bytes(root) == before and len(ex.load_arms(root)) == 8 and len(ex.load(root)) == 8
+
+
+def test_corrupt_arms_file_is_rebuilt_from_the_ledger(root, a1):
     r = _start(root, a1)
-    assert r["ok"] is False and "8개까지" in r["error"]
-    assert (
-        ex.load_arms(root) == other and _bytes(root) == before and ex.load(root) == []
-    )
+    with open(ex.arms_path(root), "w") as f:
+        f.write("{broken")
+    ex.tick(root, S + 60, _traj(root), CATS, validate=a1.load)
+    assert [a["id"] for a in a1.load_arms(os.path.join(root, "policy.json"), S)] == [r["experiment"]]
+
+
+def test_thin_arm_is_never_adopted(root, a1):
+    r = _start(root, a1, item={"window_h": 8})
+    rows, k, got = [], 0, {"a": 0, "b": 0}
+    while got["a"] < 2 or got["b"] < 9:
+        k += 1
+        arm = "b" if ex.arm_b(1, f"t{k}") else "a"
+        if got[arm] >= (9 if arm == "b" else 2):
+            continue
+        got[arm] += 1
+        rows += _sale(S + k * 300, "BED1", 1_500_000, 1_000_000, unit=f"t{k}")
+    _write_events(root, rows)
+    ex.tick(root, r["eval_ts"] + 1, _traj(root), CATS, validate=a1.load)
+    assert ex.load(root)[0]["status"] == "dropped"
+
+
+def test_no_split_when_the_seller_code_has_no_arms(root, a1):
+    with open(os.path.join(root, "policy.py"), "w") as f:
+        f.write("# old rule code\n")
+    assert not ex.seller_has_arms(root)
 
 
 def test_split_and_sequential_block_each_other(root, a1):
@@ -332,7 +361,7 @@ def test_sequential_blocks_split(root, a1):
 def test_better_b_is_adopted(root, a1, section, key, value, check):
     r = _start(root, a1, section, key, value)
     assert r["ok"] and r["mode"] == "split", r
-    _write_events(root, _balanced(1, S, 3, "BED1", 100_000, 200_000))
+    _write_events(root, _balanced(1, S, 3, "BED1", 100_000, 400_000, per_arm=4))
     out = ex.tick(root, r["eval_ts"] + 1, _traj(root), CATS, validate=a1.load)
     assert [x["status"] for x in out] == ["adopted"], ex.load(root)
     e = ex.load(root)[0]
@@ -341,8 +370,8 @@ def test_better_b_is_adopted(root, a1, section, key, value, check):
         "better",
         "clear",
         "decision",
-        9,
-        9,
+        12,
+        12,
     )
     assert v["b"] > v["a"] and v["effect"] > 2 * v["se"]
     pol = _pol(root)
@@ -360,7 +389,7 @@ def test_better_b_is_adopted(root, a1, section, key, value, check):
 def test_worse_b_is_dropped_and_policy_untouched(root, a1):
     before = _bytes(root)
     r = _start(root, a1)
-    _write_events(root, _balanced(1, S, 3, "BED1", 200_000, 100_000))
+    _write_events(root, _balanced(1, S, 3, "BED1", 400_000, 100_000, per_arm=4))
     out = ex.tick(root, r["eval_ts"] + 1, _traj(root), CATS, validate=a1.load)
     assert [x["status"] for x in out] == ["dropped"]
     assert ex.load(root)[0]["verdict"]["decision"] == "worse"
@@ -371,7 +400,7 @@ def test_worse_b_is_dropped_and_policy_untouched(root, a1):
 def test_value_changed_meanwhile_voids(root, a1):
     r = _start(root, a1)
     _set_pol(root, lambda p: p["categories"][BED].update(price_mult=0.7))
-    _write_events(root, _balanced(1, S, 3, "BED1", 100_000, 200_000))
+    _write_events(root, _balanced(1, S, 3, "BED1", 100_000, 400_000, per_arm=4))
     out = ex.tick(root, r["eval_ts"] + 1, _traj(root), CATS, validate=a1.load)
     assert [x["status"] for x in out] == ["voided"] and ex.load_arms(root) == []
     assert _pol(root)["categories"][BED]["price_mult"] == 0.7
@@ -403,8 +432,8 @@ def test_late_tick_gives_the_on_time_verdict(root, a1):
 
 def test_unit_missing_is_counted_and_thin_above_20_percent(root, a1):
     r = _start(root, a1)
-    rows = _balanced(1, S, 3, "BED1", 100_000, 200_000)
-    for i in range(6):  # 6 of 24 (25 %) without a unit id
+    rows = _balanced(1, S, 3, "BED1", 100_000, 400_000, per_arm=4)
+    for i in range(8):  # 8 of 32 (25 %) without a unit id
         s = _sale(S + 1800 + i * 60, "BED1", 1_100_000, 1_000_000)
         s[0]["data"].pop("unit")
         s[0]["data"]["unit_cost"] = 1_000_000
@@ -414,8 +443,8 @@ def test_unit_missing_is_counted_and_thin_above_20_percent(root, a1):
     assert (v["decision"], v["reason"], v["no_unit"], v["n_a"] + v["n_b"]) == (
         "thin",
         "no_unit",
-        6,
-        18,
+        8,
+        24,
     )
 
 
@@ -443,7 +472,7 @@ def test_weak_final_adopts_b_above_one_se(root, a1):
     r = _start(root, a1, item={"window_h": 8})
     rows = []
     for h, gb in enumerate(
-        [100_000, 150_000, 80_000, 160_000, 90_000, 170_000, 100_000, 120_000]
+        [160_000] * 8
     ):
         rows += _balanced(1, S + h * H, 1, "BED1", 100_000, gb, tag=f"h{h}-")
     _write_events(root, rows)
@@ -469,7 +498,7 @@ def test_expired_arm_is_decided_at_once(root, a1):
 
 def test_adopt_failure_retries_then_voids(root, a1):
     r = _start(root, a1)
-    _write_events(root, _balanced(1, S, 3, "BED1", 100_000, 200_000))
+    _write_events(root, _balanced(1, S, 3, "BED1", 100_000, 400_000, per_arm=4))
 
     def bad(p):
         raise ValueError("disk full")
@@ -494,7 +523,7 @@ def test_adopt_failure_retries_then_voids(root, a1):
 
 def test_adopt_retry_succeeds(root, a1):
     r = _start(root, a1)
-    _write_events(root, _balanced(1, S, 3, "BED1", 100_000, 200_000))
+    _write_events(root, _balanced(1, S, 3, "BED1", 100_000, 400_000, per_arm=4))
 
     def bad(p):
         raise ValueError("disk full")
