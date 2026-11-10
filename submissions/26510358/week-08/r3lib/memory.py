@@ -28,6 +28,7 @@ CREATE INDEX IF NOT EXISTS settles_cat ON settles(category, ts);
 CREATE INDEX IF NOT EXISTS settles_sku ON settles(sku, ts);
 CREATE INDEX IF NOT EXISTS settles_order ON settles(order_id);
 CREATE TABLE IF NOT EXISTS breaks (seq INTEGER PRIMARY KEY, ts REAL, order_id TEXT, buyer TEXT, shop TEXT, sku TEXT);
+CREATE INDEX IF NOT EXISTS breaks_order ON breaks(order_id);
 CREATE TABLE IF NOT EXISTS shop_stock (shop_url TEXT, name TEXT, pubkey TEXT, sku TEXT, qty INTEGER, ts REAL,
     PRIMARY KEY (shop_url, sku));
 CREATE TABLE IF NOT EXISTS shops (shop_url TEXT PRIMARY KEY, name TEXT, pubkey TEXT, owner TEXT, mine INTEGER, ts REAL);
@@ -49,6 +50,10 @@ CREATE TABLE IF NOT EXISTS members (code TEXT PRIMARY KEY, ts REAL, sku TEXT, st
 CREATE TABLE IF NOT EXISTS restocks (id INTEGER PRIMARY KEY AUTOINCREMENT, ts REAL, sku TEXT, category TEXT, qty INTEGER,
     reason TEXT);
 """
+BREAK_CACHE_S = 600     # break_rate_for answers from memory for this long. 2026-11-10: the shop asked it on every quote
+                        #   and the join scanned all of breaks for each settle of the category (no index on order_id,
+                        #   74k x 14.5k for mattresses): a couch quote took 14.5 s and a chair 5.9 s against 0.3 s for
+                        #   kimchi, inside the shop's event loop, so every other buyer waited too
 MIGRATIONS = (("forum", "ALTER TABLE forum ADD COLUMN likes INTEGER DEFAULT 0"),
               ("forum", "ALTER TABLE forum ADD COLUMN dislikes INTEGER DEFAULT 0"),
               ("negotiations", "ALTER TABLE negotiations ADD COLUMN style TEXT"))
@@ -57,6 +62,7 @@ MIGRATIONS = (("forum", "ALTER TABLE forum ADD COLUMN likes INTEGER DEFAULT 0"),
 class Memory:
     def __init__(self, path=None):
         self.path = path or config.DB_PATH
+        self._break_cache = {}
         self.path.parent.mkdir(parents=True, exist_ok=True)
         with self.db() as c:
             c.executescript(SCHEMA)
@@ -248,7 +254,15 @@ class Memory:
 
     def break_rate_for(self, grade, category):
         """Grade x category break rate when that cell has BREAK_MIN_N goods sales, else the grade's. Mattresses and
-        bedding broke at ~6% while grade A overall broke at 2.4%."""
+        bedding broke at ~6% while grade A overall broke at 2.4%. Cached for BREAK_CACHE_S."""
+        hit = self._break_cache.get((grade, category))
+        if hit and time.time() - hit[0] < BREAK_CACHE_S:
+            return hit[1]
+        p = self._break_rate_for(grade, category)
+        self._break_cache[(grade, category)] = (time.time(), p)
+        return p
+
+    def _break_rate_for(self, grade, category):
         with self.db() as c:
             n = c.execute("SELECT COUNT(*) n FROM settles WHERE kind='goods' AND grade=? AND category=?",
                           (grade, category)).fetchone()["n"]
