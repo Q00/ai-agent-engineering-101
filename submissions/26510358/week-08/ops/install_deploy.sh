@@ -31,6 +31,7 @@ cat > "$U/week08-deploy.timer" <<UNIT
 Description=Week 08: check the hub for new commits every 2 min
 [Timer]
 OnBootSec=2min
+OnActiveSec=1min
 OnUnitInactiveSec=2min
 [Install]
 WantedBy=timers.target
