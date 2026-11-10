@@ -108,6 +108,14 @@ class Depth(Plan):
         self.assertTrue(all(1 <= b["qty"] <= 3 for b in buys))
         self.assertEqual(why["planned_units"], 12)
 
+    def test_a_plan_respects_16_units_with_the_same_six_lines(self):
+        catalog = {f"s{i}": product(f"c{i}") for i in range(20)}
+        buys, why = self.plan(inventory(), catalog, {k: HOT for k in catalog}, dict(self.WIDE, max_units_per_run=16))
+        self.assertEqual(len(buys), 6)
+        self.assertEqual(sum(b["qty"] for b in buys), 16)
+        self.assertTrue(all(1 <= b["qty"] <= 3 for b in buys))
+        self.assertEqual(why["planned_units"], 16)
+
     def test_a_sku_without_bulk_evidence_stays_at_one(self):
         thin = {"distinct_buyers": 3, "settles_6h": 3, "distinct_buyers_6h": 3, "median_price": 100}
         catalog = {f"s{i}": product(f"c{i}") for i in range(20)}
@@ -175,10 +183,17 @@ class Bounds(unittest.TestCase):
     def test_settings_load_and_values_past_the_bounds_are_refused(self):
         settings = restock_capacity.config()
         self.assertEqual((settings["max_total_units"], settings["max_proven_units_per_sku"], settings["max_units_per_run"], settings["max_lines_per_run"], settings["max_unproven_units"]), (80, 3, 12, 6, 2))
-        for key, value in (("max_total_units", 81), ("max_proven_units_per_sku", 4), ("max_units_per_run", 13), ("max_lines_per_run", 11), ("max_lines_per_run", 0), ("max_lines_per_run", "6"), ("max_unproven_units", 3)):
-            with self.subTest(key=key), patch.object(restock_capacity, "read", return_value=dict(settings, **{key: value})):
+        for key, value in (("max_total_units", 81), ("max_proven_units_per_sku", 4), ("max_units_per_run", 17), ("max_units_per_run", 0), ("max_lines_per_run", 11), ("max_lines_per_run", 0), ("max_lines_per_run", "6"), ("max_unproven_units", 3)):
+            with self.subTest(key=key, value=value), patch.object(restock_capacity, "read", return_value=dict(settings, **{key: value})):
                 with self.assertRaises(ValueError):
                     restock_capacity.config()
+
+    def test_units_per_run_up_to_16_are_authorized(self):
+        # The user approved raising the bound from 12 to 16 on 11-10; 12 stays valid and 17 is refused above.
+        settings = restock_capacity.config()
+        for value in (12, 13, 16):
+            with self.subTest(value=value), patch.object(restock_capacity, "read", return_value=dict(settings, max_units_per_run=value)):
+                self.assertEqual(restock_capacity.config()["max_units_per_run"], value)
 
 
 if __name__ == "__main__":
