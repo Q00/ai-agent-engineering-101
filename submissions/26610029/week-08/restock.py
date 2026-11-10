@@ -46,7 +46,8 @@ EMOJI_BY_KIND = {"food": "🍊", "goods": "🛋️"}
 def plan(inv, d, policy, now):
     units = inv.get("units", [])
     if len(units) >= policy["max_units"]:
-        return [], "stock is full"
+        print(f"[restock] stock is full ({len(units)}/{policy['max_units']}), not buying")
+        return [], []          # why must stay a list of dicts, same shape as the normal return below
     held = {}
     for u in units:
         held[u["sku"]] = held.get(u["sku"], 0) + 1
