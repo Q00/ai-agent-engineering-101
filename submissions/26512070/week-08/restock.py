@@ -32,6 +32,7 @@ from tools.registry import Ctx, call  # noqa: E402
 
 ROUND_END = time.mktime(time.strptime("2026-11-17 23:59", "%Y-%m-%d %H:%M"))   # Round 3 ends (local time, KST)
 TAPER_H = 48            # own_floor ends this long before the end: stock left at the end is lost, so we buy only what sells
+VALUE_LINES = 5         # while stocking up, this many of the kit's 10 lines go to expected sales value, the rest to demand
 REASK_MINUTES = 20
 LEAD = 75                  # plan this many seconds before a window opens at the latest (a model turn takes ~40 s)
 WINDOW_MINUTES = 3
@@ -224,7 +225,10 @@ def build_buy_list(ctx, now=None):
         if pb["own_floor"] and (ROUND_END - now) / 3600 > TAPER_H:
             # 11/10 17:2x: with cash to spare the kit's 10 lines went to water, kimchi and cushions sold this hour and
             # the high-list best sellers never got a line - while stocking up, expected sales value comes first
-            lines.sort(key=lambda x: -x["value"])
+            # 18:5x: value alone left the fast food out (48 visits an hour asked for food we lacked, sales 37 -> 16 an
+            # hour): VALUE_LINES lines by value, the rest by what sells and is asked for, as before
+            deep = sorted(lines, key=lambda x: -x["value"])[:VALUE_LINES]
+            lines[:] = deep + [x for x in lines if x not in deep]
     # User 11/4 02:1x: plan within the money we may spend - each line gets what the cash and the stock cap allow
     from tools import act
     room = check.room(ctx)
