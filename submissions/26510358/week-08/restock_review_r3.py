@@ -11,7 +11,7 @@ and stores it for ADJUST_TTL_H. It never buys, prices or sells anything itself.
 import json
 import time
 
-from r3lib import config, market, oracle, primer, react, scout
+from r3lib import config, forge, market, oracle, primer, react, scout
 from r3lib.memory import Memory
 from restock_r3 import active_adjustments, plan, protected_categories
 
@@ -66,7 +66,8 @@ def tools(mem, inv, demand):
                        "have been held", stock_on_hand),
             react.recall_tool(mem), scout.tool(mem), oracle.tool(mem),
             react.Tool("category_evidence", "market demand, competition, price/list and forum signals for one category",
-                       category_evidence, {"category": "full category string"})]
+                       category_evidence, {"category": "full category string"}),
+            *forge.tools_for("restock_review", mem)]          # verified tools from tools/forged (RL_PROACTIVE.md 2.3)
 
 
 def principles(mem, inv, now=None, k=2):

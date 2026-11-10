@@ -21,7 +21,7 @@ import json
 import statistics
 import time
 
-from r3lib import config, decide, forum_influencer, initiative, llm, market, oracle, react
+from r3lib import config, decide, forge, forum_influencer, initiative, llm, market, oracle, react
 from r3lib.memory import Memory
 SHOP_POST_EVERY = 90 * 60
 
@@ -270,7 +270,8 @@ def buyer_tools(mem):
             react.recall_tool(mem), oracle.tool(mem),
             react.Tool("ledger_refs", "recent settled deals (seq is citable), optionally filtered by category text "
                        "(e.g. '김치') or kind ('food' / 'goods')",
-                       ledger_refs, {"category": "str or null", "limit": "int <= 20"})]
+                       ledger_refs, {"category": "str or null", "limit": "int <= 20"}),
+            *forge.tools_for("forum_post", mem)]              # verified tools from tools/forged (RL_PROACTIVE.md 2.3)
 
 
 BUYER_GOAL = (

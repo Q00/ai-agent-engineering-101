@@ -1,0 +1,35 @@
+{
+ "name": "ledger_query",
+ "description": "read-only public ledger: deals and price/list (min, median, max) of one SKU or a category over the last hours, optionally split by grade, shop or sku, with ledger seqs to cite",
+ "args": {
+  "sku": "str",
+  "category": "str (name or part of it)",
+  "hours": "number <= 72",
+  "by": "grade | shop | sku",
+  "kind": "food | goods"
+ },
+ "uses": [
+  "forum_post",
+  "restock_review",
+  "unknown"
+ ],
+ "example": {
+  "category": "신선과일",
+  "hours": 12,
+  "by": "grade"
+ },
+ "kind": "read",
+ "moves_money": false,
+ "sha256": "74f43dddd5bdd0cb8b08fe3932854c73a420929a122af42f690c2277b7dd3f0e",
+ "verified": {
+  "at": "2026-11-10T13:02:35Z",
+  "tries": 1,
+  "tests": "5 passed, 0 failed",
+  "sandbox": "python -I, no network, empty env, temp cwd"
+ },
+ "shadow_gate": null,
+ "approved_by": null,
+ "registered": true,
+ "loadable": true,
+ "not_loaded_because": null
+}
