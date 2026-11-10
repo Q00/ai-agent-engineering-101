@@ -47,6 +47,7 @@ assert mb.accept_policy({"kind": "food", "use_within_hours": 5})["min_hours_left
 (md / "payments.jsonl").write_text("\n".join(json.dumps({"shop": "http://bad", "paid": False}) for _ in range(2)) + "\n"
                                    + json.dumps({"shop": "http://ok", "paid": False}) + "\n")
 assert mb.refused_shops(md) == {"http://bad"}
+assert mb.price_cap(400, 300) == 225 and mb.price_cap(200, 300) == 200 and mb.price_cap(200, None) == 200
 wmem = {"shops": {"none": {"trades": [{"warranty": 0}, {"warranty": 0}]}, "some": {"trades": [{"warranty": 0}, {"warranty": 6}]},
                   "once": {"trades": [{"warranty": 0}]}, "food": {"trades": [{}, {}]}}}
 assert [n for n in wmem["shops"] if mb.no_warranty(wmem, n)] == ["none"]

@@ -202,9 +202,9 @@ def read_jsonl(p: Path):
 
 
 def refused_shops(md: Path):
-    """Shop URLs whose checkout the kit refused to pay at least twice in the last 50 payments."""
+    """Shop URLs whose checkout the kit refused to pay at least twice in the last 200 payments."""
     bad = {}
-    for pm in read_jsonl(md / "payments.jsonl")[-50:]:
+    for pm in read_jsonl(md / "payments.jsonl")[-200:]:      # shops that ship grade C keep doing it
         if pm.get("paid") is False:
             bad[pm["shop"]] = bad.get(pm["shop"], 0) + 1
     return {u for u, n in bad.items() if n >= 2}
@@ -214,6 +214,12 @@ def no_warranty(mem: dict, shop_name: str) -> bool:
     """Two or more goods bought there, none with a warranty: a break there is a Saved of -1 with no refund."""
     w = [t["warranty"] for t in mem["shops"].get(shop_name, {}).get("trades", []) if "warranty" in t]
     return len(w) >= 2 and not any(w)
+
+
+def price_cap(budget: int, list_price) -> int:
+    """Saved = sum of (1 - price/list) / (deals + 100): a deal only lifts it when its discount beats the running
+    average (~0.23), so never pay more than 75 % of list. Fewer deals, each one counting for more."""
+    return min(budget, int(list_price * 0.75)) if list_price else budget
 
 
 def pick_sku(shop: dict, order: dict, catalog: dict, broken: set):
@@ -330,8 +336,11 @@ def main():
             if med:
                 hint = f"Other buyers recently paid about {med} for this exact item ({n} settled deals); offer below that first. "
                 log(f"[anchor] market median {med} over {n} deals")
-        st = negotiate(shop["url"], args.item, args.budget, request_text=request, shop=shop["name"], hint=hint,
-                       anchor=med if offer and med else None)
+        cap = price_cap(args.budget, catalog.get(offer["sku"], {}).get("list_price")) if offer else args.budget
+        if cap < args.budget:
+            log(f"[cap] paying at most {cap} (75 % of list) of budget {args.budget}")
+        st = negotiate(shop["url"], args.item, cap, request_text=request, shop=shop["name"], hint=hint,
+                       anchor=min(med, cap) if offer and med else None)
         others = [s for s in shops if s["url"] != shop["url"]]
         if st["status"] != "no_offer" or attempt == 2 or not others:
             break
