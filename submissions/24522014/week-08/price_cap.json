@@ -4,10 +4,10 @@
   "max_list_price": 1000000,
   "note": "Read on every deal by seller_r3.py, so it can be switched off or changed without a restart once a restarted seller runs this code. Base: catalogue list price. Boundary: the quote is at most floor(list x ratio); a unit whose list price is max_list_price or more is left alone. The floor is never lowered: when it is above the ceiling the quote is the floor, recorded in logs/pricing and signed-offers as price_cap.state floor_bound. Evidence: raters YAHO1212, psyoung82 and mjforge give 5 up to about .798 and 4 from about .802, on 8,469 reviews of 2026-11-06; a gain to our star rank is not shown yet.",
   "pq1": {
-    "enabled": true,
+    "enabled": false,
     "share": 0.5,
     "salt": "pq1",
     "ratio": 0.7,
-    "note": "Opening-quote A/B, approved by the user on 11-10: by task hash (salt pq1) the share in the test arm open at max(floor, floor(list x .70)) on every goods unit, 1M+ included; the control arm keeps the cap above. On since 11-10 after the user's seller restart (pq1_v1 at 12:01); read on every deal."
+    "note": "Opening-quote A/B, approved by the user on 11-10: by task hash (salt pq1) the share in the test arm open at max(floor, floor(list x .70)) on every goods unit, 1M+ included; the control arm keeps the cap above. On 11-10 12:02:56 to 18:06:33 KST; off at the 6 h checkpoint (test arm Book/quote 20,537 vs control 31,470, revenue/quote 142,724 vs 191,053). Read on every deal."
   }
 }
