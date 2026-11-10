@@ -165,7 +165,8 @@ class SharedTests(unittest.TestCase):
         with Memory(self.md) as memory:
             self.assertEqual(memory.events()[0]['data']['item'], 'SKU')
             self.assertEqual(len(memory.events()), 1)
-            self.assertEqual(len(requests), 3)
+            self.assertEqual(len(requests), 4)
+            self.assertIn('/api/ledger?after=-500', requests)
             self.assertIn('/api/board?round=3', requests)
 
 

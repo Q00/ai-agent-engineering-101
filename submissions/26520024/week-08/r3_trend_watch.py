@@ -211,6 +211,10 @@ def review_once(md=None, now=None, apply=False):
             if e['kind'] == 'seller_settlement' and 0 <= now-e['ts'] < INTERVAL),
         'limitation': 'Only linked own sales; refund adjustments live in portfolio memory. No causal baseline lift.'}
     summary['funnel_limit'] = 'Action counts, not unique visits; inventory lock failures are not lack of demand.'
+    from r3_competition import fresh_report
+    competition = fresh_report(md, now)
+    summary['competition'] = {key: competition.get(key) for key in
+        ('at', 'ranking', 'leaders', 'relationships', 'leader_then_our_shop', 'coverage', 'limits')}
     desired, reasons = propose(summary, baseline)
     manual_edit = bool(previous) and current != previous.get('last_applied_policy')
     status = 'paused_manual_policy_edit' if manual_edit else ('ready' if desired else 'insufficient_data')

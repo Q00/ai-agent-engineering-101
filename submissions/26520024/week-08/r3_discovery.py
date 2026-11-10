@@ -12,7 +12,7 @@ from r3_common import atomic_json, load_catalog, load_policy, read_json, state_d
 from r3_memory import Memory
 
 
-VERSION = 2
+VERSION = 3
 HALF_LIFE = 6 * 3600
 WINDOW = 6 * 3600
 PROMPT = '''Select bounded investment hypotheses from supplied candidates for a fictional market.
@@ -25,6 +25,8 @@ Consider evidence strength, related-product price comparability, food expiry, an
 Prefer actual acceptable-order substitutes over semantic complements. portfolio is a deterministic
 estimate with partial supply coverage, not a sales guarantee. Include a small pilot when justified;
 scale only products with repeated profitable own settlements. Respect uncertainty and cash limits.
+competitive_evidence is a bounded public sample of cash leaders' sales, not a private alliance,
+an endorsement, guaranteed demand, or permission to exceed any purchase guard.
 Never fabricate sales, trends, probabilities, quality grades, or evidence. A purchase cannot choose
 a grade or its random wholesale draw. You may omit all candidates. Return only JSON:
 {"hypotheses":[{"sku":"supplied SKU","evidence_ids":["supplied ID"],"reason":"brief factual rationale"}],

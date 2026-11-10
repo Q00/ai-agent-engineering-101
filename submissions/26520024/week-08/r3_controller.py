@@ -155,6 +155,8 @@ def maintain(md=None, *, now=None, decision=None):
             from r3_reputation import maintain_reputation
             maintain_reputation(memory, md, now)
             drafts = forum_drafts(memory)
+            from r3_competition import promotion
+            drafts.extend(promotion(memory, md, now))
             atomic_json(md / 'forum-drafts.json', drafts)
             # Incoming reviews are claims to investigate, not orders to alter prices or retaliate.
             feedback = [{'evidence': e['key'], **e['data']} for e in memory.events('shop_review', limit=10)]

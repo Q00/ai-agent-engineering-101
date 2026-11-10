@@ -85,6 +85,8 @@ def enrich(inputs, memory, inventory, now, limit=24):
             'observed_refunds': sum(r.get('unit') in refunded for r in sample),
             'scale_ready': len(profitable) >= 2 and sum(margins) > 0,
             'limitation': 'No causal demand, failure probability or complete competitor stock is inferred.'}
+    from r3_competition import enrich as competitive_enrich, fresh_report
+    competitive_enrich(inputs, fresh_report(memory.md, now))
     inputs['candidates'] = diversified(inputs['candidates'], limit)
     return inputs
 

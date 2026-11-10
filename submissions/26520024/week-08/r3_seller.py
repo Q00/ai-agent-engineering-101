@@ -121,7 +121,7 @@ def find_units(text, inventory, catalog, now):
     return [match[-1] for match in sorted(matches, key=lambda row: row[:-1])]
 
 
-def pricing(unit, policy, now, previous_ask=None, market_prices=None):
+def pricing(unit, policy, now, previous_ask=None, market_prices=None, competition=None, grade=None):
     cost, listed = money(unit['cost']), money(unit['list_price'])
     left = hours_left(unit, now)
     deadline = timestamp(policy.get('trading_deadline'))
@@ -144,9 +144,13 @@ def pricing(unit, policy, now, previous_ask=None, market_prices=None):
         ceiling = max(minimum, min(listed, math.ceil(listed * ratio)))
     if previous_ask is not None:
         minimum, ceiling = min(minimum, previous_ask), min(ceiling, previous_ask)
-    return dict(minimum=minimum, ceiling=ceiling, cost=cost, list_price=listed,
+    bounds = dict(minimum=minimum, ceiling=ceiling, cost=cost, list_price=listed,
                 liquidation=liquidation, market_price_floor=None,
                 disposal_policy='food_expiry_or_terminal' if liquidation else 'preserve_cost_basis')
+    if competition and policy.get('competitive_tracking_enabled', True):
+        from r3_competition import ceiling as competitive_ceiling
+        return competitive_ceiling(unit, bounds, competition, now, grade)
+    return bounds
 
 
 def validate_action(action, offer, previous_ask, bounds):
@@ -427,7 +431,10 @@ class Seller(AgentExecutor):
             with Memory(self.md) as memory:
                 remembered = memory.context(sku=unit['sku'], role='seller')
                 market_prices = price_ratio(memory, catalog, unit['category'], now)
-            bounds = pricing(unit, policy, now, previous['ask'], market_prices)
+            from r3_competition import fresh_report
+            competition = fresh_report(self.md, now)
+            bounds = pricing(unit, policy, now, previous['ask'], market_prices, competition,
+                             effective_grade(unit, catalog, now))
             state = dict(task_id=task.id, buyer_text=text[:3000], incoming_offer=offer,
                          previous_ask=previous['ask'], unit={k: unit[k] for k in
                          ('unit', 'sku', 'name', 'category', 'list_price', 'cost', 'kind')},
@@ -448,7 +455,8 @@ class Seller(AgentExecutor):
             current_deadline = timestamp(current_policy.get('trading_deadline'))
             if now >= expires or (current_deadline is not None and now >= current_deadline):
                 raise ValueError('Quote or trading deadline reached')
-            validate_action(action, offer, previous['ask'], pricing(unit, current_policy, now, previous['ask'], market_prices))
+            validate_action(action, offer, previous['ask'], pricing(unit, current_policy, now,
+                previous['ask'], market_prices, competition, effective_grade(unit, catalog, now)))
             data = dict(previous, ask=action['price'] if action['action'] == 'ask' else previous['ask'],
                         rounds=previous['rounds'] + 1, summary=action['summary'],
                         recent=(previous['recent'] + [dict(buyer=text[:500], action=action['action'], price=action['price'])])[-2:])
