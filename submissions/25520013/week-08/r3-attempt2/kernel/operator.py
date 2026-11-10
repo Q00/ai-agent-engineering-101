@@ -252,9 +252,9 @@ class Operator:
         return obs
 
     def _ask(self, prompt, route):
-        return self.terra.complete(
-            prompt, agent="operator", timeout_s=route.get("timeout_s", 300), effort=route.get("effort", "medium")
-        )
+        # A2_OPERATOR_EFFORT (11-10, 성수님 결정: 사용량 절감) overrides the harness route's effort when set
+        effort = os.environ.get("A2_OPERATOR_EFFORT") or route.get("effort", "medium")
+        return self.terra.complete(prompt, agent="operator", timeout_s=route.get("timeout_s", 300), effort=effort)
 
     def wake(self, reason, now=None):
         """One wake: tool loop until done or max_steps. -> summary dict (also written as an operator_wake row)."""
