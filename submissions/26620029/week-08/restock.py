@@ -73,7 +73,8 @@ HIGH_A_MIN = 0.72            # Claude (2026-11-09 20:22, hourly check): high tie
 # My A units cost 0.55-0.75 of list (random), the floor is cost, and 1M+ A sold at 0.65-0.75: G24f5f979 (market A 0.676) had 121 offers
 # and 1 deal against my 0.733 floor. Below 0.72 a new dear unit has almost no margin and about 1/3 comes as grade C
 A_MIN_DEALS = 5              # grade A settles seen (customers.py sku_a) before a high-tier SKU is judged; until then it is not bought
-FOCUS_MIN_QTY = 3            # units kept of a mid or low focus SKU below the FOCUS_QTY shares (was 2)
+FOCUS_MIN_QTY = 2            # units kept of a mid or low focus SKU below the FOCUS_QTY shares. 3 at 10:22, back to 2 at
+#   16:22 (2026-11-10): deals/h stayed 53-84 for six hours while 24 h+ stock grew 21.9M -> 32.6M
 C_EXEMPT_QTY = 2            # units a run for a high-tier SKU exempt from C_STOP (no A or B in stock, high_ok)
 MEMORY = Path("restock_memory.json")
 
@@ -121,7 +122,7 @@ def pop_qty(share):
 def focus_want(sku_share, list_price):
     """Units to keep of one focus SKU: more where it sells often, at most 2 of the dearest."""
     # Claude (2026-11-10 10:22, hourly check): stock cost fell 126.6M -> 88.6M overnight with 150M cash above the user's 40M floor;
-    # a dry run wanted 9 units, every target full. Mid and low SKUs keep FOCUS_MIN_QTY (3) at least; high stays at 2
+    # a dry run wanted 9 units, every target full. Mid and low SKUs keep FOCUS_MIN_QTY at least; high stays at 2
     want = next((q for at, q in FOCUS_QTY if sku_share >= at), FOCUS_MIN_QTY if list_price <= TIER_HIGH else 2)
     return min(want, FOCUS_DEAR_QTY) if list_price > FOCUS_DEAR else want
 
