@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import base64
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -36,7 +37,7 @@ from seller_state import SellerState, SQLiteTaskStore, ResumingContextBuilder
 import seller_quality
 import seller_requirements
 import seller_warranty
-from seller_promotion import discount_quote
+from seller_promotion import active_event, discount_quote
 import seller_featured
 from capital_policy import operating_policy
 from market_scoring import VERSION
@@ -56,6 +57,35 @@ HOLD_SECONDS = 600
 FIRST_QUOTE_IDLE_SECONDS = 90
 NEGOTIATION_IDLE_SECONDS = 300
 NEGOTIATION_MAX_SECONDS = 900
+QUOTE_SPEED_TRIAL = Path('state/seller-quote-speed-trial.json')
+QUOTE_SPEED_SKUS = frozenset({'G75f11c19', 'Gc2f7811b', 'Gbf98024f', 'G59e3e5ff'})
+QUOTE_SPEED_CONTROL_SECONDS = 10
+
+
+def speed_trial_quote(task_id, requested, choices, public_quotes, requirements, now, path=QUOTE_SPEED_TRIAL):
+    if len(requested) != 1 or requested[0] not in QUOTE_SPEED_SKUS:
+        return None
+    try:
+        trial = json.loads(path.read_text())
+        start, end = trial['starts_at'], trial['ends_at']
+        if not 0 < end - start <= 3 * 3600 or not start <= now < end:
+            return None
+    except (OSError, ValueError, KeyError, TypeError):
+        return None
+    if (active_event(now=now) or {}).get('discount_bps'):
+        return None
+    featured = {offer['unit'] for offer in public_quotes}
+    for unit in choices:
+        if unit['sku'] != requested[0] or unit['kind'] != 'goods' or unit['unit'] in featured:
+            continue
+        price = round(unit['list_price'] * GRADE_ANCHORS[unit['grade']])
+        floor = seller_warranty.economics(unit, now=now + QUOTE_SPEED_CONTROL_SECONDS,
+                                         warranty_hours=seller_warranty.hours(unit))['price_floor']
+        budget = requirements.get('budget_max')
+        if price >= floor and (budget is None or price <= budget):
+            digest = hashlib.blake2b(task_id.encode(), digest_size=1, person=b'quote-speed-v1').digest()
+            return ('instant' if digest[0] % 2 else 'control', unit, price)
+    return None
 
 
 def canon(body: dict) -> bytes:
@@ -236,6 +266,7 @@ class Seller(AgentExecutor):
             public_quotes=seller_featured.active(self.state.path,time.time())
             public_request=seller_featured.requested(message,public_quotes)
             if public_request and not public_request.get('unavailable') and not requested:requested=[public_request['sku']]
+            quote_started = time.monotonic()
             record('request_seen', task_id=task.id, requested_skus=requested,
                    forum_offer_id=public_request.get('id') if public_request else None)
             if public_request and (public_request.get('unavailable') or public_request['sku'] not in requested):
@@ -281,59 +312,70 @@ class Seller(AgentExecutor):
                     if len(self.identity_messages)>=512:self.identity_messages.pop(next(iter(self.identity_messages)))
                     self.identity_messages[context.message.message_id]=now
             record('buyer_identity_observed',task_id=task.id,**identity)
-            tools = [quote_candidates(u,warranty_hours=seller_warranty.hours(u)) for u in choices]
-            for unit,tool in zip(choices,tools):
-                tool['public_quote'] = next(({k:o[k] for k in ('id','price','valid_until','grade')}
-                                            for o in public_quotes if o['unit']==unit['unit']),None)
-            keys=list(dict.fromkeys((u['sku'],u['grade']) for u in choices))
-            per_key=min(3600,12000//len(keys)-64)
-            attempts = trade_attempts({sku for sku, _ in keys})
-            memories = {f'{sku}:{grade}': compact_context(sku, grade, max_bytes=per_key, attempts=attempts)
-                        for sku, grade in keys}
-            profile_history = events(kinds=counterparty_memory.PROFILE_EVENTS) if identity['verified'] else ()
-            for tool in tools:
-                tool['memory_key']=f"{tool['sku']}:{tool['grade']}"
-            profiles={}
-            profiles_by_unit={}
-            for unit,tool in zip(choices,tools):
-                remaining=(unit['expires_at']-now)/3600 if unit.get('expires_at') is not None else None
-                bucket='unknown' if remaining is None else 'near_expiry' if remaining<=3 else 'not_near_expiry'
-                key=f"{unit['sku']}:{unit['grade']}:{bucket}"
-                if key not in profiles:
-                    profiles[key] = counterparty_memory.profile(
-                        identity, unit, history=profile_history, attempts=attempts, now=now)
-                profiles_by_unit[unit['unit']]=profiles[key]
-                tool['buyer_evidence_key']=key
-                if profiles[key]['eligible_for_price_probe']:
-                    tool['buyer_price_candidates']=profiles[key]['price_candidates']
-            del attempts, profile_history
-            prompt = {
-                "phase": "opening", "task_id": task.id, "buyer_message": message[:500],
-                'purchase_requirements': requirements,
-                'warranty_policy':seller_warranty.POLICY,
-                "objective": "Choose one available physical unit and an opening price. "
-                             "Use the calculation-tool candidates and market memory as evidence; "
-                             "you may choose another positive price when you explain why. "
-                             "A signed receipt is not a settled sale. Buyer-specific higher quotes are optional "
-                             "experiments ONLY for eligible, market-linked signed identities. Use actual calm "
-                             "high-price settlements under comparable conditions, not a permanent buyer label "
-                             "or an assumed private budget. Unverified/unknown buyers use ordinary evidence. "
-                             "Respect failed or unresolved price probes; never reprice an already agreed receipt.",
-                "unit_options": tools, "memory_by_sku_grade": memories,
-                'buyer_identity':identity,'buyer_price_evidence':profiles,
-                'market_objective':operating_policy(time.time()),
-            }
-            prompt['objective'] += (' Calculate the ordinary opening quote without anticipating promotions; '
-                                    'A public_quote is a binding price ceiling for its physical unit. Prefer a compatible '
-                                    'featured unit when useful to the buyer. An explicit quote code narrows the unit choices. '
-                                    'a separate tool applies any campaign afterward. Never inflate a base price to offset a discount. '
-                                    'Prefer repeatable positive-margin turnover, settled revenue and honest quality over '
-                                    'maximizing one markup. Unsold inventory retains acquisition-cost Book credit at round end. '
-                                    'Compare selling with holding after storage, spoilage and refund risk; credit is not a cash buyback. '
-                                    'Buying inventory does not itself increase Book. Ranking weights are percentiles.')
-            middle = tools[0]["candidates"][len(tools[0]["candidates"]) // 2]["price"]
-            answer = await self.choose(prompt, ["ask", "reject"],
-                                       {"action": "ask", "price": middle, "unit_id": choices[0]["unit"]})
+            trial = None if public_request else speed_trial_quote(
+                task.id, requested, choices, public_quotes, requirements, now)
+            if trial:
+                arm, trial_unit, middle = trial
+                profiles_by_unit = {}
+                answer = {'action': 'ask', 'price': middle, 'unit_id': trial_unit['unit']}
+                audit.begin('opening', policy_version='quote-speed-v1')
+                audit.proposed({'action': 'ask', 'price': middle, 'unit': trial_unit['unit']}, source='fixed_quote')
+                record('quote_speed_trial', task_id=task.id, arm=arm, sku=trial_unit['sku'],
+                       grade=trial_unit['grade'], unit=trial_unit['unit'], planned_price=middle)
+            else:
+                tools = [quote_candidates(u,warranty_hours=seller_warranty.hours(u)) for u in choices]
+                for unit,tool in zip(choices,tools):
+                    tool['public_quote'] = next(({k:o[k] for k in ('id','price','valid_until','grade')}
+                                                for o in public_quotes if o['unit']==unit['unit']),None)
+                keys=list(dict.fromkeys((u['sku'],u['grade']) for u in choices))
+                per_key=min(3600,12000//len(keys)-64)
+                attempts = trade_attempts({sku for sku, _ in keys})
+                memories = {f'{sku}:{grade}': compact_context(sku, grade, max_bytes=per_key, attempts=attempts)
+                            for sku, grade in keys}
+                profile_history = events(kinds=counterparty_memory.PROFILE_EVENTS) if identity['verified'] else ()
+                for tool in tools:
+                    tool['memory_key']=f"{tool['sku']}:{tool['grade']}"
+                profiles={}
+                profiles_by_unit={}
+                for unit,tool in zip(choices,tools):
+                    remaining=(unit['expires_at']-now)/3600 if unit.get('expires_at') is not None else None
+                    bucket='unknown' if remaining is None else 'near_expiry' if remaining<=3 else 'not_near_expiry'
+                    key=f"{unit['sku']}:{unit['grade']}:{bucket}"
+                    if key not in profiles:
+                        profiles[key] = counterparty_memory.profile(
+                            identity, unit, history=profile_history, attempts=attempts, now=now)
+                    profiles_by_unit[unit['unit']]=profiles[key]
+                    tool['buyer_evidence_key']=key
+                    if profiles[key]['eligible_for_price_probe']:
+                        tool['buyer_price_candidates']=profiles[key]['price_candidates']
+                del attempts, profile_history
+                prompt = {
+                    "phase": "opening", "task_id": task.id, "buyer_message": message[:500],
+                    'purchase_requirements': requirements,
+                    'warranty_policy':seller_warranty.POLICY,
+                    "objective": "Choose one available physical unit and an opening price. "
+                                 "Use the calculation-tool candidates and market memory as evidence; "
+                                 "you may choose another positive price when you explain why. "
+                                 "A signed receipt is not a settled sale. Buyer-specific higher quotes are optional "
+                                 "experiments ONLY for eligible, market-linked signed identities. Use actual calm "
+                                 "high-price settlements under comparable conditions, not a permanent buyer label "
+                                 "or an assumed private budget. Unverified/unknown buyers use ordinary evidence. "
+                                 "Respect failed or unresolved price probes; never reprice an already agreed receipt.",
+                    "unit_options": tools, "memory_by_sku_grade": memories,
+                    'buyer_identity':identity,'buyer_price_evidence':profiles,
+                    'market_objective':operating_policy(time.time()),
+                }
+                prompt['objective'] += (' Calculate the ordinary opening quote without anticipating promotions; '
+                                        'A public_quote is a binding price ceiling for its physical unit. Prefer a compatible '
+                                        'featured unit when useful to the buyer. An explicit quote code narrows the unit choices. '
+                                        'a separate tool applies any campaign afterward. Never inflate a base price to offset a discount. '
+                                        'Prefer repeatable positive-margin turnover, settled revenue and honest quality over '
+                                        'maximizing one markup. Unsold inventory retains acquisition-cost Book credit at round end. '
+                                        'Compare selling with holding after storage, spoilage and refund risk; credit is not a cash buyback. '
+                                        'Buying inventory does not itself increase Book. Ranking weights are percentiles.')
+                middle = tools[0]["candidates"][len(tools[0]["candidates"]) // 2]["price"]
+                answer = await self.choose(prompt, ["ask", "reject"],
+                                           {"action": "ask", "price": middle, "unit_id": choices[0]["unit"]})
             if answer["action"] == "reject":
                 record("rejected", task_id=task.id, reason=answer["reason"])
                 await reject("No suitable offer for this request.",'model_reject')
@@ -391,12 +433,14 @@ class Seller(AgentExecutor):
                 ask = promotion['price']
                 audit.guard('opening_promotion',ordinary_quote=promotion['ordinary_quote'],effective_price=ask)
                 record('promotion_applied', task_id=task.id, sku=unit['sku'], unit=unit['unit'], **promotion)
+            quote_wait = (max(0, QUOTE_SPEED_CONTROL_SECONDS - (time.monotonic() - quote_started))
+                          if trial and arm == 'control' else 0)
             self.open[task.id] = deal = {
                 "unit": unit, "ask": ask, "history": [], "opened_at": time.time(),
-                'opened_monotonic':time.monotonic(),'last_activity':time.monotonic(),
+                'opened_monotonic':time.monotonic(),'last_activity':time.monotonic() + quote_wait,
                 'waiting_for_first_reply':True,
-                'buyer_identity':identity,'buyer_price_evidence':profiles_by_unit[unit['unit']],
-                'last_activity_at':time.time(), 'requirements':requirements,
+                'buyer_identity':identity,'buyer_price_evidence':profiles_by_unit.get(unit['unit'], {}),
+                'last_activity_at':time.time() + quote_wait, 'requirements':requirements,
                 'warranty_hours':warranty_hours,'warranty_price_floor':warranty['price_floor'],
                 'last_decision_id':audit.links().get('decision_id'),
             }
@@ -405,14 +449,21 @@ class Seller(AgentExecutor):
                 del self.open[task.id]
                 await reject('That unit was reserved by another purchase. Please try again.','reservation_conflict')
                 return
+            if quote_wait:
+                try:
+                    await asyncio.sleep(quote_wait)
+                except asyncio.CancelledError:
+                    self.open.pop(task.id, None)
+                    self.state.close_deal(task.id)
+                    raise
             record("opening", task_id=task.id, sku=unit["sku"], unit=unit["unit"],
                    category=unit.get("category"), grade=unit["grade"], kind=unit.get("kind"),
                    cost=unit["cost"], list_price=unit["list_price"], ask=ask,
                    expires_at=unit.get("expires_at"),warranty_hours=warranty_hours,warranty_economics=warranty,
                    score_version=VERSION,score_metric='book')
-            evidence=profiles_by_unit[unit['unit']]
+            evidence=profiles_by_unit.get(unit['unit'], {})
             ordinary=unit['list_price']*GRADE_ANCHORS[unit['grade']]
-            if evidence['eligible_for_price_probe'] and ask>ordinary*1.025:
+            if evidence.get('eligible_for_price_probe') and ask>ordinary*1.025:
                 remaining=(unit['expires_at']-now)/3600 if unit.get('expires_at') is not None else None
                 record('buyer_price_probe',task_id=task.id,buyer_name=identity['buyer_name'],sku=unit['sku'],
                        grade=unit['grade'],price=ask,baseline_anchor=ordinary,

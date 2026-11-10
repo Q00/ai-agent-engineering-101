@@ -200,6 +200,24 @@ class ProfileTests(unittest.TestCase):
 
 
 class SellerIdentityIntegrationTests(unittest.TestCase):
+    def test_quote_speed_arms_use_the_same_sku_grade_and_price(self):
+        now = time.time()
+        sku = 'Gbf98024f'
+        unit = {**UNIT, 'sku': sku, 'kind': 'goods', 'list_price': 270_000,
+                'cost': 160_000, 'supplied_at': now}
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'trial.json'
+            path.write_text(json.dumps({'starts_at': now - 1, 'ends_at': now + 3600}))
+            results = [seller_r3.speed_trial_quote(str(i), [sku], [unit], [], {}, now, path)
+                       for i in range(12)]
+            self.assertEqual({arm for arm, _, _ in results}, {'instant', 'control'})
+            self.assertEqual({(u['sku'], u['grade'], price) for _, u, price in results},
+                             {(sku, unit['grade'], round(270_000 * seller_r3.GRADE_ANCHORS[unit['grade']]))})
+            self.assertIsNone(seller_r3.speed_trial_quote('1', [sku], [unit], [{'unit': unit['unit']}], {}, now, path))
+            costly = {**unit, 'cost': 270_000}
+            self.assertIsNone(seller_r3.speed_trial_quote('1', [sku], [costly], [], {}, now, path))
+            self.assertIsNone(seller_r3.speed_trial_quote('1', [sku], [unit], [], {}, now + 3600, path))
+
     def test_actual_a2a_metadata_reaches_model_and_anonymous_falls_back(self):
         key=Ed25519PrivateKey.generate()
         prompts=[]
