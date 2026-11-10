@@ -52,6 +52,10 @@ REVIEW_COUPON_PITCH = (
 )
 
 
+class ModelCapacityError(HarnessError):
+    """No model worker was started because all local slots are occupied."""
+
+
 class Seller(AgentExecutor):
     def __init__(self, cfg):
         self.cfg = cfg
@@ -66,13 +70,16 @@ class Seller(AgentExecutor):
         self.reader = StrategyReader(ROOT / ".market" / "seller-strategy.json") if adaptive.get("enabled") else None
         self.events = ROOT / "logs" / "seller-events.jsonl"
         self.max_turns = min(10, max(2, int(adaptive.get("max_turns", 6))))
-        self.model_slots = asyncio.Semaphore(2)
+        slots = cfg.get("model_concurrency", 2)
+        if type(slots) is not int or not 1 <= slots <= 3:
+            raise ValueError("model_concurrency must be an integer from 1 to 3")
+        self.model_slots = asyncio.Semaphore(slots)
 
     async def infer(self, function, *args, **kwargs):
         try:
             await asyncio.wait_for(self.model_slots.acquire(), timeout=.1)
         except TimeoutError:
-            raise HarnessError("Shop busy; model concurrency limit reached")
+            raise ModelCapacityError("Shop busy; model concurrency limit reached")
         worker = asyncio.create_task(asyncio.to_thread(function, *args, **kwargs))
 
         def finished(task):

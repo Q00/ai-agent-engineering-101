@@ -19,7 +19,7 @@ from opening_strategy import OpeningReader, bounds as opening_bounds
 from receipt_signing import sign_receipt
 from sales_advisor import AdviceReader, config_at
 from shop_policy import closing_context, policy_at, quote_copy, selling_terms, shop_copy
-from seller_agent import DEFAULT, Seller, bounded_history, build
+from seller_agent import DEFAULT, ModelCapacityError, Seller, bounded_history, build
 from seller_context import inventory_context
 from warranty_trial import WarrantyTrial
 
@@ -72,9 +72,38 @@ def inventory_decision(product, offer, history, last_ask, advice=None):
     return decide("seller_inventory.txt", context, validate, prefix="inventory-seller")
 
 
+def capacity_choice(product, offer, last_ask, negotiation):
+    """Bounded deterministic response only when no model slot was acquired.
+
+    Use pinned opening evidence first; otherwise add 10% to the active floor,
+    capped at list unless the floor itself is higher. Never unlock a discount.
+    Publication still rechecks inventory, cancellation and receipt invariants.
+    """
+    floor, stage = negotiation["price_floor"], negotiation["stage"]
+    if offer is None:
+        band = negotiation.get("opening_bounds")
+        price = max(floor, min((floor * 110 + 99) // 100, product["list_price"]))
+        if band:
+            price = max(band["minimum"], min(band.get("target") or price, band["maximum"]))
+        choice = {"action": "counter", "price": price}
+    elif last_ask is not None and offer >= last_ask:
+        choice = {"action": "accept", "price": offer}
+    elif stage == "final_reply":
+        choice = {"action": "reject"}
+    elif stage in ("close", "final_offer"):
+        choice = ({"action": "accept", "price": offer} if offer >= floor else
+                  {"action": "counter", "price": floor})
+    else:
+        # Meet halfway, rounding up; never increase an ask or undercut the floor.
+        price = max(floor, min(last_ask, (last_ask + max(floor, offer) + 1) // 2))
+        choice = {"action": "counter", "price": price}
+    return validate_choice(choice, offer, last_ask, negotiation)
+
+
 class InventorySeller(Seller):
     def __init__(self, cfg):
-        super().__init__({**cfg, "adaptive": {"enabled": False}, "sign_receipts": True})
+        super().__init__({**cfg, "adaptive": {"enabled": False}, "sign_receipts": True,
+                          "model_concurrency": 3})
         self.inventory = Inventory(cfg.get("market_dir", os.environ.get("MARKET_DIR", ROOT / ".market")))
         self.events = ROOT / "logs" / "inventory-seller-events.jsonl"
         self.r3 = {}
@@ -264,10 +293,15 @@ class InventorySeller(Seller):
             else:
                 deal["decision_source"] = "model"  # Exact profile/model is recorded by the harness.
                 phase = "model"
-                choice = await self.infer(inventory_decision,
-                                          {**product, "sales_terms": deal["terms"],
-                                           "negotiation": deal["negotiation"]},
-                                          offer, history, deal["ask"], deal["advice"])
+                try:
+                    choice = await self.infer(inventory_decision,
+                                              {**product, "sales_terms": deal["terms"],
+                                               "negotiation": deal["negotiation"]},
+                                              offer, history, deal["ask"], deal["advice"])
+                except ModelCapacityError:
+                    phase = "capacity_policy"
+                    choice = capacity_choice(product, offer, deal["ask"], deal["negotiation"])
+                    deal["decision_source"] = "capacity_fallback"
             phase = "publication"
             async with lock:
                 if canceled.is_set():
