@@ -33,6 +33,11 @@ AGENTS = [
      None, "audit", None),
     ("autopilot", "제안을 코드로 판단해 30분 실험으로 시작하고, 경계마다 채택/되돌림/연장을 판정한다",
      "결정론 코드 (모델 없음)", "30분 경계마다", None, None, None),
+    ("jev (router)", "seller의 매 턴, 어떤 도구(결정론 규칙 또는 forge가 만든 도구)로 둘지 확률로 고른다",
+     "보정된 빈도표 (우리 거래 기록, 30분마다 재학습). 모델 없음, 1ms 미만", "seller의 매 턴", None, None, None),
+    ("forge", "맞는 도구가 없는 상태에 새 도구(코드와 테스트)를 만들고, 샌드박스 통과 후 A/B로 시험한다",
+     "강한 모델(opus) 한 번 + 코드 검사(AST, 별도 프로세스 테스트, 불변식 500개)", "meta 사이클 뒤 30분마다", None, "strategy",
+     None),
     ("ops.health", "킷, 터널, 판매, 결제가 살아 있는지 5분마다 재고, 킷이 죽으면 다시 띄운다",
      "결정론 코드", "5분마다", None, None, None),
 ]
@@ -104,6 +109,21 @@ def sec_agents(d):
         if sec:
             body.append(f"<details><summary>시스템 카드: role: {e(role)}</summary><pre>{e(str(sec)[:3000])}</pre></details>")
         out.append(card(name, "".join(body)))
+    try:
+        from harness import forge, jev
+        reg = forge.registry()
+        frows = [[f"<code>{e(n)}</code>", e(r.get("status")), e(r.get("description", "")[:160]),
+                  e(", ".join(r.get("states", [])[:4])), e(r.get("verdict") or r.get("why") or "")]
+                 for n, r in reg.items()]
+        nf = [[f"<code>{e(r['state'])}</code>", e(r["n"]), e(r["settle"]), e(r["walk"])] for r in jev.no_fit_states()[:10]]
+        out.append(card("Jev 라우터와 forge (seller)",
+                        "<p>매 턴 Jev가 상태(종류, 정가대, 턴, 제시가/요구가, 아는 buyer)와 질문(성사, 이탈, 가치)으로 "
+                        "도구별 확률을 내고 기대값이 가장 큰 도구로 둔다. 10%는 탐색. 어느 도구도 성사 12%를 못 넘는 상태는 "
+                        "forge가 강한 모델(opus)로 새 도구를 만들고, 샌드박스 테스트를 통과하면 A/B로 채택을 판정한다.</p>"
+                        + table(["만든 도구", "상태", "설명", "대상 상태", "판정"], frows, "narrow")
+                        + "<h3>맞는 도구가 없는 상태</h3>" + table(["상태", "표본", "성사", "이탈"], nf)))
+    except Exception as ex:
+        out.append(card("Jev 라우터와 forge", f"<p>읽지 못함: {e(ex)}</p>"))
     trows = [[f"<code>{e(t.name)}</code>", e(t.description[:160]), e(_params(t.input_schema)),
               e("부작용: " + t.side_effect if t.side_effect else ("결정론" if t.deterministic else "")),
               e(", ".join(users.get(t.name, [])) or "코드에서만")] for t in sorted(TOOLS.values(), key=lambda t: t.name)]

@@ -65,7 +65,8 @@ def start_meta():
         return "skipped: the previous cycle is still running"
     lock.parent.mkdir(parents=True, exist_ok=True)
     lock.write_text(str(time.time()), encoding="utf-8")
-    code = "from harness import meta; import pathlib, sys\ntry:\n    meta.cycle()\nfinally:\n" \
+    # user 11/10: the forge pass (harness.forge) follows the meta cycle in the same process and lock
+    code = "from harness import meta, forge; import pathlib, sys\ntry:\n    meta.cycle()\n    print(forge.forge_once(), flush=True)\nfinally:\n" \
            f"    pathlib.Path({str(lock)!r}).unlink(missing_ok=True)"
     log = open(HERE / "logs" / "meta-console.log", "a", encoding="utf-8")   # 11/9: a silent crash hid 9 h of cycles
     log.write(f"--- {time.strftime('%m-%d %H:%M:%S')} meta start\n")
