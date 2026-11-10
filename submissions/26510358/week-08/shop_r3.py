@@ -42,6 +42,9 @@ SKU_RE = re.compile(r"\b([A-Z][0-9a-f]{6,}|[A-Z]\d{4,})\b")
 CODE_RE = re.compile(re.escape(config.LOYALTY_PREFIX) + r"[0-9a-f]{8}\b", re.I)
 
 
+ABNORMAL_OFFER_X = 3                  # a receipt above this multiple of list has never settled: no reward for it
+
+
 def log(event, **kw):
     print(json.dumps({"event": event, "ts": round(time.time(), 1), **kw}, ensure_ascii=False), flush=True)
 
@@ -189,8 +192,13 @@ class Shop(AgentExecutor):
         if not d.get("choice"):
             return
         b, ctx, arm = d["choice"]
-        reward = self._value(price, d["unit"]["cost"]) if outcome == "deal" and price else 0.0
-        b.update(ctx, arm, reward, sku=d["unit"]["sku"], outcome=outcome)
+        u = d["unit"]
+        if outcome == "deal" and price and price > u["list_price"] * ABNORMAL_OFFER_X:
+            # 65 receipts above 3x list in the round (1,666,667 for a 12,900 SKU), none of them on the ledger: such
+            # a "deal" is never paid, and as a reward it would outweigh ~600 real sales.
+            outcome, price = "abnormal_offer", None
+        reward = self._value(price, u["cost"]) if outcome == "deal" and price else 0.0
+        b.update(ctx, arm, reward, sku=u["sku"], outcome=outcome)
 
     def _gc(self):
         for k in [k for k, d in self.open.items() if time.time() - d["t0"] > OPEN_TTL]:

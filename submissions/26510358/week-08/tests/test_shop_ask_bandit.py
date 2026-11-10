@@ -61,6 +61,14 @@ def test_a_deal_pays_the_arm_its_board_score_and_a_timeout_pays_zero(tmp_path, m
                       (("goods", "B", "-"), 1.1, 0.0, "timeout")]
 
 
+def test_a_receipt_far_above_list_is_never_paid_and_pays_the_arm_nothing(tmp_path, monkeypatch):
+    s, b = shop(tmp_path, monkeypatch, 1.1)
+    s._terms(dict(UNIT))
+    s.open["t"] = {"unit": dict(UNIT), "first_ask": 200_000, "offers": [], "t0": time.time(), "choice": s._choice}
+    s._end("t", "deal", 300_000 * 3 + 1)
+    assert b.paid == [(("goods", "B", "-"), 1.1, 0.0, "abnormal_offer")]
+
+
 def test_premium_goods_use_their_own_arms_and_a_switch_turns_the_bandit_off(tmp_path, monkeypatch):
     s, b = shop(tmp_path, monkeypatch, 1.0)
     s._terms(dict(UNIT, list_price=config.PREMIUM_MIN_LIST, cost=400_000))

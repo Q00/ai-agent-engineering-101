@@ -18,6 +18,7 @@ import time
 from .. import config, initiative, market, markdown, pricing, score_model, scout
 
 GRADES = ("A", "B", "C")
+ABNORMAL_OFFER_X = 3                  # a "deal" above this multiple of list is left out of the price KPIs
 
 
 # ------------------------------------------------------------------------------------------- purchasing
@@ -69,7 +70,13 @@ def logistics_health(mem, args, call, now=None):
     expiring = [u for u in units if u.get("kind") == "food" and u.get("expires_at") and u["expires_at"] - now < 6 * 3600]
     aged = [u for u in units if u.get("kind") == "goods" and now - (u.get("supplied_at") or now) > 3 * 86400]
     stock_cost = sum(u["cost"] for u in units)
-    return {"units": len(units), "stock_cost": stock_cost, "stock_budget": int((mem.get("cash_cap") or {}).get("cap") or config.STOCK_BUDGET_MAX),
+    cc = mem.get("cash_cap") or {}
+    budget = int(cc.get("cap") or config.STOCK_BUDGET_MAX)
+    # The premium budget is separate from the cap (restock_r3.plan), so stock may reach their sum: until 2026-11-10
+    # the KPI showed only the cap and stock at "1.8x its budget" looked like a fault (RL_PROACTIVE.md 5.1-C).
+    return {"units": len(units), "stock_cost": stock_cost, "stock_budget": budget,
+            "premium_budget": int(cc.get("premium_budget") or 0),
+            "stock_ceiling": budget + int(cc.get("premium_budget") or 0),
             "expiring_6h": {"units": len(expiring), "cost": sum(u["cost"] for u in expiring)},
             "goods_over_3d": {"units": len(aged), "cost": sum(u["cost"] for u in aged)},
             "stockouts_per_h": {market.leaf(k): round(v, 2) for k, v in sorted(
@@ -144,7 +151,12 @@ def marketing_pricing(mem, args, call, now=None):
     with mem.db() as c:
         r = c.execute("SELECT COUNT(*) n, AVG(outcome='deal') close, AVG(first_ask*1.0/list_price) ask, "
                       "AVG(CASE WHEN outcome='deal' THEN final_price*1.0/list_price END) fin FROM negotiations "
-                      "WHERE role='shop' AND list_price>0 AND ts>?", (now - hours * 3600,)).fetchone()
+                      "WHERE role='shop' AND list_price>0 AND ts>? AND COALESCE(final_price, 0) <= list_price * ?",
+                      (now - hours * 3600, ABNORMAL_OFFER_X)).fetchone()
+        # RL_PROACTIVE.md 5.1-G: 63 "deals" at 1,666,667 for a 12,900 SKU (G1831f2c0) lifted final_ratio; an offer
+        # over 3x list is not a price, so it is counted apart and left out of the ratios.
+        odd = c.execute("SELECT COUNT(*) n FROM negotiations WHERE role='shop' AND list_price>0 AND ts>? AND "
+                        "final_price > list_price * ?", (now - hours * 3600, ABNORMAL_OFFER_X)).fetchone()["n"]
         mine = mem.my_shop_urls()
         prem = {"sold_24h": 0, "revenue_24h": 0}
         if mine:
@@ -158,7 +170,7 @@ def marketing_pricing(mem, args, call, now=None):
     prem.update(held=len(held), held_cost=sum(u["cost"] for u in held))
     rd = lambda x: round(x, 3) if x is not None else None
     return {"ask_room": config.ASK_ROOM, "hours": hours, "negotiations": r["n"], "close_rate": rd(r["close"]),
-            "first_ask_ratio": rd(r["ask"]), "final_ratio": rd(r["fin"]), "premium": prem}
+            "first_ask_ratio": rd(r["ask"]), "final_ratio": rd(r["fin"]), "abnormal_offers": odd, "premium": prem}
 
 
 def marketing_markdown(mem, args, call, now=None):
