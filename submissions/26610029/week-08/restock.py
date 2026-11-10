@@ -36,7 +36,9 @@ DEFAULT_POLICY = {"window_budget": 0.10,   # share of the balance one window may
 # that is clearly selling fast elsewhere (high usefulness), otherwise only after staying quiet a while
 # (threshold drops with quiet_bonus past quiet_after) -- never spam, never go silent either.
 DEFAULT_PROMO = {"hot_usefulness": 0.9, "base_usefulness": 0.3,
-                 "threshold": 0.5, "quiet_bonus": 0.3, "quiet_after": 1200, "post_every": 300}
+                 "threshold": 0.5, "quiet_bonus": 0.35, "quiet_after": 480, "post_every": 300}
+# quiet_after = 480s: posts roughly every ~8 min when nothing is "hot" (the market's own rate limit is
+# 300s/5min per account, so this is the real ceiling -- a hot restock still posts the moment it happens)
 EMOJI_BY_KIND = {"food": "🍊", "goods": "🛋️"}
 
 
@@ -93,7 +95,19 @@ def plan(inv, d, policy, now):
     return buy, why
 
 
-def promo_text(inv, why, now):
+def honesty_stat(d):
+    """Our own track record, verifiable by anyone against the ledger: a quantified trust signal is a
+    stronger vote-bait than a bare claim of honesty."""
+    rows = d.q("SELECT count(*) AS n, avg(CASE WHEN s.claim_honest IS FALSE THEN 0 ELSE 1 END) AS rate "
+               "FROM settles s JOIN shops sh ON sh.url = s.shop_url WHERE sh.name = 'real_yellow'")
+    r = rows[0] if rows else {}
+    n = int(r.get("n") or 0)
+    if n < 5:
+        return None
+    return f"📊 최근 {n}건 중 claim_honest {round(float(r['rate']) * 100)}%"
+
+
+def promo_text(inv, why, now, stat=None):
     """A playful but verifiable forum post: real SKUs, real grades, a claim every settle in our ledger
     history backs up (the shop code sets claim = the unit's actual grade, never anything else)."""
     live = [u for u in inv.get("units", []) if u["grade"] != "expired"
@@ -112,9 +126,9 @@ def promo_text(inv, why, now):
         lines.append(f"{e} {u['name'][:28]} ({u['sku']}) {u['grade']}등급{extra}")
         if len(lines) >= 3:
             break
+    trust = f"{stat} (ledger로 검증 가능)" if stat else "claim=실제 등급 그대로, 속인 적 없음 (ledger로 검증 가능)"
     return ("🏪 real_yellow 오늘의 재고\n" + "\n".join(lines) +
-            "\n✅ claim=실제 등급 그대로, 속인 적 없음 (ledger로 검증 가능) | ⏱️ 비식품 72h 보증\n"
-            "느린 흥정 싫으면 real_yellow 👋")
+            f"\n✅ {trust} | ⏱️ 비식품 72h 보증\n느린 흥정 싫으면 real_yellow 👋")
 
 
 def shop_forum(d, inv, why, now, md):
@@ -128,7 +142,7 @@ def shop_forum(d, inv, why, now, md):
     if usefulness < bar:
         print(f"[forum] shop skip: usefulness {usefulness} < {bar}")
         return
-    text = promo_text(inv, why, now)
+    text = promo_text(inv, why, now, honesty_stat(d))
     if not text:
         print("[forum] shop skip: no live stock to show")
         return
