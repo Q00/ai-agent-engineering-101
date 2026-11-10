@@ -23,10 +23,10 @@ ON = {"enabled": True, "hours": 6, "max_exposure": 1000000, "cash_exposure_ratio
 class Settings(unittest.TestCase):
     def test_shipped_off_with_the_trials_limits(self):
         value = json.loads((Path(warranty_trial.__file__).parent / "a_grade_warranty.json").read_text(encoding="utf-8"))
-        # Switched on with the user's approval of 11-10: 60M (the validator maximum) and .5 of the balance.
+        # Switched on with the user's approval of 11-10 at 60M and .5 of the balance; 90M (the validator maximum) by the user's direct approval of 11-10 19:2x.
         self.assertIs(value["enabled"], True)
-        self.assertEqual((value["hours"], value["max_exposure"], value["cash_exposure_ratio"], value["refund_ratio"]), (6, 60000000, .5, .02))
-        self.assertEqual(warranty_trial.six_hour_settings()["max_exposure"], 60000000)
+        self.assertEqual((value["hours"], value["max_exposure"], value["cash_exposure_ratio"], value["refund_ratio"]), (6, 90000000, .5, .02))
+        self.assertEqual(warranty_trial.six_hour_settings()["max_exposure"], 90000000)
 
     def test_the_validator_takes_up_to_90m_and_the_seller_reports_it(self):
         # User approval of 11-10 (direct, about 19:2x KST): the six-hour warranty limit may be 90M, no more.
