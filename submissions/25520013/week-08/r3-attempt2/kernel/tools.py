@@ -5,6 +5,7 @@ No tool writes to the market. Other participants are hashed; our own rows are ma
 
 import json
 import os
+import re
 import shutil
 from collections import Counter
 
@@ -391,14 +392,18 @@ def stockouts(root, hours=1, now=None):
     cat = b._catalog(root)
     inv = c.load_json(os.path.join(root, ".market/inventory.json"))
     have = Counter(u.get("sku") for u in (inv.get("units") or [] if isinstance(inv, dict) else []) if isinstance(u, dict))
-    by_sku, total = Counter(), 0
+    by_sku, short, total = Counter(), Counter(), 0
     for m in c.tail_json(os.path.join(root, ".r3/metrics.jsonl"), 20_000_000, b'"no_stock"'):
         ts = m.get("ts")
         if m.get("decision") != "no_stock" or not isinstance(ts, (int, float)) or ts < now - hours * 3600 or ts > now:
             continue
         total += 1
         o = m.get("outcome") if isinstance(m.get("outcome"), dict) else {}
-        by_sku[o.get("sku") if o.get("sku") in cat else None] += 1
+        sku = o.get("sku") if o.get("sku") in cat else None
+        if sku is None:  # rule code v2.12 logs only the request text: take the first catalog SKU id named in it
+            sku = next((x for x in re.findall(r"\b[A-Z][0-9a-f]{8}\b", str(o.get("request") or "")) if x in cat), None)
+        by_sku[sku] += 1
+        short[sku] += "short_shelf" in o  # stock existed but its remaining shelf was too short for the request
     leaves = {}
     for sku, n in by_sku.items():
         if sku is None:
@@ -407,7 +412,7 @@ def stockouts(root, hours=1, now=None):
         leaves.setdefault(str(info.get("category") or "?"), []).append((n, sku, str(info.get("name") or "")[:30]))
     out = [f"최근 {hours:g}시간 재고 없음 거절 {total}건 (SKU를 알 수 없는 요청 {by_sku.get(None, 0)}건)"]
     for leaf, rows in sorted(leaves.items(), key=lambda kv: -sum(r[0] for r in kv[1]))[:12]:
-        out.append(f"- {leaf}: {sum(r[0] for r in rows)}건")
+        out.append(f"- {leaf}: {sum(r[0] for r in rows)}건 (그중 재고는 있으나 남은 기한이 짧아 거절 {sum(short[r[1]] for r in rows)}건)")
         out += [f"    {sku} {name}: 거절 {n}건, 지금 재고 {have.get(sku, 0)}개" for n, sku, name in sorted(rows, reverse=True)[:5]]
     return c.cap("\n".join(out), MAX_CHARS)
 

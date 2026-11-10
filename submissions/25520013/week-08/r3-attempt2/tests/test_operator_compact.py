@@ -198,3 +198,24 @@ def test_meta_harness_wiring(tmp_path, monkeypatch):
     res = op._finish_compact({"new_tool": {"name": "q_abc"}, "note": "n"}, 1000.0)
     assert res["new_tool"]["ok"] and len(res["new_tool"]["sample"]) == 300
     assert seen["kw"]["by"] == "operator" and "policy" in seen["kw"]["reserved"]
+
+
+def test_stockouts_reads_sku_from_request_text(tmp_path):
+    from kernel import tools
+
+    root = str(tmp_path)
+    for d in (".market", ".r3"):
+        os.makedirs(os.path.join(root, d))
+    cat = [{"sku": "G0000aaaa", "name": "사과", "category": "식품>과일", "kind": "food", "list_price": 10, "shelf_hours": 48}]
+    json.dump(cat, open(os.path.join(root, ".market/catalog.json"), "w"))
+    json.dump({"units": [{"sku": "G0000aaaa"}]}, open(os.path.join(root, ".market/inventory.json"), "w"))
+    rows = [
+        {"ts": 990.0, "decision": "no_stock", "outcome": {"request": "want 사과 (G0000aaaa)", "short_shelf": 0.5}},
+        {"ts": 995.0, "decision": "no_stock", "outcome": {"request": "want (G0000aaaa)"}},
+        {"ts": 2000.0, "decision": "no_stock", "outcome": {"request": "future G0000aaaa"}},
+        {"ts": 996.0, "decision": "no_stock", "outcome": {"request": "Greetings"}},
+    ]
+    with open(os.path.join(root, ".r3/metrics.jsonl"), "w") as f:
+        f.write("\n".join(json.dumps(r) for r in rows) + "\n")
+    out = tools.stockouts(root, hours=1, now=1000.0)
+    assert "거절 3건" in out and "요청 1건" in out and "식품>과일: 2건" in out and "짧아 거절 1건" in out and "재고 1개" in out
