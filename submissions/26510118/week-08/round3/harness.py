@@ -27,10 +27,19 @@ judgement rests on words the code cannot read: our buyer's odds that a shop deli
     OPENAI_EFFORT, OPENAI_EFFORT_MID, OPENAI_EFFORT_STRONG override their reasoning effort
     HARNESS_FAKE_REPLY  tests only: every ask() returns this text and calls nothing
     HARNESS_FAKE_DECISION  tests only: every decide() question gets this probability
+
+What every call costs is counted here, in the one place all calls pass (_post): the calls, the tokens the API reports
+(input, cached input, output, reasoning) and the characters sent, summed per API and model. A process writes its
+sums as ONE line of records/api_usage.jsonl every USAGE_EVERY seconds and when it exits (11/10, the user's call: the
+bill had grown to about $5 a day and nothing said where), not a line per call: the seller and the buyer make
+thousands of calls a day. A line says which program made the calls (seller.py, market_buyer.py, analysis.py).
 """
+import atexit
 import json
 import os
 import re
+import sys
+import time
 
 import httpx
 
@@ -44,10 +53,58 @@ DECIDE_URL = "https://api.openai.com/v1/decisions"
 DECIDE_MODEL = "gpt-6-luna"              # the only model the Decisions API takes (11/2)
 
 
+USAGE_EVERY = 600        # seconds between a process's usage lines
+USAGE_KEYS = ("calls", "failed", "input", "cached", "output", "reasoning", "chars")
+_usage = {}              # "api:model" -> {USAGE_KEYS}: this process's calls since its last line
+_since = [time.time()]
+
+
 def _post(body: dict, timeout: float, url: str = URL) -> dict:
-    r = httpx.post(url, headers={"Authorization": f"Bearer {os.environ['OPENAI_API_KEY']}"}, json=body, timeout=timeout)
-    r.raise_for_status()
-    return r.json()
+    api = "decisions" if url == DECIDE_URL else "responses"
+    try:
+        r = httpx.post(url, headers={"Authorization": f"Bearer {os.environ['OPENAI_API_KEY']}"}, json=body, timeout=timeout)
+        r.raise_for_status()
+        data = r.json()
+    except Exception:
+        _count(api, body, None)
+        raise
+    _count(api, body, data)
+    return data
+
+
+def _count(api: str, body: dict, data: dict | None) -> None:
+    """Add one call to this process's sums (data None: it failed); never raises, a count is not worth a lost call."""
+    try:
+        u = _usage.setdefault(f"{api}:{body.get('model')}", dict.fromkeys(USAGE_KEYS, 0))
+        use = (data or {}).get("usage") or {}
+        u["calls"] += 1
+        u["failed"] += data is None
+        u["chars"] += len(json.dumps(body, ensure_ascii=False))
+        u["input"] += int(use.get("input_tokens") or 0)
+        u["cached"] += int((use.get("input_tokens_details") or {}).get("cached_tokens") or 0)
+        u["output"] += int(use.get("output_tokens") or 0)
+        u["reasoning"] += int((use.get("output_tokens_details") or {}).get("reasoning_tokens") or 0)
+        if time.time() - _since[0] >= USAGE_EVERY:
+            flush_usage()
+    except Exception:                                            # noqa: BLE001
+        pass
+
+
+def flush_usage() -> None:
+    """This process's sums since its last line, as one line of records/api_usage.jsonl (archived after 48 h like the
+    other records); nothing when it made no call."""
+    if not _usage:
+        return
+    try:
+        import common                      # here, not at the top: the door itself needs nothing of the trading side
+        common.record("api_usage", proc=os.path.basename(sys.argv[0] or "?"), since=int(_since[0]), usage=_usage)
+    except Exception as e:                                       # noqa: BLE001
+        print(f"[harness] usage line not written: {type(e).__name__}", flush=True)
+    _usage.clear()
+    _since[0] = time.time()
+
+
+atexit.register(flush_usage)
 
 
 def decide(note: str, evidence, questions: list, timeout: float = 10.0) -> list | None:

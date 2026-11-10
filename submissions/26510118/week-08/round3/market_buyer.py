@@ -32,8 +32,8 @@ a refurbished unit, each with other shops still listing what the order accepts.
 What the numbers miss is what others wrote: for a shop with reviews or forum posts about it, the
 decision model (harness.decide, the Decisions API) gives the odds that a purchase there goes as
 described, from those words, the ledger's record and our own deals there; the odds make half of
-the shop's trust, and odds under 0.3 make it a poor choice. The odds are kept for 30 minutes
-while the evidence stays the same, so a shop costs one question, not one per order.
+the shop's trust, and odds under 0.3 make it a poor choice. A shop's odds are kept for ODDS_TTL
+(3 hours) whatever changes, so a shop costs about eight questions a day, not one per order.
 B2, negotiating: say what we need first ("must last 49 hours", "include a 6-hour warranty"),
 offer 60, 70, 80, 90% of the list price (never above the list price or the budget), take an
 ask that fits under the next offer, and once we have made an offer take any ask within our
@@ -141,7 +141,11 @@ MARKET_SEEN = 20
 # shops" only when there are, "final" only at our ceiling.
 STEPS = 4
 TIMEOUT = 30              # seconds per A2A request; the kit stops a buyer after 300
-ODDS_TTL = 1800           # seconds a shop's odds are reused while its evidence is unchanged
+ODDS_TTL = 3 * 3600       # seconds a shop's odds are reused, whatever changed (11/10, the user's call: API cost). Until
+                          # then 30 min while the evidence stayed the same, but the evidence changed with every collection
+                          # (its ledger numbers, every 20 min) and our every deal there: on 11/10 the buyer sent 26,500
+                          # shops' evidence a day in 2,300 calls, 40 of 62 cached shops asked again within 5 minutes. The
+                          # numbers count in the trust anyway (buyer_memory.trust); the odds read the words, which move slowly.
 ODDS_BLEND = 0.5          # the decision model's share of a shop's trust
 ODDS_POOR = 0.3           # odds under this make the shop a poor choice
 # Never asked, whatever the record says (a failure is forgotten after a day, so it would be tried again)
@@ -293,9 +297,9 @@ def shop_odds(shops: list, posts: list, summary: dict, nb: dict, now: float | No
         ev = evidence_of(sh, posts, summary, nb)
         if not any(r["text"] for r in ev["reviews"]) and not ev["forum_posts"]:
             continue                                                # nothing written about it: the numbers decide
-        sig = hashlib.sha256(json.dumps(ev, sort_keys=True, ensure_ascii=False).encode()).hexdigest()[:16]
+        sig = hashlib.sha256(json.dumps(ev, sort_keys=True, ensure_ascii=False).encode()).hexdigest()[:16]   # kept: what it was asked on
         hit = cache.get(sh["name"]) or {}
-        if hit.get("sig") == sig and now - hit.get("at", 0) < ODDS_TTL:
+        if "p" in hit and now - hit.get("at", 0) < ODDS_TTL:
             out[sh["name"]] = hit["p"]
         else:
             ask.append((sh["name"], ev, sig))

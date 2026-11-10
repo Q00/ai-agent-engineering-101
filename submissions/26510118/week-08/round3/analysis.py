@@ -85,7 +85,7 @@ JOURNAL_REFS = 6
 JOURNAL_PAUSE = "journal_pause.json"
 REPLY_GAP = 3600         # the forum takes ~270 posts an hour (11/3): ours stay few
 ARCHIVED = ("negotiations", "requests", "orders", "refusals", "reviews", "unmet", "unpaid", "unpaid_buys", "votes",
-            "sales", "restock", "stock_flow")    # records whose readers look back 48 h at most; deals.jsonl is read by offset instead
+            "sales", "restock", "stock_flow", "api_usage")    # records whose readers look back 48 h at most; deals.jsonl is read by offset instead
 RECORDS_KEEP = 48 * 3600  # our records kept in the files read every pass (restock counts what sold in 48 h); the
                           # ledger's rows are kept 24 h (ledger.KEEP, since 11/5)
 OPEN_CATEGORIES = 100    # categories in stock before our shop announces itself (day one stocks about 116)

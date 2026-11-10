@@ -93,10 +93,14 @@ def test_buyer():
         check("asked again a minute later with the same evidence: no new request", len(asked) == 1)
         beta2 = dict(beta, reviews=beta["reviews"] + [{"stars": 1, "review": "Never delivered."}])
         mb.shop_odds([alpha, beta2, gamma], posts, summary, nb, NOW + 120)
-        check("a new review on Beta: only Beta is asked again", len(asked) == 2 and len(asked[1][2]) == 1 and '"Beta"' in asked[1][2][0])
+        check("a new review on Beta within the 3 hours: not asked again (11/10: the odds are kept ODDS_TTL whatever changed)",
+              len(asked) == 1)
+        later = mb.shop_odds([alpha, beta2, gamma], posts, summary, nb, NOW + mb.ODDS_TTL + 60)
+        check("after ODDS_TTL both are asked again, in one request", len(asked) == 2 and len(asked[1][2]) == 2
+              and later == {"Alpha": 0.2, "Beta": 0.9}, later)
         harness.decide = lambda *a, **k: None
         check("no decision (no key, or the API failed): no odds, the numbers decide as before",
-              mb.shop_odds([alpha], posts, summary, nb, NOW + 4000) == {})
+              mb.shop_odds([alpha], posts, summary, nb, NOW + 2 * mb.ODDS_TTL + 120) == {})
     finally:
         harness.decide = real
 

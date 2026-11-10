@@ -34,6 +34,8 @@ FILES = [
     ("records/orders.jsonl", "market_buyer", "replay, buyer analysis, integrated analysis (tries)", None,
      ("ts", "order", "category", "budget")),
     ("records/unmet.jsonl", "market_buyer", "analysis (wanted categories), linewatch (the twins), analyses", None, ("ts", "category")),
+    ("records/api_usage.jsonl", "harness (every model call, summed per process)", "a person (the API bill)", None,
+     ("ts", "proc", "usage")),
     # the analysis runner's files
     ("ledger/settles.jsonl", "analysis (collect)", "summary, tools, journal, notes, linewatch", None,
      ("seq", "ts", "shop", "item", "amount")),

@@ -11,12 +11,15 @@ tool budget is spent. Whether the real models accept it is check_models.py's job
 import json
 import os
 import sys
+import tempfile
 
 os.environ["OPENAI_API_KEY"] = "test-key-not-real"
 os.environ.pop("HARNESS_FAKE_REPLY", None)
+os.environ["MARKET_DIR"] = tempfile.mkdtemp(prefix="kiro-harness-")    # the usage lines go here, not to a real .market
 
 import httpx     # noqa: E402
 
+import common    # noqa: E402
 import harness   # noqa: E402
 
 results = []
@@ -145,6 +148,30 @@ def main() -> int:
         check("a question left unanswered is None (decide by the rule)", harness.decide("n", {}, ["a", "b"]) == [0.5, None])
         harness.httpx.post = FakeAPI(503)
         check("an API error: None, so the caller decides by its rule", harness.decide("n", {}, ["a"]) is None)
+
+        print("\n[usage] what the calls cost, summed per process (11/10)")
+        harness.flush_usage()                                   # every call made above: one line
+        path = common.MARKET_DIR / "records" / "api_usage.jsonl"
+        rows = common.read_jsonl(path)
+        u = rows[-1]["usage"] if rows else {}
+        dec = u.get("decisions:gpt-6-luna") or {}
+        check("all the calls above make one line, by API and model, the failed ones counted",
+              len(rows) == 1 and rows[0]["proc"] == "test_harness.py" and dec.get("calls") == 3 and dec.get("failed") == 1
+              and dec.get("chars", 0) > 0 and (u.get("responses:gpt-6-luna") or {}).get("calls", 0) >= 3, rows)
+        harness.flush_usage()
+        check("no call since: no second line", len(common.read_jsonl(path)) == 1)
+        priced = Answer(200, {"output": [text("9500")], "usage": {"input_tokens": 1200, "input_tokens_details": {"cached_tokens": 1000},
+                                                                  "output_tokens": 40, "output_tokens_details": {"reasoning_tokens": 30}}})
+        harness.httpx.post = lambda *a, **k: priced
+        harness.ask("x")
+        harness.ask("y")
+        got = dict(harness._usage.get(f"responses:{harness.MODEL}") or {})
+        check("the tokens the API reports are summed: input, cached input, output, reasoning",
+              got.get("calls") == 2 and got.get("input") == 2400 and got.get("cached") == 2000 and got.get("output") == 80
+              and got.get("reasoning") == 60, got)
+        harness._since[0] -= harness.USAGE_EVERY
+        harness.ask("z")
+        check("after USAGE_EVERY the next call writes its line itself", len(common.read_jsonl(path)) == 2 and not harness._usage)
         os.environ.pop("OPENAI_API_KEY")
         check("no key: no call at all", harness.chat([{"role": "user", "content": "x"}], harness.MODEL) is None
               and harness.ask("x") == "" and harness.decide("n", {}, ["a"]) is None)
