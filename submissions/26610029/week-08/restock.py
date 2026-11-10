@@ -6,7 +6,11 @@ Before anyone orders, decide what to hold until the next supply window (one 3-mi
 1. refresh the shared DB from the market (collector),
 2. rank SKUs by how much they sold across the market in the last hours times the margin they leave
    (going rate minus the expected cost of a randomly graded unit), skipping SKUs whose cost is surging,
-3. top each picked SKU up to a small target, inside a per-window share of the balance.
+3. spread the picks across categories (round-robin, best score in each category first) instead of just
+   taking the top N overall -- a buyer never sees us unless shops.json already lists us for their order's
+   category, so being stocked in only one or two hot categories (apples, dates...) caps how often we are
+   even a candidate, no matter how good our reviews or forum posts are,
+4. top each picked SKU up to a small target, inside a per-window share of the balance.
 Food is held only where it sells fast; goods may be held deeper, they only pay 1% a day.
 """
 import argparse
@@ -23,7 +27,7 @@ EXPECTED_COST = {"goods": 0.70 * 0.65 + 0.20 * 0.50 + 0.10 * 0.35,
 DEFAULT_POLICY = {"window_budget": 0.10,   # share of the balance one window may spend
                   "lookback_h": 3,          # how far back "what sells" looks
                   "max_skus": 10,           # the kit buys at most 10 lines a run
-                  "goods_target": 4, "food_target": 2,
+                  "goods_target": 6, "food_target": 2,
                   "food_min_sales": 6,      # food only for SKUs that sold at least this often in the lookback
                   "goods_min_sales": 3,
                   "max_units": 80}          # never hold more than this many units in total
@@ -45,10 +49,10 @@ def plan(inv, d, policy, now):
         held[u["sku"]] = held.get(u["sku"], 0) + 1
     surging = {s["sku"] for s in (inv.get("surge") or []) if s.get("factor", 1) > 1.05}
 
-    rows = d.q("SELECT sku, max(kind) AS kind, max(list_price) AS lp, count(*) AS n, "
-               "avg(amount::float / list_price) AS ratio FROM settles "
+    rows = d.q("SELECT sku, max(kind) AS kind, max(list_price) AS lp, max(category) AS category, "
+               "count(*) AS n, avg(amount::float / list_price) AS ratio FROM settles "
                "WHERE ts > $1 AND list_price > 0 GROUP BY sku", now - policy["lookback_h"] * 3600)
-    ranked = []
+    by_cat = {}
     for r in rows:
         kind, lp, n, ratio = r["kind"], int(r["lp"]), int(r["n"]), float(r["ratio"])
         margin = ratio - EXPECTED_COST.get(kind, 0.6)
@@ -56,11 +60,18 @@ def plan(inv, d, policy, now):
             continue
         if n < (policy["food_min_sales"] if kind == "food" else policy["goods_min_sales"]):
             continue
-        ranked.append((n * margin, r["sku"], kind, lp, n, round(margin, 3)))   # fast movers first, not big tickets
-    food = sorted((x for x in ranked if x[2] == "food"), reverse=True)
-    goods = sorted((x for x in ranked if x[2] != "food"), reverse=True)
-    ranked = [x for pair in zip(goods, food) for x in pair] + goods[len(food):] + food[len(goods):]
-    # alternate: food sells fastest but spoils; goods keep, and carry the warranty sales
+        row = (n * margin, r["sku"], kind, lp, n, round(margin, 3))   # fast movers first, not big tickets
+        by_cat.setdefault(r["category"] or r["sku"], []).append(row)
+
+    # round-robin across categories, best score in each first: spreads stock over many order categories
+    # instead of piling into whichever two or three sell the most, so shops.json lists us more often
+    queues = sorted((sorted(v, reverse=True) for v in by_cat.values()), key=lambda q: q[0], reverse=True)
+    ranked = []
+    while any(queues):
+        for q in queues:
+            if q:
+                ranked.append(q.pop(0))
+        queues = [q for q in queues if q]
 
     budget = inv.get("balance", 0) * policy["window_budget"]
     per_sku_cap = budget * 0.3                          # one sofa must not eat the whole window
