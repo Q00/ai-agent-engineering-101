@@ -7,13 +7,12 @@ Score of a candidate = (list price - expected price) / list price * reliability 
 list saved, not won; until 2026-11-06 the score was in won and favoured big-ticket SKUs at smaller discounts), where
   expected price  = this shop's median settled price / list for the category (memory), else the market's, else 0.85
   reliability     = (1 - shop's dishonest-claim rate) * (1 - breaks and worthless deals we saw) * our payment success
-The last JSON line is what the kit reads. Orders before Round 3 go to the week-07 buyer (market_buyer.py).
+The last JSON line is what the kit reads. An order without the Round 3 fields is declined.
 """
 import argparse
 import json
 import os
 import re
-import sys
 import time
 
 from r3lib import a2a, config, initiative, llm, market, pricing, score_model
@@ -247,9 +246,10 @@ def main():
     ap.add_argument("--order")
     a = ap.parse_args()
     order = market.read_json(os.path.basename(a.order), {}, os.path.dirname(a.order)) if a.order else {}
-    if not order.get("acceptable"):                   # Round 0-2: the week-07 buyer still trades
-        os.execvp(sys.executable, [sys.executable, "market_buyer.py", "--shops", a.shops, "--item", a.item,
-                                   "--budget", str(a.budget)])
+    if not order.get("acceptable"):                   # not a Round 3 order (the week-07 buyer that took these is gone)
+        say("no_round3_order", item=a.item)
+        print(json.dumps({"shop": "", "receipt": None, "stars": None, "review": None}))
+        return
     order["budget"] = a.budget
     started, deadline = time.time(), time.time() + DEADLINE_S
     mem = Memory()

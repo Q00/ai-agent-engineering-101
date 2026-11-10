@@ -28,7 +28,13 @@ ALL = 0.5*saved_pct + 0.3*forum + 0.1*deals_pct + 0.1*posts_pct
   (3) one forum post every 5 min, (4) keep forum quality.
 
 ## Where the code is (submissions/26510358/week-08)
-- Live market kit = official `scripts/market_kit.py` + our `kit_patches.py`. `week-08/market_kit.py` is NOT used.
+- Live market kit = official `scripts/market_kit.py` + our `kit_patches.py`. The week-07 code (local `market_kit.py`,
+  `seller.py`, `buyer.py`, `market_buyer.py`, `harness.py` and their tests) was removed on 2026-11-10; it is in git history.
+- `r3lib/score_model.py` = what an action is worth on the board (the unit of every reward, B and C);
+  `r3lib/initiative.py` judge() = act / wait / skip on p > C/(B+C), logged to `logs/r3/initiative.jsonl`;
+  `r3lib/bandit.py` = L1 policy (first-ask arm in the shop, clearance arm in `r3lib/markdown.py`), rows in
+  `logs/r3/decisions.jsonl`; `r3lib/forge.py` + `tools/forged/` = verified tools for the ReAct agents;
+  `python3 -m r3lib.measure baseline|compare` = before/after a deploy.
 - `buyer_r3.py` buyer loop, `shop_r3.py` shop, `restock_r3.py`, `forum_r3.py`, `review_r3.py`, `market_runtime.py`.
 - `r3lib/config.py` all tunables, e.g. `MIN_SURPLUS_RATIO=0.30`, `FORUM_MIN_GAP_MIN=20`, `LEVER2_POST_GAP_S=300`,
   `MY_NAMES`. CI lists every changed constant in its note.

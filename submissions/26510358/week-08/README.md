@@ -1,5 +1,11 @@
 # Week 08 키트 v3 운영
 
+> 2026-11-10: 아래는 10월 말 키트 v3 설치 당시의 기록임. 현재 서비스는 공식 `scripts/market_kit.py`(v4)에
+> `kit_patches.py`를 얹어 `market_runtime.py`로 실행하며, Round 3 코드는 `shop_r3.py`, `buyer_r3.py`,
+> `restock_r3.py`, `forum_r3.py`, `review_r3.py`, `r3lib/`에 있음. 아래에 나오는 로컬 `market_kit.py`,
+> `seller.py`, `buyer.py`, `market_buyer.py`, `harness.py` 등 week-07 코드는 실행 경로에서 빠져 있어
+> 이 날 삭제함(git 이력에 남아 있음). 현재 구조와 규칙은 [AGENT_GUIDE.md](AGENT_GUIDE.md) 참고.
+
 2026-10-29 권장 개선 적용 후 `market_kit.py`는 공식 v3를 바탕으로 한 로컬 확장임.
 `acp_security.py`의 결제 전 검사와 `market_identity.py`의 시장 소유권 연결을 추가했으므로
 현재 파일은 공식 원본과 바이트 단위로 같지 않음. 수정 전 원본은
