@@ -18,6 +18,7 @@ from a2a.types import Task, ListTasksRequest
 import market_memory
 import seller_requirements as requirements
 import seller_r3
+from seller_kit import instrument_settlement
 from seller_state import SellerState, SQLiteTaskStore
 
 
@@ -244,6 +245,64 @@ class PersistenceTests(unittest.TestCase):
                     'at': datetime.now(timezone.utc).isoformat()}]
         first.import_receipt_holds(history)
         self.assertEqual(second.active_leases()[0][2], 'receipt')
+
+    def test_stale_snapshot_cannot_offer_paid_unit_but_can_sell_another_of_same_sku(self):
+        second = {**self.unit, 'unit': 'u2'}
+        Path('.market/inventory.json').write_text(json.dumps({'round': 3, 'units': [self.unit, second]}))
+        market_memory.record('settled', ledger=7, unit='u1', price=800)
+        async def flow():
+            async with self.client() as c:
+                first = await self.send(c, 'I want F1')
+                last = await self.send(c, '800', first['id'])
+            self.assertEqual(last['status']['state'], 'TASK_STATE_COMPLETED')
+            self.assertEqual(SellerState().pending_receipt(first['id'])['unit'], 'u2')
+        def choose(_role, prompt, _schema):
+            if prompt['phase'] == 'opening':
+                self.assertEqual([u['unit'] for u in prompt['unit_options']], ['u2'])
+                return {'action': 'ask', 'price': 900, 'unit_id': 'u2', 'reason': 'available'}
+            return {'action': 'accept', 'price': None, 'unit_id': 'u2', 'reason': 'agreed'}
+        with patch.object(seller_r3, 'decide_json', side_effect=choose):
+            asyncio.run(flow())
+        self.assertEqual(SellerState().settled_units(), {'u1'})
+        self.assertTrue(any(e['event']=='settled_unit_blocked' and e['unit']=='u1'
+                            for e in market_memory.events()))
+
+    def test_settlement_during_negotiation_blocks_new_receipt_in_stale_inventory(self):
+        async def flow():
+            async with self.client() as c:
+                first = await self.send(c, 'I want F1')
+                result = await self.send(c, '800', first['id'])
+            self.assertEqual(result['status']['state'], 'TASK_STATE_REJECTED')
+            self.assertIsNone(SellerState().pending_receipt(first['id']))
+        def choose(_role, prompt, _schema):
+            if prompt['phase'] == 'opening':
+                return {'action': 'ask', 'price': 900, 'unit_id': 'u1', 'reason': 'available'}
+            SellerState().mark_settled({'u1'})
+            return {'action': 'accept', 'price': None, 'unit_id': 'u1', 'reason': 'agreed'}
+        with patch.object(seller_r3, 'decide_json', side_effect=choose):
+            asyncio.run(flow())
+        self.assertFalse(any(e['event']=='receipt_signed' for e in market_memory.events()))
+
+    def test_kit_marks_paid_unit_and_suppresses_saved_receipt_replay(self):
+        state = SellerState()
+        deal = {'unit': self.unit, 'opened_at': self.now, 'last_activity_at': self.now}
+        self.assertTrue(state.save_deal('old', deal))
+        self.assertTrue(state.commit_receipt('old', {'unit': 'u1', 'price': 800}))
+        class Market:
+            def call(self, method, path, **kwargs):
+                return SimpleNamespace(status_code=kwargs['status'],
+                    json=lambda: {'ledger': 7, 'mandate_receipt': {'unit': 'u1'}})
+        kit = SimpleNamespace(Market=Market, log=lambda message: None)
+        instrument_settlement(kit, state)
+        market = Market()
+        self.assertEqual(market.call('POST', '/api/settle', status=402).status_code, 402)
+        self.assertIsNotNone(state.pending_receipt('old'))
+        self.assertEqual(market.call('POST', '/api/settle', status=200).status_code, 200)
+        self.assertIsNone(SellerState().pending_receipt('old'))
+        self.assertFalse(state.save_deal('new', deal))
+        state.import_receipt_holds([{'event': 'receipt_signed', 'unit': 'u1', 'task_id': 'old',
+                                    'at': datetime.now(timezone.utc).isoformat()}])
+        self.assertEqual(state.active_leases(), [])
 
     def test_receipt_committed_before_crash_replays_without_repricing_or_model(self):
         async def flow():

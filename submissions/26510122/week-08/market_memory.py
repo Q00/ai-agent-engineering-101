@@ -23,7 +23,7 @@ from context_compaction import (MAX_TURNS, SELLER_MEMORY_BYTES, bounded, hours_l
 EVENTS = Path("logs/shop-events.jsonl")
 KIT_LOG = Path("logs/market-kit.log")
 CURSOR = Path("state/settlement-cursor.json")
-SETTLED = re.compile(r"\[acp\] settled .*? at (?P<price>\d+), ledger #(?P<ledger>\d+), "
+SETTLED = re.compile(r"^(?:\d{2}:\d{2}(?::\d{2})? )?\[acp\] settled .*? at (?P<price>\d+), ledger #(?P<ledger>\d+), "
                      r"unit (?P<unit>[^\s,]+) grade (?P<grade>[ABC])")
 
 
@@ -78,7 +78,7 @@ def record(event: str, *, path: Path = EVENTS, **fields: Any) -> dict[str, Any]:
 
 
 def sync_settlements(kit_log: Path = KIT_LOG, *, event_log: Path = EVENTS,
-                     cursor_path: Path = CURSOR) -> int:
+                     cursor_path: Path = CURSOR, on_settled=None) -> int:
     """Import only complete new [acp] settlement lines; survive log rotation."""
     if not kit_log.exists():
         return 0
@@ -92,6 +92,7 @@ def sync_settlements(kit_log: Path = KIT_LOG, *, event_log: Path = EVENTS,
     added = 0
     seen = None
     receipts_by_unit = defaultdict(list)
+    settled_units = set()
     with kit_log.open(encoding="utf-8", errors="replace") as source:
         source.seek(offset)
         while True:
@@ -115,6 +116,8 @@ def sync_settlements(kit_log: Path = KIT_LOG, *, event_log: Path = EVENTS,
                     elif row['event'] == 'receipt_signed' and row.get('unit'):
                         receipts_by_unit[row['unit']].append(row)
             ledger = int(match["ledger"])
+            if on_settled is not None:
+                settled_units.add(match['unit'])
             if ledger in seen:
                 continue
             matches={row.get('task_id'):row for row in receipts_by_unit.get(match['unit'],[])
@@ -132,6 +135,8 @@ def sync_settlements(kit_log: Path = KIT_LOG, *, event_log: Path = EVENTS,
             seen.add(ledger)
             added += 1
         next_offset = source.tell()
+    if settled_units:
+        on_settled(settled_units)
     cursor_path.parent.mkdir(parents=True, exist_ok=True)
     temp = cursor_path.with_suffix(".tmp")
     temp.write_text(json.dumps({"inode": stat.st_ino, "offset": next_offset}), encoding="utf-8")

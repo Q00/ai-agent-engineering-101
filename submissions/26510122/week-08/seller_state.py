@@ -35,6 +35,9 @@ class SellerState:
                     unit TEXT PRIMARY KEY, task TEXT NOT NULL, kind TEXT NOT NULL,
                     until REAL NOT NULL, receipt TEXT
                 );
+                CREATE TABLE IF NOT EXISTS settled_units (
+                    unit TEXT PRIMARY KEY
+                );
                 CREATE TABLE IF NOT EXISTS protocol_tasks (
                     owner TEXT NOT NULL, task TEXT NOT NULL, body BLOB NOT NULL,
                     PRIMARY KEY(owner, task)
@@ -52,6 +55,21 @@ class SellerState:
                 yield db
         finally:
             db.close()
+
+    def mark_settled(self, units):
+        """An authoritative payment permanently removes this physical unit from sale."""
+        if not units:
+            return
+        with self.connect() as db:
+            db.execute('BEGIN IMMEDIATE')
+            db.executemany('INSERT OR IGNORE INTO settled_units VALUES (?)', ((unit,) for unit in units))
+            db.execute("""DELETE FROM negotiations WHERE task IN (
+                       SELECT task FROM leases JOIN settled_units USING (unit) WHERE kind='negotiation')""")
+            db.execute('DELETE FROM leases WHERE unit IN (SELECT unit FROM settled_units)')
+
+    def settled_units(self):
+        with self.connect() as db:
+            return {row[0] for row in db.execute('SELECT unit FROM settled_units')}
 
     def restore_deals(self):
         with self.connect() as db:
@@ -74,6 +92,8 @@ class SellerState:
         unit = deal['unit']['unit']
         with self.connect() as db:
             db.execute('BEGIN IMMEDIATE')
+            if db.execute('SELECT 1 FROM settled_units WHERE unit=?', (unit,)).fetchone():
+                return False
             lease = db.execute('SELECT task, kind, until FROM leases WHERE unit=?', (unit,)).fetchone()
             if not create and (not lease or lease[0] != task or lease[1] != 'negotiation' or lease[2] <= now):
                 return False
@@ -102,7 +122,8 @@ class SellerState:
         now = time.time()
         with self.connect() as db:
             db.execute('BEGIN IMMEDIATE')
-            row = db.execute('SELECT task, kind, until FROM leases WHERE unit=?', (receipt['unit'],)).fetchone()
+            row = db.execute("""SELECT task, kind, until FROM leases WHERE unit=?
+                             AND unit NOT IN (SELECT unit FROM settled_units)""", (receipt['unit'],)).fetchone()
             if not row or row[0] != task or row[1] != 'negotiation' or row[2] <= now:
                 return False
             db.execute("UPDATE leases SET kind='receipt', until=?, receipt=? WHERE unit=?",
@@ -121,24 +142,29 @@ class SellerState:
 
     def pending_receipt(self, task):
         with self.connect() as db:
-            row = db.execute("SELECT receipt FROM leases WHERE task=? AND kind='receipt' AND until>?",
+            row = db.execute("""SELECT receipt FROM leases WHERE task=? AND kind='receipt' AND until>?
+                             AND unit NOT IN (SELECT unit FROM settled_units)""",
                              (task, time.time())).fetchone()
         return json.loads(row[0]) if row and row[0] else None
 
     def import_receipt_holds(self, history, seconds=600):
         """One-time upgrade safety, also covering an old artifact/log crash gap."""
         now = time.time()
-        settled = {e.get('unit') for e in history if e.get('event') == 'settled'}
+        settled = {e['unit'] for e in history
+                   if e.get('event') == 'settled' and e.get('unit') and e.get('ledger') is not None}
+        self.mark_settled(settled)
         with self.connect() as db:
             for event in history:
                 at = timestamp(event.get('at'))
                 if (event.get('event') != 'receipt_signed' or at is None or at + seconds <= now
                         or not event.get('unit') or not event.get('task_id') or event['unit'] in settled):
                     continue
-                db.execute('''INSERT INTO leases VALUES (?, ?, 'receipt', ?, NULL)
+                db.execute("""INSERT INTO leases
+                              SELECT ?, ?, 'receipt', ?, NULL
+                              WHERE NOT EXISTS (SELECT 1 FROM settled_units WHERE unit=?)
                               ON CONFLICT(unit) DO UPDATE SET task=excluded.task, kind='receipt',
-                                  until=excluded.until, receipt=NULL WHERE excluded.until>leases.until''',
-                           (event['unit'], event['task_id'], at + seconds))
+                                  until=excluded.until, receipt=NULL WHERE excluded.until>leases.until""",
+                           (event['unit'], event['task_id'], at + seconds, event['unit']))
 
 
 class SQLiteTaskStore(TaskStore):

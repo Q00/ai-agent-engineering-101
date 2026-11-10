@@ -10,6 +10,7 @@ import json
 import os
 from pathlib import Path
 import re
+import sqlite3
 import time
 
 import uvicorn
@@ -25,7 +26,7 @@ from a2a.server.tasks import TaskUpdater
 from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 
 from harness import decide_json, trace, MODEL
-from market_memory import (RECEIPT_EVENTS, compact_context, events, iter_events, record,
+from market_memory import (RECEIPT_EVENTS, compact_context, events, record,
                            sync_settlements, trade_attempts)
 from newsvendor_tool import quote_candidates
 from inventory_observation import requested_skus
@@ -172,19 +173,34 @@ class Seller(AgentExecutor):
                        role='seller',episode_id=f'seller:{task_id}',decision_id=deal.get('last_decision_id'),
                        reason='negotiation reservation timed out; payment outcome unknown')
 
+    def refresh_settlements(self):
+        try:
+            imported = sync_settlements(on_settled=self.state.mark_settled)
+            if imported:
+                trace('settlements_imported', count=imported)
+        except (OSError, sqlite3.Error) as error:
+            trace('settlement_sync_error', error=type(error).__name__)
+
     def available(self, text: str, *, limit: int | None = 12) -> list[dict]:
         self.expire_negotiations()
         inventory = read_inventory()
         stock = {u.get("unit") for u in inventory.get("units", [])}
         now = time.monotonic()
-        leases = self.state.active_leases(iter_events(kinds={'settled'}))
+        leases = self.state.active_leases()
         for unit, _, kind, until in leases:
             if kind == 'receipt':
                 self.holds[unit] = now + max(0, until-time.time())
         self.holds = {unit: until for unit, until in self.holds.items()
                       if until > now and (not stock or unit in stock)}
         taken = {d["unit"]["unit"] for d in self.open.values()} | set(self.holds) | {r[0] for r in leases}
-        return find_units(text, taken, inventory, limit=limit)
+        settled = self.state.settled_units()
+        available = []
+        for unit in find_units(text, taken, inventory, limit=None):
+            if unit['unit'] in settled:
+                record('settled_unit_blocked', sku=unit['sku'], unit=unit['unit'], stage='opening')
+            else:
+                available.append(unit)
+        return available[:limit]
 
     async def choose(self, prompt: dict, actions: list[str], fallback: dict) -> dict:
         audit.begin(prompt['phase'], policy_version=prompt.get('market_objective',{}).get('meta_version') or 'operator_default')
@@ -232,6 +248,7 @@ class Seller(AgentExecutor):
             audit.executed('reject',status='emitted',reason=reason)
         message = get_message_text(context.message) or ""
         record('buyer_message',task_id=task.id,text=message)
+        self.refresh_settlements()
         self.expire_negotiations()
         deal = self.open.get(task.id)
         if not new_task and deal is None:
@@ -275,12 +292,6 @@ class Seller(AgentExecutor):
             if public_request and (public_request.get('unavailable') or public_request['sku'] not in requested):
                 await up.reject(say('That public quote code is expired, unavailable or conflicts with the requested SKU. Please ask for a new quote.'))
                 return
-            try:
-                imported = sync_settlements()
-                if imported:
-                    trace("settlements_imported", count=imported)
-            except OSError as error:
-                trace("settlement_sync_error", error=str(error))
             lookup = requested[0] if len(requested) == 1 else message
             choices = self.available(public_request['sku'] if public_request else lookup, limit=None)
             if public_request:choices=[u for u in choices if u['unit']==public_request['unit']]
@@ -586,6 +597,7 @@ class Seller(AgentExecutor):
             answer = {**answer, 'price': min(deal['ask'],max(promotion['price_floor'],offer))}
             record('promotion_accept_guard',task_id=task.id,buyer_offer=offer,counter=answer['price'])
         if action == "accept" and offer > 0:
+            self.refresh_settlements()
             quality = seller_quality.quality(unit, MARKET_DIR, time.time(), HOLD_SECONDS)
             terms = {"shop":NAME,"item":unit["sku"],"price":offer,"task":task.id,"unit":unit["unit"]}
             if warranty_hours:terms['warranty_hours']=warranty_hours
@@ -594,7 +606,11 @@ class Seller(AgentExecutor):
             receipt = sign(terms)
             if not self.state.commit_receipt(task.id, receipt, HOLD_SECONDS):
                 self.open.pop(task.id, None)
-                await reject('That unit reservation expired. Please start a new request.','reservation_expired')
+                if unit['unit'] in self.state.settled_units():
+                    record('settled_unit_blocked', task_id=task.id, sku=unit['sku'], unit=unit['unit'], stage='receipt')
+                    await reject('That unit has already sold. Please start a new request.', 'unit_already_settled')
+                else:
+                    await reject('That unit reservation expired. Please start a new request.', 'reservation_expired')
                 return
             self.holds[unit['unit']] = time.monotonic() + HOLD_SECONDS
             await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
