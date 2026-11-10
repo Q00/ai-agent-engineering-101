@@ -17,6 +17,7 @@ HERE=$(cd "$(dirname "$0")/.." && pwd)
 DATA=${MARKET_DATA_DIR:-/Users/psyoung82/docker/compose/term/data}
 COMPOSE="podman compose -f $HERE/compose.yaml --project-directory $HERE"
 DRY=""
+LIST=$(mktemp)
 [ "${1:-}" = "--dry-run" ] && DRY="--dry-run"
 
 rsync -ai --checksum $DRY \
@@ -25,7 +26,15 @@ rsync -ai --checksum $DRY \
   --include='/memory/' --include='/memory/*.py' \
   --include='/strategist/' --include='/strategist/*.py' \
   --exclude='*' \
-  "$HERE/" "$DATA/" | grep -E '^>f' | sed 's/^>f[^ ]* /updated: /' || true
+  "$HERE/" "$DATA/" | grep -E '^>f' | sed 's/^>f[^ ]* /updated: /' | tee "$LIST" || true
+# The seller imports policy.py once, at its start: a RANGES change here is not seen by the running seller, and a
+# SKILL.md value the strategist (on the new RANGES) writes outside the old ones makes the seller fall back to
+# DEFAULTS (11-11: a 23M warranty cap over the old 20M range, 7 h on DEFAULTS). Recreate the container then.
+if grep -q '^updated: policy.py$' "$LIST"; then
+  echo "WARNING: policy.py changed. The running seller keeps the policy.py it loaded at start; if RANGES widened,"
+  echo "         recreate the container (podman compose up -d) before any SKILL.md value uses the wider range."
+fi
+rm -f "$LIST"
 
 if [ -z "$DRY" ]; then
   for f in market_buyer.py restock.py review.py policy.py; do python3 -m py_compile "$DATA/$f"; done
