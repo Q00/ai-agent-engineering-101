@@ -758,6 +758,11 @@ def run(a, t0):
     try:                                             # what headquarters holds the team responsible for, first
         import kpi
         b = {"accountability": kpi.accountability("marketing", c), **b}
+        try:                                         # HQ 11-10: the audit team's seller findings, run on request
+            import audit_seller                      # only ("내가 요청할때만 시행해": python audit_seller.py)
+            b["audit_seller"] = audit_seller.summary()
+        except Exception as e:
+            b["audit_seller"] = {"error": f"{type(e).__name__}: {e}"[:200]}
     except Exception as e:
         b = {"accountability": {"error": f"{type(e).__name__}: {e}"[:200]}, **b}
     research = json.loads(ask_codex((EMERGENCY + "\n\n" if getattr(a, "emergency", False) else "")
