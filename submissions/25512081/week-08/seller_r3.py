@@ -350,6 +350,12 @@ def terms(u):
     if end:                                   # sell-off: not a price test either
         share *= end[0]
         floor = max(1, math.ceil(u["cost"] * end[1]))
+    elif u["kind"] == "food" and (hours_left(u) or 0) >= CLEARANCE_HOURS and (mk := market_price(u)) and floor > mk:
+        # food bought above what the market pays sells near the market from the start, down to STALE_FLOOR of cost:
+        # a talk that ends without a deal gets a review too (Nov 10, 23:00-23:36: 64 talks without a deal vs 10 deals,
+        # 27 of them grade A Jeju Samdasu G3434758a at cost 0.56-0.73 of list against offers of 0.55; over 20 h,
+        # 661 no-deal reviews of 1-3 stars on our shop, 132 "could not agree on a price")
+        floor = max(math.ceil(u["cost"] * STALE_FLOOR), int(mk * 0.95))
     elif u["kind"] != "food" and days >= 1 and (mk := market_price(u)) and floor > mk:
         # goods held a day or more and bought above what the market now pays (surge cost): sell at the market price,
         # down to STALE_FLOOR of cost. Nov 9 06:30: 128M of our 146M stock was three SKUs (Downing 21 units at 2.61M
