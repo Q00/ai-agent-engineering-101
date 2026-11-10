@@ -420,6 +420,12 @@ class Seller(AgentExecutor):
                 raise ValueError('Trading deadline reached')
             units = {u['unit']: u for u in inventory['units']}
             candidates = find_units(text, inventory, catalog, now)
+            try:
+                from r3_replenishment import record_request
+                with Memory(self.md) as memory:
+                    record_request(memory, task.id, text, catalog, inventory, candidates, now)
+            except Exception as exc:
+                emit('r3_seller_observation_error', task_id=task.id, error=str(exc))
             unit_id, previous, token, expires = self.reservations.begin(task.id, candidates, units, now, expires)
             unit = units[unit_id]
             self.check_unit(unit, previous, catalog, now)

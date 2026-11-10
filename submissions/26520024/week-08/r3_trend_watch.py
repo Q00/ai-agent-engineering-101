@@ -141,7 +141,8 @@ def read_events(md, now):
         db.execute('PRAGMA query_only=ON')
         rows = db.execute("SELECT kind,ts,data FROM events WHERE ts>=? AND ts<=? AND kind IN "
                           "('market_settle','payment','negotiation','policy_fallback','shop_review',"
-                          "'seller_action','seller_failure','seller_checkout','seller_settlement') "
+                          "'seller_action','seller_failure','seller_checkout','seller_settlement',"
+                          "'seller_demand','buyer_supply_gap','restock_prediction') "
                           "ORDER BY ts DESC LIMIT ?", (now - 2 * INTERVAL, now, ROW_LIMIT + 1)).fetchall()
     return [{'kind': k, 'ts': ts, 'data': json.loads(data)} for k, ts, data in rows[:ROW_LIMIT]], len(rows) > ROW_LIMIT
 
@@ -211,6 +212,8 @@ def review_once(md=None, now=None, apply=False):
             if e['kind'] == 'seller_settlement' and 0 <= now-e['ts'] < INTERVAL),
         'limitation': 'Only linked own sales; refund adjustments live in portfolio memory. No causal baseline lift.'}
     summary['funnel_limit'] = 'Action counts, not unique visits; inventory lock failures are not lack of demand.'
+    from r3_replenishment import summarize as replenish_summary
+    summary['replenishment'] = replenish_summary(events, now)
     from r3_competition import fresh_report
     competition = fresh_report(md, now)
     summary['competition'] = {key: competition.get(key) for key in

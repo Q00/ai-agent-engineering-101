@@ -6,14 +6,22 @@ import statistics
 
 def observe_offers(memory, order, shops, now):
     rows = []
+    complete = True
     for shop in shops:
+        if not isinstance(shop.get('offers'), list):
+            complete = False
+            continue
         for offer in shop.get('offers', []):
             if (isinstance(offer, dict) and isinstance(offer.get('sku'), str)
                     and type(offer.get('qty')) is int and offer['qty'] >= 0):
                 rows.append({'shop': shop['name'], 'sku': offer['sku'], 'qty': offer['qty']})
+            else:
+                complete = False
     memory.record('offer_snapshot', order['order'],
                   {'category': order['category'], 'rows': rows[:2000],
                    'truncated': len(rows) > 2000, 'scope': 'own_order_category_not_entire_market'}, ts=now)
+    from r3_replenishment import record_supply_gap
+    record_supply_gap(memory, order, rows[:2000], len(rows) > 2000 or not complete, now)
 
 
 def diversified(rows, limit):
@@ -87,6 +95,8 @@ def enrich(inputs, memory, inventory, now, limit=24):
             'limitation': 'No causal demand, failure probability or complete competitor stock is inferred.'}
     from r3_competition import enrich as competitive_enrich, fresh_report
     competitive_enrich(inputs, fresh_report(memory.md, now))
+    from r3_replenishment import enrich as replenish_enrich
+    replenish_enrich(inputs, memory, inventory, now)
     inputs['candidates'] = diversified(inputs['candidates'], limit)
     return inputs
 

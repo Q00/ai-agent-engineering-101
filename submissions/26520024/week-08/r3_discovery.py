@@ -12,7 +12,8 @@ from r3_common import atomic_json, load_catalog, load_policy, read_json, state_d
 from r3_memory import Memory
 
 
-VERSION = 3
+VERSION = 4
+HORIZON = 20 * 60
 HALF_LIFE = 6 * 3600
 WINDOW = 6 * 3600
 PROMPT = '''Select bounded investment hypotheses from supplied candidates for a fictional market.
@@ -24,7 +25,12 @@ Without observations, only the explicitly marked small diversified exploration i
 Consider evidence strength, related-product price comparability, food expiry, and uncertainty.
 Prefer actual acceptable-order substitutes over semantic complements. portfolio is a deterministic
 estimate with partial supply coverage, not a sales guarantee. Include a small pilot when justified;
-scale only products with repeated profitable own settlements. Respect uncertainty and cash limits.
+Use replenishment targets: repeated profitable own settlements allow scaling; provisional_scale
+permits a bounded two-unit trial only after a mature profitable quick sale and diverse public sales.
+When justified, cover distinct acceptable-order groups with several small pilots instead of only one SKU.
+seller_demand is unverified interest, never payment proof or sufficient evidence to scale.
+Substitution evidence must name actual coacceptable orders, not just a related category.
+Respect uncertainty and cash limits.
 competitive_evidence is a bounded public sample of cash leaders' sales, not a private alliance,
 an endorsement, guaranteed demand, or permission to exceed any purchase guard.
 Never fabricate sales, trends, probabilities, quality grades, or evidence. A purchase cannot choose
@@ -92,13 +98,14 @@ def build_candidates(catalog, events, now=None, limit=24, half_life_seconds=HALF
                                      'previous_sales': 0, 'evidence_ids': [], 'first_observed_at': now})
     evidence = []
     buyers = defaultdict(set)
-    seen_sales, seen_orders, seen_events = set(), set(), set()
+    seen_sales, seen_orders, seen_events, seen_requests = set(), set(), set(), set()
+    requests = defaultdict(list)
     ordered = sorted(events, key=lambda row: (row.get('kind') != 'market_settle',
                                                -(timestamp(row.get('ts')) or 0),
                                                str(row.get('key', ''))))
     for event in ordered:
         kind, data = event.get('kind'), event.get('data', {})
-        if kind not in ('market_settle', 'settlement', 'order_seen') or not isinstance(data, dict):
+        if kind not in ('market_settle', 'settlement', 'order_seen', 'seller_demand') or not isinstance(data, dict):
             continue
         observed = timestamp(event.get('ts'))
         if observed is None or observed > now + 60 or now - observed > 7 * 86400:
@@ -109,6 +116,17 @@ def build_candidates(catalog, events, now=None, limit=24, half_life_seconds=HALF
         seen_events.add(event_id)
         age = max(0, now - observed)
         weight = 2 ** (-age / half_life_seconds)
+        if kind == 'seller_demand':
+            sku = data.get('sku')
+            bucket = (sku, int(observed // 300))
+            if (sku not in catalog or data.get('status') != 'stockout' or age > HORIZON
+                    or data.get('category') != catalog[sku]['category'] or bucket in seen_requests):
+                continue
+            seen_requests.add(bucket)
+            requests[sku].append(event_id)
+            evidence.append({'id': event_id, 'source': 'unverified_inbound_interest',
+                             'kind': kind, 'ts': observed, 'sku': sku, 'weight': .1})
+            continue
         if kind == 'order_seen':
             order = data.get('order')
             if not isinstance(order, (str, int)) or isinstance(order, bool):
@@ -189,6 +207,8 @@ def build_candidates(catalog, events, now=None, limit=24, half_life_seconds=HALF
             status = 'observed_sale'
         elif stats['eligible_orders']:
             status = 'eligible_unseen'
+        elif requests[sku]:
+            status = 'requested_unseen'
         elif related:
             status = 'related_unseen'
         elif not evidence:
@@ -196,9 +216,11 @@ def build_candidates(catalog, events, now=None, limit=24, half_life_seconds=HALF
         else:
             continue
         cited = list(stats['evidence_ids'])
+        cited.extend(requests[sku])
         for other in related:
             cited.extend(sku_stats[other]['evidence_ids'])
         score = stats['sales_weight'] + .25 * stats['eligible_weight']
+        score += .1 * min(4, len(requests[sku]))
         score += .1 * category_stats.get('score', 0) if related else 0
         candidates.append({'sku': sku, 'category': category, 'name': product.get('name', sku),
                            'kind': product.get('kind'), 'list_price': price,
@@ -207,6 +229,7 @@ def build_candidates(catalog, events, now=None, limit=24, half_life_seconds=HALF
                            'distinct_buyers': len(buyers[sku]),
                            'eligible_orders': stats['eligible_orders'],
                            'eligible_source': 'own_buyer_biased',
+                           'recent_stockout_buckets': len(requests[sku]),
                            'related_skus': related[:8], 'order_groups': stats['order_groups'],
                            'evidence_ids': list(dict.fromkeys(cited))[:8],
                            'category_score': category_stats.get('score', 0),
@@ -269,7 +292,7 @@ def analyze(md, *, now=None, decide_fn=None, memory=None):
     memory.reconcile()
     catalog = load_catalog(md)
     policy = load_policy(md)
-    events = [event for kind in ('market_settle', 'settlement', 'order_seen')
+    events = [event for kind in ('market_settle', 'settlement', 'order_seen', 'seller_demand')
               for event in memory.events(kind=kind, limit=2000)]
     inputs = build_candidates(catalog, events, now=now, limit=96,
                               half_life_seconds=policy.get('trend_half_life_seconds', HALF_LIFE))

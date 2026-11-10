@@ -25,6 +25,8 @@ DEFAULT_POLICY = {
     'buyer_min_saved': .05, 'buyer_required_warranty_hours': 0,
     'exploration_budget_fraction': .20,
     'competitive_tracking_enabled': True,
+    'adaptive_replenishment': True,
+    'adaptive_pilot_budget_fraction': .50,
 }
 
 

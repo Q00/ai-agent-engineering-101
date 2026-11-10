@@ -115,6 +115,16 @@ class InventorySellerTests(unittest.TestCase):
             actions = [event['data']['action'] for event in memory.events('seller_action')]
         self.assertEqual(actions, ['accept', 'ask'])
 
+    def test_stockout_event_distinguishes_missing_and_locked_inventory(self):
+        from r3_memory import Memory
+        missing = send(self.client, 'G00002')
+        first = send(self.client, 'G00001')
+        locked = send(self.client, 'G00001')
+        with Memory(self.md) as memory:
+            self.assertEqual(memory.get('seller_demand', missing['id'])['data']['status'], 'stockout')
+            self.assertEqual(memory.get('seller_demand', first['id'])['data']['status'], 'matching_inventory')
+            self.assertEqual(memory.get('seller_demand', locked['id'])['data']['status'], 'matching_inventory')
+
     def test_missing_stale_wrong_round_inventory_fail_closed_before_decision(self):
         for condition in ('missing', 'stale', 'round2', 'round4'):
             with self.subTest(condition=condition):
