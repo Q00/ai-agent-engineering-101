@@ -291,7 +291,7 @@ class Seller(AgentExecutor):
         self._lock = threading.Lock()                   # Resident is used by A2A calls and the tick thread
         self._ticker = None
         self._blog = {}                                 # v1.20 logging only: task id -> (buyer_ref, source)
-        self.arms_policy_path = self._pw.path if self._pw is not None else P.POLICY_FILE   # v2.12: arms file dir
+        self.arms_policy_path = self._pw.path if self._pw is not None else getattr(P, "POLICY_FILE", None)  # v2.12
 
     def held(self, now):
         """v2.3: units not to offer now: in an open negotiation, sold in the last ACCEPT_HOLD_S (two buyers on one
@@ -422,7 +422,7 @@ class Seller(AgentExecutor):
         keeps its arm. The pick (find_unit) and decline_texts already ran on self.pol. No arms or any error ->
         (self.pol, {}), the policy object itself."""
         try:
-            arms = P.load_arms(self.arms_policy_path, now)
+            arms = P.load_arms(self.arms_policy_path, now) if self.arms_policy_path else None
             if not arms:
                 return self.pol, {}
             return P.with_arms(self.pol, arms, P.arm_salt(unit["unit"]))
