@@ -34,11 +34,11 @@ def unit(sku, grade="A"):
 
 
 class Settings(unittest.TestCase):
-    def test_shipped_off(self):
+    def test_shipped_on(self):
+        # Switched on 11-10 with the food floor, after the user's seller restart.
         value = json.loads(fp.CONFIG.read_text(encoding="utf-8"))
-        self.assertIs(value["enabled"], False)
-        self.assertEqual((value["skus"], value["units_per_sku"], value["max_total_estimated_cost"]), (GOOD["skus"], 3, 310000))
-        self.assertIsNone(fp.settings())
+        self.assertIs(value["enabled"], True)
+        self.assertEqual(fp.settings(), {"skus": GOOD["skus"], "units_per_sku": 3, "max_total_estimated_cost": 310000})
 
     def test_only_a_valid_file_turns_it_on(self):
         with TemporaryDirectory() as folder:
@@ -71,8 +71,8 @@ class Picks(unittest.TestCase):
                 self.assertEqual(self.run_for({"units": []}, multiple=multiple), ([], "food_floor_108_v1"))
         self.assertTrue(self.run_for({"units": []}, multiple=1.1)[0])
 
-    def test_the_shipped_policy_keeps_the_floor_off(self):
-        self.assertFalse(fp.floor_on())
+    def test_the_shipped_policy_has_the_floor_on(self):
+        self.assertTrue(fp.floor_on())
 
     def test_three_of_each_less_what_is_held(self):
         picks, waiting = self.run_for({"units": [unit("G4a998429"), unit("G4a998429"), unit("Gdf79cd07", grade="expired")]})

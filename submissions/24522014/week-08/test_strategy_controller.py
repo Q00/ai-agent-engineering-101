@@ -305,7 +305,19 @@ class ActualSellerConsumer(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(signed["strategy_version"], 42)
 
 
+import r3_policy as _r3p_floor
+_shipped_load_policy = _r3p_floor.load_policy
+
+
+def _without_food_floor():
+    # These tests pin today's food prices: the shipped food floor (cost x 1.08, on since 11-10) must not move them.
+    policy = _shipped_load_policy()
+    policy["selling"]["food_pricing_v2"]["floor_cost_multiple"] = None
+    return policy
+
+
 def setUpModule():
+    _r3p_floor.load_policy = _without_food_floor
     # These tests fix their own prices: the shipped price cap setting must not move them.
     import price_cap
     global _cap_config
@@ -314,6 +326,7 @@ def setUpModule():
 
 
 def tearDownModule():
+    _r3p_floor.load_policy = _shipped_load_policy
     import price_cap
     price_cap.CONFIG = _cap_config
 

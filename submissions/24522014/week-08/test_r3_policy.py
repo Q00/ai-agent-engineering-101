@@ -35,5 +35,24 @@ class Policy(unittest.TestCase):
             buyer_accept({"kind": "food"})
 
 
+import r3_policy as _r3p_floor
+_shipped_load_policy = _r3p_floor.load_policy
+
+
+def _without_food_floor():
+    # These tests pin today's food prices: the shipped food floor (cost x 1.08, on since 11-10) must not move them.
+    policy = _shipped_load_policy()
+    policy["selling"]["food_pricing_v2"]["floor_cost_multiple"] = None
+    return policy
+
+
+def setUpModule():
+    _r3p_floor.load_policy = _without_food_floor
+
+
+def tearDownModule():
+    _r3p_floor.load_policy = _shipped_load_policy
+
+
 if __name__ == "__main__":
     unittest.main()

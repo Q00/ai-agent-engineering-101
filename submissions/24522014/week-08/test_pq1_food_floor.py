@@ -102,8 +102,9 @@ class FoodFloor(unittest.TestCase):
         with patch.object(r3_policy, "load_policy", return_value=policy):
             return r3_policy.selling_terms(unit, {"F": {"shelf_hours": 100}}, now=now, runtime=self.RUNTIME)
 
-    def test_shipped_off(self):
-        self.assertIsNone(r3_policy.load_policy()["selling"]["food_pricing_v2"]["floor_cost_multiple"])
+    def test_shipped_on_at_108(self):
+        # Switched on 11-10 with the food probe, after the user's seller restart (installed off in 6768fed3).
+        self.assertEqual(r3_policy.load_policy()["selling"]["food_pricing_v2"]["floor_cost_multiple"], 1.08)
 
     def test_off_is_today(self):
         for left in (.9, .3, .15, .05):
