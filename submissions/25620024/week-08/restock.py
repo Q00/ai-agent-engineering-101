@@ -198,6 +198,9 @@ def plan(md, c, t, now=None):
     for u in units:
         stock[u["sku"]] = stock.get(u["sku"], 0) + 1
     start = inv.get("start") or 5_000_000
+    # audit 11-10: the reserve also covers 3 days of storage (1%/day of stock at cost; 406M -> 12.2M)
+    stock_cost = sum(u.get("cost") or 0 for u in units)
+    t = dict(t, cash_reserve=max(t["cash_reserve"], 3 * (inv.get("storage_per_day") or 0.01) * stock_cost / start))
     cash = (inv.get("balance") or 0) - t["cash_reserve"] * start
     w = inv.get("restock") or {}                              # spend cap per supply window
     try:
@@ -211,8 +214,7 @@ def plan(md, c, t, now=None):
     # 11-10 bug fix: our deals were counted over all time against the market's last 24 h, so a SKU we had sold for a
     # week read as a 100% share -- target = the whole market's rate x 24 h (1,025 bedding sets selling 12 a day).
     # Both now count the same 24 h.
-    n_ours = dict(c.execute("select sku, count(*) from quotes where outcome='deal' and ts>? group by sku",
-                            (now - 24 * 3600,)).fetchall())
+    n_ours = {k: v[0] for k, v in _ours(c, now).items()}    # audit 11-10: ledger settles, not quote "deals" (+17%)
     by_sku, by_cat = market_model.rates(c, now=now)
     heroes = [k for k, _ in sorted(by_sku.items(), key=lambda kv: -kv[1])[:t["heroes"]]]
     buy, why = {}, []
@@ -288,6 +290,10 @@ def plan(md, c, t, now=None):
         mk = {}
     general = cash
     cash = min((inv.get("balance") or 0) - t["cash_reserve"] * start, t["pick_window_budget"] * start - spent)
+    try:
+        vetoed = set(((mk.get("_veto") or {}).get("cancel_orders")) or [])
+    except Exception:
+        vetoed = set()
     for x in promo.hq_orders():                               # 1b. headquarters' direct orders: first, never vetoed
         add(x.get("sku"), int(x.get("qty") or 0) - stock.get(x.get("sku"), 0), "HQ order", any_price=True)
     for sku, target, why_ in hits(c, now, t):                 # 1b'. our own hits, deepened as they sell (HQ 11-04)
@@ -334,11 +340,18 @@ def plan(md, c, t, now=None):
         if n_mkt.get(sku, 0) < t["min_settles"]:
             continue                                          # too little evidence: the display step covers it
         ours = n_ours.get(sku, 0)
-        share = min(1.0, max(0.05, ours / n_mkt[sku])) if ours >= t["proven_sales"] else t["share_prior"]
+        if sku in vetoed:
+            continue                                          # audit 11-10: the sales veto binds this step too
+        # audit 11-10: the 0.05 share floor (x2 for heroes) bought 10-25x our sales (G021aae64: 20 units, sells 7/day);
+        # a proven SKU uses its real share and never more than 2 days of our own 24 h sales
+        share = min(1.0, ours / n_mkt[sku]) if ours >= t["proven_sales"] else t["share_prior"]
         target = math.ceil(rate * share * t["cover_h"].get(kind, 12) * (t["hero_depth"] if sku in heroes else 1))
+        if ours >= t["proven_sales"]:
+            target = min(target, math.ceil(ours / 24 * 48))
         if kind == "goods" and ours < t["proven_sales"]:
             target = min(target, t["goods_cap_unproven"])
-        add(sku, target - stock.get(sku, 0), f"{rate:.2f}/h x share {share:.2f}" + (" hero" if sku in heroes else ""))
+        add(sku, target - stock.get(sku, 0) - buy.get(sku, 0),     # audit: minus what hits already queued
+            f"{rate:.2f}/h x share {share:.2f}" + (" hero" if sku in heroes else ""))
     have_cat = {(cat.get(s) or {}).get("category") for s in stock} | {(cat.get(s) or {}).get("category") for s in buy}
     cats = sorted(by_cat, key=lambda k: -by_cat[k]) or [d["category"] for d in demand]
     for category in cats[:t["display_cats"]]:                 # 3. display

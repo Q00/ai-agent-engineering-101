@@ -167,7 +167,7 @@ def quote(c, unit, code=None, me=None, now=None, stock_n=1, vip=False):
     # sell 12 a day) follows the market like furniture: 4% under its grade median, down to 8% under cost
     over = False
     if stock_n > 1 and unit.get("kind") == "goods":
-        rate_ = market_model.our_sales(c, unit["sku"])
+        rate_ = market_model.our_sales(c, unit["sku"], hours=24)   # audit 11-10: was 6 h
         over = (stock_n / rate_ if rate_ > 0 else float("inf")) >= t.get("overstock_h", 48)
     dear = lp >= t.get("big_follow_list", 500000) or over
     if dear:                                    # 11-07: HQ big_follow is the least undercut on furniture, even for SKUs
@@ -194,7 +194,7 @@ def quote(c, unit, code=None, me=None, now=None, stock_n=1, vip=False):
         if cut:
             price, why = price * (1 - cut), why + [f"{age:.0f} h in stock -{cut:.0%}"]
     if stock_n > 1:
-        rate = market_model.our_sales(c, unit["sku"])
+        rate = market_model.our_sales(c, unit["sku"], hours=24)    # audit 11-10: was 6 h (night = "inf h")
         cover = stock_n / rate if rate > 0 else float("inf")
         cut = max([m for h, m in t["clear_cover_h"] if cover >= h], default=0)
         if cut:
@@ -210,8 +210,12 @@ def quote(c, unit, code=None, me=None, now=None, stock_n=1, vip=False):
         price, why = price * (1 - md), why + [f"scm clear -{md:.0%}"]
     gb = groupbuy(c, unit["sku"])
     if gb:                                                # HQ 11-05 group buy: this hour's first units
-        if lp * gb["share"] < price:
-            price, why = lp * gb["share"], why + [f"group buy {gb['share']:.0%} of list, {gb['left']} left this hour"]
+        gbp = lp * gb["share"]
+        gmed, _ = market_model.market_price(c, unit["sku"], grade=unit.get("grade") if lp >= 100000 else None)
+        if gmed:                                          # audit 11-10: never more than 15% under the grade median
+            gbp = max(gbp, gmed * 0.85)
+        if gbp < price:
+            price, why = gbp, why + [f"group buy {gbp / lp:.0%} of list, {gb['left']} left this hour"]
         arm = "gb"
     tier = next(((n, d) for n, d in t["tiers"] if bought >= n), None)
     if tier:
@@ -227,8 +231,9 @@ def quote(c, unit, code=None, me=None, now=None, stock_n=1, vip=False):
                                                                               # near cost: Book
         floor = min(floor, int(cost * (1 + fm)) + 1)          # keeps +3%, revenue (0.3) gets the whole price
         if over:                                      # HQ 11-10 "악성재고는 원가 근처로, 또는 원가로 팔아": an
-            price = min(price, max(cost * 1.01, median * 0.85))   # overstocked unit asks about its cost (never more
-            why = why + [f"overstock: about cost {cost:.0f}"]     # than 15% under the market), floor below
+            price = min(price, max(cost * 1.01, median * 0.85))   # overstocked unit asks about its cost, and
+            price = max(price, median * 0.85)                     # (audit 11-10) never more than 15% under the
+            why = why + [f"overstock: about cost {cost:.0f}"]     # market after the markdowns stacked; floor below
         if dear and median * (1 - follow) < cost:
             # 11-08: a dear unit bought above its grade's market price costs 1% a day to hold (storage), ~9% to the
             # round's end, so it goes at the market price now if that loses at most big_loss_max of cost

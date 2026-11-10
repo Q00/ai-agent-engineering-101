@@ -353,7 +353,9 @@ def groupbuy_ads(c, t, now):
         held, units = {}, {}
         for u in json.loads((HERE / ".market" / "inventory.json").read_text(encoding="utf-8")).get("units", []):
             held[u["sku"]] = held.get(u["sku"], 0) + (u.get("cost") or 0)
-            units.setdefault(u["sku"], {}).setdefault(u.get("grade"), u)
+            g0 = units.setdefault(u["sku"], {}).get(u.get("grade"))      # audit 11-10: the cheapest unit per grade,
+            if g0 is None or (u.get("cost") or 0) < (g0.get("cost") or 0):  # advertised as "from"
+                units[u["sku"]][u.get("grade")] = u
     except Exception:
         held, units = {}, {}
     for sku, x in sorted((g.get("skus") or {}).items(), key=lambda kv: -held.get(kv[0], 0))[:5]:
@@ -382,12 +384,12 @@ def groupbuy_ads(c, t, now):
                       "first_per_hour": gb["per_hour"], "left_this_hour": gb["left"]})
     if not items or not refs:
         return []
-    data = {"type": "clearance", "shop": NAME, "rule": "about cost, while stock lasts; asks by grade in stock now",
-            "items": [{"sku": i["sku"], "list": i["list_price"], "ask_by_grade": i["price_by_grade"]} for i in items],
+    data = {"type": "clearance", "shop": NAME, "rule": "about cost, while stock lasts; lowest ask per grade in stock now (other units of a grade may ask more)",
+            "items": [{"sku": i["sku"], "list": i["list_price"], "from_by_grade": i["price_by_grade"]} for i in items],
             "how": "ask our shop for the SKU", "refs": refs[:5]}
     ko = "[재고 정리] 원가 수준 판매 -- 지금 재고의 등급별 실제 판매가\n" + "\n".join(
         f"- {i['name']} ({i['sku']}): 정가 {i['list_price']:,}원 -> 등급별 "
-        + ", ".join(f"{g_} {p_:,}원" for g_, p_ in i["price_by_grade"].items()) for i in items)
+        + ", ".join(f"{g_} {p_:,}원부터" for g_, p_ in i["price_by_grade"].items()) for i in items)
     en = "[Clearance] prices by grade in stock now: " + "; ".join(
         f"{i['sku']} " + ", ".join(f"{g_} {p_:,}" for g_, p_ in i["price_by_grade"].items()) for i in items)
     js = json.dumps(data, ensure_ascii=False, separators=(",", ":")) + f"\n{HUMAN}\n" + ko + "\n" + en
@@ -402,6 +404,8 @@ def clearance_facts(c, t, now):
     try:
         ad = groupbuy_ads(c, t, now)
         items = json.loads(ad[0]["texts"]["json"].split("\n")[0])["items"] if ad else []
+        for i in items:
+            i["ask_by_grade"] = i.get("from_by_grade") or i.get("ask_by_grade")
     except Exception:
         items = []
     rows, refs = [], []
@@ -415,7 +419,7 @@ def clearance_facts(c, t, now):
                 med[g_] = int(m_)
         n24 = c.execute("select count(*) from settles where sku=? and ts>?", (sku, now - 86400)).fetchone()[0]
         refs += [s_ for (s_,) in c.execute("select seq from settles where sku=? order by seq desc limit 2", (sku,))]
-        rows.append({"sku": sku, "list": i["list"], "n24h": n24, "mkt_median": med, "dragonash_ask": i["ask_by_grade"]})
+        rows.append({"sku": sku, "list": i["list"], "n24h": n24, "mkt_median": med, "dragonash_from": i["ask_by_grade"]})
     if not rows or not refs:
         return []
     rows = rows[:4]
@@ -423,7 +427,7 @@ def clearance_facts(c, t, now):
             "disclosure": "same owner as shop dragonash"}
     ko = "[가격 데이터] 침구·가구 SKU 24시간 체결 중간가(등급별)와 지금 dragonash 판매가 (같은 주인, 이해관계 공개)\n" + "\n".join(
         f"- {r['sku']} 정가 {r['list']:,}: 24h {r['n24h']}건, 시장 " + ", ".join(f"{g_} {v:,}" for g_, v in r["mkt_median"].items())
-        + " / dragonash " + ", ".join(f"{g_} {v:,}" for g_, v in r["dragonash_ask"].items()) for r in rows)
+        + " / dragonash " + ", ".join(f"{g_} {v:,}" for g_, v in r["dragonash_from"].items()) + " 부터" for r in rows)
     js = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
     return [{"topic": "clearance_facts", "as": "buyer", "kind": "price_data", "refs": refs[:8], "score": 8.0,
              "text": (js + "\n" + HUMAN + "\n" + ko)[:1000], "texts": {"json": (js + "\n" + HUMAN + "\n" + ko)[:1000],
@@ -443,6 +447,8 @@ def shop_facts(c, t, now):
     try:
         ad = groupbuy_ads(c, t, now)
         items = json.loads(ad[0]["texts"]["json"].split("\n")[0])["items"][:3] if ad else []
+        for i in items:
+            i["ask_by_grade"] = i.get("from_by_grade") or i.get("ask_by_grade")
     except Exception:
         items = []
     refs = [s_ for (s_,) in c.execute("""select s.seq from settles s join settle_units u on u.seq = s.seq
@@ -454,7 +460,7 @@ def shop_facts(c, t, now):
             "deals": me.get("deals"), "stars": me.get("stars"), "reviews": me.get("reviews"),
             "grade_claims_honest": f"{me.get('honest_claims')}/{me.get('claims')}", "refunds": me.get("refunds"),
             "receipt": "Ed25519-signed, unit named, market certificate attached",
-            "clearance_asks": {i["sku"]: i["ask_by_grade"] for i in items},
+            "clearance_from": {i["sku"]: i["ask_by_grade"] for i in items},
             "disclosure": "same owner as this buyer"}
     js = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
     ko = (f"[상점 사실] dragonash: 거래 {me.get('deals'):,}건, 별점 {me.get('stars')} (리뷰 {me.get('reviews'):,}건), "
