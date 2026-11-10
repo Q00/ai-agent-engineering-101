@@ -87,6 +87,10 @@ GRADE_OPEN = {"B": 0.72, "C": 0.60}
 # ddolcom (2026-11-09 16:40, the same instruction): grade C goods sold as is now open well under the market's C price (about 0.59
 # of list): 0.45, and at every price (not only the "low" arm of 100,000+). The floor stays the cost (C costs about 0.35 of list)
 GRADE_OPEN["C"] = 0.45
+# Claude (2026-11-11 02:22, hourly check, plan 2 step 2): stars against paid/list (star_price.py, logs/star-price-1111-0226.txt,
+# 6 h): my grade C food paid 0.714 of list on average, stars 4.13 (184 results; 0.70-0.75: 106, 4.16, 28% 5*; 0.75+: 26, 3.12)
+# against the market's C food at 0.543, 4.45. At 0.55-0.70 mine got 4.57-4.72. Grade C food now opens at most C_FOOD_OPEN of list
+C_FOOD_OPEN = 0.65
 TRIAL2_RATE = 0.0
 # ddolcom (2026-11-06, the user's instruction): one clearance only, at cost or a little above, to free the cash. These 6
 # units had sat 13-40 h and are the ones the forum post 22459 names. New units never join by age: a rule on age alone also
@@ -217,6 +221,8 @@ def ask_price(u, offers, arm=None):
         share = 1 if arm != "low" else TRIAL_DEAR_SHARE if u["list_price"] >= TRIAL_DEAR_MIN else TRIAL_SHARE
     if (arm == "low" or (arm is None and u.get("grade") == "C")) and is_goods(u) and u.get("grade") in GRADE_OPEN:
         share = min(share, GRADE_OPEN[u["grade"]])
+    if u.get("kind") == "food" and u.get("grade") == "C":
+        share = min(share, C_FOOD_OPEN)
     top = max(u["list_price"] * share, floor)
     return int(floor + (top - floor) * STEP ** offers)
 
