@@ -24,8 +24,11 @@ class AutopilotTest(unittest.TestCase):
         self.active = Path(self.tmp.name) / "memory" / "strategy" / "active.json"
         atomic.write_json(self.active, strategy(10))
         autopilot.switch(True)
+        self.direct = autopilot.DIRECT_APPLY
+        autopilot.DIRECT_APPLY = False           # the A/B path; test_direct covers the default
 
     def tearDown(self):
+        autopilot.DIRECT_APPLY = self.direct
         for k, v in self.old.items():
             os.environ.pop(k, None) if v is None else os.environ.__setitem__(k, v)
         self.tmp.cleanup()
@@ -72,6 +75,14 @@ class AutopilotTest(unittest.TestCase):
         for e in experiment.running(now=AT):
             experiment.stop(e["id"], "test reset", AT)
         out = autopilot.take(self.req(method="before_after"), AT + 1)
+        self.assertEqual((out["method"], self.ceiling()), ("before_after", 0.9))
+        with mock.patch.object(experiment, "result", return_value={"verdict": "no effect", "before": 1, "after": 1}):
+            self.assertEqual(autopilot.settle(AT + 3600), [(out["experiment"], "undone")])
+        self.assertEqual(self.ceiling(), 0.82)
+
+    def test_direct(self):
+        autopilot.DIRECT_APPLY = True
+        out = autopilot.take(self.req(agrees=False), AT)               # installed at once, audit or not
         self.assertEqual((out["method"], self.ceiling()), ("before_after", 0.9))
         with mock.patch.object(experiment, "result", return_value={"verdict": "no effect", "before": 1, "after": 1}):
             self.assertEqual(autopilot.settle(AT + 3600), [(out["experiment"], "undone")])

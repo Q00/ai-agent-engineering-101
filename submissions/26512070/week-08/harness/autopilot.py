@@ -26,6 +26,7 @@ from harness import alert, experiment, out_dir, wisdom
 SLOT_MIN = 30
 MIN_RUN_MIN = 25              # a test started at :07 ends at :30 of the next half hour, not 23 min later
 MAX_EXTEND = 3                # 'too few trades' gets at most 3 more slots (2 h in all)
+DIRECT_APPLY = True         # user 11/11: no A/B; install, compare before/after, undo a miss
 FREE_STEP = 0.3               # a number with no approved range moves at most 30% of its value per change
 
 
@@ -85,15 +86,17 @@ def take(doc, now=None):
         return {"auto": False, "why": why}
     ev = dict(doc.get("evaluation") or {})
     agrees = isinstance(doc.get("audit"), dict) and doc["audit"].get("agrees") is True
-    method = ev.get("method") if ev.get("method") in experiment.METHODS else "ab"
-    if method == "before_after" and not agrees:
-        method = "ab"                               # no audit agreement: half the trades, not all of them
-    if method == "alternate" and experiment.ROLE_OF_METRIC.get(doc["expected"]["metric"]) == "buyer":
-        method = "ab"                               # alternate runs by restock windows only
-    if "restock" in (doc["change"].get("playbook") or {}) and method == "ab":
-        # 11/11 00:1x: restock assigns arms by supply window only - an 'ab' restock test (market_top 28, 22:32-00:16)
-        # changed nothing and was judged on noise
-        method = "alternate"
+    # user 11/11 00:2x: "A/B means little - apply the change at once and check before/after". Every change is
+    # installed now and judged against the same length of time before it; a miss is undone (DIRECT_APPLY)
+    method = "before_after" if DIRECT_APPLY else (ev.get("method") if ev.get("method") in experiment.METHODS else "ab")
+    agrees = isinstance(doc.get("audit"), dict) and doc["audit"].get("agrees") is True
+    if not DIRECT_APPLY:
+        if method == "before_after" and not agrees:
+            method = "ab"                           # no audit agreement: half the trades, not all of them
+        if method == "alternate" and experiment.ROLE_OF_METRIC.get(doc["expected"]["metric"]) == "buyer":
+            method = "ab"                           # alternate runs by restock windows only
+        if "restock" in (doc["change"].get("playbook") or {}) and method == "ab":
+            method = "alternate"                    # 11/11: restock assigns arms by supply window only
     success = wisdom.success_line(doc)
     end = slot_end(now)
     exp_id = f"a{doc['id']}"

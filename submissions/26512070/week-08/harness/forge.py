@@ -10,8 +10,8 @@ a pure function decide(v) and a test. Code then
 1. checks the source (AST): no import, no open/exec/eval/compile, no dunder access - the tool sees only v;
 2. runs the model's test and our own invariants in a separate process with a time limit (python -I): a counter
    never below v['floor'], an accept only of an offer at or over the floor, None or a valid move on 500 random views;
-3. lists it as 'testing' and starts an A/B by visit (shop sales; the B arm plays the tool on its states), decided by
-   the autopilot at a 30-minute boundary: success adopts it (Jev may route to it everywhere), anything else drops it.
+3. lists it as 'testing', installs it at once for every visit in its states (user 11/11: no A/B) and compares
+   shop sales before/after at a 30-minute boundary (autopilot): success keeps it, anything else undoes and drops it.
 Every move a forged tool makes still goes through act.* (check.price), so it cannot sell below cost.
 """
 import ast
@@ -58,6 +58,11 @@ Answer with ONE JSON object and nothing else:
  "states": [<the state strings from the list it is meant for>],
  "code": "def decide(v):\\n    ...",
  "test": "def test():\\n    ...   # asserts on decide() for 3-6 views from these states"}"""
+
+
+def wisdom_active():
+    from harness import wisdom
+    return wisdom.active()
 
 
 def _reg_path():
@@ -203,12 +208,18 @@ def forge_once(now=None, call=None):
                                            encoding="utf-8")
     (FORGED_DIR / f"{name}_test.py.txt").write_text(test, encoding="utf-8")
     exp_id = f"f-{name}"
-    experiment.register(exp_id, {"playbook": {"seller": {"forged": name}}}, "sales", {"direction": "up", "by": 0.05},
-                        TEST_RUN_MIN / 60, "ab", why=f"forged tool {name}: {rec['description']}", now=now)
+    change = {"playbook": {"seller": {"forged": name}}}
+    # user 11/11 00:2x: no A/B - the tool goes in for every visit in its states at once, before/after decides
+    prev = ((wisdom_active().get("playbook") or {}).get("seller") or {}).get("forged") or ""
+    installed = autopilot._install(f"forged tool {name}", change, f"forge: passed sandbox and invariants; states "
+                                   f"{rec['states']}", "sales", now).get("installed")
+    experiment.register(exp_id, change, "sales", {"direction": "up", "by": 0.05},
+                        TEST_RUN_MIN / 60, "before_after", why=f"forged tool {name}: {rec['description']}", now=now)
     experiment.approve(exp_id, "forge: passed sandbox and invariants", now=now)
     led = experiment.ledger()
     led["experiments"][exp_id].update(end=autopilot.slot_end(now + (TEST_RUN_MIN - 25) * 60), autopilot=True,
-                                      extends=0, undo={"playbook.seller.forged": None}, request=None)
+                                      extends=0, undo={"playbook.seller.forged": prev}, request=None,
+                                      installed=installed)
     atomic.write_json(experiment.path(), led)
     rec.update(status="testing", experiment=exp_id)
     reg[name] = rec
