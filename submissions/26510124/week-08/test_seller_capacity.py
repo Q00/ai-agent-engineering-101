@@ -71,6 +71,9 @@ class CapacityReceiptTests(unittest.TestCase):
         self.assertEqual(done["status"]["state"], "TASK_STATE_COMPLETED")
         receipt = done["artifacts"][0]["parts"][0]["data"]
         self.assertEqual(receipt["price"], ask)
+        # A2A transports generic numeric data as doubles; match the kit's
+        # existing integer normalization before signature verification.
+        receipt["price"] = int(receipt["price"])
         self.assertTrue(kit.verify_seller(kit.pub_b64(key), receipt))
         self.assertEqual(seller.infer.await_count, 2)  # Acceptance already has a code path.
         events = [json.loads(l) for l in seller.events.read_text().splitlines()]
