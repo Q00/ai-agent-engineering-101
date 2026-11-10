@@ -34,11 +34,12 @@ def unit(sku, grade="A"):
 
 
 class Settings(unittest.TestCase):
-    def test_shipped_on(self):
-        # Switched on 11-10 with the food floor, after the user's seller restart.
+    def test_shipped_off(self):
+        # On 11-10 12:04 with the food floor, off 11-10 19:50:25 KST (net negative on stars); the rest of the file is kept.
         value = json.loads(fp.CONFIG.read_text(encoding="utf-8"))
-        self.assertIs(value["enabled"], True)
-        self.assertEqual(fp.settings(), {"skus": GOOD["skus"], "units_per_sku": 3, "max_total_estimated_cost": 310000})
+        self.assertIs(value["enabled"], False)
+        self.assertEqual((value["skus"], value["units_per_sku"], value["max_total_estimated_cost"]), (GOOD["skus"], 3, 310000))
+        self.assertIsNone(fp.settings())
 
     def test_only_a_valid_file_turns_it_on(self):
         with TemporaryDirectory() as folder:
