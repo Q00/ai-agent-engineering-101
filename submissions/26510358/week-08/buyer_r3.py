@@ -16,7 +16,7 @@ import re
 import sys
 import time
 
-from r3lib import a2a, config, llm, market, pricing, score_model
+from r3lib import a2a, config, initiative, llm, market, pricing, score_model
 from r3lib.memory import Memory
 from shop_r3 import parse_offer
 
@@ -195,6 +195,25 @@ def negotiate(c, order, deadline):
         client.close()
 
 
+def judge_buy(rec, c, order, p_break, bought):
+    """The same purchase in Horvitz's terms (RL_PROACTIVE.md 3), logged before the payment: p = the unit holds,
+    B = Buyer ALL of the deal when it does, C = what a break takes (0 surplus under a warranty, -1 without). The
+    rule in valid() still decides; `bought` is what it said, `decision` what p > C/(B+C) says. A purchase cannot be
+    undone unless a warranty refunds it, so without one it needs the wait margin."""
+    try:
+        b = score_model.cached()
+        if b is None:
+            return None
+        covered, disc = bool(c_covered(rec)), 1 - rec["price"] / c["list"]
+        gain = score_model.delta(b, {"kind": "buy", "r": disc})[1]
+        loss = -score_model.delta(b, {"kind": "buy", "r": 0.0 if covered else -1.0})[1]
+        return initiative.judge("buy", 1 - p_break, max(0.0, gain), max(0.0, loss), "saved, breaks without a warranty",
+                                reversible=covered, order=order.get("id"), sku=rec.get("item"), claim=rec.get("claim"),
+                                discount=round(disc, 4), warranty_hours=rec.get("warranty_hours") or 0, bought=bought)
+    except Exception:                                 # a logging fault must not lose a deal
+        return None
+
+
 def valid(rec, c, order):
     if not rec:
         return "no receipt"
@@ -213,6 +232,7 @@ def valid(rec, c, order):
         # grade with this warranty against the threshold the price limit was built on.
         theta = pricing.buyer_threshold(c.get("theta"))
         r = score_model.expected_r(1 - price / c["list"], p, warranty=c_covered(rec))
+        judge_buy(rec, c, order, p, r >= theta - 1e-6)
         if r < theta - 1e-6:
             return (f"expected saved {r:.3f} under {theta:.3f}: grade {rec.get('claim')} breaks {p:.1%}, "
                     f"warranty {rec.get('warranty_hours') or 0:g} h, discount {1 - price / c['list']:.3f}")
