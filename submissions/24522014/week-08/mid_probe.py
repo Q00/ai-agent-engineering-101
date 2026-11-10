@@ -25,6 +25,9 @@ MAX_WORST_COST = 1000000
 TYPICAL_COST_SHARE = 0.60
 WORST_COST_SHARE = 0.75
 STALE_SECONDS = 86400
+# The arrival-cost rule counts only units bought since the probe switched on (11-10 19:36:08 KST, 24e2c67f), when none of its SKUs
+# were held: a unit's cost is drawn at random on arrival with the same spread for every SKU, so earlier units say little.
+ARRIVAL_SINCE = 1794306968.0
 
 
 def number(x):
@@ -46,15 +49,16 @@ def settings(path=None):
     return {"skus": list(skus), "units_per_sku": units, "max_worst_cost_total": cap}
 
 
-def arrived_costs(md, skus):
-    """{sku: [unit costs]} from our signed offers (every unit we ever quoted), or None when an offer file does not parse."""
+def arrived_costs(md, skus, since=0.0):
+    """{sku: [unit costs]} from our signed offers issued at or after `since` (no unit of these SKUs was held at `since`, so these
+    are units bought since), or None when an offer file does not parse."""
     out = {s: [] for s in skus}
     for path in (Path(md) / "signed-offers").glob("*.json"):
         try:
             offer = json.loads(path.read_text(encoding="utf8"))
         except (OSError, ValueError):
             return None
-        if isinstance(offer, dict) and offer.get("sku") in out and number(offer.get("cost")):
+        if isinstance(offer, dict) and offer.get("sku") in out and number(offer.get("cost")) and number(offer.get("issued_at")) and offer["issued_at"] >= since:
             out[offer["sku"]].append(offer["cost"])
     return out
 
@@ -65,14 +69,15 @@ def for_run(md, inventory, catalog, intelligence, now, path=None):
         chosen = settings(path)
         if not chosen:
             return [], None
-        return pick_units(md, inventory, catalog, intelligence, now, chosen)
+        return pick_units(md, inventory, catalog, intelligence, now, chosen, since=ARRIVAL_SINCE)
     except Exception:
         return [], None
 
 
-def pick_units(md, inventory, catalog, intelligence, now, chosen, skip_surged=False):
+def pick_units(md, inventory, catalog, intelligence, now, chosen, skip_surged=False, since=0.0):
     """The probe's buying rules for `chosen` ({"skus", "units_per_sku", "max_worst_cost_total"}), shared with mid_band.py; with
-    skip_surged a SKU on the surge list is not bought at all. Raises on unexpected data; callers turn that into off."""
+    skip_surged a SKU on the surge list is not bought at all; the arrival-cost rule counts units bought at or after `since`. Raises on
+    unexpected data; callers turn that into off."""
     import median_bypass
     surge = {r.get("sku"): r.get("factor") for r in inventory.get("surge") or []
              if isinstance(r, dict) and number(r.get("factor")) and r["factor"] > 1}
@@ -81,7 +86,7 @@ def pick_units(md, inventory, catalog, intelligence, now, chosen, skip_surged=Fa
     def worst(sku):
         return (catalog.get(sku) or {}).get("list_price", 0) * WORST_COST_SHARE * surge.get(sku, 1)
     spent = sum(worst(u["sku"]) for u in units)
-    costs = arrived_costs(md, chosen["skus"])
+    costs = arrived_costs(md, chosen["skus"], since)
     sold = median_bypass.confirmed_counts(md, now, window=STALE_SECONDS)
     if costs is None or sold is None:
         return [], {s: "records_unreadable" for s in chosen["skus"]}
@@ -100,7 +105,8 @@ def pick_units(md, inventory, catalog, intelligence, now, chosen, skip_surged=Fa
         if not number(median) or median <= typical:
             notes[sku] = "median_not_above_typical_cost"
             continue
-        arrived = costs[sku] + [u["cost"] for u in units if u["sku"] == sku and number(u.get("cost"))]
+        arrived = costs[sku] + [u["cost"] for u in units if u["sku"] == sku and number(u.get("cost"))
+                                and not (number(u.get("supplied_at")) and u["supplied_at"] < since)]
         if any(c >= median for c in arrived):
             notes[sku] = "a_unit_arrived_at_or_above_the_median"
             continue

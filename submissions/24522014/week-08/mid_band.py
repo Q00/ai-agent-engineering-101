@@ -3,7 +3,7 @@
 its .75 worst-cost test) get one unit each in restock. Off unless mid_band.json says so.
 
 The buying rules are the mid-price probe's (mid_probe.pick_units): bought only while the sampled public median is above our typical
-goods cost (.60 x list), never again once a unit of it arrived at or above the median, and no more of a SKU with a unit held 24 h and
+goods cost (.60 x list), never again once a unit of it bought since switch-on arrived at or above the median, and no more of a SKU with a unit held 24 h and
 none of our completed sales of it in the last 24 h; a SKU on the surge list is not bought at all. One unit each held plus planned,
 inside the total cap and the run's units, at most max_lines_per_run (4 at most) of the ordinary lines a run, paid from the run budget
 at worst cost (.75 x list) with seven days of storage, held plus planned worst cost within max_worst_cost_total (6M at most). Its pass
@@ -22,6 +22,8 @@ ALLOWED = ("G05277ffe", "G1515d951", "G07ec17d5", "G8095ddd6", "G85a1a856", "G75
            "G2607d1f6", "G57d8dfa6", "G53b150b5", "G429bd69e", "G2c023a8c", "G9c9f8f94")
 MAX_WORST_COST = 6000000
 MAX_LINES = 4
+# The arrival-cost rule counts only units bought since the band switched on (11-10 19:54:50 KST, d245d129), peer decision 11-10.
+ARRIVAL_SINCE = 1794308090.0
 
 
 def settings(path=None):
@@ -45,7 +47,7 @@ def for_run(md, inventory, catalog, intelligence, now, path=None):
         chosen = settings(path)
         if not chosen:
             return None
-        picks, notes = pick_units(md, inventory, catalog, intelligence, now, chosen, skip_surged=True)
+        picks, notes = pick_units(md, inventory, catalog, intelligence, now, chosen, skip_surged=True, since=ARRIVAL_SINCE)
         return {"picks": picks, "max_lines": chosen["max_lines_per_run"], "notes": notes}
     except Exception:
         return None

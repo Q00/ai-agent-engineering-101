@@ -56,20 +56,21 @@ class Settings(unittest.TestCase):
 
 
 class Picks(unittest.TestCase):
-    def run_for(self, inv, price=600000, offers=(), sales=(), setting=GOOD, market=None):
+    def run_for(self, inv, issued=NOW - 3600, price=600000, offers=(), sales=(), setting=GOOD, market=None):
         with TemporaryDirectory() as folder:
             md = Path(folder)
             (md / "signed-offers").mkdir()
             (md / "checkout-events").mkdir()
             for i, (sku, cost) in enumerate(offers):
-                (md / "signed-offers" / f"o{i}.json").write_text(json.dumps({"sku": sku, "cost": cost, "price": cost + 1, "task": f"t{i}", "expires_at": NOW - 999999}), encoding="utf-8")
+                (md / "signed-offers" / f"o{i}.json").write_text(json.dumps({"sku": sku, "cost": cost, "price": cost + 1, "task": f"t{i}", "expires_at": NOW - 999999, "issued_at": issued}), encoding="utf-8")
             for i, sku in enumerate(sales):
                 task = f"s{i}"
-                (md / "signed-offers" / f"s{i}.json").write_text(json.dumps({"sku": sku, "cost": 300000, "price": 400000, "task": task, "expires_at": NOW - 600}), encoding="utf-8")
+                (md / "signed-offers" / f"s{i}.json").write_text(json.dumps({"sku": sku, "cost": 300000, "price": 400000, "task": task, "expires_at": NOW - 600, "issued_at": NOW - 900}), encoding="utf-8")
                 (md / "checkout-events" / (hashlib.sha256(task.encode()).hexdigest() + ".json")).write_text(json.dumps({"status": "completed", "at": NOW - 700}), encoding="utf-8")
             path = md / "b.json"
             path.write_text(json.dumps(setting), encoding="utf-8")
-            return mb.for_run(md, inv, catalog(price), intel(price) if market is None else market, NOW, path)
+            with patch.object(mb, "ARRIVAL_SINCE", NOW - 864000):
+                return mb.for_run(md, inv, catalog(price), intel(price) if market is None else market, NOW, path)
 
     def test_off_is_none(self):
         self.assertIsNone(self.run_for({"units": []}, setting={**GOOD, "enabled": False}))
@@ -87,6 +88,13 @@ class Picks(unittest.TestCase):
         self.assertEqual(got["notes"][SKUS[0]], "held_full")
         self.assertEqual(got["notes"][SKUS[1]], "surged")
         self.assertEqual([p["sku"] for p in got["picks"]], SKUS[2:])
+
+    def test_only_units_bought_since_its_switch_on_count_for_the_arrival_rule(self):
+        self.assertEqual(mb.ARRIVAL_SINCE, 1794308090.0)  # U3 on, 11-10 19:54:50 KST
+        got = self.run_for({"units": []}, offers=((SKUS[1], 600000 * .7),), issued=NOW - 900000)
+        self.assertEqual(got["notes"][SKUS[1]], "ok")
+        got = self.run_for({"units": []}, offers=((SKUS[1], 600000 * .7),))
+        self.assertEqual(got["notes"][SKUS[1]], "a_unit_arrived_at_or_above_the_median")
 
     def test_the_probe_rules_apply(self):
         low = {**intel(), SKUS[0]: {"median_price": 600000 * .60}}
