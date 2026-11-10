@@ -4,6 +4,7 @@ build(root, now) -> text. Each section reads its own source and says when the so
 shows up as a fact instead of a crash. Other participants appear only as hashed ids.
 """
 
+import functools
 import json
 import os
 import time
@@ -1715,66 +1716,311 @@ def section_memory(root):
     return out or ["[기억] 점검 결과 없음, 기억 서버 응답 없음"]
 
 
-def build(root=None, now=None, last_brief_ts=None):
-    root = c.data_root(root)
-    now = c.now_ts() if now is None else now
-    login = c.owner_login(root)
-    snaps = board_snapshots(root)
-    out = []
-    if not snaps:
-        out += section_time(now, None)
-        out.append("[순위] 순위표 스냅샷 없음")
-        out += section_versions(root, now)
-        out += section_trial(root, now)
-        out += section_categories(root, now, login)
-        out += section_calls(root, now)
-    else:
-        bts, bpath = snaps[-1]
+class _Ctx:
+    """Inputs the sections share, each computed on first use so that building one section skips the others' reads."""
+
+    def __init__(self, root, now, last_brief_ts):
+        self.root = c.data_root(root)
+        self.now = c.now_ts() if now is None else now
+        self.last_brief_ts = last_brief_ts
+        self.login = c.owner_login(self.root)
+
+    @functools.cached_property
+    def snaps(self):
+        return board_snapshots(self.root)
+
+    @functools.cached_property
+    def board(self):
+        """(bts, b, ts6, b6, hours6): the newest snapshot and the one nearest 6 h before it; None without snapshots."""
+        if not self.snaps:
+            return None
+        bts, bpath = self.snaps[-1]
         b = c.load_json(bpath, {}) or {}
-        ts6, p6 = _snapshot_near(snaps, bts - 6 * 3600)
+        ts6, p6 = _snapshot_near(self.snaps, bts - 6 * 3600)
         b6 = (c.load_json(p6, {}) or {}) if ts6 < bts else {}
-        hours6 = (bts - ts6) / 3600
-        out += section_time(now, bts)
-        out += section_rank(b, b6, login, hours6)
-        out += section_shop_goal(b, b6, login, hours6)
-        out += section_buyer_goal(b, b6, login, hours6)
-        out += section_profit(root, now, login)
-        out += section_net_profit(root, now, login)
-        out += section_share24(root, now, login)
-        out += section_versions(root, now)
-        out += section_rivals(b, b6, login, hours6, market_settles(root, ts6), _catalog(root))
-        out += section_trial(root, now)
-        out += section_reflections(root, now)
-        out += section_categories(root, now, login)
-        out += section_negotiation(root, now, login)
-        out += section_stars(root, now, login)
-        out += section_calls(root, now)
-        out += section_side(
-            b.get("shops") or [],
-            b6.get("shops") or [],
-            SHOP_KEYS,
-            "가게",
-            login,
-            hours6,
-        )
-        out += section_side(
-            b.get("buyers") or [],
-            b6.get("buyers") or [],
-            BUYER_KEYS,
-            "구매자",
-            login,
-            hours6,
-        )
-    out += section_inventory(root, now)
-    out += section_restock(root, now)
-    out += section_seller(root, now)
-    out += section_market(root, now, login)
-    out += section_forum(root, login, snaps, now)
-    out += section_memory(root)
-    out += section_harness(
-        root, last_brief_ts if last_brief_ts is not None else now - 1800
-    )
-    return c.mask("\n".join(out), (login,))
+        return bts, b, ts6, b6, (bts - ts6) / 3600
+
+    @property
+    def goal_args(self):
+        _, b, _, b6, hours6 = self.board
+        return b, b6, self.login, hours6
+
+    def side(self, key, keys, label):
+        _, b, _, b6, hours6 = self.board
+        return section_side(b.get(key) or [], b6.get(key) or [], keys, label, self.login, hours6)
+
+
+# (name, one-line description, thunk, need): build() order. need "snaps" = only built when board snapshots exist,
+# "board" = also reads the snapshots (section() says they are missing).
+SECTIONS = [
+    ("시각", "지금 시각, 회차 남은 시간, 목표",
+     lambda x: section_time(x.now, x.board[0] if x.board else None), None),
+    ("순위", "Everyone·Class 순위, 1위와의 차이, 상위 5명",
+     lambda x: section_rank(*x.goal_args) if x.board else ["[순위] 순위표 스냅샷 없음"], None),
+    ("가게 목표", "가게 all 공식, 항목별 위아래 가게와 속도", lambda x: section_shop_goal(*x.goal_args), "board"),
+    ("구매자 목표", "구매자 all 공식, 항목별 위아래 구매자", lambda x: section_buyer_goal(*x.goal_args), "board"),
+    ("이익", "6시간 상품군·등급별 매출 총이익과 시장", lambda x: section_profit(x.root, x.now, x.login), "snaps"),
+    ("순이익", "12시간 보증 환불 뺀 순이익, 상품군·등급별",
+     lambda x: section_net_profit(x.root, x.now, x.login), "snaps"),
+    ("시장 몫", "24시간 3시간 단위 시장 매출과 우리 몫", lambda x: section_share24(x.root, x.now, x.login), "snaps"),
+    ("판별 성과", "판매자·구매자 지금 판과 이전 판 지표", lambda x: section_versions(x.root, x.now), None),
+    ("상위 가게", "위 가게들의 시간당 증가와 판 상품군",
+     lambda x: section_rivals(*x.goal_args, market_settles(x.root, x.board[2]), _catalog(x.root)), "board"),
+    ("동시 비교", "판매자 후보 판 동시 비교 상태", lambda x: section_trial(x.root, x.now), None),
+    ("지난 반성", "판마다 마지막 반성과 그 뒤 결정 수", lambda x: section_reflections(x.root, x.now), "snaps"),
+    ("상품군 흐름", "2시간 단위 상품군별 우리 제시와 판매",
+     lambda x: section_categories(x.root, x.now, x.login), None),
+    ("협상 결과", "6시간 상품군별 우리 제시가 끝난 방식",
+     lambda x: section_negotiation(x.root, x.now, x.login), "snaps"),
+    ("별점", "6시간 우리 가게 리뷰와 별점", lambda x: section_stars(x.root, x.now, x.login), "snaps"),
+    ("모델 호출", "24시간 모델 호출 결과와 지연", lambda x: section_calls(x.root, x.now), None),
+    ("가게", "순위표 가게 항목별 값, 순위, 위 차이", lambda x: x.side("shops", SHOP_KEYS, "가게"), "board"),
+    ("구매자", "순위표 구매자 항목별 값, 순위, 위 차이", lambda x: x.side("buyers", BUYER_KEYS, "구매자"), "board"),
+    ("가게 상태", "잔고, 파산선, 재고 수, 유통기한", lambda x: section_inventory(x.root, x.now), None),
+    ("재입고", "재입고 계획 상태, 식품 재고, 재고 없음 거절", lambda x: section_restock(x.root, x.now), None),
+    ("판매 24시간", "24시간 판매 요청 결과 수", lambda x: section_seller(x.root, x.now), None),
+    ("시장 24시간", "24시간 시장 정산, 품목군 비중, 가게 수",
+     lambda x: section_market(x.root, x.now, x.login), None),
+    ("포럼", "우리 포럼 글과 구매자 forum 점수 흐름",
+     lambda x: section_forum(x.root, x.login, x.snaps, x.now), None),
+    ("기억", "기억 점검 점수와 기억 서버 수", lambda x: section_memory(x.root), None),
+    ("하네스 수정", "지난 브리핑 뒤 하네스 수정",
+     lambda x: section_harness(x.root, x.last_brief_ts if x.last_brief_ts is not None else x.now - 1800), None),
+]
+
+
+def build(root=None, now=None, last_brief_ts=None):
+    x = _Ctx(root, now, last_brief_ts)
+    out = []
+    for _, _, fn, need in SECTIONS:
+        if need is None or x.snaps:
+            out += fn(x)
+    return c.mask("\n".join(out), (x.login,))
+
+
+def section(root, name, now=None):
+    """One registry section's text (last brief time: 30 min ago), or the list of valid names."""
+    x = _Ctx(root, now, None)
+    for n, _, fn, need in SECTIONS:
+        if n == name:
+            lines = [f"[{n}] 순위표 스냅샷 없음"] if need == "board" and not x.snaps else fn(x)
+            return c.mask("\n".join(lines), (x.login,))
+    return f"섹션 없음: {name}. 쓸 수 있는 이름: " + ", ".join(n for n, *_ in SECTIONS)
+
+
+COMPACT_CHARS = 8_000  # build_compact hard cap; typical output is near 6,000 (DESIGN 14.2: always-on bundle)
+COMPACT_GAP_S = 1200  # [지난 깨어남 이후]: reference this long before now when the caller gives no last brief time
+COMPACT_NET_N = 3  # best and worst leaf x grade x warranty rows by net
+COMPACT_FULL = ("시각",)  # registry sections build_compact prints whole, so the index leaves them out
+BANKRUPT_NEAR = 2.0  # operator settings default bankrupt_near_factor: alert when balance <= bankrupt line x this
+
+
+def _standing(x):
+    """[순위]: Everyone rank, total and gap to 1st; shop all and buyer all with their ranks."""
+    _, b, _, _, _ = x.board
+    P = b.get("players") or []
+    me = next((p for p in P if c.is_mine(p, x.login)), None)
+    if not me:
+        return ["[순위] 순위표에서 우리 행을 찾지 못함"]
+    E = sorted(P, key=lambda p: -(p.get("total") or 0))
+    t = me.get("total") or 0
+    out = [f"[순위] Everyone {len(E)}명 중 {E.index(me) + 1}위, total {t:.3f}, 1위와 차이 "
+           f"{(E[0].get('total') or 0) - t:.3f}"]
+    parts = []
+    for key, label in (("shops", "가게"), ("buyers", "구매자")):
+        rows = [r for r in b.get(key) or [] if _is_num(r.get("all"))]
+        m = next((r for r in rows if c.is_mine(r, x.login)), None)
+        parts.append(f"{label} all {m['all']:.3f} ({len(rows)}곳 중 {1 + sum(1 for r in rows if r['all'] > m['all'])}위)"
+                     if m else f"{label} 행 없음")
+    return out + ["  " + ", ".join(parts)]
+
+
+def _position(rows, old, me, k, w, raw, hours6, label):
+    """One [점수 위치] line: our value and rank, the gap and all gain to the next value above, and below us the
+    soonest shop to pass us at the snapshot-gap rates (else the nearest value below). Same rates as [가게 목표]."""
+    vals = [r.get(k) or 0 for r in rows]
+    v = me.get(k) or 0
+    val = (lambda t: w * t) if raw else (lambda t: w * _pct(vals, t))
+
+    def rate(r):
+        o = (old.get(r.get("name")) or {}).get(k)
+        if not hours6 or r.get("name") not in old or (k in RATE_KEYS and _is_num(o) and abs(o) > RATE_KEYS[k]):
+            return None
+        return ((r.get(k) or 0) - (o or 0)) / hours6
+
+    rk = lambda t: 1 + sum(1 for y in vals if y > t)
+    mine = rate(me)
+    line = f"  {label} {k}: {c.fmt(v)}, {rk(v)}위" + (f", 우리 {c.fmt(mine)}/h" if mine is not None else "")
+    above = [y for y in vals if y > v]
+    if above:
+        tv = min(above)
+        line += f" | 위 {rk(tv)}위 +{c.fmt(tv - v)} (all {val(tv) - val(v):+.3f})"
+    else:
+        line += " | 1위"
+    below, threat = sorted({y for y in vals if y < v}, reverse=True)[:GOAL_STEPS_BELOW], None
+    for tv in below:
+        at = [r for r in rows if (r.get(k) or 0) == tv]
+        theirs = rate(at[0]) if len(at) == 1 else None
+        if theirs is not None and mine is not None and theirs > mine:
+            eta = (v - tv) / (theirs - mine)
+            if threat is None or eta < threat[1]:
+                threat = (tv, eta)
+    if threat:
+        line += f" | 아래 {rk(threat[0])}위 -{c.fmt(v - threat[0])}, 지금 속도면 {threat[1]:.1f}시간 뒤 우리를 넘음"
+    elif below:
+        line += f" | 바로 아래 {rk(below[0])}위 -{c.fmt(v - below[0])}"
+    return line
+
+
+def _positions(x):
+    _, b, _, b6, hours6 = x.board
+    out = ["[점수 위치] 항목: 값, 순위 | 바로 위 값까지 차이 (all 변화) | 아래에서 가장 먼저 우리를 넘을 곳"]
+    for key, formula, raw, label in (("shops", SHOP_FORMULA, (), "가게"),
+                                     ("buyers", tuple(ALL_WEIGHTS["구매자"].items()), RAW_KEYS["구매자"], "구매자")):
+        rows = [r for r in b.get(key) or [] if _is_num(r.get("all"))]
+        me = next((r for r in rows if c.is_mine(r, x.login)), None)
+        if me is None or len(rows) < 2:
+            out.append(f"  {label} 행 없음")
+            continue
+        old = {r.get("name"): r for r in b6.get(key) or []}
+        out += [_position(rows, old, me, k, w, k in raw, hours6, label) for k, w in formula]
+    return out
+
+
+def _changes(x):
+    """[지난 깨어남 이후]: the newest snapshot against the one nearest the last brief (else COMPACT_GAP_S ago)."""
+    snaps = x.snaps
+    bts, b = x.board[0], x.board[1]
+    ref = x.last_brief_ts if x.last_brief_ts is not None else x.now - COMPACT_GAP_S
+    t0, p0 = _snapshot_near(snaps, ref)
+    if t0 >= bts:
+        return [f"[지난 깨어남 이후] 새 순위표 없음 (마지막 {c.kst(bts, '%H:%M')})"]
+    b0 = c.load_json(p0, {}) or {}
+    out = []
+    P0, P1 = b0.get("players") or [], b.get("players") or []
+    m0 = next((p for p in P0 if c.is_mine(p, x.login)), None)
+    m1 = next((p for p in P1 if c.is_mine(p, x.login)), None)
+    if m0 and m1:
+        r0, r1 = _rank(P0, "total", m0), _rank(P1, "total", m1)
+        d = (m1.get("total") or 0) - (m0.get("total") or 0)
+        if r0 != r1 or d:
+            out.append(f"  Everyone {f'{r0}위 → {r1}위' if r0 != r1 else f'{r1}위 그대로'}, total {d:+.3f}")
+    for key, keys, label in (("shops", [k for k, _ in SHOP_FORMULA], "가게"),
+                             ("buyers", list(ALL_WEIGHTS["구매자"]), "구매자")):
+        R0, R1 = b0.get(key) or [], b.get(key) or []
+        s0 = next((r for r in R0 if c.is_mine(r, x.login)), None)
+        s1 = next((r for r in R1 if c.is_mine(r, x.login)), None)
+        if not s0 or not s1:
+            continue
+        parts = []
+        for k in ["all"] + keys:
+            v0, v1 = s0.get(k), s1.get(k)
+            if not _is_num(v0) or not _is_num(v1) or (k in RATE_KEYS and abs(v0) > RATE_KEYS[k]):
+                continue
+            r0, r1 = _rank(R0, k, s0), _rank(R1, k, s1)
+            if v1 == v0 and r0 == r1:
+                continue
+            d = f"{v1 - v0:+.3f}" if k == "all" else f"{'+' if v1 >= v0 else ''}{c.fmt(v1 - v0)}"
+            parts.append(f"{k} {d}" + (f" ({r0}위 → {r1}위)" if r0 != r1 else ""))
+        if parts:
+            out.append(f"  {label}: " + ", ".join(parts))
+    head = f"[지난 깨어남 이후] 순위표 {c.kst(t0, '%H:%M')} → {c.kst(bts, '%H:%M')}"
+    return [head] + out if out else [head + ", 바뀐 값 없음"]
+
+
+def _net_compact(x):
+    """[순이익] header line and the COMPACT_NET_N best and worst (leaf, grade, warranty) rows by net."""
+    sales, unmatched, delays = net_profit_data(x.root, x.now, NET_PROFIT_H, x.login)
+    out = net_profit_lines(sales, unmatched, delays, NET_PROFIT_H)[:1]
+    groups = defaultdict(list)
+    for s in sales:
+        groups[(s["leaf"], s["grade"], " 보증" if s["wh"] else " 무보증")].append(s)
+    rows = sorted(((k, _net_sum(v)) for k, v in groups.items()), key=lambda kv: -(kv[1][2] - kv[1][6]))
+    n = COMPACT_NET_N
+    if rows:
+        out.append("  순 상위: " + "; ".join(_net_entry(f"{l} {g}{t}", v) for (l, g, t), v in rows[:n]))
+    if rows[n:]:
+        out.append("  순 하위: " + "; ".join(_net_entry(f"{l} {g}{t}", v) for (l, g, t), v in rows[max(n, len(rows) - n):][::-1]))
+    return out
+
+
+def _shop_compact(x):
+    """[가게 상태]: balance against the bankrupt line, stock by category, restock plan, last hour's no_stock line."""
+    inv = c.load_json(os.path.join(x.root, ".market/inventory.json"))
+    state, left = restock_plan_state(x.root, x.now)
+    plan = {"none": "없음", "expired": "만료", "valid": f"유효 ({left}분 남음)"}[state]
+    if not isinstance(inv, dict):
+        return ["[가게 상태] inventory.json 없음", f"  재입고 계획 {plan}"]
+    cat = c.load_json(os.path.join(x.root, ".market/catalog.json"), {}) or {}
+    units = inv.get("units") or []
+    byc = Counter((cat.get(u.get("sku")) or {}).get("category", "?") for u in units if isinstance(u, dict))
+    exp24 = sum(1 for u in units if isinstance(u, dict) and _is_num(u.get("expires_at"))
+                and u["expires_at"] - x.now < 86400)
+    out = [f"[가게 상태] 잔고 {c.fmt(inv.get('balance'))}, 파산선 {c.fmt(inv.get('bankrupt_line'))}, 남은 파산 "
+           f"{inv.get('bankruptcies_left', '-')}회 | 재고 {len(units)}개: "
+           + ", ".join(f"{k} {n}" for k, n in byc.most_common(3)) + f" | 24시간 안에 유통기한 끝 {exp24}개",
+           f"  재입고 계획 {plan}"]
+    return out + [ln for ln in restock_food_lines(x.root, x.now, inv) if ln.startswith("  최근 1시간 재고 없음 거절")]
+
+
+def _alerts(x):
+    """[알림]: lines that appear only when true."""
+    out = []
+    sh = c.load_json(os.path.join(x.root, ".market/shops.json"))
+    rows = sh if isinstance(sh, list) else list(sh.values()) if isinstance(sh, dict) else []
+    if rows and not any(isinstance(r, dict) and c.is_mine(r, x.login) for r in rows):
+        out.append(f"  우리 가게가 지금 가게 목록에 없음 (목록 {len(rows)}곳)")
+    inv = c.load_json(os.path.join(x.root, ".market/inventory.json"), {}) or {}
+    bal, line = (inv.get("balance"), inv.get("bankrupt_line")) if isinstance(inv, dict) else (None, None)
+    if _is_num(bal) and _is_num(line) and bal <= (line * BANKRUPT_NEAR if line > 0 else line):
+        out.append(f"  잔고 {c.fmt(bal)}가 파산선 {c.fmt(line)}의 {BANKRUPT_NEAR:g}배 이하")
+    since = x.now - 3600
+    traj = os.path.join(x.root, "a2/trajectory.jsonl")
+    calls = Counter(r.get("status") for r in c.tail_json(traj, 20_000_000, b'"llm"')
+                    if r.get("kind") == "llm" and (r.get("ts") or 0) >= since and r.get("status") != "ok")
+    if calls:
+        out.append("  최근 1시간 모델 호출 오류: " + ", ".join(f"{k} {n}" for k, n in calls.most_common()))
+    errs = Counter(m.get("decision") for m in c.tail_json(os.path.join(x.root, ".r3/metrics.jsonl"), 20_000_000, b'_error"')
+                   if str(m.get("decision") or "").endswith("_error") and (m.get("ts") or 0) >= since)
+    errs["판매자 결정 errors"] = sum(1 for r in c.tail_json(traj, 20_000_000, b'"decision"')
+                                if r.get("kind") == "decision" and r.get("agent") == "seller"
+                                and (r.get("ts") or 0) >= since and r.get("errors"))
+    if +errs:
+        out.append("  최근 1시간 판매 처리 오류: " + ", ".join(f"{k} {n}" for k, n in (+errs).most_common()))
+    if not any(c.settle_side(e.get("data") or {}, x.login) == "shop" for e in market_settles(x.root, since)):
+        out.append("  최근 1시간 우리 판매 0건")
+    return ["[알림]"] + out if out else []
+
+
+def build_compact(root=None, now=None, last_brief_ts=None, extra=None):
+    """Always-on brief (DESIGN 14.2): time, standing, score position, changes since the last wake, `extra` (caller's
+    lines), net profit, shop state, alerts, then an index of the registry sections for the brief_section tool.
+    Each part returns fewer lines when its source is missing; COMPACT_CHARS caps the whole, index kept."""
+    x = _Ctx(root, now, last_brief_ts)
+    board = lambda f: (lambda: f(x) if x.board else [])
+    parts = [
+        ("시각", lambda: section_time(x.now, x.board[0] if x.board else None)),
+        ("순위", lambda: _standing(x) if x.board else ["[순위] 순위표 스냅샷 없음"]),
+        ("점수 위치", board(_positions)),
+        ("지난 깨어남 이후", board(_changes)),
+        ("extra", lambda: [str(ln) for ln in extra or []]),
+        ("순이익", lambda: _net_compact(x)),
+        ("가게 상태", lambda: _shop_compact(x)),
+        ("알림", lambda: _alerts(x)),
+    ]
+    out = []
+    for label, fn in parts:
+        try:
+            out += fn()
+        except Exception as e:  # a malformed source shows as a fact, the bundle still goes out
+            out.append(f"[{label}] 만들지 못함: {type(e).__name__}")
+    index = "\n".join(["[더 볼 것] brief_section 도구로 읽음"]
+                      + [f"- {n}: {d}" for n, d, _, _ in SECTIONS if n not in COMPACT_FULL])
+    text = c.mask("\n".join(out), (x.login,))
+    if len(text) + 1 + len(index) > COMPACT_CHARS:
+        note = f"\n[잘림: 묶음 상한 {COMPACT_CHARS}자, 나머지는 brief_section으로]"
+        text = text[:COMPACT_CHARS - len(index) - len(note) - 1] + note
+    return text + "\n" + index
 
 
 if __name__ == "__main__":

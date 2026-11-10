@@ -419,6 +419,73 @@ def recall(root, query, agent="operator", k=5):
 
 RECALL_TIMEOUT_S = 5.0
 
+def brief_section(root, section):
+    """브리핑 한 절 전체. section은 브리핑 끝 [더 볼 것] 목록의 이름(예: 순이익, 가게 목표, 협상 결과). 모르는 이름이면 쓸 수 있는 이름을 돌려줌."""
+    return c.cap(b.section(root, section), MAX_CHARS)  # not `name`: call() takes the tool name as its first argument
+
+
+GUIDE_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "MARKET_BRIEF.md")
+
+
+def _guide_sections():
+    """-> (path, [(heading title, text with heading)]) of the market guide's "## " sections; None when unreadable."""
+    path = os.environ.get("R3A2_MARKET_BRIEF") or GUIDE_PATH
+    try:
+        with open(path, encoding="utf-8") as f:
+            text = f.read()
+    except OSError:
+        return path, None
+    secs = []
+    for line in text.splitlines(keepends=True):
+        if line.startswith("## "):
+            secs.append([line[3:].strip(), line])
+        elif secs:
+            secs[-1][1] += line
+    return path, [tuple(s) for s in secs]
+
+
+def _guide_toc(secs):
+    return [f"- {t} ({len(body)}자)" for t, body in secs]
+
+
+def _guide_find(secs, q):
+    """The first section whose title starts with "<q>." when q is a number, else whose title contains q."""
+    q = str(q).strip()
+    return next((s for s in secs if (s[0].startswith(q + ".") if q.isdigit() else q and q in s[0])), None)
+
+
+def guide(root, section=None):
+    """시장 설명서(MARKET_BRIEF.md). section 없으면 목차(절 제목과 글자 수), 있으면 그 절: 번호(예: 10) 또는 제목 일부. 긴 절은 마지막 부분만 줌(기록 절은 아래로 덧붙여 최신이 끝에 있음)."""
+    path, secs = _guide_sections()
+    if secs is None:
+        return f"시장 설명서 없음: {os.path.basename(path)}"
+    toc = "시장 설명서 목차\n" + "\n".join(_guide_toc(secs))
+    if section is None:
+        return c.cap(toc, MAX_CHARS)
+    q = str(section).strip()
+    hit = _guide_find(secs, q)
+    if hit is None:
+        return c.cap(f"절 없음: {q}\n{toc}", MAX_CHARS)
+    body = hit[1]
+    if len(body) <= MAX_CHARS:
+        return body
+    note = f"[앞부분 생략: '{hit[0]}' 전체 {len(body)}자 중 마지막 부분만. 이 절은 아래로 덧붙여 가므로 최신이 끝에 있음]\n"
+    return note + body[-max(0, MAX_CHARS - len(note)):]
+
+
+def guide_always(sections=("1", "7")):
+    """Text for the always-on prompt: the guide's table of contents, then the given sections (number or title part)
+    in full. Not a tool; the guide tool reads the rest."""
+    path, secs = _guide_sections()
+    if secs is None:
+        return f"시장 설명서 없음: {os.path.basename(path)}"
+    body = []
+    for q in sections:
+        hit = _guide_find(secs, q)
+        body.append(hit[1].rstrip("\n") if hit else f"절 없음: {q}")
+    return "\n\n".join(["\n".join(["## 시장 설명서 목차 (나머지 절은 guide 도구로 읽음)"] + _guide_toc(secs))] + body)
+
+
 TOOLS = {
     "board": (board, ("operator",)),
     "ledger": (ledger, ("operator",)),
@@ -434,6 +501,8 @@ TOOLS = {
     "policy": (policy, ("operator",)),
     "net_profit": (net_profit, ("operator",)),
     "recall": (recall, ("operator",)),
+    "brief_section": (brief_section, ("operator",)),
+    "guide": (guide, ("operator",)),
 }
 
 
