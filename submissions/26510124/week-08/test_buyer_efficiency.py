@@ -99,6 +99,7 @@ class FailureReuseTests(unittest.TestCase):
     def test_runtime_records_comparison_data_and_next_order_reuses_it(self):
         fake = SimpleNamespace(run=lambda: "no_deal", no_deal_reason="Seller would not meet my price",
                                receipt=None, authorized_price=None, observed_receipt=None,
+                               food_lifetime_observation=None,
                                diagnostics=lambda: {"version": 1, "reason": "unknown"})
         with tempfile.TemporaryDirectory(dir=ROOT / ".market") as directory:
             memory = Path(directory) / "memory.jsonl"

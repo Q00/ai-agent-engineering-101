@@ -5,12 +5,15 @@ import tempfile
 import time
 import unittest
 from unittest.mock import patch
+import httpx
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from starlette.testclient import TestClient
 
 from buyer_policy import buying_terms
 from buyer_quote_accept import certified_choice
+from buyer_food_horizon import filter_recent_short_life
+from buyer_policy import load_policy
 from market_buyer import trade_and_record
 from seller_agent import DEFAULT, build
 from test_inventory import unit
@@ -100,3 +103,31 @@ class CertifiedQuoteTests(unittest.TestCase):
             task["status"]["message"]["parts"] = [{"text": "Certified lifetime 1h. Asking price: 5"}]
             certified_choice(task, **args, observation=observation)
             self.assertEqual(observation, {"reason": "structured_quote_missing_or_ambiguous"})
+
+    def test_verified_short_life_trade_is_recorded_and_avoided_next_time(self):
+        task, args, key = self.inputs("food")
+        task["id"] = "t1"
+        quote = task["status"]["message"]["parts"][1]["data"]
+        now = time.time()
+        quote["cert"]["cert"]["expires_at"] = now + 3600
+        quote["cert"]["sig"] = base64.b64encode(key.sign(kit.canon(quote["cert"]["cert"]))).decode()
+        shop = {"name": "ours", "url": "https://ours.invalid", "offers": [{"sku": "G00001", "qty": 2}]}
+        def transport(request):
+            if request.method == "GET":
+                return httpx.Response(200, json={"supportedInterfaces": [{"url": shop["url"]+"/rpc",
+                    "protocolBinding": "JSONRPC", "protocolVersion": "1.0"}]})
+            body = json.loads(request.content)
+            reply = ({"id": "t1", "status": {"state": "TASK_STATE_CANCELED"}}
+                     if body["method"] == "CancelTask" else task)
+            return httpx.Response(200, json={"jsonrpc": "2.0", "id": body["id"], "result": reply})
+        with httpx.Client(transport=httpx.MockTransport(transport)) as client, \
+                patch("buyer_quote_accept.schedule_now", return_value={"status": "synced", "now": now}), \
+                patch("market_buyer.buyer_decision", return_value={"action": "walk_away", "reason": "insufficient lifetime"}):
+            trade_and_record(shop, item="G00001", budget=99000, memory_path=self.root/"life.jsonl",
+                             reason="fixture", seconds=10, client=client, order=args["order"],
+                             policy=args["policy"], market_dir=self.root)
+        row = json.loads((self.root/"life.jsonl").read_text())
+        self.assertTrue(row["food_lifetime_observation"]["insufficient"])
+        self.assertEqual(row["negotiation_diagnostics"]["fast_accept_skip_reasons"],
+                         {"food_lifetime_or_checkout_headroom_insufficient": 1})
+        self.assertEqual(filter_recent_short_life([shop], [row], args["order"], load_policy()), ([], 1))
