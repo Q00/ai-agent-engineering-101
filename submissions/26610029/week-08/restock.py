@@ -28,6 +28,13 @@ DEFAULT_POLICY = {"window_budget": 0.10,   # share of the balance one window may
                   "goods_min_sales": 3,
                   "max_units": 80}          # never hold more than this many units in total
 
+# Horvitz threshold for a shop promo post: post a "hot drop" at once when we just bought something
+# that is clearly selling fast elsewhere (high usefulness), otherwise only after staying quiet a while
+# (threshold drops with quiet_bonus past quiet_after) -- never spam, never go silent either.
+DEFAULT_PROMO = {"hot_usefulness": 0.9, "base_usefulness": 0.3,
+                 "threshold": 0.5, "quiet_bonus": 0.3, "quiet_after": 1200, "post_every": 300}
+EMOJI_BY_KIND = {"food": "🍊", "goods": "🛋️"}
+
 
 def plan(inv, d, policy, now):
     units = inv.get("units", [])
@@ -75,6 +82,52 @@ def plan(inv, d, policy, now):
     return buy, why
 
 
+def promo_text(inv, why, now):
+    """A playful but verifiable forum post: real SKUs, real grades, a claim every settle in our ledger
+    history backs up (the shop code sets claim = the unit's actual grade, never anything else)."""
+    live = [u for u in inv.get("units", []) if u["grade"] != "expired"
+            and (u.get("expires_at") is None or u["expires_at"] > now + 600)]
+    if not live:
+        return None
+    hot_skus = {x["sku"] for x in why[:2]}
+    picks = [u for u in live if u["sku"] in hot_skus] or live
+    seen, lines = set(), []
+    for u in picks:
+        if u["sku"] in seen:
+            continue
+        seen.add(u["sku"])
+        e = EMOJI_BY_KIND.get(u["kind"], "📦")
+        extra = " ⏰임박" if u.get("expires_at") and u["expires_at"] - now < 6 * 3600 else ""
+        lines.append(f"{e} {u['name'][:28]} ({u['sku']}) {u['grade']}등급{extra}")
+        if len(lines) >= 3:
+            break
+    return ("🏪 real_yellow 오늘의 재고\n" + "\n".join(lines) +
+            "\n✅ claim=실제 등급 그대로, 속인 적 없음 (ledger로 검증 가능) | ⏱️ 비식품 72h 보증\n"
+            "느린 흥정 싫으면 real_yellow 👋")
+
+
+def shop_forum(d, inv, why, now, md):
+    policy = dict(DEFAULT_PROMO, **d.get_policy("shop_forum", {}))
+    last = float(d.get_state("last_post_shop", 0))
+    if now - last < policy["post_every"]:
+        return
+    hot = any(x["margin"] >= 0.1 and x["sold"] >= 50 for x in why)
+    usefulness = policy["hot_usefulness"] if hot else policy["base_usefulness"]
+    bar = policy["threshold"] - (policy["quiet_bonus"] if now - last > policy["quiet_after"] else 0)
+    if usefulness < bar:
+        print(f"[forum] shop skip: usefulness {usefulness} < {bar}")
+        return
+    text = promo_text(inv, why, now)
+    if not text:
+        print("[forum] shop skip: no live stock to show")
+        return
+    with open(md / "outbox.jsonl", "a", encoding="utf-8") as f:
+        f.write(json.dumps({"post": text, "as": "shop"}, ensure_ascii=False) + "\n")
+    d.set_state("last_post_shop", now)
+    d.log_trajectory(now, "shop", "forum_post", {"usefulness": usefulness, "bar": bar, "hot": hot}, {"text": text})
+    print(f"[forum] shop posted (usefulness {usefulness} >= {bar}):\n{text}")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--state", default=".market")
@@ -102,6 +155,10 @@ def main():
         buy, why = plan(inv, d, policy, now)
         d.log_trajectory(now, "shop", "restock", {"balance": inv.get("balance"), "units": len(inv.get("units", [])),
                                                     "window": w, "policy": policy}, {"buy": why})
+        try:
+            shop_forum(d, inv, why, now, md)
+        except Exception as e:
+            print(f"[forum] shop promo failed: {type(e).__name__}: {e}")
     for x in why:
         print(f"[restock] {x['qty']} x {x['sku']} ({x['kind']}, list {x['list']}, sold {x['sold']}, margin {x['margin']})")
     print(json.dumps({"buy": buy}))
