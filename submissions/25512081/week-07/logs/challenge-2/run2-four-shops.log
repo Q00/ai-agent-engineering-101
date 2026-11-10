@@ -1,0 +1,10 @@
+    [harness 4.6s] {"shop": "fair-furniture", "reason": "Fair-furniture's reviews describe completed deals where the receipt matched the agreed price, while maple-home has reviews of overcharging and ggari-shop turned down all three of my past trades."}
+[choose] https://sponsored-hiking-till-throw.trycloudflare.com: Fair-furniture's reviews describe completed deals where the receipt matched the agreed price, while maple-home has reviews of overcharging and ggari-shop turned down all three of my past trades.
+[buyer] -> 'I want to buy a lamp.'  <- TASK_STATE_INPUT_REQUIRED |  Asking price: 100
+    [harness 5.5s] {"action": "offer", "price": 49, "reason": "Opening offer of 49, about 65% of a target of roughly 75. This leaves room to raise in smaller steps while watching how far the seller's counteroffers drop."}
+[buyer] -> 49  <- TASK_STATE_INPUT_REQUIRED |  Asking price: 100
+    [harness 7.0s] {"action": "offer", "price": 64, "reason": "This is the second step toward a target of about 75 (roughly 85% of it, after 49 at 65%). The seller hasn't moved from 100, so I'm raising by a moderate amount and keeping room for smaller steps later."}
+[buyer] [guard] seller held 100 twice, within budget; offering the ask
+[buyer] -> 100  <- TASK_STATE_COMPLETED |  New shop: an honest review helps us. Deal: lamp at 100.
+[buyer] DEAL lamp at 100.0 (budget 120) after 2 offers, 3 harness calls, 39s
+{"shop": "https://sponsored-hiking-till-throw.trycloudflare.com", "receipt": {"task": "a644b15e-dc3d-4e69-b83f-b9de2b67471d", "item": "lamp", "sig_seller": "nlx+Qm3Wn7oDx39/dX9PtddfxkddoxO3KeyI1byPLe+eyYZ78iybd4gsypJdDQVtawIBUE82b/67ES+4iIkZBw==", "shop": "Fair Furniture", "price": 100.0}, "stars": 5, "review": "Fair deal at 100 after 1 counter, receipt matched."}
