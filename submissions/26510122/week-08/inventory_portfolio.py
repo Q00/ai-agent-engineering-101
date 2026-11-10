@@ -42,7 +42,7 @@ WINDOW_BUDGET = GROWTH_WINDOW_BUDGET
 ROLLING_BUDGET = GROWTH_EXPLORATION_BUDGET
 MAX_MAINTAINED_SKUS = 8
 STOCKOUT_TRIAL_CANDIDATES = 3
-POLICY_VERSION = 27
+POLICY_VERSION = 28
 GROWTH_SPEND_SHARE = .50
 DAY = 86400
 INFLOW_MIN_PUBLIC_DEALS = 5
@@ -457,8 +457,8 @@ def _run(inventory, catalog, history, now, model, refresh, rng, path,prepare_onl
                                'Use sales, exposure, eligible missed demand and holding/expiry risk. '
                                'In growth, cover forecast deficits with upper_midprice evidence first. Their '
                                'actual paid prices are 100,000–300,000 KRW, with at least two positive contributions '
-                               'in 12h and a positive projected contribution at current supply cost. Prioritize these '
-                               'over cheaper midprice or speculative stock; avoid buying extra beyond listed targets. '
+                               'in 12h, at least half of settlements profitably in-band, and positive projected contribution '
+                               'at current supply cost. Rank by projected contribution times proven sales. Cover these deficits first. '
                                'The general unit cost ceiling here limits exploration and other candidates; an eligible '
                                'upper_midprice candidate still reserves its full worst-case cost. '
                                'Then cover profitable midprice_priority deficits across several proven SKUs. '
@@ -657,7 +657,8 @@ def _run(inventory, catalog, history, now, model, refresh, rng, path,prepare_onl
                 record('portfolio_hold', reason='invalid_approval_or_no_correction_time')
                 return {'buy': []}
     ordered_restock = sorted(restock_orders, key=lambda r: (
-        bool(r.get('expiry_trial')), not r.get('upper_midprice'), not r['midprice_priority']))
+        bool(r.get('expiry_trial')), not r.get('upper_midprice'),
+        -(r.get('upper_midprice') or {}).get('projected_contribution_12h', 0), not r['midprice_priority']))
     desired = [{**o, 'kind':'replenishment'} for o in ordered_restock]
     desired += [{**allowed[sku], 'qty':1, 'kind':'exploration'} for sku in skus]
     for row in desired:

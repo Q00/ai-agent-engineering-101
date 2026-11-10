@@ -16,6 +16,7 @@ PROVEN_STOCK = 20  # safety ceiling, never a desired inventory target
 NEW_STOCK = 2
 MAINTENANCE_CATEGORY_LIMIT = 24
 MIN_POSITIVE_SALES = 2
+UPPER_BAND_DEPTH_SAMPLE = 8
 MIDPRICE_MIN = 30_000
 UPPER_MIDPRICE_MIN = 100_000
 MIDPRICE_MAX = 300_000
@@ -282,11 +283,20 @@ def replenishment_candidates(catalog, inventory, history, now, blocked=(), trial
         upper_midprice = None
         if (operating['phase'] == 'growth' and not options[0].get('expiry_trial')
                 and upper['positive_12h'] >= MIN_POSITIVE_SALES and upper['contribution_12h'] > 0
-                and upper['settled_12h'] * 2 >= signal['settled_sales_12h']):
+                and upper['positive_12h'] * 2 >= signal['settled_sales_12h']):
             margin = projected_upper_midprice_margin(p, upper['median_paid'], surge.get(sku, 1), now)
             if margin <= 0:
                 continue
-            upper_midprice = {**upper, 'projected_contribution_per_unit': margin}
+            upper_midprice = {**upper, 'projected_contribution_per_unit': margin,
+                              'projected_contribution_12h': round(margin * upper['positive_12h'], 2)}
+        elif (operating['phase'] == 'growth' and UPPER_MIDPRICE_MIN <= price <= MIDPRICE_MAX
+              and signal['settled_sales_12h'] >= UPPER_BAND_DEPTH_SAMPLE
+              and upper['positive_12h'] * 2 < signal['settled_sales_12h']):
+            # Keep ordinary near-window replenishment. Lower realized prices
+            # do not justify a multi-window buffer at the intended price band.
+            options = [option for option in options if not option['scenario'].startswith('cover_')]
+            if not options:
+                continue
         rows.append({'sku': sku, 'name': p.get('name', sku), 'kind': p['kind'], 'category': p.get('category'),
                      'midprice_priority': (operating['phase'] == 'growth' and
                                            signal['midprice_contribution_sales_12h'] >= MIN_POSITIVE_SALES and
@@ -300,7 +310,7 @@ def replenishment_candidates(catalog, inventory, history, now, blocked=(), trial
                      'assumption':('One additional unit after exactly one positive-contribution settlement; not proven maintenance.'
                                    if second_trial else 'Each target/quantity is forecast-derived; the model approves a candidate or holds.')})
     rows.sort(key=lambda r: (not r['upper_midprice'],
-                             -(r['upper_midprice'] or {}).get('contribution_12h', 0),
+                             -(r['upper_midprice'] or {}).get('projected_contribution_12h', 0),
                              not r['midprice_priority'],
                              -r['evidence']['midprice_contribution_12h'] if r['midprice_priority'] else 0,
                              -(r['target_options'][-1]['qty']/max(1,r['currently_stocked'])),

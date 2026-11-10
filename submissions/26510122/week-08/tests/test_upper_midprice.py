@@ -36,6 +36,23 @@ class UpperMidpriceTests(unittest.TestCase):
         rows = replenishment_candidates(self.catalog, inv, self.history(), self.now)
         self.assertEqual([r['sku'] for r in rows], ['lower'])
 
+    def test_out_of_band_sales_do_not_build_multi_window_stock(self):
+        history = []
+        for sku, paid, cost in [('upper', 220_000, 120_000), ('lower', 90_000, 50_000)]:
+            for index in range(10):
+                unit = f'{sku}-{index}'
+                at = self.now - 120 - index * 60
+                history += [{'event': 'receipt_signed', 'sku': sku, 'unit': unit, 'cost': cost,
+                             'at': at, 'supplied_at': at - 900},
+                            {'event': 'settled', 'sku': sku, 'unit': unit, 'price': paid,
+                             'at': at, 'ledger': unit}]
+        inventory = {'round': 3, 'balance': 10_000_000, 'units': []}
+        upper, lower = replenishment_candidates(self.catalog, inventory, history, self.now)
+        self.assertEqual([upper['sku'], lower['sku']], ['upper', 'lower'])
+        self.assertTrue(any(o['scenario'].startswith('cover_') for o in upper['target_options']))
+        self.assertFalse(any(o['scenario'].startswith('cover_') for o in lower['target_options']))
+        self.assertGreater(upper['upper_midprice']['projected_contribution_12h'], 0)
+
     def test_nonviable_after_approval_does_not_emit_or_consume_budget(self):
         upper = {'sku': 'upper', 'kind': 'replenishment', 'category': 'upper',
                  'qty': 1, 'target_stock': 1, 'cost_ceiling': 303_750}

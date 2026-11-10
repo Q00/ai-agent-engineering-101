@@ -16,7 +16,7 @@ def comparison_baskets(winners,rows,*,anchor,minimum,minimum_categories,slots,un
         witness.append(row);seen.add(row['category'])
     if len(witness)<minimum or len(seen)<minimum_categories or sum(r['cost_ceiling'] for r in witness)>min(budget,novel_budget):return []
     ranked=sorted(winners,key=lambda r:(r['second_trial'], not r.get('upper_midprice'),
-                                      -(r.get('upper_midprice') or {}).get('contribution_12h', 0),
+                                      -(r.get('upper_midprice') or {}).get('projected_contribution_12h', 0),
                                       not r.get('midprice_priority'),
                                       -r.get('evidence', {}).get('midprice_contribution_12h', 0) if r.get('midprice_priority') else 0,
                                       -r['forecast']['sales_rate_per_hour'],r['sku']))
