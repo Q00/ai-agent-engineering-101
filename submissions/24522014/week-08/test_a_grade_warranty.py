@@ -23,9 +23,10 @@ ON = {"enabled": True, "hours": 6, "max_exposure": 1000000, "cash_exposure_ratio
 class Settings(unittest.TestCase):
     def test_shipped_off_with_the_trials_limits(self):
         value = json.loads((Path(warranty_trial.__file__).parent / "a_grade_warranty.json").read_text(encoding="utf-8"))
-        self.assertIs(value["enabled"], False)
-        self.assertEqual((value["hours"], value["max_exposure"], value["cash_exposure_ratio"]), (6, 1000000, .1))
-        self.assertIsNone(warranty_trial.six_hour_settings())
+        # Switched on with the user's approval of 11-10: 60M (the validator maximum) and .5 of the balance.
+        self.assertIs(value["enabled"], True)
+        self.assertEqual((value["hours"], value["max_exposure"], value["cash_exposure_ratio"], value["refund_ratio"]), (6, 60000000, .5, .02))
+        self.assertEqual(warranty_trial.six_hour_settings()["max_exposure"], 60000000)
 
     def test_anything_but_a_valid_setting_is_off(self):
         with tempfile.TemporaryDirectory() as folder:

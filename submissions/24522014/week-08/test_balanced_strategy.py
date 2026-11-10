@@ -237,7 +237,9 @@ class Files(unittest.TestCase):
 
     def test_warranty_stress_floor_and_reserved_liability(self):
         self.setup_warranty()
-        value = warranty_trial.assignment(self.md, self.task, self.unit, self.terms, self.now)
+        # The two-hour trial on its own: with the shipped six-hour warranty on (11-10), A-grade goods would take that path instead.
+        with patch.object(warranty_trial, 'six_hour_settings', return_value=None):
+            value = warranty_trial.assignment(self.md, self.task, self.unit, self.terms, self.now)
         self.assertEqual(value['hours'], 2)
         self.assertEqual(value['floor'], 126)
         self.assertEqual(warranty_trial.liability(self.md, self.now), 200)
@@ -330,7 +332,9 @@ class SellerCoverage(unittest.IsolatedAsyncioTestCase):
                     patch.object(seller_r3, 'get_message_text', side_effect=['buy G1', '200']), \
                     patch.object(seller_r3, 'decision_mode', return_value='model'), patch.object(seller_r3, 'model_allowed', return_value=(True, 'ok')), \
                     patch.object(seller_r3, 'ask_json', return_value=({'action': 'counter', 'price': 200}, 'fixture')), \
-                    patch.object(seller_r3, 'sign', side_effect=lambda r: {**r, 'sig_seller': 'fixture'}) as sign:
+                    patch.object(seller_r3, 'sign', side_effect=lambda r: {**r, 'sig_seller': 'fixture'}) as sign, \
+                    patch.object(warranty_trial, 'six_hour_settings', return_value=None):
+                # The two-hour trial on its own; the shipped six-hour warranty (on since 11-10) is tested in test_a_grade_warranty.py.
                 await seller.execute(context, MagicMock())
                 self.assertEqual(seller.open[task]['coverage']['hours'], 2)
                 await seller.execute(context, MagicMock())
