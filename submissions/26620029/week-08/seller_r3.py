@@ -140,7 +140,18 @@ def floor_price(u):
     for below, share in NEAR_EXPIRY:
         if left is not None and left < below:
             return int(u["cost"] * share)
+    if is_goods(u) and time.time() - (u.get("supplied_at") or time.time()) >= OLD_BELOW_HOURS * 3600:
+        market = market_grade_price(u)
+        if market and u.get("cost", 0) >= market:
+            return int(min(u["cost"], max(OLD_BELOW_SHARE * u["cost"], AT_COST_SHARE * market)))
     return u["cost"]
+
+
+# ddolcom (2026-11-10 23:55, plan 2 step 2 "24시간이 넘은 재고의 경우 원가 보다 할인된 가격으로 팔아도 됨."): goods unsold
+# OLD_BELOW_HOURS whose cost is at or above the market price of their grade may go down to AT_COST_SHARE of that market price,
+# never under OLD_BELOW_SHARE of cost. At 01:22 that was 21 units, cost 8,081,003, market 0.82-0.99 of their cost
+OLD_BELOW_HOURS = 24
+OLD_BELOW_SHARE = 0.90
 
 
 def is_dead(u):
@@ -198,7 +209,8 @@ def ask_price(u, offers, arm=None):
     """The ask after `offers` buyer offers: the first ask, then STEP of the way to the floor each time."""
     floor = floor_price(u)
     if arm == "dead":
-        return int(floor + (floor * dead_markup(u) - floor) * STEP ** offers)
+        top = max(u["cost"] * dead_markup(u), floor)     # opens at cost (+ markup) even when the floor is under cost
+        return int(floor + (top - floor) * STEP ** offers)
     if arm == "low2":
         share = TRIAL2_SHARE
     else:
