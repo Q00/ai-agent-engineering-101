@@ -28,7 +28,7 @@ from core.events import EventWriter
 SEATS = {
     "seller": {"claude": "haiku", "fallback": "openai/gpt-4o-mini"},
     "buyer": {"claude": "haiku", "fallback": "openai/gpt-4o-mini"},
-    "restock": {"claude": "haiku", "fallback": "openai/gpt-4o-mini"},
+    "restock": {"claude": "sonnet", "fallback": "openai/gpt-4o-mini"},   # 11/10: ReAct planner, 3 a hour
     "review": {"claude": "haiku", "fallback": "openai/gpt-4o-mini"},
     "forum": {"claude": "sonnet", "fallback": "openai/gpt-4o-mini"},
     "analyst": {"claude": "sonnet", "fallback": None},

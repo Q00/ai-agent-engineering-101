@@ -213,7 +213,8 @@ STRATEGY = {
                     "top_line_share": {"type": "number", "minimum": 0.05, "maximum": 1},
                     "units_cap": {"type": "integer", "minimum": 1, "maximum": 20},
                     "own_sales": {"type": "boolean"},
-                    "own_floor": {"type": "boolean"},   # 11/10: own sales only raise goods lines (restock.TAPER_H)
+                    "own_floor": {"type": "boolean"},
+                    "react": {"type": "boolean"},       # 11/10: the window's first run planned by the ReAct loop   # 11/10: own sales only raise goods lines (restock.TAPER_H)
                     "own_cover": {"type": "number", "minimum": 0.5, "maximum": 5},
                     "probe_units": {"type": "integer", "minimum": 0, "maximum": 5},
                     "food_cap": {"type": "integer", "minimum": 1, "maximum": 20},

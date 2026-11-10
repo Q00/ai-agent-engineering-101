@@ -61,7 +61,7 @@ def playbook(ctx):
             "top_n": pb.get("top_n", 0), "top_units": pb.get("top_units", 20), "top_line_share": pb.get("top_line_share", 0.5),
             "units_cap": pb.get("units_cap", 12),
             "own_sales": pb.get("own_sales", False), "own_cover": pb.get("own_cover", 1.5),
-            "own_floor": pb.get("own_floor", False),
+            "own_floor": pb.get("own_floor", False), "react": pb.get("react", False),
             "probe_units": pb.get("probe_units", 2), "food_cap": pb.get("food_cap", 3),
             # 11/5 09:0x: food sized by its own sales per window (None = the fixed baseline above)
             "food_windows": pb.get("food_windows"), "food_fresh_share": pb.get("food_fresh_share", 0.5),
@@ -272,6 +272,48 @@ def rules_plan(ctx, now=None):
     return [], ("no_budget" if lacking else "full"), doc
 
 
+REACT_S = 55               # the ReAct plan's budget inside a 3-minute window (the kit needs ~100 s for 10 lines)
+REACT_STEPS = 3
+
+
+def react_situation(ctx, doc, draft, now):
+    """The ReAct planner's view: the rules' candidate lines and draft, the money, the score and the time left."""
+    cat, b = mf.catalog(ctx), doc["budget"]
+    left_h = (ROUND_END - now) / 3600
+    out = ["# the decision at hand: this supply window's restock plan (the window is open now, about 3 minutes)",
+           "Score: shop ALL = 0.5 book (cash + unsold stock at cost) + 0.3 revenue + 0.2 stars, each a percentile. "
+           "Stock still unsold when the round ends (11/17 23:59) is lost. The top shops hold 130-720M of stock in "
+           "high-list mattresses and sofas and sell 90-220 deals an hour; we want more sales, of both the fast cheap "
+           "lines buyers keep asking for and the high-list best sellers.",
+           f"Hours left in the round: {left_h:.0f}. Stocking up: {'yes' if left_h > TAPER_H else 'no - buy only what sells'}.",
+           f"Money: cash {b['cash']}, room under the stock cap {b['stock']}, cash floor {b['floor']}. Costs are drawn "
+           "on arrival (about 62% of list, at most 75%). The next window opens in about 20 minutes.",
+           "", "Candidate lines (sku | kind | list price | have | rules' target | our sales 2 h | asked & missed 2 h | "
+               "why | name):"]
+    for x in doc["lines"][:30]:
+        c = cat.get(x["sku"]) or {}
+        out.append(f"- {x['sku']} | {c.get('kind')} | {c.get('list_price')} | {x['have']} | {x['target']} | "
+                   f"{x.get('own_sold_2h', '-')} | {x.get('missed_2h', '-')} | {x['why']} | {(c.get('name') or '')[:30]}")
+    out += ["", f"The rules' draft plan: {json.dumps(draft)}",
+            "", "Decide the plan: at most 10 lines, 1-20 units each, within the per-SKU limit and the money. Look up "
+                "only what would change your plan (market.selling, me.missed, market.sku, check.buy), then end with "
+                "act.buy and a one-line why. The draft is a fine answer when you find nothing better."]
+    return "\n".join(out)
+
+
+def react_plan(ctx, now, w):
+    """(plan, record): the model plans the window with the rules' list as its draft; the draft when it fails."""
+    draft, why, doc = rules_plan(ctx, now)
+    d, trace = loop.decide("restock", ctx, react_situation(ctx, doc, draft, now), deadline=now + REACT_S,
+                           steps=REACT_STEPS)
+    plan = d["plan"] if d else draft
+    rec = {"lines": len(plan), "plan": plan, "refused": next((t["observation"][:200] for t in trace
+                                                              if "refused" in str(t["observation"])), None),
+           "used_model": d is not None, "react": True, "draft": draft, "why": (d or {}).get("why"),
+           "steps": len(trace), "budget": doc["budget"], "guard": None if d else "no plan from the model: the draft"}
+    return plan, rec
+
+
 def stuck(inv):
     live = [u for u in inv.get("units") or [] if u.get("grade") != "expired"]
     return ((inv.get("balance") or 0) < (inv.get("bankrupt_line") or 0) and (inv.get("bankruptcies_left") or 0) > 0
@@ -480,6 +522,16 @@ def main():
             except Exception as e:                   # the ledger must never stop a restock: buy as A
                 w.emit("exec.anomaly", {"role": "restock", "kind": "experiment_arm", "then": "arm A",
                                         "situation": {"error": f"{type(e).__name__}: {e}"[:200]}})
+        first_in_window = not (last.get("window") is not None and minute is not None
+                               and abs(minute - last["window"]) <= 2)
+        if playbook(ctx)["mode"] == "rules" and playbook(ctx)["react"] and win == "open" and first_in_window:
+            # user 11/10 20h: restock as a ReAct agent - the model plans the window's first run with tools, the rules'
+            # list is its draft and its fallback; a second run in the window stays with the rules
+            plan, rec = react_plan(ctx, t0, w)
+            atomic.write_json(state_path, {"sig": sig, "ts": t0, "window": minute, "plans_in_window": 1})
+            w.emit("restock.plan", rec)
+            print(json.dumps({"buy": plan}))
+            return
         if playbook(ctx)["mode"] == "rules":
             # HARNESS 14: buy the list at once, once per window; the agent only when the list gives nothing
             plan, why, doc = rules_plan(ctx, t0)

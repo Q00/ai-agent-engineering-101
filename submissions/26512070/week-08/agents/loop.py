@@ -32,7 +32,7 @@ ROLES = {
     "restock": {"look": ["me.inventory", "me.missed", "market.sku", "market.selling", "market.buyer_prefs", "calc.holding_cost",
                          "calc.shelf_risk",
                          "check.buy", "memory.card_section"],
-                "final": ["act.buy"], "steps": 7},
+                "final": ["act.buy"], "steps": 7, "timeout": 45},
     "review": {"look": ["me.counterpart", "memory.card_section"], "final": ["act.review"], "steps": 2},
     "forum": {"look": ["market.forum", "market.sku", "market.selling", "market.buyer_prefs", "me.missed", "me.counterpart",
                        "act.vote",
