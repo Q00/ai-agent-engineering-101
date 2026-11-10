@@ -90,7 +90,9 @@ GRADE_OPEN["C"] = 0.45
 # Claude (2026-11-11 02:22, hourly check, plan 2 step 2): stars against paid/list (star_price.py, logs/star-price-1111-0226.txt,
 # 6 h): my grade C food paid 0.714 of list on average, stars 4.13 (184 results; 0.70-0.75: 106, 4.16, 28% 5*; 0.75+: 26, 3.12)
 # against the market's C food at 0.543, 4.45. At 0.55-0.70 mine got 4.57-4.72. Grade C food now opens at most C_FOOD_OPEN of list
-C_FOOD_OPEN = 0.65
+# Claude (2026-11-11 05:22, hourly check): reverted (1.0 = off). 02:29-05:22 (logs/star-price-1111-0523.txt) C food paid 0.521
+# of list (was 0.714) and still got 4.04 stars, 5* 15% (was 4.13): price was not what the buyers rated, so the 0.19 of list was lost
+C_FOOD_OPEN = 1.0
 TRIAL2_RATE = 0.0
 # ddolcom (2026-11-06, the user's instruction): one clearance only, at cost or a little above, to free the cash. These 6
 # units had sat 13-40 h and are the ones the forum post 22459 names. New units never join by age: a rule on age alone also
