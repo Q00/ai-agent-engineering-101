@@ -31,7 +31,7 @@ from a2a.server.routes import create_agent_card_routes, create_jsonrpc_routes
 from a2a.server.tasks import InMemoryTaskStore, TaskUpdater
 from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 
-from r3lib import config, market, pricing, scout
+from r3lib import bandit, config, markdown, market, pricing, score_model, scout
 from r3lib.memory import Memory
 
 LEGACY = {"lamp": (100, 130), "chair": (180, 234), "bookshelf": (260, 338)}   # reserve, first ask (Round 0-2)
@@ -173,6 +173,24 @@ class Shop(AgentExecutor):
     def __init__(self, memory):
         self.mem = memory
         self.open = {}
+        self._choice = None                       # (bandit, context, arm) of the quote _terms just priced
+        self._board = (0.0, None)
+        self.ask_bandits = {False: bandit.Bandit("ask", config.ASK_ARMS, 1.0, mem=memory),
+                            True: bandit.Bandit("ask_premium", config.PREMIUM_ASK_ARMS, 1.0, mem=memory)}
+
+    def _value(self, price, cost):
+        """Board score of a sale, from the cached board (refreshed by the buyer and the org server, never here)."""
+        if time.time() - self._board[0] > 600:
+            self._board = (time.time(), score_model.cached())
+        return score_model.sale_value(self._board[1], price, cost)
+
+    def _learn(self, d, outcome, price):
+        """The first-ask arm of a finished negotiation gets its reward: the sale's board score, 0 without a deal."""
+        if not d.get("choice"):
+            return
+        b, ctx, arm = d["choice"]
+        reward = self._value(price, d["unit"]["cost"]) if outcome == "deal" and price else 0.0
+        b.update(ctx, arm, reward, sku=d["unit"]["sku"], outcome=outcome)
 
     def _gc(self):
         for k in [k for k, d in self.open.items() if time.time() - d["t0"] > OPEN_TTL]:
@@ -182,6 +200,10 @@ class Shop(AgentExecutor):
         d = self.open.pop(task_id, None)
         if d and not d["unit"].get("legacy"):
             try:
+                self._learn(d, outcome, price)
+            except Exception as e:                    # learning trouble must not lose a sale
+                log("bandit_error", error=str(e)[:200])
+            try:
                 self.mem.record_negotiation("shop", task_id, None, d["unit"]["sku"], d["first_ask"], price,
                                             d["offers"], outcome, style=d.get("style"))
             except Exception as e:                    # memory trouble must not lose a sale
@@ -189,6 +211,7 @@ class Shop(AgentExecutor):
 
     def _terms(self, u):
         """First ask, floor and warranty for one unit, from memory."""
+        self._choice = None
         if u.get("legacy"):
             return u["list_price"], u["cost"], 0
         ratio, n = self.mem.price_ratio(sku=u["sku"], category=u.get("category"))
@@ -213,7 +236,22 @@ class Shop(AgentExecutor):
         ask = pricing.warranty_ask(ask, u, warranty, p_break)
         floor = pricing.warranty_floor(floor, u, ask, warranty, p_break, slow=low)
         ask = pricing.cap_ask(ask, u["list_price"], grade_ratio, floor, over=-config.SLOW_UNDERCUT if slow else None)
-        log("terms", slow=slow, slow_floor=low, sku_units=u.get("sku_units"), sku=u["sku"], grade=u.get("grade"), cost=u["cost"], list_price=u["list_price"], ask=ask,
+        marked = arm = None
+        try:
+            # A live markdown of the SKU (the CEO tick's unprompted action) sets the first ask; otherwise the L1
+            # bandit scales it by one of ASK_ARMS. Either way the floor above is untouched.
+            ask, marked = markdown.apply(self.mem, u, ask, floor)
+            if marked is None and config.BANDIT_ASK_ENABLED:
+                premium = u.get("kind") == "goods" and u["list_price"] >= config.PREMIUM_MIN_LIST
+                ctx = ("premium" if premium else u.get("kind") or "goods", u.get("grade") or "-", "slow" if slow else "-")
+                b = self.ask_bandits[premium]
+                arm, _ = b.choose(ctx, sku=u["sku"])
+                if arm != 1.0:
+                    ask = int(max(floor, min(max(ask, u["list_price"]), ask * arm)))
+                self._choice = (b, ctx, arm)
+        except Exception as e:                        # a policy fault must not lose a sale: the rule's ask stands
+            log("bandit_error", error=str(e)[:200])
+        log("terms", markdown=marked, arm=arm, slow=slow, slow_floor=low, sku_units=u.get("sku_units"), sku=u["sku"], grade=u.get("grade"), cost=u["cost"], list_price=u["list_price"], ask=ask,
             floor=floor, market_ratio=ratio, grade_ratio=grade_ratio, evidence=n, adjust=adj, scarcity=premium, warranty=warranty,
             p_break=round(p_break, 4))
         return ask, floor, warranty
@@ -286,7 +324,7 @@ class Shop(AgentExecutor):
                 log("memory_error", error=str(e)[:200])
             d = self.open[task.id] = {"unit": u, "ask": ask, "floor": floor, "warranty": warranty, "first_ask": ask,
                                       "offers": [], "t0": time.time(), "style": style, "hold": hold,
-                                      "member": member}
+                                      "member": member, "choice": self._choice}
             offer = parse_offer(text, u.get("name"))
             if offer is None:
                 await up.requires_input(say(self._pitch(u, ask, warranty, member)))

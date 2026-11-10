@@ -143,6 +143,12 @@ STORAGE_PER_DAY = 0.01              #   in the round), the price at which sellin
                                     #   stock counts at cost when the round ends and pays 1% of cost a day; 67 A
                                     #   chairs, 13.4M, had floor 0.81 of list against a 0.68 market, 2026-11-10)
 MIN_MARGIN = 0.08                   # normal floor: cost * (1 + MIN_MARGIN)
+MARKDOWN_EVERY_S = 600              # the CEO tick judges markdowns of overstocked SKUs this often, with or without orders
+MARKDOWN_TTL_H = 2                  # a markdown lives this long, then its sales are the bandit's reward and it is judged again
+MARKDOWN_MAX_CUT = 0.20             # a markdown never cuts the regular first ask by more than this (RL_PROACTIVE.md 2.1)
+BANDIT_ASK_ENABLED = True           # L1: the shop's first ask x one of ASK_ARMS per (kind, grade, slow), learned on board score
+ASK_ARMS = (0.9, 1.0, 1.1)          # within +-20% of the rule's ask; floors (L0) are untouched
+PREMIUM_ASK_ARMS = (0.9, 1.0, 1.1)  # E2 proposes (1.0, 1.2, 1.5) for premium furniture: beyond +-20%, needs the human's yes
 GRADE_FACTOR = {"food": {"A": 1.0, "B": 0.95, "C": 0.82}, "goods": {"A": 1.0, "B": 0.90, "C": 0.75}}
 UNSTATED_NEED_SHARES = (0.75, 0.5, 0.25)   # food for a buyer that names no need: the soonest unit lasting this share
                                            #   of shelf life, longest first (orders ask 0.25/0.5/0.75 of it)

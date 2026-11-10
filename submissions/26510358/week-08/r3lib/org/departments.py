@@ -5,7 +5,8 @@ so the same code runs behind the internal A2A server or in-process when the serv
   purchasing  propose: what to buy (demand x share x gap x horizon, EV quantity)  [restock_r3.plan]
   logistics   window: is supply open; approve: cash, budget and line limits on a proposal; health: stock risks
   quality     warranty_policy: break rate and warranty per grade x category; harsh: review-spam styles; refunds
-  marketing   stats: our posts, votes and member codes; pricing: close rate, ask levels, premium pilot
+  marketing   stats: our posts, votes and member codes; pricing: close rate, ask levels, premium pilot;
+              markdown: the unprompted markdown of overstocked SKUs (initiative.judge + the clearance bandit)
 
 Selling (shop_r3.py) never goes through here: it answers buyers in milliseconds in-process and reads the same
 memory and pricing rules. The departments decide on the slow path (every 60 s or less often).
@@ -14,7 +15,7 @@ memory and pricing rules. The departments decide on the slow path (every 60 s or
 import json
 import time
 
-from .. import config, market, pricing, scout
+from .. import config, initiative, market, markdown, pricing, score_model, scout
 
 GRADES = ("A", "B", "C")
 
@@ -160,6 +161,30 @@ def marketing_pricing(mem, args, call, now=None):
             "first_ask_ratio": rd(r["ask"]), "final_ratio": rd(r["fin"]), "premium": prem}
 
 
+def marketing_markdown(mem, args, call, now=None):
+    """The shop's unprompted action: every MARKDOWN_EVERY_S judge a markdown for each overstocked goods SKU
+    (r3lib/markdown.py). No order starts it; the CEO tick calls it whether or not supply is open. Once a day it also
+    writes down why we still do not buy a paid dislike, lend or buy a bond."""
+    now = now or time.time()
+    if now - (mem.get("markdown_ts") or 0) < config.MARKDOWN_EVERY_S:
+        return {"due": False}
+    mem.put("markdown_ts", now)
+    inv = market.read_json("inventory.json", {}, args.get("state")) or {}
+    board = score_model.load()
+    rows = markdown.tick(mem, inv.get("units") or [], now=now, board=board)
+    if now - (mem.get("refusals_ts") or 0) >= 24 * 3600:
+        mem.put("refusals_ts", now)
+        unit = inv.get("dislike_power_unit") or 0
+        initiative.refuse("paid_dislike", "the forum part of Buyer ALL is our own rating: a rival's falling moves "
+                          "no part of our score, and the second dislike of the hour costs the unit below from book",
+                          "forum rating, book", C=-score_model.sale_value(board, -unit, 0, revenue=False),
+                          unit=unit, free_left_fee=inv.get("next_dislike_fee"), now=now)
+        initiative.refuse("loan_or_bond", "Round 3 has no way to enforce repayment; held until Round 4's wallet "
+                          "settlement (loan_ledger, due_check)", "book", now=now)
+    return {"due": True, "judged": len(rows), "acted": sum(r["decision"] == "act" for r in rows),
+            "live": sorted(k for k, m in (mem.get("markdown") or {}).items() if m.get("arm") != "keep")}
+
+
 # ------------------------------------------------------------------------------------------- ceo
 def ceo_tick(mem, args, call):
     """One restock cycle. Returns the kit's restock answer ({"buy": [...]}, maybe "bankrupt" or "wait")."""
@@ -170,6 +195,10 @@ def ceo_tick(mem, args, call):
     if (inv.get("balance") or 0) < (inv.get("bankrupt_line") or 0) and not inv.get("units") \
             and (inv.get("bankruptcies_left") or 0) > 0:
         return {"buy": [], "bankrupt": True}
+    try:
+        call("marketing", "markdown", {"state": md})    # unprompted, also in the last hours when buying has stopped
+    except Exception:
+        pass
     if config.hours_left_in_round() <= config.STOP_BUYING_HOURS:
         return {"buy": [], "wait": "last hours of the round: no new stock"}
     try:
@@ -251,6 +280,7 @@ SKILLS = {
                 "harsh": (quality_harsh, "buyer styles we decline for review spam"),
                 "refunds": (quality_refunds, "our goods refunds by grade")},
     "marketing": {"stats": (marketing_stats, "our buyer posts, votes and member codes"),
+                  "markdown": (marketing_markdown, "unprompted markdown of overstocked SKUs, judged by p > C/(B+C)"),
                   "pricing": (marketing_pricing, "close rate, ask and final price ratios, premium pilot")},
 }
 

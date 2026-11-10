@@ -159,6 +159,22 @@ def delta(b, action):
     return d_shop, d_buyer
 
 
+BOOK_PER_WON, REVENUE_PER_WON = 1.95e-10, 1.4e-11     # Shop ALL per won on 2026-11-10 (rank 18 of 68), used without a board
+
+
+def sale_value(b, price, cost, revenue=True):
+    """Shop ALL of one sale: book moves by price - cost, revenue by price. With revenue=False only book moves (a fee
+    saved). Without a board the 2026-11-10 slopes stand in, so a reward keeps its sign and rough size."""
+    if b is None:
+        return (price - cost) * BOOK_PER_WON + (price * REVENUE_PER_WON if revenue else 0.0)
+    return delta(b, {"kind": "raw", "d_book": price - cost, "d_revenue": price if revenue else 0})[0]
+
+
+def cached():
+    """The board from the cache file only, never the network: for the shop, which answers buyers in its event loop."""
+    return load(fetch=lambda: None)
+
+
 def saved_threshold(b, lo=-1.0, hi=1.0):
     """The surplus / list at which one more deal leaves Buyer ALL unchanged. A deal above our saved raises saved;
     one below lowers it but still adds a deal (0.1 of ALL as a percentile), so the break-even sits at or under

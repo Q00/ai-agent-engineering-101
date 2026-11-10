@@ -34,6 +34,7 @@ class Bandit:
 
     def __init__(self, name, arms, default, mem=None, half_life_h=HALF_LIFE_H, explore=EXPLORE, rng=None, log=True):
         assert default in arms
+        mem = mem if hasattr(mem, "get") and hasattr(mem, "put") else None     # no store: learn in this process only
         self.name, self.arms, self.default, self.mem = name, list(arms), default, mem
         self.half_life_s, self.explore, self.rng, self.log = half_life_h * 3600, explore, rng or random.Random(), log
         self.state = (mem.get(f"bandit:{name}") if mem else None) or {}
