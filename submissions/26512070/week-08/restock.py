@@ -32,6 +32,7 @@ from tools.registry import Ctx, call  # noqa: E402
 
 ROUND_END = time.mktime(time.strptime("2026-11-17 23:59", "%Y-%m-%d %H:%M"))   # Round 3 ends (local time, KST)
 TAPER_H = 48            # own_floor ends this long before the end: stock left at the end is lost, so we buy only what sells
+STOCKUP_PLANS = 2       # while stocking up, runs per supply window (a window is 3 min, a full run ~100 s)
 VALUE_LINES = 5         # while stocking up, this many of the kit's 10 lines go to expected sales value, the rest to demand
 REASK_MINUTES = 20
 LEAD = 75                  # plan this many seconds before a window opens at the latest (a model turn takes ~40 s)
@@ -450,7 +451,7 @@ def main():
         win, minute = window(inv_raw, t0)
         if win is not None:                              # the market's supply windows decide when
             same = last.get("window") is not None and minute is not None and abs(minute - last["window"]) <= 2
-            done = same and last.get("plans_in_window", 1) >= PLANS_PER_WINDOW
+            done = same and last.get("plans_in_window", 1) >= (STOCKUP_PLANS if playbook(ctx)["own_floor"] else PLANS_PER_WINDOW)
             if win == "closed" or done:
                 w.emit("restock.plan", {"lines": 0, "refused": None, "used_model": False,
                                         "window": win, "window_done": done})
@@ -482,7 +483,16 @@ def main():
         if playbook(ctx)["mode"] == "rules":
             # HARNESS 14: buy the list at once, once per window; the agent only when the list gives nothing
             plan, why, doc = rules_plan(ctx, t0)
-            atomic.write_json(state_path, {"sig": sig, "ts": t0, "window": minute, "plans_in_window": PLANS_PER_WINDOW})
+            # user 11/10 19h: the kit takes 10 lines a run, one call per 10 s, and runs us again 60 s later - while
+            # stocking up a second run goes in the same 3-minute window with the lines the time left allows
+            again = playbook(ctx)["own_floor"] and (ROUND_END - t0) / 3600 > TAPER_H
+            n_win = (last.get("plans_in_window", 0) + 1) if (again and last.get("window") is not None
+                                                             and minute is not None and abs(minute - last["window"]) <= 2) else 1
+            closes = (inv_raw.get("restock") or {}).get("closes_at") if isinstance(inv_raw.get("restock"), dict) else None
+            if n_win > 1 and closes:
+                plan = plan[:max(0, int((closes - t0) // 10) - 1)]
+            atomic.write_json(state_path, {"sig": sig, "ts": t0, "window": minute,
+                                           "plans_in_window": n_win if again else PLANS_PER_WINDOW})
             w.emit("restock.plan", {"lines": len(plan), "plan": plan, "refused": None, "used_model": False,
                                     "rules": True, "why": why, "budget": doc["budget"]})
             if why == "no_budget":                       # the strategy has to know: the money is tied up
