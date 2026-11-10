@@ -152,14 +152,18 @@ def find_unit(text, taken=(), need=None):
     # (1-star "SCAM" review, 2026-11-04); a named SKU is sold only as itself
     fit = named if m else [u for u in fit if (u.get("name") or "").lower() in want
                     or (u.get("category") or "").split(">")[-1].lower() in want]
+    # 11-10 review mining: our agreed deals got paid A 97%, B 94%, C 64% -- the kit's example buyer policy pays for
+    # A/B only. Goods (whose grade never changes) offer an A/B unit before a C one unless the buyer said C is fine.
+    c_ok = bool(need.get("grades")) and "C" in need["grades"]
+    gpen = lambda u: 1 if u.get("kind") == "goods" and u.get("grade") == "C" and not c_ok else 0
     if m:
-        u = min(fit, key=lambda u: (u.get("expires_at") or float("inf"), u.get("supplied_at") or 0), default=None)
+        u = min(fit, key=lambda u: (gpen(u), u.get("expires_at") or float("inf"), u.get("supplied_at") or 0), default=None)
     else:                    # HQ 11-10: a category order gets the SKU we hold most of first (clears overstock); food
         held = {}            # still goes first-to-expire within it
         for x in fit:
             held[x["sku"]] = held.get(x["sku"], 0) + 1
         paid = settle_rates()   # buyer team 11-10: weight by how often that SKU's deals actually get paid
-        u = min(fit, key=lambda u: (-held[u["sku"]] * paid.get(u["sku"], 0.5) if u.get("kind") == "goods" else 0,   # the cheapest unit of it
+        u = min(fit, key=lambda u: (gpen(u), -held[u["sku"]] * paid.get(u["sku"], 0.5) if u.get("kind") == "goods" else 0,   # the cheapest unit of it
                                     u.get("expires_at") or float("inf"),               # (its ask is the lowest,
                                     u.get("cost") or 0 if u.get("kind") == "goods" else 0,   # so the order closes)
                                     u.get("supplied_at") or 0), default=None)
@@ -211,7 +215,8 @@ _CLEAR = {"t": 0, "skus": set()}
 def clearance_skus():
     if time.time() - _CLEAR["t"] > 300:
         try:
-            _CLEAR["skus"] = set((json.loads(promo.GROUPBUY.read_text(encoding="utf-8")).get("skus") or {}))
+            _CLEAR["skus"] = {k for k, v in (json.loads(promo.GROUPBUY.read_text(encoding="utf-8")).get("skus") or {}).items()
+                              if v.get("clearance")}     # 11-10: the group buy now covers every product; 6 h only here
         except (OSError, ValueError):
             _CLEAR["skus"] = set()
         _CLEAR["t"] = time.time()

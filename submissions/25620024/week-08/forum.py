@@ -358,7 +358,7 @@ def groupbuy_ads(c, t, now):
                 units[u["sku"]][u.get("grade")] = u
     except Exception:
         held, units = {}, {}
-    ranked = sorted((g.get("skus") or {}).items(), key=lambda kv: -held.get(kv[0], 0))
+    ranked = sorted((g.get("skus") or {}).items(), key=lambda kv: (not kv[1].get("clearance"), -held.get(kv[0], 0)))
     k0 = int(now // 3600) * 3 % max(1, len(ranked))          # 11-10: the two biggest lines always, then three more
     pick = ranked[:2] + (ranked[2:] + ranked[2:])[k0:k0 + 3] if len(ranked) > 5 else ranked   # rotating hourly
     for sku, x in pick:
