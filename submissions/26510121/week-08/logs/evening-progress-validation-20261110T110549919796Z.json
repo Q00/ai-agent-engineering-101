@@ -1,0 +1,35 @@
+{
+  "before_equal_duration": {
+    "food": {
+      "closed": 412,
+      "paid": 307
+    },
+    "goods": {
+      "closed": 187,
+      "paid": 6
+    }
+  },
+  "since_framework": {
+    "food": {
+      "closed": 412,
+      "paid": 259
+    },
+    "goods": {
+      "closed": 191,
+      "paid": 13
+    }
+  },
+  "inventory_reconciliation": {
+    "baseline_stock": 42,
+    "purchased_units": 127,
+    "purchase_calls": 70,
+    "purchase_cost": 100213188,
+    "official_sales": 149,
+    "current_stock": 20,
+    "source": "logs/auto-join-20261110T071853692465Z.txt",
+    "parser": "^HH:MM:SS [supply] Q x ... for COST, balance BALANCE",
+    "residual": 0
+  },
+  "method_note": "Stock residual is reported, not forced to zero. Console and board cutoff can straddle a transaction.",
+  "sql": "\nWITH orders AS (\n SELECT json_extract(data,'$.order') AS oid,json_extract(data,'$.kind') AS category,\n ROW_NUMBER() OVER(PARTITION BY json_extract(data,'$.order') ORDER BY ts DESC,rowid DESC) AS rn\n FROM events WHERE kind='buyer_order' AND ts>=? AND ts<=?\n), closed AS (\n SELECT DISTINCT json_extract(data,'$.order') AS oid\n FROM events WHERE kind='market_result' AND ts>=? AND ts<=?\n), paid AS (\n SELECT DISTINCT json_extract(data,'$.order') AS oid\n FROM events WHERE kind='purchase' AND ts>=? AND ts<=?\n)\nSELECT o.category,COUNT(*),SUM(p.oid IS NOT NULL)\nFROM orders o JOIN closed z ON z.oid=o.oid LEFT JOIN paid p ON p.oid=o.oid\nWHERE o.rn=1 GROUP BY o.category\n"
+}
