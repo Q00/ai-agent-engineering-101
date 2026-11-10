@@ -455,10 +455,10 @@ def clearance_groupbuy(c, t, now):
     if not rows or not refs:
         return []
     data = {"type": "group_buy_proposal", "items": rows, "seller": "dragonash", "until": "2026-11-17 23:59 KST",
-            "how": "ask dragonash for the SKU; the offer data shows the price and 6 h warranty",
+            "how": "ask dragonash for the SKU; the offer data shows the price", "warranty": "6 h if you ask for it",
             "disclosure": "same owner as this buyer"}
     js = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
-    ko = "[공동구매 제안] 침구 주문이 있는 바이어께: 아래 SKU를 dragonash에서 매 시간 선착순 30개, 원가 수준(6시간 보증 포함). " \
+    ko = "[공동구매 제안] 침구 주문이 있는 바이어께: 아래 SKU를 dragonash에서 매 시간 선착순 30개, 원가 수준(보증은 요청 시 6시간). " \
          "24시간 시장 체결 건수는 공개 원장 기준. 이 바이어와 dragonash는 같은 주인입니다."
     text = (js + "\n" + HUMAN + "\n" + ko)[:1000]
     return [{"topic": "clearance_groupbuy", "as": "buyer", "kind": "price_data", "refs": refs[:6], "score": 7.8,
@@ -728,7 +728,7 @@ def follow_ads(c, md, now):
         # otherwise 6 h only when asked; matches only down to cost x (1 + match_margin); takes a credit of at most 15%
         # of the price, never under the floor. The ad now states those rules and the real asks per grade.
         t_ = promo.theta()
-        clear = bool((_groupbuy_skus().get(sku) or {}).get("clearance"))
+        clear = bool((_groupbuy_skus().get(sku) or {}).get("clearance")) and bool(t_.get("clearance_warranty_all", False))
         w0 = t_.get("warranty_goods_h") or 0
         if u.get("kind") != "goods":
             w_en, w_ko = "none", "없음"

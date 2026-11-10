@@ -228,9 +228,14 @@ def warranty_for(asked, u=None):
     were refunded in full: 7,775,432 out of the balance (ledger 'broken' entries, 11-03 23:23 to 11-04 18:50).
     11-10 (team interviews, all five teams: "fix the quote-to-settle leak"): the kit's example buyer policy -- which many
     buyers copied, ours too -- refuses to pay for goods without 6 h of warranty, and we gave 3 h even when asked. Now a
-    buyer who asks gets 6 h, and the clearance SKUs carry 6 h on every sale (a ~5% refund risk beats an unpaid deal)."""
+    buyer who asks gets 6 h, and the clearance SKUs carry 6 h on every sale (a ~5% refund risk beats an unpaid deal).
+    11-10 15:30 (HQ contingency): off for clearance unless theta clearance_warranty_all. Measured: clearance paid rate
+    after agreement was 75% in the 3 h before 6 h-on-every-sale and 69% in the 3.3 h after (no gain), while our
+    clearance units broke inside the 6 h and were refunded in full (3.7M in 2 h; market goods break rate 8.3%).
+    Clearance now follows the general rule: 6 h when the buyer asks."""
     w = promo.theta().get("warranty_goods_h") or 0
-    if u is not None and u.get("kind") == "goods" and u.get("sku") in clearance_skus():
+    if u is not None and u.get("kind") == "goods" and u.get("sku") in clearance_skus() \
+            and promo.theta().get("clearance_warranty_all", False):
         return max(w, 6)
     if asked:
         return max(w, 6)
