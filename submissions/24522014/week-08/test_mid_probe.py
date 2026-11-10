@@ -35,11 +35,11 @@ def unit(sku, cost=150000, age=3600):
 
 
 class Settings(unittest.TestCase):
-    def test_shipped_off(self):
+    def test_shipped_on(self):
         value = json.loads(mp.CONFIG.read_text(encoding="utf-8"))
-        self.assertIs(value["enabled"], False)
+        self.assertIs(value["enabled"], True)  # switched on 11-10 after the install commit 2f019ac6
         self.assertEqual((value["skus"], value["units_per_sku"], value["max_worst_cost_total"]), (GOOD["skus"], 3, 1000000))
-        self.assertIsNone(mp.settings())
+        self.assertEqual(mp.settings(), {"skus": GOOD["skus"], "units_per_sku": 3, "max_worst_cost_total": 1000000})
 
     def test_only_a_valid_file_turns_it_on(self):
         with TemporaryDirectory() as folder:
