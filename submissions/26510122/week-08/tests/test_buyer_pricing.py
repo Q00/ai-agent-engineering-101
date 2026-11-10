@@ -207,12 +207,13 @@ class SellerIdentityIntegrationTests(unittest.TestCase):
                 'cost': 160_000, 'supplied_at': now}
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / 'trial.json'
-            path.write_text(json.dumps({'starts_at': now - 1, 'ends_at': now + 3600}))
+            path.write_text(json.dumps({'starts_at': now - 1, 'ends_at': now + 3600,
+                                        'prices': {sku: {unit['grade']: 243_000}}}))
             results = [seller_r3.speed_trial_quote(str(i), [sku], [unit], [], {}, now, path)
                        for i in range(12)]
             self.assertEqual({arm for arm, _, _ in results}, {'instant', 'control'})
             self.assertEqual({(u['sku'], u['grade'], price) for _, u, price in results},
-                             {(sku, unit['grade'], round(270_000 * seller_r3.GRADE_ANCHORS[unit['grade']]))})
+                             {(sku, unit['grade'], 243_000)})
             self.assertIsNone(seller_r3.speed_trial_quote('1', [sku], [unit], [{'unit': unit['unit']}], {}, now, path))
             costly = {**unit, 'cost': 270_000}
             self.assertIsNone(seller_r3.speed_trial_quote('1', [sku], [costly], [], {}, now, path))

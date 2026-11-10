@@ -68,7 +68,8 @@ def speed_trial_quote(task_id, requested, choices, public_quotes, requirements, 
     try:
         trial = json.loads(path.read_text())
         start, end = trial['starts_at'], trial['ends_at']
-        if not 0 < end - start <= 3 * 3600 or not start <= now < end:
+        prices = trial['prices'][requested[0]]
+        if not isinstance(prices, dict) or not 0 < end - start <= 3 * 3600 or not start <= now < end:
             return None
     except (OSError, ValueError, KeyError, TypeError):
         return None
@@ -78,7 +79,9 @@ def speed_trial_quote(task_id, requested, choices, public_quotes, requirements, 
     for unit in choices:
         if unit['sku'] != requested[0] or unit['kind'] != 'goods' or unit['unit'] in featured:
             continue
-        price = round(unit['list_price'] * GRADE_ANCHORS[unit['grade']])
+        price = prices.get(unit['grade'])
+        if type(price) is not int or not 0 < price <= 2 * unit['list_price']:
+            continue
         floor = seller_warranty.economics(unit, now=now + QUOTE_SPEED_CONTROL_SECONDS,
                                          warranty_hours=seller_warranty.hours(unit))['price_floor']
         budget = requirements.get('budget_max')
