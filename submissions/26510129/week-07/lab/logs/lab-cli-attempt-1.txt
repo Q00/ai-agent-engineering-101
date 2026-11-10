@@ -1,0 +1,150 @@
+### 1. card
+
+$ a2a card get http://127.0.0.1:9999
+Name:         Lamp Shop
+Description:  Sells desk lamps, chairs and bookshelves. Negotiates the price with the buyer.
+Version:      1.0.0
+Interfaces:
+  JSONRPC      http://127.0.0.1:9999/
+Streaming:    true
+Skills:
+  negotiate            Negotiate a purchase
+exit code 0
+
+### 2. SendMessage without the A2A-Version header
+$ curl -s http://127.0.0.1:9999/ -H 'Content-Type: application/json' -d '{...SendMessage...}'
+{"error":{"code":-32009,"message":"A2A version '0.3' is not supported by this handler. Expected version '1.0'.","data":[{"@type":"type.googleapis.com/google.rpc.ErrorInfo","reason":"VERSION_NOT_SUPPORTED","domain":"a2a-protocol.org","metadata":{}}]},"id":1,"jsonrpc":"2.0"}
+
+### 3. buy a lamp: 80, then 105
+$ a2a send -a http://127.0.0.1:9999 -o json "I want to buy a lamp"   (task id taken from the JSON)
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+    import sys,json; print(json.load(sys.stdin)['id'])
+                           ~~~~~~~~~~~~~~~~~~~~^^^^^^
+KeyError: 'id'
+task id: 
+
+$ a2a send -a http://127.0.0.1:9999 --task-id  80
+Task:     304db58e-72f8-4855-b0e1-fcb49d6e7d14
+Context:  389c3d9e-97c1-4e44-94a0-20ba69f9aeb0
+Status:   rejected (2026-10-13T11:40:13Z)
+  We only sell: lamp, chair, bookshelf.
+History:
+  [user] 80
+exit code 0
+
+$ a2a send -a http://127.0.0.1:9999 --task-id  105
+Task:     506c731f-4f3b-4a06-9181-d1b6331860f0
+Context:  e8d537c0-4f70-431a-8003-69d7372a69c8
+Status:   rejected (2026-10-13T11:40:13Z)
+  We only sell: lamp, chair, bookshelf.
+History:
+  [user] 105
+exit code 0
+
+$ a2a task get -a http://127.0.0.1:9999  -o json
+2026/10/13 20:40:13 WARN failed to convert metadata value to string key=errors value="[map[field:id message:Field is required.]]"
+{
+  "error": {
+    "code": "A2ACLI_ERR_PROTOCOL",
+    "message": "failed to get task : Validation failed",
+    "a2aCode": "INVALID_PARAMS"
+  }
+}
+exit code 1
+
+### 4. one more message to the finished task
+
+$ a2a send -a http://127.0.0.1:9999 --task-id  110 -o json
+{
+  "task": {
+    "id": "fd4c63ff-20f1-4b9a-8c18-112af2efe196",
+    "contextId": "8c24e3e1-b3fc-4e1a-9228-9002ee538ca0",
+    "history": [
+      {
+        "messageId": "01a13510-2730-75ca-add2-d6c3e6edc2db",
+        "contextId": "8c24e3e1-b3fc-4e1a-9228-9002ee538ca0",
+        "parts": [
+          {
+            "text": "110"
+          }
+        ],
+        "role": "ROLE_USER",
+        "taskId": "fd4c63ff-20f1-4b9a-8c18-112af2efe196"
+      }
+    ],
+    "status": {
+      "message": {
+        "messageId": "233e2a79-0008-4706-8810-911d68a77c6f",
+        "contextId": "8c24e3e1-b3fc-4e1a-9228-9002ee538ca0",
+        "parts": [
+          {
+            "text": "We only sell: lamp, chair, bookshelf."
+          }
+        ],
+        "role": "ROLE_AGENT",
+        "taskId": "fd4c63ff-20f1-4b9a-8c18-112af2efe196"
+      },
+      "state": "TASK_STATE_REJECTED",
+      "timestamp": "2026-10-13T11:40:13.491833Z"
+    }
+  }
+}
+exit code 0
+
+### 5. the other terminal states
+
+$ a2a send -a http://127.0.0.1:9999 I want to buy a sofa
+Task:     97b3d70d-213b-44c5-be10-0237ede42768
+Context:  43ef1d63-168e-4624-b6f3-472301fe071e
+Status:   rejected (2026-10-13T11:40:13Z)
+  We only sell: lamp, chair, bookshelf.
+History:
+  [user] I want to buy a sofa
+exit code 0
+$ a2a send -a http://127.0.0.1:9999 -o json "I want to buy a chair"
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+    import sys,json; print(json.load(sys.stdin)['id'])
+                           ~~~~~~~~~~~~~~~~~~~~^^^^^^
+KeyError: 'id'
+task id: 
+
+$ a2a send -a http://127.0.0.1:9999 --task-id  100
+Task:     c76243f4-2c61-44df-91ee-87aa230cc098
+Context:  746fa264-72a2-4642-955f-fdfbc3d05ec1
+Status:   rejected (2026-10-13T11:40:13Z)
+  We only sell: lamp, chair, bookshelf.
+History:
+  [user] 100
+exit code 0
+
+$ a2a send -a http://127.0.0.1:9999 --task-id  100
+Task:     085ee19e-5877-4cb6-805e-1b60636e7152
+Context:  f8fe0cb6-0da8-4c26-98b1-779c5565eedd
+Status:   rejected (2026-10-13T11:40:13Z)
+  We only sell: lamp, chair, bookshelf.
+History:
+  [user] 100
+exit code 0
+
+$ a2a send -a http://127.0.0.1:9999 --task-id  100
+Task:     f3565cba-f17d-444c-afe2-2b67fb94409e
+Context:  669f31f0-108d-4f48-8cf7-d61b780db552
+Status:   rejected (2026-10-13T11:40:13Z)
+  We only sell: lamp, chair, bookshelf.
+History:
+  [user] 100
+exit code 0
+$ a2a send -a http://127.0.0.1:9999 -o json "I want to buy a bookshelf"
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+    import sys,json; print(json.load(sys.stdin)['id'])
+                           ~~~~~~~~~~~~~~~~~~~~^^^^^^
+KeyError: 'id'
+task id: 
+
+$ a2a task cancel -a http://127.0.0.1:9999 
+2026/10/13 20:40:13 WARN failed to convert metadata value to string key=errors value="[map[field:id message:Field is required.]]"
+Error: failed to cancel task : Validation failed
+exit code 1
