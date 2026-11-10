@@ -153,6 +153,37 @@ def is_dead(u):
             and u.get("cost", 0) >= DEAD_GRADE_SHARE[u["grade"]] * lp)
 
 
+# ddolcom (2026-11-10 18:22, the user's plan step 4 "4번은 18:22 에 적용합시다."): an old unit whose cost is above AT_COST_SHARE
+# of what its grade sells for in the market opens at its cost, not cost + 2%: G03d0199f A at 0.737 and 0.747 of list sat 3 h
+# against a market A of 0.751. Market grade A per SKU comes from restock_memory.json (customers.sku_a, A_MIN_DEALS deals);
+# B and C use DEAD_GRADE_SHARE. Never below cost
+AT_COST_SHARE = 0.97
+_SKU_A = {"at": 0.0, "rows": {}}
+
+
+def market_grade_price(u):
+    """What the market pays for this unit's grade, in won, or None."""
+    lp = u.get("list_price") or 0
+    if u.get("grade") == "A":
+        if time.time() - _SKU_A["at"] > 60:
+            _SKU_A["at"] = time.time()
+            try:
+                _SKU_A["rows"] = json.loads(Path("restock_memory.json").read_text(encoding="utf-8"))["customers"].get("sku_a", {})
+            except (OSError, ValueError, KeyError, TypeError):
+                pass
+        row = _SKU_A["rows"].get(u.get("sku"))
+        if row and row[0] and row[1] >= 5:
+            return row[0] * lp
+    share = DEAD_GRADE_SHARE.get(u.get("grade"))
+    return share * lp if share and lp else None
+
+
+def dead_markup(u):
+    """DEAD_MARKUP, or 1.0 (open at cost) when the cost is above AT_COST_SHARE of the market price of its grade."""
+    market = market_grade_price(u)
+    return 1.0 if market and u.get("cost", 0) > AT_COST_SHARE * market else DEAD_MARKUP
+
+
 def trial_arm(u):
     """The trial ended 2026-11-06 14:33 and low won: at 1,000,000 or more 9 deals of 71 opens against 3 of 63, about the
     same margin per open and 2.3 times the revenue; under that 45 of 106 against 35 of 119, more margin and revenue."""
@@ -167,7 +198,7 @@ def ask_price(u, offers, arm=None):
     """The ask after `offers` buyer offers: the first ask, then STEP of the way to the floor each time."""
     floor = floor_price(u)
     if arm == "dead":
-        return int(floor + (floor * DEAD_MARKUP - floor) * STEP ** offers)
+        return int(floor + (floor * dead_markup(u) - floor) * STEP ** offers)
     if arm == "low2":
         share = TRIAL2_SHARE
     else:
