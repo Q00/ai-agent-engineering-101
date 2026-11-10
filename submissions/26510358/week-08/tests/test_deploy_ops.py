@@ -33,6 +33,6 @@ def test_scope_and_secret_paths():
 
 
 def test_secret_text():
-    assert ci.SECRET_TEXT.search("-----BEGIN PRIVATE KEY-----")
+    assert ci.SECRET_TEXT.search("-----BEGIN " + "PRIVATE KEY-----")    # split: the CI secret scan reads this file too
     assert ci.SECRET_TEXT.search("token = 'sbp_" + "a" * 40 + "'")
     assert not ci.SECRET_TEXT.search("MIN_SURPLUS_RATIO = 0.30")
