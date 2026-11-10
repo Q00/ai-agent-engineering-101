@@ -223,8 +223,12 @@ def quote(c, unit, code=None, me=None, now=None, stock_n=1, vip=False):
     if follow and median:
         fm = t["follow_margin"]
         if dear:                                      # 11-07: Book counts unsold stock at cost, so a dear unit whose cost
-            fm = min(fm, t.get("big_follow_margin", 0.03))   # sits above the market median sells near cost: Book
+            fm = min(fm, 0.0 if over else t.get("big_follow_margin", 0.03))   # sits above the market median sells
+                                                                              # near cost: Book
         floor = min(floor, int(cost * (1 + fm)) + 1)          # keeps +3%, revenue (0.3) gets the whole price
+        if over:                                      # HQ 11-10 "악성재고는 원가 근처로, 또는 원가로 팔아": an
+            price = min(price, max(cost * 1.01, median * 0.85))   # overstocked unit asks about its cost (never more
+            why = why + [f"overstock: about cost {cost:.0f}"]     # than 15% under the market), floor below
         if dear and median * (1 - follow) < cost:
             # 11-08: a dear unit bought above its grade's market price costs 1% a day to hold (storage), ~9% to the
             # round's end, so it goes at the market price now if that loses at most big_loss_max of cost

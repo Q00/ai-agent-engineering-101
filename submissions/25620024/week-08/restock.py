@@ -216,6 +216,7 @@ def plan(md, c, t, now=None):
     # 11-07: 214M of furniture at cost sat in stock at 6% quote conversion (cost above the market's price for what
     # was left: grade A units priced against an all-grade median); no more furniture while the stock is over the cap
     big_stock = sum(u.get("cost") or 0 for u in units if (u.get("list_price") or 0) >= 500000)
+    our_rate = market_model.our_sales(c, hours=24)            # per SKU per hour, last 24 h
     # patch 3.4 (11-06): over 50 units of a SKU supplied market-wide in the last hour, its cost rises 0.2% a unit (up
     # to 50%). surge >= 15% (125+ units): not bought; >= 5% (75+): half the quantity. HQ orders are exempt.
     n1h = dict(c.execute("select sku, count(*) from supply_units where ts > ? group by sku", (now - 3600,)).fetchall())
@@ -233,6 +234,9 @@ def plan(md, c, t, now=None):
         if not r or qty <= 0 or (r["list_price"] > t["max_list"] and not any_price):
             return
         if sku in low:                                        # HQ 11-04: low ticket and low profit -- not stocked
+            return
+        if reason != "HQ order" and stock.get(sku, 0) > 1 and stock.get(sku, 0) / max(our_rate.get(sku, 0), 1 / 48) >= 48:
+            skipped.add(sku)                                  # HQ 11-10: no more of a SKU we hold 48 h+ of our sales of
             return
         if r["list_price"] >= 500000 and reason != "HQ order" and big_stock >= t.get("furniture_stock_cap", 120e6):
             skipped.add(sku)

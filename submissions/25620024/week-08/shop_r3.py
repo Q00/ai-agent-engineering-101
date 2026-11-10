@@ -132,7 +132,16 @@ def find_unit(text, taken=(), need=None):
     # (1-star "SCAM" review, 2026-11-04); a named SKU is sold only as itself
     fit = named if m else [u for u in fit if (u.get("name") or "").lower() in want
                     or (u.get("category") or "").split(">")[-1].lower() in want]
-    u = min(fit, key=lambda u: (u.get("expires_at") or float("inf"), u.get("supplied_at") or 0), default=None)
+    if m:
+        u = min(fit, key=lambda u: (u.get("expires_at") or float("inf"), u.get("supplied_at") or 0), default=None)
+    else:                    # HQ 11-10: a category order gets the SKU we hold most of first (clears overstock); food
+        held = {}            # still goes first-to-expire within it
+        for x in fit:
+            held[x["sku"]] = held.get(x["sku"], 0) + 1
+        u = min(fit, key=lambda u: (-held[u["sku"]] if u.get("kind") == "goods" else 0,   # the cheapest unit of it
+                                    u.get("expires_at") or float("inf"),               # (its ask is the lowest,
+                                    u.get("cost") or 0 if u.get("kind") == "goods" else 0,   # so the order closes)
+                                    u.get("supplied_at") or 0), default=None)
     if u:
         u = dict(u, shelf_hours=(cat.get(u["sku"]) or {}).get("shelf_hours"), substitute_for=substitute,
                  stock_n=sum(1 for x in units if x["sku"] == u["sku"] and x.get("grade") != "expired"))

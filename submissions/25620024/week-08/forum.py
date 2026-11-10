@@ -349,7 +349,14 @@ def groupbuy_ads(c, t, now):
     if g.get("until", 0) < now:
         return []
     cat, items, refs = market_model.catalog(), [], []
-    for sku, x in (g.get("skus") or {}).items():
+    try:                                     # HQ 11-10 overstock clearance: the biggest stock lines first, 8 at most
+        held, units = {}, {}
+        for u in json.loads((HERE / ".market" / "inventory.json").read_text(encoding="utf-8")).get("units", []):
+            held[u["sku"]] = held.get(u["sku"], 0) + (u.get("cost") or 0)
+            units.setdefault(u["sku"], {}).setdefault(u.get("grade"), u)
+    except Exception:
+        held, units = {}, {}
+    for sku, x in sorted((g.get("skus") or {}).items(), key=lambda kv: -held.get(kv[0], 0))[:5]:
         gb = promo.groupbuy(c, sku, now)
         lp = (cat.get(sku) or {}).get("list_price")
         if not gb or not lp:
@@ -358,22 +365,33 @@ def groupbuy_ads(c, t, now):
                                            join supply_units su on su.unit = u.unit where su.shop = ? and s.sku = ?
                                            order by s.seq desc limit 3""", (NAME, sku))]
         refs += seqs
+        # the ad states what the shop will actually ask, per grade in stock (11-10: the share alone understated the
+        # price of grade A units, whose floor sits above it -- an ad must not promise a price the clerk will not give)
+        n_held = sum(1 for _ in units.get(sku, {}))
+        by_grade = {}
+        for g_, u in sorted((units.get(sku) or {}).items()):
+            try:
+                by_grade[g_] = promo.quote(c, u, stock_n=max(2, int(held.get(sku, 0) // max(1, u.get("cost") or 1))))["price"]
+            except Exception:
+                pass
+        if not by_grade:
+            continue
+        low_price = min(by_grade.values())
         items.append({"sku": sku, "name": ((cat.get(sku) or {}).get("name") or "")[:28], "list_price": lp,
-                      "group_price": int(lp * gb["share"]), "share_of_list": gb["share"],
+                      "group_price": low_price, "share_of_list": round(low_price / lp, 3), "price_by_grade": by_grade,
                       "first_per_hour": gb["per_hour"], "left_this_hour": gb["left"]})
     if not items or not refs:
         return []
-    data = {"type": "group_buy", "shop": NAME, "rule": "the first N buyers each clock hour pay the group price; after "
-            "that the regular price", "items": items, "how": "ask our shop for the SKU; the offer data shows group_buy",
-            "refs": refs[:8]}
-    ko = "[공동구매] 매 시간 선착순 공동구매가 (그 시간 수량이 끝나면 일반가)\n" + "\n".join(
-        f"- {i['name']} ({i['sku']}): 정가 {i['list_price']:,}원 -> {i['group_price']:,}원 ({i['share_of_list']:.0%}), "
-        f"매 시간 선착순 {i['first_per_hour']}개, 이번 시간 {i['left_this_hour']}개 남음" for i in items)
-    en = "[Group buy] first buyers each hour pay the group price: " + "; ".join(
-        f"{i['sku']} {i['group_price']:,} ({i['share_of_list']:.0%} of list), first {i['first_per_hour']}/h, "
-        f"{i['left_this_hour']} left" for i in items)
+    data = {"type": "clearance", "shop": NAME, "rule": "about cost, while stock lasts; asks by grade in stock now",
+            "items": [{"sku": i["sku"], "list": i["list_price"], "ask_by_grade": i["price_by_grade"]} for i in items],
+            "how": "ask our shop for the SKU", "refs": refs[:5]}
+    ko = "[재고 정리] 원가 수준 판매 -- 지금 재고의 등급별 실제 판매가\n" + "\n".join(
+        f"- {i['name']} ({i['sku']}): 정가 {i['list_price']:,}원 -> 등급별 "
+        + ", ".join(f"{g_} {p_:,}원" for g_, p_ in i["price_by_grade"].items()) for i in items)
+    en = "[Clearance] prices by grade in stock now: " + "; ".join(
+        f"{i['sku']} " + ", ".join(f"{g_} {p_:,}" for g_, p_ in i["price_by_grade"].items()) for i in items)
     js = json.dumps(data, ensure_ascii=False, separators=(",", ":")) + f"\n{HUMAN}\n" + ko + "\n" + en
-    return [{"topic": "groupbuy", "as": "shop", "refs": refs[:8], "score": 3.5, "text": js[:1000],
+    return [{"topic": "groupbuy", "as": "shop", "refs": refs[:8], "score": 9.5, "text": js[:1000],
              "texts": {"json": js[:1000], "ko": ko, "en": en}}]
 
 
