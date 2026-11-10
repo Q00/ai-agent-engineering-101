@@ -69,7 +69,7 @@ RANGES = {
     "seller.first_ask_list": (0.3, 1.5), "seller.first_ask_big_list": (0.3, 1.5),
     "seller.floor_cost_mult": (0.0, 2.0), "seller.floor_list": (0.0, 1.5), "seller.stale_floor_cost_mult": (0.3, 1.0),
     "seller.warranty_hours": (0, 6), "seller.warranty_premium": (0.0, 1.0), "seller.promise_ttl_s": (10, 3600),
-    "seller.warranty_cap_6h": (0, 20000000), "seller.warranty_premium_floor": (0.0, 0.5), "seller.warranty_q_mult": (0.5, 5.0),
+    "seller.warranty_cap_6h": (0, 40000000), "seller.warranty_premium_floor": (0.0, 0.5), "seller.warranty_q_mult": (0.5, 5.0),
     "stock.inventory_cap_share": (0.0, 1.0), "stock.cash_floor": (0, 5000000), "stock.worst_cost_share": (0.25, 1.0),
     "stock.per_sku_qty": (1, 20), "stock.max_lines": (0, 10), "stock.max_qty": (1, 20),
     "buyer.cap_goods_no_warranty": (0.0, 1.5), "buyer.cap_goods_warranty": (0.0, 1.5), "buyer.cap_food": (0.0, 1.5),

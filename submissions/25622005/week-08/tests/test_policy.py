@@ -33,7 +33,7 @@ class RangeTests(unittest.TestCase):
     def test_ranges_are_checked(self):
         self.assertEqual(policy.validate(defaults()), [])
         for key, bad in [("stock.cover_min", 1), ("stock.cover_safety", 50), ("buyer.food_margin_h", -1),
-                         ("buyer.min_surplus_list", 0.6), ("seller.warranty_cap_6h", 30000000)]:
+                         ("buyer.min_surplus_list", 0.6), ("seller.warranty_cap_6h", 50000000)]:
             with self.subTest(key=key):
                 p = defaults()
                 sec, k = key.split(".")
