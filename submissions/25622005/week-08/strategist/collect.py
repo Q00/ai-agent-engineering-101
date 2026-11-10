@@ -17,6 +17,7 @@ shared volume and are only read here. The kit's own log
 """
 import bisect
 import json
+import math
 import os
 import re
 import statistics
@@ -38,6 +39,7 @@ TAIL_BYTES_BY_ROLE = {"seller": 2 << 20, "buyer": 2 << 20}
 TAIL_ROWS_BY_ROLE = {"seller": 6000, "buyer": 6000}
 HISTORY_ROLES = ("buyer", "forum")      # also kept for history_h hours (strategist/outcome.py)
 WARRANTED_H = 6                          # the seller's warranty cap window (seller.warranty_cap_6h)
+BIG_LIST = 100000                        # a sign at this list price or over is "big" in warranted_6h.paid_rate
 WARRANTED_TAIL_BYTES = 12 << 20          # seller.jsonl at ~1.4 MB an hour: 12 MB covers the 6 h
 BUCKET_S = 600
 BUCKETS_KEEP_S = 6 * 3600
@@ -347,12 +349,17 @@ def _warranted(path, now, inv):
     sign_rate: the goods first replies of those hours by whether the buyer asked for a warranty and whether we
     offered one (asked_offered, asked_refused, unasked_offered, unasked_plain: first, signed, rate), the signs
     joined by task; the same table as the brief's 1 h seller.warranty.sign_rate, over hundreds of rows instead
-    of tens. truncated when the tail did not reach back WARRANTED_H hours."""
+    of tens. paid_rate: a sign is not a sale (a buyer collects signs from several shops and pays one; the
+    board counts only the paid settle), so every sign of the hours is also counted by list band (big: BIG_LIST
+    and over) x asked x offered with how many were paid: the unit has left the inventory and this was its
+    last sign (an older sign on the same unit lost to the buyer who paid; on 11-10 this matched the ledger's
+    verified results within a few signs per row), with the won signed and paid. truncated when the tail did
+    not reach back WARRANTED_H hours."""
     rows, cut = _tail(path, 10 ** 6, WARRANTED_TAIL_BYTES)
     since = now - WARRANTED_H * 3600
     held = {u.get("unit") for u in (inv.get("units") or []) if isinstance(u, dict)} if isinstance(inv, dict) else set()
     n = signed = paid = 0
-    firsts, task_key, signs_by = Counter(), {}, Counter()
+    firsts, task_key, signs_by, every = Counter(), {}, Counter(), []
     for r in rows:
         if not isinstance(r, dict) or not isinstance(r.get("ts"), (int, float)) or r["ts"] < since:
             continue
@@ -369,10 +376,15 @@ def _warranted(path, now, inv):
             continue
         if task in task_key:
             signs_by[task_key[task]] += 1
-        if not isinstance(c.get("warranty_hours"), (int, float)) or c["warranty_hours"] <= 0:
-            continue
+        offered = isinstance(c.get("warranty_hours"), (int, float)) and c["warranty_hours"] > 0
         lp = c.get("list_price") if isinstance(c.get("list_price"), (int, float)) else c.get("price")
         lp = lp if isinstance(lp, (int, float)) else 0
+        lst = i.get("list_price") if isinstance(i.get("list_price"), (int, float)) else lp
+        asked = bool(i.get("warranty_req")) or (task in task_key and task_key[task][0])
+        every.append((r["ts"], c.get("unit"), c.get("price") if isinstance(c.get("price"), (int, float)) else 0,
+                      lst >= BIG_LIST, asked, offered))
+        if not offered:
+            continue
         n += 1
         signed += lp
         if c.get("unit") not in held:
@@ -382,8 +394,23 @@ def _warranted(path, now, inv):
              (False, True): "unasked_offered", (False, False): "unasked_plain"}
     rate = {names[k]: {"first": firsts[k], "signed": signs_by[k], "rate": round(signs_by[k] / firsts[k], 4)}
             for k in names if firsts[k]}
+    last = {}
+    for ts, unit, _, _, _, _ in every:
+        if unit is not None and ts >= last.get(unit, -math.inf):
+            last[unit] = ts
+    by = {}
+    for ts, unit, price, big, asked, offered in every:
+        row = by.setdefault(f"{'big' if big else 'small'}_{names[(asked, offered)]}",
+                            {"signs": 0, "paid": 0, "rate": 0.0, "won_signed": 0, "won_paid": 0})
+        row["signs"] += 1
+        row["won_signed"] += price
+        if unit is not None and unit not in held and last.get(unit) == ts:
+            row["paid"] += 1
+            row["won_paid"] += price
+    for row in by.values():
+        row["rate"] = round(row["paid"] / row["signs"], 4)
     return {"h": WARRANTED_H, "n": n, "sum_list_signed": signed, "sum_list_paid": paid, "sign_rate": rate,
-            "truncated": bool(cut and (first is None or first > since))}
+            "paid_rate": by, "truncated": bool(cut and (first is None or first > since))}
 
 
 def _window_rows(path, since, name, truncated, keep_since=None):

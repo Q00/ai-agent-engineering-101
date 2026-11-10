@@ -177,6 +177,15 @@ class BriefTest(unittest.TestCase):
         first["ledger_first"] = True
         self.assertTrue(analyze.brief(first, own(), None, POL, NOW)["market_window"]["partial"])
 
+    def test_market_window_counts_the_warranty_on_the_markets_big_settles(self):
+        r = raw()
+        settle = lambda seq, amount, wh: {"seq": seq, "ts": NOW - 25, "kind": "settle",
+                                          "data": {"shop": "https://x.example", "sku": "G2", "amount": amount, "warranty_hours": wh}}
+        r["ledger"] += [settle(40, 2_600_000, 6.0), settle(41, 150_000, None), settle(42, 380_000, 6), settle(43, 9_000, 6)]
+        w = analyze.brief(r, own(), None, POL, NOW)["market_window"]
+        self.assertEqual(w["warranted_big"], {"settles": 3, "warranted": 2, "share": 0.6667})     # the 9,000 one is small
+        self.assertEqual(self.b["market_window"]["warranted_big"]["settles"], 0)                   # the fixture's settle has no amount
+
     def test_our_results_under_an_old_tunnel_url_count_by_receipt_shop(self):
         r = raw()
         r["ledger"].append(result(30, "https://old-quick-tunnel.example", "G2", 60, verified=True))

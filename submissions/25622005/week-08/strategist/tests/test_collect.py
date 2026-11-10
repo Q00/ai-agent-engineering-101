@@ -336,7 +336,27 @@ class ReadOwnTest(unittest.TestCase):
                              "sign_rate": {"asked_offered": {"first": 1, "signed": 1, "rate": 1.0},      # food t4 is not counted
                                            "asked_refused": {"first": 2, "signed": 0, "rate": 0.0},
                                            "unasked_offered": {"first": 1, "signed": 1, "rate": 1.0},
-                                           "unasked_plain": {"first": 1, "signed": 1, "rate": 1.0}}})
+                                           "unasked_plain": {"first": 1, "signed": 1, "rate": 1.0}},
+                             # t1 asked (its first reply did), u-gone paid; t5 unasked, u-held not paid; t6 plain, paid
+                             "paid_rate": {"big_asked_offered": {"signs": 1, "paid": 1, "rate": 1.0, "won_signed": 1, "won_paid": 1},
+                                           "big_unasked_offered": {"signs": 1, "paid": 0, "rate": 0.0, "won_signed": 1, "won_paid": 0},
+                                           "big_unasked_plain": {"signs": 1, "paid": 1, "rate": 1.0, "won_signed": 1, "won_paid": 1}}})
+
+    def test_paid_rate_credits_a_gone_unit_to_its_last_sign_only(self):
+        now = time.time()
+        sign = lambda age, unit, price, lp, asked=None: {"ts": now - age, "kind": "sign", "inputs": {"list_price": lp, "warranty_req": asked},
+                                                         "choice": {"price": price, "unit": unit, "list_price": lp, "warranty_hours": 0}}
+        self.write("logs/decisions/seller.jsonl", [sign(3000, "u-sofa", 2_000_000, 3_800_000, True),    # lost: a later sign paid
+                                                   sign(2000, "u-sofa", 2_100_000, 3_800_000),
+                                                   sign(1000, "u-kimchi", 9_000, 12_900),
+                                                   sign(500, "u-kimchi2", 9_500, 12_900)])
+        (self.home / ".market").mkdir(parents=True)
+        (self.home / ".market" / "inventory.json").write_text(json.dumps({"balance": 1, "units": [{"unit": "u-kimchi2", "sku": "G1"}]}))
+        w = collect.read_own(self.home, now)["warranted_6h"]
+        self.assertEqual(w["paid_rate"], {"big_asked_refused": {"signs": 1, "paid": 0, "rate": 0.0, "won_signed": 2_000_000, "won_paid": 0},
+                                          "big_unasked_plain": {"signs": 1, "paid": 1, "rate": 1.0, "won_signed": 2_100_000, "won_paid": 2_100_000},
+                                          "small_unasked_plain": {"signs": 2, "paid": 1, "rate": 0.5, "won_signed": 18_500, "won_paid": 9_000}})
+        self.assertEqual((w["n"], w["sum_list_signed"]), (0, 0))
 
     def test_window_filter_and_summary_parts(self):
         now = time.time()
@@ -355,7 +375,9 @@ class ReadOwnTest(unittest.TestCase):
              "seller": {"sold_24h": 4, "stars": [5, 4, None], "regular_cats": list("abcdefghijkl"),
                         "skus": {"big": "x" * 1000}}}))
         own = collect.read_own(self.home, now, window_h=1)
-        self.assertEqual(own["warranted_6h"], {"h": 6, "n": 0, "sum_list_signed": 0, "sum_list_paid": 0, "sign_rate": {}, "truncated": False})
+        self.assertEqual(own["warranted_6h"], {"h": 6, "n": 0, "sum_list_signed": 0, "sum_list_paid": 0, "sign_rate": {},
+                                               "paid_rate": {"small_unasked_plain": {"signs": 1, "paid": 0, "rate": 0.0, "won_signed": 0, "won_paid": 0}},   # no unit: never paid
+                                               "truncated": False})
         self.assertEqual([r["id"] for r in own["decisions"]["seller"]], ["new"])
         self.assertEqual([r["id"] for r in own["decisions"]["buyer"]], ["b"])
         self.assertEqual(own["decisions"]["restock"], [])

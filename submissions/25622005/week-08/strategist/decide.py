@@ -123,11 +123,17 @@ Supply and depth:
   offered, refused by cause (grade: outside seller.warranty_grades; cap_6h: the sum of warranted sales of the
   last 6 h would pass seller.warranty_cap_6h, the only cause left, and warranted_6h gives that sum, signed and
   paid, with over_cap; near_end), sold, and
-  sign_rate by asked x offered (asked_offered vs asked_refused is what the warranty is worth to the sale, against
-  q x price). The 1 h sign_rate rows hold tens of replies and flip from run to run; warranted_6h.sign_rate is the
-  same table over 6 h (hundreds of replies): judge the warranty's worth on it, never on one hour. While
+  sign_rate by asked x offered. A sign is not a sale: a buyer collects signs from several shops and pays one,
+  and the board counts only the paid settle, so a sign rate says nothing about revenue (on 11-10 the sign
+  rates read "refusing costs no sales" while big signs paid 15% when the warranty was refused and 91% when
+  offered, and settled revenue halved). warranted_6h.paid_rate is the 6 h table of signs and paid (the unit left
+  the stock after its last sign) by list band (big: 100k and over) x asked x offered, with the won signed and
+  paid: judge the warranty on the big rows of paid_rate and won_paid, never on sign_rate or on one hour.
+  market_window.warranted_big is the share of the market's settles over 100k that carry a warranty (0.86-0.89
+  on 11-10): while it is high, a big buyer refused a warranty pays elsewhere. While
   over_cap, every ask is refused: a raise that leaves the cap under sum_list_signed changes nothing, so take the
-  cap above that sum (the step is 3M), and lower it on refunds, not on one hour's rates. Levers:
+  cap above that sum (the step is 3M), and lower it on refunds against won_paid, not on sign rates: a refund
+  costs one price, a refused big sign costs the sale about three times in four. Levers:
   seller.warranty_cap_6h, warranty_premium / premium_floor / q_mult; warranty_grades is fixed.
 - Surge: the first market.surge_free units of a SKU that the whole market (us included) buys in a rolling hour
   cost the plain price, each further unit adds market.surge_per_unit to the cost factor, up to market.surge_max

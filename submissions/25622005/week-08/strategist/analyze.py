@@ -37,6 +37,7 @@ SHOP_F = ("deals", "share", "visits", "stars", "reviews", "revenue", "profit",
 BUYER_F = ("orders", "deals", "paid", "saved", "held", "hopeless", "all", "surplus", "forum", "served", "posts")
 INV_TOP = 8                 # SKUs listed by cost tied up
 FOOD_RISK_H = 24            # food with fewer hours left is at risk
+BIG_SETTLE = 100000         # a market settle of this amount or over is "big" in market_window.warranted_big
 FOCUS_TOP = 12
 LEAF_TOP = 8
 FREE_TOP = 8
@@ -279,9 +280,13 @@ def _window(ledger, me, our_url, gap, first):
     kinds = Counter(_name(r.get("kind")) for r in ledger)
     fails = Counter(_clip(k, 40) for d in results for k, ok in _dict(d.get("checks")).items() if ok is False)
     side = lambda rows: {"results": len(rows), "verified": sum(1 for d in rows if d.get("verified") is True)}
+    big = [_dict(r.get("data")) for r in ledger if r.get("kind") == "settle"
+           and (_num(_dict(r.get("data")).get("amount")) or 0) >= BIG_SETTLE]
+    warranted = sum(1 for d in big if (_num(d.get("warranty_hours")) or 0) > 0)
     return {"rows": len(ledger), "kinds": dict(kinds.most_common(10)), "orders": kinds.get("order", 0),
             **side(results), "walkaways": sum(1 for d in results if not d.get("receipt")),
             "failing_checks": dict(fails.most_common(8)),
+            "warranted_big": {"settles": len(big), "warranted": warranted, "share": _ratio(warranted, len(big))},
             "our_shop": side([d for d in results if _our_result(d, me, our_url)]),
             "our_buyer": side([d for d in results if d.get("buyer") == me]), "ledger_gap": bool(gap),
             "covered_s": round(max(ts) - min(ts)) if ts else 0, "partial": bool(gap or first)}
