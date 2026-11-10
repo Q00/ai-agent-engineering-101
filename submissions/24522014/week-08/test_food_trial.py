@@ -168,15 +168,17 @@ class PlanWiring(unittest.TestCase):
         self.assertEqual(buys, [])
         self.assertLess(why["budget"], 750000)
 
-    def test_twelve_picks_fill_a_run_and_goods_get_no_line(self):
-        """Today's limits: 12 units a run in 6 lines. Food comes first and is not held to the line limit."""
+    def test_twelve_picks_fill_the_kits_ten_lines_and_goods_get_no_line(self):
+        """Today's limits: 12 units a run in 6 lines. Food comes first and is not held to the line limit, but since 11-10 no pass
+        opens a line past the kit's 10 (it sends buy[:10]), so 10 picks are planned and the other 2 wait for the next run."""
         limits = {**LIMITS, "max_total_units": 80, "max_units_per_run": 12, "max_lines_per_run": 6}
         catalog = {f"f{i}": food() for i in range(12)}
         catalog["g"] = {"kind": "goods", "category": "c", "list_price": 100}
         picks = [{"sku": f"f{i}", "estimated_cost": 15000} for i in range(12)]
         buys, why = self.plan(self.inv(), catalog, {k: HOT for k in catalog}, picks, limits)
-        self.assertEqual(len(buys), 12)
-        self.assertEqual(len(why["food_trial"]), 12)
+        self.assertEqual(len(buys), 10)
+        self.assertEqual(len(why["food_trial"]), 10)
+        self.assertEqual(why["kit_lines"]["total"], 10)
         self.assertNotIn("g", {b["sku"] for b in buys})
 
     def test_seven_picks_use_every_line_so_goods_get_none(self):
@@ -186,8 +188,9 @@ class PlanWiring(unittest.TestCase):
         buys, _ = self.plan(self.inv(), catalog, {k: HOT for k in catalog}, [{"sku": f"f{i}", "estimated_cost": 15000} for i in range(7)], limits)
         self.assertEqual({b["sku"] for b in buys}, {f"f{i}" for i in range(7)})
 
-    def test_lines_past_the_kits_ten_are_recorded_but_never_sent(self):
-        """The kit sends buy[:10] (scripts/market_kit.py:900). What it drops stays planned, so it is not tried again and the trial ends two short."""
+    def test_no_line_past_the_kits_ten_is_planned_so_none_is_lost(self):
+        """The kit sends buy[:10] (scripts/market_kit.py:900). Before 11-10 the plan held 12 lines, the kit dropped 2 that stayed
+        recorded as planned, and the trial ended two short. Now only 10 are planned and recorded; the other 2 are chosen next run."""
         limits = {**LIMITS, "max_total_units": 80, "max_units_per_run": 12, "max_lines_per_run": 6}
         settings = {**ON, "categories": {KIMCHI: 12}, "max_total_units": 12, "max_total_estimated_cost": 250000}
         catalog = {f"f{i}": food(price=10000) for i in range(12)}
@@ -195,8 +198,8 @@ class PlanWiring(unittest.TestCase):
         picks = ft.choose(settings, fresh(), catalog, intel, [], NOW)
         buys, why = self.plan(self.inv(), catalog, intel, picks, limits)
         state = ft.record_plan(fresh(), picks, set(why["food_trial"]), NOW)
-        self.assertEqual((len(buys), len(buys[:10]), len(state["planned"])), (12, 10, 12))
-        self.assertEqual(ft.choose(settings, state, catalog, intel, [], NOW), [])
+        self.assertEqual((len(buys), len(buys[:10]), len(state["planned"])), (10, 10, 10))
+        self.assertEqual(len(ft.choose(settings, state, catalog, intel, [], NOW)), 2)
 
     def test_closed_window_buys_no_food(self):
         catalog = {"f": food()}

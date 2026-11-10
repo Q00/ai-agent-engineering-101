@@ -20,6 +20,9 @@ from collections import Counter
 
 
 UNPROVEN_STOCK_CEILING = 16  # Above the earlier cap, only SKUs with sales evidence are added.
+# The kit buys only the first 10 lines of a plan (scripts/market_kit.py: `for b in buy[:10]`). Every pass stops opening lines at 10, so
+# nothing past the 10th is planned or budgeted. Passes keep their order: food trial, food probe, shop b's band, 1M+ probe, ordinary.
+KIT_LINES = 10
 
 
 def demand_hints(posts, catalog, now):
@@ -31,7 +34,7 @@ def demand_hints(posts, catalog, now):
     return {sku: min(2, len(authors)) for sku, authors in hints.items()}
 
 
-def plan(inventory, catalog, demand, sales, cursor=0, *, hints=None, now=None, intelligence=None, runtime=None, leader_hints=None, own_profitable=None, quality=None, food_trial=None, median_bypass=None, hi_band=None, hi_probe=None):
+def plan(inventory, catalog, demand, sales, cursor=0, *, hints=None, now=None, intelligence=None, runtime=None, leader_hints=None, own_profitable=None, quality=None, food_trial=None, median_bypass=None, hi_band=None, hi_probe=None, food_probe=None):
     now = time.time() if now is None else now
     median_bypass = set(median_bypass or ())
     hints = hints or {}
@@ -140,12 +143,24 @@ def plan(inventory, catalog, demand, sales, cursor=0, *, hints=None, now=None, i
     bypassed = []
     for pick in food_trial or ():
         carrying = 0  # Food pays no storage; the contract charges goods only.
-        if planned_units >= run_room or estimated + storage_reserve + pick["estimated_cost"] + carrying > budget:
+        if planned_units >= run_room or estimated + storage_reserve + pick["estimated_cost"] + carrying > budget or len(planned) >= KIT_LINES:
             continue
         planned[pick["sku"]] = 1
         estimated += pick["estimated_cost"]
         planned_units += 1
         trial_skus.append(pick["sku"])
+    # The food probe (food_probe.py) follows the trial on the same terms: one unit per pick, in the run's units, the total cap and
+    # the ordinary lines.
+    probe_food = []
+    for pick in food_probe or ():
+        if planned_units >= run_room or estimated + storage_reserve + pick["estimated_cost"] > budget:
+            continue
+        if not planned[pick["sku"]] and (len([s for s in planned if s not in trial_skus]) >= max_lines or len(planned) >= KIT_LINES):
+            continue
+        planned[pick["sku"]] += 1
+        estimated += pick["estimated_cost"]
+        planned_units += 1
+        probe_food.append(pick["sku"])
     hi_planned, hi_taken = 0, []
     # Held plus planned 1M+ stock at worst cost stays within the cap (hi_band.py bounds it at 24M at most).
     hi_worst = sum((catalog.get(u.get("sku")) or {}).get("list_price", 0) * 0.75 * surge.get(u.get("sku"), 1) for u in units if over_floor(u.get("sku"))) if band else 0
@@ -154,7 +169,7 @@ def plan(inventory, catalog, demand, sales, cursor=0, *, hints=None, now=None, i
         value = catalog.get(sku) or {}
         if hi_room <= 0:
             break
-        if not is_hi(sku) or value.get("category") not in categories or (sku in surge and (owned[sku] or planned[sku])):
+        if not is_hi(sku) or value.get("category") not in categories or (sku in surge and (owned[sku] or planned[sku])) or (not planned[sku] and len(planned) >= KIT_LINES):
             continue
         worst_cost = value["list_price"] * 0.75 * surge.get(sku, 1)
         reference = signal(sku).get("median_price")
@@ -179,7 +194,7 @@ def plan(inventory, catalog, demand, sales, cursor=0, *, hints=None, now=None, i
         if probe_room <= 0:
             break
         value = catalog.get(sku) or {}
-        if owned[sku] or planned[sku] or value.get("category") not in categories:
+        if owned[sku] or planned[sku] or value.get("category") not in categories or len(planned) >= KIT_LINES:
             continue
         worst_cost = value["list_price"] * 0.75 * surge.get(sku, 1)
         reference = signal(sku).get("median_price")
@@ -204,7 +219,7 @@ def plan(inventory, catalog, demand, sales, cursor=0, *, hints=None, now=None, i
         if not proven(sku) and (exploration_slots <= 0 or counted + planned_units >= UNPROVEN_STOCK_CEILING):
             continue
         # Lines are kept for range; once they are used, only the SKUs already in the plan deepen.
-        if not planned[sku] and len([s for s in planned if s not in hi_taken and s not in probe_taken]) >= max_lines:
+        if not planned[sku] and (len([s for s in planned if s not in hi_taken and s not in probe_taken]) >= max_lines or len(planned) >= KIT_LINES):
             continue
         # A surged SKU costs more with every unit the market buys, so we hold one at most and price it at the published factor.
         if sku in surge and (owned[sku] or planned[sku]):
@@ -260,7 +275,10 @@ def plan(inventory, catalog, demand, sales, cursor=0, *, hints=None, now=None, i
                   "public_evidence_skus": len(intelligence),
                   "forum_hints": hints,
                   "leader_hints": leader_hints,
-                  "food_trial": trial_skus,
+                  "food_trial": trial_skus, "food_probe": probe_food,
+                  "kit_lines": {"total": len(planned), "food_trial": len(set(trial_skus)), "food_probe": len(set(probe_food)), "band": len(hi_taken),
+                                "probe": len(probe_taken), "ordinary": len(planned) - len(set(trial_skus) | set(probe_food) | set(hi_taken) | set(probe_taken)),
+                                "limit": KIT_LINES},
                   "median_bypass_skus": sorted(median_bypass),
                   "median_bypass_used": bypassed,
                   "food_supply": "deferred outside the capped trial: no guaranteed shelf life or supported sales-window estimate"}
@@ -376,10 +394,12 @@ def main():
     band = hi_band.for_run(md, time.time(), catalog)
     import hi_probe
     probe = hi_probe.for_run(md, time.time(), catalog)
+    import food_probe
+    food_picks, food_waiting = food_probe.for_run(md, inv, catalog)
     buys, explanation = plan(inv, catalog, demand, memory["sales"], memory["cursor"], hints=hints,
                              intelligence=snapshot.get("skus", {}), runtime=effective(md), leader_hints=leader_hints,
                              own_profitable=own_profitable, quality=fresh_quality(md), food_trial=trial_picks, median_bypass=bypass, hi_band=band,
-                             hi_probe=probe)
+                             hi_probe=probe, food_probe=food_picks)
     if trial_state is not None:
         chosen = set(explanation.get("food_trial") or ())
         food_trial.record_plan(trial_state, trial_picks, chosen, time.time())
@@ -389,6 +409,7 @@ def main():
             explanation["food_trial"] = []
     explanation["food_trial_picks"] = trial_picks
     explanation["food_trial_waiting_for"] = trial_waiting
+    explanation["food_probe_waiting_for"] = food_waiting
     memory["cursor"] += 1
     temporary = memory_path.with_suffix(".tmp")
     temporary.write_text(json.dumps(memory, ensure_ascii=False, indent=2), encoding="utf-8")
