@@ -40,10 +40,11 @@ class Pq1Test(unittest.TestCase):
             path.write_text(json.dumps({**cap, "pq1": pq1} if pq1 is not None else cap), encoding="utf-8")
             return price_cap.capped(terms, goods(unit["listed"]) if "listed" in unit else unit, path, task=task)
 
-    def test_shipped_off_and_today_unchanged(self):
-        self.assertIsNone(price_cap.pq1_settings())
+    def test_shipped_on_at_half_and_off_is_today(self):
+        # Switched on 11-10 after the user's seller restart (installed off in 6768fed3).
+        self.assertEqual(price_cap.pq1_settings(), {"share": 0.5, "salt": "pq1", "ratio": 0.7})
         shipped = json.loads(price_cap.CONFIG.read_text(encoding="utf-8"))["pq1"]
-        self.assertEqual((shipped["enabled"], shipped["share"], shipped["salt"], shipped["ratio"]), (False, 0.5, "pq1", 0.7))
+        self.assertEqual((shipped["enabled"], shipped["share"], shipped["salt"], shipped["ratio"]), (True, 0.5, "pq1", 0.7))
         terms = {"quote": 100000, "floor": 60000}
         for task in (TEST_TASK, CONTROL_TASK, None):
             self.assertEqual(self.capped(terms, {"listed": 100000}, task, pq1={**PQ1, "enabled": False}),
