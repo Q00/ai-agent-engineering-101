@@ -414,7 +414,7 @@ Answer with one JSON object only:
                  jump, our score falling), money leaking (deals not settling, refunds), a fault, a rule change, or a
                  decision only the user can make; give the number and what you do about it. Usually empty.>"]
 }}
-The buyer strategist (it ran 15 minutes before you and runs again 15 minutes after) left you its reads and notes
+The buyer strategist (it runs every hour at :00; you run every 3 hours) left you its reads and notes
 in the evidence under "from_buyer_strategist"; use them.
 THE CURATOR (user, 11-06): a memory / market-intelligence agent sits between you and the buyer strategist. It
 measures the whole market (evidence "market_picture": what sells, what buyers buy, the top shops and buyers and
@@ -540,6 +540,8 @@ def run(force=False):
     mem = Memory()
     wake = read(probe.WAKE, None)
     slot = my_turn("shop")
+    if wake and not force and time.time() - mem.d.get("t", 0) < 3600:
+        wake = None                     # 11-10 (API budget): a watch condition wakes it at most once an hour
     if not force and not wake and (slot is None or slot == mem.d.get("slot")):
         return
     mem.d["slot"] = slot

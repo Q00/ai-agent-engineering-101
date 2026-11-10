@@ -347,7 +347,7 @@ Shared memory digest (the curator's summary of what both strategists have found 
 
 YOUR ROLE (user, 11-06): the buyer is RULE-BASED and fast: code picks the shop, haggles (open at the shop's
 lower-quartile price minus open_offset, then halfway, then the cap, holding at the cap while the shop keeps coming
-down) and pays, in about a second per shop, with no model call. You are its controller: every 30 minutes you set
+down) and pays, in about a second per shop, with no model call. You are its controller: every hour you set
 the rules' numbers from what they produced (evidence "rules_by_shop_6h", "throughput"). Speed comes from the code;
 flexibility comes from you.
 How the buyer works (BUYER_STRATEGY.md section 3): per order it scores the shops that hold an acceptable SKU by
@@ -447,7 +447,7 @@ Answer with one JSON object only:
                  jump, our score falling), money leaking (deals not settling, refunds), a fault, a rule change, or a
                  decision only the user can make; give the number and what you do about it. Usually empty.>"]
 }}
-The shop strategist (it ran 15 minutes before you and runs again 15 minutes after) left you its reads and notes
+The shop strategist (it runs every 3 hours; you run every hour) left you its reads and notes
 in the evidence under "from_shop_strategist"; use them."""
 
 
