@@ -37,6 +37,13 @@ def load_json(path, default):
         return default
 
 
+def load_jsonl(path):
+    try:
+        return [json.loads(line) for line in Path(path).read_text(encoding="utf-8").splitlines() if line.strip()]
+    except (OSError, ValueError):
+        return []
+
+
 def parse_ask(text, list_price):
     """The seller's price in its message. Shops write it differently, and product names carry numbers too
     (500mL x 60), so prefer a number right after asking/counter/price, else the last plausible one."""
@@ -49,10 +56,13 @@ def parse_ask(text, list_price):
     return math.ceil(plausible[-1]) if plausible else None
 
 
-def haggle(url, sku, name, list_price, budget, target_ratio, rounds):
+def haggle(url, sku, name, list_price, budget, target_ratio, rounds, need_h=None):
     card = fetch_card(url)
     rpc_url = ((card.get("supportedInterfaces") or [{}])[0]).get("url") or url
-    t, _ = send(rpc_url, f"I want to buy {name} ({sku})")
+    ask = f"I want to buy {name} ({sku})"
+    if need_h:                                   # a shop that reads it can ship a fresher unit
+        ask += f", with at least {int(need_h)} hours of shelf life left"
+    t, _ = send(rpc_url, ask)
     task_id = (t or {}).get("id")
     start = min(budget, int(list_price * target_ratio))
     offers, offer = [], None
@@ -75,7 +85,8 @@ def haggle(url, sku, name, list_price, budget, target_ratio, rounds):
             break
     if state(t) == "TASK_STATE_COMPLETED":
         r = receipt_data(t) or {}
-        honest = r.get("item") == sku and offer is not None and abs(float(r.get("price", -1)) - offer) < 1e-6
+        honest = (bool(r.get("sig_seller")) and r.get("item") == sku and offer is not None
+                  and abs(float(r.get("price", -1)) - offer) < 1e-6)   # unsigned: the kit will never pay it
         return {"deal": True, "receipt": r, "price": r.get("price"), "offers": offers, "honest": honest,
                 "agreed": offer}
     if task_id and state(t) not in ("TASK_STATE_REJECTED", "TASK_STATE_CANCELED", ""):
@@ -132,11 +143,19 @@ def main():
     acceptable = set(order.get("acceptable") or [])
     kind = order.get("kind")
 
+    need_h = order.get("use_within_hours") if kind == "food" else None
+
+    def lasts(sku):
+        """Even a grade-A unit has only >= 80% of its shelf life left: skip SKUs that cannot last the order."""
+        shelf = (catalog.get(sku) or {}).get("shelf_hours")
+        return not need_h or not shelf or shelf * 0.8 >= need_h
+
     cands = []
     for s in shops:
         if s["name"] == SELF or s["name"] in blacklist:
             continue
-        offers = [o for o in s.get("offers") or [] if o.get("qty", 0) > 0 and (not acceptable or o["sku"] in acceptable)]
+        offers = [o for o in s.get("offers") or [] if o.get("qty", 0) > 0
+                  and (not acceptable or o["sku"] in acceptable) and lasts(o["sku"])]
         if offers:
             cands.append(dict(s, offers=offers))
 
@@ -158,6 +177,15 @@ def main():
     except Exception as e:                       # no DB: still buy, with every shop on the prior
         print(f"[db] {type(e).__name__}: {e}")
 
+    # the kit refused to pay these shops before (short shelf life, no certificate...): push them down
+    refused = {}
+    for p in load_jsonl(HERE / ".market" / "payments.jsonl"):
+        if p.get("paid") is False:
+            refused[p.get("shop")] = refused.get(p.get("shop"), 0) + 1
+    for c in cands:
+        if refused.get(c["url"]):
+            scores[c["name"]] = scores.get(c["name"], 0.6) - 0.2 * min(refused[c["url"]], 3)
+
     ranked = sorted(cands, key=lambda c: scores.get(c["name"], 0.6), reverse=True)
     top = ranked[:3]
     first = random.choices(top, weights=[0.6, 0.25, 0.15][:len(top)])[0]
@@ -168,7 +196,7 @@ def main():
         sku, name, lp = pick_sku(shop["offers"], catalog, args.budget)
         print(f"[choose] {shop['name']} score {scores.get(shop['name'], 0.6):.3f}: {name} ({sku}), list {lp}")
         try:
-            result = haggle(shop["url"], sku, name, lp, args.budget, policy["target_ratio"], policy["rounds"])
+            result = haggle(shop["url"], sku, name, lp, args.budget, policy["target_ratio"], policy["rounds"], need_h)
         except Exception as e:                   # a dead tunnel or a bad card: try the next shop
             print(f"[haggle] {shop['name']}: {type(e).__name__}: {e}")
             result = {"deal": False, "offers": []}
@@ -176,8 +204,9 @@ def main():
             break
 
     if result["deal"] and not result["honest"]:
-        why = (f"receipt said {result['receipt'].get('item')} at {result['receipt'].get('price')}, "
-               f"agreed {sku} at {result['agreed']}")
+        r = result["receipt"]
+        why = ("receipt carried no sig_seller" if not r.get("sig_seller") else
+               f"receipt said {r.get('item')} at {r.get('price')}, agreed {sku} at {result['agreed']}")
         blacklist[shop["name"]] = why
         BLACKLIST_PATH.write_text(json.dumps(blacklist, ensure_ascii=False, indent=1), encoding="utf-8")
         print(f"[flag] {shop['name']}: {why}")
