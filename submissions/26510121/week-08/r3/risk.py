@@ -23,11 +23,8 @@ def quality_book(journal, now=None):
         return cached['grades']
     # Reconciliation can append a true break AFTER a provisional mature result.
     # Any broken result wins; ambiguous attribution cannot become a healthy label.
-    outcomes = {}
-    for e in journal.events('outcome', 10000):
-        previous = outcomes.get(e.get('order'))
-        if previous is None or e.get('broken'):
-            outcomes[e.get('order')] = e
+    from .outcomes import latest
+    outcomes = latest(journal)
     ambiguous = {o for e in journal.events('ambiguous_break', 2000) for o in e.get('orders', [])}
     breaks = {e.get('unit'): e for e in journal.events('public_broken', 20000)
               if 0 <= now - e['_ts'] < 172800 and e.get('unit')}
@@ -38,7 +35,7 @@ def quality_book(journal, now=None):
             continue
         outcome = outcomes.get(e.get('order'))
         exact = breaks.get(e.get('unit'))
-        if e.get('order') in ambiguous and not exact:
+        if e.get('order') in ambiguous and not exact and not (outcome or {}).get('canonical'):
             continue
         if not exact and (not outcome or not (outcome.get('matured') or outcome.get('broken'))):
             continue

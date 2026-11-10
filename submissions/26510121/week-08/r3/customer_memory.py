@@ -36,7 +36,9 @@ def retain(journal, max_visits=MAX_VISITS, max_events=MAX_EVENTS):
             "SELECT data FROM events WHERE kind='customer_visit' ORDER BY ts DESC,rowid DESC LIMIT -1 OFFSET ?",
             (max_visits,)).fetchall()
         for (data,) in old:
-            task = json.loads(data)['task']
+            visit_data=json.loads(data);task=visit_data['task']
+            from .long_memory import archive_customer
+            archive_customer(connection,task,visit_data)
             connection.execute("DELETE FROM events WHERE kind LIKE 'customer_%' AND json_extract(data,'$.task')=?", (task,))
             connection.execute('DELETE FROM kv WHERE key IN (?,?)', ('customer-visit:' + task, 'customer-payer:' + task))
             connection.execute("DELETE FROM kv WHERE key LIKE 'customer-ledger:%' AND value=?", (json.dumps(task),))

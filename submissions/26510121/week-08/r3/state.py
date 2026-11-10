@@ -203,3 +203,5 @@ class Journal:
                 pending.append(("outcome", {"order": item["order"], "broken": False, "surplus": item["value"] - item["price"],
                                      "matured": True}, "mature:" + item["order"], "buyer"))
         self.add_batch(pending,ts=now)
+        from .outcomes import reconcile as reconcile_units
+        reconcile_units(self,purchases,now)

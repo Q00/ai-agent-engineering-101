@@ -149,10 +149,6 @@ def quote_completion(journal, sku, price, now=None, grade=None, warranty=None):
 
 def observed_breaks(journal, sku):
     purchases = {x["order"]: x for x in journal.events("purchase", 10000) if x.get("sku") == sku}
-    latest = {}
-    for e in journal.events("outcome", 10000):
-        # A verified broken revision supersedes an earlier provisional non-broken outcome.
-        if e.get("order") in purchases and (e.get("broken") or e.get("order") not in latest):
-            latest[e["order"]] = e
-    known = [e for e in latest.values() if e.get("broken") or e.get("matured")]
+    from .outcomes import latest
+    known = [e for oid,e in latest(journal).items() if oid in purchases and (e.get("broken") or e.get("matured"))]
     return {"mature_samples": len(known), "broken": sum(bool(e.get("broken")) for e in known)}
