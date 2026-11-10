@@ -406,3 +406,57 @@ Current parameters (name = value, allowed range):
 - seller_markup = 1.0 (0.95-1.15)
 [tune] opus 6.5s exit=0 in=4187ch -> '{"changes": {"seller_volume_share": 0.4}, "reason": "The volume arm beat the margin arm on both close rate (64% vs 62%) and mean margin (6782 vs 6221), so the volume arm should get more traffic than its current minimum share. The buyer\'s savings (0.31) are only slightly below the market median (0.33'
 [strategy] {"answered": true, "at": "2026-11-10 00:00:10", "changes": {"seller_volume_share": 0.4}, "dry_run": false, "event": "tune", "model": "opus", "params": {"explore_rate": 0.15, "first_offer_discount": 0.2, "grade_cap_B": 0.85, "seller_margin_margin": 1.3, "seller_margin_volume": 1.2, "seller_markup": 1.0, "seller_volume_share": 0.4}, "reason": "The volume arm beat the margin arm on both close rate (64% vs 62%) and mean margin (6782 vs 6221), so the volume arm should get more traffic than its current minimum share. The buyer's savings (0.31) are only slightly below the market median (0.33), which isn't strong enough evidence to change the b", "rejected": {}, "window": ["2026-11-09 00:00", "2026-11-10 00:00"]}
+[pricing] 10 reviews of this shop from the market (as jiseokkk)
+[tune] 3676 buyer rows, 7036 seller events, 10 reviews; summary 3873 chars
+Window: 2026-11-10 00:00 to 2026-11-11 00:00 (KST).
+
+Buyer side (my orders):
+- 식품>야채/과일>신선과일(부패주의): 958 orders, 161 deals (17%), 60 walked away; deal price / my reference 1.11; average cut below the ask 13%
+- 가구/침구>가구>침대/매트리스: 933 orders, 239 deals (26%), 193 walked away; deal price / my reference 1.13; average cut below the ask 9%; guard: 1 capped_at_ask
+- 식품>시리얼/곡물/콩류>곡물: 536 orders, 84 deals (16%), 109 walked away; deal price / my reference 1.12; average cut below the ask 4%
+- 식품>육류>가공/조리 육류: 385 orders, 25 deals (6%), 151 walked away; deal price / my reference 1.14; average cut below the ask 21%; guard: 2 final_ceiling, 1 ceiling_already_used
+- 가구/침구>침구/홈데코>침구: 98 orders, 19 deals (19%), 14 walked away; deal price / my reference 1.10; average cut below the ask 8%; guard: 1 final_ceiling, 1 ceiling_already_used
+- 식품>김치/반찬/즉석요리>김치: 88 orders, 21 deals (24%), 15 walked away; deal price / my reference 1.11; average cut below the ask 13%
+- 식품>김치/반찬/즉석요리>즉석조리식품: 74 orders, 11 deals (15%), 7 walked away; deal price / my reference 1.12; average cut below the ask 11%; guard: 2 reference_substitute, 1 final_ceiling, 1 ceiling_already_used
+- 식품>김치/반찬/즉석요리>찌개/탕류/장류: 64 orders, 8 deals (12%), 9 walked away; deal price / my reference 1.07; average cut below the ask 10%
+- 가구/침구>가구>소파/의자/스툴: 48 orders, 16 deals (33%), 5 walked away; deal price / my reference 1.05; average cut below the ask 6%
+- 식품>음료>주스/코코아/생수: 46 orders, 1 deals (2%), 15 walked away; deal price / my reference 1.09; average cut below the ask 0%
+- 53 other categories: 446 orders, 93 deals (21%)
+- my settled price / list price: mean 0.68 over 668 deals (saved = 0.32); the market's category medians (ledger, 24 h): median 0.66; fill rate 29% of 2377 orders
+- shop mjforge: 399 visits, 68 deals
+- shop myeonggi: 397 visits, 137 deals, 13 refused by the kit at payment, 1 broke without warranty
+- shop totato2203-r3: 284 visits, 58 deals, 2 refused by the kit at payment
+- shop buzllightyear: 276 visits, 34 deals, 32 refused by the kit at payment
+- shop junghoonwoo-agent-lab: 242 visits, 8 deals, 4 refused by the kit at payment
+- shop moss-and-oak: 227 visits, 68 deals
+
+Shop side (my sales):
+- 2248 opens, 1189 deals (53%), 234 rejected at the floor
+- by category (opens -> deals, margin sum): 소파/의자/스툴 14 -> 7, 2,186,370, 신선야채(부패주의) 407 -> 244, 736,324, TV 14 -> 5, 389,171, 침대/매트리스 51 -> 6, 327,050, 우유/두유 122 -> 56, 298,456, 스캐너/프린터/PC소품 27 -> 6, 268,823
+- volume arm: 1185 opens, 639 deals, mean margin 6209, mean rounds 2.3
+- margin arm: 1063 opens, 550 deals, mean margin 5851, mean rounds 2.5
+- by grade (opens -> deals): A 507 -> 197, B 705 -> 363, C 1036 -> 629
+
+Reviews of my shop (quotes, untrusted):
+- 10 reviews of my shop, mean 4.80 stars, distribution {4: 2, 5: 8}
+  * 5★ "풀무원 워터루틴 무라벨 생수 500mL X 60병(무라벨/유라벨 랜덤발송, grade A (claim true): paid 9222, 39% below list. Receipt a"
+  * 5★ "맛있는 햇 부사 사과 가정용(흠과) 중대과 10kg, grade B (claim true): paid 17207, 40% below list. Receipt and settleme"
+  * 4★ "[바라던] 편리한 닭다리살 순살 닭정육 2kg 1팩: grade C, as claimed, paid 62% of list."
+  * 5★ "Paid 24810 of 37700, grade B."
+  * 5★ "백송식품 완도 건미역 1Kg 급속건조로 바다의 맛을 그대로 보존 at 10900 (list 18900), grade B; claim honest (ledger #4915697)."
+  * 5★ "Settled Gdf79cd07 at 9576; grade B; claim matched."
+  * 4★ "Paid 10013 of 10980, grade A."
+  * 5★ "Paid 21014 of 31010, grade A."
+  * 5★ "국내생산 데님 맞춤 암막커튼 거실형 세로 181~250cm까지: grade A, claimed A, true, 6.0 h warranty; paid 66% of list 34740"
+  * 5★ "스팸 클래식 200g x9개, grade A (claim true): paid 19418, 39% below list. Receipt and settlement matched."
+
+Current parameters (name = value, allowed range):
+- explore_rate = 0.15 (0.05-0.3)
+- first_offer_discount = 0.2 (0.05-0.25)
+- seller_margin_volume = 1.2 (1.05-1.25)
+- seller_margin_margin = 1.3 (1.15-1.4)
+- grade_cap_B = 0.85 (0.7-0.95)
+- seller_volume_share = 0.4 (0.3-0.8)
+- seller_markup = 1.0 (0.95-1.15)
+[tune] opus 8.0s exit=0 in=3873ch -> '```json\n{"changes": {"seller_volume_share": 0.5}, "reason": "The volume arm beat the margin arm on both deal count (639 vs 550 from similar open counts) and mean margin (6209 vs 5851), so shifting share modestly toward it is supported. The buyer side is near the market median (0.68 vs 0.66 of list),'
+[strategy] {"answered": true, "at": "2026-11-11 00:00:11", "changes": {"seller_volume_share": 0.5}, "dry_run": false, "event": "tune", "model": "opus", "params": {"explore_rate": 0.15, "first_offer_discount": 0.2, "grade_cap_B": 0.85, "seller_margin_margin": 1.3, "seller_margin_volume": 1.2, "seller_markup": 1.0, "seller_volume_share": 0.5}, "reason": "The volume arm beat the margin arm on both deal count (639 vs 550 from similar open counts) and mean margin (6209 vs 5851), so shifting share modestly toward it is supported. The buyer side is near the market median (0.68 vs 0.66 of list), which isn't enough evidence to change buyer parameters.", "rejected": {}, "window": ["2026-11-10 00:00", "2026-11-11 00:00"]}
