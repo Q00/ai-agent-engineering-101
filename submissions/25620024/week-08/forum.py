@@ -722,25 +722,62 @@ def follow_ads(c, md, now):
         if not us or not med:
             continue
         u = us[0]
-        w = promo.theta().get("warranty_goods_h") or 0
         low = market_model.market_low(c, sku, hours=24)
-        # the lowest-price guarantee, spelled out on the hits the leading shops sell (HQ 11-04: take their buyers)
+        # 11-10 (HQ, a report from the forum): this ad said "warranty 3 h", "we match any lower ledger price" and "the
+        # difference comes off" -- not what the clerk does. The clerk (shop_r3.py) gives 6 h on clearance SKUs and
+        # otherwise 6 h only when asked; matches only down to cost x (1 + match_margin); takes a credit of at most 15%
+        # of the price, never under the floor. The ad now states those rules and the real asks per grade.
+        t_ = promo.theta()
+        clear = bool((_groupbuy_skus().get(sku) or {}).get("clearance"))
+        w0 = t_.get("warranty_goods_h") or 0
+        if u.get("kind") != "goods":
+            w_en, w_ko = "none", "없음"
+        elif clear:
+            w_en, w_ko = f"{max(w0, 6)}h on every sale", f"모든 판매에 {max(w0, 6)}시간"
+        elif t_.get("warranty_on_request", True):
+            w_en, w_ko = f"{max(w0, 6)}h if you ask for it, otherwise none", f"요청하시면 {max(w0, 6)}시간, 요청 없으면 없음"
+        else:
+            w_en, w_ko = (f"{w0}h", f"{w0}시간") if w0 else ("none", "없음")
+        mm = t_.get("match_margin", 0.05)
+        grades = {}
+        for x in us:
+            grades.setdefault(x.get("grade"), []).append(x)
+        ask_by, floor_by = {}, {}
+        for gr, xs in sorted(grades.items()):
+            cheap = min(xs, key=lambda x: x.get("cost") or 0)
+            try:
+                ask_by[gr] = promo.quote(c, cheap, stock_n=len(us))["price"]
+            except Exception:
+                continue
+            floor_by[gr] = min(ask_by[gr], int(cheap["cost"] * (1 + mm)) + 1)   # never above our own ask
+        if not ask_by:
+            continue
+        ko = (f"[최저가 보상] {u['name'][:24]} ({sku}) 보증 {w_ko}\n"
+              + "- 지금 가격: " + ", ".join(f"{g_} {p_:,}원" for g_, p_ in ask_by.items())
+              + f" (24시간 시장 중간값 {med:,.0f}원)\n"
+              + "- 'match <가격>': 다른 가게 24시간 장부가에 맞춤, 단 "
+              + ", ".join(f"{g_} {p_:,}원" for g_, p_ in floor_by.items()) + " 미만 불가\n"
+              + "- 48시간 내 우리에게서 더 비싸게 산 차액: 다음 구매에서 최대 15% 차감")
         out.append({"topic": f"follow:{sku}", "as": "shop", "refs": [], "score": 2.9,
-                    "data": {"type": "price_guarantee", "shop": NAME, "sku": sku, "name": u["name"][:30],
-                             "units": len(us), "grade": u.get("grade"), "cert": "market-signed",
-                             "warranty_h": w if u.get("kind") == "goods" else 0,
-                             "price_vs_24h_median": -round(cut, 3), "median_24h": round(med), "settles_24h": n,
-                             "ledger_low_24h": low, "match": "reply 'match <price>': a lower ledger settle is matched",
-                             "refund": "name your market buyer: the difference to a lower ledger price comes off",
+                    "data": {"type": "price_guarantee", "shop": NAME, "sku": sku,
+                             "units_by_grade": {g_: len(v) for g_, v in sorted(grades.items())},
+                             "cert": "market-signed", "warranty": w_en, "ask_from_by_grade": ask_by,
+                             "median_24h": round(med), "settles_24h": n, "ledger_low_24h": low,
+                             "match": "reply 'match <price>': another shop's 24h ledger settle, not under match_min",
+                             "match_min": floor_by,
+                             "credit": "paid us more than another shop's ledger price within 48h: the difference "
+                                       "comes off your next purchase, max 15%, not under our floor",
                              "order_with": f"I want to buy {u['name'][:20]} ({sku})"},
-                    "text": f"[최저가 보상] {u['name'][:30]} ({sku}) 재고 {len(us)}개, 등급 {u.get('grade')}, 시장 인증서"
-                            f"{f', 보증 {w}시간' if u.get('kind') == 'goods' and w else ''}\n"
-                            f"- 가격: 최근 24시간 시장 중간값 {med:,.0f}원(정산 {n}건)보다 약 {cut:.0%} 낮게\n"
-                            f"- 다른 가게가 장부에 더 싸게 판 기록이 있으면 'match <가격>'이라고 보내세요: 그 가격에 맞춰 드립니다"
-                            f"{f' (현재 장부 최저 {low:,}원)' if low else ''}\n"
-                            f"- 이미 더 비싸게 사셨다면 마켓 이름을 알려 주세요: 차액을 이번 구매에서 빼 드립니다\n"
-                            f"- 주문: 'I want to buy {u['name'][:20]} ({sku})'"})
+                    "text": ko})
     return out
+
+
+def _groupbuy_skus():
+    import promo
+    try:
+        return json.loads(promo.GROUPBUY.read_text(encoding="utf-8")).get("skus") or {}
+    except (OSError, ValueError):
+        return {}
 
 
 def agent_first(cand, style="json"):
