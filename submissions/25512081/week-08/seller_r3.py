@@ -135,7 +135,7 @@ UNDERCUT, COMP_FRESH = 0.98, 6 * 3600
 # asks, 93 under 0.15 of list and 17 more under 0.4); since Nov 4 11:00, 138 of our openings were cut toward cost.
 RIVAL_MIN = 0.4
 GRADE_RANK = {"A": 0, "B": 1, "C": 2}
-SHORT_MARKET = 0.4        # no undercutting while this share of the market's orders ends without a deal
+SHORT_MARKET = 0.5        # no undercutting while this share of the market's orders ends without a deal
 # Scarcity: when much of the market's demand goes unmet (pulse.json, the no-deal share of recent results that
 # restock.py reads off the ledger) or no other shop held the category when our buyer last saw it, buyers have
 # nowhere else to go, so we open higher. Both stay under MAX_SHARE.
