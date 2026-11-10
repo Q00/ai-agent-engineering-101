@@ -150,6 +150,13 @@ def pick_sku(category, info_by_cat, mem, median_price, explore):
     return min(pool, key=lambda x: abs(x[1]["list_price"] - (median_price or x[1]["list_price"])))[0]
 
 
+def premium_per_sku(sold):
+    """Units of one premium SKU to hold: PREMIUM_HOT_COVER_H hours of what the market sells of it (sold in the last
+    PREMIUM_HOURS), between PREMIUM_PER_SKU and PREMIUM_HOT_MAX_PER_SKU."""
+    per_h = (sold or 0) / config.PREMIUM_HOURS
+    return int(min(config.PREMIUM_HOT_MAX_PER_SKU, max(config.PREMIUM_PER_SKU, math.ceil(per_h * config.PREMIUM_HOT_COVER_H))))
+
+
 def sellable_food(u, cat, now=None):
     """False for a food unit with less than FOOD_SELLABLE_SHARE of its shelf life left (no order can take it)."""
     if u.get("kind") != "food" or not u.get("expires_at"):
@@ -281,7 +288,7 @@ def plan(inv, demand_rows, mem, now=None, dry_run=False, adjust=None):
     n_prem, prem_est = len(prem_units), prem_cost
     for sku, sold in prem_cands:
         info = cat.get(sku)
-        room = min(config.PREMIUM_PER_SKU - held.get(sku, 0), prem_max - n_prem)
+        room = min(premium_per_sku(sold) - held.get(sku, 0), prem_max - n_prem)
         if not info or not is_premium(info) or room <= 0 or len(lines) >= 10:
             continue
         ratio, _ = mem.price_ratio(sku=sku, category=info["category"])

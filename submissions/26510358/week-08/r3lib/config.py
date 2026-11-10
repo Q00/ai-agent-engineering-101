@@ -71,6 +71,9 @@ PREMIUM_MIN_SOLD = 10               # a premium SKU needs this many market sales
 PREMIUM_MIN_RATIO = 0.65           # skip a premium SKU the market buys under this share of list (0.70 until
                                     #   2026-11-09: 2108 skips in 20 h at 0.67-0.69, yet on those SKUs we sold 258 at
                                     #   0.704 of list against 0.595 cost, +11% of list; 7 units / 4.8M held of a 38M budget)
+PREMIUM_HOT_COVER_H = 0.15          # hot premium SKU: hold this many hours of the MARKET's sales of it (2026-11-10:
+PREMIUM_HOT_MAX_PER_SKU = 6         #   top shops restock 5 SKUs every window, buy ~= sell, 100-500 premium units; we
+                                    #   held 1-2 per SKU and sold 2-12/day of SKUs the market sells 500-1600/day)
 PREMIUM_PER_SKU = 2                 # premium units of one SKU on hand at most (1 until 2026-11-09)
 PREMIUM_LINES = 3                   # supply lines (10 per order) kept for premium while it has candidates (it ran last
                                     #   and 42 of 144 ticks were full of normal lines before it)
@@ -89,7 +92,8 @@ CAP_SELL_HOURS = 12
 CAP_MIN_RECEIVED = 30               # units received before a slow sell-through may shrink the cap
 CAP_MIN = 25_000_000                # not below the cap already proven to sell out, unless the balance says so
                                     # ceiling: STOCK_BUDGET_SHARE x balance (the rule since 11-04), over CAP_MIN
-PREMIUM_SHARE = 0.50                # premium budget = this share of the cap (30M of 60M as set by hand)
+PREMIUM_SHARE = 0.80                # premium budget = this share of the cap (0.50 until 2026-11-10; book counts stock
+                                    #   at cost, the round ends 11-17 and top shops hold 100-760M of stock)
 PREMIUM_UNIT_COST = 833_000         # premium units allowed = premium budget / this (30M / 36 as set by hand)
 
 # --- shop: competitor scout (r3lib/scout.py) ------------------------------------------------------

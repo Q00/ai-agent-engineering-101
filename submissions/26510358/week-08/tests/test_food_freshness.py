@@ -37,3 +37,9 @@ def test_restock_does_not_count_food_no_order_can_take():
     assert not restock_r3.sellable_food(unit(5), cat)          # 0.21 of shelf
     assert restock_r3.sellable_food(unit(7), cat)
     assert restock_r3.sellable_food({"kind": "goods"}, cat)
+
+
+def test_hot_premium_skus_get_more_units():
+    assert restock_r3.premium_per_sku(0) == 2                 # floor: PREMIUM_PER_SKU
+    assert restock_r3.premium_per_sku(12 * 25) == 4           # market 25/h -> 0.15 h of it
+    assert restock_r3.premium_per_sku(12 * 100) == 6          # capped
