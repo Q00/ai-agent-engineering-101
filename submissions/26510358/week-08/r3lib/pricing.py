@@ -7,14 +7,18 @@ from . import config
 
 
 # ------------------------------------------------------------------------------------------- shop
-def unit_floor(u, now=None, hours_left_round=None):
+def unit_floor(u, now=None, hours_left_round=None, slow=False):
     """Lowest price for one unit. Normally cost plus a margin. Lower when keeping the unit is worse than selling
     it cheap: food close to its date or near the end of the round (food past its date leaves book at its cost).
-    Goods near the end of the round go down to cost, never below: book counts unsold goods at cost."""
+    Goods near the end of the round go down to cost, never below: book counts unsold goods at cost.
+    slow: the unit's SKU is slow (is_slow_sku). Goods held SLOW_FLOOR_AGE_H or more then go down to cost minus the
+    storage they would still pay until the round ends: above that, selling now leaves more book than holding."""
     now = now or time.time()
     hl = config.hours_left_in_round(now) if hours_left_round is None else hours_left_round
     cost = u["cost"]
     floor = cost * (1 + config.MIN_MARGIN)
+    if slow and u.get("kind") == "goods" and now - (u.get("supplied_at") or now) >= config.SLOW_FLOOR_AGE_H * 3600:
+        return max(1, int(cost * (1 - config.STORAGE_PER_DAY * max(0.0, hl) / 24)))
     if u.get("kind") == "food" and u.get("expires_at"):
         left = (u["expires_at"] - now) / 3600
         shelf = u.get("shelf_hours") or 0
@@ -101,6 +105,14 @@ def cap_ask(ask, list_price, market_ratio, floor, over=None):
     return int(max(floor, min(ask, list_price * (market_ratio + over))))
 
 
+def needs_slow_floor(u, slow, grade_ratio):
+    """A unit of a slow SKU gets the lower floor only when cost + margin sits above the price it is meant to sell at
+    (same-grade market minus SLOW_UNDERCUT): B and C units with room keep their normal floor."""
+    if not slow or not grade_ratio:
+        return False
+    return u["cost"] * (1 + config.MIN_MARGIN) > u["list_price"] * (grade_ratio - config.SLOW_UNDERCUT)
+
+
 def is_slow_sku(units_on_hand, sold_24h):
     """An overstocked goods SKU whose units on hand outlast SLOW_SUPPLY_DAYS at our own sales of the last 24 h."""
     return units_on_hand > config.OVERSTOCK_SKU_UNITS and units_on_hand > config.SLOW_SUPPLY_DAYS * (sold_24h or 0)
@@ -121,12 +133,13 @@ def overstock_order(fit, grade_ratio):
     return min(fit, key=key)
 
 
-def warranty_floor(floor, u, price, warranty_hours, p_break):
+def warranty_floor(floor, u, price, warranty_hours, p_break, slow=False):
     """With a warranty the shop refunds the full price if the unit breaks, so the floor also carries that expected
     refund (p_break * price). Without this a 190k mattress sold at a 7% margin carried a 190k refund risk."""
     if not warranty_hours or u.get("kind") != "goods":
         return floor
-    return max(floor, int(u["cost"] * (1 + config.MIN_MARGIN) + p_break * price))
+    base = floor if slow else u["cost"] * (1 + config.MIN_MARGIN)   # a slow unit's floor sits under cost + margin
+    return max(floor, int(base + p_break * price))
 
 
 # ------------------------------------------------------------------------------------------- buyer

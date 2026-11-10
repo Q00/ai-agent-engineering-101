@@ -202,17 +202,18 @@ class Shop(AgentExecutor):
         ask = pricing.unit_ask(u, ratio, adj)
         if u.get("kind") == "food" and not u.get("shelf_hours"):
             u = dict(u, shelf_hours=(market.catalog().get(u["sku"]) or {}).get("shelf_hours"))
-        floor = pricing.unit_floor(u)
-        p_break = self.mem.break_rate_for(u.get("grade"), u.get("category"))
-        warranty = pricing.warranty_hours_for(u, ask, p_break)
-        ask = pricing.warranty_ask(ask, u, warranty, p_break)
-        floor = pricing.warranty_floor(floor, u, ask, warranty, p_break)
-        grade_ratio, _ = self.mem.grade_price_ratio(u["sku"], u.get("grade"))
         slow = False
         if u.get("kind") == "goods" and (u.get("sku_units") or 0) > config.OVERSTOCK_SKU_UNITS:
             slow = pricing.is_slow_sku(u["sku_units"], self.mem.my_sku_sales(u["sku"]))
+        grade_ratio, _ = self.mem.grade_price_ratio(u["sku"], u.get("grade"))
+        low = pricing.needs_slow_floor(u, slow, grade_ratio)
+        floor = pricing.unit_floor(u, slow=low)
+        p_break = self.mem.break_rate_for(u.get("grade"), u.get("category"))
+        warranty = pricing.warranty_hours_for(u, ask, p_break)
+        ask = pricing.warranty_ask(ask, u, warranty, p_break)
+        floor = pricing.warranty_floor(floor, u, ask, warranty, p_break, slow=low)
         ask = pricing.cap_ask(ask, u["list_price"], grade_ratio, floor, over=-config.SLOW_UNDERCUT if slow else None)
-        log("terms", slow=slow, sku_units=u.get("sku_units"), sku=u["sku"], grade=u.get("grade"), cost=u["cost"], list_price=u["list_price"], ask=ask,
+        log("terms", slow=slow, slow_floor=low, sku_units=u.get("sku_units"), sku=u["sku"], grade=u.get("grade"), cost=u["cost"], list_price=u["list_price"], ask=ask,
             floor=floor, market_ratio=ratio, grade_ratio=grade_ratio, evidence=n, adjust=adj, scarcity=premium, warranty=warranty,
             p_break=round(p_break, 4))
         return ask, floor, warranty

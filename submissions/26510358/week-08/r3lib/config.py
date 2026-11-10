@@ -128,6 +128,10 @@ SLOW_SUPPLY_DAYS = 2                # an overstocked SKU is slow when the units 
                                     #   own sales of the last 24 h
 SLOW_UNDERCUT = 0.03                # first ask of a slow SKU: same-grade market ratio minus this (our share of a SKU
                                     #   is ~2%, so at the market price 53 B couches would take over a week)
+SLOW_FLOOR_AGE_H = 48               # a unit of a slow SKU held this long: floor = cost x (1 - storage for the days left
+STORAGE_PER_DAY = 0.01              #   in the round), the price at which selling now equals holding to the end (/rules:
+                                    #   stock counts at cost when the round ends and pays 1% of cost a day; 67 A
+                                    #   chairs, 13.4M, had floor 0.81 of list against a 0.68 market, 2026-11-10)
 MIN_MARGIN = 0.08                   # normal floor: cost * (1 + MIN_MARGIN)
 GRADE_FACTOR = {"food": {"A": 1.0, "B": 0.95, "C": 0.82}, "goods": {"A": 1.0, "B": 0.90, "C": 0.75}}
 UNSTATED_NEED_SHARES = (0.75, 0.5, 0.25)   # food for a buyer that names no need: the soonest unit lasting this share
