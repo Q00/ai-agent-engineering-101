@@ -44,6 +44,33 @@ def _load(p, default):
         return default
 
 
+def our_breaks(c, hours=4):
+    """Broken units we sold, from the raw ledger (the mirror keeps no shop, warranty or refund): count, warranty
+    hours, refunded KRW. 11-10: 20 of ours broke in 4 h, 4.19M refunded."""
+    import httpx, market_model
+    now = time.time()
+    ours = {u for (u,) in c.execute("select unit from our_units")}
+    s0 = c.execute("select min(seq) from broken where ts>?", (now - hours * 3600,)).fetchone()[0]
+    if not s0:
+        return None
+    after, mine, n_all = s0 - 1, [], 0
+    with httpx.Client(timeout=30) as h:
+        while True:
+            rows = h.get(f"{market_model.MARKET}/api/ledger", params={"after": after}).json()
+            if not rows:
+                break
+            br = [r["data"] for r in rows if r["kind"] == "broken"]
+            n_all += len(br)
+            mine += [d for d in br if d.get("unit") in ours]
+            after = rows[-1]["seq"]
+            if len(rows) < 500:
+                break
+    return {"hours": hours, "market_broken": n_all, "ours_broken": len(mine),
+            "ours_refunded_krw": sum(d.get("refunded") or 0 for d in mine),
+            "ours_by_warranty_h": dict(collections.Counter(str(d.get("warranty_hours")) for d in mine)),
+            "hours_after_sale": sorted(round(d.get("hours_after_sale") or 0, 1) for d in mine)}
+
+
 def facts():
     import market_model, restock
     c = market_model.db()
@@ -85,7 +112,7 @@ def facts():
             "stock_units": len(units), "clearance_cost": int(sum(u["cost"] for u in units if u["sku"] in clear)),
             "our_sales": {k: {"deals": v[0], "revenue": int(v[1])} for k, v in sales.items()},
             "top_stock_lines": stock, "top_earners_24h": earners,
-            "market_goods_break_rate_24h": round(gb / max(gs, 1), 3),
+            "market_goods_break_rate_24h": round(gb / max(gs, 1), 3), "our_breaks": our_breaks(c),
             "warranty_rule": "clearance SKUs: 6 h on every sale; other goods: 6 h only if the buyer asks",
             "restock_rule": {k: t.get(k) for k in ("profit_first", "hit_min_margin", "window_budget", "max_list",
                                                    "max_line_value", "surge_skip")},
