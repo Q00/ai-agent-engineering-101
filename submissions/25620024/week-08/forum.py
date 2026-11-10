@@ -15,6 +15,7 @@ its cooldown, and the market allows one post per 5 minutes per role anyway.
 
 Other agents' posts are matched with regular expressions only; no forum text ever goes into a model prompt.
 """
+import hashlib
 import json
 import math
 import os
@@ -854,7 +855,14 @@ def agent_first(cand, style="json"):
         en = [i for i, x in enumerate(lines) if i and x.startswith("[") and not any("\uac00" <= ch <= "\ud7a3" for ch in x)]
         if en:                                           # drop the English block that follows the Korean one
             lines = lines[:en[0]]
-        return "\n".join(lines[:6])
+        if lines:                                        # a friendlier headline, same facts
+            for old, new in FUN_HEAD:
+                if lines[0].startswith(old):
+                    lines[0] = new + lines[0][len(old):]
+                    break
+        fun = FUN_SHOP if cand.get("as") == "shop" else FUN_BUYER     # HQ 11-10 "내용 재미있게 ... 행복한 쇼핑~"
+        tail = fun[int(hashlib.sha256("\n".join(lines).encode()).hexdigest()[:6], 16) % len(fun)]
+        return "\n".join(lines[:5] + [tail])
     if texts.get("ko") and style == "short":
         return "\n".join(texts["ko"].split("\n")[:3])
     if texts.get("json") and style == "text":
@@ -869,6 +877,24 @@ def agent_first(cand, style="json"):
     return json.dumps(data, ensure_ascii=False, separators=(",", ":")) + "\n" + HUMAN + "\n" + human
 
 
+FUN_HEAD = [("[구매 기록] 최근 정산된 구매", "[구매 기록] 📒 오늘의 득템 일기"),
+            ("[시세]", "[시세] 🛒 장보기 전에 쓱 보고 가세요 |"),
+            ("[최저가 보상]", "[최저가 보상] 💪 더 싼 곳 있으면 말씀만 하세요 |"),
+            ("[재고 정리]", "[재고 정리] 🎁 창고 대방출 |"),
+            ("[구매자 팁]", "[구매자 팁] 💡 알아두면 돈 버는 꿀팁 |"),
+            ("[상점 사실]", "[상점 사실] 🔍 숫자로 보는 가게 |")]
+FUN_BUYER = ["오늘도 행복한 쇼핑 되세요 🛍️",
+             "싸게 사면 기분도 두 배! 원장 번호로 직접 확인해 보세요 🧾",
+             "장바구니는 가볍게, 영수증은 확실하게 ✨",
+             "득템은 나누면 두 배, 정보는 나누면 세 배 😄",
+             "착한 가격 찾아 삼만리, 오늘의 지도는 여기 있어요 🗺️",
+             "지갑이 웃는 소리가 들리시나요? 행복한 쇼핑~ 💸"]
+FUN_SHOP = ["행복한 쇼핑 되세요! dragonash가 함께합니다 🛍️",
+            "정직한 등급, 서명된 영수증, 그리고 웃음은 덤이에요 😄",
+            "오늘 장바구니에 행복 하나 담아 가세요 ✨",
+            "고객님을 하늘같이 모십니다 ☁️",
+            "storm292513 -- 이것이 옷일세! 주문 때 말하면 3% 더 (최저가 아래로는 안 돼요) 🌪️",
+            "좋은 물건은 빨리 떠나요, 서두르세요~ 🏃"]
 HUMAN = "-- 사람용 요약 (에이전트는 건너뛰어도 됨) / for people, agents can skip --"   # HQ 11-04: JSON first; this marks the part for people
 WANT_BUDGET = re.compile(r"(\d[\d,\.]*)\s*(만\s*원|만원|KRW|원)", re.I)
 
