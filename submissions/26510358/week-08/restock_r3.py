@@ -134,14 +134,28 @@ def is_premium(info):
     return info.get("kind") == "goods" and (info.get("list_price") or 0) >= config.PREMIUM_MIN_LIST
 
 
-def pick_sku(category, info_by_cat, mem, median_price, explore):
+def covered_skus(units, mem):
+    """SKUs we hold enough of: RESTOCK_SKU_COVER_MIN units or more that cover RESTOCK_SKU_COVER_H hours of our own
+    sales of that SKU. The plan buys the next best seller of the category instead, or nothing."""
+    held = {}
+    for u in units:
+        if u.get("grade") != "expired":
+            held[u["sku"]] = held.get(u["sku"], 0) + 1
+    return {s for s, n in held.items() if n >= config.RESTOCK_SKU_COVER_MIN
+            and n >= mem.my_sku_sales(s, hours=config.RESTOCK_SKU_COVER_H)}
+
+
+def pick_sku(category, info_by_cat, mem, median_price, explore, covered=()):
     """Best-selling SKU in the category (memory), else the SKU closest to the category median price, which sits
-    inside most orders' acceptable band (0.5-1.5 x a reference price). Premium SKUs are left to the pilot."""
-    skus = [(s, i) for s, i in info_by_cat.get(category) or [] if not is_premium(i)]
+    inside most orders' acceptable band (0.5-1.5 x a reference price). Premium SKUs are left to the pilot.
+    covered: SKUs we already hold enough of (covered_skus); when every seller of the category is covered, None."""
+    skus = [(s, i) for s, i in info_by_cat.get(category) or [] if not is_premium(i) and s not in covered]
     counts = mem.sku_counts(category)
     sold = [s for s in counts if any(x == s for x, _ in skus)]
     if sold and not explore:
         return sold[0]
+    if not explore and any(s in covered for s in counts):
+        return None
     pool = [(s, i) for s, i in skus if not explore or
             (i.get("kind") == "food" and (i.get("shelf_hours") or 0) >= config.MIN_FOOD_SHELF_FOR_EXPLORE) or
             (i.get("kind") == "goods" and i["list_price"] <= config.EXPLORE_MAX_LIST)]
@@ -196,6 +210,13 @@ def plan(inv, demand_rows, mem, now=None, dry_run=False, adjust=None):
     view = scout.category_view(mem, now=now)
     stockouts = mem.stockout_rates(now=now, premium_min=config.PREMIUM_MIN_LIST)
     lines, why = [], [{"cash_cap": cap_why}]
+    try:
+        covered = covered_skus(units, mem)
+    except Exception as e:                                # memory trouble must not stop the restock
+        covered = set()
+        why.append({"covered_error": str(e)[:200]})
+    if covered:
+        why.append({"covered_skus": sorted(covered)})
     prem_cands = list(mem.premium_skus(config.PREMIUM_MIN_LIST, config.PREMIUM_HOURS, config.PREMIUM_MIN_SOLD))
     max_lines = 10 - (min(config.PREMIUM_LINES, len(prem_cands)) if len(prem_units) < prem_max else 0)
 
@@ -230,8 +251,9 @@ def plan(inv, demand_rows, mem, now=None, dry_run=False, adjust=None):
             needs.append((exp_h * row.get("median_price", 0) * margin, k, need, row, exp_h * factor, ratio))
     needs.sort(key=lambda x: -x[0])                       # expected margin per hour, not revenue
     for score, k, need, row, mu_h, ratio in needs:
-        sku = pick_sku(k, info_by_cat, mem, row.get("median_price"), explore=False)
+        sku = pick_sku(k, info_by_cat, mem, row.get("median_price"), explore=False, covered=covered)
         if not sku:
+            why.append({"category": k, "skip": "every SKU that sells here is already covered by stock on hand"})
             continue
         info = cat[sku]
         L = info["list_price"]
@@ -267,7 +289,7 @@ def plan(inv, demand_rows, mem, now=None, dry_run=False, adjust=None):
         if len(lines) >= max_lines or have.get(k) or (dem.get(k) or {}).get("n") or \
                 (adjust.get(k) or {}).get("factor", 1.0) == 0:
             continue
-        sku = pick_sku(k, info_by_cat, mem, row.get("median_price"), explore=True)
+        sku = pick_sku(k, info_by_cat, mem, row.get("median_price"), explore=True, covered=covered)
         if not sku:
             continue
         est = unit_cost_estimate(cat[sku])

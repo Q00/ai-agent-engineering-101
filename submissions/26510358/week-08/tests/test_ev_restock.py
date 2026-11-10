@@ -24,6 +24,7 @@ def test_ev_quantity_stops_when_the_next_unit_loses():
 
 def test_category_cap_blocks_concentration(tmp_path, monkeypatch):
     import restock_r3
+    monkeypatch.setattr(config, "RESTOCK_SKU_COVER_MIN", 10 ** 6)   # the cap alone: these units have no own sales
     m = mem(tmp_path, monkeypatch)
     now = time.time()
     m._ingest([settle(i, "G1", 85000, now - i * 120) for i in range(1, 40)])          # chairs sell fast
@@ -52,6 +53,7 @@ def test_stock_budget_follows_balance():
 
 def test_deep_category_gets_a_larger_cap(tmp_path, monkeypatch):
     import restock_r3
+    monkeypatch.setattr(config, "RESTOCK_SKU_COVER_MIN", 10 ** 6)   # the cap alone: these units have no own sales
     m = mem(tmp_path, monkeypatch)
     now = time.time()
     m._ingest([settle(i, "G1", 85000, now - i * 10) for i in range(1, 400)])
@@ -63,3 +65,22 @@ def test_deep_category_gets_a_larger_cap(tmp_path, monkeypatch):
     assert state["stock_budget"] == 6_000_000
     assert lines and lines[0]["sku"] == "G1"                                          # 780k < 35% of 6M = 2.1M
     assert any(w.get("deep") for w in why)
+
+
+def test_no_more_of_a_sku_that_stock_on_hand_already_covers(tmp_path, monkeypatch):
+    """2026-11-10: need was counted per category, so the couch was bought 274x in 72 h against 190 sold (93 held)."""
+    import restock_r3
+    m = mem(tmp_path, monkeypatch)
+    now = time.time()
+    with m.db() as c:
+        c.execute("INSERT INTO shops (shop_url, name, mine, ts) VALUES ('https://ours', 'myeonggi', 1, ?)", (now,))
+    m._ingest([settle(i, "G1", 85000, now - i * 120) for i in range(1, 40)]            # the market buys G1 fast
+              + [settle(100 + i, "G1", 85000, now - i * 600, shop="https://ours") for i in range(3)])   # we sold 3
+    demand = [{"category": CAT["G1"]["category"], "item": "의자", "kind": "goods", "skus": 1, "median_price": 100000}]
+    held = lambda n: [{"unit": f"u{i}", "category": CAT["G1"]["category"], "cost": 60000, "sku": "G1"} for i in range(n)]
+    assert restock_r3.covered_skus(held(4), m) == set()             # under RESTOCK_SKU_COVER_MIN
+    assert restock_r3.covered_skus(held(5), m) == {"G1"}            # 5 held >= 3 sold in 24 h
+    lines, why, _ = restock_r3.plan({"balance": 50_000_000, "units": held(5)}, demand, m, now=now)
+    assert lines == [] and "covered" in why[-1]["skip"]
+    lines, _, _ = restock_r3.plan({"balance": 50_000_000, "units": held(2)}, demand, m, now=now)
+    assert lines and lines[0]["sku"] == "G1"

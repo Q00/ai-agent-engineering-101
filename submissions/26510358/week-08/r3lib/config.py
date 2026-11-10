@@ -41,6 +41,9 @@ STOCKOUT_HOURS = 6                  # requests our shop turned away for lack of 
 STOP_BUYING_HOURS = 72              # no restock in the last 72 h of the round
 CLEARANCE_HOURS = 36                # in the last 36 h, food floors fall toward salvage; goods floors fall to cost
 DEMAND_HALF_LIFE_H = 8              # recent settles weigh more
+RESTOCK_SKU_COVER_H = 24            # no more of a SKU while the units on hand cover this many hours of our own sales
+RESTOCK_SKU_COVER_MIN = 5           #   of it, from this many units up (2026-11-10: need was counted per category only,
+                                    #   so the couch was bought 274x in 72 h against 190 sold, 93 on hand)
 HORIZON_H = 12                      # stock for the sales we expect in the next 12 h
 FOOD_DUMP_SHARE = 0.30             # food floor drops to 0.3 x cost under this share of its shelf life left
 FOOD_MARKDOWN_SHARE = 0.50         #   and to 0.8 x cost under this one (orders need 0.25/0.5/0.75 of shelf)
