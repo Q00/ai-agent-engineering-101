@@ -137,6 +137,38 @@ def shop_reach(now=None, probe=None):
     return ("warn", f"no buyer at the seller for {mins} min, though {url} answers")
 
 
+REVIVE_GAP_S = 900
+
+
+def _ps(cmd):
+    import subprocess
+    r = subprocess.run(["powershell", "-NoProfile", "-Command", cmd], capture_output=True, text=True, timeout=60)
+    return r.stdout.strip()
+
+
+def revive_kit(now, st):
+    """Start the kit again when its log is stale and no kit process is alive (11/9 14:32 the kit exited without a
+    word and stayed down 24 h: the alerts were not sent - no Telegram chat set - and nothing restarted it).
+    A kit that is alive but silent is left to the alert (never two kits at once). At most once per REVIVE_GAP_S."""
+    import os
+    import subprocess
+    if os.name != "nt" or now - st.get("revived", 0) < REVIVE_GAP_S:
+        return None
+    alive = _ps("@(Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match 'market_kit\\.py' }).Count")
+    if alive not in ("0", ""):
+        return None
+    # the old kit's seller and tunnel outlive it and serve nobody
+    _ps("Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match 'seller\\.py|market_buyer|cloudflared' }"
+        " | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }")
+    st["revived"] = now
+    env = dict(os.environ, PYLAUNCHER_NO_SEARCH_PATH="1")
+    subprocess.Popen(["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-WindowStyle", "Hidden", "-File",
+                      str(paths.root() / "ops" / "inner.ps1")], env=env, stdin=subprocess.DEVNULL,
+                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                     creationflags=subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.DETACHED_PROCESS)
+    return ("now", "the kit was not running: started ops/inner.ps1 again")
+
+
 def health(now=None, rules_changed=False):
     """ops.health: findings with their level; alerts once per finding and hour; emergency actions when due."""
     now = now or time.time()
@@ -159,6 +191,13 @@ def health(now=None, rules_changed=False):
         if u["share"] is not None and u["share"] >= 0.8:
             found.append(("warn", f"model seat {seat}: {u['calls']} calls in 1 h, {u['share']:.0%} of the budget"))
     st = atomic.read_json(_state_path(), default=None) or {}
+    if kit.exists() and now - kit.stat().st_mtime > STALE_S:
+        try:
+            revived = revive_kit(now, st)
+            if revived:
+                found.append(revived)
+        except Exception as e:
+            found.append(("now", f"kit restart failed: {type(e).__name__}: {e}"[:200]))
     sent = st.setdefault("alerted", {})
     for level, f in found:
         key = f.split(":")[0][:40]
