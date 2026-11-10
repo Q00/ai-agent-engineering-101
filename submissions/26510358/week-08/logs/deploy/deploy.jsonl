@@ -1,0 +1,11 @@
+{"ts": 1794292212.0, "at": "11-10 15:30:11", "event": "pushed_server_commits_dry", "head": "3f7d6158", "hub": "5e128b10"}
+{"ts": 1794292215.3, "at": "11-10 15:30:15", "event": "pushed_server_commits", "head": "3f7d6158", "hub": "5e128b10"}
+{"ts": 1794292329.6, "at": "11-10 15:32:09", "event": "new_commits", "head": "3f7d6158", "hub": "1e9aee9b", "n": 1, "commits": ["1e9aee9 log: deploy loop test from a separate hub clone (logs only, no restart expected)"], "restart": false}
+{"ts": 1794292356.3, "at": "11-10 15:32:36", "event": "tests", "hub": "1e9aee9b", "ok": true, "out": "569 passed, 1 warning, 265 subtests passed in 26.12s"}
+{"ts": 1794292374.9, "at": "11-10 15:32:54", "event": "fast_forwarded", "head": "1e9aee9b"}
+{"ts": 1794292411.7, "at": "11-10 15:33:31", "event": "pushed_server_commits", "head": "aca47955", "hub": "1e9aee9b"}
+{"ts": 1794292509.6, "at": "11-10 15:35:09", "event": "new_commits", "head": "aca47955", "hub": "c2e27ebb", "n": 1, "commits": ["c2e27eb test: deliberately failing canary to check that the deploy gate refuses a commit whose tests fail (reverted next)"], "restart": true}
+{"ts": 1794292539.8, "at": "11-10 15:35:39", "event": "tests", "hub": "c2e27ebb", "ok": false, "out": "E       AssertionError: deliberately failing: ops/deploy_pull.py must refuse this commit\ntests/test_deploy_gate_canary.py:2: AssertionError\nFAILED tests/test_deploy_gate_canary.py::test_deploy_gate_canary - AssertionE...\n1 failed, 569 passed, 1 warning, 265 subtests passed in 29.37s"}
+{"ts": 1794292689.6, "at": "11-10 15:38:09", "event": "new_commits", "head": "aca47955", "hub": "3bedc459", "n": 2, "commits": ["3bedc45 revert: failing deploy canary c2e27eb (the gate refused it: tests failed, server stayed at aca4795)", "c2e27eb test: deliberately failing canary to check that the deploy gate refuses a commit whose tests fail (reverted next)"], "restart": false}
+{"ts": 1794292717.0, "at": "11-10 15:38:37", "event": "tests", "hub": "3bedc459", "ok": true, "out": "569 passed, 1 warning, 265 subtests passed in 26.79s"}
+{"ts": 1794292735.2, "at": "11-10 15:38:55", "event": "fast_forwarded", "head": "3bedc459"}

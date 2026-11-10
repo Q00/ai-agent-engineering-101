@@ -138,7 +138,9 @@ def restart_and_check(before):
 
 
 def needs_restart(paths):
-    return any(p.startswith(REL) and not p.startswith(REL + "logs/") and not p.endswith(".md") for p in paths)
+    """Only code the service loads needs a restart: logs/, tests/ and *.md do not."""
+    return any(p.startswith(REL) and not p.startswith((REL + "logs/", REL + "tests/")) and not p.endswith(".md")
+               for p in paths)
 
 
 def main(dry):
