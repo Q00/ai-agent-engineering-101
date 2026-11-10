@@ -111,8 +111,8 @@ def trades(since, until=None):
             continue
         lp = (cat.get(t.get("item")) or {}).get("list_price")
         saved = 1 - t["price"] / lp if t.get("outcome") == "deal" and t.get("price") and lp else None
-        if saved is not None and t.get("broken"):          # the score: a break is -1, or +1 when refunded
-            saved = 1.0 if (t.get("warranty") or 0) >= 6 else -1.0
+        if saved is not None and t.get("broken"):          # the score: a break is -1, or 0 when refunded (agent.md; +1 before 11-10 was wrong)
+            saved = 0.0 if (t.get("warranty") or 0) >= 6 else -1.0
         out.append(dict(t, list=lp, saved=saved))
     return out
 
@@ -177,7 +177,7 @@ def throughput(r6):
 
 def market_value(r6):
     """buyer_value.py's table: per kind the market mean and the 12 shops whose deals add most to the saved rate
-    (all buyers, 6 h, breaks -1/+1), with how many of our last-6 h deals went to each."""
+    (all buyers, 6 h, breaks -1, refunded 0), with how many of our last-6 h deals went to each."""
     try:
         from buyer_value import table
         st = table()
@@ -241,7 +241,7 @@ def evidence(mem, b, auto, params):
 def saved_mix(r6):
     """User 11-09: 'keep catching this and keep saved high; that is what the agent is for.' Saved per deal split
     into food and goods for us, the market and every buyer with 100+ settles in the 6 h market window (breaks -1,
-    refunded +1), the market's per-deal saved by hour (is everyone getting cheaper?), and our orders by kind with
+    refunded 0), the market's per-deal saved by hour (is everyone getting cheaper?), and our orders by kind with
     how they ended (why is our food share what it is?). On 11-09 our .371 = food 49% at .413 + goods 51% at .329,
     while the buyers just above ran .38-.41: half of the gap was the mix, half the goods price."""
     try:
@@ -355,7 +355,7 @@ the market's realized saved per deal there (evidence "market_value_6h") + conv_w
 for classmates above us, skips the order if the best is under skip_below, caps at min(category cap or value_share,
 shop median price/list + cap_margin) x list, takes any ask <= quick_accept x list at once, else haggles (haiku), and
 re-offers a floor the shop names. Goods: A/B, or any grade with a 6 h+ warranty. Food: must last its hours +
-food_extra_hours. Evidence "now"/"by_*" count saved as the score does (a break -1, a refunded one +1).
+food_extra_hours. Evidence "now"/"by_*" count saved as the score does (a break -1, a refunded one 0).
 
 Knobs (only these): global "value_share" (0.65-0.85), "quick_accept" (0.55-0.75), "food_extra_hours" (1-12),
 "skip_below" (0.15-0.33), "skip_below_food" (0.05-0.33) and "skip_below_goods" (0.15-0.4) (per-kind bars that

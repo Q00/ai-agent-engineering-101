@@ -5,7 +5,7 @@
     e = expected(t, shop_name, kind, category)   # {"saved": .., "n": .., "p50": .., "p25": .., "warranty": ..}
 
 Since patch 3.4 the buyer's main score (0.5) is the saved rate: per deal (list - price + refund) / list, a deal
-that served nothing -1 (a warranty refund makes a broken deal count +1), averaged over deals + 100. What one deal
+that served nothing -1, or 0 if refunded (agent.md; we counted a refund as +1 until 11-10), averaged over deals + 100. What one deal
 adds therefore depends mostly on WHERE we buy: on 11-06 (2 h of ledger, 5456 deals) food sold at 0.62-0.65 of list
 at Kiro729, olstjr, 11im, jiseokkk and at 0.70-0.77 at psyoung82, where we bought most; goods at 0.70 at
 sergiobuilds/Kiro729/seochanit and 0.85-0.88 at nocha12/myeonggi. Our own haggling matched other buyers' at the
@@ -143,7 +143,9 @@ def refresh(st):
 
 def _saved(r, broken):
     if r["unit"] in broken:
-        return 1.0 if broken[r["unit"]] else -1.0
+        # 11-10: agent.md 'a deal that served nothing counts -1, or 0 if refunded'; we had +1 for a refund, which
+        # made warranted C goods look like the best leg (.56) when they score ~.35 and broke 12% of our deals
+        return 0.0 if broken[r["unit"]] else -1.0
     return 1 - r["x"]
 
 
