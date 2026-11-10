@@ -258,7 +258,11 @@ def find_unit(text, taken=()):
                 if not ok:
                     log(f"[quality] no matching food lasts the {'requested' if said is not None else 'usual'} need")
                     return None
-                return min(ok, key=lambda u: (GRADE_RANK.get(u["grade"], 3), u["expires_at"] or math.inf))
+                # a unit whose floor is over what the market pays for the SKU goes behind the others: food A cost
+                # 0.66 of list, B 0.52, C 0.37, buyers paid about 0.62, so leading with A ended most talks without a
+                # deal (Nov 10 05:07-20:30: food deals 58/h to 10/h; 20:00-20:28, 11 deals in 199 talks)
+                above = lambda u: (mk := market_price(u)) is not None and u["cost"] * (1 + FLOOR_MARGIN) > mk
+                return min(ok, key=lambda u: (above(u), GRADE_RANK.get(u["grade"], 3), u["expires_at"] or math.inf))
             # a unit whose floor (cost x 1.05) is over the most it may open at (max_share) can only sell above the
             # market, so it goes behind the others (Nov 5 10:27-12:17: 4 surge-cost grade A Zinus Q mattresses
             # G1515d951, cost 380-464k, opened at list 423810 vs a market median 0.825; 15 deals, 3 settled, while 11
