@@ -36,6 +36,16 @@ EXPLORE_SHARE = 0.25                # share of MAX_STOCK_COST for coverage of ca
 EXPLORE_MAX_LIST = 60_000           # coverage buys only SKUs at or below this list price
 RESTOCK_LEAD_S = 60                 # emit a buy list only when supply is open or opens within this (2026-11-04:
                                     #   505 supply calls refused with 429 vs 634 bought; the kit skips a line after 90 s)
+STALE_MISS_WEIGHT = 0.25            # a request turned away while we held food of it that would not last the buyer's
+                                    #   need counts this much as missed demand: only grade A of a new lot (25%, 80%+
+                                    #   of shelf) serves a 0.75-shelf order. 2026-11-10: fresh fruit showed 4.7
+                                    #   stockouts/h with 31 units on hand, which sized more fruit; fruit, vegetables
+                                    #   and shellfish supplied 30-72 h before sold 81/62/65% and expired 19/31/35%
+OUTCOME_MIN_AGE_H = 12              # the units supplied to us between 72 and 12 h ago, traced on the ledger
+OUTCOME_MAX_AGE_H = 72
+OUTCOME_MIN_UNITS = 30              # sold + expired units before a category is judged
+OUTCOME_CUT = 0.5                   # a category whose supplied units lowered Shop ALL (score model): half the target
+OUTCOME_STOP_EXPIRED = 0.30         #   and none while this share of what we spent on it expired
 STOCKOUT_HOURS = 6                  # requests our shop turned away for lack of stock, counted over this window,
                                     #   are demand addressed to us: added to the category's expected sales per hour
 STOP_BUYING_HOURS = 72              # no restock in the last 72 h of the round

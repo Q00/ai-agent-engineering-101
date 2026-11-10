@@ -242,13 +242,18 @@ class Shop(AgentExecutor):
 
         if d is None:
             taken = {x["unit"]["unit"] for x in self.open.values() if x["unit"].get("unit")}
-            u, _ = find_unit(text, taken, self.mem.grade_price_ratio)
+            u, inv = find_unit(text, taken, self.mem.grade_price_ratio)
             if u is None:
-                log("no_stock", request=text[:120])
                 try:
                     k, sku = requested_category(text)
+                    # Food of it on the shelf that would not last the buyer's need is a stale miss, not an empty
+                    # shelf: the restock plan weighs it at STALE_MISS_WEIGHT.
+                    stale = bool(k) and any(x.get("kind") == "food" and x.get("grade") != "expired"
+                                            and (x["sku"] == sku if sku else x.get("category") == k)
+                                            for x in (inv or {}).get("units") or [])
+                    log("no_stock", request=text[:120], stale=stale)
                     if k:
-                        self.mem.record_stockout(k, sku)
+                        self.mem.record_stockout(k, sku, stale=stale)
                 except Exception as e:                # memory trouble must not lose a sale
                     log("memory_error", error=str(e)[:200])
                 await up.reject(say("Sorry, none of that in stock."))

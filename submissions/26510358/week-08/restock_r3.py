@@ -28,7 +28,7 @@ from pathlib import Path
 
 from cryptography.hazmat.primitives import serialization
 
-from r3lib import cashflow, config, market, pricing, scout
+from r3lib import cashflow, config, market, pricing, score_model, scout
 from r3lib.memory import Memory
 from r3lib.org import client
 
@@ -145,6 +145,20 @@ def covered_skus(units, mem):
             and n >= mem.my_sku_sales(s, hours=config.RESTOCK_SKU_COVER_H)}
 
 
+def outcome_factor(o, board=None):
+    """Scaling of a category's target from what became of the units we were supplied (Memory.category_outcomes):
+    1.0 while they raised Shop ALL (score model: book moved by revenue - spend, revenue by revenue), OUTCOME_CUT
+    when they lowered it, 0 when in addition OUTCOME_STOP_EXPIRED of the spend expired. Without a board the sign of
+    revenue - spend decides. Too few resolved units: 1.0."""
+    if not o or (o.get("sold", 0) + o.get("expired", 0)) < config.OUTCOME_MIN_UNITS or not o.get("spend"):
+        return 1.0
+    d_book = o["revenue"] - o["spend"]
+    gain = score_model.delta(board, {"kind": "raw", "d_book": d_book, "d_revenue": o["revenue"]})[0] if board else d_book
+    if gain >= 0:
+        return 1.0
+    return 0.0 if o["expired_cost"] / o["spend"] >= config.OUTCOME_STOP_EXPIRED else config.OUTCOME_CUT
+
+
 def pick_sku(category, info_by_cat, mem, median_price, explore, covered=()):
     """Best-selling SKU in the category (memory), else the SKU closest to the category median price, which sits
     inside most orders' acceptable band (0.5-1.5 x a reference price). Premium SKUs are left to the pilot.
@@ -217,6 +231,13 @@ def plan(inv, demand_rows, mem, now=None, dry_run=False, adjust=None):
         why.append({"covered_error": str(e)[:200]})
     if covered:
         why.append({"covered_skus": sorted(covered)})
+    try:
+        outcomes, board = mem.category_outcomes(now=now), score_model.load()
+    except Exception as e:                                # the ledger trace must not stop the restock
+        outcomes, board = {}, None
+        why.append({"outcome_error": str(e)[:200]})
+    cut = {k: outcome_factor(o, board) for k, o in outcomes.items()}
+    cut = {k: f for k, f in cut.items() if f != 1.0}
     prem_cands = list(mem.premium_skus(config.PREMIUM_MIN_LIST, config.PREMIUM_HOURS, config.PREMIUM_MIN_SOLD))
     max_lines = 10 - (min(config.PREMIUM_LINES, len(prem_cands)) if len(prem_units) < prem_max else 0)
 
@@ -232,7 +253,11 @@ def plan(inv, demand_rows, mem, now=None, dry_run=False, adjust=None):
         share = scout.share_estimate(1 / (1 + (d.get("shops") or 0)), view.get(k))
         gap = scout.gap_factor(view.get(k))
         exp_h = rate * share * gap + missed
-        factor = (adjust.get(k) or {}).get("factor", 1.0)
+        factor = (adjust.get(k) or {}).get("factor", 1.0) * cut.get(k, 1.0)
+        if k in cut:
+            o = outcomes[k]
+            why.append({"category": k, "outcome_factor": cut[k], "sold": o["sold"], "expired": o["expired"],
+                        "spend": o["spend"], "revenue": o["revenue"], "expired_cost": o["expired_cost"]})
         target = math.ceil(exp_h * config.HORIZON_H * factor)
         shelf = [i.get("shelf_hours") for _, i in info_by_cat.get(k, []) if i.get("shelf_hours")]
         if row.get("kind") == "food" and shelf and min(shelf) < 720:
@@ -287,7 +312,7 @@ def plan(inv, demand_rows, mem, now=None, dry_run=False, adjust=None):
     for row in sorted(demand_rows, key=lambda r: -r.get("skus", 0)):
         k = row["category"]
         if len(lines) >= max_lines or have.get(k) or (dem.get(k) or {}).get("n") or \
-                (adjust.get(k) or {}).get("factor", 1.0) == 0:
+                (adjust.get(k) or {}).get("factor", 1.0) == 0 or cut.get(k) == 0:
             continue
         sku = pick_sku(k, info_by_cat, mem, row.get("median_price"), explore=True, covered=covered)
         if not sku:

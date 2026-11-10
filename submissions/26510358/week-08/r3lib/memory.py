@@ -61,7 +61,8 @@ BREAK_CELL_N = 200      # weight of the level above, in sales: the same day's da
                         #   and shops between 10% and 15% on grade B, so a cell needs hundreds of sales to move
 MIGRATIONS = (("forum", "ALTER TABLE forum ADD COLUMN likes INTEGER DEFAULT 0"),
               ("forum", "ALTER TABLE forum ADD COLUMN dislikes INTEGER DEFAULT 0"),
-              ("negotiations", "ALTER TABLE negotiations ADD COLUMN style TEXT"))
+              ("negotiations", "ALTER TABLE negotiations ADD COLUMN style TEXT"),
+              ("stockouts", "ALTER TABLE stockouts ADD COLUMN stale INTEGER DEFAULT 0"))
 
 
 class Memory:
@@ -320,9 +321,11 @@ class Memory:
         n = {g: 50 * SUPPLY_MIX[g] + ((t["shop"].get(f"{g}|{shop}") or (0, 0))[0] if shop else 0) for g in SUPPLY_MIX}
         return sum(n[g] * self.p_break(g, category, shop, t) for g in n) / sum(n.values())
 
-    def record_stockout(self, category, sku=None):
+    def record_stockout(self, category, sku=None, stale=False):
+        """stale: we held food of it, but no unit lasted what the buyer needed."""
         with self.db() as c:
-            c.execute("INSERT INTO stockouts (ts, category, sku) VALUES (?,?,?)", (time.time(), category, sku))
+            c.execute("INSERT INTO stockouts (ts, category, sku, stale) VALUES (?,?,?,?)",
+                      (time.time(), category, sku, int(bool(stale))))
 
     def stockout_rates(self, hours=None, now=None, premium_min=None):
         """category -> requests per hour our shop turned away for lack of stock. premium_min: leave out requests
@@ -332,12 +335,71 @@ class Memory:
         cat = market.catalog() if premium_min else {}
         out = {}
         with self.db() as c:
-            for r in c.execute("SELECT category, sku FROM stockouts WHERE ts>? AND category IS NOT NULL",
+            for r in c.execute("SELECT category, sku, stale FROM stockouts WHERE ts>? AND category IS NOT NULL",
                                (now - hours * 3600,)):
                 info = cat.get(r["sku"]) or {}
                 if premium_min and info.get("kind") == "goods" and (info.get("list_price") or 0) >= premium_min:
                     continue
-                out[r["category"]] = out.get(r["category"], 0) + 1 / hours
+                # A stale miss is not a missing unit: only the freshest part of a new lot could have served it.
+                w = config.STALE_MISS_WEIGHT if r["stale"] else 1.0
+                out[r["category"]] = out.get(r["category"], 0) + w / hours
+        return out
+
+    def _seq_at(self, c, ts):
+        """First ledger seq at or after ts (seq and ts rise together; the ledger has no index on ts)."""
+        lo = (c.execute("SELECT MIN(seq) m FROM ledger").fetchone()["m"] or 0)
+        hi = (c.execute("SELECT MAX(seq) m FROM ledger").fetchone()["m"] or 0) + 1
+        while lo < hi:
+            mid = (lo + hi) // 2
+            r = c.execute("SELECT ts FROM ledger WHERE seq>=? ORDER BY seq LIMIT 1", (mid,)).fetchone()
+            if r is None or r["ts"] >= ts:
+                hi = mid
+            else:
+                lo = mid + 1
+        return lo
+
+    def category_outcomes(self, now=None, min_age_h=None, max_age_h=None, max_age=1800):
+        """What became of the units the market supplied to us between max_age_h and min_age_h ago, per category,
+        traced unit by unit on the ledger (supply -> settle or expire):
+        {category: {n, sold, expired, held, spend, revenue, expired_cost}}. Kept in meta for max_age seconds."""
+        now = now or time.time()
+        min_age_h = config.OUTCOME_MIN_AGE_H if min_age_h is None else min_age_h
+        max_age_h = config.OUTCOME_MAX_AGE_H if max_age_h is None else max_age_h
+        kept = self.get("category_outcomes")
+        if kept and now - (kept.get("ts") or 0) < max_age:
+            return kept["items"]
+        cat = market.catalog()
+        names = set(config.MY_NAMES)
+        units, out = {}, {}
+        with self.db() as c:
+            names |= {r["name"] for r in c.execute("SELECT name FROM shops WHERE mine=1")}
+            for r in c.execute("SELECT kind, ts, data FROM ledger WHERE seq>=? AND kind IN ('supply','settle','expire')",
+                               (self._seq_at(c, now - max_age_h * 3600),)):
+                d = json.loads(r["data"])
+                if r["kind"] == "supply":
+                    info = cat.get(d.get("sku"))
+                    if d.get("shop") in names and info and r["ts"] <= now - min_age_h * 3600 and d.get("qty"):
+                        for u in d.get("units") or []:
+                            units[u] = [info["category"], (d.get("total") or 0) / d["qty"], "held", 0]
+                elif r["kind"] == "settle":
+                    if d.get("unit") in units:
+                        units[d["unit"]][2:] = ["sold", d.get("amount") or 0]
+                elif d.get("shop") in names:
+                    for u in d.get("units") or []:
+                        if u in units:
+                            units[u][2] = "expired"
+        for k, cost, fate, amount in units.values():
+            o = out.setdefault(k, {"n": 0, "sold": 0, "expired": 0, "held": 0, "spend": 0, "revenue": 0, "expired_cost": 0})
+            o["n"] += 1
+            o[fate] += 1
+            if fate != "held":
+                o["spend"] += cost                    # spend counts resolved units only: held ones are still stock
+            o["revenue"] += amount
+            if fate == "expired":
+                o["expired_cost"] += cost
+        for o in out.values():
+            o.update({x: round(o[x]) for x in ("spend", "revenue", "expired_cost")})
+        self.put("category_outcomes", {"ts": now, "items": out})
         return out
 
     def own_sales(self, hours=24):
