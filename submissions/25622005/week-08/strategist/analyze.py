@@ -835,7 +835,34 @@ def _seller(rows, pol=None, warranted=None):
             "warranty_sold": sum(1 for r in signs if (_num(_dict(r.get("choice")).get("warranty_hours")) or 0) > 0),
             "sign_price_list": per_list(signs, lambda r: _dict(r.get("choice")).get("price")),
             "reject_offer_list": per_list(rejects, lambda r: inp(r).get("offer")),
+            "policy_ver": dict(Counter(str(r["policy_ver"]) for r in rows if r.get("policy_ver")).most_common(3)),
+            "off_policy": sum(1 for r in rows if _off_policy(r.get("policy_ver"))),
             "warranty": _warranty(first, signs, pol, warranted)}
+
+
+def _off_policy(ver):
+    """True when a decision row's policy_ver says the process did not read SKILL.md: policy.load fell back to the
+    last good file ("<ver>+lastgood") or to DEFAULTS ("defaults")."""
+    return isinstance(ver, str) and (ver == "defaults" or ver.endswith("+lastgood"))
+
+
+def seller_alerts(b):
+    """Alerts for run.py from the brief's seller section: rows the seller decided on DEFAULTS or the last good
+    policy. The seller process validates SKILL.md with the policy.py it imported at its start, so a value
+    outside that file's RANGES (widened in a later policy.py the strategist and the hooks already run) makes
+    it fall back: on 11-11 a cap of 23M over the running seller's 20M range put it on DEFAULTS for 7 h (cap
+    500k, floor_list 0.6, first_ask_big_list 0.78, 32 keys off the live policy) while four cap raises went
+    through unnoticed."""
+    s = _dict(_dict(b).get("seller"))
+    off, vers = s.get("off_policy"), _dict(s.get("policy_ver"))
+    if not isinstance(off, int) or off <= 0:
+        return []
+    total = sum(v for v in vers.values() if isinstance(v, int)) or off
+    return [f"seller off policy: {off} of {total} seller rows in the window ran on "
+            f"{', '.join(k for k in vers if _off_policy(k)) or 'DEFAULTS'} (policy_ver {vers}): the seller process "
+            "rejected SKILL.md, so seller.* and stock.* changes do nothing for it. A value outside the RANGES of the "
+            "policy.py it loaded at its start (older than the strategist's: a widened bound needs a container "
+            "recreate) or a broken file; move the value back inside the old range or recreate the container."]
 
 
 def _warranty(first, signs, pol, warranted=None):

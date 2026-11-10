@@ -730,7 +730,25 @@ class NewSectionsTest(unittest.TestCase):
         se.pop("warranty")
         self.assertEqual(se, {"first": 4, "signed": 2, "sign_rate": 0.5, "canceled": 1, "final": 1, "rejected": 1,
                               "no_price": 1, "no_stock": 1, "llm_exception": 1, "warranty_req": 1, "warranty_sold": 1,
-                              "sign_price_list": 0.85, "reject_offer_list": 0.5})
+                              "sign_price_list": 0.85, "reject_offer_list": 0.5, "policy_ver": {}, "off_policy": 0})
+
+    def test_seller_rows_on_defaults_or_lastgood_raise_an_alert(self):
+        o = own()
+        row = lambda ver: {"kind": "quote", "choice": {"action": "quote"}, "inputs": {"list_price": 10000}, "policy_ver": ver}
+        o["decisions"]["seller"] = [row("319/89dc1777")] * 2 + [row("304/292aa3ff+lastgood")] + [row("defaults")] * 3
+        b = analyze.brief(raw(), o, None, POL, NOW)
+        self.assertEqual(b["seller"]["policy_ver"], {"defaults": 3, "319/89dc1777": 2, "304/292aa3ff+lastgood": 1})
+        self.assertEqual(b["seller"]["off_policy"], 4)
+        alerts = analyze.seller_alerts(b)
+        self.assertEqual(len(alerts), 1)
+        self.assertTrue(alerts[0].startswith("seller off policy: 4 of 6 seller rows in the window ran on defaults, "
+                                             "304/292aa3ff+lastgood (policy_ver {"), alerts[0])
+        self.assertIn("recreate", alerts[0])
+        o["decisions"]["seller"] = [row("319/89dc1777")] * 2
+        b = analyze.brief(raw(), o, None, POL, NOW)
+        self.assertEqual((b["seller"]["off_policy"], analyze.seller_alerts(b)), (0, []))
+        self.assertEqual(analyze.seller_alerts({}), [])
+        self.assertEqual(analyze.seller_alerts({"seller": {"off_policy": "3"}}), [])
 
     def test_seller_warranty_asked_offered_refused_and_the_sign_rate_by_both(self):
         o = own()

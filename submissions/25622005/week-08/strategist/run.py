@@ -255,6 +255,7 @@ def _steps(cfg, now, client, state, rec):
                           weights={"shop": mf.get("shop_weights"), "buyer": mf.get("buyer_weights")},
                           tables=tables, market=market)
     rec["me"] = brief.get("me")
+    rec["alerts"] += analyze.seller_alerts(brief)    # the seller decided on DEFAULTS or lastgood: it rejected SKILL.md
     atomic_write_json(home / "briefs" / f"{rid}.json", brief)
     state["last_brief"] = brief
     # 2b the demand analyst: a second model call that writes memory/demand_forecast.json (apply mode only)
