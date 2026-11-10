@@ -28,6 +28,7 @@ SELF = "real_yellow"                      # same owner: our own shop can never s
 BLACKLIST_PATH = HERE / "market_buyer_blacklist.json"
 DEFAULT_POLICY = {"target_ratio": 0.55,   # first offer, as a share of list price
                   "rounds": 6, "tries": 2}
+GOODS_WARRANTY_MIN_PRICE = 15000          # require a warranty on goods at or above this list price
 
 
 def load_json(path, default):
@@ -159,7 +160,6 @@ def main():
         if offers:
             cands.append(dict(s, offers=offers))
 
-    accept = {"cert": True, "min_hours_left": order["use_within_hours"]} if kind == "food" and order.get("use_within_hours") else {}
     if not cands:
         print(f"[choose] no shop stocks an acceptable SKU for {args.item} ({len(shops)} shops)")
         print(json.dumps({"shop": None, "receipt": None, "stars": 3, "review": "Nobody had it in stock."}))
@@ -219,6 +219,13 @@ def main():
                              {"deal": result["deal"], "price": result.get("price"), "offers": result.get("offers")})
     except Exception as e:
         print(f"[db] trajectory not written: {type(e).__name__}")
+
+    accept = {"cert": True, "min_hours_left": order["use_within_hours"]} if kind == "food" and order.get("use_within_hours") else {}
+    if kind != "food" and lp >= GOODS_WARRANTY_MIN_PRICE:
+        # unwarrantied goods that later broke cost 1,090,586 won total with zero refund (measured live):
+        # require a warranty on pricier goods so a break comes out of the shop's balance, not ours
+        # (agent.md: surplus = value - price + refund, so an unwarrantied break is -price)
+        accept["warranty_hours"] = 6
 
     if result["deal"]:
         ratio = result["price"] / lp if lp else 1
