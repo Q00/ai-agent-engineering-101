@@ -149,7 +149,7 @@ class Receipt(unittest.IsolatedAsyncioTestCase):
             seller = seller_r3.Seller()
             with patch.object(seller_r3, "MARKET_DIR", md), patch.object(seller_r3, "__file__", str(root / "seller_r3.py")), patch.object(seller_r3, "TaskUpdater", return_value=updater), \
                     patch.object(seller_r3, "get_message_text", side_effect=["buy G1", "200"]), patch.object(seller_r3, "decision_mode", return_value="rules"), \
-                    patch.object(seller_r3, "capped", side_effect=lambda terms, u: terms), patch.object(warranty_trial, "six_hour_settings", return_value=ON), \
+                    patch.object(seller_r3, "capped", side_effect=lambda terms, u, **kw: terms), patch.object(warranty_trial, "six_hour_settings", return_value=ON), \
                     patch.object(seller_r3, "sign", side_effect=lambda r: {**r, "sig_seller": "fixture"}) as sign, patch.object(seller_r3, "new_text_part", side_effect=lambda text: text) as text:
                 await seller.execute(context, MagicMock())
                 self.assertIn("Warranty: 6 hours.", text.call_args_list[0].args[0])

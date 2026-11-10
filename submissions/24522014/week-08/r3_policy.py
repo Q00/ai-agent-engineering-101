@@ -87,6 +87,12 @@ def selling_terms(unit, catalog=None, now=None, signals=None, runtime=None):
     multiplier = runtime["controls"]["quote_multipliers"].get(unit.get("sku"), 1)
     if unit.get("kind") == "goods" and not (stage >= 0 and floor < cost):
         quote = max(floor, min(max(floor, math.ceil(unit["list_price"])), math.ceil(quote*multiplier)))
+    # Food floor, approved by the user on 11-10 (price at least cost x 1.08), behind food_pricing_v2.floor_cost_multiple (1 to 1.5;
+    # missing or null means off): it binds on every food path, fresh, market band and expiry clearance alike, and never lowers anything.
+    multiple = config["food_pricing_v2"].get("floor_cost_multiple") if unit.get("kind") == "food" else None
+    if type(multiple) in (int, float) and math.isfinite(multiple) and 1 <= multiple <= 1.5:
+        floor = max(floor, math.ceil(cost * multiple))
+        quote = max(quote, floor)
     return {"floor": floor, "quote": quote, "discount_reason": reason,
             "strategy_version": runtime["version"], "strategy_experiment": runtime.get("experiment"),
             "discount_stage": stage + 1, "below_cost_allowed": stage >= 0 and floor < cost}

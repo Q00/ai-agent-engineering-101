@@ -154,7 +154,7 @@ class SellerFlow(unittest.IsolatedAsyncioTestCase):
             real = price_cap.capped
             with patch.object(seller_r3, "MARKET_DIR", md), patch.object(seller_r3, "__file__", str(root / "seller_r3.py")), patch.object(seller_r3, "TaskUpdater", return_value=updater), \
                     patch.object(seller_r3, "get_message_text", side_effect=["buy G1"]), patch.object(seller_r3, "decision_mode", return_value="rules"), \
-                    patch.object(seller_r3, "capped", side_effect=lambda terms, u: real(terms, u, config)), \
+                    patch.object(seller_r3, "capped", side_effect=lambda terms, u, **kw: real(terms, u, config, **kw)), \
                     patch.object(seller_r3, "sign", side_effect=lambda r: {**r, "sig_seller": "fixture"}) as sign:
                 await seller.execute(context, MagicMock())
                 ask = seller.open["t1"]["ask"]

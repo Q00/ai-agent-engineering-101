@@ -21,6 +21,7 @@ SKU = re.compile(r"^G[0-9a-f]{8}$")
 MAX_SKUS, MAX_UNITS_PER_SKU, MAX_COST = 5, 3, 400000
 WORST_COST_SHARE = .75
 REQUIRED_FEATURE = "food_floor_108_v1"
+FLOOR_MULTIPLE = 1.08
 
 
 def settings(path=None):
@@ -39,22 +40,33 @@ def settings(path=None):
     return {"skus": list(skus), "units_per_sku": units, "max_total_estimated_cost": cap}
 
 
-def ready(md):
-    """Whether the seller now running reports the cost x 1.08 food floor. It rewrites this file with its own code's list."""
+def floor_on(policy_path=None):
+    """Whether r3_policy.json sets the food floor at cost x 1.08 or more (food_pricing_v2.floor_cost_multiple)."""
+    try:
+        rule = json.loads(Path(policy_path or ROOT / "r3_policy.json").read_text(encoding="utf-8"))["selling"]["food_pricing_v2"]
+    except (OSError, ValueError, KeyError, TypeError):
+        return False
+    multiple = rule.get("floor_cost_multiple") if isinstance(rule, dict) else None
+    return type(multiple) in (int, float) and math.isfinite(multiple) and FLOOR_MULTIPLE <= multiple <= 1.5
+
+
+def ready(md, policy_path=None):
+    """Whether the seller now running reports the food floor code (it rewrites strategy-consumer.json with its own code's list) and
+    the floor is switched on at cost x 1.08 or more. Both are needed: the user's approval says no probe food sells below cost x 1.08."""
     try:
         features = json.loads((Path(md) / "strategy-consumer.json").read_text(encoding="utf-8-sig")).get("features")
     except (OSError, ValueError, AttributeError):
         return False
-    return isinstance(features, list) and REQUIRED_FEATURE in features
+    return isinstance(features, list) and REQUIRED_FEATURE in features and floor_on(policy_path)
 
 
-def for_run(md, inventory, catalog, path=None):
-    """(picks, feature still waited for). Each pick is one unit: {"sku", "estimated_cost", "probe": True}."""
+def for_run(md, inventory, catalog, path=None, policy_path=None):
+    """(picks, what is still waited for). Each pick is one unit: {"sku", "estimated_cost", "probe": True}."""
     try:
         chosen = settings(path)
         if not chosen:
             return [], None
-        if not ready(md):
+        if not ready(md, policy_path):
             return [], REQUIRED_FEATURE
         surge = {r.get("sku"): r.get("factor") for r in inventory.get("surge") or [] if isinstance(r, dict)}
         units = [u for u in inventory.get("units", []) if u.get("grade") != "expired" and u.get("sku") in chosen["skus"]]

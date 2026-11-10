@@ -53,15 +53,26 @@ class Settings(unittest.TestCase):
 
 
 class Picks(unittest.TestCase):
-    def run_for(self, inv, features=("food_floor_108_v1",), setting=GOOD):
+    def run_for(self, inv, features=("food_floor_108_v1",), setting=GOOD, multiple=1.08):
         with TemporaryDirectory() as folder:
             Path(folder, "strategy-consumer.json").write_text(json.dumps({"features": list(features)}), encoding="utf-8")
+            policy = Path(folder) / "r3_policy.json"
+            policy.write_text(json.dumps({"selling": {"food_pricing_v2": {"floor_cost_multiple": multiple}}}), encoding="utf-8")
             path = Path(folder) / "f.json"
             path.write_text(json.dumps(setting), encoding="utf-8")
-            return fp.for_run(folder, inv, catalog(), path)
+            return fp.for_run(folder, inv, catalog(), path, policy)
 
     def test_waits_for_the_seller_floor(self):
         self.assertEqual(self.run_for({"units": []}, features=("food_pricing_v2",)), ([], "food_floor_108_v1"))
+
+    def test_waits_until_the_floor_is_on_at_108_or_more(self):
+        for multiple in (None, 1.0, 1.07, "1.08", 1.6):
+            with self.subTest(multiple=multiple):
+                self.assertEqual(self.run_for({"units": []}, multiple=multiple), ([], "food_floor_108_v1"))
+        self.assertTrue(self.run_for({"units": []}, multiple=1.1)[0])
+
+    def test_the_shipped_policy_keeps_the_floor_off(self):
+        self.assertFalse(fp.floor_on())
 
     def test_three_of_each_less_what_is_held(self):
         picks, waiting = self.run_for({"units": [unit("G4a998429"), unit("G4a998429"), unit("Gdf79cd07", grade="expired")]})
