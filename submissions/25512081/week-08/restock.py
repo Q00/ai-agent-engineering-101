@@ -469,11 +469,11 @@ def main():
     # food the seller no longer ships to a buyer who does not state its need (under 0.75 of shelf_hours left, seller_r3
     # NEED_SHARE) does not count as held, so the category is bought again (Nov 10 15:48: 116 of 136 food units were
     # under it, many supplied at 0.2-0.7 of their shelf life, restock bought 0 lines and food deals fell from ~65/h to 12/h)
-    def sellable(u):
+    def ships(u):
         shelf = (catalog.get(u["sku"]) or {}).get("shelf_hours")
         return u.get("kind") != "food" or not shelf or not u.get("expires_at") \
             or (u["expires_at"] - time.time()) / 3600 >= SELL_SHARE * shelf
-    held = Counter(u["category"] for u in units if sellable(u))
+    held = Counter(u["category"] for u in units if ships(u))
     stock_cost = sum(u["cost"] for u in units)
     cash = inv.get("balance", 0) - CASH_FLOOR
     scale_caps(inv, stock_cost)
