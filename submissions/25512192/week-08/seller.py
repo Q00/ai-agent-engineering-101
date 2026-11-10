@@ -57,6 +57,7 @@ DEFAULT = {
     "max_rounds": 10,
 }
 SMALL_CATALOG = 12          # up to this many items the harness sees the whole catalog
+OPEN_TTL = 600              # a negotiation idle this long no longer holds its unit (buyers leave without CancelTask)
 
 SYSTEM = ("You are the pricing brain of a shop's sales agent. You decide which item a buyer "
           "means and how to negotiate its price. Answer with exactly one JSON object and nothing else.")
@@ -193,6 +194,9 @@ class Seller(AgentExecutor):
             await getattr(up, how)(up.new_agent_message(parts=[new_text_part(msg)]))
 
         if deal is None and stock.round3():   # Round 3: sell a unit from stock
+            now = time.time()
+            for tid in [k for k, d in self.open.items() if now - d.get("seen", now) > OPEN_TTL]:
+                self.open.pop(tid, None)      # without this, abandoned talks held every unit (11-08 to 11-10: 0 sales)
             taken = {d["item"].get("unit") for d in self.open.values()}
             u = stock.find_unit(text, taken)
             if u is None:
@@ -201,7 +205,7 @@ class Seller(AgentExecutor):
             t = stock.terms(u, policy.load(), mm.read_json(mm.STATS, None) or mm.empty(), stock.load_catalog())
             item = {"id": u["sku"], "name": u.get("name"), "reserve": t["floor"], "unit": u["unit"], "terms": t,
                     "category": u.get("category"), "grade": u.get("grade")}
-            self.open[task.id] = {"item": item, "ask": t["ask"], "opening": t["ask"], "history": []}
+            self.open[task.id] = {"item": item, "ask": t["ask"], "opening": t["ask"], "history": [], "seen": time.time()}
             log(f"[{tag}] unit {u['unit']} {u['sku']} grade {u.get('grade')} cost {t['cost']} list {t['list_price']}"
                 f" -> floor {t['floor']}, ask {t['ask']}, claim {t['claim']}, warranty {t['warranty_hours']}")
             await ask_buyer(f"In stock: {stock.describe(u, t)}. Send your offer as a number. Asking price: {t['ask']}",
@@ -230,6 +234,7 @@ class Seller(AgentExecutor):
             await ask_buyer(f"{note} Item: {item['name']}. Send your offer as a number. Asking price: {ask}", ask)
             return
 
+        deal["seen"] = time.time()
         item, reserve = deal["item"], deal["item"]["reserve"]
         offer = last_number(text)
         if offer is None:
