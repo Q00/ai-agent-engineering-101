@@ -768,6 +768,47 @@ def votes(forum, state):
     return out
 
 
+SELF_PROMO = ('"type":"shop_facts"', '"type":"price_data","source":"ledger 24h by grade')
+
+
+def self_promo_ok(state, forum, now):
+    """HQ 11-10 "바이어 순위 떨어지지 않게 조심해": the buyer's posts about our own shop stop for 24 h as soon as
+    (a) any of them draws 2+ dislikes, or more dislikes than likes after 15 min, or (b) the buyer's board forum rating
+    falls 0.005+ under where it stood before the first such post (checked every 15 min). Each stop is logged."""
+    if now < state.get("self_promo_off_until", 0):
+        return False
+    why = None
+    for p_ in forum:
+        if p_.get("author") != NAME or p_.get("role") != "buyer" or not any(k in (p_.get("text") or "") for k in SELF_PROMO):
+            continue
+        likes, dis = int(p_.get("likes") or 0), int(p_.get("dislikes") or 0)
+        if dis >= 2 or (dis > likes and now - float(p_.get("ts") or now) > 900):
+            why = f"post {p_.get('id')}: {likes} likes, {dis} dislikes"
+            break
+    if not why and now - state.get("rating_checked", 0) > 900:
+        state["rating_checked"] = now
+        try:
+            import httpx
+            b = httpx.get(f"{market_model.MARKET}/api/board", timeout=20).json()
+            r = next(x for x in b.get("buyers", []) if x.get("name") == NAME).get("forum")
+            base = state.setdefault("self_promo_base", r)
+            if r is not None and base is not None and r <= base - 0.005:
+                why = f"buyer forum rating {base} -> {r}"
+        except Exception:
+            pass
+    if why:
+        state["self_promo_off_until"] = now + 86400
+        state.pop("self_promo_base", None)
+        try:
+            with (HERE / "private" / "hq_decisions.md").open("a", encoding="utf-8") as f:
+                f.write(f"\n## {time.strftime('%Y-%m-%d %H:%M')} forum guard: buyer posts about our shop stopped for "
+                        f"24 h ({why})\n")
+        except OSError:
+            pass
+        return False
+    return True
+
+
 def tick(md=Path(".market"), c=None, now=None):
     """One pass: maybe one post per role, and votes. Returns the lines written to the outbox."""
     t, now, md = theta(), now or time.time(), Path(md)
@@ -780,9 +821,10 @@ def tick(md=Path(".market"), c=None, now=None):
         forum = []
     # a post's score is the Wilson lower bound of its votes (6 likes 0.61, 7 likes 0.646) and buyer ALL averages it:
     # posts that name other shops (honesty, breakage) risk their dislikes, so the buyer posts only checkable records
+    promo_ok = self_promo_ok(state, forum, now)
     cands = purchase_records(c, t, now, top=5) + price_index(c, t, now) + (stock_check(c, t, now) if t.get("name_shops") else []) \
         + (receipt_tips(c, t, now) if t.get("name_shops") else []) + checkout_tips(c, t, now) + replies(c, t, forum, now) \
-        + frugal_shops(c, t, now) + wanted_posts(c, t, now) + groupbuy_ads(c, t, now) + groupbuy_call(c, t, now) + clearance_facts(c, t, now) + shop_facts(c, t, now) \
+        + frugal_shops(c, t, now) + wanted_posts(c, t, now) + groupbuy_ads(c, t, now) + groupbuy_call(c, t, now) + (clearance_facts(c, t, now) + shop_facts(c, t, now) if promo_ok else []) \
         + offers(forum, md, now) \
         + opening_ads(c, md, now) + follow_ads(c, md, now)
     lines = []
