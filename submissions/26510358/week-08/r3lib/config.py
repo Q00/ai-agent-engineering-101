@@ -117,6 +117,14 @@ ASK_MAX_OVER_MARKET = 0.04          # final first ask (after scarcity, grade, wa
                                     #   curve moved. 30 h of terms->deal, list >= 300k, ask minus same-grade market:
                                     #   +0.00 close 0.34 / 35k profit per quote, +0.04 0.26 / 41k, +0.08 0.14 / 19k,
                                     #   +0.12 0.08 / 8k (last 12 h: 38k, 50k, 14k, 8k); 1,100 of 1,840 quotes sat >= +0.08
+OVERSTOCK_SKU_UNITS = 10            # goods SKU with more units than this on hand: offer the grade with the widest
+                                    #   margin over its same-grade market price first, C last (2026-11-10: best grade
+                                    #   first sold 172 A / 18 B / 0 C of 274 couches bought in 72 h; 53 B + 34 C, 20M,
+                                    #   never reached a buyer while A, the thinnest margin, was restocked)
+SLOW_SUPPLY_DAYS = 2                # an overstocked SKU is slow when the units on hand last longer than this at our
+                                    #   own sales of the last 24 h
+SLOW_UNDERCUT = 0.03                # first ask of a slow SKU: same-grade market ratio minus this (our share of a SKU
+                                    #   is ~2%, so at the market price 53 B couches would take over a week)
 MIN_MARGIN = 0.08                   # normal floor: cost * (1 + MIN_MARGIN)
 GRADE_FACTOR = {"food": {"A": 1.0, "B": 0.95, "C": 0.82}, "goods": {"A": 1.0, "B": 0.90, "C": 0.75}}
 UNSTATED_NEED_SHARES = (0.75, 0.5, 0.25)   # food for a buyer that names no need: the soonest unit lasting this share

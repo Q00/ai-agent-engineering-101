@@ -91,12 +91,34 @@ def warranty_ask(ask, u, warranty_hours, p_break):
     return int(min(u["list_price"], ask * (1 + p_break)))
 
 
-def cap_ask(ask, list_price, market_ratio, floor):
+def cap_ask(ask, list_price, market_ratio, floor, over=None):
     """Keep the first ask within ASK_MAX_OVER_MARKET of what the market pays for this SKU at this grade, after the warranty
-    price-in and scarcity premium have been added. Never below the floor; unchanged without market evidence."""
+    price-in and scarcity premium have been added. Never below the floor; unchanged without market evidence.
+    over: another distance from the market ratio, e.g. -SLOW_UNDERCUT for a slow overstocked SKU."""
     if not market_ratio or not list_price:
         return ask
-    return int(max(floor, min(ask, list_price * (market_ratio + config.ASK_MAX_OVER_MARKET))))
+    over = config.ASK_MAX_OVER_MARKET if over is None else over
+    return int(max(floor, min(ask, list_price * (market_ratio + over))))
+
+
+def is_slow_sku(units_on_hand, sold_24h):
+    """An overstocked goods SKU whose units on hand outlast SLOW_SUPPLY_DAYS at our own sales of the last 24 h."""
+    return units_on_hand > config.OVERSTOCK_SKU_UNITS and units_on_hand > config.SLOW_SUPPLY_DAYS * (sold_24h or 0)
+
+
+def overstock_order(fit, grade_ratio):
+    """Which unit of an overstocked goods SKU to offer: the one with the widest margin over its same-grade market
+    price (grade_ratio(sku, grade) -> (ratio, n)), oldest first among equals. Grade C goes last: it ships without a
+    warranty and breaks ~30%, which costs stars. A grade without market evidence goes after the known ones."""
+    ratios = {}
+
+    def key(u):
+        g = u.get("grade") or "C"
+        if g not in ratios:
+            ratios[g] = (grade_ratio(u["sku"], g) or (None, 0))[0]
+        margin = ratios[g] * u["list_price"] - u["cost"] if ratios[g] else float("-inf")
+        return (g == "C", -margin, u.get("supplied_at") or 0)
+    return min(fit, key=key)
 
 
 def warranty_floor(floor, u, price, warranty_hours, p_break):

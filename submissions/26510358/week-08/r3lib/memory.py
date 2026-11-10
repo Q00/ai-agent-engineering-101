@@ -155,6 +155,13 @@ class Memory:
         with self.db() as c:
             return {r["shop_url"] for r in c.execute("SELECT shop_url FROM shops WHERE mine=1")}
 
+    def my_sku_sales(self, sku, hours=24):
+        """Units of one SKU our own shop sold in the window (settles under any of our tunnel URLs or names)."""
+        mine = sorted(self.my_shop_urls() | set(config.MY_NAMES))
+        with self.db() as c:
+            return c.execute(f"SELECT COUNT(*) n FROM settles WHERE sku=? AND ts>? AND shop IN ({','.join('?' * len(mine))})",
+                             (sku, time.time() - hours * 3600, *mine)).fetchone()["n"]
+
     # ------------------------------------------------------------------ demand and prices (shop side)
     def category_demand(self, hours=48, half_life=config.DEMAND_HALF_LIFE_H, now=None, premium_min=None):
         """category -> {rate: decayed settles per hour, n, shops: competitors holding stock}. Market-wide.

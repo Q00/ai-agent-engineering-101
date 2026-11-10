@@ -95,9 +95,12 @@ def wanted_hours(text):
     return float(m.group(1)) if m else 0.0
 
 
-def find_unit(text, taken):
+def find_unit(text, taken, grade_ratio=None):
     """In-stock unit for what the buyer asked (SKU first, else category or name). Among fitting units, the one
-    that expires first while still lasting what the buyer asked for; goods: best grade first, then oldest."""
+    that expires first while still lasting what the buyer asked for; goods: best grade first, then oldest.
+    A goods SKU with more than OVERSTOCK_SKU_UNITS on hand offers its widest-margin grade first instead
+    (pricing.overstock_order; needs grade_ratio = Memory.grade_price_ratio). The unit comes back with sku_units,
+    the units of its SKU on hand."""
     inv = market.read_json("inventory.json", {}) or {}
     if (inv.get("round") or 0) < 3:
         want = (text or "").lower()
@@ -127,7 +130,15 @@ def find_unit(text, taken):
         # last is worth 0 to the buyer and earns 1-2 stars from accounts with few deals, which weigh a whole
         # account's mean (2026-11-10: buyer-01 3.80 / buyer-02 3.52 on "Only 35.4 h left; I needed 42.0 h").
         return None, inv
-    return min(fit, key=lambda u: ("ABC".find(u.get("grade") or "C"), u.get("supplied_at") or 0)), inv
+    best = min(fit, key=lambda u: ("ABC".find(u.get("grade") or "C"), u.get("supplied_at") or 0))
+    same = [u for u in fit if u["sku"] == best["sku"]]
+    on_hand = sum(1 for u in inv.get("units") or [] if u["sku"] == best["sku"] and u.get("grade") != "expired")
+    if grade_ratio and on_hand > config.OVERSTOCK_SKU_UNITS:
+        try:
+            best = pricing.overstock_order(same, grade_ratio)
+        except Exception as e:                        # memory trouble must not lose a sale
+            log("overstock_error", error=str(e)[:200])
+    return dict(best, sku_units=on_hand), inv
 
 
 def requested_category(text):
@@ -197,8 +208,11 @@ class Shop(AgentExecutor):
         ask = pricing.warranty_ask(ask, u, warranty, p_break)
         floor = pricing.warranty_floor(floor, u, ask, warranty, p_break)
         grade_ratio, _ = self.mem.grade_price_ratio(u["sku"], u.get("grade"))
-        ask = pricing.cap_ask(ask, u["list_price"], grade_ratio, floor)
-        log("terms", sku=u["sku"], grade=u.get("grade"), cost=u["cost"], list_price=u["list_price"], ask=ask,
+        slow = False
+        if u.get("kind") == "goods" and (u.get("sku_units") or 0) > config.OVERSTOCK_SKU_UNITS:
+            slow = pricing.is_slow_sku(u["sku_units"], self.mem.my_sku_sales(u["sku"]))
+        ask = pricing.cap_ask(ask, u["list_price"], grade_ratio, floor, over=-config.SLOW_UNDERCUT if slow else None)
+        log("terms", slow=slow, sku_units=u.get("sku_units"), sku=u["sku"], grade=u.get("grade"), cost=u["cost"], list_price=u["list_price"], ask=ask,
             floor=floor, market_ratio=ratio, grade_ratio=grade_ratio, evidence=n, adjust=adj, scarcity=premium, warranty=warranty,
             p_break=round(p_break, 4))
         return ask, floor, warranty
@@ -227,7 +241,7 @@ class Shop(AgentExecutor):
 
         if d is None:
             taken = {x["unit"]["unit"] for x in self.open.values() if x["unit"].get("unit")}
-            u, _ = find_unit(text, taken)
+            u, _ = find_unit(text, taken, self.mem.grade_price_ratio)
             if u is None:
                 log("no_stock", request=text[:120])
                 try:
