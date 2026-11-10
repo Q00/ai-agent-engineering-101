@@ -30,7 +30,7 @@ HERE = Path(__file__).parent
 STATE = HERE / "private" / "forum_state.json"
 THETA = Path(os.environ.get("SHOP_THETA", HERE / "private" / "shop_theta.json"))
 DEFAULTS = {"post_threshold": 1.0, "topic_cooldown_h": 2, "window_h": 6, "min_n": 5, "min_n_index": 30,
-            "max_posts_day": {"buyer": 288, "shop": 96},
+            "max_posts_day": {"buyer": 288, "shop": 288},
             "name_shops": False,   # 11-05: our posts draw ~0.8 likes under others' in every hour and every format since
                                    # day 1 (author-level); test: no post names other shops (receipt tips, stock checks)
             "gap_s": {"buyer": 300, "shop": 300}}   # 11-07: patch 3.4 votes are one stance per voter per AUTHOR,
@@ -878,8 +878,12 @@ def tick(md=Path(".market"), c=None, now=None):
         if best and best["score"] >= t["post_threshold"]:
             style = "json"
             share = next((x for x in fresh if x.get("kind") == "stock_check"), None)
+            facts = max((x for x in fresh if x.get("kind") == "price_data"), key=lambda x: x["score"], default=None)
             if role == "buyer" and share:                # the stock-check share goes first when it is due
                 best = share
+            elif role == "buyer" and facts and now - state.get("facts_last", 0) > 1800:
+                best = facts                             # 11-10: the clearance facts never won the format pick;
+                state["facts_last"] = now                # one goes out every 30 min (topics rotate by cooldown)
             elif role == "buyer":                        # the review team picks format and order (experiment)
                 try:
                     import review_team
