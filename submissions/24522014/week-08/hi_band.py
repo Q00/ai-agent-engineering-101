@@ -3,7 +3,8 @@
 Up to `slots` units of goods listed at `min_list_price` or more are held outside the total cap, and planned before the ordinary
 SKUs outside the run's units and lines; they pay from the same run budget at worst cost (.75 x list x surge). A place goes only to a
 SKU with at least `min_own_sales_24h` of our completed sales in the last `min_own_sales_window_hours` (24 to 72) and a positive Book sum (our price minus our real
-cost); held plus planned 1M+ stock stays within `max_worst_cost_total` (at most 12M) at worst cost; that evidence stands in for the market median, as in proposal 2, and a surged SKU keeps the median test and one unit.
+cost); held plus planned 1M+ stock stays within `max_worst_cost_total` (at most 24M) at worst cost; that evidence stands in for the market median, as in proposal 2, and a surged SKU keeps the median test and one unit.
+Bounds: slots 1 to 20 and the worst-cost cap at most 24M (raised from 10 and 12M on the user's approval); the shipped setting decides the values in use.
 Read on every restock run; anything missing, unreadable or malformed means off, which is today's plan.
 """
 
@@ -23,8 +24,8 @@ def settings(path=None):
         return None
     slots, floor, sales = value.get("slots"), value.get("min_list_price"), value.get("min_own_sales_24h")
     window, cap = value.get("min_own_sales_window_hours", 24), value.get("max_worst_cost_total")
-    if not (type(slots) is int and 1 <= slots <= 10 and type(floor) is int and floor >= 1000000 and type(sales) is int and 1 <= sales <= 10
-            and type(window) is int and 24 <= window <= 72 and type(cap) is int and 1 <= cap <= 12000000):
+    if not (type(slots) is int and 1 <= slots <= 20 and type(floor) is int and floor >= 1000000 and type(sales) is int and 1 <= sales <= 10
+            and type(window) is int and 24 <= window <= 72 and type(cap) is int and 1 <= cap <= 24000000):
         return None
     return {"slots": slots, "min_list_price": floor, "min_own_sales_24h": sales, "window_hours": window, "max_worst_cost_total": cap}
 

@@ -140,7 +140,7 @@ def plan(inventory, catalog, demand, sales, cursor=0, *, hints=None, now=None, i
         planned_units += 1
         trial_skus.append(pick["sku"])
     hi_planned, hi_taken = 0, []
-    # Held plus planned 1M+ stock at worst cost stays within the cap (12M at most).
+    # Held plus planned 1M+ stock at worst cost stays within the cap (hi_band.py bounds it at 24M at most).
     hi_worst = sum((catalog.get(u.get("sku")) or {}).get("list_price", 0) * 0.75 * surge.get(u.get("sku"), 1) for u in units if over_floor(u.get("sku"))) if band else 0
     hi_cap = band.get("max_worst_cost_total", 12000000) if band else 0
     for sku in (sorted(hb["sales"], key=lambda s: (-hb["sales"][s], s)) if hb else ()):

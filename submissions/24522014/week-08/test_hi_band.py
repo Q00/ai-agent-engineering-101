@@ -126,6 +126,35 @@ class Plan(unittest.TestCase):
         self.assertEqual({b["sku"]: b["qty"] for b in buys}.get("H"), 2)
 
 
+class WiderBounds(unittest.TestCase):
+    """Up to 20 places and a 24M worst-cost cap: the places, the per-SKU limit and the cap all still bind."""
+    PUBLIC = {"distinct_buyers": 5, "settles_6h": 9, "distinct_buyers_6h": 5}
+
+    def plan(self, list_price, cap):
+        cat = {f"H{i}": {"category": "cat", "kind": "goods", "list_price": list_price} for i in range(8)}
+        # A median under the worst cost, so the ordinary pass skips them and only the band's places buy.
+        intel = {k: dict(self.PUBLIC, median_price=int(list_price * .7)) for k in cat}
+        band = {"slots": 20, "min_list_price": 1000000, "sales": {k: 2 for k in cat}, "max_worst_cost_total": cap}
+        with patch.object(rp, "capacity_config", return_value=LIMITS):
+            return rp.plan(inventory(), cat, [{"category": "cat"}], {}, 0, intelligence=intel, runtime=RUNTIME, now=NOW, hi_band=band)
+
+    def test_twenty_places_fill_when_the_cap_has_room(self):
+        buys, why = self.plan(1000000, 24000000)
+        self.assertEqual(sum(b["qty"] for b in buys), 20)
+        self.assertTrue(all(b["qty"] <= 3 for b in buys))
+        self.assertEqual((why["hi_band"]["planned"], why["hi_band"]["worst_cost_total"]), (20, 15000000))
+
+    def test_the_24m_cap_binds_before_twenty_places(self):
+        buys, why = self.plan(2000000, 24000000)
+        self.assertEqual(sum(b["qty"] for b in buys), 16)
+        self.assertEqual(why["hi_band"]["worst_cost_total"], 24000000)
+
+    def test_a_12m_cap_still_holds_with_twenty_places(self):
+        buys, why = self.plan(2000000, 12000000)
+        self.assertEqual(sum(b["qty"] for b in buys), 8)
+        self.assertEqual(why["hi_band"]["worst_cost_total"], 12000000)
+
+
 class Settings(unittest.TestCase):
     def test_off_unless_valid(self):
         with TemporaryDirectory() as folder:
@@ -136,9 +165,14 @@ class Settings(unittest.TestCase):
             older = {k: v for k, v in good.items() if k != "min_own_sales_window_hours"}
             path.write_text(json.dumps(older), encoding="utf-8")
             self.assertEqual(hi_band.settings(path)["window_hours"], 24)
-            for bad in ({**good, "enabled": "true"}, {**good, "enabled": False}, {**good, "slots": 11}, {**good, "slots": 0}, {**good, "min_list_price": 999999},
+            # Bounds raised on the user's approval: up to 20 slots and a 24M cap; today's 10 and 12M stay valid.
+            for wider in ({**good, "slots": 20, "max_worst_cost_total": 24000000}, {**good, "slots": 11, "max_worst_cost_total": 12000001}):
+                path.write_text(json.dumps(wider), encoding="utf-8")
+                got = hi_band.settings(path)
+                self.assertEqual((got["slots"], got["max_worst_cost_total"]), (wider["slots"], wider["max_worst_cost_total"]))
+            for bad in ({**good, "enabled": "true"}, {**good, "enabled": False}, {**good, "slots": 21}, {**good, "slots": 0}, {**good, "min_list_price": 999999},
                         {**good, "min_own_sales_24h": 0}, {**good, "slots": 10.0}, {**good, "min_own_sales_window_hours": 73}, {**good, "min_own_sales_window_hours": 23},
-                        {**good, "max_worst_cost_total": 12000001}, {k: v for k, v in good.items() if k != "max_worst_cost_total"}):
+                        {**good, "max_worst_cost_total": 24000001}, {k: v for k, v in good.items() if k != "max_worst_cost_total"}):
                 path.write_text(json.dumps(bad), encoding="utf-8")
                 self.assertIsNone(hi_band.settings(path), bad)
             self.assertIsNone(hi_band.settings(Path(folder) / "missing.json"))
