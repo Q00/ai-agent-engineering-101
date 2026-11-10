@@ -52,7 +52,9 @@ COMPACT_STEPS = 6  # model calls per wake
 COMPACT_TOOLS = 3  # tool calls per step
 COMPACT_OBS = 6_000  # chars kept of one tool result
 NOTES_CHARS = 2_000
-BUSY_INTERVAL_S = 3600  # heartbeat while an experiment runs; a verdict, a rank jump or an alarm wakes at once
+# Heartbeat while an experiment runs. 1200 since 11-11 (성수님: 20분마다 시장을 보고 전략을 잡아야 함); it was 3600,
+# and with experiments always running the operator woke hourly and mostly waited.
+BUSY_INTERVAL_S = 1200
 REV_WEIGHT_MAX = 0.2
 COMPACT_SCHEMA = """한 단계에 JSON 객체 하나로만 답함. 둘 중 하나:
 1. 도구 호출 (한 번에 3개까지): {"tools": [{"tool": "<도구 이름>", "args": {<인자>}}], "keep": "<바로 앞 관찰에서 남길 결론, 300자 안>"}
