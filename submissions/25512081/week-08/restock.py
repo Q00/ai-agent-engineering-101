@@ -34,6 +34,7 @@ CASH_FLOOR = 1_500_000    # round 3's first 20 minutes: 55-60% of the market's o
 STOCK_CAP = 9_000_000     # (3M until Nov 4 13:00, 6M until 14:00; raised for big-ticket stock, see VALUE_BUDGET) shops' supply buys fell from 924 to 175 per 10 min; we sold 36 units in 21 min from
                           # about 60 in stock. Demand is far above supply, so we hold more (bankruptcy line 500,000)
 SEED_PRICE = 80_000        # seed goods categories whose median price is at most this
+SELL_SHARE = 0.75          # seller_r3 NEED_SHARE: food under this share of its shelf life left is not offered
 SEED_FOOD_HOURS = 168      # seed food that keeps at least a week
 MIN_DATA = 30              # market settles needed before targets follow the data
 TOTAL_UNITS = 160          # the stock the targets add up to, once there is data
@@ -465,7 +466,14 @@ def main():
     track_my_sales(st, inv)
 
     units = [u for u in inv.get("units", []) if u.get("grade") != "expired"]
-    held = Counter(u["category"] for u in units)
+    # food the seller no longer ships to a buyer who does not state its need (under 0.75 of shelf_hours left, seller_r3
+    # NEED_SHARE) does not count as held, so the category is bought again (Nov 10 15:48: 116 of 136 food units were
+    # under it, many supplied at 0.2-0.7 of their shelf life, restock bought 0 lines and food deals fell from ~65/h to 12/h)
+    def sellable(u):
+        shelf = (catalog.get(u["sku"]) or {}).get("shelf_hours")
+        return u.get("kind") != "food" or not shelf or not u.get("expires_at") \
+            or (u["expires_at"] - time.time()) / 3600 >= SELL_SHARE * shelf
+    held = Counter(u["category"] for u in units if sellable(u))
     stock_cost = sum(u["cost"] for u in units)
     cash = inv.get("balance", 0) - CASH_FLOOR
     scale_caps(inv, stock_cost)
