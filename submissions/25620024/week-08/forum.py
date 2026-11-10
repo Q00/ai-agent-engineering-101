@@ -358,7 +358,10 @@ def groupbuy_ads(c, t, now):
                 units[u["sku"]][u.get("grade")] = u
     except Exception:
         held, units = {}, {}
-    for sku, x in sorted((g.get("skus") or {}).items(), key=lambda kv: -held.get(kv[0], 0))[:5]:
+    ranked = sorted((g.get("skus") or {}).items(), key=lambda kv: -held.get(kv[0], 0))
+    k0 = int(now // 3600) * 3 % max(1, len(ranked))          # 11-10: the two biggest lines always, then three more
+    pick = ranked[:2] + (ranked[2:] + ranked[2:])[k0:k0 + 3] if len(ranked) > 5 else ranked   # rotating hourly
+    for sku, x in pick:
         gb = promo.groupbuy(c, sku, now)
         lp = (cat.get(sku) or {}).get("list_price")
         if not gb or not lp:
@@ -432,6 +435,34 @@ def clearance_facts(c, t, now):
     return [{"topic": "clearance_facts", "as": "buyer", "kind": "price_data", "refs": refs[:8], "score": 8.0,
              "text": (js + "\n" + HUMAN + "\n" + ko)[:1000], "texts": {"json": (js + "\n" + HUMAN + "\n" + ko)[:1000],
                                                                     "ko": ko, "en": js}}]
+
+
+def clearance_groupbuy(c, t, now):
+    """As the buyer (HQ 11-10 "공동구매도 제안하고"): a group-buy proposal for the bedding SKUs buyers settle most --
+    the market's 24 h volume and grade medians (ledger), the shop that will sell the first 30 per hour at about cost
+    (dragonash, same owner, disclosed), and how to take it (ask for the SKU). A checkable offer, no instructions."""
+    try:
+        ad = groupbuy_ads(c, t, now)
+        items = json.loads(ad[0]["texts"]["json"].split("\n")[0])["items"][:3] if ad else []
+    except Exception:
+        items = []
+    rows, refs = [], []
+    for i in items:
+        n24 = c.execute("select count(*) from settles where sku=? and ts>?", (i["sku"], now - 86400)).fetchone()[0]
+        refs += [s_ for (s_,) in c.execute("select seq from settles where sku=? order by seq desc limit 2", (i["sku"],))]
+        rows.append({"sku": i["sku"], "list": i["list"], "settles_24h": n24,
+                     "group_price_from_by_grade": i.get("from_by_grade") or i.get("ask_by_grade"), "first_per_hour": 30})
+    if not rows or not refs:
+        return []
+    data = {"type": "group_buy_proposal", "items": rows, "seller": "dragonash", "until": "2026-11-17 23:59 KST",
+            "how": "ask dragonash for the SKU; the offer data shows the price and 6 h warranty",
+            "disclosure": "same owner as this buyer"}
+    js = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
+    ko = "[공동구매 제안] 침구 주문이 있는 바이어께: 아래 SKU를 dragonash에서 매 시간 선착순 30개, 원가 수준(6시간 보증 포함). " \
+         "24시간 시장 체결 건수는 공개 원장 기준. 이 바이어와 dragonash는 같은 주인입니다."
+    text = (js + "\n" + HUMAN + "\n" + ko)[:1000]
+    return [{"topic": "clearance_groupbuy", "as": "buyer", "kind": "price_data", "refs": refs[:6], "score": 7.8,
+             "text": text, "texts": {"json": text, "ko": ko, "en": js}}]
 
 
 def shop_facts(c, t, now):
@@ -774,7 +805,7 @@ def votes(forum, state):
     return out
 
 
-SELF_PROMO = ('"type":"shop_facts"', '"type":"price_data","source":"ledger 24h by grade')
+SELF_PROMO = ('"type":"shop_facts"', '"type":"group_buy_proposal"', '"type":"price_data","source":"ledger 24h by grade')
 
 
 def self_promo_ok(state, forum, now):
@@ -830,7 +861,7 @@ def tick(md=Path(".market"), c=None, now=None):
     promo_ok = self_promo_ok(state, forum, now)
     cands = purchase_records(c, t, now, top=5) + price_index(c, t, now) + (stock_check(c, t, now) if t.get("name_shops") else []) \
         + (receipt_tips(c, t, now) if t.get("name_shops") else []) + checkout_tips(c, t, now) + replies(c, t, forum, now) \
-        + frugal_shops(c, t, now) + wanted_posts(c, t, now) + groupbuy_ads(c, t, now) + groupbuy_call(c, t, now) + (clearance_facts(c, t, now) + shop_facts(c, t, now) if promo_ok else []) \
+        + frugal_shops(c, t, now) + wanted_posts(c, t, now) + groupbuy_ads(c, t, now) + groupbuy_call(c, t, now) + (clearance_facts(c, t, now) + shop_facts(c, t, now) + clearance_groupbuy(c, t, now) if promo_ok else []) \
         + offers(forum, md, now) \
         + opening_ads(c, md, now) + follow_ads(c, md, now)
     lines = []

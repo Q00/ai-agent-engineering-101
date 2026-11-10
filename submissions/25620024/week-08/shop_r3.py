@@ -105,6 +105,26 @@ def refused_units(now=None):
     return _REFUSED["units"]
 
 
+_PAID = {"t": 0, "r": {}}
+
+
+def settle_rates():
+    """{sku: our paid deals / our agreed deals, last 24 h} (11-10 buyer team: steer category orders to the SKU whose
+    deals get paid, times how much of it we hold). Refreshed every 10 min."""
+    if time.time() - _PAID["t"] > 600:
+        try:
+            c = market_model.db()
+            agreed = dict(c.execute("select sku, count(*) from quotes where outcome='deal' and ts>? group by sku",
+                                    (time.time() - 86400,)).fetchall())
+            paid = dict(c.execute(f"select sku, count(*) from settles where ts>? and seq in ({market_model.ours(c)}) "
+                                  f"group by sku", (time.time() - 86400,)).fetchall())
+            _PAID["r"] = {k: min(1.0, paid.get(k, 0) / n) for k, n in agreed.items() if n >= 3}
+        except Exception:
+            pass
+        _PAID["t"] = time.time()
+    return _PAID["r"]
+
+
 def find_unit(text, taken=(), need=None):
     """The in-stock unit for what the buyer asked (SKU first, then name or category) that expires first, among
     units that pass what the buyer said it needs. If the asked SKU has none that pass (or none at all), the clerk
@@ -138,7 +158,8 @@ def find_unit(text, taken=(), need=None):
         held = {}            # still goes first-to-expire within it
         for x in fit:
             held[x["sku"]] = held.get(x["sku"], 0) + 1
-        u = min(fit, key=lambda u: (-held[u["sku"]] if u.get("kind") == "goods" else 0,   # the cheapest unit of it
+        paid = settle_rates()   # buyer team 11-10: weight by how often that SKU's deals actually get paid
+        u = min(fit, key=lambda u: (-held[u["sku"]] * paid.get(u["sku"], 0.5) if u.get("kind") == "goods" else 0,   # the cheapest unit of it
                                     u.get("expires_at") or float("inf"),               # (its ask is the lowest,
                                     u.get("cost") or 0 if u.get("kind") == "goods" else 0,   # so the order closes)
                                     u.get("supplied_at") or 0), default=None)
