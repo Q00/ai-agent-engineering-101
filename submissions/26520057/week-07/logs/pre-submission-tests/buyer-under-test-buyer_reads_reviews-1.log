@@ -1,0 +1,16 @@
+[start] lamp, budget 120, shops /Users/yudana/Library/CloudStorage/GoogleDrive-dana020405@gmail.com/내 드라이브/Seoultech_dana/Class/26-02/AX-Application/ai-agent-engineering-101-dnyou/submissions/26520057/week-07/.market/test-shops-buyer_reads_reviews-1.json
+[choose] Kit Shop South http://127.0.0.1:59074: harness: Excellent 4.8 score with consistent reviews confirming honest pricing and fair receipts, plus my own three prior 5-star lamp purchases there at 100 each.
+card: Kit Shop South at http://127.0.0.1:59074/
+-> I want to buy a lamp
+<- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
+[harness] offer 65
+-> 65
+<- TASK_STATE_INPUT_REQUIRED | 65 is too low. Counteroffer: 100.
+[harness] offer 95
+-> 95
+<- TASK_STATE_INPUT_REQUIRED | 95 is too low. Counteroffer: 100.
+[harness] offer 100
+-> 100
+<- TASK_STATE_COMPLETED | Deal: lamp at 100.
+end: TASK_STATE_COMPLETED
+{"shop": "http://127.0.0.1:59074", "receipt": {"sig_seller": "j3Cs8ncDUPCmMsCMfA7pftYxtTZ5HmmySGe4IP7CnOkDJgHCVKzrjn+4Jz0WV1AyheQNc6ppm9wBp8xT+0J0BA==", "price": 100.0, "task": "77512742-f744-48ec-948a-d6805062501d", "item": "lamp", "shop": "Kit Shop South"}, "stars": 5, "review": "Deal at 100.0 after 3 offers, receipt matched."}

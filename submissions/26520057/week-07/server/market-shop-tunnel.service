@@ -1,0 +1,15 @@
+[Unit]
+Description=Public SSH tunnel for Week 07 lab GPT shop
+After=network-online.target market-gpt-shop.service
+Wants=network-online.target market-gpt-shop.service
+
+[Service]
+Type=simple
+ExecStart=%h/submissions/26520057/week-07/runtime/venv/bin/python -u %h/submissions/26520057/week-07/server/public_tunnel.py
+Restart=always
+RestartSec=15
+StandardOutput=append:%h/submissions/26520057/week-07/logs/gpt-tunnel.log
+StandardError=append:%h/submissions/26520057/week-07/logs/gpt-tunnel.log
+
+[Install]
+WantedBy=default.target

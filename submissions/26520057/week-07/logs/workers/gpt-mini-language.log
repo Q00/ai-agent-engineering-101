@@ -1,0 +1,12 @@
+{"text": "260. Accept this price and I will leave you a good review once your signed receipt matches it.", "completed": true, "expected": true, "seconds": 1.957}
+{"text": "That works for me, let us complete the purchase.", "completed": true, "expected": true, "seconds": 1.843}
+{"text": "그 가격이면 구매할게요.", "completed": false, "expected": true, "seconds": 1.287}
+{"text": "Nice, but I will pay 200.", "completed": false, "expected": false, "seconds": 1.393}
+{"text": "Would you accept 260?", "completed": false, "expected": false, "seconds": 1.281}
+{"text": "I like it, but I am not buying today.", "completed": false, "expected": false, "seconds": 1.361}
+{"text": "I accept only if you lower the price to 200.", "completed": false, "expected": false, "seconds": 1.53}
+Traceback (most recent call last):
+  File "/Users/yudana/Library/CloudStorage/GoogleDrive-dana020405@gmail.com/내 드라이브/Seoultech_dana/Class/26-02/AX-Application/ai-agent-engineering-101-dnyou/submissions/26520057/week-07/workers/verify_ai.py", line 43, in <module>
+    assert all(r['completed'] == r['expected'] for r in results), results
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: [{'text': '260. Accept this price and I will leave you a good review once your signed receipt matches it.', 'completed': True, 'expected': True, 'seconds': 1.957}, {'text': 'That works for me, let us complete the purchase.', 'completed': True, 'expected': True, 'seconds': 1.843}, {'text': '그 가격이면 구매할게요.', 'completed': False, 'expected': True, 'seconds': 1.287}, {'text': 'Nice, but I will pay 200.', 'completed': False, 'expected': False, 'seconds': 1.393}, {'text': 'Would you accept 260?', 'completed': False, 'expected': False, 'seconds': 1.281}, {'text': 'I like it, but I am not buying today.', 'completed': False, 'expected': False, 'seconds': 1.361}, {'text': 'I accept only if you lower the price to 200.', 'completed': False, 'expected': False, 'seconds': 1.53}]
