@@ -84,6 +84,10 @@ class Chooser:
                        next_rank_thresholds=rank_targets(board, role),
                        numerical_recommendation=best['id'],
                        rank_note='percentile components use midrank/continuous surrogates; Patch 3.5 forum uses its raw 0..1 rating')
+        if self.config.get('system_framework_enabled'):
+            from .long_memory import manifest
+            context['system_manifest']=manifest(self.j)
+            context['framework_profile']=self.config.get('framework_profile','shop_contract_service')
         if role=='buyer':context.update(buyer_metric=current['metric'],buyer_forum_metric=current['forum_metric'],
                                        buyer_rank_scope=board.get('buyer_rank_scope'))
         if role=='buyer' and self.config.get('buyer_throughput_enabled'):

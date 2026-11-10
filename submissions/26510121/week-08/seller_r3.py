@@ -43,15 +43,23 @@ class Seller(AgentExecutor):
         skus = re.findall(r"\bG[0-9a-z]+\b", text, re.I)
         requirement = re.search(r'(?:last at least|use within|minimum shelf life(?: after checkout)?:?)\s*(\d+(?:\.\d+)?)\s*(?:hours?|h)\b', text, re.I)
         min_hours = float(requirement.group(1)) if requirement else 0
+        warranty_request=re.search(r'(?:minimum|at least)\s*(\d+(?:\.\d+)?)\s*(?:hours?|h)\s*(?:of\s*)?warranty|warranty\s*(?:of\s*)?(?:at least|minimum)\s*(\d+(?:\.\d+)?)',text,re.I)
+        requested_warranty=float(next(x for x in warranty_request.groups() if x)) if warranty_request else 0
+        if requested_warranty>72:return None
+        grade_matches=re.findall(r'\b(?:require|need|only)\s+(?:certified\s+)?(?:grade\s+)?([ABC])\b|\bgrade\s+([ABC])\s+(?:only|required)\b',text,re.I)
+        required_grades={token.upper() for pair in grade_matches for token in pair if token}
+        minimum_grade=re.search(r'\b(?:at least|minimum)\s+grade\s+([ABC])\b',text,re.I)
+        if minimum_grade:required_grades=set('ABC'[:'ABC'.index(minimum_grade[1].upper())+1])
+        # Parse only explicit requirements, not incidental descriptions or a
+        # hypothetical list of grades in an RFQ.
         choices = [u for u in inv.get("units", []) if grade(u, cat) != "expired" and
+                   (not required_grades or grade(u,cat) in required_grades) and
                    (u.get('kind') != 'food' or remaining(u) >= min_hours + self.cfg['checkout_buffer_seconds'] / 3600) and
                    ((u["sku"].casefold() in {x.casefold() for x in skus}) if skus else
                     (u["name"].casefold() in want or u["category"].split(">")[ -1].casefold() in want))]
         for u in sorted(choices, key=lambda x: (remaining(x), x.get("supplied_at", 0))):
             if self.j.reserve(u["unit"], task, self.cfg["session_ttl_seconds"]):
-                warranty = re.search(r'(?:minimum|at least)\s*(\d+(?:\.\d+)?)\s*(?:hours?|h)\s*(?:of\s*)?warranty|warranty\s*(?:of\s*)?(?:at least|minimum)\s*(\d+(?:\.\d+)?)', text, re.I)
-                required = min(6, float(next(x for x in warranty.groups() if x))) if warranty else 0
-                return dict(u, requested_use_hours=min_hours, minimum_warranty_hours=required)
+                return dict(u, requested_use_hours=min_hours, minimum_warranty_hours=requested_warranty)
         self.j.add("stockout", {"sku": skus[0] if skus else None, "request": text[:300]}, role="shop")
         return None
 

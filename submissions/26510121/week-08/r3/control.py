@@ -148,4 +148,7 @@ def update(journal, config=None, now=None, force=False):
     journal.put('market_control', result)
     journal.add('market_control', result)
     atomic_json(journal.md/'market-control.json', result)
+    if cfg.get('system_framework_enabled'):
+        from .evolution import update as framework_update
+        framework_update(journal,cfg,now)
     return result

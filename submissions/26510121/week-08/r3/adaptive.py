@@ -35,12 +35,12 @@ def activate_revision(journal, revision, now=None):
 
 
 def validate(role, patch):
-    allowed = {'buyer_counter_ratio', 'buyer_food_time_seconds', 'buyer_goods_time_seconds'} if role == 'buyer' else {
+    allowed = {'buyer_counter_ratio', 'buyer_goods_counter_ratio', 'buyer_food_time_seconds', 'buyer_goods_time_seconds'} if role == 'buyer' else {
         'inventory_target_units', 'category_weights', 'assortment_coverage_fraction', 'shop_margin_fraction'}
     if role not in {'buyer', 'shop'} or not isinstance(patch, dict) or set(patch) - allowed:
         raise ValueError('Unsupported adaptive strategy field')
     for key, value in patch.items():
-        if key == 'buyer_counter_ratio':
+        if key in ('buyer_counter_ratio','buyer_goods_counter_ratio'):
             if type(value) not in (int, float) or not .88 <= value <= .98:
                 raise ValueError('Counter ratio outside bounds')
         elif key == 'inventory_target_units':
@@ -101,6 +101,10 @@ def begin_buyer(journal, order):
         cfg=policy()
         if cfg.get('buyer_patch34_enabled'):activate_buyer_revision(journal,cfg.get('buyer_strategy_revision'))
     cfg, selected = effective(journal, 'buyer', frozen=frozen)
+    if order.get('kind')=='goods':cfg['buyer_counter_ratio']=cfg.get('buyer_goods_counter_ratio',cfg['buyer_counter_ratio'])
+    if cfg.get('system_framework_enabled'):
+        from .evolution import assign
+        cfg.update(assign(journal,order,cfg))
     if frozen is None:
         journal.put(key, selected)
         journal.add('buyer_order', {'order': order['order'], 'budget': order['budget'],
@@ -205,10 +209,8 @@ def evidence(journal, role, version, now, since=0):
             opportunities = [e for e in opportunities if e['order'] in executed]
         results = {e['order']: e for e in journal.events('market_result', 10000)}
         purchases = {e['order']: e for e in journal.events('purchase', 10000)}
-        outcomes = {}
-        for event in journal.events('outcome', 10000):
-            if event.get('broken') or event['order'] not in outcomes:
-                outcomes[event['order']] = event
+        from .outcomes import latest
+        outcomes = latest(journal)
         known, paid, bad = [], 0, 0
         for order in opportunities:
             oid = order['order']
@@ -228,8 +230,16 @@ def evidence(journal, role, version, now, since=0):
         counters = sum(e.get('order') in ids for e in journal.events('buyer_counter', 10000))
         price_failures = sum(e.get('order') in ids and e.get('kind') == 'no_agreement'
                              for e in journal.events('attempt', 10000))
+        segments={}
+        for name in ('food','goods'):
+            group=[o for o in known if o.get('kind')==name];oids={o['order'] for o in group}
+            npaid=sum(oid in purchases for oid in oids)
+            segments[name]={'samples':len(group),'paid':npaid,'success_rate':npaid/max(1,len(group)),
+                'bad':sum(bool(outcomes.get(oid,{}).get('broken')) for oid in oids),
+                'counter_moves':sum(e.get('order') in oids for e in journal.events('buyer_counter',10000)),
+                'no_agreement':sum(e.get('order') in oids and e.get('kind')=='no_agreement' for e in journal.events('attempt',10000))}
         return {'samples': len(known), 'paid': paid, 'bad': bad, 'counter_moves': counters,
-                'no_agreement': price_failures, 'success_rate': paid / max(1, len(known))}
+                'no_agreement': price_failures, 'success_rate': paid / max(1, len(known)),'segments':segments}
     settlements = journal.events('shop_settled', 10000)
     pending = {e.get('task') for e in settlements if e.get('paid_at', e['_ts']) > now - MATURITY}
     ids = {e['task'] for e in opportunities} - pending
@@ -248,7 +258,7 @@ def propose(journal, role, state, stats, market):
     cfg = policy()
     diagnosis = journal.get('market_control', {})
     if cfg.get('market_control_enabled') and 0 <= time.time()-diagnosis.get('at',0) < 900:
-        if diagnosis.get('pause_restock'):
+        if role=='shop' and diagnosis.get('pause_restock'):
             return None
         steps = {'shop_margin_fraction':.01, 'assortment_coverage_fraction':.05,
                  'inventory_target_units':5, 'buyer_food_time_seconds':-3}
@@ -265,17 +275,23 @@ def propose(journal, role, state, stats, market):
             except ValueError:continue
             return patch, item['reason']
     if role == 'buyer':
-        ratio = current.get('buyer_counter_ratio', .92)
-        if stats['counter_moves'] >= 5 and stats['no_agreement'] >= 5 and stats['success_rate'] < .5:
+        if cfg.get('system_framework_enabled') and journal.get('framework-arena',{}).get('active'):
+            return None  # One experiment at a time; keep diagnostic loops independent.
+        goods=stats.get('segments',{}).get('goods',{})
+        segmented=goods.get('samples',0)>=MIN_SAMPLES
+        selected=goods if segmented else stats
+        key='buyer_goods_counter_ratio' if segmented else 'buyer_counter_ratio'
+        ratio = current.get(key, .92)
+        if selected['counter_moves'] >= 5 and selected['no_agreement'] >= 5 and selected['success_rate'] < .5:
             new = min(.98, round(ratio + .02, 2))
             reason = 'Repeated failed price negotiations: test a smaller discount request'
-        elif stats['success_rate'] >= .8 and not stats['bad']:
+        elif selected['success_rate'] >= .8 and not selected['bad']:
             new = max(.88, round(ratio - .02, 2))
             reason = 'High observed completion with no known bad outcomes: test a larger discount'
         else:
             return None
         if new != ratio:
-            return dict(current, buyer_counter_ratio=new), reason
+            return dict(current, **{key:new}), reason
         return None
     inv = journal.snapshot('inventory.json', {})
     if inv.get('round') != 3:
@@ -405,7 +421,10 @@ def update(journal, now=None):
                 transition(journal, role, state, next_state, action,
                            {'reason': reason, 'evidence': stats, 'public_categories': market}, now)
             else:
-                reason = 'No supported untried bounded change'
+                reason = ('framework_experiment_active' if role=='buyer' and journal.get('framework-arena',{}).get('active')
+                          else 'No supported untried bounded change')
+        elif not trial and now<state.get('cooldown_until',0):
+            reason='experiment_cooldown'
         journal.add('strategy_evaluation', {'version': state['version'], 'action': action,
                     'reason': reason, 'evidence': stats, 'public_categories': market}, role=role, ts=now)
         actions.append({'role': role, 'action': action})
