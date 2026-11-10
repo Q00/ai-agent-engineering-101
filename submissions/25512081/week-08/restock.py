@@ -129,7 +129,7 @@ def read_ledger(st, catalog):
     """New settles since the last run -> category and SKU points."""
     seq = st.get("seq", -500)
     with httpx.Client(timeout=15) as c:
-        for _ in range(20):
+        for _ in range(80):  # 20 pages left restock 31k rows behind after the Nov 10 15:50-18:19 crash
             try:
                 rows = c.get(f"{MARKET}/api/ledger", params={"after": seq}).json()
             except (httpx.HTTPError, ValueError) as e:
