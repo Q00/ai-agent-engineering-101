@@ -221,6 +221,10 @@ def build_buy_list(ctx, now=None):
         # the money goes first to what sells and is asked for most (then value): water asked 20 times came last
         # behind a 2.2M sofa that sells a few, and the cash ran out before it
         lines.sort(key=lambda x: (-(x.get("own_sold_2h", 0) + x.get("missed_2h", 0)), -x["value"]))
+        if pb["own_floor"] and (ROUND_END - now) / 3600 > TAPER_H:
+            # 11/10 17:2x: with cash to spare the kit's 10 lines went to water, kimchi and cushions sold this hour and
+            # the high-list best sellers never got a line - while stocking up, expected sales value comes first
+            lines.sort(key=lambda x: -x["value"])
     # User 11/4 02:1x: plan within the money we may spend - each line gets what the cash and the stock cap allow
     from tools import act
     room = check.room(ctx)
