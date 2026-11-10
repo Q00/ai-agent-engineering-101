@@ -945,7 +945,9 @@ def self_promo_ok(state, forum, now):
     falls 0.005+ under where it stood before the first such post (checked every 15 min). Each stop is logged."""
     if now < state.get("self_promo_off_until", 0):
         return False
-    why = None
+    if not theta().get("buyer_self_promo", False):   # 11-10 19:40 cross-interview: the buyer's forum rating (0.3 of
+        return False                                 # buyer ALL) is class percentile 0.08; promotion moves to shop posts,
+    why = None                                       # whose votes do not score
     for p_ in forum:
         if p_.get("author") != NAME or p_.get("role") != "buyer" or not any(k in (p_.get("text") or "") for k in SELF_PROMO):
             continue
