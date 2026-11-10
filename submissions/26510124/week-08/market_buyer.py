@@ -23,7 +23,7 @@ from payment_memory import recent_jsonl, reconcile, attach_reviews
 from buyer_policy import buying_terms, checkout_policy, load_policy, negotiation_policy
 from buyer_selection import shortlist, offer_fingerprint, reuse_failures, compatibility_fingerprint
 from buyer_context import compact_dialogue
-from buyer_fast_selection import recent_success_choice, timeout_choice
+from buyer_fast_selection import recent_success_choice, timeout_choice, value_choice
 from buyer_value_memory import build_value_evidence
 from buyer_public_prices import read_public_prices, merge_price_evidence
 from buyer_retry import remaining_retry_decisions, select_alternative
@@ -156,9 +156,14 @@ def choose_shop(shops, memory, *, item, budget, deadline, policy=None, order=Non
                                   g.get("source") == "public_ledger" for o in c["offers"]
                                   for g in o.get("price_history", [])) for c in candidates),
                               "exploration": [c["name"] for c in candidates if c["selection_role"] == "exploration"]})
-    choice = recent_success_choice(candidates, memory, budget=budget, config=policy,
-                                   order=order, catalog=catalog, seed=seed)
-    method = "recent_settlement" if choice is not None else "model"
+    choice = value_choice(candidates, values=values, budget=budget, config=policy,
+                          order=order, catalog=catalog, seed=seed)
+    method = "repeated_value" if choice is not None else "model"
+    if choice is None:
+        choice = recent_success_choice(candidates, memory, budget=budget, config=policy,
+                                       order=order, catalog=catalog, seed=seed)
+        if choice is not None:
+            method = "recent_settlement"
     if choice is None:
         try:
             choice = decide("market_select.txt", context, validate, timeout=min(timeout, remaining),

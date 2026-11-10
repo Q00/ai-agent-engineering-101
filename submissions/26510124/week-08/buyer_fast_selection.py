@@ -1,5 +1,6 @@
 """Bounded local selection shortcuts; every purchase still negotiates/checks anew."""
 import hashlib
+import math
 import time
 from datetime import datetime
 from fractions import Fraction
@@ -15,6 +16,62 @@ def exploration_turn(seed):
 
 def rotation(seed, name, sku=""):
     return hashlib.sha256((str(seed) + "\0" + name + "\0" + sku).encode()).hexdigest()
+
+
+def value_choice(candidates, *, values, budget, config, order, catalog, seed):
+    """Choose where to negotiate using validated repeated price observations.
+
+    `values` must come from the own/public evidence builders, not shop payloads.
+    No new calls or prompt data. One fifth of orders keep model comparison.
+    Historical medians are neither current quotes nor realized Saved estimates.
+    """
+    if (not config.get("selection_cache_seconds", 900) or exploration_turn(seed)
+            or order.get("round", 0) < 3 or not isinstance(catalog, dict)):
+        return None
+    eligible = []
+    for candidate in candidates:
+        own = candidate["own_memory"]
+        if (own["receipt_mismatches"] or own["unsatisfactory_settlements"]
+                or candidate["reviews"]["low_star_count"]):
+            continue
+        for offer in candidate["offers"]:
+            sku = offer["sku"]
+            if not isinstance(catalog.get(sku), dict):
+                continue
+            terms = buying_terms(budget, product=catalog[sku], order=order, config=config)
+            for group in values.get((candidate["name"], sku), {}).get("groups", []):
+                public = group.get("source") == "public_ledger"
+                count, age, price = (group.get(k) for k in ("sample_count", "age_seconds", "median_price"))
+                if (group.get("source") not in (None, "public_ledger")
+                        or type(count) is not int or count < (5 if public else 3)
+                        or type(age) not in (int, float) or not math.isfinite(age) or not 0 <= age <= 900
+                        or type(price) is not int or not 0 < price <= terms["target_price"]
+                        or group.get("kind") != terms["kind"]
+                        or group.get("grade") not in terms["accept"].get("grades", [])):
+                    continue
+                if public and (type(group.get("buyer_count")) is not int or group["buyer_count"] < 3):
+                    continue
+                if terms["kind"] == "goods":
+                    warranty = group.get("warranty_hours")
+                    if (type(warranty) not in (int, float) or not math.isfinite(warranty)
+                            or warranty < max(terms["accept"]["warranty_hours"],
+                                              terms.get("preferred_warranty_hours", 6))):
+                        continue
+                elif terms["kind"] == "food":
+                    life = group.get("minimum_hours_left")
+                    if (public or type(life) not in (int, float) or not math.isfinite(life)
+                            or life < terms["accept"]["min_hours_left"]):
+                        continue
+                else:
+                    continue
+                eligible.append((Fraction(price, terms["list_price"]), public, age,
+                                 rotation(seed, candidate["name"], sku), candidate["name"], sku))
+    if not eligible:
+        return None
+    _, public, _, _, name, sku = min(eligible)
+    return {"name": name, "sku": sku,
+            "reason": ("Repeated recent public" if public else "Repeated recent own") +
+                      " settlements met target price and preferred terms; negotiate and verify this unit anew."}
 
 
 def _timestamp(row):
@@ -78,7 +135,8 @@ def recent_success_choice(candidates, memory, *, budget, config, order, catalog,
                 continue
             terms = buying_terms(budget, product=catalog[sku], order=order, config=config)
             if (old.get("accept") != terms["accept"] or old.get("kind") != terms["kind"]
-                    or not terms["accept"].get("cert") or price > terms["price_limit"]):
+                    or not terms["accept"].get("cert")
+                    or price > terms.get("completion_price", terms["price_limit"])):
                 continue
             reusable.append((Fraction(price, terms["list_price"]), -stamp,
                              rotation(seed, candidate["name"], sku), candidate["name"], sku,

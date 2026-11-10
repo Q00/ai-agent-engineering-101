@@ -26,11 +26,11 @@ class FastSelectionTests(unittest.TestCase):
         self.shops = [shop("proven", [4, 5]), shop("new")]
         self.record = {"name": "proven", "item": "G00001", "round": 3, "result": "settled",
                        "time": datetime.fromtimestamp(self.now - 30, timezone.utc).isoformat(),
-                       "ledger": 17, "price": 75000, "stars": 2, "review_issues": [], "verified_review": True,
+                       "ledger": 17, "price": 70000, "stars": 2, "review_issues": [], "verified_review": True,
                        "review_reasons": ["above_preferred_price"],
                        "review_preference_shortfalls": ["above_preferred_price"],
                        "purchase_policy": deepcopy(self.terms),
-                       "observed_receipt": {"item": "G00001", "price": 75000, "task": "t1"}}
+                       "observed_receipt": {"item": "G00001", "price": 70000, "task": "t1"}}
 
     def candidates(self, *, shops=None, memory=None, seed=None):
         return shortlist(self.shops if shops is None else shops,
@@ -61,7 +61,7 @@ class FastSelectionTests(unittest.TestCase):
         for changes in ({"result": "receipt_issued"}, {"ledger": None}, {"ledger": True}, {"ledger": 0},
                         {"verified_review": False}, {"verified_review": None},
                         {"review_issues": None}, {"review_issues": ["warranty_shortfall"]},
-                        {"observed_receipt": {"item": "G99999", "price": 75000, "task": "t1"}},
+                        {"observed_receipt": {"item": "G99999", "price": 70000, "task": "t1"}},
                         {"purchase_policy": {}}):
             with self.subTest(changes=changes):
                 self.assertIsNone(self.cached(records=[{**self.record, **changes}]))
