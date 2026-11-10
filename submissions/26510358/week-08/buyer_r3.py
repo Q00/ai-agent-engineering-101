@@ -16,7 +16,7 @@ import re
 import sys
 import time
 
-from r3lib import a2a, config, llm, market, pricing
+from r3lib import a2a, config, llm, market, pricing, score_model
 from r3lib.memory import Memory
 from shop_r3 import parse_offer
 
@@ -40,21 +40,57 @@ def c_covered(rec):
 
 def accept_policy(order, rec=None):
     """What the kit checks before paying. Goods: grade C only when the receipt carries a warranty long enough to
-    cover a break, so a C unit shipped against an A/B claim without one is not paid for either."""
+    cover a break, so a C unit shipped against an A/B claim without one is not paid for either. A warranty the
+    receipt promises is required of the seller's copy for every grade: the price we agreed to counted on it."""
     if order.get("kind") == "food":
         return {"cert": True, "min_hours_left": float(order.get("use_within_hours") or 0) + config.HOURS_MARGIN}
     if c_covered(rec):
-        return {"cert": True, "grades": list(config.BUYER_GRADES), "warranty_hours": config.BUYER_C_MIN_WARRANTY_H}
+        grades = list(config.BUYER_GRADES) if (rec or {}).get("claim") == "C" else \
+            [g for g in config.BUYER_GRADES if g != "C"]
+        return {"cert": True, "grades": grades, "warranty_hours": config.BUYER_C_MIN_WARRANTY_H}
     return {"cert": True, "grades": [g for g in config.BUYER_GRADES if g != "C"]}
 
 
-def candidates(order, shops, mem, my_urls):
+GRADE_RE = re.compile(r"\bgrade\s*[:=]?\s*([ABC])\b|\b([ABC])\s*등급|등급\s*[:=]?\s*([ABC])\b", re.I)
+WARRANTY_RE = re.compile(r"(\d+(?:\.\d+)?)\s*(?:-\s*)?(?:h|hrs?|hours?|시간)\b[^.\n]{0,24}?(?:warranty|guarantee|보증)"
+                         r"|(?:warranty|guarantee|보증)[^.\n\d]{0,30}?(\d+(?:\.\d+)?)\s*(?:h|hrs?|hours?|시간)", re.I)
+NO_WARRANTY_RE = re.compile(r"\bno\s+warranty|without\s+(?:a\s+)?warranty|warranty\s*:?\s*(?:0\s*h|none|no)\b|보증\s*없", re.I)
+
+
+def quote_hints(text):
+    """(grade or None, warranty hours) a shop states in its reply. Only a hint for how far to bid: the receipt's
+    claim and warranty_hours decide whether we pay (valid, accept_policy)."""
+    text = text or ""
+    m = GRADE_RE.search(text)
+    grade = next((g.upper() for g in (m.groups() if m else ()) if g), None)
+    hours = 0.0
+    if not NO_WARRANTY_RE.search(text):
+        w = WARRANTY_RE.search(text)
+        hours = float(next((g for g in (w.groups() if w else ()) if g), 0) or 0)
+    return grade, hours
+
+
+def limit_for(c, grade, warranty_hours):
+    """Most we pay this shop for a goods unit of this grade, with or without a warranty long enough to cover a
+    break (breaks come within 6 h of the sale)."""
+    p = (c.get("p_grade") or {}).get(grade)
+    if p is None:
+        return c["max_pay"]
+    return pricing.buyer_limits(c["list"], c["budget"], "goods", p,
+                                warranty=warranty_hours >= config.BUYER_C_MIN_WARRANTY_H, min_surplus=c.get("theta"))
+
+
+def candidates(order, shops, mem, my_urls, theta=None):
+    """theta: expected surplus / list a deal must reach (pricing.buyer_threshold); MIN_SURPLUS_RATIO when None."""
     cat = market.catalog()
     acceptable = set(order.get("acceptable") or [])
     out = []
     seen = {"shops": len(shops), "with_offers": 0, "offers": 0, "mine": 0, "not_acceptable": 0, "no_qty": 0,
             "no_list_price": 0}
-    p_market = mem.break_rate()
+    try:
+        table = mem.break_table()
+    except Exception:                                 # no table: the grade priors still price the risk
+        table = {"grade": {}, "cat": {}, "shop": {}}
     for s in shops:
         seen["with_offers"] += bool(s.get("offers"))
         url = (s.get("url") or "").rstrip("/")
@@ -71,8 +107,13 @@ def candidates(order, shops, mem, my_urls):
                      else "no_list_price"] += 1
                 continue
             L = info["list_price"]
-            p_break = (rep["break_rate"] + p_market) / 2
-            max_pay = pricing.buyer_limits(L, order["budget"], info.get("kind"), p_break)
+            goods = info.get("kind") == "goods"
+            # Before the shop names a grade: its usual grade mix, no warranty. negotiate() moves the limit once the
+            # reply states the grade and the warranty (2026-11-10: grade alone sets the break rate, A 2.9% B 11.9%
+            # C 33.9%, the same in every category).
+            p_grade = {g: mem.p_break(g, info.get("category"), s.get("name"), table) for g in "ABC"} if goods else {}
+            p_break = mem.p_break_mix(info.get("category"), s.get("name"), table) if goods else 0.0
+            max_pay = pricing.buyer_limits(L, order["budget"], info.get("kind"), p_break, min_surplus=theta)
             ratio_m, _ = mem.price_ratio(sku=sku, category=info.get("category"))
             exp = pricing.expected_price(L, mem.shop_price_ratio(url, info.get("category")), ratio_m)
             ours = 1.0 if rep["our_buys"] < 3 else (rep["our_paid"] + 1) / (rep["our_buys"] + 1)
@@ -86,7 +127,8 @@ def candidates(order, shops, mem, my_urls):
             saved = surplus / L
             opening = pricing.memory_opening(L, max_pay, mem.shop_profile(url))
             out.append({"shop": url, "name": s.get("name"), "sku": sku, "item_name": info.get("name"), "list": L,
-                        "kind": info.get("kind"), "max_pay": max_pay, "expected": exp,
+                        "kind": info.get("kind"), "max_pay": max_pay, "expected": exp, "budget": order["budget"],
+                        "theta": theta, "p_grade": {g: round(p, 4) for g, p in p_grade.items()},
                         "score": round(saved * reliability, 4), "saved": round(saved, 4),
                         "reliability": round(reliability, 3),
                         "opening": opening})
@@ -134,6 +176,11 @@ def negotiate(c, order, deadline):
         while a2a.state(t) == "TASK_STATE_INPUT_REQUIRED" and n < config.MAX_OFFERS and time.time() < deadline:
             got = read_ask(a2a.said(t), c)
             ask = got if got is not None else ask
+            if c["kind"] == "goods":
+                grade, hours = quote_hints(a2a.said(t))
+                if grade:                              # the shop named the grade: bid to that grade's own limit
+                    c["hint"] = {"grade": grade, "warranty_hours": hours}
+                    c["max_pay"] = limit_for(c, grade, hours)
             action, price = pricing.buyer_next_offer(c["list"], c["max_pay"], ask, offer, n, opening=c.get("opening"))
             if offer is not None and price <= offer and action == "offer":
                 break                                  # at our limit and the shop does not move
@@ -160,6 +207,15 @@ def valid(rec, c, order):
         return f"receipt price {price} above our limit {c['max_pay']}"
     if order.get("kind") != "food" and rec.get("claim") == "C" and not c_covered(rec):
         return f"grade C without a {config.BUYER_C_MIN_WARRANTY_H} h warranty (C breaks ~35%, a break counts -1 saved)"
+    p = (c.get("p_grade") or {}).get(rec.get("claim"))
+    if order.get("kind") != "food" and p is not None and c.get("list"):
+        # What the receipt actually promises decides, not what the reply said: expected surplus / list of this
+        # grade with this warranty against the threshold the price limit was built on.
+        theta = pricing.buyer_threshold(c.get("theta"))
+        r = score_model.expected_r(1 - price / c["list"], p, warranty=c_covered(rec))
+        if r < theta - 1e-6:
+            return (f"expected saved {r:.3f} under {theta:.3f}: grade {rec.get('claim')} breaks {p:.1%}, "
+                    f"warranty {rec.get('warranty_hours') or 0:g} h, discount {1 - price / c['list']:.3f}")
     return None
 
 
@@ -191,8 +247,16 @@ def main():
         except Exception as e:
             say("memory_sync_error", error=str(e)[:200])
     shops = json.loads(open(a.shops, encoding="utf-8").read())
-    cands = candidates(order, shops, mem, mem.my_shop_urls())
+    try:
+        board = score_model.load()
+        model_theta = score_model.saved_threshold(board) if board else None
+    except Exception as e:
+        model_theta = None
+        say("score_model_error", error=str(e)[:200])
+    theta = pricing.buyer_threshold(model_theta)
+    cands = candidates(order, shops, mem, mem.my_shop_urls(), theta=theta)
     decision_log({"order": order.get("order"), "category": order.get("category"), "budget": a.budget,
+                  "theta": round(theta, 4), "model_theta": model_theta and round(model_theta, 4),
                   "kind": order.get("kind"), "use_within_hours": order.get("use_within_hours"),
                   "candidates": cands[:8], "filter": getattr(candidates, "last_filter", None)})
     say("candidates", n=len(cands), top=cands[:3])
@@ -213,6 +277,8 @@ def main():
         mem.record_negotiation("buyer", order.get("order"), c["shop"], c["sku"], talk.get("ask"),
                                rec and rec.get("price"), talk.get("lines"), "deal" if not problem else "no_deal")
         decision_log({"order": order.get("order"), "shop": c["shop"], "sku": c["sku"], "max_pay": c["max_pay"],
+                      "hint": c.get("hint"), "claim": rec and rec.get("claim"),
+                      "warranty_hours": rec and rec.get("warranty_hours"),
                       "talk": talk, "problem": problem, "price": rec and rec.get("price")})
         if problem:
             say("no_deal", shop=c["name"], reason=problem, ask=talk.get("ask"), offer=talk.get("offer"))

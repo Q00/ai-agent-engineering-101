@@ -54,6 +54,11 @@ BREAK_CACHE_S = 600     # break_rate_for answers from memory for this long. 2026
                         #   and the join scanned all of breaks for each settle of the category (no index on order_id,
                         #   74k x 14.5k for mattresses): a couch quote took 14.5 s and a chair 5.9 s against 0.3 s for
                         #   kimchi, inside the shop's event loop, so every other buyer waited too
+BREAK_PRIOR = {"A": 0.03, "B": 0.12, "C": 0.34}   # market, 189k goods settles to 2026-11-10: A 2.9%, B 11.9%, C 33.9%
+SUPPLY_MIX = {"A": 0.7, "B": 0.2, "C": 0.1}       # how the market draws a goods unit's grade (/agent.md)
+BREAK_TABLE_S = 1800    # the grade / category / shop break counts are recounted from the ledger this often
+BREAK_CELL_N = 200      # weight of the level above, in sales: the same day's data showed no category effect at all
+                        #   and shops between 10% and 15% on grade B, so a cell needs hundreds of sales to move
 MIGRATIONS = (("forum", "ALTER TABLE forum ADD COLUMN likes INTEGER DEFAULT 0"),
               ("forum", "ALTER TABLE forum ADD COLUMN dislikes INTEGER DEFAULT 0"),
               ("negotiations", "ALTER TABLE negotiations ADD COLUMN style TEXT"))
@@ -269,6 +274,51 @@ class Memory:
         if category and n >= config.BREAK_MIN_N:
             return self.break_rate(grade, category)
         return self.break_rate(grade)
+
+    def break_table(self, now=None, max_age=BREAK_TABLE_S):
+        """Goods sold and broken on the public ledger by grade, grade x category and grade x shop name:
+        {"grade": {g: [n, k]}, "cat": {"g|category": [n, k]}, "shop": {"g|name": [n, k]}}. Kept in meta and
+        recounted when older than max_age (0.4 s on 189k goods settles)."""
+        now = now or time.time()
+        t = self.get("break_table")
+        if t and now - (t.get("ts") or 0) < max_age:
+            return t
+        t = {"ts": now, "grade": {}, "cat": {}, "shop": {}}
+        with self.db() as c:
+            names = {r["shop_url"]: r["name"] for r in c.execute("SELECT shop_url, name FROM shops")}
+            for r in c.execute("SELECT s.grade g, s.category cat, s.shop sh, COUNT(*) n, SUM(b.seq IS NOT NULL) k "
+                               "FROM settles s LEFT JOIN breaks b ON b.order_id = s.order_id "
+                               "WHERE s.kind='goods' AND s.grade IN ('A','B','C') GROUP BY 1, 2, 3"):
+                keys = [("grade", r["g"]), ("cat", f"{r['g']}|{r['cat']}")]
+                if names.get(r["sh"]):
+                    keys.append(("shop", f"{r['g']}|{names[r['sh']]}"))
+                for level, key in keys:
+                    cell = t[level].setdefault(key, [0, 0])
+                    cell[0] += r["n"]
+                    cell[1] += r["k"] or 0
+        self.put("break_table", t)
+        return t
+
+    def p_break(self, grade, category=None, shop=None, table=None):
+        """Probability that a goods unit of this grade breaks: Beta posterior mean, the grade's market rate updated
+        by the grade x category cell and then by the grade x shop cell, each level worth BREAK_CELL_N sales of
+        the one above. Unknown grade: None."""
+        if grade not in BREAK_PRIOR:
+            return None
+        t = table if table is not None else self.break_table()
+        n, k = t["grade"].get(grade) or (0, 0)
+        p = (k + 10 * BREAK_PRIOR[grade]) / (n + 10)
+        for level, key in (("cat", category), ("shop", shop)):
+            n, k = (t[level].get(f"{grade}|{key}") if key else None) or (0, 0)
+            p = (k + BREAK_CELL_N * p) / (n + BREAK_CELL_N)
+        return p
+
+    def p_break_mix(self, category=None, shop=None, table=None):
+        """The same before the shop has named a grade: its own grade mix of goods sold (on top of 50 sales at the
+        market's supply mix) times each grade's probability."""
+        t = table if table is not None else self.break_table()
+        n = {g: 50 * SUPPLY_MIX[g] + ((t["shop"].get(f"{g}|{shop}") or (0, 0))[0] if shop else 0) for g in SUPPLY_MIX}
+        return sum(n[g] * self.p_break(g, category, shop, t) for g in n) / sum(n.values())
 
     def record_stockout(self, category, sku=None):
         with self.db() as c:

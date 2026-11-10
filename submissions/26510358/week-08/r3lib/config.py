@@ -227,6 +227,7 @@ MIN_SURPLUS_RATIO = 0.30            # keep at least this share of list (0.05 unt
                                     #   (sum of surplus/list over deals + 100), so a deal below our saved (0.2955)
                                     #   lowers it. 72 h replay: 0.30 keeps 64% of deals at mean 0.374 -> end-of-round
                                     #   saved 0.330 (rank ~8) vs 0.312 (rank ~17) keeping all; deals stay top-10
+BUYER_THRESHOLD_BAND = 0.20         # the score model may move the threshold this far from MIN_SURPLUS_RATIO (0.24-0.36)
 FIRST_OFFER_RATIO = 0.55            # first offer as a share of list price
 MAX_OFFERS = 6
 SHOPS_TO_TRY = 3

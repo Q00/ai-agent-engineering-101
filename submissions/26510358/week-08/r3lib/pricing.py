@@ -143,13 +143,27 @@ def warranty_floor(floor, u, price, warranty_hours, p_break, slow=False):
 
 
 # ------------------------------------------------------------------------------------------- buyer
-def buyer_limits(list_price, budget, kind, p_break=0.1, warranty=False):
-    """Most we will pay. Value to the order is the list price (0 if the goods break without a warranty), so
-    the expected value of goods without a warranty is list_price * (1 - p_break) - p_break * price."""
-    cap = list_price * (1 - config.MIN_SURPLUS_RATIO)
-    if kind == "goods" and not warranty:
-        # value - price >= MIN_SURPLUS * L  with value = L(1-p) - p*price  ->  price <= L(1 - p - m) / (1 + p)
-        cap = list_price * (1 - p_break - config.MIN_SURPLUS_RATIO) / (1 + p_break)
+def buyer_threshold(model_value=None):
+    """The expected surplus / list a deal must reach: the score model's break-even for one more deal
+    (score_model.saved_threshold, near our current saved), kept within BUYER_THRESHOLD_BAND of MIN_SURPLUS_RATIO;
+    the constant itself without a board."""
+    m = config.MIN_SURPLUS_RATIO
+    if not isinstance(model_value, (int, float)):
+        return m
+    return min(m * (1 + config.BUYER_THRESHOLD_BAND), max(m * (1 - config.BUYER_THRESHOLD_BAND), model_value))
+
+
+def buyer_limits(list_price, budget, kind, p_break=0.1, warranty=False, min_surplus=None):
+    """Most we will pay, from how a deal scores (/agent.md): surplus / list is the discount when the unit serves,
+    0 when goods break under a warranty and -1 when they break without one. Expected value m or more:
+      (1 - p)(1 - price / L) - (0 or p) >= m   ->   price <= L (1 - (m + (0 or p)) / (1 - p))
+    Until 2026-11-10 every goods offer was limited as if it had no warranty at one average p (0.077): a grade A
+    unit under warranty needed a 42% discount where 30.3% already scores above our saved."""
+    m = config.MIN_SURPLUS_RATIO if min_surplus is None else min_surplus
+    cap = list_price * (1 - m)
+    if kind == "goods":
+        p = min(0.9, max(0.0, p_break or 0.0))
+        cap = list_price * (1 - (m + (0 if warranty else p)) / (1 - p))
     return int(max(0, min(budget, cap)))
 
 
