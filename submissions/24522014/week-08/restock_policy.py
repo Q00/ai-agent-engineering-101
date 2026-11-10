@@ -34,7 +34,7 @@ def demand_hints(posts, catalog, now):
     return {sku: min(2, len(authors)) for sku, authors in hints.items()}
 
 
-def plan(inventory, catalog, demand, sales, cursor=0, *, hints=None, now=None, intelligence=None, runtime=None, leader_hints=None, own_profitable=None, quality=None, food_trial=None, median_bypass=None, hi_band=None, hi_probe=None, food_probe=None, mid_probe=None):
+def plan(inventory, catalog, demand, sales, cursor=0, *, hints=None, now=None, intelligence=None, runtime=None, leader_hints=None, own_profitable=None, quality=None, food_trial=None, median_bypass=None, hi_band=None, hi_probe=None, food_probe=None, mid_probe=None, mid_band=None):
     now = time.time() if now is None else now
     median_bypass = set(median_bypass or ())
     hints = hints or {}
@@ -225,10 +225,27 @@ def plan(inventory, catalog, demand, sales, cursor=0, *, hints=None, now=None, i
         probe_room -= 1
         probe_planned += 1
         probe_taken.append(sku)
+    # The mid-price demand band (mid_band.py) comes after the 1M+ probe and before the ordinary pass, so room that frees up goes to
+    # it first: one unit per pick, in the run's units, the total cap and the ordinary lines, at most its own line limit a run, with
+    # seven days of goods storage. Its SKUs are under 1M, so shop b's band never counts them.
+    band_goods = []
+    band_lines = mid_band.get("max_lines", 0) if isinstance(mid_band, dict) else 0
+    for pick in (mid_band.get("picks") or () if isinstance(mid_band, dict) else ()):
+        carrying = pick["estimated_cost"] * rate * 7
+        if planned_units >= run_room or estimated + storage_reserve + pick["estimated_cost"] + carrying > budget or over_floor(pick["sku"]):
+            continue
+        if not planned[pick["sku"]] and (len(set(band_goods)) >= band_lines
+                                         or len([s for s in planned if s not in hi_taken and s not in probe_taken]) >= max_lines or len(planned) >= KIT_LINES):
+            continue
+        planned[pick["sku"]] += 1
+        estimated += pick["estimated_cost"]
+        storage_reserve += carrying
+        planned_units += 1
+        band_goods.append(pick["sku"])
     new_range = [pair for pair in candidates if owned[pair[0]] == 0 and proven(pair[0])]
     for position, (sku, value) in enumerate(new_range + candidates):
         # Supply draws the grade on arrival; shelf_hours is not a minimum remaining lifetime.
-        if value.get("kind") == "food" or sku in probe_skus or sku in probe_goods:
+        if value.get("kind") == "food" or sku in probe_skus or sku in probe_goods or sku in band_goods:
             continue
         if not proven(sku) and (exploration_slots <= 0 or counted + planned_units >= UNPROVEN_STOCK_CEILING):
             continue
@@ -289,10 +306,10 @@ def plan(inventory, catalog, demand, sales, cursor=0, *, hints=None, now=None, i
                   "public_evidence_skus": len(intelligence),
                   "forum_hints": hints,
                   "leader_hints": leader_hints,
-                  "food_trial": trial_skus, "food_probe": probe_food, "mid_probe": probe_goods,
+                  "food_trial": trial_skus, "food_probe": probe_food, "mid_probe": probe_goods, "mid_band": band_goods,
                   "kit_lines": {"total": len(planned), "food_trial": len(set(trial_skus)), "food_probe": len(set(probe_food)), "band": len(hi_taken),
-                                "probe": len(probe_taken), "goods_probe": len(set(probe_goods)),
-                                "ordinary": len(planned) - len(set(trial_skus) | set(probe_food) | set(hi_taken) | set(probe_taken) | set(probe_goods)),
+                                "probe": len(probe_taken), "goods_probe": len(set(probe_goods)), "goods_band": len(set(band_goods)),
+                                "ordinary": len(planned) - len(set(trial_skus) | set(probe_food) | set(hi_taken) | set(probe_taken) | set(probe_goods) | set(band_goods)),
                                 "limit": KIT_LINES},
                   "median_bypass_skus": sorted(median_bypass),
                   "median_bypass_used": bypassed,
@@ -413,11 +430,14 @@ def main():
     food_picks, food_waiting = food_probe.for_run(md, inv, catalog)
     import mid_probe
     mid_picks, mid_notes = mid_probe.for_run(md, inv, catalog, snapshot.get("skus", {}), time.time())
+    import mid_band
+    band_goods = mid_band.for_run(md, inv, catalog, snapshot.get("skus", {}), time.time())
     buys, explanation = plan(inv, catalog, demand, memory["sales"], memory["cursor"], hints=hints,
                              intelligence=snapshot.get("skus", {}), runtime=effective(md), leader_hints=leader_hints,
                              own_profitable=own_profitable, quality=fresh_quality(md), food_trial=trial_picks, median_bypass=bypass, hi_band=band,
-                             hi_probe=probe, food_probe=food_picks, mid_probe=mid_picks)
+                             hi_probe=probe, food_probe=food_picks, mid_probe=mid_picks, mid_band=band_goods)
     explanation["mid_probe_notes"] = mid_notes
+    explanation["mid_band_notes"] = (band_goods or {}).get("notes")
     if trial_state is not None:
         chosen = set(explanation.get("food_trial") or ())
         food_trial.record_plan(trial_state, trial_picks, chosen, time.time())

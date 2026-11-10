@@ -65,45 +65,54 @@ def for_run(md, inventory, catalog, intelligence, now, path=None):
         chosen = settings(path)
         if not chosen:
             return [], None
-        import median_bypass
-        surge = {r.get("sku"): r.get("factor") for r in inventory.get("surge") or []
-                 if isinstance(r, dict) and number(r.get("factor")) and r["factor"] > 1}
-        units = [u for u in inventory.get("units", []) if u.get("grade") != "expired" and u.get("sku") in chosen["skus"]]
-        held = Counter(u["sku"] for u in units)
-        def worst(sku):
-            return (catalog.get(sku) or {}).get("list_price", 0) * WORST_COST_SHARE * surge.get(sku, 1)
-        spent = sum(worst(u["sku"]) for u in units)
-        costs = arrived_costs(md, chosen["skus"])
-        sold = median_bypass.confirmed_counts(md, now, window=STALE_SECONDS)
-        if costs is None or sold is None:
-            return [], {s: "records_unreadable" for s in chosen["skus"]}
-        picks, notes = [], {}
-        for sku in chosen["skus"]:
-            product = catalog.get(sku) or {}
-            price = product.get("list_price")
-            if product.get("kind") != "goods" or not number(price) or price <= 0:
-                notes[sku] = "not_goods"
-                continue
-            median = (intelligence.get(sku) or {}).get("median_price")
-            typical = price * TYPICAL_COST_SHARE * surge.get(sku, 1)
-            if not number(median) or median <= typical:
-                notes[sku] = "median_not_above_typical_cost"
-                continue
-            arrived = costs[sku] + [u["cost"] for u in units if u["sku"] == sku and number(u.get("cost"))]
-            if any(c >= median for c in arrived):
-                notes[sku] = "a_unit_arrived_at_or_above_the_median"
-                continue
-            old = [u for u in units if u["sku"] == sku and number(u.get("supplied_at")) and now - u["supplied_at"] >= STALE_SECONDS]
-            if old and not (sold.get(sku) or (0, 0))[0]:
-                notes[sku] = "held_24h_without_a_sale"
-                continue
-            notes[sku] = "held_full" if held[sku] >= chosen["units_per_sku"] else "ok"
-            for _ in range(max(0, chosen["units_per_sku"] - held[sku])):
-                if spent + worst(sku) > chosen["max_worst_cost_total"]:
-                    notes[sku] = "worst_cost_cap"
-                    break
-                picks.append({"sku": sku, "estimated_cost": worst(sku), "probe": True})
-                spent += worst(sku)
-        return picks, notes
+        return pick_units(md, inventory, catalog, intelligence, now, chosen)
     except Exception:
         return [], None
+
+
+def pick_units(md, inventory, catalog, intelligence, now, chosen, skip_surged=False):
+    """The probe's buying rules for `chosen` ({"skus", "units_per_sku", "max_worst_cost_total"}), shared with mid_band.py; with
+    skip_surged a SKU on the surge list is not bought at all. Raises on unexpected data; callers turn that into off."""
+    import median_bypass
+    surge = {r.get("sku"): r.get("factor") for r in inventory.get("surge") or []
+             if isinstance(r, dict) and number(r.get("factor")) and r["factor"] > 1}
+    units = [u for u in inventory.get("units", []) if u.get("grade") != "expired" and u.get("sku") in chosen["skus"]]
+    held = Counter(u["sku"] for u in units)
+    def worst(sku):
+        return (catalog.get(sku) or {}).get("list_price", 0) * WORST_COST_SHARE * surge.get(sku, 1)
+    spent = sum(worst(u["sku"]) for u in units)
+    costs = arrived_costs(md, chosen["skus"])
+    sold = median_bypass.confirmed_counts(md, now, window=STALE_SECONDS)
+    if costs is None or sold is None:
+        return [], {s: "records_unreadable" for s in chosen["skus"]}
+    picks, notes = [], {}
+    for sku in chosen["skus"]:
+        product = catalog.get(sku) or {}
+        price = product.get("list_price")
+        if product.get("kind") != "goods" or not number(price) or price <= 0:
+            notes[sku] = "not_goods"
+            continue
+        if skip_surged and sku in surge:
+            notes[sku] = "surged"
+            continue
+        median = (intelligence.get(sku) or {}).get("median_price")
+        typical = price * TYPICAL_COST_SHARE * surge.get(sku, 1)
+        if not number(median) or median <= typical:
+            notes[sku] = "median_not_above_typical_cost"
+            continue
+        arrived = costs[sku] + [u["cost"] for u in units if u["sku"] == sku and number(u.get("cost"))]
+        if any(c >= median for c in arrived):
+            notes[sku] = "a_unit_arrived_at_or_above_the_median"
+            continue
+        old = [u for u in units if u["sku"] == sku and number(u.get("supplied_at")) and now - u["supplied_at"] >= STALE_SECONDS]
+        if old and not (sold.get(sku) or (0, 0))[0]:
+            notes[sku] = "held_24h_without_a_sale"
+            continue
+        notes[sku] = "held_full" if held[sku] >= chosen["units_per_sku"] else "ok"
+        for _ in range(max(0, chosen["units_per_sku"] - held[sku])):
+            if spent + worst(sku) > chosen["max_worst_cost_total"]:
+                notes[sku] = "worst_cost_cap"
+                break
+            picks.append({"sku": sku, "estimated_cost": worst(sku), "probe": True})
+            spent += worst(sku)
+    return picks, notes
