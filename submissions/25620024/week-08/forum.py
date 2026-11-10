@@ -420,10 +420,10 @@ def groupbuy_ads(c, t, now):
                       "first_per_hour": gb["per_hour"], "left_this_hour": gb["left"]})
     if not items or not refs:
         return []
-    data = {"type": "clearance", "shop": NAME, "rule": "about cost, while stock lasts; lowest ask per grade in stock now (other units of a grade may ask more)",
+    data = {"type": "clearance", "shop": NAME, "rule": "clearance prices while stock lasts; lowest ask per grade in stock now (other units of a grade may ask more)",
             "items": [{"sku": i["sku"], "list": i["list_price"], "from_by_grade": i["price_by_grade"]} for i in items],
             "how": "ask our shop for the SKU", "refs": refs[:5]}
-    ko = "[재고 정리] 원가 수준 판매 -- 지금 재고의 등급별 실제 판매가\n" + "\n".join(
+    ko = "[재고 정리] 창고 정리 특가 -- 지금 재고의 등급별 실제 판매가\n" + "\n".join(
         f"- {i['name']} ({i['sku']}): 정가 {i['list_price']:,}원 -> 등급별 "
         + ", ".join(f"{g_} {p_:,}원부터" for g_, p_ in i["price_by_grade"].items()) for i in items)
     en = "[Clearance] prices by grade in stock now: " + "; ".join(
@@ -491,7 +491,7 @@ def clearance_groupbuy(c, t, now):
             "how": "ask dragonash for the SKU; the offer data shows the price and the warranty", "warranty": _clear_w()[0],
             "disclosure": "same owner as this buyer"}
     js = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
-    ko = "[공동구매 제안] 침구 주문이 있는 바이어께: 아래 SKU를 dragonash에서 매 시간 선착순 30개, 원가 수준(보증: " + _clear_w()[1] + "). " \
+    ko = "[공동구매 제안] 침구 주문이 있는 바이어께: 아래 SKU를 dragonash에서 매 시간 선착순 30개, 정리 특가(보증: " + _clear_w()[1] + "). " \
          "24시간 시장 체결 건수는 공개 원장 기준. 이 바이어와 dragonash는 같은 주인입니다."
     text = (js + "\n" + HUMAN + "\n" + ko)[:1000]
     return [{"topic": "clearance_groupbuy", "as": "buyer", "kind": "price_data", "refs": refs[:6], "score": 7.8,
@@ -529,7 +529,7 @@ def shop_facts(c, t, now):
     js = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
     ko = (f"[상점 사실] dragonash: 거래 {me.get('deals'):,}건, 별점 {me.get('stars')} (리뷰 {me.get('reviews'):,}건), "
           f"등급 주장 정직 {me.get('honest_claims'):,}/{me.get('claims'):,}, 환불 {me.get('refunds')}건. "
-          "재고 정리 중인 품목은 원가 수준 판매. 이 바이어와 같은 주인입니다.")
+          "재고 정리 중인 품목은 특가 판매. 이 바이어와 같은 주인입니다.")
     text = (js + "\n" + HUMAN + "\n" + ko)[:1000]
     return [{"topic": "shop_facts", "as": "buyer", "kind": "price_data", "refs": refs, "score": 7.6,
              "text": text, "texts": {"json": text, "ko": ko, "en": js}}]
@@ -804,7 +804,7 @@ def follow_ads(c, md, now):
                              "match": "reply 'match <price>': another shop's 24h ledger settle, not under match_min",
                              "match_min": floor_by,
                              "credit": "paid us more than another shop's ledger price within 48h: the difference "
-                                       "comes off your next purchase, max 15%, not under our floor",
+                                       "comes off your next purchase, max 15%, not under our lowest price",
                              "order_with": f"I want to buy {u['name'][:20]} ({sku})"},
                     "text": ko})
     return out

@@ -209,9 +209,9 @@ def big_buyer(c, text):
 CLERK = ("clerk: no haggling needed, this is our price | need a shelf life, grade or warranty? say e.g. "
          "'need 48h, grade A/B' and I pick a unit that passes "
          "| price match: reply 'match <price>' with another shop's settle of this SKU on the ledger (last 24 h) and we "
-         "go down to it, but not under our cost + 5% | paid us more than another shop's ledger price for the same SKU "
+         "go down to it, as far as our lowest price for that unit | paid us more than another shop's ledger price for the same SKU "
          "within 48 h? say your market name: the difference comes off this purchase, at most 15% of its price and not "
-         "under our floor")   # HQ 11-10 "진정성 유지": the old text promised an unconditional match and full credit
+         "under our lowest price")   # HQ 11-10 "진정성 유지": the old text promised an unconditional match and full credit
 MATCH_RE = re.compile(r"\bmatch|cheaper|elsewhere|other shop|another shop|lower price|최저가|더 싸|다른 (가게|곳)", re.I)
 
 
@@ -407,7 +407,7 @@ class Shop(AgentExecutor):
                                                          f"the ledger) | ")
             await up.requires_input(say_offer(f"{regular}{sub}{facts(u, q['price'], q, code)}{warranty_note(u, need['warranty'])}"
                                         + (f" | thank-you price for {big} (bought a {cross_sell()['min_ticket']}+ item "
-                                           f"here): at our cost" if big else "")
+                                           f"here): our lowest price" if big else "")
                                         + (f" | VIP {vip}: -{promo.theta().get('vip_discount', 0):.0%} applied" if vip and not big else "")
                                         + (f" | guarantee credit -{credit[1]} applied (you paid more than the ledger's "
                                            f"lowest price elsewhere, settle #{credit[0]})" if credit else "")
@@ -465,7 +465,7 @@ class Shop(AgentExecutor):
             await up.complete(say(f"Deal: {u['name'][:40]} at {price}. Signed receipt attached (Ed25519 shop_fp={FP}),"
                                   f" claim={u.get('grade')} = true grade. member={code}"
                                   + (f": quote it next time for -{nxt:.0%}" if nxt else ": quote it next time")
-                                  + (f" | thank you: your next order of {gift['name'][:30]} ({gift['sku']}) is at our cost;"
+                                  + (f" | thank you: your next order of {gift['name'][:30]} ({gift['sku']}) is at our lowest price;"
                                      " ask for it with your market name" if gift else "")))
             log(f"{task.id[:8]} deal {u['sku']} at {price} (cost {u['cost']}, member {code})")
             del self.open[task.id]
