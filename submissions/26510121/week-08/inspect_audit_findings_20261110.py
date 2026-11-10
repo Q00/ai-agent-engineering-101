@@ -37,7 +37,9 @@ def main():
                 'latest':[{'action':r['action'],'reason':r['reason'],'evidence':r.get('evidence')} for r in summary['latest']]}
         result['states']={role:{k:state.get(k) for k in ('version','status','since','cooldown_until','patch')}
                           for role,state in audit['adaptive_states'].items()}
-        result['event_sizes']=audit['event_sizes']
+        result['event_sizes']=[{'kind':r['kind'],'n':r['n'],
+            'json_characters':r.get('json_characters',r.get('json_bytes'))} for r in audit['event_sizes']]
+        result['event_size_note']='Corrected label: source SQL length(TEXT) counts characters, not bytes. Source log remains unchanged.'
         p=c.execute("SELECT min(ts),max(ts),count(*) FROM events WHERE kind='customer_visit'").fetchone()
         result['customer_retained_now']={'oldest':p[0],'newest':p[1],'n':p[2],'span_hours':(p[1]-p[0])/3600}
     stamp=datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')

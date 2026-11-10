@@ -49,7 +49,7 @@ def main():
         last=c.execute("SELECT max(ts),count(*) FROM events WHERE kind='model_usage'").fetchone()
         result['model_usage']={'latest':last[0],'total':last[1],
             'last_24h':c.execute("SELECT count(*) FROM events WHERE kind='model_usage' AND ts>? AND ts<=?",(end-86400,end)).fetchone()[0]}
-        result['event_sizes']=[{'kind':k,'n':n,'json_bytes':bs} for k,n,bs in c.execute(
+        result['event_sizes']=[{'kind':k,'n':n,'json_characters':bs} for k,n,bs in c.execute(
             'SELECT kind,count(*),sum(length(data)) FROM events GROUP BY kind ORDER BY sum(length(data)) DESC LIMIT 10')]
         result['db_bytes']=(ROOT/'.market/r3.sqlite3').stat().st_size
         result['memory_coverage']={}
@@ -126,6 +126,8 @@ def main():
         result['rules']={k:v for k,v in j.get('market_rules',{}).items() if k in ('at','buyer_metric','buyer_forum_metric','compatible')}
         result['memory_scan_seconds']=time.time()-result['captured_at']
     result['limits']=['Read-only SQLite snapshot; kv records can be newer than the frozen public board. They are labeled current local state.',
+        'Customer FIFO retention can delete pre-cutoff visits before this audit; coverage describes currently retained records, not a historical reconstruction.',
+        'SQLite length(TEXT) measures characters, not UTF-8 bytes. event_sizes is an as-read all-time character-count profile.',
         'Window-end in-flight orders are pending; failures are attempts and can occur in later paid orders.',
         'Context limits imply missing evidence, not proven causal contribution to rank loss.',
         'Observed control intervals cap carry-forward at 120 seconds; they do not measure exact market downtime.']

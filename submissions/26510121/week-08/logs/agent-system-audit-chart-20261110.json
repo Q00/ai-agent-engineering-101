@@ -1,0 +1,47 @@
+{
+  "id": "agent-system-audit-all",
+  "title": "양쪽 자산·Saved 개선과 다른 ALL 흐름",
+  "description": "2026-11-09 21:28→11-10 13:26 KST 공식 보드 관측. ALL 축은 0.75~0.87로 확대. 시점 간 연결은 관측 변화이며 인과 추정이 아닙니다.",
+  "height": 250,
+  "spec": {
+    "type": "line",
+    "x": "time",
+    "y": [
+      "Shop ALL",
+      "Buyer ALL"
+    ],
+    "yLabel": "ALL 점수",
+    "yDomain": [
+      0.75,
+      0.87
+    ],
+    "startAtZero": false,
+    "showValues": true,
+    "showLegend": true,
+    "colors": {
+      "Shop ALL": "#167D9A",
+      "Buyer ALL": "#B55D22"
+    },
+    "valueFormat": {
+      "style": "decimal",
+      "maximumFractionDigits": 3
+    }
+  },
+  "rows": [
+    {
+      "time": "2026-11-09T21:28:29.527456+09:00",
+      "Shop ALL": 0.847,
+      "Buyer ALL": 0.795
+    },
+    {
+      "time": "2026-11-10T08:58:00.856118+09:00",
+      "Shop ALL": 0.832,
+      "Buyer ALL": 0.796
+    },
+    {
+      "time": "2026-11-10T13:26:21.820021+09:00",
+      "Shop ALL": 0.829,
+      "Buyer ALL": 0.78
+    }
+  ]
+}
