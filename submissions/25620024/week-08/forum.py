@@ -395,6 +395,41 @@ def groupbuy_ads(c, t, now):
              "texts": {"json": js[:1000], "ko": ko, "en": en}}]
 
 
+def clearance_facts(c, t, now):
+    """As the buyer (HQ 11-10 "홍보가 아닌, 사실로 안내하면 돼"): a price-data post for the bedding/furniture SKUs our
+    shop is clearing -- the market's 24 h settles and median by grade (ledger), next to the asks our shop gives now,
+    with our interest disclosed. Facts a buyer can check; no claims about other shops, no instructions."""
+    try:
+        ad = groupbuy_ads(c, t, now)
+        items = json.loads(ad[0]["texts"]["json"].split("\n")[0])["items"] if ad else []
+    except Exception:
+        items = []
+    rows, refs = [], []
+    cat = market_model.catalog()
+    for i in items:
+        sku = i["sku"]
+        med = {}
+        for g_ in sorted(i["ask_by_grade"]):
+            m_, n_ = market_model.market_price(c, sku, grade=g_)
+            if m_:
+                med[g_] = int(m_)
+        n24 = c.execute("select count(*) from settles where sku=? and ts>?", (sku, now - 86400)).fetchone()[0]
+        refs += [s_ for (s_,) in c.execute("select seq from settles where sku=? order by seq desc limit 2", (sku,))]
+        rows.append({"sku": sku, "list": i["list"], "n24h": n24, "mkt_median": med, "dragonash_ask": i["ask_by_grade"]})
+    if not rows or not refs:
+        return []
+    rows = rows[:4]
+    data = {"type": "price_data", "source": "ledger 24h by grade; current asks", "items": rows,
+            "disclosure": "same owner as shop dragonash"}
+    ko = "[가격 데이터] 침구·가구 SKU 24시간 체결 중간가(등급별)와 지금 dragonash 판매가 (같은 주인, 이해관계 공개)\n" + "\n".join(
+        f"- {r['sku']} 정가 {r['list']:,}: 24h {r['n24h']}건, 시장 " + ", ".join(f"{g_} {v:,}" for g_, v in r["mkt_median"].items())
+        + " / dragonash " + ", ".join(f"{g_} {v:,}" for g_, v in r["dragonash_ask"].items()) for r in rows)
+    js = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
+    return [{"topic": "clearance_facts", "as": "buyer", "kind": "price_data", "refs": refs[:8], "score": 8.0,
+             "text": (js + "\n" + HUMAN + "\n" + ko)[:1000], "texts": {"json": (js + "\n" + HUMAN + "\n" + ko)[:1000],
+                                                                    "ko": ko, "en": js}}]
+
+
 def groupbuy_call(c, t, now, top=4, min_ticket=150000):
     """As the buyer, a group-buy call (HQ 11-05 "Recruit buyers"): the high-ticket SKUs buyers settle most on the public
     ledger (24 h), what they paid (median and the cheapest quarter, as a share of list), and the proposal: buyers who get
@@ -712,7 +747,7 @@ def tick(md=Path(".market"), c=None, now=None):
     # posts that name other shops (honesty, breakage) risk their dislikes, so the buyer posts only checkable records
     cands = purchase_records(c, t, now, top=5) + price_index(c, t, now) + (stock_check(c, t, now) if t.get("name_shops") else []) \
         + (receipt_tips(c, t, now) if t.get("name_shops") else []) + checkout_tips(c, t, now) + replies(c, t, forum, now) \
-        + frugal_shops(c, t, now) + wanted_posts(c, t, now) + groupbuy_ads(c, t, now) + groupbuy_call(c, t, now) \
+        + frugal_shops(c, t, now) + wanted_posts(c, t, now) + groupbuy_ads(c, t, now) + groupbuy_call(c, t, now) + clearance_facts(c, t, now) \
         + offers(forum, md, now) \
         + opening_ads(c, md, now) + follow_ads(c, md, now)
     lines = []
