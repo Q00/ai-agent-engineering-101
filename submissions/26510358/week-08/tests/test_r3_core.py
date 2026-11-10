@@ -69,9 +69,9 @@ def test_pricing_rules():
     assert pricing.seller_reply(9000, 6480, 9000, 1) == ("accept", 9000)
     act, p = pricing.seller_reply(9000, 6480, 5000, 0)
     assert act == "counter" and 6480 <= p < 9000
-    # buyer never above budget or 95% of list
-    assert pricing.buyer_limits(10000, 99999, "food") == 9500
-    assert pricing.buyer_limits(10000, 7000, "food") == 7000
+    # buyer never above budget or list x (1 - MIN_SURPLUS_RATIO): 70% since 2026-11-10 (a deal below our saved lowers it)
+    assert pricing.buyer_limits(10000, 99999, "food") == 7000
+    assert pricing.buyer_limits(10000, 6000, "food") == 6000
     assert pricing.buyer_limits(100000, 10**6, "goods", p_break=0.2) < 70000
     act, p = pricing.buyer_next_offer(10000, 9000, 9500, None, 0)
     assert act == "offer" and p == 5500

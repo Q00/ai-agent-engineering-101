@@ -199,7 +199,10 @@ BUYER_C_MIN_WARRANTY_H = 6         # grade C goods only with this much warranty 
                                    #   come within 6 h of the sale); without it the kit pays for A and B only
 
 # --- buyer -----------------------------------------------------------------------------------------
-MIN_SURPLUS_RATIO = 0.05            # never pay more than 95% of list price
+MIN_SURPLUS_RATIO = 0.30            # keep at least this share of list (0.05 until 2026-11-10). Saved is an average
+                                    #   (sum of surplus/list over deals + 100), so a deal below our saved (0.2955)
+                                    #   lowers it. 72 h replay: 0.30 keeps 64% of deals at mean 0.374 -> end-of-round
+                                    #   saved 0.330 (rank ~8) vs 0.312 (rank ~17) keeping all; deals stay top-10
 FIRST_OFFER_RATIO = 0.55            # first offer as a share of list price
 MAX_OFFERS = 6
 SHOPS_TO_TRY = 3
