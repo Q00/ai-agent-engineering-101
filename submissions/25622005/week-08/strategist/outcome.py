@@ -7,8 +7,11 @@ automatically, and only on food conversion (their direct, mechanical effect): bo
 after must show a drop of at least DROP against the base and a two-proportion z of at most -Z, so one
 noisy half-hour is not enough.
 A revert returns the key to its old value (if it still holds the value the change wrote) and blocks that
-direction for BLOCK_H. Goods conversion, our share of market settles and posts per hour swing too much
-between half-hours (goods 0.55-0.96 with no change) to judge a change by: they are reported, never acted on.
+direction for BLOCK_H. Goods conversion, our share of market settles, our settled revenue per hour and posts
+per hour swing too much between half-hours (goods 0.55-0.96 with no change) to judge a change by: they are
+reported, never acted on. shop_rev_h is there because a seller lever's effect is in paid revenue, which the
+seller log cannot show (a sign is not a sale): on 11-10 four warranty cap cuts went through with only buyer
+and forum metrics in their outcome rows while settled revenue halved.
 While a check is pending the model is not asked (run.py), so one change-set is judged before the next.
 """
 import math
@@ -21,7 +24,7 @@ CHECK_H, BASE_H, MAX_WAIT_H = 1.0, 2.0, 3.0
 CHECK_SLACK_S = 600
 HISTORY_H = MAX_WAIT_H              # how far back run.py must keep buyer and forum rows (collect.read_own)
 DROP, Z, MIN_N, BLOCK_H = 0.30, 2.5, 20, 12
-METRICS = ("buyer_food_conv", "buyer_goods_conv", "shop_share", "posts_h")
+METRICS = ("buyer_food_conv", "buyer_goods_conv", "shop_share", "shop_rev_h", "posts_h")
 REVERT = {"buyer.cap_food": "buyer_food_conv", "buyer.min_surplus_list": "buyer_food_conv"}
 
 
@@ -45,6 +48,9 @@ def measure(hist, buckets, m, t0, t1):
     elif m == "shop_share":
         tot = collect.bucket_total(buckets, t0, t1)
         num, den = tot["ours"], tot["settle"]
+    elif m == "shop_rev_h":             # our settled (paid) revenue per hour, from the ledger's settles: what the
+        tot = collect.bucket_total(buckets, t0, t1)                   # board counts, where a seller lever shows
+        num, den = round(sum(v for k, v in tot.items() if k.startswith("ours_rev."))), (t1 - t0) / 3600
     else:                               # posts_h: per hour
         num = sum(1 for r in hist.get("forum") or [] if _in(r, t0, t1)
                   and isinstance(r.get("choice"), dict) and r["choice"].get("posted") is True)
