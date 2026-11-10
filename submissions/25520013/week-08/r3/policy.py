@@ -3,6 +3,7 @@
 Hard guard: a seller price is never below the unit's cost (`floor_price` >= cost + 1, and `guard_price` is the
 last check before a receipt is signed). Every price leaving this module is an int (the kit's checkout needs int).
 """
+import copy
 import hashlib
 import json
 import math
@@ -103,6 +104,104 @@ class PolicyWatcher:
         self._bad = h
         self.failures += 1
         return self.pol, ("reload_failed", h, err)
+
+
+# --- v2.12 concurrent comparison arms: policy_arms.json next to the live policy.json. Each live arm writes its value
+# at its path for the share of sale requests whose salt hashes below the share (arm "b"); the rest keep the policy
+# as it is (arm "a"). No file, an empty list or only expired arms -> the policy object itself, unchanged.
+# The seller salts by the sold unit id and applies arms after the unit is picked: shop keys read by the pick or by
+# decline_texts (c_first_leaves, food_min_left_frac, decline_texts, ...) and restock keys have no effect when armed.
+ARMS_FILE = "policy_arms.json"
+ARMS_MAX = 8
+ARM_ROOTS = ("defaults", "categories", "shop")         # the seller reads these; other roots are ignored
+_ARMS_CACHE = {}                                       # arms file path -> ((mtime_ns, size), valid arms)
+
+
+def _arm_ok(a):
+    num = lambda v: isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v)
+    if not isinstance(a, dict):
+        return False
+    p = a.get("path")
+    return (isinstance(a.get("id"), int) and not isinstance(a.get("id"), bool)
+            and isinstance(p, list) and len(p) >= 2 and all(isinstance(k, str) and k for k in p) and p[0] in ARM_ROOTS
+            and "value" in a and num(a.get("share")) and 0 < a["share"] < 1 and num(a.get("until")))
+
+
+def load_arms(policy_path, now):
+    """v2.12: valid arms of policy_arms.json (beside `policy_path`) whose `until` (epoch s) is after `now`. Parsed
+    once per (mtime, size) of the file; a stat per call. Missing / unreadable / corrupt file, not {"arms": [...]},
+    or more than ARMS_MAX arms -> []; an arm with a bad field (id int, path list of >= 2 keys under ARM_ROOTS, value
+    present, 0 < share < 1, until a number) or a repeated id is skipped. Never raises."""
+    try:
+        p = Path(policy_path).parent / ARMS_FILE
+        st = p.stat()
+        key = (st.st_mtime_ns, st.st_size)
+        hit = _ARMS_CACHE.get(str(p))
+        if hit is None or hit[0] != key:
+            ok, seen = [], set()
+            try:
+                raw = json.loads(p.read_bytes())
+                arms = raw.get("arms") if isinstance(raw, dict) else None
+            except Exception:                            # noqa: BLE001 - a corrupt file is no arms
+                arms = None
+            if isinstance(arms, list) and len(arms) <= ARMS_MAX:
+                for a in arms:
+                    if _arm_ok(a) and a["id"] not in seen:
+                        seen.add(a["id"])
+                        ok.append(a)
+            hit = _ARMS_CACHE[str(p)] = (key, ok)
+        return [a for a in hit[1] if a["until"] > now]
+    except Exception:                                    # noqa: BLE001 - never fail a request on arms
+        return []
+
+
+def arm_salt(unit_id):
+    """v2.12: salt of one sale: the unit id. Live requests carry no buyer identity; the market settle record carries
+    the unit, so the evaluator rebuilds the salt from it with this same function. A unit keeps its arm while in stock."""
+    return str(unit_id)
+
+
+def arm_pick(arm_id, salt, share=0.5):
+    """v2.12: True = arm b. sha256 of "<arm_id>:<salt>", first 8 hex digits as a fraction of 2**32, below share."""
+    return int(hashlib.sha256(f"{arm_id}:{salt}".encode()).hexdigest()[:8], 16) / 2**32 < share
+
+
+def _set_path(pol, path, value):
+    """Copy-on-write: a new top dict and new dicts along `path` (missing ones created); everything else shared."""
+    out = dict(pol)
+    cur, src = out, pol
+    for k in path[:-1]:
+        nxt = src.get(k) if isinstance(src, dict) else None
+        if nxt is not None and not isinstance(nxt, dict):
+            raise PolicyError(f"arm path {path!r}: {k!r} is not an object")
+        cur[k] = dict(nxt or {})
+        cur, src = cur[k], nxt
+    cur[path[-1]] = copy.deepcopy(value)
+    return out
+
+
+def with_arms(pol, arms, salt):
+    """v2.12: (pol2, picked). pol2 = pol with the value of every arm picked b for this salt at its path (pol itself
+    when none is b; pol is never mutated); picked = {arm id: "a" | "b"} for every arm given. When the arms make a
+    policy that fails validate (or a path runs through a non-object), pol is returned and its b arms are "invalid"."""
+    picked, b = {}, []
+    for a in arms or ():
+        if arm_pick(a["id"], salt, a["share"]):
+            b.append(a)
+            picked[a["id"]] = "b"
+        else:
+            picked[a["id"]] = "a"
+    if not b:
+        return pol, picked
+    try:
+        pol2 = pol
+        for a in b:
+            pol2 = _set_path(pol2, a["path"], a["value"])
+        validate(pol2)
+    except Exception:                                    # noqa: BLE001 - a bad arm never replaces the policy
+        picked.update({a["id"]: "invalid" for a in b})
+        return pol, picked
+    return pol2, picked
 
 
 def _check(name, v, bounds):

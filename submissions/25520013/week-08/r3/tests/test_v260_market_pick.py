@@ -91,5 +91,5 @@ def test_the_seller_passes_stats_to_the_pick():
     assert (
         src.index("st = self.stats()")
         < src.index("find_unit(text")
-        < src.index("P.ask_price(unit, self.pol, stats=st")
+        < src.index("P.ask_price(unit, pol, stats=st")  # v2.12 arms: the ask uses the arm-applied policy
     )

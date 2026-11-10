@@ -291,6 +291,7 @@ class Seller(AgentExecutor):
         self._lock = threading.Lock()                   # Resident is used by A2A calls and the tick thread
         self._ticker = None
         self._blog = {}                                 # v1.20 logging only: task id -> (buyer_ref, source)
+        self.arms_policy_path = self._pw.path if self._pw is not None else P.POLICY_FILE   # v2.12: arms file dir
 
     def held(self, now):
         """v2.3: units not to offer now: in an open negotiation, sold in the last ACCEPT_HOLD_S (two buyers on one
@@ -415,6 +416,20 @@ class Seller(AgentExecutor):
                                            "error": str(e)[:120]}, pol=pol)
             return ("counter", floor) if deal["rounds"] < 8 else ("reject", None)
 
+    def deal_policy(self, unit, now):
+        """v2.12: (policy, picked arms) for a new sale of `unit`: P.with_arms over the live arms of policy_arms.json,
+        salted by the unit id (P.arm_salt; the market settle carries the unit), so a unit offered again in a later task
+        keeps its arm. The pick (find_unit) and decline_texts already ran on self.pol. No arms or any error ->
+        (self.pol, {}), the policy object itself."""
+        try:
+            arms = P.load_arms(self.arms_policy_path, now)
+            if not arms:
+                return self.pol, {}
+            return P.with_arms(self.pol, arms, P.arm_salt(unit["unit"]))
+        except Exception as e:                           # noqa: BLE001 - the unchanged policy on any error
+            print(f"WARNING: seller: arms skipped ({type(e).__name__}: {str(e)[:150]})", file=sys.stderr, flush=True)
+            return self.pol, {}
+
     def _metric(self, decision, outcome, pol=None):
         """pol: the deal's own policy (v1.16 reload: a deal opened before a reload is tagged with its own hash)."""
         r = Recorder("seller", policy_hash=(pol or self.pol)["_hash"])
@@ -468,18 +483,20 @@ class Seller(AgentExecutor):
                 await up.reject(say("Sorry, we have none of that in stock." if need is None
                                     else f"Sorry, none of our units has {need:g} h of shelf life left."))
                 return
+            pol, arms = self.deal_policy(unit, now)     # v2.12: arms by unit, this deal's policy for every round
             sh = self.shelf(unit["sku"])
             relax, nset = self.volume()
-            ask = P.ask_price(unit, self.pol, stats=st, inv=inv, shelf_hours=sh, relax=relax)
+            ask = P.ask_price(unit, pol, stats=st, inv=inv, shelf_hours=sh, relax=relax)
             deal = self.open[task.id] = {"unit": unit, "ask": ask, "rounds": 0, "t": time.time(), "inv": inv, "sh": sh, "text": text,
-                                         "relax": relax, "stats": st, "pol": self.pol}
+                                         "relax": relax, "stats": st, "pol": pol, "arms": arms}
             self._metric("open", {"sku": unit["sku"], "unit": unit["unit"], "cost": unit["cost"], "ask": ask,
-                                  "floor": P.floor_price(unit, self.pol, inv, relax=relax), "relax": relax,
+                                  "floor": P.floor_price(unit, pol, inv, relax=relax), "relax": relax,
                                   "settled": nset, "stats": st is not None, "stats_error": self._rerr,
-                                  "stats_seq": getattr(st, "s", {}).get("seq") if st is not None else None})
+                                  "stats_seq": getattr(st, "s", {}).get("seq") if st is not None else None,
+                                  **({"arms": arms} if arms else {})})
             self._bl("quote", task.id, kind="open", sku=unit["sku"], unit=unit["unit"], category=unit.get("category"),
-                     grade=unit.get("grade"), ask=ask, cost=unit.get("cost"), policy_hash=self.pol.get("_hash"))
-            await up.requires_input(say(opening_text(unit, self.pol, ask, st, sh)))
+                     grade=unit.get("grade"), ask=ask, cost=unit.get("cost"), policy_hash=pol.get("_hash"))
+            await up.requires_input(say(opening_text(unit, pol, ask, st, sh)))
             return
         deal["rounds"] += 1
         deal["t"] = now
@@ -511,7 +528,8 @@ class Seller(AgentExecutor):
             self._metric("accept", {"sku": u["sku"], "unit": u["unit"], "cost": u["cost"], "price": price,
                                     "below_cost": price < u["cost"], "rounds": deal["rounds"],
                                     "relax": deal["relax"], "claim": receipt.get("claim"),
-                                    "warranty_hours": receipt.get("warranty_hours", 0)}, pol=deal.get("pol"))
+                                    "warranty_hours": receipt.get("warranty_hours", 0),
+                                    **({"arms": deal["arms"]} if deal.get("arms") else {})}, pol=deal.get("pol"))
             await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
             self._bl("outcome", task.id, outcome="accept", sku=u["sku"], price=price, rounds=deal["rounds"])
             self._blog.pop(task.id, None)
