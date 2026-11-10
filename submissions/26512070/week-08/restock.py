@@ -31,6 +31,7 @@ from tools import market_files as mf  # noqa: E402
 from tools.registry import Ctx, call  # noqa: E402
 
 ROUND_END = time.mktime(time.strptime("2026-11-17 23:59", "%Y-%m-%d %H:%M"))   # Round 3 ends (local time, KST)
+TAPER_H = 48            # own_floor ends this long before the end: stock left at the end is lost, so we buy only what sells
 REASK_MINUTES = 20
 LEAD = 75                  # plan this many seconds before a window opens at the latest (a model turn takes ~40 s)
 WINDOW_MINUTES = 3
@@ -58,6 +59,7 @@ def playbook(ctx):
             "top_n": pb.get("top_n", 0), "top_units": pb.get("top_units", 20), "top_line_share": pb.get("top_line_share", 0.5),
             "units_cap": pb.get("units_cap", 12),
             "own_sales": pb.get("own_sales", False), "own_cover": pb.get("own_cover", 1.5),
+            "own_floor": pb.get("own_floor", False),
             "probe_units": pb.get("probe_units", 2), "food_cap": pb.get("food_cap", 3),
             # 11/5 09:0x: food sized by its own sales per window (None = the fixed baseline above)
             "food_windows": pb.get("food_windows"), "food_fresh_share": pb.get("food_fresh_share", 0.5),
@@ -194,7 +196,12 @@ def build_buy_list(ctx, now=None):
             want_units = math.ceil(n * pb["own_cover"])
             if kind == "goods":
                 probe = pb["probe_units"] if (x["have"] == 0 and n == 0) else 0
-                x["target"] = min(lim["max_units_per_sku"], max(want_units, probe))
+                if pb["own_floor"] and (ROUND_END - now) / 3600 > TAPER_H:
+                    # user 11/10 15h ("stock up fast"): our 2 h sales only raise a goods line - cutting the market's
+                    # and top lines to them bought 1-6M a window while 266M cash sat idle (32 sales/h vs 90-220)
+                    x["target"] = min(lim["max_units_per_sku"], max(x["target"], want_units, probe))
+                else:
+                    x["target"] = min(lim["max_units_per_sku"], max(want_units, probe))
             elif kind == "food" and pb["food_windows"]:
                 # 11/5 09:0x (user: food fresh, goods by their own cover; old food must not pile up): food is bought
                 # for food_windows windows of its own sales (2 h = 6 windows), and only units with food_fresh_share
