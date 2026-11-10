@@ -1,6 +1,5 @@
 """Cheap food discovery never supplies freshness or purchase authorization."""
 from contextlib import redirect_stdout
-from copy import deepcopy
 from io import StringIO
 import json
 import time
@@ -117,7 +116,7 @@ class FoodDiscoveryTests(unittest.TestCase):
                             for i in (3, 4)])
         selected, _, state, _ = self.select()
         self.assertEqual(selected["name"], "shop")  # Cheap C before dearer A.
-        retry = alternative_shop(state, selected, f.order)
+        retry, _ = alternative_shop(state, selected, f.order)
         self.assertEqual(retry["name"], "other")
         self.assertEqual(retry["price_reference"], [])
 
