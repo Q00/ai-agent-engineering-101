@@ -52,7 +52,7 @@ def six_hour_settings(path=None):
     """The A-grade six-hour warranty's settings when switched on and inside its bounds; anything else is off."""
     c = read(ROOT / "a_grade_warranty.json" if path is None else path, {})
     try:
-        if (c.get("enabled") is not True or c["hours"] != 6 or not 0 < c["max_exposure"] <= 60000000 or not 0 < c["cash_exposure_ratio"] <= .7
+        if (c.get("enabled") is not True or c["hours"] != 6 or not 0 < c["max_exposure"] <= 90000000 or not 0 < c["cash_exposure_ratio"] <= .7
                 or not 0 <= c["refund_ratio"] < .2 or c["quote_lease_seconds"] != 600):
             return None
     except (AttributeError, KeyError, TypeError):

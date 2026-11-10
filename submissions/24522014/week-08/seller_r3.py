@@ -43,7 +43,7 @@ from sale_order import grade_c_last, order_key
 from strategy_policy import effective
 
 NAME = "kcwarni Inventory Shop"
-FEATURES = ["actual_grade_receipt", "bounded_warranty_v1", "coded_seller_rules", "model_breaker", "food_pricing_v2", "price_cap_v1", "sale_order_v1", "a_grade_six_hour_v1", "pq1_v1", "food_floor_108_v1"]
+FEATURES = ["actual_grade_receipt", "bounded_warranty_v1", "coded_seller_rules", "model_breaker", "food_pricing_v2", "price_cap_v1", "sale_order_v1", "a_grade_six_hour_v1", "pq1_v1", "food_floor_108_v1", "a_warranty_90m_v1"]
 MARKET_DIR = Path(os.environ.get("MARKET_DIR", ".market"))
 
 PROMPT = """You are a Round 3 inventory sales agent. A buyer is negotiating for one {name}.

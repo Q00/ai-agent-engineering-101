@@ -28,11 +28,23 @@ class Settings(unittest.TestCase):
         self.assertEqual((value["hours"], value["max_exposure"], value["cash_exposure_ratio"], value["refund_ratio"]), (6, 60000000, .5, .02))
         self.assertEqual(warranty_trial.six_hour_settings()["max_exposure"], 60000000)
 
+    def test_the_validator_takes_up_to_90m_and_the_seller_reports_it(self):
+        # User approval of 11-10 (direct, about 19:2x KST): the six-hour warranty limit may be 90M, no more.
+        import seller_r3
+        self.assertIn("a_warranty_90m_v1", seller_r3.FEATURES)
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "w.json"
+            for ok in (60000000, 90000000):
+                path.write_text(json.dumps({**ON, "max_exposure": ok}), encoding="utf-8")
+                self.assertEqual(warranty_trial.six_hour_settings(path)["max_exposure"], ok)
+            path.write_text(json.dumps({**ON, "max_exposure": 90000001}), encoding="utf-8")
+            self.assertIsNone(warranty_trial.six_hour_settings(path))
+
     def test_anything_but_a_valid_setting_is_off(self):
         with tempfile.TemporaryDirectory() as folder:
             path = Path(folder) / "w.json"
             self.assertIsNone(warranty_trial.six_hour_settings(path))
-            for bad in ({**ON, "enabled": "true"}, {**ON, "enabled": 1}, {**ON, "hours": 2}, {**ON, "hours": 7}, {**ON, "max_exposure": 0}, {**ON, "max_exposure": 60000001}, {**ON, "cash_exposure_ratio": .71},
+            for bad in ({**ON, "enabled": "true"}, {**ON, "enabled": 1}, {**ON, "hours": 2}, {**ON, "hours": 7}, {**ON, "max_exposure": 0}, {**ON, "max_exposure": 90000001}, {**ON, "cash_exposure_ratio": .71},
                         {**ON, "refund_ratio": .2}, {**ON, "refund_ratio": -.1}, {**ON, "quote_lease_seconds": 60}, {"enabled": True}, {**ON, "max_exposure": "x"}, []):
                 path.write_text(json.dumps(bad), encoding="utf-8")
                 self.assertIsNone(warranty_trial.six_hour_settings(path), bad)
