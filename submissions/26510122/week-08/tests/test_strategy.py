@@ -28,6 +28,46 @@ import review_r3
 
 
 class NewsvendorTests(unittest.TestCase):
+    def test_price_guidance_compares_profit_with_paid_same_grade_and_coverage(self):
+        from newsvendor_tool import price_guidance
+        now = 500_000
+        unit = {'sku': 'G1', 'grade': 'A', 'cost': 180_000, 'kind': 'goods',
+                'supplied_at': now - 86400}
+        evidence = {'outcome': 'SETTLED', 'sku': 'G1', 'settled_grade': 'A',
+                    'settled_at': now - 60, 'warranty_hours_at_receipt': 6}
+        rows = [{**evidence, 'ledger': n, 'settled_price': price}
+                for n, price in enumerate((198_000, 210_000, 224_000), 1)]
+        rows += [rows[1], {**evidence, 'ledger': 4, 'settled_price': 280_000, 'warranty_hours_at_receipt': 72},
+                 {**evidence, 'ledger': 5, 'settled_price': 280_000, 'settled_grade': 'B'},
+                 {**evidence, 'ledger': 6, 'settled_price': 300_000, 'settled_at': now-73*3600},
+                 {**evidence, 'ledger': 7, 'settled_price': 300_000, 'outcome': 'RECEIPT_PENDING'}]
+        got = price_guidance(unit, now=now, warranty_hours=6, attempts=rows,
+                             offered_price=200_000, target_profit=5_000)
+        self.assertEqual(got['break_even_price'], 202_000)
+        self.assertEqual(got['minimum_profitable_price'], 202_001)
+        self.assertEqual(got['minimum_price_for_target'], 207_556)
+        self.assertEqual(got['comparable_paid_72h']['count'], 3)
+        self.assertEqual(got['suggested_opening_price'], 210_000)
+        self.assertEqual(got['estimated_profit_at_offer'], -1_800)
+        self.assertEqual(got['estimated_profit_at_suggestion'], 7_200)
+        self.assertIsNone(price_guidance(unit, now=now, warranty_hours=6, attempts=rows,
+                                        target_profit=15_000)['suggested_opening_price'])
+
+    def test_price_guidance_does_not_mix_food_shelf_life_or_count_signed_as_paid(self):
+        from newsvendor_tool import price_guidance
+        now = 500_000
+        unit = {'sku': 'F1', 'grade': 'C', 'cost': 5_000, 'kind': 'food',
+                'expires_at': now + 3600}
+        evidence = {'outcome': 'SETTLED', 'sku': 'F1', 'settled_grade': 'C',
+                    'settled_at': now - 600, 'settled_price': 6_000}
+        rows = [{**evidence, 'ledger': 1, 'hours_left_at_receipt': 12},
+                {**evidence, 'ledger': 2, 'hours_left_at_receipt': 2}]
+        got = price_guidance(unit, now=now, attempts=rows, offered_price=0)
+        self.assertEqual(got['minimum_profitable_price'], 5_001)
+        self.assertEqual(got['comparable_paid_72h']['count'], 1)
+        self.assertEqual(got['estimated_profit_at_offer'], -5_000)
+        self.assertIsNone(got['suggested_opening_price'])
+
     def test_lecture_discrete_example_selects_thirteen(self) -> None:
         probabilities = [0.0] * 4 + [
             0.01, 0.02, 0.04, 0.08, 0.09, 0.11, 0.16,

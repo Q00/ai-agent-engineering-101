@@ -172,6 +172,7 @@ def _attempts(rows: Iterable[dict], *, skus: Set[str] | None = None) -> list[dic
             attempts[task]["outcome"] = "RECEIPT_PENDING"
             attempts[task]["agreed_price"] = row.get("price")
             attempts[task]['grade_at_receipt'] = row.get('grade')
+            attempts[task]['warranty_hours_at_receipt'] = row.get('warranty_hours')
             expires=row.get('expires_at',attempts[task].get('expires_at'))
             attempts[task]['hours_left_at_receipt'] = hours_left(expires,row.get('at'))
         elif task in attempts and kind=='checkout_unpaid':
@@ -188,6 +189,7 @@ def _attempts(rows: Iterable[dict], *, skus: Set[str] | None = None) -> list[dic
             attempts[task]["outcome"] = "SETTLED"
             attempts[task]["settled_price"] = settlement["price"]
             attempts[task]["ledger"] = settlement["ledger"]
+            attempts[task]['settled_at'] = settlement.get('at')
             attempts[task]['settled_grade'] = settlement.get('grade')
     return list(attempts.values())
 

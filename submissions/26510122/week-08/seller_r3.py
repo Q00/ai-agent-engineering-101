@@ -28,7 +28,7 @@ from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 from harness import decide_json, trace, MODEL
 from market_memory import (RECEIPT_EVENTS, compact_context, events, record,
                            sync_settlements, trade_attempts)
-from newsvendor_tool import quote_candidates
+from newsvendor_tool import price_guidance, quote_candidates
 from inventory_observation import requested_skus
 from context_compaction import MAX_TURNS
 import buyer_identity
@@ -352,6 +352,8 @@ class Seller(AgentExecutor):
                 profiles={}
                 profiles_by_unit={}
                 for unit,tool in zip(choices,tools):
+                    tool['price_guidance'] = price_guidance(
+                        unit, now=now, warranty_hours=seller_warranty.hours(unit), attempts=attempts)
                     remaining=(unit['expires_at']-now)/3600 if unit.get('expires_at') is not None else None
                     bucket='unknown' if remaining is None else 'near_expiry' if remaining<=3 else 'not_near_expiry'
                     key=f"{unit['sku']}:{unit['grade']}:{bucket}"
@@ -368,7 +370,9 @@ class Seller(AgentExecutor):
                     'purchase_requirements': requirements,
                     'warranty_policy':seller_warranty.POLICY,
                     "objective": "Choose one available physical unit and an opening price. "
-                                 "Use the calculation-tool candidates and market memory as evidence; "
+                                 "Use price_guidance: a supported opening price comes from recent comparable paid sales. "
+                                 "A median below the profit floor signals a cost or demand gap. Use the other candidates "
+                                 "and market memory when comparable sales are sparse. "
                                  "you may choose another positive price when you explain why. "
                                  "A signed receipt is not a settled sale. Buyer-specific higher quotes are optional "
                                  "experiments ONLY for eligible, market-linked signed identities. Use actual calm "
@@ -530,17 +534,21 @@ class Seller(AgentExecutor):
                grade=unit['grade'],cost=unit['cost'],expires_at=unit.get('expires_at'))
         deal["history"].append({"buyer_offer": offer, "seller_ask": deal["ask"]})
         self.state.save_deal(task.id, deal, create=False)
-        memory = compact_context(unit["sku"], unit["grade"])
+        attempts = trade_attempts({unit['sku']})
+        memory = compact_context(unit["sku"], unit["grade"], attempts=attempts)
+        guidance = price_guidance(unit, warranty_hours=warranty_hours, attempts=attempts, offered_price=offer)
         prompt = {
             "phase": "follow_up", "task_id": task.id,
             "unit": quote_candidates(unit,warranty_hours=warranty_hours), "current_ask": deal["ask"],
-            "buyer_offer": offer, "history": deal["history"][-MAX_TURNS:], "memory": memory,
+            "buyer_offer": offer, "price_guidance": guidance, "history": deal["history"][-MAX_TURNS:], "memory": memory,
             'buyer_price_evidence':deal.get('buyer_price_evidence'),
             'purchase_requirements':deal['requirements'], 'buyer_message':message[:500],
             'warranty_policy':seller_warranty.POLICY,'agreed_warranty_hours':warranty_hours,
             'warranty_price_floor':warranty_floor,
             'market_objective':operating_policy(time.time()),
-            "objective": "Accept, counter or reject. Consider purchase cost, grade, "
+            "objective": "Accept, counter or reject. Use the tool's estimated profit at the offered price and "
+                         "comparable paid evidence. If near-expiry food is sold below the profit floor, treat it as "
+                         "limiting a loss. Consider purchase cost, grade, "
                          "food expiry and goods storage, but do not treat purchase cost "
                          "as an absolute floor for food already near expiry. "
                          "A receipt counts only if checkout later settles. The buyer profile is a hypothesis; "
