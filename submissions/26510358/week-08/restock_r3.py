@@ -150,6 +150,16 @@ def pick_sku(category, info_by_cat, mem, median_price, explore):
     return min(pool, key=lambda x: abs(x[1]["list_price"] - (median_price or x[1]["list_price"])))[0]
 
 
+def sellable_food(u, cat, now=None):
+    """False for a food unit with less than FOOD_SELLABLE_SHARE of its shelf life left (no order can take it)."""
+    if u.get("kind") != "food" or not u.get("expires_at"):
+        return True
+    shelf = (cat.get(u.get("sku")) or {}).get("shelf_hours")
+    if not shelf:
+        return True
+    return (u["expires_at"] - (now or time.time())) / 3600 >= config.FOOD_SELLABLE_SHARE * shelf
+
+
 def plan(inv, demand_rows, mem, now=None, dry_run=False, adjust=None):
     now = now or time.time()
     adjust = active_adjustments(mem, now) if adjust is None else adjust
@@ -165,6 +175,8 @@ def plan(inv, demand_rows, mem, now=None, dry_run=False, adjust=None):
             prem_units.append(u)                          # premium stock has its own budget (pilot below)
             prem_cost += u["cost"]
         elif u.get("grade") != "expired":
+            if not sellable_food(u, cat, now):            # under 0.25 of shelf: it only waits to expire
+                continue
             have[u["category"]] = have.get(u["category"], 0) + 1
             stock_cost += u["cost"]
             cat_cost[u["category"]] = cat_cost.get(u["category"], 0) + u["cost"]
@@ -196,7 +208,7 @@ def plan(inv, demand_rows, mem, now=None, dry_run=False, adjust=None):
         target = math.ceil(exp_h * config.HORIZON_H * factor)
         shelf = [i.get("shelf_hours") for _, i in info_by_cat.get(k, []) if i.get("shelf_hours")]
         if row.get("kind") == "food" and shelf and min(shelf) < 720:
-            target = min(target, math.ceil(exp_h * min(shelf) * 0.5 * factor))
+            target = min(target, math.ceil(exp_h * min(shelf) * config.FOOD_TARGET_SHELF_SHARE * factor))
         ratio, n = mem.price_ratio(category=k)
         if ratio is not None and ratio < 0.65:
             why.append({"category": k, "skip": f"market pays {ratio:.2f} of list, no margin over cost"})

@@ -42,6 +42,11 @@ STOP_BUYING_HOURS = 72              # no restock in the last 72 h of the round
 CLEARANCE_HOURS = 36                # in the last 36 h, food floors fall toward salvage; goods floors fall to cost
 DEMAND_HALF_LIFE_H = 8              # recent settles weigh more
 HORIZON_H = 12                      # stock for the sales we expect in the next 12 h
+FOOD_DUMP_SHARE = 0.30             # food floor drops to 0.3 x cost under this share of its shelf life left
+FOOD_MARKDOWN_SHARE = 0.50         #   and to 0.8 x cost under this one (orders need 0.25/0.5/0.75 of shelf)
+FOOD_SELLABLE_SHARE = 0.25         # restock counts food under this share as gone: no order can take it
+FOOD_TARGET_SHELF_SHARE = 0.30     # short-life food: stock at most the sales of this share of its shelf life
+                                   #   (0.5 until 2026-11-10; units arrive with A 80%+/B 45%+/C less left)
 MIN_FOOD_SHELF_FOR_EXPLORE = 720    # coverage only with long-life food (no expiry inside the round)
 
 # --- shop: expected-value restock (pricing.ev_quantity) -------------------------------------------

@@ -17,9 +17,14 @@ def unit_floor(u, now=None, hours_left_round=None):
     floor = cost * (1 + config.MIN_MARGIN)
     if u.get("kind") == "food" and u.get("expires_at"):
         left = (u["expires_at"] - now) / 3600
-        if left < 6:
+        shelf = u.get("shelf_hours") or 0
+        share = left / shelf if 0 < shelf < config.MIN_FOOD_SHELF_FOR_EXPLORE else 1.0   # long-life: hours only
+        # Orders need 0.25/0.5/0.75 of the shelf life, so a unit under ~0.3 of it is about to become unsellable.
+        # Until 2026-11-10 only absolute hours (6/12 h) counted: a 24 h abalone hit 6 h at 0.25 of shelf, already
+        # past every order; 183 units / 2.42M expired in 72 h, mostly 24-48 h-shelf SKUs.
+        if left < 6 or share < config.FOOD_DUMP_SHARE:
             floor = min(floor, cost * 0.3)
-        elif left < 12:
+        elif left < 12 or share < config.FOOD_MARKDOWN_SHARE:
             floor = min(floor, cost * 0.8)
     if hl < config.CLEARANCE_HOURS:
         if u.get("kind") == "food":

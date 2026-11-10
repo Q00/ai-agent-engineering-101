@@ -186,6 +186,8 @@ class Shop(AgentExecutor):
             log("scout_error", error=str(e)[:200])
         adj += premium
         ask = pricing.unit_ask(u, ratio, adj)
+        if u.get("kind") == "food" and not u.get("shelf_hours"):
+            u = dict(u, shelf_hours=(market.catalog().get(u["sku"]) or {}).get("shelf_hours"))
         floor = pricing.unit_floor(u)
         p_break = self.mem.break_rate_for(u.get("grade"), u.get("category"))
         warranty = pricing.warranty_hours_for(u, ask, p_break)
