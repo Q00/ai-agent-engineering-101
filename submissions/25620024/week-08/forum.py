@@ -527,7 +527,7 @@ def shop_facts(c, t, now):
     js = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
     ko = (f"[상점 사실] dragonash: 거래 {me.get('deals'):,}건, 별점 {me.get('stars')} (리뷰 {me.get('reviews'):,}건), "
           f"등급 주장 정직 {me.get('honest_claims'):,}/{me.get('claims'):,}, 환불 {me.get('refunds')}건. "
-          "재고 정리 중인 품목은 원가 수준 판매(등급별 호가는 JSON). 이 바이어와 같은 주인입니다.")
+          "재고 정리 중인 품목은 원가 수준 판매. 이 바이어와 같은 주인입니다.")
     text = (js + "\n" + HUMAN + "\n" + ko)[:1000]
     return [{"topic": "shop_facts", "as": "buyer", "kind": "price_data", "refs": refs, "score": 7.6,
              "text": text, "texts": {"json": text, "ko": ko, "en": js}}]
@@ -769,7 +769,7 @@ def follow_ads(c, md, now):
         if u.get("kind") != "goods":
             w_en, w_ko = "none", "없음"
         elif clear:
-            w_en, w_ko = f"{lab_en} on every sale (refund if it breaks)", f"모든 판매에 {lab_ko} 보증, 고장 시 전액 환불"
+            w_en, w_ko = f"{lab_en} on every sale (refund if it breaks)", f"모든 판매에 {lab_ko}, 하자 시 전액 환불"
         elif t_.get("warranty_on_request", True):
             w_en, w_ko = f"{lab_en} if you ask for it, otherwise none", f"요청하시면 {lab_ko}, 요청 없으면 없음"
         else:
@@ -839,6 +839,21 @@ def agent_first(cand, style="json"):
     English text first and the JSON line after it, when both fit in 1,000 characters. style "short" is the first three
     Korean lines with five refs (11-04 review: is it length that costs us a like?)."""
     texts = cand.get("texts") or {}
+    if style == "ko":        # HQ 11-10 "'좋아요'가 눌린 글을 벤치마킹해! json 먼저의 룰은 이제 폐기!": the liked posts
+        if texts.get("ko"):  # are short Korean records with ledger numbers -- no JSON block, at most 6 lines
+            human = texts["ko"]
+        else:
+            human = cand.get("text") or ""
+            if HUMAN in human:
+                human = human.split(HUMAN, 1)[1].strip()
+            elif human.lstrip().startswith("{"):
+                body = human.split("\n", 1)
+                human = body[1].strip() if len(body) > 1 and body[1].strip() else human
+        lines = [x for x in human.split("\n") if x.strip()]
+        en = [i for i, x in enumerate(lines) if i and x.startswith("[") and not any("\uac00" <= ch <= "\ud7a3" for ch in x)]
+        if en:                                           # drop the English block that follows the Korean one
+            lines = lines[:en[0]]
+        return "\n".join(lines[:6])
     if texts.get("ko") and style == "short":
         return "\n".join(texts["ko"].split("\n")[:3])
     if texts.get("json") and style == "text":
@@ -983,6 +998,7 @@ def tick(md=Path(".market"), c=None, now=None):
                     best = pick if pick and pick["score"] >= t["post_threshold"] else best
                 except Exception:
                     pass
+            style = forum_style = theta().get("post_style", "ko")   # HQ 11-10: JSON-first retired; "json" brings it back
             if style == "short":
                 best = dict(best, refs=(best.get("refs") or [])[:5])
             if best.get("kind") != "reply":
