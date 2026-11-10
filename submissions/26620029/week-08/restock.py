@@ -153,12 +153,13 @@ def focus_lines(inv, catalog, focus_cats, cu):
     # Claude (2026-11-09 23:22, hourly check): the market's top SKU G00327e80 (25.7 deals/h, grade A at 0.734 of list) held only
     # 3 grade C here, so C_STOP kept A out; 7 C deals agreed in 3 h, none settled. A high-tier SKU that passes high_ok and holds
     # no A or B goods is exempt from C_STOP, at most C_EXEMPT_QTY units a run
+    surge = {x["sku"]: x.get("factor") for x in inv.get("surge") or [] if x.get("sku")}
     ab = {u["sku"] for u in inv["units"] if u.get("kind") == "goods" and u.get("grade") in ("A", "B")}
     exempt = {s for s in c_full if s not in ab and s in catalog and catalog[s]["list_price"] > TIER_HIGH
-              and high_ok(cu.get("sku_a", {}), s)}
+              and high_ok(cu.get("sku_a", {}), s, surge)}
     c_full -= exempt
     if use_recent and SPREAD:
-        return [(s, min(q, C_EXEMPT_QTY) if s in exempt else q) for s, q in spread_lines(recent, catalog, shops, total, have, c_full, balance, cu.get("sku_a", {}))]
+        return [(s, min(q, C_EXEMPT_QTY) if s in exempt else q) for s, q in spread_lines(recent, catalog, shops, total, have, c_full, balance, cu.get("sku_a", {}), surge)]
     lines = []
     for cat in focus_cats:
         skus = recent.get(cat, {}) if use_recent else cu.get("sku_buys", {}).get(cat, {})
@@ -178,13 +179,18 @@ def tier(list_price):
     return 0 if list_price > TIER_HIGH else 1 if list_price > TIER_LOW else 2
 
 
-def high_ok(sku_a, s):
-    """A high-tier SKU is bought only when grade A sells at HIGH_A_MIN of list or more (A_MIN_DEALS deals seen)."""
+def high_ok(sku_a, s, surge=None):
+    """A SKU is bought only when grade A sells at HIGH_A_MIN x its supply surge of list or more (A_MIN_DEALS deals seen)."""
+    # Claude (2026-11-10 17:22, hourly check, the user's plan step 1): two days of supply lines (2,282) kept cost/list flat at
+    # 0.56-0.59, but A costs 0.55-0.75 of list times surge (G021aae64 x1.114: A at 0.68-0.78 against a market 0.711, 0 sold in
+    # 3 h). The plan said 0.75 x surge; a dry run kept 5 of 73 top SKUs, so the high tier's 0.72 now holds for mid and low too
+    # (mid 11 of 25, low 14 of 25, 70% and 60% of their market deals) and every threshold is scaled by the SKU's surge
     row = sku_a.get(s)
-    return bool(row) and row[1] >= A_MIN_DEALS and row[0] is not None and row[0] >= HIGH_A_MIN
+    need = HIGH_A_MIN * ((surge or {}).get(s) or 1)
+    return bool(row) and row[1] >= A_MIN_DEALS and row[0] is not None and row[0] >= need
 
 
-def spread_lines(recent, catalog, shops, total, have, c_full, balance, sku_a=None):
+def spread_lines(recent, catalog, shops, total, have, c_full, balance, sku_a=None, surge=None):
     """ddolcom (2026-11-09 15:40, the user's instruction): every goods SKU of any category that settled at MIN_SHOPS or more
     other shops in the last 3 h, the TIER_SKUS best sellers of each price tier (dear by value, mid and cheap by deals),
     taken in turn high, mid, low so one run's few lines do not all go to sofas. Sold-out SKUs first within the turn."""
@@ -196,7 +202,7 @@ def spread_lines(recent, catalog, shops, total, have, c_full, balance, sku_a=Non
                 continue
             if c["list_price"] * COST_GUESS > UNIT_SHARE * balance:
                 continue
-            if tier(c["list_price"]) == 0 and not high_ok(sku_a or {}, s):
+            if not high_ok(sku_a or {}, s, surge):
                 continue
             by_tier[tier(c["list_price"])].append((n, s))
     queues = []
