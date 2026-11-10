@@ -30,9 +30,9 @@ class RoundClockTest(unittest.TestCase):
         demand = [{"category": "home>sofa", "median_price": 1_000_000}, {"category": "food>juice", "median_price": 8_000}]
         stats = {"categories": {"home>sofa": {"n": 50, "median_ratio": 0.8, "revenue": 40_000_000, "median_amount": 800_000},
                                 "food>juice": {"n": 50, "median_ratio": 0.8, "revenue": 320_000, "median_amount": 6_400}}, "skus": {}}
-        units = [{"category": "home>sofa", "sku": "S1", "cost": 600_000, "list_price": 1_000_000}] * 3 \
+        units = [{"category": "home>sofa", "sku": "S1", "cost": 600_000, "list_price": 1_000_000}] * 2 \
             + [{"category": "food>juice", "sku": "J1", "cost": 4_000, "list_price": 8_000}]
-        inv = {"balance": 5_000_000, "units": units}                      # sofas 1.8M of a 4.1M cap: over 35%, under 55%
+        inv = {"balance": 5_000_000, "units": units}                      # sofas 1.2M of a 2.5M cap: over 35%, under 55%
         closes = {"home>sofa": {"opens": 20, "deals": 12, "close_rate": 0.6}}
         self.assertEqual([], [b["sku"] for b in restock.plan(inv, catalog, demand, [], {}, stats)])
         report = {}

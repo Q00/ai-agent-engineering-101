@@ -161,6 +161,36 @@ def regulars_prompt(text):
     return bool(re.search(r"reply\s+'buyer:\s*<your market name>'", text or "", re.I))
 
 
+def shop_price_levels(cache_rows, catalog):
+    """Per shop URL, the median of settled price / list price over the ledger cache (24 h). 11-10: the top buyers pay
+    0.47-0.59 of list and buy from shops that settle at 0.56-0.60; I paid 0.70 and my favourite shop settles at 0.70."""
+    by = {}
+    for r in cache_rows or []:
+        lp = (catalog.get(r.get("sku")) or {}).get("list_price")
+        if r.get("shop") and lp:
+            by.setdefault(r["shop"], []).append(r["price"] / lp)
+    return {url: statistics.median(v) for url, v in by.items() if len(v) >= 5}
+
+
+def opening_offer(ask, reference, discount):
+    """The first offer is code, not the model: the lower of my reference and the ask less the discount. 11-10: told
+    to open 20% below, the model opened at 88% of the ask and deals closed at 92%; others pay 5% less at the same
+    shop for the same SKU."""
+    if not isinstance(ask, (int, float)) or ask <= 0:
+        return None
+    price = ask * (1 - discount)
+    if reference:
+        price = min(price, reference)
+    return max(1, int(round(price)))
+
+
+def capped_step(previous, proposal, cap=1.04):
+    """A later offer may not jump more than 4% over my previous one; the model tends to leap to the ask."""
+    if not isinstance(previous, (int, float)) or not isinstance(proposal, (int, float)):
+        return proposal
+    return int(round(min(proposal, previous * cap)))
+
+
 def stated_floor(text):
     """A floor the shop states in its reply ("No deal. Lowest for this unit: 186000"), else None."""
     m = re.search(r"\b[Ll]owest\b[^0-9]{0,40}(\d[\d,]*)", text or "")
@@ -209,7 +239,7 @@ def steered(t):
 
 
 def negotiate(url, item, budget, reference, record="", request=None, value_cap=None, food_need=None, shelf_hours=None,
-              grades=(), slack=1.05):
+              grades=(), slack=1.05, discount=0.20):
     """A sealed-budget loop: the LLM proposes, then the mandate guardian authorizes.
     `value_cap` is the SKU's list price: the guardian never pays above it, whatever the budget.
     `food_need` (the order's use_within_hours) with the SKU's `shelf_hours`: a unit whose stated grade cannot last
@@ -277,10 +307,18 @@ def negotiate(url, item, budget, reference, record="", request=None, value_cap=N
             d = {"action": "offer", "price": quick}
             buyer_policy.emit("buyer_quick_offer", item=item, task=tid[:8], round=round_index + 1, why=why, price=quick,
                               reference=reference)
+        elif not offers and opening_offer(ask, reference, discount):
+            d = {"action": "offer", "price": opening_offer(ask, reference, discount)}   # the opener is code (no model call)
+            print(f"[buyer] opening at {d['price']} ({discount:.0%} under the ask {ask}, capped at my reference {reference})", flush=True)
         else:
             d = harness.decide(buyer_policy.NEGOTIATOR_SYSTEM,
                                buyer_policy.situation(f"Item: {item}. Personal reference price: {reference}. {record}",
                                                       offers, status_text(t), ask))
+            if d and isinstance(d.get("price"), (int, float)) and offers:
+                stepped = capped_step(offers[-1][0], d["price"])
+                if stepped != d["price"]:
+                    print(f"[buyer] the model's {d['price']} capped to {stepped}: no more than 4% over my last offer", flush=True)
+                    d["price"] = stepped
         if d is None:
             fallback = buyer_policy.public_fallback_offer(reference, ask, round_index)
             d = {"action": "offer", "price": fallback}
@@ -486,6 +524,9 @@ def main():
     reference = buyer_policy.item_reference(mem, category, fallback=category_reference(order, catalog))
     selector_guardian = buyer_policy.MandateGuardian(a.budget, reference)
     candidates = prepare_round3_shops(shops, order, catalog, selector_guardian)
+    levels = shop_price_levels((ledger.load_json(MEMORY.parent / ledger.CACHE_FILE) or {}).get("rows"), catalog)
+    for s in candidates:                      # what each shop's settles cost against list, for the router's cheapness
+        s["_price_ratio"] = levels.get(s.get("url"))
     cooled = [s for s in candidates if cooling_off(mem, s.get("name"))]
     if cooled and len(cooled) < len(candidates):
         print(f"[choose] skipping {[s.get('name') for s in cooled]}: answered nothing on their last visits", flush=True)
@@ -513,7 +554,7 @@ def main():
             outcome, agreed, receipt, log, manip, info = negotiate(
                 pick["url"], wanted, a.budget, reference,
                 bargain_record(pick["name"], mem, discount), request, value_cap,
-                food_need, catalog.get(wanted, {}).get("shelf_hours"), grades, slack
+                food_need, catalog.get(wanted, {}).get("shelf_hours"), grades, slack, discount
             )
         except Exception as e:   # httpx errors, a card that is not JSON, a task without the fields we expect
             print(f"[buyer] shop unreachable: {type(e).__name__}: {str(e)[:120]}", flush=True)

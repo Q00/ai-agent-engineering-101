@@ -101,6 +101,23 @@ class Round3BuyerContextTest(unittest.TestCase):
         self.assertEqual("long", market_buyer.choose_request(shop, catalog, order)["sku"])   # the only feasible one
         self.assertEqual("short", market_buyer.choose_request(shop, catalog)["sku"])         # no order: list price wins
 
+    def test_the_opener_is_code_and_later_steps_are_capped(self):
+        self.assertEqual(80_000, market_buyer.opening_offer(100_000, 92_000, 0.20))      # 20% under the ask
+        self.assertEqual(70_000, market_buyer.opening_offer(100_000, 70_000, 0.20))      # never above my reference
+        self.assertIsNone(market_buyer.opening_offer(None, 70_000, 0.20))
+        self.assertEqual(83_200, market_buyer.capped_step(80_000, 95_000))              # 4% over my last offer
+        self.assertEqual(81_000, market_buyer.capped_step(80_000, 81_000))
+
+    def test_cheap_shops_on_the_ledger_rank_higher(self):
+        rows = [{"shop": "u-cheap", "sku": "valuable", "price": 110}] * 5 + [{"shop": "u-dear", "sku": "valuable", "price": 160}] * 5
+        levels = market_buyer.shop_price_levels(rows, self.catalog)
+        self.assertEqual({"u-cheap": 0.55, "u-dear": 0.80}, levels)
+        shops = [{"name": "dear", "url": "u-dear", "reviews": [], "_price_ratio": 0.80},
+                 {"name": "cheap", "url": "u-cheap", "reviews": [], "_price_ratio": 0.55}]
+        ranked = buyer_policy.rank_shops(shops, [], "valuable", 150)
+        self.assertEqual(["cheap", "dear"], [s["name"] for s, _ in ranked])
+        self.assertEqual(0.55, ranked[0][1]["price_ratio"])
+
     def test_quick_offer_takes_a_good_ask_or_a_stated_floor_inside_the_limit(self):
         self.assertEqual((186000, "the shop's stated lowest"), market_buyer.quick_offer(200000, 186000, 180000, 250000))
         self.assertEqual((170000, "the ask"), market_buyer.quick_offer(170000, None, 180000, 250000))

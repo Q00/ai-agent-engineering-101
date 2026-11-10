@@ -29,8 +29,10 @@ EXPECTED_COST_RATIO = 0.60   # supply cost as a share of list price, averaged ov
 # median lot 10k) while the market's revenue was sofas at 1.7M and mattresses at 300k (the top shop: lots of 1M, 180M
 # bought in 2.3 h). The caps now scale with capital, categories are weighed by settled revenue, and the SKU is the one
 # nearest the price the category actually settles at, as long as one unit stays a small share of the balance.
-STOCK_SHARE = 0.60           # stock at cost may not exceed this share of capital (balance + stock at cost);
-                             # 11-06 18:30: 80% of what was bought in 5 h had sold, the top shops hold 400M+ in stock
+STOCK_SHARE = 0.40           # stock at cost may not exceed this share of capital (balance + stock at cost).
+                             # 11-06: 60% (80% of what was bought in 5 h had sold). 11-10: the board's profit is the
+                             # balance alone - four days took the book from 43M to 63M but 17M of it sat in stock and
+                             # profit moved 18M -> 20M; stock is worth nothing at the close, so cash is kept higher.
 EXPLORE_STOCK_SHARE = 0.10   # of capital: below this, categories with no evidence may still be tried (one lot each)
 RUN_SPEND_SHARE = 0.40       # of the balance, per run
 UNIT_COST_SHARE = 0.20       # one unit's expected cost may not exceed this share of capital (balance + stock at cost);

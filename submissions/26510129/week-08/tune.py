@@ -252,6 +252,25 @@ def apply(proposal, params, since, until, dry_run=False):
     return merged
 
 
+def commit_logs():
+    """Commit the kit's logs once a day from this cron: market-kit.log rotates every ~20 h and the rotated file is
+    overwritten by the next rotation, which lost 11-07 and 11-08 before anyone committed them (11-10)."""
+    here = Path(__file__).resolve().parent
+    try:
+        branch = subprocess.run(["git", "branch", "--show-current"], cwd=here, capture_output=True, text=True, timeout=30).stdout.strip()
+        if branch != "week-08":
+            print(f"[tune] logs not committed: branch is {branch!r}", flush=True)
+            return
+        subprocess.run(["git", "add", "logs/market-kit.log", "logs/market-kit.log.1", "logs/tune.log"], cwd=here, capture_output=True, timeout=120)
+        staged = subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=here, timeout=30).returncode == 1
+        if staged:
+            msg = f"docs(week-08): kit logs through {time.strftime('%Y-%m-%d %H:%M')} (midnight commit from tune.py)\n\nCo-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
+            r = subprocess.run(["git", "commit", "-q", "-m", msg], cwd=here, capture_output=True, text=True, timeout=120)
+            print(f"[tune] logs committed: exit {r.returncode} {r.stderr.strip()[:100]}", flush=True)
+    except Exception as e:
+        print(f"[tune] log commit failed: {type(e).__name__}: {str(e)[:100]}", flush=True)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--hours", type=float, default=24)
@@ -274,6 +293,8 @@ def main():
     if a.summary_only:
         return
     apply(propose(summary), params, since, until, dry_run=a.dry_run)
+    if not a.dry_run:
+        commit_logs()
 
 
 if __name__ == "__main__":
