@@ -161,15 +161,19 @@ def main():
     except Exception as e:                    # stale data still beats buying blind
         print(f"[restock] collector failed: {type(e).__name__}: {e}")
 
-    with DB() as d:
-        policy = dict(DEFAULT_POLICY, **d.get_policy("restock", {}))
-        buy, why = plan(inv, d, policy, now)
-        d.log_trajectory(now, "shop", "restock", {"balance": inv.get("balance"), "units": len(inv.get("units", [])),
-                                                    "window": w, "policy": policy}, {"buy": why})
-        try:
-            shop_forum(d, inv, why, now, md)
-        except Exception as e:
-            print(f"[forum] shop promo failed: {type(e).__name__}: {e}")
+    buy, why = [], []
+    try:
+        with DB() as d:
+            policy = dict(DEFAULT_POLICY, **d.get_policy("restock", {}))
+            buy, why = plan(inv, d, policy, now)
+            d.log_trajectory(now, "shop", "restock", {"balance": inv.get("balance"), "units": len(inv.get("units", [])),
+                                                        "window": w, "policy": policy}, {"buy": why})
+            try:
+                shop_forum(d, inv, why, now, md)
+            except Exception as e:
+                print(f"[forum] shop promo failed: {type(e).__name__}: {e}")
+    except Exception as e:          # the DB being unreachable (not the market) shouldn't skip a real window
+        print(f"[restock] DB unreachable, skipping this window's buy: {type(e).__name__}: {e}")
     for x in why:
         print(f"[restock] {x['qty']} x {x['sku']} ({x['kind']}, list {x['list']}, sold {x['sold']}, margin {x['margin']})")
     print(json.dumps({"buy": buy}))
