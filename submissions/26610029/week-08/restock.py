@@ -31,7 +31,9 @@ DEFAULT_POLICY = {"window_budget": 0.10,   # share of the balance one window may
                   "goods_target": 6, "food_target": 2,
                   "food_min_sales": 6,      # food only for SKUs that sold at least this often in the lookback
                   "goods_min_sales": 3,
-                  "max_units": 80}          # never hold more than this many units in total
+                  "max_units": 150}         # never hold more than this many units in total -- Book counts
+                                            # unsold stock as an asset and storage is only 1%/day, so 80 was
+                                            # capping restock (6 of 9 runs in one hour skipped: stock was full)
 
 # Horvitz threshold for a shop promo post: post a "hot drop" at once when we just bought something
 # that is clearly selling fast elsewhere (high usefulness), otherwise only after staying quiet a while
