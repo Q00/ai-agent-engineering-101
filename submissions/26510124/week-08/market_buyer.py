@@ -27,6 +27,7 @@ from buyer_fast_selection import recent_success_choice, timeout_choice, value_ch
 from buyer_value_memory import build_value_evidence
 from buyer_public_prices import read_public_prices, read_food_discovery, merge_price_evidence
 from buyer_retry import remaining_retry_decisions, select_alternative
+from buyer_quote_accept import certified_choice
 
 
 VERSION_HEADERS = {"A2A-Version": "1.0"}
@@ -226,13 +227,16 @@ def last_asking_price(text):
 
 
 class Buyer:
-    def __init__(self, client, *, url, item, budget, seconds=RUN_SECONDS, policy=None):
+    def __init__(self, client, *, url, item, budget, seconds=RUN_SECONDS, policy=None,
+                 order=None, market_dir=None, shop_name=None):
         self.client = client
         self.base_url = url.rstrip("/")
         self.endpoint = None
         self.item = item
         self.budget = budget
         self.policy = policy or buying_terms(budget)
+        self.order, self.market_dir, self.shop_name = order or {}, market_dir, shop_name
+        self.fast_accepts, self.model_decisions = 0, 0
         self.price_limit = min(budget, self.policy["price_limit"])
         self.no_deal_reason = ""
         self.started_at = time.monotonic()
@@ -255,6 +259,7 @@ class Buyer:
     def diagnostics(self):
         """Local observations only; seller claims never establish a root cause."""
         return {"version": 1, "reason": self.reason_code, "stage": self.stage,
+                "fast_accepts": self.fast_accepts, "model_decisions": self.model_decisions,
                 "decisions": self.decisions, "last_parsed_ask": self.last_parsed_ask,
                 "last_authorized_bid": self.authorized_price,
                 "elapsed_seconds": round(max(0, time.monotonic() - self.started_at), 3),
@@ -357,7 +362,7 @@ class Buyer:
             raise BuyerError("Seller did not confirm cancellation")
         self.cancel_confirmed = True
 
-    def validate_decision(self, decision, seller_message):
+    def validate_decision(self, decision, seller_message, *, certified_ask=None):
         if not isinstance(decision, dict):
             raise BuyerError("Harness decision must be an object")
         action = decision.get("action")
@@ -372,14 +377,14 @@ class Buyer:
             raise BuyerError("Harness price must be a positive integer within the budget")
         if price > self.price_limit:
             raise PolicyRefusal("Model price exceeds the owner's purchasing limit", reason="price_limit")
-        exact_ask = last_asking_price(seller_message)
+        exact_ask = certified_ask if certified_ask is not None else last_asking_price(seller_message)
         accepts_current_ask = exact_ask is not None and price == exact_ask
         if (self.authorized_price is not None
                 and price > self.authorized_price + self.policy["max_concession"]
                 and not ((action == "accept" or accepts_current_ask)
                          and self.policy.get("allow_accept_above_concession") is True)):
             raise PolicyRefusal("Model concession exceeds the per-turn limit", reason="concession_limit")
-        if action == "accept" and price != last_asking_price(seller_message):
+        if action == "accept" and price != exact_ask:
             raise BuyerError("Harness acceptance price does not match the seller's ask")
 
     def verify_receipt(self, task):
@@ -487,7 +492,16 @@ class Buyer:
                                         "context_chars": len(json.dumps(compact, ensure_ascii=False))})
             self.stage = "model_decision"
             self.decisions = decisions + 1
-            decision = buyer_decision(item=self.item, budget=self.budget,
+            decision = certified_choice(task, item=self.item, shop_name=self.shop_name,
+                                        order=self.order, policy=self.policy, market_dir=self.market_dir,
+                                        seconds_left=self.remaining())
+            certified_ask = decision["price"] if decision is not None else None
+            if decision is not None:
+                self.fast_accepts += 1
+                log("BUYER DECISION SOURCE", "certified_target_quote")
+            else:
+                self.model_decisions += 1
+                decision = buyer_decision(item=self.item, budget=self.budget,
                                       **compact,
                                       timeout=min(90, self.remaining()), policy=self.policy,
                                       current_ask=last_asking_price(text),
@@ -495,7 +509,7 @@ class Buyer:
             decisions += 1
             log("BUYER DECISION", decision)
             self.stage = "decision_validation"
-            self.validate_decision(decision, text)
+            self.validate_decision(decision, text, certified_ask=certified_ask)
             self.remaining()
             if decision["action"] == "walk_away":
                 self.stage = "buyer_cancel"
@@ -505,16 +519,17 @@ class Buyer:
                 log("NO DEAL", {"reason": decision["reason"], "taskId": self.task_id})
                 return "no_deal"
             # The wire contract uses a numeric offer for both acceptance and
-            # counteroffers. The model explicitly chooses that action and price.
+            # counteroffers. The model or certified target shortcut chooses the price.
             self.authorized_price = decision["price"]
             self.stage = "offer_request"
             task = self.send(str(self.authorized_price))
 
 
 def trade_and_record(shop, *, item, budget, memory_path, reason, seconds, client, order=None, policy=None,
-                     attempt_status=None):
+                     attempt_status=None, market_dir=None):
     policy = policy or buying_terms(budget, order=order)
-    buyer = Buyer(client, url=shop["url"], item=item, budget=budget, seconds=seconds, policy=policy)
+    buyer = Buyer(client, url=shop["url"], item=item, budget=budget, seconds=seconds, policy=policy,
+                  order=order, market_dir=market_dir, shop_name=shop["name"])
     detail = ""
     try:
         outcome = buyer.run()
@@ -622,7 +637,7 @@ def main(argv=None):
             result = trade_and_record(shop, item=sku, budget=args.budget,
                                       memory_path=args.memory, reason=reason,
                                       seconds=deadline - time.monotonic(), client=client, order=order, policy=policy,
-                                      attempt_status=attempt_status)
+                                      attempt_status=attempt_status, market_dir=args.shops.parent)
             remaining = remaining_retry_decisions(attempt_status,
                 max_decisions=config["max_decisions"], seconds_left=deadline - time.monotonic())
             alternative = (alternative_shop(selection, shop, order)
@@ -639,7 +654,7 @@ def main(argv=None):
                 log("PURCHASE POLICY", policy)
                 result = trade_and_record(shop, item=sku, budget=args.budget,
                     memory_path=args.memory, reason=reason, seconds=deadline - time.monotonic(),
-                    client=client, order=order, policy=policy)
+                    client=client, order=order, policy=policy, market_dir=args.shops.parent)
     except (BuyerError, HarnessError, OSError, ValueError) as exc:
         result["review"] = f"Buyer could not complete the order: {exc}"
         exit_code = 1

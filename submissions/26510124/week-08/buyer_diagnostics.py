@@ -162,6 +162,7 @@ def summarize(root=ROOT, *, hours=24, round_number=3, now=None, byte_limit=4_000
             review_index[row["order"]].append(row)
     reasons, stages, seller_reports = Counter(), Counter(), Counter()
     statuses, proofs, durations, decisions = {}, {}, [], []
+    decision_sources = {"fast_accepts": [], "model_decisions": []}
     for key, row in records.items():
         diag = row.get("negotiation_diagnostics")
         valid = isinstance(diag, dict) and type(diag.get("version")) is int and diag["version"] == 1
@@ -170,6 +171,9 @@ def summarize(root=ROOT, *, hours=24, round_number=3, now=None, byte_limit=4_000
         stage = diag.get("stage") if valid else None
         stages[stage if isinstance(stage, str) and stage in STAGES else "unknown"] += 1
         if valid:
+            for field, counts in decision_sources.items():
+                if type(diag.get(field)) is int and diag[field] >= 0:
+                    counts.append(diag[field])
             elapsed = diag.get("elapsed_seconds")
             if _number(elapsed) and elapsed >= 0:
                 durations.append(elapsed)
@@ -238,6 +242,8 @@ def summarize(root=ROOT, *, hours=24, round_number=3, now=None, byte_limit=4_000
             "selection_failures": len(selections),
             "selection_failure_reasons": dict(Counter(row.get("reason") if isinstance(row.get("reason"), str) and row["reason"] in REASONS else "unknown" for row in selections.values())),
             "decisions_total": sum(decisions), "attempts_with_decision_count": len(decisions),
+            "decision_sources": {field: {"total": sum(counts), "attempts_observed": len(counts)}
+                                 for field, counts in decision_sources.items()},
             "elapsed_seconds_total": round(sum(durations), 3), "attempts_with_elapsed": len(durations),
             "excluded_rows": dict(excluded), "sources": sources,
             "limits": ["Bounded local tails, not all market orders or lifetime history.",

@@ -9,6 +9,8 @@ ROOT = Path(__file__).resolve().parent
 
 def load_policy():
     config = read_json(ROOT / "buyer-policy.json")
+    if type(config.get("fast_quote_accept_enabled", False)) is not bool:
+        raise ValueError("Invalid buyer policy: fast_quote_accept_enabled")
     for key in ("budget_cap_percent", "list_price_cap_percent", "target_percent_of_cap",
                 "max_concession_percent_of_cap"):
         if type(config.get(key)) is not int or not 1 <= config[key] <= 100:
@@ -111,6 +113,7 @@ def buying_terms(budget, *, product=None, order=None, config=None):
         raise ValueError("No positive integer price meets this purchasing policy")
     terms = {
         "version": config["version"], "price_limit": limit,
+        "fast_quote_accept_enabled": config.get("fast_quote_accept_enabled", False),
         "target_price": max(1, limit * config["target_percent_of_cap"] // 100),
         "list_price": ref, "max_decisions": config["max_decisions"],
         "max_concession": max(1, limit * config["max_concession_percent_of_cap"] // 100),
