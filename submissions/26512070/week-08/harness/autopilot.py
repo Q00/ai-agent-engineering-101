@@ -90,6 +90,10 @@ def take(doc, now=None):
         method = "ab"                               # no audit agreement: half the trades, not all of them
     if method == "alternate" and experiment.ROLE_OF_METRIC.get(doc["expected"]["metric"]) == "buyer":
         method = "ab"                               # alternate runs by restock windows only
+    if "restock" in (doc["change"].get("playbook") or {}) and method == "ab":
+        # 11/11 00:1x: restock assigns arms by supply window only - an 'ab' restock test (market_top 28, 22:32-00:16)
+        # changed nothing and was judged on noise
+        method = "alternate"
     success = wisdom.success_line(doc)
     end = slot_end(now)
     exp_id = f"a{doc['id']}"
