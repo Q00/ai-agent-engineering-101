@@ -24,7 +24,7 @@
   "food_min_shelf_hours": 48
  },
  "buyer": {
-  "offer_open_ratio": 0.67,
+  "offer_open_ratio": 0.65,
   "max_paid_ratio": 0.75,
   "goods_grades": [
    "A",
@@ -33,6 +33,6 @@
   "require_warranty_goods": true,
   "food_hours_margin": 6
  },
- "notes": "Shop: no sales in the last 6 h, 106 units (about 9.5M at cost) sit in stock at 1% of cost per day, and 7 food units expire within 12 h. I made two small moves to clear stock: floor_margin from 0.0 to -0.05, so a stale item can sell slightly below cost instead of sitting and decaying, and clearance_hours from 72 to 96, so food enters clearance earlier. The open ratio of 0.6 is already below the ledger medians of 0.56-0.75 paid/list, so I left it. Categories are unchanged: the current eight match the highest 24 h volume in the ledger. Buyer: 44 of the last 100 orders ended in no deal and 89 of 2",
- "updated": 1794304689.410026
+ "notes": "Shop: no sales in the last 6 h while 105 units (cost about 9.5M) sit in stock at 1%/day holding cost, and 6 food units expire within 12 h. The opening ask of 0.6 is already below the market median paid/list of 0.57-0.70, so the likely blocker is the floor at exactly cost, since grade A cost is 55-75% of list. I lowered floor_margin slightly to -0.03 so a few more negotiations can close, and raised clearance_hours from 72 to 96 so food starts clearing earlier. The category list already covers the top ledger sellers, so I left it unchanged. Buyer: 88 of 200 agreed deals were paid, and the most c",
+ "updated": 1794306549.2282016
 }
