@@ -135,8 +135,8 @@ class InventorySeller(Seller):
             "warranty_hours, cert; food: expires_at, hours_left). Send an integer offer on "
             "the same task, or the quoted ask to accept. final=true means no lower price. "
             "Quotes are not receipts; complete checkout after receiving a signed receipt.")
-        updated.skills[0].tags = ["shopping", "negotiation", "certificate", "signed-receipt", "inventory"]
-        updated.skills[0].examples = ["I want to buy G5cd4ffbc", "150000"]
+        updated.skills[0].tags[:] = ["shopping", "negotiation", "certificate", "signed-receipt", "inventory"]
+        updated.skills[0].examples[:] = ["I want to buy G5cd4ffbc", "150000"]
         return updated
 
     def event(self, task, outcome, product=None, price=None, *, deal=None,

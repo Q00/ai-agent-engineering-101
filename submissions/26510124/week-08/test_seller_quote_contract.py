@@ -1,5 +1,4 @@
 """Public quote interoperability without real model calls or market trades."""
-from copy import deepcopy
 import json
 import time
 import unittest
@@ -37,7 +36,7 @@ class SellerQuoteContractTests(unittest.TestCase):
             self.assertNotIn("cost", json.dumps(facts))
             self.assertNotIn("secret_internal", json.dumps(first))
             self.assertFalse(first.get("artifacts"))
-            done = fixtures.send(client, str(facts["ask"]), first["id"])
+            done = fixtures.send(client, str(int(facts["ask"])), first["id"])
         self.receipt(done, key, 90000)
         self.assertEqual(model.call_count, 1)
 
