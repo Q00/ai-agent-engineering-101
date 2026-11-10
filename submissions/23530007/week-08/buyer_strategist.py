@@ -447,7 +447,7 @@ Answer with one JSON object only:
                  jump, our score falling), money leaking (deals not settling, refunds), a fault, a rule change, or a
                  decision only the user can make; give the number and what you do about it. Usually empty.>"]
 }}
-The shop strategist (it runs every 3 hours; you run every hour) left you its reads and notes
+The shop strategist (it runs every 6 hours; you run every hour) left you its reads and notes
 in the evidence under "from_shop_strategist"; use them."""
 
 

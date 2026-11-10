@@ -414,7 +414,7 @@ Answer with one JSON object only:
                  jump, our score falling), money leaking (deals not settling, refunds), a fault, a rule change, or a
                  decision only the user can make; give the number and what you do about it. Usually empty.>"]
 }}
-The buyer strategist (it runs every hour at :00; you run every 3 hours) left you its reads and notes
+The buyer strategist (it runs every hour at :00; you run every 6 hours) left you its reads and notes
 in the evidence under "from_buyer_strategist"; use them.
 THE CURATOR (user, 11-06): a memory / market-intelligence agent sits between you and the buyer strategist. It
 measures the whole market (evidence "market_picture": what sells, what buyers buy, the top shops and buyers and

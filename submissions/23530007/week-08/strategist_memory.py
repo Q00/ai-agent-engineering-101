@@ -192,11 +192,13 @@ def my_turn(role, now=None):
     """The buyer analyses in even 15-minute slots (:00, :30), the shop in odd ones (:15, :45): each every 30 min,
     each reading what the other wrote 15 minutes earlier. Returns the slot number when it is this role's turn."""
     # 11-10 (user: the API key had $195 left for 172 h after $304 in 67 h): the buyer every hour at :00, the shop
-    # every 3 h at :30 (01:30, 04:30, ... UTC; book lead 340M, safe), down from every 30 min each
+    # every 3 h at :30 (01:30, 04:30, ... UTC; book lead 340M, safe), down from every 30 min each. Same day, later
+    # (user: Round 4 opens right after Round 3 and the credit refills only on the 20th): the shop every 6 h
+    # (01:30, 07:30, 13:30, 19:30 UTC) so ~$60 is left for Round 4's first days
     slot = int((now or time.time()) // SLOT)
     if role == "buyer":
         return slot if slot % 4 == 0 else None
-    return slot if slot % 12 == 6 else None
+    return slot if slot % 24 == 6 else None
 
 
 def _db():
