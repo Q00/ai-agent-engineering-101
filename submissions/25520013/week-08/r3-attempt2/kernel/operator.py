@@ -56,11 +56,12 @@ ACTION_SCHEMA = """한 단계에 JSON 객체 하나로만 답함. 둘 중 하나
   "trial_end": {"target": "seller", "adopt": <true면 후보를 지금 판으로 설치, false면 버림>, "reason": "<근거>"},
   "settings": {"interval_s": <초>, "wake_after_requests": <건수>, ...},
   "restock_plan": {"buy": [{"sku": "<SKU>", "qty": <양의 정수>}], "valid_until": <유닉스 시각>},
-  "policy": [{"section": "defaults.food|defaults.goods|<상품군 전체 경로>", "key": "<policy 도구의 편집 가능 키>", "value": <수>, "reason": "<근거: 어떤 숫자>"}],
+  "policy": [{"section": "defaults.food|defaults.goods|<상품군 전체 경로>|shop|buyer.defaults.food|buyer.defaults.goods", "key": "<policy 도구의 편집 가능 키>", "value": <수>, "reason": "<근거: 어떤 숫자>"}],
   "forum": [{"post": "<글>", "as": "shop|buyer"}],
   "memcheck": <true|false>,
   "note": "<이번 점검 요약>"}}
 done의 모든 항목은 선택임.
+policy 키는 항목마다 숫자 하나: 판매 구역은 price_mult 등 7개, fresh_discount.B|C (0~0.5, 폭 0.06)도, goods 구역은 warranty_hours.A|B|C (정수 0~max_warranty_hours, 폭 6)도. shop은 grade_floor_list.A|B|C (0.3~0.9, 폭 0.05)와 c_first_leaves.<잎 이름> (1 넣기, 0 빼기). buyer.defaults.*는 max_pay_frac (0.5~1.0, 폭 0.05)와 accept_c.max_pay_frac (C등급 구매 상한, 0.4~1.0, 폭 0.05). bounds는 사람만 고침.
 trial은 판매자 후보 판을 지금 판과 같은 시간에 나란히 돌림: 새 판매 요청이 task id 해시로 두 판에 무작위로 나뉨. 진행 중에는 판매자 edits와 revert가 막히고, trial_end로 채택하거나 버림. 브리핑의 [동시 비교] 줄에 두 판 숫자가 나옴."""
 
 

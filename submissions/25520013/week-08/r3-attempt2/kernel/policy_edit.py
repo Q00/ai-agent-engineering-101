@@ -28,8 +28,25 @@ KEYS = {
     "qty_per_buy": (1, 20, 8),
     "warranty_uplift": (0.0, 0.2, 0.03),
 }
-INT_KEYS = ("max_rounds", "stock_target", "qty_per_buy")
+# buyer.defaults.<kind> only; the shop-side keys above are refused there
+# accept_c.max_pay_frac caps what our buyer pays for a grade C unit (attempt 1 market_buyer.grade_c_terms)
+BUYER_KEYS = {"max_pay_frac": (0.5, 1.0, 0.05), "accept_c.max_pay_frac": (0.4, 1.0, 0.05)}
+# "<key>.<grade>": one grade's number in a per-grade dict -> (grades, lowest, highest, largest change in one edit)
+GRADE_KEYS = {
+    "fresh_discount": (("B", "C"), 0.0, 0.5, 0.06),  # food and goods sections (attempt 1 ask_price has no kind check)
+    "warranty_hours": (("A", "B", "C"), 0, 24, 6),  # goods sections; also capped by max_warranty_hours
+    "grade_floor_list": (("A", "B", "C"), 0.3, 0.9, 0.05),  # shop only; attempt 1 validate allows [0.3, 0.9]
+}
+LEAF_KEY = "c_first_leaves"  # "c_first_leaves.<leaf name>" in shop: 1 puts the leaf in the list, 0 takes it out
+INT_KEYS = ("max_rounds", "stock_target", "qty_per_buy", "warranty_hours", LEAF_KEY)
 DEFAULTS = ("defaults.food", "defaults.goods")
+BUYER = ("buyer.defaults.food", "buyer.defaults.goods")
+WHERE = {
+    "shop": "shop",
+    "buyer": "buyer.defaults.food or buyer.defaults.goods",
+    "goods": "defaults.goods or a goods category path",
+    "rules": "defaults.food, defaults.goods or a category path",
+}
 COOLDOWN_S = 1800  # one edit per (section, key) in 30 min, so a change reaches the settle numbers before the next
 MAX_PER_WAKE = 3
 
@@ -61,31 +78,105 @@ def _kind(section):
 def _block(pol, section, create=False):
     if section in DEFAULTS:
         return pol["defaults"][section.split(".", 1)[1]]
+    if section == "shop":
+        return pol.setdefault("shop", {}) if create else pol.get("shop")
+    if section in BUYER:
+        return ((pol.get("buyer") or {}).get("defaults") or {}).get(section.rsplit(".", 1)[1])
     cats = pol.setdefault("categories", {})
     if section not in cats and create:
         cats[section] = {}
     return cats.get(section)
 
 
+def _spec(key):
+    """(lowest, highest, largest change) for an editable key, None for any other key."""
+    base, _, sub = key.partition(".") if isinstance(key, str) else ("", "", "")
+    if key in KEYS:
+        return KEYS[key]
+    if key in BUYER_KEYS:
+        return BUYER_KEYS[key]
+    if base in GRADE_KEYS and sub in GRADE_KEYS[base][0]:
+        return GRADE_KEYS[base][1:]
+    if base == LEAF_KEY and sub.strip() and ">" not in sub:
+        return (0, 1, 1)
+    return None
+
+
+def _where(key):
+    """Which sections take this key (a WHERE entry)."""
+    base = key.split(".", 1)[0]
+    if base in ("grade_floor_list", LEAF_KEY):
+        return "shop"
+    if key in BUYER_KEYS:
+        return "buyer"
+    return "goods" if base == "warranty_hours" else "rules"
+
+
+def _fits(section, key):
+    w = _where(key)
+    if section == "shop" or section in BUYER:
+        return w == ("shop" if section == "shop" else "buyer")
+    return w == "rules" or (w == "goods" and _kind(section) == "goods")
+
+
+def _resolved(pol, section):
+    """The block attempt 1 reads for this section, as its policy.resolve builds it: defaults[kind], then the
+    categories entry under the leaf name, then the one under the full path. shop and buyer.defaults are read as is."""
+    if section == "shop" or section in BUYER:
+        return _block(pol, section) or {}
+    defs = pol.get("defaults") or {}
+    if section in DEFAULTS:
+        return dict(defs.get(section.split(".", 1)[1]) or {})
+    out = dict(defs.get(_kind(section)) or {})
+    cats = pol.get("categories") or {}
+    for k in (section.split(">")[-1], section):
+        out.update(cats.get(k) or {})
+    return out
+
+
 def effective(pol, section, key):
-    """The value attempt 1 uses for this section: defaults[kind] overlaid by the category entry."""
-    blk = _block(pol, section)
-    if blk and key in blk:
-        return blk[key]
-    return (pol.get("defaults") or {}).get(_kind(section), {}).get(key)
+    """The value attempt 1 uses for this section and key ("<key>.<grade>" reads one grade; c_first_leaves.<leaf> is
+    1 when the leaf is listed, else 0). A grade missing from its dict reads 0 as attempt 1 does (policy.py ask_price,
+    warranty_hours), except grade_floor_list, where a missing grade means no floor (None)."""
+    blk = _resolved(pol, section)
+    base, _, sub = key.partition(".")
+    if not sub:
+        return blk.get(key)
+    if base == LEAF_KEY:
+        return 1 if sub in (blk.get(base) or ()) else 0
+    d = blk.get(base) or {}
+    return d.get(sub, None if base == "grade_floor_list" else 0)
+
+
+def _keys(section):
+    """The editable keys of a section, as view lists them."""
+    if section == "shop":
+        return [f"grade_floor_list.{g}" for g in GRADE_KEYS["grade_floor_list"][0]]
+    if section in BUYER:
+        return list(BUYER_KEYS)
+    out = list(KEYS) + [f"fresh_discount.{g}" for g in GRADE_KEYS["fresh_discount"][0]]
+    if _kind(section) == "goods":
+        out += [f"warranty_hours.{g}" for g in GRADE_KEYS["warranty_hours"][0]]
+    return out
 
 
 def view(root, categories=()):
     """Current values of the editable keys, per section, for the operator's tool."""
     pol = c.load_json(path(root), {}) or {}
     secs = list(DEFAULTS) + sorted((pol.get("categories") or {}).keys())
+    grades = {k: [list(v[0]), *v[1:]] for k, v in GRADE_KEYS.items()}
     lines = [
         f"편집 가능 키 (최소, 최대, 한 번에 바꿀 수 있는 폭): {json.dumps(KEYS, ensure_ascii=False)}",
+        f"등급 키 <키>.<등급> (등급, 최소, 최대, 폭): {json.dumps(grades, ensure_ascii=False)}. "
+        "fresh_discount는 판매 구역 어디나, warranty_hours는 goods 구역, grade_floor_list는 shop. warranty_hours는 max_warranty_hours를 넘지 못함. "
+        "grade_floor_list에 없는 등급은 범위 안 아무 값으로 새로 둘 수 있음",
+        f"shop의 {LEAF_KEY}.<잎 이름>: 1이면 목록에 넣고 0이면 뺌. "
+        f"buyer.defaults.food/goods: {json.dumps(BUYER_KEYS, ensure_ascii=False)}. bounds 구역은 사람만 고침",
         f"같은 구역의 같은 키는 {COOLDOWN_S // 60}분에 한 번, 한 점검에 {MAX_PER_WAKE}개까지 바꿀 수 있음",
     ]
     for s in secs:
-        vals = {k: effective(pol, s, k) for k in KEYS}
-        own = sorted(k for k in KEYS if k in (_block(pol, s) or {}))
+        vals = {k: effective(pol, s, k) for k in _keys(s)}
+        own = sorted({k.split(".", 1)[0] for k in vals} & set(_block(pol, s) or {}))
         lines.append(
             f"- {s}: {json.dumps(vals, ensure_ascii=False)}"
             + (
@@ -94,6 +185,13 @@ def view(root, categories=()):
                 else ""
             )
         )
+    shop = _resolved(pol, "shop")
+    vals = {k: effective(pol, "shop", k) for k in _keys("shop")}
+    vals[LEAF_KEY] = shop.get(LEAF_KEY) or []
+    lines.append(f"- shop: {json.dumps(vals, ensure_ascii=False)}")
+    for s in BUYER:
+        if _block(pol, s) is not None:
+            lines.append(f"- {s}: {json.dumps({k: effective(pol, s, k) for k in BUYER_KEYS}, ensure_ascii=False)}")
     extra = sorted(set(categories) - set(secs))
     if extra:
         lines.append(
@@ -130,11 +228,18 @@ def _one(root, it, traj, now, categories, validate, done_n):
     )
     if done_n >= MAX_PER_WAKE:
         return {"ok": False, "error": f"한 점검에 {MAX_PER_WAKE}개까지"}
-    if key not in KEYS:
-        return {"ok": False, "error": f"key must be one of {sorted(KEYS)}"}
+    if sec == "bounds":
+        return {"ok": False, "error": "bounds는 사람만 고침 (operator edits refused)"}
+    if _spec(key) is None:
+        return {
+            "ok": False,
+            "error": f"key must be one of {sorted(KEYS) + sorted(BUYER_KEYS)}, "
+            f"<{'|'.join(GRADE_KEYS)}>.<grade> or {LEAF_KEY}.<leaf name>",
+        }
+    base = key.split(".", 1)[0]
     if isinstance(val, bool) or not isinstance(val, (int, float)):
         return {"ok": False, "error": "value must be a number"}
-    if key in INT_KEYS:
+    if base in INT_KEYS:
         if val != int(val):
             return {"ok": False, "error": f"{key} must be a whole number"}
         val = int(val)
@@ -147,17 +252,29 @@ def _one(root, it, traj, now, categories, validate, done_n):
     if not isinstance(pol, dict):
         return {"ok": False, "error": "policy.json unreadable"}
     known = set((pol.get("categories") or {}).keys()) | set(categories)
-    if not isinstance(sec, str) or (sec not in DEFAULTS and sec not in known):
+    fixed = DEFAULTS + ("shop",) + tuple(s for s in BUYER if _block(pol, s) is not None)
+    if not isinstance(sec, str) or (sec not in fixed and sec not in known):
         return {
             "ok": False,
-            "error": "section must be defaults.food, defaults.goods or a full category path",
+            "error": f"section must be one of {list(fixed)} or a full category path",
         }
-    lo, hi, step = KEYS[key]
-    blo, bhi = (pol.get("bounds") or {}).get(key, (lo, hi))
+    if not _fits(sec, key):
+        return {"ok": False, "error": f"{key} cannot be edited in {sec}: only in {WHERE[_where(key)]}"}
+    lo, hi, step = _spec(key)
+    blo, bhi = (pol.get("bounds") or {}).get(base, (lo, hi))
     lo, hi = max(lo, blo), min(hi, bhi)
+    if base == "warranty_hours":  # attempt 1 caps the hours it offers at max_warranty_hours (policy.py warranty_hours)
+        hi = min(hi, int(_resolved(pol, sec).get("max_warranty_hours", 6)))
     if not lo <= val <= hi:
         return {"ok": False, "error": f"{key}={val} outside [{lo}, {hi}]"}
     old = effective(pol, sec, key)
+    if key == "accept_c.max_pay_frac" and not old:
+        return {"ok": False, "error": f"{sec} has no accept_c block: grade C buying is off there"}
+    if val == 1 and base == LEAF_KEY and old == 0:
+        sub = key.split(".", 1)[1]
+        leaves = {k.split(">")[-1] for k in known | set((pol.get("shop") or {}).get("restock_priority") or [])}
+        if sub not in leaves:
+            return {"ok": False, "error": f"{sub} is not a leaf of a known category path"}
     if (
         isinstance(old, (int, float))
         and not isinstance(old, bool)
@@ -179,7 +296,18 @@ def _one(root, it, traj, now, categories, validate, done_n):
             "ok": False,
             "error": f"{sec} {key} was changed less than {COOLDOWN_S // 60} min ago",
         }
-    _block(pol, sec, create=True)[key] = val
+    blk = _block(pol, sec, create=True)
+    if base == LEAF_KEY:
+        sub = key.split(".", 1)[1]
+        blk[base] = [x for x in blk.get(base) or [] if x != sub] + ([sub] if val else [])
+    elif key in BUYER_KEYS and "." in key:
+        blk[base] = {**(blk.get(base) or {}), key.split(".", 1)[1]: val}
+    elif base in GRADE_KEYS:
+        # the dict attempt 1 reads now (maybe inherited from defaults or the leaf entry), written here whole
+        # with one grade changed, so the other grades keep their values
+        blk[base] = {**(_resolved(pol, sec).get(base) or {}), key.split(".", 1)[1]: val}
+    else:
+        blk[key] = val
     os.makedirs(os.path.join(root, BAK_DIR), exist_ok=True)
     fd, tmp = tempfile.mkstemp(dir=root, prefix=".policy.tmp-")
     try:
@@ -206,4 +334,9 @@ def _one(root, it, traj, now, categories, validate, done_n):
         reason=reason,
         backup=os.path.relpath(bak, root),
     )
-    return {"ok": True, "section": sec, "key": key, "old": old, "new": val}
+    res = {"ok": True, "section": sec, "key": key, "old": old, "new": val}
+    if old is None and base == "grade_floor_list":
+        # 2026-11-10 성수님: the operator decides strategy; a first floor moves this grade from the market-price floor
+        # to a share of list (attempt 1 market_floor), so the result says there was no step limit
+        res["note"] = "이 등급은 처음 두는 값이라 한 번에 바꾸는 폭 제한을 적용하지 않음. 이 등급의 최저가가 시장가 기준에서 정가 비율로 바뀜"
+    return res
