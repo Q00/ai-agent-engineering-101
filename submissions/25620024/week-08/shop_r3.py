@@ -208,7 +208,7 @@ def big_buyer(c, text):
 
 CLERK = ("clerk: no haggling needed, this is our price | need a shelf life, grade or warranty? say e.g. "
          "'need 48h, grade A/B' and I pick a unit that passes "
-         "| price match: reply 'match <price>' with another shop's settle of this SKU on the ledger (last 24 h) and we "
+         "| price match: reply 'match <price>' with another shop's ledger price for this SKU (last 24 h) and we "
          "go down to it, as far as our lowest price for that unit | paid us more than another shop's ledger price for the same SKU "
          "within 48 h? say your market name: the difference comes off this purchase, at most 15% of its price and not "
          "under our lowest price")   # HQ 11-10 "진정성 유지": the old text promised an unconditional match and full credit
@@ -291,7 +291,7 @@ def offer_data(u, price, q, vip=None, asked=False):
             "receipt_key_fp": FP, "accept_by": "reply with the ask as a number",
             **({"market_median_24h": round(q["market_median"]),
                 "ask_vs_market_median": round(price / q["market_median"] - 1, 3),
-                "market_median_source": "public ledger settles of other shops, last 24 h"} if q.get("market_median") else {})}
+                "market_median_source": "public ledger prices of other shops, last 24 h"} if q.get("market_median") else {})}
 
 
 def warranty_note(u, asked=False):
@@ -410,7 +410,7 @@ class Shop(AgentExecutor):
                                            f"here): our lowest price" if big else "")
                                         + (f" | VIP {vip}: -{promo.theta().get('vip_discount', 0):.0%} applied" if vip and not big else "")
                                         + (f" | guarantee credit -{credit[1]} applied (you paid more than the ledger's "
-                                           f"lowest price elsewhere, settle #{credit[0]})" if credit else "")
+                                           f"lowest price elsewhere, ledger {credit[0]})" if credit else "")
                                         + f" | asking {q['price']}. Reply with a number. | {CLERK}"))
             return
 
@@ -436,7 +436,7 @@ class Shop(AgentExecutor):
             elif low and max(low - 1, floor) < deal["ask"]:
                 deal["ask"] = max(low - 1, floor)
                 q = deal["q"] = dict(q, least=deal["ask"])
-                await up.requires_input(say_offer(f"price match: the lowest price another shop settled {u['sku']} at on "
+                await up.requires_input(say_offer(f"price match: the lowest price another shop sold {u['sku']} for on "
                                                   f"the ledger (24 h) is {low}; we ask {deal['ask']}. Reply with it to buy."))
                 return
         if offer is not None and offer >= q["least"]:
