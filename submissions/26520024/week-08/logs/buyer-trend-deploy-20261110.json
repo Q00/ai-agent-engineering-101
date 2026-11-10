@@ -1,0 +1,77 @@
+{
+  "mode": "live_read_only_verification_no_manual_trade",
+  "buyer_strategy_observed": [
+    {
+      "order": "o-8dfeb869687f",
+      "ts": 1794313284.7727547,
+      "shop": "inextro",
+      "sku": "G25fe9221",
+      "strategy_version": "settled-trend-v1",
+      "trend_basis": "public_sku_6h_mixed_quality",
+      "trend_samples": 11,
+      "outcome": "receipt_pending",
+      "paid": true
+    }
+  ],
+  "clock_samples": [
+    {
+      "endpoint": "/api/demand",
+      "status": 200,
+      "http_date": "Tue, 10 Nov 2026 12:22:01 GMT",
+      "cache_age": null,
+      "rtt_seconds": 2.967,
+      "market_minus_host_seconds": -599.699,
+      "configured_offset_seconds": -596.603,
+      "corrected_minus_market_seconds": 3.095
+    },
+    {
+      "endpoint": "/api/shops",
+      "status": 200,
+      "http_date": "Tue, 10 Nov 2026 12:22:01 GMT",
+      "cache_age": null,
+      "rtt_seconds": 0.879,
+      "market_minus_host_seconds": -601.623,
+      "configured_offset_seconds": -596.603,
+      "corrected_minus_market_seconds": 5.019
+    },
+    {
+      "endpoint": "/api/board?round=3",
+      "status": 200,
+      "http_date": "Tue, 10 Nov 2026 12:22:01 GMT",
+      "cache_age": null,
+      "rtt_seconds": 1.323,
+      "market_minus_host_seconds": -602.725,
+      "configured_offset_seconds": -596.603,
+      "corrected_minus_market_seconds": 6.122
+    }
+  ],
+  "market": "https://market.ourolabs.ai",
+  "identity": {
+    "name": "leeuichann",
+    "registered_url": "https://copied-highland-enormous-request.trycloudflare.com",
+    "public_key_matches_local": true,
+    "card_http_status": 200,
+    "stock_units": 4
+  },
+  "settlement": {
+    "ledger": 4873099,
+    "found": true,
+    "round": 3,
+    "buyer": "leeuichann",
+    "order_matches": true,
+    "amount_matches": true
+  },
+  "tmux": [
+    "ai:market.0 python",
+    "ai:trend-watch.0 python",
+    "gem:bash.0 bash",
+    "my-gem:bash.0 bash"
+  ],
+  "inventory_age_seconds": 2.263,
+  "os_clock_modified": false,
+  "server_or_tunnel_restarted": false,
+  "limitations": [
+    "HTTP Date has second resolution; observed clock correction is not exact synchronization.",
+    "New policy profitability is not yet measured."
+  ]
+}
