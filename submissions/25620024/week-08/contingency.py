@@ -102,6 +102,33 @@ FIXES_TODAY = ("11-10 contingency fixes, measured 1 h after: (1) price-guarantee
                "hour (market 65), Ge62449c9 0.3 -> 6.7.")
 
 
+def class_gaps():
+    """Our class (students-only) percentile on every scored component, the median and the top (HQ 11-10 19:20)."""
+    import httpx, market_model, statistics as st
+    try:
+        b = httpx.get(f"{market_model.MARKET}/api/board", timeout=20).json()
+    except Exception as e:
+        return {"error": str(e)[:100]}
+    stud = [p for p in b["players"] if p.get("student")]
+    sn = {p["shop"]["name"] for p in stud if p.get("shop")}
+    bn = {p["buyer"]["name"] for p in stud if p.get("buyer")}
+    shops = [x for x in b["shops"] if x["name"] in sn]
+    buyers = [x for x in b["buyers"] if x["name"] in bn]
+    me_s = next(x for x in shops if x["name"] == NAME_)
+    me_b = next(x for x in buyers if x["name"] == NAME_)
+
+    def row(lst, me, k):
+        v = [x.get(k) for x in lst if x.get(k) is not None]
+        return {"ours": me.get(k), "class_pct": round(sum(1 for x in v if x < me[k]) / max(1, len(v) - 1), 2),
+                "median": round(st.median(v), 3), "top": max(v)}
+    ranked = sorted(stud, key=lambda p: -p["student_total"])
+    return {"shop (ALL = 0.5 book + 0.3 revenue + 0.2 stars_rank)": {k: row(shops, me_s, k) for k in ("book", "revenue", "stars_rank")},
+            "buyer (ALL = 0.5 saved + 0.3 forum + 0.1 deals + 0.1 posts)": {k: row(buyers, me_b, k) for k in ("saved", "forum", "deals", "posts")},
+            "forum_rule": "one stance per account per author (likes minus dislikes there); a like stance weighs 1 + log2(net likes), a dislike 1 unless paid for more; voters need 50 settled deals",
+            "class_rank": next(i + 1 for i, p in enumerate(ranked) if p["player"] == "dragonash22"),
+            "top5": [{"player": p["player"], "total": p["student_total"]} for p in ranked[:5]]}
+
+
 def facts():
     import market_model, restock
     c = market_model.db()
@@ -148,7 +175,7 @@ def facts():
             "restock_rule": {k: t.get(k) for k in ("profit_first", "hit_min_margin", "window_budget", "max_list",
                                                    "max_line_value", "surge_skip")},
             "restock_plan_now": {"lines": buy, "why": why[:12]},
-            "fixes_today_and_results": FIXES_TODAY, "forum": forum_facts(),
+            "fixes_today_and_results": FIXES_TODAY + " INCIDENT 16:42-19:05: a 175 h warranty made the market refuse 74 settles; back to 72 h.", "forum": forum_facts(), "class_gaps": class_gaps(),
             "audit_findings": audit.get("findings"), "buyer_audit": {k: buyer_mem.get(k) for k in ("at", "findings")}
             if buyer_mem else None}
 
@@ -193,7 +220,7 @@ def run():
         q = (f"{RULES}\nYou are the {teams[role]}. HQ has called a contingency: the shop fell in the class ranking after "
              f"over-buying bedding (clearance stock below); today's fixes and their results are in the facts. Audit the "
              f"{other} from these numbers: up to 4 concrete faults, each with its number. Then name up to 3 changes for "
-             f"your own unit -- at least one must use the public forum (the buyer's forum rating is 0.3 of buyer ALL; the "
+             f"your own unit aimed at the weakest class percentile in class_gaps -- at least one must use the public forum (the buyer's forum rating is 0.3 of buyer ALL; the "
              f"facts show which posts other agents like and how ours fare; honest, verifiable posts only, our shared "
              f"owner disclosed when the buyer mentions our shop), each with the evidence, the expected "
              f"effect (in KRW or percentile points) and the risk. JSON only.\n\nFACTS: {data}")
