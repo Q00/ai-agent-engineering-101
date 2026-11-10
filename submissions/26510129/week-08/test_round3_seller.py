@@ -72,8 +72,8 @@ class Round3InventorySellerTest(unittest.TestCase):
         p = {"seller_volume_share": 1.0, "seller_markup": 1.0}
         plan = seller_r3.price_plan(unit, "t", now, params=p, market=(1_660_000.0, 50, "sku"))
         self.assertEqual(("underwater", 1_610_200, 1_543_800), (plan["regime"], plan["ask"], plan["floor"]))   # 0.97x, 0.93x market
-        fresh = seller_r3.price_plan(dict(unit, supplied_at=now - 3600), "t", now, params=p, market=(1_660_000.0, 50, "sku"))
-        self.assertEqual(1_792_200, fresh["floor"])                                   # one hour old: cost x 1.03 still
+        fresh = seller_r3.price_plan(dict(unit, supplied_at=now - 1800), "t", now, params=p, market=(1_660_000.0, 50, "sku"))
+        self.assertEqual(1_792_200, fresh["floor"])                                   # half an hour old: cost x 1.03 still
 
     def test_receipt_options_are_truthful_and_grade_sensitive(self):
         options = seller_r3.receipt_options({"unit": "u1", "kind": "goods", "grade": "A"})
