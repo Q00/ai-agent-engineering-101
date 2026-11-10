@@ -174,3 +174,27 @@ def test_main_loop_survives_a_failing_poll(o, monkeypatch, tmp_path):
         op.main(["--root", o.root, "--dry", "--harness", str(tmp_path / "noharness")])
     rows = [json.loads(x) for x in open(os.path.join(o.root, "a2/trajectory.jsonl"), encoding="utf-8")]
     assert sum(1 for r in rows if r.get("error") == "RuntimeError") == 1  # the same error is logged once an hour
+
+
+def test_meta_harness_wiring(tmp_path, monkeypatch):
+    """Guidance and audit lines reach the prompt, hidden tools leave the list, new_tool goes through made_tools."""
+    from kernel import auditor, made_tools
+    from kernel import operator as opm
+
+    root = str(tmp_path)
+    os.makedirs(os.path.join(root, "a2"), exist_ok=True)
+    with open(os.path.join(root, auditor.GUIDANCE), "w", encoding="utf-8") as f:
+        f.write("재입고 절을 한 점검에 한 번만 읽음")
+    with open(os.path.join(root, auditor.TOOL_STATE), "w", encoding="utf-8") as f:
+        json.dump({"hidden": ["shops", "policy"], "desc": {"board": "순위표 새 설명"}}, f)
+    op = opm.Operator.__new__(opm.Operator)
+    op.root = root
+    names = dict(op.listed())
+    assert "shops" not in names and names["board"] == "순위표 새 설명" and "stockouts" in names
+    assert auditor.guidance(root) == "재입고 절을 한 점검에 한 번만 읽음"
+    seen = {}
+    monkeypatch.setattr(made_tools, "add", lambda r, spec, now, **kw: seen.update(spec=spec, kw=kw) or {"ok": True, "name": spec["name"], "sample": "x" * 900})
+    op.secrets, op.traj = (), None
+    res = op._finish_compact({"new_tool": {"name": "q_abc"}, "note": "n"}, 1000.0)
+    assert res["new_tool"]["ok"] and len(res["new_tool"]["sample"]) == 300
+    assert seen["kw"]["by"] == "operator" and "policy" in seen["kw"]["reserved"]

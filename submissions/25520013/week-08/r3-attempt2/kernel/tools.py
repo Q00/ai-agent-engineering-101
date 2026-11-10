@@ -382,6 +382,36 @@ def policy(root, days=1):
     return c.cap(pe.view(root, cats) + "\n최근 정책 수정\n" + ("\n".join(hist) or "없음"), MAX_CHARS)
 
 
+def stockouts(root, hours=1, now=None):
+    """재고 없음으로 거절한 요청을 상품군 잎과 SKU별로 셈: 최근 hours시간(1~24)의 거절 수, 지금 그 SKU의 우리 재고 수. 어느 상품군의 stock_target, qty_per_buy를 올릴지 정할 때 씀."""
+    from collections import Counter
+
+    now = c.now_ts() if now is None else now
+    hours = max(1, min(24, hours)) if isinstance(hours, (int, float)) and not isinstance(hours, bool) else 1
+    cat = b._catalog(root)
+    inv = c.load_json(os.path.join(root, ".market/inventory.json"))
+    have = Counter(u.get("sku") for u in (inv.get("units") or [] if isinstance(inv, dict) else []) if isinstance(u, dict))
+    by_sku, total = Counter(), 0
+    for m in c.tail_json(os.path.join(root, ".r3/metrics.jsonl"), 20_000_000, b'"no_stock"'):
+        ts = m.get("ts")
+        if m.get("decision") != "no_stock" or not isinstance(ts, (int, float)) or ts < now - hours * 3600:
+            continue
+        total += 1
+        o = m.get("outcome") if isinstance(m.get("outcome"), dict) else {}
+        by_sku[o.get("sku") if o.get("sku") in cat else None] += 1
+    leaves = {}
+    for sku, n in by_sku.items():
+        if sku is None:
+            continue
+        info = cat.get(sku) if isinstance(cat.get(sku), dict) else {}
+        leaves.setdefault(str(info.get("category") or "?"), []).append((n, sku, str(info.get("name") or "")[:30]))
+    out = [f"최근 {hours:g}시간 재고 없음 거절 {total}건 (SKU를 알 수 없는 요청 {by_sku.get(None, 0)}건)"]
+    for leaf, rows in sorted(leaves.items(), key=lambda kv: -sum(r[0] for r in kv[1]))[:12]:
+        out.append(f"- {leaf}: {sum(r[0] for r in rows)}건")
+        out += [f"    {sku} {name}: 거절 {n}건, 지금 재고 {have.get(sku, 0)}개" for n, sku, name in sorted(rows, reverse=True)[:5]]
+    return c.cap("\n".join(out), MAX_CHARS)
+
+
 NET_SKU_TOP = 15  # net_profit: per-SKU rows for one category leaf
 
 
@@ -500,6 +530,7 @@ TOOLS = {
     "replay_probe": (replay_probe, ("operator",)),
     "policy": (policy, ("operator",)),
     "net_profit": (net_profit, ("operator",)),
+    "stockouts": (stockouts, ("operator",)),
     "recall": (recall, ("operator",)),
     "brief_section": (brief_section, ("operator",)),
     "guide": (guide, ("operator",)),

@@ -21,7 +21,7 @@ from kernel import brief as b
 from kernel import common as c
 from kernel import experiments as ex
 from kernel import harness as hz
-from kernel import policy_edit, tools, versions
+from kernel import audit, auditor, made_tools, policy_edit, tools, versions
 from kernel.agent import ParseError, parse_last_object
 from kernel.llm import ModelError, ModelRefused
 from kernel.trajectory import Trajectory
@@ -60,8 +60,10 @@ COMPACT_SCHEMA = """한 단계에 JSON 객체 하나로만 답함. 둘 중 하�
   "policy": [{"section": "defaults.food|defaults.goods|<상품군 전체 경로>|shop|buyer.defaults.food|buyer.defaults.goods", "key": "<키>", "value": <수>, "reason": "<근거 숫자>", "expect": "<기대 효과: 어떤 숫자가 어느 쪽으로>", "window_h": <2~8, 생략 가능>}],
   "forum": [{"post": "<글>", "as": "shop|buyer"}],
   "notes": "<다음 점검의 네가 읽을 메모 전체, 2,000자 안. 생략하면 그대로 둠>",
+  "new_tool": {"name": "q_<영소문자_숫자>", "description": "<어떤 숫자를 주는지>", "source": "events|metrics|buyer|trajectory", "hours": <1~48>, "where": [{"field": "<점 경로>", "op": "==|!=|>|>=|<|<=|in|contains|exists", "value": <값>}], "group_by": ["<점 경로>|hour|leaf"], "agg": [{"fn": "count|sum|mean|median|min|max|share", "field": "<점 경로>", "as": "<이름>"}], "limit": <줄 수>},
   "note": "<이번 점검 한 줄 요약>"}}
 done의 모든 항목은 선택임. 지금 값과 허용 범위는 policy 도구로 봄.
+new_tool은 읽기 전용 질의 도구를 하나 만듦 (한 점검에 하나, 모두 8개까지): 기록 파일 하나를 조건으로 거르고 묶어 세는 정의이고 코드는 아님. 커널이 실제 기록으로 시험 실행해 통과하면 다음 점검부터 도구 목록에 나옴. 기록의 필드 이름은 events, trajectory 도구로 행을 먼저 보고 정함. 있는 도구로 못 얻는 숫자가 반복해 필요할 때만 만듦.
 policy 항목은 모두 실험으로 걸림: 판매 쪽 값은 동시 비교(물건 절반에만 새 값, 판정 때 채택 또는 버림), 구매와 재고 값은 전후 비교(바로 적용, 나빠지면 되돌림).
 policy 키는 항목마다 숫자 하나: 판매 구역은 price_mult, min_margin, concession, max_rounds, stock_target, qty_per_buy, warranty_uplift, fresh_discount.B|C. goods 구역은 warranty_hours.A|B|C도. shop은 grade_floor_list.A|B|C와 c_first_leaves.<잎 이름> (1 넣기, 0 빼기). buyer.defaults.*는 max_pay_frac, open_frac (첫 제시가), step_frac (회차마다 올리는 폭), accept_c.max_pay_frac, accept_c.open_frac. bounds는 사람만 고침."""
 RESERVED_ARGS = ("harness_root", "dry", "now")
@@ -259,10 +261,37 @@ class Operator:
             if "operator" in agents
         )
 
+    def listed(self):
+        """Compact-mode tool list as (name, description): built-ins the auditor has not hidden (with its
+        re-descriptions), then the operator-made query tools."""
+        try:
+            state = auditor.tool_state(self.root)
+        except Exception:  # a broken auditor file must not take the tool list away
+            state = {"hidden": [], "desc": {}}
+        out = [
+            (name, state["desc"].get(name) or " ".join((fn.__doc__ or "").split())[:160])
+            for name, (fn, agents) in tools.TOOLS.items()
+            if "operator" in agents and name not in HARNESS_TOOLS and name not in state["hidden"]
+        ]
+        try:
+            out += [(n, "(만든 도구) " + str(d)[:160]) for n, d in made_tools.listing(self.root)]
+        except Exception:
+            pass
+        return out
+
     def _run_tool(self, name, args):
         args = {k: v for k, v in (args if isinstance(args, dict) else {}).items() if k not in RESERVED_ARGS}
         if name in HARNESS_TOOLS and self.compact():  # not listed in compact mode, so not callable either
             return "도구 오류: 이 방식에서는 쓸 수 없는 도구"
+        if isinstance(name, str) and name.startswith(made_tools.PREFIX) and self.compact():
+            try:
+                obs = made_tools.call(self.root, name, args or None)
+            except Exception as e:
+                obs = f"도구 오류: {type(e).__name__}: {e}"
+            obs = c.cap(c.mask(str(obs), self.secrets), tools.MAX_CHARS)
+            self.traj.append("operator", "tool", name=name, obs_chars=len(obs),
+                             args=c.mask(json.dumps(args, ensure_ascii=False, default=str)[:2000], self.secrets))
+            return obs
         if name in HARNESS_TOOLS:
             args["harness_root"] = self.harness_root
         if name == "replay_probe":
@@ -439,22 +468,29 @@ class Operator:
                 job = f.read()
         except OSError:
             job = ""
+        listed = self.listed()
+        try:
+            audit_lines = audit.lines(self.root, now, listed=[n for n, _ in listed])
+        except Exception:  # the audit is a reader of the trajectory; it must never stop a wake
+            audit_lines = []
+        try:
+            guidance = auditor.guidance(self.root)
+        except Exception:
+            guidance = ""
         base = "\n\n".join(
             [
                 job,
+                "## 감사자가 준 일하는 방식 (네 지난 점검들을 감사해 쓴 것. 전략 값이 아니라 일하는 방법임)\n\n"
+                + (c.mask(guidance, self.secrets) or "없음"),
                 tools.guide_always(),
                 "## 상태 카드 (커널이 모은 사실, 해석 없음)",
-                b.build_compact(self.root, now, last_brief, extra=ex.lines(self.root, now)),
+                b.build_compact(self.root, now, last_brief, extra=list(ex.lines(self.root, now)) + list(audit_lines)),
                 "## 네 메모 (지난 점검의 네가 남김)",
                 c.mask(self._notes(), self.secrets) or "없음",
                 "## 깨운 이유",
                 reason,
                 "## 도구",
-                "\n".join(
-                    f"- {name}: {' '.join((fn.__doc__ or '').split())[:160]}"
-                    for name, (fn, agents) in tools.TOOLS.items()
-                    if "operator" in agents and name not in HARNESS_TOOLS
-                ),
+                "\n".join(f"- {name}: {doc}" for name, doc in listed),
                 "## 답 형식",
                 COMPACT_SCHEMA,
             ]
@@ -539,6 +575,15 @@ class Operator:
             result["policy"] = out
         if "forum" in done:
             result["forum"] = self._forum(done["forum"])
+        if isinstance(done.get("new_tool"), dict):  # declarative query only; the test run on real data is the gate
+            try:
+                r = made_tools.add(self.root, done["new_tool"], now, traj=self.traj, by="operator",
+                                   reserved=tuple(tools.TOOLS))
+            except Exception as e:
+                r = {"ok": False, "error": f"{type(e).__name__}: {str(e)[:200]}"}
+            r = r if isinstance(r, dict) else {"ok": False, "error": "no result"}
+            result["new_tool"] = {k: c.mask(str(v), self.secrets)[:300] if isinstance(v, str) else v
+                                  for k, v in r.items() if k in ("ok", "name", "error", "sample")}
         if isinstance(done.get("notes"), str) and done["notes"].strip():
             path = os.path.join(self.root, "a2/operator_notes.md")
             os.makedirs(os.path.dirname(path), exist_ok=True)
@@ -875,6 +920,9 @@ def main(argv=None):
                 if a.once:
                     raise
                 traj.append("operator", "operator_wake", reason=reason, status="crash", error=type(err).__name__)
+        if op.compact() and os.environ.get("A2_AUDITOR") == "1" and not a.dry:
+            # meta-harness: audits how the operator works, edits its guidance and tool list, never policy
+            auditor.maybe_run(root, terra, traj, c.now_ts(), secrets=secrets, listed=[n for n, _ in op.listed()])
         if a.once:
             return 0
         time.sleep(POLL_S)

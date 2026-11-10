@@ -27,7 +27,7 @@ case "${1:-status}" in
       case "$n" in
         memd) launch memd "$CODE/.venv/bin/python" -m memd.server --root "$W" ;;
         memfeed) launch memfeed python3 -m kernel.memfeed --root "$W" --interval-s 300 ;;
-        operator) launch operator env A2_OPERATOR_EFFORT="${A2_OPERATOR_EFFORT:-low}" A2_OPERATOR_INTERVAL_S="${A2_OPERATOR_INTERVAL_S:-1200}" A2_OPERATOR_COMPACT="${A2_OPERATOR_COMPACT:-1}" A2_SPLIT="${A2_SPLIT:-1}" python3 -m kernel.operator --root "$W" ;;
+        operator) launch operator env A2_OPERATOR_EFFORT="${A2_OPERATOR_EFFORT:-medium}" A2_AUDITOR="${A2_AUDITOR:-1}" A2_OPERATOR_INTERVAL_S="${A2_OPERATOR_INTERVAL_S:-1200}" A2_OPERATOR_COMPACT="${A2_OPERATOR_COMPACT:-1}" A2_SPLIT="${A2_SPLIT:-1}" python3 -m kernel.operator --root "$W" ;;
         *) echo "unknown process $n" ;;
       esac
     done
