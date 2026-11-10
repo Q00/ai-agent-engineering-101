@@ -24,7 +24,7 @@ Type=oneshot
 WorkingDirectory=$W8
 Environment=PYTHONDONTWRITEBYTECODE=1
 ExecStart=/usr/bin/python3 $W8/ops/deploy_pull.py
-TimeoutStartSec=45min
+TimeoutStartSec=90min
 UNIT
 cat > "$U/week08-deploy.timer" <<UNIT
 [Unit]
