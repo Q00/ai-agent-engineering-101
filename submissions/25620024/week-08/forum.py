@@ -338,6 +338,37 @@ def wanted_posts(c, t, now, min_wanted=3):
              "kind": "summary"}]
 
 
+def warranty_ad(c, now):
+    """As the shop (HQ 11-10 "평생 보증 제도 ... 게시판에도 적극 홍보해"): our warranty policy, every hour. Facts only:
+    the hours run until the market closes; product defects only, not damage from use; refs are our own recent settles."""
+    import promo
+    t = promo.theta()
+    if not t.get("warranty_until") or t["warranty_until"] < now:
+        return []
+    h = round((t["warranty_until"] - now) / 3600, 1)
+    refs = [s_ for (s_,) in c.execute(f"select seq from settles where seq in ({market_model.ours(c)}) "
+                                       "order by seq desc limit 3")]
+    clear = bool(t.get("clearance_warranty_all"))
+    data = {"type": "warranty_policy", "shop": NAME, "warranty": "lifetime/unlimited (평생·무기한)",
+            "warranty_hours_now": h, "until": "2026-11-17 23:59 KST (market close)",
+            "covers": "product defects (the ledger's broken entries)", "excludes": "damage from use",
+            "remedy": "full refund of the price paid", "applies_to": ("every sale of the goods on our clearance list (see our clearance posts); "
+                                                                    "other goods when you ask for a warranty") if clear
+            else "goods, when you ask for a warranty",
+            "how": "the offer data and the signed receipt carry warranty_hours", "refs": refs}
+    ko = ("[평생·무기한 보증] dragonash 상점\n"
+          f"- 보증: 평생·무기한 (마켓이 닫히는 11-17 23:59까지, 지금 기준 {h:.0f}시간)\n"
+          "- 단 제품 하자 시에 한하며, 사용으로 인한 파손은 제외. 하자 시 결제 금액 전액 환불\n"
+          + ("- 대상: 재고 정리 목록의 상품은 모든 판매, 그 외 상품은 보증을 요청하시면\n" if clear
+             else "- 대상: 보증을 요청하신 상품\n")
+          + "- 제안 데이터와 서명된 영수증의 warranty_hours에 그대로 적힙니다")
+    en = (f"[Lifetime/unlimited warranty] dragonash: until the market closes (11-17 23:59 KST, {h:.0f} h now); "
+          "product defects only, not damage from use; full refund for a defect; stated in the offer and the signed receipt.")
+    js = json.dumps(data, ensure_ascii=False, separators=(",", ":")) + f"\n{HUMAN}\n" + ko + "\n" + en
+    return [{"topic": f"warranty:{int(now // 3600) % 2}", "as": "shop", "refs": refs, "score": 9.8, "text": js[:1000],
+             "texts": {"json": js[:1000], "ko": ko, "en": en}}]
+
+
 def groupbuy_ads(c, t, now):
     """As the shop, the group-buy offer (HQ 11-05; W09 lecture: "선착순 50명만 50% 할인"): each SKU in
     private/groupbuy.json, its price this hour, how many group-buy units are left this hour, refs = our own settles of it."""
@@ -731,12 +762,16 @@ def follow_ads(c, md, now):
         clear = bool((_groupbuy_skus().get(sku) or {}).get("clearance")) and bool(t_.get("clearance_warranty_all", False))
         w0 = t_.get("warranty_goods_h") or 0
         lh = max(w0, 6, t_.get("warranty_long_h", 6))
+        if t_.get("warranty_until"):
+            lh = max(lh, round((t_["warranty_until"] - time.time()) / 3600))
+        lab_en = "lifetime/unlimited (until the market closes 11-17 23:59 KST; product defects only, not damage from use)" if t_.get("warranty_until") else f"{lh}h"
+        lab_ko = "평생·무기한(마켓이 닫히는 11-17 23:59까지, 단 제품 하자 시, 사용 파손 제외)" if t_.get("warranty_until") else f"{lh}시간"
         if u.get("kind") != "goods":
             w_en, w_ko = "none", "없음"
         elif clear:
-            w_en, w_ko = f"{lh}h on every sale (refund if it breaks)", f"모든 판매에 {lh}시간(고장 시 전액 환불)"
+            w_en, w_ko = f"{lab_en} on every sale (refund if it breaks)", f"모든 판매에 {lab_ko} 보증, 고장 시 전액 환불"
         elif t_.get("warranty_on_request", True):
-            w_en, w_ko = f"{lh}h if you ask for it, otherwise none", f"요청하시면 {lh}시간, 요청 없으면 없음"
+            w_en, w_ko = f"{lab_en} if you ask for it, otherwise none", f"요청하시면 {lab_ko}, 요청 없으면 없음"
         else:
             w_en, w_ko = (f"{w0}h", f"{w0}시간") if w0 else ("none", "없음")
         mm = t_.get("match_margin", 0.05)
@@ -778,6 +813,12 @@ def _clear_w():
     import promo
     t = promo.theta()
     h = max(t.get("warranty_goods_h") or 0, 6, t.get("warranty_long_h", 6))
+    if t.get("warranty_until"):
+        if t.get("clearance_warranty_all", False):
+            return ("lifetime, unlimited: until the market closes (2026-11-17 23:59 KST), on every sale; product defects only, not damage from use; full refund for a defect",
+                    "모든 판매에 평생·무기한 보증(마켓이 닫히는 11-17 23:59까지). 단 제품 하자 시에 한하며, 사용으로 인한 파손은 제외. 하자 시 전액 환불")
+        return ("lifetime, unlimited: until the market closes (2026-11-17 23:59 KST), if you ask for it; product defects only, not damage from use",
+                "요청 시 평생·무기한 보증(마켓이 닫히는 11-17 23:59까지). 단 제품 하자 시에 한하며, 사용으로 인한 파손은 제외")
     if t.get("clearance_warranty_all", False):
         return f"{h} h on every sale, full refund if it breaks", f"모든 판매에 {h}시간, 고장 시 전액 환불"
     return f"{h} h if you ask for it", f"요청 시 {h}시간"
@@ -911,7 +952,7 @@ def tick(md=Path(".market"), c=None, now=None):
         + (receipt_tips(c, t, now) if t.get("name_shops") else []) + checkout_tips(c, t, now) + replies(c, t, forum, now) \
         + frugal_shops(c, t, now) + wanted_posts(c, t, now) + groupbuy_ads(c, t, now) + groupbuy_call(c, t, now) + (clearance_facts(c, t, now) + shop_facts(c, t, now) + clearance_groupbuy(c, t, now) if promo_ok else []) \
         + offers(forum, md, now) \
-        + opening_ads(c, md, now) + follow_ads(c, md, now)
+        + opening_ads(c, md, now) + follow_ads(c, md, now) + warranty_ad(c, now)
     lines = []
     day = time.strftime("%Y-%m-%d", time.localtime(now))
     if state.get("day") != day:
