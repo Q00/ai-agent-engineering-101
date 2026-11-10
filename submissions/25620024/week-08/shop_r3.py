@@ -229,6 +229,47 @@ def clearance_skus():
     return _CLEAR["skus"]
 
 
+AB_LOG = Path(__file__).parent / "private" / "price_ab.jsonl"
+
+
+def price_ab(task_id, u, q):
+    """HQ 11-11 (A): a price test on a clearance SKU -- theta price_ab {sku: +share}: half the orders (by task id) ask
+    that much more. Logged to private/price_ab.jsonl with the unit, so paid deals can be joined on the ledger."""
+    x = (promo.theta().get("price_ab") or {}).get(u.get("sku"))
+    if not x:
+        return q, None
+    arm = "B" if int(hashlib.sha256(task_id.encode()).hexdigest()[:8], 16) % 2 else "A"
+    if arm == "B":
+        q = dict(q, price=int(q["price"] * (1 + x)), least=int(q["least"] * (1 + x)), why=q["why"] + f"; ab +{x:.0%}")
+    try:
+        with AB_LOG.open("a", encoding="utf-8") as f:
+            f.write(json.dumps({"ts": time.time(), "task": task_id, "sku": u["sku"], "unit": u.get("unit"), "arm": arm,
+                                "ask": q["price"], "event": "offer"}) + "\n")
+    except OSError:
+        pass
+    return q, arm
+
+
+def standing_price(c, code, u, q):
+    """HQ 11-11 (C): a buyer that quotes its member code gets the price it paid us for the same SKU in the last 24 h,
+    if that is lower now -- never under the floor."""
+    if not code:
+        return q
+    c.execute("create table if not exists member_last (code text, sku text, price real, ts real, primary key (code, sku))")
+    row = c.execute("select price from member_last where code=? and sku=? and ts>?", (code, u["sku"], time.time() - 86400)).fetchone()
+    if row and row[0] < q["price"]:
+        held = max(q["floor"], int(row[0]))
+        if held < q["price"]:
+            q = dict(q, price=held, least=min(q["least"], held), why=q["why"] + f"; standing price {held} (24 h)")
+    return q
+
+
+def remember_price(c, code, u, price):
+    c.execute("create table if not exists member_last (code text, sku text, price real, ts real, primary key (code, sku))")
+    c.execute("insert or replace into member_last values (?,?,?,?)", (code, u["sku"], price, time.time()))
+    c.commit()
+
+
 EGG = "storm292513"     # HQ 11-10 easter egg ("292513 = 이것이 옷일세"): say it, get egg_discount more off
 
 
@@ -391,6 +432,8 @@ class Shop(AgentExecutor):
                 if at_cost < q["price"]:
                     q = dict(q, price=at_cost, least=at_cost, floor=at_cost, why=q["why"] + f"; at cost for {big}")
                     credit = None
+            q, ab = price_ab(task.id, u, q)
+            q = standing_price(self.c, code, u, q)
             q, egg = egg_off(text, q)
             deal = self.open[task.id] = {"unit": u, "q": q, "ask": q["price"], "turns": 0, "code": code, "vip": vip,
                                          "egg": bool(egg),
@@ -452,6 +495,14 @@ class Shop(AgentExecutor):
                 receipt["warranty_hours"] = w
             code = deal["code"] or promo.new_code(task.id)
             promo.count_purchase(self.c, code, price)
+            remember_price(self.c, code, u, price)
+            if (promo.theta().get("price_ab") or {}).get(u.get("sku")):
+                try:
+                    with AB_LOG.open("a", encoding="utf-8") as f:
+                        f.write(json.dumps({"ts": time.time(), "task": task.id, "sku": u["sku"], "unit": u.get("unit"),
+                                            "price": price, "event": "deal"}) + "\n")
+                except OSError:
+                    pass
             promo.record(self.c, task.id, u, q, price, "deal")
             if u.get("unit"):
                 self.sold[u["unit"]] = time.time()
