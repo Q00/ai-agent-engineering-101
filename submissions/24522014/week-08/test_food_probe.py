@@ -15,7 +15,7 @@ RUNTIME = {"version": 1, "controls": {"restock_paused": False, "restock_budget_r
 LIMITS = {"revision": "t", "max_total_units": 80, "max_proven_units_per_sku": 3, "max_units_per_run": 12, "max_lines_per_run": 6, "max_unproven_units": 2,
           "min_profitable_own_sales_6h": 3, "min_public_sales_6h": 6, "min_public_buyers": 3}
 NOW = 1793800000.0
-GOOD = {"enabled": True, "skus": ["G4a998429", "Gdf79cd07", "G476cc094", "G80435d53", "G66ded25b"], "units_per_sku": 3, "max_total_estimated_cost": 310000}
+GOOD = {"enabled": True, "skus": ["G4a998429", "Gdf79cd07", "G476cc094", "G80435d53", "G32bf9a8e"], "units_per_sku": 3, "max_total_estimated_cost": 310000}
 CHEAP = {"distinct_buyers": 5, "settles_6h": 9, "distinct_buyers_6h": 5, "median_price": 95}
 
 
@@ -79,7 +79,7 @@ class Picks(unittest.TestCase):
         self.assertIsNone(waiting)
         count = {}
         for p in picks: count[p["sku"]] = count.get(p["sku"], 0) + 1
-        self.assertEqual(count, {"G4a998429": 1, "Gdf79cd07": 3, "G476cc094": 3, "G80435d53": 3, "G66ded25b": 3})
+        self.assertEqual(count, {"G4a998429": 1, "Gdf79cd07": 3, "G476cc094": 3, "G80435d53": 3, "G32bf9a8e": 3})
 
     def test_the_cost_cap_counts_held_stock(self):
         # 15000 worst cost a unit; 100000 holds 6 units, 2 of them already held.
