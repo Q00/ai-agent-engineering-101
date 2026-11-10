@@ -18,6 +18,8 @@ import json
 import time
 from pathlib import Path
 
+import meta_harness
+
 import collector
 from db import DB
 
@@ -163,6 +165,12 @@ def main():
     md = Path(ap.parse_args().state)
     inv = json.loads((md / "inventory.json").read_text(encoding="utf-8"))
     now = time.time()
+
+    try:                                        # independent of the supply window: runs on every call,
+        with DB() as d:                        # self-throttled inside to once per ~20 min
+            meta_harness.maybe_tune(d, now)
+    except Exception as e:
+        print(f"[meta] skipped: {type(e).__name__}: {e}")
 
     if inv.get("balance", 0) < inv.get("bankrupt_line", 0) and not inv.get("units") and inv.get("bankruptcies_left"):
         print(json.dumps({"buy": [], "bankrupt": True}))
