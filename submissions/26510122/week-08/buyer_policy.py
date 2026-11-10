@@ -6,10 +6,15 @@ rates. Settlement logs can support revisions after Round 3 opens.
 
 from __future__ import annotations
 
-import math
 from collections import defaultdict
+from decimal import Decimal
+import json
+import math
+import os
+from pathlib import Path
 from statistics import median_low
 import time
+from urllib.request import urlopen
 
 from context_compaction import epoch
 
@@ -17,6 +22,10 @@ from context_compaction import epoch
 FOOD_MAX_SHARE = 0.85
 GOODS_MAX_SHARE = 0.75
 CHECKOUT_BUFFER_SECONDS = 120
+SAVED_BOARD = 'https://market.ourolabs.ai/api/board?round=3'
+SAVED_CACHE = Path('state/buyer-saved-reference.json')
+SAVED_REFRESH_SECONDS = 300
+SAVED_MAX_AGE_SECONDS = 900
 
 
 def shelf_minimum(order: dict) -> float:
@@ -86,11 +95,64 @@ def opening_offer_range(cap, guidance=None):
     return [max(1, math.floor(cap * .7)), max(1, math.floor(cap * .85))]
 
 
-def purchase_price_guidance(cap, prices):
+def market_saved_reference(name, *, path=SAVED_CACHE, now=None):
+    """Read a bounded, cached copy of the official buyer Saved value."""
+    now = time.time() if now is None else now
+    try:
+        cache = json.loads(path.read_text())
+        if not isinstance(cache, dict) or cache.get('name') != name:
+            cache = {}
+    except (OSError, ValueError):
+        cache = {}
+    checked = cache.get('checked_at')
+    if type(checked) not in (int, float) or not 0 <= now - checked < SAVED_REFRESH_SECONDS:
+        cache.update(name=name, checked_at=now)
+        try:
+            with urlopen(SAVED_BOARD, timeout=2) as response:
+                board = json.load(response)
+            if board.get('round') != 3:
+                raise ValueError('unexpected market round')
+            row = next(x for x in board['buyers'] if x['name'] == name and x.get('deals', 0) > 0)
+            saved = row['saved']
+            if type(saved) not in (int, float) or not -1 <= saved < 1:
+                raise ValueError('invalid market Saved')
+            cache.update(saved=saved, observed_at=now)
+        except (OSError, ValueError, TypeError, KeyError, AttributeError, StopIteration):
+            pass
+        try:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            temporary = path.with_name(f'.{path.name}.{os.getpid()}.tmp')
+            temporary.write_text(json.dumps(cache))
+            temporary.replace(path)
+        except OSError:
+            pass
+    seen = cache.get('observed_at')
+    saved = cache.get('saved')
+    if (type(seen) in (int, float) and 0 <= now - seen <= SAVED_MAX_AGE_SECONDS
+            and type(saved) in (int, float) and -1 <= saved < 1):
+        return {'saved': saved, 'observed_at': seen}
+    return None
+
+
+def saved_price_reference(list_price, baseline):
+    """Greatest whole price that strictly improves the published Saved if usable."""
+    if not baseline or type(list_price) is not int or list_price <= 0:
+        return None
+    saved = baseline['saved']
+    cutoff = Decimal(list_price) * (1 - Decimal(str(saved)))
+    whole_price = math.ceil(cutoff) - 1
+    return {'current_market_saved': saved, 'observed_at': baseline['observed_at'],
+            'max_price_to_improve_if_usable': whole_price if whole_price > 0 else None}
+
+
+def purchase_price_guidance(cap, prices, *, list_price=None, saved_baseline=None):
     """Suggest a market-supported range while retaining the mandate ceiling."""
     baseline = opening_offer_range(cap)
     result = {'paid_sample_72h': len(prices), 'median_paid': median_low(prices) if prices else None,
               'suggested_maximum': None, 'opening_offer_range': baseline}
+    saved = saved_price_reference(list_price, saved_baseline)
+    if saved is not None:
+        result['saved_reference'] = saved
     if len(prices) < 3:
         return result
     median = result['median_paid']

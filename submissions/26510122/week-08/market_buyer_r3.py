@@ -13,7 +13,7 @@ import uuid
 
 from buyer_memory import brief, context, import_broken, import_payments, read_events, record, register_shops
 from context_compaction import BUYER_PROMPT_BYTES, size, text
-from buyer_policy import (acceptance, opening_offer_range, paid_price_samples, price_cap,
+from buyer_policy import (acceptance, market_saved_reference, opening_offer_range, paid_price_samples, price_cap,
                           purchase_price_guidance, receipt_problem)
 from buyer_r3 import negotiate
 from harness import decide_json, trace, MODEL
@@ -39,7 +39,7 @@ def review_summary(reviews: list[dict]) -> dict:
 
 
 def candidates(order: dict, shops: list[dict], catalog: dict,
-               own_shop_name: str, *, full_pool: bool = False) -> list[dict]:
+               own_shop_name: str, *, full_pool: bool = False, saved_baseline=None) -> list[dict]:
     acceptable = set(order.get("acceptable") or [])
     history=read_events()
     prices = paid_price_samples(order, history)
@@ -74,7 +74,8 @@ def candidates(order: dict, shops: list[dict], catalog: dict,
                           "stock": offer["qty"], "reviews": review_summary(shop.get("reviews") or []),
                           "first_hand": first_hand, "paid": paid, "refusals": refusals,
                           'score_evidence':buyer_candidate(product['list_price'],cap),
-                          'price_guidance':purchase_price_guidance(cap, prices.get(sku, ()))})
+                          'price_guidance':purchase_price_guidance(
+                              cap, prices.get(sku, ()), list_price=product['list_price'], saved_baseline=saved_baseline)})
     found, held, probe = buyer_checkout_memory.filter_candidates(found,order,history)
     record('checkout_cache_summary',order=order.get('order'),allowed=len(found),
            held=len(held),guarded_probe=probe is not None)
@@ -140,6 +141,9 @@ def choose(candidates_: list[dict], order: dict, *, forced_candidate_id: str | N
                            "A cheaper product at a better usable saving rate can beat an expensive product. "
                            "The saved-at-cap candidate order is conditional, not an actual quote or guaranteed deal. "
                            "Use the recent exact-SKU paid median and suggested maximum where available. "
+                           "Separately, saved_reference is the largest whole price that would improve the "
+                           "published aggregate Saved if this purchase is usable. Treat it as negotiation guidance "
+                           "and weigh settlement likelihood and current quality. "
                            "Check current shelf life, grade and warranty before comparing these historical prices. "
                            "The cap is a private hard ceiling, "
                            "not a suggested first offer; reserve room for counteroffers by using the "
@@ -232,14 +236,16 @@ def choose(candidates_: list[dict], order: dict, *, forced_candidate_id: str | N
 
 
 def run(order: dict, shops: list[dict], catalog: dict, own_shop_name: str, *,
-        epsilon: float = buyer_exploration.DEFAULT_EPSILON,rng=None,life=None,life_advice: bool = False) -> dict:
+        epsilon: float = buyer_exploration.DEFAULT_EPSILON,rng=None,life=None,life_advice: bool = False,
+        saved_baseline=None) -> dict:
     with audit.scope('buyer',record,order=order.get('order'),
                      episode_id=f"buyer:{order.get('order') or uuid.uuid4().hex}",score_version=VERSION,model=MODEL):
-        return _run(order,shops,catalog,own_shop_name,epsilon=epsilon,rng=rng,life=life,life_advice=life_advice)
+        return _run(order,shops,catalog,own_shop_name,epsilon=epsilon,rng=rng,life=life,life_advice=life_advice,
+                    saved_baseline=saved_baseline)
 
 
 def _run(order: dict, shops: list[dict], catalog: dict, own_shop_name: str, *,
-         epsilon: float,rng=None,life=None,life_advice: bool = False) -> dict:
+         epsilon: float,rng=None,life=None,life_advice: bool = False,saved_baseline=None) -> dict:
     started = time.monotonic()
     register_shops(shops)
     imported = import_payments()
@@ -255,7 +261,7 @@ def _run(order: dict, shops: list[dict], catalog: dict, own_shop_name: str, *,
         except Exception as error:
             record('buyer_life_advice_unavailable', error=type(error).__name__)
             # Life bookkeeping cannot block a valid market order.
-    available = candidates(order, shops, catalog, own_shop_name,full_pool=True)
+    available = candidates(order, shops, catalog, own_shop_name, full_pool=True, saved_baseline=saved_baseline)
     if not available:
         record("no_candidate", order=order.get("order"), item=order.get("item"))
         return {"shop": "", "receipt": None, "stars": 3,
@@ -399,7 +405,9 @@ def main() -> None:
     if args.life:
         from buyer_life import BuyerLife
         life=BuyerLife(market_dir=args.order.parent)
-    result = run(order, shops, catalog, args.own_shop_name,epsilon=args.epsilon,life=life)
+    saved_baseline = market_saved_reference(args.own_shop_name)
+    result = run(order, shops, catalog, args.own_shop_name,epsilon=args.epsilon,life=life,
+                 saved_baseline=saved_baseline)
     print(json.dumps(result, ensure_ascii=False), flush=True)
 
 

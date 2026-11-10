@@ -91,10 +91,12 @@ def followup_offer(*, message: str, last_offer: int, cap: int, sku: str,
     audit.begin('buyer_counter',parent_decision_id=audit.links().get('decision_id'))
     ask = asking_price(message)
     price_guidance = (memory or {}).get('price_guidance') or {}
-    suggested = price_guidance.get('suggested_maximum')
+    saved_reference = price_guidance.get('saved_reference') or {}
     fallback_cap = cap
-    if type(suggested) is int and last_offer < suggested < cap and (offers_remaining or 0) > 1:
-        fallback_cap = suggested
+    if (offers_remaining or 0) > 1:
+        for price in (price_guidance.get('suggested_maximum'), saved_reference.get('max_price_to_improve_if_usable')):
+            if type(price) is int and last_offer < price < fallback_cap:
+                fallback_cap = price
     fallback = (ask if ask is not None and ask <= fallback_cap else
                 min(fallback_cap, last_offer + max(1, (fallback_cap - last_offer) // 2)))
     if fallback <= last_offer and (ask is None or ask > cap):
@@ -111,8 +113,9 @@ def followup_offer(*, message: str, last_offer: int, cap: int, sku: str,
               "objective": "Choose the next offer or walk away. Optimize normalized Saved, not absolute currency savings. "
                            "A usable trade contributes (list_price-paid)/list_price; qualify shelf life, grade and warranty. "
                            "A quoted discount is not a realized score; broken or unusable goods can reduce Saved. "
-                           "Use the suggested maximum in price_guidance when present. A higher price needs "
-                           "current quality or availability evidence and must stay within the authorized cap. "
+                           "Compare the historical market price and the separate Saved-improving reference "
+                           "when present. A price above either reference can be justified by current quality, "
+                           "availability and the chance of a valid settlement. Stay within the authorized cap. "
                            "Balance a better rate with completing a valid issued order before its deadline. "
                            "A high asking price is negotiable; do not reveal the private mandate limit."}
     prompt['offers_remaining']=offers_remaining

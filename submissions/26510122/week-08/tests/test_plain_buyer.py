@@ -1,10 +1,12 @@
+import io
 import json
 from pathlib import Path
 import tempfile
 import time
 import unittest
+from unittest.mock import patch
 
-from buyer_policy import acceptance, paid_price_samples, purchase_price_guidance
+from buyer_policy import acceptance, market_saved_reference, paid_price_samples, purchase_price_guidance
 from buyer_r3 import followup_offer, opening_request
 from ops import buyer_service
 
@@ -34,6 +36,34 @@ class PlainBuyerTests(unittest.TestCase):
                   'deadline': time.monotonic() + 20}
         self.assertEqual(followup_offer(**kwargs, offers_remaining=2), 575)
         self.assertEqual(followup_offer(**kwargs, offers_remaining=1), 700)
+
+    def test_saved_reference_is_strict_and_separate_from_market_prices(self):
+        baseline = {'saved': .2733, 'observed_at': 1000}
+        prices = (71000, 73000, 74000)
+        guidance = purchase_price_guidance(80000, prices, list_price=100000, saved_baseline=baseline)
+        self.assertEqual(guidance['suggested_maximum'], 74000)
+        self.assertEqual(guidance['saved_reference']['max_price_to_improve_if_usable'], 72669)
+        sparse = purchase_price_guidance(80000, prices[:1], list_price=100000, saved_baseline=baseline)
+        self.assertIsNone(sparse['suggested_maximum'])
+        self.assertEqual(sparse['saved_reference'], guidance['saved_reference'])
+        kwargs = {'message': 'asking 75000', 'last_offer': 70000, 'cap': 80000, 'sku': 'F1',
+                  'list_price': 100000, 'memory': {'price_guidance': guidance},
+                  'deadline': time.monotonic() + 20}
+        self.assertEqual(followup_offer(**kwargs, offers_remaining=2), 71334)
+        self.assertEqual(followup_offer(**kwargs, offers_remaining=1), 75000)
+
+    def test_saved_reference_uses_recent_cache_during_board_failure(self):
+        board = {'round': 3, 'buyers': [{'name': 'buyer', 'deals': 10, 'saved': .2733}]}
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory)/'saved.json'
+            with patch('buyer_policy.urlopen', return_value=io.StringIO(json.dumps(board))) as fetch:
+                baseline = market_saved_reference('buyer', path=path, now=1000)
+                self.assertEqual(baseline, {'saved': .2733, 'observed_at': 1000})
+                self.assertEqual(market_saved_reference('buyer', path=path, now=1299), baseline)
+                fetch.assert_called_once()
+            with patch('buyer_policy.urlopen', side_effect=TimeoutError):
+                self.assertEqual(market_saved_reference('buyer', path=path, now=1300), baseline)
+                self.assertIsNone(market_saved_reference('buyer', path=path, now=1901))
 
     def test_food_message_matches_checkout_requirement_without_budget_or_roleplay(self):
         order = {'kind': 'food', 'use_within_hours': 360, 'budget': 98765}
