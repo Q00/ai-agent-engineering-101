@@ -119,8 +119,15 @@ def install(kit, journal=None, config=None):
             return response
         data = response.json()
         if path == "/api/shops" and method == "GET":
+            if cfg.get('system_framework_enabled'):
+                from .long_memory import observe_reviews
+                observe_reviews(j,data.get('shops',[]))
             registry = {s["url"].rstrip("/"): {k: s.get(k) for k in ("name", "pubkey", "owner")} for s in data["shops"]}
             atomic_json(j.md / "registry.json", registry)
+            if cfg.get('system_framework_enabled'):
+                aliases=j.get('market-shop-identities',{})
+                aliases.update(registry)
+                j.put('market-shop-identities',dict(list(aliases.items())[-5000:]))
             if cfg.get('shop_growth_v5'):
                 from collections import Counter
                 counts = Counter(sku for s in data['shops'] if s.get('name') != 'seochanit'
@@ -186,6 +193,9 @@ def install(kit, journal=None, config=None):
                     customer_memory.bind_market_payer(j, event['seq'], event['data'])
                 elif event.get("kind") in {"refund", "broken"}:
                     j.add("public_" + event["kind"], event["data"], eid="public:" + str(event["seq"]), ts=event.get("ts"))
+                elif event.get('kind')=='result' and cfg.get('system_framework_enabled'):
+                    from .long_memory import observe_market_result
+                    observe_market_result(j,event)
             seq = rows[-1]["seq"]
             j.put("public_ledger_seq", seq)
             if len(rows) < 500:

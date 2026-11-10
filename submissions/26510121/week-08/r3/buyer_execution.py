@@ -29,13 +29,21 @@ def route_context(journal,now=None,order=None):
             visits[(event['shop'],event['sku'])][event['order']]=True
     for event in journal.events('buyer_quote_latency',1000):
         if start<=event['_ts']<=now:latency[event['shop']].append(event['seconds'])
+    paid={r['order']:r for r in journal.events('purchase',2000) if start<=r.get('paid_at',r['_ts'])<=now}
+    checkout=defaultdict(list)
+    for row in journal.events('agreement',3000):
+        purchase=paid.get(row.get('order'))
+        if purchase and purchase.get('shop')==row.get('shop'):
+            seconds=purchase.get('paid_at',purchase['_ts'])-row['_ts']
+            if 0<seconds<120:checkout[row['shop']].append(seconds)
     return {'routes':{k:{'n':len(rows),'paid':sum(rows.values())} for k,rows in visits.items()},
+            'checkout':{key:statistics.median(values) for key,values in checkout.items()},
             'latency':{k:max(.25,min(8,statistics.median(v))) for k,v in latency.items()}}
 
 
 def execution_seconds(candidate,context):
     latency=context['latency'].get(candidate['shop'],1.5)
-    return max(1,2*latency+2)
+    return max(1,2*latency+context.get('checkout',{}).get(candidate['shop'],2))
 
 
 def route_adjust(candidate,order,journal,config,context):

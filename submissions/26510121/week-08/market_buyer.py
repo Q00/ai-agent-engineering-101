@@ -51,7 +51,7 @@ def buy(order, shops, journal, chooser=None, peer_factory=Peer):
         cfg=dict(cfg,max_shop_candidates=cfg.get('buyer_route_candidates',4))
     journal.reconcile()
     journal.add('buyer_execution', {'order': order['order'], 'strategy_version': strategy['version'],
-                'contract_revision':'contract-memory-v1'},
+                'contract_revision':'contract-frontier-v2'},
                 eid='buyer-execution:' + order['order'], role='buyer')
     empty = {"shop": "", "receipt": None, "stars": 3, "review": "No settled purchase; no seller rating inferred."}
     if cfg.get('buyer_patch34_enabled') and journal.get('market_rules',{}).get('buyer_compatible') is False:
@@ -239,6 +239,9 @@ def execute(order, journal, chooser, peer_factory, cfg, strategy, registry, rank
                 if terms.get('sku') not in (None, c['sku']):
                     raise ValueError('quote_sku_mismatch')
                 assessment = buyer_assessment(dict(product, sku=c['sku']), order, terms, journal, cfg,shop=c['shop'])
+                if cfg.get('system_framework_enabled'):
+                    from r3.contracts import observe
+                    observe(journal,order,c,terms,assessment,ask)
                 cap, required_warranty, stress = assessment['cap'], assessment['required_warranty'], assessment['failure']
                 required_grade = assessment.get('required_grade',terms.get('grade'))
                 conditional_requirements=assessment.get('conditional_terms',[])
@@ -261,10 +264,21 @@ def execute(order, journal, chooser, peer_factory, cfg, strategy, registry, rank
                 if cfg.get('buyer_throughput_enabled'):
                     from r3.buyer_execution import price_times
                     price_times(actions,c,assessment,cfg)
+                if cfg.get('system_framework_enabled'):
+                    from r3.contracts import probability
+                    for action in actions:
+                        if action['id']!='counter':continue
+                        old_probability=action.get('completion_probability',1)
+                        calibrated=probability(journal,order,c,assessment,ask,old_probability)
+                        factor=calibrated/max(.000001,old_probability)
+                        action['score']*=factor
+                        action['expected_delta']={k:v*factor for k,v in action['expected_delta'].items()}
+                        action['completion_probability']=calibrated
                 if order.get('kind')=='food' and cfg.get('buyer_fast_food_enabled') and not cfg.get('buyer_patch34_enabled'):
                     move=max(actions,key=lambda a:a['score'])
                 else:
                     move = chooser.choose("buyer", actions, {"ask": ask, "order": order, "turn": turn,
+                                           'shop':c['shop'],'sku':c['sku'],'task':task['id'],
                                            'buyer_execution':True,'operation':'price',
                                            "product": product, "strategy": strategy}, deadline=deadline)
                 agreed = move["price"]
@@ -279,6 +293,9 @@ def execute(order, journal, chooser, peer_factory, cfg, strategy, registry, rank
                     from r3.protocol import observe_quote
                     observe_quote(journal,task,c['shop'],order,'negotiation')
                 except Exception:pass
+            if cfg.get('system_framework_enabled'):
+                from r3.contracts import failed
+                failed(journal,order,c,'no_agreement',task.get('id') if task else None)
             journal.add("attempt", {"order": order['order'], "strategy_version": strategy['version'],
                                     "shop": c["shop"], "sku": c["sku"], "success": False,
                                     'use_within_hours':order.get('use_within_hours',0),
@@ -290,6 +307,9 @@ def execute(order, journal, chooser, peer_factory, cfg, strategy, registry, rank
                 'certificate_unavailable', 'receipt_integrity_failure', 'registered_signing_key_unavailable',
                 'ambiguous_ask', 'conflicting_ask', 'conflicting_offer_terms', 'quote_sku_mismatch', 'invalid_money',
                 'known_unavailable_unit','known_unsuitable_shelf_life','quote_grade_changed','quote_warranty_changed'} else None
+            if cfg.get('system_framework_enabled'):
+                from r3.contracts import failed
+                failed(journal,order,c,reason,task.get('id') if task else None)
             journal.add("attempt", {"order": order['order'], "strategy_version": strategy['version'],
                                     "shop": c["shop"], "sku": c["sku"], "success": False,
                                     'reason': reason,

@@ -216,6 +216,10 @@ def race_quotes(order,ranked,registry,journal,config,peer_factory,deadline):
                     c['quote_failed']=True;continue
                 feasible=ask<=a['cap'] and not a['conditional_terms']
                 price=min(ask,a['cap']);completion=1 if feasible else .35 if ask<=a['cap'] else .25
+                if config.get('system_framework_enabled'):
+                    from .contracts import observe,probability
+                    observe(journal,order,c,terms,a,ask)
+                    if not feasible:completion=probability(journal,order,c,a,ask,completion)
                 c['score']=completion*contribution(price,c['product']['list_price'],a['failure'],a['covered_failure'])
                 c['expected_delta']=terms_delta(a['saved_state'],price,c['product']['list_price'],a['failure'],a['covered_failure'],completion)
                 c['execution_seconds']=max(1,seconds+2)

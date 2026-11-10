@@ -110,6 +110,15 @@ def shop_candidates(unit, inv, catalog, journal, config, *, offer=None, previous
         recovery_floor = max(1, math.ceil(cost*.98/max(.01,1-stress_refund)))
     ceiling = previous_ask or int(1.05 * L)
     prices = {max(recovery_floor, int(reference * f)) for f in (.9, 1, 1.1)}
+    long_contract=None;rating=None
+    if config.get('system_framework_enabled'):
+        from .long_memory import contract_summary,rating_summary
+        long_contract=contract_summary(journal,unit,warranty,now)
+        rating=rating_summary(journal,unit,warranty)
+        ratio=long_contract.get('median_paid_to_list_ratio')
+        if long_contract['samples']>=3 and type(ratio) in (int,float):
+            remembered=int(ratio*L)
+            if recovery_floor<=remembered<=ceiling:prices.add(remembered)
     memory_evidence = None
     if customer_memory:
         behavior = customer_memory.get('category_behavior', {})
@@ -141,7 +150,8 @@ def shop_candidates(unit, inv, catalog, journal, config, *, offer=None, previous
                             scenario='shrunk observed completion plus monotone price response')
         result.append({"id": "quote:" + str(p), "action": "counter", "price": p,
                        "warranty_hours": warranty, "score": sale_delta(p, cost, completion['completion'], stress_refund)['book'],
-                       "evidence": dict(stats, quote_completion=completion, customer_memory=memory_evidence),
+                       "evidence": dict(stats, quote_completion=completion, customer_memory=memory_evidence,
+                                        long_contract_memory=long_contract,rating_shadow=rating),
                        'expected_delta': sale_delta(p, cost, completion['completion'], stress_refund),
                        "recovery_floor": recovery_floor,
                            "risk": "conservative grade risk; full gross reserve remains required" if warranty else "food expiry or uninsured goods"})
@@ -239,7 +249,9 @@ def buyer_candidates(order, shops, catalog, journal, config=None):
                 from .buyer_execution import route_adjust
                 route_adjust(result[-1],order,journal,config,execution_context)
                 result[-1]['checkout_buffer_seconds']=config.get('checkout_buffer_seconds',30)
-    return sorted(result, key=lambda x:x['score']/max(1,x.get('execution_seconds',1)),reverse=True)
+    result=sorted(result, key=lambda x:x['score']/max(1,x.get('execution_seconds',1)),reverse=True)
+    from .contracts import prepare
+    return prepare(result,order,journal,config or {})
 
 
 def supply_open(inv, now=None):
