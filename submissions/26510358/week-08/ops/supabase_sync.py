@@ -238,7 +238,8 @@ def main():
     t0 = time.time()
     st = state()
     lite = sqlite3.connect(f"file:{config.DB_PATH}?mode=ro", uri=True, timeout=30)
-    with psycopg.connect(db_url(), connect_timeout=20, autocommit=False) as pg:
+    with psycopg.connect(db_url(), connect_timeout=20, autocommit=False,
+                         prepare_threshold=None) as pg:  # no server-side prepares: works through the 6543 transaction pooler
         ensure_schema(pg, lite)
         rows = sync_tables(pg, lite, st)
         rows.update(sync_jsonl(pg, st))

@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Start the one-way copy of our market data to Supabase (ops/supabase_sync.py) every 2 min. Needs:
-#   .market/supabase.env (gitignored, chmod 600) with  SUPABASE_DB_URL=postgresql://postgres.<ref>:<password>@aws-0-<region>.pooler.supabase.com:5432/postgres
-#   (Supabase dashboard > Connect > "Session pooler": the direct db.<ref>.supabase.co host is IPv6 only)
+#   .market/supabase.env (gitignored, chmod 600) with  SUPABASE_DB_URL=postgresql://postgres.<ref>:<password>@aws-0-<region>.pooler.supabase.com:6543/postgres
+#   (the direct db.<ref>.supabase.co host is IPv6 only and this server has no IPv6 route; outbound 5432 is blocked
+#    here, so the session pooler is unreachable too: use the transaction pooler on 6543. Our project: aws-0-ap-northeast-1)
 #   psycopg in ~/.venvs/week08-qa  (pip install "psycopg[binary]")
 set -euo pipefail
 W8="$(cd "$(dirname "$0")/.." && pwd)"
