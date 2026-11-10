@@ -319,7 +319,7 @@ def build():
     secs = [("홈", ps.sec_home), ("전략", ps.sec_strategy), ("메타", ps.sec_meta), ("seller", wrap(sec_seller)),
             ("buyer", wrap(sec_buyer)), ("restock", wrap(sec_restock)),
             ("시장", lambda d: ps.sec_market2(d) + wrap(sec_market)(d)), ("지식", ps.sec_knowledge),
-            ("기록", wrap(sec_record))]
+            ("기록", wrap(sec_record)), ("에이전트", lambda d: __import__("ops.agents_page", fromlist=["x"]).sec_agents(d))]
     tabs = []
     for i, (label, fn) in enumerate(secs):
         try:
