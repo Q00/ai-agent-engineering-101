@@ -1232,6 +1232,194 @@ def section_profit(root, now, login):
     return out
 
 
+NET_PROFIT_H = 12  # [순이익]: longer than PROFIT_H so a leaf x grade row holds enough breaks to be stable
+NET_BYTES_PER_H = 4_000_000  # events tail read per hour of window ([시장 몫 24시간] reads 80 MB for 24 h of settles)
+NET_WARRANTY_SLACK_S = 60  # a break this long after the warranty end still got a refund (live check, 11-10)
+NET_MEDIAN_MIN = 5  # breaks needed before the sale-to-break median is printed
+
+
+def net_profit_data(root, now, hours, login, cat=None):
+    """Our sales settled in the last `hours` with unit cost (unit_gone, else restock, joined by unit) and the breaks
+    of those sales: a mine market broken row joins our latest not yet broken settle of the same (buyer, sku) at or
+    before broke_at; it is refunded when that sale had warranty_hours and broke within them (+60 s). Refunds count
+    in the window of the sale. -> (sales, unmatched breaks, sale-to-break seconds)."""
+    since = now - hours * 3600
+    cat = _catalog(root) if cat is None else cat
+    path, nb = os.path.join(root, ".r3/events.jsonl"), int(NET_BYTES_PER_H * (hours + 2))
+    cost = {}
+    for e in c.tail_json(path, nb, b'"restock"'):
+        d = e.get("data") or {}
+        if e.get("type") == "restock" and e.get("mine") and d.get("unit") and isinstance(d.get("cost"), (int, float)):
+            cost[d["unit"]] = (float(d["cost"]), _leaf(d.get("category")))
+    for e in c.tail_json(path, nb, b'"unit_gone"'):
+        d = e.get("data") or {}
+        if e.get("type") == "unit_gone" and d.get("unit") and isinstance(d.get("cost"), (int, float)):
+            cost[d["unit"]] = (float(d["cost"]), _leaf(d.get("category")))
+    sales, by_key = [], defaultdict(list)
+    for e in c.tail_json(path, nb, b'"settle"'):
+        d = e.get("data") or {}
+        if (e.get("type") != "settle" or e.get("src") != "market" or (e.get("ts") or 0) < since
+                or c.settle_side(d, login) != "shop"):
+            continue
+        u = cost.get(d.get("unit"))
+        leaf = _leaf((cat.get(d.get("sku")) or {}).get("category"))
+        s = {"ts": e["ts"], "amount": float(d.get("amount") or 0), "cost": u[0] if u else None,
+             "leaf": u[1] if u and leaf == "?" else leaf, "sku": d.get("sku"), "grade": d.get("grade") or "-",
+             "wh": d.get("warranty_hours") or 0, "broke": False, "refund": 0.0}
+        sales.append(s)
+        by_key[(json.dumps(d.get("buyer")), d.get("sku"))].append(s)
+    breaks = []
+    for e in c.tail_json(path, nb, b'"broken"'):
+        d = e.get("data") or {}
+        if e.get("type") == "broken" and e.get("src") == "market" and e.get("mine"):
+            at = d.get("broke_at") if isinstance(d.get("broke_at"), (int, float)) else e.get("ts")
+            if isinstance(at, (int, float)) and at >= since:
+                breaks.append((at, json.dumps(d.get("buyer")), d.get("sku")))
+    unmatched, delays = 0, []
+    for at, buyer, sku in sorted(breaks):
+        s = max((x for x in by_key.get((buyer, sku), ()) if x["ts"] <= at and not x["broke"]),
+                key=lambda x: x["ts"], default=None)
+        if s is None:
+            unmatched += 1
+            continue
+        s["broke"] = True
+        delays.append(at - s["ts"])
+        if s["wh"] and at - s["ts"] <= s["wh"] * 3600 + NET_WARRANTY_SLACK_S:
+            s["refund"] = s["amount"]
+    return sales, unmatched, delays
+
+
+def _net_sum(sales):
+    """[n, revenue, gross over sales with a cost, sales with a cost, broken, refunds n, refund amount]"""
+    x = [0, 0.0, 0.0, 0, 0, 0, 0.0]
+    for s in sales:
+        x[0] += 1
+        x[1] += s["amount"]
+        if s["cost"] is not None:
+            x[2] += s["amount"] - s["cost"]
+            x[3] += 1
+        x[4] += s["broke"]
+        x[5] += s["refund"] > 0
+        x[6] += s["refund"]
+    return x
+
+
+def _net_entry(label, x):
+    return (f"{label} {x[0]}건, 총 {c.fmt(x[2])}, 고장 {x[4]}, 환불 {x[5]}건 {c.fmt(x[6])}, 순 {c.fmt(x[2] - x[6])}, "
+            f"고장률 {x[4] / x[0]:.0%}")
+
+
+def net_profit_lines(sales, unmatched, delays, hours, leaves=None, top=PROFIT_TOP):
+    """[순이익] text: one total line, the recent-sales note and per category leaf (top by our revenue) one entry per
+    grade, split by warranty when both kinds sold. leaves limits the leaf lines to those names."""
+    if not sales:
+        return [f"[순이익 {hours:g}시간, 판매 시각 기준] 우리 판매 기록 없음"]
+    t = _net_sum(sales)
+    out = [f"[순이익 {hours:g}시간, 판매 시각 기준] 우리 판매 {t[0]}건 (원가 이어진 {t[3]}건), 총이익 {c.fmt(t[2])}, "
+           f"보증 환불 {t[5]}건 {c.fmt(t[6])}, 순이익 {c.fmt(t[2] - t[6])}; 고장 {t[4]}건 ({t[4] / t[0]:.1%}), "
+           f"판매와 못 이은 고장 {unmatched}건",
+           "  최근 몇 시간의 판매는 아직 고장날 수 있어 최근 순이익은 상한"
+           + (f"; 판매에서 고장까지 중앙 {st.median(delays) / 3600:.1f}시간 (고장 {len(delays)}건)"
+              if len(delays) >= NET_MEDIAN_MIN else "")]
+    by_leaf = defaultdict(list)
+    for s in sales:
+        by_leaf[s["leaf"]].append(s)
+    rows = sorted(by_leaf.items(), key=lambda kv: -sum(s["amount"] for s in kv[1]))
+    for leaf, ss in [kv for kv in rows if leaves is None or kv[0] in leaves][:top]:
+        parts = []
+        for g in sorted({s["grade"] for s in ss}):
+            gs = [s for s in ss if s["grade"] == g]
+            split = [(" 보증", [s for s in gs if s["wh"]]), (" 무보증", [s for s in gs if not s["wh"]])]
+            parts += [_net_entry(g + tag, _net_sum(sub)) for tag, sub in split if sub]
+        out.append(f"  {leaf}: " + "; ".join(parts))
+    return out
+
+
+def section_net_profit(root, now, login):
+    """[순이익]: net_profit_lines over the last NET_PROFIT_H hours. Numbers only."""
+    return net_profit_lines(*net_profit_data(root, now, NET_PROFIT_H, login), NET_PROFIT_H)
+
+
+BUYER_STEPS = 3  # [구매자 목표]: values above us per column; fewer than GOAL_STEPS to keep the section near 1.3k chars
+BUYER_STEPS_BELOW = 2
+
+
+def buyer_all(rows, r):
+    """Buyer all from ALL_WEIGHTS: percentile columns among rows, RAW_KEYS columns as their own value."""
+    raw = RAW_KEYS["구매자"]
+    return sum(w * ((r.get(k) or 0) if k in raw else _pct([t.get(k) or 0 for t in rows], r.get(k) or 0))
+               for k, w in ALL_WEIGHTS["구매자"].items())
+
+
+def section_buyer_goal(b, b6, login, hours6):
+    """[구매자 목표]: our buyer all, the formula check against the board, and per column our rank, percentile (forum:
+    its value), rate over the snapshot gap and, for the next BUYER_STEPS values above, the gap, that buyer's rate and
+    the all gain; BUYER_STEPS_BELOW values below. Percentiles are over every board row, alive or not (live 11-10: 64
+    rows, 49 alive; all rows reproduce the board's all within 0.0005, alive rows only miss by up to 0.079). No goal
+    number is set."""
+    rows = [r for r in b.get("buyers") or [] if isinstance(r.get("all"), (int, float))]
+    me = next((r for r in rows if c.is_mine(r, login)), None)
+    if me is None or len(rows) < 2:
+        return ["[구매자 목표] 우리 구매자 행 없음"]
+    old = {r.get("name"): r for r in (b6 or {}).get("buyers") or []}
+    raw, W = RAW_KEYS["구매자"], ALL_WEIGHTS["구매자"]
+    err = max(abs(buyer_all(rows, r) - r["all"]) for r in rows)
+    rank = 1 + sum(1 for r in rows if r["all"] > me["all"])
+    out = [f"[구매자 목표] 우리 구매자 all {me['all']:.3f} ({len(rows)}곳 중 {rank}위)",
+           "  공식: " + " + ".join(f"{w} {k}" + ("(값 그대로)" if k in raw else "") for k, w in W.items())
+           + f", 나머지는 순위표 {len(rows)}곳 백분위 (동점은 중간 순위); 순위표 all과 최대 오차 {err:.4f}"]
+
+    def rate(r, k):
+        o = (old.get(r.get("name")) or {}).get(k)
+        if not hours6 or r.get("name") not in old or (k in RATE_KEYS and isinstance(o, (int, float))
+                                                        and abs(o) > RATE_KEYS[k]):
+            return None  # the old snapshot still holds the pre-Patch 3.4 meaning of a rate column
+        return ((r.get(k) or 0) - (o or 0)) / hours6
+
+    fmt_rate = lambda r: "-" if r is None else f"{c.fmt(r)}/h"
+    for k, w in W.items():
+        vals = [r.get(k) or 0 for r in rows]
+        v = me.get(k) or 0
+        val = (lambda x: w * x) if k in raw else (lambda x: w * _pct(vals, x))
+        mine = rate(me, k)
+        out.append(f"  구매자 {k}: {c.fmt(v)}, {1 + sum(1 for x in vals if x > v)}위, "
+                   + ("값 그대로" if k in raw else f"백분위 {_pct(vals, v):.3f}")
+                   + f", 1위면 all {val(max(vals)) - val(v):+.3f}, 우리 {fmt_rate(mine)}")
+        steps = []
+        for tv in sorted({x for x in vals if x > v})[:BUYER_STEPS]:
+            at = [r for r in rows if (r.get(k) or 0) == tv]
+            theirs = rate(at[0], k) if len(at) == 1 else None
+            who = f"그 구매자 {fmt_rate(theirs)}" if len(at) == 1 else f"{len(at)}곳"
+            if theirs is None or mine is None:
+                eta = ""
+            elif mine > theirs:
+                eta = f", 지금 속도면 {(tv - v) / (mine - theirs):.1f}시간 뒤 따라잡음"
+            else:
+                eta = ", 지금 속도로는 못 따라잡음"
+            steps.append(f"{1 + sum(1 for x in vals if x > tv)}위 +{c.fmt(tv - v)} ({who}, all {val(tv) - val(v):+.3f}"
+                         f"{eta})")
+        if steps:
+            out.append("    위 구매자: " + "; ".join(steps))
+        below = []
+        for tv in sorted({x for x in vals if x < v}, reverse=True)[:BUYER_STEPS_BELOW]:
+            at = [r for r in rows if (r.get(k) or 0) == tv]
+            theirs = rate(at[0], k) if len(at) == 1 else None
+            if len(at) > 1:
+                eta = f"{len(at)}곳"
+            elif theirs is None or mine is None:
+                eta = f"그 구매자 {fmt_rate(theirs)}"
+            elif theirs > mine:
+                eta = f"그 구매자 {fmt_rate(theirs)}, 지금 속도면 {(v - tv) / (theirs - mine):.1f}시간 뒤 우리를 넘음"
+            else:
+                eta = f"그 구매자 {fmt_rate(theirs)}, 지금 속도로는 못 넘음"
+            below.append(f"{1 + sum(1 for x in vals if x > tv)}위 -{c.fmt(v - tv)} ({eta})")
+        if below:
+            lose = ("값 그대로라 순위가 바뀌어도 all 변화 없음" if k in raw
+                    else f"한 곳이 우리를 넘으면 all 약 -{w / (len(vals) - 1):.4f}")
+            out.append(f"    아래 구매자 ({lose}): " + "; ".join(below))
+    return out
+
+
 SHARE_BLOCK_H = 3  # [시장 몫 24시간]: eight 3 h blocks, so a fall that began before the 6 h windows shows with its start
 SHARE_BLOCKS = 8
 SHARE_TOP = 2  # market categories by revenue shown per block
@@ -1549,7 +1737,9 @@ def build(root=None, now=None, last_brief_ts=None):
         out += section_time(now, bts)
         out += section_rank(b, b6, login, hours6)
         out += section_shop_goal(b, b6, login, hours6)
+        out += section_buyer_goal(b, b6, login, hours6)
         out += section_profit(root, now, login)
+        out += section_net_profit(root, now, login)
         out += section_share24(root, now, login)
         out += section_versions(root, now)
         out += section_rivals(b, b6, login, hours6, market_settles(root, ts6), _catalog(root))

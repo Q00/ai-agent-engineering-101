@@ -10,6 +10,7 @@ from collections import Counter
 
 from kernel import brief as b
 from kernel import common as c
+from kernel import memory
 
 MAX_CHARS = 16_000  # about 4k tokens (estimate); the operator may change it through its harness settings
 
@@ -370,7 +371,7 @@ def replay_probe(root, target, version=None, files=None, harness_dir=None, n=20,
 
 
 def policy(root, days=1):
-    """시도 1 규칙의 policy.json 값: 구역(defaults.food, defaults.goods, 상품군 전체 경로)마다 편집 가능 키의 지금 값,  허용 범위와 한 번에 바꿀 수 있는 폭, 최근 days일의 정책 수정 기록. LIVE가 꺼진 동안 done.policy로 고침."""
+    """시도 1 규칙의 policy.json 값: 구역(defaults.food, defaults.goods, 상품군 전체 경로, shop, buyer.defaults.food, buyer.defaults.goods)마다 편집 가능 키의 지금 값,  허용 범위와 한 번에 바꿀 수 있는 폭, 최근 days일의 정책 수정 기록. LIVE가 꺼진 동안 done.policy로 고침."""
     from kernel import policy_edit as pe
     from kernel.trajectory import Trajectory
 
@@ -380,6 +381,43 @@ def policy(root, days=1):
     hist = [f"- {c.kst(r.get('ts'))} {r.get('section')} {r.get('key')} {r.get('old')} -> {r.get('new')}: {r.get('reason')}" for r in rows[-30:]]
     return c.cap(pe.view(root, cats) + "\n최근 정책 수정\n" + ("\n".join(hist) or "없음"), MAX_CHARS)
 
+
+NET_SKU_TOP = 15  # net_profit: per-SKU rows for one category leaf
+
+
+def net_profit(root, hours=12, category=None, now=None):
+    """Our gross profit minus warranty refunds over the last `hours` (1-48) by sale time, per category leaf and grade
+    with breaks, refunds and break rate. category (a leaf) adds per-SKU rows: sku, grade, n, gross, refunds, net,
+    break rate, top 15 by |net|."""
+    now = c.now_ts() if now is None else now
+    hours = max(1.0, min(48.0, float(hours))) if isinstance(hours, (int, float)) and not isinstance(hours, bool) else 12.0
+    sales, unmatched, delays = b.net_profit_data(root, now, hours, c.owner_login(root))
+    leaf = b._leaf(category) if category else None
+    lines = b.net_profit_lines(sales, unmatched, delays, hours, leaves=None if leaf is None else {leaf})
+    if leaf is not None:
+        by = {}
+        for s in sales:
+            if s["leaf"] == leaf:
+                by.setdefault((s["sku"], s["grade"]), []).append(s)
+        rows = sorted(((k, b._net_sum(v)) for k, v in by.items()), key=lambda kv: -abs(kv[1][2] - kv[1][6]))
+        lines.append(f"{leaf} SKU별 {len(rows)}묶음" + ("" if rows else ": 판매 없음"))
+        lines += [f"{sku} {g}: {x[0]}건, 총 {c.fmt(x[2])}, 환불 {c.fmt(x[6])}, 순 {c.fmt(x[2] - x[6])}, "
+                  f"고장률 {x[4] / x[0]:.0%}" for (sku, g), x in rows[:NET_SKU_TOP]]
+    return c.cap("\n".join(lines), MAX_CHARS)
+
+
+def recall(root, query, agent="operator", k=5):
+    """Search the mem0 memory (lessons, harness results, shop habits seen by our buyer). agent = operator, seller or
+    buyer (whose memories), k = 1..10. Returns the best matches, or says the memory daemon did not answer."""
+    if agent not in ("operator", "seller", "buyer") or not isinstance(query, str) or not query.strip():
+        return "인자 오류: query는 글, agent는 operator, seller, buyer 중 하나"
+    hits = memory.search(memory.sock_path(root), agent, query, k if isinstance(k, int) else 5, timeout=RECALL_TIMEOUT_S)
+    if not hits:
+        return f"기억 없음 또는 메모리 데몬 응답 없음 ({agent}, {query[:60]})"
+    return c.cap(f"기억 {agent} {len(hits)}건\n" + "\n".join(f"- {h}" for h in hits), MAX_CHARS)
+
+
+RECALL_TIMEOUT_S = 5.0
 
 TOOLS = {
     "board": (board, ("operator",)),
@@ -394,6 +432,8 @@ TOOLS = {
     "harness_read": (harness_read, ("operator",)),
     "replay_probe": (replay_probe, ("operator",)),
     "policy": (policy, ("operator",)),
+    "net_profit": (net_profit, ("operator",)),
+    "recall": (recall, ("operator",)),
 }
 
 
