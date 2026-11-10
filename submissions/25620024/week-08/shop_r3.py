@@ -208,9 +208,10 @@ def big_buyer(c, text):
 
 CLERK = ("clerk: no haggling needed, this is our price | need a shelf life, grade or warranty? say e.g. "
          "'need 48h, grade A/B' and I pick a unit that passes "
-         "| LOWEST-PRICE GUARANTEE: seen it cheaper? reply 'match <price>': if another shop settled it at that price "
-         "on the ledger, we match it | paid us more than another shop's ledger price for the same SKU within 24 h? "
-         "say your market name: the difference comes off this purchase")
+         "| price match: reply 'match <price>' with another shop's settle of this SKU on the ledger (last 24 h) and we "
+         "go down to it, but not under our cost + 5% | paid us more than another shop's ledger price for the same SKU "
+         "within 48 h? say your market name: the difference comes off this purchase, at most 15% of its price and not "
+         "under our floor")   # HQ 11-10 "진정성 유지": the old text promised an unconditional match and full credit
 MATCH_RE = re.compile(r"\bmatch|cheaper|elsewhere|other shop|another shop|lower price|최저가|더 싸|다른 (가게|곳)", re.I)
 
 
