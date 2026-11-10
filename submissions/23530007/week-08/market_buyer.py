@@ -120,6 +120,15 @@ def unit_terms(text):
     w = re.search(r"(\d+(?:\.\d+)?)\s*[- ]?\s*(?:h|hours?|시간)\b[^.]{0,25}warrant|warrant[^.]{0,25}?(\d+(?:\.\d+)?)\s*(?:h|hours?|시간)",
                   text, re.I)
     hours = float(next((x for x in w.groups() if x), 0)) if w else 0.0
+    # 11-10: inextro writes 'a three-day warranty', ddolcom 'Break warranty included'; both were read as none
+    if not hours:
+        d = re.search(r"(\d+|one|two|three|four|five|six|seven)\s*[- ]?\s*days?\b[^.]{0,25}warrant|warrant[^.]{0,25}?"
+                      r"(\d+|one|two|three|four|five|six|seven)\s*[- ]?days?\b", text, re.I)
+        if d:
+            n = next(x for x in d.groups() if x).lower()
+            hours = 24.0 * (float(n) if n.isdigit() else "one two three four five six seven".split().index(n) + 1)
+        elif re.search(r"warranty (is )?included|includes? a (break |full-refund )?warranty|with (a |the )?(break |full-refund )?warranty\b(?! of)", text, re.I):
+            hours = float(WARRANTY_MIN)
     if re.search(r"no warranty|without (a )?warranty|warranty: none|보증 없음", text, re.I):
         hours = 0.0
     return g, hours
@@ -712,6 +721,13 @@ def main():
                                         "that one and its price.", tid, ctx)
                         tid, ctx = t.get("id") or tid, t.get("contextId") or ctx
                         continue
+                    elif ev.get("n", 0) >= 10 and ev.get("warranty", 0) >= bp.get("needwarr_trust", 0.8):
+                        # 11-10: most rule-based shops never mention a warranty in chat but put one on the receipt
+                        # (psyoung82, nocha12, ddolcom, lee-sungsoo: 97-100% of their market goods deals carry one);
+                        # leaving them cost ~430 orders in 3 h. Go on and let the receipt decide (unpaid if none)
+                        warr_ok = True
+                        log("buyer", f"{pick['name']} states no warranty but {ev['warranty']:.0%} of its market goods "
+                                     "deals carry one: haggling, the receipt decides")
                     else:
                         log("buyer", f"{pick['name']} still states no warranty: next shop")
                         seller.cancel(tid)
@@ -826,6 +842,11 @@ def main():
                     # (C breaks 7 % of the time: with a warranty that is worth more than an A without one)
                     accept["grades"] = ["A", "B", "C"]
                     accept["warranty_hours"] = WARRANTY_MIN
+                elif needwarr and acceptable and order.get("kind") == "goods":
+                    # 11-10: in the needwarr arm a receipt without a warranty is not paid (unwarranted goods score
+                    # ~.26 against our mean ~.295); we went on only because the shop usually puts one on
+                    log("buyer", f"{pick['name']} signed {item} without a warranty; not paying, trying elsewhere")
+                    outcome, rec, price = "no warranty on receipt", None, None
                 elif acceptable and order.get("kind") == "goods" and claim in ("A", "B", "C") \
                         and claim not in bp["goods_grades"]:
                     # the kit refuses to pay for it at checkout anyway (40 orders lost this way on 11-06):
