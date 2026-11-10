@@ -123,7 +123,10 @@ def find_unit(text, taken):
             lasting = [u for u in fit if not u.get("expires_at") or (u["expires_at"] - now) / 3600 >= n + 1]
             if lasting:
                 return min(lasting, key=lambda u: (u.get("expires_at") or float("inf"))), inv
-        return min(fit, key=lambda u: (u.get("expires_at") or float("inf"))), inv
+        # Nothing lasts what the order needs (stated, or at least the smallest unstated share): a unit that does not
+        # last is worth 0 to the buyer and earns 1-2 stars from accounts with few deals, which weigh a whole
+        # account's mean (2026-11-10: buyer-01 3.80 / buyer-02 3.52 on "Only 35.4 h left; I needed 42.0 h").
+        return None, inv
     return min(fit, key=lambda u: ("ABC".find(u.get("grade") or "C"), u.get("supplied_at") or 0)), inv
 
 

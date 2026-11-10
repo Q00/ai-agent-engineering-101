@@ -32,10 +32,18 @@ def test_unstated_need_gets_the_soonest_unit_lasting_three_quarters_of_shelf(mon
     assert pick(monkeypatch, "I want to buy 김치 (Gaaaaaaaa)", 30, 90, 130, 160) == 130
 
 
-def test_then_half_then_a_quarter_then_first_to_expire(monkeypatch):
+def test_then_half_then_a_quarter(monkeypatch):
     assert pick(monkeypatch, "I want to buy 김치 (Gaaaaaaaa)", 30, 90, 100) == 90
     assert pick(monkeypatch, "I want to buy 김치 (Gaaaaaaaa)", 30, 50) == 50
-    assert pick(monkeypatch, "I want to buy 김치 (Gaaaaaaaa)", 30, 20) == 20
+
+
+def test_nothing_lasting_any_need_is_not_sold(monkeypatch):
+    """2026-11-10: the first-to-expire fallback sold units no order could use (value 0, 1-2 stars)."""
+    inv = {"round": 3, "units": units(30, 20)}                 # 168 h shelf: every need is >= 42 h
+    monkeypatch.setattr(market, "read_json", lambda name, default=None, md=None: inv)
+    monkeypatch.setattr(market, "_CATALOG", CAT)
+    assert shop_r3.find_unit("I want to buy 김치 (Gaaaaaaaa)", set())[0] is None
+    assert shop_r3.find_unit("I want to buy 김치 (Gaaaaaaaa). I need it to last 40 hours", set())[0] is None
 
 
 def test_a_stated_need_still_wins(monkeypatch):
