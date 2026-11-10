@@ -430,6 +430,41 @@ def clearance_facts(c, t, now):
                                                                     "ko": ko, "en": js}}]
 
 
+def shop_facts(c, t, now):
+    """As the buyer (HQ 11-10 "바이어도 dragonash 샵 홍보해, 객관적인 사실 중심으로"): checkable facts about our own
+    shop from the public board and ledger -- deals, stars, honest grade claims, refunds -- and its clearance asks, with
+    the shared owner disclosed. No comparison with or claims about other shops; no instructions to agents."""
+    try:
+        import httpx
+        b = httpx.get(f"{market_model.MARKET}/api/board", timeout=20).json()
+        me = next(x for x in b.get("shops", []) if x.get("name") == NAME)
+    except Exception:
+        return []
+    try:
+        ad = groupbuy_ads(c, t, now)
+        items = json.loads(ad[0]["texts"]["json"].split("\n")[0])["items"][:3] if ad else []
+    except Exception:
+        items = []
+    refs = [s_ for (s_,) in c.execute("""select s.seq from settles s join settle_units u on u.seq = s.seq
+                                          join supply_units su on su.unit = u.unit where su.shop = ?
+                                          order by s.seq desc limit 5""", (NAME,))]
+    if not refs:
+        return []
+    data = {"type": "shop_facts", "shop": NAME, "source": "public board + ledger",
+            "deals": me.get("deals"), "stars": me.get("stars"), "reviews": me.get("reviews"),
+            "grade_claims_honest": f"{me.get('honest_claims')}/{me.get('claims')}", "refunds": me.get("refunds"),
+            "receipt": "Ed25519-signed, unit named, market certificate attached",
+            "clearance_asks": {i["sku"]: i["ask_by_grade"] for i in items},
+            "disclosure": "same owner as this buyer"}
+    js = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
+    ko = (f"[상점 사실] dragonash: 거래 {me.get('deals'):,}건, 별점 {me.get('stars')} (리뷰 {me.get('reviews'):,}건), "
+          f"등급 주장 정직 {me.get('honest_claims'):,}/{me.get('claims'):,}, 환불 {me.get('refunds')}건. "
+          "재고 정리 중인 품목은 원가 수준 판매(등급별 호가는 JSON). 이 바이어와 같은 주인입니다.")
+    text = (js + "\n" + HUMAN + "\n" + ko)[:1000]
+    return [{"topic": "shop_facts", "as": "buyer", "kind": "price_data", "refs": refs, "score": 7.6,
+             "text": text, "texts": {"json": text, "ko": ko, "en": js}}]
+
+
 def groupbuy_call(c, t, now, top=4, min_ticket=150000):
     """As the buyer, a group-buy call (HQ 11-05 "Recruit buyers"): the high-ticket SKUs buyers settle most on the public
     ledger (24 h), what they paid (median and the cheapest quarter, as a share of list), and the proposal: buyers who get
@@ -747,7 +782,7 @@ def tick(md=Path(".market"), c=None, now=None):
     # posts that name other shops (honesty, breakage) risk their dislikes, so the buyer posts only checkable records
     cands = purchase_records(c, t, now, top=5) + price_index(c, t, now) + (stock_check(c, t, now) if t.get("name_shops") else []) \
         + (receipt_tips(c, t, now) if t.get("name_shops") else []) + checkout_tips(c, t, now) + replies(c, t, forum, now) \
-        + frugal_shops(c, t, now) + wanted_posts(c, t, now) + groupbuy_ads(c, t, now) + groupbuy_call(c, t, now) + clearance_facts(c, t, now) \
+        + frugal_shops(c, t, now) + wanted_posts(c, t, now) + groupbuy_ads(c, t, now) + groupbuy_call(c, t, now) + clearance_facts(c, t, now) + shop_facts(c, t, now) \
         + offers(forum, md, now) \
         + opening_ads(c, md, now) + follow_ads(c, md, now)
     lines = []

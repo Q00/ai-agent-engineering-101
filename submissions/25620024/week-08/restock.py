@@ -133,9 +133,9 @@ def by_value(c, buy, now=None):
     ours = _ours(c, now)
     tier = lambda n: 3 if n >= 50 else 2 if n >= 10 else 1 if n >= 3 else 0
 
-    def key(b):
-        n, tk, pr = ours.get(b["sku"], (0, 0, 0))
-        return (tier(n), tk, pr / tk if tk else 0)
+    def key(b):                                        # HQ 11-10: profit per day (units x profit per unit) first --
+        n, tk, pr = ours.get(b["sku"], (0, 0, 0))      # pace, ticket and margin in one number
+        return (n * pr, tier(n), tk)
     return sorted(buy, key=key, reverse=True)
 
 
@@ -174,12 +174,18 @@ def hits(c, now, t):
         _, tk, pr = econ.get(sku, (0, 0, 0))
         cover = t.get("hit_cover", 4) * (2 if tk >= t.get("hit_big_ticket", 100000) else 1) \
             * (1.5 if tk and pr / tk >= t.get("hit_good_margin", 0.25) else 1)   # HQ 11-04: sells, ticket, margin
+        if tk and pr / tk < t.get("hit_min_margin", 0.10):
+            continue                                          # HQ 11-10: thin-margin SKUs are not refilled
         target = max(2, math.ceil(per_window * cover))
         cost = tk - pr
         if cost > 0:                                          # no single SKU above hit_max_value at cost
             target = min(target, max(2, int(t.get("hit_max_value", 10_000_000) // cost)))
-        out.append((sku, target, f"hit: sold {n.get(3, 0)} in 3 h, {n.get(24, 0)} in 24 h, ticket {tk:,.0f} -> keep {target}"))
-    return sorted(out, key=lambda x: -x[1])
+        profit_h = per_window * 3 * pr                        # what this SKU earns us per hour at its pace
+        out.append((sku, target, f"hit: sold {n.get(3, 0)} in 3 h, {n.get(24, 0)} in 24 h, ticket {tk:,.0f}, "
+                                 f"profit {pr:,.0f}/unit, {profit_h:,.0f}/h -> keep {target}", profit_h))
+    # HQ 11-10 "이윤 높고, 객단가 높고, 잘 팔리는 제품 중심으로 매입해서 이익 보전": profit per hour = pace x
+    # (price - cost) is all three at once; the cash goes to the best earners first
+    return [(a, b, w) for a, b, w, _ in sorted(out, key=lambda x: -x[3])]
 
 
 def plan(md, c, t, now=None):
@@ -286,6 +292,11 @@ def plan(md, c, t, now=None):
         add(x.get("sku"), int(x.get("qty") or 0) - stock.get(x.get("sku"), 0), "HQ order", any_price=True)
     for sku, target, why_ in hits(c, now, t):                 # 1b'. our own hits, deepened as they sell (HQ 11-04)
         add(sku, target - stock.get(sku, 0) - buy.get(sku, 0), why_, any_price=True)
+    if t.get("profit_first"):                                 # HQ 11-10: only proven earners until profit is back
+        cash = min(cash, general)
+        return [{"sku": k, "qty": v} for k, v in buy.items()], why + ["profit-first: proven earners only"] + \
+            ([f"surge skip: {sorted(skipped)}"] if skipped else []), cash, \
+            {"window": wid, "spent": spent + sum(cat[k]["list_price"] * t["cost_guess"] * v for k, v in buy.items())}
     for x in mk.get("skus") or []:
         add(x.get("sku"), int(x.get("qty") or 0) - stock.get(x.get("sku"), 0) - buy.get(x.get("sku"), 0),
             "marketing pick", any_price=True)
