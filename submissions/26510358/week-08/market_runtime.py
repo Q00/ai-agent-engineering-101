@@ -19,6 +19,7 @@ ROOT = Path(__file__).resolve().parent
 KIT_DIR = Path(os.environ.get("MARKET_KIT_DIR", str(ROOT.parents[2] / "scripts"))).resolve()
 sys.path.insert(0, str(KIT_DIR))
 import market_kit
+import kit_patches                                  # this folder is sys.path[0] (the script's own directory)
 
 OFFICIAL_MARKET = market_kit.Market
 RETRYABLE_ERRORS = (httpx.TimeoutException, httpx.NetworkError,
@@ -97,6 +98,7 @@ def main():
             super().__init__(base, owner_override or owner)
 
     market_kit.Market = AuthenticatedMarket
+    kit_patches.apply(market_kit)
     market_kit.log("[runtime] claim loaded; starting the official market kit")
     return market_kit.main()
 
