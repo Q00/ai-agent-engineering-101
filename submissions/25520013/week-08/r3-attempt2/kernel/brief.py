@@ -1959,7 +1959,9 @@ def _shop_compact(x):
     out = [f"[가게 상태] 잔고 {c.fmt(inv.get('balance'))}, 파산선 {c.fmt(inv.get('bankrupt_line'))}, 남은 파산 "
            f"{inv.get('bankruptcies_left', '-')}회 | 재고 {len(units)}개: "
            + ", ".join(f"{k} {n}" for k, n in byc.most_common(3)) + f" | 24시간 안에 유통기한 끝 {exp24}개",
-           f"  재입고 계획 {plan}"]
+           ]
+    if os.path.exists(os.path.join(x.root, "a2", "LIVE")):  # the plan only drives restock while attempt 2 is live
+        out.append(f"  재입고 계획 {plan}")
     return out + [ln for ln in restock_food_lines(x.root, x.now, inv) if ln.startswith("  최근 1시간 재고 없음 거절")]
 
 
@@ -1968,7 +1970,9 @@ def _alerts(x):
     out = []
     sh = c.load_json(os.path.join(x.root, ".market/shops.json"))
     rows = sh if isinstance(sh, list) else list(sh.values()) if isinstance(sh, dict) else []
-    if rows and not any(isinstance(r, dict) and c.is_mine(r, x.login) for r in rows):
+    # live shops.json rows carry only name, offers, reviews, url (11-10): without an owner field nothing can be said
+    owned = any(isinstance(r, dict) and any(k in r for k in ("owner", "player", "github")) for r in rows)
+    if owned and not any(isinstance(r, dict) and c.is_mine(r, x.login) for r in rows):
         out.append(f"  우리 가게가 지금 가게 목록에 없음 (목록 {len(rows)}곳)")
     inv = c.load_json(os.path.join(x.root, ".market/inventory.json"), {}) or {}
     bal, line = (inv.get("balance"), inv.get("bankrupt_line")) if isinstance(inv, dict) else (None, None)

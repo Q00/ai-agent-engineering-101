@@ -148,7 +148,8 @@ class Operator:
     def _shop_missing(self):
         sh = c.load_json(os.path.join(self.root, ".market/shops.json"))
         rows = sh if isinstance(sh, list) else list(sh.values()) if isinstance(sh, dict) else []
-        if not rows:
+        # live rows carry only name, offers, reviews, url (11-10): without an owner field nothing can be said
+        if not any(isinstance(r, dict) and any(k in r for k in ("owner", "player", "github")) for r in rows):
             return False
         return not any(isinstance(r, dict) and c.is_mine(r, self.login) for r in rows)
 
