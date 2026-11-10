@@ -36,7 +36,11 @@ RESERVE = {"lamp": 100, "chair": 180, "bookshelf": 260}     # Rounds 0-2 have no
 MARKET_DIR = Path(os.environ.get("MARKET_DIR", ".market"))
 FOOD_CUTS = (0.80, 0.45)        # shelf life left: A at or above 80%, B at or above 45%, C below (agent.md)
 MAX_ROUNDS = 8
-CACHE = {"at": 0, "skus": {}, "catalog": {}}   # restock.py writes state/sku_stats.json every minute
+# An open negotiation holds its unit so two buyers are not promised the same one. Many buyers walk away without
+# CancelTask, so a hold lapses after HOLD_S seconds of silence; before this, every walk-away locked its unit until
+# the seller restarted (11-11 probe: 16 of 18 units answered "none of that in stock").
+HOLD_S = float(os.environ.get("SELLER_HOLD_S", 300))
+CACHE ={"at": 0, "skus": {}, "catalog": {}}   # restock.py writes state/sku_stats.json every minute
 SALES_LOG = Path("logs") / "seller_r3.jsonl"
 
 
@@ -144,7 +148,14 @@ class Seller(AgentExecutor):
         up = TaskUpdater(event_queue=event_queue, task_id=task.id, context_id=task.context_id)
         say = lambda text: up.new_agent_message(parts=[new_text_part(text)])
         text = get_message_text(context.message) or ""
+        now_s = time.time()
+        for tid in [k for k, d in self.open.items() if now_s - d["at"] > HOLD_S]:
+            del self.open[tid]                           # silent too long: let the unit go
         deal = self.open.get(task.id)
+
+        if deal is None and context.current_task is not None:
+            await up.reject(say(f"This negotiation lapsed after {HOLD_S / 60:.0f} min of silence. Ask for the item again."))
+            return
 
         if deal is None:
             unit = find_unit(text, {d["unit"]["unit"] for d in self.open.values() if d["unit"]["unit"]})
@@ -152,11 +163,12 @@ class Seller(AgentExecutor):
                 await up.reject(say("Sorry, we have none of that in stock."))
                 return
             t = terms(unit)
-            self.open[task.id] = {"unit": unit, "t": t, "ask": t["ask"], "rounds": 0}
+            self.open[task.id] = {"unit": unit, "t": t, "ask": t["ask"], "rounds": 0, "at": now_s}
             await up.requires_input(say(f"{describe(unit, t)}. Asking {t['ask']}. Send your offer as a number."))
             return
 
         deal["rounds"] += 1
+        deal["at"] = now_s
         u, t = deal["unit"], deal["t"]
         nums = [int(x.replace(",", "")) for x in re.findall(r"(?<![A-Za-z#\d])\d[\d,]*", text)]
         nums = [n for n in nums if n >= 0.05 * u["list_price"]]     # not hours, grades or parts of a SKU
