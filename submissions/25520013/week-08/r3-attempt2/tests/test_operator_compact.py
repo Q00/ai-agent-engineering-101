@@ -89,7 +89,8 @@ def test_last_step_must_be_done(o):
     assert "반드시 done" in o.terra.prompts[-1]
 
 
-def test_wake_reason_interval_stretches_while_an_experiment_runs(o):
+def test_wake_reason_interval_stretches_while_an_experiment_runs(o, monkeypatch):
+    monkeypatch.setattr(op, "BUSY_INTERVAL_S", 3600)  # the live value equals the idle interval since 11-11
     assert "주기 점검" in o.wake_reason(NOW)
     o.terra = Script({"done": {"policy": [_item()]}})
     o.wake("주기 점검", NOW)
