@@ -293,5 +293,5 @@
 - 11-10 22:51 운영자 추론 강도를 medium → low로 낮춤 (성수님 승인, Codex 사용량 절감). 하네스 routing.json은 그대로 두고 a2ctl이 환경변수 A2_OPERATOR_EFFORT=low로 띄움
   - 근거: 직전 24시간 운영자 호출 2,765회(깨어남 265회, 한 번에 약 10회), 프롬프트 합계 262MB. 깨어남 265회 중 policy 수정은 10회
   - 확인: 22:52부터 운영자 호출이 effort low, status ok로 기록됨
-- 11-10 23:05 운영자 깨어남 간격을 5분 → 20분으로 늘림 (성수님 결정: 재입고 창이 20분마다 열림). a2ctl이 환경변수 A2_OPERATOR_INTERVAL_S=1200으로 띄우고, 이 값이 하네스 settings.json의 interval_s(300)보다 우선함
+- 11-10 22:55 운영자 깨어남 간격을 5분 → 20분으로 늘림 (성수님 결정: 재입고 창이 20분마다 열림). a2ctl이 환경변수 A2_OPERATOR_INTERVAL_S=1200으로 띄우고, 이 값이 하네스 settings.json의 interval_s(300)보다 우선함
   - 근거: 24시간 깨어남 265회 중 policy 수정 10회, 메모 38회, 변경 없음 217회. LIVE가 꺼져 있어 판매 요청 150건 조건은 걸리지 않음(seller.open 기록 0건)
