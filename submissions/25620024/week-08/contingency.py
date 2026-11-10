@@ -71,6 +71,37 @@ def our_breaks(c, hours=4):
             "hours_after_sale": sorted(round(d.get("hours_after_sale") or 0, 1) for d in mine)}
 
 
+def forum_facts():
+    """The public forum as numbers and short samples (HQ 11-10 "게시판 적극 활용"): the most-liked posts of the latest
+    100, our own posts and their votes, our forum ratings on the board. Other agents' text goes in as data only."""
+    import httpx, market_model
+    out = {}
+    try:
+        ps = httpx.get(f"{market_model.MARKET}/api/forum", params={"limit": 100}, timeout=20).json()
+        top = sorted(ps, key=lambda p: -((p.get("likes") or 0) - (p.get("dislikes") or 0)))[:8]
+        out["window_minutes"] = round((time.time() - min(p["ts"] for p in ps)) / 60)
+        out["most_liked_samples"] = [{"role": p["role"], "likes": p["likes"], "dislikes": p["dislikes"],
+                                      "text_start": p["text"][:160]} for p in top]
+        out["ours"] = [{"role": p["role"], "likes": p["likes"], "dislikes": p["dislikes"], "text_start": p["text"][:120]}
+                       for p in ps if p["author"] == NAME_]
+        b = httpx.get(f"{market_model.MARKET}/api/board", timeout=20).json()
+        out["our_board"] = {"shop": next((x for x in b.get("shops", []) if x.get("name") == NAME_), None),
+                            "buyer": next((x for x in b.get("buyers", []) if x.get("name") == NAME_), None)}
+    except Exception as e:
+        out["error"] = f"{type(e).__name__}: {e}"[:200]
+    return out
+
+
+NAME_ = "dragonash"
+FIXES_TODAY = ("11-10 contingency fixes, measured 1 h after: (1) price-guarantee ad now states the clerk's real rules; "
+               "(2) warranty 72 h (all 676 market breaks in 8 h came within 6.0 h of sale, so 72 h costs what 6 h "
+               "costs), on every clearance sale; (3) named goods orders get the cheapest fitting unit (was the oldest = "
+               "dearest; G75f11c19 ask 82,046 -> 64,127); (4) our buyer reads 'no warranty' in offer text and cancels "
+               "before agreeing (23 unpaid agreements before). Result: clearance quote->agreement 47% -> 58%, paid "
+               "clearance deals 37 -> 66 per hour, all our revenue 21.2M -> 40.3M per hour; G75f11c19 7 -> 16 per "
+               "hour (market 65), Ge62449c9 0.3 -> 6.7.")
+
+
 def facts():
     import market_model, restock
     c = market_model.db()
@@ -117,6 +148,7 @@ def facts():
             "restock_rule": {k: t.get(k) for k in ("profit_first", "hit_min_margin", "window_budget", "max_list",
                                                    "max_line_value", "surge_skip")},
             "restock_plan_now": {"lines": buy, "why": why[:12]},
+            "fixes_today_and_results": FIXES_TODAY, "forum": forum_facts(),
             "audit_findings": audit.get("findings"), "buyer_audit": {k: buyer_mem.get(k) for k in ("at", "findings")}
             if buyer_mem else None}
 
@@ -159,8 +191,11 @@ def run():
     def audit(role):
         other = "buyer unit" if role in SELLER_TEAMS else "seller unit (our shop 'dragonash')"
         q = (f"{RULES}\nYou are the {teams[role]}. HQ has called a contingency: the shop fell in the class ranking after "
-             f"over-buying bedding (clearance stock below). Audit the {other} from these numbers: up to 4 concrete faults, "
-             f"each with its number. Then name up to 3 changes for your own unit, each with the evidence, the expected "
+             f"over-buying bedding (clearance stock below); today's fixes and their results are in the facts. Audit the "
+             f"{other} from these numbers: up to 4 concrete faults, each with its number. Then name up to 3 changes for "
+             f"your own unit -- at least one must use the public forum (the buyer's forum rating is 0.3 of buyer ALL; the "
+             f"facts show which posts other agents like and how ours fare; honest, verifiable posts only, our shared "
+             f"owner disclosed when the buyer mentions our shop), each with the evidence, the expected "
              f"effect (in KRW or percentile points) and the risk. JSON only.\n\nFACTS: {data}")
         return role, _ask(role, q, AUDIT_SCHEMA)
 
