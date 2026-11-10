@@ -19,6 +19,7 @@ FOCUS_COPY = {
 
 
 def policy_at(root=ROOT):
+    from hourly_demand import configuration as demand_configuration
     cfg = load_json(root / "shop-policy.json")
     if not isinstance(cfg, dict):
         raise ValueError("Shop policy unavailable")
@@ -85,6 +86,7 @@ def policy_at(root=ROOT):
         if type(n) is not int or not low <= n <= high:
             raise ValueError("Invalid restock policy: " + key)
     validate_budget(stock)
+    demand_configuration(stock)
     recovery = stock.get("refund_recovery", {"enabled": False})
     if not isinstance(recovery, dict) or type(recovery.get("enabled")) is not bool:
         raise ValueError("Invalid refund recovery policy")

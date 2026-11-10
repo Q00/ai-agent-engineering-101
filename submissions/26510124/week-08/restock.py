@@ -20,6 +20,7 @@ from inventory import Inventory, read_json
 from sales_performance import sku_metrics, update as update_sales
 from market_evidence import demand_scores, demand_profiles, refresh as refresh_market
 from market_clock import schedule_now
+from hourly_demand import refresh as refresh_demand, ranks as demand_ranks
 from opening_strategy import update as update_openings
 from shop_policy import policy_at
 from shop_horizon import phase as round_phase, purchase_window
@@ -62,7 +63,7 @@ def _skip(root, path, state, window, now, status=None):
 
 
 def plan(inv, catalog, demand, memory, attempts, cfg, now, public=None, *, lifecycle=None, horizon=None,
-         focus_control=None, adaptive_control=None):
+         focus_control=None, adaptive_control=None, research=None):
     if (not number(inv.get("balance")) or not number(inv.get("start")) or inv["start"] <= 0
             or not isinstance(catalog, dict) or len(catalog) > 20000
             or not isinstance(demand, list) or len(demand) > 5000):
@@ -115,7 +116,7 @@ def plan(inv, catalog, demand, memory, attempts, cfg, now, public=None, *, lifec
     adaptive_rules = adaptive_config(cfg)
     candidate_exclusions = {}
     adaptive = (adaptive_candidates(inv, catalog, categories, economics, cfg, now, public, paused=paused,
-                                   allowed=adaptive_control, diagnostics=candidate_exclusions)
+                                   allowed=adaptive_control, diagnostics=candidate_exclusions, research=research)
                 if adaptive_rules and len(inv["units"]) < adaptive_rules["low_stock_units"]
                 and stage["allow_exploration"] else {})
     candidates.update({sku: row["product"] for sku, row in adaptive.items()})
@@ -194,6 +195,16 @@ def plan(inv, catalog, demand, memory, attempts, cfg, now, public=None, *, lifec
 
     turnover = adaptive_rules.get("turnover_goods", {}) if adaptive_rules else {}
     turnover_enabled = turnover.get("enabled") is True
+    hourly_priority = demand_ranks(research, cfg, inv.get("round"), now)
+    if hourly_priority:
+        # Research changes order only: available() rechecks current funds,
+        # supply credits, losses, per-SKU depth, food and horizon constraints.
+        for _ in range(cfg["hourly_demand"]["priority_units_per_run"]):
+            eligible = [sku for sku in available() if sku in hourly_priority and buy[sku] == 0]
+            if not eligible:
+                break
+            sku = min(eligible, key=lambda s: hourly_priority[s])
+            add(sku, "hourly_market_demand")
     if adaptive and turnover_enabled:
         priority = {sku: rank for rank, sku in enumerate(adaptive)}
         priority_slots = min(turnover["priority_units_per_run"], adaptive_rules["max_units_per_run"], slots,
@@ -306,6 +317,11 @@ def plan(inv, catalog, demand, memory, attempts, cfg, now, public=None, *, lifec
         "bankruptcy_eligible": bankruptcy_eligible, "automatic_bankruptcy": False,
         "exposure": exposure.summary(), "horizon": stage,
         "focused_goods": focused,
+        "hourly_demand": {"report_id": research.get("report_id") if hourly_priority else None,
+                          "generated_at": research.get("generated_at") if hourly_priority else None,
+                          "ranked_skus": len(hourly_priority),
+                          "priority_units_planned": sum(c["reason"] == "hourly_market_demand" for c in choices),
+                          "scope": "priority among currently eligible candidates; all purchase limits apply"},
         "adaptive_goods": {"enabled": bool(adaptive_rules),
             "exclusion_counts": dict(Counter(candidate_exclusions.values())),
             "excluded_candidates": dict(list(candidate_exclusions.items())[:32]),
@@ -375,6 +391,9 @@ def run_once(root=ROOT, now=None):
         inv = Inventory(md).snapshot()
         if inv["round"] < 3:
             return {"buy": []}
+        # Runs on the existing hook even when supply is closed. No new network
+        # call: cached market evidence is collected by the existing poller.
+        research = refresh_demand(root, inv, cfg, clock())
         path = md / "restock-control.json"
         state = load_json(path) if path.exists() else {"round": inv["round"], "attempts": []}
         if not isinstance(state, dict) or not isinstance(state.get("attempts"), list) or len(state["attempts"]) > 500:
@@ -398,6 +417,7 @@ def run_once(root=ROOT, now=None):
                     and 0 < opens - market_time(inv["round"])["now"] <= focus.get("prepare_before_seconds", 180)
                     and state.get("prepared_opening") != opens):
                 prepared = refresh_market(root, inv["round"], clock(), deadline_seconds=8)
+                research = refresh_demand(root, inv, cfg, clock(), public=prepared)
                 state["prepared_opening"] = opens
                 profiles = demand_profiles(prepared, clock())
                 state["prepared_demand_usable"] = any(
@@ -443,6 +463,7 @@ def run_once(root=ROOT, now=None):
         current = clock()
         if public and public.get("round") != inv["round"]:
             public = None
+        research = refresh_demand(root, inv, cfg, current, public=public)
         memory = update_sales(root, inv["round"], current, public=public, inventory=inv)
         lifecycle = update_stock(root, inv, memory, current)
         focus = focused_config(cfg)
@@ -470,7 +491,8 @@ def run_once(root=ROOT, now=None):
                 categories = {d["category"] for d in demand if isinstance(d, dict)
                               and isinstance(d.get("category"), str)}
                 pool = (adaptive_candidates(inv, catalog, categories, economics, cfg, current, public,
-                                            paused=adaptive_paused(inv, economics, lifecycle_stats, cfg, current))
+                                            paused=adaptive_paused(inv, economics, lifecycle_stats, cfg, current),
+                                            research=research)
                         if len(inv["units"]) < adaptive_rules["low_stock_units"] else {})
                 adaptive_control = prepare_adaptive(prior_adaptive, memory, pool, adaptive_rules,
                     lifecycle_stats=lifecycle_stats, held=held,
@@ -495,7 +517,7 @@ def run_once(root=ROOT, now=None):
         run_cfg = {**cfg, "max_units_per_run": min(cfg["max_units_per_run"], line_capacity)}
         decision, evidence = plan(inv, catalog, demand, memory, attempts, run_cfg, current, public,
                                   lifecycle=lifecycle, horizon=policy["horizon"], focus_control=focused_control,
-                                  adaptive_control=adaptive_control)
+                                  adaptive_control=adaptive_control, research=research)
         latest = Inventory(md).snapshot()
         checked = current_window(latest)
         if checked["status"] != "window_open":

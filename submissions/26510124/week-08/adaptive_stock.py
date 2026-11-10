@@ -13,6 +13,7 @@ from market_evidence import demand_profiles
 from stock_budget import StockBudget
 from supply_pricing import surge_factors, worst_cost
 from replenishment_profit import refund_recovery
+from hourly_demand import ranks as demand_ranks
 
 SKU = re.compile(r"[GF][0-9a-f]{8}\Z")
 
@@ -67,7 +68,8 @@ def depth_cap(metric, cfg, kind="goods"):
     return depth_evidence(metric, cfg, kind)["depth_cap"]
 
 
-def candidates(inv, catalog, categories, economics, cfg, now, public, *, paused=(), allowed=None, diagnostics=None):
+def candidates(inv, catalog, categories, economics, cfg, now, public, *, paused=(), allowed=None, diagnostics=None,
+               research=None):
     """Return a bounded pool of eligible alternatives, never arbitrary stock."""
     rules = configuration(cfg)
     if not rules:
@@ -81,6 +83,7 @@ def candidates(inv, catalog, categories, economics, cfg, now, public, *, paused=
     budget = max(0, math.floor(inv["balance"]) - math.ceil(inv["start"] * cfg["cash_reserve_percent"] / 100))
     exposure = StockBudget(inv, cfg)
     profiles = demand_profiles(public, now)
+    hourly = demand_ranks(research, cfg, inv.get("round"), now)
     food_rules = rules.get("food_pilots", {})
     food_enabled = isinstance(food_rules, dict) and food_rules.get("enabled") is True
     turnover_rules = rules.get("turnover_goods", {})
@@ -138,6 +141,7 @@ def candidates(inv, catalog, categories, economics, cfg, now, public, *, paused=
                            if p["grade"] == "A" and p["warranty_hours"] == 6), None)
         quality_price = (comparable["price"] / product["list_price"] if comparable else 0)
         evidence = {"kind": product["kind"], **depth,
+                    "hourly_demand_rank": hourly.get(sku),
                     "refund_recovery": recovered,
                     "own_mature": own.get("mature", 0), "own_net_estimate": own.get("net_estimate", 0),
                     "sales": profile["sales"], "buyers": profile["buyers"],
@@ -164,8 +168,12 @@ def candidates(inv, catalog, categories, economics, cfg, now, public, *, paused=
             rank = (-int(measured), -pressure if measured else -profile["sales"],
                     -diversity, -min(profile["named_shops"], 10), -profile["sales"],
                     product["list_price"], sku)
+            if hourly:
+                rank = (int(sku not in hourly), hourly.get(sku, 999), *rank)
             food_ranked.append((rank, sku, row))
         else:
+            if hourly:
+                rank = (int(sku not in hourly), hourly.get(sku, 999), *rank)
             ranked.append((rank, sku, row))
             if turnover:
                 # Reserve room for affordable demand before turnover value
@@ -175,6 +183,8 @@ def candidates(inv, catalog, categories, economics, cfg, now, public, *, paused=
                 turnover_rank = (-int(proven(own, cfg["min_mature_sales"])), -profile["buyers"],
                                  -int(measured), -pressure if measured else 0,
                                  -profile["sales"], product["list_price"], sku)
+                if hourly:
+                    turnover_rank = (int(sku not in hourly), hourly.get(sku, 999), *turnover_rank)
                 turnover_ranked.append((turnover_rank, sku, row))
     food_slots = min(len(food_ranked), food_rules["max_candidates"], rules["max_candidates"]) if food_enabled else 0
     if turnover_enabled:
