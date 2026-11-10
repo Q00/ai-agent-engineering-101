@@ -423,9 +423,17 @@ def groupbuy_ads(c, t, now):
     data = {"type": "clearance", "shop": NAME, "rule": "clearance prices while stock lasts; lowest ask per grade in stock now (other units of a grade may ask more)",
             "items": [{"sku": i["sku"], "list": i["list_price"], "from_by_grade": i["price_by_grade"]} for i in items],
             "how": "ask our shop for the SKU", "refs": refs[:5]}
-    ko = "[재고 정리] 창고 정리 특가 -- 지금 재고의 등급별 실제 판매가\n" + "\n".join(
-        f"- {i['name']} ({i['sku']}): 정가 {i['list_price']:,}원 -> 등급별 "
-        + ", ".join(f"{g_} {p_:,}원부터" for g_, p_ in i["price_by_grade"].items()) for i in items)
+    n_by = {}
+    try:
+        for u in json.loads((HERE / ".market" / "inventory.json").read_text(encoding="utf-8")).get("units", []):
+            n_by[u["sku"]] = n_by.get(u["sku"], 0) + 1
+    except Exception:
+        pass
+    # HQ 11-11 (1) a price table agents can read before they pick a shop: price, % off list, stock, warranty
+    ko = "[가격표] 📋 주문 전에 보는 dragonash 정리 특가 (보증 72시간, 시장 인증서)\n" + "\n".join(
+        f"- {i['name']} ({i['sku']}): 정가 {i['list_price']:,}원 → "
+        + ", ".join(f"{g_} {p_:,}원(-{1 - p_ / i['list_price']:.0%})" for g_, p_ in i["price_by_grade"].items())
+        + f" | 재고 {n_by.get(i['sku'], 0)}개" for i in items)
     en = "[Clearance] prices by grade in stock now: " + "; ".join(
         f"{i['sku']} " + ", ".join(f"{g_} {p_:,}" for g_, p_ in i["price_by_grade"].items()) for i in items)
     js = json.dumps(data, ensure_ascii=False, separators=(",", ":")) + f"\n{HUMAN}\n" + ko + "\n" + en
@@ -881,6 +889,7 @@ FUN_HEAD = [("[구매 기록] 최근 정산된 구매", "[구매 기록] 📒 �
             ("[시세]", "[시세] 🛒 장보기 전에 쓱 보고 가세요 |"),
             ("[최저가 보상]", "[최저가 보상] 💪 더 싼 곳 있으면 말씀만 하세요 |"),
             ("[재고 정리]", "[재고 정리] 🎁 창고 대방출 |"),
+            ("[가격표]", "[가격표]"),
             ("[구매자 팁]", "[구매자 팁] 💡 알아두면 돈 버는 꿀팁 |"),
             ("[상점 사실]", "[상점 사실] 🔍 숫자로 보는 가게 |")]
 FUN_BUYER = ["오늘도 행복한 쇼핑 되세요 🛍️",

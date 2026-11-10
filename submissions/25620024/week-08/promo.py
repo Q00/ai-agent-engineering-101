@@ -238,6 +238,19 @@ def quote(c, unit, code=None, me=None, now=None, stock_n=1, vip=False):
             # 11-08: a dear unit bought above its grade's market price costs 1% a day to hold (storage), ~9% to the
             # round's end, so it goes at the market price now if that loses at most big_loss_max of cost
             floor = min(floor, int(cost * (1 - t.get("big_loss_max", 0.08))) + 1)
+    if over and median and t.get("grade_hedge", True):
+        # HQ 11-11 (2) the hedge inside a SKU: cheap B/C units carry the volume at deep discounts; a dear unit (often
+        # grade A) asks up to 97% of its own grade's market median, capped at cost + 15% -- still under the market
+        hedge = min(median * 0.97, cost * 1.15)
+        if hedge > price:
+            price, why = hedge, why + [f"grade hedge {hedge:.0f}"]
+    if over and t.get("round_end"):
+        # HQ 11-11 (4) Book counts unsold stock at cost and storage is 1%/day: selling under cost x (1 - 1% x days
+        # left) loses more than holding the unit to the round's end, so no overstocked unit goes under that
+        days = max(0.0, (t["round_end"] - time.time()) / 86400)
+        hold = int(cost * (1 - 0.01 * days)) + 1
+        if hold > floor:
+            floor, why = hold, why + [f"hold floor {hold}"]
     price = max(int(price), floor)
     least = max(int(price * (1 - t["haggle_room"])), floor)
     return {"price": price, "least": least, "arm": arm if isinstance(arm, str) else f"{arm:.2f}", "floor": floor,
