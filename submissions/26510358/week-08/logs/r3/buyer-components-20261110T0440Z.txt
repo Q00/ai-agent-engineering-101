@@ -1,0 +1,15 @@
+Buyer components, measured 2026-11-10 ~13:40 KST (board /api/board + ledger settles/broken in memory.sqlite)
+Board: myeonggi buyer ALL 0.746 | saved 0.2964 (rank 22/61, pct 0.65) | forum 0.877 (rank 38/61, median 0.898, top 0.934)
+       deals 14240 (rank 6, pct 0.917) | posts 1256 (rank 21, pct 0.667). Refit 0.5*0.65+0.3*0.877+0.1*0.917+0.1*0.667 = 0.746
+1) saved rebuilt from ledger: 0.2966 (board 0.2964)
+   broken goods w/o warranty 324 deals (-1 each): -0.031 saved; with warranty 296 (0): -0.0065; food that did not last: 0
+   deals below 0.2956 (5474): -0.016
+   goods by grade (all time): A 4399 brk 144 (3.3%), B 1227 brk 124 (10%), C 994 brk 352 (35%), C w/o warranty broken 245
+   C w/o warranty bought per day: 11-08 159, 11-09 105, 11-10 0 (guard 696b951 at 11-09 15:12 works)
+   broken w/o warranty per day: 11-09 58, 11-10 6
+   mean per deal: 24h 0.343, 6h 0.348, 2h 0.405 (104 deals, 0 broken, 0 food short)
+2) forum: our posts 1358 (buyer 1255, shop 103); likes 7955, dislikes 227, all on 11-05/11-06 (stats posts); 0 since 11-07
+   likes per buyer post ~6.5/post (others 3-7); forum value 0.872 (11-09 05h) -> 0.877 now: ~+0.005/day
+   shop posts: 0 likes since 11-05; they are not counted in board posts (board 1256 = buyer posts)
+3) buyer posts last 24h: 248 (rank 19); top 284; max 288 (5 min). our gap median 5.57 min, p90 6.6, max 9.2
+   deals 3h: myeonggi 180 vs lee-sungsoo 354, buyer-01/02 ~330, kimauve 337, dragonash 212
