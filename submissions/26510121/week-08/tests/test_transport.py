@@ -171,6 +171,9 @@ def test_remote_missing_shop_rejoins_even_when_card_is_locally_healthy(tmp_path)
     monitor.tick(31)
     assert len(attempts)==1 and monitor.procs[1] is old and not stopped
     assert not monitor.pending_registration
+    from r3.state import read_json
+    assert read_json(tmp_path/'.market/shop-health.json')['status']=='registration_unverified'
+    assert monitor.market_visibility=='registration_unverified'
 
 
 def test_pending_registration_waits_when_the_whole_registry_disappears(tmp_path):
@@ -184,6 +187,28 @@ def test_pending_registration_waits_when_the_whole_registry_disappears(tmp_path)
     assert monitor.pending_registration and len(calls)==1
     rows.clear();monitor.tick(61)
     assert len(calls)==1 and monitor.procs[1] is old and not stopped
+
+
+def test_registry_membership_cannot_hide_a_board_offline_result(tmp_path):
+    from r3.state import read_json
+    attempts=[]
+    monitor,old,new,stopped,logs=supervisor_fixture(tmp_path,
+        lambda *a,**kw:attempts.append(a) or {'name':'seochanit'})
+    monitor.provider='cloudflare';monitor.market.base='https://market.example'
+    alive=[False]
+    def get(url,**kwargs):
+        if url.endswith('/api/shops'):
+            rows=[{'name':'seochanit','url':'https://old.example'}]
+        else:rows=[{'name':'seochanit','alive':alive[0]},{'name':'peer','alive':True}]
+        return httpx.Response(200,json={'shops':rows})
+    monitor.market.c=SimpleNamespace(get=get)
+    monitor.tick(1)
+    assert not attempts and read_json(tmp_path/'.market/shop-health.json')['status']=='market_board_offline'
+    monitor.tick(61)
+    assert len(attempts)==1 and read_json(tmp_path/'.market/shop-health.json')['status']=='registration_unverified'
+    alive[0]=True;monitor.tick(91)
+    assert read_json(tmp_path/'.market/shop-health.json')['status']=='healthy'
+    assert monitor.procs[1] is old and not stopped
 
 
 def test_replacement_allows_dns_to_become_ready_after_thirty_seconds(tmp_path):

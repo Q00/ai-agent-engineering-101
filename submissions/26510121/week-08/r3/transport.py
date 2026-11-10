@@ -147,6 +147,7 @@ class ShopSupervisor:
         self.last_registry_probe=-1000
         self.market_visibility='unknown'
         self.last_board_probe=-1000
+        self.last_board_alive=None
         self.board_offline_checks=0
         self.last_board_rejoin=-1000
         self.board_global_outage=False
@@ -157,6 +158,7 @@ class ShopSupervisor:
             'pending_registration': self.pending_registration, 'consecutive_probe_failures': self.misses,
             'market_visibility':self.market_visibility,'registry_misses':self.registry_misses,
             'board_offline_checks':self.board_offline_checks,
+            'market_board_alive':self.last_board_alive,
             'board_global_outage':self.board_global_outage,
             'probe_interval_seconds': 15, 'renewal_seconds': 3300 if self.provider == 'pinggy' else None})
 
@@ -197,6 +199,7 @@ class ShopSupervisor:
                             if board_response.status_code==200:
                                 rows=board_response.json().get('shops',[])
                                 own=[r for r in rows if r.get('name')==self.args.name]
+                                self.last_board_alive=own[0].get('alive') if len(own)==1 else None
                                 active_peer=any(r.get('name')!=self.args.name and r.get('alive') is True for r in rows)
                                 self.board_global_outage=bool(rows) and any(r.get('alive') is False for r in rows) and not any(r.get('alive') is True for r in rows)
                                 if self.board_global_outage:self.market_visibility='market_board_outage'
@@ -250,10 +253,14 @@ class ShopSupervisor:
             self.pending_registration = False
             self.registration_failures=0
             self.registry_misses=0
-            self.market_visibility='present'
+            # Join acknowledges identity/URL acceptance, not sustained public
+            # discovery. Only independent registry and board probes establish it.
+            self.market_visibility='registration_unverified'
+            self.last_board_alive=None
+            self.last_board_probe=-1000
             self.board_offline_checks=0
             self.last_board_rejoin=now
-            kit.log(f"[market] shop registered again as {result['name']} at {self.proxy.public}")
+            kit.log(f"[market] registration accepted for {result['name']} at {self.proxy.public}; awaiting public verification")
             if self.retired is not None:
                 kit.stop(self.retired)
                 for i in range(len(self.procs) - 1, 1, -1):
@@ -262,6 +269,9 @@ class ShopSupervisor:
                 self.retired = None
         self.snapshot('market_discovery_outage' if self.market_visibility in {'market_empty','market_board_outage'} else
                       'market_registration_missing' if self.market_visibility in {'absent','board_offline'} else
+                      'market_board_offline' if self.last_board_alive is False else
+                      'registration_unverified' if self.market_visibility=='registration_unverified' or
+                          self.market_visibility=='present' and (self.last_board_alive is not True or now-self.last_board_probe>=120) else
                       'healthy' if healthy or not self.pending_registration and self.misses == 0 else 'probing')
 
 
