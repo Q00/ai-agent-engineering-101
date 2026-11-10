@@ -47,7 +47,8 @@ DEFAULT_POLICY = {"undercut": 0.02,           # price this far (share of list) u
                   "clearance_hours": 6,       # ... except food with fewer hours left than this
                   "clearance_floor": 0.6,     # which may go down to cost * this
                   "warranty_max_break": 0.06, # give a warranty when the grade's break rate is under this
-                  "warranty_hours": 6}
+                  "warranty_hours": 72}       # goods only break within 6 h of the sale, so 72 h costs the
+                                              # same as 6 h and passes any buyer's accept.warranty_hours (max 72)
 
 PROMPT = """You are the sales agent of a discount shop (low margin, high volume, honest grades).
 A buyer is negotiating for one {name} (grade {grade}{warranty}).
