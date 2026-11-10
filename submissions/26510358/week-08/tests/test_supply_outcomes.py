@@ -72,11 +72,24 @@ def test_the_price_gate_is_the_fixed_line_until_the_flag_and_then_our_own_cohort
     g = restock_r3.price_gate
     kimchi = {"sold": 408, "expired": 0, "spend": 8_400_000, "revenue": 11_100_000, "expired_cost": 0}
     thin = {"sold": 3, "expired": 0, "spend": 10, "revenue": 20, "expired_cost": 0}
-    assert g(0.634, kimchi, "food") and not g(0.66, kimchi, "food") and not g(None, None, "food")   # live rule
+    monkeypatch.setattr(config, "RESTOCK_GATE_BY_EVIDENCE", False)
+    assert g(0.634, kimchi, "food") and not g(0.66, kimchi, "food") and not g(None, None, "food")   # the old rule
     monkeypatch.setattr(config, "RESTOCK_GATE_BY_EVIDENCE", True)
     assert not g(0.634, kimchi, "food")                             # cohorts exist: outcome_factor judges it
     assert not g(0.577, None, "food") and g(0.53, None, "food")     # none: grade-mix cost + margin, food 0.54
     assert g(0.63, thin, "goods") and not g(0.645, thin, "goods")   # goods 0.64, too few units is no evidence
+
+
+def test_categories_are_ranked_by_what_they_earned_when_we_know_it(monkeypatch):
+    kimchi = {"sold": 408, "expired": 0, "spend": 8_400_000, "revenue": 11_100_000}
+    fruit = {"sold": 589, "expired": 132, "spend": 11_594_859, "revenue": 10_908_949}
+    model = 0.634 - config.EV_COST_RATIO
+    monkeypatch.setattr(config, "RESTOCK_GATE_BY_EVIDENCE", True)
+    r = restock_r3.rank_margin
+    assert r(0.634, kimchi) > r(0.642, None) == 0.642 - config.EV_COST_RATIO > 0 > r(0.642, fruit)
+    assert r(0.634, {"sold": 3, "expired": 0, "spend": 10, "revenue": 99}) == model       # too few units: the model
+    monkeypatch.setattr(config, "RESTOCK_GATE_BY_EVIDENCE", False)
+    assert r(0.634, kimchi) == model
 
 
 def test_stale_misses_weigh_a_quarter_in_the_stockout_rate(tmp_path, monkeypatch):

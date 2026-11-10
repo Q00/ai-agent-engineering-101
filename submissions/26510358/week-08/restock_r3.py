@@ -147,8 +147,8 @@ def covered_skus(units, mem):
 
 def price_gate(ratio, outcome, kind):
     """True when a category is not bought because of what the market pays for it (median price / list, 72 h).
-    Live rule: under RESTOCK_GATE_RATIO (0.65), whatever we earned there.
-    With RESTOCK_GATE_BY_EVIDENCE (off until the human says yes): a category whose own 12-72 h cohorts are large
+    Until 2026-11-10: under RESTOCK_GATE_RATIO (0.65), whatever we earned there (still the rule with the flag off).
+    With RESTOCK_GATE_BY_EVIDENCE (on since 2026-11-10, the human's decision): a category whose own 12-72 h cohorts are large
     enough is never gated on price, because outcome_factor already cuts or stops it when it loses; without that
     evidence the line is the expected cost of the grade mix plus MIN_MARGIN (food 0.54, goods 0.64).
     Why: over the round the ratio did not tell profit from loss. Kimchi at 0.634 earned +32% on spend (26.3M) and
@@ -161,6 +161,17 @@ def price_gate(ratio, outcome, kind):
     if outcome and (outcome.get("sold", 0) + outcome.get("expired", 0)) >= config.OUTCOME_MIN_UNITS:
         return False
     return ratio < config.RESTOCK_GATE_NO_EVIDENCE.get(kind, config.RESTOCK_GATE_RATIO)
+
+
+def rank_margin(ratio, outcome):
+    """Margin per list won that orders the categories competing for the stock budget. With enough of our own cohorts
+    it is what the category earned (profit / spend x the cost share of list); otherwise the model's market ratio
+    minus the assumed cost. 2026-11-10: with ~1M of room under the cap, fresh fruit (-6% on spend) was ranked above
+    kimchi (+32%) because both sat near the same market ratio."""
+    if config.RESTOCK_GATE_BY_EVIDENCE and outcome and outcome.get("spend", 0) > 0 \
+            and outcome.get("sold", 0) + outcome.get("expired", 0) >= config.OUTCOME_MIN_UNITS:
+        return (outcome["revenue"] - outcome["spend"]) / outcome["spend"] * config.EV_COST_RATIO
+    return (ratio or config.EV_DEFAULT_PRICE_RATIO) - config.EV_COST_RATIO
 
 
 def outcome_factor(o, board=None):
@@ -290,7 +301,7 @@ def plan(inv, demand_rows, mem, now=None, dry_run=False, adjust=None):
                         "stockouts_per_h": round(missed, 2),
                         "pressure": (view.get(k) or {}).get("pressure"), "target": target})
         if need > 0:
-            margin = (ratio or config.EV_DEFAULT_PRICE_RATIO) - config.EV_COST_RATIO
+            margin = rank_margin(ratio, outcomes.get(k))
             needs.append((exp_h * row.get("median_price", 0) * margin, k, need, row, exp_h * factor, ratio))
     needs.sort(key=lambda x: -x[0])                       # expected margin per hour, not revenue
     for score, k, need, row, mu_h, ratio in needs:
