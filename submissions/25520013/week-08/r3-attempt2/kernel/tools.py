@@ -371,8 +371,8 @@ def replay_probe(root, target, version=None, files=None, harness_dir=None, n=20,
     return c.cap("\n".join(lines), MAX_CHARS)
 
 
-def policy(root, days=1):
-    """시도 1 규칙의 policy.json 값: 구역(defaults.food, defaults.goods, 상품군 전체 경로, shop, buyer.defaults.food, buyer.defaults.goods)마다 편집 가능 키의 지금 값,  허용 범위와 한 번에 바꿀 수 있는 폭, 최근 days일의 정책 수정 기록. LIVE가 꺼진 동안 done.policy로 고침."""
+def policy(root, days=1, section=None):
+    """시도 1 규칙의 policy.json 값: 구역(defaults.food, defaults.goods, 상품군 전체 경로, shop, buyer.defaults.food, buyer.defaults.goods)마다 편집 가능 키의 지금 값,  허용 범위와 한 번에 바꿀 수 있는 폭, 최근 days일의 정책 수정 기록. section(구역 이름의 일부, 예: "음료", "buyer")을 주면 그 구역 줄과 그 구역의 수정 기록만 돌려줘 결과가 잘리지 않음. LIVE가 꺼진 동안 done.policy로 고침."""
     from kernel import policy_edit as pe
     from kernel.trajectory import Trajectory
 
@@ -380,7 +380,12 @@ def policy(root, days=1):
     days = max(1, min(7, int(days))) if isinstance(days, (int, float)) and not isinstance(days, bool) else 1
     rows = pe.recent(Trajectory(os.path.join(root, "a2/trajectory.jsonl")), c.now_ts(), days * 24)
     hist = [f"- {c.kst(r.get('ts'))} {r.get('section')} {r.get('key')} {r.get('old')} -> {r.get('new')}: {r.get('reason')}" for r in rows[-30:]]
-    return c.cap(pe.view(root, cats) + "\n최근 정책 수정\n" + ("\n".join(hist) or "없음"), MAX_CHARS)
+    view = pe.view(root, cats)
+    if isinstance(section, str) and section.strip():
+        sec = section.strip()
+        view = "\n".join(ln for ln in view.split("\n") if not ln.startswith("- ") or sec in ln.split(": ", 1)[0])
+        hist = [h for h in hist if sec in h]
+    return c.cap(view + "\n최근 정책 수정\n" + ("\n".join(hist) or "없음"), MAX_CHARS)
 
 
 def stockouts(root, hours=1, now=None):

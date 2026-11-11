@@ -282,3 +282,12 @@ def test_grounding_marks_unused_reads_and_unfounded_numbers(o):
     o.terra = Script({"tools": [{"tool": "policy", "args": {}}]}, {"done": {"note": "끝"}})
     res = o.wake("주기 점검", NOW)
     assert res["grounding"]["read"] == 1 and res["grounding"]["unfounded"] == []
+
+
+def test_policy_tool_narrows_to_a_section(o):
+    from kernel import tools as T
+    full = T.call("policy", "operator", o.root)
+    part = T.call("policy", "operator", o.root, section="buyer")
+    rows = [ln for ln in part.split("\n") if ln.startswith("- ") and "->" not in ln]
+    assert len(part) < len(full) and rows and all("buyer" in ln.split(": ", 1)[0] for ln in rows)
+    assert "편집 가능 키" in part
