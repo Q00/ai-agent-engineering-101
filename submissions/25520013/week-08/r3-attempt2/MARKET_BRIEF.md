@@ -351,3 +351,7 @@
   - experiments 도구를 넣음: 진행 중인 실험 전부와 막힌 범위. 상태 카드는 진행 14건 중 6건만 보여 줬고 두 운영자가 실험 목록을 도구 검색으로 8번 찾았음
   - code_read가 end와 count 인자를 받음: 12회 중 5회가 인자 오류였음
   - 가게 운영자의 점검당 단계를 6에서 10으로 늘림: 3회 점검 모두 코드 읽기에 6단계를 다 쓰고 수정에 이르지 못함
+- 11-11 16:25 성수님 결정: 가게 운영에 관한 값은 모두 가게 운영자가 정함. shop 구역의 재입고와 재고 한도 22개 키(max_inventory_cost_frac, max_spend_per_run, max_spend_frac, max_lines_per_run, max_total_units, est_cost_frac 등)를 실험으로 걸 수 있게 엶
+  - 근거: 15:04, 15:23, 15:44 창 모두 재입고가 재고 총액 한도 2.5배에서 멈췄고(재고 원가 3.39억, 잔고 1.33억) 15:44 창은 0개를 삼
+  - 이 키들은 같은 키끼리만 겹침 (shop 전체 범위로 두면 진행 중인 가게 실험 14건이 끝날 때까지 못 검)
+  - 사람 몫으로 남긴 것: 파산선(balance_floor, liquidation_line, allow_bankrupt)과 bounds

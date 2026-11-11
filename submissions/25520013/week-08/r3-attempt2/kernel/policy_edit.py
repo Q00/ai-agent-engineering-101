@@ -62,8 +62,37 @@ GRADE_KEYS = {
         0.05,
     ),  # shop only; attempt 1 validate allows [0.3, 0.9]
 }
+# shop section only (11-11 성수님: 가게 운영에 관한 값은 모두 운영자가 정함). Restock and stock limits the rule code reads
+# from policy.json "shop". Left to people: balance_floor, allow_bankrupt, liquidation_line (the bankruptcy line) and bounds.
+SHOP_KEYS = {
+    "max_inventory_cost_frac": (0.5, 6.0, 0.5),
+    "max_spend_per_run": (300_000, 30_000_000, 3_000_000),
+    "max_spend_frac": (0.05, 1.0, 0.15),
+    "max_unit_cost": (100_000, 6_000_000, 1_000_000),
+    "max_lines_per_run": (1, 30, 5),
+    "max_total_units": (50, 1000, 100),
+    "food_sell_through": (0.1, 1.0, 0.2),
+    "food_cold_units": (0, 20, 4),
+    "food_min_units": (0, 10, 2),
+    "goods_cold_units": (0, 20, 4),
+    "goods_min_units": (0, 10, 2),
+    "goods_max_storage_frac": (0.001, 0.05, 0.01),
+    "idle_pause_s": (0, 86_400, 21_600),
+    "idle_low_stock_units": (0, 100, 20),
+    "idle_low_stock_frac": (0.0, 1.0, 0.25),
+    "own_velocity_tau_h": (1, 72, 12),
+    "restock_stop_before_end_h": (0, 12, 2),
+    "est_cost_frac": (0.3, 0.9, 0.1),
+    "goods_cost_frac": (0.4, 0.9, 0.1),
+    "market_floor_frac": (0.5, 1.0, 0.1),
+    "food_min_left_frac": (0.0, 0.9, 0.2),
+    "liquidation_margin": (0.0, 0.3, 0.05),
+}
+SHOP_INT = ("max_spend_per_run", "max_unit_cost", "max_lines_per_run", "max_total_units", "food_cold_units",
+            "food_min_units", "goods_cold_units", "goods_min_units", "idle_pause_s", "idle_low_stock_units",
+            "own_velocity_tau_h", "restock_stop_before_end_h")
 LEAF_KEY = "c_first_leaves"  # "c_first_leaves.<leaf name>" in shop: 1 puts the leaf in the list, 0 takes it out
-INT_KEYS = ("max_rounds", "stock_target", "qty_per_buy", "warranty_hours", LEAF_KEY)
+INT_KEYS = ("max_rounds", "stock_target", "qty_per_buy", "warranty_hours", LEAF_KEY) + SHOP_INT
 DEFAULTS = ("defaults.food", "defaults.goods")
 BUYER = ("buyer.defaults.food", "buyer.defaults.goods")
 WHERE = {
@@ -122,6 +151,8 @@ def _spec(key):
         return KEYS[key]
     if key in BUYER_KEYS:
         return BUYER_KEYS[key]
+    if key in SHOP_KEYS:
+        return SHOP_KEYS[key]
     if base in GRADE_KEYS and sub in GRADE_KEYS[base][0]:
         return GRADE_KEYS[base][1:]
     if base == LEAF_KEY and sub.strip() and ">" not in sub:
@@ -132,7 +163,7 @@ def _spec(key):
 def _where(key):
     """Which sections take this key (a WHERE entry)."""
     base = key.split(".", 1)[0]
-    if base in ("grade_floor_list", LEAF_KEY):
+    if base in ("grade_floor_list", LEAF_KEY) or key in SHOP_KEYS:
         return "shop"
     if key in BUYER_KEYS:
         return "buyer"
@@ -178,7 +209,7 @@ def effective(pol, section, key):
 def _keys(section):
     """The editable keys of a section, as view lists them."""
     if section == "shop":
-        return [f"grade_floor_list.{g}" for g in GRADE_KEYS["grade_floor_list"][0]]
+        return [f"grade_floor_list.{g}" for g in GRADE_KEYS["grade_floor_list"][0]] + list(SHOP_KEYS)
     if section in BUYER:
         return list(BUYER_KEYS)
     out = list(KEYS) + [f"fresh_discount.{g}" for g in GRADE_KEYS["fresh_discount"][0]]
@@ -198,6 +229,7 @@ def view(root, categories=()):
         "fresh_discount는 판매 구역 어디나, warranty_hours는 goods 구역, grade_floor_list는 shop. warranty_hours는 max_warranty_hours를 넘지 못함. "
         "grade_floor_list에 없는 등급은 범위 안 아무 값으로 새로 둘 수 있음",
         f"shop의 {LEAF_KEY}.<잎 이름>: 1이면 목록에 넣고 0이면 뺌. "
+        f"shop의 재입고와 재고 한도 키 (최소, 최대, 폭): {json.dumps(SHOP_KEYS, ensure_ascii=False)}. "
         f"buyer.defaults.food/goods: {json.dumps(BUYER_KEYS, ensure_ascii=False)}. bounds 구역은 사람만 고침",
         f"같은 구역의 같은 키는 {COOLDOWN_S // 60}분에 한 번, 한 점검에 {MAX_PER_WAKE}개까지 바꿀 수 있음",
     ]
@@ -391,7 +423,7 @@ def _prepare(root, it, traj, now, categories, done_n):
     if not isinstance(key, str) or _spec(key) is None:
         return {
             "ok": False,
-            "error": f"key must be one of {sorted(KEYS) + sorted(BUYER_KEYS)}, "
+            "error": f"key must be one of {sorted(KEYS) + sorted(BUYER_KEYS) + sorted(SHOP_KEYS)}, "
             f"<{'|'.join(GRADE_KEYS)}>.<grade> or {LEAF_KEY}.<leaf name>",
         }
     base = key.split(".", 1)[0]
@@ -575,7 +607,7 @@ def kernel_set(
 
 
 BASES = (
-    set(KEYS) | {k.split(".", 1)[0] for k in BUYER_KEYS} | set(GRADE_KEYS) | {LEAF_KEY}
+    set(KEYS) | {k.split(".", 1)[0] for k in BUYER_KEYS} | set(GRADE_KEYS) | {LEAF_KEY} | set(SHOP_KEYS)
 )
 
 

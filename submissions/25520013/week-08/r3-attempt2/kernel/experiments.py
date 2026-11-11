@@ -166,7 +166,12 @@ def _scope_kind(section, scope):
     return scope.split(":", 1)[1] if scope.startswith("kind:") else pe._kind(section)
 
 
-def _overlap(sec_a, sec_b):
+def _overlap(sec_a, sec_b, key_a=None, key_b=None):
+    # a shop-wide restock or stock limit (pe.SHOP_KEYS) only overlaps the same key: with "shop:all" it would wait for
+    # every running shop experiment (14 on 11-11), so the limit that stopped restock could not be tried for hours
+    for s1, k1, s2, k2 in ((sec_a, key_a, sec_b, key_b), (sec_b, key_b, sec_a, key_a)):
+        if s1 == "shop" and k1 in pe.SHOP_KEYS:
+            return s2 == "shop" and k2 == k1
     (side_a, a), (side_b, b) = scope_of(sec_a), scope_of(sec_b)
     if side_a != side_b or a == b:
         return a == b
@@ -226,7 +231,7 @@ def blocked(root, section, key, now, mode="sequential"):
         if e.get("status") != "running":
             continue
         try:
-            if _overlap(section, e["section"]):
+            if _overlap(section, e["section"], key, e.get("key")):
                 return (
                     f"실험 #{e['id']} ({e['section']} {e['key']} {e['old']}→{e['new']}, 범위 {e['scope']})이 "
                     f"{c.kst(e['eval_ts'], '%H:%M')} 판정 전까지 진행 중이라 {section}은 지금 바꿀 수 없음"
@@ -242,7 +247,7 @@ def blocked(root, section, key, now, mode="sequential"):
                 e.get("status") in BLOCK_AFTER
                 and _num_ok(t)
                 and now < t + CONTAM_S
-                and _overlap(section, e["section"])
+                and _overlap(section, e["section"], key, e.get("key"))
             ):
                 return (
                     f"실험 #{e['id']} ({e['section']} {e['key']})이 {c.kst(t, '%H:%M')}에 "
@@ -254,7 +259,7 @@ def blocked(root, section, key, now, mode="sequential"):
     return None
 
 
-def _before_from(rows, section):
+def _before_from(rows, section, key=None):
     """Latest end time of an overlapping experiment whose value was live and is no longer (GONE), None if none."""
     out = None
     for e in rows:
@@ -263,7 +268,7 @@ def _before_from(rows, section):
             if (
                 e.get("status") in GONE
                 and _num_ok(t)
-                and _overlap(section, e["section"])
+                and _overlap(section, e["section"], key, e.get("key"))
             ):
                 out = t if out is None else max(out, t)
         except (KeyError, TypeError, ValueError, AttributeError):
@@ -274,7 +279,7 @@ def _before_from(rows, section):
 def default_window_h(side, key):
     if side == "buyer":
         return DEFAULT_WINDOW_H["buyer"]
-    return DEFAULT_WINDOW_H["slow" if key.split(".", 1)[0] in SLOW_KEYS else "shop"]
+    return DEFAULT_WINDOW_H["slow" if key.split(".", 1)[0] in SLOW_KEYS or key in pe.SHOP_KEYS else "shop"]
 
 
 def _window(wh, side, key):
@@ -369,7 +374,7 @@ def register(
     else:
         if raw is not None:
             exp["raw"] = raw
-        exp["before_from"] = _before_from(rows, row["section"])
+        exp["before_from"] = _before_from(rows, row["section"], row.get("key"))
     if side == "buyer":
         exp["s0"] = board_saved(root, now)
     exp["eval_ts"] = _eval_ts(exp)

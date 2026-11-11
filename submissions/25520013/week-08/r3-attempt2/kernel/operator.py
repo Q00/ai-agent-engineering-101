@@ -165,7 +165,7 @@ code는 규칙 코드를 고침 (값으로 못 고치는 원인일 때만, 한 �
 적용 뒤 커널이 30분 감시하고 (오류나 기록 끊김이면 바로 되돌림) 4시간 전후를 비교해 나빠지면 되돌림. policy.py와 hooks/seller.py 수정은 판매자 재시작 뒤 반영됨. 결과는 상태 카드의 [코드] 줄에 나옴.
 new_tool은 읽기 전용 질의 도구를 하나 만듦 (한 점검에 하나, 모두 8개까지): 기록 파일 하나를 조건으로 거르고 묶어 세는 정의이고 코드는 아님. 커널이 실제 기록으로 시험 실행해 통과하면 다음 점검부터 도구 목록에 나옴. 기록의 필드 이름은 events, trajectory 도구로 행을 먼저 보고 정함. 있는 도구로 못 얻는 숫자가 반복해 필요할 때만 만듦.
 policy 항목은 모두 실험으로 걸림: 판매 쪽 값은 동시 비교(물건 절반에만 새 값, 판정 때 채택 또는 버림), 구매와 재고 값은 전후 비교(바로 적용, 나빠지면 되돌림).
-policy 키는 항목마다 숫자 하나: 판매 구역은 price_mult, min_margin, concession, max_rounds, stock_target, qty_per_buy, warranty_uplift, fresh_discount.B|C. goods 구역은 warranty_hours.A|B|C도. shop은 grade_floor_list.A|B|C와 c_first_leaves.<잎 이름> (1 넣기, 0 빼기). buyer.defaults.*는 max_pay_frac, open_frac (첫 제시가), step_frac (회차마다 올리는 폭), accept_c.max_pay_frac, accept_c.open_frac. bounds는 사람만 고침."""
+policy 키는 항목마다 숫자 하나: 판매 구역은 price_mult, min_margin, concession, max_rounds, stock_target, qty_per_buy, warranty_uplift, fresh_discount.B|C. goods 구역은 warranty_hours.A|B|C도. shop은 grade_floor_list.A|B|C와 c_first_leaves.<잎 이름> (1 넣기, 0 빼기). shop은 재입고와 재고 한도 값도 받음 (max_inventory_cost_frac, max_spend_per_run, max_lines_per_run, max_total_units, est_cost_frac 등. 전체 목록과 범위는 policy 도구). buyer.defaults.*는 max_pay_frac, open_frac (첫 제시가), step_frac (회차마다 올리는 폭), accept_c.max_pay_frac, accept_c.open_frac. bounds는 사람만 고침."""
 RESERVED_ARGS = ("harness_root", "dry", "now")
 HARNESS_TOOLS = ("versions", "harness_read", "replay_probe")
 

@@ -296,7 +296,7 @@ def test_effective_overlays_the_leaf_entry_like_attempt1_resolve(root, a1):
 def test_policy_tool_shows_new_sections_and_keys(root):
     out = tools.call("policy", "operator", root)
     assert (
-        '- shop: {"grade_floor_list.A": null, "grade_floor_list.B": null, "grade_floor_list.C": 0.55, "c_first_leaves": []}'
+        '- shop: {"grade_floor_list.A": null, "grade_floor_list.B": null, "grade_floor_list.C": 0.55, "max_inventory_cost_frac":'
         in out
     )
     assert '- buyer.defaults.goods: {"max_pay_frac": 0.85' in out

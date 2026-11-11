@@ -53,3 +53,28 @@ def test_step_cap_comes_from_the_environment(monkeypatch):
     assert operator._compact_steps() == 12
     monkeypatch.delenv("A2_COMPACT_STEPS")
     assert operator._compact_steps() == 6
+
+
+def test_shop_limit_keys_are_editable_in_shop_only():
+    from kernel import policy_edit as pe
+    assert pe._spec("max_inventory_cost_frac") == (0.5, 6.0, 0.5)
+    assert pe._fits("shop", "max_inventory_cost_frac") and not pe._fits("defaults.food", "max_inventory_cost_frac")
+    assert not pe._fits("buyer.defaults.food", "max_inventory_cost_frac")
+    for k in ("balance_floor", "allow_bankrupt", "liquidation_line"):
+        assert pe._spec(k) is None  # the bankruptcy line stays with people
+    assert "max_lines_per_run" in pe.INT_KEYS and "max_inventory_cost_frac" in pe._keys("shop")
+
+
+def test_shop_limit_key_overlaps_only_the_same_key(tmp_path):
+    os.makedirs(tmp_path / "a2")
+    rows = [{"id": 5, "status": "running", "mode": "sequential", "section": "식품>음료>주스", "scope": "주스",
+             "key": "stock_target", "old": 10, "new": 22, "eval_ts": NOW + 3600},
+            {"id": 6, "status": "running", "mode": "sequential", "section": "shop", "scope": "shop:all",
+             "key": "max_spend_frac", "old": 0.5, "new": 0.6, "eval_ts": NOW + 3600}]
+    with open(ex.ledger_path(str(tmp_path)), "w") as f:
+        json.dump(rows, f)
+    root = str(tmp_path)
+    assert ex.blocked(root, "shop", "max_inventory_cost_frac", NOW) is None
+    assert ex.blocked(root, "shop", "max_spend_frac", NOW) is not None
+    assert ex.blocked(root, "shop", "grade_floor_list.C", NOW) is not None  # shop:all keys still wait for the others
+    assert ex.blocked(root, "식품>음료>주스", "qty_per_buy", NOW) is not None
