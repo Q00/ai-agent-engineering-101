@@ -25,6 +25,19 @@ def inventory(ctx):
     return read(ctx, "inventory.json", default={"balance": None, "units": []}) or {"units": []}
 
 
+def surge_factor(ctx, sku):
+    """Patch 3.4 surge cost (harness.rules_digest found it unfollowed, 11/11): over 50 units of a SKU bought by the
+    whole market in the last hour, each further unit adds 0.2% to its cost, up to +50%. inventory.json 'surge' lists
+    the SKUs under surge with their factor; 1.0 for the rest."""
+    for s in inventory(ctx).get("surge") or []:
+        if isinstance(s, dict) and s.get("sku") == sku:
+            try:
+                return max(1.0, float(s.get("factor") or 1.0))
+            except (TypeError, ValueError):
+                return 1.0
+    return 1.0
+
+
 def unit(ctx, unit_id):
     return next((u for u in inventory(ctx).get("units", []) if u.get("unit") == unit_id), None)
 

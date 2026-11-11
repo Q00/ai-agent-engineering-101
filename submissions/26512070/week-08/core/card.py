@@ -80,7 +80,15 @@ def assemble(role: str, reader: str = "executor", priorities=None, limits=None, 
         raise KeyError(f"no role {role!r}; roles: {sorted(k[6:] for k in s if k.startswith('role: '))}")
     if reader not in FRAMES:
         raise KeyError(f"reader must be one of {sorted(FRAMES)}")
-    parts = [f"# {k}\n{v}" for k, v in s.items() if k.startswith("core: ")]
+    parts = []
+    try:                        # user 11/11: the market's own rules, read by harness.rules_digest, come first
+        from harness import rules_digest
+        top = rules_digest.text()
+        if top:
+            parts.append(top)
+    except Exception:
+        pass
+    parts += [f"# {k}\n{v}" for k, v in s.items() if k.startswith("core: ")]
     parts.append(f"# your role: {role}\n{s['role: ' + role]}")
     parts.append(f"# intent\n{FRAMES[reader]}\n\n{s['intent']}")
     if strategy:

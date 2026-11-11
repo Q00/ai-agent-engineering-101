@@ -147,7 +147,10 @@ def assemble(now=None, for_loop=False):
                        key=lambda x: -x[1]["talks"])[:8]
     top_buyers = sorted(((l, p["as_buyer"]) for l, p in parts_.items() if p["as_buyer"].get("sales")),
                         key=lambda x: -x[1]["sales"])[:8]
+    from harness import rules_digest
+    unfollowed = rules_digest.gaps()
     blocks = [
+        *([("market rules in force (stated, top priority)", rules_digest.text())] if rules_digest.text() else []),
         ("score rule", f"{score.text()}\n(stated, source market:rules patch {rules.get('patch')}, checked "
                        f"{time.strftime('%m-%d %H:%M', time.localtime(rules.get('checked') or now))})"),
         ("top rules", TOP_RULES.replace("{decides}", DECIDES[auto])),
@@ -172,6 +175,10 @@ def assemble(now=None, for_loop=False):
           if wisdom.status() else []),
         *([("the user's questions (answer these first in your report, with the evidence you looked up)",
             "\n".join(f"{i}. {q['q']}" for i, q in enumerate(questions(), 1)))] if questions() else []),
+        *([("market rules our code does not follow yet (fix these first: a playbook number if one covers it, else "
+            "say in your report exactly what code must read and do)",
+            "\n".join(f"- {r['id']}: {r['rule']} (data: {r.get('data_field')}; must: {r.get('must_do')})"
+                      for r in unfollowed))] if unfollowed else []),
         ("the task", "Find the part of the class-view score with the most room you can move with one number, "
                      "and propose the change that the evidence supports best. Prefer ab. Say nothing new if "
                      "nothing is supported." + (AUTO_TASK if auto else "")),

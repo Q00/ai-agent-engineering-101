@@ -29,7 +29,7 @@ ROLES = {
     "buyer": {"look": ["me.counterpart", "market.sku", "calc.surplus", "check.offer", "check.receipt", "rec.label",
                        "memory.card_section"],
               "final": ["act.pick", "act.offer", "act.walk_away", "act.finish"], "steps": 3},
-    "restock": {"look": ["me.inventory", "me.missed", "market.sku", "market.selling", "market.buyer_prefs", "calc.holding_cost",
+    "restock": {"look": ["me.inventory", "me.market_state", "me.missed", "market.sku", "market.selling", "market.buyer_prefs", "calc.holding_cost",
                          "calc.shelf_risk",
                          "check.buy", "memory.card_section"],
                 "final": ["act.buy"], "steps": 7, "timeout": 45},

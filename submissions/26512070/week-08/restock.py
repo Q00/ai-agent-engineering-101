@@ -33,6 +33,7 @@ from tools.registry import Ctx, call  # noqa: E402
 ROUND_END = time.mktime(time.strptime("2026-11-17 23:59", "%Y-%m-%d %H:%M"))   # Round 3 ends (local time, KST)
 TAPER_H = 48            # own_floor ends this long before the end: stock left at the end is lost, so we buy only what sells
 STOCKUP_PLANS = 2       # while stocking up, runs per supply window (a window is 3 min, a full run ~100 s)
+SURGE_SKIP = 1.15        # a SKU costing more than 15% over plain (surge) waits for a later window
 VALUE_LINES = 5         # while stocking up, this many of the kit's 10 lines go to expected sales value, the rest to demand
 REASK_MINUTES = 20
 LEAD = 75                  # plan this many seconds before a window opens at the latest (a model turn takes ~40 s)
@@ -230,6 +231,14 @@ def build_buy_list(ctx, now=None):
             # hour): VALUE_LINES lines by value, the rest by what sells and is asked for, as before
             deep = sorted(lines, key=lambda x: -x["value"])[:VALUE_LINES]
             lines[:] = deep + [x for x in lines if x not in deep]
+    # patch 3.4 surge cost (11/11, harness.rules_digest: unfollowed): a SKU the whole market bought over 50 of in the
+    # last hour costs up to +50%; above SURGE_SKIP we wait for the next window (the hour rolls on) instead of buying
+    for x in lines:
+        f = mf.surge_factor(ctx, x["sku"])
+        if f > 1.0:
+            x["surge"] = f
+        if f > SURGE_SKIP:
+            x["target"] = min(x["target"], x["have"])
     # User 11/4 02:1x: plan within the money we may spend - each line gets what the cash and the stock cap allow
     from tools import act
     room = check.room(ctx)
@@ -288,12 +297,16 @@ def react_situation(ctx, doc, draft, now):
            f"Hours left in the round: {left_h:.0f}. Stocking up: {'yes' if left_h > TAPER_H else 'no - buy only what sells'}.",
            f"Money: cash {b['cash']}, room under the stock cap {b['stock']}, cash floor {b['floor']}. Costs are drawn "
            "on arrival (about 62% of list, at most 75%). The next window opens in about 20 minutes.",
+           "Surge cost (market rule, patch 3.4): a SKU the whole market bought over 50 of in the last hour costs 0.2% "
+           "more per unit, up to +50%; the 'surge' column is that factor (the rules skip a SKU above "
+           f"{SURGE_SKIP}). me.market_state shows every field the market gives.",
            "", "Candidate lines (sku | kind | list price | have | rules' target | our sales 2 h | asked & missed 2 h | "
-               "why | name):"]
+               "surge | why | name):"]
     for x in doc["lines"][:30]:
         c = cat.get(x["sku"]) or {}
         out.append(f"- {x['sku']} | {c.get('kind')} | {c.get('list_price')} | {x['have']} | {x['target']} | "
-                   f"{x.get('own_sold_2h', '-')} | {x.get('missed_2h', '-')} | {x['why']} | {(c.get('name') or '')[:30]}")
+                   f"{x.get('own_sold_2h', '-')} | {x.get('missed_2h', '-')} | {x.get('surge', 1.0)} | {x['why']} | "
+                   f"{(c.get('name') or '')[:30]}")
     out += ["", f"The rules' draft plan: {json.dumps(draft)}",
             "", "Decide the plan: at most 10 lines, 1-20 units each, within the per-SKU limit and the money. Look up "
                 "only what would change your plan (market.selling, me.missed, market.sku, check.buy), then end with "

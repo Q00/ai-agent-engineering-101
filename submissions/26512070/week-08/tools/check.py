@@ -159,10 +159,10 @@ def room(ctx):
     exp, worst = cost_share(ctx)
     return {"cash": None if balance is None else balance - lim["cash_floor"] - reserve,
             "cash_worst": None if balance is None else balance - lim["cash_floor"],
-            "unit_worst": lambda sku: round((cat.get(sku) or {}).get("list_price", 0) * worst),
+            "unit_worst": lambda sku: round((cat.get(sku) or {}).get("list_price", 0) * worst * mf.surge_factor(ctx, sku)),
             "stock": lim["max_stock_share"] * base - sum(u["cost"] for u in units), "have": have,
             "per_sku": lim["max_units_per_sku"], "balance": balance, "reserve": reserve, "floor": lim["cash_floor"],
-            "worst": lambda sku: round((cat.get(sku) or {}).get("list_price", 0) * exp)}
+            "worst": lambda sku: round((cat.get(sku) or {}).get("list_price", 0) * exp * mf.surge_factor(ctx, sku))}
 
 
 @tool("check.buy", "May restock buy this plan? Checks the kit's format (10 lines, 1-20 each) and the limits: units per "
@@ -198,9 +198,10 @@ def buy(ctx, plan):
             raise Refused(f"{line['sku']}: {have.get(line['sku'], 0)} in stock + {line['qty']} is over "
                           f"{lim['max_units_per_sku']} per SKU", f"buy at most {lim['max_units_per_sku'] - have.get(line['sku'], 0)}")
         have[line["sku"]] = have.get(line["sku"], 0) + line["qty"]     # the same SKU on two lines counts once
-        est = round(c["list_price"] * exp) * line["qty"]
+        f = mf.surge_factor(ctx, line["sku"])             # patch 3.4 surge cost
+        est = round(c["list_price"] * exp * f) * line["qty"]
         spend += est
-        spend_worst += round(c["list_price"] * worst_share) * line["qty"]
+        spend_worst += round(c["list_price"] * worst_share * f) * line["qty"]
         if c.get("kind") == "food":
             food_value += est
     reserve, open_total, open_n = warranty_reserve(ctx)

@@ -66,7 +66,10 @@ def start_meta():
     lock.parent.mkdir(parents=True, exist_ok=True)
     lock.write_text(str(time.time()), encoding="utf-8")
     # user 11/10: the forge pass (harness.forge) follows the meta cycle in the same process and lock
-    code = "from harness import meta, forge; import pathlib, sys\ntry:\n    meta.cycle()\n    print(forge.forge_once(), flush=True)\nfinally:\n" \
+    # user 11/11: changed market rules are read (harness.rules_digest) before the cycle
+    code = ("from harness import meta, forge, rules_digest; import pathlib, sys\ntry:\n"
+            "    print(rules_digest.ensure(), flush=True)\n"
+            "    meta.cycle()\n    print(forge.forge_once(), flush=True)\nfinally:\n") + \
            f"    pathlib.Path({str(lock)!r}).unlink(missing_ok=True)"
     log = open(HERE / "logs" / "meta-console.log", "a", encoding="utf-8")   # 11/9: a silent crash hid 9 h of cycles
     log.write(f"--- {time.strftime('%m-%d %H:%M:%S')} meta start\n")

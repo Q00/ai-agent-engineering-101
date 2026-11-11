@@ -26,6 +26,14 @@ def _read(path, default=None):
         return default
 
 
+@tool("me.market_state", "Everything the market tells our shop besides the unit list: every top-level field of "
+      "inventory.json as given (restock window, surge cost by SKU, storage, fees, the bankruptcy line, ...). A field the "
+      "market adds shows up here at once, before any code reads it.", {"type": "object", "properties": {}})
+def market_state(ctx):
+    inv = mf.inventory(ctx)
+    return {**{k: v for k, v in inv.items() if k != "units"}, "units_held": len(inv.get("units") or [])}
+
+
 @tool("me.inventory", "Our shop's stock now: balance, units by kind, stock value, food share, and units that expire "
       "within 12 hours. detail=full lists every unit.",
       {"type": "object", "properties": {"detail": _DETAIL}})

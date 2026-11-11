@@ -78,6 +78,20 @@ def sec_agents(d):
             users[t].append(role)
     out = [kpi([("에이전트", len(AGENTS)), ("도구", len(TOOLS)), ("모델 호출 (오늘)", sum(calls.values())),
                 ("전략", f"v{d.strategy.get('version')}")])]
+    try:                        # user 11/11: the market's rules on top, with what our code does not follow yet
+        from harness import rules_digest
+        dg = rules_digest.digest()
+        gap = rules_digest.gaps(dg)
+        rrows = [[e(r.get("id")), e(r.get("rule", "")[:200]), e(r.get("data_field") or "-"),
+                  e("미반영" if r.get("handled") is False else "반영" if r.get("handled") else "-")]
+                 for r in sorted(dg.get("rules", []), key=lambda r: r.get("handled") is not False)]
+        out.append(card(f"시장 규칙 (최상위 지혜, patch {dg.get('patch')}) - 미반영 {len(gap)}건",
+                        "<p>시장 원문이 바뀌면 meta 사이클 시작 때 analyst가 다시 읽어 정리하고, 모든 역할의 카드와 meta "
+                        "컨텍스트 맨 앞에 넣는다. 우리 코드가 그 데이터 필드를 읽지 않으면 미반영으로 표시되고 meta가 먼저 다룬다.</p>"
+                        "<details><summary>규칙 " + str(len(rrows)) + "개</summary>"
+                        + table(["규칙", "내용", "데이터", "코드"], rrows, "narrow") + "</details>", "warn" if gap else ""))
+    except Exception as ex:
+        out.append(card("시장 규칙", f"<p>읽지 못함: {e(ex)}</p>"))
     rows = []
     for name, purpose, how, when, role, seat, prole in AGENTS:
         s = model.SEATS.get(seat) or {}
