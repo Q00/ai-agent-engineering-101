@@ -41,6 +41,13 @@ DEFAULT_POLICY = {"window_budget": 0.10,   # share of the balance one window may
                                             # unsold stock as an asset and storage is only 1%/day, so 80 was
                                             # capping restock (6 of 9 runs in one hour skipped: stock was full)
 
+OWN_RATE_MIN_SAMPLE = 5   # need at least this many of our own negotiations before trusting the rate
+OWN_RATE_FLOOR = 0.20     # a SKU can sell well market-wide (what the ranking below measures) while still
+                         # converting poorly for us specifically -- measured live: G81ade83e kept getting
+                         # re-bought every window off a healthy market-wide "sold" count, but our own
+                         # negotiations for it landed an 18% deal rate (2 of 11, most cancels with zero
+                         # counter-offer), tying capital up in stock we can't actually move
+
 # Horvitz threshold for a shop promo post: post a "hot drop" at once when we just bought something
 # that is clearly selling fast elsewhere (high usefulness), otherwise only after staying quiet a while
 # (threshold drops with quiet_bonus past quiet_after) -- never spam, never go silent either.
@@ -60,6 +67,17 @@ def stockout_categories(d, now, lookback_h):
                  AND context->>'category' IS NOT NULL GROUP BY 1, 2 HAVING count(*) >= 3""",
                now - lookback_h * 3600)
     return {(r["cat"], r["kind"]): int(r["n"]) for r in rows}
+
+
+def own_deal_rates(d, now, lookback_h):
+    """Our own shop's recent negotiation outcomes per SKU, independent of how well that SKU sells
+    market-wide (settles, used below) -- buyer mix, our own ask, and warranty terms can make a SKU a
+    poor fit for our shop specifically even when it is popular overall."""
+    rows = d.q("""SELECT context->>'sku' AS sku, count(*) AS n,
+                 avg(CASE WHEN outcome->>'result' = 'deal' THEN 1 ELSE 0 END) AS rate
+                 FROM trajectory WHERE role='shop' AND decision='sell' AND ts > $1
+                 GROUP BY 1""", now - lookback_h * 3600)
+    return {r["sku"]: (float(r["rate"]), int(r["n"])) for r in rows}
 
 
 def plan(inv, d, policy, now, catalog):
@@ -98,6 +116,7 @@ def plan(inv, d, policy, now, catalog):
 
     budget = inv.get("balance", 0) * policy["window_budget"]
     per_sku_cap = budget * 0.3                          # one sofa must not eat the whole window
+    own_rates = own_deal_rates(d, now, policy["lookback_h"])
     buy, why = [], []
 
     # categories nobody stocks at all: no sales history to rank by, so a settles-based ranking never finds
@@ -127,6 +146,9 @@ def plan(inv, d, policy, now, catalog):
         covered.add(cat)
 
     for value, sku, kind, lp, n, margin in ranked:
+        own_rate, own_n = own_rates.get(sku, (None, 0))
+        if own_n >= OWN_RATE_MIN_SAMPLE and own_rate < OWN_RATE_FLOOR:
+            continue          # sells well market-wide but not for us: don't keep tying up capital in it
         unit_cost = lp * 0.75                           # worst case: an A unit at the top of its range
         if unit_cost <= 0 or unit_cost > budget:
             continue
