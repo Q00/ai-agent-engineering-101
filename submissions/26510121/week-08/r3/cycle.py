@@ -64,12 +64,21 @@ class MarketCycle:
         started=time.monotonic()
         now=time.time()
         if now-self.last_analysis>=60:
-            analytics(self.j,now);self.last_analysis=now
+            self.last_analysis=now
+            roles={'market_observer':lambda:analytics(self.j,time.time())}
             if self.cfg.get('objective_feedback_enabled'):
                 from .quality import update as quality_update
                 from .feedback import update as feedback_update
-                quality_update(self.j,self.cfg,now)
-                feedback_update(self.j,self.cfg,now)
+                roles.update(quality_evaluator=lambda:quality_update(self.j,self.cfg,time.time()),
+                             policy_compiler=lambda:feedback_update(self.j,self.cfg,time.time()))
+            status={}
+            for role,work in roles.items():
+                try:
+                    work();status[role]={'at':time.time(),'status':'completed'}
+                except Exception as exc:
+                    status[role]={'at':time.time(),'status':'failed','error_type':type(exc).__name__}
+                    self.j.add('analytical_role_error',dict(role=role,**status[role]))
+            self.j.put('analytical-role-status',status)
             self.meta(now)
             from .usage import report
             report(self.j,self.cfg,now)
@@ -98,6 +107,7 @@ class MarketCycle:
             summary['operating_policy']={k:feedback.get(k) for k in ('id','at','status','regime','patches','reasons','execution_feedback')}
             summary['next_actions']=[{'issue':reason,'action':'restore_or_refresh_facts' if 'stale' in reason or 'guards' in reason else 'independent_research_review'} for reason in feedback.get('reasons',[])]
             summary['quality_holdout']=self.j.get('quality-holdout-summary',{})
+            summary['analytical_roles']=self.j.get('analytical-role-status',{})
         self.j.put('cycle-meta-state',summary);self.j.add('cycle_meta_evaluation',summary)
 
     def tick(self,now=None):

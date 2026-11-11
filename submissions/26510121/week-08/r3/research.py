@@ -24,9 +24,23 @@ SCHEMA = {'type': 'object', 'additionalProperties': False, 'properties': {
     'shop_service_level': {'type': 'number', 'minimum': .85, 'maximum': .95},
     'shop_plan': {'type': 'string', 'enum': ['diversified', 'breadth', 'cautious', 'wait']},
     'operating_actions': {'type':'array','items':{'type':'string','enum':['stock_coverage','buyer_price_gap']},'maxItems':2},
+    'operating_policy': {'type':'object','additionalProperties':False,'properties':{
+        'cover_cycles':{'type':'number','enum':[1,1.5,2,3]},
+        'initial_batch_limit':{'type':'integer','enum':[2,6,10,20]},
+        'frontier_min_orders':{'type':'integer','enum':[4,8,12]},
+        'recheck_seconds':{'type':'integer','enum':[60,120,300]}},
+        'required':['cover_cycles','initial_batch_limit','frontier_min_orders','recheck_seconds']},
     'approve_trial': {'type': 'boolean'}}, 'required': [
         'summary','hypotheses','evidence_ids','skills','skill_steps','buyer_probe_percent','buyer_gap_power',
-        'buyer_diverse_quotes','shop_service_level','shop_plan','operating_actions','approve_trial']}
+        'buyer_diverse_quotes','shop_service_level','shop_plan','operating_actions','operating_policy','approve_trial']}
+
+
+def valid_operating(value):
+    choices={'cover_cycles':(1,1.5,2,3),'initial_batch_limit':(2,6,10,20),
+             'frontier_min_orders':(4,8,12),'recheck_seconds':(60,120,300)}
+    return isinstance(value,dict) and set(value)==set(choices) and all(
+        type(value[key]) in (int,float) and not isinstance(value[key],bool) and value[key] in allowed
+        and (key=='cover_cycles' or type(value[key]) is int) for key,allowed in choices.items())
 
 
 def execution_projection(feedback):
@@ -106,6 +120,7 @@ def validate(value, evidence):
             and value['shop_plan'] in ('diversified','breadth','cautious','wait') and type(value['approve_trial']) is bool
             and isinstance(value['operating_actions'],list) and len(value['operating_actions'])<=2
             and all(x in ('stock_coverage','buyer_price_gap') for x in value['operating_actions'])
+            and valid_operating(value['operating_policy'])
             and isinstance(value['summary'],str) and len(value['summary']) <= 800
             and isinstance(value['hypotheses'],list) and len(value['hypotheses']) <= 4
             and all(isinstance(x,str) and len(x)<=400 for x in value['hypotheses'])
@@ -138,6 +153,13 @@ def call(journal, config, facts, evidence, role, proposal=None, client=None, key
         'operating_actions is independent of approve_trial: insufficient mature challenger samples block economic '
         'promotion, not measurement-based routing responses. Shop transport failures do not block Buyer actions. '
         'Approve only operating actions justified by the supplied fresh facts; an empty list is valid. '
+        'Choose operating_policy using measured demand, competing supply, cost/risk, closed-order results and '
+        'peer trends. These are your execution parameters, not a request for a human to tune them. Cover cycles '
+        'sets repeat-demand inventory coverage; initial_batch_limit sets a conditional cap, never a buy target. '
+        'Higher public-only batches require stronger diverse external payments. Frontier controls apply only '
+        'to repeated, term-comparable price failures with recovery probes. Return baseline values if evidence '
+        'does not support change; preserve the supplied current_operating_policy exactly instead of assuming '
+        'the first enum value is the baseline. Rank/cash/quality objectives and money guards remain authoritative. '
         'Inspect Main execution_feedback, peer trends, inventory, supply blocks and regime changes; explain why to act or wait. '
         'Use <=3 short hypotheses and a concise summary. '
         + ('Independently challenge the proposed explanation; approve_trial only if evidence supports a bounded test, '
@@ -225,6 +247,13 @@ def publish(journal, config, facts, analyst, critic, rules_hash, now=None):
     if config.get('objective_feedback_enabled'):
         packet['operating_intents']=sorted(set(analyst['operating_actions']) & set(critic['operating_actions']))
         packet['operating_actions_reviewed']=True
+        if config.get('agent_policy_selection_enabled'):
+            a,b=analyst['operating_policy'],critic['operating_policy']
+            packet['operating_policy']={'cover_cycles':min(a['cover_cycles'],b['cover_cycles']),
+                'initial_batch_limit':min(a['initial_batch_limit'],b['initial_batch_limit']),
+                'frontier_min_orders':max(a['frontier_min_orders'],b['frontier_min_orders']),
+                'recheck_seconds':min(a['recheck_seconds'],b['recheck_seconds'])}
+            packet['policy_authority']='independent_agent_consensus_with_numeric_execution_guards'
     atomic_json(journal.md/'market-research-v15.json',packet)
     journal.put('research-last-result',packet)
     journal.add('market_research_published',packet)
@@ -252,6 +281,17 @@ def update(journal, config, now=None, client=None, key=None):
     market=journal.get('cycle-market-analytics',{})
     if not 0<=now-market.get('at',0)<180:
         return None
+    if config.get('agent_policy_selection_enabled'):
+        from .feedback import update as refresh_operating
+        operating=journal.get('feedback-last-policy',{})
+        if operating.get('status')!='active' or operating.get('at',0)<market.get('at',0):
+            operating=refresh_operating(journal,config,now,force=True) or {}
+        # Do not pay a model to reconsider a known stale diagnosis. The
+        # observer must first publish a coherent, current evidence generation.
+        if (operating.get('status')!='active' or operating.get('rules_hash')!=rules.get('sha256')
+                or operating.get('at',0)<market.get('at',0)
+                or not -2<=now-market.get('feed_at',journal.get('public_feed_caught_up_at',0))<180):
+            return None
     previous=journal.get('research-last-attempt',{})
     window=(journal.snapshot('inventory.json',{}).get('restock') or {}).get('opens_at')
     preopen=type(window) in (int,float) and 0<=window-now<=300 and previous.get('window')!=window
@@ -274,6 +314,10 @@ def update(journal, config, now=None, client=None, key=None):
            'parameters':{k:config.get(k) for k in ('buyer_contract_probe_percent','shop_stock_service_level')},
            'meta':journal.get('cycle-meta-state',{}),
            'evidence_ids':evidence}
+    baseline=journal.get('research-last-result',{}).get('operating_policy')
+    if not valid_operating(baseline):
+        baseline={'cover_cycles':1,'initial_batch_limit':6,'frontier_min_orders':8,'recheck_seconds':120}
+    facts['current_operating_policy']=baseline
     if config.get('objective_feedback_enabled'):
         operating=journal.get('feedback-last-policy',{})
         facts['operating_feedback']={k:operating.get(k) for k in ('at','regime','facts','peer_trends','objective_targets','patches','reasons','execution_feedback','constraints')}

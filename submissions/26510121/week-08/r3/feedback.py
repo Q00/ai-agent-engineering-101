@@ -14,15 +14,19 @@ from .state import atomic_json, identity
 REVISION = 'objective-feedback-v16-1'
 FILE = 'operating-policy-v16.json'
 LIMITS = {'shop': {'shop_demand_horizon_cycles': (1., 3.), 'shop_inventory_ceiling': (120, 240),
-                    'shop_sku_trend_factors': None,'shop_public_demand_skus':None},
-          'buyer': {'buyer_frontier_category_enabled': (False, True)}}
+                    'shop_sku_trend_factors': None,'shop_public_demand_skus':None,'shop_public_demand_caps':None},
+          'buyer': {'buyer_frontier_category_enabled': (False, True),
+                    'buyer_frontier_min_orders':(4,12),'buyer_frontier_recheck_seconds':(60,300)}}
 
 
 def valid_patch(role, patch):
     if not isinstance(patch, dict) or set(patch)-LIMITS[role].keys():
         return False
     for key, value in patch.items():
-        if key=='shop_public_demand_skus':
+        if key=='shop_public_demand_caps':
+            if not isinstance(value,dict) or len(value)>20 or any(not isinstance(k,str) or not k.startswith('G')
+                or len(k)>64 or type(v) is not int or not 1<=v<=20 for k,v in value.items()):return False
+        elif key=='shop_public_demand_skus':
             if not isinstance(value,list) or len(value)>20 or any(not isinstance(s,str) or not s.startswith('G') or len(s)>64 for s in value):return False
         elif key=='shop_sku_trend_factors':
             if (not isinstance(value,dict) or len(value)>20 or any(not isinstance(sku,str) or not sku.startswith('G') or len(sku)>64
@@ -31,7 +35,7 @@ def valid_patch(role, patch):
             if type(value) is not bool: return False
         elif type(value) not in (int, float) or not math.isfinite(value) or not LIMITS[role][key][0] <= value <= LIMITS[role][key][1]:
             return False
-        elif key == 'shop_inventory_ceiling' and type(value) is not int:
+        elif key in {'shop_inventory_ceiling','buyer_frontier_min_orders','buyer_frontier_recheck_seconds'} and type(value) is not int:
             return False
     return True
 
@@ -40,15 +44,15 @@ def fresh(journal, now):
     rules = journal.get('market_rules', {})
     return bool(rules.get('compatible') and rules.get('buyer_compatible') and rules.get('sha256')
         and 0 <= now-rules.get('at', now) < 7200
-        and 0 <= now-journal.get('board_checked_at', 0) < 180
-        and 0 <= now-journal.get('public_feed_caught_up_at', 0) < 180)
+        and -2 <= now-journal.get('board_checked_at', 0) < 180
+        and -2 <= now-journal.get('public_feed_caught_up_at', 0) < 180)
 
 
-def update(journal, config, now=None):
+def update(journal, config, now=None, force=False):
     if not config.get('objective_feedback_enabled'): return None
     now = time.time() if now is None else now
     previous = journal.snapshot(FILE, {})
-    if 0 <= now-previous.get('at', 0) < 45: return previous
+    if not force and 0 <= now-previous.get('at', 0) < 45: return previous
     board = journal.snapshot('board.json', {})
     market = journal.get('cycle-market-analytics', {})
     rules = journal.get('market_rules', {})
@@ -118,6 +122,9 @@ def update(journal, config, now=None):
                 and issued.get('rules_hash') == rules.get('sha256')
                 and 0 <= now-issued.get('at', 0) < 1200 and now < issued.get('expires_at', 0))
     intents = issued.get('operating_intents', []) if reviewed else []
+    from .research import valid_operating
+    selected=issued.get('operating_policy',{})
+    agent_selected=config.get('agent_policy_selection_enabled') and reviewed and valid_operating(selected)
     patches = {'shop': {}, 'buyer': {}}
     reasons = []
     evidence_ok = fresh(journal, now) and 0 <= now-market.get('at', 0) < 180 and board.get('round') == 3
@@ -125,6 +132,7 @@ def update(journal, config, now=None):
         # Supply failures justify a larger coverage horizon only for SKUs with
         # repeat own paid demand. Candidate economics still reject bad units.
         cycles = min(3., 1.25 + min(1.75, len(blocks)/4))
+        if agent_selected:cycles=selected['cover_cycles']
         if regime == 'shock': cycles = min(cycles, 1.5)
         if 'stock_coverage' in intents:
             patches['shop']['shop_demand_horizon_cycles'] = cycles
@@ -134,18 +142,26 @@ def update(journal, config, now=None):
     if evidence_ok and segments['goods']['closed'] >= 20 and segments['goods']['conversion'] < .3:
         if 'buyer_price_gap' in intents:
             patches['buyer']['buyer_frontier_category_enabled'] = True
+            if agent_selected:
+                patches['buyer'].update(buyer_frontier_min_orders=selected['frontier_min_orders'],
+                    buyer_frontier_recheck_seconds=selected['recheck_seconds'])
         else: reasons.append('buyer_frontier_review_pending')
     if evidence_ok and 'stock_coverage' in intents:
         factors={}
         qualified=[]
+        caps={}
         for sku in market.get('top_skus',[])[:20]:
             n=sku.get('recent60',0);current=sku.get('recent20',0)
             if n>=12:
                 ratio=(current+5)/(max(0,n-current)/2+5)
                 factors[sku['sku']]=round(max(.75,min(1.5,1+(ratio-1)*.5))*20)/20
-            if n>=20 and current>=10 and sku.get('buyers20',0)>=3:qualified.append(sku['sku'])
+            if n>=20 and current>=10 and sku.get('buyers20',0)>=3:
+                qualified.append(sku['sku'])
+                if agent_selected:
+                    caps[sku['sku']]=min(selected['initial_batch_limit'],20 if current>=50 and sku.get('buyers20',0)>=5 else 6)
         if factors:patches['shop']['shop_sku_trend_factors']=factors
         if qualified:patches['shop']['shop_public_demand_skus']=sorted(qualified)
+        if caps:patches['shop']['shop_public_demand_caps']=caps
     if not evidence_ok: reasons.append('facts_stale_or_rules_unverified')
     if journal.get('market_control', {}).get('pause_restock'): reasons.append('fresh_supply_guards_still_required')
     # This semantic ID is stable when the policy is unchanged. Merely observing
@@ -185,6 +201,8 @@ def update(journal, config, now=None):
             'restock_block_reasons': dict(Counter(r.get('reason') for r in blocks)), 'stockouts_60min': len(shortages),
             'buyer_segments_60min': segments, 'technical_attempts_60min': sum(r.get('kind') in ('ReadTimeout','ConnectTimeout','ConnectError') for r in attempts)},
         'peer_trends': trends, 'research_at': issued.get('at'), 'reviewed_intents': intents,
+        'policy_authority':'agent_selected' if agent_selected else 'bounded_baseline',
+        'source_times':{'board':journal.get('board_checked_at'),'feed':journal.get('public_feed_caught_up_at'),'analytics':market.get('at')},
         'objective_targets':{'shop':rank_targets(scoring_board,'shop'),'buyer':rank_targets(scoring_board,'buyer')},
         'execution_feedback': {'main_choices_by_policy': dict(choice_counts), 'buyer_closed_results_by_policy': outcomes,
             'buyer_canonical_mature_results_by_policy':canonical,

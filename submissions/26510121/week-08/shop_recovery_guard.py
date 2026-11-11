@@ -22,7 +22,8 @@ def decide(probe, state, now):
     reason = 'unverified'
     if not probe.get('runtime_matches'):
         return 'stop', dict(state, misses=0), 'runtime_changed'
-    if probe.get('primary_age', 0) < 120:
+    recent_primary=probe.get('primary_age',0)<120
+    if recent_primary and not probe.get('cooperative_recovery'):
         return 'wait', dict(state, misses=0), 'primary_supervisor_recent'
     if not probe.get('verified'):
         return 'wait', dict(state, misses=0), reason
@@ -39,9 +40,11 @@ def decide(probe, state, now):
     state['misses'] = state.get('misses', 0) + 1
     if state['misses'] < 2:
         return 'wait', state, 'confirm_again'
+    if recent_primary and probe.get('unverified_seconds',0)<180:
+        return 'wait',state,'allow_current_address_verification_grace'
     if now - state.get('last_attempt', 0) < 120:
         return 'wait', state, 'repair_cooldown'
-    return 'repair', dict(state, last_attempt=now, misses=0), 'confirmed_own_discovery_failure'
+    return ('request' if recent_primary else 'repair'), dict(state, last_attempt=now, misses=0), 'confirmed_own_discovery_failure'
 
 
 def probe(url, pinned):
@@ -61,6 +64,9 @@ def probe(url, pinned):
     shops = registry.get('shops', [])
     health = read_json(ROOT / '.market/shop-health.json', {})
     primary = health.get('primary_heartbeat_at', health.get('checked_at', 0))
+    grace=health.get('seconds_since_verification_or_grace',health.get('seconds_since_market_verified',0))
+    actual=health.get('seconds_since_market_verified')
+    unverified=min(actual,grace) if type(actual) in (int,float) and type(grace) in (int,float) else grace
     result = {
         'runtime_matches': read_json(ROOT / '.market/runtime.json', {}) == pinned and market_active(),
         'primary_age': time.time() - primary,
@@ -71,11 +77,24 @@ def probe(url, pinned):
         'listed': any(r.get('name') == 'seochanit' and r.get('url', '').rstrip('/') == url for r in shops),
         'shop_alive': own[0].get('alive') if len(own) == 1 else None,
         'active_peers': sum(r.get('name') != 'seochanit' and r.get('alive') is True for r in board.get('shops', [])),
+        'cooperative_recovery':read_json(ROOT/'policy.json',{}).get('cooperative_recovery_enabled',False),
+        'unverified_seconds':unverified if type(unverified) in (int,float) else 0,
     }
     return result
 
 
 def repair(pinned, url):
+    if read_json(ROOT/'policy.json',{}).get('cooperative_recovery_enabled'):
+        try:
+            with lease(ROOT/'.market/discovery-mutation.lock'):
+                return _repair(pinned,url)
+        except RuntimeError as exc:
+            if 'already holds' not in str(exc):raise
+            return {'attempted':False,'reason':'primary_mutation_in_progress'}
+    return _repair(pinned,url)
+
+
+def _repair(pinned, url):
     # Recheck immediately before invoking the existing identity-bound helper.
     if read_json(ROOT / '.market/runtime.json', {}) != pinned or not market_active():
         return {'attempted': False, 'reason': 'runtime_changed'}
@@ -118,6 +137,9 @@ def main():
                        'url': url, 'action': action, 'reason': reason, 'probe': evidence, 'state': state}
                 if action == 'repair':
                     row['repair'] = repair(pinned, url)
+                elif action=='request':
+                    from r3.recovery import request
+                    row['request_id']=request(ROOT/'.market',pinned,url,evidence,now)
                 if action == 'stop':
                     stream.write(json.dumps(row) + '\n'); stream.flush()
                     return

@@ -73,7 +73,7 @@ def prepare(candidates,order,journal,config):
         candidate=paused[0]
         category=candidate.get('evidence',{}).get('category_frontier',{})
         key='frontier-last-probe:'+identity([shop_identity(journal,candidate['shop']),candidate['product'].get('category')])
-        if not category.get('paused') or now-journal.get(key,0)>=120:
+        if not category.get('paused') or now-journal.get(key,0)>=config.get('buyer_frontier_recheck_seconds',120):
             kept=[candidate]
             kept[0].setdefault('evidence',{}).setdefault('contract_route',{})['probe']=True
             if category.get('paused'):journal.put(key,now)
@@ -95,10 +95,11 @@ def category_paused(candidate,order,journal,config,context,now):
                     and 0<=now-r['_ts']<1200 and r.get('ask',0)>r.get('cap',float('inf'))
                     and type(r.get('list_price')) in (int,float) and r['list_price']>0]
     orders={r['order'] for r in rows};skus={r['sku'] for r in rows}
-    if len(orders)<8 or len(skus)<3: return False
+    minimum=max(4,min(12,config.get('buyer_frontier_min_orders',8)))
+    if len(orders)<minimum or len(skus)<3: return False
     term=candidate.get('evidence',{}).get('seller_term_prior',{})
     comparable=[r for r in rows if r.get('grade')==term.get('grade') and r.get('warranty_hours')==term.get('warranty_hours')]
-    if len({r['order'] for r in comparable})<8: return False
+    if len({r['order'] for r in comparable})<minimum: return False
     worst_ratio=min(r['ask']/r['list_price'] for r in comparable)
     improved=candidate['reference_price']/max(1,candidate['product']['list_price'])<worst_ratio*.95
     probe=int(identity([order['order'],owner,category])[:8],16)%100<config.get('buyer_contract_probe_percent',8)

@@ -15,7 +15,7 @@ def poisson_tail(arrivals, quantity):
     return max(0.0,min(1.0,1-cdf))
 
 
-def target_stock(rate, paid, config, public_qualified=False):
+def target_stock(rate, paid, config, public_qualified=False, public_limit=6):
     maximum=min(20,config['restock_max_qty'])
     arrivals=max(0,rate)*config.get('supply_cycle_seconds',1200)/3600
     supported=paid>=3 or public_qualified and config.get('objective_feedback_enabled')
@@ -30,7 +30,7 @@ def target_stock(rate, paid, config, public_qualified=False):
     # Diverse, recent external payments can fund a measured first batch even
     # before our own stock was visible. Public activity alone is capped at six;
     # repeated own paid demand can use all twenty legal units per supply call.
-    return min(maximum,target if paid>=3 else min(6 if supported else 2,target))
+    return min(maximum,target if paid>=3 else min(max(1,min(20,public_limit)) if supported else 2,target))
 
 
 def resale_terms(product,public,journal,config,now):

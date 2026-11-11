@@ -26,6 +26,9 @@ def load_kit():
 def install(kit, journal=None, config=None):
     j = journal or Journal()
     cfg = config or policy()
+    if cfg.get('discovery_priority_enabled') and hasattr(kit,'Proxy'):
+        from .discovery import install as install_discovery
+        install_discovery(kit)
     from .autonomy import BackgroundLane
     analytics_lane = BackgroundLane('market-analysis-v14')
     publication_lane = BackgroundLane('market-publication-v14')

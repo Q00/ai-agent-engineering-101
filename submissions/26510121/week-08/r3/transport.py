@@ -159,6 +159,10 @@ class ShopSupervisor:
         self.last_rotation=self.started-600
         self.verified_checks=0
         self.active_peers=False
+        self.cooperative=read_json(self.directory/'policy.json',{}).get('cooperative_recovery_enabled',False)
+        self.runtime=read_json(self.directory/'.market/runtime.json',{})
+        self.last_request=None;self.last_actual_verified=None
+        self.next_registration=self.started
 
     def snapshot(self, status):
         atomic_json(self.directory / '.market/shop-health.json', {
@@ -168,12 +172,25 @@ class ShopSupervisor:
             'board_offline_checks':self.board_offline_checks,
             'market_board_alive':self.last_board_alive,
             'board_global_outage':self.board_global_outage,
-            'recovery_revision':'v15' if self.recovery_v15 else 'v14',
+            'recovery_revision':'v17' if self.cooperative else 'v15' if self.recovery_v15 else 'v14',
             'verified_checks':self.verified_checks,
-            'seconds_since_market_verified':max(0,time.monotonic()-self.last_verified),
+            'seconds_since_market_verified':(max(0,time.monotonic()-self.last_actual_verified) if self.last_actual_verified is not None else None) if self.cooperative else max(0,time.monotonic()-self.last_verified),
+            'seconds_since_verification_or_grace':max(0,time.monotonic()-self.last_verified),
+            'last_observer_request':self.last_request,
+            'discovery':self.proxy.discovery.summary() if hasattr(self.proxy,'discovery') else None,
             'probe_interval_seconds': 15, 'renewal_seconds': 3300 if self.provider == 'pinggy' else None})
 
     def tick(self, now=None):
+        if not self.cooperative:return self._tick(now)
+        from .lifecycle import lease
+        try:
+            with lease(self.directory/'.market/discovery-mutation.lock'):
+                return self._tick(now)
+        except RuntimeError as exc:
+            if 'already holds' not in str(exc):raise
+            self.snapshot('recovery_mutation_in_progress')
+
+    def _tick(self, now=None):
         now = time.monotonic() if now is None else now
         kit = self.kit
         if self.procs[0].poll() is not None:
@@ -220,7 +237,7 @@ class ShopSupervisor:
                                     matched=(len(own)==1 and (own[0].get('card') or {}).get('url','').rstrip('/')==self.proxy.public)
                                     verified=present and matched and self.last_board_alive is True
                                     self.verified_checks=self.verified_checks+1 if verified else 0
-                                    if verified:self.last_verified=now
+                                    if verified:self.last_verified=now;self.last_actual_verified=now
                                 self.board_offline_checks=self.board_offline_checks+1 if offline else 0
                                 if self.board_offline_checks>=2 and now-self.last_board_rejoin>=120:
                                     self.pending_registration=True
@@ -228,6 +245,17 @@ class ShopSupervisor:
                         except Exception:pass
             except Exception:
                 self.market_visibility='unverified'
+        if self.cooperative:
+            from .recovery import receive
+            req=receive(self.directory/'.market',self.runtime,self.proxy.public,time.time(),self.last_request)
+            if req:
+                self.last_request=req['id']
+                accepted=(healthy and self.active_peers and not self.board_global_outage
+                          and self.market_visibility not in ('market_empty','unverified')
+                          and (self.market_visibility!='present' or self.last_board_alive is False))
+                if accepted:self.pending_registration=True
+                atomic_json(self.directory/'.market/recovery-response.json',{'id':req['id'],'at':time.time(),
+                    'accepted':bool(accepted),'reason':'confirmed_primary_probe' if accepted else 'current_probe_does_not_confirm_failure'})
         expired_soon = self.provider == 'pinggy' and now - self.started >= 3300
         # A market validator timeout while our public card still answers does
         # not establish a broken tunnel. Preserve the reachable address and
@@ -265,17 +293,19 @@ class ShopSupervisor:
             self.last_verified=now  # Bounded discovery grace for the new hostname.
             self.verified_checks=0
             kit.log('[tunnel] replacement ready; shop registration pending at ' + url)
-        if self.pending_registration and self.market_visibility!='market_empty' and not self.board_global_outage:
+        if self.pending_registration and self.market_visibility!='market_empty' and not self.board_global_outage and (not self.cooperative or now>=self.next_registration):
             # A one-shot join must be retried even when the new URL is already healthy.
             try:
                 result = self.market.join('shop', self.args.name, self.keys['shop'], self.proxy.public, tries=1)
             except (Exception, SystemExit) as exc:
                 self.registration_failures+=1
+                if self.cooperative:self.next_registration=now+min(120,15*2**min(3,self.registration_failures-1))
                 kit.log('[market] shop registration pending; retrying in 15 s (' + type(exc).__name__ + ')')
                 self.snapshot('registration_retry')
                 return
             self.pending_registration = False
             self.registration_failures=0
+            if self.cooperative:self.next_registration=now+60
             self.registry_misses=0
             # Join acknowledges identity/URL acceptance, not sustained public
             # discovery. Only independent registry and board probes establish it.

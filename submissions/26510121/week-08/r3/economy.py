@@ -401,7 +401,8 @@ def restock_candidates(inv, catalog, demand, journal, config, now=None):
             paid=growth.get('positive_paid_while_available',0)
             if paid>=3:rate=max(.01,growth.get('paid_arrival_rate_scenario',rate/max(.01,trend))*trend)
             public_qualified=config.get('objective_feedback_enabled') and sku in config.get('shop_public_demand_skus',[])
-            desired=target_stock(rate,paid,config,public_qualified=public_qualified)
+            desired=target_stock(rate,paid,config,public_qualified=public_qualified,
+                public_limit=config.get('shop_public_demand_caps',{}).get(sku,6))
         else:
             desired = max(1, math.ceil(rate * config.get('supply_cycle_seconds', 1200) / 3600 * 1.5))
         needed=desired-count.get(sku,0)
