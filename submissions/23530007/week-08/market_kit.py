@@ -1138,11 +1138,18 @@ def watchdog(a, agent, d, market, keys, procs, proxy, sport, pport, state, every
                     if me is not None and me.get("alive") is False:
                         state["relist_t"] = time.time()
                         log("[market] the board marks this shop dead though the card answers: joining again")
-                        j = market.join("shop", a.name, keys["shop"], proxy.public)
-                        log(f"[market] shop registered again as {j['name']} (same URL)")
+                        try:
+                            j = market.join("shop", a.name, keys["shop"], proxy.public, tries=1)
+                            log(f"[market] shop registered again as {j['name']} (same URL)")
+                        except SystemExit as e:
+                            # the market itself cannot read our card through this quick tunnel ("cannot read an
+                            # agent card at ..."): a new tunnel is the only fix, so fall through to the swap below
+                            log(f"[kit] in-place join refused ({str(e)[:160]}); replacing the tunnel")
+                            misses = 3
+                            ok = False
                 except (Exception, SystemExit) as e:
                     log(f"[kit] relist check: {type(e).__name__}: {e}")
-            misses = 0 if ok else misses + 1
+            misses = 0 if ok else max(misses, misses + 1)
             if misses < 3:
                 continue
             log(f"[tunnel] {proxy.public} stopped answering, opening a new tunnel")
