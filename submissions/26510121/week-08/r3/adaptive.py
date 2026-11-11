@@ -91,6 +91,9 @@ def effective(journal, role, base=None, frozen=None):
     cfg.setdefault('category_weights', {})
     cfg.update(validate(role, selected['patch']))
     cfg['strategy_version'] = selected['version']
+    if role=='shop' and cfg.get('objective_feedback_enabled'):
+        from .feedback import apply
+        cfg=apply(journal,cfg,role)
     return cfg, selected
 
 
@@ -105,6 +108,9 @@ def begin_buyer(journal, order):
     if cfg.get('system_framework_enabled'):
         from .evolution import assign
         cfg.update(assign(journal,order,cfg))
+    if cfg.get('objective_feedback_enabled'):
+        from .feedback import apply
+        cfg=apply(journal,cfg,'buyer',order=order['order'])
     if frozen is None:
         journal.put(key, selected)
         journal.add('buyer_order', {'order': order['order'], 'budget': order['budget'],

@@ -170,6 +170,9 @@ def shop_candidates(unit, inv, catalog, journal, config, *, offer=None, previous
                    'evidence': {'cost': cost, 'hours_left': left if math.isfinite(left) else None,
                                 'clearance': liquidation, 'alternative': 'retain inventory; expiry is a loss'},
                    'recovery_floor': recovery_floor})
+    if config.get('objective_feedback_enabled'):
+        from .quality import augment
+        augment(journal,config,dict(unit,grade=grade(unit,catalog,now)),result,now)
     return result
 
 
@@ -391,11 +394,14 @@ def restock_candidates(inv, catalog, demand, journal, config, now=None):
         growth = merchant.get('skus', {}).get(sku, {})
         rate = (growth.get('arrival_rate_scenario', 0) if merchant else
                 max(own.get(sku, 0), .35 * observed.get('per_seller_per_hour', 0)))
+        trend=config.get('shop_sku_trend_factors',{}).get(sku,1) if config.get('objective_feedback_enabled') else 1
+        rate*=trend
         if velocity:
             from .shop_growth import target_stock
             paid=growth.get('positive_paid_while_available',0)
-            if paid>=3:rate=max(.01,growth.get('paid_arrival_rate_scenario',rate))
-            desired=target_stock(rate,paid,config)
+            if paid>=3:rate=max(.01,growth.get('paid_arrival_rate_scenario',rate/max(.01,trend))*trend)
+            public_qualified=config.get('objective_feedback_enabled') and sku in config.get('shop_public_demand_skus',[])
+            desired=target_stock(rate,paid,config,public_qualified=public_qualified)
         else:
             desired = max(1, math.ceil(rate * config.get('supply_cycle_seconds', 1200) / 3600 * 1.5))
         needed=desired-count.get(sku,0)
@@ -480,6 +486,7 @@ def restock_candidates(inv, catalog, demand, journal, config, now=None):
                                            growth=growth, arrival_rate_scenario=rate,
                                            planning_hours=hours,scenario_unit_cost=cost_ratio*p['list_price'],
                                            resale_price_scenario=price,resale_terms_scenario=terms)
+        if config.get('objective_feedback_enabled'):candidates[-1]['evidence']['trend_factor_scenario']=trend
     from .meta import rank_progress
     board = journal.snapshot('board.json', {})
     if now - journal.get('board_checked_at', 0) > 300:

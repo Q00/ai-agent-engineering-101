@@ -23,9 +23,25 @@ SCHEMA = {'type': 'object', 'additionalProperties': False, 'properties': {
     'buyer_diverse_quotes': {'type': 'boolean'},
     'shop_service_level': {'type': 'number', 'minimum': .85, 'maximum': .95},
     'shop_plan': {'type': 'string', 'enum': ['diversified', 'breadth', 'cautious', 'wait']},
+    'operating_actions': {'type':'array','items':{'type':'string','enum':['stock_coverage','buyer_price_gap']},'maxItems':2},
     'approve_trial': {'type': 'boolean'}}, 'required': [
         'summary','hypotheses','evidence_ids','skills','skill_steps','buyer_probe_percent','buyer_gap_power',
-        'buyer_diverse_quotes','shop_service_level','shop_plan','approve_trial']}
+        'buyer_diverse_quotes','shop_service_level','shop_plan','operating_actions','approve_trial']}
+
+
+def execution_projection(feedback):
+    """Keep totals plus four policy cohorts; full evidence stays in the journal."""
+    result={}
+    choices=feedback.get('main_choices_by_policy',{})
+    result['main_choices_total']=sum(choices.values())
+    result['main_choices_by_policy']=dict(sorted(choices.items(),key=lambda p:p[1],reverse=True)[:4])
+    for name,field in [('buyer_closed_results_by_policy','closed_orders'),
+                       ('shop_paid_results_by_policy','paid'),('buyer_canonical_mature_results_by_policy','mature_paid')]:
+        rows=feedback.get(name,{})
+        result[name]=dict(sorted(rows.items(),key=lambda p:p[1].get(field,0),reverse=True)[:4])
+        result[name+'_total']=sum(r.get(field,0) for r in rows.values())
+    result['note']='Bounded observed cohorts, not causal lift; final quality uses canonical mature outcomes only.'
+    return result
 
 
 def analytics(journal, now=None):
@@ -40,7 +56,7 @@ def analytics(journal, now=None):
     same_owner = {name for name, row in buyers.items() if owner and owner_of(row) == owner}
     same_owner.add('seochanit')
     windows = {str(minutes): {'trades': 0, 'amount': 0} for minutes in (5,20,60,360)}
-    sku_rows, preferences = {}, defaultdict(Counter)
+    sku_rows, preferences, recent_buyers = {}, defaultdict(Counter), defaultdict(set)
     with journal.connect() as db:
         records = db.execute('SELECT id,ts,data FROM events WHERE kind=? AND ts>=? AND ts<=? ORDER BY ts',
                              ('public_settle', now-21600, now)).fetchall()
@@ -56,14 +72,19 @@ def analytics(journal, now=None):
             if now-at <= minutes*60:
                 windows[str(minutes)]['trades'] += 1; windows[str(minutes)]['amount'] += price
         entry = sku_rows.setdefault(sku, {'sku': sku, 'category': product.get('category'), 'trades': 0,
-                                         'recent20': 0, 'amount': 0, 'last_at': at})
-        entry['trades'] += 1; entry['amount'] += price; entry['recent20'] += now-at <= 1200; entry['last_at'] = at
+                                         'recent20': 0, 'recent60': 0, 'amount': 0, 'last_at': at})
+        entry['trades'] += 1; entry['amount'] += price; entry['recent20'] += now-at <= 1200; entry['recent60'] += now-at <= 3600; entry['last_at'] = at
+        if now-at<=1200 and isinstance(row.get('buyer'),str):recent_buyers[sku].add(row['buyer'])
         preferences[str(row.get('buyer', 'unknown'))][product.get('category', 'unknown')] += 1
     peers = {}
     for role in ('shops','buyers'):
         peers[role] = [{k: row.get(k) for k in ('name','all','deals','book','revenue','saved','forum','alive')}
                        for row in sorted(board.get(role,[]), key=lambda r:r.get('all') or 0,reverse=True)[:6]]
-    result = {'at': now, 'windows': windows, 'top_skus': sorted(sku_rows.values(),key=lambda r:r['trades'],reverse=True)[:15],
+    leaders=sorted(sku_rows.values(),key=lambda r:r['trades'],reverse=True)[:10]
+    emerging=sorted(sku_rows.values(),key=lambda r:r['recent20'],reverse=True)[:10]
+    selected={r['sku']:r for r in leaders+emerging}
+    for sku,row in selected.items():row['buyers20']=len(recent_buyers[sku])
+    result = {'at': now, 'windows': windows, 'top_skus': list(selected.values()),
               'buyer_preferences': [{'buyer':name, 'categories':counts.most_common(3), 'observational_only': True}
                                     for name,counts in sorted(preferences.items(),key=lambda p:sum(p[1].values()),reverse=True)[:8]],
               'competitors': peers, 'feed_at': journal.get('public_feed_caught_up_at'),
@@ -83,6 +104,8 @@ def validate(value, evidence):
     return (validate_buyer(patch) and type(value['shop_service_level']) in (int,float)
             and math.isfinite(value['shop_service_level']) and .85 <= value['shop_service_level'] <= .95
             and value['shop_plan'] in ('diversified','breadth','cautious','wait') and type(value['approve_trial']) is bool
+            and isinstance(value['operating_actions'],list) and len(value['operating_actions'])<=2
+            and all(x in ('stock_coverage','buyer_price_gap') for x in value['operating_actions'])
             and isinstance(value['summary'],str) and len(value['summary']) <= 800
             and isinstance(value['hypotheses'],list) and len(value['hypotheses']) <= 4
             and all(isinstance(x,str) and len(x)<=400 for x in value['hypotheses'])
@@ -109,6 +132,13 @@ def call(journal, config, facts, evidence, role, proposal=None, client=None, key
         'Buyer optimizes Saved/forum/deals/posts; their account total is the objective. Supply is about every '
         '20 minutes for 3 minutes; plan before opening. Skills are bounded diagnostic tools. '
         'Return current parameters if no supported change. New parameters are TRIAL PROPOSALS, not promotions. '
+        'When operating_feedback is present, operating_actions are separately reviewed OPERATING INTENTS: '
+        'stock_coverage permits the supplied bounded repeat-demand coverage response; buyer_price_gap permits '
+        'same-owner/category failed-contract routing with recovery probes. These do not relax a price cap or guarantee improvement. '
+        'operating_actions is independent of approve_trial: insufficient mature challenger samples block economic '
+        'promotion, not measurement-based routing responses. Shop transport failures do not block Buyer actions. '
+        'Approve only operating actions justified by the supplied fresh facts; an empty list is valid. '
+        'Inspect Main execution_feedback, peer trends, inventory, supply blocks and regime changes; explain why to act or wait. '
         'Use <=3 short hypotheses and a concise summary. '
         + ('Independently challenge the proposed explanation; approve_trial only if evidence supports a bounded test, '
            'not because the analyst agreed. Check counterexamples, price frontier, maturity and data gaps.'
@@ -192,6 +222,9 @@ def publish(journal, config, facts, analyst, critic, rules_hash, now=None):
               'skill_ids':[t['skill']['id'] for t in tools], 'queued_buyer_profile':profile,
               'trial_review_approved':approved, 'economic_superiority_verified':False,
               'shop_plan_recommendation':critic['shop_plan']}
+    if config.get('objective_feedback_enabled'):
+        packet['operating_intents']=sorted(set(analyst['operating_actions']) & set(critic['operating_actions']))
+        packet['operating_actions_reviewed']=True
     atomic_json(journal.md/'market-research-v15.json',packet)
     journal.put('research-last-result',packet)
     journal.add('market_research_published',packet)
@@ -222,20 +255,38 @@ def update(journal, config, now=None, client=None, key=None):
     previous=journal.get('research-last-attempt',{})
     window=(journal.snapshot('inventory.json',{}).get('restock') or {}).get('opens_at')
     preopen=type(window) in (int,float) and 0<=window-now<=300 and previous.get('window')!=window
+    operating=journal.get('feedback-last-policy',{})
+    operating_state=identity([operating.get('regime'), sorted(operating.get('reasons',[]))]) if config.get('objective_feedback_enabled') else None
+    urgent=operating_state is not None and previous.get('operating_state')!=operating_state
     interval=config.get('research_interval_seconds',1200)
-    if now-previous.get('at',0)<(300 if preopen or previous.get('rules_hash')!=rules['sha256'] else interval):
+    changed_revision=previous.get('execution_revision')!=config.get('execution_revision')
+    if now-previous.get('at',0)<(300 if urgent or preopen or changed_revision or previous.get('rules_hash')!=rules['sha256'] else interval):
         return None
-    journal.put('research-last-attempt',{'at':now,'window':window if preopen else previous.get('window'),'rules_hash':rules['sha256']})
+    journal.put('research-last-attempt',{'at':now,'window':window if preopen else previous.get('window'),'rules_hash':rules['sha256'],
+                                      'execution_revision':config.get('execution_revision'),'operating_state':operating_state})
     plan=journal.snapshot('shop-plan-v15.json',{})
     control=journal.get('market_control',{})
     framework=journal.get('framework-plan',{})
     evidence=['rules:'+rules['sha256'],'ledger:'+str(market.get('ledger_seq')),'kv:framework-plan','kv:market_control','kv:cycle-meta-state','snapshot:shop-plan-v15.json']
     facts={'market':market,'control':{k:control.get(k) for k in ('status','reasons','leader_gap','suggestions')},
-           'framework':{k:framework.get(k) for k in ('issues','evaluation')},
+           'framework':{k:framework.get(k) for k in ('issues','evaluation','segments')},
            'supply_plan':{k:plan.get(k) for k in ('window','phase','selected','options')},
            'parameters':{k:config.get(k) for k in ('buyer_contract_probe_percent','shop_stock_service_level')},
            'meta':journal.get('cycle-meta-state',{}),
            'evidence_ids':evidence}
+    if config.get('objective_feedback_enabled'):
+        operating=journal.get('feedback-last-policy',{})
+        facts['operating_feedback']={k:operating.get(k) for k in ('at','regime','facts','peer_trends','objective_targets','patches','reasons','execution_feedback','constraints')}
+        facts['operating_feedback']['execution_feedback']=execution_projection(operating.get('execution_feedback',{}))
+        facts['quality_holdout']=journal.get('quality-holdout-summary',{})
+        arena=journal.get('framework-arena',{})
+        facts['profile_dispatch']={k:arena.get(k) for k in ('champion','challenger','since','active','challenger_percent')}
+        from .evolution import PROFILES
+        from .strategy_lab import profiles
+        facts['profile_dispatch']['catalog']=dict(PROFILES,**profiles(journal))
+        facts['parameters'].update({k:config.get(k) for k in ('buyer_contract_gap_power','buyer_contract_diverse_quotes',
+            'shop_inventory_ceiling','shop_demand_horizon_cycles')})
+        evidence.extend(['kv:feedback-last-policy','kv:quality-holdout-summary'])
     try:
         analyst=call(journal,config,facts,evidence,'analyst',client=client,key=key)
         critic=call(journal,config,facts,evidence,'critic',proposal=analyst,client=client,key=key)

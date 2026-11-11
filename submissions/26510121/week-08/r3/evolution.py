@@ -21,14 +21,16 @@ def assign(journal,order,config):
     if frozen is None:
         arena=journal.get('framework-arena',{})
         profile=arena.get('champion','contract_frontier');arm='champion'
-        if order.get('kind')=='goods' and arena.get('active') and int(identity(order['order'])[:8],16)%100<10:
+        fraction=arena.get('challenger_percent',10) if config.get('objective_feedback_enabled') else 10
+        fraction=max(10,min(30,fraction))
+        if order.get('kind')=='goods' and arena.get('active') and int(identity(order['order'])[:8],16)%100<fraction:
             profile=arena.get('challenger','coverage_probe');arm='challenger'
         if profile not in available:profile='contract_frontier'
         board=journal.snapshot('board.json',{})
         own=next((r for r in board.get('buyers',[]) if r.get('name')=='seochanit'),{})
         frozen={'order':order['order'],'kind':order.get('kind'),'profile':profile,'arm':arm,
                 'experiment':arena.get('experiment'),'revision':REVISION,'saved_at_assignment':own.get('saved',0),
-                'rules_sha256':journal.get('market_rules',{}).get('sha256')}
+                'rules_sha256':journal.get('market_rules',{}).get('sha256'), 'challenger_percent':fraction}
         if profile not in PROFILES:
             frozen['profile_patch']=available[profile]
         journal.put(key,frozen);journal.add('framework_order',frozen,eid=key,role='buyer')
@@ -56,7 +58,7 @@ def evaluate(journal,arena,now):
     results={r['order']:r for r in journal.events('market_result',10000)}
     outcomes=latest(journal);stats={}
     for arm in ('champion','challenger'):
-        rewards=[];durations=[];npaid=0;pending=0
+        rewards=[];durations=[];weights=[];npaid=0;pending=0
         for row in assignments:
             if row['arm']!=arm:continue
             oid=row['order'];result=results.get(oid)
@@ -69,20 +71,24 @@ def evaluate(journal,arena,now):
                 reward=outcome.get('saved_contribution',0)-row.get('saved_at_assignment',0);npaid+=1
             rewards.append(reward)
             durations.append(max(1,result['_ts']-row['_ts'])+15)
-        n=len(rewards);avg=statistics.mean(rewards) if n else 0
-        se=math.sqrt(statistics.variance(rewards)/n) if n>1 else 1
+            p=max(.1,min(.3,row.get('challenger_percent',10)/100))
+            weights.append(1/(p if arm=='challenger' else 1-p))
+        n=len(rewards);total=sum(weights);effective=total**2/sum(w*w for w in weights) if weights else 0
+        avg=sum(w*r for w,r in zip(weights,rewards))/total if total else 0
+        seconds=sum(w*d for w,d in zip(weights,durations))/total if total else None
+        se=math.sqrt(sum(w*w*(r-avg)**2 for w,r in zip(weights,rewards))/total**2*effective/(effective-1)) if effective>1 else 1
         stats[arm]={'closed':n,'paid':npaid,'pending':pending,'reward':avg,'standard_error':se,
-                    'seconds':statistics.mean(durations) if durations else None,
-                    'score_per_second':avg/statistics.mean(durations) if durations else 0}
+                    'effective_samples':effective,'seconds':seconds,
+                    'score_per_second':avg/seconds if seconds else 0}
     a,b=stats['champion'],stats['challenger']
-    ready=min(a['closed'],b['closed'])>=50 and min(a['paid'],b['paid'])>=20
+    ready=min(a['closed'],b['closed'])>=50 and min(a['effective_samples'],b['effective_samples'])>=49.999 and min(a['paid'],b['paid'])>=20
     better=ready and b['reward']-1.96*b['standard_error']>a['reward']+1.96*a['standard_error'] and b['score_per_second']>a['score_per_second']
     faster=ready and b['seconds']<=a['seconds']*1.2
     from .risk import wilson
     worse=min(a['closed'],b['closed'])>=50 and (wilson(b['paid'],b['closed'])<wilson(a['paid'],a['closed'],False) or
         ready and b['reward']+1.96*b['standard_error']<a['reward']-1.96*a['standard_error'])
     return {'at':now,'stats':stats,'ready':ready,'promote':bool(better and faster),'rollback':bool(worse),
-            'note':'Saved uplift over assignment baseline; completed 6h+10m cohorts, minimum samples and latency guard.'}
+            'note':'Saved uplift over assignment baseline; inverse assignment propensity weighting; completed 6h+10m cohorts, minimum effective samples and latency guard.'}
 
 
 def update(journal,config,now=None):
@@ -105,6 +111,11 @@ def update(journal,config,now=None):
             arena['challenger']=next_candidate(journal,arena['champion'],arena.get('challenger'))
         journal.add('framework_experiment',dict(arena,action='restarted_after_cooldown'),role='buyer')
     evaluation=evaluate(journal,arena,now)
+    if config.get('objective_feedback_enabled') and arena.get('active'):
+        challenger=evaluation.get('stats',{}).get('challenger',{})
+        # Increase future randomized exposure, not the confidence of sparse
+        # evidence. Already assigned orders and mature promotion gates persist.
+        arena=dict(arena,challenger_percent=30 if challenger.get('closed',0)>=50 and challenger.get('paid',0)<20 else 10)
     if arena.get('active') and evaluation['promote']:
         alternatives=[name for name in PROFILES if name not in (arena['champion'],arena['challenger'])]
         if config.get('market_cycle_enabled'):

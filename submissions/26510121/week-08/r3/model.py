@@ -80,6 +80,11 @@ class Chooser:
                 return (candidate.get('objective_utility',0)/seconds,candidate.get('score',0)/seconds)
             return (candidate.get('objective_utility', 0), candidate.get('score', 0))
         best = max(candidates, key=utility)
+        def finish(selected):
+            if self.config.get('objective_feedback_enabled'):
+                from .feedback import record_choice
+                record_choice(self.j,self.config,role,decision_id,selected,context)
+            return selected
         context = dict(context, objective='maximize Shop ALL + Buyer ALL; score each component by its current rule',
                        next_rank_thresholds=rank_targets(board, role),
                        numerical_recommendation=best['id'],
@@ -105,6 +110,9 @@ class Chooser:
                 context['market_research']=advice
                 self.j.add('research_main_feedback',{'role':role,'research_at':advice['at'],
                     'operation':context.get('operation'),'candidates':len(candidates)},role=role)
+        if self.config.get('objective_feedback_enabled'):
+            from .feedback import context as feedback_context
+            context['operating_policy']=feedback_context(self.j,self.config)
         diagnosis=self.j.get('market_control',{})
         if 0<=time.time()-diagnosis.get('at',0)<900:
             context['market_state']={k:diagnosis.get(k) for k in
@@ -120,7 +128,7 @@ class Chooser:
             self.j.add('decision',{'decision':decision_id,'chosen':best['id'],'mode':'fast_buyer_saved'},role=role)
             self.j.add('buyer_saved_execution',{'decision':decision_id,'chosen':best['id'],
                 'operation':context.get('operation'),'seconds':time.monotonic()-started},role=role)
-            return best
+            return finish(best)
         if (role=='shop' and context.get('shop_execution') and
                 self.config.get('shop_fast_execution_enabled') and (not critical or bounded_restock)):
             self.j.add('decision',{'decision':decision_id,'chosen':best['id'],
@@ -128,11 +136,11 @@ class Chooser:
             self.j.add('shop_fast_execution',{'decision':decision_id,'chosen':best['id'],
                 'operation':context.get('operation','quote'),'seconds':time.monotonic()-started,
                 'bounded_restock':bounded_restock},role=role)
-            return best
+            return finish(best)
         if os.environ.get("R3_MODEL_MODE") == "offline" or len(candidates) == 1:
             self.j.add("decision", {"decision": decision_id, "chosen": best["id"],
                                     "mode": 'explicit_offline' if os.environ.get('R3_MODEL_MODE') == 'offline' else 'single_feasible'}, role=role)
-            return best
+            return finish(best)
         try:
             selected = self._call(role + "_actor", candidates, context, deadline=deadline)
             if critical and (deadline is None or deadline - time.time() > 8):
@@ -148,11 +156,11 @@ class Chooser:
                            'chosen': best['id'], 'reason': 'below numerical objective floor'}, role=role)
                 selected = best
             self.j.add("decision", {"decision": decision_id, "chosen": selected["id"], "mode": "model"}, role=role)
-            return selected
+            return finish(selected)
         except ModelError as exc:
             self.j.add("decision", {"decision": decision_id, "chosen": best["id"], "mode": "numeric_fallback",
                                     "error": str(exc)}, role=role)
-            return best
+            return finish(best)
 
     def _call(self, role, candidates, context, *, critic=False, deadline=None):
         cfg = self.config

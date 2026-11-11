@@ -29,7 +29,8 @@ def fixture(tmp_path):
 def opinion(evidence):
     return {'summary':'Use bounded experiments; keep checkout guards.', 'hypotheses':['Demand may have shifted.'],
         'evidence_ids':evidence[:2],'skills':['stock_coverage'],'skill_steps':['measure','diagnose','propose','validate_facts'], 'buyer_probe_percent':12,'buyer_gap_power':2,
-        'buyer_diverse_quotes':True,'shop_service_level':.95,'shop_plan':'diversified','approve_trial':True}
+        'buyer_diverse_quotes':True,'shop_service_level':.95,'shop_plan':'diversified',
+        'operating_actions':['stock_coverage','buyer_price_gap'],'approve_trial':True}
 
 
 def test_plan_prepared_while_closed_then_consumed_only_in_correct_window(tmp_path):

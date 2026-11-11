@@ -62,15 +62,20 @@ class MarketCycle:
         from .prewindow import prepare
         from .research import analytics
         started=time.monotonic()
-        update(self.j,self.cfg)
-        cfg,strategy=effective(self.j,'shop',base=self.cfg)
-        prepare(self.j,cfg,strategy)
         now=time.time()
         if now-self.last_analysis>=60:
             analytics(self.j,now);self.last_analysis=now
+            if self.cfg.get('objective_feedback_enabled'):
+                from .quality import update as quality_update
+                from .feedback import update as feedback_update
+                quality_update(self.j,self.cfg,now)
+                feedback_update(self.j,self.cfg,now)
             self.meta(now)
             from .usage import report
             report(self.j,self.cfg,now)
+        update(self.j,self.cfg)
+        cfg,strategy=effective(self.j,'shop',base=self.cfg)
+        prepare(self.j,cfg,strategy)
         self.j.put('cycle-last-preparation',{'at':time.time(),'seconds':time.monotonic()-started})
 
     def meta(self,now):
@@ -88,6 +93,11 @@ class MarketCycle:
                  'skills_executed':state.get('executed_skills',0),'research_at':research.get('at'),
                  'next_actions':['retain_mature_gates','prepare_before_window','research_new_bounded_profiles'],
                  'promotion_authority':'mature_evaluators_only'}
+        if self.cfg.get('objective_feedback_enabled'):
+            feedback=self.j.get('feedback-last-policy',{})
+            summary['operating_policy']={k:feedback.get(k) for k in ('id','at','status','regime','patches','reasons','execution_feedback')}
+            summary['next_actions']=[{'issue':reason,'action':'restore_or_refresh_facts' if 'stale' in reason or 'guards' in reason else 'independent_research_review'} for reason in feedback.get('reasons',[])]
+            summary['quality_holdout']=self.j.get('quality-holdout-summary',{})
         self.j.put('cycle-meta-state',summary);self.j.add('cycle_meta_evaluation',summary)
 
     def tick(self,now=None):

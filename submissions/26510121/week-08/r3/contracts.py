@@ -34,7 +34,12 @@ def history(journal,now=None):
         if 0<=now-at<=3600:
             key=(shop_identity(journal,p.get('shop','')),p.get('sku'),p.get('kind'))
             paid[key]=max(paid.get(key,0),at)
-    result={'groups':{key:list(rows.values()) for key,rows in groups.items()},'paid':paid,'now':now}
+    category_groups=defaultdict(list)
+    for key,values in groups.items():
+        for row in values.values():
+            if row.get('category'):category_groups[(key[0],row['category'])].append(row)
+    result={'groups':{key:list(rows.values()) for key,rows in groups.items()},'paid':paid,'now':now,
+            'category_groups':dict(category_groups)}
     if len(_HISTORY)>16:_HISTORY.clear()
     _HISTORY[cache_key]=result
     return result
@@ -48,7 +53,10 @@ def prepare(candidates,order,journal,config):
         key=(shop_identity(journal,candidate['shop']),candidate['sku'],'goods')
         rows=[r for r in context['groups'].get(key,[]) if r.get('class') in ('price','contract')]
         rows.sort(key=lambda r:r['_ts'],reverse=True)
-        if not rows:kept.append(candidate);continue
+        if not rows:
+            if not category_paused(candidate,order,journal,config,context,now): kept.append(candidate)
+            else: paused.append(candidate)
+            continue
         recent=[r for r in rows if r.get('signature')==rows[0].get('signature')]
         burst=len(recent)>=3 and recent[0]['_ts']-recent[2]['_ts']<=600
         seconds=min(3600,600*2**min(2,max(0,len(recent)//3-1)))
@@ -57,10 +65,18 @@ def prepare(candidates,order,journal,config):
         candidate['evidence']['contract_route']={'failed_orders':len(recent),'paused':blocked,'probe':probe,
             'until':recent[0]['_ts']+seconds if blocked else None,'stable_identity':key[0]}
         if blocked and not probe:paused.append(candidate)
+        elif category_paused(candidate,order,journal,config,context,now):paused.append(candidate)
         else:kept.append(candidate)
     if not kept and paused:
-        # One bounded recovery probe, never bypass a certificate or safe cap.
-        kept=[paused[0]];kept[0]['evidence']['contract_route']['probe']=True
+        # Category-wide rejection cannot justify retrying every sibling SKU on
+        # every order. Retain a timed recovery probe, even if all paths paused.
+        candidate=paused[0]
+        category=candidate.get('evidence',{}).get('category_frontier',{})
+        key='frontier-last-probe:'+identity([shop_identity(journal,candidate['shop']),candidate['product'].get('category')])
+        if not category.get('paused') or now-journal.get(key,0)>=120:
+            kept=[candidate]
+            kept[0].setdefault('evidence',{}).setdefault('contract_route',{})['probe']=True
+            if category.get('paused'):journal.put(key,now)
     if config.get('buyer_contract_diverse_quotes'):
         unique=[];repeated=[];seen=set()
         for candidate in kept:
@@ -69,6 +85,34 @@ def prepare(candidates,order,journal,config):
         kept=unique+repeated
     if paused:journal.add('buyer_contract_pause',{'order':order['order'],'paused':len(paused),'kept':len(kept)},role='buyer')
     return kept
+
+
+def category_paused(candidate,order,journal,config,context,now):
+    if not config.get('buyer_frontier_category_enabled'): return False
+    owner=shop_identity(journal,candidate['shop']);category=candidate['product'].get('category')
+    if not category: return False
+    rows=[r for r in context.get('category_groups',{}).get((owner,category),[]) if r.get('kind')=='goods' and r.get('class')=='price'
+                    and 0<=now-r['_ts']<1200 and r.get('ask',0)>r.get('cap',float('inf'))
+                    and type(r.get('list_price')) in (int,float) and r['list_price']>0]
+    orders={r['order'] for r in rows};skus={r['sku'] for r in rows}
+    if len(orders)<8 or len(skus)<3: return False
+    term=candidate.get('evidence',{}).get('seller_term_prior',{})
+    comparable=[r for r in rows if r.get('grade')==term.get('grade') and r.get('warranty_hours')==term.get('warranty_hours')]
+    if len({r['order'] for r in comparable})<8: return False
+    worst_ratio=min(r['ask']/r['list_price'] for r in comparable)
+    improved=candidate['reference_price']/max(1,candidate['product']['list_price'])<worst_ratio*.95
+    probe=int(identity([order['order'],owner,category])[:8],16)%100<config.get('buyer_contract_probe_percent',8)
+    blocked=not improved and not probe
+    # Actual paid recovery, including a sibling SKU, invalidates category-wide
+    # negative evidence. Only term-comparable explicit refusals qualify above.
+    last=max(r['_ts'] for r in comparable)
+    for key,at in context['paid'].items():
+        if key[0]==owner and key[2]=='goods' and at>=last:
+            blocked=False
+    candidate['evidence']['category_frontier']={'paused':blocked,'failed_orders':len(orders),'distinct_skus':len(skus),
+        'probe':probe,'public_terms_improved':improved,'stable_identity':owner,
+        'source':'same owner/category/grade/warranty; explicit above-cap no-agreement; 20 minutes'}
+    return blocked
 
 
 def observe(journal,order,candidate,terms,assessment,ask):
@@ -106,5 +150,6 @@ def failed(journal,order,candidate,reason,task=None):
     else:return  # Outages, local deadlines and unknown payments are not price evidence.
     row={'order':order['order'],'kind':'goods','shop':candidate['shop'],
          'shop_identity':shop_identity(journal,candidate['shop']),'sku':candidate['sku'],
+         'category':candidate['product'].get('category'),'list_price':candidate['product'].get('list_price'),
          'task':task,'class':category,'reason':reason,**contract}
     journal.add('buyer_contract_result',row,eid='contract-result:'+identity([order['order'],row['shop_identity'],candidate['sku']]),role='buyer')

@@ -32,14 +32,18 @@ def main():
         kinds=['market_research_published','market_research_deferred','research_skill_execution','research_strategy_queued',
                'research_main_feedback','buyer_prepared_published','buyer_prepared_used','shop_plan_prepared','shop_prepared_plan_used',
                'cycle_supervisor_error','cycle_supply_error','buyer_worker_error','shop_settled','purchase','model_usage']
+        if cfg.get('objective_feedback_enabled'):
+            kinds+=['feedback_policy_created','feedback_main_choice','quality_holdout_evaluation']
         counts={kind:db.execute('SELECT count(*) FROM events WHERE kind=? AND ts>=?',(kind,runtime.get('started_at',now))).fetchone()[0] for kind in kinds}
         models=[json.loads(raw) for raw, in db.execute('SELECT data FROM events WHERE kind=? AND ts>=?',('model_usage',runtime.get('started_at',now)))]
         heartbeat=kv('cycle-heartbeat');meta=kv('cycle-meta-state');last_research=kv('research-last-result')
         stats=kv('cycle-last-preparation')
+        operating=kv('feedback-last-policy');quality=kv('quality-holdout-summary')
     try:
         with lease(ROOT/'.market/shop-recovery-guard.lock'):guard_active=False
     except RuntimeError:guard_active=True
-    promotion=sorted((ROOT/'logs').glob('v15-source-promotion-*.json'))[-1]
+    release='v16' if cfg.get('objective_feedback_enabled') else 'v15'
+    promotion=sorted((ROOT/'logs').glob(release+'-source-promotion-*.json'))[-1]
     manifest=read_json(promotion,{})
     mismatches=[r['path'] for r in manifest['files'] if hashlib.sha256((ROOT/r['path']).read_bytes()).hexdigest()!=r['candidate_sha256']]
     report={'at_utc':datetime.now(timezone.utc).isoformat(),'runtime':runtime,'url':url,
@@ -47,12 +51,15 @@ def main():
             'listed':listed,'online':online,'own':{role:{k:r.get(k) for k in ('alive','all','book','saved','deals','forum')} for role,r in own.items()},
             'source_mismatches':mismatches,'counts_since_restart':counts,'cycle_heartbeat':heartbeat,'last_preparation':stats,
             'meta':meta,'last_research':last_research,'model_usage':[{'role':r.get('role'),'model':r.get('model'),'usage':r.get('usage'),'estimated_usd':r.get('estimated_usd')} for r in models],
+            'operating_policy':{k:operating.get(k) for k in ('at','id','status','regime','patches','reasons','execution_feedback')},
+            'quality_holdout':quality,
+            'market_status_verified':all(r.get('status')==200 for r in results[2:]),
             'independent_recovery_guard_active':guard_active,'primary_recovery':health,
             'cost_cap_usd':cfg.get('daily_api_budget_usd'),'budget_mode':cfg.get('research_budget_mode'),
             'daily_usage':read_json(ROOT/'.market/model-usage-daily.json',{}),
             'limits':['Short observations are not causal economic improvement or a first-place guarantee.',
                       'A registry/board snapshot is not sustained availability proof.']}
-    path=ROOT/'logs'/('v15-live-verification-'+datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')+'.json')
+    path=ROOT/'logs'/(release+'-live-verification-'+datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')+'.json')
     path.open('x',encoding='utf-8').write(json.dumps(report,ensure_ascii=False,indent=2))
     print('SOURCE',path)
     print(json.dumps({k:v for k,v in report.items() if k not in ('limits','daily_usage','meta','last_research')},ensure_ascii=True,indent=2))

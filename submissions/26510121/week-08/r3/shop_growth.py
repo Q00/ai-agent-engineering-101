@@ -15,16 +15,22 @@ def poisson_tail(arrivals, quantity):
     return max(0.0,min(1.0,1-cdf))
 
 
-def target_stock(rate, paid, config):
+def target_stock(rate, paid, config, public_qualified=False):
     maximum=min(20,config['restock_max_qty'])
     arrivals=max(0,rate)*config.get('supply_cycle_seconds',1200)/3600
+    supported=paid>=3 or public_qualified and config.get('objective_feedback_enabled')
+    if supported and config.get('objective_feedback_enabled'):
+        arrivals*=max(1,min(3 if paid>=3 else 2,config.get('shop_demand_horizon_cycles',1)))
     # Proven repeat demand can use the legal 20-unit lot capacity. A raw
     # request or peer announcement alone never qualifies as paid evidence.
-    service=config.get('shop_stock_service_level',.9) if paid>=3 else .65
+    service=config.get('shop_stock_service_level',.9) if paid>=3 else .8 if supported else .65
     target=1
     while target<maximum and poisson_tail(arrivals,target+1)>1-service:
         target+=1
-    return min(maximum,target if paid>=3 else min(2,target))
+    # Diverse, recent external payments can fund a measured first batch even
+    # before our own stock was visible. Public activity alone is capped at six;
+    # repeated own paid demand can use all twenty legal units per supply call.
+    return min(maximum,target if paid>=3 else min(6 if supported else 2,target))
 
 
 def resale_terms(product,public,journal,config,now):
