@@ -55,6 +55,7 @@ NOTES_CHARS = 2_000
 # Heartbeat while an experiment runs. 1200 since 11-11 (성수님: 20분마다 시장을 보고 전략을 잡아야 함); it was 3600,
 # and with experiments always running the operator woke hourly and mostly waited.
 BUSY_INTERVAL_S = 1200
+ASK_TIMEOUT_S = 120  # per model call; about twice the slowest answered call
 REV_WEIGHT_MAX = 0.2
 COMPACT_SCHEMA = """한 단계에 JSON 객체 하나로만 답함. 둘 중 하나:
 1. 도구 호출 (한 번에 3개까지): {"tools": [{"tool": "<도구 이름>", "args": {<인자>}}], "keep": "<바로 앞 관찰에서 남길 결론, 300자 안>"}
@@ -317,7 +318,15 @@ class Operator:
     def _ask(self, prompt, route):
         # A2_OPERATOR_EFFORT (11-10, 성수님 결정: 사용량 절감) overrides the harness route's effort when set
         effort = os.environ.get("A2_OPERATOR_EFFORT") or route.get("effort", "medium")
-        return self.terra.complete(prompt, agent="operator", timeout_s=route.get("timeout_s", 300), effort=effort)
+        # A hung CLI call, not slow thinking, is what times out: 5 of 7,870 calls in 72 h ran the full 300 s while
+        # the slowest answered one took 64 s. So wait ASK_TIMEOUT_S and ask once more instead of losing the wake.
+        timeout_s = min(route.get("timeout_s", 300), ASK_TIMEOUT_S)
+        try:
+            return self.terra.complete(prompt, agent="operator", timeout_s=timeout_s, effort=effort)
+        except ModelError as e:
+            if str(e) != "timeout":
+                raise
+            return self.terra.complete(prompt, agent="operator", timeout_s=timeout_s, effort=effort)
 
     def wake(self, reason, now=None):
         """One wake: tool loop until done or max_steps. -> summary dict (also written as an operator_wake row)."""

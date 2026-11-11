@@ -220,3 +220,22 @@ def test_stockouts_reads_sku_from_request_text(tmp_path):
         f.write("\n".join(json.dumps(r) for r in rows) + "\n")
     out = tools.stockouts(root, hours=1, now=1000.0)
     assert "거절 3건" in out and "요청 1건" in out and "식품>과일: 2건" in out and "짧아 거절 1건" in out and "재고 1개" in out
+
+
+def test_ask_retries_once_after_a_timeout(o):
+    from kernel.llm import ModelError
+
+    class Flaky:
+        def __init__(self, fails):
+            self.fails, self.timeouts = fails, []
+
+        def complete(self, prompt, *, agent, timeout_s, effort="medium"):
+            self.timeouts.append(timeout_s)
+            if len(self.timeouts) <= self.fails:
+                raise ModelError("timeout")
+            return '{"done": {"note": "ok"}}'
+
+    o.terra = Flaky(1)
+    assert o.wake("주기 점검", NOW)["status"] == "done" and o.terra.timeouts == [op.ASK_TIMEOUT_S] * 2
+    o.terra = Flaky(2)
+    assert o.wake("주기 점검", NOW + 1)["status"] == "model_error" and len(o.terra.timeouts) == 2
