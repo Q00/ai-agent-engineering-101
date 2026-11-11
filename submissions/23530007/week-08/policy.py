@@ -225,7 +225,16 @@ def buyer_params():
         regime = "STEADY"
     if trades:
         note("buyer", regime, sig)
-    return regime, merged(cfg, "buyer", regime), sig
+    p = merged(cfg, "buyer", regime)
+    # 11-11: guards.py may override a buyer knob for a few hours (e.g. goods_delta after a break spike); the
+    # strategist's own settings stay untouched underneath
+    try:
+        for k, v in (read_json(HERE / ".market" / "guard_overrides.json", {}) or {}).items():
+            if isinstance(v, dict) and v.get("until", 0) > t and k in p:
+                p[k] = v["value"]
+    except Exception:
+        pass
+    return regime, p, sig
 
 
 if __name__ == "__main__":

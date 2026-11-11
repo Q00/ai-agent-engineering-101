@@ -498,6 +498,10 @@ def run(force=False):
     if wake:
         BUYER_WAKE.unlink(missing_ok=True)
         log(f"woken early by a guard: {json.dumps(wake, ensure_ascii=False)[:300]}")
+    guard = shop.read(HERE / ".market" / "guard_state.json", {})     # 11-11: guards.py
+    if not force and not wake and guard.get("budget_block_until", 0) > time.time():
+        log("slot skipped: G10 budget block (guard wakes still run)")
+        return
     mem.d["slot"] = slot if slot is not None else mem.d.get("slot")
     mem.d["t"] = time.time()
     mem.d.setdefault("working", {})["woken_by"] = wake
@@ -620,6 +624,13 @@ def run(force=False):
             log(f"dropped unknown knob {knob!r}")
             continue
         new = round(min(hi, max(lo, cur - steps[knob], min(cur + steps[knob], value))), 3)
+        now_ = time.time()                                             # 11-11: guards.py freezes
+        if (guard.get("frozen") or {}).get(knob, 0) > now_:
+            log(f"dropped {knob}: frozen by G6 until {time.strftime('%H:%M', time.gmtime(guard['frozen'][knob]))} UTC")
+            continue
+        if guard.get("freeze_all_until", 0) > now_ or (knob.endswith("_share") and guard.get("freeze_shares_until", 0) > now_):
+            log(f"dropped {knob}: moves frozen by a guard (G3 collapse / G1 reconcile)")
+            continue
         log(f"[{mode}] {knob} {key or ''} {cur:g} -> {new:g} (asked {value:g}) | {str(mv.get('why'))[:200]} "
             f"| predicts {pred['metric']} {pred.get('category', '')} {pred['op']} {pred['value']} | uses {mv.get('uses')}")
         applied = mode == "apply"

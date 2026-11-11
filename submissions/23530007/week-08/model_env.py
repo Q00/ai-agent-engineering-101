@@ -144,7 +144,7 @@ def alert_user(role, items, min_gap=1800):
     fresh = [x for x in items if x[:120] not in sent]
     if not fresh or now - st.get("last", {}).get(role, 0) < min_gap:
         return []
-    name = {"shop": "상점 에이전트", "buyer": "구매 에이전트", "curator": "큐레이터", "ops": "운영"}.get(role, role)
+    name = {"shop": "상점 에이전트", "buyer": "구매 에이전트", "curator": "큐레이터", "ops": "운영", "guard": "가드"}.get(role, role)
     subprocess.run([sys.executable, str(Path(__file__).resolve().parent / "notify.py"),
                     f"[yms979] {name} 경보", "\n\n".join(fresh)], capture_output=True, text=True)
     for x in fresh:
