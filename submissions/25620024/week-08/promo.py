@@ -253,6 +253,22 @@ def quote(c, unit, code=None, me=None, now=None, stock_n=1, vip=False):
         hold = int(cost * (1 - 0.01 * days)) + 1
         if hold > floor:
             floor, why = hold, why + [f"hold floor {hold}"]
+    nm = unit.get("name") or ""
+    if t.get("mattress_sell_vs_hold") and t.get("round_end") and unit.get("kind") == "goods" and "매트리스" in nm \
+            and "커버" not in nm and not over:
+        # owner 11-11: a mattress bought above its grade's market median sat at cost x 1.12 (G07ec17d5: ask 229k vs
+        # median 195k, 1 sale in 3 h while the market sold 56). Sell near the market only when that beats holding:
+        # Book after selling = market - cost; after holding to the end = - cost x 1% x days left (storage).
+        gmed = median or market_model.market_price(c, unit["sku"], grade=unit.get("grade"))[0]
+        if gmed and cost > gmed:
+            days = max(0.0, (t["round_end"] - time.time()) / 86400)
+            hold = int(cost * (1 - 0.01 * days)) + 1
+            target = int(gmed * (1 - t.get("mattress_undercut", 0.02)))
+            if target >= hold:
+                floor, price = target, min(price, int(gmed))
+                why = why + [f"mattress sell>hold: market {target} >= hold {hold}"]
+            else:
+                why = why + [f"mattress hold>sell: market {target} < hold {hold}"]
     price = max(int(price), floor)
     least = max(int(price * (1 - t["haggle_room"])), floor)
     return {"price": price, "least": least, "arm": arm if isinstance(arm, str) else f"{arm:.2f}", "floor": floor,
