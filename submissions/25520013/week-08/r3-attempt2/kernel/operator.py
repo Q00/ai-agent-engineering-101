@@ -57,6 +57,15 @@ NOTES_CHARS = 2_000
 BUSY_INTERVAL_S = 1200
 OBS_BUDGET = 14_000  # chars of tool results shown per step: newest in full, older ones cut to OBS_TRIM
 OBS_TRIM = 1_000
+TOOL_ERR = ("도구 오류", "인자 오류", "도구 없음", "만든 도구 없음", "기억 없음", "operator는")  # how a failed tool answers
+
+
+def obs_facts(obs):
+    """What the tool row keeps of an observation for the audit: its first line and whether the tool failed."""
+    head = " ".join(str(obs).split())[:120]
+    return {"obs_head": head, "err": True} if head.startswith(TOOL_ERR) else {"obs_head": head}
+
+
 ASK_TIMEOUT_S = 120  # per model call; about twice the slowest answered call
 REV_WEIGHT_MAX = 0.2
 COMPACT_SCHEMA = """한 단계에 JSON 객체 하나로만 답함. 둘 중 하나:
@@ -295,7 +304,7 @@ class Operator:
             except Exception as e:
                 obs = f"도구 오류: {type(e).__name__}: {e}"
             obs = c.cap(c.mask(str(obs), self.secrets), tools.MAX_CHARS)
-            self.traj.append("operator", "tool", name=name, obs_chars=len(obs),
+            self.traj.append("operator", "tool", name=name, obs_chars=len(obs), **obs_facts(obs),
                              args=c.mask(json.dumps(args, ensure_ascii=False, default=str)[:2000], self.secrets))
             return obs
         if name in HARNESS_TOOLS:
@@ -314,6 +323,7 @@ class Operator:
             name=name,
             args=c.mask(json.dumps(shown, ensure_ascii=False, default=str)[:2000], self.secrets),
             obs_chars=len(obs),
+            **obs_facts(obs),
         )
         return obs
 

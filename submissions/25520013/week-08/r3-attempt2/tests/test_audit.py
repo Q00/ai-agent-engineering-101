@@ -111,6 +111,8 @@ def test_counts_repeats_tools_and_edits(tmp_path):
         "obs_chars_mean": 100,
         "obs_chars_max": 100,
         "repeats": 1,
+        "errors": 0,
+        "last_error": "",
     }
     assert rep["tools"]["sales"]["obs_chars_mean"] == 300
     assert rep["repeat_calls"] == 1
@@ -415,6 +417,8 @@ def test_tool_table(tmp_path):
         "wakes": 1,
         "obs_chars_mean": 100,
         "repeats": 1,
+        "errors": 0,
+        "last_error": "",
         "listed": True,
     }
     assert t[2]["listed"] is False and t[3] == {
@@ -423,6 +427,8 @@ def test_tool_table(tmp_path):
         "wakes": 0,
         "obs_chars_mean": 0,
         "repeats": 0,
+        "errors": 0,
+        "last_error": "",
         "listed": True,
     }
 
@@ -444,3 +450,28 @@ def test_deterministic(tmp_path):
 def test_head_shows_hours(tmp_path, hours):
     out = audit.lines(_root(tmp_path, [wake(NOW - 0.5 * H)]), NOW, hours=hours)
     assert out[0].startswith(f"[감사] 최근 {hours}시간 점검 1회")
+
+
+def test_tool_errors_are_counted_and_cached_rows_do_not_skew_obs(tmp_path):
+    import json as _j
+    import os as _o
+
+    from kernel import audit as _a
+    from kernel.operator import obs_facts
+
+    assert obs_facts("도구 오류: TypeError: x").get("err") and "err" not in obs_facts("기억 operator 3건\n- a")
+    root = str(tmp_path)
+    _o.makedirs(_o.path.join(root, "a2"))
+    rows = [
+        {"ts": 100.0, "agent": "operator", "kind": "tool", "name": "recall", "args": "{}", "obs_chars": 65, "err": True, "obs_head": "도구 오류: TypeError: call() got multiple values"},
+        {"ts": 101.0, "agent": "operator", "kind": "tool", "name": "policy", "args": "{}", "obs_chars": 7000, "obs_head": "편집 가능 키"},
+        {"ts": 102.0, "agent": "operator", "kind": "tool", "name": "policy", "args": "{}", "obs_chars": 0, "cached": True},
+        {"ts": 103.0, "agent": "operator", "kind": "operator_wake", "status": "done", "result": {"calls": 3, "prompt_chars": 9}},
+    ]
+    with open(_o.path.join(root, "a2/trajectory.jsonl"), "w") as f:
+        f.write("\n".join(_j.dumps(r) for r in rows) + "\n")
+    rep = _a.report(root, 200.0, hours=1)
+    assert rep["tool_errors"] == 1 and rep["tools"]["recall"]["errors"] == 1
+    assert rep["tools"]["policy"]["obs_chars_mean"] == 7000 and rep["tools"]["policy"]["repeats"] == 1
+    assert "도구가 오류로 답한 호출 1회, 최다 recall" in _a.lines(root, 200.0, hours=1)[1]
+    assert [r for r in _a.tool_table(root, 200.0, hours=1) if r["name"] == "recall"][0]["last_error"].startswith("도구 오류")

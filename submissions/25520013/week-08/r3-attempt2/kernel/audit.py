@@ -73,9 +73,9 @@ def _wakes(root):
                 if isinstance(r.get("args"), str)
                 else json.dumps(r.get("args"), sort_keys=True, default=str)
             )
-            tools.append(
-                (name, args, r.get("obs_chars") if _num(r.get("obs_chars")) else None)
-            )
+            oc = r.get("obs_chars") if _num(r.get("obs_chars")) and not r.get("cached") else None
+            err = str(r.get("obs_head") or "오류")[:80] if r.get("err") is True else None
+            tools.append((name, args, oc, err))
         elif kind == "operator_wake":
             wakes.append(dict(r, _tools=tools))
             tools = []
@@ -134,7 +134,7 @@ def report(root, now, hours=24, since=None, listed=None):
     tools, obs = {}, {}
     for w in wakes:
         seen = {}
-        for name, args, oc in w["_tools"]:
+        for name, args, oc, err in w["_tools"]:
             t = tools.setdefault(
                 name,
                 {
@@ -143,9 +143,14 @@ def report(root, now, hours=24, since=None, listed=None):
                     "obs_chars_mean": 0,
                     "obs_chars_max": 0,
                     "repeats": 0,
+                    "errors": 0,
+                    "last_error": "",
                 },
             )
             t["uses"] += 1
+            if err:
+                t["errors"] += 1
+                t["last_error"] = err
             if not any(k[0] == name for k in seen):
                 t["wakes"] += 1
             if (name, args) in seen:
@@ -236,6 +241,7 @@ def report(root, now, hours=24, since=None, listed=None):
         + sum(1 for w in in_win if w.get("status") == "crash"),
         "tools": dict(sorted(tools.items())),
         "repeat_calls": sum(t["repeats"] for t in tools.values()),
+        "tool_errors": sum(t["errors"] for t in tools.values()),
         "unused_tools": sorted(listed - set(tools)),
         "edits": edits,
         "experiments": exps,
@@ -298,6 +304,13 @@ def lines(root, now, hours=24, listed=None):
         found.append(
             f"정책 수정 {ed['asked']}건 중 {ed['refused']}건 거절됨, 최다 사유 '{reason}' {k}건임"
         )
+    if rep.get("tool_errors"):  # a failing tool is the kernel's fault or a wrong call: either way it must be seen
+        name, t = sorted(rep["tools"].items(), key=lambda x: (-x[1]["errors"], x[0]))[0]
+        found.insert(
+            0,
+            f"도구가 오류로 답한 호출 {rep['tool_errors']}회, 최다 {name} {t['errors']}회: '{t['last_error'][:60]}'. "
+            "인자를 고쳐 부르거나 다른 도구를 쓰고, 계속되면 notes에 적음",
+        )
     if rep["repeat_calls"]:
         name, t = sorted(rep["tools"].items(), key=lambda x: (-x[1]["repeats"], x[0]))[
             0
@@ -344,6 +357,8 @@ def tool_table(root, now, hours=24, listed=None):
                 "wakes": t.get("wakes", 0),
                 "obs_chars_mean": t.get("obs_chars_mean", 0),
                 "repeats": t.get("repeats", 0),
+                "errors": t.get("errors", 0),
+                "last_error": t.get("last_error", ""),
                 "listed": name in shown,
             }
         )

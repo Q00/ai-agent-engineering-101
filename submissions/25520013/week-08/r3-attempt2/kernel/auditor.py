@@ -364,13 +364,13 @@ def _tool_block(root, now, listed, ts):
         for n in ts["hidden"]
         if n not in names
     ]
-    out = ["이름 | 쓴 횟수 | 쓴 점검 | 관찰 평균 글자 | 반복 | 목록 | 운영자가 만듦"]
+    out = ["이름 | 쓴 횟수 | 쓴 점검 | 관찰 평균 글자 | 반복 | 오류 답 | 목록 | 운영자가 만듦"]
     for r in rows:
         n = r.get("name")
         state = (
             "숨김" if n in ts["hidden"] else "보임" if r.get("listed") else "목록 밖"
         )
-        line = f"{n} | {r.get('uses', 0)} | {r.get('wakes', 0)} | {r.get('obs_chars_mean', 0)} | {r.get('repeats', 0)} | {state}"
+        line = f"{n} | {r.get('uses', 0)} | {r.get('wakes', 0)} | {r.get('obs_chars_mean', 0)} | {r.get('repeats', 0)} | {r.get('errors', 0)}{(' (' + str(r.get('last_error'))[:60] + ')') if r.get('errors') else ''} | {state}"
         line += (
             f" | 예: {' '.join(str(made[n]).split())[:DESC_CHARS]}"
             if n in made
