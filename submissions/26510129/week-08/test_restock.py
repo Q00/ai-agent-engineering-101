@@ -128,6 +128,16 @@ class RestockMemoryTest(unittest.TestCase):
         self.assertEqual(["sofa"], report["skipped_slow"])
         self.assertEqual(["S1"], [b["sku"] for b in restock.plan(inv, catalog, demand, [], {}, stats, {}, {"home>sofa": {"opens": 25, "deals": 15, "close_rate": 0.6}})])
 
+    def test_a_sku_the_whole_market_is_buying_is_left_alone(self):
+        catalog = {"S1": {"category": "c>a", "kind": "goods", "list_price": 100_000},
+                   "S2": {"category": "c>a", "kind": "goods", "list_price": 100_000}}
+        demand = [{"category": "c>a"}]
+        stats = {"skus": {}, "categories": {}, "supplied_1h": {"S1": 60, "S2": 5}}   # patch 3.4: S1's cost is climbing
+        report = {}
+        buys = restock.plan({"balance": 5_000_000, "units": []}, catalog, demand, [], {}, stats, report)
+        self.assertEqual("S2", buys[0]["sku"])
+        self.assertEqual([{"sku": "S1", "crowded": 60}], report["skipped_below_cost"])
+
     def test_forum_requires_ledger_reference(self):
         forum = [{"text": "kimchi wanted", "refs": []}, {"text": "kimchi bought", "refs": [10]}]
         self.assertEqual(restock.forum_scores(forum, ["food>kimchi"])["food>kimchi"], 1)

@@ -145,10 +145,11 @@ def price_plan(unit, task, now=None, params=None, market=None, pressure=None, ho
     if market_price and regime != "slow":
         floor = max(floor, min(market_price * 0.96, cap))   # never above what the grade is worth
     # underwater: the market now pays less than this unit cost (11-06 18:00: sofas bought at 1.74M while the
-    # category's settles fell to 1.66M, 25 opens -> 4 deals). After six hours in stock the floor follows the market
-    # (93% of it): a few percent lost now beats storage for days and the dump at the close.
+    # category's settles fell to 1.66M, 25 opens -> 4 deals). The ask follows the market, but since Round 3 patch
+    # 3.4 ranks the shop by Book (unsold stock counts at cost) the floor is the cost itself: a unit sold under cost
+    # is a loss on the book, a unit held is not (storage at 1% a day is the only drain).
     if market_price and unit.get("kind") == "goods" and days * 24 >= 1 and cost * 1.03 > market_price * 0.97:
-        target, floor, regime = min(target, market_price * 0.97), min(floor, market_price * 0.93), "underwater"
+        target, floor, regime = min(target, market_price * 0.97), min(floor, cost), "underwater"
     hours_left = None
 
     if unit.get("kind") == "food" and unit.get("expires_at"):
@@ -159,15 +160,11 @@ def price_plan(unit, task, now=None, params=None, market=None, pressure=None, ho
             target, floor = min(target, cost * 0.90), cost * 0.60
         elif hours_left <= 6:
             target, floor = min(target, cost * 1.02), cost * 0.85
-    # the round's close: stock is worth nothing afterwards, so the last day sells down, the last 12 h sell under
-    # cost, and the last 3 h take anything above one credit (round_clock)
-    if hours_to_end is not None:
-        if hours_to_end < round_clock.LAST_HOURS:
-            target, floor, regime = min(target, cost * 0.6), 1, "last-hours"
-        elif hours_to_end < round_clock.DUMP_HOURS:
-            target, floor, regime = min(target, cost * 0.9), cost * 0.6, "dump"
-        elif hours_to_end < round_clock.SELL_DOWN_HOURS:
-            target, floor, regime = min(target, (market_price or cost * 1.05) * 0.95), cost * 0.9, "sell-down"
+    # the round's close (round_clock). Until patch 3.4 stock was worth nothing after the close and the last hours
+    # dumped it; the Book now counts unsold stock at cost, so the last day only lowers the ask to the market and
+    # the floor to the cost itself - thin margins close, nothing sells at a loss.
+    if hours_to_end is not None and hours_to_end < round_clock.SELL_DOWN_HOURS:
+        target, floor, regime = min(target, (market_price or cost * 1.05) * 0.95), min(floor, cost), "sell-down"
     floor = max(1, int(round(floor)))
     ask = max(floor, int(round(target)))
     return {"arm": arm, "ask": ask, "floor": floor, "cost": cost, "list_price": list_price,

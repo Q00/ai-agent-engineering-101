@@ -29,10 +29,12 @@ EXPECTED_COST_RATIO = 0.60   # supply cost as a share of list price, averaged ov
 # median lot 10k) while the market's revenue was sofas at 1.7M and mattresses at 300k (the top shop: lots of 1M, 180M
 # bought in 2.3 h). The caps now scale with capital, categories are weighed by settled revenue, and the SKU is the one
 # nearest the price the category actually settles at, as long as one unit stays a small share of the balance.
-STOCK_SHARE = 0.40           # stock at cost may not exceed this share of capital (balance + stock at cost).
-                             # 11-06: 60% (80% of what was bought in 5 h had sold). 11-10: the board's profit is the
-                             # balance alone - four days took the book from 43M to 63M but 17M of it sat in stock and
-                             # profit moved 18M -> 20M; stock is worth nothing at the close, so cash is kept higher.
+STOCK_SHARE = 0.55           # stock at cost may not exceed this share of capital (balance + stock at cost).
+                             # 11-06: 60%. 11-10: 40% because the board's profit was cash alone. 11-11: Round 3 patch
+                             # 3.4 ranks the shop by Book = balance - start + unsold stock at cost, so stock is capital
+                             # again; 55% keeps room for storage fees and food that spoils.
+CROWDED_SKU_UNITS = 40       # patch 3.4: a SKU supplied over 50 units market-wide in an hour costs 0.2% more a unit,
+                             # up to 50%; a SKU already past 40 is left to the crowd
 EXPLORE_STOCK_SHARE = 0.10   # of capital: below this, categories with no evidence may still be tried (one lot each)
 RUN_SPEND_SHARE = 0.40       # of the balance, per run
 UNIT_COST_SHARE = 0.20       # one unit's expected cost may not exceed this share of capital (balance + stock at cost);
@@ -98,7 +100,11 @@ def sellable_choice(choices, category, stats, skipped):
     """The first SKU the market does not pay less than its expected cost for. Supply draws A 70% at 55-75% of list,
     B 20% at 40-60%, C 10% at 25-45%: about 0.59 on average. A SKU whose settled price sits under that is a loss
     before storage; it is recorded in `skipped` so the log shows why it was not bought."""
+    crowded = stats.get("supplied_1h") or {}
     for sku, row in choices:
+        if crowded.get(sku, 0) > CROWDED_SKU_UNITS:
+            skipped.append({"sku": sku, "crowded": crowded[sku]})
+            continue
         price, n, _ = ledger.market_price(stats, sku, category, row.get("list_price"))
         expected_cost = (row.get("list_price") or 0) * EXPECTED_COST_RATIO
         if price is not None and price < expected_cost:

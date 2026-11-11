@@ -66,6 +66,13 @@ class LedgerTest(unittest.TestCase):
             Path(d, ledger.STATS_FILE).write_text(json.dumps({"settles": 7}))
             self.assertEqual(7, ledger.refresh(d, CATALOG, now=NOW)["settles"])
 
+    def test_supplies_counts_the_last_hour_per_sku(self):
+        entries = [{"kind": "supply", "ts": NOW - 100, "data": {"sku": "S1", "qty": 20}},
+                   {"kind": "supply", "ts": NOW - 200, "data": {"sku": "S1", "qty": 35}},
+                   {"kind": "supply", "ts": NOW - 7200, "data": {"sku": "S1", "qty": 99}},   # two hours ago
+                   {"kind": "settle", "ts": NOW - 10, "data": {"sku": "S1", "amount": 1}}]
+        self.assertEqual({"S1": 55}, ledger.supplies(entries, now=NOW))
+
     def test_stats_file_round_trip(self):
         with tempfile.TemporaryDirectory() as d:
             self.assertEqual({}, ledger.load_stats(d))

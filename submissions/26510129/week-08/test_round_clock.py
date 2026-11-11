@@ -39,17 +39,14 @@ class RoundClockTest(unittest.TestCase):
         self.assertEqual(["S1"], [b["sku"] for b in restock.plan(inv, catalog, demand, [], {}, stats, report, closes)])
         self.assertEqual(["juice"], report["skipped_small_margin"])      # 8k x (0.8 - 0.6) = 1.6k a unit: not worth topping up
 
-    def test_seller_sells_down_dumps_and_then_takes_anything(self):
+    def test_seller_sells_down_to_cost_but_never_below_it_at_the_close(self):
         unit = {"sku": "G1", "kind": "goods", "cost": 1000, "list_price": 2000, "grade": "A", "expires_at": None}
         p = {"seller_volume_share": 1.0, "seller_markup": 1.0}
         normal = seller_r3.price_plan(unit, "t", params=p, market=(1500.0, 5, "sku"), hours_to_end=100)
         self.assertEqual((1500, 1440, "even"), (normal["ask"], normal["floor"], normal["regime"]))
-        down = seller_r3.price_plan(unit, "t", params=p, market=(1500.0, 5, "sku"), hours_to_end=20)
-        self.assertEqual((1425, 900, "sell-down"), (down["ask"], down["floor"], down["regime"]))
-        dump = seller_r3.price_plan(unit, "t", params=p, market=(1500.0, 5, "sku"), hours_to_end=10)
-        self.assertEqual((900, 600, "dump"), (dump["ask"], dump["floor"], dump["regime"]))
-        last = seller_r3.price_plan(unit, "t", params=p, market=(1500.0, 5, "sku"), hours_to_end=2)
-        self.assertEqual((600, 1, "last-hours"), (last["ask"], last["floor"], last["regime"]))
+        for hours in (20, 10, 2):   # patch 3.4: unsold stock keeps its cost on the Book, so the floor is the cost
+            down = seller_r3.price_plan(unit, "t", params=p, market=(1500.0, 5, "sku"), hours_to_end=hours)
+            self.assertEqual((1425, 1000, "sell-down"), (down["ask"], down["floor"], down["regime"]), hours)
 
     def test_slow_category_prices_on_the_volume_arm_even_on_the_margin_arm(self):
         unit = {"sku": "G1", "kind": "goods", "cost": 1000, "list_price": 2000, "grade": "A", "expires_at": None}

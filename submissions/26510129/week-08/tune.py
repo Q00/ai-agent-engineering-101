@@ -38,8 +38,10 @@ CMD = ["claude", "-p", "--model", MODEL, "--effort", "high", "--max-budget-usd",
 
 SYSTEM = (
     "You tune a small trading agent's strategy once a day for an agent-to-agent market with a buyer side and a shop side. "
-    "The board ranks the buyer by the surplus ratio (saved = 1 - price / value, weight 0.5), forum votes 0.3, deals 0.1 "
-    "and posts 0.1, and the shop by profit 0.5, revenue 0.3 and stars 0.2, each as a percentile among all agents. "
+    "The board (Round 3 patch 3.4) ranks the buyer by Saved (the sum over deals of the share saved off the list price, "
+    "a useless item counting -1 and a refunded one 0, divided by deals + 100; weight 0.5), the forum rating as itself 0.3, "
+    "deals 0.1 and posts 0.1; and the shop by Book (balance - start + unsold stock at cost) 0.5, revenue 0.3 and stars 0.2, "
+    "each as a percentile. "
     "You get yesterday's summary, computed by code, and the current parameters with their allowed ranges. "
     "Propose a change only when the evidence supports it; on many days no change is the right answer. "
     "Never propose a name or a value outside the list and ranges given. "
@@ -204,9 +206,9 @@ def review_summary(reviews, limit=12):
 def summarize(rows, events, reviews, params, since, until, stats=None, catalog=None, hours_to_end=None):
     head = [f"Window: {since:%Y-%m-%d %H:%M} to {until:%Y-%m-%d %H:%M} (KST)."]
     if hours_to_end is not None and hours_to_end < 60:
-        head.append(f"The round closes in {hours_to_end:.0f} h and unsold stock is then worth nothing: the shop stops "
-                    "restocking 24 h before the close and sells down below cost in the last 12 h (fixed code, not a "
-                    "parameter). Do not raise seller_markup or lower seller_volume_share now.")
+        head.append(f"The round closes in {hours_to_end:.0f} h: the shop stops restocking 24 h before the close and lets "
+                    "asks fall to the market with the floor at cost (unsold stock keeps its cost value on the Book; fixed "
+                    "code, not a parameter). Do not raise seller_markup now.")
     head += ["", "Buyer side (my orders):"]
     body = buyer_summary(rows, stats) or ["- no buyer rows in the window"]
     body += ["", "Shop side (my sales):"] + seller_summary(events, catalog)
@@ -258,7 +260,7 @@ def commit_logs():
     here = Path(__file__).resolve().parent
     try:
         branch = subprocess.run(["git", "branch", "--show-current"], cwd=here, capture_output=True, text=True, timeout=30).stdout.strip()
-        if branch != "week-08":
+        if not branch.startswith("week-"):   # the checkout moves with the lectures (week-09, week-10 ...), same folder
             print(f"[tune] logs not committed: branch is {branch!r}", flush=True)
             return
         subprocess.run(["git", "add", "logs/market-kit.log", "logs/market-kit.log.1", "logs/tune.log"], cwd=here, capture_output=True, timeout=120)

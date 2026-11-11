@@ -71,7 +71,7 @@ class Round3InventorySellerTest(unittest.TestCase):
                 "supplied_at": now - 8 * 3600}
         p = {"seller_volume_share": 1.0, "seller_markup": 1.0}
         plan = seller_r3.price_plan(unit, "t", now, params=p, market=(1_660_000.0, 50, "sku"))
-        self.assertEqual(("underwater", 1_610_200, 1_543_800), (plan["regime"], plan["ask"], plan["floor"]))   # 0.97x, 0.93x market
+        self.assertEqual(("underwater", 1_740_000, 1_740_000), (plan["regime"], plan["ask"], plan["floor"]))   # ask 0.97x market but never under cost
         fresh = seller_r3.price_plan(dict(unit, supplied_at=now - 1800), "t", now, params=p, market=(1_660_000.0, 50, "sku"))
         self.assertEqual(1_792_200, fresh["floor"])                                   # half an hour old: cost x 1.03 still
 

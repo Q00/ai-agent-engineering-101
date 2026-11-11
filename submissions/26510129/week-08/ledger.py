@@ -33,6 +33,20 @@ def fetch(after=-500, timeout=10):
     return body if isinstance(body, list) else (body.get("entries") or body.get("ledger") or [])
 
 
+def supplies(entries, now=None, hours=1):
+    """Market-wide supply in the last hour per SKU: {sku: units}. Round 3 patch 3.4: once a SKU has been supplied
+    more than 50 units market-wide in an hour, its cost rises 0.2% a unit, up to 50%; a crowded SKU is a dear one."""
+    now = now or time.time()
+    since = now - hours * 3600
+    out = {}
+    for e in entries or []:
+        if e.get("kind") == "supply" and (e.get("ts") or 0) >= since:
+            d = e.get("data") or {}
+            if d.get("sku"):
+                out[d["sku"]] = out.get(d["sku"], 0) + int(d.get("qty") or 1)
+    return out
+
+
 def settles(entries, now=None, hours=WINDOW_HOURS):
     """Normalize settled deals to {sku, price, shop, buyer, ts}.
 
@@ -92,6 +106,7 @@ def refresh(state_dir, catalog, now=None, max_pages=MAX_PAGES):
     state = Path(state_dir)
     cache = load_json(state / CACHE_FILE) or {"last_seq": None, "rows": []}
     rows, after, pages = list(cache.get("rows") or []), cache.get("last_seq") or -FIRST_FETCH, 0
+    supply = list(cache.get("supply") or [])   # [{sku, qty, ts}] of the last hour
     try:
         while pages < max_pages:
             page = fetch(after)
@@ -99,12 +114,18 @@ def refresh(state_dir, catalog, now=None, max_pages=MAX_PAGES):
             if not page:
                 break
             rows += settles(page, now)
+            supply += [{"sku": e["data"]["sku"], "qty": int(e["data"].get("qty") or 1), "ts": e.get("ts") or 0}
+                       for e in page if e.get("kind") == "supply" and (e.get("data") or {}).get("sku")]
             after = page[-1]["seq"]
             if len(page) < 500:
                 break
         rows = [r for r in rows if r["ts"] >= now - WINDOW_HOURS * 3600]
-        (state / CACHE_FILE).write_text(json.dumps({"last_seq": after, "rows": rows}, ensure_ascii=False), encoding="utf-8")
+        supply = [s for s in supply if s["ts"] >= now - 3600]
+        (state / CACHE_FILE).write_text(json.dumps({"last_seq": after, "rows": rows, "supply": supply}, ensure_ascii=False), encoding="utf-8")
         result = stats(rows, catalog, now)
+        result["supplied_1h"] = {}
+        for s in supply:
+            result["supplied_1h"][s["sku"]] = result["supplied_1h"].get(s["sku"], 0) + s["qty"]
         (state / STATS_FILE).write_text(json.dumps(result, ensure_ascii=False, indent=1), encoding="utf-8")
         return result
     except Exception as e:   # market down, no network, odd body: keep the previous stats
