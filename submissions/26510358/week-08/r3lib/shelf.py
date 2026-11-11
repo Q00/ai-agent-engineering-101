@@ -18,8 +18,9 @@ Stars: reviews are written at the deal, so a later break does not move them (4 d
 reviews, A 4.52). The guard reads that number each time: SHELF_MIN_REVIEWS reviews of the grade under
 SHELF_MIN_STARS and the grade is not pushed.
 
-The shop reads Memory meta `shelf` ({sku: {grade, until}}) in find_unit (live()). An entry lives SHELF_TTL_H and is
-then judged again on what it sold.
+The shop reads Memory meta `shelf` ({sku: {grade, since, until}}) in find_unit (live()). An entry lives SHELF_TTL_H
+and is then judged again; q counts only the sales made before the run started (`since`), so a push goes on while
+the grade would not clear where it stood, and ends when the units, the market or the stars no longer carry it.
 """
 import statistics
 import time
@@ -50,8 +51,8 @@ def shown_first(us, mem):
 
 
 def _facts(mem, sku, now):
-    """(market price ratios by grade over SHELF_MARKET_H, our sales by grade and our close rate on the SKU over
-    24 h)."""
+    """(market price ratios by grade over SHELF_MARKET_H, the times of our sales by grade and our close rate on the
+    SKU over 24 h)."""
     mine = sorted(mem.my_shop_urls() | set(config.MY_NAMES))
     since = now - 24 * 3600
     market = {}
@@ -59,9 +60,10 @@ def _facts(mem, sku, now):
         for r in c.execute("SELECT grade, amount * 1.0 / list_price FROM settles WHERE sku=? AND ts>? AND "
                            "list_price>0 AND amount>0", (sku, now - config.SHELF_MARKET_H * 3600)):
             market.setdefault(r[0], []).append(r[1])
-        ours = {r[0]: r[1] for r in c.execute(
-            f"SELECT grade, COUNT(*) FROM settles WHERE sku=? AND ts>? AND shop IN ({','.join('?' * len(mine))}) "
-            "GROUP BY grade", (sku, since, *mine))}
+        ours = {}
+        for r in c.execute(f"SELECT grade, ts FROM settles WHERE sku=? AND ts>? AND shop IN "
+                           f"({','.join('?' * len(mine))})", (sku, since, *mine)):
+            ours.setdefault(r[0], []).append(r[1])
         n, deals = c.execute("SELECT COUNT(*), SUM(outcome='deal') FROM negotiations WHERE role='shop' AND sku=? "
                              "AND ts>?", (sku, since)).fetchone()
     return market, ours, ((deals or 0) / n if n else config.SHELF_DEFAULT_CLOSE)
@@ -73,7 +75,8 @@ def tick(mem, units, now=None, board=_LOAD, log=True):
     now = now or time.time()
     board = score_model.load() if board is _LOAD else board
     days_left = max(0.0, config.hours_left_in_round(now)) / 24
-    state = {s: m for s, m in (mem.get("shelf") or {}).items() if m.get("until", 0) > now}
+    # Entries stay a day past their end: a grade pushed again goes on from `since`, the start of its run.
+    state = {s: m for s, m in (mem.get("shelf") or {}).items() if now - m.get("until", 0) < 24 * 3600}
     by = {}
     for u in units:
         if u.get("kind") == "goods" and u.get("grade") in ("A", "B", "C") and not u.get("legacy"):
@@ -84,7 +87,8 @@ def tick(mem, units, now=None, board=_LOAD, log=True):
         grades = {}
         for u in us:
             grades.setdefault(u["grade"], []).append(u)
-        if sku in state or len(grades) < 2:
+        prev = state.get(sku) or {}
+        if prev.get("until", 0) > now or len(grades) < 2:
             continue
         first = shown_first(us, mem)
         facts = best = None
@@ -101,7 +105,10 @@ def tick(mem, units, now=None, board=_LOAD, log=True):
                 continue                              # no market for the grade, or it pays under our floor
             price = int(statistics.median(ratios) * u["list_price"])
             p = sum(r * u["list_price"] >= floor for r in ratios) / len(ratios)
-            sold = ours.get(g, 0)
+            # Our own pace where the grade stands: sales made while it was pushed do not count (2026-11-11: 7 C
+            # couches sold in the first 2 h window read as "sells out in time" and the push stopped with 29 left).
+            since = prev.get("since") if prev.get("grade") == g else None
+            sold = sum(1 for t in ours.get(g) or [] if since is None or t < since)
             q = min(1.0, sold * days_left / len(gs))
             if q >= 1:
                 continue                              # it sells out in time where it is: nothing to judge
@@ -110,7 +117,8 @@ def tick(mem, units, now=None, board=_LOAD, log=True):
             shown = market.get(first.get("grade")) or []
             shown_price = statistics.median(shown) * first["list_price"] if shown else first["cost"]
             C = close * max(0.0, at(shown_price, first["cost"]))
-            cand = {"grade": g, "p": p, "B": B, "C": C, "held": len(gs), "waiting": len(old), "sold_24h": sold,
+            cand = {"grade": g, "p": p, "B": B, "C": C, "held": len(gs), "waiting": len(old),
+                    "sold_24h": len(ours.get(g) or []), "sold_unpushed": sold, "pushed_since": since,
                     "market_deals": len(ratios), "price": price, "floor": floor, "cost": u["cost"],
                     "sell_through": round(q, 3), "shown_first": first.get("grade"), "close_rate": round(close, 3)}
             if best is None or p * B - (1 - p) * C > best["p"] * best["B"] - (1 - best["p"]) * best["C"]:
@@ -129,6 +137,7 @@ def tick(mem, units, now=None, board=_LOAD, log=True):
         rows.append(row)
         if row["decision"] == "act":
             state[sku] = {"grade": best["grade"], "ts": round(now), "held": best["held"],
+                          "since": best["pushed_since"] or round(now),
                           "until": round(now + config.SHELF_TTL_H * 3600)}
     mem.put("shelf", state)
     return rows

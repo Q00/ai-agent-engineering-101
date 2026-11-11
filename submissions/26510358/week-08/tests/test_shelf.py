@@ -65,6 +65,23 @@ def test_a_grade_the_market_buys_and_we_never_sell_is_shown_first(tmp_path, monk
     assert shelf.live(m, now + config.SHELF_TTL_H * 3600 + 1) == {}
 
 
+def test_what_a_push_sold_does_not_end_it_while_the_grade_would_not_clear_where_it_stood(tmp_path, monkeypatch):
+    m, now = setup(tmp_path, monkeypatch)
+    units = stock(now, A=2, B=6, C=12)
+    shelf.tick(m, units, now=now, board=None)
+    later = now + config.SHELF_TTL_H * 3600 + 60
+    with m.db() as c:                                           # 7 C sold inside the window: 7 x 6.4 days > 12 held
+        for i in range(7):
+            c.execute("INSERT INTO settles (seq, ts, shop, sku, category, kind, list_price, amount, grade) VALUES "
+                      "(?,?,?,?,?,?,?,?,?)", (1000 + i, now + 600 + i, OURS, SKU, "가구>침대", "goods", LIST,
+                                              int(LIST * 0.5), "C"))
+    r = shelf.tick(m, units, now=later, board=None)[0]
+    assert (r["decision"], r["sold_24h"], r["sold_unpushed"], r["pushed_since"]) == ("act", 7, 0, round(now))
+    assert m.get("shelf")[SKU]["since"] == round(now) and shelf.live(m, later) == {SKU: "C"}
+    fresh, now2 = setup(tmp_path / "fresh", monkeypatch, ours={"A": 5, "B": 5, "C": 7})        # the same 7, unpushed
+    assert shelf.tick(fresh, stock(now2, A=2, B=6, C=12), now=now2, board=None) == []
+
+
 def test_a_grade_that_sells_out_in_time_at_our_own_pace_stays_where_it_is(tmp_path, monkeypatch):
     m, now = setup(tmp_path, monkeypatch, ours={"A": 5, "B": 5, "C": 10})
     assert shelf.tick(m, stock(now, A=2, B=6, C=12), now=now, board=None) == [] and shelf.live(m, now) == {}

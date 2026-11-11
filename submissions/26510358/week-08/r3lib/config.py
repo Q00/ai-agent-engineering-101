@@ -152,7 +152,7 @@ MARKDOWN_MAX_CUT = 0.20             # a markdown never cuts the regular first as
 BANDIT_ASK_ENABLED = True           # L1: the shop's first ask x one of ASK_ARMS per (kind, grade, slow), learned on board score
 ASK_ARMS = (0.9, 1.0, 1.1)          # within +-20% of the rule's ask; floors (L0) are untouched
 PREMIUM_ASK_ARMS = (0.9, 1.0, 1.1)  # E2 proposes (1.0, 1.2, 1.5) for premium furniture: beyond +-20%, needs the human's yes
-# --- shop: the grade shown first and grade C's first ask (r3lib/shelf.py), the human's yes 2026-11-11 11:40 KST ----
+# --- shop: the grade shown first and grade C's first ask (r3lib/shelf.py), the human's yes 2026-11-11 ~10:45 KST --
 SHELF_EVERY_S = 600                 # the CEO tick judges the order of each mixed-grade goods SKU this often
 SHELF_TTL_H = 2                     # a pushed grade stays first this long, then it is judged again on what it sold
 SHELF_MIN_HELD = 3                  # units of a grade that must have waited SHELF_MIN_AGE_H before it is a candidate
