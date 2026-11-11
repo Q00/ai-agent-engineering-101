@@ -450,6 +450,28 @@ def main():
     except Exception as e:
         log(f"G14 skipped: {e!r}")
 
+    # price rivals (user 11-11 23:00: 'no need to be the cheapest in the market; match the rival shop for each part,
+    # revenue: inextro and so on, and sell a little under THAT shop'): the student shops next to us on each part of
+    # the shop score, written for seller_r3 every tick.
+    try:
+        studs_ = {(p_.get("shop") or {}).get("name") for p_ in bd["players"] if p_.get("student")}
+        ss_ = [s_ for s_ in bd["shops"] if s_["name"] in studs_ and s_.get("deals")]
+        pr_ = {}
+        for part_ in ("revenue", "book"):
+            L_ = sorted((s_ for s_ in ss_ if s_.get(part_) is not None), key=lambda s_: -s_[part_])
+            i_ = next((k_ for k_, s_ in enumerate(L_) if s_["name"] == "yms979"), None)
+            if i_ is None:
+                continue
+            if i_ > 0:
+                pr_.setdefault(L_[i_ - 1]["name"], []).append(f"{part_} ahead of us")
+            if i_ + 1 < len(L_):
+                pr_.setdefault(L_[i_ + 1]["name"], []).append(f"{part_} right behind us")
+        if pr_ and not DRY:
+            (MD / "price_rivals.json").write_text(json.dumps({"t": now, "shops": pr_}, ensure_ascii=False))
+        st["price_rivals"] = pr_
+    except Exception as e:
+        log(f"price rivals skipped: {e!r}")
+
     # G13 revenue 2nd (user 11-11: never lose it): the student shop right below us in revenue, 3 h slopes
     try:
         studs = {(p.get("shop") or {}).get("name") for p in bd["players"] if p.get("student")}

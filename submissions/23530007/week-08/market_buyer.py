@@ -99,7 +99,7 @@ WARRANTY_MIN = 6          # goods break within 6 h of the sale: a warranty this 
 # writes it, else the buyer knob target_mean) by goods_delta, which gives each grade a price ceiling
 # x_bar_g = 1 - (m* + delta) / (1 - p_g): about A .64, B .62, C .51 today. Applied when the shop states the grade
 # and again at the receipt; goods without a 6 h warranty on the receipt are never paid.
-BREAK_P = {"A": 0.03, "B": 0.08, "C": 0.29}
+BREAK_P = {"A": 0.03, "B": 0.13, "C": 0.40}   # 11-11 23:00: B .08 -> .13, C .29 -> .40 (3,909 goods we sold 6.5-54 h ago: A 2.3% broke, B 13.4%, C 34-46%; the 6 h cache saw only about half of the breaks)
 SCORE_FILE = Path(__file__).resolve().parent / ".market" / "buyer_score.json"
 
 

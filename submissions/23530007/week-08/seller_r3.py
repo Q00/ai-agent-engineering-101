@@ -171,6 +171,41 @@ def market_x(sku, category, asks):
     return competitor_ask(asks, category, 3) if asks is not None else None
 
 
+RIVAL_UNDER, RIVAL_OVER = 0.01, 0.02     # 11-11: floor and opening ask around the price rivals' settle (share of list)
+GRADE_OFF = {"A": 0.0, "B": -0.07, "C": -0.15}   # a grade's usual distance from the SKU median when the grade has no data
+_RV = {"t": 0, "shops": [], "by": {}, "sku": {}}
+
+
+def rival_price(sku, grade, category, asks):
+    """The price (share of list) to sit just under: the lowest median settle of this SKU and grade over 6 h among the
+    shops we race (price_rivals.json: next to us on revenue and on book); with fewer than 3 such settles the rivals'
+    median for the SKU shifted by the grade's usual offset; with none, the market median for the SKU (market_x)."""
+    if time.time() - _RV["t"] > 600:
+        _RV["t"] = time.time()
+        try:
+            _RV["shops"] = list((json.loads((HERE / ".market" / "price_rivals.json").read_text()).get("shops") or {}).keys())
+            deals = json.loads((HERE / ".market" / "shop_value.json").read_text()).get("deals") or []
+            t1 = max(d["ts"] for d in deals) if deals else 0
+            by, bys = {}, {}
+            for d in deals:
+                if d.get("goods") and t1 - d["ts"] <= 6 * 3600 and d.get("shop") in _RV["shops"]:
+                    by.setdefault((d["shop"], d["sku"], d.get("grade")), []).append(d["x"])
+                    bys.setdefault((d["shop"], d["sku"]), []).append(d["x"])
+            med = lambda v: sorted(v)[len(v) // 2]
+            _RV["by"] = {k: med(v) for k, v in by.items() if len(v) >= 3}
+            _RV["sku"] = {k: med(v) for k, v in bys.items() if len(v) >= 3}
+        except (OSError, ValueError):
+            pass
+    c = [_RV["by"][(s, sku, grade)] for s in _RV["shops"] if (s, sku, grade) in _RV["by"]]
+    if c:
+        return min(c)
+    c = [_RV["sku"][(s, sku)] for s in _RV["shops"] if (s, sku) in _RV["sku"]]
+    if c:
+        return min(c) + GRADE_OFF.get(grade, 0.0)
+    x = market_x(sku, category, asks)
+    return (x + GRADE_OFF.get(grade, 0.0)) if x else None
+
+
 def sellable_first(fit, asks):
     """11-11 (user: defend revenue 2nd): goods units whose floor fits under the market price come first; the oldest
     unit was often one bought at +15 % surge (G021aae64 grade A at .77-.81 of list vs a .70 market): it was quoted
@@ -495,6 +530,19 @@ class Shop(AgentExecutor):
                 # that rate on price give 5 stars under ~.66 of list: real_yellow 5.0 at .50-.58 vs 3.0 above .75)
                 share = min(share, STAR_ASK)
                 floor = min(floor, round(u["list_price"] * STAR_FLOOR))
+            if u.get("kind") == "goods" and u.get("unit") and regime not in ("LIQUIDATE", "LIQUIDATE_LAST"):
+                # 11-11 23:00, user: 'cheaper than the others, but only very slightly; no need to be the cheapest in the
+                # market: match the rival shop of each part (revenue: inextro, ...) and sell a little under it'. Two days
+                # of our sales net of refunds: grade A +.063 of list at a price of .728, B +.025 at .608 (13.4% of B
+                # units break and are refunded), and at today's .60-.63 an A unit (mean cost .648) made about nothing.
+                # ref = the lowest median settle of this SKU and grade among the shops next to us on revenue and book
+                # (guards.py -> price_rivals.json), else the market's median for the SKU. We do not go under
+                # ref - RIVAL_UNDER and open at ref + RIVAL_OVER; the cost floor still holds above that.
+                ref = rival_price(u["sku"], grade, u.get("category"), self.asks)
+                if ref:
+                    under, over = p.get("rival_under", RIVAL_UNDER), p.get("rival_over", RIVAL_OVER)   # params.json shop.base
+                    floor = max(floor, round(u["list_price"] * (ref - under)))
+                    share = ref + over
             who, min_share = rival(text)
             if who:                                     # a rival above us in class: no deep discount (user 11-07)
                 floor = max(floor, round(u["list_price"] * min_share))
