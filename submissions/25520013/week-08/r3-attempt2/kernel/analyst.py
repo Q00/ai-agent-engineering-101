@@ -9,8 +9,9 @@ operators' done.ask and from the standing questions of ANALYST_JOB.md (kernel.qu
 a2/findings.jsonl, which the role operators read in their next wake. Trajectory rows carry agent and role "analyst".
 It never takes the operators' busy lock or the ledger lock, so it never delays an operator wake.
 
-Env: A2_ANALYST_STEPS (default 24, 6 to 40 model calls per question), A2_ANALYST_EFFORT (default high),
-A2_ANALYST_MIN_GAP_S (default 900: at most one run per this many seconds).
+Env: A2_ANALYST_STEPS (default 60, 6 to 200 model calls per question; a silent backstop, not shown to the model),
+A2_ANALYST_EFFORT (default medium), A2_ANALYST_MIN_GAP_S (default 900: at most one run per this many seconds; a
+scheduler detail, not shown to the model).
 """
 
 import argparse
@@ -44,10 +45,10 @@ _new_tool_rule = next(
 )
 SCHEMA = (
     """한 단계에 JSON 객체 하나로만 답함. 둘 중 하나:
-1. 도구 호출 (한 번에 3개까지): {"tools": [{"tool": "<도구 이름>", "args": {<인자>}}], "keep": "<바로 앞 관찰에서 남길 결론, 300자 안>"}
+1. 도구 호출: {"tools": [{"tool": "<도구 이름>", "args": {<인자>}}, ...], "keep": "<바로 앞 관찰에서 남길 결론>"}
 2. 끝내기: {"done": {
-  "answer": {"finding": "<확인한 원인과 숫자, 표본 수, 확인 못 한 것. 1,500자 안>", "evidence": ["<숫자와 그 숫자를 본 도구 이름>", "... 8개까지"], "suggest": "<운영자가 시험해 볼 값이나 코드 자리, 400자 안. 제안이지 결정이 아님>", "for": ["shop" 또는 "buyer", 둘 다면 둘]},
-  "notes": "<다음 질문의 네가 읽을 메모 전체, 2,000자 안. 생략하면 그대로 둠>",
+  "answer": {"finding": "<확인한 원인과 숫자, 표본 수, 확인 못 한 것>", "evidence": ["<숫자와 그 숫자를 본 도구 이름>", ...], "suggest": "<운영자가 시험해 볼 값이나 코드 자리. 제안이지 결정이 아님>", "for": ["shop" 또는 "buyer", 둘 다면 둘]},
+  "notes": "<다음 질문의 네가 읽을 메모 전체. 생략하면 그대로 둠>",
 """
     + _new_tool
     + """}}
@@ -61,9 +62,9 @@ policy, code, forum, ask는 받지 않음: 조사원은 가게를 바꾸지 않�
 
 def _steps():
     try:
-        return max(6, min(40, int(os.environ.get("A2_ANALYST_STEPS") or 24)))
+        return max(6, min(200, int(os.environ.get("A2_ANALYST_STEPS") or 60)))
     except ValueError:
-        return 24
+        return 60
 
 
 def _min_gap():

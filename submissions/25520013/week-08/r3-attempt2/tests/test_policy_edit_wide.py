@@ -181,9 +181,9 @@ def test_inherit_then_copy_keeps_the_other_grades(root, a1):
     assert r["fresh_discount"] == {"B": 0.12, "C": 0.3} and r["price_mult"] == 0.7
 
 
-def test_new_grade_floor_has_no_step_check_and_says_so(root, a1):
+def test_new_grade_floor_says_it_is_new(root, a1):
     res = _edit(root, a1, [_it("shop", "grade_floor_list.A", 0.85)])
-    assert res[0]["ok"] and res[0]["old"] is None and "폭" in res[0]["note"]
+    assert res[0]["ok"] and res[0]["old"] is None and "처음 두는 값" in res[0]["note"]
     assert _pol(root)["shop"]["grade_floor_list"] == {"C": 0.55, "A": 0.85}
     bad = _edit(root, a1, [_it("shop", "grade_floor_list.B", 0.95)])
     assert not bad[0]["ok"] and "outside" in bad[0]["error"]
@@ -210,7 +210,6 @@ def test_refusals_leave_the_file_untouched(root, a1):
     before = open(os.path.join(root, "policy.json"), "rb").read()
     bad = [
         _it("buyer.defaults.goods", "max_pay_frac", 0.45),  # below 0.5
-        _it("buyer.defaults.goods", "max_pay_frac", 0.95),  # step 0.1 > 0.05
         _it(
             "buyer.defaults.goods", "price_mult", 0.9
         ),  # shop-side key in a buyer section
@@ -221,10 +220,8 @@ def test_refusals_leave_the_file_untouched(root, a1):
         _it("defaults.goods", "grade_floor_list.C", 0.6),  # shop-only key
         _it("defaults.goods", "fresh_discount.A", 0.1),  # no A in fresh_discount
         _it("defaults.goods", "fresh_discount.C", 0.6),  # above 0.5
-        _it("defaults.goods", "fresh_discount.C", 0.2),  # step 0.1 > 0.06
         _it("defaults.goods", "warranty_hours.C", 12),  # above max_warranty_hours 6
         _it("defaults.goods", "warranty_hours.C", 3.5),  # whole hours only
-        _it("shop", "grade_floor_list.C", 0.65),  # step 0.1 > 0.05
         _it("shop", "grade_floor_list.C", "0.6"),  # not a number
         _it("shop", "c_first_leaves.없는잎", 1),  # not a known leaf
         _it("shop", "c_first_leaves.가구>소파", 1),  # a path, not a leaf
@@ -237,14 +234,15 @@ def test_refusals_leave_the_file_untouched(root, a1):
         (i, r) for i, r in enumerate(res) if r["ok"]
     ]
     assert (
-        "only in buyer.defaults" in res[4]["error"]
-        and "only in shop" in res[7]["error"]
+        "only in buyer.defaults" in res[3]["error"]
+        and "only in shop" in res[6]["error"]
     )
-    assert "사람만" in res[18]["error"]
+    assert "사람만" in res[15]["error"]
     assert open(os.path.join(root, "policy.json"), "rb").read() == before
 
 
-def test_cooldown_and_per_wake_limit_use_the_full_dotted_key(root, a1):
+def test_no_cooldown_or_per_wake_limit_and_dotted_keys_are_separate(root, a1):
+    # 11-11: the cooldown, the step limit and the per-wake count are gone
     t0, traj = time.time(), _traj(root)
     assert _edit(
         root, a1, [_it("defaults.goods", "fresh_discount.C", 0.26)], now=t0, traj=traj
@@ -255,7 +253,7 @@ def test_cooldown_and_per_wake_limit_use_the_full_dotted_key(root, a1):
         [
             _it(
                 "defaults.goods", "fresh_discount.C", 0.22
-            ),  # same dotted key within 30 min
+            ),  # same dotted key a minute later
             _it(
                 "defaults.goods", "fresh_discount.B", 0.1
             ),  # another grade of the same dict is a different key
@@ -263,7 +261,7 @@ def test_cooldown_and_per_wake_limit_use_the_full_dotted_key(root, a1):
         now=t0 + 60,
         traj=traj,
     )
-    assert not res[0]["ok"] and "min ago" in res[0]["error"] and res[1]["ok"]
+    assert res[0]["ok"] and res[0]["old"] == 0.26 and res[1]["ok"]
     four = _edit(
         root,
         a1,
@@ -276,7 +274,7 @@ def test_cooldown_and_per_wake_limit_use_the_full_dotted_key(root, a1):
         now=t0 + 120,
         traj=traj,
     )
-    assert [r["ok"] for r in four] == [True, True, True, False]
+    assert [r["ok"] for r in four] == [True, True, True, True]
 
 
 def test_effective_overlays_the_leaf_entry_like_attempt1_resolve(root, a1):
@@ -350,9 +348,9 @@ def test_buyer_open_and_step_and_bad_inputs(root, a1):
         [
             _it("buyer.defaults.food", "open_frac", 0.5),
             _it("buyer.defaults.food", "step_frac", 0.09),
-            _it("buyer.defaults.goods", "open_frac", 0.4),  # more than 0.05 at once
+            _it("buyer.defaults.goods", "open_frac", 0.4),  # any distance inside the bounds
         ],
     )
-    assert [r["ok"] for r in res] == [True, True, False], res
+    assert [r["ok"] for r in res] == [True, True, True], res
     assert _pol(root)["buyer"]["defaults"]["food"]["open_frac"] == 0.5
     assert _pol(root)["buyer"]["defaults"]["food"]["step_frac"] == 0.09

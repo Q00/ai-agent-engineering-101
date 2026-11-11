@@ -372,7 +372,7 @@ def replay_probe(root, target, version=None, files=None, harness_dir=None, n=20,
 
 
 def policy(root, days=1, section=None):
-    """시도 1 규칙의 policy.json 값: 구역(defaults.food, defaults.goods, 상품군 전체 경로, shop, buyer.defaults.food, buyer.defaults.goods)마다 편집 가능 키의 지금 값,  허용 범위와 한 번에 바꿀 수 있는 폭, 최근 days일의 정책 수정 기록. section(구역 이름의 일부, 예: "음료", "buyer")을 주면 그 구역 줄과 그 구역의 수정 기록만 돌려줘 결과가 잘리지 않음. LIVE가 꺼진 동안 done.policy로 고침."""
+    """시도 1 규칙의 policy.json 값: 구역(defaults.food, defaults.goods, 상품군 전체 경로, shop, buyer.defaults.food, buyer.defaults.goods)마다 편집 가능 키의 지금 값과 범위(최소, 최대), 최근 days일의 정책 수정 기록. section(구역 이름의 일부, 예: "음료", "buyer")을 주면 그 구역 줄과 그 구역의 수정 기록만 돌려줘 결과가 잘리지 않음. LIVE가 꺼진 동안 done.policy로 고침."""
     from kernel import policy_edit as pe
     from kernel.trajectory import Trajectory
 
@@ -545,7 +545,7 @@ def code_read(root, file, start=1, lines=120, end=None, count=None, func=None):
 
 
 def experiments(root, hours=6, now=None):
-    """실험 장부 전체: 진행 중인 실험 모두(범위, 키, 값, 판정 시각, 건 운영자)와 최근 hours시간에 끝난 실험의 판정, 그리고 되돌림 뒤 새 실험이 막힌 범위와 풀리는 시각. 새 실험을 걸기 전에 겹치는 범위를 볼 때 씀."""
+    """실험 장부 전체: 진행 중인 실험 모두(범위, 키, 값, 판정 시각, 건 운영자), 최근 hours시간에 끝난 실험의 판정, 그리고 같은 시간에 실험 없이 그냥 적용한 값 수정(시각, 구역, 키, 전 값 → 새 값)."""
     from kernel import experiments as ex
 
     now = c.now_ts() if now is None else now
@@ -556,7 +556,7 @@ def experiments(root, hours=6, now=None):
     rows = [e for e in ex.load(root) if isinstance(e, dict) and "id" in e]
     who = lambda e: f" [{ex.role_of(e) or '-'}]"
     run = [e for e in rows if e.get("status") == "running"]
-    out = [f"진행 중 {len(run)}건 (범위가 겹치는 새 실험은 거절됨)"]
+    out = [f"진행 중 {len(run)}건"]
     for e in run:
         try:
             out.append(ex._run_line(e) + f", 범위 {e.get('section')}" + who(e))
@@ -569,9 +569,19 @@ def experiments(root, hours=6, now=None):
             line = ex._ended_line(e) + f", 범위 {e.get('section')}, 끝 {c.kst(e['ended_ts'], '%H:%M')}" + who(e)
         except Exception:  # noqa: BLE001
             line = f"  #{e.get('id')} {e.get('status')}"
-        if e.get("status") in ex.BLOCK_AFTER and e.get("mode") != "split" and now < e["ended_ts"] + ex.CONTAM_S:
-            line += f" → 이 범위의 새 전후 비교 실험은 {c.kst(e['ended_ts'] + ex.CONTAM_S, '%H:%M')}까지 막힘"
         out.append(line)
+    try:  # direct changes (done.policy with test none) are not in the ledger; the trajectory has them
+        from kernel import policy_edit as pe
+        from kernel.trajectory import Trajectory
+
+        direct = [r for r in pe.recent(Trajectory(os.path.join(root, "a2/trajectory.jsonl")), now, hours)
+                  if r.get("by") == "direct"]
+    except Exception:  # noqa: BLE001 - the ledger part above is still useful
+        direct = []
+    out.append(f"최근 {hours:g}시간에 실험 없이 그냥 적용한 값 {len(direct)}건")
+    for r in reversed(direct[-30:]):
+        out.append(f"  {c.kst(r.get('ts') or 0, '%m-%d %H:%M')} {r.get('section')} {r.get('key')} "
+                   f"{r.get('old')} → {r.get('new')}" + (f" [{r['role']}]" if r.get("role") else ""))
     return c.cap("\n".join(out), MAX_CHARS)
 
 

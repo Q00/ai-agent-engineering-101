@@ -37,8 +37,9 @@ def o(tmp_path, monkeypatch):
     return op.Operator(root, None, traj, harness_root=str(tmp_path / "noharness"))
 
 
-def _item(key="price_mult", value=0.85, section="defaults.goods"):
-    return {"section": section, "key": key, "value": value, "reason": "근거 1", "expect": "순이익 +0.1M/h"}
+def _item(key="price_mult", value=0.85, section="defaults.goods", test="before_after"):
+    # 11-11: an item is an experiment only when it asks for one; the tests here are about experiments
+    return {"section": section, "key": key, "value": value, "reason": "근거 1", "expect": "순이익 +0.1M/h", "test": test}
 
 
 def test_compact_only_when_env_set_and_live_off(o, monkeypatch):
@@ -66,10 +67,10 @@ def test_wake_keeps_one_step_of_observations_and_registers_experiments(o):
     assert "시장 설명서 목차" in p[1].split("이번 점검의 관찰")[1] and "시장 설명서 목차" in p[2].split("이번 점검의 관찰")[1]
     pol = res["policy"]
     assert pol[0]["ok"] and pol[0]["experiment"] == 1
-    assert not pol[1]["ok"] and "실험" in pol[1]["error"]  # same scope as the experiment just started
+    assert pol[1]["ok"] and pol[1]["experiment"] == 2  # 11-11: nothing refused because another experiment runs
     assert json.load(open(os.path.join(o.root, "policy.json"), encoding="utf-8"))["defaults"]["goods"]["price_mult"] == 0.85
     run = ex.running(o.root)
-    assert len(run) == 1 and run[0]["expect"] == "순이익 +0.1M/h"
+    assert len(run) == 2 and run[0]["expect"] == "순이익 +0.1M/h"
     assert open(os.path.join(o.root, "a2/operator_notes.md"), encoding="utf-8").read() == "가설: 값 0.85"
     o.terra = Script({"done": {}})
     o.wake("주기 점검", NOW + 60)
@@ -86,7 +87,8 @@ def test_last_step_must_be_done(o):
     o.terra = Script(*[{"tools": [{"tool": "policy", "args": {}}]}] * op.COMPACT_STEPS)
     res = o.wake("주기 점검", NOW)
     assert res["status"] == "no_done" and res["calls"] == op.COMPACT_STEPS
-    assert "반드시 done" in o.terra.prompts[-1]
+    assert "이번 점검을 여기서 마무리함: done 객체로 답함" in o.terra.prompts[-1]
+    assert "이번 점검을 여기서 마무리함" not in o.terra.prompts[-2]
 
 
 def test_wake_reason_interval_stretches_while_an_experiment_runs(o, monkeypatch):
@@ -118,7 +120,7 @@ def test_rev_weight_from_board(o):
 def test_split_env_starts_a_concurrent_comparison_and_leaves_policy_json(o, monkeypatch):
     monkeypatch.setenv("A2_SPLIT", "1")
     before = open(os.path.join(o.root, "policy.json"), encoding="utf-8").read()
-    o.terra = Script({"done": {"policy": [_item(), _item("max_pay_frac", 0.8, "buyer.defaults.goods")]}})
+    o.terra = Script({"done": {"policy": [_item(test="split"), _item("max_pay_frac", 0.8, "buyer.defaults.goods")]}})
     r = o.wake("주기 점검", NOW)
     rows = {e["key"]: e for e in ex.running(o.root)}
     assert rows["price_mult"]["mode"] == "split" and rows["max_pay_frac"]["mode"] == "sequential", r
@@ -135,6 +137,9 @@ def test_without_split_env_the_same_key_is_sequential(o, monkeypatch):
     o.wake("주기 점검", NOW)
     assert ex.running(o.root)[0]["mode"] == "sequential"
     assert not os.path.exists(os.path.join(o.root, "policy_arms.json"))
+    o.terra = Script({"done": {"policy": [_item("min_margin", 0.1, test="split")]}})
+    r = o.wake("주기 점검", NOW + 60)
+    assert not r["policy"][0]["ok"] and "split은 지금 쓸 수 없음" in r["policy"][0]["error"]
 
 
 def test_bad_item_is_refused_and_nothing_is_left_unregistered(o):

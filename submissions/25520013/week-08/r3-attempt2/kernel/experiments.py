@@ -1,17 +1,25 @@
 """Experiment ledger, verdicts and automatic revert or adoption for operator policy edits (human code, not editable by
 the model).
 
-DESIGN 14.4 step 1. start() is the one entry point for an operator policy item: it checks, writes and registers as
-one step and never raises. Two modes:
+DESIGN 14.4 step 1. apply_policy() (and start(), its one-item wrapper) checks, writes and registers as
+one step and never raises. Modes of an experiment:
 
 - sequential: the edit goes into policy.json and the experiment compares the metric over the window_h hours after it
   with the window_h hours before it (shop side: the before value scaled by the market's revenue rate in the same
   scope; buyer side: by the other buyers' deal rate), then keeps the edit, puts the section's raw state back
-  (policy_edit.kernel_restore) or extends the window once. One running experiment per scope (blocked()).
+  (policy_edit.kernel_restore) or extends the window once.
 - split (v2.12 arms): for sale-side keys the seller reads after the unit pick (SPLIT_KEYS), policy.json keeps the old
   value and <root>/policy_arms.json gives the new value to the sales whose unit id hashes into arm "b" (attempt 1
   policy.arm_pick, reimplemented here as arm_b). The verdict compares the two arms over the same hours, so no before
   window and no market adjustment; "better" writes the new value (policy_edit.kernel_set) and removes the arm.
+- group (11-11): the before/after items of one done with the same "group" label, judged as one sequential experiment
+  on the role's whole side (scope "shop:all" or "buyer:all"); a worse verdict puts every item's raw state back.
+  Ledger entries of mode "bet" (the same thing under its first name) are judged the same way.
+
+Since 11-11 (성수님: the strategy, including how to measure, belongs to the operator) apply_policy takes a whole
+done.policy list: each item is applied directly (no experiment) unless it asks for a test, everything is written in one
+write, and a change ends the running experiments of its role whose scope it touches (voided, "overwritten"). Nothing is
+refused because an experiment runs or recently ended. Entries started before keep their automatic verdicts.
 
 Ledger: <root>/a2/experiments.json. Plain code, no model calls.
 """
@@ -30,7 +38,8 @@ from kernel import common as c
 from kernel import policy_edit as pe
 
 LEDGER = os.path.join("a2", "experiments.json")
-MIN_WINDOW_H, MAX_WINDOW_H = 2, 8
+MIN_WINDOW_H, MAX_WINDOW_H = 1, 48
+EXT_MAX_WINDOW_H = 8  # the kernel's own extension of an undecided window stops here
 SLOW_KEYS = (
     "stock_target",
     "qty_per_buy",
@@ -63,10 +72,9 @@ BASELINE_SLACK_S = (
     600  # the events read must reach back to the before window's start + this
 )
 MIN_BEFORE_H = 1  # a before window clipped shorter than this has no baseline
-CONTAM_S = (
-    2 * 3600
-)  # an overlapping experiment that ended reverted/dropped/voided blocks new sequential ones this long
-BLOCK_AFTER = ("reverted", "dropped", "voided")
+# a new before/after experiment that starts less than this after an overlapping one ended keeps its full before window
+# and names that experiment on its verdict (until 11-11 such a start was refused)
+CONTAM_S = 2 * 3600
 GONE = (
     "reverted",
     "dropped",
@@ -114,11 +122,16 @@ REASON_KO = {
     "cost_unknown": "원가 모름",
     "no_unit": "유닛 모름",
     "eval_error": "평가 실패, 값은 그대로 둠",
+    "overwritten": "운영자가 덮어씀",
 }
 EXPECT_CHARS = 40
 LINES_RUN, LINES_ENDED = 6, 5
 ROLES = ("shop", "buyer")  # the role operators (kernel.operator --role)
 OTHER = " (다른 운영자)"  # a role's state card marks the other role's lines
+TESTS = ("none", "before_after", "split")  # what a policy item may ask for (apply_policy)
+GROUP_MODES = ("group", "bet")  # "bet": the first name of a group, still read from the ledger
+GROUP_WINDOW_H = 4  # default window of a group
+GROUP_LABEL_CHARS = 40
 
 
 def ledger_path(root):
@@ -172,6 +185,10 @@ def _overlap(sec_a, sec_b, key_a=None, key_b=None):
     for s1, k1, s2, k2 in ((sec_a, key_a, sec_b, key_b), (sec_b, key_b, sec_a, key_a)):
         if s1 == "shop" and k1 in pe.SHOP_KEYS:
             return s2 == "shop" and k2 == k1
+    # buyer keys only overlap the same key of the same kind (11-11: two experiments held buyer:food and buyer:goods
+    # whole, so the buyer operator could not try a second key for hours); the verdict lists the overlapping ids instead
+    if sec_a.startswith("buyer.") and sec_b.startswith("buyer."):
+        return sec_a == sec_b and key_a == key_b
     (side_a, a), (side_b, b) = scope_of(sec_a), scope_of(sec_b)
     if side_a != side_b or a == b:
         return a == b
@@ -222,58 +239,81 @@ def running(root):
     ]
 
 
-def blocked(root, section, key, now, mode="sequential"):
-    """None when an edit of (section, key) may start an experiment now, else a Korean message: a running experiment
-    (either mode) whose scope overlaps, or (sequential only) an overlapping one that ended reverted, dropped or voided
-    less than CONTAM_S ago, since its value still colours the before window."""
-    rows = [e for e in load(root) if isinstance(e, dict)]
-    for e in rows:
-        if e.get("status") != "running":
-            continue
-        try:
-            if _overlap(section, e["section"], key, e.get("key")):
-                return (
-                    f"실험 #{e['id']} ({e['section']} {e['key']} {e['old']}→{e['new']}, 범위 {e['scope']})이 "
-                    f"{c.kst(e['eval_ts'], '%H:%M')} 판정 전까지 진행 중이라 {section}은 지금 바꿀 수 없음"
-                )
-        except (KeyError, TypeError, ValueError, AttributeError, OverflowError):
-            continue
-    if mode != "sequential":
-        return None
-    for e in rows:
-        try:
-            t = e.get("ended_ts")
-            if (
-                e.get("status") in BLOCK_AFTER
-                and _num_ok(t)
-                and now < t + CONTAM_S
-                and _overlap(section, e["section"], key, e.get("key"))
-            ):
-                return (
-                    f"실험 #{e['id']} ({e['section']} {e['key']})이 {c.kst(t, '%H:%M')}에 "
-                    f"{STATUS_KO.get(e['status'], e['status'])}으로 끝나 그 영향이 남아 있어 {section}의 새 실험은 "
-                    f"{c.kst(t + CONTAM_S, '%H:%M')}까지 시작할 수 없음"
-                )
-        except (KeyError, TypeError, ValueError, AttributeError, OverflowError):
-            continue
-    return None
+def _parts(e):
+    """The (section, key) pairs an entry holds for overlap checks: a group's items, else its own section and key."""
+    if e.get("mode") in GROUP_MODES:
+        return [(x["section"], x.get("key")) for x in e.get("items") or []]
+    return [(e["section"], e.get("key"))]
 
 
-def _before_from(rows, section, key=None):
-    """Latest end time of an overlapping experiment whose value was live and is no longer (GONE), None if none."""
-    out = None
-    for e in rows:
+def _hits(section, key, e):
+    return any(_overlap(section, s, key, k) for s, k in _parts(e))
+
+
+def overlaps(root, section, key, role=None):
+    """The running experiments (of role when given, else of any role) whose scope a change of (section, key) touches:
+    the ones such a change ends as voided (void_overlaps). Nothing is refused because of them."""
+    out = []
+    for e in load(root):
         try:
-            t = e.get("ended_ts")
-            if (
-                e.get("status") in GONE
-                and _num_ok(t)
-                and _overlap(section, e["section"], key, e.get("key"))
-            ):
-                out = t if out is None else max(out, t)
+            if (isinstance(e, dict) and e.get("status") == "running" and (role is None or role_of(e) == role)
+                    and _hits(section, key, e)):
+                out.append(e)
         except (KeyError, TypeError, ValueError, AttributeError):
             continue
     return out
+
+
+def _what(e):
+    if e.get("mode") in GROUP_MODES:
+        return f"묶음 '{e.get('key')}' 키 {len(e.get('items') or [])}개"
+    return f"{e.get('section')} {e.get('key')}"
+
+
+def void_overlaps(root, pairs, role, now, traj, keep=()):
+    """End as voided (reason "overwritten") every running experiment of the role (any role when None) whose scope a new
+    change of one of pairs [(section, key)] touches; a split's arm is removed. The other role's experiments are never
+    touched. keep: ids left alone. -> [{"id", "what"}] of the ended ones."""
+    if not pairs:
+        return []
+    rows, out = load(root), []
+    for e in rows:
+        try:
+            if (not isinstance(e, dict) or e.get("status") != "running" or e.get("id") in keep
+                    or (role is not None and role_of(e) != role)):
+                continue
+            hit = next(((s, k) for s, k in pairs if _hits(s, k, e)), None)
+            if hit is None:
+                continue
+            if e.get("mode") == "split":
+                _remove_arm(root, e.get("id"))
+            _end(e, "voided", {"decision": "voided", "reason": "overwritten", "by": f"{hit[0]} {hit[1]}"}, now, traj)
+            out.append({"id": e.get("id"), "what": _what(e)})
+        except (KeyError, TypeError, ValueError, AttributeError):
+            continue
+    if out:
+        save(root, rows)
+    return out
+
+
+def _before(rows, pairs, now):
+    """(before_from, mixed) for a new before/after experiment over pairs [(section, key)]: before_from is the latest end
+    of an overlapping experiment whose value was live and is no longer (GONE), mixed the ids of such experiments that
+    ended less than CONTAM_S before now. A recent end does not clip the before window (it would leave no baseline);
+    the verdict names it instead (11-11: CONTAM_S used to refuse the start)."""
+    bf, mixed = None, []
+    for e in rows:
+        try:
+            t = e.get("ended_ts")
+            if (isinstance(e, dict) and e.get("status") in GONE and _num_ok(t)
+                    and any(_hits(s, k, e) for s, k in pairs)):
+                if now - t < CONTAM_S:
+                    mixed.append(e["id"])
+                else:
+                    bf = t if bf is None else max(bf, t)
+        except (KeyError, TypeError, ValueError, AttributeError):
+            continue
+    return bf, mixed
 
 
 def default_window_h(side, key):
@@ -341,13 +381,15 @@ def register(
     raw=None,
     eid=None,
     arm=None,
+    role=None,
 ):
     """Record a successful policy edit (or split check) ({section, key, old, new}) as a running experiment. window_h
     None (or not a finite number) takes the default for the key; any value is clamped to [MIN_WINDOW_H, MAX_WINDOW_H]
     whole hours. rev_weight (shop side, the caller's board-derived worth of one won of revenue in net-profit won)
     turns the metric into score_proxy_per_h = net + rev_weight x revenue; it is kept for the whole experiment.
     mode "sequential" keeps raw ({base, present, value}: the section's own state before the edit, for the revert) and
-    before_from (see _before_from); mode "split" keeps arm (the policy_arms.json entry). -> the experiment."""
+    before_from and before_mixed (see _before); mode "split" keeps arm (the policy_arms.json entry). role (a role
+    operator) is stored. -> the experiment."""
     rev_weight = rev_weight if _num_ok(rev_weight) and rev_weight > 0 else 0.0
     side, scope = scope_of(row["section"], row["key"])
     rows = load(root)
@@ -374,7 +416,11 @@ def register(
     else:
         if raw is not None:
             exp["raw"] = raw
-        exp["before_from"] = _before_from(rows, row["section"], row.get("key"))
+        exp["before_from"], mixed = _before(rows, [(row["section"], row.get("key"))], now)
+        if mixed:
+            exp["before_mixed"] = mixed
+    if role in ROLES:
+        exp["role"] = role
     if side == "buyer":
         exp["s0"] = board_saved(root, now)
     exp["eval_ts"] = _eval_ts(exp)
@@ -513,6 +559,32 @@ def _err(msg):
     return {"ok": False, "error": str(msg)[:500]}
 
 
+def _test_of(item):
+    """The test the operator chose for a policy item: "none" when absent or empty, else the value as given."""
+    t = item.get("test")
+    return "none" if t in (None, "", "none") else t
+
+
+def _group_label(v):
+    return " ".join(v.split())[:GROUP_LABEL_CHARS] if isinstance(v, str) else ""
+
+
+def _clean(it):
+    return {
+        "section": it["section"],
+        "key": it["key"],
+        "value": it.get("value"),
+        "reason": it.get("reason") if isinstance(it.get("reason"), str) else "",
+    }
+
+
+def _expect(it):
+    e = it.get("expect")
+    if not isinstance(e, str) or not e:
+        e = it.get("reason") if isinstance(it.get("reason"), str) else ""
+    return e[:500]
+
+
 def start(
     root,
     item,
@@ -523,12 +595,13 @@ def start(
     categories=(),
     validate=None,
     split_ok=False,
+    role=None,
 ):
-    """Check, write and register one operator policy item {section, key, value, reason, expect, window_h} as an
-    experiment. mode "auto": split when split_ok and the key is splittable on a shop-side section, else sequential;
-    "split" / "sequential" force it. Never raises; on any failure nothing is left half done (a written edit whose
-    registration fails is put back at once). -> {"ok": True, "experiment", "mode", "section", "key", "old", "new",
-    "eval_ts"} (plus "note" when the edit has one) or {"ok": False, "error"}."""
+    """One operator policy item {section, key, value, reason, expect, window_h} as an experiment (the entry point
+    before 11-11, now a wrapper of apply_policy): mode "auto" is split when split_ok, the key is splittable on a
+    shop-side section and the seller reads arms, else before/after; "split" / "sequential" force it. Never raises.
+    -> apply_policy's result for the item ({"ok": True, "experiment", "mode", "section", "key", "old", "new",
+    "eval_ts", "test"} or {"ok": False, "error"}) with "voided"."""
     try:
         if not isinstance(item, dict):
             return _err("each policy item must be an object")
@@ -545,32 +618,123 @@ def start(
         split = mode == "split" or (
             mode == "auto" and split_ok is True and can_split and seller_has_arms(root)
         )
-        msg = blocked(root, sec, key, now, "split" if split else "sequential")
-        if msg:
-            return _err(msg)
-        expect = item.get("expect")
-        if not isinstance(expect, str) or not expect:
-            expect = item.get("reason") if isinstance(item.get("reason"), str) else ""
-        clean = {
-            "section": sec,
-            "key": key,
-            "value": item.get("value"),
-            "reason": item.get("reason") if isinstance(item.get("reason"), str) else "",
-        }
-        args = (
-            root,
-            clean,
-            now,
-            traj,
-            rev_weight,
-            item.get("window_h"),
-            expect[:500],
-            categories,
-            validate,
-        )
-        return _start_split(*args) if split else _start_sequential(*args)
+        it = {k: v for k, v in item.items() if k != "group"}
+        it["test"] = "split" if split else "before_after"
+        out = apply_policy(root, [it], now, traj, role=role, rev_weight=rev_weight, categories=categories,
+                           validate=validate, split_ok=True)
+        return dict(out["results"][0], voided=out["voided"])
     except Exception as e:  # noqa: BLE001 - a hostile item is a refusal, never a crashed wake
         return _err(f"{type(e).__name__}: {e}")
+
+
+def apply_policy(root, items, now, traj, role=None, rev_weight=0.0, categories=(), validate=None, split_ok=False):
+    """Apply one done.policy list (11-11 성수님: the operator decides what to change, how much, how many and how to
+    measure it). Any number of items; each may carry "test":
+    - "none" (default, or absent): the value is written; no experiment, no verdict, no revert (trajectory row by
+      "direct").
+    - "before_after": written, then judged as a sequential experiment (kept or put back); items with the same
+      "group" label are one experiment on their side, judged and put back together.
+    - "split": sell-side keys (SPLIT_KEYS) only, when split_ok and the seller reads arms: policy.json keeps the old
+      value, half the units get the new one, adopted or dropped at the verdict.
+    Every written item goes into policy.json in one write (policy_edit.apply_many). A change ends as voided every
+    running experiment of the same role whose scope it touches (void_overlaps); the other role's never. Nothing is
+    refused because an experiment runs. Never raises. -> {"results": [per item, aligned with items], "voided":
+    [{"id", "what"}]}."""
+    items = items if isinstance(items, list) else []
+    try:
+        return _apply_policy(root, items, now, traj, role, rev_weight, categories, validate, split_ok)
+    except Exception as e:  # noqa: BLE001 - a hostile list is a refusal, never a crashed wake
+        return {"results": [_err(f"{type(e).__name__}: {e}") for _ in items], "voided": []}
+
+
+def _apply_policy(root, items, now, traj, role, rev_weight, categories, validate, split_ok):
+    res, plan, seen = [None] * len(items), [], set()
+    for i, it in enumerate(items):
+        if not isinstance(it, dict):
+            res[i] = _err("each policy item must be an object")
+            continue
+        sec, key = it.get("section"), it.get("key")
+        if not isinstance(sec, str) or not isinstance(key, str):
+            res[i] = _err("section and key must be strings")
+            continue
+        if (sec, key) in seen:
+            res[i] = _err(f"{sec} {key}가 이 목록에 두 번 있음")
+            continue
+        seen.add((sec, key))
+        test = _test_of(it)
+        if test not in TESTS:
+            res[i] = _err(f"test는 none, before_after, split 중 하나임 (낸 값 {str(test)[:30]})")
+            continue
+        if test == "split" and not (splittable(key) and scope_of(sec, key)[0] == "shop"):
+            res[i] = _err(f"{key}는 split으로 잴 수 없음. split이 되는 키는 판매 구역의 {', '.join(SPLIT_KEYS)}")
+            continue
+        if test == "split" and not (split_ok is True and seller_has_arms(root)):
+            res[i] = _err("split은 지금 쓸 수 없음 (판매자가 비교 팔을 읽지 않음). before_after와 none은 됨")
+            continue
+        plan.append((i, it, test, _group_label(it.get("group")) if test == "before_after" else ""))
+    # a group is one experiment on one side: one refused item keeps the whole group out
+    members = {}
+    for i, it, test, g in plan:
+        if g:
+            members.setdefault(g, []).append(it)
+    bad = {}
+    for g, its in members.items():
+        if len({scope_of(it["section"])[0] for it in its}) > 1:
+            bad[g] = "가게 쪽 값과 구매 쪽 값은 한 묶음에 담지 못함 (판정이 쪽마다 따로임)"
+            continue
+        for it in its:
+            x = pe._prepare(root, it, now, categories)
+            if not x.get("ok"):
+                bad[g] = f"{it['section']} {it['key']}: {x.get('error')}"
+                break
+    for i, it, test, g in plan:
+        if g in bad:
+            res[i] = _err(f"묶음 '{g}'의 항목이 거절돼 묶음 전체를 적용하지 않음: {bad[g]}")
+    plan = [p for p in plan if p[3] not in bad]
+    writes = [p for p in plan if p[2] != "split"]
+    raws = {}
+    if writes:
+        pol = _policy(root)
+        raws = {i: pe.raw_state(pol, it["section"], it["key"]) for i, it, _, _ in writes}
+    got = pe.apply_many(
+        root, [_clean(it) for _, it, _, _ in writes], traj, now, categories, validate, tag=pe.kernel_tag(now),
+        by=["direct" if t == "none" else "experiment" for _, _, t, _ in writes],
+    )
+    applied = []
+    for (i, it, test, g), r in zip(writes, got):
+        if r.get("ok"):
+            applied.append((i, it, test, g, r))
+        else:
+            res[i] = _err(r.get("error"))
+    splits = []
+    for i, it, test, _ in plan:
+        if test == "split":
+            r = pe.check(root, _clean(it), traj, now, categories=categories, validate=validate)
+            if r.get("ok"):
+                splits.append((i, it))
+            else:
+                res[i] = _err(r.get("error"))
+    touched = [(it["section"], it["key"]) for _, it, *_ in applied] + [(it["section"], it["key"]) for _, it in splits]
+    voided = void_overlaps(root, touched, role, now, traj)
+    groups = {}
+    for i, it, test, g, r in applied:
+        if test == "none":
+            res[i] = dict(r, test="none")
+        elif g:
+            groups.setdefault(g, []).append((i, it, r))
+        else:
+            res[i] = _register_one(root, it, r, raws[i], now, traj, role, rev_weight, validate)
+    for g, xs in groups.items():
+        out = _register_group(root, g, xs, raws, now, traj, role, rev_weight, validate)
+        for i, _, _ in xs:
+            res[i] = out
+    for i, it in splits:
+        res[i] = dict(
+            _start_split(root, _clean(it), now, traj, rev_weight, it.get("window_h"), _expect(it), categories, validate,
+                         role=role),
+            test="split",
+        )
+    return {"results": res, "voided": voided}
 
 
 def _ok(exp, r):
@@ -589,77 +753,27 @@ def _ok(exp, r):
     return out
 
 
-def _start_sequential(
-    root, clean, now, traj, rev_weight, window_h, expect, categories, validate
-):
-    sec, key = clean["section"], clean["key"]
+def _register_one(root, it, r, raw_state, now, traj, role, rev_weight, validate):
+    """Register one written before/after item as a sequential experiment; a failed registration puts the value back."""
+    present, value = raw_state
+    raw = {"base": r["key"].split(".", 1)[0], "present": present, "value": value}
     try:
-        pol = c.load_json(pe.path(root), None)
-    except ValueError:
-        pol = None
-    present, value = pe.raw_state(pol, sec, key)
-    raw = {"base": key.split(".", 1)[0], "present": present, "value": value}
-    def undo(why):
-        try:
-            now_state = pe.raw_state(c.load_json(pe.path(root), None), sec, key)
-        except Exception:  # noqa: BLE001
-            now_state = None
-        if now_state == (present, value):
-            return "값은 그대로임"
-        back = pe.kernel_restore(
-            root, sec, raw["base"], present, value, traj, now, why, tag=pe.kernel_tag(now), key=key,
-            validate=validate,
-        )
-        return "값은 원래대로 되돌림" if back.get("ok") else f"되돌리기도 실패: {back.get('error')}"
-
-    try:
-        eid = _next_id(load(root))
-        r = pe.apply(root, [clean], traj, now, categories=categories, validate=validate)[0]
-    except Exception as e:  # noqa: BLE001 - a write that failed half way must not leave an unregistered edit
-        return _err(f"수정 실패 ({type(e).__name__}: {e}); " + undo(f"수정 실패로 되돌림 ({type(e).__name__})"))
-    if not r.get("ok"):
-        return _err(r.get("error"))
-    try:
-        exp = register(
-            root,
-            r,
-            expect,
-            window_h,
-            now,
-            traj,
-            rev_weight,
-            mode="sequential",
-            raw=raw,
-            eid=eid,
-        )
+        exp = register(root, r, _expect(it), it.get("window_h"), now, traj, rev_weight, mode="sequential", raw=raw,
+                       role=role)
     except Exception as e:  # noqa: BLE001 - an unregistered edit must not stay in the file
-        _drop_entry(root, eid)
         back = pe.kernel_restore(
-            root,
-            sec,
-            raw["base"],
-            present,
-            value,
-            traj,
-            now,
-            f"실험 등록 실패로 되돌림 ({type(e).__name__})",
-            tag=pe.kernel_tag(now, eid),
-            key=key,
-            validate=validate,
+            root, r["section"], raw["base"], present, value, traj, now, f"실험 등록 실패로 되돌림 ({type(e).__name__})",
+            tag=pe.kernel_tag(now), key=r["key"], validate=validate,
         )
         return _err(
             f"실험 등록 실패 ({type(e).__name__}: {e}); "
-            + (
-                "값은 원래대로 되돌림"
-                if back.get("ok")
-                else f"되돌리기도 실패: {back.get('error')}"
-            )
+            + ("값은 원래대로 되돌림" if back.get("ok") else f"되돌리기도 실패: {back.get('error')}")
         )
-    return _ok(exp, r)
+    return dict(_ok(exp, r), test="before_after")
 
 
 def _start_split(
-    root, clean, now, traj, rev_weight, window_h, expect, categories, validate
+    root, clean, now, traj, rev_weight, window_h, expect, categories, validate, role=None
 ):
     sec, key = clean["section"], clean["key"]
     r = pe.check(root, clean, traj, now, categories=categories, validate=validate)
@@ -690,8 +804,9 @@ def _start_split(
             mode="split",
             eid=eid,
             arm={k: arm[k] for k in ("path", "value", "share", "until")},
+            role=role,
         )
-        # the cooldown of policy_edit.recent() sees this row, so a split start starts the key's cooldown
+        # the policy tool's history shows the proposal (policy.json keeps the old value until the verdict)
         traj.append(
             "operator",
             "policy_edit",
@@ -713,6 +828,82 @@ def _start_split(
             )
         return _err(f"실험 등록 실패 ({type(e).__name__}: {e}); 비교 팔은 지움")
     return _ok(exp, r)
+
+
+def _register_group(root, label, xs, raws, now, traj, role, rev_weight, validate):
+    """Register the written items xs [(index, item, edit result)] of one group as ONE experiment of mode "group" on
+    their side's whole scope ("shop:all" or "buyer:all"); a worse verdict puts every item's raw state back. A failed
+    registration puts the items back at once. -> the result each item of the group gets."""
+    items = [it for _, it, _ in xs]
+    got = [
+        {**{k: r[k] for k in ("section", "key", "old", "new")},
+         "raw": {"base": r["key"].split(".", 1)[0], "present": raws[i][0], "value": raws[i][1]}}
+        for i, _, r in xs
+    ]
+    side = scope_of(got[0]["section"])[0]
+    role = role if role in ROLES else side
+    wh = next((it["window_h"] for it in items if "window_h" in it), None)
+    expect = next((_expect(it) for it in items if _expect(it)), "")
+    try:
+        exp = _register_group_entry(root, label, got, role, side, rev_weight, wh, expect, now, traj)
+    except Exception as e:  # noqa: BLE001 - an unregistered group must not stay in the file
+        why = f"묶음 등록 실패로 되돌림 ({type(e).__name__})"
+        bad = [x for x in reversed(got) if not pe.kernel_restore(
+            root, x["section"], x["raw"]["base"], x["raw"]["present"], x["raw"]["value"], traj, now, why,
+            tag=pe.kernel_tag(now), key=x["key"], validate=validate).get("ok")]
+        return _err(f"묶음 등록 실패 ({type(e).__name__}: {e}); "
+                    + ("값은 모두 원래대로 되돌림" if not bad else f"되돌리기 실패 {len(bad)}개"))
+    return {
+        "ok": True,
+        "test": "before_after",
+        "experiment": exp["id"],
+        "mode": "group",
+        "group": label,
+        "items": [{k: x[k] for k in ("section", "key", "old", "new")} for x in got],
+        "eval_ts": exp["eval_ts"],
+    }
+
+
+def _register_group_entry(root, label, got, role, side, rev_weight, window_h, expect, now, traj):
+    rows = load(root)
+    rw = rev_weight if side == "shop" and _num_ok(rev_weight) and rev_weight > 0 else 0.0
+    bf, mixed = _before(rows, [(x["section"], x["key"]) for x in got], now)
+    exp = {
+        "id": _next_id(rows),
+        "mode": "group",
+        "section": "group",
+        "key": label,
+        "old": None,
+        "new": None,
+        "items": got,
+        "role": role,
+        "started_ts": now,
+        "window_h": _window(window_h, side, "") if _num_ok(window_h) else GROUP_WINDOW_H,
+        "maturity_h": MATURITY_H[side],
+        "scope": side + ":all",
+        "side": side,
+        "metric": SCORE_METRIC if rw > 0 else METRIC[side],
+        "rev_weight": float(rw),
+        "expect": str(expect or "")[:500],
+        "status": "running",
+        "extended": False,
+        "before_from": bf,
+    }
+    if mixed:
+        exp["before_mixed"] = mixed
+    if side == "buyer":
+        exp["s0"] = board_saved(root, now)
+    exp["eval_ts"] = _eval_ts(exp)
+    rows.append(exp)
+    save(root, rows)
+    traj.append(
+        "operator",
+        "experiment_start",
+        items=[{k: x[k] for k in ("section", "key", "old", "new")} for x in got],
+        **{k: exp[k] for k in ("id", "mode", "section", "key", "scope", "side", "metric", "rev_weight", "window_h",
+                               "eval_ts", "expect", "role")},
+    )
+    return exp
 
 
 # --- events and metrics
@@ -868,7 +1059,7 @@ def read_events(root, lo, hi, login=None, cat=None, now=None):
 
 
 def _in_scope(scope, leaf, kind):
-    if scope == "shop:all":
+    if scope in ("shop:all", "buyer:all"):
         return True
     if scope.startswith(("kind:", "buyer:")):
         return kind == scope.split(":", 1)[1]
@@ -1239,7 +1430,7 @@ def _end(exp, status, v, now, traj):
 
 def _extend(exp, v, traj):
     exp.update(
-        window_h=min(MAX_WINDOW_H, exp["window_h"] * 2),
+        window_h=min(EXT_MAX_WINDOW_H, exp["window_h"] * 2),
         extended=True,
         first_verdict=v,
     )
@@ -1267,6 +1458,52 @@ def _policy(root):
     return pol
 
 
+def overlapping(rows, exp):
+    """Ids of the other experiments of exp's side whose live time [started_ts, ended_ts) overlaps exp's after window
+    [started_ts, started_ts + window_h): their changes are inside a before/after comparison of that side (a bet, a
+    buyer key), so its verdict is confounded by them."""
+    t = exp["started_ts"]
+    end = t + exp["window_h"] * 3600
+    out = []
+    for e in rows:
+        try:
+            if not isinstance(e, dict) or e.get("id") == exp.get("id") or e.get("side") != exp.get("side"):
+                continue
+            t_end = e.get("ended_ts")
+            if e["started_ts"] < end and (not _num_ok(t_end) or t_end > t):
+                out.append(e["id"])
+        except (KeyError, TypeError):
+            continue
+    return out
+
+
+def _judge(exp, v, traj):
+    """The before/after rule of sequential experiments and bets on verdict v (sets v["final"]): -> None when the window
+    was extended, True to keep the value, False to put it back."""
+    if v["decision"] in ("better", "worse"):
+        v["final"] = "decision"
+    elif not exp.get("extended"):
+        _extend(exp, v, traj)
+        return None
+    elif v["decision"] == "no_baseline":
+        v.update(final="no_baseline")  # nothing to compare against: the value stays
+    elif v["reason"] == "cost_unknown":
+        v.update(
+            final="cost_unknown"
+        )  # profit of sales with unknown cost is not judged: the value stays
+    elif v["n_before"] == 0 and v["n_after"] == 0:
+        v.update(final="no_activity")
+    else:
+        v.update(final="point_estimate")
+    return v["decision"] == "better" or (
+        v["decision"] != "worse"
+        and (
+            v["final"] in ("no_activity", "no_baseline", "cost_unknown")
+            or v["effect"] >= 0
+        )
+    )
+
+
 def _step_sequential(root, exp, now, traj, categories, validate):
     """Decide one due sequential experiment. -> True when it ended or was extended; raises when the revert failed."""
     cur = pe.effective(_policy(root), exp["section"], exp["key"])
@@ -1280,28 +1517,14 @@ def _step_sequential(root, exp, now, traj, categories, validate):
         )
         return True
     v = evaluate(root, exp, now)
-    if v["decision"] in ("better", "worse"):
-        v["final"] = "decision"
-    elif not exp.get("extended"):
-        _extend(exp, v, traj)
+    ov = overlapping(load(root), exp) if exp.get("side") == "buyer" else []
+    if ov:  # only when there is one: HEAD's buyer verdicts carry no overlap key
+        v["overlap"] = ov
+    if exp.get("before_mixed"):
+        v["before_mixed"] = exp["before_mixed"]
+    keep = _judge(exp, v, traj)
+    if keep is None:
         return True
-    elif v["decision"] == "no_baseline":
-        v.update(final="no_baseline")  # nothing to compare against: the value stays
-    elif v["reason"] == "cost_unknown":
-        v.update(
-            final="cost_unknown"
-        )  # profit of sales with unknown cost is not judged: the value stays
-    elif v["n_before"] == 0 and v["n_after"] == 0:
-        v.update(final="no_activity")
-    else:
-        v.update(final="point_estimate")
-    keep = v["decision"] == "better" or (
-        v["decision"] != "worse"
-        and (
-            v["final"] in ("no_activity", "no_baseline", "cost_unknown")
-            or v["effect"] >= 0
-        )
-    )
     if keep:
         _end(exp, "kept", v, now, traj)
         return True
@@ -1343,6 +1566,54 @@ def _step_sequential(root, exp, now, traj, categories, validate):
     return True
 
 
+def _step_group(root, exp, now, traj, categories, validate):
+    """Decide one due group (mode "group", or "bet" from before) like a sequential experiment (evaluate on the whole side, _judge), with the ids of the other
+    experiments of the side in its window (overlapping) on the verdict. Worse: every item's raw state goes back
+    (policy_edit.kernel_restore, as a sequential revert). A restore that fails raises; the items already restored are
+    marked and the verdict kept, so the retry restores only the rest. -> True when it ended or was extended."""
+    items = exp.get("items") or []
+    v = exp.get("reverting")
+    if not isinstance(v, dict):
+        pol, moved = _policy(root), {}
+        for x in items:
+            cur = pe.effective(pol, x["section"], x["key"])
+            if not _same(cur, x["new"]):
+                moved[f"{x['section']} {x['key']}"] = cur
+        if moved:
+            _end(exp, "voided", {"decision": "voided", "reason": "value_changed", "value_now": moved}, now, traj)
+            return True
+        v = evaluate(root, exp, now)
+        ov = overlapping(load(root), exp)
+        if ov:
+            v["overlap"] = ov
+        if exp.get("before_mixed"):
+            v["before_mixed"] = exp["before_mixed"]
+        keep = _judge(exp, v, traj)
+        if keep is None:
+            return True
+        if keep:
+            _end(exp, "kept", v, now, traj)
+            return True
+        exp["reverting"] = v
+    why = f"묶음 #{exp['id']} '{exp['key']}' 판정 {v['decision']} ({v['reason']}): 키 {len(items)}개를 모두 되돌림"
+    for x in items:
+        if x.get("restored"):
+            continue
+        raw = x["raw"]
+        res = pe.kernel_restore(
+            root, x["section"], raw["base"], raw.get("present"), raw.get("value"), traj, now, why,
+            tag=pe.kernel_tag(now, exp["id"]), key=x["key"], validate=validate,
+        )
+        if not res.get("ok"):
+            raise RuntimeError(f"revert failed: {x['section']} {x['key']}: {res.get('error')}")
+        for y in items:  # items of the same section and base share the raw state just put back
+            if y["section"] == x["section"] and y["raw"]["base"] == raw["base"]:
+                y["restored"] = True
+    exp.pop("reverting", None)
+    _end(exp, "reverted", v, now, traj)
+    return True
+
+
 def _step_split(root, exp, now, traj, categories, validate):
     """Decide one due split experiment. -> True when it ended or was extended; raises when a write failed."""
     eid = exp["id"]
@@ -1364,7 +1635,7 @@ def _step_split(root, exp, now, traj, categories, validate):
         adopt = v["decision"] == "better"
     elif (
         not exp.get("extended")
-        and exp["window_h"] < MAX_WINDOW_H
+        and exp["window_h"] < EXT_MAX_WINDOW_H
         and now < (arm.get("until") or 0)
     ):
         _extend(exp, v, traj)
@@ -1453,7 +1724,8 @@ def tick(root, now, traj, categories=(), validate=None):
             if now < exp["eval_ts"]:
                 continue
             dirty = True
-            step = _step_split if exp.get("mode") == "split" else _step_sequential
+            mode = exp.get("mode")
+            step = _step_split if mode == "split" else _step_group if mode in GROUP_MODES else _step_sequential
             if step(root, exp, now, traj, categories, validate):
                 out.append(exp)
         except Exception as e:  # noqa: BLE001 - one bad entry must not stop the others
@@ -1519,7 +1791,9 @@ def _run_line(e):
     exp = str(e.get("expect") or "")
     exp = exp[:EXPECT_CHARS] + ("…" if len(exp) > EXPECT_CHARS else "")
     when = c.kst(e["eval_ts"], "%H:%M") if _num_ok(e.get("eval_ts")) else "-"
-    if e.get("mode") == "split":
+    if e.get("mode") in GROUP_MODES:
+        head = f"  진행 #{e['id']} 묶음 '{e.get('key')}' 키 {len(e.get('items') or [])}개"
+    elif e.get("mode") == "split":
         head = f"  진행 #{e['id']} 동시 비교 {_label(e.get('section'))} {e.get('key')} A {_val(e.get('old'))} / B {_val(e.get('new'))}"
     else:
         head = f"  진행 #{e['id']} {_label(e.get('section'))} {e.get('key')} {_val(e.get('old'))}→{_val(e.get('new'))}"
@@ -1534,7 +1808,11 @@ def _run_line(e):
 
 def _ended_line(e):
     v, side = e.get("verdict") or {}, e.get("side")
-    head = f"  #{e['id']} {e.get('key')} {_val(e.get('old'))}→{_val(e.get('new'))} {STATUS_KO.get(e['status'], e['status'])}"
+    status = STATUS_KO.get(e["status"], e["status"])
+    if e.get("mode") in GROUP_MODES:
+        head = f"  #{e['id']} 묶음 '{e.get('key')}' 키 {len(e.get('items') or [])}개 {status}"
+    else:
+        head = f"  #{e['id']} {e.get('key')} {_val(e.get('old'))}→{_val(e.get('new'))} {status}"
     if e["status"] == "voided":
         return head + (f": {_reason(v)}" if _reason(v) else "")
     reason = _reason(v)
@@ -1558,6 +1836,16 @@ def _ended_line(e):
             else ""
         )
         + (f", {reason}" if reason else "")
+        + (
+            f", 같은 구간의 다른 실험 {', '.join(f'#{i}' for i in v['overlap'])} (비교가 섞임)"
+            if v.get("overlap")
+            else ""
+        )
+        + (
+            f", 전 구간에 앞선 실험 {', '.join(f'#{i}' for i in v['before_mixed'])}의 값이 섞임"
+            if v.get("before_mixed")
+            else ""
+        )
     )
 
 

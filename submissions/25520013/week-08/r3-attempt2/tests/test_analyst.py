@@ -80,20 +80,23 @@ def test_ask_accepted_refused_and_duplicate(env):
     r = qs.ask(root, "shop", {"q": " C등급  리뷰는 어디서? "}, NOW)
     assert not r["ok"] and "#1" in r["error"]  # same question, whitespace aside
     assert qs.ask(root, "shop", {"q": "보증 환불은?"}, NOW)["ok"]
-    r = qs.ask(root, "shop", "세 번째", NOW)
-    assert not r["ok"] and "2개" in r["error"]  # two open already
-    assert not qs.ask(root, "buyer", "가" * 401, NOW)["ok"]
-    assert "1개까지" in qs.ask(root, "buyer", ["a", "b"], NOW)["error"]
+    assert qs.ask(root, "shop", "세 번째", NOW)["ok"]  # 11-11: no small open-question count
+    long = qs.ask(root, "buyer", "가" * 5000, NOW)
+    assert long["ok"] and len(_q(root, long["id"])["q"]) == qs.Q_CHARS  # cut silently, not refused
+    assert not qs.ask(root, "buyer", ["a", "b"], NOW)["ok"]  # the operator sends each item of a list
     assert not qs.ask(root, "buyer", {"x": 1}, NOW)["ok"]
     assert qs.ask(root, "buyer", "구매 절약은?", NOW)["ok"]
-    assert [(r["from"], r["for"], r["status"]) for r in qs.load(root)] == [
+    assert [(r["from"], r["for"], r["status"]) for r in qs.load(root)][:3] == [
         ("shop", ["shop"], "open"),
         ("shop", ["shop"], "open"),
-        ("buyer", ["buyer"], "open"),
+        ("shop", ["shop"], "open"),
     ]
-    assert (
-        qs.ask(root, "shop", "x " + "y" * 10, NOW, secrets=("y" * 10,))["ok"] is False
-    )  # still 2 open
+    r = qs.ask(root, "shop", "x " + "y" * 10, NOW, secrets=("y" * 10,))
+    assert r["ok"] and "y" * 10 not in _q(root, r["id"])["q"]
+    for i in range(qs.OPEN_PER_ROLE - 4):
+        assert qs.ask(root, "shop", f"질문 {i}", NOW)["ok"]
+    r = qs.ask(root, "shop", "하나 더", NOW)
+    assert not r["ok"] and f"{qs.OPEN_PER_ROLE}개" in r["error"]  # the runaway backstop
 
 
 def test_ask_result_reaches_the_next_wake(env):
@@ -111,16 +114,22 @@ def test_ask_result_reaches_the_next_wake(env):
     assert (
         "- 조사 질문: 거절됨. 같은 질문이 이미 열려 있음 (#1)" in shop.terra.prompts[2]
     )
-    assert '"ask": "<조사원에게 맡길 질문 하나, 400자 안>"' in shop.terra.prompts[0]
-    assert "ask는 조사원에게 질문 하나를 맡김" in op.role_schema("buyer")
+    assert '"ask": "<조사원에게 맡길 질문, 여럿이면 목록>"' in shop.terra.prompts[0]
+    assert "ask는 조사원에게 질문을 맡김" in op.role_schema("buyer")
+    shop.terra = Script({"done": {"ask": ["가게 질문 A", "가게 질문 B"]}})
+    res = shop.wake("주기 점검", NOW + 3600)
+    assert [x["ok"] for x in res["ask"]] == [True, True]  # several questions in one wake
     assert "ask" not in op.COMPACT_SCHEMA  # the single operator has no investigator
     assert "ask" not in make(None)._finish_compact({"ask": "x"}, NOW)
 
 
 # ------------------------------------------------------------ standing questions
-def test_standing_questions_by_interval_without_duplicates(env, monkeypatch):
+def test_standing_questions_by_interval_without_duplicates(env, monkeypatch, tmp_path):
     root, make = env
-    monkeypatch.setattr(an, "JOB", os.path.join(op.HERE, "ANALYST_JOB.md"))
+    assert qs.standing(open(os.path.join(op.HERE, "ANALYST_JOB.md"), encoding="utf-8").read()) == []  # 11-12: none shipped
+    job = tmp_path / "JOB.md"
+    job.write_text("- [standing 3h for=shop] 최근 24시간 별점 3점 이하 리뷰가 어디서 나오는지\n- [standing 6h for=buyer] 절약 비율\n", encoding="utf-8")
+    monkeypatch.setattr(an, "JOB", str(job))
     items = qs.standing(open(an.JOB, encoding="utf-8").read())
     assert [(h, f) for h, f, _ in items] == [(3.0, ["shop"]), (6.0, ["buyer"])]
     assert items[0][2].startswith("최근 24시간 별점 3점 이하 리뷰가")

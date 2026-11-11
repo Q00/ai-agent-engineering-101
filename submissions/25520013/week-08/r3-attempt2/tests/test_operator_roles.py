@@ -94,12 +94,13 @@ def test_trajectory_rows_carry_the_role(tmp_path):
 
 
 def test_role_job_files_are_human_written_per_role():
-    # 11-11: the role job texts are written by a human per role (they began as copies of OPERATOR_JOB.md)
-    other = {"shop": "hooks/market_buyer.py는 구매 운영자 몫", "buyer": "hooks/seller.py와 hooks/restock.py는 가게 운영자 몫"}
+    # 11-11: the role job texts are written by a human per role: goal, means and hard lines only, no work order
+    other = {"shop": "구매 운영자가 같은 방식으로 맡음", "buyer": "가게 운영자가 같은 방식으로 맡음"}
     for r in op.ROLES:
         text = open(os.path.join(op.HERE, f"OPERATOR_JOB_{r.upper()}.md"), encoding="utf-8").read()
         assert text.startswith(f"<!-- role: {r} -->\n")
-        assert "## 규칙 코드 고치기" in text and "## 도구함" in text and other[r] in text
+        assert "## 목표와 권한" in text and "## 수단" in text and "## 넘을 수 없는 선" in text and other[r] in text
+        assert "일하는 순서" not in text and "개까지" not in text and "번까지" not in text
 
 
 def test_job_path_falls_back_to_the_single_job(env, monkeypatch, tmp_path):
@@ -307,8 +308,9 @@ def test_policy_items_of_the_other_side_are_refused(env):
     )
     assert not r["policy"][0]["ok"] and "가게 운영자(shop)" in r["policy"][0]["error"]
     assert r["policy"][1]["ok"]
-    roles = {e["key"]: e.get("role") for e in ex.load(root)}
-    assert roles == {"price_mult": "shop", "max_pay_frac": "buyer"}
+    # test none (the default): applied directly, so the role is on the trajectory row, not on a ledger entry
+    roles = {x["key"]: x.get("role") for x in _rows(root) if x.get("kind") == "policy_edit"}
+    assert roles == {"price_mult": "shop", "max_pay_frac": "buyer"} and ex.load(root) == []
 
 
 def test_code_files_and_forum_of_the_other_side_are_refused(env):

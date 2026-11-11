@@ -95,9 +95,7 @@ def test_refusals_leave_the_file_untouched(root):
     before = open(os.path.join(root, "policy.json"), "rb").read()
     bad = [
         {"section": BED, "key": "owner", "value": 1, "reason": "r"},  # key not editable
-        {"section": BED, "key": "price_mult", "value": 0.9, "reason": "r"},  # step 0.24 > 0.1
         {"section": BED, "key": "price_mult", "value": "0.7", "reason": "r"},  # not a number
-        {"section": BED, "key": "price_mult", "value": 0.7},  # no reason
         {"section": "없는>상품군", "key": "price_mult", "value": 0.9, "reason": "r"},  # unknown section
         {"section": BED, "key": "max_rounds", "value": 2.5, "reason": "r"},  # whole numbers only
         {"section": BED, "key": "stock_target", "value": 30, "reason": "r"},  # attempt 1's own check refuses
@@ -105,22 +103,22 @@ def test_refusals_leave_the_file_untouched(root):
     ]
     res = pe.apply(root, bad, traj, now)
     assert [r["ok"] for r in res] == [False] * len(bad)
-    assert "check failed" in res[6]["error"]
+    assert "check failed" in res[4]["error"]
     assert open(os.path.join(root, "policy.json"), "rb").read() == before
     assert not [f for f in os.listdir(root) if f.startswith(".policy.tmp-")]
 
 
-def test_new_category_from_catalog_starts_from_defaults_and_cooldown_holds(root):
+def test_new_category_from_catalog_starts_from_defaults_and_no_cooldown(root):
     traj, now = _traj(root), time.time()
     res = pe.apply(root, [{"section": SOFA, "key": "price_mult", "value": 0.8, "reason": "소파 몫 4%"}], traj, now,
                    categories={SOFA})
     assert res[0]["ok"] and res[0]["old"] == 0.9 and _pol(root)["categories"][SOFA] == {"price_mult": 0.8}
     again = pe.apply(root, [{"section": SOFA, "key": "price_mult", "value": 0.75, "reason": "r"}], traj, now + 60,
                      categories={SOFA})
-    assert not again[0]["ok"] and "min ago" in again[0]["error"]
+    assert again[0]["ok"] and again[0]["old"] == 0.8  # 11-11: no cooldown, no step limit
 
 
-def test_at_most_three_per_wake(root):
+def test_one_refused_item_among_several(root):
     traj, now = _traj(root), time.time()
     items = [{"section": s, "key": "max_rounds", "value": v, "reason": "r"} for s, v in (("defaults.food", 3), ("defaults.goods", 3), (BED, 2))]
     items.append({"section": BED, "key": "stock_target", "value": 30, "reason": "r"})

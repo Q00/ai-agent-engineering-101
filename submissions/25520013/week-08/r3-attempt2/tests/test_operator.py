@@ -744,7 +744,7 @@ def test_max_steps_forces_done(root, hroot):
     )
     res = o.wake("test", now=NOW)
     assert res["status"] == "no_done" and len(_rows(root, "tool")) == 1
-    assert "반드시 done" in terra.prompts[-1]
+    assert "이번 점검을 여기서 마무리함: done 객체로 답함" in terra.prompts[-1]
 
 
 def test_main_dry_once(root, hroot, capsys):

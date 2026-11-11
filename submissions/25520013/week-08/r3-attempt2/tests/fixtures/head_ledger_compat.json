@@ -1,0 +1,654 @@
+{
+ "made_by": "HEAD kernel/experiments.py (git archive), scratch generator",
+ "files": {
+  "policy.json": "{\n  \"owner\": {\n    \"github\": \"secret-login\"\n  },\n  \"shop\": {\n    \"liquidation_line\": 1500000,\n    \"grade_floor_list\": {\n      \"C\": 0.55\n    },\n    \"restock_priority\": [\n      \"가구/침구>가구>침대/매트리스\"\n    ]\n  },\n  \"defaults\": {\n    \"food\": {\n      \"price_mult\": 0.92,\n      \"max_rounds\": 5,\n      \"fresh_discount\": {\n        \"B\": 0.06,\n        \"C\": 0.3\n      }\n    },\n    \"goods\": {\n      \"price_mult\": 0.9,\n      \"max_rounds\": 4,\n      \"fresh_discount\": {\n        \"B\": 0.08,\n        \"C\": 0.3\n      },\n      \"warranty_hours\": {\n        \"A\": 6,\n        \"B\": 6,\n        \"C\": 0\n      },\n      \"max_warranty_hours\": 6\n    }\n  },\n  \"categories\": {\n    \"가구/침구>가구>침대/매트리스\": {\n      \"stock_target\": 36,\n      \"price_mult\": 0.8\n    }\n  },\n  \"buyer\": {\n    \"defaults\": {\n      \"food\": {\n        \"open_frac\": 0.55,\n        \"max_pay_frac\": 0.8,\n        \"step_frac\": 0.07,\n        \"max_rounds\": 5\n      },\n      \"goods\": {\n        \"open_frac\": 0.55,\n        \"max_pay_frac\": 0.85,\n        \"step_frac\": 0.07,\n        \"max_rounds\": 5\n      }\n    },\n    \"categories\": {}\n  },\n  \"bounds\": {\n    \"price_mult\": [\n      0.5,\n      1.5\n    ],\n    \"max_pay_frac\": [\n      0.3,\n      1.0\n    ]\n  }\n}\n",
+  "policy_arms.json": "{\n \"arms\": [\n  {\n   \"id\": 2,\n   \"path\": [\n    \"categories\",\n    \"가구/침구>가구>소파/의자/스툴\",\n    \"price_mult\"\n   ],\n   \"value\": 0.85,\n   \"share\": 0.5,\n   \"until\": 1794019860.0\n  }\n ]\n}",
+  "a2/experiments.json": "[\n {\n  \"id\": 1,\n  \"mode\": \"sequential\",\n  \"section\": \"가구/침구>가구>침대/매트리스\",\n  \"key\": \"price_mult\",\n  \"old\": 0.9,\n  \"new\": 0.8,\n  \"started_ts\": 1794000000.0,\n  \"window_h\": 4,\n  \"maturity_h\": 2,\n  \"scope\": \"침대/매트리스\",\n  \"side\": \"shop\",\n  \"metric\": \"net_profit_per_h\",\n  \"rev_weight\": 0.0,\n  \"expect\": \"가설\",\n  \"status\": \"running\",\n  \"extended\": false,\n  \"raw\": {\n   \"base\": \"price_mult\",\n   \"present\": false,\n   \"value\": null\n  },\n  \"before_from\": null,\n  \"eval_ts\": 1794021600.0\n },\n {\n  \"id\": 2,\n  \"mode\": \"split\",\n  \"section\": \"가구/침구>가구>소파/의자/스툴\",\n  \"key\": \"price_mult\",\n  \"old\": 0.9,\n  \"new\": 0.85,\n  \"started_ts\": 1794000060.0,\n  \"window_h\": 3,\n  \"maturity_h\": 2,\n  \"scope\": \"소파/의자/스툴\",\n  \"side\": \"shop\",\n  \"metric\": \"net_profit_per_h\",\n  \"rev_weight\": 0.0,\n  \"expect\": \"가설\",\n  \"status\": \"running\",\n  \"extended\": false,\n  \"arm\": {\n   \"path\": [\n    \"categories\",\n    \"가구/침구>가구>소파/의자/스툴\",\n    \"price_mult\"\n   ],\n   \"value\": 0.85,\n   \"share\": 0.5,\n   \"until\": 1794019860.0\n  },\n  \"eval_ts\": 1794018060.0\n },\n {\n  \"id\": 3,\n  \"mode\": \"sequential\",\n  \"section\": \"buyer.defaults.food\",\n  \"key\": \"max_pay_frac\",\n  \"old\": 0.85,\n  \"new\": 0.8,\n  \"started_ts\": 1794000120.0,\n  \"window_h\": 2,\n  \"maturity_h\": 0,\n  \"scope\": \"buyer:food\",\n  \"side\": \"buyer\",\n  \"metric\": \"saved_gain_per_h\",\n  \"rev_weight\": 0.0,\n  \"expect\": \"가설\",\n  \"status\": \"running\",\n  \"extended\": false,\n  \"raw\": {\n   \"base\": \"max_pay_frac\",\n   \"present\": true,\n   \"value\": 0.85\n  },\n  \"before_from\": null,\n  \"s0\": null,\n  \"eval_ts\": 1794007320.0\n },\n {\n  \"id\": 4,\n  \"mode\": \"sequential\",\n  \"section\": \"defaults.food\",\n  \"key\": \"max_rounds\",\n  \"old\": 4,\n  \"new\": 5,\n  \"started_ts\": 1794000180.0,\n  \"window_h\": 2,\n  \"maturity_h\": 2,\n  \"scope\": \"kind:food\",\n  \"side\": \"shop\",\n  \"metric\": \"net_profit_per_h\",\n  \"rev_weight\": 0.0,\n  \"expect\": \"가설\",\n  \"status\": \"running\",\n  \"extended\": false,\n  \"raw\": {\n   \"base\": \"max_rounds\",\n   \"present\": true,\n   \"value\": 4\n  },\n  \"before_from\": null,\n  \"eval_ts\": 1794014580.0\n }\n]",
+  ".r3/events.jsonl": "{\"ts\": 1793985660.0, \"type\": \"settle\", \"src\": \"market\", \"role\": \"market\", \"mine\": false, \"data\": {\"sku\": \"BED1\", \"buyer\": \"b1\", \"unit\": \"u1\", \"amount\": 1285000.0, \"own_owner\": true, \"shop\": \"our shop\", \"order\": \"o-u1\", \"grade\": \"A\"}}\n{\"ts\": 1793892000.0, \"type\": \"unit_gone\", \"src\": \"inventory\", \"role\": \"market\", \"mine\": true, \"data\": {\"unit\": \"u1\", \"cost\": 1000000, \"category\": \"가구/침구>가구>침대/매트리스\"}}\n{\"ts\": 1793986260.0, \"type\": \"settle\", \"src\": \"market\", \"role\": \"market\", \"mine\": false, \"data\": {\"sku\": \"BED1\", \"buyer\": \"b2\", \"unit\": \"u2\", \"amount\": 1285000.0, \"own_owner\": true, \"shop\": \"our shop\", \"order\": \"o-u2\", \"grade\": \"A\"}}\n{\"ts\": 1793892000.0, \"type\": \"unit_gone\", \"src\": \"inventory\", \"role\": \"market\", \"mine\": true, \"data\": {\"unit\": \"u2\", \"cost\": 1000000, \"category\": \"가구/침구>가구>침대/매트리스\"}}\n{\"ts\": 1793986860.0, \"type\": \"settle\", \"src\": \"market\", \"role\": \"market\", \"mine\": false, \"data\": {\"sku\": \"BED1\", \"buyer\": \"b3\", \"unit\": \"u3\", \"amount\": 1285000.0, \"own_owner\": true, \"shop\": \"our shop\", \"order\": \"o-u3\", \"grade\": \"A\"}}\n{\"ts\": 1793892000.0, \"type\": \"unit_gone\", \"src\": \"inventory\", \"role\": \"market\", \"mine\": true, \"data\": {\"unit\": \"u3\", \"cost\": 1000000, \"category\": \"가구/침구>가구>침대/매트리스\"}}\n{\"ts\": 1793989260.0, \"type\": \"settle\", \"src\": \"market\", \"role\": \"market\", \"mine\": false, \"data\": {\"sku\": \"BED1\", \"buyer\": \"b4\", \"unit\": \"u4\", \"amount\": 1300000.0, \"own_owner\": true, \"shop\": \"our shop\", \"order\": \"o-u4\", \"grade\": \"A\"}}\n{\"ts\": 1793892000.0, \"type\": \"unit_gone\", \"src\": \"inventory\", \"role\": \"market\", \"mine\": true, \"data\": {\"unit\": \"u4\", \"cost\": 1000000, \"category\": \"가구/침구>가구>침대/매트리스\"}}\n{\"ts\": 1793989860.0, \"type\": \"settle\", \"src\": \"market\", \"role\": \"market\", \"mine\": false, \"data\": {\"sku\": \"BED1\", \"buyer\": \"b5\", \"unit\": \"u5\", \"amount\": 1300000.0, \"own_owner\": true, \"shop\": \"our shop\", \"order\": \"o-u5\", \"grade\": \"A\"}}\n{\"ts\": 1793892000.0, \"type\": \"unit_gone\", \"src\": \"inventory\", \"role\": \"market\", \"mine\": true, \"data\": {\"unit\": \"u5\", \"cost\": 1000000, \"category\": \"가구/침구>가구>침대/매트리스\"}}\n{\"ts\": 1793990460.0, \"type\": \"settle\", \"src\": \"market\", \"role\": \"market\", \"mine\": false, \"data\": {\"sku\": \"BED1\", \"buyer\": \"b6\", \"unit\": \"u6\", \"amount\": 1300000.0, \"own_owner\": true, \"shop\": \"our shop\", \"order\": \"o-u6\", \"grade\": \"A\"}}\n{\"ts\": 1793892000.0, \"type\": \"unit_gone\", \"src\": \"inventory\", \"role\": \"market\", \"mine\": true, \"data\": {\"unit\": \"u6\", \"cost\": 1000000, \"category\": \"가구/침구>가구>침대/매트리스\"}}\n{\"ts\": 1793992860.0, \"type\": \"settle\", \"src\": \"market\", \"role\": \"market\", \"mine\": false, \"data\": {\"sku\": \"BED1\", \"buyer\": \"b7\", \"unit\": \"u7\", \"amount\": 1315000.0, \"own_owner\": true, \"shop\": \"our shop\", \"order\": \"o-u7\", \"grade\": \"A\"}}\n{\"ts\": 1793892000.0, \"type\": \"unit_gone\", \"src\": \"inventory\", \"role\": \"market\", \"mine\": true, \"data\": {\"unit\": \"u7\", \"cost\": 1000000, \"category\": \"가구/침구>가구>침대/매트리스\"}}\n{\"ts\": 1793993460.0, \"type\": \"settle\", \"src\": \"market\", \"role\": \"market\", \"mine\": false, \"data\": {\"sku\": \"BED1\", \"buyer\": \"b8\", \"unit\": \"u8\", \"amount\": 1315000.0, \"own_owner\": true, \"shop\": \"our shop\", \"order\": \"o-u8\", \"grade\": \"A\"}}\n{\"ts\": 1793892000.0, \"type\": \"unit_gone\", \"src\": \"inventory\", \"role\": \"market\", \"mine\": true, \"data\": {\"unit\": \"u8\", \"cost\": 1000000, \"category\": \"가구/침구>가구>침대/매트리스\"}}\n{\"ts\": 1793994060.0, \"type\": \"settle\", \"src\": \"market\", \"role\": \"market\", \"mine\": false, \"data\": {\"sku\": \"BED1\", \"buyer\": \"b9\", \"unit\": \"u9\", \"amount\": 1315000.0, \"own_owner\": true, \"shop\": \"our shop\", \"order\": \"o-u9\", \"grade\": \"A\"}}\n{\"ts\": 1793892000.0, \"type\": \"unit_gone\", \"src\": \"inventory\", \"role\": \"market\", \"mine\": true, \"data\": {\"unit\": \"u9\", \"cost\": 1000000, \"category\": \"가구/침구>가구>침대/매트리스\"}}\n{\"ts\": 1793996460.0, \"type\": \"settle\", \"src\": \"market\", \"role\": \"market\", \"mine\": false, \"data\": {\"sku\": \"BED1\", \"buyer\": \"b10\", \"unit\": \"u10\", \"amount\": 1285000.0, \"own_owner\": true, \"shop\": \"our shop\", \"order\": \"o-u10\", \"grade\": \"A\"}}\n{\"ts\": 1793892000.0, \"type\": \"unit_gone\", \"src\": \"inventory\", \"role\": \"market\", \"mine\": true, \"data\": {\"unit\": \"u10\", \"cost\": 1000000, \"category\": \"가구/침구>가구>침대/매트리스\"}}\n{\"ts\": 1793997060.0, \"type\": \"settle\", \"src\": \"market\", \"role\": \"market\", \"mine\": false, \"data\": {\"sku\": \"BED1\", \"buyer\": \"b11\", \"unit\": \"u11\", \"amount\": 1285000.0, \"own_owner\": true, \"shop\": \"our shop\", \"order\": \"o-u11\", \"grade\": \"A\"}}\n{\"ts\": 1793892000.0, \"type\": \"unit_gone\", \"src\": \"inventory\", \"role\": \"market\", \"mine\": true, \"data\": {\"unit\": \"u11\", \"cost\": 1000000, \"category\": \"가구/침구>가구>침대/매트리스\"}}\n{\"ts\": 1793997660.0, \"type\": \"settle\", \"src\": \"market\", \"role\": \"market\", \"mine\": false, \"data\": {\"sku\": \"BED1\", \"buyer\": \"b12\", \"unit\": \"u12\", \"amount\": 1285000.0, \"own_owner\": true, \"shop\": \"our shop\", \"order\": \"o-u12\", \"grade\": \"A\"}}\n{\"ts\": 1793892000.0, \"type\": \"unit_gone\", \"src\": \"inventory\", \"role\": \"market\", \"mine\": true, \"data\": {\"unit\": \"u12\", \"cost\": 1000000, \"category\": \"가구/침구>가구>침대/매트리스\"}}\n{\"ts\": 1794000060.0, \"type\": \"settle\", \"src\": \"market\", \"role\": \"market\", \"mine\": false, \"data\": {\"sku\": \"BED1\", \"buyer\": \"b13\", \"unit\": \"u13\", \"amount\": 1095000.0, \"own_owner\": true, \"shop\": \"our shop\", \"order\": \"o-u13\", \"grade\": \"A\"}}\n{\"ts\": 1793892000.0, \"type\": \"unit_gone\", \"src\": \"inventory\", \"role\": \"market\", \"mine\": true, \"data\": {\"unit\": \"u13\", \"cost\": 1000000, \"category\": \"가구/침구>가구>침대/매트리스\"}}\n{\"ts\": 1794000660.0, \"type\": \"settle\", \"src\": \"market\", \"role\": \"market\", \"mine\": false, \"data\": {\"sku\": \"BED1\", \"buyer\": \"b14\", \"unit\": \"u14\", \"amount\": 1095000.0, \"own_owner\": true, \"shop\": \"our shop\", \"order\": \"o-u14\", \"grade\": \"A\"}}\n{\"ts\": 1793892000.0, \"type\": \"unit_gone\", \"src\": \"inventory\", \"role\": \"market\", \"mine\": true, \"data\": {\"unit\": \"u14\", \"cost\": 1000000, \"category\": \"가구/침구>가구>침대/매트리스\"}}\n{\"ts\": 1794001260.0, \"type\": \"settle\", \"src\": \"market\", \"role\": \"market\", \"mine\": false, \"data\": {\"sku\": \"BED1\", \"buyer\": \"b15\", \"unit\": \"u15\", \"amount\": 1095000.0, \"own_owner\": true, \"shop\": \"our shop\", \"order\": \"o-u15\", \"grade\": \"A\"}}\n{\"ts\": 1793892000.0, \"type\": \"unit_gone\", \"src\": \"inventory\", \"role\": \"market\", \"mine\": true, \"data\": {\"unit\": \"u15\", \"cost\": 1000000, \"category\": \"가구/침구>가구>침대/매트리스\"}}\n{\"ts\": 1794003660.0, \"type\": \"settle\", \"src\": \"market\", \"role\": \"market\", \"mine\": false, \"data\": {\"sku\": \"BED1\", \"buyer\": \"b16\", \"unit\": \"u16\", \"amount\": 1100000.0, \"own_owner\": true, \"shop\": \"our shop\", \"order\": \"o-u16\", \"grade\": \"A\"}}\n{\"ts\": 1793892000.0, \"type\": \"unit_gone\", \"src\": \"inventory\", \"role\": \"market\", \"mine\": true, \"data\": {\"unit\": \"u16\", \"cost\": 1000000, \"category\": \"가구/침구>가구>침대/매트리스\"}}\n{\"ts\": 1794004260.0, \"type\": \"settle\", \"src\": \"market\", \"role\": \"market\", \"mine\": false, \"data\": {\"sku\": \"BED1\", \"buyer\": \"b17\", \"unit\": \"u17\", \"amount\": 1100000.0, \"own_owner\": true, \"shop\": \"our shop\", \"order\": \"o-u17\", \"grade\": \"A\"}}\n{\"ts\": 1793892000.0, \"type\": \"unit_gone\", \"src\": \"inventory\", \"role\": \"market\", \"mine\": true, \"data\": {\"unit\": \"u17\", \"cost\": 1000000, \"category\": \"가구/침구>가구>침대/매트리스\"}}\n{\"ts\": 1794004860.0, \"type\": \"settle\", \"src\": \"market\", \"role\": \"market\", \"mine\": false, \"data\": {\"sku\": \"BED1\", \"buyer\": \"b18\", \"unit\": \"u18\", \"amount\": 1100000.0, \"own_owner\": true, \"shop\": \"our shop\", \"order\": \"o-u18\", \"grade\": \"A\"}}\n{\"ts\": 1793892000.0, \"type\": \"unit_gone\", \"src\": \"inventory\", \"role\": \"market\", \"mine\": true, \"data\": {\"unit\": \"u18\", \"cost\": 1000000, \"category\": \"가구/침구>가구>침대/매트리스\"}}\n{\"ts\": 1794007260.0, \"type\": \"settle\", \"src\": \"market\", \"role\": \"market\", \"mine\": false, \"data\": {\"sku\": \"BED1\", \"buyer\": \"b19\", \"unit\": \"u19\", \"amount\": 1105000.0, \"own_owner\": true, \"shop\": \"our shop\", \"order\": \"o-u19\", \"grade\": \"A\"}}\n{\"ts\": 1793892000.0, \"type\": \"unit_gone\", \"src\": \"inventory\", \"role\": \"market\", \"mine\": true, \"data\": {\"unit\": \"u19\", \"cost\": 1000000, \"category\": \"가구/침구>가구>침대/매트리스\"}}\n{\"ts\": 1794007860.0, \"type\": \"settle\", \"src\": \"market\", \"role\": \"market\", \"mine\": false, \"data\": {\"sku\": \"BED1\", \"buyer\": \"b20\", \"unit\": \"u20\", \"amount\": 1105000.0, \"own_owner\": true, \"shop\": \"our shop\", \"order\": \"o-u20\", \"grade\": \"A\"}}\n{\"ts\": 1793892000.0, \"type\": \"unit_gone\", \"src\": \"inventory\", \"role\": \"market\", \"mine\": true, \"data\": {\"unit\": \"u20\", \"cost\": 1000000, \"category\": \"가구/침구>가구>침대/매트리스\"}}\n{\"ts\": 1794008460.0, \"type\": \"settle\", \"src\": \"market\", \"role\": \"market\", \"mine\": false, \"data\": {\"sku\": \"BED1\", \"buyer\": \"b21\", \"unit\": \"u21\", \"amount\": 1105000.0, \"own_owner\": true, \"shop\": \"our shop\", \"order\": \"o-u21\", \"grade\": \"A\"}}\n{\"ts\": 1793892000.0, \"type\": \"unit_gone\", \"src\": \"inventory\", \"role\": \"market\", \"mine\": true, \"data\": {\"unit\": \"u21\", \"cost\": 1000000, \"category\": \"가구/침구>가구>침대/매트리스\"}}\n{\"ts\": 1794010860.0, \"type\": \"settle\", \"src\": \"market\", \"role\": \"market\", \"mine\": false, \"data\": {\"sku\": \"BED1\", \"buyer\": \"b22\", \"unit\": \"u22\", \"amount\": 1095000.0, \"own_owner\": true, \"shop\": \"our shop\", \"order\": \"o-u22\", \"grade\": \"A\"}}\n{\"ts\": 1793892000.0, \"type\": \"unit_gone\", \"src\": \"inventory\", \"role\": \"market\", \"mine\": true, \"data\": {\"unit\": \"u22\", \"cost\": 1000000, \"category\": \"가구/침구>가구>침대/매트리스\"}}\n{\"ts\": 1794011460.0, \"type\": \"settle\", \"src\": \"market\", \"role\": \"market\", \"mine\": false, \"data\": {\"sku\": \"BED1\", \"buyer\": \"b23\", \"unit\": \"u23\", \"amount\": 1095000.0, \"own_owner\": true, \"shop\": \"our shop\", \"order\": \"o-u23\", \"grade\": \"A\"}}\n{\"ts\": 1793892000.0, \"type\": \"unit_gone\", \"src\": \"inventory\", \"role\": \"market\", \"mine\": true, \"data\": {\"unit\": \"u23\", \"cost\": 1000000, \"category\": \"가구/침구>가구>침대/매트리스\"}}\n{\"ts\": 1794012060.0, \"type\": \"settle\", \"src\": \"market\", \"role\": \"market\", \"mine\": false, \"data\": {\"sku\": \"BED1\", \"buyer\": \"b24\", \"unit\": \"u24\", \"amount\": 1095000.0, \"own_owner\": true, \"shop\": \"our shop\", \"order\": \"o-u24\", \"grade\": \"A\"}}\n{\"ts\": 1793892000.0, \"type\": \"unit_gone\", \"src\": \"inventory\", \"role\": \"market\", \"mine\": true, \"data\": {\"unit\": \"u24\", \"cost\": 1000000, \"category\": \"가구/침구>가구>침대/매트리스\"}}\n{\"ts\": 1794000120.0, \"type\": \"settle\", \"src\": \"market\", \"role\": \"market\", \"mine\": false, \"data\": {\"sku\": \"SOFA1\", \"buyer\": \"b25\", \"unit\": \"u1794000060.0-1\", \"amount\": 1190000.0, \"own_owner\": true, \"shop\": \"our shop\", \"order\": \"o-u1794000060.0-1\", \"grade\": \"A\"}}\n{\"ts\": 1793892000.0, \"type\": \"unit_gone\", \"src\": \"inventory\", \"role\": \"market\", \"mine\": true, \"data\": {\"unit\": \"u1794000060.0-1\", \"cost\": 1000000, \"category\": \"가구/침구>가구>소파/의자/스툴\"}}\n{\"ts\": 1794000520.0, \"type\": \"settle\", \"src\": \"market\", \"role\": \"market\", \"mine\": false, \"data\": {\"sku\": \"SOFA1\", \"buyer\": \"b26\", \"unit\": \"u1794000060.0-2\", \"amount\": 1190000.0, \"own_owner\": true, \"shop\": \"our shop\", \"order\": \"o-u1794000060.0-2\", \"grade\": \"A\"}}\n{\"ts\": 1793892000.0, \"type\": \"unit_gone\", \"src\": \"inventory\", \"role\": \"market\", \"mine\": true, \"data\": {\"unit\": \"u1794000060.0-2\", \"cost\": 1000000, \"category\": \"가구/침구>가구>소파/의자/스툴\"}}\n{\"ts\": 1794000920.0, \"type\": \"settle\", \"src\": \"market\", \"role\": \"market\", \"mine\": false, \"data\": {\"sku\": \"SOFA1\", \"buyer\": \"b27\", \"unit\": \"u1794000060.0-3\", \"amount\": 1247000.0, \"own_owner\": true, \"shop\": \"our shop\", \"order\": \"o-u1794000060.0-3\", \"grade\": \"A\"}}\n{\"ts\": 1793892000.0, \"type\": \"unit_gone\", \"src\": \"inventory\", \"role\": \"market\", \"mine\": true, \"data\": {\"unit\": \"u1794000060.0-3\", \"cost\": 1000000, \"category\": \"가구/침구>가구>소파/의자/스툴\"}}\n{\"ts\": 1794001320.0, \"type\": \"settle\", \"src\": \"market\", \"role\": \"market\", \"mine\": false, \"data\": {\"sku\": \"SOFA1\", \"buyer\": \"b28\", \"unit\": \"u1794000060.0-4\", \"amount\": 1190000.0, \"own_owner\": true, \"shop\": \"our shop\", \"order\": \"o-u1794000060.0-4\", \"grade\": \"A\"}}\n{\"ts\": 1793892000.0, \"type\": \"unit_gone\", \"src\": \"inventory\", \"role\": \"market\", \"mine\": true, \"data\": {\"unit\": \"u1794000060.0-4\", \"cost\": 1000000, \"category\": \"가구/침구>가구>소파/의자/스툴\"}}\n{\"ts\": 1794001720.0, \"type\": \"settle\", \"src\": \"market\", \"role\": \"market\", \"mine\": false, \"data\": {\"sku\": \"SOFA1\", \"buyer\": \"b29\", \"unit\": \"u1794000060.0-13\", \"amount\": 1247000.0, \"own_owner\": true, \"shop\": \"our shop\", \"order\": \"o-u1794000060.0-13\", \"grade\": \"A\"}}\n{\"ts\": 1793892000.0, \"type\": \"unit_gone\", \"src\": \"inventory\", \"role\": \"market\", \"mine\": true, \"data\": {\"unit\": \"u1794000060.0-13\", \"cost\": 1000000, \"category\": \"가구/침구>가구>소파/의자/스툴\"}}\n{\"ts\": 1794002120.0, \"type\": \"settle\", \"src\": \"market\", \"role\": \"market\", \"mine\": false, \"data\": {\"sku\": \"SOFA1\", \"buyer\": \"b30\", \"unit\": \"u1794000060.0-15\", \"amount\": 1247000.0, \"own_owner\": true, \"shop\": \"our shop\", \"order\": \"o-u1794000060.0-15\", \"grade\": \"A\"}}\n{\"ts\": 1793892000.0, \"type\": \"unit_gone\", \"src\": \"inventory\", \"role\": \"market\", \"mine\": true, \"data\": {\"unit\": \"u1794000060.0-15\", \"cost\": 1000000, \"category\": \"가구/침구>가구>소파/의자/스툴\"}}\n{\"ts\": 1794003720.0, \"type\": \"settle\", \"src\": \"market\", \"role\": \"market\", \"mine\": false, \"data\": {\"sku\": \"SOFA1\", \"buyer\": \"b31\", \"unit\": \"u1794000060.0-16\", \"amount\": 1200000.0, \"own_owner\": true, \"shop\": \"our shop\", \"order\": \"o-u1794000060.0-16\", \"grade\": \"A\"}}\n{\"ts\": 1793892000.0, \"type\": \"unit_gone\", \"src\": \"inventory\", \"role\": \"market\", \"mine\": true, \"data\": {\"unit\": \"u1794000060.0-16\", \"cost\": 1000000, \"category\": \"가구/침구>가구>소파/의자/스툴\"}}\n{\"ts\": 1794004120.0, \"type\": \"settle\", \"src\": \"market\", \"role\": \"market\", \"mine\": false, \"data\": {\"sku\": \"SOFA1\", \"buyer\": \"b32\", \"unit\": \"u1794000060.0-17\", \"amount\": 1260000.0, \"own_owner\": true, \"shop\": \"our shop\", \"order\": \"o-u1794000060.0-17\", \"grade\": \"A\"}}\n{\"ts\": 1793892000.0, \"type\": \"unit_gone\", \"src\": \"inventory\", \"role\": \"market\", \"mine\": true, \"data\": {\"unit\": \"u1794000060.0-17\", \"cost\": 1000000, \"category\": \"가구/침구>가구>소파/의자/스툴\"}}\n{\"ts\": 1794004520.0, \"type\": \"settle\", \"src\": \"market\", \"role\": \"market\", \"mine\": false, \"data\": {\"sku\": \"SOFA1\", \"buyer\": \"b33\", \"unit\": \"u1794000060.0-18\", \"amount\": 1260000.0, \"own_owner\": true, \"shop\": \"our shop\", \"order\": \"o-u1794000060.0-18\", \"grade\": \"A\"}}\n{\"ts\": 1793892000.0, \"type\": \"unit_gone\", \"src\": \"inventory\", \"role\": \"market\", \"mine\": true, \"data\": {\"unit\": \"u1794000060.0-18\", \"cost\": 1000000, \"category\": \"가구/침구>가구>소파/의자/스툴\"}}\n{\"ts\": 1794004920.0, \"type\": \"settle\", \"src\": \"market\", \"role\": \"market\", \"mine\": false, \"data\": {\"sku\": \"SOFA1\", \"buyer\": \"b34\", \"unit\": \"u1794000060.0-19\", \"amount\": 1200000.0, \"own_owner\": true, \"shop\": \"our shop\", \"order\": \"o-u1794000060.0-19\", \"grade\": \"A\"}}\n{\"ts\": 1793892000.0, \"type\": \"unit_gone\", \"src\": \"inventory\", \"role\": \"market\", \"mine\": true, \"data\": {\"unit\": \"u1794000060.0-19\", \"cost\": 1000000, \"category\": \"가구/침구>가구>소파/의자/스툴\"}}\n{\"ts\": 1794005320.0, \"type\": \"settle\", \"src\": \"market\", \"role\": \"market\", \"mine\": false, \"data\": {\"sku\": \"SOFA1\", \"buyer\": \"b35\", \"unit\": \"u1794000060.0-20\", \"amount\": 1200000.0, \"own_owner\": true, \"shop\": \"our shop\", \"order\": \"o-u1794000060.0-20\", \"grade\": \"A\"}}\n{\"ts\": 1793892000.0, \"type\": \"unit_gone\", \"src\": \"inventory\", \"role\": \"market\", \"mine\": true, \"data\": {\"unit\": \"u1794000060.0-20\", \"cost\": 1000000, \"category\": \"가구/침구>가구>소파/의자/스툴\"}}\n{\"ts\": 1794005720.0, \"type\": \"settle\", \"src\": \"market\", \"role\": \"market\", \"mine\": false, \"data\": {\"sku\": \"SOFA1\", \"buyer\": \"b36\", \"unit\": \"u1794000060.0-21\", \"amount\": 1260000.0, \"own_owner\": true, \"shop\": \"our shop\", \"order\": \"o-u1794000060.0-21\", \"grade\": \"A\"}}\n{\"ts\": 1793892000.0, \"type\": \"unit_gone\", \"src\": \"inventory\", \"role\": \"market\", \"mine\": true, \"data\": {\"unit\": \"u1794000060.0-21\", \"cost\": 1000000, \"category\": \"가구/침구>가구>소파/의자/스툴\"}}\n{\"ts\": 1794007320.0, \"type\": \"settle\", \"src\": \"market\", \"role\": \"market\", \"mine\": false, \"data\": {\"sku\": \"SOFA1\", \"buyer\": \"b37\", \"unit\": \"u1794000060.0-22\", \"amount\": 1273000.0, \"own_owner\": true, \"shop\": \"our shop\", \"order\": \"o-u1794000060.0-22\", \"grade\": \"A\"}}\n{\"ts\": 1793892000.0, \"type\": \"unit_gone\", \"src\": \"inventory\", \"role\": \"market\", \"mine\": true, \"data\": {\"unit\": \"u1794000060.0-22\", \"cost\": 1000000, \"category\": \"가구/침구>가구>소파/의자/스툴\"}}\n{\"ts\": 1794007720.0, \"type\": \"settle\", \"src\": \"market\", \"role\": \"market\", \"mine\": false, \"data\": {\"sku\": \"SOFA1\", \"buyer\": \"b38\", \"unit\": \"u1794000060.0-23\", \"amount\": 1210000.0, \"own_owner\": true, \"shop\": \"our shop\", \"order\": \"o-u1794000060.0-23\", \"grade\": \"A\"}}\n{\"ts\": 1793892000.0, \"type\": \"unit_gone\", \"src\": \"inventory\", \"role\": \"market\", \"mine\": true, \"data\": {\"unit\": \"u1794000060.0-23\", \"cost\": 1000000, \"category\": \"가구/침구>가구>소파/의자/스툴\"}}\n{\"ts\": 1794008120.0, \"type\": \"settle\", \"src\": \"market\", \"role\": \"market\", \"mine\": false, \"data\": {\"sku\": \"SOFA1\", \"buyer\": \"b39\", \"unit\": \"u1794000060.0-24\", \"amount\": 1210000.0, \"own_owner\": true, \"shop\": \"our shop\", \"order\": \"o-u1794000060.0-24\", \"grade\": \"A\"}}\n{\"ts\": 1793892000.0, \"type\": \"unit_gone\", \"src\": \"inventory\", \"role\": \"market\", \"mine\": true, \"data\": {\"unit\": \"u1794000060.0-24\", \"cost\": 1000000, \"category\": \"가구/침구>가구>소파/의자/스툴\"}}\n{\"ts\": 1794008520.0, \"type\": \"settle\", \"src\": \"market\", \"role\": \"market\", \"mine\": false, \"data\": {\"sku\": \"SOFA1\", \"buyer\": \"b40\", \"unit\": \"u1794000060.0-25\", \"amount\": 1210000.0, \"own_owner\": true, \"shop\": \"our shop\", \"order\": \"o-u1794000060.0-25\", \"grade\": \"A\"}}\n{\"ts\": 1793892000.0, \"type\": \"unit_gone\", \"src\": \"inventory\", \"role\": \"market\", \"mine\": true, \"data\": {\"unit\": \"u1794000060.0-25\", \"cost\": 1000000, \"category\": \"가구/침구>가구>소파/의자/스툴\"}}\n{\"ts\": 1794008920.0, \"type\": \"settle\", \"src\": \"market\", \"role\": \"market\", \"mine\": false, \"data\": {\"sku\": \"SOFA1\", \"buyer\": \"b41\", \"unit\": \"u1794000060.0-26\", \"amount\": 1273000.0, \"own_owner\": true, \"shop\": \"our shop\", \"order\": \"o-u1794000060.0-26\", \"grade\": \"A\"}}\n{\"ts\": 1793892000.0, \"type\": \"unit_gone\", \"src\": \"inventory\", \"role\": \"market\", \"mine\": true, \"data\": {\"unit\": \"u1794000060.0-26\", \"cost\": 1000000, \"category\": \"가구/침구>가구>소파/의자/스툴\"}}\n{\"ts\": 1794009320.0, \"type\": \"settle\", \"src\": \"market\", \"role\": \"market\", \"mine\": false, \"data\": {\"sku\": \"SOFA1\", \"buyer\": \"b42\", \"unit\": \"u1794000060.0-27\", \"amount\": 1273000.0, \"own_owner\": true, \"shop\": \"our shop\", \"order\": \"o-u1794000060.0-27\", \"grade\": \"A\"}}\n{\"ts\": 1793892000.0, \"type\": \"unit_gone\", \"src\": \"inventory\", \"role\": \"market\", \"mine\": true, \"data\": {\"unit\": \"u1794000060.0-27\", \"cost\": 1000000, \"category\": \"가구/침구>가구>소파/의자/스툴\"}}\n{\"ts\": 1793992860.0, \"type\": \"settle\", \"src\": \"market\", \"role\": \"market\", \"mine\": false, \"data\": {\"sku\": \"SNK1\", \"buyer\": \"b43\", \"unit\": \"u43\", \"amount\": 1001900.0, \"own_owner\": true, \"shop\": \"our shop\", \"order\": \"o-u43\", \"grade\": \"A\"}}\n{\"ts\": 1793892000.0, \"type\": \"unit_gone\", \"src\": \"inventory\", \"role\": \"market\", \"mine\": true, \"data\": {\"unit\": \"u43\", \"cost\": 1000000, \"category\": \"식품>과자\"}}\n{\"ts\": 1793993460.0, \"type\": \"settle\", \"src\": \"market\", \"role\": \"market\", \"mine\": false, \"data\": {\"sku\": \"SNK1\", \"buyer\": \"b44\", \"unit\": \"u44\", \"amount\": 1001900.0, \"own_owner\": true, \"shop\": \"our shop\", \"order\": \"o-u44\", \"grade\": \"A\"}}\n{\"ts\": 1793892000.0, \"type\": \"unit_gone\", \"src\": \"inventory\", \"role\": \"market\", \"mine\": true, \"data\": {\"unit\": \"u44\", \"cost\": 1000000, \"category\": \"식품>과자\"}}\n{\"ts\": 1793994060.0, \"type\": \"settle\", \"src\": \"market\", \"role\": \"market\", \"mine\": false, \"data\": {\"sku\": \"SNK1\", \"buyer\": \"b45\", \"unit\": \"u45\", \"amount\": 1001900.0, \"own_owner\": true, \"shop\": \"our shop\", \"order\": \"o-u45\", \"grade\": \"A\"}}\n{\"ts\": 1793892000.0, \"type\": \"unit_gone\", \"src\": \"inventory\", \"role\": \"market\", \"mine\": true, \"data\": {\"unit\": \"u45\", \"cost\": 1000000, \"category\": \"식품>과자\"}}\n{\"ts\": 1793996460.0, \"type\": \"settle\", \"src\": \"market\", \"role\": \"market\", \"mine\": false, \"data\": {\"sku\": \"SNK1\", \"buyer\": \"b46\", \"unit\": \"u46\", \"amount\": 1002000.0, \"own_owner\": true, \"shop\": \"our shop\", \"order\": \"o-u46\", \"grade\": \"A\"}}\n{\"ts\": 1793892000.0, \"type\": \"unit_gone\", \"src\": \"inventory\", \"role\": \"market\", \"mine\": true, \"data\": {\"unit\": \"u46\", \"cost\": 1000000, \"category\": \"식품>과자\"}}\n{\"ts\": 1793997060.0, \"type\": \"settle\", \"src\": \"market\", \"role\": \"market\", \"mine\": false, \"data\": {\"sku\": \"SNK1\", \"buyer\": \"b47\", \"unit\": \"u47\", \"amount\": 1002000.0, \"own_owner\": true, \"shop\": \"our shop\", \"order\": \"o-u47\", \"grade\": \"A\"}}\n{\"ts\": 1793892000.0, \"type\": \"unit_gone\", \"src\": \"inventory\", \"role\": \"market\", \"mine\": true, \"data\": {\"unit\": \"u47\", \"cost\": 1000000, \"category\": \"식품>과자\"}}\n{\"ts\": 1793997660.0, \"type\": \"settle\", \"src\": \"market\", \"role\": \"market\", \"mine\": false, \"data\": {\"sku\": \"SNK1\", \"buyer\": \"b48\", \"unit\": \"u48\", \"amount\": 1002000.0, \"own_owner\": true, \"shop\": \"our shop\", \"order\": \"o-u48\", \"grade\": \"A\"}}\n{\"ts\": 1793892000.0, \"type\": \"unit_gone\", \"src\": \"inventory\", \"role\": \"market\", \"mine\": true, \"data\": {\"unit\": \"u48\", \"cost\": 1000000, \"category\": \"식품>과자\"}}\n{\"ts\": 1794000240.0, \"type\": \"settle\", \"src\": \"market\", \"role\": \"market\", \"mine\": false, \"data\": {\"sku\": \"SNK1\", \"buyer\": \"b49\", \"unit\": \"u49\", \"amount\": 1001900.0, \"own_owner\": true, \"shop\": \"our shop\", \"order\": \"o-u49\", \"grade\": \"A\"}}\n{\"ts\": 1793892000.0, \"type\": \"unit_gone\", \"src\": \"inventory\", \"role\": \"market\", \"mine\": true, \"data\": {\"unit\": \"u49\", \"cost\": 1000000, \"category\": \"식품>과자\"}}\n{\"ts\": 1794000840.0, \"type\": \"settle\", \"src\": \"market\", \"role\": \"market\", \"mine\": false, \"data\": {\"sku\": \"SNK1\", \"buyer\": \"b50\", \"unit\": \"u50\", \"amount\": 1001900.0, \"own_owner\": true, \"shop\": \"our shop\", \"order\": \"o-u50\", \"grade\": \"A\"}}\n{\"ts\": 1793892000.0, \"type\": \"unit_gone\", \"src\": \"inventory\", \"role\": \"market\", \"mine\": true, \"data\": {\"unit\": \"u50\", \"cost\": 1000000, \"category\": \"식품>과자\"}}\n{\"ts\": 1794001440.0, \"type\": \"settle\", \"src\": \"market\", \"role\": \"market\", \"mine\": false, \"data\": {\"sku\": \"SNK1\", \"buyer\": \"b51\", \"unit\": \"u51\", \"amount\": 1001900.0, \"own_owner\": true, \"shop\": \"our shop\", \"order\": \"o-u51\", \"grade\": \"A\"}}\n{\"ts\": 1793892000.0, \"type\": \"unit_gone\", \"src\": \"inventory\", \"role\": \"market\", \"mine\": true, \"data\": {\"unit\": \"u51\", \"cost\": 1000000, \"category\": \"식품>과자\"}}\n{\"ts\": 1794003840.0, \"type\": \"settle\", \"src\": \"market\", \"role\": \"market\", \"mine\": false, \"data\": {\"sku\": \"SNK1\", \"buyer\": \"b52\", \"unit\": \"u52\", \"amount\": 1002000.0, \"own_owner\": true, \"shop\": \"our shop\", \"order\": \"o-u52\", \"grade\": \"A\"}}\n{\"ts\": 1793892000.0, \"type\": \"unit_gone\", \"src\": \"inventory\", \"role\": \"market\", \"mine\": true, \"data\": {\"unit\": \"u52\", \"cost\": 1000000, \"category\": \"식품>과자\"}}\n{\"ts\": 1794004440.0, \"type\": \"settle\", \"src\": \"market\", \"role\": \"market\", \"mine\": false, \"data\": {\"sku\": \"SNK1\", \"buyer\": \"b53\", \"unit\": \"u53\", \"amount\": 1002000.0, \"own_owner\": true, \"shop\": \"our shop\", \"order\": \"o-u53\", \"grade\": \"A\"}}\n{\"ts\": 1793892000.0, \"type\": \"unit_gone\", \"src\": \"inventory\", \"role\": \"market\", \"mine\": true, \"data\": {\"unit\": \"u53\", \"cost\": 1000000, \"category\": \"식품>과자\"}}\n{\"ts\": 1794005040.0, \"type\": \"settle\", \"src\": \"market\", \"role\": \"market\", \"mine\": false, \"data\": {\"sku\": \"SNK1\", \"buyer\": \"b54\", \"unit\": \"u54\", \"amount\": 1002000.0, \"own_owner\": true, \"shop\": \"our shop\", \"order\": \"o-u54\", \"grade\": \"A\"}}\n{\"ts\": 1793892000.0, \"type\": \"unit_gone\", \"src\": \"inventory\", \"role\": \"market\", \"mine\": true, \"data\": {\"unit\": \"u54\", \"cost\": 1000000, \"category\": \"식품>과자\"}}\n",
+  ".market/catalog.json": "{\"BED1\": {\"category\": \"가구/침구>가구>침대/매트리스\", \"kind\": \"goods\", \"list_price\": 2000000}, \"SOFA1\": {\"category\": \"가구/침구>가구>소파/의자/스툴\", \"kind\": \"goods\", \"list_price\": 1000000}, \"SNK1\": {\"category\": \"식품>과자\", \"kind\": \"food\", \"list_price\": 10000}}"
+ },
+ "ticks": [
+  1794021601.0,
+  1794021781.0
+ ],
+ "after": [
+  {
+   "ledger": [
+    {
+     "id": 1,
+     "mode": "sequential",
+     "section": "가구/침구>가구>침대/매트리스",
+     "key": "price_mult",
+     "old": 0.9,
+     "new": 0.8,
+     "started_ts": 1794000000.0,
+     "window_h": 4,
+     "maturity_h": 2,
+     "scope": "침대/매트리스",
+     "side": "shop",
+     "metric": "net_profit_per_h",
+     "rev_weight": 0.0,
+     "expect": "가설",
+     "status": "reverted",
+     "extended": false,
+     "raw": {
+      "base": "price_mult",
+      "present": false,
+      "value": null
+     },
+     "before_from": null,
+     "eval_ts": 1794021600.0,
+     "verdict": {
+      "metric": "net_profit_per_h",
+      "window_h": 4,
+      "before_start": 1793985600.0,
+      "before_h": 4.0,
+      "baseline": true,
+      "before": 888750.0,
+      "before_adj": 753337.7531340405,
+      "after": 296250.0,
+      "r": 0.8476374156219865,
+      "effect": -457087.7531340405,
+      "se": 19621.07002623429,
+      "n_before": 12,
+      "n_after": 12,
+      "rev_weight": 0.0,
+      "net_before": 888750.0,
+      "net_after": 296250.0,
+      "revenue_before": 3888750.0,
+      "revenue_after": 3296250.0,
+      "market_before": 15555000.0,
+      "market_after": 13185000.0,
+      "stars_before": null,
+      "stars_after": null,
+      "n_reviews_before": 0,
+      "n_reviews_after": 0,
+      "cost_known_before": 1.0,
+      "cost_known_after": 1.0,
+      "decision": "worse",
+      "reason": "clear",
+      "final": "decision"
+     },
+     "ended_ts": 1794021601.0
+    },
+    {
+     "id": 2,
+     "mode": "split",
+     "section": "가구/침구>가구>소파/의자/스툴",
+     "key": "price_mult",
+     "old": 0.9,
+     "new": 0.85,
+     "started_ts": 1794000060.0,
+     "window_h": 3,
+     "maturity_h": 2,
+     "scope": "소파/의자/스툴",
+     "side": "shop",
+     "metric": "net_profit_per_h",
+     "rev_weight": 0.0,
+     "expect": "가설",
+     "status": "dropped",
+     "extended": false,
+     "arm": {
+      "path": [
+       "categories",
+       "가구/침구>가구>소파/의자/스툴",
+       "price_mult"
+      ],
+      "value": 0.85,
+      "share": 0.5,
+      "until": 1794019860.0
+     },
+     "eval_ts": 1794018060.0,
+     "verdict": {
+      "metric": "net_profit_per_h",
+      "window_h": 3,
+      "a": 600000.0,
+      "b": 780000.0,
+      "effect": 180000.0,
+      "se": 328297.6291923738,
+      "hours": 3,
+      "n_a": 9,
+      "n_b": 9,
+      "no_unit": 0,
+      "rev_weight": 0.0,
+      "net_a": 600000.0,
+      "net_b": 780000.0,
+      "revenue_a": 3600000.0,
+      "revenue_b": 3780000.0,
+      "stars_a": null,
+      "stars_b": null,
+      "n_reviews_a": 0,
+      "n_reviews_b": 0,
+      "cost_known_a": 1.0,
+      "cost_known_b": 1.0,
+      "decision": "unclear",
+      "reason": "noise",
+      "final": "point_estimate",
+      "adopt": false
+     },
+     "ended_ts": 1794021601.0
+    },
+    {
+     "id": 3,
+     "mode": "sequential",
+     "section": "buyer.defaults.food",
+     "key": "max_pay_frac",
+     "old": 0.85,
+     "new": 0.8,
+     "started_ts": 1794000120.0,
+     "window_h": 4,
+     "maturity_h": 0,
+     "scope": "buyer:food",
+     "side": "buyer",
+     "metric": "saved_gain_per_h",
+     "rev_weight": 0.0,
+     "expect": "가설",
+     "status": "running",
+     "extended": true,
+     "raw": {
+      "base": "max_pay_frac",
+      "present": true,
+      "value": 0.85
+     },
+     "before_from": null,
+     "s0": null,
+     "eval_ts": 1794014520.0,
+     "first_verdict": {
+      "metric": "saved_gain_per_h",
+      "window_h": 2,
+      "before_start": 1793992920.0,
+      "before_h": 2.0,
+      "baseline": true,
+      "before": 0.0,
+      "before_adj": 0.0,
+      "after": 0.0,
+      "r": 1.2,
+      "effect": 0.0,
+      "se": 0.0,
+      "n_before": 0,
+      "n_after": 0,
+      "s0": null,
+      "others_before": 5,
+      "others_after": 6,
+      "decision": "thin",
+      "reason": "thin"
+     }
+    },
+    {
+     "id": 4,
+     "mode": "sequential",
+     "section": "defaults.food",
+     "key": "max_rounds",
+     "old": 4,
+     "new": 5,
+     "started_ts": 1794000180.0,
+     "window_h": 4,
+     "maturity_h": 2,
+     "scope": "kind:food",
+     "side": "shop",
+     "metric": "net_profit_per_h",
+     "rev_weight": 0.0,
+     "expect": "가설",
+     "status": "running",
+     "extended": true,
+     "raw": {
+      "base": "max_rounds",
+      "present": true,
+      "value": 4
+     },
+     "before_from": null,
+     "eval_ts": 1794021780.0,
+     "first_verdict": {
+      "metric": "net_profit_per_h",
+      "window_h": 2,
+      "before_start": 1793992980.0,
+      "before_h": 2.0,
+      "baseline": true,
+      "before": 4900.0,
+      "before_adj": 5879.941315022556,
+      "after": 5850.0,
+      "r": 1.199988023473991,
+      "effect": -29.94131502255641,
+      "se": 1090.356234333359,
+      "n_before": 5,
+      "n_after": 6,
+      "rev_weight": 0.0,
+      "net_before": 4900.0,
+      "net_after": 5850.0,
+      "revenue_before": 2504900.0,
+      "revenue_after": 3005850.0,
+      "market_before": 5009800.0,
+      "market_after": 6011700.0,
+      "stars_before": null,
+      "stars_after": null,
+      "n_reviews_before": 0,
+      "n_reviews_after": 0,
+      "cost_known_before": 1.0,
+      "cost_known_after": 1.0,
+      "decision": "unclear",
+      "reason": "noise"
+     }
+    }
+   ],
+   "policy": {
+    "owner": {
+     "github": "secret-login"
+    },
+    "shop": {
+     "liquidation_line": 1500000,
+     "grade_floor_list": {
+      "C": 0.55
+     },
+     "restock_priority": [
+      "가구/침구>가구>침대/매트리스"
+     ]
+    },
+    "defaults": {
+     "food": {
+      "price_mult": 0.92,
+      "max_rounds": 5,
+      "fresh_discount": {
+       "B": 0.06,
+       "C": 0.3
+      }
+     },
+     "goods": {
+      "price_mult": 0.9,
+      "max_rounds": 4,
+      "fresh_discount": {
+       "B": 0.08,
+       "C": 0.3
+      },
+      "warranty_hours": {
+       "A": 6,
+       "B": 6,
+       "C": 0
+      },
+      "max_warranty_hours": 6
+     }
+    },
+    "categories": {
+     "가구/침구>가구>침대/매트리스": {
+      "stock_target": 36
+     }
+    },
+    "buyer": {
+     "defaults": {
+      "food": {
+       "open_frac": 0.55,
+       "max_pay_frac": 0.8,
+       "step_frac": 0.07,
+       "max_rounds": 5
+      },
+      "goods": {
+       "open_frac": 0.55,
+       "max_pay_frac": 0.85,
+       "step_frac": 0.07,
+       "max_rounds": 5
+      }
+     },
+     "categories": {}
+    },
+    "bounds": {
+     "price_mult": [
+      0.5,
+      1.5
+     ],
+     "max_pay_frac": [
+      0.3,
+      1.0
+     ]
+    }
+   },
+   "arms": {
+    "arms": []
+   }
+  },
+  {
+   "ledger": [
+    {
+     "id": 1,
+     "mode": "sequential",
+     "section": "가구/침구>가구>침대/매트리스",
+     "key": "price_mult",
+     "old": 0.9,
+     "new": 0.8,
+     "started_ts": 1794000000.0,
+     "window_h": 4,
+     "maturity_h": 2,
+     "scope": "침대/매트리스",
+     "side": "shop",
+     "metric": "net_profit_per_h",
+     "rev_weight": 0.0,
+     "expect": "가설",
+     "status": "reverted",
+     "extended": false,
+     "raw": {
+      "base": "price_mult",
+      "present": false,
+      "value": null
+     },
+     "before_from": null,
+     "eval_ts": 1794021600.0,
+     "verdict": {
+      "metric": "net_profit_per_h",
+      "window_h": 4,
+      "before_start": 1793985600.0,
+      "before_h": 4.0,
+      "baseline": true,
+      "before": 888750.0,
+      "before_adj": 753337.7531340405,
+      "after": 296250.0,
+      "r": 0.8476374156219865,
+      "effect": -457087.7531340405,
+      "se": 19621.07002623429,
+      "n_before": 12,
+      "n_after": 12,
+      "rev_weight": 0.0,
+      "net_before": 888750.0,
+      "net_after": 296250.0,
+      "revenue_before": 3888750.0,
+      "revenue_after": 3296250.0,
+      "market_before": 15555000.0,
+      "market_after": 13185000.0,
+      "stars_before": null,
+      "stars_after": null,
+      "n_reviews_before": 0,
+      "n_reviews_after": 0,
+      "cost_known_before": 1.0,
+      "cost_known_after": 1.0,
+      "decision": "worse",
+      "reason": "clear",
+      "final": "decision"
+     },
+     "ended_ts": 1794021601.0
+    },
+    {
+     "id": 2,
+     "mode": "split",
+     "section": "가구/침구>가구>소파/의자/스툴",
+     "key": "price_mult",
+     "old": 0.9,
+     "new": 0.85,
+     "started_ts": 1794000060.0,
+     "window_h": 3,
+     "maturity_h": 2,
+     "scope": "소파/의자/스툴",
+     "side": "shop",
+     "metric": "net_profit_per_h",
+     "rev_weight": 0.0,
+     "expect": "가설",
+     "status": "dropped",
+     "extended": false,
+     "arm": {
+      "path": [
+       "categories",
+       "가구/침구>가구>소파/의자/스툴",
+       "price_mult"
+      ],
+      "value": 0.85,
+      "share": 0.5,
+      "until": 1794019860.0
+     },
+     "eval_ts": 1794018060.0,
+     "verdict": {
+      "metric": "net_profit_per_h",
+      "window_h": 3,
+      "a": 600000.0,
+      "b": 780000.0,
+      "effect": 180000.0,
+      "se": 328297.6291923738,
+      "hours": 3,
+      "n_a": 9,
+      "n_b": 9,
+      "no_unit": 0,
+      "rev_weight": 0.0,
+      "net_a": 600000.0,
+      "net_b": 780000.0,
+      "revenue_a": 3600000.0,
+      "revenue_b": 3780000.0,
+      "stars_a": null,
+      "stars_b": null,
+      "n_reviews_a": 0,
+      "n_reviews_b": 0,
+      "cost_known_a": 1.0,
+      "cost_known_b": 1.0,
+      "decision": "unclear",
+      "reason": "noise",
+      "final": "point_estimate",
+      "adopt": false
+     },
+     "ended_ts": 1794021601.0
+    },
+    {
+     "id": 3,
+     "mode": "sequential",
+     "section": "buyer.defaults.food",
+     "key": "max_pay_frac",
+     "old": 0.85,
+     "new": 0.8,
+     "started_ts": 1794000120.0,
+     "window_h": 4,
+     "maturity_h": 0,
+     "scope": "buyer:food",
+     "side": "buyer",
+     "metric": "saved_gain_per_h",
+     "rev_weight": 0.0,
+     "expect": "가설",
+     "status": "kept",
+     "extended": true,
+     "raw": {
+      "base": "max_pay_frac",
+      "present": true,
+      "value": 0.85
+     },
+     "before_from": null,
+     "s0": null,
+     "eval_ts": 1794014520.0,
+     "first_verdict": {
+      "metric": "saved_gain_per_h",
+      "window_h": 2,
+      "before_start": 1793992920.0,
+      "before_h": 2.0,
+      "baseline": true,
+      "before": 0.0,
+      "before_adj": 0.0,
+      "after": 0.0,
+      "r": 1.2,
+      "effect": 0.0,
+      "se": 0.0,
+      "n_before": 0,
+      "n_after": 0,
+      "s0": null,
+      "others_before": 5,
+      "others_after": 6,
+      "decision": "thin",
+      "reason": "thin"
+     },
+     "verdict": {
+      "metric": "saved_gain_per_h",
+      "window_h": 4,
+      "before_start": 1793985720.0,
+      "before_h": 4.0,
+      "baseline": true,
+      "before": 0.0,
+      "before_adj": 0.0,
+      "after": 0.0,
+      "r": 1.0,
+      "effect": 0.0,
+      "se": 0.0,
+      "n_before": 0,
+      "n_after": 0,
+      "s0": null,
+      "others_before": 6,
+      "others_after": 6,
+      "decision": "thin",
+      "reason": "thin",
+      "final": "no_activity"
+     },
+     "ended_ts": 1794021781.0
+    },
+    {
+     "id": 4,
+     "mode": "sequential",
+     "section": "defaults.food",
+     "key": "max_rounds",
+     "old": 4,
+     "new": 5,
+     "started_ts": 1794000180.0,
+     "window_h": 4,
+     "maturity_h": 2,
+     "scope": "kind:food",
+     "side": "shop",
+     "metric": "net_profit_per_h",
+     "rev_weight": 0.0,
+     "expect": "가설",
+     "status": "kept",
+     "extended": true,
+     "raw": {
+      "base": "max_rounds",
+      "present": true,
+      "value": 4
+     },
+     "before_from": null,
+     "eval_ts": 1794021780.0,
+     "first_verdict": {
+      "metric": "net_profit_per_h",
+      "window_h": 2,
+      "before_start": 1793992980.0,
+      "before_h": 2.0,
+      "baseline": true,
+      "before": 4900.0,
+      "before_adj": 5879.941315022556,
+      "after": 5850.0,
+      "r": 1.199988023473991,
+      "effect": -29.94131502255641,
+      "se": 1090.356234333359,
+      "n_before": 5,
+      "n_after": 6,
+      "rev_weight": 0.0,
+      "net_before": 4900.0,
+      "net_after": 5850.0,
+      "revenue_before": 2504900.0,
+      "revenue_after": 3005850.0,
+      "market_before": 5009800.0,
+      "market_after": 6011700.0,
+      "stars_before": null,
+      "stars_after": null,
+      "n_reviews_before": 0,
+      "n_reviews_after": 0,
+      "cost_known_before": 1.0,
+      "cost_known_after": 1.0,
+      "decision": "unclear",
+      "reason": "noise"
+     },
+     "verdict": {
+      "metric": "net_profit_per_h",
+      "window_h": 4,
+      "before_start": 1793985780.0,
+      "before_h": 4.0,
+      "baseline": true,
+      "before": 2925.0,
+      "before_adj": 2925.0,
+      "after": 2925.0,
+      "r": 1.0,
+      "effect": 0.0,
+      "se": 2107.42734157076,
+      "n_before": 6,
+      "n_after": 6,
+      "rev_weight": 0.0,
+      "net_before": 2925.0,
+      "net_after": 2925.0,
+      "revenue_before": 1502925.0,
+      "revenue_after": 1502925.0,
+      "market_before": 6011700.0,
+      "market_after": 6011700.0,
+      "stars_before": null,
+      "stars_after": null,
+      "n_reviews_before": 0,
+      "n_reviews_after": 0,
+      "cost_known_before": 1.0,
+      "cost_known_after": 1.0,
+      "decision": "unclear",
+      "reason": "noise",
+      "final": "point_estimate"
+     },
+     "ended_ts": 1794021781.0
+    }
+   ],
+   "policy": {
+    "owner": {
+     "github": "secret-login"
+    },
+    "shop": {
+     "liquidation_line": 1500000,
+     "grade_floor_list": {
+      "C": 0.55
+     },
+     "restock_priority": [
+      "가구/침구>가구>침대/매트리스"
+     ]
+    },
+    "defaults": {
+     "food": {
+      "price_mult": 0.92,
+      "max_rounds": 5,
+      "fresh_discount": {
+       "B": 0.06,
+       "C": 0.3
+      }
+     },
+     "goods": {
+      "price_mult": 0.9,
+      "max_rounds": 4,
+      "fresh_discount": {
+       "B": 0.08,
+       "C": 0.3
+      },
+      "warranty_hours": {
+       "A": 6,
+       "B": 6,
+       "C": 0
+      },
+      "max_warranty_hours": 6
+     }
+    },
+    "categories": {
+     "가구/침구>가구>침대/매트리스": {
+      "stock_target": 36
+     }
+    },
+    "buyer": {
+     "defaults": {
+      "food": {
+       "open_frac": 0.55,
+       "max_pay_frac": 0.8,
+       "step_frac": 0.07,
+       "max_rounds": 5
+      },
+      "goods": {
+       "open_frac": 0.55,
+       "max_pay_frac": 0.85,
+       "step_frac": 0.07,
+       "max_rounds": 5
+      }
+     },
+     "categories": {}
+    },
+    "bounds": {
+     "price_mult": [
+      0.5,
+      1.5
+     ],
+     "max_pay_frac": [
+      0.3,
+      1.0
+     ]
+    }
+   },
+   "arms": {
+    "arms": []
+   }
+  }
+ ]
+}

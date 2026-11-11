@@ -449,18 +449,18 @@ def test_baseline_is_cached_and_baseline_failures_do_not_block(env):
         ),
         ([{"file": RS, "old": "return", "new": "return"}], (RS,), "old", "2번 나와"),
         ([{"file": RS, "old": "", "new": "x"}], (RS,), "old", "비어 있음"),
-        ([{"file": RS, "old": "return 1", "new": "#" * 4001}], (RS,), "size", "4000자"),
+        ([{"file": RS, "old": "return 1", "new": "#" * 20_001}], (RS,), "size", "20000자"),
         (
             [
                 {
                     "file": RS,
                     "old": "return 1",
-                    "new": "return 1\n" + "    y = 1\n" * 160,
+                    "new": "return 1\n" + "    y = 1\n" * 410,
                 }
             ],
             (RS,),
             "size",
-            "150줄",
+            "400줄",
         ),
         (
             [{"file": RS, "old": "return 1", "new": "return (1"}],
@@ -474,7 +474,7 @@ def test_baseline_is_cached_and_baseline_failures_do_not_block(env):
             "noop",
             "바뀐 것이 없음",
         ),
-        ([EDIT] * 4, (RS,), "shape", "1~3개"),
+        ([EDIT] * 9, (RS,), "shape", "1~8개"),
         ("x", (RS,), "shape", "목록"),
         ([{"file": RS, "old": "x"}], (RS,), "shape", "목록"),
     ],
@@ -490,11 +490,14 @@ def test_refusals_before_tests(env, edits, read, cls, word):
 
 
 @pytest.mark.parametrize(
-    "reason,expect", [("짧음", EXPECT), (REASON, "짧음"), (None, EXPECT), (REASON, 5)]
+    "reason,expect", [("짧음", EXPECT), (REASON, "짧음"), (None, None), (REASON, 5)]
 )
-def test_short_reason_or_expect_refused(env, reason, expect):
+def test_reason_and_expect_are_optional(env, reason, expect):
+    # 11-11: no minimum text; what the operator writes as its reason is its own
     res = _p(env, reason=reason, expect=expect)
-    assert res["cls"] == "short" and "20자" in res["error"]
+    assert res["ok"], res
+    ch = ce.load(env.root)[0]
+    assert isinstance(ch["reason"], str) and isinstance(ch["expect"], str) and ch["eval_revert"] is False
 
 
 @pytest.mark.parametrize(
@@ -651,25 +654,24 @@ def test_stage_dirs_capped(env):
     assert len(os.listdir(os.path.join(env.root, ce.STAGE))) == ce.STAGE_KEEP
 
 
-def test_one_open_cooldown_and_repeat_after_revert(env):
+def test_one_at_a_time_only_under_the_canary_no_cooldown_no_repeat_refusal(env):
     assert _p(env)["ok"]
     edit2 = {"file": RS, "old": "return 2", "new": "return 3"}
-    assert _p(env, [edit2], now=NOW + 60)["cls"] == "open"
+    assert _p(env, [edit2], now=NOW + 60)["cls"] == "open"  # #1 is under the canary
     rows = ce.load(env.root)
-    rows[0].update(status="kept", ended_ts=NOW + 100)
+    rows[0].update(status="evaluating")  # canary passed: the 4 h comparison only reports, so a new change is taken
     ce._save(env.root, rows)
-    res = _p(env, [edit2], now=NOW + 600)
-    assert res["cls"] == "cooldown" and "60분" in res["error"]
-    assert _p(env, [edit2], now=NOW + ce.COOLDOWN_S + 1)["ok"]
+    assert _p(env, [edit2], now=NOW + 120)["ok"]
     rows = ce.load(env.root)
-    ev = ce.revert(
-        env.root, rows[1], NOW + ce.COOLDOWN_S + 100, env.traj, "감시 중 이상", "canary"
-    )
+    ev = ce.revert(env.root, rows[1], NOW + 200, env.traj, "감시 중 이상", "canary")
     assert ev["status"] == "reverted" and "return 2" in _text(env.root, RS)
     ce._save(env.root, rows)
-    res = _p(env, [edit2], now=NOW + 3 * H)
-    assert res["cls"] == "repeat"
-    assert _p(env, [edit2], now=NOW + 8 * H)["ok"]  # past REPEAT_S
+    assert _p(env, [edit2], now=NOW + 300)["ok"]  # the same edit again at once: the operator's call
+    rows = ce.load(env.root)
+    rows[0].pop("eval_revert")  # a row from before 11-11 still judged with a revert keeps new changes out
+    rows[2].update(status="kept")
+    ce._save(env.root, rows)
+    assert _p(env, [{"file": RS, "old": "return 3", "new": "return 4"}], now=NOW + 400)["cls"] == "open"
 
 
 def test_corrupt_state_files_read_as_no_history(env):
@@ -1004,7 +1006,21 @@ def test_canary_pass_then_evaluation_kept(env):
     assert "return 2" in _text(env.root, RS)
 
 
-def test_evaluation_worse_reverts_and_metric_selection(env, monkeypatch):
+def test_evaluation_reports_without_revert(env, monkeypatch):
+    monkeypatch.setattr(ex, "evaluate", lambda root, exp, now, data=None: {
+        "decision": "worse", "reason": "clear", "effect": -1.0, "se": 0.1, "n_before": 9, "n_after": 9})
+    _applied(env)
+    rows = ce.load(env.root)
+    rows[0].update(status="evaluating")
+    ce._save(env.root, rows)
+    ev = ce.watch(env.root, NOW + 4 * H, env.traj)
+    assert ev[0]["status"] == "kept" and "자동 되돌림 없음" in ev[0]["why"]
+    ch = ce.load(env.root)[0]
+    assert ch["verdict"]["decision"] == "worse" and "return 2" in _text(env.root, RS)  # the code stays
+    assert "가게 효과 -" in "\n".join(ce.lines(env.root, NOW + 4 * H + 1))
+
+
+def test_legacy_evaluation_worse_reverts_and_metric_selection(env, monkeypatch):
     seen = []
 
     def fake(root, exp, now, data=None):
@@ -1034,6 +1050,7 @@ def test_evaluation_worse_reverts_and_metric_selection(env, monkeypatch):
     _applied(env)
     rows = ce.load(env.root)
     rows[0].update(status="evaluating")
+    rows[0].pop("eval_revert")  # a change written before 11-11
     ce._save(env.root, rows)
     ev = ce.watch(env.root, NOW + 4 * H, env.traj)
     assert ev[0]["status"] == "kept" and seen == [("shop", "shop:all", NOW, 4, 0)]
@@ -1260,9 +1277,7 @@ def test_lines_and_summary(env):
         ln[0].startswith("[코드] 수정 #1 hooks/restock.py 되돌림")
         and "plan_error" in ln[0]
     )
-    assert ln[-1].startswith("[코드] 다음 코드 수정은") and all(
-        "—" not in x for x in ln
-    )
+    assert not any("다음 코드 수정은" in x for x in ln) and all("—" not in x for x in ln)  # no cooldown line
     s = ce.summary(env.root, NOW + 300)
     assert (
         s["applied"] == 1
@@ -1287,7 +1302,7 @@ def test_audit_counts_and_findings(env):
         and rep["code"]["refused"] == 2
         and rep["code"]["refused_by"] == {"not_read": 2}
     )
-    assert set(rep["score"]) == {"mistakes_per_wake", "idle_share", "hit_rate", "wakes"}
+    assert set(rep["score"]) == {"mistakes_per_wake", "wakes"}
     env.traj.append(
         "operator",
         "operator_wake",
@@ -1317,8 +1332,6 @@ def test_audit_counts_and_findings(env):
         os.path.join(env.root, "a2/trajectory.jsonl"),
         "".join(json.dumps(r, ensure_ascii=False) + "\n" for r in rows),
     )
-    rep = audit.report(env.root, NOW + 200)
-    assert rep["idle_wakes"] == 0  # a wake that applied code is not idle
     text = "\n".join(audit.lines(env.root, NOW + 200))
     assert "코드 수정이 되돌려짐 (감시 1건" in text and "plan_error" in text
     assert "코드 수정 제안 2건 거절됨, 최다 사유 '읽지 않은 파일' 2건임" in text

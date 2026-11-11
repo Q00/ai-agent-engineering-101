@@ -126,14 +126,8 @@ def test_counts_repeats_tools_and_edits(tmp_path):
     )
     assert rep["edits"]["reasons"] == {BAD["error"][:40]: 1, "not an object": 1}
     assert rep["model_errors"] == 1 and rep["no_done"] == 1
-    assert rep["idle_wakes"] == 1  # only the done wake without policy
     s = rep["score"]
-    assert s == {
-        "mistakes_per_wake": 1.25,
-        "idle_share": 0.25,
-        "hit_rate": None,
-        "wakes": 4,
-    }
+    assert s == {"mistakes_per_wake": 1.25, "wakes": 4}
     assert audit.score(rep) == s
 
 
@@ -155,19 +149,16 @@ def test_non_compact_wakes_ignored_and_their_tools_not_counted(tmp_path):
     assert rep["unused_tools"] == []
 
 
-def test_idle_definition(tmp_path):
-    rows = [
-        wake(NOW - 6 * H, policy=[BAD]),  # idle: only a refused edit
-        wake(NOW - 5 * H, policy=[OK]),
-        wake(NOW - 4 * H, forum={"queued": 1, "result": []}),
-        wake(NOW - 3 * H, forum=[{"post": "x"}]),
-        wake(NOW - 2 * H, forum={"queued": 0}),  # idle
-        wake(NOW - 1 * H, new_tool={"ok": True, "name": "t"}),
-        wake(NOW - 0.5 * H, new_tool={"ok": False}),  # idle
-        wake(NOW - 0.2 * H, status="model_error"),  # not done: not idle
-    ]
-    rep = audit.report(_root(tmp_path, rows), NOW)
-    assert rep["wakes"] == 8 and rep["idle_wakes"] == 3
+def test_no_strategy_judging_in_the_report(tmp_path):
+    # 11-11: a wake that changes nothing, a group left alone, a verdict without a follow-up and the hit rate are the
+    # operator's strategy, not process mistakes
+    rows = [wake(NOW - 6 * H, policy=[BAD]), wake(NOW - 2 * H, forum={"queued": 0})]
+    ledger = [exp(1, "defaults.goods", "price_mult", NOW - 10 * H, "kept", NOW - 6 * H)]
+    rep = audit.report(_root(tmp_path, rows, ledger), NOW)
+    for k in ("idle_wakes", "untouched_groups", "stale_verdicts", "hit"):
+        assert k not in rep
+    assert set(rep["score"]) == {"mistakes_per_wake", "wakes"}
+    assert "빈 점검" not in "\n".join(audit.lines(_root(tmp_path, rows, ledger), NOW))
 
 
 def test_crashes(tmp_path):
@@ -199,7 +190,7 @@ def test_crashes(tmp_path):
     assert rep["crashes"] == 2 and rep["wakes"] == 0
 
 
-def test_experiments_hit_and_untouched_groups(tmp_path):
+def test_experiment_counts(tmp_path):
     ledger = [
         exp(1, "defaults.goods", "price_mult", NOW - 10 * H, "kept", NOW - 6 * H),
         exp(2, "defaults.goods", "stock_target", NOW - 9 * H, "reverted", NOW - 5 * H),
@@ -224,30 +215,6 @@ def test_experiments_hit_and_untouched_groups(tmp_path):
         0,
     )
     assert x["by_group"] == {"sale": 3, "restock": 1, "buyer": 0, "shop": 0}
-    assert rep["untouched_groups"] == ["shop"]  # buyer has a running experiment
-    assert rep["hit"] == {"ended": 3, "good": 2}  # voided is not a verdict
-    assert rep["score"]["hit_rate"] == 0.67
-
-
-def test_stale_verdicts(tmp_path):
-    ledger = [
-        exp(
-            1, "defaults.goods", "price_mult", NOW - 10 * H, "reverted", NOW - 6 * H
-        ),  # sale: followed by #4
-        exp(
-            2, "defaults.goods", "stock_target", NOW - 10 * H, "kept", NOW - 6 * H
-        ),  # restock: stale
-        exp(
-            3, "shop", "liquidation_line", NOW - 10 * H, "dropped", NOW - 1.5 * H
-        ),  # 1 wake after: not stale
-        exp(4, "defaults.food", "min_margin", NOW - 5 * H, "running"),
-        exp(
-            5, "buyer.defaults.goods", "max_price", NOW - 10 * H, "kept", NOW - 0.5 * H
-        ),  # no wake after
-    ]
-    rows = [wake(NOW - 5.5 * H), wake(NOW - 3 * H), wake(NOW - H)]
-    rep = audit.report(_root(tmp_path, rows, ledger), NOW)
-    assert rep["stale_verdicts"] == [2]
 
 
 def test_hours_and_since_windows(tmp_path):
@@ -263,12 +230,7 @@ def test_hours_and_since_windows(tmp_path):
 def test_missing_and_corrupt_files(tmp_path):
     rep = audit.report(str(tmp_path / "nothing"), NOW, listed=["policy"])
     assert rep["wakes"] == 0 and rep["calls"] == 0 and rep["unused_tools"] == ["policy"]
-    assert rep["score"] == {
-        "mistakes_per_wake": 0.0,
-        "idle_share": 0.0,
-        "hit_rate": None,
-        "wakes": 0,
-    }
+    assert rep["score"] == {"mistakes_per_wake": 0.0, "wakes": 0}
     rows = [
         "{not json",
         "[1, 2]",
@@ -310,7 +272,7 @@ def test_missing_and_corrupt_files(tmp_path):
     ]
     root = _root(tmp_path, rows, ledger="{broken")
     rep = audit.report(root, NOW)
-    assert rep["wakes"] == 1 and rep["prompt_chars"] == 0 and rep["idle_wakes"] == 1
+    assert rep["wakes"] == 1 and rep["prompt_chars"] == 0
     assert rep["tools"]["?"]["uses"] == 1 and rep["tools"]["?"]["obs_chars_mean"] == 0
     assert rep["experiments"]["started"] == 0
     root2 = _root(
@@ -326,7 +288,7 @@ def test_missing_and_corrupt_files(tmp_path):
             }
         ],
     )
-    assert audit.report(root2, NOW)["hit"] == {"ended": 0, "good": 0}
+    assert audit.report(root2, NOW)["experiments"]["kept"] == 0
     assert len(audit.lines(root, NOW)) >= 1 and audit.tool_table(root, NOW)
 
 
@@ -351,7 +313,7 @@ def test_lines_head_and_only_non_zero_findings(tmp_path):
     ]
     out = audit.lines(_root(tmp_path, rows, ledger), NOW, listed=["policy"])
     assert out == [
-        "[감사] 최근 24시간 점검 1회, 호출 2회, 점검당 실수 0.0, 빈 점검 0회"
+        "[감사] 최근 24시간 점검 1회, 호출 2회, 점검당 실수 0.0"
     ]
 
 
@@ -375,10 +337,10 @@ def test_lines_findings_and_700_char_cap(tmp_path, monkeypatch, line_chars):
     text = "\n".join(out)
     assert len(text) <= 700 and len(out) <= 6
     assert out[0].startswith(
-        "[감사] 최근 24시간 점검 6회, 호출 12회, 점검당 실수 5.2, 빈 점검 5회"
+        "[감사] 최근 24시간 점검 6회, 호출 12회, 점검당 실수 5.2"
     )
-    assert any("판매 값" in x and "가게 값" in x for x in out)
-    assert any("#1, #2, #3" in x and "외 69건" in x for x in out)
+    assert any("정책 수정 20건 중 20건 거절됨" in x for x in out)
+    assert not any("안 쓴 도구" in x for x in out)  # kept in the report for the auditor, not a line
     assert "—" not in text and not any(x.endswith(".") for x in out)
 
 
@@ -391,14 +353,14 @@ def test_lines_each_finding(tmp_path):
     ]
     out = audit.lines(_root(tmp_path, rows), NOW, listed=["policy", "guide"])
     assert (
-        out[0] == "[감사] 최근 24시간 점검 2회, 호출 4회, 점검당 실수 1.5, 빈 점검 1회"
+        out[0] == "[감사] 최근 24시간 점검 2회, 호출 4회, 점검당 실수 1.5"
     )
     body = "\n".join(out[1:])
-    assert "판매 값, 재고 값, 구매 값, 가게 값" in body
+    assert "판매 값" not in body
     assert f"정책 수정 1건 중 1건 거절됨, 최다 사유 '{BAD['error'][:40]}' 1건임" in body
     assert "반복 호출 1회, 최다 policy 1회임" in body
     assert "모델 오류 1회임" in body
-    assert "안 쓴 도구 1개: guide임" in body
+    assert "안 쓴 도구" not in body
 
 
 def test_tool_table(tmp_path):

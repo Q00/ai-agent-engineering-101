@@ -18,7 +18,7 @@ from kernel import code_tools
 from kernel import common as c
 
 STORE = "a2/tools_made.json"
-MADE_MAX = 12
+MADE_MAX = 100  # runaway backstop, not shown to the model
 PREFIX = "q_"
 OUT_CHARS = 4000
 MAX_BYTES = 20_000_000  # tail read per run

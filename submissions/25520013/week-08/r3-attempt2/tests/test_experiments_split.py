@@ -98,6 +98,8 @@ def test_split_start_leaves_policy_json_and_writes_valid_arms(root, a1):
         "old": 0.9,
         "new": 0.8,
         "eval_ts": S + 5 * H,
+        "test": "split",
+        "voided": [],
     }
     assert _bytes(root) == before
     pp = os.path.join(root, "policy.json")
@@ -130,7 +132,7 @@ def test_split_start_leaves_policy_json_and_writes_valid_arms(root, a1):
     row = [x for x in _rows(root, "policy_edit") if x.get("by") == "split_start"]
     assert len(row) == 1 and row[0]["experiment"] == 1 and not row[0].get("backup")
     assert not os.path.exists(os.path.join(root, pe.BAK_DIR))
-    # the split start started the key's cooldown
+    # 11-11: no cooldown after a split start
     chk = pe.check(
         root,
         {"section": BED, "key": "price_mult", "value": 0.85, "reason": "r"},
@@ -139,7 +141,7 @@ def test_split_start_leaves_policy_json_and_writes_valid_arms(root, a1):
         CATS,
         a1.load,
     )
-    assert chk["ok"] is False and "min ago" in chk["error"]
+    assert chk["ok"] is True
 
 
 def test_split_start_per_grade_value_is_the_whole_dict(root, a1):
@@ -152,9 +154,9 @@ def test_split_start_per_grade_value_is_the_whole_dict(root, a1):
     fd = pol2["defaults"]["goods"]["fresh_discount"]
     assert fd["B"] == 0.08 and fd["C"] == (0.25 if picked[1] == "b" else _pol(root)["defaults"]["goods"]["fresh_discount"]["C"])
     r = _start(root, a1, "shop", "grade_floor_list.A", 0.5)
-    assert (
-        r is not None and r["ok"] is False
-    )  # shop:all overlaps the running defaults.goods experiment
+    # shop:all overlaps the running defaults.goods experiment: the new change voids it and its arm goes
+    assert r["ok"] and [v["id"] for v in r["voided"]] == [1]
+    assert ex.load(root)[0]["status"] == "voided" and [a["id"] for a in ex.load_arms(root)] == [2]
 
 
 def test_check_runs_every_edit_check_without_writing(root, a1):
@@ -176,7 +178,6 @@ def test_check_runs_every_edit_check_without_writing(root, a1):
         "new": 0.8,
     }
     bad = [
-        {"section": BED, "key": "price_mult", "value": 0.6, "reason": "r"},  # step
         {"section": BED, "key": "price_mult", "value": 1.3, "reason": "r"},  # range
         {
             "section": "식품>과자",
@@ -184,7 +185,6 @@ def test_check_runs_every_edit_check_without_writing(root, a1):
             "value": 3,
             "reason": "r",
         },  # goods only
-        {"section": BED, "key": "price_mult", "value": 0.8},  # no reason
     ]
     for it in bad:
         assert pe.check(root, it, traj, S, CATS, a1.load)["ok"] is False, it
@@ -313,23 +313,22 @@ def test_no_split_when_the_seller_code_has_no_arms(root, a1):
     assert not ex.seller_has_arms(root)
 
 
-def test_split_and_sequential_block_each_other(root, a1):
+def test_split_and_sequential_overwrite_each_other(root, a1):
+    # 11-11: nothing is refused because an experiment runs; a change in its scope voids it
     assert _start(root, a1)["ok"]
-    assert _start(root, a1, mode="sequential", item={"value": 0.85})["ok"] is False
-    assert _start(root, a1, "defaults.goods", "price_mult", 0.85)["ok"] is False
-    assert _start(root, a1, SOFA, "price_mult", 0.85)["ok"] is True  # another leaf
-    assert (
-        _start(root, a1, "shop", "grade_floor_list.C", 0.6, mode="sequential")["ok"]
-        is False
-    )
-    assert len(ex.load_arms(root)) == 2
+    r = _start(root, a1, mode="sequential", item={"value": 0.85})
+    assert r["ok"] and [v["id"] for v in r["voided"]] == [1] and ex.load_arms(root) == []
+    assert _start(root, a1, SOFA, "price_mult", 0.85)["voided"] == []  # another leaf
+    r = _start(root, a1, "shop", "grade_floor_list.C", 0.6, mode="sequential")
+    assert r["ok"] and sorted(v["id"] for v in r["voided"]) == [2, 3]
+    assert [e["status"] for e in ex.load(root)] == ["voided", "voided", "voided", "running"]
 
 
-def test_sequential_blocks_split(root, a1):
+def test_sequential_is_overwritten_by_split(root, a1):
     assert _start(root, a1, "shop", "grade_floor_list.C", 0.6, mode="sequential")["ok"]
     r = _start(root, a1)
-    assert r["ok"] is False and "#1" in r["error"]
-    assert not os.path.exists(ex.arms_path(root))
+    assert r["ok"] and r["mode"] == "split" and [v["id"] for v in r["voided"]] == [1]
+    assert ex.load(root)[0]["verdict"]["reason"] == "overwritten"
 
 
 # --- evaluation and ending

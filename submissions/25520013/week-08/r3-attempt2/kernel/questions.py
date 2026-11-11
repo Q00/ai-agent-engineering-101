@@ -22,13 +22,15 @@ QUESTIONS = os.path.join("a2", "questions.json")
 FINDINGS = os.path.join("a2", "findings.jsonl")
 ROLES = ("shop", "buyer")
 FROM = ("shop", "buyer", "human", "standing")
-Q_CHARS = 400  # an operator's question
-OPEN_PER_ROLE = 2  # open questions one role operator may have
+# Silent technical caps (11-11 성수님: the agents are not told limits): text beyond them is cut, not refused. Only
+# OPEN_PER_ROLE refuses, a runaway backstop far above normal use. The prompt shows findings shortened (prompt_lines).
+Q_CHARS = 4_000  # an operator's question
+OPEN_PER_ROLE = 20  # open questions one role operator may have
 CLOSED_KEEP = 200  # closed questions kept in the file (open ones are always kept)
-FINDING_CHARS = 1_500
-EVIDENCE_MAX = 8
-EVIDENCE_CHARS = 200
-SUGGEST_CHARS = 400
+FINDING_CHARS = 8_000
+EVIDENCE_MAX = 40
+EVIDENCE_CHARS = 500
+SUGGEST_CHARS = 4_000
 PROMPT_N = 3  # findings shown in a role operator's prompt
 PROMPT_HOURS = 12
 FINDINGS_BYTES = 5_000_000
@@ -115,22 +117,14 @@ def add(root, frm, q, now, for_=None):
 
 
 def ask(root, role, value, now, secrets=()):
-    """A role operator's done.ask: a string or {"q": "..."}, at most Q_CHARS, refused while that role has
-    OPEN_PER_ROLE open questions or the same question is open. -> add's result."""
+    """One question of a role operator's done.ask (the operator sends each item of a list here): a string or
+    {"q": "..."}, cut to Q_CHARS, refused while that role has OPEN_PER_ROLE open questions or the same question is
+    open. -> add's result."""
     if isinstance(value, dict):
         value = value.get("q")
-    if isinstance(value, list):
-        return {
-            "ok": False,
-            "error": '한 점검에 질문 1개까지: 글 하나 또는 {"q": "..."}',
-        }
     if not isinstance(value, str) or not value.strip():
-        return {"ok": False, "error": '형식: 글 하나 또는 {"q": "..."}'}
-    if len(value.strip()) > Q_CHARS:
-        return {
-            "ok": False,
-            "error": f"질문은 {Q_CHARS}자까지 (지금 {len(value.strip())}자)",
-        }
+        return {"ok": False, "error": '형식: 글 또는 {"q": "..."}'}
+    value = value.strip()[:Q_CHARS]
     n = sum(
         1 for r in load(root) if r.get("status") == "open" and r.get("from") == role
     )

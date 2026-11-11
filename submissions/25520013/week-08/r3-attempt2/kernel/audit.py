@@ -1,8 +1,9 @@
 """Process audit of the operator model (meta-harness): how it works, not what it decides. Plain code, no model calls.
 
 report(root, now) reads the trajectory (<root>/a2/trajectory.jsonl, last TRAJ_BYTES) and the experiment ledger and
-counts, over the compact wakes in the window, what the operator ignored (tools, experiment groups, verdicts), wasted
-(repeated calls, idle wakes) and got wrong (refused edits, model errors, wakes without done). lines() is the [감사]
+counts, over the compact wakes in the window, process mistakes: repeated calls, failing tool calls, cut or uncited
+reads, numbers in a reason not seen in any tool result, refused edits, model errors, wakes without done. 11-11: what
+the operator changes, tests or leaves alone is its strategy and is not judged here. lines() is the [감사]
 block of the state card; tool_table() is the per-tool table for the auditor model. Missing or corrupt files count as
 zero; nothing here raises on bad rows. Nothing is masked here (callers mask).
 
@@ -22,24 +23,8 @@ from kernel import experiments as ex
 TRAJ = os.path.join("a2", "trajectory.jsonl")
 TRAJ_BYTES = 30_000_000
 GROUPS = ("sale", "restock", "buyer", "shop")
-GROUP_KO = {
-    "sale": "판매 값",
-    "restock": "재고 값",
-    "buyer": "구매 값",
-    "shop": "가게 값",
-}
 ENDED = ("adopted", "kept", "dropped", "reverted", "voided")
-DECIDED = (
-    "adopted",
-    "kept",
-    "dropped",
-    "reverted",
-)  # voided has no verdict, so it is not in the hit rate
-GOOD = ("adopted", "kept")
-STALE_WAKES = 2
 REASON_CHARS = 40
-UNUSED_SHOWN = 8
-IDS_SHOWN = 10
 LINES_MAX = 6
 LINE_CHARS = 200
 BLOCK_CHARS = 700
@@ -95,28 +80,6 @@ def _wakes(root, role=None):
 def _compact(w):
     res = w.get("result")
     return isinstance(res, dict) and _num(res.get("calls"))
-
-
-def _posted(res):
-    f = res.get("forum")
-    if isinstance(f, list):
-        return bool(f)
-    return isinstance(f, dict) and _num(f.get("queued")) and f["queued"] > 0
-
-
-def _idle(w):
-    res = w["result"]
-    if w.get("status") != "done":
-        return False
-    pol = res.get("policy") if isinstance(res.get("policy"), list) else []
-    if any(isinstance(p, dict) and p.get("ok") is True for p in pol):
-        return False
-    nt = res.get("new_tool")
-    if isinstance(nt, dict) and nt.get("ok"):
-        return False
-    if isinstance(res.get("code"), dict) and res["code"].get("ok") is True:
-        return False
-    return not _posted(res)
 
 
 def _ledger(root):
@@ -233,30 +196,6 @@ def report(root, now, hours=24, since=None, listed=None, role=None):
             for g in groups
         },
     }
-    busy = {group_of(e.get("section"), e.get("key")) for e in running}
-    untouched = [g for g in groups if exps["by_group"][g] == 0 and g not in busy]
-
-    compact_ts = [w["ts"] for w in all_wakes if _compact(w) and w["ts"] <= now]
-    stale = []
-
-    def order(e):  # numeric ids in number order, any other id after them as text
-        i = e.get("id")
-        return (e["ended_ts"], 0, i, "") if _num(i) else (e["ended_ts"], 1, 0, str(i))
-
-    for e in sorted(ended, key=order):
-        t, g = e["ended_ts"], group_of(e.get("section"), e.get("key"))
-        if sum(1 for ts in compact_ts if ts > t) < STALE_WAKES:
-            continue
-        if any(
-            _num(x.get("started_ts"))
-            and x["started_ts"] > t
-            and group_of(x.get("section"), x.get("key")) == g
-            for x in rows
-        ):
-            continue
-        stale.append(e.get("id"))
-
-    decided = [e for e in ended if e["status"] in DECIDED]
     rep = {
         "window_h": round((now - start) / 3600, 2),
         "from_ts": start,
@@ -265,7 +204,6 @@ def report(root, now, hours=24, since=None, listed=None, role=None):
         "prompt_chars": chars,
         "calls_per_wake": round(calls / max(n, 1), 2),
         "chars_per_call": round(chars / max(calls, 1)),
-        "idle_wakes": sum(1 for w in wakes if _idle(w)),
         "model_errors": sum(1 for w in wakes if w.get("status") == "model_error"),
         "no_done": sum(1 for w in wakes if w.get("status") == "no_done"),
         "crashes": sum(1 for ts in poll_crashes if start <= ts <= now)
@@ -279,12 +217,6 @@ def report(root, now, hours=24, since=None, listed=None, role=None):
         "unused_tools": sorted(listed - set(tools)),
         "edits": edits,
         "experiments": exps,
-        "untouched_groups": untouched,
-        "stale_verdicts": stale,
-        "hit": {
-            "ended": len(decided),
-            "good": sum(1 for e in decided if e["status"] in GOOD),
-        },
         "code": code_edit.summary(root, now, since=start),  # not in score
     }
     if role is not None:
@@ -296,18 +228,14 @@ def report(root, now, hours=24, since=None, listed=None, role=None):
 
 
 def score(rep):
-    """mistakes_per_wake = (repeat_calls + refused edits + model_errors + no_done) / wakes; idle_share = idle / wakes;
-    hit_rate = good / ended, None with no ended experiment."""
+    """mistakes_per_wake = (repeat_calls + refused edits + model_errors + no_done) / wakes."""
     n = max(rep.get("wakes") or 0, 1)
     bad = (rep.get("repeat_calls") or 0) + (
         (rep.get("edits") or {}).get("refused") or 0
     )
     bad += (rep.get("model_errors") or 0) + (rep.get("no_done") or 0)
-    hit = rep.get("hit") or {}
     return {
         "mistakes_per_wake": round(bad / n, 2),
-        "idle_share": round((rep.get("idle_wakes") or 0) / n, 2),
-        "hit_rate": round(hit["good"] / hit["ended"], 2) if hit.get("ended") else None,
         "wakes": rep.get("wakes") or 0,
     }
 
@@ -325,19 +253,9 @@ def lines(root, now, hours=24, listed=None, role=None):
         return [f"[감사] 최근 {h}시간 점검 기록 없음"]
     out = [
         f"[감사] 최근 {h}시간 점검 {rep['wakes']}회, 호출 {rep['calls']}회, "
-        f"점검당 실수 {rep['score']['mistakes_per_wake']:.1f}, 빈 점검 {rep['idle_wakes']}회"
+        f"점검당 실수 {rep['score']['mistakes_per_wake']:.1f}"
     ]
     found = []
-    if rep["untouched_groups"]:
-        names = ", ".join(GROUP_KO[g] for g in rep["untouched_groups"])
-        found.append(f"실험 시작 0건이고 진행 중인 실험도 없는 묶음: {names}임")
-    if rep["stale_verdicts"]:
-        sv = rep["stale_verdicts"]
-        ids = ", ".join(f"#{i}" for i in sv[:IDS_SHOWN])
-        ids += f" 외 {len(sv) - IDS_SHOWN}건" if len(sv) > IDS_SHOWN else ""
-        found.append(
-            f"판정 뒤 점검 {STALE_WAKES}회 이상 지나도 같은 묶음 새 실험 없음: {ids}"
-        )
     ed = rep["edits"]
     if ed["refused"]:
         reason, k = sorted(ed["reasons"].items(), key=lambda x: (-x[1], x[0]))[0]
@@ -355,7 +273,7 @@ def lines(root, now, hours=24, listed=None, role=None):
         u = rep["unfounded_numbers"]
         found.insert(
             1 if rep.get("tool_errors") else 0,
-            f"실험 근거(reason, expect)에 쓴 숫자 중 이번 점검에 본 자료에 없는 것 {len(u)}개 (예: {', '.join(u[:4])}). "
+            f"값 수정 근거(reason, expect)에 쓴 숫자 중 이번 점검에 본 자료에 없는 것 {len(u)}개 (예: {', '.join(u[:4])}). "
             "근거 숫자는 도구로 읽은 값을 그대로 씀",
         )
     if rep.get("uncited_reads"):
@@ -389,10 +307,6 @@ def lines(root, now, hours=24, listed=None, role=None):
     ]
     if any(k for k, _ in errs):
         found.append(", ".join(f"{label} {k}회" for k, label in errs if k) + "임")
-    if rep["unused_tools"]:
-        un = rep["unused_tools"]
-        more = f" 외 {len(un) - UNUSED_SHOWN}개" if len(un) > UNUSED_SHOWN else ""
-        found.append(f"안 쓴 도구 {len(un)}개: {', '.join(un[:UNUSED_SHOWN])}{more}임")
     if rep.get("search_zero"):
         found.append(f"tool_search 결과 0개 {rep['search_zero']}회 (예: {', '.join(rep['search_zero_queries'][-3:])}): "
                      "낱말을 바꿔 다시 찾음")

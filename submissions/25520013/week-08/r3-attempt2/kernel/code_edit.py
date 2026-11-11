@@ -13,14 +13,16 @@ seller restart (A2_SELLER_RESTART_CMD, started without waiting by watch()). Stat
     restart_pending --restart failed / timeout--> refused_restart (backups restored; old process runs old code)
     watching --canary trips--> reverted | revert_restart_pending | conflict
     watching --WATCH_S passed--> evaluating
-    evaluating --worse beyond noise--> reverted | revert_restart_pending | conflict
-    evaluating --otherwise--> kept
+    evaluating --EVAL_H passed--> kept, with the before/after numbers (11-11: no revert on the comparison; the
+                                  operator reads the numbers and decides. Rows without eval_revert False, written
+                                  before that, still revert when worse beyond noise)
     revert_restart_pending --restart ok--> reverted   (failed restarts retried every RETRY_S, files stay restored)
     any open status --MAX_FAILS evaluation errors--> voided (code left as it is)
 
 watch() runs on every operator poll and never blocks: a 30 min canary on the hooks' metrics rows (revert at once on
 errors or silence), then a 4 h before/after comparison with the experiment ledger's sequential evaluate (shop score
-proxy for shop-side code, buyer saved gain for the buyer hook, both for policy.py), reverted when worse beyond noise.
+proxy for shop-side code, buyer saved gain for the buyer hook, both for policy.py), reported, not acted on. A new
+change is refused only while another one is restarting or under the canary (BLOCKING).
 
 State: <root>/a2/code_changes.json (list), backups <root>/a2/code_backups/<id>/, stage <root>/a2/code_stage/,
 test baseline cache <root>/a2/code_baseline.json, restart logs <root>/a2/logs/seller_restart-<id>.log.
@@ -128,14 +130,10 @@ ALLOWED_IMPORTS = ("math", "re", "json", "time", "statistics", "collections", "i
 BANNED_NAMES = ("eval", "exec", "compile", "__import__", "getattr", "setattr", "delattr", "globals", "locals", "vars", "__builtins__", "breakpoint", "input")
 BANNED_OS = ("system", "popen", "remove", "unlink", "rmdir", "kill", "environ")
 WRITE_METHODS = ("write_text", "write_bytes")
-MAX_EDITS = 3
-NEW_CHARS = 4_000
-MAX_CHANGED_LINES = 150
-MIN_TEXT = 20  # reason and expect
-COOLDOWN_S = 3600
-REPEAT_S = (
-    6 * 3600
-)  # a change reverted this recently may not come back with the identical edits
+# Size limits of one change (runaway guards, not strategy): edits per change, chars of one new text, changed lines.
+MAX_EDITS = 8
+NEW_CHARS = 20_000
+MAX_CHANGED_LINES = 400
 WATCH_S = 1800
 EVAL_H = 4
 SILENCE_S = 1200
@@ -180,6 +178,15 @@ SEARCH_ROWS = 40
 ROW_CHARS = 160
 METRICS_BYTES = 20_000_000
 OPEN = ("restart_pending", "watching", "evaluating", "revert_restart_pending")
+BLOCKING = ("restart_pending", "watching", "revert_restart_pending")  # a new change waits for these (one restart or
+# canary at a time, so a canary trip or a restart names one change)
+
+
+def _blocks(r):
+    """Whether open change r makes a new one wait: restarting or under the canary, or a legacy row still judged with
+    a revert."""
+    st = r.get("status")
+    return st in BLOCKING or (st == "evaluating" and r.get("eval_revert") is not False)
 STATUS_KO = {
     "restart_pending": "판매자 재시작 대기",
     "watching": "감시",
@@ -1072,15 +1079,8 @@ def _propose(root, edits, reason, expect, now, traj, read_files, runner, rev_wei
         )
     edits = [{"file": e["file"], "old": e["old"], "new": e["new"]} for e in edits]
     files = sorted({e["file"] for e in edits})
-    for k, v in (("reason", reason), ("expect", expect)):
-        if not isinstance(v, str) or len(v.strip()) < MIN_TEXT:
-            return _refuse(
-                traj,
-                now,
-                "short",
-                f"{k}는 {MIN_TEXT}자 이상의 글이어야 함 (근거 숫자와 기대 효과)",
-                files,
-            )
+    reason = reason if isinstance(reason, str) else ""
+    expect = expect if isinstance(expect, str) else ""
     for f in files:
         if f not in EDITABLE:
             return _refuse(
@@ -1116,7 +1116,7 @@ def _propose(root, edits, reason, expect, now, traj, read_files, runner, rev_wei
             files,
         )
     rows = load(root)
-    live = [r for r in rows if r.get("status") in OPEN]
+    live = [r for r in rows if _blocks(r)]
     if live:
         r = live[-1]
         return _refuse(
@@ -1126,32 +1126,7 @@ def _propose(root, edits, reason, expect, now, traj, read_files, runner, rev_wei
             f"코드 수정 #{r.get('id')}이 {STATUS_KO.get(r.get('status'))} 중이라 새 수정을 받지 않음",
             files,
         )
-    last = max(
-        [r["ts"] for r in rows if _num(r.get("ts"))] or [None], key=lambda x: x or 0
-    )
-    if last is not None and now - last < COOLDOWN_S:
-        return _refuse(
-            traj,
-            now,
-            "cooldown",
-            f"코드 수정 사이 대기 {COOLDOWN_S // 60}분: {c.kst(last + COOLDOWN_S, '%H:%M')}부터 받음",
-            files,
-        )
     sig = _sig(edits)
-    for r in rows:
-        if (
-            r.get("status") in ("reverted", "revert_restart_pending", "refused_restart")
-            and r.get("sig") == sig
-            and _num(r.get("ended_ts"))
-            and now - r["ended_ts"] < REPEAT_S
-        ):
-            return _refuse(
-                traj,
-                now,
-                "repeat",
-                f"코드 수정 #{r.get('id')}과 같은 수정이 {REPEAT_S // 3600}시간 안에 되돌려졌음",
-                files,
-            )
     for e in edits:
         if len(e["new"]) > NEW_CHARS:
             return _refuse(
@@ -1284,6 +1259,7 @@ def _propose(root, edits, reason, expect, now, traj, read_files, runner, rev_wei
         "changed_lines": n_lines,
         "sig": sig,
         "diff": diff,
+        "eval_revert": False,  # the 4 h comparison only reports
     }
     if role is not None:
         ch["role"] = role
@@ -1751,6 +1727,8 @@ def _step(root, ch, now, traj, restarter):
         return None
     v = evaluate(root, ch, now)
     ch["verdict"] = v
+    if ch.get("eval_revert") is False:
+        return _end(ch, "kept", now, traj, "evaluation", f"{EVAL_H}시간 전후 비교 숫자만 냄 (자동 되돌림 없음)")
     if v["decision"] == "worse":
         bad = [m for m in v["metrics"] if v[m]["decision"] == "worse"]
         return revert(
@@ -1849,7 +1827,9 @@ def lines(root, now, role=None):
             if st in ("watching", "evaluating"):
                 out.append(
                     f"[코드] 수정 #{r['id']} {', '.join(r.get('files') or [])} {STATUS_KO[st]} 중: "
-                    f"감시 {_hm(r.get('watch_until'))}까지, 판정 {_hm(r.get('eval_until'))} "
+                    f"감시 {_hm(r.get('watch_until'))}까지, "
+                    + ("전후 비교 숫자 " if r.get("eval_revert") is False else "판정 ")
+                    + f"{_hm(r.get('eval_until'))} "
                     f"({'/'.join(r.get('metrics') or [])} 기준)"
                     + mark(r)
                 )
@@ -1880,16 +1860,6 @@ def lines(root, now, role=None):
                 + (f", {_verdict_text(r.get('verdict'))}" if r.get("verdict") else "")
                 + mark(r)
             )
-        last = max(
-            [r["ts"] for r in rows if _num(r.get("ts"))] or [None], key=lambda x: x or 0
-        )
-        if (
-            out
-            and last is not None
-            and now < last + COOLDOWN_S
-            and not any(r.get("status") in OPEN for r in rows)
-        ):
-            out.append(f"[코드] 다음 코드 수정은 {_hm(last + COOLDOWN_S)}부터 받음")
         return out[:4]
     except Exception:  # noqa: BLE001
         return []

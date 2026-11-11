@@ -301,20 +301,18 @@ def test_scope_of():
         ("buyer.defaults.goods", "shop", False),
     ],
 )
-def test_blocked_pairs(root, running_sec, edit_sec, hit):
+def test_overlap_pairs(root, running_sec, edit_sec, hit):
+    # 11-11: an overlap no longer refuses; it is what a new change voids (void_overlaps)
     e = _exp(running_sec, eid=7)
     _put_ledger(root, [e])
-    msg = ex.blocked(root, edit_sec, "price_mult", S + 60)
-    assert (msg is not None) is hit
-    if hit:
-        assert "#7" in msg and f"{c.kst(e['eval_ts'], '%H:%M')} 판정" in msg
+    assert [x["id"] for x in ex.overlaps(root, edit_sec, "price_mult")] == ([7] if hit else [])
 
 
-def test_ended_experiment_does_not_block(root):
+def test_ended_experiment_does_not_overlap(root):
     _put_ledger(
         root, [_exp(BED, status="kept"), _exp("shop", status="reverted", eid=2)]
     )
-    assert ex.blocked(root, BED, "price_mult", S) is None
+    assert ex.overlaps(root, BED, "price_mult") == []
 
 
 # --- register
@@ -364,8 +362,8 @@ def test_register_defaults_and_clamps(root):
         0.31,
         "saved_gain_per_h",
     )
-    assert ex.register(root, r(BED, "price_mult"), "", 1, S, traj)["window_h"] == 2
-    assert ex.register(root, r(BED, "price_mult"), "", 20, S, traj)["window_h"] == 8
+    assert ex.register(root, r(BED, "price_mult"), "", 0.2, S, traj)["window_h"] == 1
+    assert ex.register(root, r(BED, "price_mult"), "", 200, S, traj)["window_h"] == 48
     assert ex.register(root, r(BED, "price_mult"), "", 5.6, S, traj)["window_h"] == 6
     assert [e["id"] for e in ex.load(root)] == [1, 2, 3, 4, 5, 6, 7]
     starts = _rows(root, "experiment_start")
@@ -1072,7 +1070,7 @@ def test_no_baseline_extends_then_keeps(root, a1, first):
     assert "비교 기준 없음" in "\n".join(ex.lines(root, x["ended_ts"]))
 
 
-def test_contamination_blocks_for_2h_and_clips_the_before_window(root):
+def test_recent_end_is_named_not_refused_and_an_older_one_clips_the_before_window(root):
     T = S - H
     _put_ledger(
         root,
@@ -1081,16 +1079,19 @@ def test_contamination_blocks_for_2h_and_clips_the_before_window(root):
             _exp(SOFA, status="kept", eid=2, ended_ts=T),
         ],
     )
-    msg = ex.blocked(root, BED, "price_mult", S)
-    assert "#1" in msg and f"{c.kst(T + 2 * H, '%H:%M')}까지" in msg
-    assert (
-        ex.blocked(root, "defaults.goods", "price_mult", S) is not None
-    )  # overlapping scope
-    assert (
-        ex.blocked(root, SOFA, "price_mult", S) is None
-    )  # kept: its value is still live
-    assert ex.blocked(root, BED, "price_mult", S, mode="split") is None
-    assert ex.blocked(root, BED, "price_mult", T + 2 * H) is None
+    # 11-11: a start within CONTAM_S of an overlapping end is allowed; the window is not clipped, the verdict names it
+    row = {"section": BED, "key": "price_mult", "old": 0.9, "new": 0.8}
+    e = ex.register(root, row, "", 3, S, _traj(root))
+    assert e["before_from"] is None and e["before_mixed"] == [1]
+    assert ex.register(root, dict(row, section="defaults.goods"), "", 3, S, _traj(root))["before_mixed"] == [1]
+    assert "before_mixed" not in ex.register(root, dict(row, section=SOFA), "", 3, S, _traj(root))  # kept: still live
+    _put_ledger(
+        root,
+        [
+            _exp(BED, status="reverted", eid=1, ended_ts=T),
+            _exp(SOFA, status="kept", eid=2, ended_ts=T),
+        ],
+    )
     row = {"section": BED, "key": "price_mult", "old": 0.9, "new": 0.8}
     e = ex.register(root, row, "", 3, T + 2 * H, _traj(root))
     assert e["before_from"] == T and e["mode"] == "sequential"
@@ -1217,9 +1218,6 @@ def test_eval_error_voids_after_six_failures(root, a1):
         and x["verdict"]["note"] == "값은 그대로 둠"
     )
     assert "평가 실패, 값은 그대로 둠" in "\n".join(ex.lines(root, t + 6 * 601))
-    assert (
-        ex.blocked(root, BED, "price_mult", x["ended_ts"] + 2 * H) is None
-    )  # not blocked for ever
 
 
 @pytest.mark.parametrize(
@@ -1312,7 +1310,6 @@ HOSTILE = [
     {"section": BED, "key": "price_mult", "value": "0.8", "reason": "r"},
     {"section": BED, "key": "price_mult", "value": [0.8], "reason": "r"},
     {"section": BED, "key": "price_mult", "value": True, "reason": "r"},
-    {"section": BED, "key": "price_mult", "value": 0.8, "reason": {"x": 1}},
     {"section": "bounds", "key": "price_mult", "value": 0.8, "reason": "r"},
     {"section": "x" * 10_000, "key": "price_mult", "value": 0.8, "reason": "r"},
     {
@@ -1346,7 +1343,7 @@ def test_start_with_hostile_items_never_raises(root, a1):
     assert open(os.path.join(root, "policy.json"), "rb").read() == before
     assert ex.load(root) == [] and not os.path.exists(ex.arms_path(root))
     good = [
-        ({"section": BED, "key": "price_mult", "value": 0.8, "window_h": 10**400}, 8),
+        ({"section": BED, "key": "price_mult", "value": 0.8, "window_h": 10**400}, 48),
         (
             {
                 "section": SOFA,
@@ -1409,7 +1406,7 @@ def test_start_with_hostile_items_never_raises(root, a1):
     )
     assert huge["ok"] and len(ex.load(root)[-1]["expect"]) == 500
     # every edit in the file has its running experiment
-    edits = [r for r in _rows(root, "policy_edit") if r.get("by") is None]
+    edits = [r for r in _rows(root, "policy_edit") if r.get("by") == "experiment"]
     assert len(edits) == len(ex.running(root)) == 5
 
 

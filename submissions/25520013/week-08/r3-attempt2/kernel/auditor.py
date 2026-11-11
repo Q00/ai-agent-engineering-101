@@ -4,7 +4,7 @@ One model call per run reads the audit counts (kernel.audit), the tool table, th
 wakes, the operator's notes and the guidance history, and may answer with a new working-method guidance for the
 operator and tool list changes (hide, show, describe, remove operator-made q_ tools). It never sets policy values: a
 guidance that attaches a number to a policy key is refused. Each guidance version is judged by code
-(judge_guidance): mistakes per wake and idle share before and after, reverted to the previous text when clearly worse.
+(judge_guidance): mistakes per wake before and after, reverted to the previous text when clearly worse.
 Missing sibling modules (kernel.audit, kernel.made_tools) count as no data. Corrupt state files read as empty.
 
 With roles (the two role operators, shop and buyer, kernel.operator --role) one run looks at both: guidance, its
@@ -62,7 +62,6 @@ WORSE_MISTAKES_RATIO = (
     1.25  # revert when after.mistakes_per_wake > before * ratio + slack
 )
 WORSE_MISTAKES_SLACK = 0.5
-WORSE_IDLE_DELTA = 0.25  # revert when after.idle_share > before.idle_share + delta
 HISTORY_MAX = 12
 HISTORY_SHOWN = 4
 DESC_CHARS = 160
@@ -258,15 +257,9 @@ def _score(root, now, since, role=None):
 
 
 def _worse(before, after):
-    bm, am, bi, ai = (
-        x if _num(x) else 0
-        for x in (before.get("mistakes_per_wake"), after.get("mistakes_per_wake"),
-                  before.get("idle_share"), after.get("idle_share"))
-    )
-    return (
-        am > bm * WORSE_MISTAKES_RATIO + WORSE_MISTAKES_SLACK
-        or ai > bi + WORSE_IDLE_DELTA
-    )
+    # 11-11: only process mistakes; how much the operator changes (the old idle share) is its strategy
+    bm, am = (x if _num(x) else 0 for x in (before.get("mistakes_per_wake"), after.get("mistakes_per_wake")))
+    return am > bm * WORSE_MISTAKES_RATIO + WORSE_MISTAKES_SLACK
 
 
 def judge_guidance(root, now, traj, role=None):

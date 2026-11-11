@@ -402,11 +402,8 @@ def _active(env, before, prev="옛 안내"):
             "kept",
         ),  # 2.0 * 1.25 + 0.5 = 3.0, not above
         ({"mistakes_per_wake": 3.01, "idle_share": 0.2}, "reverted"),
-        (
-            {"mistakes_per_wake": 1.0, "idle_share": 0.45},
-            "kept",
-        ),  # 0.2 + 0.25, not above
-        ({"mistakes_per_wake": 1.0, "idle_share": 0.46}, "reverted"),
+        # 11-11: how much the operator changes is its strategy; the idle share no longer judges a guidance
+        ({"mistakes_per_wake": 1.0, "idle_share": 0.9}, "kept"),
     ],
 )
 def test_judge_guidance_thresholds(env, after, status):

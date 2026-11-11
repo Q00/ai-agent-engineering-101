@@ -31,7 +31,7 @@ def test_code_read_takes_end_and_count(tmp_path):
     assert "x12 = 12" in b and "x13 = 13" not in b
 
 
-def test_experiments_tool_lists_every_running_one_and_the_block(tmp_path):
+def test_experiments_tool_lists_every_running_one_and_the_direct_changes(tmp_path):
     os.makedirs(tmp_path / "a2")
     rows = [{"id": i, "status": "running", "mode": "sequential", "section": f"식품>잎{i}", "scope": f"식품>잎{i}",
              "key": "stock_target", "old": 5, "new": 9, "eval_ts": NOW + 3600, "side": "shop"} for i in range(1, 10)]
@@ -42,17 +42,26 @@ def test_experiments_tool_lists_every_running_one_and_the_block(tmp_path):
         json.dump(rows, f)
     out = tools.call("experiments", "operator", str(tmp_path), now=NOW)
     assert "진행 중 9건" in out and all(f"#{i} " in out for i in range(1, 10))
-    assert "#13" in out and "막힘" in out
+    assert "#13" in out and "막힘" not in out  # 11-11: nothing is blocked after a revert
+    from kernel.trajectory import Trajectory
+    traj = Trajectory(os.path.join(str(tmp_path), "a2/trajectory.jsonl"), role="shop")
+    traj.append("operator", "policy_edit", section="defaults.food", key="price_mult", old=0.9, new=0.85, reason="",
+                by="direct")
+    traj.append("operator", "policy_edit", section="defaults.food", key="min_margin", old=0.1, new=0.2, reason="",
+                by="experiment")
+    import time
+    out = tools.call("experiments", "operator", str(tmp_path), now=time.time())
+    assert "실험 없이 그냥 적용한 값 1건" in out and "defaults.food price_mult 0.9 → 0.85 [shop]" in out
     assert "experiments" in tools.RECOMMENDED["shop"] and "experiments" in tools.RECOMMENDED["buyer"]
 
 
 def test_step_cap_comes_from_the_environment(monkeypatch):
     monkeypatch.setenv("A2_COMPACT_STEPS", "10")
     assert operator._compact_steps() == 10
-    monkeypatch.setenv("A2_COMPACT_STEPS", "99")
-    assert operator._compact_steps() == 12
+    monkeypatch.setenv("A2_COMPACT_STEPS", "999")
+    assert operator._compact_steps() == 200
     monkeypatch.delenv("A2_COMPACT_STEPS")
-    assert operator._compact_steps() == 6
+    assert operator._compact_steps() == 60  # 11-11: a silent backstop, not a working budget
 
 
 def test_shop_limit_keys_are_editable_in_shop_only():
@@ -74,7 +83,8 @@ def test_shop_limit_key_overlaps_only_the_same_key(tmp_path):
     with open(ex.ledger_path(str(tmp_path)), "w") as f:
         json.dump(rows, f)
     root = str(tmp_path)
-    assert ex.blocked(root, "shop", "max_inventory_cost_frac", NOW) is None
-    assert ex.blocked(root, "shop", "max_spend_frac", NOW) is not None
-    assert ex.blocked(root, "shop", "grade_floor_list.C", NOW) is not None  # shop:all keys still wait for the others
-    assert ex.blocked(root, "식품>음료>주스", "qty_per_buy", NOW) is not None
+    ids = lambda sec, key: [e["id"] for e in ex.overlaps(root, sec, key)]  # noqa: E731
+    assert ids("shop", "max_inventory_cost_frac") == []
+    assert ids("shop", "max_spend_frac") == [6]
+    assert ids("shop", "grade_floor_list.C") == [5]  # a shop:all key touches the sale-side ones, not a limit key
+    assert ids("식품>음료>주스", "qty_per_buy") == [5]  # a shop limit key overlaps only itself

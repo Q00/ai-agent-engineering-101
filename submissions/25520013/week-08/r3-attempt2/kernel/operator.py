@@ -55,20 +55,20 @@ BOUNDS = {
     "bankrupt_near_factor": (1.0, 20.0, 2.0),
 }
 # Compact mode (DESIGN 14.2, A2_OPERATOR_COMPACT=1, only while LIVE is off): a small always-on prompt (job text, guide
-# sections 1 and 7, state card, the operator's notes), details through tools, observations kept one step, every policy
-# edit registered as an experiment the kernel judges and reverts (kernel.experiments)
+# sections 1 and 7, state card, the operator's notes), details through tools; the operator chooses whether and how a
+# policy change is measured (kernel.experiments.apply_policy)
 JOB = os.path.join(HERE, "OPERATOR_JOB.md")
+# 11-11 성수님: the agents are not given or told resource limits; efficiency is the harness's job (bounded prompt, memory).
+# The numbers below are silent runaway backstops far above normal use, never shown to the model.
 def _compact_steps():
     try:
-        return max(3, min(12, int(os.environ.get("A2_COMPACT_STEPS") or 6)))
+        return max(3, min(200, int(os.environ.get("A2_COMPACT_STEPS") or 60)))
     except ValueError:
-        return 6
+        return 60
 
 
-# model calls per wake (env A2_COMPACT_STEPS, 3 to 12). 11-11: the shop operator used all 6 on reading code in 3 of 3
-# wakes and never reached a change, so its launcher line asks for 10.
-COMPACT_STEPS = _compact_steps()
-COMPACT_TOOLS = 3  # tool calls per step
+COMPACT_STEPS = _compact_steps()  # model calls per wake before the kernel asks for the done object (env A2_COMPACT_STEPS)
+COMPACT_TOOLS = 12  # tool calls run per step; more in one step are dropped
 COMPACT_OBS = 6_000  # chars kept of one tool result
 OBS_CAP = {"code_read": 10_000}  # 11-11: 30 of 36 code reads were shown cut at 6,000; code_read stops itself at 9,000
 
@@ -77,7 +77,17 @@ def obs_cap(name):
     """Chars of one result of tool name the compact operator is shown."""
     return OBS_CAP.get(name, COMPACT_OBS)
 
-NOTES_CHARS = 2_000
+NOTES_CHARS = 20_000  # silent technical cap of the notes file
+# Strategy memo (done.strategy, a2/strategy_<role>.md): the operator writes it when it wants; it heads every later
+# prompt. No review wake, no schedule (11-11 성수님: the strategy and when to revise it are the operator's).
+STRATEGY_CHARS = 20_000  # silent technical cap
+STRATEGY_TS = re.compile(r"\A<!-- ts: (\d+(?:\.\d+)?) -->\n")
+KEEP_CHARS = 1_000  # one kept conclusion
+LAST_DONE_CHARS = 6_000  # silent bound of the last done's result lines (a done may carry any number of policy items)
+KEPT_FULL = 8_000  # newest kept conclusions shown in full up to this many chars, older ones as one-line heads
+KEPT_HEAD = 120
+KEPT_HEADS = 4_000  # older heads up to this many chars, then only their count
+
 # Heartbeat while an experiment runs. 1200 since 11-11 (성수님: 20분마다 시장을 보고 전략을 잡아야 함); it was 3600,
 # and with experiments always running the operator woke hourly and mostly waited.
 BUSY_INTERVAL_S = 1200
@@ -97,6 +107,8 @@ LEDGER_LOCK = os.path.join("a2", "operator_ledger.lock")  # role mode: the two p
 AUDITOR_LOCK = os.path.join("a2", "auditor.lock")
 OBS_BUDGET = 14_000  # chars of tool results shown per step: newest in full, older ones cut to OBS_TRIM
 OBS_TRIM = 1_000
+OBS_TRIM_BUDGET = 10_000  # chars of cut results; beyond it older results show only their call
+OBS_HEADS = 6_000  # chars of those call lines; beyond it only their count
 TOOL_ERR = ("도구 오류", "인자 오류", "도구 없음", "만든 도구 없음", "기억 없음", "operator는")  # how a failed tool answers
 
 
@@ -158,21 +170,26 @@ def grounding(base, obs_all, done, kept=()):
 ASK_TIMEOUT_S = 120  # per model call; about twice the slowest answered call
 REV_WEIGHT_MAX = 0.2
 COMPACT_SCHEMA = """한 단계에 JSON 객체 하나로만 답함. 둘 중 하나:
-1. 도구 호출 (한 번에 3개까지): {"tools": [{"tool": "<도구 이름>", "args": {<인자>}}], "keep": "<바로 앞 관찰에서 남길 결론, 300자 안>"}
+1. 도구 호출: {"tools": [{"tool": "<도구 이름>", "args": {<인자>}}, ...], "keep": "<바로 앞 관찰에서 남길 결론>"}
 2. 끝내기: {"done": {
-  "policy": [{"section": "defaults.food|defaults.goods|<상품군 전체 경로>|shop|buyer.defaults.food|buyer.defaults.goods", "key": "<키>", "value": <수>, "reason": "<근거 숫자>", "expect": "<기대 효과: 어떤 숫자가 어느 쪽으로>", "window_h": <2~8, 생략 가능>}],
+  "policy": [{"section": "defaults.food|defaults.goods|<상품군 전체 경로>|shop|buyer.defaults.food|buyer.defaults.goods", "key": "<키>", "value": <수>, "reason": "<근거, 생략 가능>", "test": "none|before_after|split, 생략하면 none", "group": "<묶음 이름, 생략 가능>", "window_h": <잴 시간, 생략 가능>, "expect": "<기대 효과, 생략 가능>"}],
   "forum": [{"post": "<글>", "as": "shop|buyer"}],
-  "notes": "<다음 점검의 네가 읽을 메모 전체, 2,000자 안. 생략하면 그대로 둠>",
+  "notes": "<다음 점검의 네가 읽을 메모 전체. 생략하면 그대로 둠>",
+  "strategy": "<네 전략 메모 전체. 생략하면 그대로 둠>",
+  "next_wake_min": <다음 점검까지 분, 생략하면 기본 시각>,
   "new_tool": {"name": "q_<영소문자_숫자>", "description": "<어떤 숫자를 주는지>", "source": "events|metrics|buyer|trajectory", "hours": <1~48>, "where": [{"field": "<점 경로>", "op": "==|!=|>|>=|<|<=|in|contains|exists", "value": <값>}], "group_by": ["<점 경로>|hour|leaf"], "agg": [{"fn": "count|sum|mean|median|min|max|share", "field": "<점 경로>", "as": "<이름>"}], "limit": <줄 수>} 또는 코드 도구 {"name": "q_<영소문자_숫자>", "description": "<어떤 숫자를 주는지>", "code": "<analyze로 돌려 본 def run(load, args) 코드>"},
-  "code": {"edits": [{"file": "<policy.py|hooks/restock.py|hooks/market_buyer.py|hooks/seller.py>", "old": "<바꿀 원문 그대로>", "new": "<새 글>"}], "reason": "<근거 숫자와 원인, 20자 이상>", "expect": "<기대 효과: 어떤 숫자가 어느 쪽으로, 20자 이상>"},
+  "code": {"edits": [{"file": "<policy.py|hooks/restock.py|hooks/market_buyer.py|hooks/seller.py>", "old": "<바꿀 원문 그대로>", "new": "<새 글>"}], "reason": "<근거>", "expect": "<기대 효과>"},
   "note": "<이번 점검 한 줄 요약>"}}
-done의 모든 항목은 선택임. 지금 값과 허용 범위는 policy 도구로 봄.
-code는 규칙 코드를 고침 (값으로 못 고치는 원인일 때만, 한 번에 하나): 고칠 파일은 이번 점검에서 code_read로 먼저 읽음. old는 파일에 정확히 한 번 나오는 원문, 수정 3개까지, 바뀐 줄 150줄까지.
+done의 모든 항목은 선택임. 지금 값과 범위(최소, 최대)는 policy 도구로 봄. 범위 밖 값은 거절됨.
+policy 항목은 몇 개든 한 번에 함께 적용됨. test는 바꾼 값의 효과를 커널이 재는 방식임: none은 그냥 적용함(커널의 판정도 되돌림도 없음). before_after는 바로 적용하고 수정 전후 window_h시간을 비교해 나빠지면 커널이 되돌림. 같은 group 이름의 before_after 항목은 실험 하나로 함께 판정되고 나빠지면 함께 되돌려짐.
+split은 판매 구역의 price_mult, min_margin, concession, max_rounds, warranty_uplift, fresh_discount, warranty_hours, grade_floor_list에만 되고, 판매되는 물건의 절반에만 새 값을 적용해 같은 시간에 비교한 뒤 판정 때 채택하거나 버림.
+진행 중인 실험의 범위를 다시 바꾸면 그 실험은 무효로 끝나고 새 값이 적용됨. 실험 판정은 상태 카드의 [실험] 줄에, 그냥 적용한 값은 experiments 도구에 나옴.
+strategy는 네 전략 메모임: 쓰면 다음 점검부터 프롬프트 위쪽에 계속 나옴. next_wake_min은 다음 점검을 몇 분 뒤에 할지 정함. 실험이나 코드 수정의 판정, 순위 급변, 경보가 오면 그 전에도 깨어남.
+code는 규칙 코드를 고침: 고칠 파일은 이번 점검에서 code_read로 먼저 읽음. old는 파일에 정확히 한 번 나오는 원문임.
 커널이 규칙 코드의 시험을 돌려 새로 실패하는 시험이 있으면 거절함. 보호 함수(원가 이하 판매 금지, 정책 검증, 지출 상한, 서명, 주인 확인)를 바꾸거나 위험한 import, 호출, 파일 쓰기, URL을 새로 넣으면 거절함.
-적용 뒤 커널이 30분 감시하고 (오류나 기록 끊김이면 바로 되돌림) 4시간 전후를 비교해 나빠지면 되돌림. policy.py와 hooks/seller.py 수정은 판매자 재시작 뒤 반영됨. 결과는 상태 카드의 [코드] 줄에 나옴.
-new_tool은 읽기 전용 질의 도구를 하나 만듦 (한 점검에 하나, 모두 12개까지): 기록 파일 하나를 조건으로 거르고 묶어 세는 정의, 또는 analyze로 돌려 본 읽기 전용 코드(code)임. 커널이 실제 기록으로 시험 실행해 통과하면 다음 점검부터 도구 목록에 나옴. 기록의 필드 이름은 events, trajectory 도구로 행을 먼저 보고 정함. 있는 도구로 못 얻는 숫자가 반복해 필요할 때만 만듦.
-policy 항목은 모두 실험으로 걸림: 판매 쪽 값은 동시 비교(물건 절반에만 새 값, 판정 때 채택 또는 버림), 구매와 재고 값은 전후 비교(바로 적용, 나빠지면 되돌림).
-policy 키는 항목마다 숫자 하나: 판매 구역은 price_mult, min_margin, concession, max_rounds, stock_target, qty_per_buy, warranty_uplift, fresh_discount.B|C. goods 구역은 warranty_hours.A|B|C도. shop은 grade_floor_list.A|B|C와 c_first_leaves.<잎 이름> (1 넣기, 0 빼기). shop은 재입고와 재고 한도 값도 받음 (max_inventory_cost_frac, max_spend_per_run, max_lines_per_run, max_total_units, est_cost_frac 등. 전체 목록과 범위는 policy 도구). buyer.defaults.*는 max_pay_frac, open_frac (첫 제시가), step_frac (회차마다 올리는 폭), accept_c.max_pay_frac, accept_c.open_frac. bounds는 사람만 고침."""
+적용 뒤 커널이 30분 감시해 오류나 기록 끊김이면 바로 되돌림. 재시작이나 감시가 끝나기 전에는 다음 코드 수정을 받지 않음. 4시간 전후 비교 숫자는 상태 카드의 [코드] 줄에 나오고 커널이 되돌리지 않음. policy.py와 hooks/seller.py 수정은 판매자 재시작 뒤 반영됨.
+new_tool은 읽기 전용 질의 도구를 하나 만듦: 기록 파일 하나를 조건으로 거르고 묶어 세는 정의, 또는 analyze로 돌려 본 읽기 전용 코드(code)임. 커널이 실제 기록으로 시험 실행해 통과하면 다음 점검부터 도구 목록에 나옴. 기록의 필드 이름은 events, trajectory 도구로 행을 먼저 보고 정함.
+policy 키: 판매 구역은 price_mult, min_margin, concession, max_rounds, stock_target, qty_per_buy, warranty_uplift, fresh_discount.B|C. goods 구역은 warranty_hours.A|B|C도. shop은 grade_floor_list.A|B|C와 c_first_leaves.<잎 이름> (1 넣기, 0 빼기). shop은 재입고와 재고 한도 값도 받음 (max_inventory_cost_frac, max_spend_per_run, max_lines_per_run, max_total_units, est_cost_frac 등. 전체 목록과 범위는 policy 도구). buyer.defaults.*는 max_pay_frac, open_frac (첫 제시가), step_frac (회차마다 올리는 폭), accept_c.max_pay_frac, accept_c.open_frac. bounds는 사람만 고침."""
 RESERVED_ARGS = ("harness_root", "dry", "now")
 HARNESS_TOOLS = ("versions", "harness_read", "replay_probe")
 
@@ -219,12 +236,13 @@ def role_schema(role):
          f'"section": "{sections}"'),
         ('"as": "shop|buyer"', f'"as": "{role}"'),
         ("<policy.py|hooks/restock.py|hooks/market_buyer.py|hooks/seller.py>", "<" + "|".join(code_edit.ROLE_FILES[role]) + ">"),
-        ('  "note": "<이번 점검 한 줄 요약>"}}', '  "ask": "<조사원에게 맡길 질문 하나, 400자 안>",\n  "note": "<이번 점검 한 줄 요약>"}}'),
+        ('  "note": "<이번 점검 한 줄 요약>"}}', '  "ask": "<조사원에게 맡길 질문, 여럿이면 목록>",\n  "note": "<이번 점검 한 줄 요약>"}}'),
     ):
         head = head.replace(old, new)
-    head += ("\nask는 조사원에게 질문 하나를 맡김 (한 점검에 하나, 열린 질문은 운영자마다 2개까지): 원인을 확인하는 데 도구 호출이 "
-             "3번 넘게 들 것 같을 때 씀. 조사원이 여러 단계로 확인해 다음 점검의 조사 결과 절에 답하고, 그동안 너는 아는 것으로 "
-             "결정을 이어 감")
+    if role == "buyer":  # split is a sell-side comparison only
+        head = head.replace('"test": "none|before_after|split, 생략하면 none"', '"test": "none|before_after, 생략하면 none"')
+        head = "\n".join(ln for ln in head.split("\n") if not ln.startswith("split은"))
+    head += "\nask는 조사원에게 질문을 맡김: 조사원이 여러 단계로 확인해 다음 점검의 조사 결과 절에 답함"
     return (head + "\n" + keys + f"\n너는 {ROLE_KO[role]}임. 위 구역, 파일, 글쓴이 밖은 {ROLE_KO[other]} 몫이라 커널이 거절함. "
             "도구는 둘이 같이 씀")
 
@@ -332,6 +350,62 @@ def release_busy(root, role):
             os.unlink(os.path.join(root, BUSY))
 
 
+def _kept_text(kept):
+    """The kept conclusions as prompt text: the newest in full up to KEPT_FULL chars, older ones as one-line heads up
+    to KEPT_HEADS chars, then only how many were left out (silent bound on a long wake)."""
+    full, heads, used, n_out = [], [], 0, 0
+    for k in reversed(kept):
+        if used + len(k) <= KEPT_FULL:
+            full.append(k)
+            used += len(k) + 1
+        else:
+            h = " ".join(k.split())[:KEPT_HEAD]
+            if sum(len(x) + 1 for x in heads) + len(h) <= KEPT_HEADS:
+                heads.append(h)
+            else:
+                n_out += 1
+    out = ([f"(앞선 결론 {n_out}개는 줄임)"] if n_out else []) + list(reversed(heads)) + list(reversed(full))
+    return "\n".join(out)
+
+
+def _last_done_text(lines):
+    """The last done's result lines up to LAST_DONE_CHARS, then how many were left out."""
+    out, used = [], 0
+    lines = [str(x) for x in lines or []]
+    for i, x in enumerate(lines):
+        if used + len(x) + 1 > LAST_DONE_CHARS:
+            out.append(f"(이하 {len(lines) - i}줄 생략: experiments, trajectory 도구로 봄)")
+            break
+        out.append(x)
+        used += len(x) + 1
+    return "\n".join(out)
+
+
+def _obs_text(obs_all):
+    """This wake's observations, newest first: in full while OBS_BUDGET lasts, then cut to OBS_TRIM while
+    OBS_TRIM_BUDGET lasts, then only the call while OBS_HEADS lasts, then only their count. -> (blocks, keys shown in
+    full)."""
+    shown, full, left, trim, heads, n_out = [], set(), OBS_BUDGET, OBS_TRIM_BUDGET, OBS_HEADS, 0
+    for key, (at, head, text) in sorted(obs_all.items(), key=lambda kv: -kv[1][0]):
+        if len(text) <= left:
+            full.add(key)
+            left -= len(text)
+            shown.append(f"[단계 {at + 1}] {head}\n{text}")
+        elif trim > 0:
+            text = text[:OBS_TRIM] + "\n[오래된 관찰이라 앞부분만 남김. 더 필요하면 다시 부름]"
+            left, trim = 0, trim - len(text)
+            shown.append(f"[단계 {at + 1}] {head}\n{text}")
+        elif heads > 0:
+            line = f"[단계 {at + 1}] {head} (오래된 관찰이라 결과는 줄임. 필요하면 다시 부름)"
+            heads -= len(line)
+            shown.append(line)
+        else:
+            n_out += 1
+    if n_out:
+        shown.append(f"(더 오래된 관찰 {n_out}개는 줄임. 필요하면 다시 부름)")
+    return shown, full
+
+
 class DryTerra:
     """Stand-in model for --dry: ends every wake at once with no edits."""
 
@@ -346,10 +420,16 @@ def done_lines(done, result, now):
     for it, r in zip(items, result.get("policy") or []):
         it, r = (it if isinstance(it, dict) else {}), (r if isinstance(r, dict) else {})
         head = f"- 값 {it.get('section')} {it.get('key')} → {it.get('value')}: "
-        if r.get("ok"):
-            out.append(head + f"적용됨 (실험 #{r.get('experiment')}, 판정 {r.get('eval_kst') or '-'})")
+        if r.get("ok") and r.get("experiment") is None:
+            out.append(head + "적용됨 (실험 없음)")
+        elif r.get("ok"):
+            how = {"split": "동시 비교", "group": f"묶음 '{r.get('group')}' 전후 비교"}.get(r.get("mode"), "전후 비교")
+            out.append(head + f"적용됨 ({how} 실험 #{r.get('experiment')}, 판정 {r.get('eval_kst') or '-'})")
         else:
             out.append(head + f"거절됨. {str(r.get('error'))[:300]}")
+    for v in result.get("voided") or []:
+        if isinstance(v, dict):
+            out.append(f"- 진행 중이던 실험 #{v.get('id')} ({v.get('what')})은 이번 값이 범위를 덮어써 무효로 끝남")
     r = result.get("code")
     if isinstance(r, dict):
         out.append(f"- 코드 수정: " + (f"적용됨 (#{r.get('id')}, {r.get('status')})" if r.get("ok")
@@ -358,12 +438,20 @@ def done_lines(done, result, now):
     if isinstance(r, dict):
         out.append(f"- 포럼 글: 대기열에 {r.get('queued', 0)}개" + (f", 거절: {r['refused']}" if r.get("refused") else ""))
     r = result.get("ask")
-    if isinstance(r, dict):
-        out.append("- 조사 질문: " + (f"접수됨 (#{r.get('id')}, 답은 조사 결과 절에 나옴)" if r.get("ok")
-                                    else f"거절됨. {str(r.get('error'))[:300]}"))
+    for r in r if isinstance(r, list) else [r] if isinstance(r, dict) else []:
+        if isinstance(r, dict):
+            out.append("- 조사 질문: " + (f"접수됨 (#{r.get('id')}, 답은 조사 결과 절에 나옴)" if r.get("ok")
+                                        else f"거절됨. {str(r.get('error'))[:300]}"))
     r = result.get("new_tool")
     if isinstance(r, dict):
         out.append(f"- 도구 만들기 {r.get('name')}: " + ("만들어짐" if r.get("ok") else f"거절됨. {str(r.get('error'))[:300]}"))
+    r = result.get("strategy")
+    if isinstance(r, dict):
+        out.append("- 전략 메모: " + ("저장됨" if r.get("ok") else f"거절됨. {r.get('error')}"))
+    r = result.get("next_wake")
+    if isinstance(r, dict):
+        out.append("- 다음 점검: " + (f"{r.get('at_kst')} ({r.get('min'):g}분 뒤로 정함)" if r.get("ok")
+                                   else f"기본 시각 (next_wake_min {str(r.get('error'))[:100]})"))
     if len(out) == 1:
         out.append("- 낸 것 없음 (값, 코드, 글, 도구 모두)")
     return out
@@ -500,11 +588,11 @@ class Operator:
         if self.live():
             return "LIVE 켜짐: 시도 2의 판매자, 구매자, 재입고 계획이 가게를 운영함. done.policy는 쓰지 않음"
         return (
-            "LIVE 꺼짐 (11-07 11시 성수님 결정, Codex 구독 한도 소진): 판매, 구매, 재입고는 시도 1의 규칙 코드가 policy.json 값을 읽어 "
+            "LIVE 꺼짐: 판매, 구매, 재입고는 시도 1의 규칙 코드가 policy.json 값을 읽어 "
             "결정함. 재입고 물량은 hooks/restock.py가 policy.py의 restock_plan 함수를 불러 정하고, 이 함수는 지금 실제로 돌고 있음. "
             "받지 않는 것은 시도 2 방식의 출력 항목뿐임: 판매자와 구매자 지침 수정(edits의 seller, buyer), trial, done의 restock_plan 항목. "
-            "네가 규칙을 바꾸는 길은 둘임: 값은 done.policy(policy 도구로 지금 값을 보고, 키 하나씩 허용 폭 안에서, 근거 숫자를 reason에), "
-            "규칙의 동작은 done.code(일 문서의 규칙 코드 고치기). 고친 뒤의 효과 판정은 실험 장부가 함. "
+            "네가 규칙을 바꾸는 길은 둘임: 값은 done.policy(policy 도구로 지금 값과 범위를 봄), "
+            "규칙의 동작은 done.code. "
             "자기 지침(edits의 operator)과 메모는 지금처럼 고칠 수 있음"
         )
 
@@ -684,7 +772,7 @@ class Operator:
             last_step = step == s["max_steps"] - 1 or used >= OBS_TOTAL_CHARS
             prompt = base + "\n\n## 이번 점검의 도구 호출과 관찰\n\n" + ("\n\n".join(history) or "아직 없음")
             if last_step:
-                prompt += "\n\n도구 단계나 관찰 한도를 다 씀. 이번 답은 반드시 done 객체여야 함."
+                prompt += "\n\n이번 점검을 여기서 마무리함: done 객체로 답함."
             try:
                 act = parse_last_object(self._ask(prompt, route))
             except (ModelRefused, ModelError) as e:
@@ -781,6 +869,40 @@ class Operator:
         except OSError:
             return ""
 
+    def _strategy_path(self):
+        return os.path.join(self.root, "a2/strategy.md" if self.role is None else f"a2/strategy_{self.role}.md")
+
+    def _strategy(self):
+        """(ts, memo) of the strategy memo file; (None, "") when there is none, ts None when it has no time line."""
+        try:
+            with open(self._strategy_path(), encoding="utf-8") as f:
+                text = f.read()
+        except OSError:
+            return None, ""
+        m = STRATEGY_TS.match(text)
+        return (float(m.group(1)), text[m.end():]) if m else (None, text)
+
+    def _strategy_block(self, now):
+        """The prompt section of the operator's strategy memo with its time; [] when there is none."""
+        ts, memo = self._strategy()
+        memo = c.mask(memo.strip(), self.secrets)
+        when = c.kst(ts, "%m-%d %H:%M") if ts is not None else "시각 모름"
+        return [f"## 전략 메모 (네가 {when}에 씀)", memo] if memo else []
+
+    def _save_strategy(self, text, now):
+        """done.strategy: the memo (masked, STRATEGY_CHARS at most) replaces a2/strategy_<role>.md with its time; one
+        trajectory row of kind "strategy"."""
+        if not isinstance(text, str) or not text.strip():
+            return {"ok": False, "error": "strategy는 비어 있지 않은 글이어야 함"}
+        memo = c.mask(text.strip(), self.secrets)[:STRATEGY_CHARS]
+        path = self._strategy_path()
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path + ".tmp", "w", encoding="utf-8") as f:
+            f.write(f"<!-- ts: {int(now)} -->\n{memo}")
+        os.replace(path + ".tmp", path)
+        self.traj.append(self.agent, "strategy", chars=len(memo), memo=memo)
+        return {"ok": True, "chars": len(memo)}
+
     def _rev_weight(self):
         """What one won of revenue is worth in net-profit won for the shop score, from the newest board: shop all =
         0.5 pct(book) + 0.3 pct(revenue) + ..., and a won moves a percentile by the density of shops around our
@@ -826,13 +948,20 @@ class Operator:
         if ended:
             reasons.append(f"실험 판정 {len(ended)}건 (상태 카드의 [실험] 줄)")
         last = st.get("last_wake_ts")
-        gap = max(s["interval_s"], BUSY_INTERVAL_S) if ex.running(self.root) else s["interval_s"]
-        window = self._window_reason(now, last) if self.role == "shop" else None
-        if window is not None:
-            if window:
-                reasons.append(window)
-        elif last is None or now - last >= gap:
-            reasons.append("주기 점검")
+        asked = st.get("next_wake_ts")
+        if _num(asked):  # the operator chose its next wake (done.next_wake_min): that replaces the default cadence
+            if now >= asked:
+                reasons.append(f"네가 정한 다음 점검 시각 {c.kst(asked, '%H:%M')} "
+                               f"(지난 점검에서 {st.get('next_wake_min'):g}분 뒤로 정함)" if _num(st.get("next_wake_min"))
+                               else f"네가 정한 다음 점검 시각 {c.kst(asked, '%H:%M')}")
+        else:
+            gap = max(s["interval_s"], BUSY_INTERVAL_S) if ex.running(self.root) else s["interval_s"]
+            window = self._window_reason(now, last) if self.role == "shop" else None
+            if window is not None:
+                if window:
+                    reasons.append(window + " (기본 시각: 다음 점검 시각을 정하지 않음)")
+            elif last is None or now - last >= gap:
+                reasons.append("주기 점검 (기본 시각: 다음 점검 시각을 정하지 않음)" if self.role in ROLES else "주기 점검")
         if ev["rank"] and st.get("last_rank") and abs(ev["rank"] - st["last_rank"]) >= s["rank_jump"]:
             reasons.append(f"Everyone 순위 {st['last_rank']}위에서 {ev['rank']}위로 바뀜")
         if self.role != "buyer" and ev["shop_missing"] and not st.get("shop_missing"):
@@ -853,6 +982,8 @@ class Operator:
                   bankrupt_near=ev["bankrupt_near"])
         if self.role is not None and _num(self._seen_next):
             st["events_seen_ts"] = max(self._seen_next, st.get("events_seen_ts") or 0)
+        st.pop("next_wake_ts", None)  # a time the operator chose is used once; this wake's done may choose the next
+        st.pop("next_wake_min", None)
         last_brief = st.get("last_brief_ts")
         st["last_brief_ts"] = now
         self._save_state(st)
@@ -877,6 +1008,7 @@ class Operator:
         base = "\n\n".join(
             [
                 job,
+                *self._strategy_block(now),
                 "## 감사자가 준 일하는 방식 (네 지난 점검들을 감사해 쓴 것. 전략 값이 아니라 일하는 방법임)\n\n"
                 + (c.mask(guidance, self.secrets) or "없음"),
                 tools.guide_always(),
@@ -884,7 +1016,7 @@ class Operator:
                 b.build_compact(self.root, now, last_brief,
                                 extra=list(ex.lines(self.root, now, **self._role_kw())) + list(code_lines) + list(audit_lines)),
                 "## 지난 점검에 네가 낸 것의 결과 (커널 기록. 거절된 것은 적용되지 않았음)",
-                "\n".join(str(x) for x in (st.get("last_done") or {}).get("lines") or []) or "없음",
+                _last_done_text((st.get("last_done") or {}).get("lines")) or "없음",
                 *self._findings_block(now),
                 "## 네 메모 (지난 점검의 네가 남김)",
                 c.mask(self._notes(), self.secrets) or "없음",
@@ -921,24 +1053,17 @@ class Operator:
         obs_all, full = {}, set()  # (tool, args) -> [step, head, text]; keys shown in full in the last prompt
         for step in range(steps):
             last_step = step == steps - 1
-            shown, left, full = [], OBS_BUDGET, set()
-            for key, (at, head, text) in sorted(obs_all.items(), key=lambda kv: -kv[1][0]):
-                if len(text) <= left:
-                    full.add(key)
-                else:
-                    text = text[:OBS_TRIM] + "\n[오래된 관찰이라 앞부분만 남김. 더 필요하면 다시 부름]"
-                left -= len(text)
-                shown.append(f"[단계 {at + 1}] {head}\n{text}")
+            shown, full = _obs_text(obs_all)
             prompt = (
                 base
                 + "\n\n## 남긴 결론\n\n"
-                + ("\n".join(kept) or "없음")
+                + (_kept_text(kept) or "없음")
                 + "\n\n## 이번 점검의 관찰 (새것부터. 여기 있는 것은 다시 부르지 않음)\n\n"
                 + ("\n\n".join(shown) or "없음")
                 + ("" if obs_all or not fresh else "\n\n" + "\n".join(fresh))
             )
             if last_step:
-                prompt += "\n\n도구 단계를 다 씀. 이번 답은 반드시 done 객체여야 함."
+                prompt += "\n\n이번 점검을 여기서 마무리함: done 객체로 답함."
             chars += len(prompt)
             calls += 1
             try:
@@ -953,7 +1078,7 @@ class Operator:
                 keep = act.get("keep")
                 kept.append(
                     f"[단계 {step}] "
-                    + (c.mask(keep, self.secrets)[:400] if isinstance(keep, str) and keep.strip()
+                    + (c.mask(keep, self.secrets)[:KEEP_CHARS] if isinstance(keep, str) and keep.strip()
                        else "(결론을 남기지 않음) " + " / ".join(" ".join(x.split())[:150] for x in fresh))
                 )
             early = None if last_step or not isinstance(act.get("done"), dict) else self._early_done(obs_all)
@@ -1001,10 +1126,11 @@ class Operator:
         return self._end(reason, step + 1, "no_done", {"prompt_chars": chars, "calls": calls})
 
     def _finish_compact(self, done, now, read_files=()):
-        """Apply a compact done: each policy item that no running experiment blocks is written through policy_edit
-        and registered as an experiment; a code change goes through code_edit.propose (read_files: the rule-code files
-        read this wake); forum posts are queued; notes replace the operator's notes file. A role operator's items of
-        the other side are refused, and its experiments and code changes keep its role."""
+        """Apply a compact done: the policy items go through kernel.experiments.apply_policy (one write, each item
+        measured as it asks or not at all); a code change goes through code_edit.propose (read_files: the rule-code
+        files read this wake); forum posts are queued; notes and strategy replace their files; next_wake_min sets the
+        next periodic wake. A role operator's items of the other side are refused, and its experiments and code
+        changes keep its role."""
         with self._ledger_lock():
             return self._finish_compact_locked(done, now, read_files)
 
@@ -1012,35 +1138,11 @@ class Operator:
         result = {"note": c.mask(str(done.get("note") or ""), self.secrets)[:500]}
         items = done.get("policy")
         if isinstance(items, list) and items:
-            cats, out, n_ok, weight = self._cats(), [], 0, None
-            for i, it in enumerate(items):
-                if not isinstance(it, dict):
-                    out.append({"ok": False, "error": "each policy item must be an object"})
-                    continue
-                sec = it.get("section")
-                if self.role is not None and isinstance(sec, str) and sec.startswith("buyer.") != (self.role == "buyer"):
-                    out.append({"ok": False, "error": self._side_error(sec)})
-                    continue
-                if n_ok >= policy_edit.MAX_PER_WAKE:
-                    out.append({"ok": False, "error": f"한 점검에 {policy_edit.MAX_PER_WAKE}개까지"})
-                    continue
-                try:  # ex.start checks, writes and registers as one step; now + i keeps backup names apart
-                    weight = self._rev_weight() if weight is None else weight
-                    exp = c.mask(str(it.get("expect") or it.get("reason") or ""), self.secrets)[:200]
-                    r = ex.start(self.root, dict(it, expect=exp), now + i, self.traj, rev_weight=weight,
-                                 categories=cats, split_ok=os.environ.get("A2_SPLIT") == "1")
-                except Exception as e:  # a value the edit code did not expect is a refusal, not a crashed wake
-                    r = {"ok": False, "error": f"{type(e).__name__}: {str(e)[:200]}"}
-                if not isinstance(r, dict):
-                    r = {"ok": False, "error": "no result"}
-                if r.get("ok"):
-                    n_ok += 1
-                    if self.role is not None:
-                        ex.set_role(self.root, r.get("experiment"), self.role)
-                    if isinstance(r.get("eval_ts"), (int, float)):
-                        r = dict(r, eval_kst=c.kst(r["eval_ts"]))
-                out.append(r)
-            result["policy"] = out
+            result["policy"], result["voided"] = self._apply_policy(items, now)
+        if "strategy" in done:
+            result["strategy"] = self._save_strategy(done["strategy"], now)
+        if "next_wake_min" in done and self.role in ROLES:
+            result["next_wake"] = self._set_next_wake(done["next_wake_min"], now)
         if isinstance(done.get("code"), dict):
             code = done["code"]
             try:
@@ -1071,7 +1173,9 @@ class Operator:
                                   for k, v in r.items() if k in ("ok", "name", "error", "sample")}
         if self.role in ROLES and "ask" in done:  # a question for the investigator (kernel.analyst)
             try:
-                result["ask"] = questions.ask(self.root, self.role, done["ask"], now, self.secrets)
+                asks = done["ask"] if isinstance(done["ask"], list) else [done["ask"]]
+                got = [questions.ask(self.root, self.role, q, now, self.secrets) for q in asks]
+                result["ask"] = got[0] if len(got) == 1 else got
             except Exception as e:  # the queue file is shared; a failed write is a refusal, not a crashed wake
                 result["ask"] = {"ok": False, "error": f"{type(e).__name__}: {str(e)[:200]}"}
         if isinstance(done.get("notes"), str) and done["notes"].strip():
@@ -1082,6 +1186,53 @@ class Operator:
             os.replace(path + ".tmp", path)
             result["notes_chars"] = min(len(done["notes"]), NOTES_CHARS)
         return result
+
+    def _other_side(self, section):
+        """True when a role operator's policy item names the other role's section."""
+        return self.role is not None and isinstance(section, str) and section.startswith("buyer.") != (self.role == "buyer")
+
+    def _apply_policy(self, items, now):
+        """done.policy: the other side's items are refused here, the rest go to kernel.experiments.apply_policy in one
+        call. -> (results aligned with items, the experiments the change voided)."""
+        out, mine = [None] * len(items), []
+        for i, it in enumerate(items):
+            if isinstance(it, dict) and self._other_side(it.get("section")):
+                out[i] = {"ok": False, "error": self._side_error(it.get("section"))}
+            else:
+                mine.append(i)
+        voided = []
+        if mine:
+            try:
+                weight = self._rev_weight()
+            except Exception:  # the board read only weights the shop metric
+                weight = 0.0
+            sent = []
+            for i in mine:
+                it = items[i]
+                if isinstance(it, dict):
+                    it = dict(it, **{k: c.mask(it[k], self.secrets)[:500] for k in ("expect", "reason", "group")
+                                    if isinstance(it.get(k), str)})
+                sent.append(it)
+            r = ex.apply_policy(self.root, sent, now, self.traj, role=self.role, rev_weight=weight,
+                                categories=self._cats(), split_ok=os.environ.get("A2_SPLIT") == "1")
+            voided = r.get("voided") or []
+            for i, x in zip(mine, r.get("results") or []):
+                x = x if isinstance(x, dict) else {"ok": False, "error": "no result"}
+                if x.get("ok") and _num(x.get("eval_ts")):
+                    x = dict(x, eval_kst=c.kst(x["eval_ts"]))
+                out[i] = x
+        return [x if x is not None else {"ok": False, "error": "no result"} for x in out], voided
+
+    def _set_next_wake(self, value, now):
+        """done.next_wake_min: the next periodic wake that many minutes from now (a value below the poll interval
+        takes the poll interval, a technical minimum). Anything that is not a positive number leaves the default."""
+        if not _num(value) or not value > 0 or value != value or value == float("inf"):
+            return {"ok": False, "error": "양의 수가 아님"}
+        at = now + max(POLL_S, value * 60)
+        st = self._state()
+        st.update(next_wake_ts=at, next_wake_min=value)
+        self._save_state(st)
+        return {"ok": True, "min": value, "at_kst": c.kst(at, "%H:%M")}
 
     # ------------------------------------------------------------ done
     def _apply_edits(self, edits, now):

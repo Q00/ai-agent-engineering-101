@@ -1,9 +1,9 @@
 """Operator edits to attempt 1's policy.json while the attempt-2 switch is off (human code, not editable by the model).
 
 11-07 11시 성수님 결정: the codex subscription ran out (reset 11-11 17:36), so a2/LIVE is off and attempt 1's rules run
-the shop. The operator (now on Haiku) does not decide sales; it improves the rules by changing one number in
-policy.json at a time, inside the ranges below. The file is never rewritten from the model's text: the kernel copies
-the current file, changes the one key, checks the copy with attempt 1's own policy.load (its validate), keeps the old
+the shop. The operator does not decide sales; it improves the rules by changing numbers in policy.json inside the
+ranges below (11-11 성수님: any number of keys at once, no step or cooldown; the strategy is the operator's). The file
+is never rewritten from the model's text: the kernel copies the current file, changes the keys, checks the copy with attempt 1's own policy.load (its validate), keeps the old
 file under a2/policy_bak/ and swaps the new one in with one rename. Attempt 1's seller re-reads policy.json when its
 bytes change; its restock hook reads it on every run. Each edit writes one trajectory row of kind "policy_edit".
 """
@@ -20,7 +20,8 @@ from kernel import common as c
 
 POLICY = "policy.json"
 BAK_DIR = os.path.join("a2", "policy_bak")
-# key -> (lowest, highest, largest change in one edit); the policy file's own "bounds" apply as well
+# key -> (lowest, highest, unused): the third number was the largest change in one edit and limits nothing since 11-11
+# (strategy belongs to the operator); the policy file's own "bounds" apply as well
 KEYS = {
     "price_mult": (0.5, 1.2, 0.1),
     "min_margin": (0.0, 0.5, 0.05),
@@ -41,7 +42,7 @@ BUYER_KEYS = {
     "accept_c.max_pay_frac": (0.4, 1.0, 0.05),
     "accept_c.open_frac": (0.2, 0.6, 0.05),
 }
-# "<key>.<grade>": one grade's number in a per-grade dict -> (grades, lowest, highest, largest change in one edit)
+# "<key>.<grade>": one grade's number in a per-grade dict -> (grades, lowest, highest, unused)
 GRADE_KEYS = {
     "fresh_discount": (
         ("B", "C"),
@@ -101,8 +102,6 @@ WHERE = {
     "goods": "defaults.goods or a goods category path",
     "rules": "defaults.food, defaults.goods or a category path",
 }
-COOLDOWN_S = 1800  # one edit per (section, key) in 30 min, so a change reaches the settle numbers before the next
-MAX_PER_WAKE = 3
 
 
 def path(root):
@@ -145,7 +144,7 @@ def _block(pol, section, create=False):
 
 
 def _spec(key):
-    """(lowest, highest, largest change) for an editable key, None for any other key."""
+    """(lowest, highest, unused) for an editable key, None for any other key."""
     base, _, sub = key.partition(".") if isinstance(key, str) else ("", "", "")
     if key in KEYS:
         return KEYS[key]
@@ -222,16 +221,19 @@ def view(root, categories=()):
     """Current values of the editable keys, per section, for the operator's tool."""
     pol = c.load_json(path(root), {}) or {}
     secs = list(DEFAULTS) + sorted((pol.get("categories") or {}).keys())
-    grades = {k: [list(v[0]), *v[1:]] for k, v in GRADE_KEYS.items()}
+    grades = {k: [list(v[0]), *v[1:3]] for k, v in GRADE_KEYS.items()}
+
+    def rng(d):
+        return json.dumps({k: list(v[:2]) for k, v in d.items()}, ensure_ascii=False)
+
     lines = [
-        f"편집 가능 키 (최소, 최대, 한 번에 바꿀 수 있는 폭): {json.dumps(KEYS, ensure_ascii=False)}",
-        f"등급 키 <키>.<등급> (등급, 최소, 최대, 폭): {json.dumps(grades, ensure_ascii=False)}. "
+        f"편집 가능 키 (최소, 최대): {rng(KEYS)}",
+        f"등급 키 <키>.<등급> (등급, 최소, 최대): {json.dumps(grades, ensure_ascii=False)}. "
         "fresh_discount는 판매 구역 어디나, warranty_hours는 goods 구역, grade_floor_list는 shop. warranty_hours는 max_warranty_hours를 넘지 못함. "
         "grade_floor_list에 없는 등급은 범위 안 아무 값으로 새로 둘 수 있음",
         f"shop의 {LEAF_KEY}.<잎 이름>: 1이면 목록에 넣고 0이면 뺌. "
-        f"shop의 재입고와 재고 한도 키 (최소, 최대, 폭): {json.dumps(SHOP_KEYS, ensure_ascii=False)}. "
-        f"buyer.defaults.food/goods: {json.dumps(BUYER_KEYS, ensure_ascii=False)}. bounds 구역은 사람만 고침",
-        f"같은 구역의 같은 키는 {COOLDOWN_S // 60}분에 한 번, 한 점검에 {MAX_PER_WAKE}개까지 바꿀 수 있음",
+        f"shop의 재입고와 재고 한도 키 (최소, 최대): {rng(SHOP_KEYS)}. "
+        f"buyer.defaults.food/goods (최소, 최대): {rng(BUYER_KEYS)}. bounds 구역은 사람만 고침",
     ]
     for s in secs:
         vals = {k: effective(pol, s, k) for k in _keys(s)}
@@ -350,10 +352,10 @@ def _finite(v):
 
 
 def check(root, item, traj, now, categories=(), validate=None):
-    """Every check of an operator edit (range, step, cooldown, section and key rules, attempt 1 validate on a changed
-    temp copy) without touching policy.json, no backup and no trajectory row. -> the success dict an edit returns
+    """Every check of an operator edit (range, section and key rules, attempt 1 validate on a changed temp copy)
+    without touching policy.json, no backup and no trajectory row. -> the success dict an edit returns
     ({"ok": True, section, key, old, new}) or {"ok": False, "error"}."""
-    x = _prepare(root, item, traj, now, categories, 0)
+    x = _prepare(root, item, now, categories)
     if not x.get("ok"):
         return x
     _put(x["pol"], x["section"], x["key"], x["new"])
@@ -373,16 +375,13 @@ def _result(x):
         "new": x["new"],
     }
     if x["old"] is None and x["key"].split(".", 1)[0] == "grade_floor_list":
-        # 2026-11-10 성수님: the operator decides strategy; a first floor moves this grade from the market-price floor
-        # to a share of list (attempt 1 market_floor), so the result says there was no step limit
-        res["note"] = (
-            "이 등급은 처음 두는 값이라 한 번에 바꾸는 폭 제한을 적용하지 않음. 이 등급의 최저가가 시장가 기준에서 정가 비율로 바뀜"
-        )
+        # a first floor moves this grade from the market-price floor to a share of list (attempt 1 market_floor)
+        res["note"] = "이 등급은 처음 두는 값임. 이 등급의 최저가가 시장가 기준에서 정가 비율로 바뀜"
     return res
 
 
 def _one(root, it, traj, now, categories, validate, done_n):
-    x = _prepare(root, it, traj, now, categories, done_n)
+    x = _prepare(root, it, now, categories)
     if not x.get("ok"):
         return x
     _put(x["pol"], x["section"], x["key"], x["new"])
@@ -405,9 +404,11 @@ def _one(root, it, traj, now, categories, validate, done_n):
     return _result(x)
 
 
-def _prepare(root, it, traj, now, categories, done_n):
-    """The checks of an operator edit that need no write. -> {"ok": True, pol, section, key, old, new, reason} with pol
-    the parsed live file (unchanged), or {"ok": False, "error"}."""
+def _prepare(root, it, now, categories):
+    """The checks of an operator edit that need no write: key and section rules, type, range (min and max, the file's
+    bounds), a real change. No step, cooldown, count or reason rule (11-11 성수님: strategy belongs to the operator).
+    -> {"ok": True, pol, section, key, old, new, reason} with pol the parsed live file (unchanged), or
+    {"ok": False, "error"}."""
     if not isinstance(it, dict):
         return {"ok": False, "error": "each policy item must be an object"}
     sec, key, val, reason = (
@@ -416,8 +417,6 @@ def _prepare(root, it, traj, now, categories, done_n):
         it.get("value"),
         str(it.get("reason") or "")[:500],
     )
-    if done_n >= MAX_PER_WAKE:
-        return {"ok": False, "error": f"한 점검에 {MAX_PER_WAKE}개까지"}
     if sec == "bounds":
         return {"ok": False, "error": "bounds는 사람만 고침 (operator edits refused)"}
     if not isinstance(key, str) or _spec(key) is None:
@@ -433,8 +432,6 @@ def _prepare(root, it, traj, now, categories, done_n):
         if val != int(val):
             return {"ok": False, "error": f"{key} must be a whole number"}
         val = int(val)
-    if not reason:
-        return {"ok": False, "error": "reason is required"}
     try:
         pol = c.load_json(path(root), None)
     except ValueError:
@@ -459,7 +456,7 @@ def _prepare(root, it, traj, now, categories, done_n):
             "ok": False,
             "error": f"{key} cannot be edited in {sec}: only in {WHERE[_where(key)]}",
         }
-    lo, hi, step = _spec(key)
+    lo, hi = _spec(key)[:2]
     blo, bhi = (pol.get("bounds") or {}).get(base, (lo, hi))
     lo, hi = max(lo, blo), min(hi, bhi)
     if (
@@ -487,27 +484,8 @@ def _prepare(root, it, traj, now, categories, done_n):
                 "ok": False,
                 "error": f"{sub} is not a leaf of a known category path",
             }
-    if (
-        isinstance(old, (int, float))
-        and not isinstance(old, bool)
-        and abs(val - old) > step + 1e-9
-    ):
-        return {
-            "ok": False,
-            "error": f"{key} can move at most {step} per edit (now {old})",
-        }
     if old == val:
         return {"ok": False, "error": f"{key} is already {val}"}
-    last = [
-        r
-        for r in recent(traj, now, COOLDOWN_S / 3600)
-        if r.get("section") == sec and r.get("key") == key
-    ]
-    if last:
-        return {
-            "ok": False,
-            "error": f"{sec} {key} was changed less than {COOLDOWN_S // 60} min ago",
-        }
     return {
         "ok": True,
         "pol": pol,
@@ -517,6 +495,49 @@ def _prepare(root, it, traj, now, categories, done_n):
         "new": val,
         "reason": reason,
     }
+
+
+def apply_many(root, items, traj, now, categories=(), validate=None, tag=None, by=None):
+    """Write any number of operator edits as one change: every item gets the checks of an edit (_prepare), the items
+    that pass go into one copy of policy.json, which attempt 1's validate checks once before one backup and one
+    rename. A refused item is left out; the same section and key twice refuses the later one; a copy that fails
+    validate writes nothing and refuses every item. One trajectory row of kind "policy_edit" per written item with
+    by (one label for all, or a list aligned with items; None writes no by). -> [result per item, aligned]."""
+    items = list(items) if isinstance(items, list) else []
+    bys = by if isinstance(by, list) else [by] * len(items)
+    out, seen = [], set()
+    for it in items:
+        x = _prepare(root, it, now, categories)
+        if x.get("ok"):
+            k = (x["section"], x["key"])
+            if k in seen:
+                x = {"ok": False, "error": f"{x['section']} {x['key']}가 이 목록에 두 번 있음"}
+            seen.add(k)
+        out.append(x)
+    xs = [(i, x) for i, x in enumerate(out) if x.get("ok")]
+    if not xs:
+        return out
+    pol = xs[0][1]["pol"]
+    for _, x in xs:
+        _put(pol, x["section"], x["key"], x["new"])
+    try:
+        bak = _swap(root, pol, validate, tag or kernel_tag(now))
+    except Exception as e:  # attempt 1's PolicyError or a write error: the live file stays as it was
+        err = {"ok": False, "error": f"check failed: {type(e).__name__}: {e}"}
+        return [dict(err) if x.get("ok") else x for x in out]
+    for i, x in xs:
+        traj.append(
+            "operator",
+            "policy_edit",
+            section=x["section"],
+            key=x["key"],
+            old=x["old"],
+            new=x["new"],
+            reason=x["reason"],
+            backup=os.path.relpath(bak, root),
+            **({"by": bys[i]} if bys[i] is not None else {}),
+        )
+    return [_result(x) if x.get("ok") else x for x in out]
 
 
 _SEQ = [
@@ -544,7 +565,7 @@ def kernel_set(
 ):
     """Kernel-only write of a typed value (kernel.experiments: an adopted split value, or a revert of an experiment
     registered before raw states were kept): the same typed write, attempt 1 validate, backup and rename as an operator
-    edit, without the range, step, cooldown and per-wake checks.
+    edit, without the range check.
     value None removes the key: a grade_floor_list (or other per-grade) grade, a c_first_leaves leaf or a scalar key
     the section did not set; a dict or category entry left empty goes too. tag names the backup (kernel_tag(now) when
     None). -> {"ok": True/False, ...}"""
