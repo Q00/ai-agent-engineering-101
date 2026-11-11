@@ -208,7 +208,9 @@ def quote(c, unit, code=None, me=None, now=None, stock_n=1, vip=False):
         md = None
     if md:
         price, why = price * (1 - md), why + [f"scm clear -{md:.0%}"]
-    gb = groupbuy(c, unit["sku"])
+    # buyer-team audit 11-11: G021aae64 (5 held, 43 unmet in 3 h) went at 363k, under cost 395k and the median 403k;
+    # a SKU we hold only a few of needs no group-buy pull
+    gb = groupbuy(c, unit["sku"]) if stock_n > t.get("gb_min_stock", 5) else None
     if gb:                                                # HQ 11-05 group buy: this hour's first units
         gbp = lp * gb["share"]
         gmed, _ = market_model.market_price(c, unit["sku"], grade=unit.get("grade") if lp >= 100000 else None)
