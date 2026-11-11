@@ -653,6 +653,18 @@ def wait_card(base, seconds=60):
 NAMED_TUNNEL = Path.home() / ".config" / "ai-agent-market" / "named_tunnel.json"   # yms979: {"name", "url"}
 
 
+def other_url(url):
+    """11-11: the named tunnel's other hostname (named_tunnel.json url / alt_url), or None."""
+    try:
+        cfg = json.loads(NAMED_TUNNEL.read_text())
+        urls = [cfg["url"].rstrip("/")] + ([cfg["alt_url"].rstrip("/")] if cfg.get("alt_url") else [])
+    except (OSError, ValueError, KeyError):
+        return None
+    if len(urls) < 2 or (url or "").rstrip("/") not in urls:
+        return None
+    return urls[1] if (url or "").rstrip("/") == urls[0] else urls[0]
+
+
 def open_named_tunnel(port):
     """yms979 11-11: a named Cloudflare tunnel on our own domain (fixed URL). The market kept failing to read our
     card through quick trycloudflare tunnels (ConnectTimeout, 'alive=False' every few minutes). Returns
@@ -1200,9 +1212,25 @@ def watchdog(a, agent, d, market, keys, procs, proxy, sport, pport, state, every
                 try:
                     r = market.c.get(f"{market.base}/api/board?round=3", timeout=10)
                     me = next((s for s in (r.json().get("shops") or []) if s.get("name") == a.name), None) if r.status_code == 200 else None
+                    if me is not None and me.get("alive"):
+                        state["dead_streak"] = 0
                     if me is not None and me.get("alive") is False:
                         state["relist_t"] = time.time()
+                        state["dead_streak"] = state.get("dead_streak", 0) + 1
                         log("[market] the board marks this shop dead though the card answers: joining again")
+                        # 11-11 (user: recover from market outages by any means): same-URL joins never revived us
+                        # (20+ today); after two dead checks in a row move to the other hostname of the named
+                        # tunnel (both answer), so the market registers a changed URL and probes it afresh
+                        alt = other_url(proxy.public)
+                        if state["dead_streak"] >= 2 and alt and card_ok(alt):
+                            try:
+                                j = market.join("shop", a.name, keys["shop"], alt, tries=1)
+                                proxy.public = state["own_shop"] = alt
+                                state["dead_streak"] = 0
+                                log(f"[market] shop registered again as {j['name']} at {alt} (moved URL to get re-probed)")
+                                continue
+                            except SystemExit as e:
+                                log(f"[kit] join at {alt} refused ({str(e)[:120]}); trying the same URL")
                         try:
                             j = market.join("shop", a.name, keys["shop"], proxy.public, tries=1)
                             log(f"[market] shop registered again as {j['name']} (same URL)")
