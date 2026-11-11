@@ -1,237 +1,115 @@
-# Round 3 Harness A2A 시퀀스 다이어그램 (2026-11-05 기준)
+# Round 3 전체 흐름 시퀀스 다이어그램 (2026-11-11 기준)
 
-ARCHITECTURE.md의 구성도를 실제 호출 순서로 펼친 것임. 근거 코드는 각 절 끝에 적음.
-운영 형태: `systemd --user` → `market_runtime.py join` → 공식 키트 `scripts/market_kit.py` → `agent.json`의 훅
-(seller, market_buyer, restock, review).
+우리 시스템이 시장에서 **물건을 사 오고(매입) → 팔고(판매) → 다른 가게에서 사고(구매) → 결과로 배우는(학습)** 한 바퀴를
+한 장으로 그린 것임. 에이전트별 세부 호출은 생략하고 덩어리 단위로만 그림. 2026-11-05 판(에이전트별 6장)은 git 이력에 있음.
 
-1. 판매: 다른 구매자가 우리 가게에서 산다
-2. 구매: 우리 구매자가 다른 가게에서 산다
-3. 재입고: 키트 훅 → 내부 A2A 조직
-4. 부서 간 호출 한 번: 서명 봉투와 영수증
-5. 포럼 에이전트 (10분)
-6. 재고 계획 검토 ReAct (30분)
-
-## 1. 판매: 다른 구매자가 우리 가게에서 산다
+- 점수: 가게 = 0.5 book + 0.3 매출 + 0.2 별점, 구매자 = 0.5 saved + 0.3 포럼 + 0.1 거래 수 + 0.1 글 수
+- book = 현금 + 안 팔린 재고(원가). 그래서 재고는 "안 팔려도 원가만큼은 점수"이고, 손해는 하루 1% 보관료와 만료뿐임
+- 모든 돈 결정(가격, 하한, 매입 수량)은 코드 규칙이 함. LLM·Decision API는 포럼 판단과 가격 문장 읽기에만 씀
 
 ```mermaid
 sequenceDiagram
-  actor Buyer as 다른 구매자 에이전트
-  participant BuyerKit as 구매자 키트
-  participant Tunnel as 우리 키트 (터널·프록시)
-  participant Shop as shop_r3.py (Seller A2A)
-  participant Memory as memory.sqlite
-  participant Pricing as pricing · scout
-  participant ACP as 우리 키트 ACP
-  participant Market as market.ourolabs.ai
-  Buyer->>Tunnel: A2A SendMessage (품목 요청, 제안가)
-  Tunnel->>Shop: 메시지 전달
-  Shop->>Shop: 재고 단위 찾기 (find_unit)
-  alt 재고 없음
-    Shop->>Memory: 품절 기록 (record_stockout)
-    Shop-->>Buyer: reject "none of that in stock"
-  else 재고 있음
-    Shop->>Memory: 구매자 스타일 조회 (harsh_styles)
-    Shop->>Memory: 시장 가격 비율 · 성사율 · 파손률 조회
-    Shop->>Pricing: 첫 호가 = 시장비율 + ASK_ROOM + 희소 프리미엄, 하한, 보증 시간
-    Shop-->>Buyer: 호가 (requires_input)
-    loop 최대 8회 제안
-      Buyer->>Shop: 제안가
-      Shop->>Pricing: seller_reply(ask, floor, offer)
-      Shop-->>Buyer: 카운터오퍼
-    end
-    Shop->>Shop: Ed25519로 영수증 서명 (sku, price, unit, grade claim, warranty)
-    Shop-->>Buyer: 영수증 artifact + 거래 완료
-    Shop->>Memory: 협상 기록 (first_ask, final, offers, style)
+  autonumber
+  box rgb(235,242,255) 시장
+    participant M as 시장 서버<br/>(원장·공급·보드)
+    participant O as 다른 학생들<br/>(구매자·가게)
   end
-  BuyerKit->>ACP: create_checkout_session (영수증)
-  ACP->>ACP: sig_seller 확인, 품목·가격 대조, checkout_jwt 서명
-  BuyerKit->>ACP: complete_checkout_session (AP2 mandates)
-  ACP->>Market: POST /api/settle
-  Market-->>ACP: mandate_receipt, ledger 번호
-  ACP-->>BuyerKit: 주문 확정
-```
-
-근거: `shop_r3.py` `Shop.execute`·`_terms`, `scripts/market_kit.py` `AcpShop`.
-
-## 2. 구매: 우리 구매자가 다른 가게에서 산다
-
-```mermaid
-sequenceDiagram
-  participant Market as market.ourolabs.ai
-  participant Kit as 우리 키트
-  participant BuyerR3 as buyer_r3.py
-  participant Memory as memory.sqlite
-  participant Codex as Codex CLI (gpt-6.1-sol)
-  participant OtherShop as 다른 가게 Seller A2A
-  participant OtherACP as 다른 가게 ACP
-  participant Review as review_r3.py
-  Kit->>Market: POST /api/orders (주문 폴링)
-  Market-->>Kit: 주문 (품목, 예산, mandates)
-  Kit->>Market: GET /api/shops
-  Kit->>BuyerR3: market_buyer 훅 실행 (shops, item, budget, order)
-  BuyerR3->>Memory: 후보 점수 = (정가 - 예상가) × 신뢰도
-  loop 후보 가게별 (가게당 90초, 전체 240초)
-    BuyerR3->>OtherShop: A2A 요청 + 제안가
-    OtherShop-->>BuyerR3: 호가 / 카운터오퍼
-    opt 숫자를 규칙으로 못 읽을 때
-      BuyerR3->>Codex: 답장에서 현재 호가 추출 (read_ask)
-    end
+  box rgb(240,250,240) 우리 시스템 (서버 한 대)
+    participant K as 키트<br/>(터널·결제 ACP)
+    participant S as 우리 가게<br/>(shop_r3)
+    participant B as 우리 구매자<br/>(buyer_r3)
+    participant G as 운영 두뇌<br/>(restock 훅 + 내부 조직)
+    participant D as 기억<br/>(memory.sqlite)
   end
-  BuyerR3-->>Kit: 결과 한 줄 (shop, receipt, accept policy)
-  Kit->>Kit: sig_seller 검증, 품목·예산 대조 후 sig_buyer 서명
-  Kit->>OtherACP: checkout session 생성 → complete (AP2 mandates)
-  OtherACP->>Market: POST /api/settle
-  Market-->>OtherACP: mandate_receipt
-  OtherACP-->>Kit: 결제 확정
-  Kit->>Review: review 훅 (deal.json)
-  Review->>Memory: 받은 물건 기록
-  Review-->>Kit: 별점 · 사실만 쓴 리뷰
-  Kit->>Market: POST /api/results (receipt, sig_buyer, mandate_receipt, stars, review)
-```
 
-근거: `buyer_r3.py`, `review_r3.py`, `scripts/market_kit.py` `handle_order`·`acp_pay`.
-
-## 3. 재입고: 키트 훅 → 내부 A2A 조직
-
-```mermaid
-sequenceDiagram
-  participant Market as market.ourolabs.ai
-  participant Kit as 우리 키트 (sync 루프)
-  participant Hook as restock_r3.py (훅)
-  participant Memory as memory.sqlite
-  participant CEO as ceo
-  participant QUA as quality
-  participant LOG as logistics
-  participant PUR as purchasing
-  participant MKG as marketing
-  Kit->>Market: GET /api/inventory · /api/forum · /api/demand
-  Kit->>Kit: .market/*.json 갱신, outbox 전송
-  Kit->>Hook: restock 훅 (60초마다)
-  Hook->>Market: GET /api/ledger · /api/shops
-  Hook->>Memory: ledger · 가게 동기화
-  Hook-)Hook: forum_r3 (10분) · restock_review_r3 (30분) 백그라운드 시작
-  Hook->>Hook: 내부 A2A 서버가 없으면 시작 (r3lib.org.server)
-  Hook->>CEO: tick (서명 봉투, A2A)
-  CEO->>QUA: harsh (리뷰 스팸 스타일, 10분 제한)
-  QUA->>Memory: harsh_styles 갱신 (판매 경로가 읽음)
-  CEO->>LOG: window (공급 창이 열렸나, 시장 시계 기준)
-  alt 창이 닫힘
-    CEO-->>Hook: buy [] (wait)
-  else 창이 열림
-    CEO->>PUR: propose
-    PUR->>Memory: 수요 · 점유율(scout) · 매진율 · ReAct 배율 · 품절
-    PUR-->>CEO: lines + why (재고 상한 = 잔고 40%, 3M~16M, 고가 8M/10개)
-    CEO->>LOG: approve(lines)
-    LOG-->>CEO: buy (현금 여유, 최대 10줄, 1~20개)
-    CEO->>Memory: 재입고 기록, restock.jsonl
-    CEO-->>Hook: buy 목록 + 영수증
+  rect rgb(255,248,230)
+  Note over M,D: ① 매입 — 60초마다 점검, 공급 창구는 15~20분마다 3분만 열림
+  K->>M: 재고·수요·포럼 조회 (10초마다)
+  K->>G: 재입고 훅 실행 (60초마다)
+  G->>M: 원장 새 항목 가져오기
+  G->>D: 원장 저장 (모든 가게의 거래·공급·만료)
+  G->>G: 선제 행동 (10분마다, 주문이 없어도)<br/>과잉 재고 할인 · 묵은 등급 먼저 보여주기<br/>p > C/(B+C) 일 때만 실행
+  G->>D: 할인·노출 결정 저장 (가게가 읽음)
+  alt 공급 창구 열림
+    G->>D: 카테고리 수요 · 우리 실적(판매·만료) · 재고 예산
+    G-->>K: 살 목록 (최대 10줄, 실적이 나쁜 카테고리는 줄임)
+    K->>M: 공급 요청
+    M-->>K: 재고 입고 (등급은 시장이 무작위: goods A70 B20 C10)
+  else 닫힘
+    G-->>K: 이번엔 안 삼
   end
-  Hook-->>Kit: buy 목록 (JSON)
-  loop 최대 10줄
-    Kit->>Market: POST /api/supply (sku, qty), 429면 대기 후 재시도
-    Kit->>Market: GET /api/inventory (즉시 갱신)
   end
-  opt 30분마다
-    Hook->>CEO: kpi
-    CEO->>Market: GET /api/board
-    CEO->>LOG: health
-    CEO->>QUA: refunds
-    CEO->>MKG: stats · pricing
-    CEO->>CEO: kpi.jsonl 기록
+
+  rect rgb(235,248,255)
+  Note over O,D: ② 판매 — 다른 학생의 구매자가 우리 가게에 옴
+  O->>K: 견적 요청 (A2A, 터널 주소)
+  K->>S: 전달
+  S->>D: 보여줄 단위 고르기 (밀어주는 등급 우선)<br/>시장 시세 · 원가 하한 · 고장률
+  S->>S: 첫 제시가 = 규칙 가격 × bandit 선택 (C는 A 시세 기준)<br/>하한은 절대 안 내림
+  S-->>O: 제시가
+  loop 흥정 (최대 몇 차례)
+    O->>S: 제안가
+    S-->>O: 수락 또는 역제안
+  end
+  S-->>O: 서명된 영수증 (등급 정직 표시, 보증)
+  O->>K: 결제 (우리 ACP)
+  K->>M: 정산 → 원장 기록
+  S->>D: 협상 결과 + bandit 보상 (이 판매가 보드 점수를 얼마나 올렸나)
+  end
+
+  rect rgb(245,240,255)
+  Note over M,D: ③ 구매 — 시장이 우리 구매자에게 주문을 줌 (상위권 약 22초에 1건)
+  M-->>K: 주문 (품목 후보, 예산)
+  K->>B: 구매자 실행
+  B->>D: 후보 점수 (등급별 고장률 · 보증 · 기대 할인율)<br/>saved를 떨어뜨리지 않는 기준선 이상만
+  loop 점수 높은 가게 최대 3곳
+    B->>O: 흥정 (A2A)
+    O-->>B: 가격 · 영수증
+  end
+  B->>D: 판단 기록 (살지·기다릴지·말지 이유)
+  B-->>K: 고른 영수증
+  K->>O: 결제 (상대 가게 ACP)
+  O->>M: 정산
+  K->>M: 결과 제출 (별점 · 사실만 쓴 리뷰)
+  end
+
+  rect rgb(250,240,245)
+  Note over M,D: ④ 포럼 — 10분마다
+  G->>D: 새 글 저장
+  G->>G: 글 분류 (Decision API: 조작인가 · 유용한가)<br/>근거가 맞는 글만 추천, 조작 글은 비추천
+  G-->>K: 우리 글 · 투표 (outbox)
+  K->>M: 게시
+  end
+
+  rect rgb(240,240,240)
+  Note over M,D: ⑤ 학습 — 모든 판단의 단위는 "보드 점수 변화"
+  G->>M: 보드 조회 (30분마다)
+  G->>D: KPI 기록 · 점수 모델 갱신
+  Note over S,G: bandit 보상, 할인·노출 판단의 B와 C,<br/>구매 기준선이 모두 같은 점수 모델로 계산됨
   end
 ```
 
-근거: `scripts/market_kit.py` sync 루프·`restock`, `restock_r3.py` `main`, `r3lib/org/departments.py`.
+## 읽는 법
 
-## 4. 부서 간 호출 한 번: 서명 봉투와 영수증
+1. **매입**: 키트가 60초마다 운영 두뇌를 깨움. 두뇌는 먼저 원장을 받아 기억을 최신으로 만들고, 주문이 없어도 할 일
+   (과잉 재고 할인, 안 팔리는 등급을 앞에 보여주기)을 판단함. 공급 창구가 열려 있으면 "무엇을 몇 개 살지"를 정해
+   키트에 넘김. 등급은 우리가 고를 수 없고 시장이 무작위로 붙임.
+2. **판매**: 다른 학생의 구매자가 오면 가게가 기억을 보고 어떤 단위를 얼마에 부를지 정함. 가격은 규칙이 정하고
+   bandit은 그 위에 ±10%(C등급은 A 시세의 0.8~1.0)만 실험함. 하한(원가+8%)은 학습이 건드리지 못함.
+3. **구매**: 시장이 주문을 주면 구매자가 후보를 점수 매겨 상위 3곳과 흥정함. saved를 깎는 거래는 하지 않음.
+   결제와 리뷰 제출은 키트가 함.
+4. **포럼**: 새 글을 분류해 근거가 맞는 글은 추천, 조작 글은 비추천. 우리 글도 원장 근거가 있을 때만 씀.
+5. **학습**: 보드를 주기적으로 읽어 "이 행동이 점수를 얼마나 바꾸나"를 계산하는 점수 모델을 갱신함. 판매의 bandit,
+   선제 행동의 실행 여부, 구매 기준선이 모두 이 하나의 숫자로 판단됨.
 
-```mermaid
-sequenceDiagram
-  participant Caller as 호출자 (hook 또는 부서)
-  participant Client as org.client.call
-  participant Server as org.server (127.0.0.1)
-  participant Dept as 대상 부서 스킬
-  Caller->>Client: call(to, skill, args)
-  Client->>Client: server.json에서 포트 확인
-  alt 서버 살아 있음
-    Client->>Client: seal(from, to, skill, args, ts, nonce) + Ed25519 서명
-    Client->>Server: A2A SendMessage /{부서}/ (봉투)
-    Server->>Server: 레지스트리 공개키로 서명 확인, to 일치, 60초 이내, nonce 재사용 거절
-    alt 검증 실패
-      Server-->>Client: reject (REJECTED, 오류로 올라감)
-    else 검증 통과
-      Server->>Dept: departments.run(skill, args)
-      Dept-->>Server: result (스킬 오류도 답으로 반환)
-      Server->>Server: receipt{by, req=sha256(봉투), res=sha256(result), sig}
-      Server-->>Client: artifact {result, receipt}
-      Client->>Client: 영수증 서명·해시 확인 (불일치면 오류, fallback 아님)
-    end
-  else 서버 없음 또는 전송 오류
-    Client->>Dept: 같은 스킬을 프로세스 안에서 실행 (fallback)
-  end
-  Client->>Client: org-calls.jsonl 기록 (via a2a/local, ms)
-  Client-->>Caller: result
-```
+## 근거 코드
 
-근거: `r3lib/org/client.py`, `r3lib/org/server.py`, `r3lib/org/envelope.py`.
-
-## 5. 포럼 에이전트 (10분)
-
-```mermaid
-sequenceDiagram
-  participant Hook as restock_r3.py
-  participant Forum as forum_r3.py
-  participant Memory as memory.sqlite
-  participant Codex as Codex CLI (ReAct · 분류)
-  participant Decide as Decisions API (gpt-6-luna)
-  participant Outbox as .market/outbox.jsonl
-  participant Kit as 우리 키트
-  participant Market as market.ourolabs.ai
-  Hook-)Forum: 10분마다 시작
-  Forum->>Memory: forum.json 새 글 저장 (upsert_forum)
-  Forum->>Codex: 새 글 라벨 (classify)
-  loop 새 글마다 (글당 한 번, 결과 캐시)
-    Forum->>Decide: 글 종류 (manipulation / report / advice / other)
-    Decide-->>Forum: 보정 확률 (실패하면 Codex 라벨 사용)
-    Forum->>Outbox: 조작이면 비추천, ledger 근거가 모두 맞으면 추천
-  end
-  Forum->>Codex: ReAct (읽기 전용 툴, 먼저 말할지 + 초안)
-  Codex-->>Forum: post?, p_wanted, text, refs
-  opt 초안이 있으면
-    Forum->>Decide: 이 초안이 유용한가 (Horvitz p)
-  end
-  alt p >= p* 이고 refs 검증 통과
-    Forum->>Outbox: 구매자 글
-  else 침묵
-    Forum->>Memory: 리포트 레인 (구매 기록 → SKU 시세 → 카테고리 시세 순환)
-    Forum->>Decide: 자가 점검 P(manipulation)
-    Forum->>Outbox: 0.5 미만이면 게시 (같은 주제 6시간 금지)
-  end
-  Kit->>Outbox: 읽기
-  Kit->>Market: POST /api/forum · /api/forum/vote
-```
-
-근거: `forum_r3.py` `main`·`vote`·`proactive_buyer_post`·`scheduled_report`, `r3lib/decide.py`.
-
-## 6. 재고 계획 검토 ReAct (30분)
-
-```mermaid
-sequenceDiagram
-  participant Hook as restock_r3.py
-  participant Review as restock_review_r3.py
-  participant Memory as memory.sqlite
-  participant Primer as primer (시장 원칙)
-  participant Codex as Codex CLI (ReAct)
-  participant PUR as purchasing.propose
-  Hook-)Review: 30분마다 시작
-  Review->>Memory: 현재 재고 계획 (plan) · 현재 배율
-  Review->>Primer: 상황에 맞는 원칙 미리 넣기
-  Review->>Codex: ReAct (읽기 전용 툴: 매진율, 유통기한, 보관 일수, scout, 포럼)
-  Codex-->>Review: 카테고리별 배율 + 이유
-  Review->>Review: [ADJUST_MIN, ADJUST_MAX]로 clamp, 수요 있는 카테고리만, 매진율 0.9 이상·품절 카테고리는 축소 무시
-  Review->>Memory: restock_adjust 저장 (TTL)
-  Note over PUR,Memory: 다음 재입고 propose가 이 배율을 수요 목표에 곱함
-  PUR->>Memory: restock_adjust 읽기
-```
-
-근거: `restock_review_r3.py`, `restock_r3.py` `active_adjustments`·`protected_categories`.
+| 단계 | 파일 |
+|---|---|
+| 키트 (주기, 공급, 결제, 결과 제출) | `scripts/market_kit.py` `sync_loop`·`restock`·`handle_order`, `market_runtime.py`, `kit_patches.py` |
+| 운영 두뇌 | `restock_r3.py`, `r3lib/org/departments.py` (`ceo_tick`, `marketing_markdown`, `marketing_shelf`) |
+| 선제 행동 | `r3lib/markdown.py`, `r3lib/shelf.py`, `r3lib/initiative.py` |
+| 판매 | `shop_r3.py` (`find_unit`, `_terms`, `_learn`), `r3lib/pricing.py`, `r3lib/bandit.py` |
+| 구매 | `buyer_r3.py` (`candidates`, `read_ask`), `review_r3.py` |
+| 포럼 | `forum_r3.py`, `r3lib/decide.py` |
+| 기억·점수 | `r3lib/memory.py`, `r3lib/score_model.py`, `r3lib/measure.py` |
