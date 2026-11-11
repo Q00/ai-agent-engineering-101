@@ -82,7 +82,8 @@ SLOW_UNIT = 0.25             # 11-11: what a grade C unit counts for in the SKU 
 OVER_UNIT = 0.5              # ... and an A/B unit whose floor is above the SKU's market median (sells, but slowly: ~27% close)
 LINE_MAX_COST = 25e6         # 11-11: most one supply line may cost (at COST_GUESS), so one 3.8M sofa x20 does not take 46M
 MUST_LINES = 4               # 11-11: most must_stock lines in one window
-WINDOW_MAX_COST = 150e6      # ... and most one window may cost (90M -> 150M the same evening: user, 'buy more boldly, cash is idle')
+WINDOW_MAX_COST = 120e6      # ... and most one window may cost (90M -> 150M the same evening: user, 'buy more boldly, cash is idle')
+# 11-12 08:17 KST: 150M -> 120M: goods stock at cost went 363M -> 831M in 26 h (bought ~87 M/h vs ~40 M/h sold at cost), storage 1%/day ~.35 M/h and rising; one step down
 COST_A, SURGE_MARGIN = 0.65, 0.03   # 11-11: typical grade A cost share; margin kept under the market median x
 RIVAL_MIN, RIVAL_SHARE, RIVAL_COVER_H, RIVAL_LINES = 6, 0.5, 2.0, 5   # 11-12: the book rival's best sellers (sku_wants)
 COST_GUESS = 0.6             # cost as a share of list price before a unit arrives (A 55-75 %, B 40-60 %, C 25-45 %)
