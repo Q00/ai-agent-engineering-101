@@ -151,6 +151,14 @@ class Round3BuyerContextTest(unittest.TestCase):
         self.assertEqual({"action": "offer", "decision": "approved", "price": 12530}, guardian.authorize(12530, 1, 12530))
         self.assertEqual("reference_substitute", guardian.authorize(12530, 1, 13438)["decision"])   # not the ask: still sealed
 
+    def test_a_warranty_shop_may_sell_me_a_grade_c_unit_with_the_warranty_required(self):
+        order = {"acceptable": ["g"], "kind": "goods"}
+        covered = [{"shop": "covered", "settled": True, "warranty_hours": 6, "grade": "A", "list_price": 100_000, "value": 100_000}] * 5
+        bare = [{"shop": "bare", "settled": True, "warranty_hours": 0, "grade": "A", "list_price": 100_000, "value": 100_000}] * 5
+        self.assertEqual({"grades": ["A", "B", "C"], "warranty_hours": 1}, market_buyer.accept_constraints(order, {"name": "covered"}, covered))
+        self.assertEqual({"grades": ["A", "B"]}, market_buyer.accept_constraints(order, {"name": "bare"}, bare))
+        self.assertEqual({"grades": ["A", "B"]}, market_buyer.accept_constraints(order, {"name": "new"}, covered))   # no data: A/B
+
     def test_the_opener_is_no_lower_than_the_shops_usual_settle(self):
         self.assertEqual(51, market_buyer.opening_offer(72, 51, 0.25))                 # reference below ask x 0.75
         self.assertEqual(55, market_buyer.opening_offer(72, 51, 0.25, at_least=55))    # the shop settles at 0.55 of list
