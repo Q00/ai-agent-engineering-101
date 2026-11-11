@@ -17,6 +17,7 @@ scheduler detail, not shown to the model).
 import argparse
 import json
 import os
+import re
 import time
 
 from kernel import brief as b
@@ -31,6 +32,12 @@ JOB = os.path.join(op.HERE, "ANALYST_JOB.md")
 POLL_S = 60
 MIN_GAP_S = 900
 PAST_N = 5  # earlier findings shown in the prompt
+# Tool section: names and one short line each; the full description and argument names come from tool_search (as a
+# role operator sees its non-recommended tools). 11-12: the full list was a third of the fixed prompt.
+TOOL_LINE = 90
+TOOL_FULL = ("analyze",)  # shown with its whole description: its load() interface is what the analysis code needs
+TOOL_MORE = "- 도구마다 설명 전체와 인자 이름은 tool_search(query=도구 이름)로 봄. 위 이름은 그대로 부를 수 있음"
+_SENTENCE = re.compile(r"(?<=\.)\s")
 REFUSED = (
     "policy",
     "code",
@@ -58,6 +65,14 @@ answer는 꼭 냄. 확인하지 못한 것은 추측하지 않고 finding에 확
     + """
 policy, code, forum, ask는 받지 않음: 조사원은 가게를 바꾸지 않음. 값과 코드의 결정은 운영자 몫임"""
 )
+
+
+def _short(doc):
+    """The first sentence of a tool description, cut at a word boundary to about TOOL_LINE chars."""
+    text = _SENTENCE.split(" ".join(str(doc).split()), 1)[0]
+    if len(text) <= TOOL_LINE:
+        return text
+    return text[:TOOL_LINE].rsplit(" ", 1)[0] + " …"
 
 
 def _steps():
@@ -106,7 +121,8 @@ class Analyst(op.Operator):
         return {}
 
     def _tool_text(self, listed):
-        return "\n".join(f"- {name}: {doc}" for name, doc in listed)
+        lines = [f"- {name}: {doc if name in TOOL_FULL else _short(doc)}" for name, doc in listed]
+        return "\n".join(lines + [TOOL_MORE])
 
     # ------------------------------------------------------------ one question
     def _job(self):
@@ -134,6 +150,10 @@ class Analyst(op.Operator):
         return "\n".join(lines)
 
     def _base(self, q, now):
+        return self._base_sized(q, now)[0]
+
+    def _base_sized(self, q, now):
+        """The fixed prompt of question q and its chars by section (kernel.operator.sized)."""
         try:
             extra = list(ex.lines(self.root, now))
         except Exception:  # the ledger only adds lines to the card
@@ -144,7 +164,7 @@ class Analyst(op.Operator):
             "human": "사람",
             "standing": "정기 질문 (조사원 일 문서)",
         }
-        return "\n\n".join(
+        return op.sized(
             [
                 self._job(),
                 tools.guide_always(),
@@ -175,7 +195,8 @@ class Analyst(op.Operator):
         route = (loaded[0].routing.get("operator.wake") or {}) if loaded else {}
         reason = f"질문 #{q['id']}"
         try:
-            return self._compact_loop(self._base(q, now), route, reason, now)
+            base, sizes = self._base_sized(q, now)
+            return self._compact_loop(base, route, reason, now, sizes)
         except Exception as e:  # a crashed run still answers the asker
             return self._end(
                 reason, 0, "crash", {"error": f"{type(e).__name__}: {str(e)[:200]}"}

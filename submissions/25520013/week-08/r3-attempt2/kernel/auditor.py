@@ -20,6 +20,7 @@ import tempfile
 
 from kernel import common as c
 from kernel import experiments as ex
+from kernel import llm
 from kernel.agent import ParseError, parse_last_object
 from kernel.llm import ModelError, ModelRefused
 
@@ -515,8 +516,9 @@ def _runs_block(st):
     return "\n".join(out)[-RUNS_CHARS:] or "없음 (첫 감사)"
 
 
-def _fit(head, blocks, tail, limit=PROMPT_CHARS):
-    """Join head, (header, body) blocks and tail; trim the longest bodies until the whole fits in limit."""
+def _fit(head, blocks, tail, limit=PROMPT_CHARS, sizes=None):
+    """Join head, (header, body) blocks and tail; trim the longest bodies until the whole fits in limit. sizes (a
+    dict) gets the chars of each part: "job", each header's name (up to " ("), "답 형식"."""
     blocks = [[h, b] for h, b in blocks]
 
     def total():
@@ -530,6 +532,12 @@ def _fit(head, blocks, tail, limit=PROMPT_CHARS):
             break
         keep = max(0, len(body) - (total() - limit) - len(mark))
         blocks[i][1] = body[:keep] + mark
+    if sizes is not None:
+        sizes["job"] = len(head) + 2
+        for h, b in blocks:
+            name = h[3:].split(" (", 1)[0].strip()
+            sizes[name] = sizes.get(name, 0) + len(h) + len(b) + 4
+        sizes["답 형식"] = len(tail)
     return "\n\n".join([head] + [f"{h}\n\n{b}" for h, b in blocks] + [tail])
 
 
@@ -562,9 +570,10 @@ def _role_blocks(root, now, st):
     return out
 
 
-def build_prompt(root, now, secrets=(), listed=None, roles=None):
+def build_prompt(root, now, secrets=(), listed=None, roles=None, sizes=None):
     """The auditor prompt: job text, the data blocks, the answer schema; masked, at most PROMPT_CHARS. roles: the
-    single-operator notes and guidance blocks give way to the per-role blocks."""
+    single-operator notes and guidance blocks give way to the per-role blocks. sizes (a dict) gets the chars by
+    section."""
     st = _state(root)
     last = st.get("last_run_ts") if _num(st.get("last_run_ts")) else now - 24 * 3600
     listed = list(listed) if listed is not None else _default_listed(root)
@@ -611,7 +620,7 @@ def build_prompt(root, now, secrets=(), listed=None, roles=None):
         ]
     blocks.append(("## 네 지난 감사 (네 기억. 각 줄의 숫자는 그 감사 직전 구간이라, 조치의 결과는 다음 줄 숫자에 나타남)", _runs_block(st)))
     blocks = [(h, c.mask(b, secrets)) for h, b in blocks]
-    return _fit(c.mask(job, secrets), blocks, "## 답 형식\n\n" + (SCHEMA_ROLES if roles else SCHEMA))
+    return _fit(c.mask(job, secrets), blocks, "## 답 형식\n\n" + (SCHEMA_ROLES if roles else SCHEMA), sizes=sizes)
 
 
 # ------------------------------------------------------------ apply
@@ -824,7 +833,8 @@ def run(
             dict(out, status="skipped", note="지난 감사 뒤 운영자 점검 없음"),
         )
     listed = list(listed) if listed is not None else _default_listed(root)
-    prompt = build_prompt(root, now, secrets, listed, **({"roles": roles} if roles else {}))
+    sizes = {}
+    prompt = build_prompt(root, now, secrets, listed, sizes=sizes, **({"roles": roles} if roles else {}))
     out["prompt_chars"] = len(prompt)
     try:
         nums, rows = _period(root, now, st.get("last_run_ts") if _num(st.get("last_run_ts")) else now - 24 * 3600, listed,
@@ -832,9 +842,10 @@ def run(
     except Exception:  # noqa: BLE001 - memory is best effort
         nums, rows = {}, {}
     try:
-        ans = parse_last_object(
-            terra.complete(prompt, agent="auditor", timeout_s=timeout_s, effort=effort)
-        )
+        with llm.sections(sizes):
+            ans = parse_last_object(
+                terra.complete(prompt, agent="auditor", timeout_s=timeout_s, effort=effort)
+            )
     except Exception as e:  # noqa: BLE001 - any model-side failure ends this audit with nothing applied
         return _finish(
             root,

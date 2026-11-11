@@ -3,9 +3,12 @@
 One completion per call: prompt on stdin, answer on stdout, empty temp dir as cwd, codex's own tools off. The tool
 loop for agents is run by the kernel, not by codex. Every call is written to the trajectory (status, latency, sizes;
 never the prompt text). A subscription-limit refusal raises ModelRefused so the caller can fall back to the model's
-own script and the briefing can count it.
+own script and the briefing can count it. Inside `with sections(sizes)` the row also carries the prompt's size by
+section (sections: name -> chars) and, when given, the call's purpose (e.g. "compact").
 """
 
+import contextlib
+import contextvars
 import os
 import re
 import stat
@@ -49,6 +52,19 @@ TOOL_OFF_ARGS = tuple(a for f in TOOL_OFF for a in ("--disable", f)) + (
 )
 QUOTA_RX = re.compile(r"(?i)rate.?limit|usage.?limit|quota|too many requests|\b429\b")
 AUTH_RX = re.compile(r"(?i)unauthori[sz]ed|\b401\b|\b403\b|log ?in again|auth")
+
+
+_SECTIONS = contextvars.ContextVar("prompt_sections", default=None)
+
+
+@contextlib.contextmanager
+def sections(sizes, purpose=None):
+    """Within the block every llm row also carries sections (section name -> chars) and purpose when given."""
+    tok = _SECTIONS.set({"sections": dict(sizes or {}), **({"purpose": purpose} if purpose else {})})
+    try:
+        yield
+    finally:
+        _SECTIONS.reset(tok)
 
 
 class ModelRefused(RuntimeError):
@@ -124,6 +140,8 @@ class Terra:
             "model": MODEL,
             "effort": effort,
             "prompt_bytes": len(prompt.encode("utf-8")),
+            "prompt_chars": len(prompt),
+            **(_SECTIONS.get() or {}),
         }
         t0 = time.monotonic()
         try:

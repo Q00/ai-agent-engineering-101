@@ -8,6 +8,11 @@ a2/trajectory.jsonl rows of kind:
   version_result  one factual sentence per row (version, window, numbers): to the target agent and operator
   harness_edit    what changed and why: to operator
   buyer_exec      attempt and outcome rows, shop habits seen from the buyer side: to buyer
+  experiment_end  the kernel's experiment verdict with its numbers: to operator (always)
+  code_edit_end   the kernel's verdict on a rule-code change (kept, reverted, ...) with its numbers: to operator (always)
+  wake_summary    what one wake of a compact-loop agent (role operator, investigator) carried at its end: the kernel's
+                  summary of the wake or its kept conclusions (kernel.operator._hand_over): to operator (always)
+and a2/findings.jsonl rows (the investigator's findings, kernel.questions): to operator, once per addressed role (always).
 Settle rows and raw seller/buyer decision rows are not fed: SKU prices and conversion are aggregated by kernel tools.
 Each row becomes short Korean sentences built mechanically. Sentences go to the daemon as add(infer=True) in batches
 of up to BATCH, per agent; mem0's infer step extracts the facts. Only kinds named in that agent's harness memory.json
@@ -30,15 +35,20 @@ MAX_PER_RUN = 200
 SOURCES = (
     (
         "a2/trajectory.jsonl",
-        (b'"buyer_exec"', b'"reflection"', b'"version_result"', b'"harness_edit"', b'"experiment_end"'),
+        (b'"buyer_exec"', b'"reflection"', b'"version_result"', b'"harness_edit"', b'"experiment_end"',
+         b'"code_edit_end"', b'"wake_summary"'),
     ),
+    ("a2/findings.jsonl", None),
 )
+SOURCE_KIND = {"a2/findings.jsonl": "finding"}  # rows of these files carry no kind: the file gives it
 AGENTS = ("seller", "buyer", "operator")
 OPERATOR_STORE = ("harness_edit", "reflection", "version_result")
-ALWAYS_STORE = ("experiment_end",)  # kernel verdicts: the only lessons the compact operator structure produces
-ROLES = ("shop", "buyer")  # a row a role operator's process wrote carries its role; memories keep it as metadata
+# kernel verdicts, investigator findings and wake summaries: what the compact structure learns
+ALWAYS_STORE = ("experiment_end", "code_edit_end", "finding", "wake_summary")
+ROLES = ("shop", "buyer", "analyst")  # a row a role operator's process wrote carries its role; memories keep it as metadata
 EXP_STATUS = {"adopted": "채택", "dropped": "버림", "kept": "유지", "reverted": "되돌림", "voided": "무효"}
 FIELD_CAP = 200
+TEXT_CAP = 4_000  # a finding's or a wake summary's text
 METRIC_LABELS = (
     ("requests", "요청"),
     ("offers", "제안"),
@@ -160,6 +170,30 @@ def _experiment_text(row):
     return parts
 
 
+def _code_text(row):
+    """One factual sentence for an ended rule-code change: files, status, phase, why and the verdict numbers."""
+    parts = [f"코드 수정 #{row.get('id')} 파일 {' '.join(map(str, row.get('files') or [])) or '없음'}",
+             f"판정 {row.get('status')} (단계 {row.get('phase')})", f"사유 {_short(row.get('why'))}"]
+    v = row.get("verdict") if isinstance(row.get("verdict"), dict) else {}
+    for m in v.get("metrics") or []:
+        x = v.get(m) if isinstance(v.get(m), dict) else {}
+        parts.append(f"{m} 효과 {x.get('effect')} 표준오차 {x.get('se')} 건수 {x.get('n_before')}→{x.get('n_after')}"
+                     f" 판단 {x.get('decision')}")
+    return parts
+
+
+def _finding_text(row):
+    """The investigator's finding: question, finding, evidence lines and suggestion, or that it was not finished."""
+    parts = [f"조사 결과 #{row.get('id')}" + (" (미완)" if row.get("status") == "failed" else ""),
+             f"질문 {_short(row.get('q'))}", f"결과 {str(row.get('finding') or '')[:TEXT_CAP]}"]
+    ev = [str(e) for e in row.get("evidence") or [] if str(e).strip()]
+    if ev:
+        parts.append("근거 " + " / ".join(ev))
+    if row.get("suggest"):
+        parts.append(f"제안 {_short(row['suggest'])}")
+    return parts
+
+
 def sentence(row, login=""):
     """[(agent, kind, sentence), ...] for a row worth storing, else None.
 
@@ -179,6 +213,13 @@ def sentence(row, login=""):
         agents, parts = ("operator",), _edit_text(row)
     elif kind == "experiment_end" and row.get("status") in EXP_STATUS:
         agents, parts = ("operator",), _experiment_text(row)
+    elif kind == "code_edit_end":
+        agents, parts = ("operator",), _code_text(row)
+    elif kind == "finding" and str(row.get("finding") or "").strip():
+        agents, parts = ("operator",), _finding_text(row)
+    elif kind == "wake_summary" and str(row.get("text") or "").strip():
+        who = {"shop": "가게 운영자", "buyer": "구매 운영자", "analyst": "조사원"}.get(row.get("role"), "운영자")
+        agents, parts = ("operator",), [f"{who} 점검 간추림: {str(row['text'])[:TEXT_CAP]}"]
     else:
         return None
     if not parts:
@@ -241,15 +282,19 @@ def run_once(
     by_agent, new_cur = {}, dict(cur)
 
     def keep(row):
-        role = row.get("role") if row.get("role") in ROLES else None
-        out = [s + (role,) for s in sentence(row, login) or () if s[1] in ALWAYS_STORE or s[1] in kinds.get(s[0], set())]
+        roles = [row.get("role") if row.get("role") in ROLES else None]
+        if row.get("kind") == "finding":  # a finding goes to each operator it is addressed to
+            roles = [r for r in row.get("for") or [] if r in ROLES] or [None]
+        out = [s + (role,) for s in sentence(row, login) or () if s[1] in ALWAYS_STORE or s[1] in kinds.get(s[0], set())
+               for role in roles]
         return out or None
 
     for src, needles in SOURCES:
+        kind = SOURCE_KIND.get(src)
         found, new_cur[src] = read_new(
             os.path.join(root, src),
             int(cur.get(src) or 0),
-            keep,
+            (lambda row, kind=kind: keep(dict(row, kind=kind))) if kind else keep,
             MAX_PER_RUN,
             now - since_hours * 3600 if first else None,
             needles,
