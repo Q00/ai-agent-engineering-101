@@ -131,7 +131,7 @@ def decide(system, state, validator, purpose, deadline, context=None, transport=
     model = ModelSession(log, transport=transport or bounded_transport)
     history = [dict(role='user', content=json.dumps(state, ensure_ascii=False))]
     log('decision_input', system=system, state=state)
-    for attempt in range(3):
+    for attempt in range(1 if purpose == 'r3-curator' else 3):
         raw = model(system, history, purpose)
         history.append(dict(role='assistant', content=raw))
         try:
@@ -142,6 +142,8 @@ def decide(system, state, validator, purpose, deadline, context=None, transport=
             continue
         log('decision_valid', action=action, usage=model.stats)
         return action
+    if purpose == 'r3-curator':
+        raise RuntimeError('Invalid curator response; no model retry')
     raise RuntimeError('Three invalid decisions; no fabricated fallback action')
 
 

@@ -9,7 +9,7 @@ from core import decide
 
 class PurposeTests(unittest.TestCase):
     def test_round3_roles_reach_transport_and_validator(self):
-        for purpose in ('r3-discovery', 'r3-restock', 'round3_reflection'):
+        for purpose in ('r3-discovery', 'r3-restock', 'round3_reflection', 'r3-curator'):
             calls = []
             def transport(system, history, emit):
                 calls.append(purpose)

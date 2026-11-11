@@ -18,6 +18,7 @@ DEFAULT_POLICY = {
     'min_turnover_hours': 6, 'public_observation_enabled': True,
     'forum_enabled': True, 'reflection_enabled': False,
     'reflection_interval_seconds': 1800,
+    'curator_model_enabled': True,
     'fallback_enabled': True, 'model_call_seconds': 20,
     'model_cooldown_seconds': 300, 'supply_margin_seconds': 20,
     'adaptive_pricing': True, 'opening_price_fraction': .9,

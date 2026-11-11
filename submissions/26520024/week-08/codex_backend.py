@@ -123,10 +123,10 @@ class ModelSession:
         self.stats = dict(actor_calls=0, reader_calls=0, retries=0, input_tokens=0, output_tokens=0)
 
     def __call__(self, system, history, purpose):
-        if purpose not in ("buyer", "seller", "reader", "r3-discovery", "r3-restock", "round3_reflection"):
+        if purpose not in ("buyer", "seller", "reader", "r3-discovery", "r3-restock", "round3_reflection", "r3-curator"):
             raise ValueError("unknown call purpose")
-        for attempt in range(len(RETRY_DELAYS) + 1):
-            key = "reader_calls" if purpose in ("reader", "r3-discovery", "round3_reflection") else "actor_calls"
+        for attempt in range(1 if purpose == "r3-curator" else len(RETRY_DELAYS) + 1):
+            key = "reader_calls" if purpose in ("reader", "r3-discovery", "round3_reflection", "r3-curator") else "actor_calls"
             self.stats[key] += 1
             call = self.stats["actor_calls"] + self.stats["reader_calls"]
             def emit(event, **data):
@@ -136,7 +136,7 @@ class ModelSession:
                 raw, usage = self.transport(system, history, emit)
             except (Exception, KeyboardInterrupt) as exc:
                 emit("call_error", kind=type(exc).__name__, error=str(exc))
-                if isinstance(exc, RateLimited) and attempt < len(RETRY_DELAYS):
+                if isinstance(exc, RateLimited) and purpose != "r3-curator" and attempt < len(RETRY_DELAYS):
                     delay = RETRY_DELAYS[attempt]
                     self.stats["retries"] += 1
                     emit("retry", delay_seconds=delay)
