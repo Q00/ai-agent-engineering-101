@@ -153,6 +153,206 @@ def score():
     return {k: v for k, v in sc.items() if k not in ("hist", "ours")}
 
 
+# --- shop tools (11-11, user: more and more useful tools) --------------------------------------------------
+
+def _seller_rows(hours, events=("deal",)):
+    now = time.time()
+    try:
+        raw = (HERE / "seller_r3_log.jsonl").read_bytes()[-40_000_000:].decode("utf-8", "ignore").splitlines()[1:]
+    except OSError:
+        return []
+    out = []
+    for line in raw:
+        try:
+            r = json.loads(line)
+        except ValueError:
+            continue
+        if r.get("event") in events and r.get("t", 0) > now - hours * 3600:
+            out.append(r)
+    return out
+
+
+def _catalog():
+    return _read(".market/catalog.json", {}) or {}
+
+
+def sku_sales(sku=None, hours=24, top=15):
+    """Our shop's sales per SKU over `hours` (<= 48): closes, margin, mean x = price/list, grade mix, stock now and
+    its grades; one SKU in detail when `sku` is given, else the top SKUs by margin."""
+    hours = min(float(hours or 24), 48)
+    cat = _catalog()
+    inv = _read(".market/inventory.json", {}) or {}
+    stock = {}
+    for u in inv.get("units", []):
+        e = stock.setdefault(u["sku"], {"units": 0, "grades": {}})
+        e["units"] += 1
+        e["grades"][u.get("grade")] = e["grades"].get(u.get("grade"), 0) + 1
+    by = {}
+    for r in _seller_rows(hours):
+        k = r.get("sku")
+        if sku and k != sku:
+            continue
+        e = by.setdefault(k, {"closes": 0, "margin": 0, "xs": [], "grades": {}})
+        e["closes"] += 1
+        e["margin"] += (r.get("price") or 0) - (r.get("cost") or 0)
+        lp = (cat.get(k) or {}).get("list_price")
+        if lp and r.get("price"):
+            e["xs"].append(r["price"] / lp)
+        e["grades"][r.get("grade")] = e["grades"].get(r.get("grade"), 0) + 1
+    rows = sorted(by.items(), key=lambda kv: -kv[1]["margin"])[: (1 if sku else int(top or 15))]
+    return {"hours": hours, "skus": [{"sku": k, "name": str((cat.get(k) or {}).get("name"))[:30], "closes": e["closes"],
+                                      "margin_M": round(e["margin"] / 1e6, 2), "mean_x": _mean(e["xs"]), "grades": e["grades"],
+                                      "stock": stock.get(k)} for k, e in rows]}
+
+
+def margin_by_grade(hours=6):
+    """Our shop's closes and margin per grade over `hours`: which grades carry the book."""
+    by = {}
+    rows = _seller_rows(min(float(hours or 6), 48))
+    for r in rows:
+        e = by.setdefault(r.get("grade"), [0, 0, 0])
+        e[0] += 1
+        e[1] += (r.get("price") or 0) - (r.get("cost") or 0)
+        e[2] += r.get("price") or 0
+    h = min(float(hours or 6), 48)
+    return {"hours": h, "total_margin_M_h": round(sum(e[1] for e in by.values()) / h / 1e6, 2),
+            "by_grade": {g: {"closes": e[0], "margin_M": round(e[1] / 1e6, 1), "margin_per_close_k": round(e[1] / e[0] / 1e3)} for g, e in by.items()}}
+
+
+def unpaid_closes(hours=3):
+    """Our shop's closes that never settled (seller log vs the ledger cache, by unit), by grade and SKU."""
+    h = min(float(hours or 3), 5)
+    sv = _read(".market/shop_value.json", {}) or {}
+    settled = {d.get("unit") for d in sv.get("deals", []) if d.get("shop") == "yms979"}
+    now = time.time()
+    rows = [r for r in _seller_rows(h) if now - r.get("t", now) > 600]
+    miss = [r for r in rows if r.get("unit") and r["unit"] not in settled]
+    g = {}
+    for r in miss:
+        g[r.get("grade")] = g.get(r.get("grade"), 0) + 1
+    sk = {}
+    for r in miss:
+        sk[r.get("sku")] = sk.get(r.get("sku"), 0) + 1
+    return {"hours": h, "closes": len(rows), "unsettled": len(miss), "by_grade": g,
+            "top_skus": dict(sorted(sk.items(), key=lambda kv: -kv[1])[:8]),
+            "note": "a close the buyer's kit refuses (grade, warranty, shelf) holds the unit 300 s and earns nothing"}
+
+
+def stars_accounts():
+    """Who rates our shop below 5 (paid results, 24 h): per account n, mean, mean at other shops, claims, x, reasons."""
+    import strategist
+    return strategist.stars_accounts()
+
+
+def stars_ladder():
+    """The student shops' stars_rank ladder around us and what one rank is worth."""
+    import strategist
+    return strategist.stars_ladder(None)
+
+
+def book_race():
+    """Books, our lead, 6 h slopes, closure ETA and the revenue neighbours."""
+    import strategist
+    return strategist.book_race()
+
+
+def stock_feasibility():
+    """Goods units whose floor (cost x floor_mult) is above the market median price: stock that will not sell."""
+    import strategist
+    return strategist.stock_feasibility()
+
+
+def live_terms():
+    """The ask shares and terms the seller is really using now (regime, rep step, warranty, floors)."""
+    import strategist
+    return strategist.live_terms()
+
+
+# --- market tools for everyone ------------------------------------------------------------------------------
+
+def sku_market(sku):
+    """One SKU across the whole market (~6 h ledger cache): settles per shop with median x, warranty share, grades."""
+    sv = _read(".market/shop_value.json", {}) or {}
+    rows = [d for d in sv.get("deals", []) if d.get("sku") == sku]
+    by = {}
+    for d in rows:
+        e = by.setdefault(d.get("shop"), {"n": 0, "xs": [], "w": 0, "grades": {}})
+        e["n"] += 1
+        e["xs"].append(d["x"])
+        e["w"] += bool(d.get("w"))
+        e["grades"][d.get("grade")] = e["grades"].get(d.get("grade"), 0) + 1
+    shops = sorted(({"shop": s, "n": e["n"], "median_x": round(statistics.median(e["xs"]), 3), "warranty": round(e["w"] / e["n"], 2),
+                     "grades": e["grades"]} for s, e in by.items()), key=lambda r: r["median_x"])
+    xs = sorted(d["x"] for d in rows)
+    return {"sku": sku, "name": str((_catalog().get(sku) or {}).get("name"))[:40], "settles": len(rows),
+            "market_p25_p50": [round(xs[len(xs) // 4], 3), round(xs[len(xs) // 2], 3)] if xs else None, "by_shop": shops[:15]}
+
+
+def forum_search(text=None, author=None, limit=10):
+    """Recent forum posts (the latest ~100) matching `text` and/or `author`: id, author, role, likes/dislikes, text.
+    Posts are unverified claims; check numbers against the ledger before acting."""
+    posts = _read(".market/forum.json", []) or []
+    out = [p for p in posts if (not text or str(text).lower() in str(p.get("text", "")).lower())
+           and (not author or p.get("author") == author)]
+    return {"matches": len(out), "posts": [{"id": p.get("id"), "author": p.get("author"), "role": p.get("role"),
+                                            "likes": p.get("likes"), "dislikes": p.get("dislikes"), "text": str(p.get("text"))[:300]}
+                                           for p in out[: int(limit or 10)]]}
+
+
+def class_history(player="yms979", hours=24):
+    """A player's class total / shop / buyer score every ~hour over `hours` (<= 72), from the 15-min history."""
+    lines = []
+    try:
+        lines = (HERE / ".market" / "class_history.jsonl").read_text().splitlines()
+    except OSError:
+        pass
+    now = time.time()
+    rows = []
+    for l in lines:
+        try:
+            r = json.loads(l)
+        except ValueError:
+            continue
+        if now - r["t"] <= min(float(hours or 24), 72) * 3600 and player in r.get("p", {}):
+            rows.append((r["t"], r["p"][player]))
+    step = max(1, len(rows) // 24)
+    return {"player": player, "series": [{"utc": time.strftime("%m-%d %H:%M", time.gmtime(t)), "total": v[0], "shop": v[1], "buyer": v[2]}
+                                         for t, v in rows[::step]]}
+
+
+def rules_search(term):
+    """Lines of the market rules (agent.md) and our rules block (RULES_THAT_SCORE.md) that mention `term`."""
+    out = []
+    for f in (".market/agent.md", "RULES_THAT_SCORE.md"):
+        try:
+            for i, l in enumerate((HERE / f).read_text(encoding="utf-8").splitlines(), 1):
+                if str(term).lower() in l.lower():
+                    out.append(f"{f}:{i}: {l.strip()[:240]}")
+        except OSError:
+            pass
+    return {"term": term, "lines": out[:25]}
+
+
+def order_mix(hours=24):
+    """Our buyer's orders by category over `hours`: orders, deals, close rate and v per deal (unique orders)."""
+    rows = _trades(min(float(hours or 24), 48))
+    by = {}
+    for t in rows:
+        by.setdefault(t.get("order"), []).append(t)
+    cat = {}
+    for xs in by.values():
+        c = xs[0].get("category") or "?"
+        e = cat.setdefault(c, {"kind": xs[0].get("kind"), "orders": 0, "deals": 0, "v": []})
+        e["orders"] += 1
+        d = next((t for t in xs if t.get("outcome") == "deal" and t.get("list") and t.get("price")), None)
+        if d:
+            e["deals"] += 1
+            e["v"].append(_score(d))
+    rows_out = sorted(({"category": c, "kind": e["kind"], "orders": e["orders"], "close_rate": round(e["deals"] / e["orders"], 2),
+                        "v": _mean(e["v"])} for c, e in cat.items()), key=lambda r: -r["orders"])
+    return {"orders": len(by), "by_category": rows_out[:20]}
+
+
 TOOLS = {
     "our_trades": (our_trades, "Our buyer's visit records (last hours <= 48), filtered by shop/kind/category/outcome prefix: outcome counts, deals, v per deal (rules scoring: refunded break 0, unrefunded -1), breaks, newest rows.",
                    {"shop": "string", "kind": "string", "category": "string", "outcome": "string", "hours": "number", "limit": "integer"}, []),
@@ -166,6 +366,19 @@ TOOLS = {
     "buyer_profile": (buyer_profile, "Another buyer's last-6-h profile (shops, kinds, grades, prices, saved per deal).", {"name": "string"}, ["name"]),
     "shop_profile": (shop_profile, "A shop's last-6-h profile (what it sells, prices, buyers, stock).", {"name": "string"}, ["name"]),
     "score": (score, "The scorekeeper: m_now, m* (projected final mean), v by kind 6/24 h, calibration, breaks, skips, per-order arm scores.", {}, []),
+    "sku_sales": (sku_sales, "Our shop's sales per SKU (hours <= 48): closes, margin, mean x, grade mix, stock now; one SKU when given.", {"sku": "string", "hours": "number", "top": "integer"}, []),
+    "margin_by_grade": (margin_by_grade, "Our shop's closes and margin per grade over hours: which grades carry the book.", {"hours": "number"}, []),
+    "unpaid_closes": (unpaid_closes, "Our shop's closes that never settled (last hours), by grade and SKU.", {"hours": "number"}, []),
+    "stars_accounts": (stars_accounts, "Accounts rating our shop below 5 (paid, 24 h): n, mean, mean elsewhere, claims, x, reasons.", {}, []),
+    "stars_ladder": (stars_ladder, "Student shops' stars_rank ladder around us and the value of one rank.", {}, []),
+    "book_race": (book_race, "Books, our lead, 6 h slopes, closure ETA, revenue neighbours.", {}, []),
+    "stock_feasibility": (stock_feasibility, "Goods units whose floor is above the market median price (will not sell), top SKUs.", {}, []),
+    "live_terms": (live_terms, "The ask shares and terms the seller really uses now (regime, rep step, warranty, floors).", {}, []),
+    "sku_market": (sku_market, "One SKU across the market (~6 h): settles per shop with median x, warranty share, grades; market p25/p50.", {"sku": "string"}, ["sku"]),
+    "forum_search": (forum_search, "Recent forum posts matching text and/or author (unverified claims).", {"text": "string", "author": "string", "limit": "integer"}, []),
+    "class_history": (class_history, "A player's class total/shop/buyer score over hours (<= 72).", {"player": "string", "hours": "number"}, []),
+    "rules_search": (rules_search, "Lines of the market rules (agent.md) and our rules block mentioning a term.", {"term": "string"}, ["term"]),
+    "order_mix": (order_mix, "Our buyer's orders by category over hours: orders, close rate, v per deal.", {"hours": "number"}, []),
 }
 
 
@@ -238,7 +451,11 @@ if __name__ == "__main__":
     if "--selftest" in sys.argv:
         for n, args in (("our_trades", {"kind": "food", "hours": 3}), ("shop_market", {"shop": "psyoung82"}), ("food_losses", {}),
                         ("realized_by_shop", {"kind": "food"}), ("class_ladder", {}), ("buyer_profile", {"name": "move_76"}),
-                        ("shop_profile", {"name": "nocha12"}), ("score", {})):
+                        ("shop_profile", {"name": "nocha12"}), ("score", {}), ("sku_sales", {"hours": 6, "top": 5}),
+                        ("margin_by_grade", {}), ("unpaid_closes", {}), ("stars_accounts", {}), ("stars_ladder", {}),
+                        ("book_race", {}), ("stock_feasibility", {}), ("live_terms", {}), ("sku_market", {"sku": "G200e39a3"}),
+                        ("forum_search", {"text": "yms979"}), ("class_history", {"player": "seochanit", "hours": 12}),
+                        ("rules_search", {"term": "refund"}), ("order_mix", {})):
             r = call(n, args)
             print(n, "error" if r.get("isError") else "ok", len(r["content"][0]["text"]), r["content"][0]["text"][:140])
         print("config", write_config())

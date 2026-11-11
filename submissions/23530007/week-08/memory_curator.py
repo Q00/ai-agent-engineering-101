@@ -148,6 +148,11 @@ CURRENT digest: {digest}
 
 NEW entries (oldest first; each may carry "requests"): {entries}
 
+TOOLS (11-11): when this run allows them you have read-only tools (mcp__market__*: score, class_ladder, our_trades,
+shop_market, food_losses, realized_by_shop, order_mix, buyer_profile, shop_profile, sku_market, sku_sales,
+margin_by_grade, unpaid_closes, stars_accounts, stars_ladder, book_race, stock_feasibility, live_terms, forum_search,
+class_history, rules_search). Use them to ANSWER the strategists' requests with numbers instead of 'not measurable'
+(at most 10 calls), and keep the digest short.
 Answer with one JSON object only:
 {{"market_flow": "...",
   "rankers_playbook": [{{"who": "...", "role": "shop"|"buyer", "what": "...", "numbers": "..."}}],
@@ -203,7 +208,15 @@ def ask(prompt):
     with tempfile.TemporaryDirectory() as empty:
         t = time.time()
         try:
-            p = model_env.run(shlex.split(MODEL_CMD), prompt, empty, MODEL_TIMEOUT, role="curator")   # API key, else login
+            cmd = shlex.split(MODEL_CMD)
+            try:                                          # 11-11: the read-only market tools, when enabled for the curator
+                params = json.loads((HERE / "params.json").read_text())
+                if "curator" in ((params.get("strategist") or {}).get("tools") or []):
+                    import market_tools
+                    cmd += ["--mcp-config", str(market_tools.write_config()), "--strict-mcp-config", "--allowedTools", "mcp__market"]
+            except Exception as e:
+                log(f"tools unavailable ({e!r})")
+            p = model_env.run(cmd, prompt, empty, MODEL_TIMEOUT, role="curator")   # API key, else login
             sp = getattr(p, "spend", None) or {}
             log(f"model answered in {time.time() - t:.0f} s ({len(prompt)} chars in"
                 + (f", ${sp['cost']:.3f}, out {sp['output']} + think {sp['thinking']} tok" if sp else "") + ")")

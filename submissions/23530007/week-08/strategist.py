@@ -575,6 +575,10 @@ strategists' records hold for it: set when, value, applied, outcome), {{"kind": 
 (our buyer's matching trade records with their fields), {{"kind": "question", "text"}} (anything else). Answers arrive before your next run.
 The curator's digest: {digest}
 Standing stock strategy (SHOP_STOCK_STRATEGY.md: constraints, how restock decides, what to watch): {stock}
+TOOLS (11-11): you have read-only tools (mcp__market__*) for checking a cause before you move: sku_sales(sku, hours),
+margin_by_grade(hours), unpaid_closes(hours), stars_accounts, stars_ladder, book_race, stock_feasibility, live_terms,
+sku_market(sku), shop_profile(name), buyer_profile(name), forum_search(text, author), class_history(player, hours),
+rules_search(term). Use at most 8 calls; your final message must still be the single JSON object.
 USER PRIORITY (11-11, replaces 11-06): keep the shop's trend and raise stars. The order is: (1) BOOK 1ST above
 all (worth ~0.011 class shop; evidence "book_race": the lead, both 6 h slopes and the closure ETA; the margin pace
 fell from 9 to 2-6 M/h over three days while the 2nd book grows 4+ M/h), (2) revenue 2nd, (3) stars_rank, WITHOUT
