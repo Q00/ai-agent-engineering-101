@@ -202,6 +202,8 @@ def build(hours=6.0):
     try:                                           # the kit log stamps HH:MM:SS (UTC)
         h, m, s_ = (int(x) for x in kit["last_seller_task"].split(":"))
         task_age = (now - (now // 86400 * 86400 + h * 3600 + m * 60 + s_)) % 86400 / 60
+        if task_age > 1435:                        # a task stamped in the same second as `now`: not a day old
+            task_age = 0.0
     except Exception:  # noqa: BLE001
         pass
     live = [s for s in b["shops"] if s.get("deals")]
