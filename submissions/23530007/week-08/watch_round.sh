@@ -137,6 +137,10 @@ nohup "$HERE/.venv/bin/python" "$HERE/memory_curator.py" >/dev/null 2>&1 &
 # 11-11 (user: keep every log and data source in a DB): data/market_archive.db, incremental, one run at a time
 nohup "$HERE/.venv/bin/python" "$HERE/ops/archive_db.py" >>"$HERE/logs/archive_db.log" 2>&1 &
 
+# 11-11 (user: make the accounts that lift our stars come to us): a truthful shop notice on the forum, food and
+# furniture in turn, at most one per 10 min (shop_post.py)
+"$HERE/.venv/bin/python" "$HERE/shop_post.py" >>"$HERE/logs/shop_post.log" 2>&1 || true
+
 # 11-08: the user's phone messages (private ntfy topic) read every 30 s and passed to the agents
 nohup "$HERE/.venv/bin/python" "$HERE/inbox.py" --loop 14 30 >/dev/null 2>&1 &
 
