@@ -106,12 +106,56 @@ def restart_kit():
     return None
 
 
+def relist_if_delisted(me, dry=False):
+    """11-11: the market marked our shop alive=False and dropped it from /api/shops (no buyer could find us for
+    12 min) while our tunnel and seller answered, so the kit's watchdog (3 failed card checks) never re-joined.
+    When the board says dead but the local seller answers, kill the kit's cloudflared child: the watchdog opens a
+    new tunnel within ~3 min and joins again ('shop registered again'). At most once per 20 min."""
+    if me.get("alive", True):
+        return None
+    rf = HERE / ".market" / "relist.json"
+    try:
+        st = json.loads(rf.read_text())
+    except (OSError, ValueError):
+        st = {}
+    if time.time() - st.get("relist_t", 0) < 20 * 60:
+        return "relist: waiting (last try < 20 min ago)"
+    out = subprocess.run(["ps", "-eo", "pid,ppid,args"], capture_output=True, text=True).stdout.splitlines()
+    kit = next((l.split()[0] for l in out if f"market_kit.py join --dir {HERE}" in l and "/python" in l.split()[2]), None)
+    if not kit:
+        return "relist: no kit process found"
+    tunnels = [l.split()[0] for l in out if len(l.split()) > 2 and l.split()[1] == kit and "cloudflared" in l]
+    if not tunnels:
+        return "relist: kit has no tunnel child"
+    if not dry:
+        for pid in tunnels:
+            try:
+                os.kill(int(pid), signal.SIGTERM)
+            except OSError:
+                pass
+        st["relist_t"] = time.time()
+        rf.write_text(json.dumps(st))
+        try:
+            subprocess.run([sys.executable, str(HERE / "notify.py"), "[yms979] 상점 재등록",
+                            "보드에서 상점이 꺼진 것으로 표시되어 터널을 교체하고 재등록을 유도했습니다 (3-4분 소요)."],
+                           capture_output=True, text=True)
+        except Exception:
+            pass
+    return f"relist: board alive=False, killed tunnel {tunnels} so the kit watchdog re-joins"
+
+
 def main(dry=False):
     now = time.time()
     g = read()
     with urllib.request.urlopen("https://market.ourolabs.ai/api/board?round=3", timeout=30) as r:
         shops = [s for s in json.load(r)["shops"] if s.get("deals")]
     me = next(s for s in shops if s["name"] == NAME)
+    try:
+        msg = relist_if_delisted(me, dry)
+        if msg:
+            log(msg)
+    except Exception as e:
+        log(f"relist check failed: {e!r}")
     rival = max((s for s in shops if s["name"] != NAME), key=lambda s: s.get("book") or 0)
     lead = (me.get("book") or 0) - (rival.get("book") or 0)
     hist = [h for h in g.get("hist", []) if now - h[0] <= KEEP] + [[now, lead]]
