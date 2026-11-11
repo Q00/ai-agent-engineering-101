@@ -6,12 +6,13 @@ from collections import defaultdict
 import statistics
 import time
 from .buyer_scoring import contribution
+from .decision_view import history
 
 
 def route_context(journal,now=None,order=None):
     now=time.time() if now is None else now;start=now-3600
     visits=defaultdict(dict);latency=defaultdict(list)
-    for event in journal.events('attempt',2000):
+    for event in history(journal,'attempt',2000):
         if not start<=event['_ts']<=now:continue
         if not event.get('shop') or not event.get('sku') or not event.get('order'):continue
         if (order or {}).get('kind')=='food' and event.get('use_within_hours')!=order.get('use_within_hours',0):continue
@@ -20,18 +21,18 @@ def route_context(journal,now=None,order=None):
             visits[key].setdefault(oid,False)
         seconds=event.get('seconds')
         if type(seconds) in (int,float) and 0<seconds<120:latency[event['shop']].append(seconds)
-    for event in journal.events('purchase',2000):
+    for event in history(journal,'purchase',2000):
         if not start<=event.get('paid_at',event['_ts'])<=now:continue
         if (order or {}).get('kind')=='food':
             expiry=event.get('expires_at');paid_at=event.get('paid_at',event['_ts'])
             if type(expiry) not in (int,float) or expiry-paid_at<(order.get('use_within_hours',0)*3600+30):continue
         if event.get('shop') and event.get('sku') and event.get('order'):
             visits[(event['shop'],event['sku'])][event['order']]=True
-    for event in journal.events('buyer_quote_latency',1000):
+    for event in history(journal,'buyer_quote_latency',1000):
         if start<=event['_ts']<=now:latency[event['shop']].append(event['seconds'])
-    paid={r['order']:r for r in journal.events('purchase',2000) if start<=r.get('paid_at',r['_ts'])<=now}
+    paid={r['order']:r for r in history(journal,'purchase',2000) if start<=r.get('paid_at',r['_ts'])<=now}
     checkout=defaultdict(list)
-    for row in journal.events('agreement',3000):
+    for row in history(journal,'agreement',3000):
         purchase=paid.get(row.get('order'))
         if purchase and purchase.get('shop')==row.get('shop'):
             seconds=purchase.get('paid_at',purchase['_ts'])-row['_ts']

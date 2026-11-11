@@ -316,12 +316,16 @@ def execute(order, journal, chooser, peer_factory, cfg, strategy, registry, rank
                                     'use_within_hours':order.get('use_within_hours',0),
                                     "kind": type(exc).__name__, "seconds": time.monotonic() - started}, role="buyer")
         finally:
-            try:
-                if not task_complete and hasattr(peer, 'cancel') and task:
-                    peer.cancel(task['id'])
-            except Exception:
-                pass
-            peer.close()
+            if os.environ.get('R3_PERSISTENT_BUYER') == '1' and not task_complete and task:
+                from r3.quote_market import defer_close
+                defer_close(peer, task)
+            else:
+                try:
+                    if not task_complete and hasattr(peer, 'cancel') and task:
+                        peer.cancel(task['id'])
+                except Exception:
+                    pass
+                peer.close()
     from r3.forum import queue_wanted
     queue_wanted(journal, order)
     return empty

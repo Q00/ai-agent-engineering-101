@@ -13,6 +13,11 @@ def metric(board, rules=None):
 
 
 def state(journal,config):
+    from .decision_view import fact
+    return dict(fact(journal, ('buyer-state', bool(config.get('buyer_patch34_enabled')), config.get('buyer_forum_metric')), lambda: _state(journal, config)))
+
+
+def _state(journal,config):
     board=journal.snapshot('board.json',{})
     own=next((r for r in board.get('buyers',[]) if r.get('name')=='seochanit'),{})
     rules=journal.get('market_rules',{})

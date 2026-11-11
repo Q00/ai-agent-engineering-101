@@ -189,7 +189,9 @@ class Journal:
         by_name={}
         for item in purchases:by_name.setdefault(item.get('name'),[]).append(item)
         ambiguous_orders = set();pending=[]
-        broken_orders = {e['order'] for e in self.events('outcome',10000) if e.get('broken')}
+        prior_outcomes = self.events('outcome',10000)
+        existing_outcome_ids = {e['_event_id'] for e in prior_outcomes}
+        broken_orders = {e['order'] for e in prior_outcomes if e.get('broken')}
         for news in self.events("broken_news"):
             possible = [e for e in by_name.get(news.get('name'),[])
                         if 0 <= news.get("broke_at", 0) - e["paid_at"] <= 21600]
@@ -208,7 +210,8 @@ class Journal:
                          "ambiguous:" + news["_event_id"], "buyer"))
         for item in purchases:
             mature = item.get("kind") == "food" or now >= item["paid_at"] + 21600
-            if mature and item["order"] not in broken_orders and item["order"] not in ambiguous_orders:
+            if (mature and item['order'] not in broken_orders and item['order'] not in ambiguous_orders
+                    and 'mature:' + item['order'] not in existing_outcome_ids):
                 pending.append(("outcome", {"order": item["order"], "broken": False, "surplus": item["value"] - item["price"],
                                      "matured": True}, "mature:" + item["order"], "buyer"))
         self.add_batch(pending,ts=now)

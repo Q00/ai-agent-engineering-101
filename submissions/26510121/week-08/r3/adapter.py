@@ -13,7 +13,8 @@ from . import customer_memory
 
 
 def load_kit():
-    source = ROOT.parents[2] / "scripts" / "market_kit.py"
+    source = next((parent / 'scripts' / 'market_kit.py' for parent in ROOT.parents
+                   if (parent / 'scripts' / 'market_kit.py').is_file()), ROOT.parents[2] / 'scripts' / 'market_kit.py')
     spec = importlib.util.spec_from_file_location("r3_course_kit", source)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
@@ -25,11 +26,32 @@ def load_kit():
 def install(kit, journal=None, config=None):
     j = journal or Journal()
     cfg = config or policy()
+    from .autonomy import BackgroundLane
+    analytics_lane = BackgroundLane('market-analysis-v14')
+    publication_lane = BackgroundLane('market-publication-v14')
     original_accept = kit.check_accept
     original_call = kit.Market.call
     original_order = kit.handle_order
     original_news = kit.broken_news
     original_outbox = kit.outbox
+    original_run_buyer = kit.run_buyer
+    buyer_bridge = None
+    if cfg.get('buyer_worker_enabled'):
+        from .worker_bridge import BuyerBridge
+        buyer_bridge = BuyerBridge(ROOT, kit.stop, j)
+
+    def run_buyer(command, directory):
+        if buyer_bridge is None or 'market_buyer.py' not in command:
+            return original_run_buyer(command, directory)
+        order = j.snapshot('order.json', {})
+        shops = j.snapshot('shops.json', [])
+        if not order.get('order') or not order.get('acceptable'):
+            return original_run_buyer(command, directory)
+        timeout = min(kit.BUYER_TIMEOUT, max(.1, order.get('expires', time.time()) - time.time() - 5))
+        lines = buyer_bridge.run(order, shops, timeout)
+        for line in lines:
+            kit.log('[buyer] ' + line)
+        return lines
     BaseShop = kit.AcpShop
 
     def strict_accept(order, co, accept):
@@ -176,11 +198,55 @@ def install(kit, journal=None, config=None):
             return handle_order(kit,j,cfg,order,*args,**kwargs)
         return original_order(order, *args, **kwargs)
 
-    def news(market, md, state):
-        original_news(market, md, state)
-        seq = j.get("public_ledger_seq", -500)
+    def personal_news(market, md, state):
+        # A bounded slice, with enough per-request tolerance for the real server.
+        me = market.joined.get('buyer', (None,))[0]
+        if 'ledger_seq' not in state:
+            response = market.c.get(market.base + '/api/ledger', params={'after': -1}, timeout=8)
+            if response.status_code != 200:
+                return
+            rows = response.json()
+            state['ledger_seq'] = rows[-1]['seq'] if rows else 0
+        until = time.monotonic() + 15
         for _ in range(4):
-            r = market.c.get(f"{market.base}/api/ledger", params={"after": seq})
+            if time.monotonic() >= until:
+                break
+            response = market.c.get(market.base + '/api/ledger', params={'after': state['ledger_seq']}, timeout=8)
+            rows = response.json() if response.status_code == 200 else []
+            if not rows:
+                break
+            for event in rows:
+                data = event.get('data', {})
+                if event.get('kind') == 'broken' and data.get('buyer') == me:
+                    note = {'name': kit.CATALOG.get(data.get('item'), {}).get('name') or data.get('item'),
+                            'broke_at': int(event['ts'])}
+                    with (md / 'broken.jsonl').open('a', encoding='utf-8') as stream:
+                        stream.write(json.dumps(note, ensure_ascii=False) + '\n')
+            state['ledger_seq'] = rows[-1]['seq']
+            if len(rows) < 500:
+                break
+
+    def news(market, md, state):
+        if not cfg.get('autonomy_v14_enabled'):
+            original_news(market, md, state)
+        else:
+            try:
+                personal_news(market, md, state)
+            except Exception as exc:
+                j.add('feed_probe_error', {'stage': 'personal_news', 'error_type': type(exc).__name__})
+        seq = j.get("public_ledger_seq", -500)
+        feed_until = time.monotonic() + 15
+        for _ in range(4):
+            if cfg.get('autonomy_v14_enabled') and time.monotonic() >= feed_until:
+                break
+            try:
+                r = market.c.get(f"{market.base}/api/ledger", params={"after": seq},
+                                 **({'timeout': 8} if cfg.get('autonomy_v14_enabled') else {}))
+            except Exception as exc:
+                if not cfg.get('autonomy_v14_enabled'):
+                    raise
+                j.add('feed_probe_error', {'stage': 'public_ledger', 'error_type': type(exc).__name__})
+                break
             if r.status_code != 200:
                 break
             rows = r.json()
@@ -201,10 +267,14 @@ def install(kit, journal=None, config=None):
             if len(rows) < 500:
                 j.put('public_feed_caught_up_at', time.time())
                 break
-        j.reconcile()
+        if not cfg.get('autonomy_v14_enabled'):
+            j.reconcile()
 
-    def outbox(market, md):
-        original_outbox(market, md)
+    def analytical_outbox(market, md):
+        if not cfg.get('autonomy_v14_enabled'):
+            original_outbox(market, md)
+        else:
+            j.reconcile()
         if time.time() - j.get("board_checked_at", 0) > 60:
             with contextlib.suppress(Exception):
                 response = market.c.get(f"{market.base}/api/board", timeout=5)
@@ -239,6 +309,22 @@ def install(kit, journal=None, config=None):
                 context(j, j.snapshot('catalog.json', {}))
             except Exception as exc:
                 j.add('merchant_context_error', {'error_type': type(exc).__name__})
+        if cfg.get('autonomy_v14_enabled'):
+            try:
+                from .buyer_quality import cohorts
+                from .risk import shop_refund_risk
+                from .autonomy import update as autonomy_update
+                cohorts(j)
+                shop_refund_risk(j, 'A', 3, cfg)
+                autonomy_update(j, cfg)
+            except Exception as exc:
+                j.add('autonomy_v14_error', {'error_type': type(exc).__name__})
+            return
+        publish_outbox(market, md, legacy=True)
+
+    def publish_outbox(market, md, legacy=False):
+        if not legacy:
+            original_outbox(market, md)
         from .forum import schedule, deliver
         try:
             schedule(j, cfg)
@@ -247,11 +333,18 @@ def install(kit, journal=None, config=None):
         except Exception as exc:
             j.add('forum_error', {'error_type': type(exc).__name__})
 
+    def outbox(market, md):
+        if not cfg.get('autonomy_v14_enabled'):
+            return analytical_outbox(market, md)
+        analytics_lane.submit(lambda: analytical_outbox(market, md))
+        publication_lane.submit(lambda: publish_outbox(market, md))
+
     kit.check_accept = strict_accept
     kit.AcpShop = StrictShop
     kit.Market.call = market_call
     kit.handle_order = order_handler
     kit.broken_news = news
     kit.outbox = outbox
+    kit.run_buyer = run_buyer
     os.environ["R3_STRICT_ADAPTER"] = "1"
     return kit

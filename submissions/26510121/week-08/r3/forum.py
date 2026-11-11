@@ -72,8 +72,9 @@ def signals(journal, now=None):
 
 def shop_hint(journal, name, sku, now=None):
     now = time.time() if now is None else now
+    from .decision_view import history
     return any(r['role'] == 'shop' and r['author'] == name and sku in r['skus'] and
-               0 <= now - r['_ts'] < 1800 for r in journal.events('forum_observation', MAX_OBSERVATIONS))
+               0 <= now - r['_ts'] < 1800 for r in history(journal, 'forum_observation', MAX_OBSERVATIONS))
 
 
 def queue_wanted(journal, order, now=None):

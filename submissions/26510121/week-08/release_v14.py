@@ -30,10 +30,11 @@ def write(path, value):
     path.write_text(json.dumps(value, ensure_ascii=False, indent=2), encoding='utf-8')
 
 
-def checkpoint():
+def checkpoint(test_log=None):
     stamp = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')
-    tests = STAGE / 'logs/v14-full-final-tests-01.txt'
-    text = tests.read_text(encoding='utf-16')
+    tests = test_log.resolve() if test_log else STAGE / 'logs/v14-full-final-tests-01.txt'
+    raw = tests.read_bytes()
+    text = raw.decode('utf-16' if raw.startswith((b'\xff\xfe', b'\xfe\xff')) else 'utf-8-sig')
     passed = re.search(r'(\d+) passed', text)
     if not passed or int(passed[1]) < 295 or re.search(r'\d+ failed|\d+ errors', text):
         raise RuntimeError('Full regression evidence is missing or failed')
@@ -66,12 +67,14 @@ def checkpoint():
         'status': 'validated_candidate_not_deployed', 'files': entries, 'full_tests_passed': int(passed[1]),
         'parity': str(parity_path.relative_to(ROOT)), 'replay': str(replay_path.relative_to(ROOT)),
         'patch': str(patch_path.relative_to(ROOT)), 'new_economic_trade_rules_enabled': False,
+        'test_log': str(tests.relative_to(ROOT)),
         'universal_superiority_or_first_place_proven': False}
     path = ROOT / 'logs' / ('v14-release-candidate-' + stamp + '.json')
     write(path, report); print(path)
 
 
 def promote(manifest):
+    manifest = manifest.resolve()
     from r3.lifecycle import market_active
     if market_active():
         raise RuntimeError('Runtime still owns the lease; drain before source replacement')
@@ -118,8 +121,9 @@ def promote(manifest):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--promote', type=Path)
+    parser.add_argument('--tests', type=Path)
     args = parser.parse_args()
     if args.promote:
         promote(args.promote)
     else:
-        checkpoint()
+        checkpoint(args.tests)

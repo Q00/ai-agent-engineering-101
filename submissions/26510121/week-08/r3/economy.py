@@ -5,6 +5,7 @@ import math
 import time
 from .state import warranty_hours
 from .finance import planning_hours, reserve_days, surge_factor, supply_bound, sale_delta
+from .decision_view import decision, history
 
 
 def remaining(unit, now=None):
@@ -38,14 +39,15 @@ def expected_surplus(list_price, price, failure=0, covered_failure=0):
 
 
 def shop_statistics(journal, sku, category=None):
-    visits = [e for e in journal.events("shop_opportunity", 10000) if e.get("sku") == sku]
-    paid = [e for e in journal.events("shop_settled", 10000) if e.get("sku") == sku]
+    visits = [e for e in history(journal, 'shop_opportunity', 10000) if e.get('sku') == sku]
+    paid = [e for e in history(journal, 'shop_settled', 10000) if e.get('sku') == sku]
     return {"opportunities": len(visits), "settled": len(paid),
             "settlement_rate": (len(paid) + 1) / (len(visits) + 2),
             "prices": [e["price"] for e in paid[:20]],
             "source": "own observed opportunities, with a disclosed Beta(1,1) rate prior"}
 
 
+@decision
 def shop_candidates(unit, inv, catalog, journal, config, *, offer=None, previous_ask=None, now=None,
                     customer_memory=None, _warranty_variant=False):
     now = time.time() if now is None else now
@@ -171,6 +173,7 @@ def shop_candidates(unit, inv, catalog, journal, config, *, offer=None, previous
     return result
 
 
+@decision
 def buyer_candidates(order, shops, catalog, journal, config=None):
     from .buyer_scoring import state,terms_delta,blocked_units
     from .state import policy
@@ -179,8 +182,17 @@ def buyer_candidates(order, shops, catalog, journal, config=None):
     from .market_memory import market_book
     now = time.time()
     book = market_book(journal, catalog, now)
-    past = journal.events("purchase", 10000)
-    failures = journal.events("attempt", 2000)
+    past = history(journal, 'purchase', 10000)
+    failures = history(journal, 'attempt', 2000)
+    by_route, by_identity, failed_routes = {}, {}, {}
+    for position, row in enumerate(past):
+        if 0 <= now - row.get('paid_at', row['_ts']) <= 21600:
+            by_route.setdefault((row.get('shop'), row.get('sku')), {})[position] = row
+            if row.get('shop_identity'):
+                by_identity.setdefault((row['shop_identity'], row.get('sku')), {})[position] = row
+    for row in failures:
+        if not row.get('success') and 0 <= now - row['_ts'] <= 21600 and row.get('kind') not in {'model_error', 'local_error'}:
+            failed_routes.setdefault((row.get('shop'), row.get('sku')), []).append(row)
     result = []
     allowed = set(order.get("acceptable") or [])
     registry = journal.snapshot("registry.json", {})
@@ -203,11 +215,11 @@ def buyer_candidates(order, shops, catalog, journal, config=None):
                     ((config or {}).get('checkout_buffer_seconds',30)/3600 if (config or {}).get('buyer_throughput_enabled') else 0)):
                 continue
             counterpart_key = registry.get(shop["url"], {}).get("pubkey")
-            own = [x for x in past if 0 <= now - x.get('paid_at', x['_ts']) <= 21600 and (x.get("shop") == shop["url"] or
-                   counterpart_key and x.get("shop_identity") == counterpart_key) and x.get("sku") == sku]
-            failed = [x for x in failures if x.get("shop") == shop["url"] and not x.get("success")
-                      and x.get('sku') == sku and 0 <= now - x['_ts'] <= 21600
-                      and x.get("kind") not in {"model_error", "local_error"}]
+            own_rows = dict(by_route.get((shop['url'], sku), {}))
+            if counterpart_key:
+                own_rows.update(by_identity.get((counterpart_key, sku), {}))
+            own = [own_rows[position] for position in sorted(own_rows)]
+            failed = failed_routes.get((shop['url'], sku), [])
             if (config or {}).get('buyer_championship_enabled'):
                 failed=[x for x in failed if x.get('kind')=='no_agreement' and
                         (product.get('kind')!='food' or

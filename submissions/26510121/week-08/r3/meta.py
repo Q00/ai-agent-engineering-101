@@ -134,9 +134,10 @@ def rank_gain(board, role, own_name, delta):
 def quote_completion(journal, sku, price, now=None, grade=None, warranty=None):
     """Observe paid task outcomes and matured uncompleted opportunities, not imagined rejections."""
     now = time.time() if now is None else now
-    paid = {x.get("task") for x in journal.events("shop_settled", 10000)}
+    from .decision_view import fact, history
+    paid = fact(journal, 'completion-paid-tasks', lambda: {x.get('task') for x in history(journal, 'shop_settled', 10000)})
     comparable = {}
-    for e in journal.events("shop_quote", 10000):
+    for e in history(journal, 'shop_quote', 10000):
         if grade is not None and e.get('grade')!=grade:continue
         if warranty is not None and e.get('warranty_hours')!=warranty:continue
         if e.get("sku") == sku and abs(e["price"] - price) <= max(1, price * .1):

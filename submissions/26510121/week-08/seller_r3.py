@@ -21,8 +21,17 @@ from r3.economy import grade, remaining, shop_candidates
 from r3.model import Chooser
 from r3.adaptive import effective
 from r3 import customer_memory
+from r3.decision_view import frame
 
 NAME = "Seochanit Shop"
+
+
+def prepare_quote(journal, task, unit, inv, catalog, config, offer, previous_ask):
+    with frame(journal):
+        memory = customer_memory.summary(journal, task, unit)
+        candidates = shop_candidates(unit, inv, catalog, journal, config, offer=offer,
+                                     previous_ask=previous_ask, customer_memory=memory)
+        return memory, candidates
 
 
 class Seller(AgentExecutor):
@@ -33,6 +42,7 @@ class Seller(AgentExecutor):
         self.key_path = Path(key_path or ROOT / "shop_key.pem")
         self.deals = {}
         self.locks = {}
+        self.work_slots = asyncio.Semaphore(4)
 
     def select_unit(self, text, task):
         inv = self.j.snapshot("inventory.json", {})
@@ -69,7 +79,21 @@ class Seller(AgentExecutor):
             task = new_task_from_user_message(context.message)
             await event_queue.enqueue_event(task)
         async with self.locks.setdefault(task.id, asyncio.Lock()):
-            await self._execute(task, context, event_queue)
+            async with self.work_slots:
+                await self._execute(task, context, event_queue)
+
+    async def reserve_unit(self, text, task_id):
+        pending = asyncio.create_task(asyncio.to_thread(self.select_unit, text, task_id))
+        try:
+            return await asyncio.shield(pending)
+        except asyncio.CancelledError:
+            # Cancelling the coroutine cannot stop an already running DB thread.
+            # Wait for its reservation, then release it before dropping the lock.
+            try:
+                await pending
+            finally:
+                await asyncio.to_thread(self.j.release, task_id)
+            raise
 
     async def _execute(self, task, context, queue):
         up = TaskUpdater(event_queue=queue, task_id=task.id, context_id=task.context_id)
@@ -77,7 +101,7 @@ class Seller(AgentExecutor):
         text = (get_message_text(context.message) or "")[:2000]
         deal = self.deals.get(task.id)
         if deal is None:
-            unit = self.select_unit(text, task.id)
+            unit = await self.reserve_unit(text, task.id)
             message_id = getattr(context.message, 'message_id', '')
             metadata = customer_memory.metadata_dict(getattr(context.message, 'metadata', None))
             shop_pubkey = None
@@ -88,16 +112,16 @@ class Seller(AgentExecutor):
                         serialization.Encoding.Raw, serialization.PublicFormat.Raw)).decode()
                 except (ValueError, OSError):
                     pass
-            signer = customer_memory.signed_visitor(self.j, task.id, message_id, text,
-                                                     metadata, expected_shop=shop_pubkey)
+            signer = await asyncio.to_thread(customer_memory.signed_visitor, self.j, task.id, message_id, text,
+                                             metadata, expected_shop=shop_pubkey)
             if unit is None:
-                customer_memory.visit(self.j, task.id, text, signer=signer)
-                customer_memory.incoming(self.j, task.id, message_id, text)
+                await asyncio.to_thread(customer_memory.visit, self.j, task.id, text, signer=signer)
+                await asyncio.to_thread(customer_memory.incoming, self.j, task.id, message_id, text)
                 customer_memory.finish(self.j, task.id, 'stockout')
                 await up.reject(say("No matching available inventory unit."))
                 return
             config, strategy = effective(self.j, 'shop', self.cfg)
-            customer_memory.visit(self.j, task.id, text, unit, strategy['version'], signer)
+            await asyncio.to_thread(customer_memory.visit, self.j, task.id, text, unit, strategy['version'], signer)
             deal = self.deals[task.id] = {"unit": unit, "ask": None, "turns": 0,
                                          "until": time.time() + self.cfg["session_ttl_seconds"],
                                          "config": config, "strategy": strategy}
@@ -107,8 +131,8 @@ class Seller(AgentExecutor):
                                             "strategy_version": strategy['version']},
                        eid="visit:" + task.id, role="shop")
         message_id = getattr(context.message, 'message_id', '')
-        customer_memory.incoming(self.j, task.id, message_id, text,
-                                 last_ask=deal['ask'], turn=deal['turns'] + 1)
+        await asyncio.to_thread(customer_memory.incoming, self.j, task.id, message_id, text,
+                                last_ask=deal['ask'], turn=deal['turns'] + 1)
         if deal.get("receipt"):
             await up.add_artifact(parts=[new_data_part(deal["receipt"])], name="receipt")
             await up.complete(say("Previously agreed receipt; no new sale."))
@@ -136,11 +160,10 @@ class Seller(AgentExecutor):
             match = re.fullmatch(r"\s*(?:I accept(?: at)?\s*)?([\d,]+)\s*", text, re.I)
             if match:
                 offer = int(match.group(1).replace(",", ""))
-        memory = customer_memory.summary(self.j, task.id, unit)
         quoting_unit = dict(unit, minimum_warranty_hours=deal['unit'].get('minimum_warranty_hours', 0),
                             promised_warranty_hours=deal.get('promised_warranty_hours'))
-        candidates = shop_candidates(quoting_unit, inv, cat, self.j, deal['config'], offer=offer,
-                                     previous_ask=deal["ask"], customer_memory=memory)
+        memory, candidates = await asyncio.to_thread(prepare_quote, self.j, task.id, quoting_unit,
+                                                     inv, cat, deal['config'], offer, deal['ask'])
         if not candidates:
             customer_memory.finish(self.j, task.id, 'no_feasible_offer')
             await up.reject(say("No feasible inventory offer."))
@@ -189,10 +212,11 @@ class Seller(AgentExecutor):
 
     async def cancel(self, context, event_queue):
         task = context.current_task
-        customer_memory.finish(self.j, task.id, 'cancelled')
-        self.j.release(task.id)
-        self.deals.pop(task.id, None)
-        await TaskUpdater(event_queue=event_queue, task_id=task.id, context_id=task.context_id).cancel()
+        async with self.locks.setdefault(task.id, asyncio.Lock()):
+            await asyncio.to_thread(customer_memory.finish, self.j, task.id, 'cancelled')
+            await asyncio.to_thread(self.j.release, task.id)
+            self.deals.pop(task.id, None)
+            await TaskUpdater(event_queue=event_queue, task_id=task.id, context_id=task.context_id).cancel()
 
 
 def build(port, seller=None):

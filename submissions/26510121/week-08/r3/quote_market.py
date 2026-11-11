@@ -8,6 +8,10 @@ import time
 import queue
 import threading
 import math
+import os
+_CLEANUP = queue.Queue(maxsize=8)
+_CLEANUP_LOCK = threading.Lock()
+_CLEANUP_STARTED = False
 from .market_memory import buyer_assessment
 from .protocol import quote, quote_terms
 
@@ -149,10 +153,39 @@ def _close_quote(peer,task):
     finally:peer.close()
 
 
+def defer_close(peer, task):
+    """Bound cleanup work in the persistent worker; never queue payments."""
+    global _CLEANUP_STARTED
+    with _CLEANUP_LOCK:
+        if not _CLEANUP_STARTED:
+            def run():
+                while True:
+                    item = _CLEANUP.get()
+                    try:
+                        _close_quote(*item)
+                    except Exception:
+                        pass
+                    finally:
+                        _CLEANUP.task_done()
+            for _ in range(2):
+                threading.Thread(target=run, name='quote-cleanup', daemon=True).start()
+            _CLEANUP_STARTED = True
+    try:
+        _CLEANUP.put_nowait((peer, task))
+        return True
+    except queue.Full:
+        # Bounded fallback preserves cancellation rather than leaking unlimited peers.
+        _close_quote(peer, task)
+        return False
+
+
 def close_quotes(prepared,background=False):
     for peer,task in prepared.values():
         if background:
-            threading.Thread(target=_close_quote,args=(peer,task),daemon=True).start()
+            if os.environ.get('R3_PERSISTENT_BUYER') == '1':
+                defer_close(peer, task)
+            else:
+                threading.Thread(target=_close_quote, args=(peer, task), daemon=True).start()
         else:_close_quote(peer,task)
 
 

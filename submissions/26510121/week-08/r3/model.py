@@ -88,6 +88,12 @@ class Chooser:
             from .long_memory import manifest
             context['system_manifest']=manifest(self.j)
             context['framework_profile']=self.config.get('framework_profile','shop_contract_service')
+        if self.config.get('autonomy_v14_enabled'):
+            from .autonomy import context as role_context
+            packet = role_context(self.j, self.config, role=role,
+                                  rules_hash=context.get('system_manifest', {}).get('rules_sha256'))
+            if packet:
+                context['observed_role_facts'] = packet
         if role=='buyer':context.update(buyer_metric=current['metric'],buyer_forum_metric=current['forum_metric'],
                                        buyer_rank_scope=board.get('buyer_rank_scope'))
         if role=='buyer' and self.config.get('buyer_throughput_enabled'):

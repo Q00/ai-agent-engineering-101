@@ -1,20 +1,21 @@
 """Route by observed terms, recent technical reliability and own settled history."""
 import time
+from .decision_view import history
 from .buyer_scoring import contribution,terms_delta
 
 
 def context(journal,now=None):
     now=time.time() if now is None else now
     since=max(now-900,journal.get('buyer_revision_epoch',0));errors={}
-    for e in journal.events('attempt',1500):
+    for e in history(journal,'attempt',1500):
         if not since<=e['_ts']<=now:continue
         if e.get('kind') not in ('rfq_failed','ReadTimeout','HTTPStatusError','ConnectError') and e.get('reason')!='ambiguous_ask':continue
         shop=e.get('shop')
         if shop:errors[shop]=errors.get(shop,0)+1
-    paid={(p.get('order'),p.get('shop')) for p in journal.events('purchase',2000)
+    paid={(p.get('order'),p.get('shop')) for p in history(journal,'purchase',2000)
           if 0<=now-p.get('paid_at',p['_ts'])<=1800}
     proofs={}
-    for e in journal.events('agreement',3000):
+    for e in history(journal,'agreement',3000):
         if (e.get('order'),e.get('shop')) in paid:
             rows=proofs.setdefault(e['shop'],[])
             if e.get('task') and e['task'] not in rows and len(rows)<3:rows.append(e['task'])
