@@ -414,6 +414,11 @@ def main():
             continue
         if v["kind"] == "food" and (v.get("shelf_hours") or 0) < 24:
             continue
+        # 11-11 20:50 (user: sell the food we hold, stop restocking it): food was 0.23 M/h of 35.5 M/h paid revenue
+        # and 5% of supply lines, with ~1 M/day of units passing their date (those leave the book at cost). Only
+        # params must_stock (long-shelf foods for the accounts that lift our star mean) is still bought.
+        if v["kind"] == "food" and not p.get("restock_food", True):
+            continue
         by_cat[v["category"]].append(v)
 
     top_cat = max(value.values(), default=0) or 1                      # a mattress outweighs a kimchi
