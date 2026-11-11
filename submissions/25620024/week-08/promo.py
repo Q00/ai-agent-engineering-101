@@ -177,7 +177,8 @@ def quote(c, unit, code=None, me=None, now=None, stock_n=1, vip=False):
         follow = min(follow, t.get("max_undercut", 0.05))      # finance caps how far under the median we go
     median = None
     if follow is not None:          # 0 means "at the median", not "no follow" (11-04: a 0 cap sent mattresses out at 0.92)
-        median, n = market_model.market_price(c, unit["sku"], grade=unit.get("grade") if lp >= 100000 else None)
+        median, n = market_model.market_price(c, unit["sku"], grade=unit.get("grade") if lp >= 100000 else None,
+                                               grade_fallback=GRADE_FALLBACK)
         if median:
             price, why = min(price, median * (1 - follow)), why + [f"follow: {follow:.0%} under the 24 h {'grade ' + unit.get('grade') + ' ' if lp >= 100000 and unit.get('grade') else ''}median {median:.0f} (n={n})"]
     low = market_model.market_low(c, unit["sku"], me)
@@ -269,12 +270,47 @@ def quote(c, unit, code=None, me=None, now=None, stock_n=1, vip=False):
                 why = why + [f"mattress sell>hold: market {target} >= hold {hold}"]
             else:
                 why = why + [f"mattress hold>sell: market {target} < hold {hold}"]
+    # HQ 11-11 20:30 cycle (stock -> errors -> market -> interviews). Book counts unsold stock at cost, so a unit only
+    # needs to sell when the market pays at least its cost; none of these sells a goods unit under its cost.
+    gmk = None
+    if unit.get("kind") in ("goods", "food") and t.get("market_fix", True):
+        gmk = median or market_model.market_price(c, unit["sku"], grade=unit.get("grade") if lp >= 100000 else None,
+                                                  grade_fallback=GRADE_FALLBACK)[0]
+    if gmk and unit.get("kind") == "goods":
+        tgt = int(gmk * (1 - t.get("market_fix_undercut", 0.02)))
+        if over and tgt >= cost * 1.05:
+            # (1) overstock the market pays >= 5% over cost for: G75f11c19 A sold at 77k (cost 79.6k, others 89k,
+            # median 87k) -- 156 of 212 sales under cost in 24 h -- because the near-cost cap and the hold floor let
+            # haggling go 6% under cost. Ask 2% under the grade median and never close under cost.
+            if tgt > price:
+                price, why = tgt, why + [f"overstock market {tgt} (median {gmk:.0f} >= cost+5%)"]
+            floor = max(floor, int(cost) + 1)
+        elif not over and max(price, floor) > gmk * 1.02 and tgt >= cost:
+            # (2) an ask above a market that still pays our cost: G30604071 A asked cost x 1.12 = 254k against a
+            # 229,950 median and fell from ~15 sales an hour to 1 in 3 h (2 deals, 14 misses in 6 h). The ask is
+            # max(price, floor): the margin floor, not the price, held it up
+            price, why = min(price, tgt), why + [f"market follow {tgt} (median {gmk:.0f}, ask was over it)"]
+            floor = min(floor, max(int(cost) + 1, int(tgt * (1 - t["haggle_room"]))))
+    if gmk and unit.get("kind") == "food" and unit.get("expires_at") and unit.get("shelf_hours") \
+            and max(price, floor) > gmk * 1.02 and floor > gmk * 0.95:
+        # (3) food priced over its market by its cost floor dies on the shelf and loses the whole cost: G4a998429 B
+        # (cost up to 39.5k, market 30.7k) asked 38-44k, 1 sale and 9 misses in 6 h, 74-107 h of shelf left
+        left = (unit["expires_at"] - now) / (unit["shelf_hours"] * 3600)
+        if left < t.get("food_fix_left", 0.7):
+            tgt = int(gmk * 0.98)
+            price, why = min(price, tgt), why + [f"food at market {tgt} ({left:.0%} shelf left; expiry loses the cost)"]
+            floor = min(floor, int(gmk * 0.9))
     price = max(int(price), floor)
     least = max(int(price * (1 - t["haggle_room"])), floor)
     return {"price": price, "least": least, "arm": arm if isinstance(arm, str) else f"{arm:.2f}", "floor": floor,
             "tier": tier, "group_buy": gb,
             "why": "; ".join(why + [f"exp {e}:{a}" for e, a, _ in exps]), "market_median": median,
             "exps": [(e, a) for e, a, _ in exps], "warranty_goods_h": t.get("warranty_goods_h", 0)}
+
+
+# a grade with under 10 settles in 24 h prices from the all-grade median times this (G30604071 C, cost ~97k, was priced
+# from the 229,950 all-grade median; C trades about 20% under A: G75f11c19 C/A 0.82, G0be9ed07 0.62)
+GRADE_FALLBACK = {"A": 1.0, "B": 0.9, "C": 0.8}
 
 
 GROUPBUY = Path(__file__).parent / "private" / "groupbuy.json"
