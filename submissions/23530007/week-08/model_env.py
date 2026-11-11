@@ -47,7 +47,8 @@ def _unwrap(p, cmd, prompt, secs, role, fell_back):
         return p
     u = j.get("usage") or {}
     mu = j.get("modelUsage") or {}
-    row = {"t": round(time.time(), 1), "role": role or "?", "model": next(iter(mu), _model_of(cmd)), "secs": round(secs, 1),
+    main_model = max(mu, key=lambda k: (mu[k] or {}).get("costUSD", 0)) if mu else _model_of(cmd)   # the CLI also bills a small haiku helper
+    row = {"t": round(time.time(), 1), "role": role or "?", "model": main_model, "secs": round(secs, 1),
            "cost": round(float(j.get("total_cost_usd") or 0), 5), "chars_in": len(prompt),
            "input": u.get("input_tokens", 0), "cache_read": u.get("cache_read_input_tokens", 0),
            "cache_write": u.get("cache_creation_input_tokens", 0), "output": u.get("output_tokens", 0),
