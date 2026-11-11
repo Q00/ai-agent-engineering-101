@@ -285,7 +285,10 @@ def quote(c, unit, code=None, me=None, now=None, stock_n=1, vip=False):
             if tgt > price:
                 price, why = tgt, why + [f"overstock market {tgt} (median {gmk:.0f} >= cost+5%)"]
             floor = max(floor, int(cost) + 1)
-        elif not over and max(price, floor) > gmk * 1.02 and tgt >= cost:
+        elif not over and max(price, floor) > gmk * 1.02 and gmk > cost * 1.003:
+            # live 21:19: a G30604071 A unit bought at ~227k (median 229,950, 2%-under target 225k) still asked
+            # cost x 1.12 = 254k; a unit bought under the median asks max(target, cost) and never closes under cost
+            tgt = max(tgt, int(cost) + 1)
             # (2) an ask above a market that still pays our cost: G30604071 A asked cost x 1.12 = 254k against a
             # 229,950 median and fell from ~15 sales an hour to 1 in 3 h (2 deals, 14 misses in 6 h). The ask is
             # max(price, floor): the margin floor, not the price, held it up
