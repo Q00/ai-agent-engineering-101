@@ -44,6 +44,7 @@ SHOP_VALUE = MD / "shop_value.json"
 LOGF = HERE / "logs" / "guards.log"
 MARKET = "https://market.ourolabs.ai"
 DAILY_CAP = 18.5           # $/24 h: (credit - 60 for Round 4) / days left on 11-11
+TOTAL_GAP = 0.03           # G12: class-total lead under this wakes both strategists
 DRY = "--dry" in sys.argv
 
 
@@ -278,6 +279,28 @@ def main():
             fired(st, "G10w", now)
     except Exception as e:
         log(f"G10 skipped: {e!r}")
+
+    # G12 total race (11-11, user: who can take 1st): the class-total gap to the 2nd shrinks under TOTAL_GAP
+    try:
+        ch1 = tail_jsonl(CLASS, 1)
+        if ch1:
+            p = ch1[0].get("p") or {}
+            tot = sorted(((v[0], n) for n, v in p.items() if v and v[0] is not None), reverse=True)
+            if tot and tot[0][1] == "yms979" and len(tot) > 1:
+                gap = tot[0][0] - tot[1][0]
+                st["total_gap"] = round(gap, 3)
+                if gap < TOTAL_GAP and cooled(st, "G12", 3 * 3600, now):
+                    wake("buyer", f"G12 total race: gap to {tot[1][1]} is {gap:.3f}")
+                    wake("shop", f"G12 total race: gap to {tot[1][1]} is {gap:.3f}")
+                    alert([f"G12 종합 1위 격차 {gap:.3f} ({tot[1][1]}): 두 전략가를 깨웁니다."])
+                    fired(st, "G12", now)
+                    fires.append("G12")
+            elif tot and tot[0][1] != "yms979" and cooled(st, "G12lost", 3 * 3600, now):
+                alert([f"G12 종합 1위를 {tot[0][1]}에게 내줬습니다 ({tot[0][0]:.3f} vs 우리 {p.get('yms979', [0])[0]:.3f})"])
+                fired(st, "G12lost", now)
+                fires.append("G12")
+    except Exception as e:
+        log(f"G12 skipped: {e!r}")
 
     # G11 skip share
     ss = (sc.get("skips") or {}).get("share_of_orders_6h")
