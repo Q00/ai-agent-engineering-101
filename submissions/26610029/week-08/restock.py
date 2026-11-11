@@ -69,6 +69,18 @@ def stockout_categories(d, now, lookback_h):
     return {(r["cat"], r["kind"]): int(r["n"]) for r in rows}
 
 
+def low_competition_categories(d, now, lookback_h=24, max_shops=5):
+    """Categories where few shops compete market-wide -- thin, not dead. These rarely clear
+    food_min_sales/goods_min_sales (total demand there is just low), so the ranking below would skip
+    them even when margin is fine and being one of only a handful of sellers means a buyer who lands
+    in that category has few alternatives to us. A longer lookback than the usual ranking's: a niche
+    category needs more time to accumulate any sales at all to judge competition by."""
+    rows = d.q("""SELECT category FROM settles WHERE ts > $1 AND category IS NOT NULL
+                 GROUP BY category HAVING count(DISTINCT shop_url) <= $2""",
+               now - lookback_h * 3600, max_shops)
+    return {r["category"] for r in rows}
+
+
 def own_deal_rates(d, now, lookback_h):
     """Our own shop's recent negotiation outcomes per SKU, independent of how well that SKU sells
     market-wide (settles, used below) -- buyer mix, our own ask, and warranty terms can make a SKU a
@@ -93,14 +105,17 @@ def plan(inv, d, policy, now, catalog):
     rows = d.q("SELECT sku, max(kind) AS kind, max(list_price) AS lp, max(category) AS category, "
                "count(*) AS n, avg(amount::float / list_price) AS ratio FROM settles "
                "WHERE ts > $1 AND list_price > 0 GROUP BY sku", now - policy["lookback_h"] * 3600)
+    low_comp = low_competition_categories(d, now)
     by_cat = {}
     for r in rows:
         kind, lp, n, ratio = r["kind"], int(r["lp"]), int(r["n"]), float(r["ratio"])
         margin = ratio - EXPECTED_COST.get(kind, 0.6)
         if margin <= 0.02 or r["sku"] in surging:
             continue
-        if n < (policy["food_min_sales"] if kind == "food" else policy["goods_min_sales"]):
-            continue
+        min_sales = policy["food_min_sales"] if kind == "food" else policy["goods_min_sales"]
+        if n < min_sales and r["category"] not in low_comp:   # a thin market gets a pass: being one
+            continue                                           # of few sellers there matters more than
+                                                                # hitting the usual sales-volume bar
         row = (n * margin, r["sku"], kind, lp, n, round(margin, 3))   # fast movers first, not big tickets
         by_cat.setdefault(r["category"] or r["sku"], []).append(row)
 
