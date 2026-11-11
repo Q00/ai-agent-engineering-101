@@ -55,6 +55,8 @@ NOTES_CHARS = 2_000
 # Heartbeat while an experiment runs. 1200 since 11-11 (성수님: 20분마다 시장을 보고 전략을 잡아야 함); it was 3600,
 # and with experiments always running the operator woke hourly and mostly waited.
 BUSY_INTERVAL_S = 1200
+OBS_BUDGET = 14_000  # chars of tool results shown per step: newest in full, older ones cut to OBS_TRIM
+OBS_TRIM = 1_000
 ASK_TIMEOUT_S = 120  # per model call; about twice the slowest answered call
 REV_WEIGHT_MAX = 0.2
 COMPACT_SCHEMA = """한 단계에 JSON 객체 하나로만 답함. 둘 중 하나:
@@ -507,15 +509,26 @@ class Operator:
                 COMPACT_SCHEMA,
             ]
         )
+        # 11-11: results used to vanish after one step and 24 of 31 repeated calls re-read one two steps later.
         kept, fresh, chars, calls, step = [], [], 0, 0, 0
+        obs_all, full = {}, set()  # (tool, args) -> [step, head, text]; keys shown in full in the last prompt
         for step in range(COMPACT_STEPS):
             last_step = step == COMPACT_STEPS - 1
+            shown, left, full = [], OBS_BUDGET, set()
+            for key, (at, head, text) in sorted(obs_all.items(), key=lambda kv: -kv[1][0]):
+                if len(text) <= left:
+                    full.add(key)
+                else:
+                    text = text[:OBS_TRIM] + "\n[오래된 관찰이라 앞부분만 남김. 더 필요하면 다시 부름]"
+                left -= len(text)
+                shown.append(f"[단계 {at + 1}] {head}\n{text}")
             prompt = (
                 base
                 + "\n\n## 남긴 결론\n\n"
                 + ("\n".join(kept) or "없음")
-                + "\n\n## 바로 앞 단계의 관찰 (다음 단계에는 지워짐)\n\n"
-                + ("\n\n".join(fresh) or "없음")
+                + "\n\n## 이번 점검의 관찰 (새것부터. 여기 있는 것은 다시 부르지 않음)\n\n"
+                + ("\n\n".join(shown) or "없음")
+                + ("" if obs_all or not fresh else "\n\n" + "\n".join(fresh))
             )
             if last_step:
                 prompt += "\n\n도구 단계를 다 씀. 이번 답은 반드시 done 객체여야 함."
@@ -547,11 +560,17 @@ class Operator:
             for t in asked[:COMPACT_TOOLS]:
                 if not isinstance(t, dict):
                     continue
+                head = json.dumps({"tool": t.get("tool"), "args": t.get("args")}, ensure_ascii=False, default=str,
+                                  sort_keys=True)[:300]
+                if head in full:  # still on the page in full: no second read
+                    self.traj.append("operator", "tool", name=t.get("tool"), obs_chars=0, cached=True,
+                                     args=c.mask(json.dumps(t.get("args"), ensure_ascii=False, default=str)[:2000],
+                                                 self.secrets))
+                    fresh.append(head + "\n이미 읽음: 위 관찰에 그대로 있음")
+                    continue
                 obs = c.cap(self._run_tool(t.get("tool"), t.get("args")), COMPACT_OBS)
-                fresh.append(
-                    json.dumps({"tool": t.get("tool"), "args": t.get("args")}, ensure_ascii=False, default=str)[:300]
-                    + "\n" + obs
-                )
+                obs_all[head] = [step, head, obs]
+                fresh.append(head + "\n" + obs)
             if not fresh:
                 fresh = ["도구 호출이 없음: tools 목록이나 done 객체로 답해야 함"]
         return self._end(reason, step + 1, "no_done", {"prompt_chars": chars, "calls": calls})

@@ -63,7 +63,7 @@ def test_wake_keeps_one_step_of_observations_and_registers_experiments(o):
     assert "편집 가능 키" in p[1]  # the first step's observation is shown in full on the next step
     assert "goods price_mult 0.9 확인" in p[2]
     assert p[2].count("편집 가능 키") == p[1].count("편집 가능 키")  # one policy observation, not two
-    assert "시장 설명서 목차" in p[1].split("바로 앞 단계의 관찰")[1] and "시장 설명서 목차" not in p[2].split("바로 앞 단계의 관찰")[1]
+    assert "시장 설명서 목차" in p[1].split("이번 점검의 관찰")[1] and "시장 설명서 목차" in p[2].split("이번 점검의 관찰")[1]
     pol = res["policy"]
     assert pol[0]["ok"] and pol[0]["experiment"] == 1
     assert not pol[1]["ok"] and "실험" in pol[1]["error"]  # same scope as the experiment just started
@@ -239,3 +239,28 @@ def test_ask_retries_once_after_a_timeout(o):
     assert o.wake("주기 점검", NOW)["status"] == "done" and o.terra.timeouts == [op.ASK_TIMEOUT_S] * 2
     o.terra = Flaky(2)
     assert o.wake("주기 점검", NOW + 1)["status"] == "model_error" and len(o.terra.timeouts) == 2
+
+
+def test_repeat_call_is_answered_from_the_page_and_agent_arg_works(o):
+    from kernel import memfeed, tools
+
+    o.terra = Script(
+        {"tools": [{"tool": "policy", "args": {}}]},
+        {"tools": [{"tool": "guide", "args": {"section": "1"}}]},
+        {"tools": [{"tool": "policy", "args": {}}]},
+        {"done": {"note": "끝"}},
+    )
+    o.wake("주기 점검", NOW)
+    p = o.terra.prompts
+    assert "편집 가능 키" in p[2] and p[3].count("편집 가능 키") == p[2].count("편집 가능 키")
+    assert "이미 읽음" not in p[2]
+    with open(os.path.join(o.root, "a2/trajectory.jsonl"), encoding="utf-8") as f:
+        rows = [r for r in map(json.loads, f) if r.get("kind") == "tool"]
+    assert [r.get("cached", False) for r in rows] == [False, False, True]
+    assert "TypeError" not in str(o._run_tool("recall", {"agent": "operator", "query": "소파 가격", "k": 3}))
+    assert "TypeError" not in str(o._run_tool("trajectory", {"agent": "operator", "hours": 1}))
+    row = {"kind": "experiment_end", "ts": NOW, "id": 2, "mode": "split", "section": "가구>소파", "key": "price_mult",
+           "old": 0.68, "new": 0.73, "status": "dropped", "verdict": {"a": 1301770.9, "b": 1123829.7, "se": 502977.8}}
+    (agent, kind, text), = memfeed.sentence(row)
+    assert agent == "operator" and "판정 버림" in text and "1123830" in text and "0.68 → 0.73" in text
+    assert memfeed.sentence(dict(row, status="running")) is None

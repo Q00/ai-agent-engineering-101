@@ -30,11 +30,13 @@ MAX_PER_RUN = 200
 SOURCES = (
     (
         "a2/trajectory.jsonl",
-        (b'"buyer_exec"', b'"reflection"', b'"version_result"', b'"harness_edit"'),
+        (b'"buyer_exec"', b'"reflection"', b'"version_result"', b'"harness_edit"', b'"experiment_end"'),
     ),
 )
 AGENTS = ("seller", "buyer", "operator")
 OPERATOR_STORE = ("harness_edit", "reflection", "version_result")
+ALWAYS_STORE = ("experiment_end",)  # kernel verdicts: the only lessons the compact operator structure produces
+EXP_STATUS = {"adopted": "채택", "dropped": "버림", "kept": "유지", "reverted": "되돌림", "voided": "무효"}
 FIELD_CAP = 200
 METRIC_LABELS = (
     ("requests", "요청"),
@@ -141,6 +143,22 @@ def _buyer_exec_text(row):
     return None
 
 
+def _experiment_text(row):
+    """One factual sentence for an ended experiment: what was tried, the verdict and its numbers."""
+    v = row.get("verdict") if isinstance(row.get("verdict"), dict) else {}
+    parts = [
+        f"실험 #{row.get('id')} {_short(row.get('section'))} {row.get('key')} {row.get('old')} → {row.get('new')}"
+        f" ({'동시 비교' if row.get('mode') == 'split' else '전후 비교'})",
+        f"판정 {EXP_STATUS.get(row.get('status'), row.get('status'))}",
+    ]
+    for k, label in (("a", "기존 값 쪽 시간당"), ("b", "새 값 쪽 시간당"), ("before", "수정 전"), ("after", "수정 후"),
+                     ("effect", "차이"), ("se", "표준오차"), ("n_a", "기존 쪽 판매 수"), ("n_b", "새 쪽 판매 수"),
+                     ("hours", "비교 시간")):
+        if _num(v.get(k)):
+            parts.append(f"{label} {round(v[k], 3) if abs(v[k]) < 100 else round(v[k])}")
+    return parts
+
+
 def sentence(row, login=""):
     """[(agent, kind, sentence), ...] for a row worth storing, else None.
 
@@ -158,6 +176,8 @@ def sentence(row, login=""):
         parts = (_reflection_text if kind == "reflection" else _version_text)(row)
     elif kind == "harness_edit" and target in AGENTS:
         agents, parts = ("operator",), _edit_text(row)
+    elif kind == "experiment_end" and row.get("status") in EXP_STATUS:
+        agents, parts = ("operator",), _experiment_text(row)
     else:
         return None
     if not parts:
@@ -220,7 +240,7 @@ def run_once(
     by_agent, new_cur = {}, dict(cur)
 
     def keep(row):
-        out = [s for s in sentence(row, login) or () if s[1] in kinds.get(s[0], set())]
+        out = [s for s in sentence(row, login) or () if s[1] in ALWAYS_STORE or s[1] in kinds.get(s[0], set())]
         return out or None
 
     for src, needles in SOURCES:

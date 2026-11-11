@@ -542,7 +542,7 @@ TOOLS = {
 }
 
 
-def call(name, agent, root, **kwargs):
+def call(name, agent, root, /, **kwargs):
     """Run a tool for an agent. Unknown tool, wrong agent or bad arguments come back as an observation."""
     if name not in TOOLS:
         return f"도구 없음: {name}. 쓸 수 있는 도구: {', '.join(k for k, v in TOOLS.items() if agent in v[1])}"
