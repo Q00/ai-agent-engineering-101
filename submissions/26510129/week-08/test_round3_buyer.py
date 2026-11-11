@@ -55,7 +55,8 @@ class Round3BuyerContextTest(unittest.TestCase):
     def test_food_unit_grade_decides_before_negotiating(self):
         self.assertTrue(market_buyer.food_unit_ok("A", 600, 360))     # 480 h at least
         self.assertFalse(market_buyer.food_unit_ok("B", 600, 360))    # 270 h at least
-        self.assertFalse(market_buyer.food_unit_ok("C", 600, 1))
+        self.assertFalse(market_buyer.food_unit_ok("C", 600, 200))    # 132 h typical: not for a 200 h order
+        self.assertTrue(market_buyer.food_unit_ok("C", 600, 100))     # but a 100 h order is worth a try (the kit checks)
         self.assertTrue(market_buyer.food_unit_ok(None, 600, 360))    # unknown grade: let the kit's check decide
         self.assertTrue(market_buyer.food_unit_ok("C", None, 360))
         task = {"status": {"message": {"metadata": {"ask": 10}, "parts": [{"text": "kimchi (F1), certified grade B: asking 10."}]}}}
@@ -149,6 +150,11 @@ class Round3BuyerContextTest(unittest.TestCase):
         guardian = buyer_policy.MandateGuardian(50000, 9660, 12530)
         self.assertEqual({"action": "offer", "decision": "approved", "price": 12530}, guardian.authorize(12530, 1, 12530))
         self.assertEqual("reference_substitute", guardian.authorize(12530, 1, 13438)["decision"])   # not the ask: still sealed
+
+    def test_the_opener_is_no_lower_than_the_shops_usual_settle(self):
+        self.assertEqual(51, market_buyer.opening_offer(72, 51, 0.25))                 # reference below ask x 0.75
+        self.assertEqual(55, market_buyer.opening_offer(72, 51, 0.25, at_least=55))    # the shop settles at 0.55 of list
+        self.assertEqual(60, market_buyer.opening_offer(60, 51, 0.25, at_least=65))    # never over the ask
 
     def test_an_ask_under_the_quick_take_share_is_paid_without_bargaining(self):
         self.assertEqual((170000, "the ask"), market_buyer.quick_offer(170000, None, 150000, 250000, quick_take=176000))

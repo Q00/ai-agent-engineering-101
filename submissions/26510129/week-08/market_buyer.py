@@ -84,7 +84,10 @@ def bargain_record(name, mem, discount=0.15):
     return ", ".join(parts) + ". " + rule
 
 
-GRADE_LIFE = {"A": 0.80, "B": 0.45, "C": 0.0}   # share of its shelf life a food unit of that grade still has, at least (agent.md)
+GRADE_LIFE = {"A": 0.80, "B": 0.45, "C": 0.22}   # share of its shelf life a food unit of that grade still has: A and B at least
+# (agent.md), C a typical value (under 45%; 11-11 17:50: every C food unit was refused before a word, while the top buyers
+# buy the cheap B/C units - 724 of my visits today ended "stale", asks at a median 0.63 of list; the kit's checkout check
+# of the real hours left is the backstop, a refusal there costs one visit)
 
 
 def unit_grade(t):
@@ -219,16 +222,19 @@ def order_goes_on(outcome, no_offer, bargained, attempt, shops_per_order=SHOPS_P
     return outcome in ("closed", "walked_away") and bargained < shops_per_order
 
 
-def opening_offer(ask, reference, discount):
-    """The first offer is code, not the model: the lower of my reference and the ask less the discount. 11-10: told
-    to open 20% below, the model opened at 88% of the ask and deals closed at 92%; others pay 5% less at the same
-    shop for the same SKU."""
+def opening_offer(ask, reference, discount, at_least=None):
+    """The first offer is code, not the model: the lower of my reference and the ask less the discount, but no lower
+    than `at_least` (the shop's own median settle on the ledger x list, 11-11 17:50: a shop that settles at 0.55 of
+    list answered my 0.51 opener with a 0.69 counter, which I then paid; the top buyers pay it 0.54). 11-10: told to
+    open 20% below, the model opened at 88% of the ask and deals closed at 92%."""
     if not isinstance(ask, (int, float)) or ask <= 0:
         return None
     price = ask * (1 - discount)
     if reference:
         price = min(price, reference)
-    return max(1, int(round(price)))
+    if isinstance(at_least, (int, float)) and at_least > 0:
+        price = max(price, at_least)
+    return max(1, int(round(min(price, ask))))
 
 
 def capped_step(previous, proposal, cap=STEP_CAP):
@@ -297,7 +303,7 @@ def steered(t):
 
 
 def negotiate(url, item, budget, reference, record="", request=None, value_cap=None, food_need=None, shelf_hours=None,
-              grades=(), slack=1.05, discount=0.20, pay_cap=None, quick_take=None):
+              grades=(), slack=1.05, discount=0.20, pay_cap=None, quick_take=None, open_at_least=None):
     """A sealed-budget loop: the LLM proposes, then the mandate guardian authorizes.
     `value_cap` is the SKU's list price (what a parsed ask is checked against); `pay_cap` (PAY_CAP_RATIO of it) is what
     the guardian never pays above, whatever the budget; an ask at or under `quick_take` is paid at once.
@@ -337,7 +343,9 @@ def negotiate(url, item, budget, reference, record="", request=None, value_cap=N
         unfit = f"grade {grade} unit; the order accepts {'/'.join(grades)}"
     elif food_need and hours_left is not None and hours_left < food_need:
         unfit = f"the shop says {hours_left} h of shelf life left; the order needs {food_need} h"
-    elif food_need and grade and not food_unit_ok(grade, shelf_hours, food_need):
+    elif food_need and hours_left is None and grade and not food_unit_ok(grade, shelf_hours, food_need):
+        # 17:50: hours the shop states settle it; the grade estimate is only for a shop that names none (a stated
+        # 155 h on a grade C unit used to be refused by the grade rule after passing the hours rule)
         unfit = f"grade {grade} unit of a {shelf_hours} h product cannot last the order's {food_need} h"
     if unfit:
         print(f"[buyer] {unfit}; not negotiating", flush=True)
@@ -384,9 +392,10 @@ def negotiate(url, item, budget, reference, record="", request=None, value_cap=N
             d = {"action": "offer", "price": quick}
             buyer_policy.emit("buyer_quick_offer", item=item, task=tid[:8], round=round_index + 1, why=why, price=quick,
                               reference=reference)
-        elif not offers and opening_offer(ask, reference, discount):
-            d = {"action": "offer", "price": opening_offer(ask, reference, discount)}   # the opener is code (no model call)
-            print(f"[buyer] opening at {d['price']} ({discount:.0%} under the ask {ask}, capped at my reference {reference})", flush=True)
+        elif not offers and opening_offer(ask, reference, discount, open_at_least):
+            d = {"action": "offer", "price": opening_offer(ask, reference, discount, open_at_least)}   # the opener is code (no model call)
+            print(f"[buyer] opening at {d['price']} ({discount:.0%} under the ask {ask}, capped at my reference {reference}, "
+                  f"at least the shop's usual {open_at_least})", flush=True)
         else:
             d = harness.decide(buyer_policy.NEGOTIATOR_SYSTEM,
                                buyer_policy.situation(f"Item: {item}. Personal reference price: {reference}. {record}",
@@ -631,12 +640,15 @@ def main():
         value_cap = catalog.get(wanted, {}).get("list_price")
         pay_cap = int(value_cap * PAY_CAP_RATIO) if isinstance(value_cap, (int, float)) and value_cap > 0 else None
         quick_take = int(value_cap * QUICK_TAKE_RATIO) if pay_cap else None
+        level = pick.get("_price_ratio")   # what this shop's settles cost against list on the ledger (24 h)
+        open_at_least = int(level * value_cap) if pay_cap and isinstance(level, (int, float)) and level > 0 else None
         reference = sku_reference(wanted, catalog, category_ref, stats)
         try:
             outcome, agreed, receipt, log, manip, info = negotiate(
                 pick["url"], wanted, a.budget, reference,
                 bargain_record(pick["name"], mem, discount), request, value_cap,
-                food_need, catalog.get(wanted, {}).get("shelf_hours"), grades, slack, discount, pay_cap, quick_take
+                food_need, catalog.get(wanted, {}).get("shelf_hours"), grades, slack, discount, pay_cap, quick_take,
+                open_at_least
             )
         except Exception as e:   # httpx errors, a card that is not JSON, a task without the fields we expect
             print(f"[buyer] shop unreachable: {type(e).__name__}: {str(e)[:120]}", flush=True)
