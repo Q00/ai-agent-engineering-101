@@ -1,0 +1,1215 @@
+--- a/r3/decision_view.py
++++ b/r3/decision_view.py
+@@ -0,0 +1,53 @@
++"""Private, request-scoped reuse of historical reads; never caches payments.
++
++Factories return internal read-only facts. Nothing persists across decisions.
++Current inventory, reservations, balances and checkout state bypass this view.
++"""
++from contextlib import contextmanager
++from contextvars import ContextVar
++from functools import wraps
++import inspect
++
++_ACTIVE = ContextVar('r3_decision_view', default=None)
++
++
++@contextmanager
++def frame(journal):
++    current = _ACTIVE.get()
++    if current is not None and current[0] is journal:
++        yield
++        return
++    token = _ACTIVE.set((journal, {}))
++    try:
++        yield
++    finally:
++        _ACTIVE.reset(token)
++
++
++def fact(journal, key, factory):
++    current = _ACTIVE.get()
++    if current is None or current[0] is not journal:
++        return factory()
++    cache = current[1]
++    if key not in cache:
++        cache[key] = factory()
++    return cache[key]
++
++
++def history(journal, kind, limit=500):
++    current = _ACTIVE.get()
++    if current is not None and current[0] is journal:
++        for key, rows in current[1].items():
++            if isinstance(key, tuple) and len(key) == 3 and key[:2] == ('history', kind) and key[2] >= limit:
++                return rows[:limit]
++    return fact(journal, ('history', kind, limit), lambda: journal.events(kind, limit))
++
++
++def decision(function):
++    index = list(inspect.signature(function).parameters).index('journal')
++    @wraps(function)
++    def wrapped(*args, **kwargs):
++        journal = args[index] if len(args) > index else kwargs['journal']
++        with frame(journal):
++            return function(*args, **kwargs)
++    return wrapped
+--- a/r3/meta.py
++++ b/r3/meta.py
+@@ -134,9 +134,10 @@
+ def quote_completion(journal, sku, price, now=None, grade=None, warranty=None):
+     """Observe paid task outcomes and matured uncompleted opportunities, not imagined rejections."""
+     now = time.time() if now is None else now
+-    paid = {x.get("task") for x in journal.events("shop_settled", 10000)}
++    from .decision_view import fact, history
++    paid = fact(journal, 'completion-paid-tasks', lambda: {x.get('task') for x in history(journal, 'shop_settled', 10000)})
+     comparable = {}
+-    for e in journal.events("shop_quote", 10000):
++    for e in history(journal, 'shop_quote', 10000):
+         if grade is not None and e.get('grade')!=grade:continue
+         if warranty is not None and e.get('warranty_hours')!=warranty:continue
+         if e.get("sku") == sku and abs(e["price"] - price) <= max(1, price * .1):
+--- a/r3/economy.py
++++ b/r3/economy.py
+@@ -5,6 +5,7 @@
+ import time
+ from .state import warranty_hours
+ from .finance import planning_hours, reserve_days, surge_factor, supply_bound, sale_delta
++from .decision_view import decision, history
+ 
+ 
+ def remaining(unit, now=None):
+@@ -38,14 +39,15 @@
+ 
+ 
+ def shop_statistics(journal, sku, category=None):
+-    visits = [e for e in journal.events("shop_opportunity", 10000) if e.get("sku") == sku]
+-    paid = [e for e in journal.events("shop_settled", 10000) if e.get("sku") == sku]
++    visits = [e for e in history(journal, 'shop_opportunity', 10000) if e.get('sku') == sku]
++    paid = [e for e in history(journal, 'shop_settled', 10000) if e.get('sku') == sku]
+     return {"opportunities": len(visits), "settled": len(paid),
+             "settlement_rate": (len(paid) + 1) / (len(visits) + 2),
+             "prices": [e["price"] for e in paid[:20]],
+             "source": "own observed opportunities, with a disclosed Beta(1,1) rate prior"}
+ 
+ 
++@decision
+ def shop_candidates(unit, inv, catalog, journal, config, *, offer=None, previous_ask=None, now=None,
+                     customer_memory=None, _warranty_variant=False):
+     now = time.time() if now is None else now
+@@ -171,6 +173,7 @@
+     return result
+ 
+ 
++@decision
+ def buyer_candidates(order, shops, catalog, journal, config=None):
+     from .buyer_scoring import state,terms_delta,blocked_units
+     from .state import policy
+@@ -179,8 +182,17 @@
+     from .market_memory import market_book
+     now = time.time()
+     book = market_book(journal, catalog, now)
+-    past = journal.events("purchase", 10000)
+-    failures = journal.events("attempt", 2000)
++    past = history(journal, 'purchase', 10000)
++    failures = history(journal, 'attempt', 2000)
++    by_route, by_identity, failed_routes = {}, {}, {}
++    for position, row in enumerate(past):
++        if 0 <= now - row.get('paid_at', row['_ts']) <= 21600:
++            by_route.setdefault((row.get('shop'), row.get('sku')), {})[position] = row
++            if row.get('shop_identity'):
++                by_identity.setdefault((row['shop_identity'], row.get('sku')), {})[position] = row
++    for row in failures:
++        if not row.get('success') and 0 <= now - row['_ts'] <= 21600 and row.get('kind') not in {'model_error', 'local_error'}:
++            failed_routes.setdefault((row.get('shop'), row.get('sku')), []).append(row)
+     result = []
+     allowed = set(order.get("acceptable") or [])
+     registry = journal.snapshot("registry.json", {})
+@@ -203,11 +215,11 @@
+                     ((config or {}).get('checkout_buffer_seconds',30)/3600 if (config or {}).get('buyer_throughput_enabled') else 0)):
+                 continue
+             counterpart_key = registry.get(shop["url"], {}).get("pubkey")
+-            own = [x for x in past if 0 <= now - x.get('paid_at', x['_ts']) <= 21600 and (x.get("shop") == shop["url"] or
+-                   counterpart_key and x.get("shop_identity") == counterpart_key) and x.get("sku") == sku]
+-            failed = [x for x in failures if x.get("shop") == shop["url"] and not x.get("success")
+-                      and x.get('sku') == sku and 0 <= now - x['_ts'] <= 21600
+-                      and x.get("kind") not in {"model_error", "local_error"}]
++            own_rows = dict(by_route.get((shop['url'], sku), {}))
++            if counterpart_key:
++                own_rows.update(by_identity.get((counterpart_key, sku), {}))
++            own = [own_rows[position] for position in sorted(own_rows)]
++            failed = failed_routes.get((shop['url'], sku), [])
+             if (config or {}).get('buyer_championship_enabled'):
+                 failed=[x for x in failed if x.get('kind')=='no_agreement' and
+                         (product.get('kind')!='food' or
+--- a/r3/forum.py
++++ b/r3/forum.py
+@@ -72,8 +72,9 @@
+ 
+ def shop_hint(journal, name, sku, now=None):
+     now = time.time() if now is None else now
++    from .decision_view import history
+     return any(r['role'] == 'shop' and r['author'] == name and sku in r['skus'] and
+-               0 <= now - r['_ts'] < 1800 for r in journal.events('forum_observation', MAX_OBSERVATIONS))
++               0 <= now - r['_ts'] < 1800 for r in history(journal, 'forum_observation', MAX_OBSERVATIONS))
+ 
+ 
+ def queue_wanted(journal, order, now=None):
+--- a/r3/buyer_scoring.py
++++ b/r3/buyer_scoring.py
+@@ -13,6 +13,11 @@
+ 
+ 
+ def state(journal,config):
++    from .decision_view import fact
++    return dict(fact(journal, ('buyer-state', bool(config.get('buyer_patch34_enabled')), config.get('buyer_forum_metric')), lambda: _state(journal, config)))
++
++
++def _state(journal,config):
+     board=journal.snapshot('board.json',{})
+     own=next((r for r in board.get('buyers',[]) if r.get('name')=='seochanit'),{})
+     rules=journal.get('market_rules',{})
+--- a/r3/buyer_routes.py
++++ b/r3/buyer_routes.py
+@@ -1,20 +1,21 @@
+ """Route by observed terms, recent technical reliability and own settled history."""
+ import time
++from .decision_view import history
+ from .buyer_scoring import contribution,terms_delta
+ 
+ 
+ def context(journal,now=None):
+     now=time.time() if now is None else now
+     since=max(now-900,journal.get('buyer_revision_epoch',0));errors={}
+-    for e in journal.events('attempt',1500):
++    for e in history(journal,'attempt',1500):
+         if not since<=e['_ts']<=now:continue
+         if e.get('kind') not in ('rfq_failed','ReadTimeout','HTTPStatusError','ConnectError') and e.get('reason')!='ambiguous_ask':continue
+         shop=e.get('shop')
+         if shop:errors[shop]=errors.get(shop,0)+1
+-    paid={(p.get('order'),p.get('shop')) for p in journal.events('purchase',2000)
++    paid={(p.get('order'),p.get('shop')) for p in history(journal,'purchase',2000)
+           if 0<=now-p.get('paid_at',p['_ts'])<=1800}
+     proofs={}
+-    for e in journal.events('agreement',3000):
++    for e in history(journal,'agreement',3000):
+         if (e.get('order'),e.get('shop')) in paid:
+             rows=proofs.setdefault(e['shop'],[])
+             if e.get('task') and e['task'] not in rows and len(rows)<3:rows.append(e['task'])
+--- a/r3/buyer_execution.py
++++ b/r3/buyer_execution.py
+@@ -6,12 +6,13 @@
+ import statistics
+ import time
+ from .buyer_scoring import contribution
++from .decision_view import history
+ 
+ 
+ def route_context(journal,now=None,order=None):
+     now=time.time() if now is None else now;start=now-3600
+     visits=defaultdict(dict);latency=defaultdict(list)
+-    for event in journal.events('attempt',2000):
++    for event in history(journal,'attempt',2000):
+         if not start<=event['_ts']<=now:continue
+         if not event.get('shop') or not event.get('sku') or not event.get('order'):continue
+         if (order or {}).get('kind')=='food' and event.get('use_within_hours')!=order.get('use_within_hours',0):continue
+@@ -20,18 +21,18 @@
+             visits[key].setdefault(oid,False)
+         seconds=event.get('seconds')
+         if type(seconds) in (int,float) and 0<seconds<120:latency[event['shop']].append(seconds)
+-    for event in journal.events('purchase',2000):
++    for event in history(journal,'purchase',2000):
+         if not start<=event.get('paid_at',event['_ts'])<=now:continue
+         if (order or {}).get('kind')=='food':
+             expiry=event.get('expires_at');paid_at=event.get('paid_at',event['_ts'])
+             if type(expiry) not in (int,float) or expiry-paid_at<(order.get('use_within_hours',0)*3600+30):continue
+         if event.get('shop') and event.get('sku') and event.get('order'):
+             visits[(event['shop'],event['sku'])][event['order']]=True
+-    for event in journal.events('buyer_quote_latency',1000):
++    for event in history(journal,'buyer_quote_latency',1000):
+         if start<=event['_ts']<=now:latency[event['shop']].append(event['seconds'])
+-    paid={r['order']:r for r in journal.events('purchase',2000) if start<=r.get('paid_at',r['_ts'])<=now}
++    paid={r['order']:r for r in history(journal,'purchase',2000) if start<=r.get('paid_at',r['_ts'])<=now}
+     checkout=defaultdict(list)
+-    for row in journal.events('agreement',3000):
++    for row in history(journal,'agreement',3000):
+         purchase=paid.get(row.get('order'))
+         if purchase and purchase.get('shop')==row.get('shop'):
+             seconds=purchase.get('paid_at',purchase['_ts'])-row['_ts']
+--- a/r3/adapter.py
++++ b/r3/adapter.py
+@@ -13,7 +13,8 @@
+ 
+ 
+ def load_kit():
+-    source = ROOT.parents[2] / "scripts" / "market_kit.py"
++    source = next((parent / 'scripts' / 'market_kit.py' for parent in ROOT.parents
++                   if (parent / 'scripts' / 'market_kit.py').is_file()), ROOT.parents[2] / 'scripts' / 'market_kit.py')
+     spec = importlib.util.spec_from_file_location("r3_course_kit", source)
+     module = importlib.util.module_from_spec(spec)
+     spec.loader.exec_module(module)
+@@ -25,11 +26,32 @@
+ def install(kit, journal=None, config=None):
+     j = journal or Journal()
+     cfg = config or policy()
++    from .autonomy import BackgroundLane
++    analytics_lane = BackgroundLane('market-analysis-v14')
++    publication_lane = BackgroundLane('market-publication-v14')
+     original_accept = kit.check_accept
+     original_call = kit.Market.call
+     original_order = kit.handle_order
+     original_news = kit.broken_news
+     original_outbox = kit.outbox
++    original_run_buyer = kit.run_buyer
++    buyer_bridge = None
++    if cfg.get('buyer_worker_enabled'):
++        from .worker_bridge import BuyerBridge
++        buyer_bridge = BuyerBridge(ROOT, kit.stop, j)
++
++    def run_buyer(command, directory):
++        if buyer_bridge is None or 'market_buyer.py' not in command:
++            return original_run_buyer(command, directory)
++        order = j.snapshot('order.json', {})
++        shops = j.snapshot('shops.json', [])
++        if not order.get('order') or not order.get('acceptable'):
++            return original_run_buyer(command, directory)
++        timeout = min(kit.BUYER_TIMEOUT, max(.1, order.get('expires', time.time()) - time.time() - 5))
++        lines = buyer_bridge.run(order, shops, timeout)
++        for line in lines:
++            kit.log('[buyer] ' + line)
++        return lines
+     BaseShop = kit.AcpShop
+ 
+     def strict_accept(order, co, accept):
+@@ -177,10 +199,42 @@
+         return original_order(order, *args, **kwargs)
+ 
+     def news(market, md, state):
+-        original_news(market, md, state)
++        if not cfg.get('autonomy_v14_enabled'):
++            original_news(market, md, state)
++        else:
++            # Bounded catch-up: leave the cursor for the next tick, never claim
++            # the full feed is current just because this slice ran out of time.
++            me = market.joined.get('buyer', (None,))[0]
++            if 'ledger_seq' not in state:
++                response = market.c.get(market.base + '/api/ledger', params={'after': -1}, timeout=2)
++                rows = response.json() if response.status_code == 200 else []
++                state['ledger_seq'] = rows[-1]['seq'] if rows else 0
++            until = time.monotonic() + 5
++            for _ in range(4):
++                if time.monotonic() >= until:
++                    break
++                response = market.c.get(market.base + '/api/ledger', params={'after': state['ledger_seq']}, timeout=2)
++                rows = response.json() if response.status_code == 200 else []
++                if not rows:
++                    break
++                # Write the append-only news before advancing its cursor.
++                for event in rows:
++                    data = event.get('data', {})
++                    if event.get('kind') == 'broken' and data.get('buyer') == me:
++                        note = {'name': kit.CATALOG.get(data.get('item'), {}).get('name') or data.get('item'),
++                                'broke_at': int(event['ts'])}
++                        with (md / 'broken.jsonl').open('a', encoding='utf-8') as stream:
++                            stream.write(json.dumps(note, ensure_ascii=False) + '\n')
++                state['ledger_seq'] = rows[-1]['seq']
++                if len(rows) < 500:
++                    break
+         seq = j.get("public_ledger_seq", -500)
++        feed_until = time.monotonic() + 5
+         for _ in range(4):
+-            r = market.c.get(f"{market.base}/api/ledger", params={"after": seq})
++            if cfg.get('autonomy_v14_enabled') and time.monotonic() >= feed_until:
++                break
++            r = market.c.get(f"{market.base}/api/ledger", params={"after": seq},
++                             **({'timeout': 2} if cfg.get('autonomy_v14_enabled') else {}))
+             if r.status_code != 200:
+                 break
+             rows = r.json()
+@@ -201,10 +255,14 @@
+             if len(rows) < 500:
+                 j.put('public_feed_caught_up_at', time.time())
+                 break
+-        j.reconcile()
+-
+-    def outbox(market, md):
+-        original_outbox(market, md)
++        if not cfg.get('autonomy_v14_enabled'):
++            j.reconcile()
++
++    def analytical_outbox(market, md):
++        if not cfg.get('autonomy_v14_enabled'):
++            original_outbox(market, md)
++        else:
++            j.reconcile()
+         if time.time() - j.get("board_checked_at", 0) > 60:
+             with contextlib.suppress(Exception):
+                 response = market.c.get(f"{market.base}/api/board", timeout=5)
+@@ -239,6 +297,22 @@
+                 context(j, j.snapshot('catalog.json', {}))
+             except Exception as exc:
+                 j.add('merchant_context_error', {'error_type': type(exc).__name__})
++        if cfg.get('autonomy_v14_enabled'):
++            try:
++                from .buyer_quality import cohorts
++                from .risk import shop_refund_risk
++                from .autonomy import update as autonomy_update
++                cohorts(j)
++                shop_refund_risk(j, 'A', 3, cfg)
++                autonomy_update(j, cfg)
++            except Exception as exc:
++                j.add('autonomy_v14_error', {'error_type': type(exc).__name__})
++            return
++        publish_outbox(market, md, legacy=True)
++
++    def publish_outbox(market, md, legacy=False):
++        if not legacy:
++            original_outbox(market, md)
+         from .forum import schedule, deliver
+         try:
+             schedule(j, cfg)
+@@ -247,11 +321,18 @@
+         except Exception as exc:
+             j.add('forum_error', {'error_type': type(exc).__name__})
+ 
++    def outbox(market, md):
++        if not cfg.get('autonomy_v14_enabled'):
++            return analytical_outbox(market, md)
++        analytics_lane.submit(lambda: analytical_outbox(market, md))
++        publication_lane.submit(lambda: publish_outbox(market, md))
++
+     kit.check_accept = strict_accept
+     kit.AcpShop = StrictShop
+     kit.Market.call = market_call
+     kit.handle_order = order_handler
+     kit.broken_news = news
+     kit.outbox = outbox
++    kit.run_buyer = run_buyer
+     os.environ["R3_STRICT_ADAPTER"] = "1"
+     return kit
+--- a/r3/autonomy.py
++++ b/r3/autonomy.py
+@@ -0,0 +1,264 @@
++"""Event-driven analytical roles and typed skill composition, with no LLM calls.
++
++Only trusted primitives may be composed. New trade rules remain proposals until
++independent economic evidence exists; official rules and money guards are fixed.
++"""
++from collections import Counter
++import hashlib
++import json
++import math
++import threading
++import time
++
++from .state import identity, atomic_json
++
++REVISION = 'autonomy-v14-fast-facts-1'
++ROLES = {
++    'shop_main': 'fresh inventory, reservations, quote and checkout guards',
++    'buyer_main': 'bounded execution, receipt verification and one payment path',
++    'director': 'deduplicate issues, bound work and retain prior valid context',
++    'need_assessor': 'distinguish missing data, repeated failure and missing capability',
++    'skill_router': 'select applicable, versioned trusted primitive plans or none',
++    'context_curator': 'typed facts with provenance, version and expiry; no raw chats',
++    'market_portfolio': 'external demand, stock exposure, cash and inventory proposals',
++    'buyer_path': 'feasible contracts, technical failures and bounded recovery',
++    'quality_reputation': 'mature unit quality and account-linked reviews',
++    'tool_builder': 'compose shallow analytical skills from trusted primitives',
++    'evaluator': 'check data contracts and evidence; never self-approve trade rules',
++    'release_controller': 'publish validated facts; defer unverified trade changes',
++}
++PRIMITIVES = {'measure', 'diagnose', 'propose', 'validate_facts'}
++ISSUES = {'stock_coverage', 'buyer_price_gap', 'buyer_transport', 'buyer_preparation',
++          'shop_rating_holdout', 'feed_stale', 'buyer_protocol'}
++
++
++class BackgroundLane:
++    """One daemon worker and at most one job; repeated ticks are coalesced."""
++    def __init__(self, name):
++        self.name, self.busy, self.coalesced, self.last_error = name, False, 0, None
++        self.lock = threading.Lock()
++
++    def submit(self, function):
++        with self.lock:
++            if self.busy:
++                self.coalesced += 1
++                return False
++            self.busy = True
++        def run():
++            try:
++                self.last_error = None
++                function()
++            except Exception as exc:
++                self.last_error = type(exc).__name__
++            finally:
++                with self.lock:
++                    self.busy = False
++        threading.Thread(target=run, name=self.name, daemon=True).start()
++        return True
++
++
++def compile_skill(issue, rules_hash):
++    if issue not in ISSUES:
++        raise ValueError('unsupported_skill_issue')
++    steps = (['measure', 'diagnose', 'validate_facts'] if issue in {'feed_stale', 'shop_rating_holdout'}
++             else ['measure', 'diagnose', 'propose', 'validate_facts'])
++    skill = {'issue': issue, 'steps': steps, 'rules_hash': rules_hash,
++             'effects': 'analysis_only', 'max_steps': 4, 'revision': REVISION}
++    skill['id'] = identity(skill)
++    return skill
++
++
++def validate_skill(skill):
++    if skill.get('issue') not in ISSUES or skill.get('effects') != 'analysis_only':
++        return False
++    steps = skill.get('steps', [])
++    return (1 <= len(steps) <= 4 and all(s in PRIMITIVES for s in steps)
++            and steps[-1] == 'validate_facts' and skill.get('revision') == REVISION)
++
++
++def rule_effect(config, parameter, values):
++    """Reject changes hidden by higher-priority rules before any economic trial."""
++    from .shop_growth import target_stock, inventory_limit
++    signatures = []
++    for value in values:
++        cfg = dict(config, **{parameter: value})
++        if parameter == 'inventory_target_units':
++            signature = inventory_limit(cfg)
++        elif parameter == 'shop_stock_service_level':
++            if type(value) not in (int, float) or not .8 <= value <= .99:
++                return {'status': 'rejected_out_of_bounds'}
++            signature = [target_stock(rate, paid, cfg) for rate in (1, 5, 10, 20) for paid in (0, 3)]
++        else:
++            return {'status': 'requires_domain_evaluation'}
++        signatures.append(signature)
++    return {'status': 'no_effect' if len({identity(s) for s in signatures}) < 2 else 'behavior_changes',
++            'signatures': signatures, 'economic_superiority_verified': False}
++
++
++def run_skill(skill, facts, config=None):
++    """Interpret a generated data plan; there is no eval/import/shell capability."""
++    if not validate_skill(skill):
++        raise ValueError('invalid_skill_plan')
++    result = {'skill_id': skill['id'], 'issue': skill['issue'], 'completed_steps': []}
++    for step in skill['steps']:
++        if step == 'measure':
++            result['fact_fields'] = sorted(facts)
++        elif step == 'diagnose':
++            result['diagnosis'] = skill['issue']
++        elif step == 'propose':
++            parameter, values = {
++                'stock_coverage': ('shop_stock_service_level', [.85, .9, .95]),
++                'buyer_price_gap': ('buyer_contract_gap_power', [1, 2, 3]),
++                'buyer_transport': ('buyer_rfq_goods_seconds', [3, 4, 5]),
++            }.get(skill['issue'], (None, []))
++            result['proposal'] = {'parameter': parameter, 'candidate_values': values,
++                'status': 'shadow_requires_independent_validation', 'execution_allowed': False}
++            if parameter and config:
++                result['proposal']['structural_check'] = rule_effect(config, parameter, values)
++        elif step == 'validate_facts':
++            result['analysis_contract_valid'] = all(type(v) in (int, float) and math.isfinite(v) for v in facts.values())
++        result['completed_steps'].append(step)
++    return result
++
++
++def policy_version(config):
++    return identity({k: config.get(k) for k in ('version', 'shop_strategy_revision', 'buyer_strategy_revision',
++                                             'execution_revision', 'autonomy_v14_enabled')})
++
++
++def valid_packet(packet, rules_hash, config, now=None):
++    try:
++        return _valid_packet(packet, rules_hash, config, now)
++    except (TypeError, ValueError, KeyError, OverflowError):
++        return False
++
++
++def _valid_packet(packet, rules_hash, config, now=None):
++    now = time.time() if now is None else now
++    if not isinstance(packet, dict) or set(packet) != {'schema', 'as_of', 'expires_at', 'rules_hash',
++            'policy_version', 'data_version', 'evidence_ids', 'fact_or_hypothesis', 'facts', 'issues', 'skill_ids', 'source_as_of'}:
++        return False
++    if (packet['schema'] != REVISION or packet['rules_hash'] != rules_hash or not rules_hash
++            or packet['policy_version'] != policy_version(config) or packet['fact_or_hypothesis'] != 'observed_facts'
++            or not 0 <= now - packet['as_of'] <= 180 or not now < packet['expires_at'] <= packet['as_of'] + 180):
++        return False
++    if set(packet['facts']) != {'stock_units', 'stock_skus', 'food_quotes', 'goods_quotes', 'goods_above_cap',
++                                'preparation_p95', 'technical_failures', 'protocol_failures', 'verified_review_accounts'}:
++        return False
++    values = packet['facts'].values()
++    return (all(type(x) in (int, float) and math.isfinite(x) and x >= 0 for x in values)
++            and packet['facts']['stock_skus'] <= packet['facts']['stock_units']
++            and packet['facts']['goods_above_cap'] <= packet['facts']['goods_quotes']
++            and all(issue in ISSUES for issue in packet['issues'])
++            and len(packet['issues']) <= 8 and len(packet['skill_ids']) <= 8
++            and type(packet['data_version']) is int and packet['data_version'] >= 0
++            and 0 < len(packet['evidence_ids']) <= 8
++            and all(isinstance(x, str) and len(x) <= 160 for x in packet['evidence_ids'])
++            and set(packet['source_as_of']) == {'inventory', 'framework', 'quality', 'feed'}
++            and all(x is None or type(x) in (int, float) and math.isfinite(x) and x <= now + 5
++                    for x in packet['source_as_of'].values())
++            and len(json.dumps(packet, ensure_ascii=False).encode()) <= 3500)
++
++
++def context(journal, config, now=None, role=None, rules_hash=None):
++    if rules_hash is None:
++        rules = journal.get('market_rules', {})
++        rules_hash = rules.get('sha256') if isinstance(rules, dict) else None
++    packet = journal.snapshot('autonomy-v14-context.json', {})
++    if not valid_packet(packet, rules_hash, config, now):
++        return None
++    fields = ({'stock_units', 'stock_skus', 'verified_review_accounts'} if role == 'shop' else
++              {'food_quotes', 'goods_quotes', 'goods_above_cap', 'technical_failures', 'protocol_failures', 'preparation_p95'})
++    issues = [issue for issue in packet['issues'] if issue == 'feed_stale' or
++              (issue.startswith('shop_') or issue.startswith('stock_')) == (role == 'shop')]
++    return {k: v for k, v in dict(packet, facts={k: v for k, v in packet['facts'].items() if k in fields},
++                                 issues=issues).items() if k != 'skill_ids'}
++
++
++def update(journal, config, now=None):
++    now = time.time() if now is None else now
++    previous = journal.get('autonomy-v14:state', {})
++    if 0 <= now - previous.get('at', 0) < 60:
++        return previous
++    rules = journal.get('market_rules', {})
++    rule_hash = rules.get('sha256')
++    if not rule_hash or rules.get('compatible') is not True:
++        return {'status': 'deferred_rules_unverified'}
++    feed = journal.get('public_feed_caught_up_at', 0)
++    feed_current = 0 <= now - feed <= 180
++    inventory = journal.snapshot('inventory.json', {})
++    framework = journal.get('framework-plan', {})
++    quality = journal.get('shop-rating-shadow', {})
++    preparations = [r for r in journal.events('buyer_preparation', 200) if 0 <= now - r['_ts'] <= 3600]
++    attempts = [r for r in journal.events('attempt', 1000) if 0 <= now - r['_ts'] <= 3600]
++    durations = sorted(r['seconds'] for r in preparations if type(r.get('seconds')) in (int, float) and r['seconds'] >= 0)
++    segments = framework.get('segments', {})
++    goods, food = segments.get('goods', {}), segments.get('food', {})
++    units = inventory.get('units', [])
++    pos = (len(durations) - 1) * .95 if durations else 0
++    lower = int(pos)
++    preparation_p95 = (durations[lower] + (durations[min(lower + 1, len(durations) - 1)] - durations[lower]) * (pos - lower)) if durations else 0
++    facts = {'stock_units': len(units), 'stock_skus': len({u['sku'] for u in units}),
++        'food_quotes': food.get('quotes', 0), 'goods_quotes': goods.get('quotes', 0),
++        'goods_above_cap': goods.get('above_cap', 0),
++        'preparation_p95': preparation_p95,
++        'technical_failures': sum(r.get('kind') in {'ReadTimeout', 'ConnectError', 'HTTPStatusError'} or
++            r.get('kind') == 'rfq_failed' and r.get('error_type') in {'ReadTimeout', 'ConnectError', 'HTTPStatusError'} for r in attempts),
++        'protocol_failures': sum(r.get('reason') in {'ambiguous_ask', 'quote_sku_mismatch', 'receipt_integrity_failure',
++            'conflicting_offer_terms', 'quote_grade_changed', 'quote_warranty_changed', 'certificate_unavailable'} for r in attempts),
++        'verified_review_accounts': quality.get('verified_accounts', 0)}
++    issues = []
++    if not feed_current:
++        issues.append('feed_stale')
++    if facts['stock_units'] < config.get('shop_inventory_ceiling', 180) // 2:
++        issues.append('stock_coverage')
++    if facts['goods_quotes'] >= 20 and facts['goods_above_cap'] / facts['goods_quotes'] > .8:
++        issues.append('buyer_price_gap')
++    if facts['technical_failures'] >= 5:
++        issues.append('buyer_transport')
++    if facts['protocol_failures'] >= 3:
++        issues.append('buyer_protocol')
++    if facts['preparation_p95'] > 1:
++        issues.append('buyer_preparation')
++    issues.append('shop_rating_holdout')  # No forecast becomes a confirmed rating gain.
++    library = dict(previous.get('library', {}))
++    for issue in issues:
++        skill = compile_skill(issue, rule_hash)
++        if not validate_skill(skill):
++            raise ValueError('generated_skill_failed_contract')
++        old = library.get(skill['id'], {})
++        library[skill['id']] = dict(skill, uses=old.get('uses', 0) + 1, last_used=now)
++    # Bounded active catalogue; retired definitions remain in append-only events.
++    library = dict(sorted(library.items(), key=lambda pair: pair[1]['last_used'], reverse=True)[:24])
++    selected = [row['id'] for row in library.values() if row['issue'] in issues and row['rules_hash'] == rule_hash]
++    executions = [run_skill(library[skill_id], facts, config) for skill_id in selected]
++    for execution in executions:
++        journal.add('autonomy_v14_skill_execution', execution, role='system')
++    evidence = ['snapshot:inventory.json', 'kv:framework-plan', 'kv:shop-rating-shadow']
++    evidence += [r['_event_id'] for r in (preparations[:3] + attempts[:2]) if r.get('_event_id')]
++    packet = {'schema': REVISION, 'as_of': now, 'expires_at': now + 180, 'rules_hash': rule_hash,
++        'policy_version': policy_version(config), 'data_version': journal.get('public_ledger_seq'),
++        'evidence_ids': evidence, 'fact_or_hypothesis': 'observed_facts', 'facts': facts,
++        'issues': issues, 'skill_ids': selected}
++    inventory_path = journal.md / 'inventory.json'
++    packet['source_as_of'] = {'inventory': inventory_path.stat().st_mtime if inventory_path.exists() else None,
++        'framework': framework.get('at'), 'quality': quality.get('at'), 'feed': feed or None}
++    valid = valid_packet(packet, rule_hash, config, now)
++    # These are hypotheses, never instructions Main may execute as new rules.
++    candidates = [{'issue': issue, 'status': 'shadow_requires_economic_validation',
++        'candidate_id': identity([rule_hash, issue]), 'self_approval_allowed': False}
++        for issue in issues if issue in {'stock_coverage', 'buyer_price_gap'}]
++    old_issues = set(previous.get('issues', []))
++    resolved = sorted(old_issues - set(issues))
++    result = {'at': now, 'revision': REVISION, 'status': 'published_facts' if valid and feed_current else 'deferred',
++        'issues': issues, 'library': library, 'candidates': candidates,
++        'resolved_observational_only': resolved, 'role_ids': list(ROLES),
++        'executed_skills': len(executions),
++        'paid_model_calls': 0, 'arbitrary_generated_code_enabled': False,
++        'strategy_promotion_authority': 'existing_matured_champion_challenger_evaluator'}
++    if valid and feed_current:
++        journal.put('autonomy-v14:context', packet)
++        atomic_json(journal.md / 'autonomy-v14-context.json', packet)
++    journal.put('autonomy-v14:state', result)
++    journal.add('autonomy_v14_evaluation', result, role='system')
++    return result
+--- a/r3/worker_bridge.py
++++ b/r3/worker_bridge.py
+@@ -0,0 +1,89 @@
++"""Single-flight Buyer IPC. Children negotiate; only the parent may pay."""
++import atexit
++import json
++import os
++import queue
++import subprocess
++import sys
++import threading
++import time
++import uuid
++
++
++class BuyerBridge:
++    def __init__(self, root, stop, journal):
++        self.root, self.stop, self.journal = root, stop, journal
++        self.lock = threading.Lock()
++        self.process = None
++        self.responses = queue.Queue(maxsize=2)
++        atexit.register(self.close)
++
++    def close(self):
++        process, self.process = self.process, None
++        if process is not None:
++            self.stop(process)
++
++    def start(self):
++        self.close()
++        self.responses = queue.Queue(maxsize=2)
++        responses = self.responses
++        env = dict(os.environ, R3_PERSISTENT_BUYER='1', PYTHONUTF8='1')
++        process = subprocess.Popen([sys.executable, '-u', '-m', 'r3.buyer_worker'],
++            cwd=self.root, env=env, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
++            stderr=subprocess.DEVNULL, text=True, encoding='utf-8')
++        self.process = process
++        def read():
++            try:
++                for line in process.stdout:
++                    if len(line) > 2_000_000:
++                        break
++                    try:
++                        response = json.loads(line)
++                    except ValueError:
++                        break
++                    responses.put(response, timeout=1)
++            except (OSError, queue.Full):
++                pass
++            finally:
++                try:
++                    responses.put({'error': 'worker_stream_closed'}, timeout=.1)
++                except queue.Full:
++                    pass
++        threading.Thread(target=read, name='buyer-worker-output', daemon=True).start()
++
++    def run(self, order, shops, timeout):
++        with self.lock:
++            if 'mandates' in order or 'nonce' in order:
++                raise ValueError('payment_material_must_stay_in_parent')
++            started = time.monotonic()
++            request_id = uuid.uuid4().hex
++            # Reviews/prose are not candidate inputs; keep them out of worker context.
++            routing_shops = [{key: row[key] for key in ('name', 'url', 'offers') if key in row} for row in shops]
++            body = json.dumps({'id': request_id, 'order': order, 'shops': routing_shops}, ensure_ascii=False)
++            if len(body.encode()) > 2_000_000:
++                self.journal.add('buyer_worker_error', {'order': order.get('order'),
++                    'reason': 'input_budget_exceeded', 'payment_started': False}, role='buyer')
++                return []  # Before dispatch; parent can submit one truthful failed result.
++            try:
++                if self.process is None or self.process.poll() is not None:
++                    self.start()
++                self.process.stdin.write(body + '\n')
++                self.process.stdin.flush()
++                response = self.responses.get(timeout=max(.1, timeout))
++                if not isinstance(response, dict):
++                    raise ValueError('buyer_worker_invalid_envelope')
++                if response.get('id') != request_id or response.get('order') != order.get('order'):
++                    raise ValueError('buyer_worker_response_identity_mismatch')
++                if response.get('error'):
++                    raise ValueError('buyer_worker_job_failed')
++                result = response.get('result')
++                if not isinstance(result, dict):
++                    raise ValueError('buyer_worker_invalid_result')
++                self.journal.add('buyer_worker_execution', {'order': order['order'],
++                    'seconds': time.monotonic() - started, 'request_id': request_id}, role='buyer')
++                return [json.dumps(result, ensure_ascii=False)]
++            except (OSError, ValueError, queue.Empty) as exc:
++                self.close()
++                self.journal.add('buyer_worker_error', {'order': order.get('order'),
++                    'error_type': type(exc).__name__, 'payment_started': False}, role='buyer')
++                return []  # Never accept a late/cross-order response or replay payment.
+--- a/r3/buyer_worker.py
++++ b/r3/buyer_worker.py
+@@ -0,0 +1,33 @@
++"""Long-lived, one-job-at-a-time Buyer negotiation worker; no payment keys."""
++import json
++import os
++import sys
++
++from market_buyer import buy
++from .state import Journal
++from . import contracts
++
++
++def main():
++    os.environ['R3_PERSISTENT_BUYER'] = '1'
++    journal = Journal()
++    for line in sys.stdin:
++        response = {'id': None, 'order': None}
++        try:
++            if len(line.encode()) > 2_000_000:
++                raise ValueError('input_too_large')
++            request = json.loads(line)
++            order, shops = request['order'], request['shops']
++            response.update(id=request['id'], order=order['order'])
++            if 'mandates' in order or 'nonce' in order:
++                raise ValueError('private_payment_material_not_allowed')
++            contracts._IDENTITIES.clear()
++            contracts._HISTORY.clear()
++            response['result'] = buy(order, shops, journal)
++        except Exception as exc:
++            response['error'] = type(exc).__name__
++        print(json.dumps(response, ensure_ascii=False), flush=True)
++
++
++if __name__ == '__main__':
++    main()
+--- a/r3/state.py
++++ b/r3/state.py
+@@ -189,7 +189,9 @@
+         by_name={}
+         for item in purchases:by_name.setdefault(item.get('name'),[]).append(item)
+         ambiguous_orders = set();pending=[]
+-        broken_orders = {e['order'] for e in self.events('outcome',10000) if e.get('broken')}
++        prior_outcomes = self.events('outcome',10000)
++        existing_outcome_ids = {e['_event_id'] for e in prior_outcomes}
++        broken_orders = {e['order'] for e in prior_outcomes if e.get('broken')}
+         for news in self.events("broken_news"):
+             possible = [e for e in by_name.get(news.get('name'),[])
+                         if 0 <= news.get("broke_at", 0) - e["paid_at"] <= 21600]
+@@ -208,7 +210,8 @@
+                          "ambiguous:" + news["_event_id"], "buyer"))
+         for item in purchases:
+             mature = item.get("kind") == "food" or now >= item["paid_at"] + 21600
+-            if mature and item["order"] not in broken_orders and item["order"] not in ambiguous_orders:
++            if (mature and item['order'] not in broken_orders and item['order'] not in ambiguous_orders
++                    and 'mature:' + item['order'] not in existing_outcome_ids):
+                 pending.append(("outcome", {"order": item["order"], "broken": False, "surplus": item["value"] - item["price"],
+                                      "matured": True}, "mature:" + item["order"], "buyer"))
+         self.add_batch(pending,ts=now)
+--- a/r3/quote_market.py
++++ b/r3/quote_market.py
+@@ -8,6 +8,10 @@
+ import queue
+ import threading
+ import math
++import os
++_CLEANUP = queue.Queue(maxsize=8)
++_CLEANUP_LOCK = threading.Lock()
++_CLEANUP_STARTED = False
+ from .market_memory import buyer_assessment
+ from .protocol import quote, quote_terms
+ 
+@@ -149,10 +153,39 @@
+     finally:peer.close()
+ 
+ 
++def defer_close(peer, task):
++    """Bound cleanup work in the persistent worker; never queue payments."""
++    global _CLEANUP_STARTED
++    with _CLEANUP_LOCK:
++        if not _CLEANUP_STARTED:
++            def run():
++                while True:
++                    item = _CLEANUP.get()
++                    try:
++                        _close_quote(*item)
++                    except Exception:
++                        pass
++                    finally:
++                        _CLEANUP.task_done()
++            for _ in range(2):
++                threading.Thread(target=run, name='quote-cleanup', daemon=True).start()
++            _CLEANUP_STARTED = True
++    try:
++        _CLEANUP.put_nowait((peer, task))
++        return True
++    except queue.Full:
++        # Bounded fallback preserves cancellation rather than leaking unlimited peers.
++        _close_quote(peer, task)
++        return False
++
++
+ def close_quotes(prepared,background=False):
+     for peer,task in prepared.values():
+         if background:
+-            threading.Thread(target=_close_quote,args=(peer,task),daemon=True).start()
++            if os.environ.get('R3_PERSISTENT_BUYER') == '1':
++                defer_close(peer, task)
++            else:
++                threading.Thread(target=_close_quote, args=(peer, task), daemon=True).start()
+         else:_close_quote(peer,task)
+ 
+ 
+--- a/r3/model.py
++++ b/r3/model.py
+@@ -88,6 +88,12 @@
+             from .long_memory import manifest
+             context['system_manifest']=manifest(self.j)
+             context['framework_profile']=self.config.get('framework_profile','shop_contract_service')
++        if self.config.get('autonomy_v14_enabled'):
++            from .autonomy import context as role_context
++            packet = role_context(self.j, self.config, role=role,
++                                  rules_hash=context.get('system_manifest', {}).get('rules_sha256'))
++            if packet:
++                context['observed_role_facts'] = packet
+         if role=='buyer':context.update(buyer_metric=current['metric'],buyer_forum_metric=current['forum_metric'],
+                                        buyer_rank_scope=board.get('buyer_rank_scope'))
+         if role=='buyer' and self.config.get('buyer_throughput_enabled'):
+--- a/seller_r3.py
++++ b/seller_r3.py
+@@ -21,8 +21,17 @@
+ from r3.model import Chooser
+ from r3.adaptive import effective
+ from r3 import customer_memory
++from r3.decision_view import frame
+ 
+ NAME = "Seochanit Shop"
++
++
++def prepare_quote(journal, task, unit, inv, catalog, config, offer, previous_ask):
++    with frame(journal):
++        memory = customer_memory.summary(journal, task, unit)
++        candidates = shop_candidates(unit, inv, catalog, journal, config, offer=offer,
++                                     previous_ask=previous_ask, customer_memory=memory)
++        return memory, candidates
+ 
+ 
+ class Seller(AgentExecutor):
+@@ -33,6 +42,7 @@
+         self.key_path = Path(key_path or ROOT / "shop_key.pem")
+         self.deals = {}
+         self.locks = {}
++        self.work_slots = asyncio.Semaphore(4)
+ 
+     def select_unit(self, text, task):
+         inv = self.j.snapshot("inventory.json", {})
+@@ -69,7 +79,8 @@
+             task = new_task_from_user_message(context.message)
+             await event_queue.enqueue_event(task)
+         async with self.locks.setdefault(task.id, asyncio.Lock()):
+-            await self._execute(task, context, event_queue)
++            async with self.work_slots:
++                await self._execute(task, context, event_queue)
+ 
+     async def _execute(self, task, context, queue):
+         up = TaskUpdater(event_queue=queue, task_id=task.id, context_id=task.context_id)
+@@ -77,7 +88,7 @@
+         text = (get_message_text(context.message) or "")[:2000]
+         deal = self.deals.get(task.id)
+         if deal is None:
+-            unit = self.select_unit(text, task.id)
++            unit = await asyncio.to_thread(self.select_unit, text, task.id)
+             message_id = getattr(context.message, 'message_id', '')
+             metadata = customer_memory.metadata_dict(getattr(context.message, 'metadata', None))
+             shop_pubkey = None
+@@ -88,16 +99,16 @@
+                         serialization.Encoding.Raw, serialization.PublicFormat.Raw)).decode()
+                 except (ValueError, OSError):
+                     pass
+-            signer = customer_memory.signed_visitor(self.j, task.id, message_id, text,
+-                                                     metadata, expected_shop=shop_pubkey)
++            signer = await asyncio.to_thread(customer_memory.signed_visitor, self.j, task.id, message_id, text,
++                                             metadata, expected_shop=shop_pubkey)
+             if unit is None:
+-                customer_memory.visit(self.j, task.id, text, signer=signer)
+-                customer_memory.incoming(self.j, task.id, message_id, text)
++                await asyncio.to_thread(customer_memory.visit, self.j, task.id, text, signer=signer)
++                await asyncio.to_thread(customer_memory.incoming, self.j, task.id, message_id, text)
+                 customer_memory.finish(self.j, task.id, 'stockout')
+                 await up.reject(say("No matching available inventory unit."))
+                 return
+             config, strategy = effective(self.j, 'shop', self.cfg)
+-            customer_memory.visit(self.j, task.id, text, unit, strategy['version'], signer)
++            await asyncio.to_thread(customer_memory.visit, self.j, task.id, text, unit, strategy['version'], signer)
+             deal = self.deals[task.id] = {"unit": unit, "ask": None, "turns": 0,
+                                          "until": time.time() + self.cfg["session_ttl_seconds"],
+                                          "config": config, "strategy": strategy}
+@@ -107,8 +118,8 @@
+                                             "strategy_version": strategy['version']},
+                        eid="visit:" + task.id, role="shop")
+         message_id = getattr(context.message, 'message_id', '')
+-        customer_memory.incoming(self.j, task.id, message_id, text,
+-                                 last_ask=deal['ask'], turn=deal['turns'] + 1)
++        await asyncio.to_thread(customer_memory.incoming, self.j, task.id, message_id, text,
++                                last_ask=deal['ask'], turn=deal['turns'] + 1)
+         if deal.get("receipt"):
+             await up.add_artifact(parts=[new_data_part(deal["receipt"])], name="receipt")
+             await up.complete(say("Previously agreed receipt; no new sale."))
+@@ -136,11 +147,10 @@
+             match = re.fullmatch(r"\s*(?:I accept(?: at)?\s*)?([\d,]+)\s*", text, re.I)
+             if match:
+                 offer = int(match.group(1).replace(",", ""))
+-        memory = customer_memory.summary(self.j, task.id, unit)
+         quoting_unit = dict(unit, minimum_warranty_hours=deal['unit'].get('minimum_warranty_hours', 0),
+                             promised_warranty_hours=deal.get('promised_warranty_hours'))
+-        candidates = shop_candidates(quoting_unit, inv, cat, self.j, deal['config'], offer=offer,
+-                                     previous_ask=deal["ask"], customer_memory=memory)
++        memory, candidates = await asyncio.to_thread(prepare_quote, self.j, task.id, quoting_unit,
++                                                     inv, cat, deal['config'], offer, deal['ask'])
+         if not candidates:
+             customer_memory.finish(self.j, task.id, 'no_feasible_offer')
+             await up.reject(say("No feasible inventory offer."))
+@@ -189,8 +199,8 @@
+ 
+     async def cancel(self, context, event_queue):
+         task = context.current_task
+-        customer_memory.finish(self.j, task.id, 'cancelled')
+-        self.j.release(task.id)
++        await asyncio.to_thread(customer_memory.finish, self.j, task.id, 'cancelled')
++        await asyncio.to_thread(self.j.release, task.id)
+         self.deals.pop(task.id, None)
+         await TaskUpdater(event_queue=event_queue, task_id=task.id, context_id=task.context_id).cancel()
+ 
+--- a/market_buyer.py
++++ b/market_buyer.py
+@@ -316,12 +316,16 @@
+                                     'use_within_hours':order.get('use_within_hours',0),
+                                     "kind": type(exc).__name__, "seconds": time.monotonic() - started}, role="buyer")
+         finally:
+-            try:
+-                if not task_complete and hasattr(peer, 'cancel') and task:
+-                    peer.cancel(task['id'])
+-            except Exception:
+-                pass
+-            peer.close()
++            if os.environ.get('R3_PERSISTENT_BUYER') == '1' and not task_complete and task:
++                from r3.quote_market import defer_close
++                defer_close(peer, task)
++            else:
++                try:
++                    if not task_complete and hasattr(peer, 'cancel') and task:
++                        peer.cancel(task['id'])
++                except Exception:
++                    pass
++                peer.close()
+     from r3.forum import queue_wanted
+     queue_wanted(journal, order)
+     return empty
+--- a/policy.json
++++ b/policy.json
+@@ -82,5 +82,8 @@
+   "buyer_fast_accept_margin": 0.04,
+   "system_framework_enabled": true,
+   "framework_experiments_enabled": true,
+-  "buyer_contract_probe_percent": 8
++  "buyer_contract_probe_percent": 8,
++  "autonomy_v14_enabled": true,
++  "buyer_worker_enabled": true,
++  "execution_revision": "v14-fastframe-1"
+ }
+--- a/tests/test_v14_runtime.py
++++ b/tests/test_v14_runtime.py
+@@ -0,0 +1,194 @@
++"""Decision isolation, nonblocking Seller, role context, bounded work and Buyer IPC."""
++import asyncio
++from concurrent.futures import ThreadPoolExecutor
++import copy
++import json
++import os
++from pathlib import Path
++import sys
++import threading
++import time
++from types import SimpleNamespace
++
++import httpx
++import pytest
++sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
++from r3.decision_view import frame, history, fact
++from r3.state import Journal, atomic_json, policy
++from r3.autonomy import update, context, valid_packet, compile_skill, validate_skill, BackgroundLane
++from r3.autonomy import rule_effect
++from r3.worker_bridge import BuyerBridge
++from test_market_contract import unit
++import seller_r3
++
++
++def test_history_is_reused_only_inside_one_decision_and_one_journal():
++    calls = []
++    class Source:
++        def events(self, kind, limit=500):
++            calls.append((id(self), kind, limit))
++            return [{'value': len(calls), 'n': n} for n in range(limit)]
++    a, b = Source(), Source()
++    with frame(a):
++        original = history(a, 'own', 10)
++        assert history(a, 'own', 3) == original[:3]
++        assert len(calls) == 1
++        with frame(b):
++            assert history(b, 'own', 3)[0]['value'] == 2
++        assert history(a, 'own', 10)[0]['value'] == 1
++    with frame(a):
++        assert history(a, 'own', 3)[0]['value'] == 3
++
++
++def test_parallel_decisions_do_not_share_facts():
++    journal = object()
++    barrier = threading.Barrier(2)
++    def run(value):
++        with frame(journal):
++            result = fact(journal, 'private', lambda: value)
++            barrier.wait(timeout=3)
++            return fact(journal, 'private', lambda: -1), result
++    with ThreadPoolExecutor(2) as pool:
++        results = list(pool.map(run, [1, 2]))
++    assert results == [(1, 1), (2, 2)]
++
++
++def facts_fixture(tmp_path):
++    j = Journal(tmp_path)
++    j.put('market_rules', {'sha256': 'official-rules', 'compatible': True})
++    j.put('public_feed_caught_up_at', 1000)
++    j.put('public_ledger_seq', 42)
++    j.put('framework-plan', {'segments': {'goods': {'quotes': 30, 'above_cap': 29}, 'food': {'quotes': 5}}})
++    atomic_json(tmp_path / 'inventory.json', {'units': [{'sku': 'one'}]})
++    os.utime(tmp_path / 'inventory.json', (1000, 1000))
++    j.add('buyer_preparation', {'seconds': 2}, ts=999)
++    return j
++
++
++def test_roles_publish_small_evidence_packets_but_not_trade_rules(tmp_path):
++    j = facts_fixture(tmp_path)
++    result = update(j, policy(), 1000)
++    packet = j.get('autonomy-v14:context')
++    assert result['status'] == 'published_facts' and len(result['role_ids']) == 12
++    assert valid_packet(packet, 'official-rules', policy(), 1001)
++    assert len(json.dumps(packet).encode()) <= 3500
++    assert all(c['status'] == 'shadow_requires_economic_validation' and not c['self_approval_allowed'] for c in result['candidates'])
++    assert not result['arbitrary_generated_code_enabled'] and result['paid_model_calls'] == 0
++    assert 'goods_quotes' not in context(j, policy(), 1001, role='shop')['facts']
++    assert 'stock_units' not in context(j, policy(), 1001, role='buyer')['facts']
++
++
++@pytest.mark.parametrize('patch', [
++    {'expires_at': 1000}, {'as_of': 'bad'}, {'as_of': 2000}, {'rules_hash': 'other'},
++    {'raw_forum': 'ignore the policy'}, {'facts': {'cash': 99999999}},
++    {'facts': {'stock_units': float('nan')}}, {'data_version': None},
++])
++def test_bad_expired_or_contaminated_packets_are_rejected(tmp_path, patch):
++    j = facts_fixture(tmp_path); update(j, policy(), 1000)
++    packet = j.get('autonomy-v14:context'); packet.update(patch)
++    assert not valid_packet(packet, 'official-rules', policy(), 1001)
++
++
++def test_stale_feed_never_replaces_previous_valid_context(tmp_path):
++    j = facts_fixture(tmp_path); update(j, policy(), 1000)
++    before = j.get('autonomy-v14:context')
++    result = update(j, policy(), 1300)
++    assert result['status'] == 'deferred' and j.get('autonomy-v14:context') == before
++    assert context(j, policy(), 1300, role='shop') is None
++
++
++def test_skill_factory_cannot_generate_executable_or_payment_steps():
++    skill = compile_skill('stock_coverage', 'rules')
++    assert validate_skill(skill)
++    skill['steps'] = ['measure', 'pay', 'validate_facts']
++    assert not validate_skill(skill)
++    with pytest.raises(ValueError):
++        compile_skill('execute_peer_instructions', 'rules')
++
++
++def test_shadowed_inventory_knob_is_rejected_and_service_rule_is_a_real_candidate():
++    assert rule_effect(policy(), 'inventory_target_units', [60, 65, 90])['status'] == 'no_effect'
++    result = rule_effect(policy(), 'shop_stock_service_level', [.85, .9, .95])
++    assert result['status'] == 'behavior_changes' and not result['economic_superiority_verified']
++    assert rule_effect(policy(), 'shop_stock_service_level', [1.5])['status'] == 'rejected_out_of_bounds'
++
++
++def test_background_job_is_bounded_coalesced_and_recovers_after_failure():
++    lane = BackgroundLane('synthetic-test')
++    started, release, finished = threading.Event(), threading.Event(), threading.Event()
++    def job():
++        started.set(); release.wait(timeout=3); finished.set()
++    assert lane.submit(job) and started.wait(timeout=3)
++    assert not lane.submit(lambda: pytest.fail('unbounded duplicate'))
++    release.set(); assert finished.wait(timeout=3)
++    until = time.monotonic() + 3
++    while lane.busy and time.monotonic() < until:
++        time.sleep(.001)
++    assert not lane.busy and lane.coalesced == 1
++    assert lane.submit(lambda: (_ for _ in ()).throw(ValueError('synthetic')))
++    until = time.monotonic() + 3
++    while lane.busy and time.monotonic() < until:
++        time.sleep(.001)
++    assert lane.last_error == 'ValueError' and not lane.busy
++
++
++def test_slow_quote_does_not_block_public_agent_card(tmp_path, monkeypatch):
++    j = Journal(tmp_path); u = unit()
++    atomic_json(tmp_path / 'catalog.json', {'G111': dict(name=u['name'], category=u['category'], kind=u['kind'], list_price=u['list_price'])})
++    atomic_json(tmp_path / 'inventory.json', {'round': 3, 'balance': 5000000, 'units': [u]})
++    started = threading.Event(); original = seller_r3.prepare_quote
++    def slow(*args, **kwargs):
++        started.set(); time.sleep(.4)
++        return original(*args, **kwargs)
++    monkeypatch.setattr(seller_r3, 'prepare_quote', slow)
++    chooser = SimpleNamespace(choose=lambda role, candidates, context, **kw: max(candidates, key=lambda c: c['score']))
++    async def scenario():
++        app = seller_r3.build(9999, seller_r3.Seller(j, chooser=chooser))
++        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url='http://test') as client:
++            request = asyncio.create_task(client.post('/', headers={'A2A-Version': '1.0'}, json={
++                'jsonrpc': '2.0', 'id': 'one', 'method': 'SendMessage', 'params': {'message': {
++                    'role': 'ROLE_USER', 'messageId': 'one', 'parts': [{'text': 'G111'}]}}}))
++            until = time.monotonic() + 3
++            while not started.is_set() and time.monotonic() < until:
++                await asyncio.sleep(.001)
++            assert started.is_set()
++            before = time.monotonic()
++            response = await client.get('/.well-known/agent-card.json')
++            elapsed = time.monotonic() - before
++            assert response.status_code == 200 and elapsed < .3
++            assert (await request).status_code == 200
++    asyncio.run(scenario())
++
++
++def test_buyer_bridge_reuses_one_process_and_binds_order_responses(tmp_path, monkeypatch):
++    monkeypatch.setenv('MARKET_DIR', str(tmp_path))
++    j = Journal(tmp_path)
++    atomic_json(tmp_path / 'catalog.json', {})
++    atomic_json(tmp_path / 'board.json', {'round': 3, 'buyers': []})
++    def stop(process):
++        if process.stdin:
++            process.stdin.close()
++        try:
++            process.wait(timeout=4)
++        except Exception:
++            process.kill(); process.wait(timeout=2)
++    bridge = BuyerBridge(Path(__file__).resolve().parents[1], stop, j)
++    try:
++        for number in range(2):
++            order = {'order': 'synthetic-' + str(number), 'kind': 'food', 'acceptable': ['Gmissing'],
++                     'budget': 100, 'expires': time.time() + 120, 'item': 'synthetic'}
++            lines = bridge.run(order, [], 10)
++            assert json.loads(lines[0])['receipt'] is None
++            if number == 0:
++                pid = bridge.process.pid
++            assert bridge.process.pid == pid
++        assert len(j.events('buyer_worker_execution')) == 2
++    finally:
++        bridge.close()
++
++
++def test_payment_material_never_enters_buyer_ipc(tmp_path):
++    bridge = BuyerBridge(tmp_path, lambda p: None, Journal(tmp_path))
++    with pytest.raises(ValueError):
++        bridge.run({'order': 'one', 'mandates': 'private'}, [], 1)
++    assert bridge.process is None
