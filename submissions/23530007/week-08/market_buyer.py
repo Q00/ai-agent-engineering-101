@@ -45,7 +45,7 @@
        category caps too) and the shop's usual price + cap_margin; saved is a share of list, so a cheap item at
        40% off counts more than a dear one at 30% off
      - the result line carries "accept": the market's certificate always; food must last
-       use_within_hours + 1 h; goods must be grade A or B. The kit pays nothing if the checkout fails it
+       use_within_hours + 1 h; goods need a 6 h warranty and a price under their grade's ceiling (x_bar). The kit pays nothing if the checkout fails it
      - payments.jsonl tells me afterwards when the kit did not pay; that visit counts as failed
        (the shop stays out for FAIL_MEMORY), like a connection error
    Memory keys Round 3 trades by SKU, so "cheaper elsewhere" compares the same product.
@@ -93,6 +93,30 @@ MAX_ROUNDS = 8
 DEADLINE = 240          # the kit and the test stop the buyer at 300 s
 SEEN_TASKS = 1000      # task ids of receipts I received, to catch a replayed receipt
 WARRANTY_MIN = 6          # goods break within 6 h of the sale: a warranty this long covers every break
+# 11-11 restructure (user: saved first). A goods deal is worth (1 - p_grade) x (1 - x): a refunded break scores 0
+# (agent.md), and the market's fully observed break rates by grade are A 3%, B 8%, C 29% (11-11, 6 h ledger).
+# The deal must beat the mean our saved will end at (m*: .market/buyer_score.json "m_star" when the scorekeeper
+# writes it, else the buyer knob target_mean) by goods_delta, which gives each grade a price ceiling
+# x_bar_g = 1 - (m* + delta) / (1 - p_g): about A .64, B .62, C .51 today. Applied when the shop states the grade
+# and again at the receipt; goods without a 6 h warranty on the receipt are never paid.
+BREAK_P = {"A": 0.03, "B": 0.08, "C": 0.29}
+SCORE_FILE = Path(__file__).resolve().parent / ".market" / "buyer_score.json"
+
+
+def m_star(bp):
+    try:
+        v = json.loads(SCORE_FILE.read_text()).get("m_star")
+        if v is not None and 0.2 <= float(v) <= 0.6:
+            return float(v)
+    except (OSError, ValueError, AttributeError):
+        pass
+    return float(bp.get("target_mean", 0.33))
+
+
+def x_bar(grade, bp):
+    """Highest price/list at which a warranted unit of this grade still beats m* + goods_delta."""
+    p = BREAK_P.get(grade or "B", 0.08)
+    return round(max(0.3, 1 - (m_star(bp) + float(bp.get("goods_delta", 0.02))) / (1 - p)), 3)
 GRADE_C_MEMORY = 6 * 3600   # a shop that offered a grade-C unit of a SKU is not asked for that SKU again for this long
 FAIL_MEMORY = 6 * 3600  # a failed visit keeps a shop out for this long; shops restart and get fixed
 REJECT_SHOP_SECS = 15 * 60   # 11-09: an out-of-stock turn-away keeps the shop out this long (other items)
@@ -628,12 +652,11 @@ def main():
             first = f"I want to buy {label}." + (f" It must last {hours:g} hours." if hours else
                                                  " Grade A or B only, please." if order.get("kind") == "goods" else "")
             if cheapgoods and order.get("kind") == "goods":
-                # 11-07 A/B "cheapgoods": market 6 h, goods with a warranty: A 0.261 saved per deal, B 0.362, C 0.460
-                # (a break under warranty is refunded and counts +1); 81% of our goods were grade A. Ask for B or C
-                # with a warranty first; without one only A or B is paid (the accept check below)
-                first = (f"I want to buy {label}. I prefer grade C (refurbished) or B (damaged box) with a warranty of"
-                         f" at least {WARRANTY_MIN} hours on the receipt, priced for its grade; grade A only if you have"
-                         " nothing else. Please quote your cheapest unit that way.")
+                # 11-07 A/B "cheapgoods", rewritten 11-11: a refunded break scores 0, not +1, and grade C breaks 29%
+                # (our C deals ran .277 per deal vs B .335); the opener asks for B or A with a warranty and no C
+                first = (f"I want to buy {label}. I prefer grade B (damaged box) or A with a warranty of at least"
+                         f" {WARRANTY_MIN} hours on the receipt, priced for its grade; no grade C, please."
+                         " Please quote your cheapest unit that way.")
             if cheapfood and hours:
                 # 11-07 A/B "cheapfood": food grade is only shelf life left, so any unit that lasts serves the order;
                 # Kiro729 buys 43% grade C / 1% A at 0.577 of list against our 21% A at 0.662 (market A 0.746,
@@ -659,12 +682,12 @@ def main():
         # list and dragonash 0.65; we take the shop's second ask (~0.65-0.73) as soon as it is under our cap.
         # In the "push" arm, an ask still above the shop's lower quartile + push_band gets one more counter
         # (halfway down to that quartile) before we take it; a rejection that names a floor reopens at it below.
-        regraded = False
-        # 11-09 (user: raise the buyer score whatever it takes): goods without a warranty ran .202 per deal in 12 h
-        # (15 breaks at -1 in 152), goods with one .387 (34 refunded breaks at +1, none at -1). In the needwarr arm a
-        # goods order asks once for a 6 h warranty when the shop's reply states none, and leaves before agreeing a
-        # price if the shop still states none (half the shops that state nothing do put one on the receipt)
-        needwarr = order.get("kind") == "goods" and random.random() < bp.get("needwarr_share", 0)
+        regraded = True   # 11-11: the C/B regrade request is off (regraded deals paid .671 of list and broke 11.9%)
+        # 11-09 needwarr arm, made the rule for every goods order on 11-11: unwarranted goods ran .185 per deal vs
+        # .304 warranted over 48 h (an unrefunded break scores -1). A goods order asks once for a 6 h warranty when
+        # the shop's reply states none, goes on when the shop's market deals are mostly warranted (the receipt
+        # decides), and never pays a receipt without one
+        needwarr = order.get("kind") == "goods"
         warr_ok, warr_asked = False, False
         graded = None     # 11-08 gradeaware: (grade, warranty hours) read from the shop's first reply
         short = None    # 11-07: 43 of 69 lost food orders in 6 h agreed a price, then the kit refused to pay (shelf life)
@@ -682,19 +705,18 @@ def main():
             for _ in range(MAX_ROUNDS):
                 if state(t) not in ("TASK_STATE_INPUT_REQUIRED", "TASK_STATE_UNKNOWN") or time.time() - start > DEADLINE:
                     break
-                if gradeaware and graded is None and acceptable and order.get("kind") == "goods":
-                    # 11-08 A/B "gradeaware" (user: the last lever for the buyer rank): the shop states the unit's grade
-                    # and warranty in its first reply. A warranted unit scores (1 - x) + p_break * x (a refunded break
-                    # counts +1): C (p~0.16) still beats our running mean at x 0.78, B (p~0.057) at x 0.72, while A
-                    # (p~0.013) needs x <= ~0.70. So a warranted C/B gets a higher cap and no extra counter that could
-                    # lose it; an unwarranted C would be refused at checkout anyway, so we leave for the next shop now
+                if graded is None and acceptable and order.get("kind") == "goods":
+                    # 11-11 (was the gradeaware arm, which RAISED the cap for warranted B/C on the stale +1 rule):
+                    # when the shop states the unit's grade, the cap falls to that grade's ceiling x_bar_g so the deal
+                    # beats m* after the grade's break rate; an unwarranted C goes to the next shop
                     graded = unit_terms(said(t))
                     g_, w_ = graded
-                    if g_ in ("B", "C") and w_ >= WARRANTY_MIN:
-                        cap = max(cap, min(a.budget, int(want["list_price"] * bp.get(f"gradeaware_cap_{g_.lower()}", 0.75))))
-                        npush = max_push          # no extra counter (keeps the push A/B labels intact)
-                        log("buyer", f"{pick['name']} offers grade {g_} with a {w_} h warranty: cap raised to {cap}, no push")
-                    elif g_ == "C" and w_ < WARRANTY_MIN:
+                    if g_ in ("A", "B", "C"):
+                        gcap = int(want["list_price"] * x_bar(g_, bp))
+                        if gcap < cap:
+                            log("buyer", f"{pick['name']} offers grade {g_}: cap {cap} -> {gcap} ({x_bar(g_, bp):.2f} of list, m* {m_star(bp):.3f})")
+                            cap = max(1, gcap)
+                    if g_ == "C" and w_ < WARRANTY_MIN:
                         log("buyer", f"{pick['name']} offers grade C without a warranty: next shop")
                         outcome = "grade C claimed"
                         seller.cancel(tid)
@@ -837,23 +859,22 @@ def main():
                 outcome = "deal"
                 claim = rec.get("claim")
                 warranty = as_int(rec.get("warranty_hours")) or 0
-                if acceptable and order.get("kind") == "goods" and warranty >= WARRANTY_MIN:
-                    # a broken unit under warranty is refunded and counts +1 instead of -1, so any grade pays
-                    # (C breaks 7 % of the time: with a warranty that is worth more than an A without one)
-                    accept["grades"] = ["A", "B", "C"]
-                    accept["warranty_hours"] = WARRANTY_MIN
-                elif needwarr and acceptable and order.get("kind") == "goods":
-                    # 11-10: in the needwarr arm a receipt without a warranty is not paid (unwarranted goods score
-                    # ~.26 against our mean ~.295); we went on only because the shop usually puts one on
+                if acceptable and order.get("kind") == "goods" and warranty < WARRANTY_MIN:
+                    # 11-11: a goods receipt without a 6 h warranty is never paid (an unrefunded break scores -1;
+                    # unwarranted goods ran .185 per deal over 48 h)
                     log("buyer", f"{pick['name']} signed {item} without a warranty; not paying, trying elsewhere")
                     outcome, rec, price = "no warranty on receipt", None, None
-                elif acceptable and order.get("kind") == "goods" and claim in ("A", "B", "C") \
-                        and claim not in bp["goods_grades"]:
-                    # the kit refuses to pay for it at checkout anyway (40 orders lost this way on 11-06):
-                    # leave the receipt unpaid and try the next shop while there is time
-                    mem.setdefault("grade_c", {})[f"{pick['name']}|{item}"] = time.time()
-                    log("buyer", f"{pick['name']} signed {item} as grade {claim}; not paying, trying elsewhere")
-                    outcome, rec, price = f"grade {claim} claimed", None, None
+                elif acceptable and order.get("kind") == "goods" and price and price > want["list_price"] * x_bar(claim, bp):
+                    # 11-11: the claimed grade's price ceiling (a refunded break scores 0, so a warranted C at x .60
+                    # is worth .28, below m*); unpaid, the next shop is tried at a price that pays
+                    if claim == "C":
+                        mem.setdefault("grade_c", {})[f"{pick['name']}|{item}"] = time.time()
+                    log("buyer", f"{pick['name']} signed {item} as grade {claim or '?'} at {price / want['list_price']:.2f} of list, "
+                                 f"above the grade's ceiling {x_bar(claim, bp):.2f}; not paying, trying elsewhere")
+                    outcome, rec, price = "too dear", None, None
+                elif acceptable and order.get("kind") == "goods":
+                    accept["grades"] = ["A", "B", "C"]
+                    accept["warranty_hours"] = WARRANTY_MIN
             elif state(t) == "TASK_STATE_REJECTED":
                 outcome = "rejected"
             else:

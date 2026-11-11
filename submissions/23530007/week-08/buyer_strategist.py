@@ -69,6 +69,8 @@ GLOBAL = {                                    # role, bounds, step
     "cheapfood_share": ((0.0, 1.0), 0.3),     # food: ask for the cheapest unit that lasts and open low
     "cheapfood_open": ((0.2, 0.6), 0.05),     # food opening offer, share of list
     "cheapgoods_share": ((0.0, 1.0), 0.3),
+    "target_mean": ((0.28, 0.40), 0.01),      # 11-11: the mean a goods deal must beat (m*) until buyer_score.json writes it
+    "goods_delta": ((0.0, 0.08), 0.01),       # 11-11: margin over m* a goods deal must clear after its grade's break rate
     "needwarr_share": ((0.0, 1.0), 0.3),      # 11-09 (user): goods orders that require a 6 h warranty before haggling
     "aim15_share": ((0.0, 1.0), 0.3),         # 11-09 (user): of the aimtop orders, the share capped at p15, not p25
     "aimtop_share": ((0.0, 1.0), 0.3),        # 11-09: cap at the shop's p25 (what the best buyers pay), not p50    # goods: ask for C/B with a warranty first, A only if nothing else
@@ -363,8 +365,8 @@ Knobs (only these): global "value_share" (0.65-0.85), "quick_accept" (0.55-0.75)
 replace skip_below; see BUYER_STRATEGY.md 0a2), "conv_weight" (0-0.3), "rival_penalty" (0-0.1), "cap_margin" (0-0.1), "near_cap" (0-0.04),
 "open_offset" (0-0.08), "max_shops" (1-6), "value_half_life_h" (0-6, default 2: how fast the shop values
 follow the newest market deals; lower when prices are moving, higher when the values look noisy), and the arms (11-08): "push_share", "push3_share", "cheapfood_share",
-"cheapgoods_share", "aimtop_share" (cap at the shop's p25, where the best buyers pay), "aim15_share" (of the aimtop orders, the share capped at p15 instead of p25), "needwarr_share" (goods orders that ask for a 6 h warranty and leave before a price when the shop has none), "skubest_share", "wpen_share", "gradeaware_share" (each 0-1, share of orders), "push3_below" (0-0.2), "push_below"
-(0-0.15), "cheapfood_open" (0.2-0.6), "wpen_cost" (0-0.12), "gradeaware_cap_c" (0.65-0.85), "gradeaware_cap_b" (0.62-0.8); per shop (give "shop": name from the evidence) "shop_bias" (-0.1..0.1,
+"cheapgoods_share", "aimtop_share" (cap at the shop's p25, where the best buyers pay), "aim15_share" (of the aimtop orders, the share capped at p15 instead of p25), "target_mean"/"goods_delta" (11-11: goods are paid only when (1-p_grade)(1-x) >= target_mean + goods_delta; the warranty is required on every goods receipt and the grade ceilings replace gradeaware); "needwarr_share" (no effect since 11-11, the rule is on for every goods order; goods orders that ask for a 6 h warranty and leave before a price when the shop has none), "skubest_share", "wpen_share", "gradeaware_share" (each 0-1, share of orders), "push3_below" (0-0.2), "push_below"
+(0-0.15), "cheapfood_open" (0.2-0.6), "wpen_cost" (0-0.12), "gradeaware_cap_c"/"gradeaware_cap_b" (no effect since 11-11); per shop (give "shop": name from the evidence) "shop_bias" (-0.1..0.1,
 added to its value score) and "shop_cap" (-0.05..0.05, added to the cap there as a share of list);
 per category "cap" (0.6-0.85, replaces value_share for that category; "category" is the order's item name as in
 THREE RACES (user, 11-08: 'look at the shop rank and the buyer rank apart; the 2nd shop is not the 2nd overall; do
@@ -479,6 +481,10 @@ def board_view():
 
 def run(force=False):
     mem = Memory(STATE)
+    for k_, v_ in list(mem.d.get("steps", {}).items()):          # 11-11: no step below half its base
+        spec_ = GLOBAL.get(k_) or CAT.get(k_) or SHOP.get(k_)
+        if spec_ and v_ < spec_[1] / 2:
+            mem.d["steps"][k_] = spec_[1] / 2
     slot = my_turn("buyer")
     wake = shop.read(BUYER_WAKE, None)
     if wake and not force and time.time() - mem.d.get("t", 0) < 3600:
@@ -530,7 +536,7 @@ def run(force=False):
             base = (GLOBAL.get(knob) or CAT.get(knob) or SHOP.get(knob))[1]
             old = mem.d["steps"].get(knob, base)
             rate = sum(k["last"]) / len(k["last"])
-            new = max(base / 8, old / 2) if rate < 0.5 else min(base, old * 1.5) if rate > 0.75 else old
+            new = max(base / 2, old / 2) if rate < 0.5 else min(base, old * 1.5) if rate > 0.75 else old   # 11-11: floor base/2 (cap sat at 0.005)
             if new != old:
                 mem.d["steps"][knob] = new
                 log(f"method: {knob} hit {rate:.0%}; step limit {old:g} -> {new:g}")
