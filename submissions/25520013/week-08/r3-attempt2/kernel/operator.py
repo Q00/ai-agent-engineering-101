@@ -31,7 +31,7 @@ from kernel import brief as b
 from kernel import common as c
 from kernel import experiments as ex
 from kernel import harness as hz
-from kernel import audit, auditor, code_edit, made_tools, policy_edit, tools, versions
+from kernel import audit, auditor, code_edit, made_tools, policy_edit, questions, tools, versions
 from kernel.agent import ParseError, parse_last_object
 from kernel.llm import ModelError, ModelRefused
 from kernel.trajectory import Trajectory
@@ -219,8 +219,12 @@ def role_schema(role):
          f'"section": "{sections}"'),
         ('"as": "shop|buyer"', f'"as": "{role}"'),
         ("<policy.py|hooks/restock.py|hooks/market_buyer.py|hooks/seller.py>", "<" + "|".join(code_edit.ROLE_FILES[role]) + ">"),
+        ('  "note": "<이번 점검 한 줄 요약>"}}', '  "ask": "<조사원에게 맡길 질문 하나, 400자 안>",\n  "note": "<이번 점검 한 줄 요약>"}}'),
     ):
         head = head.replace(old, new)
+    head += ("\nask는 조사원에게 질문 하나를 맡김 (한 점검에 하나, 열린 질문은 운영자마다 2개까지): 원인을 확인하는 데 도구 호출이 "
+             "3번 넘게 들 것 같을 때 씀. 조사원이 여러 단계로 확인해 다음 점검의 조사 결과 절에 답하고, 그동안 너는 아는 것으로 "
+             "결정을 이어 감")
     return (head + "\n" + keys + f"\n너는 {ROLE_KO[role]}임. 위 구역, 파일, 글쓴이 밖은 {ROLE_KO[other]} 몫이라 커널이 거절함. "
             "도구는 둘이 같이 씀")
 
@@ -353,6 +357,10 @@ def done_lines(done, result, now):
     r = result.get("forum")
     if isinstance(r, dict):
         out.append(f"- 포럼 글: 대기열에 {r.get('queued', 0)}개" + (f", 거절: {r['refused']}" if r.get("refused") else ""))
+    r = result.get("ask")
+    if isinstance(r, dict):
+        out.append("- 조사 질문: " + (f"접수됨 (#{r.get('id')}, 답은 조사 결과 절에 나옴)" if r.get("ok")
+                                    else f"거절됨. {str(r.get('error'))[:300]}"))
     r = result.get("new_tool")
     if isinstance(r, dict):
         out.append(f"- 도구 만들기 {r.get('name')}: " + ("만들어짐" if r.get("ok") else f"거절됨. {str(r.get('error'))[:300]}"))
@@ -363,6 +371,7 @@ def done_lines(done, result, now):
 
 class Operator:
     role = None  # "shop" or "buyer" for a role operator, None for the single operator
+    agent = "operator"  # the trajectory agent of this process's rows (kernel.analyst: "analyst")
 
     def __init__(self, root, terra, traj, harness_root=HARNESS, market_brief_path=MARKET_BRIEF, dry=False,
                  spawn=subprocess.Popen, role=None):
@@ -587,7 +596,7 @@ class Operator:
             except Exception as e:
                 obs = f"도구 오류: {type(e).__name__}: {e}"
             obs = c.cap(c.mask(str(obs), self.secrets), tools.MAX_CHARS)
-            self.traj.append("operator", "tool", name=name, obs_chars=len(obs), **obs_facts(obs, COMPACT_OBS),
+            self.traj.append(self.agent, "tool", name=name, obs_chars=len(obs), **obs_facts(obs, COMPACT_OBS),
                              args=c.mask(json.dumps(args, ensure_ascii=False, default=str)[:2000], self.secrets),
                              **self._tool_extra(name, args, obs))
             return obs
@@ -602,7 +611,7 @@ class Operator:
         obs = c.cap(c.mask(str(obs), self.secrets), tools.MAX_CHARS)
         shown = {k: v for k, v in args.items() if k not in RESERVED_ARGS}
         self.traj.append(
-            "operator",
+            self.agent,
             "tool",
             name=name,
             args=c.mask(json.dumps(shown, ensure_ascii=False, default=str)[:2000], self.secrets),
@@ -612,18 +621,21 @@ class Operator:
         )
         return obs
 
-    def _ask(self, prompt, route):
+    def _effort(self, route):
         # A2_OPERATOR_EFFORT (11-10, 성수님 결정: 사용량 절감) overrides the harness route's effort when set
-        effort = os.environ.get("A2_OPERATOR_EFFORT") or route.get("effort", "medium")
+        return os.environ.get("A2_OPERATOR_EFFORT") or route.get("effort", "medium")
+
+    def _ask(self, prompt, route):
+        effort = self._effort(route)
         # A hung CLI call, not slow thinking, is what times out: 5 of 7,870 calls in 72 h ran the full 300 s while
         # the slowest answered one took 64 s. So wait ASK_TIMEOUT_S and ask once more instead of losing the wake.
         timeout_s = min(route.get("timeout_s", 300), ASK_TIMEOUT_S)
         try:
-            return self.terra.complete(prompt, agent="operator", timeout_s=timeout_s, effort=effort)
+            return self.terra.complete(prompt, agent=self.agent, timeout_s=timeout_s, effort=effort)
         except ModelError as e:
             if str(e) != "timeout":
                 raise
-            return self.terra.complete(prompt, agent="operator", timeout_s=timeout_s, effort=effort)
+            return self.terra.complete(prompt, agent=self.agent, timeout_s=timeout_s, effort=effort)
 
     def wake(self, reason, now=None):
         """One wake: tool loop until done or max_steps. -> summary dict (also written as an operator_wake row)."""
@@ -869,6 +881,7 @@ class Operator:
                                 extra=list(ex.lines(self.root, now, **self._role_kw())) + list(code_lines) + list(audit_lines)),
                 "## 지난 점검에 네가 낸 것의 결과 (커널 기록. 거절된 것은 적용되지 않았음)",
                 "\n".join(str(x) for x in (st.get("last_done") or {}).get("lines") or []) or "없음",
+                *self._findings_block(now),
                 "## 네 메모 (지난 점검의 네가 남김)",
                 c.mask(self._notes(), self.secrets) or "없음",
                 "## 깨운 이유",
@@ -879,12 +892,31 @@ class Operator:
                 COMPACT_SCHEMA if self.role is None else role_schema(self.role),
             ]
         )
+        return self._compact_loop(base, route, reason, now)
+
+    def _steps(self):
+        return COMPACT_STEPS
+
+    def _findings_block(self, now):
+        """The prompt section of the investigator's findings for this role operator, [] when there are none."""
+        if self.role not in ROLES:
+            return []
+        try:
+            lines = questions.prompt_lines(self.root, self.role, now)
+        except Exception:  # a reader of the findings file; it must never cost a wake
+            lines = []
+        return ["## 조사 결과 (조사원이 확인한 것. 결정은 네 몫)", c.mask("\n".join(lines), self.secrets)] if lines else []
+
+    def _compact_loop(self, base, route, reason, now):
+        """The compact step loop over the fixed prompt base: tool steps with kept conclusions until a done object or
+        _steps() model calls."""
         # 11-11: results used to vanish after one step and 24 of 31 repeated calls re-read one two steps later.
         kept, fresh, chars, calls, step = [], [], 0, 0, 0
+        self._kept, steps = kept, self._steps()  # kept: the conclusions so far (kernel.analyst reads them on no done)
         read_files = set()  # rule-code files read this wake: code_read, or code_search with a file (search hits alone do not count)
         obs_all, full = {}, set()  # (tool, args) -> [step, head, text]; keys shown in full in the last prompt
-        for step in range(COMPACT_STEPS):
-            last_step = step == COMPACT_STEPS - 1
+        for step in range(steps):
+            last_step = step == steps - 1
             shown, left, full = [], OBS_BUDGET, set()
             for key, (at, head, text) in sorted(obs_all.items(), key=lambda kv: -kv[1][0]):
                 if len(text) <= left:
@@ -944,7 +976,7 @@ class Operator:
                 head = json.dumps({"tool": t.get("tool"), "args": t.get("args")}, ensure_ascii=False, default=str,
                                   sort_keys=True)[:300]
                 if head in full:  # still on the page in full: no second read
-                    self.traj.append("operator", "tool", name=t.get("tool"), obs_chars=0, cached=True,
+                    self.traj.append(self.agent, "tool", name=t.get("tool"), obs_chars=0, cached=True,
                                      args=c.mask(json.dumps(t.get("args"), ensure_ascii=False, default=str)[:2000],
                                                  self.secrets))
                     fresh.append(head + "\n이미 읽음: 위 관찰에 그대로 있음")
@@ -1021,13 +1053,18 @@ class Operator:
                 result["forum"]["refused"] = f"as {o} 글 {len(other)}개: {ROLE_KO[o]}가 씀. {ROLE_KO[self.role]}는 as {self.role}로만 씀"
         if isinstance(done.get("new_tool"), dict):  # declarative query only; the test run on real data is the gate
             try:
-                r = made_tools.add(self.root, done["new_tool"], now, traj=self.traj, by="operator",
+                r = made_tools.add(self.root, done["new_tool"], now, traj=self.traj, by=self.agent,
                                    reserved=tuple(tools.TOOLS), **self._role_kw())
             except Exception as e:
                 r = {"ok": False, "error": f"{type(e).__name__}: {str(e)[:200]}"}
             r = r if isinstance(r, dict) else {"ok": False, "error": "no result"}
             result["new_tool"] = {k: c.mask(str(v), self.secrets)[:300] if isinstance(v, str) else v
                                   for k, v in r.items() if k in ("ok", "name", "error", "sample")}
+        if self.role in ROLES and "ask" in done:  # a question for the investigator (kernel.analyst)
+            try:
+                result["ask"] = questions.ask(self.root, self.role, done["ask"], now, self.secrets)
+            except Exception as e:  # the queue file is shared; a failed write is a refusal, not a crashed wake
+                result["ask"] = {"ok": False, "error": f"{type(e).__name__}: {str(e)[:200]}"}
         if isinstance(done.get("notes"), str) and done["notes"].strip():
             path = self._notes_path()
             os.makedirs(os.path.dirname(path), exist_ok=True)

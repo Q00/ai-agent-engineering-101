@@ -575,6 +575,29 @@ def experiments(root, hours=6, now=None):
     return c.cap("\n".join(out), MAX_CHARS)
 
 
+def findings(root, hours=24, role=None, now=None):
+    """조사 결과 전체: 조사원이 최근 hours시간(1~168)에 끝낸 질문마다 질문, 결과, 근거(숫자와 도구), 제안, 받는 운영자, 미완 여부. role(shop, buyer)을 주면 그 운영자에게 온 것만. 상태 카드 위 조사 결과 절보다 자세히 볼 때 씀."""
+    from kernel import questions
+
+    now = c.now_ts() if now is None else now
+    try:
+        hours = min(168.0, max(1.0, float(hours)))
+    except (TypeError, ValueError):
+        hours = 24.0
+    if role is not None and role not in ROLES:
+        return f"인자 오류: role은 {', '.join(ROLES)} 중 하나 또는 생략"
+    rows = questions.findings(root, since=now - hours * 3600, role=role)
+    out = [f"최근 {hours:g}시간 조사 결과 {len(rows)}건" + (f" ({role} 앞)" if role else "")]
+    for r in reversed(rows):
+        mark = " 미완" if r.get("status") == "failed" else ""
+        out.append(f"#{r.get('id')} {c.kst(r.get('ts') or now, '%m-%d %H:%M')} 질문한 쪽 {r.get('from')}, 받는 쪽 "
+                   f"{','.join(r.get('for') or [])}{mark}\n  질문: {r.get('q')}\n  결과: {r.get('finding')}")
+        out += [f"  근거: {e}" for e in r.get("evidence") or []]
+        if r.get("suggest"):
+            out.append(f"  제안: {r['suggest']}")
+    return c.cap("\n".join(out), MAX_CHARS)
+
+
 def restock_log(root, hours=2, now=None):
     """재입고 훅 기록: 최근 hours시간(0.5~24)의 실행 수와 멈춘 사유(why)별 수, 산 실행(줄, 수량, 예산, 메모), 상품군 잎과 SKU별 산 수량, 재고 상한이나 예산으로 멈춘 횟수와 마지막 재고 원가, 잔고."""
     from kernel import code_edit
@@ -637,9 +660,10 @@ def tool_search(root, query):
 # kernel.auditor.recommended). Every tool stays callable by both roles; a role sees the others by name only.
 RECOMMENDED = {
     "shop": ("board", "ledger", "events", "stockouts", "sku_stats", "net_profit", "inventory", "restock_log",
-             "policy", "experiments", "code_search", "code_read", "brief_section", "guide", "recall", "tool_search"),
+             "policy", "experiments", "code_search", "code_read", "brief_section", "guide", "recall", "tool_search",
+             "findings"),
     "buyer": ("board", "ledger", "events", "shops", "catalog", "policy", "experiments", "code_search", "code_read",
-              "brief_section", "guide", "recall", "tool_search"),
+              "brief_section", "guide", "recall", "tool_search", "findings"),
 }
 
 TOOLS = {
@@ -665,6 +689,7 @@ TOOLS = {
     "restock_log": (restock_log, ("operator",)),
     "experiments": (experiments, ("operator",)),
     "tool_search": (tool_search, ("operator",)),
+    "findings": (findings, ("operator",)),
 }
 
 

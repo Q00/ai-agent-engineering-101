@@ -1,6 +1,7 @@
 #!/bin/bash
 # Attempt-2 background processes on labpc: memory daemon, memory feeder, operator (single, or the two role operators
-# operator-shop and operator-buyer; never both kinds at once).
+# operator-shop and operator-buyer; never both kinds at once), and the investigator analyst (kernel.analyst, started by
+# name only: a2ctl.sh start analyst).
 #   a2ctl.sh start|stop|status   (CODE=~/r3a2-code, W=the live dir)
 # Each process runs in its own session (setsid) and its pid is kept in W/a2/pids/<name>.pid; stop sends SIGTERM to
 # that process group only. The switch for the hooks is the flag file W/a2/LIVE, not this script.
@@ -22,7 +23,7 @@ launch() { # name, command...
 }
 
 case "${1:-status}" in
-  start)  # a2ctl.sh start [memd] [memfeed] [operator] [operator-shop] [operator-buyer]; no names = memd memfeed operator-shop operator-buyer
+  start)  # a2ctl.sh start [memd] [memfeed] [operator] [operator-shop] [operator-buyer] [analyst]; no names = memd memfeed operator-shop operator-buyer
     names="${*:2}"; names="${names:-memd memfeed operator-shop operator-buyer}"
     for n in $names; do
       case "$n" in
@@ -36,12 +37,14 @@ case "${1:-status}" in
         operator)  # the single operator; never next to the role operators
           if alive operator-shop || alive operator-buyer; then echo "operator refused: a role operator is running (stop operator-shop operator-buyer first)"; continue; fi
           launch operator env A2_OPERATOR_EFFORT="${A2_OPERATOR_EFFORT:-medium}" A2_AUDITOR="${A2_AUDITOR:-1}" A2_OPERATOR_INTERVAL_S="${A2_OPERATOR_INTERVAL_S:-1200}" A2_OPERATOR_COMPACT="${A2_OPERATOR_COMPACT:-1}" A2_SPLIT="${A2_SPLIT:-1}" A2_SELLER_RESTART_CMD="${A2_SELLER_RESTART_CMD:-bash $CODE/live/seller_restart.sh}" A2_CODE_TESTS_DIR="${A2_CODE_TESTS_DIR:-$HOME/r3-rule-tests}" python3 -m kernel.operator --root "$W" ;;
+        analyst)  # the investigator: read-only, never takes the operators' busy lock
+          launch analyst env A2_ANALYST_STEPS="${A2_ANALYST_STEPS:-24}" A2_ANALYST_EFFORT="${A2_ANALYST_EFFORT:-high}" A2_ANALYST_MIN_GAP_S="${A2_ANALYST_MIN_GAP_S:-900}" python3 -m kernel.analyst --root "$W" ;;
         *) echo "unknown process $n" ;;
       esac
     done
     ;;
-  stop)  # a2ctl.sh stop [names]; no names = every operator, memfeed, memd
-    names="${*:2}"; names="${names:-operator operator-shop operator-buyer memfeed memd}"
+  stop)  # a2ctl.sh stop [names]; no names = every operator, the analyst, memfeed, memd
+    names="${*:2}"; names="${names:-operator operator-shop operator-buyer analyst memfeed memd}"
     for n in $names; do
       if alive "$n"; then
         pg=$(ps -o pgid= -p "$(cat "$P/$n.pid")" | tr -d ' ')
@@ -53,7 +56,7 @@ case "${1:-status}" in
     done
     ;;
   status)
-    for n in memd memfeed operator operator-shop operator-buyer; do
+    for n in memd memfeed operator operator-shop operator-buyer analyst; do
       if alive "$n"; then echo "$n running pid $(cat "$P/$n.pid")"; else echo "$n not running"; fi
     done
     [ -e "$W/a2/LIVE" ] && echo "switch: LIVE (attempt 2 decides)" || echo "switch: off (attempt 1 decides)"
