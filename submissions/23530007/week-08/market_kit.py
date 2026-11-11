@@ -1129,13 +1129,15 @@ def watchdog(a, agent, d, market, keys, procs, proxy, sport, pport, state, every
             # yms979 11-11: the market dropped our shop from /api/shops twice (alive=False) while the tunnel and
             # the card still answered, so the 3-miss rule below never fired and buyers could not find us for
             # 5-16 min. When the market no longer lists us but the card answers, join again at once (same URL).
-            if ok:
+            # (the unauthenticated /api/shops is not the alive list: it left us out while the board said alive and
+            # the watchdog re-joined every minute; the board's alive flag is the signal, at most once per 5 min)
+            if ok and time.time() - state.get("relist_t", 0) > 300:
                 try:
-                    r = market.c.get(f"{market.base}/api/shops", timeout=10)
-                    lst = r.json() if r.status_code == 200 else None
-                    lst = lst.get("shops") if isinstance(lst, dict) else lst
-                    if isinstance(lst, list) and lst and not any(s.get("name") == a.name for s in lst):
-                        log("[market] the market no longer lists this shop though the card answers: joining again")
+                    r = market.c.get(f"{market.base}/api/board?round=3", timeout=10)
+                    me = next((s for s in (r.json().get("shops") or []) if s.get("name") == a.name), None) if r.status_code == 200 else None
+                    if me is not None and me.get("alive") is False:
+                        state["relist_t"] = time.time()
+                        log("[market] the board marks this shop dead though the card answers: joining again")
                         j = market.join("shop", a.name, keys["shop"], proxy.public)
                         log(f"[market] shop registered again as {j['name']} (same URL)")
                 except (Exception, SystemExit) as e:
