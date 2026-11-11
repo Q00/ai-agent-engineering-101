@@ -219,10 +219,19 @@ BIG_TICKET = 1_000_000     # a value SKU at this list price or more holds only i
 # a median 0.61 of list and the market sold 102 and 44 at a median 0.70; we sold 5 and 6 (16:17-18:17: 13 and 9),
 # margin 2.97M (was 9.18M). A unit whose floor (cost x 1.05) is over the market's recent price sells only to the
 # top of the market and is offered last, so it does not count against the line.
+# A unit held a day or more sells at the market price, down to 0.88 of its cost (seller_r3 STALE_FLOOR, 2913892), so
+# it is not priced out and counts as held. Without this, Downing G24f5f979 held 13 grade A units over 24 h (cost
+# 2.72-2.85M, market 2.56M) and restock still bought 14 more in 24 h (Nov 10 13:42-Nov 11 08:01, ~29M), grade A at
+# 2.72-2.82M, which sold at 2.41-2.86M.
+STALE_SHARE = 0.88
+
+
 def sellable(units, sku, catalog, st):
     px = sorted(st["sku_px"].get(sku) or [])
     sale = (px[len(px) // 2] if len(px) >= 3 else DEFAULT_PX) * catalog[sku]["list_price"]
-    return sum(1 for u in units if u["sku"] == sku and u["cost"] * 1.05 <= sale)
+    day = time.time() - 86400
+    return sum(1 for u in units if u["sku"] == sku and (u["cost"] * 1.05 <= sale or (
+        u.get("supplied_at", time.time()) <= day and u["cost"] * STALE_SHARE <= sale)))
 
 
 def market_rate(st, catalog, sku):
