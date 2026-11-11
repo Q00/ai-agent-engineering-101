@@ -71,6 +71,7 @@ def obs_facts(obs, limit=None):
     return out
 
 
+TEXT_TOOLS = ("brief_section", "guide", "recall")  # they return prose: a number match says nothing about use
 _NUM = re.compile(r"\d[\d,]*(?:\.\d+)?")
 
 
@@ -105,7 +106,7 @@ def grounding(base, obs_all, done, kept=()):
         seen |= own
         if (own - shown) & said:
             cited += 1
-        elif not str(text).startswith(TOOL_ERR):
+        elif not str(text).startswith(TOOL_ERR) and name not in TEXT_TOOLS:
             uncited.append(name)
     unfounded = []
     for it in done.get("policy") if isinstance(done.get("policy"), list) else []:

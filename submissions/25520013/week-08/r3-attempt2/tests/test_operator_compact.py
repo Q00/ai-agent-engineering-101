@@ -272,11 +272,12 @@ def test_grounding_marks_unused_reads_and_unfounded_numbers(o):
         '{"args": {}, "tool": "stockouts"}': [0, "h", "생수 거절 66건, 재고 1개"],
         '{"args": {}, "tool": "policy"}': [1, "h", "stock_target 지금 10, 범위 2~40"],
         '{"args": {}, "tool": "recall"}': [1, "h", "도구 오류: TypeError"],
+        '{"args": {}, "tool": "guide"}': [1, "h", "포럼 글은 하루 12개까지"],
     }
     done = {"policy": [{"section": "x", "key": "stock_target", "value": 22,
                         "reason": "품절 거절 66건, 6시간 판매 35건", "expect": "거절이 66건보다 줄어듦"}]}
     g = op.grounding(base, obs, done, kept=())
-    assert g == {"read": 3, "cited": 1, "uncited": ["policy"], "unfounded": ["35"]}
+    assert g == {"read": 4, "cited": 1, "uncited": ["policy"], "unfounded": ["35"]}
     assert op.numbers("1,234.50원 0.50 7 12") == {"1234.5", "0.5", "12"}
     assert op.obs_facts("x" * 10, 5).get("cut") and "cut" not in op.obs_facts("x" * 10, 50)
     o.terra = Script({"tools": [{"tool": "policy", "args": {}}]}, {"done": {"note": "끝"}})
