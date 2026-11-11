@@ -81,13 +81,30 @@ def restart_container(logs):
     threading.Thread(target=hot_update, args=(logs,), daemon=True).start()
 
 
-def hot_update(logs):
-    """After a container restart: the hook code and the strategist loop (hot_update.sh rsyncs and restarts it)."""
-    try:
-        r = subprocess.run(["sh", str(HERE / "docker" / "hot_update.sh")], capture_output=True, text=True, timeout=300)
-        log(logs, f"hot_update exit {r.returncode}: {(r.stdout or r.stderr).strip()[-200:]}")
-    except Exception as e:
-        log(logs, f"hot_update error {type(e).__name__}: {e}")
+def container_health():
+    out = subprocess.run(["podman", "inspect", "--format", "{{.State.Health.Status}}", "week08-market-market-1"],
+                         capture_output=True, text=True)
+    return out.stdout.strip()
+
+
+def hot_update(logs, wait_s=300):
+    """After a container restart: the hook code and the strategist loop (hot_update.sh rsyncs and restarts it),
+    once the container is healthy. On 11-12 02:32 the exec of the loop into a container still starting up failed
+    silently, and the health check passed on the previous run's state.json; tried up to 3 times."""
+    t0 = time.time()
+    while container_health() != "healthy" and time.time() - t0 < wait_s:
+        time.sleep(10)
+    log(logs, f"container {container_health() or 'unknown'} after {time.time() - t0:.0f} s; running hot_update")
+    for attempt in range(3):
+        try:
+            r = subprocess.run(["sh", str(HERE / "docker" / "hot_update.sh")], capture_output=True, text=True,
+                               timeout=300)
+            log(logs, f"hot_update exit {r.returncode}: {(r.stdout or r.stderr).strip()[-200:]}")
+            if r.returncode == 0:
+                return
+        except Exception as e:
+            log(logs, f"hot_update error {type(e).__name__}: {e}")
+        time.sleep(30)
 
 
 # --- the watchdog

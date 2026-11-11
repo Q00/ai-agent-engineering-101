@@ -39,7 +39,16 @@ rm -f "$LIST"
 if [ -z "$DRY" ]; then
   for f in market_buyer.py restock.py review.py policy.py; do python3 -m py_compile "$DATA/$f"; done
   # the loop's pid is in its heartbeat (the slim image has no procps); a new loop then starts detached
+  T0=$(date +%s)
   $COMPOSE exec -d market as-agent sh -c 'pid=$(python -c "import json;print(json.load(open(\"/data/strategist-home/heartbeat.json\"))[\"pid\"])" 2>/dev/null); [ -n "$pid" ] && kill "$pid" 2>/dev/null; sleep 2; mkdir -p /data/strategist-home && exec python -m strategist >> /data/strategist-home/console.log 2>&1' >/dev/null 2>&1 || true
   sleep 65                                        # the new loop writes its first heartbeat after HEARTBEAT_S
-  $COMPOSE exec market as-agent python -m strategist health >/dev/null 2>&1 && echo "strategist loop: restarted, healthy" || echo "strategist loop: health not fresh yet (heartbeat is every 60 s)"
+  # only a heartbeat written after this restart counts: `python -m strategist health` also accepts a fresh
+  # state.json, which a run minutes earlier leaves behind, and on 11-12 02:32 that said "healthy" for a loop
+  # whose exec had failed in a container still starting up
+  if python3 -c "import json,sys; sys.exit(0 if json.load(open('$DATA/strategist-home/heartbeat.json'))['ts'] >= $T0 else 1)" 2>/dev/null; then
+    echo "strategist loop: restarted, healthy"
+  else
+    echo "strategist loop: NOT running (no heartbeat since the restart); run this script again"
+    exit 1
+  fi
 fi
