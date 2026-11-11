@@ -125,6 +125,7 @@ echo "${hash:-$old_hash} ${round:-$old_round} $health" > "$STATE"
 
 # strategist: market analysis and parameter moves, once an hour (strategist.py keeps its own clock); in the
 # background so a slow model call never holds this watcher up
+"$HERE/.venv/bin/python" "$HERE/buyer_score.py" >/dev/null 2>&1 || true          # 11-11: scorekeeper (m*, calibration, reconcile)
 "$HERE/.venv/bin/python" "$HERE/market_probe.py" --check >/dev/null 2>&1 || true   # its watch list may wake it early
 nohup "$HERE/.venv/bin/python" "$HERE/strategist.py" >/dev/null 2>&1 &
 nohup "$HERE/.venv/bin/python" "$HERE/buyer_strategist.py" >/dev/null 2>&1 &   # the buyer's own analyst

@@ -365,21 +365,33 @@ def choose(shops, mem, item, budget, ask_model=True, ctx=None):
 
         def value(s):
             e = expected(ctx["stats"], s["name"], ctx["kind"], ctx["cat"])
-            if ctx.get("aimtop") and e.get("saved_top") is not None and e.get("n", 0) >= 10:
-                e = dict(e, saved=round((e["n"] * e["saved_top"] + 10 * e["saved"]) / (e["n"] + 10), 4))
+            # 11-11: the aimtop saved_top blend (an in-sample best-quarter number) no longer enters the ranking or
+            # the skip test (it stays in the cap); instead the market expectation is calibrated with what WE realized
+            # at that shop over 24 h (goods were overpredicted by .04-.08), else by the kind's measured gap
+            o = (ctx.get("ours") or {}).get(f"{s['name']}|{ctx['kind']}")
+            if o and o.get("n", 0) >= 3 and o.get("v") is not None:
+                k_ = min(o["n"], 40)
+                e = dict(e, saved=round((10 * e["saved"] + k_ * o["v"]) / (10 + k_), 4), market_saved=e["saved"])
+            else:
+                g_ = ((ctx.get("cal") or {}).get(ctx["kind"]) or {}).get("gap")
+                if g_ is not None:
+                    e = dict(e, saved=round(e["saved"] + max(-0.08, min(0.02, g_)), 4), market_saved=e["saved"])
             if ctx.get("wpen") and ctx["kind"] == "goods":
                 # 11-07 A/B "wpen": our no-warranty goods ran 0.244 per deal (16 breaks at -1 in 439) against 0.324
                 # with a warranty, below our running mean; charge a shop for the share of its goods sold without one
                 e = dict(e, saved=round(e["saved"] - bp.get("wpen_cost", 0.06) * (1 - (e.get("warranty") or 0)), 4))
             v = seen.get(s["name"], [0, 0])
             conv = (v[1] + 1) / (v[0] + 2) if v[0] >= 5 else 0.6
-            bias = ((bp.get("shop_auto") or {}).get(s["name"]) or {}).get("shop_bias", 0)   # the strategist's call
+            sa = (bp.get("shop_auto") or {}).get(s["name"]) or {}
+            bias = sa.get("shop_bias", 0) + sa.get(f"bias_{ctx['kind']}", 0)   # the strategist's call, per kind since 11-11
             return (e["saved"] + bp["conv_weight"] * conv - (bp["rival_penalty"] if s["name"] in rivals else 0) + bias,
                     e, conv)
         ranked = sorted(((value(s), s) for s in allowed), key=lambda x: -x[0][0])
         # skip only when no allowed shop reaches skip_below; else the best score among those that do
         # user 11-06: food 0.279 vs goods 0.194 saved per deal (goods breaks count -1): a bar per kind
         thr = bp.get(f"skip_below_{ctx['kind']}", bp["skip_below"])
+        if ctx.get("m_star"):      # 11-11: a deal under the mean our saved will end at (m*) lowers the final score
+            thr = max(thr, ctx["m_star"] + bp.get(f"skip_delta_{ctx['kind']}", 0.0 if ctx["kind"] == "food" else -0.02))
         worth = [r for r in ranked if r[0][1]["saved"] >= thr]
     if ctx is not None and ranked:
         (score, e, conv), pick = (worth or ranked)[0]
@@ -389,7 +401,7 @@ def choose(shops, mem, item, budget, ask_model=True, ctx=None):
                + (", a rival above us" if pick["name"] in rivals else "")
                + "; next: " + ", ".join(f"{s['name']} {v[1]['saved']:.3f}" for v, s in ranked[1:4]))
         if e["saved"] < thr:
-            return None, f"skip: best expected saved {e['saved']:.3f} < skip_below_{ctx['kind']} {thr} ({why})", skipped, views
+            return None, f"skip: best expected saved {e['saved']:.3f} < bar {thr:.3f} (m* {ctx.get('m_star')}) ({why})", skipped, views
         return pick, why, skipped, views
     lower = [s for s in allowed if s["name"] not in rivals]
     allowed = lower or allowed
@@ -599,8 +611,13 @@ def main():
         # against psyoung82's 0.71), though a failed try costs seconds and the next shop is tried; rival_penalty
         # 0.04 pushed down the cheap food at Kiro729 for a revenue effect on them our ~70 deals/day barely move
         sbp = dict(bp, conv_weight=bp.get("pricefirst_conv_weight", 0.02), rival_penalty=0) if pricefirst else bp
+        try:                                   # 11-11: the scorekeeper's tables (buyer_score.py, every 15 min)
+            _sc = json.loads(SCORE_FILE.read_text())
+        except (OSError, ValueError):
+            _sc = {}
         vctx = {"stats": value_table(), "kind": order.get("kind") or "goods", "cat": order.get("category"), "bp": sbp,
-                "wpen": wpen, "aimtop": aimtop, "aim15": aim15}
+                "wpen": wpen, "aimtop": aimtop, "aim15": aim15, "m_star": m_star(sbp),
+                "ours": _sc.get("ours") or {}, "cal": _sc.get("calibration") or {}}
         shops = [s for s in shops if pick_sku(s, acceptable, catalog, a.budget, share, cskip)]
         prices = [(catalog.get(k) or {}).get("list_price") or 0 for k in acceptable]
         try:                                       # for our shop's restock: which prices this order accepts,
@@ -626,7 +643,8 @@ def main():
                                   "order": order.get("order"), "category": a.item, "kind": order.get("kind"),
                                   "outcome": "skipped (low value)", "price": None, "asks": [], "agreed": None,
                                   "honest": True, "signed": True, "void": "", "expected": expected_in(why),
-                                  "shopsel": "pricefirst" if pricefirst else "base", "wpen": wpen, "cheapfood": cheapfood, "cheapgoods": cheapgoods})
+                                  "shopsel": "pricefirst" if pricefirst else "base", "wpen": wpen, "cheapfood": cheapfood, "cheapgoods": cheapgoods,
+                                  "aimtop": aimtop, "aim15": aim15, "elapsed": int(time.time() - start)})
             save_memory(mem)
             no_deal(f"Skipped: no shop sells {a.item} cheaply enough for me now.")
             return
@@ -897,7 +915,11 @@ def main():
                                   "order": order.get("order"), "category": a.item if acceptable else None,
                                   "kind": order.get("kind"), "outcome": outcome, "price": None, "asks": asks,
                                   "agreed": agreed, "honest": True, "signed": True, "void": "",
-                                  "shopsel": "pricefirst" if pricefirst else "base", "wpen": wpen, "cheapfood": cheapfood, "cheapgoods": cheapgoods})
+                                  "shopsel": "pricefirst" if pricefirst else "base", "wpen": wpen, "cheapfood": cheapfood, "cheapgoods": cheapgoods,
+                                  "aimtop": aimtop, "aim15": aim15, "cap": cap if acceptable else None,
+                                  "list": want.get("list_price") if acceptable else None, "expected": expected_in(why),
+                                  "push": (f"{arm}-pushed" if pushed else f"{arm}-arm") if push else "control2",
+                                  "elapsed": int(time.time() - start)})
             log("buyer", f"{pick['name']} {'turned me away' if turned_away else 'did not meet my price'} ({outcome}); "
                          f"trying another shop ({attempt + 2}/{max_shops})")
             shops = others

@@ -69,6 +69,8 @@ GLOBAL = {                                    # role, bounds, step
     "cheapfood_share": ((0.0, 1.0), 0.3),     # food: ask for the cheapest unit that lasts and open low
     "cheapfood_open": ((0.2, 0.6), 0.05),     # food opening offer, share of list
     "cheapgoods_share": ((0.0, 1.0), 0.3),
+    "skip_delta_food": ((-0.05, 0.05), 0.01),  # 11-11: skip bar = m* + delta (m* from buyer_score.json)
+    "skip_delta_goods": ((-0.06, 0.05), 0.01),
     "target_mean": ((0.28, 0.40), 0.01),      # 11-11: the mean a goods deal must beat (m*) until buyer_score.json writes it
     "goods_delta": ((0.0, 0.08), 0.01),       # 11-11: margin over m* a goods deal must clear after its grade's break rate
     "needwarr_share": ((0.0, 1.0), 0.3),      # 11-09 (user): goods orders that require a 6 h warranty before haggling
@@ -83,6 +85,8 @@ GLOBAL = {                                    # role, bounds, step
 }
 SHOP = {                                      # per shop (user 11-06: the strategist steers the rule-based buyer)
     "shop_bias": ((-0.1, 0.1), 0.03),         # added to the shop's value score (prefer > 0, avoid < 0)
+    "bias_food": ((-0.1, 0.1), 0.03),         # 11-11: same, for food orders only (route food to the .40+ shops)
+    "bias_goods": ((-0.1, 0.1), 0.03),        # 11-11: same, for goods orders only (beds/sofas to the .30+ shops)
     "shop_cap": ((-0.05, 0.05), 0.02),        # added to the cap at that shop, as a share of list
 }
 CAT = {"cap": ((0.6, 0.85), 0.04)}            # per category: replaces value_share for orders of that category
@@ -361,12 +365,12 @@ re-offers a floor the shop names. Goods: A/B, or any grade with a 6 h+ warranty.
 food_extra_hours. Evidence "now"/"by_*" count saved as the score does (a break -1, a refunded one 0).
 
 Knobs (only these): global "value_share" (0.65-0.85), "quick_accept" (0.55-0.75), "food_extra_hours" (1-12),
-"skip_below" (0.15-0.33), "skip_below_food" (0.05-0.33) and "skip_below_goods" (0.15-0.4) (per-kind bars that
+"skip_delta_food"/"skip_delta_goods" (11-11: the skip bar is max(fixed bar, m* + delta) where m* is the mean our saved will end at, from buyer_score.json; the fixed bars) "skip_below" (0.15-0.33), "skip_below_food" (0.05-0.33) and "skip_below_goods" (0.15-0.4) (per-kind bars that
 replace skip_below; see BUYER_STRATEGY.md 0a2), "conv_weight" (0-0.3), "rival_penalty" (0-0.1), "cap_margin" (0-0.1), "near_cap" (0-0.04),
 "open_offset" (0-0.08), "max_shops" (1-6), "value_half_life_h" (0-6, default 2: how fast the shop values
 follow the newest market deals; lower when prices are moving, higher when the values look noisy), and the arms (11-08): "push_share", "push3_share", "cheapfood_share",
 "cheapgoods_share", "aimtop_share" (cap at the shop's p25, where the best buyers pay), "aim15_share" (of the aimtop orders, the share capped at p15 instead of p25), "target_mean"/"goods_delta" (11-11: goods are paid only when (1-p_grade)(1-x) >= target_mean + goods_delta; the warranty is required on every goods receipt and the grade ceilings replace gradeaware); "needwarr_share" (no effect since 11-11, the rule is on for every goods order; goods orders that ask for a 6 h warranty and leave before a price when the shop has none), "skubest_share", "wpen_share", "gradeaware_share" (each 0-1, share of orders), "push3_below" (0-0.2), "push_below"
-(0-0.15), "cheapfood_open" (0.2-0.6), "wpen_cost" (0-0.12), "gradeaware_cap_c"/"gradeaware_cap_b" (no effect since 11-11); per shop (give "shop": name from the evidence) "shop_bias" (-0.1..0.1,
+(0-0.15), "cheapfood_open" (0.2-0.6), "wpen_cost" (0-0.12), "gradeaware_cap_c"/"gradeaware_cap_b" (no effect since 11-11); per shop (give "shop": name from the evidence) "bias_food"/"bias_goods" (-0.1..0.1, 11-11: per-kind routing, added to the value score for orders of that kind), "shop_bias" (-0.1..0.1,
 added to its value score) and "shop_cap" (-0.05..0.05, added to the cap there as a share of list);
 per category "cap" (0.6-0.85, replaces value_share for that category; "category" is the order's item name as in
 THREE RACES (user, 11-08: 'look at the shop rank and the buyer rank apart; the 2nd shop is not the 2nd overall; do
