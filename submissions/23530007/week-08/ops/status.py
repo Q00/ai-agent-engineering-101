@@ -70,7 +70,34 @@ def shop_pace(now, hours):
     grades = {}
     for r in rows:
         grades[r.get("grade")] = grades.get(r.get("grade"), 0) + 1
-    return {"hours": hours, "deals_h": round(len(rows) / hours, 1), "margin_M_h": round(margin / hours / 1e6, 2), "grades": grades}
+    out = {"hours": hours, "deals_h": round(len(rows) / hours, 1), "margin_M_h": round(margin / hours / 1e6, 2), "grades": grades}
+    # 11-11 (user: 'is this tool rough?'): a 'deal' in the seller log is an AGREED close; a quarter were never paid
+    # (grade C: 16% paid) and their 'margin' was 60% of the figure above (11.8 M/h shown, 4.7 M/h paid, book +0.63 M/h).
+    # Paid = the unit settled on the ledger (cache, ~10 min behind: closes newer than the cache are left out).
+    sv = read(".market/shop_value.json", {}) or {}
+    D = sv.get("deals") or []
+    if D:
+        t1 = max(d["ts"] for d in D) - 120
+        paid_units = {d.get("unit") for d in D if d.get("shop") == NAME}
+        old = [r for r in rows if r.get("t", 0) <= t1]
+        h = max(0.05, (t1 - (now - hours * 3600)) / 3600)
+        paid = [r for r in old if r.get("unit") in paid_units]
+        out.update(paid_h=round(len(paid) / h, 1), paid_share=round(len(paid) / len(old), 2) if old else None,
+                   paid_margin_M_h=round(sum((r.get("price") or 0) - (r.get("cost") or 0) for r in paid) / h / 1e6, 2),
+                   paid_revenue_M_h=round(sum(r.get("price") or 0 for r in paid) / h / 1e6, 1))
+    return out
+
+
+def book_slope():
+    """Our book and the runner-up's in M/h over the guard's history (up to 6.5 h): what the book really did."""
+    bh = (read(".market/guard_state.json", {}) or {}).get("book_hist") or []
+    if len(bh) < 2 or bh[-1]["t"] - bh[0]["t"] < 1800:
+        return None
+    a, b = bh[0], bh[-1]
+    dt = (b["t"] - a["t"]) / 3600
+    same = a.get("rival") == b.get("rival")
+    return {"hours": round(dt, 1), "ours_M_h": round((b["us"] - a["us"]) / dt / 1e6, 2), "rival": b.get("rival"),
+            "rival_M_h": round((b["rb"] - a["rb"]) / dt / 1e6, 2) if same else None}
 
 
 def revenue_race(b, now):
@@ -151,7 +178,8 @@ def main():
                  "book_M": round(shops[NAME]["book"] / 1e6), "rival": rival["name"], "rival_book_M": round(rival["book"] / 1e6),
                  "lead_M": round((shops[NAME]["book"] - rival["book"]) / 1e6), "stars_rank": shops[NAME].get("stars_rank"),
                  "market_dead_shops": f"{sum(1 for s in live if not s.get('alive'))}/{len(live)}",
-                 "pace_1h": shop_pace(now, 1), "pace_6h": shop_pace(now, 6), "revenue_race": revenue_race(b, now)},
+                 "pace_1h": shop_pace(now, 1), "pace_6h": shop_pace(now, 6), "revenue_race": revenue_race(b, now),
+                 "book_slope": book_slope()},
         "buyer": {"rank": i_b, "score": buy[i_b - 1]["student_buyer"],
                   "above": [(p["player"], p["student_buyer"]) for p in buy[max(0, i_b - 3):i_b - 1]],
                   "saved": buyers[NAME]["saved"], "deals": buyers[NAME]["deals"], "m_star": sc.get("m_star"),
@@ -168,7 +196,13 @@ def main():
     print(f"TOTAL  rank {t['rank']}  {t['score']}  (vs {t['second']}: {t['gap']:+.3f})")
     print(f"SHOP   rank {s['rank']}  {s['score']}  alive {s['alive']}  book {s['book_M']}M vs {s['rival']} {s['rival_book_M']}M (lead {s['lead_M']}M)"
           f"  stars_rank {s['stars_rank']}  market dead {s['market_dead_shops']}")
-    print(f"       1h: {s['pace_1h']['deals_h']} deals/h, margin {s['pace_1h']['margin_M_h']}M/h {s['pace_1h']['grades']} | 6h: margin {s['pace_6h']['margin_M_h']}M/h")
+    p1, p6 = s["pace_1h"], s["pace_6h"]
+    print(f"       6h: PAID {p6.get('paid_h')} deals/h, revenue {p6.get('paid_revenue_M_h')}M/h, margin {p6.get('paid_margin_M_h')}M/h"
+          f" ({(p6.get('paid_share') or 0):.0%} of {p6['deals_h']} agreed closes/h were paid) | 1h: paid {p1.get('paid_h')}/h, margin {p1.get('paid_margin_M_h')}M/h")
+    bs = s.get("book_slope")
+    if bs:
+        print(f"       book over {bs['hours']} h: ours {bs['ours_M_h']:+} M/h, {bs['rival']} {bs['rival_M_h'] if bs['rival_M_h'] is not None else '?':+} M/h"
+              " (paid margin less refunds of broken warranted goods, storage 1%/day and expired food)")
     rr = s.get("revenue_race") or {}
     if rr.get("ahead"):
         print(f"       revenue rank {rr['rank']}: {rr['gap_M']}M behind {rr['ahead']}; to pass it we must outsell it by {rr['need_lead_M_h']} M/h;"

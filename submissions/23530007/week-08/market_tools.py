@@ -206,17 +206,30 @@ def sku_sales(sku=None, hours=24, top=15):
 
 
 def margin_by_grade(hours=6):
-    """Our shop's closes and margin per grade over `hours`: which grades carry the book."""
+    """Our shop's agreed closes and margin per grade over `hours`, and what was actually PAID (the unit settled on
+    the ledger). 11-11: 'which grades carry the book' read from closes was wrong: grade C showed 47 M of margin on
+    204 closes in 6 h, of which 33 were paid for 6 M; paid margin was 4.7 M/h while the book grew +0.63 M/h (refunds
+    of broken warranted goods, storage and expired food take the rest)."""
     by = {}
-    rows = _seller_rows(min(float(hours or 6), 48))
+    h = min(float(hours or 6), 48)
+    rows = _seller_rows(h)
+    sv = _read(HERE / ".market" / "shop_value.json", {}) or {}
+    D = sv.get("deals") or []
+    paid_units = {d.get("unit") for d in D if d.get("shop") == "yms979"}
+    t1 = (max(d["ts"] for d in D) - 120) if D else 0
     for r in rows:
-        e = by.setdefault(r.get("grade"), [0, 0, 0])
+        e = by.setdefault(r.get("grade"), [0, 0, 0, 0, 0])
         e[0] += 1
         e[1] += (r.get("price") or 0) - (r.get("cost") or 0)
-        e[2] += r.get("price") or 0
-    h = min(float(hours or 6), 48)
-    return {"hours": h, "total_margin_M_h": round(sum(e[1] for e in by.values()) / h / 1e6, 2),
-            "by_grade": {g: {"closes": e[0], "margin_M": round(e[1] / 1e6, 1), "margin_per_close_k": round(e[1] / e[0] / 1e3)} for g, e in by.items()}}
+        if r.get("t", 0) <= t1 and r.get("unit") in paid_units:
+            e[3] += 1
+            e[4] += (r.get("price") or 0) - (r.get("cost") or 0)
+    return {"hours": h, "paid_margin_M_h": round(sum(e[4] for e in by.values()) / h / 1e6, 2),
+            "agreed_margin_M_h": round(sum(e[1] for e in by.values()) / h / 1e6, 2),
+            "by_grade": {g: {"closes": e[0], "paid": e[3], "paid_share": round(e[3] / e[0], 2), "margin_on_closes_M": round(e[1] / 1e6, 1),
+                             "margin_paid_M": round(e[4] / 1e6, 1), "paid_margin_per_deal_k": round(e[4] / e[3] / 1e3) if e[3] else None}
+                         for g, e in by.items()},
+            "note": "decide on the PAID columns; closes newer than the ledger cache (~10 min) count as unpaid"}
 
 
 def unpaid_closes(hours=3):
@@ -443,7 +456,7 @@ TOOLS = {
     "shop_profile": (shop_profile, "A shop's last-6-h profile (what it sells, prices, buyers, stock).", {"name": "string"}, ["name"]),
     "score": (score, "The scorekeeper: m_now, m* (projected final mean), v by kind 6/24 h, calibration, breaks, skips, per-order arm scores.", {}, []),
     "sku_sales": (sku_sales, "Our shop's sales per SKU (hours <= 48): closes, margin, mean x, grade mix, stock now; one SKU when given.", {"sku": "string", "hours": "number", "top": "integer"}, []),
-    "margin_by_grade": (margin_by_grade, "Our shop's closes and margin per grade over hours: which grades carry the book.", {"hours": "number"}, []),
+    "margin_by_grade": (margin_by_grade, "Our shop's agreed closes per grade over hours and what was actually PAID (settled): paid share, margin on closes vs paid margin. Decide on the paid columns.", {"hours": "number"}, []),
     "unpaid_closes": (unpaid_closes, "Our shop's closes that never settled (last hours), by grade and SKU.", {"hours": "number"}, []),
     "stars_accounts": (stars_accounts, "Accounts rating our shop below 5 (paid, 24 h): n, mean, mean elsewhere, claims, x, reasons.", {}, []),
     "stars_ladder": (stars_ladder, "Student shops' stars_rank ladder around us and the value of one rank.", {}, []),
