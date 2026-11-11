@@ -275,12 +275,29 @@ class ShopSupervisor:
                       'healthy' if healthy or not self.pending_registration and self.misses == 0 else 'probing')
 
 
+def supervision_step(monitor, kit):
+    """A failed diagnostic write must not terminate the recovery worker."""
+    try:
+        monitor.tick()
+        return True
+    except (Exception, SystemExit) as exc:
+        try:
+            kit.log('[kit] shop supervisor: ' + type(exc).__name__)
+        except Exception:
+            pass
+        try:
+            monitor.snapshot('retrying')
+        except Exception as reporting_error:
+            try:
+                kit.log('[kit] supervisor health write failed; continuing next tick (' +
+                        type(reporting_error).__name__ + ')')
+            except Exception:
+                pass
+        return False
+
+
 def supervise(kit, *args):
     monitor = ShopSupervisor(kit, *args)
     while True:
         time.sleep(15)
-        try:
-            monitor.tick()
-        except (Exception, SystemExit) as exc:
-            kit.log('[kit] shop supervisor: ' + type(exc).__name__)
-            monitor.snapshot('retrying')
+        supervision_step(monitor, kit)

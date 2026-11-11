@@ -30,7 +30,16 @@ def atomic_json(path, value):
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_name(path.name + "." + uuid.uuid4().hex + ".tmp")
     tmp.write_text(json.dumps(value, ensure_ascii=False, indent=2), encoding="utf-8")
-    os.replace(tmp, path)
+    # Windows readers/antivirus can briefly deny replacing an existing file.
+    # Bound retries; a real permission failure must still reach the caller.
+    for attempt in range(4):
+        try:
+            os.replace(tmp, path)
+            break
+        except PermissionError as exc:
+            if getattr(exc, 'winerror', None) not in {5, 32, 33} or attempt == 3:
+                raise
+            time.sleep(.01 * 2 ** attempt)
 
 
 def policy(root=ROOT):
