@@ -111,13 +111,24 @@ def relist_if_delisted(me, dry=False):
     12 min) while our tunnel and seller answered, so the kit's watchdog (3 failed card checks) never re-joined.
     When the board says dead but the local seller answers, kill the kit's cloudflared child: the watchdog opens a
     new tunnel within ~3 min and joins again ('shop registered again'). At most once per 20 min."""
-    if me.get("alive", True):
-        return None
     rf = HERE / ".market" / "relist.json"
     try:
         st = json.loads(rf.read_text())
     except (OSError, ValueError):
         st = {}
+    if me.get("alive", True):
+        if st.get("dead_since"):
+            st.pop("dead_since", None)
+            rf.write_text(json.dumps(st))
+        return None
+    # 11-11: the kit's own watchdog re-joins within a minute when the board says dead; this tunnel swap is the
+    # fallback, used only when the shop has been dead for two consecutive ticks (>= 15 min)
+    if not st.get("dead_since"):
+        st["dead_since"] = time.time()
+        rf.write_text(json.dumps(st))
+        return "relist: board alive=False, first sighting (the kit watchdog re-joins by itself; acting if still dead next tick)"
+    if time.time() - st["dead_since"] < 14 * 60:
+        return "relist: board alive=False, waiting for the kit watchdog"
     if time.time() - st.get("relist_t", 0) < 20 * 60:
         return "relist: waiting (last try < 20 min ago)"
     out = subprocess.run(["ps", "-eo", "pid,ppid,args"], capture_output=True, text=True).stdout.splitlines()
