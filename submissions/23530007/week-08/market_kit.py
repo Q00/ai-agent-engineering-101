@@ -1126,6 +1126,20 @@ def watchdog(a, agent, d, market, keys, procs, proxy, sport, pport, state, every
             if not a.tunnel:
                 continue
             ok = procs[1].poll() is None and card_ok(proxy.public)
+            # yms979 11-11: the market dropped our shop from /api/shops twice (alive=False) while the tunnel and
+            # the card still answered, so the 3-miss rule below never fired and buyers could not find us for
+            # 5-16 min. When the market no longer lists us but the card answers, join again at once (same URL).
+            if ok:
+                try:
+                    r = market.c.get(f"{market.base}/api/shops", timeout=10)
+                    lst = r.json() if r.status_code == 200 else None
+                    lst = lst.get("shops") if isinstance(lst, dict) else lst
+                    if isinstance(lst, list) and lst and not any(s.get("name") == a.name for s in lst):
+                        log("[market] the market no longer lists this shop though the card answers: joining again")
+                        j = market.join("shop", a.name, keys["shop"], proxy.public)
+                        log(f"[market] shop registered again as {j['name']} (same URL)")
+                except (Exception, SystemExit) as e:
+                    log(f"[kit] relist check: {type(e).__name__}: {e}")
             misses = 0 if ok else misses + 1
             if misses < 3:
                 continue
