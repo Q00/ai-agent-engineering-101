@@ -44,6 +44,13 @@ SHOP_VALUE = MD / "shop_value.json"
 LOGF = HERE / "logs" / "guards.log"
 MARKET = "https://market.ourolabs.ai"
 DAILY_CAP = 18.5           # $/24 h: (credit - 60 for Round 4) / days left on 11-11
+try:                       # 11-11 (user: use nearly all of the credit before it expires): 1.4 x the paced daily budget
+    import strategist_memory as _sm
+    _b = _sm.pace()[2]
+    if _b:
+        DAILY_CAP = max(DAILY_CAP, round(1.4 * _b, 1))
+except Exception:
+    pass
 TOTAL_GAP = 0.03           # G12: class-total lead under this wakes both strategists
 DRY = "--dry" in sys.argv
 

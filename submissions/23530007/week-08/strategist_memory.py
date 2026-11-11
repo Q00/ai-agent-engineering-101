@@ -256,11 +256,15 @@ def operator_note(note_file, answer_file, max_age_h=6):
         return None
     if not n.get("note"):
         return None
+    try:                                # 11-11: t may be a string (notes written by hand / ops/tell.py)
+        nt = float(n.get("t") or 0)
+    except (TypeError, ValueError):
+        nt = 0.0
     try:
-        answered = _j.loads(Path(answer_file).read_text(encoding="utf-8")).get("t", 0) > n.get("t", 0)
-    except (OSError, ValueError):
+        answered = float(_j.loads(Path(answer_file).read_text(encoding="utf-8")).get("t") or 0) > nt
+    except (OSError, ValueError, TypeError):
         answered = False
-    if answered and time.time() - n.get("t", 0) > max_age_h * 3600:
+    if answered and time.time() - nt > max_age_h * 3600:
         return None
     return n["note"]
 
@@ -319,6 +323,28 @@ def read_board(role, n=1):
 # reason to think hard (wake, new operator note, rank change, big move), medium on routine runs.
 GATE_MAX_GAP_H = {"buyer": 3.0, "shop": 6.0}
 GATE_MIN_GAP_H = {"buyer": 50 / 60, "shop": 1.0}   # 11-11: checks every 30 min; a flapping rank must not buy a run each
+CREDIT_END = 1795219200       # 2026-11-21 00:00 UTC: the promotional credit expires (no refill)
+# 11-11 (user: 'use nearly all of what is left; raise the frequency'): the gate paces itself to the credit. daily
+# budget = credit left / days to expiry; spend in the last 24 h under 85 % of it -> every check may run (min gap
+# 30 min, max gap buyer 1 h / shop 2 h, effort high); 85-115 % -> min gap buyer 40 / shop 60 min, max 2 h / 4 h,
+# effort high; over 115 % -> the frugal setting above (effort medium unless something hard happened)
+PACE = {"under": ({"buyer": 0.5, "shop": 0.5}, {"buyer": 1.0, "shop": 2.0}, True),
+        "on": ({"buyer": 40 / 60, "shop": 1.0}, {"buyer": 2.0, "shop": 4.0}, True),
+        "over": (GATE_MIN_GAP_H, GATE_MAX_GAP_H, False)}
+
+
+def pace(now=None):
+    """('under'|'on'|'over', spend 24 h, daily budget)."""
+    import time as _t
+    now = now or _t.time()
+    try:
+        import model_env
+        sp = model_env.spend_summary(now)
+        budget = (sp.get("credit_left") or 0) / max(0.5, (CREDIT_END - now) / 86400)
+        r = (sp.get("today") or 0) / budget if budget > 0 else 9
+        return ("under" if r < 0.85 else "on" if r <= 1.15 else "over"), sp.get("today"), round(budget, 2)
+    except Exception:
+        return "over", None, None
 
 
 def _gate_state(role):
@@ -407,13 +433,17 @@ def run_gate(role, mem_d, woken=False, now=None):
         if fp["book_eta_h"] < 150 <= old["book_eta_h"]:
             hard.append("book ETA under 150 h")
             why.append("book ETA under 150 h")
-    if age_h >= GATE_MAX_GAP_H.get(role, 6):
+    mode, spent, budget = pace(now)
+    min_gap, max_gap, always_high = PACE[mode]
+    if age_h >= max_gap.get(role, 6):
         why.append(f"{age_h:.1f} h since the last model run")
     run = bool(why)
     urgent = woken or "new operator note" in why
-    if run and not urgent and old and age_h < GATE_MIN_GAP_H.get(role, 1.0):
-        return False, "medium", f"waiting: {'; '.join(why)} (last model run {age_h * 60:.0f} min ago, min gap {GATE_MIN_GAP_H[role] * 60:.0f} min)"
-    effort = "high" if hard else "medium"
+    if run and not urgent and old and age_h < min_gap.get(role, 1.0):
+        return False, "medium", f"waiting: {'; '.join(why)} (last model run {age_h * 60:.0f} min ago, min gap {min_gap[role] * 60:.0f} min, pace {mode})"
+    effort = "high" if hard or always_high else "medium"
+    if run:
+        why.append(f"pace {mode}: ${spent}/24 h vs budget ${budget}/day")
     if run:
         mem_d["gate_fp"] = fp
         mem_d["model_t"] = now
