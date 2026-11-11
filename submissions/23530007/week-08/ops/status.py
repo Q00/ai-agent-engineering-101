@@ -81,10 +81,15 @@ def shop_pace(now, hours):
         paid_units = {d.get("unit") for d in D if d.get("shop") == NAME}
         old = [r for r in rows if r.get("t", 0) <= t1]
         h = max(0.05, (t1 - (now - hours * 3600)) / 3600)
-        paid = [r for r in old if r.get("unit") in paid_units]
-        out.update(paid_h=round(len(paid) / h, 1), paid_share=round(len(paid) / len(old), 2) if old else None,
+        last = {}                                   # a unit agreed twice (unpaid, then paid) counts once: its last close
+        for r in old:
+            if r.get("unit"):
+                last[r["unit"]] = r
+        paid = [r for u, r in last.items() if u in paid_units]
+        settles = [d for d in D if d.get("shop") == NAME and d["ts"] > now - hours * 3600]   # the ledger itself
+        out.update(paid_h=round(len(settles) / h, 1), paid_share=round(len(paid) / len(old), 2) if old else None,
                    paid_margin_M_h=round(sum((r.get("price") or 0) - (r.get("cost") or 0) for r in paid) / h / 1e6, 2),
-                   paid_revenue_M_h=round(sum(r.get("price") or 0 for r in paid) / h / 1e6, 1))
+                   paid_revenue_M_h=round(sum(d.get("amt") or 0 for d in settles) / h / 1e6, 1))
     return out
 
 
