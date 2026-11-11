@@ -8,8 +8,8 @@ typical goods cost (TYPICAL_COST_SHARE x list x surge). Until 11-11 it also boug
 that median; the user replaced that on 11-11 with a sales-outcome stop (see UNSOLD_SECONDS): no more of a SKU while any held unit
 of it is 6 h old unsold.
 At most 3 units of each held plus planned, inside the total cap, the run's units and the ordinary lines, paid from the run budget
-at worst cost (.75 x list x surge) with seven days of storage; held plus planned at worst cost within max_worst_cost_total (1M at
-most). A SKU with a held unit at least 24 h old and none of our completed sales of it in the last 24 h buys no more. The seller's
+at worst cost (.75 x list x surge) with seven days of storage; held plus planned at worst cost within max_worst_cost_total (1.2M at
+most from 11-11, 1M before). A SKU with a held unit at least 24 h old and none of our completed sales of it in the last 24 h buys no more. The seller's
 goods floor is cost plus storage plus 5%; only its long-stock (7 days held) and round-end (last 24 h) clearances go below cost.
 Read on every restock run; anything missing, unreadable or malformed means off, which is today's plan.
 """
@@ -23,7 +23,10 @@ ROOT = Path(__file__).resolve().parent
 CONFIG = ROOT / "mid_probe.json"
 ALLOWED = ("G0667d440", "G75f11c19")
 MAX_UNITS_PER_SKU = 3
-MAX_WORST_COST = 1000000
+# 1.2M from 11-11 (the user's choice in the Orchestrator session, about 19:5x KST: "1.2M으로 올림 (권장)"; 1M until then): in 24 h
+# U2 sold 83 (G75f11c19 63, G0667d440 20), all above cost, Book 1.59M, 40 known raters at 4.83, while three mattress units at
+# about 261k worst each held the bedding SKU (about 92k) to one unit.
+MAX_WORST_COST = 1200000
 TYPICAL_COST_SHARE = 0.60
 WORST_COST_SHARE = 0.75
 STALE_SECONDS = 86400

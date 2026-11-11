@@ -38,17 +38,20 @@ class Settings(unittest.TestCase):
     def test_shipped_on(self):
         value = json.loads(mp.CONFIG.read_text(encoding="utf-8"))
         self.assertIs(value["enabled"], True)  # switched on 11-10 after the install commit 2f019ac6
-        self.assertEqual((value["skus"], value["units_per_sku"], value["max_worst_cost_total"]), (GOOD["skus"], 3, 1000000))
-        self.assertEqual(mp.settings(), {"skus": GOOD["skus"], "units_per_sku": 3, "max_worst_cost_total": 1000000})
+        # 1.2M from 11-11 about 19:5x KST (the user's choice in the Orchestrator session), 1M before.
+        self.assertEqual((value["skus"], value["units_per_sku"], value["max_worst_cost_total"]), (GOOD["skus"], 3, 1200000))
+        self.assertEqual(mp.settings(), {"skus": GOOD["skus"], "units_per_sku": 3, "max_worst_cost_total": 1200000})
 
     def test_only_a_valid_file_turns_it_on(self):
         with TemporaryDirectory() as folder:
             path = Path(folder) / "m.json"
             path.write_text(json.dumps(GOOD), encoding="utf-8")
             self.assertEqual(mp.settings(path), {"skus": GOOD["skus"], "units_per_sku": 3, "max_worst_cost_total": 1000000})
+            path.write_text(json.dumps({**GOOD, "max_worst_cost_total": 1200000}), encoding="utf-8")
+            self.assertEqual(mp.settings(path)["max_worst_cost_total"], 1200000)
             for bad in ({**GOOD, "enabled": "true"}, {**GOOD, "skus": GOOD["skus"] + ["G0e4deffc"]}, {**GOOD, "skus": ["G0e4deffc"]}, {**GOOD, "skus": []},
                         {**GOOD, "skus": ["G0667d440"] * 2}, {**GOOD, "units_per_sku": 4}, {**GOOD, "units_per_sku": 0}, {**GOOD, "units_per_sku": 2.0},
-                        {**GOOD, "max_worst_cost_total": 1000001}, {**GOOD, "max_worst_cost_total": 0}, {**GOOD, "max_worst_cost_total": "1"},
+                        {**GOOD, "max_worst_cost_total": 1200001}, {**GOOD, "max_worst_cost_total": 0}, {**GOOD, "max_worst_cost_total": "1"},
                         {k: v for k, v in GOOD.items() if k != "units_per_sku"}, []):
                 path.write_text(json.dumps(bad), encoding="utf-8")
                 self.assertIsNone(mp.settings(path), bad)
