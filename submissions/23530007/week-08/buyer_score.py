@@ -141,7 +141,7 @@ def build(now=None):
     arms = {}
     for o, t in last.items():
         v = score(t) if t.get("outcome") == "deal" and t.get("list") and t.get("price") else 0.0
-        for flag in ("aimtop", "aim15", "cheapfood", "cheapgoods", "pricefirst"):
+        for flag in ("aimtop", "aim15", "cheapfood", "cheapgoods", "pricefirst", "talk", "soft"):
             if flag in t:
                 arms.setdefault(f"{flag}={bool(t[flag])}", []).append(v)
         if t.get("push"):

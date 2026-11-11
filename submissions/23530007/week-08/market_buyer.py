@@ -381,6 +381,18 @@ def avoid_shops():
     return names, pairs, why
 
 
+TALK_FIRST = ("Thank you. Before I name a number: what is the lowest price you can do for this unit today? "
+              "I am ready to buy now if the price is right.")
+SOFT_REJECT = 0.30                       # 11-11: reject share that marks a shop as one that ends talks on low offers
+
+
+def reject_rate(mem, shop, hours=24, min_n=8):
+    """Share of our haggled visits to `shop` in the last `hours` that the shop ended ('rejected'); None under min_n."""
+    since = time.time() - hours * 3600
+    v = [t for t in mem.get("trades", []) if t.get("shop") == shop and t.get("t", 0) >= since and t.get("asks")]
+    return sum(1 for t in v if t.get("outcome") == "rejected") / len(v) if len(v) >= min_n else None
+
+
 _LE = {"t": 0, "m": {}}
 
 
@@ -872,6 +884,15 @@ def main():
         # then takes the ask; push5 offers the shop's low edge itself (p05 of its settles over 6 h, else p25 - .12)
         # and climbs by push5_step of list per round, up to push5_rounds counters, before it takes an ask under the cap
         low5 = None
+        # 11-11 22:20 (user: 'better to start the conversation first, then haggle'): shops differ: psyoung82 ended 49%
+        # of our talks after two offers and winun1127 62%, buzllightyear and choo-chu never end one and never move.
+        # talk (A/B, talk_share): before any number we ask once for the shop's lowest price and haggle from its
+        # answer. soft: at a shop that ended >= SOFT_REJECT of our talks in 24 h (>= 8 visits) the first counter is
+        # halfway between the low edge and its ask, not the low edge itself, and it climbs from there.
+        talk = random.random() < bp.get("talk_share", 0)
+        talked = False
+        rej_rate = reject_rate(mem, pick["name"])
+        soft = rej_rate is not None and rej_rate >= SOFT_REJECT
         if push and push5:                                            # food and, since 19:55 (user), goods
             arm, max_push = "push5", int(bp.get("push5_rounds", 6))
             low5 = low_edge(pick["name"], order.get("kind") or "food")
@@ -973,6 +994,11 @@ def main():
                     # Open just under the shop's lower quartile, then halfway to the cap, then the cap; take any
                     # ask at or under the cap; after 3 offers walk (the next shop is tried).
                     mine = [p for k, p in history if k == "you offered"]
+                    if talk and not talked and not mine and time.time() - start < DEADLINE - 25:
+                        talked = True               # one question, no number: the shop's answer is the ask we haggle from
+                        t = seller.send(TALK_FIRST, tid, ctx)
+                        tid, ctx = t.get("id") or tid, t.get("contextId") or ctx
+                        continue
                     history.append(("seller asked", ask))
                     lp = want["list_price"]
                     prev = [a for k, a in history[:-1] if k == "seller asked"]
@@ -987,6 +1013,8 @@ def main():
                         if arm == "push5":      # the low edge itself, then small steps up; never above the ask
                             aim_p = int(lp * max(0.38, low5 if low5 is not None else p25 - 0.12))
                             step5 = max(1, int(lp * bp.get("push5_step", 0.015)))
+                            if soft and not mine:        # a shop that ends talks on low offers: start halfway to its
+                                aim_p = max(aim_p, (ask + aim_p) // 2)   # ask (psyoung82 gives .17 of list when it stays in the talk)
                             action, offer = "offer", min(ask, max(aim_p, (mine[-1] + step5) if mine else aim_p))
                         else:
                             action, offer = "offer", max(mine[-1] if mine else 0, (ask + aim_p) // 2)
@@ -1095,7 +1123,7 @@ def main():
                                   "shopsel": "pricefirst" if pricefirst else "base", "wpen": wpen, "cheapfood": cheapfood, "cheapgoods": cheapgoods,
                                   "aimtop": aimtop, "aim15": aim15, "cap": cap if acceptable else None,
                                   "list": want.get("list_price") if acceptable else None, "expected": expected_in(why),
-                                  "push": (f"{arm}-pushed" if pushed else f"{arm}-arm") if push else "control2",
+                                  "push": (f"{arm}-pushed" if pushed else f"{arm}-arm") if push else "control2", "talk": talk, "soft": soft,
                                   "elapsed": int(time.time() - start)})
             log("buyer", f"{pick['name']} {'turned me away' if turned_away else 'did not meet my price'} ({outcome}); "
                          f"trying another shop ({attempt + 2}/{max_shops})")
@@ -1136,7 +1164,7 @@ def main():
                           "expected": expected_in(why),      # the shop's expected saved per deal when chosen
                           "shopsel": "pricefirst" if pricefirst else "base", "wpen": wpen, "cheapfood": cheapfood, "cheapgoods": cheapgoods, "regraded": regraded, "skubest": skubest, "aimtop": aimtop, "aim15": aim15, "needwarr": needwarr,
                           "gradeaware": gradeaware, "graded": list(graded) if graded else None,
-                          "push": (f"{arm}-pushed" if pushed else f"{arm}-arm") if push else "control2"})   # 11-07 A/B
+                          "push": (f"{arm}-pushed" if pushed else f"{arm}-arm") if push else "control2", "talk": talk, "soft": soft})   # 11-07 A/B
     save_memory(mem)
     log("buyer", f"done: {outcome}" + (f" at {price}" if price is not None else "")
                  + f", {time.time() - start:.0f} s, harness calls {harness.CALLS['n']}")
