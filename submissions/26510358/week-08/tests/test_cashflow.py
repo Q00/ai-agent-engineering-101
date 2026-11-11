@@ -46,7 +46,8 @@ def test_holds_below_cap_and_shrinks_on_slow_sales():
 def test_balance_ceiling_wins_and_min_holds_otherwise():
     m = Mem(sold=100, received=100, turned=9)
     m.put("cash_cap", {"cap": 500_000_000, "ts": 0})
-    assert cashflow.caps(m, 100_000_000, 60_000_000, now=10_000)[0] == 40_000_000      # 0.40 x balance
+    assert cashflow.caps(m, 100_000_000, 60_000_000, now=10_000)[0] == \
+        int(config.CAP_CEILING_SHARE * 100_000_000)                                    # 0.60 x balance (0.40 to 11-11)
     assert cashflow.caps(Mem(), 5_000_000, 0, now=10_000)[0] == config.MAX_STOCK_COST    # small shop: old floor
     m = Mem(sold=0, received=100)
     m.put("cash_cap", {"cap": 1, "ts": 0})

@@ -62,8 +62,8 @@ def test_deep_category_gets_a_larger_cap(tmp_path, monkeypatch):
     demand = [{"category": CAT["G1"]["category"], "item": "의자", "kind": "goods", "skus": 1, "median_price": 100000}]
     chairs = [{"unit": f"u{i}", "category": CAT["G1"]["category"], "cost": 60000, "sku": "G1"} for i in range(13)]
     lines, why, state = restock_r3.plan({"balance": 15_000_000, "units": chairs}, demand, m, now=now)
-    assert state["stock_budget"] == 6_000_000
-    assert lines and lines[0]["sku"] == "G1"                                          # 780k < 35% of 6M = 2.1M
+    assert state["stock_budget"] == int(config.CAP_CEILING_SHARE * 15_000_000)       # 9M (6M at 0.40 to 11-11)
+    assert lines and lines[0]["sku"] == "G1"                                          # 780k < 35% of 9M = 3.15M
     assert any(w.get("deep") for w in why)
 
 
