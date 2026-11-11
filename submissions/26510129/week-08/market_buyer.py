@@ -239,13 +239,16 @@ def capped_step(previous, proposal, cap=STEP_CAP):
 
 
 FLOOR_PHRASES = re.compile(r"(?:lowest|no deal below|cost floor|our last ask was|final price was)[^0-9]{0,24}(\d[\d,]*)", re.I)
+FLOOR_BEFORE = re.compile(r"(\d[\d,]*)\s+is\s+(?:our|the|my)\s+(?:lowest|floor|final)", re.I)   # "13438 is our lowest: ..."
 
 
 def stated_floor(text):
     """A floor the shop states in its reply, else None. 11-11: of ~1,100 closes in 19 h, 580 named one in five
     phrasings ("No deal at 80000; our lowest is 92000", "No deal below 92000", "Lowest for this unit: 92000",
-    "Cannot sell below certified cost floor (92000)", "Our last ask was 92000"); the first regex read only one."""
-    m = FLOOR_PHRASES.search(text or "")
+    "Cannot sell below certified cost floor (92000)", "Our last ask was 92000"); the first regex read only one.
+    17:30: "13438 is our lowest: it is top grade (A) ..." (the number before the word) was read as nothing and cost
+    three offers and two model calls before the shop rejected."""
+    m = FLOOR_BEFORE.search(text or "") or FLOOR_PHRASES.search(text or "")
     return int(m.group(1).replace(",", "")) if m else None
 
 
@@ -269,7 +272,8 @@ def first_ask(t, list_price=None):
     ask = ((t or {}).get("status", {}).get("message", {}).get("metadata") or {}).get("ask")
     if isinstance(ask, (int, float)):
         return int(ask)
-    nums = [int(n) for n in re.findall(r"(?<![\d.])(\d{1,9})(?![\d])", status_text(t))]
+    # 17:30: "Asking 12,530 credits" was read as 12 and 530, both implausible, so the ask was unknown
+    nums = [int(n.replace(",", "")) for n in re.findall(r"(?<![\d.,])(\d{1,3}(?:,\d{3})+|\d{1,9})(?![\d,])", status_text(t))]
     if isinstance(list_price, (int, float)) and list_price > 0:
         nums = [n for n in nums if 0.2 * list_price <= n <= 3 * list_price]
     return nums[-1] if nums else None
@@ -350,8 +354,21 @@ def negotiate(url, item, budget, reference, record="", request=None, value_cap=N
         ask = ((t or {}).get("status", {}).get("message", {}).get("metadata") or {}).get("ask")
         if ask is None:
             ask = first_ask(t, value_cap)
+        floor = stated_floor(status_text(t))
+        if floor and isinstance(value_cap, (int, float)) and not 0.2 * value_cap <= floor <= 3 * value_cap:
+            floor = None   # a number read out of other text, not a price
+        if floor and floor > guardian.limit:
+            # 17:30: a shop that names a lowest over my pay cap will not come down to it; three offers and two model
+            # calls went into "13438 is our lowest" (0.75 of list, cap 0.70) before it rejected
+            print(f"[buyer] the shop's stated lowest {floor} is over my pay cap {guardian.limit}; leaving", flush=True)
+            rpc(rpc_url, "CancelTask", {"id": tid})
+            return "walked_away", None, None, log, manip, info
+        if round_index >= 3 and isinstance(ask, (int, float)) and ask > guardian.limit:
+            print(f"[buyer] three offers and the ask {ask} is still over my pay cap {guardian.limit}; leaving", flush=True)
+            rpc(rpc_url, "CancelTask", {"id": tid})
+            return "walked_away", None, None, log, manip, info
         # after a reopen the shop has shown its floor: the next ask near it is taken rather than bargained down again
-        quick, why = quick_offer(ask, stated_floor(status_text(t)), reference, guardian.limit,
+        quick, why = quick_offer(ask, floor, reference, guardian.limit,
                                  max(slack, 1.05) if info.get("reopened") else slack, quick_take)
         if quick is None and offers and closing_gap(offers[-1][0], ask, guardian.limit, reference, slack):
             quick, why = int(round(ask)), "the ask, within 2% of my last offer,"

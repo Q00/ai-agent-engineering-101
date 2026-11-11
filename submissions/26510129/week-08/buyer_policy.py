@@ -245,7 +245,10 @@ class MandateGuardian:
             # 21:09 (o-b3f18a8374b8): the model opened at 30500 against an ask of 26500. Paying the ask closes the deal;
             # paying more than the ask is never the buyer's interest.
             proposal, decision = int(round(current_ask)), "capped_at_ask"
-        if proposal < self.__limit or (proposal == self.__limit and round_index >= 2):
+        # meeting a price the shop itself named reveals nothing, so the ask may be paid at the ceiling in any round
+        # (11-11 17:30: a counter equal to the cap was answered with the reference and had to be offered again)
+        at_the_ask = _number(current_ask) and proposal == int(round(current_ask))
+        if proposal < self.__limit or (proposal == self.__limit and (round_index >= 2 or at_the_ask)):
             if proposal == self.__limit:
                 self.ceiling_used = True
             return {"action": "offer", "decision": decision, "price": proposal}

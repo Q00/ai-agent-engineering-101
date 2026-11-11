@@ -139,6 +139,17 @@ class Round3BuyerContextTest(unittest.TestCase):
         self.assertTrue(market_buyer.regulars_prompt("REGULARS: bought here before? reply 'buyer: <your market name>' and VIP -3% comes off"))
         self.assertFalse(market_buyer.regulars_prompt("lamp: asking 115. Send your offer as a number."))
 
+    def test_asks_with_thousands_separators_and_floors_named_before_the_word_are_read(self):
+        task = {"status": {"message": {"parts": [{"text": "Asking 12,530 credits. Send your offer as a number."}]}}}
+        self.assertEqual(12530, market_buyer.first_ask(task, 17900))
+        self.assertEqual(13438, market_buyer.stated_floor("13438 is our lowest: it is top grade (A), with its certificate"))
+        self.assertEqual(92000, market_buyer.stated_floor("No deal at 80000; our lowest is 92000"))
+
+    def test_the_ask_may_be_paid_at_the_ceiling_in_the_first_round(self):
+        guardian = buyer_policy.MandateGuardian(50000, 9660, 12530)
+        self.assertEqual({"action": "offer", "decision": "approved", "price": 12530}, guardian.authorize(12530, 1, 12530))
+        self.assertEqual("reference_substitute", guardian.authorize(12530, 1, 13438)["decision"])   # not the ask: still sealed
+
     def test_an_ask_under_the_quick_take_share_is_paid_without_bargaining(self):
         self.assertEqual((170000, "the ask"), market_buyer.quick_offer(170000, None, 150000, 250000, quick_take=176000))
         self.assertEqual((None, None), market_buyer.quick_offer(180000, None, 150000, 250000, quick_take=176000))
