@@ -60,6 +60,7 @@ C_WARRANTY_UNTIL = 1794265200          # 2026-11-10 08:00 KST
 C_WARRANTY_UNTIL = 1794210000          # 2026-11-09 16:40 KST: over
 # ddolcom (strategy 3): prices come from code. ask = floor + (list price - floor) * STEP ** (buyer offers so far)
 STEP = 0.6                                  # each buyer offer moves the ask 40% of the way down to the floor
+ACCEPT_GAP = 0.92                           # from a buyer's second offer, one at the floor and this share of the ask or more is a deal
 # ddolcom: a buyer that leaves without cancelling kept its unit promised until a restart. On 2026-11-06 after 34 h of
 # uptime 10 of 14 high-value SKUs answered "none in stock" with units on the shelf. A negotiation silent this long is
 # over; 300 s is above the 180 s a harness call may take between two offers
@@ -405,6 +406,12 @@ class Seller(AgentExecutor):
         deal["ask"] = max(min(ask_price(u, deal["offers"], deal["arm"]), deal["ask"]), floor_price(u))   # an ask never goes up
         ask = deal["ask"]
         print(f"[price] {u['sku']} offer {offer}, ask {ask} (floor {floor_price(u)})", flush=True)
+        # Claude (2026-11-12 08:44, hourly check): G021aae64 (40 deals/h in the market) sold 0 in 2 h. Buyers offered about 320,000,
+        # then 360,142 against our 396,978 (floor 359,256) and walked, 19 times. In the hour 170 of 840 offers sat between the floor
+        # and the ask. From the second offer, one at the floor and within ACCEPT_GAP of the ask is taken
+        if offer < ask and deal["offers"] >= 2 and offer >= floor_price(u) and offer >= ACCEPT_GAP * ask:
+            print(f"[price] {u['sku']} offer {offer} taken within {ACCEPT_GAP} of ask {ask}", flush=True)
+            ask = offer
         if offer >= ask:
             print(f"[price] deal {u['sku']} at {offer} (list {u['list_price']}, arm {deal['arm']})", flush=True)
             receipt = {"shop": NAME, "item": u["sku"], "price": offer, "task": task.id}
