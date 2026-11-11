@@ -23,6 +23,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent.parent
 MARKET = "https://market.ourolabs.ai"
 OUT = HERE / "reports"
+METRIC_CHANGE = 1793934000   # 2026-11-06 12:00 KST: the buyer ranking switched to saved (rules patch)
 
 
 def _get(path):
@@ -73,7 +74,7 @@ def sample(pages=8, bucket_h=12.0):
                 lp = item.get("list_price")
                 if not lp or not d.get("amount"):
                     continue
-                rows.append({"b": b, "buyer": d.get("buyer"), "cat": item.get("category", "?").split(">")[-1],
+                rows.append({"b": b, "ts": e.get("ts"), "buyer": d.get("buyer"), "cat": item.get("category", "?").split(">")[-1],
                              "food": d.get("expires_at") is not None, "v": 1 - d["amount"] / lp})
     return rows, {"t0": t0, "t1": now, "buckets": n_b, "pages_per_bucket": pages}
 
@@ -91,7 +92,8 @@ def analyse(rows, meta):
     for r in rows:
         k = (r["b"], r["cat"])
         if r["buyer"] in board and k in ref:
-            e = per.setdefault(r["buyer"], {"v": [], "ref": [], "food": 0, "cats": {}})
+            e = per.setdefault(r["buyer"], {"v": [], "ref": [], "food": 0, "cats": {}, "pre": [], "post": []})
+            (e["pre"] if (r.get("ts") or 0) < METRIC_CHANGE else e["post"]).append(r["v"] - ref[k])
             e["v"].append(r["v"])
             e["ref"].append(ref[k])
             e["food"] += r["food"]
@@ -105,10 +107,16 @@ def analyse(rows, meta):
                     "raw_v": round(st.mean(e["v"]), 4), "mix_v": round(st.mean(e["ref"]), 4),
                     "skill": round(st.mean(x - y for x, y in zip(e["v"], e["ref"])), 4),
                     "food_share": round(e["food"] / len(e["v"]), 2),
+                    "skill_pre": round(st.mean(e["pre"]), 4) if len(e["pre"]) >= 15 else None,
+                    "skill_post": round(st.mean(e["post"]), 4) if len(e["post"]) >= 15 else None,
+                    "n_pre": len(e["pre"]), "n_post": len(e["post"]),
                     "top_cats": [f"{c} {n / len(e['v']):.0%}" for c, n in top]})
     mean_mix = st.mean(r["mix_v"] for r in out)
     for r in out:
         r["adjusted_saved"] = round(r["board_saved"] - (r["mix_v"] - mean_mix), 4)
+    for key in ("skill_post",):
+        for i, r in enumerate(sorted((r for r in out if r.get(key) is not None), key=lambda r: -r[key])):
+            r["rank_" + key] = i + 1
     for key in ("board_saved", "adjusted_saved", "skill"):
         for i, r in enumerate(sorted(out, key=lambda r: -r[key])):
             r["rank_" + key] = i + 1
