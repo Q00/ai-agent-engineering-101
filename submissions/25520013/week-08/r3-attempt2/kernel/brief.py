@@ -308,8 +308,9 @@ def section_restock(root, now):
     if not os.path.exists(os.path.join(root, "a2/LIVE")):  # attempt 1 restocks; the plan file is not read
         return [
             f"[재입고] 재고 {len(inv.get('units') or [])}개, 최근 1시간 판매 {sold}개 | 공급 창 {win}",
-            "  재입고는 규칙 코드가 공급 창마다 policy의 stock_target, qty_per_buy, restock_priority로 실행함. "
-            "restock_plan은 지금 쓰이지 않음. 재고를 바꾸려면 그 policy 값을 실험으로 걺",
+            "  재입고는 규칙 코드가 공급 창마다 실행함: hooks/restock.py가 policy.py의 restock_plan 함수를 불러 "
+            "policy의 stock_target, qty_per_buy, restock_priority와 섹션 shop의 한도로 살 물량을 정함(이 함수가 지금 실제 실행 경로임). "
+            "쓰이지 않는 것은 시도 2 방식의 계획 파일(done의 restock_plan 항목)뿐임. 재고를 바꾸려면 값은 done.policy, 동작은 done.code",
         ] + restock_food_lines(root, now, inv)
     return [
         f"[재입고] 계획 {head} | 재고 {len(inv.get('units') or [])}개, 최근 1시간 판매 {sold}개 | 공급 창 {win}",
