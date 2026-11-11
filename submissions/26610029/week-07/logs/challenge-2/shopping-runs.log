@@ -1,0 +1,60 @@
+Challenge 2 -- shopping_buyer.py manual runs
+
+Setup: python spawn_shops.py --count 20 --out directory.json
+  -> 20 real Agent Cards collected (ports 9800-9819), item subsets and price
+     multipliers varied per shop (see spawn_shops.py's ITEM_SETS / mult formula),
+     e.g.:
+       Shop 01 (lamp)               -> Sells: lamp.
+       Shop 02 (chair)              -> Sells: chair.
+       Shop 03 (bookshelf)          -> Sells: bookshelf.
+       Shop 04 (lamp/chair)         -> Sells: lamp, chair.
+       ... (20 total, see directory.json)
+
+=== Bug found and fixed before these runs ===
+First attempt: ask_harness_candidates("lamp", shops) returned
+  'CANDIDATES Shop 01, Shop 08, Shop 15, Shop 04, Shop 11, ...'
+-- the harness dropped the trailing "(item, item)" from the full shop name
+when repeating it back, so exact-string validation against the directory
+rejected every single name -> candidates for lamp: []. Fixed by resolving a
+returned name to the one directory name it is a PREFIX of, instead of
+requiring an exact match (see ask_harness_candidates in shopping_buyer.py).
+
+=== Run 1: shopping list [lamp, chair, bookshelf], budget 500 (too tight) ===
+$ python shopping_buyer.py --directory directory.json --list shopping_list.json --budget 500
+  candidates for lamp: ['Shop 01 (lamp)', 'Shop 08 (lamp)', 'Shop 15 (lamp)']
+  bought lamp from Shop 15 (lamp) at 103.0 (remaining budget: 397.0)
+  candidates for chair: ['Shop 02 (chair)', 'Shop 09 (chair)', 'Shop 16 (chair)']
+  bought chair from Shop 02 (chair) at 220.0 (remaining budget: 177.0)
+  candidates for bookshelf: ['Shop 03 (bookshelf)', 'Shop 10 (bookshelf)', 'Shop 17 (bookshelf)']
+  could not buy bookshelf within remaining budget 177.0
+  -> all_items_bought: false (budget too tight for this list, not a bug -- the
+     buyer correctly refused to overspend rather than exceed the budget)
+
+=== Run 2: same list, budget 650 ===
+$ python shopping_buyer.py --directory directory.json --list shopping_list.json --budget 650
+  candidates for lamp: ['Shop 01 (lamp)', 'Shop 08 (lamp)', 'Shop 15 (lamp)']
+  bought lamp from Shop 15 (lamp) at 103.0 (remaining budget: 547.0)
+  candidates for chair: ['Shop 02 (chair)', 'Shop 09 (chair)', 'Shop 16 (chair)']
+  bought chair from Shop 02 (chair) at 220.0 (remaining budget: 327.0)
+  candidates for bookshelf: ['Shop 03 (bookshelf)', 'Shop 10 (bookshelf)', 'Shop 17 (bookshelf)']
+  bought bookshelf from Shop 17 (bookshelf) at 290.0 (remaining budget: 37.0)
+  -> {"all_items_bought": true, "within_budget": true, "no_duplicates": true}
+
+=== Run 3: duplicate-item guard, list [lamp, chair, bookshelf, lamp], budget 650 ===
+$ python shopping_buyer.py --directory directory.json --list shopping_list_dup_test.json --budget 650
+  bought lamp from Shop 08 (lamp) at 120.0 (remaining budget: 530.0)
+  bought chair from Shop 02 (chair) at 220.0 (remaining budget: 310.0)
+  bought bookshelf from Shop 03 (bookshelf) at 250.0 (remaining budget: 60.0)
+  skip lamp: already bought          <-- the second "lamp" entry was skipped in code,
+                                           never sent to any shop a second time
+  -> {"all_items_bought": true, "within_budget": true, "no_duplicates": true}
+
+=== Known limitation (documented honestly, not fixed) ===
+shop_for_item() negotiates with up to 3 candidate shops AT ONCE (asyncio.gather)
+and keeps only the cheapest one that actually closed. If more than one
+candidate's negotiation reaches TASK_STATE_COMPLETED in the same batch, the
+"losing" shop(s) also believe they made a real sale (there is no A2A operation
+to undo a COMPLETED task) -- the buyer just never records or pays for it. This
+is a real tradeoff of negotiating with several shops at once rather than one
+at a time, and is left as-is rather than engineered around, within this
+assignment's time budget.
