@@ -700,6 +700,40 @@ def remember_phantoms(quotes):
             pass
 
 
+STUCK = Path(__file__).parent / "private" / "enuri" / "stuck.json"
+
+
+def stuck_pairs(now=None):
+    """(shop|sku) -> ts of a no deal where the shop never moved its ask. HQ 11-11 13:41: 103 of 180 no deals in 3 h
+    were 'it asked N and did not come down'; the same shop and item failed again and again (pepsi 13x, water 10x)."""
+    try:
+        st = json.loads(STUCK.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    now = now or time.time()
+    return {k: v for k, v in st.items() if now - v < T.get("stuck_skip_h", 1) * 3600}
+
+
+def remember_stuck(shop, sku):
+    st = stuck_pairs()
+    st[f"{shop}|{sku}"] = time.time()
+    try:
+        STUCK.parent.mkdir(parents=True, exist_ok=True)
+        STUCK.write_text(json.dumps(st), encoding="utf-8")
+    except OSError:
+        pass
+
+
+def skip_stuck(cands):
+    """Drop (shop, SKU) pairs that refused to move within the hour, but never the last candidate."""
+    st = stuck_pairs()
+    keep = [c for c in cands if f"{c[1]['name']}|{c[2]['sku']}" not in st]
+    if len(keep) < len(cands):
+        log(f"[stuck] skip {len(cands) - len(keep)} shop/item pairs that did not come down within "
+            f"{T.get('stuck_skip_h', 1)} h" + ("" if keep else "; none left, keeping them"))
+    return keep or cands
+
+
 RECEIPT_ERRORS = Path(__file__).parent / "private" / "enuri" / "receipt_errors.jsonl"
 
 
@@ -833,6 +867,7 @@ def round3(a, order, shops, mem, started):
     cands, adv, rows = follow_enuri(order, shops, cat, prof, book)
     if not cands:                       # no book, or no advice: my own ranking (it logs why nothing fits)
         cands, adv = candidates(shops, order, cat, prof, book), None
+    cands = skip_stuck(cands)
     rfq = T["rfq_big"] if order["budget"] >= T["big_budget"] else T["rfq"]      # big orders: ask more shops
     try:
         import market_model          # the buyer is the shop's sensor: what this order showed goes in the shared model
@@ -972,6 +1007,8 @@ def round3(a, order, shops, mem, started):
                     problem = None
             elif problem and problem.startswith("receipt"):
                 log_receipt_error(shop["name"], sku, rec, agreed, problem, False)
+    if outcome == "no deal" and asks and len(set(asks)) == 1:
+        remember_stuck(shop["name"], sku)
     issues, worst = misbehaviour(sku, asks, offers, texts, outcome)
     issues += notes
     if notes:
