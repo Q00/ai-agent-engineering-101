@@ -17,6 +17,7 @@ import math
 import os
 import re
 import tempfile
+from collections import Counter
 
 from kernel import agent_registry as reg
 from kernel import common as c
@@ -68,7 +69,7 @@ HISTORY_MAX = 12
 HISTORY_SHOWN = 4
 DESC_CHARS = 160
 TOOL_CHANGES_MAX = 4
-PROMPT_CHARS = 14_000
+PROMPT_CHARS = 24_000
 NOTES_SHOWN = 800
 WAKES_SHOWN = 3
 RUNS_MAX = 12  # the auditor's own memory: its past runs kept in the state file
@@ -77,6 +78,11 @@ RUNS_CHARS = 1_800
 WAKE_NOTE_CHARS = 300
 WAKE_LOOKBACK_S = 72 * 3600
 FINDINGS_MAX = 5
+ASKS_MAX = 2  # silent backstop: questions the auditor may file per run
+CARD_MAX = 3  # silent backstop: tools pinned to one role's state card
+CARD_CHARS = 600  # per pinned tool on the card
+GAPS_SHOWN = 10
+GAP_RX = re.compile(r"확인하지 못|확인할 수 없|확인되지 않|확정할 수 없|셀 수 없|이을 수 없|연결할 수 없|남아 있지 않|기록이 없|알 수 없|구분할 수 없|나눌 수 없")
 AGENT_HISTORY_MAX = 24  # the auditor's agent changes kept in its state file
 AGENT_CHANGES_MAX = 3  # silent backstop: agent changes applied per run
 CONTEXT_SECTIONS = 6  # largest prompt sections shown per agent in the prompt-size block
@@ -123,7 +129,9 @@ SCHEMA_ROLES = """JSON 객체 하나로만 답함. 모든 항목은 선택임:
  "guidance": {"shop": "<가게 운영자에게 줄 새 안내 전체, 1,500자 안. 바꿀 것이 없으면 null>", "buyer": "<구매 운영자에게, 같은 형식>"},
  "tools": {"hide": ["<도구 이름>"], "show": ["<도구 이름>"], "describe": {"<도구 이름>": "<새 설명 160자 안>"},
            "remove": ["q_<운영자가 만든 도구>"],
-           "recommend": {"shop": ["<도구 이름>"], "buyer": ["<도구 이름>"]}, "unrecommend": {"shop": ["<도구 이름>"], "buyer": ["<도구 이름>"]}},
+           "recommend": {"shop": ["<도구 이름>"], "buyer": ["<도구 이름>"]}, "unrecommend": {"shop": ["<도구 이름>"], "buyer": ["<도구 이름>"]},
+           "card": {"shop": ["q_<만든 도구>"], "buyer": ["q_<만든 도구>"]}, "uncard": {"shop": ["q_<만든 도구>"], "buyer": ["q_<만든 도구>"]}},
+ "ask": [{"q": "<조사원에게 맡길 일: 운영자가 못 보는 사실을 세는 q_ 도구를 만들어 저장해 달라는 것 등>", "for": ["shop", "buyer"]}],
  "agents": [{"op": "create|update|retire", "name": "<영소문자_숫자>", "job": "<에이전트의 일 문서 전체>", "wake": {"every_min": <분>, "on_ask": true}, "for": ["shop", "buyer"], "reason": "<근거 숫자>"}],
  "note": "<이번 감사 한 줄 요약>"}
 도구 변경은 한 번에 4개까지 (recommend, unrecommend 포함). hide, show, describe, remove는 두 운영자 모두에 걸림. policy, brief_section, guide, tool_search는 추천 목록에서 빼지 못함. policy 키 이름 뒤에 숫자를 붙이면 그 안내가 거절됨.
@@ -200,6 +208,52 @@ def tool_state(root):
             k: v for k, v in desc.items() if isinstance(k, str) and isinstance(v, str)
         },
     }
+
+
+def card_state(root):
+    """The made tools the auditor pinned to each role's state card: {role: [q_ names]}."""
+    st = c.load_json(_path(root, TOOL_STATE), {})
+    d = st.get("card") if isinstance(st, dict) and isinstance(st.get("card"), dict) else {}
+    return {r: [n for n in d.get(r) if isinstance(n, str)] if isinstance(d.get(r), list) else [] for r in ROLES}
+
+
+def card_lines(root, now, role):
+    """State-card lines of the pinned tools of a role: each tool's current output, cut. Never raises."""
+    out = []
+    try:
+        names = card_state(root).get(role, []) if role in ROLES else sorted({n for v in card_state(root).values() for n in v})
+    except Exception:  # noqa: BLE001 - a broken state file pins nothing
+        return out
+    for name in names:
+        try:
+            text = c.cap(str(made_tools.call(root, name, None, now, count=False)), CARD_CHARS)
+            out.append(f"[감사자가 붙인 도구 {name}] (전체는 그 도구를 부르면 나옴)\n{text}")
+        except Exception as e:  # noqa: BLE001 - one broken tool is one line
+            out.append(f"[감사자가 붙인 도구 {name}] 만들지 못함: {type(e).__name__}")
+    return out
+
+
+def _gaps_block(root, now, hours=24):
+    """Facts for finding what the operators cannot see: sentences of recent findings that say something could not be
+    checked, counted or joined; the questions open or asked; the tools pinned to the cards."""
+    from kernel import questions
+
+    rows = questions.findings(root, since=now - hours * 3600)
+    hits = []
+    for r in rows:
+        for sent in re.split(r"(?<=[.다음임])\s+|\n+", str(r.get("finding") or "")):
+            if GAP_RX.search(sent):
+                hits.append((r.get("ts") or 0, r.get("id"), r.get("from"), " ".join(sent.split())[:220]))
+    ids = {h[1] for h in hits}
+    out = [f"최근 {hours}시간 조사 결과 {len(rows)}건 중 '확인하지 못함'류 문장이 있는 것 {len(ids)}건, 그런 문장 {len(hits)}개 "
+           f"(최근 것부터 {GAPS_SHOWN}개). 같은 것이 되풀이되면 운영자가 볼 길이 없는 사실임"]
+    for ts, qid, frm, sent in sorted(hits, key=lambda h: -h[0])[:GAPS_SHOWN]:
+        out.append(f"- #{qid} ({frm}, {c.kst(ts, '%H:%M')}): {sent}")
+    asked = Counter(str(q.get("from")) for q in questions.load(root) if (q.get("ts") or 0) >= now - hours * 3600)
+    out.append("질문 수(물은 쪽별): " + (", ".join(f"{k} {v}" for k, v in asked.most_common()) or "없음"))
+    card = card_state(root)
+    out.append("상태 카드에 붙인 도구: " + (", ".join(f"{r} {card[r]}" for r in ROLES if card[r]) or "없음"))
+    return "\n".join(out)
 
 
 def rec_state(root):
@@ -661,6 +715,7 @@ def _remember(st, now, out, nums, rows):
             "guidance_changed": out["guidance_changed"],
             "tools": tools,
             **({"agents": out["agents"]["applied"]} if (out.get("agents") or {}).get("applied") else {}),
+            **({"ask": out["ask"]["applied"]} if (out.get("ask") or {}).get("applied") else {}),
         }
     )
     st["runs"] = runs[-RUNS_MAX:]
@@ -777,6 +832,7 @@ def build_prompt(root, now, secrets=(), listed=None, roles=None, sizes=None):
         ("## 감사 보고 (최근 24시간, 커널이 셈)", audit_lines),
         (f"## 감사 숫자 (지난 감사 {c.kst(last)} 이후, 0 아닌 항목만)", rep),
         ("## 도구 표 (최근 24시간)", _tool_block(root, now, listed, ts)),
+        ("## 정보 빈칸 (조사 결과에서 커널이 찾은 문장, 해석 없음)", _safe(lambda: _gaps_block(root, now))),
         ("## 실험 기록 (커널 판정)", exp),
         (
             "## 코드 수정 (운영자가 규칙 코드를 고친 기록)",
@@ -802,7 +858,33 @@ def build_prompt(root, now, secrets=(), listed=None, roles=None, sizes=None):
     return _fit(c.mask(job, secrets), blocks, "## 답 형식\n\n" + (SCHEMA_ROLES if roles else SCHEMA), sizes=sizes)
 
 
+def _safe(fn):
+    try:
+        return fn()
+    except Exception as e:  # noqa: BLE001 - a block that cannot be built is one line
+        return f"만들지 못함: {type(e).__name__}"
+
+
 # ------------------------------------------------------------ apply
+def _apply_ask(root, now, items, secrets):
+    """The auditor's questions to the investigator (which can run analysis code and save q_ tools)."""
+    from kernel import questions
+
+    applied, refused = [], []
+    for it in items if isinstance(items, list) else []:
+        q = it.get("q") if isinstance(it, dict) else None
+        if not isinstance(q, str) or not q.strip():
+            refused.append({"why": "q는 비어 있지 않은 글이어야 함"})
+        elif tells_value(q):
+            refused.append({"q": q[:60], "why": "policy 키에 숫자를 붙인 값 지시는 질문에 쓸 수 없음"})
+        elif len(applied) >= ASKS_MAX:
+            refused.append({"q": q[:60], "why": f"한 감사에 질문 {ASKS_MAX}개까지"})
+        else:
+            r = questions.add(root, "auditor", c.mask(q.strip(), secrets)[: questions.Q_CHARS], now, for_=it.get("for"))
+            (applied if r.get("ok") else refused).append({"id": r["id"]} if r.get("ok") else {"q": q[:60], "why": r.get("error")})
+    return {"applied": applied, "refused": refused}
+
+
 def tells_value(text):
     """True when text attaches a number to a policy key name (within 25 characters on the same line)."""
     return bool(VALUE_RX.search(text))
@@ -960,10 +1042,30 @@ def _apply_tools(root, now, ask, listed, secrets, traj, roles=None):
                     if (name in recommended(root, role, rs)) != (op == "recommend"):
                         rs[keep][role].append(name)
                     applied.append({"op": op, "role": role, "name": name})
+    card = card_state(root)
+    for op in ("card", "uncard") if roles else ():
+        d = ask.get(op) if isinstance(ask.get(op), dict) else {}
+        for role, names in d.items():
+            for name in _names(names):
+                if role not in roles:
+                    refused.append({"op": op, "role": str(role)[:20], "name": name, "why": "역할은 shop 또는 buyer"})
+                elif op == "card" and name not in _made_names(root):
+                    refused.append({"op": op, "role": role, "name": name, "why": "만든 도구(q_) 중에 없음"})
+                elif op == "card" and name in card[role]:
+                    refused.append({"op": op, "role": role, "name": name, "why": "이미 붙어 있음"})
+                elif op == "card" and len(card[role]) >= CARD_MAX:
+                    refused.append({"op": op, "role": role, "name": name, "why": f"한 카드에 도구 {CARD_MAX}개까지. 먼저 uncard로 뗌"})
+                elif op == "uncard" and name not in card[role]:
+                    refused.append({"op": op, "role": role, "name": name, "why": "붙어 있지 않음"})
+                elif room(op, name):
+                    card[role] = [n for n in card[role] if n != name] + ([name] if op == "card" else [])
+                    applied.append({"op": op, "role": role, "name": name})
+    for role in ROLES:  # a removed tool leaves the cards
+        card[role] = [n for n in card[role] if n in _made_names(root)]
     if applied:
         raw = c.load_json(_path(root, TOOL_STATE), {})
         raw = raw if isinstance(raw, dict) else {}
-        raw.update(hidden=hidden, desc=desc)
+        raw.update(hidden=hidden, desc=desc, card=card)
         if rs is not None:
             raw.update(rs)
         _atomic_json(_path(root, TOOL_STATE), raw)
@@ -1057,6 +1159,8 @@ def run(
     out["tools"] = _apply_tools(root, now, ans.get("tools"), listed, secrets, traj, roles)
     if "agents" in ans:
         out["agents"] = _apply_agents(root, now, ans.get("agents"), secrets, st, traj)
+    if "ask" in ans:
+        out["ask"] = _apply_ask(root, now, ans.get("ask"), secrets)
     _remember(st, now, out, nums, rows)
     return _finish(root, traj, now, st, dict(out, status="done"))
 

@@ -165,6 +165,7 @@ class Analyst(op.Operator):
             "buyer": "구매 운영자",
             "human": "사람",
             "standing": "정기 질문 (조사원 일 문서)",
+            "auditor": "감사자 (운영자가 못 보는 사실을 메우려는 요청. 도구를 만들어 달라는 것이면 analyze로 돌려 본 뒤 new_tool로 저장함)",
         }
         return op.sized(
             [

@@ -542,8 +542,9 @@ def remove(root, name, now, traj=None, by="auditor"):
     return {"ok": True}
 
 
-def call(root, name, args=None, now=None):
-    """Run a stored tool by name and count the use. Unknown name or bad args give a Korean error string."""
+def call(root, name, args=None, now=None, count=True):
+    """Run a stored tool by name and count the use (count=False: a kernel read such as the state card, not a use).
+    Unknown name or bad args give a Korean error string."""
     tools = load(root)
     tool = next((t for t in tools if t["name"] == name), None)
     if tool is None:
@@ -557,6 +558,8 @@ def call(root, name, args=None, now=None):
             return f"인자 오류: {err}"
         spec = {k: v for k, v in tool.items() if k not in META}
         text = _run(root, spec, args or None, now)[0]
+    if not count:
+        return text
     try:
         for t in tools:
             if t["name"] == name:

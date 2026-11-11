@@ -22,7 +22,7 @@ from kernel import common as c
 QUESTIONS = os.path.join("a2", "questions.json")
 FINDINGS = os.path.join("a2", "findings.jsonl")
 ROLES = ("shop", "buyer")
-FROM = ("shop", "buyer", "human", "standing")
+FROM = ("shop", "buyer", "human", "standing", "auditor")
 # Silent technical caps (11-11 성수님: the agents are not told limits): text beyond them is cut, not refused. Only
 # OPEN_PER_ROLE refuses, a runaway backstop far above normal use. The prompt shows findings shortened (prompt_lines).
 Q_CHARS = 4_000  # an operator's question
@@ -243,6 +243,7 @@ def _who(r):
         "buyer": "구매 운영자 질문",
         "human": "사람 질문",
         "standing": "정기 질문",
+        "auditor": "감사자 질문",
     }.get(r.get("from"), "질문")
 
 
