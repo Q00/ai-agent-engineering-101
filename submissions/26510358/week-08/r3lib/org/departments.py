@@ -229,7 +229,7 @@ def ceo_tick(mem, args, call):
         call("marketing", "shelf", {"state": md})       # unprompted: which grade each mixed-grade SKU shows first
     except Exception:
         pass
-    if config.hours_left_in_round() <= config.STOP_BUYING_HOURS:
+    if config.hours_left_in_round() <= config.GOODS_STOP_BUYING_HOURS:   # food stops earlier, inside the plan
         return {"buy": [], "wait": "last hours of the round: no new stock"}
     try:
         call("quality", "harsh", {})                    # rate-limited inside; keeps the shop's guard current

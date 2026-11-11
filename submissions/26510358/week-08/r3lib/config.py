@@ -51,7 +51,10 @@ RESTOCK_GATE_BY_EVIDENCE = True     # our own cohorts decide instead (restock_r3
 RESTOCK_GATE_NO_EVIDENCE = {"food": 0.54, "goods": 0.64}   # under the flag, without cohorts: grade-mix cost x (1 + MIN_MARGIN)
 STOCKOUT_HOURS = 6                  # requests our shop turned away for lack of stock, counted over this window,
                                     #   are demand addressed to us: added to the category's expected sales per hour
-STOP_BUYING_HOURS = 72              # no restock in the last 72 h of the round
+STOP_BUYING_HOURS = 72              # no FOOD restock in the last 72 h of the round (it would expire unsold: a loss)
+GOODS_STOP_BUYING_HOURS = 12        # goods are bought until 12 h before the end: an unsold goods unit stays in book at its
+                                    #   cost (server.py econ_board: book = profit + cost of stock), only storage (1%/day)
+                                    #   is lost. Until 2026-11-11 goods stopped at 72 h too: 2.5 of 6.5 days left unbought
 CLEARANCE_HOURS = 36                # in the last 36 h, food floors fall toward salvage; goods floors fall to cost
 DEMAND_HALF_LIFE_H = 8              # recent settles weigh more
 RESTOCK_SKU_COVER_H = 24            # no more of a SKU while the units on hand cover this many hours of our own sales

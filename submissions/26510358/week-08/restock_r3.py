@@ -9,7 +9,8 @@ For each category:
   gap    = competitor supply vs market sales from the ledger (scout.gap_factor, 0.7-1.3)
   target = ceil(rate * share * gap * HORIZON_H) units, capped for short-life food by half its shelf life
 Categories without evidence get one unit for coverage (long-life food, cheap goods), within EXPLORE_SHARE of the
-stock budget, so orders can find us while the ledger fills. No buying in the last STOP_BUYING_HOURS.
+stock budget, so orders can find us while the ledger fills. No food bought in the last STOP_BUYING_HOURS, no goods
+in the last GOODS_STOP_BUYING_HOURS (unsold goods stay in book at cost).
 
 The plan itself is rule-based and answers within the hook's time. A background ReAct review
 (restock_review_r3.py, every RESTOCK_REVIEW_EVERY_MIN) may scale a category's demand target by a clamped factor
@@ -275,6 +276,10 @@ def plan(inv, demand_rows, mem, now=None, dry_run=False, adjust=None):
     view = scout.category_view(mem, now=now)
     stockouts = mem.stockout_rates(now=now, premium_min=config.PREMIUM_MIN_LIST)
     lines, why = [], [{"cash_cap": cap_why}]
+    food_open = config.hours_left_in_round(now) > config.STOP_BUYING_HOURS
+    if not food_open:
+        why.append({"round_end": f"no food in the last {config.STOP_BUYING_HOURS} h: goods only"})
+        demand_rows = [r for r in demand_rows if r.get("kind") != "food"]
     try:
         covered = covered_skus(units, mem)
     except Exception as e:                                # memory trouble must not stop the restock
