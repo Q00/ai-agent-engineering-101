@@ -4,7 +4,9 @@ in restock. Off unless mid_probe.json says so.
 
 Supply is bought blind (a unit's cost is drawn on arrival, about .25-.75 of list, median .60), so "buy only when the supply cost is
 under the public median" is applied as the user chose on 11-10: a SKU is bought only while its sampled public median is above our
-typical goods cost (TYPICAL_COST_SHARE x list x surge), and it buys no more once any unit of it arrived at or above that median.
+typical goods cost (TYPICAL_COST_SHARE x list x surge). Until 11-11 it also bought no more once any unit of it arrived at or above
+that median; the user replaced that on 11-11 with a sales-outcome stop (see UNSOLD_SECONDS): no more of a SKU while any held unit
+of it is 6 h old unsold.
 At most 3 units of each held plus planned, inside the total cap, the run's units and the ordinary lines, paid from the run budget
 at worst cost (.75 x list x surge) with seven days of storage; held plus planned at worst cost within max_worst_cost_total (1M at
 most). A SKU with a held unit at least 24 h old and none of our completed sales of it in the last 24 h buys no more. The seller's
@@ -25,8 +27,13 @@ MAX_WORST_COST = 1000000
 TYPICAL_COST_SHARE = 0.60
 WORST_COST_SHARE = 0.75
 STALE_SECONDS = 86400
-# The arrival-cost rule counts only units bought since the probe switched on (11-10 19:36:08 KST, 24e2c67f), when none of its SKUs
-# were held: a unit's cost is drawn at random on arrival with the same spread for every SKU, so earlier units say little.
+# Sales-outcome stop, approved by the user on 11-11 (Orchestrator session, about 09:4x KST: "판매 결과 기준으로 교체 (권장)"): the
+# arrival-cost stop ended almost every SKU, since a unit's cost is drawn at random (40 arrivals since 11-10 19:54, 13 at or above the
+# median, all 13 sold above cost, Book mean 20.0k, min 7.6k). Now a SKU buys no more while any held unit of it is 6 h old unsold
+# (band units sold in about 16 min on average on 11-10). It reopens once that unit is gone.
+UNSOLD_SECONDS = 21600
+# Arrived costs are still read (an unreadable offer means off) from units bought since the probe switched on (11-10 19:36:08 KST,
+# 24e2c67f); they no longer stop a SKU.
 ARRIVAL_SINCE = 1794306968.0
 
 
@@ -76,8 +83,8 @@ def for_run(md, inventory, catalog, intelligence, now, path=None):
 
 def pick_units(md, inventory, catalog, intelligence, now, chosen, skip_surged=False, since=0.0):
     """The probe's buying rules for `chosen` ({"skus", "units_per_sku", "max_worst_cost_total"}), shared with mid_band.py; with
-    skip_surged a SKU on the surge list is not bought at all; the arrival-cost rule counts units bought at or after `since`. Raises on
-    unexpected data; callers turn that into off."""
+    skip_surged a SKU on the surge list is not bought at all; offers issued at or after `since` are read so that an unreadable one
+    means off. Raises on unexpected data; callers turn that into off."""
     import median_bypass
     surge = {r.get("sku"): r.get("factor") for r in inventory.get("surge") or []
              if isinstance(r, dict) and number(r.get("factor")) and r["factor"] > 1}
@@ -105,14 +112,12 @@ def pick_units(md, inventory, catalog, intelligence, now, chosen, skip_surged=Fa
         if not number(median) or median <= typical:
             notes[sku] = "median_not_above_typical_cost"
             continue
-        arrived = costs[sku] + [u["cost"] for u in units if u["sku"] == sku and number(u.get("cost"))
-                                and not (number(u.get("supplied_at")) and u["supplied_at"] < since)]
-        if any(c >= median for c in arrived):
-            notes[sku] = "a_unit_arrived_at_or_above_the_median"
-            continue
         old = [u for u in units if u["sku"] == sku and number(u.get("supplied_at")) and now - u["supplied_at"] >= STALE_SECONDS]
         if old and not (sold.get(sku) or (0, 0))[0]:
             notes[sku] = "held_24h_without_a_sale"
+            continue
+        if any(u["sku"] == sku and number(u.get("supplied_at")) and now - u["supplied_at"] >= UNSOLD_SECONDS for u in units):
+            notes[sku] = "a_unit_held_6h_unsold"
             continue
         notes[sku] = "held_full" if held[sku] >= chosen["units_per_sku"] else "ok"
         for _ in range(max(0, chosen["units_per_sku"] - held[sku])):

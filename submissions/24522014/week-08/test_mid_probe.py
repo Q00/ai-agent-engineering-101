@@ -1,7 +1,7 @@
 """Mid-price goods probe (mid_probe.json), approved by the user on 11-10: G0667d440 and G75f11c19, at most 3 held plus planned each,
 inside the total cap, the run's units and the ordinary lines; bought only while the public median is above our typical goods cost
-(.60 x list x surge), never again once a unit arrived at or above the median, no more of a SKU held 24 h without a sale; held plus
-planned worst cost within 1M. Off by default."""
+(.60 x list x surge), no more of a SKU while a held unit of it is 6 h old unsold (11-11; it replaced the arrival-cost stop), no
+more of a SKU held 24 h without a sale; held plus planned worst cost within 1M. Off by default."""
 
 import hashlib
 import json
@@ -105,33 +105,39 @@ class Picks(unittest.TestCase):
         self.assertNotIn("G0667d440", self.count(picks))
         self.assertEqual(notes["G0667d440"], "median_not_above_typical_cost")
 
-    def test_a_unit_that_arrived_at_or_above_the_median_ends_that_sku(self):
+    def test_a_unit_that_arrived_at_or_above_the_median_no_longer_ends_that_sku(self):
+        # The user's 11-11 change: arrival cost alone never stops a SKU; the cost floor keeps every sale above cost.
+        self.assertEqual(mp.ARRIVAL_SINCE, 1794306968.0)
         for inv, offers in (({"units": [unit("G0667d440", cost=236660)]}, ()), ({"units": []}, (("G0667d440", 240000),))):
             picks, notes = self.run_for(inv, offers=offers)
-            self.assertNotIn("G0667d440", self.count(picks))
-            self.assertEqual(notes["G0667d440"], "a_unit_arrived_at_or_above_the_median")
+            self.assertIn("G0667d440", self.count(picks))
+            self.assertNotEqual(notes["G0667d440"], "a_unit_arrived_at_or_above_the_median")
             self.assertIn("G75f11c19", self.count(picks))
 
-    def test_only_units_bought_since_switch_on_count_for_the_arrival_rule(self):
-        # Peer decision of 11-10: unit cost is drawn per unit, so a unit from before the probe says little. Here switch-on is patched to
-        # 10 days before NOW; an offer issued, or a unit supplied, before it does not stop the SKU, and one after it still does.
-        self.assertEqual(mp.ARRIVAL_SINCE, 1794306968.0)
-        _, notes = self.run_for({"units": []}, offers=(("G0667d440", 240000),), issued=NOW - 900000)
-        self.assertEqual(notes["G0667d440"], "ok")
-        _, notes = self.run_for({"units": [unit("G0667d440", cost=240000, age=900000)]})
-        self.assertNotEqual(notes["G0667d440"], "a_unit_arrived_at_or_above_the_median")
-        _, notes = self.run_for({"units": []}, offers=(("G0667d440", 240000),), issued=NOW - 800000)
-        self.assertEqual(notes["G0667d440"], "a_unit_arrived_at_or_above_the_median")
+    def test_a_unit_held_6h_unsold_stops_buying_that_sku_until_it_is_gone(self):
+        self.assertEqual(mp.UNSOLD_SECONDS, 21600)
+        picks, notes = self.run_for({"units": [unit("G75f11c19", cost=60000, age=21600)]})
+        self.assertNotIn("G75f11c19", self.count(picks))
+        self.assertEqual(notes["G75f11c19"], "a_unit_held_6h_unsold")
+        self.assertIn("G0667d440", self.count(picks))
+        # Recent sales of the SKU do not lift it while that unit is still held.
+        _, notes = self.run_for({"units": [unit("G75f11c19", cost=60000, age=21600)]}, sales=("G75f11c19",))
+        self.assertEqual(notes["G75f11c19"], "a_unit_held_6h_unsold")
+        picks, notes = self.run_for({"units": [unit("G75f11c19", cost=60000, age=21599)]})
+        self.assertNotEqual(notes["G75f11c19"], "a_unit_held_6h_unsold")
+        self.assertIn("G75f11c19", self.count(picks))
+        picks, notes = self.run_for({"units": []})
+        self.assertIn("G75f11c19", self.count(picks))
 
     def test_a_unit_held_24h_without_a_sale_ends_buying_it(self):
         stale = {"units": [unit("G75f11c19", cost=60000, age=86400)]}
         picks, notes = self.run_for(stale)
         self.assertNotIn("G75f11c19", self.count(picks))
         self.assertEqual(notes["G75f11c19"], "held_24h_without_a_sale")
+        # With a recent sale the 24 h rule passes, but that unit is still over 6 h unsold, so the SKU stays stopped.
         picks, notes = self.run_for(stale, sales=("G75f11c19",))
-        self.assertIn("G75f11c19", self.count(picks))
-        picks, _ = self.run_for({"units": [unit("G75f11c19", cost=60000, age=86399)]})
-        self.assertIn("G75f11c19", self.count(picks))
+        self.assertNotIn("G75f11c19", self.count(picks))
+        self.assertEqual(notes["G75f11c19"], "a_unit_held_6h_unsold")
 
     def test_an_unreadable_offer_buys_nothing(self):
         picks, notes = self.run_for({"units": []}, broken=True)

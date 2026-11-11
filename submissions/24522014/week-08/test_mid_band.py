@@ -107,22 +107,23 @@ class Picks(unittest.TestCase):
         self.assertEqual(got["notes"][SKUS[1]], "surged")
         self.assertEqual([p["sku"] for p in got["picks"]], SKUS[2:])
 
-    def test_only_units_bought_since_its_switch_on_count_for_the_arrival_rule(self):
+    def test_arrival_cost_no_longer_stops_a_sku(self):
         self.assertEqual(mb.ARRIVAL_SINCE, 1794308090.0)  # U3 on, 11-10 19:54:50 KST
-        got = self.run_for({"units": []}, offers=((SKUS[1], 600000 * .7),), issued=NOW - 900000)
-        self.assertEqual(got["notes"][SKUS[1]], "ok")
-        got = self.run_for({"units": []}, offers=((SKUS[1], 600000 * .7),))
-        self.assertEqual(got["notes"][SKUS[1]], "a_unit_arrived_at_or_above_the_median")
+        for issued in (NOW - 900000, NOW - 900):
+            got = self.run_for({"units": []}, offers=((SKUS[1], 600000 * .7),), issued=issued)
+            self.assertEqual(got["notes"][SKUS[1]], "ok")
+            self.assertIn(SKUS[1], [p["sku"] for p in got["picks"]])
 
     def test_the_probe_rules_apply(self):
         low = {**intel(), SKUS[0]: {"median_price": 600000 * .60}}
         got = self.run_for({"units": []}, market=low)
         self.assertEqual(got["notes"][SKUS[0]], "median_not_above_typical_cost")
-        got = self.run_for({"units": []}, offers=((SKUS[1], 600000 * .68),))
-        self.assertEqual(got["notes"][SKUS[1]], "a_unit_arrived_at_or_above_the_median")
+        unsold = {"units": [unit(SKUS[1], age=21600)]}
+        self.assertEqual(self.run_for(unsold)["notes"][SKUS[1]], "a_unit_held_6h_unsold")
+        self.assertEqual(self.run_for({"units": [unit(SKUS[1], age=21599)]})["notes"][SKUS[1]], "held_full")
         stale = {"units": [unit(SKUS[2], age=86400)]}
         self.assertEqual(self.run_for(stale)["notes"][SKUS[2]], "held_24h_without_a_sale")
-        self.assertEqual(self.run_for(stale, sales=(SKUS[2],))["notes"][SKUS[2]], "held_full")
+        self.assertEqual(self.run_for(stale, sales=(SKUS[2],))["notes"][SKUS[2]], "a_unit_held_6h_unsold")
 
 
 class Plan(unittest.TestCase):

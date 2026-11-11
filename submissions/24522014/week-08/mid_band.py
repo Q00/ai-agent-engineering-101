@@ -3,8 +3,9 @@
 its .75 worst-cost test) get one unit each in restock. Off unless mid_band.json says so.
 
 The buying rules are the mid-price probe's (mid_probe.pick_units): bought only while the sampled public median is above our typical
-goods cost (.60 x list), never again once a unit of it bought since switch-on arrived at or above the median, and no more of a SKU with a unit held 24 h and
-none of our completed sales of it in the last 24 h; a SKU on the surge list is not bought at all. units_per_sku (1 to 3) each held
+goods cost (.60 x list), no more of a SKU while any held unit of it is 6 h old unsold (the user's 11-11 sales-outcome stop, which
+replaced "never again once a unit arrived at or above the median"), and no more of a SKU with a unit held 24 h and none of our
+completed sales of it in the last 24 h; a SKU on the surge list is not bought at all. units_per_sku (1 to 3) each held
 plus planned, inside the total cap and the run's units, at most max_lines_per_run (4 at most) of the ordinary lines a run (more units
 of a SKU already in the run add to its line, not a new one), paid from the run budget at worst cost (.75 x list) with seven days of
 storage, held plus planned worst cost within max_worst_cost_total (17M at most; 1 unit and 6M until 11-11). Its pass
@@ -26,7 +27,7 @@ ALLOWED = ("G05277ffe", "G1515d951", "G07ec17d5", "G8095ddd6", "G85a1a856", "G75
 MAX_WORST_COST = 17000000
 MAX_UNITS = 3
 MAX_LINES = 4
-# The arrival-cost rule counts only units bought since the band switched on (11-10 19:54:50 KST, d245d129), peer decision 11-10.
+# Offers are read from the band's switch-on (11-10 19:54:50 KST, d245d129); since 11-11 their arrival costs no longer stop a SKU.
 ARRIVAL_SINCE = 1794308090.0
 
 
