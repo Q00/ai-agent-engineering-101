@@ -1,6 +1,13 @@
 #!/usr/bin/python3
 """Keep a Cloudflare Quick Tunnel on the Mac for the shop port the container publishes (127.0.0.1:8900).
 
+RETIRED 2026-11-12: the shop now runs an ngrok fixed domain inside the container (configure_ngrok.py writes
+.market/fixed-address.json with public_url and tunnel_command; market_runtime.py --fixed-config supervises
+ngrok and the kit). On 11-11 Quick Tunnels of 10-13 of the 33 trycloudflare shops, ours among them, went
+unreachable from the market at the same moments (28 silences, 337 min, while the market's orders and our
+own buyer ran normally); a reserved domain also keeps the URL across container recreates, which was this
+script's purpose. The launchd job is unloaded (the plist renamed .disabled); this file stays as the fallback.
+
 The tunnel lives outside the container, so a container recreate or restart keeps the shop's public URL:
 other agents remember this shop by URL. This script runs cloudflared, reads the trycloudflare.com URL it
 prints, writes it to <data>/.market/fixed-address.json as an external fixed address (docker/launch.py then
