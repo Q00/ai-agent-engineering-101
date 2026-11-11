@@ -1,5 +1,6 @@
 import io
 import json
+import os
 from pathlib import Path
 import tempfile
 import time
@@ -9,6 +10,7 @@ from unittest.mock import patch
 from buyer_policy import acceptance, market_saved_reference, paid_price_samples, purchase_price_guidance
 from buyer_r3 import followup_offer, opening_request
 from ops import buyer_service
+import market_buyer_r3
 
 
 class PlainBuyerTests(unittest.TestCase):
@@ -64,6 +66,29 @@ class PlainBuyerTests(unittest.TestCase):
             with patch('buyer_policy.urlopen', side_effect=TimeoutError):
                 self.assertEqual(market_saved_reference('buyer', path=path, now=1300), baseline)
                 self.assertIsNone(market_saved_reference('buyer', path=path, now=1901))
+
+    def test_candidate_prices_are_shop_specific_and_ranked_by_observed_saving(self):
+        now=time.time()
+        history=[{'event':'settled','at':now-10,'sku':'G1','grade':'A','ledger':index,
+                  'price':price,'shop_name':name,'shop':f'https://{name}'}
+                 for index,(name,price) in enumerate(
+                     [('expensive',700)]*3+[('cheap',500)]*3,1)]
+        shops=[{'name':name,'url':f'https://{name}','offers':[{'sku':'G1','qty':1}]}
+               for name in ('expensive','cheap')]
+        order={'order':'o1','kind':'goods','budget':1000,'acceptable':['G1']}
+        catalog={'G1':{'kind':'goods','list_price':1000}}
+        with tempfile.TemporaryDirectory() as directory:
+            previous=Path.cwd()
+            os.chdir(directory)
+            try:
+                with patch.object(market_buyer_r3,'read_events',return_value=history):
+                    choices=market_buyer_r3.candidates(order,shops,catalog,'own')
+                self.assertEqual([c['shop'] for c in choices],['cheap','expensive'])
+                self.assertEqual(choices[0]['price_guidance']['reference_source'],'same_shop_sku')
+                self.assertEqual(choices[0]['price_guidance']['median_paid'],500)
+                self.assertEqual(choices[1]['price_guidance']['median_paid'],700)
+            finally:
+                os.chdir(previous)
 
     def test_food_message_matches_checkout_requirement_without_budget_or_roleplay(self):
         order = {'kind': 'food', 'use_within_hours': 360, 'budget': 98765}

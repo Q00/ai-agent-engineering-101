@@ -63,7 +63,7 @@ def price_cap(order: dict, product: dict) -> int:
     return min(budget, math.floor(list_price * ratio))
 
 
-def paid_price_samples(order, history, now=None):
+def paid_price_samples(order, history, now=None, *, by_shop=False):
     """Recent usable, locally verified exact-SKU payments for an issued order."""
     now = time.time() if now is None else now
     acceptable = set(order.get('acceptable') or ())
@@ -85,7 +85,10 @@ def paid_price_samples(order, history, now=None):
                 continue
         elif e.get('grade') not in policy.get('grades', ()):
             continue
-        by_sku[e['sku']][e['ledger']] = e['price']
+        if by_shop and not e.get('shop_name'):
+            continue
+        key = (e['shop_name'], e['sku']) if by_shop else e['sku']
+        by_sku[key][e['ledger']] = e['price']
     return {sku: tuple(sorted(prices.values())) for sku, prices in by_sku.items()}
 
 
@@ -156,6 +159,8 @@ def purchase_price_guidance(cap, prices, *, list_price=None, saved_baseline=None
     if len(prices) < 3:
         return result
     median = result['median_paid']
+    if type(list_price) is int and list_price > 0:
+        result['saved_if_usable_at_reference'] = round(1 - median / list_price, 6)
     upper_quartile = prices[math.ceil(.75 * len(prices)) - 1]
     high = min(baseline[1], median)
     low = min(baseline[0], max(1, math.floor(median * .92)))

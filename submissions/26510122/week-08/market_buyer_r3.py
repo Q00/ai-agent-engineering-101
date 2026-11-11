@@ -43,6 +43,7 @@ def candidates(order: dict, shops: list[dict], catalog: dict,
     acceptable = set(order.get("acceptable") or [])
     history=read_events()
     prices = paid_price_samples(order, history)
+    shop_prices = paid_price_samples(order, history, by_shop=True)
     found = []
     seen=set()
     for shop in shops:
@@ -66,6 +67,13 @@ def candidates(order: dict, shops: list[dict], catalog: dict,
             refusals = (first_hand["same_sku_payment_outcomes"].get("refused", 0)
                         + 2 * first_hand["observed_receipt_problems"])
             paid = first_hand["same_sku_payment_outcomes"].get("paid", 0)
+            samples = shop_prices.get((shop['name'], sku), ())
+            source = 'same_shop_sku' if len(samples) >= 3 else 'same_sku'
+            if len(samples) < 3:
+                samples = prices.get(sku, ())
+            guidance = purchase_price_guidance(
+                cap, samples, list_price=product['list_price'], saved_baseline=saved_baseline)
+            guidance['reference_source'] = source
             found.append({"shop": shop["name"], "url": shop["url"], "sku": sku,
                           "name": product.get("name") or offer.get("name") or sku,
                           'category':product.get('category'),'kind':product.get('kind'),
@@ -74,8 +82,7 @@ def candidates(order: dict, shops: list[dict], catalog: dict,
                           "stock": offer["qty"], "reviews": review_summary(shop.get("reviews") or []),
                           "first_hand": first_hand, "paid": paid, "refusals": refusals,
                           'score_evidence':buyer_candidate(product['list_price'],cap),
-                          'price_guidance':purchase_price_guidance(
-                              cap, prices.get(sku, ()), list_price=product['list_price'], saved_baseline=saved_baseline)})
+                          'price_guidance':guidance})
     found, held, probe = buyer_checkout_memory.filter_candidates(found,order,history)
     record('checkout_cache_summary',order=order.get('order'),allowed=len(found),
            held=len(held),guarded_probe=probe is not None)
@@ -88,7 +95,8 @@ def candidates(order: dict, shops: list[dict], catalog: dict,
                sku=probe['sku'],constraint=probe['checkout_constraint'],
                reason='No unheld candidates; recheck an aged observation under all checkout guards.')
     # Compact model input while preserving different shops and SKUs when possible.
-    found.sort(key=lambda c: (c['score_evidence']['saved_if_usable_at_cap'],
+    found.sort(key=lambda c: (c['price_guidance'].get(
+                                  'saved_if_usable_at_reference', c['score_evidence']['saved_if_usable_at_cap']),
                               c["paid"] - c["refusals"],c["reviews"]["average"] or 3), reverse=True)
     for index,choice in enumerate(found):
         choice['id']=str(index)
@@ -141,6 +149,8 @@ def choose(candidates_: list[dict], order: dict, *, forced_candidate_id: str | N
                            "A cheaper product at a better usable saving rate can beat an expensive product. "
                            "The saved-at-cap candidate order is conditional, not an actual quote or guaranteed deal. "
                            "Use the recent exact-SKU paid median and suggested maximum where available. "
+                           "same_shop_sku samples describe this seller; same_sku samples pool other sellers. "
+                           "saved_if_usable_at_reference is a historical comparison, not a current quote. "
                            "Separately, saved_reference is the largest whole price that would improve the "
                            "published aggregate Saved if this purchase is usable. Treat it as negotiation guidance "
                            "and weigh settlement likelihood and current quality. "
@@ -304,9 +314,12 @@ def _run(order: dict, shops: list[dict], catalog: dict, own_shop_name: str, *,
     fallback = next((c for c in available if c["url"] != chosen["url"]), None)
     attempts = [(chosen, first_offer)]
     if fallback:
-        price = max(1, math.floor(fallback['cap'] * .9))
-        suggested_maximum = (fallback.get('price_guidance') or {}).get('suggested_maximum')
-        attempts.append((fallback, min(price, suggested_maximum) if suggested_maximum else price))
+        guidance = fallback.get('price_guidance') or {}
+        price = opening_offer_range(fallback['cap'], guidance)[1]
+        saved_reference = (guidance.get('saved_reference') or {}).get('max_price_to_improve_if_usable')
+        if type(saved_reference) is int and saved_reference > 0:
+            price = min(price, saved_reference)
+        attempts.append((fallback, price))
     expires = order.get("expires")
     deadline = min(started + 235,
                    time.monotonic() + max(0, float(expires) - time.time() - 5)
