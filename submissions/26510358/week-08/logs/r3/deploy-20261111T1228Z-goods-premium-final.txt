@@ -1,0 +1,31 @@
+Deploy 2026-11-11 21:28 KST (12:28Z): A d888dda, B 2d43909, C 508ebdd. Human's yes for the restart, 2026-11-11 ~21:25 KST.
+
+Why (from the rank analysis this session, board snapshots 11-05..11-11 and REA capture of market.ourolabs.ai):
+  our total was flat (1.497 -> 1.490) while 9 players passed us; shops that passed us grew book 120-170M/day on
+  premium goods, ours 42M/day with ~200M of balance idle; our buyer took 73% of first asks and spent thousands of
+  turns on prices the shop had called final.
+
+A d888dda restock: goods are bought until 12 h before the end (GOODS_STOP_BUYING_HOURS), food still stops at 72 h.
+  Book counts unsold goods at cost (server.py econ_board; live board 66/66 shops book == profit + stock_cost).
+  Dry-run on live stock at 60 h left: 0 -> 54 goods units. GOODS_END_RISK left at 0.10: 0.10 vs 0.03 gave the same
+  plan (not the binding limit).
+B 2d43909 restock: PREMIUM_LINES 3->5, PREMIUM_SHARE 0.80->1.50, PREMIUM_PER_SKU 2->3, PREMIUM_HOT_MAX_PER_SKU 6->8.
+  24 h: 800k+ goods 205 sales / 260M (~60% of our revenue), 51 held at a median age of 3 h, our share 3.9% of the
+  market's 5,207 such deals. Tried and dropped in a dry-run: PREMIUM_MIN_LIST 800k -> 200k (reclassifies 47M held
+  as premium, over budget, premium buys stop).
+C 508ebdd buyer: a price the shop calls final is taken at once within max_pay, left at once above it.
+  Last 20k negotiations: 2,539 of 2,591 finals held (98%), 4,123 turns spent after them.
+
+Restart: kill 3509639 at 21:28:39 after the window's last supply (21:27:45); respawned 1313622 at 21:29:08.
+  The live service runs from this tree, so C (buyer_r3.py per order) was live from its save, ~21:31.
+First evidence:
+  21:29:22-33 the window was still open (jitter): 2 premium beds bought by the new server (1.28M, 1.29M).
+  21:31:18 an order with a final price was taken at once and settled (final True, COMPLETED, 11,837).
+  21:32:24 plan: premium budget 82M -> 155.9M, premium held 59.2M/52 units -> 97.9M/87, 10 premium lines
+  (normal stock 114.7M over its 103.9M cap, so premium took every line), round_end empty (72 h not reached).
+Seen, not changed: plans emitted while supply is closed get 429 (opens in 652-746 s); the kit retries each line.
+
+Rollback: B if the median age of held 800k+ units passes 24 h (git revert 2d43909, kill the org server);
+  C if deals/h or saved per deal drop over 6 h against the 6 h before 21:31 (git revert 508ebdd, no restart).
+Watch: premium median age and sell-through (inventory + settles), cash_cap in restock.jsonl, talk.final in
+  buyer-decisions.jsonl.
