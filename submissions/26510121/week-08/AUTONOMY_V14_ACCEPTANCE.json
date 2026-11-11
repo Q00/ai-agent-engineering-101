@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "proposal": "round3-autonomy-v14",
+  "status": "design_only",
+  "implementation_complete": false,
+  "deployment_allowed": false,
+  "current_runtime_policy_change_allowed": false,
+  "new_live_strategy_canary_allowed": false,
+  "universal_superiority_proven": false,
+  "evaluation_rule": "No candidate deployment from missing, stale, self-authored-only or counterfactually unsupported evidence.",
+  "baseline": {
+    "commit": "521d1b9",
+    "buyer_revision": "buyer-v13-contract-frontier",
+    "shop_revision": "shop-v11-contract-memory",
+    "framework_revision": "system-v13-contract-frontier",
+    "observation": "logs/main-routing-20261110T115822343174Z.json",
+    "observation_not_candidate_validation": true
+  },
+  "required_gates": {
+    "functional_authority": "not_run",
+    "latency_and_resources": "not_run",
+    "context_integrity": "not_run",
+    "economic_superiority": "not_run",
+    "release_recovery": "not_run"
+  },
+  "main_path_constraints": {
+    "added_model_calls_per_trade": 0,
+    "wait_for_tool_generation": false,
+    "import_generated_python": false,
+    "recheck_current_transaction_facts": true,
+    "single_payment_path": true,
+    "pin_version_for_inflight_order": true
+  },
+  "background_defaults_proposed_only": {
+    "maximum_model_workers": 2,
+    "shared_paid_model_daily_budget_usd": 0,
+    "unset_budget_blocks_paid_model_jobs": true,
+    "inherit_unlimited_live_budget": false,
+    "jev_required": false,
+    "rea_required": false,
+    "unverified_generated_code_execution": false
+  },
+  "context_requirements": [
+    "as_of",
+    "rules_hash",
+    "data_version",
+    "policy_version",
+    "evidence_ids",
+    "expires_at",
+    "fact_or_hypothesis"
+  ],
+  "preserve_exactly": [
+    "active_order_and_unit_identity",
+    "price_grade_warranty_and_use_horizon",
+    "inventory_reservations",
+    "uncertain_payment_status",
+    "refund_liabilities",
+    "official_objective_definition",
+    "source_and_freshness"
+  ],
+  "prohibited_self_modifications": [
+    "credentials_or_owner_identity",
+    "receipt_signature_verification",
+    "same_owner_settlement_restriction",
+    "exact_sku_and_certificate_checks",
+    "promised_warranty",
+    "saved_price_cap",
+    "refund_reserve",
+    "uncertain_payment_retry_guard",
+    "own_evaluation_gates",
+    "own_permissions_or_budget"
+  ],
+  "deployment_blockers": [
+    "candidate_not_implemented",
+    "required_evaluations_not_run",
+    "sandbox_isolation_not_established",
+    "paid_generation_budget_unset",
+    "economic_counterfactual_not_identified"
+  ]
+}
