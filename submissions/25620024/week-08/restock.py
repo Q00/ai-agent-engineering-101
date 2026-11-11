@@ -241,6 +241,17 @@ def plan(md, c, t, now=None):
             return live[sku]
         return min(0.5, 0.002 * max(0, n1h.get(sku, 0) - 50))
 
+    dear_memo = {}
+
+    def dear(sku):                                            # HQ 11-12: our last buys of this SKU cost more than
+        if sku not in dear_memo:                              # market median x buy_cap (sofa G0e4deffc: 1.335M against
+            rows = [r[0] for r in c.execute(                  # a 1.367M median, 2% left before storage and breaks)
+                "select cost from supply_units where shop = 'dragonash' and sku = ? and ts > ? and cost > 0 "
+                "order by ts desc limit 6", (sku, now - 86400))]
+            med = market_model.market_price(c, sku)[0] if rows else None
+            dear_memo[sku] = bool(med and sum(rows) / len(rows) > med * t.get("buy_cap", 0.93))
+        return dear_memo[sku]
+
     def add(sku, qty, reason, any_price=False):
         nonlocal cash
         r = cat.get(sku)
@@ -249,6 +260,9 @@ def plan(md, c, t, now=None):
         if sku in low:                                        # HQ 11-04: low ticket and low profit -- not stocked
             return
         if reason != "HQ order" and sku in set(t.get("restock_hold") or []):   # HQ 11-11: lines that lose per unit
+            skipped.add(sku)
+            return
+        if reason != "HQ order" and dear(sku):                # HQ 11-12 "매입가가 비싸졌다면 사지마"
             skipped.add(sku)
             return
         if reason != "HQ order" and stock.get(sku, 0) > 1 and stock.get(sku, 0) / max(our_rate.get(sku, 0), 1 / 48) >= 48:
