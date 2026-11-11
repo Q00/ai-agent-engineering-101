@@ -318,6 +318,16 @@ def find_unit(text, taken=()):
     return min(fit, key=key, default=None)
 
 
+def grade_c_unit(sku, taken=()):
+    """The cheapest in-stock grade C unit of this SKU not held in another open negotiation, or None."""
+    try:
+        inv = json.loads((MARKET_DIR / "inventory.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    cs = [u for u in inv.get("units", []) if u["sku"] == sku and u.get("grade") == "C" and u["unit"] not in taken]
+    return min(cs, key=lambda u: u["cost"], default=None)
+
+
 def offer_in(text):
     """The buyer's offer: the first number in the message, thousands separators allowed (52,000 -> 52000).
     A number glued to letters (a SKU such as G00001) is not an offer."""
@@ -374,6 +384,20 @@ class Seller(AgentExecutor):
         if offer is None:
             await up.requires_input(say(f"Counteroffer: {deal['ask']}. Send your offer as a number."))
             return
+        # Claude (2026-11-12 02:44, hourly check): G03d0199f (16 deals/h in the market) sold 0 in 6 h with 4 in stock: its A
+        # (cost 1,207,605, 13 h old) stood first and got offers of 945,338-1,062,214, all under its floor, while three C at
+        # 545,095-572,793 waited behind it (C_BEHIND_SHARE). An offer under an A or B floor now gets the same SKU's grade C
+        # offered openly, as a new ask the buyer must answer, never a silent switch
+        if is_goods(u) and u.get("grade") != "C" and offer < floor_price(u):
+            c = grade_c_unit(u["sku"], {d["unit"]["unit"] for k, d in self.open.items() if k != task.id and d["unit"]["unit"]})
+            if c and floor_price(c) <= offer:
+                deal.update(unit=c, ask=ask_price(c, 0, deal["arm"]), offers=0)
+                print(f"[price] {u['sku']} offer {offer} under grade {u['grade']} floor {floor_price(u)}: "
+                      f"offered grade C {c['unit']} at {deal['ask']} (floor {floor_price(c)})", flush=True)
+                await up.requires_input(say(f"We cannot go that low on grade {u['grade']}. The same item {c['name']} "
+                                            f"(SKU {c['sku']}) in grade C: asking {deal['ask']}. {facts(c)} "
+                                            f"Send your offer as a number.".replace("  ", " ")))
+                return
         deal["offers"] += 1
         deal["ask"] = max(min(ask_price(u, deal["offers"], deal["arm"]), deal["ask"]), floor_price(u))   # an ask never goes up
         ask = deal["ask"]
