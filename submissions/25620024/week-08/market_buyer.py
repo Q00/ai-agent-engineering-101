@@ -739,12 +739,43 @@ def remember_stuck(shop, sku):
 
 def skip_stuck(cands):
     """Drop (shop, SKU) pairs that refused to move within the hour, but never the last candidate."""
-    st = stuck_pairs()
+    st = set(stuck_pairs()) | slow_pairs()
     keep = [c for c in cands if f"{c[1]['name']}|{c[2]['sku']}" not in st]
     if len(keep) < len(cands):
-        log(f"[stuck] skip {len(cands) - len(keep)} shop/item pairs that did not come down within "
+        log(f"[stuck] skip {len(cands) - len(keep)} shop/item pairs that did not come down (or not far enough, twice) within "
             f"{T.get('stuck_skip_h', 1)} h" + ("" if keep else "; none left, keeping them"))
     return keep or cands
+
+
+SLOW = Path(__file__).parent / "private" / "enuri" / "slow.json"
+
+
+def slow_pairs(now=None):
+    """(shop|sku) pairs whose ask came down but stayed above my cap in slow_fails (2) no deals within the hour.
+    HQ 11-11 19:10: 101 of 223 no deals in 3 h were four such pairs (water 48x at one shop, 16144 -> 16021)."""
+    now = now or time.time()
+    try:
+        st = json.loads(SLOW.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return set()
+    h = T.get("stuck_skip_h", 1) * 3600
+    return {k for k, ts in st.items() if sum(1 for t in ts if now - t < h) >= T.get("slow_fails", 2)}
+
+
+def remember_slow(shop, sku):
+    now, h = time.time(), T.get("stuck_skip_h", 1) * 3600
+    try:
+        st = json.loads(SLOW.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        st = {}
+    st = {k: [t for t in ts if now - t < h] for k, ts in st.items()}
+    st = {k: ts for k, ts in st.items() if ts}
+    st.setdefault(f"{shop}|{sku}", []).append(now)
+    try:
+        SLOW.parent.mkdir(parents=True, exist_ok=True)
+        SLOW.write_text(json.dumps(st), encoding="utf-8")
+    except OSError:
+        pass
 
 
 RECEIPT_ERRORS = Path(__file__).parent / "private" / "enuri" / "receipt_errors.jsonl"
@@ -1022,6 +1053,8 @@ def round3(a, order, shops, mem, started):
                 log_receipt_error(shop["name"], sku, rec, agreed, problem, False)
     if outcome == "no deal" and asks and len(set(asks)) == 1:
         remember_stuck(shop["name"], sku)
+    elif outcome == "no deal" and asks:
+        remember_slow(shop["name"], sku)
     issues, worst = misbehaviour(sku, asks, offers, texts, outcome)
     issues += notes
     if notes:
