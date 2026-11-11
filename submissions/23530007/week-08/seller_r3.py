@@ -250,15 +250,21 @@ def pick_unit(text, held, now, asks=None):
     accepts_c = bool(ACCEPTS_C.search(text)) or (want is not None and "C" in want)
     if re.search(r"prefer\s*(grade\s*)?C|cheapest\s*grade|refurb", text, re.I):
         return min(fit, key=lambda u: (-GRADE_ORDER.get(u.get("grade") or "A", 1), u.get("supplied_at") or 0))
+    # 11-11 20:30, USER DECISION ('then we just sell B or A'): goods go out as grade A or B; a grade C unit only to a
+    # buyer whose message accepts C. 48 h of paid reviews joined to our sales: A 4.72 stars (2,574 sales), B 4.51
+    # (866), C 4.22 (288, all but one to buyers who had not asked for C; lee-sungsoo rated 48 of them 1.79 after
+    # unwarranted breaks, the largest fixable hole in our per-account star mean). C was 5% of goods revenue and 16%
+    # of goods margin, and a C offered unasked was paid 10-19% of the time. No fallback to C: with only C left of a
+    # SKU the answer is 'none in stock' (no deal, no review) and restock, which counts C at 0.25, refills it.
+    # The knob grade_first now only orders A before B (1) or oldest-first among A and B (0).
+    ab = [u for u in fit if (u.get("grade") or "A") != "C"]
+    if not ab:
+        if accepts_c:
+            return min(fit, key=lambda u: u.get("supplied_at") or 0)
+        return None
     if shop_policy_now().get("grade_first"):
-        ranked = sorted(fit, key=lambda u: (GRADE_ORDER.get(u.get("grade") or "A", 1), u.get("supplied_at") or 0))
-        for u in ranked:
-            if (u.get("grade") or "A") != "C" or accepts_c:
-                return u
-        # 11-11 19:15: only C left of this SKU: offer it rather than answer "none in stock" (a C close to a buyer
-        # who did not ask for C still settles ~19% of the time, and those sales carry the largest margin)
-        return ranked[0] if ranked else None
-    return min(fit, key=lambda u: u.get("supplied_at") or 0)
+        return min(ab, key=lambda u: (GRADE_ORDER.get(u.get("grade") or "A", 1), u.get("supplied_at") or 0))
+    return min(ab, key=lambda u: u.get("supplied_at") or 0)
 
 
 CHEAP_LIST, CHEAP_SHARE = 50000, 0.58   # 11-11: concession on cheap items from the 3rd offer (<= ~1M/day)
