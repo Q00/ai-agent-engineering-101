@@ -36,11 +36,12 @@ def unit(sku, grade="A"):
 class Settings(unittest.TestCase):
     def test_shipped_on(self):
         # On 11-10 12:04 with the food floor, off 11-10 19:50:25 KST (net negative on stars), on again 11-11 about 18:0x KST (the
-        # user's choice in the Orchestrator session) with the same SKUs, units and cost limit.
+        # user's choice in the Orchestrator session) with the same SKUs, units and cost limit; at most 4 picks a run from 11-11 20:18:17
+        # KST (an Orchestrator tightening within the user's food approval).
         value = json.loads(fp.CONFIG.read_text(encoding="utf-8"))
         self.assertIs(value["enabled"], True)
         self.assertEqual((value["skus"], value["units_per_sku"], value["max_total_estimated_cost"]), (GOOD["skus"], 3, 310000))
-        self.assertIsNotNone(fp.settings())
+        self.assertEqual(fp.settings()["max_units_per_run"], 4)
 
     def test_only_a_valid_file_turns_it_on(self):
         with TemporaryDirectory() as folder:
