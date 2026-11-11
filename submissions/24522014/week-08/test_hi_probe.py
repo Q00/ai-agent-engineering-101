@@ -26,7 +26,7 @@ PROBE = {"skus": ["P1", "P2", "P3"], "max_units": 3}
 
 def catalog():
     out = {f"c{i}": {"category": "cat", "kind": "goods", "list_price": 100} for i in range(6)}
-    for k in ("H", "P1", "P2", "P3", "P4"):
+    for k in ("H", "L", "P1", "P2", "P3", "P4"):
         out[k] = {"category": "cat", "kind": "goods", "list_price": HI_LIST}
     return out
 
@@ -42,7 +42,7 @@ def inventory(units=(), surge=None, balance=1000000000):
 class Plan(unittest.TestCase):
     def plan(self, inv, band=BAND, probe=PROBE, limits=LIMITS, intel=None):
         cat = catalog()
-        intelligence = intel or {**{k: CHEAP for k in cat if k.startswith("c")}, **{k: HI_LOW for k in ("H", "P1", "P2", "P3", "P4")}}
+        intelligence = intel or {**{k: CHEAP for k in cat if k.startswith("c")}, **{k: HI_LOW for k in ("H", "L", "P1", "P2", "P3", "P4")}}
         with patch.object(rp, "capacity_config", return_value=limits):
             return rp.plan(inv, cat, [{"category": "cat"}], {}, 0, intelligence=intelligence, runtime=RUNTIME, now=NOW, hi_band=band, hi_probe=probe)
 
@@ -119,6 +119,45 @@ class Plan(unittest.TestCase):
         ordinary = [b for b in buys if b["sku"].startswith("c")]
         self.assertEqual(len(ordinary), LIMITS["max_lines_per_run"])
 
+    # ahead_of_band_sales_below, the user's 11-11 choice ("판매 적은 품목보다 앞으로 (권장)"): only the order moves.
+    def test_ahead_of_band_puts_the_probe_before_slower_band_skus(self):
+        # Worst cost 1.5M a unit and a 7M cap: H (24 of our sales) takes 3 (4.5M) and one more unit fits.
+        band = {**BAND, "slots": 10, "sales": {"H": 24, "L": 23}, "max_worst_cost_total": 7000000}
+        buys, why = self.plan(inventory(), band=band)
+        q = self.qty(buys)
+        self.assertEqual((q.get("H"), q.get("L"), sum(q.get(k, 0) for k in ("P1", "P2", "P3"))), (3, 1, 0))
+        self.assertNotIn("ahead_of_band_sales_below", why["hi_probe"])
+        buys, why = self.plan(inventory(), band=band, probe={**PROBE, "ahead_of_band_sales_below": 24})
+        q = self.qty(buys)
+        self.assertEqual((q.get("H"), q.get("L"), q.get("P1"), q.get("P2"), q.get("P3")), (3, None, 1, None, None))
+        self.assertEqual((why["hi_probe"]["taken"], why["hi_probe"]["ahead_of_band_sales_below"]), (["P1"], 24))
+        self.assertLessEqual(why["hi_probe"]["worst_cost_total"], 7000000)
+
+    def test_ahead_of_band_changes_nothing_when_every_band_sku_is_ahead_or_the_probe_is_full(self):
+        band = {**BAND, "slots": 10, "sales": {"H": 30, "L": 5}, "max_worst_cost_total": 7000000}
+        full = [unit(k, 1500000) for k in ("P1", "P2", "P3")]
+        for inv in (inventory(), inventory([unit("H", 1500000), unit("c0")]), inventory(full)):
+            for ahead, b in ((5, band), (1, BAND), (24, band if inv["units"] == full else None)):
+                if b is None:
+                    continue
+                with self.subTest(units=len(inv["units"]), ahead=ahead):
+                    self.assertEqual(self.plan(inv, band=b, probe={**PROBE, "ahead_of_band_sales_below": ahead})[0], self.plan(inv, band=b)[0])
+        buys, _ = self.plan(inventory(full), band={**band, "max_worst_cost_total": 24000000}, probe={**PROBE, "ahead_of_band_sales_below": 24})
+        self.assertEqual((self.qty(buys).get("H"), self.qty(buys).get("L")), (3, 3))
+
+    def test_ahead_of_band_keeps_the_caps(self):
+        probe = {**PROBE, "ahead_of_band_sales_below": 24}
+        band = {**BAND, "slots": 10, "sales": {"H": 30, "L": 5}}
+        # The band cap: 3M leaves room for two units, both H's (ahead), none for the probe.
+        buys, _ = self.plan(inventory(), band={**band, "max_worst_cost_total": 3000000}, probe=probe)
+        self.assertEqual({k: v for k, v in self.qty(buys).items() if not k.startswith("c")}, {"H": 2})
+        # The run budget: 5% of 40M is a 2M budget, one unit at 1.5M worst cost; H plans it, the probe gets nothing.
+        buys, _ = self.plan(inventory(balance=40000000), band=band, probe=probe)
+        self.assertEqual({k: v for k, v in self.qty(buys).items() if not k.startswith("c")}, {"H": 1})
+        # The three probe units.
+        buys, why = self.plan(inventory([unit("P1", 1500000), unit("P2", 1500000)]), band=band, probe=probe)
+        self.assertEqual((why["hi_probe"]["held"], why["hi_probe"]["planned"]), (2, 1))
+
 
 class Settings(unittest.TestCase):
     def test_shipped_on_with_the_three_skus(self):
@@ -139,6 +178,19 @@ class Settings(unittest.TestCase):
                 path.write_text(json.dumps(bad), encoding="utf-8")
                 self.assertIsNone(hi_probe.settings(path), bad)
             self.assertIsNone(hi_probe.settings(Path(folder) / "missing.json"))
+
+    def test_the_order_key_is_optional_and_checked(self):
+        good = {"enabled": True, "skus": ["G03d0199f", "G24f5f979", "G3e0d6c67"], "max_units": 3, "ahead_of_band_sales_below": 24}
+        with TemporaryDirectory() as folder:
+            path = Path(folder) / "p.json"
+            path.write_text(json.dumps(good), encoding="utf-8")
+            self.assertEqual(hi_probe.settings(path), {"skus": good["skus"], "max_units": 3, "ahead_of_band_sales_below": 24})
+            with patch.object(mb, "confirmed_counts", return_value={}):
+                self.assertEqual(hi_probe.for_run(folder, NOW, {s: {"kind": "goods"} for s in good["skus"]}, path),
+                                 {"skus": good["skus"], "max_units": 3, "ahead_of_band_sales_below": 24})
+            for bad in (0, 1001, 24.0, "24", True, None, -1):
+                path.write_text(json.dumps({**good, "ahead_of_band_sales_below": bad}), encoding="utf-8")
+                self.assertIsNone(hi_probe.settings(path), bad)
 
     def test_a_sku_leaves_the_probe_at_its_first_sale_of_ours(self):
         cat = {"G03d0199f": {"kind": "goods"}, "G24f5f979": {"kind": "goods"}, "Gb5d0dde7": {"kind": "food"}}

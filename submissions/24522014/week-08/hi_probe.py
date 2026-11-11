@@ -18,6 +18,10 @@ CONFIG = ROOT / "hi_probe.json"
 SKU = re.compile(r"^G[0-9a-f]{8}$")
 MAX_SKUS, MAX_UNITS = 3, 3
 ROUND_WINDOW = 30 * 86400  # any of our completed sales this round takes a SKU out of the probe
+# Optional "ahead_of_band_sales_below" (the user's 11-11 choice in the Orchestrator session, about 14:1x KST: "판매 적은 품목보다
+# 앞으로 (권장)"): the probe plans after the band SKUs with at least that many of our sales in the band's window and before the
+# others, inside the same caps. Absent, it plans after the whole band, as before. Present but invalid means off.
+MAX_AHEAD = 1000
 
 
 def settings(path=None):
@@ -32,11 +36,18 @@ def settings(path=None):
             or not all(isinstance(s, str) and SKU.match(s) for s in skus)
             or type(units) is not int or not 1 <= units <= MAX_UNITS):
         return None
-    return {"skus": list(skus), "max_units": units}
+    chosen = {"skus": list(skus), "max_units": units}
+    if "ahead_of_band_sales_below" in value:
+        ahead = value["ahead_of_band_sales_below"]
+        if type(ahead) is not int or not 1 <= ahead <= MAX_AHEAD:
+            return None
+        chosen["ahead_of_band_sales_below"] = ahead
+    return chosen
 
 
 def for_run(md, now, catalog, path=None):
-    """{"skus": [probe SKUs still never sold, in the file's order], "max_units"} for one restock run, or None when off or on any error."""
+    """{"skus": [probe SKUs still never sold, in the file's order], "max_units"} (plus "ahead_of_band_sales_below" when the file sets
+    it) for one restock run, or None when off or on any error."""
     try:
         chosen = settings(path)
         if not chosen:
@@ -47,6 +58,6 @@ def for_run(md, now, catalog, path=None):
             return None
         sold = {sku for sku, (n, _) in counts.items() if n > 0}
         skus = [s for s in chosen["skus"] if s not in sold and (catalog.get(s) or {}).get("kind") == "goods"]
-        return {"skus": skus, "max_units": chosen["max_units"]}
+        return {**chosen, "skus": skus}
     except Exception:
         return None

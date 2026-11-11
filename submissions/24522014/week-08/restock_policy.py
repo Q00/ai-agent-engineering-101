@@ -176,13 +176,46 @@ def plan(inventory, catalog, demand, sales, cursor=0, *, hints=None, now=None, i
         planned_units += 1
         probe_goods.append(pick["sku"])
     hi_planned, hi_taken = 0, []
+    probe_planned, probe_taken = 0, []
     # Held plus planned 1M+ stock at worst cost stays within the cap (hi_band.py bounds it at 24M at most).
     hi_worst = sum((catalog.get(u.get("sku")) or {}).get("list_price", 0) * 0.75 * surge.get(u.get("sku"), 1) for u in units if over_floor(u.get("sku"))) if band else 0
     hi_cap = band.get("max_worst_cost_total", 12000000) if band else 0
-    for sku in (sorted(hb["sales"], key=lambda s: (-hb["sales"][s], s)) if hb else ()):
+    band_order = sorted(hb["sales"], key=lambda s: (-hb["sales"][s], s)) if hb else []
+    # The probe plans after the whole band, unless hi_probe.json sets ahead_of_band_sales_below (the user's 11-11 choice in the
+    # Orchestrator session, about 14:1x KST: "판매 적은 품목보다 앞으로 (권장)"): band SKUs with at least that many of our sales in the
+    # band's window plan first, then the probe, then the other band SKUs. The probe had bought nothing in 167 runs over 30 h, last
+    # in line behind a cap held at 23.9M of 24M. Caps, units and every test are unchanged; only the order moves.
+    ahead = probe.get("ahead_of_band_sales_below") if probe else None
+    if type(ahead) is int:
+        steps = ([("band", s) for s in band_order if hb["sales"][s] >= ahead] + [("probe", s) for s in probe_skus]
+                 + [("band", s) for s in band_order if hb["sales"][s] < ahead])
+    else:
+        steps = [("band", s) for s in band_order] + [("probe", s) for s in probe_skus]
+    for kind, sku in steps:
         value = catalog.get(sku) or {}
+        if kind == "probe":
+            # Once probe_room is spent no later probe SKU can plan, so skipping is the old loop's break.
+            if probe_room <= 0 or owned[sku] or planned[sku] or value.get("category") not in categories or len(planned) >= KIT_LINES:
+                continue
+            worst_cost = value["list_price"] * 0.75 * surge.get(sku, 1)
+            reference = signal(sku).get("median_price")
+            # No sale of ours stands in for the median here, so a surged probe SKU keeps the test and needs a sampled median to pass it.
+            if sku in surge and (reference is None or reference <= worst_cost * (1 + rate)):
+                continue
+            carrying_cost = worst_cost * rate * 7
+            if estimated + storage_reserve + worst_cost + carrying_cost > budget or hi_worst + worst_cost > hi_cap:
+                continue
+            planned[sku] += 1
+            estimated += worst_cost
+            storage_reserve += carrying_cost
+            hi_worst += worst_cost
+            probe_room -= 1
+            probe_planned += 1
+            probe_taken.append(sku)
+            continue
+        # Once hi_room is spent no later band SKU can plan, so skipping is the old loop's break.
         if hi_room <= 0:
-            break
+            continue
         if not is_hi(sku) or value.get("category") not in categories or (sku in surge and (owned[sku] or planned[sku])) or (not planned[sku] and len(planned) >= KIT_LINES):
             continue
         worst_cost = value["list_price"] * 0.75 * surge.get(sku, 1)
@@ -203,28 +236,6 @@ def plan(inventory, catalog, demand, sales, cursor=0, *, hints=None, now=None, i
         hi_room -= qty
         hi_planned += qty
         hi_taken.append(sku)
-    probe_planned, probe_taken = 0, []
-    for sku in probe_skus:
-        if probe_room <= 0:
-            break
-        value = catalog.get(sku) or {}
-        if owned[sku] or planned[sku] or value.get("category") not in categories or len(planned) >= KIT_LINES:
-            continue
-        worst_cost = value["list_price"] * 0.75 * surge.get(sku, 1)
-        reference = signal(sku).get("median_price")
-        # No sale of ours stands in for the median here, so a surged probe SKU keeps the test and needs a sampled median to pass it.
-        if sku in surge and (reference is None or reference <= worst_cost * (1 + rate)):
-            continue
-        carrying_cost = worst_cost * rate * 7
-        if estimated + storage_reserve + worst_cost + carrying_cost > budget or hi_worst + worst_cost > hi_cap:
-            continue
-        planned[sku] += 1
-        estimated += worst_cost
-        storage_reserve += carrying_cost
-        hi_worst += worst_cost
-        probe_room -= 1
-        probe_planned += 1
-        probe_taken.append(sku)
     # The mid-price demand band (mid_band.py) comes after the 1M+ probe and before the ordinary pass, so room that frees up goes to
     # it first: one unit per pick, in the run's units, the total cap and the ordinary lines, at most its own line limit a run, with
     # seven days of goods storage. Its SKUs are under 1M, so shop b's band never counts them.
@@ -293,6 +304,8 @@ def plan(inventory, catalog, demand, sales, cursor=0, *, hints=None, now=None, i
     if probe:
         extra["hi_probe"] = {"skus": probe_skus, "max_units": probe["max_units"], "held": probe_held, "planned": probe_planned, "taken": probe_taken,
                              "worst_cost_total": round(hi_worst), "worst_cost_cap": hi_cap}
+        if type(ahead) is int:
+            extra["hi_probe"]["ahead_of_band_sales_below"] = ahead
     planned_units += hi_planned + probe_planned
     return buys, {"reason": "bounded_experiment", "budget": budget, **extra,
                   "strategy_version": runtime["version"], "strategy_experiment": runtime.get("experiment"),
