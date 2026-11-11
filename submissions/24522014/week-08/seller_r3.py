@@ -12,6 +12,7 @@ import asyncio
 import base64
 import json
 import os
+import re
 import time
 import math
 from datetime import datetime, timezone
@@ -43,7 +44,7 @@ from sale_order import grade_c_last, order_key
 from strategy_policy import effective
 
 NAME = "kcwarni Inventory Shop"
-FEATURES = ["actual_grade_receipt", "bounded_warranty_v1", "coded_seller_rules", "model_breaker", "food_pricing_v2", "price_cap_v1", "sale_order_v1", "a_grade_six_hour_v1", "pq1_v1", "food_floor_108_v1", "a_warranty_90m_v1"]
+FEATURES = ["actual_grade_receipt", "bounded_warranty_v1", "coded_seller_rules", "model_breaker", "food_pricing_v2", "price_cap_v1", "sale_order_v1", "a_grade_six_hour_v1", "pq1_v1", "food_floor_108_v1", "a_warranty_90m_v1", "shelf_need_fit_v1"]
 MARKET_DIR = Path(os.environ.get("MARKET_DIR", ".market"))
 
 PROMPT = """You are a Round 3 inventory sales agent. A buyer is negotiating for one {name}.
@@ -95,9 +96,34 @@ def condition_notice(unit, terms=None):
     return notice, details
 
 
+# A stated shelf-life need (the user's 11-11 choice in the Orchestrator session, about 18:3x KST: "맞는 재고 골라 팔기 + 기록
+# (권장)"): probe-food 2 stars on 11-10 said "Only X h of shelf life left; I needed Y h", and find_unit gave out the unit that
+# expires first. When the request says how many hours it needs, find_unit picks a unit that has them if one exists, and
+# otherwise picks as before. No refusal and no disclosure change; the pricing log records the stated need.
+NEED_PATTERNS = (
+    re.compile(r"(\d+(?:\.\d+)?)\s*(?:h|hrs?|hours?)\b(?:\s+of)?\s+(?:shelf[\s-]?life|freshness)", re.I),
+    re.compile(r"(\d+(?:\.\d+)?)\s*(?:h|hrs?|hours?)\b\s+(?:left|remaining)", re.I),
+    re.compile(r"min_hours_left\W{0,3}(\d+(?:\.\d+)?)", re.I),
+    re.compile(r"(\d+(?:\.\d+)?)\s*시간\s*이상"),
+)
+
+
+def stated_need_hours(text):
+    """The most hours of shelf life the request says the order needs, or None when it states none."""
+    found = [float(m.group(1)) for pattern in NEED_PATTERNS for m in pattern.finditer(str(text or ""))]
+    found = [h for h in found if 0 < h <= 10000]
+    return max(found) if found else None
+
+
+def hours_left(unit, now):
+    """Hours of shelf life left, or None for a unit without an expiry (order_key treats it as never expiring)."""
+    return (unit["expires_at"] - now) / 3600 if unit.get("expires_at") else None
+
+
 def find_unit(text, taken=()):
     """The in-stock unit that fits what the buyer asked for (category, name or SKU) and expires first,
-    skipping units already promised in another open negotiation."""
+    skipping units already promised in another open negotiation; with a stated shelf-life need, the first
+    to expire among those that meet it, if any does."""
     want = text.lower()
     try:
         inv = json.loads((MARKET_DIR / "inventory.json").read_text(encoding="utf-8"))
@@ -113,6 +139,11 @@ def find_unit(text, taken=()):
             or u["sku"].lower() in want)]
     named = [u for u in fit if u["sku"].lower() in want]
     fit = named or fit                                   # a SKU the buyer named comes first
+    need = stated_need_hours(text)
+    if need is not None:
+        now = time.time()
+        enough = [u for u in fit if hours_left(u, now) is None or hours_left(u, now) >= need]
+        fit = enough or fit
     c_last = grade_c_last()
     return min(fit, key=lambda u: order_key(u, c_last), default=None)
 
@@ -241,7 +272,8 @@ class Seller(AgentExecutor):
         (log_dir / (uuid4().hex + ".json")).write_text(json.dumps(
             {"at": datetime.now(timezone.utc).isoformat(), "task": task.id,
              "unit": u.get("unit"), "sku": u["sku"], "cost": u["cost"],
-             "grade_observed": u.get("grade"), "expires_at": u.get("expires_at"), "request_form": request_form(deal.get("request"), u), **terms},
+             "grade_observed": u.get("grade"), "expires_at": u.get("expires_at"), "request_form": request_form(deal.get("request"), u),
+             "stated_need_hours": stated_need_hours(deal.get("request")), **terms},
             ensure_ascii=False, indent=2), encoding="utf-8")
         if deal["ask"] is not None and deal["offer"] == deal["ask"] and deal["offer"] >= reserve:
             move, raw = {"action": "accept"}, "deterministic acceptance of the disclosed quote"

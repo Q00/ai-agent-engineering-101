@@ -45,6 +45,42 @@ class R3Contract(unittest.TestCase):
                 self.assertEqual(seller_r3.find_unit("G00001", {"3"})["unit"], "2")
                 self.assertIsNone(seller_r3.find_unit("G00002"))
 
+    # The stated shelf-life need, the user's 11-11 choice ("맞는 재고 골라 팔기 + 기록 (권장)").
+    def test_a_stated_shelf_life_need_picks_a_unit_that_meets_it(self):
+        now = 1794390000.0
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            units = [dict(unit=str(i), sku="G00001", name="food", category="food", grade=grade, expires_at=now + hours * 3600, supplied_at=0)
+                     for i, grade, hours in ((3, "C", 10), (2, "A", 400), (4, "B", 100))]
+            (root / "inventory.json").write_text(json.dumps({"round": 3, "units": units}), encoding="utf-8")
+            with patch.object(seller_r3, "MARKET_DIR", root), patch.object(seller_r3.time, "time", return_value=now):
+                self.assertEqual(seller_r3.find_unit("G00001")["unit"], "3")  # no stated need: the first to expire, as before
+                self.assertEqual(seller_r3.find_unit("G00001 please. This order needs at least 362 hours of shelf life left.")["unit"], "2")
+                self.assertEqual(seller_r3.find_unit("G00001, needs at least 50 hours of shelf life left")["unit"], "4")
+                self.assertEqual(seller_r3.find_unit("G00001, needs at least 50 hours of shelf life left", {"4"})["unit"], "2")
+                # No unit meets it: picked as before, never refused.
+                self.assertEqual(seller_r3.find_unit("G00001. This order needs at least 900 hours of shelf life left.")["unit"], "3")
+
+    def test_a_unit_without_expiry_meets_any_stated_need(self):
+        now = 1794390000.0
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            units = [dict(unit="g", sku="G00009", name="lamp", category="home", grade="A", expires_at=None, supplied_at=0, kind="goods")]
+            (root / "inventory.json").write_text(json.dumps({"round": 3, "units": units}), encoding="utf-8")
+            with patch.object(seller_r3, "MARKET_DIR", root), patch.object(seller_r3.time, "time", return_value=now):
+                self.assertEqual(seller_r3.find_unit("G00009, needs at least 500 hours of shelf life left")["unit"], "g")
+
+    def test_stated_need_hours_reads_only_shelf_life_hours(self):
+        need = seller_r3.stated_need_hours
+        self.assertEqual(need("This order accepts grade A or B and needs at least 362 hours of shelf life left."), 362)
+        self.assertEqual(need("I need 180 h of shelf life"), 180)
+        self.assertEqual(need("at least 74.5 hours remaining please"), 74.5)
+        self.assertEqual(need('{"min_hours_left": 542}'), 542)
+        self.assertEqual(need("유통기한 360시간 이상 남은 것"), 360)
+        self.assertEqual(need("72 hours of shelf life, or better 126 hours left"), 126)
+        for none in ("", None, "My budget is 30000", "deliver within 3 hours", "G00001 x 2", "0 hours of shelf life"):
+            self.assertIsNone(need(none), none)
+
     def test_balanced_food_order_retains_stock_filter_and_time_constraints(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
