@@ -148,7 +148,46 @@ def round100(x):
     return int(round(x / 100.0)) * 100 if x >= 1000 else int(round(x))
 
 
-def pick_unit(text, held, now):
+_MKT = {"t": 0, "x": {}}
+
+
+def market_x(sku, category, asks):
+    """11-11: what a goods unit can sell for now, as a share of list: the SKU's market median settle over 6 h
+    (buyer_value's ledger cache, >= 8 settles, re-read every 10 min), else the category's competitor first ask."""
+    if time.time() - _MKT["t"] > 600:
+        _MKT["t"] = time.time()
+        try:
+            deals = json.loads((HERE / ".market" / "shop_value.json").read_text()).get("deals") or []
+            t1 = max(d["ts"] for d in deals) if deals else 0
+            by = {}
+            for d in deals:
+                if d.get("goods") and t1 - d["ts"] <= 6 * 3600 and d.get("sku"):
+                    by.setdefault(d["sku"], []).append(d["x"])
+            _MKT["x"] = {k: sorted(v)[len(v) // 2] for k, v in by.items() if len(v) >= 8}
+        except (OSError, ValueError):
+            pass
+    if sku in _MKT["x"]:
+        return _MKT["x"][sku]
+    return competitor_ask(asks, category, 3) if asks is not None else None
+
+
+def sellable_first(fit, asks):
+    """11-11 (user: defend revenue 2nd): goods units whose floor fits under the market price come first; the oldest
+    unit was often one bought at +15 % surge (G021aae64 grade A at .77-.81 of list vs a .70 market): it was quoted
+    at its floor and lost 86 of 94 asks while cheaper A/B units of the same SKU sat unused. Order inside each group
+    stays oldest-first (book: C and early units carry the margin). No unit fits: the old order, unchanged."""
+    if not fit or fit[0].get("kind") == "food":
+        return fit
+    fm = shop_policy_now().get("floor_mult", 1.05)
+    ok = []
+    for u in fit:
+        x = market_x(u["sku"], u.get("category"), asks)
+        if x is None or (u.get("cost") or 0) * fm <= x * u["list_price"]:
+            ok.append(u)
+    return ok or fit
+
+
+def pick_unit(text, held, now, asks=None):
     inv = read_json(MARKET_DIR / "inventory.json", {})
     if inv.get("round", 0) < 3:
         item = next((k for k in RESERVE if k in text.lower()), None)
@@ -207,6 +246,7 @@ def pick_unit(text, held, now):
     # 11-11 07:45 REVERTED to oldest-first by default: in the 2.5 h with A-first, margin fell from 5.8 M/h to
     # 1.1 M/h (C units made 130k per deal vs A 14k / B 15k; big-ticket deals 119 -> 8 per 6 h) and the book lead
     # started shrinking. Book 1st outranks stars (user). A-first is the policy knob grade_first (strategist).
+    fit = sellable_first(fit, asks)
     accepts_c = bool(ACCEPTS_C.search(text)) or (want is not None and "C" in want)
     if re.search(r"prefer\s*(grade\s*)?C|cheapest\s*grade|refurb", text, re.I):
         return min(fit, key=lambda u: (-GRADE_ORDER.get(u.get("grade") or "A", 1), u.get("supplied_at") or 0))
@@ -404,7 +444,7 @@ class Shop(AgentExecutor):
             # Hold an agreed unit for RECENT_HOLD s; if that buyer never pays it comes back after that
             self.closed = {k: v for k, v in self.closed.items() if now - v < RECENT_HOLD}
             held |= set(self.closed)
-            u = pick_unit(text, held, now)
+            u = pick_unit(text, held, now, self.asks)
             if u is None:
                 log("seller", f"task {task.id[:8]} nothing in stock for {text[:80]!r}")
                 record(event="no_stock", text=text[:120], skus=SKU.findall(text))

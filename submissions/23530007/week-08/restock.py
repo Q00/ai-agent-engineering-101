@@ -78,6 +78,7 @@ NEED_SHARE = 0.25            # a food order's use_within_hours is the category's
                              # has seen orders in the category (a fixed 72 h shut out 24 h categories: ready meals)
 INTEL = Path(os.environ.get("MARKET_INTEL", HERE / "market_intel.jsonl"))              # hours
 SURGE_MAX = 0.15             # most cost surge we pay on a SKU (margins run ~20-25 % of list)
+COST_A, SURGE_MARGIN = 0.65, 0.03   # 11-11: typical grade A cost share; margin kept under the market median x
 COST_GUESS = 0.6             # cost as a share of list price before a unit arrives (A 55-75 %, B 40-60 %, C 25-45 %)
 
 
@@ -131,6 +132,22 @@ def market_sales(st, catalog):
                 st["sku"][sku] = st["sku"].get(sku, 0) + 1
     except Exception as e:
         print(f"[restock] ledger: {type(e).__name__}: {e}", file=sys.stderr)
+
+
+def market_p50_x(hours=6, min_n=8):
+    """Median price/list per goods SKU over the market's last `hours` of settles (buyer_value's ledger cache)."""
+    try:
+        deals = json.loads((HERE / ".market" / "shop_value.json").read_text()).get("deals") or []
+    except (OSError, ValueError, NameError):
+        return {}
+    if not deals:
+        return {}
+    t1 = max(d["ts"] for d in deals)
+    by = {}
+    for d in deals:
+        if d.get("goods") and t1 - d["ts"] <= hours * 3600 and d.get("sku"):
+            by.setdefault(d["sku"], []).append(d["x"])
+    return {k: sorted(v)[len(v) // 2] for k, v in by.items() if len(v) >= min_n}
 
 
 def decay(counts, hours):
@@ -439,11 +456,19 @@ def main():
     max_stock = p["max_stock_share"] * (cash + stock_cost)
     buy, spend = [], 0
     surge = {x["sku"]: x.get("units") or 0 for x in inv.get("surge") or [] if x.get("sku")}
+    mkt_x = market_p50_x()
     goods_lines = 0
     for _, cat, v, qty in wants:
         # rule seen 11-05: past 50 units of a SKU bought market-wide in an hour, each unit adds 0.2 % to its cost
         # (up to +50 %); we paid +13 % on the 424k mattress. Stop where the cost would pass +SURGE_MAX.
-        qty = min(qty, max(0, 50 + round(SURGE_MAX / 0.002) - surge.get(v["sku"], 0)))
+        # 11-11 (user: defend revenue 2nd): the hot bed SKU G021aae64 sold 403 units market-wide in 6 h at x ~.70
+        # while our grade A units cost up to .81 of list (bought at +15 % surge): unsellable, 325 of 837 goods units
+        # sat with floors above the market median. Allow only the surge that keeps a typical A unit (COST_A of list)
+        # under the SKU's market median minus a margin; hot SKUs then buy only in the no-surge zone.
+        allowed = SURGE_MAX
+        if v["kind"] == "goods" and v["sku"] in mkt_x:
+            allowed = min(SURGE_MAX, max(0.0, (mkt_x[v["sku"]] - SURGE_MARGIN) / COST_A - 1))
+        qty = min(qty, max(0, 50 + round(allowed / 0.002) - surge.get(v["sku"], 0)))
         if qty <= 0:
             continue
         if len(buy) >= MAX_LINES:
