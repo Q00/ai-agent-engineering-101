@@ -25,7 +25,7 @@ import time
 
 HARNESS_CMD = os.environ.get(
     "HARNESS_CMD",
-    "claude -p --model haiku --tools '' --setting-sources '' --no-session-persistence")
+    "claude -p --model haiku --effort low --max-budget-usd 0.02 --tools '' --setting-sources '' --no-session-persistence")
 TIMEOUT = 45
 BREAKER = Path(os.environ.get("HARNESS_BREAKER", Path(__file__).resolve().parent / ".market" / "harness_down"))
 OPEN_FOR = 600
@@ -74,7 +74,7 @@ def decide(who: str, prompt: str, timeout: float | None = None) -> dict | None:
         CALLS["n"] += 1
         with tempfile.TemporaryDirectory() as empty:
             try:
-                proc = model_env.run(shlex.split(HARNESS_CMD), prompt, empty, timeout or TIMEOUT)   # API key, else login
+                proc = model_env.run(shlex.split(HARNESS_CMD), prompt, empty, timeout or TIMEOUT, role="haiku")   # API key, else login
                 raw = proc.stdout.strip()
             except subprocess.TimeoutExpired:
                 raw = ""

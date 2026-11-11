@@ -54,7 +54,9 @@ GUIDE = HERE / "MARKET_GUIDE.md"
 MARKET = "https://market.ourolabs.ai"
 EVERY = 3600 - 120
 CLAUDE = shutil.which("claude") or str(Path.home() / ".local" / "bin" / "claude")   # cron has a bare PATH
-MODEL_CMD = f"{CLAUDE} -p --model opus --tools '' --setting-sources '' --no-session-persistence"
+# 11-11 (user: API cost): effort pinned (the CLI default was unpinned; ~73% of a call was output/thinking), a hard
+# cap per call, and --output-format json (added by model_env.run) so each call's cost lands in spend.jsonl
+MODEL_CMD = f"{CLAUDE} -p --model opus --effort high --max-budget-usd 0.6 --tools '' --setting-sources '' --no-session-persistence"
 MODEL_TIMEOUT = 600
 TOP_SKUS = 45
 MAX_MOVES = 12
@@ -451,8 +453,12 @@ def ask_model(prompt, role):
     with tempfile.TemporaryDirectory() as empty:
         t = time.time()
         try:
-            p = model_env.run(shlex.split(MODEL_CMD), prompt, empty, MODEL_TIMEOUT)   # user's API key, else login
-            log(f"{role}: model answered in {time.time() - t:.0f} s ({len(prompt)} chars in)")
+            p = model_env.run(shlex.split(MODEL_CMD), prompt, empty, MODEL_TIMEOUT, role=role)   # API key, else login
+            sp = getattr(p, "spend", None) or {}
+            log(f"{role}: model answered in {time.time() - t:.0f} s ({len(prompt)} chars in"
+                + (f", ${sp['cost']:.3f}, out {sp['output']} + think {sp['thinking']} tok" if sp else "") + ")")
+            if getattr(p, "error_text", None):
+                log(f"{role}: model error: {p.error_text}")
             return p.stdout.strip()
         except (subprocess.TimeoutExpired, OSError) as e:
             log(f"{role}: model call failed: {e!r}")

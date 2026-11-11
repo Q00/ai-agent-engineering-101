@@ -53,7 +53,7 @@ BMEM = HERE / "buyer_memory.json"
 CLAUDE = shutil.which("claude") or str(Path.home() / ".local" / "bin" / "claude")
 # 11-11 (user: try another model for the curator): sonnet costs half of opus per token, so it can run hourly
 # for what the 2 h opus schedule cost; the strategists that decide stay on opus
-MODEL_CMD = f"{CLAUDE} -p --model sonnet --tools '' --setting-sources '' --no-session-persistence"
+MODEL_CMD = f"{CLAUDE} -p --model sonnet --effort medium --max-budget-usd 0.3 --tools '' --setting-sources '' --no-session-persistence"
 MODEL_TIMEOUT = 420                                 # opus (11-08) answers 70k chars slower than sonnet did
 HOT_HOURS = 24
 DIGEST_KEEP = 10
@@ -203,8 +203,12 @@ def ask(prompt):
     with tempfile.TemporaryDirectory() as empty:
         t = time.time()
         try:
-            p = model_env.run(shlex.split(MODEL_CMD), prompt, empty, MODEL_TIMEOUT)   # user's API key, else login
-            log(f"model answered in {time.time() - t:.0f} s ({len(prompt)} chars in)")
+            p = model_env.run(shlex.split(MODEL_CMD), prompt, empty, MODEL_TIMEOUT, role="curator")   # API key, else login
+            sp = getattr(p, "spend", None) or {}
+            log(f"model answered in {time.time() - t:.0f} s ({len(prompt)} chars in"
+                + (f", ${sp['cost']:.3f}, out {sp['output']} + think {sp['thinking']} tok" if sp else "") + ")")
+            if getattr(p, "error_text", None):
+                log(f"model error: {p.error_text}")
             return p.stdout.strip()
         except (subprocess.TimeoutExpired, OSError) as e:
             log(f"model call failed: {e!r}")

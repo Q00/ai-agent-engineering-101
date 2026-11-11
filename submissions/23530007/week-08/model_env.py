@@ -21,13 +21,104 @@ def env(use_key=True):
     return e
 
 
-def run(cmd, prompt, cwd, timeout):
-    """subprocess.run of cmd with the key; once more on the CLI login if that fails. Timeouts propagate."""
+SPEND = Path(__file__).resolve().parent / ".market" / "spend.jsonl"
+CREDIT_ANCHOR = (1794369200.0, 181.0)        # 11-11 02:20 UTC: ~$181 of API credit left (ops_cost estimate)
+
+
+def _model_of(cmd):
+    try:
+        return cmd[cmd.index("--model") + 1]
+    except (ValueError, IndexError):
+        return "?"
+
+
+def _unwrap(p, cmd, prompt, secs, role, fell_back):
+    """11-11 (user: the API bill): every claude -p call runs with --output-format json; the JSON carries the
+    answer in 'result' plus total_cost_usd and token counts. Hand callers the plain answer in p.stdout (as before)
+    and append one row per call to .market/spend.jsonl so cost per role is measured, not guessed."""
+    import json
+    import time
+    raw = (p.stdout or "").strip()
+    try:
+        j = json.loads(raw)
+    except ValueError:
+        j = None
+    if not isinstance(j, dict) or "result" not in j:
+        return p
+    u = j.get("usage") or {}
+    mu = j.get("modelUsage") or {}
+    row = {"t": round(time.time(), 1), "role": role or "?", "model": next(iter(mu), _model_of(cmd)), "secs": round(secs, 1),
+           "cost": round(float(j.get("total_cost_usd") or 0), 5), "chars_in": len(prompt),
+           "input": u.get("input_tokens", 0), "cache_read": u.get("cache_read_input_tokens", 0),
+           "cache_write": u.get("cache_creation_input_tokens", 0), "output": u.get("output_tokens", 0),
+           "thinking": (u.get("output_tokens_details") or {}).get("thinking_tokens", 0),
+           "is_error": bool(j.get("is_error")), "subtype": j.get("subtype"), "fallback": fell_back}
+    try:
+        SPEND.parent.mkdir(exist_ok=True)
+        with SPEND.open("a", encoding="utf-8") as f:
+            f.write(json.dumps(row, ensure_ascii=False) + "\n")
+    except OSError:
+        pass
+    p.spend = row
+    if j.get("is_error"):
+        p.stdout = ""                          # the 'result' is an error text, not an answer
+        p.returncode = p.returncode or 1
+        p.error_text = str(j.get("result"))[:300]
+    else:
+        p.stdout = str(j.get("result") or "")
+    return p
+
+
+def run(cmd, prompt, cwd, timeout, role=None):
+    """subprocess.run of cmd with the key; once more on the CLI login if that fails. Timeouts propagate.
+    Adds --output-format json when the caller did not, and records the call in spend.jsonl (see _unwrap)."""
+    import time
+    cmd = list(cmd)
+    if "--output-format" not in cmd:
+        cmd += ["--output-format", "json"]
+    t0 = time.time()
     p = subprocess.run(cmd, input=prompt, cwd=cwd, capture_output=True, text=True, timeout=timeout, env=env())
+    fell_back = False
     if (p.returncode != 0 or not p.stdout.strip()) and KEY_FILE.is_file():
+        fell_back = True
         p = subprocess.run(cmd, input=prompt, cwd=cwd, capture_output=True, text=True, timeout=timeout,
                            env=env(use_key=False))
-    return p
+        try:
+            alert_user("ops", [f"API 키 호출 실패 → 구독 로그인으로 대체 실행 ({role or '?'}): 크레딧 잔액을 확인하세요."])
+        except Exception:
+            pass
+    return _unwrap(p, cmd, prompt, time.time() - t0, role, fell_back)
+
+
+def spend_rows(since):
+    """spend.jsonl rows with t >= since."""
+    import json
+    out = []
+    try:
+        for line in SPEND.read_text(encoding="utf-8").splitlines():
+            try:
+                r = json.loads(line)
+            except ValueError:
+                continue
+            if r.get("t", 0) >= since:
+                out.append(r)
+    except OSError:
+        pass
+    return out
+
+
+def spend_summary(now=None):
+    """{'today': $ in the last 24 h, 'per_role': {...}, 'credit_left': estimate from CREDIT_ANCHOR}."""
+    import time
+    now = now or time.time()
+    day = spend_rows(now - 86400)
+    per = {}
+    for r in day:
+        per[r["role"]] = per.get(r["role"], 0) + r["cost"]
+    all_rows = spend_rows(CREDIT_ANCHOR[0])
+    return {"today": round(sum(r["cost"] for r in day), 2), "calls": len(day),
+            "per_role": {k: round(v, 2) for k, v in sorted(per.items(), key=lambda kv: -kv[1])},
+            "credit_left": round(CREDIT_ANCHOR[1] - sum(r["cost"] for r in all_rows), 1)}
 
 
 ALERTS = Path(__file__).resolve().parent / ".market" / "agent_alerts.json"
@@ -53,7 +144,7 @@ def alert_user(role, items, min_gap=1800):
     fresh = [x for x in items if x[:120] not in sent]
     if not fresh or now - st.get("last", {}).get(role, 0) < min_gap:
         return []
-    name = {"shop": "상점 에이전트", "buyer": "구매 에이전트", "curator": "큐레이터"}.get(role, role)
+    name = {"shop": "상점 에이전트", "buyer": "구매 에이전트", "curator": "큐레이터", "ops": "운영"}.get(role, role)
     subprocess.run([sys.executable, str(Path(__file__).resolve().parent / "notify.py"),
                     f"[yms979] {name} 경보", "\n\n".join(fresh)], capture_output=True, text=True)
     for x in fresh:

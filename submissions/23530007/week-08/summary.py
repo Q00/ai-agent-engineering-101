@@ -198,6 +198,13 @@ def main():
             lines.append(f"구매 A/B 가구 보증 우선: {f(wa['wpen'])} | 기존: {f(wa['base'])} (+{wa['wpen']['minus_one']}/{wa['base']['minus_one']} 고장)")
     except Exception:
         pass
+    try:   # 11-11 (user: the API bill): what the agents spent in the last 24 h and the credit left
+        import model_env
+        sp = model_env.spend_summary(now)
+        roles = ", ".join(f"{k} ${v:.2f}" for k, v in list(sp["per_role"].items())[:4])
+        lines.append(f"API 비용 24h ${sp['today']:.2f} ({sp['calls']}회: {roles}), 크레딧 약 ${sp['credit_left']:.0f} 남음")
+    except Exception:
+        pass
     msg = "\n".join(lines)
 
     if "--dry" in sys.argv:
