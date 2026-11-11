@@ -200,7 +200,9 @@ def my_turn(role, now=None):
         # 11-11 restructure (user: 'as recommended'): the buyer every hour at :00 plus code-guard wakes
         # (.market/buyer_strategist_wake); the 30-min cadence of 01:50 did not address the cause (step size, bugs)
         return slot if slot % 4 == 0 else None
-    return slot if slot % 24 == 6 else None
+    # 11-11 12:35 (user: revenue 2nd must not be lost; the shop moved from margin-first to volume at or above cost):
+    # every 2 h at :30 (01:30, 03:30, ... UTC; ~+$5.6/day) while the revenue defense settles; back to 6 h after
+    return slot if slot % 8 == 6 else None
 
 
 def _db():
