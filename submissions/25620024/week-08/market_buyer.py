@@ -835,7 +835,7 @@ def price_plan(order, q, rows, book, adv):
     _, shop, offer, lp = q["c"]
     sku = offer["sku"]
     row = rows.get((shop["name"], sku)) if adv else None
-    cap = min(order["budget"], int(lp * T["max_pay_ratio"]))
+    cap = min(order["budget"], int(lp * T["max_pay_ratio"] + 1e-6))
     if row:
         cap = min(cap, int(row["walk_away"]))
     if row:
@@ -846,7 +846,7 @@ def price_plan(order, q, rows, book, adv):
         if book_low:
             low = int(max(0.45 * lp, min(low, book_low)))
     low = min(low, int(0.9 * cap))
-    close_at = max(cap, min(order["budget"], int(lp * close_ratio(lp))))
+    close_at = max(cap, min(order["budget"], int(lp * close_ratio(lp) + 1e-6)))   # float: int(5400*0.7) was 3779 (audit 11-11)
     target = group_target(sku)
     if target:                                  # HQ 11-05 group-buy call: we said we buy these at or under the target
         cap, close_at, low = min(cap, target), min(close_at, target), min(low, int(0.95 * target))
@@ -950,7 +950,7 @@ def round3(a, order, shops, mem, started):
     # ask up to 0.76 of list (within budget); a deal keeping 24%+ moves the saved rate by ~0.00001
     dp = tactic_arm(order, "deal_push")
     if dp == "B":
-        close_at = max(close_at, min(order["budget"], int(lp * T.get("deal_push_close", 0.76))))
+        close_at = max(close_at, min(order["budget"], int(lp * T.get("deal_push_close", 0.76) + 1e-6)))
     pm, note = tactic_arm(order, "price_match2"), None
     book_low = ((book.get("prices") or {}).get(sku) or {}).get("low")
     # MBT TF: a price-match request took 30% off our own first ask. v1 (09:40-11:15) set the opening TO the ledger
