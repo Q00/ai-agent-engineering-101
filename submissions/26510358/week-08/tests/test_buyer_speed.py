@@ -63,3 +63,24 @@ def test_the_shop_columns_the_buyer_reads_are_indexed(tmp_path):
     assert "breaks_shop" in plan("SELECT COUNT(*) FROM breaks WHERE shop=?", "x")
     assert "purchases_shop" in plan("SELECT COUNT(*) FROM purchases WHERE shop_url=?", "x")
     assert "negotiations_cp" in plan("SELECT ts FROM negotiations WHERE role='buyer' AND counterpart=?", "x")
+
+
+def test_read_ask_takes_the_shops_price_not_our_offer_and_skips_the_llm_without_a_price(monkeypatch):
+    """Replies from the log, 2026-11-11: 898 of 9,277 went to the LLM (4.2 s each), mostly 'none in stock'; and the
+    last-number rule read our own offer back as the shop's ask ('My price: 44451. Thank you for 35750.')."""
+    calls = []
+    monkeypatch.setattr(buyer_r3.llm, "ask_json", lambda *a, **k: calls.append(a) or {"price": None})
+    read = lambda text, L: buyer_r3.read_ask(text, {"list": L})
+    assert read("My price: 44451. Thank you for 35750. I can meet you partway.", 60_000) == 44451
+    assert read("Thank you for 12624. I can meet you partway. My price: 12866.", 17_900) == 12866
+    assert read("Counteroffer: 416661. Lower-priced alternative: G78e0ddfe 토퍼 5cm~7.5cm 퀸/킹.", 339_000) == 416661
+    assert read("Counteroffer: 92475. SKU G416971dc, grade A. Includes a 6-hour warranty", 119_200) == 92475
+    assert read("13616 is our lowest: it is top grade (A), and only about 2% over what this unit cost us.", 17_900) == 13616
+    assert read("Our final price is 15314, cert=true. No deal at 13355.", 20_000) == 15314
+    assert read("Item X: asking 18648. Send your offer as a number.", 23_000) == 18648
+    assert calls == []
+    for text in ("Sorry, we have none of that in stock right now.", "No deal.", "Sorry, no matching unit is in stock.",
+                 "No available unit meets the requested expiry, grade or warranty."):
+        assert read(text, 20_000) is None
+    assert calls == []
+    assert read("Let us talk about it.", 20_000) is None and len(calls) == 1          # unreadable: the LLM still reads it

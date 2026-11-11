@@ -139,11 +139,28 @@ def candidates(order, shops, mem, my_urls, theta=None):
     return out
 
 
+# 2026-11-11: of 9,277 shop lines, 368 had no number (330 of them "none of that in stock" / "No deal") and 530 gave
+# parse_offer an out-of-range one ("5cm", "6-hour warranty", "about 2% over"), so 898 replies went to the LLM at a
+# p50 of 4.2 s each, 1,756 calls a day, mostly to learn that there is no price.
+NO_PRICE_RE = re.compile(r"\b(none of that in stock|no matching (unit|stock)|no available unit|out of stock|no deal\b)",
+                         re.I)
+ASK_RE = re.compile(r"(?:counteroffer|asking|reply with|firm price|final price is|price is|my price|lowest is)\s*:?\s*"
+                    r"(?:₩|krw\s*)?(\d[\d,]{2,})|(\d[\d,]{2,})\s+is our lowest", re.I)
+
+
 def read_ask(reply, c):
-    """Shop's price from its reply; regex first, the LLM only when the regex finds nothing plausible."""
+    """Shop's price from its reply: a number after the words shops price with, then the last plausible number; a
+    reply that says it has nothing to sell has no price. The LLM only when none of these reads it."""
+    lo, hi = 0.1 * c["list"], 5 * c["list"]
+    for m in ASK_RE.finditer(reply or ""):
+        v = int((m.group(1) or m.group(2)).replace(",", ""))
+        if lo <= v <= hi:
+            return v
     p = parse_offer(reply)
-    if p is not None and 0.1 * c["list"] <= p <= 5 * c["list"]:
+    if p is not None and lo <= p <= hi:
         return p
+    if NO_PRICE_RE.search(reply or ""):
+        return None
     out = llm.ask_json("A shop replied in a price negotiation. Extract the price it is asking now, as a whole "
                        'number of credits, as {"price": n}, or {"price": null} if it names none.',
                        {"shop_reply": reply[:1500]}, timeout=30, purpose="read_ask")
