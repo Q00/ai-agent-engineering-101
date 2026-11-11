@@ -22,7 +22,11 @@ class VerdictTest(unittest.TestCase):
         self.assertIsNone(ht.verdict(NOW, NOW - 400, NOW - 400, 0, 0))     # both logs still: nothing to serve
 
     def test_short_silence_is_not_a_reason(self):
-        self.assertIsNone(ht.verdict(NOW, NOW - 299, NOW - 30, 0, 0))
+        self.assertIsNone(ht.verdict(NOW, NOW - ht.SILENT_S + 1, NOW - 30, 0, 0))
+
+    def test_two_minutes_is_the_threshold(self):
+        self.assertEqual(ht.SILENT_S, 120)      # 11-12: 30-50 rows/min fall to 0 inside two minutes when the tunnel dies
+        self.assertTrue(ht.verdict(NOW, NOW - 120, NOW - 30, 0, 0))
 
     def test_probe_failures_restart(self):
         self.assertIsNone(ht.verdict(NOW, NOW - 10, NOW - 10, ht.PROBE_FAILS - 1, 0))

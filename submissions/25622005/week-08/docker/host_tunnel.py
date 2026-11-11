@@ -20,6 +20,9 @@ inbound path is dead: cloudflared is terminated, comes back with a new URL, and 
 A public card probe (the URL from the Mac, python user agent) that fails PROBE_FAILS checks in a row does the
 same. A quiet market (both logs still) is not a reason to restart, and after a restart COOLDOWN_S pass before
 the next one, since the restart itself silences the seller for a minute. Every verdict is logged.
+SILENT_S went from 300 to 120 s on 11-12 08:40: in the night's 9 silences (03:14-07:52) the seller log fell
+from 30-50 rows a minute to 0 inside two minutes while the Mac's own card probe never failed, and no 2-minute
+gap without a restart occurred; at 5 min each event cost about 7 min of inbound, at 2 min about 3.
 Run it under launchd (docker/com.psyoung82.market-tunnel.plist) or by hand:
 
     /usr/bin/python3 docker/host_tunnel.py [--data DIR] [--port 8900] [--once-url]
@@ -40,7 +43,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent.parent
 URL_RE = re.compile(r"https://[a-z0-9-]+\.trycloudflare\.com")
 CLOUDFLARED = "/opt/homebrew/bin/cloudflared"
-CHECK_S, SILENT_S, PROBE_FAILS, COOLDOWN_S = 60, 300, 3, 600
+CHECK_S, SILENT_S, PROBE_FAILS, COOLDOWN_S = 60, 120, 3, 600
 
 
 def log(logs, msg):
