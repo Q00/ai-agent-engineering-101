@@ -34,7 +34,7 @@ DEFAULTS = {"post_threshold": 1.0, "topic_cooldown_h": 2, "window_h": 6, "min_n"
             "max_posts_day": {"buyer": 288, "shop": 288},
             "name_shops": False,   # 11-05: our posts draw ~0.8 likes under others' in every hour and every format since
                                    # day 1 (author-level); test: no post names other shops (receipt tips, stock checks)
-            "early_s": 60,         # MBT 11-12: the buyer queues its next post 60 s before the 300 s gap (see tick)
+            "early_s": 290, "max_wait": 2,   # MBT 11-12: the buyer keeps up to 2 posts queued (see tick)
             "gap_s": {"buyer": 300, "shop": 300}}   # 11-07: patch 3.4 votes are one stance per voter per AUTHOR,
             # not per post, so a weak post no longer pulls the rating down; posts (0.1) want count -> 5 min again.
             # Before: 11-05 05:50: back to 30 min. At 5 min (19:30-20:49) the rating
@@ -1031,26 +1031,29 @@ def tick(md=Path(".market"), c=None, now=None):
         state["day"], state["today"] = day, {}
     # MBT 11-12: posts still waiting in the outbox (the kit keeps a 429'd post and resends it every 10 s, renaming
     # outbox.jsonl to outbox.taking while it sends). A file that cannot be read counts as waiting (fail closed).
-    waiting = set()
+    waiting = {"buyer": 0, "shop": 0}
     for name in ("outbox.jsonl", "outbox.taking"):
         try:
             for l in (md / name).read_text(encoding="utf-8").splitlines():
                 if '"post"' in l:
                     try:
-                        waiting.add(json.loads(l).get("as"))
+                        r_ = json.loads(l).get("as")
+                        waiting[r_] = waiting.get(r_, 0) + 1
                     except ValueError:
-                        waiting |= {"buyer", "shop"}
+                        waiting = {"buyer": 99, "shop": 99}
         except FileNotFoundError:
             pass
         except OSError:
-            waiting |= {"buyer", "shop"}
+            waiting = {"buyer": 99, "shop": 99}
     for role in ("buyer", "shop"):
         # MBT 11-12: ticks come every 60-100 s, so a post written at 300 s went out at 350 s median (8.5/h against
-        # the market's 12/h). The buyer (posts score 0.1 of buyer ALL) queues its next post early_s seconds before
-        # the 300 s is up, one at a time; the kit sends it the moment the market's 300 s opens. The shop's posts
-        # do not score, so the shop keeps the plain gap.
+        # the market's 12/h), and while a supply window is open the restock run (and this tick in it) takes 7-11 min.
+        # The buyer (posts score 0.1 of buyer ALL) keeps up to max_wait posts queued, early_s seconds ahead of the
+        # 300 s gap; the kit's own sync thread sends one the moment the market's 300 s opens and keeps the rest.
+        # The shop's posts do not score, so the shop keeps the plain gap, one at a time.
         early = t.get("early_s", 0) if role == "buyer" else 0
-        if role in waiting or now - state["last"].get(role, 0) < (t.get("gap_s") or {}).get(role, 300) - early:
+        if waiting.get(role, 0) >= (t.get("max_wait", 1) if role == "buyer" else 1) \
+                or now - state["last"].get(role, 0) < (t.get("gap_s") or {}).get(role, 300) - early:
             continue
         if state.setdefault("today", {}).get(role, 0) >= (t["max_posts_day"] or {}).get(role, 99):
             continue
