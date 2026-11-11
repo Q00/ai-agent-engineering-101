@@ -260,13 +260,46 @@ def failed_last(mem, name, item=None):
         # 11-11: a transport error (a tunnel hiccup, a non-JSON reply) kept a good shop out for 6 h (thisjonghoon,
         # our 2nd food source, after one JSONDecodeError); it is a 15-min lock now, like an out-of-stock reply
         return f"last visit failed: {last['outcome']}" if time.time() - last.get("t", 0) <= REJECT_SHOP_SECS else None
-    if str(last.get("outcome", "")).startswith("unpaid"):
+    oc, recent = str(last.get("outcome", "")), time.time() - last.get("t", 0) <= REJECT_SHOP_SECS
+    # 11-11 21:40: a failure that is about ONE unit or one moment kept the whole shop out for 6 h, and a shop that is
+    # out is not visited, so nothing cleared it: Kiro729 (our best food leg) after a receipt for another SKU (4 of its
+    # 94 deals in 48 h), ddolcom and cheapest-in-town after 'unit ... is not in stock' (sold to someone else), jiseokkk
+    # after a unit with too little shelf life (82 such refusals in 72 h), outseop after the market's own 500 on a
+    # payment; 5 of 14 candidate shops per order were out this way. Now: a sold unit or a payment error is a 15-min
+    # lock like any transport error; a short-dated unit or a swapped SKU skips that SKU at that shop (unit_skip)
+    if oc.startswith("unpaid") and ("is not in stock" in oc or "payment not completed" in oc):
+        return f"last visit failed: {oc[:80]}" if recent else None
+    if oc.startswith("unpaid") and "shelf life" in oc:
+        return None
+    if oc.startswith("unpaid"):
         return f"last visit failed: {last['outcome']}"
     if last.get("outcome") == "rejected" and not last.get("asks"):
         return "last visit turned me away without an ask (out of stock or not selling)"
+    if last.get("outcome") == "deal" and last.get("signed") is False and "receipt names" in str(last.get("void")):
+        return f"last deal did not count: {last.get('void')}" if recent else None
     if last.get("outcome") == "deal" and last.get("signed") is False:
         return f"last deal did not count: {last.get('void') or 'the receipt had no seller signature'}"
     return None
+
+
+UNIT_FAIL_SECS = 2 * 3600
+
+
+def unit_skip(mem):
+    """'shop|sku' pairs whose unit failed lately for a reason of its own: too little shelf life for the order's
+    policy, a receipt that named another SKU, or a turn-away before any ask (asking the same shop for the same SKU
+    again ended the same way 215 times of 252 in 48 h; for another SKU 45%, whatever the wait). That SKU is not
+    asked for at that shop for UNIT_FAIL_SECS."""
+    since, out = time.time() - UNIT_FAIL_SECS, set()
+    for t in reversed(mem["trades"]):
+        if t.get("t", 0) < since:
+            break
+        oc = str(t.get("outcome", ""))
+        if t.get("shop") and t.get("item") and ((oc.startswith("unpaid") and "shelf life" in oc)
+                                                or (oc == "deal" and "receipt names" in str(t.get("void")))
+                                                or (oc == "rejected" and not t.get("asks"))):
+            out.add(f"{t['shop']}|{t['item']}")
+    return out
 
 
 def memory_view(mem, name, item):
@@ -800,7 +833,7 @@ def main():
         note_broken(mem, md)
         catalog = json.load(open(md / "catalog.json", encoding="utf-8"))
         share = (bp.get("cat_auto", {}).get(a.item) or {}).get("cap", bp["value_share"])   # buyer_strategist.py
-        cskip = grade_c_skip(mem)
+        cskip = grade_c_skip(mem) | unit_skip(mem)
         # 11-07 A/B "pricefirst" (independent of the push arms): rank shops by price alone. conv_weight 0.1 gave a
         # shop that often agrees +0.06 over one that rarely does (psyoung82 over olstjr, whose buyers pay 0.59
         # against psyoung82's 0.71), though a failed try costs seconds and the next shop is tried; rival_penalty
