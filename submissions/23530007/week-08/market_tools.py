@@ -361,6 +361,49 @@ def projection(rate=None, v=None):
     return whatif.project(rate, v)
 
 
+def peer_best(category, hours=6, top=6):
+    """11-11 (user: 'why must I tell you the obvious'): in one category (leaf name, e.g. 침대/매트리스), the buyers
+    with the best realized v over `hours` (n >= 8): v, median x, grade mix, warranty share, breaks, top shops; the
+    market by grade (median x, break share, v if warranted = (1-x)(1-p), unwarranted = (1-x)(1-p) - p); and us."""
+    st_ = _read(HERE / ".market" / "shop_value.json", {}) or {}
+    D, br = st_.get("deals") or [], st_.get("broken") or {}
+    if not D:
+        return {"error": "no ledger cache"}
+    t1 = max(d["ts"] for d in D)
+    R = [d for d in D if d.get("cat", "").split(">")[-1] == category and t1 - d["ts"] <= min(float(hours or 6), 6) * 3600]
+
+    def v(d):
+        u = d.get("unit")
+        return (0.0 if br[u] else -1.0) if u in br else 1 - d["x"]
+    by = {}
+    for d in R:
+        by.setdefault(d.get("buyer"), []).append(d)
+    rows = []
+    for b, L in by.items():
+        if len(L) < 8 and b != "yms979":
+            continue
+        g = {k: sum(1 for d in L if d.get("grade") == k) for k in "ABC"}
+        shops = {}
+        for d in L:
+            shops[d["shop"]] = shops.get(d["shop"], 0) + 1
+        rows.append({"buyer": b, "n": len(L), "v": round(_mean([v(d) for d in L]), 3),
+                     "x_med": round(statistics.median(d["x"] for d in L), 3), "grades": g,
+                     "warranty": round(sum(1 for d in L if d.get("w")) / len(L), 2),
+                     "breaks": sum(1 for d in L if d.get("unit") in br),
+                     "top_shops": sorted(shops.items(), key=lambda kv: -kv[1])[:3]})
+    rows.sort(key=lambda r: -r["v"])
+    grade = {}
+    for k in "ABC":
+        xs = [d["x"] for d in R if d.get("grade") == k]
+        if len(xs) >= 5:
+            p = sum(1 for d in R if d.get("grade") == k and d.get("unit") in br) / len(xs)
+            xm = statistics.median(xs)
+            grade[k] = {"n": len(xs), "x_med": round(xm, 3), "break_share": round(p, 3),
+                        "v_if_warranted": round((1 - xm) * (1 - p), 3), "v_if_not": round((1 - xm) * (1 - p) - p, 3)}
+    return {"category": category, "market": {"n": len(R), "v": round(_mean([v(d) for d in R]), 3)}, "by_grade": grade,
+            "best_buyers": rows[:top], "us": next((r for r in rows if r["buyer"] == "yms979"), None)}
+
+
 def final_rank(rate=30.0, v=0.40):
     """Projected final class TOTAL ranks: buyer by projected saved rank (ours at the scenario), shop by its 24-h trend
     and by half its 48-h trend (damped), top 10 + us. Rough extrapolation (ops/final_rank.py)."""
@@ -411,6 +454,7 @@ TOOLS = {
     "class_history": (class_history, "A player's class total/shop/buyer score over hours (<= 72).", {"player": "string", "hours": "number"}, []),
     "rules_search": (rules_search, "Lines of the market rules (agent.md) and our rules block mentioning a term.", {"term": "string"}, ["term"]),
     "projection": (projection, "Our final saved and saved rank among students for a scenario (deals/h, per-deal v), others at their last-6-h pace; no args = grid.", {"rate": "number", "v": "number"}, []),
+    "peer_best": (peer_best, "In one category (leaf, e.g. 침대/매트리스): the buyers with the best realized v over 6 h (v, median x, grades, warranty, breaks, shops), the market by grade with v if warranted / not, and us.", {"category": "string", "hours": "number", "top": "integer"}, ["category"]),
     "final_rank": (final_rank, "Projected final class TOTAL ranks (top 10 + us) with our buyer at a scenario (deals/h, v; default 30, .40): buyer by projected saved rank, shop by its 24-h trend and a damped 48-h trend. Rough.", {"rate": "number", "v": "number"}, []),
     "shop_health": (shop_health, "Is our shop alive and reachable now: board alive flag, market-wide dead count, our card from outside, last seller task age, kit exits and relists over 6 h, verdict.", {}, []),
     "frontier": (frontier, "The saved frontier over time (sampled ledger, buckets of `bucket` h over `days`): per-deal v, food share, warranty share for market, students, top-8 saved students and us. Slow; once per run.", {"days": "number", "bucket": "number"}, []),

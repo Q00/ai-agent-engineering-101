@@ -241,7 +241,39 @@ def evidence(mem, b, auto, params):
             "market_picture": buyer_picture(market_picture()),
             "ab_tests": ab_tests(), "buy_health": buy_health(now),
             "saved_mix_vs_peers_6h": saved_mix(r6),
+            "peer_best_our_categories": peer_best_ours(),
             "from_operator": operator_note(OPERATOR_NOTE, OPERATOR_ANSWER)}
+
+
+def peer_best_ours(n=3):
+    """11-11 (user: 'why must I tell you the obvious'): every run, for our n most-ordered categories (24 h), who buys
+    them cheapest and how (grade, warranty, shop), and the market's v by grade if warranted: the comparison that
+    showed warranted B/C furniture at ~.36 against our .356 goods bar, which no evidence block carried before."""
+    try:
+        import market_tools
+        from collections import Counter
+        c = Counter()
+        cut = time.time() - 24 * 3600
+        with open(HERE / "market_intel.jsonl", encoding="utf-8") as f:
+            for line in f:
+                if '"order"' not in line:
+                    continue
+                try:
+                    r = json.loads(line)
+                except ValueError:
+                    continue
+                if r.get("type") == "order" and r.get("t", 0) >= cut:
+                    c[(r.get("category") or "").split(">")[-1]] += 1
+        tot = sum(c.values()) or 1
+        out = {}
+        for cat, k in c.most_common(n):
+            pb = market_tools.peer_best(cat, 6, 4)
+            out[cat] = {"our_order_share_24h": round(k / tot, 3), "market": pb.get("market"), "by_grade": pb.get("by_grade"),
+                        "best_buyers": [{x: r[x] for x in ("buyer", "n", "v", "x_med", "grades", "warranty", "top_shops")}
+                                        for r in pb.get("best_buyers") or []], "us": pb.get("us")}
+        return out
+    except Exception as e:
+        return {"error": repr(e)[:200]}
 
 
 def saved_mix(r6):

@@ -372,6 +372,32 @@ def avoid_shops():
     return names, pairs, why
 
 
+_GB = {"t": 0, "m": {}}
+
+
+def graded_best(shop, cat):
+    """(v, n): the market's realized v of WARRANTED grade B/C goods at `shop` in `cat` over 6 h (a break refunded = 0,
+    unrefunded -1), from buyer_value's ledger cache, re-read every 10 min; None without data."""
+    if time.time() - _GB["t"] > 600:
+        _GB["t"] = time.time()
+        try:
+            sv = json.loads((HERE / ".market" / "shop_value.json").read_text())
+            br = sv.get("broken") or {}
+            D = sv.get("deals") or []
+            t1 = max(d["ts"] for d in D) if D else 0
+            m = {}
+            for d in D:
+                if not d.get("goods") or d.get("grade") not in ("B", "C") or not d.get("w") or t1 - d["ts"] > 6 * 3600:
+                    continue
+                u = d.get("unit")
+                vv = (0.0 if br[u] else -1.0) if u in br else 1 - d["x"]
+                m.setdefault((d["shop"], d.get("cat")), []).append(vv)
+            _GB["m"] = {k: (sum(v) / len(v), len(v)) for k, v in m.items()}
+        except (OSError, ValueError):
+            pass
+    return _GB["m"].get((shop, cat))
+
+
 def expected_in(why):
     """The expected saved per deal that choose() named for the picked (or best, when skipping) shop, so the
     curator can show what each expectation band realized (the buyer strategist asked for it on 11-06)."""
@@ -447,6 +473,14 @@ def choose(shops, mem, item, budget, ask_model=True, ctx=None):
                 g_ = ((ctx.get("cal") or {}).get(ctx["kind"]) or {}).get("gap")
                 if g_ is not None:
                     e = dict(e, saved=round(e["saved"] + max(-0.08, min(0.02, g_)), 4), market_saved=e["saved"])
+            if ctx["kind"] == "goods":
+                # 11-11 (user audit: 'find what else we miss'): the shop's market median is mostly grade A (x ~.69,
+                # v ~.30), so we skipped beds/sofas/bedding although warranted B/C there realize ~.36 and the best
+                # buyers get .36-.45. Use the warranted B/C realized v at this shop and category when it is higher
+                # and backed by >= 6 deals; the opener already asks for B/A with a warranty
+                gb = graded_best(s["name"], ctx["cat"])
+                if gb and gb[1] >= 6 and gb[0] > e["saved"]:
+                    e = dict(e, saved=round((gb[1] * gb[0] + 6 * e["saved"]) / (gb[1] + 6), 4), graded_bc=gb)
             if ctx.get("wpen") and ctx["kind"] == "goods":
                 # 11-07 A/B "wpen": our no-warranty goods ran 0.244 per deal (16 breaks at -1 in 439) against 0.324
                 # with a warranty, below our running mean; charge a shop for the share of its goods sold without one

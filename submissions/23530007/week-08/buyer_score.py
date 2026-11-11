@@ -119,6 +119,12 @@ def build(now=None):
                         "expected_median": sorted([t["expected"] for t in sk if t.get("kind") == k and t.get("expected") is not None] or [0])[
                             len([t for t in sk if t.get("kind") == k and t.get("expected") is not None]) // 2]}
                     for k in KINDS}
+    # 11-11 (user: 'why must I tell you the obvious'): skipped orders whose best expected v was still above m* (each
+    # such deal would have raised the final saved): the gains left on the table, per kind and per hour
+    ms_ = out.get("m_star")
+    if ms_:
+        out["skips"]["above_mstar_per_h"] = {k: round(sum(1 for t in sk if t.get("kind") == k and (t.get("expected") or 0) > ms_) / 6, 1)
+                                             for k in KINDS}
     out["skips"]["share_of_orders_6h"] = round(len({t["order"] for t in sk if t.get("order")}) /
                                                max(1, len({t["order"] for t in trades if now - t["t"] < 6 * 3600 and t.get("order")})), 3)
     g3 = [t for t in deals if now - t["t"] < 3 * 3600 and t.get("kind") == "goods"]

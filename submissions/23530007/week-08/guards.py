@@ -14,6 +14,7 @@ buyer_score.py. Each guard is justified by a past incident (volatility analysis,
   G7 rank step   class buyer <= -.009 or class shop <= -.007 in one 15-min step, confirmed by the next sample
                  -> wake the matching strategist (2 h cooldown)
   G8 stars       our board stars_rank worse by >= 2 ranks within 2.5 h (shop_parts.jsonl) -> wake the shop (<= 2/day)
+  G15 gains     > 6 skipped orders/h with expected v above m* -> wake the buyer strategist (<= 1 per 2 h)
   G14 final     projected final class rank (ops/final_rank.py, every 2 h) under 1st -> wake the shop, alert <= 1 per 12 h
   G13 revenue   the student shop below us in revenue passing us before the round ends (3 h slopes) -> wake the shop
                  (<= 1 per 2 h), phone alert under 72 h (user 11-11: never lose revenue 2nd)
@@ -272,6 +273,20 @@ def main():
                 fires.append("G9")
     except Exception as e:
         log(f"G9 skipped: {e!r}")
+
+    # G15 gains left on the table (user 11-11): more than 6 skipped orders an hour whose expected v beat m* -> wake the
+    # buyer strategist (<= 1 per 2 h) to lower the bar on that kind
+    try:
+        sc15 = json.loads((MD / "buyer_score.json").read_text())
+        ab = ((sc15.get("skips") or {}).get("above_mstar_per_h") or {})
+        worst = max(ab.items(), key=lambda kv: kv[1], default=(None, 0))
+        if worst[1] > 6 and cooled(st, "G15", 2 * 3600, now):
+            wake("buyer", f"G15 {worst[1]} {worst[0]} orders/h skipped although their expected v beat m* {sc15.get('m_star')}: "
+                          "each would raise the final saved; lower that kind's bar (skip_delta / goods_delta) or say why not")
+            fired(st, "G15", now)
+            fires.append("G15")
+    except Exception as e:
+        log(f"G15 skipped: {e!r}")
 
     # G14 projected final rank (user 11-11: 'finish 1st; the shop must hold 1st whatever it takes'): every 2 h,
     # ops/final_rank.py at our current buyer pace; projected under 1st (damped view) -> wake the shop strategist with
