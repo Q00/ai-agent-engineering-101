@@ -114,6 +114,7 @@ def food_unit_ok(grade, shelf_hours, need):
     return shelf_hours * GRADE_LIFE.get(grade, 1.0) >= need
 
 
+NO_WARRANTY = re.compile(r"warranty\s*:?\s*0\s*h|no warranty|without (?:a )?warranty", re.I)   # "warranty 0 h", "no warranty"
 NICK = os.environ.get("MARKET_NICK", "jiseokkk")   # my market name, for shops that take a few percent off for regulars
 WARRANTY_MATTERS_FROM = 0         # 11-11 17:30: a break scores -1 whatever the price (agent.md: "a sofa and a snack at 30% off
                                   # score the same"; 62 of my 157 breaks had no warranty), so every goods order prefers warranty shops
@@ -366,6 +367,10 @@ def negotiate(url, item, budget, reference, record="", request=None, value_cap=N
     unfit = None
     if grade and grades and grade not in grades:   # 02:47: a 377,000 grade C unit was negotiated, then refused at checkout
         unfit = f"grade {grade} unit; the order accepts {'/'.join(grades)}"
+    elif grade == "C" and grades and NO_WARRANTY.search(status_text(t)):
+        # 19:50: a C unit is taken only under a warranty (the kit demands it at checkout); a shop that says "warranty
+        # 0 h" in its opening (winun1127: its A/B units carry one, its C units do not) is left before any offer
+        unfit = "grade C unit offered without a warranty"
     elif food_need and hours_left is not None and hours_left < food_need:
         unfit = f"the shop says {hours_left} h of shelf life left; the order needs {food_need} h"
     elif food_need and hours_left is None and grade and not food_unit_ok(grade, shelf_hours, food_need):

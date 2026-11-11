@@ -160,6 +160,11 @@ class Round3BuyerContextTest(unittest.TestCase):
         self.assertEqual({"grades": ["A", "B"]}, market_buyer.accept_constraints(order, {"name": "bare"}, bare, "C"))
         self.assertEqual({"grades": ["A", "B"]}, market_buyer.accept_constraints(order, {"name": "new"}, covered, "C"))   # no data: A/B
 
+    def test_a_shop_saying_warranty_zero_is_recognized(self):
+        self.assertTrue(market_buyer.NO_WARRANTY.search("grade C. Market certificate included; warranty 0 h. Asking price: 79672."))
+        self.assertTrue(market_buyer.NO_WARRANTY.search("grade C, 155.2 h shelf life left, no warranty; the"))
+        self.assertFalse(market_buyer.NO_WARRANTY.search("grade C, warranty 6 h, certificate attached"))
+
     def test_the_opener_is_no_lower_than_the_shops_usual_settle(self):
         self.assertEqual(51, market_buyer.opening_offer(72, 51, 0.25))                 # reference below ask x 0.75
         self.assertEqual(55, market_buyer.opening_offer(72, 51, 0.25, at_least=55))    # the shop settles at 0.55 of list
