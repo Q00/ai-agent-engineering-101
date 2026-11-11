@@ -58,7 +58,16 @@ BOUNDS = {
 # sections 1 and 7, state card, the operator's notes), details through tools, observations kept one step, every policy
 # edit registered as an experiment the kernel judges and reverts (kernel.experiments)
 JOB = os.path.join(HERE, "OPERATOR_JOB.md")
-COMPACT_STEPS = 6  # model calls per wake
+def _compact_steps():
+    try:
+        return max(3, min(12, int(os.environ.get("A2_COMPACT_STEPS") or 6)))
+    except ValueError:
+        return 6
+
+
+# model calls per wake (env A2_COMPACT_STEPS, 3 to 12). 11-11: the shop operator used all 6 on reading code in 3 of 3
+# wakes and never reached a change, so its launcher line asks for 10.
+COMPACT_STEPS = _compact_steps()
 COMPACT_TOOLS = 3  # tool calls per step
 COMPACT_OBS = 6_000  # chars kept of one tool result
 NOTES_CHARS = 2_000
@@ -317,6 +326,32 @@ class DryTerra:
 
     def complete(self, prompt, *, agent, timeout_s, effort="medium"):
         return json.dumps({"done": {"edits": [], "reflection": [], "note": "dry"}})
+
+
+def done_lines(done, result, now):
+    """What the kernel did with a compact done, one line per submitted item, for the next wake's prompt."""
+    out = [f"{c.kst(now, '%H:%M')} 점검"]
+    items = done.get("policy") if isinstance(done.get("policy"), list) else []
+    for it, r in zip(items, result.get("policy") or []):
+        it, r = (it if isinstance(it, dict) else {}), (r if isinstance(r, dict) else {})
+        head = f"- 값 {it.get('section')} {it.get('key')} → {it.get('value')}: "
+        if r.get("ok"):
+            out.append(head + f"적용됨 (실험 #{r.get('experiment')}, 판정 {r.get('eval_kst') or '-'})")
+        else:
+            out.append(head + f"거절됨. {str(r.get('error'))[:300]}")
+    r = result.get("code")
+    if isinstance(r, dict):
+        out.append(f"- 코드 수정: " + (f"적용됨 (#{r.get('id')}, {r.get('status')})" if r.get("ok")
+                                    else f"거절됨. {str(r.get('error'))[:300]}"))
+    r = result.get("forum")
+    if isinstance(r, dict):
+        out.append(f"- 포럼 글: 대기열에 {r.get('queued', 0)}개" + (f", 거절: {r['refused']}" if r.get("refused") else ""))
+    r = result.get("new_tool")
+    if isinstance(r, dict):
+        out.append(f"- 도구 만들기 {r.get('name')}: " + ("만들어짐" if r.get("ok") else f"거절됨. {str(r.get('error'))[:300]}"))
+    if len(out) == 1:
+        out.append("- 낸 것 없음 (값, 코드, 글, 도구 모두)")
+    return out
 
 
 class Operator:
@@ -824,6 +859,8 @@ class Operator:
                 "## 상태 카드 (커널이 모은 사실, 해석 없음)",
                 b.build_compact(self.root, now, last_brief,
                                 extra=list(ex.lines(self.root, now, **self._role_kw())) + list(code_lines) + list(audit_lines)),
+                "## 지난 점검에 네가 낸 것의 결과 (커널 기록. 거절된 것은 적용되지 않았음)",
+                "\n".join(str(x) for x in (st.get("last_done") or {}).get("lines") or []) or "없음",
                 "## 네 메모 (지난 점검의 네가 남김)",
                 c.mask(self._notes(), self.secrets) or "없음",
                 "## 깨운 이유",
@@ -878,6 +915,12 @@ class Operator:
             if isinstance(act.get("done"), dict):
                 result = self._finish_compact(act["done"], now, read_files)
                 result.update(prompt_chars=chars, calls=calls)
+                try:  # 11-11: the buyer operator sent one refused change in 3 wakes; it never saw the refusal
+                    st2 = self._state()
+                    st2["last_done"] = {"ts": now, "lines": done_lines(act["done"], result, now)}
+                    self._save_state(st2)
+                except Exception:  # a record for the next wake; it must never cost this one
+                    pass
                 try:
                     result["grounding"] = grounding(base, obs_all, act["done"], kept)
                 except Exception:  # the check reads model text; it must never cost the wake

@@ -533,11 +533,46 @@ def code_search(root, pattern, file=None):
     return code_edit.search(root, pattern, file)
 
 
-def code_read(root, file, start=1, lines=120):
-    """규칙 코드 파일 하나를 줄 번호와 함께 읽음 (한 번에 200줄까지, start부터). done.code로 고치려는 파일은 이번 점검에서 이 도구로 먼저 읽어야 함."""
+def code_read(root, file, start=1, lines=120, end=None, count=None):
+    """규칙 코드 파일 하나를 줄 번호와 함께 읽음 (한 번에 200줄까지, start부터 lines줄. end를 주면 그 줄까지). done.code로 고치려는 파일은 이번 점검에서 이 도구로 먼저 읽어야 함."""
     from kernel import code_edit
 
+    if isinstance(count, int) and not isinstance(count, bool):  # 11-11: 5 of 12 live calls failed on end= / count=
+        lines = count
+    elif isinstance(end, int) and not isinstance(end, bool) and isinstance(start, int):
+        lines = end - start + 1
     return code_edit.read(root, file, start, lines)
+
+
+def experiments(root, hours=6, now=None):
+    """실험 장부 전체: 진행 중인 실험 모두(범위, 키, 값, 판정 시각, 건 운영자)와 최근 hours시간에 끝난 실험의 판정, 그리고 되돌림 뒤 새 실험이 막힌 범위와 풀리는 시각. 새 실험을 걸기 전에 겹치는 범위를 볼 때 씀."""
+    from kernel import experiments as ex
+
+    now = c.now_ts() if now is None else now
+    try:
+        hours = min(48.0, max(1.0, float(hours)))
+    except (TypeError, ValueError):
+        hours = 6.0
+    rows = [e for e in ex.load(root) if isinstance(e, dict) and "id" in e]
+    who = lambda e: f" [{ex.role_of(e) or '-'}]"
+    run = [e for e in rows if e.get("status") == "running"]
+    out = [f"진행 중 {len(run)}건 (범위가 겹치는 새 실험은 거절됨)"]
+    for e in run:
+        try:
+            out.append(ex._run_line(e) + f", 범위 {e.get('section')}" + who(e))
+        except Exception:  # noqa: BLE001 - a malformed entry is shown by id only
+            out.append(f"  진행 #{e.get('id')}")
+    ended = [e for e in rows if e.get("status") != "running" and ex._num_ok(e.get("ended_ts")) and e["ended_ts"] >= now - hours * 3600]
+    out.append(f"최근 {hours:g}시간에 끝난 실험 {len(ended)}건")
+    for e in sorted(ended, key=lambda e: -e["ended_ts"]):
+        try:
+            line = ex._ended_line(e) + f", 범위 {e.get('section')}, 끝 {c.kst(e['ended_ts'], '%H:%M')}" + who(e)
+        except Exception:  # noqa: BLE001
+            line = f"  #{e.get('id')} {e.get('status')}"
+        if e.get("status") in ex.BLOCK_AFTER and e.get("mode") != "split" and now < e["ended_ts"] + ex.CONTAM_S:
+            line += f" → 이 범위의 새 전후 비교 실험은 {c.kst(e['ended_ts'] + ex.CONTAM_S, '%H:%M')}까지 막힘"
+        out.append(line)
+    return c.cap("\n".join(out), MAX_CHARS)
 
 
 def restock_log(root, hours=2, now=None):
@@ -602,8 +637,8 @@ def tool_search(root, query):
 # kernel.auditor.recommended). Every tool stays callable by both roles; a role sees the others by name only.
 RECOMMENDED = {
     "shop": ("board", "ledger", "events", "stockouts", "sku_stats", "net_profit", "inventory", "restock_log",
-             "policy", "code_search", "code_read", "brief_section", "guide", "recall", "tool_search"),
-    "buyer": ("board", "ledger", "events", "shops", "catalog", "policy", "code_search", "code_read",
+             "policy", "experiments", "code_search", "code_read", "brief_section", "guide", "recall", "tool_search"),
+    "buyer": ("board", "ledger", "events", "shops", "catalog", "policy", "experiments", "code_search", "code_read",
               "brief_section", "guide", "recall", "tool_search"),
 }
 
@@ -628,6 +663,7 @@ TOOLS = {
     "code_search": (code_search, ("operator",)),
     "code_read": (code_read, ("operator",)),
     "restock_log": (restock_log, ("operator",)),
+    "experiments": (experiments, ("operator",)),
     "tool_search": (tool_search, ("operator",)),
 }
 
