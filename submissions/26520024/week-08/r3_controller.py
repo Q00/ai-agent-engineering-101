@@ -162,8 +162,11 @@ def maintain(md=None, *, now=None, decision=None):
             feedback = [{'evidence': e['key'], **e['data']} for e in memory.events('shop_review', limit=10)]
             atomic_json(md / 'feedback-queue.json', {'received_reviews': feedback,
                         'policy': 'Verify claims against receipts/payments before changing policy. No retaliatory votes.'})
+            from r3_curator import refresh
+            curation = refresh(memory, policy, now, decision)
             return {'reconciled': reconciled, 'drafts': len(drafts),
                     'forum': enqueue_one(md, drafts, memory, policy, now),
+                    'curation': curation,
                     'reflection': reflection(md, memory, policy, now, decision)}
 
 

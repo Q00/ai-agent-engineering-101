@@ -303,7 +303,7 @@ class BuyerTests(unittest.TestCase):
                              receipt=dict(item='F001', price=90 + n, sig_seller='blob' * 1000),
                              settled=dict(sku='F001', grade='B', value=130, ledger=n),
                              review=dict(stars=4, review='Private historical budget 987654321. ' * 100)),
-                        ts=100 + n)
+                        ts=time.time() - 100 + n)
         self.write()
         self.execute()
         state = self.states[0]

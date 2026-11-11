@@ -353,8 +353,11 @@ def plan_restock(md, *, now=None, decide_fn=None, memory=None):
             if not proposals:
                 atomic_json(Path(md) / 'restock_commitments.json', ledger)
                 return {'buy': []}
+            from r3_curator import compact_strategy
+            brief = compact_strategy(analysis.get('current_inputs', analysis['inputs']),
+                                     memory, now, skus=[p['sku'] for p in proposals])
             state = {'proposals': proposals, 'hypotheses': analysis['hypotheses'],
-                     'inputs': analysis.get('current_inputs', analysis['inputs']),
+                     'inputs': brief,
                      'cash_balance': inventory['balance'], 'pending': pending,
                      'policy': policy, 'worst_wholesale_fraction': .75 * MAX_SURGE,
                      'observed_surge': inventory.get('surge')}
