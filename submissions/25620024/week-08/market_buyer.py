@@ -382,7 +382,10 @@ def negotiate(card_url, item, budget, started, ratio=None, low=None, opened=None
             floor = asks[-1]                                # counter was under the close line: buy at it
         if floor and floor <= close_at and time.time() - started < TIME_LIMIT - 30:
             log(f"   the shop's floor {floor} is within {budget}: buying at it in a new task")
-            t2 = send(url, f"I want to buy {item}. I accept your lowest price {floor}.")
+            # seller-team audit 11-11: without the need, the new task got any unit (grade C, 290 h left, no warranty)
+            # and the kit then refused to pay it -- say the same need as the first message
+            t2 = send(url, f"I want to buy {item}. I accept your lowest price {floor}."
+                           + (f" | need: {NEED['text']}" if NEED.get("text") else ""))
             if state(t2) == "TASK_STATE_INPUT_REQUIRED":
                 t2 = send(url, str(floor), t2["id"])
             if state(t2) == "TASK_STATE_COMPLETED":
