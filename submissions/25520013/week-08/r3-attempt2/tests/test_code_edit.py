@@ -266,7 +266,7 @@ def test_read_numbers_lines_and_caps_at_200(env):
     )
     assert (
         body[1] == "   10| x9 = 9"
-        and body[-1] == "[다음: start=210]"
+        and body[-1] == "[여기까지 온전히 보임. 이어 읽기: start=210]"
         and len(body) == 202
     )
     assert "(편집 가능)" in ce.read(env.root, "policy.py")

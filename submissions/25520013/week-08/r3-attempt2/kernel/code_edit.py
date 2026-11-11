@@ -374,24 +374,59 @@ def search(root, pattern, file=None):
         return f"도구 오류: {type(e).__name__}: {str(e)[:200]}"
 
 
-def read(root, file, start=1, lines=120):
-    """Numbered lines start.. of one readable file, at most READ_MAX lines."""
+READ_CHARS = 9_000  # one answer must fit what the operator is shown (operator.OBS_CAP["code_read"]), so nothing is cut
+
+
+def _func_span(text, func):
+    """(first line, last line) of the top-level or nested def/class named func, decorators included; None if absent."""
+    import ast
+
+    for node in ast.walk(ast.parse("\n".join(text))):
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)) and node.name == func:
+            first = min([node.lineno] + [d.lineno for d in node.decorator_list])
+            return first, node.end_lineno
+    return None
+
+
+def read(root, file, start=1, lines=120, func=None):
+    """Numbered lines of one readable file: from start for at most lines (READ_MAX), or the whole function func.
+    The answer stops at READ_CHARS on a line boundary and always says where the next call continues."""
     try:
         p = _safe(root, file)
         if p is None:
             return f"인자 오류: 읽을 수 없는 파일 {str(file)[:80]}. 읽을 수 있는 파일: {', '.join(readable(root))}"
+        text = _read_text(p).splitlines()
+        what, stop = "", len(text)
+        if isinstance(func, str) and func.strip():
+            name = func.strip().split("(")[0].split(".")[-1]
+            span = _func_span(text, name)
+            if span is None:
+                return f"인자 오류: {file}에 함수 {name[:60]} 없음. code_search로 'def '를 찾아 이름을 확인함"
+            if not _num(start) or int(start) <= span[0] or int(start) > span[1]:
+                start = span[0]  # a start inside the function continues it
+            stop, lines = span[1], READ_MAX
+            what = f"함수 {name} {span[0]}~{span[1]}줄 중 "
         start = int(start) if _num(start) else 1
         lines = int(lines) if _num(lines) else 120
         start, lines = max(1, start), max(1, min(READ_MAX, lines))
-        text = _read_text(p).splitlines()
-        end = min(len(text), start + lines - 1)
+        end = min(stop, start + lines - 1)
+        body, used = [], 0
+        for i in range(start, end + 1):
+            row = f"{i:>5}| {text[i - 1]}"
+            if body and used + len(row) + 1 > READ_CHARS:
+                end = i - 1
+                break
+            body.append(row)
+            used += len(row) + 1
         out = [
-            f"{file} 전체 {len(text)}줄, {start}~{end}줄"
+            f"{file} 전체 {len(text)}줄, {what}{start}~{end}줄"
             + (" (편집 가능)" if file in EDITABLE else " (읽기 전용)")
-        ]
-        out += [f"{i:>5}| {text[i - 1]}" for i in range(start, end + 1)]
-        if end < len(text):
-            out.append(f"[다음: start={end + 1}]")
+        ] + body
+        if end < stop:
+            more = f"start={end + 1}" + (f", func={func.strip()}" if what else "")
+            out.append(f"[여기까지 온전히 보임. 이어 읽기: {more}]")
+        elif what:
+            out.append("[함수 끝]")
         return c.cap(c.mask("\n".join(out), _secrets(root)), 16_000)
     except Exception as e:  # noqa: BLE001
         return f"도구 오류: {type(e).__name__}: {str(e)[:200]}"

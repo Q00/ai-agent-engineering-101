@@ -533,15 +533,15 @@ def code_search(root, pattern, file=None):
     return code_edit.search(root, pattern, file)
 
 
-def code_read(root, file, start=1, lines=120, end=None, count=None):
-    """규칙 코드 파일 하나를 줄 번호와 함께 읽음 (한 번에 200줄까지, start부터 lines줄. end를 주면 그 줄까지). done.code로 고치려는 파일은 이번 점검에서 이 도구로 먼저 읽어야 함."""
+def code_read(root, file, start=1, lines=120, end=None, count=None, func=None):
+    """규칙 코드 파일 하나를 줄 번호와 함께 읽음. func에 함수 이름을 주면 그 함수 전체를 읽음(예: file=policy.py, func=restock_plan). 아니면 start부터 lines줄(end를 주면 그 줄까지). 답은 잘리지 않게 줄 경계에서 멈추고 끝에 이어 읽을 start를 알려 줌. done.code로 고치려는 파일은 이번 점검에서 이 도구로 먼저 읽어야 함."""
     from kernel import code_edit
 
     if isinstance(count, int) and not isinstance(count, bool):  # 11-11: 5 of 12 live calls failed on end= / count=
         lines = count
     elif isinstance(end, int) and not isinstance(end, bool) and isinstance(start, int):
         lines = end - start + 1
-    return code_edit.read(root, file, start, lines)
+    return code_edit.read(root, file, start, lines, func=func)
 
 
 def experiments(root, hours=6, now=None):

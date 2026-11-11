@@ -70,6 +70,13 @@ def _compact_steps():
 COMPACT_STEPS = _compact_steps()
 COMPACT_TOOLS = 3  # tool calls per step
 COMPACT_OBS = 6_000  # chars kept of one tool result
+OBS_CAP = {"code_read": 10_000}  # 11-11: 30 of 36 code reads were shown cut at 6,000; code_read stops itself at 9,000
+
+
+def obs_cap(name):
+    """Chars of one result of tool name the compact operator is shown."""
+    return OBS_CAP.get(name, COMPACT_OBS)
+
 NOTES_CHARS = 2_000
 # Heartbeat while an experiment runs. 1200 since 11-11 (성수님: 20분마다 시장을 보고 전략을 잡아야 함); it was 3600,
 # and with experiments always running the operator woke hourly and mostly waited.
@@ -600,7 +607,7 @@ class Operator:
             name=name,
             args=c.mask(json.dumps(shown, ensure_ascii=False, default=str)[:2000], self.secrets),
             obs_chars=len(obs),
-            **obs_facts(obs, COMPACT_OBS if self.compact() else None),
+            **obs_facts(obs, obs_cap(name) if self.compact() else None),
             **self._tool_extra(name, shown, obs),
         )
         return obs
@@ -942,7 +949,7 @@ class Operator:
                                                  self.secrets))
                     fresh.append(head + "\n이미 읽음: 위 관찰에 그대로 있음")
                     continue
-                obs = c.cap(self._run_tool(t.get("tool"), t.get("args")), COMPACT_OBS)
+                obs = c.cap(self._run_tool(t.get("tool"), t.get("args")), obs_cap(t.get("tool")))
                 obs_all[head] = [step, head, obs]
                 f = (t.get("args") or {}).get("file") if isinstance(t.get("args"), dict) else None
                 if t.get("tool") in ("code_read", "code_search") and isinstance(f, str) and not obs.startswith(TOOL_ERR):
