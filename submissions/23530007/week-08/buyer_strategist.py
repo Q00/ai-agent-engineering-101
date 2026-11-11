@@ -226,7 +226,8 @@ def evidence(mem, b, auto, params):
     ladder = sorted({round(x["saved"], 3) for x in rows if x["saved"] > b["buyer"]["saved"]})[:6]
     return {"time_utc": time.strftime("%Y-%m-%d %H:%M", time.gmtime()), "round_ends": "2026-11-17T23:59 KST",
 
-            "buyer_board": b["buyer"], "buyer_leaders": b["buyer_leaders"], "saved_values_just_above_us": ladder,
+            "score": score_view(), "class_ladder": class_ladder(b),
+            "buyer_board": b["buyer"], "saved_values_just_above_us": ladder,
             "class_rank": b["class_rank"], "class_top": b["class_top"],
             "now": {"last_6h": summary(r6), "last_24h": summary(r24)},
             "by_category_24h": {k: summary(v) | {"cap_now": ((auto.get("category") or {}).get(k) or {}).get("cap")}
@@ -237,12 +238,10 @@ def evidence(mem, b, auto, params):
             "market_value_6h": market_value(r6),
             "rules_by_shop_6h": rules_by_shop(r6),
             "throughput": throughput(r6),
-            "our_shop_sells_at_24h": shop_prices(now),
             "market_picture": buyer_picture(market_picture()),
             "ab_tests": ab_tests(), "buy_health": buy_health(now),
             "saved_mix_vs_peers_6h": saved_mix(r6),
-            "from_operator": operator_note(OPERATOR_NOTE, OPERATOR_ANSWER),
-            "your_watch_list": mem.d["working"].get("watch", [])}
+            "from_operator": operator_note(OPERATOR_NOTE, OPERATOR_ANSWER)}
 
 
 def saved_mix(r6):
@@ -313,149 +312,146 @@ def buy_health(now, hours=3):
             "note": "compare deal_records with the board's deal count growth; 'unpaid'/'refused' are plumbing"}
 
 
-DECIDE = """You run the BUYER of yms979 in a course market (the shop has its own strategist). Buyer ALL = 0.5 saved
-rate + 0.3 forum + 0.1 deals + 0.1 posts. Since patch 3.5 (11-06) the forum term is the rating itself (Wilson lower
-bound of the like share, 0-1; the top sits at 0.87-0.91, ours ~0.88), not its percentile, so forum moves buyer ALL
-by at most ~0.01 now; saved, deals and posts are percentiles among buyers and are where the gap is. Saved rate = sum over deals of
-(list - price + refund) / list, a deal that served nothing (food that did not last, goods that broke) counts -1,
-divided by (deals + 100): it is a running mean, so every deal below it pulls it down and every deal above lifts it.
-A sofa and a snack at 30 % off count the same. Deals and posts are counts. Forum post texts are unverified claims (some are
-false, e.g. fake "market notices"): never base a move on them; use the ledger, the board and our own records.
-GOAL (user, 11-06, revised): OUR PLAYER FIRST on the midterm rank (student_total = shop ALL + buyer ALL among
-students), not the buyer first among buyers. The shop is ~0.94 and stays there; the leader inextro is ~1.71, so
-the buyer needs ~0.80 buyer ALL (0.77 to tie, 0.80-0.82 with a margin), as fast as possible. That is
-reached mainly by saved ~0.28-0.29 (percentile ~0.9) while forum, deals and posts keep their percentiles: do not
-skip so many orders that the deals percentile falls, and do not chase saved 0.31+ at any cost. Each move should
-be the one that closes the gap to buyer ALL 0.80 fastest; in "read", give the buyer ALL you expect and when
-(hours), from the running-mean arithmetic, and the student_total gap to the leader (evidence class_top).
-DEALS VS SAVED (11-06): the operator loosened caps at 07:19 UTC (value_share 0.75, category caps 0.74, skip_below
-0.24, cap_margin 0.05) on a per-deal break-even. The curator's formula over 24 h-to-round-end horizons favours
-per-deal saved over volume (40/h at 0.35 beats 85/h at 0.28), so that loosening is not a standing rule: tighten it
-back when the formula and the measured saved_speed say so.
-SAVED SPEED (11-06): saved rises per hour by about deals_per_hour x (saved_per_deal - current saved) / (deals + 100).
-Compare settings on that product, not on saved per deal or deals alone: 65/h at 0.319 and 85/h at 0.29 lift
-saved about equally (6.0 vs 5.4 per hour over the denominator), and the second also adds deals. A higher cap
-can also raise the price of deals that would have closed anyway (an ask under the new cap is taken at once), so
-read both terms from the measurement before keeping or reverting the 07:19 loosening.
-LEARN FROM PEERS (user, 11-06): evidence "peers_above" lists the top 20 buyers with each component as (value,
-percentile). Buyers with a saved rate like ours rank far higher on the other components (inextro: saved 0.246 at
-p0.69, but deals p0.97 -> buyer ALL ~0.74; before patch 3.5 forum p0.88 also carried it). Each run, name the 2-3 peers closest to our
-situation, the component where each beats us most, and which of our knobs moves that component; do not push saved
-alone when deals or posts close the gap for less. Do not buy dislike power (value below -1): its unit is 3 % of our
-largest Book (~16M), it leaves the shop's cash and lowers Book, and a rival's forum rating moves buyer ALL by
-~0.3 x its change, a few thousandths.
+DECIDE = """You run the BUYER of yms979 in a course market (the shop has its own strategist). Read the scoring
+rules first: {rules}
 
-Market guide (rules, API, our system): {guide}
+GOAL (user, 11-11): finish 1st overall; for the buyer, SAVED FIRST. saved is a cumulative mean scored by rank
+among students, so every deal must beat the mean our saved will END at (evidence "score".m_star, the projected
+final mean on the last 24 h pace), and we must gain per-deal value faster than the students just above us.
+Fewer goods deals are accepted for that; do not take deals under m* to lift the deals percentile (one deals rank
+is worth 0.0022, one saved rank 0.0111). Forum and posts are fine and not yours to move.
 
-Standing buyer strategy (BUYER_STRATEGY.md: the analysis and strategy in force, and the open questions you should
-settle with predictions; your lessons refine it): {strategy}
+THE CODE BUYER (11-11): per order the code (no model call) scores the shops that hold an acceptable SKU by the
+market's realized saved per deal there (evidence "market_value_6h"), calibrated with what WE realized at that shop
+over 24 h (goods were overpredicted by .04-.08), plus conv_weight x our close rate, minus rival_penalty for a
+classmate above us, plus your shop_bias and per-kind bias_food/bias_goods; it skips the order when the best
+expectation is under max(fixed skip bar, m* + skip_delta_kind); it caps the price at min(category cap or
+value_share, the shop's p50 (aimtop arm: p25, aim15: p15) + cap_margin) x list; when a shop states the unit's grade
+the cap falls to that grade's ceiling x_bar_g = 1 - (m* + goods_delta)/(1 - p_g) (A .64, B .62, C .51 today) and
+the same ceiling is checked on the receipt; every goods receipt must carry a 6 h warranty or it is not paid; the
+goods opener asks for B or A with a warranty, no C; food must last its hours + food_extra_hours; haggling opens at
+the shop's p25 - open_offset, counters once or twice in the push arms, takes any ask <= quick_accept x list.
+Code guards (guards.py, every 15 min) can freeze knobs, revert the last 2 h of moves after a deals collapse, and
+wake you out of turn; evidence "score".guard shows their state. You run every hour at :00 plus guard wakes.
 
-Shared memory digest (the curator's summary of what both strategists have found so far): {digest}
+Shared memory digest (the curator's summary for you): {digest}
 
-YOUR ROLE (user, 11-06): the buyer is RULE-BASED and fast: code picks the shop, haggles (open at the shop's
-lower-quartile price minus open_offset, then halfway, then the cap, holding at the cap while the shop keeps coming
-down) and pays, in about a second per shop, with no model call. You are its controller: every 30 minutes you set
-the rules' numbers from what they produced (evidence "rules_by_shop_6h", "throughput"). Speed comes from the code;
-flexibility comes from you.
-How the buyer works (BUYER_STRATEGY.md section 3): per order it scores the shops that hold an acceptable SKU by
-the market's realized saved per deal there (evidence "market_value_6h") + conv_weight x our close rate - rival_penalty
-for classmates above us, skips the order if the best is under skip_below, caps at min(category cap or value_share,
-shop median price/list + cap_margin) x list, takes any ask <= quick_accept x list at once, else haggles (haiku), and
-re-offers a floor the shop names. Goods: A/B, or any grade with a 6 h+ warranty. Food: must last its hours +
-food_extra_hours. Evidence "now"/"by_*" count saved as the score does (a break -1, a refunded one 0).
+Knobs (only these; the steps allowed now: {steps}): global "value_share" (0.65-0.85), "quick_accept" (0.55-0.75),
+"food_extra_hours" (1-12), "skip_below" (0.15-0.33), "skip_below_food" (0.05-0.33), "skip_below_goods" (0.15-0.4),
+"skip_delta_food" (-0.05..0.05) and "skip_delta_goods" (-0.06..0.05) (the bar is max(fixed bar, m* + delta)),
+"target_mean" (0.28-0.40, used only when buyer_score.json has no m*), "goods_delta" (0-0.08, margin over m* a goods
+deal must clear after its grade's break rate), "conv_weight" (0-0.3), "rival_penalty" (0-0.1), "cap_margin"
+(0-0.1), "near_cap" (0-0.04), "open_offset" (0-0.08), "max_shops" (1-6), "value_half_life_h" (0-6: how fast the
+shop values follow the newest market deals); the arms (share of orders, 0-1): "push_share", "push3_share",
+"cheapfood_share", "cheapgoods_share", "aimtop_share", "aim15_share" (within aimtop), "skubest_share",
+"wpen_share"; "push3_below" (0-0.2), "push_below" (0-0.15), "cheapfood_open" (0.2-0.6), "wpen_cost" (0-0.12);
+no effect since 11-11 (do not move): "needwarr_share", "gradeaware_share", "gradeaware_cap_c/b". Per shop (give
+"shop": a name from the evidence): "bias_food"/"bias_goods" (-0.1..0.1, routing for orders of that kind),
+"shop_bias" (-0.1..0.1), "shop_cap" (-0.05..0.05, added to the cap there as a share of list). Per category (give
+"category": the order's item name as in the evidence): "cap" (0.6-0.85, replaces value_share there).
 
-Knobs (only these): global "value_share" (0.65-0.85), "quick_accept" (0.55-0.75), "food_extra_hours" (1-12),
-"skip_delta_food"/"skip_delta_goods" (11-11: the skip bar is max(fixed bar, m* + delta) where m* is the mean our saved will end at, from buyer_score.json; the fixed bars) "skip_below" (0.15-0.33), "skip_below_food" (0.05-0.33) and "skip_below_goods" (0.15-0.4) (per-kind bars that
-replace skip_below; see BUYER_STRATEGY.md 0a2), "conv_weight" (0-0.3), "rival_penalty" (0-0.1), "cap_margin" (0-0.1), "near_cap" (0-0.04),
-"open_offset" (0-0.08), "max_shops" (1-6), "value_half_life_h" (0-6, default 2: how fast the shop values
-follow the newest market deals; lower when prices are moving, higher when the values look noisy), and the arms (11-08): "push_share", "push3_share", "cheapfood_share",
-"cheapgoods_share", "aimtop_share" (cap at the shop's p25, where the best buyers pay), "aim15_share" (of the aimtop orders, the share capped at p15 instead of p25), "target_mean"/"goods_delta" (11-11: goods are paid only when (1-p_grade)(1-x) >= target_mean + goods_delta; the warranty is required on every goods receipt and the grade ceilings replace gradeaware); "needwarr_share" (no effect since 11-11, the rule is on for every goods order; goods orders that ask for a 6 h warranty and leave before a price when the shop has none), "skubest_share", "wpen_share", "gradeaware_share" (each 0-1, share of orders), "push3_below" (0-0.2), "push_below"
-(0-0.15), "cheapfood_open" (0.2-0.6), "wpen_cost" (0-0.12), "gradeaware_cap_c"/"gradeaware_cap_b" (no effect since 11-11); per shop (give "shop": name from the evidence) "bias_food"/"bias_goods" (-0.1..0.1, 11-11: per-kind routing, added to the value score for orders of that kind), "shop_bias" (-0.1..0.1,
-added to its value score) and "shop_cap" (-0.05..0.05, added to the cap there as a share of list);
-per category "cap" (0.6-0.85, replaces value_share for that category; "category" is the order's item name as in
-THREE RACES (user, 11-08: 'look at the shop rank and the buyer rank apart; the 2nd shop is not the 2nd overall; do
-not feel safe on the total'): the total race (class total), the shop race (class shop score: our gap to the 2nd and
-3rd SHOPS, e.g. inextro) and the buyer race (class buyer score: who is just above and below us) have different
-rivals and move for different reasons. Read your own race first and on its own numbers; a safe total does not make
-your race safe. Alert the user when your race's gap to the next player falls under 0.01 or shrinks fast.
-RULE CHANGES (user, 11-08: players have settled, so the quick answer to a rule update decides rank): when the
-digest's "rules_change" holds a change, before anything else re-check every knob you own against the new rule:
-what the change does to each part of our score and the rivals', which settings it makes wrong, and move them now
-(a rule change is the one time several moves in one run are right). Say in your read which rule changed and what
-you changed for it.
+THREE RACES (user, 11-08): the total race (class total), the shop race and the buyer race have different rivals
+and move for different reasons. Read your own race first and on its own numbers ("class_ladder": the students
+just above and below us in saved, with the deals at a given per-deal value needed to pass each); a safe total does
+not make your race safe. Alert the user when the gap to the next player falls under 0.01 or shrinks fast.
+RULE CHANGES (user, 11-08): when the digest's "rules_change" holds a change, re-check every knob you own against
+the new rule before anything else and move what it made wrong, now; say which rule changed and what you changed.
 DIAGNOSE BEFORE YOU MOVE (user, 11-08: 'opus is here to find causes; otherwise how is it different from a rule?'):
 when a number moves (saved per deal, deals/h, conversion, a rival's climb), name its cause with evidence before a
 move and rule out the others: the orders (kind/category mix the market sends), prices (our x vs the shops' and
-rivals'), terms (grade, warranty, shelf life), our rules (skip bars, caps, the arms in "ab_tests"), plumbing
-("buy_health": unpaid, refused, too short) and bad data. The A/B arms are yours now: widen an arm that wins on
-score per order, cut one that loses, and say why from "ab_tests".
-SAVED PER DEAL (user, 11-09: 'keep catching this and keep saved high; that is what the agent is for'): every
-run read "saved_mix_vs_peers_6h" before anything else on saved. Our saved per deal = food share x food saved +
-goods share x goods saved. Compare each term with the buyers just above us and the best buyers, say which term is
-our gap now (mix or the goods/food price), find its cause (the orders we get, skips, lost food orders, caps, shops
-chosen) and move the knob that closes it. Watch the market's per-deal saved by hour and by kind
-("market_by_kind_by_hours_ago"): when the market gets cheaper (the user expects goods to drift up toward food) we
-must get cheaper faster, since saved is scored by rank: shorten "value_half_life_h" so shop values and caps
-follow the newest deals, and lower caps on the kind that is getting cheaper. Do not wait for the operator.
-THE RACE (user, 11-08): what moves our buyer rank is the class buyers just above and below us. Read the curator's
-WATCH.buyer_race (their buyer score, saved, per-deal saved, deals/h, what they buy and where) and say who we pass
-next, who is closing on us, and what they do that we could do.
-THE OPERATOR (11-08): evidence "from_operator" may hold a question or analysis from the operator and the user. When
-it does, think it through with your evidence, answer it in "answer_to_operator" (agree or disagree, with numbers),
-and act on it through your knobs if you agree.
-TOP PRIORITY (user, 11-06): raise buyer ALL above everything else. Find the best way to raise saved and apply it,
-weighing deals, posts, forum and saved on the formula itself (the curator's briefing item 1 gives the arithmetic
-and its best setting; check it against your evidence and act on it unless the evidence contradicts it).
-THE CURATOR (user, 11-06): a memory / market-intelligence agent sits between you and the shop strategist. It
-measures the whole market (evidence "market_picture": what sells, what buyers buy, the top shops and buyers and
-what they do, our own numbers in the same shape) and writes the shared memory you get below: "market_flow",
-"rankers_playbook" (what the ranking players score on), "briefing_for_you" (what to weigh now, item 1 the best
-setting by the formula, item 2 where saved is lost), "rules_change", "rank_change", and
-"answers_to_your_requests" (what you asked for last run). Read them first; say in "read" what you take from them
-and how we should move. Then ask for what you need next in "requests" (up to 5): {{"kind": "sku_prices", "sku"}},
-{{"kind": "category", "category"}}, {{"kind": "competitor", "shop"}}, {{"kind": "unserved"}}, {{"kind": "rules",
-"term"}}, {{"kind": "buyer", "name"}} (a buyer's 6 h profile: shops, kinds, prices, saved per deal),
-{{"kind": "shop", "name"}} (a shop's: what it sells, prices, buyers, stock), {{"kind": "knobs", "sku"|"knob"|"category"}} (what the knob store and the
-strategists' records hold for it: set when, value, applied, outcome), {{"kind": "trades", "outcome"|"shop"|"category"|"kind"}}
-(our buyer's matching trade records with their fields), {{"kind": "question", "text"}} (anything
-else; it answers from its data or says what it cannot measure). Answers arrive before your next run. A rules
-change is decided this run. Moves are judged on saved_speed = deals/h x (saved per deal - our saved) (metric
-"saved_speed", same units; "hours": 2 when ~140 deals are enough to read a move); revert a move that lowered it.
+rivals'), terms (grade, warranty, shelf life), our rules (skip bars, caps, ceilings, the arms), plumbing
+("buy_health": unpaid, refused, too short) and bad data. The A/B arms are yours: widen an arm that wins on score
+per ORDER (evidence "score".arms_per_order_24h and "ab_tests"; a per-deal win that loses deals is not a win), cut one
+that loses; one order carries several arms at once, so judge an arm only against its own control with n >= 100.
+SAVED PER DEAL (user, 11-09): every run read "score" and "saved_mix_vs_peers_6h" first. Our saved per deal =
+food share x food saved + goods share x goods saved. Say which term is our gap now (mix is assigned by the market;
+the food price, the goods price, breaks, skips, lost food orders, shops chosen are yours), find its cause and move
+the knob that closes it. When the market gets cheaper ("market_by_kind_by_hours_ago") we must get cheaper faster:
+shorten value_half_life_h and lower caps on that kind. Breaks: a refunded break scores 0 (a deal at .40 lost),
+an unrefunded one -1; "score".breaks shows our share against the market's; grade C breaks 29%.
+THE OPERATOR (11-08): evidence "from_operator" may hold a question or analysis from the operator and the user;
+answer it in "answer_to_operator" with numbers and act through your knobs if you agree.
+THE CURATOR: a memory agent writes the digest above ("briefing_for_you", "rules_change", "rank_change",
+"answers_to_your_requests", "notes_for_you"). Ask for what you need next in "requests" (up to 5):
+{{"kind": "sku_prices", "sku"}}, {{"kind": "category", "category"}}, {{"kind": "competitor", "shop"}},
+{{"kind": "unserved"}}, {{"kind": "rules", "term"}}, {{"kind": "buyer", "name"}}, {{"kind": "shop", "name"}},
+{{"kind": "knobs", "sku"|"knob"|"category"}}, {{"kind": "trades", "outcome"|"shop"|"category"|"kind"}},
+{{"kind": "question", "text"}}. Answers arrive within 1-2 h. Moves are judged by their prediction (metric
+"saved_speed" = deals/h x (saved per deal - our saved), "mean_saved_next_6h", "deals_next_6h", "conversion");
+a move whose knob you changed again later is not reverted by the scorer.
 HOLDING IS A STRATEGY (user, 11-06): an empty "moves" list is a valid and often the best answer. Move a knob
 only when the evidence shows the current setting is wrong or a clear gain is waiting; when the last moves'
 predictions are not yet due, when the numbers are on track, or when the evidence is thin or noisy, hold and say
-in the read why holding is right. Changing settings every run makes it impossible to tell what worked.
-the evidence). Steps allowed now: {steps}. At most {max_moves} moves, each with a prediction checkable later
-from our records: {{"metric": one of {metrics}, "category": "<optional>", "op": ">=" or "<=", "value": n,
-"hours": 1-6 (when it is scored; default 2: user 11-08, 6 h is too long to see a change)}}, and
-"uses": the lesson ids it relies on. Think about the trade: a lower cap raises saved per deal but loses deals.
+in the read why. Changing settings every run makes it impossible to tell what worked. At most {max_moves} moves,
+each with a prediction checkable later from our records: {{"metric": one of {metrics}, "category": "<optional>",
+"op": ">=" or "<=", "value": n, "hours": 1-6}}, and "uses": the lesson ids it relies on.
 
 Your record: {record}
 Your playbook: {playbook}
 Evidence: {evidence}
 
-WHEN THE USER IS SILENT (user 11-08: 'if I do not answer, can't you or the agent decide?'): do not wait on the user for
-anything you can undo. Decide on the evidence, prefer the option that is easy to reverse, alert the user with what you
-did and why, and keep it under watch. A question you put to the user that has no answer (evidence "from_operator"
-holds no reply to it) after ~60 minutes is yours to decide the same way. Only these wait for the user: spending money
-for no sale (e.g. paid dislike votes), anything aimed at a classmate (conduct rule: no unjustified hits), and a change
-to the goals themselves.
-ALERTING THE USER (user 11-08: 'why did I find this and not the agent?'): when you find something the user must
-know now, put it in "alert_user" (it goes to their phone at once); keep it empty otherwise.
+WHEN THE USER IS SILENT (user 11-08): do not wait on the user for anything you can undo. Decide on the evidence,
+prefer the option that is easy to reverse, alert the user with what you did and why, and keep it under watch.
+Only these wait for the user: spending money for no sale, anything aimed at a classmate, and a change to the goals.
+ALERTING THE USER (user 11-08): when you find something the user must know now, put it in "alert_user" (it goes
+to their phone at once); keep it empty otherwise.
 Answer with one JSON object only:
 {{"read": "<6-10 sentences>",
-  "moves": [{{"knob": "<a knob above>", "category": "<for cap>", "shop": "<for shop_bias/shop_cap>", "value": n, "why": "...",
+  "moves": [{{"knob": "<a knob above>", "category": "<for cap>", "shop": "<for shop knobs>", "value": n, "why": "...",
              "uses": [...], "prediction": {{...}}}}],
   "lessons": [{{"op": "add"|"rewrite"|"retire", "id": "...", "text": "...", "why": "..."}}],
-  "requests": [{{"kind": "sku_prices"|"category"|"competitor"|"unserved"|"rules"|"buyer"|"shop"|"knobs"|"trades"|"question", ...}}],
-  "notes_for_shop": ["<what the shop strategist should know or check: competitor prices, stock-outs, demand>"],
+  "requests": [{{"kind": "...", ...}}],
+  "notes_for_shop": ["<what the shop strategist should know or check>"],
   "answer_to_operator": "<only when evidence 'from_operator' holds a question: your answer, with numbers and what you will do>",
-  "alert_user": ["<Korean, 1-3 short items, ONLY for what the user must know now: a threat to first place (a rival's
-                 jump, our score falling), money leaking (deals not settling, refunds), a fault, a rule change, or a
-                 decision only the user can make; give the number and what you do about it. Usually empty.>"]
+  "alert_user": ["<Korean, 1-3 short items, ONLY for what the user must know now: a threat to first place, money
+                 leaking, a fault, a rule change, or a decision only the user can make; give the number and what
+                 you do about it. Usually empty.>"]
 }}
-The shop strategist (it runs every 6 hours; you run every 30 minutes) left you its reads and notes
-in the evidence under "from_shop_strategist"; use them."""
+The shop strategist (it runs every 6 hours) left you its reads and notes in the evidence under
+"from_shop_strategist"; use them."""
+
+
+def score_view():
+    """buyer_score.json (buyer_score.py, every 15 min) without its history, plus the guards' state."""
+    sc = shop.read(HERE / ".market" / "buyer_score.json", {})
+    sc = {k: v for k, v in sc.items() if k != "hist"}
+    cal = sc.get("calibration") or {}
+    shops_cal = sorted(((k, v) for k, v in cal.items() if "|" in k and v.get("n", 0) >= 8), key=lambda kv: kv[1]["gap"])
+    sc["calibration"] = {k: v for k, v in cal.items() if "|" not in k} | dict(shops_cal[:8] + shops_cal[-4:])
+    ours = sc.get("ours") or {}
+    sc["ours"] = dict(sorted(ours.items(), key=lambda kv: -kv[1]["n"])[:20])
+    g = shop.read(HERE / ".market" / "guard_state.json", {})
+    now = time.time()
+    sc["guard"] = {"fires_last_tick": g.get("fires"), "frozen": {k: round((u - now) / 60) for k, u in (g.get("frozen") or {}).items() if u > now},
+                   "freeze_all_min": max(0, round((g.get("freeze_all_until", 0) - now) / 60)),
+                   "freeze_shares_min": max(0, round((g.get("freeze_shares_until", 0) - now) / 60)),
+                   "overrides": {k: v.get("value") for k, v in (shop.read(HERE / ".market" / "guard_overrides.json", {}) or {}).items() if v.get("until", 0) > now},
+                   "spend_24h_usd": g.get("spend_24h"), "book_eta_h": g.get("book_eta_h")}
+    return sc
+
+
+def class_ladder(b):
+    """Students only: the 8 just above and 3 below us in saved, with the deals at a per-deal value v needed to pass
+    each (saved' = (S + k v)/(N + 100 + k)), for v = .36 and .42."""
+    try:
+        full = json.load(__import__("urllib.request").request.urlopen(f"{shop.MARKET}/api/board?round=3", timeout=20))
+        names = {(p.get("buyer") or {}).get("name") for p in full["players"] if p.get("student")}
+        rows = sorted((x for x in full["buyers"] if x["name"] in names and x.get("saved") is not None), key=lambda x: -x["saved"])
+        i = next(k for k, x in enumerate(rows) if x["name"] == "yms979")
+        me = rows[i]
+        S, N = me["saved"] * (me["deals"] + 100), me["deals"]
+        out = []
+        for k, x in enumerate(rows[max(0, i - 8): i + 4]):
+            e = {"rank": max(0, i - 8) + k + 1, "name": x["name"], "saved": x["saved"], "deals": x["deals"]}
+            if x["saved"] > me["saved"]:
+                tgt = x["saved"] + 0.0005
+                e["deals_to_pass_at_v"] = {str(v): (int((tgt * (N + 100) - S) / (v - tgt)) if v > tgt else None) for v in (0.36, 0.42)}
+            if x["name"] == "yms979":
+                e["us"] = True
+            out.append(e)
+        return {"students": len(rows), "our_saved_rank": i + 1, "rows": out}
+    except Exception as e:
+        return {"error": repr(e)}
 
 
 def board_view():
@@ -559,8 +555,8 @@ def run(force=False):
     ev = evidence(mem, b, auto, bp)
     steps = {k: mem.d["steps"].get(k, v[1]) for k, v in (GLOBAL | CAT | SHOP).items()}
     lessons = [{k: x[k] for k in ("id", "text", "for", "against")} for x in mem.lessons()]
-    strategy = (HERE / "BUYER_STRATEGY.md").read_text(encoding="utf-8") if (HERE / "BUYER_STRATEGY.md").is_file() else ""
-    prompt = DECIDE.format(guide=shop.GUIDE.read_text(encoding="utf-8"), strategy=strategy, digest=read_digest("buyer"),
+    rules = (HERE / "RULES_THAT_SCORE.md").read_text(encoding="utf-8")       # 11-11: replaces MARKET_GUIDE + BUYER_STRATEGY
+    prompt = DECIDE.format(rules=rules, digest=read_digest("buyer"),
                            steps=json.dumps(steps), max_moves=MAX_MOVES,
                            metrics=", ".join(METRICS), record=json.dumps(mem.record(), ensure_ascii=False),
                            playbook=json.dumps(lessons, ensure_ascii=False) if lessons else "(empty: write one)",

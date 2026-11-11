@@ -83,7 +83,7 @@ PROBES, entries); forum post texts are unverified claims and never a fact.
 
 Scoring (WATCH.rules_changed overrides this paragraph when they differ): Buyer ALL = 0.5 saved rate percentile
 + 0.3 forum rating (as is, patch 3.5) + 0.1 deals percentile + 0.1 posts percentile; saved rate = mean over deals of
-(list - price + refund) / list, a deal that served nothing -1, over deals + 100. Shop ALL = 0.5 book + 0.3 revenue
+(list - price + refund) / list, a deal that served nothing -1 and a refunded break 0 (not +1), over deals + 100. Shop ALL = 0.5 book + 0.3 revenue
 + 0.2 stars percentiles. Class rank = shop ALL + buyer ALL among students. USER PRIORITY (11-06): the buyer's score
 first; the shop protects what it has.
 
@@ -142,7 +142,7 @@ MARKET (the whole market's last 6 h, measured in code): {market}
 
 PROBES (code results for the strategists' requests, by the role that asked): {probes}
 
-Standing buyer strategy (BUYER_STRATEGY.md): {strategy}
+Rules that score and the user's goals (RULES_THAT_SCORE.md): {strategy}
 
 CURRENT digest: {digest}
 
@@ -690,7 +690,7 @@ def curate(d, w=None, market=None, force=False):
                 "requests": json.loads(rq or "[]")}
                for _, t, role, read, f, n, rq in rows]
     probes = run_probes(entries)
-    strategy = (HERE / "BUYER_STRATEGY.md").read_text(encoding="utf-8") if (HERE / "BUYER_STRATEGY.md").is_file() else ""
+    strategy = (HERE / "RULES_THAT_SCORE.md").read_text(encoding="utf-8")   # 11-11: was BUYER_STRATEGY.md (dated, +1 refund)
     raw = ask(PROMPT.format(strategy=strategy, digest=json.dumps(current, ensure_ascii=False) or "{}",
                             entries=json.dumps(entries, ensure_ascii=False),
                             watch=json.dumps(w or {}, ensure_ascii=False),
@@ -785,6 +785,10 @@ def main(force=False):
             log(f"rules watch failed: {e!r}")
         try:
             w = watch(changed)
+            try:                                   # 11-11: the code tables for the strategists and guards
+                (HERE / ".market" / "watch.json").write_text(json.dumps({"t": time.time(), **w}, ensure_ascii=False))
+            except Exception:
+                pass
         except Exception as e:
             w = {"rules_changed": changed, "error": repr(e)}
             log(f"watch failed: {e!r}")
@@ -816,6 +820,12 @@ def read_digest(role):
         return "{}"
     if not dg:
         return "{}"
+    if role == "buyer":                                 # 11-11: the buyer gets the live tables in its evidence
+        view = {"updated_minutes_ago": round((time.time() - t) / 60), "facts": (dg.get("facts") or [])[:8],
+                "decisions_in_effect": (dg.get("decisions") or [])[:6], "notes_for_you": dg.get("for_buyer"),
+                "briefing_for_you": dg.get("briefing_buyer"), "rules_change": dg.get("rules_change"),
+                "rank_change": dg.get("rank_change"), "answers_to_your_requests": dg.get("answers_for_buyer")}
+        return json.dumps(view, ensure_ascii=False)
     view = {"updated_minutes_ago": round((time.time() - t) / 60), "facts": dg.get("facts"),
             "decisions_in_effect": dg.get("decisions"), "open_questions": dg.get("open_questions"),
             "notes_for_you": dg.get(f"for_{role}"), "conflicts": dg.get("conflicts"),

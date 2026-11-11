@@ -118,7 +118,7 @@ def _rows(st, cat, names):
             out.append({"ts": float(r["ts"]), "shop": _shop_name(r.get("shop"), names), "buyer": r.get("buyer") or "?",
                         "kind": "goods" if r.get("goods") else "food", "cat": c, "cat_last": c.split(">")[-1] or "?",
                         "x": x, "w": bool(r.get("w")), "grade": r.get("grade") or "?", "sku": sku, "value": value,
-                        "saved": (1.0 if refunded else -1.0) if broke else 1.0 - x,
+                        "saved": (0.0 if refunded else -1.0) if broke else 1.0 - x,   # 11-11: a refunded break scores 0
                         "broke": broke, "refunded": refunded})
         except (KeyError, TypeError, ValueError):
             continue
