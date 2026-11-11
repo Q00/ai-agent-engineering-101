@@ -62,8 +62,8 @@ LIMITS = {"facts": 20, "decisions": 10, "open_questions": 8, "for_shop": 6, "for
 STRINGS = {"rules_change": 3, "rank_change": 3, "market_flow": 4}      # one paragraph each, x TEXT_MAX
 ITEM_KEYS = ("id", "text", "source", "since", "last_confirmed", "who", "what", "when", "why", "role", "numbers",
              "request", "answer")
-REFRESH_MIN = 180                                  # a digest older than this is rewritten even without new entries
-MIN_GAP_MIN = 170                                  # 11-10 (API budget): at most one model call per this many minutes
+REFRESH_MIN = 120                                  # a digest older than this is rewritten even without new entries
+MIN_GAP_MIN = 110                                  # 11-10 (API budget): at most one model call per this many minutes
 LOCK_WAIT = 480                                    # s a run waits for another curator (a model call takes ~90 s)
 PROBE_CHARS = 2500                                 # a code result for one request, at most
 RULES_URLS = ("https://market.ourolabs.ai/rules", "https://market.ourolabs.ai/agent.md")
@@ -73,7 +73,7 @@ BSTATE = HERE / "buyer_strategist_memory.json"
 TEXT_MAX = 320
 
 PROMPT = """You are the market intelligence and memory of one player's agents (yms979) in a course market: a shop
-strategist and a buyer strategist, deciding their knobs every hour (buyer) and every 6 hours (shop). They do not read the market raw;
+strategist and a buyer strategist, deciding their knobs every 30 minutes (buyer) and every 6 hours (shop). They do not read the market raw;
 they read you. Every run you (1) show the whole market's flow, (2) say what the top-ranked players score on,
 (3) answer the requests the strategists made last run, (4) brief each one on what matters for its next decision,
 and (5) keep the shared memory small and current. Everything you write rests on the numbers below (WATCH, MARKET,

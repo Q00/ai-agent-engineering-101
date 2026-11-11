@@ -61,20 +61,20 @@ GLOBAL = {                                    # role, bounds, step
     "max_shops": ((1, 6), 1),                 # shops tried per order (an order comes every ~20 s; time under that is free)
     # 11-08 (user: like the shop, the buyer agent owns all of the buyer): the negotiation and choice arms the
     # operator ran as A/B tests, now yours; each *_share is the share of orders that use it (the rest is control)
-    "push_share": ((0.0, 1.0), 0.1),          # counter once more on an ask still above the shop's p25 band
-    "push3_share": ((0.0, 1.0), 0.1),         # of those, the deeper push3 (aim p25 - push3_below, two counters)
+    "push_share": ((0.0, 1.0), 0.3),          # counter once more on an ask still above the shop's p25 band
+    "push3_share": ((0.0, 1.0), 0.3),         # of those, the deeper push3 (aim p25 - push3_below, two counters)
     "push3_below": ((0.0, 0.2), 0.02),
     "push_below": ((0.0, 0.15), 0.02),        # push2's aim under p25
-    "cheapfood_share": ((0.0, 1.0), 0.1),     # food: ask for the cheapest unit that lasts and open low
+    "cheapfood_share": ((0.0, 1.0), 0.3),     # food: ask for the cheapest unit that lasts and open low
     "cheapfood_open": ((0.2, 0.6), 0.05),     # food opening offer, share of list
-    "cheapgoods_share": ((0.0, 1.0), 0.1),
-    "needwarr_share": ((0.0, 1.0), 0.1),      # 11-09 (user): goods orders that require a 6 h warranty before haggling
-    "aim15_share": ((0.0, 1.0), 0.1),         # 11-09 (user): of the aimtop orders, the share capped at p15, not p25
-    "aimtop_share": ((0.0, 1.0), 0.1),        # 11-09: cap at the shop's p25 (what the best buyers pay), not p50    # goods: ask for C/B with a warranty first, A only if nothing else
-    "skubest_share": ((0.0, 1.0), 0.1),       # pick the SKU with the best market saved at the shop (not the dearest)
-    "wpen_share": ((0.0, 1.0), 0.1),          # charge shops for goods sold without a warranty
+    "cheapgoods_share": ((0.0, 1.0), 0.3),
+    "needwarr_share": ((0.0, 1.0), 0.3),      # 11-09 (user): goods orders that require a 6 h warranty before haggling
+    "aim15_share": ((0.0, 1.0), 0.3),         # 11-09 (user): of the aimtop orders, the share capped at p15, not p25
+    "aimtop_share": ((0.0, 1.0), 0.3),        # 11-09: cap at the shop's p25 (what the best buyers pay), not p50    # goods: ask for C/B with a warranty first, A only if nothing else
+    "skubest_share": ((0.0, 1.0), 0.3),       # pick the SKU with the best market saved at the shop (not the dearest)
+    "wpen_share": ((0.0, 1.0), 0.3),          # charge shops for goods sold without a warranty
     "wpen_cost": ((0.0, 0.12), 0.02),
-    "gradeaware_share": ((0.0, 1.0), 0.1),    # goods: read the offered grade/warranty; warranted C/B get a higher cap
+    "gradeaware_share": ((0.0, 1.0), 0.3),    # goods: read the offered grade/warranty; warranted C/B get a higher cap
     "gradeaware_cap_c": ((0.65, 0.85), 0.03), # cap for a warranted C, share of list ((1-x)+0.16x beats the mean)
     "gradeaware_cap_b": ((0.62, 0.8), 0.03),
 }
@@ -347,7 +347,7 @@ Shared memory digest (the curator's summary of what both strategists have found 
 
 YOUR ROLE (user, 11-06): the buyer is RULE-BASED and fast: code picks the shop, haggles (open at the shop's
 lower-quartile price minus open_offset, then halfway, then the cap, holding at the cap while the shop keeps coming
-down) and pays, in about a second per shop, with no model call. You are its controller: every hour you set
+down) and pays, in about a second per shop, with no model call. You are its controller: every 30 minutes you set
 the rules' numbers from what they produced (evidence "rules_by_shop_6h", "throughput"). Speed comes from the code;
 flexibility comes from you.
 How the buyer works (BUYER_STRATEGY.md section 3): per order it scores the shops that hold an acceptable SKU by
@@ -447,7 +447,7 @@ Answer with one JSON object only:
                  jump, our score falling), money leaking (deals not settling, refunds), a fault, a rule change, or a
                  decision only the user can make; give the number and what you do about it. Usually empty.>"]
 }}
-The shop strategist (it runs every 6 hours; you run every hour) left you its reads and notes
+The shop strategist (it runs every 6 hours; you run every 30 minutes) left you its reads and notes
 in the evidence under "from_shop_strategist"; use them."""
 
 
