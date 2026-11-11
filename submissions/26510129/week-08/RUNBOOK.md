@@ -23,6 +23,16 @@ curl -s <가게 주소>/.well-known/acp.json | head -c 300
 crontab -l
 ```
 
+## 감시 (cron, 한 번만 설치)
+
+11-11 15:37에 kit은 살아 있고 터널도 여기서는 응답했는데 시장의 `/api/shops`에서 내 가게가 빠져(alive=false)
+buyer들이 가게를 못 받았다(open 90/h → 30/h). `watchdog.sh`가 10분마다 확인해 두 번 연속 빠지면 재접속한다.
+
+```bash
+chmod +x /home/iai4/Desktop/han/ai-agent-engineering-101/submissions/26510129/week-08/watchdog.sh
+( crontab -l 2>/dev/null | grep -v watchdog.sh; echo '*/10 * * * * /home/iai4/Desktop/han/ai-agent-engineering-101/submissions/26510129/week-08/watchdog.sh >> /home/iai4/Desktop/han/ai-agent-engineering-101/submissions/26510129/week-08/logs/watchdog.log 2>&1' ) | crontab -
+```
+
 ## 멈추기 / 다시 들어가기
 
 ```bash
