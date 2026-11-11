@@ -377,6 +377,14 @@ def shop_health():
     return health.check()
 
 
+def frontier(days=3, bucket=12):
+    """The saved frontier over time (sampled ledger): per-deal v, food share, warranty share by bucket for the market,
+    all students, the top-8 saved students and us (ops/frontier.py). Slow (~3-6 min): call at most once per run."""
+    sys.path.insert(0, str(HERE / "ops"))
+    import frontier as fr
+    return fr.frontier(float(days or 3), float(bucket or 12), pages_per_bucket=4)
+
+
 TOOLS = {
     "our_trades": (our_trades, "Our buyer's visit records (last hours <= 48), filtered by shop/kind/category/outcome prefix: outcome counts, deals, v per deal (rules scoring: refunded break 0, unrefunded -1), breaks, newest rows.",
                    {"shop": "string", "kind": "string", "category": "string", "outcome": "string", "hours": "number", "limit": "integer"}, []),
@@ -405,6 +413,7 @@ TOOLS = {
     "projection": (projection, "Our final saved and saved rank among students for a scenario (deals/h, per-deal v), others at their last-6-h pace; no args = grid.", {"rate": "number", "v": "number"}, []),
     "final_rank": (final_rank, "Projected final class TOTAL ranks (top 10 + us) with our buyer at a scenario (deals/h, v; default 30, .40): buyer by projected saved rank, shop by its 24-h trend and a damped 48-h trend. Rough.", {"rate": "number", "v": "number"}, []),
     "shop_health": (shop_health, "Is our shop alive and reachable now: board alive flag, market-wide dead count, our card from outside, last seller task age, kit exits and relists over 6 h, verdict.", {}, []),
+    "frontier": (frontier, "The saved frontier over time (sampled ledger, buckets of `bucket` h over `days`): per-deal v, food share, warranty share for market, students, top-8 saved students and us. Slow; once per run.", {"days": "number", "bucket": "number"}, []),
     "order_mix": (order_mix, "Our buyer's orders by category over hours: orders, close rate, v per deal.", {"hours": "number"}, []),
 }
 

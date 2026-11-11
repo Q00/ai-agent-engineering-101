@@ -389,7 +389,8 @@ each with a prediction checkable later from our records: {{"metric": one of {met
 TOOLS (11-11): when the run allows them you have read-only tools (mcp__market__*): score, class_ladder,
 our_trades(shop/kind/category/outcome/hours), shop_market(shop, kind), food_losses(hours), realized_by_shop(kind, hours),
 buyer_profile(name), shop_profile(name), order_mix(hours), projection(rate, v) (our final saved rank at a
-deals/h x v scenario), final_rank(rate, v) (projected final class TOTAL ranks). Use them to CHECK a cause before a move (e.g. why food v is low at a shop,
+deals/h x v scenario), final_rank(rate, v) (projected final class TOTAL ranks), frontier(days, bucket) (top students' per-deal v and
+food share over time; slow, once per run). Use them to CHECK a cause before a move (e.g. why food v is low at a shop,
 whether a rejection was right: a deal helps only if v > m*), not to re-read what the evidence already shows; at most
 6 calls. Your final message must still be the single JSON object below.
 

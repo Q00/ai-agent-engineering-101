@@ -151,7 +151,7 @@ NEW entries (oldest first; each may carry "requests"): {entries}
 TOOLS (11-11): when this run allows them you have read-only tools (mcp__market__*: score, class_ladder, our_trades,
 shop_market, food_losses, realized_by_shop, order_mix, buyer_profile, shop_profile, sku_market, sku_sales,
 margin_by_grade, unpaid_closes, stars_accounts, stars_ladder, book_race, stock_feasibility, live_terms, forum_search,
-class_history, rules_search, projection, final_rank, shop_health). Use them to ANSWER the strategists' requests with numbers instead of 'not measurable'
+class_history, rules_search, projection, final_rank, shop_health, frontier). Use them to ANSWER the strategists' requests with numbers instead of 'not measurable'
 (at most 10 calls), and keep the digest short.
 Answer with one JSON object only:
 {{"market_flow": "...",
