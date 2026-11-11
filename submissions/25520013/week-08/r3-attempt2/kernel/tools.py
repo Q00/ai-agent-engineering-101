@@ -7,7 +7,8 @@ import json
 import os
 import re
 import shutil
-from collections import Counter
+import statistics as st
+from collections import Counter, defaultdict
 
 from kernel import brief as b
 from kernel import common as c
@@ -685,6 +686,10 @@ def reviews(root, hours=24, by="category", low=3, now=None):
         return "\n".join(out)
     base, n_acc = acc_mean(rows)
     out.append(f"계정별 평균의 평균 {base:.3f} (계정 {n_acc}곳). 아래 '빼면'은 그 구간 리뷰가 없었을 때 이 값의 변화")
+    if loose:  # 11-12: five questions chased the unlinked low reviews without knowing whether they move the stars
+        out.append(f"  견줄 값: 판매와 이어진 리뷰만의 평균 {mean([r[2] for r in rows]):.2f}, 이어지지 않은 리뷰까지 넣은 평균 "
+                   f"{mean([d['stars'] for d in rv]):.2f}. 순위표의 stars 값(상태 카드의 점수 위치, board 도구)이 어느 쪽에 "
+                   "가까운지로 이어지지 않은 리뷰가 별점에 들어가는지 볼 수 있음")
     groups = {}
     for r in rows:
         groups.setdefault(r[0], []).append(r)
@@ -795,6 +800,95 @@ def tool_search(root, query):
     return c.cap("\n".join(out), MAX_CHARS)
 
 
+BUY_STATES = {"TASK_STATE_COMPLETED": "흥정 완료", "TASK_STATE_REJECTED": "가게가 거절", "walked_away": "우리가 물러남",
+              "receipt_refused": "영수증 거부"}
+
+
+def buy_attempts(root, hours=6, now=None):
+    """우리 구매 시도가 어떻게 끝났는지: 최근 hours시간(1~48)의 구매 주문 수와 정산으로 이어진 수, 가게별 시도를 끝난 모양별로 셈(흥정 완료, 가게가 거절, 가격 상한에서 멈춤 cap_stop, 마감에 잘림 deadline_cut, 그 밖의 입력 대기, 우리가 물러남과 그 사유, 오류). 식품과 일반상품을 나눠 주고, 상한에서 멈춘 적이 있는 주문이 결국 정산됐는지, 정산된 주문의 지불액/가치 평균도 줌."""
+    now = c.now_ts() if now is None else now
+    try:
+        hours = min(48.0, max(1.0, float(hours)))
+    except (TypeError, ValueError):
+        hours = 6.0
+    since, cat = now - hours * 3600, b._catalog(root)
+    path, nb = os.path.join(root, ".r3/events.jsonl"), int(40_000_000 * max(1.0, hours / 6))
+    paid = {}
+    for e in c.tail_json(path, nb, b'"deal"'):
+        d = e.get("data") or {}
+        if e.get("type") == "settle" and e.get("src") == "deal" and e.get("role") == "buyer" and d.get("order"):
+            paid[d["order"]] = d
+    orders, first_cap = [], None
+    for e in c.tail_json(path, nb, b'"market_buyer"'):
+        d = e.get("data") or {}
+        if (e.get("type") == "decision" and d.get("hook") == "market_buyer" and since <= (e.get("ts") or 0) <= now
+                and isinstance(d.get("tried"), list)):
+            orders.append((str(e.get("key") or "").split(":", 1)[-1], [t for t in d["tried"] if isinstance(t, dict)]))
+            if first_cap is None and any(t.get("cap_stop") for t in orders[-1][1]):
+                first_cap = e["ts"]
+    if not orders:
+        return f"최근 {hours:g}시간 구매 결정 기록 없음"
+
+    def end(t):
+        if t.get("error"):
+            return "오류"
+        if t.get("state") == "TASK_STATE_INPUT_REQUIRED":
+            return ("가격 상한에서 멈춤" if t.get("cap_stop") else "마감에 잘림" if t.get("deadline_cut") else "그 밖의 입력 대기")
+        return BUY_STATES.get(t.get("state"), str(t.get("state") or "상태 없음"))
+
+    def kind(t):
+        item = cat.get(t.get("sku"))
+        if not isinstance(item, dict):
+            return "종류 모름"
+        return "식품" if b._is_num(item.get("shelf_hours")) and item["shelf_hours"] > 0 else "일반상품"
+
+    def share(n, total):
+        return f"{n}건 ({n / total:.0%})" if total else f"{n}건"
+
+    done = [o for o in orders if o[0] in paid]
+    out = [f"구매 시도 최근 {hours:g}시간: 주문 {len(orders)}건, 정산으로 이어진 주문 {share(len(done), len(orders))}, "
+           f"가게별 시도 {sum(len(t) for _, t in orders)}건 (주문 하나가 여러 가게를 시도할 수 있음)"]
+    ends = defaultdict(Counter)
+    for _, tried in orders:
+        for t in tried:
+            ends[kind(t)][end(t)] += 1
+    for k in ("식품", "일반상품", "종류 모름"):
+        if ends.get(k):
+            n = sum(ends[k].values())
+            out.append(f"  {k} 시도 {n}건: " + ", ".join(f"{name} {share(v, n)}" for name, v in ends[k].most_common()))
+    why = Counter()
+    for _, tried in orders:
+        for t in tried:
+            if t.get("why"):
+                w = str(t["why"])
+                why["말한 유통기한이 짧음" if "shelf life" in w else "말한 등급" if "claim" in w or "grade" in w else w[:30]] += 1
+    errs = Counter(re.sub(r"\d+", "N", re.sub(r"https?://\S+", "[URL]", str(t["error"])))[:50]
+                   for _, tried in orders for t in tried if t.get("error"))
+    if errs:
+        out.append("  오류 내용(숫자와 주소는 가림): " + ", ".join(f"{k} {v}" for k, v in errs.most_common(4)))
+    if first_cap is not None and first_cap - since > 600:
+        out.append(f"  cap_stop 표시는 이 구간에서 {c.kst(first_cap, '%H:%M')}에 처음 나옴: 그 전의 같은 일은 '그 밖의 입력 대기'로 세어짐")
+    if why:
+        out.append("  우리가 물러난 사유: " + ", ".join(f"{k} {v}" for k, v in why.most_common(5)))
+    for flag, label in (("cap_stop", "가격 상한에서 멈춘 시도가 있던 주문"), ("deadline_cut", "마감에 잘린 시도가 있던 주문")):
+        hit = [o for o in orders if any(t.get(flag) for t in o[1])]
+        if hit:
+            out.append(f"  {label} {len(hit)}건 중 정산 {share(sum(1 for o in hit if o[0] in paid), len(hit))}")
+    miss = [o for o in orders if o[0] not in paid]
+    if miss:
+        last = Counter(end(o[1][-1]) if o[1] else "시도 없음" for o in miss)
+        out.append(f"  정산되지 않은 주문 {len(miss)}건의 마지막 시도: " + ", ".join(f"{k} {v}" for k, v in last.most_common()))
+    for k in ("식품", "일반상품"):
+        rs = [paid[o[0]] for o in done if o[1] and kind(o[1][-1]) == k]
+        rs = [d["amount"] / d["value"] for d in rs if b._is_num(d.get("amount")) and b._is_num(d.get("value")) and d["value"] > 0]
+        if rs:
+            out.append(f"  {k} 정산 {len(rs)}건의 지불액/가치: 평균 {st.mean(rs):.3f}, 중앙 {st.median(rs):.3f}")
+    rounds = [t["rounds"] for _, tried in orders for t in tried if t.get("state") == "TASK_STATE_COMPLETED" and b._is_num(t.get("rounds"))]
+    if rounds:
+        out.append(f"  흥정 완료 시도의 회차: 중앙 {st.median(rounds):g}, 최대 {max(rounds):g}")
+    return c.cap("\n".join(out), MAX_CHARS)
+
+
 # Default recommended lists of the role operators, by what each tool reads (the auditor moves tools in and out,
 # kernel.auditor.recommended). Every tool stays callable by both roles; a role sees the others by name only.
 RECOMMENDED = {
@@ -802,7 +896,7 @@ RECOMMENDED = {
              "policy", "experiments", "code_search", "code_read", "brief_section", "guide", "recall", "tool_search",
              "findings", "reviews"),
     "buyer": ("board", "ledger", "events", "shops", "catalog", "policy", "experiments", "code_search", "code_read",
-              "brief_section", "guide", "recall", "tool_search", "findings"),
+              "brief_section", "guide", "recall", "tool_search", "findings", "buy_attempts"),
 }
 
 TOOLS = {
@@ -830,6 +924,7 @@ TOOLS = {
     "tool_search": (tool_search, ("operator",)),
     "findings": (findings, ("operator",)),
     "reviews": (reviews, ("operator",)),
+    "buy_attempts": (buy_attempts, ("operator",)),
     "analyze": (analyze, ("operator",)),
     "agents": (agents, ("operator",)),
 }

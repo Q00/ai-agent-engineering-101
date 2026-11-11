@@ -1987,21 +1987,27 @@ def _money_compact(x):
     if not isinstance(inv, dict):
         return []
     cat = _catalog(x.root)
-    by = defaultdict(lambda: [0, 0.0])
+    by = defaultdict(lambda: [0, 0.0, []])
     for u in inv.get("units") or []:
         if isinstance(u, dict):
             g = by[_leaf((cat.get(u.get("sku")) or {}).get("category"))]
             g[0] += 1
             g[1] += float(u.get("cost") or 0) if _is_num(u.get("cost")) else 0.0
+            if _is_num(u.get("supplied_at")) and u["supplied_at"] <= x.now:
+                g[2].append((x.now - u["supplied_at"]) / 3600)
+    rate = inv.get("storage_per_day") if _is_num(inv.get("storage_per_day")) and 0 < inv["storage_per_day"] < 1 else None
+    keep = lambda cost: f", 보관비 하루 {c.fmt(cost * rate)}" if rate else ""
+    age = lambda hs: f", 들어온 지 중앙 {st.median(hs):.0f}시간(가장 오래된 것 {max(hs):.0f}시간)" if hs else ""
     sold = Counter(s["leaf"] for s in net_profit_data(x.root, x.now, NET_PROFIT_H, x.login, cat)[0])
     rows = sorted(by.items(), key=lambda kv: -kv[1][1])
     out = [f"[돈이 있는 곳] 현금 {c.fmt(inv.get('balance'))}, 재고 원가 합 {c.fmt(sum(v[1] for v in by.values()))} "
-           f"({sum(v[0] for v in by.values())}개). 아래는 원가가 큰 상품군부터, 최근 {NET_PROFIT_H}시간 판매 수와 "
-           "그 속도로 지금 재고를 나눈 시간"]
-    for leaf, (n, cost) in rows[:MONEY_TOP]:
+           f"({sum(v[0] for v in by.values())}개)"
+           + (f", 보관비 하루 {c.fmt(sum(v[1] for v in by.values()) * rate)} (원가의 {rate:.1%})" if rate else "")
+           + f". 아래는 원가가 큰 상품군부터, 최근 {NET_PROFIT_H}시간 판매 수와 그 속도로 지금 재고를 나눈 시간"]
+    for leaf, (n, cost, hs) in rows[:MONEY_TOP]:
         k = sold.get(leaf, 0)
         pace = f"판매 {k}개, 그 속도로 {n / k * NET_PROFIT_H:.0f}시간 치" if k else "판매 0개"
-        out.append(f"  {leaf}: {n}개 원가 합 {c.fmt(cost)}, {pace}")
+        out.append(f"  {leaf}: {n}개 원가 합 {c.fmt(cost)}, {pace}{keep(cost)}{age(hs)}")
     if rows[MONEY_TOP:]:
         rest = rows[MONEY_TOP:]
         out.append(f"  그 밖 {len(rest)}개 상품군: {sum(v[0] for _, v in rest)}개 원가 합 {c.fmt(sum(v[1] for _, v in rest))}, "

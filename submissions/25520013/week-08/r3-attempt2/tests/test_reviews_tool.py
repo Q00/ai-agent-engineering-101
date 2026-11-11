@@ -33,6 +33,8 @@ def test_reviews_by_grade(tmp_path, monkeypatch):
     assert lines[2].startswith("  fail 시각(시)별 건수: ")
     lines = [lines[0]] + lines[3:]
     assert "계정별 평균의 평균 2.667 (계정 3곳)" in lines[1]
+    assert lines[2].startswith("  견줄 값: 판매와 이어진 리뷰만의 평균 3.25, 이어지지 않은 리뷰까지 넣은 평균 3.20.")
+    lines = lines[:2] + lines[3:]
     assert lines[3].startswith("  C: 리뷰 2, 평균 1.50, 3점 이하 2, 1~2점 2, 계정 2곳, 빼면 +2.333")
     assert lines[4].startswith("  A: 리뷰 2, 평균 5.00, 3점 이하 0")
 

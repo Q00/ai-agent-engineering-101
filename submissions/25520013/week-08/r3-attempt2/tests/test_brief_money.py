@@ -58,3 +58,22 @@ def test_no_section_10_or_no_new_entry_adds_nothing(root, tmp_path, monkeypatch)
     monkeypatch.setenv("R3A2_MARKET_BRIEF", str(tmp_path / "none.md"))
     t = _card(root)
     assert "[사람이 적은 것]" not in t and "만들지 못함" not in t
+
+
+def test_money_lines_carry_storage_cost_and_stock_age(root):
+    root = pathlib.Path(root)
+    inv = json.loads((root / ".market/inventory.json").read_text())
+    inv["storage_per_day"] = 0.01
+    for k, u in enumerate(inv["units"]):
+        u["supplied_at"] = NOW - (k + 1) * 3600
+    (root / ".market/inventory.json").write_text(json.dumps(inv))
+    total = sum(u["cost"] for u in inv["units"])
+    lines = [ln for ln in _card(root).split("\n")]
+    head = next(ln for ln in lines if ln.startswith("[돈이 있는 곳]"))
+    assert f"보관비 하루 {c.fmt(total * 0.01)} (원가의 1.0%)" in head
+    assert any("보관비 하루" in ln and "들어온 지 중앙" in ln and "가장 오래된 것" in ln for ln in lines if ln.startswith("  "))
+
+
+def test_money_lines_without_a_rate_or_supply_time_say_nothing_of_them(root):
+    t = _card(root)
+    assert "[돈이 있는 곳]" in t and "원가의" not in t and "들어온 지" not in t
