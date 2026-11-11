@@ -268,7 +268,11 @@ def pick_unit(text, held, now, asks=None):
 
 
 CHEAP_LIST, CHEAP_SHARE = 50000, 0.58   # 11-11: concession on cheap items from the 3rd offer (<= ~1M/day)
-FOOD_SHELF_FLOOR = 0.45       # 11-11: food under this share of its shelf life is not sold
+FOOD_SHELF_FLOOR = 0.80       # share of its shelf life a food unit must still have to be sold. 0.45 on 11-11 (no grade C);
+#                               0.80 the same evening (user: 'sell the fresh ones, do not sell the old ones'): the market's food
+#                               grade A starts at ~80% left, B is 45-80%. 48 h of paid food reviews by shelf life left at the sale:
+#                               under 45% 4.5 stars, 45-60% 4.66, 60-75% 4.80, 75-90% 4.83; every low review under 75% names the
+#                               shelf life or grade B (25620027 rates older food 3.70 and fresh 4.67, nohaggle-hero 4.62 vs 5.00)
 GRADE_ORDER = {"A": 0, "B": 1, "C": 2}
 ACCEPTS_C = re.compile(r"grade\s*C\b|refurb|any\s*grade|cheapest\s*grade|lowest\s*grade|\bC\s*grade", re.I)
 NO_C = re.compile(r"(grade\s*)?A\s*(or|/)\s*B\s*(grade\s*)?only|only\s*grade\s*A|not\s*(buy|pay\s*for|take)\s*grade\s*C|"
