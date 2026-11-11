@@ -297,3 +297,21 @@ def test_policy_tool_narrows_to_a_section(o):
     rows = [ln for ln in part.split("\n") if ln.startswith("- ") and "->" not in ln]
     assert len(part) < len(full) and rows and all("buyer" in ln.split(": ", 1)[0] for ln in rows)
     assert "편집 가능 키" in part
+
+
+def test_long_tool_calls_that_differ_late_are_both_run(o, monkeypatch):
+    # 11-12: two analyze calls sharing their first 300 chars are different calls
+    ran = []
+    monkeypatch.setenv("A2_COMPACT_STEPS", "8")
+    monkeypatch.setattr(o, "_run_tool", lambda name, args: ran.append(args["code"][-3:]) or "결과 " + args["code"][-3:])
+    code = "def run(load, args):\n    return 1  # " + "x" * 400
+    o.terra = Script(
+        {"tools": [{"tool": "analyze", "args": {"code": code + "aaa"}}]},
+        {"tools": [{"tool": "analyze", "args": {"code": code + "bbb"}}]},
+        {"tools": [{"tool": "analyze", "args": {"code": code + "bbb"}}]},
+        {"done": {"note": "끝"}},
+    )
+    o.wake("주기 점검", NOW)
+    assert ran == ["aaa", "bbb"]
+    last = o.terra.prompts[-1]  # both results stay on the page; the repeat is not run again
+    assert "결과 aaa" in last and "결과 bbb" in last

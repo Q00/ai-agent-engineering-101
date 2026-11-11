@@ -17,6 +17,7 @@ trajectory are shared, and the two never wake at the same time (a2/operator_busy
 import argparse
 import contextlib
 import fcntl
+import hashlib
 import importlib
 import json
 import math
@@ -1201,8 +1202,11 @@ class Operator:
             for t in asked[:COMPACT_TOOLS]:
                 if not isinstance(t, dict):
                     continue
-                head = json.dumps({"tool": t.get("tool"), "args": t.get("args")}, ensure_ascii=False, default=str,
-                                  sort_keys=True)[:300]
+                whole = json.dumps({"tool": t.get("tool"), "args": t.get("args")}, ensure_ascii=False, default=str,
+                                   sort_keys=True)
+                # 11-12: the key was the first 300 chars, so an analyze call whose code changed after that point
+                # was answered "이미 읽음" and never run (live: 56 edits of one analysis, none executed)
+                head = whole if len(whole) <= 300 else whole[:300] + " #" + hashlib.sha1(whole.encode()).hexdigest()[:10]
                 if head in full:  # still on the page in full: no second read
                     self.traj.append(self.agent, "tool", name=t.get("tool"), obs_chars=0, cached=True,
                                      args=c.mask(json.dumps(t.get("args"), ensure_ascii=False, default=str)[:2000],

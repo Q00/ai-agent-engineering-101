@@ -32,7 +32,8 @@ CODE_CHARS = 6_000
 OUT_CHARS = 6_000  # one observation, the compact operator's COMPACT_OBS
 STR_CHARS = 300  # per string value in a loaded row (log text is untrusted)
 LOAD_ROWS = 200_000  # rows one load() may return
-LOAD_BYTES = {"events": 200_000_000}  # tail read per load(); 24 h of events is large
+LOAD_BYTES = {"events": 200_000_000, "metrics": 400_000_000}  # tail read per load(); 24 h of events is large
+# metrics (11-12): the 20 MB default covered about half an hour of a 1.1 GB file, so a 6 h count could not be made
 MAX_HOURS = 48
 ERR = "코드 오류:"
 DROP_KEYS = ("owner", "own_owner")
