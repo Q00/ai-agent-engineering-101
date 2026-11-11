@@ -199,10 +199,14 @@ def my_turn(role, now=None):
     if role == "buyer":
         # 11-11 restructure (user: 'as recommended'): the buyer every hour at :00 plus code-guard wakes
         # (.market/buyer_strategist_wake); the 30-min cadence of 01:50 did not address the cause (step size, bugs)
-        return slot if slot % 4 == 0 else None
+        # 11-11 12:25 (user: with the cost gate, check more often): every 30 min (:00, :30); run_gate decides
+        # whether the model runs (min gap 50 min, max gap 3 h)
+        return slot if slot % 2 == 0 else None
     # 11-11 12:35 (user: revenue 2nd must not be lost; the shop moved from margin-first to volume at or above cost):
     # every 2 h at :30 (01:30, 03:30, ... UTC; ~+$5.6/day) while the revenue defense settles; back to 6 h after
-    return slot if slot % 8 == 6 else None
+    # 11-11 12:25 (user: with the cost gate, check more often): every 30 min (:15, :45); run_gate decides whether
+    # the model runs (min gap 60 min, max gap 6 h)
+    return slot if slot % 2 == 1 else None
 
 
 def _db():
@@ -314,6 +318,7 @@ def read_board(role, n=1):
 # Run the model when something moved; otherwise skip, but never longer than MAX_GAP_H. Effort high when there is a
 # reason to think hard (wake, new operator note, rank change, big move), medium on routine runs.
 GATE_MAX_GAP_H = {"buyer": 3.0, "shop": 6.0}
+GATE_MIN_GAP_H = {"buyer": 50 / 60, "shop": 1.0}   # 11-11: checks every 30 min; a flapping rank must not buy a run each
 
 
 def _gate_state(role):
@@ -352,12 +357,32 @@ def _gate_state(role):
     return fp
 
 
+def _last_model_t(role):
+    import json as _j
+    name = "buyer strategist" if role == "buyer" else "strategist"
+    t = 0.0
+    try:
+        for l in (Path(__file__).resolve().parent / ".market" / "spend.jsonl").read_text().splitlines()[-400:]:
+            try:
+                r = _j.loads(l)
+            except ValueError:
+                continue
+            if r.get("role") == name:
+                t = max(t, r.get("t") or 0)
+    except OSError:
+        pass
+    return t
+
+
 def run_gate(role, mem_d, woken=False, now=None):
     """(run?, effort, why). mem_d is the strategist's memory dict; it keeps gate_fp and model_t."""
     import time as _t
     now = now or _t.time()
     fp = _gate_state(role)
     old = mem_d.get("gate_fp") or {}
+    if not old:                       # first gated run: compare with now, from the last real model call (spend ledger)
+        old = dict(fp, note_t=0 if role == "buyer" else fp.get("note_t", 0))
+        mem_d["model_t"] = mem_d.get("model_t") or _last_model_t(role)
     age_h = (now - (mem_d.get("model_t") or 0)) / 3600
     why = []
     if woken:
@@ -384,10 +409,11 @@ def run_gate(role, mem_d, woken=False, now=None):
             why.append("book ETA under 150 h")
     if age_h >= GATE_MAX_GAP_H.get(role, 6):
         why.append(f"{age_h:.1f} h since the last model run")
-    if not old:
-        why.append("first gated run")
     run = bool(why)
-    effort = "high" if hard or not old else "medium"
+    urgent = woken or "new operator note" in why
+    if run and not urgent and old and age_h < GATE_MIN_GAP_H.get(role, 1.0):
+        return False, "medium", f"waiting: {'; '.join(why)} (last model run {age_h * 60:.0f} min ago, min gap {GATE_MIN_GAP_H[role] * 60:.0f} min)"
+    effort = "high" if hard else "medium"
     if run:
         mem_d["gate_fp"] = fp
         mem_d["model_t"] = now
