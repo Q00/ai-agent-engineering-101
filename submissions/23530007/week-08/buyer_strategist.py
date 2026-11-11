@@ -386,6 +386,12 @@ in the read why. Changing settings every run makes it impossible to tell what wo
 each with a prediction checkable later from our records: {{"metric": one of {metrics}, "category": "<optional>",
 "op": ">=" or "<=", "value": n, "hours": 1-6}}, and "uses": the lesson ids it relies on.
 
+TOOLS (11-11): when the run allows them you have read-only tools (mcp__market__*): score, class_ladder,
+our_trades(shop/kind/category/outcome/hours), shop_market(shop, kind), food_losses(hours), realized_by_shop(kind, hours),
+buyer_profile(name), shop_profile(name). Use them to CHECK a cause before a move (e.g. why food v is low at a shop,
+whether a rejection was right: a deal helps only if v > m*), not to re-read what the evidence already shows; at most
+6 calls. Your final message must still be the single JSON object below.
+
 Your record: {record}
 Your playbook: {playbook}
 Evidence: {evidence}

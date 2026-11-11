@@ -603,11 +603,26 @@ Answer with one JSON object only:
 {{"diagnosis": "<3-6 sentences>", "lessons": [{{"op": "add"|"rewrite"|"retire", "id": "L2", "text": "...", "why": "..."}}]}}"""
 
 
+def model_cmd(role):
+    """11-11 (user: build the tools and use them): a strategist may get the read-only market tools (market_tools.py,
+    MCP stdio) when params.json strategist.tools lists its role; the answer is still one JSON object."""
+    cmd = shlex.split(MODEL_CMD)
+    roles = (read(PARAMS, {}).get("strategist") or {}).get("tools") or []
+    if role in roles:
+        try:
+            import market_tools
+            cfg = market_tools.write_config()
+            cmd += ["--mcp-config", str(cfg), "--strict-mcp-config", "--allowedTools", "mcp__market"]
+        except Exception as e:
+            log(f"{role}: tools unavailable ({e!r}); running without")
+    return cmd
+
+
 def ask_model(prompt, role):
     with tempfile.TemporaryDirectory() as empty:
         t = time.time()
         try:
-            p = model_env.run(shlex.split(MODEL_CMD), prompt, empty, MODEL_TIMEOUT, role=role)   # API key, else login
+            p = model_env.run(model_cmd(role), prompt, empty, MODEL_TIMEOUT, role=role)   # API key, else login
             sp = getattr(p, "spend", None) or {}
             log(f"{role}: model answered in {time.time() - t:.0f} s ({len(prompt)} chars in"
                 + (f", ${sp['cost']:.3f}, out {sp['output']} + think {sp['thinking']} tok" if sp else "") + ")")
