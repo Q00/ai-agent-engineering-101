@@ -274,9 +274,16 @@ def main():
             lead = mine["book"] - rival["book"]
             eta = lead / (theirs - ours) if theirs > ours else None
             st["book_eta_h"] = round(eta, 1) if eta else None
-            if eta is not None and 0 < eta < 72 and cooled(st, "G9", 6 * 3600, now):
+            # 11-11 22:45: 72 h was a fixed bar; with 138 h left a lead closing in 150-200 h is thin too (the evening's
+            # decisions, no grade C sales, a stock buffer, food under cost, take ~1-1.5 M/h off the book). The bar is
+            # now 1.5 x the hours left (at least 72 h); the phone alert goes out under 1.15 x the hours left.
+            left9 = max(0.0, (1794927540 - now) / 3600)
+            st["book_lead_at_end_M"] = round((lead - (theirs - ours) * left9) / 1e6) if theirs > ours else round(lead / 1e6)
+            if eta is not None and 0 < eta < max(72, 1.5 * left9) and cooled(st, "G9", 3 * 3600, now):
                 wake("shop", f"G9 book: lead {lead / 1e6:.0f}M over {rival['name']} closes in {eta:.0f} h (us {ours / 1e6:+.1f} M/h, them {theirs / 1e6:+.1f} M/h)")
-                alert([f"G9 장부 격차 {lead / 1e6:.0f}M이 {eta:.0f}h 안에 닫힐 속도입니다 ({rival['name']} {theirs / 1e6:+.1f} M/h, 우리 {ours / 1e6:+.1f} M/h)"])
+                if eta < max(72, 1.15 * left9) and cooled(st, "G9a", 6 * 3600, now):
+                    alert([f"G9 장부 격차 {lead / 1e6:.0f}M이 {eta:.0f}h 안에 닫힐 속도입니다 (남은 시간 {left9:.0f}h; {rival['name']} {theirs / 1e6:+.1f} M/h, 우리 {ours / 1e6:+.1f} M/h)"])
+                    fired(st, "G9a", now)
                 fired(st, "G9", now)
                 fires.append("G9")
     except Exception as e:
