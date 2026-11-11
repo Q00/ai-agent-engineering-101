@@ -650,6 +650,28 @@ def own_velocity(activity, catalog, pol, now=None):
     return out
 
 
+ASKED_TAU_S = 3600.0                                     # v2.13: hooks/restock.py decays own_asked with the same tau
+ASKED_MIN = 2.0                                          # decayed refusals in about the last hour to count as asked
+
+
+def own_asked(activity, now=None):
+    """v2.13 (2026-11-11): SKUs buyers asked OUR shop for while we held none, {sku: decayed refusals} at now
+    (activity own_asked, tau 1 h), only those at ASKED_MIN or more. shop.restock_asked_first false turns the use off
+    in restock_plan. 13:34 labpc: 61 no_stock refusals in 1 h, 26 for one water SKU with 1 unit on hand, while the
+    4 h of restock bought three other drinks SKUs (the top market settles) and none of it."""
+    now = now or time.time()
+    out = {}
+    for sku, pair in ((activity or {}).get("own_asked") or {}).items():
+        try:
+            v, ref = pair
+            v = float(v) * math.exp(-max(0.0, now - float(ref)) / ASKED_TAU_S)
+        except (TypeError, ValueError):
+            continue
+        if v >= ASKED_MIN:
+            out[sku] = v
+    return out
+
+
 def restock_gate(inv, pol, activity=None, now=None):
     """v1.7 inventory risk gate, before any buying. -> (why, info) with why None when restock may buy.
     (c) idle: no demand evidence for idle_pause_s -> pause (a quiet market would leave a full refill unsold: v1.6
@@ -947,6 +969,7 @@ def restock_plan(inv, demand, catalog, pol, stats=None, rng=None, activity=None,
         by_cat.setdefault(x.get("category"), []).append((sku, x))
 
     own_v = own_velocity(activity, catalog, pol, now)
+    asked = own_asked(activity, now) if sp.get("restock_asked_first", True) else {}   # v2.13
     cost_frac = expected_cost_frac(units, sp) if sp.get("skip_below_market") else None
     goods_cf = sp.get("goods_cost_frac") if cost_frac else None   # v2.8, see below_market_cost_frac
     surge = surge_factors(inv)                           # v2.0a (Patch 3.2): hot SKUs cost more to restock
@@ -996,12 +1019,16 @@ def restock_plan(inv, demand, catalog, pol, stats=None, rng=None, activity=None,
         # mock first restock): the v1.4 order below, unchanged.
         med = d.get("median_price") or 0
         sold = {t[0]: int((_stat(stats, "sku", t[0]) or {}).get("settles_all") or 0) for t in cands}
-        near = [t for t in cands if not med or 0.5 * med <= t[1]["list_price"] <= 1.5 * med or sold[t[0]] > 0] or cands
+        near = [t for t in cands if not med or 0.5 * med <= t[1]["list_price"] <= 1.5 * med or sold[t[0]] > 0
+                or t[0] in asked] or cands
+        # v2.13: SKUs buyers asked our shop for and we lacked come first, most asked first (then the old order)
         if kind == "food":
-            order_ = sorted(near, key=lambda t: (-sold[t[0]], -(t[1].get("shelf_hours") or 0), abs(t[1]["list_price"] - med), t[0]))
+            order_ = sorted(near, key=lambda t: (-asked.get(t[0], 0), -sold[t[0]], -(t[1].get("shelf_hours") or 0), abs(t[1]["list_price"] - med), t[0]))
         else:                                            # v2.0a: goods by market margin per hour, then settles
             rate = {t[0]: margin_rate(t[0], t[1], stats, surge.get(t[0], 1.0)) for t in near}
-            order_ = sorted(near, key=lambda t: (-rate[t[0]], -sold[t[0]], abs(t[1]["list_price"] - med), t[0]))
+            order_ = sorted(near, key=lambda t: (-asked.get(t[0], 0), -rate[t[0]], -sold[t[0]], abs(t[1]["list_price"] - med), t[0]))
+        if any(t[0] in asked for t in order_[:3]):
+            notes.insert(0, f"{cat}: asked first {[(t[0], round(asked[t[0]], 1)) for t in order_[:3] if t[0] in asked]}")
         if cost_frac:                                    # v1.18: SKUs the market settles under our cost + margin
             low = [t[0] for t in order_
                    if below_market(t[0], t[1], stats,

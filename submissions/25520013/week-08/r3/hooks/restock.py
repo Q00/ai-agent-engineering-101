@@ -4,6 +4,7 @@ import copy
 import json
 import math
 import os
+import re
 import sys
 import time
 from pathlib import Path
@@ -85,6 +86,18 @@ def market_activity(root=None, tau_h=24.0, now=None, pol=None):
                     if m.get("decision") == "no_stock":
                         st["no_stock"] = st.get("no_stock", 0) + 1
                         st["last_no_stock_ts"] = max(m["ts"], st.get("last_no_stock_ts") or 0)
+                        # v2.13: which SKU the buyer asked us for and we did not hold (a short-shelf refusal had
+                        # stock, so it is not counted): decayed count per SKU, same estimator as own_sales
+                        o = m.get("outcome") if isinstance(m.get("outcome"), dict) else {}
+                        ids = ASKED_SKU.findall(str(o.get("request") or "")) if "short_shelf" not in o else []
+                        if ids:
+                            asked = st.setdefault("own_asked", {})
+                            v, ref = asked.get(ids[0], [0.0, m["ts"]])
+                            v = v * math.exp(-max(0.0, m["ts"] - ref) / ASKED_TAU_S) + 1.0
+                            asked[ids[0]] = [round(v, 6), max(m["ts"], ref)]
+                            if len(asked) > 400:               # keep the 200 most recent
+                                for k in sorted(asked, key=lambda s: asked[s][1])[:200]:
+                                    del asked[k]
                     elif m.get("decision") == "accept" and m.get("hook") == "seller":
                         # v1.11: our seller hook accepted a deal = a buyer is buying from US (no ledger shop format)
                         st["own_accepts"] = st.get("own_accepts", 0) + 1
@@ -116,7 +129,10 @@ def market_activity(root=None, tau_h=24.0, now=None, pol=None):
         return {"error": f"{type(ex).__name__}: {ex}"}
 
 
-ACTIVITY_KEYS = ("last_settle_ts", "first_stock_ts", "settles", "orders", "last_order_ts", "results",
+ASKED_SKU = re.compile(r"\b[A-Z][0-9a-f]{8}\b")        # a SKU id in the masked request text
+ASKED_TAU_S = 3600.0                                     # v2.13: must equal policy.ASKED_TAU_S
+
+ACTIVITY_KEYS = ("own_asked", "last_settle_ts", "first_stock_ts", "settles", "orders", "last_order_ts", "results",
                  "last_result_ts", "resume_ts", "own_sales", "own_settles", "last_own_settle_ts", "no_stock",
                  "last_no_stock_ts", "own_accepts", "last_own_accept_ts")
 
