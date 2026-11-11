@@ -19,6 +19,10 @@ ROOT = Path(__file__).resolve().parent
 CONFIG = ROOT / "food_probe.json"
 SKU = re.compile(r"^G[0-9a-f]{8}$")
 MAX_SKUS, MAX_UNITS_PER_SKU, MAX_COST = 5, 3, 400000
+# Optional "max_units_per_run" (11-11 about 20:2x KST, an Orchestrator tightening within the user's food approval): at most that many
+# probe picks a run, taken one SKU at a time in the file's order (1 of each, then a second of each, ...), so a window's first run no
+# longer spends 10 of its 12 units on probe food. Absent means today's picks; present but not an int from 1 to 12 means off.
+MAX_UNITS_PER_RUN = 12
 WORST_COST_SHARE = .75
 REQUIRED_FEATURE = "food_floor_108_v1"
 FLOOR_MULTIPLE = 1.08
@@ -37,7 +41,13 @@ def settings(path=None):
             or type(units) is not int or not 1 <= units <= MAX_UNITS_PER_SKU
             or type(cap) not in (int, float) or not math.isfinite(cap) or not 0 < cap <= MAX_COST):
         return None
-    return {"skus": list(skus), "units_per_sku": units, "max_total_estimated_cost": cap}
+    chosen = {"skus": list(skus), "units_per_sku": units, "max_total_estimated_cost": cap}
+    if "max_units_per_run" in value:
+        per_run = value["max_units_per_run"]
+        if type(per_run) is not int or not 1 <= per_run <= MAX_UNITS_PER_RUN:
+            return None
+        chosen["max_units_per_run"] = per_run
+    return chosen
 
 
 def floor_on(policy_path=None):
@@ -73,15 +83,32 @@ def for_run(md, inventory, catalog, path=None, policy_path=None):
         held = Counter(u["sku"] for u in units)
         spent = sum((catalog.get(u["sku"]) or {}).get("list_price", 0) * WORST_COST_SHARE for u in units)
         picks = []
+        eligible = []
         for sku in chosen["skus"]:
             product = catalog.get(sku) or {}
             price = product.get("list_price")
             if product.get("kind") != "food" or sku in surge or type(price) not in (int, float) or not math.isfinite(price) or price <= 0:
                 continue
-            for _ in range(max(0, chosen["units_per_sku"] - held[sku])):
-                cost = price * WORST_COST_SHARE
+            eligible.append((sku, price * WORST_COST_SHARE, max(0, chosen["units_per_sku"] - held[sku])))
+        if "max_units_per_run" not in chosen:
+            for sku, cost, want in eligible:
+                for _ in range(want):
+                    if spent + cost > chosen["max_total_estimated_cost"]:
+                        break
+                    picks.append({"sku": sku, "estimated_cost": cost, "probe": True})
+                    spent += cost
+            return picks, None
+        # One SKU at a time: a SKU whose next unit does not fit the cost limit stops there, as in the loop above.
+        stopped = set()
+        for round_ in range(chosen["units_per_sku"]):
+            for sku, cost, want in eligible:
+                if len(picks) >= chosen["max_units_per_run"]:
+                    return picks, None
+                if sku in stopped or round_ >= want:
+                    continue
                 if spent + cost > chosen["max_total_estimated_cost"]:
-                    break
+                    stopped.add(sku)
+                    continue
                 picks.append({"sku": sku, "estimated_cost": cost, "probe": True})
                 spent += cost
         return picks, None

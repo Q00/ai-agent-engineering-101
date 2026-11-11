@@ -53,6 +53,18 @@ class Settings(unittest.TestCase):
                 path.write_text(json.dumps(bad), encoding="utf-8")
                 self.assertIsNone(fp.settings(path), bad)
 
+    def test_max_units_per_run_is_optional_and_checked(self):
+        with TemporaryDirectory() as folder:
+            path = Path(folder) / "f.json"
+            path.write_text(json.dumps(GOOD), encoding="utf-8")
+            self.assertNotIn("max_units_per_run", fp.settings(path))  # absent: today's picks
+            for good in (1, 4, 12):
+                path.write_text(json.dumps({**GOOD, "max_units_per_run": good}), encoding="utf-8")
+                self.assertEqual(fp.settings(path)["max_units_per_run"], good)
+            for bad in (0, 13, -1, 4.0, "4", True, None, [4]):
+                path.write_text(json.dumps({**GOOD, "max_units_per_run": bad}), encoding="utf-8")
+                self.assertIsNone(fp.settings(path), bad)
+
 
 class Picks(unittest.TestCase):
     def run_for(self, inv, features=("food_floor_108_v1",), setting=GOOD, multiple=1.08):
@@ -91,6 +103,34 @@ class Picks(unittest.TestCase):
     def test_surged_and_non_food_skus_are_skipped(self):
         picks, _ = self.run_for({"units": [], "surge": [{"sku": "G4a998429", "factor": 1.2}]})
         self.assertNotIn("G4a998429", {p["sku"] for p in picks})
+
+    def test_without_the_per_run_cap_the_order_is_sku_by_sku(self):
+        picks, _ = self.run_for({"units": []})
+        self.assertEqual([p["sku"] for p in picks], [s for s in GOOD["skus"] for _ in range(3)])
+
+    def test_per_run_cap_interleaves_and_truncates(self):
+        picks, waiting = self.run_for({"units": []}, setting={**GOOD, "max_units_per_run": 4})
+        self.assertIsNone(waiting)
+        self.assertEqual([p["sku"] for p in picks], GOOD["skus"])  # one of each, not three of the first
+        picks, _ = self.run_for({"units": []}, setting={**GOOD, "max_units_per_run": 6})
+        self.assertEqual([p["sku"] for p in picks], GOOD["skus"] + GOOD["skus"][:2])
+
+    def test_per_run_cap_skips_what_is_held_and_keeps_the_cost_limit(self):
+        s = GOOD["skus"]
+        # Held: 3 of the first (full), 1 of the second; wants are 0, 2, 3, 3.
+        held = [unit(s[0]), unit(s[0]), unit(s[0]), unit(s[1])]
+        picks, _ = self.run_for({"units": held}, setting={**GOOD, "max_units_per_run": 12})
+        self.assertEqual([p["sku"] for p in picks], [s[1], s[2], s[3], s[1], s[2], s[3], s[2], s[3]])
+        # 15000 worst a unit; 100000 holds 6 with 4 held, so 2 more, one SKU at a time.
+        picks, _ = self.run_for({"units": held}, setting={**GOOD, "max_total_estimated_cost": 100000, "max_units_per_run": 12})
+        self.assertEqual([p["sku"] for p in picks], [s[1], s[2]])
+
+    def test_per_run_cap_frees_run_units_for_ordinary(self):
+        picks, _ = self.run_for({"units": []}, setting={**GOOD, "max_units_per_run": 4})
+        buys, why = Plan().plan(picks)
+        q = {b["sku"]: b["qty"] for b in buys}
+        self.assertEqual(sum(q.get(x, 0) for x in GOOD["skus"]), 4)
+        self.assertEqual(why["kit_lines"]["food_probe"], 4)
 
 
 class Plan(unittest.TestCase):
