@@ -312,15 +312,16 @@ def rivals_above():
         return set()
 
 
-AVOID_MARGIN = 0.12          # classmates within this much of our class total are rivals
+AVOID_MARGIN = 0.12          # (unused since 11-11 12:50) classmates within this much of our class total
+USER_BANNED = {"seochanit"}  # user 11-11: do not trade with seochanit
 AVOID_BAD_GAP = 0.02         # a shop|kind where we realized v < m* - this over 24 h (n >= 10) is avoided
 
 
 def avoid_shops():
     """11-11 (user: 'the buyer must not go to shops that could be a problem'): (names, 'name|kind' pairs, reasons),
     cached 10 min in .market/avoid_shops.json. Avoided:
-    - rivals: the shops of classmates whose class total is above ours or within AVOID_MARGIN of it, the runner-up
-      book shop and the student shop right below us in revenue (buying there adds to their revenue and book);
+    - the shops we race directly: the runner-up book shop and the student shop right below us in revenue (buying
+      there adds to their revenue and book), plus USER_BANNED;
     - bad for our saved: shop|kind pairs where we realized v under m* - AVOID_BAD_GAP over 24 h (n >= 10)."""
     path = HERE / ".market" / "avoid_shops.json"
     try:
@@ -336,10 +337,11 @@ def avoid_shops():
         studs = [x for x in b["players"] if x.get("student")]
         me = next(x for x in studs if x["player"] == ME)
         shop_of = {x["player"]: (x.get("shop") or {}).get("name") for x in studs}
-        for x in studs:
-            if x["player"] != ME and (x.get("student_total") or 0) >= (me.get("student_total") or 0) - AVOID_MARGIN and shop_of.get(x["player"]):
-                names.add(shop_of[x["player"]])
-                why[shop_of[x["player"]]] = f"rival total {x.get('student_total')}"
+        # 11-11 12:50 (user: 'narrow it'): rivals by class total are no longer avoided (our buys barely move a shop
+        # percentile while the good deals there lifted our saved); only the shops we race directly stay out
+        for n in USER_BANNED:
+            names.add(n)
+            why[n] = "user ban (11-11: no trade with seochanit)"
         sshops = [s for s in b["shops"] if s["name"] in set(shop_of.values())]
         book2 = max((s for s in sshops if s["name"] != ME and s.get("book") is not None), key=lambda s: s["book"], default=None)
         if book2:
