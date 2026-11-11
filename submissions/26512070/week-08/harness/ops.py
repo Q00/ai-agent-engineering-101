@@ -112,10 +112,13 @@ def shop_reach(now=None, probe=None):
             last = line[:8]
     if last is None:
         return None
+    # 11/11: 'now' is the runner pass's start, and the kit log is read minutes later - a turn written after 'now'
+    # was taken for yesterday's ('quiet for 1438 min', three false alerts); the log is compared with the clock
+    now = max(now, time.time())
     t = time.localtime(now)
     h, mi, se = (int(x) for x in last.split(":"))
     ts = time.mktime((t.tm_year, t.tm_mon, t.tm_mday, h, mi, se, 0, 0, -1))
-    if ts > now + 60:
+    if ts > now + 3600:
         ts -= 86400                                      # the last turn was before midnight
     quiet = now - ts
     if quiet < QUIET_S:
