@@ -70,7 +70,7 @@ def schema(row):
     items += ['  "notes": "<다음 깨움의 네가 읽을 메모 전체. 생략하면 그대로 둠>",'] + pick('  "new_tool"')
     items.append('  "note": "<이번 깨움 한 줄 요약>"}}')
     rules += pick("new_tool은") + ["머리글의 권한 밖 항목은 커널이 거절하고 기록함"]
-    return "\n".join(['한 단계에 JSON 객체 하나로만 답함. 둘 중 하나:',
+    return "\n".join(['한 단계에 JSON 객체 하나로만 답함. 도구는 이 JSON의 도구 호출로만 불리고 커널이 돌림. 모델 자체의 함수 호출(exec, wait 등)은 이 환경에 실행기가 없어 실패함. 둘 중 하나:',
                       '1. 도구 호출: {"tools": [{"tool": "<도구 이름>", "args": {<인자>}}, ...], "keep": "<바로 앞 관찰에서 남길 결론>"}',
                       '2. 끝내기: {"done": {'] + items + rules)
 

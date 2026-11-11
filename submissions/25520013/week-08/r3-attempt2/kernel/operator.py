@@ -33,7 +33,7 @@ from kernel import brief as b
 from kernel import common as c
 from kernel import experiments as ex
 from kernel import harness as hz
-from kernel import agent_registry, audit, auditor, code_edit, llm, made_tools, policy_edit, questions, tools, versions
+from kernel import agent_registry, audit, auditor, code_edit, code_tools, llm, made_tools, policy_edit, questions, tools, versions
 from kernel.agent import ParseError, parse_last_object
 from kernel.llm import ModelError, ModelRefused
 from kernel.trajectory import Trajectory
@@ -217,7 +217,7 @@ def grounding(base, obs_all, done, kept=()):
 
 ASK_TIMEOUT_S = 120  # per model call; about twice the slowest answered call
 REV_WEIGHT_MAX = 0.2
-COMPACT_SCHEMA = """한 단계에 JSON 객체 하나로만 답함. 둘 중 하나:
+COMPACT_SCHEMA = """한 단계에 JSON 객체 하나로만 답함. 도구는 이 JSON의 도구 호출로만 불리고 커널이 돌림. 모델 자체의 함수 호출(exec, wait 등)은 이 환경에 실행기가 없어 실패함. 둘 중 하나:
 1. 도구 호출: {"tools": [{"tool": "<도구 이름>", "args": {<인자>}}, ...], "keep": "<바로 앞 관찰에서 남길 결론>"}
 2. 끝내기: {"done": {
   "policy": [{"section": "defaults.food|defaults.goods|<상품군 전체 경로>|shop|buyer.defaults.food|buyer.defaults.goods", "key": "<키>", "value": <수>, "reason": "<근거, 생략 가능>", "test": "none|before_after|split, 생략하면 none", "group": "<묶음 이름, 생략 가능>", "window_h": <잴 시간, 생략 가능>, "expect": "<기대 효과, 생략 가능>"}],
@@ -236,13 +236,13 @@ strategy는 네 전략 메모임: 쓰면 다음 점검부터 프롬프트 위쪽
 code는 규칙 코드를 고침: 고칠 파일은 이번 점검에서 code_read로 먼저 읽음. old는 파일에 정확히 한 번 나오는 원문임.
 커널이 규칙 코드의 시험을 돌려 새로 실패하는 시험이 있으면 거절함. 보호 함수(원가 이하 판매 금지, 정책 검증, 지출 상한, 서명, 주인 확인)를 바꾸거나 위험한 import, 호출, 파일 쓰기, URL을 새로 넣으면 거절함.
 적용 뒤 커널이 30분 감시해 오류나 기록 끊김이면 바로 되돌림. 재시작이나 감시가 끝나기 전에는 다음 코드 수정을 받지 않음. 4시간 전후 비교 숫자는 상태 카드의 [코드] 줄에 나오고 커널이 되돌리지 않음. policy.py와 hooks/seller.py 수정은 판매자 재시작 뒤 반영됨.
-new_tool은 읽기 전용 질의 도구를 하나 만듦: 기록 파일 하나를 조건으로 거르고 묶어 세는 정의, 또는 analyze로 돌려 본 읽기 전용 코드(code)임. 커널이 실제 기록으로 시험 실행해 통과하면 다음 점검부터 도구 목록에 나옴. 기록의 필드 이름은 events, trajectory 도구로 행을 먼저 보고 정함.
+new_tool은 읽기 전용 질의 도구를 하나 만듦: 기록 파일 하나를 조건으로 거르고 묶어 세는 정의, 또는 analyze로 돌려 본 읽기 전용 코드(code)임. code 대신 "code_from": "last_analyze"를 쓰면 이번 점검에서 마지막으로 오류 없이 돈 analyze 코드가 그대로 저장됨. 커널이 실제 기록으로 시험 실행해 통과하면 다음 점검부터 도구 목록에 나옴. 기록의 필드 이름은 events, trajectory 도구로 행을 먼저 보고 정함.
 policy 키: 판매 구역은 price_mult, min_margin, concession, max_rounds, stock_target, qty_per_buy, warranty_uplift, fresh_discount.B|C. goods 구역은 warranty_hours.A|B|C도. shop은 grade_floor_list.A|B|C와 c_first_leaves.<잎 이름> (1 넣기, 0 빼기). shop은 재입고와 재고 한도 값도 받음 (max_inventory_cost_frac, max_spend_per_run, max_lines_per_run, max_total_units, est_cost_frac 등. 전체 목록과 범위는 policy 도구). buyer.defaults.*는 max_pay_frac, open_frac (첫 제시가), step_frac (회차마다 올리는 폭), accept_c.max_pay_frac, accept_c.open_frac. bounds는 사람만 고침."""
 END_LINE = "\n\n이번 점검을 여기서 마무리함: done 객체로 답함."
 RESERVED_ARGS = ("harness_root", "dry", "now")
 HARNESS_TOOLS = ("versions", "harness_read", "replay_probe")
 
-ACTION_SCHEMA = """한 단계에 JSON 객체 하나로만 답함. 둘 중 하나:
+ACTION_SCHEMA = """한 단계에 JSON 객체 하나로만 답함. 도구는 이 JSON의 도구 호출로만 불리고 커널이 돌림. 모델 자체의 함수 호출(exec, wait 등)은 이 환경에 실행기가 없어 실패함. 둘 중 하나:
 1. 도구 호출: {"tool": "<도구 이름>", "args": {<인자>}}
 2. 끝내기: {"done": {
   "reflection": [{"target": "seller|buyer|operator", "version": <판 번호>, "effects": [{"edit": "<수정 요약>", "effect": "도움|해로움|효과 없음|판단 불가", "evidence": "<근거>"}], "lesson": "<교훈 하나 또는 null>"}],
@@ -1214,6 +1214,8 @@ class Operator:
                     fresh.append(head + "\n이미 읽음: 위 관찰에 그대로 있음")
                     continue
                 obs = c.cap(self._run_tool(t.get("tool"), t.get("args")), obs_cap(t.get("tool")))
+                if t.get("tool") == "analyze" and isinstance(t.get("args"), dict) and not obs.startswith(TOOL_ERR + (code_tools.ERR,)):
+                    self._last_analyze = t["args"].get("code")  # new_tool code_from: survives compaction
                 obs_all[head] = [step, head, obs]
                 cs["gone"].discard(head)
                 f = (t.get("args") or {}).get("file") if isinstance(t.get("args"), dict) else None
@@ -1336,6 +1338,11 @@ class Operator:
         return out
 
     def _new_tool(self, spec, now):
+        if spec.get("code_from") == "last_analyze" and not spec.get("code"):
+            code = getattr(self, "_last_analyze", None)
+            if not isinstance(code, str):
+                return {"ok": False, "error": "이번 점검에서 오류 없이 돈 analyze 코드가 없음"}
+            spec = {k: v for k, v in spec.items() if k != "code_from"} | {"code": code}
         try:
             r = made_tools.add(self.root, spec, now, traj=self.traj, by=self.agent,
                                reserved=tuple(tools.TOOLS), **self._role_kw())

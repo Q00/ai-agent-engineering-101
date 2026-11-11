@@ -315,3 +315,21 @@ def test_long_tool_calls_that_differ_late_are_both_run(o, monkeypatch):
     assert ran == ["aaa", "bbb"]
     last = o.terra.prompts[-1]  # both results stay on the page; the repeat is not run again
     assert "결과 aaa" in last and "결과 bbb" in last
+
+
+def test_new_tool_code_from_last_analyze(o, monkeypatch):
+    # 11-12: the analysis code that ran is saved as a tool without being typed again (it may be compacted away)
+    from kernel import made_tools
+    got = []
+    monkeypatch.setattr(made_tools, "add", lambda root, spec, now, **kw: got.append(spec) or {"ok": True, "name": spec["name"]})
+    spec = {"name": "q_restock_runs", "description": "재입고 실행 횟수와 수량", "code_from": "last_analyze"}
+    assert o._new_tool(dict(spec), NOW)["ok"] is False and not got
+    monkeypatch.setattr(o, "_run_tool", lambda name, args: "코드 오류: x" if "bad" in args["code"] else "3")
+    o.terra = Script(
+        {"tools": [{"tool": "analyze", "args": {"code": "def run(load, args):\n    return 3"}}]},
+        {"tools": [{"tool": "analyze", "args": {"code": "def run(load, args):\n    return bad"}}]},
+        {"done": {"note": "끝", "new_tool": spec}},
+    )
+    o.wake("주기 점검", NOW)
+    assert got == [{"name": "q_restock_runs", "description": "재입고 실행 횟수와 수량", "code": "def run(load, args):\n    return 3"}]
+    assert "exec, wait 등" in o.terra.prompts[0]

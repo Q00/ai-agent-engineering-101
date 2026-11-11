@@ -51,7 +51,7 @@ _new_tool_rule = next(
     ln for ln in op.COMPACT_SCHEMA.splitlines() if ln.startswith("new_tool은")
 )
 SCHEMA = (
-    """한 단계에 JSON 객체 하나로만 답함. 둘 중 하나:
+    """한 단계에 JSON 객체 하나로만 답함. 도구는 이 JSON의 도구 호출로만 불리고 커널이 돌림. 모델 자체의 함수 호출(exec, wait 등)은 이 환경에 실행기가 없어 실패함. 둘 중 하나:
 1. 도구 호출: {"tools": [{"tool": "<도구 이름>", "args": {<인자>}}, ...], "keep": "<바로 앞 관찰에서 남길 결론>"}
 2. 끝내기: {"done": {
   "answer": {"finding": "<확인한 원인과 숫자, 표본 수, 확인 못 한 것>", "evidence": ["<숫자와 그 숫자를 본 도구 이름>", ...], "suggest": "<운영자가 시험해 볼 값이나 코드 자리. 제안이지 결정이 아님>", "for": ["shop" 또는 "buyer", 둘 다면 둘]},
