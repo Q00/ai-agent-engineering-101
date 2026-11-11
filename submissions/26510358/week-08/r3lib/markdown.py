@@ -16,7 +16,8 @@ and initiative.judge decides whether to act on a markdown arm, with everything i
 A markdown lives MARKDOWN_TTL_H and is then judged again: a price is reversible, which is why it may act at p > p*.
 The cut never exceeds MARKDOWN_MAX_CUT of the regular price and the shop still clamps to its floor.
 
-The shop reads Memory meta `markdown` ({sku: {arm, until, ...}}) when it quotes (apply()). When a markdown window
+The shop reads Memory meta `markdown` ({sku: {arm, grade, until, ...}}) when it quotes (apply()); the markdown holds
+for units of the grade it was judged on. When a markdown window
 ends, the SKU's sales inside it become the bandit's reward.
 """
 import time
@@ -52,6 +53,11 @@ def apply(mem, u, ask, floor, now=None):
     m = (mem.get("markdown") or {}).get(u["sku"])
     now = now or time.time()
     if not m or m.get("arm") in (None, "keep") or m.get("until", 0) <= now or u.get("kind") != "goods":
+        return ask, None
+    if m.get("grade") and u.get("grade") != m["grade"]:
+        # The markdown was judged on one grade's price, margin and market (the unit shown first then). A unit of
+        # another grade was never judged: 2026-11-11 our C goods closed at 0.82 of the market's C median, the cut
+        # of a markdown decided for the SKU's A or B units.
         return ask, None
     return arm_price(m["arm"], u, floor, ask), m["arm"]
 
@@ -133,6 +139,7 @@ def tick(mem, units, now=None, board=_LOAD, policy=None, log=True):
             rows.append(row)
         if arm == "keep" or executed != "keep":               # a vetoed arm is not what ran: it teaches nothing
             live[sku] = {"arm": executed, "context": "|".join(ctx), "ts": round(now), "units": n,
+                         "grade": u.get("grade"),
                          "until": round(now + config.MARKDOWN_TTL_H * 3600),
                          "avg_cost": round(sum(x["cost"] for x in us) / n)}
     mem.put("markdown", live)

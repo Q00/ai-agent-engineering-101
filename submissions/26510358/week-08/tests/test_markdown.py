@@ -111,3 +111,17 @@ def test_the_ceo_tick_runs_it_without_an_order_and_at_most_every_ten_minutes(tmp
     import json
     goals = [json.loads(x)["goal"] for x in (tmp_path / "logs" / "initiative.jsonl").read_text().splitlines()]
     assert goals == ["shop_markdown", "paid_dislike", "loan_or_bond"]         # refusals are written once a day
+
+
+def test_a_markdown_holds_only_for_the_grade_it_was_judged_on(tmp_path, monkeypatch):
+    """2026-11-11: our grade C goods closed at 0.82 of the market's C median: a markdown judged on a SKU's A or B
+    unit also cut the C units, whose price, margin and market it had never looked at."""
+    m, now = setup(tmp_path, monkeypatch, own_sales=2)
+    markdown.tick(m, shelf(60), now=now, board=None, policy=always("cost"))
+    assert m.get("markdown")["G1"]["grade"] == "B"
+    b = shelf(1)[0]
+    c = dict(b, grade="C", cost=100_000)
+    assert markdown.apply(m, b, 171_000, 162_000, now=now)[1] == "cost"
+    assert markdown.apply(m, c, 150_000, 108_000, now=now) == (150_000, None)
+    m.put("markdown", {"G1": {"arm": "cost", "until": now + 3600}})          # an entry written before the change
+    assert markdown.apply(m, c, 150_000, 108_000, now=now)[1] == "cost"
