@@ -378,6 +378,21 @@ class Shop(AgentExecutor):
                                 # not be offered again (the team found a checkout refused with 409, 2026-11-03)
         self.c = market_model.db()
 
+    def expire_open(self):
+        """A buyer that walks away without a word never closes its task, so its unit stayed 'taken' until a restart:
+        the buyer team's audit (11-11 15:40) found the 2 held G00327e80 sofas refused as 'not in stock' 69 times in 3 h.
+        A talk idle longer than open_ttl_s (theta, 600 s) frees its unit and is recorded as a miss."""
+        ttl, now = promo.theta().get("open_ttl_s", 600), time.time()
+        old = [k for k, d in self.open.items() if now - d.get("ts", now) > ttl]
+        for k in old:
+            d = self.open.pop(k, None)
+            try:
+                promo.record(self.c, k, d["unit"], d["q"], None, "miss")
+            except Exception:
+                pass
+        if old:
+            log(f"[open] freed {len(old)} idle talks older than {ttl} s; {len(self.open)} open")
+
     async def execute(self, context, event_queue):
         task = context.current_task
         if task is None:
@@ -396,10 +411,13 @@ class Shop(AgentExecutor):
             return up.new_agent_message(parts=[new_text_part(text), new_data_part(o)], metadata={"ask": d["ask"]})
         text = get_message_text(context.message) or ""
         deal = self.open.get(task.id)
+        if deal is not None:
+            deal["ts"] = time.time()
 
         if deal is None:
             need = needs(text)
             self.sold = {k: v for k, v in self.sold.items() if time.time() - v < 120}
+            self.expire_open()
             u, sku, cat = find_unit(text, {d["unit"]["unit"] for d in self.open.values()} | set(self.sold), need)
             if u is None:
                 category = (cat.get(sku) or {}).get("category") if sku else None
@@ -436,6 +454,7 @@ class Shop(AgentExecutor):
             q = standing_price(self.c, code, u, q)
             q, egg = egg_off(text, q)
             deal = self.open[task.id] = {"unit": u, "q": q, "ask": q["price"], "turns": 0, "code": code, "vip": vip,
+                                         "ts": time.time(),
                                          "egg": bool(egg),
                                          "talk": 0, "credit": credit, "warranty_asked": need["warranty"],
                                          # a buyer that asked by category (no SKU) gets the category on its receipt
