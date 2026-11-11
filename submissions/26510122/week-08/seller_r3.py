@@ -370,7 +370,9 @@ class Seller(AgentExecutor):
                     'purchase_requirements': requirements,
                     'warranty_policy':seller_warranty.POLICY,
                     "objective": "Choose one available physical unit and an opening price. "
-                                 "Use price_guidance: a supported opening price comes from recent comparable paid sales. "
+                                 "Use price_guidance: distinguish successful opening quotes from final paid prices. "
+                                 "A paid median is a negotiation outcome, not an instruction to start there and discount again. "
+                                 "Compare the historical opening reference, sale profit and settlement chance; "
                                  "A median below the profit floor signals a cost or demand gap. Use the other candidates "
                                  "and market memory when comparable sales are sparse. "
                                  "you may choose another positive price when you explain why. "

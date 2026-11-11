@@ -98,6 +98,7 @@ def price_guidance(unit: dict, *, now: float | None = None, warranty_hours: int 
     remaining = (expires - now) / 3600 if type(expires) in (int, float) else None
     bucket = expiry_band(remaining) if food else None
     comparable = {}
+    openings = {}
     for a in attempts:
         if a.get('outcome') != 'SETTLED' or a.get('sku') != unit['sku'] or a.get('ledger') is None:
             continue
@@ -114,6 +115,9 @@ def price_guidance(unit: dict, *, now: float | None = None, warranty_hours: int 
         elif a.get('warranty_hours_at_receipt') != charges['warranty_hours']:
             continue
         comparable[a['ledger']] = paid
+        opening = a.get('opening_ask')
+        if type(opening) is int and opening >= paid and a.get('grade') == unit['grade']:
+            openings[a['ledger']] = opening
     prices = list(comparable.values())
     observed = median_low(prices) if prices else None
     if food and bucket is None:
@@ -124,7 +128,8 @@ def price_guidance(unit: dict, *, now: float | None = None, warranty_hours: int 
         status = 'typical_paid_price_below_target'
     else:
         status = 'supported'
-    start = observed if status == 'supported' else None
+    opening_median = median_low(list(openings.values())) if len(openings) >= 3 else None
+    start = max(observed, opening_median) if status == 'supported' and opening_median is not None else None
     return {
         'break_even_price': break_even,
         'minimum_profitable_price': positive_price,
@@ -134,8 +139,12 @@ def price_guidance(unit: dict, *, now: float | None = None, warranty_hours: int 
         'refund_share_scenario': float(refund),
         'comparable_paid_72h': {'count': len(prices), 'median': observed,
                                 'min': min(prices, default=None), 'max': max(prices, default=None)},
+        'comparable_openings_72h': {'count': len(openings), 'median': opening_median},
         'status': status,
         'suggested_opening_price': start,
+        'opening_reference_note': 'Paid prices describe completed negotiations. Opening guidance uses only '
+                                  'opening quotes that later settled under comparable conditions. '
+                                  'It is a reference, not a floor or evidence that higher asks will convert.',
         'estimated_profit_at_suggestion': profit(start) if start is not None else None,
         'offered_price': offered_price,
         'estimated_profit_at_offer': profit(offered_price) if offered_price is not None else None,

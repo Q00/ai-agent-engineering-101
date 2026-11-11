@@ -33,7 +33,8 @@ class NewsvendorTests(unittest.TestCase):
         now = 500_000
         unit = {'sku': 'G1', 'grade': 'A', 'cost': 180_000, 'kind': 'goods',
                 'supplied_at': now - 86400}
-        evidence = {'outcome': 'SETTLED', 'sku': 'G1', 'settled_grade': 'A',
+        evidence = {'outcome': 'SETTLED', 'sku': 'G1', 'grade': 'A', 'settled_grade': 'A',
+                    'opening_ask': 230_000,
                     'settled_at': now - 60, 'warranty_hours_at_receipt': 6}
         rows = [{**evidence, 'ledger': n, 'settled_price': price}
                 for n, price in enumerate((198_000, 210_000, 224_000), 1)]
@@ -47,11 +48,22 @@ class NewsvendorTests(unittest.TestCase):
         self.assertEqual(got['minimum_profitable_price'], 202_001)
         self.assertEqual(got['minimum_price_for_target'], 207_556)
         self.assertEqual(got['comparable_paid_72h']['count'], 3)
-        self.assertEqual(got['suggested_opening_price'], 210_000)
+        self.assertEqual(got['comparable_paid_72h']['median'], 210_000)
+        self.assertEqual(got['suggested_opening_price'], 230_000)
         self.assertEqual(got['estimated_profit_at_offer'], -1_800)
-        self.assertEqual(got['estimated_profit_at_suggestion'], 7_200)
+        self.assertEqual(got['estimated_profit_at_suggestion'], 25_200)
         self.assertIsNone(price_guidance(unit, now=now, warranty_hours=6, attempts=rows,
                                         target_profit=15_000)['suggested_opening_price'])
+
+    def test_paid_prices_without_original_quotes_do_not_become_new_opening_quotes(self):
+        unit = {'sku': 'G1', 'grade': 'A', 'cost': 100, 'kind': 'goods'}
+        rows = [{'sku': 'G1', 'settled_grade': 'A', 'outcome': 'SETTLED',
+                 'settled_at': 990, 'settled_price': 150, 'ledger': n,
+                 'warranty_hours_at_receipt': 0} for n in range(3)]
+        result = newsvendor_tool.price_guidance(unit, now=1000, attempts=rows)
+        self.assertEqual(result['comparable_paid_72h']['median'], 150)
+        self.assertIsNone(result['suggested_opening_price'])
+        self.assertEqual(result['comparable_openings_72h']['count'], 0)
 
     def test_price_guidance_does_not_mix_food_shelf_life_or_count_signed_as_paid(self):
         from newsvendor_tool import price_guidance
