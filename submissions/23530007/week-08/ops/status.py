@@ -73,6 +73,32 @@ def shop_pace(now, hours):
     return {"hours": hours, "deals_h": round(len(rows) / hours, 1), "margin_M_h": round(margin / hours / 1e6, 2), "grades": grades}
 
 
+def revenue_race(b, now):
+    """11-11 (user: can we take revenue 1st?): the student shop ahead of us in revenue, the gap, the lead in M/h we
+    need over it to pass before the end, and both shops' settled revenue over the last 6 h (ledger cache)."""
+    try:
+        studs = {(p.get("shop") or {}).get("name") for p in b["players"] if p.get("student")}
+        rv = sorted((s for s in b["shops"] if s["name"] in studs and s.get("revenue") is not None), key=lambda s: -s["revenue"])
+        i = next(k for k, s in enumerate(rv) if s["name"] == NAME)
+        out = {"rank": i + 1}
+        if i == 0:
+            out.update(behind=rv[1]["name"], lead_M=round((rv[0]["revenue"] - rv[1]["revenue"]) / 1e6))
+            return out
+        ahead = rv[i - 1]
+        left = max(1.0, (END - now) / 3600)
+        gap = ahead["revenue"] - rv[i]["revenue"]
+        sv = read(".market/shop_value.json", {}) or {}
+        D = sv.get("deals") or []
+        t1 = max((d["ts"] for d in D), default=now)
+        r6 = {n: sum(d.get("amt") or 0 for d in D if d["shop"] == n and t1 - d["ts"] < 6 * 3600) / 6e6 for n in (NAME, ahead["name"])}
+        out.update(ahead=ahead["name"], gap_M=round(gap / 1e6), need_lead_M_h=round(gap / left / 1e6, 1),
+                   ours_6h_M_h=round(r6[NAME], 1), theirs_6h_M_h=round(r6[ahead["name"]], 1),
+                   lead_6h_M_h=round(r6[NAME] - r6[ahead["name"]], 1))
+        return out
+    except Exception as e:  # noqa: BLE001
+        return {"error": repr(e)[:120]}
+
+
 def kit_state():
     out = subprocess.run(["pgrep", "-f", f"market_kit.py join --dir {HERE}"], capture_output=True, text=True).stdout.split()
     log = HERE / "logs" / "market-kit.log"
@@ -125,7 +151,7 @@ def main():
                  "book_M": round(shops[NAME]["book"] / 1e6), "rival": rival["name"], "rival_book_M": round(rival["book"] / 1e6),
                  "lead_M": round((shops[NAME]["book"] - rival["book"]) / 1e6), "stars_rank": shops[NAME].get("stars_rank"),
                  "market_dead_shops": f"{sum(1 for s in live if not s.get('alive'))}/{len(live)}",
-                 "pace_1h": shop_pace(now, 1), "pace_6h": shop_pace(now, 6)},
+                 "pace_1h": shop_pace(now, 1), "pace_6h": shop_pace(now, 6), "revenue_race": revenue_race(b, now)},
         "buyer": {"rank": i_b, "score": buy[i_b - 1]["student_buyer"],
                   "above": [(p["player"], p["student_buyer"]) for p in buy[max(0, i_b - 3):i_b - 1]],
                   "saved": buyers[NAME]["saved"], "deals": buyers[NAME]["deals"], "m_star": sc.get("m_star"),
@@ -143,6 +169,12 @@ def main():
     print(f"SHOP   rank {s['rank']}  {s['score']}  alive {s['alive']}  book {s['book_M']}M vs {s['rival']} {s['rival_book_M']}M (lead {s['lead_M']}M)"
           f"  stars_rank {s['stars_rank']}  market dead {s['market_dead_shops']}")
     print(f"       1h: {s['pace_1h']['deals_h']} deals/h, margin {s['pace_1h']['margin_M_h']}M/h {s['pace_1h']['grades']} | 6h: margin {s['pace_6h']['margin_M_h']}M/h")
+    rr = s.get("revenue_race") or {}
+    if rr.get("ahead"):
+        print(f"       revenue rank {rr['rank']}: {rr['gap_M']}M behind {rr['ahead']}; to pass it we must outsell it by {rr['need_lead_M_h']} M/h;"
+              f" last 6 h: us {rr['ours_6h_M_h']} vs {rr['theirs_6h_M_h']} M/h (lead {rr['lead_6h_M_h']:+})")
+    elif rr.get("behind"):
+        print(f"       revenue rank 1, {rr['lead_M']}M ahead of {rr['behind']}")
     print(f"BUYER  rank {bu['rank']}  {bu['score']}  above {bu['above']}  saved {bu['saved']} (m* {bu['m_star']})  deals {bu['deals']}")
     for p in (bu["pace_2h"], bu["pace_6h"]):
         print(f"       {p['hours']}h: {p['deals_h']} deals/h v {p['v']} | food {p['food_h']}/h {p['food_v']} | goods {p['goods_h']}/h {p['goods_v']} | breaks {p['breaks']}")
