@@ -362,6 +362,7 @@ def negotiate(url, item, budget, reference, record="", request=None, value_cap=N
             t = named
             info["ask"] = ask0 = first_ask(t, value_cap)
     grade, hours_left = unit_grade(t), unit_hours_left(t)
+    info["grade"] = grade
     unfit = None
     if grade and grades and grade not in grades:   # 02:47: a 377,000 grade C unit was negotiated, then refused at checkout
         unfit = f"grade {grade} unit; the order accepts {'/'.join(grades)}"
@@ -607,13 +608,15 @@ def sku_reference(sku, catalog, fallback, stats=None):
 WARRANTY_SHOP_SHARE = 0.8   # a shop whose settled goods came with a warranty this often is trusted with a grade C unit
 
 
-def accept_constraints(order, shop=None, mem=None):
+def accept_constraints(order, shop=None, mem=None, grade=None):
     """What the kit must verify before paying. A settled deal is worth the list price whatever the grade (agent.md),
     so for goods only the grade floor is kept (A/B: fewer breaks) and the certificate is not demanded: 11-04 02:30,
     20 agreed goods deals had been refused only for "no certificate". Food keeps both: the certificate is what proves
     the shelf life the order depends on. 11-11 18:50: at a shop whose goods usually carry a warranty (`shop`, `mem`)
     a grade C unit is accepted too, with the warranty required: C goods cost 25-45% of list (YAHO1212 settles C at
-    0.52, A at 0.70) and a break under warranty is refunded (scores 0, not -1); 14 such units were refused in 30 min."""
+    0.52, A at 0.70) and a break under warranty is refunded (scores 0, not -1); 14 such units were refused in 30 min.
+    19:20: the warranty is demanded only when the unit negotiated is grade C (`grade`): demanded for every goods deal
+    at such shops it refused 4 A/B deals at checkout ("warranty 0 h") in 30 min against 2 C deals won."""
     if not order.get("acceptable"):
         return None
     if order.get("kind") == "food":
@@ -622,7 +625,7 @@ def accept_constraints(order, shop=None, mem=None):
         # whose value is the list price like anyone's. The hours check stays; the certificate flag goes.
         return {"min_hours_left": int(math.ceil(order.get("use_within_hours") or 0))}
     share = buyer_policy.warranty_share(mem, shop.get("name")) if shop and mem is not None else None
-    if share is not None and share >= WARRANTY_SHOP_SHARE:
+    if grade == "C" and share is not None and share >= WARRANTY_SHOP_SHARE:
         return {"grades": ["A", "B", "C"], "warranty_hours": 1}
     return {"grades": ["A", "B"]}
 
@@ -667,7 +670,7 @@ def main():
 
     stats = ledger.load_stats(MEMORY.parent)   # what the market lately paid: the bargaining anchor per SKU
     food_need = order.get("use_within_hours") if order.get("kind") == "food" else None
-    grades = tuple((accept_constraints(order, pick, mem) or {}).get("grades") or ())   # what the kit will pay for; checked first
+    grades = tuple((accept_constraints(order, pick, mem, "C") or {}).get("grades") or ())   # units worth negotiating at this shop
     sc = scarcity(mem, category)
     slack, discount, posture = regime(sc, params["first_offer_discount"])
     buyer_policy.emit("buyer_regime", item=category, scarcity=round(sc, 2) if sc is not None else None,
@@ -726,9 +729,9 @@ def main():
             print(f"[choose] retry with {pick['url']}: {pick['name']}. picked by portfolio policy after the last shop "
                   f"{'had no fitting stock' if no_offer else 'failed'}", flush=True)
         wanted = request["sku"] if request else a.item
-        grades = tuple((accept_constraints(order, pick, mem) or {}).get("grades") or ())   # per shop: C only with a warranty
+        grades = tuple((accept_constraints(order, pick, mem, "C") or {}).get("grades") or ())   # per shop: C only with a warranty
 
-    accept = accept_constraints(order, pick, mem)
+    accept = accept_constraints(order, pick, mem, info.get("grade"))   # the warranty is demanded only for a grade C unit
     print(json.dumps({"shop": pick["url"], "receipt": receipt, "stars": stars, "review": text,
                       **({"accept": accept} if accept else {})}, ensure_ascii=False), flush=True)
 

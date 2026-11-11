@@ -155,9 +155,10 @@ class Round3BuyerContextTest(unittest.TestCase):
         order = {"acceptable": ["g"], "kind": "goods"}
         covered = [{"shop": "covered", "settled": True, "warranty_hours": 6, "grade": "A", "list_price": 100_000, "value": 100_000}] * 5
         bare = [{"shop": "bare", "settled": True, "warranty_hours": 0, "grade": "A", "list_price": 100_000, "value": 100_000}] * 5
-        self.assertEqual({"grades": ["A", "B", "C"], "warranty_hours": 1}, market_buyer.accept_constraints(order, {"name": "covered"}, covered))
-        self.assertEqual({"grades": ["A", "B"]}, market_buyer.accept_constraints(order, {"name": "bare"}, bare))
-        self.assertEqual({"grades": ["A", "B"]}, market_buyer.accept_constraints(order, {"name": "new"}, covered))   # no data: A/B
+        self.assertEqual({"grades": ["A", "B", "C"], "warranty_hours": 1}, market_buyer.accept_constraints(order, {"name": "covered"}, covered, "C"))
+        self.assertEqual({"grades": ["A", "B"]}, market_buyer.accept_constraints(order, {"name": "covered"}, covered, "A"))   # an A unit: no demand
+        self.assertEqual({"grades": ["A", "B"]}, market_buyer.accept_constraints(order, {"name": "bare"}, bare, "C"))
+        self.assertEqual({"grades": ["A", "B"]}, market_buyer.accept_constraints(order, {"name": "new"}, covered, "C"))   # no data: A/B
 
     def test_the_opener_is_no_lower_than_the_shops_usual_settle(self):
         self.assertEqual(51, market_buyer.opening_offer(72, 51, 0.25))                 # reference below ask x 0.75
