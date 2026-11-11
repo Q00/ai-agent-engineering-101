@@ -626,7 +626,41 @@ def wait_card(base, seconds=60):
     return False
 
 
+NAMED_TUNNEL = Path.home() / ".config" / "ai-agent-market" / "named_tunnel.json"   # yms979: {"name", "url"}
+
+
+def open_named_tunnel(port):
+    """yms979 11-11: a named Cloudflare tunnel on our own domain (fixed URL). The market kept failing to read our
+    card through quick trycloudflare tunnels (ConnectTimeout, 'alive=False' every few minutes). Returns
+    (proc, url) once cloudflared reports a registered connection, else None (the caller falls back)."""
+    try:
+        cfg = json.loads(NAMED_TUNNEL.read_text())
+        name, url = cfg["name"], cfg["url"].rstrip("/")
+    except (OSError, ValueError, KeyError):
+        return None
+    proc = subprocess.Popen(["cloudflared", "tunnel", "--no-autoupdate", "run", "--url", f"http://127.0.0.1:{port}", name],
+                            stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+    up = []
+
+    def read():
+        for line in proc.stdout:
+            if "Registered tunnel connection" in line and not up:
+                up.append(line)
+    threading.Thread(target=read, daemon=True).start()
+    deadline = time.time() + 45
+    while time.time() < deadline and not up and proc.poll() is None:
+        time.sleep(0.2)
+    if up:
+        return proc, url
+    stop(proc)
+    log(f"[tunnel] the named tunnel {name} did not connect within 45 s; using a quick tunnel")
+    return None
+
+
 def open_tunnel(port):
+    named = open_named_tunnel(port)
+    if named:
+        return named
     proc = subprocess.Popen(["cloudflared", "tunnel", "--no-autoupdate", "--url", f"http://127.0.0.1:{port}"],
                             stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
     found = []
