@@ -47,9 +47,14 @@ class Settings(unittest.TestCase):
             path = Path(folder) / "b.json"
             path.write_text(json.dumps(GOOD), encoding="utf-8")
             self.assertEqual(mb.settings(path), {"skus": SKUS, "units_per_sku": 1, "max_worst_cost_total": 6000000, "max_lines_per_run": 4})
+            # Up to 3 a SKU and 17M, approved by the user on 11-11.
+            three = {**GOOD, "units_per_sku": 3, "max_worst_cost_total": 17000000}
+            path.write_text(json.dumps(three), encoding="utf-8")
+            self.assertEqual(mb.settings(path), {"skus": SKUS, "units_per_sku": 3, "max_worst_cost_total": 17000000, "max_lines_per_run": 4})
             for bad in ({**GOOD, "enabled": "true"}, {**GOOD, "skus": SKUS + ["G0667d440"]}, {**GOOD, "skus": ["G0e4deffc"]}, {**GOOD, "skus": []},
-                        {**GOOD, "skus": [SKUS[0]] * 2}, {**GOOD, "units_per_sku": 2}, {**GOOD, "units_per_sku": True}, {**GOOD, "units_per_sku": 1.0},
-                        {**GOOD, "max_worst_cost_total": 6000001}, {**GOOD, "max_worst_cost_total": 0}, {**GOOD, "max_lines_per_run": 5},
+                        {**GOOD, "skus": [SKUS[0]] * 2}, {**GOOD, "units_per_sku": 4}, {**GOOD, "units_per_sku": 0}, {**GOOD, "units_per_sku": True},
+                        {**GOOD, "units_per_sku": 1.0}, {**three, "units_per_sku": 3.0},
+                        {**GOOD, "max_worst_cost_total": 17000001}, {**GOOD, "max_worst_cost_total": 0}, {**GOOD, "max_lines_per_run": 5},
                         {**GOOD, "max_lines_per_run": 0}, {k: v for k, v in GOOD.items() if k != "max_lines_per_run"}, []):
                 path.write_text(json.dumps(bad), encoding="utf-8")
                 self.assertIsNone(mb.settings(path), bad)
@@ -83,6 +88,19 @@ class Picks(unittest.TestCase):
         self.assertEqual(len(got["picks"]), 11)
         self.assertEqual(got["notes"][SKUS[-1]], "worst_cost_cap")
 
+    def test_three_of_each_within_17m(self):
+        three = {**GOOD, "units_per_sku": 3, "max_worst_cost_total": 17000000}
+        got = self.run_for({"units": []}, setting=three)  # 36 x 450,000 worst = 16.2M
+        self.assertEqual([p["sku"] for p in got["picks"]], [s for s in SKUS for _ in range(3)])
+        got = self.run_for({"units": []}, setting=three, price=700000)  # 525,000 worst each: 32 fit under 17M
+        self.assertEqual(len(got["picks"]), 32)
+        self.assertEqual((got["notes"][SKUS[10]], got["notes"][SKUS[11]]), ("worst_cost_cap", "worst_cost_cap"))
+        self.assertEqual([p["sku"] for p in got["picks"]].count(SKUS[10]), 2)
+        got = self.run_for({"units": [unit(SKUS[0]), unit(SKUS[1]), unit(SKUS[1]), unit(SKUS[1])]}, setting=three)
+        self.assertEqual([p["sku"] for p in got["picks"]].count(SKUS[0]), 2)
+        self.assertEqual(got["notes"][SKUS[1]], "held_full")
+        self.assertNotIn(SKUS[1], [p["sku"] for p in got["picks"]])
+
     def test_held_counts_and_a_surged_sku_is_skipped(self):
         got = self.run_for({"units": [unit(SKUS[0])], "surge": [{"sku": SKUS[1], "factor": 1.05}]})
         self.assertEqual(got["notes"][SKUS[0]], "held_full")
@@ -115,8 +133,21 @@ class Plan(unittest.TestCase):
             return rp.plan({"round": 3, "balance": 1000000000, "start": 5000000, "storage_per_day": .01, "restock": {"open": True}, "units": list(units), "surge": []},
                            cat, [{"category": "c"}], {}, 0, intelligence=market, runtime=RUNTIME, now=NOW, mid_probe=mid, mid_band=band)
 
-    def band(self, n=12, lines=4):
-        return {"picks": [{"sku": s, "estimated_cost": 450000.0, "probe": True} for s in SKUS[:n]], "max_lines": lines, "notes": {}}
+    def band(self, n=12, lines=4, units=1):
+        return {"picks": [{"sku": s, "estimated_cost": 450000.0, "probe": True} for s in SKUS[:n] for _ in range(units)], "max_lines": lines, "notes": {}}
+
+    def test_three_a_sku_add_units_not_lines_within_the_run_units(self):
+        buys, why = self.plan(self.band(units=3))
+        q = {b["sku"]: b["qty"] for b in buys}
+        self.assertEqual(why["kit_lines"]["goods_band"], 4)
+        self.assertEqual([q[s] for s in SKUS[:4]], [3, 3, 3, 3])
+        self.assertTrue(all(s not in q for s in SKUS[4:]))
+        self.assertLessEqual(why["planned_units"], LIMITS["max_units_per_run"])
+        self.assertLessEqual(why["kit_lines"]["total"], rp.KIT_LINES)
+        held = [{"unit": f"h{i}", "sku": f"g{i % 8}", "kind": "goods", "grade": "A", "cost": 50} for i in range(75)]
+        buys, why = self.plan(self.band(units=3), units=held)  # 5 left under the 80 total
+        self.assertEqual(sum(b["qty"] for b in buys), 5)
+        self.assertEqual(why["mid_band"], [SKUS[0]] * 3 + [SKUS[1]] * 2)
 
     def test_at_most_its_lines_and_the_ordinary_pass_keeps_lines(self):
         buys, why = self.plan(self.band())
