@@ -121,10 +121,23 @@ def refresh(st):
                              "x": round(d["amount"] / lp, 4), "w": (d.get("warranty_hours") or 0) > 0,
                              "unit": d.get("unit"), "grade": d.get("grade"),
                              "sku": d.get("sku"), "amt": d.get("amount")})      # 11-06: market_picture.py reads these
-            elif e.get("kind") == "result" and d.get("receipt") and d.get("stars") is not None \
-                    and st["names"].get(str(d.get("shop") or "").rstrip("/")) == "yms979":
-                # 11-08: the ratings our shop gets (paid deals only count for stars), for the shop's star diagnosis
-                st.setdefault("our_ratings", []).append([e["ts"], d.get("buyer"), d["stars"], str(d.get("review") or "")[:90]])
+            elif e.get("kind") == "result" and d.get("receipt") and d.get("stars") is not None and d.get("verified"):
+                # 11-08: the ratings our shop gets, for the shop's star diagnosis. 11-11: PAID results only (unpaid
+                # 'payment not verified yet' rows counted for nothing yet read as drag), 24 h, with the claim and
+                # x = price/list; and every account's mean at other shops per hour bucket (48 h) for comparison
+                shop_name = st["names"].get(str(d.get("shop") or "").rstrip("/"))
+                rc = d.get("receipt") or {}
+                lp_ = (cat.get(rc.get("item")) or {}).get("list_price")
+                x_ = round(rc["price"] / lp_, 3) if lp_ and rc.get("price") else None
+                if shop_name == "yms979":
+                    st.setdefault("our_ratings", []).append([e["ts"], d.get("buyer"), d["stars"], str(d.get("review") or "")[:120],
+                                                             rc.get("claim"), x_])
+                hb = str(int(e["ts"] // 3600))
+                agg = st.setdefault("rating_hours", {}).setdefault(hb, {}).setdefault(str(d.get("buyer")), [0, 0, 0, 0])
+                if shop_name == "yms979":
+                    agg[2] += d["stars"]; agg[3] += 1
+                else:
+                    agg[0] += d["stars"]; agg[1] += 1
             elif e.get("kind") == "broken":
                 broken[d.get("unit")] = (d.get("refunded") or 0) > 0
         after = page[-1]["seq"]
@@ -133,7 +146,8 @@ def refresh(st):
     st["seq"] = after
     cut = time.time() - WINDOW
     st["deals"] = [r for r in rows if r["ts"] >= cut]
-    st["our_ratings"] = [x for x in st.get("our_ratings", []) if x[0] >= cut]
+    st["our_ratings"] = [x for x in st.get("our_ratings", []) if x[0] >= time.time() - 24 * 3600]
+    st["rating_hours"] = {h: v for h, v in st.get("rating_hours", {}).items() if int(h) * 3600 >= time.time() - 48 * 3600}
     units = {r["unit"] for r in st["deals"]}
     st["broken"] = {u: v for u, v in broken.items() if u in units}
     st["t"] = time.time()

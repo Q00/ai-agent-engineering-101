@@ -90,6 +90,7 @@ GLOBAL = {                            # whitelisted shared parameters: role, bou
     "warranty_b": ("shop", (0, 1), 1),             # 1 = grade B goods carry the warranty (A always does)
     "warranty_c": ("shop", (0, 1), 1),             # 1 = grade C too (C breaks ~15%: each refund leaves the book)
     "warranty_hours": ("shop", (6, 72), 6),        # the market refuses settles above some length (8760 h was refused)
+    "rep_step": ("shop", (0, 0.06), 0.01),         # 11-11: the +-step policy adds to every ask share when the last 10 reviews are high/low (was hidden)
     # -- stock and restock
     "buy": ("shop", (0, 1), 1),                    # 0 stops all restock
     "keep_cash": ("shop", (500000, 50000000), 1000000),
@@ -201,6 +202,108 @@ def shop_score_parts(n_hist=12):
         return {"error": repr(e)}
 
 
+import re
+NAME = "yms979"
+REASON_RX = [("price", r"price|under list|% off|of list|expensive|budget|cheap"), ("grade C", r"grade C|refurb"),
+             ("grade B", r"grade B|damaged box"), ("warranty", r"warrant"), ("shelf", r"shelf|hours left|expire|fresh"),
+             ("broke", r"broke|broken|defect"), ("receipt", r"mismatch|receipt|claim")]
+
+
+def stars_accounts(limit=15):
+    """11-11: who rates our shop below 5 and why (paid results, 24 h, from buyer_value's ledger cache), each
+    account's mean at OTHER shops over 48 h, and what they bought from us (claim, x). Sorted by shortfall."""
+    try:
+        st = json.loads((HERE / ".market" / "shop_value.json").read_text())
+    except (OSError, ValueError):
+        return {"error": "no shop_value.json"}
+    acc = {}
+    for row in st.get("our_ratings") or []:
+        ts, buyer, stars, review = row[0], row[1], row[2], row[3]
+        claim, x = (row[4], row[5]) if len(row) >= 6 else (None, None)
+        a = acc.setdefault(buyer, {"n": 0, "sum": 0, "below5": 0, "claims": {}, "xs": [], "reasons": {}, "last": 0})
+        a["n"] += 1; a["sum"] += stars; a["below5"] += stars < 5; a["last"] = max(a["last"], ts)
+        if claim:
+            a["claims"][claim] = a["claims"].get(claim, 0) + 1
+        if x:
+            a["xs"].append(x)
+        if stars < 5:
+            for name, rx in REASON_RX:
+                if re.search(rx, review, re.I):
+                    a["reasons"][name] = a["reasons"].get(name, 0) + 1
+    others = {}
+    for h, by in (st.get("rating_hours") or {}).items():
+        for buyer, (s_o, n_o, s_u, n_u) in by.items():
+            o = others.setdefault(buyer, [0, 0])
+            o[0] += s_o; o[1] += n_o
+    rows = []
+    for buyer, a in acc.items():
+        mean = a["sum"] / a["n"]
+        oth = others.get(buyer)
+        rows.append({"account": buyer, "n_24h": a["n"], "mean_for_us": round(mean, 2), "below_5": a["below5"],
+                     "mean_at_other_shops_48h": round(oth[0] / oth[1], 2) if oth and oth[1] else None,
+                     "claims": a["claims"], "mean_x": round(sum(a["xs"]) / len(a["xs"]), 3) if a["xs"] else None,
+                     "reasons": dict(sorted(a["reasons"].items(), key=lambda kv: -kv[1])[:3]),
+                     "hours_since_last": round((time.time() - a["last"]) / 3600, 1), "shortfall": round(5 - mean, 2)})
+    rows.sort(key=lambda r: -r["shortfall"])
+    n_acc = len(rows)
+    return {"accounts_24h": n_acc, "mean_of_account_means": round(sum(r["mean_for_us"] for r in rows) / n_acc, 3) if n_acc else None,
+            "note": "stars_rank is one mean per account; a 1-star gain on one account moves it by ~1/accounts",
+            "worst": rows[:limit]}
+
+
+def stars_ladder(b):
+    """11-11: the student shops' stars_rank ladder around us and the gain needed per rank."""
+    try:
+        full = json.load(__import__("urllib.request").request.urlopen(f"{MARKET}/api/board?round=3", timeout=20))
+        names = {(p.get("shop") or {}).get("name") for p in full["players"] if p.get("student")}
+        rows = sorted((s for s in full["shops"] if s["name"] in names and s.get("stars_rank") is not None and s.get("deals")),
+                      key=lambda s: -s["stars_rank"])
+        i = next(k for k, s in enumerate(rows) if s["name"] == NAME)
+        return {"our_class_rank": i + 1, "students": len(rows), "one_rank_worth_class_shop": round(0.2 / (len(rows) - 1), 4),
+                "ladder": [{"rank": k + 1, "shop": s["name"], "stars_rank": s["stars_rank"], "raw_stars": s.get("stars"), "reviews": s.get("reviews")}
+                           for k, s in enumerate(rows[:max(10, i + 3)])]}
+    except Exception as e:
+        return {"error": repr(e)}
+
+
+def live_terms():
+    """11-11: the ask shares and terms the seller is really using (regime + rep step), next to the knob values."""
+    try:
+        import policy
+        regime, p, sig = policy.shop_params()
+        return {"regime": regime, "ask_share_live": p.get("ask_share"), "rep_step": p.get("rep_step"), "rep_avg_last10": sig.get("stars"),
+                "warranty_grades": p.get("warranty_grades"), "warranty_hours": p.get("warranty_hours"),
+                "floor_mult": p.get("floor_mult"), "slow_hours": p.get("slow_hours")}
+    except Exception as e:
+        return {"error": repr(e)}
+
+
+def book_race():
+    """11-11: the book and revenue race from the board plus guards.py's 6 h slopes and closure ETA."""
+    try:
+        full = json.load(__import__("urllib.request").request.urlopen(f"{MARKET}/api/board?round=3", timeout=20))
+        shops = sorted((s for s in full["shops"] if s.get("book") is not None and s.get("deals")), key=lambda s: -s["book"])
+        me = next(s for s in shops if s["name"] == NAME)
+        by_rev = sorted(shops, key=lambda s: -(s.get("revenue") or 0))
+        ri = next(k for k, s in enumerate(by_rev) if s["name"] == NAME)
+        g = read(HERE / ".market" / "guard_state.json", {})
+        hist = g.get("book_hist") or []
+        slopes = None
+        if len(hist) >= 2 and hist[-1]["t"] - hist[0]["t"] >= 3600:
+            dt = (hist[-1]["t"] - hist[0]["t"]) / 3600
+            slopes = {"hours": round(dt, 1), "ours_M_per_h": round((hist[-1]["us"] - hist[0]["us"]) / dt / 1e6, 2),
+                      "rival": hist[-1]["rival"], "rival_M_per_h": round((hist[-1]["rb"] - hist[0]["rb"]) / dt / 1e6, 2)}
+        return {"book": [{"shop": s["name"], "book_M": round(s["book"] / 1e6)} for s in shops[:4]],
+                "lead_M": round((me["book"] - shops[1]["book"]) / 1e6) if shops[0]["name"] == NAME else round((me["book"] - shops[0]["book"]) / 1e6),
+                "slopes_6h": slopes, "closure_eta_h": g.get("book_eta_h"),
+                "revenue": {"our_rank": ri + 1, "ours_B": round(me.get("revenue", 0) / 1e9, 2),
+                            "above_B": round(by_rev[ri - 1].get("revenue", 0) / 1e9, 2) if ri else None,
+                            "below_B": round(by_rev[ri + 1].get("revenue", 0) / 1e9, 2) if ri + 1 < len(by_rev) else None,
+                            "below_name": by_rev[ri + 1]["name"] if ri + 1 < len(by_rev) else None}}
+    except Exception as e:
+        return {"error": repr(e)}
+
+
 def evidence(m, mem, b):
     now = time.time()
     inv = read(HERE / ".market" / "inventory.json", {})
@@ -255,6 +358,8 @@ def evidence(m, mem, b):
             "globals_now": {k: (auto.get("globals") or {}).get(k, current_base(k)) for k in GLOBAL},
             "market_picture": market_picture(), "your_watch_list": w.get("watch", []),
             "shop_score_parts": shop_score_parts(),
+            "stars_accounts": stars_accounts(), "stars_ladder": stars_ladder(b), "live_terms": live_terms(),
+            "book_race": book_race(),
             "settle_health": settle_health(), "lead_guard": read(HERE / ".market" / "warranty_guard.json", {}).get("why"),
             "from_operator": operator_note(HERE / "operator_to_shop.json", HERE / "shop_answer_to_operator.json"),
             "woken_by": w.get("woken_by")}
@@ -432,8 +537,16 @@ strategists' records hold for it: set when, value, applied, outcome), {{"kind": 
 (our buyer's matching trade records with their fields), {{"kind": "question", "text"}} (anything else). Answers arrive before your next run.
 The curator's digest: {digest}
 Standing stock strategy (SHOP_STOCK_STRATEGY.md: constraints, how restock decides, what to watch): {stock}
-User priority (11-06): the BUYER score comes first; when a shop move would hurt the buyer (e.g. pricing that
-drives cheap supply away), say so in notes_for_buyer."""
+USER PRIORITY (11-11, replaces 11-06): keep the shop's trend and raise stars. The order is: (1) BOOK 1ST above
+all (worth ~0.011 class shop; evidence "book_race": the lead, both 6 h slopes and the closure ETA; the margin pace
+fell from 9 to 2-6 M/h over three days while the 2nd book grows 4+ M/h), (2) revenue 2nd, (3) stars_rank, WITHOUT
+general price cuts: stars come from unit choice (A before B before C unless the buyer accepts C; C goods rate 4.4
+vs A 4.75 and 64% of C agreements never settle), food shelf life (never under .45 of shelf), warranty on A/B, and
+the few accounts in "stars_accounts" whose mean for us is far below their mean elsewhere (one account is ~1/N of
+stars_rank). "stars_ladder" gives the student ladder and what one rank is worth; "live_terms" shows the ask shares
+the seller really uses (the rep step adds +0.03 when the last 10 reviews are high; it is your knob "rep_step" now).
+Warranty on grade C stays off (refunds ~4.5M/day for +0.005 stars). When a buyer move would hurt the shop or the
+reverse, say so in notes_for_buyer. Scoring rules and the user's goals: {rules}"""
 
 CRITIC = """You review the playbook of a market strategist (an agent shop in a course market) after its
 predictions missed. For each miss: which lesson led it astray, and was the lesson wrong, too broad, or applied
@@ -581,6 +694,7 @@ def run(force=False):
     rec = mem.record()
     lessons = [{k: x[k] for k in ("id", "text", "for", "against")} for x in mem.lessons()]
     prompt = DECIDE.format(guide=GUIDE.read_text(encoding="utf-8") if GUIDE.is_file() else "",
+                           rules=(HERE / "RULES_THAT_SCORE.md").read_text(encoding="utf-8"),
                            steps=json.dumps(steps), max_moves=MAX_MOVES, metrics=", ".join(METRICS),
                            globals_doc=json.dumps({k: {"bounds": v[1], "step": v[2]} for k, v in GLOBAL.items()}),
                            record=json.dumps(rec, ensure_ascii=False),
