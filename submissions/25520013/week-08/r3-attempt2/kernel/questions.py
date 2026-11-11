@@ -2,11 +2,12 @@
 findings it writes for the role operators.
 
 a2/questions.json: [{id, ts, from: shop|buyer|human|standing, q, for: [roles], status: open|done|failed,
-answered_ts}]. Role operators ask through done.ask (ask), standing questions come from ANALYST_JOB.md
+answered_ts, to (only on a question for a created agent, kernel.agent_registry; without it the investigator's)}]. Role operators ask through done.ask (ask), standing questions come from ANALYST_JOB.md
 (standing, enqueue_standing). Three processes write it, so every change is a read-modify-write under a file lock with
 an atomic replace.
 
-a2/findings.jsonl: one row per finished question {id, ts, from, q, finding, evidence, suggest, for, status}. The role
+a2/findings.jsonl: one row per finished question {id, ts, from, q, finding, evidence, suggest, for, status}, and per
+answer of a created agent (by: its name; id None when no question woke it). The role
 operators see the newest ones addressed to them (prompt_lines); the findings tool lists them in full.
 """
 
@@ -86,16 +87,16 @@ def _for(v, default):
     return default
 
 
-def add(root, frm, q, now, for_=None):
-    """Append an open question. -> {"ok": True, "id"} or {"ok": False, "error"} (bad input, or the same question is
-    already open)."""
+def add(root, frm, q, now, for_=None, to=None):
+    """Append an open question (to: a created agent's name, else the investigator's). -> {"ok": True, "id"} or
+    {"ok": False, "error"} (bad input, or the same question is already open for the same addressee)."""
     if frm not in FROM or not isinstance(q, str) or not q.strip():
         return {"ok": False, "error": "질문은 빈 글이 아니어야 함"}
     q = q.strip()
     with _lock(root):
         rows = load(root)
         dup = next(
-            (r for r in rows if r.get("status") == "open" and _same(r.get("q"), q)),
+            (r for r in rows if r.get("status") == "open" and _same(r.get("q"), q) and r.get("to") == to),
             None,
         )
         if dup is not None:
@@ -110,6 +111,7 @@ def add(root, frm, q, now, for_=None):
                 "for": _for(for_, [frm] if frm in ROLES else list(ROLES)),
                 "status": "open",
                 "answered_ts": None,
+                **({"to": to} if to is not None else {}),
             }
         )
         _save(root, rows)
@@ -118,9 +120,12 @@ def add(root, frm, q, now, for_=None):
 
 def ask(root, role, value, now, secrets=()):
     """One question of a role operator's done.ask (the operator sends each item of a list here): a string or
-    {"q": "..."}, cut to Q_CHARS, refused while that role has OPEN_PER_ROLE open questions or the same question is
+    {"q": "...", "to": "<agent name>"} (to: a live created agent that wakes on questions; without it the
+    investigator), cut to Q_CHARS, refused while that role has OPEN_PER_ROLE open questions or the same question is
     open. -> add's result."""
+    to = None
     if isinstance(value, dict):
+        to = value.get("to")
         value = value.get("q")
     if not isinstance(value, str) or not value.strip():
         return {"ok": False, "error": '형식: 글 또는 {"q": "..."}'}
@@ -130,12 +135,19 @@ def ask(root, role, value, now, secrets=()):
     )
     if n >= OPEN_PER_ROLE:
         return {"ok": False, "error": f"열린 질문이 이미 {n}개: 답이 나온 뒤 다시 물음"}
-    return add(root, role, c.mask(value, secrets), now)
+    if to is not None:
+        from kernel import agent_registry
+
+        err = agent_registry.accepts_questions(root, to)
+        if err:
+            return {"ok": False, "error": err}
+    return add(root, role, c.mask(value, secrets), now, to=to)
 
 
-def next_open(root):
-    """The question to work next: operators' and the human's before standing ones, oldest first; None when none."""
-    rows = [r for r in load(root) if r.get("status") == "open"]
+def next_open(root, to=None):
+    """The question to work next: operators' and the human's before standing ones, oldest first; None when none.
+    to: a created agent's questions; without it the investigator's (the rows with no "to")."""
+    rows = [r for r in load(root) if r.get("status") == "open" and r.get("to") == to]
     rows.sort(key=lambda r: (r.get("from") == "standing", r.get("ts") or 0, r["id"]))
     return rows[0] if rows else None
 
@@ -185,8 +197,9 @@ def enqueue_standing(root, items, now):
 
 
 # ------------------------------------------------------------ findings
-def add_finding(root, question, finding, evidence, suggest, for_, now, status="done"):
-    """Append the finding row of a question (masked by the caller), fields cut to their limits. -> the row."""
+def add_finding(root, question, finding, evidence, suggest, for_, now, status="done", by=None):
+    """Append the finding row of a question (masked by the caller), fields cut to their limits; by: the created agent
+    that wrote it. -> the row."""
     row = {
         "id": question.get("id"),
         "ts": now,
@@ -201,6 +214,7 @@ def add_finding(root, question, finding, evidence, suggest, for_, now, status="d
         "suggest": str(suggest or "")[:SUGGEST_CHARS],
         "for": _for(for_, question.get("for") or list(ROLES)),
         "status": status,
+        **({"by": by} if by else {}),
     }
     path = os.path.join(root, FINDINGS)
     os.makedirs(os.path.dirname(path), exist_ok=True)
@@ -222,6 +236,8 @@ def findings(root, since=None, role=None):
 
 
 def _who(r):
+    if r.get("by"):
+        return f"에이전트 {r['by']}" + (" 답" if r.get("id") is not None else "")
     return {
         "shop": "가게 운영자 질문",
         "buyer": "구매 운영자 질문",
@@ -238,7 +254,7 @@ def prompt_lines(root, role, now):
     for r in reversed(rows):
         mark = " (조사 미완)" if r.get("status") == "failed" else ""
         out.append(
-            f"- {c.kst(r.get('ts') or now, '%H:%M')} #{r.get('id')} {_who(r)}{mark}: "
+            f"- {c.kst(r.get('ts') or now, '%H:%M')}{'' if r.get('id') is None else ' #' + str(r.get('id'))} {_who(r)}{mark}: "
             + " ".join(str(r.get("q")).split())[:200]
         )
         out.append("  결과: " + " ".join(str(r.get("finding")).split())[:600])

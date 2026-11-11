@@ -710,12 +710,20 @@ def findings(root, hours=24, role=None, now=None):
     out = [f"최근 {hours:g}시간 조사 결과 {len(rows)}건" + (f" ({role} 앞)" if role else "")]
     for r in reversed(rows):
         mark = " 미완" if r.get("status") == "failed" else ""
-        out.append(f"#{r.get('id')} {c.kst(r.get('ts') or now, '%m-%d %H:%M')} 질문한 쪽 {r.get('from')}, 받는 쪽 "
+        out.append(f"#{r.get('id')} {c.kst(r.get('ts') or now, '%m-%d %H:%M')}"
+                   + (f" 쓴 에이전트 {r['by']}," if r.get("by") else "") + f" 질문한 쪽 {r.get('from')}, 받는 쪽 "
                    f"{','.join(r.get('for') or [])}{mark}\n  질문: {r.get('q')}\n  결과: {r.get('finding')}")
         out += [f"  근거: {e}" for e in r.get("evidence") or []]
         if r.get("suggest"):
             out.append(f"  제안: {r['suggest']}")
     return c.cap("\n".join(out), MAX_CHARS)
+
+
+def agents(root, name=None, now=None):
+    """에이전트(운영자, 조사원, 감사자가 만든 것): name 없으면 모두 한 줄씩(만든 쪽, 판, 권한, 깨는 때, 받는 쪽, 마지막 깨움, 하는 일), name을 주면 그 에이전트의 일 문서 전체, 최근 깨움 5개, 최근 조사 결과 5개."""
+    from kernel import agent_registry
+
+    return c.cap(agent_registry.tool_text(root, name if isinstance(name, str) else None, now), MAX_CHARS)
 
 
 def restock_log(root, hours=2, now=None):
@@ -819,6 +827,7 @@ TOOLS = {
     "findings": (findings, ("operator",)),
     "reviews": (reviews, ("operator",)),
     "analyze": (analyze, ("operator",)),
+    "agents": (agents, ("operator",)),
 }
 
 

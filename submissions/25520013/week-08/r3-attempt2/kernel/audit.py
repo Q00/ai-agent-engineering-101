@@ -48,12 +48,14 @@ def group_of(section, key):
     return "sale"
 
 
-def _wakes(root, role=None):
+def _wakes(root, role=None, agent="operator"):
     """-> (wakes, poll_crash_ts). wakes: every operator_wake row in file order with the tool rows written since the
-    previous wake row ("tools": [(name, args)], "obs": [(name, obs_chars)]). role: only that role's rows."""
+    previous wake row ("tools": [(name, args)], "obs": [(name, obs_chars)]). role: only that role's rows. agent: a
+    created agent's name (kernel.agents) reads its rows and its agent_wake rows instead."""
     wakes, crashes, tools = [], [], []
+    wake_kind = "operator_wake" if agent == "operator" else "agent_wake"
     for r in c.tail_json(os.path.join(root, TRAJ), TRAJ_BYTES):
-        if r.get("agent") != "operator" or not _num(r.get("ts")):
+        if r.get("agent") != agent or not _num(r.get("ts")):
             continue
         if role is not None and r.get("role") != role:
             continue
@@ -69,7 +71,7 @@ def _wakes(root, role=None):
             err = str(r.get("obs_head") or "오류")[:80] if r.get("err") is True else None
             search = (str(r.get("query") or "")[:60], r.get("hits")) if name == "tool_search" else None
             tools.append((name, args, oc, err, r.get("cut") is True, r.get("recommended") is False, search))
-        elif kind == "operator_wake":
+        elif kind == wake_kind:
             wakes.append(dict(r, _tools=tools))
             tools = []
         elif kind == "operator_poll" and r.get("status") == "crash":
@@ -94,10 +96,11 @@ def _groups(role):
     return GROUPS if role is None else tuple(g for g in GROUPS if (g == "buyer") == (role == "buyer"))
 
 
-def report(root, now, hours=24, since=None, listed=None, role=None):
-    """Audit counts over [since, now] when since is given, else [now - hours h, now]. See the module docstring."""
+def report(root, now, hours=24, since=None, listed=None, role=None, agent="operator"):
+    """Audit counts over [since, now] when since is given, else [now - hours h, now]. See the module docstring.
+    agent: a created agent's name for the same counts over its own wakes (its ledger part is not its own)."""
     start = since if _num(since) else now - hours * 3600
-    all_wakes, poll_crashes = _wakes(root, role)
+    all_wakes, poll_crashes = _wakes(root, role, agent)
     searches = []
     in_win = [w for w in all_wakes if start <= w["ts"] <= now]
     wakes = [w for w in in_win if _compact(w)]
@@ -361,3 +364,48 @@ def role_tool_table(root, now, role, recommended, hours=24):
                      "errors": t.get("errors", 0), "cut": t.get("cut", 0), "uncited": t.get("uncited", 0)})
     rows.sort(key=lambda r: (-r["calls"], r["name"]))
     return rows, {"searches": rep["searches"], "search_zero": rep["search_zero"], "queries": rep["search_zero_queries"]}
+
+
+def agent_facts(root, now, hours=24):
+    """Process facts per created agent (kernel.agent_registry) over the last hours, from the same counts as the
+    operators' (report with agent=name): wakes, crashes, tool errors, repeat calls, unfounded numbers, refused items,
+    mistakes per wake; done items outside its powers (agent_refused rows); findings it wrote and failed; how many of
+    them an operator they were for woke within questions.PROMPT_HOURS after (so they were in its findings section);
+    and the operators' agents tool calls naming it. [] when the registry is empty."""
+    from kernel import agent_registry, questions
+
+    rows = agent_registry.load(root)
+    if not rows:
+        return []
+    start = now - hours * 3600
+    op_wakes, looked, refused = {}, {}, {}
+    for r in c.tail_json(os.path.join(root, TRAJ), TRAJ_BYTES):
+        if not _num(r.get("ts")):
+            continue
+        if r.get("agent") == "operator" and r.get("kind") == "operator_wake":
+            op_wakes.setdefault(r.get("role"), []).append(r["ts"])
+        elif r.get("agent") == "operator" and r.get("kind") == "tool" and r.get("name") == "agents" and r["ts"] >= start:
+            for a in rows:
+                if f'"{a["name"]}"' in str(r.get("args") or ""):
+                    looked[a["name"]] = looked.get(a["name"], 0) + 1
+        elif r.get("kind") == "agent_refused" and r["ts"] >= start:
+            refused[r.get("agent")] = refused.get(r.get("agent"), 0) + 1
+    window = questions.PROMPT_HOURS * 3600
+    found = [f for f in questions.findings(root, since=start) if f.get("by")]
+    out = []
+    for a in rows:
+        rep = report(root, now, hours=hours, agent=a["name"])
+        mine = [f for f in found if f.get("by") == a["name"]]
+        shown = sum(1 for f in mine if _num(f.get("ts")) and any(f["ts"] <= w <= f["ts"] + window
+                                           for role in f.get("for") or [] for w in op_wakes.get(role, [])))
+        out.append({
+            "name": a["name"], "status": a["status"], "creator": a.get("creator"), "version": a["version"],
+            "powers": a["powers"], "wake": a["wake"], "wakes": rep["wakes"], "crashes": rep["crashes"],
+            "tool_errors": rep["tool_errors"], "repeat_calls": rep["repeat_calls"],
+            "unfounded": len(rep["unfounded_numbers"]), "refused_items": rep["edits"]["refused"],
+            "outside_powers": refused.get(a["name"], 0), "no_done": rep["no_done"],
+            "model_errors": rep["model_errors"], "mistakes_per_wake": rep["score"]["mistakes_per_wake"],
+            "findings": len(mine), "findings_failed": sum(1 for f in mine if f.get("status") == "failed"),
+            "findings_shown": shown, "looked_up": looked.get(a["name"], 0),
+        })
+    return out

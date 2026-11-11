@@ -19,6 +19,7 @@ import contextlib
 import fcntl
 import importlib
 import json
+import math
 import os
 import re
 import shutil
@@ -31,7 +32,7 @@ from kernel import brief as b
 from kernel import common as c
 from kernel import experiments as ex
 from kernel import harness as hz
-from kernel import audit, auditor, code_edit, llm, made_tools, policy_edit, questions, tools, versions
+from kernel import agent_registry, audit, auditor, code_edit, llm, made_tools, policy_edit, questions, tools, versions
 from kernel.agent import ParseError, parse_last_object
 from kernel.llm import ModelError, ModelRefused
 from kernel.trajectory import Trajectory
@@ -43,6 +44,7 @@ HARNESS = os.path.join(HERE, "harness")
 MARKET_BRIEF = os.path.join(HERE, "MARKET_BRIEF.md")
 CLI = "/home/sungsoo/.local/bin/codex"  # 11-07 오후: codex 한도 초기화로 gpt-6.1-terra 복귀 (kernel/llm.py)
 POLL_S = 60
+NEXT_WAKE_MAX_MIN = 720  # done.next_wake_min above this takes this (silent backstop, never shown)
 BRIEF_CHARS = 24_000  # about 6k tokens (DESIGN 8, estimate)
 OBS_TOTAL_CHARS = 120_000  # about 30k tokens of observations per wake (DESIGN 8, estimate)
 EDIT_TARGETS = ("seller", "buyer", "operator")
@@ -265,6 +267,14 @@ def bounded(settings):
     return out
 
 
+AGENT_LINE = ('  "agent": {"op": "create|update|retire", "name": "<영소문자_숫자>", "job": "<이 에이전트의 일 문서 전체>", '
+              '"wake": {"every_min": <분>, "on_ask": true}, "powers": [<"read", "policy", "forum", "code" 중>]},')
+AGENT_RULE = ("agent는 에이전트 하나를 만들거나(create), 일 문서와 깨는 때와 권한을 고치거나(update), 은퇴시킴(retire). 커널이 job 앞에 "
+              "머리글(만든 쪽, 권한, 넘을 수 없는 선)을 붙여 따로 돌림. wake는 every_min(그 분마다 깸)과 on_ask(그 이름으로 온 "
+              "질문에 깸) 중 하나 이상. powers의 read는 도구함 읽기이고 그 결과는 조사 결과 절에 그 이름으로 옴. policy, forum, "
+              "code는 네 쪽에만 걸리고 너와 같은 검사를 거침. powers를 생략하면 read만. 네 에이전트는 에이전트 절과 agents 도구로 봄")
+
+
 def role_schema(role):
     """COMPACT_SCHEMA for a role operator: only the policy sections and keys, rule-code files and forum author that
     role may change, and a last line naming the other role."""
@@ -278,13 +288,15 @@ def role_schema(role):
          f'"section": "{sections}"'),
         ('"as": "shop|buyer"', f'"as": "{role}"'),
         ("<policy.py|hooks/restock.py|hooks/market_buyer.py|hooks/seller.py>", "<" + "|".join(code_edit.ROLE_FILES[role]) + ">"),
-        ('  "note": "<이번 점검 한 줄 요약>"}}', '  "ask": "<조사원에게 맡길 질문, 여럿이면 목록>",\n  "note": "<이번 점검 한 줄 요약>"}}'),
+        ('  "note": "<이번 점검 한 줄 요약>"}}',
+         '  "ask": "<조사원에게 맡길 질문, 여럿이면 목록>",\n' + AGENT_LINE + '\n  "note": "<이번 점검 한 줄 요약>"}}'),
     ):
         head = head.replace(old, new)
     if role == "buyer":  # split is a sell-side comparison only
         head = head.replace('"test": "none|before_after|split, 생략하면 none"', '"test": "none|before_after, 생략하면 none"')
         head = "\n".join(ln for ln in head.split("\n") if not ln.startswith("split은"))
-    head += "\nask는 조사원에게 질문을 맡김: 조사원이 여러 단계로 확인해 다음 점검의 조사 결과 절에 답함"
+    head += ("\nask는 조사원에게 질문을 맡김: 조사원이 여러 단계로 확인해 다음 점검의 조사 결과 절에 답함. "
+             '항목을 {"q": "<질문>", "to": "<에이전트 이름>"}으로 주면 그 이름으로 온 질문에 깨는 에이전트가 답함\n' + AGENT_RULE)
     return (head + "\n" + keys + f"\n너는 {ROLE_KO[role]}임. 위 구역, 파일, 글쓴이 밖은 {ROLE_KO[other]} 몫이라 커널이 거절함. "
             "도구는 둘이 같이 씀")
 
@@ -484,6 +496,11 @@ def done_lines(done, result, now):
         if isinstance(r, dict):
             out.append("- 조사 질문: " + (f"접수됨 (#{r.get('id')}, 답은 조사 결과 절에 나옴)" if r.get("ok")
                                         else f"거절됨. {str(r.get('error'))[:300]}"))
+    r = result.get("agent")
+    if isinstance(r, dict):
+        label = " ".join(str(x)[:40] for x in (r.get("op"), r.get("name")) if x)
+        out.append(f"- 에이전트 {label}: "
+                   + (f"적용됨 (판 {r.get('version')})" if r.get("ok") else f"거절됨. {str(r.get('error'))[:300]}"))
     r = result.get("new_tool")
     if isinstance(r, dict):
         out.append(f"- 도구 만들기 {r.get('name')}: " + ("만들어짐" if r.get("ok") else f"거절됨. {str(r.get('error'))[:300]}"))
@@ -1065,6 +1082,7 @@ class Operator:
                 "## 지난 점검에 네가 낸 것의 결과 (커널 기록. 거절된 것은 적용되지 않았음)",
                 _last_done_text((st.get("last_done") or {}).get("lines")) or "없음",
                 *self._findings_block(now),
+                *self._agents_block(now),
                 "## 네 메모 (지난 점검의 네가 남김)",
                 c.mask(self._notes(), self.secrets) or "없음",
                 "## 깨운 이유",
@@ -1089,6 +1107,17 @@ class Operator:
         except Exception:  # a reader of the findings file; it must never cost a wake
             lines = []
         return ["## 조사 결과 (조사원이 확인한 것. 결정은 네 몫)", c.mask("\n".join(lines), self.secrets)] if lines else []
+
+    def _agents_block(self, now):
+        """The prompt section of the created agents working for this role operator, [] when there are none."""
+        if self.role not in ROLES:
+            return []
+        try:
+            lines = agent_registry.prompt_lines(self.root, self.role, now)
+        except Exception:  # a reader of the registry; it must never cost a wake
+            lines = []
+        return (["## 에이전트 (네 쪽 일을 하는 것. 일 문서, 지난 깨움, 조사 결과 전문은 agents 도구)",
+                 c.mask("\n".join(lines), self.secrets)] if lines else [])
 
     def _compact_loop(self, base, route, reason, now, sizes=None):
         """The compact step loop over the fixed prompt base (sizes: its chars by section): tool steps with kept
@@ -1249,61 +1278,102 @@ class Operator:
         files read this wake); forum posts are queued; notes and strategy replace their files; next_wake_min sets the
         next periodic wake. A role operator's items of the other side are refused, and its experiments and code
         changes keep its role."""
-        with self._ledger_lock():
-            return self._finish_compact_locked(done, now, read_files)
+        try:
+            with self._ledger_lock():
+                return self._finish_compact_locked(done, now, read_files)
+        except Exception as e:  # the per-field guards inside cannot cover the lock: the wake still ends with its record
+            self.traj.append(self.agent, "done_field_error", field="done", error=type(e).__name__,
+                             detail=c.mask(str(e), self.secrets)[:200])
+            return {"done_error": {"ok": False, "error": type(e).__name__}}
+
+    def _guard(self, result, field, fn, fail=None):
+        """result[field] = fn(). A handler that raises leaves {"ok": False, "error": "<type>"} there (fail(that) when
+        given) and one done_field_error row, so one failing done field never drops the others."""
+        try:
+            result[field] = fn()
+        except Exception as e:  # one failing field must not cost the others
+            err = {"ok": False, "error": type(e).__name__}
+            result[field] = fail(err) if fail else err
+            try:
+                self.traj.append(self.agent, "done_field_error", field=field, error=type(e).__name__,
+                                 detail=c.mask(str(e), self.secrets)[:200])
+            except Exception:  # the record must not cost the wake either
+                pass
+
+    def _code(self, code, now, read_files):
+        try:
+            weight = self._rev_weight()
+        except Exception:  # the board read only weights the shop metric
+            weight = 0.0
+        r = code_edit.propose(self.root, code.get("edits"), code.get("reason"), code.get("expect"), now, self.traj,
+                              read_files=read_files, rev_weight=weight, **self._role_kw())
+        return {"ok": r.get("ok"), "id": r.get("id"), "status": r.get("status"),
+                "error": c.mask(str(r["error"]), self.secrets)[:300] if r.get("error") else None,
+                "tests": (r.get("tests") or {}).get("summary")}
+
+    def _forum_done(self, posts):
+        other = [p for p in posts if isinstance(p, dict) and p.get("as") in ROLES and p.get("as") != self.role] if (
+            self.role is not None and isinstance(posts, list)) else []
+        out = self._forum([p for p in posts if not any(p is x for x in other)] if other else posts)
+        if other:
+            o = other[0]["as"]
+            out["refused"] = f"as {o} 글 {len(other)}개: {ROLE_KO[o]}가 씀. {ROLE_KO[self.role]}는 as {self.role}로만 씀"
+        return out
+
+    def _new_tool(self, spec, now):
+        try:
+            r = made_tools.add(self.root, spec, now, traj=self.traj, by=self.agent,
+                               reserved=tuple(tools.TOOLS), **self._role_kw())
+        except Exception as e:
+            r = {"ok": False, "error": f"{type(e).__name__}: {str(e)[:200]}"}
+        r = r if isinstance(r, dict) else {"ok": False, "error": "no result"}
+        return {k: c.mask(str(v), self.secrets)[:300] if isinstance(v, str) else v
+                for k, v in r.items() if k in ("ok", "name", "error", "sample")}
+
+    def _ask_done(self, value, now):
+        try:
+            asks = value if isinstance(value, list) else [value]
+            got = [questions.ask(self.root, self.role, q, now, self.secrets) for q in asks]
+            return got[0] if len(got) == 1 else got
+        except Exception as e:  # the queue file is shared; a failed write is a refusal, not a crashed wake
+            return {"ok": False, "error": f"{type(e).__name__}: {str(e)[:200]}"}
+
+    def _save_notes(self, text):
+        path = self._notes_path()
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path + ".tmp", "w", encoding="utf-8") as f:
+            f.write(c.mask(text, self.secrets)[:NOTES_CHARS])
+        os.replace(path + ".tmp", path)
+        return min(len(text), NOTES_CHARS)
 
     def _finish_compact_locked(self, done, now, read_files):
         result = {"note": c.mask(str(done.get("note") or ""), self.secrets)[:500]}
         items = done.get("policy")
         if isinstance(items, list) and items:
-            result["policy"], result["voided"] = self._apply_policy(items, now)
+            self._guard(result, "policy", lambda: self._apply_policy(items, now),
+                        fail=lambda err: ([dict(err) for _ in items], []))
+            result["policy"], result["voided"] = result["policy"]
         if "strategy" in done:
-            result["strategy"] = self._save_strategy(done["strategy"], now)
+            self._guard(result, "strategy", lambda: self._save_strategy(done["strategy"], now))
         if "next_wake_min" in done and self.role in ROLES:
-            result["next_wake"] = self._set_next_wake(done["next_wake_min"], now)
+            self._guard(result, "next_wake", lambda: self._set_next_wake(done["next_wake_min"], now))
         if isinstance(done.get("code"), dict):
-            code = done["code"]
-            try:
-                weight = self._rev_weight()
-            except Exception:  # the board read only weights the shop metric
-                weight = 0.0
-            r = code_edit.propose(self.root, code.get("edits"), code.get("reason"), code.get("expect"), now, self.traj,
-                                  read_files=read_files, rev_weight=weight, **self._role_kw())
-            result["code"] = {"ok": r.get("ok"), "id": r.get("id"), "status": r.get("status"),
-                              "error": c.mask(str(r["error"]), self.secrets)[:300] if r.get("error") else None,
-                              "tests": (r.get("tests") or {}).get("summary")}
+            self._guard(result, "code", lambda: self._code(done["code"], now, read_files))
         if "forum" in done:
-            posts = done["forum"]
-            other = [p for p in posts if isinstance(p, dict) and p.get("as") in ROLES and p.get("as") != self.role] if (
-                self.role is not None and isinstance(posts, list)) else []
-            result["forum"] = self._forum([p for p in posts if not any(p is x for x in other)] if other else posts)
-            if other:
-                o = other[0]["as"]
-                result["forum"]["refused"] = f"as {o} 글 {len(other)}개: {ROLE_KO[o]}가 씀. {ROLE_KO[self.role]}는 as {self.role}로만 씀"
+            self._guard(result, "forum", lambda: self._forum_done(done["forum"]))
         if isinstance(done.get("new_tool"), dict):  # declarative query or code tool; the test run on real data is the gate
-            try:
-                r = made_tools.add(self.root, done["new_tool"], now, traj=self.traj, by=self.agent,
-                                   reserved=tuple(tools.TOOLS), **self._role_kw())
-            except Exception as e:
-                r = {"ok": False, "error": f"{type(e).__name__}: {str(e)[:200]}"}
-            r = r if isinstance(r, dict) else {"ok": False, "error": "no result"}
-            result["new_tool"] = {k: c.mask(str(v), self.secrets)[:300] if isinstance(v, str) else v
-                                  for k, v in r.items() if k in ("ok", "name", "error", "sample")}
-        if self.role in ROLES and "ask" in done:  # a question for the investigator (kernel.analyst)
-            try:
-                asks = done["ask"] if isinstance(done["ask"], list) else [done["ask"]]
-                got = [questions.ask(self.root, self.role, q, now, self.secrets) for q in asks]
-                result["ask"] = got[0] if len(got) == 1 else got
-            except Exception as e:  # the queue file is shared; a failed write is a refusal, not a crashed wake
-                result["ask"] = {"ok": False, "error": f"{type(e).__name__}: {str(e)[:200]}"}
+            self._guard(result, "new_tool", lambda: self._new_tool(done["new_tool"], now))
+        if self.role in ROLES and "ask" in done:  # a question for the investigator (kernel.analyst) or an agent
+            self._guard(result, "ask", lambda: self._ask_done(done["ask"], now))
+        if self.role in ROLES and "agent" in done:  # an agent this role defines (kernel.agent_registry)
+            self._guard(result, "agent", lambda: self._agent_done(done["agent"], now))
         if isinstance(done.get("notes"), str) and done["notes"].strip():
-            path = self._notes_path()
-            os.makedirs(os.path.dirname(path), exist_ok=True)
-            with open(path + ".tmp", "w", encoding="utf-8") as f:
-                f.write(c.mask(done["notes"], self.secrets)[:NOTES_CHARS])
-            os.replace(path + ".tmp", path)
-            result["notes_chars"] = min(len(done["notes"]), NOTES_CHARS)
+            self._guard(result, "notes_chars", lambda: self._save_notes(done["notes"]))
         return result
+
+    def _agent_done(self, spec, now):
+        """done.agent: create, update or retire an agent with this role as its creator (kernel.agent_registry)."""
+        return agent_registry.apply(self.root, self.role, spec, now, self.traj, self.secrets)
 
     def _other_side(self, section):
         """True when a role operator's policy item names the other role's section."""
@@ -1343,14 +1413,25 @@ class Operator:
 
     def _set_next_wake(self, value, now):
         """done.next_wake_min: the next periodic wake that many minutes from now (a value below the poll interval
-        takes the poll interval, a technical minimum). Anything that is not a positive number leaves the default."""
-        if not _num(value) or not value > 0 or value != value or value == float("inf"):
+        takes the poll interval, a technical minimum; one above NEXT_WAKE_MAX_MIN takes that, a silent backstop).
+        Anything that is not a positive finite number leaves the default. Never raises."""
+        try:
+            ok = _num(value) and math.isfinite(value) and value > 0
+        except (OverflowError, ValueError):  # an int too large for a float
+            ok = False
+        if not ok:
             return {"ok": False, "error": "양의 수가 아님"}
+        value = float(min(value, NEXT_WAKE_MAX_MIN))
+        value = int(value) if value.is_integer() else value
         at = now + max(POLL_S, value * 60)
         st = self._state()
         st.update(next_wake_ts=at, next_wake_min=value)
         self._save_state(st)
-        return {"ok": True, "min": value, "at_kst": c.kst(at, "%H:%M")}
+        try:
+            at_kst = c.kst(at, "%H:%M")
+        except (OverflowError, ValueError, OSError):
+            at_kst = "?"
+        return {"ok": True, "min": value, "at_kst": at_kst}
 
     # ------------------------------------------------------------ done
     def _apply_edits(self, edits, now):
@@ -1589,7 +1670,7 @@ class Operator:
         if not self.live():
             done = self._drop_unused(done, result)
         if "trial_end" in done:
-            result["trial_end"] = self._trial_end(done["trial_end"], now)
+            self._guard(result, "trial_end", lambda: self._trial_end(done["trial_end"], now))
         result["revert"] = self._revert(done.get("revert"), now)
         applied, errors = self._apply_edits(done.get("edits"), now)
         result["edit_errors"] = errors
@@ -1610,7 +1691,7 @@ class Operator:
                 result["retry_errors"] = [f"retry failed: {type(e).__name__}"]
         result["edits"] = applied
         if "trial" in done:
-            result["trial"] = self._trial_start(done["trial"], now)
+            self._guard(result, "trial", lambda: self._trial_start(done["trial"], now))
         if isinstance(done.get("settings"), dict):
             cur = c.load_json(os.path.join(self.harness_root, "operator", "settings.json"), {}) or {}
             new = dict(cur, **done["settings"])
@@ -1629,13 +1710,13 @@ class Operator:
                 )
             result["settings"] = {"ok": ok, **info, "bounded": bounded(new)}
         if "restock_plan" in done:
-            result["restock_plan"] = self._restock(done["restock_plan"], now)
+            self._guard(result, "restock_plan", lambda: self._restock(done["restock_plan"], now))
         if "forum" in done:
-            result["forum"] = self._forum(done["forum"])
+            self._guard(result, "forum", lambda: self._forum(done["forum"]))
         if "policy" in done:
-            result["policy"] = self._policy(done["policy"], now)
+            self._guard(result, "policy", lambda: self._policy(done["policy"], now))
         if done.get("memcheck") is True:
-            result["memcheck"] = self._memcheck()
+            self._guard(result, "memcheck", self._memcheck)
         return result
 
 

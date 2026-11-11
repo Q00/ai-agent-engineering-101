@@ -154,9 +154,11 @@ def test_split_start_per_grade_value_is_the_whole_dict(root, a1):
     fd = pol2["defaults"]["goods"]["fresh_discount"]
     assert fd["B"] == 0.08 and fd["C"] == (0.25 if picked[1] == "b" else _pol(root)["defaults"]["goods"]["fresh_discount"]["C"])
     r = _start(root, a1, "shop", "grade_floor_list.A", 0.5)
-    # shop:all overlaps the running defaults.goods experiment: the new change voids it and its arm goes
-    assert r["ok"] and [v["id"] for v in r["voided"]] == [1]
-    assert ex.load(root)[0]["status"] == "voided" and [a["id"] for a in ex.load_arms(root)] == [2]
+    # shop:all only overlaps the running defaults.goods experiment's scope: it is not voided, its verdict will name it
+    assert r["ok"] and r["voided"] == []
+    e = ex.load(root)[0]
+    assert e["status"] == "running" and e["mixed_by"] == ["shop grade_floor_list.A"]
+    assert [a["id"] for a in ex.load_arms(root)] == [1, 2]
 
 
 def test_check_runs_every_edit_check_without_writing(root, a1):
@@ -314,19 +316,27 @@ def test_no_split_when_the_seller_code_has_no_arms(root, a1):
 
 
 def test_split_and_sequential_overwrite_each_other(root, a1):
-    # 11-11: nothing is refused because an experiment runs; a change in its scope voids it
+    # nothing is refused because an experiment runs; a change of its own key voids it, a scope-only touch is noted
     assert _start(root, a1)["ok"]
     r = _start(root, a1, mode="sequential", item={"value": 0.85})
     assert r["ok"] and [v["id"] for v in r["voided"]] == [1] and ex.load_arms(root) == []
     assert _start(root, a1, SOFA, "price_mult", 0.85)["voided"] == []  # another leaf
     r = _start(root, a1, "shop", "grade_floor_list.C", 0.6, mode="sequential")
-    assert r["ok"] and sorted(v["id"] for v in r["voided"]) == [2, 3]
-    assert [e["status"] for e in ex.load(root)] == ["voided", "voided", "voided", "running"]
+    assert r["ok"] and r["voided"] == []
+    rows = ex.load(root)
+    assert [e["status"] for e in rows] == ["voided", "running", "running", "running"]
+    assert rows[1]["mixed_by"] == rows[2]["mixed_by"] == ["shop grade_floor_list.C"]
+    r = _start(root, a1, SOFA, "price_mult", 0.8, mode="sequential")  # the split's own key
+    assert r["ok"] and [v["id"] for v in r["voided"]] == [3]
 
 
-def test_sequential_is_overwritten_by_split(root, a1):
+def test_sequential_is_not_overwritten_by_a_split_elsewhere_in_scope(root, a1):
     assert _start(root, a1, "shop", "grade_floor_list.C", 0.6, mode="sequential")["ok"]
     r = _start(root, a1)
+    assert r["ok"] and r["mode"] == "split" and r["voided"] == []
+    e = ex.load(root)[0]
+    assert e["status"] == "running" and e["mixed_by"] == [f"{BED} price_mult"]
+    r = _start(root, a1, "shop", "grade_floor_list.C", 0.5)  # a split of the sequential's own key
     assert r["ok"] and r["mode"] == "split" and [v["id"] for v in r["voided"]] == [1]
     assert ex.load(root)[0]["verdict"]["reason"] == "overwritten"
 

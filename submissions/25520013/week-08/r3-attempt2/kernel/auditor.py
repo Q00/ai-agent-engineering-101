@@ -18,6 +18,7 @@ import os
 import re
 import tempfile
 
+from kernel import agent_registry as reg
 from kernel import common as c
 from kernel import experiments as ex
 from kernel import llm
@@ -76,6 +77,9 @@ RUNS_CHARS = 1_800
 WAKE_NOTE_CHARS = 300
 WAKE_LOOKBACK_S = 72 * 3600
 FINDINGS_MAX = 5
+AGENT_HISTORY_MAX = 24  # the auditor's agent changes kept in its state file
+AGENT_CHANGES_MAX = 3  # silent backstop: agent changes applied per run
+CONTEXT_SECTIONS = 6  # largest prompt sections shown per agent in the prompt-size block
 POLICY_KEYS = (
     "price_mult",
     "min_margin",
@@ -100,21 +104,30 @@ VALUE_RX = re.compile(
     r"(?:\s*(?:를|을|은|는|이|가|의|=|:|→|->|to))*\s*[(\[]?\s*\.?\d",
     re.IGNORECASE,
 )
+AGENTS_RULE = ("agents는 에이전트를 만들거나(create, 읽기 권한만), 일 문서와 깨는 때를 고치거나(update, 운영자, 조사원, 너 중 누가 "
+               "만든 것이든), 은퇴시킴(retire). 커널이 job 앞에 머리글(만든 쪽, 권한, 넘을 수 없는 선)을 붙임. for는 결과를 읽을 "
+               "운영자(생략하면 둘 다). 사람이 쓴 일 문서(운영자, 조사원, 감사자)는 에이전트가 아니라 고치지 못함. 네가 만들거나 고친 "
+               "에이전트는 판마다 기록되고, 그 에이전트의 점검당 실수가 전보다 나빠지면 커널이 이전 일 문서로 되돌림. policy 키 "
+               "이름 뒤에 숫자를 붙인 일 문서는 거절됨")
 SCHEMA = """JSON 객체 하나로만 답함. 모든 항목은 선택임:
 {"findings": ["<실수와 근거 숫자>", ... 5개까지],
  "guidance": "<운영자에게 줄 새 안내 전체, 1,500자 안. 바꿀 것이 없으면 null>",
  "tools": {"hide": ["<도구 이름>"], "show": ["<도구 이름>"], "describe": {"<도구 이름>": "<새 설명 160자 안>"},
            "remove": ["q_<운영자가 만든 도구>"]},
+ "agents": [{"op": "create|update|retire", "name": "<영소문자_숫자>", "job": "<에이전트의 일 문서 전체>", "wake": {"every_min": <분>, "on_ask": true}, "for": ["shop", "buyer"], "reason": "<근거 숫자>"}],
  "note": "<이번 감사 한 줄 요약>"}
-도구 변경은 한 번에 4개까지. policy 키 이름 뒤에 숫자를 붙이면 안내 전체가 거절됨."""
+도구 변경은 한 번에 4개까지. policy 키 이름 뒤에 숫자를 붙이면 안내 전체가 거절됨.
+""" + AGENTS_RULE
 SCHEMA_ROLES = """JSON 객체 하나로만 답함. 모든 항목은 선택임:
 {"findings": ["<[shop] 또는 [buyer]와 실수, 근거 숫자>", ... 5개까지],
  "guidance": {"shop": "<가게 운영자에게 줄 새 안내 전체, 1,500자 안. 바꿀 것이 없으면 null>", "buyer": "<구매 운영자에게, 같은 형식>"},
  "tools": {"hide": ["<도구 이름>"], "show": ["<도구 이름>"], "describe": {"<도구 이름>": "<새 설명 160자 안>"},
            "remove": ["q_<운영자가 만든 도구>"],
            "recommend": {"shop": ["<도구 이름>"], "buyer": ["<도구 이름>"]}, "unrecommend": {"shop": ["<도구 이름>"], "buyer": ["<도구 이름>"]}},
+ "agents": [{"op": "create|update|retire", "name": "<영소문자_숫자>", "job": "<에이전트의 일 문서 전체>", "wake": {"every_min": <분>, "on_ask": true}, "for": ["shop", "buyer"], "reason": "<근거 숫자>"}],
  "note": "<이번 감사 한 줄 요약>"}
-도구 변경은 한 번에 4개까지 (recommend, unrecommend 포함). hide, show, describe, remove는 두 운영자 모두에 걸림. policy, brief_section, guide, tool_search는 추천 목록에서 빼지 못함. policy 키 이름 뒤에 숫자를 붙이면 그 안내가 거절됨."""
+도구 변경은 한 번에 4개까지 (recommend, unrecommend 포함). hide, show, describe, remove는 두 운영자 모두에 걸림. policy, brief_section, guide, tool_search는 추천 목록에서 빼지 못함. policy 키 이름 뒤에 숫자를 붙이면 그 안내가 거절됨.
+""" + AGENTS_RULE
 
 
 # ------------------------------------------------------------ files
@@ -310,6 +323,164 @@ def judge_guidance(root, now, traj, role=None):
     return act
 
 
+# ------------------------------------------------------------ created agents (kernel.agent_registry, kernel.agents)
+def _agent_hist(st):
+    h = st.get("agent_history")
+    st["agent_history"] = [x for x in h if isinstance(x, dict)] if isinstance(h, list) else []
+    return st["agent_history"]
+
+
+def _agent_score(root, now, name, since):
+    if audit is None:
+        return None, 0
+    rep = audit.report(root, now, since=since, agent=name)
+    return audit.score(rep), rep.get("wakes") or 0
+
+
+def judge_agents(root, now, traj):
+    """Judge each active agent change of the auditor once MIN_WAKES wakes of that agent ran under it: kept, or put back
+    to the previous version (kernel.agent_registry.restore) when its mistakes per wake are clearly worse. A change the
+    agent's creator or a later change replaced is superseded. -> the judged records."""
+    st = _state(root)
+    out = []
+    for h in _agent_hist(st):
+        if h.get("status") != "active" or not _num(h.get("ts")):
+            continue
+        row = reg.get(root, h.get("name"))
+        if row is None or row["version"] != h.get("version"):
+            h["status"] = "superseded"
+            out.append(h)
+            continue
+        after, wakes = _agent_score(root, now, h["name"], h["ts"])
+        if after is None or wakes < MIN_WAKES:
+            continue
+        h["after"] = after
+        before = h.get("before") if isinstance(h.get("before"), dict) else {}
+        thin = not _num(before.get("wakes")) or before["wakes"] < MIN_WAKES
+        if not thin and _worse(before, after):
+            h["status"] = "reverted"
+            h["restored_version"] = reg.restore(root, h["name"], h.get("prev"), now)
+        else:
+            h["status"] = "kept"
+        traj.append("auditor", "auditor_agent", action=h["status"], id=h.get("id"), name=h["name"], op=h.get("op"),
+                    before=before, after=after)
+        out.append(h)
+    if out:
+        _atomic_json(_path(root, STATE), st)
+    return out
+
+
+def _apply_agents(root, now, items, secrets, st, traj):
+    """The auditor's agent changes through kernel.agent_registry (creator "auditor": read-only agents, any agent's
+    job text and wake, retire). A job text that attaches a number to a policy key is refused like a guidance. Each
+    applied create or update is recorded with the previous version and the agent's score before, for judge_agents."""
+    applied, refused = [], []
+    for it in items if isinstance(items, list) else []:
+        if not isinstance(it, dict):
+            refused.append({"why": "agents 항목은 객체여야 함"})
+            continue
+        name = str(it.get("name"))[:40]
+        if len(applied) >= AGENT_CHANGES_MAX:
+            refused.append({"op": it.get("op"), "name": name, "why": f"한 감사에 에이전트 변경 {AGENT_CHANGES_MAX}개까지"})
+            continue
+        if isinstance(it.get("job"), str) and tells_value(it["job"]):
+            refused.append({"op": it.get("op"), "name": name, "why": "policy 키에 숫자를 붙인 값 지시는 일 문서에 쓸 수 없음"})
+            continue
+        prev = reg.get(root, it.get("name")) if isinstance(it.get("name"), str) else None
+        spec = {k: it[k] for k in ("op", "name", "job", "wake", "powers") if k in it}
+        r = reg.apply(root, "auditor", spec, now, traj, secrets, for_=it.get("for") if isinstance(it.get("for"), list) else None)
+        if not r.get("ok"):
+            refused.append({"op": it.get("op"), "name": name, "why": str(r.get("error"))[:200]})
+            continue
+        applied.append({"op": r["op"], "name": r["name"], "version": r["version"]})
+        if r["op"] == "retire":
+            continue
+        hist = _agent_hist(st)
+        for h in hist:
+            if h.get("name") == r["name"] and h.get("status") == "active":
+                h["status"] = "superseded"
+        since = prev.get("updated_ts") if prev and _num(prev.get("updated_ts")) else now - 24 * 3600
+        before, _ = _agent_score(root, now, r["name"], since) if prev and prev["status"] == "live" else (None, 0)
+        hist.append({"id": max([h.get("id") for h in hist if _num(h.get("id"))] or [0]) + 1, "ts": now,
+                     "name": r["name"], "op": r["op"], "version": r["version"],
+                     "prev": {k: prev.get(k) for k in ("job", "wake", "powers", "status")} if prev else None,
+                     "before": before, "status": "active",
+                     "reason": c.mask(str(it.get("reason") or ""), secrets)[:300]})
+        st["agent_history"] = hist[-AGENT_HISTORY_MAX:]
+    return {"applied": applied, "refused": refused}
+
+
+def _agents_block(root, now):
+    """One line per created agent with its process facts (kernel.audit.agent_facts); "" when there is none."""
+    if audit is None or not reg.load(root):  # no registry: the prompt is as before
+        return ""
+    out = []
+    for f in audit.agent_facts(root, now):
+        row = reg.get(root, f["name"]) or {"job": ""}
+        out.append(
+            f"- {f['name']} [{'살아 있음' if f['status'] == 'live' else '은퇴'}] 만든 쪽 {f['creator']}, 판 {f['version']}, "
+            f"권한 {','.join(f['powers'])}, {reg.wake_text(f['wake'])}: {reg.purpose(row['job'])}\n"
+            f"  깨움 {f['wakes']}, 점검당 실수 {f['mistakes_per_wake']}, 충돌 {f['crashes']}, 도구 오류 {f['tool_errors']}, "
+            f"반복 호출 {f['repeat_calls']}, 근거 없는 숫자 {f['unfounded']}, 거절된 값 {f['refused_items']}, "
+            f"권한 밖 항목 {f['outside_powers']}, done 없이 끝남 {f['no_done']}, 모델 오류 {f['model_errors']}, "
+            f"조사 결과 {f['findings']} (미완 {f['findings_failed']}), 그 뒤 받는 운영자가 깨어 읽을 수 있었던 것 "
+            f"{f['findings_shown']}, 운영자의 agents 도구 조회 {f['looked_up']}")
+    return "\n".join(out)
+
+
+def _agent_history_block(st):
+    out = []
+    for h in _agent_hist(st)[-HISTORY_SHOWN:]:
+        out.append(f"- #{h.get('id')} {c.kst(h['ts']) if _num(h.get('ts')) else '?'} {h.get('op')} {h.get('name')} "
+                   f"(판 {h.get('version')}) {h.get('status')}: 전 {json.dumps(h.get('before'), ensure_ascii=False)}, "
+                   f"후 {json.dumps(h.get('after'), ensure_ascii=False)}")
+    return "\n".join(out) or "없음"
+
+
+def _context_block(root, now, hours=24):
+    """Prompt sizes per agent from the llm rows (prompt_chars, sections) and the compaction rows of the last hours:
+    facts for managing context. The kernel's thresholds are not the auditor's to change."""
+    calls, comp = {}, {}
+    for r in c.tail_json(_path(root, TRAJ), 30_000_000):
+        if not _num(r.get("ts")) or r["ts"] < now - hours * 3600:
+            continue
+        who = str(r.get("agent")) + (f"[{r['role']}]" if isinstance(r.get("role"), str) else "")
+        if r.get("kind") == "llm" and _num(r.get("prompt_chars")):
+            d = calls.setdefault(who, {"n": 0, "chars": [], "sec": {}, "compact": 0})
+            if r.get("purpose") == "compact":
+                d["compact"] += 1
+                continue
+            d["n"] += 1
+            d["chars"].append(r["prompt_chars"])
+            for k, v in (r.get("sections") if isinstance(r.get("sections"), dict) else {}).items():
+                if _num(v):
+                    d["sec"].setdefault(str(k)[:30], []).append(v)
+        elif r.get("kind") == "compact":
+            d = comp.setdefault(who, {"ok": 0, "failed": 0, "before": [], "after": []})
+            d["ok" if r.get("status") == "ok" else "failed"] += 1
+            if r.get("status") == "ok" and _num(r.get("chars_before")) and _num(r.get("chars_after")):
+                d["before"].append(r["chars_before"])
+                d["after"].append(r["chars_after"])
+    mean = lambda v: round(sum(v) / len(v)) if v else 0
+    out = []
+    for who in sorted(set(calls) | set(comp)):
+        d = calls.get(who) or {"n": 0, "chars": [], "sec": {}, "compact": 0}
+        line = f"- {who}: 호출 {d['n']}"
+        if d["chars"]:
+            line += f", 프롬프트 평균 {mean(d['chars']):,}자 (최대 {max(d['chars']):,})"
+            top = sorted(d["sec"].items(), key=lambda kv: -mean(kv[1]))[:CONTEXT_SECTIONS]
+            if top:
+                line += ", 절별 평균: " + ", ".join(f"{k} {mean(v):,}" for k, v in top)
+        if d["compact"]:
+            line += f", 간추림 호출 {d['compact']}"
+        k = comp.get(who)
+        if k:
+            line += f"; 간추림 성공 {k['ok']}, 실패 {k['failed']}" + (
+                f", 평균 {mean(k['before']):,}자에서 {mean(k['after']):,}자로" if k["before"] else "")
+        out.append(line)
+    return "\n".join(out) or "없음"
+
+
 # ------------------------------------------------------------ prompt
 def _nonzero(obj):
     if isinstance(obj, dict):
@@ -489,6 +660,7 @@ def _remember(st, now, out, nums, rows):
             "note": out["note"][:160],
             "guidance_changed": out["guidance_changed"],
             "tools": tools,
+            **({"agents": out["agents"]["applied"]} if (out.get("agents") or {}).get("applied") else {}),
         }
     )
     st["runs"] = runs[-RUNS_MAX:]
@@ -511,6 +683,8 @@ def _runs_block(st):
             for t in r.get("tools") or []
             if isinstance(t, dict)
         ]
+        out += [f"  에이전트 {a.get('op')} {a.get('name')} (판 {a.get('version')})"
+                for a in r.get("agents") if isinstance(a, dict)] if isinstance(r.get("agents"), list) else []
         if r.get("note"):
             out.append(f"  메모: {r['note']}")
     return "\n".join(out)[-RUNS_CHARS:] or "없음 (첫 감사)"
@@ -609,7 +783,12 @@ def build_prompt(root, now, secrets=(), listed=None, roles=None, sizes=None):
             ("\n".join(code_edit.history_lines(root, 4)) if code_edit is not None else "") or "없음",
         ),
         ("## 최근 점검 (운영자)", "\n".join(_wake_text(w) for w in wakes) or "없음"),
+        ("## 프롬프트 크기 (최근 24시간, 에이전트별 모델 호출과 간추림. 커널이 잼)", _context_block(root, now)),
     ]
+    agents = _agents_block(root, now)
+    if agents:
+        blocks += [("## 에이전트 (만든 에이전트별 과정 숫자, 최근 24시간. 커널이 셈)", agents),
+                   ("## 네 에이전트 변경 이력 (최근 4건, 그 에이전트의 점검으로 잰 전후 점수)", _agent_history_block(st))]
     if roles:
         blocks += _role_blocks(root, now, st)
     else:
@@ -810,6 +989,10 @@ def run(
         judged = {r: judge_guidance(root, now, traj, role=r) for r in roles}
     else:
         judged = judge_guidance(root, now, traj)
+    try:
+        agents_judged = judge_agents(root, now, traj)
+    except Exception:  # noqa: BLE001 - a broken registry must not stop the audit
+        agents_judged = []
     st = _state(root)
     out = {
         "reason": reason,
@@ -824,6 +1007,8 @@ def run(
         out["judged"] = {r: {"id": j.get("id"), "status": j.get("status")} for r, j in judged.items() if j is not None}
     elif judged is not None:
         out["judged"] = {"id": judged.get("id"), "status": judged.get("status")}
+    if agents_judged:
+        out["agents_judged"] = [{"id": h.get("id"), "name": h.get("name"), "status": h.get("status")} for h in agents_judged]
     if _num(st.get("last_run_ts")) and not _compact_wakes(root, st["last_run_ts"]):
         return _finish(
             root,
@@ -870,6 +1055,8 @@ def run(
         out["guidance_changed"] = g["changed"]
     out["guidance"] = g
     out["tools"] = _apply_tools(root, now, ans.get("tools"), listed, secrets, traj, roles)
+    if "agents" in ans:
+        out["agents"] = _apply_agents(root, now, ans.get("agents"), secrets, st, traj)
     _remember(st, now, out, nums, rows)
     return _finish(root, traj, now, st, dict(out, status="done"))
 

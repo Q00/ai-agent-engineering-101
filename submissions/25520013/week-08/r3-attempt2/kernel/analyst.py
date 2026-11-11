@@ -24,7 +24,7 @@ from kernel import brief as b
 from kernel import common as c
 from kernel import experiments as ex
 from kernel import operator as op
-from kernel import questions, tools
+from kernel import agent_registry, questions, tools
 from kernel.trajectory import Trajectory
 
 ROLE = "analyst"
@@ -56,6 +56,7 @@ SCHEMA = (
 2. 끝내기: {"done": {
   "answer": {"finding": "<확인한 원인과 숫자, 표본 수, 확인 못 한 것>", "evidence": ["<숫자와 그 숫자를 본 도구 이름>", ...], "suggest": "<운영자가 시험해 볼 값이나 코드 자리. 제안이지 결정이 아님>", "for": ["shop" 또는 "buyer", 둘 다면 둘]},
   "notes": "<다음 질문의 네가 읽을 메모 전체. 생략하면 그대로 둠>",
+  "agent": {"op": "create|update|retire", "name": "<영소문자_숫자>", "job": "<이 에이전트의 일 문서 전체>", "wake": {"every_min": <분>, "on_ask": true}, "powers": ["read"]},
 """
     + _new_tool
     + """}}
@@ -63,7 +64,8 @@ answer는 꼭 냄. 확인하지 못한 것은 추측하지 않고 finding에 확
 """
     + _new_tool_rule
     + """
-policy, code, forum, ask는 받지 않음: 조사원은 가게를 바꾸지 않음. 값과 코드의 결정은 운영자 몫임"""
+policy, code, forum, ask는 받지 않음: 조사원은 가게를 바꾸지 않음. 값과 코드의 결정은 운영자 몫임
+agent는 읽기 에이전트 하나를 만들거나(create), 일 문서와 깨는 때를 고치거나(update), 은퇴시킴(retire). 커널이 job 앞에 머리글(만든 쪽, 권한, 넘을 수 없는 선)을 붙여 따로 돌림. wake는 every_min(그 분마다 깸)과 on_ask(그 이름으로 온 질문에 깸) 중 하나 이상. 그 결과는 두 운영자의 조사 결과 절에 그 이름으로 감"""
 )
 
 
@@ -215,6 +217,8 @@ class Analyst(op.Operator):
         )
         if refused:
             result["refused"] = refused
+        if "agent" in done:  # a read-only agent the investigator defines (kernel.agent_registry)
+            result["agent"] = agent_registry.apply(self.root, ROLE, done["agent"], now, self.traj, self.secrets)
         ans = done.get("answer")
         if (
             isinstance(ans, dict)
@@ -266,7 +270,7 @@ class Analyst(op.Operator):
     def _end(self, reason, steps, status, result):
         if status != "done":
             why = {
-                "no_done": f"단계 {steps}개를 다 쓰고도 답을 내지 않음",
+                "no_done": "조사 미완 (답을 내지 못하고 끝남)",
                 "model_error": "모델 호출 실패",
                 "crash": "실행 오류",
             }.get(status, status)

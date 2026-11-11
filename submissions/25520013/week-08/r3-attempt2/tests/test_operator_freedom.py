@@ -247,14 +247,15 @@ def test_group_is_one_experiment_restored_together_when_worse(root, a1):
     assert {x["key"] for x in back} == {"price_mult", "stock_target", "max_rounds"}
 
 
-def test_group_with_a_refused_item_or_two_sides_is_refused_whole(root, a1):
+def test_group_refused_member_refuses_only_itself(root, a1):
     bad = GROUP[:2] + [
         _it("max_rounds", 50, "defaults.food", test="before_after", group="침대 공세")
     ]
-    out = _apply(root, a1, bad)
-    assert [x["ok"] for x in out["results"]] == [False] * 3 and "묶음 전체" in out[
-        "results"
-    ][0]["error"]
+    out = _apply(root, a1, bad)  # 11-12: a refused member refuses only itself
+    assert [x["ok"] for x in out["results"]] == [True, True, False]
+
+
+def test_group_of_two_sides_is_refused_whole(root, a1):
     mixed = [
         GROUP[0],
         _it(

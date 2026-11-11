@@ -643,6 +643,65 @@ def raw_state(pol, section, key):
     return True, copy.deepcopy(blk[base])
 
 
+def inherited_value(pol, section, base):
+    """What a category section reads for base when it does not set base itself (defaults[kind], then the leaf-name
+    entry, as _resolved builds it); None for defaults, shop and buyer sections, which inherit nothing."""
+    if section in DEFAULTS or section == "shop" or section in BUYER or not isinstance(pol, dict):
+        return None
+    out = dict((pol.get("defaults") or {}).get(_kind(section)) or {})
+    leaf = section.split(">")[-1]
+    if leaf != section:
+        out.update((pol.get("categories") or {}).get(leaf) or {})
+    return copy.deepcopy(out.get(base))
+
+
+def _restore_sub(pol, blk, section, base, sub, present, value, inherited=None):
+    """Put back one grade of a per-grade dict, one accept_c field or one c_first_leaves leaf inside the section's own
+    base, leaving every other part of that base as it is now (a later direct write or a kept sibling experiment stays).
+    present/value: the section's raw state for base before the experiment (raw_state). When base was not set in the
+    section, the operator write materialised {**inherited, sub: new} there (_put); the inverse removes base again when
+    every other grade still equals what the section inherits now or inherited then (inherited), so no pinned copy of
+    inherited values stays. -> False when the saved state does not have the base's shape (the caller restores the whole
+    base)."""
+    if not isinstance(blk, dict):
+        return True  # no section entry and nothing saved: nothing to put back
+    cur = blk.get(base)
+    if base == LEAF_KEY:
+        if (present and not isinstance(value, list)) or (cur is not None and not isinstance(cur, list)):
+            return False
+        was, now = (list(value) if present else []), list(cur or [])
+        if [x for x in now if x != sub] == [x for x in was if x != sub]:  # nothing else in the list changed
+            if present:
+                blk[base] = copy.deepcopy(value)
+            else:
+                blk.pop(base, None)
+        elif sub in was and sub not in now:
+            now.insert(min(was.index(sub), len(now)), sub)
+            blk[base] = now
+        elif sub not in was:
+            blk[base] = [x for x in now if x != sub]
+        return True
+    if (present and not isinstance(value, dict)) or (cur is not None and not isinstance(cur, dict)):
+        return False
+    parent = inherited_value(pol, section, base)
+    parent = parent if isinstance(parent, dict) else {}
+    d = dict(cur) if isinstance(cur, dict) else dict(parent)
+    src = value if present else parent
+    if sub in src:
+        d[sub] = copy.deepcopy(src[sub])
+    else:
+        d.pop(sub, None)
+    if present:
+        blk[base] = d
+        return True
+    inh = inherited if isinstance(inherited, dict) else {}
+    if all((g in parent and v == parent[g]) or (g in inh and v == inh[g]) for g, v in d.items()):
+        blk.pop(base, None)  # only inherited values left: the section inherits again
+    else:
+        blk[base] = d
+    return True
+
+
 def kernel_restore(
     root,
     section,
@@ -655,12 +714,15 @@ def kernel_restore(
     tag=None,
     key=None,
     validate=None,
+    inherited=None,
 ):
-    """Kernel-only write that puts the section's own raw state for `base` back exactly as raw_state captured it:
-    present -> blk[base] = value (the whole per-grade dict or leaf list), absent -> the key removed, and a category
-    entry left empty removed, so a category never keeps a pinned copy of an inherited value. Attempt 1 validate,
-    backup (tag, kernel_tag(now) when None) and rename as every edit; one trajectory row kind "policy_edit" by "kernel"
-    (key: the experiment's key, else base). -> {"ok": True/False, ...}"""
+    """Kernel-only write that puts the section's own raw state for `base` back as raw_state captured it. For a key
+    with a part inside base (fresh_discount.B, accept_c.open_frac, c_first_leaves.<leaf>) only that part goes back
+    (_restore_sub, inherited: what the section inherited for base when it did not set it); the result is the whole
+    saved state when nothing else in base changed since. Any other key: present -> blk[base] = value, absent -> the
+    key removed. A category entry left empty is removed, so a category never keeps a pinned copy of an inherited
+    value. Attempt 1 validate, backup (tag, kernel_tag(now) when None) and rename as every edit; one trajectory row
+    kind "policy_edit" by "kernel" (key: the experiment's key, else base). -> {"ok": True/False, ...}"""
     if (
         not isinstance(section, str)
         or section == "bounds"
@@ -683,7 +745,10 @@ def kernel_restore(
     try:
         old = effective(pol, section, shown)
         blk = _block(pol, section, create=bool(present))
-        if present:
+        sub = shown.split(".", 1)[1] if "." in shown else ""
+        if sub and _restore_sub(pol, blk, section, base, sub, present, value, inherited):
+            pass
+        elif present:
             blk[base] = copy.deepcopy(value)
         elif isinstance(blk, dict):
             blk.pop(base, None)
