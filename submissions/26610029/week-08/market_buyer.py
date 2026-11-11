@@ -162,6 +162,14 @@ def main():
 
     if not cands:
         print(f"[choose] no shop stocks an acceptable SKU for {args.item} ({len(shops)} shops)")
+        try:
+            with DB() as d:
+                # a category restock's own settles-based ranking will never discover on its own: nobody
+                # has ever sold it, so it never looks like "something that sells". Give restock this signal.
+                d.log_trajectory(time.time(), "buyer", "stockout",
+                                 {"category": order.get("category"), "item": args.item, "kind": kind}, None)
+        except Exception as e:
+            print(f"[db] stockout not logged: {type(e).__name__}: {e}")
         print(json.dumps({"shop": None, "receipt": None, "stars": 3, "review": "Nobody had it in stock."}))
         return
 

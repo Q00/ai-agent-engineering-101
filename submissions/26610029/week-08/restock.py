@@ -47,7 +47,18 @@ DEFAULT_PROMO = {"hot_usefulness": 0.9, "base_usefulness": 0.3,
 EMOJI_BY_KIND = {"food": "🍊", "goods": "🛋️"}
 
 
-def plan(inv, d, policy, now):
+def stockout_categories(d, now, lookback_h):
+    """Categories our own buyer recently asked for and found zero market-wide stock for -- a settles-based
+    ranking can never discover these on its own (nobody has ever sold there, so there's no sales history to
+    rank), even though the demand is real and visible right in our own buyer's logs."""
+    rows = d.q("""SELECT context->>'category' AS cat, context->>'kind' AS kind, count(*) AS n
+                 FROM trajectory WHERE role='buyer' AND decision='stockout' AND ts > $1
+                 AND context->>'category' IS NOT NULL GROUP BY 1, 2 HAVING count(*) >= 3""",
+               now - lookback_h * 3600)
+    return {(r["cat"], r["kind"]): int(r["n"]) for r in rows}
+
+
+def plan(inv, d, policy, now, catalog):
     units = inv.get("units", [])
     if len(units) >= policy["max_units"]:
         print(f"[restock] stock is full ({len(units)}/{policy['max_units']}), not buying")
@@ -84,6 +95,33 @@ def plan(inv, d, policy, now):
     budget = inv.get("balance", 0) * policy["window_budget"]
     per_sku_cap = budget * 0.3                          # one sofa must not eat the whole window
     buy, why = [], []
+
+    # categories nobody stocks at all: no sales history to rank by, so a settles-based ranking never finds
+    # them. Reserve a couple of slots FIRST (not leftover ones -- a crowded round-robin fills every slot
+    # most windows, so "only if there's room" almost never actually fires) for a small, low-risk trial:
+    # the cheapest catalog SKU in the category. First mover with zero competition beats optimizing within
+    # a crowd of sellers who are all fighting over the same proven-popular SKUs.
+    covered = set(by_cat.keys())
+    trial_slots = min(2, policy["max_skus"])
+    for (cat, kind), n_seen in sorted(stockout_categories(d, now, policy["lookback_h"]).items(),
+                                      key=lambda x: -x[1]):
+        if cat in covered or len(buy) >= trial_slots:
+            continue
+        candidates = [(sku, v) for sku, v in catalog.items()
+                     if v.get("category") == cat and sku not in surging and v.get("list_price")]
+        if not candidates:
+            continue
+        sku, v = min(candidates, key=lambda x: x[1]["list_price"])      # cheapest: smallest trial risk
+        lp = v["list_price"]
+        unit_cost = lp * 0.75
+        if unit_cost > per_sku_cap or unit_cost > budget or held.get(sku):
+            continue
+        buy.append({"sku": sku, "qty": 1})
+        why.append({"sku": sku, "kind": v.get("kind", kind), "list": lp, "sold": 0, "margin": None,
+                   "qty": 1, "trial": True, "stockouts_seen": n_seen})
+        budget -= unit_cost
+        covered.add(cat)
+
     for value, sku, kind, lp, n, margin in ranked:
         if lp * 0.75 > per_sku_cap:
             continue
@@ -142,7 +180,7 @@ def shop_forum(d, inv, why, now, md):
     last = float(d.get_state("last_post_shop", 0))
     if now - last < policy["post_every"]:
         return
-    hot = any(x["margin"] >= 0.1 and x["sold"] >= 50 for x in why)
+    hot = any(x.get("margin") is not None and x["margin"] >= 0.1 and x["sold"] >= 50 for x in why)
     usefulness = policy["hot_usefulness"] if hot else policy["base_usefulness"]
     bar = policy["threshold"] - (policy["quiet_bonus"] if now - last > policy["quiet_after"] else 0)
     if usefulness < bar:
@@ -187,11 +225,12 @@ def main():
     except Exception as e:                    # stale data still beats buying blind
         print(f"[restock] collector failed: {type(e).__name__}: {e}")
 
+    catalog = json.loads((md / "catalog.json").read_text(encoding="utf-8"))
     buy, why = [], []
     try:
         with DB() as d:
             policy = dict(DEFAULT_POLICY, **d.get_policy("restock", {}))
-            buy, why = plan(inv, d, policy, now)
+            buy, why = plan(inv, d, policy, now, catalog)
             d.log_trajectory(now, "shop", "restock", {"balance": inv.get("balance"), "units": len(inv.get("units", [])),
                                                         "window": w, "policy": policy}, {"buy": why})
             try:
@@ -201,7 +240,11 @@ def main():
     except Exception as e:          # the DB being unreachable (not the market) shouldn't skip a real window
         print(f"[restock] DB unreachable, skipping this window's buy: {type(e).__name__}: {e}")
     for x in why:
-        print(f"[restock] {x['qty']} x {x['sku']} ({x['kind']}, list {x['list']}, sold {x['sold']}, margin {x['margin']})")
+        if x.get("trial"):
+            print(f"[restock] TRIAL {x['qty']} x {x['sku']} ({x['kind']}, list {x['list']}) -- "
+                 f"{x['stockouts_seen']} recent stockouts for this category, no sales history yet")
+        else:
+            print(f"[restock] {x['qty']} x {x['sku']} ({x['kind']}, list {x['list']}, sold {x['sold']}, margin {x['margin']})")
     print(json.dumps({"buy": buy}))
 
 
