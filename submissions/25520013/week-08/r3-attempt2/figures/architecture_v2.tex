@@ -1,4 +1,4 @@
-% R3 시도 2 전체 구조 (2026-11-11 16:06 기준, 운영자 분리 뒤). 컴파일: xelatex architecture_v2.tex
+% R3 시도 2 전체 구조 (2026-11-11 16:16 기준, 운영자 분리 뒤). 컴파일: xelatex architecture_v2.tex
 % architecture.tex(11-05)는 하네스를 모델이 고치던 때의 그림이고, 이 그림이 지금 실제로 도는 구조임
 \documentclass[border=14pt]{standalone}
 \usepackage{fontspec}
@@ -38,7 +38,7 @@
 \begin{tikzpicture}
 
 % ======================= 시장 =======================
-\node[mkt, anchor=north west, text width=20.2cm, align=center] (market) at (7.0,0) {%
+\node[mkt, anchor=north west, text width=20.2cm, align=center] (market) at (9.1,0) {%
   \textbf{시장} Round 3 (11-17 23:59 종료)\\[2pt]
   구매자 요청\qquad 구매 명령\qquad 공급 창(약 20분마다)\qquad 순위표\qquad 포럼};
 
@@ -61,7 +61,7 @@
 \node[ztitle, text=cHum] at (zhum.north west) {사람 (성수님): 목표와 한계만 정함};
 
 % ======================= 거래 층 =======================
-\node[rul, anchor=north west, text width=4.3cm] (seller) at (7.3,-3.2) {%
+\node[rul, anchor=north west, text width=4.3cm] (seller) at (9.4,-3.2) {%
   \textbf{판매} hooks/seller.py\\ 요청마다 가격 제시, 흥정,\\ 수락과 거절};
 \node[rul, anchor=north west, text width=4.3cm] (restock) at ([xshift=4mm]seller.north east) {%
   \textbf{재입고} hooks/restock.py\\ 공급 창마다 무엇을 몇 개\\ 살지 계산해 삼};
@@ -75,7 +75,7 @@
 \node[ztitle, text=cRul] at (zrul.north west) {거래 층: 규칙 코드 (거래 한 건 한 건을 처리, LLM을 부르지 않음)};
 
 % ======================= 운영자 층 =======================
-\node[llm, anchor=north west, text width=5.6cm] (opshop) at (7.3,-7.4) {%
+\node[llm, anchor=north west, text width=5.6cm] (opshop) at (9.4,-7.4) {%
   \textbf{가게 운영자} (LLM)\\
   목표: 가게 점수\\
   깨어남: 재입고 창 약 5분 전, 판정 때\\
@@ -99,7 +99,7 @@
 \node[ztitle, text=cLLM] at (zop.north west) {운영자 층: 전략을 정함 (의문 → 도구로 원인 확인 → 값 또는 코드 수정)};
 
 % ======================= 메타하네스 =======================
-\node[met, anchor=north west, text width=4.5cm] (exp) at (7.3,-13.4) {%
+\node[met, anchor=north west, text width=4.5cm] (exp) at (9.4,-14.6) {%
   \textbf{실험 검증} (코드)\\
   모든 값 수정은 실험으로 등록\\
   판매 값: 물건 절반에만 새 값,\\ \hspace{1em}같은 시간 비교\\
@@ -114,7 +114,7 @@
 \node[met, anchor=north west, text width=4.5cm] (audit) at ([xshift=4mm]code.north east) {%
   \textbf{과정 감사}\\
   코드: 점검마다 반복 호출,\\ \hspace{1em}목록 밖 호출, 검색 실패를 셈\\
-  감사자 (LLM, 6시간마다):\\ \hspace{1em}운영자별 일하는 방식 안내,\\ \hspace{1em}권장 도구 넣고 빼기};
+  감사자 (LLM, 1시간마다):\\ \hspace{1em}운영자별 일하는 방식 안내,\\ \hspace{1em}권장 도구 넣고 빼기};
 \node[met, anchor=north west, text width=4.3cm] (traj) at ([xshift=4mm]audit.north east) {%
   \textbf{기록} trajectory\\
   모든 도구 호출, 관찰,\\ 모델 호출, 점검 결과,\\ 실험과 코드 수정의 판정\\
@@ -139,20 +139,20 @@
 \draw[flow, cMkt] (market.south -| policy.north) -- node[lab, pos=0.45]{순위표, 장부\\(읽기)} (zrul.north -| policy.north);
 
 % 운영자 -> 메타하네스 -> 거래 층
-\draw[flow, cLLM] (opshop.south) -- node[lab]{값 수정, 코드 수정,\\도구 만들기} (opshop.south |- zmet.north);
-\draw[flow, cLLM] (opbuy.south) -- node[lab]{값 수정, 코드 수정,\\도구 만들기} (opbuy.south |- zmet.north);
+\draw[flow, cLLM] (opshop.south) -- node[lab, pos=0.4]{값 수정, 코드 수정,\\도구 만들기} ([yshift=7mm]opshop.south |- zmet.north);
+\draw[flow, cLLM] (opbuy.south) -- node[lab, pos=0.4]{값 수정, 코드 수정,\\도구 만들기} ([yshift=7mm]opbuy.south |- zmet.north);
 \draw[flow, cMet] (zmet.east) -- ++(0.9,0) |- node[lab, pos=0.25]{통과한 수정만 적용\\(값은 policy.json,\\코드는 네 파일)} (zrul.east);
-\draw[flow, cMet] (shared.south |- zmet.north) -- node[lab]{상태 카드: 순위, 실험과\\코드 판정, 감사 줄,\\지난 수정의 결과} (shared.south |- zop.south);
+\draw[flow, cMet] ([yshift=7mm]shared.south |- zmet.north) -- node[lab, pos=0.45]{상태 카드: 순위, 실험과\\코드 판정, 감사 줄,\\지난 수정의 결과} (shared.south |- zop.south);
 
 % 거래 층 -> 운영자: 관찰
 \draw[flow, cRul] (zrul.south -| shared.north) -- node[lab]{거래 기록, 재고, 재입고 기록\\(도구로 읽음)} (zop.north -| shared.north);
 
 % 사람 -> 각 층
-\draw[flow, cHum] (job.east) -- ++(0.55,0) |- node[lab, pos=0.75]{일 문서, 시장 안내} (zop.west);
-\draw[flow, cHum] (safe.east) -- ++(0.95,0) |- node[lab, pos=0.75]{한계와 금지} (zmet.west);
+\draw[flow, cHum] (job.east) -- ++(1.0,0) |- node[lab, pos=0.78, above]{일 문서, 안내} (zop.west);
+\draw[flow, cHum] (safe.east) -- ++(1.6,0) |- node[lab, pos=0.72, above]{한계와 금지} (zmet.west);
 
 % 기억 <-> 운영자
-\draw[flow, <->, cMem] (zmem.east) -- ++(0.3,0) |- node[lab, pos=0.78]{메모, recall} ([yshift=-9mm]zop.west);
+\draw[flow, <->, cMem] (zmem.east) -- ++(0.45,0) |- node[lab, pos=0.8, below]{메모, recall} ([yshift=-12mm]zop.west);
 
 % ======================= 범례 =======================
 \node[anchor=north west, font=\footnotesize, align=left] at ([yshift=-5mm]zmet.south west) {%
@@ -162,7 +162,7 @@
   \textcolor{cSha}{\rule{9pt}{6pt}} 공용\quad
   \textcolor{cMet}{\rule{9pt}{6pt}} 메타하네스\quad
   \textcolor{cMem}{\rule{9pt}{6pt}} 기억\quad
-  \textcolor{cMkt}{\rule{9pt}{6pt}} 시장\qquad 2026-11-11 16:06 기준};
+  \textcolor{cMkt}{\rule{9pt}{6pt}} 시장\qquad 2026-11-11 16:16 기준};
 
 \end{tikzpicture}
 \end{document}
