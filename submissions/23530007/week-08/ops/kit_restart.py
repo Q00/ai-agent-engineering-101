@@ -38,7 +38,8 @@ def log_tail(n=600):
 
 def card_ok(url):
     try:
-        with urllib.request.urlopen(url.rstrip("/") + "/.well-known/agent-card.json", timeout=15) as r:
+        req = urllib.request.Request(url.rstrip("/") + "/.well-known/agent-card.json", headers={"User-Agent": "curl/8.5.0"})
+        with urllib.request.urlopen(req, timeout=15) as r:   # Cloudflare answers 403 to Python's default UA
             return r.status == 200
     except Exception:
         return False
