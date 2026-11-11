@@ -128,6 +128,7 @@ COMPACT_HEAD = "## 이번 점검에서 지금까지 (커널이 간추림)"
 SUMMARY_HEADS = ("## 확인된 숫자와 출처", "## 세운 가설과 결과", "## 이미 한 변경과 요청", "## 아직 안 풀린 것", "## 다음에 하려던 것")
 SUMMARY_IN = 60_000  # chars of old observations handed to the summary call; each result is cut in proportion beyond it
 COMPACT_FAILS = 2  # after this many failed summary calls a wake stays on the trimming path
+COMPACT_TIMEOUT_S = 300  # live 11-12: 2 of 6 summary calls (30k to 42k chars in, about 9k out) ran past 120 s
 WAKE_MEMO_CHARS = 4_000  # the wake's carried summary handed to long-term memory (kernel.memfeed, kind wake_summary)
 SUMMARY_JOB = """너는 커널의 기록 정리 담당임. 아래 자료는 한 에이전트가 이번 점검에서 지금까지 한 도구 호출과 그 결과, 에이전트가 남긴 결론, 앞선 간추림임. 이것을 아래 다섯 절의 간추림 하나로 다시 씀. 에이전트는 다음 단계부터 원문 대신 이 간추림을 읽음.
 
@@ -1250,7 +1251,7 @@ class Operator:
         out, error = "", None
         try:
             with llm.sections({k: len(t) + 2 for k, t in data}, purpose="compact"):
-                out = self.terra.complete(prompt, agent=self.agent, timeout_s=ASK_TIMEOUT_S, effort=COMPACT_EFFORT)
+                out = self.terra.complete(prompt, agent=self.agent, timeout_s=COMPACT_TIMEOUT_S, effort=COMPACT_EFFORT)
             out = c.mask(out.strip(), self.secrets) if isinstance(out, str) else ""
             if out and sum(h in out for h in SUMMARY_HEADS) < 3:  # not the asked form (a refusal, "ok"): never a summary
                 out, error = "", "not a summary"
