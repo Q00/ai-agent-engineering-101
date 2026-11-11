@@ -164,6 +164,12 @@ def pick_unit(text, held, now):
     if not fit:
         return None
     if fit[0].get("kind") == "food":
+        # 11-11: food under FOOD_SHELF_FLOOR of its shelf life is never sold (it drew 3-4 stars from every rubric:
+        # shelf share < .25 rated 4.33, .25-.45 4.55, >= .8 4.85; the units are ~0.7% of stock at cost)
+        fresh = [u for u in fit if not shelf_hours(u["sku"]) or hours_left(u, now) >= FOOD_SHELF_FLOOR * shelf_hours(u["sku"])]
+        if not fresh:
+            return None
+        fit = fresh
         m = NEED.search(text)
         if not m:
             # need unknown: the freshest, so it lasts. 11-08: we handed doomed units here ('its last chance') and
@@ -194,9 +200,24 @@ def pick_unit(text, held, now):
         fit = [u for u in fit if (u.get("grade") or "A") in want] or None
         if not fit:
             return None
-    return min(fit, key=lambda u: u.get("supplied_at") or 0)
+    # 11-11 (restructure, user: raise stars without price cuts): the oldest unit regardless of grade handed C to
+    # buyers who never asked for C: C goods rate 4.42 vs A 4.75 / B 4.64 and 64% of C agreements never settled
+    # (the buyer's kit refuses them, the unit sits held 300 s). Now A first, then B (oldest within the grade); C
+    # only when the message accepts C (or the buyer stated grades that include it)
+    accepts_c = bool(ACCEPTS_C.search(text)) or (want is not None and "C" in want)
+    ranked = sorted(fit, key=lambda u: (GRADE_ORDER.get(u.get("grade") or "A", 1), u.get("supplied_at") or 0))
+    if accepts_c and ACCEPTS_C.search(text) and re.search(r"prefer\s*(grade\s*)?C|cheapest\s*grade|refurb", text, re.I):
+        ranked = sorted(fit, key=lambda u: (-GRADE_ORDER.get(u.get("grade") or "A", 1), u.get("supplied_at") or 0))
+    for u in ranked:
+        if (u.get("grade") or "A") != "C" or accepts_c:
+            return u
+    return None
 
 
+CHEAP_LIST, CHEAP_SHARE = 50000, 0.58   # 11-11: concession on cheap items from the 3rd offer (<= ~1M/day)
+FOOD_SHELF_FLOOR = 0.45       # 11-11: food under this share of its shelf life is not sold
+GRADE_ORDER = {"A": 0, "B": 1, "C": 2}
+ACCEPTS_C = re.compile(r"grade\s*C\b|refurb|any\s*grade|cheapest\s*grade|lowest\s*grade|\bC\s*grade", re.I)
 NO_C = re.compile(r"(grade\s*)?A\s*(or|/)\s*B\s*(grade\s*)?only|only\s*grade\s*A|not\s*(buy|pay\s*for|take)\s*grade\s*C|"
                   r"no\s*grade\s*C|grade\s*C\s*(is\s*)?not|A\s*/\s*B\s*only|I buy grade A", re.I)
 ONLY_A = re.compile(r"(only|just)\s*grade\s*A\b|grade\s*A\s*only", re.I)
@@ -442,7 +463,12 @@ class Shop(AgentExecutor):
             return
         d["offers"].append(offer)
         n, ask, floor = len(d["offers"]), d["ask"], d["floor"]
-        if offer >= ask or offer >= floor + (ask - floor) * d["meet"] or (n >= 3 and offer >= floor):
+        u_ = d["unit"]
+        # 11-11: on cheap items (list < CHEAP_LIST) the price-rubric accounts (real_yellow, move_76, q00, iyen-dori)
+        # haggle 6-7 rounds and rate 3-4 at x .70; from the 3rd offer we take >= max(cost, CHEAP_SHARE x list)
+        cheap_ok = (u_.get("unit") and (u_.get("list_price") or 0) < CHEAP_LIST and n >= 3
+                    and offer >= max(u_.get("cost") or 0, CHEAP_SHARE * u_["list_price"]))
+        if offer >= ask or offer >= floor + (ask - floor) * d["meet"] or (n >= 3 and offer >= floor) or cheap_ok:
             # the buyer's own number, even above our ask: buyers check the receipt against what they agreed,
             # and 14 of our low reviews on 11-05 read "Agreed 57031, receipt says 33900" (we had charged the ask)
             await self.close(up, say, task.id, d, offer)
@@ -493,6 +519,11 @@ class Shop(AgentExecutor):
 def build(port):
     url = f"http://127.0.0.1:{port}/"
     base = read_params(PARAMS, {}).get("shop", {}).get("base", {})
+    try:                                        # 11-11: the card states the MERGED policy (strategist knobs included)
+        from policy import shop_params
+        _, base, _ = shop_params()
+    except Exception:
+        pass
     from shop_guard import grades_now           # the card states what the deals carry (book-lead guard, 11-07)
     warranty, grades = base.get("warranty_hours", 0), grades_now(base.get("warranty_grades", []))
     cover = (f"grade {' and '.join(grades)} goods carry a {wtext(warranty)} (other grades: none)"

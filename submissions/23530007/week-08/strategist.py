@@ -278,6 +278,43 @@ def live_terms():
         return {"error": repr(e)}
 
 
+def stock_feasibility(floor_mult=None):
+    """11-11: goods units whose floor (cost x floor_mult) sits above the market's median price for the SKU (6 h
+    ledger cache, >= 10 settles): they do not sell until slow pricing cuts them. 266 units / 123M at 05:10 UTC."""
+    try:
+        import statistics
+        inv = read(HERE / ".market" / "inventory.json", {})
+        cat = read(HERE / ".market" / "catalog.json", {})
+        sv = read(HERE / ".market" / "shop_value.json", {})
+        if floor_mult is None:
+            import policy
+            floor_mult = policy.shop_params()[1].get("floor_mult", 1.05)
+        px = {}
+        for d in sv.get("deals", []):
+            if d.get("goods"):
+                px.setdefault(d["sku"], []).append(d["x"])
+        p50 = {k: statistics.median(v) for k, v in px.items() if len(v) >= 10}
+        tot = bad = cost = 0
+        by = {}
+        for u in inv.get("units", []):
+            if u.get("expires_at"):
+                continue
+            lp, m = (cat.get(u["sku"]) or {}).get("list_price"), p50.get(u["sku"])
+            if not lp or not m:
+                continue
+            tot += 1
+            if (u.get("cost") or 0) * floor_mult > m * lp:
+                bad += 1; cost += u.get("cost") or 0
+                e = by.setdefault(u["sku"], {"units": 0, "cost_M": 0, "grades": {}, "market_p50_x": round(m, 3), "list": lp})
+                e["units"] += 1; e["cost_M"] = round(e["cost_M"] + (u.get("cost") or 0) / 1e6, 1)
+                e["grades"][u.get("grade") or "?"] = e["grades"].get(u.get("grade") or "?", 0) + 1
+        top = sorted(by.items(), key=lambda kv: -kv[1]["cost_M"])[:10]
+        return {"goods_units_with_market_price": tot, "units_above_market_p50_at_floor": bad, "their_cost_M": round(cost / 1e6),
+                "floor_mult": floor_mult, "top_skus": [dict(v, sku=k, name=str((cat.get(k) or {}).get("name"))[:30]) for k, v in top]}
+    except Exception as e:
+        return {"error": repr(e)}
+
+
 def book_race():
     """11-11: the book and revenue race from the board plus guards.py's 6 h slopes and closure ETA."""
     try:
@@ -359,7 +396,7 @@ def evidence(m, mem, b):
             "market_picture": market_picture(), "your_watch_list": w.get("watch", []),
             "shop_score_parts": shop_score_parts(),
             "stars_accounts": stars_accounts(), "stars_ladder": stars_ladder(b), "live_terms": live_terms(),
-            "book_race": book_race(),
+            "book_race": book_race(), "stock_feasibility": stock_feasibility(),
             "settle_health": settle_health(), "lead_guard": read(HERE / ".market" / "warranty_guard.json", {}).get("why"),
             "from_operator": operator_note(HERE / "operator_to_shop.json", HERE / "shop_answer_to_operator.json"),
             "woken_by": w.get("woken_by")}
@@ -545,6 +582,9 @@ vs A 4.75 and 64% of C agreements never settle), food shelf life (never under .4
 the few accounts in "stars_accounts" whose mean for us is far below their mean elsewhere (one account is ~1/N of
 stars_rank). "stars_ladder" gives the student ladder and what one rank is worth; "live_terms" shows the ask shares
 the seller really uses (the rep step adds +0.03 when the last 10 reviews are high; it is your knob "rep_step" now).
+"stock_feasibility" lists goods units whose floor (cost x floor_mult) sits above the market's median price: they
+do not sell until slow pricing cuts them (266 units, 123M at 05:10 UTC, mostly sofas and beds bought dear); decide
+per SKU between a lower floor_mult / earlier slow_hours / ask cut and holding, on the book race.
 Warranty on grade C stays off (refunds ~4.5M/day for +0.005 stars). When a buyer move would hurt the shop or the
 reverse, say so in notes_for_buyer. Scoring rules and the user's goals: {rules}"""
 
