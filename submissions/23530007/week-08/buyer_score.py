@@ -44,8 +44,8 @@ def mean(xs):
 
 
 def board():
-    with urllib.request.urlopen(f"{MARKET}/api/board?round=3", timeout=15) as r:
-        b = json.load(r)
+    import board_api
+    b = board_api.fetch(timeout=15, tries=2, wait=12)           # 11-11: see board_api.py
     me = next(x for x in b["buyers"] if x["name"] == "yms979")
     return {"saved": me["saved"], "deals": me["deals"], "served": me.get("served"), "orders": me.get("orders")}
 

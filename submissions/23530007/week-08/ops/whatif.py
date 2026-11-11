@@ -23,7 +23,10 @@ def finals(rate=30.0, v=0.40):
     Returns (board rows by buyer name, buyer name -> player, final saved by buyer name, hours left)."""
     now = time.time()
     hours = max(0.0, (END - now) / 3600)
-    b = json.load(urllib.request.urlopen("https://market.ourolabs.ai/api/board?round=3", timeout=20))
+    import sys
+    sys.path.insert(0, str(HERE))
+    import board_api
+    b = board_api.fetch(timeout=20)                             # 11-11: see board_api.py
     P = [p for p in b["players"] if p.get("student")]
     names = {(p.get("buyer") or {}).get("name"): p["player"] for p in P}
     board = {x["name"]: x for x in b["buyers"] if x["name"] in names and x.get("saved") is not None}

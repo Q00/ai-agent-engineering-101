@@ -251,8 +251,8 @@ def main():
     # G9 book lead closure (board, 6 h slopes kept in state)
     try:
         import urllib.request
-        with urllib.request.urlopen(f"{MARKET}/api/board?round=3", timeout=15) as r:
-            bd = json.load(r)
+        import board_api
+        bd = board_api.fetch(timeout=15, tries=2, wait=12)      # 11-11: never the ~1 min zero-history board after a URL move
         shops = [s for s in bd["shops"] if s.get("book") is not None]
         mine = next(s for s in shops if s["name"] == "yms979")
         rival = max((s for s in shops if s["name"] != "yms979"), key=lambda s: s["book"])
@@ -298,17 +298,33 @@ def main():
             import final_rank as _fr
             sc_ = json.loads((MD / "buyer_score.json").read_text())
             v6_ = sc_.get("v6") or {}
-            pr = _fr.project(float(v6_.get("deals_h") or 30), float(v6_.get("all") or 0.40))
-            st["final_rank"] = {"damped": pr["us"]["rank_damped"], "trend": pr["us"]["rank_trend"], "t": now}
-            if pr["us"]["rank_damped"] > 1:
-                top = [r for r in pr["rows"] if r["rank_damped"] < pr["us"]["rank_damped"]]
-                msg = ", ".join(f"{r['player']} {r['total_damped']} (shop/day {r['shop_slope_day_48h']:+.3f})" for r in top)
-                wake("shop", f"G14 projected final rank {pr['us']['rank_damped']} (us {pr['us']['total_damped']}); ahead: {msg}. "
-                             "User: the shop must hold every point (book 1st, revenue 2nd, stars up).")
-                fires.append("G14")
-                if cooled(st, "G14a", 12 * 3600, now):
-                    alert([f"G14 최종 예상 순위 {pr['us']['rank_damped']}위 (우리 {pr['us']['total_damped']}); 앞: {msg}"])
-                    fired(st, "G14a", now)
+            # 11-11 19:20: part-by-part projection (book, revenue, stars, saved, deals, posts each at its own slope)
+            # instead of the shop score carried forward in a line, which named dragonash22 1st while its book fell
+            comp = _fr.project_components()
+            if comp:
+                st["final_rank"] = {"rank": comp["us"]["rank_end"], "total": comp["us"]["total_end"], "t": now, "method": "components"}
+                # the shops of everyone projected above us or within .05 of us: our buyer does not buy GOODS there
+                # (a 1 M bed is 1 M of revenue and ~0.1-0.3 M of book for a rival whose ranks sit a few tens of M
+                # from the next shop; food tickets are too small to matter and stay open)
+                cont = {r["shop_name"]: f"{r['player']} projected {r['total_end']} (us {comp['us']['total_end']})"
+                        for r in comp["rows"] if r["player"] != "yms979" and r["total_end"] >= comp["us"]["total_end"] - 0.05}
+                if not DRY:
+                    (MD / "contenders.json").write_text(json.dumps({"t": now, "shops": cont}, ensure_ascii=False))
+                if comp["us"]["rank_end"] > 1:
+                    ahead = [r for r in comp["rows"] if r["rank_end"] < comp["us"]["rank_end"]]
+                    msg = ", ".join(f"{r['player']} {r['total_end']} (shop {r['shop'][0]}>{r['shop'][1]}, buyer {r['buyer'][0]}>{r['buyer'][1]})" for r in ahead[:4])
+                    me_ = next(r for r in comp["rows"] if r["player"] == "yms979")
+                    mine_txt = f"us {me_['total_end']}: shop {me_['shop'][0]}>{me_['shop'][1]}, buyer {me_['buyer'][0]}>{me_['buyer'][1]} (saved rank {me_['ranks_now_end']['saved']}, deals rank {me_['ranks_now_end']['deals']})"
+                    for role in ("shop", "buyer"):
+                        wake(role, f"G14 projected final rank {comp['us']['rank_end']} by parts; ahead: {msg}. {mine_txt}. "
+                                   "Tool final_rank shows every part; gaps under .03 are a tie.")
+                    fires.append("G14")
+                    if cooled(st, "G14a", 12 * 3600, now):
+                        alert([f"G14 최종 예상 {comp['us']['rank_end']}위 ({comp['us']['total_end']}); 앞: {msg}"])
+                        fired(st, "G14a", now)
+            else:
+                pr = _fr.project(float(v6_.get("deals_h") or 30), float(v6_.get("all") or 0.40))
+                st["final_rank"] = {"damped": pr["us"]["rank_damped"], "trend": pr["us"]["rank_trend"], "t": now}
     except Exception as e:
         log(f"G14 skipped: {e!r}")
 

@@ -129,6 +129,14 @@ def relist_if_delisted(me, dry=False):
         return "relist: board alive=False, first sighting (the kit watchdog re-joins by itself; acting if still dead next tick)"
     if time.time() - st["dead_since"] < 14 * 60:
         return "relist: board alive=False, waiting for the kit watchdog"
+    # 11-11 19:30: the kit now re-joins at the named tunnel's other hostname at every dead check (the only thing that
+    # revives us in a market outage); killing the tunnel no longer helps and costs the connector a restart
+    try:
+        nt = json.loads((Path.home() / ".config/ai-agent-market/named_tunnel.json").read_text())
+        if nt.get("alt_url"):
+            return "relist: board alive=False for 14+ min; the kit alternates hostnames (no tunnel kill)"
+    except (OSError, ValueError):
+        pass
     if time.time() - st.get("relist_t", 0) < 20 * 60:
         return "relist: waiting (last try < 20 min ago)"
     out = subprocess.run(["ps", "-eo", "pid,ppid,args"], capture_output=True, text=True).stdout.splitlines()
@@ -158,8 +166,8 @@ def relist_if_delisted(me, dry=False):
 def main(dry=False):
     now = time.time()
     g = read()
-    with urllib.request.urlopen("https://market.ourolabs.ai/api/board?round=3", timeout=30) as r:
-        shops = [s for s in json.load(r)["shops"] if s.get("deals")]
+    import board_api
+    shops = [s for s in board_api.fetch(timeout=30, tries=2, wait=12)["shops"] if s.get("deals")]   # 11-11: see board_api.py
     me = next(s for s in shops if s["name"] == NAME)
     try:
         msg = relist_if_delisted(me, dry)

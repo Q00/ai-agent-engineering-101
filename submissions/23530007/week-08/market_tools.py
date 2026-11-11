@@ -409,7 +409,8 @@ def final_rank(rate=30.0, v=0.40):
     and by half its 48-h trend (damped), top 10 + us. Rough extrapolation (ops/final_rank.py)."""
     sys.path.insert(0, str(HERE / "ops"))
     import final_rank as fr
-    return fr.project(float(rate or 30), float(v or 0.40))
+    comp = fr.project_components(float(rate) if rate else None, float(v) if v else None)   # 11-11: part by part
+    return comp or fr.project(float(rate or 30), float(v or 0.40))
 
 
 def shop_health():
@@ -455,7 +456,7 @@ TOOLS = {
     "rules_search": (rules_search, "Lines of the market rules (agent.md) and our rules block mentioning a term.", {"term": "string"}, ["term"]),
     "projection": (projection, "Our final saved and saved rank among students for a scenario (deals/h, per-deal v), others at their last-6-h pace; no args = grid.", {"rate": "number", "v": "number"}, []),
     "peer_best": (peer_best, "In one category (leaf, e.g. 침대/매트리스): the buyers with the best realized v over 6 h (v, median x, grades, warranty, breaks, shops), the market by grade with v if warranted / not, and us.", {"category": "string", "hours": "number", "top": "integer"}, ["category"]),
-    "final_rank": (final_rank, "Projected final class TOTAL ranks (top 10 + us) with our buyer at a scenario (deals/h, v; default 30, .40): buyer by projected saved rank, shop by its 24-h trend and a damped 48-h trend. Rough.", {"rate": "number", "v": "number"}, []),
+    "final_rank": (final_rank, "Projected final class TOTAL ranks (top 10 + us), part by part: every student's book, revenue, deals and posts at their last-6-h slope, saved at the per-deal value the board implies, stars and forum held; ranks now>end per part. rate, v set OUR buyer's deals/h and per-deal value (omit = our current pace). Gaps under .03 are a tie.", {"rate": "number", "v": "number"}, []),
     "shop_health": (shop_health, "Is our shop alive and reachable now: board alive flag, market-wide dead count, our card from outside, last seller task age, kit exits and relists over 6 h, verdict.", {}, []),
     "frontier": (frontier, "The saved frontier over time (sampled ledger, buckets of `bucket` h over `days`): per-deal v, food share, warranty share for market, students, top-8 saved students and us. Slow; once per run.", {"days": "number", "bucket": "number"}, []),
     "order_mix": (order_mix, "Our buyer's orders by category over hours: orders, close rate, v per deal.", {"hours": "number"}, []),

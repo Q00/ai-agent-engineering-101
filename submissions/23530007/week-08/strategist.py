@@ -137,8 +137,8 @@ def notify(title, body):
 
 
 def board():
-    with urllib.request.urlopen(f"{MARKET}/api/board?round=3", timeout=30) as r:
-        b = json.load(r)
+    import board_api
+    b = board_api.fetch(timeout=30)                             # 11-11: see board_api.py
     shops = [s for s in b["shops"] if s.get("deals")]
     buyers = [x for x in b["buyers"] if x.get("all") is not None]
 
@@ -171,8 +171,8 @@ def shop_score_parts(n_hist=12):
     we are from the next value up and the rival from the value under ours. Logged to .market/shop_parts.jsonl so the
     trend of every part is read, not only the total."""
     try:
-        with urllib.request.urlopen("https://market.ourolabs.ai/api/board?round=3", timeout=30) as r:
-            shops = [s for s in json.load(r)["shops"] if s.get("deals")]
+        import board_api
+        shops = [s for s in board_api.fetch(timeout=30)["shops"] if s.get("deals")]
         n = len(shops)
 
         def part(s, k):
@@ -255,7 +255,7 @@ def stars_accounts(limit=15):
 def stars_ladder(b):
     """11-11: the student shops' stars_rank ladder around us and the gain needed per rank."""
     try:
-        full = json.load(__import__("urllib.request").request.urlopen(f"{MARKET}/api/board?round=3", timeout=20))
+        full = __import__("board_api").fetch(timeout=20)
         names = {(p.get("shop") or {}).get("name") for p in full["players"] if p.get("student")}
         rows = sorted((s for s in full["shops"] if s["name"] in names and s.get("stars_rank") is not None and s.get("deals")),
                       key=lambda s: -s["stars_rank"])
@@ -319,7 +319,7 @@ def stock_feasibility(floor_mult=None):
 def book_race():
     """11-11: the book and revenue race from the board plus guards.py's 6 h slopes and closure ETA."""
     try:
-        full = json.load(__import__("urllib.request").request.urlopen(f"{MARKET}/api/board?round=3", timeout=20))
+        full = __import__("board_api").fetch(timeout=20)
         shops = sorted((s for s in full["shops"] if s.get("book") is not None and s.get("deals")), key=lambda s: -s["book"])
         me = next(s for s in shops if s["name"] == NAME)
         by_rev = sorted(shops, key=lambda s: -(s.get("revenue") or 0))

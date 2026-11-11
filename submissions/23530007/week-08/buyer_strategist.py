@@ -49,7 +49,7 @@ MAX_MOVES = 8
 GLOBAL = {                                    # role, bounds, step
     "value_share": ((0.65, 0.85), 0.03),      # the most the buyer pays, as a share of list price
     "quick_accept": ((0.55, 0.75), 0.03),     # an ask at or under this share of list is taken at once
-    "food_extra_hours": ((1, 12), 2),         # food must last the order's hours + this (a spoiled deal counts -1)
+    "food_extra_hours": ((0.25, 12), 2),      # food must last the order's hours + this (a spoiled deal counts -1); floor 1 -> 0.25 on 11-11 (10 near-misses within 1 h per 6 h)
     "skip_below": ((0.15, 0.33), 0.02),       # skip an order when the best shop's expected saved per deal is under this
     "skip_below_food": ((0.05, 0.33), 0.03),  # the same bar for food orders (user 11-06: take every food order that lasts)
     "skip_below_goods": ((0.15, 0.4), 0.03),
@@ -369,7 +369,7 @@ wake you out of turn; evidence "score".guard shows their state. You run every ho
 Shared memory digest (the curator's summary for you): {digest}
 
 Knobs (only these; the steps allowed now: {steps}): global "value_share" (0.65-0.85), "quick_accept" (0.55-0.75),
-"food_extra_hours" (1-12), "skip_below" (0.15-0.33), "skip_below_food" (0.05-0.33), "skip_below_goods" (0.15-0.4),
+"food_extra_hours" (0.25-12), "skip_below" (0.15-0.33), "skip_below_food" (0.05-0.33), "skip_below_goods" (0.15-0.4),
 "skip_delta_food" (-0.05..0.05) and "skip_delta_goods" (-0.06..0.05) (the bar is max(fixed bar, m* + delta)),
 "target_mean" (0.28-0.40, used only when buyer_score.json has no m*), "goods_delta" (0-0.08, margin over m* a goods
 deal must clear after its grade's break rate), "conv_weight" (0-0.3), "rival_penalty" (0-0.1), "cap_margin"
@@ -474,7 +474,7 @@ def class_ladder(b):
     """Students only: the 8 just above and 3 below us in saved, with the deals at a per-deal value v needed to pass
     each (saved' = (S + k v)/(N + 100 + k)), for v = .36 and .42."""
     try:
-        full = json.load(__import__("urllib.request").request.urlopen(f"{shop.MARKET}/api/board?round=3", timeout=20))
+        full = __import__("board_api").fetch(timeout=20)
         names = {(p.get("buyer") or {}).get("name") for p in full["players"] if p.get("student")}
         rows = sorted((x for x in full["buyers"] if x["name"] in names and x.get("saved") is not None), key=lambda x: -x["saved"])
         i = next(k for k, x in enumerate(rows) if x["name"] == "yms979")
@@ -496,7 +496,7 @@ def class_ladder(b):
 
 def board_view():
     b = shop.board()
-    full = json.load(__import__("urllib.request").request.urlopen(f"{shop.MARKET}/api/board?round=3", timeout=30))
+    full = __import__("board_api").fetch(timeout=30)
     me = next(x for x in full["buyers"] if x["name"] == "yms979")
     b["buyer"] = {k: me.get(k) for k in ("all", "saved", "forum", "deals", "orders", "posts")} | \
         {k: v for k, v in b["buyer"].items() if k.endswith("_rank")}

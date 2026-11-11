@@ -299,8 +299,8 @@ def rivals_above():
     except (OSError, ValueError, KeyError):
         pass
     try:
-        with urllib.request.urlopen(f"{MARKET}/api/board?round=3", timeout=10) as r:
-            b = json.load(r)
+        import board_api
+        b = board_api.fetch(timeout=10, tries=1)                # 11-11: a transient board falls back to the last good one
         # classmates only (the midterm ranks students; shaun0927 is an outside player, user 11-05)
         players = sorted((x for x in b["players"] if x.get("student")), key=lambda x: -(x.get("student_total") or 0))
         mine = next((i for i, x in enumerate(players) if x["player"] == ME), len(players))
@@ -332,8 +332,8 @@ def avoid_shops():
         pass
     names, pairs, why = set(), set(), {}
     try:
-        with urllib.request.urlopen(f"{MARKET}/api/board?round=3", timeout=10) as r:
-            b = json.load(r)
+        import board_api
+        b = board_api.fetch(timeout=10, tries=1)                # 11-11: a transient board falls back to the last good one
         studs = [x for x in b["players"] if x.get("student")]
         me = next(x for x in studs if x["player"] == ME)
         shop_of = {x["player"]: (x.get("shop") or {}).get("name") for x in studs}
@@ -361,6 +361,15 @@ def avoid_shops():
             if o.get("n", 0) >= 10 and o.get("v") is not None and o["v"] < mstar - AVOID_BAD_GAP:
                 pairs.add(k)
                 why[k] = f"our v {o['v']} < m* {mstar} over {o['n']} deals"
+    except (OSError, ValueError):
+        pass
+    try:                                 # 11-11 19:30: guards.py G14 lists the projected contenders' shops every 2 h
+        cont = json.loads((HERE / ".market" / "contenders.json").read_text())
+        if time.time() - cont.get("t", 0) < 6 * 3600:
+            for n_, w_ in (cont.get("shops") or {}).items():
+                if n_ != ME:
+                    pairs.add(f"{n_}|goods")
+                    why[f"{n_}|goods"] = f"contender: {w_}"
     except (OSError, ValueError):
         pass
     names.discard(ME)

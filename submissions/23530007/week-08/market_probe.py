@@ -32,6 +32,9 @@ WAKE = MD / "strategist_wake"
 
 
 def get(url, timeout=30):
+    if url.startswith("/api/board"):                            # 11-11: see board_api.py
+        import board_api
+        return board_api.fetch(timeout=timeout)
     with urllib.request.urlopen(f"{MARKET}{url}", timeout=timeout) as r:
         return json.load(r)
 

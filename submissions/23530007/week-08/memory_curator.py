@@ -299,7 +299,8 @@ def watch(rules_changed):
     race = []
     try:
         import urllib.request
-        fb = json.load(urllib.request.urlopen("https://market.ourolabs.ai/api/board?round=3", timeout=30))
+        import board_api
+        fb = board_api.fetch(timeout=30)                        # 11-11: not the zero-history board after a URL move
         stud = sorted((p for p in fb["players"] if p.get("student") and p.get("student_shop") is not None),
                       key=lambda p: -p["student_shop"])
         byname = {x["name"]: x for x in fb["shops"]}
@@ -504,7 +505,8 @@ def formula(b, hourly):
     buyer ALL gained per step of each component at today's board, and where saved lands for a few
     (deals/h, saved per deal) settings, so the briefing compares them on buyer ALL itself."""
     import urllib.request
-    full = json.load(urllib.request.urlopen("https://market.ourolabs.ai/api/board?round=3", timeout=30))
+    import board_api
+    full = board_api.fetch(timeout=30)
     # 11-07: the class score (student_total) scores each part as a percentile among STUDENTS (43), not the open
     # board, so the arithmetic runs on the students' buyers; ours sits at 0.48 there vs 0.55 on the board
     students = {(p.get("buyer") or {}).get("name") for p in full["players"] if p.get("student")}

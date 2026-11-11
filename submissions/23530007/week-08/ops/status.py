@@ -20,6 +20,10 @@ END = 1794927540            # 2026-11-17 23:59 KST
 
 
 def get(path):
+    if path.startswith("/api/board"):                           # 11-11: see board_api.py
+        sys.path.insert(0, str(HERE))
+        import board_api
+        return board_api.fetch(timeout=20, tries=2, wait=10)
     with urllib.request.urlopen(f"{MARKET}{path}", timeout=20) as r:
         return json.load(r)
 

@@ -125,8 +125,8 @@ def main():
     now = time.time()
     if "--force" not in sys.argv and "--dry" not in sys.argv and now - st.get("t", 0) < EVERY:
         return
-    with urllib.request.urlopen("https://market.ourolabs.ai/api/board?round=3", timeout=30) as r:
-        b = json.load(r)
+    import board_api
+    b = board_api.fetch(timeout=30)                             # 11-11: see board_api.py
     cls = sorted((p for p in b["players"] if p.get("student")), key=lambda p: -(p.get("student_total") or 0))
     totals = {p["player"]: p["student_total"] for p in cls}
     rank = next(i + 1 for i, p in enumerate(cls) if p["player"] == NAME)
