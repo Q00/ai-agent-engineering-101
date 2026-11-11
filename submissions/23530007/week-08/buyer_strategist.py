@@ -65,6 +65,7 @@ GLOBAL = {                                    # role, bounds, step
     "push_share": ((0.0, 1.0), 0.3),          # counter once more on an ask still above the shop's p25 band
     "push3_share": ((0.0, 1.0), 0.3),         # of those, the deeper push3 (aim p25 - push3_below, two counters)
     "push3_below": ((0.0, 0.2), 0.02),
+    "push5_share": ((0.0, 1.0), 0.25),        # 11-11: of pushed orders, the deep push (offer the shop's low edge, climb in small steps)
     "push_below": ((0.0, 0.15), 0.02),        # push2's aim under p25
     "cheapfood_share": ((0.0, 1.0), 0.3),     # food: ask for the cheapest unit that lasts and open low
     "cheapfood_open": ((0.2, 0.6), 0.05),     # food opening offer, share of list
@@ -374,7 +375,8 @@ Knobs (only these; the steps allowed now: {steps}): global "value_share" (0.65-0
 "target_mean" (0.28-0.40, used only when buyer_score.json has no m*), "goods_delta" (0-0.08, margin over m* a goods
 deal must clear after its grade's break rate), "conv_weight" (0-0.3), "rival_penalty" (0-0.1), "cap_margin"
 (0-0.1), "near_cap" (0-0.04), "open_offset" (0-0.08), "max_shops" (1-6), "value_half_life_h" (0-6: how fast the
-shop values follow the newest market deals); the arms (share of orders, 0-1): "push_share", "push3_share",
+shop values follow the newest market deals); the arms (share of orders, 0-1): "push_share", "push3_share", "push5_share" (offers the shop's 5th-percentile price, for goods among its warranted A/B units, and climbs
+.015 of list per round, up to 6 counters; compare push=push5-* with push=push3-* in arms_per_order_24h),
 "cheapfood_share", "cheapgoods_share", "aimtop_share", "aim15_share" (within aimtop), "skubest_share",
 "wpen_share"; "push3_below" (0-0.2), "push_below" (0-0.15), "cheapfood_open" (0.2-0.6), "wpen_cost" (0-0.12);
 no effect since 11-11 (do not move): "needwarr_share", "gradeaware_share", "gradeaware_cap_c/b". Per shop (give

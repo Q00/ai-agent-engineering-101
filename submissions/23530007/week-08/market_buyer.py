@@ -381,6 +381,33 @@ def avoid_shops():
     return names, pairs, why
 
 
+_LE = {"t": 0, "m": {}}
+
+
+def low_edge(shop, kind, min_n=20):
+    """The low edge of what `shop` accepts for `kind` ('food'; 'goods' = its warranted grade A/B units): the 5th
+    percentile of price/list over its settles in the last 6 h (buyer_value's ledger cache, re-read every 10 min); None under min_n settles."""
+    if time.time() - _LE["t"] > 600:
+        _LE["t"] = time.time()
+        try:
+            sv = json.loads((HERE / ".market" / "shop_value.json").read_text())
+            D = sv.get("deals") or []
+            t1 = max(d["ts"] for d in D) if D else 0
+            m = {}
+            for d in D:
+                if t1 - d["ts"] > 6 * 3600:
+                    continue
+                if not d.get("goods"):
+                    m.setdefault((d["shop"], "food"), []).append(d["x"])
+                elif d.get("grade") in ("A", "B") and d.get("w"):       # goods: warranted A/B only, what we buy
+                    m.setdefault((d["shop"], "goods"), []).append(d["x"])
+            _LE["m"] = {k: (sorted(v)[len(v) * 5 // 100], len(v)) for k, v in m.items()}
+        except (OSError, ValueError):
+            pass
+    e = _LE["m"].get((shop, kind))
+    return e[0] if e and e[1] >= min_n else None
+
+
 _GB = {"t": 0, "m": {}}
 
 
@@ -490,6 +517,13 @@ def choose(shops, mem, item, budget, ask_model=True, ctx=None):
                 gb = graded_best(s["name"], ctx["cat"])
                 if gb and gb[1] >= 6 and gb[0] > e["saved"]:
                     e = dict(e, saved=round((gb[1] * gb[0] + 6 * e["saved"]) / (gb[1] + 6), 4), graded_bc=gb)
+                if ctx.get("push5"):
+                    # a push5 order haggles from the shop's low edge for warranted A/B (5th percentile of its
+                    # settles): expect that edge + .04 of list, less a 4% break haircut (a warranted break = 0);
+                    # the grade ceilings at the receipt still refuse anything that would score under the bar
+                    le = low_edge(s["name"], "goods")
+                    if le is not None and (1 - le - 0.04) * 0.96 > e["saved"]:
+                        e = dict(e, saved=round((1 - le - 0.04) * 0.96, 4), low_edge=le)
             if ctx.get("wpen") and ctx["kind"] == "goods":
                 # 11-07 A/B "wpen": our no-warranty goods ran 0.244 per deal (16 breaks at -1 in 439) against 0.324
                 # with a warranty, below our running mean; charge a shop for the share of its goods sold without one
@@ -708,6 +742,7 @@ def main():
         # 11-09 A/B "aim15" (user: 'next, try 15%'): within aimtop, the cap sits at the shop's p15 + cap_margin
         aim15 = aimtop and random.random() < bp.get("aim15_share", 0)
         gradeaware = order.get("kind") == "goods" and random.random() < bp.get("gradeaware_share", 0)
+        push5 = random.random() < bp.get("push5_share", 0)        # 11-11: drawn before the shop choice (see value())
         if order.get("kind") == "food" and order.get("use_within_hours"):
             try:                                   # for our shop's restock: how long buyers need food to last
                 with open(INTEL, "a", encoding="utf-8") as f:
@@ -730,7 +765,7 @@ def main():
         except (OSError, ValueError):
             _sc = {}
         vctx = {"stats": value_table(), "kind": order.get("kind") or "goods", "cat": order.get("category"), "bp": sbp,
-                "wpen": wpen, "aimtop": aimtop, "aim15": aim15, "m_star": m_star(sbp),
+                "wpen": wpen, "aimtop": aimtop, "aim15": aim15, "push5": push5, "m_star": m_star(sbp),
                 "ours": _sc.get("ours") or {}, "cal": _sc.get("calibration") or {}}
         shops = [s for s in shops if pick_sku(s, acceptable, catalog, a.budget, share, cskip)]
         prices = [(catalog.get(k) or {}).get("list_price") or 0 for k in acceptable]
@@ -831,6 +866,15 @@ def main():
         arm = "push3" if push and random.random() < bp.get("push3_share", 0) else "push2"
         below = bp.get("push3_below", 0.10) if arm == "push3" else bp.get("push_below", 0.05)
         npush, max_push = 0, 2 if arm == "push3" else 1
+        # 11-11 push5 (A/B; food first, goods added the same evening at the user's word): psyoung82 pays .10-.13 of list less than we do at the SAME shop and grade (6 h:
+        # thisjonghoon B .45 vs our .54 and others' .59, outseop C .44 vs .52, YAHO1212 B .47 vs .58): it buys at the
+        # low edge of what each shop accepts. push3 counters twice at the midpoint between the ask and its aim and
+        # then takes the ask; push5 offers the shop's low edge itself (p05 of its settles over 6 h, else p25 - .12)
+        # and climbs by push5_step of list per round, up to push5_rounds counters, before it takes an ask under the cap
+        low5 = None
+        if push and push5:                                            # food and, since 19:55 (user), goods
+            arm, max_push = "push5", int(bp.get("push5_rounds", 6))
+            low5 = low_edge(pick["name"], order.get("kind") or "food")
         try:
             seller = Seller(pick["url"])
             t = seller.send(first)
@@ -924,13 +968,20 @@ def main():
                     history.append(("seller asked", ask))
                     lp = want["list_price"]
                     prev = [a for k, a in history[:-1] if k == "seller asked"]
+                    aim_bar = (max(0.38, low5 if low5 is not None else p25 - 0.12) if arm == "push5" and p25 else
+                               max(0.4, p25 - below) if p25 else None)
                     if (push and npush < max_push and ask <= cap and p25 and len(mine) < 1 + max_push
-                            and ask > lp * max(0.4, p25 - below)):
+                            and ask > lp * aim_bar):
                         # counter halfway down to (shop p25 - push_below); push2 (11-07 07:00) also reaches here
                         # for low first asks the quick accept used to take, and aims below p25, not at it
                         pushed, npush = True, npush + 1
                         aim_p = int(lp * max(0.4, p25 - below))
-                        action, offer = "offer", max(mine[-1] if mine else 0, (ask + aim_p) // 2)
+                        if arm == "push5":      # the low edge itself, then small steps up; never above the ask
+                            aim_p = int(lp * max(0.38, low5 if low5 is not None else p25 - 0.12))
+                            step5 = max(1, int(lp * bp.get("push5_step", 0.015)))
+                            action, offer = "offer", min(ask, max(aim_p, (mine[-1] + step5) if mine else aim_p))
+                        else:
+                            action, offer = "offer", max(mine[-1] if mine else 0, (ask + aim_p) // 2)
                     elif ask <= cap:
                         action, offer = "offer", ask
                     elif len(mine) >= 3 and prev and ask >= prev[-1]:
