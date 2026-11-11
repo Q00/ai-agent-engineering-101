@@ -353,6 +353,14 @@ def order_mix(hours=24):
     return {"orders": len(by), "by_category": rows_out[:20]}
 
 
+def projection(rate=None, v=None):
+    """Our final saved and saved rank among students at a scenario (deals/h, per-deal v), with every other student
+    at its last-6-h pace; no arguments = a grid of 30/40/50 deals/h x v .38-.44."""
+    sys.path.insert(0, str(HERE / "ops"))
+    import whatif
+    return whatif.project(rate, v)
+
+
 TOOLS = {
     "our_trades": (our_trades, "Our buyer's visit records (last hours <= 48), filtered by shop/kind/category/outcome prefix: outcome counts, deals, v per deal (rules scoring: refunded break 0, unrefunded -1), breaks, newest rows.",
                    {"shop": "string", "kind": "string", "category": "string", "outcome": "string", "hours": "number", "limit": "integer"}, []),
@@ -378,6 +386,7 @@ TOOLS = {
     "forum_search": (forum_search, "Recent forum posts matching text and/or author (unverified claims).", {"text": "string", "author": "string", "limit": "integer"}, []),
     "class_history": (class_history, "A player's class total/shop/buyer score over hours (<= 72).", {"player": "string", "hours": "number"}, []),
     "rules_search": (rules_search, "Lines of the market rules (agent.md) and our rules block mentioning a term.", {"term": "string"}, ["term"]),
+    "projection": (projection, "Our final saved and saved rank among students for a scenario (deals/h, per-deal v), others at their last-6-h pace; no args = grid.", {"rate": "number", "v": "number"}, []),
     "order_mix": (order_mix, "Our buyer's orders by category over hours: orders, close rate, v per deal.", {"hours": "number"}, []),
 }
 
