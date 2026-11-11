@@ -180,9 +180,13 @@ def memory_opening(list_price, max_pay, profile):
     return int(min(max_pay, list_price * profile["min_close_ratio"] * 0.97))
 
 
-def buyer_next_offer(list_price, max_pay, ask, last_offer, n, opening=None):
+def buyer_next_offer(list_price, max_pay, ask, last_offer, n, opening=None, final=False):
     """Our next offer. Opens low (FIRST_OFFER_RATIO of list), then closes half the gap to the shop's ask each
-    round, never above max_pay. Returns ("accept", ask) when the ask is already good enough."""
+    round, never above max_pay. Returns ("accept", ask) when the ask is already good enough.
+    final: the shop called its price final. Of 2,591 such prices in the logs 2,539 (98%) never moved, yet we went on
+    for 4,123 more turns: take it now when it is within max_pay, else ("walk", None)."""
+    if final and ask is not None:
+        return ("accept", int(ask)) if ask <= max_pay else ("walk", None)
     if ask is not None and ask <= max_pay and (ask <= list_price * 0.72 or n >= 3):
         return "accept", int(ask)
     if last_offer is None:

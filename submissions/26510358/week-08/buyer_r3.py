@@ -168,6 +168,15 @@ def read_ask(reply, c):
     return int(v) if isinstance(v, (int, float)) and 0.1 * c["list"] <= v <= 5 * c["list"] else None
 
 
+FINAL_RE = re.compile(r"\bfinal (?:price|offer)\b|\bfirm price\b|\b(?:lowest|floor) (?:price|we can)|already (?:at|as low)"
+                      r"|as low as it goes|can(?:no|')t go (?:any )?lower|\bno lower\b|최종|더 이상 (?:못|안)", re.I)
+
+
+def is_final(reply):
+    """The shop says its price will not move (wording collected from the logged replies)."""
+    return bool(FINAL_RE.search(reply or ""))
+
+
 SHELF_RE = re.compile(r"(\d+(?:\.\d+)?)\s*(?:h|hours?|시간)\s*(?:of shelf life|left|남)", re.I)
 
 
@@ -184,7 +193,7 @@ def negotiate(c, order, deadline):
     if c["kind"] == "food":
         want += f" Need at least {accept_policy(order)['min_hours_left']:.0f} h of shelf life."
     t = client.send(want)
-    lines, ask, offer, n = [("me", want), ("shop", a2a.said(t))], None, None, 0
+    lines, ask, offer, n, final = [("me", want), ("shop", a2a.said(t))], None, None, 0, False
     try:
         if c["kind"] == "food":
             left, need = stated_shelf_hours(a2a.said(t)), accept_policy(order)["min_hours_left"]
@@ -200,7 +209,11 @@ def negotiate(c, order, deadline):
                 if grade:                              # the shop named the grade: bid to that grade's own limit
                     c["hint"] = {"grade": grade, "warranty_hours": hours}
                     c["max_pay"] = limit_for(c, grade, hours)
-            action, price = pricing.buyer_next_offer(c["list"], c["max_pay"], ask, offer, n, opening=c.get("opening"))
+            final = got is not None and is_final(a2a.said(t))
+            action, price = pricing.buyer_next_offer(c["list"], c["max_pay"], ask, offer, n, opening=c.get("opening"),
+                                                     final=final)
+            if action == "walk":
+                break                                  # a final price over our limit: the next shop, not 6 more turns
             if offer is not None and price <= offer and action == "offer":
                 break                                  # at our limit and the shop does not move
             offer, n = price, n + 1
@@ -209,7 +222,8 @@ def negotiate(c, order, deadline):
         if a2a.state(t) == "TASK_STATE_INPUT_REQUIRED":
             client.cancel(t.get("id"))
         rec = a2a.receipt(t) if a2a.state(t) == "TASK_STATE_COMPLETED" else None
-        return rec, {"lines": lines, "ask": ask, "offer": offer, "state": a2a.state(t), "task": t.get("id")}
+        return rec, {"lines": lines, "ask": ask, "offer": offer, "state": a2a.state(t), "task": t.get("id"),
+                     "final": final}
     finally:
         client.close()
 
