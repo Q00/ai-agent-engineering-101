@@ -268,7 +268,7 @@ def plan(inv, demand_rows, mem, now=None, dry_run=False, adjust=None):
             stock_cost += u["cost"]
             cat_cost[u["category"]] = cat_cost.get(u["category"], 0) + u["cost"]
     balance = inv.get("balance") or 0
-    stock_max, prem_budget, prem_max, cap_why = cashflow.caps(mem, balance, stock_cost, now, dry_run)
+    stock_max, prem_budget, prem_max, cap_why = cashflow.caps(mem, balance, stock_cost, now, dry_run, premium_cost=prem_cost)
     budget = min(balance - config.CASH_RESERVE, stock_max - stock_cost)
     explore_budget = min(budget, config.EXPLORE_SHARE * config.MAX_STOCK_COST - (mem.get("explore_spent") or 0))
     dem = mem.category_demand(now=now, premium_min=config.PREMIUM_MIN_LIST)   # this plan never buys premium,

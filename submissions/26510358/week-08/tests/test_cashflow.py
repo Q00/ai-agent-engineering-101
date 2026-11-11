@@ -58,3 +58,17 @@ def test_dry_run_keeps_state():
     m = Mem(sold=90, received=100, turned=2)
     cashflow.caps(m, 200e6, 59e6, now=10_000, dry_run=True)
     assert m.get("cash_cap") is None
+
+
+def test_premium_stock_does_not_shrink_the_normal_ceiling():
+    """2026-11-11: buying premium moved 174M of balance to 151M in an hour, the ceiling (0.60 x balance) fell 104M -> 90M
+    under the 109M of normal stock, and food/normal goods got no restock line. Cash spent on premium stock is still
+    capital (book counts it at cost), so the ceiling is a share of balance + premium stock at cost."""
+    huge = config.STOCK_BUDGET_MAX * 10                                   # a cap the ceiling clips
+    a, b = Mem(), Mem()
+    a.kv["cash_cap"] = b.kv["cash_cap"] = {"cap": huge, "ts": 10_000}     # no step: the ceiling alone decides
+    before = cashflow.caps(a, 174_000_000, 109_000_000, now=10_060)[0]
+    after = cashflow.caps(b, 151_000_000, 109_000_000, now=10_060, premium_cost=23_000_000)[0]
+    assert after == before == int(config.CAP_CEILING_SHARE * 174_000_000)
+    assert cashflow.caps(Mem(), 151_000_000, 109_000_000, now=10_060)[3]["ceiling"] == \
+        int(config.CAP_CEILING_SHARE * 151_000_000)                       # without premium stock: as before

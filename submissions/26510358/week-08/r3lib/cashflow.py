@@ -24,12 +24,16 @@ def _sell_rate(mem, hours):
     return (sold / received if received else None), received
 
 
-def caps(mem, balance, stock_cost, now=None, dry_run=False):
-    """-> (stock cap, premium budget, premium max units, why). stock_cost: non-premium stock, the cap's own."""
+def caps(mem, balance, stock_cost, now=None, dry_run=False, premium_cost=0):
+    """-> (stock cap, premium budget, premium max units, why). stock_cost: non-premium stock, the cap's own.
+    premium_cost: premium stock on hand at cost. The ceiling is a share of balance + premium_cost: until 2026-11-11 it
+    was a share of the balance alone, so every premium buy lowered it (104M -> 90M in the first hour of the larger
+    premium budget) and food and normal goods got no restock line while their stock sat over the shrunken cap."""
     now = now or time.time()
     st = mem.get("cash_cap") or {}
     cap = float(st.get("cap") or config.STOCK_BUDGET_MAX)
-    ceiling = max(config.MAX_STOCK_COST, config.CAP_CEILING_SHARE * max(0, balance or 0))
+    ceiling = max(config.MAX_STOCK_COST,
+                  config.CAP_CEILING_SHARE * (max(0, balance or 0) + max(0, premium_cost or 0)))
     why = {"cap_before": int(cap), "ceiling": int(ceiling), "stock_cost": int(stock_cost)}
     if now - (st.get("ts") or 0) >= config.CAP_STEP_MIN * 60:
         rate, received = _sell_rate(mem, config.CAP_SELL_HOURS)
