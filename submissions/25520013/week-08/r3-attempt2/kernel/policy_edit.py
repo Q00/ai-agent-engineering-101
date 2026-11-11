@@ -217,10 +217,12 @@ def _keys(section):
     return out
 
 
-def view(root, categories=()):
-    """Current values of the editable keys, per section, for the operator's tool."""
+def view(root, categories=(), show=()):
+    """Current values of the editable keys, per section, for the operator's tool. show: categories without a block of
+    their own that still get a value line (what they inherit), so asking for one never comes back without values."""
     pol = c.load_json(path(root), {}) or {}
     secs = list(DEFAULTS) + sorted((pol.get("categories") or {}).keys())
+    bare = sorted(set(show) - set(secs))
     grades = {k: [list(v[0]), *v[1:3]] for k, v in GRADE_KEYS.items()}
 
     def rng(d):
@@ -246,6 +248,11 @@ def view(root, categories=()):
                 else ""
             )
         )
+    for s in bare:
+        vals = {k: effective(pol, s, k) for k in _keys(s)}
+        lines.append(
+            f"- {s}: {json.dumps(vals, ensure_ascii=False)} (이 구역에 직접 적힌 키 없음: 전부 defaults.{_kind(s)}에서 물려받은 값)"
+        )
     shop = _resolved(pol, "shop")
     vals = {k: effective(pol, "shop", k) for k in _keys("shop")}
     vals[LEAF_KEY] = shop.get(LEAF_KEY) or []
@@ -259,7 +266,7 @@ def view(root, categories=()):
     if extra:
         lines.append(
             "새로 값을 줄 수 있는 상품군(지금은 defaults 값을 씀): "
-            + ", ".join(extra[:30])
+            + ", ".join(extra)
         )
     return "\n".join(lines)
 

@@ -380,10 +380,14 @@ def policy(root, days=1, section=None):
     days = max(1, min(7, int(days))) if isinstance(days, (int, float)) and not isinstance(days, bool) else 1
     rows = pe.recent(Trajectory(os.path.join(root, "a2/trajectory.jsonl")), c.now_ts(), days * 24)
     hist = [f"- {c.kst(r.get('ts'))} {r.get('section')} {r.get('key')} {r.get('old')} -> {r.get('new')}: {r.get('reason')}" for r in rows[-30:]]
-    view = pe.view(root, cats)
-    if isinstance(section, str) and section.strip():
-        sec = section.strip()
-        view = "\n".join(ln for ln in view.split("\n") if not ln.startswith("- ") or sec in ln.split(": ", 1)[0])
+    sec = section.strip() if isinstance(section, str) else ""
+    view = pe.view(root, cats, show=[x for x in cats if sec and sec in x])
+    if sec:
+        view = "\n".join(
+            ln
+            for ln in view.split("\n")
+            if not ln.startswith(("- ", "새로 값을 줄 수 있는")) or sec in ln.split(": ", 1)[0]
+        )
         hist = [h for h in hist if sec in h]
     return c.cap(view + "\n최근 정책 수정\n" + ("\n".join(hist) or "없음"), MAX_CHARS)
 
