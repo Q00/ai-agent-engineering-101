@@ -402,6 +402,31 @@ class Memory:
         self.put("category_outcomes", {"ts": now, "items": out})
         return out
 
+    def grade_stars(self, grade, hours=96, now=None, max_age=3600):
+        """(mean stars, n) of the reviews our goods deals claimed at this grade got in the last `hours`. Reviews are
+        written once, at the deal (ledger `result`), so this is what selling a grade does to our stars. Kept in meta
+        for max_age seconds."""
+        now = now or time.time()
+        key = f"grade_stars:{grade}"
+        kept = self.get(key)
+        if kept and now - (kept.get("ts") or 0) < max_age:
+            return kept["mean"], kept["n"]
+        mine = sorted(self.my_shop_urls())
+        cat = market.catalog()
+        total = n = 0
+        if mine:
+            with self.db() as c:
+                q = ("SELECT json_extract(data, '$.receipt.item') sku, json_extract(data, '$.stars') stars FROM ledger "
+                     "WHERE seq>=? AND kind='result' AND json_extract(data, '$.receipt.claim')=? AND "
+                     f"json_extract(data, '$.shop') IN ({','.join('?' * len(mine))})")
+                for r in c.execute(q, (self._seq_at(c, now - hours * 3600), grade, *mine)):
+                    if r["stars"] is not None and (cat.get(r["sku"]) or {}).get("kind") == "goods":
+                        total += r["stars"]
+                        n += 1
+        mean = total / n if n else 0.0
+        self.put(key, {"ts": now, "mean": mean, "n": n})
+        return mean, n
+
     def own_sales(self, hours=24):
         mine = self.my_shop_urls()
         if not mine:

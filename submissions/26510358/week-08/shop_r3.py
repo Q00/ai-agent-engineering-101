@@ -31,7 +31,7 @@ from a2a.server.routes import create_agent_card_routes, create_jsonrpc_routes
 from a2a.server.tasks import InMemoryTaskStore, TaskUpdater
 from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 
-from r3lib import bandit, config, markdown, market, pricing, score_model, scout
+from r3lib import bandit, config, markdown, market, pricing, score_model, scout, shelf
 from r3lib.memory import Memory
 
 LEGACY = {"lamp": (100, 130), "chair": (180, 234), "bookshelf": (260, 338)}   # reserve, first ask (Round 0-2)
@@ -98,12 +98,14 @@ def wanted_hours(text):
     return float(m.group(1)) if m else 0.0
 
 
-def find_unit(text, taken, grade_ratio=None):
+def find_unit(text, taken, grade_ratio=None, first=None):
     """In-stock unit for what the buyer asked (SKU first, else category or name). Among fitting units, the one
     that expires first while still lasting what the buyer asked for; goods: best grade first, then oldest.
     A goods SKU with more than OVERSTOCK_SKU_UNITS on hand offers its widest-margin grade first instead
     (pricing.overstock_order; needs grade_ratio = Memory.grade_price_ratio). The unit comes back with sku_units,
-    the units of its SKU on hand."""
+    the units of its SKU on hand.
+    first: {sku: grade} from the CEO tick's shelf pass (r3lib/shelf.py): the SKU shows that grade first, oldest
+    unit, while it has one (pushed=grade on the unit)."""
     inv = market.read_json("inventory.json", {}) or {}
     if (inv.get("round") or 0) < 3:
         want = (text or "").lower()
@@ -141,6 +143,10 @@ def find_unit(text, taken, grade_ratio=None):
             best = pricing.overstock_order(same, grade_ratio)
         except Exception as e:                        # memory trouble must not lose a sale
             log("overstock_error", error=str(e)[:200])
+    pushed = [u for u in same if u.get("grade") == (first or {}).get(best["sku"])]
+    if pushed:
+        return dict(min(pushed, key=lambda u: u.get("supplied_at") or 0), sku_units=on_hand,
+                    pushed=pushed[0]["grade"]), inv
     return dict(best, sku_units=on_hand), inv
 
 
@@ -180,6 +186,7 @@ class Shop(AgentExecutor):
         self._board = (0.0, None)
         self.ask_bandits = {False: bandit.Bandit("ask", config.ASK_ARMS, 1.0, mem=memory),
                             True: bandit.Bandit("ask_premium", config.PREMIUM_ASK_ARMS, 1.0, mem=memory)}
+        self.anchor_bandit = bandit.Bandit("ask_c", config.C_ANCHOR_ARMS, config.C_ANCHOR_ARMS[0], mem=memory)
 
     def _value(self, price, cost):
         """Board score of a sale, from the cached board (refreshed by the buyer and the org server, never here)."""
@@ -244,13 +251,26 @@ class Shop(AgentExecutor):
         ask = pricing.warranty_ask(ask, u, warranty, p_break)
         floor = pricing.warranty_floor(floor, u, ask, warranty, p_break, slow=low)
         ask = pricing.cap_ask(ask, u["list_price"], grade_ratio, floor, over=-config.SLOW_UNDERCUT if slow else None)
-        marked = arm = None
+        marked = arm = anchor = None
         try:
             # A live markdown of the SKU (the CEO tick's unprompted action) sets the first ask; otherwise the L1
             # bandit scales it by one of ASK_ARMS. Either way the floor above is untouched.
             ask, marked = markdown.apply(self.mem, u, ask, floor)
-            if marked is None and config.BANDIT_ASK_ENABLED:
-                premium = u.get("kind") == "goods" and u["list_price"] >= config.PREMIUM_MIN_LIST
+            premium = u.get("kind") == "goods" and u["list_price"] >= config.PREMIUM_MIN_LIST
+            a_ratio = None
+            if marked is None and config.C_ANCHOR_ENABLED and u.get("kind") == "goods" and u.get("grade") == "C":
+                a_ratio, _ = self.mem.grade_price_ratio(u["sku"], "A")
+            if a_ratio:
+                # Grade C starts from what the market pays for the SKU's grade A (16% of the market's C deals pay
+                # 0.95 of it or more, the median 0.81), not from the C median we used to end under. Never below the
+                # rule's ask; a buyer who haggles still comes down to the same floor.
+                ctx = ("premium" if premium else "goods", "C", "slow" if slow else "-")
+                b = self.anchor_bandit
+                arm, _ = b.choose(ctx, sku=u["sku"])
+                ask = int(max(floor, ask, min(u["list_price"], u["list_price"] * a_ratio * arm)))
+                self._choice = (b, ctx, arm)
+                anchor = round(a_ratio, 4)
+            elif marked is None and config.BANDIT_ASK_ENABLED:
                 ctx = ("premium" if premium else u.get("kind") or "goods", u.get("grade") or "-", "slow" if slow else "-")
                 b = self.ask_bandits[premium]
                 arm, _ = b.choose(ctx, sku=u["sku"])
@@ -259,7 +279,7 @@ class Shop(AgentExecutor):
                 self._choice = (b, ctx, arm)
         except Exception as e:                        # a policy fault must not lose a sale: the rule's ask stands
             log("bandit_error", error=str(e)[:200])
-        log("terms", markdown=marked, arm=arm, slow=slow, slow_floor=low, sku_units=u.get("sku_units"), sku=u["sku"], grade=u.get("grade"), cost=u["cost"], list_price=u["list_price"], ask=ask,
+        log("terms", markdown=marked, arm=arm, anchor=anchor, pushed=u.get("pushed"), slow=slow, slow_floor=low, sku_units=u.get("sku_units"), sku=u["sku"], grade=u.get("grade"), cost=u["cost"], list_price=u["list_price"], ask=ask,
             floor=floor, market_ratio=ratio, grade_ratio=grade_ratio, evidence=n, adjust=adj, scarcity=premium, warranty=warranty,
             p_break=round(p_break, 4))
         return ask, floor, warranty
@@ -288,7 +308,7 @@ class Shop(AgentExecutor):
 
         if d is None:
             taken = {x["unit"]["unit"] for x in self.open.values() if x["unit"].get("unit")}
-            u, inv = find_unit(text, taken, self.mem.grade_price_ratio)
+            u, inv = find_unit(text, taken, self.mem.grade_price_ratio, shelf.live(self.mem))
             if u is None:
                 try:
                     k, sku = requested_category(text)

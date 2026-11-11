@@ -152,6 +152,20 @@ MARKDOWN_MAX_CUT = 0.20             # a markdown never cuts the regular first as
 BANDIT_ASK_ENABLED = True           # L1: the shop's first ask x one of ASK_ARMS per (kind, grade, slow), learned on board score
 ASK_ARMS = (0.9, 1.0, 1.1)          # within +-20% of the rule's ask; floors (L0) are untouched
 PREMIUM_ASK_ARMS = (0.9, 1.0, 1.1)  # E2 proposes (1.0, 1.2, 1.5) for premium furniture: beyond +-20%, needs the human's yes
+# --- shop: the grade shown first and grade C's first ask (r3lib/shelf.py), the human's yes 2026-11-11 11:40 KST ----
+SHELF_EVERY_S = 600                 # the CEO tick judges the order of each mixed-grade goods SKU this often
+SHELF_TTL_H = 2                     # a pushed grade stays first this long, then it is judged again on what it sold
+SHELF_MIN_HELD = 3                  # units of a grade that must have waited SHELF_MIN_AGE_H before it is a candidate
+SHELF_MIN_AGE_H = 12
+SHELF_MIN_MARKET = 8                # market deals of the SKU at that grade in SHELF_MARKET_H: 48 h, because a thin
+SHELF_MARKET_H = 48                 #   SKU (office chair: 5 C deals in 24 h, 11 in 48 h, 12 C on our shelf) is the case
+SHELF_DEFAULT_CLOSE = 0.3           # our close rate on a SKU without a quote in 24 h
+SHELF_MIN_STARS = 4.3               # guard: a grade whose goods deals average under this over SHELF_MIN_REVIEWS
+SHELF_MIN_REVIEWS = 30              #   reviews (4 days) is not pushed (2026-11-11: C 4.58 over 342, A 4.52)
+C_ANCHOR_ENABLED = True             # grade C goods: first ask = the SKU's grade A market median x one of the arms,
+C_ANCHOR_ARMS = (0.8, 0.9, 1.0)     #   never under the rule's ask; floors and concessions untouched. 3 days of ledger:
+                                    #   the market's C deals sit at 0.81 of the same SKU's A median (p75 0.90, p90
+                                    #   0.99), ours closed at 0.82 of the market's C median and 71% of C quotes closed
 GRADE_FACTOR = {"food": {"A": 1.0, "B": 0.95, "C": 0.82}, "goods": {"A": 1.0, "B": 0.90, "C": 0.75}}
 UNSTATED_NEED_SHARES = (0.75, 0.5, 0.25)   # food for a buyer that names no need: the soonest unit lasting this share
                                            #   of shelf life, longest first (orders ask 0.25/0.5/0.75 of it)

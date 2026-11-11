@@ -7,6 +7,7 @@ so the same code runs behind the internal A2A server or in-process when the serv
   quality     warranty_policy: break rate and warranty per grade x category; harsh: review-spam styles; refunds
   marketing   stats: our posts, votes and member codes; pricing: close rate, ask levels, premium pilot;
               markdown: the unprompted markdown of overstocked SKUs (initiative.judge + the clearance bandit)
+              shelf: the unprompted choice of the grade a mixed-grade SKU shows first (initiative.judge)
 
 Selling (shop_r3.py) never goes through here: it answers buyers in milliseconds in-process and reads the same
 memory and pricing rules. The departments decide on the slow path (every 60 s or less often).
@@ -15,7 +16,7 @@ memory and pricing rules. The departments decide on the slow path (every 60 s or
 import json
 import time
 
-from .. import config, initiative, market, markdown, pricing, score_model, scout
+from .. import config, initiative, market, markdown, pricing, score_model, scout, shelf
 
 GRADES = ("A", "B", "C")
 ABNORMAL_OFFER_X = 3                  # a "deal" above this multiple of list is left out of the price KPIs
@@ -197,6 +198,19 @@ def marketing_markdown(mem, args, call, now=None):
             "live": sorted(k for k, m in (mem.get("markdown") or {}).items() if m.get("arm") != "keep")}
 
 
+def marketing_shelf(mem, args, call, now=None):
+    """The shop's second unprompted action: every SHELF_EVERY_S judge, for each goods SKU with several grades on
+    hand, whether a grade the market buys and we do not sell should be shown first (r3lib/shelf.py)."""
+    now = now or time.time()
+    if now - (mem.get("shelf_ts") or 0) < config.SHELF_EVERY_S:
+        return {"due": False}
+    mem.put("shelf_ts", now)
+    inv = market.read_json("inventory.json", {}, args.get("state")) or {}
+    rows = shelf.tick(mem, inv.get("units") or [], now=now, board=score_model.load())
+    return {"due": True, "judged": len(rows), "acted": sum(r["decision"] == "act" for r in rows),
+            "live": shelf.live(mem, now)}
+
+
 # ------------------------------------------------------------------------------------------- ceo
 def ceo_tick(mem, args, call):
     """One restock cycle. Returns the kit's restock answer ({"buy": [...]}, maybe "bankrupt" or "wait")."""
@@ -209,6 +223,10 @@ def ceo_tick(mem, args, call):
         return {"buy": [], "bankrupt": True}
     try:
         call("marketing", "markdown", {"state": md})    # unprompted, also in the last hours when buying has stopped
+    except Exception:
+        pass
+    try:
+        call("marketing", "shelf", {"state": md})       # unprompted: which grade each mixed-grade SKU shows first
     except Exception:
         pass
     if config.hours_left_in_round() <= config.STOP_BUYING_HOURS:
@@ -293,6 +311,7 @@ SKILLS = {
                 "refunds": (quality_refunds, "our goods refunds by grade")},
     "marketing": {"stats": (marketing_stats, "our buyer posts, votes and member codes"),
                   "markdown": (marketing_markdown, "unprompted markdown of overstocked SKUs, judged by p > C/(B+C)"),
+                  "shelf": (marketing_shelf, "unprompted: the grade a mixed-grade SKU shows first, by p > C/(B+C)"),
                   "pricing": (marketing_pricing, "close rate, ask and final price ratios, premium pilot")},
 }
 
