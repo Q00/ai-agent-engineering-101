@@ -17,7 +17,12 @@ import time
 from harness import call_harness
 
 INTERVAL = 1200          # seconds between tuning passes
-LOOKBACK = 2 * 3600       # how far back the stats look
+LOOKBACK = 2100           # how far back the stats look -- kept close to INTERVAL (not much longer) so a
+                         # tune's own effect shows up in the very next cycle instead of being averaged
+                         # away with 1-2 hours of whatever the knob was set to before (measured live:
+                         # cutting open_premium to 0 actually lifted the deal rate to 50%, but a 2-hour
+                         # lookback kept diluting that with the worse 0.06/0.04/0.02 periods, so the next
+                         # cycle "saw" no improvement and kept cutting a knob that had already worked)
 
 # (min, max) for every knob a human already chose a starting value for; the LLM's answer is clamped here
 BOUNDS = {
@@ -88,11 +93,15 @@ def rule_proposal(stats, policy):
     reasons = []
 
     neg = stats["shop_negotiations"]
-    if neg["total"] >= 20 and neg["deal_rate"] is not None and neg["deal_rate"] < 0.35:
-        cur = policy["seller"].get("open_premium", 0.06)
-        p["seller"]["open_premium"] = cur - 0.02
+    cur_premium = policy["seller"].get("open_premium", 0.06)
+    if (neg["total"] >= 20 and neg["deal_rate"] is not None and neg["deal_rate"] < 0.35
+            and cur_premium > BOUNDS["seller"]["open_premium"][0]):   # no room left: let the LLM pick
+        p["seller"]["open_premium"] = max(BOUNDS["seller"]["open_premium"][0], cur_premium - 0.02)
         reasons.append(f"shop deal_rate {neg['deal_rate']} over {neg['total']} negotiations is low: "
-                       f"open_premium {cur} -> {p['seller']['open_premium']}")
+                       f"open_premium {cur_premium} -> {p['seller']['open_premium']}")
+    elif neg["total"] >= 20 and neg["deal_rate"] is not None and neg["deal_rate"] < 0.35:
+        reasons.append(f"shop deal_rate {neg['deal_rate']} is still low but open_premium is already at its "
+                       f"floor ({cur_premium}) -- the low rate likely isn't about price anymore")
 
     loss = stats["shop_warranty_losses"]
     if loss["n"] >= 3 and loss["refunded_won"] > 100000:
