@@ -14,6 +14,8 @@ buyer_score.py. Each guard is justified by a past incident (volatility analysis,
   G7 rank step   class buyer <= -.009 or class shop <= -.007 in one 15-min step, confirmed by the next sample
                  -> wake the matching strategist (2 h cooldown)
   G8 stars       our board stars_rank worse by >= 2 ranks within 2.5 h (shop_parts.jsonl) -> wake the shop (<= 2/day)
+  G13 revenue   the student shop below us in revenue passing us before the round ends (3 h slopes) -> wake the shop
+                 (<= 1 per 2 h), phone alert under 72 h (user 11-11: never lose revenue 2nd)
   G9 book        book lead over the best other shop closing in < 72 h at the 6 h slopes -> wake the shop (<= 1 per 6 h)
   G10 budget     model spend in the last 24 h >= DAILY_CAP -> the strategists skip their non-wake slots; alert at 80%
   G11 skips      skipped share of orders over 6 h > 65% -> alert (the skip bar may be above the market)
@@ -269,6 +271,36 @@ def main():
                 fires.append("G9")
     except Exception as e:
         log(f"G9 skipped: {e!r}")
+
+    # G13 revenue 2nd (user 11-11: never lose it): the student shop right below us in revenue, 3 h slopes
+    try:
+        studs = {(p.get("shop") or {}).get("name") for p in bd["players"] if p.get("student")}
+        rv = sorted([s for s in bd["shops"] if s["name"] in studs and s.get("revenue") is not None], key=lambda s: -s["revenue"])
+        i = [s["name"] for s in rv].index("yms979")
+        if i + 1 < len(rv):
+            below = rv[i + 1]
+            rh = [h for h in (st.get("rev_hist") or []) if now - h["t"] <= 3.5 * 3600]
+            rh.append({"t": now, "us": mine["revenue"], "who": below["name"], "them": below["revenue"]})
+            st["rev_hist"] = rh
+            base = next((h for h in rh if now - h["t"] >= 2.5 * 3600 and h["who"] == below["name"]), None)
+            if base:
+                dt = (now - base["t"]) / 3600
+                ours, theirs = (mine["revenue"] - base["us"]) / dt, (below["revenue"] - base["them"]) / dt
+                gap = mine["revenue"] - below["revenue"]
+                eta = gap / (theirs - ours) if theirs > ours else None
+                st["rev_eta_h"] = round(eta, 1) if eta else None
+                st["rev_rank"] = i + 1
+                left_h = max(0.0, (1794927540 - now) / 3600)          # round end 11-17 23:59 KST
+                if eta is not None and eta < left_h + 12 and cooled(st, "G13", 2 * 3600, now):
+                    wake("shop", f"G13 revenue rank {i + 1}: {below['name']} closes the {gap / 1e9:.2f} B gap in {eta:.0f} h "
+                                 f"(them {theirs / 1e6:.1f} M/h, us {ours / 1e6:.1f} M/h); the round has {left_h:.0f} h left")
+                    fired(st, "G13", now)
+                    fires.append("G13")
+                    if eta < 72 and cooled(st, "G13a", 12 * 3600, now):
+                        alert([f"G13 매출 {i + 1}위: {below['name']}가 {eta:.0f}h 안에 추월할 속도입니다 (그쪽 {theirs / 1e6:.1f} M/h, 우리 {ours / 1e6:.1f} M/h)"])
+                        fired(st, "G13a", now)
+    except Exception as e:
+        log(f"G13 skipped: {e!r}")
 
     # G10 budget
     try:
