@@ -112,8 +112,14 @@ def food_unit_ok(grade, shelf_hours, need):
 
 
 NICK = os.environ.get("MARKET_NICK", "jiseokkk")   # my market name, for shops that take a few percent off for regulars
-WARRANTY_MATTERS_FROM = 300_000   # goods at or above this reference price prefer shops that give a warranty
-REOPEN_SLACK = 1.15               # a stated floor up to this much over my reference is paid in a new task
+WARRANTY_MATTERS_FROM = 0         # 11-11 17:30: a break scores -1 whatever the price (agent.md: "a sofa and a snack at 30% off
+                                  # score the same"; 62 of my 157 breaks had no warranty), so every goods order prefers warranty shops
+PAY_CAP_RATIO = 0.70              # 11-11 17:30: never pay over this share of list. Saved scores 1 - price/list per deal (0.30
+                                  # here, over my 0.257 average); the market's median settle is 0.63 of list
+QUICK_TAKE_RATIO = 0.64           # an ask at or under this share of list is paid at once: 61% of the market's settles are under
+                                  # 0.66, and at the same shops the top buyers pay what I pay - they just close 3-5x more orders
+SHOPS_PER_ORDER = 3               # a close or walk-away moves the order to the next shop: 11-11, 47% of my orders ended at the
+                                  # first shop's refusal (fill 18%); the top buyers fill 60-70% of theirs
 STEP_CAP = 1.06                   # a later offer may not jump more than this over my previous one (11-11: shops close
                                   # at my 4th offer, 4% steps from 80% reached 0.84 of the ask there; 6% reach 0.95)
 
@@ -164,15 +170,53 @@ def regulars_prompt(text):
     return bool(re.search(r"reply\s+'buyer:\s*<your market name>'", text or "", re.I))
 
 
-def shop_price_levels(cache_rows, catalog):
-    """Per shop URL, the median of settled price / list price over the ledger cache (24 h). 11-10: the top buyers pay
-    0.47-0.59 of list and buy from shops that settle at 0.56-0.60; I paid 0.70 and my favourite shop settles at 0.70."""
+def shop_price_levels(cache_rows, catalog, url2name=None):
+    """Per shop (its market name when `url2name` knows the URL, else the URL), the median of settled price / list
+    price over the ledger cache (24 h). 11-10: the top buyers pay 0.47-0.59 of list and buy from shops that settle at
+    0.56-0.60; I paid 0.70 and my favourite shop settles at 0.70. 11-11 17:30: a shop that rejoins gets a new tunnel
+    and its settles sit under a URL the order's shop list no longer carries (17 of the 60 biggest shops, including
+    the cheapest), so the levels are keyed by name wherever the name is known."""
     by = {}
     for r in cache_rows or []:
         lp = (catalog.get(r.get("sku")) or {}).get("list_price")
-        if r.get("shop") and lp:
-            by.setdefault(r["shop"], []).append(r["price"] / lp)
-    return {url: statistics.median(v) for url, v in by.items() if len(v) >= 5}
+        url = (r.get("shop") or "").rstrip("/")
+        if url and lp:
+            by.setdefault((url2name or {}).get(url, url), []).append(r["price"] / lp)
+    return {key: statistics.median(v) for key, v in by.items() if len(v) >= 5}
+
+
+NAMES_FILE = "shop_names.json"
+
+
+def shop_names(shops, mem, folder):
+    """URL -> market name for every shop URL seen in an order's shop list or on a settled deal, kept across orders
+    in .market/shop_names.json (the ledger names shops only by URL)."""
+    path = Path(folder) / NAMES_FILE
+    names = ledger.load_json(path) or {}
+    before = len(names)
+    for s in shops or []:
+        if s.get("url") and s.get("name"):
+            names[s["url"].rstrip("/")] = s["name"]
+    for row in mem:
+        if row.get("shop_url") and row.get("shop"):
+            names.setdefault(row["shop_url"].rstrip("/"), row["shop"])
+    if len(names) != before:
+        tmp = path.with_suffix(".tmp")
+        tmp.write_text(json.dumps(names), encoding="utf-8")
+        os.replace(tmp, path)
+    return names
+
+
+def order_goes_on(outcome, no_offer, bargained, attempt, shops_per_order=SHOPS_PER_ORDER):
+    """Whether the order tries another shop (or SKU) after this visit: always after a visit that produced no offer
+    (no stock, a unit that did not fit, an unreachable shop), and after a close or walk-away until `shops_per_order`
+    shops have refused. A deal, a refused checkout or the sixth attempt ends it. Until 11-11 17:30 the first close
+    ended the order: 639 + 289 of 1,958 orders that day."""
+    if attempt >= 6 or outcome in ("deal", "rejected_checkout"):
+        return False
+    if no_offer or outcome == "unreachable":
+        return True
+    return outcome in ("closed", "walked_away") and bargained < shops_per_order
 
 
 def opening_offer(ask, reference, discount):
@@ -205,12 +249,14 @@ def stated_floor(text):
     return int(m.group(1).replace(",", "")) if m else None
 
 
-def quick_offer(ask, floor, reference, limit, slack=1.05):
+def quick_offer(ask, floor, reference, limit, slack=1.05, quick_take=None):
     """A price worth taking without bargaining: the shop's stated floor or the ask when it is inside my limit and no
     more than `slack` over my reference (the reference is 95% of the market price, so 1.05 is "at the market price
-    or better": 00:30, asks ran 4-20% over the reference and a stricter rule never fired). Returns (price, why)."""
+    or better": 00:30, asks ran 4-20% over the reference and a stricter rule never fired), or at or under
+    `quick_take` (QUICK_TAKE_RATIO of the list price, 11-11 17:30). Returns (price, why)."""
     for price, why in ((floor, "the shop's stated lowest"), (ask, "the ask")):
-        if isinstance(price, (int, float)) and 0 < price <= limit and reference and price <= reference * slack:
+        if isinstance(price, (int, float)) and 0 < price <= limit and (
+                (reference and price <= reference * slack) or (quick_take and price <= quick_take)):
             return int(round(price)), why
     return None, None
 
@@ -247,9 +293,10 @@ def steered(t):
 
 
 def negotiate(url, item, budget, reference, record="", request=None, value_cap=None, food_need=None, shelf_hours=None,
-              grades=(), slack=1.05, discount=0.20):
+              grades=(), slack=1.05, discount=0.20, pay_cap=None, quick_take=None):
     """A sealed-budget loop: the LLM proposes, then the mandate guardian authorizes.
-    `value_cap` is the SKU's list price: the guardian never pays above it, whatever the budget.
+    `value_cap` is the SKU's list price (what a parsed ask is checked against); `pay_cap` (PAY_CAP_RATIO of it) is what
+    the guardian never pays above, whatever the budget; an ask at or under `quick_take` is paid at once.
     `food_need` (the order's use_within_hours) with the SKU's `shelf_hours`: a unit whose stated grade cannot last
     that long is cancelled before any offer (info["stale"] = grade) instead of being refused at checkout later.
 
@@ -294,8 +341,9 @@ def negotiate(url, item, budget, reference, record="", request=None, value_cap=N
         info["stale"] = grade
         return "closed", None, None, [("you", opening), ("shop", status_text(t))], manip, info
     log = [("you", opening), ("shop", status_text(t))]
-    guardian = buyer_policy.MandateGuardian(budget, reference, value_cap)
-    print(f"[buyer] first ask {ask0}, private ceiling sealed, personal reference {reference}, value cap {value_cap}. {record}", flush=True)
+    guardian = buyer_policy.MandateGuardian(budget, reference, pay_cap or value_cap)
+    print(f"[buyer] first ask {ask0}, private ceiling sealed, personal reference {reference}, pay cap {pay_cap or value_cap}, "
+          f"quick take {quick_take}. {record}", flush=True)
 
     offers = []   # (my offer, the ask the shop answered with): the harness gets this instead of the whole transcript
     for round_index in range(MAX_ROUNDS):
@@ -304,9 +352,13 @@ def negotiate(url, item, budget, reference, record="", request=None, value_cap=N
             ask = first_ask(t, value_cap)
         # after a reopen the shop has shown its floor: the next ask near it is taken rather than bargained down again
         quick, why = quick_offer(ask, stated_floor(status_text(t)), reference, guardian.limit,
-                                 max(slack, 1.05) if info.get("reopened") else slack)
+                                 max(slack, 1.05) if info.get("reopened") else slack, quick_take)
         if quick is None and offers and closing_gap(offers[-1][0], ask, guardian.limit, reference, slack):
             quick, why = int(round(ask)), "the ask, within 2% of my last offer,"
+        if quick is None and offers and isinstance(ask, (int, float)) and 0 < ask <= guardian.limit:
+            # 11-11 17:30: shops concede 1-2% a round and close at my third or fourth offer (639 orders ended that way
+            # today), so a counter already inside my pay cap is paid rather than bargained a few percent more and lost
+            quick, why = int(round(ask)), "the counter, inside my pay cap,"
         if quick is not None:
             # 11-05 00:30: 45% of the market's orders go unfilled and a unit draws several buyers within minutes, so
             # a price already at or under my reference is taken at once (no model call) rather than haggled for a few
@@ -360,8 +412,8 @@ def negotiate(url, item, budget, reference, record="", request=None, value_cap=N
             # inside my limit and near my reference, one new task is opened and N is paid at once.
             floor = stated_floor(status_text(t))
             # 11-11: stated floors ran at 1.13x my reference (market x 0.92), so 83% of them were left on the table
-            # at the old 1.05; up to 1.15x (about 6% over the market price) is still inside my limit and worth a deal
-            if floor and floor <= guardian.limit and floor <= reference * REOPEN_SLACK and not info.get("reopened"):
+            # at the old 1.05; 17:30: the limit is now the pay cap (0.70 of list), so any floor inside it is paid
+            if floor and floor <= guardian.limit and not info.get("reopened"):
                 info["reopened"] = True
                 print(f"[buyer] the shop closed at a stated lowest {floor} inside my limit; reopening to pay it", flush=True)
                 buyer_policy.emit("buyer_reopen_at_floor", item=item, floor=floor, reference=reference)
@@ -534,9 +586,10 @@ def main():
     reference = buyer_policy.item_reference(mem, category, fallback=category_reference(order, catalog))
     selector_guardian = buyer_policy.MandateGuardian(a.budget, reference)
     candidates = prepare_round3_shops(shops, order, catalog, selector_guardian)
-    levels = shop_price_levels((ledger.load_json(MEMORY.parent / ledger.CACHE_FILE) or {}).get("rows"), catalog)
+    names = shop_names(shops, mem, MEMORY.parent)
+    levels = shop_price_levels((ledger.load_json(MEMORY.parent / ledger.CACHE_FILE) or {}).get("rows"), catalog, names)
     for s in candidates:                      # what each shop's settles cost against list, for the router's cheapness
-        s["_price_ratio"] = levels.get(s.get("url"))
+        s["_price_ratio"] = levels.get(s.get("name")) or levels.get((s.get("url") or "").rstrip("/"))
     cooled = [s for s in candidates if cooling_off(mem, s.get("name"))]
     if cooled and len(cooled) < len(candidates):
         print(f"[choose] skipping {[s.get('name') for s in cooled]}: answered nothing on their last visits", flush=True)
@@ -555,16 +608,18 @@ def main():
     slack, discount, posture = regime(sc, params["first_offer_discount"])
     buyer_policy.emit("buyer_regime", item=category, scarcity=round(sc, 2) if sc is not None else None,
                       posture=posture, quick_slack=slack, first_offer_discount=discount)
-    category_ref, tried = reference, {}   # tried: shop url -> SKUs it was asked for
+    category_ref, tried, bargained = reference, {}, 0   # tried: shop url -> SKUs it was asked for; bargained: shops that refused
     for attempt in range(1, 7):   # day 1: 15 orders died on a shop whose card came back as an error page; now the order moves on
         tried.setdefault(pick["url"], set()).add(wanted)
         value_cap = catalog.get(wanted, {}).get("list_price")
+        pay_cap = int(value_cap * PAY_CAP_RATIO) if isinstance(value_cap, (int, float)) and value_cap > 0 else None
+        quick_take = int(value_cap * QUICK_TAKE_RATIO) if pay_cap else None
         reference = sku_reference(wanted, catalog, category_ref, stats)
         try:
             outcome, agreed, receipt, log, manip, info = negotiate(
                 pick["url"], wanted, a.budget, reference,
                 bargain_record(pick["name"], mem, discount), request, value_cap,
-                food_need, catalog.get(wanted, {}).get("shelf_hours"), grades, slack, discount
+                food_need, catalog.get(wanted, {}).get("shelf_hours"), grades, slack, discount, pay_cap, quick_take
             )
         except Exception as e:   # httpx errors, a card that is not JSON, a task without the fields we expect
             print(f"[buyer] shop unreachable: {type(e).__name__}: {str(e)[:120]}", flush=True)
@@ -589,7 +644,8 @@ def main():
                     "at": time.strftime("%Y-%m-%d %H:%M"),
                     **{k: info.get(k) for k in ("ask", "first_offer", "last_offer", "guard_decisions", "checkout_authorized")}})
         save_memory(mem)
-        if (outcome != "unreachable" and not no_offer) or attempt == 6:
+        bargained += outcome in ("closed", "walked_away") and not no_offer
+        if not order_goes_on(outcome, no_offer, bargained, attempt):
             break
         request = choose_request(pick, catalog, order, exclude=tried[pick["url"]]) if no_offer else None
         if request is not None:

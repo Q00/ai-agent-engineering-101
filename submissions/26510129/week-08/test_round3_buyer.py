@@ -139,6 +139,25 @@ class Round3BuyerContextTest(unittest.TestCase):
         self.assertTrue(market_buyer.regulars_prompt("REGULARS: bought here before? reply 'buyer: <your market name>' and VIP -3% comes off"))
         self.assertFalse(market_buyer.regulars_prompt("lamp: asking 115. Send your offer as a number."))
 
+    def test_an_ask_under_the_quick_take_share_is_paid_without_bargaining(self):
+        self.assertEqual((170000, "the ask"), market_buyer.quick_offer(170000, None, 150000, 250000, quick_take=176000))
+        self.assertEqual((None, None), market_buyer.quick_offer(180000, None, 150000, 250000, quick_take=176000))
+        self.assertEqual((None, None), market_buyer.quick_offer(170000, None, 150000, 160000, quick_take=176000))   # over my limit
+
+    def test_an_order_moves_to_the_next_shop_after_a_close_until_three_refused(self):
+        go = market_buyer.order_goes_on
+        self.assertTrue(go("closed", False, 1, 1))
+        self.assertTrue(go("walked_away", False, 2, 2))
+        self.assertFalse(go("closed", False, 3, 3))
+        self.assertFalse(go("deal", False, 0, 1))
+        self.assertTrue(go("no_stock", True, 3, 4))
+        self.assertFalse(go("closed", False, 1, 6))
+
+    def test_price_levels_follow_a_shop_across_its_tunnels(self):
+        rows = [{"shop": "u-old/", "sku": "valuable", "price": 110}] * 3 + [{"shop": "u-new", "sku": "valuable", "price": 110}] * 3
+        self.assertEqual({}, market_buyer.shop_price_levels(rows, self.catalog))   # three each: under the five needed
+        self.assertEqual({"cheap": 0.55}, market_buyer.shop_price_levels(rows, self.catalog, {"u-old": "cheap", "u-new": "cheap"}))
+
     def test_a_receipt_may_name_any_acceptable_sku_or_a_sku_of_the_asked_category(self):
         catalog = {"G1": {"category": "home>bed"}, "G2": {"category": "home>bed"}, "K1": {"category": "food>kimchi"}}
         self.assertTrue(market_buyer.receipt_names_the_order("G1", "G1"))

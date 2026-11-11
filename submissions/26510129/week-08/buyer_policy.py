@@ -159,10 +159,13 @@ def evidence(shop, memory, item, reference=None, available=0, prefer_warranty=Fa
     # the shop's price level on the public ledger (settled / list, 24 h, set by market_buyer): a shop at 0.55 earns
     # the full 0.25, one at 0.80 nothing. 11-10: the board ranks buyers by the surplus ratio, the cheapest shops
     # settle at 0.56-0.60 of list and the top buyers live there; my favourite settled at 0.70.
+    # 11-11 17:30: at the same shops the top buyers pay what I pay (Kiro729: they 0.57-0.61, I 0.62); they buy 50-80% at
+    # shops settling under 0.62 of list, I bought 29%. Cheapness now outweighs the history terms: 0.54 of list earns
+    # the full 0.45, 0.74 nothing. A warranty shop earns 0.25 for any goods order (a break is -1 whatever the price).
     ratio = shop.get("_price_ratio")
-    cheapness = _clamp((0.80 - ratio) / 0.25) if _number(ratio) else 0.0
+    cheapness = _clamp((0.74 - ratio) / 0.20) if _number(ratio) else 0.0
     score = (0.35 * success + 0.25 * integrity + 0.20 * value + 0.20 * exploration - 0.20 * concentration
-             + 0.10 * availability + 0.25 * cheapness + (0.15 * warranty if warranty is not None else 0.0))
+             + 0.10 * availability + 0.45 * cheapness + (0.25 * warranty if warranty is not None else 0.0))
     return {
         "shop": shop.get("name"),
         "attempts": len(rows),
