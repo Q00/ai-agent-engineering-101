@@ -29,7 +29,6 @@ BLACKLIST_PATH = HERE / "market_buyer_blacklist.json"
 DEFAULT_POLICY = {"target_ratio": 0.55,   # first offer, as a share of list price
                   "rounds": 6, "tries": 2}
 GOODS_WARRANTY_MIN_PRICE = 15000          # require a warranty on goods at or above this list price
-GOODS_WARRANTY_BREAK_RATE = 0.03          # ...or from a shop whose own measured break rate exceeds this
 
 
 def load_json(path, default):
@@ -97,9 +96,11 @@ def haggle(url, sku, name, list_price, budget, target_ratio, rounds, need_h=None
 
 
 def shop_scores(d, cands):
-    """(name -> score, name -> break_rate). Unknown shops get a neutral prior instead of zero, so new
-    shops still get tried. The break rate is returned separately too: picking a shop and deciding whether
-    to insist on a warranty from it are two different questions and both want this same number."""
+    """name -> score. Unknown shops get a neutral prior instead of zero, so new shops still get tried.
+    A shop's own measured break rate already pulls its score down (-3 * brk below) -- that is the only
+    place break rate should act: it used to also force a hard warranty requirement on any goods purchase
+    from a high-break shop, which just blocked the purchase outright on a refusal (warranty_hours: 6 the
+    shop wouldn't grant) instead of simply making us prefer a different shop when one was available."""
     names = [c["name"] for c in cands]
     # by name, through every URL the collector ever saw for that shop: a tunnel URL changes on each restart
     market = {r["name"]: r for r in d.q(
@@ -111,7 +112,7 @@ def shop_scores(d, cands):
         "SELECT context->>'shop' AS shop, count(*) AS n, "
         "sum(CASE WHEN (outcome->>'deal')::boolean THEN 1 ELSE 0 END) AS ok "
         "FROM trajectory WHERE role = 'buyer' AND context->>'shop' = ANY($1) GROUP BY 1", names)}
-    scores, break_rates = {}, {}
+    scores = {}
     for c in cands:
         m, me = market.get(c["name"]), mine.get(c["name"])
         n = int(m["n"]) if m else 0
@@ -120,8 +121,7 @@ def shop_scores(d, cands):
         brk = int(m["broke"]) / n if n else 0.02
         my_rate = (int(me["ok"]) + 1) / (int(me["n"]) + 2) if me else 0.5
         scores[c["name"]] = (1 - ratio) + 0.3 * honest + 0.3 * my_rate - 3 * brk + 0.03 * math.log1p(n)
-        break_rates[c["name"]] = brk
-    return scores, break_rates
+    return scores
 
 
 def pick_sku(offers, catalog, budget):
@@ -177,7 +177,7 @@ def main():
         print(json.dumps({"shop": None, "receipt": None, "stars": 3, "review": "Nobody had it in stock."}))
         return
 
-    policy, scores, break_rates = dict(DEFAULT_POLICY), {}, {}
+    policy, scores = dict(DEFAULT_POLICY), {}
     try:
         with DB() as d:
             now = time.time()
@@ -185,7 +185,7 @@ def main():
                      (now, s["name"], o["sku"], o["name"], o["qty"], order.get("category")))
                     for s in shops for o in s.get("offers") or [])
             policy.update(d.get_policy("buyer", {}))
-            scores, break_rates = shop_scores(d, cands)
+            scores = shop_scores(d, cands)
     except Exception as e:                       # no DB: still buy, with every shop on the prior
         print(f"[db] {type(e).__name__}: {e}")
 
@@ -233,13 +233,13 @@ def main():
         print(f"[db] trajectory not written: {type(e).__name__}")
 
     accept = {"cert": True, "min_hours_left": order["use_within_hours"]} if kind == "food" and order.get("use_within_hours") else {}
-    shop_break_rate = break_rates.get(shop["name"], 0.02) if shop else 0.02
-    if kind != "food" and (lp >= GOODS_WARRANTY_MIN_PRICE or shop_break_rate > GOODS_WARRANTY_BREAK_RATE):
+    if kind != "food" and lp >= GOODS_WARRANTY_MIN_PRICE:
         # unwarrantied goods that later broke cost 1,090,586 won total with zero refund (measured live):
-        # require a warranty on pricier goods, or on ANY goods from a shop whose own measured break rate
-        # is already high (e.g. gom31-certified-goods at 4.25%, well above the market's usual ~1-2%), so
-        # a break comes out of the shop's balance, not ours (agent.md: surplus = value - price + refund,
-        # so an unwarrantied break is -price)
+        # require a warranty on pricier goods, so a break comes out of the shop's balance, not ours
+        # (agent.md: surplus = value - price + refund, so an unwarrantied break is -price). A high-break
+        # shop is handled in shop_scores() instead (lower score -> picked less often): gating payment on
+        # warranty_hours here too meant a flat refusal whenever that shop wouldn't grant it, which measured
+        # live as 23 missed deals / ~5.35M won an hour in refused payments ("warranty 0 h, policy asks for 6")
         accept["warranty_hours"] = 6
 
     if result["deal"]:
