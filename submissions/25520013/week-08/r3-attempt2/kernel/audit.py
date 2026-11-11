@@ -5,6 +5,10 @@ counts, over the compact wakes in the window, what the operator ignored (tools, 
 (repeated calls, idle wakes) and got wrong (refused edits, model errors, wakes without done). lines() is the [감사]
 block of the state card; tool_table() is the per-tool table for the auditor model. Missing or corrupt files count as
 zero; nothing here raises on bad rows. Nothing is masked here (callers mask).
+
+role (shop, buyer: the role operators) limits everything to that role's rows (the trajectory rows its process wrote,
+its experiments) and adds per tool the calls outside its recommended list and the tool_search queries;
+role_tool_table() is that role's table for the auditor. Without a role the report is the single operator's, as before.
 """
 
 import json
@@ -59,12 +63,14 @@ def group_of(section, key):
     return "sale"
 
 
-def _wakes(root):
+def _wakes(root, role=None):
     """-> (wakes, poll_crash_ts). wakes: every operator_wake row in file order with the tool rows written since the
-    previous wake row ("tools": [(name, args)], "obs": [(name, obs_chars)])."""
+    previous wake row ("tools": [(name, args)], "obs": [(name, obs_chars)]). role: only that role's rows."""
     wakes, crashes, tools = [], [], []
     for r in c.tail_json(os.path.join(root, TRAJ), TRAJ_BYTES):
         if r.get("agent") != "operator" or not _num(r.get("ts")):
+            continue
+        if role is not None and r.get("role") != role:
             continue
         kind = r.get("kind")
         if kind == "tool":
@@ -76,7 +82,8 @@ def _wakes(root):
             )
             oc = r.get("obs_chars") if _num(r.get("obs_chars")) and not r.get("cached") else None
             err = str(r.get("obs_head") or "오류")[:80] if r.get("err") is True else None
-            tools.append((name, args, oc, err, r.get("cut") is True))
+            search = (str(r.get("query") or "")[:60], r.get("hits")) if name == "tool_search" else None
+            tools.append((name, args, oc, err, r.get("cut") is True, r.get("recommended") is False, search))
         elif kind == "operator_wake":
             wakes.append(dict(r, _tools=tools))
             tools = []
@@ -120,10 +127,15 @@ def _ledger(root):
     return [e for e in rows if isinstance(e, dict)]
 
 
-def report(root, now, hours=24, since=None, listed=None):
+def _groups(role):
+    return GROUPS if role is None else tuple(g for g in GROUPS if (g == "buyer") == (role == "buyer"))
+
+
+def report(root, now, hours=24, since=None, listed=None, role=None):
     """Audit counts over [since, now] when since is given, else [now - hours h, now]. See the module docstring."""
     start = since if _num(since) else now - hours * 3600
-    all_wakes, poll_crashes = _wakes(root)
+    all_wakes, poll_crashes = _wakes(root, role)
+    searches = []
     in_win = [w for w in all_wakes if start <= w["ts"] <= now]
     wakes = [w for w in in_win if _compact(w)]
     n = len(wakes)
@@ -140,7 +152,9 @@ def report(root, now, hours=24, since=None, listed=None):
         g = (w.get("result") or {}).get("grounding") if isinstance(w.get("result"), dict) else None
         g = g if isinstance(g, dict) else {}
         unfounded += [str(x)[:20] for x in (g.get("unfounded") if isinstance(g.get("unfounded"), list) else [])]
-        for name, args, oc, err, cut in w["_tools"]:
+        for name, args, oc, err, cut, outside, search in w["_tools"]:
+            if search is not None:
+                searches.append(search)
             t = tools.setdefault(
                 name,
                 {
@@ -157,6 +171,8 @@ def report(root, now, hours=24, since=None, listed=None):
             )
             t["uses"] += 1
             t["cut"] += cut
+            if role is not None:
+                t["outside"] = t.get("outside", 0) + outside
             if err:
                 t["errors"] += 1
                 t["last_error"] = err
@@ -190,6 +206,9 @@ def report(root, now, hours=24, since=None, listed=None):
             edits["reasons"][err] = edits["reasons"].get(err, 0) + 1
 
     rows = _ledger(root)
+    if role is not None:
+        rows = [e for e in rows if ex.role_of(e) == role]
+    groups = _groups(role)
     started = [
         e for e in rows if _num(e.get("started_ts")) and start <= e["started_ts"] <= now
     ]
@@ -211,11 +230,11 @@ def report(root, now, hours=24, since=None, listed=None):
         **exps,
         "by_group": {
             g: sum(1 for e in started if group_of(e.get("section"), e.get("key")) == g)
-            for g in GROUPS
+            for g in groups
         },
     }
     busy = {group_of(e.get("section"), e.get("key")) for e in running}
-    untouched = [g for g in GROUPS if exps["by_group"][g] == 0 and g not in busy]
+    untouched = [g for g in groups if exps["by_group"][g] == 0 and g not in busy]
 
     compact_ts = [w["ts"] for w in all_wakes if _compact(w) and w["ts"] <= now]
     stale = []
@@ -268,6 +287,10 @@ def report(root, now, hours=24, since=None, listed=None):
         },
         "code": code_edit.summary(root, now, since=start),  # not in score
     }
+    if role is not None:
+        zero = [q for q, hits in searches if hits == 0]
+        rep.update(role=role, outside_calls=sum(t.get("outside", 0) for t in tools.values()),
+                   searches=len(searches), search_zero=len(zero), search_zero_queries=zero[-5:])
     rep["score"] = score(rep)
     return rep
 
@@ -293,9 +316,10 @@ def _h(hours):
     return int(hours) if _num(hours) and float(hours).is_integer() else hours
 
 
-def lines(root, now, hours=24, listed=None):
-    """[감사] block: one head line and up to LINES_MAX - 1 non-zero findings, facts only, BLOCK_CHARS in total."""
-    rep = report(root, now, hours=hours, listed=listed)
+def lines(root, now, hours=24, listed=None, role=None):
+    """[감사] block: one head line and up to LINES_MAX - 1 non-zero findings, facts only, BLOCK_CHARS in total. role: that
+    role's report (listed is then its recommended list)."""
+    rep = report(root, now, hours=hours, listed=listed, role=role)
     h = _h(hours)
     if not rep["wakes"]:
         return [f"[감사] 최근 {h}시간 점검 기록 없음"]
@@ -369,6 +393,9 @@ def lines(root, now, hours=24, listed=None):
         un = rep["unused_tools"]
         more = f" 외 {len(un) - UNUSED_SHOWN}개" if len(un) > UNUSED_SHOWN else ""
         found.append(f"안 쓴 도구 {len(un)}개: {', '.join(un[:UNUSED_SHOWN])}{more}임")
+    if rep.get("search_zero"):
+        found.append(f"tool_search 결과 0개 {rep['search_zero']}회 (예: {', '.join(rep['search_zero_queries'][-3:])}): "
+                     "낱말을 바꿔 다시 찾음")
     total = len(out[0])
     for f in found:
         f = "  " + (f if len(f) <= LINE_CHARS else f[: LINE_CHARS - 1] + "…")
@@ -405,3 +432,18 @@ def tool_table(root, now, hours=24, listed=None):
             }
         )
     return sorted(out, key=lambda r: (-r["uses"], r["name"]))
+
+
+def role_tool_table(root, now, role, recommended, hours=24):
+    """One role's tools for the auditor: rows {name, calls, outside, recommended, errors, cut, uncited} for every tool
+    the role called or has recommended (calls desc, then name), and its tool_search numbers {searches, search_zero,
+    queries: the latest zero-hit queries}."""
+    rep = report(root, now, hours=hours, listed=recommended, role=role)
+    rec = set(x for x in (recommended or ()) if isinstance(x, str))
+    rows = []
+    for name in rec | set(rep["tools"]):
+        t = rep["tools"].get(name) or {}
+        rows.append({"name": name, "calls": t.get("uses", 0), "outside": t.get("outside", 0), "recommended": name in rec,
+                     "errors": t.get("errors", 0), "cut": t.get("cut", 0), "uncited": t.get("uncited", 0)})
+    rows.sort(key=lambda r: (-r["calls"], r["name"]))
+    return rows, {"searches": rep["searches"], "search_zero": rep["search_zero"], "queries": rep["search_zero_queries"]}

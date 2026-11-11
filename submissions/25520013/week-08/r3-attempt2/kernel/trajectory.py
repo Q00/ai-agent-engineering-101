@@ -11,12 +11,13 @@ from kernel import common as c
 
 
 class Trajectory:
-    def __init__(self, path, secrets=()):
+    def __init__(self, path, secrets=(), role=None):
         self.path = path
         self.secrets = tuple(s for s in secrets if s)
+        self.role = role  # a role operator's process (shop, buyer): every row it writes carries "role"
 
     def append(self, agent, kind, **fields):
-        row = {"ts": round(time.time(), 3), "agent": agent, "kind": kind, **fields}
+        row = {"ts": round(time.time(), 3), "agent": agent, "kind": kind, **({"role": self.role} if self.role else {}), **fields}
         line = c.mask(json.dumps(row, ensure_ascii=False, default=str), self.secrets)
         os.makedirs(os.path.dirname(self.path) or ".", exist_ok=True)
         with open(self.path, "a", encoding="utf-8") as f:

@@ -547,6 +547,66 @@ def restock_log(root, hours=2, now=None):
     return code_edit.restock_log(root, hours, now)
 
 
+ROLES = ("shop", "buyer")  # the role operators (kernel.operator --role); one shared toolbox
+SEARCH_MAX = 8
+SEARCH_SKIP = ("versions", "harness_read", "replay_probe")  # operator.HARNESS_TOOLS: not callable in compact mode
+SEARCH_ARGS_SKIP = ("root", "now", "harness_root", "dry")
+_TOKEN = re.compile(r"[0-9A-Za-z_가-힣]+")
+
+
+def _search_entries(root):
+    """[(name, description, argument names, maker role or None)] of every tool an operator can call: built-ins with
+    the auditor's re-descriptions (hidden ones left out), then the operator-made q_ tools."""
+    import inspect
+
+    from kernel import auditor, made_tools
+
+    st = auditor.tool_state(root)
+    out = []
+    for name, (fn, agents) in TOOLS.items():
+        if "operator" not in agents or name in SEARCH_SKIP or (name in st["hidden"] and name not in auditor.CORE_TOOLS):
+            continue
+        args = [p for p in inspect.signature(fn).parameters if p not in SEARCH_ARGS_SKIP]
+        out.append((name, st["desc"].get(name) or " ".join((fn.__doc__ or "").split()), args, None))
+    for t in made_tools.load(root):
+        desc = st["desc"].get(t["name"]) or " ".join(str(t.get("description") or "").split())
+        out.append((t["name"], desc, ["hours"], t.get("role") or "operator"))
+    return out
+
+
+def tool_search(root, query):
+    """도구 찾기: query(한글이나 영어 낱말, 여럿이면 띄어 씀)를 모든 도구(운영자가 만든 q_ 도구 포함)의 이름과 설명에서 찾아 맞는 도구 8개까지 설명 전체, 인자 이름, 추천 목록에 둔 운영자(shop, buyer)를 줌. 도구 목록에 이름만 나온 도구를 쓰기 전에 부름."""
+    from kernel import auditor
+
+    if not isinstance(query, str) or not query.strip():
+        return "인자 오류: query는 찾을 낱말 글"
+    q = query.strip()
+    toks = list(dict.fromkeys(t.lower() for t in _TOKEN.findall(q))) or [q.lower()]
+    rec = {r: set(auditor.recommended(root, r)) for r in ROLES}
+    scored = []
+    for name, desc, args, by in _search_entries(root):
+        n, d = name.lower(), desc.lower()
+        s = sum(3 * (t in n) + (t in d) for t in toks)
+        if s:
+            scored.append((-s, name, desc, args, by))
+    hits = sorted(scored)[:SEARCH_MAX]
+    out = [f"도구 찾기 '{q[:60]}': {len(hits)}개" + ("" if hits else ". 다른 낱말(한글 또는 영어)로 다시 찾음")]
+    for _, name, desc, args, by in hits:
+        who = ", ".join(r for r in ROLES if name in rec[r]) or "없음"
+        made = "" if by is None else f", 만든 도구(만든 쪽 {by})"
+        out.append(f"- {name}({', '.join(args)}) 추천: {who}{made}\n  {desc}")
+    return c.cap("\n".join(out), MAX_CHARS)
+
+
+# Default recommended lists of the role operators, by what each tool reads (the auditor moves tools in and out,
+# kernel.auditor.recommended). Every tool stays callable by both roles; a role sees the others by name only.
+RECOMMENDED = {
+    "shop": ("board", "ledger", "events", "stockouts", "sku_stats", "net_profit", "inventory", "restock_log",
+             "policy", "code_search", "code_read", "brief_section", "guide", "recall", "tool_search"),
+    "buyer": ("board", "ledger", "events", "shops", "catalog", "policy", "code_search", "code_read",
+              "brief_section", "guide", "recall", "tool_search"),
+}
+
 TOOLS = {
     "board": (board, ("operator",)),
     "ledger": (ledger, ("operator",)),
@@ -568,6 +628,7 @@ TOOLS = {
     "code_search": (code_search, ("operator",)),
     "code_read": (code_read, ("operator",)),
     "restock_log": (restock_log, ("operator",)),
+    "tool_search": (tool_search, ("operator",)),
 }
 
 

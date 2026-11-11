@@ -53,6 +53,11 @@ SHOP_FILES = ("hooks/restock.py", "hooks/seller.py")  # judged on the shop metri
 BUYER_FILES = (
     "hooks/market_buyer.py",
 )  # judged on the buyer metric; policy.py on both
+ROLE_FILES = {  # what each role operator (kernel.operator --role) may change
+    "shop": ("policy.py", "hooks/restock.py", "hooks/seller.py"),
+    "buyer": ("policy.py", "hooks/market_buyer.py"),
+}
+ROLE_KO = {"shop": "가게 운영자(shop)", "buyer": "구매 운영자(buyer)"}
 # Names whose top-level definition ("Class.method" for a method) must stay byte-identical and may not gain new
 # bindings anywhere in the file.
 PROTECTED = {
@@ -205,6 +210,7 @@ CLS_KO = {
     "runner": "시험 실행 불가",
     "write": "쓰기 실패",
     "error": "커널 오류",
+    "role": "다른 운영자 몫",
 }
 
 CHANGES = os.path.join("a2", "code_changes.json")
@@ -239,6 +245,30 @@ def load(root):
 
 def _save(root, rows):
     ex._atomic_json(os.path.join(root, CHANGES), rows, ".code_changes.tmp-")
+
+
+def role_of(ch):
+    """The role operators a change belongs to: the proposing role when stored, else by its files (hooks/market_buyer.py
+    buyer, policy.py both, the rest shop)."""
+    if ch.get("role") in ROLE_FILES:
+        return {ch["role"]}
+    out = set()
+    for f in ch.get("files") or []:
+        out |= {"shop", "buyer"} if f == "policy.py" else {"buyer"} if f in BUYER_FILES else {"shop"}
+    return out or {"shop"}
+
+
+def role_error(files, role):
+    """None when the role may change all these files, else the Korean refusal naming the other role."""
+    other = "buyer" if role == "shop" else "shop"
+    bad = [f for f in files if f not in ROLE_FILES[role]]
+    if not bad:
+        return None
+    return (
+        f"{', '.join(str(f)[:80] for f in bad)}는 {ROLE_KO[role]}가 고치지 않는 파일임"
+        f"{'(' + ROLE_KO[other] + ' 몫)' if all(f in ROLE_FILES[other] for f in bad) else ''}. "
+        f"고칠 수 있는 파일: {', '.join(ROLE_FILES[role])}"
+    )
 
 
 def _atomic_text(path, data, mode=None):
@@ -961,10 +991,16 @@ def _snapshot(root, now, metrics, rev_weight):
 
 
 def propose(
-    root, edits, reason, expect, now, traj, read_files=(), runner=None, rev_weight=0.0
+    root, edits, reason, expect, now, traj, read_files=(), runner=None, rev_weight=0.0, role=None
 ):
-    """Gate, test and apply one code change. -> {ok, id, error, tests, files, status} (refusals also carry cls)."""
+    """Gate, test and apply one code change. -> {ok, id, error, tests, files, status} (refusals also carry cls).
+    role (a role operator): files outside ROLE_FILES[role] are refused first; the change keeps the role."""
     try:
+        if role is not None and isinstance(edits, list):
+            files = sorted({e.get("file") for e in edits if isinstance(e, dict) and isinstance(e.get("file"), str)})
+            err = role_error(files, role)
+            if err:
+                return _refuse(traj, now, "role", err, files)
         return _propose(
             root,
             edits,
@@ -975,12 +1011,13 @@ def propose(
             set(read_files or ()),
             runner or default_runner,
             rev_weight if _num(rev_weight) and rev_weight > 0 else 0.0,
+            role,
         )
     except Exception as e:  # noqa: BLE001 - a proposal the kernel did not expect is a refusal
         return _refuse(traj, now, "error", f"{type(e).__name__}: {str(e)[:200]}")
 
 
-def _propose(root, edits, reason, expect, now, traj, read_files, runner, rev_weight):
+def _propose(root, edits, reason, expect, now, traj, read_files, runner, rev_weight, role=None):
     secrets = _secrets(root)
     if (
         not isinstance(edits, list)
@@ -1213,6 +1250,8 @@ def _propose(root, edits, reason, expect, now, traj, read_files, runner, rev_wei
         "sig": sig,
         "diff": diff,
     }
+    if role is not None:
+        ch["role"] = role
     rows.append(ch)
     _save(root, rows)
     traj.append(
@@ -1346,6 +1385,7 @@ def _end(ch, status, now, traj, phase, why, wake=True):
         phase=phase,
         why=str(why)[:300],
         verdict=ch.get("verdict"),
+        **({"role": ch["role"]} if ch.get("role") in ROLE_FILES else {}),
     )
     return {
         "id": ch.get("id"),
@@ -1760,8 +1800,12 @@ def _hm(ts):
     return c.kst(ts, "%H:%M") if _num(ts) else "-"
 
 
-def lines(root, now):
-    """Up to 4 [코드] state-card lines; [] without history."""
+def lines(root, now, role=None):
+    """Up to 4 [코드] state-card lines; [] without history. With a role, the other role's lines end with ex.OTHER."""
+
+    def mark(r):
+        return ex.OTHER if role and role not in role_of(r) else ""
+
     try:
         rows = [r for r in load(root) if "id" in r]
         out = []
@@ -1772,6 +1816,7 @@ def lines(root, now):
                     f"[코드] 수정 #{r['id']} {', '.join(r.get('files') or [])} {STATUS_KO[st]} 중: "
                     f"감시 {_hm(r.get('watch_until'))}까지, 판정 {_hm(r.get('eval_until'))} "
                     f"({'/'.join(r.get('metrics') or [])} 기준)"
+                    + mark(r)
                 )
             elif st in ("restart_pending", "revert_restart_pending"):
                 rs = r.get("restart") or {}
@@ -1783,6 +1828,7 @@ def lines(root, now):
                         if rs.get("ok") is False
                         else ""
                     )
+                    + mark(r)
                 )
         ended = sorted(
             (
@@ -1797,6 +1843,7 @@ def lines(root, now):
                 f"[코드] 수정 #{r['id']} {', '.join(r.get('files') or [])} {STATUS_KO.get(r.get('status'), r.get('status'))} "
                 f"{c.kst(r['ended_ts'])}: {str(r.get('why') or '')[:100]}"
                 + (f", {_verdict_text(r.get('verdict'))}" if r.get("verdict") else "")
+                + mark(r)
             )
         last = max(
             [r["ts"] for r in rows if _num(r.get("ts"))] or [None], key=lambda x: x or 0

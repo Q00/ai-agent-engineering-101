@@ -45,7 +45,7 @@ KEYS = (
     "sort",
     "limit",
 )
-META = ("created_ts", "by", "uses", "last_used_ts")
+META = ("created_ts", "by", "uses", "last_used_ts", "role")  # role: the role operator that made it (shared by both)
 # Identity fields hashed in output cells, as common.scrub does for the other tools.
 ID_KEYS = c.IDENTITY_KEYS + ("author", "shop", "buyer", "seller", "login", "counterparty", "participants", "from", "to")
 
@@ -459,8 +459,9 @@ def listing(root):
     return [(t["name"], t["description"]) for t in load(root)]
 
 
-def add(root, spec, now, traj=None, by="operator", reserved=()):
-    """Validate, test-run on the real data and store a made tool. Returns {"ok", "name", "sample"} or {"ok", "error"}."""
+def add(root, spec, now, traj=None, by="operator", reserved=(), role=None):
+    """Validate, test-run on the real data and store a made tool (tagged with the maker's role when given). Returns
+    {"ok", "name", "sample"} or {"ok", "error"}."""
     clean, err = validate(spec)
     if err:
         return {"ok": False, "error": err}
@@ -484,7 +485,7 @@ def add(root, spec, now, traj=None, by="operator", reserved=()):
         }
     if problem:
         return {"ok": False, "error": f"시험 실행이 한도를 넘음: {problem}"}
-    clean.update({"created_ts": now, "by": by, "uses": 0})
+    clean.update({"created_ts": now, "by": by, "uses": 0, **({"role": role} if role else {})})
     _write(root, tools + [clean])
     if traj is not None:
         traj.append(

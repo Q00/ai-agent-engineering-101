@@ -6,6 +6,10 @@ operator and tool list changes (hide, show, describe, remove operator-made q_ to
 guidance that attaches a number to a policy key is refused. Each guidance version is judged by code
 (judge_guidance): mistakes per wake and idle share before and after, reverted to the previous text when clearly worse.
 Missing sibling modules (kernel.audit, kernel.made_tools) count as no data. Corrupt state files read as empty.
+
+With roles (the two role operators, shop and buyer, kernel.operator --role) one run looks at both: guidance, its
+versions and their judging are per role (operator_guidance_<role>.md, that role's wakes), the prompt gets a per-role
+tool table, and the answer may also move tools into or out of a role's recommended list (recommend, unrecommend).
 """
 
 import json
@@ -40,7 +44,9 @@ TOOL_STATE = "a2/tool_state.json"  # {"hidden": [names], "desc": {name: text}}
 STATE = "a2/auditor_state.json"  # last_run_ts, verdicts_seen, guidance history
 NOTES = "a2/operator_notes.md"
 TRAJ = "a2/trajectory.jsonl"
-CORE_TOOLS = ("policy", "brief_section", "guide")
+CORE_TOOLS = ("policy", "brief_section", "guide", "tool_search")  # never hidden, never unrecommended
+ROLES = ("shop", "buyer")
+ROLE_KO = {"shop": "가게 운영자(shop)", "buyer": "구매 운영자(buyer)"}
 HARNESS_TOOLS = (
     "versions",
     "harness_read",
@@ -99,6 +105,14 @@ SCHEMA = """JSON 객체 하나로만 답함. 모든 항목은 선택임:
            "remove": ["q_<운영자가 만든 도구>"]},
  "note": "<이번 감사 한 줄 요약>"}
 도구 변경은 한 번에 4개까지. policy 키 이름 뒤에 숫자를 붙이면 안내 전체가 거절됨."""
+SCHEMA_ROLES = """JSON 객체 하나로만 답함. 모든 항목은 선택임:
+{"findings": ["<[shop] 또는 [buyer]와 실수, 근거 숫자>", ... 5개까지],
+ "guidance": {"shop": "<가게 운영자에게 줄 새 안내 전체, 1,500자 안. 바꿀 것이 없으면 null>", "buyer": "<구매 운영자에게, 같은 형식>"},
+ "tools": {"hide": ["<도구 이름>"], "show": ["<도구 이름>"], "describe": {"<도구 이름>": "<새 설명 160자 안>"},
+           "remove": ["q_<운영자가 만든 도구>"],
+           "recommend": {"shop": ["<도구 이름>"], "buyer": ["<도구 이름>"]}, "unrecommend": {"shop": ["<도구 이름>"], "buyer": ["<도구 이름>"]}},
+ "note": "<이번 감사 한 줄 요약>"}
+도구 변경은 한 번에 4개까지 (recommend, unrecommend 포함). hide, show, describe, remove는 두 운영자 모두에 걸림. policy, brief_section, guide, tool_search는 추천 목록에서 빼지 못함. policy 키 이름 뒤에 숫자를 붙이면 그 안내가 거절됨."""
 
 
 # ------------------------------------------------------------ files
@@ -137,10 +151,23 @@ def _state(root):
     return st
 
 
-def guidance(root):
+def _hist(st, role):
+    """The guidance history list of a role ("history" for the single operator), cleaned and kept in st."""
+    key = "history" if role is None else f"history_{role}"
+    h = st.get(key)
+    st[key] = [x for x in h if isinstance(x, dict)] if isinstance(h, list) else []
+    return st[key]
+
+
+def guidance_rel(role=None):
+    """Guidance file of a role beside the single operator's (GUIDANCE)."""
+    return GUIDANCE if role is None else GUIDANCE[: -len(".md")] + f"_{role}.md"
+
+
+def guidance(root, role=None):
     """Current guidance text ("" when none), at most GUIDANCE_CHARS."""
     try:
-        with open(_path(root, GUIDANCE), encoding="utf-8") as f:
+        with open(_path(root, guidance_rel(role)), encoding="utf-8") as f:
             return f.read()[:GUIDANCE_CHARS]
     except (OSError, ValueError):
         return ""
@@ -158,6 +185,34 @@ def tool_state(root):
             k: v for k, v in desc.items() if isinstance(k, str) and isinstance(v, str)
         },
     }
+
+
+def rec_state(root):
+    """The auditor's changes to the recommended lists: {"recommend": {role: [names]}, "unrecommend": {role: [names]}}."""
+    st = c.load_json(_path(root, TOOL_STATE), {})
+    st = st if isinstance(st, dict) else {}
+    out = {}
+    for k in ("recommend", "unrecommend"):
+        d = st.get(k) if isinstance(st.get(k), dict) else {}
+        out[k] = {r: [n for n in d.get(r) if isinstance(n, str)] if isinstance(d.get(r), list) else [] for r in ROLES}
+    return out
+
+
+def recommended(root, role, rs=None):
+    """A role's recommended tools in order: the defaults (tools.RECOMMENDED), the q_ tools that role made, the auditor's
+    additions; minus the auditor's removals (never CORE_TOOLS)."""
+    from kernel import tools
+
+    rs = rec_state(root) if rs is None else rs
+    made = []
+    if made_tools is not None:
+        try:
+            made = [t.get("name") for t in made_tools.load(root) if isinstance(t, dict) and t.get("role") == role]
+        except Exception:  # noqa: BLE001 - a broken made-tools file is no tool
+            made = []
+    names = list(tools.RECOMMENDED.get(role, ())) + made + rs["recommend"].get(role, [])
+    drop = set(rs["unrecommend"].get(role, [])) - set(CORE_TOOLS)
+    return [n for n in dict.fromkeys(names) if isinstance(n, str) and n not in drop]
 
 
 def _interval_s():
@@ -193,10 +248,10 @@ def due(root, now):
 
 
 # ------------------------------------------------------------ guidance judging
-def _score(root, now, since):
+def _score(root, now, since, role=None):
     if audit is None:
         return None, 0
-    rep = audit.report(root, now, since=since)
+    rep = audit.report(root, now, since=since, **({"role": role} if role else {}))
     return audit.score(rep), rep.get("wakes") or 0
 
 
@@ -212,12 +267,13 @@ def _worse(before, after):
     )
 
 
-def judge_guidance(root, now, traj):
+def judge_guidance(root, now, traj, role=None):
     """Judge the active guidance version once MIN_WAKES compact wakes ran under it: kept, or reverted to the previous
-    text when clearly worse. -> the judged version or None."""
+    text when clearly worse. -> the judged version or None. role: that role's guidance, judged on its wakes."""
     st = _state(root)
+    tag = {"role": role} if role else {}
     act = next(
-        (h for h in reversed(st["history"]) if h.get("status") == "active"), None
+        (h for h in reversed(_hist(st, role)) if h.get("status") == "active"), None
     )
     if (
         act is None
@@ -225,7 +281,7 @@ def judge_guidance(root, now, traj):
         or not isinstance(act.get("before"), dict)
     ):
         return None
-    after, wakes = _score(root, now, act["ts"])
+    after, wakes = _score(root, now, act["ts"], role)
     if after is None or wakes < MIN_WAKES:
         return None
     act["after"] = after
@@ -233,7 +289,7 @@ def judge_guidance(root, now, traj):
     if not thin and _worse(act["before"], after):
         act["status"] = "reverted"
         prev = act.get("prev_text") if isinstance(act.get("prev_text"), str) else ""
-        _atomic_write(_path(root, GUIDANCE), prev[:GUIDANCE_CHARS])
+        _atomic_write(_path(root, guidance_rel(role)), prev[:GUIDANCE_CHARS])
         traj.append(
             "auditor",
             "auditor_guidance",
@@ -241,6 +297,7 @@ def judge_guidance(root, now, traj):
             id=act.get("id"),
             before=act["before"],
             after=after,
+            **tag,
         )
     else:
         act["status"] = "kept"
@@ -251,6 +308,7 @@ def judge_guidance(root, now, traj):
             id=act.get("id"),
             before=act["before"],
             after=after,
+            **tag,
         )
     _atomic_json(_path(root, STATE), st)
     return act
@@ -318,6 +376,7 @@ def _compact_wakes(root, since):
 
 def _wake_text(w):
     res = w.get("result") or {}
+    who = f"[{w['role']}] " if w.get("role") in ROLES else ""
     pol = []
     for p in res.get("policy") if isinstance(res.get("policy"), list) else []:
         if isinstance(p, dict):
@@ -327,16 +386,16 @@ def _wake_text(w):
             pol.append(item)
     return "\n".join(
         [
-            f"- {c.kst(w['ts'])} 상태 {w.get('status')}, 도구: {', '.join(w['_tools']) or '없음'}",
+            f"- {who}{c.kst(w['ts'])} 상태 {w.get('status')}, 도구: {', '.join(w['_tools']) or '없음'}",
             f"  요약: {str(res.get('note') or '')[:WAKE_NOTE_CHARS] or '없음'}",
             f"  policy: {json.dumps(pol, ensure_ascii=False) if pol else '없음'}",
         ]
     )
 
 
-def _notes(root):
+def _notes(root, role=None):
     try:
-        with open(_path(root, NOTES), encoding="utf-8") as f:
+        with open(_path(root, NOTES if role is None else NOTES[: -len(".md")] + f"_{role}.md"), encoding="utf-8") as f:
             return f.read()[:NOTES_SHOWN]
     except (OSError, ValueError):
         return ""
@@ -400,8 +459,9 @@ def _history_block(hist):
     return "\n".join(out) or "없음"
 
 
-def _period(root, now, since, listed):
-    """What the kernel counted over one audit period and the per-tool rows, for the auditor's memory."""
+def _period(root, now, since, listed, roles=None):
+    """What the kernel counted over one audit period and the per-tool rows, for the auditor's memory. roles: also each
+    role's numbers under nums["roles"]."""
     if audit is None:
         return {}, {}
     r = audit.report(root, now, since=since, listed=listed)
@@ -409,6 +469,12 @@ def _period(root, now, since, listed):
     for k in ("repeat_calls", "tool_errors", "uncited_reads", "cut_reads"):
         nums[k] = r.get(k, 0)
     nums["unfounded"] = len(r.get("unfounded_numbers") or [])
+    if roles:
+        nums["roles"] = {}
+        for role in roles:
+            rr = audit.report(root, now, since=since, listed=recommended(root, role), role=role)
+            nums["roles"][role] = dict(audit.score(rr), **{k: rr.get(k, 0) for k in (
+                "repeat_calls", "tool_errors", "outside_calls", "searches", "search_zero")})
     return nums, r.get("tools") or {}
 
 
@@ -472,8 +538,38 @@ def _fit(head, blocks, tail, limit=PROMPT_CHARS):
     return "\n\n".join([head] + [f"{h}\n\n{b}" for h, b in blocks] + [tail])
 
 
-def build_prompt(root, now, secrets=(), listed=None):
-    """The auditor prompt: job text, the data blocks, the answer schema; masked, at most PROMPT_CHARS."""
+def _role_tool_block(root, now, role):
+    if audit is None:
+        return "감사 모듈 없음"
+    rows, s = audit.role_tool_table(root, now, role, recommended(root, role))
+    out = ["이름 | 호출 | 추천 목록 밖 호출 | 추천 | 오류 답 | 잘린 채 봄 | 읽고 안 씀"]
+    out += [f"{r['name']} | {r['calls']} | {r['outside']} | {'예' if r['recommended'] else '아니오'} | {r['errors']} | "
+            f"{r['cut']} | {r['uncited']}" for r in rows]
+    out.append(f"tool_search 질의 {s['searches']}회, 결과 0개 {s['search_zero']}회"
+               + (f": {', '.join(s['queries'])}" if s["queries"] else ""))
+    return "\n".join(out)
+
+
+def _role_blocks(root, now, st):
+    """The per-role blocks of a roles run: [감사] lines, tool table, notes, guidance and its history."""
+    out = []
+    for r in ROLES:
+        who = ROLE_KO[r]
+        if audit is not None:
+            out.append((f"## {who} 감사 보고 (최근 24시간, 그 운영자의 점검만)",
+                        "\n".join(audit.lines(root, now, 24, listed=recommended(root, r), role=r)) or "없음"))
+        out += [
+            (f"## {who} 도구 표 (최근 24시간)", _role_tool_block(root, now, r)),
+            (f"## {who} 메모 (앞 800자)", _notes(root, r) or "없음"),
+            (f"## {who} 지금 안내 (guidance.{r})", guidance(root, r) or "없음"),
+            (f"## {who} 안내 이력 (최근 4판, 그 운영자의 점검으로 잰 전후 점수)", _history_block(_hist(st, r))),
+        ]
+    return out
+
+
+def build_prompt(root, now, secrets=(), listed=None, roles=None):
+    """The auditor prompt: job text, the data blocks, the answer schema; masked, at most PROMPT_CHARS. roles: the
+    single-operator notes and guidance blocks give way to the per-role blocks."""
     st = _state(root)
     last = st.get("last_run_ts") if _num(st.get("last_run_ts")) else now - 24 * 3600
     listed = list(listed) if listed is not None else _default_listed(root)
@@ -509,13 +605,18 @@ def build_prompt(root, now, secrets=(), listed=None):
             ("\n".join(code_edit.history_lines(root, 4)) if code_edit is not None else "") or "없음",
         ),
         ("## 최근 점검 (운영자)", "\n".join(_wake_text(w) for w in wakes) or "없음"),
-        ("## 운영자 메모 (앞 800자)", _notes(root) or "없음"),
-        ("## 지금 안내 (guidance)", guidance(root) or "없음"),
-        ("## 안내 이력 (최근 4판, 커널이 잰 전후 점수)", _history_block(st["history"])),
-        ("## 네 지난 감사 (네 기억. 각 줄의 숫자는 그 감사 직전 구간이라, 조치의 결과는 다음 줄 숫자에 나타남)", _runs_block(st)),
     ]
+    if roles:
+        blocks += _role_blocks(root, now, st)
+    else:
+        blocks += [
+            ("## 운영자 메모 (앞 800자)", _notes(root) or "없음"),
+            ("## 지금 안내 (guidance)", guidance(root) or "없음"),
+            ("## 안내 이력 (최근 4판, 커널이 잰 전후 점수)", _history_block(st["history"])),
+        ]
+    blocks.append(("## 네 지난 감사 (네 기억. 각 줄의 숫자는 그 감사 직전 구간이라, 조치의 결과는 다음 줄 숫자에 나타남)", _runs_block(st)))
     blocks = [(h, c.mask(b, secrets)) for h, b in blocks]
-    return _fit(c.mask(job, secrets), blocks, "## 답 형식\n\n" + SCHEMA)
+    return _fit(c.mask(job, secrets), blocks, "## 답 형식\n\n" + (SCHEMA_ROLES if roles else SCHEMA))
 
 
 # ------------------------------------------------------------ apply
@@ -524,7 +625,7 @@ def tells_value(text):
     return bool(VALUE_RX.search(text))
 
 
-def _apply_guidance(root, now, text, secrets, st):
+def _apply_guidance(root, now, text, secrets, st, role=None):
     if text is None:
         return {"changed": False}
     if not isinstance(text, str) or not text.strip():
@@ -535,14 +636,14 @@ def _apply_guidance(root, now, text, secrets, st):
             "changed": False,
             "refused": "policy 키에 숫자를 붙인 값 지시는 안내에 쓸 수 없음",
         }
-    cur = guidance(root)
+    cur = guidance(root, role)
     if text.strip() == cur.strip():
         return {"changed": False, "unchanged": True}
-    hist = st["history"]
+    hist = _hist(st, role)
     prev_ts = (
         hist[-1].get("ts") if hist and _num(hist[-1].get("ts")) else now - 24 * 3600
     )
-    before, _ = _score(root, now, prev_ts)
+    before, _ = _score(root, now, prev_ts, role)
     for h in hist:
         if h.get("status") == "active":
             h["status"] = "superseded"
@@ -557,8 +658,8 @@ def _apply_guidance(root, now, text, secrets, st):
             "status": "active",
         }
     )
-    st["history"] = hist[-HISTORY_MAX:]
-    _atomic_write(_path(root, GUIDANCE), text)
+    st["history" if role is None else f"history_{role}"] = hist[-HISTORY_MAX:]
+    _atomic_write(_path(root, guidance_rel(role)), text)
     return {"changed": True, "id": nid, "chars": len(text)}
 
 
@@ -566,11 +667,12 @@ def _names(v):
     return [x for x in v if isinstance(x, str)] if isinstance(v, list) else []
 
 
-def _apply_tools(root, now, ask, listed, secrets, traj):
+def _apply_tools(root, now, ask, listed, secrets, traj, roles=None):
     applied, refused = [], []
     if not isinstance(ask, dict):
         return {"applied": applied, "refused": refused}
     ts = tool_state(root)
+    rs = rec_state(root) if roles else None
     hidden, desc = list(ts["hidden"]), dict(ts["desc"])
     made = _made_names(root)
 
@@ -654,8 +756,34 @@ def _apply_tools(root, now, ask, listed, secrets, traj):
                         "why": str((r or {}).get("error") or "remove 실패"),
                     }
                 )
+    for op in ("recommend", "unrecommend") if roles else ():
+        d = ask.get(op) if isinstance(ask.get(op), dict) else {}
+        for role, names in d.items():
+            for name in _names(names):
+                cur = recommended(root, role, rs) if role in roles else []
+                if role not in roles:
+                    refused.append({"op": op, "role": str(role)[:20], "name": name, "why": "역할은 shop 또는 buyer"})
+                elif op == "recommend" and name not in listed:
+                    refused.append({"op": op, "role": role, "name": name, "why": "목록에 없는 도구"})
+                elif op == "recommend" and name in cur:
+                    refused.append({"op": op, "role": role, "name": name, "why": "이미 추천 목록에 있음"})
+                elif op == "unrecommend" and name in CORE_TOOLS:
+                    refused.append({"op": op, "role": role, "name": name, "why": "핵심 도구는 추천 목록에서 빼지 못함"})
+                elif op == "unrecommend" and name not in cur:
+                    refused.append({"op": op, "role": role, "name": name, "why": "추천 목록에 없는 도구"})
+                elif room(op, name):
+                    undo, keep = ("unrecommend", "recommend") if op == "recommend" else ("recommend", "unrecommend")
+                    rs[undo][role] = [n for n in rs[undo][role] if n != name]
+                    if (name in recommended(root, role, rs)) != (op == "recommend"):
+                        rs[keep][role].append(name)
+                    applied.append({"op": op, "role": role, "name": name})
     if applied:
-        _atomic_json(_path(root, TOOL_STATE), {"hidden": hidden, "desc": desc})
+        raw = c.load_json(_path(root, TOOL_STATE), {})
+        raw = raw if isinstance(raw, dict) else {}
+        raw.update(hidden=hidden, desc=desc)
+        if rs is not None:
+            raw.update(rs)
+        _atomic_json(_path(root, TOOL_STATE), raw)
     return {"applied": applied, "refused": refused}
 
 
@@ -669,11 +797,15 @@ def _finish(root, traj, now, st, out):
 
 
 def run(
-    root, terra, traj, now, secrets=(), listed=None, effort="medium", timeout_s=300
+    root, terra, traj, now, secrets=(), listed=None, effort="medium", timeout_s=300, roles=None
 ):
-    """One audit: judge the active guidance, one model call, apply guarded changes. -> the auditor_run row fields."""
+    """One audit: judge the active guidance, one model call, apply guarded changes. -> the auditor_run row fields.
+    roles: one run for both role operators (guidance judged and written per role)."""
     reason = due(root, now) or "수동 실행"
-    judged = judge_guidance(root, now, traj)
+    if roles:
+        judged = {r: judge_guidance(root, now, traj, role=r) for r in roles}
+    else:
+        judged = judge_guidance(root, now, traj)
     st = _state(root)
     out = {
         "reason": reason,
@@ -684,7 +816,9 @@ def run(
         "tools": {"applied": [], "refused": []},
         "note": "",
     }
-    if judged is not None:
+    if roles:
+        out["judged"] = {r: {"id": j.get("id"), "status": j.get("status")} for r, j in judged.items() if j is not None}
+    elif judged is not None:
         out["judged"] = {"id": judged.get("id"), "status": judged.get("status")}
     if _num(st.get("last_run_ts")) and not _compact_wakes(root, st["last_run_ts"]):
         return _finish(
@@ -695,10 +829,11 @@ def run(
             dict(out, status="skipped", note="지난 감사 뒤 운영자 점검 없음"),
         )
     listed = list(listed) if listed is not None else _default_listed(root)
-    prompt = build_prompt(root, now, secrets, listed)
+    prompt = build_prompt(root, now, secrets, listed, **({"roles": roles} if roles else {}))
     out["prompt_chars"] = len(prompt)
     try:
-        nums, rows = _period(root, now, st.get("last_run_ts") if _num(st.get("last_run_ts")) else now - 24 * 3600, listed)
+        nums, rows = _period(root, now, st.get("last_run_ts") if _num(st.get("last_run_ts")) else now - 24 * 3600, listed,
+                             roles)
     except Exception:  # noqa: BLE001 - memory is best effort
         nums, rows = {}, {}
     try:
@@ -718,10 +853,17 @@ def run(
         c.mask(str(x), secrets)[:300] for x in (f if isinstance(f, list) else [])
     ][:FINDINGS_MAX]
     out["note"] = c.mask(str(ans.get("note") or ""), secrets)[:300]
-    g = _apply_guidance(root, now, ans.get("guidance"), secrets, st)
-    out["guidance_changed"] = g["changed"]
+    if roles:
+        ask = ans.get("guidance") if isinstance(ans.get("guidance"), dict) else {}
+        g = {r: _apply_guidance(root, now, ask.get(r), secrets, st, role=r) for r in roles}
+        if ans.get("guidance") is not None and not isinstance(ans.get("guidance"), dict):
+            g["refused"] = "guidance는 역할별 객체 {shop, buyer}여야 함"
+        out["guidance_changed"] = any(v.get("changed") for v in g.values() if isinstance(v, dict))
+    else:
+        g = _apply_guidance(root, now, ans.get("guidance"), secrets, st)
+        out["guidance_changed"] = g["changed"]
     out["guidance"] = g
-    out["tools"] = _apply_tools(root, now, ans.get("tools"), listed, secrets, traj)
+    out["tools"] = _apply_tools(root, now, ans.get("tools"), listed, secrets, traj, roles)
     _remember(st, now, out, nums, rows)
     return _finish(root, traj, now, st, dict(out, status="done"))
 
@@ -729,13 +871,13 @@ def run(
 _RETRY_AT = {}  # root -> earliest next try after a crash (the state file may be the thing that is broken)
 
 
-def maybe_run(root, terra, traj, now, secrets=(), listed=None, force=False):
+def maybe_run(root, terra, traj, now, secrets=(), listed=None, force=False, roles=None):
     """run() when due() or force, else None. Never raises: a crash is returned and logged as an auditor_run row,
     and the next try waits MIN_GAP_S so a broken state file cannot call the model on every poll."""
     try:
         if not force and (now < _RETRY_AT.get(root, 0) or not due(root, now)):
             return None
-        return run(root, terra, traj, now, secrets=secrets, listed=listed)
+        return run(root, terra, traj, now, secrets=secrets, listed=listed, **({"roles": roles} if roles else {}))
     except Exception as e:  # noqa: BLE001 - the auditor must never stop the operator daemon
         _RETRY_AT[root] = now + MIN_GAP_S
         out = {"status": "crash", "error": f"{type(e).__name__}: {str(e)[:200]}"}

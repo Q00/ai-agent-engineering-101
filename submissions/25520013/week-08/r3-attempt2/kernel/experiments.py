@@ -117,6 +117,8 @@ REASON_KO = {
 }
 EXPECT_CHARS = 40
 LINES_RUN, LINES_ENDED = 6, 5
+ROLES = ("shop", "buyer")  # the role operators (kernel.operator --role)
+OTHER = " (다른 운영자)"  # a role's state card marks the other role's lines
 
 
 def ledger_path(root):
@@ -188,6 +190,24 @@ def splittable(key):
     if base in pe.GRADE_KEYS:
         return bool(sub)
     return not sub and base in SPLIT_KEYS
+
+
+def role_of(e):
+    """The role operator an experiment belongs to: the role stored when it was proposed, else buyer for a buyer.*
+    section and shop for any other."""
+    if e.get("role") in ROLES:
+        return e["role"]
+    return "buyer" if str(e.get("section") or "").startswith("buyer.") else "shop"
+
+
+def set_role(root, eid, role):
+    """Store the proposing role on the ledger entry with this id."""
+    rows = load(root)
+    for e in rows:
+        if isinstance(e, dict) and e.get("id") == eid:
+            e["role"] = role
+            save(root, rows)
+            return
 
 
 def running(root):
@@ -1208,6 +1228,7 @@ def _end(exp, status, v, now, traj):
         new=exp.get("new"),
         status=status,
         verdict=v,
+        **({"role": exp["role"]} if exp.get("role") in ROLES else {}),
     )
 
 
@@ -1535,9 +1556,12 @@ def _ended_line(e):
     )
 
 
-def lines(root, now, last=LINES_ENDED):
+def lines(root, now, last=LINES_ENDED, role=None):
     """[실험] briefing lines: counts, up to LINES_RUN running experiments and the last `last` ended ones, one compact
-    line each with its mode."""
+    line each with its mode. With a role, the other role's lines end with OTHER."""
+
+    def mark(e):
+        return OTHER if role and role_of(e) != role else ""
     rows = [e for e in load(root) if isinstance(e, dict) and "id" in e]
     run = [e for e in rows if e.get("status") == "running"]
     ended = sorted(
@@ -1555,14 +1579,14 @@ def lines(root, now, last=LINES_ENDED):
     out = [head]
     for e in run[:LINES_RUN]:
         try:
-            out.append(_run_line(e))
+            out.append(_run_line(e) + mark(e))
         except Exception:  # noqa: BLE001 - a malformed entry is shown by id only
             out.append(f"  진행 #{e.get('id')}")
     if len(run) > LINES_RUN:
         out.append(f"  … 진행 {len(run) - LINES_RUN}건 더")
     for e in reversed(ended):
         try:
-            out.append(_ended_line(e))
+            out.append(_ended_line(e) + mark(e))
         except Exception:  # noqa: BLE001
             out.append(f"  #{e.get('id')} {STATUS_KO.get(e.get('status'), '')}")
     return out

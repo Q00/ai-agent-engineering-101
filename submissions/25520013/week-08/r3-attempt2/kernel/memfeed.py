@@ -36,6 +36,7 @@ SOURCES = (
 AGENTS = ("seller", "buyer", "operator")
 OPERATOR_STORE = ("harness_edit", "reflection", "version_result")
 ALWAYS_STORE = ("experiment_end",)  # kernel verdicts: the only lessons the compact operator structure produces
+ROLES = ("shop", "buyer")  # a row a role operator's process wrote carries its role; memories keep it as metadata
 EXP_STATUS = {"adopted": "채택", "dropped": "버림", "kept": "유지", "reverted": "되돌림", "voided": "무효"}
 FIELD_CAP = 200
 METRIC_LABELS = (
@@ -240,7 +241,8 @@ def run_once(
     by_agent, new_cur = {}, dict(cur)
 
     def keep(row):
-        out = [s for s in sentence(row, login) or () if s[1] in ALWAYS_STORE or s[1] in kinds.get(s[0], set())]
+        role = row.get("role") if row.get("role") in ROLES else None
+        out = [s + (role,) for s in sentence(row, login) or () if s[1] in ALWAYS_STORE or s[1] in kinds.get(s[0], set())]
         return out or None
 
     for src, needles in SOURCES:
@@ -253,13 +255,13 @@ def run_once(
             needles,
         )
         for item in found:
-            for agent, _, text in item:
-                by_agent.setdefault(agent, []).append(text)
+            for agent, _, text, role in item:
+                by_agent.setdefault((agent, role), []).append(text)
     sent = batches = 0
-    for agent, lines in by_agent.items():
+    for (agent, role), lines in by_agent.items():
         for i in range(0, len(lines), BATCH):
             chunk = lines[i : i + BATCH]
-            meta = {"source": "memfeed", "n": len(chunk)}
+            meta = {"source": "memfeed", "n": len(chunk), **({"role": role} if role else {})}
             if not add(sock, agent, "\n".join(chunk), infer=True, metadata=meta):
                 return {"sent": sent, "batches": batches, "ok": False}
             sent, batches = sent + len(chunk), batches + 1

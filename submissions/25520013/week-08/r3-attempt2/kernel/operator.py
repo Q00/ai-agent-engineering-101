@@ -1,19 +1,28 @@
 """Operator: wake conditions, the tool loop with Terra and the effects of its done action (human code).
 
-    python3 -m kernel.operator --root R [--once] [--dry] [--harness DIR] [--cli PATH]
+    python3 -m kernel.operator --root R [--once] [--dry] [--harness DIR] [--cli PATH] [--role shop|buyer]
 
 The kernel only bounds the operator's own settings, runs tools and applies edits through kernel.versions. What to
 change and why is the model's (harness/operator text). Each wake: one prompt per step with the operator's always-read
 harness, MARKET_BRIEF.md, the briefing (version results and call refusals near the top), the wake reason, the tool
 list and the action schema; the model answers one JSON action per step. --dry swaps the model for a stub that
 answers {"done": {}} at once.
+
+--role (env A2_OPERATOR_ROLE) runs one of two role operators in compact mode: shop (sale, restock and shop values, the
+seller and restock rule code) or buyer (buyer.* values, the buyer rule code). Each has its own job text, notes, state,
+guidance and wake rule and may change only its own side; the toolbox, ledgers, policy.json, memory, auditor and
+trajectory are shared, and the two never wake at the same time (a2/operator_busy.json). No role: the single operator.
 """
 
 import argparse
+import contextlib
+import fcntl
 import importlib
 import json
 import os
 import re
+import shutil
+import statistics
 import subprocess
 import sys
 import time
@@ -56,6 +65,20 @@ NOTES_CHARS = 2_000
 # Heartbeat while an experiment runs. 1200 since 11-11 (성수님: 20분마다 시장을 보고 전략을 잡아야 함); it was 3600,
 # and with experiments always running the operator woke hourly and mostly waited.
 BUSY_INTERVAL_S = 1200
+# Role operators (11-11): one shared toolbox, ledgers and auditor, two operators that change only their own side
+ROLES = tools.ROLES
+ROLE_KO = code_edit.ROLE_KO
+ROLE_INTERVAL_S = 1200  # a role operator's interval without A2_OPERATOR_INTERVAL_S
+ROLE_ONLY_TOOLS = ("tool_search",)  # not listed for the single operator
+SHOP_LEAD_S = 300  # env A2_SHOP_LEAD_S: the shop wakes this long before the next restock window opens
+WINDOW_AHEAD_S = 1800  # a window estimate further ahead than this, or already past, leaves it to the interval
+SHOP_MIN_GAP_S = 600  # the window rule never wakes the shop more often than this
+WINDOW_LOOKBACK_S = 6 * 3600  # restock rows read for the window estimate
+WINDOW_BYTES = 5_000_000
+BUSY = os.path.join("a2", "operator_busy.json")  # {role, pid, ts} while a role operator's wake runs
+BUSY_STALE_S = 900
+LEDGER_LOCK = os.path.join("a2", "operator_ledger.lock")  # role mode: the two processes' ledger writes take turns
+AUDITOR_LOCK = os.path.join("a2", "auditor.lock")
 OBS_BUDGET = 14_000  # chars of tool results shown per step: newest in full, older ones cut to OBS_TRIM
 OBS_TRIM = 1_000
 TOOL_ERR = ("도구 오류", "인자 오류", "도구 없음", "만든 도구 없음", "기억 없음", "operator는")  # how a failed tool answers
@@ -167,6 +190,128 @@ def bounded(settings):
     return out
 
 
+def role_schema(role):
+    """COMPACT_SCHEMA for a role operator: only the policy sections and keys, rule-code files and forum author that
+    role may change, and a last line naming the other role."""
+    other = "buyer" if role == "shop" else "shop"
+    head, keys = COMPACT_SCHEMA.rsplit("\n", 1)
+    i, j, k = keys.index("판매 구역은"), keys.index(" buyer.defaults.*는"), keys.index(" bounds는")
+    keys = keys[:j] + keys[k:] if role == "shop" else keys[:i] + keys[j + 1:]
+    sections = "defaults.food|defaults.goods|<상품군 전체 경로>|shop" if role == "shop" else "buyer.defaults.food|buyer.defaults.goods"
+    for old, new in (
+        ('"section": "defaults.food|defaults.goods|<상품군 전체 경로>|shop|buyer.defaults.food|buyer.defaults.goods"',
+         f'"section": "{sections}"'),
+        ('"as": "shop|buyer"', f'"as": "{role}"'),
+        ("<policy.py|hooks/restock.py|hooks/market_buyer.py|hooks/seller.py>", "<" + "|".join(code_edit.ROLE_FILES[role]) + ">"),
+    ):
+        head = head.replace(old, new)
+    return (head + "\n" + keys + f"\n너는 {ROLE_KO[role]}임. 위 구역, 파일, 글쓴이 밖은 {ROLE_KO[other]} 몫이라 커널이 거절함. "
+            "도구는 둘이 같이 씀")
+
+
+def _num(v):
+    return isinstance(v, (int, float)) and not isinstance(v, bool)
+
+
+def _openings(root, now):
+    """Restock window openings recorded in the last WINDOW_LOOKBACK_S, sorted: ts + opens_in_s of attempt 1's restock
+    hook rows in .r3/metrics.jsonl (outcome.why window_closed) and of the kernel hook's trajectory rows (kind restock)."""
+    out = []
+    for path, pick in (
+        (os.path.join(root, ".r3/metrics.jsonl"),
+         lambda m: m.get("outcome") if m.get("hook") == "restock" and isinstance(m.get("outcome"), dict) else None),
+        (os.path.join(root, "a2/trajectory.jsonl"), lambda r: r if r.get("kind") == "restock" else None),
+    ):
+        for r in c.tail_json(path, WINDOW_BYTES, b'"opens_in_s"'):
+            o, ts = pick(r), r.get("ts")
+            wait = o.get("opens_in_s") if o else None
+            if _num(ts) and _num(wait) and wait > 0 and now - WINDOW_LOOKBACK_S <= ts <= now:
+                out.append(ts + wait)
+    return sorted(out)
+
+
+def next_window_ts(root, now):
+    """Next restock window opening from recorded data, or None: the market's .market/inventory.json restock.opens_at
+    when it is ahead; else the recorded openings (_openings, one per minute): the nearest one ahead, or the last one
+    carried forward by the median gap between them."""
+    inv = c.load_json(os.path.join(root, ".market/inventory.json"), {})
+    w = inv.get("restock") if isinstance(inv, dict) and isinstance(inv.get("restock"), dict) else {}
+    if _num(w.get("opens_at")) and w["opens_at"] > now:
+        return float(w["opens_at"])
+    seen = []
+    for t in _openings(root, now):  # every hook run before a window reports it: openings within a minute are one
+        if not seen or t - seen[-1] > 60:
+            seen.append(t)
+    ahead = [t for t in seen if t > now]
+    if ahead:
+        return ahead[0]
+    if len(seen) < 2:
+        return None
+    gap = statistics.median(b - a for a, b in zip(seen, seen[1:]))
+    if gap < SHOP_MIN_GAP_S:
+        return None
+    return seen[-1] + gap * (int((now - seen[-1]) // gap) + 1)
+
+
+@contextlib.contextmanager
+def _flock(root, rel, block=True):
+    """Exclusive lock on <root>/<rel>; yields False when block is False and another process holds it."""
+    path = os.path.join(root, rel)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "a") as f:
+        try:
+            fcntl.flock(f, fcntl.LOCK_EX | (0 if block else fcntl.LOCK_NB))
+        except BlockingIOError:
+            yield False
+            return
+        try:
+            yield True
+        finally:
+            fcntl.flock(f, fcntl.LOCK_UN)
+
+
+def _alive(pid):
+    try:
+        os.kill(pid, 0)
+    except PermissionError:
+        return True
+    except (OSError, TypeError, ValueError, OverflowError):
+        return False
+    return True
+
+
+def busy_other(root, role, now):
+    """The other role's busy lock {role, pid, ts} while its wake runs, else None. A lock older than BUSY_STALE_S or
+    whose pid is dead is stale and ignored."""
+    b = c.load_json(os.path.join(root, BUSY))
+    if not isinstance(b, dict) or b.get("role") == role:
+        return None
+    pid = b.get("pid")
+    if not _num(b.get("ts")) or now - b["ts"] > BUSY_STALE_S or not isinstance(pid, int) or not _alive(pid):
+        return None
+    return b
+
+
+def claim_busy(root, role, now):
+    """Take the busy lock for this role's wake. -> False while the other role's wake runs."""
+    with _flock(root, BUSY + ".lock"):
+        if busy_other(root, role, now):
+            return False
+        path = os.path.join(root, BUSY)
+        with open(path + ".tmp", "w", encoding="utf-8") as f:
+            json.dump({"role": role, "pid": os.getpid(), "ts": now}, f)
+        os.replace(path + ".tmp", path)
+    return True
+
+
+def release_busy(root, role):
+    """Drop the busy lock when this process holds it."""
+    with _flock(root, BUSY + ".lock"):
+        b = c.load_json(os.path.join(root, BUSY))
+        if isinstance(b, dict) and b.get("role") == role and b.get("pid") == os.getpid():
+            os.unlink(os.path.join(root, BUSY))
+
+
 class DryTerra:
     """Stand-in model for --dry: ends every wake at once with no edits."""
 
@@ -175,8 +320,10 @@ class DryTerra:
 
 
 class Operator:
+    role = None  # "shop" or "buyer" for a role operator, None for the single operator
+
     def __init__(self, root, terra, traj, harness_root=HARNESS, market_brief_path=MARKET_BRIEF, dry=False,
-                 spawn=subprocess.Popen):
+                 spawn=subprocess.Popen, role=None):
         self.root, self.terra, self.traj = root, terra, traj
         self.harness_root, self.market_brief_path, self.dry, self.spawn = (
             harness_root,
@@ -186,7 +333,11 @@ class Operator:
         )
         self.login = c.owner_login(root)
         self.secrets = (self.login,) if self.login else ()
-        self.state_path = os.path.join(root, "a2/operator_state.json")
+        self.role = role
+        self.state_path = os.path.join(root, "a2/operator_state.json" if role is None else f"a2/operator_state_{role}.json")
+        self._seen_next = None  # role mode: the newest verdict time this wake answers (wake_reason sets it)
+        if role is not None:
+            self._seed_notes()
 
     # ------------------------------------------------------------ settings and state
     def settings(self):
@@ -194,6 +345,8 @@ class Operator:
         env = os.environ.get("A2_OPERATOR_INTERVAL_S", "")  # 2026-11-10: the human's interval wins over the harness
         if env.isdigit():
             s["interval_s"] = int(env)
+        elif self.role is not None:  # role operators wake on a fixed interval, not the harness's
+            s["interval_s"] = ROLE_INTERVAL_S
         return bounded(s)
 
     def _state(self):
@@ -260,6 +413,8 @@ class Operator:
         now = c.now_ts() if now is None else now
         if self.compact():
             return self._wake_reason_compact(now)
+        if self.role is not None:  # role operators work in compact mode only
+            return None
         s, st = self.settings(), self._state()
         ev = self.events_now(s)
         reasons = []
@@ -326,7 +481,7 @@ class Operator:
         return "\n".join(
             f"- {name}: {' '.join((fn.__doc__ or '').split())[:300]}"
             for name, (fn, agents) in tools.TOOLS.items()
-            if "operator" in agents
+            if "operator" in agents and name not in ROLE_ONLY_TOOLS
         )
 
     def listed(self):
@@ -340,12 +495,43 @@ class Operator:
             (name, state["desc"].get(name) or " ".join((fn.__doc__ or "").split())[:160])
             for name, (fn, agents) in tools.TOOLS.items()
             if "operator" in agents and name not in HARNESS_TOOLS
+            and (self.role is not None or name not in ROLE_ONLY_TOOLS)
             and (name not in state["hidden"] or name in auditor.CORE_TOOLS)
         ]
         try:
             out += [(n, "(만든 도구) " + str(d)[:160]) for n, d in made_tools.listing(self.root)]
         except Exception:
             pass
+        return out
+
+    def _recommended(self):
+        try:
+            return auditor.recommended(self.root, self.role)
+        except Exception:  # a broken auditor file must not take the list away
+            return list(tools.RECOMMENDED.get(self.role, ()))
+
+    def _tool_text(self, listed):
+        """The prompt's tool section: every listed tool with its description; for a role operator only its recommended
+        tools, the others by name on one line."""
+        if self.role is None:
+            return "\n".join(f"- {name}: {doc}" for name, doc in listed)
+        rec = set(self._recommended())
+        out = [f"- {name}: {doc}" for name, doc in listed if name in rec]
+        rest = [name for name, _ in listed if name not in rec]
+        if rest:
+            out.append("- 그 밖의 도구 (이름만. 설명과 인자는 tool_search로 보고, 그대로 부를 수 있음): " + ", ".join(rest))
+        return "\n".join(out)
+
+    def _tool_extra(self, name, args, obs):
+        """Tool row fields of a role operator: whether the tool is on its recommended list; for tool_search the query
+        and the number of tools found."""
+        if self.role is None:
+            return {}
+        out = {"recommended": name in self._recommended()}
+        if name == "tool_search":
+            found = re.findall(r"': (\d+)개", str(obs).split("\n", 1)[0])
+            out.update(query=c.mask(str((args or {}).get("query") or "")[:60], self.secrets),
+                       hits=int(found[-1]) if found else None)
         return out
 
     def _run_tool(self, name, args):
@@ -359,7 +545,8 @@ class Operator:
                 obs = f"도구 오류: {type(e).__name__}: {e}"
             obs = c.cap(c.mask(str(obs), self.secrets), tools.MAX_CHARS)
             self.traj.append("operator", "tool", name=name, obs_chars=len(obs), **obs_facts(obs, COMPACT_OBS),
-                             args=c.mask(json.dumps(args, ensure_ascii=False, default=str)[:2000], self.secrets))
+                             args=c.mask(json.dumps(args, ensure_ascii=False, default=str)[:2000], self.secrets),
+                             **self._tool_extra(name, args, obs))
             return obs
         if name in HARNESS_TOOLS:
             args["harness_root"] = self.harness_root
@@ -378,6 +565,7 @@ class Operator:
             args=c.mask(json.dumps(shown, ensure_ascii=False, default=str)[:2000], self.secrets),
             obs_chars=len(obs),
             **obs_facts(obs, COMPACT_OBS if self.compact() else None),
+            **self._tool_extra(name, shown, obs),
         )
         return obs
 
@@ -469,9 +657,67 @@ class Operator:
     def _cats(self):
         return {v.get("category") for v in b._catalog(self.root).values() if isinstance(v, dict) and v.get("category")}
 
+    def _notes_path(self):
+        return os.path.join(self.root, "a2/operator_notes.md" if self.role is None else f"a2/operator_notes_{self.role}.md")
+
+    def _seed_notes(self):
+        """First start of a role with no notes file: its notes start as a copy of the single operator's."""
+        path, single = self._notes_path(), os.path.join(self.root, "a2/operator_notes.md")
+        if not os.path.exists(path) and os.path.exists(single):
+            shutil.copyfile(single, path)
+
+    def _job_path(self):
+        """OPERATOR_JOB_<ROLE>.md for a role operator when it is there, else OPERATOR_JOB.md."""
+        if self.role is not None:
+            p = os.path.join(HERE, f"OPERATOR_JOB_{self.role.upper()}.md")
+            if os.path.exists(p):
+                return p
+        return JOB
+
+    def _ledger_lock(self):
+        return _flock(self.root, LEDGER_LOCK) if self.role is not None else contextlib.nullcontext()
+
+    def _role_kw(self):
+        return {"role": self.role} if self.role is not None else {}
+
+    def _role_events(self, st, now):
+        """This role's experiment and code-change verdicts since it last woke, read from the ledgers (a verdict the
+        other process reached wakes this one too). The first call only marks the start."""
+        seen = st.get("events_seen_ts")
+        if not _num(seen):
+            st["events_seen_ts"] = now
+            self._save_state(st)
+            return [], []
+        exps = [e for e in ex.load(self.root) if isinstance(e, dict) and e.get("status") not in (None, "running")
+                and _num(e.get("ended_ts")) and e["ended_ts"] > seen and ex.role_of(e) == self.role]
+        codes = [r for r in code_edit.load(self.root) if r.get("status") not in code_edit.OPEN
+                 and _num(r.get("ended_ts")) and r["ended_ts"] > seen and self.role in code_edit.role_of(r)]
+        self._seen_next = max([seen] + [x["ended_ts"] for x in exps + codes])
+        return exps, codes
+
+    def _window_reason(self, now, last):
+        """Shop: wake A2_SHOP_LEAD_S (SHOP_LEAD_S) before the next restock window opens, at most every SHOP_MIN_GAP_S
+        and once per window. -> the reason, "" while it is not time, None when there is no usable estimate (none,
+        past or more than WINDOW_AHEAD_S away): the interval decides then."""
+        nxt = next_window_ts(self.root, now)
+        if nxt is None or not now < nxt <= now + WINDOW_AHEAD_S:
+            return None
+        lead = os.environ.get("A2_SHOP_LEAD_S", "")
+        at = nxt - (int(lead) if lead.isdigit() else SHOP_LEAD_S)
+        if now < at or (last is not None and (now - last < SHOP_MIN_GAP_S or last >= at)):
+            return ""
+        return f"재입고 창 {c.kst(nxt, '%H:%M')} 열리기 {max(0, round((nxt - now) / 60))}분 전"
+
+    def _side_error(self, section):
+        if self.role == "shop":
+            return (f"{section[:60]}는 구매 쪽 값이라 {ROLE_KO['buyer']}가 고침. {ROLE_KO['shop']}는 buyer.로 시작하지 "
+                    "않는 구역만 고침")
+        return (f"{section[:60]}는 가게 쪽 값이라 {ROLE_KO['shop']}가 고침. {ROLE_KO['buyer']}는 buyer.defaults.food, "
+                "buyer.defaults.goods만 고침")
+
     def _notes(self):
         try:
-            with open(os.path.join(self.root, "a2/operator_notes.md"), encoding="utf-8") as f:
+            with open(self._notes_path(), encoding="utf-8") as f:
                 return f.read()[:NOTES_CHARS]
         except OSError:
             return ""
@@ -510,17 +756,27 @@ class Operator:
         ledger is ticked here on every poll (code only, no model call)."""
         s, st = self.settings(), self._state()
         ev = self.events_now(s)
-        ended = [e for e in ex.tick(self.root, now, self.traj, categories=self._cats()) if e.get("status") != "running"]
+        with self._ledger_lock():
+            ticked = ex.tick(self.root, now, self.traj, categories=self._cats())
+        ended = [e for e in ticked if e.get("status") != "running"]
         reasons = []
+        if self.role is not None:
+            ended, codes = self._role_events(st, now)
+            if codes:
+                reasons.append(f"코드 수정 판정 {len(codes)}건 (상태 카드의 [코드] 줄)")
         if ended:
             reasons.append(f"실험 판정 {len(ended)}건 (상태 카드의 [실험] 줄)")
         last = st.get("last_wake_ts")
         gap = max(s["interval_s"], BUSY_INTERVAL_S) if ex.running(self.root) else s["interval_s"]
-        if last is None or now - last >= gap:
+        window = self._window_reason(now, last) if self.role == "shop" else None
+        if window is not None:
+            if window:
+                reasons.append(window)
+        elif last is None or now - last >= gap:
             reasons.append("주기 점검")
         if ev["rank"] and st.get("last_rank") and abs(ev["rank"] - st["last_rank"]) >= s["rank_jump"]:
             reasons.append(f"Everyone 순위 {st['last_rank']}위에서 {ev['rank']}위로 바뀜")
-        if ev["shop_missing"] and not st.get("shop_missing"):
+        if self.role != "buyer" and ev["shop_missing"] and not st.get("shop_missing"):
             reasons.append("우리 가게가 가게 목록에서 빠짐")
         if ev["bankrupt_near"] and not st.get("bankrupt_near"):
             reasons.append("잔고가 파산선 가까이 내려감")
@@ -536,26 +792,29 @@ class Operator:
         ev = self.events_now(s)
         st.update(last_wake_ts=now, last_rank=ev["rank"], shop_missing=ev["shop_missing"],
                   bankrupt_near=ev["bankrupt_near"])
+        if self.role is not None and _num(self._seen_next):
+            st["events_seen_ts"] = max(self._seen_next, st.get("events_seen_ts") or 0)
         last_brief = st.get("last_brief_ts")
         st["last_brief_ts"] = now
         self._save_state(st)
         loaded, _ = self._always_text()  # the harness only routes the call here (effort, timeout); JOB is the job text
         route = (loaded[0].routing.get("operator.wake") or {}) if loaded else {}
         try:
-            with open(JOB, encoding="utf-8") as f:
+            with open(self._job_path(), encoding="utf-8") as f:
                 job = f.read()
         except OSError:
             job = ""
         listed = self.listed()
         try:
-            audit_lines = audit.lines(self.root, now, listed=[n for n, _ in listed])
+            names = self._recommended() if self.role is not None else [n for n, _ in listed]
+            audit_lines = audit.lines(self.root, now, listed=names, **self._role_kw())
         except Exception:  # the audit is a reader of the trajectory; it must never stop a wake
             audit_lines = []
         try:
-            guidance = auditor.guidance(self.root)
+            guidance = auditor.guidance(self.root, **self._role_kw())
         except Exception:
             guidance = ""
-        code_lines = code_edit.lines(self.root, now)  # never raises
+        code_lines = code_edit.lines(self.root, now, **self._role_kw())  # never raises
         base = "\n\n".join(
             [
                 job,
@@ -563,15 +822,16 @@ class Operator:
                 + (c.mask(guidance, self.secrets) or "없음"),
                 tools.guide_always(),
                 "## 상태 카드 (커널이 모은 사실, 해석 없음)",
-                b.build_compact(self.root, now, last_brief, extra=list(ex.lines(self.root, now)) + list(code_lines) + list(audit_lines)),
+                b.build_compact(self.root, now, last_brief,
+                                extra=list(ex.lines(self.root, now, **self._role_kw())) + list(code_lines) + list(audit_lines)),
                 "## 네 메모 (지난 점검의 네가 남김)",
                 c.mask(self._notes(), self.secrets) or "없음",
                 "## 깨운 이유",
                 reason,
                 "## 도구",
-                "\n".join(f"- {name}: {doc}" for name, doc in listed),
+                self._tool_text(listed),
                 "## 답 형식",
-                COMPACT_SCHEMA,
+                COMPACT_SCHEMA if self.role is None else role_schema(self.role),
             ]
         )
         # 11-11: results used to vanish after one step and 24 of 31 repeated calls re-read one two steps later.
@@ -651,7 +911,12 @@ class Operator:
     def _finish_compact(self, done, now, read_files=()):
         """Apply a compact done: each policy item that no running experiment blocks is written through policy_edit
         and registered as an experiment; a code change goes through code_edit.propose (read_files: the rule-code files
-        read this wake); forum posts are queued; notes replace the operator's notes file."""
+        read this wake); forum posts are queued; notes replace the operator's notes file. A role operator's items of
+        the other side are refused, and its experiments and code changes keep its role."""
+        with self._ledger_lock():
+            return self._finish_compact_locked(done, now, read_files)
+
+    def _finish_compact_locked(self, done, now, read_files):
         result = {"note": c.mask(str(done.get("note") or ""), self.secrets)[:500]}
         items = done.get("policy")
         if isinstance(items, list) and items:
@@ -659,6 +924,10 @@ class Operator:
             for i, it in enumerate(items):
                 if not isinstance(it, dict):
                     out.append({"ok": False, "error": "each policy item must be an object"})
+                    continue
+                sec = it.get("section")
+                if self.role is not None and isinstance(sec, str) and sec.startswith("buyer.") != (self.role == "buyer"):
+                    out.append({"ok": False, "error": self._side_error(sec)})
                     continue
                 if n_ok >= policy_edit.MAX_PER_WAKE:
                     out.append({"ok": False, "error": f"한 점검에 {policy_edit.MAX_PER_WAKE}개까지"})
@@ -674,6 +943,8 @@ class Operator:
                     r = {"ok": False, "error": "no result"}
                 if r.get("ok"):
                     n_ok += 1
+                    if self.role is not None:
+                        ex.set_role(self.root, r.get("experiment"), self.role)
                     if isinstance(r.get("eval_ts"), (int, float)):
                         r = dict(r, eval_kst=c.kst(r["eval_ts"]))
                 out.append(r)
@@ -685,23 +956,29 @@ class Operator:
             except Exception:  # the board read only weights the shop metric
                 weight = 0.0
             r = code_edit.propose(self.root, code.get("edits"), code.get("reason"), code.get("expect"), now, self.traj,
-                                  read_files=read_files, rev_weight=weight)
+                                  read_files=read_files, rev_weight=weight, **self._role_kw())
             result["code"] = {"ok": r.get("ok"), "id": r.get("id"), "status": r.get("status"),
                               "error": c.mask(str(r["error"]), self.secrets)[:300] if r.get("error") else None,
                               "tests": (r.get("tests") or {}).get("summary")}
         if "forum" in done:
-            result["forum"] = self._forum(done["forum"])
+            posts = done["forum"]
+            other = [p for p in posts if isinstance(p, dict) and p.get("as") in ROLES and p.get("as") != self.role] if (
+                self.role is not None and isinstance(posts, list)) else []
+            result["forum"] = self._forum([p for p in posts if not any(p is x for x in other)] if other else posts)
+            if other:
+                o = other[0]["as"]
+                result["forum"]["refused"] = f"as {o} 글 {len(other)}개: {ROLE_KO[o]}가 씀. {ROLE_KO[self.role]}는 as {self.role}로만 씀"
         if isinstance(done.get("new_tool"), dict):  # declarative query only; the test run on real data is the gate
             try:
                 r = made_tools.add(self.root, done["new_tool"], now, traj=self.traj, by="operator",
-                                   reserved=tuple(tools.TOOLS))
+                                   reserved=tuple(tools.TOOLS), **self._role_kw())
             except Exception as e:
                 r = {"ok": False, "error": f"{type(e).__name__}: {str(e)[:200]}"}
             r = r if isinstance(r, dict) else {"ok": False, "error": "no result"}
             result["new_tool"] = {k: c.mask(str(v), self.secrets)[:300] if isinstance(v, str) else v
                                   for k, v in r.items() if k in ("ok", "name", "error", "sample")}
         if isinstance(done.get("notes"), str) and done["notes"].strip():
-            path = os.path.join(self.root, "a2/operator_notes.md")
+            path = self._notes_path()
             os.makedirs(os.path.dirname(path), exist_ok=True)
             with open(path + ".tmp", "w", encoding="utf-8") as f:
                 f.write(c.mask(done["notes"], self.secrets)[:NOTES_CHARS])
@@ -1003,28 +1280,40 @@ def main(argv=None):
     ap.add_argument("--dry", action="store_true", help="stub model that answers done with no edits")
     ap.add_argument("--harness", default=HARNESS)
     ap.add_argument("--cli", default=CLI)
+    ap.add_argument("--role", default=None, help="shop or buyer (env A2_OPERATOR_ROLE); none = the single operator")
     a = ap.parse_args(argv)
+    role = a.role or os.environ.get("A2_OPERATOR_ROLE") or None
+    if role is not None and role not in ROLES:
+        ap.error(f"--role must be one of {', '.join(ROLES)}")
     root = c.data_root(a.root)
     login = c.owner_login(root)
     secrets = (login,) if login else ()
-    traj = Trajectory(os.path.join(root, "a2/trajectory.jsonl"), secrets=secrets)
+    traj = Trajectory(os.path.join(root, "a2/trajectory.jsonl"), secrets=secrets, role=role)
     if a.dry:
         terra = DryTerra()
     else:
         from kernel.llm import Terra
 
         terra = Terra(traj, cli=a.cli, secrets=secrets)
-    op = Operator(root, terra, traj, harness_root=a.harness, dry=a.dry)
+    op = Operator(root, terra, traj, harness_root=a.harness, dry=a.dry, role=role)
     poll_err = (None, 0.0)
     while True:
         try:  # rule-code changes: restart, canary and verdict (code only, never blocks)
-            code_events = [e for e in code_edit.watch(root, c.now_ts(), traj) if e.get("wake")]
+            if role is None:
+                code_events = [e for e in code_edit.watch(root, c.now_ts(), traj) if e.get("wake")]
+            elif role == "shop":  # one process runs restarts; verdicts reach each role through the ledger (wake_reason)
+                with op._ledger_lock():
+                    code_events = [e for e in code_edit.watch(root, c.now_ts(), traj)
+                                   if e.get("wake") and e.get("status") in code_edit.OPEN]
+            else:
+                code_events = []
         except Exception:
             code_events = []
         try:
             versions.check_breakage(root, a.harness, traj, op.settings()["breakage_n"])
             if not op.compact():  # compact mode ticks the ledger inside wake_reason; verdicts must not stop elsewhere
-                ex.tick(root, c.now_ts(), traj, categories=op._cats())
+                with op._ledger_lock():
+                    ex.tick(root, c.now_ts(), traj, categories=op._cats())
             reason = "수동 실행 (--once)" if a.once else op.wake_reason()
         except Exception as err:  # one bad poll must not stop the daemon; the same error is logged once an hour
             if a.once:
@@ -1035,6 +1324,8 @@ def main(argv=None):
                 traj.append("operator", "operator_poll", status="crash", error=name, detail=str(err)[:200])
         if code_events:  # like an experiment verdict: wake at once
             reason = ", ".join([f"코드 수정 판정 {len(code_events)}건 (상태 카드의 [코드] 줄)"] + ([reason] if reason else []))
+        if reason and role is not None and not claim_busy(root, role, c.now_ts()):
+            reason = None  # the other role's wake runs: this one waits and asks again at the next poll
         if reason:
             try:
                 print(json.dumps(op.wake(reason), ensure_ascii=False, default=str), flush=True)
@@ -1042,10 +1333,19 @@ def main(argv=None):
                 if a.once:
                     raise
                 traj.append("operator", "operator_wake", reason=reason, status="crash", error=type(err).__name__)
+            finally:
+                if role is not None:
+                    release_busy(root, role)
         if op.compact() and os.environ.get("A2_AUDITOR") == "1" and not a.dry:
             # meta-harness: audits how the operator works, edits its guidance and tool list, never policy
             try:
-                auditor.maybe_run(root, terra, traj, c.now_ts(), secrets=secrets, listed=[n for n, _ in op.listed()])
+                if role is None:
+                    auditor.maybe_run(root, terra, traj, c.now_ts(), secrets=secrets, listed=[n for n, _ in op.listed()])
+                else:  # one auditor for both roles: whichever process holds the lock runs it when it is due
+                    with _flock(root, AUDITOR_LOCK, block=False) as got:
+                        if got:
+                            auditor.maybe_run(root, terra, traj, c.now_ts(), secrets=secrets,
+                                              listed=[n for n, _ in op.listed()], roles=ROLES)
             except Exception:  # the auditor must never stop the operator daemon
                 pass
         if a.once:
