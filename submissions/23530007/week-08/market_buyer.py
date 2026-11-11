@@ -283,6 +283,22 @@ def failed_last(mem, name, item=None):
 
 
 UNIT_FAIL_SECS = 2 * 3600
+REFAIL_SECS = {"food": 30 * 60, "goods": 2 * 3600}
+REFAIL_PENALTY = 0.08
+
+
+def price_refail(mem, kind):
+    """'shop|sku' pairs where our haggle ended on price within REFAIL_SECS. Over 24 h the next visit to the same shop
+    for the same SKU closed 12% of the time within 30 min for food (24% on any visit) and 6% within 2 h for goods
+    (15%); 1,144 of 4,123 visits a day were such repeats. choose() tries those shops after the others."""
+    since, out = time.time() - REFAIL_SECS.get(kind, 1800), set()
+    for t in reversed(mem["trades"]):
+        if t.get("t", 0) < since:
+            break
+        if t.get("shop") and t.get("item") and (t.get("outcome") in ("too dear", "over budget", "walked away")
+                                                or (t.get("outcome") == "rejected" and t.get("asks"))):
+            out.add(f"{t['shop']}|{t['item']}")
+    return out
 
 
 def unit_skip(mem):
@@ -611,8 +627,9 @@ def choose(shops, mem, item, budget, ask_model=True, ctx=None):
             conv = (v[1] + 1) / (v[0] + 2) if v[0] >= 5 else 0.6
             sa = (bp.get("shop_auto") or {}).get(s["name"]) or {}
             bias = sa.get("shop_bias", 0) + sa.get(f"bias_{ctx['kind']}", 0)   # the strategist's call, per kind since 11-11
-            return (e["saved"] + bp["conv_weight"] * conv - (bp["rival_penalty"] if s["name"] in rivals else 0) + bias,
-                    e, conv)
+            refail = bp.get("refail_penalty", REFAIL_PENALTY) if s["name"] in (ctx.get("refailed") or ()) else 0
+            return (e["saved"] + bp["conv_weight"] * conv - (bp["rival_penalty"] if s["name"] in rivals else 0) + bias
+                    - refail, e, conv)
         ranked = sorted(((value(s), s) for s in allowed), key=lambda x: -x[0][0])
         # skip only when no allowed shop reaches skip_below; else the best score among those that do
         # user 11-06: food 0.279 vs goods 0.194 saved per deal (goods breaks count -1): a bar per kind
@@ -863,6 +880,10 @@ def main():
 
     max_shops = int(bp.get("max_shops", MAX_SHOPS)) if acceptable else MAX_SHOPS   # strategist knob
     for attempt in range(max_shops):              # a shop that turns me away before any ask: try the next one
+        if vctx is not None and acceptable:        # 11-11: shops where this SKU just failed on price go last
+            pf = price_refail(mem, vctx["kind"])
+            vctx["refailed"] = {s["name"] for s in shops if pf and "{}|{}".format(s["name"], (pick_sku(
+                s, acceptable, catalog, a.budget, share, cskip, stats=vctx["stats"] if skubest else None) or {}).get("sku")) in pf}
         pick, why, skipped, views = choose(shops, mem, a.item, a.budget, ask_model=attempt == 0, ctx=vctx)
         t_shop = time.time()
         if pick is None:                           # every shop is expected under skip_below: no deal beats a bad one
