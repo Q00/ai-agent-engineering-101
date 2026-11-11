@@ -1972,6 +1972,81 @@ def _shop_compact(x):
     return out + [ln for ln in restock_food_lines(x.root, x.now, inv) if ln.startswith("  최근 1시간 재고 없음 거절")]
 
 
+MONEY_TOP = 5  # leaves shown by stock cost in [돈이 있는 곳]
+MONEY_RESTOCK_H = 2
+HUMAN_NOTE_H = 6  # guide section 10 entries this recent are named on the card (24 h showed 24 entries live)
+HUMAN_NOTE_N = 5  # the newest ones
+HUMAN_NOTE_CHARS = 200
+
+
+def _money_compact(x):
+    """[돈이 있는 곳]: cash, stock cost per leaf with its units, the last NET_PROFIT_H hours' sales and the stock
+    divided by that pace, and the last hours' restock runs. Facts only (live 11-12: the card showed stock in units,
+    so where the money sat was never on it)."""
+    inv = c.load_json(os.path.join(x.root, ".market/inventory.json"))
+    if not isinstance(inv, dict):
+        return []
+    cat = _catalog(x.root)
+    by = defaultdict(lambda: [0, 0.0])
+    for u in inv.get("units") or []:
+        if isinstance(u, dict):
+            g = by[_leaf((cat.get(u.get("sku")) or {}).get("category"))]
+            g[0] += 1
+            g[1] += float(u.get("cost") or 0) if _is_num(u.get("cost")) else 0.0
+    sold = Counter(s["leaf"] for s in net_profit_data(x.root, x.now, NET_PROFIT_H, x.login, cat)[0])
+    rows = sorted(by.items(), key=lambda kv: -kv[1][1])
+    out = [f"[돈이 있는 곳] 현금 {c.fmt(inv.get('balance'))}, 재고 원가 합 {c.fmt(sum(v[1] for v in by.values()))} "
+           f"({sum(v[0] for v in by.values())}개). 아래는 원가가 큰 상품군부터, 최근 {NET_PROFIT_H}시간 판매 수와 "
+           "그 속도로 지금 재고를 나눈 시간"]
+    for leaf, (n, cost) in rows[:MONEY_TOP]:
+        k = sold.get(leaf, 0)
+        pace = f"판매 {k}개, 그 속도로 {n / k * NET_PROFIT_H:.0f}시간 치" if k else "판매 0개"
+        out.append(f"  {leaf}: {n}개 원가 합 {c.fmt(cost)}, {pace}")
+    if rows[MONEY_TOP:]:
+        rest = rows[MONEY_TOP:]
+        out.append(f"  그 밖 {len(rest)}개 상품군: {sum(v[0] for _, v in rest)}개 원가 합 {c.fmt(sum(v[1] for _, v in rest))}, "
+                   f"판매 {sum(sold.get(k, 0) for k, _ in rest)}개")
+    gone = sum(n for k, n in sold.items() if k not in by)
+    if gone:
+        out.append(f"  지금 재고가 없는 상품군의 최근 {NET_PROFIT_H}시간 판매 {gone}개")
+    from kernel import code_edit  # lazy: code_edit is not needed to import the brief
+
+    log = code_edit.restock_log(x.root, MONEY_RESTOCK_H, x.now).split("\n")[:2]
+    if log and log[0].startswith("재입고 실행"):
+        out.append("  " + ", ".join(log))
+    return out
+
+
+def _human_notes(x):
+    """[사람이 적은 것]: the head lines of guide section 10 entries dated in the last HUMAN_NOTE_H hours (the section
+    is appended to and far too long for the prompt, so a new entry was invisible until someone read the section)."""
+    import re
+    from datetime import datetime
+
+    from kernel import tools  # lazy: tools imports this module
+
+    _, secs = tools._guide_sections()
+    hit = tools._guide_find(secs, "10") if secs else None
+    if not hit:
+        return []
+    year, out = datetime.fromtimestamp(x.now, c.KST).year, []
+    for ln in hit[1].splitlines():
+        m = re.match(r"- (\d\d)-(\d\d) (\d\d):(\d\d) ", ln)
+        if not m:
+            continue
+        try:
+            ts = datetime(year, *map(int, m.groups()), tzinfo=c.KST).timestamp()
+        except ValueError:
+            continue
+        if 0 <= x.now - ts <= HUMAN_NOTE_H * 3600:
+            out.append("  " + ln[:HUMAN_NOTE_CHARS] + (" …" if len(ln) > HUMAN_NOTE_CHARS else ""))
+    if not out:
+        return []
+    out = out[-HUMAN_NOTE_N:]
+    return [f"[사람이 적은 것] 시장 설명서 10절에 최근 {HUMAN_NOTE_H}시간 동안 새로 적힌 항목 {len(out)}개 "
+            "(전체와 근거는 guide 도구 section 10)"] + out
+
+
 def _alerts(x):
     """[알림]: lines that appear only when true."""
     out = []
@@ -2017,6 +2092,8 @@ def build_compact(root=None, now=None, last_brief_ts=None, extra=None):
         ("extra", lambda: [str(ln) for ln in extra or []]),
         ("순이익", lambda: _net_compact(x)),
         ("가게 상태", lambda: _shop_compact(x)),
+        ("돈이 있는 곳", lambda: _money_compact(x)),
+        ("사람이 적은 것", lambda: _human_notes(x)),
         ("알림", lambda: _alerts(x)),
     ]
     out = []
