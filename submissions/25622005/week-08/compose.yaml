@@ -19,9 +19,10 @@ services:
       MARKET_URL: https://market.ourolabs.ai
       # The shop port is published to the Mac's 127.0.0.1 (ports below) so a tunnel outside the container
       # (docker/host_tunnel.py) can serve it: a container recreate then keeps the public URL.
-      # Since 2026-11-12 the tunnel is ngrok on a reserved domain, started inside the container by
-      # market_runtime.py --fixed-config from .market/fixed-address.json (see configure_ngrok.py); the
-      # host tunnel is retired (its header says why) and the published port is only a local convenience.
+      # host_tunnel.py also watches the inbound path (seller log silent while the buyer hook runs, or the
+      # public card failing) and restarts cloudflared, the container and the strategist loop. ngrok's
+      # reserved domain (configure_ngrok.py) was tried on 11-12 and dropped: the free plan allows
+      # 20,000 HTTP requests a month and the shop takes about 30,000 a day.
       KIT_BIND_HOST: 0.0.0.0
       # Kit hooks: model call for a negotiation the rules do not cover (llm.exception_* in SKILL.md).
       EXCEPTION_HARNESS_CMD: 'claude -p --model claude-sonnet-5-5 --tools "" --setting-sources "" --no-session-persistence'
