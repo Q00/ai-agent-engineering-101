@@ -66,6 +66,17 @@ class Settings(unittest.TestCase):
                 path.write_text(json.dumps({**GOOD, "max_units_per_run": bad}), encoding="utf-8")
                 self.assertIsNone(fp.settings(path), bad)
 
+    def test_pick_order_is_optional_and_checked(self):
+        with TemporaryDirectory() as folder:
+            path = Path(folder) / "f.json"
+            path.write_text(json.dumps({**GOOD, "max_units_per_run": 4}), encoding="utf-8")
+            self.assertNotIn("pick_order", fp.settings(path))  # absent: one SKU at a time under the cap
+            path.write_text(json.dumps({**GOOD, "max_units_per_run": 4, "pick_order": "most_room_first"}), encoding="utf-8")
+            self.assertEqual(fp.settings(path)["pick_order"], "most_room_first")
+            for bad in ("", "round_robin", "MOST_ROOM_FIRST", "most_room_first ", 1, True, None, ["most_room_first"], {"most_room_first": 1}):
+                path.write_text(json.dumps({**GOOD, "max_units_per_run": 4, "pick_order": bad}), encoding="utf-8")
+                self.assertIsNone(fp.settings(path), bad)
+
 
 class Picks(unittest.TestCase):
     def run_for(self, inv, features=("food_floor_108_v1",), setting=GOOD, multiple=1.08):
@@ -125,6 +136,43 @@ class Picks(unittest.TestCase):
         # 15000 worst a unit; 100000 holds 6 with 4 held, so 2 more, one SKU at a time.
         picks, _ = self.run_for({"units": held}, setting={**GOOD, "max_total_estimated_cost": 100000, "max_units_per_run": 12})
         self.assertEqual([p["sku"] for p in picks], [s[1], s[2]])
+
+    def test_most_room_first_fills_the_emptiest_sku_first(self):
+        s = GOOD["skus"]
+        most = {**GOOD, "max_units_per_run": 4, "pick_order": "most_room_first"}
+        # Held 2, 0, 0, 3: rooms 1, 3, 3, 0; the second SKU is filled, then the third starts (file order breaks the tie).
+        held = [unit(s[0]), unit(s[0]), unit(s[3]), unit(s[3]), unit(s[3])]
+        picks, waiting = self.run_for({"units": held}, setting=most)
+        self.assertIsNone(waiting)
+        self.assertEqual([p["sku"] for p in picks], [s[1], s[1], s[1], s[2]])
+        # Nothing held: all rooms 3, so the file's order.
+        picks, _ = self.run_for({"units": []}, setting=most)
+        self.assertEqual([p["sku"] for p in picks], [s[0], s[0], s[0], s[1]])
+        # Room 1 before room 0; an expired unit is not held.
+        held = [unit(s[0]), unit(s[0]), unit(s[0]), unit(s[1]), unit(s[1]), unit(s[2], grade="expired")] + [unit(s[3])] * 2
+        picks, _ = self.run_for({"units": held}, setting=most)
+        self.assertEqual([p["sku"] for p in picks], [s[2], s[2], s[2], s[1]])
+
+    def test_most_room_first_keeps_the_cost_limit_and_works_without_the_run_cap(self):
+        s = GOOD["skus"]
+        # 15000 worst a unit; 100000 holds 6 with 4 held (3 of the first, 1 of the second), so 2 more: rooms 0, 2, 3, 3 -> the third.
+        held = [unit(s[0]), unit(s[0]), unit(s[0]), unit(s[1])]
+        picks, _ = self.run_for({"units": held}, setting={**GOOD, "max_total_estimated_cost": 100000, "max_units_per_run": 12,
+                                                         "pick_order": "most_room_first"})
+        self.assertEqual([p["sku"] for p in picks], [s[2], s[2]])
+        # No run cap: every room is filled, the emptiest SKUs first.
+        picks, _ = self.run_for({"units": held}, setting={**GOOD, "pick_order": "most_room_first"})
+        self.assertEqual([p["sku"] for p in picks], [s[2]] * 3 + [s[3]] * 3 + [s[1]] * 2)
+
+    def test_most_room_first_takes_fewer_lines_for_the_same_units(self):
+        held = [unit(GOOD["skus"][0]), unit(GOOD["skus"][0])]
+        rr, _ = self.run_for({"units": held}, setting={**GOOD, "max_units_per_run": 4})
+        most, _ = self.run_for({"units": held}, setting={**GOOD, "max_units_per_run": 4, "pick_order": "most_room_first"})
+        _, why_rr = Plan().plan(rr)
+        buys, why_most = Plan().plan(most)
+        self.assertEqual((len(rr), len(most)), (4, 4))
+        self.assertEqual((why_rr["kit_lines"]["food_probe"], why_most["kit_lines"]["food_probe"]), (4, 2))
+        self.assertEqual(sum(b["qty"] for b in buys if b["sku"] in GOOD["skus"]), 4)
 
     def test_per_run_cap_frees_run_units_for_ordinary(self):
         picks, _ = self.run_for({"units": []}, setting={**GOOD, "max_units_per_run": 4})
