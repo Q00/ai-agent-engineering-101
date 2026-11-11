@@ -581,7 +581,17 @@ def follow_enuri(order, shops, cat, prof, book):
         log(f"[enuri] no advice: {type(e).__name__}: {e}")
         return [], None, {}
     cands, rows = [], {}
+    # HQ 11-11 14:00: the book also ranks shops from its own index that are not in this order's list (their alive
+    # flag flickers). The kit signs and pays only shops in the list it gave me, so all 28 deals there in 3 h ended
+    # "not a registered shop" -- agreed, never paid ("failed: settled"). Only shops in the list now.
+    live = {s.get("url") for s in shops}
+    gone = [r for r in adv["ranked"] if r.get("url") not in live]
+    if gone:
+        log(f"[enuri] skip {len(gone)} advised shop/item pairs not in the market's list now: "
+            + ", ".join(sorted({r['shop'] for r in gone})[:6]))
     for r in adv["ranked"]:
+        if r.get("url") not in live:
+            continue
         why = blocked(prof, r["shop"])
         if why:
             log(f"[filter] skip {r['shop']}: {why}")
