@@ -41,20 +41,38 @@ class StrategyTests(unittest.TestCase):
         cheap,_=self.baskets(10000)
         self.assertEqual(cheap,[])  # cannot fund the required exploration witness
 
-    def test_unreviewed_buy_is_corrected_once_without_any_reservation(self):
-        inv=fixtures.inventory(0);calls=[]
+    def test_safe_model_basket_proceeds_with_missing_review_recorded(self):
+        inv=fixtures.inventory(0)
+        calls=[]
         def model(role,prompt,schema):
             calls.append(prompt)
-            self.assertTrue(prompt['basket_comparison']['required'])
-            if len(calls)==2:
-                self.assertIn('allocation_review_required',prompt['correction']['tool_validation_error'])
-                self.assertFalse(json.loads(self.path.read_text())['intents'])
             example=prompt['basket_comparison']['alternatives'][-1]
-            return {'action':'buy','skus':example['skus'],'replenishment':example['replenishment'],'reason':'Unreviewed choice'}
+            return {'action':'buy','skus':example['skus'],'replenishment':example['replenishment'],
+                    'reason':'Model selected this financially valid basket.'}
         result=portfolio.run(inv,fixtures.catalog(),history(),1000,model=model,
             refresh=lambda:(inv,1000,True),state_path=self.path,rng=random.Random(1))
-        self.assertEqual(result,{'buy':[]});self.assertEqual(len(calls),2)
-        self.assertFalse(json.loads(self.path.read_text())['intents'])
+        self.assertTrue(result['buy'])
+        self.assertEqual(len(calls),1)
+        approval=next(e for e in events() if e['event']=='portfolio_approval')
+        self.assertEqual(approval['allocation_review']['status'],'incomplete')
+        self.assertTrue(any(e['event']=='portfolio_review_incomplete' for e in events()))
+        self.assertEqual(approval['model_choice']['skus'],calls[0]['basket_comparison']['alternatives'][-1]['skus'])
+
+    def test_missing_omission_reason_preserves_exact_selected_basket(self):
+        inv=fixtures.inventory(0)
+        selected=[]
+        def model(role,prompt,schema):
+            example=prompt['basket_comparison']['alternatives'][-1]
+            selected.extend(example['skus'])
+            return {'action':'buy','skus':example['skus'],'replenishment':[],
+                'strategy_review':{'compared_ids':['broad','depth'],'chosen_approach':'custom',
+                    'tradeoff':'Selected the small exploration basket.','exceptions':[]},
+                'reason':'Model chose exploration only.'}
+        result=portfolio.run(inv,fixtures.catalog(),history(),1000,model=model,
+            refresh=lambda:(inv,1000,True),state_path=self.path,rng=random.Random(1))
+        self.assertEqual({r['sku'] for r in result['buy']},set(selected))
+        approval=next(e for e in events() if e['event']=='portfolio_approval')
+        self.assertIn('omission',approval['allocation_review']['error'])
 
     def test_model_can_choose_depth_and_audit_records_its_actual_behavior(self):
         inv=fixtures.inventory(0)

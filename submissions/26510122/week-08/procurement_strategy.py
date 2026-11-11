@@ -72,7 +72,7 @@ def review_schema(alternatives,winners):
         'compared_ids':{'type':'array','items':{'type':'string','enum':[a['id'] for a in alternatives] or ['none']},'maxItems':3},
         'chosen_approach':{'type':'string','enum':[a['id'] for a in alternatives]+['custom','hold']},
         'tradeoff':{'type':'string'},
-        'exceptions':{'type':'array','maxItems':12,'items':{'type':'object','additionalProperties':False,
+        'exceptions':{'type':'array','maxItems':max(12,len(winners)),'items':{'type':'object','additionalProperties':False,
             'properties':{'sku':{'type':'string','enum':[w['sku'] for w in winners] or ['none']},'reason':{'type':'string'}},
             'required':['sku','reason']}}},'required':['compared_ids','chosen_approach','tradeoff','exceptions']}
 

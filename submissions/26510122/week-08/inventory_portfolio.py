@@ -617,8 +617,6 @@ def _run(inventory, catalog, history, now, model, refresh, rng, path,prepare_onl
             raise ValueError('combined supply/unit limit exceeded')
         if not skus and not restock_orders:
             raise ValueError('empty buy')
-        if review_required or answer.get('strategy_review') is not None:
-            validate_review(answer.get('strategy_review'),alternatives,winners,skus,selected_restock)
         return skus, allowed, restock_orders
 
     correction = None
@@ -656,6 +654,18 @@ def _run(inventory, catalog, history, now, model, refresh, rng, path,prepare_onl
                 hold_preparation('invalid_approval_or_no_correction_time')
                 record('portfolio_hold', reason='invalid_approval_or_no_correction_time')
                 return {'buy': []}
+    allocation_review = answer.get('strategy_review')
+    if review_required or allocation_review is not None:
+        try:
+            allocation_review = validate_review(
+                allocation_review, alternatives, winners, skus, answer.get('replenishment') or [])
+        except (ValueError, TypeError, AttributeError) as error:
+            allocation_review = {'status': 'incomplete', 'error': str(error),
+                                 'model_review': answer.get('strategy_review')}
+            record('portfolio_review_incomplete', window=key, error=str(error),
+                   selected_skus=skus,
+                   selected_replenishment=[{'sku': r['sku'], 'target_stock': r['target_stock']}
+                                           for r in restock_orders])
     ordered_restock = sorted(restock_orders, key=lambda r: (
         bool(r.get('expiry_trial')), not r.get('upper_midprice'),
         -(r.get('upper_midprice') or {}).get('projected_contribution_12h', 0), not r['midprice_priority']))
@@ -668,7 +678,7 @@ def _run(inventory, catalog, history, now, model, refresh, rng, path,prepare_onl
         {k:r.get(k) for k in ('sku','kind','qty','target_stock','cost_ceiling','second_trial','midprice_priority',
                              'forecast_scenario','coverage_hours','forecast_mean','demand_basis','forum_request_ids',
                              'stockout_trial','inflow_trial','expiry_demand','expiry_trial','upper_midprice')} for r in desired],
-        model_choice=answer,allocation_review=answer.get('strategy_review'),
+        model_choice=answer,allocation_review=allocation_review,
         allocation_behavior={'review_required':review_required,
             'offered_proven_skus':sum(not w['second_trial'] for w in winners),
             'selected_proven_skus':sum(not r['second_trial'] for r in restock_orders),
