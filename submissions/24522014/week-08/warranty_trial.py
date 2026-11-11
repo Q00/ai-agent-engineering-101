@@ -3,6 +3,7 @@
 from datetime import datetime, timezone
 import hashlib
 import math
+import os
 from pathlib import Path
 import time
 from uuid import uuid4
@@ -11,28 +12,75 @@ from market_state import read, write, task_file
 
 ROOT = Path(__file__).resolve().parent
 
+# Parsed JSON by path, reused while the file's (mtime_ns, size) is unchanged (the user's 11-11 choice in the Orchestrator session,
+# about 19:2x KST: "제안대로 진행해줘"). The seller calls liability() up to twice a deal step on its event loop; it parsed every signed
+# offer (10,430 files, about 0.95 s a call), and our own card then took up to 2.65 s to answer, which matches the shop showing
+# offline on the board with an unchanged tunnel URL. Results are unchanged: a new or rewritten file is parsed again, a removed one
+# is dropped, and a file that does not parse raises as before.
+_PARSED = {}
+
+
+def _listing(folder):
+    """{path: (mtime_ns, size)} for the *.json files in folder, as Path.glob("*.json") would find them; empty when it is missing."""
+    try:
+        with os.scandir(folder) as entries:
+            return {os.path.join(folder, e.name): (s.st_mtime_ns, s.st_size)
+                    for e in entries if e.name.lower().endswith(".json") and e.is_file() for s in (e.stat(),)}
+    except FileNotFoundError:
+        return {}
+
+
+def _parsed(path, stamp, default=None):
+    """read(path, default), parsed again only when `stamp` ((mtime_ns, size), or None for unknown) changed."""
+    key = str(path)
+    hit = _PARSED.get(key)
+    if stamp is not None and hit is not None and hit[0] == stamp:
+        return hit[1]
+    value = read(path, default)
+    if stamp is not None:
+        _PARSED[key] = (stamp, value)
+    return value
+
+
+def _stamped(path, default=None):
+    """read(path, default) through the cache, with the file's current (mtime_ns, size)."""
+    try:
+        s = os.stat(path)
+    except FileNotFoundError:
+        return read(path, default)
+    return _parsed(path, (s.st_mtime_ns, s.st_size), default)
+
 
 def liability(md, now=None):
     md = Path(md)
     now = time.time() if now is None else now
-    local = read(md / "local-settlements.json", {}).get("records", {})
+    local = _stamped(md / "local-settlements.json", {}).get("records", {})
     settled = {r.get("unit"): r.get("ts", 0) for r in local.values() if r.get("round") == 3}
     total, signed = 0, set()
-    for source in (md / "signed-offers").glob("*.json"):
-        offer = read(source)
+    offers = _listing(md / "signed-offers")
+    prefix = os.path.join(md / "signed-offers", "")
+    for gone in [k for k in _PARSED if k.startswith(prefix) and k not in offers]:
+        del _PARSED[gone]
+    events = _listing(md / "checkout-events")
+    for source, stamp in offers.items():
+        offer = _parsed(source, stamp)
         task = offer.get("task")
         if task:
             signed.add(task)
         hours = offer.get("warranty_hours") or 0
         if hours <= 0:
             continue
-        status = read(task_file(md, "checkout-events", task), {}).get("status") if task else None
+        if task:
+            event = task_file(md, "checkout-events", task)
+            status = _parsed(event, events.get(str(event)), {}).get("status")
+        else:
+            status = None
         if status in ("refused", "canceled", "expired"):
             continue
         start = max(offer["issued_at"], settled.get(offer["unit"], 0))
         if status in ("processing", "uncertain") or now < start+hours*3600+600:
             total += offer["price"]
-    state = read(md / "warranty-trial.json", {})
+    state = _stamped(md / "warranty-trial.json", {})
     total += sum(a["quote"] for task, a in state.get("assignments", {}).items()
                  if a.get("hours") and task not in signed and now < a["expires_at"])
     return total
