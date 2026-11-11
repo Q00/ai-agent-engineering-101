@@ -90,6 +90,8 @@ def candidates(order, shops, mem, my_urls, theta=None):
         table = mem.break_table()
     except Exception:                                 # no table: the grade priors still price the risk
         table = {"grade": {}, "cat": {}, "shop": {}}
+    memo = {}                                         # one answer per (question, shop, category / sku) in a call:
+    ask = lambda key, f: memo[key] if key in memo else memo.setdefault(key, f())   # 236 offers came from 34 shops
     for s in shops:
         seen["with_offers"] += bool(s.get("offers"))
         url = (s.get("url") or "").rstrip("/")
@@ -113,8 +115,9 @@ def candidates(order, shops, mem, my_urls, theta=None):
             p_grade = {g: mem.p_break(g, info.get("category"), s.get("name"), table) for g in "ABC"} if goods else {}
             p_break = mem.p_break_mix(info.get("category"), s.get("name"), table) if goods else 0.0
             max_pay = pricing.buyer_limits(L, order["budget"], info.get("kind"), p_break, min_surplus=theta)
-            ratio_m, _ = mem.price_ratio(sku=sku, category=info.get("category"))
-            exp = pricing.expected_price(L, mem.shop_price_ratio(url, info.get("category")), ratio_m)
+            ratio_m, _ = ask(("sku", sku), lambda: mem.price_ratio(sku=sku, category=info.get("category")))
+            shop_ratio = ask(("shop", url, info.get("category")), lambda: mem.shop_price_ratio(url, info.get("category")))
+            exp = pricing.expected_price(L, shop_ratio, ratio_m)
             ours = 1.0 if rep["our_buys"] < 3 else (rep["our_paid"] + 1) / (rep["our_buys"] + 1)
             bad = rep["our_bad"] / max(1, rep["our_paid"])
             reliability = (1 - rep["lie_rate"]) * max(0.1, 1 - bad) * ours
@@ -124,7 +127,7 @@ def candidates(order, shops, mem, my_urls, theta=None):
             # The market scores buyers by saved = sum(surplus / list) / (deals + 100) ("a sofa and a snack at 30%
             # off score the same", /agent.md), so rank by the expected share of list saved, not by won.
             saved = surplus / L
-            opening = pricing.memory_opening(L, max_pay, mem.shop_profile(url))
+            opening = pricing.memory_opening(L, max_pay, ask(("profile", url), lambda: mem.shop_profile(url)))
             out.append({"shop": url, "name": s.get("name"), "sku": sku, "item_name": info.get("name"), "list": L,
                         "kind": info.get("kind"), "max_pay": max_pay, "expected": exp, "budget": order["budget"],
                         "theta": theta, "p_grade": {g: round(p, 4) for g, p in p_grade.items()},

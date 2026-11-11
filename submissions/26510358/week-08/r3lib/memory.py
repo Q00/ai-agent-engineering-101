@@ -27,8 +27,10 @@ CREATE TABLE IF NOT EXISTS settles (
 CREATE INDEX IF NOT EXISTS settles_cat ON settles(category, ts);
 CREATE INDEX IF NOT EXISTS settles_sku ON settles(sku, ts);
 CREATE INDEX IF NOT EXISTS settles_order ON settles(order_id);
+CREATE INDEX IF NOT EXISTS settles_shop ON settles(shop, ts);
 CREATE TABLE IF NOT EXISTS breaks (seq INTEGER PRIMARY KEY, ts REAL, order_id TEXT, buyer TEXT, shop TEXT, sku TEXT);
 CREATE INDEX IF NOT EXISTS breaks_order ON breaks(order_id);
+CREATE INDEX IF NOT EXISTS breaks_shop ON breaks(shop);
 CREATE TABLE IF NOT EXISTS shop_stock (shop_url TEXT, name TEXT, pubkey TEXT, sku TEXT, qty INTEGER, ts REAL,
     PRIMARY KEY (shop_url, sku));
 CREATE TABLE IF NOT EXISTS shops (shop_url TEXT PRIMARY KEY, name TEXT, pubkey TEXT, owner TEXT, mine INTEGER, ts REAL);
@@ -40,6 +42,8 @@ CREATE TABLE IF NOT EXISTS purchases (
 CREATE TABLE IF NOT EXISTS negotiations (
     id INTEGER PRIMARY KEY AUTOINCREMENT, ts REAL, role TEXT, ref TEXT, counterpart TEXT, sku TEXT,
     category TEXT, list_price INTEGER, first_ask INTEGER, final_price INTEGER, offers TEXT, outcome TEXT);
+CREATE INDEX IF NOT EXISTS purchases_shop ON purchases(shop_url);
+CREATE INDEX IF NOT EXISTS negotiations_cp ON negotiations(role, counterpart, ts);
 CREATE TABLE IF NOT EXISTS forum (
     id TEXT PRIMARY KEY, ts REAL, author TEXT, role TEXT, thread TEXT, text TEXT, refs TEXT, score INTEGER,
     signals TEXT, voted INTEGER DEFAULT 0, mine INTEGER DEFAULT 0);
@@ -50,6 +54,9 @@ CREATE TABLE IF NOT EXISTS members (code TEXT PRIMARY KEY, ts REAL, sku TEXT, st
 CREATE TABLE IF NOT EXISTS restocks (id INTEGER PRIMARY KEY AUTOINCREMENT, ts REAL, sku TEXT, category TEXT, qty INTEGER,
     reason TEXT);
 """
+# settles_shop, breaks_shop, purchases_shop, negotiations_cp (2026-11-11): the buyer asks shop_reputation,
+# shop_price_ratio and shop_profile for every offer, and without them each was a full scan (500k settles, 87k
+# negotiations): candidates took 14.4 s of a 33 s order cycle, 2.4 s with them.
 BREAK_CACHE_S = 600     # break_rate_for answers from memory for this long. 2026-11-10: the shop asked it on every quote
                         #   and the join scanned all of breaks for each settle of the category (no index on order_id,
                         #   74k x 14.5k for mattresses): a couch quote took 14.5 s and a chair 5.9 s against 0.3 s for
