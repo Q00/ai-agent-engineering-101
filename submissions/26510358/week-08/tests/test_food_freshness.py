@@ -5,7 +5,7 @@ import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from r3lib import pricing
+from r3lib import config, pricing
 import restock_r3
 
 
@@ -40,6 +40,6 @@ def test_restock_does_not_count_food_no_order_can_take():
 
 
 def test_hot_premium_skus_get_more_units():
-    assert restock_r3.premium_per_sku(0) == 2                 # floor: PREMIUM_PER_SKU
-    assert restock_r3.premium_per_sku(12 * 25) == 4           # market 25/h -> 0.15 h of it
-    assert restock_r3.premium_per_sku(12 * 100) == 6          # capped
+    assert restock_r3.premium_per_sku(0) == config.PREMIUM_PER_SKU                    # floor
+    assert restock_r3.premium_per_sku(12 * 25) == max(config.PREMIUM_PER_SKU, 4)       # market 25/h -> 0.15 h of it
+    assert restock_r3.premium_per_sku(12 * 100) == config.PREMIUM_HOT_MAX_PER_SKU      # capped

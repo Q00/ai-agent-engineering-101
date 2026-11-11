@@ -109,7 +109,8 @@ def test_premium_buys_up_to_per_sku_limit_and_below_old_ratio(tmp_path, monkeypa
              "list_price": 1_200_000}]
     lines, why, state = restock_r3.plan({"balance": 200_000_000, "units": held}, DEMAND, m, now=now)
     prem = {ln["sku"]: ln["qty"] for ln in lines if ln["sku"].startswith("P")}
-    assert prem == {"P1": 1, "P2": 2}                      # P1 tops up to 2, P2 gets 2
+    n = config.PREMIUM_PER_SKU                             # these SKUs are not hot: the floor decides
+    assert prem == {"P1": n - 1, "P2": n}                  # P1 tops up to n, P2 gets n
     monkeypatch.setattr(m, "price_ratio", lambda **kw: (0.64, 50))
     lines, why, _ = restock_r3.plan({"balance": 200_000_000, "units": held}, DEMAND, m, now=now)
     assert not [ln for ln in lines if ln["sku"].startswith("P")]

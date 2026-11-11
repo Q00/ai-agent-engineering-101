@@ -91,11 +91,14 @@ PREMIUM_MIN_RATIO = 0.65           # skip a premium SKU the market buys under th
                                     #   2026-11-09: 2108 skips in 20 h at 0.67-0.69, yet on those SKUs we sold 258 at
                                     #   0.704 of list against 0.595 cost, +11% of list; 7 units / 4.8M held of a 38M budget)
 PREMIUM_HOT_COVER_H = 0.15          # hot premium SKU: hold this many hours of the MARKET's sales of it (2026-11-10:
-PREMIUM_HOT_MAX_PER_SKU = 6         #   top shops restock 5 SKUs every window, buy ~= sell, 100-500 premium units; we
+PREMIUM_HOT_MAX_PER_SKU = 8         # (6 until 2026-11-11)   top shops restock 5 SKUs every window, buy ~= sell, 100-500 premium units; we
                                     #   held 1-2 per SKU and sold 2-12/day of SKUs the market sells 500-1600/day)
-PREMIUM_PER_SKU = 2                 # premium units of one SKU on hand at most (1 until 2026-11-09)
-PREMIUM_LINES = 3                   # supply lines (10 per order) kept for premium while it has candidates (it ran last
-                                    #   and 42 of 144 ticks were full of normal lines before it)
+PREMIUM_PER_SKU = 3                 # premium units of one SKU on hand at least (1 until 2026-11-09, 2 until 2026-11-11)
+PREMIUM_LINES = 5                   # supply lines (10 per order) kept for premium while it has candidates (it ran last
+                                    #   and 42 of 144 ticks were full of normal lines before it). 3 until 2026-11-11: 800k+
+                                    #   goods were 205 of our sales and 260M of revenue in 24 h (~60%), the 51 held had a
+                                    #   median age of 3 h, and we had 3.9% of the market's 5,207 such deals; the 3 lines
+                                    #   held the buy to ~10M a cycle while ~200M of balance sat idle
 
 # --- shop: adaptive stock cap (r3lib/cashflow.py), 2026-11-08 -------------------------------------
 #     Replaces the hand-raised STOCK_BUDGET_MAX / PREMIUM_BUDGET / PREMIUM_MAX_UNITS in the restock plan; those
@@ -119,7 +122,9 @@ CAP_CEILING_SHARE = 0.60            # the adaptive cap's ceiling as a share of t
 STUCK_GRADE_AGE_H = 24              # a SKU is not bought again while one of its grades has STUCK_GRADE_MIN_OLD units
 STUCK_GRADE_MIN_OLD = 3             #   older than this that our own sales of that grade would not clear by the round's
                                     #   end (the market draws grades: each order brings A70 B20 C10, also of a stuck grade)
-PREMIUM_SHARE = 0.80                # premium budget = this share of the cap (0.50 until 2026-11-10; book counts stock
+PREMIUM_SHARE = 1.50                # premium budget = this share of the cap (0.50 until 2026-11-10, 0.80 until 2026-11-11;
+                                    #   book counts stock at cost, so idle cash earns nothing: 201.6M balance, 146M stock;
+                                    #   rollback if 800k+ units held reach a median age of 24 h). Earlier: book counts stock
                                     #   at cost, the round ends 11-17 and top shops hold 100-760M of stock)
 PREMIUM_UNIT_COST = 833_000         # premium units allowed = premium budget / this (30M / 36 as set by hand)
 
