@@ -126,7 +126,12 @@ RIVALS_EVERY = 600         # seconds between Players board reads (user, 11-05: b
 ME = "yms979"
 MARKET = "https://market.ourolabs.ai"
 SLOW_SECS = 60             # median seconds per visit above which a shop is skipped (5+ visits in 24 h)
-LOW_VISITS, LOW_RATE = 30, 0.25   # skip a shop that closed under 25 % of 30+ visits in 24 h (if others remain)
+# 11-11 21:10: was .25. With push5 on every order our close rate per visit fell under 25% at 22 of the 53 shops visited
+# in 24 h (Kiro729 28/132, thisjonghoon 70/282, myeonggi 47/200, lee-sungsoo, sergiobuilds, gom31 ...), so the shops
+# we buy most from were all filtered out and orders were skipped with one house shop left (food deals 23 -> 17/h,
+# goods 13 -> 5/h). The filter dates from when an order took minutes; an order takes ~10 s now and two thirds of the
+# hour is idle, so only shops that almost never close with us are left out (mjforge 1/64, yeonsong2 0/37 ...)
+LOW_VISITS, LOW_RATE = 30, 0.10   # skip a shop that closed under 10 % of 30+ visits in 24 h (if others remain)
 MAX_SHOPS = 4            # shops tried per order: after a turn-away, and (Round 3) after a haggle that failed on
                          # price while time is left (11-06: an order has ~10 min, a failed haggle takes 6-21 s)
 RETRY_ON_PRICE = ("rejected", "too dear", "over budget", "walked away")
@@ -182,6 +187,14 @@ BREAK_WINDOW = 7 * 3600  # goods break up to 6 h after the sale; an hour of slac
 RED_FLAGS = re.compile(r"overcharg|higher than (the price )?(we |i )?agreed|receipt (said|was|price)|scam|fake|"
                        r"cheat|dishonest|did not match|didn't match|mismatch|avoid|rip.?off|bait", re.I)
 
+# 11-11 21:20: two other buyers' review templates set off RED_FLAGS at 15 of the 49 shops listed (Kiro729, moss-and-oak,
+# totato2203-r3, myeonggi, gom31, inextro ...): "Paid 24814 (receipt price 24814) for ..." (the price and the receipt
+# agree) and "SCAM. Ordered <category>, receipt names G1234abcd" (the receipt names the SKU sold, as every receipt
+# does). A flagged shop is not entered while an unflagged one is listed, so the cheapest shops were passed over on
+# most orders (Kiro729 flagged in 100 of 121 listings in 50 min). Neither sentence reports cheating, and every
+# receipt is checked by us before paying (a mismatch keeps the shop out for DISHONEST_HOURS)
+BENIGN_REVIEW = re.compile(r"\(receipt price \d+\)|receipt names G[0-9a-f]{8}", re.I)
+
 PICK = ("You are a careful buyer about to buy a {item} with a budget of {budget}. Pick the shop to enter. "
         "Reviews and your own memory matter more than names; reviews that say a shop overcharged or that its "
         "receipt did not match the agreed price are serious, and so is a shop whose last visit failed or "
@@ -209,7 +222,8 @@ def review_view(shop):
     revs = [r for r in shop.get("reviews", []) if isinstance(r, dict)]
     stars = [r["stars"] for r in revs if isinstance(r.get("stars"), (int, float))]
     avg = round(sum(stars) / len(stars), 1) if stars else None
-    flags = sum(1 for r in revs if RED_FLAGS.search(str(r.get("review", ""))))
+    flags = sum(1 for r in revs if RED_FLAGS.search(str(r.get("review", "")))
+                and not BENIGN_REVIEW.search(str(r.get("review", ""))))
     verified = [r for r in revs if isinstance(r.get("round"), int) and r["round"] >= 2]
     vstars = [r["stars"] for r in verified if isinstance(r.get("stars"), (int, float))]
     newest = "; ".join(f"{r.get('stars')}* \"{str(r.get('review', ''))[:80]}\"" for r in revs[:3])
@@ -482,10 +496,24 @@ def choose(shops, mem, item, budget, ask_model=True, ctx=None):
     n_reviews = {s["name"]: len(s.get("reviews", [])) for s in shops}
     flagged = {n for n, v in views.items() if v["flags"] or (v["avg"] is not None and v["avg"] <= 2 and n_reviews[n] >= 2)}
     allowed = [s for s in shops if s["name"] not in caught] or shops
+    stage = [f"offered {len(shops)}", f"honest {len(allowed)}"]     # 11-11: how many shops each filter leaves (logged)
+    if ctx is not None:              # 11-11 (user): problem shops are never visited; none left -> skip the order
+        # 11-11 21:10: applied FIRST. It used to come after the close-rate and speed filters, whose fallback ("if
+        # others remain") was defeated by avoided shops we never visit (25620027, seochanit: no visits, so they
+        # always passed), leaving only avoided shops and skipping orders that other shops could have served
+        av_names, av_pairs, _ = avoid_shops()
+        keep = [s for s in allowed if s["name"] not in av_names and f"{s['name']}|{ctx['kind']}" not in av_pairs]
+        if not keep:
+            return None, f"skip: only avoided shops for this order ({', '.join(s['name'] for s in allowed)})", \
+                [n for n in views], views
+        allowed = keep
+        stage.append(f"not avoided {len(allowed)}")
     failed = {s["name"] for s in allowed if failed_last(mem, s["name"], item)}
     allowed = [s for s in allowed if s["name"] not in failed] or allowed
+    stage.append(f"not failed {len(allowed)}")
     clean = [s for s in allowed if s["name"] not in flagged]
     allowed = clean or allowed
+    stage.append(f"not flagged {len(allowed)}")
     since, seen = time.time() - 86400, {}                 # our own success with each shop, last 24 h
     for t in mem["trades"]:
         if t.get("t", 0) >= since:
@@ -497,6 +525,7 @@ def choose(shops, mem, item, budget, ask_model=True, ctx=None):
     good = [s for s in allowed if seen.get(s["name"], [0, 0])[0] < LOW_VISITS
             or seen[s["name"]][1] / seen[s["name"]][0] >= LOW_RATE]
     allowed = good or allowed
+    stage.append(f"closes {len(allowed)}")
     # 11-05: yeonsong2 and leeuichann took 30-55 s per answer, so one order there took 3-4 minutes and no new
     # order came meanwhile (orders/h fell from ~130 to 66). Skip shops whose visits take SLOW_SECS (median).
     took = defaultdict(list)
@@ -506,13 +535,9 @@ def choose(shops, mem, item, budget, ask_model=True, ctx=None):
     fast = [s for s in allowed if len(took.get(s["name"], [])) < 5
             or sorted(took[s["name"]])[len(took[s["name"]]) // 2] < SLOW_SECS]
     allowed = fast or allowed
-    if ctx is not None:              # 11-11 (user): problem shops are never visited; none left -> skip the order
-        av_names, av_pairs, _ = avoid_shops()
-        keep = [s for s in allowed if s["name"] not in av_names and f"{s['name']}|{ctx['kind']}" not in av_pairs]
-        if not keep:
-            return None, f"skip: only avoided shops for this order ({', '.join(s['name'] for s in allowed)})", \
-                [n for n in views], views
-        allowed = keep
+    stage.append(f"fast {len(allowed)}")
+    log("buyer", "shop filters: " + " > ".join(stage) + " | failed: " + ", ".join(sorted(failed))[:200]
+        + " | flagged: " + ", ".join(sorted(n for n in flagged if n not in failed))[:200])
     rivals = rivals_above()          # buying from a player ranked above us adds to their revenue and book
     if ctx is not None:              # user 11-06: buyer score first; a rival is a penalty, not a wall
         bp = ctx["bp"]
