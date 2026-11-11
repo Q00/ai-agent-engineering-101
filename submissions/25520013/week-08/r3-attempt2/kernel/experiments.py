@@ -719,11 +719,17 @@ def _apply_policy(root, items, now, traj, role, rev_weight, categories, validate
     if writes:
         # each item's own state before this done (other items of the done not in it): (present, raw value, what a
         # category inherited for a per-grade or accept_c base it did not set)
-        pol = _policy(root)
+        pol, ledger0 = _policy(root), load(root)
         for i, it, _, _ in writes:
             present, value = pe.raw_state(pol, it["section"], it["key"])
             base, _, sub = it["key"].partition(".")
             inh = pe.inherited_value(pol, it["section"], base) if sub and not present and base != pe.LEAF_KEY else None
+            if sub and present and base != pe.LEAF_KEY:
+                # the base is only there because a running experiment of this section copied the inherited dict in:
+                # this item started from the same inherited state, so both reverts end with the category inheriting
+                org = _inherited_origin(ledger0, it["section"], base)
+                if org is not None:
+                    present, value, inh = False, None, org
             raws[i] = (present, value, inh)
         # a split whose own value is about to be written loses its arm first, so the seller never reads the new base
         # with the old arm; sync_arms below puts back the arm of one the write did not end
@@ -788,6 +794,20 @@ def _ok(exp, r):
     if r.get("note"):
         out["note"] = r["note"]
     return out
+
+
+def _inherited_origin(rows, section, base):
+    """The inherited dict a running experiment of this section recorded for base when the section did not set it
+    (raw present False with "inherited"), else None."""
+    for e in rows:
+        if not isinstance(e, dict) or e.get("status") != "running":
+            continue
+        for x in (e.get("items") if isinstance(e.get("items"), list) else [e]):
+            raw = x.get("raw") if isinstance(x, dict) else None
+            if (isinstance(raw, dict) and x.get("section") == section and raw.get("base") == base
+                    and raw.get("present") is False and isinstance(raw.get("inherited"), dict)):
+                return copy.deepcopy(raw["inherited"])
+    return None
 
 
 def _raw(key, state):

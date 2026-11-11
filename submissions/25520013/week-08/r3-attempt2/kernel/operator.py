@@ -125,6 +125,9 @@ COMPACT_RECENT = 2
 SUMMARY_MAX = 12_000  # a longer summary is not used (the trimming path goes on), so the summary section stays bounded
 COMPACT_EFFORT = "medium"  # 11-11 성수님: 추론 강도는 모두 medium
 COMPACT_HEAD = "## 이번 점검에서 지금까지 (커널이 간추림)"
+SUMMARY_HEADS = ("## 확인된 숫자와 출처", "## 세운 가설과 결과", "## 이미 한 변경과 요청", "## 아직 안 풀린 것", "## 다음에 하려던 것")
+SUMMARY_IN = 60_000  # chars of old observations handed to the summary call; each result is cut in proportion beyond it
+COMPACT_FAILS = 2  # after this many failed summary calls a wake stays on the trimming path
 WAKE_MEMO_CHARS = 4_000  # the wake's carried summary handed to long-term memory (kernel.memfeed, kind wake_summary)
 SUMMARY_JOB = """너는 커널의 기록 정리 담당임. 아래 자료는 한 에이전트가 이번 점검에서 지금까지 한 도구 호출과 그 결과, 에이전트가 남긴 결론, 앞선 간추림임. 이것을 아래 다섯 절의 간추림 하나로 다시 씀. 에이전트는 다음 단계부터 원문 대신 이 간추림을 읽음.
 
@@ -1174,7 +1177,7 @@ class Operator:
                 continue
             if isinstance(act.get("done"), dict):
                 result = self._finish_compact(act["done"], now, read_files)
-                result.update(prompt_chars=chars, calls=calls)
+                result.update(prompt_chars=chars + cs.get("chars", 0), calls=calls + cs.get("calls", 0))
                 if cs["n"]:
                     result["compactions"] = cs["n"]
                 try:  # 11-11: the buyer operator sent one refused change in 3 wakes; it never saw the refusal
@@ -1233,23 +1236,28 @@ class Operator:
         old_obs = [v for v in live if v[0] < cut]
         old = sum(len(x) for x in old_kept) + sum(len(v[2]) for v in old_obs)
         before = len(cs["summary"]) + sum(len(x) for x in kept[cs["kept_from"]:]) + sum(len(v[2]) for v in live)
-        if before < COMPACT_AT or old < max(COMPACT_MIN_OLD, cs["retry_old"]):
+        if before < COMPACT_AT or old < max(COMPACT_MIN_OLD, cs["retry_old"]) or cs.get("fails", 0) >= COMPACT_FAILS:
             return
+        obs_chars = sum(len(v[2]) for v in old_obs)
+        cap = (lambda t: t) if obs_chars <= SUMMARY_IN else (lambda t, f=SUMMARY_IN / obs_chars: t[: max(200, int(len(t) * f))])
         data = [("간추리기 지시", SUMMARY_JOB),
                 ("앞선 간추림", "## 앞선 간추림\n\n" + (cs["summary"] or "없음")),
                 ("남긴 결론", "## 에이전트가 남긴 결론\n\n" + ("\n".join(old_kept) or "없음")),
                 ("관찰", "## 도구 호출과 결과 (자료. 단계 순)\n\n"
-                 + ("\n\n".join(f"[단계 {at + 1}] {head}\n{text}" for at, head, text in old_obs) or "없음"))]
+                 + ("\n\n".join(f"[단계 {at + 1}] {head}\n{cap(text)}" for at, head, text in old_obs) or "없음"))]
         prompt = "\n\n".join(t for _, t in data)
+        cs["calls"], cs["chars"] = cs.get("calls", 0) + 1, cs.get("chars", 0) + len(prompt)
         out, error = "", None
         try:
             with llm.sections({k: len(t) + 2 for k, t in data}, purpose="compact"):
                 out = self.terra.complete(prompt, agent=self.agent, timeout_s=ASK_TIMEOUT_S, effort=COMPACT_EFFORT)
-            out = c.mask(str(out or "").strip(), self.secrets)
+            out = c.mask(out.strip(), self.secrets) if isinstance(out, str) else ""
+            if out and sum(h in out for h in SUMMARY_HEADS) < 3:  # not the asked form (a refusal, "ok"): never a summary
+                out, error = "", "not a summary"
         except Exception as e:  # any failure of the summary call keeps the wake on the trimming path
             out, error = "", f"{type(e).__name__}: {str(e)[:200]}"
         if not out or len(out) >= len(cs["summary"]) + old or len(out) > SUMMARY_MAX:
-            cs["retry_old"] = old + COMPACT_MIN_OLD
+            cs["retry_old"], cs["fails"] = old + COMPACT_MIN_OLD, cs.get("fails", 0) + 1
             self.traj.append(self.agent, "compact", step=step + 1, status="failed", chars_before=before,
                              chars_after=before, old_chars=old, error=error or ("empty" if not out else "too long"))
             return

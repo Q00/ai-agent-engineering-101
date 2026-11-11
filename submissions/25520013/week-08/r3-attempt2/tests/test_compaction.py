@@ -23,8 +23,8 @@ NOW = 1_794_000_000.0
 DEFAULTS = (op.COMPACT_AT, op.COMPACT_MIN_OLD)  # the module's values, before the fixture sets the test scale
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OBS = 3_000  # chars of one fake tool result: two per step, 6,000 per step
-SUMMARY_1 = '## 확인된 숫자와 출처\n- 순이익 1,234,567.89원, net_profit {"hours": 12}\n## 세운 가설과 결과\n- 없음'
-SUMMARY_2 = '## 확인된 숫자와 출처\n- 순이익 1,234,567.89원과 C등급 리뷰 0.4167, reviews {"by": "grade"}\n- 없음'
+SUMMARY_1 = '## 확인된 숫자와 출처\n- 순이익 1,234,567.89원, net_profit {"hours": 12}\n## 세운 가설과 결과\n- 없음\n## 이미 한 변경과 요청\n- 없음\n## 아직 안 풀린 것\n- 없음\n## 다음에 하려던 것\n- 없음'
+SUMMARY_2 = '## 확인된 숫자와 출처\n- 순이익 1,234,567.89원과 C등급 리뷰 0.4167, reviews {"by": "grade"}\n- 없음\n## 세운 가설과 결과\n- 없음\n## 이미 한 변경과 요청\n- 없음\n## 아직 안 풀린 것\n- 없음\n## 다음에 하려던 것\n- 없음'
 
 
 def _obs(name, args):
@@ -549,3 +549,21 @@ def test_memfeed_feeds_findings_and_code_verdicts(tmp_path):
         add=lambda *a, **k: again.append(a) or True,
     )
     assert again == []
+
+
+@pytest.mark.parametrize("bad", ["ok", "죄송하지만 도와드릴 수 없음", {"a": 1}, ["x"], 7, b"bytes"])
+def test_a_reply_that_is_not_the_asked_summary_is_never_used(env, bad):
+    root, make = env
+    m = Model(_acts(6), [bad, bad, SUMMARY_1])
+    make("shop", m).wake("주기 점검", NOW)
+    rows = _rows(root, "compact")
+    assert [r["status"] for r in rows] == ["failed", "failed"]  # and no third try in this wake
+    assert all(op.COMPACT_HEAD not in p for p in m.prompts)
+
+
+def test_summary_input_is_bounded(env, monkeypatch):
+    root, make = env
+    monkeypatch.setattr(op, "SUMMARY_IN", 5_000)
+    m = Model(_acts(4), [SUMMARY_1, SUMMARY_2])
+    make("shop", m).wake("주기 점검", NOW)
+    assert m.summary_prompts and all(len(p) < len(op.SUMMARY_JOB) + 5_000 + 4_000 + len(SUMMARY_1) for p in m.summary_prompts)

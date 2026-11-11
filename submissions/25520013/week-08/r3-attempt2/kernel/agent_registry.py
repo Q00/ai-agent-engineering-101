@@ -231,6 +231,10 @@ def _apply(root, creator, spec, now, secrets, for_):
             n = sum(1 for r in rows if r["status"] == "live")
             if n >= MAX_LIVE:
                 return {"ok": False, "op": op, "name": name, "error": f"살아 있는 에이전트가 이미 {n}개임: 하나를 retire한 뒤 만듦"}
+            if row is not None and row.get("creator") != creator:  # a reused name never inherits another creator's notes
+                for old in (state_path(root, name), notes_path(root, name)):
+                    if os.path.isfile(old):
+                        os.replace(old, f"{old}.old-{int(now)}")
             side = creator if creator in ROLES else None
             fr = [creator] if creator in ROLES else [x for x in ROLES if x in (for_ or ROLES)] or list(ROLES)
             new = {"name": name, "job": job, "wake": wake, "powers": powers, "creator": creator, "side": side,
@@ -412,7 +416,7 @@ def tool_text(root, name=None, now=None, wakes=5, findings_n=5):
               if x.get("agent") == name and x.get("kind") == "agent_wake"]
     for w in reversed(rows_t[-wakes:]):
         res = w.get("result") if isinstance(w.get("result"), dict) else {}
-        out.append(f"- {c.kst(w.get('ts') or 0, '%m-%d %H:%M')} {w.get('reason')}: {w.get('status')}, 단계 {w.get('steps')}"
+        out.append(f"- {c.kst(w.get('ts') or 0, '%m-%d %H:%M')} {w.get('reason')}: {w.get('status')}"
                    + (f", 요약 {str(res.get('note'))[:200]}" if res.get("note") else ""))
     if not rows_t:
         out.append("- 없음")

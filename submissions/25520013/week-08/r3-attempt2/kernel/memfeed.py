@@ -296,7 +296,7 @@ def run_once(
             int(cur.get(src) or 0),
             (lambda row, kind=kind: keep(dict(row, kind=kind))) if kind else keep,
             MAX_PER_RUN,
-            now - since_hours * 3600 if first else None,
+            now - since_hours * 3600 if first or src not in cur else None,  # a source new to the cursor starts at the cut too
             needles,
         )
         for item in found:
