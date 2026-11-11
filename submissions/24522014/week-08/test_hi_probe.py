@@ -161,10 +161,11 @@ class Plan(unittest.TestCase):
 
 class Settings(unittest.TestCase):
     def test_shipped_on_with_the_three_skus(self):
-        # Switched on 11-10 after the approval; the code was committed off first.
+        # Switched on 11-10 after the approval; the code was committed off first. Ahead of band SKUs under 24 of our sales from 11-11
+        # (the user's choice in the Orchestrator session, about 14:1x KST).
         value = json.loads(hi_probe.CONFIG.read_text(encoding="utf-8"))
         self.assertIs(value["enabled"], True)
-        self.assertEqual(hi_probe.settings(), {"skus": ["G03d0199f", "G24f5f979", "G3e0d6c67"], "max_units": 3})
+        self.assertEqual(hi_probe.settings(), {"skus": ["G03d0199f", "G24f5f979", "G3e0d6c67"], "max_units": 3, "ahead_of_band_sales_below": 24})
 
     def test_only_a_valid_file_turns_it_on(self):
         good = {"enabled": True, "skus": ["G03d0199f", "G24f5f979", "Gb5d0dde7"], "max_units": 3}
