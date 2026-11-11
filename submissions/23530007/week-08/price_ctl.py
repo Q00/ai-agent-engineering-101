@@ -35,7 +35,9 @@ END = 1794927540                      # 2026-11-17 23:59 KST
 ME = "yms979"
 
 STEP = 0.01
-UNDER_MIN, UNDER_MAX = -0.02, 0.04    # -0.02 = two points ABOVE the rival's price
+UNDER_MIN, UNDER_MAX = -0.02, 0.01    # -0.02 = two points ABOVE the rival's price. 11-12 (user: 'the safest 1st,
+                                      # leave the shop as it is'): MAX was .04; revenue 1st is worth +.007 and needs
+                                      # +28.5 M/h over inextro (we do +20), so prices are no longer cut to chase it
 ADJ_MIN, ADJ_MAX = -0.03, 0.06
 GLOBAL_EVERY = 2 * 3600
 SKU_EVERY = 2 * 3600
