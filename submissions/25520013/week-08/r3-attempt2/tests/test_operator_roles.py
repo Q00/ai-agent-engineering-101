@@ -93,13 +93,13 @@ def test_trajectory_rows_carry_the_role(tmp_path):
     )
 
 
-def test_role_job_files_are_copies_with_a_role_line():
-    base = open(op.JOB, encoding="utf-8").read()
+def test_role_job_files_are_human_written_per_role():
+    # 11-11: the role job texts are written by a human per role (they began as copies of OPERATOR_JOB.md)
+    other = {"shop": "hooks/market_buyer.py는 구매 운영자 몫", "buyer": "hooks/seller.py와 hooks/restock.py는 가게 운영자 몫"}
     for r in op.ROLES:
-        text = open(
-            os.path.join(op.HERE, f"OPERATOR_JOB_{r.upper()}.md"), encoding="utf-8"
-        ).read()
-        assert text == f"<!-- role: {r} -->\n" + base
+        text = open(os.path.join(op.HERE, f"OPERATOR_JOB_{r.upper()}.md"), encoding="utf-8").read()
+        assert text.startswith(f"<!-- role: {r} -->\n")
+        assert "## 규칙 코드 고치기" in text and "## 도구함" in text and other[r] in text
 
 
 def test_job_path_falls_back_to_the_single_job(env, monkeypatch, tmp_path):
