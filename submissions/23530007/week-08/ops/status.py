@@ -208,6 +208,12 @@ def main():
     if bs:
         print(f"       book over {bs['hours']} h: ours {bs['ours_M_h']:+} M/h, {bs['rival']} {bs['rival_M_h'] if bs['rival_M_h'] is not None else '?':+} M/h"
               " (paid margin less refunds of broken warranted goods, storage 1%/day and expired food)")
+    pc = read(".market/price_ctl.json", {}) or {}
+    if pc:
+        adj = pc.get("sku") or {}
+        up, dn = sum(1 for x in adj.values() if x > 0), sum(1 for x in adj.values() if x < 0)
+        print(f"       prices: goods sit {pc.get('under', 0):+.2f} of list under the rival shops' settle (negative = above); "
+              f"{up} SKUs set dearer, {dn} cheaper | {str(pc.get('status'))[:150]}")
     rr = s.get("revenue_race") or {}
     if rr.get("ahead"):
         print(f"       revenue rank {rr['rank']}: {rr['gap_M']}M behind {rr['ahead']}; to pass it we must outsell it by {rr['need_lead_M_h']} M/h;"

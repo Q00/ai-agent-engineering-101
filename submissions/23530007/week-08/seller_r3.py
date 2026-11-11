@@ -176,6 +176,20 @@ GRADE_OFF = {"A": 0.0, "B": -0.07, "C": -0.15}   # a grade's usual distance from
 _RV = {"t": 0, "shops": [], "by": {}, "sku": {}}
 
 
+_PC = {"t": 0, "d": {}}
+
+
+def price_ctl():
+    """The price controller's current settings (.market/price_ctl.json: under, sku adjustments), re-read every 3 min."""
+    if time.time() - _PC["t"] > 180:
+        _PC["t"] = time.time()
+        try:
+            _PC["d"] = json.loads((HERE / ".market" / "price_ctl.json").read_text())
+        except (OSError, ValueError):
+            _PC["d"] = {}
+    return _PC["d"]
+
+
 def rival_price(sku, grade, category, asks):
     """The price (share of list) to sit just under: the lowest median settle of this SKU and grade over 6 h among the
     shops we race (price_rivals.json: next to us on revenue and on book); with fewer than 3 such settles the rivals'
@@ -540,9 +554,15 @@ class Shop(AgentExecutor):
                 # ref - RIVAL_UNDER and open at ref + RIVAL_OVER; the cost floor still holds above that.
                 ref = rival_price(u["sku"], grade, u.get("category"), self.asks)
                 if ref:
-                    under, over = p.get("rival_under", RIVAL_UNDER), p.get("rival_over", RIVAL_OVER)   # params.json shop.base
-                    floor = max(floor, round(u["list_price"] * (ref - under)))
-                    share = ref + over
+                    # 23:30 (user: 'balance it dynamically and get both'; 'some items can cost a little more'):
+                    # price_ctl.py moves `under` (all goods: up when the book lead is thin, down when the book is safe
+                    # and revenue is behind) and a per-SKU `adj` (up on strong demand or when nearly out, down when
+                    # nobody takes it) every 15 min from what it measures; the seller only reads the file
+                    ctl = price_ctl()
+                    under = ctl.get("under", p.get("rival_under", RIVAL_UNDER))
+                    level = ref - under + (ctl.get("sku") or {}).get(u["sku"], 0.0)
+                    floor = max(floor, round(u["list_price"] * level))
+                    share = level + p.get("rival_over", RIVAL_OVER) + 0.01
             who, min_share = rival(text)
             if who:                                     # a rival above us in class: no deep discount (user 11-07)
                 floor = max(floor, round(u["list_price"] * min_share))
