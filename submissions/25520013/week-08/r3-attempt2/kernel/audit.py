@@ -75,7 +75,7 @@ def _wakes(root):
             )
             oc = r.get("obs_chars") if _num(r.get("obs_chars")) and not r.get("cached") else None
             err = str(r.get("obs_head") or "오류")[:80] if r.get("err") is True else None
-            tools.append((name, args, oc, err))
+            tools.append((name, args, oc, err, r.get("cut") is True))
         elif kind == "operator_wake":
             wakes.append(dict(r, _tools=tools))
             tools = []
@@ -131,10 +131,13 @@ def report(root, now, hours=24, since=None, listed=None):
         if _num(w["result"].get("prompt_chars"))
     )
 
-    tools, obs = {}, {}
+    tools, obs, unfounded = {}, {}, []
     for w in wakes:
         seen = {}
-        for name, args, oc, err in w["_tools"]:
+        g = (w.get("result") or {}).get("grounding") if isinstance(w.get("result"), dict) else None
+        g = g if isinstance(g, dict) else {}
+        unfounded += [str(x)[:20] for x in (g.get("unfounded") if isinstance(g.get("unfounded"), list) else [])]
+        for name, args, oc, err, cut in w["_tools"]:
             t = tools.setdefault(
                 name,
                 {
@@ -145,9 +148,12 @@ def report(root, now, hours=24, since=None, listed=None):
                     "repeats": 0,
                     "errors": 0,
                     "last_error": "",
+                    "cut": 0,
+                    "uncited": 0,
                 },
             )
             t["uses"] += 1
+            t["cut"] += cut
             if err:
                 t["errors"] += 1
                 t["last_error"] = err
@@ -158,6 +164,9 @@ def report(root, now, hours=24, since=None, listed=None):
             seen[(name, args)] = True
             if oc is not None:
                 obs.setdefault(name, []).append(oc)
+        for name in g.get("uncited") if isinstance(g.get("uncited"), list) else []:
+            if name in tools:
+                tools[name]["uncited"] += 1
     for name, v in obs.items():
         tools[name]["obs_chars_mean"] = round(sum(v) / len(v))
         tools[name]["obs_chars_max"] = max(v)
@@ -242,6 +251,9 @@ def report(root, now, hours=24, since=None, listed=None):
         "tools": dict(sorted(tools.items())),
         "repeat_calls": sum(t["repeats"] for t in tools.values()),
         "tool_errors": sum(t["errors"] for t in tools.values()),
+        "cut_reads": sum(t["cut"] for t in tools.values()),
+        "uncited_reads": sum(t["uncited"] for t in tools.values()),
+        "unfounded_numbers": unfounded[:20],
         "unused_tools": sorted(listed - set(tools)),
         "edits": edits,
         "experiments": exps,
@@ -311,6 +323,21 @@ def lines(root, now, hours=24, listed=None):
             f"도구가 오류로 답한 호출 {rep['tool_errors']}회, 최다 {name} {t['errors']}회: '{t['last_error'][:60]}'. "
             "인자를 고쳐 부르거나 다른 도구를 쓰고, 계속되면 notes에 적음",
         )
+    if rep.get("unfounded_numbers"):
+        u = rep["unfounded_numbers"]
+        found.insert(
+            1 if rep.get("tool_errors") else 0,
+            f"실험 근거(reason, expect)에 쓴 숫자 중 이번 점검에 본 자료에 없는 것 {len(u)}개 (예: {', '.join(u[:4])}). "
+            "근거 숫자는 도구로 읽은 값을 그대로 씀",
+        )
+    if rep.get("uncited_reads"):
+        name, t = sorted(rep["tools"].items(), key=lambda x: (-x[1]["uncited"], x[0]))[0]
+        found.append(
+            f"읽고도 결정이나 결론에 숫자를 하나도 쓰지 않은 도구 결과 {rep['uncited_reads']}회, 최다 {name} {t['uncited']}회임"
+        )
+    if rep.get("cut_reads"):
+        name, t = sorted(rep["tools"].items(), key=lambda x: (-x[1]["cut"], x[0]))[0]
+        found.append(f"길어서 잘린 채 본 도구 결과 {rep['cut_reads']}회, 최다 {name} {t['cut']}회: 인자로 범위를 좁혀 부름")
     if rep["repeat_calls"]:
         name, t = sorted(rep["tools"].items(), key=lambda x: (-x[1]["repeats"], x[0]))[
             0
@@ -359,6 +386,8 @@ def tool_table(root, now, hours=24, listed=None):
                 "repeats": t.get("repeats", 0),
                 "errors": t.get("errors", 0),
                 "last_error": t.get("last_error", ""),
+                "cut": t.get("cut", 0),
+                "uncited": t.get("uncited", 0),
                 "listed": name in shown,
             }
         )

@@ -604,3 +604,19 @@ def test_verifier_round_fixes(env):
     assert au.judge_guidance(env.root, NOW, env.traj)["status"] == "kept"
     _state(env.root, last_run_ts=NOW + 10**9)
     assert au.due(env.root, NOW) == "첫 감사"
+
+
+def test_auditor_remembers_its_runs_and_reads_them_back(env):
+    _wake(env.root, NOW - H)
+    _run(env, {"findings": ["반복 호출 2건"], "note": "첫 메모", "guidance": "읽은 숫자를 근거에 씀",
+               "tools": {"describe": {"events": "범위를 좁혀 부름"}}})
+    st = json.load(open(os.path.join(env.root, au.STATE)))
+    run = st["runs"][-1]
+    assert run["findings"] == ["반복 호출 2건"] and run["guidance_changed"] and "wakes" in run["nums"]
+    assert run["tools"][0]["name"] == "events" and set(run["tools"][0]["before"]) == {"uses", "errors", "uncited", "cut"}
+    assert st["history"][-1]["status"] == "active"
+    p = au.build_prompt(env.root, NOW + H, listed=LISTED)
+    assert "네 지난 감사" in p and "짚은 것: 반복 호출 2건" in p and "도구 describe events" in p and "첫 메모" in p
+    st["runs"] = "깨짐"
+    json.dump(st, open(os.path.join(env.root, au.STATE), "w"))
+    assert "없음 (첫 감사)" in au.build_prompt(env.root, NOW + H, listed=LISTED)

@@ -13,6 +13,7 @@ import argparse
 import importlib
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -60,10 +61,58 @@ OBS_TRIM = 1_000
 TOOL_ERR = ("도구 오류", "인자 오류", "도구 없음", "만든 도구 없음", "기억 없음", "operator는")  # how a failed tool answers
 
 
-def obs_facts(obs):
-    """What the tool row keeps of an observation for the audit: its first line and whether the tool failed."""
+def obs_facts(obs, limit=None):
+    """What the tool row keeps of an observation for the audit: its first line, whether the tool failed, and
+    whether the operator saw it cut (longer than limit)."""
     head = " ".join(str(obs).split())[:120]
-    return {"obs_head": head, "err": True} if head.startswith(TOOL_ERR) else {"obs_head": head}
+    out = {"obs_head": head, "err": True} if head.startswith(TOOL_ERR) else {"obs_head": head}
+    if limit and len(str(obs)) > limit:
+        out["cut"] = True
+    return out
+
+
+_NUM = re.compile(r"\d[\d,]*(?:\.\d+)?")
+
+
+def numbers(text):
+    """Number tokens of a text, commas dropped; one-digit tokens are too common to mean anything."""
+    out = set()
+    for tok in _NUM.findall(str(text)):
+        tok = tok.replace(",", "")
+        if "." in tok:
+            tok = tok.rstrip("0").rstrip(".")
+        if len(tok.replace(".", "")) >= 2:
+            out.add(tok)
+    return out
+
+
+def grounding(base, obs_all, done, kept=()):
+    """Did the wake's reading reach its decision? Mechanical check on number tokens only.
+
+    cited/uncited: a tool result counts as used when a number that only it showed (not on the state card) appears
+    in the done object or in a kept conclusion. unfounded: numbers in a policy item's reason or expect found nowhere
+    in what the operator was shown this wake (prompt, tool results), other than the item's own value.
+    """
+    shown = numbers(base)
+    said = numbers(json.dumps(done, ensure_ascii=False, default=str) + " " + " ".join(kept))
+    cited, uncited, seen = 0, [], set(shown)
+    for head, (_, _, text) in obs_all.items():
+        try:
+            name = str(json.loads(head).get("tool"))
+        except (ValueError, AttributeError):
+            name = "?"
+        own = numbers(text)
+        seen |= own
+        if (own - shown) & said:
+            cited += 1
+        elif not str(text).startswith(TOOL_ERR):
+            uncited.append(name)
+    unfounded = []
+    for it in done.get("policy") if isinstance(done.get("policy"), list) else []:
+        if isinstance(it, dict):
+            claim = numbers(f"{it.get('reason') or ''} {it.get('expect') or ''}") - numbers(it.get("value"))
+            unfounded += sorted(claim - seen)
+    return {"read": len(obs_all), "cited": cited, "uncited": uncited[:12], "unfounded": unfounded[:8]}
 
 
 ASK_TIMEOUT_S = 120  # per model call; about twice the slowest answered call
@@ -304,7 +353,7 @@ class Operator:
             except Exception as e:
                 obs = f"도구 오류: {type(e).__name__}: {e}"
             obs = c.cap(c.mask(str(obs), self.secrets), tools.MAX_CHARS)
-            self.traj.append("operator", "tool", name=name, obs_chars=len(obs), **obs_facts(obs),
+            self.traj.append("operator", "tool", name=name, obs_chars=len(obs), **obs_facts(obs, COMPACT_OBS),
                              args=c.mask(json.dumps(args, ensure_ascii=False, default=str)[:2000], self.secrets))
             return obs
         if name in HARNESS_TOOLS:
@@ -323,7 +372,7 @@ class Operator:
             name=name,
             args=c.mask(json.dumps(shown, ensure_ascii=False, default=str)[:2000], self.secrets),
             obs_chars=len(obs),
-            **obs_facts(obs),
+            **obs_facts(obs, COMPACT_OBS if self.compact() else None),
         )
         return obs
 
@@ -562,6 +611,10 @@ class Operator:
             if isinstance(act.get("done"), dict):
                 result = self._finish_compact(act["done"], now)
                 result.update(prompt_chars=chars, calls=calls)
+                try:
+                    result["grounding"] = grounding(base, obs_all, act["done"], kept)
+                except Exception:  # the check reads model text; it must never cost the wake
+                    pass
                 return self._end(reason, step + 1, "done", result)
             if last_step:
                 break

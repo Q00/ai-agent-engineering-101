@@ -113,6 +113,8 @@ def test_counts_repeats_tools_and_edits(tmp_path):
         "repeats": 1,
         "errors": 0,
         "last_error": "",
+        "cut": 0,
+        "uncited": 0,
     }
     assert rep["tools"]["sales"]["obs_chars_mean"] == 300
     assert rep["repeat_calls"] == 1
@@ -419,6 +421,8 @@ def test_tool_table(tmp_path):
         "repeats": 1,
         "errors": 0,
         "last_error": "",
+        "cut": 0,
+        "uncited": 0,
         "listed": True,
     }
     assert t[2]["listed"] is False and t[3] == {
@@ -429,6 +433,8 @@ def test_tool_table(tmp_path):
         "repeats": 0,
         "errors": 0,
         "last_error": "",
+        "cut": 0,
+        "uncited": 0,
         "listed": True,
     }
 

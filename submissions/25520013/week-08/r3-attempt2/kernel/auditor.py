@@ -58,6 +58,9 @@ TOOL_CHANGES_MAX = 4
 PROMPT_CHARS = 14_000
 NOTES_SHOWN = 800
 WAKES_SHOWN = 3
+RUNS_MAX = 12  # the auditor's own memory: its past runs kept in the state file
+RUNS_SHOWN = 4
+RUNS_CHARS = 1_800
 WAKE_NOTE_CHARS = 300
 WAKE_LOOKBACK_S = 72 * 3600
 FINDINGS_MAX = 5
@@ -364,13 +367,13 @@ def _tool_block(root, now, listed, ts):
         for n in ts["hidden"]
         if n not in names
     ]
-    out = ["이름 | 쓴 횟수 | 쓴 점검 | 관찰 평균 글자 | 반복 | 오류 답 | 목록 | 운영자가 만듦"]
+    out = ["이름 | 쓴 횟수 | 쓴 점검 | 관찰 평균 글자 | 반복 | 오류 답 | 잘린 채 봄 | 읽고 안 씀 | 목록 | 운영자가 만듦"]
     for r in rows:
         n = r.get("name")
         state = (
             "숨김" if n in ts["hidden"] else "보임" if r.get("listed") else "목록 밖"
         )
-        line = f"{n} | {r.get('uses', 0)} | {r.get('wakes', 0)} | {r.get('obs_chars_mean', 0)} | {r.get('repeats', 0)} | {r.get('errors', 0)}{(' (' + str(r.get('last_error'))[:60] + ')') if r.get('errors') else ''} | {state}"
+        line = f"{n} | {r.get('uses', 0)} | {r.get('wakes', 0)} | {r.get('obs_chars_mean', 0)} | {r.get('repeats', 0)} | {r.get('errors', 0)}{(' (' + str(r.get('last_error'))[:60] + ')') if r.get('errors') else ''} | {r.get('cut', 0)} | {r.get('uncited', 0)} | {state}"
         line += (
             f" | 예: {' '.join(str(made[n]).split())[:DESC_CHARS]}"
             if n in made
@@ -391,6 +394,60 @@ def _history_block(hist):
             f"\n  {' '.join(str(h.get('text') or '').split())[:200]}"
         )
     return "\n".join(out) or "없음"
+
+
+def _period(root, now, since, listed):
+    """What the kernel counted over one audit period and the per-tool rows, for the auditor's memory."""
+    if audit is None:
+        return {}, {}
+    r = audit.report(root, now, since=since, listed=listed)
+    nums = dict(audit.score(r))
+    for k in ("repeat_calls", "tool_errors", "uncited_reads", "cut_reads"):
+        nums[k] = r.get(k, 0)
+    nums["unfounded"] = len(r.get("unfounded_numbers") or [])
+    return nums, r.get("tools") or {}
+
+
+def _remember(st, now, out, nums, rows):
+    """Append this run to the auditor's memory: what it said and changed, and the numbers it was looking at."""
+    tools = [
+        dict(ch, before={k: (rows.get(ch.get("name")) or {}).get(k, 0) for k in ("uses", "errors", "uncited", "cut")})
+        for ch in out["tools"]["applied"]
+    ]
+    runs = st.get("runs") if isinstance(st.get("runs"), list) else []
+    runs.append(
+        {
+            "ts": now,
+            "nums": nums,
+            "findings": [str(x)[:160] for x in out["findings"]][:4],
+            "note": out["note"][:160],
+            "guidance_changed": out["guidance_changed"],
+            "tools": tools,
+        }
+    )
+    st["runs"] = runs[-RUNS_MAX:]
+
+
+def _runs_block(st):
+    """The auditor's memory as prompt text, oldest first: each run's numbers are the period BEFORE that run, so the
+    effect of a run shows in the numbers of the next one."""
+    runs = [r for r in (st.get("runs") if isinstance(st.get("runs"), list) else []) if isinstance(r, dict)]
+    out = []
+    for r in runs[-RUNS_SHOWN:]:
+        out.append(
+            f"- {c.kst(r['ts']) if _num(r.get('ts')) else '?'} 그때까지의 숫자 "
+            f"{json.dumps(r.get('nums'), ensure_ascii=False, separators=(',', ':'))}"
+            f"{', 안내 바꿈' if r.get('guidance_changed') else ''}"
+        )
+        out += [f"  짚은 것: {x}" for x in r.get("findings") or []]
+        out += [
+            f"  도구 {t.get('op')} {t.get('name')} (그때 {json.dumps(t.get('before'), ensure_ascii=False)})"
+            for t in r.get("tools") or []
+            if isinstance(t, dict)
+        ]
+        if r.get("note"):
+            out.append(f"  메모: {r['note']}")
+    return "\n".join(out)[-RUNS_CHARS:] or "없음 (첫 감사)"
 
 
 def _fit(head, blocks, tail, limit=PROMPT_CHARS):
@@ -447,6 +504,7 @@ def build_prompt(root, now, secrets=(), listed=None):
         ("## 운영자 메모 (앞 800자)", _notes(root) or "없음"),
         ("## 지금 안내 (guidance)", guidance(root) or "없음"),
         ("## 안내 이력 (최근 4판, 커널이 잰 전후 점수)", _history_block(st["history"])),
+        ("## 네 지난 감사 (네 기억. 각 줄의 숫자는 그 감사 직전 구간이라, 조치의 결과는 다음 줄 숫자에 나타남)", _runs_block(st)),
     ]
     blocks = [(h, c.mask(b, secrets)) for h, b in blocks]
     return _fit(c.mask(job, secrets), blocks, "## 답 형식\n\n" + SCHEMA)
@@ -632,6 +690,10 @@ def run(
     prompt = build_prompt(root, now, secrets, listed)
     out["prompt_chars"] = len(prompt)
     try:
+        nums, rows = _period(root, now, st.get("last_run_ts") if _num(st.get("last_run_ts")) else now - 24 * 3600, listed)
+    except Exception:  # noqa: BLE001 - memory is best effort
+        nums, rows = {}, {}
+    try:
         ans = parse_last_object(
             terra.complete(prompt, agent="auditor", timeout_s=timeout_s, effort=effort)
         )
@@ -652,6 +714,7 @@ def run(
     out["guidance_changed"] = g["changed"]
     out["guidance"] = g
     out["tools"] = _apply_tools(root, now, ans.get("tools"), listed, secrets, traj)
+    _remember(st, now, out, nums, rows)
     return _finish(root, traj, now, st, dict(out, status="done"))
 
 

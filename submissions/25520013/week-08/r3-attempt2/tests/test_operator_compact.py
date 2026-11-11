@@ -264,3 +264,21 @@ def test_repeat_call_is_answered_from_the_page_and_agent_arg_works(o):
     (agent, kind, text), = memfeed.sentence(row)
     assert agent == "operator" and "판정 버림" in text and "1123830" in text and "0.68 → 0.73" in text
     assert memfeed.sentence(dict(row, status="running")) is None
+
+
+def test_grounding_marks_unused_reads_and_unfounded_numbers(o):
+    base = "상태 카드: 순위 5위, 차이 0.061"
+    obs = {
+        '{"args": {}, "tool": "stockouts"}': [0, "h", "생수 거절 66건, 재고 1개"],
+        '{"args": {}, "tool": "policy"}': [1, "h", "stock_target 지금 10, 범위 2~40"],
+        '{"args": {}, "tool": "recall"}': [1, "h", "도구 오류: TypeError"],
+    }
+    done = {"policy": [{"section": "x", "key": "stock_target", "value": 22,
+                        "reason": "품절 거절 66건, 6시간 판매 35건", "expect": "거절이 66건보다 줄어듦"}]}
+    g = op.grounding(base, obs, done, kept=())
+    assert g == {"read": 3, "cited": 1, "uncited": ["policy"], "unfounded": ["35"]}
+    assert op.numbers("1,234.50원 0.50 7 12") == {"1234.5", "0.5", "12"}
+    assert op.obs_facts("x" * 10, 5).get("cut") and "cut" not in op.obs_facts("x" * 10, 50)
+    o.terra = Script({"tools": [{"tool": "policy", "args": {}}]}, {"done": {"note": "끝"}})
+    res = o.wake("주기 점검", NOW)
+    assert res["grounding"]["read"] == 1 and res["grounding"]["unfounded"] == []
