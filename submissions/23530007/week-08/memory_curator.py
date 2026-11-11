@@ -51,7 +51,9 @@ ARCHIVE = HERE / "logs" / "archive"
 LOGF = HERE / "logs" / "memory_curator.log"
 BMEM = HERE / "buyer_memory.json"
 CLAUDE = shutil.which("claude") or str(Path.home() / ".local" / "bin" / "claude")
-MODEL_CMD = f"{CLAUDE} -p --model opus --tools '' --setting-sources '' --no-session-persistence"
+# 11-11 (user: try another model for the curator): sonnet costs half of opus per token, so it can run hourly
+# for what the 2 h opus schedule cost; the strategists that decide stay on opus
+MODEL_CMD = f"{CLAUDE} -p --model sonnet --tools '' --setting-sources '' --no-session-persistence"
 MODEL_TIMEOUT = 420                                 # opus (11-08) answers 70k chars slower than sonnet did
 HOT_HOURS = 24
 DIGEST_KEEP = 10
@@ -62,8 +64,8 @@ LIMITS = {"facts": 20, "decisions": 10, "open_questions": 8, "for_shop": 6, "for
 STRINGS = {"rules_change": 3, "rank_change": 3, "market_flow": 4}      # one paragraph each, x TEXT_MAX
 ITEM_KEYS = ("id", "text", "source", "since", "last_confirmed", "who", "what", "when", "why", "role", "numbers",
              "request", "answer")
-REFRESH_MIN = 120                                  # a digest older than this is rewritten even without new entries
-MIN_GAP_MIN = 110                                  # 11-10 (API budget): at most one model call per this many minutes
+REFRESH_MIN = 60                                  # a digest older than this is rewritten even without new entries
+MIN_GAP_MIN = 55                                  # 11-10 (API budget): at most one model call per this many minutes
 LOCK_WAIT = 480                                    # s a run waits for another curator (a model call takes ~90 s)
 PROBE_CHARS = 2500                                 # a code result for one request, at most
 RULES_URLS = ("https://market.ourolabs.ai/rules", "https://market.ourolabs.ai/agent.md")
