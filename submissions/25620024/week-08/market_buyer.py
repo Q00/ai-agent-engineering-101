@@ -626,7 +626,7 @@ def offer_of(task):
 
 
 NEED = {}          # set by round3: what this order needs, said to every shop up front
-SHELF_RE = re.compile(r"(\d+(?:\.\d+)?)\s*h(?:ours?)?\s*(?:of\s+)?shelf|shelf[ -]life[^0-9]{0,25}(\d+(?:\.\d+)?)\s*h", re.I)
+SHELF_RE = re.compile(r"(\d+(?:\.\d+)?)\s*h(?:ours?)?\s*(?:of\s+)?shelf|shelf[ _-]life(?:_left)?[^0-9]{0,25}(\d+(?:\.\d+)?)\s*h", re.I)
 
 
 def shelf_of(task, off=None):
@@ -664,7 +664,7 @@ def quote(c):
             return {"c": c, "error": f"offered warranty {wh} h, need {NEED['warranty']} h"}
         grade = (off or {}).get("grade")
         if not grade:                                    # 11-05 audit: 6 grade-C refusals; the grade is often only
-            gm = re.search(r"\bgrade ([ABC])\b", status_text(task) or "")   # in the text ("grade C now")
+            gm = re.search(r"\bgrade\s*[=:]?\s*([ABC])\b", status_text(task) or "")   # also "grade=C" (audit 11-11)   # in the text ("grade C now")
             grade = gm.group(1) if gm else None
         if ask and NEED.get("grades") and grade and grade not in NEED["grades"]:   # audit 11-04: grade C goods were
             rpc(url, "CancelTask", {"id": task["id"]})                           # agreed, then refused by the kit
