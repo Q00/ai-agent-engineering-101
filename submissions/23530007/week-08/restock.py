@@ -502,8 +502,25 @@ def main():
         if good_ < q_:
             # food arrives with a random share of its shelf life left (about 1 unit in 5 is grade A), so a line buys
             # a few times the shortage, at most 12 units
-            must.append((good_ - q_, ((False, -2, 0), v_["category"], v_, min(12, 3 * int(q_ - good_)))))
-    wants += [w for _, w in sorted(must, key=lambda m: m[0])[:MUST_LINES]]
+            must.append((good_ - q_, ((False, -2, 0), v_["category"], v_, int((p.get("food_wide") or {}).get("qty", 5)))))   # small lines (user: one or two fresh units, no stock)
+    food_lines = [w for _, w in sorted(must, key=lambda m: m[0])[:MUST_LINES]]
+    # 11-11 21:40 (user: 'do food wide; keep only one or two fresh units, not a stock; stop if the loss gets heavy'):
+    # the long-shelf foods that sell most in the market, one or two grade A units of each. A line buys fw["qty"]
+    # units because about 1 supplied unit in 5 arrives fresh; the rest is never sold (the seller ships grade A food
+    # only) and leaves the book when it passes its date: that waste is the price of the star reviews, and guards.py
+    # G17 switches food_wide off when the loss passes its limits. At most fw["lines"] such lines a window.
+    fw = p.get("food_wide") or {}
+    if fw.get("on"):
+        a_units = Counter(u["sku"] for u in fresh if u.get("kind") == "food" and u.get("grade") == "A")
+        taken = {w[2]["sku"] for w in food_lines}
+        cands = sorted((k for k, n in st["sku"].items() if (catalog.get(k) or {}).get("kind") == "food"
+                        and (catalog[k].get("shelf_hours") or 0) >= fw.get("min_shelf_h", 168)
+                        and a_units[k] < fw.get("target", 1) and k not in taken),
+                       key=lambda k: -st["sku"][k])[:fw.get("top", 60)]
+        room = max(0, MUST_LINES - len(food_lines))
+        for k in cands[:min(room, fw.get("lines", 2))]:
+            food_lines.append(((False, -2, 1), catalog[k]["category"], catalog[k], int(fw.get("qty", 5))))
+    wants += food_lines
     wants.sort(key=lambda w: w[0])
     max_stock = p["max_stock_share"] * (cash + stock_cost)
     buy, spend = [], 0

@@ -485,12 +485,14 @@ class Shop(AgentExecutor):
             if doomed:
                 share = min(share, DOOM_ASK)
             floor = floor_of(u, now, mult)
-            if u.get("kind") == "food" and u["sku"] in (p.get("must_stock") or {}):
+            if u.get("kind") == "food" and (u["sku"] in (p.get("must_stock") or {}) or (p.get("food_wide") or {}).get("on")):
                 # 11-11 21:10 (user: 'use fresh food to raise stars even at a small loss, furniture makes it up'): the
                 # long-shelf foods kept for the accounts that lift our per-account star mean (JangSeongWoong rates
                 # every shop 5.0 and never paid us; gom31-certified-goods rates grade A 5 and pays x .52-.60) are
                 # asked at STAR_ASK of list and may go down to STAR_FLOOR, under cost if need be (a few thousand
-                # credits a unit); only units with >= 80% of their shelf life are sold at all (FOOD_SHELF_FLOOR)
+                # credits a unit); only units with >= 80% of their shelf life are sold at all (FOOD_SHELF_FLOOR).
+                # 21:40, user 'do food wide': with params food_wide.on EVERY food unit is priced this way (accounts
+                # that rate on price give 5 stars under ~.66 of list: real_yellow 5.0 at .50-.58 vs 3.0 above .75)
                 share = min(share, STAR_ASK)
                 floor = min(floor, round(u["list_price"] * STAR_FLOOR))
             who, min_share = rival(text)

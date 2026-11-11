@@ -14,7 +14,8 @@ buyer_score.py. Each guard is justified by a past incident (volatility analysis,
   G7 rank step   class buyer <= -.009 or class shop <= -.007 in one 15-min step, confirmed by the next sample
                  -> wake the matching strategist (2 h cooldown)
   G8 stars       our board stars_rank worse by >= 2 ranks within 2.5 h (shop_parts.jsonl) -> wake the shop (<= 2/day)
-  G16 star food  no paid review from the two target accounts 24 h after the star foods started -> must_stock off
+  G17 food loss  food bought minus paid food sales over 6 M in 24 h or 25 M in all -> food restock off, phone alert
+  G16 star food  (off since 21:40) no paid review from the two target accounts 24 h after the star foods started -> must_stock off
   G15 gains     > 6 skipped orders/h with expected v above m* -> wake the buyer strategist (<= 1 per 2 h)
   G14 final     projected final class rank (ops/final_rank.py, every 2 h) under 1st -> wake the shop, alert <= 1 per 12 h
   G13 revenue   the student shop below us in revenue passing us before the round ends (3 h slopes) -> wake the shop
@@ -49,6 +50,10 @@ SHOP_VALUE = MD / "shop_value.json"
 LOGF = HERE / "logs" / "guards.log"
 MARKET = "https://market.ourolabs.ai"
 STAR_ACCOUNTS = {"JangSeongWoong", "gom31-certified-goods"}   # G16: the accounts the must_stock foods are kept for
+G16_ACTIVE = False         # 11-11 21:40: off, the wide food trial is judged by its loss (G17)
+FOOD_LOSS_24H = 6e6        # G17: food bought minus paid food sales, credits, in any 24 h
+FOOD_LOSS_TOTAL = 25e6     # G17: ... and since the wide food programme started
+FOOD_LOSS_HARD = 50e6      # G17: the loss at which food restock stops even while the stars rise
 STAR_HOURS = 24            # G16: hours to wait for a paid review from them before food restock is switched off
 DAILY_CAP = 18.5           # $/24 h: (credit - 60 for Round 4) / days left on 11-11
 try:                       # 11-11 (user: use nearly all of the credit before it expires): 1.4 x the paced daily budget
@@ -277,12 +282,86 @@ def main():
     except Exception as e:
         log(f"G9 skipped: {e!r}")
 
+    # G17 food loss limit (user 11-11 21:40: 'do food wide; stop if the loss gets heavy'). Since the wide food
+    # programme started: what we paid for food units (every food unit seen in stock with supplied_at after the start,
+    # plus food units sold before a tick saw them) minus what paid food sales brought in. Over FOOD_LOSS_24H in any
+    # 24 h or FOOD_LOSS_TOTAL in all -> params food_wide.on = false and must_stock = {} (no more food is bought; the
+    # food in stock is still sold), phone alert.
+    try:
+        fl = st.setdefault("food_loss", {"start": now, "units": {}, "sold": {}})
+        cfg17 = json.loads((HERE / "params.json").read_text())
+        on17 = bool((cfg17["shop"]["base"].get("food_wide") or {}).get("on")) or bool(cfg17["shop"]["base"].get("must_stock"))
+        if on17 and not fl.get("stopped"):
+            inv17 = json.loads((MD / "inventory.json").read_text()).get("units") or []
+            for u in inv17:
+                if u.get("kind") == "food" and (u.get("supplied_at") or 0) >= fl["start"]:
+                    fl["units"][u["unit"]] = [u.get("supplied_at"), u.get("cost") or 0]
+            paid17 = {d.get("unit") for d in (json.loads((MD / "shop_value.json").read_text()).get("deals") or []) if d.get("shop") == "yms979"}
+            cat17 = json.loads((MD / "catalog.json").read_text())
+            with open(HERE / "seller_r3_log.jsonl", encoding="utf-8") as f17:
+                for line in f17.readlines()[-20000:]:
+                    if '"deal"' not in line:
+                        continue
+                    try:
+                        r17 = json.loads(line)
+                    except ValueError:
+                        continue
+                    if (r17.get("event") == "deal" and r17.get("t", 0) >= fl["start"] and r17.get("unit") in paid17
+                            and (cat17.get(r17.get("sku")) or {}).get("kind") == "food"):
+                        fl["sold"][r17["unit"]] = [r17["t"], r17.get("price") or 0, r17.get("cost") or 0]
+            def _loss(since):
+                bought = sum(c for t_, c in fl["units"].values() if (t_ or 0) >= since)
+                bought += sum(c for u_, (t_, p_, c) in fl["sold"].items() if u_ not in fl["units"] and t_ >= since)
+                return bought - sum(p_ for t_, p_, c in fl["sold"].values() if t_ >= since)
+            l24, ltot = _loss(now - 86400), _loss(fl["start"])
+            fl["loss_24h_M"], fl["loss_total_M"] = round(l24 / 1e6, 2), round(ltot / 1e6, 2)
+            fl["sales"] = len(fl["sold"])
+            # user 21:45: 'if the stars rise more than expected and keep rising, it may go on'. The board's stars_rank
+            # (2 decimals) is kept per tick; rising = at least +0.01 against 24 h ago (or against the start while the
+            # programme is younger). While it rises the soft limits do not stop the programme; FOOD_LOSS_HARD does.
+            try:
+                sr17 = float(mine.get("stars_rank"))
+                hist17 = [h for h in fl.setdefault("stars_hist", []) if now - h[0] <= 48 * 3600]
+                hist17.append([now, sr17])
+                fl["stars_hist"] = hist17
+                fl.setdefault("stars_start", sr17)
+                ref17 = next((h[1] for h in hist17 if now - h[0] <= 24 * 3600), fl["stars_start"]) if now - fl["start"] > 24 * 3600 else fl["stars_start"]
+                rising17 = sr17 >= ref17 + 0.01
+                fl["stars_now"], fl["stars_ref"], fl["stars_rising"] = sr17, ref17, rising17
+            except Exception:
+                rising17 = False
+            over17 = l24 > FOOD_LOSS_24H or ltot > FOOD_LOSS_TOTAL
+            if over17 and rising17 and ltot <= FOOD_LOSS_HARD:
+                if cooled(st, "G17keep", 12 * 3600, now):
+                    log(f"G17 food loss {l24 / 1e6:.1f} M in 24 h, {ltot / 1e6:.1f} M in all is over the soft limit, but stars_rank rose {fl.get('stars_ref')} -> {fl.get('stars_now')}: kept (hard limit {FOOD_LOSS_HARD / 1e6:.0f} M)")
+                    alert([f"G17 식품 손해가 기준을 넘었지만(24시간 {l24 / 1e6:.1f}M, 누적 {ltot / 1e6:.1f}M) 별점이 {fl.get('stars_ref')} → {fl.get('stars_now')}로 오르는 중이라 계속합니다. 누적 {FOOD_LOSS_HARD / 1e6:.0f}M에서 멈춥니다."])
+                    fired(st, "G17keep", now)
+                over17 = False
+            if over17:
+                b17 = cfg17["shop"]["base"]
+                if not DRY:
+                    b17["food_wide"] = dict(b17.get("food_wide") or {}, on=False)
+                    if b17.get("must_stock"):
+                        b17["must_stock_off"] = b17["must_stock"]
+                        b17["must_stock"] = {}
+                    tmp17 = HERE / "params.json.tmp"
+                    tmp17.write_text(json.dumps(cfg17, ensure_ascii=False, indent=1), encoding="utf-8")
+                    tmp17.replace(HERE / "params.json")
+                    fl["stopped"] = now
+                log(f"G17 food loss {l24 / 1e6:.1f} M in 24 h, {ltot / 1e6:.1f} M in all (limits {FOOD_LOSS_24H / 1e6:.0f} / {FOOD_LOSS_TOTAL / 1e6:.0f}): food restock switched off")
+                alert([f"G17 식품 손해가 한도를 넘어 식품 재입고를 껐습니다 (24시간 {l24 / 1e6:.1f}M, 누적 {ltot / 1e6:.1f}M; 판매 {len(fl['sold'])}건). 남은 식품은 계속 판매합니다."])
+                fires.append("G17")
+    except Exception as e:
+        log(f"G17 skipped: {e!r}")
+
     # G16 star foods (user 11-11 21:25: 'if it does not seem to work, just stop stocking food'): the must_stock foods
     # are kept for two accounts (JangSeongWoong, gom31-certified-goods). If neither has left a PAID review of our shop
     # STAR_HOURS after the start, restock of them is switched off (params.json shop.base.must_stock -> {}, the list is
     # kept under must_stock_off); the food already in stock is still sold.
     try:
         sf = st.setdefault("star_food", {"start": now})
+        if not sf.get("decided") and not G16_ACTIVE:      # 21:40: the user widened the food trial; G17's loss limit decides
+            sf["decided"], sf["result"] = True, "superseded by the wide food trial (G17 loss limit)"
         if not sf.get("decided"):
             sv16 = json.loads((MD / "shop_value.json").read_text())
             hits = [r for r in (sv16.get("our_ratings") or []) if r[0] >= sf["start"] and r[1] in STAR_ACCOUNTS]

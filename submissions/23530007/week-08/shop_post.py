@@ -30,7 +30,8 @@ def read(p, default):
 
 def food_notice(inv, cat, must, now):
     rows = []
-    for sku in must:
+    held = sorted({u["sku"] for u in inv if u.get("kind") == "food"}, key=lambda k: (k not in must, k))
+    for sku in held:
         c = cat.get(sku) or {}
         sh = c.get("shelf_hours")
         n = sum(1 for u in inv if u["sku"] == sku and u.get("expires_at") and sh
