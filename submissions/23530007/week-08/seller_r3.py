@@ -171,7 +171,9 @@ def market_x(sku, category, asks):
     return competitor_ask(asks, category, 3) if asks is not None else None
 
 
-RIVAL_UNDER, RIVAL_OVER = 0.01, 0.02     # 11-11: floor and opening ask around the price rivals' settle (share of list)
+RIVAL_UNDER, RIVAL_OVER = 0.01, 0.0      # 11-11: floor and opening ask around the price rivals' settle (share of list)
+# 11-12: RIVAL_OVER .02 -> 0: an opening ask .02 over the rival's settle lost the buyers who take or leave the first
+# quote (G07ec17d5: 9 quotes at .727-.747 of list against 25620027's .705, no deal); we now open AT the settle.
 GRADE_OFF = {"A": 0.0, "B": -0.07, "C": -0.15}   # a grade's usual distance from the SKU median when the grade has no data
 _RV = {"t": 0, "shops": [], "by": {}, "sku": {}}
 
@@ -192,30 +194,51 @@ def price_ctl():
 
 def rival_price(sku, grade, category, asks):
     """The price (share of list) to sit just under: the lowest median settle of this SKU and grade over 6 h among the
-    shops we race (price_rivals.json: next to us on revenue and on book); with fewer than 3 such settles the rivals'
-    median for the SKU shifted by the grade's usual offset; with none, the market median for the SKU (market_x)."""
+    shops we race (price_rivals.json: next to us on the book); with fewer than 3 such settles, what the OTHER shops
+    settled this SKU and grade at (>= 5), then the rivals' SKU median shifted by the grade's usual offset, then the
+    other shops' median for the category and grade, then for the grade market-wide; market_x last.
+    11-12 (user: 'widen the book'; 'only very slightly cheaper than the shop we race'): the fallback used to be
+    market_x, the SKU's median over ALL shops and ALL grades. For 335 of our 483 goods sales in 6 h no rival had a
+    median, so the reference was mostly our own sales, grade B and C included: grade A sold at .648 of list while
+    the other shops settled grade A at .695 (25620027 .712, inextro .683) and B at .592 against .622. Our own
+    settles are no longer in any reference."""
     if time.time() - _RV["t"] > 600:
         _RV["t"] = time.time()
         try:
             _RV["shops"] = list((json.loads((HERE / ".market" / "price_rivals.json").read_text()).get("shops") or {}).keys())
             deals = json.loads((HERE / ".market" / "shop_value.json").read_text()).get("deals") or []
             t1 = max(d["ts"] for d in deals) if deals else 0
-            by, bys = {}, {}
+            by, bys, oth, othc, othg = {}, {}, {}, {}, {}
             for d in deals:
-                if d.get("goods") and t1 - d["ts"] <= 6 * 3600 and d.get("shop") in _RV["shops"]:
+                if not d.get("goods") or t1 - d["ts"] > 6 * 3600:
+                    continue
+                if d.get("shop") in _RV["shops"]:
                     by.setdefault((d["shop"], d["sku"], d.get("grade")), []).append(d["x"])
                     bys.setdefault((d["shop"], d["sku"]), []).append(d["x"])
+                if d.get("shop") != "yms979":
+                    oth.setdefault((d["sku"], d.get("grade")), []).append(d["x"])
+                    othc.setdefault((d.get("cat"), d.get("grade")), []).append(d["x"])
+                    othg.setdefault(d.get("grade"), []).append(d["x"])
             med = lambda v: sorted(v)[len(v) // 2]
             _RV["by"] = {k: med(v) for k, v in by.items() if len(v) >= 3}
             _RV["sku"] = {k: med(v) for k, v in bys.items() if len(v) >= 3}
+            _RV["oth"] = {k: med(v) for k, v in oth.items() if len(v) >= 5}
+            _RV["othc"] = {k: med(v) for k, v in othc.items() if len(v) >= 15}
+            _RV["othg"] = {k: med(v) for k, v in othg.items() if len(v) >= 30}
         except (OSError, ValueError):
             pass
     c = [_RV["by"][(s, sku, grade)] for s in _RV["shops"] if (s, sku, grade) in _RV["by"]]
     if c:
         return min(c)
+    if (sku, grade) in _RV.get("oth", {}):
+        return _RV["oth"][(sku, grade)]
     c = [_RV["sku"][(s, sku)] for s in _RV["shops"] if (s, sku) in _RV["sku"]]
     if c:
         return min(c) + GRADE_OFF.get(grade, 0.0)
+    if (category, grade) in _RV.get("othc", {}):
+        return _RV["othc"][(category, grade)]
+    if grade in _RV.get("othg", {}):
+        return _RV["othg"][grade]
     x = market_x(sku, category, asks)
     return (x + GRADE_OFF.get(grade, 0.0)) if x else None
 

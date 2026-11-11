@@ -469,7 +469,10 @@ def main():
         studs_ = {(p_.get("shop") or {}).get("name") for p_ in bd["players"] if p_.get("student")}
         ss_ = [s_ for s_ in bd["shops"] if s_["name"] in studs_ and s_.get("deals")]
         pr_ = {}
-        for part_ in ("revenue", "book"):
+        # 11-12 (user: 'widen the book; revenue 1st is not worth it; sell what the shop catching up on the book
+        # sells'): only the book neighbours are matched now. inextro (revenue ahead) settles grade A at .683 against
+        # 25620027's .712, and the seller takes the LOWEST rival median, so racing inextro cost .03 of list a unit.
+        for part_ in ("book",):
             L_ = sorted((s_ for s_ in ss_ if s_.get(part_) is not None), key=lambda s_: -s_[part_])
             i_ = next((k_ for k_, s_ in enumerate(L_) if s_["name"] == "yms979"), None)
             if i_ is None:
