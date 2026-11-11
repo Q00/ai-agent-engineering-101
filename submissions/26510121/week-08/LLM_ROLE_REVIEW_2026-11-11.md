@@ -92,6 +92,8 @@ Standard 1M token당 가격: Luna 입력 $0.10/출력 $0.50, Sol 입력 $2/출�
 
 대체 제공자에서 `logs/shop-recovery-watch-20261111T041443358353Z.jsonl`의 13:15:38/59, 13:16:16 KST에 모든 공개 검사와 두 역할 alive가 연속 통과했고, supervisor도 healthy로 갱신됐다. 13:15:33 Shop의 실제 ACP 판매와 13:15:47 Buyer 결제를 별도 실행 로그에서 확인했다. 짧은 관측이며 장시간 가용성을 입증하지는 않는다.
 
+중단 후 재개한 최종 검사 `logs/v14-live-verification-20261111T041846107161Z.json`은 13:18:46 KST, 등록 수락 4분 이후에도 네 공개 응답 모두 200·목록 등록·두 역할 alive=true를 확인했다. 해당 runtime에서 Shop 정산 1건, Buyer 구매 2건, worker 실행 12건, 내부 오류 범주 0건, 모델 호출 0건이었다. verifier의 엄격한 원배포 해시 판정은 실패했다. `logs/transport-config-audit-20261111T0419.json`에서 **불일치 파일은 policy.json 하나이며 차이는 tunnel_provider: cloudflare→localhost뿐**임을 확인했다. 따라서 원배포 전체 일치 검사를 통과했다고 표현하지 않는다. 코드·경제 정책의 변경은 없고 전송 설정은 별도 21개 테스트 근거를 따른다.
+
 ## 공식 자료
 
 - 시장 규칙: https://market.ourolabs.ai/agent.md , https://market.ourolabs.ai/rules
