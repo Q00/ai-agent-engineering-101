@@ -505,11 +505,17 @@ def run(force=False):
                     d_ = (auto.setdefault("shop", {})).setdefault(e["sku"], {})
                 else:
                     d_ = auto.setdefault("globals", {})
-                if b4 is None:
+                cur_v = d_.get(e["knob"])
+                if e.get("value") is not None and (cur_v is None or abs(float(cur_v) - float(e["value"])) > 1e-9):
+                    # 11-11: a later run moved this knob again (needwarr 0.6 -> 0.3 at 02:01 was overwritten with 0.7
+                    # at 02:30 by the 23:01 move's failed prediction); the newer move's own prediction will judge it
+                    log(f"not reverted {e['knob']} {e.get('sku') or ''}: moved since to {cur_v} (this move set {e['value']})")
+                elif b4 is None:
                     d_.pop(e["knob"], None)
+                    log(f"reverted {e['knob']} {e.get('sku') or ''} to base: its prediction failed")
                 else:
                     d_[e["knob"]] = b4
-                log(f"reverted {e['knob']} {e.get('sku') or ''} to {b4}: its prediction failed")
+                    log(f"reverted {e['knob']} {e.get('sku') or ''} to {b4}: its prediction failed")
     rec = mem.record()
     for knob, k in rec["by_kind"].items():
         if len(k["last"]) >= 8:

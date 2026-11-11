@@ -477,14 +477,20 @@ def learn(m, mem, auto):
         if not ok:
             new_misses += 1
             b4 = e.get("before")                    # 11-08: restore the value before the move, not the base
+            d_ = None
             if e.get("applied") and e["knob"] in KNOBS and e.get("sku"):
                 d_ = (auto.setdefault("sku", {})).setdefault(e["sku"], {})
-                d_.pop(e["knob"], None) if b4 is None else d_.__setitem__(e["knob"], b4)
-                log(f"reverted {e['knob']} on {e['sku']} to {b4}: its prediction failed")
             elif e.get("applied") and e["knob"] in GLOBAL:
                 d_ = auto.setdefault("globals", {})
-                d_.pop(e["knob"], None) if b4 is None else d_.__setitem__(e["knob"], b4)
-                log(f"reverted global {e['knob']} to {b4}: its prediction failed")
+            if d_ is not None:
+                cur_v = d_.get(e["knob"])
+                if e.get("value") is not None and (cur_v is None or abs(float(cur_v) - float(e["value"])) > 1e-9):
+                    # 11-11: only revert a knob that still holds what this move set; a later move is judged by its own
+                    # prediction (the buyer's needwarr 0.3 was overwritten with a stale 0.7 this way)
+                    log(f"not reverted {e['knob']} {e.get('sku') or ''}: moved since to {cur_v} (this move set {e['value']})")
+                else:
+                    d_.pop(e["knob"], None) if b4 is None else d_.__setitem__(e["knob"], b4)
+                    log(f"reverted {e['knob']} {e.get('sku') or ''} to {b4}: its prediction failed")
     rec = mem.record()
     for knob, k in rec["by_kind"].items():           # how far each kind of move may go
         if len(k["last"]) >= 8:
