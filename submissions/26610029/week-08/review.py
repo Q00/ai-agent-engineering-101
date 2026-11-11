@@ -20,7 +20,14 @@ from db import DB
 
 HERE = Path(__file__).resolve().parent
 POST_EVERY = 300                     # the market takes one buyer post per 5 minutes
-DEFAULT_POLICY = {"threshold": 0.5,  # post when usefulness >= threshold
+DEFAULT_POLICY = {"threshold": 0.3,  # post when usefulness >= threshold -- was 0.5: a routine deal's
+                                     # baseline usefulness (0.3) never cleared it without 30 min of
+                                     # quiet first, so the market's 300s cap sat mostly unused on
+                                     # ordinary deals. Measured live: our buyer posts already score as
+                                     # well as or better than top posters by avg vote score (0.631 vs.
+                                     # 0.535-0.639 for the market's most-liked accounts), but we had
+                                     # 264 posts to their 406-444 over the same stretch -- the gap was
+                                     # in how often we posted, not how good each post was
                   "quiet_bonus": 0.2, "quiet_after": 1800}
 
 
