@@ -39,8 +39,9 @@ class Settings(unittest.TestCase):
     def test_shipped_on(self):
         value = json.loads(mb.CONFIG.read_text(encoding="utf-8"))
         self.assertIs(value["enabled"], True)  # switched on 11-10 after the install commit cc24e1db; 3 a SKU and 17M from 11-11 (23786019)
-        self.assertEqual((value["skus"], value["units_per_sku"], value["max_worst_cost_total"], value["max_lines_per_run"]), (SKUS, 3, 17000000, 4))
-        self.assertEqual(mb.settings()["max_lines_per_run"], 4)
+        # At most 2 lines a run from 11-11 11:3x KST, a tightening after the 11:21 FALLBACK_B signal.
+        self.assertEqual((value["skus"], value["units_per_sku"], value["max_worst_cost_total"], value["max_lines_per_run"]), (SKUS, 3, 17000000, 2))
+        self.assertEqual(mb.settings()["max_lines_per_run"], 2)
 
     def test_only_a_valid_file_turns_it_on(self):
         with TemporaryDirectory() as folder:
