@@ -30,12 +30,14 @@ from collections import Counter
 from pathlib import Path
 
 from r3lib import (FLOW_HOURS, HERE, SALES, append_jsonl, catalog, endgame, forum_wants, market_flow, market_now,
-                   read_json, read_jsonl, refresh_market_sales)
+                   read_json, read_jsonl, refresh_market_sales, refresh_shop_prices)
 
 CASH_FLOOR = 1_000_000
-STOCK_CAP = 6_000_000   # all stock at cost; expensive SKUs only below it
-CHEAP_CAP = 2_500_000   # cheap SKUs (list <= 100,000) at cost
-CHEAP_RUN = 300_000     # cheap SKUs a run
+# The score counts stock at cost (book = cash + unsold stock), so stock is no loss as long as it does not spoil;
+# the top shops hold 20-480M. Raised 11-11 from 6M / 2.5M / 300k: more SKUs in stock, more orders reach the shop.
+STOCK_CAP = 15_000_000  # all stock at cost; expensive SKUs only below it
+CHEAP_CAP = 5_000_000   # cheap SKUs (list <= 100,000) at cost
+CHEAP_RUN = 600_000     # cheap SKUs a run
 SPEND_SHARE = 0.40
 MAX_LINES = 10
 MAX_LIST = 700_000
@@ -54,6 +56,7 @@ def main():
         print(json.dumps({"buy": []}))
         return
     market = refresh_market_sales()     # every run, also between windows, so the ledger cache stays current
+    refresh_shop_prices()                # what each shop settles at, for market_buyer_r3.py
     flow = market_flow(market, cat)      # every 3 hours: what the market bought, and at what share of list price
     win = inv.get("restock") or {}
     if win and not win.get("open") and (win.get("opens_at") or 0) - market_now() > LEAD:
@@ -61,7 +64,7 @@ def main():
         return
     phase = endgame()
     if phase >= 2:
-        print(json.dumps({"buy": []}))                      # close out: stock left at the end is lost
+        print(json.dumps({"buy": []}))                      # close out: nothing bought now sells before the end
         return
     balance = inv.get("balance") or 0
     units = [u for u in inv.get("units", []) if u.get("grade") != "expired"]
@@ -80,8 +83,6 @@ def main():
     room = balance - CASH_FLOOR
     budgets = {True: min(room, CHEAP_CAP - cheap_cost, CHEAP_RUN),
                False: min(room, STOCK_CAP - stock_cost, balance * SPEND_SHARE)}
-    if phase >= 1:
-        budgets[False] = 0                                  # wind down: expensive stock may not sell before the end
     if max(budgets.values()) <= 0:
         print(json.dumps({"buy": []}))
         return

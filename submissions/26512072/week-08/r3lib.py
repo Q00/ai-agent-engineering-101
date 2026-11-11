@@ -63,11 +63,12 @@ def inventory():
     return read_json(MD / "inventory.json", {}) or {}
 
 
-# Round 3 end = the midterm PR deadline (the market does not publish it). Stock is not counted in profit, so the
-# shop winds down before it: from WIND_DOWN no expensive buying and old stock sells down to 70% of cost; from
-# CLOSE_OUT no buying at all and everything sells down to 50% of cost (KST, epoch seconds).
+# Round 3 end = the midterm PR deadline (the market does not publish it). The score counts unsold stock at cost
+# (book), so the shop does not sell goods off below cost; it stops buying at CLOSE_OUT (nothing bought then can sell
+# in time), and from WIND_DOWN food that would spoil before ROUND_END sells down to half its cost (KST, epoch s).
 WIND_DOWN = 1794754800      # 2026-11-16 00:00 KST
 CLOSE_OUT = 1794884400      # 2026-11-17 12:00 KST
+ROUND_END = 1794927540      # 2026-11-17 23:59 KST
 
 
 def endgame():
@@ -143,6 +144,67 @@ def refresh_market_sales(max_pages=40):
     tmp.write_text(json.dumps(cache, ensure_ascii=False), encoding="utf-8")
     os.replace(tmp, MARKET_SALES)
     return per
+
+
+SHOP_PRICES = HERE / "shop_prices.json"
+SHOP_KEEP = 100
+
+
+def refresh_shop_prices(max_pages=40):
+    """What each shop settles at, as a share of the list price: the last SHOP_KEEP deals per shop name, from the
+    public ledger's result rows (a result with a receipt is a deal; the receipt names the shop and the price). The
+    buyer ranks shops by it, since its score (saved) is the share of the list price it did not pay. Incremental like
+    refresh_market_sales; the first run starts 100,000 rows back (about 4 hours)."""
+    cache = read_json(SHOP_PRICES, {}) or {}
+    shops, alias = cache.get("shops", {}), cache.get("alias", {})
+    seq = cache.get("seq")
+    cat = catalog()
+    # a receipt names the shop as its seller wrote it ("Nocha Furniture"); the buyer knows the market name
+    # ("nocha12"). The row's shop URL is the shop's tunnel, which the board lists per market name.
+    try:
+        board = httpx.get(f"{MARKET}/api/board", timeout=20).json()["shops"]
+        url2name = {(b.get("card") or {}).get("url", "").rstrip("/"): b["name"] for b in board if b.get("card")}
+    except (httpx.HTTPError, ValueError, KeyError):
+        url2name = {}
+    if seq is None:
+        try:
+            tip = httpx.get(f"{MARKET}/api/ledger", params={"after": -1}, timeout=20).json()
+            seq = max(R3_START, tip[-1]["seq"] - 100_000)
+        except (httpx.HTTPError, ValueError, IndexError, KeyError):
+            return shops
+    for _ in range(max_pages):
+        try:
+            rows = httpx.get(f"{MARKET}/api/ledger", params={"after": seq}, timeout=20).json()
+        except (httpx.HTTPError, ValueError):
+            break
+        if not rows:
+            break
+        for e in rows:
+            r = (e.get("data") or {}).get("receipt") if e.get("kind") == "result" else None
+            if isinstance(r, dict) and r.get("shop") and r.get("item") in cat and isinstance(r.get("price"), (int, float)):
+                url = str(e["data"].get("shop") or "").rstrip("/")
+                name = url2name.get(url) or (url.split("/shop/")[-1] if "/shop/" in url else None)
+                if name:
+                    alias[r["shop"]] = name
+                name = name or alias.get(r["shop"])
+                if not name:
+                    continue
+                lst = shops.setdefault(name, [])
+                lst.append(round(r["price"] / cat[r["item"]]["list_price"], 3))
+                del lst[:-SHOP_KEEP]
+        seq = rows[-1]["seq"]
+        if len(rows) < 500:
+            break
+    tmp = SHOP_PRICES.with_suffix(".tmp")
+    tmp.write_text(json.dumps({"seq": seq, "updated": time.time(), "shops": shops, "alias": alias}), encoding="utf-8")
+    os.replace(tmp, SHOP_PRICES)
+    return shops
+
+
+def shop_ratio(name, shops=None):
+    """Median price / list price of a shop's recent deals, or None with fewer than 5."""
+    lst = (shops if shops is not None else (read_json(SHOP_PRICES, {}) or {}).get("shops", {})).get(name) or []
+    return sorted(lst)[len(lst) // 2] if len(lst) >= 5 else None
 
 
 def market_flow(per, cat):

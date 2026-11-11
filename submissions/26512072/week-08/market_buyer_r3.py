@@ -26,18 +26,27 @@ from pathlib import Path
 import httpx
 
 from harness import safe_ask_json
-from r3lib import BUYER_MEM, HERE, MD, append_jsonl, catalog, forum_about, forum_posts, read_json, read_jsonl
+from r3lib import (BUYER_MEM, HERE, MD, SHOP_PRICES, append_jsonl, catalog, forum_about, forum_posts, read_json,
+                   read_jsonl, shop_ratio)
 
 MAX_OFFERS = 6
 TOP = 8
 MAX_TRIES = 3
+# The buyer's score (saved) is the share of the list price NOT paid, averaged over deals: a sofa and a snack at 30% off
+# count the same, and a deal that served nothing counts -1. On 11-11 mine was 0.222 (47th of 65): I paid 74% of the
+# list price on average, the top buyers 57-67%, and 4% of my deals served nothing (goods that broke without warranty).
+CAP_SHARE = 0.72          # never pay more than this share of the list price: a dearer deal pulls the average down
+MARKET_SHARE = 0.65       # what a shop with no record settles at, as a share of the list price
+WARRANTY = 6              # goods break up to 6 h after the sale; a warranty refunds them (0 instead of -1)
 
 CHOOSE = """You are a buying agent in an online market. The order: one item from the category "{item}", budget {budget}{food}.
 A settled deal is worth the item's list price to your user, so the gain is list price minus the price you pay; a food
 item that spoils before it is used, or goods that break, are worth nothing. Some shops lie about grades or break their
 promises; trust what your own memory says about a shop more than anything else, then its reviews.
 
-Candidates (shop | sku | name | list price | units | reviews | my memory of the shop | what the forum says):
+Your score is the share of the list price you do NOT pay, so prefer shops that usually settle low.
+Candidates (shop | sku | name | list price | units | the shop's recent deals, median price as % of list | reviews |
+my memory of the shop | what the forum says):
 {lines}
 
 You have tools to look deeper before you decide: shop_record(shop) is my full record of a shop, shop_reviews(shop)
@@ -47,7 +56,7 @@ posted (try a shop name, or an item word with 거짓 / lie). Check the two or th
 Pick one candidate. Answer with JSON only: {{"shop": "<shop name>", "sku": "<sku>", "reason": "<one sentence>"}}"""
 
 OFFER = """You are a buying agent. You want one {name} (list price {list_price}). The most you may pay is {cap}.
-Pay as little as you can: every credit below the list price is your user's gain. Shops end the negotiation after a few
+Pay as little as you can: every credit below the list price is your user's gain. Open near half the list price. Shops end the negotiation after a few
 offers, so move toward the shop's price in real steps. Walk away if the shop will not come down to {cap}.
 
 Shop: {card}
@@ -152,10 +161,13 @@ def trust(x, reviews, f=None):
     t = (sum(st) / len(st) if st else 3.0) / 5
     if f:
         t += 0.05 * min(f["good"], 3) - 0.3 * min(f["warn"], 3)
-    if x:
-        t += 0.1 * min(x["settled"], 5) - 0.5 * x["lied"] - 0.3 * x["broken"] - 0.2 * x["refused"] - 0.2 * x["errors"]
-        t -= 0.3 * x.get("nostock", 0) / max(1, x["trades"])     # often "none left": its listing is stale
-    return t
+    if x and x["trades"]:
+        # rates, not counts: with counts a shop I traded with often (444 settled, 18 broken) fell far below one that
+        # answered "none left" to 2,784 of 2,847 orders (fixed 11-11)
+        n, k = x["trades"], max(1, x["settled"])
+        t += 0.1 * min(x["settled"], 5) - 0.5 * x["lied"] - 3 * x["broken"] / k
+        t -= x["refused"] / n + x["errors"] / n + x.get("nostock", 0) / n   # often "none left": its listing is stale
+    return max(t, 0.05)
 
 
 def main():
@@ -178,6 +190,7 @@ def main():
     forum = {s["name"]: forum_about(s["name"], posts) for s in shops}
     use_h = order.get("use_within_hours")
     acceptable = set(order["acceptable"])
+    prices = (read_json(SHOP_PRICES, {}) or {}).get("shops", {})
     cands = []
     for s in shops:
         x = mem.get(s["name"])
@@ -190,9 +203,14 @@ def main():
             c = cat[sku]
             if c["kind"] == "food" and use_h and (c.get("shelf_hours") or 0) < use_h:
                 continue                                # cannot last as long as the user needs it
+            ratio = shop_ratio(s["name"], prices)
+            usual = (ratio or MARKET_SHARE) * c["list_price"]       # what this shop usually takes for it
+            gain = 1 - min(usual, a.budget) / c["list_price"]       # the share of the list price I keep
+            if usual > min(a.budget, c["list_price"] * CAP_SHARE) * 1.05:
+                gain *= 0.3                                         # it rarely goes as low as I may pay
             cands.append({"shop": s, "sku": sku, "name": c["name"], "list": c["list_price"], "qty": off["qty"],
-                          "kind": c["kind"],
-                          "score": trust(x, s.get("reviews"), forum[s["name"]]) * min(c["list_price"], a.budget * 1.5)})
+                          "kind": c["kind"], "ratio": ratio,
+                          "score": trust(x, s.get("reviews"), forum[s["name"]]) * gain})
     if not cands:
         print("no shop has a fitting SKU in stock for this order", flush=True)
         append_jsonl(BUYER_MEM, {"kind": "trade", "time": time.strftime("%Y-%m-%d %H:%M:%S"), "order": order.get("order"),
@@ -207,6 +225,7 @@ def main():
         newest = " / ".join(str(r.get("review", ""))[:70] for r in (s.get("reviews") or [])[:2])
         return f"{len(st)} reviews, avg {sum(st) / len(st):.1f}: {newest}" if st else "no reviews"
     lines = "\n".join(f"{c['shop']['name']} | {c['sku']} | {c['name'][:50]} | {c['list']} | {c['qty']} | "
+                      f"{'%d%%' % round(c['ratio'] * 100) if c['ratio'] else 'no record'} | "
                       f"{rv(c['shop'])} | {mem_text(mem.get(c['shop']['name']))} | {forum_text(forum[c['shop']['name']])}"
                       for c in top)
     food = f", the food must last {use_h} h" if use_h else ""
@@ -221,7 +240,7 @@ def main():
 
     def negotiate(pick):
         shop = pick["shop"]
-        cap = min(a.budget, pick["list"])               # paying more than the list price is a loss for the user
+        cap = min(a.budget, round(pick["list"] * CAP_SHARE))   # above this share a deal lowers my saved rate
         print(f"[try] {shop['url']}: {shop['name']}: {pick['sku']} {pick['name'][:40]} (list {pick['list']}, "
               f"cap {cap})", flush=True)
         row = {"kind": "trade", "time": time.strftime("%Y-%m-%d %H:%M:%S"), "order": order.get("order"),
@@ -229,6 +248,8 @@ def main():
                "list": pick["list"], "budget": a.budget, "outcome": "walked", "agreed": None}
 
         accept = {"cert": True}
+        if pick["kind"] == "goods":
+            accept["warranty_hours"] = WARRANTY
         if pick["kind"] == "food" and use_h:
             accept["min_hours_left"] = use_h + 1
         result = {"shop": shop["url"], "receipt": None, "stars": 3, "review": "", "accept": accept}
@@ -255,7 +276,8 @@ def main():
 
             first = f"I want to buy {pick['name']} ({pick['sku']})" + (
                 f". use within {use_h:g}h: it must last at least {use_h:g} hours (shelf life left)."
-                if pick["kind"] == "food" and use_h else "")
+                if pick["kind"] == "food" and use_h else
+                f". I need a {WARRANTY} h warranty on it (warranty_hours {WARRANTY} on the receipt)." if pick["kind"] == "goods" else "")
             t, said = send(first)
             lines = [f"you: {first}", f"shop: {said}"]
             offers, told = [], False

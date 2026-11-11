@@ -29,7 +29,7 @@ from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 from harness import CMD, safe_ask_json
 import httpx
 
-from r3lib import (FLOW, MARKET, SALES, SHOP_NAME, append_jsonl, endgame, hours_left, inventory, market_now, read_json,
+from r3lib import (FLOW, MARKET, ROUND_END, SALES, SHOP_NAME, append_jsonl, endgame, hours_left, inventory, market_now, read_json,
                    read_jsonl)
 
 KEY_FILE = Path(__file__).resolve().parent / "shop_key.pem"
@@ -127,16 +127,16 @@ def terms(u):
         base = {"A": 0.85, "B": 0.78, "C": 0.7}.get(u["grade"], 0.8)
     ratio = market_ratio(u)                         # open a little above where this market closes, so we land near it
     waited = (market_now() - (u.get("supplied_at") or market_now())) / 3600
-    if waited > STALE_HOURS:                        # buyers went elsewhere: profit counts the balance, not the stock,
-        lift = -0.10 if waited > 24 else -0.03      # so open below the market (buyers left at our first ask) and
-        floor = min(floor, round(cost * (0.9 if waited > 24 else 1.0)))   # sell down to cost, 90% after a day
+    # The board ranks shops by book = cash + the cost of unsold stock (agent.md, read again 11-11; I had taken the
+    # cash-only "profit" column for the score). A unit kept is worth its cost, so a sale below cost lowers the score:
+    # goods never go below cost (storage is 1% a day); food only when it would spoil, which takes its cost out.
+    if waited > STALE_HOURS:                        # buyers went elsewhere: open below the market, sell down to cost
+        lift = -0.10 if waited > 24 else -0.03
+        floor = min(floor, cost)
     else:
         lift = 0.05
-    phase = endgame()                               # stock left at the end of Round 3 is lost: sell below cost
-    if phase >= 2:
-        lift, floor = -0.10, min(floor, round(cost * 0.5))
-    elif phase == 1 and waited > STALE_HOURS:
-        floor = min(floor, round(cost * 0.7))
+    if u.get("kind") == "food" and endgame() and (u.get("expires_at") or 0) < ROUND_END:
+        lift, floor = -0.10, min(floor, round(cost * 0.5))   # it spoils before Round 3 ends: anything beats nothing
     opening = round(lp * (min(0.95, max(0.6, ratio + lift + delta)) if ratio else base + delta))
     floor = max(1, floor)
     return floor, max(opening, floor), quality + ", market certificate included"
