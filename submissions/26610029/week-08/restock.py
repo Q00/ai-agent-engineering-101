@@ -28,8 +28,12 @@ EXPECTED_COST = {"goods": 0.70 * 0.65 + 0.20 * 0.50 + 0.10 * 0.35,
                  "food": 0.25 * 0.65 + 0.50 * 0.50 + 0.25 * 0.35}
 DEFAULT_POLICY = {"window_budget": 0.10,   # share of the balance one window may spend
                   "lookback_h": 3,          # how far back "what sells" looks
-                  "max_skus": 7,            # kept under 10: the kit spends ~10s per line and the window
-                                            # is only open ~3 min, so 10 lines often run past the close
+                  "max_skus": 10,           # was 7: restock was hitting this cap on almost every window
+                                            # while only ~37% of cash was ever deployed as stock, capping
+                                            # category variety (and so deal volume) well below what the
+                                            # balance could support. 10 lines at ~10s each can run past the
+                                            # ~3-min window on a late start, but a line that misses is only
+                                            # skipped for that window (self.retries 3x, then moves on), not lost
                   "goods_target": 6, "food_target": 2,
                   "food_min_sales": 6,      # food only for SKUs that sold at least this often in the lookback
                   "goods_min_sales": 3,
