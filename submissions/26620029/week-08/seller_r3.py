@@ -331,6 +331,7 @@ class Seller(AgentExecutor):
 
     async def execute(self, context, event_queue):
         task = context.current_task
+        fresh = task is None                             # a new negotiation, not a later message of an old one
         if task is None:
             task = new_task_from_user_message(context.message)
             await event_queue.enqueue_event(task)
@@ -347,12 +348,23 @@ class Seller(AgentExecutor):
         if deal is None:                                 # the buyer names what it wants: open at the list price
             unit = find_unit(text, {d["unit"]["unit"] for d in self.open.values() if d["unit"]["unit"]})
             if unit is None:
-                await up.reject(say("Sorry, we have none of that in stock."))
+                # Claude (2026-11-11 13:20, the user's "고쳐줘" on the star study, logs/star-buyers-1111-1315.txt): olstjr gave
+                # 1 star for "claimed to be out of stock but then completed the deal". "None in stock" was also the answer when
+                # every unit was held in another open negotiation, or when this negotiation had timed out (OPEN_TTL)
+                if not fresh:
+                    await up.reject(say("This negotiation timed out on our side. Please ask for the item again."))
+                elif find_unit(text):
+                    await up.reject(say("Every unit of that is held in another open negotiation right now. "
+                                        "Please ask again in a minute."))
+                else:
+                    await up.reject(say("Sorry, we have none of that in stock."))
                 return
             arm = trial_arm(unit)
             deal = self.open[task.id] = {"unit": unit, "ask": ask_price(unit, 0, arm), "offers": 0, "seen": now, "arm": arm}
             u = deal["unit"]
-            reply = f"{u['name']}: asking {deal['ask']}. {facts(u)} Send your offer as a number.".replace("  ", " ")
+            # Claude (2026-11-11 13:20, same study): q00 asked for 과자, got G1831f2c0 (Pringles, category 과자) and gave
+            # 1 star three times: "receipt names G1831f2c0 ... forges receipts". The SKU now shows before any price is agreed
+            reply = f"{u['name']} (SKU {u['sku']}, category {(u.get('category') or '').split('>')[-1]}): asking {deal['ask']}. {facts(u)} Send your offer as a number.".replace("  ", " ")
             print(f"[price] open {u['sku']} at {deal['ask']} (list {u['list_price']}, floor {floor_price(u)}, arm {arm})", flush=True)
             await up.requires_input(say(await worded(reply)))
             return
