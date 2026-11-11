@@ -1,8 +1,9 @@
-"""Operator-made tools (human code, not editable by the model): declarative read-only queries over the shop's logs.
+"""Operator-made tools (human code, not editable by the model): read-only queries over the shop's logs.
 
-A made tool is a JSON spec, never code: filter (where) -> group (group_by) -> aggregate (agg) over one JSONL source in
-a time window. Fields are dotted paths resolved by dict/list indexing only (no getattr, no eval), sources are a fixed
-name -> path table, and the only file written is the registry <root>/a2/tools_made.json. A meta-harness prunes tools
+A made tool is a JSON spec: filter (where) -> group (group_by) -> aggregate (agg) over one JSONL source in
+a time window, or a saved code tool (kind "code": def run(load, args) run by kernel.code_tools in its sandbox).
+Fields are dotted paths resolved by dict/list indexing only (no getattr, no eval), sources are a fixed name -> path
+table, and the only file written is the registry <root>/a2/tools_made.json. A meta-harness prunes tools
 through remove().
 """
 
@@ -13,10 +14,11 @@ import re
 import statistics as st
 from datetime import datetime
 
+from kernel import code_tools
 from kernel import common as c
 
 STORE = "a2/tools_made.json"
-MADE_MAX = 8
+MADE_MAX = 12
 PREFIX = "q_"
 OUT_CHARS = 4000
 MAX_BYTES = 20_000_000  # tail read per run
@@ -45,6 +47,7 @@ KEYS = (
     "sort",
     "limit",
 )
+CODE_KEYS = ("name", "description", "code")  # a saved code tool
 META = ("created_ts", "by", "uses", "last_used_ts", "role")  # role: the role operator that made it (shared by both)
 # Identity fields hashed in output cells, as common.scrub does for the other tools.
 ID_KEYS = c.IDENTITY_KEYS + ("author", "shop", "buyer", "seller", "login", "counterparty", "participants", "from", "to")
@@ -205,6 +208,25 @@ def validate(spec):
         "sort": clean_sort,
         "limit": limit,
     }, None
+
+
+def validate_code(spec):
+    """Check of a code tool {name, description, code}. Returns (clean_spec, None) or (None, error)."""
+    if not isinstance(spec, dict):
+        return None, "spec은 객체(dict)여야 함"
+    extra = sorted(str(k) for k in spec if k not in CODE_KEYS)
+    if extra:
+        return None, f"모르는 키: {', '.join(extra)} (코드 도구는 {', '.join(CODE_KEYS)})"
+    name = spec.get("name")
+    if not isinstance(name, str) or not _NAME.fullmatch(name):
+        return None, f"name은 {PREFIX}로 시작하는 ^q_[a-z0-9_]{{3,30}}$ 형식이어야 함"
+    desc = spec.get("description")
+    if not isinstance(desc, str) or not 10 <= len(desc.strip()) <= 200:
+        return None, "description은 10..200자 (어떤 숫자를 주는지)"
+    err = code_tools.check(spec.get("code"))
+    if err:
+        return None, err
+    return {"name": name, "description": " ".join(desc.split()), "code": spec["code"], "kind": "code"}, None
 
 
 def _get(row, path):
@@ -437,7 +459,11 @@ def load(root):
     for t in _read_store(root):
         if not isinstance(t, dict):
             continue
-        clean, err = validate({k: v for k, v in t.items() if k not in META})
+        spec = {k: v for k, v in t.items() if k not in META}
+        if t.get("kind") == "code":
+            clean, err = validate_code({k: v for k, v in spec.items() if k != "kind"})
+        else:
+            clean, err = validate(spec)
         if err or any(x["name"] == clean["name"] for x in out):
             continue
         clean.update({k: t[k] for k in META if k in t})
@@ -461,8 +487,9 @@ def listing(root):
 
 def add(root, spec, now, traj=None, by="operator", reserved=(), role=None):
     """Validate, test-run on the real data and store a made tool (tagged with the maker's role when given). Returns
-    {"ok", "name", "sample"} or {"ok", "error"}."""
-    clean, err = validate(spec)
+    {"ok", "name", "sample"} or {"ok", "error"}. A spec with code is a code tool: check and one real run are the gate."""
+    code = isinstance(spec, dict) and "code" in spec
+    clean, err = validate_code(spec) if code else validate(spec)
     if err:
         return {"ok": False, "error": err}
     name = clean["name"]
@@ -476,13 +503,18 @@ def add(root, spec, now, traj=None, by="operator", reserved=(), role=None):
             "ok": False,
             "error": f"만든 도구는 최대 {MADE_MAX}개: 하나를 지운 뒤 추가",
         }
-    try:
-        text, problem = _run(root, clean, None, now)
-    except Exception as e:  # the test run is the gate: any failure refuses the tool
-        return {
-            "ok": False,
-            "error": f"시험 실행 실패: {type(e).__name__}: {str(e)[:200]}",
-        }
+    if code:
+        text, problem = code_tools.execute(root, clean["code"], None, now), None
+        if text.startswith(code_tools.ERR):
+            return {"ok": False, "error": f"시험 실행 실패: {text[:300]}"}
+    else:
+        try:
+            text, problem = _run(root, clean, None, now)
+        except Exception as e:  # the test run is the gate: any failure refuses the tool
+            return {
+                "ok": False,
+                "error": f"시험 실행 실패: {type(e).__name__}: {str(e)[:200]}",
+            }
     if problem:
         return {"ok": False, "error": f"시험 실행이 한도를 넘음: {problem}"}
     clean.update({"created_ts": now, "by": by, "uses": 0, **({"role": role} if role else {})})
@@ -492,7 +524,7 @@ def add(root, spec, now, traj=None, by="operator", reserved=(), role=None):
             by,
             "tool_made",
             name=name,
-            source=clean["source"],
+            source=clean.get("source", "code"),
             description=clean["description"],
         )
     return {"ok": True, "name": name, "sample": text[:SAMPLE_CHARS]}
@@ -517,11 +549,14 @@ def call(root, name, args=None, now=None):
     if tool is None:
         have = ", ".join(t["name"] for t in tools) or "없음"
         return f"만든 도구 없음: {name}. 있는 도구: {have}"
-    err = _args_err(args)
-    if err:
-        return f"인자 오류: {err}"
-    spec = {k: v for k, v in tool.items() if k not in META}
-    text = _run(root, spec, args or None, now)[0]
+    if tool.get("kind") == "code":
+        text = code_tools.execute(root, tool["code"], args or None, now)
+    else:
+        err = _args_err(args)
+        if err:
+            return f"인자 오류: {err}"
+        spec = {k: v for k, v in tool.items() if k not in META}
+        text = _run(root, spec, args or None, now)[0]
     try:
         for t in tools:
             if t["name"] == name:

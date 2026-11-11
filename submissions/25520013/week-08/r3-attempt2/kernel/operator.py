@@ -163,14 +163,14 @@ COMPACT_SCHEMA = """한 단계에 JSON 객체 하나로만 답함. 둘 중 하�
   "policy": [{"section": "defaults.food|defaults.goods|<상품군 전체 경로>|shop|buyer.defaults.food|buyer.defaults.goods", "key": "<키>", "value": <수>, "reason": "<근거 숫자>", "expect": "<기대 효과: 어떤 숫자가 어느 쪽으로>", "window_h": <2~8, 생략 가능>}],
   "forum": [{"post": "<글>", "as": "shop|buyer"}],
   "notes": "<다음 점검의 네가 읽을 메모 전체, 2,000자 안. 생략하면 그대로 둠>",
-  "new_tool": {"name": "q_<영소문자_숫자>", "description": "<어떤 숫자를 주는지>", "source": "events|metrics|buyer|trajectory", "hours": <1~48>, "where": [{"field": "<점 경로>", "op": "==|!=|>|>=|<|<=|in|contains|exists", "value": <값>}], "group_by": ["<점 경로>|hour|leaf"], "agg": [{"fn": "count|sum|mean|median|min|max|share", "field": "<점 경로>", "as": "<이름>"}], "limit": <줄 수>},
+  "new_tool": {"name": "q_<영소문자_숫자>", "description": "<어떤 숫자를 주는지>", "source": "events|metrics|buyer|trajectory", "hours": <1~48>, "where": [{"field": "<점 경로>", "op": "==|!=|>|>=|<|<=|in|contains|exists", "value": <값>}], "group_by": ["<점 경로>|hour|leaf"], "agg": [{"fn": "count|sum|mean|median|min|max|share", "field": "<점 경로>", "as": "<이름>"}], "limit": <줄 수>} 또는 코드 도구 {"name": "q_<영소문자_숫자>", "description": "<어떤 숫자를 주는지>", "code": "<analyze로 돌려 본 def run(load, args) 코드>"},
   "code": {"edits": [{"file": "<policy.py|hooks/restock.py|hooks/market_buyer.py|hooks/seller.py>", "old": "<바꿀 원문 그대로>", "new": "<새 글>"}], "reason": "<근거 숫자와 원인, 20자 이상>", "expect": "<기대 효과: 어떤 숫자가 어느 쪽으로, 20자 이상>"},
   "note": "<이번 점검 한 줄 요약>"}}
 done의 모든 항목은 선택임. 지금 값과 허용 범위는 policy 도구로 봄.
 code는 규칙 코드를 고침 (값으로 못 고치는 원인일 때만, 한 번에 하나): 고칠 파일은 이번 점검에서 code_read로 먼저 읽음. old는 파일에 정확히 한 번 나오는 원문, 수정 3개까지, 바뀐 줄 150줄까지.
 커널이 규칙 코드의 시험을 돌려 새로 실패하는 시험이 있으면 거절함. 보호 함수(원가 이하 판매 금지, 정책 검증, 지출 상한, 서명, 주인 확인)를 바꾸거나 위험한 import, 호출, 파일 쓰기, URL을 새로 넣으면 거절함.
 적용 뒤 커널이 30분 감시하고 (오류나 기록 끊김이면 바로 되돌림) 4시간 전후를 비교해 나빠지면 되돌림. policy.py와 hooks/seller.py 수정은 판매자 재시작 뒤 반영됨. 결과는 상태 카드의 [코드] 줄에 나옴.
-new_tool은 읽기 전용 질의 도구를 하나 만듦 (한 점검에 하나, 모두 8개까지): 기록 파일 하나를 조건으로 거르고 묶어 세는 정의이고 코드는 아님. 커널이 실제 기록으로 시험 실행해 통과하면 다음 점검부터 도구 목록에 나옴. 기록의 필드 이름은 events, trajectory 도구로 행을 먼저 보고 정함. 있는 도구로 못 얻는 숫자가 반복해 필요할 때만 만듦.
+new_tool은 읽기 전용 질의 도구를 하나 만듦 (한 점검에 하나, 모두 12개까지): 기록 파일 하나를 조건으로 거르고 묶어 세는 정의, 또는 analyze로 돌려 본 읽기 전용 코드(code)임. 커널이 실제 기록으로 시험 실행해 통과하면 다음 점검부터 도구 목록에 나옴. 기록의 필드 이름은 events, trajectory 도구로 행을 먼저 보고 정함. 있는 도구로 못 얻는 숫자가 반복해 필요할 때만 만듦.
 policy 항목은 모두 실험으로 걸림: 판매 쪽 값은 동시 비교(물건 절반에만 새 값, 판정 때 채택 또는 버림), 구매와 재고 값은 전후 비교(바로 적용, 나빠지면 되돌림).
 policy 키는 항목마다 숫자 하나: 판매 구역은 price_mult, min_margin, concession, max_rounds, stock_target, qty_per_buy, warranty_uplift, fresh_discount.B|C. goods 구역은 warranty_hours.A|B|C도. shop은 grade_floor_list.A|B|C와 c_first_leaves.<잎 이름> (1 넣기, 0 빼기). shop은 재입고와 재고 한도 값도 받음 (max_inventory_cost_frac, max_spend_per_run, max_lines_per_run, max_total_units, est_cost_frac 등. 전체 목록과 범위는 policy 도구). buyer.defaults.*는 max_pay_frac, open_frac (첫 제시가), step_frac (회차마다 올리는 폭), accept_c.max_pay_frac, accept_c.open_frac. bounds는 사람만 고침."""
 RESERVED_ARGS = ("harness_root", "dry", "now")
@@ -1051,7 +1051,7 @@ class Operator:
             if other:
                 o = other[0]["as"]
                 result["forum"]["refused"] = f"as {o} 글 {len(other)}개: {ROLE_KO[o]}가 씀. {ROLE_KO[self.role]}는 as {self.role}로만 씀"
-        if isinstance(done.get("new_tool"), dict):  # declarative query only; the test run on real data is the gate
+        if isinstance(done.get("new_tool"), dict):  # declarative query or code tool; the test run on real data is the gate
             try:
                 r = made_tools.add(self.root, done["new_tool"], now, traj=self.traj, by=self.agent,
                                    reserved=tuple(tools.TOOLS), **self._role_kw())

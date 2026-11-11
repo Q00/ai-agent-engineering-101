@@ -715,6 +715,13 @@ def restock_log(root, hours=2, now=None):
     return code_edit.restock_log(root, hours, now)
 
 
+def analyze(root, code, args=None, now=None):
+    """분석 코드 실행: 짧은 읽기 전용 파이썬 함수 def run(load, args)를 지금 바로 돌려 run이 돌려준 값을 줌. load(source, hours=24, where=None)는 events, metrics, buyer, trajectory 기록의 행(dict) 목록을 줌 (where는 줄에 들어 있을 글자로 미리 거름). 질의 도구로 못 하는 잇기(join: 주문 id로 리뷰와 settle, fail 잇기)와 계정별 평균 같은 다시 계산에 씀. import는 math, re, json, time, statistics, collections, itertools, functools, datetime, bisect, heapq만 됨. 계정과 가게 이름은 해시로 오고 우리 것은 우리로 옴. settle의 data.side는 우리 쪽(shop은 우리 가게가 판 것, buyer는 우리 구매자가 산 것, None은 남의 거래)임. 파일 쓰기와 네트워크 없음, 20초 한도. args는 run의 두 번째 인자로 감. 다시 쓸 분석은 new_tool에 code로 저장함."""
+    from kernel import code_tools
+
+    return code_tools.execute(root, code, args, now)
+
+
 ROLES = ("shop", "buyer")  # the role operators (kernel.operator --role); one shared toolbox
 SEARCH_MAX = 8
 SEARCH_SKIP = ("versions", "harness_read", "replay_probe")  # operator.HARNESS_TOOLS: not callable in compact mode
@@ -738,7 +745,7 @@ def _search_entries(root):
         out.append((name, st["desc"].get(name) or " ".join((fn.__doc__ or "").split()), args, None))
     for t in made_tools.load(root):
         desc = st["desc"].get(t["name"]) or " ".join(str(t.get("description") or "").split())
-        out.append((t["name"], desc, ["hours"], t.get("role") or "operator"))
+        out.append((t["name"], desc, [] if t.get("kind") == "code" else ["hours"], t.get("role") or "operator"))
     return out
 
 
@@ -801,6 +808,7 @@ TOOLS = {
     "tool_search": (tool_search, ("operator",)),
     "findings": (findings, ("operator",)),
     "reviews": (reviews, ("operator",)),
+    "analyze": (analyze, ("operator",)),
 }
 
 

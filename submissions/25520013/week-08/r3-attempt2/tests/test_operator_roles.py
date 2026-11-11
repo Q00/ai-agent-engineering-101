@@ -669,6 +669,7 @@ def test_every_registry_tool_is_assigned():
         "versions",
         "harness_read",
         "replay_probe",
+        "analyze",  # the investigator sees every tool; the role operators find it by name or tool_search
     }
     for core in au.CORE_TOOLS:
         assert core in tools.RECOMMENDED["shop"] and core in tools.RECOMMENDED["buyer"]
