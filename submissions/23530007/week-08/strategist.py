@@ -713,8 +713,8 @@ def run(force=False):
     if wake:
         probe.WAKE.unlink(missing_ok=True)
         log(f"woken early by watch condition: {json.dumps(wake, ensure_ascii=False)}")
-    guard = read(HERE / ".market" / "guard_state.json", {})          # 11-11: guards.py
-    if not force and not wake and guard.get("budget_block_until", 0) > time.time():
+    gstate = read(HERE / ".market" / "guard_state.json", {})         # 11-11: guards.py (not the guard() function)
+    if not force and not wake and gstate.get("budget_block_until", 0) > time.time():
         log("slot skipped: G10 budget block (guard wakes still run)")
         return
     mem.d["t"] = time.time()
