@@ -18,6 +18,7 @@ def _root(tmp_path):
         ev.append({"ts": NOW - 3600, "type": "review", "role": "shop", "data": {"order": order, "stars": stars}})
     sale("o1", "b1", "A", 5); sale("o2", "b1", "A", 5); sale("o3", "b2", "C", 1); sale("o4", "b3", "C", 2, wh=6)
     ev.append({"ts": NOW - 3600, "type": "review", "role": "shop", "data": {"order": "zz", "stars": 3}})  # no sale
+    ev.append({"ts": NOW - 4000, "type": "fail", "role": "shop", "data": {"order": "zz", "stage": "result"}})
     ev.append({"ts": NOW - 90 * 3600, "type": "review", "role": "shop", "data": {"order": "o1", "stars": 1}})  # old
     (tmp_path / ".r3/events.jsonl").write_text("".join(json.dumps(e) + "\n" for e in ev))
     return str(tmp_path)
@@ -28,6 +29,9 @@ def test_reviews_by_grade(tmp_path, monkeypatch):
     out = tools.reviews(_root(tmp_path), hours=24, by="grade", now=NOW)
     lines = out.splitlines()
     assert "5건" in lines[0] and "판매와 이어진 4건" in lines[0]
+    assert "판매와 이어지지 않은 리뷰 1건: 그 주문에 fail 이벤트가 있는 것 1건 (평균 3.00, 3점 이하 1건, 단계 result 1), 없는 것 0건" in lines[1]
+    assert lines[2].startswith("  fail 시각(시)별 건수: ")
+    lines = [lines[0]] + lines[3:]
     assert "계정별 평균의 평균 2.667 (계정 3곳)" in lines[1]
     assert lines[3].startswith("  C: 리뷰 2, 평균 1.50, 3점 이하 2, 1~2점 2, 계정 2곳, 빼면 +2.333")
     assert lines[4].startswith("  A: 리뷰 2, 평균 5.00, 3점 이하 0")

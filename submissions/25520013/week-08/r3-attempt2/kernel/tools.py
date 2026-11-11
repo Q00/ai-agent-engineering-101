@@ -633,12 +633,21 @@ def reviews(root, hours=24, by="category", low=3, now=None):
         h = (x - ts) / 3600
         return "12시간 미만" if h < 12 else "12~24시간" if h < 24 else "24~72시간" if h < 72 else "72시간 이상"
 
-    rows = []  # (group, account, stars)
+    rows, loose = [], []  # (group, account, stars); reviews whose order is not among our settles
     for d in rv:
         s = ours.get(d.get("order"))
         if s:
             rows.append((group(*s), c.hid(s[0].get("buyer")), d["stars"]))
+        else:
+            loose.append(d)
     mean = lambda v: st.mean(v) if v else 0.0
+    fails = {}
+    if loose:  # 11-11: 600 of 2,047 reviews in 24 h had no settle but a fail event (stage result), mean 2.94
+        want = {d.get("order") for d in loose}
+        for e in c.tail_json(os.path.join(root, ".r3/events.jsonl"), 200_000_000, b'"fail"'):
+            d = e.get("data") or {}
+            if e.get("type") == "fail" and d.get("order") in want:
+                fails[d["order"]] = (str(d.get("stage") or "-"), e.get("ts") or 0)
 
     def acc_mean(rs):
         per = {}
@@ -648,8 +657,18 @@ def reviews(root, hours=24, by="category", low=3, now=None):
 
     out = [f"우리 가게 리뷰 최근 {hours:g}시간: {len(rv)}건, 평균 {mean([d['stars'] for d in rv]):.2f}, {low}점 이하 "
            f"{sum(1 for d in rv if d['stars'] <= low)}건; 판매와 이어진 {len(rows)}건"]
+    if loose:
+        fl = [d["stars"] for d in loose if d.get("order") in fails]
+        ot = [d["stars"] for d in loose if d.get("order") not in fails]
+        stages = Counter(fails[d["order"]][0] for d in loose if d.get("order") in fails)
+        hrs = Counter(c.kst(fails[d["order"]][1], "%H") for d in loose if d.get("order") in fails)
+        out.append(f"판매와 이어지지 않은 리뷰 {len(loose)}건: 그 주문에 fail 이벤트가 있는 것 {len(fl)}건 (평균 {mean(fl):.2f}, "
+                   f"{low}점 이하 {sum(1 for x in fl if x <= low)}건, 단계 " + ", ".join(f"{k} {v}" for k, v in stages.most_common(3))
+                   + f"), 없는 것 {len(ot)}건 (평균 {mean(ot):.2f}). 이 리뷰들은 판매 기록이 없어 아래 구간 표에 들어가지 않음")
+        if hrs:
+            out.append("  fail 시각(시)별 건수: " + ", ".join(f"{h}시 {n}" for h, n in sorted(hrs.items())))
     if not rows:
-        return out[0]
+        return "\n".join(out)
     base, n_acc = acc_mean(rows)
     out.append(f"계정별 평균의 평균 {base:.3f} (계정 {n_acc}곳). 아래 '빼면'은 그 구간 리뷰가 없었을 때 이 값의 변화")
     groups = {}
