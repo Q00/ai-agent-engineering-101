@@ -484,10 +484,11 @@ class Operator:
         if self.live():
             return "LIVE 켜짐: 시도 2의 판매자, 구매자, 재입고 계획이 가게를 운영함. done.policy는 쓰지 않음"
         return (
-            "LIVE 꺼짐 (11-07 11시 성수님 결정, Codex 구독 한도 소진): 판매, 구매, 재입고는 시도 1의 규칙이 policy.json 값을 읽어 "
-            "결정함. 판매자와 구매자 지침 수정(edits의 seller, buyer), trial, restock_plan은 가게에 반영되지 않아 커널이 받지 않음. "
-            "네가 규칙을 바꾸는 길은 done.policy 하나임: policy 도구로 지금 값을 보고, 키 하나씩 허용 폭 안에서 고치고, "
-            "근거 숫자를 reason에 적음. 고친 뒤에는 브리핑의 정산, 매출, 이익, 별점으로 효과를 보고 유지하거나 되돌림(되돌리기도 같은 policy 항목). "
+            "LIVE 꺼짐 (11-07 11시 성수님 결정, Codex 구독 한도 소진): 판매, 구매, 재입고는 시도 1의 규칙 코드가 policy.json 값을 읽어 "
+            "결정함. 재입고 물량은 hooks/restock.py가 policy.py의 restock_plan 함수를 불러 정하고, 이 함수는 지금 실제로 돌고 있음. "
+            "받지 않는 것은 시도 2 방식의 출력 항목뿐임: 판매자와 구매자 지침 수정(edits의 seller, buyer), trial, done의 restock_plan 항목. "
+            "네가 규칙을 바꾸는 길은 둘임: 값은 done.policy(policy 도구로 지금 값을 보고, 키 하나씩 허용 폭 안에서, 근거 숫자를 reason에), "
+            "규칙의 동작은 done.code(일 문서의 규칙 코드 고치기). 고친 뒤의 효과 판정은 실험 장부가 함. "
             "자기 지침(edits의 operator)과 메모는 지금처럼 고칠 수 있음"
         )
 
