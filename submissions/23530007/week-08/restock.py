@@ -81,7 +81,7 @@ SURGE_MAX = 0.15             # most cost surge we pay on a SKU (margins run ~20-
 SLOW_UNIT = 0.25             # 11-11: what a grade C unit counts for in the SKU cover (paid 10-19% when not asked for)
 OVER_UNIT = 0.5              # ... and an A/B unit whose floor is above the SKU's market median (sells, but slowly: ~27% close)
 LINE_MAX_COST = 25e6         # 11-11: most one supply line may cost (at COST_GUESS), so one 3.8M sofa x20 does not take 46M
-WINDOW_MAX_COST = 90e6       # ... and most one window may cost
+WINDOW_MAX_COST = 150e6      # ... and most one window may cost (90M -> 150M the same evening: user, 'buy more boldly, cash is idle')
 COST_A, SURGE_MARGIN = 0.65, 0.03   # 11-11: typical grade A cost share; margin kept under the market median x
 COST_GUESS = 0.6             # cost as a share of list price before a unit arrives (A 55-75 %, B 40-60 %, C 25-45 %)
 
