@@ -14,6 +14,7 @@ buyer_score.py. Each guard is justified by a past incident (volatility analysis,
   G7 rank step   class buyer <= -.009 or class shop <= -.007 in one 15-min step, confirmed by the next sample
                  -> wake the matching strategist (2 h cooldown)
   G8 stars       our board stars_rank worse by >= 2 ranks within 2.5 h (shop_parts.jsonl) -> wake the shop (<= 2/day)
+  G16 star food  no paid review from the two target accounts 24 h after the star foods started -> must_stock off
   G15 gains     > 6 skipped orders/h with expected v above m* -> wake the buyer strategist (<= 1 per 2 h)
   G14 final     projected final class rank (ops/final_rank.py, every 2 h) under 1st -> wake the shop, alert <= 1 per 12 h
   G13 revenue   the student shop below us in revenue passing us before the round ends (3 h slopes) -> wake the shop
@@ -47,6 +48,8 @@ PARTS = MD / "shop_parts.jsonl"
 SHOP_VALUE = MD / "shop_value.json"
 LOGF = HERE / "logs" / "guards.log"
 MARKET = "https://market.ourolabs.ai"
+STAR_ACCOUNTS = {"JangSeongWoong", "gom31-certified-goods"}   # G16: the accounts the must_stock foods are kept for
+STAR_HOURS = 24            # G16: hours to wait for a paid review from them before food restock is switched off
 DAILY_CAP = 18.5           # $/24 h: (credit - 60 for Round 4) / days left on 11-11
 try:                       # 11-11 (user: use nearly all of the credit before it expires): 1.4 x the paced daily budget
     import strategist_memory as _sm
@@ -273,6 +276,39 @@ def main():
                 fires.append("G9")
     except Exception as e:
         log(f"G9 skipped: {e!r}")
+
+    # G16 star foods (user 11-11 21:25: 'if it does not seem to work, just stop stocking food'): the must_stock foods
+    # are kept for two accounts (JangSeongWoong, gom31-certified-goods). If neither has left a PAID review of our shop
+    # STAR_HOURS after the start, restock of them is switched off (params.json shop.base.must_stock -> {}, the list is
+    # kept under must_stock_off); the food already in stock is still sold.
+    try:
+        sf = st.setdefault("star_food", {"start": now})
+        if not sf.get("decided"):
+            sv16 = json.loads((MD / "shop_value.json").read_text())
+            hits = [r for r in (sv16.get("our_ratings") or []) if r[0] >= sf["start"] and r[1] in STAR_ACCOUNTS]
+            if hits:
+                sf["hits"] = len(hits)
+                sf["last_hit"] = max(r[0] for r in hits)
+            if now - sf["start"] >= STAR_HOURS * 3600:
+                sf["decided"] = True
+                if not sf.get("hits"):
+                    cfg16 = json.loads((HERE / "params.json").read_text())
+                    b16 = cfg16["shop"]["base"]
+                    if b16.get("must_stock") and not DRY:
+                        b16["must_stock_off"] = b16["must_stock"]
+                        b16["must_stock"] = {}
+                        tmp16 = HERE / "params.json.tmp"
+                        tmp16.write_text(json.dumps(cfg16, ensure_ascii=False, indent=1), encoding="utf-8")
+                        tmp16.replace(HERE / "params.json")
+                    sf["result"] = "off"
+                    log(f"G16 star foods: no paid review from {sorted(STAR_ACCOUNTS)} in {STAR_HOURS} h -> must_stock switched off")
+                    alert([f"G16 별점용 식품: {STAR_HOURS}시간 동안 JangSeongWoong·gom31의 결제 리뷰가 없어 식품 재입고를 껐습니다 (남은 식품은 계속 판매)."])
+                    fires.append("G16")
+                else:
+                    sf["result"] = "kept"
+                    log(f"G16 star foods: {sf['hits']} paid review(s) from the target accounts in {STAR_HOURS} h -> kept")
+    except Exception as e:
+        log(f"G16 skipped: {e!r}")
 
     # G15 gains left on the table (user 11-11): more than 6 skipped orders an hour whose expected v beat m* -> wake the
     # buyer strategist (<= 1 per 2 h) to lower the bar on that kind
