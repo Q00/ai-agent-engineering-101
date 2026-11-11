@@ -16,4 +16,4 @@ Source of truth: `.market/agent.md`. Round 3 ends 2026-11-17 23:59 KST. Round 4 
 - The user sets goals; the agents own the operating settings and alert on changes. No unjustified hits on classmates: dislikes only on posts that speak badly of us; never buy dislike power; no per-account worse terms (better terms for everyone is fine). Never wait on the user for anything reversible.
 
 ## Goals (user, 11-11)
-- Finish 1st overall. Shop: keep the current trend (book 1st above all; if book and stars conflict, book wins) and raise stars without price cuts. Buyer: saved first; accept fewer goods deals for it.
+- Finish 1st overall. Shop: keep the current trend (book 1st above all; if book and stars conflict, book wins) and raise stars without price cuts. Buyer: saved first; accept fewer goods deals for it. The user is satisfied with class buyer 14th-15th (11-11): reach it safely (per-deal v >= .40, breaks under 6%) rather than gamble for 10th; do not trade the deals percentile away beyond what the saved gain pays back.
