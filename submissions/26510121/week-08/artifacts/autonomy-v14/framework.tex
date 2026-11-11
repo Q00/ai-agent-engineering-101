@@ -32,7 +32,7 @@
 
 \vspace{2mm}
 {\sffamily\fontsize{10}{14}\selectfont\color{muted}
-현재 운영: v13 유지 \quad | \quad 신규 프레임워크: 미구현·미적용 \quad | \quad 검증 근거가 충분한 변경만 반영 \hfill 2026-11-11}
+기준 버전: v13 \quad | \quad 신규 프레임워크: 미구현·미적용 \quad | \quad 검증 근거가 충분한 변경만 반영 \hfill 2026-11-11}
 
 \vspace{5mm}
 \resizebox{!}{240mm}{%
@@ -77,8 +77,8 @@
 \draw[edge] (guards.west) -- (136,-33) |- (shop.east);
 \draw[edge] (136,-33) |- (buyer.east);
 \draw[edge,draw=teal] (active.west) -- (guards.east);
-\node[small,anchor=west] at (5,-59)
-  {Main 추가 모델 호출 0 · 생성 작업 대기 0을 목표로 설계 / 외부 시장 지연과 전체 처리 지연은 별도 측정};
+\node[small,anchor=west] at (83,-59)
+  {Main 추가 모델 호출·생성 대기 0 목표 / 전체·외부 지연 별도 측정};
 
 % 2. Event-driven analysis and capability creation.
 \node[proposed,text width=38mm,minimum height=27mm] (events) at (28,-92)
