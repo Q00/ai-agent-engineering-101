@@ -312,6 +312,64 @@ def rivals_above():
         return set()
 
 
+AVOID_MARGIN = 0.12          # classmates within this much of our class total are rivals
+AVOID_BAD_GAP = 0.02         # a shop|kind where we realized v < m* - this over 24 h (n >= 10) is avoided
+
+
+def avoid_shops():
+    """11-11 (user: 'the buyer must not go to shops that could be a problem'): (names, 'name|kind' pairs, reasons),
+    cached 10 min in .market/avoid_shops.json. Avoided:
+    - rivals: the shops of classmates whose class total is above ours or within AVOID_MARGIN of it, the runner-up
+      book shop and the student shop right below us in revenue (buying there adds to their revenue and book);
+    - bad for our saved: shop|kind pairs where we realized v under m* - AVOID_BAD_GAP over 24 h (n >= 10)."""
+    path = HERE / ".market" / "avoid_shops.json"
+    try:
+        c = json.loads(path.read_text())
+        if time.time() - c["t"] < RIVALS_EVERY:
+            return set(c["names"]), set(c["pairs"]), c["why"]
+    except (OSError, ValueError, KeyError):
+        pass
+    names, pairs, why = set(), set(), {}
+    try:
+        with urllib.request.urlopen(f"{MARKET}/api/board?round=3", timeout=10) as r:
+            b = json.load(r)
+        studs = [x for x in b["players"] if x.get("student")]
+        me = next(x for x in studs if x["player"] == ME)
+        shop_of = {x["player"]: (x.get("shop") or {}).get("name") for x in studs}
+        for x in studs:
+            if x["player"] != ME and (x.get("student_total") or 0) >= (me.get("student_total") or 0) - AVOID_MARGIN and shop_of.get(x["player"]):
+                names.add(shop_of[x["player"]])
+                why[shop_of[x["player"]]] = f"rival total {x.get('student_total')}"
+        sshops = [s for s in b["shops"] if s["name"] in set(shop_of.values())]
+        book2 = max((s for s in sshops if s["name"] != ME and s.get("book") is not None), key=lambda s: s["book"], default=None)
+        if book2:
+            names.add(book2["name"])
+            why[book2["name"]] = "book runner-up"
+        rv = sorted((s for s in sshops if s.get("revenue") is not None), key=lambda s: -s["revenue"])
+        i = next((k for k, s in enumerate(rv) if s["name"] == ME), None)
+        if i is not None and i + 1 < len(rv):
+            names.add(rv[i + 1]["name"])
+            why[rv[i + 1]["name"]] = "right below us in revenue"
+    except Exception:
+        pass
+    try:
+        sc = json.loads((HERE / ".market" / "buyer_score.json").read_text())
+        mstar = sc.get("m_star") or 0.33
+        for k, o in (sc.get("ours") or {}).items():
+            if o.get("n", 0) >= 10 and o.get("v") is not None and o["v"] < mstar - AVOID_BAD_GAP:
+                pairs.add(k)
+                why[k] = f"our v {o['v']} < m* {mstar} over {o['n']} deals"
+    except (OSError, ValueError):
+        pass
+    names.discard(ME)
+    try:
+        path.write_text(json.dumps({"t": time.time(), "names": sorted(names), "pairs": sorted(pairs), "why": why},
+                                   ensure_ascii=False))
+    except OSError:
+        pass
+    return names, pairs, why
+
+
 def expected_in(why):
     """The expected saved per deal that choose() named for the picked (or best, when skipping) shop, so the
     curator can show what each expectation band realized (the buyer strategist asked for it on 11-06)."""
@@ -363,6 +421,13 @@ def choose(shops, mem, item, budget, ask_model=True, ctx=None):
     fast = [s for s in allowed if len(took.get(s["name"], [])) < 5
             or sorted(took[s["name"]])[len(took[s["name"]]) // 2] < SLOW_SECS]
     allowed = fast or allowed
+    if ctx is not None:              # 11-11 (user): problem shops are never visited; none left -> skip the order
+        av_names, av_pairs, _ = avoid_shops()
+        keep = [s for s in allowed if s["name"] not in av_names and f"{s['name']}|{ctx['kind']}" not in av_pairs]
+        if not keep:
+            return None, f"skip: only avoided shops for this order ({', '.join(s['name'] for s in allowed)})", \
+                [n for n in views], views
+        allowed = keep
     rivals = rivals_above()          # buying from a player ranked above us adds to their revenue and book
     if ctx is not None:              # user 11-06: buyer score first; a rival is a penalty, not a wall
         bp = ctx["bp"]
