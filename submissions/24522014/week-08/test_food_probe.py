@@ -35,7 +35,7 @@ def unit(sku, grade="A"):
 
 class Settings(unittest.TestCase):
     def test_shipped_on(self):
-        # On 11-10 12:04 with the food floor, off 11-10 19:50:25 KST (net negative on stars), on again 11-11 about 18:4x KST (the
+        # On 11-10 12:04 with the food floor, off 11-10 19:50:25 KST (net negative on stars), on again 11-11 about 18:0x KST (the
         # user's choice in the Orchestrator session) with the same SKUs, units and cost limit.
         value = json.loads(fp.CONFIG.read_text(encoding="utf-8"))
         self.assertIs(value["enabled"], True)
