@@ -36,6 +36,15 @@ STOCK_CAP = 9_000_000     # (3M until Nov 4 13:00, 6M until 14:00; raised for bi
 SEED_PRICE = 80_000        # seed goods categories whose median price is at most this
 SELL_SHARE = 0.75          # seller_r3 NEED_SHARE: food under this share of its shelf life left is not offered
 SEED_FOOD_HOURS = 168      # seed food that keeps at least a week
+# Food that keeps a day or less is not bought: units arrive with 0.15-1.0 of it left and most are under the 0.75 the
+# seller ships, so they expire (Nov 11 06:00-18:15: 24 h food sold ~76 units for ~98k over cost while 61 of ours
+# expired, 915k at cost; instant rice Gb2392fa9 bought 36, sold 39, expired 22 = 295k; eggs G37bccafb -78k)
+MIN_SHELF_HOURS = 24
+
+
+def spoils(sku, catalog):
+    c = catalog.get(sku) or {}
+    return c.get("kind") == "food" and 0 < (c.get("shelf_hours") or 0) <= MIN_SHELF_HOURS
 MIN_DATA = 30              # market settles needed before targets follow the data
 TOTAL_UNITS = 160          # the stock the targets add up to, once there is data
 MAX_PER_CAT = 8
@@ -530,10 +539,12 @@ def main():
 
     surge = {s["sku"]: s.get("factor", 1.0) for s in inv.get("surge", []) if s.get("sku")}
     buy = plan_lines(sd, st, catalog, room, surge) if not endgame and not closed else []
+    buy = [b for b in buy if not spoils(b["sku"], catalog)]
     room -= sum(b.pop("est") for b in buy)
     held_sku = Counter(u["sku"] for u in units)
     if not endgame and not closed:
         extra = unmet_lines(catalog, held_sku, min(room, UNMET_SHARE * (inv.get("balance", 0) + stock_cost)), surge)
+        extra = [b for b in extra if not spoils(b["sku"], catalog)]
         room -= sum(b.pop("est") for b in extra)
         buy += extra
     order = sorted(set(order) | set(VALUE_SKU), key=lambda c: (-st["rev"].get(c, 0), -st["pop"].get(c, 0)))
@@ -551,7 +562,7 @@ def main():
             sku = pick_sku(cat, catalog, st, medians.get(cat, 0)) if gap > 0 else None
         if gap <= 0:
             continue
-        if not sku:
+        if not sku or spoils(sku, catalog):
             continue
         unit_est = catalog[sku]["list_price"] * UNIT_COST * surge.get(sku, 1.0)   # 25-75% of list, x surge
         gap = min(gap, LINE_QTY_MAX, max(1, int(MAX_LINE_COST // unit_est)))
