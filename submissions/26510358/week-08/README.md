@@ -19,7 +19,8 @@
 2026-10-29 과제 진행 보고서는 [REPORT.md](REPORT.md), 업그레이드 순서는
 [ROUND3_UPGRADE.md](ROUND3_UPGRADE.md)에 있음. Round 3 개시 전 준비 단계이며 최종 제출 완료가 아님.
 정산 기억 호환성은 `../week-07/market_memory.py`, `market_buyer.py`, `harness.py`에 보완함.
-읽기 전용 증거 수집기는 `ops/snapshot_evidence.py`, 별도 회귀 검사는 `tests/`에 있음.
+읽기 전용 증거 수집기 `ops/snapshot_evidence.py`(week-07 로그 대상)와 그 의존성 `market_memory.py`,
+week-07 서비스용 `ops/restart_guarded.py`·`ops/rejoin_v3.py`는 2026-11-11 제거함(git 이력에 남음). 회귀 검사는 `tests/`에 있음.
 현재 운영 프로세스가 기록하는 원문 로그는 계속 `../week-07/logs/market-kit.log`임.
 이 로그를 편집하지 않고 새 압축 스냅샷과 해시를 `logs/round2-baseline-20261029/`에 보존함.
 
