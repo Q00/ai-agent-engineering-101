@@ -53,7 +53,7 @@ BMEM = HERE / "buyer_memory.json"
 CLAUDE = shutil.which("claude") or str(Path.home() / ".local" / "bin" / "claude")
 # 11-11 (user: try another model for the curator): sonnet costs half of opus per token, so it can run hourly
 # for what the 2 h opus schedule cost; the strategists that decide stay on opus
-MODEL_CMD = f"{CLAUDE} -p --model sonnet --effort medium --max-budget-usd 0.3 --tools '' --setting-sources '' --no-session-persistence"
+MODEL_CMD = f"{CLAUDE} -p --model sonnet --effort medium --max-budget-usd 0.8 --tools '' --setting-sources '' --no-session-persistence"
 MODEL_TIMEOUT = 420                                 # opus (11-08) answers 70k chars slower than sonnet did
 HOT_HOURS = 24
 DIGEST_KEEP = 10
@@ -712,6 +712,9 @@ def curate(d, w=None, market=None, force=False):
         log(f"no usable digest ({len(raw)} chars); {len(rows)} entries stay uncurated")
         return False
     dg = clean(ans)
+    if not any(dg.get(k) for k in ("facts", "briefing_buyer", "briefing_shop", "decisions")):
+        log(f"empty digest answer ({len(raw)} chars); the previous digest stays, {len(rows)} entries uncurated")   # 11-11
+        return False
     d.execute("INSERT INTO digest VALUES (?, ?)", (time.time(), json.dumps(dg, ensure_ascii=False)))
     d.executemany("UPDATE entries SET curated = 1 WHERE rowid = ?", [(r[0],) for r in rows])
     log(f"digest updated from {len(rows)} entries ({sum(len(v) for v in probes.values())} probes): "

@@ -60,8 +60,9 @@ def _unwrap(p, cmd, prompt, secs, role, fell_back):
     except OSError:
         pass
     p.spend = row
-    if j.get("is_error"):
-        p.stdout = ""                          # the 'result' is an error text, not an answer
+    if j.get("is_error") or p.returncode != 0:
+        row["is_error"] = True
+        p.stdout = ""                          # the 'result' is an error text (e.g. budget exceeded), not an answer
         p.returncode = p.returncode or 1
         p.error_text = str(j.get("result"))[:300]
     else:
@@ -79,12 +80,17 @@ def run(cmd, prompt, cwd, timeout, role=None):
     t0 = time.time()
     p = subprocess.run(cmd, input=prompt, cwd=cwd, capture_output=True, text=True, timeout=timeout, env=env())
     fell_back = False
+    # 11-11: a call stopped by --max-budget-usd (or any other error the CLI reports as JSON) exits 1 with a JSON
+    # body; that is not a key failure, so it is recorded and returned, never re-run on the login
+    if p.stdout.strip().startswith("{") and '"result"' in p.stdout:
+        return _unwrap(p, cmd, prompt, time.time() - t0, role, False)
     if (p.returncode != 0 or not p.stdout.strip()) and KEY_FILE.is_file():
         fell_back = True
+        err = (p.stderr or "")[-200:].replace("\n", " ")
         p = subprocess.run(cmd, input=prompt, cwd=cwd, capture_output=True, text=True, timeout=timeout,
                            env=env(use_key=False))
         try:
-            alert_user("ops", [f"API 키 호출 실패 → 구독 로그인으로 대체 실행 ({role or '?'}): 크레딧 잔액을 확인하세요."])
+            alert_user("ops", [f"API 키 호출 실패 → 구독 로그인으로 대체 실행 ({role or '?'}, rc {p.returncode}): {err or '출력 없음'}"])
         except Exception:
             pass
     return _unwrap(p, cmd, prompt, time.time() - t0, role, fell_back)

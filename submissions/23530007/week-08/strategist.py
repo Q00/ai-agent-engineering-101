@@ -56,7 +56,7 @@ EVERY = 3600 - 120
 CLAUDE = shutil.which("claude") or str(Path.home() / ".local" / "bin" / "claude")   # cron has a bare PATH
 # 11-11 (user: API cost): effort pinned (the CLI default was unpinned; ~73% of a call was output/thinking), a hard
 # cap per call, and --output-format json (added by model_env.run) so each call's cost lands in spend.jsonl
-MODEL_CMD = f"{CLAUDE} -p --model opus --effort high --max-budget-usd 0.6 --tools '' --setting-sources '' --no-session-persistence"
+MODEL_CMD = f"{CLAUDE} -p --model opus --effort high --max-budget-usd 0.8 --tools '' --setting-sources '' --no-session-persistence"
 MODEL_TIMEOUT = 600
 TOP_SKUS = 45
 MAX_MOVES = 12
