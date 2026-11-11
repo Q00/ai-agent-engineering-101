@@ -428,8 +428,12 @@ def main():
                 # the shops of everyone projected above us or within .05 of us: our buyer does not buy GOODS there
                 # (a 1 M bed is 1 M of revenue and ~0.1-0.3 M of book for a rival whose ranks sit a few tens of M
                 # from the next shop; food tickets are too small to matter and stay open)
+                # 11-11 23:30: 'within .05 of us' shut out the six largest warranted-furniture shops and goods orders were
+                # left with one or two candidate shops (26 of 28 goods orders skipped) just when the user asked for
+                # volume. Now only the shops of students projected ABOVE us; the shops we race on revenue and book are
+                # avoided through market_buyer.avoid_shops and price_rivals.json.
                 cont = {r["shop_name"]: f"{r['player']} projected {r['total_end']} (us {comp['us']['total_end']})"
-                        for r in comp["rows"] if r["player"] != "yms979" and r["total_end"] >= comp["us"]["total_end"] - 0.05}
+                        for r in comp["rows"] if r["player"] != "yms979" and r["total_end"] > comp["us"]["total_end"]}
                 if not DRY:
                     (MD / "contenders.json").write_text(json.dumps({"t": now, "shops": cont}, ensure_ascii=False))
                 if comp["us"]["rank_end"] > 1:

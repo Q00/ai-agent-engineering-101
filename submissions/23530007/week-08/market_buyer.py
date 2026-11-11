@@ -363,6 +363,15 @@ def avoid_shops():
                 why[k] = f"our v {o['v']} < m* {mstar} over {o['n']} deals"
     except (OSError, ValueError):
         pass
+    try:                                 # 11-11 23:30: the shops next to us on revenue and book (guards.py, every tick):
+        pr = json.loads((HERE / ".market" / "price_rivals.json").read_text())      # no goods bought there
+        if time.time() - pr.get("t", 0) < 3600:
+            for n_, w_ in (pr.get("shops") or {}).items():
+                if n_ != ME:
+                    pairs.add(f"{n_}|goods")
+                    why[f"{n_}|goods"] = "race rival: " + ", ".join(w_)
+    except (OSError, ValueError):
+        pass
     try:                                 # 11-11 19:30: guards.py G14 lists the projected contenders' shops every 2 h
         cont = json.loads((HERE / ".market" / "contenders.json").read_text())
         if time.time() - cont.get("t", 0) < 6 * 3600:
