@@ -36,7 +36,7 @@ def activate_revision(journal, revision, now=None):
 
 def validate(role, patch):
     allowed = {'buyer_counter_ratio', 'buyer_goods_counter_ratio', 'buyer_food_time_seconds', 'buyer_goods_time_seconds'} if role == 'buyer' else {
-        'inventory_target_units', 'category_weights', 'assortment_coverage_fraction', 'shop_margin_fraction'}
+        'inventory_target_units', 'category_weights', 'assortment_coverage_fraction', 'shop_margin_fraction', 'shop_stock_service_level'}
     if role not in {'buyer', 'shop'} or not isinstance(patch, dict) or set(patch) - allowed:
         raise ValueError('Unsupported adaptive strategy field')
     for key, value in patch.items():
@@ -46,9 +46,9 @@ def validate(role, patch):
         elif key == 'inventory_target_units':
             if type(value) is not int or not 10 <= value <= 90:
                 raise ValueError('Inventory target outside bounds')
-        elif key in {'assortment_coverage_fraction', 'shop_margin_fraction', 'buyer_food_time_seconds', 'buyer_goods_time_seconds'}:
+        elif key in {'assortment_coverage_fraction', 'shop_margin_fraction', 'buyer_food_time_seconds', 'buyer_goods_time_seconds','shop_stock_service_level'}:
             low, high = {'assortment_coverage_fraction':(.2,.5),'shop_margin_fraction':(.01,.10),
-                         'buyer_food_time_seconds':(8,35),'buyer_goods_time_seconds':(30,120)}[key]
+                         'buyer_food_time_seconds':(8,35),'buyer_goods_time_seconds':(30,120),'shop_stock_service_level':(.85,.95)}[key]
             if type(value) not in (int,float) or not low <= value <= high:
                 raise ValueError('Control outside bounded trial range')
         elif (not isinstance(value, dict) or len(value) > 200 or
@@ -257,6 +257,11 @@ def propose(journal, role, state, stats, market):
     current = state.get('patch', {})
     cfg = policy()
     diagnosis = journal.get('market_control', {})
+    if role=='shop' and cfg.get('market_cycle_enabled') and not diagnosis.get('pause_restock',True):
+        from .strategy_lab import shop_proposal
+        level=shop_proposal(journal,dict(cfg,**current))
+        if level is not None:
+            return dict(current,shop_stock_service_level=level),'Independently reviewed LLM proposal; evaluate in existing mature trial'
     if cfg.get('market_control_enabled') and 0 <= time.time()-diagnosis.get('at',0) < 900:
         if role=='shop' and diagnosis.get('pause_restock'):
             return None

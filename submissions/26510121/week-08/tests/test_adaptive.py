@@ -50,7 +50,8 @@ def test_only_bounded_strategy_fields_can_override_policy(tmp_path):
             validate('shop', patch)
     j.put(KEY + 'buyer', {'version': 1, 'patch': {'buyer_counter_ratio': .94}})
     cfg, selected = effective(j, 'buyer')
-    assert cfg['daily_api_budget_usd'] is policy()['daily_api_budget_usd'] is None
+    assert cfg['daily_api_budget_usd'] == policy()['daily_api_budget_usd']
+    assert cfg['daily_api_budget_usd'] is None  # User requested observed spend without a cap.
     assert cfg['buyer_counter_ratio'] == .94 and selected['version'] == 1
 
 

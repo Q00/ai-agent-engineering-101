@@ -8,6 +8,22 @@ from r3.model import Chooser
 from r3.adaptive import effective
 
 
+def portfolios(candidates):
+    result = []
+    breadth = [dict(c, qty=1, max_cost=c['max_cost']/c['qty'],
+                    capital_commitment=c['capital_commitment']/c['qty'],score=c['score']/c['qty'],
+                    expected_delta={k:v/c['qty'] for k,v in c['expected_delta'].items()}) for c in candidates]
+    for name, lines in [('diversified', candidates), ('breadth', breadth), ('cautious', candidates[:1])]:
+        result.append({'id': name, 'buy': [{'sku': c['sku'], 'qty': c['qty']} for c in lines],
+            'score': sum(c['score'] for c in lines), 'max_cost': sum(c['max_cost'] for c in lines),
+            'capital_commitment': sum(c['capital_commitment'] for c in lines),
+            'expected_delta': {k: sum(c['expected_delta'].get(k, 0) for c in lines) for k in ('book','profit','revenue')},
+            'evidence': [c['evidence'] for c in lines]})
+    result.append({'id': 'wait', 'buy': [], 'score': 0, 'max_cost': 0, 'capital_commitment': 0,
+        'expected_delta': {'book': 0, 'profit': 0, 'revenue': 0}, 'evidence': 'keep cash; no attractive inventory'})
+    return result
+
+
 def plan(journal, chooser=None):
     cfg, strategy = effective(journal, 'shop')
     journal.reconcile()
@@ -39,31 +55,24 @@ def plan(journal, chooser=None):
     # Allocate inside the executable line budget. Truncating afterwards strands
     # capital that should have funded depth in the remaining legal supply calls.
     cfg=dict(cfg,restock_max_lines=line_budget)
+    if cfg.get('market_cycle_enabled'):
+        from r3.prewindow import consume
+        prepared = consume(journal, cfg, strategy, inv)
+        if prepared is not None:
+            return prepared
     candidates = restock_candidates(inv, journal.snapshot("catalog.json", {}),
                                     journal.snapshot("demand.json", []), journal, cfg)
     if not candidates:
         return {"buy": [], "bankrupt": inv.get("balance", 0) < inv.get("bankrupt_line", 0)
                 and not inv.get("units") and inv.get("bankruptcies_left", 0) > 0}
     # The actor chooses among transparent portfolio variants; every line has a conservative affordability bound.
-    portfolios = []
-    breadth = [dict(c, qty=1, max_cost=c['max_cost']/c['qty'],
-                    capital_commitment=c['capital_commitment']/c['qty'],score=c['score']/c['qty'],
-                    expected_delta={k:v/c['qty'] for k,v in c['expected_delta'].items()}) for c in candidates]
-    for name, lines in [("diversified", candidates), ("breadth", breadth), ("cautious", candidates[:1])]:
-        portfolios.append({"id": name, "buy": [{"sku": c["sku"], "qty": c["qty"]} for c in lines],
-                           "score": sum(c["score"] for c in lines), "max_cost": sum(c["max_cost"] for c in lines),
-                           'capital_commitment':sum(c['capital_commitment'] for c in lines),
-                           'expected_delta': {k: sum(c['expected_delta'].get(k, 0) for c in lines) for k in ('book', 'profit', 'revenue')},
-                           "evidence": [c["evidence"] for c in lines]})
-    portfolios.append({'id': 'wait', 'buy': [], 'score': 0, 'max_cost': 0,
-                       'capital_commitment':0,
-                       'expected_delta': {'book': 0, 'profit': 0, 'revenue': 0}, 'evidence': 'keep cash; no attractive inventory'})
-    selected = (chooser or Chooser(journal, cfg)).choose("shop", portfolios,
+    options = portfolios(candidates)
+    selected = (chooser or Chooser(journal, cfg)).choose("shop", options,
                {"balance": inv["balance"], "stock_units": len(inv.get("units", [])), "strategy": strategy,
                 'shop_execution':True,'operation':'restock',
                 'supply_window': inv.get('restock'), 'cash_capacity': cash_capacity(inv, journal, cfg)},
                deadline=(inv.get('restock') or {}).get('closes_at', time.time() + 120) - 15,
-               critical=portfolios[0]["max_cost"] > cfg["critic_cash_fraction"] * inv["balance"])
+               critical=options[0]["max_cost"] > cfg["critic_cash_fraction"] * inv["balance"])
     current = journal.snapshot('inventory.json', {})
     if not supply_open(current) or cash_capacity(current, journal, cfg)['spendable'] < sum(
             c['capital_commitment']/c['qty']*b['qty'] for c in candidates for b in selected['buy'] if b['sku']==c['sku']):

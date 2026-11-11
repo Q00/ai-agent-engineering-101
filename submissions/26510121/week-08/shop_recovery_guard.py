@@ -106,6 +106,12 @@ def main():
         while True:
             now = time.time()
             try:
+                # Follow only this pinned runtime's current address after a
+                # primary-controlled tunnel rotation; never reuse an old URL.
+                current=read_json(ROOT/'.market/shop-health.json',{}).get('url','').rstrip('/')
+                parsed=urlsplit(current)
+                if parsed.scheme=='https' and parsed.hostname and not parsed.username and not parsed.password:
+                    url=current
                 evidence = probe(url, pinned)
                 action, state, reason = decide(evidence, state, now)
                 row = {'at': now, 'pid': os.getpid(), 'runtime_session': pinned['session'],

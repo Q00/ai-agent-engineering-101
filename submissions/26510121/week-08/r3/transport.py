@@ -46,8 +46,11 @@ def open_available_tunnel(kit,port,avoid=None):
     providers=list(dict.fromkeys([preferred,'cloudflare','localhost','pinggy']))
     if avoid in providers:providers.remove(avoid);providers.append(avoid)
     pinned=read_json(ROOT/'policy.json',{}).get('tunnel_provider')
-    if pinned in {'cloudflare','localhost','pinggy'}:
+    failover=read_json(ROOT/'policy.json',{}).get('shop_recovery_v15_enabled',False)
+    if pinned in {'cloudflare','localhost','pinggy'} and not failover:
         providers=[pinned]
+    elif pinned in providers and avoid is None:
+        providers.remove(pinned);providers.insert(0,pinned)
     for provider in providers:
         try:
             process,url=open_tunnel(kit,port,provider)
@@ -151,15 +154,23 @@ class ShopSupervisor:
         self.board_offline_checks=0
         self.last_board_rejoin=-1000
         self.board_global_outage=False
+        self.recovery_v15=read_json(self.directory/'policy.json',{}).get('shop_recovery_v15_enabled',False)
+        self.last_verified=self.started
+        self.last_rotation=self.started-600
+        self.verified_checks=0
+        self.active_peers=False
 
     def snapshot(self, status):
         atomic_json(self.directory / '.market/shop-health.json', {
-            'checked_at': time.time(), 'status': status, 'url': self.proxy.public,
+            'checked_at': time.time(), 'primary_heartbeat_at': time.time(), 'status': status, 'url': self.proxy.public,
             'pending_registration': self.pending_registration, 'consecutive_probe_failures': self.misses,
             'market_visibility':self.market_visibility,'registry_misses':self.registry_misses,
             'board_offline_checks':self.board_offline_checks,
             'market_board_alive':self.last_board_alive,
             'board_global_outage':self.board_global_outage,
+            'recovery_revision':'v15' if self.recovery_v15 else 'v14',
+            'verified_checks':self.verified_checks,
+            'seconds_since_market_verified':max(0,time.monotonic()-self.last_verified),
             'probe_interval_seconds': 15, 'renewal_seconds': 3300 if self.provider == 'pinggy' else None})
 
     def tick(self, now=None):
@@ -192,7 +203,7 @@ class ShopSupervisor:
                     # Registry membership and an answering card can coexist
                     # with market board alive=false. Require two independent
                     # observations and active peers before same-address repair.
-                    if present and healthy and now-self.last_board_probe>=60:
+                    if (present or self.recovery_v15) and healthy and now-self.last_board_probe>=60:
                         self.last_board_probe=now
                         try:
                             board_response=self.market.c.get(self.market.base+'/api/board',timeout=4)
@@ -201,9 +212,15 @@ class ShopSupervisor:
                                 own=[r for r in rows if r.get('name')==self.args.name]
                                 self.last_board_alive=own[0].get('alive') if len(own)==1 else None
                                 active_peer=any(r.get('name')!=self.args.name and r.get('alive') is True for r in rows)
+                                self.active_peers=active_peer
                                 self.board_global_outage=bool(rows) and any(r.get('alive') is False for r in rows) and not any(r.get('alive') is True for r in rows)
                                 if self.board_global_outage:self.market_visibility='market_board_outage'
                                 offline=len(own)==1 and own[0].get('alive') is False and active_peer
+                                if self.recovery_v15:
+                                    matched=(len(own)==1 and (own[0].get('card') or {}).get('url','').rstrip('/')==self.proxy.public)
+                                    verified=present and matched and self.last_board_alive is True
+                                    self.verified_checks=self.verified_checks+1 if verified else 0
+                                    if verified:self.last_verified=now
                                 self.board_offline_checks=self.board_offline_checks+1 if offline else 0
                                 if self.board_offline_checks>=2 and now-self.last_board_rejoin>=120:
                                     self.pending_registration=True
@@ -217,6 +234,10 @@ class ShopSupervisor:
         # retry registration; rotating it repeats DNS warmup during an outage.
         alternative=(self.registration_failures>=2 and not healthy and
                      self.market_visibility!='market_empty')
+        remote_stuck=(self.recovery_v15 and self.active_peers and not self.board_global_outage
+                      and self.market_visibility not in {'market_empty','unverified'}
+                      and now-self.last_verified>=300 and now-self.last_rotation>=600)
+        alternative=alternative or remote_stuck
         if (expired_soon and not self.pending_registration) or self.misses >= 2 or alternative:
             # Keep the old process in the kit's cleanup list until registration succeeds.
             # A provisioning failure leaves the current tunnel untouched.
@@ -240,6 +261,9 @@ class ShopSupervisor:
             self.pending_registration = True
             self.registration_failures=0
             self.started, self.misses = now, 0
+            self.last_rotation=now
+            self.last_verified=now  # Bounded discovery grace for the new hostname.
+            self.verified_checks=0
             kit.log('[tunnel] replacement ready; shop registration pending at ' + url)
         if self.pending_registration and self.market_visibility!='market_empty' and not self.board_global_outage:
             # A one-shot join must be retried even when the new URL is already healthy.
@@ -261,12 +285,18 @@ class ShopSupervisor:
             self.board_offline_checks=0
             self.last_board_rejoin=now
             kit.log(f"[market] registration accepted for {result['name']} at {self.proxy.public}; awaiting public verification")
-            if self.retired is not None:
+            if self.retired is not None and not self.recovery_v15:
                 kit.stop(self.retired)
                 for i in range(len(self.procs) - 1, 1, -1):
                     if self.procs[i] is self.retired:
                         self.procs.pop(i)
                 self.retired = None
+        if self.recovery_v15 and self.retired is not None and self.verified_checks>=3:
+            kit.stop(self.retired)
+            for i in range(len(self.procs)-1,1,-1):
+                if self.procs[i] is self.retired:self.procs.pop(i)
+            self.retired=None
+            kit.log('[market] replacement verified across registry and board; retired previous tunnel')
         self.snapshot('market_discovery_outage' if self.market_visibility in {'market_empty','market_board_outage'} else
                       'market_registration_missing' if self.market_visibility in {'absent','board_offline'} else
                       'market_board_offline' if self.last_board_alive is False else

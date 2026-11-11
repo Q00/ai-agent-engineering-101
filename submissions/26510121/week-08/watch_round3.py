@@ -47,6 +47,7 @@ class Watcher:
         self.root, self.fetch, self.spawn, self.active = root, fetch, spawn, active
         self.child = None
         self.child_log = None
+        self.recovery_guard = None
         self.next_check = 0
         stop_at = policy(root).get('end_at')
         self.end = datetime.fromisoformat(stop_at).timestamp() if stop_at else float('inf')
@@ -106,6 +107,16 @@ class Watcher:
             both = 'shop registered as ' in text and 'buyer registered as ' in text
             if both and not self.state['both_roles_registered']:
                 self.record('both_roles_registered', both_roles_registered=True)
+            if (both and policy(self.root).get('shop_recovery_v15_enabled') and self.active(self.root)
+                    and (self.recovery_guard is None or self.recovery_guard.poll() is not None)):
+                runtime=read_json(self.root/'.market/runtime.json',{})
+                if runtime.get('launch_id')==self.child_log.stem:
+                    guard_log=self.root/'logs'/('auto-recovery-guard-'+datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')+'.txt')
+                    with guard_log.open('xb') as out:
+                        self.recovery_guard=subprocess.Popen([sys.executable,'-u','shop_recovery_guard.py'],cwd=self.root,
+                            stdin=subprocess.DEVNULL,stdout=out,stderr=subprocess.STDOUT,
+                            creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
+                    self.record('recovery_guard_started',recovery_guard_pid=self.recovery_guard.pid)
             return True
         if now < self.next_check:
             return True

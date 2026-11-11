@@ -98,6 +98,13 @@ class Chooser:
                                        buyer_rank_scope=board.get('buyer_rank_scope'))
         if role=='buyer' and self.config.get('buyer_throughput_enabled'):
             context['execution_objective']='expected rank/Saved progress per bounded execution-second scenario; hard caps unchanged'
+        if self.config.get('market_cycle_enabled'):
+            from .research import context as research_context
+            advice=research_context(self.j,self.config)
+            if advice:
+                context['market_research']=advice
+                self.j.add('research_main_feedback',{'role':role,'research_at':advice['at'],
+                    'operation':context.get('operation'),'candidates':len(candidates)},role=role)
         diagnosis=self.j.get('market_control',{})
         if 0<=time.time()-diagnosis.get('at',0)<900:
             context['market_state']={k:diagnosis.get(k) for k in

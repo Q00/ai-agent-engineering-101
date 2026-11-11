@@ -1,7 +1,8 @@
 {
   "version": "r3-market-observer-book-v6",
   "market_control_enabled": true,
-  "tunnel_provider": "localhost",
+  "tunnel_provider": "cloudflare",
+  "shop_recovery_v15_enabled": true,
   "market_control_interval_seconds": 300,
   "shop_growth_v5": true,
   "shop_strategy_revision": "shop-v11-contract-memory",
@@ -37,6 +38,12 @@
   "actor_model": "gpt-6-luna",
   "critic_model": "gpt-6-luna",
   "daily_api_budget_usd": null,
+  "research_budget_mode": "observe",
+  "market_cycle_enabled": true,
+  "research_enabled": true,
+  "research_model": "gpt-6-luna",
+  "research_interval_seconds": 1200,
+  "cache_prices_usd_per_million": {"gpt-6-luna": [0.01, 0.125]},
   "model_timeout_seconds": 18,
   "critic_cash_fraction": 0.1,
   "cash_reserve_fraction": 0.2,
@@ -85,5 +92,5 @@
   "buyer_contract_probe_percent": 8,
   "autonomy_v14_enabled": true,
   "buyer_worker_enabled": true,
-  "execution_revision": "v14-fastframe-1"
+  "execution_revision": "v15-market-cycle-1"
 }

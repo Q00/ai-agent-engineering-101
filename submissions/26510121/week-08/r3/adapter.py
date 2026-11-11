@@ -35,6 +35,8 @@ def install(kit, journal=None, config=None):
     original_news = kit.broken_news
     original_outbox = kit.outbox
     original_run_buyer = kit.run_buyer
+    original_restock = kit.restock
+    cycle = None
     buyer_bridge = None
     if cfg.get('buyer_worker_enabled'):
         from .worker_bridge import BuyerBridge
@@ -136,7 +138,28 @@ def install(kit, journal=None, config=None):
             if diagnosis.get('pause_restock',True) or time.time()-diagnosis.get('at',0)>900 or required>cap['spendable']:
                 j.add('supply_blocked', {'sku':item.get('sku'),'qty':quantity,'reason':'fresh_cash_or_control_guard'})
                 return httpx.Response(429,json={'error':'local capital guard','wait':30})
-        response = original_call(self, method, path, role=role, **kwargs)
+        supply_claim = None
+        if (cfg.get('market_cycle_enabled') and cfg.get('market_control_enabled') and
+                method == 'POST' and path == '/api/supply' and isinstance(current.get('restock'),dict)):
+            from .cycle import claim_supply
+            # The plan is a numeric preview, never a retry token. A pending POST
+            # blocks new side effects until its outcome is known.
+            plan = j.snapshot('shop-plan-v15.json', {})
+            execution = str(plan.get('at')) if plan.get('window') == [current['restock']['opens_at'],current['restock']['closes_at']] else j.get('supply-current-execution','external')
+            supply_claim = claim_supply(j,current,kwargs.get('json',{}),execution)
+            if supply_claim is None:
+                return httpx.Response(409,json={'error':'supply already completed or outcome uncertain; no blind retry'})
+        try:
+            response = original_call(self, method, path, role=role, **kwargs)
+        except Exception:
+            if supply_claim:
+                from .cycle import finish_supply
+                finish_supply(j,supply_claim,'uncertain')
+            raise
+        if supply_claim:
+            from .cycle import finish_supply
+            finish_supply(j,supply_claim,'complete' if response.status_code==200 else
+                          'retryable' if response.status_code in (400,402,409,429) else 'uncertain')
         if response.status_code != 200:
             return response
         data = response.json()
@@ -334,10 +357,30 @@ def install(kit, journal=None, config=None):
             j.add('forum_error', {'error_type': type(exc).__name__})
 
     def outbox(market, md):
+        nonlocal cycle
+        if (cfg.get('market_cycle_enabled') and getattr(market,'base',None)=='https://market.ourolabs.ai'
+                and getattr(market,'joined',{}).get('shop') and cycle is None):
+            from .cycle import MarketCycle
+            cycle=MarketCycle(j,cfg,market,original_restock)
+            # The kit passes agent/directory to its restock callback. Capture
+            # them there; observations and preplans start immediately.
+            cycle.start(None)
         if not cfg.get('autonomy_v14_enabled'):
             return analytical_outbox(market, md)
         analytics_lane.submit(lambda: analytical_outbox(market, md))
         publication_lane.submit(lambda: publish_outbox(market, md))
+
+    def restock_callback(agent, directory, market, md, inv, demand):
+        nonlocal cycle
+        if not cfg.get('market_cycle_enabled') or getattr(market,'base',None)!='https://market.ourolabs.ai':
+            return original_restock(agent,directory,market,md,inv,demand)
+        if cycle is None:
+            from .cycle import MarketCycle
+            cycle=MarketCycle(j,cfg,market,original_restock)
+            cycle.start((agent,directory))
+        else:
+            cycle.args=(agent,directory)
+        return cycle.restock(agent,directory,market,md,inv,demand)
 
     kit.check_accept = strict_accept
     kit.AcpShop = StrictShop
@@ -345,6 +388,7 @@ def install(kit, journal=None, config=None):
     kit.handle_order = order_handler
     kit.broken_news = news
     kit.outbox = outbox
+    kit.restock = restock_callback
     kit.run_buyer = run_buyer
     os.environ["R3_STRICT_ADAPTER"] = "1"
     return kit

@@ -15,20 +15,24 @@ REVISION='system-v13-contract-frontier'
 
 
 def assign(journal,order,config):
+    from .strategy_lab import profiles
+    available=dict(PROFILES,**profiles(journal)) if config.get('market_cycle_enabled') else PROFILES
     key='framework-order:'+str(order['order']);frozen=journal.get(key)
     if frozen is None:
         arena=journal.get('framework-arena',{})
         profile=arena.get('champion','contract_frontier');arm='champion'
         if order.get('kind')=='goods' and arena.get('active') and int(identity(order['order'])[:8],16)%100<10:
             profile=arena.get('challenger','coverage_probe');arm='challenger'
-        if profile not in PROFILES:profile='contract_frontier'
+        if profile not in available:profile='contract_frontier'
         board=journal.snapshot('board.json',{})
         own=next((r for r in board.get('buyers',[]) if r.get('name')=='seochanit'),{})
         frozen={'order':order['order'],'kind':order.get('kind'),'profile':profile,'arm':arm,
                 'experiment':arena.get('experiment'),'revision':REVISION,'saved_at_assignment':own.get('saved',0),
                 'rules_sha256':journal.get('market_rules',{}).get('sha256')}
+        if profile not in PROFILES:
+            frozen['profile_patch']=available[profile]
         journal.put(key,frozen);journal.add('framework_order',frozen,eid=key,role='buyer')
-    return dict(PROFILES[frozen['profile']],framework_profile=frozen['profile'])
+    return dict(frozen.get('profile_patch') or available.get(frozen['profile'],PROFILES['contract_frontier']),framework_profile=frozen['profile'])
 
 
 def summarize(journal,now):
@@ -96,10 +100,16 @@ def update(journal,config,now=None):
         journal.add('framework_experiment',dict(arena,action='started'),role='buyer')
     elif not arena.get('active') and now>=arena.get('retry_at',float('inf')) and config.get('framework_experiments_enabled') and journal.get('adaptive:buyer',{}).get('status')!='trial':
         arena=dict(arena,active=True,since=now,experiment=identity([REVISION,rule_hash,now]))
+        if config.get('market_cycle_enabled'):
+            from .strategy_lab import next_candidate
+            arena['challenger']=next_candidate(journal,arena['champion'],arena.get('challenger'))
         journal.add('framework_experiment',dict(arena,action='restarted_after_cooldown'),role='buyer')
     evaluation=evaluate(journal,arena,now)
     if arena.get('active') and evaluation['promote']:
         alternatives=[name for name in PROFILES if name not in (arena['champion'],arena['challenger'])]
+        if config.get('market_cycle_enabled'):
+            from .strategy_lab import next_candidate
+            alternatives=[next_candidate(journal,arena['challenger'],arena['champion'])]
         arena=dict(arena,champion=arena['challenger'],challenger=alternatives[0] if alternatives else arena['champion'],since=now,
                    experiment=identity([REVISION,rule_hash,now]))
         journal.add('framework_experiment',dict(arena,action='promoted',evidence=evaluation),role='buyer')

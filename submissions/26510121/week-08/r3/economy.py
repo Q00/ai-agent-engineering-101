@@ -196,14 +196,20 @@ def buyer_candidates(order, shops, catalog, journal, config=None):
     result = []
     allowed = set(order.get("acceptable") or [])
     registry = journal.snapshot("registry.json", {})
+    prepared = None
+    if (config or {}).get('market_cycle_enabled'):
+        from .prepared import get
+        prepared = get(journal, order, config, now)
+        if prepared:
+            journal.add('buyer_prepared_used', {'order': order['order'], 'version': prepared['version']}, role='buyer')
     route_context={}
     if (config or {}).get('buyer_contract_routing_enabled'):
         from .buyer_routes import context as buyer_route_context
-        route_context=buyer_route_context(journal,now)
+        route_context=prepared['routes'] if prepared else buyer_route_context(journal,now)
     execution_context={}
     if (config or {}).get('buyer_throughput_enabled'):
         from .buyer_execution import route_context as execution_route_context
-        execution_context=execution_route_context(journal,now,order)
+        execution_context=prepared['execution'] if prepared else execution_route_context(journal,now,order)
     for shop in shops:
         for row in shop.get("offers", []):
             sku = row.get("sku")
