@@ -11,6 +11,7 @@ import json
 import math
 import os
 
+from kernel import code_edit
 from kernel import common as c
 from kernel import experiments as ex
 
@@ -105,6 +106,8 @@ def _idle(w):
         return False
     nt = res.get("new_tool")
     if isinstance(nt, dict) and nt.get("ok"):
+        return False
+    if isinstance(res.get("code"), dict) and res["code"].get("ok") is True:
         return False
     return not _posted(res)
 
@@ -263,6 +266,7 @@ def report(root, now, hours=24, since=None, listed=None):
             "ended": len(decided),
             "good": sum(1 for e in decided if e["status"] in GOOD),
         },
+        "code": code_edit.summary(root, now, since=start),  # not in score
     }
     rep["score"] = score(rep)
     return rep
@@ -345,6 +349,15 @@ def lines(root, now, hours=24, listed=None):
         found.append(
             f"같은 점검 안 같은 인자 반복 호출 {rep['repeat_calls']}회, 최다 {name} {t['repeats']}회임"
         )
+    code = rep.get("code") or {}
+    if (code.get("reverted_canary") or 0) + (code.get("reverted_eval") or 0) + (code.get("refused_restart") or 0):
+        lr = code.get("last_revert") or {}
+        found.insert(0, f"코드 수정이 되돌려짐 (감시 {code.get('reverted_canary', 0)}건, 비교 {code.get('reverted_eval', 0)}건, "
+                        f"재시작 실패 {code.get('refused_restart', 0)}건), 마지막 #{lr.get('id')}: '{str(lr.get('why') or '')[:80]}'. "
+                        "같은 원인을 다시 고치기 전에 이유를 읽음")
+    if (code.get("refused") or 0) >= 2:
+        cls, k = sorted(code["refused_by"].items(), key=lambda x: (-x[1], x[0]))[0]
+        found.append(f"코드 수정 제안 {code['refused']}건 거절됨, 최다 사유 '{code_edit.CLS_KO.get(cls, cls)}' {k}건임")
     errs = [
         (rep["model_errors"], "모델 오류"),
         (rep["no_done"], "done 없이 끝남"),

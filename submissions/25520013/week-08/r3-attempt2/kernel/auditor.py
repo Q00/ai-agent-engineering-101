@@ -27,6 +27,10 @@ try:
     from kernel import made_tools
 except ImportError:  # sibling not there yet: no operator-made tools
     made_tools = None
+try:
+    from kernel import code_edit
+except ImportError:  # sibling not there yet: no code changes
+    code_edit = None
 
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 JOB = os.path.join(HERE, "AUDITOR_JOB.md")
@@ -500,6 +504,10 @@ def build_prompt(root, now, secrets=(), listed=None):
         (f"## 감사 숫자 (지난 감사 {c.kst(last)} 이후, 0 아닌 항목만)", rep),
         ("## 도구 표 (최근 24시간)", _tool_block(root, now, listed, ts)),
         ("## 실험 기록 (커널 판정)", exp),
+        (
+            "## 코드 수정 (운영자가 규칙 코드를 고친 기록)",
+            ("\n".join(code_edit.history_lines(root, 4)) if code_edit is not None else "") or "없음",
+        ),
         ("## 최근 점검 (운영자)", "\n".join(_wake_text(w) for w in wakes) or "없음"),
         ("## 운영자 메모 (앞 800자)", _notes(root) or "없음"),
         ("## 지금 안내 (guidance)", guidance(root) or "없음"),

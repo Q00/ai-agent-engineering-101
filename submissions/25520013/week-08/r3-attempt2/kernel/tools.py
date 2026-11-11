@@ -526,6 +526,27 @@ def guide_always(sections=("1", "7")):
     return "\n\n".join(["\n".join(["## 시장 설명서 목차 (나머지 절은 guide 도구로 읽음)"] + _guide_toc(secs))] + body)
 
 
+def code_search(root, pattern, file=None):
+    """규칙 코드(policy.py, hooks/*.py)에서 pattern(정규식, 틀리면 글자 그대로)을 찾아 '파일:줄: 내용'을 40줄까지 줌. file을 주면 그 파일만 찾음. 원인을 코드에서 찾을 때 씀."""
+    from kernel import code_edit
+
+    return code_edit.search(root, pattern, file)
+
+
+def code_read(root, file, start=1, lines=120):
+    """규칙 코드 파일 하나를 줄 번호와 함께 읽음 (한 번에 200줄까지, start부터). done.code로 고치려는 파일은 이번 점검에서 이 도구로 먼저 읽어야 함."""
+    from kernel import code_edit
+
+    return code_edit.read(root, file, start, lines)
+
+
+def restock_log(root, hours=2, now=None):
+    """재입고 훅 기록: 최근 hours시간(0.5~24)의 실행 수와 멈춘 사유(why)별 수, 산 실행(줄, 수량, 예산, 메모), 상품군 잎과 SKU별 산 수량, 재고 상한이나 예산으로 멈춘 횟수와 마지막 재고 원가, 잔고."""
+    from kernel import code_edit
+
+    return code_edit.restock_log(root, hours, now)
+
+
 TOOLS = {
     "board": (board, ("operator",)),
     "ledger": (ledger, ("operator",)),
@@ -544,6 +565,9 @@ TOOLS = {
     "recall": (recall, ("operator",)),
     "brief_section": (brief_section, ("operator",)),
     "guide": (guide, ("operator",)),
+    "code_search": (code_search, ("operator",)),
+    "code_read": (code_read, ("operator",)),
+    "restock_log": (restock_log, ("operator",)),
 }
 
 

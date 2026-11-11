@@ -22,7 +22,7 @@ from kernel import brief as b
 from kernel import common as c
 from kernel import experiments as ex
 from kernel import harness as hz
-from kernel import audit, auditor, made_tools, policy_edit, tools, versions
+from kernel import audit, auditor, code_edit, made_tools, policy_edit, tools, versions
 from kernel.agent import ParseError, parse_last_object
 from kernel.llm import ModelError, ModelRefused
 from kernel.trajectory import Trajectory
@@ -71,7 +71,7 @@ def obs_facts(obs, limit=None):
     return out
 
 
-TEXT_TOOLS = ("brief_section", "guide", "recall")  # they return prose: a number match says nothing about use
+TEXT_TOOLS = ("brief_section", "guide", "recall", "code_read", "code_search")  # they return prose: a number match says nothing about use
 _NUM = re.compile(r"\d[\d,]*(?:\.\d+)?")
 
 
@@ -125,8 +125,12 @@ COMPACT_SCHEMA = """한 단계에 JSON 객체 하나로만 답함. 둘 중 하�
   "forum": [{"post": "<글>", "as": "shop|buyer"}],
   "notes": "<다음 점검의 네가 읽을 메모 전체, 2,000자 안. 생략하면 그대로 둠>",
   "new_tool": {"name": "q_<영소문자_숫자>", "description": "<어떤 숫자를 주는지>", "source": "events|metrics|buyer|trajectory", "hours": <1~48>, "where": [{"field": "<점 경로>", "op": "==|!=|>|>=|<|<=|in|contains|exists", "value": <값>}], "group_by": ["<점 경로>|hour|leaf"], "agg": [{"fn": "count|sum|mean|median|min|max|share", "field": "<점 경로>", "as": "<이름>"}], "limit": <줄 수>},
+  "code": {"edits": [{"file": "<policy.py|hooks/restock.py|hooks/market_buyer.py|hooks/seller.py>", "old": "<바꿀 원문 그대로>", "new": "<새 글>"}], "reason": "<근거 숫자와 원인, 20자 이상>", "expect": "<기대 효과: 어떤 숫자가 어느 쪽으로, 20자 이상>"},
   "note": "<이번 점검 한 줄 요약>"}}
 done의 모든 항목은 선택임. 지금 값과 허용 범위는 policy 도구로 봄.
+code는 규칙 코드를 고침 (값으로 못 고치는 원인일 때만, 한 번에 하나): 고칠 파일은 이번 점검에서 code_read로 먼저 읽음. old는 파일에 정확히 한 번 나오는 원문, 수정 3개까지, 바뀐 줄 150줄까지.
+커널이 규칙 코드의 시험을 돌려 새로 실패하는 시험이 있으면 거절함. 보호 함수(원가 이하 판매 금지, 정책 검증, 지출 상한, 서명, 주인 확인)를 바꾸거나 위험한 import, 호출, 파일 쓰기, URL을 새로 넣으면 거절함.
+적용 뒤 커널이 30분 감시하고 (오류나 기록 끊김이면 바로 되돌림) 4시간 전후를 비교해 나빠지면 되돌림. policy.py와 hooks/seller.py 수정은 판매자 재시작 뒤 반영됨. 결과는 상태 카드의 [코드] 줄에 나옴.
 new_tool은 읽기 전용 질의 도구를 하나 만듦 (한 점검에 하나, 모두 8개까지): 기록 파일 하나를 조건으로 거르고 묶어 세는 정의이고 코드는 아님. 커널이 실제 기록으로 시험 실행해 통과하면 다음 점검부터 도구 목록에 나옴. 기록의 필드 이름은 events, trajectory 도구로 행을 먼저 보고 정함. 있는 도구로 못 얻는 숫자가 반복해 필요할 때만 만듦.
 policy 항목은 모두 실험으로 걸림: 판매 쪽 값은 동시 비교(물건 절반에만 새 값, 판정 때 채택 또는 버림), 구매와 재고 값은 전후 비교(바로 적용, 나빠지면 되돌림).
 policy 키는 항목마다 숫자 하나: 판매 구역은 price_mult, min_margin, concession, max_rounds, stock_target, qty_per_buy, warranty_uplift, fresh_discount.B|C. goods 구역은 warranty_hours.A|B|C도. shop은 grade_floor_list.A|B|C와 c_first_leaves.<잎 이름> (1 넣기, 0 빼기). buyer.defaults.*는 max_pay_frac, open_frac (첫 제시가), step_frac (회차마다 올리는 폭), accept_c.max_pay_frac, accept_c.open_frac. bounds는 사람만 고침."""
@@ -551,6 +555,7 @@ class Operator:
             guidance = auditor.guidance(self.root)
         except Exception:
             guidance = ""
+        code_lines = code_edit.lines(self.root, now)  # never raises
         base = "\n\n".join(
             [
                 job,
@@ -558,7 +563,7 @@ class Operator:
                 + (c.mask(guidance, self.secrets) or "없음"),
                 tools.guide_always(),
                 "## 상태 카드 (커널이 모은 사실, 해석 없음)",
-                b.build_compact(self.root, now, last_brief, extra=list(ex.lines(self.root, now)) + list(audit_lines)),
+                b.build_compact(self.root, now, last_brief, extra=list(ex.lines(self.root, now)) + list(code_lines) + list(audit_lines)),
                 "## 네 메모 (지난 점검의 네가 남김)",
                 c.mask(self._notes(), self.secrets) or "없음",
                 "## 깨운 이유",
@@ -571,6 +576,7 @@ class Operator:
         )
         # 11-11: results used to vanish after one step and 24 of 31 repeated calls re-read one two steps later.
         kept, fresh, chars, calls, step = [], [], 0, 0, 0
+        read_files = set()  # rule-code files read this wake: code_read, or code_search with a file (search hits alone do not count)
         obs_all, full = {}, set()  # (tool, args) -> [step, head, text]; keys shown in full in the last prompt
         for step in range(COMPACT_STEPS):
             last_step = step == COMPACT_STEPS - 1
@@ -610,7 +616,7 @@ class Operator:
                        else "(결론을 남기지 않음) " + " / ".join(" ".join(x.split())[:150] for x in fresh))
                 )
             if isinstance(act.get("done"), dict):
-                result = self._finish_compact(act["done"], now)
+                result = self._finish_compact(act["done"], now, read_files)
                 result.update(prompt_chars=chars, calls=calls)
                 try:
                     result["grounding"] = grounding(base, obs_all, act["done"], kept)
@@ -634,14 +640,18 @@ class Operator:
                     continue
                 obs = c.cap(self._run_tool(t.get("tool"), t.get("args")), COMPACT_OBS)
                 obs_all[head] = [step, head, obs]
+                f = (t.get("args") or {}).get("file") if isinstance(t.get("args"), dict) else None
+                if t.get("tool") in ("code_read", "code_search") and isinstance(f, str) and not obs.startswith(TOOL_ERR):
+                    read_files.add(f)
                 fresh.append(head + "\n" + obs)
             if not fresh:
                 fresh = ["도구 호출이 없음: tools 목록이나 done 객체로 답해야 함"]
         return self._end(reason, step + 1, "no_done", {"prompt_chars": chars, "calls": calls})
 
-    def _finish_compact(self, done, now):
+    def _finish_compact(self, done, now, read_files=()):
         """Apply a compact done: each policy item that no running experiment blocks is written through policy_edit
-        and registered as an experiment; forum posts are queued; notes replace the operator's notes file."""
+        and registered as an experiment; a code change goes through code_edit.propose (read_files: the rule-code files
+        read this wake); forum posts are queued; notes replace the operator's notes file."""
         result = {"note": c.mask(str(done.get("note") or ""), self.secrets)[:500]}
         items = done.get("policy")
         if isinstance(items, list) and items:
@@ -668,6 +678,17 @@ class Operator:
                         r = dict(r, eval_kst=c.kst(r["eval_ts"]))
                 out.append(r)
             result["policy"] = out
+        if isinstance(done.get("code"), dict):
+            code = done["code"]
+            try:
+                weight = self._rev_weight()
+            except Exception:  # the board read only weights the shop metric
+                weight = 0.0
+            r = code_edit.propose(self.root, code.get("edits"), code.get("reason"), code.get("expect"), now, self.traj,
+                                  read_files=read_files, rev_weight=weight)
+            result["code"] = {"ok": r.get("ok"), "id": r.get("id"), "status": r.get("status"),
+                              "error": c.mask(str(r["error"]), self.secrets)[:300] if r.get("error") else None,
+                              "tests": (r.get("tests") or {}).get("summary")}
         if "forum" in done:
             result["forum"] = self._forum(done["forum"])
         if isinstance(done.get("new_tool"), dict):  # declarative query only; the test run on real data is the gate
@@ -996,6 +1017,10 @@ def main(argv=None):
     op = Operator(root, terra, traj, harness_root=a.harness, dry=a.dry)
     poll_err = (None, 0.0)
     while True:
+        try:  # rule-code changes: restart, canary and verdict (code only, never blocks)
+            code_events = [e for e in code_edit.watch(root, c.now_ts(), traj) if e.get("wake")]
+        except Exception:
+            code_events = []
         try:
             versions.check_breakage(root, a.harness, traj, op.settings()["breakage_n"])
             if not op.compact():  # compact mode ticks the ledger inside wake_reason; verdicts must not stop elsewhere
@@ -1008,6 +1033,8 @@ def main(argv=None):
             if name != poll_err[0] or t - poll_err[1] >= 3600:
                 poll_err = (name, t)
                 traj.append("operator", "operator_poll", status="crash", error=name, detail=str(err)[:200])
+        if code_events:  # like an experiment verdict: wake at once
+            reason = ", ".join([f"코드 수정 판정 {len(code_events)}건 (상태 카드의 [코드] 줄)"] + ([reason] if reason else []))
         if reason:
             try:
                 print(json.dumps(op.wake(reason), ensure_ascii=False, default=str), flush=True)
