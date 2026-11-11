@@ -127,12 +127,15 @@ def plan(inv, d, policy, now, catalog):
         covered.add(cat)
 
     for value, sku, kind, lp, n, margin in ranked:
-        if lp * 0.75 > per_sku_cap:
+        unit_cost = lp * 0.75                           # worst case: an A unit at the top of its range
+        if unit_cost <= 0 or unit_cost > budget:
             continue
         target = policy["goods_target"] if kind == "goods" else policy["food_target"]
         qty = target - held.get(sku, 0)
-        unit_cost = lp * 0.75                           # worst case: an A unit at the top of its range
-        qty = min(qty, int(budget // unit_cost)) if unit_cost else 0
+        qty = min(qty, int(budget // unit_cost))
+        qty = min(qty, int(per_sku_cap // unit_cost))   # cap this SKU's TOTAL spend, not just its unit
+        # price -- a pricey item bought in bulk was eating a whole window's budget by itself (qty=4 at
+        # ~82k/unit once swallowed 93% of a 354k window), crowding out the other 8 categories max_skus allows
         if qty < 1:
             continue
         buy.append({"sku": sku, "qty": qty})
