@@ -179,6 +179,12 @@ def main():
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
     except OSError:
         if not a.stats:
+            # 11-11: a long ledger backfill held the lock for hours and no board snapshot was taken meanwhile; the
+            # snapshot is one small insert (WAL), so take it even when another run holds the lock
+            try:
+                board(connect())
+            except Exception:  # noqa: BLE001
+                pass
             raise SystemExit(0)
     db = connect()
     if a.stats:

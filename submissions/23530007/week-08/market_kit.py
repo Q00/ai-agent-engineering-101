@@ -419,7 +419,13 @@ class AcpShop:
         inv = r.json()
         if inv.get("round", 0) < ECON_ROUND:
             return False, None                          # no stock before Round 3
-        held = {s["unit"] for s in self.sessions.values() if s.get("unit") and s["status"] == "ready_for_payment"}
+        # yms979 11-11: a session that is opened and then neither paid nor cancelled held its unit until 500 newer
+        # sessions pushed it out (~4 h): every later sale of that unit was refused "not in stock for this order"
+        # (59 refusals in 4 h, the same units again and again: oldest-first hands the stuck unit to each buyer).
+        # An open checkout now holds its unit for SESSION_HOLD s, like the seller's own 300 s hold.
+        now_ = time.time()
+        held = {s["unit"] for s in self.sessions.values() if s.get("unit") and s["status"] == "ready_for_payment"
+                and now_ - s.get("t", now_) < SESSION_HOLD}
         units = [u for u in inv["units"] if u["unit"] not in held and u["grade"] != "expired"]
         want = rec.get("item")
         fits = lambda u: (u["sku"] in acceptable if acceptable else
@@ -462,7 +468,7 @@ class AcpShop:
             if type(rec.get("warranty_hours")) in (int, float) and rec["warranty_hours"] > 0:
                 co["warranty_hours"] = rec["warranty_hours"]
         self.sessions[sid] = s = {
-            "id": sid, "status": "ready_for_payment", "task": rec["task"], "unit": co.get("unit"),
+            "id": sid, "status": "ready_for_payment", "task": rec["task"], "unit": co.get("unit"), "t": time.time(),
             "line_items": [{"id": co["item"], "quantity": 1}],
             "totals": [{"type": "total", "amount": rec["price"]}],
             "capabilities": {"payment_methods": ["ap2-mandate"]},
@@ -603,6 +609,10 @@ def receipt_from_task(task):
 
 
 # --- market
+
+SESSION_HOLD = 300           # s an open (unpaid) checkout session keeps its unit from other checkouts
+ROUND_END = 1794927540       # 2026-11-17 23:59 KST
+
 
 class Market:
     def __init__(self, base, owner=None):
@@ -1222,6 +1232,9 @@ def watchdog(a, agent, d, market, keys, procs, proxy, sport, pport, state, every
                         # (20+ today); after two dead checks in a row move to the other hostname of the named
                         # tunnel (both answer), so the market registers a changed URL and probes it afresh
                         alt = other_url(proxy.public)
+                        if ROUND_END - time.time() < 1800:
+                            alt = None      # no URL moves in the round's last 30 min: right after a move the board
+                            #                 once showed stars_rank 3.0 for us for a moment (18:56 UTC)
                         if state["dead_streak"] >= 1 and alt and card_ok(alt):   # every dead check (a moved URL is alive until the next ~2-min check)
                             try:
                                 j = market.join("shop", a.name, keys["shop"], alt, tries=1)

@@ -255,7 +255,9 @@ def pick_unit(text, held, now, asks=None):
         for u in ranked:
             if (u.get("grade") or "A") != "C" or accepts_c:
                 return u
-        return None
+        # 11-11 19:15: only C left of this SKU: offer it rather than answer "none in stock" (a C close to a buyer
+        # who did not ask for C still settles ~19% of the time, and those sales carry the largest margin)
+        return ranked[0] if ranked else None
     return min(fit, key=lambda u: u.get("supplied_at") or 0)
 
 
