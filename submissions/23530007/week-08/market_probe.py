@@ -154,6 +154,8 @@ def watch_value(w):
 def check(watch):
     """Return the first watch condition that holds now, or None."""
     for w in watch[:MAX_WATCH]:
+        if w.get("metric") != "class_rank":
+            continue                  # 11-11: 21 of 24 early wakes since 11-08 were surge/our_stock flip-flops on two SKUs
         try:
             v = watch_value(w)
         except Exception:

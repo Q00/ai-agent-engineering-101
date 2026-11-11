@@ -197,8 +197,9 @@ def my_turn(role, now=None):
     # (01:30, 07:30, 13:30, 19:30 UTC) so ~$60 is left for Round 4's first days
     slot = int((now or time.time()) // SLOT)
     if role == "buyer":
-        # 11-11 (user: the buyer rank is falling, raise the frequency if needed): the buyer every 30 min again
-        return slot if slot % 2 == 0 else None
+        # 11-11 restructure (user: 'as recommended'): the buyer every hour at :00 plus code-guard wakes
+        # (.market/buyer_strategist_wake); the 30-min cadence of 01:50 did not address the cause (step size, bugs)
+        return slot if slot % 4 == 0 else None
     return slot if slot % 24 == 6 else None
 
 

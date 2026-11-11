@@ -36,6 +36,7 @@ from harness import last_json_object
 from strategist_memory import Memory, buyer_picture, market_picture, operator_note, my_turn, post_board, read_board, read_digest, valid_requests
 
 HERE = Path(__file__).resolve().parent
+BUYER_WAKE = HERE / ".market" / "buyer_strategist_wake"   # 11-11: written by guards.py; honored at most hourly
 AUTO = HERE / "params_auto_buyer.json"
 STATE = HERE / "buyer_strategist_memory.json"
 LOGF = HERE / "logs" / "buyer_strategist.log"
@@ -479,10 +480,17 @@ def board_view():
 def run(force=False):
     mem = Memory(STATE)
     slot = my_turn("buyer")
-    if not force and (slot is None or slot == mem.d.get("slot")):
+    wake = shop.read(BUYER_WAKE, None)
+    if wake and not force and time.time() - mem.d.get("t", 0) < 3600:
+        wake = None                     # a guard may wake the buyer at most once an hour
+    if not force and not wake and (slot is None or slot == mem.d.get("slot")):
         return
-    mem.d["slot"] = slot
+    if wake:
+        BUYER_WAKE.unlink(missing_ok=True)
+        log(f"woken early by a guard: {json.dumps(wake, ensure_ascii=False)[:300]}")
+    mem.d["slot"] = slot if slot is not None else mem.d.get("slot")
     mem.d["t"] = time.time()
+    mem.d.setdefault("working", {})["woken_by"] = wake
     params = shop.read(shop.PARAMS, {})
     mode = params.get("strategist", {}).get("mode", "propose")
     auto = shop.read(AUTO, {"globals": {}, "category": {}})

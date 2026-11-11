@@ -64,8 +64,8 @@ LIMITS = {"facts": 20, "decisions": 10, "open_questions": 8, "for_shop": 6, "for
 STRINGS = {"rules_change": 3, "rank_change": 3, "market_flow": 4}      # one paragraph each, x TEXT_MAX
 ITEM_KEYS = ("id", "text", "source", "since", "last_confirmed", "who", "what", "when", "why", "role", "numbers",
              "request", "answer")
-REFRESH_MIN = 60                                  # a digest older than this is rewritten even without new entries
-MIN_GAP_MIN = 55                                  # 11-10 (API budget): at most one model call per this many minutes
+REFRESH_MIN = 120                                 # a digest older than this is rewritten even without new entries
+MIN_GAP_MIN = 110                                 # 11-10 (API budget): at most one model call per this many minutes
 LOCK_WAIT = 480                                    # s a run waits for another curator (a model call takes ~90 s)
 PROBE_CHARS = 2500                                 # a code result for one request, at most
 RULES_URLS = ("https://market.ourolabs.ai/rules", "https://market.ourolabs.ai/agent.md")
@@ -672,11 +672,17 @@ def curate(d, w=None, market=None, force=False):
         why.append("no briefing yet")
     if force:
         why.append("forced")
+    # 11-11: the shop strategist runs at 01:30/07:30/13:30/19:30 UTC; a digest older than 50 min is refreshed in the
+    # 20 min before a slot so it reads something fresh (bypasses MIN_GAP below)
+    tm = time.gmtime()
+    pre_shop = tm.tm_hour % 6 == 1 and 10 <= tm.tm_min < 30 and dt is not None and time.time() - dt > 50 * 60
+    if pre_shop:
+        why.append("shop slot in <= 20 min")
     if not why:
         return False                                 # nothing new to merge, answer or brief
     # 11-10 (user: API budget, $195 for 172 h): at most one model call per MIN_GAP_MIN unless the rules changed or
     # it is forced; new entries wait and are merged in the next call
-    if dt is not None and time.time() - dt < MIN_GAP_MIN * 60 and not w.get("rules_changed") and not force:
+    if dt is not None and time.time() - dt < MIN_GAP_MIN * 60 and not w.get("rules_changed") and not force and not pre_shop:
         return False
     log("curating: " + ", ".join(why))
     entries = [{"at": time.strftime("%Y-%m-%d %H:%M", time.gmtime(t)), "role": role, "read": read,

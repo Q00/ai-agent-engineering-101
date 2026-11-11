@@ -22,7 +22,7 @@ def env(use_key=True):
 
 
 SPEND = Path(__file__).resolve().parent / ".market" / "spend.jsonl"
-CREDIT_ANCHOR = (1794369200.0, 181.0)        # 11-11 02:20 UTC: ~$181 of API credit left (ops_cost estimate)
+CREDIT_ANCHOR = (1794372842.0, 173.0)        # 11-11 ~04:55 UTC: ~$181 at 02:20 (ops_cost estimate) minus ~$8 spent since
 
 
 def _model_of(cmd):

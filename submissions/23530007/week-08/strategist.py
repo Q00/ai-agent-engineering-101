@@ -60,7 +60,7 @@ MODEL_CMD = f"{CLAUDE} -p --model opus --effort high --max-budget-usd 0.6 --tool
 MODEL_TIMEOUT = 600
 TOP_SKUS = 45
 MAX_MOVES = 12
-REFLECT_MISSES = 3
+REFLECT_MISSES = 10 ** 6       # 11-11: critic off (130 lesson edits/day, lessons evicted within hours, ~$0.6/day)
 GUARD_DROP = 0.3
 
 KNOBS = {                             # per-SKU factors: bounds, default step
