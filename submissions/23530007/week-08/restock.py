@@ -81,6 +81,7 @@ SURGE_MAX = 0.15             # most cost surge we pay on a SKU (margins run ~20-
 SLOW_UNIT = 0.25             # 11-11: what a grade C unit counts for in the SKU cover (paid 10-19% when not asked for)
 OVER_UNIT = 0.5              # ... and an A/B unit whose floor is above the SKU's market median (sells, but slowly: ~27% close)
 LINE_MAX_COST = 25e6         # 11-11: most one supply line may cost (at COST_GUESS), so one 3.8M sofa x20 does not take 46M
+MUST_LINES = 4               # 11-11: most must_stock lines in one window
 WINDOW_MAX_COST = 150e6      # ... and most one window may cost (90M -> 150M the same evening: user, 'buy more boldly, cash is idle')
 COST_A, SURGE_MARGIN = 0.65, 0.03   # 11-11: typical grade A cost share; margin kept under the market median x
 COST_GUESS = 0.6             # cost as a share of list price before a unit arrives (A 55-75 %, B 40-60 %, C 25-45 %)
@@ -482,6 +483,20 @@ def main():
         wants.append((priority, cat, v, qty))
 
     wants += tier_wants(catalog, demand, value, top_cat, units, wants, p, now)
+    # 11-11 (user: raise stars): SKUs kept in stock for the accounts that would lift our per-account star mean:
+    # JangSeongWoong rates every shop 5.0 and has never paid us (a new 5.0 account is worth ~+.009 stars_rank), and
+    # gom31-certified-goods rates by grade (A 5, B 4, C 3) with only 6 reviews of us at 3.67. They buy long-shelf
+    # foods we held none of, or only aged (grade C) units of. params.json shop.base.must_stock = {sku: fresh units};
+    # only grade A/B units count; at most MUST_LINES lines a window so the goods lines keep theirs.
+    must = []
+    for sku_, q_ in (p.get("must_stock") or {}).items():
+        v_ = catalog.get(sku_)
+        if not v_:
+            continue
+        good_ = sum(1 for u in fresh if u["sku"] == sku_ and u.get("grade") in ("A", "B"))
+        if good_ < q_:
+            must.append((good_ - q_, ((False, -2, 0), v_["category"], v_, min(MAX_QTY, int(q_ - good_)))))
+    wants += [w for _, w in sorted(must, key=lambda m: m[0])[:MUST_LINES]]
     wants.sort(key=lambda w: w[0])
     max_stock = p["max_stock_share"] * (cash + stock_cost)
     buy, spend = [], 0
