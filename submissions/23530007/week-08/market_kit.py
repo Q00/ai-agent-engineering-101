@@ -212,6 +212,30 @@ def stop(proc):
                 proc.kill()
             proc.wait(timeout=5)
         except Exception:
+            try:                                        # yms979 11-11: not a group leader: kill the process itself
+                proc.kill()
+                proc.wait(timeout=5)
+            except Exception:
+                pass
+
+
+def reap_stale_tunnels():
+    """yms979 11-11: kill this user's cloudflared tunnels left by earlier kit runs or failed swaps (only this kit
+    starts cloudflared under this user; other users' tunnels are never touched)."""
+    if os.name == "nt":
+        return
+    try:
+        # match the process NAME exactly (-x), never the command line: a shell whose command line merely
+        # contains "cloudflared" must not be killed
+        out = subprocess.run(["pgrep", "-u", str(os.getuid()), "-x", "cloudflared"],
+                             capture_output=True, text=True).stdout.split()
+    except OSError:
+        return
+    for pid in out:
+        try:
+            os.kill(int(pid), signal.SIGTERM)
+            log(f"[tunnel] stopped a stale cloudflared (pid {pid}) from an earlier run")
+        except (OSError, ValueError):
             pass
 
 
@@ -638,8 +662,12 @@ def open_named_tunnel(port):
         name, url = cfg["name"], cfg["url"].rstrip("/")
     except (OSError, ValueError, KeyError):
         return None
+    # yms979 11-11: own session so stop() (killpg) really stops it; before, killpg failed silently and every
+    # tunnel swap left the old connector running (three connectors of yms979-shop at once, Cloudflare spreads the
+    # market's requests over all of them; one on a stale port = failed card reads we cause ourselves)
     proc = subprocess.Popen(["cloudflared", "tunnel", "--no-autoupdate", "run", "--url", f"http://127.0.0.1:{port}", name],
-                            stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+                            stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+                            start_new_session=(os.name != "nt"))
     up = []
 
     def read():
@@ -662,7 +690,8 @@ def open_tunnel(port):
     if named:
         return named
     proc = subprocess.Popen(["cloudflared", "tunnel", "--no-autoupdate", "--url", f"http://127.0.0.1:{port}"],
-                            stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+                            stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+                            start_new_session=(os.name != "nt"))
     found = []
 
     def read():                                     # reads until cloudflared exits, so its pipe never fills
@@ -1064,6 +1093,7 @@ def cmd_join(a):
                 proxy.target(f"http://127.0.0.1:{sport}")
                 proxy.acp = AcpShop(keys["shop"], market, d / ".market")
                 if a.tunnel:
+                    reap_stale_tunnels()
                     try:
                         tp, url = open_tunnel(pport)
                     except RuntimeError as e:
@@ -1165,7 +1195,8 @@ def watchdog(a, agent, d, market, keys, procs, proxy, sport, pport, state, every
             # 5-16 min. When the market no longer lists us but the card answers, join again at once (same URL).
             # (the unauthenticated /api/shops is not the alive list: it left us out while the board said alive and
             # the watchdog re-joined every minute; the board's alive flag is the signal, at most once per 5 min)
-            if ok and time.time() - state.get("relist_t", 0) > 300:
+            # (11-11 user: check every 2 min, not 5: during market-wide outages each minute dead costs ~1 deal)
+            if ok and time.time() - state.get("relist_t", 0) > 120:
                 try:
                     r = market.c.get(f"{market.base}/api/board?round=3", timeout=10)
                     me = next((s for s in (r.json().get("shops") or []) if s.get("name") == a.name), None) if r.status_code == 200 else None

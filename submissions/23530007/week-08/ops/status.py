@@ -80,6 +80,11 @@ def kit_state():
     url = next((l.split(" at ")[-1].split()[0] for l in reversed(tail) if "registered" in l and " at " in l), None)
     if not url:
         url = next((l.split("through the kit at ")[-1].strip() for l in reversed(tail) if "through the kit at" in l), None)
+    if not url:                                     # busy log: fall back to the named tunnel's fixed URL
+        try:
+            url = json.loads((Path.home() / ".config/ai-agent-market/named_tunnel.json").read_text())["url"].rstrip("/")
+        except (OSError, ValueError, KeyError):
+            pass
     last_task = next((l[:8] for l in reversed(tail) if "[seller]" in l and " task " in l), None)
     rejoins = sum(1 for l in tail[-600:] if "marks this shop dead" in l or "registered again" in l)
     return {"kit_running": bool(out), "public_url": url, "last_seller_task": last_task, "recent_rejoin_lines": rejoins}
