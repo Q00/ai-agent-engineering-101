@@ -106,6 +106,7 @@ DEAD_MARKUP = 1.02
 DEAD_AGE_HOURS = 12
 # Claude (2026-11-09 03:23, hourly check): 0.65 reverted to always (inf). With C first, settles fell to about half of the
 # night before (01 h 50 against 117, 02 h 51 against 128) and no deals per settle rose from 0.37 to 0.78: buyers walked at C
+C_SWITCH = False         # offer the same SKU's grade C when an offer is under the A/B floor (on 02:47-03:44 11-12, see execute)
 C_BEHIND_SHARE = float("inf")  # grade C goes after A and B only if an A or B unit costs at most this share of list (find_unit)
 DEAD_FIRST_SHARE = 0.5   # share of asks on a named SKU that offer its old units first (see find_unit)
 DEAD_MIN_LIST = 100_000
@@ -388,7 +389,9 @@ class Seller(AgentExecutor):
         # (cost 1,207,605, 13 h old) stood first and got offers of 945,338-1,062,214, all under its floor, while three C at
         # 545,095-572,793 waited behind it (C_BEHIND_SHARE). An offer under an A or B floor now gets the same SKU's grade C
         # offered openly, as a new ask the buyer must answer, never a silent switch
-        if is_goods(u) and u.get("grade") != "C" and offer < floor_price(u):
+        # Claude (2026-11-12 03:44, hourly check): off. 58 switches since 02:47 on 22 C units, 19 of them agreed, but the same units
+        # came back up to 7 times and only 2 C goods settled in the hour: buyers agree to the C and then do not pay for it
+        if C_SWITCH and is_goods(u) and u.get("grade") != "C" and offer < floor_price(u):
             c = grade_c_unit(u["sku"], {d["unit"]["unit"] for k, d in self.open.items() if k != task.id and d["unit"]["unit"]})
             if c and floor_price(c) <= offer:
                 deal.update(unit=c, ask=ask_price(c, 0, deal["arm"]), offers=0)
