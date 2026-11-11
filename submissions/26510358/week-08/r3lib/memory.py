@@ -182,6 +182,16 @@ class Memory:
                              (sku, time.time() - hours * 3600, *mine)).fetchone()["n"]
 
     # ------------------------------------------------------------------ demand and prices (shop side)
+    def my_sku_grade_sales(self, sku, hours=24):
+        """{grade: units} our shop sold of one SKU in the last `hours`."""
+        mine = sorted(self.my_shop_urls())
+        if not mine:
+            return {}
+        with self.db() as c:
+            return {r[0]: r[1] for r in c.execute(
+                f"SELECT grade, COUNT(*) FROM settles WHERE sku=? AND ts>? AND shop IN ({','.join('?' * len(mine))}) "
+                "GROUP BY grade", (sku, time.time() - hours * 3600, *mine))}
+
     def category_demand(self, hours=48, half_life=config.DEMAND_HALF_LIFE_H, now=None, premium_min=None):
         """category -> {rate: decayed settles per hour, n, shops: competitors holding stock}. Market-wide.
         premium_min: leave out goods listed at or above it (the normal restock plan never buys those)."""

@@ -8,9 +8,9 @@ Once per CAP_STEP_MIN the cap moves on two signals from our own shop:
   grow   x CAP_GROW    stock is at the cap AND (buyers were turned away for lack of stock OR it sells through)
   shrink x CAP_SHRINK  what the market supplied to us in the last CAP_SELL_HOURS sold under CAP_SLOW_SELL
   hold   otherwise
-and stays inside [CAP_MIN, STOCK_BUDGET_SHARE x balance]; the balance ceiling wins over CAP_MIN, so stock can never
-spend the shop's cash down. The premium (800k+ goods) budget is PREMIUM_SHARE of the cap, on top of it, so all stock
-stays under 0.60 x balance: as stock grows the balance falls, and stock settles under ~37% of book.
+and stays inside [CAP_MIN, CAP_CEILING_SHARE x balance]; the balance ceiling wins over CAP_MIN, so stock can never
+spend the shop's cash down. The premium (800k+ goods) budget is PREMIUM_SHARE of the cap, on top of it: as stock grows
+the balance falls, so with the ceiling at 0.60 (0.40 until 2026-11-11) stock settles near half of book at most.
 """
 import time
 
@@ -29,7 +29,7 @@ def caps(mem, balance, stock_cost, now=None, dry_run=False):
     now = now or time.time()
     st = mem.get("cash_cap") or {}
     cap = float(st.get("cap") or config.STOCK_BUDGET_MAX)
-    ceiling = max(config.MAX_STOCK_COST, config.STOCK_BUDGET_SHARE * max(0, balance or 0))
+    ceiling = max(config.MAX_STOCK_COST, config.CAP_CEILING_SHARE * max(0, balance or 0))
     why = {"cap_before": int(cap), "ceiling": int(ceiling), "stock_cost": int(stock_cost)}
     if now - (st.get("ts") or 0) >= config.CAP_STEP_MIN * 60:
         rate, received = _sell_rate(mem, config.CAP_SELL_HOURS)

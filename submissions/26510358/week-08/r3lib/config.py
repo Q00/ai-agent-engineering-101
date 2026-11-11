@@ -108,6 +108,14 @@ CAP_SELL_HOURS = 12
 CAP_MIN_RECEIVED = 30               # units received before a slow sell-through may shrink the cap
 CAP_MIN = 25_000_000                # not below the cap already proven to sell out, unless the balance says so
                                     # ceiling: STOCK_BUDGET_SHARE x balance (the rule since 11-04), over CAP_MIN
+CAP_CEILING_SHARE = 0.60            # the adaptive cap's ceiling as a share of the balance (STOCK_BUDGET_SHARE 0.40 until
+                                    #   2026-11-11, the human's yes): in 36 h the cap asked to grow 29 times and shrink
+                                    #   0 times (sell-through 0.78-1.0) and was clipped at 0.40 x balance every time,
+                                    #   with ~200M idle. Unsold stock counts at cost, so the cost of more stock is the 1%/day
+                                    #   storage; the shrink rule (sell-through < CAP_SLOW_SELL) still pulls the cap back.
+STUCK_GRADE_AGE_H = 24              # a SKU is not bought again while one of its grades has STUCK_GRADE_MIN_OLD units
+STUCK_GRADE_MIN_OLD = 3             #   older than this that our own sales of that grade would not clear by the round's
+                                    #   end (the market draws grades: each order brings A70 B20 C10, also of a stuck grade)
 PREMIUM_SHARE = 0.80                # premium budget = this share of the cap (0.50 until 2026-11-10; book counts stock
                                     #   at cost, the round ends 11-17 and top shops hold 100-760M of stock)
 PREMIUM_UNIT_COST = 833_000         # premium units allowed = premium budget / this (30M / 36 as set by hand)

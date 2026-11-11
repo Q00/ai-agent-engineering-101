@@ -145,6 +145,28 @@ def covered_skus(units, mem):
             and n >= mem.my_sku_sales(s, hours=config.RESTOCK_SKU_COVER_H)}
 
 
+def stuck_skus(units, mem, now=None):
+    """{sku: grade} of goods SKUs with a grade that will not sell out: STUCK_GRADE_MIN_OLD or more units older than
+    STUCK_GRADE_AGE_H that our own sales of that grade (24 h) would not clear by the round's end. The plan does not buy
+    such a SKU again: every order of it brings more of each grade (A70 B20 C10, drawn by the market). 2026-11-11: 13 C
+    of one sofa held 140 h, 12 C of an office chair 66 h; none of the 121 SKUs bought that day was stuck yet, which is
+    why this is a guard before the cap goes up, not a new quantity rule."""
+    now = time.time() if now is None else now
+    days = max(0.0, config.hours_left_in_round(now)) / 24
+    held = {}
+    for u in units:
+        if u.get("kind") == "goods" and u.get("grade") in ("A", "B", "C"):
+            held.setdefault((u["sku"], u["grade"]), []).append(u)
+    out = {}
+    for (sku, g), us in sorted(held.items()):
+        old = [u for u in us if now - (u.get("supplied_at") or now) >= config.STUCK_GRADE_AGE_H * 3600]
+        if len(old) < config.STUCK_GRADE_MIN_OLD or sku in out:
+            continue
+        if mem.my_sku_grade_sales(sku).get(g, 0) * days < len(us):
+            out[sku] = g
+    return out
+
+
 def price_gate(ratio, outcome, kind):
     """True when a category is not bought because of what the market pays for it (median price / list, 72 h).
     Until 2026-11-10: under RESTOCK_GATE_RATIO (0.65), whatever we earned there (still the rule with the flag off).
@@ -258,6 +280,14 @@ def plan(inv, demand_rows, mem, now=None, dry_run=False, adjust=None):
     except Exception as e:                                # memory trouble must not stop the restock
         covered = set()
         why.append({"covered_error": str(e)[:200]})
+    try:
+        stuck = stuck_skus(units, mem, now)
+    except Exception as e:                            # memory trouble: the plan goes on without the guard
+        stuck = {}
+        why.append({"stuck_error": str(e)[:200]})
+    if stuck:
+        covered = set(covered) | set(stuck)
+        why.append({"stuck_grade": stuck})
     if covered:
         why.append({"covered_skus": sorted(covered)})
     try:
