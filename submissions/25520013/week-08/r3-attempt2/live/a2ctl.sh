@@ -38,7 +38,7 @@ case "${1:-status}" in
           if alive operator-shop || alive operator-buyer; then echo "operator refused: a role operator is running (stop operator-shop operator-buyer first)"; continue; fi
           launch operator env A2_OPERATOR_EFFORT="${A2_OPERATOR_EFFORT:-medium}" A2_AUDITOR="${A2_AUDITOR:-1}" A2_OPERATOR_INTERVAL_S="${A2_OPERATOR_INTERVAL_S:-1200}" A2_OPERATOR_COMPACT="${A2_OPERATOR_COMPACT:-1}" A2_SPLIT="${A2_SPLIT:-1}" A2_SELLER_RESTART_CMD="${A2_SELLER_RESTART_CMD:-bash $CODE/live/seller_restart.sh}" A2_CODE_TESTS_DIR="${A2_CODE_TESTS_DIR:-$HOME/r3-rule-tests}" python3 -m kernel.operator --root "$W" ;;
         analyst)  # the investigator: read-only, never takes the operators' busy lock
-          launch analyst env A2_ANALYST_STEPS="${A2_ANALYST_STEPS:-24}" A2_ANALYST_EFFORT="${A2_ANALYST_EFFORT:-high}" A2_ANALYST_MIN_GAP_S="${A2_ANALYST_MIN_GAP_S:-900}" python3 -m kernel.analyst --root "$W" ;;
+          launch analyst env A2_ANALYST_STEPS="${A2_ANALYST_STEPS:-24}" A2_ANALYST_EFFORT="${A2_ANALYST_EFFORT:-medium}" A2_ANALYST_MIN_GAP_S="${A2_ANALYST_MIN_GAP_S:-900}" python3 -m kernel.analyst --root "$W" ;;
         *) echo "unknown process $n" ;;
       esac
     done

@@ -621,6 +621,10 @@ class Operator:
         )
         return obs
 
+    def _early_done(self, obs_all):
+        """A reason to refuse a done object before the last step, or None (kernel.analyst: no tool result yet)."""
+        return None
+
     def _effort(self, route):
         # A2_OPERATOR_EFFORT (11-10, 성수님 결정: 사용량 절감) overrides the harness route's effort when set
         return os.environ.get("A2_OPERATOR_EFFORT") or route.get("effort", "medium")
@@ -952,6 +956,11 @@ class Operator:
                     + (c.mask(keep, self.secrets)[:400] if isinstance(keep, str) and keep.strip()
                        else "(결론을 남기지 않음) " + " / ".join(" ".join(x.split())[:150] for x in fresh))
                 )
+            early = None if last_step or not isinstance(act.get("done"), dict) else self._early_done(obs_all)
+            if early:
+                kept.append(f"[단계 {step + 1}] {early}")
+                fresh = []
+                continue
             if isinstance(act.get("done"), dict):
                 result = self._finish_compact(act["done"], now, read_files)
                 result.update(prompt_chars=chars, calls=calls)

@@ -38,6 +38,7 @@ class Rec(Script):
 @pytest.fixture
 def env(tmp_path, monkeypatch):
     monkeypatch.setenv("A2_OPERATOR_COMPACT", "1")
+    monkeypatch.setattr(an.Analyst, "_early_done", lambda self, obs_all: None)  # scripts here answer at step 1
     for k in (
         "A2_OPERATOR_INTERVAL_S",
         "A2_SHOP_LEAD_S",
@@ -148,7 +149,7 @@ def test_run_writes_the_finding_and_logs_analyst_rows(env):
     )
     res = a.poll(NOW)
     assert res["status"] == "done" and res["answer"] == {"ok": True, "id": 1}
-    assert {x for x in a.terra.calls} == {("analyst", "high")}
+    assert {x for x in a.terra.calls} == {("analyst", "medium")}
     p = a.terra.prompts[0]
     assert (
         "## 이번 질문\n\n#1 " in p
@@ -398,3 +399,21 @@ def test_analyst_main_takes_no_busy_or_ledger_lock(env, monkeypatch, tmp_path):
     assert _q(root, 1)["status"] == "failed"  # the dry model answers without a finding
     run = [r for r in _rows(root) if r["kind"] == "analyst_run"]
     assert run and run[0]["role"] == "analyst" and run[0]["status"] == "done"
+
+
+def test_answer_without_any_tool_call_is_refused_once_tools_are_read(tmp_path, monkeypatch):
+    assert "도구를 한 번도 부르지 않고" in an.Analyst._early_done(None, {})
+    assert an.Analyst._early_done(None, {"k": [0, "h", "obs"]}) is None
+    assert op.Operator._early_done(None, {}) is None
+
+
+def test_early_answer_goes_back_to_the_tools(env, monkeypatch):
+    root, make = env
+    monkeypatch.undo()
+    monkeypatch.setenv("A2_OPERATOR_COMPACT", "1")
+    qs.ask(root, "shop", "별점 낮은 구간은?", NOW)
+    a = make("analyst")
+    a.terra = Rec({"done": {"answer": ANSWER}}, {"tools": [{"tool": "policy", "args": {}}]}, {"done": {"answer": ANSWER}})
+    res = a.poll(NOW)
+    assert res["status"] == "done" and res["calls"] == 3
+    assert "거절됨: 도구를 한 번도" in a.terra.prompts[1]

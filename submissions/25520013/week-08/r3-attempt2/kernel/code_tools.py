@@ -82,6 +82,8 @@ SAFE_BUILTINS = (
     "tuple",
     "isinstance",
     "reversed",
+    "next",
+    "iter",
     "divmod",
     "pow",
     "repr",

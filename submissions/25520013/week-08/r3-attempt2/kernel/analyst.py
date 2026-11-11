@@ -93,7 +93,13 @@ class Analyst(op.Operator):
         return _steps()
 
     def _effort(self, route):
-        return os.environ.get("A2_ANALYST_EFFORT") or "high"
+        return os.environ.get("A2_ANALYST_EFFORT") or "medium"  # 11-11 성수님: 추론 강도는 모두 medium
+
+    def _early_done(self, obs_all):
+        # 11-11 22:08: question #7 was answered in one step with no tool call ("도구 실행 환경 오류", no such error)
+        if not obs_all:
+            return "거절됨: 도구를 한 번도 부르지 않고 답할 수 없음. 도구 결과를 먼저 읽을 것 (도구 오류를 봤다면 그 오류 글을 그대로 적음)"
+        return None
 
     def _tool_extra(self, name, args, obs):  # it has no recommended list
         return {}

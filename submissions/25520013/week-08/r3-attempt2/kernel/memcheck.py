@@ -368,7 +368,7 @@ def main(argv=None):
         questions,
         lambda agent, query, k: memory.search(sock, agent, query, k, timeout=5.0),
         lambda prompt: terra.complete(
-            prompt, agent="operator", timeout_s=90, effort="low"
+            prompt, agent="operator", timeout_s=90, effort="medium"
         ),
         top_k=a.top_k,
     )
