@@ -575,6 +575,97 @@ def experiments(root, hours=6, now=None):
     return c.cap("\n".join(out), MAX_CHARS)
 
 
+REVIEW_BY = ("category", "grade", "warranty", "price", "shelf", "claim", "sku", "account")
+
+
+def reviews(root, hours=24, by="category", low=3, now=None):
+    """우리 가게 리뷰를 판매(주문)와 이어 구간별로 셈: 최근 hours시간(1~72), by는 category|grade|warranty|price(정가 대비 판매가)|shelf(판 때 남은 유통기한)|claim(말한 등급이 실제와 같은지)|sku|account. 구간마다 리뷰 수, 평균, low점 이하 수, 그리고 그 구간 리뷰를 뺐을 때 계정별 평균의 평균이 얼마나 바뀌는지를 줌(별점은 리뷰한 계정마다 평균 하나로 셈)."""
+    import statistics as st
+
+    from kernel import brief
+
+    now = c.now_ts() if now is None else now
+    try:
+        hours = min(72.0, max(1.0, float(hours)))
+    except (TypeError, ValueError):
+        hours = 24.0
+    if by not in REVIEW_BY:
+        return f"인자 오류: by는 {', '.join(REVIEW_BY)} 중 하나"
+    low = low if isinstance(low, int) and not isinstance(low, bool) and 1 <= low <= 4 else 3
+    since, login, cat = now - hours * 3600, c.owner_login(root), brief._catalog(root)
+    rv = []
+    for e in c.tail_json(os.path.join(root, ".r3/events.jsonl"), 120_000_000, b'"review"'):
+        d = e.get("data") or {}
+        if (e.get("type") == "review" and e.get("role") == "shop" and (e.get("ts") or 0) >= since
+                and isinstance(d.get("stars"), (int, float)) and not isinstance(d.get("stars"), bool)):
+            rv.append(d)
+    if not rv:
+        return f"최근 {hours:g}시간 우리 가게 리뷰 기록 없음"
+    ours = {}
+    for e in c.tail_json(os.path.join(root, ".r3/events.jsonl"), 160_000_000, b'"settle"'):
+        d = e.get("data") or {}
+        if (e.get("type") == "settle" and e.get("src") == "market" and (e.get("ts") or 0) >= since - 12 * 3600
+                and d.get("order") and c.settle_side(d, login) == "shop"):
+            ours[d["order"]] = (d, e.get("ts") or 0)
+
+    def group(d, ts):
+        if by == "category":
+            return brief._leaf(d.get("category") or (cat.get(d.get("sku")) or {}).get("category"))
+        if by == "grade":
+            return str(d.get("grade") or "-")
+        if by == "warranty":
+            return "보증 있음" if d.get("warranty_hours") else "보증 없음"
+        if by == "claim":
+            return {True: "말한 등급이 실제와 같음", False: "말한 등급이 실제와 다름"}.get(d.get("claim_honest"), "기록 없음")
+        if by == "sku":
+            return f"{d.get('sku')} {str(d.get('name') or '')[:24]}"
+        if by == "account":
+            return c.hid(d.get("buyer"))
+        if by == "price":
+            lp = brief._list_price(cat, d.get("sku"))
+            if not lp or not isinstance(d.get("amount"), (int, float)):
+                return "정가 모름"
+            r = d["amount"] / lp
+            return "0.6 미만" if r < 0.6 else "0.6~0.7" if r < 0.7 else "0.7~0.8" if r < 0.8 else "0.8~0.9" if r < 0.9 else "0.9 이상"
+        x = d.get("expires_at")  # shelf
+        if not isinstance(x, (int, float)) or x - ts > 60 * 86400:
+            return "기한 없음(일반상품)"
+        h = (x - ts) / 3600
+        return "12시간 미만" if h < 12 else "12~24시간" if h < 24 else "24~72시간" if h < 72 else "72시간 이상"
+
+    rows = []  # (group, account, stars)
+    for d in rv:
+        s = ours.get(d.get("order"))
+        if s:
+            rows.append((group(*s), c.hid(s[0].get("buyer")), d["stars"]))
+    mean = lambda v: st.mean(v) if v else 0.0
+
+    def acc_mean(rs):
+        per = {}
+        for _, a, x in rs:
+            per.setdefault(a, []).append(x)
+        return mean([mean(v) for v in per.values()]), len(per)
+
+    out = [f"우리 가게 리뷰 최근 {hours:g}시간: {len(rv)}건, 평균 {mean([d['stars'] for d in rv]):.2f}, {low}점 이하 "
+           f"{sum(1 for d in rv if d['stars'] <= low)}건; 판매와 이어진 {len(rows)}건"]
+    if not rows:
+        return out[0]
+    base, n_acc = acc_mean(rows)
+    out.append(f"계정별 평균의 평균 {base:.3f} (계정 {n_acc}곳). 아래 '빼면'은 그 구간 리뷰가 없었을 때 이 값의 변화")
+    groups = {}
+    for r in rows:
+        groups.setdefault(r[0], []).append(r)
+    order = sorted(groups, key=lambda g: -(acc_mean([r for r in rows if r[0] != g])[0] - base) if len(groups) > 1 else 0)
+    out.append(f"{by}별 (빼면 가장 많이 오르는 순, 상위 {min(len(order), 25)}개):")
+    for g in order[:25]:
+        v = [x for _, _, x in groups[g]]
+        rest = [r for r in rows if r[0] != g]
+        delta = f"{acc_mean(rest)[0] - base:+.3f}" if rest else "-"
+        out.append(f"  {g}: 리뷰 {len(v)}, 평균 {mean(v):.2f}, {low}점 이하 {sum(1 for x in v if x <= low)}, "
+                   f"1~2점 {sum(1 for x in v if x <= 2)}, 계정 {len({a for _, a, _ in groups[g]})}곳, 빼면 {delta}")
+    return c.cap("\n".join(out), MAX_CHARS)
+
+
 def findings(root, hours=24, role=None, now=None):
     """조사 결과 전체: 조사원이 최근 hours시간(1~168)에 끝낸 질문마다 질문, 결과, 근거(숫자와 도구), 제안, 받는 운영자, 미완 여부. role(shop, buyer)을 주면 그 운영자에게 온 것만. 상태 카드 위 조사 결과 절보다 자세히 볼 때 씀."""
     from kernel import questions
@@ -661,7 +752,7 @@ def tool_search(root, query):
 RECOMMENDED = {
     "shop": ("board", "ledger", "events", "stockouts", "sku_stats", "net_profit", "inventory", "restock_log",
              "policy", "experiments", "code_search", "code_read", "brief_section", "guide", "recall", "tool_search",
-             "findings"),
+             "findings", "reviews"),
     "buyer": ("board", "ledger", "events", "shops", "catalog", "policy", "experiments", "code_search", "code_read",
               "brief_section", "guide", "recall", "tool_search", "findings"),
 }
@@ -690,6 +781,7 @@ TOOLS = {
     "experiments": (experiments, ("operator",)),
     "tool_search": (tool_search, ("operator",)),
     "findings": (findings, ("operator",)),
+    "reviews": (reviews, ("operator",)),
 }
 
 
