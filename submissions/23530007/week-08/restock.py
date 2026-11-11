@@ -498,9 +498,11 @@ def main():
         v_ = catalog.get(sku_)
         if not v_:
             continue
-        good_ = sum(1 for u in fresh if u["sku"] == sku_ and u.get("grade") in ("A", "B"))
+        good_ = sum(1 for u in fresh if u["sku"] == sku_ and u.get("grade") == "A")     # the seller ships grade A food only
         if good_ < q_:
-            must.append((good_ - q_, ((False, -2, 0), v_["category"], v_, min(MAX_QTY, int(q_ - good_)))))
+            # food arrives with a random share of its shelf life left (about 1 unit in 5 is grade A), so a line buys
+            # a few times the shortage, at most 12 units
+            must.append((good_ - q_, ((False, -2, 0), v_["category"], v_, min(12, 3 * int(q_ - good_)))))
     wants += [w for _, w in sorted(must, key=lambda m: m[0])[:MUST_LINES]]
     wants.sort(key=lambda w: w[0])
     max_stock = p["max_stock_share"] * (cash + stock_cost)

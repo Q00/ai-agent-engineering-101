@@ -268,6 +268,7 @@ def pick_unit(text, held, now, asks=None):
 
 
 CHEAP_LIST, CHEAP_SHARE = 50000, 0.58   # 11-11: concession on cheap items from the 3rd offer (<= ~1M/day)
+STAR_ASK, STAR_FLOOR = 0.56, 0.46   # 11-11: opening ask and floor (share of list) for params must_stock foods
 FOOD_SHELF_FLOOR = 0.80       # share of its shelf life a food unit must still have to be sold. 0.45 on 11-11 (no grade C);
 #                               0.80 the same evening (user: 'sell the fresh ones, do not sell the old ones'): the market's food
 #                               grade A starts at ~80% left, B is 45-80%. 48 h of paid food reviews by shelf life left at the sale:
@@ -484,6 +485,14 @@ class Shop(AgentExecutor):
             if doomed:
                 share = min(share, DOOM_ASK)
             floor = floor_of(u, now, mult)
+            if u.get("kind") == "food" and u["sku"] in (p.get("must_stock") or {}):
+                # 11-11 21:10 (user: 'use fresh food to raise stars even at a small loss, furniture makes it up'): the
+                # long-shelf foods kept for the accounts that lift our per-account star mean (JangSeongWoong rates
+                # every shop 5.0 and never paid us; gom31-certified-goods rates grade A 5 and pays x .52-.60) are
+                # asked at STAR_ASK of list and may go down to STAR_FLOOR, under cost if need be (a few thousand
+                # credits a unit); only units with >= 80% of their shelf life are sold at all (FOOD_SHELF_FLOOR)
+                share = min(share, STAR_ASK)
+                floor = min(floor, round(u["list_price"] * STAR_FLOOR))
             who, min_share = rival(text)
             if who:                                     # a rival above us in class: no deep discount (user 11-07)
                 floor = max(floor, round(u["list_price"] * min_share))
