@@ -14,6 +14,7 @@ buyer_score.py. Each guard is justified by a past incident (volatility analysis,
   G7 rank step   class buyer <= -.009 or class shop <= -.007 in one 15-min step, confirmed by the next sample
                  -> wake the matching strategist (2 h cooldown)
   G8 stars       our board stars_rank worse by >= 2 ranks within 2.5 h (shop_parts.jsonl) -> wake the shop (<= 2/day)
+  G14 final     projected final class rank (ops/final_rank.py, every 2 h) under 1st -> wake the shop, alert <= 1 per 12 h
   G13 revenue   the student shop below us in revenue passing us before the round ends (3 h slopes) -> wake the shop
                  (<= 1 per 2 h), phone alert under 72 h (user 11-11: never lose revenue 2nd)
   G9 book        book lead over the best other shop closing in < 72 h at the 6 h slopes -> wake the shop (<= 1 per 6 h)
@@ -271,6 +272,30 @@ def main():
                 fires.append("G9")
     except Exception as e:
         log(f"G9 skipped: {e!r}")
+
+    # G14 projected final rank (user 11-11: 'finish 1st; the shop must hold 1st whatever it takes'): every 2 h,
+    # ops/final_rank.py at our current buyer pace; projected under 1st (damped view) -> wake the shop strategist with
+    # the threat and its shop slope, phone alert at most every 12 h
+    try:
+        if cooled(st, "G14chk", 2 * 3600, now):
+            fired(st, "G14chk", now)
+            sys.path.insert(0, str(HERE / "ops"))
+            import final_rank as _fr
+            sc_ = json.loads((MD / "buyer_score.json").read_text())
+            v6_ = sc_.get("v6") or {}
+            pr = _fr.project(float(v6_.get("deals_h") or 30), float(v6_.get("all") or 0.40))
+            st["final_rank"] = {"damped": pr["us"]["rank_damped"], "trend": pr["us"]["rank_trend"], "t": now}
+            if pr["us"]["rank_damped"] > 1:
+                top = [r for r in pr["rows"] if r["rank_damped"] < pr["us"]["rank_damped"]]
+                msg = ", ".join(f"{r['player']} {r['total_damped']} (shop/day {r['shop_slope_day_48h']:+.3f})" for r in top)
+                wake("shop", f"G14 projected final rank {pr['us']['rank_damped']} (us {pr['us']['total_damped']}); ahead: {msg}. "
+                             "User: the shop must hold every point (book 1st, revenue 2nd, stars up).")
+                fires.append("G14")
+                if cooled(st, "G14a", 12 * 3600, now):
+                    alert([f"G14 최종 예상 순위 {pr['us']['rank_damped']}위 (우리 {pr['us']['total_damped']}); 앞: {msg}"])
+                    fired(st, "G14a", now)
+    except Exception as e:
+        log(f"G14 skipped: {e!r}")
 
     # G13 revenue 2nd (user 11-11: never lose it): the student shop right below us in revenue, 3 h slopes
     try:
