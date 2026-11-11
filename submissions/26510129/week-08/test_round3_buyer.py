@@ -199,6 +199,13 @@ class Round3BuyerContextTest(unittest.TestCase):
         self.assertTrue(market_buyer.cooling_off(mem, "x"))
         self.assertFalse(market_buyer.cooling_off(mem[:3], "x"))                              # not yet four
         self.assertFalse(market_buyer.cooling_off(mem + [{"shop": "x", "outcome": "deal"}], "x"))   # answered again
+        import time as _time
+        dated = mem[:3] + [{"shop": "x", "outcome": "stale", "at": "2026-11-11 17:00"}]
+        t0 = _time.mktime(_time.strptime("2026-11-11 17:00", "%Y-%m-%d %H:%M"))
+        self.assertTrue(market_buyer.cooling_off(dated, "x", now=t0 + 10 * 60))      # ten minutes later: still cooled
+        self.assertFalse(market_buyer.cooling_off(dated, "x", now=t0 + 31 * 60))     # the cool-off expires
+        self.assertTrue(market_buyer.shop_moved(100, 96))
+        self.assertFalse(market_buyer.shop_moved(100, 98.5))
 
     def test_closing_gap_pays_the_ask_when_my_offer_is_within_two_percent(self):
         self.assertTrue(market_buyer.closing_gap(404800, 405000, 441000, 380000, 1.05))

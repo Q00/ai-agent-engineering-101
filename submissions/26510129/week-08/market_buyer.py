@@ -137,12 +137,36 @@ def scarcity(mem, category, recent=60):
     return sum(1 for r in rows if r.get("outcome") == "no_stock") / len(rows)
 
 
-def cooling_off(mem, shop_name, streak=4):
+COOL_OFF_MINUTES = 30
+
+
+def cooling_off(mem, shop_name, streak=4, now=None):
     """A shop whose last `streak` visits all ended before any offer (no stock, or a rejection at the opening like
-    leeuichann's "cannot be verified against current inventory", 11 times in 40 orders at 01:10) is left alone
-    until it has been visited and answered again; no_stock rows do not lower its score, so this is the only brake."""
+    leeuichann's "cannot be verified against current inventory", 11 times in 40 orders at 01:10) is left alone for
+    COOL_OFF_MINUTES after its last visit; no_stock rows do not lower its score, so this is the only brake.
+    11-11 18:10: without the expiry a cooled shop was never visited again, so it stayed cooled for good: 48 shops,
+    among them the market's biggest and cheapest (nocha12 10,756 settles a day, psyoung82 8,053, yms979, lee-sungsoo,
+    inextro, olstjr...), 14 of the 23 shops of one order. Most of their "stale" rows came from the food grade rule
+    relaxed at 17:42."""
     rows = [r for r in mem if r.get("shop") == shop_name][-streak:]
-    return len(rows) == streak and all(r.get("outcome") in ("no_stock", "stale") for r in rows)
+    if len(rows) < streak or not all(r.get("outcome") in ("no_stock", "stale") for r in rows):
+        return False
+    last = rows[-1].get("at")
+    if not last:
+        return True
+    try:
+        last_ts = time.mktime(time.strptime(last, "%Y-%m-%d %H:%M"))
+    except ValueError:
+        return True
+    return (now if now is not None else time.time()) - last_ts < COOL_OFF_MINUTES * 60
+
+
+def shop_moved(previous_ask, ask, at_least=0.03):
+    """Did the shop concede at least `at_least` from its previous ask? 18:10: 129 model offers in 25 min drew 127
+    counters and 2 deals; shops here concede 1-2% a round, and the deals came from quick-takes, openers and my final
+    ceiling. The model is asked only when the shop is actually bargaining."""
+    return (isinstance(previous_ask, (int, float)) and isinstance(ask, (int, float)) and previous_ask > 0
+            and (previous_ask - ask) / previous_ask >= at_least)
 
 
 def closing_gap(last_offer, ask, limit, reference, slack):
@@ -371,8 +395,8 @@ def negotiate(url, item, budget, reference, record="", request=None, value_cap=N
             print(f"[buyer] the shop's stated lowest {floor} is over my pay cap {guardian.limit}; leaving", flush=True)
             rpc(rpc_url, "CancelTask", {"id": tid})
             return "walked_away", None, None, log, manip, info
-        if round_index >= 3 and isinstance(ask, (int, float)) and ask > guardian.limit:
-            print(f"[buyer] three offers and the ask {ask} is still over my pay cap {guardian.limit}; leaving", flush=True)
+        if isinstance(ask, (int, float)) and ask > guardian.limit and (round_index >= 3 or guardian.ceiling_used):
+            print(f"[buyer] the ask {ask} is still over my pay cap {guardian.limit} after my last word; leaving", flush=True)
             rpc(rpc_url, "CancelTask", {"id": tid})
             return "walked_away", None, None, log, manip, info
         # after a reopen the shop has shown its floor: the next ask near it is taken rather than bargained down again
@@ -396,6 +420,12 @@ def negotiate(url, item, budget, reference, record="", request=None, value_cap=N
             d = {"action": "offer", "price": opening_offer(ask, reference, discount, open_at_least)}   # the opener is code (no model call)
             print(f"[buyer] opening at {d['price']} ({discount:.0%} under the ask {ask}, capped at my reference {reference}, "
                   f"at least the shop's usual {open_at_least})", flush=True)
+        elif offers and not shop_moved(offers[-2][1] if len(offers) > 1 else ask0, ask):
+            # the shop is not bargaining (under 3% off its last ask): my last word is the pay cap, offered as the
+            # guardian's final ceiling (round 2 semantics) without a model round
+            d = {"action": "offer", "price": guardian.limit}
+            round_index = max(round_index, 2)
+            print(f"[buyer] the shop holds near {ask}; my last word is the pay cap {guardian.limit}", flush=True)
         else:
             d = harness.decide(buyer_policy.NEGOTIATOR_SYSTEM,
                                buyer_policy.situation(f"Item: {item}. Personal reference price: {reference}. {record}",
