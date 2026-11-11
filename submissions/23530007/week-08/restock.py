@@ -78,6 +78,10 @@ NEED_SHARE = 0.25            # a food order's use_within_hours is the category's
                              # has seen orders in the category (a fixed 72 h shut out 24 h categories: ready meals)
 INTEL = Path(os.environ.get("MARKET_INTEL", HERE / "market_intel.jsonl"))              # hours
 SURGE_MAX = 0.15             # most cost surge we pay on a SKU (margins run ~20-25 % of list)
+SLOW_UNIT = 0.25             # 11-11: what a grade C unit counts for in the SKU cover (paid 10-19% when not asked for)
+OVER_UNIT = 0.5              # ... and an A/B unit whose floor is above the SKU's market median (sells, but slowly: ~27% close)
+LINE_MAX_COST = 25e6         # 11-11: most one supply line may cost (at COST_GUESS), so one 3.8M sofa x20 does not take 46M
+WINDOW_MAX_COST = 90e6       # ... and most one window may cost
 COST_A, SURGE_MARGIN = 0.65, 0.03   # 11-11: typical grade A cost share; margin kept under the market median x
 COST_GUESS = 0.6             # cost as a share of list price before a unit arrives (A 55-75 %, B 40-60 %, C 25-45 %)
 
@@ -232,6 +236,16 @@ def sku_wants(catalog, have_sku, p, now, hours_left, market_sku, mkt_units=None,
                     sold[ev["sku"]] += 1
                 elif ev.get("event") == "no_stock" and ev.get("skus"):
                     asked[ev["skus"][0]] += 1
+    # 11-11: 'deal' in the seller log is an agreed close, paid or not (25% of furniture closes were never paid,
+    # and a unit stuck in an unpaid checkout was agreed again and again): the per-SKU demand is the PAID settles
+    # of our shop on the ledger when the cache has them
+    try:
+        sv_ = json.loads((HERE / ".market" / "shop_value.json").read_text())
+        paid_ = Counter(d["sku"] for d in sv_.get("deals") or [] if d.get("shop") == "yms979" and d.get("ts", 0) >= since)
+        if sum(paid_.values()) >= 20:
+            sold = paid_
+    except (OSError, ValueError):
+        pass
     mkt = {k: n * math.log(2) / HALF_LIFE for k, n in market_sku.items()}            # market sales per hour
     best = sorted((k for k in mkt if (catalog.get(k) or {}).get("kind") == "goods"),
                   key=lambda k: -mkt[k] * catalog[k]["list_price"])[:p["market_top"]]
@@ -404,7 +418,23 @@ def main():
     top_cat = max(value.values(), default=0) or 1                      # a mattress outweighs a kimchi
     top_own = max(st["own_cat"].values(), default=0) or 1
     top_forum = max(st["forum_cat"].values(), default=0) or 1
-    wants = sku_wants(catalog, have_sku, p, now, sig["hours_left"], st["sku"], st.get("mkt_units"), st.get("mkt_shops"))   # (priority, category, sku, qty)
+    # 11-11 (user: stock deep and wide, sell a little under the others): for the per-SKU cover only units a normal
+    # buyer will pay for count as stock. A grade C unit offered to a buyer who did not ask for C is paid ~10-19% of
+    # the time, and a grade A unit whose floor (cost x floor_mult) sits above the SKU's market median waits for a
+    # price-insensitive buyer: both counted 1 before, so a SKU holding only such units looked covered, was not
+    # restocked and lost its asks. They now count SLOW_UNIT each.
+    mx_ = market_p50_x()
+    fm_ = p.get("floor_mult", 1.05)
+    sellable_sku = Counter()
+    for u in fresh:
+        if u.get("kind") != "goods":
+            sellable_sku[u["sku"]] += 1
+            continue
+        x_ = mx_.get(u["sku"])
+        over_ = x_ is not None and (u.get("cost") or 0) * fm_ > x_ * (u.get("list_price") or 1)
+        sellable_sku[u["sku"]] += SLOW_UNIT if u.get("grade") == "C" else OVER_UNIT if over_ else 1
+    wants = sku_wants(catalog, {k: int(v) for k, v in sellable_sku.items()}, p, now, sig["hours_left"], st["sku"],
+                      st.get("mkt_units"), st.get("mkt_shops"))   # (priority, category, sku, qty)
     for _, cat, v, qty in wants:                            # the category loop sees these as stock already
         have[cat] += qty
         have_sku[v["sku"]] += qty
@@ -480,8 +510,8 @@ def main():
         unit = v["list_price"] * COST_GUESS
         # 11-06: a line that did not fit whole was skipped, so the top sellers (Plana 4 swing 11 % of revenue,
         # 20 x ~2.3M) got nothing for 2 h and sat at 0 stock while 64M cash waited; buy what fits instead
-        room = min(cash - spend - p["keep_cash"], max_stock - stock_cost - spend)
-        qty = min(qty, int(room // unit)) if unit > 0 else qty
+        room = min(cash - spend - p["keep_cash"], max_stock - stock_cost - spend, WINDOW_MAX_COST - spend)
+        qty = min(qty, int(room // unit), max(1, int(LINE_MAX_COST // unit))) if unit > 0 else qty
         if qty <= 0:
             continue
         cost = unit * qty
