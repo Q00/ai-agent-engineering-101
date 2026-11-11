@@ -113,6 +113,9 @@ def food_unit_ok(grade, shelf_hours, need):
 
 NICK = os.environ.get("MARKET_NICK", "jiseokkk")   # my market name, for shops that take a few percent off for regulars
 WARRANTY_MATTERS_FROM = 300_000   # goods at or above this reference price prefer shops that give a warranty
+REOPEN_SLACK = 1.15               # a stated floor up to this much over my reference is paid in a new task
+STEP_CAP = 1.06                   # a later offer may not jump more than this over my previous one (11-11: shops close
+                                  # at my 4th offer, 4% steps from 80% reached 0.84 of the ask there; 6% reach 0.95)
 
 
 def scarcity(mem, category, recent=60):
@@ -184,16 +187,21 @@ def opening_offer(ask, reference, discount):
     return max(1, int(round(price)))
 
 
-def capped_step(previous, proposal, cap=1.04):
-    """A later offer may not jump more than 4% over my previous one; the model tends to leap to the ask."""
+def capped_step(previous, proposal, cap=STEP_CAP):
+    """A later offer may not jump more than STEP_CAP over my previous one; the model tends to leap to the ask."""
     if not isinstance(previous, (int, float)) or not isinstance(proposal, (int, float)):
         return proposal
     return int(round(min(proposal, previous * cap)))
 
 
+FLOOR_PHRASES = re.compile(r"(?:lowest|no deal below|cost floor|our last ask was|final price was)[^0-9]{0,24}(\d[\d,]*)", re.I)
+
+
 def stated_floor(text):
-    """A floor the shop states in its reply ("No deal. Lowest for this unit: 186000"), else None."""
-    m = re.search(r"\b[Ll]owest\b[^0-9]{0,40}(\d[\d,]*)", text or "")
+    """A floor the shop states in its reply, else None. 11-11: of ~1,100 closes in 19 h, 580 named one in five
+    phrasings ("No deal at 80000; our lowest is 92000", "No deal below 92000", "Lowest for this unit: 92000",
+    "Cannot sell below certified cost floor (92000)", "Our last ask was 92000"); the first regex read only one."""
+    m = FLOOR_PHRASES.search(text or "")
     return int(m.group(1).replace(",", "")) if m else None
 
 
@@ -317,7 +325,7 @@ def negotiate(url, item, budget, reference, record="", request=None, value_cap=N
             if d and isinstance(d.get("price"), (int, float)) and offers:
                 stepped = capped_step(offers[-1][0], d["price"])
                 if stepped != d["price"]:
-                    print(f"[buyer] the model's {d['price']} capped to {stepped}: no more than 4% over my last offer", flush=True)
+                    print(f"[buyer] the model's {d['price']} capped to {stepped}: no more than {STEP_CAP - 1:.0%} over my last offer", flush=True)
                     d["price"] = stepped
         if d is None:
             fallback = buyer_policy.public_fallback_offer(reference, ask, round_index)
@@ -351,7 +359,9 @@ def negotiate(url, item, budget, reference, record="", request=None, value_cap=N
             # 00:30: 111 closes in 6 h came as "No deal. Lowest for this unit: N" with the task already over. When N is
             # inside my limit and near my reference, one new task is opened and N is paid at once.
             floor = stated_floor(status_text(t))
-            if floor and floor <= guardian.limit and floor <= reference * 1.10 and not info.get("reopened"):
+            # 11-11: stated floors ran at 1.13x my reference (market x 0.92), so 83% of them were left on the table
+            # at the old 1.05; up to 1.15x (about 6% over the market price) is still inside my limit and worth a deal
+            if floor and floor <= guardian.limit and floor <= reference * REOPEN_SLACK and not info.get("reopened"):
                 info["reopened"] = True
                 print(f"[buyer] the shop closed at a stated lowest {floor} inside my limit; reopening to pay it", flush=True)
                 buyer_policy.emit("buyer_reopen_at_floor", item=item, floor=floor, reference=reference)

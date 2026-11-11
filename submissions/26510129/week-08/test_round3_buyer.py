@@ -105,8 +105,16 @@ class Round3BuyerContextTest(unittest.TestCase):
         self.assertEqual(80_000, market_buyer.opening_offer(100_000, 92_000, 0.20))      # 20% under the ask
         self.assertEqual(70_000, market_buyer.opening_offer(100_000, 70_000, 0.20))      # never above my reference
         self.assertIsNone(market_buyer.opening_offer(None, 70_000, 0.20))
-        self.assertEqual(83_200, market_buyer.capped_step(80_000, 95_000))              # 4% over my last offer
+        self.assertEqual(84_800, market_buyer.capped_step(80_000, 95_000))              # 6% over my last offer
         self.assertEqual(81_000, market_buyer.capped_step(80_000, 81_000))
+
+    def test_stated_floor_reads_the_shops_five_phrasings(self):
+        for text, floor in (("No deal at 80000; our lowest is 92,000", 92000), ("No deal below 92000", 92000),
+                            ("No deal. Lowest for this unit: 92000. receipt=Ed25519", 92000),
+                            ("Cannot sell below certified cost floor (92000). No deal at 80000.", 92000),
+                            ("No deal. Our last ask was 92000", 92000), ("Final price was 92000 No deal.", 92000),
+                            ("Counteroffer: 92000.", None), ("We cannot agree at that price.", None)):
+            self.assertEqual(floor, market_buyer.stated_floor(text), text)
 
     def test_cheap_shops_on_the_ledger_rank_higher(self):
         rows = [{"shop": "u-cheap", "sku": "valuable", "price": 110}] * 5 + [{"shop": "u-dear", "sku": "valuable", "price": 160}] * 5
