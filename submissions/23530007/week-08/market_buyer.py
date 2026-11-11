@@ -708,6 +708,7 @@ def main():
         needwarr = order.get("kind") == "goods"
         warr_ok, warr_asked = False, False
         graded = None     # 11-08 gradeaware: (grade, warranty hours) read from the shop's first reply
+        gceil = None      # 11-11: the stated grade's price ceiling; nothing above it is agreed (not even 'near')
         short = None    # 11-07: 43 of 69 lost food orders in 6 h agreed a price, then the kit refused to pay (shelf life)
         push = random.random() < bp.get("push_share", 0)
         pushed = False
@@ -731,6 +732,7 @@ def main():
                     g_, w_ = graded
                     if g_ in ("A", "B", "C"):
                         gcap = int(want["list_price"] * x_bar(g_, bp))
+                        gceil = gcap
                         if gcap < cap:
                             log("buyer", f"{pick['name']} offers grade {g_}: cap {cap} -> {gcap} ({x_bar(g_, bp):.2f} of list, m* {m_star(bp):.3f})")
                             cap = max(1, gcap)
@@ -782,7 +784,8 @@ def main():
                 ask = read_ask(t)[0]
                 if ask is not None:
                     asks.append(ask)
-                near = acceptable and ask is not None and cap < ask <= min(a.budget, cap + want["list_price"] * bp["near_cap"])
+                near = acceptable and ask is not None and cap < ask <= min(a.budget, cap + want["list_price"] * bp["near_cap"],
+                                                                           gceil if gceil else a.budget)
                 # 11-07 push2: the quick accept took first asks up to 0.70 of list without a counter (Pringles at
                 # 0.59 while Kiro729 sold it at 0.41); in the push arm a low first ask still gets one counter
                 low_first = (push and npush < max_push and not near and ask is not None and p25 and vctx is not None
@@ -882,7 +885,8 @@ def main():
                     # unwarranted goods ran .185 per deal over 48 h)
                     log("buyer", f"{pick['name']} signed {item} without a warranty; not paying, trying elsewhere")
                     outcome, rec, price = "no warranty on receipt", None, None
-                elif acceptable and order.get("kind") == "goods" and price and price > want["list_price"] * x_bar(claim, bp):
+                elif acceptable and order.get("kind") == "goods" and price and price > want["list_price"] * (x_bar(claim, bp) + bp["near_cap"]):
+                    # (near_cap tolerance: a price we agreed is paid; the ceiling binds before the agreement)
                     # 11-11: the claimed grade's price ceiling (a refunded break scores 0, so a warranted C at x .60
                     # is worth .28, below m*); unpaid, the next shop is tried at a price that pays
                     if claim == "C":
