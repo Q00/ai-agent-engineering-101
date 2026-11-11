@@ -1,0 +1,43 @@
+{
+  "mode": "production_deployment_read_only_verification",
+  "verified_at_market_clock_utc": "2026-11-11T07:42:41.598039+00:00",
+  "version": "evidence-curator-v1",
+  "staged_source_files_match": 14,
+  "offline_test_report": "round3-offline/20261111T075022269532Z.json",
+  "offline_tests": {"tests": 326, "failures": 0, "errors": 0, "cli_locks_passed": 7},
+  "natural_curator_run": {
+    "event_key": "1794382770.4530952",
+    "status": "recorded",
+    "model": "gpt-5.6-luna",
+    "input_chars": 4151,
+    "selected_buyer_refs": 3,
+    "selected_strategist_refs": 6,
+    "next_attempt_at": 1794389970.4530952
+  },
+  "natural_buyer_prediction": {
+    "order": "o-f227a375d28b",
+    "timestamp": 1794382943.539828,
+    "curation_version": "evidence-curator-v1"
+  },
+  "natural_buyer_audit": {
+    "event_key": "buyer:5981276",
+    "packets": 48,
+    "packet_chars": 28158,
+    "retrieved_events": 1032,
+    "retrieval_seconds": 0.108947,
+    "capped_kinds": ["settlement", "payment", "negotiation"],
+    "raw_evidence_deleted": false
+  },
+  "strategist_natural_audit_observed": false,
+  "tmux_panes_observed": ["ai:market", "ai:trend-watch"],
+  "server_or_tunnel_restarted": false,
+  "keys_or_databases_reset": false,
+  "server_nas_conda_configuration_changed": false,
+  "manual_trade_or_model_call_for_verification": false,
+  "limitations": [
+    "No causal market-profit or ranking improvement measurement",
+    "Packet characters are not billed tokens or the entire buyer prompt",
+    "Strategist wiring and read-only replay passed; its next natural model/restock cycle was not yet observed",
+    "Application-corrected market clock is not proof of exact host clock synchronization"
+  ]
+}
