@@ -1222,7 +1222,7 @@ def watchdog(a, agent, d, market, keys, procs, proxy, sport, pport, state, every
                         # (20+ today); after two dead checks in a row move to the other hostname of the named
                         # tunnel (both answer), so the market registers a changed URL and probes it afresh
                         alt = other_url(proxy.public)
-                        if state["dead_streak"] >= 2 and alt and card_ok(alt):
+                        if state["dead_streak"] >= 1 and alt and card_ok(alt):   # every dead check (a moved URL is alive until the next ~2-min check)
                             try:
                                 j = market.join("shop", a.name, keys["shop"], alt, tries=1)
                                 proxy.public = state["own_shop"] = alt
