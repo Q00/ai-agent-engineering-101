@@ -48,8 +48,9 @@ DEFAULT_POLICY = {"undercut": 0.02,           # price this far (share of list) u
                   "clearance_hours": 6,       # ... except food with fewer hours left than this
                   "clearance_floor": 0.6,     # which may go down to cost * this
                   "warranty_max_break": 0.06, # give a warranty when the grade's break rate is under this
-                  "warranty_hours": 72}       # goods only break within 6 h of the sale, so 72 h costs the
+                  "warranty_hours": 72,       # goods only break within 6 h of the sale, so 72 h costs the
                                               # same as 6 h and passes any buyer's accept.warranty_hours (max 72)
+                  "concede_threshold": 0.15}  # first offer this far under ask -> concede straight to target
 
 PROMPT = """You are the sales agent of a discount shop (low margin, high volume, honest grades).
 A buyer is negotiating for one {name} (grade {grade}{warranty}).
@@ -209,7 +210,7 @@ class Seller(AgentExecutor):
 
         if deal["offer"] is not None and deal["offer"] >= target:   # good enough: no need to ask the harness
             action, move = "accept", {}
-        elif first_offer_gap >= 0.15:
+        elif first_offer_gap >= MARKET.policy.get("concede_threshold", 0.15):
             print(f"[concede] first offer {deal['offer']} is {first_offer_gap:.0%} under ask {ask} -> "
                   f"counter at target {target} (likely to cancel otherwise)", flush=True)
             action, move = "counter", {"price": target}

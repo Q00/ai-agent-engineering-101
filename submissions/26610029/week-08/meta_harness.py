@@ -29,7 +29,7 @@ BOUNDS = {
     "seller": {
         "undercut": (0.0, 0.06), "open_premium": (0.0, 0.08), "min_margin": (0.03, 0.12),
         "clearance_hours": (3, 12), "clearance_floor": (0.5, 0.8), "warranty_max_break": (0.02, 0.10),
-        "warranty_hours": (6, 72),
+        "warranty_hours": (6, 72), "concede_threshold": (0.08, 0.30),
     },
     "restock": {
         "window_budget": (0.05, 0.25), "lookback_h": (1, 6), "max_skus": (3, 10),
@@ -100,8 +100,17 @@ def rule_proposal(stats, policy):
         reasons.append(f"shop deal_rate {neg['deal_rate']} over {neg['total']} negotiations is low: "
                        f"open_premium {cur_premium} -> {p['seller']['open_premium']}")
     elif neg["total"] >= 20 and neg["deal_rate"] is not None and neg["deal_rate"] < 0.35:
-        reasons.append(f"shop deal_rate {neg['deal_rate']} is still low but open_premium is already at its "
-                       f"floor ({cur_premium}) -- the low rate likely isn't about price anymore")
+        # price is already at its floor and the rate is still low: try a different lever -- concede to
+        # target more readily, in case the stuck negotiations are lowball-and-vanish buyers, not price
+        cur_c = policy["seller"].get("concede_threshold", 0.15)
+        if cur_c > BOUNDS["seller"]["concede_threshold"][0]:
+            p["seller"]["concede_threshold"] = max(BOUNDS["seller"]["concede_threshold"][0], cur_c - 0.03)
+            reasons.append(f"shop deal_rate {neg['deal_rate']} is still low but open_premium is already at "
+                           f"its floor ({cur_premium}): trying concede_threshold {cur_c} -> "
+                           f"{p['seller']['concede_threshold']} instead")
+        else:
+            reasons.append(f"shop deal_rate {neg['deal_rate']} is still low but both open_premium and "
+                           f"concede_threshold are already at their floors -- likely not fixable by price")
 
     loss = stats["shop_warranty_losses"]
     if loss["n"] >= 3 and loss["refunded_won"] > 100000:
