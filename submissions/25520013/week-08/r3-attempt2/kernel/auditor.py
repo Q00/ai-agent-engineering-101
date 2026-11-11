@@ -253,6 +253,11 @@ def _gaps_block(root, now, hours=24):
     out.append("질문 수(물은 쪽별): " + (", ".join(f"{k} {v}" for k, v in asked.most_common()) or "없음"))
     card = card_state(root)
     out.append("상태 카드에 붙인 도구: " + (", ".join(f"{r} {card[r]}" for r in ROLES if card[r]) or "없음"))
+    from kernel import brief
+
+    for r in ROLES:  # what each operator's card holds now, so the auditor can tell what is not on it
+        heads = re.findall(r"^\[([^\]\n]{1,20})\]", brief.build_compact(root, now, now - 3600, role=r), re.M)
+        out.append(f"{ROLE_KO[r]} 상태 카드의 칸: " + ", ".join(dict.fromkeys(h.split(" ")[0] for h in heads)))
     return "\n".join(out)
 
 

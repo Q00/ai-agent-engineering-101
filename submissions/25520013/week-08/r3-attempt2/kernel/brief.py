@@ -2020,7 +2020,57 @@ def _money_compact(x):
     log = code_edit.restock_log(x.root, MONEY_RESTOCK_H, x.now).split("\n")[:2]
     if log and log[0].startswith("재입고 실행"):
         out.append("  " + ", ".join(log))
+    last = None
+    for m in c.tail_json(os.path.join(x.root, ".r3/metrics.jsonl"), 80_000_000, b'"restock_plan"'):
+        o = m.get("outcome") if isinstance(m.get("outcome"), dict) else {}
+        if m.get("hook") == "restock" and not o.get("why") and _is_num(o.get("qty")) and o["qty"] > 0 and _is_num(m.get("ts")):
+            last = (m["ts"], o["qty"])
+    if last and last[0] <= x.now:
+        out.append(f"  마지막으로 산 재입고 실행: {c.kst(last[0])} ({(x.now - last[0]) / 3600:.1f}시간 전), 수량 {last[1]:g}")
     return out
+
+
+HOURLY_H = 6  # [시간대별]: clock hours shown, the current (partial) hour last
+
+
+def _hourly(x, role):
+    """[시간대별]: per clock hour, our shop's settled sales (count, revenue) and our buyer's settled buys (count,
+    paid/value). Facts only: the 12 h totals on the card hide whether the pace is rising or falling."""
+    since = (int(x.now) // 3600 - (HOURLY_H - 1)) * 3600
+    hr = defaultdict(lambda: [0, 0.0, 0, 0.0, 0.0])
+    for e in c.tail_json(os.path.join(x.root, ".r3/events.jsonl"), NET_BYTES_PER_H * (HOURLY_H + 2), b'"settle"'):
+        ts, d = e.get("ts"), e.get("data") or {}
+        if e.get("type") != "settle" or not _is_num(ts) or not since <= ts <= x.now:
+            continue
+        h = hr[int(ts) // 3600]
+        if e.get("src") == "market" and c.settle_side(d, x.login) == "shop":
+            h[0] += 1
+            h[1] += d.get("amount") if _is_num(d.get("amount")) else 0
+        elif e.get("src") == "deal" and e.get("role") == "buyer":
+            h[2] += 1
+            if _is_num(d.get("amount")) and _is_num(d.get("value")):
+                h[3] += d["amount"]
+                h[4] += d["value"]
+    hours = range(since // 3600, int(x.now) // 3600 + 1)
+    hh = lambda k: c.kst(k * 3600, "%H시")
+    out = [f"[시간대별] 최근 {HOURLY_H}개 시각(마지막은 진행 중인 {int(x.now % 3600 // 60)}분째 시각)"]
+    if role in (None, "shop"):
+        out.append("  가게 정산 판매 건수(매출): " + ", ".join(f"{hh(k)} {hr[k][0]}({c.fmt(hr[k][1])})" for k in hours))
+    if role in (None, "buyer"):
+        out.append("  구매 정산 건수(지불액/가치): " + ", ".join(
+            f"{hh(k)} {hr[k][2]}" + (f"({hr[k][3] / hr[k][4]:.2f})" if hr[k][4] > 0 else "") for k in hours))
+    return out
+
+
+BUY_CARD_LINES = 8
+
+
+def _buy_compact(x):
+    """[구매 시도]: the head of the buy_attempts tool for the last 6 hours (the buyer operator's card)."""
+    from kernel import tools  # lazy: tools imports this module
+
+    lines = tools.buy_attempts(x.root, 6, x.now).split("\n")
+    return ["[구매 시도] " + lines[0]] + lines[1:BUY_CARD_LINES] + ["  (전체는 buy_attempts 도구)"]
 
 
 def _human_notes(x):
@@ -2084,10 +2134,12 @@ def _alerts(x):
     return ["[알림]"] + out if out else []
 
 
-def build_compact(root=None, now=None, last_brief_ts=None, extra=None):
+def build_compact(root=None, now=None, last_brief_ts=None, extra=None, role=None):
     """Always-on brief (DESIGN 14.2): time, standing, score position, changes since the last wake, `extra` (caller's
     lines), net profit, shop state, alerts, then an index of the registry sections for the brief_section tool.
-    Each part returns fewer lines when its source is missing; COMPACT_CHARS caps the whole, index kept."""
+    Each part returns fewer lines when its source is missing; COMPACT_CHARS caps the whole, index kept.
+    role: a role operator's card leaves out the other side's parts (shop: no buy attempts; buyer: no net profit and
+    stock money); None shows both."""
     x = _Ctx(root, now, last_brief_ts)
     board = lambda f: (lambda: f(x) if x.board else [])
     parts = [
@@ -2096,9 +2148,11 @@ def build_compact(root=None, now=None, last_brief_ts=None, extra=None):
         ("점수 위치", board(_positions)),
         ("지난 깨어남 이후", board(_changes)),
         ("extra", lambda: [str(ln) for ln in extra or []]),
-        ("순이익", lambda: _net_compact(x)),
+        ("시간대별", lambda: _hourly(x, role)),
+        ("순이익", lambda: _net_compact(x) if role != "buyer" else []),
         ("가게 상태", lambda: _shop_compact(x)),
-        ("돈이 있는 곳", lambda: _money_compact(x)),
+        ("돈이 있는 곳", lambda: _money_compact(x) if role != "buyer" else []),
+        ("구매 시도", lambda: _buy_compact(x) if role != "shop" else []),
         ("사람이 적은 것", lambda: _human_notes(x)),
         ("알림", lambda: _alerts(x)),
     ]

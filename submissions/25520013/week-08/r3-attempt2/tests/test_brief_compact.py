@@ -242,7 +242,7 @@ def test_build_compact_parts_in_order_with_extra(root):
              "[순이익 12시간", "[가게 상태]", "[알림]", "[더 볼 것] brief_section 도구로 읽음"]
     pos = [t.index(h) for h in heads]
     assert pos == sorted(pos)
-    assert t.index(extra[0]) == t.index("\n[순이익") - len(extra[0])
+    assert t.index(extra[0]) == t.index("\n[시간대별]") - len(extra[0])  # 11-12: the hourly part follows extra
     lines = t.splitlines()
     # (c): one line per formula column, and the shop growing faster below us shows with its hours to pass us
     assert [ln.split(":")[0] for ln in lines if ln.split(":")[0] in COLUMNS] == list(COLUMNS)

@@ -77,3 +77,23 @@ def test_money_lines_carry_storage_cost_and_stock_age(root):
 def test_money_lines_without_a_rate_or_supply_time_say_nothing_of_them(root):
     t = _card(root)
     assert "[돈이 있는 곳]" in t and "원가의" not in t and "들어온 지" not in t
+
+
+def test_card_by_role_and_hourly(root):
+    import json, os
+    now = 1_794_400_000.0
+    ev = [
+        {"ts": now - 7300, "type": "settle", "src": "deal", "role": "buyer", "data": {"order": "o1", "amount": 60, "value": 100}},
+        {"ts": now - 7200, "type": "decision", "role": "buyer", "key": "buy:o1",
+         "data": {"hook": "market_buyer", "tried": [{"sku": "S1", "state": "TASK_STATE_COMPLETED", "rounds": 2}]}},
+    ]
+    os.makedirs(os.path.join(str(root), ".r3"), exist_ok=True)
+    with open(os.path.join(str(root), ".r3/events.jsonl"), "a") as fh:
+        fh.write("".join(json.dumps(e) + "\n" for e in ev))
+    shop = brief.build_compact(str(root), now, now - 1200, role="shop")
+    buyer = brief.build_compact(str(root), now, now - 1200, role="buyer")
+    both = brief.build_compact(str(root), now, now - 1200)
+    assert "[돈이 있는 곳]" in shop and "[구매 시도]" not in shop and "가게 정산 판매 건수" in shop and "구매 정산 건수" not in shop
+    assert "[돈이 있는 곳]" not in buyer and "[구매 시도] 구매 시도 최근 6시간: 주문 1건" in buyer
+    assert "구매 정산 건수(지불액/가치): " in buyer and "1(0.60)" in buyer and "가게 정산 판매 건수" not in buyer
+    assert "[돈이 있는 곳]" in both and "[구매 시도]" in both and "만들지 못함" not in shop + buyer + both
