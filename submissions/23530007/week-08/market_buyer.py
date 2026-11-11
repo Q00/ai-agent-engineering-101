@@ -242,7 +242,11 @@ def failed_last(mem, name, item=None):
         return None
     if "grade C" in str(last.get("outcome", "")):     # a grade-C unit: only that SKU is skipped (grade_c_skip)
         return None
-    if str(last.get("outcome", "")).startswith(("error", "unpaid")):
+    if str(last.get("outcome", "")).startswith("error"):
+        # 11-11: a transport error (a tunnel hiccup, a non-JSON reply) kept a good shop out for 6 h (thisjonghoon,
+        # our 2nd food source, after one JSONDecodeError); it is a 15-min lock now, like an out-of-stock reply
+        return f"last visit failed: {last['outcome']}" if time.time() - last.get("t", 0) <= REJECT_SHOP_SECS else None
+    if str(last.get("outcome", "")).startswith("unpaid"):
         return f"last visit failed: {last['outcome']}"
     if last.get("outcome") == "rejected" and not last.get("asks"):
         return "last visit turned me away without an ask (out of stock or not selling)"
