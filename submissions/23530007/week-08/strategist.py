@@ -90,7 +90,8 @@ GLOBAL = {                            # whitelisted shared parameters: role, bou
     "warranty_b": ("shop", (0, 1), 1),             # 1 = grade B goods carry the warranty (A always does)
     "warranty_c": ("shop", (0, 1), 1),             # 1 = grade C too (C breaks ~15%: each refund leaves the book)
     "warranty_hours": ("shop", (6, 72), 6),        # the market refuses settles above some length (8760 h was refused)
-    "rep_step": ("shop", (0, 0.06), 0.01),         # 11-11: the +-step policy adds to every ask share when the last 10 reviews are high/low (was hidden)
+    "rep_step": ("shop", (0, 0.06), 0.01),
+    "grade_first": ("shop", (0, 1), 1),            # 11-11: 1 = hand A before B before C to buyers who state no grade (stars +, margin -: C made 130k/deal)         # 11-11: the +-step policy adds to every ask share when the last 10 reviews are high/low (was hidden)
     # -- stock and restock
     "buy": ("shop", (0, 1), 1),                    # 0 stops all restock
     "keep_cash": ("shop", (500000, 50000000), 1000000),

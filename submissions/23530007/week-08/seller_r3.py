@@ -204,14 +204,19 @@ def pick_unit(text, held, now):
     # buyers who never asked for C: C goods rate 4.42 vs A 4.75 / B 4.64 and 64% of C agreements never settled
     # (the buyer's kit refuses them, the unit sits held 300 s). Now A first, then B (oldest within the grade); C
     # only when the message accepts C (or the buyer stated grades that include it)
+    # 11-11 07:45 REVERTED to oldest-first by default: in the 2.5 h with A-first, margin fell from 5.8 M/h to
+    # 1.1 M/h (C units made 130k per deal vs A 14k / B 15k; big-ticket deals 119 -> 8 per 6 h) and the book lead
+    # started shrinking. Book 1st outranks stars (user). A-first is the policy knob grade_first (strategist).
     accepts_c = bool(ACCEPTS_C.search(text)) or (want is not None and "C" in want)
-    ranked = sorted(fit, key=lambda u: (GRADE_ORDER.get(u.get("grade") or "A", 1), u.get("supplied_at") or 0))
-    if accepts_c and ACCEPTS_C.search(text) and re.search(r"prefer\s*(grade\s*)?C|cheapest\s*grade|refurb", text, re.I):
-        ranked = sorted(fit, key=lambda u: (-GRADE_ORDER.get(u.get("grade") or "A", 1), u.get("supplied_at") or 0))
-    for u in ranked:
-        if (u.get("grade") or "A") != "C" or accepts_c:
-            return u
-    return None
+    if re.search(r"prefer\s*(grade\s*)?C|cheapest\s*grade|refurb", text, re.I):
+        return min(fit, key=lambda u: (-GRADE_ORDER.get(u.get("grade") or "A", 1), u.get("supplied_at") or 0))
+    if shop_policy_now().get("grade_first"):
+        ranked = sorted(fit, key=lambda u: (GRADE_ORDER.get(u.get("grade") or "A", 1), u.get("supplied_at") or 0))
+        for u in ranked:
+            if (u.get("grade") or "A") != "C" or accepts_c:
+                return u
+        return None
+    return min(fit, key=lambda u: u.get("supplied_at") or 0)
 
 
 CHEAP_LIST, CHEAP_SHARE = 50000, 0.58   # 11-11: concession on cheap items from the 3rd offer (<= ~1M/day)
@@ -467,7 +472,7 @@ class Shop(AgentExecutor):
         # 11-11: on cheap items (list < CHEAP_LIST) the price-rubric accounts (real_yellow, move_76, q00, iyen-dori)
         # haggle 6-7 rounds and rate 3-4 at x .70; from the 3rd offer we take >= max(cost, CHEAP_SHARE x list)
         cheap_ok = (u_.get("unit") and (u_.get("list_price") or 0) < CHEAP_LIST and n >= 3
-                    and offer >= max(u_.get("cost") or 0, CHEAP_SHARE * u_["list_price"]))
+                    and offer >= max((u_.get("cost") or 0) * 1.05, CHEAP_SHARE * u_["list_price"]))   # never at cost
         if offer >= ask or offer >= floor + (ask - floor) * d["meet"] or (n >= 3 and offer >= floor) or cheap_ok:
             # the buyer's own number, even above our ask: buyers check the receipt against what they agreed,
             # and 14 of our low reviews on 11-05 read "Agreed 57031, receipt says 33900" (we had charged the ask)
