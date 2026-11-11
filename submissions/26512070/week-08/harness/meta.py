@@ -149,8 +149,12 @@ def assemble(now=None, for_loop=False):
                         key=lambda x: -x[1]["sales"])[:8]
     from harness import rules_digest
     unfollowed = rules_digest.gaps()
+    hn = atomic.read_json(out_dir() / "health_now.json", default=None) or {}
+    health_now = hn.get("findings") if now - hn.get("ts", 0) < 1800 else None
     blocks = [
         *([("market rules in force (stated, top priority)", rules_digest.text())] if rules_digest.text() else []),
+        *([("health findings now (observed by code - an operations fault here outweighs any strategy number)",
+            "\n".join(f"- [{lv}] {f}" for lv, f in health_now))] if health_now else []),
         ("score rule", f"{score.text()}\n(stated, source market:rules patch {rules.get('patch')}, checked "
                        f"{time.strftime('%m-%d %H:%M', time.localtime(rules.get('checked') or now))})"),
         ("top rules", TOP_RULES.replace("{decides}", DECIDES[auto])),

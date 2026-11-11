@@ -112,6 +112,7 @@ class SellerCoreTest(Base):
         self.assertEqual((out["state"], out["receipt"]["price"]), ("completed", 4100))
         st["playbook"] = {"seller": {"mode": "shadow"}}
         atomic.write_json(path, st)
+        self.core.promised.clear()          # the fixture's inventory keeps the sold unit; the market would not
         self.core.model_call = lambda p, s, t: self.answers.pop(0)
         self.answers = ['{"tool": "act.counter", "args": {"unit": "u-goods", "price": 4400, "say": "4400 for it."}}']
         out = self.core.handle("r2", "I want to buy G0026722f")

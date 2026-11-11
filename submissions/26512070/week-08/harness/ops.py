@@ -172,6 +172,32 @@ def revive_kit(now, st):
     return ("now", "the kit was not running: started ops/inner.ps1 again")
 
 
+def checkout_refusals(now=None, window_s=3600):
+    """(count, {unit: n}) of our checkout's refusals in the last hour from the kit log (11/12: 331 deals agreed and
+    refused at payment over 15 h - 'unit ... is not in stock for this order' - and nothing in the harness counted it)."""
+    import re
+    now = max(now or 0, time.time())
+    t = time.localtime(now)
+    n, units = 0, {}
+    for line in _kit_tail(1_500_000):
+        if "[acp] checkout refused" not in line:
+            continue
+        try:
+            h, mi, se = (int(x) for x in line[:8].split(":"))
+        except ValueError:
+            continue
+        ts = time.mktime((t.tm_year, t.tm_mon, t.tm_mday, h, mi, se, 0, 0, -1))
+        if ts > now + 3600:
+            ts -= 86400
+        if now - ts > window_s:
+            continue
+        n += 1
+        m = re.search(r"unit (u-[0-9a-f]+)", line)
+        if m:
+            units[m.group(1)] = units.get(m.group(1), 0) + 1
+    return n, units
+
+
 def health(now=None, rules_changed=False):
     """ops.health: findings with their level; alerts once per finding and hour; emergency actions when due."""
     now = now or time.time()
@@ -184,6 +210,14 @@ def health(now=None, rules_changed=False):
     inner = paths.bus() / "status" / "inner.json"
     if inner.exists() and now - inner.stat().st_mtime > STALE_S:
         found.append(("now", f"the inner runtime's status is {int((now - inner.stat().st_mtime) // 60)} min old"))
+    try:
+        n, units = checkout_refusals(now)
+        if n >= 5:
+            top = sorted(units.items(), key=lambda kv: -kv[1])[:3]
+            found.append(("now", f"our checkout refused {n} agreed deals in the last hour (units {top}): the seller "
+                                 "promises units the kit will not ship"))
+    except Exception as e:
+        found.append(("warn", f"checkout refusal count failed: {type(e).__name__}"))
     try:
         reach = shop_reach(now)
         if reach:
@@ -212,6 +246,7 @@ def health(now=None, rules_changed=False):
         # 5 h unseen (the phone alert was not sent); the change is an alert, the user reads it and decides
         alert.send("[규칙 변경] the market's rules changed: read memory/market/rules (restock keeps running)", "now", now)
     atomic.write_json(_state_path(), st)
+    atomic.write_json(paths.memory() / "harness" / "health_now.json", {"ts": now, "findings": found})
     return {"findings": found, "emergency": emergency()}
 
 

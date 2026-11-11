@@ -13,6 +13,7 @@ import base64
 import json
 import math
 import random
+import re
 import time
 from pathlib import Path
 
@@ -28,6 +29,7 @@ MAX_TURNS = 12
 KNOWN_AT = 0.5             # a guess this sure that names a confirmed customer makes the buyer "not first time"
 CANDIDATES = 5
 FIT_SPARE = 1.05           # food_fit: a unit must last the buyer's stated hours with 5% to spare
+PROMISED_S = 1200          # a unit we signed a receipt for waits this long for its checkout before we offer it again
 OPEN_TTL = 900             # a talk with no message for this long is dropped and its unit freed (11/6 22:4x: 63 talks
                            # the buyer never ended held 62 units, every unit of the six SKUs buyers asked for most)
 NEEDS_EVERY = 600          # food_review_need: the needed hours are read again from the ledger this often
@@ -78,7 +80,9 @@ class SellerCore:
     def __init__(self, shop_name, key, model_call=None, clock=time.time):
         self.name, self.key, self.model_call, self.clock = shop_name, key, model_call, clock
         self.open = {}
-        self.armed = set()          # visits whose experiment arms are recorded (seller.arm)
+        self.armed = set()
+        self.promised = {}              # unit -> when we signed a receipt for it (blocked_units)
+        self._blocked = (0, set())          # visits whose experiment arms are recorded (seller.arm)
         self.events = EventWriter("seller", source="seller")
         self.tool_events = EventWriter("seller", source="tools")    # one open file for every turn's tool calls
 
@@ -88,10 +92,33 @@ class SellerCore:
 
     # --- what fits
 
+    def blocked_units(self, now):
+        """Units the kit's checkout will refuse (11/12 04h: one pillow cover held by a checkout a buyer never paid was
+        promised 159 times from 11/11 13:48 - every deal on it died at payment, settled sales fell from ~25% of
+        visits to ~3%): units refused at our checkout in the last REFUSED_S (read from the kit log), and units we
+        signed a receipt for in the last PROMISED_S that are still in stock (a checkout may be holding them)."""
+        if now - self._blocked[0] > 60:
+            refused = set()
+            kit = paths.root() / "logs" / "market-kit.log"
+            try:
+                with open(kit, "rb") as fh:
+                    fh.seek(0, 2)
+                    fh.seek(max(0, fh.tell() - 600_000))
+                    for line in fh.read().decode("utf-8", "replace").splitlines():
+                        if "checkout refused" in line:
+                            m = re.search(r"unit (u-[0-9a-f]+) is not in stock", line)
+                            if m:
+                                refused.add(m.group(1))
+            except OSError:
+                pass
+            self._blocked = (now, refused)
+        recent = {u for u, ts in self.promised.items() if now - ts < PROMISED_S}
+        return self._blocked[1] | recent
+
     def candidates(self, ctx, ex, text):
         """Units that fit what the buyer asked for: a named SKU first, else category or name words."""
         cat, now = mf.catalog(ctx), ctx.now()
-        taken = {s["unit"] for s in self.open.values() if s.get("unit")}
+        taken = {s["unit"] for s in self.open.values() if s.get("unit")} | self.blocked_units(now)
         units = [u for u in mf.inventory(ctx).get("units", []) if u.get("grade") != "expired" and u["unit"] not in taken
                  and (u.get("cert") or not ctx.strategy.get("certified_only")) and not mf.on_hold(ctx, u["sku"], cat)]
         want = text.lower()
@@ -283,6 +310,7 @@ class SellerCore:
             if d.get("warranty_hours"):
                 receipt["warranty_hours"] = d["warranty_hours"]
             receipt = sign(self.key, receipt)
+            self.promised[st["unit"]] = self.clock()
             return self._close(task_id, st, "completed", d["say"], receipt=receipt, decision=d, cost=u["cost"])
         st["ask"] = d["price"]
         st["lines"].append({"from": "us", "price": d["price"], "say": d["say"]})
