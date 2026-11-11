@@ -125,6 +125,15 @@ def settle_rates():
     return _PAID["r"]
 
 
+def SHOP_THETA_FRESH():
+    """shop_theta.json "food_fresh_first" (default on): see find_unit."""
+    try:
+        import promo
+        return bool(promo.theta().get("food_fresh_first", True))
+    except Exception:
+        return True
+
+
 def find_unit(text, taken=(), need=None):
     """The in-stock unit for what the buyer asked (SKU first, then name or category) that expires first, among
     units that pass what the buyer said it needs. If the asked SKU has none that pass (or none at all), the clerk
@@ -155,12 +164,21 @@ def find_unit(text, taken=(), need=None):
     # 11-10 review mining: our agreed deals got paid A 97%, B 94%, C 64% -- the kit's example buyer policy pays for
     # A/B only. Goods (whose grade never changes) offer an A/B unit before a C one unless the buyer said C is fine.
     c_ok = bool(need.get("grades")) and "C" in need["grades"]
+    # stars audit 11-11 (week-10 lecture: a first move must weigh the cost of a wrong guess): house buyers never say
+    # how long their food must last, the market settles a unit that runs out before the order's use_within_hours at
+    # value 0, and the buyer reviews "Only N h of shelf life left; I needed M h" with 2 stars -- 21 of 1,209 sampled
+    # reviews, buyer-01's mean 3.44 and buyer-02's 3.67 over one Bayesian voice each. We turn food stock about twice a
+    # day and hold no expired units, so a buyer who states no shelf need now gets the freshest unit; a buyer who
+    # states one still gets the first-to-expire unit that passes it.
+    fresh_first = not need.get("hours") and SHOP_THETA_FRESH()
+    age = lambda u: (-(u.get("expires_at") or 0) if fresh_first and u.get("kind") == "food" and u.get("expires_at")
+                     else u.get("expires_at") or float("inf"))
     gpen = lambda u: 1 if u.get("kind") == "goods" and u.get("grade") == "C" and not c_ok else 0
     if m:
         # HQ 11-10 16:05 "니즈를 만들어": a named goods order got the oldest unit, often the dearest one we bought
         # (G75f11c19: missed quotes asked 76.8k on average, agreed ones 58.3k; the market settles it at ~80k). Goods
         # now offer the cheapest unit that fits -- its ask is the lowest -- food still the first to expire.
-        u = min(fit, key=lambda u: (gpen(u), u.get("expires_at") or float("inf"),
+        u = min(fit, key=lambda u: (gpen(u), age(u),
                                     (u.get("cost") or 0) if u.get("kind") == "goods" else 0,
                                     u.get("supplied_at") or 0), default=None)
     else:                    # HQ 11-10: a category order gets the SKU we hold most of first (clears overstock); food
@@ -169,7 +187,7 @@ def find_unit(text, taken=(), need=None):
             held[x["sku"]] = held.get(x["sku"], 0) + 1
         paid = settle_rates()   # buyer team 11-10: weight by how often that SKU's deals actually get paid
         u = min(fit, key=lambda u: (gpen(u), -held[u["sku"]] * paid.get(u["sku"], 0.5) if u.get("kind") == "goods" else 0,   # the cheapest unit of it
-                                    u.get("expires_at") or float("inf"),               # (its ask is the lowest,
+                                    age(u),                                            # (its ask is the lowest,
                                     u.get("cost") or 0 if u.get("kind") == "goods" else 0,   # so the order closes)
                                     u.get("supplied_at") or 0), default=None)
     if u:
