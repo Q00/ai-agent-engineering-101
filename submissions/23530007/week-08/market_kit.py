@@ -1208,7 +1208,7 @@ def watchdog(a, agent, d, market, keys, procs, proxy, sport, pport, state, every
             # (the unauthenticated /api/shops is not the alive list: it left us out while the board said alive and
             # the watchdog re-joined every minute; the board's alive flag is the signal, at most once per 5 min)
             # (11-11 user: check every 2 min, not 5: during market-wide outages each minute dead costs ~1 deal)
-            if ok and time.time() - state.get("relist_t", 0) > 120:
+            if ok and time.time() - state.get("relist_t", 0) > 55:   # 11-11 14:55: a moved URL stays alive ~2 min, so check every minute
                 try:
                     r = market.c.get(f"{market.base}/api/board?round=3", timeout=10)
                     me = next((s for s in (r.json().get("shops") or []) if s.get("name") == a.name), None) if r.status_code == 200 else None
