@@ -23,7 +23,7 @@ MAX_SKUS, MAX_UNITS_PER_SKU, MAX_COST = 5, 3, 400000
 # probe picks a run, taken one SKU at a time in the file's order (1 of each, then a second of each, ...), so a window's first run no
 # longer spends 10 of its 12 units on probe food. Absent means today's picks; present but not an int from 1 to 12 means off.
 MAX_UNITS_PER_RUN = 12
-# Optional "pick_order": "most_room_first" (11-11 about 22:5x KST, an Orchestrator tightening within the user's food approval): the SKU
+# Optional "pick_order": "most_room_first" (11-11 about 22:3x KST, an Orchestrator tightening within the user's food approval): the SKU
 # with the most room (units_per_sku minus held) is filled first, ties in the file's order, each SKU filled before the next, within the
 # cost limit and max_units_per_run. Under a 4-a-run cap that buys 3+1 units on 2 lines where one SKU at a time takes 4 lines, and the
 # probe's lines come out of the run's shared ordinary lines. Absent means the orders above; any other value means off.
