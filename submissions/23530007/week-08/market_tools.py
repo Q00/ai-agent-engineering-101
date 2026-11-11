@@ -361,6 +361,22 @@ def projection(rate=None, v=None):
     return whatif.project(rate, v)
 
 
+def final_rank(rate=30.0, v=0.40):
+    """Projected final class TOTAL ranks: buyer by projected saved rank (ours at the scenario), shop by its 24-h trend
+    and by half its 48-h trend (damped), top 10 + us. Rough extrapolation (ops/final_rank.py)."""
+    sys.path.insert(0, str(HERE / "ops"))
+    import final_rank as fr
+    return fr.project(float(rate or 30), float(v or 0.40))
+
+
+def shop_health():
+    """Is our shop alive and reachable now: board alive flag, market-wide dead count, our agent card from outside,
+    last seller task age, kit exits and tunnel relists over 6 h, verdict OK / MARKET OUTAGE (not us) / PROBLEM."""
+    sys.path.insert(0, str(HERE / "ops"))
+    import health
+    return health.check()
+
+
 TOOLS = {
     "our_trades": (our_trades, "Our buyer's visit records (last hours <= 48), filtered by shop/kind/category/outcome prefix: outcome counts, deals, v per deal (rules scoring: refunded break 0, unrefunded -1), breaks, newest rows.",
                    {"shop": "string", "kind": "string", "category": "string", "outcome": "string", "hours": "number", "limit": "integer"}, []),
@@ -387,6 +403,8 @@ TOOLS = {
     "class_history": (class_history, "A player's class total/shop/buyer score over hours (<= 72).", {"player": "string", "hours": "number"}, []),
     "rules_search": (rules_search, "Lines of the market rules (agent.md) and our rules block mentioning a term.", {"term": "string"}, ["term"]),
     "projection": (projection, "Our final saved and saved rank among students for a scenario (deals/h, per-deal v), others at their last-6-h pace; no args = grid.", {"rate": "number", "v": "number"}, []),
+    "final_rank": (final_rank, "Projected final class TOTAL ranks (top 10 + us) with our buyer at a scenario (deals/h, v; default 30, .40): buyer by projected saved rank, shop by its 24-h trend and a damped 48-h trend. Rough.", {"rate": "number", "v": "number"}, []),
+    "shop_health": (shop_health, "Is our shop alive and reachable now: board alive flag, market-wide dead count, our card from outside, last seller task age, kit exits and relists over 6 h, verdict.", {}, []),
     "order_mix": (order_mix, "Our buyer's orders by category over hours: orders, close rate, v per deal.", {"hours": "number"}, []),
 }
 

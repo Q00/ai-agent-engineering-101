@@ -18,8 +18,9 @@ HERE = Path(__file__).resolve().parent.parent
 END = 1794927540            # 2026-11-17 23:59 KST
 
 
-def project(rate=None, v=None):
-    """The projection as a dict (also the market tool 'projection')."""
+def finals(rate=30.0, v=0.40):
+    """Every student buyer's projected final saved (others at their last-6-h pace, us at (rate, v)).
+    Returns (board rows by buyer name, buyer name -> player, final saved by buyer name, hours left)."""
     now = time.time()
     hours = max(0.0, (END - now) / 3600)
     b = json.load(urllib.request.urlopen("https://market.ourolabs.ai/api/board?round=3", timeout=20))
@@ -37,25 +38,33 @@ def project(rate=None, v=None):
         e = pace.setdefault(d.get("buyer"), [0, 0.0])
         e[0] += 1
         e[1] += dv
-
-    def final(saved, n, rate, v):
-        k = rate * hours
-        return (saved * (n + 100) + k * v) / (n + 100 + k)
-
-    others = {}
+    out = {}
     for name, x in board.items():
         if name == "yms979":
+            out[name] = final(x["saved"], x["deals"], rate, v, hours)
             continue
         e = pace.get(name)
         if e and e[0] >= 10 and x.get("alive", True):
-            others[name] = final(x["saved"], x["deals"], e[0] / span, e[1] / e[0])
+            out[name] = final(x["saved"], x["deals"], e[0] / span, e[1] / e[0], hours)
         else:
-            others[name] = x["saved"]                     # frozen or unknown pace: stays where it is
+            out[name] = x["saved"]                        # frozen or unknown pace: stays where it is
+    return board, names, out, hours
+
+
+def final(saved, n, rate, v, hours):
+    k = rate * hours
+    return (saved * (n + 100) + k * v) / (n + 100 + k)
+
+
+def project(rate=None, v=None):
+    """The projection as a dict (also the market tool 'projection')."""
+    board, _, fin, hours = finals()
+    others = {n: s for n, s in fin.items() if n != "yms979"}
     me = board["yms979"]
     scen = [(rate, v)] if rate and v else [(r, vv) for r in (30, 40, 50) for vv in (0.38, 0.40, 0.42, 0.44)]
     rows = []
     for r, vv in scen:
-        f = final(me["saved"], me["deals"], r, vv)
+        f = final(me["saved"], me["deals"], r, vv, hours)
         rank = 1 + sum(1 for s in others.values() if s > f)
         rows.append({"deals_h": r, "v": vv, "final_saved": round(f, 4), "saved_rank": rank})
     ladder = sorted(others.items(), key=lambda kv: -kv[1])
