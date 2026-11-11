@@ -84,6 +84,7 @@ LINE_MAX_COST = 25e6         # 11-11: most one supply line may cost (at COST_GUE
 MUST_LINES = 4               # 11-11: most must_stock lines in one window
 WINDOW_MAX_COST = 150e6      # ... and most one window may cost (90M -> 150M the same evening: user, 'buy more boldly, cash is idle')
 COST_A, SURGE_MARGIN = 0.65, 0.03   # 11-11: typical grade A cost share; margin kept under the market median x
+RIVAL_MIN, RIVAL_SHARE, RIVAL_COVER_H, RIVAL_LINES = 6, 0.5, 2.0, 5   # 11-12: the book rival's best sellers (sku_wants)
 COST_GUESS = 0.6             # cost as a share of list price before a unit arrives (A 55-75 %, B 40-60 %, C 25-45 %)
 
 
@@ -254,7 +255,39 @@ def sku_wants(catalog, have_sku, p, now, hours_left, market_sku, mkt_units=None,
               and mkt_units.get(k, 0) / r < p["scarce_market_hours"] and mkt_shops.get(k, 0) <= p["scarce_max_shops"]
               and catalog[k]["kind"] == "goods"}             # goods only (user, 11-05: no food here)
     out = []
+    # 11-12 (user: 'we sell what the shop catching up on our book sells'): the best sellers of the shops next to us
+    # on the book (price_rivals.json, written by guards.py), from their settles of the last 6 h. 25620027 made 92%
+    # of its goods revenue on SKUs we hold, but its two volume SKUs ran 106 and 80 sales in 6 h while we held 9
+    # sellable grade A units of the first and 5 of the second. A rival SKU is held for RIVAL_SHARE of the rival's
+    # rate over RIVAL_COVER_H, when the rival's median price leaves SURGE_MARGIN over a typical grade A cost, and
+    # at most RIVAL_LINES such lines a window go first (ranked by the margin the rival makes on them per hour).
+    rival_rate, rival_gain = {}, {}
+    try:
+        rv_ = set((json.loads((HERE / ".market" / "price_rivals.json").read_text()).get("shops") or {}).keys())
+        dl_ = json.loads((HERE / ".market" / "shop_value.json").read_text()).get("deals") or []
+        t1_ = max((d["ts"] for d in dl_), default=0)
+        xs_ = {}
+        for d in dl_:
+            if d.get("goods") and d.get("shop") in rv_ and t1_ - d["ts"] <= 6 * 3600 and d.get("grade") in ("A", "B"):
+                xs_.setdefault(d["sku"], []).append(d["x"])
+        for k, v_ in xs_.items():
+            x_ = sorted(v_)[len(v_) // 2]
+            if len(v_) >= RIVAL_MIN and k in catalog and x_ - 0.01 >= COST_A + SURGE_MARGIN:
+                rival_rate[k] = len(v_) / 6
+                rival_gain[k] = len(v_) / 6 * (x_ - COST_A) * catalog[k]["list_price"]
+    except (OSError, ValueError):
+        pass
+    for sku in sorted(rival_gain, key=lambda k: -rival_gain[k]):
+        v = catalog[sku]
+        if v.get("kind") != "goods" or v["list_price"] > p["sku_max_price"]:
+            continue
+        qty = min(MAX_QTY, math.ceil(RIVAL_SHARE * rival_rate[sku] * RIVAL_COVER_H) - have_sku.get(sku, 0))
+        if qty > 0 and sum(1 for w in out if w[0][1] == -2) < RIVAL_LINES:
+            out.append(((False, -2, -rival_gain[sku]), v["category"], v, qty))
+    taken = {w[2]["sku"] for w in out}
     for sku in set(sold) | set(asked) | set(best) | scarce:
+        if sku in taken:
+            continue
         v = catalog.get(sku)
         if not v or v["list_price"] > p["sku_max_price"]:
             continue
