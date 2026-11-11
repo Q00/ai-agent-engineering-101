@@ -12,6 +12,7 @@ raised to what check.price allows) and records why.
 import base64
 import json
 import math
+import random
 import time
 from pathlib import Path
 
@@ -374,12 +375,20 @@ class SellerCore:
         try:
             v, c, unit = self.turn_view(ctx, st)
             if v is not None:
-                testing = self.playbook_raw(ctx).get("forged")
+                # 11/11 12:5x: a forged tool is a candidate only on the states it was made for - Jev picked an
+                # adopted one-state tool on 6,645 turns where it had no move. On its states it plays, and
+                # jev.EXPLORE of those turns go to the rules as the control its verdict is measured against
+                key = jev.keys(v)[0]
                 reg = trade.registry()
-                if testing and jev.keys(v)[0] in (reg.get(testing) or {}).get("states", []):
-                    chosen, note = testing, "ab"
+                testing = self.playbook_raw(ctx).get("forged")
+                cover = [n for n in ([testing] if testing else []) + trade.forged(("adopted",))
+                         if n and key in (reg.get(n) or {}).get("states", [])]
+                if cover and random.random() >= jev.EXPLORE:
+                    chosen, note = cover[0], "covers"
+                elif cover:
+                    chosen, note = rules, "control"
                 else:
-                    chosen, ans, note = jev.route("seller", v, [rules] + trade.forged(("adopted",)))
+                    chosen, ans, note = jev.route("seller", v, [rules])
         except Exception as e:                       # the router must never stop a sale
             v, note = None, f"router failed: {type(e).__name__}"
         d = None

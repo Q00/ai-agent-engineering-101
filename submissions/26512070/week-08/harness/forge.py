@@ -219,12 +219,64 @@ def forge_once(now=None, call=None):
     led = experiment.ledger()
     led["experiments"][exp_id].update(end=autopilot.slot_end(now + (TEST_RUN_MIN - 25) * 60), autopilot=True,
                                       extends=0, undo={"playbook.seller.forged": prev}, request=None,
-                                      installed=installed)
+                                      installed=installed, max_extend=JUDGE_EXTEND)
     atomic.write_json(experiment.path(), led)
     rec.update(status="testing", experiment=exp_id)
     reg[name] = rec
     _save(reg)
     return {"testing": name, "states": rec["states"], "experiment": exp_id}
+
+
+JUDGE_MIN = 20                # visits each side before a forged tool is judged
+JUDGE_MARGIN = 0.05           # the tool must settle this much more often than the rules (absolute)
+JUDGE_EXTEND = 8              # up to 8 more half hours (4 h) to gather them
+
+
+def judge(e, now=None):
+    """The verdict of a forged tool's test on its own states (11/11 12:5x: whole-shop sales before/after moved with
+    the hour, not with a tool that plays ~2% of the turns): visits since the start where the tool played on its
+    states, against visits where the rules played those same states (the jev.EXPLORE control and the hours before)."""
+    from harness import trajectory
+    now = now or time.time()
+    name = e["change"]["playbook"]["seller"]["forged"]
+    states = set((registry().get(name) or {}).get("states", []))
+    since = e["start"] - 6 * 3600
+    days = sorted({time.strftime("%Y%m%d", time.localtime(t)) for t in (since, e["start"], now)})
+    settled = {}
+    for d in days:
+        for t in trajectory.build(d).values():
+            if t["role"] == "seller":
+                settled[t["id"]] = bool(t["result"].get("settled"))
+    tool, ctrl = set(), set()
+    for d in days:
+        f = paths.raw() / "seller" / f"seller-{d}.jsonl"
+        if not f.exists():
+            continue
+        with open(f, encoding="utf-8") as fh:
+            for line in fh:
+                if '"jev.route"' not in line:
+                    continue
+                try:
+                    ev = json.loads(line)
+                except ValueError:
+                    continue
+                dd, task = ev.get("data") or {}, (ev.get("keys") or {}).get("task")
+                if not task or dd.get("state") not in states or not (since <= ev["ts"] < now):
+                    continue
+                if dd.get("tool") == name and ev["ts"] >= e["start"]:
+                    tool.add(task)
+                elif dd.get("tool") == "trade.seller_rules":
+                    ctrl.add(task)
+    ctrl -= tool
+    a = [settled[t] for t in tool if t in settled]
+    b = [settled[t] for t in ctrl if t in settled]
+    out = {"id": e["id"], "metric": "settle rate on its states", "B": {"value": round(sum(a) / len(a), 3) if a else None,
+           "n": len(a)}, "A": {"value": round(sum(b) / len(b), 3) if b else None, "n": len(b)}}
+    if min(len(a), len(b)) < JUDGE_MIN:
+        out["verdict"] = "too few trades yet"
+    else:
+        out["verdict"] = "success" if out["B"]["value"] >= out["A"]["value"] + JUDGE_MARGIN else "no effect"
+    return out
 
 
 def sync(reg=None, now=None):

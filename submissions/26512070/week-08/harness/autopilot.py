@@ -150,9 +150,13 @@ def settle(now=None):
     for e in list(experiment.ledger()["experiments"].values()):
         if not (e.get("autopilot") and e["status"] == "running" and now >= e["end"]):
             continue
-        r = experiment.result(e["id"], now)
+        if e["id"].startswith("f-"):                # 11/11: a forged tool is judged on its own states
+            from harness import forge
+            r = forge.judge(e, now)
+        else:
+            r = experiment.result(e["id"], now)
         v = r.get("verdict")
-        if v in ("too few trades yet", "too few windows yet") and e.get("extends", 0) < MAX_EXTEND:
+        if v in ("too few trades yet", "too few windows yet") and e.get("extends", 0) < e.get("max_extend", MAX_EXTEND):
             led = experiment.ledger()
             led["experiments"][e["id"]].update(end=slot_end(now), extends=e.get("extends", 0) + 1)
             atomic.write_json(experiment.path(), led)
