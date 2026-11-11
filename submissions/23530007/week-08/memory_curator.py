@@ -58,7 +58,7 @@ MODEL_TIMEOUT = 420                                 # opus (11-08) answers 70k c
 HOT_HOURS = 24
 DIGEST_KEEP = 10
 TRADES_HOURS = 48
-LIMITS = {"facts": 20, "decisions": 10, "open_questions": 8, "for_shop": 6, "for_buyer": 6, "conflicts": 5,
+LIMITS = {"facts": 10, "decisions": 10, "open_questions": 8, "for_shop": 6, "for_buyer": 6, "conflicts": 5,
           "briefing_buyer": 6, "briefing_shop": 6, "rankers_playbook": 8, "answers_for_buyer": 6,
           "answers_for_shop": 6, "wanted_data": 4}
 STRINGS = {"rules_change": 3, "rank_change": 3, "market_flow": 4}      # one paragraph each, x TEXT_MAX
@@ -274,7 +274,7 @@ def watch(rules_changed):
            "rank": {"class_rank_now": b.get("class_rank"), "class_rank_last_run": st.get("class_rank"),
                     "minutes_since_last_run": round((now - st["t"]) / 60) if st.get("t") else None,
                     "class_top": b.get("class_top"), "changes_since_last_run": moved},
-           "buyer": b["buyer"], "peers_above": (b.get("peers_above") or [])[:10],
+           "buyer": b["buyer"], "peers_above": (b.get("peers_above") or [])[:6],
            "saved_speed": {"by_hour": hourly, "since_last_move": None if not last else {
                "hours": round((now - last) / 3600, 2),
                "speed": bs.saved_speed(bs.trades(last), (now - last) / 3600, base),
@@ -343,7 +343,13 @@ def watch(rules_changed):
                 nm = (p.get("shop") or {}).get("name")
                 if nm and nm not in names:
                     names.append(nm)
-            out["rivals"] = {n: mpic.profile_shop(n) for n in names if n}
+            # 11-11 (prompt diet, 138k -> ~70k chars): two compact profiles (the 2nd/3rd class shops), no SKU lists
+            def compact(prof):
+                if not isinstance(prof, dict):
+                    return prof
+                return {k: (v[:5] if isinstance(v, list) and k in ("by_category", "by_shop", "top_categories", "top_shops") else v)
+                        for k, v in prof.items() if k not in ("by_sku", "top_skus", "by_hour_6h")}
+            out["rivals"] = {n: compact(mpic.profile_shop(n)) for n in names[:2] if n}
             out["total_rivals_shop"] = [{"player": p["player"], "class_total": p.get("student_total"),
                                          "class_shop": p.get("student_shop"), "class_buyer": p.get("student_buyer"),
                                          **{k: (byname.get((p.get("shop") or {}).get("name")) or {}).get(k)
@@ -691,7 +697,11 @@ def curate(d, w=None, market=None, force=False):
                for _, t, role, read, f, n, rq in rows]
     probes = run_probes(entries)
     strategy = (HERE / "RULES_THAT_SCORE.md").read_text(encoding="utf-8")   # 11-11: was BUYER_STRATEGY.md (dated, +1 refund)
-    raw = ask(PROMPT.format(strategy=strategy, digest=json.dumps(current, ensure_ascii=False) or "{}",
+    # 11-11: the previous digest goes back trimmed (facts 10, no prose blocks the model rewrites anyway)
+    prev = {k: v for k, v in (current or {}).items() if k not in ("market_flow", "rankers_playbook")}
+    if isinstance(prev.get("facts"), list):
+        prev["facts"] = prev["facts"][:10]
+    raw = ask(PROMPT.format(strategy=strategy, digest=json.dumps(prev, ensure_ascii=False) or "{}",
                             entries=json.dumps(entries, ensure_ascii=False),
                             watch=json.dumps(w or {}, ensure_ascii=False),
                             market=json.dumps(market or {"error": "no market picture"}, ensure_ascii=False),
