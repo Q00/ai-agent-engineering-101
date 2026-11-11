@@ -7,10 +7,11 @@ This script, run every 15 min by watch_round.sh, moves `under` and `adj` from wh
 .market/price_ctl.json, which the seller re-reads every few minutes (no restart). No model call.
 
 GLOBAL level `under` (how far under the rival's price), one step of STEP at most every GLOBAL_EVERY, judged on the
-book and revenue slopes measured SINCE the last step:
-  book first   the lead over the runner-up, carried to the round's end at both slopes, under BOOK_THIN -> price up
-  then revenue the book is rich (projected lead >= BOOK_RICH) and we do not outsell the shop ahead of us in revenue
-               by what we need to pass it before the end -> price down
+book slope fitted through the guard's 6.5 h of readings (trendfit.py; not the two readings since the last step, which
+carried to the end are +-170 M of noise) and the revenue of the last 3 h:
+  book first   the lead over the runner-up, carried to the round's end at the fitted slope, under BOOK_THIN -> price up
+  then revenue the book is rich even one standard error lower (>= BOOK_RICH) and we do not outsell the shop ahead of
+               us in revenue by what we need to pass it before the end -> price down
   else hold.   Bounds UNDER_MIN (above the rival) .. UNDER_MAX.
 
 PER SKU `adj` (+ = dearer), one step at most every SKU_EVERY per SKU, on the quotes since its last step:
@@ -86,14 +87,23 @@ def global_step(ctl, now, base_under):
     if now - t0 < GLOBAL_EVERY:
         return None, f"next global check in {(GLOBAL_EVERY - (now - t0)) / 60:.0f} min"
     g = read(MD / "guard_state.json", {})
-    bh = [h for h in (g.get("book_hist") or []) if h["t"] >= t0 + 600]
-    if len(bh) < 2 or bh[-1]["t"] - bh[0]["t"] < 3600 or bh[0].get("rival") != bh[-1].get("rival"):
-        return None, "not enough book history since the last step"
+    # 11-12: the book slope is fitted through ALL the guard's readings (6.5 h, every 15 min), not taken from the two
+    # readings since the last step: the lead moves +-3 M between readings, which over 2 h is +-1.2 M/h, +-170 M at
+    # the round's end, against bars of 150 and 220 M (trendfit.py). sd = one standard error of the lead at the end.
+    sys.path.insert(0, str(HERE))
+    import trendfit
+    bh = g.get("book_hist") or []
+    bh = [h for h in bh if h.get("rival") == bh[-1].get("rival")] if bh else []
+    if len(bh) < 8 or bh[-1]["t"] - bh[0]["t"] < 4 * 3600:
+        return None, "not enough book history (needs 4 h against the same runner-up)"
     dt = (bh[-1]["t"] - bh[0]["t"]) / 3600
-    ours, theirs = (bh[-1]["us"] - bh[0]["us"]) / dt, (bh[-1]["rb"] - bh[0]["rb"]) / dt
+    fl = trendfit.linfit([(h["t"], h["us"] - h["rb"]) for h in bh])
+    ours = trendfit.linfit([(h["t"], h["us"]) for h in bh])["slope"]
+    theirs = trendfit.linfit([(h["t"], h["rb"]) for h in bh])["slope"]
     lead = bh[-1]["us"] - bh[-1]["rb"]
     left = max(0.0, (END - now) / 3600)
-    proj = lead + (ours - theirs) * left
+    proj = lead + fl["slope"] * left
+    sd = (fl["se"] or 0.0) * left
     sv = read(MD / "shop_value.json", {})
     D = sv.get("deals") or []
     t1 = max((d["ts"] for d in D), default=now)
@@ -115,11 +125,13 @@ def global_step(ctl, now, base_under):
         pass
     under = ctl.get("under", base_under)
     facts = (f"book {ours / 1e6:+.2f} vs {bh[-1]['rival']} {theirs / 1e6:+.2f} M/h over {dt:.1f} h, lead {lead / 1e6:.0f} M -> "
-             f"{proj / 1e6:.0f} M at the end; revenue {r_us / 1e6:.1f} M/h vs {ahead} {r_ah / 1e6:.1f}"
+             f"{proj / 1e6:.0f} +-{sd / 1e6:.0f} M at the end; revenue {r_us / 1e6:.1f} M/h vs {ahead} {r_ah / 1e6:.1f}"
              + (f" (need +{need / 1e6:.1f})" if need is not None else ""))
+    # the book comes first (user: the shop must stay 1st): up on the best estimate; down only when the book is rich
+    # even one standard error lower
     if proj < BOOK_THIN and under > UNDER_MIN:
         return round(under - STEP, 3), f"price UP (book thin): {facts}"
-    if proj >= BOOK_RICH and need is not None and (r_us - r_ah) < need and under < UNDER_MAX:
+    if proj - sd >= BOOK_RICH and need is not None and (r_us - r_ah) < need and under < UNDER_MAX:
         return round(under + STEP, 3), f"price DOWN (book rich, revenue behind): {facts}"
     return under, f"hold: {facts}"
 

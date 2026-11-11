@@ -143,66 +143,22 @@ def main():
              f"  상점 {me['student_shop']:.3f} + 구매자 {me['student_buyer']:.3f}"
              + (f", 최근 시간당 {ours:+.4f}" if ours is not None else "")]
 
-    try:   # 11-07 user: shop is 1st, so first place comes from the buyer score; the push leads with that
-        lines += first_place(b, cls, me, now)
+    # 11-12 (user: 'total rank, shop rank, buyer rank, the revenue gap to inextro and the book gap and whether they
+    # are closing, well laid out; a lot of information does not tell me what to look at'): the push is now the short
+    # report of ops/brief.py (ranks, the three shop races with their direction, buyer pace, the projected final rank,
+    # what to check). The longer lines it replaces (passing times, A/B arms, API spend) stay in ops/status.py and the
+    # tools. If the brief fails, the two rank lines above are sent alone.
+    title = f"[yms979] 반 {rank}위{move}"
+    try:
+        sys.path.insert(0, str(HERE / "ops"))
+        import brief
+        o = brief.build()
+        lines = [brief.text(o)]
+        title = f"[yms979] {brief.headline(o)}"
     except Exception as e:
-        lines.append(f"1등 계산 실패: {e}")
-
-    try:   # 11-08 user: read the shop race and the buyer race apart; the 2nd shop is not the 2nd overall
-        lines += races(b, st, now)
-    except Exception as e:
-        lines.append(f"상점/구매자 순위 계산 실패: {e}")
-
-    lines.append("[전체] 위 순위와 따라잡는 시점:")
-    for i, p in enumerate(cls[:rank - 1]):
-        gap = p["student_total"] - me["student_total"]
-        theirs = rate(hist, p["player"], now)
-        sp = f", 시간당 {theirs:+.4f}" if theirs is not None else ""
-        lines.append(f"  {i + 1}위 {p['player']} {p['student_total']:.3f} (차이 {gap:.3f}{sp}) → {eta(gap, ours, theirs, now)}")
-    if rank < len(cls):
-        nxt = cls[rank]
-        lines.append(f"아래: {rank + 1}위 {nxt['player']} {nxt['student_total']:.3f} (우리보다 {me['student_total'] - nxt['student_total']:.3f} 아래)")
-
-    prev = {n: i + 1 for i, n in enumerate(st.get("order", []))}
-    moved = [f"{p['player']} {prev[p['player']]}→{i + 1}" for i, p in enumerate(cls[:max(rank + 1, 6)])
-             if p["player"] in prev and prev[p["player"]] != i + 1]
-    if moved:
-        lines.append("순위 변동: " + ", ".join(moved))
-
-    u = next((x for x in b["buyers"] if x["name"] == NAME), None)
-    if u:
-        lines.append(f"구매자 거래 {u['deals']}, 글 {u.get('posts') or 0} | 라운드 종료까지 {(ROUND_END.timestamp() - now) / 3600:.0f}시간")
-    try:   # 11-07 buyer A/B (one more counter vs take the ask), over all shops: score gain per order decides
-        import buyer_strategist as bs
-        import memory_curator as mc
-        ab = {x["key"]: x for x in mc.breakdown(bs, now)["push_ab"]}
-        f = lambda x: f"{x['deals']}건/{x['orders']}주문, 거래당 {x['saved_per_deal']}, 주문당 점수 {x['score_gain_per_order']:+.4f}"
-        for p, c, label in (("push3", "control2", "A/B3 더 깊게(p25-0.10, 2번)"), ("push2", "control2", "A/B2 첫 제시가도 깎기"),
-                            ("push", "control", "A/B1 한번 더 깎기")):
-            if p in ab and c in ab:
-                lines.append(f"구매 {label}: {f(ab[p])} | 그대로: {f(ab[c])}")
-        ca = {x["key"]: x for x in mc.breakdown(bs, now)["cheapfood_ab_food"]}
-        if "cheapfood" in ca and "base" in ca:
-            lines.append(f"구매 A/B 식품 싼 등급+낮게 시작: {f(ca['cheapfood'])} | 기존: {f(ca['base'])}")
-        ga2 = {x["key"]: x for x in mc.breakdown(bs, now)["gradeaware_ab_goods"]}
-        if "gradeaware" in ga2 and "base" in ga2:
-            lines.append(f"구매 A/B 가구 등급별 협상: {f(ga2['gradeaware'])} | 기존: {f(ga2['base'])}")
-        ka = {x["key"]: x for x in mc.breakdown(bs, now)["skubest_ab"]}
-        if "skubest" in ka and "base" in ka:
-            lines.append(f"구매 A/B 상품 선택(saved 기준): {f(ka['skubest'])} | 기존(최고가): {f(ka['base'])}")
-        ga = {x["key"]: x for x in mc.breakdown(bs, now)["cheapgoods_ab_goods"]}
-        if "cheapgoods" in ga and "base" in ga:
-            lines.append(f"구매 A/B 가구 보증 C·B 우선: {f(ga['cheapgoods'])} | 기존: {f(ga['base'])}")
-        wa = {x["key"]: x for x in mc.breakdown(bs, now)["wpen_ab_goods"]}
-        if "wpen" in wa and "base" in wa:
-            lines.append(f"구매 A/B 가구 보증 우선: {f(wa['wpen'])} | 기존: {f(wa['base'])} (+{wa['wpen']['minus_one']}/{wa['base']['minus_one']} 고장)")
-    except Exception:
-        pass
-    try:   # 11-11 (user: the API bill): what the agents spent in the last 24 h and the credit left
-        import model_env
-        sp = model_env.spend_summary(now)
-        roles = ", ".join(f"{k} ${v:.2f}" for k, v in list(sp["per_role"].items())[:4])
-        lines.append(f"API 비용 24h ${sp['today']:.2f} ({sp['calls']}회: {roles}), 크레딧 약 ${sp['credit_left']:.0f} 남음")
+        lines.append(f"(짧은 보고 실패: {e!r})")
+    try:   # the races' snapshot the next push compares with (kept for the state file's readers)
+        races(b, st, now)
     except Exception:
         pass
     msg = "\n".join(lines)
@@ -210,7 +166,7 @@ def main():
     if "--dry" in sys.argv:
         print(msg)
         return
-    sent = subprocess.run([sys.executable, str(HERE / "notify.py"), f"[yms979] 반 {rank}위{move}", msg],
+    sent = subprocess.run([sys.executable, str(HERE / "notify.py"), title, msg],
                           capture_output=True, text=True).stdout.strip()
     STATE.write_text(json.dumps({"t": now, "class_rank": rank, "class_total": me["student_total"],
                                  "races": st.get("_races_new", st.get("races", {})),

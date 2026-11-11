@@ -51,15 +51,16 @@ def _pct(vals):
     return out
 
 
-def _board_pair(hours=6.0):
-    """(old board, its time, new board, its time): the live board and the archived snapshot nearest `hours` ago
-    (data/market_archive.db, one snapshot every 15 min), at least 2 h apart; None without one."""
+def _board_pair(hours=6.0, new=None):
+    """(old board, its time, new board, its time): the live board (or `new`, one the caller already fetched) and the
+    archived snapshot nearest `hours` ago (data/market_archive.db, one snapshot every 15 min), at least 2 h apart;
+    None without one."""
     import sqlite3
     import urllib.request
     now = time.time()
     sys.path.insert(0, str(HERE))
     import board_api
-    new = board_api.fetch(timeout=20)                           # never the zero-history board after a URL move
+    new = new or board_api.fetch(timeout=20)                    # never the zero-history board after a URL move
     try:
         db = sqlite3.connect(f"file:{DB}?mode=ro", uri=True, timeout=20)
         import board_api as _ba
@@ -76,7 +77,7 @@ def _board_pair(hours=6.0):
     return json.loads(row[1]), row[0], new, now
 
 
-def project_components(rate=None, v=None, hours=6.0, overrides=None, top=10):
+def project_components(rate=None, v=None, hours=6.0, overrides=None, top=10, board=None):
     """11-11 (user: 'build the scenario that keeps us 1st'): the final class totals projected PART BY PART. Each
     student's book, revenue, deals and posts continue at their slope over the last `hours` (two board snapshots);
     saved continues with the per-deal value the board implies over that window; stars_rank and the forum rating
@@ -84,7 +85,7 @@ def project_components(rate=None, v=None, hours=6.0, overrides=None, top=10):
     buyer = .5 saved + .3 forum rating + .1 deals + .1 posts. `rate`, `v` set OUR buyer's deals/h and per-deal
     value; `overrides` = {(player, field): value} with fields book_rate, rev_rate, deals_rate, posts_rate, v,
     stars, forum for what-if scenarios. Returns None when no archived snapshot is old enough."""
-    pair = _board_pair(hours)
+    pair = _board_pair(hours, board)
     if not pair:
         return None
     A, tA, B, tB = pair
