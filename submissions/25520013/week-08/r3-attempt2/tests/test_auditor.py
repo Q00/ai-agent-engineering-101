@@ -164,11 +164,11 @@ def _run(env, *acts, listed=LISTED, secrets=()):
 # ------------------------------------------------------------ due
 def test_due_first_run_interval_and_verdicts(env, monkeypatch):
     assert au.due(env.root, NOW) == "첫 감사"
-    _state(env.root, last_run_ts=NOW - 3 * H)
+    _state(env.root, last_run_ts=NOW - 0.75 * H)
     assert au.due(env.root, NOW) is None
     _ledger(
         env.root,
-        [{"id": i, "status": "kept", "ended_ts": NOW - H} for i in range(3)]
+        [{"id": i, "status": "kept", "ended_ts": NOW - 0.6 * H} for i in range(3)]
         + [
             {"id": 9, "status": "running"},
             {"id": 8, "status": "reverted", "ended_ts": NOW - 4 * H},
@@ -176,8 +176,8 @@ def test_due_first_run_interval_and_verdicts(env, monkeypatch):
     )
     assert au.due(env.root, NOW) == "실험 판정 3건"
     _state(
-        env.root, last_run_ts=NOW - 1.5 * H
-    )  # verdicts after the run but inside MIN_GAP_S
+        env.root, last_run_ts=NOW - 0.4 * H
+    )  # inside MIN_GAP_S
     assert au.due(env.root, NOW) is None
     _state(env.root, last_run_ts=NOW - 6 * H)
     assert au.due(env.root, NOW) == "주기 감사"
@@ -569,8 +569,8 @@ def test_corrupt_files_and_missing_siblings(env, monkeypatch):
 
 
 def test_maybe_run_not_due_forced_and_never_raises(env, monkeypatch):
-    _wake(env.root, NOW - H)
-    _state(env.root, last_run_ts=NOW - H)
+    _wake(env.root, NOW - 0.4 * H)
+    _state(env.root, last_run_ts=NOW - 0.5 * H)
     assert au.maybe_run(env.root, Script(), env.traj, NOW, listed=LISTED) is None
     res = au.maybe_run(
         env.root, Script({"note": "강제"}), env.traj, NOW, listed=LISTED, force=True

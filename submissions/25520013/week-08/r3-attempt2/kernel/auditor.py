@@ -52,8 +52,10 @@ HARNESS_TOOLS = (
     "harness_read",
     "replay_probe",
 )  # operator.HARNESS_TOOLS: not listed in compact mode
-INTERVAL_S = 6 * 3600  # env A2_AUDITOR_INTERVAL_S overrides
-MIN_GAP_S = 2 * 3600
+# 11-11 성수님: 감사는 길어도 1시간마다. 6시간 주기로는 분리 뒤 첫 1시간에 한 번도 돌지 않았고 운영자의 반복 실수
+# (거절된 수정을 세 번 다시 냄)를 사람이 먼저 봄
+INTERVAL_S = 3600  # env A2_AUDITOR_INTERVAL_S overrides
+MIN_GAP_S = 1800
 VERDICTS_TRIGGER = 3
 MIN_WAKES = 4  # wakes needed under a guidance before it is judged
 WORSE_MISTAKES_RATIO = (
