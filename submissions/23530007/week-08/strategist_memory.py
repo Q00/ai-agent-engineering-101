@@ -305,3 +305,90 @@ def read_board(role, n=1):
         return []
     return [{"minutes_ago": round((time.time() - t) / 60), "read": r, "findings": json.loads(f),
              "notes_to_you": json.loads(nt)} for t, r, f, nt in rows]
+
+
+# ---------------------------------------------------------------------------------------------------------------
+# 11-11 (user: build something that cuts the API credit): a code-only gate in front of the strategists' model call.
+# A run costs $0.4-0.8 (prompt ~35k tokens written to cache and never re-read at hourly cadence, plus 8-16k output
+# and thinking tokens). The learn/revert step runs in code before the gate, so skipping only skips the model.
+# Run the model when something moved; otherwise skip, but never longer than MAX_GAP_H. Effort high when there is a
+# reason to think hard (wake, new operator note, rank change, big move), medium on routine runs.
+GATE_MAX_GAP_H = {"buyer": 3.0, "shop": 6.0}
+
+
+def _gate_state(role):
+    import json as _j
+    md = Path(__file__).resolve().parent / ".market"
+    fp = {}
+    try:
+        rows = (md / "class_history.jsonl").read_text().splitlines()
+        last = _j.loads(rows[-1])["p"]
+        me = last.get("yms979") or [None, None, None]
+        i = 1 if role == "shop" else 2
+        fp["score"] = me[i]
+        fp["rank"] = 1 + sum(1 for v in last.values() if v[i] is not None and me[i] is not None and v[i] > me[i])
+        fp["total_rank"] = 1 + sum(1 for v in last.values() if v[0] is not None and me[0] is not None and v[0] > me[0])
+    except (OSError, ValueError, IndexError, KeyError):
+        pass
+    try:
+        g = _j.loads((md / "guard_state.json").read_text())
+        fp["fires"] = sorted(g.get("fires") or [])
+        if role == "shop":
+            fp["book_eta_h"] = g.get("book_eta_h")
+    except (OSError, ValueError):
+        pass
+    if role == "buyer":
+        try:
+            s = _j.loads((md / "buyer_score.json").read_text())
+            fp["v6"] = (s.get("v6") or {}).get("all")
+            fp["deals_h"] = (s.get("v6") or {}).get("deals_h")
+        except (OSError, ValueError):
+            pass
+    note = Path(__file__).resolve().parent / ("operator_to_buyer.json" if role == "buyer" else "operator_to_shop.json")
+    try:
+        fp["note_t"] = float(_j.loads(note.read_text()).get("t") or 0)
+    except (OSError, ValueError):
+        fp["note_t"] = 0
+    return fp
+
+
+def run_gate(role, mem_d, woken=False, now=None):
+    """(run?, effort, why). mem_d is the strategist's memory dict; it keeps gate_fp and model_t."""
+    import time as _t
+    now = now or _t.time()
+    fp = _gate_state(role)
+    old = mem_d.get("gate_fp") or {}
+    age_h = (now - (mem_d.get("model_t") or 0)) / 3600
+    why = []
+    if woken:
+        why.append("woken")
+    if fp.get("note_t", 0) > old.get("note_t", 0):
+        why.append("new operator note")
+    if old.get("rank") is not None and fp.get("rank") != old.get("rank"):
+        why.append(f"rank {old.get('rank')} -> {fp.get('rank')}")
+    if old.get("total_rank") is not None and fp.get("total_rank") != old.get("total_rank"):
+        why.append(f"total rank {old.get('total_rank')} -> {fp.get('total_rank')}")
+    if set(fp.get("fires") or []) - set(old.get("fires") or []):
+        why.append(f"guard fires {sorted(set(fp['fires']) - set(old.get('fires') or []))}")
+    hard = list(why)
+    if fp.get("score") is not None and old.get("score") is not None and abs(fp["score"] - old["score"]) >= 0.01:
+        why.append(f"score {old['score']} -> {fp['score']}")
+    if role == "buyer":
+        if fp.get("v6") is not None and old.get("v6") is not None and abs(fp["v6"] - old["v6"]) >= 0.02:
+            why.append(f"v6 {old['v6']} -> {fp['v6']}")
+        if fp.get("deals_h") and old.get("deals_h") and abs(fp["deals_h"] - old["deals_h"]) / old["deals_h"] >= 0.25:
+            why.append(f"deals/h {old['deals_h']} -> {fp['deals_h']}")
+    if role == "shop" and fp.get("book_eta_h") and old.get("book_eta_h"):
+        if fp["book_eta_h"] < 150 <= old["book_eta_h"]:
+            hard.append("book ETA under 150 h")
+            why.append("book ETA under 150 h")
+    if age_h >= GATE_MAX_GAP_H.get(role, 6):
+        why.append(f"{age_h:.1f} h since the last model run")
+    if not old:
+        why.append("first gated run")
+    run = bool(why)
+    effort = "high" if hard or not old else "medium"
+    if run:
+        mem_d["gate_fp"] = fp
+        mem_d["model_t"] = now
+    return run, effort, "; ".join(why) or "nothing moved since the last model run"

@@ -44,7 +44,7 @@ from pathlib import Path
 import market_probe as probe
 import product_memory as pm
 from harness import last_json_object
-from strategist_memory import Memory, market_picture, my_turn, operator_note, post_board, read_board, read_digest, valid_requests
+from strategist_memory import Memory, market_picture, my_turn, run_gate, operator_note, post_board, read_board, read_digest, valid_requests
 
 HERE = Path(__file__).resolve().parent
 AUTO = HERE / "params_auto.json"
@@ -608,10 +608,15 @@ Answer with one JSON object only:
 {{"diagnosis": "<3-6 sentences>", "lessons": [{{"op": "add"|"rewrite"|"retire", "id": "L2", "text": "...", "why": "..."}}]}}"""
 
 
+EFFORT_NOW = None
+
+
 def model_cmd(role):
     """11-11 (user: build the tools and use them): a strategist may get the read-only market tools (market_tools.py,
     MCP stdio) when params.json strategist.tools lists its role; the answer is still one JSON object."""
     cmd = shlex.split(MODEL_CMD)
+    if EFFORT_NOW and "--effort" in cmd:                # 11-11: run_gate picks medium on routine runs
+        cmd[cmd.index("--effort") + 1] = EFFORT_NOW
     roles = (read(PARAMS, {}).get("strategist") or {}).get("tools") or []
     if role in roles:
         try:
@@ -750,6 +755,16 @@ def run(force=False):
     mode = guard(mem, b, mode)
     if mem.d.get("unreflected", 0) >= REFLECT_MISSES:
         reflect(mem)
+    global EFFORT_NOW
+    go, EFFORT_NOW, why = run_gate("shop", mem.d, woken=bool(wake) or force)
+    if not go:
+        log(f"model skipped (cost gate): {why}")
+        if mode == "apply":                  # keep the learn step's reverts
+            auto["t"] = mem.d["t"]
+            AUTO.write_text(json.dumps(auto, ensure_ascii=False, indent=1), encoding="utf-8")
+        mem.save()
+        return
+    log(f"model run (effort {EFFORT_NOW}): {why}")
     ev = evidence(m, mem, b)
     steps = {k: mem.d["steps"].get(k, KNOBS[k][1] if k in KNOBS else GLOBAL[k][2]) for k in list(KNOBS) + list(GLOBAL)}
     rec = mem.record()

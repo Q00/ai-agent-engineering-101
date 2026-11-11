@@ -33,7 +33,7 @@ import market_probe as probe
 import model_env
 import strategist as shop
 from harness import last_json_object
-from strategist_memory import Memory, buyer_picture, market_picture, operator_note, my_turn, post_board, read_board, read_digest, valid_requests
+from strategist_memory import Memory, buyer_picture, market_picture, operator_note, my_turn, run_gate, post_board, read_board, read_digest, valid_requests
 
 HERE = Path(__file__).resolve().parent
 BUYER_WAKE = HERE / ".market" / "buyer_strategist_wake"   # 11-11: written by guards.py; honored at most hourly
@@ -558,6 +558,15 @@ def run(force=False):
         shop.LOGF, keep = LOGF, shop.LOGF                     # the critic logs into the buyer's log
         shop.reflect(mem)
         shop.LOGF = keep
+    go, shop.EFFORT_NOW, why = run_gate("buyer", mem.d, woken=bool(wake) or force)
+    if not go:
+        log(f"model skipped (cost gate): {why}")
+        if mode == "apply":                  # keep the learn step's reverts
+            auto["t"] = mem.d["t"]
+            AUTO.write_text(json.dumps(auto, ensure_ascii=False, indent=1), encoding="utf-8")
+        mem.save()
+        return
+    log(f"model run (effort {shop.EFFORT_NOW}): {why}")
     b = board_view()
     bp = params.get("buyer", {}).get("base", {})
     ev = evidence(mem, b, auto, bp)
