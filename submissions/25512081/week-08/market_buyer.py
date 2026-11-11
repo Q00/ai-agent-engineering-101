@@ -44,6 +44,7 @@ SHORTLIST = 6          # shops asked for a quote at once: every candidate up to 
 CONCESSION_PRIOR = (0.93, 3)   # final / first ask before we know a shop: the Round 2 average, worth 3 deals
 EXPLORE = 0.2          # rounds 1-2: share of orders sent to a random shop, so every shop gets measured
 QUOTE_WAIT = 40        # seconds to wait for their first asks
+BREAK_HOURS = 6.0      # goods break only within this many hours of the sale, so no warranty past it is asked for
 FALLBACK_LEFT = 110    # seconds the next quote needs to be worth a try (the kit stops us at 300)
 
 
@@ -370,7 +371,10 @@ def accept_policy(order, warranty=0, grade_c=False):
         return {"cert": True, "min_hours_left": (order.get("use_within_hours") or 0) + 1}
     acc = {"cert": True, "grades": ["A", "B", "C"] if grade_c else ["A", "B"]}
     if warranty:                                  # the shop promised it in the talk: pay only if the checkout has it
-        acc["warranty_hours"] = warranty
+        # goods break only in the first 6 h after the sale (531 breaks on the ledger, Nov 12: max 5.97 h), so a
+        # 6 h warranty covers the whole risk; asking for the promised 48 h made the kit refuse deals whose
+        # receipt carried 6 h (tomato&potato, 10 orders / 14.6M of budget lost on Nov 12 00:17-06:17)
+        acc["warranty_hours"] = min(warranty, BREAK_HOURS)
     return acc
 
 
