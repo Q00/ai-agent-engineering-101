@@ -53,6 +53,11 @@ FLOOR_MARGIN = float(os.environ.get("SHOP_FLOOR_MARGIN", "0.05"))
 CLOSE_GAP = 0.03          # an offer within 3% of the ask closes at the offer
 MAX_DISCOUNT = 0.10       # haggling never takes the ask more than 10% below the opening ask
 MAX_ROUNDS = 6
+# On the last round an offer of at least LAST_CALL of the unit's cost (all of it for big tickets) closes instead of
+# ending the talk: a talk without a deal gets a review too, 2.7 stars on average vs 4.6 for a deal (Nov 11 04:00-16:00:
+# 243 talks ended "No deal", 456 no-deal reviews; of 236 with a number last, the offer was 0.90-1.0 of our last ask,
+# which sits near cost x 1.05, in 107)
+LAST_CALL = 0.95
 STEPS = (0.4, 0.25, 0.2, 0.15)   # each counter gives up this share of the room between opening ask and floor
 # Learning the price from our own talks: Thompson sampling, a bandit (the simplest kind of reinforcement
 # learning). Each category has ARMS, multipliers on the manager's share. Per arm we count talks that ended in a
@@ -558,6 +563,9 @@ class Seller(AgentExecutor):
             bare = re.fullmatch(r"\s*[\d,]+(\.\d+)?\s*", text or "")
             await self._close(task, up, say, deal, int(min(offer, deal["unit"]["list_price"])) if bare else ask)
         elif offer is not None and offer >= max(floor, ask * (1 - CLOSE_GAP)):
+            await self._close(task, up, say, deal, offer)
+        elif deal["rounds"] >= MAX_ROUNDS and offer is not None and offer >= deal["unit"]["cost"] * (
+                1.0 if deal["unit"]["list_price"] >= BIG_TICKET else LAST_CALL):
             await self._close(task, up, say, deal, offer)
         elif deal["rounds"] >= MAX_ROUNDS:
             del self.open[task.id]
