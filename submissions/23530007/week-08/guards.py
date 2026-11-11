@@ -269,8 +269,16 @@ def main():
         st["book_hist"] = hist
         base = next((h for h in hist if now - h["t"] >= 5 * 3600 and h["rival"] == rival["name"]), None)
         if base:
-            dt = (now - base["t"]) / 3600
-            ours, theirs = (mine["book"] - base["us"]) / dt, (rival["book"] - base["rb"]) / dt
+            # 11-12: slopes fitted through every reading since `base` (trendfit.py): the lead moves +-3 M between
+            # readings, and the two-reading slope used until now turned that into +-.5 M/h (+-70 M at the round's end)
+            import trendfit
+            same = [h for h in hist if h["t"] >= base["t"] and h["rival"] == rival["name"]]
+            fu, fr = trendfit.linfit([(h["t"], h["us"]) for h in same]), trendfit.linfit([(h["t"], h["rb"]) for h in same])
+            fl = trendfit.linfit([(h["t"], h["us"] - h["rb"]) for h in same])
+            ours, theirs = fu["slope"], fr["slope"]
+            st["book_fit"] = {"lead_M_h": round(fl["slope"] / 1e6, 2), "se_M_h": round((fl["se"] or 0) / 1e6, 2),
+                              "flat": fl["flat"], "n": fl["n"], "span_h": round(fl["span_h"], 1),
+                              "ours_M_h": round(ours / 1e6, 2), "rival_M_h": round(theirs / 1e6, 2), "rival": rival["name"]}
             lead = mine["book"] - rival["book"]
             eta = lead / (theirs - ours) if theirs > ours else None
             st["book_eta_h"] = round(eta, 1) if eta else None
