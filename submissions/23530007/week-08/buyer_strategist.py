@@ -71,7 +71,7 @@ GLOBAL = {                                    # role, bounds, step
     "cheapfood_open": ((0.2, 0.6), 0.05),     # food opening offer, share of list
     "cheapgoods_share": ((0.0, 1.0), 0.3),
     "skip_delta_food": ((-0.05, 0.05), 0.01),  # 11-11: skip bar = m* + delta (m* from buyer_score.json)
-    "skip_delta_goods": ((-0.06, 0.05), 0.01),
+    "skip_delta_goods": ((-0.10, 0.05), 0.01),   # floor -0.06 -> -0.10 on 11-11 (user: volume; the grade ceilings at the receipt guard the value)
     "target_mean": ((0.28, 0.40), 0.01),      # 11-11: the mean a goods deal must beat (m*) until buyer_score.json writes it
     "goods_delta": ((0.0, 0.08), 0.01),       # 11-11: margin over m* a goods deal must clear after its grade's break rate
     "needwarr_share": ((0.0, 1.0), 0.3),      # 11-09 (user): goods orders that require a 6 h warranty before haggling
@@ -371,7 +371,7 @@ Shared memory digest (the curator's summary for you): {digest}
 
 Knobs (only these; the steps allowed now: {steps}): global "value_share" (0.65-0.85), "quick_accept" (0.55-0.75),
 "food_extra_hours" (0.25-12), "skip_below" (0.15-0.33), "skip_below_food" (0.05-0.33), "skip_below_goods" (0.15-0.4),
-"skip_delta_food" (-0.05..0.05) and "skip_delta_goods" (-0.06..0.05) (the bar is max(fixed bar, m* + delta)),
+"skip_delta_food" (-0.05..0.05) and "skip_delta_goods" (-0.10..0.05) (the bar is max(fixed bar, m* + delta)),
 "target_mean" (0.28-0.40, used only when buyer_score.json has no m*), "goods_delta" (0-0.08, margin over m* a goods
 deal must clear after its grade's break rate), "conv_weight" (0-0.3), "rival_penalty" (0-0.1), "cap_margin"
 (0-0.1), "near_cap" (0-0.04), "open_offset" (0-0.08), "max_shops" (1-6), "value_half_life_h" (0-6: how fast the

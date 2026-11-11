@@ -894,6 +894,14 @@ def main():
                         if gcap < cap:
                             log("buyer", f"{pick['name']} offers grade {g_}: cap {cap} -> {gcap} ({x_bar(g_, bp):.2f} of list, m* {m_star(bp):.3f})")
                             cap = max(1, gcap)
+                        elif bp.get("goods_cap_ceiling") and gcap > cap and (g_ in ("A", "B") or w_ >= WARRANTY_MIN):
+                            # 11-11 22:00 (user: 'now raise the volume a lot'): the cap was the shop's low-quartile
+                            # price + .05, and 35 of 67 goods visits in an hour ended 'too dear' although over half of
+                            # those shops' lowest asks were under .66 of list. Any price up to the grade's ceiling still
+                            # beats m* + goods_delta after its break rate, so that ceiling is the cap (within budget);
+                            # push5 still offers the low edge first and climbs.
+                            log("buyer", f"{pick['name']} offers grade {g_}: cap {cap} -> {min(a.budget, gcap)} (the grade ceiling, volume)")
+                            cap = max(1, min(a.budget, gcap))
                     if g_ == "C" and w_ < WARRANTY_MIN:
                         log("buyer", f"{pick['name']} offers grade C without a warranty: next shop")
                         outcome = "grade C claimed"
