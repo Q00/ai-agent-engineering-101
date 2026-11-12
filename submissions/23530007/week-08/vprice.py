@@ -53,7 +53,11 @@ def floor_v(kind, grade, m_star, bp):
     (v_floor, the per-deal v at which one more deal neither lifts nor lowers our projected final class rank: the
     saved-mean loss equals the deals-percentile gain), not m* (the mean): goods A deals at EV .745-.80 were refused at
     ~27 orders/h under the m* + .02 floor. Without v_floor it falls back to m*."""
-    base = bp.get("v_floor") or m_star
+    # 11-12 23:50 (user: 'saved changes in real time; when it moves, wake the buyer or adjust the negotiation'):
+    # with v_floor_rel set the floor's base is m* + v_floor_rel, and m* is recomputed from the board's saved every
+    # 15 min (buyer_score.py), so the floors follow saved without a model run
+    rel = bp.get("v_floor_rel")
+    base = (m_star + float(rel)) if rel is not None else (bp.get("v_floor") or m_star)
     if kind == "food":
         return base + knob(bp, "food_delta")
     p = BREAK_P.get(grade or "A", 0.03)

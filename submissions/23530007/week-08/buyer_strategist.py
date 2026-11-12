@@ -54,6 +54,7 @@ GLOBAL = {                                    # role, bounds, step (11-12 patch 
     "rounds": ((1, 6), 1),                    # counters before we take any ask at or under the cap (else walk)
     "soft_rounds": ((1, 4), 1),               # the same at shops that end talks on low offers (reject share >= 30%)
     "v_floor": ((0.70, 0.82), 0.01),          # 11-12: the price floor's base, the break-even v (not m*): floor = v_floor + delta
+    "v_floor_rel": ((-0.05, 0.05), 0.01),     # 11-12 23:50: when set, the floor base is m* + this (follows saved live)
     "food_delta": ((-0.10, 0.10), 0.02),      # food floor = v_floor + this (the least a food deal may score)
     "goods_delta": ((0.0, 0.15), 0.02),       # goods floor = (m* + this) / (1 - break rate of the stated grade)
     "near_v": ((0.0, 0.08), 0.01),            # a receipt within this v under the floor is still paid
@@ -218,7 +219,7 @@ def evidence(mem, b, auto, params):
     ladder = sorted({round(x["saved"], 3) for x in rows if x["saved"] > b["buyer"]["saved"]})[:6]
     return {"time_utc": time.strftime("%Y-%m-%d %H:%M", time.gmtime()), "round_ends": "2026-11-17T23:59 KST",
 
-            "score": score_view(), "class_ladder": class_ladder(b), "buyer_frontier": buyer_frontier(),
+            "score": score_view(), "class_ladder": class_ladder(b), "buyer_frontier": buyer_frontier(), "peer_benchmark": shop.read(HERE / ".market" / "peer_bench.json", {}),
             "buyer_board": b["buyer"], "saved_values_just_above_us": ladder,
             "class_rank": b["class_rank"], "class_top": b["class_top"],
             "now": {"last_6h": summary(r6), "last_24h": summary(r24)},
@@ -353,6 +354,18 @@ which read ~.016 above the board). The code now ranks shops by P(deal per visit,
 minus slot_value per 20 s past the slot, skips shops under dead_p, stops an order after the first shop when the
 next visit is worth <= 0, and past hurry_secs takes any ask under the cap. Watch orders/h (target 170+), close rate
 per kind, slots lost (orders over 20 s) and v; ops/buyer_end.py gives the rank distribution for a (deals/h, v).
+
+PEER BENCHMARK (user, 11-12 23:50: 'when there is something like this, check it and apply it every time you review
+the buyer'): every run read evidence "peer_benchmark" (peer_bench.py, every 15 min, last 6 h, same scoring as the
+board): "better" lists the student buyers whose per-deal v beats ours by >= .02, with the same shop|kind compared
+(their v and price/list vs ours) and how they open at OUR shop. When a peer gets more at the same shop, name the cause
+(price: their x lower; SKU choice: same x but higher v = units with a higher cost share; breaks; opening move) and
+apply what our knobs can copy now (anchor_share/anchor_x, take_v, open_v/step_v/rounds, routing biases); say in
+"read" which peer row you used and what you changed or why not. On 11-12 SungJinho's buyer (25620027) got .885 vs
+our .830: psyoung82 goods .949 at .625 of list vs ours .764 at .704 (its opening: ~.45 of list, then take the
+counter -> the 'anchor' A/B arm), ddolcom goods .929 vs .816 at the SAME price (.664 vs .669: SKU choice/cost share).
+Guard G19 wakes you when our board v drops, the saved order around us changes, or such a peer gap appears; the
+price floors follow m* every tick on their own (v_floor_rel).
 
 YOUR OBJECTIVE (user, 11-12: 'the buyer matters now; find the strategy that makes us a DOMINANT 1st'): the
 highest projected FINAL class BUYER rank, then the widest gap over the next buyer. Not saved alone, not deals/h:

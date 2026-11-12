@@ -504,6 +504,56 @@ def main():
     except Exception as e:
         log(f"G18 skipped: {e!r}")
 
+    # G19 saved watch (user 11-12 23:50: 'saved changes in real time; when it moves past a threshold, wake the buyer
+    # or adjust the negotiation'). The floors already follow m* every tick (vprice v_floor_rel); this wakes the buyer
+    # strategist (no phone alert) when (a) our board-implied v over the last 2 h runs .03 under its 6 h value or
+    # under m*, (b) a student passes us or is passed in saved, or (c) peer_bench finds a student beating our per-deal
+    # v by >= .04 with a same-shop gap >= .08 (n >= 10 each), once per 6 h per student. Cool-down 90 min overall.
+    try:
+        import sqlite3
+        db19 = sqlite3.connect(f"file:{HERE / 'data' / 'market_archive.db'}?mode=ro", uri=True, timeout=30)
+        def bpace(hours):
+            r_ = db19.execute("SELECT ts, data FROM board WHERE ts <= ? ORDER BY ts DESC LIMIT 1", (now - hours * 3600,)).fetchone()
+            o_ = next(y for y in json.loads(r_[1])["buyers"] if y["name"] == "yms979")
+            x_ = next(y for y in bd["buyers"] if y["name"] == "yms979")
+            dd_ = x_["deals"] - o_["deals"]
+            return (x_["saved"] * (x_["deals"] + 100) - o_["saved"] * (o_["deals"] + 100)) / max(1, dd_), dd_
+        v2, n2 = bpace(2)
+        v6, n6 = bpace(6)
+        ms19 = (json.loads((MD / "buyer_score.json").read_text()) or {}).get("m_star")
+        why19 = []
+        if n2 >= 60 and (v2 < v6 - 0.03 or (ms19 and v2 < ms19)):
+            why19.append(f"board v 2h {v2:.3f} vs 6h {v6:.3f} (m* {ms19})")
+        names19 = {(p_.get("buyer") or {}).get("name") for p_ in bd["players"] if p_.get("student")}
+        order19 = [x_["name"] for x_ in sorted((y for y in bd["buyers"] if y["name"] in names19 and y.get("saved") is not None),
+                                               key=lambda y: -y["saved"])]
+        i19 = order19.index("yms979")
+        nb19 = order19[max(0, i19 - 2): i19 + 3]
+        old19 = st.get("saved_order")
+        if old19 and old19.get("rank") != i19 + 1:
+            why19.append(f"saved rank {old19['rank']} -> {i19 + 1} (around us now: {', '.join(nb19)})")
+        st["saved_order"] = {"rank": i19 + 1, "around": nb19, "t": now}
+        try:
+            pb = json.loads((MD / "peer_bench.json").read_text())
+            for e_ in pb.get("better") or []:
+                big = [z for z in e_.get("same_shop") or [] if z["their_n"] >= 10 and z["our_n"] >= 10
+                       and z["their_v"] - z["our_v"] >= 0.08]
+                if e_.get("v_gap", 0) >= 0.04 and big and cooled(st, f"G19:{e_['name']}", 6 * 3600, now):
+                    fired(st, f"G19:{e_['name']}", now)
+                    why19.append(f"{e_['name']} ({e_.get('player')}) beats our per-deal v by {e_['v_gap']:+.3f}; same shop: "
+                                 + "; ".join(f"{z['shop']} {z['kind']} theirs {z['their_v']} at x {z['their_x']} vs ours "
+                                             f"{z['our_v']} at x {z['our_x']}" for z in big[:3])
+                                 + (f"; opens at our shop at {e_['opening_at_our_shop']}" if e_.get("opening_at_our_shop") else ""))
+        except (OSError, ValueError):
+            pass
+        if why19 and cooled(st, "G19", 90 * 60, now):
+            fired(st, "G19", now)
+            wake("buyer", "G19 saved watch: " + " | ".join(why19) + ". Evidence 'peer_benchmark' has the details; "
+                 "apply what fits (knobs) and say what you took from it.")
+            fires.append("G19")
+    except Exception as e:
+        log(f"G19 skipped: {e!r}")
+
     # price rivals (user 11-11 23:00: 'no need to be the cheapest in the market; match the rival shop for each part,
     # revenue: inextro and so on, and sell a little under THAT shop'): the student shops next to us on each part of
     # the shop score, written for seller_r3 every tick.
