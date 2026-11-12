@@ -58,6 +58,11 @@ GRADE_LIMIT = {("food", "A"): 0.65, ("food", "B"): 0.65, ("food", "C"): 0.60,
                ("goods", "A"): 0.70, ("goods", "B"): 0.60, ("goods", "C"): 0.55}
 GRADE_RE = re.compile(r"\b(?i:grade)\s*(?:now\s*)?(?:is\s*)?[:=]?\s*([ABC])\b")
 STEP_SHARE = 0.05                             # one offer rises at most this share of list price
+# Claude (2026-11-12 21:44, hourly check, the 19:30 plan's step 2 after step 1 showed its effect): 2 h of my deals under the grade
+# limits (logs/saved-study-1112-2144.txt) score 0.893 a deal against 0.826 over the 12 h before, at 53 deals/h (revert line 35).
+# Smaller rises and two more offers let a deal settle nearer the shop's floor. Revert to 0.05 and 8 if deals/h fall under 35
+STEP_SHARE = 0.03
+MAX_OFFERS = 10
 PRICE_WEIGHT = 10.0                           # shop score per unit of paid/list: 0.03 cheaper is worth 0.3 stars
 PRICE_MIN_DEALS = 10                          # market deals of a shop before its prices count
 SHOP_PRICES = Path("shop_prices.json")        # paid/list per shop and kind, from the ledger (restock.py writes it)
