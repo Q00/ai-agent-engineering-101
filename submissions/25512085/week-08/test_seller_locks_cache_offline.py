@@ -161,6 +161,60 @@ class ReservationTests(unittest.TestCase):
 
 
 class LockAndCacheTests(unittest.TestCase):
+    def test_catalog_transient_read_failure_retries_unchanged_file(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = Path(tmp)
+            path = directory/'catalog.json'
+            path.write_text('{"a":{"list_price":100}}')
+            signature = (path.stat().st_mtime_ns, path.stat().st_size)
+            with patch.object(Path, 'read_text', side_effect=[PermissionError('busy'), original_read(path)]) as read:
+                self.assertEqual(store.load_catalog(directory), {})
+                self.assertEqual(store.load_catalog(directory), {'a': {'list_price': 100}})
+                self.assertEqual(read.call_count, 2)
+            self.assertEqual((path.stat().st_mtime_ns, path.stat().st_size), signature)
+
+    def test_catalog_parse_or_shape_failure_is_not_cached(self):
+        for failed in ('{invalid', 'null'):
+            with self.subTest(failed=failed), tempfile.TemporaryDirectory() as tmp:
+                directory = Path(tmp)
+                path = directory/'catalog.json'
+                path.write_text('{"a":{}}')
+                with patch.object(Path, 'read_text', side_effect=[failed, original_read(path)]) as read:
+                    self.assertEqual(store.load_catalog(directory), {})
+                    self.assertEqual(store.load_catalog(directory), {'a': {}})
+                    self.assertEqual(read.call_count, 2)
+
+    def test_valid_empty_catalog_is_cached(self):
+        for contents in ('{}', '[]'):
+            with self.subTest(contents=contents), tempfile.TemporaryDirectory() as tmp:
+                directory = Path(tmp)
+                (directory/'catalog.json').write_text(contents)
+                with patch.object(Path, 'read_text', return_value=contents) as read:
+                    self.assertEqual(store.load_catalog(directory), {})
+                    self.assertEqual(store.load_catalog(directory), {})
+                    self.assertEqual(read.call_count, 1)
+
+    def test_policy_read_parse_or_shape_failure_retries_unchanged_file(self):
+        for failed in (PermissionError('busy'), '{invalid', '[]'):
+            with self.subTest(failed=repr(failed)), tempfile.TemporaryDirectory() as tmp, \
+                    patch.object(policy, 'CONFIG_PATH', Path(tmp)/'policy.json'):
+                path = policy.CONFIG_PATH
+                path.write_text('{"enabled":true}')
+                signature = (path.stat().st_mtime_ns, path.stat().st_size)
+                with patch.object(Path, 'read_text', side_effect=[failed, original_read(path)]) as read:
+                    self.assertEqual(policy.config(), {'enabled': False})
+                    self.assertEqual(policy.config(), {'enabled': True})
+                    self.assertEqual(read.call_count, 2)
+                self.assertEqual((path.stat().st_mtime_ns, path.stat().st_size), signature)
+
+    def test_valid_empty_policy_is_cached(self):
+        with tempfile.TemporaryDirectory() as tmp, patch.object(policy, 'CONFIG_PATH', Path(tmp)/'policy.json'):
+            policy.CONFIG_PATH.write_text('{}')
+            with patch.object(Path, 'read_text', return_value='{}') as read:
+                self.assertEqual(policy.config(), {})
+                self.assertEqual(policy.config(), {})
+                self.assertEqual(read.call_count, 1)
+
     def test_timeout_never_enters_or_overwrites(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp)/'hub.json'
