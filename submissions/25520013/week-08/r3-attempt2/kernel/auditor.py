@@ -69,8 +69,8 @@ HISTORY_MAX = 12
 HISTORY_SHOWN = 4
 DESC_CHARS = 160
 TOOL_CHANGES_MAX = 4
-PROMPT_CHARS = 27_000  # 11-12: 24,000 held the blocks at about 23,000; the board block adds about 1,200 and the
-# values switched outside the kernel about 600
+PROMPT_CHARS = 28_000  # 11-12: 24,000 held the blocks at about 23,000; the board block adds about 1,200, the
+# values switched outside the kernel about 600 and the newest refused code edits about 800
 NOTES_SHOWN = 800
 WAKES_SHOWN = 3
 RUNS_MAX = 12  # the auditor's own memory: its past runs kept in the state file
@@ -878,7 +878,8 @@ def build_prompt(root, now, secrets=(), listed=None, roles=None, sizes=None):
         ("## 실험 기록 (커널 판정)", exp),
         (
             "## 코드 수정 (운영자가 규칙 코드를 고친 기록)",
-            ("\n".join(code_edit.history_lines(root, 4)) if code_edit is not None else "") or "없음",
+            ("\n".join(code_edit.history_lines(root, 4) + code_edit.refusal_lines(root, 3))
+             if code_edit is not None else "") or "없음",
         ),
         ("## 최근 점검 (운영자)", "\n".join(_wake_text(w) for w in wakes) or "없음"),
         ("## 프롬프트 크기 (최근 24시간, 에이전트별 모델 호출과 간추림. 커널이 잼)", _context_block(root, now)),

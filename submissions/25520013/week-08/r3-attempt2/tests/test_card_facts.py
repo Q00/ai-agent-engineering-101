@@ -648,7 +648,7 @@ def test_auditor_prompt_holds_the_board_comparison_with_hashed_names(tmp_path):
     p = au.build_prompt(r, NOW, roles=au.ROLES, sizes=sizes)
     assert "## 다른 가게와 우리 (순위표의 가게 열, 커널이 셈. 해석 없음)\n\n[가게 회전 25시간]" in p
     assert f"1위 {c.hid('Alpha Shop')}: book +50.0M" in p and "Alpha" not in p and LOGIN not in p
-    assert sizes.get("다른 가게와 우리", 0) > 300 and len(p) <= au.PROMPT_CHARS == 27_000
+    assert sizes.get("다른 가게와 우리", 0) > 300 and len(p) <= au.PROMPT_CHARS == 28_000
     assert "8. 다른 가게와 우리:" in p and "uncard에 그 이름을 적어 떼고" in p
     assert "뗐던 카드 칸 이름" in au.SCHEMA_ROLES
 

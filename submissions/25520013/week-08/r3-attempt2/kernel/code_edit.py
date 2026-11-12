@@ -749,17 +749,43 @@ def _parse_failed(text):
     return out
 
 
+REASON_CHARS = 160  # of the reason pytest prints after a failed test's name
+REASON_TESTS = 3  # failed tests whose reason goes into the refusal; the rest are named only
+
+
+def _parse_reasons(text):
+    """{test id: what pytest prints after ' - ' on its FAILED/ERROR line} (the first line of the error)."""
+    out = {}
+    for line in str(text).splitlines():
+        m = re.match(r"^(FAILED|ERROR) (.+)$", line.strip())
+        if m and " - " in m.group(2):
+            tid, _, why = m.group(2).partition(" - ")
+            if why.strip():
+                out.setdefault(tid.strip(), why.strip())
+    return out
+
+
+def _reason(v):
+    """A failure reason as one short masked printable piece, '' when there is none."""
+    if not isinstance(v, str):
+        return ""
+    v = c.mask("".join(ch if ch.isprintable() else " " for ch in v)).strip()
+    return v if len(v) <= REASON_CHARS else v[:REASON_CHARS] + "…"
+
+
 def default_runner(stage_dir, timeout_s):
     """Run the rule code's tests in stage_dir with A2_CODE_TEST_CMD (default TEST_CMD; {root} = the live root, which is
     the stage dir minus <STAGE>/<id>/<base|new>). A run without a pytest count line is a runner error.
-    -> {"ok", "failed": [test ids from FAILED/ERROR lines], "summary", "error"}."""
+    -> {"ok", "failed": [test ids from FAILED/ERROR lines], "summary", "error"}, with "reasons" {test id: first
+    line of its error} when tests failed. COLUMNS is set wide: at pytest's default 80 columns the reason after a long
+    test name is cut away (live 11-12: two refusals in a row named the test and not why it failed)."""
     stage_dir = os.path.abspath(stage_dir)
     root = stage_dir
     for _ in range(len(STAGE.split(os.sep)) + 2):
         root = os.path.dirname(root)
     tmpl = os.environ.get(TEST_CMD_ENV) or TEST_CMD
     cmd = shlex.split(tmpl.replace("{root}", shlex.quote(root)))
-    env = dict(os.environ, PYTHONDONTWRITEBYTECODE="1")
+    env = dict(os.environ, PYTHONDONTWRITEBYTECODE="1", COLUMNS="400")
     try:
         p = subprocess.run(
             cmd,
@@ -798,7 +824,8 @@ def default_runner(stage_dir, timeout_s):
     if p.returncode == 0:
         return {"ok": True, "failed": [], "summary": summary, "error": None, "passed": passed}
     if p.returncode == 1 and failed:
-        return {"ok": False, "failed": failed, "summary": summary, "error": None, "passed": passed}
+        return {"ok": False, "failed": failed, "summary": summary, "error": None, "passed": passed,
+                "reasons": _parse_reasons(p.stdout)}
     if p.returncode == 1:
         return {
             "ok": False,
@@ -911,7 +938,8 @@ def _prune_stage(root, keep=STAGE_KEEP):
 
 def run_tests(root, sid, new_texts, runner):
     """Stage the rule code, run the baseline (cached by content hash) and the edited copy.
-    -> {"ok": passed?, "error", "cls", "summary", "new_failed", "baseline_failed"}."""
+    -> {"ok": passed?, "error", "cls", "summary", "new_failed", "baseline_failed"}. The error names the newly failed
+    tests (five at most) and, for the first REASON_TESTS, the reason the runner read for each."""
     tests_dir = os.environ.get(TESTS_DIR_ENV)
     if not os.path.isdir(tests_dir or os.path.join(root, "tests")):
         return {
@@ -966,9 +994,12 @@ def run_tests(root, sid, new_texts, runner):
         "baseline_failed": len(base_failed),
     }
     if newly:
+        why = r.get("reasons") if isinstance(r.get("reasons"), dict) else {}
+        named = [f"{t} ({_reason(why.get(t))})" if i < REASON_TESTS and _reason(why.get(t)) else t
+                 for i, t in enumerate(newly[:5])]
         out.update(
             cls="tests",
-            error=f"새로 실패한 시험 {len(newly)}개: {', '.join(newly[:5])}",
+            error=f"새로 실패한 시험 {len(newly)}개: {', '.join(named)}",
         )
     elif isinstance(base_passed, int) and isinstance(r.get("passed"), int) and r["passed"] < base_passed:
         # a test that stops being collected or gets skipped is not a FAILED line: the passed count catches it
@@ -1910,6 +1941,25 @@ def summary(root, now, hours=24, since=None):
     except Exception:  # noqa: BLE001
         pass
     return out
+
+
+def refusal_lines(root, last=3):
+    """The newest refused code edits for the auditor: time, role, files, class and what the operator was told (200).
+    The audit numbers count refusals by class; these lines are the refusals themselves."""
+    try:
+        rows = [r for r in c.tail_json(os.path.join(root, TRAJ), 30_000_000, b'"code_edit_refused')
+                if r.get("kind") == "code_edit_refused"]
+        out = []
+        for r in rows[-last:]:
+            t = r.get("at") if _num(r.get("at")) else r.get("ts")
+            out.append(
+                f"- 거절 {c.kst(t) if _num(t) and 1.5e9 < t < 4.1e9 else '?'} {str(r.get('role') or '?')[:12]} "
+                f"{', '.join(str(x)[:60] for x in (r.get('files') or [])[:4]) or '파일 없음'} [{str(r.get('cls') or '?')[:20]}]: "
+                f"{' '.join(str(r.get('error') or '').split())[:200]}"
+            )
+        return out
+    except Exception:  # noqa: BLE001
+        return []
 
 
 def history_lines(root, last=4):

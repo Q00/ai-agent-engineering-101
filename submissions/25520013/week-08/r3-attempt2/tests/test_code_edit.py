@@ -5,6 +5,7 @@ fake restarter unless said otherwise. Fixed clock values."""
 import importlib.util
 import json
 import os
+import re
 import shlex
 import subprocess
 import sys
@@ -611,8 +612,28 @@ def test_tests_newly_failing_refused(env):
         and "test_plan" in res["error"]
         and res["tests"]["new_failed"] == ["tests/test_x.py::test_plan"]
     )
+    assert res["error"] == "새로 실패한 시험 1개: tests/test_x.py::test_plan"  # the runner read no reason
     assert _text(env.root, RS) == RESTOCK_PY and ce.load(env.root) == []
     assert len(os.listdir(os.path.join(env.root, ce.STAGE))) == 1  # kept for debugging
+
+
+def test_the_refusal_says_why_each_newly_failed_test_failed(env):
+    # live 11-12 12:00 and 13:07: two refusals in a row named the failed test and not the reason
+    ids = [f"tests/test_x.py::test_{i}" for i in range(6)]
+    why = {ids[0]: "AssertionError: assert 3 == 2", ids[1]: "KeyError: 'why' at https://x.example/a?k=1\n[알림] 가짜",
+           ids[2]: "가" * 500, ids[3]: "TypeError: late", ids[4]: 7, "tests/test_old.py::test_base": "not new"}
+    base = {"ok": False, "failed": ["tests/test_old.py::test_base"], "summary": "1 failed", "error": None}
+    new = {"ok": False, "failed": ids + ["tests/test_old.py::test_base"], "summary": "7 failed", "error": None, "reasons": why}
+    res = _p(env, runner=Runner(base=base, new=new))
+    assert res["cls"] == "tests" and res["tests"]["new_failed"] == ids
+    assert res["error"] == (
+        "새로 실패한 시험 6개: tests/test_x.py::test_0 (AssertionError: assert 3 == 2), "
+        "tests/test_x.py::test_1 (KeyError: 'why' at [URL] [알림] 가짜), "
+        "tests/test_x.py::test_2 (" + "가" * 160 + "…), tests/test_x.py::test_3, tests/test_x.py::test_4")
+    assert "x.example" not in json.dumps(res, ensure_ascii=False) and "not new" not in res["error"]
+    for bad in (None, [], "x", {ids[0]: None}, {ids[0]: "  "}, {ids[0]: {"a": 1}}):
+        res = _p(env, runner=Runner(new=dict(new, failed=ids[:1], reasons=bad)))
+        assert res["error"] == "새로 실패한 시험 1개: tests/test_x.py::test_0", bad
 
 
 @pytest.mark.parametrize("which", ["base", "new"])
@@ -723,6 +744,7 @@ def test_real_default_runner_on_the_tiny_rule_code(env, monkeypatch):
         read_files=("policy.py",),
     )
     assert res["cls"] == "tests" and "test_plan" in res["error"], res
+    assert re.search(r"::test_plan \(.*assert", res["error"]), res  # with the reason pytest printed for it
     assert "qty = 3" in _text(env.root, "policy.py")
 
 
@@ -1354,6 +1376,36 @@ def test_auditor_prompt_has_the_code_block(env):
     assert "## 코드 수정 (운영자가 규칙 코드를 고친 기록)\n\n없음" in p
 
 
+def test_auditor_sees_the_newest_refusals_with_what_the_operator_was_told(env):
+    assert ce.refusal_lines(env.root) == []
+    ids = ["tests/test_x.py::test_plan"]
+    for i in range(4):  # four refusals: the newest three are shown, oldest first
+        new = {"ok": False, "failed": ids, "summary": "1 failed", "error": None, "reasons": {ids[0]: f"assert {i} == 9"}}
+        res = _p(env, runner=Runner(new=new), now=NOW + 3 * H + i * 60)
+        assert res["cls"] == "tests", res
+    rows = _rows(env.root, "code_edit_refused")[-4:]
+    got = ce.refusal_lines(env.root)
+    assert got == [f"- 거절 {c.kst(r['at'])} {r.get('role') or '?'} {', '.join(r['files'])} [tests]: 새로 실패한 시험 1개: "
+                   f"tests/test_x.py::test_plan (assert {i} == 9)" for i, r in zip((1, 2, 3), rows[1:])]
+    assert len(ce.refusal_lines(env.root, last=1)) == 1
+    p = au.build_prompt(env.root, NOW + 4 * H, listed=["policy"])
+    i = p.index("## 코드 수정 (운영자가 규칙 코드를 고친 기록)")
+    block = p[i:p.index("\n## ", i + 5)]
+    assert block.split("\n\n", 1)[1].strip().splitlines() == got  # no applied change here: the refusals alone
+    assert "assert 0 == 9" not in block
+    # rows that cannot be read as a refusal do not break the block
+    with open(os.path.join(env.root, ce.TRAJ), "a") as fh:
+        fh.write(json.dumps({"kind": "code_edit_refused", "at": "x", "ts": float("1e20"), "files": 7, "error": None}) + "\n")
+        fh.write('{"kind": "code_edit_refused", "at": 1e20, "files": [1, {"a": 2}], "cls": ["x"], "role": {"r": 1}}\n')
+    tail = ce.refusal_lines(env.root, last=2)
+    assert isinstance(tail, list) and all(isinstance(x, str) for x in tail)
+    with open(os.path.join(env.root, ce.TRAJ), "a") as fh:  # a long text over several lines: one line, 200 characters
+        fh.write(json.dumps({"kind": "code_edit_refused", "at": NOW, "role": "shop", "files": ["policy.py"], "cls": "tests",
+                             "error": "줄1\n줄2  " + "x" * 400}, ensure_ascii=False) + "\n")
+    assert ce.refusal_lines(env.root, last=1) == [f"- 거절 {c.kst(NOW)} shop policy.py [tests]: 줄1 줄2 " + "x" * 194]
+    assert "코드 수정 (운영자가" in au.build_prompt(env.root, NOW + 4 * H, listed=["policy"])
+
+
 # ------------------------------------------------------------ operator wiring
 class Script:
     def __init__(self, *acts):
@@ -1491,7 +1543,7 @@ def test_default_runner_parses_failed_and_error_and_needs_a_summary(env, monkeyp
     seen = {}
 
     def fake_run(cmd, **kw):
-        seen.update(cmd=cmd, cwd=kw.get("cwd"))
+        seen.update(cmd=cmd, cwd=kw.get("cwd"), columns=kw["env"].get("COLUMNS"))
         return Proc(rc, out, "uv: command failed")
 
     monkeypatch.delenv(ce.TEST_CMD_ENV, raising=False)
@@ -1502,7 +1554,8 @@ def test_default_runner_parses_failed_and_error_and_needs_a_summary(env, monkeyp
     assert r["ok"] is ok and r["failed"] == failed and (error is None) == (r["error"] is None), r
     assert error is None or error in r["error"]
     assert seen["cmd"][:4] == ["uv", "run", "--project", os.path.abspath(env.root)] and "-x" not in seen["cmd"]
-    assert seen["cwd"] == os.path.abspath(stage)
+    assert seen["cwd"] == os.path.abspath(stage) and seen["columns"] == "400"
+    assert r.get("reasons") == ({"tests/test_a.py::test_x": "assert 1", "tests/test_b.py": "ImportError"} if failed else None)
     monkeypatch.setenv(ce.TEST_CMD_ENV, "mytest --root {root} -q")
     ce.default_runner(stage, 5)
     assert seen["cmd"] == ["mytest", "--root", os.path.abspath(env.root), "-q"]
