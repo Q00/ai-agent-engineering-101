@@ -1,0 +1,15 @@
+  [host] server=http://127.0.0.1:8000/mcp model=claude-haiku-4-5-20251001
+  [goal] Read notes.txt and sum the numbers in it.
+  [host] 2 tools: ['calculator', 'read_file']
+  [model] 'I\'ll read the notes.txt file and sum the numbers in it.\n<function_calls>\n[{"tool": "read_file", "args": {"path": "notes.txt"}}]\n</function_calls>\n<function_calls>\n[{"tool": "read_file", "args": {"path": "notes.txt"}}]\n</function_calls>\n\nNow I\'ll sum the numbers I found in the file. Let me calculate '
+  [tool] read_file({'path': 'notes.txt'}) -> Meeting memo, 2026-09-01
+
+Attendees: 4
+Pizza budget: 48000
+Drinks: 9500
+Reimbursed so far: 12000
+
+Sum the numbers above to get the total the agent should report.
+
+  [tool] calculator({'expression': '4 + 48000 + 9500 + 12000'}) -> 69504
+  [answer] 69504
