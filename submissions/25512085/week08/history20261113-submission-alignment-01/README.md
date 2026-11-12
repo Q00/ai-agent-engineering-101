@@ -40,7 +40,7 @@ python -B submissions/25512085/week08/history20261113-submission-alignment-01/ve
 
 ## 남은 작업 / 미실행
 
-- 보고서·그림 담당이 운영 사실만 반영할 것. runtime monolith와 in-memory 예약, 결정론적 Round3 경로를 기준으로 할 것.
+- 보고서·그림 담당이 운영 사실만 반영할 것. runtime monolith와 in-memory 예약, 비LLM 규칙 기반 Round3 가격·accept 경로를 기준으로 할 것. no-deal 후기에는 무작위 템플릿 선택이 있어 전체 출력을 완전 결정론적이라고 쓰지는 말 것.
 - **제출용 최신 전체 운영 원본 로그는 미확보**. 기존 로컬 원본은11월5일이며 원산지 미확정. 별도 명시 수집·민감정보 검토 필요.
 - 공식 check_week08 스크립트는 이 checkout에 없어서 미실행. 결제·LLM·애플리케이션 회귀 테스트·deploy·restart는 이 범위에서 미실행.
 - 지표 관측은11월13일 KST 중간 snapshot이며 종료시각 최종 점수가 아니다. 부분 로그의 broad refusal 문구를 전체 실패율·고유 주문 실패 수로 변환하지 말 것.
