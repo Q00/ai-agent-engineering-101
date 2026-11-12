@@ -7,7 +7,7 @@ tactic (first number ~.45 of list, take the counter) was visible in our own shop
 comparison every tick so the buyer strategist sees it each run:
 
     .market/peer_bench.json
-      ours          our per-deal v over WINDOW_H (ledger settles, unit costs, breaks scored 0 / -1), deals/h
+      ours          our per-deal v over WINDOW_H (3 h; v_6h next to it) (ledger settles, unit costs, breaks scored 0 / -1), deals/h
       peers         every student buyer with >= MIN_DEALS: v, deals/h, food share, share at or under cost
       better        the peers whose v beats ours by >= GAP, each with the same-shop|kind comparison (their v and
                     price/list vs ours, n >= 5 both), their goods median list price, and how they open at OUR
@@ -26,13 +26,14 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 ARCHIVE = HERE / "data" / "market_archive.db"
 OUT = HERE / ".market" / "peer_bench.json"
-WINDOW_H = 6
-MIN_DEALS = 100
+WINDOW_H = 3          # 11-12 (user: '6 h is too long'): 3 h for the comparison, 6 h shown next to it as a check
+LONG_H = 6
+MIN_DEALS = 60
 GAP = 0.02
 ME = "yms979"
 
 
-def build():
+def build(window_h=WINDOW_H):
     import cost_model
     now = time.time()
     db = sqlite3.connect(f"file:{ARCHIVE}?mode=ro", uri=True, timeout=30)
@@ -48,14 +49,14 @@ def build():
     b = board_api.fetch(timeout=20)
     students = {(p.get("buyer") or {}).get("name"): p["player"] for p in b["players"] if p.get("student")}
     broken = {}
-    for (d,) in db.execute("SELECT data FROM ledger WHERE kind='broken' AND ts > ?", (now - (WINDOW_H + 8) * 3600,)):
+    for (d,) in db.execute("SELECT data FROM ledger WHERE kind='broken' AND ts > ?", (now - (LONG_H + 8) * 3600,)):
         x = json.loads(d).get("data") or {}
         broken[x.get("unit")] = (x.get("refunded") or 0) > 0
-    rows = [json.loads(d).get("data") or {} for (d,) in db.execute(
-        "SELECT data FROM ledger WHERE kind='settle' AND ts > ?", (now - WINDOW_H * 3600,))]
+    rows = [dict(json.loads(d).get("data") or {}, _ts=ts) for ts, d in db.execute(
+        "SELECT ts, data FROM ledger WHERE kind='settle' AND ts > ?", (now - LONG_H * 3600,))]
     rows = [r for r in rows if r.get("buyer") in students and r.get("sku") in cat]
     uc = cost_model.unit_costs([r["unit"] for r in rows])
-    per = defaultdict(list)
+    per, per_long = defaultdict(list), defaultdict(list)
     for r in rows:
         lp, c = cat[r["sku"]]["list_price"], uc.get(r["unit"])
         if c is None:
@@ -64,21 +65,27 @@ def build():
             v = 0.0 if broken[r["unit"]] else -1.0
         else:
             v = 1.0 if lp <= c else min(1.0, (lp - r["amount"]) / (lp - c))
-        per[r["buyer"]].append({"shop": names.get(str(r.get("shop")).rstrip("/"), "?"),
-                                "kind": "goods" if r.get("expires_at") is None else "food",
-                                "v": v, "x": r["amount"] / lp, "under": r["amount"] <= c, "lp": lp,
-                                "task": (r.get("task") or None)})
+        z = {"shop": names.get(str(r.get("shop")).rstrip("/"), "?"),
+             "kind": "goods" if r.get("expires_at") is None else "food",
+             "v": v, "x": r["amount"] / lp, "under": r["amount"] <= c, "lp": lp}
+        per_long[r["buyer"]].append(z)
+        if now - r["_ts"] <= window_h * 3600:
+            per[r["buyer"]].append(z)
 
-    def summ(L):
+    def summ(L, name=None):
         n = len(L)
-        return {"deals_h": round(n / WINDOW_H, 1), "v": round(sum(z["v"] for z in L) / n, 3),
+        Ll = per_long.get(name) or []
+        return {"deals_h": round(n / window_h, 1), "v": round(sum(z["v"] for z in L) / n, 3),
+                "v_6h": round(sum(z["v"] for z in Ll) / len(Ll), 3) if Ll else None,
                 "food_share": round(sum(z["kind"] == "food" for z in L) / n, 2),
                 "at_or_under_cost": round(sum(z["under"] for z in L) / n, 2),
                 "goods_median_list": int(statistics.median([z["lp"] for z in L if z["kind"] == "goods"] or [0]))}
-    out = {"t": now, "window_h": WINDOW_H, "ours": summ(per[ME]) if per.get(ME) else None, "peers": {}, "better": []}
+    out = {"t": now, "window_h": window_h, "note": "goods break up to 6 h after the sale: v over 3 h reads a little high, "
+                                                  "more for goods-heavy buyers (us); v_6h is the check",
+           "ours": summ(per[ME], ME) if per.get(ME) else None, "peers": {}, "better": []}
     for name, L in per.items():
         if len(L) >= MIN_DEALS and name != ME:
-            out["peers"][name] = dict(summ(L), player=students.get(name))
+            out["peers"][name] = dict(summ(L, name), player=students.get(name))
     if not out["ours"]:
         return out
     mine = defaultdict(list)
@@ -109,7 +116,7 @@ def their_openers(db, now):
     """buyer -> how it opened at OUR shop (first number / list, numbers per talk), from our seller's message log
     (every message since 11-12 15:52) joined with the ledger's receipts by task id."""
     tasks = {}
-    for (d,) in db.execute("SELECT data FROM ledger WHERE kind='result' AND ts > ?", (now - WINDOW_H * 3600,)):
+    for (d,) in db.execute("SELECT data FROM ledger WHERE kind='result' AND ts > ?", (now - LONG_H * 3600,)):
         x = json.loads(d).get("data") or {}
         rc = x.get("receipt") or {}
         if rc.get("task"):
