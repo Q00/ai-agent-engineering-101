@@ -445,7 +445,7 @@ def groupbuy_ads(c, t, now):
         f"- {i['name'][:16]} ({i['sku']}): 여기 {i['low_grade']}등급 {i['low']:,}원 = 정가의 {ours:.0%} 할인 → "
         f"거래당 +{ours:.2f}점 / 시장 중간값 {med:,.0f}원이면 +{mkt:.2f}점 (차이 +{ours - mkt:.2f}점, 재고 {n_by.get(i['sku'], 0)}개)"
         for i, ours, mkt, med in gain[:3]) + "\n- 근거: 절약률 = Σ(1−지불가/정가)/(거래+100), 바이어 ALL의 50% (마켓 규칙). 시장 중간값은 공개 원장 24시간" \
-        if gain else "[가격표] 📋 주문 전에 보는 dragonash 정리 특가 (보증 72시간, 시장 인증서)\n" + "\n".join(
+        if gain else "[가격표] 📋 주문 전에 보는 dragonash 정리 특가 (A·B급 보증 72시간, C급 보증 없음, 시장 인증서)\n" + "\n".join(
         f"- {i['name']} ({i['sku']}): 정가 {i['list_price']:,}원 → "
         + ", ".join(f"{g_} {p_:,}원(-{1 - p_ / i['list_price']:.0%})" for g_, p_ in i["price_by_grade"].items())
         + f" | 재고 {n_by.get(i['sku'], 0)}개" for i in items)
@@ -797,9 +797,9 @@ def follow_ads(c, md, now):
         if u.get("kind") != "goods":
             w_en, w_ko = "none", "없음"
         elif clear:
-            w_en, w_ko = f"{lab_en} on every sale (refund if it breaks)", f"모든 판매에 {lab_ko}, 하자 시 전액 환불"
+            w_en, w_ko = f"{lab_en} on every grade A/B sale (refund if it breaks); grade C: none", f"A·B급 모든 판매에 {lab_ko}, 하자 시 전액 환불 (C급은 보증 없음)"
         elif t_.get("warranty_on_request", True):
-            w_en, w_ko = f"{lab_en} if you ask for it, otherwise none", f"요청하시면 {lab_ko}, 요청 없으면 없음"
+            w_en, w_ko = f"{lab_en} for grade A/B if you ask for it; grade C: none", f"A·B급은 요청하시면 {lab_ko}, C급은 보증 없음"
         else:
             w_en, w_ko = (f"{w0}h", f"{w0}시간") if w0 else ("none", "없음")
         mm = t_.get("match_margin", 0.05)
@@ -843,13 +843,13 @@ def _clear_w():
     h = max(t.get("warranty_goods_h") or 0, 6, t.get("warranty_long_h", 6))
     if t.get("warranty_until"):
         if t.get("clearance_warranty_all", False):
-            return ("lifetime, unlimited: until the market closes (2026-11-17 23:59 KST), on every sale; product defects only, not damage from use; full refund for a defect",
-                    "모든 판매에 평생·무기한 보증(마켓이 닫히는 11-17 23:59까지). 단 제품 하자 시에 한하며, 사용으로 인한 파손은 제외. 하자 시 전액 환불")
-        return ("lifetime, unlimited: until the market closes (2026-11-17 23:59 KST), if you ask for it; product defects only, not damage from use",
-                "요청 시 평생·무기한 보증(마켓이 닫히는 11-17 23:59까지). 단 제품 하자 시에 한하며, 사용으로 인한 파손은 제외")
+            return ("lifetime, unlimited (grades A/B; grade C: none): until the market closes (2026-11-17 23:59 KST), on every sale; product defects only, not damage from use; full refund for a defect",
+                    "A·B급 모든 판매에 평생·무기한 보증(C급 없음, 마켓이 닫히는 11-17 23:59까지). 단 제품 하자 시에 한하며, 사용으로 인한 파손은 제외. 하자 시 전액 환불")
+        return ("lifetime, unlimited (grades A/B; grade C: none): until the market closes (2026-11-17 23:59 KST), if you ask for it; product defects only, not damage from use",
+                "A·B급 요청 시 평생·무기한 보증(C급 없음, 마켓이 닫히는 11-17 23:59까지). 단 제품 하자 시에 한하며, 사용으로 인한 파손은 제외")
     if t.get("clearance_warranty_all", False):
-        return f"{h} h on every sale, full refund if it breaks", f"모든 판매에 {h}시간, 고장 시 전액 환불"
-    return f"{h} h if you ask for it", f"요청 시 {h}시간"
+        return f"{h} h on every grade A/B sale, full refund if it breaks; grade C: none", f"A·B급 모든 판매에 {h}시간, 고장 시 전액 환불 (C급은 보증 없음)"
+    return f"{h} h for grade A/B if you ask for it; grade C: none", f"A·B급 요청 시 {h}시간 (C급은 보증 없음)"
 
 
 def _groupbuy_skus():

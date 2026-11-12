@@ -173,7 +173,8 @@ def find_unit(text, taken=(), need=None):
     fresh_first = not need.get("hours") and SHOP_THETA_FRESH()
     age = lambda u: (-(u.get("expires_at") or 0) if fresh_first and u.get("kind") == "food" and u.get("expires_at")
                      else u.get("expires_at") or float("inf"))
-    gpen = lambda u: 1 if u.get("kind") == "goods" and u.get("grade") == "C" and not c_ok else 0
+    wg = promo.theta().get("warranty_grades", ("A", "B"))   # review 11-12: a buyer who asks for a warranty gets a
+    gpen = lambda u: 1 if u.get("kind") == "goods" and u.get("grade") == "C" and (not c_ok or (need.get("warranty") and "C" not in wg)) else 0   # unit that carries one
     if m:
         # HQ 11-10 16:05 "니즈를 만들어": a named goods order got the oldest unit, often the dearest one we bought
         # (G75f11c19: missed quotes asked 76.8k on average, agreed ones 58.3k; the market settles it at ~80k). Goods
@@ -324,6 +325,9 @@ def warranty_for(asked, u=None):
     settles from 16:42 to 19:05: clearance paid 0 in the last hour while 73% agreed). 72 h settles (ours from 16:10,
     other shops'). The warranty is capped at theta warranty_max_h (72) whatever the other settings say."""
     t = promo.theta()
+    if u is not None and u.get("kind") == "goods" and u.get("grade") not in t.get("warranty_grades", ("A", "B")):
+        return 0          # MBT TF 11-12 (3rd): grade C hides a defect 35% of the time (market rule) and breaks within 6 h;
+                          # 24 h: C margin 6.5M, C refunds 14.9M. yms979 ships A/B with 72 h, C with none; we do the same
     w = t.get("warranty_goods_h") or 0
     long_h = max(6, t.get("warranty_long_h", 6))
     if t.get("warranty_until"):
@@ -357,6 +361,8 @@ def warranty_note(u, asked=False):
     h = warranty_for(asked, u)
     if u.get("kind") != "goods":
         return ""
+    if u.get("grade") not in promo.theta().get("warranty_grades", ("A", "B")):
+        return f" | grade {u.get('grade')}: no warranty (warranty is for grade A/B only), sold as is"
     if h and promo.theta().get("warranty_until") and h > 72:      # HQ 11-10 "평생, 무기한 둘다 병기해"
         return (f" | warranty={h}h: lifetime/unlimited (평생·무기한) until the market closes 2026-11-17 23:59 KST; "
                 f"product defects only (단 제품 하자 시), not damage from use (사용 파손 제외); full refund for a defect")
@@ -564,7 +570,9 @@ class Shop(AgentExecutor):
             need = needs(text)
             deal["warranty_asked"] = deal.get("warranty_asked") or need["warranty"]
             vip = deal["vip"] or is_vip(self.c, text)
-            if need["hours"] or need["grades"] or (vip and not deal["vip"]):
+            no_w = need["warranty"] and u.get("kind") == "goods" \
+                and u.get("grade") not in promo.theta().get("warranty_grades", ("A", "B"))   # asked for one on a C unit
+            if need["hours"] or need["grades"] or no_w or (vip and not deal["vip"]):
                 taken = {d["unit"]["unit"] for k, d in self.open.items() if k != task.id} | set(self.sold)
                 v, _, _ = find_unit(f"{text} {u['sku']}", taken, need)
                 if v is None:
