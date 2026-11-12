@@ -44,7 +44,7 @@ from sale_order import grade_c_last, order_key
 from strategy_policy import effective
 
 NAME = "kcwarni Inventory Shop"
-FEATURES = ["actual_grade_receipt", "bounded_warranty_v1", "coded_seller_rules", "model_breaker", "food_pricing_v2", "price_cap_v1", "sale_order_v1", "a_grade_six_hour_v1", "pq1_v1", "food_floor_108_v1", "a_warranty_90m_v1", "shelf_need_fit_v1"]
+FEATURES = ["actual_grade_receipt", "bounded_warranty_v1", "coded_seller_rules", "model_breaker", "food_pricing_v2", "price_cap_v1", "sale_order_v1", "a_grade_six_hour_v1", "pq1_v1", "food_floor_108_v1", "a_warranty_90m_v1", "shelf_need_fit_v1", "shelf_need_days_pct_v1"]
 MARKET_DIR = Path(os.environ.get("MARKET_DIR", ".market"))
 
 PROMPT = """You are a Round 3 inventory sales agent. A buyer is negotiating for one {name}.
@@ -108,10 +108,91 @@ NEED_PATTERNS = (
 )
 
 
+# Days and shares of shelf life (the user's 11-12 choice in the Orchestrator session, about 10:0x KST: "단서 기록 + 일·% 표현
+# 읽기 (권장)"): 55 probe-food 2 stars from 11-11 18:04 to 11-12 06:08 each said "I needed Y h" with Y exactly 25, 50 or 75% of
+# the SKU's full shelf life, while only about 2% of food requests stated a need in hours. "N days" counts as N x 24 hours, and
+# "N% of shelf life" as N% of the catalog's shelf_hours for the unit's SKU. Only which unit is picked changes, as above.
+DAY_PATTERNS = (
+    re.compile(r"(\d+(?:\.\d+)?)\s*days?\b(?:\s+of)?\s+(?:shelf[\s-]?life|freshness)", re.I),
+    re.compile(r"(\d+(?:\.\d+)?)\s*days?\b\s+(?:left|remaining)", re.I),
+    re.compile(r"min_days_left\W{0,3}(\d+(?:\.\d+)?)", re.I),
+    re.compile(r"(\d+(?:\.\d+)?)\s*일\s*이상"),
+)
+PERCENT_PATTERNS = (
+    re.compile(r"(\d+(?:\.\d+)?)\s*%\s*(?:of\s+(?:its\s+|the\s+|their\s+)?(?:full\s+|total\s+)?)?(?:shelf[\s-]?life|freshness)", re.I),
+    re.compile(r"(?:shelf[\s-]?life|freshness)\W{0,3}(?:of\s+|at\s+least\s+|>=?\s*|≥\s*){0,3}(\d+(?:\.\d+)?)\s*%", re.I),
+    re.compile(r"(?:유통기한|신선도)\D{0,10}(\d+(?:\.\d+)?)\s*%"),
+)
+# What the pricing log records about a food request's shelf-life wording: terms from this fixed list and numbers that carry a
+# time or percent unit. Never the request text itself.
+CLUE_TERMS = (
+    ("shelf life", re.compile(r"shelf[\s-]?life", re.I)), ("fresh", re.compile(r"fresh", re.I)),
+    ("expir", re.compile(r"expir", re.I)), ("best before", re.compile(r"best\s+before", re.I)),
+    ("use by", re.compile(r"use\s+by", re.I)), ("left", re.compile(r"\bleft\b", re.I)),
+    ("remaining", re.compile(r"remaining", re.I)), ("at least", re.compile(r"at\s+least", re.I)),
+    ("min_hours_left", re.compile(r"min_hours_left", re.I)), ("유통기한", re.compile(r"유통기한")), ("신선", re.compile(r"신선")),
+    ("이상", re.compile(r"이상")),
+)
+# "grade A or B", "grades A, B": each letter named after "grade" is logged as "grade A" and so on.
+CLUE_GRADES = re.compile(r"\b(?i:grades?)\s+([ABC]\b(?:\s*(?:,|/|or|and)\s*[ABC]\b)*)")
+CLUE_NUMBER = re.compile(r"(\d+(?:\.\d+)?)\s*(%|hours?|hrs?|h\b|days?|d\b|weeks?|시간|일|주)", re.I)
+CLUE_UNITS = {"%": "%", "h": "h", "hr": "h", "hrs": "h", "hour": "h", "hours": "h", "시간": "h", "d": "d", "day": "d", "days": "d",
+              "일": "d", "week": "w", "weeks": "w", "주": "w"}
+
+
+def _needs(patterns, text, top):
+    found = [float(m.group(1)) for pattern in patterns for m in pattern.finditer(str(text or ""))]
+    found = [x for x in found if 0 < x <= top]
+    return max(found) if found else None
+
+
 def stated_need_hours(text):
-    """The most hours of shelf life the request says the order needs, or None when it states none."""
-    found = [float(m.group(1)) for pattern in NEED_PATTERNS for m in pattern.finditer(str(text or ""))]
-    found = [h for h in found if 0 < h <= 10000]
+    """The most hours of shelf life the request says the order needs ("N days" as N x 24), or None when it states none."""
+    hours, days = _needs(NEED_PATTERNS, text, 10000), _needs(DAY_PATTERNS, text, 10000 / 24)
+    found = [x for x in (hours, days * 24 if days is not None else None) if x is not None]
+    return max(found) if found else None
+
+
+def stated_need_percent(text):
+    """The largest share of full shelf life (0-100) the request says the order needs, or None when it states none."""
+    return _needs(PERCENT_PATTERNS, text, 100)
+
+
+def shelf_clues(text):
+    """{"terms", "numbers"}: the shelf-life terms (from CLUE_TERMS) and the numbers with a time or percent unit in the request, at
+    most 12 numbers, as [value, unit]; never the text itself."""
+    text = str(text or "")
+    terms = [name for name, pattern in CLUE_TERMS if pattern.search(text)]
+    grades = {g for m in CLUE_GRADES.finditer(text) for g in re.findall(r"\b[ABC]\b", m.group(1))}
+    terms += [f"grade {g}" for g in sorted(grades)]
+    numbers = [[float(m.group(1)), CLUE_UNITS.get(m.group(2).lower(), m.group(2))] for m in CLUE_NUMBER.finditer(text)][:12]
+    return {"terms": terms, "numbers": numbers}
+
+
+_SHELF = {"stamp": None, "hours": {}}
+
+
+def shelf_hours_by_sku():
+    """{sku: the catalog's full shelf_hours}, parsed again only when catalog.json changes; {} when it cannot be read."""
+    path = MARKET_DIR / "catalog.json"
+    try:
+        stat = path.stat()
+        stamp = (str(path), stat.st_mtime_ns, stat.st_size)
+        if _SHELF["stamp"] != stamp:
+            catalog = json.loads(path.read_text(encoding="utf-8"))
+            _SHELF["hours"] = {sku: p["shelf_hours"] for sku, p in catalog.items() if isinstance(p, dict)
+                               and type(p.get("shelf_hours")) in (int, float) and p["shelf_hours"] > 0}
+            _SHELF["stamp"] = stamp
+    except (OSError, ValueError, AttributeError):
+        return {}
+    return _SHELF["hours"]
+
+
+def unit_need_hours(unit, hours, percent, shelf):
+    """The hours this unit must have left: the larger of the stated hours and the stated share of its SKU's full shelf life; None
+    when neither applies to it."""
+    found = [x for x in (hours, percent / 100 * shelf[unit["sku"]] if percent is not None and unit.get("sku") in shelf else None)
+             if x is not None]
     return max(found) if found else None
 
 
@@ -139,10 +220,14 @@ def find_unit(text, taken=()):
             or u["sku"].lower() in want)]
     named = [u for u in fit if u["sku"].lower() in want]
     fit = named or fit                                   # a SKU the buyer named comes first
-    need = stated_need_hours(text)
-    if need is not None:
+    need, percent = stated_need_hours(text), stated_need_percent(text)
+    if need is not None or percent is not None:
         now = time.time()
-        enough = [u for u in fit if hours_left(u, now) is None or hours_left(u, now) >= need]
+        shelf = shelf_hours_by_sku() if percent is not None else {}
+        def meets(u):
+            left, wanted = hours_left(u, now), unit_need_hours(u, need, percent, shelf)
+            return left is None or wanted is None or left >= wanted
+        enough = [u for u in fit if meets(u)]
         fit = enough or fit
     c_last = grade_c_last()
     return min(fit, key=lambda u: order_key(u, c_last), default=None)
@@ -269,11 +354,14 @@ class Seller(AgentExecutor):
         reserve = terms["floor"]
         log_dir = Path(__file__).resolve().parent / "logs" / "pricing"
         log_dir.mkdir(parents=True, exist_ok=True)
+        need_hours, need_percent = stated_need_hours(deal.get("request")), stated_need_percent(deal.get("request"))
         (log_dir / (uuid4().hex + ".json")).write_text(json.dumps(
             {"at": datetime.now(timezone.utc).isoformat(), "task": task.id,
              "unit": u.get("unit"), "sku": u["sku"], "cost": u["cost"],
              "grade_observed": u.get("grade"), "expires_at": u.get("expires_at"), "request_form": request_form(deal.get("request"), u),
-             "stated_need_hours": stated_need_hours(deal.get("request")), **terms},
+             "stated_need_hours": need_hours, "stated_need_percent": need_percent,
+             "need_for_unit_hours": unit_need_hours(u, need_hours, need_percent, shelf_hours_by_sku() if need_percent is not None else {}),
+             "shelf_clues": shelf_clues(deal.get("request")) if u.get("kind") == "food" else None, **terms},
             ensure_ascii=False, indent=2), encoding="utf-8")
         if deal["ask"] is not None and deal["offer"] == deal["ask"] and deal["offer"] >= reserve:
             move, raw = {"action": "accept"}, "deterministic acceptance of the disclosed quote"
