@@ -378,9 +378,16 @@ def load_catalog(market_dir: Path) -> dict[str, dict[str, Any]]:
     key = (str(path.resolve()), stat.st_mtime_ns, stat.st_size)
     with _catalog_cache_lock:
         if key not in _catalog_cache:
-            cat = load_json_safe(path, {})
+            # A fallback {} is not a successful empty catalog: transient sharing
+            # locks/partial reads must be retried even when the signature is unchanged.
+            try:
+                cat = json.loads(path.read_text(encoding='utf-8'))
+            except (OSError, ValueError):
+                return {}
+            if not isinstance(cat, (dict, list)):
+                return {}
             value = ({x['sku']: x for x in cat if isinstance(x, dict) and 'sku' in x}
-                     if isinstance(cat, list) else cat if isinstance(cat, dict) else {})
+                     if isinstance(cat, list) else cat)
             # Normally one market directory; bound test/multi-directory retention too.
             if len(_catalog_cache) >= 8:
                 _catalog_cache.clear()

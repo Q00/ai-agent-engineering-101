@@ -210,7 +210,8 @@ def config():
         if _config_cache is not None and _config_cache[0] == key:
             return copy.deepcopy(_config_cache[1])
         value = json.loads(CONFIG_PATH.read_text(encoding='utf-8'))
-        value = value if isinstance(value, dict) else {'enabled': False}
+        if not isinstance(value, dict):
+            return {'enabled': False}  # Invalid shape is a fallback, not a cached config.
         _config_cache = (key, value)
         return copy.deepcopy(value)
     except (OSError, ValueError):
