@@ -1875,20 +1875,28 @@ def interim_data(root, run, now):
     return read_events(root, min(lo), now, now=now) if lo else None
 
 
-def _last_window_h(e):
-    """The longest window a running experiment is judged on: its own once it was extended (or is at the kernel's
-    extension limit), else the one extension the kernel makes of an undecided window (_extend)."""
+def _after_undecided(e, now):
+    """What tick does with an undecided verdict on e's present window (mirrors _judge / _step_split): ("extend", h)
+    when the window becomes h hours and is judged once more, ("last", window_h) when the weak rule decides on this
+    window. A split is extended only while its arm lives (now < arm.until); a before/after window above the extension
+    limit is cut to the limit (h below window_h), and one at the limit is judged again on the same hours ("last")."""
     wh = e["window_h"]
-    return wh if e.get("extended") or wh >= EXT_MAX_WINDOW_H else min(EXT_MAX_WINDOW_H, wh * 2)
+    h = min(EXT_MAX_WINDOW_H, wh * 2)
+    if e.get("extended") or h == wh:
+        return "last", wh
+    if e.get("mode") == "split" and not (wh < EXT_MAX_WINDOW_H and now < ((e.get("arm") or {}).get("until") or 0)):
+        return "last", wh
+    return "extend", h
 
 
 def interim_line(e, now, data):
     """What a running experiment holds so far, as one card line (no writes, no verdict): hours run of the window, the
     sample (per arm, or before and after) with the pace projected to the verdict time next to the sample the verdict
     needs, the values and their difference, the smallest difference a clear verdict needs (the larger of CLEAR_SE x se
-    at the verdict time, when sales keep coming as they have, and REL_MIN of the base value or of FLOOR), and what the
-    kernel does below that: one extension of the window, then on the last window the weak rule (split: B only when it
-    beats A by more than one se; before/after: the sign of the difference). A split also says whether the present
+    at the verdict time, when sales keep coming as they have, and REL_MIN of the base value or of FLOOR) with the
+    stars guard that overrides it, and what the kernel does below that (_after_undecided): one more look on another
+    window, or on the last window the weak rule with its exceptions (split: B only when it beats A by more than one
+    se; before/after: the sign of the difference). A split also says whether the present
     difference would clear the noise inside the last window at this pace (se of a split falls with 1 / sqrt(hours)).
     "" when too early or without data.
     Live 11-12: experiments ended on 3 against 5 sales; nothing on the card showed that before the verdict."""
@@ -1900,11 +1908,15 @@ def interim_line(e, now, data):
     if el < INTERIM_MIN_H:
         return ""
     k = wh / el  # the verdict window over the hours run
-    last = _last_window_h(e)
+    nxt, h_nxt = _after_undecided(e, now)
+    last = max(wh, h_nxt)  # the longest window this experiment is still judged on
     head = (f"    지금까지 {wh:g}/{wh:g}시간 (구간 끝남, 판정 대기): " if done
             else f"    지금까지 {math.floor(el * 10 + 1e-6) / 10:.1f}/{wh:g}시간: ")
     noise = f"잡음({CLEAR_SE}se)"
-    ext = f"커널이 구간을 {last:g}시간으로 늘려 한 번 더 봄" if last > wh else ""  # else this window is the last
+    ext = ("" if nxt == "last"  # this window is the last
+           else f"커널이 구간을 {h_nxt:g}시간으로 늘려 한 번 더 봄" if h_nxt > wh
+           else f"커널이 처음 {h_nxt:g}시간만으로 다시 판정함")
+    stars = f"; 리뷰가 양쪽 {STARS_MIN_N}건 이상이고 별점이 {STARS_DROP:g} 넘게 낮아지면 차이와 상관없이 악화 판정"
     if e.get("mode") == "split":
         v = evaluate_split(None, dict(e, window_h=el), now, data)
         diff = v["b"] - v["a"]
@@ -1921,10 +1933,10 @@ def interim_line(e, now, data):
             se_end = v["se"] / math.sqrt(k)
             out += (
                 ". " + ("" if done else "판매가 이대로면 ")
-                + f"뚜렷한 판정에 필요한 차이는 ±{_num(max(CLEAR_SE * se_end, rel), 'shop')}부터 ({noise}과 {rel_name} 중 큰 쪽)"
+                + f"뚜렷한 판정에 필요한 차이는 ±{_num(max(CLEAR_SE * se_end, rel), 'shop')}부터 ({noise}과 {rel_name} 중 큰 쪽{stars})"
                 + (f", 못 미치면 {ext}" if ext
                    else f", 마지막 구간이라 못 미치면 B가 A보다 1se(±{_num(se_end, 'shop')}) 넘게 좋고 표본이 각 {THIN_N} "
-                        "이상일 때만 B를 채택하고 아니면 A로 둠")
+                        "이상일 때만 B를 채택하고 아니면 A로 둠 (원가나 단위를 모르는 판매가 많아도 A로 둠)")
             )
             if diff:
                 h = el * (CLEAR_SE * v["se"] / abs(diff)) ** 2
@@ -1957,17 +1969,20 @@ def interim_line(e, now, data):
         return (head + f"{unit} 후 {a['n']}" + (f" ({pace})" if pace else "") + f", 후 {_num(a['value'], side)}. "
                 + (f"전 구간이 {int((t - b0) // 60)}분이라 비교 기준이 없음 (기준 {MIN_BEFORE_H * 60}분)" if short
                    else "거래 기록이 전 구간의 시작까지 닿지 않아 비교 기준이 없음")
-                + ", 비교 없이 값이 유지됨")
+                + (f", {ext}" if ext and h_nxt < wh else ", 비교 없이 값이 유지됨"))
     out = (
         head
         + f"{unit} 전 {b['n']} → 후 {a['n']} (" + (pace + ", " if pace else "")
         + f"판정에 필요한 표본 {THIN_N}), 전 보정 {_num(adj, side)}, 후 {_num(a['value'], side)}, "
         f"차이 {_num(a['value'] - adj, side, sign=True)}"
     )
-    sign = "차이의 부호로 정함 (0 이상이면 값 유지, 음이면 되돌림)"
+    sign = ("차이의 부호로 정함 (0 이상이면 값 유지, 음이면 되돌림; "
+            + ("" if side == "buyer" else "원가 모르는 판매가 많거나 ") + f"전후 모두 {unit}가 없으면 값 유지)")
+    if side == "buyer":
+        stars = ""  # the stars guard is the shop side's
     bb = [x * r for x in b["buckets"]]
     if len(bb) < 2:
-        return (out + ". 전 구간이 1시간 구간 하나라 잡음을 셀 수 없어 이 구간에서는 뚜렷한 판정이 나오지 않음, "
+        return (out + ". 전 구간이 1시간 구간 하나라 잡음을 셀 수 없어 이 구간에서는 차이로 뚜렷한 판정이 나오지 않음, "
                 + (ext or f"마지막 구간이라 {sign}"))
     # the after variance over whole elapsed hours only: a partial last hour would read as a swing of its own
     whole = int(el + 1e-9)
@@ -1980,7 +1995,7 @@ def interim_line(e, now, data):
     rel_name = f"전 보정 값의 {REL_MIN:.0%} 기준" if abs(adj) >= FLOOR[side] else "최소 기준"
     return (out + ". " + ("" if done else "시간별 흔들림이 이대로면 ")
             + f"뚜렷한 판정에 필요한 차이는 ±{_num(need, side)}부터 ({noise}과 {rel_name} 중 큰 쪽"
-            + ("" if own else ", 후 구간이 온전한 2시간 미만이라 전 구간의 흔들림으로 셈") + ")"
+            + ("" if own else ", 후 구간이 온전한 2시간 미만이라 전 구간의 흔들림으로 셈") + stars + ")"
             + (f", 못 미치면 {ext}" if ext else f", 마지막 구간이라 못 미치면 {sign}"))
 
 
