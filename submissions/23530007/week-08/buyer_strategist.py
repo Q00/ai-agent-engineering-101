@@ -46,52 +46,34 @@ OPERATOR_ANSWER = HERE / "buyer_answer_to_operator.json"
 CATALOG = HERE / ".market" / "catalog.json"
 EVERY = 3600 - 120
 MAX_MOVES = 8
-GLOBAL = {                                    # role, bounds, step
-    "value_share": ((0.65, 0.85), 0.03),      # the most the buyer pays, as a share of list price
-    "quick_accept": ((0.55, 0.75), 0.03),     # an ask at or under this share of list is taken at once
-    "food_extra_hours": ((0.25, 12), 2),      # food must last the order's hours + this (a spoiled deal counts -1); floor 1 -> 0.25 on 11-11 (10 near-misses within 1 h per 6 h)
-    "skip_below": ((0.15, 0.33), 0.02),       # skip an order when the best shop's expected saved per deal is under this
-    "skip_below_food": ((0.05, 0.33), 0.03),  # the same bar for food orders (user 11-06: take every food order that lasts)
-    "skip_below_goods": ((0.15, 0.4), 0.03),
-    "value_half_life_h": ((0, 6), 1),         # 11-09: weight half-life of market deals in the shop values (0 = flat 6 h)  # the same bar for goods orders (goods ran 0.194 per deal with breaks at -1)
-    "conv_weight": ((0.0, 0.3), 0.05),        # shop pick: expected saved + this x our close rate there
+GLOBAL = {                                    # role, bounds, step (11-12 patch 3.6 rebuild: the price policy is vprice.py)
+    # price policy in v = (list - price)/(list - unit cost), the score of patch 3.6 (vprice.plan / vprice.move)
+    "take_v": ((0.80, 0.98), 0.02),           # an ask that already scores this v is taken at once (the next order waits)
+    "open_v": ((0.85, 1.0), 0.02),            # our first counter, in v (1.0 = the unit's cost itself)
+    "step_v": ((0.01, 0.10), 0.01),           # each later counter concedes this much v
+    "rounds": ((1, 6), 1),                    # counters before we take any ask at or under the cap (else walk)
+    "soft_rounds": ((1, 4), 1),               # the same at shops that end talks on low offers (reject share >= 30%)
+    "food_delta": ((-0.10, 0.10), 0.02),      # food floor = m* + this (the least a food deal may score)
+    "goods_delta": ((0.0, 0.15), 0.02),       # goods floor = (m* + this) / (1 - break rate of the stated grade)
+    "near_v": ((0.0, 0.08), 0.01),            # a receipt within this v under the floor is still paid
+    "skip_delta_food": ((-0.15, 0.10), 0.02), # skip an order when the best shop's expected v < m* + this
+    "skip_delta_goods": ((-0.20, 0.10), 0.02),
+    "target_mean": ((0.60, 0.90), 0.02),      # m* fallback when buyer_score.json has none
+    # shop choice and order flow
+    "food_extra_hours": ((0.25, 12), 2),      # food must last the order's hours + this (a spoiled deal counts -1)
+    "conv_weight": ((0.0, 0.3), 0.05),        # shop pick: expected v + this x our close rate there
     "rival_penalty": ((0.0, 0.1), 0.02),      # shop pick: minus this for a classmate shop ranked above us
-    "cap_margin": ((0.0, 0.1), 0.02),         # cap at most (shop's median price / list + this) x list
-    "near_cap": ((0.0, 0.04), 0.005),         # an ask within this x list above the cap is taken (near misses)
-    "open_offset": ((0.0, 0.08), 0.01),       # code haggling opens at (shop's lower-quartile price/list - this) x list
-    "max_shops": ((1, 6), 1),                 # shops tried per order (an order comes every ~20 s; time under that is free)
-    # 11-08 (user: like the shop, the buyer agent owns all of the buyer): the negotiation and choice arms the
-    # operator ran as A/B tests, now yours; each *_share is the share of orders that use it (the rest is control)
-    "push_share": ((0.0, 1.0), 0.3),          # counter once more on an ask still above the shop's p25 band
-    "push3_share": ((0.0, 1.0), 0.3),         # of those, the deeper push3 (aim p25 - push3_below, two counters)
-    "push3_below": ((0.0, 0.2), 0.02),
-    "push5_share": ((0.0, 1.0), 0.25),
-    "talk_share": ((0.0, 1.0), 0.25),         # 11-11: share of orders that first ask the shop for its lowest price, then haggle        # 11-11: of pushed orders, the deep push (offer the shop's low edge, climb in small steps)
-    "push_below": ((0.0, 0.15), 0.02),        # push2's aim under p25
-    "cheapfood_share": ((0.0, 1.0), 0.3),     # food: ask for the cheapest unit that lasts and open low
-    "cheapfood_open": ((0.2, 0.6), 0.05),     # food opening offer, share of list
-    "cheapgoods_share": ((0.0, 1.0), 0.3),
-    "skip_delta_food": ((-0.15, 0.10), 0.02),   # 11-12 patch 3.6: the saved scale is ~2x wider (mean .72 vs .31)  # 11-11: skip bar = m* + delta (m* from buyer_score.json)
-    "skip_delta_goods": ((-0.20, 0.10), 0.02),   # floor -0.06 -> -0.10 on 11-11 (user: volume; the grade ceilings at the receipt guard the value)
-    "target_mean": ((0.60, 0.90), 0.02),      # 11-11: the mean a goods deal must beat (m*) until buyer_score.json writes it
-    "goods_delta": ((0.0, 0.15), 0.02),       # 11-11: margin over m* a goods deal must clear after its grade's break rate
-    "needwarr_share": ((0.0, 1.0), 0.3),      # 11-09 (user): goods orders that require a 6 h warranty before haggling
-    "aim15_share": ((0.0, 1.0), 0.3),         # 11-09 (user): of the aimtop orders, the share capped at p15, not p25
-    "aimtop_share": ((0.0, 1.0), 0.3),        # 11-09: cap at the shop's p25 (what the best buyers pay), not p50    # goods: ask for C/B with a warranty first, A only if nothing else
-    "skubest_share": ((0.0, 1.0), 0.3),       # pick the SKU with the best market saved at the shop (not the dearest)
-    "wpen_share": ((0.0, 1.0), 0.3),          # charge shops for goods sold without a warranty
-    "wpen_cost": ((0.0, 0.12), 0.02),
-    "gradeaware_share": ((0.0, 1.0), 0.3),    # goods: read the offered grade/warranty; warranted C/B get a higher cap
-    "gradeaware_cap_c": ((0.65, 0.85), 0.03), # cap for a warranted C, share of list ((1-x)+0.16x beats the mean)
-    "gradeaware_cap_b": ((0.62, 0.8), 0.03),
+    "max_shops": ((1, 6), 1),                 # shops tried per order
+    "value_half_life_h": ((0, 6), 1),         # weight half-life of market deals in the shop values (0 = flat 6 h)
+    "talk_share": ((0.0, 1.0), 0.25),         # share of orders that first ask the shop for its lowest price, then haggle
 }
+
 SHOP = {                                      # per shop (user 11-06: the strategist steers the rule-based buyer)
     "shop_bias": ((-0.1, 0.1), 0.03),         # added to the shop's value score (prefer > 0, avoid < 0)
     "bias_food": ((-0.1, 0.1), 0.03),         # 11-11: same, for food orders only (route food to the .40+ shops)
     "bias_goods": ((-0.1, 0.1), 0.03),        # 11-11: same, for goods orders only (beds/sofas to the .30+ shops)
-    "shop_cap": ((-0.05, 0.05), 0.02),        # added to the cap at that shop, as a share of list
 }
-CAT = {"cap": ((0.6, 0.85), 0.04)}            # per category: replaces value_share for orders of that category
+CAT = {}                                      # 11-12: category caps are gone (the cap is the price at floor_v)
 METRICS = ("deals_next_6h", "mean_saved_next_6h", "conversion_next_6h", "saved_speed")
 
 
@@ -359,37 +341,34 @@ SCALE (11-12 patch 3.6): every saved number here (m*, v, expected, market_value)
 min(1, (list - price)/(list - unit cost)); values before 11-12 ~10:30 UTC in old memory or notes were 1 - price/list
 (about half as large). Do not compare across the two.
 
-THE CODE BUYER (11-11): per order the code (no model call) scores the shops that hold an acceptable SKU by the
-market's realized saved per deal there (evidence "market_value_6h"), calibrated with what WE realized at that shop
-over 24 h (goods were overpredicted by .04-.08), plus conv_weight x our close rate, minus rival_penalty for a
-classmate above us, plus your shop_bias and per-kind bias_food/bias_goods; it skips the order when the best
-expectation is under max(fixed skip bar, m* + skip_delta_kind); it caps the price at min(category cap or
-value_share, the shop's p50 (aimtop arm: p25, aim15: p15) + cap_margin) x list; when a shop states the unit's grade
-the cap falls to that grade's ceiling x_bar_g = 1 - (m* + goods_delta)(1 - c)/(1 - p_g), c = the SKU's cost share
-for that grade (patch 3.6, 11-12: about A .70, B .61, C .36 at m* .75); food is capped at 1 - (m* + skip_delta_food)(1 - c), and
-the same ceiling is checked on the receipt; every goods receipt must carry a 6 h warranty or it is not paid; the
-goods opener asks for B or A with a warranty, no C; food must last its hours + food_extra_hours; haggling opens at
-the shop's p25 - open_offset, counters once or twice in the push arms, takes any ask <= quick_accept x list.
-Code guards (guards.py, every 15 min) can freeze knobs, revert the last 2 h of moves after a deals collapse, and
-wake you out of turn; evidence "score".guard shows their state. You run every hour at :00 plus guard wakes.
+THE CODE BUYER (11-12 rebuild for patch 3.6): per order the code (no model call) scores the shops that hold an
+acceptable SKU by the market's realized v per deal there (evidence "market_value_6h", new scale), calibrated with
+what WE realized at that shop over 24 h, plus conv_weight x our close rate, minus rival_penalty for a classmate
+above us, plus your shop_bias and per-kind bias_food/bias_goods; it skips the order when the best expectation is
+under m* + skip_delta_kind. At the shop it asks for the acceptable SKU with the best realized v there; food: the
+cheapest unit that lasts the order's hours + food_extra_hours; goods: grade A with a 6 h warranty (B only if much
+cheaper, never C). PRICE POLICY (vprice.py), all in v = (list - price)/(list - unit cost) with the SKU's cost share
+by grade from the ledger (cost_model.py): floor_v = m* + food_delta (food) or (m* + goods_delta)/(1 - p_break)
+(goods: A 3%, B 13%, C 40%, so a C can never reach the floor and is refused); cap = the price at floor_v; an ask at
+take_v or better is taken at once; otherwise we counter at open_v, then open_v - step_v, ... for `rounds` counters
+(soft_rounds at shops that ended >= 30% of our talks), then take any ask at or under the cap, else walk to the next
+shop (max_shops). When the shop states the grade the plan is redone for it. A receipt is paid only with a 6 h
+warranty (goods) and when its v is within near_v of the claimed grade's floor. Code guards (guards.py, every 15
+min) can freeze knobs, revert the last 2 h of moves after a deals collapse, and wake you out of turn; evidence
+"score".guard shows their state. You run every hour at :00 plus guard wakes.
+Judge the policy on: v6/v24 by kind against m* (evidence "score"), deals/h, orders ending without a deal and why
+(too dear / rejected / grade C / no warranty), and the per-order score; the old A/B arms (push*, aimtop, cheap*,
+quick_accept, value_share, caps per category) no longer exist, do not ask for them.
 
 Shared memory digest (the curator's summary for you): {digest}
 
-Knobs (only these; the steps allowed now: {steps}): global "value_share" (0.65-0.85), "quick_accept" (0.55-0.75),
-"food_extra_hours" (0.25-12), "skip_below" (0.15-0.33), "skip_below_food" (0.05-0.33), "skip_below_goods" (0.15-0.4),
-"skip_delta_food" (-0.15..0.10) and "skip_delta_goods" (-0.20..0.10) (the bar is max(fixed bar, m* + delta)),
-"target_mean" (0.60-0.90, used only when buyer_score.json has no m*), "goods_delta" (0-0.15, margin over m* a goods
-deal must clear after its grade's break rate), "conv_weight" (0-0.3), "rival_penalty" (0-0.1), "cap_margin"
-(0-0.1), "near_cap" (0-0.04), "open_offset" (0-0.08), "max_shops" (1-6), "value_half_life_h" (0-6: how fast the
-shop values follow the newest market deals); the arms (share of orders, 0-1): "push_share", "push3_share", "talk_share" (asks for the shop's lowest price before any number; compare talk=True/False
-in arms_per_order_24h), "push5_share" (offers the shop's 5th-percentile price, for goods among its warranted A/B units, and climbs
-.015 of list per round, up to 6 counters; compare push=push5-* with push=push3-* in arms_per_order_24h),
-"cheapfood_share", "cheapgoods_share", "aimtop_share", "aim15_share" (within aimtop), "skubest_share",
-"wpen_share"; "push3_below" (0-0.2), "push_below" (0-0.15), "cheapfood_open" (0.2-0.6), "wpen_cost" (0-0.12);
-no effect since 11-11 (do not move): "needwarr_share", "gradeaware_share", "gradeaware_cap_c/b". Per shop (give
+Knobs (only these; the steps allowed now: {steps}): global "take_v" (0.80-0.98), "open_v" (0.85-1.0), "step_v"
+(0.01-0.10), "rounds" (1-6), "soft_rounds" (1-4), "food_delta" (-0.10..0.10), "goods_delta" (0-0.15), "near_v"
+(0-0.08), "skip_delta_food" (-0.15..0.10), "skip_delta_goods" (-0.20..0.10), "target_mean" (0.60-0.90, m*
+fallback only), "food_extra_hours" (0.25-12), "conv_weight" (0-0.3), "rival_penalty" (0-0.1), "max_shops" (1-6),
+"value_half_life_h" (0-6), "talk_share" (0-1; compare talk=True/False in arms_per_order_24h). Per shop (give
 "shop": a name from the evidence): "bias_food"/"bias_goods" (-0.1..0.1, routing for orders of that kind),
-"shop_bias" (-0.1..0.1), "shop_cap" (-0.05..0.05, added to the cap there as a share of list). Per category (give
-"category": the order's item name as in the evidence): "cap" (0.6-0.85, replaces value_share there).
+"shop_bias" (-0.1..0.1).
 
 THREE RACES (user, 11-08): the total race (class total), the shop race and the buyer race have different rivals
 and move for different reasons. Read your own race first and on its own numbers ("class_ladder": the students

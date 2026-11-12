@@ -81,6 +81,7 @@ from collections import defaultdict
 from pathlib import Path
 
 import harness
+import vprice
 from buyer import RpcError, Seller, next_move, read_ask, receipt, said, state
 from harness import as_int, decide, log
 from buyer_value import expected, table as value_table
@@ -846,20 +847,10 @@ def main():
     regime, bp = "STEADY", {}
     if acceptable:
         regime, bp, _ = buyer_params()
-        pricefirst = random.random() < bp.get("pricefirst_share", 0)
-        wpen = random.random() < bp.get("wpen_share", 0)
-        cheapfood = order.get("kind") == "food" and random.random() < bp.get("cheapfood_share", 0)
-        cheapgoods = order.get("kind") == "goods" and random.random() < bp.get("cheapgoods_share", 0)
-        skubest = random.random() < bp.get("skubest_share", 0)
-        # 11-09 A/B "aimtop" (user: aim at what the best buyers get, not the average): the cap sits at the shop's
-        # lower-quartile price (p25 + cap_margin) instead of its median, and shops are ranked by the saved of their
-        # best quarter of deals. 11-09: p10 was tried for a few minutes; on 12 h of our haggles it halved deals per
-        # order (0.31 vs 0.62) for +0.03 per deal, so the user chose p25
-        aimtop = random.random() < bp.get("aimtop_share", 0)
-        # 11-09 A/B "aim15" (user: 'next, try 15%'): within aimtop, the cap sits at the shop's p15 + cap_margin
-        aim15 = aimtop and random.random() < bp.get("aim15_share", 0)
-        gradeaware = order.get("kind") == "goods" and random.random() < bp.get("gradeaware_share", 0)
-        push5 = random.random() < bp.get("push5_share", 0)        # 11-11: drawn before the shop choice (see value())
+        # 11-12 patch 3.6 rebuild: the A/B arms (pricefirst, wpen, cheapfood, cheapgoods, skubest, aimtop, aim15,
+        # gradeaware, push2/3/5) are gone; one price policy in v (vprice.py), food always asks for the cheapest unit
+        # that lasts, goods for grade A with a warranty, the SKU with the best realized v at the shop (skubest)
+        skubest, push5, aim15 = True, True, False
         if order.get("kind") == "food" and order.get("use_within_hours"):
             try:                                   # for our shop's restock: how long buyers need food to last
                 with open(INTEL, "a", encoding="utf-8") as f:
@@ -870,19 +861,19 @@ def main():
         note_payments(mem, md)
         note_broken(mem, md)
         catalog = json.load(open(md / "catalog.json", encoding="utf-8"))
-        share = (bp.get("cat_auto", {}).get(a.item) or {}).get("cap", bp["value_share"])   # buyer_strategist.py
+        share = 0.8                      # 11-12: budget fit only (the cap comes from vprice.plan)
         cskip = grade_c_skip(mem) | unit_skip(mem)
         # 11-07 A/B "pricefirst" (independent of the push arms): rank shops by price alone. conv_weight 0.1 gave a
         # shop that often agrees +0.06 over one that rarely does (psyoung82 over olstjr, whose buyers pay 0.59
         # against psyoung82's 0.71), though a failed try costs seconds and the next shop is tried; rival_penalty
         # 0.04 pushed down the cheap food at Kiro729 for a revenue effect on them our ~70 deals/day barely move
-        sbp = dict(bp, conv_weight=bp.get("pricefirst_conv_weight", 0.02), rival_penalty=0) if pricefirst else bp
+        sbp = bp
         try:                                   # 11-11: the scorekeeper's tables (buyer_score.py, every 15 min)
             _sc = json.loads(SCORE_FILE.read_text())
         except (OSError, ValueError):
             _sc = {}
         vctx = {"stats": value_table(), "kind": order.get("kind") or "goods", "cat": order.get("category"), "bp": sbp,
-                "wpen": wpen, "aimtop": aimtop, "aim15": aim15, "push5": push5, "m_star": m_star(sbp),
+                "push5": True, "m_star": m_star(sbp),
                 "ours": _sc.get("ours") or {}, "cal": _sc.get("calibration") or {}}
         shops = [s for s in shops if pick_sku(s, acceptable, catalog, a.budget, share, cskip)]
         prices = [(catalog.get(k) or {}).get("list_price") or 0 for k in acceptable]
@@ -900,6 +891,7 @@ def main():
             return
 
     max_shops = int(bp.get("max_shops", MAX_SHOPS)) if acceptable else MAX_SHOPS   # strategist knob
+    vplan_rec, vp, soft, n_off = None, None, False, 0
     for attempt in range(max_shops):              # a shop that turns me away before any ask: try the next one
         if vctx is not None and acceptable:        # 11-11: shops where this SKU just failed on price go last
             pf = price_refail(mem, vctx["kind"])
@@ -913,8 +905,7 @@ def main():
                                   "order": order.get("order"), "category": a.item, "kind": order.get("kind"),
                                   "outcome": "skipped (low value)", "price": None, "asks": [], "agreed": None,
                                   "honest": True, "signed": True, "void": "", "expected": expected_in(why), "scale": 36,
-                                  "shopsel": "pricefirst" if pricefirst else "base", "wpen": wpen, "cheapfood": cheapfood, "cheapgoods": cheapgoods,
-                                  "aimtop": aimtop, "aim15": aim15, "elapsed": int(time.time() - start)})
+                                  "push": "v", "elapsed": int(time.time() - start)})
             save_memory(mem)
             no_deal(f"Skipped: no shop sells {a.item} cheaply enough for me now.")
             return
@@ -926,44 +917,33 @@ def main():
         if acceptable:
             want = pick_sku(pick, acceptable, catalog, a.budget, share, cskip, stats=vctx["stats"] if skubest else None)
             item, label = want["sku"], f"{want['name']} ({want['sku']})"
-            cap = min(a.budget, int(want["list_price"] * share))
             ev = expected(vctx["stats"], pick["name"], vctx["kind"], vctx["cat"])
-            if ev["n"] >= 10:      # do not pay above what this shop usually takes from other buyers
-                p25 = ev["p25"]
-                cap = min(cap, int(want["list_price"] * (((ev.get("p15") or ev["p25"]) if aim15 else ev["p25"] if aimtop else ev["p50"]) + bp["cap_margin"])))
-            if order.get("kind") == "food":
-                # 11-12 patch 3.6: food pays at most what still scores m* + skip_delta_food at the SKU's cost share
-                # (grade unknown before the shop answers: B, the median food grade)
-                fx = 1 - (vctx["m_star"] + bp.get("skip_delta_food", -0.08)) * (1 - cshare(item, "B", "food"))
-                if want["list_price"] * fx < cap:
-                    log("buyer", f"food value ceiling: cap {cap} -> {int(want['list_price'] * fx)} ({fx:.2f} of list)")
-                    cap = max(1, int(want["list_price"] * fx))
-            adj = ((bp.get("shop_auto") or {}).get(pick["name"]) or {}).get("shop_cap", 0)   # strategist, per shop
-            if adj:
-                cap = max(1, min(a.budget, int(cap + want["list_price"] * adj)))
-                aim = (f"Other buyers usually settle with this shop at {int(want['list_price'] * ev['p25'])}-"
-                       f"{int(want['list_price'] * ev['p50'])}; aim for the low end.")
+            p25 = ev["p25"] if ev["n"] >= 10 else None
             hours = order.get("use_within_hours")
-            first = f"I want to buy {label}." + (f" It must last {hours:g} hours." if hours else
-                                                 " Grade A or B only, please." if order.get("kind") == "goods" else "")
-            if cheapgoods and order.get("kind") == "goods":
-                # 11-07 A/B "cheapgoods", rewritten 11-11: a refunded break scores 0, not +1, and grade C breaks 29%
-                # (our C deals ran .277 per deal vs B .335); the opener asks for B or A with a warranty and no C
-                first = (f"I want to buy {label}. I prefer grade B (damaged box) or A with a warranty of at least"
-                         f" {WARRANTY_MIN} hours on the receipt, priced for its grade; no grade C, please."
-                         " Please quote your cheapest unit that way.")
-            if cheapfood and hours:
-                # 11-07 A/B "cheapfood": food grade is only shelf life left, so any unit that lasts serves the order;
-                # Kiro729 buys 43% grade C / 1% A at 0.577 of list against our 21% A at 0.662 (market A 0.746,
-                # B 0.668, C 0.594). Ask for the cheapest unit that lasts, and open low (below) to draw the floor
-                first += (" Any grade is fine as long as it lasts that long: please quote your cheapest unit that"
-                          " does, and say how many hours it has left.")
+            # 11-12 patch 3.6 (user: rebuild the buyer for the new rule): the price policy is vprice.plan, written in
+            # v = (list - price)/(list - cost): the cap is the price at floor_v (m* + delta, over the grade's break
+            # rate), the counters go from open_v down by step_v, an ask at take_v or better is taken at once
+            rej_rate = reject_rate(mem, pick["name"])
+            soft = rej_rate is not None and rej_rate >= SOFT_REJECT
+            vp = vprice.plan(vctx["kind"], want["list_price"], item, None, vctx["m_star"], bp, a.budget, soft)
+            cap = max(1, vp["cap"])
+            vplan_rec = {"floor": vp["floor_v"], "take": vp["take_v"], "open": vp["offers"][:1], "c": vp["c"], "soft": soft}
+            if order.get("kind") == "food":
+                first = (f"I want to buy {label}." + (f" It must last {hours:g} hours." if hours else "")
+                         + " Any grade is fine as long as it lasts that long: please quote your cheapest unit that"
+                           " does, and say how many hours it has left.")
+            else:
+                first = (f"I want to buy {label}. Grade A with a warranty of at least {WARRANTY_MIN} hours on the"
+                         " receipt, please (grade B only if it is much cheaper, no grade C). Please quote your"
+                         " cheapest such unit and its price.")
             accept = {"cert": True}
             if order.get("kind") == "food" and hours:
                 accept["min_hours_left"] = hours + bp["food_extra_hours"]
             elif order.get("kind") == "goods":
                 accept["grades"] = bp["goods_grades"]
-            log("buyer", f"{item} list price {want['list_price']}, cap {cap} ({regime}), accept {accept}")
+            log("buyer", f"{item} list price {want['list_price']}, cap {cap} ({cap / want['list_price']:.2f} of list; "
+                         f"floor v {vp['floor_v']:.3f}, c {vp['c']:.2f}, m* {vctx['m_star']:.3f}, offers {vp['offers']}"
+                         f"{', soft' if soft else ''}), accept {accept}")
 
         listed = {s["name"] for s in shops}
         elsewhere = best_elsewhere(mem, item, listed, pick["name"])
@@ -977,41 +957,15 @@ def main():
         # list and dragonash 0.65; we take the shop's second ask (~0.65-0.73) as soon as it is under our cap.
         # In the "push" arm, an ask still above the shop's lower quartile + push_band gets one more counter
         # (halfway down to that quartile) before we take it; a rejection that names a floor reopens at it below.
-        regraded = True   # 11-11: the C/B regrade request is off (regraded deals paid .671 of list and broke 11.9%)
-        # 11-09 needwarr arm, made the rule for every goods order on 11-11: unwarranted goods ran .185 per deal vs
-        # .304 warranted over 48 h (an unrefunded break scores -1). A goods order asks once for a 6 h warranty when
-        # the shop's reply states none, goes on when the shop's market deals are mostly warranted (the receipt
-        # decides), and never pays a receipt without one
-        needwarr = order.get("kind") == "goods"
+        needwarr = order.get("kind") == "goods"     # every goods receipt must carry a 6 h warranty (11-11)
         warr_ok, warr_asked = False, False
-        graded = None     # 11-08 gradeaware: (grade, warranty hours) read from the shop's first reply
-        gceil = None      # 11-11: the stated grade's price ceiling; nothing above it is agreed (not even 'near')
-        short = None    # 11-07: 43 of 69 lost food orders in 6 h agreed a price, then the kit refused to pay (shelf life)
-        push = random.random() < bp.get("push_share", 0)
-        pushed = False
-        # 11-07 push3: 39 of 89 push2 counters were taken at exactly our number, so the shops had room below it;
-        # push3 aims at the shop's p25 - push3_below (0.10) and may counter twice. Split of the push arm.
-        arm = "push3" if push and random.random() < bp.get("push3_share", 0) else "push2"
-        below = bp.get("push3_below", 0.10) if arm == "push3" else bp.get("push_below", 0.05)
-        npush, max_push = 0, 2 if arm == "push3" else 1
-        # 11-11 push5 (A/B; food first, goods added the same evening at the user's word): psyoung82 pays .10-.13 of list less than we do at the SAME shop and grade (6 h:
-        # thisjonghoon B .45 vs our .54 and others' .59, outseop C .44 vs .52, YAHO1212 B .47 vs .58): it buys at the
-        # low edge of what each shop accepts. push3 counters twice at the midpoint between the ask and its aim and
-        # then takes the ask; push5 offers the shop's low edge itself (p05 of its settles over 6 h, else p25 - .12)
-        # and climbs by push5_step of list per round, up to push5_rounds counters, before it takes an ask under the cap
-        low5 = None
-        # 11-11 22:20 (user: 'better to start the conversation first, then haggle'): shops differ: psyoung82 ended 49%
-        # of our talks after two offers and winun1127 62%, buzllightyear and choo-chu never end one and never move.
-        # talk (A/B, talk_share): before any number we ask once for the shop's lowest price and haggle from its
-        # answer. soft: at a shop that ended >= SOFT_REJECT of our talks in 24 h (>= 8 visits) the first counter is
-        # halfway between the low edge and its ask, not the low edge itself, and it climbs from there.
-        talk = random.random() < bp.get("talk_share", 0)
+        graded = None     # (grade, warranty hours) read from the shop's first reply
+        short = None      # food: the unit's shelf life is under the order's hours
+        n_off, last_off = 0, None                     # our counters so far (vprice.move)
+        talk = vctx is not None and random.random() < bp.get("talk_share", 0)
         talked = False
-        rej_rate = reject_rate(mem, pick["name"])
-        soft = rej_rate is not None and rej_rate >= SOFT_REJECT
-        if push and push5:                                            # food and, since 19:55 (user), goods
-            arm, max_push = "push5", int(bp.get("push5_rounds", 6))
-            low5 = low_edge(pick["name"], order.get("kind") or "food")
+        if vctx is None:
+            soft = False
         try:
             seller = Seller(pick["url"])
             t = seller.send(first)
@@ -1026,35 +980,17 @@ def main():
                     graded = unit_terms(said(t))
                     g_, w_ = graded
                     if g_ in ("A", "B", "C"):
-                        gcap = int(want["list_price"] * x_bar(g_, bp, item))
-                        gceil = gcap
-                        if gcap < cap:
-                            log("buyer", f"{pick['name']} offers grade {g_}: cap {cap} -> {gcap} ({x_bar(g_, bp, item):.2f} of list, m* {m_star(bp):.3f})")
-                            cap = max(1, gcap)
-                        elif bp.get("goods_cap_ceiling") and gcap > cap and (g_ in ("A", "B") or w_ >= WARRANTY_MIN):
-                            # 11-11 22:00 (user: 'now raise the volume a lot'): the cap was the shop's low-quartile
-                            # price + .05, and 35 of 67 goods visits in an hour ended 'too dear' although over half of
-                            # those shops' lowest asks were under .66 of list. Any price up to the grade's ceiling still
-                            # beats m* + goods_delta after its break rate, so that ceiling is the cap (within budget);
-                            # push5 still offers the low edge first and climbs.
-                            log("buyer", f"{pick['name']} offers grade {g_}: cap {cap} -> {min(a.budget, gcap)} (the grade ceiling, volume)")
-                            cap = max(1, min(a.budget, gcap))
-                    if g_ == "C" and w_ < WARRANTY_MIN:
-                        log("buyer", f"{pick['name']} offers grade C without a warranty: next shop")
-                        outcome = "grade C claimed"
-                        seller.cancel(tid)
-                        raise ShortShelf("grade C unwarranted")
-                if (cheapgoods and not regraded and acceptable and order.get("kind") == "goods"
-                        and re.search(r"grade\s*A\b|A\s*grade|등급\s*A|A\s*등급", said(t), re.I)):
-                    # 11-08: in the cheapgoods arm 71 of 94 goods still came as grade A (shops pick the unit; 14 C
-                    # with a warranty did come): ask once for a C or B unit with a warranty before haggling
-                    regraded = True
-                    log("buyer", f"{pick['name']} offered grade A: asking once for a C or B unit with a warranty")
-                    t = seller.send(f"Do you have a grade C or B unit of {label} with a warranty of at least "
-                                    f"{WARRANTY_MIN} hours on the receipt? I would rather take that one, priced for "
-                                    "its grade. If not, tell me and we go on with this unit.", tid, ctx)
-                    tid, ctx = t.get("id") or tid, t.get("contextId") or ctx
-                    continue
+                        # the plan is redone for the stated grade: its cost share and break rate set the floor
+                        vp = vprice.plan(vctx["kind"], want["list_price"], item, g_, vctx["m_star"], bp, a.budget, soft)
+                        vplan_rec.update(floor=vp["floor_v"], c=vp["c"], grade=g_)
+                        if vp["impossible"] or (g_ == "C" and w_ < WARRANTY_MIN):
+                            log("buyer", f"{pick['name']} offers grade {g_}: no price beats m* after a {vprice.BREAK_P[g_]:.0%} break rate: next shop")
+                            outcome = "grade C claimed"
+                            seller.cancel(tid)
+                            raise ShortShelf("grade C unwarranted")
+                        if vp["cap"] != cap:
+                            log("buyer", f"{pick['name']} offers grade {g_}: cap {cap} -> {vp['cap']} ({vp['cap'] / want['list_price']:.2f} of list, floor v {vp['floor_v']:.3f}, c {vp['c']:.2f})")
+                            cap = max(1, vp["cap"])
                 if needwarr and not warr_ok and acceptable:
                     if unit_terms(said(t))[1] >= WARRANTY_MIN:
                         warr_ok = True
@@ -1087,67 +1023,21 @@ def main():
                 ask = read_ask(t)[0]
                 if ask is not None:
                     asks.append(ask)
-                near = acceptable and ask is not None and cap < ask <= min(a.budget, cap + want["list_price"] * bp["near_cap"],
-                                                                           gceil if gceil else a.budget)
-                # 11-07 push2: the quick accept took first asks up to 0.70 of list without a counter (Pringles at
-                # 0.59 while Kiro729 sold it at 0.41); in the push arm a low first ask still gets one counter
-                low_first = (push and npush < max_push and not near and ask is not None and p25 and vctx is not None
-                             and bp.get("code_haggle") and ask > want["list_price"] * max(0.4, p25 - below))
-                if not low_first and (near or (acceptable and ask is not None and ask <= cap
-                                               and ask <= want["list_price"] * bp["quick_accept"])):
-                    # near: 11-06, 43 of 54 rejections in an hour came after asks within ~1-2 % of list of our cap
-                    # (ask 0.70, our offer 0.69); taking such an ask keeps saved ~0.29-0.30 and saves the order
-                    # already at or under a typical deal price (median paid ~0.75-0.79 of list): take it now.
-                    # Haggling costs ~5 s a model call; order flow, not a few % of price, held the buyer back
-                    log("buyer", f"ask {ask} is {ask / want['list_price']:.0%} of list: taking it")
-                    agreed = ask
-                    t = seller.send(str(ask), tid, ctx)
-                    tid, ctx = t.get("id") or tid, t.get("contextId") or ctx
-                    continue
-                if vctx is not None and bp.get("code_haggle") and ask is not None:
-                    # 11-06: a model move took 4-5 s and an order 17-34 s (80-170 s over several shops), and the next
-                    # order only comes when this one ends; the price logic was code already (cap, shop's band).
-                    # Open just under the shop's lower quartile, then halfway to the cap, then the cap; take any
-                    # ask at or under the cap; after 3 offers walk (the next shop is tried).
-                    mine = [p for k, p in history if k == "you offered"]
-                    if talk and not talked and not mine and time.time() - start < DEADLINE - 25:
+                if vctx is not None and ask is not None:
+                    # 11-12: one move in v (vprice.move): take an ask at take_v or better, else counter from open_v
+                    # down by step_v, `rounds` times, then take any ask at or under the cap, else walk
+                    if talk and not talked and n_off == 0 and time.time() - start < DEADLINE - 25:
                         talked = True               # one question, no number: the shop's answer is the ask we haggle from
                         t = seller.send(TALK_FIRST, tid, ctx)
                         tid, ctx = t.get("id") or tid, t.get("contextId") or ctx
                         continue
                     history.append(("seller asked", ask))
-                    lp = want["list_price"]
-                    prev = [a for k, a in history[:-1] if k == "seller asked"]
-                    aim_bar = (max(0.38, low5 if low5 is not None else p25 - 0.12) if arm == "push5" and p25 else
-                               max(0.4, p25 - below) if p25 else None)
-                    if (push and npush < max_push and ask <= cap and p25 and len(mine) < 1 + max_push
-                            and ask > lp * aim_bar):
-                        # counter halfway down to (shop p25 - push_below); push2 (11-07 07:00) also reaches here
-                        # for low first asks the quick accept used to take, and aims below p25, not at it
-                        pushed, npush = True, npush + 1
-                        aim_p = int(lp * max(0.4, p25 - below))
-                        if arm == "push5":      # the low edge itself, then small steps up; never above the ask
-                            aim_p = int(lp * max(0.38, low5 if low5 is not None else p25 - 0.12))
-                            step5 = max(1, int(lp * bp.get("push5_step", 0.015)))
-                            if soft and not mine:        # a shop that ends talks on low offers: start halfway to its
-                                aim_p = max(aim_p, (ask + aim_p) // 2)   # ask (psyoung82 gives .17 of list when it stays in the talk)
-                            action, offer = "offer", min(ask, max(aim_p, (mine[-1] + step5) if mine else aim_p))
-                        else:
-                            action, offer = "offer", max(mine[-1] if mine else 0, (ask + aim_p) // 2)
-                    elif ask <= cap:
-                        action, offer = "offer", ask
-                    elif len(mine) >= 3 and prev and ask >= prev[-1]:
-                        action, offer = "walk", None       # the shop stopped coming down: next shop
-                    elif len(mine) >= 3:
-                        action, offer = "offer", cap       # still coming down (rounds take < 1 s): hold at the cap
-                    elif not mine:
-                        action, offer = "offer", min(cap, int(lp * (bp.get("cheapfood_open", 0.3) if cheapfood else
-                                                                     max(0.4, (p25 or cap / lp) - bp.get("open_offset", 0.02)))))
-                    elif len(mine) == 1:
-                        action, offer = "offer", max(mine[-1], (mine[-1] + cap) // 2)
-                    else:
-                        action, offer = "offer", cap
-                    if offer is not None:
+                    prev = [x for k, x in history[:-1] if k == "seller asked"]
+                    action, offer = vprice.move(vp, ask, n_off, last_off, prev)
+                    if action == "take":
+                        log("buyer", f"ask {ask} is {ask / want['list_price']:.2f} of list, v {vprice.v_of(ask, vp['lp'], vp['c']):.3f} (floor {vp['floor_v']:.3f}): taking it")
+                    elif action == "offer":
+                        n_off, last_off = n_off + 1, offer
                         history.append(("you offered", offer))
                     ask2, say = ask, ""
                 else:
@@ -1211,14 +1101,15 @@ def main():
                     # unwarranted goods ran .185 per deal over 48 h)
                     log("buyer", f"{pick['name']} signed {item} without a warranty; not paying, trying elsewhere")
                     outcome, rec, price = "no warranty on receipt", None, None
-                elif acceptable and order.get("kind") == "goods" and price and price > want["list_price"] * (x_bar(claim, bp, item) + bp["near_cap"]):
+                elif acceptable and price and not vprice.receipt_ok(price, want["list_price"], item, claim, order.get("kind") or "goods", vctx["m_star"], bp)[0]:
                     # (near_cap tolerance: a price we agreed is paid; the ceiling binds before the agreement)
                     # 11-11: the claimed grade's price ceiling (a refunded break scores 0, so a warranted C at x .60
                     # is worth .28, below m*); unpaid, the next shop is tried at a price that pays
                     if claim == "C":
                         mem.setdefault("grade_c", {})[f"{pick['name']}|{item}"] = time.time()
-                    log("buyer", f"{pick['name']} signed {item} as grade {claim or '?'} at {price / want['list_price']:.2f} of list, "
-                                 f"above the grade's ceiling {x_bar(claim, bp, item):.2f}; not paying, trying elsewhere")
+                    _ok, _v, _fv = vprice.receipt_ok(price, want["list_price"], item, claim, order.get("kind") or "goods", vctx["m_star"], bp)
+                    log("buyer", f"{pick['name']} signed {item} as grade {claim or '?'} at {price / want['list_price']:.2f} of list "
+                                 f"(v {_v}, under the grade's floor {_fv}); not paying, trying elsewhere")
                     outcome, rec, price = "too dear", None, None
                 elif acceptable and order.get("kind") == "goods":
                     accept["grades"] = ["A", "B", "C"]
@@ -1245,10 +1136,9 @@ def main():
                                   "order": order.get("order"), "category": a.item if acceptable else None,
                                   "kind": order.get("kind"), "outcome": outcome, "price": None, "asks": asks,
                                   "agreed": agreed, "honest": True, "signed": True, "void": "",
-                                  "shopsel": "pricefirst" if pricefirst else "base", "wpen": wpen, "cheapfood": cheapfood, "cheapgoods": cheapgoods,
-                                  "aimtop": aimtop, "aim15": aim15, "cap": cap if acceptable else None,
+                                  "cap": cap if acceptable else None, "vplan": vplan_rec,
                                   "list": want.get("list_price") if acceptable else None, "expected": expected_in(why), "scale": 36,
-                                  "push": (f"{arm}-pushed" if pushed else f"{arm}-arm") if push else "control2", "talk": talk, "soft": soft,
+                                  "push": "v", "talk": talk, "soft": soft, "offers": n_off,
                                   "elapsed": int(time.time() - start)})
             log("buyer", f"{pick['name']} {'turned me away' if turned_away else 'did not meet my price'} ({outcome}); "
                          f"trying another shop ({attempt + 2}/{max_shops})")
@@ -1290,9 +1180,8 @@ def main():
                           "scale": 36,                        # 11-12: expected is on the patch 3.6 scale
                           "c": round(cshare(item, (rec or {}).get("claim") or (graded[0] if graded else None),
                                             order.get("kind") or "food"), 4) if acceptable and outcome == "deal" else None,
-                          "shopsel": "pricefirst" if pricefirst else "base", "wpen": wpen, "cheapfood": cheapfood, "cheapgoods": cheapgoods, "regraded": regraded, "skubest": skubest, "aimtop": aimtop, "aim15": aim15, "needwarr": needwarr,
-                          "gradeaware": gradeaware, "graded": list(graded) if graded else None,
-                          "push": (f"{arm}-pushed" if pushed else f"{arm}-arm") if push else "control2", "talk": talk, "soft": soft})   # 11-07 A/B
+                          "graded": list(graded) if graded else None, "vplan": vplan_rec,
+                          "push": "v", "talk": talk, "soft": soft, "offers": n_off})
     save_memory(mem)
     log("buyer", f"done: {outcome}" + (f" at {price}" if price is not None else "")
                  + f", {time.time() - start:.0f} s, harness calls {harness.CALLS['n']}")
