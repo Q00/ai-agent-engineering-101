@@ -227,7 +227,7 @@ def test_registry_names_are_unique_with_short_descriptions():
 def test_section_one_and_unknown(root, tmp_path_factory):
     net = brief.section(root, "순이익", now=NOW)
     assert net.startswith("[순이익 12시간, 판매 시각 기준] 우리 판매 6건") and "[가게 목표" not in net
-    assert brief.section(root, "가게 목표", now=NOW).startswith("[가게 목표 0.90] 우리 가게 all")
+    assert brief.section(root, "가게 목표", now=NOW).startswith("[가게 목표] 우리 가게 all")
     bad = brief.section(root, "없는 절", now=NOW)
     assert bad.startswith("섹션 없음: 없는 절") and "순이익" in bad and "하네스 수정" in bad
     empty = str(tmp_path_factory.mktemp("e"))

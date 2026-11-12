@@ -834,8 +834,7 @@ def test_shop_goal_formula_matches_board_and_lists_ranks_above():
     old = {"shops": [dict(s, book=s["book"] - 60) for s in shops]}
     out = brief.section_shop_goal({"shops": shops}, old, LOGIN, 6.0)
     assert (
-        out[0].startswith("[가게 목표 0.90] 우리 가게 all 0.425 (5곳 중 3위)")
-        and "+0.475" in out[0]
+        out[0] == "[가게 목표] 우리 가게 all 0.425 (5곳 중 3위), 가게 1위 all 1.000, 1위까지 +0.575"
     )
     assert "최대 오차 0.0000" in out[1] and "0.2 stars_rank" in out[1]
     assert out[2].startswith(

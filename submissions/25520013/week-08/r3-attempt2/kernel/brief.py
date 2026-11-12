@@ -1257,9 +1257,9 @@ def section_turnover(b, old, hours, login):
     return out
 
 
-# [가게 목표]: 성수님 목표(2026-11-06 17시) 가게 all 0.90. The formula below reproduces the board's shop all for all
-# 58 shops within 0.0005 (11-06 16:50 snapshot): stars_rank, not stars, and a mid-rank percentile over every shop.
-SHOP_GOAL = 0.90
+# [가게 목표]: the goal is 1st overall (11-12: the 11-06 shop target 0.90 was dropped, it read as enough while the 1st
+# shop stood at 0.977). The formula below reproduces the board's shop all for all 58 shops within 0.0005 (11-06 16:50
+# snapshot): stars_rank, not stars, and a mid-rank percentile over every shop.
 SHOP_FORMULA = (("book", 0.5), ("revenue", 0.3), ("stars_rank", 0.2))
 GOAL_STEPS = 5  # ranks above us listed per column
 GOAL_STEPS_BELOW = 3  # ranks below us listed per column
@@ -1279,18 +1279,19 @@ def shop_all(shops, s):
 
 
 def section_shop_goal(b, b6, login, hours6):
-    """[가게 목표]: our shop all against SHOP_GOAL, the formula check against the board, and per column our rank,
+    """[가게 목표]: our shop all against the 1st shop's, the formula check against the board, and per column our rank,
     percentile, rate over the snapshot gap and, for the next GOAL_STEPS ranks above, the gap, that shop's rate and
     the shop all we would have there with the other columns unchanged. Numbers only."""
     shops = [s for s in b.get("shops") or [] if isinstance(s.get("all"), (int, float))]
     me = next((s for s in shops if c.is_mine(s, login)), None)
     if me is None or len(shops) < 2:
-        return [f"[가게 목표 {SHOP_GOAL:.2f}] 우리 가게 행 없음"]
+        return ["[가게 목표] 우리 가게 행 없음"]
     old = {s.get("name"): s for s in (b6 or {}).get("shops") or []}
     err = max(abs(shop_all(shops, s) - s["all"]) for s in shops)
     rank = 1 + sum(1 for s in shops if s["all"] > me["all"])
-    out = [f"[가게 목표 {SHOP_GOAL:.2f}] 우리 가게 all {me['all']:.3f} ({len(shops)}곳 중 {rank}위), 목표까지 "
-           f"{SHOP_GOAL - me['all']:+.3f}",
+    top = max(s["all"] for s in shops)
+    out = [f"[가게 목표] 우리 가게 all {me['all']:.3f} ({len(shops)}곳 중 {rank}위), 가게 1위 all {top:.3f}, 1위까지 "
+           f"{top - me['all']:+.3f}",
            f"  공식: " + " + ".join(f"{w} {k}" for k, w in SHOP_FORMULA) + f" 백분위 ({len(shops)}곳, 동점은 중간 순위); "
            f"순위표 all과 최대 오차 {err:.4f}"]
     rate = lambda s, k: (((s.get(k) or 0) - ((old.get(s.get("name")) or {}).get(k) or 0)) / hours6
