@@ -93,6 +93,41 @@ def cloudflare_command(binary,port):
     return [binary,'tunnel','--no-autoupdate','--protocol','http2','--url',f'http://127.0.0.1:{port}']
 
 
+def tunnel_retry(provider, output, failures):
+    if provider == 'cloudflare' and re.search(r'provisioning failed with status 429\b', output):
+        return 'pinggy', 15
+    return provider, min(300, 15 * 2 ** min(max(failures - 1, 0), 5))
+
+
+def registry_matches(url):
+    try:
+        with urllib.request.urlopen('https://market.ourolabs.ai/api/shops', timeout=4) as response:
+            data = json.load(response)
+        shops = data.get('shops') if isinstance(data, dict) else None
+        if not isinstance(shops, list) or any(
+                not isinstance(s, dict) or not isinstance(s.get('name'), str)
+                or not isinstance(s.get('url'), str) for s in shops):
+            return None
+        return any(s.get('name') == 'outseop-26510122' and s.get('url') == url for s in shops)
+    except (OSError, ValueError):
+        return None
+
+
+def safe_tunnel_renewal(runtime, now):
+    path = runtime / '.market/inventory.json'
+    try:
+        inventory = json.loads(path.read_text())
+        if not isinstance(inventory, dict):
+            return False
+        window = inventory.get('restock') or {}
+        if not isinstance(window, dict):
+            return False
+        return (0 <= now - path.stat().st_mtime < 30 and inventory.get('round') == 3
+                and not window.get('open') and window.get('opens_at', 0) - now > 90)
+    except (OSError, ValueError, TypeError):
+        return False
+
+
 def run(args):
     global STOP
     def finish(*_):
@@ -113,6 +148,10 @@ def run(args):
     env['MARKET_OWNER']=args.owner_file.read_text().strip()
     env['PYTHONUNBUFFERED']='1'
     alternate_domain=False
+    provider=getattr(args,'tunnel_provider','pinggy')
+    if provider not in ('pinggy','cloudflare'):raise ValueError('Unknown tunnel provider')
+    failures=0
+    retry_seconds=15
     while not STOP:
         ssh=market=forum=None;workers={}
         try:
@@ -122,8 +161,6 @@ def run(args):
                  (ROOT/'logs/seller-r3-tunnel.log').open('a') as ssh_log, \
                  (ROOT/'logs/seller-r3-kit-console.log').open('a') as kit_log, \
                  (ROOT/'logs/seller-forum-console.log').open('a') as forum_log:
-                provider=getattr(args,'tunnel_provider','pinggy')
-                if provider not in ('pinggy','cloudflare'):raise ValueError('Unknown tunnel provider')
                 output_offset=ssh_log.tell()
                 if provider=='cloudflare':
                     binary=shutil.which('cloudflared',path=env['PATH'])
@@ -150,6 +187,8 @@ def run(args):
                     time.sleep(1)
                 if STOP:break
                 if not url:raise RuntimeError('Public tunnel did not become ready')
+                failures=0
+                retry_seconds=15
                 log(f'Tunnel ready: {url}')
                 market=subprocess.Popen([str(ROOT/'.venv/bin/python'),*kit_entrypoint(runtime,kit,manifest),'join','--dir',str(runtime),
                     '--market','https://market.ourolabs.ai','--name','outseop-26510122','--port',str(args.port),
@@ -174,8 +213,19 @@ def run(args):
                         'source_commit':manifest['source_commit'],'started_at':time.time(),'buyer_enabled':False,'tunnel_provider':provider}
                 status.update({key:proc.pid for key,proc in workers.items()})
                 (runtime/'running.json').write_text(json.dumps(status,indent=2))
-                until=time.monotonic()+55*60
-                while not STOP and ssh.poll() is None and market.poll() is None and time.monotonic()<until:
+                until=time.monotonic()+55*60 if provider=='pinggy' else float('inf')
+                next_health=time.monotonic()+120
+                missing_checks=0
+                while not STOP and ssh.poll() is None and market.poll() is None:
+                    clock=time.monotonic()
+                    if clock>=next_health:
+                        registered=registry_matches(url)
+                        missing_checks=missing_checks+1 if registered is False else 0
+                        next_health=time.monotonic()+60
+                    if (clock>=until or missing_checks>=2) and safe_tunnel_renewal(runtime,time.time()):
+                        if missing_checks>=2:
+                            log('Shop absent from registry twice; renewing tunnel in a safe supply gap')
+                        break
                     if forum.poll() is not None:
                         log('Forum worker exited; restarting independently')
                         forum=subprocess.Popen([str(ROOT/'.venv/bin/python'),str(runtime/'release/seller_forum.py'),
@@ -193,11 +243,25 @@ def run(args):
                 if market.poll() not in (None,0):
                     alternate_domain=not alternate_domain
                     log('Kit failed; next tunnel cycle will try the other provider domain first')
-        except Exception as error:log(f'Service cycle failed: {type(error).__name__}: {error}')
+        except Exception as error:
+            failures+=1
+            output=''
+            if provider=='cloudflare':
+                try:
+                    with (ROOT/'logs/seller-r3-tunnel.log').open() as reader:
+                        reader.seek(output_offset)
+                        output=reader.read(16384)
+                except (OSError,UnboundLocalError):
+                    pass
+            next_provider,retry_seconds=tunnel_retry(provider,output,failures)
+            log(f'Service cycle failed: {type(error).__name__}: {error}; retry in {retry_seconds}s')
+            if next_provider!=provider:
+                log('Cloudflare tunnel provisioning is rate limited; using the existing Pinggy fallback')
+            provider=next_provider
         finally:
             for proc in workers.values():stop(proc)
             stop(forum);stop(market);stop(ssh)
-        for _ in range(15):
+        for _ in range(retry_seconds):
             if STOP:break
             time.sleep(1)
 

@@ -84,3 +84,44 @@ class RegistrationRetryTests(unittest.TestCase):
         kit,sleep,join=self.fixture([self.timeout() for _ in range(4)])
         with self.assertRaises(SystemExit):kit.Market().join('shop','name',object(),'https://same.example')
         self.assertEqual(join.call_count,4);self.assertEqual(sleep.call_count,3)
+
+
+class TunnelContinuityTests(unittest.TestCase):
+    def test_provisioning_rate_limit_uses_existing_fallback_and_backs_off(self):
+        from ops.seller_service import tunnel_retry
+        self.assertEqual(tunnel_retry('cloudflare','quick tunnel provisioning failed with status 429',1),
+                         ('pinggy',15))
+        self.assertEqual(tunnel_retry('cloudflare','HTTP 200, no provider URL',2),('cloudflare',30))
+        self.assertEqual(tunnel_retry('pinggy','other failure',8),('pinggy',300))
+
+    def test_registry_errors_are_unknown_instead_of_confirmed_absence(self):
+        from unittest.mock import patch, MagicMock
+        from ops.seller_service import registry_matches
+        with patch('ops.seller_service.urllib.request.urlopen',side_effect=TimeoutError):
+            self.assertIsNone(registry_matches('https://shop.example'))
+        response=MagicMock()
+        with patch('ops.seller_service.urllib.request.urlopen',return_value=response):
+            response.__enter__.return_value.read.return_value=b'{"shops":[]}'
+            self.assertFalse(registry_matches('https://shop.example'))
+            response.__enter__.return_value.read.return_value=b'{"shops":[{"name":"outseop-26510122","url":"https://shop.example"}]}'
+            self.assertTrue(registry_matches('https://shop.example'))
+            response.__enter__.return_value.read.return_value=b'{"error":"restarting"}'
+            self.assertIsNone(registry_matches('https://shop.example'))
+
+    def test_renewal_waits_for_fresh_inventory_and_a_gap_after_supply(self):
+        import os
+        from ops.seller_service import safe_tunnel_renewal
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory)
+            (root/'.market').mkdir()
+            path=root/'.market/inventory.json'
+            def inventory(opened=False,opens_at=1200):
+                path.write_text(json.dumps({'round':3,'restock':{'open':opened,'opens_at':opens_at}}))
+                os.utime(path,(1000,1000))
+            inventory()
+            self.assertTrue(safe_tunnel_renewal(root,1010))
+            self.assertFalse(safe_tunnel_renewal(root,1100))
+            inventory(True)
+            self.assertFalse(safe_tunnel_renewal(root,1010))
+            inventory(False,1050)
+            self.assertFalse(safe_tunnel_renewal(root,1010))
