@@ -67,6 +67,24 @@ def leaf(category):
     return (category or "?").split(">")[-1]
 
 
+def r36(paid, lp, cost):
+    """Patch 3.6 (11-12 18:19): a buyer's saved per deal = (list - paid) / (list - cost) of the unit, 1 at or under cost."""
+    return 1.0 if paid <= cost else (lp - paid) / (lp - cost) if lp > cost else 0.0
+
+
+def unit_costs(c, seqs):
+    """seq -> supply cost of the unit settled, other shops' units only (we never state our own cost)."""
+    out = {}
+    seqs = list(seqs)
+    for i in range(0, len(seqs), 500):
+        part = seqs[i:i + 500]
+        for seq, cost in c.execute(f"""select x.seq, su.cost from settle_units x join supply_units su on su.unit = x.unit
+                                       where su.shop != ? and su.cost > 0 and x.seq in ({','.join('?' * len(part))})""",
+                                   (NAME, *part)):
+            out[seq] = cost
+    return out
+
+
 def price_index(c, t, now):
     out = []
     rows = c.execute("select seq, category, sku, amount, list_price, shop from settles where ts>? and list_price>0",
@@ -90,19 +108,30 @@ def price_index(c, t, now):
         best_en = " / ".join(f"{((cat_rows.get(k) or {}).get('name') or k)[:22]} ({k}) {n} sold" for k, n in top)
         low = min(rs, key=lambda r: r[3] / r[4])
         seqs =", ".join(str(r[0]) for r in rs[-8:])
+        costs = unit_costs(c, [r[0] for r in rs])               # patch 3.6: the score buyers now get per deal
+        r36s = sorted(r36(r[3], r[4], costs[r[0]]) for r in rs if r[0] in costs)
+        rline_ko = (f"- 패치 3.6 Saved r=(정가−체결가)/(정가−원가) 중앙값 {statistics.median(r36s):.2f}, "
+                    f"원가 이하 체결(r=1) {sum(x >= 1 for x in r36s) / len(r36s):.0%} ({len(r36s)}건, 원가는 원장 공급 기록)\n") \
+            if len(r36s) >= t["min_n_index"] else ""
+        rline_en = (f"- patch 3.6 saved r=(list-paid)/(list-cost) median {statistics.median(r36s):.2f}, at/under cost "
+                    f"{sum(x >= 1 for x in r36s) / len(r36s):.0%} (n={len(r36s)}, cost from ledger supplies)\n") if rline_ko else ""
         ko = (f"[시세] {leaf(cat)}: 최근 {t['window_h']}시간 시장 정산 {len(rs)}건 (공개 원장 기준)\n"
               f"- 체결가/정가 중앙값 {statistics.median(ratios):.0%} (하위 25% {q(0.25):.0%}, 상위 25% {q(0.75):.0%})\n"
+              + rline_ko +
               f"- 가장 많이 팔린 상품: {best}\n"
               f"- 최저 체결: {low[2]} {low[3]:,}원 (정가의 {low[3] / low[4]:.0%})\n"
               f"- 근거: 원장 seq {seqs}")
         en = (f"[Market] {leaf(cat)}: {len(rs)} settles in the last {t['window_h']} h (public ledger)\n"
               f"- paid/list median {statistics.median(ratios):.0%} (lower quartile {q(0.25):.0%}, upper {q(0.75):.0%})\n"
+              + rline_en +
               f"- best sellers: {best_en}\n"
               f"- lowest settle: {low[2]} {low[3]:,} ({low[3] / low[4]:.0%} of list)\n"
               f"- refs: ledger seq {seqs}")
         js = json.dumps(
             {"type": "market_summary", "category": leaf(cat), "window_h": t["window_h"], "settles": len(rs),
              "paid_share": {"median": round(statistics.median(ratios), 3), "q25": round(q(0.25), 3), "q75": round(q(0.75), 3)},
+             **({"saved_r_patch36": {"median": round(statistics.median(r36s), 3), "at_or_under_cost": round(sum(x >= 1 for x in r36s) / len(r36s), 3),
+                                     "n": len(r36s)}} if rline_ko else {}),
              "best_sellers": [{"sku": k, "name": ((cat_rows.get(k) or {}).get("name") or k)[:22], "sold": n} for k, n in top],
              "lowest": {"sku": low[2], "price": low[3], "share": round(low[3] / low[4], 3)},
              "refs": [r[0] for r in rs][-8:]}, ensure_ascii=False, separators=(",", ":")) + (   # JSON on top (HQ)
@@ -124,9 +153,11 @@ def purchase_records(c, t, now, top=3):
                         limit ?""", (NAME, now - t["window_h"] * 3600, top)).fetchall()
     if len(rows) < top:
         return []
+    costs = unit_costs(c, [r[0] for r in rows])       # patch 3.6: the saved r each buy scored (the seller's cost is public)
+    rr = lambda seq, a, lp: f" | Saved r {r36(a, lp, costs[seq]):.2f}" if seq in costs else ""
     nm = lambda sku: ((cat.get(sku) or {}).get('name') or sku)[:28]
     ko = "[구매 기록] 최근 정산된 구매 (공개 원장으로 확인 가능)\n" + "\n".join(
-        f"- {nm(sku)} ({sku}) | {a:,}원, 정가 {lp:,}원 대비 {1 - a / lp:.0%} 저렴 | 등급 {g}{' (주장과 일치)' if h else ''}"
+        f"- {nm(sku)} ({sku}) | {a:,}원, 정가 {lp:,}원 대비 {1 - a / lp:.0%} 저렴{rr(seq, a, lp)} | 등급 {g}{' (주장과 일치)' if h else ''}"
         f" | 원장 #{seq}" for seq, sku, a, lp, g, h in rows)
     en = "[Purchase records] our latest settled buys (checkable on the public ledger)\n" + "\n".join(
         f"- {nm(sku)} ({sku}) | paid {a:,} vs list {lp:,} ({1 - a / lp:.0%} under) | grade {g}"
@@ -283,33 +314,39 @@ def frugal_shops(c, t, now, top_cats=3, min_n=5):
     """As the buyer, which shops sold cheapest lately (W09 lecture: "어떤 가게가 프루걸한가… 게시판에 올려주시면… 좋아요"):
     for the busiest categories, the shops with the lowest median paid/list over window_h, from the public ledger
     (settles joined to the supply that named the shop). Each line carries two of that shop's settles as refs."""
-    rows = c.execute("""select su.shop, s.category, s.seq, s.amount * 1.0 / s.list_price from settles s
-                        join settle_units x on x.seq = s.seq join supply_units su on su.unit = x.unit
-                        where s.ts > ? and s.list_price > 0""", (now - t["window_h"] * 3600,)).fetchall()
+    # patch 3.6 (11-12): buyers are scored on r = (list - paid)/(list - cost), so shops are ranked by the median r
+    # their buyers got (higher is better for the buyer); our own shop is left out (we never state our own costs)
+    rows = [(shop, cat, seq, r36(a, lp, cost)) for shop, cat, seq, a, lp, cost in c.execute(
+        """select su.shop, s.category, s.seq, s.amount, s.list_price, su.cost from settles s
+           join settle_units x on x.seq = s.seq join supply_units su on su.unit = x.unit
+           where s.ts > ? and s.list_price > 0 and su.cost > 0 and su.shop != ?""", (now - t["window_h"] * 3600, NAME))]
     by = {}
     for shop, cat, seq, r in rows:
         by.setdefault(cat, {}).setdefault(shop, []).append((seq, r))
     cats = sorted(by, key=lambda k: -sum(len(v) for v in by[k].values()))[:top_cats]
     items, refs = [], []
     for cat in cats:
-        ranked = sorted(((statistics.median(r for _, r in v), shop, v) for shop, v in by[cat].items() if len(v) >= min_n))
+        ranked = sorted(((statistics.median(r for _, r in v), shop, v) for shop, v in by[cat].items() if len(v) >= min_n),
+                        key=lambda x: -x[0])
         if len(ranked) < 3:
             continue
         mkt = statistics.median(r for v in by[cat].values() for _, r in v)
-        best = [{"shop": shop, "paid_share_median": round(med, 3), "n": len(v)} for med, shop, v in ranked[:3]]
+        best = [{"shop": shop, "saved_r_median": round(med, 3), "n": len(v)} for med, shop, v in ranked[:3]]
         for _, _, v in ranked[:3]:
             refs += [seq for seq, _ in v[-2:]]
         items.append({"category": leaf(cat), "market_median": round(mkt, 3), "cheapest_shops": best})
     if not items or not refs:
         return []
-    data = {"type": "frugal_shops", "window_h": t["window_h"], "measure": "median paid/list per shop, public ledger",
+    data = {"type": "frugal_shops", "window_h": t["window_h"], "measure": "median patch 3.6 saved r = (list - paid)/(list - cost) per shop, public ledger (settles + supplies); our shop excluded",
             "categories": items, "refs": refs[:8]}
-    ko = f"[알뜰 가게] 최근 {t['window_h']}시간 원장 기준, 범주별로 정가 대비 가장 싸게 판 가게 (체결가/정가 중앙값)\n" + "\n".join(
-        f"- {i['category']} (시장 {i['market_median']:.0%}): " + ", ".join(
-            f"{b['shop']} {b['paid_share_median']:.0%} ({b['n']}건)" for b in i["cheapest_shops"]) for i in items)
-    en = f"[Frugal shops] last {t['window_h']} h, public ledger, median paid/list per shop:\n" + "\n".join(
-        f"- {i['category']} (market {i['market_median']:.0%}): " + ", ".join(
-            f"{b['shop']} {b['paid_share_median']:.0%} (n={b['n']})" for b in i["cheapest_shops"]) for i in items)
+    ko = (f"[알뜰 가게] 최근 {t['window_h']}시간 원장 기준, 범주별로 바이어가 Saved를 가장 많이 받은 가게\n"
+          "(패치 3.6: r=(정가−체결가)/(정가−원가), 원가 이하면 1. 가게별 중앙값, 원가는 원장 공급 기록, 우리 가게 제외)\n") + "\n".join(
+        f"- {i['category']} (시장 {i['market_median']:.2f}): " + ", ".join(
+            f"{b['shop']} {b['saved_r_median']:.2f} ({b['n']}건)" for b in i["cheapest_shops"]) for i in items)
+    en = (f"[Frugal shops] last {t['window_h']} h, public ledger: shops where buyers kept the most of the margin, median "
+          "patch 3.6 saved r = (list-paid)/(list-cost), 1 at/under cost (our shop excluded):\n") + "\n".join(
+        f"- {i['category']} (market {i['market_median']:.2f}): " + ", ".join(
+            f"{b['shop']} {b['saved_r_median']:.2f} (n={b['n']})" for b in i["cheapest_shops"]) for i in items)
     return [{"topic": "frugal", "as": "buyer", "refs": refs[:8], "score": 9.0, "text": ko,   # above the price index
              "texts": {"ko": ko, "en": en, "json": json.dumps(data, ensure_ascii=False, separators=(",", ":"))[:1000]},
              "kind": "summary"}]
@@ -441,16 +478,18 @@ def groupbuy_ads(c, t, now):
         gr, low = min(ab.items(), key=lambda kv: kv[1]) if ab else min(i["price_by_grade"].items(), key=lambda kv: kv[1])
         if med and med > low:
             gain.append((dict(i, low=low, low_grade=gr), 1 - low / i["list_price"], 1 - med / i["list_price"], med))
-    ko = "[바이어 순위 올리는 법] 📈 같은 상품, 더 큰 할인 = 더 높은 절약률 점수\n" + "\n".join(
-        f"- {i['name'][:16]} ({i['sku']}): 여기 {i['low_grade']}등급 {i['low']:,}원 = 정가의 {ours:.0%} 할인 → "
-        f"거래당 +{ours:.2f}점 / 시장 중간값 {med:,.0f}원이면 +{mkt:.2f}점 (차이 +{ours - mkt:.2f}점, 재고 {n_by.get(i['sku'], 0)}개)"
-        for i, ours, mkt, med in gain[:3]) + "\n- 근거: 절약률 = Σ(1−지불가/정가)/(거래+100), 바이어 ALL의 50% (마켓 규칙). 시장 중간값은 공개 원장 24시간" \
+    # patch 3.6 (11-12): saved = (list - paid)/(list - cost) per deal; the old "sum(1 - paid/list)" line was no longer
+    # the rule. We do not state our own unit costs, so the post compares prices only: same SKU, lower price, higher r.
+    ko = "[바이어 순위 올리는 법] 📈 같은 상품이면 더 싸게 살수록 Saved가 올라갑니다\n" + "\n".join(
+        f"- {i['name'][:16]} ({i['sku']}): 여기 {i['low_grade']}등급 {i['low']:,}원 (정가의 {ours:.0%} 할인) / "
+        f"24시간 시장 중간값 {med:,.0f}원 (정가의 {mkt:.0%} 할인), 재고 {n_by.get(i['sku'], 0)}개"
+        for i, ours, mkt, med in gain[:3]) + "\n- 근거: 패치 3.6부터 Saved = 거래마다 (정가−지불가)/(정가−원가)의 합 ÷ (거래+100), 원가 이하면 1, 바이어 ALL의 50%. 시장 중간값은 공개 원장 24시간" \
         if gain else "[가격표] 📋 주문 전에 보는 dragonash 정리 특가 (A·B급 보증 72시간, C급 보증 없음, 시장 인증서)\n" + "\n".join(
         f"- {i['name']} ({i['sku']}): 정가 {i['list_price']:,}원 → "
         + ", ".join(f"{g_} {p_:,}원(-{1 - p_ / i['list_price']:.0%})" for g_, p_ in i["price_by_grade"].items())
         + f" | 재고 {n_by.get(i['sku'], 0)}개" for i in items)
-    en = ("[Saved-rate math] same SKU, bigger share off list = more saved per deal (saved = sum(1 - paid/list)/(deals+100), "
-          "0.5 of buyer ALL): " + "; ".join(f"{i['sku']} here {ours:.0%} off vs {mkt:.0%} at the 24 h ledger median (+{ours - mkt:.2f} per deal)"
+    en = ("[Saved math, patch 3.6] same SKU, lower price = higher saved (per deal (list - paid)/(list - cost), 1 at/under cost, "
+          "summed over deals + 100, 0.5 of buyer ALL): " + "; ".join(f"{i['sku']} here {ours:.0%} off list vs {mkt:.0%} at the 24 h ledger median"
                                           for i, ours, mkt, _ in gain[:3])) if gain else \
         "[Clearance] prices by grade in stock now: " + "; ".join(
         f"{i['sku']} " + ", ".join(f"{g_} {p_:,}" for g_, p_ in i["price_by_grade"].items()) for i in items)
