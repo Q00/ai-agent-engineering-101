@@ -1227,11 +1227,32 @@ def shop_metric(data, scope, t0, t1, rev_weight=0.0):
     }
 
 
+# Patch 3.6 (11-12): a deal's saved is (list - paid) / (list - the shop's unit cost), at most 1. The buyer does not
+# see the cost, so the market's average cost share of list (RULES: goods about 61%, food about 52%) stands in for it.
+# On our ledger this gives 0.729 against the board's 0.721 (the old share of list: 0.346 against 0.334).
+COST_FRAC = {"food": 0.52, "goods": 0.61}
+# The first board snapshot on the patch 3.6 scale (11-12 17:47 KST); an s0 read before it is on the old scale, so
+# those runs compare against S0_V36, our board saved in that snapshot.
+SAVED_V36_TS = 1_794_473_247
+S0_V36 = 0.7212
+
+
+def margin_kept(lp, paid, kind):
+    """The share of the shop's margin a deal kept, at most 1 (Patch 3.6), with COST_FRAC standing in for the cost."""
+    return min(1.0, (lp - paid) / (lp * (1 - COST_FRAC.get(kind, COST_FRAC["goods"]))))
+
+
+def s0_of(e):
+    """The s0 a run's buyer metric compares against: its own when it started on the patch 3.6 scale, else S0_V36."""
+    t = e.get("started_ts")
+    return e.get("s0") if _num_ok(t) and t >= SAVED_V36_TS else S0_V36
+
+
 def buyer_metric(data, scope, t0, t1, s0):
-    """saved_gain_per_h over our buyer's purchases settled in [t0, t1) of the scope's kind: sum of (surplus_frac - s0)
-    per hour, surplus_frac = (list - paid) / list. The board's saved is sum(surplus_frac) / (deals + 100), so a deal
-    raises it only when its surplus_frac is above the current value s0. "others": the other buyers' deals of the
-    same kind in the window (market settles that are not our purchases)."""
+    """saved_gain_per_h over our buyer's purchases settled in [t0, t1) of the scope's kind: sum of (kept - s0) per
+    hour, kept = margin_kept(list, paid, kind). The board's saved is sum(kept) / (deals + 100), so a deal raises it
+    only when its kept share is above the current value s0. "others": the other buyers' deals of the same kind in the
+    window (market settles that are not our purchases)."""
     if t1 <= t0:
         return {"value": 0.0, "n": 0, "buckets": [], "others": 0, "hours": 0.0}
     n_b, idx = _buckets(t0, t1)
@@ -1239,7 +1260,7 @@ def buyer_metric(data, scope, t0, t1, s0):
     for x in data["deals"]:
         if t0 <= x["ts"] < t1 and _in_scope(scope, None, x["kind"]):
             n += 1
-            buckets[idx(x["ts"])] += (x["lp"] - x["amount"]) / x["lp"] - s0
+            buckets[idx(x["ts"])] += margin_kept(x["lp"], x["amount"], x["kind"]) - s0
     others = sum(
         1
         for ts, kind in data.get("others") or ()
@@ -1276,8 +1297,8 @@ def evaluate(root, exp, now, data=None):
         data = read_events(root, b0 - JOIN_LOOKBACK_H * 3600, t + w + mat, now=now)
     if side == "buyer":
         b, a = (
-            buyer_metric(data, scope, b0, t, exp.get("s0")),
-            buyer_metric(data, scope, t, t + w, exp.get("s0")),
+            buyer_metric(data, scope, b0, t, s0_of(exp)),
+            buyer_metric(data, scope, t, t + w, s0_of(exp)),
         )
         r = _ratio(a["others"], a["hours"], b["others"], b["hours"])
     else:
@@ -1319,7 +1340,7 @@ def evaluate(root, exp, now, data=None):
         "n_after": a["n"],
     }
     if side == "buyer":
-        v.update(s0=exp.get("s0"), others_before=b["others"], others_after=a["others"])
+        v.update(s0=s0_of(exp), others_before=b["others"], others_after=a["others"])
     else:
         v.update(
             rev_weight=exp.get("rev_weight") or 0.0,
@@ -1952,7 +1973,7 @@ def interim_line(e, now, data):
     b0 = min(max(t - w, bf) if _num_ok(bf) else t - w, t)
     t1 = t + el * 3600
     if side == "buyer":
-        b, a = buyer_metric(data, scope, b0, t, e.get("s0")), buyer_metric(data, scope, t, t1, e.get("s0"))
+        b, a = buyer_metric(data, scope, b0, t, s0_of(e)), buyer_metric(data, scope, t, t1, s0_of(e))
         r = _ratio(a["others"], a["hours"], b["others"], b["hours"])
     else:
         rw = e.get("rev_weight") or 0.0
@@ -1986,7 +2007,7 @@ def interim_line(e, now, data):
                 + (ext or f"마지막 구간이라 {sign}"))
     # the after variance over whole elapsed hours only: a partial last hour would read as a swing of its own
     whole = int(el + 1e-9)
-    ab = (buyer_metric(data, scope, t, t + whole * 3600, e.get("s0")) if side == "buyer"
+    ab = (buyer_metric(data, scope, t, t + whole * 3600, s0_of(e)) if side == "buyer"
           else shop_metric(data, scope, t, t + whole * 3600, e.get("rev_weight") or 0.0))["buckets"] if whole >= 2 else []
     own = len(ab) >= 2
     va = st.variance(ab) if own else st.variance(bb)

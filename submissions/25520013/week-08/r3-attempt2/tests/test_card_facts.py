@@ -456,7 +456,10 @@ def test_interim_line_of_a_small_before_after_experiment_names_the_floor(root):
         "못 미치면 커널이 구간을 6시간으로 늘려 한 번 더 봄")
 
 
-def test_interim_line_of_a_buyer_experiment_matches_hand_arithmetic(root):
+def test_interim_line_of_a_buyer_experiment_matches_hand_arithmetic(root, monkeypatch):
+    # written on the pre-3.6 saved scale: the share of list kept, s0 as recorded
+    monkeypatch.setattr(ex, "COST_FRAC", {"food": 0.0, "goods": 0.0})
+    monkeypatch.setattr(ex, "SAVED_V36_TS", 0)
     # s0 0.3; before: one deal an hour with saved share 0.4, 0.5, 0.6 -> gains 0.1, 0.2, 0.3 (0.2/h, variance 0.01);
     # after: 0.5 then 0.7 -> gains 0.2, 0.4 (0.3/h over 2 h, variance 0.02); no other buyers, so r = 1
     e = _exp("buyer.defaults.food", key="max_pay_frac", old=0.65, new=0.7, window_h=3, s0=0.3)

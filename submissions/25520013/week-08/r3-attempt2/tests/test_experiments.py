@@ -533,11 +533,32 @@ def test_buyer_metric_with_s0(root):
     data = ex.read_events(root, S - H, S + 3 * H, login=LOGIN)
     assert len(data["deals"]) == 4 and data["sales"] == []
     m = ex.buyer_metric(data, "buyer:goods", S, S + 2 * H, 0.3)
-    # surplus fracs 0.4, 0.2 (catalog list 2M) and 0.75 (settle list_price 2M wins over the catalog's 1M); minus s0
+    # shares of list kept 0.4, 0.2 (catalog list 2M) and 0.75 (settle list_price 2M wins over the catalog's 1M); as
+    # shares of the margin (goods cost 61% of list) 1.03 -> 1, 0.513 and 1.92 -> 1 (Patch 3.6); minus s0
     assert m["n"] == 3
-    assert m["value"] == pytest.approx((0.1 - 0.1 + 0.45) / 2)
+    assert m["value"] == pytest.approx((1 + 0.2 / 0.39 + 1 - 3 * 0.3) / 2)
     food = ex.buyer_metric(data, "buyer:food", S, S + 2 * H, 0.3)
-    assert food["n"] == 1 and food["value"] == pytest.approx((0.5 - 0.3) / 2)
+    assert food["n"] == 1 and food["value"] == pytest.approx((1 - 0.3) / 2)
+
+
+def test_a_deal_scores_the_share_of_the_margin_it_kept():
+    assert ex.margin_kept(100, 80, "food") == pytest.approx(20 / 48)
+    assert ex.margin_kept(100, 80, "goods") == pytest.approx(20 / 39)
+    assert ex.margin_kept(100, 40, "food") == 1.0  # below cost counts as the whole margin
+    assert ex.margin_kept(100, 100, "goods") == 0.0
+    assert ex.margin_kept(100, 120, "food") == pytest.approx(-20 / 48)
+    assert ex.margin_kept(100, 80, "other") == ex.margin_kept(100, 80, "goods")
+
+
+def test_a_run_begun_on_the_old_saved_scale_compares_against_the_first_new_board_value():
+    t = ex.SAVED_V36_TS
+    assert ex.s0_of({"started_ts": t - 1, "s0": 0.334}) == ex.S0_V36
+    assert ex.s0_of({"s0": 0.334}) == ex.S0_V36
+    assert ex.s0_of({"started_ts": t, "s0": 0.73}) == 0.73
+    e = {"side": "buyer", "scope": "buyer:all", "window_h": 2, "started_ts": t - 10, "s0": 0.334,
+         "metric": ex.METRIC["buyer"]}
+    v = ex.evaluate(None, e, t + 4 * H, {"deals": [], "others": [], "earliest": 0})
+    assert v["s0"] == ex.S0_V36
 
 
 # --- tick
