@@ -1,0 +1,185 @@
+{
+  "version": "week02-required-2",
+  "week": "week-02",
+  "checker": "review-only",
+  "status": "unofficial-review-draft",
+  "base_point_per_item": 1,
+  "bonus_policy": {
+    "explicit_criteria": [],
+    "open_ended": true,
+    "open_points": 1,
+    "cap": null
+  },
+  "items": [
+    {
+      "id": "F01",
+      "category": "requirements",
+      "mode": "review",
+      "title": "필수 소스와 공유 도구",
+      "rule": "Required tools_shared.py, harness_react.py and harness_plan_execute.py exist, parse, and both harnesses import the shared tool/model/meter module.",
+      "pass_rule": "Required tools_shared.py, harness_react.py and harness_plan_execute.py exist, parse, and both harnesses import the shared tool/model/meter module.",
+      "fail_rule": "Required source missing, invalid or shared module bypassed.",
+      "source_requirement": "What to submit: tools_shared.py, harness_react.py, harness_plan_execute.py; both harnesses share tools/model/Meter."
+    },
+    {
+      "id": "F02",
+      "category": "requirements",
+      "mode": "review",
+      "title": "기준 과제·성공 기준·사전 기록",
+      "rule": "TASK.md has task and expected lines; required starter task uses unchanged app.log. The available history records task definition before graded runs.",
+      "pass_rule": "TASK.md has task and expected lines; required starter task uses unchanged app.log. The available history records task definition before graded runs.",
+      "fail_rule": "Required task/data or success criterion missing or materially changed; do not infer actual execution dates from timestamps alone.",
+      "source_requirement": "Assignment / TASK.md: unchanged app.log task, task/expected success criterion committed before runs."
+    },
+    {
+      "id": "F03",
+      "category": "requirements",
+      "mode": "review",
+      "title": "두 하네스의 구현",
+      "rule": "ReAct maintains an iterative action-observation loop; Plan-then-Execute separates planning and execution. Code exposes their actual differences.",
+      "pass_rule": "ReAct maintains an iterative action-observation loop; Plan-then-Execute separates planning and execution. Code exposes their actual differences.",
+      "fail_rule": "A required harness is absent or the implementations do not actually differ in the required pattern.",
+      "source_requirement": "Assignment: compare ReAct and Plan-then-Execute harnesses.",
+      "assessment": {
+        "obligations": [
+          {
+            "id": "architectures",
+            "rule": "ReAct has an action-observation loop and Plan-then-Execute separates planning/execution; inspect actual implementations."
+          },
+          {
+            "id": "return-paths",
+            "rule": "If answer verification/revision is implemented, trace its acceptance/rejection/revision return paths in submitted source. The harness returns the intended final answer rather than a verifier control token/prose. If no verifier exists, that is allowed. Do not demand new execution traces solely to prove all branches."
+          }
+        ]
+      }
+    },
+    {
+      "id": "F04",
+      "category": "requirements",
+      "mode": "review",
+      "title": "반복 실행과 결과 계약",
+      "rule": "CSV exact header run,harness,success,tokens,iters,interventions,note; at least three records per harness on required task, including failures.",
+      "pass_rule": "CSV exact header run,harness,success,tokens,iters,interventions,note; at least three records per harness on required task, including failures.",
+      "fail_rule": "Missing runs, missing metrics or discarded failed graded records.",
+      "source_requirement": "Assignment / results.csv: exact header, >=3 runs per harness, all metrics and failed runs retained."
+    },
+    {
+      "id": "F05",
+      "category": "requirements",
+      "mode": "review",
+      "title": "실행 기록",
+      "rule": "Per-run logs support graded results and expose relevant calls, observations and failures.",
+      "pass_rule": "Per-run logs support graded results and expose relevant calls, observations and failures.",
+      "fail_rule": "Required logs missing or insufficient to support the main recorded experiment.",
+      "source_requirement": "What to submit / logs/: one console capture per run."
+    },
+    {
+      "id": "F06",
+      "category": "requirements",
+      "mode": "review",
+      "title": "보고서 측정 결과표",
+      "source_requirement": "What to submit / REPORT.md part 2: measurements, the table from results.csv.",
+      "rule": "The report includes the measured results table from results.csv for both harnesses, including failed runs.",
+      "pass_rule": "Required raw measurements are present and materially agree with results.csv. Additional adjusted metrics are reviewed under C03, not required merely because the student added them.",
+      "fail_rule": "The required raw measurement table is absent or materially incomplete/incorrect. State the missing deliverable, not an error solely in optional derived calculations."
+    },
+    {
+      "id": "C01",
+      "category": "requirements",
+      "mode": "review",
+      "title": "비교 조건 통제",
+      "rule": "Same model, task and tools in both variants; harness-level ceilings and termination differences may be part of treatment if stated in advance. CLI provider choice alone is not a defect.",
+      "pass_rule": "Same model, task and tools in both variants; harness-level ceilings and termination differences may be part of treatment if stated in advance. CLI provider choice alone is not a defect.",
+      "fail_rule": "Model/task/tool differences confound the claimed harness comparison or experimental changes are concealed.",
+      "source_requirement": "Assignment: hold model, task and tools constant, vary only the harness."
+    },
+    {
+      "id": "C02",
+      "category": "consistency",
+      "mode": "review",
+      "title": "원시 결과와 로그의 일치",
+      "rule": "Raw CSV values agree with the report table; success and iterations agree with visible execution traces, and any recorded usage meters do not contradict tokens. Do not require extra provider usage dumps that the assignment did not request; explicitly limit token verification to available records.",
+      "pass_rule": "Raw CSV values agree with the report table; success and iterations agree with visible execution traces, and any recorded usage meters do not contradict tokens. Do not require extra provider usage dumps that the assignment did not request; explicitly limit token verification to available records.",
+      "fail_rule": "An unexplained mismatch materially changes measured outcomes.",
+      "assessment": {
+        "obligations": [
+          {
+            "id": "measurements",
+            "rule": "Raw CSV values agree with the report table; success and iterations agree with visible execution traces, and any recorded usage meters do not contradict tokens. Do not require extra provider usage dumps that the assignment did not request; explicitly limit token verification to available records."
+          },
+          {
+            "id": "answers",
+            "rule": "Inspect actual final answers and promised success logic against TASK expected lines and supplied reference data, not just success labels. Substring matches, intermediate answers or verifier prose alone do not prove a correct final answer. A correct hour with a wrong count is still a factual defect. Local reporting errors can need correction without invalidating the whole comparison."
+          }
+        ]
+      }
+    },
+    {
+      "id": "C03",
+      "category": "consistency",
+      "mode": "review",
+      "title": "파생 지표·계산·본문 일치",
+      "rule": "Derived/adjusted metrics reproduce from stated formulas, inputs and correction assumptions; ratios follow the same definitions.",
+      "pass_rule": "Derived/adjusted metrics reproduce from stated formulas, inputs and correction assumptions; ratios follow the same definitions.",
+      "fail_rule": "A stated formula cannot reproduce a principal table or comparison and affects the interpretation; do not fail for a cosmetic typo alone."
+    },
+    {
+      "id": "I01",
+      "category": "requirements",
+      "mode": "review",
+      "title": "재현 설정",
+      "rule": "Provider/model, tool interface and run commands/settings are stated; unsupported CLI controls may be explicitly unavailable.",
+      "pass_rule": "Provider/model, tool interface and run commands/settings are stated; unsupported CLI controls may be explicitly unavailable.",
+      "fail_rule": "Material settings are missing so the comparison cannot be meaningfully reconstructed.",
+      "source_requirement": "Grading / reproducibility: provider, model, tool schemas, how to run; state settings except API key."
+    },
+    {
+      "id": "I02",
+      "category": "requirements",
+      "mode": "review",
+      "title": "다섯 축과 지표의 연결",
+      "rule": "Describe the five axes (context management, tool granularity, termination, error recovery, human intervention) and which settings differ in the two harnesses. Causal quality of the interpretation is separate qualitative feedback.",
+      "pass_rule": "Describe the five axes (context management, tool granularity, termination, error recovery, human intervention) and which settings differ in the two harnesses. Causal quality of the interpretation is separate qualitative feedback.",
+      "fail_rule": "Required variant/axis definitions are absent or materially misdescribe the implemented harnesses.",
+      "source_requirement": "REPORT.md part 1: variant definitions and how the five axes differ."
+    },
+    {
+      "id": "I03",
+      "category": "intent",
+      "mode": "review",
+      "title": "실패와 한계의 해석",
+      "rule": "Treat failures as findings, disclose implementation limitations, preserve attempted/discarded work and avoid attributing all implementation defects to an abstract architecture.",
+      "pass_rule": "Treat failures as findings, disclose implementation limitations, preserve attempted/discarded work and avoid attributing all implementation defects to an abstract architecture.",
+      "fail_rule": "Concealed failures or unsupported central universal/causal claims invalidate the analysis. Do not penalize a low success rate itself."
+    },
+    {
+      "id": "I04",
+      "category": "requirements",
+      "mode": "review",
+      "title": "근거 중심의 결론",
+      "rule": "Provide the required interpretation of which harness affected which measured metric and why, using concrete logs. Negative results are valid. Assess the qualitative strength and limits separately; request correction of a local derived-metric formula under C03 without duplicating a deduction here unless it invalidates this required analysis.",
+      "pass_rule": "Provide the required interpretation of which harness affected which measured metric and why, using concrete logs. Negative results are valid. Assess the qualitative strength and limits separately; request correction of a local derived-metric formula under C03 without duplicating a deduction here unless it invalidates this required analysis.",
+      "fail_rule": "A winner declaration substitutes for required evidence-based analysis; do not double-deduct the same arithmetic defect.",
+      "source_requirement": "REPORT.md part 3 / Grading: which harness affected which metric and why, with log evidence."
+    }
+  ],
+  "scoring_policy": "requirements-only-v1",
+  "audit_groups": {
+    "final_answer": [
+      "F02",
+      "F05",
+      "C02",
+      "C03"
+    ],
+    "judge_logic": [
+      "F01",
+      "F03",
+      "C02"
+    ],
+    "verification": [
+      "F03",
+      "F05",
+      "C02"
+    ]
+  }
+}
