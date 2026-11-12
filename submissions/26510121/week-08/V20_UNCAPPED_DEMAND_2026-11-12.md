@@ -136,3 +136,21 @@ targets in the new mode. Startup public tunnel readiness and fresh background
 demand diagnostics are checked separately; a source copy is not connectivity
 proof. Supply is currently closed, so actual new supply execution is not yet
 evidence for this release's quantity behavior.
+
+## Live verification, 14:38:03 KST
+
+- `logs/v20-live-verification-20261112T053803215823Z.json`: both accounts online,
+  all four public HTTP checks 200, no source mismatches, recovery guard active.
+- `logs/v20-live-cap-proof-20261112T053721444314Z.json`: unit caps disabled,
+  `inventory_ceiling=null`, fresh demand diagnostics and a recent supervisor
+  heartbeat. Since restart it recorded one Shop sale and three Buyer purchases,
+  zero analytical, context, supervisor, supply, worker or deferred-research errors.
+- A completed live research review references objective context
+  `b507a834b4ab2cc1e57a30bef14a472974c395b5536ee497c4366893c152e117`, matching the
+  freshly built v20 context. That context has caps disabled and **78 of 93 held
+  SKUs still at targets of one or two**, with 21 SKUs having repeat profitable
+  own-payment evidence. This supports the mechanism found in the frozen replay;
+  it is not a claim of stable future stock or causal earnings improvement.
+- The supply window remained closed during verification. No larger live supply
+  purchase is claimed. The forecast comparison and boundary tests establish the
+  code behavior; the next natural windows provide realized acquisition evidence.
