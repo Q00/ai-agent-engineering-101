@@ -1134,7 +1134,7 @@ def outside_switching(root):
     finished blocks, arm_ts the start of the last block when it has no end yet; None when unknown."""
     try:
         lanes = c.load_json(os.path.join(c.data_root(root), OUTSIDE_LOOP), {}).get("lanes")
-    except (ValueError, OSError, AttributeError):
+    except (ValueError, OSError, AttributeError, RecursionError):
         return []
     same = lambda x, y: json.dumps(x, sort_keys=True) == json.dumps(y, sort_keys=True)
     out = []
@@ -1174,7 +1174,7 @@ def section_outside(root, role=None, part=None):
     base = c.data_root(root)
     try:
         pol = c.load_json(os.path.join(base, "policy.json"), None)
-    except (ValueError, OSError):
+    except (ValueError, OSError, RecursionError):
         pol = None
     try:
         written = _epoch(os.path.getmtime(os.path.join(base, OUTSIDE_LOOP)))

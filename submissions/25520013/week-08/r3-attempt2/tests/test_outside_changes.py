@@ -109,6 +109,8 @@ def test_a_broken_loop_file_reads_as_nothing(root):
         open(p, "w").write(raw)
         assert brief.outside_switching(root) == [] and brief.section_outside(root) == [], raw
         assert brief.build_compact(root, NOW, NOW - 1200, role="shop") == plain
+    open(p, "w").write("[" * 100_000 + "]" * 100_000)  # nesting too deep to parse (verifier 11-12)
+    assert brief.section_outside(root) == [] and brief.build_compact(root, NOW, NOW - 1200, role="shop") == plain
     # odd numbers in an otherwise usable entry: the line goes out without the parts that cannot be said
     _loop(root, {"a": {"active": {"status": "running", "id": 7, "t_start": "x", "edits": [
         {"path": "shop.liquidation_line", "current": None, "value": "높음"}],
@@ -222,3 +224,15 @@ def test_the_side_is_the_start_of_the_path_not_a_word_in_it(root):
     shop, buyer = brief.section_outside(root, role="shop"), brief.section_outside(root, role="buyer")
     assert [ln.split(":")[0] for ln in shop[1:]] == ["  defaults.buyer_bonus x"] and shop[0] == head(1, 2, "가게 쪽 ")
     assert [ln.split(":")[0] for ln in buyer[1:]] == ["  buyer.defaults.goods y"] and buyer[0] == head(1, 2, "구매 쪽 ")
+
+
+def test_a_policy_file_nested_too_deep_or_a_state_file_whose_time_cannot_be_read(root, monkeypatch):
+    pol_path = os.path.join(root, "policy.json")
+    keep = open(pol_path).read()
+    open(pol_path, "w").write("[" * 100_000 + "]" * 100_000)
+    assert _one(root) == ["  shop liquidation_line: 1 또는 2 구간 0개, policy.json을 읽지 못함 (루프의 실험 e1)"]
+    open(pol_path, "w").write(keep)
+    real = os.path.getmtime
+    monkeypatch.setattr(os.path, "getmtime", lambda p: (_ for _ in ()).throw(PermissionError()) if p.endswith("loop.json") else real(p))
+    out = brief.section_outside(root)
+    assert out[0].endswith("정책 수정 기록과 실험 장부에는 나오지 않음)") and len(out) == 2
