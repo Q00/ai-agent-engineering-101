@@ -642,6 +642,44 @@ def shelf_of(task, off=None):
     return float(m.group(1) or m.group(2)) if m else None
 
 
+UNIT_RE = re.compile(r"\bu-[0-9a-f]{8,}\b")
+
+
+def unit_cost(shop_name, sku, off, text):
+    """Patch 3.6 (11-12 18:19): saved per deal = (list - paid) / (list - cost) of the unit sold, capped at 1 at or under
+    cost. Every supply is on the public ledger (supply_units), so the offered unit's cost is known: by its unit id
+    (offer data or reply text), else the average this shop paid for the SKU in the last 24 h. (cost, source) or (None, None)."""
+    import sqlite3
+    import market_model
+    u = (off or {}).get("unit") or ((UNIT_RE.search(text or "") or [None])[0] if text else None)
+    try:
+        c = sqlite3.connect(f"file:{market_model.DB}?mode=ro", uri=True, timeout=10)
+        try:
+            if u:
+                row = c.execute("select cost from supply_units where unit = ?", (u,)).fetchone()
+                if row and row[0]:
+                    return float(row[0]), "unit"
+            row = c.execute("select avg(cost), count(*) from supply_units where shop = ? and sku = ? and ts > ? and cost > 0",
+                            (shop_name, sku, time.time() - 86400)).fetchone()
+            if row and row[1] and row[1] >= 2:
+                return float(row[0]), "shop avg"
+        finally:
+            c.close()
+    except Exception:
+        pass
+    return None, None
+
+
+def r_at(lp, cost, price):
+    """The board's saved for one deal (patch 3.6)."""
+    return 1.0 if price <= cost else (lp - price) / max(1.0, lp - cost)
+
+
+def price_for_r(lp, cost, r):
+    """The price that leaves saved r on a unit of this cost."""
+    return int(lp - r * (lp - cost))
+
+
 def quote(c):
     """Open a task with one shop for one SKU and read its first ask (the quote round runs these in parallel,
     like delegate_task: each one alone, only the result comes back). The opening says what the order needs
@@ -675,7 +713,8 @@ def quote(c):
         if ask and NEED.get("strict") and left is None:     # a long-life need: no stated shelf life, no deal
             rpc(url, "CancelTask", {"id": task["id"]})     # (144 of 153 refused payments were shelf life, 11-04)
             return {"c": c, "error": f"no shelf life stated; this order needs {NEED['hours']} h"}
-        return {"c": c, "url": url, "task": task, "opening": opening, "ask": ask}
+        cost, src = unit_cost(s["name"], o["sku"], off, status_text(task)) if ask else (None, None)
+        return {"c": c, "url": url, "task": task, "opening": opening, "ask": ask, "cost": cost, "cost_src": src}
     except Exception as e:
         return {"c": c, "error": f"{type(e).__name__}: {e}"}
 
@@ -884,6 +923,14 @@ def price_plan(order, q, rows, book, adv):
     target = group_target(sku)
     if target:                                  # HQ 11-05 group-buy call: we said we buy these at or under the target
         cap, close_at, low = min(cap, target), min(close_at, target), min(low, int(0.95 * target))
+    cost = q.get("cost")
+    if cost and lp > cost:                      # patch 3.6: judge by the shop's margin we keep, r = (lp - p)/(lp - cost)
+        r_cap = price_for_r(lp, cost, T.get("r_cap", 0.85))
+        r_min = price_for_r(lp, cost, T.get("r_group_min", 0.3) if target else T.get("r_min", 0.65))
+        cap = min(cap, max(r_cap, int(cost)))  # haggle no higher than r 0.85
+        low = min(max(int(cost), min(low, price_for_r(lp, cost, T.get("r_open", 0.95)))), cap)   # open near
+                                                # r 0.95, not under cost (r is 1 there already), never over the cap
+        close_at = max(min(close_at, r_min), min(order["budget"], int(cost)))   # take an ask at cost; walk under r_min
     return cap, low, close_at, row
 
 
@@ -901,8 +948,11 @@ def pick_quote(good, order, cands):
     first (one far above it rarely comes down far enough), then Enuri's rank."""
     # patch 3.4 (11-06): the buyer score is the saved RATE -- the share of list kept per deal -- so a 30%-off snack
     # beats a 10%-off sofa; picked on (list - ask) / list, not list - ask
-    return max(good, key=lambda q: (q["ask"] <= order["budget"], (q["c"][3] - q["ask"]) / max(1, q["c"][3]),
-                                    -cands.index(q["c"])))
+    # patch 3.6 (11-12): saved is (list - paid) / (list - cost), so pick on r at the ask where the unit's cost is known
+    def keep(q):
+        lp = q["c"][3]
+        return r_at(lp, q["cost"], q["ask"]) if q.get("cost") and lp > q["cost"] else (lp - q["ask"]) / max(1, lp)
+    return max(good, key=lambda q: (q["ask"] <= order["budget"], keep(q), -cands.index(q["c"])))
 
 
 def round3(a, order, shops, mem, started):
@@ -985,6 +1035,8 @@ def round3(a, order, shops, mem, started):
     dp = tactic_arm(order, "deal_push")
     if dp == "B":
         close_at = max(close_at, min(order["budget"], int(lp * T.get("deal_push_close", 0.76) + 1e-6)))
+        if pick.get("cost") and lp > pick["cost"]:   # patch 3.6: the push never takes an ask under r_min
+            close_at = min(close_at, max(price_for_r(lp, pick["cost"], T.get("r_min", 0.65)), int(pick["cost"])))
     pm, note = tactic_arm(order, "price_match2"), None
     book_low = ((book.get("prices") or {}).get(sku) or {}).get("low")
     # MBT TF: a price-match request took 30% off our own first ask. v1 (09:40-11:15) set the opening TO the ledger
@@ -994,7 +1046,8 @@ def round3(a, order, shops, mem, started):
         low = int(book_low)
         note = f"Price match please: {low} is the lowest settle for this item on the public ledger in the last 24 h."
     log(f"[choose] {shop['name']} {offer['name']} ({sku}): ask {pick['ask']}, list {lp}, haggle up to {cap}, "
-        f"open {low}, take up to {close_at}")
+        f"open {low}, take up to {close_at}" + (f" | cost {pick['cost']:.0f} ({pick['cost_src']}), r at ask "
+        f"{r_at(lp, pick['cost'], pick['ask']):.2f}, at close {r_at(lp, pick['cost'], close_at):.2f}" if pick.get("cost") else " | cost unknown"))
 
     task, asks, offers, texts, notes, rec, problem = None, [], [], [], [], None, None
     try:
