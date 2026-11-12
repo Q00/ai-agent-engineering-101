@@ -12,10 +12,12 @@ file replacement so concurrent processes never observe partial writes.
 from __future__ import annotations
 
 import contextlib
+import functools
 import json
 import math
 import os
 import statistics
+import sys
 import threading
 import time
 import urllib.request
@@ -109,11 +111,26 @@ def default_hub() -> dict[str, Any]:
     }
 
 
+class HubLockTimeout(TimeoutError):
+    """The shared hub was not acquired; no mutation body has run."""
+
+
+def skip_hub_timeout(function):
+    """Analytics may be lost, but must not abort checkout or overwrite a snapshot."""
+    @functools.wraps(function)
+    def wrapped(*args, **kwargs):
+        try:
+            return function(*args, **kwargs)
+        except HubLockTimeout:
+            print(f'[hub-lock-skipped] {function.__name__}', file=sys.stderr, flush=True)
+    return wrapped
+
+
 @contextlib.contextmanager
 def file_lock(path: Path = STATE_FILE, timeout: float = 8.0):
     """Cross-process advisory lock using msvcrt (Windows) or fcntl (POSIX)."""
     lock_file = path.with_suffix(".lock")
-    start = time.time()
+    start = time.monotonic()
     fd = None
     while True:
         try:
@@ -133,9 +150,8 @@ def file_lock(path: Path = STATE_FILE, timeout: float = 8.0):
                 except OSError:
                     pass
                 fd = None
-            if (time.time() - start) >= timeout:
-                # Timeout safeguard: proceed anyway to avoid unrecoverable process freeze
-                break
+            if (time.monotonic() - start) >= timeout:
+                raise HubLockTimeout('shared hub lock timeout')
             time.sleep(0.04)
 
     try:
@@ -257,8 +273,14 @@ def load_hub(path: Path = STATE_FILE, *, _locked: bool = False) -> dict[str, Any
                 if not _locked:
                     # Re-read under lock: never overwrite a concurrent writer's
                     # newer state with the initial, unlocked migration read.
-                    with file_lock(path):
-                        return load_hub(path, _locked=True)
+                    try:
+                        with file_lock(path, timeout=0):
+                            return load_hub(path, _locked=True)
+                    except HubLockTimeout:
+                        # Migration can wait for the next locked writer. Reads,
+                        # especially seller pricing, must not block the event loop.
+                        print('[hub-lock-skipped] read-only migration', file=sys.stderr, flush=True)
+                        return hub
                 compact_hub(hub, time.time())
                 _save_hub_unlocked(hub, path)
             return hub
@@ -340,12 +362,28 @@ def load_json_safe(path: Path, default: Any = None) -> Any:
         return default
 
 
+_catalog_cache = {}
+_catalog_cache_lock = threading.Lock()
+
+
 def load_catalog(market_dir: Path) -> dict[str, dict[str, Any]]:
-    """Load SKU -> metadata dict from .market/catalog.json."""
-    cat = load_json_safe(market_dir / "catalog.json", {})
-    if isinstance(cat, list):
-        return {x["sku"]: x for x in cat if isinstance(x, dict) and "sku" in x}
-    return cat if isinstance(cat, dict) else {}
+    """Read-only process snapshot keyed by file identity, mtime and size. Never cache inventory."""
+    path = market_dir / 'catalog.json'
+    try:
+        stat = path.stat()
+    except OSError:
+        return {}
+    key = (str(path.resolve()), stat.st_mtime_ns, stat.st_size)
+    with _catalog_cache_lock:
+        if key not in _catalog_cache:
+            cat = load_json_safe(path, {})
+            value = ({x['sku']: x for x in cat if isinstance(x, dict) and 'sku' in x}
+                     if isinstance(cat, list) else cat if isinstance(cat, dict) else {})
+            # Normally one market directory; bound test/multi-directory retention too.
+            if len(_catalog_cache) >= 8:
+                _catalog_cache.clear()
+            _catalog_cache[key] = value
+        return _catalog_cache[key]
 
 
 def load_inventory(market_dir: Path) -> dict[str, Any]:
@@ -726,6 +764,7 @@ def sync_broken_and_payments(hub: dict[str, Any], market_dir: Path) -> list[dict
     return newly_attributed
 
 
+@skip_hub_timeout
 def record_inbound_inquiry(category_or_item: str, matched: bool, path: Path = STATE_FILE, raw_text: str = "", *, sku: str = "", observed_at: float | None = None) -> None:
     """Record a buyer inquiry arriving at seller.py (including missed demand when out of stock)."""
     if not category_or_item and not sku:
@@ -771,6 +810,7 @@ def record_inbound_inquiry(category_or_item: str, matched: bool, path: Path = ST
                     missed_ts[k] = s_arr[-50:]
 
 
+@skip_hub_timeout
 def record_buyer_order(category: str, path: Path = STATE_FILE) -> dict[str, Any] | None:
     """Record an order category assigned to our market_buyer.py."""
     if not category:

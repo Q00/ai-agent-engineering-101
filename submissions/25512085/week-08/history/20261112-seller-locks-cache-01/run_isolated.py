@@ -22,10 +22,11 @@ for rel in tracked:
     if (src.parent == SOURCE and src.suffix in ('.py', '.sh')) or (src.parent == REPO/'scripts' and src.suffix == '.py') or rel.endswith('/seller_cash_policy.json'):
         dst = tree / rel
         dst.parent.mkdir(parents=True, exist_ok=True)
-        dst.write_bytes(src.read_bytes())
+        baseline = OUT / 'evidence/baseline-v3' / rel
+        dst.write_bytes((baseline if mode == 'baseline' and baseline.exists() else src).read_bytes())
 # New focused tests are explicitly allowed before their first commit.
 test = SOURCE / 'test_seller_locks_cache_offline.py'
-if test.exists():
+if test.exists() and mode != 'baseline':
     (cwd / test.name).write_bytes(test.read_bytes())
 scratch = tree / 'scratch'
 scratch.mkdir()
@@ -59,8 +60,12 @@ import test_buyer_outcomes_p2_offline as outcomes_tests
 outcomes_tests.P2Tests.test_cross_process_journal_lock_fails_closed = unittest.skip('child processes forbidden; new lock tests run in-process')(outcomes_tests.P2Tests.test_cross_process_journal_lock_fails_closed)
 for name in ('test_bash_stub_preserves_auth_loop_and_other_python_forwarding', 'test_bash_stub_structure_failure_cannot_fall_back_to_vanilla'):
     setattr(visibility.LauncherTests, name, unittest.skip('isolated runner forbids child processes')(getattr(visibility.LauncherTests, name)))
-suite = (unittest.defaultTestLoader.loadTestsFromName('test_seller_locks_cache_offline') if mode == 'focused'
-         else unittest.defaultTestLoader.discover('.', pattern='test_*_offline.py'))
+if mode == 'baseline':
+    suite = unittest.TestSuite(unittest.defaultTestLoader.loadTestsFromName(p.stem)
+        for p in sorted(cwd.glob('test_*_offline.py')) if p.stem != 'test_seller_locks_cache_offline')
+else:
+    suite = (unittest.defaultTestLoader.loadTestsFromName('test_seller_locks_cache_offline') if mode == 'focused'
+             else unittest.defaultTestLoader.discover('.', pattern='test_*_offline.py'))
 result = unittest.TextTestRunner(verbosity=2).run(suite)
 print('RESULT=' + json.dumps(dict(tests=result.testsRun, failures=len(result.failures), errors=len(result.errors), skipped=len(result.skipped))))
 sys.exit(not result.wasSuccessful())
