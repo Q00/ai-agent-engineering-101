@@ -210,7 +210,7 @@ def evidence(mem, b, auto, params):
     ladder = sorted({round(x["saved"], 3) for x in rows if x["saved"] > b["buyer"]["saved"]})[:6]
     return {"time_utc": time.strftime("%Y-%m-%d %H:%M", time.gmtime()), "round_ends": "2026-11-17T23:59 KST",
 
-            "score": score_view(), "class_ladder": class_ladder(b),
+            "score": score_view(), "class_ladder": class_ladder(b), "buyer_frontier": buyer_frontier(),
             "buyer_board": b["buyer"], "saved_values_just_above_us": ladder,
             "class_rank": b["class_rank"], "class_top": b["class_top"],
             "now": {"last_6h": summary(r6), "last_24h": summary(r24)},
@@ -333,9 +333,22 @@ rules first: {rules}
 
 GOAL (user, 11-11): finish 1st overall; for the buyer, SAVED FIRST. saved is a cumulative mean scored by rank
 among students, so every deal must beat the mean our saved will END at (evidence "score".m_star, the projected
-final mean on the last 24 h pace), and we must gain per-deal value faster than the students just above us.
-Fewer goods deals are accepted for that; do not take deals under m* to lift the deals percentile (one deals rank
-is worth 0.0022, one saved rank 0.0111). Forum and posts are fine and not yours to move.
+final mean on the last 6 h pace), and we must gain per-deal value faster than the students just above us.
+
+YOUR OBJECTIVE (user, 11-12: 'the buyer matters now; find the strategy that makes us a DOMINANT 1st'): the
+highest projected FINAL class BUYER rank, then the widest gap over the next buyer. Not saved alone, not deals/h:
+the class buyer score = .5 saved pct + .3 forum + .1 deals pct + .1 posts pct among the 46 students. Evidence
+"buyer_frontier" gives it directly: for each price floor T, the (deals/h, v) our own deals since the rebuild give
+and the projected final buyer rank, saved rank, deals rank and gap to 1st (others at their own pace), plus what-ifs.
+Start every run there: pick the floor that ranks best, set food_delta/goods_delta so the floors land on it
+(floor = m* + food_delta; goods A floor = (m* + goods_delta)/0.97), and say which row you chose and why. Measured
+11-12 12:15: per-deal v moves the saved rank far more than volume (78/h x .84 -> saved 11th; 78/h x .88 -> 6th;
+120/h x .82 -> 11th) because 14,000+ deals are already in the mean; the deals percentile (.1) is the counterweight,
+so a floor that halves deals can lose more on deals than it gains on saved: the frontier weighs both. Our parts
+on 11-12: saved pct .69 (the gap), forum .912 (top .93), deals pct .78, posts pct .96. Beyond the floor, the
+levers that raise v without losing deals are yours too: harder haggling (open_v, step_v, rounds), routing to the
+shops where our v is highest (bias_food/bias_goods), skipping shops whose v is under the floor. Every move must
+name the frontier row it aims at; when you hold, say why the current floor is already the best row.
 
 SCALE (11-12 patch 3.6): every saved number here (m*, v, expected, market_value) is on the new scale
 min(1, (list - price)/(list - unit cost)); values before 11-12 ~10:30 UTC in old memory or notes were 1 - price/list
@@ -478,6 +491,50 @@ def class_ladder(b):
                 e["us"] = True
             out.append(e)
         return {"students": len(rows), "our_saved_rank": i + 1, "rows": out}
+    except Exception as e:
+        return {"error": repr(e)}
+
+
+def buyer_frontier():
+    """11-12 (user: 'find the strategy that lifts the buyer rank, a dominant 1st'): our projected FINAL class BUYER
+    rank (all four parts: .5 saved pct + .3 forum + .1 deals pct + .1 posts pct, every student at their own recent
+    pace, ops/final_rank.project_components) for the (deals/h, v) we would get with a price floor T, read off our own
+    deals since the rebuild (deals under T dropped, no replacements: a conservative frontier), plus a few what-ifs."""
+    try:
+        import sys as _s
+        _s.path.insert(0, str(HERE / "ops"))
+        import final_rank as fr
+        import buyer_score as bs
+        tr = json.loads(BMEM.read_text()).get("trades", [])
+        now = time.time()
+        bs.costs(tr, now)
+        t0 = max(now - 6 * 3600, 1794475200)                          # the price policy rebuild, 11-12 09:20 UTC
+        h = max(0.5, (now - t0) / 3600)
+        D = [bs.score(t) for t in tr if t["t"] >= t0 and t.get("outcome") == "deal" and t.get("list") and t.get("price")]
+        win = max(2.5, min(6.0, (now - fr.PATCH36_T) / 3600 - 0.2))
+        board = __import__("board_api").fetch(timeout=20)
+
+        def rank(rate, v):
+            r = fr.project_components(rate, v, hours=win, top=60, board=board)
+            rows = sorted(r["rows"], key=lambda x: -x["buyer"][1])
+            i = next(k for k, x in enumerate(rows) if x["player"] == "yms979")
+            me = rows[i]
+            return {"buyer_end": me["buyer"][1], "buyer_rank_end": i + 1, "saved_rank_end": me["ranks_now_end"]["saved"][1],
+                    "deals_rank_end": me["ranks_now_end"]["deals"][1],
+                    "gap_to_1st": round(rows[0]["buyer"][1] - me["buyer"][1], 3) if i else round(me["buyer"][1] - rows[1]["buyer"][1], 3)}
+        out = {"window_h": round(h, 1), "deals": len(D), "by_floor": [], "what_if": []}
+        for T in (0.0, 0.76, 0.78, 0.80, 0.82, 0.85, 0.88, 0.90):
+            L = [v for v in D if v >= T]
+            if len(L) < 10:
+                continue
+            rate, v = len(L) / h, sum(L) / len(L)
+            out["by_floor"].append({"floor": T, "deals_h": round(rate, 1), "v": round(v, 3)} | rank(rate, v))
+        for rate, v in ((40, 0.92), (60, 0.90), (80, 0.88), (100, 0.86), (120, 0.84)):
+            out["what_if"].append({"deals_h": rate, "v": v} | rank(rate, v))
+        rows = sorted(fr.project_components(None, None, hours=win, top=60, board=board)["rows"], key=lambda x: -x["buyer"][1])
+        out["projected_buyer_top"] = [{"player": x["player"], "buyer_end": x["buyer"][1], "saved_rank_end": x["ranks_now_end"]["saved"][1],
+                                       "pace": x["pace"]} for x in rows[:8]]
+        return out
     except Exception as e:
         return {"error": repr(e)}
 
