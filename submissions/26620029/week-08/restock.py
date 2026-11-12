@@ -347,6 +347,13 @@ def main():
         buy = plan(inv, catalog, load(state / "demand.json", []), mem, cu)
     else:
         buy = []
+    try:                                        # stock ads as the shop (promo.py decides whether one is due); never blocks a buy
+        import subprocess
+        import sys
+        subprocess.Popen([sys.executable, "-X", "utf8", "promo.py", "--state", str(state)], stdin=subprocess.DEVNULL,
+                         stdout=subprocess.DEVNULL, stderr=open("logs/promo.err", "a"), start_new_session=True)
+    except OSError as e:
+        print(f"restock: promo.py not started ({type(e).__name__})")
     mem["last_run"] = {"t": int(now), "balance": inv["balance"], "buy": buy}
     MEMORY.write_text(json.dumps(mem, ensure_ascii=False, indent=1), encoding="utf-8")
     top = sorted(customers.favourites(cu).items(), key=lambda x: -x[1])[:3]
