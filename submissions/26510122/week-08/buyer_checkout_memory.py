@@ -20,12 +20,15 @@ def epoch(value):
 
 
 def constraint(choice, order, history, now):
-    aliases={}
-    for e in history:
-        if e.get('shop') and e.get('shop_name'):
-            aliases.setdefault(e['shop'],set()).add(e['shop_name'])
+    aliases=getattr(history,'alias_names',None)
+    if aliases is None:
+        aliases={}
+        for e in history:
+            if e.get('shop') and e.get('shop_name'):
+                aliases.setdefault(e['shop'],set()).add(e['shop_name'])
+    relevant=getattr(history,'by_sku',{}).get(choice['sku'],[]) if hasattr(history,'by_sku') else history
     matching=[]
-    for e in history:
+    for e in relevant:
         payment=e.get('event')=='payment' and e.get('paid') is False
         unavailable=e.get('event')=='negotiation' and e.get('result')=='no_receipt' and not e.get('offers')
         if not (payment or unavailable) or e.get('sku')!=choice['sku']:
@@ -70,8 +73,9 @@ def constraint(choice, order, history, now):
         if kind:
             # A larger observed stock count can indicate a new supply. Recheck
             # under unchanged hard checkout guards, rather than preserving a veto.
-            selected=next((r for r in reversed(history) if r.get('event')=='selection_opportunities'
-                           and r.get('order')==e.get('order')),None)
+            selected=(history.opportunities.get(e.get('order')) if hasattr(history,'opportunities') else
+                      next((r for r in reversed(history) if r.get('event')=='selection_opportunities'
+                            and r.get('order')==e.get('order')),None))
             old_stock=None
             if selected:
                 prior=next((c for c in selected.get('eligible_candidates',[])

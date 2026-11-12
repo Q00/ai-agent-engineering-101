@@ -11,7 +11,7 @@ from pathlib import Path
 import time
 import uuid
 
-from buyer_memory import brief, context, import_broken, import_payments, read_events, record, register_shops
+from buyer_memory import brief, context, import_broken, import_payments, read_events, read_history, PreparedHistory, record, register_shops
 from context_compaction import BUYER_PROMPT_BYTES, size, text
 from buyer_policy import (acceptance, market_saved_reference, opening_offer_range, paid_price_samples, price_cap,
                           purchase_price_guidance, receipt_problem)
@@ -39,9 +39,10 @@ def review_summary(reviews: list[dict]) -> dict:
 
 
 def candidates(order: dict, shops: list[dict], catalog: dict,
-               own_shop_name: str, *, full_pool: bool = False, saved_baseline=None) -> list[dict]:
+               own_shop_name: str, *, full_pool: bool = False, saved_baseline=None, history=None) -> list[dict]:
     acceptable = set(order.get("acceptable") or [])
-    history=read_events()
+    history=read_events() if history is None else history
+    history=history if isinstance(history,PreparedHistory) else PreparedHistory(history)
     prices = paid_price_samples(order, history)
     shop_prices = paid_price_samples(order, history, by_shop=True)
     found = []
@@ -285,11 +286,12 @@ def run(order: dict, shops: list[dict], catalog: dict, own_shop_name: str, *,
 def _run(order: dict, shops: list[dict], catalog: dict, own_shop_name: str, *,
          epsilon: float,rng=None,life=None,life_advice: bool = False,saved_baseline=None) -> dict:
     started = time.monotonic()
-    register_shops(shops)
-    imported = import_payments()
+    history = read_history()
+    register_shops(shops,history=history)
+    imported = import_payments(history=history)
     if imported:
         trace("buyer_payments_imported", count=imported)
-    broken = import_broken()
+    broken = import_broken(history=history)
     if broken:
         trace("buyer_breakage_imported", count=broken)
     life_context=None
@@ -299,7 +301,8 @@ def _run(order: dict, shops: list[dict], catalog: dict, own_shop_name: str, *,
         except Exception as error:
             record('buyer_life_advice_unavailable', error=type(error).__name__)
             # Life bookkeeping cannot block a valid market order.
-    available = candidates(order, shops, catalog, own_shop_name, full_pool=True, saved_baseline=saved_baseline)
+    history = PreparedHistory(history)
+    available = candidates(order, shops, catalog, own_shop_name, full_pool=True, saved_baseline=saved_baseline,history=history)
     if not available:
         record("no_candidate", order=order.get("order"), item=order.get("item"))
         return {"shop": "", "receipt": None, "stars": 3,
@@ -318,6 +321,8 @@ def _run(order: dict, shops: list[dict], catalog: dict, own_shop_name: str, *,
                reference_price_groups=forum_context.get('reference_prices',[]),context_bytes=size(forum_context))
     except Exception as error:
         record('forum_memory_unavailable',order=order.get('order'),error=type(error).__name__)
+    record('buyer_preparation',order=order.get('order'),seconds=round(time.monotonic()-started,3),
+           history_rows=len(history),history_source=history.reader_source,eligible_count=len(available))
     record('selection_opportunities',selection_id=selection_id,order=order.get('order'),**policy,
            score_version=VERSION,score_metric='saved',
            order_kind=order.get('kind'),order_item=order.get('item'),

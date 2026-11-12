@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+from contextlib import closing
 from collections import Counter
 from datetime import datetime, timezone
 import json
 import os
+import sqlite3
+import time
 from pathlib import Path
 from typing import Any
 import decision_audit
@@ -33,7 +36,133 @@ def read_events(path: Path = EVENTS) -> list[dict[str, Any]]:
     return result
 
 
-def record(event: str, *, path: Path = EVENTS, **fields: Any) -> None:
+MEMORY_KINDS = frozenset({'shop_identity', 'payment', 'settled', 'negotiation', 'broken'})
+
+
+class HistoryRows(list):
+    reader_source = 'raw_log'
+
+
+def read_history(path: Path = EVENTS, *, db_path=None, now=None):
+    """Read a consistent indexed prefix plus its fresh raw tail; never write the DB.
+
+    The raw log remains authoritative. A missing/stale/rotated index falls back
+    to the source. Identity observations from every event are retained, even
+    when the large decision payload is not relevant to purchase memory.
+    """
+    path = Path(path)
+    now = time.time() if now is None else now
+    db_path = Path(db_path) if db_path else path.parent.parent/'state/buyer.sqlite3'
+    rows = HistoryRows()
+    identities = set()
+
+    def remember(event):
+        if not isinstance(event, dict):
+            return
+        if event.get('shop_name') and event.get('shop'):
+            identities.add((event.get('order'),event['shop'],event['shop_name']))
+        if event.get('event') in MEMORY_KINDS:
+            rows.append(event)
+        elif event.get('event') == 'selection_opportunities':
+            try:
+                at = datetime.fromisoformat(event['at'].replace('Z','+00:00')).timestamp()
+            except (KeyError,ValueError,TypeError,AttributeError):
+                at = now  # unknown age must not discard a possible checkout guard
+            if at >= now-15*60:
+                rows.append(event)
+
+    try:
+        source = path.open('rb')
+    except FileNotFoundError:
+        return rows
+    with source:
+        stat = os.fstat(source.fileno())
+        try:
+            with closing(sqlite3.connect(db_path.resolve().as_uri()+'?mode=ro',uri=True,timeout=.5)) as db:
+                db.execute('BEGIN')
+                cursor = db.execute('SELECT device,inode,generation,offset FROM sources WHERE source=?',
+                                    ('logs/buyer-events.jsonl',)).fetchone()
+                if (not cursor or cursor[0]!=stat.st_dev or cursor[1]!=stat.st_ino
+                        or not 0<=cursor[3]<=stat.st_size):
+                    raise ValueError('index does not match the opened log')
+                generation, offset = cursor[2:]
+                last = db.execute('SELECT byte_offset,payload FROM events WHERE source=? AND generation=? '
+                                  'AND byte_offset<? ORDER BY byte_offset DESC LIMIT 1',
+                                  ('logs/buyer-events.jsonl',generation,offset)).fetchone()
+                if last:
+                    source.seek(last[0])
+                    if json.loads(source.readline()) != json.loads(last[1]):
+                        raise ValueError('indexed prefix changed')
+                elif offset:
+                    raise ValueError('indexed prefix has no verifiable event')
+                query = """SELECT event,at,order_id,shop_url,shop_name,
+                           CASE WHEN event IN ('shop_identity','payment','settled','negotiation','broken')
+                             OR event='selection_opportunities' AND (at IS NULL OR at>=?)
+                           THEN payload END
+                           FROM events WHERE source=? AND generation=? AND byte_offset<?
+                           ORDER BY byte_offset"""
+                cutoff=datetime.fromtimestamp(now-15*60,timezone.utc).isoformat(timespec='seconds')
+                for kind,at,order,url,name,payload in db.execute(
+                        query,(cutoff,'logs/buyer-events.jsonl',generation,offset)):
+                    if name and url:
+                        identities.add((order,url,name))
+                    if payload is not None:
+                        remember(json.loads(payload))
+                source.seek(offset)
+                rows.reader_source='sqlite_prefix_and_raw_tail'
+        except (OSError,sqlite3.Error,ValueError,TypeError):
+            rows.clear()
+            identities.clear()
+            source.seek(0)
+            rows.reader_source='raw_log'
+        for line in source:
+            if not line.endswith(bytes([10])):
+                break  # an append in progress is not evidence
+            try:
+                remember(json.loads(line))
+            except (ValueError,UnicodeError):
+                continue
+        rows.extend({'event':'identity_observation','order':order,'shop':url,'shop_name':name}
+                    for order,url,name in sorted(identities,key=lambda x:tuple(str(v) for v in x)))
+    return rows
+
+
+class PreparedHistory(list):
+    """Resolve identities and group first-hand evidence once per issued order."""
+    def __init__(self, rows):
+        super().__init__(rows)
+        self.reader_source=getattr(rows,'reader_source','provided_history')
+        self.alias_names={}
+        self.order_names={}
+        self.by_name={}
+        self.by_url={}
+        self.by_sku={}
+        self.broken_names=Counter()
+        self.opportunities={}
+        for e in self:
+            if e.get('shop_name') and e.get('shop'):
+                self.alias_names.setdefault(e['shop'],set()).add(e['shop_name'])
+                if e.get('order'):
+                    self.order_names.setdefault((e['order'],e['shop']),set()).add(e['shop_name'])
+            if e.get('event')=='broken':
+                self.broken_names[e.get('name')]+=1
+            if e.get('event')=='selection_opportunities' and e.get('order'):
+                self.opportunities[e['order']]=e
+        for e in self:
+            if e.get('event') not in ('payment','settled','negotiation'):
+                continue
+            name=e.get('shop_name') or self.resolved(e.get('shop'),e.get('order'))
+            if name:
+                self.by_name.setdefault(name,[]).append(e)
+            self.by_url.setdefault(e.get('shop'),[]).append(e)
+            self.by_sku.setdefault(e.get('sku'),[]).append(e)
+
+    def resolved(self,url,order=None):
+        names=self.order_names.get((order,url)) or self.alias_names.get(url,set())
+        return next(iter(names)) if len(names)==1 else None
+
+
+def record(event: str, *, path: Path = EVENTS, **fields: Any) -> dict:
     path.parent.mkdir(parents=True, exist_ok=True)
     row = {"at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
            "event": event, **decision_audit.enrich(fields)}
@@ -44,17 +173,20 @@ def record(event: str, *, path: Path = EVENTS, **fields: Any) -> None:
             raise OSError("short buyer event write")
     finally:
         os.close(fd)
+    return row
 
 
-def register_shops(shops: list[dict], *, path: Path = EVENTS) -> None:
+def register_shops(shops: list[dict], *, path: Path = EVENTS, history=None) -> None:
     """Use registry names as identity; URLs are transport aliases, not identity."""
-    seen = {(r.get('shop_name'), r.get('shop')) for r in read_events(path) if r['event']=='shop_identity'}
+    rows = read_history(path) if history is None else history
+    seen = {(r.get('shop_name'), r.get('shop')) for r in rows if r['event']=='shop_identity'}
     for shop in shops:
         if not isinstance(shop,dict):
             continue
         name, url = shop.get('name'), shop.get('url')
         if isinstance(name,str) and name and isinstance(url,str) and url and (name,url) not in seen:
-            record('shop_identity',path=path,shop_name=name,shop=url)
+            row=record('shop_identity',path=path,shop_name=name,shop=url)
+            if history is not None:history.append(row)
             seen.add((name,url))
 
 
@@ -69,11 +201,11 @@ def resolve_shop_name(shop_url: str, *, order: str | None = None,
     return next(iter(names)) if len(names)==1 else None
 
 
-def import_payments(payment_path: Path = PAYMENTS, *, event_path: Path = EVENTS) -> int:
+def import_payments(payment_path: Path = PAYMENTS, *, event_path: Path = EVENTS, history=None) -> int:
     """Import kit payment evidence once; a negotiated receipt is not a purchase."""
     if not payment_path.exists():
         return 0
-    history = read_events(event_path)
+    history = read_history(event_path) if history is None else history
     def key(e):
         return tuple(e.get(k) for k in ('order','shop','sku','price','paid','ledger','reason'))
     seen = {key(e) for e in history if e['event']=='payment'}
@@ -91,23 +223,25 @@ def import_payments(payment_path: Path = PAYMENTS, *, event_path: Path = EVENTS)
                 continue
             linked = decision_audit.buyer_outcome_links(history, order=payment['order'],
                         shop=payment.get('shop'), sku=payment.get('item'), price=payment.get('price'))
-            record("payment", path=event_path, order=payment["order"],
+            added=record("payment", path=event_path, order=payment["order"],
                    shop_name=resolve_shop_name(payment.get('shop'),order=payment['order'],history=history),
                    shop=payment.get("shop"), sku=payment.get("item"),
                    price=payment.get("price"), paid=payment.get("paid") is True,
                    ledger=payment.get("ledger"), reason=payment.get("reason"),
                    **{k:v for k,v in linked.items() if k not in ('order','shop','shop_name','sku')},
                    outcome_source='kit_payment')
+            history.append(added)
             seen.add(key(normalized))
             count += 1
     return count
 
 
-def import_broken(broken_path: Path = BROKEN, *, event_path: Path = EVENTS) -> int:
+def import_broken(broken_path: Path = BROKEN, *, event_path: Path = EVENTS, history=None) -> int:
     """Keep post-sale breakage evidence without guessing which seller caused it."""
     if not broken_path.exists():
         return 0
-    seen = {(e.get("name"), e.get("broke_at")) for e in read_events(event_path)
+    history = read_history(event_path) if history is None else history
+    seen = {(e.get("name"), e.get("broke_at")) for e in history
             if e["event"] == "broken"}
     count = 0
     with broken_path.open(encoding="utf-8", errors="replace") as source:
@@ -121,8 +255,9 @@ def import_broken(broken_path: Path = BROKEN, *, event_path: Path = EVENTS) -> i
             key = (news["name"], news["broke_at"])
             if key in seen:
                 continue
-            record("broken", path=event_path, name=news["name"], broke_at=news["broke_at"],
+            added=record("broken", path=event_path, name=news["name"], broke_at=news["broke_at"],
                    outcome_link_status='unmatched',outcome_source='kit_breakage_notice')
+            history.append(added)
             seen.add(key)
             count += 1
     return count
@@ -131,23 +266,10 @@ def import_broken(broken_path: Path = BROKEN, *, event_path: Path = EVENTS) -> i
 def context(shop_url: str, sku: str, *, shop_name: str | None = None,
             product_name: str | None = None, path: Path = EVENTS,
             history: list[dict] | None = None) -> dict[str, Any]:
-    rows = read_events(path) if history is None else history
-    alias_names, order_names = {}, {}
-    for e in rows:
-        if e.get('shop_name') and e.get('shop'):
-            alias_names.setdefault(e['shop'],set()).add(e['shop_name'])
-            if e.get('order'):
-                order_names.setdefault((e['order'],e['shop']),set()).add(e['shop_name'])
-    def resolved(url, order=None):
-        names = order_names.get((order,url)) or alias_names.get(url,set())
-        return next(iter(names)) if len(names)==1 else None
-    name = shop_name or resolved(shop_url)
-    def belongs(e):
-        if e.get('shop_name'):
-            return e['shop_name']==name if name else e.get('shop')==shop_url
-        identity = resolved(e.get('shop'),e.get('order'))
-        return identity==name if name else e.get('shop')==shop_url
-    first_hand = [e for e in rows if e['event'] in ('payment','settled','negotiation') and belongs(e)]
+    rows = read_history(path) if history is None else history
+    rows = rows if isinstance(rows,PreparedHistory) else PreparedHistory(rows)
+    name = shop_name or rows.resolved(shop_url)
+    first_hand = rows.by_name.get(name,[]) if name else rows.by_url.get(shop_url,[])
     ledger_orders={e['ledger']:e['order'] for e in first_hand if e.get('ledger') is not None and e.get('order')}
     episodes = {}
     for i,e in enumerate(first_hand):
@@ -176,7 +298,7 @@ def context(shop_url: str, sku: str, *, shop_name: str | None = None,
             'settled_prices_by_grade':price_ranges([e for e in same if e['outcome']=='paid']),
             'cases':select_cases(same),
             'observed_receipt_problems':sum(e.get('result')=='invalid_receipt' for e in first_hand if e['event']=='negotiation' and e.get('sku')==sku),
-            'same_product_broken_reports':sum(e['event']=='broken' and e.get('name')==product_name for e in rows) if product_name else 0,
+            'same_product_broken_reports':rows.broken_names[product_name] if product_name else 0,
             'note':'Only confirmed payment/settlement is paid. Cases are observations, not rules. '
                    'Breakage reports identify a product, not its seller. Unknown grade stays unknown.'}
     return bounded(view,('cases',),BUYER_MEMORY_BYTES)

@@ -9,7 +9,7 @@ import os
 from pathlib import Path
 import time
 
-from buyer_memory import read_events, record, resolve_shop_name
+from buyer_memory import read_events, read_history, record, resolve_shop_name
 from context_compaction import hours_left
 from market_scoring import saved_at_price,buyer_cost_reference,VERSION
 import decision_audit
@@ -41,10 +41,11 @@ def run(deal: dict, catalog: dict, *, life=None,allow_forum_publish=False) -> di
     grade = settled.get("grade")
     ledger = settled.get("ledger")
     shop = settled.get("shop")
-    linked = decision_audit.buyer_outcome_links(read_events(), order=order.get('order'),
+    history = read_history()
+    linked = decision_audit.buyer_outcome_links(history, order=order.get('order'),
                 shop=shop, sku=sku, price=price, task_id=deal['receipt'].get('task'))
     record("settled", order=order.get("order"), shop=shop, sku=sku,
-           shop_name=resolve_shop_name(shop,order=order.get('order')),
+           shop_name=resolve_shop_name(shop,order=order.get('order'),history=history),
            name=settled.get("name"), price=price, list_price=list_price,
            grade=grade, value=value, ledger=ledger,
            claim_honest=settled.get("claim_honest"),
