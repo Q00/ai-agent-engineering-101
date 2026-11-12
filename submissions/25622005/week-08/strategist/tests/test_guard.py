@@ -130,24 +130,24 @@ class Settles(unittest.TestCase):
 
     def test_max_step(self):
         acc, _ = run(prop("seller.first_ask_list", 0.99), prop("seller.floor_list", 0.40),
-                     prop("seller.warranty_cap_6h", 5000000))
+                     prop("seller.warranty_cap_6h", 15000000))
         self.assertEqual([(a["old"], a["new"], a["clamped"]) for a in acc],
-                         [(0.85, 0.9, True), (0.60, 0.55, True), (500000, 3500000, True)])   # step 3,000,000
+                         [(0.85, 0.9, True), (0.60, 0.55, True), (500000, 10500000, True)])  # step 10,000,000
         acc, _ = run(prop("seller.first_ask_list", 0.88))
         self.assertEqual((acc[0]["new"], acc[0]["clamped"]), (0.88, False))
 
     def test_a_patch_note_widens_the_step_of_the_stock_posture_keys(self):
         p = pol(stock__inventory_cap_share=0.90, stock__big_ticket_share=0.90)
         acc, _ = run(prop("stock.inventory_cap_share", 0.50), prop("stock.big_ticket_share", 0.40),
-                     prop("seller.first_ask_list", 0.60), prop("seller.warranty_cap_6h", 5000000), p=p, max_changes=4)
+                     prop("seller.first_ask_list", 0.60), prop("seller.warranty_cap_6h", 15000000), p=p, max_changes=4)
         self.assertEqual([(a["key"], a["new"]) for a in acc], [("stock.inventory_cap_share", 0.85), ("stock.big_ticket_share", 0.8),
-                                                                ("seller.first_ask_list", 0.8), ("seller.warranty_cap_6h", 3500000)])
+                                                                ("seller.first_ask_list", 0.8), ("seller.warranty_cap_6h", 10500000)])
         acc, _ = run(prop("stock.inventory_cap_share", 0.50), prop("stock.big_ticket_share", 0.40),
-                     prop("seller.first_ask_list", 0.60), prop("seller.warranty_cap_6h", 5000000), p=p, max_changes=4, patch=True)
+                     prop("seller.first_ask_list", 0.60), prop("seller.warranty_cap_6h", 15000000), p=p, max_changes=4, patch=True)
         self.assertEqual([(a["key"], a["new"], a["clamped"]) for a in acc],
                          [("stock.inventory_cap_share", 0.75, True), ("stock.big_ticket_share", 0.6, True),   # 3 steps
                           ("seller.first_ask_list", 0.7, True),                                               # 3 x 0.05
-                          ("seller.warranty_cap_6h", 3500000, True)])                                         # not a stock posture key
+                          ("seller.warranty_cap_6h", 10500000, True)])                                        # not a stock posture key
         self.assertTrue(all(k in g.TUNABLE for k in g.PATCH_WIDE))
 
     def test_int_keys_are_rounded_to_int(self):
@@ -226,7 +226,7 @@ class Bounds(unittest.TestCase):
         for key, b in (("clear_cost_h", (0, 72, 12)), ("clear_70_h", (0, 48, 6)), ("clear_any_h", (0, 24, 3)),
                        ("taper_h", (0, 96, 12)), ("goods_stop_h", (0, 48, 6))):
             self.assertEqual(g.bounds(f"stock.{key}"), b)
-        self.assertEqual(g.bounds("seller.warranty_cap_6h"), (100000, 40000000, 3000000))
+        self.assertEqual(g.bounds("seller.warranty_cap_6h"), (100000, 80000000, 10000000))
         self.assertNotIn("forum.min_gap_min", g.TUNABLE)
 
     def test_focus_max_not_below_the_focus_list(self):

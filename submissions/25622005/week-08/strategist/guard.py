@@ -35,7 +35,10 @@ TUNABLE = {
     "seller.warranty_premium": (0.05, 0.30, 0.05),
     "seller.warranty_premium_floor": (0.0, 0.10, 0.01),   # breakage-priced warranty: the floor of the premium
     "seller.warranty_q_mult": (1.0, 3.0, 0.25),           # safety on the measured breakage upper bound
-    "seller.warranty_cap_6h": (100000, 40000000, 3000000),   # a step that clears a window run over the cap (1M did not on 11-09); a busy night signs 20-32M in 6 h (11-10)
+    "seller.warranty_cap_6h": (100000, 80000000, 10000000),  # a step that clears a window run over the cap (1M did not on 11-09; 3M took
+                                                             # 13 runs to cross 40M on 11-13); a busy night signs 20-32M in 6 h (11-10), and on
+                                                             # 11-13 the big-ticket hours signed 56M in 6 h: at the 40M bound 98 of 146 warranty
+                                                             # asks an hour were refused while an offered warranty doubles the sign rate
     "seller.food_clear_uwh_factor": (1.0, 4.0, 0.5),
     "seller.goods_stale_days": (2, 10, 1),
     "seller.stale_floor_cost_mult": (0.60, 1.00, 0.10),   # clearance: stale goods floor as a share of cost
