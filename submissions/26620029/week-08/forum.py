@@ -33,7 +33,8 @@ KIT_LOG = Path("logs/market-kit.log")    # the kit's "[acp] paid" lines carry th
 KIT_LOG_TAIL = 2_000_000                 # bytes read from its end
 ME = "ddolcom"
 MIN_GAP = 5 * 60 + 5                     # seconds between my posts (the market allows one per 5 min)
-DEAL_BATCH = 3                           # paid deals needed before a price report
+WAIT_MAX = 90                            # a run this close to the gap sleeps until it, holding the lock (stale after 120 s)
+DEAL_BATCH = 3                          # paid deals needed before a price report
 MAX_REFS = 5
 MAX_VOTES = 5                            # per run
 WORDING_TIMEOUT = 45                     # claude -p haiku rewrites the post (detached, so waiting is free); 0 = code text
@@ -182,6 +183,13 @@ def main():
         catalog = read_json(MARKET_DIR / "catalog.json", {})
         lines = votes(mem, read_json(MARKET_DIR / "forum.json", []))
         post = None
+        # ddolcom (2026-11-12 10:30, the user's "5분 제한을 풀고 글 수를 대폭 늘려줘"): the 5 minutes are the market's rule (/rules:
+        # "One post every 5 minutes as a shop and as a buyer"), so they stay. Posts waited for the next order after the gap, about
+        # 5.5 min apart (10-11 an hour, 1,675 so far). A run up to WAIT_MAX early now waits for the gap: about 11.7 an hour
+        wait = MIN_GAP - (time.time() - mem["last_post"])
+        if 0 < wait <= WAIT_MAX and not a.dry_run:
+            time.sleep(wait)
+            LOCK.touch()
         if time.time() - mem["last_post"] >= MIN_GAP:
             post = draft(mem, read_jsonl(MARKET_DIR / "payments.jsonl"), read_jsonl(MARKET_DIR / "broken.jsonl"), catalog)
         if post:

@@ -72,6 +72,11 @@ TIER_SKUS = 25               # best sellers kept per tier (23 high, 45 mid, 42 l
 HIGH_A_MIN = 0.72            # Claude (2026-11-09 20:22, hourly check): high tier only where the market's grade A sells at this share of list.
 # My A units cost 0.55-0.75 of list (random), the floor is cost, and 1M+ A sold at 0.65-0.75: G24f5f979 (market A 0.676) had 121 offers
 # and 1 deal against my 0.733 floor. Below 0.72 a new dear unit has almost no margin and about 1/3 comes as grade C
+# ddolcom (2026-11-12 10:30, the user's "1, 2를 적용"): 0.72 -> 0.66. Over 6 h the class's top shops sold 53-96 units of 1M+ list
+# against my 25 (SungJinho 96, dragonash22 68, Nocha12 59) at A 0.67-0.72 of list with supply at 0.585-0.62 of list like mine, and
+# paid 2,371-2,841만 an hour against my 991만 (logs/top-shops-1112-1008.txt). Blocked at 0.72: G24f5f979 (market A 0.672, 22 deals/h),
+# G00327e80 0.699, Gf6b70da8 0.700, Gbec2b68f 0.692
+HIGH_A_MIN = 0.66
 A_MIN_DEALS = 5              # grade A settles seen (customers.py sku_a) before a high-tier SKU is judged; until then it is not bought
 BREAK_MAX = 0.15             # Claude (2026-11-10 19:22, the user's plan step 3): a SKU with BREAK_MIN_SETTLES+ market settles
 # Claude (2026-11-11 03:22, plan 2 step 3): spread SKUs that pass every filter above (3+ shops, A price x surge, breaks) keep one

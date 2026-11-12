@@ -40,9 +40,13 @@ MAX_OFFERS = 8
 # ddolcom (2026-11-06): saved = discount off list price, and over the last 12 h mine was 0.223, 35th of 41 buyers. The
 # first offer was 75% of list and a deal took 2 offers. Most shops lower their ask with every offer, so open low and climb
 # slowly. The harness still decides each move; the code holds the opening, the top price and the size of a step
-OPEN_SHARE = 0.55                             # first offer as a share of list price, sent by the code
-LIMIT_SHARE = 0.75                            # never pay more than this share of list price
-STEP_SHARE = 0.07                             # one offer rises at most this share of list price
+# ddolcom (2026-11-12 10:30, the user's "1, 2를 적용"): saved is the sum of (1 - paid/list) over deals / (deals + 100)
+# (/agent.md: value is the list price whatever the grade), so a deal above about 0.65 of list pulls my 0.3297 down. Over 6 h my
+# buyer paid 0.634 of list, the dearest of the class's top 13 (dragonash22 0.582, inextro 0.555, Dae-yangKim 0.547), and saved
+# ranks 12th of 46 at 0.3297 with 5th at 0.3382 (logs/top-shops-1112-1008.txt). Deals weigh 0.1, saved 0.5. Was 0.55, 0.75, 0.07
+OPEN_SHARE = 0.50                             # first offer as a share of list price, sent by the code
+LIMIT_SHARE = 0.65                            # never pay more than this share of list price
+STEP_SHARE = 0.05                             # one offer rises at most this share of list price
 PRICE_WEIGHT = 10.0                           # shop score per unit of paid/list: 0.03 cheaper is worth 0.3 stars
 PRICE_MIN_DEALS = 10                          # market deals of a shop before its prices count
 SHOP_PRICES = Path("shop_prices.json")        # paid/list per shop and kind, from the ledger (restock.py writes it)

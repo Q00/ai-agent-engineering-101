@@ -88,6 +88,10 @@ GRADE_OPEN = {"B": 0.72, "C": 0.60}
 # ddolcom (2026-11-09 16:40, the same instruction): grade C goods sold as is now open well under the market's C price (about 0.59
 # of list): 0.45, and at every price (not only the "low" arm of 100,000+). The floor stays the cost (C costs about 0.35 of list)
 GRADE_OPEN["C"] = 0.45
+# ddolcom (2026-11-12 10:30, the user's "C 등급의 호가를 0.6으로 올려서 시작해"): over 6 h my C goods sold at 0.396 of list while the
+# class's top shops sold theirs at 0.46-0.66, mostly without a warranty (logs/top-shops-1112-1008.txt). The floor stays the cost.
+# This replaces plan 2 step 5's 0.40 from 11-16
+GRADE_OPEN["C"] = 0.60
 # Claude (2026-11-11 02:22, hourly check, plan 2 step 2): stars against paid/list (star_price.py, logs/star-price-1111-0226.txt,
 # 6 h): my grade C food paid 0.714 of list on average, stars 4.13 (184 results; 0.70-0.75: 106, 4.16, 28% 5*; 0.75+: 26, 3.12)
 # against the market's C food at 0.543, 4.45. At 0.55-0.70 mine got 4.57-4.72. Grade C food now opens at most C_FOOD_OPEN of list
