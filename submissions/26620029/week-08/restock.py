@@ -82,6 +82,13 @@ BREAK_MAX = 0.15             # Claude (2026-11-10 19:22, the user's plan step 3)
 # Claude (2026-11-11 03:22, plan 2 step 3): spread SKUs that pass every filter above (3+ shops, A price x surge, breaks) keep one
 # unit more than focus_want. Goods unsold 24 h+ were 18.4M against the 29.65M the user set as the line to revert at
 SPREAD_BONUS = 1
+# ddolcom (2026-11-12 20:20, the user's "1번부터 5번까지 ... 동시에 진행해", top-20 shop study logs/top-shops-1112-2002.txt):
+# refunds 150만/h against Nocha12 73만 and DY-76 40만, about 43% of my margin; 16 SKUs with 100+ market settles break 0.105-0.126
+# (market mean 0.037). Food: my deals 25% food against Nocha12 81%, DY-76 94% at 18.8-20.2% margin with no break refunds; a dry
+# run at 20:15 gave food 2 of 10 lines (focus took 8), 4 with FOCUS_MAX_LINES 6
+BREAK_MAX = 0.10
+FOCUS_MAX_LINES = 6
+FOOD_MAX_QTY = 6
 BREAK_MIN_SETTLES = 100     # breaking above BREAK_MAX is not bought. 12 h ledger: goods break 0.090 on average and mostly evenly
 #   (chi2 50 on 28 df); only G07ec17d5 (29 of 163, 0.178) and G03cab593 (19 of 117, 0.162) stood out. A broken unit under warranty
 #   refunds the whole price, and a mid-tier A nets about 0.07 of list, so a 0.15+ break rate loses money on every sale

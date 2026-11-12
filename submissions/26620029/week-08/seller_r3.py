@@ -61,6 +61,13 @@ C_WARRANTY_UNTIL = 1794210000          # 2026-11-09 16:40 KST: over
 # ddolcom (strategy 3): prices come from code. ask = floor + (list price - floor) * STEP ** (buyer offers so far)
 STEP = 0.6                                  # each buyer offer moves the ask 40% of the way down to the floor
 ACCEPT_GAP = 0.92                           # from a buyer's second offer, one at the floor and this share of the ask or more is a deal
+# ddolcom (2026-11-12 20:20, the user's "1번부터 5번까지 ... 동시에 진행해", logs/top-shops-1112-2002.txt): margin 9.1% of paid,
+# the lowest of the top 20 shops (Nocha12 18.8%, yms979 12.5%); their grade A goods sell at 0.70-0.79 of list against my 0.693.
+# Back to 0.92 if my deals an hour fall under 70 (97 over those 6 h)
+ACCEPT_GAP = 0.95
+# Same plan: grade C goods sold at 0.422 of list against 0.556-0.654 at the top shops (market C goods 0.565, cost 0.473), so
+# their floor is never under this share of list (it stays at cost when the cost is higher)
+C_GOODS_FLOOR = 0.50
 # ddolcom: a buyer that leaves without cancelling kept its unit promised until a restart. On 2026-11-06 after 34 h of
 # uptime 10 of 14 high-value SKUs answered "none in stock" with units on the shelf. A negotiation silent this long is
 # over; 300 s is above the 180 s a harness call may take between two offers
@@ -145,6 +152,14 @@ def shelf_left(u):
 
 
 def floor_price(u):
+    """Lowest price for this unit (see _floor), and for grade C goods never under C_GOODS_FLOOR of list."""
+    f = _floor(u)
+    if is_goods(u) and u.get("grade") == "C" and u.get("unit") not in BELOW_COST_FLOOR:
+        f = max(f, int(C_GOODS_FLOOR * (u.get("list_price") or 0)))
+    return f
+
+
+def _floor(u):
     """Lowest price for this unit: its cost, or less for food near its date (NEAR_EXPIRY) or a named unit."""
     if u.get("unit") in BELOW_COST_FLOOR:
         return BELOW_COST_FLOOR[u["unit"]]
@@ -281,22 +296,51 @@ def sign(receipt):
     return dict(receipt, sig_seller=base64.b64encode(key.sign(canon(body))).decode())
 
 
-def find_unit(text, taken=()):
-    """The in-stock unit that fits what the buyer asked for (category, name or SKU) and expires first,
-    skipping units already promised in another open negotiation."""
+# ddolcom (2026-11-12 20:20, the user's "판매코드가 요청을 읽고 정직하게 대응할 수 있도록 변경해줘"): buyers ask for shelf life
+# ("It must have at least 84 hours of shelf life left") and the code did not read it: 17 of my low reviews in about 5 h were
+# "Only 30.8 h of shelf life left; I needed 126.0 h." A stated need now picks a unit with that much left, or the shop says it has none
+SHELF_KEY = r"(?:shelf|fresh|expir|best before|use within|유통|소비기한|남은)"
+SHELF_NUM = r"(\d+(?:\.\d+)?)\s*(hours?|hrs?|h|days?|d|시간|일)(?![a-z])"
+SHELF_RES = [re.compile(SHELF_NUM + r"[^.\n]{0,50}?" + SHELF_KEY, re.I),
+             re.compile(SHELF_KEY + r"[^.\n\d]{0,50}?" + SHELF_NUM, re.I)]
+
+
+def shelf_need(text):
+    """Hours of shelf life the buyer says it needs, or None when it states none."""
+    for rx in SHELF_RES:
+        m = rx.search(text or "")
+        if m:
+            return float(m.group(1)) * (24 if m.group(2).lower() in ("d", "day", "days", "일") else 1)
+    return None
+
+
+def hours_left(u):
+    return (u["expires_at"] - time.time()) / 3600 if u.get("expires_at") else None
+
+
+def fitting_units(text, taken=()):
+    """In-stock units that fit what the buyer asked for (category, name or SKU), not held in another open negotiation."""
     want = text.lower()
     try:
         inv = json.loads((MARKET_DIR / "inventory.json").read_text(encoding="utf-8"))
     except (OSError, ValueError):
         inv = {}
+    return inv, [u for u in inv.get("units", []) if u["grade"] != "expired" and u["unit"] not in taken and
+                 ((u.get("category") or "").split(">")[-1].lower() in want or (u.get("name") or "").lower() in want
+                  or u["sku"].lower() in want)]
+
+
+def find_unit(text, taken=(), need_hours=None):
+    """The in-stock unit that fits what the buyer asked for (category, name or SKU) and expires first,
+    skipping units already promised in another open negotiation and food with less than need_hours of shelf life left."""
+    want = text.lower()
+    inv, fit = fitting_units(text, taken)
     if inv.get("round", 0) < 3:
         item = next((k for k in RESERVE if k in want), None)
         return item and {"sku": item, "name": item, "list_price": int(RESERVE[item] * 1.3), "cost": RESERVE[item],
                          "unit": None, "expires_at": None, "supplied_at": 0}
-    units = inv.get("units", [])
-    fit = [u for u in units if u["grade"] != "expired" and u["unit"] not in taken and
-           ((u.get("category") or "").split(">")[-1].lower() in want or (u.get("name") or "").lower() in want
-            or u["sku"].lower() in want)]
+    if need_hours:
+        fit = [u for u in fit if hours_left(u) is None or hours_left(u) >= need_hours]
     # Claude (2026-11-10 02:22, hourly check): a buyer naming the product, not its SKU code, fell to the oldest unit of the category,
     # grade C: G00327e80 (the market's top SKU, A at 0.726) opened its C at 1,011,060 21 times since 00:23 with 0 settles, its
     # two new A (cost 0.60 of list) once. A name match now counts as named, so A and B and the cheapest cost go first
@@ -362,16 +406,22 @@ class Seller(AgentExecutor):
             deal["seen"] = now
 
         if deal is None:                                 # the buyer names what it wants: open at the list price
-            unit = find_unit(text, {d["unit"]["unit"] for d in self.open.values() if d["unit"]["unit"]})
+            need = shelf_need(text)
+            unit = find_unit(text, {d["unit"]["unit"] for d in self.open.values() if d["unit"]["unit"]}, need)
             if unit is None:
                 # Claude (2026-11-11 13:20, the user's "고쳐줘" on the star study, logs/star-buyers-1111-1315.txt): olstjr gave
                 # 1 star for "claimed to be out of stock but then completed the deal". "None in stock" was also the answer when
                 # every unit was held in another open negotiation, or when this negotiation had timed out (OPEN_TTL)
                 if not fresh:
                     await up.reject(say("This negotiation timed out on our side. Please ask for the item again."))
-                elif find_unit(text):
+                elif find_unit(text, (), need):
                     await up.reject(say("Every unit of that is held in another open negotiation right now. "
                                         "Please ask again in a minute."))
+                elif need and find_unit(text):
+                    best = max((hours_left(u) or 0 for u in fitting_units(text)[1]), default=0)
+                    print(f"[shelf] asked {need:g} h, freshest unit {best:.0f} h: declined", flush=True)
+                    await up.reject(say(f"Sorry, we have none with at least {need:g} hours of shelf life left: "
+                                        f"our freshest unit has about {int(best)} hours left."))
                 else:
                     await up.reject(say("Sorry, we have none of that in stock."))
                 return
