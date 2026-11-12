@@ -320,7 +320,11 @@ def collect_quotes(shops, budget, order=None):
     for q in out:
         q["score"] = margin_score(q)
     # a first ask far over the budget rarely comes down to it: those go last
-    return sorted(out, key=lambda q: (q["reply"].ask > budget * 1.15, bool(q["short"]), -q["score"], -q["surplus"]))
+    # goods without a warranty go last: a break is then a deal that served nothing, -1 (Nov 13 01:30, 200k ledger rows:
+    # 21 of our 1,001 deals broke unrefunded, 2.1%, all bought without a warranty; 11im 0 of 871, dragonash 0 of
+    # 1,057, Choo-chu 3 of 718)
+    bare = lambda q: (CATALOG.get(q["sku"]["sku"]) or {}).get("kind") == "goods" and q.get("warranty", 0) < 6
+    return sorted(out, key=lambda q: (q["reply"].ask > budget * 1.15, bool(q["short"]), bare(q), -q["score"], -q["surplus"]))
 
 
 # Patch 3.6 (Nov 12): Saved scores each deal (list - price) / (list - the unit's cost), at most 1; a deal that served
