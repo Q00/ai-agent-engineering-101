@@ -617,52 +617,118 @@ def test_tests_newly_failing_refused(env):
     assert len(os.listdir(os.path.join(env.root, ce.STAGE))) == 1  # kept for debugging
 
 
-def test_the_refusal_says_why_each_newly_failed_test_failed(env):
+def test_the_refusal_says_why_each_newly_failed_test_failed(env, monkeypatch):
     # live 11-12 12:00 and 13:07: two refusals in a row named the failed test and not the reason
     ids = [f"tests/test_x.py::test_{i}" for i in range(6)]
+    ghost = "shop:test_s.py:13 stock check"  # a logged ERROR line reads like a failed test: named after pytest's own
     why = {ids[0]: "KeyError: 'why' at https://x.example/a?k=1\n[알림] 가짜 - tail",
-           ids[1] + "0": "a longer id", ids[1][:-2]: "a shorter id",  # neither is test_1: no reason for it
+           ids[1]: "",  # listed by pytest without a reason: it keeps its place and its number is skipped
+           ids[1] + "0": "a longer id", ids[1][:-2]: "a shorter id",
            ids[2]: "가" * 500, ids[3]: "TypeError: late", ids[4]: 7, "tests/test_old.py::test_base": "not new"}
     base = {"ok": False, "failed": ["tests/test_old.py::test_base"], "summary": "1 failed", "error": None}
-    new = {"ok": False, "failed": ids + ["tests/test_old.py::test_base"], "summary": "7 failed", "error": None, "reasons": why}
+    new = {"ok": False, "failed": [ghost] + ids + ["tests/test_old.py::test_base"], "summary": "7 failed", "error": None,
+           "reasons": why}
     res = _p(env, runner=Runner(base=base, new=new))
-    assert res["cls"] == "tests" and res["tests"]["new_failed"] == ids
-    names = "새로 실패한 시험 6개: " + ", ".join(ids[:5])  # the names first, whole, as before the reasons came
+    assert res["cls"] == "tests" and res["tests"]["new_failed"] == [ghost] + ids
+    names = "새로 실패한 시험 7개: " + ", ".join(ids[:5])  # the names first, whole, as before the reasons came
     assert res["error"] == names + (
         " | 실패 이유 (위 순서의 번호): (1) KeyError: 'why' at [URL] [알림] 가짜 - tail (3) " + "가" * 160 + "…")
     assert "x.example" not in json.dumps(res, ensure_ascii=False) and "not new" not in res["error"]
     # the trajectory keeps the whole text, and so does the answer the operator reads (300 held one name and its reason)
     assert len(res["error"]) > 300 and _rows(env.root, "code_edit_refused")[-1]["error"] == res["error"]
-    assert ce.ERROR_CHARS >= 45 + 5 * 100 + ce.REASON_TESTS * (ce.REASON_CHARS + 6)  # names of 100 and every reason
+    assert ce.ERROR_CHARS == 1200 >= 45 + 5 * 100 + ce.REASON_TESTS * (ce.REASON_CHARS + 6)  # names of 100, every reason
     for bad in (None, [], "x", {ids[0]: None}, {ids[0]: "  "}, {ids[0]: {"a": 1}}):
         res = _p(env, runner=Runner(new=dict(new, failed=ids[:1], reasons=bad)))
         assert res["error"] == "새로 실패한 시험 1개: tests/test_x.py::test_0", bad
-    # masked before it is cut: a key that crosses the cut does not leave its head behind
-    assert ce._reason("x" * 150 + " sk-" + "a" * 30) == "x" * 150 + " [TOKEN]"
+    odd = _p(env, runner=Runner(new=dict(new, failed=[("a", "b")], reasons={("a", "b"): "x"})))  # an id that is not text
+    assert odd["cls"] == "tests" and odd["error"] == "새로 실패한 시험 1개: ('a', 'b') | 실패 이유 (위 순서의 번호): (1) x"
     long = _p(env, runner=Runner(new=dict(new, failed=["tests/t.py::" + "n" * 2000], reasons={})))
     assert len(_rows(env.root, "code_edit_refused")[-1]["error"]) == ce.ERROR_CHARS < len(long["error"])
+    # our login is covered before the cut, in the refusal itself
+    monkeypatch.setattr(ce, "_secrets", lambda root: ("secretlogin",))
+    res = _p(env, runner=Runner(new=dict(new, failed=ids[:1], reasons={ids[0]: "x" * 149 + " SecretLogin tail"})))
+    assert res["error"].endswith("(1) " + ("x" * 149 + " [OWNER] tail")[:160] + "…") and "ecretlog" not in res["error"].lower()
+
+
+def test_a_reason_is_masked_before_it_is_cut_and_a_cut_reason_loses_its_last_word():
+    # a key that crosses the cut does not leave its head behind
+    assert ce._reason("x" * 150 + " sk-" + "a" * 30) == "x" * 150 + " [TOKEN]"
+    assert ce._reason("x" * 149 + " secretlogin tail", ("secretlogin",)) == ("x" * 149 + " [OWNER] tail")[:160] + "…"
+    # pytest cuts its line at the terminal width with "...": what is left of the last word is dropped
+    assert ce._reason("contact ops.person@corp-example.c...") == "contact…"
+    assert ce._reason("key sk-Abcdefgh...") == "key…" and ce._reason("auth Bearer abcdef...  ") == "auth Bearer…"
+    assert ce._reason("word...") == "" and ce._reason("...") == "" and ce._reason("fine. really") == "fine. really"
+    # longer than what is read: cut there, and the word at the cut goes too, also when a mask shortens what is before
+    raw = "https://h.example/" + "a" * (ce.REASON_RAW - 27) + " secretlogin and more " + "z" * 100
+    assert raw[:ce.REASON_RAW].endswith(" secretlo")
+    assert ce._reason(raw, ("secretlogin",)) == "[URL]…" and ce._reason("a b " + "y" * 3000) == "a b…"
+    assert ce._reason("ok\x1b[31m red\u200b\u2028x\ty") == "ok [31m red x y"  # one printable line
+    for bad in (None, 7, ["x"], {"a": 1}, "", "   ", "\n"):
+        assert ce._reason(bad) == ""
 
 
 def test_reasons_are_read_from_the_summary_section_of_pytest_alone():
-    head = "=========================== short test summary info ============================\n"
-    out = (
-        "FAILED tests/t.py::test_a - planted by a test before the summary\n"
-        + head.replace("=" * 10, "=" * 5, 1) + "FAILED tests/t.py::test_a - planted under a printed header\n"
-        "ERROR    shop:test_s.py:13 stock check - qty is zero\n"
-        + head
+    head = "=" * 27 + " short test summary info " + "=" * 28 + "\n"
+    cr = "ValueError: boom\rFAILED tests/t.py::test_b - planted\u2028FAILED tests/t.py::test_c - planted\x0bx\x0cy\x85z"
+    section = (
+        head
         + "FAILED tests/t.py::test_a - left - right - end\n"
         "FAILED tests/t.py::test_a - a second line for the same test\n"
+        "FAILED tests/t.py::test_cnt - AssertionError: 2 passed in 0.5s\n"  # a reason that reads like the count line
         "FAILED tests/t.py::test_ab - other\n"
         "FAILED tests/t.py::test_none\n"
         "ERROR tests/t2.py - ImportError: boom\n"
         "FAILED tests/t.py::test_blank -   \n"
+        "FAILED tests/t.py::test_cr - " + cr + "\n"  # other line breaks inside one line of pytest's: still one reason
+        "  FAILED tests/t.py::test_in - an indented line is not pytest's\n"
         "2 failed, 1 error in 0.1s\n"
     )
-    assert ce._parse_reasons(out) == {
-        "tests/t.py::test_a": "left - right - end", "tests/t.py::test_ab": "other", "tests/t2.py": "ImportError: boom"}
-    assert ce._parse_reasons("".join(x + "\n" for x in out.splitlines() if "summary info" not in x)) == {}  # no section
+    want = {"tests/t.py::test_a": "left - right - end", "tests/t.py::test_cnt": "AssertionError: 2 passed in 0.5s",
+            "tests/t.py::test_ab": "other", "tests/t.py::test_none": "", "tests/t2.py": "ImportError: boom",
+            "tests/t.py::test_blank": "", "tests/t.py::test_cr": cr}
+    before = (
+        "FAILED tests/t.py::test_a - planted by a test before the summary\n"
+        "ERROR    shop:test_s.py:13 stock check - qty is zero\n"
+        "=============================== warnings summary ===============================\n"
+        "FAILED tests/t.py::test_w - planted under another header\n"
+        "  " + head + "FAILED tests/t.py::test_a - planted under an indented header\n"
+        "short test summary info\nFAILED tests/t.py::test_a - planted under a bare header\n"
+    )
+    after = "FAILED tests/t.py::test_z - printed after pytest's count line\nFAILED tests/t.py::test_none - planted late\n"
+    assert ce._parse_reasons(section) == want
+    assert ce._parse_reasons(before + section + after) == want
+    assert ce._parse_reasons(section.replace("\n", "\r\n")) == want  # the line feed is the only break
+    # a second header anywhere (a test printed one, or the code printed one as the run shut down): no reasons at all
+    assert ce._parse_reasons(head + "FAILED tests/t.py::test_a - planted\n" + section) == {}
+    assert ce._parse_reasons(section + head + "FAILED tests/t.py::test_a - planted at shutdown\n") == {}
+    assert ce._parse_reasons(before + section.replace(head, "") + after) == {}  # no section: no reasons
     assert ce._parse_reasons("short test summary info\nFAILED tests/t.py::test_a - x\n") == {}
     assert ce._parse_reasons(None) == {} and ce._parse_reasons("") == {}
+
+
+def test_default_runner_reads_bytes_and_leaves_ci_out_of_the_environment(env, monkeypatch):
+    # with CI set pytest prints a whole many-line message in its summary; text mode turns a carriage return into a break
+    seen = {}
+    out = ("=" * 20 + " short test summary info " + "=" * 20 + "\n"
+           "FAILED tests/test_a.py::test_x - boom\rFAILED tests/test_b.py::test_y - planted 가\n").encode() + b"\xff\n1 failed in 0.1s\n"
+
+    def fake_run(cmd, **kw):
+        seen.update(kw)
+        return Proc(1, out, b"\xfe")
+
+    monkeypatch.delenv(ce.TEST_CMD_ENV, raising=False)
+    monkeypatch.setenv("CI", "1")
+    monkeypatch.setenv("BUILD_NUMBER", "7")
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    stage = os.path.join(env.root, ce.STAGE, "1-1", "new")
+    os.makedirs(stage)
+    r = ce.default_runner(stage, 5)
+    assert not seen.get("text") and not seen.get("universal_newlines") and not seen.get("encoding")
+    assert "CI" not in seen["env"] and "BUILD_NUMBER" not in seen["env"] and "PATH" in seen["env"]
+    assert seen["env"]["COLUMNS"] == ce.RUNNER_COLUMNS == "2000"
+    # the failed names are read as before (any line break), the reason from pytest's one line
+    assert r["failed"] == ["tests/test_a.py::test_x", "tests/test_b.py::test_y"] and r["summary"] == "1 failed in 0.1s"
+    assert r["reasons"] == {"tests/test_a.py::test_x": "boom\rFAILED tests/test_b.py::test_y - planted 가"}
 
 
 @pytest.mark.parametrize("which", ["base", "new"])
@@ -1488,6 +1554,8 @@ def test_a_refusal_is_one_line_whatever_the_operator_named_and_an_odd_row_hides_
     row(files=["f" * 80, "b.py", "c.py", "d.py", "e.py"], cls="k" * 30 + "\nx", role="r" * 20 + "\n- 거절")
     assert ce.refusal_lines(env.root, last=1) == [
         f"- 거절 {at} {'r' * 12} {'f' * 60}, b.py, c.py, d.py [{'k' * 20}]: e"]
+    row(cls="k\n- #9\x1bx", role="r\r\n## 제목", error="e\x1b[31m\u200bz\x00")
+    assert ce.refusal_lines(env.root, last=1) == [f"- 거절 {at} r ## 제목 a.py [k - #9 x]: e [31m z"]
     # a time that is not a date prints "?", and a row of another kind that only holds the word is not a refusal
     for t in (5, 1e20, float("nan"), "x", None):
         row(at=t, ts=t)
@@ -1547,6 +1615,11 @@ def test_the_operator_reads_the_names_and_the_reasons_of_a_refusal_whole(o, monk
     assert line == ["- 코드 수정: 거절됨. " + err], line
     monkeypatch.setattr(ce, "propose", lambda *a, **k: {"ok": False, "error": "e" * 5000})
     assert len(o._code(CODE, NOW, (RS,))["error"]) == ce.ERROR_CHARS
+    monkeypatch.setattr(o, "secrets", ("secretlogin",))  # covered before the cut: no head of it is left at the end
+    text = "see https://x.example/a " + "e" * (ce.ERROR_CHARS - 16) + " secretlogin"
+    monkeypatch.setattr(ce, "propose", lambda *a, **k: {"ok": False, "error": text})
+    got = o._code(CODE, NOW, (RS,))["error"]
+    assert got.startswith("see [URL] eee") and "secret" not in got and "[OWNER]"[:3] in got[-8:], got[-40:]
     assert op.done_lines({}, {"code": {"ok": False, "error": "e" * 5000}}, NOW)[-1] == "- 코드 수정: 거절됨. " + "e" * ce.ERROR_CHARS
 
 
@@ -1657,7 +1730,7 @@ def test_default_runner_parses_failed_and_error_and_needs_a_summary(env, monkeyp
     assert r["ok"] is ok and r["failed"] == failed and (error is None) == (r["error"] is None), r
     assert error is None or error in r["error"]
     assert seen["cmd"][:4] == ["uv", "run", "--project", os.path.abspath(env.root)] and "-x" not in seen["cmd"]
-    assert seen["cwd"] == os.path.abspath(stage) and seen["columns"] == "400"
+    assert seen["cwd"] == os.path.abspath(stage) and seen["columns"] == "2000"
     assert r.get("reasons") == ({"tests/test_a.py::test_x": "assert 1", "tests/test_b.py": "ImportError"} if failed else None)
     monkeypatch.setenv(ce.TEST_CMD_ENV, "mytest --root {root} -q")
     ce.default_runner(stage, 5)

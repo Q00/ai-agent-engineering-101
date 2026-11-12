@@ -750,34 +750,50 @@ def _parse_failed(text):
 
 
 REASON_CHARS = 160  # of the reason pytest prints after a failed test's name
+REASON_RAW = 2000  # of that reason as read, before it is masked
 REASON_TESTS = 3  # failed tests whose reason goes into the refusal; the rest are named only
 ERROR_CHARS = 1200  # of a refusal as the operator reads it and as the trajectory keeps it: five names, three reasons
 AUDIT_ERROR_CHARS = 400  # of that text on the auditor's line
+RUNNER_COLUMNS = "2000"  # pytest cuts its FAILED line to the terminal width: at 80 the reason after a long name is gone
+RUNNER_ENV_DROP = ("CI", "BUILD_NUMBER")  # with these pytest prints a whole many-line message where one line is read
 _SHORT_HEAD = re.compile(r"^=+ short test summary info =+$")
 
 
 def _parse_reasons(text):
-    """{test id: what pytest prints after ' - ' on its FAILED/ERROR line} (the first line of the error). Read from
-    pytest's own summary section alone (after its last 'short test summary info' line): a FAILED line a test printed
-    earlier in the output is not pytest's word. No such section, no reasons."""
-    lines = str(text).splitlines()
-    heads = [i for i, x in enumerate(lines) if _SHORT_HEAD.match(x.strip())]
+    """{test id: what pytest prints after ' - ' on its FAILED/ERROR line ('' when nothing)} for the tests pytest lists
+    in its own summary section: the lines between its 'short test summary info' line and its count line. Lines are
+    split at the line feed alone and read from the first column, so a message that holds another kind of line break
+    stays one reason, and what a test printed before the section or what the code printed after the count line is
+    not pytest's word. More than one such header, or none: {} (the names still go out, without reasons)."""
+    lines = str(text or "").split("\n")
+    heads = [i for i, x in enumerate(lines) if _SHORT_HEAD.match(x.rstrip("\r"))]
     out = {}
-    for line in lines[heads[-1] + 1:] if heads else []:
-        m = re.match(r"^(FAILED|ERROR) (.+)$", line.strip())
-        if m and " - " in m.group(2):
+    for line in lines[heads[0] + 1:] if len(heads) == 1 else []:
+        m = re.match(r"^(FAILED|ERROR) (.+)$", line)
+        if m:
             tid, _, why = m.group(2).partition(" - ")
-            if why.strip():
-                out.setdefault(tid.strip(), why.strip())
+            out.setdefault(tid.strip(), why.strip())
+        elif _SUMMARY.search(line):
+            break
     return out
 
 
-def _reason(v):
-    """A failure reason as one short masked printable piece, '' when there is none."""
+def _reason(v, secrets=()):
+    """A failure reason as one short masked printable piece, '' when there is none. Masked before it is cut; a reason
+    that arrives already cut (pytest's '...' at the terminal width, or longer than REASON_RAW) loses its last word,
+    which may be the head of something the mask would have covered whole."""
     if not isinstance(v, str):
         return ""
-    v = c.mask("".join(ch if ch.isprintable() else " " for ch in v)).strip()
-    return v if len(v) <= REASON_CHARS else v[:REASON_CHARS] + "…"
+    cut = len(v) > REASON_RAW or v.rstrip().endswith("...")
+    words = "".join(ch if ch.isprintable() else " " for ch in v[:REASON_RAW]).split()
+    v = c.mask(" ".join(words[:-1] if cut else words), secrets)
+    return v + "…" if cut and v and len(v) <= REASON_CHARS else v if len(v) <= REASON_CHARS else v[:REASON_CHARS] + "…"
+
+
+def _dec(b):
+    """A captured stream as text with its line breaks as written (text mode would turn a carriage return into a
+    line feed, and a line of pytest's into two)."""
+    return b.decode("utf-8", "replace") if isinstance(b, bytes) else str(b or "")
 
 
 def _one_line(v, limit):
@@ -790,20 +806,21 @@ def default_runner(stage_dir, timeout_s):
     the stage dir minus <STAGE>/<id>/<base|new>). A run without a pytest count line is a runner error.
     -> {"ok", "failed": [test ids from FAILED/ERROR lines], "summary", "error"}, with "reasons" {test id: first
     line of its error} when tests failed. COLUMNS is set wide: at pytest's default 80 columns the reason after a long
-    test name is cut away (live 11-12: two refusals in a row named the test and not why it failed)."""
+    test name is cut away (live 11-12: two refusals in a row named the test and not why it failed). The output is read
+    as bytes and RUNNER_ENV_DROP is left out of the environment so that one line of pytest's stays one line."""
     stage_dir = os.path.abspath(stage_dir)
     root = stage_dir
     for _ in range(len(STAGE.split(os.sep)) + 2):
         root = os.path.dirname(root)
     tmpl = os.environ.get(TEST_CMD_ENV) or TEST_CMD
     cmd = shlex.split(tmpl.replace("{root}", shlex.quote(root)))
-    env = dict(os.environ, PYTHONDONTWRITEBYTECODE="1", COLUMNS="400")
+    env = dict({k: v for k, v in os.environ.items() if k not in RUNNER_ENV_DROP},
+               PYTHONDONTWRITEBYTECODE="1", COLUMNS=RUNNER_COLUMNS)
     try:
         p = subprocess.run(
             cmd,
             cwd=stage_dir,
             capture_output=True,
-            text=True,
             timeout=timeout_s,
             env=env,
         )
@@ -821,23 +838,24 @@ def default_runner(stage_dir, timeout_s):
             "summary": "",
             "error": f"시험 실행 실패: {type(e).__name__}: {e}"[:300],
         }
-    tail = [x for x in (p.stdout or "").splitlines() if x.strip()]
-    summary = (tail[-1] if tail else (p.stderr or "").strip()[-300:])[:300]
-    failed = _parse_failed(p.stdout)
+    stdout, stderr = _dec(p.stdout), _dec(p.stderr)
+    tail = [x for x in stdout.splitlines() if x.strip()]
+    summary = (tail[-1] if tail else stderr.strip()[-300:])[:300]
+    failed = _parse_failed(stdout)
     m = re.search(r"\b(\d+) passed\b", summary)
     passed = int(m.group(1)) if m else 0
-    if not _has_summary(p.stdout):
+    if not _has_summary(stdout):
         return {
             "ok": False,
             "failed": [],
             "summary": summary,
-            "error": f"pytest 요약 줄이 없음 (종료 코드 {p.returncode}): {(p.stderr or '').strip()[-200:]}"[:300],
+            "error": f"pytest 요약 줄이 없음 (종료 코드 {p.returncode}): {stderr.strip()[-200:]}"[:300],
         }
     if p.returncode == 0:
         return {"ok": True, "failed": [], "summary": summary, "error": None, "passed": passed}
     if p.returncode == 1 and failed:
         return {"ok": False, "failed": failed, "summary": summary, "error": None, "passed": passed,
-                "reasons": _parse_reasons(p.stdout)}
+                "reasons": _parse_reasons(stdout)}
     if p.returncode == 1:
         return {
             "ok": False,
@@ -1007,11 +1025,14 @@ def run_tests(root, sid, new_texts, runner):
     }
     if newly:
         why = r.get("reasons") if isinstance(r.get("reasons"), dict) else {}
-        # the names first, as before; then the reasons, numbered by the place of the test among those names
-        whys = [f"({i}) {_reason(why.get(t))}" for i, t in enumerate(newly[:REASON_TESTS], 1) if _reason(why.get(t))]
+        # the names first, as before, those pytest lists in its summary ahead of names read elsewhere in the output
+        # (a logged ERROR line reads like one); then the reasons, numbered by the place of the test among the names
+        named = sorted(newly, key=lambda t: t not in why)[:5]
+        secrets = _secrets(root)
+        whys = [f"({i}) {x}" for i, t in enumerate(named[:REASON_TESTS], 1) if (x := _reason(why.get(t), secrets))]
         out.update(
             cls="tests",
-            error=f"새로 실패한 시험 {len(newly)}개: {', '.join(newly[:5])}"
+            error=f"새로 실패한 시험 {len(newly)}개: {', '.join(str(t) for t in named)}"
             + (f" | 실패 이유 (위 순서의 번호): {' '.join(whys)}" if whys else ""),
         )
     elif isinstance(base_passed, int) and isinstance(r.get("passed"), int) and r["passed"] < base_passed:

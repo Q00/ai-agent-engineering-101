@@ -648,7 +648,7 @@ def _wake_text(w):
     return "\n".join(
         [
             f"- {who}{c.kst(w['ts'])} 상태 {w.get('status')}, 도구: {', '.join(w['_tools']) or '없음'}",
-            f"  요약: {str(res.get('note') or '')[:WAKE_NOTE_CHARS] or '없음'}",
+            f"  요약: {' '.join(str(res.get('note') or '').split())[:WAKE_NOTE_CHARS] or '없음'}",
             f"  policy: {json.dumps(pol, ensure_ascii=False) if pol else '없음'}",
         ]
     )
