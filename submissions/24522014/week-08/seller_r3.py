@@ -44,7 +44,7 @@ from sale_order import grade_c_last, order_key
 from strategy_policy import effective
 
 NAME = "kcwarni Inventory Shop"
-FEATURES = ["actual_grade_receipt", "bounded_warranty_v1", "coded_seller_rules", "model_breaker", "food_pricing_v2", "price_cap_v1", "sale_order_v1", "a_grade_six_hour_v1", "pq1_v1", "food_floor_108_v1", "a_warranty_90m_v1", "shelf_need_fit_v1", "shelf_need_days_pct_v1", "food_hours_need_v1"]
+FEATURES = ["actual_grade_receipt", "bounded_warranty_v1", "coded_seller_rules", "model_breaker", "food_pricing_v2", "price_cap_v1", "sale_order_v1", "a_grade_six_hour_v1", "pq1_v1", "food_floor_108_v1", "a_warranty_90m_v1", "shelf_need_fit_v1", "shelf_need_days_pct_v1", "food_hours_need_v1", "food_shelf_left_notice_v1"]
 MARKET_DIR = Path(os.environ.get("MARKET_DIR", ".market"))
 
 PROMPT = """You are a Round 3 inventory sales agent. A buyer is negotiating for one {name}.
@@ -89,6 +89,18 @@ def condition_notice(unit, terms=None):
     notice = f"Inventory condition: {grade}."
     if expires:
         notice += f" Expires at {expires}."
+    left = hours_left(unit, time.time()) if unit.get("kind") == "food" else None
+    if left is not None:
+        # Shelf life left on a food quote (the user's 11-12 choice in the Orchestrator session, about 15:3x KST: "남은 유통기한 명시
+        # (권장)"): every probe-food low since 06:04 came from a request with no stated need and a unit under 75% of its shelf life,
+        # while units shown short to a buyer who stated a need never sold. The notice and the data part now give the hours left
+        # (rounded down), the SKU's full shelf hours and the share left, so a buyer can see the unit is short before buying.
+        # No refusal and no price change.
+        hours = max(0, int(left))
+        full = shelf_hours_by_sku().get(unit.get("sku"))
+        share = int(100 * max(0, left) / full) if full else None
+        details.update(shelf_hours_left=hours, shelf_hours_full=full, shelf_left_percent=share)
+        notice += f" Shelf life left: {hours} h" + (f" of {full:g} h ({share}%)." if full else ".")
     if terms and terms["discount_stage"]:
         notice += f" Clearance reason: {terms['discount_reason']}; stage {terms['discount_stage']}."
     notice += " Confirm the certificate at checkout; condition can change while negotiating."

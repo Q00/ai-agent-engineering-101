@@ -21,6 +21,36 @@ class R3Contract(unittest.TestCase):
         self.assertEqual(details["grade_observed"], "B")
         self.assertTrue(details["certificate_available"])
         self.assertIsNone(details["discount_reason"])
+
+    def test_food_notice_states_shelf_life_left(self):
+        now = 1794460000
+        unit = {"unit": "u1", "sku": "G00001", "kind": "food", "grade": "B", "expires_at": now + 151.9 * 3600, "supplied_at": 0}
+        with patch.object(seller_r3.time, "time", return_value=now), \
+                patch.object(seller_r3, "shelf_hours_by_sku", return_value={"G00001": 720}):
+            notice, details = seller_r3.condition_notice(unit)
+            self.assertIn("Expires at", notice)
+            self.assertIn("Shelf life left: 151 h of 720 h (21%).", notice)
+            self.assertEqual((details["shelf_hours_left"], details["shelf_hours_full"], details["shelf_left_percent"]), (151, 720, 21))
+            self.assertLess(notice.index("Shelf life left"), notice.index("Warranty"))
+            notice, details = seller_r3.condition_notice(dict(unit, expires_at=now - 3600))
+            self.assertIn("Shelf life left: 0 h of 720 h (0%).", notice)
+            self.assertEqual(details["shelf_hours_left"], 0)
+        with patch.object(seller_r3.time, "time", return_value=now), patch.object(seller_r3, "shelf_hours_by_sku", return_value={}):
+            notice, details = seller_r3.condition_notice(unit)
+            self.assertIn("Shelf life left: 151 h.", notice)
+            self.assertIsNone(details["shelf_hours_full"])
+            self.assertIsNone(details["shelf_left_percent"])
+
+    def test_goods_notice_has_no_shelf_life_left(self):
+        for unit in ({"unit": "u1", "sku": "G00001", "kind": "goods", "grade": "A", "expires_at": 2000000000, "supplied_at": 0},
+                     {"unit": "u1", "sku": "G00001", "grade": "A", "expires_at": 2000000000, "supplied_at": 0},
+                     {"unit": "u1", "sku": "G00001", "kind": "food", "grade": "A", "expires_at": None, "supplied_at": 0}):
+            with patch.object(seller_r3, "shelf_hours_by_sku", side_effect=AssertionError("not read")):
+                notice, details = seller_r3.condition_notice(unit)
+            self.assertNotIn("Shelf life left", notice)
+            self.assertNotIn("shelf_hours_left", details)
+        self.assertIn("food_shelf_left_notice_v1", seller_r3.FEATURES)
+
     def test_questions_and_conditional_messages_are_not_purchase_offers(self):
         self.assertIsNone(seller_r3.purchase_offer("My budget is 100; is a warranty included?", "G00001", 90))
         self.assertIsNone(seller_r3.purchase_offer("I will pay 90 if you add a warranty", "G00001", 90))
