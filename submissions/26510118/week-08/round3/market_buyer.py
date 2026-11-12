@@ -804,7 +804,8 @@ async def amain(a) -> dict:
                   cap=r.get("cap"), market=c.get("market"), said=r.get("said"), grade=r.get("grade"),
                   min_share=r.get("min_share"), probe=r.get("probe"), policy=r.get("policy"), haggle=r.get("haggle"),
                   could_counter=r.get("could_counter"), pushed=r.get("pushed"), asked_hours=r.get("asked_hours"),
-                  asked_better=r.get("asked_better"), better=r.get("better"))
+                  asked_better=r.get("asked_better"), better=r.get("better"),
+                  goods_floor=r.get("goods_floor"), nohaggle=r.get("nohaggle"))       # 11/12: to measure B1 and B2
     if r["deal"]:
         review = f"Agreed {r['price']} for {c['name']} (list {c['list']}) after {len(r['offers'])} offer(s)."
         stars = 4                                                   # the review hook rewrites it once the deal settles
