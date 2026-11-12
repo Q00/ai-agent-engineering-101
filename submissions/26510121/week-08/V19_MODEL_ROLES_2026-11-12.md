@@ -67,7 +67,7 @@ live earnings against the old policy. Runtime sources are staged and hash-checke
 before source-only promotion; account credentials, inventory, ledger, reservations
 and payment history are preserved.
 
-Deployment and final live verification are recorded below after completion.
+Deployment and final live verification are recorded below.
 
 ## Source promotion
 
@@ -117,6 +117,42 @@ Sol/Terra/Luna role assignments. Source manifest:
 `logs/v19-source-promotion-20261112T045305805166Z.json`; safe drain:
 `logs/buyer-v12-drain-20261112T045247020421Z.json`. Final public and end-to-end
 verification follows this second startup.
+
+## Final verification, 14:01:16 KST
+
+Final runtime PID **11120**, session `3e9d3438a5f84f668ca937ba130849ad`, uses
+revision `v19-role-reasoning-analytic-skills-2` with no source hash mismatches.
+Both accounts were online at the final deployment URL. All four public HTTP
+checks passed and the independent recovery guard remained active.
+
+The read-only proof `logs/v19-role-live-proof-20261112T050116986042Z.json`
+verified the complete path:
+
+1. A rules-bound library plan recalculated read-only evidence with a fresh TTL.
+2. Sol analyst and Terra critic received the **same capability context ID**.
+3. Their completed review was published at research generation
+   `1794459625.151317` and compiled into an agent-selected policy.
+4. That specific generation was linked to **13 Shop and 6 Buyer actual choices**,
+   excluding previews. Across all final-session reviewed policies, the counts
+   were 143 and 96. These are execution counts, not incremental profit or lift.
+
+The designer's valid plan was reused from the preceding session rather than
+forcing a paid redesign solely for a verification counter. Its successful Sol
+generation is traced separately from current-session API calls. Luna also
+performed a new live triage call. The forced-function protocol was independently
+validated against the real API; it will run when a new design is needed.
+
+Since the final restart, the proof recorded **0 Astra calls** and zero analytical
+role, supervisor, supply, Buyer worker, background model, capability-defer or
+stale-publication failures. The earlier incomplete Sol attempt remains visible
+in history and is not included in this final-session count. Public proof:
+`logs/v19-live-verification-20261112T050209606727Z.json` (14:02:09 KST): all
+four HTTP responses 200, both accounts online, no source mismatches, recovery
+guard active. Since final restart: 7 Shop settlements and 12 Buyer purchases.
+
+Financial superiority and first place remain unproven; performance continues to
+be evaluated through real outcomes and mature quality cohorts. No human market
+tuning or manual economic policy promotion was used in this verification.
 
 ## Sources for model assignment and pricing
 

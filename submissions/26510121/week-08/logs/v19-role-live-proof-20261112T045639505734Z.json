@@ -1,0 +1,726 @@
+{
+  "at_utc": "2026-11-12T04:56:39.504697+00:00",
+  "runtime": {
+    "pid": 11120,
+    "session": "3e9d3438a5f84f668ca937ba130849ad",
+    "started_at": 1794459187.7398262,
+    "launch_id": "auto-join-20261112T045307284680Z"
+  },
+  "expected_models": {
+    "market_research_analyst": "gpt-6.1-sol",
+    "market_research_critic": "gpt-6.1-terra",
+    "capability_triage": "gpt-6-luna",
+    "capability_designer": "gpt-6.1-sol"
+  },
+  "actual_models": {
+    "market_research_analyst": [
+      "gpt-6.1-sol"
+    ],
+    "market_research_critic": [
+      "gpt-6.1-terra"
+    ],
+    "capability_triage": [
+      "gpt-6-luna"
+    ],
+    "capability_designer": [
+      "gpt-6.1-sol"
+    ]
+  },
+  "all_roles_verified": true,
+  "current_runtime_models": {
+    "market_research_analyst": [
+      "gpt-6.1-sol"
+    ],
+    "market_research_critic": [
+      "gpt-6.1-terra"
+    ],
+    "capability_triage": [],
+    "capability_designer": []
+  },
+  "roles_verified_from_reused_plan": [
+    "capability_triage",
+    "capability_designer"
+  ],
+  "reused_plan_generation_usage": [
+    {
+      "role": "capability_triage",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "low",
+      "usage": {
+        "input_tokens": 3664,
+        "input_tokens_details": {
+          "cache_write_tokens": 3661,
+          "cached_tokens": 0
+        },
+        "output_tokens": 306,
+        "output_tokens_details": {
+          "reasoning_tokens": 208
+        },
+        "total_tokens": 3970
+      },
+      "estimated_usd": 0.000611,
+      "seconds": 5.530999999959022,
+      "completion_status": "completed",
+      "accounting": "conservative_input_1.25x",
+      "automatic_model_fallback": false,
+      "event_at": 1794459067.1560302
+    },
+    {
+      "role": "capability_designer",
+      "model": "gpt-6.1-sol",
+      "reasoning_effort": "medium",
+      "usage": {
+        "input_tokens": 3778,
+        "input_tokens_details": {
+          "cache_write_tokens": 3775,
+          "cached_tokens": 0
+        },
+        "output_tokens": 277,
+        "output_tokens_details": {
+          "reasoning_tokens": 28
+        },
+        "total_tokens": 4055
+      },
+      "estimated_usd": 0.012215,
+      "seconds": 7.827999999979511,
+      "completion_status": "completed",
+      "accounting": "conservative_input_1.25x",
+      "automatic_model_fallback": false,
+      "event_at": 1794459075.0430644
+    }
+  ],
+  "astra_calls_since_restart": 0,
+  "capability_plan": {
+    "schema": 1,
+    "at": 1794459075.0924873,
+    "expires_at": 1794460275.0924873,
+    "rules_hash": "e8e63cc2f212ac65c62062760f43c6a335f4ccfbfd78d77d258b476d5575a942",
+    "tools": [
+      "objective_gap_audit",
+      "stock_depth_audit",
+      "buyer_frontier_audit"
+    ],
+    "evidence_ids": [
+      "rules:e8e63cc2f212ac65c62062760f43c6a335f4ccfbfd78d77d258b476d5575a942",
+      "ledger:5525870",
+      "snapshot:inventory.json",
+      "kv:feedback-last-policy"
+    ],
+    "effects": "read_only_analysis",
+    "id": "1499e7e93c4c2a22649a8bb358ea778ea6c1b44c944b8a31567005c2cae5616e"
+  },
+  "capability_brief": {
+    "at": 1794459395.4389813,
+    "expires_at": 1794459575.4389813,
+    "rules_hash": "e8e63cc2f212ac65c62062760f43c6a335f4ccfbfd78d77d258b476d5575a942",
+    "plan_id": "1499e7e93c4c2a22649a8bb358ea778ea6c1b44c944b8a31567005c2cae5616e",
+    "evidence_ids": [
+      "rules:e8e63cc2f212ac65c62062760f43c6a335f4ccfbfd78d77d258b476d5575a942",
+      "ledger:5527141",
+      "snapshot:inventory.json",
+      "kv:feedback-last-policy",
+      "kv:objective-decision-context"
+    ],
+    "calculations": {
+      "objective_gap_audit": {
+        "control": {
+          "status": "observe_and_trade",
+          "leader_gap": 0.05899999999999994,
+          "reasons": []
+        },
+        "constraints": [
+          "no_price_cap_change",
+          "full_refund_reserve",
+          "live_supply_checks",
+          "no_unverified_profile_promotion"
+        ],
+        "shop_alternatives": [
+          {
+            "cover_cycles": 1,
+            "lines": 10,
+            "units": 14,
+            "capital_commitment": 3845876.5,
+            "expected_book_scenario": 102673.00006011386,
+            "expected_revenue_scenario": 1031998.2492167345,
+            "rank_progress_surrogate": 0.0009423260441941305,
+            "upper_mean_cost_book_stress": -60221.30714963008,
+            "examples": [
+              {
+                "sku": "G022ce883",
+                "qty": 4,
+                "own_positive_paid_available": 32,
+                "arrival_rate_scenario": 10.986698138426046
+              },
+              {
+                "sku": "G3d0d84ad",
+                "qty": 1,
+                "own_positive_paid_available": 1,
+                "arrival_rate_scenario": 1.1259336686098527
+              },
+              {
+                "sku": "Gf0e58a76",
+                "qty": 1,
+                "own_positive_paid_available": 24,
+                "arrival_rate_scenario": 3.911623645521468
+              },
+              {
+                "sku": "Gb2392fa9",
+                "qty": 2,
+                "own_positive_paid_available": 6,
+                "arrival_rate_scenario": 3.482853826150014
+              }
+            ]
+          },
+          {
+            "cover_cycles": 1.5,
+            "lines": 10,
+            "units": 18,
+            "capital_commitment": 3403214.0,
+            "expected_book_scenario": 99919.29423891225,
+            "expected_revenue_scenario": 1011172.0788593065,
+            "rank_progress_surrogate": 0.000922968413610381,
+            "upper_mean_cost_book_stress": -63294.56833280047,
+            "examples": [
+              {
+                "sku": "G022ce883",
+                "qty": 7,
+                "own_positive_paid_available": 32,
+                "arrival_rate_scenario": 10.986698138426046
+              },
+              {
+                "sku": "Gf0e58a76",
+                "qty": 2,
+                "own_positive_paid_available": 24,
+                "arrival_rate_scenario": 3.911623645521468
+              },
+              {
+                "sku": "G3d0d84ad",
+                "qty": 1,
+                "own_positive_paid_available": 1,
+                "arrival_rate_scenario": 1.1259336686098527
+              },
+              {
+                "sku": "Gb2392fa9",
+                "qty": 2,
+                "own_positive_paid_available": 6,
+                "arrival_rate_scenario": 3.482853826150014
+              }
+            ]
+          },
+          {
+            "cover_cycles": 2,
+            "lines": 10,
+            "units": 22,
+            "capital_commitment": 3534391.0,
+            "expected_book_scenario": 109021.04840421489,
+            "expected_revenue_scenario": 1080625.6834590314,
+            "rank_progress_surrogate": 0.0009874837125302682,
+            "upper_mean_cost_book_stress": -66263.18425438221,
+            "examples": [
+              {
+                "sku": "G022ce883",
+                "qty": 9,
+                "own_positive_paid_available": 32,
+                "arrival_rate_scenario": 10.986698138426046
+              },
+              {
+                "sku": "Gf0e58a76",
+                "qty": 3,
+                "own_positive_paid_available": 24,
+                "arrival_rate_scenario": 3.911623645521468
+              },
+              {
+                "sku": "G3d0d84ad",
+                "qty": 1,
+                "own_positive_paid_available": 1,
+                "arrival_rate_scenario": 1.1259336686098527
+              },
+              {
+                "sku": "Gb2392fa9",
+                "qty": 3,
+                "own_positive_paid_available": 6,
+                "arrival_rate_scenario": 3.482853826150014
+              }
+            ]
+          },
+          {
+            "cover_cycles": 3,
+            "lines": 10,
+            "units": 26,
+            "capital_commitment": 6545544.5,
+            "expected_book_scenario": 319331.0491318554,
+            "expected_revenue_scenario": 2782534.4080556775,
+            "rank_progress_surrogate": 0.002562017920921722,
+            "upper_mean_cost_book_stress": -110192.57648898482,
+            "examples": [
+              {
+                "sku": "G03d0199f",
+                "qty": 1,
+                "own_positive_paid_available": 6,
+                "arrival_rate_scenario": 1.198189293018874
+              },
+              {
+                "sku": "Gb10b3f23",
+                "qty": 1,
+                "own_positive_paid_available": 4,
+                "arrival_rate_scenario": 0.7699491285182827
+              },
+              {
+                "sku": "G022ce883",
+                "qty": 13,
+                "own_positive_paid_available": 32,
+                "arrival_rate_scenario": 10.986698138426046
+              },
+              {
+                "sku": "Gf0e58a76",
+                "qty": 5,
+                "own_positive_paid_available": 24,
+                "arrival_rate_scenario": 3.911623645521468
+              }
+            ]
+          }
+        ],
+        "issues": []
+      },
+      "stock_depth_audit": {
+        "held_units": 132,
+        "distinct_skus": 91,
+        "internal_held_sku_cap": 20,
+        "skus_at_cap": 0,
+        "repeat_skus": [
+          {
+            "sku": "Gef4d3036",
+            "observed_paid20": 34,
+            "observed_external_buyers20": 16,
+            "held": 1
+          },
+          {
+            "sku": "G200e39a3",
+            "observed_paid20": 16,
+            "observed_external_buyers20": 7,
+            "held": 4
+          },
+          {
+            "sku": "G022ce883",
+            "observed_paid20": 36,
+            "observed_external_buyers20": 16,
+            "held": 2
+          },
+          {
+            "sku": "G3434758a",
+            "observed_paid20": 10,
+            "observed_external_buyers20": 8,
+            "held": 0
+          },
+          {
+            "sku": "G7fa48eaa",
+            "observed_paid20": 18,
+            "observed_external_buyers20": 10,
+            "held": 0
+          },
+          {
+            "sku": "G0be9ed07",
+            "observed_paid20": 21,
+            "observed_external_buyers20": 10,
+            "held": 1
+          },
+          {
+            "sku": "G66ded25b",
+            "observed_paid20": 12,
+            "observed_external_buyers20": 7,
+            "held": 0
+          },
+          {
+            "sku": "G2560a8c9",
+            "observed_paid20": 26,
+            "observed_external_buyers20": 11,
+            "held": 0
+          }
+        ],
+        "note": "Paid observations are not latent demand. A cap is not proof it binds; no cap change authorized."
+      },
+      "buyer_frontier_audit": {
+        "metric": "saved",
+        "current_saved": 0.34,
+        "current_deals": 14160,
+        "current_forum": 0.903,
+        "forum_raw_all_gain_per_0_01": 0.003,
+        "segments_60min": {
+          "food": {
+            "closed": 112,
+            "paid": 74,
+            "conversion": 0.6607142857142857,
+            "active_seconds": 821.2948253154755,
+            "initial_saved_paid_n": 74,
+            "initial_saved_paid_mean": 0.4141871933019842,
+            "confirmed_mature_paid_n": 0,
+            "confirmed_mature_saved_paid_mean": null,
+            "quality_pending": 74
+          },
+          "goods": {
+            "closed": 54,
+            "paid": 1,
+            "conversion": 0.018518518518518517,
+            "active_seconds": 438.85982060432434,
+            "initial_saved_paid_n": 1,
+            "initial_saved_paid_mean": 0.38597702985054766,
+            "confirmed_mature_paid_n": 0,
+            "confirmed_mature_saved_paid_mean": null,
+            "quality_pending": 1
+          }
+        },
+        "mature_quality_cohorts": {
+          "food": {
+            "age_window_hours": [
+              6,
+              48
+            ],
+            "eligible_paid": 2994,
+            "confirmed_paid": 0,
+            "pending": 2994,
+            "sum_confirmed_saved_contribution": 0,
+            "confirmed_saved_paid_mean": null
+          },
+          "goods": {
+            "age_window_hours": [
+              6,
+              48
+            ],
+            "eligible_paid": 118,
+            "confirmed_paid": 116,
+            "pending": 2,
+            "sum_confirmed_saved_contribution": 43.84063877111214,
+            "confirmed_saved_paid_mean": 0.3779365411302771
+          }
+        },
+        "contract_failure_classes": {
+          "price": 171
+        },
+        "forum_formats": {
+          "same_terms_price": {
+            "scored_posts_10min_old": 9,
+            "mean_observed_score": 0.638,
+            "enough_for_descriptive_comparison": true
+          },
+          "acceptable_alternatives": {
+            "scored_posts_10min_old": 5,
+            "mean_observed_score": 0.6244,
+            "enough_for_descriptive_comparison": true
+          },
+          "mature_quality": {
+            "scored_posts_10min_old": 0,
+            "mean_observed_score": null,
+            "enough_for_descriptive_comparison": false
+          }
+        },
+        "note": "Paid Saved contributions are normalized, not absolute surplus. Pending quality is not success. Post scores are sampled from newest 100 public posts, not causal format lift or the full forum aggregate."
+      }
+    },
+    "authority": "read_only_calculated_evidence",
+    "economic_superiority_verified": false,
+    "id": "6f6e1fa9b3747fa71cbade42d1d0af62dce13eca7b41d5a0119a1f900c0bd507"
+  },
+  "capability_consumers": [],
+  "research_publications": [
+    {
+      "schema": 1,
+      "at": 1794459323.0989065,
+      "expires_at": 1794460523.0989065,
+      "rules_hash": "e8e63cc2f212ac65c62062760f43c6a335f4ccfbfd78d77d258b476d5575a942",
+      "summary": "Keep 3/6/8/60: rank forecast .00256 vs ≤.00099, stress -110k; 572m spendable. Execution not permitted; forum evidence biased; no promotion.",
+      "hypotheses": [
+        "3 vs 1/1.5/2: Book 319 vs 103/100/109k; revenue 2.78 vs 1.03/1.01/1.08m, forecast only.",
+        "Main 13 paid/145k margin; 51 paid, 45 stockouts and 35/36 acquired support depth despite delays.",
+        "Goods 1/54 vs food 74/112 paid; food Saved pending, goods mature .378. Recovery probes may help."
+      ],
+      "evidence_ids": [
+        "rules:e8e63cc2f212ac65c62062760f43c6a335f4ccfbfd78d77d258b476d5575a942",
+        "ledger:5526142",
+        "kv:framework-plan",
+        "snapshot:shop-plan-v15.json",
+        "kv:feedback-last-policy",
+        "kv:quality-holdout-summary",
+        "kv:objective-decision-context"
+      ],
+      "skill_ids": [
+        "74d3ee01e01fa04e8eefa711e85041d7902f50df1834ce399f094e416d8bea07",
+        "07b1f855ba6afa45f49af8efa61263665e3df4be6202bd964f361ecb676a8894",
+        "343aac61dc07a0e086f3324861db5bb0ad0f5b83436eda1311a62327163e2cac",
+        "674377d13d42befbb838a6cd4550837e93fbb27965fc16c4b9888f46de3a7b9a"
+      ],
+      "queued_buyer_profile": null,
+      "trial_review_approved": false,
+      "economic_superiority_verified": false,
+      "shop_plan_recommendation": "diversified",
+      "operating_intents": [
+        "buyer_price_gap",
+        "stock_coverage"
+      ],
+      "operating_actions_reviewed": true,
+      "forum_focus": "balanced",
+      "objective_context_id": "17e6070fb4fa131a08a58f39034ef628b8ff79f5e392bda5ed9ad4d71ea8134d",
+      "operating_policy": {
+        "cover_cycles": 3,
+        "initial_batch_limit": 6,
+        "frontier_min_orders": 8,
+        "recheck_seconds": 60
+      },
+      "policy_authority": "independent_agent_consensus_with_numeric_execution_guards",
+      "event_at": 1794459323.1666698
+    }
+  ],
+  "compiled_research_generations": 2,
+  "matched_main_choices": {
+    "shop": 22,
+    "buyer": 18
+  },
+  "main_examples": [
+    {
+      "decision": "db156b0db9304f3fb596084c025ef106",
+      "policy_id": "63a228c7bb42d926445d7e980b5960a92cf29c2873925649c488014ac151037f",
+      "role": "buyer",
+      "order": "o-54bd0e016e6c",
+      "task": "8b2be3e8-a252-406a-bbc3-561731e337c4",
+      "operation": "price",
+      "chosen": "counter",
+      "expected_delta": {
+        "surplus": 421726.1909719586,
+        "deals": 0.3314596405755598,
+        "saved": 4.6481795762460734e-08
+      },
+      "objective_utility": 1.1134836170656472e-06,
+      "preview": false,
+      "reason": "selected_by_official_objective_surrogate_after_operating_policy",
+      "event_at": 1794459393.3474305
+    },
+    {
+      "decision": "9510d35f59ab4ed18a5ad8e70a14c27e",
+      "policy_id": "63a228c7bb42d926445d7e980b5960a92cf29c2873925649c488014ac151037f",
+      "role": "buyer",
+      "order": "o-54bd0e016e6c",
+      "task": null,
+      "operation": "offer_selection",
+      "chosen": "lee-sungsoo:G4a12722c",
+      "expected_delta": {
+        "surplus": 161243.86108800993,
+        "deals": 0.15404794486287413,
+        "saved": 2.1603407589828176e-08
+      },
+      "objective_utility": 5.174989878620196e-07,
+      "preview": false,
+      "reason": "selected_by_official_objective_surrogate_after_operating_policy",
+      "event_at": 1794459393.5425267
+    },
+    {
+      "decision": "16bbe17a3e5a45a3a70ba46026635f3e",
+      "policy_id": "63a228c7bb42d926445d7e980b5960a92cf29c2873925649c488014ac151037f",
+      "role": "buyer",
+      "order": "o-54bd0e016e6c",
+      "task": "8038d492-60a7-44e8-9222-46d78c611f25",
+      "operation": "price",
+      "chosen": "counter",
+      "expected_delta": {
+        "surplus": 354736.49439362186,
+        "deals": 0.3389054786983231,
+        "saved": 4.7527496697621985e-08
+      },
+      "objective_utility": 1.1384977733674974e-06,
+      "preview": false,
+      "reason": "selected_by_official_objective_surrogate_after_operating_policy",
+      "event_at": 1794459393.6429012
+    },
+    {
+      "decision": "b3c195e1b4324d5897b79e46528ee2ce",
+      "policy_id": "63a228c7bb42d926445d7e980b5960a92cf29c2873925649c488014ac151037f",
+      "role": "shop",
+      "order": null,
+      "task": "f479d6ce-2056-4aaa-ab8d-352508b046e7",
+      "operation": "quote",
+      "chosen": "quote:1602446:w3",
+      "expected_delta": {
+        "book": 949.2566178943307,
+        "revenue": 48411.12490322471,
+        "profit": 48411.12490322471,
+        "stars_rank": 0.0
+      },
+      "objective_utility": 4.2852773370474325e-05,
+      "preview": false,
+      "reason": "selected_by_official_objective_surrogate_after_operating_policy",
+      "event_at": 1794459393.8004656
+    },
+    {
+      "decision": "ae85a1db8ef942a480d551e2158a8cd3",
+      "policy_id": "63a228c7bb42d926445d7e980b5960a92cf29c2873925649c488014ac151037f",
+      "role": "shop",
+      "order": null,
+      "task": "e0afe867-83de-4cac-983f-48c68d866179",
+      "operation": "quote",
+      "chosen": "accept:1046400:w0",
+      "expected_delta": {
+        "book": 363661,
+        "revenue": 1046400,
+        "profit": 1046400,
+        "stars_rank": 0.0
+      },
+      "objective_utility": 0.001096927878110887,
+      "preview": false,
+      "reason": "selected_by_official_objective_surrogate_after_operating_policy",
+      "event_at": 1794459395.6322103
+    },
+    {
+      "decision": "44643dc7563a4a2e952d75fe532f9012",
+      "policy_id": "63a228c7bb42d926445d7e980b5960a92cf29c2873925649c488014ac151037f",
+      "role": "shop",
+      "order": null,
+      "task": "88f1e497-6fbe-4a1c-956e-962409ad0d27",
+      "operation": "quote",
+      "chosen": "quote:465857:w6",
+      "expected_delta": {
+        "book": 1848.161994301845,
+        "revenue": 94255.13128806258,
+        "profit": 94255.13128806258,
+        "stars_rank": 0.0
+      },
+      "objective_utility": 8.34378432525484e-05,
+      "preview": false,
+      "reason": "selected_by_official_objective_surrogate_after_operating_policy",
+      "event_at": 1794459396.7850823
+    }
+  ],
+  "errors_since_restart": {
+    "analytical_role_error": 0,
+    "cycle_supervisor_error": 0,
+    "cycle_supply_error": 0,
+    "buyer_worker_error": 0,
+    "background_model_failed": 0,
+    "capability_deferred": 0,
+    "research_publication_rejected": 0
+  },
+  "usage": [
+    {
+      "role": "market_research_analyst",
+      "model": "gpt-6.1-sol",
+      "reasoning_effort": "medium",
+      "response_mode": "json_schema",
+      "usage": {
+        "input_tokens": 8776,
+        "input_tokens_details": {
+          "cache_write_tokens": 8773,
+          "cached_tokens": 0
+        },
+        "output_tokens": 1192,
+        "output_tokens_details": {
+          "reasoning_tokens": 723
+        },
+        "total_tokens": 9968
+      },
+      "estimated_usd": 0.03386,
+      "seconds": 25.45299999997951,
+      "completion_status": "completed",
+      "accounting": "conservative_input_1.25x",
+      "automatic_model_fallback": false,
+      "event_at": 1794459310.7183506
+    },
+    {
+      "role": "market_research_critic",
+      "model": "gpt-6.1-terra",
+      "reasoning_effort": "medium",
+      "response_mode": "json_schema",
+      "usage": {
+        "input_tokens": 9196,
+        "input_tokens_details": {
+          "cache_write_tokens": 9193,
+          "cached_tokens": 0
+        },
+        "output_tokens": 980,
+        "output_tokens_details": {
+          "reasoning_tokens": 611
+        },
+        "total_tokens": 10176
+      },
+      "estimated_usd": 0.016395,
+      "seconds": 12.327999999979511,
+      "completion_status": "completed",
+      "accounting": "conservative_input_1.25x",
+      "automatic_model_fallback": false,
+      "event_at": 1794459323.082228
+    }
+  ],
+  "cycle_heartbeat": {
+    "at": 1794459395.4389813,
+    "preparing": true,
+    "researching": true,
+    "capability_designing": true,
+    "capability_error": null,
+    "preparation_error": null,
+    "research_error": null
+  },
+  "research_last_attempt": {
+    "at": 1794459268.6683807,
+    "window": 1794458637,
+    "rules_hash": "e8e63cc2f212ac65c62062760f43c6a335f4ccfbfd78d77d258b476d5575a942",
+    "execution_revision": "v19-role-reasoning-analytic-skills-2",
+    "operating_state": "39b394d6ee9268a0d0a1455d9cb330b7ac0ef189bfe80f0e9bed585a4123308c",
+    "capability_plan_id": null
+  },
+  "current_policy": {
+    "id": "6cf6201216bc8401be0b54a9f031626e2753900c9fbcdfbce659a0dc90492d34",
+    "at": 1794459395.9074025,
+    "research_at": 1794459323.0989065,
+    "policy_authority": "agent_selected",
+    "patches": {
+      "shop": {
+        "shop_demand_horizon_cycles": 3,
+        "shop_sku_trend_factors": {
+          "Gef4d3036": 1.2,
+          "G200e39a3": 0.8,
+          "G022ce883": 1.3,
+          "G3434758a": 0.75,
+          "G7fa48eaa": 1.2,
+          "G0be9ed07": 1.05,
+          "G66ded25b": 0.85,
+          "G2560a8c9": 1.15,
+          "G1831f2c0": 1.15,
+          "G021aae64": 0.75,
+          "G74e686be": 1.2,
+          "G0b4dad18": 1.4,
+          "G575cddb8": 1.25
+        },
+        "shop_public_demand_skus": [
+          "G022ce883",
+          "G0b4dad18",
+          "G0be9ed07",
+          "G1831f2c0",
+          "G200e39a3",
+          "G2560a8c9",
+          "G575cddb8",
+          "G66ded25b",
+          "G74e686be",
+          "G7fa48eaa",
+          "Gef4d3036"
+        ],
+        "shop_public_demand_caps": {
+          "Gef4d3036": 6,
+          "G200e39a3": 6,
+          "G022ce883": 6,
+          "G7fa48eaa": 6,
+          "G0be9ed07": 6,
+          "G66ded25b": 6,
+          "G2560a8c9": 6,
+          "G1831f2c0": 6,
+          "G74e686be": 6,
+          "G0b4dad18": 6,
+          "G575cddb8": 6
+        }
+      },
+      "buyer": {
+        "buyer_frontier_category_enabled": true,
+        "buyer_frontier_min_orders": 8,
+        "buyer_frontier_recheck_seconds": 60
+      }
+    },
+    "reasons": []
+  },
+  "economic_superiority_or_first_place_proven": false,
+  "verified": false
+}
