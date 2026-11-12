@@ -545,6 +545,30 @@ def expected_in(why):
     return round(float(m.group(1)), 3) if m else None
 
 
+VISIT_HOURS = 6        # 11-12: our own visits per shop|kind that the visit model reads
+SLOT_SECS = 20         # the market issues one order per 20 s per buyer; time past that costs the next order
+
+
+def visit_model(mem, kind, hours=VISIT_HOURS):
+    """11-12 (user: 'think harder, the optimal strategy'): shop -> (P(deal) per visit, visits, median secs) for
+    `kind` over our last `hours`, P shrunk toward 0.3 with 3 pseudo-visits. 3 h after the rebuild 391 orders lost
+    38 slots/h to orders over 20 s, and whole shops failed one kind predictably: inextro goods 8 deals in 169 visits
+    (113 grade C claims, 1,403 s), buzllightyear goods 4 in 118 (68 grade C), sergiobuilds goods 0 in 42 (no
+    warranty), psyoung82 goods 18 in 153 (112 asks under our floor); our haggling lost almost nothing (8 of 232
+    rejected visits had an ask at our floor)."""
+    since = time.time() - hours * 3600
+    acc = defaultdict(lambda: [0, 0, []])
+    for t in mem.get("trades", []):
+        if t.get("t", 0) >= since and t.get("kind") == kind and t.get("shop") and t.get("outcome") \
+                and not str(t["outcome"]).startswith("skipped"):
+            a_ = acc[t["shop"]]
+            a_[0] += 1
+            a_[1] += t["outcome"] == "deal"
+            if t.get("secs") is not None:
+                a_[2].append(t["secs"])
+    return {n: ((d + 0.9) / (v + 3), v, sorted(sx)[len(sx) // 2] if sx else None) for n, (v, d, sx) in acc.items()}
+
+
 def choose(shops, mem, item, budget, ask_model=True, ctx=None):
     """Round 3 (ctx: stats, kind, cat, bp): the allowed shop whose deals add most to the saved rate (buyer_value:
     the whole market's realized saved per deal there, shrunk to the market mean), plus conv_weight x our close
@@ -610,6 +634,21 @@ def choose(shops, mem, item, budget, ask_model=True, ctx=None):
     rivals = rivals_above()          # buying from a player ranked above us adds to their revenue and book
     if ctx is not None:              # user 11-06: buyer score first; a rival is a penalty, not a wall
         bp = ctx["bp"]
+        vm = visit_model(mem, ctx["kind"])
+        # 11-12: a shop that closed under DEAD_P of >= 10 visits of this kind in 6 h is not visited (the data ages out
+        # in 6 h, which re-opens it); kept when nothing else is left
+        dead_p = bp.get("dead_p", 0.05)
+        def _raw(n):                     # deals / visits without the shrink
+            p_, nv_, _ = vm[n]
+            return (p_ * (nv_ + 3) - 0.9) / max(1, nv_)
+        live = [s for s in allowed if not (vm.get(s["name"], (1, 0, 0))[1] >= 10 and _raw(s["name"]) < dead_p)]
+        if live and len(live) < len(allowed):
+            log("buyer", "visit model: not visiting " + ", ".join(
+                f"{s['name']} ({vm[s['name']][1]} visits)" for s in allowed if s not in live))
+        allowed = live or allowed
+        elapsed = time.time() - ctx.get("start", time.time())
+        v0 = bp.get("v_breakeven", 0.745)
+        slot_v = bp.get("slot_value", 0.06)
 
         def value(s):
             e = expected(ctx["stats"], s["name"], ctx["kind"], ctx["cat"])
@@ -645,13 +684,16 @@ def choose(shops, mem, item, budget, ask_model=True, ctx=None):
                 # 11-07 A/B "wpen": our no-warranty goods ran 0.244 per deal (16 breaks at -1 in 439) against 0.324
                 # with a warranty, below our running mean; charge a shop for the share of its goods sold without one
                 e = dict(e, saved=round(e["saved"] - bp.get("wpen_cost", 0.12) * (1 - (e.get("warranty") or 0)), 4))
-            v = seen.get(s["name"], [0, 0])
-            conv = (v[1] + 1) / (v[0] + 2) if v[0] >= 5 else 0.6
             sa = (bp.get("shop_auto") or {}).get(s["name"]) or {}
             bias = sa.get("shop_bias", 0) + sa.get(f"bias_{ctx['kind']}", 0)   # the strategist's call, per kind since 11-11
             refail = bp.get("refail_penalty", REFAIL_PENALTY) if s["name"] in (ctx.get("refailed") or ()) else 0
-            return (e["saved"] + bp["conv_weight"] * conv - (bp["rival_penalty"] if s["name"] in rivals else 0) + bias
-                    - refail, e, conv)
+            # 11-12: expected gain of a visit = P(deal per visit, ours, this kind) x (expected v - break-even v),
+            # minus the slots its time takes past the order's free 20 s (slot_value = one order's expected gain)
+            p_, nv_, secs_ = vm.get(s["name"], (0.3, 0, None))
+            secs_ = secs_ if secs_ is not None else 5
+            over = max(0.0, elapsed + secs_ - SLOT_SECS) / SLOT_SECS
+            ev_ = e["saved"] - (bp.get("rival_penalty", 0.02) if s["name"] in rivals else 0) + bias - refail
+            return (p_ * (ev_ - v0) - slot_v * over, e, p_)
         ranked = sorted(((value(s), s) for s in allowed), key=lambda x: -x[0][0])
         # skip only when no allowed shop reaches skip_below; else the best score among those that do
         # user 11-06: food 0.279 vs goods 0.194 saved per deal (goods breaks count -1): a bar per kind
@@ -663,11 +705,13 @@ def choose(shops, mem, item, budget, ask_model=True, ctx=None):
         (score, e, conv), pick = (worth or ranked)[0]
         skipped = [n for n in views if n not in {s["name"] for s in allowed}]
         why = (f"value: {pick['name']} expected saved {e['saved']:.3f} per deal ({e['n']} market deals, "
-               f"median {e['p50']:.2f} of list, warranty {e['warranty']:.0%}), our close rate {conv:.2f}"
+               f"median {e['p50']:.2f} of list, warranty {e['warranty']:.0%}), our P(deal) per visit {conv:.2f}, score {score:.3f}"
                + (", a rival above us" if pick["name"] in rivals else "")
-               + "; next: " + ", ".join(f"{s['name']} {v[1]['saved']:.3f}" for v, s in ranked[1:4]))
+               + "; next: " + ", ".join(f"{s['name']} {v[0]:.3f} (P {v[2]:.2f}, v {v[1]['saved']:.3f})" for v, s in ranked[1:4]))
         if e["saved"] < thr:
             return None, f"skip: best expected saved {e['saved']:.3f} < bar {thr:.3f} (m* {ctx.get('m_star')}) ({why})", skipped, views
+        if ctx.get("attempt", 0) > 0 and score <= 0:
+            return None, f"skip: stop after {ctx['attempt']} shops, {elapsed:.0f} s in: the next visit is worth {score:.3f} ({why})", skipped, views
         return pick, why, skipped, views
     lower = [s for s in allowed if s["name"] not in rivals]
     allowed = lower or allowed
@@ -897,6 +941,8 @@ def main():
             pf = price_refail(mem, vctx["kind"])
             vctx["refailed"] = {s["name"] for s in shops if pf and "{}|{}".format(s["name"], (pick_sku(
                 s, acceptable, catalog, a.budget, share, cskip, stats=vctx["stats"] if skubest else None) or {}).get("sku")) in pf}
+        if vctx is not None:
+            vctx["start"], vctx["attempt"] = start, attempt
         pick, why, skipped, views = choose(shops, mem, a.item, a.budget, ask_model=attempt == 0, ctx=vctx)
         t_shop = time.time()
         if pick is None:                           # every shop is expected under skip_below: no deal beats a bad one
@@ -1033,7 +1079,8 @@ def main():
                         continue
                     history.append(("seller asked", ask))
                     prev = [x for k, x in history[:-1] if k == "seller asked"]
-                    action, offer = vprice.move(vp, ask, n_off, last_off, prev)
+                    action, offer = vprice.move(vp, ask, n_off, last_off, prev,
+                                                hurry=time.time() - start > bp.get("hurry_secs", 15))
                     if action == "take":
                         log("buyer", f"ask {ask} is {ask / want['list_price']:.2f} of list, v {vprice.v_of(ask, vp['lp'], vp['c']):.3f} (floor {vp['floor_v']:.3f}): taking it")
                     elif action == "offer":

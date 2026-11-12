@@ -61,7 +61,12 @@ GLOBAL = {                                    # role, bounds, step (11-12 patch 
     "target_mean": ((0.60, 0.90), 0.02),      # m* fallback when buyer_score.json has none
     # shop choice and order flow
     "food_extra_hours": ((0.25, 12), 2),      # food must last the order's hours + this (a spoiled deal counts -1)
-    "conv_weight": ((0.0, 0.3), 0.05),        # shop pick: expected v + this x our close rate there
+    # 11-12 slot economics: one order per 20 s per buyer; a visit is ranked by P(deal per visit, ours, 6 h, this kind)
+    # x (expected v - v_breakeven) - slot_value x (seconds past the order's free 20 s)/20
+    "v_breakeven": ((0.70, 0.80), 0.01),      # the v at which one more deal neither lifts nor lowers the final buyer score
+    "slot_value": ((0.0, 0.15), 0.02),        # one order's expected gain, charged per 20 s an order runs past its slot
+    "dead_p": ((0.0, 0.15), 0.02),            # a shop closing under this per visit (>= 10 visits of the kind, 6 h) is skipped
+    "hurry_secs": ((8, 30), 2),               # past this many seconds into an order, an ask under the cap is taken at once
     "rival_penalty": ((0.0, 0.1), 0.02),      # shop pick: minus this for a classmate shop ranked above us
     "max_shops": ((1, 6), 1),                 # shops tried per order
     "value_half_life_h": ((0, 6), 1),         # weight half-life of market deals in the shop values (0 = flat 6 h)
@@ -335,6 +340,17 @@ GOAL (user, 11-11): finish 1st overall; for the buyer, SAVED FIRST. saved is a c
 among students, so every deal must beat the mean our saved will END at (evidence "score".m_star, the projected
 final mean on the last 6 h pace), and we must gain per-deal value faster than the students just above us.
 
+SLOT ECONOMICS (11-12 12:50, measured): the market issues ONE ORDER PER 20 s per buyer (180/h; others get 165-175/h,
+we got 134/h because 77 of 391 orders ran past 20 s and lost 38 slots/h, mostly goods orders that failed anyway).
+Deals/h = orders/h x close rate, so the volume lever is (1) finishing orders inside 20 s and (2) not visiting shops
+that predictably fail the kind (grade C only, no warranty, asks under our floor). Our haggling lost almost nothing
+(8 of 232 rejected visits had an ask at our floor), and the floors near m* are right: by the projection one deal/h
+is worth ~+.0008 buyer score and +.01 v ~+.007, so a deal is worth taking above v ~.73 (board) / ~.745 (our records,
+which read ~.016 above the board). The code now ranks shops by P(deal per visit, ours, 6 h, kind) x (v - v_breakeven)
+minus slot_value per 20 s past the slot, skips shops under dead_p, stops an order after the first shop when the
+next visit is worth <= 0, and past hurry_secs takes any ask under the cap. Watch orders/h (target 170+), close rate
+per kind, slots lost (orders over 20 s) and v; ops/buyer_end.py gives the rank distribution for a (deals/h, v).
+
 YOUR OBJECTIVE (user, 11-12: 'the buyer matters now; find the strategy that makes us a DOMINANT 1st'): the
 highest projected FINAL class BUYER rank, then the widest gap over the next buyer. Not saved alone, not deals/h:
 the class buyer score = .5 saved pct + .3 forum + .1 deals pct + .1 posts pct among the 46 students. Evidence
@@ -377,7 +393,8 @@ Shared memory digest (the curator's summary for you): {digest}
 
 Knobs (only these; the steps allowed now: {steps}): global "take_v" (0.80-0.98), "open_v" (0.85-1.0), "step_v"
 (0.01-0.10), "rounds" (1-6), "soft_rounds" (1-4), "food_delta" (-0.10..0.10), "goods_delta" (0-0.15), "near_v"
-(0-0.08), "skip_delta_food" (-0.15..0.10), "skip_delta_goods" (-0.20..0.10), "target_mean" (0.60-0.90, m*
+(0-0.08), "v_breakeven" (0.70-0.80), "slot_value" (0-0.15), "dead_p" (0-0.15), "hurry_secs" (8-30),
+"skip_delta_food" (-0.15..0.10), "skip_delta_goods" (-0.20..0.10), "target_mean" (0.60-0.90, m*
 fallback only), "food_extra_hours" (0.25-12), "conv_weight" (0-0.3), "rival_penalty" (0-0.1), "max_shops" (1-6),
 "value_half_life_h" (0-6), "talk_share" (0-1; compare talk=True/False in arms_per_order_24h). Per shop (give
 "shop": a name from the evidence): "bias_food"/"bias_goods" (-0.1..0.1, routing for orders of that kind),

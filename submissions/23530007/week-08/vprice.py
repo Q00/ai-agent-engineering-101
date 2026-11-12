@@ -70,13 +70,14 @@ def plan(kind, lp, sku, grade, m_star, bp, budget, soft=False):
             "near_v": knob(bp, "near_v")}
 
 
-def move(pl, ask, n_offers, last_offer, prev_asks):
-    """One haggling step. `ask` the shop's current price, `n_offers` how many numbers we gave, `last_offer` ours."""
+def move(pl, ask, n_offers, last_offer, prev_asks, hurry=False):
+    """One haggling step. `ask` the shop's current price, `n_offers` how many numbers we gave, `last_offer` ours.
+    hurry (11-12): the order is near the end of its free 20 s slot; an ask at or under the cap is taken at once."""
     lp, c = pl["lp"], pl["c"]
     if ask is None:
         return "walk", None
     va = v_of(ask, lp, c)
-    if ask <= pl["cap"] and (va >= pl["take_v"] or n_offers >= len(pl["offers"])):
+    if ask <= pl["cap"] and (va >= pl["take_v"] or n_offers >= len(pl["offers"]) or hurry):
         return "take", ask
     if n_offers < len(pl["offers"]):
         target_v = pl["offers"][n_offers]
