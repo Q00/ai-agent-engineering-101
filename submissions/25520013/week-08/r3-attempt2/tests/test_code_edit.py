@@ -706,6 +706,18 @@ def test_reasons_are_read_from_the_summary_section_of_pytest_alone():
     assert ce._parse_reasons(None) == {} and ce._parse_reasons("") == {}
 
 
+def test_default_runner_reads_the_count_from_a_padded_line(env, monkeypatch):
+    # independent check round 3: without -q pytest pads the count line with "=" to COLUMNS (2000); cut to 300 first,
+    # the passed count was lost and a skipped test no longer refused the edit
+    line = "=" * 900 + " 2 passed, 1 skipped in 0.1s " + "=" * 900
+    monkeypatch.delenv(ce.TEST_CMD_ENV, raising=False)
+    monkeypatch.setattr(subprocess, "run", lambda cmd, **kw: Proc(0, ("...\n" + line + "\n").encode()))
+    stage = os.path.join(env.root, ce.STAGE, "1-1", "new")
+    os.makedirs(stage)
+    r = ce.default_runner(stage, 5)
+    assert r["ok"] and r["passed"] == 2 and r["summary"] == "2 passed, 1 skipped in 0.1s"
+
+
 def test_default_runner_reads_bytes_and_leaves_ci_out_of_the_environment(env, monkeypatch):
     # with CI set pytest prints a whole many-line message in its summary; text mode turns a carriage return into a break
     seen = {}
@@ -719,12 +731,13 @@ def test_default_runner_reads_bytes_and_leaves_ci_out_of_the_environment(env, mo
     monkeypatch.delenv(ce.TEST_CMD_ENV, raising=False)
     monkeypatch.setenv("CI", "1")
     monkeypatch.setenv("BUILD_NUMBER", "7")
+    monkeypatch.setenv("PYTEST_ADDOPTS", "-vvv")
     monkeypatch.setattr(subprocess, "run", fake_run)
     stage = os.path.join(env.root, ce.STAGE, "1-1", "new")
     os.makedirs(stage)
     r = ce.default_runner(stage, 5)
     assert not seen.get("text") and not seen.get("universal_newlines") and not seen.get("encoding")
-    assert "CI" not in seen["env"] and "BUILD_NUMBER" not in seen["env"] and "PATH" in seen["env"]
+    assert not {"CI", "BUILD_NUMBER", "PYTEST_ADDOPTS"} & set(seen["env"]) and "PATH" in seen["env"]
     assert seen["env"]["COLUMNS"] == ce.RUNNER_COLUMNS == "2000"
     # the failed names are read as before (any line break), the reason from pytest's one line
     assert r["failed"] == ["tests/test_a.py::test_x", "tests/test_b.py::test_y"] and r["summary"] == "1 failed in 0.1s"

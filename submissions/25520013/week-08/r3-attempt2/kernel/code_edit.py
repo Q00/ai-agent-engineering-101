@@ -755,7 +755,7 @@ REASON_TESTS = 3  # failed tests whose reason goes into the refusal; the rest ar
 ERROR_CHARS = 1200  # of a refusal as the operator reads it and as the trajectory keeps it: five names, three reasons
 AUDIT_ERROR_CHARS = 400  # of that text on the auditor's line
 RUNNER_COLUMNS = "2000"  # pytest cuts its FAILED line to the terminal width: at 80 the reason after a long name is gone
-RUNNER_ENV_DROP = ("CI", "BUILD_NUMBER")  # with these pytest prints a whole many-line message where one line is read
+RUNNER_ENV_DROP = ("CI", "BUILD_NUMBER", "PYTEST_ADDOPTS")  # with these pytest may print a many-line message whole
 _SHORT_HEAD = re.compile(r"^=+ short test summary info =+$")
 
 
@@ -840,9 +840,10 @@ def default_runner(stage_dir, timeout_s):
         }
     stdout, stderr = _dec(p.stdout), _dec(p.stderr)
     tail = [x for x in stdout.splitlines() if x.strip()]
-    summary = (tail[-1] if tail else stderr.strip()[-300:])[:300]
+    last = tail[-1].strip().strip("=").strip() if tail else ""  # pytest pads its count line with "=" to the width
+    summary = (last or stderr.strip()[-300:])[:300]
     failed = _parse_failed(stdout)
-    m = re.search(r"\b(\d+) passed\b", summary)
+    m = re.search(r"\b(\d+) passed\b", last)
     passed = int(m.group(1)) if m else 0
     if not _has_summary(stdout):
         return {
