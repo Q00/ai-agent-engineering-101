@@ -1,7 +1,7 @@
 """Route by observed terms, recent technical reliability and own settled history."""
 import time
 from .decision_view import history
-from .buyer_scoring import contribution,terms_delta
+from .buyer_scoring import contribution,terms_delta,score_inputs
 
 
 def context(journal,now=None):
@@ -32,7 +32,8 @@ def adjust(candidate,order,journal,config,route_context):
         assessment=buyer_assessment(dict(candidate['product'],sku=candidate['sku']),order,term,journal,config,shop=shop)
         q,covered=assessment['failure'],assessment['covered_failure']
         completion=.7 if price<=assessment['cap'] else .1
-        options.append((completion*contribution(price,candidate['product']['list_price'],q,covered),term,assessment,completion))
+        options.append((completion*contribution(price,candidate['product']['list_price'],q,covered,
+                       **score_inputs(assessment['saved_state'])),term,assessment,completion))
     failures=route_context['errors'].get(shop,0)
     reliability=1/(1+.35*min(8,failures))
     if options:

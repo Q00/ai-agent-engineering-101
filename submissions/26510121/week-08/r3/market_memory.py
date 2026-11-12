@@ -85,9 +85,9 @@ def buyer_price_actions(ask, cap, product, reference, ratio, turn, max_turns, pr
         return (1 - failure_stress) * L - price + price * recovery
     def expected(price,completion):
         if saved_state and saved_state['metric']=='saved':
-            from .buyer_scoring import contribution,terms_delta
+            from .buyer_scoring import contribution,terms_delta,score_inputs
             recovery=(failure_stress if covered else 0) if covered_failure is None else covered_failure
-            value=contribution(price,L,failure_stress,recovery)
+            value=contribution(price,L,failure_stress,recovery,**score_inputs(saved_state))
             return completion*value,terms_delta(saved_state,price,L,failure_stress,recovery,completion)
         return completion*surplus(price),{'surplus':completion*surplus(price),'deals':completion}
     if ask <= cap:
@@ -137,16 +137,28 @@ def buyer_assessment(product, order, terms, journal, config, *, shop=None):
         stress, covered = risk['failure_upper'], risk['covered_lower']
         if required < 6:
             cap = min(cap, int(product['list_price'] * (1 - stress) / max(.000001, 1 - covered)))
-    from .buyer_scoring import state,saved_price_cap
+    from .buyer_scoring import state,saved_price_cap,cost_scenario,MARGIN
     current=state(journal,config)
-    target=None
+    cost=None
+    if current.get('score_formula')==MARGIN:
+        # A plain peer cost field is never authoritative. Enforce any grade
+        # used in this conditional scenario at the authoritative checkout.
+        declared=declared or terms.get('grade',terms.get('claim'))
+        declared=declared if declared in ('A','B','C') else None
+        from .buyer_costs import scenario
+        cost=scenario(journal,product,declared)
+        current=dict(current,unit_cost=cost['unit_cost'],cost_samples=cost['cost_samples'])
+    target=None;normalized_cap=None
     if current['metric']=='saved':
         normalized_cap,target=saved_price_cap(product['list_price'],current,stress,covered,
                                                config.get('buyer_saved_target_margin',.002))
-        cap=min(cap,normalized_cap)
+        if not (config.get('buyer_joint_objective_enabled') and current.get('score_formula')==MARGIN):
+            cap=min(cap,normalized_cap)
     return {'cap': cap, 'required_warranty': required, 'failure': stress,
             'required_grade':declared,'conditional_terms':conditional,
-            'covered_failure': covered, 'risk_evidence': risk,'saved_state':current,'target_contribution':target}
+            'covered_failure': covered, 'risk_evidence': risk,'saved_state':current,'target_contribution':target,
+            'cost_scenario':cost,'saved_reference_cap':normalized_cap,
+            'saved_target_is_hard_cap':not (config.get('buyer_joint_objective_enabled') and current.get('score_formula')==MARGIN)}
 
 
 def buyer_terms(product, order, terms, journal, config):

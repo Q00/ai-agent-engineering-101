@@ -34,6 +34,8 @@ def reconcile(journal,purchases,now):
                 if oid:refunds.setdefault('order:'+oid,row)
         facts={'at':now,'broken':broken,'refunds':refunds}
         journal.put('outcome-unit-facts:v1',facts)
+    from .buyer_scoring import formula,LEGACY,same_formula
+    version=formula(journal)
     old=latest(journal);feed=journal.get('public_feed_caught_up_at',0)
     fresh=0<=now-feed<=180
     pending=[]
@@ -61,8 +63,13 @@ def reconcile(journal,purchases,now):
             row={'order':oid,'unit':unit,'broken':False,'canonical':True,'matured':True,
                  'refund_status':'not_needed','refunded':0,'surplus':item['value']-item['price'],
                  'source':'six_hour_unit_feed_complete',
-                 'saved_contribution':item.get('initial_saved_contribution',1-item['price']/max(1,item['value']))}
+                 'saved_contribution':item.get('initial_saved_contribution',1-item['price']/max(1,item['value']))
+                    if version==LEGACY and same_formula(item,version) else None,
+                 'saved_lower_scenario':item.get('initial_saved_lower_scenario') if same_formula(item,version) else None,
+                 'score_exact':version==LEGACY and same_formula(item,version)}
         else:continue
+        row['score_formula']=version
+        if broken:row['score_exact']=True
         previous=old.get(oid,{})
         # Sparse bookkeeping changes must not produce a new event every poll.
         if all(previous.get(k)==v for k,v in row.items()):continue

@@ -178,7 +178,7 @@ def test_rule_audit_understands_buyer_change_separately(tmp_path):
     j,cfg=fixture(tmp_path)
     text=('shops by book, revenue and stars; each further unit adds 0.2%; up to +50%; '
           'buyers by saved rate; ALL weighs them 0.5, 0.3, 0.1, 0.1; divided by deals + 100; '
-          'counts -1, or 0 if refunded; at least 50 settled deals; one stance per; next_dislike_fee')
+          'surplus / list price; counts -1, or 0 if refunded; at least 50 settled deals; one stance per; next_dislike_fee')
     r=audit_rules(j,text)
     assert r['compatible'] and r['buyer_compatible'] and r['buyer_metric']=='saved' and r['forum_vote_min_deals']==50
     assert audit_rules(j,'unrecognized buyer scoring')['buyer_compatible'] is False

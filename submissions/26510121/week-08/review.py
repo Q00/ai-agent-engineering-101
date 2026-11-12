@@ -18,12 +18,21 @@ def review(deal, journal):
         value = buyer_value(product, price, hours_left=(expires - now) / 3600 if expires else float("inf"),
                             use_hours=order.get("use_within_hours", 0))["value"]
     value = value or 0
+    from r3.buyer_scoring import formula,LEGACY,cost_scenario,contribution,MARGIN
+    version=formula(journal)
+    scenario=cost_scenario(product,settled.get('grade')) if product.get('list_price') and version==MARGIN else None
+    # Settlement is signed, but does not expose acquisition cost. Do not invent
+    # an exact margin-share outcome from a seller's claimed cost or our bound.
+    initial=((value-price)/product['list_price'] if value and product.get('list_price') else -1) if version==LEGACY else None
     item = {"order": order["order"], "sku": sku, "unit": settled.get("unit"), "shop": settled["shop"],
             "shop_identity": journal.snapshot("registry.json", {}).get(settled["shop"], {}).get("pubkey"),
             "name": settled.get("name", product.get("name", sku)), "kind": product.get("kind", order.get("kind")),
             "price": price, "value": value, "paid_at": now, "grade": settled.get("grade"),
             'list_price':product.get('list_price'),'expires_at':expires,
-            'initial_saved_contribution':(value-price)/product['list_price'] if value and product.get('list_price') else -1,
+            'initial_saved_contribution':initial,'score_formula':version,
+            'initial_saved_lower_scenario':contribution(price,product['list_price'],score_formula=MARGIN,
+                 unit_cost=scenario['unit_cost']) if scenario and value else None,
+            'cost_scenario':scenario,
             "warranty_hours": warranty_hours(settled.get('warranty_hours')), "ledger": settled.get("ledger"),
             "strategy_version": journal.get('buyer_strategy:' + str(order['order']), {}).get('version', 0)}
     journal.add("purchase", item, eid="purchase:" + order["order"], role="buyer")

@@ -2,7 +2,9 @@
 
 
 def observe(journal,board,inv,capacity,now):
-    current={'at':now}
+    from .buyer_scoring import formula,same_formula
+    version=formula(journal)
+    current={'at':now,'score_formula':version}
     for role,table,fields in [('shop','shops',['book','revenue','all','stock_cost','stock_units']),
                               ('buyer','buyers',['saved','forum','deals','posts','all'])]:
         rows=[r for r in board.get(table,[]) if type(r.get('all')) in (int,float)]
@@ -16,6 +18,7 @@ def observe(journal,board,inv,capacity,now):
     if baseline:
         hours=(now-baseline['at'])/3600
         for role,field in [('shop','book'),('buyer','saved')]:
+            if role=='buyer' and not same_formula(baseline,version):continue
             own=current[role]['own'].get(field);old=baseline[role]['own'].get(field)
             if type(own) not in (int,float) or type(old) not in (int,float):continue
             peers=[]

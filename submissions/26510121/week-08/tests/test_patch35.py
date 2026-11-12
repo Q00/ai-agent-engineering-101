@@ -35,7 +35,7 @@ def test_forum_targets_are_benchmarks_while_saved_stays_percentile():
 def rule_text():
     return ('shops by book, revenue and stars; each further unit adds 0.2%; up to +50%; '
             'buyers by saved rate; ALL weighs them 0.5, 0.3, 0.1, 0.1; divided by deals + 100; '
-            'counts -1, or 0 if refunded; except the forum rating, which counts as itself (0 to 1). '
+            'surplus / list price; counts -1, or 0 if refunded; except the forum rating, which counts as itself (0 to 1). '
             'A dislike with value -N (N up to 1000); unit x (N - 1)^2; 3% of largest Book; '
             'power_fee and next_vote_fee; at least 50 settled deals')
 

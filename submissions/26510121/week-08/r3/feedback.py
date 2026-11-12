@@ -93,11 +93,13 @@ def update(journal, config, now=None, force=False):
     for role in ('shops', 'buyers'):
         peers[role] = [{k: r.get(k) for k in ('name', 'all', 'book', 'revenue', 'deals', 'saved', 'forum', 'stock_units', 'alive')}
                       for r in board.get(role, []) if type(r.get('all')) in (int, float)]
-    observation = {'at': now, 'board_at': journal.get('board_checked_at'), 'peers': peers}
+    from .buyer_scoring import formula,same_formula
+    observation = {'at': now, 'score_formula':formula(journal), 'board_at': journal.get('board_checked_at'), 'peers': peers}
     trends = {}
     if prior_rows:
         old = json.loads(prior_rows[0][1]); hours = (now-prior_rows[0][0])/3600
         for role in peers:
+            if role=='buyers' and not same_formula(old,formula(journal)):continue
             baseline = {r['name']: r for r in old['peers'][role]}
             compared = []
             for row in peers[role]:
@@ -189,7 +191,10 @@ def update(journal, config, now=None, force=False):
         out = shop_outcomes.setdefault(pid, {'paid': 0, 'gross_revenue': 0, 'gross_margin': 0})
         out['paid'] += 1; out['gross_revenue'] += sale['price']; out['gross_margin'] += sale['price']-sale['cost']
     canonical = {}
+    from .buyer_scoring import formula,same_formula
+    score_version=formula(journal)
     for oid,frozen in mature_policy_rows.items():
+        if not same_formula(frozen,score_version) or not same_formula(mature_outcomes[oid],score_version):continue
         value=mature_outcomes[oid].get('saved_contribution')
         if type(value) not in (int,float):continue
         row=canonical.setdefault(frozen['id'], {'mature_paid':0,'broken':0,'sum_final_saved_contribution':0,'saved_delta_at_assignment_sum':0})
@@ -251,7 +256,8 @@ def apply(journal, config, role, order=None, now=None):
         # the same order; the actual economic and payment guards stay fresh.
         row = {k:row[k] for k in ('id','rules_hash','patches','at','regime')}
         buyer=next((r for r in journal.snapshot('board.json',{}).get('buyers',[]) if r.get('name')=='seochanit'),{})
-        row.update(saved_at_assignment=buyer.get('saved'),deals_at_assignment=buyer.get('deals',0))
+        from .buyer_scoring import formula
+        row.update(saved_at_assignment=buyer.get('saved'),deals_at_assignment=buyer.get('deals',0),score_formula=formula(journal))
         journal.put(key, row)
     patch = row.get('patches', {}).get(role, {})
     if not valid_patch(role, patch): return config

@@ -7,6 +7,7 @@ from collections import Counter
 import math,statistics,time
 from .state import identity
 from .outcomes import latest
+from .buyer_scoring import formula
 
 PROFILES={'contract_frontier':{'buyer_contract_probe_percent':8,'buyer_contract_gap_power':2,'buyer_contract_diverse_quotes':False},
           'coverage_probe':{'buyer_contract_probe_percent':15,'buyer_contract_gap_power':1,'buyer_contract_diverse_quotes':True},
@@ -29,6 +30,7 @@ def assign(journal,order,config):
         board=journal.snapshot('board.json',{})
         own=next((r for r in board.get('buyers',[]) if r.get('name')=='seochanit'),{})
         frozen={'order':order['order'],'kind':order.get('kind'),'profile':profile,'arm':arm,
+                'score_formula':formula(journal),
                 'experiment':arena.get('experiment'),'revision':REVISION,'saved_at_assignment':own.get('saved',0),
                 'rules_sha256':journal.get('market_rules',{}).get('sha256'), 'challenger_percent':fraction}
         if profile not in PROFILES:
@@ -52,7 +54,10 @@ def summarize(journal,now):
 
 
 def evaluate(journal,arena,now):
+    from .buyer_scoring import formula,same_formula
+    version=formula(journal)
     assignments=[r for r in journal.events('framework_order',6000) if r.get('experiment')==arena.get('experiment')
+                 and same_formula(r,version)
                  and r.get('kind')=='goods' and r['_ts']>=arena.get('since',now) and r['_ts']<=now-22200]
     purchases={r['order']:r for r in journal.events('purchase',10000)}
     results={r['order']:r for r in journal.events('market_result',10000)}
@@ -68,6 +73,7 @@ def evaluate(journal,arena,now):
             if oid in purchases:
                 outcome=outcomes.get(oid,{})
                 if not outcome.get('canonical') or outcome.get('refund_status')=='expected_by_warranty_rule':pending+=1;continue
+                if not same_formula(outcome,version) or type(outcome.get('saved_contribution')) not in (int,float):pending+=1;continue
                 reward=outcome.get('saved_contribution',0)-row.get('saved_at_assignment',0);npaid+=1
             rewards.append(reward)
             durations.append(max(1,result['_ts']-row['_ts'])+15)

@@ -20,11 +20,14 @@ def shop_identity(journal,url):
 
 
 def history(journal,now=None):
-    now=time.time() if now is None else now;cache_key=str(getattr(journal,'md',id(journal)))
+    from .buyer_scoring import formula,same_formula
+    version=formula(journal)
+    now=time.time() if now is None else now;cache_key=(str(getattr(journal,'md',id(journal))),version)
     cached=_HISTORY.get(cache_key)
     if cached and 0<=now-cached['now']<3:return cached
     groups=defaultdict(dict)
     for row in journal.events('buyer_contract_result',6000):
+        if not same_formula(row,version):continue
         if not 0<=now-row['_ts']<=3600:continue
         key=(row['shop_identity'],row['sku'],row.get('kind'))
         groups[key].setdefault(row['order'],row)
@@ -118,7 +121,8 @@ def category_paused(candidate,order,journal,config,context,now):
 
 def observe(journal,order,candidate,terms,assessment,ask):
     contract={'grade':terms.get('grade'),'warranty_hours':terms.get('warranty_hours'),
-              'ask':ask,'cap':assessment['cap']}
+              'ask':ask,'cap':assessment['cap'],
+              'score_formula':assessment.get('saved_state',{}).get('score_formula','list_discount_v34')}
     signature=identity([contract['grade'],contract['warranty_hours'],int(ask/max(1,candidate['product']['list_price'])*50)])
     candidate['last_contract']=dict(contract,signature=signature)
     candidate.setdefault('evidence',{})['contract_frontier']={'ask':ask,'safe_cap':assessment['cap'],

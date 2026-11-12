@@ -13,7 +13,9 @@ def version(journal):
     with journal.connect() as db:
         rows = [db.execute('SELECT rowid FROM events WHERE kind=? ORDER BY ts DESC,rowid DESC LIMIT 1',
                            (kind,)).fetchone() for kind in KINDS]
-    return identity([row[0] if row else 0 for row in rows] + [journal.get('buyer_revision_epoch', 0)])
+    return identity([row[0] if row else 0 for row in rows] + [journal.get('buyer_revision_epoch', 0),
+                    journal.get('market_rules',{}).get('buyer_saved_formula'),
+                    journal.get('buyer-cost-scenarios:v22',{}).get('id')])
 
 
 def pack_execution(row):

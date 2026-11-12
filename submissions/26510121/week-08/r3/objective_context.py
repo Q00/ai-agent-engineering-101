@@ -51,12 +51,14 @@ def observe_forum(journal, now):
 
 
 def buyer_evidence(journal, now):
+    from .buyer_scoring import formula,same_formula,MARGIN
+    version=formula(journal)
     orders = {r['order']: r for r in journal.events('buyer_order', 4000) if 0 <= now-r['_ts'] <= 3600}
     results = {r['order']: r for r in journal.events('market_result', 4000) if r.get('order') in orders}
     purchases = {r['order']: r for r in journal.events('purchase', 10000)}
     canonical = {}
     for row in reversed(journal.events('outcome', 10000)):
-        if row.get('canonical'):
+        if row.get('canonical') and same_formula(row,version):
             canonical[row['order']] = row
     segments = {}
     for kind in ('food', 'goods'):
@@ -66,7 +68,7 @@ def buyer_evidence(journal, now):
                    and canonical[o].get('matured') and type(canonical[o].get('saved_contribution')) in (int,float)
                    and canonical[o].get('refund_status') != 'expected_by_warranty_rule']
         initial = [purchases[o]['initial_saved_contribution'] for o in paid
-                   if type(purchases[o].get('initial_saved_contribution')) in (int,float)]
+                   if same_formula(purchases[o],version) and type(purchases[o].get('initial_saved_contribution')) in (int,float)]
         durations = [max(0, results[o]['_ts']-orders[o]['_ts']) for o in closed]
         segments[kind] = {'closed': len(closed), 'paid': len(paid),
             'conversion': len(paid)/max(1,len(closed)), 'active_seconds': sum(durations),
@@ -101,8 +103,15 @@ def buyer_evidence(journal, now):
             'enough_for_descriptive_comparison':len(rows)>=5}
     board = journal.snapshot('board.json', {})
     own = next((r for r in board.get('buyers', []) if r.get('name') == 'seochanit'), {})
-    failures = [r for r in journal.events('buyer_contract_result', 4000) if 0 <= now-r['_ts'] <= 3600]
+    failures = [r for r in journal.events('buyer_contract_result', 4000) if 0 <= now-r['_ts'] <= 3600 and same_formula(r,version)]
     return {'metric':journal.get('market_rules',{}).get('buyer_metric','unknown'),
+        'score_formula':version,'acquisition_cost_observable':False,
+        'decision_score_source':'public_range_and_shrunk_own_cost_proxy_scenarios' if version==MARGIN else 'list_discount',
+        'cost_model':{k:journal.get('buyer-cost-scenarios:v22',{}).get(k) for k in ('at','id','groups','source')},
+        'healthy_margin_share_exact_reward_pending':version==MARGIN,
+        'objective_weights':{'saved_percentile':.5,'forum_raw':.3,'deals_percentile':.1,'posts_percentile':.1},
+        'decision_contract':'joint expected ALL progress per execution second; compare purchase/counter/outside option',
+        'saved_average_is_not_a_purchase_veto':True,
         'current_saved':own.get('saved'), 'current_deals':own.get('deals'), 'current_forum':own.get('forum'),
         'forum_raw_all_gain_per_0_01':.003 if journal.get('market_rules',{}).get('buyer_forum_metric')=='raw' else None,
         'segments_60min':segments,'mature_quality_cohorts':mature_cohorts,

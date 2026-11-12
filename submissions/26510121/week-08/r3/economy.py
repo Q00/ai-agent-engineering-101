@@ -178,7 +178,7 @@ def shop_candidates(unit, inv, catalog, journal, config, *, offer=None, previous
 
 @decision
 def buyer_candidates(order, shops, catalog, journal, config=None):
-    from .buyer_scoring import state,terms_delta,blocked_units
+    from .buyer_scoring import state,terms_delta,blocked_units,cost_scenario,MARGIN,same_formula,contribution,score_inputs
     from .state import policy
     current=state(journal,config or policy())
     from .forum import shop_hint
@@ -228,7 +228,8 @@ def buyer_candidates(order, shops, catalog, journal, config=None):
             if counterpart_key:
                 own_rows.update(by_identity.get((counterpart_key, sku), {}))
             own = [own_rows[position] for position in sorted(own_rows)]
-            failed = failed_routes.get((shop['url'], sku), [])
+            failed = [r for r in failed_routes.get((shop['url'], sku), [])
+                      if r.get('kind')!='no_agreement' or same_formula(r,current.get('score_formula'))]
             if (config or {}).get('buyer_championship_enabled'):
                 failed=[x for x in failed if x.get('kind')=='no_agreement' and
                         (product.get('kind')!='food' or
@@ -250,8 +251,14 @@ def buyer_candidates(order, shops, catalog, journal, config=None):
             hint = shop_hint(journal, shop['name'], sku)
             monetary=max(0,product['list_price']-estimate)
             normalized=monetary/max(1,product['list_price'])
+            scenario=dict(current)
+            if current.get('score_formula')==MARGIN:
+                from .buyer_costs import scenario as cost_forecast
+                costs=cost_forecast(journal,product,None)
+                scenario.update(unit_cost=costs['unit_cost'],cost_samples=costs['cost_samples'])
+                normalized=contribution(estimate,product['list_price'],**score_inputs(scenario))
             score=success*(normalized if current['metric']=='saved' else monetary)
-            changes=terms_delta(current,estimate,product['list_price'],completion=success)
+            changes=terms_delta(scenario,estimate,product['list_price'],completion=success)
             result.append({"id": shop["name"] + ":" + sku, "shop": shop["url"], "name": shop["name"],
                            "sku": sku, "product": product, "reference_price": estimate,
                            "score": score * (1.03 if hint else 1),

@@ -93,6 +93,15 @@ class Chooser:
                     # bonus; otherwise the .3 forum term would be counted twice.
                     candidate['objective_utility']-=.3*direct_gain(own.get('forum') or 0,delta.get('forum',0))
             candidate['objective_utility'] *= candidate.get('capital_efficiency_factor',1)
+            if role=='buyer' and self.config.get('buyer_joint_objective_enabled'):
+                # Keep the four actual marginal contributions inspectable.
+                # A zero forum/post delta on a quote is deliberate: publishing
+                # and votes are separate observed actions, not payment rewards.
+                candidate['objective_component_progress']={key:{
+                    'raw_delta':delta.get(key,0),
+                    'rank_gain':rank_gain(board,role,'seochanit',{key:delta.get(key,0)}),
+                    'progress_surrogate':rank_progress(board,role,'seochanit',{key:delta.get(key,0)})}
+                    for key in ('saved','forum','deals','posts')}
         def utility(candidate):
             if role=='buyer' and context.get('buyer_execution') and self.config.get('buyer_throughput_enabled'):
                 seconds=max(1,candidate.get('execution_seconds',1))
@@ -119,7 +128,8 @@ class Chooser:
             if packet:
                 context['observed_role_facts'] = packet
         if role=='buyer':context.update(buyer_metric=current['metric'],buyer_forum_metric=current['forum_metric'],
-                                       buyer_rank_scope=board.get('buyer_rank_scope'))
+                                       buyer_rank_scope=board.get('buyer_rank_scope'),buyer_score_formula=current.get('score_formula'),
+                                       saved_average_is_reference=self.config.get('buyer_joint_objective_enabled',False))
         if role=='buyer' and self.config.get('buyer_throughput_enabled'):
             context['execution_objective']='expected rank/Saved progress per bounded execution-second scenario; hard caps unchanged'
         if self.config.get('market_cycle_enabled'):

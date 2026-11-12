@@ -11,6 +11,7 @@ from r3.model import Chooser
 from r3.protocol import Peer, quote, quote_terms, retain_quote_terms, verify_receipt
 from r3.quote_market import compare_quotes, close_quotes, request_text,clarify
 from r3.adaptive import begin_buyer
+from r3.buyer_scoring import formula,MARGIN,joint_actions
 
 
 def receipt_guard(journal,order,candidate,rec,stage,reasons,*,task=None,agreed=None,cap=None):
@@ -216,9 +217,25 @@ def execute(order, journal, chooser, peer_factory, cfg, strategy, registry, rank
                     if rec.get('cert') is False:
                         # The kit will reject this checkout. Try another shop while the order is still alive.
                         raise ValueError('certificate_unavailable')
+                    if cfg.get('buyer_joint_objective_enabled') and formula(journal)==MARGIN:
+                        # Immediate artifacts and negotiated receipts share the
+                        # same whole-objective/outside-option check.
+                        final=buyer_assessment(dict(c['product'],sku=c['sku']),order,rec,journal,cfg,shop=c['shop'])
+                        actions=buyer_price_actions(rec['price'],final['cap'],c['product'],rec['price'],
+                            1,0,1,failure_stress=final['failure'],covered_failure=final['covered_failure'],
+                            saved_state=final['saved_state'])
+                        for action in actions:action['execution_seconds']=max(1,c.get('execution_seconds',5))
+                        decision=chooser.choose('buyer',joint_actions(actions),{'buyer_execution':True,
+                            'operation':'final_purchase','order':order,'shop':c['shop'],'sku':c['sku']},deadline=deadline)
+                        if decision['id']=='continue_search':
+                            journal.add('buyer_objective_skip',{'order':order['order'],'shop':c['shop'],
+                                'sku':c['sku'],'stage':'final_purchase'},role='buyer')
+                            break
                     accept = {"cert": True, "expected_sku": c["sku"]}
                     if order.get("kind") == "food":
                         accept["min_hours_left"] = order.get("use_within_hours", 0) + cfg["checkout_buffer_seconds"] / 3600
+                        if required_grade in ('A','B','C'):
+                            accept['grades']=[required_grade]
                     else:
                         accept["warranty_hours"] = required_warranty
                         if required_grade in ('A', 'B', 'C'):
@@ -274,6 +291,8 @@ def execute(order, journal, chooser, peer_factory, cfg, strategy, registry, rank
                         action['score']*=factor
                         action['expected_delta']={k:v*factor for k,v in action['expected_delta'].items()}
                         action['completion_probability']=calibrated
+                if cfg.get('buyer_joint_objective_enabled') and formula(journal)==MARGIN:
+                    actions=joint_actions(actions)
                 if order.get('kind')=='food' and cfg.get('buyer_fast_food_enabled') and not cfg.get('buyer_patch34_enabled'):
                     move=max(actions,key=lambda a:a['score'])
                 else:
@@ -281,6 +300,10 @@ def execute(order, journal, chooser, peer_factory, cfg, strategy, registry, rank
                                            'shop':c['shop'],'sku':c['sku'],'task':task['id'],
                                            'buyer_execution':True,'operation':'price',
                                            "product": product, "strategy": strategy}, deadline=deadline)
+                if move['id']=='continue_search':
+                    journal.add('buyer_objective_skip',{'order':order['order'],'shop':c['shop'],
+                        'sku':c['sku'],'stage':'price'},role='buyer')
+                    break
                 agreed = move["price"]
                 previous_offer = agreed
                 if move['id'] == 'counter':
@@ -299,7 +322,8 @@ def execute(order, journal, chooser, peer_factory, cfg, strategy, registry, rank
             journal.add("attempt", {"order": order['order'], "strategy_version": strategy['version'],
                                     "shop": c["shop"], "sku": c["sku"], "success": False,
                                     'use_within_hours':order.get('use_within_hours',0),
-                                    "kind": "no_agreement", "seconds": time.monotonic() - started}, role="buyer")
+                                    "kind": "no_agreement", "seconds": time.monotonic() - started,
+                                    "score_formula": formula(journal)}, role="buyer")
         except Exception as exc:
             if not isinstance(exc, ValueError):
                 ranked = [x for x in ranked if x['shop'] != c['shop']]

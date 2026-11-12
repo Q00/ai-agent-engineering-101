@@ -5,7 +5,7 @@ These are bounded routing priors, never a reason to weaken checkout or price cap
 from collections import defaultdict
 import statistics
 import time
-from .buyer_scoring import contribution
+from .buyer_scoring import contribution,score_inputs,formula,same_formula
 from .decision_view import history
 
 
@@ -13,6 +13,7 @@ def route_context(journal,now=None,order=None):
     now=time.time() if now is None else now;start=now-3600
     visits=defaultdict(dict);latency=defaultdict(list)
     for event in history(journal,'attempt',2000):
+        if event.get('kind')=='no_agreement' and not same_formula(event,formula(journal)):continue
         if not start<=event['_ts']<=now:continue
         if not event.get('shop') or not event.get('sku') or not event.get('order'):continue
         if (order or {}).get('kind')=='food' and event.get('use_within_hours')!=order.get('use_within_hours',0):continue
@@ -78,5 +79,6 @@ def strong_offer(candidate,assessment,ask,config):
     if assessment.get('conditional_terms') or ask>assessment['cap']:return False
     state=assessment['saved_state']
     if state['metric']!='saved':return False
-    value=contribution(ask,candidate['product']['list_price'],assessment['failure'],assessment['covered_failure'])
+    value=contribution(ask,candidate['product']['list_price'],assessment['failure'],assessment['covered_failure'],
+                       **score_inputs(state))
     return value>=state['saved']+config.get('buyer_fast_accept_margin',.04)
