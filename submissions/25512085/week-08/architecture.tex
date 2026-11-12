@@ -1,0 +1,96 @@
+% AI-assisted draft; student must verify, edit and explain it.
+% Revision 2: separate buyer client/shop server; direct ledger ingestion;
+% legacy seller history is not a current cash-policy feed.
+% Main found no pdflatex/xelatex/lualatex/tectonic on PATH. Not compiled.
+\documentclass[10pt,a4paper,landscape]{article}
+\usepackage[margin=12mm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta}
+\pagestyle{empty}
+\setlength{\parindent}{0pt}
+\begin{document}
+\begin{center}
+{\Large\bfseries mjforge Round 3 --- deployed 6bb3cd8}\\[1mm]
+Student 25512085 \quad Evidence: 2026-11-13 KST \quad Rule-based operational policy
+\end{center}
+\begin{center}
+\begin{tikzpicture}[x=1cm,y=1cm,>=Latex,
+ base/.style={draw,rounded corners,align=center,font=\small,text width=3.35cm,minimum height=1cm},
+ ours/.style={base,draw=blue!65!black,fill=blue!6},
+ kit/.style={base,draw=orange!70!black,fill=orange!10},
+ ext/.style={base,draw=black!60,fill=black!5},
+ flow/.style={->,thick},ctx/.style={->,dashed},
+ label/.style={font=\scriptsize,align=center,fill=white,inner sep=1pt}]
+
+% Lane 1: negotiation. Receipt returns to our buyer, not directly to payment.
+\node[ext] (order) at (0,0) {Market order\\and discovery};
+\node[kit] (dispatch) at (5,0) {Buyer kit\\dispatch};
+\node[ours] (buyer) at (10,0) {Our buyer\\ranking / receipt guard};
+\node[ext] (peer) at (15,0) {Peer seller A2A};
+\node[ours] (mem) at (20,0) {\texttt{memory.json}\\buyer reads directly};
+\draw[flow] (order)--(dispatch);
+\draw[flow] (dispatch)--(buyer);
+\draw[flow,<->] (buyer)--node[label,above]{negotiate / receipt}(peer);
+\draw[ctx] (mem.north) -- ++(0,.6) -| (buyer.north);
+
+% Lane 2: client/server payment boundary. Only shop server calls settle.
+\node[ours] (result) at (0,-2) {Buyer result\\\texttt{\{shop, receipt, accept, ...\}}};
+\node[kit] (client) at (5,-2) {Buyer kit ACP/AP2 client\\validate checkout / mandates};
+\node[ext] (server) at (10,-2) {Peer shop ACP server\\create / complete};
+\node[ext] (settle) at (15,-2) {Market\\\texttt{/api/settle}};
+\node[ours] (review) at (20,-2) {Post-payment review\\\texttt{\{stars, review\}} to kit};
+\draw[flow] (result)--(client);
+\draw[flow,<->] (client)--(server);
+\draw[flow] (server)--(settle);
+\draw[ctx] (settle)--node[label,above]{kit hook}(review);
+\node[label] at (5,-.95) {After negotiation: our buyer returns the result below to its kit};
+
+% Lane 3: evidence ingestion and policy inputs, not just kit snapshots.
+\node[ext] (ledger) at (0,-4) {Public ledger\\and market evidence};
+\node[ours] (store) at (5,-4) {Store: direct GET\\called by restock};
+\node[ours] (hub) at (10,-4) {Shared hub\\bounded comparables};
+\node[ours] (policy) at (15,-4) {Current policy consumers\\buyer / seller cash / restock};
+\node[kit] (snapshot) at (20,-4) {Kit \texttt{.market} snapshots\\catalog / inventory etc.};
+\draw[ctx] (ledger)--(store);
+\draw[ctx] (store)--node[label,above]{normalize / apply}(hub);
+\draw[ctx] (hub)--(policy);
+\draw[ctx] (snapshot)--(policy);
+
+% Lane 4: tool outputs and separate persistence layers.
+\node[ours] (restock) at (0,-6) {Restock plan\\\texttt{\{buy: [...]\}}};
+\node[kit] (hooks) at (5,-6) {Kit procurement / forum\\executes plan and outbox};
+\node[ours] (journal) at (10,-6) {Append-only journal\\after hub unlock / fsync\\256 MiB cap; unknowns};
+\node[ours] (seller) at (15,-6) {Our seller + cash policy\\A2A / signed receipt\\volatile 90s / 120s state};
+\node[ours] (forum) at (20,-6) {Review / forum writer\\memory and hub updates\\outbox draft};
+\draw[flow] (restock)--(hooks);
+\draw[flow] (hub)--(journal);
+\draw[ctx] (policy)--(seller);
+\draw[ctx] (review.east) -- ++(.65,0) |- (forum.east);
+\draw[flow] (forum.south) -- ++(0,-.65) -| (hooks.south);
+
+\node[align=left,font=\scriptsize,text width=23cm] at (10,-8.15) {
+ \textcolor{blue!65!black}{Blue: our code/context.}
+ \textcolor{orange!70!black}{Orange: our provided kit.}
+ Grey: market or peer (peer ACP may also use a kit).
+ Solid: tool/payment. Dashed: context/hook.\\
+ Our seller is a separate serving role: external buyer $\to$ our kit A2A proxy $\to$ our seller;
+ signed receipt returns to that buyer, then our shop ACP server calls market settle. No self-trading is implied.\\
+ Current seller pricing uses hub/cash policy. \texttt{seller\_history.json} is legacy-only, not an arrow into current policy.
+ Buyer reads \texttt{memory.json} directly; review updates it.\\
+ Bounded retention: shop memory recent 5; purchases 150; hub SKU comparables 50/3h.
+ Working sessions and SDK/ACP memory are not the append journal.\\
+ Hub lock timeout is fail-open. No deployed persistent seller reservation, local catalog cache,
+ or local \texttt{\_cash\_*} split is claimed. Local cache contract is mtime\_ns + size, not a one-second TTL.
+};
+\end{tikzpicture}
+\end{center}
+\small
+\textbf{Policy guard:} goods receipt ExpectedSaved $>0$ before 5 settle samples;
+$>0.25$ at 5+ samples regardless of warranty. Mature list-price caps: goods 67\%, food 66\%;
+budget/comparables can tighten them. These are policy assumptions, not measured model accuracy.\\[1mm]
+\textbf{Authorship / status:} AI-assisted draft; student must review, edit and explain every boundary.
+No LaTeX engine found on current PATH by the main session; PDF not built or visually validated.
+Source: saved runtime source/manifest, not live-memory proof.
+\end{document}
