@@ -897,19 +897,22 @@ class Operator:
         return {"role": self.role} if self.role is not None else {}
 
     def _role_events(self, st, now):
-        """This role's experiment and code-change verdicts since it last woke, read from the ledgers (a verdict the
-        other process reached wakes this one too). The first call only marks the start."""
+        """This role's experiment and code-change verdicts and the answers to its own questions since it last woke,
+        read from the ledgers (a verdict the other process reached wakes this one too). The first call only marks the
+        start. -> (experiments, code changes, answered questions)."""
         seen = st.get("events_seen_ts")
         if not _num(seen):
             st["events_seen_ts"] = now
             self._save_state(st)
-            return [], []
+            return [], [], []
         exps = [e for e in ex.load(self.root) if isinstance(e, dict) and e.get("status") not in (None, "running")
                 and _num(e.get("ended_ts")) and e["ended_ts"] > seen and ex.role_of(e) == self.role]
         codes = [r for r in code_edit.load(self.root) if r.get("status") not in code_edit.OPEN
                  and _num(r.get("ended_ts")) and r["ended_ts"] > seen and self.role in code_edit.role_of(r)]
-        self._seen_next = max([seen] + [x["ended_ts"] for x in exps + codes])
-        return exps, codes
+        answers = [q for q in questions.load(self.root) if q.get("from") == self.role
+                   and q.get("status") in ("done", "failed") and _num(q.get("answered_ts")) and q["answered_ts"] > seen]
+        self._seen_next = max([seen] + [x["ended_ts"] for x in exps + codes] + [q["answered_ts"] for q in answers])
+        return exps, codes, answers
 
     def _window_reason(self, now, last):
         """Shop: wake A2_SHOP_LEAD_S (SHOP_LEAD_S) before the next restock window opens, at most every SHOP_MIN_GAP_S
@@ -1011,9 +1014,12 @@ class Operator:
         ended = [e for e in ticked if e.get("status") != "running"]
         reasons = []
         if self.role is not None:
-            ended, codes = self._role_events(st, now)
+            ended, codes, answers = self._role_events(st, now)
             if codes:
                 reasons.append(f"코드 수정 판정 {len(codes)}건 (상태 카드의 [코드] 줄)")
+            if answers:
+                reasons.append("네 조사 질문의 답 도착 " + ", ".join(f"#{q['id']}" for q in answers[:5])
+                               + " (findings 도구로 전문을 봄)")
         if ended:
             reasons.append(f"실험 판정 {len(ended)}건 (상태 카드의 [실험] 줄)")
         last = st.get("last_wake_ts")

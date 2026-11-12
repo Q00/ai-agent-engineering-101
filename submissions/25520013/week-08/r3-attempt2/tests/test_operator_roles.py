@@ -454,6 +454,26 @@ def test_verdicts_wake_the_role_that_proposed_them(env):
     ) is None and "코드 수정 판정" in shop.wake_reason(NOW + 180)
 
 
+def test_an_answer_to_its_own_question_wakes_the_role_that_asked_once(env):
+    from kernel import questions as qs
+
+    root, make = env
+    shop, buyer = make("shop"), make("buyer")
+    for o in (shop, buyer):
+        o.wake_reason(NOW)
+        o._save_state(dict(o._state(), last_wake_ts=NOW, next_wake_ts=NOW + 30 * 60))
+    a = qs.add(root, "shop", "사과는 어디에서 빠지나", NOW + 5)["id"]
+    qs.add(root, "buyer", "구매 오류는 어디서 나나", NOW + 6)
+    assert shop.wake_reason(NOW + 60) is None  # asked, not answered yet: the operator's own next wake stands
+    qs.close(root, a, "done", NOW + 90)
+    r = shop.wake_reason(NOW + 120)
+    assert r == f"네 조사 질문의 답 도착 #{a} (findings 도구로 전문을 봄)"
+    assert buyer.wake_reason(NOW + 120) is None  # the other role's answer does not wake it
+    shop.terra = Script({"done": {}})
+    shop.wake(r, NOW + 120)
+    assert shop.wake_reason(NOW + 180) is None  # seen: no second wake for the same answer
+
+
 # ------------------------------------------------------------ restock window
 def _inv(root, **restock):
     os.makedirs(os.path.join(root, ".market"), exist_ok=True)
