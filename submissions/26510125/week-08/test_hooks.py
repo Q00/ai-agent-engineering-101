@@ -20,6 +20,7 @@ assert restock.surged([{"sku": "G1", "cost": 240, "list_price": 300, "supplied_a
 restock.settled = lambda: [{"item": "G1", "amount": 300}, {"item": "G1", "amount": 300}, {"item": "G2", "amount": 900}]
 assert restock.settled_counts() == {"G1": 600, "G2": 900}                                             # revenue, not count
 restock.settled_counts = lambda: collections.Counter({"F1": 10, "G1": 4, "G2": 1, "ZZ": 9})
+restock.median_price = lambda sku: (200, 7) if sku == "G1" else (None, 0)
 sys.argv = ["restock", "--state", str(md)]
 import io, contextlib
 buf = io.StringIO()
@@ -32,6 +33,10 @@ assert buy.get("G1", 0) == 6 - 1, buy          # min(6 per SKU, int(20000*0.08/2
 assert "F1" not in buy and buy.get("G2") == 2, buy   # milk: 24 h shelf -> never; desk: int(1600/675) = 2 units
 assert "bankrupt" not in out
 assert (md / "outbox.jsonl").exists() and json.loads((md / "outbox.jsonl").read_text())["as"] == "shop"
+txt = restock.notice([{"sku": "G1", "name": "lamp", "grade": "A", "kind": "goods"}, {"sku": "G2", "name": "desk", "grade": "A", "kind": "goods"},
+                      {"sku": "G1", "name": "lamp", "grade": "C", "kind": "goods"}])
+assert "lamp (G1) 190 (최근 7건 중앙값 200)" in txt and "desk" not in txt, txt        # 95 % of the median; no median, no line
+assert restock.notice([{"sku": "F1", "name": "milk", "grade": "A", "kind": "food"}]) is None
 
 # market_buyer Round 3 helpers
 order = {"order": "o1", "item": "lamp", "category": "goods>home", "budget": 400, "acceptable": ["G1", "G2"], "kind": "goods"}

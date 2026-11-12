@@ -5,12 +5,12 @@ The kit's default buys random SKUs when stock is low. This one reads demand from
 balance, skipping SKUs whose supply price has surged.
 Rules: keep stock under 400 A/B units (storage is 1 %/day of cost), spend at most 5 % of the balance per SKU,
 food only with >= 10 days of shelf life (buyers refuse grade C, and food gets there fast), file for bankruptcy only
-when below the line with nothing left to sell. Also posts a shop notice to the forum at most every 60 min.
+when below the line with nothing left to sell. Also posts the shop's price list to the forum once an hour (week-10 LAB first move).
 """
 import argparse, collections, json, time
 from pathlib import Path
 
-from market_price import settled
+from market_price import settled, median_price
 
 MAX_UNITS, PER_SKU_SHARE, TOP = 400, 0.08, 30   # goods do not decay and Book counts stock at cost: idle cash earns nothing
 
@@ -43,6 +43,28 @@ def surged(units):
     return {sku for sku, r in last.items() if r > 0.75}
 
 
+def notice(units):
+    """Week-10 LAB, the shop's first move: instead of "we have stock", a price list other buyers' agents can act on —
+    our ask (5 % under the market median) for the three A-grade SKUs with the most settled revenue, with the median.
+    Target: buyer agents that read [시세] posts (they quote and follow them). Wrong-case cost: one post slot an hour.
+    Metric: seller visits/h and deals/h (baseline Nov 12 12:00-15:00: ~300 visits/h, ~75 deals/h)."""
+    hot = settled_counts()
+    rows = []
+    for u in sorted((u for u in units if u.get("grade") == "A" and u.get("kind") == "goods"), key=lambda u: -hot[u["sku"]]):
+        if any(r[0] == u["sku"] for r in rows):
+            continue
+        med, n = median_price(u["sku"])
+        if med:
+            rows.append((u["sku"], u["name"][:30], int(med * 0.95), med, n))
+        if len(rows) == 3:
+            break
+    if not rows:
+        return None
+    return ("[시세/재고] yeonsong2 호가 = 시장 중앙값의 95 %, A등급·시장 인증서·6h 보증: " +
+            "; ".join(f"{name} ({sku}) {ask:,} (최근 {n}건 중앙값 {med:,})" for sku, name, ask, med, n in rows) +
+            ". SKU로 요청하면 즉시 수락.")
+
+
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument("--state", required=True); a = ap.parse_args()
     md = Path(a.state)
@@ -70,14 +92,12 @@ def main():
             if qty >= 1:
                 out["buy"].append({"sku": sku, "qty": qty}); room -= qty
         print(f"[restock] balance {balance} units {len(units)} hot={len(hot)} surged={sorted(hot_now)[:5]} -> buy {out['buy']}", flush=True)
-    # forum: one shop notice per 10 minutes about what we stock
+    # forum, once an hour: the shop's price list (week-10 LAB "first move"), see notice()
     stamp = md / "last_shop_post"
-    if units and time.time() - (stamp.stat().st_mtime if stamp.exists() else 0) > 3600:
-        cats = collections.Counter(u.get("category", "").split(">")[-1] for u in units).most_common(3)
-        line = {"post": "yeonsong2 재고 있음: " + ", ".join(f"{c} {n}개" for c, n in cats) + " — 등급 정직 표기, 비식품 보증 A 6h/B 3h.",
-                "refs": [], "as": "shop"}
+    text = notice(units) if units and time.time() - (stamp.stat().st_mtime if stamp.exists() else 0) > 3600 else None
+    if text:
         with (md / "outbox.jsonl").open("a", encoding="utf-8") as f:
-            f.write(json.dumps(line, ensure_ascii=False) + "\n")
+            f.write(json.dumps({"post": text, "refs": [], "as": "shop"}, ensure_ascii=False) + "\n")
         stamp.touch()
     print(json.dumps(out, ensure_ascii=False), flush=True)
 
