@@ -473,7 +473,7 @@ def test_kept_and_observations_stay_bounded_over_a_long_wake():
         "[단계 59]" in text and "앞선 결론" in text
     )  # the newest in full, the oldest counted
     obs = {
-        (i, "t"): (i, f"tool{i} {{}}", "x" * 14_000)
+        (i, "t"): (i, f"tool{i} {{}}", "x" * op.OBS_BUDGET)
         for i in range(op.COMPACT_STEPS * op.COMPACT_TOOLS)
     }
     shown, full = op._obs_text(obs)

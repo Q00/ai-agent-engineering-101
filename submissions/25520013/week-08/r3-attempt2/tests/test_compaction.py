@@ -211,16 +211,16 @@ def test_a_compacted_call_may_be_made_again(env):
 
 def test_default_thresholds(env, monkeypatch):
     root, make = env
-    assert DEFAULTS == (24_000, 16_000)
+    assert DEFAULTS == (60_000, 30_000)  # 24,000 / 16,000 until 11-12 23:50 (live: a summary every 2-3 steps)
     monkeypatch.setattr(op, "COMPACT_AT", DEFAULTS[0])
     monkeypatch.setattr(op, "COMPACT_MIN_OLD", DEFAULTS[1])
-    m = Model(_acts(6), [SUMMARY_1, SUMMARY_2])
+    m = Model(_acts(11), [SUMMARY_1, SUMMARY_2])
     make("shop", m).wake("주기 점검", NOW)
     rows = _rows(root, "compact")
-    # 6,000 chars per step: steps 1-4 carry under 24,000; before step 5, 24,000 carried with 12,000 older (< 16,000);
-    # before step 6, 30,000 carried with 18,000 older: the first compaction; the second needs 16,000 more older chars
-    assert [r["step"] for r in rows] == [6] and rows[0]["chars_before"] >= 24_000
-    assert all(op.COMPACT_HEAD not in p for p in m.prompts[:5]) and SUMMARY_1 in m.prompts[5]
+    # 6,000 chars per step: before step 10, 54,000 carried (< 60,000); before step 11, 60,000 carried with 48,000
+    # older: the first compaction; the second needs 30,000 more older chars, which this wake does not reach
+    assert [r["step"] for r in rows] == [11] and rows[0]["chars_before"] >= 60_000
+    assert all(op.COMPACT_HEAD not in p for p in m.prompts[:10]) and SUMMARY_1 in m.prompts[10]
 
 
 def test_env_switch_turns_compaction_off(env, monkeypatch):

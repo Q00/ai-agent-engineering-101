@@ -108,9 +108,9 @@ BUSY = os.path.join("a2", "operator_busy.json")  # {role, pid, ts} while a role 
 BUSY_STALE_S = 900
 LEDGER_LOCK = os.path.join("a2", "operator_ledger.lock")  # role mode: the two processes' ledger writes take turns
 AUDITOR_LOCK = os.path.join("a2", "auditor.lock")
-OBS_BUDGET = 14_000  # chars of tool results shown per step: newest in full, older ones cut to OBS_TRIM
+OBS_BUDGET = 40_000  # (14,000 until 11-12 23:50) chars of tool results shown per step: newest in full, older ones cut to OBS_TRIM
 OBS_TRIM = 1_000
-OBS_TRIM_BUDGET = 10_000  # chars of cut results; beyond it older results show only their call
+OBS_TRIM_BUDGET = 20_000  # (10,000 until 11-12 23:50) chars of cut results; beyond it older results show only their call
 OBS_HEADS = 6_000  # chars of those call lines; beyond it only their count
 # Compaction (like Claude Code's): when the carried part of a wake (kept conclusions + retained observations, raw chars)
 # reaches COMPACT_AT and its older part (all but the last COMPACT_RECENT tool steps) is at least COMPACT_MIN_OLD, one
@@ -120,11 +120,15 @@ OBS_HEADS = 6_000  # chars of those call lines; beyond it only their count
 # 16,000 chars of new material at least (a 26k-43k chars investigator step carried mostly results; at 8,000 chars of
 # results per step that is one extra call per two steps, at 3,000 one per five). Env A2_COMPACT_SUMMARY=0 turns it off
 # (trimming only). Never shown to the agent: its prompt only gets the section COMPACT_HEAD.
-COMPACT_AT = OBS_BUDGET + OBS_TRIM_BUDGET  # 24,000
-COMPACT_MIN_OLD = 16_000
+COMPACT_AT = OBS_BUDGET + OBS_TRIM_BUDGET  # 60,000
+# 11-12 23:50 (24,000 / 16,000 before): live 24 h, 351 summary calls took 10.9 h of model time against 4.8 h for
+# the agents' own calls (investigator 9.6 h vs 3.3 h), median 103 s each, and chars_after had a median of 29k, so a
+# wake re-summarized every 2-3 steps. Latency follows output, not input: prompts 40-80 KB 7.8 s, 80-120 KB 9.9 s,
+# a 10-20 KB summary 93 s. So the wake carries more verbatim and compacts rarely, as Claude Code does near its limit
+COMPACT_MIN_OLD = 30_000
 COMPACT_RECENT = 2
-SUMMARY_TARGET = 12_000  # 11-12 23:40: the summary call is told this length; without it every re-summary carried all numbers forward and grew past SUMMARY_MAX (live: 9.4k -> 17.6k -> rejected)
-SUMMARY_MAX = 20_000  # (12,000 until 11-12: 4 of 14 live summaries were thrown away as too long) a longer summary is not used (the trimming path goes on), so the summary section stays bounded
+SUMMARY_TARGET = 15_000  # (12,000 for 23:27-23:50) 11-12 23:40: the summary call is told this length; without it every re-summary carried all numbers forward and grew past SUMMARY_MAX (live: 9.4k -> 17.6k -> rejected)
+SUMMARY_MAX = 30_000  # (20,000 until 11-12 23:50: 44 of 351 live summaries in 24 h were rejected at about 20k) (12,000 until 11-12: 4 of 14 live summaries were thrown away as too long) a longer summary is not used (the trimming path goes on), so the summary section stays bounded
 COMPACT_EFFORT = "medium"  # 11-11 성수님: 추론 강도는 모두 medium
 COMPACT_HEAD = "## 이번 점검에서 지금까지 (커널이 간추림)"
 SUMMARY_HEADS = ("## 확인된 숫자와 출처", "## 세운 가설과 결과", "## 이미 한 변경과 요청", "## 아직 안 풀린 것", "## 다음에 하려던 것")
