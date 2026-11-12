@@ -901,20 +901,23 @@ class Operator:
         read from the ledgers (a verdict the other process reached wakes this one too). The first call only marks the
         start. -> (experiments, code changes, answered questions)."""
         seen = st.get("events_seen_ts")
-        if not _num(seen):
+        if not _num(seen) or seen != seen:
             st["events_seen_ts"] = now
             self._save_state(st)
             return [], [], []
+        if seen > now:  # a mark already ahead of the clock (older code, clock skew) heals to the last wake
+            last = st.get("last_wake_ts")
+            seen = min(last, now) if _num(last) and last == last else now
         exps = [e for e in ex.load(self.root) if isinstance(e, dict) and e.get("status") not in (None, "running")
-                and _num(e.get("ended_ts")) and e["ended_ts"] > seen and ex.role_of(e) == self.role]
+                and _num(e.get("ended_ts")) and seen < e["ended_ts"] <= now and ex.role_of(e) == self.role]
         codes = [r for r in code_edit.load(self.root) if r.get("status") not in code_edit.OPEN
-                 and _num(r.get("ended_ts")) and r["ended_ts"] > seen and self.role in code_edit.role_of(r)]
+                 and _num(r.get("ended_ts")) and seen < r["ended_ts"] <= now and self.role in code_edit.role_of(r)]
         last = st.get("last_wake_ts")
         since = max(seen, last) if _num(last) else seen  # an answer that came before its last wake was on that page
         answers = [q for q in questions.load(self.root) if q.get("from") == self.role
                    and q.get("status") in ("done", "failed") and _num(q.get("answered_ts")) and since < q["answered_ts"] <= now]
-        # a stamp ahead of the clock never moves the mark past now
-        self._seen_next = max([seen] + [min(now, x["ended_ts"]) for x in exps + codes] + [q["answered_ts"] for q in answers])
+        # stamps ahead of the clock are left until the clock reaches them, so the mark never passes now
+        self._seen_next = max([seen] + [x["ended_ts"] for x in exps + codes] + [q["answered_ts"] for q in answers])
         return exps, codes, answers
 
     def _window_reason(self, now, last):
@@ -1059,7 +1062,8 @@ class Operator:
         st.update(last_wake_ts=now, last_rank=ev["rank"], shop_missing=ev["shop_missing"],
                   bankrupt_near=ev["bankrupt_near"])
         if self.role is not None and _num(self._seen_next):
-            st["events_seen_ts"] = max(self._seen_next, st.get("events_seen_ts") or 0)
+            old = st.get("events_seen_ts")
+            st["events_seen_ts"] = max(self._seen_next, min(old, now) if _num(old) and old == old else 0)
         st.pop("next_wake_ts", None)  # a time the operator chose is used once; this wake's done may choose the next
         st.pop("next_wake_min", None)
         last_brief = st.get("last_brief_ts")

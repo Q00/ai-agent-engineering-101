@@ -1039,3 +1039,34 @@ def test_memfeed_tags_memories_with_the_role(tmp_path):
         ("operator", {"source": "memfeed", "n": 1, "role": "buyer"}),
         ("operator", {"source": "memfeed", "n": 1}),
     ]
+
+
+def test_a_verdict_stamped_ahead_of_the_clock_does_not_wake_on_every_poll(env):
+    root, make = env
+    shop = make("shop")
+    shop.wake_reason(NOW)
+    shop._save_state(dict(shop._state(), last_wake_ts=NOW, next_wake_ts=NOW + 30 * 60))
+    ex.save(root, [{"id": 1, "section": "defaults.goods", "key": "price_mult", "status": "kept", "role": "shop",
+                    "ended_ts": float("inf")},
+                   {"id": 2, "section": "defaults.goods", "key": "price_mult", "status": "kept", "role": "shop",
+                    "ended_ts": NOW + 10**6}])
+    ce._save(root, [{"id": 1, "files": ["hooks/restock.py"], "status": "kept", "ended_ts": NOW + 10**6, "ts": NOW}])
+    for t in (NOW + 100, NOW + 101, NOW + 102):
+        assert shop.wake_reason(t) is None
+    assert "실험 판정 1건" in shop.wake_reason(NOW + 10**6 + 1)  # the clock reached it: woken once
+
+
+def test_a_seen_mark_ahead_of_the_clock_heals(env):
+    from kernel import questions as qs
+
+    root, make = env
+    shop = make("shop")
+    shop.wake_reason(NOW)
+    shop._save_state(dict(shop._state(), events_seen_ts=NOW + 10**6, last_wake_ts=NOW, next_wake_ts=NOW + 30 * 60))
+    a = qs.add(root, "shop", "질문", NOW + 140)["id"]
+    qs.close(root, a, "done", NOW + 150)
+    r = shop.wake_reason(NOW + 160)
+    assert f"#{a}" in (r or "")
+    shop.terra = Script({"done": {}})
+    shop.wake(r, NOW + 160)
+    assert shop._state()["events_seen_ts"] <= NOW + 160
