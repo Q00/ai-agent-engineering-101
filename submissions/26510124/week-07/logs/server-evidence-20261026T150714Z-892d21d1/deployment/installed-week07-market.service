@@ -1,0 +1,23 @@
+[Unit]
+Description=Week 07 dyishappy seller and buyer
+Wants=network-online.target
+After=network-online.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+WorkingDirectory=%h/agent-market-week07/repo/submissions/26510124/week-07
+Environment="PATH=%h/agent-market-week07/bin:%h/.local/bin:/usr/local/bin:/usr/bin:/bin"
+Environment=PYTHONUNBUFFERED=1
+Environment=DISABLE_AUTOUPDATER=1
+Environment=TZ=Asia/Seoul
+EnvironmentFile=%h/agent-market-week07/secrets/market.env
+ExecStart=%h/agent-market-week07/repo/submissions/26510124/week-07/.venv/bin/python %h/agent-market-week07/repo/submissions/26510124/week-07/public_market.py join --dir %h/agent-market-week07/repo/submissions/26510124/week-07 --market https://market.ourolabs.ai --name dyishappy --tunnel
+Restart=always
+RestartSec=20
+KillMode=control-group
+TimeoutStopSec=35
+UMask=0077
+
+[Install]
+WantedBy=default.target

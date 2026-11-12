@@ -1,0 +1,54 @@
+
+## buyer tests: your market_buyer against the kit's rule-based shops
+
+### buyer_deal #1: '/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-07/.venv/bin/python' market_buyer.py --shops '/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-07/logs/market-buyer-check-20261020T111711Z-43dbefca/.market/test-shops-buyer_deal-1.json' --item lamp --budget 120
+    Kit Shop saw: offers [110], deals [110], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+    last line: {"shop": "http://127.0.0.1:56588", "receipt": {"item": "lamp", "price": 110.0, "sig_seller": "+xhl6iOBwUnOVFipdtyupC9FGuj0pGbpVxV+8eLhW7q8DN8RNDP84UI7bidp6Egm1UrL41ZNwmggxigiBHPpDQ==", "shop": "Kit Shop", "task": "df3b699d-862c-4b50-85f2-36ec77c16f38"}, "stars": 5, "review": "Bought lamp at 110.0; r
+  PASS  buyer_deal #1: offers [110], stars 5, receipt yes
+  PASS  buyer_protocol_deal #1: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1
+
+### buyer_deal #2: '/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-07/.venv/bin/python' market_buyer.py --shops '/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-07/logs/market-buyer-check-20261020T111711Z-43dbefca/.market/test-shops-buyer_deal-2.json' --item lamp --budget 120
+    Kit Shop saw: offers [115], deals [115], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+    last line: {"shop": "http://127.0.0.1:56637", "receipt": {"item": "lamp", "price": 115.0, "sig_seller": "1OLUi4Nkkj/H+OVqqPMQT91H2Ni2X5Ywm6eybiibNwFYx+z4aEM9HnHsVwDWMjVCLEX5/tSxGfoccXKaJ3AJAw==", "shop": "Kit Shop", "task": "1b75327d-a298-44d2-8d3f-308dfaaf5259"}, "stars": 5, "review": "Bought lamp at 115.0; r
+  PASS  buyer_deal #2: offers [115], stars 5, receipt yes
+  PASS  buyer_protocol_deal #2: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1
+
+### buyer_deal #3: '/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-07/.venv/bin/python' market_buyer.py --shops '/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-07/logs/market-buyer-check-20261020T111711Z-43dbefca/.market/test-shops-buyer_deal-3.json' --item lamp --budget 120
+    Kit Shop saw: offers [105], deals [105], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+    last line: {"shop": "http://127.0.0.1:56678", "receipt": {"item": "lamp", "price": 105.0, "sig_seller": "yjDeq3WDP60tLfbjMrbbK/aiT4fw3tEz9untHWs03jJC8VcS6X4cWa/UdNpTZPT+Cox/5Jz0D0BJ6hUK9wt2Aw==", "shop": "Kit Shop", "task": "c8144c12-351d-479b-8415-2621b20f7240"}, "stars": 5, "review": "Bought lamp at 105.0; r
+  PASS  buyer_deal #3: offers [105], stars 5, receipt yes
+  PASS  buyer_protocol_deal #3: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1
+
+### buyer_holds_budget #1: '/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-07/.venv/bin/python' market_buyer.py --shops '/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-07/logs/market-buyer-check-20261020T111711Z-43dbefca/.market/test-shops-buyer_holds_budget-1.json' --item bookshelf --budget 230
+    Kit Shop saw: offers [215, 225, 230], deals [], canceled 1, continued 3, posts without A2A-Version 1.0: 0
+    last line: {"shop": "http://127.0.0.1:56718", "receipt": null, "stars": 3, "review": "No deal for bookshelf within budget 230; no completed purchase."}
+  PASS  buyer_holds_budget #1: offers [215, 225, 230], stars 3, receipt null
+  PASS  buyer_protocol_holds_budget #1: posts 5, without A2A-Version 1.0 0, follow-ups with taskId 3
+
+### buyer_holds_budget #2: '/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-07/.venv/bin/python' market_buyer.py --shops '/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-07/logs/market-buyer-check-20261020T111711Z-43dbefca/.market/test-shops-buyer_holds_budget-2.json' --item bookshelf --budget 230
+    Kit Shop saw: offers [190, 220, 230], deals [], canceled 1, continued 3, posts without A2A-Version 1.0: 0
+    last line: {"shop": "http://127.0.0.1:56893", "receipt": null, "stars": 3, "review": "No deal for bookshelf within budget 230; no completed purchase."}
+  PASS  buyer_holds_budget #2: offers [190, 220, 230], stars 3, receipt null
+  PASS  buyer_protocol_holds_budget #2: posts 5, without A2A-Version 1.0 0, follow-ups with taskId 3
+
+### buyer_holds_budget #3: '/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-07/.venv/bin/python' market_buyer.py --shops '/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-07/logs/market-buyer-check-20261020T111711Z-43dbefca/.market/test-shops-buyer_holds_budget-3.json' --item bookshelf --budget 230
+    Kit Shop saw: offers [170, 210, 225, 230], deals [], canceled 1, continued 4, posts without A2A-Version 1.0: 0
+    last line: {"shop": "http://127.0.0.1:57073", "receipt": null, "stars": 3, "review": "No deal for bookshelf within budget 230; no completed purchase."}
+  PASS  buyer_holds_budget #3: offers [170, 210, 225, 230], stars 3, receipt null
+  PASS  buyer_protocol_holds_budget #3: posts 6, without A2A-Version 1.0 0, follow-ups with taskId 4
+
+### buyer_reads_reviews #1: '/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-07/.venv/bin/python' market_buyer.py --shops '/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-07/logs/market-buyer-check-20261020T111711Z-43dbefca/.market/test-shops-buyer_reads_reviews-1.json' --item lamp --budget 120
+    Kit Shop North saw: offers [], deals [], canceled 0, continued 0, posts without A2A-Version 1.0: 0
+    Kit Shop South saw: offers [100], deals [100], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+    last line: {"shop": "http://127.0.0.1:57251", "receipt": {"item": "lamp", "price": 100.0, "sig_seller": "jR6vroLZTmVAfrUcJUVOyM8dRKTqA4P0gWOPusc53TsmRMysrRdtDPq/i7WqskHdfKvZNuGwmT9/lsHaI65pBA==", "shop": "Kit Shop South", "task": "38353e03-0477-4f96-ae9c-481b8fda90eb"}, "stars": 5, "review": "Bought lamp at 10
+
+### buyer_reads_reviews #2: '/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-07/.venv/bin/python' market_buyer.py --shops '/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-07/logs/market-buyer-check-20261020T111711Z-43dbefca/.market/test-shops-buyer_reads_reviews-2.json' --item lamp --budget 120
+    Kit Shop North saw: offers [], deals [], canceled 0, continued 0, posts without A2A-Version 1.0: 0
+    Kit Shop South saw: offers [100], deals [100], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+    last line: {"shop": "http://127.0.0.1:57298", "receipt": {"item": "lamp", "price": 100.0, "sig_seller": "0RF3GHglOLZbjPUkxfGIZwzoUN6BrE6jNGz3K7PiYWxGQH7zYGBsL/ODyVZyOVlI4yVpjuvFfKD+NJtf1rMuAQ==", "shop": "Kit Shop South", "task": "bbf3f0b5-d0d1-4285-a8b5-9ec50c8eb4a3"}, "stars": 5, "review": "Bought lamp at 10
+
+### buyer_reads_reviews #3: '/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-07/.venv/bin/python' market_buyer.py --shops '/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-07/logs/market-buyer-check-20261020T111711Z-43dbefca/.market/test-shops-buyer_reads_reviews-3.json' --item lamp --budget 120
+    Kit Shop North saw: offers [], deals [], canceled 0, continued 0, posts without A2A-Version 1.0: 0
+    Kit Shop South saw: offers [110], deals [110], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+    last line: {"shop": "http://127.0.0.1:57346", "receipt": {"item": "lamp", "price": 110.0, "sig_seller": "huAZ9O3w+dq6S3+s7MUZ/aefvid5K1sNDnqlEEu6IDROqJO1tS+a1ddBFa1TKKSjWeiwPv0A3xM8j6h1AbFODg==", "shop": "Kit Shop South", "task": "327181c5-cef3-42ca-a0c4-630affa6e6b1"}, "stars": 5, "review": "Bought lamp at 11
+  PASS  buyer_reads_reviews #1: shop with good reviews in 3 of 3 runs (picks ['good', 'good', 'good']); needs 2
