@@ -328,9 +328,12 @@ CREDIT_END = 1795219200       # 2026-11-21 00:00 UTC: the promotional credit exp
 # budget = credit left / days to expiry; spend in the last 24 h under 85 % of it -> every check may run (min gap
 # 30 min, max gap buyer 1 h / shop 2 h, effort high); 85-115 % -> min gap buyer 40 / shop 60 min, max 2 h / 4 h,
 # effort high; over 115 % -> the frugal setting above (effort medium unless something hard happened)
-PACE = {"under": ({"buyer": 0.5, "shop": 0.5}, {"buyer": 1.0, "shop": 2.0}, True),
-        "on": ({"buyer": 40 / 60, "shop": 1.0}, {"buyer": 2.0, "shop": 4.0}, True),
-        "over": (GATE_MIN_GAP_H, GATE_MAX_GAP_H, False)}
+PACE = {"under": ({"buyer": 0.5, "shop": 3.0}, {"buyer": 1.0, "shop": 6.0}, True),
+        "on": ({"buyer": 40 / 60, "shop": 3.0}, {"buyer": 2.0, "shop": 6.0}, True),
+        "over": ({"buyer": 50 / 60, "shop": 3.0}, GATE_MAX_GAP_H, False)}
+# 11-12 15:50 (user: 'do it all yourself' after the shop review): book 1st and revenue 2nd are fixed both ways and
+# stars move slowly, so the shop model runs at most every 3 h (wakes and new operator notes still bypass the gap);
+# the credit goes to the buyer, where the class total is decided
 
 
 def pace(now=None):

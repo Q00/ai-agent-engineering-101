@@ -332,6 +332,13 @@ def pick_unit(text, held, now, asks=None):
     # unsold; even a buyer who asks for C or the cheapest grade gets A or B (asked-for C was 1 sale in 48 h, and
     # accounts that rate by grade give a C 3 stars 'as claimed').
     ab = [u for u in fit if (u.get("grade") or "A") != "C"]
+    # 11-12 15:50 (user: 'do it all yourself' after the shop review): book 1st and revenue 2nd cannot move either way,
+    # stars_rank is the only shop part left and decides the class total (4.43 -> 4.40 drops us 5 star ranks and to 2nd
+    # overall). Our grade B goods rate 4.30 vs A 4.56 (24 h; 25620027 and fair-furniture give A 5, B 4); without the B
+    # goods of the last 24 h our per-account star mean would be +0.005. Policy knob sell_b (0 = A only; unsold B stays
+    # in the book at cost)
+    if not shop_policy_now().get("sell_b", 1):
+        ab = [u for u in ab if (u.get("grade") or "A") == "A"]
     if not ab:
         return None
     if shop_policy_now().get("grade_first"):
