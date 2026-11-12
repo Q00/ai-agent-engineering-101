@@ -156,7 +156,7 @@ class AdaptiveStockTests(unittest.TestCase):
             root = Path(directory)
             atomic_json(root / "shop-policy.json", self.policy)
             self.assertEqual(policy_at(root)["restock"]["adaptive_goods"]["low_stock_units"], 8)
-            self.rules["low_stock_units"] = 31
+            self.rules["low_stock_units"] = 61
             atomic_json(root / "shop-policy.json", self.policy)
             with self.assertRaisesRegex(ValueError, "adaptive inventory policy: low_stock_units"):
                 policy_at(root)
@@ -218,9 +218,9 @@ class AdaptiveStockTests(unittest.TestCase):
 
     def test_full_pending_history_refuses_new_pilots_and_confirmed_inactive_history_can_retire(self):
         original = {f"G{i:08x}": {"planned_qty": 1, "settled_qty": 0, "last_ledger": 0,
-                    "retry_credit": 0, "observed_at_plan": 0} for i in range(32)}
+                    "retry_credit": 0, "observed_at_plan": 0} for i in range(self.rules["max_retained_skus"])}
         result = self.control(original, pool={ALT1: {}})
-        self.assertEqual(len(result), 32)
+        self.assertEqual(len(result), self.rules["max_retained_skus"])
         self.assertNotIn(ALT1, result)
         self.assertEqual(original[next(iter(original))]["settled_qty"], 0)
         settled = deepcopy(original)

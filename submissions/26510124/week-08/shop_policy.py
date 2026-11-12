@@ -78,7 +78,7 @@ def policy_at(root=ROOT):
     if not isinstance(stock, dict) or type(stock.get("enabled")) is not bool:
         raise ValueError("Invalid restock policy")
     for key, low, high in (("cash_reserve_percent", 25, 80), ("max_units_per_run", 1, 10),
-                           ("max_stock_units", 1, 50), ("max_units_per_sku", 1, 5),
+                           ("max_stock_units", 1, 60), ("max_units_per_sku", 1, 5),
                            ("max_food_units_per_sku", 1, 2), ("interval_seconds", 900, 86400),
                            ("exploration_units", 0, 2), ("min_mature_sales", 3, 10),
                            ("slow_stock_hours", 12, 72)):
@@ -100,8 +100,8 @@ def policy_at(root=ROOT):
     if adaptive is not None:
         if not isinstance(adaptive, dict) or type(adaptive.get("enabled")) is not bool:
             raise ValueError("Invalid adaptive inventory policy")
-        for key, low, high in (("max_candidates", 1, 18), ("max_retained_skus", 6, 32),
-                               ("max_units_per_run", 1, 8), ("low_stock_units", 1, 30),
+        for key, low, high in (("max_candidates", 1, 32), ("max_retained_skus", 6, 96),
+                               ("max_units_per_run", 1, 8), ("low_stock_units", 1, 60),
                                ("minimum_public_sales", 3, 100), ("minimum_public_buyers", 2, 20),
                                ("minimum_public_shops", 2, 20)):
             value = adaptive.get(key)
