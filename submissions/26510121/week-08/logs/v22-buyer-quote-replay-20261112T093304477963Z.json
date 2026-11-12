@@ -1,0 +1,630 @@
+{
+  "at": "2026-11-12T09:33:04.183637+00:00",
+  "rule_source": "logs\\patch-rules-source-20261112T092314027441Z.json",
+  "rules": {
+    "at": 1794475984.1836367,
+    "sha256": "3de7d37ca3361ae7620fe873aebada513457cba30a705bb22927553c788045db",
+    "compatible": true,
+    "expected": "book/revenue/stars; surge<=1.5",
+    "source": "/agent.md",
+    "buyer_metric": "saved",
+    "buyer_saved_formula": "margin_share_v36",
+    "buyer_compatible": true,
+    "buyer_forum_metric": "raw",
+    "paid_dislike_power": true,
+    "paid_dislike_contract_known": true,
+    "forum_vote_min_deals": 50,
+    "stance_scoring": true,
+    "dislike_costs_shop_cash": true
+  },
+  "cost_model": {
+    "at": 1794475984.1836367,
+    "expires_at": 1794476164.1836367,
+    "rules_hash": "3de7d37ca3361ae7620fe873aebada513457cba30a705bb22927553c788045db",
+    "groups": {
+      "food:A": {
+        "n": 50,
+        "positive_margin_n": 50,
+        "quantile_ratios": [
+          0.5618809201623816,
+          0.5846464646464646,
+          0.6105818673883626,
+          0.6387924528301887,
+          0.6531833910034602,
+          0.6728881469115192,
+          0.712949494949495,
+          0.7288268156424581,
+          0.7765829145728643
+        ],
+        "nonpositive_margin_n": 0
+      },
+      "food:B": {
+        "n": 184,
+        "positive_margin_n": 184,
+        "quantile_ratios": [
+          0.4042929292929293,
+          0.4421799307958478,
+          0.47165829145728644,
+          0.5012152777777777,
+          0.52375,
+          0.55182156133829,
+          0.5808229813664596,
+          0.6027684964200477,
+          0.6953768844221105
+        ],
+        "nonpositive_margin_n": 0
+      },
+      "food:C": {
+        "n": 108,
+        "positive_margin_n": 108,
+        "quantile_ratios": [
+          0.251190798376184,
+          0.28977358490566035,
+          0.31460784313725493,
+          0.35405204460966544,
+          0.39437037037037037,
+          0.4108040201005025,
+          0.43787589498806684,
+          0.4497037037037037,
+          0.5950167224080267
+        ],
+        "nonpositive_margin_n": 0
+      },
+      "goods:A": {
+        "n": 42,
+        "positive_margin_n": 42,
+        "quantile_ratios": [
+          0.5579914305501648,
+          0.5762104362703165,
+          0.5960939510939511,
+          0.6170073307460112,
+          0.6385893060295791,
+          0.654937343358396,
+          0.6706628056628057,
+          0.6927746059630118,
+          0.7344322916666667
+        ],
+        "nonpositive_margin_n": 0
+      },
+      "goods:B": {
+        "n": 14,
+        "positive_margin_n": 14,
+        "quantile_ratios": [
+          0.4149192407163422,
+          0.4852787805856398,
+          0.4873882113821138,
+          0.502345642394582,
+          0.5116366564192651,
+          0.5333114224137931,
+          0.5413828230197295,
+          0.5582029795158286,
+          0.575347721822542
+        ],
+        "nonpositive_margin_n": 0
+      },
+      "goods:C": {
+        "n": 1,
+        "positive_margin_n": 1,
+        "quantile_ratios": [
+          0.2716560304449649,
+          0.2716560304449649,
+          0.2716560304449649,
+          0.2716560304449649,
+          0.2716560304449649,
+          0.2716560304449649,
+          0.2716560304449649,
+          0.2716560304449649,
+          0.2716560304449649
+        ],
+        "nonpositive_margin_n": 0
+      }
+    },
+    "source": "own_settled_costs_selected_proxy_not_other_sellers_cost",
+    "selection_and_surge_transfer_uncertain": true,
+    "id": "1b8163f4c457137b277ee11e5389aba086b07f6df0426c01487d5f97251d6b17"
+  },
+  "rows": [
+    {
+      "sku": "Gfaaed86c",
+      "kind": "food",
+      "quote_at": 1794475975.1985772,
+      "ask": 45468,
+      "previous_cap": 17989,
+      "budget_quality_cap": 62010,
+      "saved_reference_only": 41262,
+      "saved_target_is_hard_cap": false,
+      "cost_source": "public_range_scenario_grid",
+      "cost_samples": 0,
+      "selected": "accept",
+      "expected_delta": {
+        "surplus": 16542,
+        "deals": 1,
+        "saved": -7.748467749787453e-06
+      },
+      "component_progress": {
+        "saved": {
+          "raw_delta": -7.748467749787453e-06,
+          "rank_gain": 0.0,
+          "progress_surrogate": -5.321749828146594e-06
+        },
+        "forum": {
+          "raw_delta": 0,
+          "rank_gain": 0.0,
+          "progress_surrogate": 0.0
+        },
+        "deals": {
+          "raw_delta": 1,
+          "rank_gain": 0.0,
+          "progress_surrogate": 1.1312217194570097e-05
+        },
+        "posts": {
+          "raw_delta": 0,
+          "rank_gain": 0.0,
+          "progress_surrogate": 0.0
+        }
+      },
+      "quote_reconstruction": "stored grade/warranty; no claim to reconstruct unrecorded peer terms"
+    },
+    {
+      "sku": "G200e39a3",
+      "kind": "food",
+      "quote_at": 1794475975.1617963,
+      "ask": 30142,
+      "previous_cap": 10994,
+      "budget_quality_cap": 37900,
+      "saved_reference_only": 25219,
+      "saved_target_is_hard_cap": false,
+      "cost_source": "public_range_scenario_grid",
+      "cost_samples": 0,
+      "selected": "counter",
+      "expected_delta": {
+        "surplus": 5593.5,
+        "deals": 0.55,
+        "saved": -4.153954226487169e-06
+      },
+      "component_progress": {
+        "saved": {
+          "raw_delta": -4.153954226487169e-06,
+          "rank_gain": 0.0,
+          "progress_surrogate": -2.8529905401475375e-06
+        },
+        "forum": {
+          "raw_delta": 0,
+          "rank_gain": 0.0,
+          "progress_surrogate": 0.0
+        },
+        "deals": {
+          "raw_delta": 0.55,
+          "rank_gain": 0.0,
+          "progress_surrogate": 6.22171945700023e-06
+        },
+        "posts": {
+          "raw_delta": 0,
+          "rank_gain": 0.0,
+          "progress_surrogate": 0.0
+        }
+      },
+      "quote_reconstruction": "stored grade/warranty; no claim to reconstruct unrecorded peer terms"
+    },
+    {
+      "sku": "Gfc2574c9",
+      "kind": "food",
+      "quote_at": 1794475951.5305362,
+      "ask": 28820,
+      "previous_cap": 13895,
+      "budget_quality_cap": 34540,
+      "saved_reference_only": 31873,
+      "saved_target_is_hard_cap": false,
+      "cost_source": "public_range_scenario_grid",
+      "cost_samples": 0,
+      "selected": "accept",
+      "expected_delta": {
+        "surplus": 19080,
+        "deals": 1,
+        "saved": 6.027742154586293e-06
+      },
+      "component_progress": {
+        "saved": {
+          "raw_delta": 6.027742154586293e-06,
+          "rank_gain": 0.0,
+          "progress_surrogate": 0.00015455749114445805
+        },
+        "forum": {
+          "raw_delta": 0,
+          "rank_gain": 0.0,
+          "progress_surrogate": 0.0
+        },
+        "deals": {
+          "raw_delta": 1,
+          "rank_gain": 0.0,
+          "progress_surrogate": 1.1312217194570097e-05
+        },
+        "posts": {
+          "raw_delta": 0,
+          "rank_gain": 0.0,
+          "progress_surrogate": 0.0
+        }
+      },
+      "quote_reconstruction": "stored grade/warranty; no claim to reconstruct unrecorded peer terms"
+    },
+    {
+      "sku": "Gac0c1622",
+      "kind": "food",
+      "quote_at": 1794475888.6074789,
+      "ask": 15984,
+      "previous_cap": 5796,
+      "budget_quality_cap": 19150,
+      "saved_reference_only": 13295,
+      "saved_target_is_hard_cap": false,
+      "cost_source": "public_range_scenario_grid",
+      "cost_samples": 0,
+      "selected": "counter",
+      "expected_delta": {
+        "surplus": 2901.2500000000005,
+        "deals": 0.55,
+        "saved": -4.4492746649335585e-06
+      },
+      "component_progress": {
+        "saved": {
+          "raw_delta": -4.4492746649335585e-06,
+          "rank_gain": 0.0,
+          "progress_surrogate": -3.0558205116326675e-06
+        },
+        "forum": {
+          "raw_delta": 0,
+          "rank_gain": 0.0,
+          "progress_surrogate": 0.0
+        },
+        "deals": {
+          "raw_delta": 0.55,
+          "rank_gain": 0.0,
+          "progress_surrogate": 6.22171945700023e-06
+        },
+        "posts": {
+          "raw_delta": 0,
+          "rank_gain": 0.0,
+          "progress_surrogate": 0.0
+        }
+      },
+      "quote_reconstruction": "stored grade/warranty; no claim to reconstruct unrecorded peer terms"
+    },
+    {
+      "sku": "G4a998429",
+      "kind": "food",
+      "quote_at": 1794475826.155853,
+      "ask": 35696,
+      "previous_cap": 14185,
+      "budget_quality_cap": 48900,
+      "saved_reference_only": 32538,
+      "saved_target_is_hard_cap": false,
+      "cost_source": "public_range_scenario_grid",
+      "cost_samples": 0,
+      "selected": "accept",
+      "expected_delta": {
+        "surplus": 13204,
+        "deals": 1,
+        "saved": -7.34373257065966e-06
+      },
+      "component_progress": {
+        "saved": {
+          "raw_delta": -7.34373257065966e-06,
+          "rank_gain": 0.0,
+          "progress_surrogate": -5.043772369928146e-06
+        },
+        "forum": {
+          "raw_delta": 0,
+          "rank_gain": 0.0,
+          "progress_surrogate": 0.0
+        },
+        "deals": {
+          "raw_delta": 1,
+          "rank_gain": 0.0,
+          "progress_surrogate": 1.1312217194570097e-05
+        },
+        "posts": {
+          "raw_delta": 0,
+          "rank_gain": 0.0,
+          "progress_surrogate": 0.0
+        }
+      },
+      "quote_reconstruction": "stored grade/warranty; no claim to reconstruct unrecorded peer terms"
+    },
+    {
+      "sku": "G2c023a8c",
+      "kind": "goods",
+      "quote_at": 1794475766.356735,
+      "ask": 390573,
+      "previous_cap": 100329,
+      "budget_quality_cap": 500500,
+      "saved_reference_only": 360666,
+      "saved_target_is_hard_cap": false,
+      "cost_source": "shrunk_own_cost_proxy",
+      "cost_samples": 42,
+      "selected": "counter",
+      "expected_delta": {
+        "surplus": 68939.82909314282,
+        "deals": 0.55,
+        "saved": 2.9597819554156666e-07
+      },
+      "component_progress": {
+        "saved": {
+          "raw_delta": 2.9597819554156666e-07,
+          "rank_gain": 0.0,
+          "progress_surrogate": 7.589184500222945e-06
+        },
+        "forum": {
+          "raw_delta": 0,
+          "rank_gain": 0.0,
+          "progress_surrogate": 0.0
+        },
+        "deals": {
+          "raw_delta": 0.55,
+          "rank_gain": 0.0,
+          "progress_surrogate": 6.22171945700023e-06
+        },
+        "posts": {
+          "raw_delta": 0,
+          "rank_gain": 0.0,
+          "progress_surrogate": 0.0
+        }
+      },
+      "quote_reconstruction": "stored grade/warranty; no claim to reconstruct unrecorded peer terms"
+    },
+    {
+      "sku": "G0be9ed07",
+      "kind": "goods",
+      "quote_at": 1794475724.7877555,
+      "ask": 29086,
+      "previous_cap": 8859,
+      "budget_quality_cap": 39900,
+      "saved_reference_only": 29103,
+      "saved_target_is_hard_cap": false,
+      "cost_source": "shrunk_own_cost_proxy",
+      "cost_samples": 42,
+      "selected": "counter",
+      "expected_delta": {
+        "surplus": 6595.758899826942,
+        "deals": 0.55,
+        "saved": 4.334987372766042e-06
+      },
+      "component_progress": {
+        "saved": {
+          "raw_delta": 4.334987372766042e-06,
+          "rank_gain": 0.0,
+          "progress_surrogate": 0.00011115352237778264
+        },
+        "forum": {
+          "raw_delta": 0,
+          "rank_gain": 0.0,
+          "progress_surrogate": 0.0
+        },
+        "deals": {
+          "raw_delta": 0.55,
+          "rank_gain": 0.0,
+          "progress_surrogate": 6.22171945700023e-06
+        },
+        "posts": {
+          "raw_delta": 0,
+          "rank_gain": 0.0,
+          "progress_surrogate": 0.0
+        }
+      },
+      "quote_reconstruction": "stored grade/warranty; no claim to reconstruct unrecorded peer terms"
+    },
+    {
+      "sku": "G2e9e9145",
+      "kind": "goods",
+      "quote_at": 1794475707.2030716,
+      "ask": 29436,
+      "previous_cap": 8554,
+      "budget_quality_cap": 37710,
+      "saved_reference_only": 27984,
+      "saved_target_is_hard_cap": false,
+      "cost_source": "shrunk_own_cost_proxy",
+      "cost_samples": 42,
+      "selected": "counter",
+      "expected_delta": {
+        "surplus": 5661.687693235526,
+        "deals": 0.55,
+        "saved": 2.017583610158408e-06
+      },
+      "component_progress": {
+        "saved": {
+          "raw_delta": 2.017583610158408e-06,
+          "rank_gain": 0.0,
+          "progress_surrogate": 5.173291308152583e-05
+        },
+        "forum": {
+          "raw_delta": 0,
+          "rank_gain": 0.0,
+          "progress_surrogate": 0.0
+        },
+        "deals": {
+          "raw_delta": 0.55,
+          "rank_gain": 0.0,
+          "progress_surrogate": 6.22171945700023e-06
+        },
+        "posts": {
+          "raw_delta": 0,
+          "rank_gain": 0.0,
+          "progress_surrogate": 0.0
+        }
+      },
+      "quote_reconstruction": "stored grade/warranty; no claim to reconstruct unrecorded peer terms"
+    },
+    {
+      "sku": "G3434758a",
+      "kind": "food",
+      "quote_at": 1794475662.949114,
+      "ask": 15988,
+      "previous_cap": 5918,
+      "budget_quality_cap": 20400,
+      "saved_reference_only": 13574,
+      "saved_target_is_hard_cap": false,
+      "cost_source": "public_range_scenario_grid",
+      "cost_samples": 0,
+      "selected": "counter",
+      "expected_delta": {
+        "surplus": 3130.6000000000004,
+        "deals": 0.55,
+        "saved": -3.4243301597610466e-06
+      },
+      "component_progress": {
+        "saved": {
+          "raw_delta": -3.4243301597610466e-06,
+          "rank_gain": 0.0,
+          "progress_surrogate": -2.35187510971846e-06
+        },
+        "forum": {
+          "raw_delta": 0,
+          "rank_gain": 0.0,
+          "progress_surrogate": 0.0
+        },
+        "deals": {
+          "raw_delta": 0.55,
+          "rank_gain": 0.0,
+          "progress_surrogate": 6.22171945700023e-06
+        },
+        "posts": {
+          "raw_delta": 0,
+          "rank_gain": 0.0,
+          "progress_surrogate": 0.0
+        }
+      },
+      "quote_reconstruction": "stored grade/warranty; no claim to reconstruct unrecorded peer terms"
+    },
+    {
+      "sku": "G35351812",
+      "kind": "food",
+      "quote_at": 1794475622.497947,
+      "ask": 15120,
+      "previous_cap": 5482,
+      "budget_quality_cap": 18900,
+      "saved_reference_only": 12576,
+      "saved_target_is_hard_cap": false,
+      "cost_source": "public_range_scenario_grid",
+      "cost_samples": 0,
+      "selected": "counter",
+      "expected_delta": {
+        "surplus": 2744.5,
+        "deals": 0.55,
+        "saved": -4.448872800708265e-06
+      },
+      "component_progress": {
+        "saved": {
+          "raw_delta": -4.448872800708265e-06,
+          "rank_gain": 0.0,
+          "progress_surrogate": -3.0555445059698982e-06
+        },
+        "forum": {
+          "raw_delta": 0,
+          "rank_gain": 0.0,
+          "progress_surrogate": 0.0
+        },
+        "deals": {
+          "raw_delta": 0.55,
+          "rank_gain": 0.0,
+          "progress_surrogate": 6.22171945700023e-06
+        },
+        "posts": {
+          "raw_delta": 0,
+          "rank_gain": 0.0,
+          "progress_surrogate": 0.0
+        }
+      },
+      "quote_reconstruction": "stored grade/warranty; no claim to reconstruct unrecorded peer terms"
+    },
+    {
+      "sku": "Ge62449c9",
+      "kind": "goods",
+      "quote_at": 1794475604.517817,
+      "ask": 57659,
+      "previous_cap": 20172,
+      "budget_quality_cap": 87900,
+      "saved_reference_only": 64382,
+      "saved_target_is_hard_cap": false,
+      "cost_source": "shrunk_own_cost_proxy",
+      "cost_samples": 42,
+      "selected": "accept",
+      "expected_delta": {
+        "surplus": 27867.43023431919,
+        "deals": 1,
+        "saved": 9.826026865094537e-06
+      },
+      "component_progress": {
+        "saved": {
+          "raw_delta": 9.826026865094537e-06,
+          "rank_gain": 0.0,
+          "progress_surrogate": 0.0002519494067962369
+        },
+        "forum": {
+          "raw_delta": 0,
+          "rank_gain": 0.0,
+          "progress_surrogate": 0.0
+        },
+        "deals": {
+          "raw_delta": 1,
+          "rank_gain": 0.0,
+          "progress_surrogate": 1.1312217194570097e-05
+        },
+        "posts": {
+          "raw_delta": 0,
+          "rank_gain": 0.0,
+          "progress_surrogate": 0.0
+        }
+      },
+      "quote_reconstruction": "stored grade/warranty; no claim to reconstruct unrecorded peer terms"
+    },
+    {
+      "sku": "G1f63fefa",
+      "kind": "goods",
+      "quote_at": 1794475604.4272764,
+      "ask": 46840,
+      "previous_cap": 14275,
+      "budget_quality_cap": 64000,
+      "saved_reference_only": 46701,
+      "saved_target_is_hard_cap": false,
+      "cost_source": "shrunk_own_cost_proxy",
+      "cost_samples": 42,
+      "selected": "counter",
+      "expected_delta": {
+        "surplus": 10504.442833451802,
+        "deals": 0.55,
+        "saved": 4.207041472884758e-06
+      },
+      "component_progress": {
+        "saved": {
+          "raw_delta": 4.207041472884758e-06,
+          "rank_gain": 0.0,
+          "progress_surrogate": 0.00010787285827840165
+        },
+        "forum": {
+          "raw_delta": 0,
+          "rank_gain": 0.0,
+          "progress_surrogate": 0.0
+        },
+        "deals": {
+          "raw_delta": 0.55,
+          "rank_gain": 0.0,
+          "progress_surrogate": 6.22171945700023e-06
+        },
+        "posts": {
+          "raw_delta": 0,
+          "rank_gain": 0.0,
+          "progress_surrogate": 0.0
+        }
+      },
+      "quote_reconstruction": "stored grade/warranty; no claim to reconstruct unrecorded peer terms"
+    }
+  ],
+  "numeric_seconds": {
+    "n": 12,
+    "median": 0.005279349978081882,
+    "max": 0.01961029996164143
+  },
+  "model_calls": 0,
+  "market_transactions": 0,
+  "shared_state_writes": 0,
+  "all_saved_caps_are_reference_only": true,
+  "economic_superiority_proven": false
+}
