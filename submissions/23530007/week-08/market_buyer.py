@@ -655,7 +655,7 @@ def choose(shops, mem, item, budget, ask_model=True, ctx=None):
         ranked = sorted(((value(s), s) for s in allowed), key=lambda x: -x[0][0])
         # skip only when no allowed shop reaches skip_below; else the best score among those that do
         # user 11-06: food 0.279 vs goods 0.194 saved per deal (goods breaks count -1): a bar per kind
-        thr = bp.get(f"skip_below_{ctx['kind']}", bp["skip_below"])
+        thr = bp.get(f"skip_below_{ctx['kind']}", bp.get("skip_below", 0.0))   # 11-12: fixed bars gone; m* + delta rules
         if ctx.get("m_star"):      # 11-11: a deal under the mean our saved will end at (m*) lowers the final score
             thr = max(thr, ctx["m_star"] + bp.get(f"skip_delta_{ctx['kind']}", -0.08 if ctx["kind"] == "food" else -0.04))
         worth = [r for r in ranked if r[0][1]["saved"] >= thr]
@@ -1065,7 +1065,7 @@ def main():
                               r"cost floor \()\s*(\d[\d,]*)|(\d[\d,]*) is as low as we go", said(t))
             floor = as_int((named.group(1) or named.group(2)).replace(",", "")) if named else None
             if (state(t) == "TASK_STATE_REJECTED" and floor
-                    and floor <= min(a.budget, cap + (want["list_price"] * bp["near_cap"] if acceptable else 0))
+                    and floor <= min(a.budget, cap + (want["list_price"] * bp.get("near_cap", 0.01) if acceptable else 0))
                     and time.time() - start < DEADLINE - 30):
                 # most shops end the talk after 2 low offers and only then name their floor (146 of 221 rejections,
                 # 65 of them under our cap): open a new talk and offer that floor, up to 3 times
