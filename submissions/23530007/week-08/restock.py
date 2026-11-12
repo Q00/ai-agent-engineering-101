@@ -476,7 +476,12 @@ def main():
             continue
         x_ = mx_.get(u["sku"])
         over_ = x_ is not None and (u.get("cost") or 0) * fm_ > x_ * (u.get("list_price") or 1)
-        sellable_sku[u["sku"]] += SLOW_UNIT if u.get("grade") == "C" else OVER_UNIT if over_ else 1
+        # 11-12 23:10: since sell_b 0 (15:46, grade A goods only) a grade B unit is never sold, and grade C is not sold
+        # either since 11-11 20:40; both still counted as cover, so best sellers holding only B/C looked covered, were
+        # not refilled and lost their asks: paid deals fell 120 -> 30-56/h from 17:00 while asks and 'no_stock' stayed
+        if (u.get("grade") == "B" and not p.get("sell_b", 1)) or u.get("grade") == "C":
+            continue
+        sellable_sku[u["sku"]] += OVER_UNIT if over_ else 1
     wants = sku_wants(catalog, {k: int(v) for k, v in sellable_sku.items()}, p, now, sig["hours_left"], st["sku"],
                       st.get("mkt_units"), st.get("mkt_shops"))   # (priority, category, sku, qty)
     for _, cat, v, qty in wants:                            # the category loop sees these as stock already
