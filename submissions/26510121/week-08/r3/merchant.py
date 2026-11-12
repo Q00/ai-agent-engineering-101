@@ -18,11 +18,14 @@ def observe_inventory(journal, inv, now=None):
         return
     counts = dict(Counter(u['sku'] for u in inv.get('units', []) if
                           not u.get('expires_at') or u['expires_at'] > now))
+    health=journal.snapshot('shop-health.json',{})
+    reachable=(health.get('status')=='healthy' and health.get('market_board_alive') is True
+               and not health.get('pending_registration') and 0<=now-health.get('checked_at',0)<45)
     history = journal.get('merchant_stock_timeline', [])
-    if history and history[-1]['counts'] == counts and now-history[-1]['at'] < 30:
+    if history and history[-1]['counts'] == counts and history[-1].get('reachable')==reachable and now-history[-1]['at'] < 30:
         return
     history = [r for r in history if now-HORIZON <= r['at'] <= now]
-    history.append({'at': now, 'counts': counts})
+    history.append({'at': now, 'counts': counts,'reachable':reachable})
     journal.put('merchant_stock_timeline', history[-1024:])
 
 
@@ -33,10 +36,14 @@ def coverage_keys(sku, product, baskets):
         key for key, row in baskets.items() if sku in row['skus']]
 
 
-def context(journal, catalog, now=None):
+def context(journal, catalog, now=None, config=None):
     now = time.time() if now is None else now
+    config=config or {}
+    from .demand_policy import context as demand_context
+    adaptive=demand_context(journal,config,now)
+    demand_id=adaptive.get('id') if adaptive else 'uncalibrated-neutral' if config.get('shop_adaptive_demand_enabled') else None
     cached = journal.get('merchant_context_v5', {})
-    if 0 <= now-cached.get('at', -1000) < 30:
+    if 0 <= now-cached.get('at', -1000) < 30 and cached.get('demand_policy_id')==demand_id:
         return cached
     book = {s: dict(row, samples=row.get('external_samples', row['samples']))
             for s,row in market_book(journal, catalog, now).items()}
@@ -139,10 +146,19 @@ def context(journal, catalog, now=None):
                      'coverage_keys': keys,
                      'competition_sellers_plus_us': competitors,
                      'rate_note': 'equal-share prior x0.5, shrunk available-time requests; not a causal demand estimate'}
+        if config.get('shop_adaptive_demand_enabled'):
+            calibrated=(adaptive or {}).get('skus',{}).get(sku)
+            raw=public.get('samples',0)/6/competitors
+            fallback=((len(positive_paid[sku])+.25*raw)/(observed_hours+.25)
+                      if observed_hours>=2/60 else raw)
+            selected=calibrated['rate_per_hour'] if calibrated else fallback
+            rows[sku].update(arrival_rate_scenario=selected,paid_arrival_rate_scenario=selected,
+                demand_calibration=calibrated,
+                rate_note='data-derived time-decayed posterior; neutral raw-public fallback when calibration unavailable')
     # Persist compact aggregates; never grow an unbounded stream of raw chats.
     selected = sorted(rows, key=lambda s: (rows[s]['lost_exact_requests'], rows[s]['public'].get('samples', 0),
                                            rows[s]['available_requests'], s), reverse=True)[:1500]
-    result = {'at': now, 'skus': {s: rows[s] for s in selected}, 'coverage_weights': dict(weights),
+    result = {'at': now,'demand_policy_id':demand_id, 'skus': {s: rows[s] for s in selected}, 'coverage_weights': dict(weights),
               'summary': {'tracked_skus': len(selected), 'observed_baskets': len(baskets),
                           'top_unserved_categories': category_lost.most_common(10),
                           'exposure_started_at': coverage_start,

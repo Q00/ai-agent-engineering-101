@@ -345,7 +345,7 @@ def restock_candidates(inv, catalog, demand, journal, config, now=None):
     merchant = {}
     if config.get('shop_growth_v5'):
         from .merchant import context
-        merchant = context(journal, catalog, now)
+        merchant = context(journal, catalog, now,config=config)
     signals = {}
     for e in journal.events("public_settle", 20000):
         if e.get('buyer') == 'seochanit' or not 0 <= now-e['_ts'] <= 21600:
@@ -394,15 +394,21 @@ def restock_candidates(inv, catalog, demand, journal, config, now=None):
         growth = merchant.get('skus', {}).get(sku, {})
         rate = (growth.get('arrival_rate_scenario', 0) if merchant else
                 max(own.get(sku, 0), .35 * observed.get('per_seller_per_hour', 0)))
-        trend=config.get('shop_sku_trend_factors',{}).get(sku,1) if config.get('objective_feedback_enabled') else 1
+        trend=config.get('shop_sku_trend_factors',{}).get(sku,1) if config.get('objective_feedback_enabled') and not config.get('shop_adaptive_demand_enabled') else 1
         rate*=trend
         if velocity:
             from .shop_growth import target_stock
             paid=growth.get('positive_paid_while_available',0)
             if paid>=3:rate=max(.01,growth.get('paid_arrival_rate_scenario',rate/max(.01,trend))*trend)
             public_qualified=config.get('objective_feedback_enabled') and sku in config.get('shop_public_demand_skus',[])
+            coverage=None
+            if config.get('shop_adaptive_demand_enabled'):
+                from .demand_policy import coverage_hours
+                probability=(growth.get('demand_calibration') or {}).get('supply_success_scenario',2/3)
+                coverage=coverage_hours(inv,probability,config,now)
+                if p.get('kind')=='food':coverage=min(coverage,p.get('shelf_hours') or coverage)
             desired=target_stock(rate,paid,config,public_qualified=public_qualified,
-                public_limit=config.get('shop_public_demand_caps',{}).get(sku,6))
+                public_limit=config.get('shop_public_demand_caps',{}).get(sku,6),coverage_hours=coverage)
         else:
             desired = max(1, math.ceil(rate * config.get('supply_cycle_seconds', 1200) / 3600 * 1.5))
         needed=desired-count.get(sku,0)
@@ -486,6 +492,7 @@ def restock_candidates(inv, catalog, demand, journal, config, now=None):
                                         "adaptive_category_weight": weight}})
         candidates[-1]['evidence'].update(kind=p.get('kind'), list_price=p['list_price'],
                                            uncapped_inventory=not stock_caps_enabled(config),
+                                           adaptive_coverage_hours=coverage if velocity else None,
                                            growth=growth, arrival_rate_scenario=rate,
                                            planning_hours=hours,scenario_unit_cost=cost_ratio*p['list_price'],
                                            resale_price_scenario=price,resale_terms_scenario=terms)

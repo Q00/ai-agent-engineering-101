@@ -96,7 +96,7 @@ def test_observed_high_value_goods_compete_with_food_without_relaxing_reserves(t
     assert {'G1', 'G3'} <= {c['sku'] for c in candidates}  # Same category need not exclude another SKU.
     capacity = cash_capacity(inv, j, policy(), now)
     assert sum(c['capital_commitment'] for c in candidates) <= capacity['spendable']
-    assert all(c['capital_commitment'] <= .15 * inv['balance'] for c in candidates)
+    assert all(c['capital_commitment'] <= policy()['max_sku_capital_fraction'] * inv['balance'] for c in candidates)
     assert all(c['evidence']['expected_holding_hours'] < capacity['remaining_days'] * 24 for c in candidates)
 
 

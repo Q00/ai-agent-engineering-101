@@ -1,0 +1,184 @@
+{
+  "source": "logs\\v20-frozen-demand-20261112T052619694729Z.json.gz",
+  "source_cutoff": 1794461179.0332859,
+  "revision": "adaptive-public-prior-and-replenishment-v21-1",
+  "calibration_seconds": 0.38693070015870035,
+  "summary": {
+    "tracked_skus": 893,
+    "calibration_multiplier_is_fixed": false,
+    "median_posterior_multiplier": 0.7928004972015487,
+    "observed_supply_access": {
+      "successful_attempted_windows": 0,
+      "failed_attempted_windows": 0,
+      "unknown_and_unattempted_windows_are_not_failures": true
+    },
+    "default_supply_success_scenario": 0.6666666666666666,
+    "coverage_hours_default": 1.0083333333333333,
+    "rate_method": "leave-one-SKU-out group shrinkage, then time-decayed own positive payments/exposure",
+    "availability_limit": "Older exposure is physical-stock proxy; reachable telemetry improves future evidence.",
+    "uncertainty": "Conditional sales and geometric supply scenarios; not latent-demand identification."
+  },
+  "posterior_multiplier_range": [
+    0.10536066639349856,
+    2.502092082553306
+  ],
+  "coverage_hours_range": [
+    1.0083333333333333,
+    1.0083333333333333
+  ],
+  "scenarios": [
+    {
+      "adaptive": false,
+      "lines": 10,
+      "units": 13,
+      "capital_commitment": 1992213.88,
+      "book_scenario": 97013.78665438252,
+      "seconds": 2.7989836998749524,
+      "quantities": [
+        {
+          "sku": "G4a998429",
+          "qty": 3,
+          "rate": 1.7615577331666326,
+          "coverage_hours": null
+        },
+        {
+          "sku": "G00b9c4bb",
+          "qty": 1,
+          "rate": 0.8582036951308512,
+          "coverage_hours": null
+        },
+        {
+          "sku": "Gf7ca73a2",
+          "qty": 2,
+          "rate": 2.9663014497121885,
+          "coverage_hours": null
+        },
+        {
+          "sku": "G312cdc93",
+          "qty": 1,
+          "rate": 1.0833333333333333,
+          "coverage_hours": null
+        },
+        {
+          "sku": "G67efbcf0",
+          "qty": 1,
+          "rate": 1.986111111111111,
+          "coverage_hours": null
+        },
+        {
+          "sku": "G50d60e61",
+          "qty": 1,
+          "rate": 0.6805555555555555,
+          "coverage_hours": null
+        },
+        {
+          "sku": "Gf3e749a1",
+          "qty": 1,
+          "rate": 0.08333333333333333,
+          "coverage_hours": null
+        },
+        {
+          "sku": "G40e27aec",
+          "qty": 1,
+          "rate": 0.3541666666666667,
+          "coverage_hours": null
+        },
+        {
+          "sku": "G67c36d2b",
+          "qty": 1,
+          "rate": 0.13095238095238096,
+          "coverage_hours": null
+        },
+        {
+          "sku": "G0132ff94",
+          "qty": 1,
+          "rate": 0.3796296296296296,
+          "coverage_hours": null
+        }
+      ]
+    },
+    {
+      "adaptive": true,
+      "lines": 10,
+      "units": 23,
+      "capital_commitment": 1468702.78,
+      "book_scenario": 105183.17914622818,
+      "seconds": 3.7399453001562506,
+      "quantities": [
+        {
+          "sku": "Gef4d3036",
+          "qty": 5,
+          "rate": 3.589743189084405,
+          "coverage_hours": 1.0083333333333333
+        },
+        {
+          "sku": "G4a998429",
+          "qty": 4,
+          "rate": 2.466033945215101,
+          "coverage_hours": 1.0083333333333333
+        },
+        {
+          "sku": "G67efbcf0",
+          "qty": 4,
+          "rate": 3.1491797527728185,
+          "coverage_hours": 1.0083333333333333
+        },
+        {
+          "sku": "G312cdc93",
+          "qty": 2,
+          "rate": 1.7325281887038084,
+          "coverage_hours": 1.0083333333333333
+        },
+        {
+          "sku": "Gb907db4f",
+          "qty": 2,
+          "rate": 1.4227870259595259,
+          "coverage_hours": 1.0083333333333333
+        },
+        {
+          "sku": "G00b9c4bb",
+          "qty": 1,
+          "rate": 1.2059762676489656,
+          "coverage_hours": 1.0083333333333333
+        },
+        {
+          "sku": "G01883718",
+          "qty": 1,
+          "rate": 1.771574312525575,
+          "coverage_hours": 1.0083333333333333
+        },
+        {
+          "sku": "Ge62449c9",
+          "qty": 2,
+          "rate": 2.1053056190310837,
+          "coverage_hours": 1.0083333333333333
+        },
+        {
+          "sku": "G58b20aad",
+          "qty": 1,
+          "rate": 0.3454153808624732,
+          "coverage_hours": 1.0083333333333333
+        },
+        {
+          "sku": "G0132ff94",
+          "qty": 1,
+          "rate": 0.4364273634548981,
+          "coverage_hours": 1.0083333333333333
+        }
+      ]
+    }
+  ],
+  "context_contract": {
+    "source_bytes": 20708,
+    "fact_bytes": 20708,
+    "budget_bytes": 23000,
+    "reductions": [],
+    "duplicated_meta_feedback_removed": false
+  },
+  "schema_valid": true,
+  "cash_and_legal_lot_guards_verified": true,
+  "market_transactions": 0,
+  "model_calls": 0,
+  "economic_superiority_proven": false,
+  "note": "Each row uses its own rate assumption; larger forecast Book is not observed uplift. Historical physical availability is a proxy."
+}

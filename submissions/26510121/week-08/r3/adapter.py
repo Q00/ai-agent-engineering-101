@@ -335,7 +335,7 @@ def install(kit, journal=None, config=None):
         if cfg.get('shop_growth_v5'):
             try:
                 from .merchant import context
-                context(j, j.snapshot('catalog.json', {}))
+                context(j, j.snapshot('catalog.json', {}),config=cfg)
             except Exception as exc:
                 j.add('merchant_context_error', {'error_type': type(exc).__name__})
         if cfg.get('autonomy_v14_enabled'):

@@ -62,7 +62,7 @@ def update(journal, config=None, now=None, force=False):
         return {'status': 'waiting_for_round3'}
     catalog = journal.snapshot('catalog.json', {})
     from .merchant import context
-    market = context(journal, catalog, now)
+    market = context(journal, catalog, now,config=cfg)
     own = next((r for r in board.get('shops', []) if r.get('name')=='seochanit'), {})
     buyer = next((r for r in board.get('buyers', []) if r.get('name')=='seochanit'), {})
     current_book = book_row(own)

@@ -116,7 +116,7 @@
   "buyer_contract_probe_percent": 8,
   "autonomy_v14_enabled": true,
   "buyer_worker_enabled": true,
-  "execution_revision": "v20-demand-without-held-unit-caps-1",
+  "execution_revision": "v21-adaptive-shop-demand-and-replenishment-1",
   "objective_feedback_enabled": true,
   "agent_policy_selection_enabled": true,
   "discovery_priority_enabled": true,
@@ -151,5 +151,11 @@
       "response_mode": "function"
     }
   },
-  "shop_inventory_caps_enabled": false
+  "shop_inventory_caps_enabled": false,
+  "shop_adaptive_demand_enabled": true,
+  "shop_demand_half_life_hours": 1,
+  "shop_demand_calibration_prior_events": 5,
+  "shop_demand_prior_hours": 0.25,
+  "shop_replenishment_service_level": 0.9,
+  "shop_supply_delivery_seconds": 30
 }

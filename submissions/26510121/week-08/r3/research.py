@@ -180,6 +180,12 @@ def call(journal, config, facts, evidence, role, proposal=None, client=None, key
             'Quantity follows finite demand quantiles, marginal Book, available cash, storage/refund reserves '
             'and executable supply time. Probe-unit probability decreases with existing inventory and depth. '
             'Distinguish estimated low demand from a quantity ceiling; do not request buying just to fill space.')
+    if config.get('shop_adaptive_demand_enabled'):
+        instructions+=(' Shop demand now uses an evidence-derived posterior multiplier, not a fixed 0.5. '
+            'The protection period uses observed attempted supply-window reliability and current time to supply, '
+            'limited by evaluated economics and shelf life, not fixed 1/2/3 cycle ceilings. Legacy cover_cycles '
+            'has no horizon authority in this mode. Inspect demand_diagnostics and calibration quality before '
+            'approving operating intents. Physical-availability proxy and geometric supply assumptions remain uncertain.')
     from .objective_context import curate
     try:
         facts, compacted = curate(facts)
@@ -334,7 +340,7 @@ def update(journal, config, now=None, client=None, key=None):
     facts={'observed_at':now,'market':market,'control':{k:control.get(k) for k in ('status','reasons','leader_gap','suggestions')},
            'framework':{k:framework.get(k) for k in ('issues','evaluation','segments')},
            'supply_plan':{k:plan.get(k) for k in ('window','phase','selected','options')},
-           'parameters':{k:config.get(k) for k in ('buyer_contract_probe_percent','shop_stock_service_level','shop_inventory_caps_enabled')},
+           'parameters':{k:config.get(k) for k in ('buyer_contract_probe_percent','shop_stock_service_level','shop_inventory_caps_enabled','shop_adaptive_demand_enabled')},
            'meta':journal.get('cycle-meta-state',{}),
            'evidence_ids':evidence}
     if capability_brief:

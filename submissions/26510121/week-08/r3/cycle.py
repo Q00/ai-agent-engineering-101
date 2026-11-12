@@ -67,6 +67,9 @@ class MarketCycle:
         if now-self.last_analysis>=60:
             self.last_analysis=now
             roles={'market_observer':lambda:analytics(self.j,time.time())}
+            if self.cfg.get('shop_adaptive_demand_enabled'):
+                from .demand_policy import update as demand_update
+                roles['shop_demand_observer']=lambda:demand_update(self.j,self.cfg,time.time())
             if self.cfg.get('objective_decision_enabled'):
                 from .objective_context import observe_forum
                 roles['forum_objective_observer']=lambda:observe_forum(self.j,time.time())

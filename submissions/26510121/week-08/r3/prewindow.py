@@ -35,9 +35,13 @@ def prepare(journal, config, strategy, now=None):
             or not opens - 310 <= now < closes - 20):
         return None
     old = journal.snapshot('shop-plan-v15.json', {})
+    from .demand_policy import context as demand_context
+    demand=demand_context(journal,config,now)
+    demand_id=demand.get('id') if demand else None
     phase = 'early' if now < opens - 90 else 'checked' if now < opens - 15 else 'ready'
     if (old.get('window') == [opens, closes] and old.get('phase') == phase
-            and old.get('policy_hash') == config_hash(config) and 0 <= now - old.get('at', 0) < 45):
+            and old.get('policy_hash') == config_hash(config) and old.get('demand_policy_id')==demand_id
+            and 0 <= now - old.get('at', 0) < 45):
         return old
     from .economy import restock_candidates, cash_capacity
     from .model import Chooser
@@ -58,7 +62,7 @@ def prepare(journal, config, strategy, now=None):
     summaries = [{k: c.get(k) for k in ('id', 'buy', 'score', 'capital_commitment', 'expected_delta', 'objective_utility')}
                  for c in options]
     packet = {'schema': 1, 'at': now, 'expires_at': closes - 15, 'window': [opens, closes], 'phase': phase,
-              'rules_hash': rules['sha256'], 'policy_hash': config_hash(config), 'strategy_version': strategy['version'],
+              'rules_hash': rules['sha256'], 'policy_hash': config_hash(config),'demand_policy_id':demand_id, 'strategy_version': strategy['version'],
               'selected': chosen['id'], 'options': summaries,
               'held': dict(Counter(u['sku'] for u in virtual['units'])),
               'unit_commitments': {c['sku']: c['capital_commitment'] / c['qty'] for c in candidates},
@@ -84,10 +88,14 @@ def _consume(journal, config, strategy, inv, now=None):
     if packet.get('checksum') != identity({k:v for k,v in packet.items() if k!='checksum'}):
         return None
     window = inv.get('restock') or {}
+    from .demand_policy import context as demand_context
+    demand=demand_context(journal,config,now)
+    demand_id=demand.get('id') if demand else None
     if (not supply_open(inv, now) or packet.get('schema') != 1
             or packet.get('window') != [window.get('opens_at'), window.get('closes_at')]
             or packet.get('rules_hash') != journal.get('market_rules', {}).get('sha256')
             or packet.get('policy_hash') != config_hash(config)
+            or packet.get('demand_policy_id')!=demand_id
             or packet.get('strategy_version') != strategy['version']
             or not 0 <= now - packet.get('at', 0) <= 90 or now >= packet.get('expires_at', 0)):
         return None

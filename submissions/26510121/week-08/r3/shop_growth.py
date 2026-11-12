@@ -39,10 +39,13 @@ def poisson_target(arrivals,service):
     return low
 
 
-def target_stock(rate, paid, config, public_qualified=False, public_limit=6):
+def target_stock(rate, paid, config, public_qualified=False, public_limit=6,coverage_hours=None):
     arrivals=max(0,rate)*config.get('supply_cycle_seconds',1200)/3600
     supported=paid>=3 or public_qualified and config.get('objective_feedback_enabled')
-    if supported and config.get('objective_feedback_enabled'):
+    if config.get('shop_adaptive_demand_enabled'):
+        hours=coverage_hours if type(coverage_hours) in (int,float) and math.isfinite(coverage_hours) and coverage_hours>0 else config.get('supply_cycle_seconds',1200)/3600
+        arrivals=max(0,rate)*hours
+    elif supported and config.get('objective_feedback_enabled'):
         arrivals*=max(1,min(3 if paid>=3 else 2,config.get('shop_demand_horizon_cycles',1)))
     # Proven repeat demand can use the legal 20-unit lot capacity. A raw
     # request or peer announcement alone never qualifies as paid evidence.
@@ -195,25 +198,29 @@ def demand_diagnostics(inv,merchant,config):
     for sku,held in counts.items():
         g=merchant.get('skus',{}).get(sku,{})
         paid=g.get('positive_paid_while_available',0)
-        trend=config.get('shop_sku_trend_factors',{}).get(sku,1)
+        trend=config.get('shop_sku_trend_factors',{}).get(sku,1) if not config.get('shop_adaptive_demand_enabled') else 1
         rate=g.get('paid_arrival_rate_scenario',0) if paid>=3 else g.get('arrival_rate_scenario',0)
         rate=max(.01,rate*trend) if paid>=3 else max(0,rate*trend)
         public=sku in config.get('shop_public_demand_skus',[])
-        target=target_stock(rate,paid,config,public,config.get('shop_public_demand_caps',{}).get(sku,6))
+        calibration=g.get('demand_calibration') or {}
+        coverage=calibration.get('coverage_hours')
+        target=target_stock(rate,paid,config,public,config.get('shop_public_demand_caps',{}).get(sku,6),coverage_hours=coverage)
         low+=target<=2;repeat+=paid>=3;shortfall+=max(0,target-held)
         rows.append({'sku':sku,'held':held,'target_scenario':target,'rate_per_hour_scenario':rate,
             'rate_source':'own_positive_paid' if paid>=3 else 'public_prior_or_request_conversion',
             'own_positive_paid':paid,'public_qualified':public,
             'observed_availability_hours':g.get('available_hours_observed'),
+            'adaptive_calibration':calibration,
             'lost_exact_requests_not_directly_added_to_rate':g.get('lost_exact_requests',0)})
     return {'inventory_unit_caps_enabled':stock_caps_enabled(config),
         'total_unit_ceiling':inventory_limit(config),'held_skus':len(counts),
         'held_skus_target_at_most_two':low,'held_skus_with_repeat_paid_evidence':repeat,
         'target_shortfall_units_scenario':shortfall,'merchant_context_at':merchant.get('at'),
         'supply_cycle_seconds':config.get('supply_cycle_seconds',1200),
-        'repeat_coverage_cycles':max(1,min(3,config.get('shop_demand_horizon_cycles',1))),
-        'public_only_coverage_cycles':max(1,min(2,config.get('shop_demand_horizon_cycles',1))),
-        'public_equal_share_prior_multiplier':.5,
+        'repeat_coverage_cycles':None if config.get('shop_adaptive_demand_enabled') else max(1,min(3,config.get('shop_demand_horizon_cycles',1))),
+        'public_only_coverage_cycles':None if config.get('shop_adaptive_demand_enabled') else max(1,min(2,config.get('shop_demand_horizon_cycles',1))),
+        'public_equal_share_prior_multiplier':'data-derived' if config.get('shop_adaptive_demand_enabled') else .5,
+        'demand_policy_id':merchant.get('demand_policy_id'),
         'examples':sorted(rows,key=lambda r:r['target_scenario']-r['held'],reverse=True)[:4],
         'interpretation':'Low rate/coverage can retain small targets without a unit cap. Prior and Poisson arrivals are scenarios, not identified hidden demand. Lost requests require feasibility attribution before adding demand.'}
 

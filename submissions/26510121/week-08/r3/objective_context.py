@@ -169,6 +169,10 @@ def shop_alternatives(journal, config, now):
     unreserved = sum(u.get('unit') not in reserved for u in units)
     from .shop_growth import demand_diagnostics
     diagnostic=demand_diagnostics(dict(inv,units=units),shadow.get('merchant_context_v5',{}),cfg)
+    if config.get('shop_adaptive_demand_enabled'):
+        from .demand_policy import context as demand_context
+        learned=demand_context(journal,config,now)
+        diagnostic['calibration_summary']=(learned or {}).get('summary',{'status':'no_fresh_calibration_neutral_prior'})
     return {'at':now, 'rules_hash':journal.get('market_rules',{}).get('sha256'),
         'physical_live_units':len(units),'unreserved_live_units':unreserved,'inventory_ceiling':inventory_limit(cfg),
         'food_under_2h_units':sum(u.get('kind')=='food' and remaining(u,now)<2 for u in units),
