@@ -1612,7 +1612,7 @@ def _buyer_all(data):
     """The events data with every buyer deal and other-buyer settle relabelled kind "all" (one buyer scope)."""
     return dict(
         data,
-        deals=[dict(x, kind="all") for x in data.get("deals") or []],
+        deals=[dict(x, kind="all", cost_kind=x.get("kind")) for x in data.get("deals") or []],  # kind still prices the margin
         others=[(ts, "all") for ts, _ in data.get("others") or []],
     )
 
@@ -1629,6 +1629,7 @@ def evaluate(root, change, now):
             "side": m,
             "window_h": EVAL_H,
             "started_ts": t,
+            "s0_ts": change.get("ts", t),
             "maturity_h": 0,
             "before_from": None,
         }

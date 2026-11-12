@@ -491,11 +491,11 @@ def test_kept_and_observations_stay_bounded_over_a_long_wake():
 
 
 def test_head_ledger_is_judged_exactly_as_head_did(tmp_path, a1, monkeypatch):
+    """The fixture was made by HEAD's kernel/experiments.py (git archive; sequential and split entries, their files and
+    HEAD's tick results). The new code must tick the same ledger to the same entries and the same policy files."""
     # written on the pre-3.6 saved scale: the share of list kept, s0 as recorded
     monkeypatch.setattr(ex, "COST_FRAC", {"food": 0.0, "goods": 0.0})
     monkeypatch.setattr(ex, "SAVED_V36_TS", 0)
-    """The fixture was made by HEAD's kernel/experiments.py (git archive; sequential and split entries, their files and
-    HEAD's tick results). The new code must tick the same ledger to the same entries and the same policy files."""
     fx = json.load(open(FIXTURE, encoding="utf-8"))
     r = str(tmp_path / "data")
     for rel, text in fx["files"].items():

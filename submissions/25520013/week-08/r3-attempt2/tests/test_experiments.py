@@ -559,6 +559,53 @@ def test_a_run_begun_on_the_old_saved_scale_compares_against_the_first_new_board
          "metric": ex.METRIC["buyer"]}
     v = ex.evaluate(None, e, t + 4 * H, {"deals": [], "others": [], "earliest": 0})
     assert v["s0"] == ex.S0_V36
+    # a code change proposed before the switch and restarted after it: s0 was read on the old scale
+    assert ex.s0_of({"started_ts": t + 600, "s0_ts": t - 600, "s0": 0.334}) == ex.S0_V36
+
+
+def test_every_window_of_an_old_scale_run_is_scored_against_the_new_s0(monkeypatch):
+    t = ex.SAVED_V36_TS
+    seen = []
+    real = ex.buyer_metric
+    monkeypatch.setattr(ex, "buyer_metric", lambda d, sc, a, b, s0: seen.append(s0) or real(d, sc, a, b, s0))
+    deals = [{"ts": t - 3 * H + k * 600, "amount": 60.0, "lp": 100.0, "kind": "food"} for k in range(30)]
+    data = {"deals": deals, "others": [], "earliest": 0, "sales": []}
+    e = {"side": "buyer", "scope": "buyer:all", "window_h": 3, "started_ts": t - 1.5 * H, "s0": 0.334,
+         "metric": ex.METRIC["buyer"], "eval_ts": t + 10 * H, "id": 1, "section": "buyer.defaults.food",
+         "key": "max_pay_frac", "old": 0.6, "new": 0.6, "status": "running"}
+    v = ex.evaluate(None, e, t + 2 * H, data)
+    kept = (100 - 60) / 48
+    assert v["before"] == pytest.approx(9 * (kept - ex.S0_V36) / 3)
+    assert v["after"] == pytest.approx(18 * (kept - ex.S0_V36) / 3)
+    seen.clear()
+    ex.interim_line(e, t + H, data)  # 2.5 h in: the after window's own hourly spread is read too
+    assert len(seen) >= 3 and set(seen) == {ex.S0_V36}
+
+
+def test_a_code_change_proposed_before_the_switch_and_restarted_after_it_uses_the_new_s0(monkeypatch):
+    from kernel import code_edit as ce
+
+    t, got = ex.SAVED_V36_TS, []
+    monkeypatch.setattr(ex, "read_events", lambda *a, **k: {"deals": [], "others": [], "sales": []})
+    monkeypatch.setattr(ex, "evaluate", lambda root, exp, now, data=None: got.append(ex.s0_of(exp)) or {"decision": "ok"})
+    ce.evaluate(None, {"metrics": ["buyer"], "ts": t - 600, "applied_ts": t + 600, "s0": 0.334}, t + 5 * H)
+    ce.evaluate(None, {"metrics": ["buyer"], "ts": t + 60, "applied_ts": t + 600, "s0": 0.73}, t + 5 * H)
+    assert got == [ex.S0_V36, 0.73]
+
+
+def test_a_food_deal_keeps_its_cost_share_in_the_one_scope_of_a_code_change():
+    from kernel import code_edit as ce
+
+    data = {"deals": [{"ts": 10.0, "amount": 80.0, "lp": 100.0, "kind": "food"}], "others": []}
+    m = ex.buyer_metric(ce._buyer_all(data), "buyer:all", 0, 3600, 0.0)
+    assert m["n"] == 1 and m["value"] == pytest.approx(20 / 48)
+
+
+def test_a_settle_with_a_non_finite_amount_or_price_is_not_a_deal():
+    cat = {}
+    for d in ({"amount": float("nan"), "list_price": 100}, {"amount": 80, "list_price": float("inf")},
+              {"amount": True, "list_price": 100}):
+        assert ex._buyer_deal({"ts": 1.0}, d, cat) is None
 
 
 # --- tick

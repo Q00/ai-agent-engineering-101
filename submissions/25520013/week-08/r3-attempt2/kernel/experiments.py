@@ -996,7 +996,7 @@ def _buyer_deal(e, d, cat):
         if isinstance(lp, (int, float)) and not isinstance(lp, bool) and lp > 0
         else brief._list_price(cat, d.get("sku"))
     )
-    if not lp or not isinstance(d.get("amount"), (int, float)):
+    if not _num_ok(lp) or lp <= 0 or not _num_ok(d.get("amount")):  # NaN or inf would read as a whole margin kept
         return None
     item = cat.get(d.get("sku")) or {}
     return {
@@ -1243,8 +1243,9 @@ def margin_kept(lp, paid, kind):
 
 
 def s0_of(e):
-    """The s0 a run's buyer metric compares against: its own when it started on the patch 3.6 scale, else S0_V36."""
-    t = e.get("started_ts")
+    """The s0 a run's buyer metric compares against: its own when it was read on the patch 3.6 scale, else S0_V36.
+    s0_ts is when s0 was read, when that differs from the start (a code change restarted after it was proposed)."""
+    t = e.get("s0_ts", e.get("started_ts"))
     return e.get("s0") if _num_ok(t) and t >= SAVED_V36_TS else S0_V36
 
 
@@ -1260,7 +1261,7 @@ def buyer_metric(data, scope, t0, t1, s0):
     for x in data["deals"]:
         if t0 <= x["ts"] < t1 and _in_scope(scope, None, x["kind"]):
             n += 1
-            buckets[idx(x["ts"])] += margin_kept(x["lp"], x["amount"], x["kind"]) - s0
+            buckets[idx(x["ts"])] += margin_kept(x["lp"], x["amount"], x.get("cost_kind", x["kind"])) - s0
     others = sum(
         1
         for ts, kind in data.get("others") or ()
