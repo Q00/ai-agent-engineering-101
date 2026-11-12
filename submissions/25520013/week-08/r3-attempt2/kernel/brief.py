@@ -1897,6 +1897,140 @@ def section_memory(root):
     return out or ["[기억] 점검 결과 없음, 기억 서버 응답 없음"]
 
 
+# [목표 진척] (11-12: our total went 1.676 -> 1.658 over a day, 7th against the 1st's 1.773, and the card said nothing:
+# the goal sections were only read when opened). A linear extrapolation of the board columns, not a forecast.
+ROUND_END_TS = c.ROUND_END  # 2026-11-17 23:59 KST
+GOAL_COLS = {"shops": tuple(k for k, _ in SHOP_FORMULA), "buyers": tuple(ALL_WEIGHTS["구매자"])}
+GOAL_CLAMP = {"book": (0, None), "revenue": (0, None), "stars_rank": (0, 5), "saved": (None, 1), "forum": (0, 1),
+              "deals": (0, None), "posts": (0, None)}
+
+
+def _pid(p):
+    return json.dumps(p.get("player") or p.get("owner"), sort_keys=True, ensure_ascii=False, default=str)
+
+
+def _col_rate(row, old, k, hours):
+    """Per-hour change of column k from old to row; None without an old value (or an old pre-Patch 3.4 rate value)."""
+    o, v = (old or {}).get(k), row.get(k)
+    if not hours or not _is_num(o) or not _is_num(v) or (k in RATE_KEYS and abs(o) > RATE_KEYS[k]):
+        return None
+    return (v - o) / hours
+
+
+def goal_progress(cur, s6, s24, login, now):
+    """Pure: our total against the 1st now, the change of both, and both at round end at the last 6 h rates.
+
+    cur, s6, s24: (ts, board) of the newest snapshot and of those nearest now - 6 h and now - 24 h (None when missing
+    or not older than cur). Every shop and buyer row's GOAL_COLS are extended linearly from cur to ROUND_END_TS at
+    the row's own rate over s6 -> cur (a row without a row of the same name in s6 holds its values), clamped by
+    GOAL_CLAMP; shop all and buyer all are recomputed with shop_all and buyer_all over all rows, and a player's total
+    is the sum for the rows named in its shop and buyer objects (a side without such a row keeps its board all).
+    cols: per weighted column of our rows, our value and rate, and the rate that reaches the column's projected 1st
+    value by round end. -> dict, or None without our player row."""
+    if not cur:
+        return None
+    bts, b = cur
+    P = [p for p in b.get("players") or [] if isinstance(p, dict) and _is_num(p.get("total"))]
+    me = next((p for p in P if c.is_mine(p, login)), None)
+    if me is None:
+        return None
+    E = sorted(P, key=lambda p: -p["total"])
+    top = E[0]
+
+    def change(snap, p):
+        if not snap or snap[0] >= bts:
+            return None
+        o = next((q for q in snap[1].get("players") or [] if isinstance(q, dict) and _is_num(q.get("total"))
+                  and _pid(q) == _pid(p)), None)
+        return None if o is None else {"d": p["total"] - o["total"], "h": (bts - snap[0]) / 3600}
+
+    h6 = (bts - s6[0]) / 3600 if s6 and s6[0] < bts else 0.0
+    span = max(0.0, (ROUND_END_TS - bts) / 3600)
+    side_all, cols = {}, []
+    for key, f in (("shops", shop_all), ("buyers", buyer_all)):
+        rows = [r for r in b.get(key) or [] if isinstance(r, dict) and _is_num(r.get("all"))]
+        old = {r.get("name"): r for r in ((s6[1].get(key) or []) if h6 else []) if isinstance(r, dict)}
+        rates = [{k: _col_rate(r, old.get(r.get("name")), k, h6) for k in GOAL_COLS[key]} for r in rows]
+        proj = []
+        for r, rt in zip(rows, rates):
+            q = dict(r)
+            for k in GOAL_COLS[key]:
+                if rt[k] is not None:
+                    lo, hi = GOAL_CLAMP[k]
+                    v = (r.get(k) or 0) + rt[k] * span
+                    q[k] = min(hi if hi is not None else v, max(lo if lo is not None else v, v))
+            proj.append(q)
+        side_all[key] = {q.get("name"): f(proj, q) for q in proj}
+        i = next((i for i, r in enumerate(rows) if c.is_mine(r, login)), None)
+        if i is None or not h6:
+            continue
+        for k in GOAL_COLS[key]:
+            best = max(q.get(k) or 0 for q in proj)
+            v = rows[i].get(k) or 0
+            cols.append({"side": key, "key": k, "value": v, "rate": rates[i][k], "proj": proj[i].get(k) or 0,
+                         "top": best, "need": (best - v) / span if span else None,
+                         "lead": (proj[i].get(k) or 0) >= best})
+
+    def proj_total(p):
+        t = 0.0
+        for key, side in (("shops", "shop"), ("buyers", "buyer")):
+            o = p.get(side) if isinstance(p.get(side), dict) else {}
+            if o.get("name") in side_all[key]:
+                t += side_all[key][o["name"]]
+            elif _is_num(o.get("all")):
+                t += o["all"]
+        return t
+
+    pt = [proj_total(p) for p in P]
+    mine = pt[P.index(me)]
+    j = max(range(len(P)), key=lambda n: pt[n])
+    return {
+        "ts": bts,
+        "left_h": (ROUND_END_TS - now) / 3600,
+        "n": len(P),
+        "total": me["total"],
+        "rank": E.index(me) + 1,
+        "top_total": top["total"],
+        "top_is_me": top is me,
+        "change": {"me": {6: change(s6, me), 24: change(s24, me)}, "top": {6: change(s6, top), 24: change(s24, top)}},
+        "proj": {"h": h6, "total": mine, "rank": 1 + sum(1 for x in pt if x > mine), "top_total": pt[j],
+                 "top_is_me": P[j] is me, "top_rank_now": E.index(P[j]) + 1} if h6 else None,
+        "cols": cols,
+    }
+
+
+def section_goal_progress(g, role=None):
+    """[목표 진척] text of a goal_progress dict; role "shop" / "buyer" keeps that side's column line. Numbers only."""
+    if not g:
+        return ["[목표 진척] 자료 없음"]
+    sg = lambda v: "-" if v is None else ("+" if v >= 0 else "") + c.fmt(v)
+    ch = lambda who: ", ".join(f"{x['h']:.0f}시간 {x['d']:+.3f}" if x else f"{h}시간 자료 없음"
+                               for h, x in g["change"][who].items())
+    out = [f"[목표 진척] 회차 종료까지 {g['left_h']:.0f}시간 | 우리 {g['n']}명 중 {g['rank']}위 total {g['total']:.3f}, "
+           f"1위 {g['top_total']:.3f}{' (우리)' if g['top_is_me'] else ''}, 차이 {g['top_total'] - g['total']:.3f}",
+           f"  total 변화: 우리 {ch('me')} | 1위 {ch('top')}"]
+    p = g["proj"]
+    if not p:
+        return out + ["  종료 예상: 6시간 전 순위표 없음"]
+    out.append(f"  종료 예상 (각 행의 순위표 값을 최근 {p['h']:.0f}시간 속도로 직선 연장, 백분위 다시 셈): 우리 "
+               f"{p['total']:.3f} {p['rank']}위, 예상 1위 "
+               + ("우리" if p["top_is_me"] else f"{p['top_total']:.3f} (지금 {p['top_rank_now']}위)"))
+    for key, label in (("shops", "가게"), ("buyers", "구매자")):
+        if role == {"shops": "buyer", "buyers": "shop"}[key]:
+            continue
+        cs = [x for x in g["cols"] if x["side"] == key]
+        if cs:
+            out.append(f"  {label} 항목 예상 1위 값까지 필요/지금 속도: " + "; ".join(
+                f"{x['key']} 예상 1위, 지금 {sg(x['rate'])}/h" if x["lead"]
+                else f"{x['key']} {sg(x['need'])}/h / {sg(x['rate'])}/h" for x in cs))
+    return out
+
+
+def goal(root=None, now=None):
+    """goal_progress for a data root (the auditor's facts); None without snapshots or our row."""
+    return _Ctx(root, now, None).goal
+
+
 class _Ctx:
     """Inputs the sections share, each computed on first use so that building one section skips the others' reads."""
 
@@ -1930,6 +2064,19 @@ class _Ctx:
         ts, p = _snapshot_near(self.snaps, bts - TURNOVER_H * 3600)
         return b, ((c.load_json(p, {}) or {}) if ts < bts else {}), (bts - ts) / 3600
 
+    @functools.cached_property
+    def goal(self):
+        """goal_progress over the newest snapshot and those nearest now - 6 h and now - 24 h; None without snapshots."""
+        if not self.board:
+            return None
+        bts = self.board[0]
+
+        def near(h):
+            ts, p = _snapshot_near(self.snaps, self.now - h * 3600)
+            return (ts, c.load_json(p, {}) or {}) if ts < bts else None
+
+        return goal_progress((bts, self.board[1]), near(6), near(24), self.login, self.now)
+
     @property
     def goal_args(self):
         _, b, _, b6, hours6 = self.board
@@ -1951,6 +2098,8 @@ SECTIONS = [
      lambda x: section_rank(*x.goal_args) if x.board else ["[순위] 순위표 스냅샷 없음"], None),
     ("가게 목표", "가게 all 공식, 항목별 위아래 가게와 속도", lambda x: section_shop_goal(*x.goal_args), "board"),
     ("구매자 목표", "구매자 all 공식, 항목별 위아래 구매자", lambda x: section_buyer_goal(*x.goal_args), "board"),
+    ("목표 진척", "1위와 차이·변화, 종료 예상 total·순위, 필요 속도",
+     lambda x: section_goal_progress(x.goal), "ask"),
     ("이익", "6시간 상품군·등급별 매출 총이익과 시장", lambda x: section_profit(x.root, x.now, x.login), "snaps"),
     ("순이익", "12시간 보증 환불 뺀 순이익, 상품군·등급별",
      lambda x: section_net_profit(x.root, x.now, x.login), "snaps"),
@@ -2008,7 +2157,7 @@ COMPACT_CHARS = 10_000  # build_compact hard cap (DESIGN 14.2: always-on bundle)
 # grew from about 4,600 to 6,300 chars before the caller's lines with [가게 회전], the leaf returns and the interim lines
 COMPACT_GAP_S = 1200  # [지난 깨어남 이후]: reference this long before now when the caller gives no last brief time
 COMPACT_NET_N = 3  # best and worst leaf x grade x warranty rows by net
-COMPACT_FULL = ("시각",)  # registry sections build_compact prints whole, so the index leaves them out
+COMPACT_FULL = ("시각", "목표 진척")  # registry sections build_compact prints whole, so the index leaves them out
 BANKRUPT_NEAR = 2.0  # operator settings default bankrupt_near_factor: alert when balance <= bankrupt line x this
 
 
@@ -2351,6 +2500,7 @@ def build_compact(root=None, now=None, last_brief_ts=None, extra=None, role=None
     off = set(off or ())
     board = lambda f: (lambda: f(x) if x.board else [])
     parts = [
+        ("목표 진척", lambda: section_goal_progress(x.goal, role)),
         ("시각", lambda: section_time(x.now, x.board[0] if x.board else None)),
         ("순위", lambda: _standing(x) if x.board else ["[순위] 순위표 스냅샷 없음"]),
         ("점수 위치", board(_positions)),

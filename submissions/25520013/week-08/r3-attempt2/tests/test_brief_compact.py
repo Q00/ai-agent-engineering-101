@@ -219,7 +219,7 @@ def test_build_matches_legacy_on_the_kernel_fixture_root(tmp_path):
 
 def test_registry_names_are_unique_with_short_descriptions():
     names = [n for n, *_ in brief.SECTIONS]
-    assert len(names) == len(set(names)) == 26
+    assert len(names) == len(set(names)) == 27
     assert all(len(d) <= 40 for _, d, _, _ in brief.SECTIONS)
     assert names[:3] == ["시각", "순위", "가게 목표"] and names[-1] == "하네스 수정"
 

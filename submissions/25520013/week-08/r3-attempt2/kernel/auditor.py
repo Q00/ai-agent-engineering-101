@@ -288,6 +288,60 @@ def _board_block(root, now):
     return brief.section(root, "가게 회전", now)
 
 
+GOAL_RISE_LOOKBACK_H = 72  # [목표 진척] block: snapshots scanned back for the last rise of our total
+GOAL_ENDED_H = 24
+
+
+def _verdict_kind(v):
+    """"clear" (better/worse past the noise or on stars), "unclear" (noise, thin or unknown cost) or "other"."""
+    v = v if isinstance(v, dict) else {}
+    if v.get("decision") in ("better", "worse") and v.get("reason") in ("clear", "stars"):
+        return "clear"
+    if v.get("decision") in ("unclear", "thin") or v.get("reason") in ("noise", "thin", "cost_unknown", "no_unit"):
+        return "unclear"
+    return "other"
+
+
+def _goal_block(root, now):
+    """Whether the operators' actions move the goal: brief.goal_progress as text, hours since our total last rose,
+    and the experiments and code changes ended in GOAL_ENDED_H hours by whether their verdict was clear. Experiments
+    are counted by the verdict's decision and reason, not the status (a report-only verdict ends as "measured")."""
+    from kernel import brief
+
+    root = c.data_root(root)
+    login = c.owner_login(root)
+    out = brief.section_goal_progress(brief.goal(root, now))
+    snaps = [s for s in brief.board_snapshots(root) if now - GOAL_RISE_LOOKBACK_H * 3600 <= s[0] <= now]
+    later, rise = None, None
+    for ts, p in reversed(snaps):
+        me = next((x for x in (c.load_json(p, {}) or {}).get("players") or []
+                   if isinstance(x, dict) and c.is_mine(x, login) and _num(x.get("total"))), None)
+        if me is None:
+            continue
+        if later is not None and later[1] > me["total"]:
+            rise = later[0]
+            break
+        later = (ts, me["total"])
+    out.append(f"우리 total이 마지막으로 오른 순위표: {(now - rise) / 3600:.1f}시간 전" if rise is not None
+               else f"우리 total이 오른 순위표: 최근 {GOAL_RISE_LOOKBACK_H}시간 스냅샷 {len(snaps)}개 안에 없음")
+    since = now - GOAL_ENDED_H * 3600
+    kinds = Counter(_verdict_kind(e.get("verdict")) for e in _ended(root) if e["ended_ts"] >= since)
+    out.append(f"최근 {GOAL_ENDED_H}시간 끝난 실험 {sum(kinds.values())}건: 판정 뚜렷(잡음 넘음·별점) {kinds['clear']}, "
+               f"불분명(잡음 안·표본 적음·원가 모름) {kinds['unclear']}, 그 밖(무효·기준 없음 등) {kinds['other']}")
+    if code_edit is not None:
+        ch = Counter()
+        for r in code_edit.load(root):
+            if not isinstance(r, dict) or r.get("status") in code_edit.OPEN or not _num(r.get("ended_ts")) \
+                    or r["ended_ts"] < since:
+                continue
+            v = r.get("verdict") if isinstance(r.get("verdict"), dict) else None
+            ks = [_verdict_kind(v.get(m)) for m in v.get("metrics") or []] if v else []
+            ch["none" if not ks else "clear" if "clear" in ks else "unclear" if "unclear" in ks else "other"] += 1
+        out.append(f"최근 {GOAL_ENDED_H}시간 끝난 코드 수정 {sum(ch.values())}건: 판정 뚜렷 {ch['clear']}, 불분명 "
+                   f"{ch['unclear']}, 그 밖 {ch['other']}, 판정 없이 끝남(되돌림·무효 등) {ch['none']}")
+    return "\n".join(out)
+
+
 def _outside_block(root):
     """Policy values a loop outside the kernel switches now (brief.section_outside): the operators' edit history and
     the ledger do not hold them, so without this block the auditor cannot tell that they exist."""
@@ -874,6 +928,7 @@ def build_prompt(root, now, secrets=(), listed=None, roles=None, sizes=None):
         ("## 도구 표 (최근 24시간)", _tool_block(root, now, listed, ts)),
         ("## 정보 빈칸 (조사 결과에서 커널이 찾은 문장, 해석 없음)", _safe(lambda: _gaps_block(root, now))),
         ("## 다른 가게와 우리 (순위표의 가게 열, 커널이 셈. 해석 없음)", _safe(lambda: _board_block(root, now))),
+        ("## 목표 진척 (순위표와 실험·코드 판정, 커널이 셈. 해석 없음)", _safe(lambda: _goal_block(root, now))),
         ("## 커널 밖에서 바뀌는 정책 값 (시도 1 실험 루프의 상태 파일, 해석 없음)", _safe(lambda: _outside_block(root))),
         ("## 실험 기록 (커널 판정)", exp),
         (
@@ -1199,6 +1254,7 @@ def run(
     ][:FINDINGS_MAX]
     out["note"] = c.mask(str(ans.get("note") or ""), secrets)[:300]
     if roles:
+        _route_findings(root, now, out["findings"], roles)
         ask = ans.get("guidance") if isinstance(ans.get("guidance"), dict) else {}
         g = {r: _apply_guidance(root, now, ask.get(r), secrets, st, role=r) for r in roles}
         if ans.get("guidance") is not None and not isinstance(ans.get("guidance"), dict):
@@ -1215,6 +1271,23 @@ def run(
         out["ask"] = _apply_ask(root, now, ans.get("ask"), secrets)
     _remember(st, now, out, nums, rows)
     return _finish(root, traj, now, st, dict(out, status="done"))
+
+
+def _route_findings(root, now, findings, roles):
+    """The findings tagged [shop] / [buyer] go to that operator the way the investigator's do: one findings row per
+    role (questions.add_finding), shown in its prompt's 조사 결과 section and by the findings tool. Before 11-12 they
+    stayed in the auditor's state file and no operator saw them. Never raises."""
+    from kernel import questions
+
+    for r in roles:
+        mine = [f for f in findings if f"[{r}]" in f]
+        if not mine:
+            continue
+        try:
+            questions.add_finding(root, {"id": None, "from": "auditor", "q": "감사자가 짚은 것"}, " / ".join(mine),
+                                  [], "", [r], now)
+        except Exception:  # noqa: BLE001 - delivery is best effort, the audit itself is done
+            pass
 
 
 _RETRY_AT = {}  # root -> earliest next try after a crash (the state file may be the thing that is broken)
