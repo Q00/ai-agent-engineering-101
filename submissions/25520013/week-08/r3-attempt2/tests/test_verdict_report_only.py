@@ -121,3 +121,14 @@ def test_schema_says_the_kernel_never_reverts_or_adopts():
     here = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     for name in ("OPERATOR_JOB_SHOP.md", "OPERATOR_JOB_BUYER.md"):
         assert "재서 숫자로 알려 주기만" in open(os.path.join(here, name), encoding="utf-8").read()
+
+
+def test_job_docs_define_the_goal_as_final_rank_not_proof():
+    """11-13: operators held values for hours waiting for causal certainty; the goal lines say what counts."""
+    import os
+    here = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    for f in ("OPERATOR_JOB_SHOP.md", "OPERATOR_JOB_BUYER.md"):
+        text = open(os.path.join(here, f), encoding="utf-8").read()
+        assert "인과를 증명하는 것은 목표가 아니고" in text
+        assert "그대로 두는 것도 결정임" in text
+        assert "걸린 크기와 남은 시간에 비춰 네가 정함" in text
