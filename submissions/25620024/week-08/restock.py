@@ -193,6 +193,37 @@ def hits(c, now, t):
     return [(a, b, w) for a, b, w, _ in sorted(out, key=lambda x: -x[3])]
 
 
+def food_expand(c, now, t, cat, stock):
+    """MST TF 11-12 (HQ approved "고마진 식품으로 매입 확대"): food has no defects, so no warranty refunds -- the
+    furniture refunds (44.9M in 24 h) are what kept Book flat. The market's food with a shelf of 48 h+ that sells
+    100+ a day at a margin of food_min_margin+ between its 24 h median price and its 24 h average supply cost
+    (both public ledger), stocked to share x cover_h hours of the market's pace. Returns [(sku, qty, why)] by
+    the market's profit per hour, best first."""
+    sold, costs = {}, {}
+    for sku, a in c.execute("select sku, amount from settles where ts > ?", (now - 86400,)):
+        sold.setdefault(sku, []).append(a)
+    for sku, co in c.execute("select sku, cost from supply_units where ts > ? and cost > 0", (now - 86400,)):
+        costs.setdefault(sku, []).append(co)
+    out = []
+    for sku, v in sold.items():
+        r = cat.get(sku) or {}
+        if r.get("kind") != "food" or (r.get("shelf_hours") or 0) < t.get("food_min_shelf", 48) \
+                or len(v) < t.get("food_min_sold24", 100) or len(costs.get(sku, [])) < 10:
+            continue
+        med, avg_cost = sorted(v)[len(v) // 2], sum(costs[sku]) / len(costs[sku])
+        margin = (med - avg_cost) / med if med else 0
+        if margin < t.get("food_min_margin", 0.15):
+            continue
+        rate = len(v) / 24
+        target = max(2, min(t.get("food_max_target", 12),
+                            math.ceil(rate * t.get("food_share", 0.05) * t.get("food_cover_h", 8))))
+        qty = target - stock.get(sku, 0)
+        if qty > 0:
+            out.append((rate * (med - avg_cost), sku, qty,
+                        f"food expand: market {len(v)}/24 h, median {med:,.0f}, avg cost {avg_cost:,.0f} ({margin:.0%}) -> keep {target}"))
+    return [(s, q, w) for _, s, q, w in sorted(out, reverse=True)[:t.get("food_expand_lines", 8)]]
+
+
 def plan(md, c, t, now=None):
     now = now or time.time()
     inv, cat, demand = load(md, "inventory.json", {}), market_model.catalog(md), load(md, "demand.json", [])
@@ -330,6 +361,12 @@ def plan(md, c, t, now=None):
         add(x.get("sku"), int(x.get("qty") or 0) - stock.get(x.get("sku"), 0), "HQ order", any_price=True)
     for sku, target, why_ in hits(c, now, t):                 # 1b'. our own hits, deepened as they sell (HQ 11-04)
         add(sku, target - stock.get(sku, 0) - buy.get(sku, 0), why_, any_price=True)
+    if t.get("food_expand", True):                            # 1b''. MST TF 11-12: high-margin food the market buys
+        before = cash
+        cash = min(cash, t.get("food_expand_budget", 4_000_000))   # at most this much of the window on new food
+        for sku, qty, why_ in food_expand(c, now, t, cat, stock):
+            add(sku, qty - buy.get(sku, 0), why_)
+        cash = before - (min(before, t.get("food_expand_budget", 4_000_000)) - cash)
     if t.get("profit_first"):                                 # HQ 11-10: only proven earners until profit is back
         cash = min(cash, general)
         return [{"sku": k, "qty": v} for k, v in buy.items()], why + ["profit-first: proven earners only"] + \
