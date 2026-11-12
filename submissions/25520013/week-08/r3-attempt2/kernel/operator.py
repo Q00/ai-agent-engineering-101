@@ -909,8 +909,10 @@ class Operator:
                 and _num(e.get("ended_ts")) and e["ended_ts"] > seen and ex.role_of(e) == self.role]
         codes = [r for r in code_edit.load(self.root) if r.get("status") not in code_edit.OPEN
                  and _num(r.get("ended_ts")) and r["ended_ts"] > seen and self.role in code_edit.role_of(r)]
+        last = st.get("last_wake_ts")
+        since = max(seen, last) if _num(last) else seen  # an answer that came before its last wake was on that page
         answers = [q for q in questions.load(self.root) if q.get("from") == self.role
-                   and q.get("status") in ("done", "failed") and _num(q.get("answered_ts")) and q["answered_ts"] > seen]
+                   and q.get("status") in ("done", "failed") and _num(q.get("answered_ts")) and q["answered_ts"] > since]
         self._seen_next = max([seen] + [x["ended_ts"] for x in exps + codes] + [q["answered_ts"] for q in answers])
         return exps, codes, answers
 

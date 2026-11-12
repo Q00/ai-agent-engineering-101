@@ -472,6 +472,12 @@ def test_an_answer_to_its_own_question_wakes_the_role_that_asked_once(env):
     shop.terra = Script({"done": {}})
     shop.wake(r, NOW + 120)
     assert shop.wake_reason(NOW + 180) is None  # seen: no second wake for the same answer
+    # an answer that came before the operator's last wake (read on that wake's page) does not wake it again, even
+    # when no verdict has moved its seen mark since
+    c = qs.add(root, "shop", "깍두기는 왜 품절인가", NOW + 200)["id"]
+    qs.close(root, c, "done", NOW + 210)
+    shop._save_state(dict(shop._state(), last_wake_ts=NOW + 220))
+    assert shop.wake_reason(NOW + 240) is None
 
 
 # ------------------------------------------------------------ restock window
