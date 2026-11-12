@@ -390,7 +390,12 @@ def policy(root, days=1, section=None):
             if not ln.startswith(("- ", "새로 값을 줄 수 있는")) or sec in ln.split(": ", 1)[0]
         )
         hist = [h for h in hist if sec in h]
-    return c.cap(view + "\n최근 정책 수정\n" + ("\n".join(hist) or "없음"), MAX_CHARS)
+    try:  # values a loop outside the kernel switches: they are in neither the view's history nor the ledger
+        outside = b.section_outside(root, part=sec)
+    except Exception:  # noqa: BLE001 - the view still goes out
+        outside = []
+    return c.cap(view + "\n최근 정책 수정\n" + ("\n".join(hist) or "없음")
+                 + ("\n" + "\n".join(outside) if outside else ""), MAX_CHARS)
 
 
 def stockouts(root, hours=1, now=None):

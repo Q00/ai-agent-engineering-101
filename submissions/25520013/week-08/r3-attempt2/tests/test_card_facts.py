@@ -622,8 +622,8 @@ def test_auditor_takes_kernel_card_parts_off_and_puts_them_back(tmp_path):
                             list(tools.TOOLS), (), None, roles=au.ROLES)
     assert again["applied"] == [] and sorted(x["why"] for x in again["refused"]) == ["이미 떼어져 있음", "이미 붙어 있음"]
     gaps = au._gaps_block(r, NOW)
-    assert ("커널이 넣는 칸 중 네가 떼고(uncard) 다시 붙일(card) 수 있는 것: shop 가게 회전, 묶인 돈 수익, 실험 중간값; "
-            "buyer 실험 중간값. 지금 뗀 것: shop 가게 회전, 실험 중간값; buyer 실험 중간값") in gaps
+    assert ("커널이 넣는 칸 중 네가 떼고(uncard) 다시 붙일(card) 수 있는 것: shop 가게 회전, 묶인 돈 수익, 실험 중간값, 커널 밖 변경; "
+            "buyer 실험 중간값, 커널 밖 변경. 지금 뗀 것: shop 가게 회전, 실험 중간값; buyer 실험 중간값") in gaps
     shop_parts = next(ln for ln in gaps.split("\n") if ln.startswith(au.ROLE_KO["shop"] + " 상태 카드의 칸"))
     assert "가게 회전" not in shop_parts
     back = au._apply_tools(r, NOW, {"card": {"shop": ["가게 회전"]}}, list(tools.TOOLS), (), None, roles=au.ROLES)
@@ -648,7 +648,7 @@ def test_auditor_prompt_holds_the_board_comparison_with_hashed_names(tmp_path):
     p = au.build_prompt(r, NOW, roles=au.ROLES, sizes=sizes)
     assert "## 다른 가게와 우리 (순위표의 가게 열, 커널이 셈. 해석 없음)\n\n[가게 회전 25시간]" in p
     assert f"1위 {c.hid('Alpha Shop')}: book +50.0M" in p and "Alpha" not in p and LOGIN not in p
-    assert sizes.get("다른 가게와 우리", 0) > 300 and len(p) <= au.PROMPT_CHARS == 26_000
+    assert sizes.get("다른 가게와 우리", 0) > 300 and len(p) <= au.PROMPT_CHARS == 27_000
     assert "8. 다른 가게와 우리:" in p and "uncard에 그 이름을 적어 떼고" in p
     assert "뗐던 카드 칸 이름" in au.SCHEMA_ROLES
 

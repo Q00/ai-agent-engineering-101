@@ -1086,7 +1086,81 @@ def section_rivals(b, b6, login, hours6, settles=None, cat=None):
 
 TURNOVER_H = 24  # [가게 회전]: window
 # kernel card parts the auditor may take off a role's state card (uncard) and put back (card)
-CARD_OPTIONAL = {"shop": ("가게 회전", "묶인 돈 수익", "실험 중간값"), "buyer": ("실험 중간값",)}
+CARD_OPTIONAL = {"shop": ("가게 회전", "묶인 돈 수익", "실험 중간값", "커널 밖 변경"),
+                 "buyer": ("실험 중간값", "커널 밖 변경")}
+OUTSIDE_LOOP = "icrl/state/loop.json"  # the state file of attempt 1's experiment loop (the kernel only reads it)
+
+
+def _at(d, parts):
+    """The value at a dotted path whose segments may themselves hold dots (a category name): longest segment first."""
+    if not parts:
+        return d
+    if not isinstance(d, dict):
+        return None
+    for i in range(len(parts), 0, -1):
+        k = ".".join(parts[:i])
+        if k in d:
+            v = _at(d[k], parts[i:])
+            if v is not None:
+                return v
+    return None
+
+
+def outside_switching(root):
+    """Policy values an experiment loop outside the kernel is switching now: attempt 1's loop holds each value at one of
+    two settings for a block of time and writes policy.json itself, so the kernel's edit history and its experiment
+    ledger do not show it (live 11-12: three such values, blocks of about 21 and 42 minutes, one in the section of a
+    running kernel experiment). Read from the loop's own state file; [] when it is missing, unreadable or idle.
+    -> [{"path", "a", "b", "id", "since", "blocks", "block_min", "arm_ts"}], block_min and arm_ts None when unknown."""
+    try:
+        lanes = c.load_json(os.path.join(c.data_root(root), OUTSIDE_LOOP), {}).get("lanes")
+    except (ValueError, OSError, AttributeError):
+        return []
+    out = []
+    for lane in (lanes or {}).values() if isinstance(lanes, dict) else ():
+        a = lane.get("active") if isinstance(lane, dict) else None
+        if not isinstance(a, dict) or a.get("status") != "running":
+            continue
+        bl = [x for x in a.get("blocks") or [] if isinstance(x, dict)] if isinstance(a.get("blocks"), list) else []
+        spans = sorted(x["t1"] - x["t0"] for x in bl if _is_num(x.get("t0")) and _is_num(x.get("t1")) and x["t1"] > x["t0"])
+        last = bl[-1].get("t0") if bl else None
+        for e in a.get("edits") or [] if isinstance(a.get("edits"), list) else []:
+            if isinstance(e, dict) and isinstance(e.get("path"), str) and e["path"] and "current" in e and "value" in e:
+                out.append({"path": e["path"], "a": e["current"], "b": e["value"], "id": a.get("id"),
+                            "since": a.get("t_start") if _is_num(a.get("t_start")) else None, "blocks": len(bl),
+                            "block_min": spans[len(spans) // 2] / 60 if spans else None,
+                            "arm_ts": last if _is_num(last) else None})
+    return sorted(out, key=lambda it: it["path"])
+
+
+def section_outside(root, role=None, part=None):
+    """[커널 밖 변경]: the values of outside_switching with the value policy.json holds now. role: only that side's
+    values (buyer: paths under buyer.); part: only paths holding that text. [] when there is none. Facts only."""
+    items = [it for it in outside_switching(root)
+             if (role is None or (role == "buyer") == it["path"].startswith("buyer."))
+             and (not part or part in it["path"])]
+    if not items:
+        return []
+    try:
+        pol = c.load_json(os.path.join(c.data_root(root), "policy.json"), None)
+    except (ValueError, OSError):
+        pol = None
+    val = lambda v: json.dumps(v, ensure_ascii=False) if not isinstance(v, str) else v
+    out = [f"[커널 밖 변경] 시도 1의 실험 루프가 구간마다 두 값 중 하나로 두는 정책 값 {len(items)}개 "
+           "(그 루프가 policy.json에 직접 써서 정책 수정 기록과 실험 장부에는 나오지 않음)"]
+    for it in items:
+        sec, _, key = it["path"].rpartition(".")
+        sec = sec[len("categories."):] if sec.startswith("categories.") else sec
+        now_v = _at(pol, it["path"].split("."))
+        out.append(
+            f"  {sec} {key}: {val(it['a'])} 또는 {val(it['b'])}"
+            + (f", 구간 약 {it['block_min']:.0f}분" if it["block_min"] else "")
+            + (f", {c.kst(it['since'])}부터" if it["since"] else "") + f" 구간 {it['blocks']}개"
+            + (f", 지금 구간은 {c.kst(it['arm_ts'], '%H:%M')}부터" if it["arm_ts"] else "")
+            + (f", policy.json의 지금 값 {val(now_v)}" if now_v is not None else ", policy.json에 지금 값 없음")
+            + f" (루프의 실험 {it['id']})"
+        )
+    return out
 
 
 def section_turnover(b, old, hours, login):
@@ -1826,7 +1900,8 @@ class _Ctx:
 
 
 # (name, one-line description, thunk, need): build() order. need "snaps" = only built when board snapshots exist,
-# "board" = also reads the snapshots (section() says they are missing), "ask" = as "board" but built only when asked
+# "board" = also reads the snapshots (section() says they are missing), "ask" = as "board" but built only when asked,
+# "asked" = built only when asked and needs no snapshot
 # for by name (section(), the card), so build() stays what it was.
 SECTIONS = [
     ("시각", "지금 시각, 회차 남은 시간, 목표",
@@ -1844,6 +1919,8 @@ SECTIONS = [
      lambda x: section_rivals(*x.goal_args, market_settles(x.root, x.board[2]), _catalog(x.root)), "board"),
     ("가게 회전", "24시간 위 가게와 우리의 book·매출·거래 증가, 재고 원가",
      lambda x: section_turnover(*x.board_day, x.login), "ask"),
+    ("커널 밖 변경", "시도 1의 실험 루프가 지금 두 값 사이에서 바꾸는 정책 값",
+     lambda x: section_outside(x.root) or ["[커널 밖 변경] 지금 없음"], "asked"),
     ("동시 비교", "판매자 후보 판 동시 비교 상태", lambda x: section_trial(x.root, x.now), None),
     ("지난 반성", "판마다 마지막 반성과 그 뒤 결정 수", lambda x: section_reflections(x.root, x.now), "snaps"),
     ("상품군 흐름", "2시간 단위 상품군별 우리 제시와 판매",
@@ -1871,7 +1948,7 @@ def build(root=None, now=None, last_brief_ts=None):
     x = _Ctx(root, now, last_brief_ts)
     out = []
     for _, _, fn, need in SECTIONS:
-        if need is None or (x.snaps and need != "ask"):
+        if need is None or (x.snaps and need not in ("ask", "asked")):
             out += fn(x)
     return c.mask("\n".join(out), (x.login,))
 
@@ -2240,6 +2317,7 @@ def build_compact(root=None, now=None, last_brief_ts=None, extra=None, role=None
          if x.board and role != "buyer" and "가게 회전" not in off else []),
         ("지난 깨어남 이후", board(_changes)),
         ("extra", lambda: [str(ln) for ln in extra or []]),
+        ("커널 밖 변경", lambda: section_outside(x.root, role) if "커널 밖 변경" not in off else []),
         ("시간대별", lambda: _hourly(x, role)),
         ("순이익", lambda: _net_compact(x) if role != "buyer" else []),
         ("가게 상태", lambda: _shop_compact(x)),

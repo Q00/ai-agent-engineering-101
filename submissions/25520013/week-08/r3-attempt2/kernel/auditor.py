@@ -69,7 +69,8 @@ HISTORY_MAX = 12
 HISTORY_SHOWN = 4
 DESC_CHARS = 160
 TOOL_CHANGES_MAX = 4
-PROMPT_CHARS = 26_000  # 11-12: 24,000 held the blocks at about 23,000; the board block adds about 1,200
+PROMPT_CHARS = 27_000  # 11-12: 24,000 held the blocks at about 23,000; the board block adds about 1,200 and the
+# values switched outside the kernel about 600
 NOTES_SHOWN = 800
 WAKES_SHOWN = 3
 RUNS_MAX = 12  # the auditor's own memory: its past runs kept in the state file
@@ -285,6 +286,14 @@ def _board_block(root, now):
     from kernel import brief
 
     return brief.section(root, "가게 회전", now)
+
+
+def _outside_block(root):
+    """Policy values a loop outside the kernel switches now (brief.section_outside): the operators' edit history and
+    the ledger do not hold them, so without this block the auditor cannot tell that they exist."""
+    from kernel import brief
+
+    return "\n".join(brief.section_outside(root)) or "없음"
 
 
 def rec_state(root):
@@ -865,6 +874,7 @@ def build_prompt(root, now, secrets=(), listed=None, roles=None, sizes=None):
         ("## 도구 표 (최근 24시간)", _tool_block(root, now, listed, ts)),
         ("## 정보 빈칸 (조사 결과에서 커널이 찾은 문장, 해석 없음)", _safe(lambda: _gaps_block(root, now))),
         ("## 다른 가게와 우리 (순위표의 가게 열, 커널이 셈. 해석 없음)", _safe(lambda: _board_block(root, now))),
+        ("## 커널 밖에서 바뀌는 정책 값 (시도 1 실험 루프의 상태 파일, 해석 없음)", _safe(lambda: _outside_block(root))),
         ("## 실험 기록 (커널 판정)", exp),
         (
             "## 코드 수정 (운영자가 규칙 코드를 고친 기록)",
