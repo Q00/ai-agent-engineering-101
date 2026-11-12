@@ -108,14 +108,14 @@ class GoodsSelectionTests(unittest.TestCase):
         for text, expected, warranty in [('G00000001', 'a', 72),
                                           ('G00000001 cheap', 'c', 0)]:
             with self.subTest(text=text):
-                self.agent = seller.Seller(0)
+                self.agent = food_fixture.fresh_seller(self.tmp)
                 self.turn(text)
                 deal = self.agent.open['task-1']
                 self.assertEqual(deal['unit']['unit'], expected)
                 result = self.receipt(self.turn(str(deal['ask'])))
                 self.assertEqual(result['warranty_hours'], warranty)
         self.inventory['units'] = units[1:]
-        self.agent = seller.Seller(0)
+        self.agent = food_fixture.fresh_seller(self.tmp)
         self.turn('G00000001')
         self.assertEqual(self.agent.open['task-1']['unit']['unit'], 'b')
 
@@ -191,7 +191,7 @@ class GoodsSelectionTests(unittest.TestCase):
                            (dict(self.goods('bad-ts', 1850000), supplied_at=10**1000), OverflowError)):
             with self.subTest(unit=bad['unit']):
                 self.inventory['units'] = [valid, bad]
-                self.agent = seller.Seller(0)
+                self.agent = food_fixture.fresh_seller(self.tmp)
                 self.turn('G00000001')
                 self.assertEqual(self.agent.open['task-1']['unit']['unit'], 'valid')
                 # No global pricing normalization: directly malformed prices still fail.
@@ -271,7 +271,7 @@ class GoodsSelectionTests(unittest.TestCase):
                     self.assertGreater(gap, 0)
                     # baseline cost=100000 => one-day band=1000 (2% cap is larger).
                     self.assertLessEqual(gap, 1000) if within else self.assertGreater(gap, 1000)
-                    self.agent = seller.Seller(0)
+                    self.agent = food_fixture.fresh_seller(self.tmp)
                     with patch.object(seller, 'load_hub', return_value=hub):
                         events = self.turn('G00000001')
                     deal = self.agent.open['task-1']
@@ -300,7 +300,7 @@ class GoodsSelectionTests(unittest.TestCase):
                                 int(100000/(1-seller.BREAK_RATE[grade])*1.05))
                 self.assertEqual(q['hard_floor'], floor)
                 self.inventory['units'] = [fresh, old]
-                self.agent = seller.Seller(0)
+                self.agent = food_fixture.fresh_seller(self.tmp)
                 with patch.object(seller, 'load_hub', return_value=hub):
                     self.turn('G00000001')
                 self.assertEqual(self.agent.open['task-1']['unit']['unit'], 'eight-hours')

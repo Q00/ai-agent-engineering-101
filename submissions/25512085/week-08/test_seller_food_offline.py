@@ -10,6 +10,7 @@ import sys
 import tempfile
 from types import SimpleNamespace
 import unittest
+import uuid
 from unittest.mock import patch
 
 sys.dont_write_bytecode = True
@@ -19,6 +20,11 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 import seller
 import store
+
+
+def fresh_seller(directory):
+    """Independent simulation, not a restart of an earlier signed checkout."""
+    return seller.Seller(0, reservation_file=directory / ('reservations-' + uuid.uuid4().hex + '.json'))
 
 
 class FakeQueue:
@@ -290,7 +296,7 @@ class FoodSafetyTests(unittest.TestCase):
         receipt = self.receipt(self.turn("g00000001 warranty 6h offer 36000"))
         self.assertEqual(receipt["unit"], "good-a")
         self.assertEqual(receipt["warranty_hours"], 72)
-        self.agent = seller.Seller(0)
+        self.agent = fresh_seller(self.tmp)
         self.turn("g00000001 warranty 6h")
         receipt = self.receipt(self.turn("offer 36000"))
         self.assertEqual(receipt["warranty_hours"], 72)

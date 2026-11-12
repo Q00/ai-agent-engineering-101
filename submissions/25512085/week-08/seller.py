@@ -940,12 +940,12 @@ def extract_buyer_offer(text: str, current_ask: int = 0, list_price: int = 0, sk
 
 
 class Seller(AgentExecutor):
-    def __init__(self, port: int):
+    def __init__(self, port: int, *, reservation_file: Path | None = None):
         self.port = port
         self.open: dict[str, dict[str, Any]] = {}
         # committed_units tracks units for which a signed receipt has been issued,
         # guarding them against concurrent sales until ACP settlement is finalized.
-        self.reservation_file = BASE_DIR / 'seller_reservations.json'
+        self.reservation_file = reservation_file if reservation_file is not None else BASE_DIR / 'seller_reservations.json'
         try:
             restored = json.loads(self.reservation_file.read_text(encoding='utf-8'))
         except FileNotFoundError:
@@ -994,9 +994,11 @@ class Seller(AgentExecutor):
         except BaseException:
             # Only the pre-publication boundary rolls back. Disk errors leave a
             # conservative reservation, never a receipt without durable protection.
-            if uid in self.committed_units:
-                self._save_reservations({u: ts for u, ts in self.committed_units.items() if u != uid})
-            self.open.pop(tid, None)
+            try:
+                if uid in self.committed_units:
+                    self._save_reservations({u: ts for u, ts in self.committed_units.items() if u != uid})
+            finally:
+                self.open.pop(tid, None)
             raise
         self.open.pop(tid, None)
 
@@ -1144,6 +1146,7 @@ class Seller(AgentExecutor):
                                 and any(w in text.lower() for w in NO_CARE_WORDS)),
                     "rounds": 0,
                     "created_at": now_ts,
+                    "last_activity_at": now_ts,
                     "offers": [],
                     "required_use_hours": required_hours,
                     "awaiting_use_period": is_food and required_hours is None,
@@ -1255,8 +1258,8 @@ class Seller(AgentExecutor):
             u = deal["unit"]
             live_grade, hours_left = compute_live_unit_grade(u, catalog)
             if live_grade == "expired":
-                await up.reject(say("Sorry, that unit just passed its shelf-life window; transaction cancelled safely."))
                 del self.open[task.id]
+                await up.reject(say("Sorry, that unit just passed its shelf-life window; transaction cancelled safely."))
                 return
 
             cost = int(u.get("cost") or 100)
@@ -1264,8 +1267,8 @@ class Seller(AgentExecutor):
             r1_target = int(deal.get("r1_target") or hard_floor)
             r2_target = int(deal.get("r2_target") or hard_floor)
             if u.get('kind')=='goods' and required_warranty_hours(text)>int(deal.get('warranty_hours') or 0):
-                await up.reject(say("Requested warranty exceeds the disclosed terms. No receipt issued."))
                 del self.open[task.id]
+                await up.reject(say("Requested warranty exceeds the disclosed terms. No receipt issued."))
                 return
             # Safe-Care choice: the buyer drops it by saying so (grades A/B only) and asking for it brings it back.
             # The stored targets include Safe-Care; without it every target is lower by the expected refund.
@@ -1294,8 +1297,8 @@ class Seller(AgentExecutor):
                 r1_target=max(r1_target,hard_floor)
                 r2_target=max(r2_target,hard_floor)
                 if in_mode(int(deal['ask'])) < hard_floor:
-                    await up.reject(say("The previously quoted price no longer clears the actual-cost profit floor. Transaction cancelled. No receipt issued."))
                     del self.open[task.id]
+                    await up.reject(say("The previously quoted price no longer clears the actual-cost profit floor. Transaction cancelled. No receipt issued."))
                     return
 
             # Balanced 3-Turn Concession Policy:
@@ -1312,8 +1315,8 @@ class Seller(AgentExecutor):
                 final_target = max(hard_floor,math.ceil(in_mode(deal['initial_ask'])*.99))
                 should_accept = offer >= final_target
                 if not should_accept and deal['rounds'] >= 2:
-                    await up.reject(say(f"Our final price is {final_target}, cert=true{terms}. No deal at {offer}."))
                     del self.open[task.id]
+                    await up.reject(say(f"Our final price is {final_target}, cert=true{terms}. No deal at {offer}."))
                     return
 
             # Goods keep their protected floor; food clearance may still allow below-cost sales.
@@ -1329,8 +1332,8 @@ class Seller(AgentExecutor):
                 current_ask = in_mode(int(deal["ask"]))
                 final_price = min(current_ask, int(offer))
                 if is_goods and final_price<hard_floor:
-                    await up.reject(say("The previously quoted price no longer clears the actual-cost profit floor. No receipt issued."))
                     del self.open[task.id]
+                    await up.reject(say("The previously quoted price no longer clears the actual-cost profit floor. No receipt issued."))
                     return
                 receipt = {
                     "shop": SHOP_NAME,
@@ -1360,8 +1363,8 @@ class Seller(AgentExecutor):
 
             # Reject if buyer stalls below cost for >= 4 rounds
             if deal["rounds"] >= 4 and offer < hard_floor:
-                await up.reject(say(f"Cannot sell below certified cost floor ({hard_floor}). No deal at {offer}."))
                 del self.open[task.id]
+                await up.reject(say(f"Cannot sell below certified cost floor ({hard_floor}). No deal at {offer}."))
                 return
 
             # Stepped Concession Curve:

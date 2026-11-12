@@ -14,7 +14,7 @@ class GoodsTermsPilotTests(unittest.TestCase):
     SKUS = ('G021aae64', 'G0be9ed07', 'G81ade83e')
 
     def stock(self, sku='G021aae64', grades=('A', 'B', 'C')):
-        self.agent = seller.Seller(0)
+        self.agent = fixture.fresh_seller(self.tmp)
         self.catalog[sku] = dict(kind='goods', category='goods>sofa', list_price=100000)
         self.inventory['units'] = [dict(
             sku=sku, unit=sku+'-'+g, name='sofa', category='goods>sofa', kind='goods',

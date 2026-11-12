@@ -91,7 +91,7 @@ class WarrantyDisclosureTests(unittest.TestCase):
     def test_legacy_missing_warranty_keeps_grade_fallback(self):
         for grade, hours in [('A', 72), ('B', 6), ('C', 0)]:
             with self.subTest(grade=grade):
-                self.agent = seller.Seller(0)
+                self.agent = fixture.fresh_seller(self.tmp)
                 self.check_deal(grade, hours, missing=True)
 
     def test_food_concession_then_receipt_has_no_goods_warranty(self):

@@ -86,7 +86,7 @@ class GoodsFloorTests(unittest.TestCase):
                         hub = self.evidence(grade) if evidence else {}
                         for instant in (False, True):
                             with self.subTest(grade=grade, age=age, factor=factor, evidence=evidence, instant=instant):
-                                self.agent = seller.Seller(0)
+                                self.agent = fixture.fresh_seller(self.tmp)
                                 unit = self.goods(grade, age)
                                 self.inventory['units'] = [unit]
                                 q = self.quote(unit, factor, hub)
@@ -100,7 +100,7 @@ class GoodsFloorTests(unittest.TestCase):
 
     def test_low_offers_cannot_sign_receipt(self):
         for grade in ('A', 'B', 'C'):
-            self.agent = seller.Seller(0)
+            self.agent = fixture.fresh_seller(self.tmp)
             unit = self.goods(grade, 24)
             self.inventory['units'] = [unit]
             self.turn(unit['sku'])
@@ -114,7 +114,7 @@ class GoodsFloorTests(unittest.TestCase):
             for no_care in (False, True):
                 for change in ('storage', 'risk'):
                     with self.subTest(grade=grade, no_care=no_care, change=change):
-                        self.agent = seller.Seller(0)
+                        self.agent = fixture.fresh_seller(self.tmp)
                         unit = self.goods(grade)
                         self.inventory['units'] = [unit]
                         self.turn(unit['sku'])
@@ -142,7 +142,7 @@ class GoodsFloorTests(unittest.TestCase):
         for grade, stored, no_care in (('A', 0, False), ('A', 12, False), ('B', 0, False),
                                       ('B', 3, False), ('A', 72, True), ('B', 6, True), ('C', 0, False)):
             with self.subTest(grade=grade, stored=stored, no_care=no_care):
-                self.agent = seller.Seller(0)
+                self.agent = fixture.fresh_seller(self.tmp)
                 unit = self.goods(grade, 240)
                 self.inventory['units'] = [unit]
                 self.turn(unit['sku'])
@@ -169,7 +169,7 @@ class GoodsFloorTests(unittest.TestCase):
     def late_cash_turn(self, offer):
         for grade in ('A', 'B', 'C'):
             with self.subTest(grade=grade, offer=offer):
-                self.agent = seller.Seller(0)
+                self.agent = fixture.fresh_seller(self.tmp)
                 unit = self.goods(grade)
                 self.inventory['units'] = [unit]
                 hub = self.evidence(grade)
@@ -203,7 +203,7 @@ class GoodsFloorTests(unittest.TestCase):
         for grade, stored, no_care in (('A', 0, False), ('A', 12, False), ('B', 3, False),
                                       ('C', 0, False), ('A', 72, True), ('B', 6, True)):
             with self.subTest(grade=grade, stored=stored, no_care=no_care):
-                self.agent = seller.Seller(0)
+                self.agent = fixture.fresh_seller(self.tmp)
                 unit = self.goods(grade)
                 self.inventory['units'] = [unit]
                 self.turn(unit['sku'])
@@ -232,7 +232,7 @@ class GoodsFloorTests(unittest.TestCase):
                                       ('A', 72, True), ('B', 6, True)):
             for low_offer in (True, False):
                 with self.subTest(grade=grade, stored=stored, no_care=no_care, low_offer=low_offer):
-                    self.agent = seller.Seller(0)
+                    self.agent = fixture.fresh_seller(self.tmp)
                     unit = self.goods(grade)
                     self.inventory['units'] = [unit]
                     self.turn(unit['sku'])
@@ -257,7 +257,7 @@ class GoodsFloorTests(unittest.TestCase):
 
     def test_no_care_signed_receipt_uses_undiscounted_live_floor(self):
         for grade in ('A', 'B'):
-            self.agent = seller.Seller(0)
+            self.agent = fixture.fresh_seller(self.tmp)
             unit = self.goods(grade, 240)
             self.inventory['units'] = [unit]
             self.turn(unit['sku'])
@@ -272,7 +272,7 @@ class GoodsFloorTests(unittest.TestCase):
 
     def test_current_profit_floor_rechecked_after_no_care_conversion(self):
         for grade in ('A', 'B'):
-            self.agent = seller.Seller(0)
+            self.agent = fixture.fresh_seller(self.tmp)
             unit = self.goods(grade, 240)
             self.inventory['units'] = [unit]
             self.turn(unit['sku'])
