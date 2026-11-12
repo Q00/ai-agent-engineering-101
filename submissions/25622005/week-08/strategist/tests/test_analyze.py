@@ -827,7 +827,35 @@ class NewSectionsTest(unittest.TestCase):
         self.assertEqual(pj["saved_end"]["kept_0.45"], round((0.2553 * 7320 + 300 * 0.45) / 7620, 4))
         self.assertEqual(pj["saved_end"]["as_now"], round((0.2553 * 7320 + 300 * (0.329 * (1 - 272 / 7220) - 272 / 7220)) / 7620, 4))
         self.assertEqual([(p["deals"], p["kept"]) for p in sv["peers"]], [(1068, 0.523), (6817, 0.468)])  # >= 1000 deals, no house
-        self.assertEqual(sv["policy"], {"min_kept": 0.31, "break_penalty": 1.0, "step_list": 0.0, "cap_goods_no_warranty": 0.8})
+        self.assertEqual(sv["policy"], {"min_kept": 0.31, "min_kept_A": None, "min_kept_B": None, "min_kept_C": None,
+                                        "break_penalty": 1.0, "step_list": 0.0, "cap_goods_no_warranty": 0.8})
+        self.assertEqual((sv["rule"], sv["by_grade"], sv["window_est"]), (None, {}, None))
+
+    def test_saved_by_grade_under_the_margin_rule(self):
+        # Patch 3.6: a deal scores (list - price) / (list - cost) at most 1; the cost is drawn by grade (A 0.55-0.75
+        # of list, C 0.25-0.45), so a C at 0.45 kept scores 0.6923 at the middle cost and an A at 0.40 scores 1
+        r = raw()
+        r["board"]["buyers"] = [{"name": "psyoung82", "owner": {"login": "psyoung82"}, "house": False, "orders": 1000,
+                                 "deals": 900, "served": 900, "paid": 0.55, "saved": 0.6}]
+        o = own()
+        o["decisions"]["buyer"] = [{"kind": "order", "inputs": {"kind": "food"}, "choice": {"shop": "s"}}] * 3
+        o["decisions"]["review"] = [
+            {"kind": "review", "inputs": {"price": 5500, "value": 10000, "grade": "C", "expires_at": NOW + 3600}},
+            {"kind": "review", "inputs": {"price": 5500, "value": 10000, "grade": "C", "expires_at": NOW + 3600}},
+            {"kind": "review", "inputs": {"price": 6000, "value": 10000, "grade": "A", "expires_at": None}},
+            {"kind": "review", "inputs": {"price": 6000, "value": 10000, "grade": "?"}}]
+        pol = {"stock": {"end_ts": NOW + 100 * 3600}, "buyer": {"min_kept": 0.3, "min_kept_C": 0.55}}
+        sv = analyze.brief(r, o, None, pol, NOW, market={"facts": {"saved_is_margin_share_capped_1": True}})["saved"]
+        self.assertEqual(sv["rule"], "margin_share")
+        self.assertEqual(sv["by_grade"], {
+            "food_C": {"n": 2, "share": 0.6667, "kept": 0.45, "est": 0.6923, "est_band": [0.6, 0.8182], "kept_for_1": 0.75},
+            "goods_A": {"n": 1, "share": 0.3333, "kept": 0.4, "est": 1.0, "est_band": [0.8889, 1.0], "kept_for_1": 0.45}})
+        self.assertEqual(sv["window_est"], 0.7949)
+        pj = sv["projection"]
+        self.assertEqual(pj["as_now_per_deal"], 0.7949)
+        self.assertEqual(pj["saved_end"]["as_now"], round((0.6 * 1000 + 300 * 0.7949) / 1300, 4))
+        sv = analyze.brief(r, o, None, pol, NOW, market={"facts": {"saved_is_kept_share_over_deals_plus_100": True}})["saved"]
+        self.assertEqual((sv["rule"], sv["projection"]["as_now_per_deal"]), ("kept_of_list", 0.45))
 
     def test_closing_at_the_cap_or_under_it_and_the_failed_tries_near_the_cap(self):
         o = own()
@@ -849,7 +877,7 @@ class NewSectionsTest(unittest.TestCase):
     def test_saved_without_a_board_row(self):
         r = raw(); r["board"]["buyers"] = []
         sv = analyze.brief(r, own(), None, POL, NOW)["saved"]
-        self.assertEqual(list(sv), ["policy", "closing"])
+        self.assertEqual(list(sv), ["policy", "rule", "by_grade", "window_est", "closing"])
 
     def test_restock_excluded_and_surge_from_the_last_planning_run(self):
         o = own()

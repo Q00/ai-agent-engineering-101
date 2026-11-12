@@ -942,18 +942,51 @@ def _buyer_log(rows):
     return out
 
 
-def _saved(buyers, me_row, me_b, rows, pol, hours_left, window_h):
-    """The buyer's Saved, taken apart (Saved = sum over deals of surplus / list, a deal that served nothing -1
-    or 0 when refunded, over deals + 100). unserved: the board's deals - served, each a -1, and the drag they
+def _by_grade(reviews):
+    """(by_grade, window_est): our window's paid deals by kind x grade (the review hook's rows carry the settled
+    grade, price and list): n, share, kept (mean 1 - price / list), est (the deal's Saved under Patch 3.6 at the
+    grade's middle cost, policy.margin_share), est_band [at its low cost, at its high cost], kept_for_1 (the kept
+    of list that scores 1 whatever the unit's cost). window_est: the mean est over all of them."""
+    import policy
+    groups = {}
+    for r in _rows(reviews):
+        i = _dict(r.get("inputs"))
+        p, lst, g = _num(i.get("price")), _num(i.get("value")), i.get("grade")
+        if not p or not lst or g not in policy.COST_SHARE:
+            continue
+        groups.setdefault(("food" if i.get("expires_at") else "goods", g), []).append(1 - p / lst)
+    n_all = sum(len(v) for v in groups.values())
+    out, est_sum = {}, 0.0
+    for (kind, g), ks in sorted(groups.items()):
+        ests = [policy.margin_share(k, g) for k in ks]
+        est_sum += sum(ests)
+        out[f"{kind}_{g}"] = {"n": len(ks), "share": _r(len(ks) / n_all), "kept": _r(statistics.mean(ks)),
+                              "est": _r(statistics.mean(ests)),
+                              "est_band": [_r(statistics.mean(policy.margin_share(k, g, 0) for k in ks)),
+                                           _r(statistics.mean(policy.margin_share(k, g, 1) for k in ks))],
+                              "kept_for_1": _r(1 - policy.COST_SHARE[g][0])}
+    return out, (_r(est_sum / n_all) if n_all else None)
+
+
+def _saved(buyers, me_row, me_b, rows, pol, hours_left, window_h, reviews=None, facts=None):
+    """The buyer's Saved, taken apart. rule: the market's Saved rule in force (facts: margin_share, Patch 3.6,
+    a deal scores (list - price) / (list - cost) at most 1; kept_of_list, Patch 3.4, surplus / list; None when
+    neither sentence is there), a deal that served nothing -1 or 0 when refunded, over deals + 100. by_grade and
+    window_est: _by_grade. unserved: the board's deals - served, each a -1, and the drag they
     put on saved. kept_per_deal: 1 - the board's paid (our mean price / list). window: this window's deals, the
     goods deals among them and how many carried the full 6 h warranty, the deal rate. projection: the deals
-    left at that rate, the weight of the history in the final saved, and the final saved if every deal left kept
-    the share named (as_now: the current kept with the current unserved share going on; the SAVED_TARGETS with
-    breaks refunded). peers: the PEER_TOP best saved among the other buyers with PEER_MIN_DEALS deals, with their paid.
+    left at that rate, the weight of the history in the final saved, and the final saved if every deal left
+    scored the value named (as_now: the window's per-deal score, window_est under the margin rule, else the
+    current kept, with the current unserved share going on; the SAVED_TARGETS with breaks refunded).
+    peers: the PEER_TOP best saved among the other buyers with PEER_MIN_DEALS deals, with their paid.
     policy: the buyer keys that set the share kept."""
     deals, served, saved, paid = (_num(_dict(me_b).get(k)) for k in ("deals", "served", "saved", "paid"))
-    out = {"policy": {k: _dict(_dict(pol).get("buyer")).get(k) for k in ("min_kept", "break_penalty", "step_list",
-                                                                             "cap_goods_no_warranty")}}
+    out = {"policy": {k: _dict(_dict(pol).get("buyer")).get(k) for k in ("min_kept", "min_kept_A", "min_kept_B", "min_kept_C",
+                                                                             "break_penalty", "step_list", "cap_goods_no_warranty")}}
+    f = _dict(facts)
+    out["rule"] = ("margin_share" if f.get("saved_is_margin_share_capped_1") else
+                   "kept_of_list" if f.get("saved_is_kept_share_over_deals_plus_100") else None)
+    out["by_grade"], out["window_est"] = _by_grade(reviews)
     orders = [r for r in _rows(rows) if r.get("kind") == "order"]
     won = [r for r in orders if isinstance(r.get("choice"), dict)]
     out["closing"] = _closing(orders, won, pol)
@@ -976,7 +1009,9 @@ def _saved(buyers, me_row, me_b, rows, pol, hours_left, window_h):
         ends = {}
         if kept is not None and unserved is not None:
             share = unserved / deals if deals else 0
-            ends["as_now"] = _r((saved * hist + left * (kept * (1 - share) - share)) / (hist + left))
+            per = out["window_est"] if out["rule"] == "margin_share" and out["window_est"] is not None else kept
+            proj["as_now_per_deal"] = per
+            ends["as_now"] = _r((saved * hist + left * (per * (1 - share) - share)) / (hist + left))
         for k in SAVED_TARGETS:
             ends[f"kept_{k}"] = _r((saved * hist + left * k) / (hist + left))
         proj["saved_end"] = ends
@@ -1111,7 +1146,8 @@ def brief(raw, own, prev, pol, now, me=ME, window_h=1, flows=None, known=(), foc
     dec = _dict(own.get("decisions"))
     b["seller"] = _seller(_rows(dec.get("seller")), pol, own.get("warranted_6h"))
     b["buyer_log"] = _buyer_log(_rows(dec.get("buyer")))
-    b["saved"] = _saved(buyers, _find(buyers, me), b["me"].get("buyer"), _rows(dec.get("buyer")), pol, b["hours_left"], window_h)
+    b["saved"] = _saved(buyers, _find(buyers, me), b["me"].get("buyer"), _rows(dec.get("buyer")), pol, b["hours_left"], window_h,
+                        _rows(dec.get("review")), _dict(_dict(market).get("facts")))
     b["forum"] = _forum(raw.get("forum"), since)
     b["reviews_of_us"] = _reviews(raw.get("shop_reviews"))
     b["inventory"] = _inventory(own.get("inventory"), ledger, url, me, pol, now, ledger_h, flows, known)

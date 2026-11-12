@@ -54,6 +54,7 @@ DEFAULTS = {
     "buyer": {
         "cap_goods_no_warranty": 0.70, "cap_goods_warranty": 0.94, "cap_food": 0.95,
         "min_surplus_list": 0.05, "min_kept": 0.0, "open_list": 0.60, "max_shops": 3, "food_margin_h": 0.2,
+        "min_kept_A": 0.0, "min_kept_B": 0.0, "min_kept_C": 0.0,
         "target_s": 20, "continue_p": 0.75, "msg_timeout_s": 12, "order_cap_s": 60,
         "binding": True, "accept_cert": True, "break_penalty": 1.0, "step_list": 0.0,
     },
@@ -63,6 +64,30 @@ DEFAULTS = {
     "forum": {"enabled": True, "max_per_day": 288, "min_gap_min": 5, "shop_replies": False, "unmet_demand": False,
               "report_enabled": True, "report_repeat_h": 12},
 }
+
+# Market facts the buyer's Saved depends on (agent.md 'Supply', and Patch 3.6 of 11-12: Saved is the share of the
+# shop's margin a deal took). strategist/facts.py alerts when their sentences change; update them by hand then.
+COST_SHARE = {"A": (0.55, 0.75), "B": (0.40, 0.60), "C": (0.25, 0.45)}      # a unit's cost as a share of list
+GRADE_PRIOR = {"food": {"A": 0.25, "B": 0.50, "C": 0.25}, "goods": {"A": 0.70, "B": 0.20, "C": 0.10}}
+
+
+def margin_share(kept, grade, point=0.5):
+    """One deal's Saved under Patch 3.6: (list - price) / (list - cost), at most 1, from kept = 1 - price / list
+    and the cost at `point` of the grade's band (0: the band's low cost, the widest margin, the score the deal
+    reaches whatever the cost; 0.5 its middle; 1 its high cost). None for an unknown grade."""
+    band = COST_SHARE.get(grade)
+    if band is None or kept is None:
+        return None
+    c = band[0] + (band[1] - band[0]) * point
+    return min(1.0, kept / (1 - c))
+
+
+def expected_margin_share(kept, kind, point=0.5):
+    """margin_share averaged over the grades supply draws for the kind (GRADE_PRIOR): the score of a deal at this
+    kept share of list before a quote or a receipt names the unit's grade."""
+    prior = GRADE_PRIOR.get(kind) or GRADE_PRIOR["goods"]
+    return sum(w * margin_share(kept, g, point) for g, w in prior.items())
+
 
 # Bounds for values where a typo would be costly. (low, high), inclusive.
 RANGES = {
@@ -77,6 +102,7 @@ RANGES = {
     "buyer.break_penalty": (0.0, 1.0), "buyer.step_list": (0.0, 0.3),
     "buyer.continue_p": (0.0, 1.0), "buyer.msg_timeout_s": (1, 120), "buyer.order_cap_s": (5, 280),
     "buyer.food_margin_h": (0.0, 24.0), "buyer.min_surplus_list": (0.0, 0.5), "buyer.min_kept": (0.0, 0.6),
+    "buyer.min_kept_A": (0.0, 0.85), "buyer.min_kept_B": (0.0, 0.85), "buyer.min_kept_C": (0.0, 0.85),
     "stock.window_lead_s": (0, 60),         # the kit retries a closed-window line 3 x 30 s, then skips it
     "stock.cover_min": (5, 240), "stock.cover_safety": (0.5, 5.0),
     "llm.planner_max_per_h": (0, 20), "llm.exception_max_per_h": (0, 60), "forum.max_per_day": (0, 288),

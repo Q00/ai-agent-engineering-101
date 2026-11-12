@@ -162,16 +162,30 @@ Supply and depth:
   The brief's saved.closing shows the evidence: at_cap_share (deals paid at the cap, where a floor under it was
   never probed) against under_cap, price_over_cap, the winning try's turns and elapsed_s, and among the failed
   tries near_share (last ask within 10% of the cap: what a slightly lower min_kept would close, at a lower kept).
-  Saved (board: buyers.saved) is the average share of list kept per deal (denominator deals + 100), so a deal
-  that keeps less than our current saved lowers it, and the deals still to come outnumber the history (brief
-  saved.projection: history_weight, and the final saved at the current kept and at 0.40 / 0.45): the share kept
-  on new deals decides the final saved, while deals weigh 0.1 and sit near their ceiling. saved.peers lists the
-  best saved among the other buyers with 1000+ deals with their paid (1 - paid is the share they keep per deal).
-  buyer.min_kept is set by code each run (score_twin, history source "objective": one step toward the larger of
-  max(our saved, the rank-3 saved) + 0.02 and the rank-3 kept share among those peers, raised only while the
-  buyer's window conversion is at least 0.30, a step down under 0.20); a change of yours to it is discarded as a
-  duplicate. It pauses, with an alert, when the market's Saved sentence changes (fact
-  saved_is_kept_share_over_deals_plus_100): then re-derive buyer.min_kept yourself from the new rule.
+  Saved (board: buyers.saved) is a mean over deals (denominator deals + 100) of one score per deal; brief
+  saved.rule names the market's rule in force. Under margin_share (Patch 3.6 of 11-12, fact
+  saved_is_margin_share_capped_1) a deal scores (list - price) / (list - unit cost), at most 1: the share of the
+  shop's margin it took, not of list. The unit's cost is drawn by grade (fact cost_share_bands_A55_75_B40_60_C25_45:
+  A 0.55-0.75 of list, B 0.40-0.60, C 0.25-0.45), so the kept share of list that scores a full 1 whatever the cost
+  is A 0.45, B 0.60, C 0.75 (saved.by_grade[...].kept_for_1), and the same kept scores less on a C than on an A:
+  haggling an A below 0.55 of list buys nothing and loses deals, a C at 0.55 kept scores 0.73-0.97 (est_band).
+  saved.by_grade is the window's paid deals by kind x grade (n, share, kept, est: the score at the band's middle
+  cost, est_band at its low and high cost), saved.window_est their mean score, and saved.projection the final
+  saved if the deals left score as the window does (as_now, basis as_now_per_deal) or every deal left scores k
+  (kept_k keys). A deal scoring above the running saved raises it: while window_est is above saved, more deals
+  (conversion; deals weigh 0.1 too) raise Saved, and a lower floor that closes more A and B deals costs nothing
+  until it lets a C through under its score. Levers: buyer.min_kept, the kept floor of every cap before a quote
+  names the unit's grade, and buyer.min_kept_A / _B / _C, the floor once a quote or receipt names that grade
+  (tools/negotiation re-caps at (1 - the larger floor) x list; the candidate score weighs a shop's likely price by
+  the Saved it scores over the kind's grade mix): set the grade floors from kept_for_1 and by_grade (an A floor at
+  0.45 or under, a C floor between its score and its conversion), and min_kept low enough that the generic cap
+  does not refuse the A and B quotes a grade floor would take. Under kept_of_list (Patch 3.4, fact
+  saved_is_kept_share_over_deals_plus_100) a deal scores its kept share of list and buyer.min_kept is code's each
+  run (score_twin, history source "objective": a step toward max(our saved, the rank-3 saved) + 0.02 or the rank-3
+  kept share among buyers with 1000+ deals, raised only at a window conversion of 0.30+, a step down under 0.20;
+  your change to it is then discarded as a duplicate); under any other rule score_twin is paused with an alert
+  and buyer.min_kept is yours. saved.peers lists the best saved among the other buyers with 1000+ deals with
+  their paid; under margin_share a low paid is not what makes a high saved (0.38 kept on A units scores 1).
 - Big-ticket goods (list above stock.big_ticket_list) are first asked at seller.first_ask_big_list x list, the
   rest at seller.first_ask_list; the market clears big-ticket goods at about 0.67-0.72 of list.
 - forum.min_gap_min spaces our buyer posts; it is set from the market's post limit automatically, not by you.

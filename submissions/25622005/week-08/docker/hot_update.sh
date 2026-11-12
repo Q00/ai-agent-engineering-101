@@ -18,7 +18,23 @@ DATA=${MARKET_DATA_DIR:-/Users/psyoung82/docker/compose/term/data}
 COMPOSE="podman compose -f $HERE/compose.yaml --project-directory $HERE"
 DRY=""
 LIST=$(mktemp)
-[ "${1:-}" = "--dry-run" ] && DRY="--dry-run"
+[ "${1:-}" = "--dry-run" ] && DRY="--dry-run" && USER_DRY=1
+
+# A policy key (RANGES) the running seller's policy.py does not know makes it reject SKILL.md as soon as the
+# strategist writes the key (11-11: 7 h on DEFAULTS over a value, and an unknown key is the same error). The
+# seller loaded the image's policy.py (launch.py copies the image over /data at every start), so the repo's keys
+# are compared with the image's: new keys -> nothing is copied and only the strategist loop is restarted, until
+# the container is recreated from a rebuilt image (the user's command: podman compose up -d).
+IMG_KEYS=$($COMPOSE exec -T market python -c "import sys; sys.path.insert(0, '/opt/agent'); import policy; print(','.join(sorted(policy.RANGES)))" 2>/dev/null | tr -d '\r' | tail -1 || true)
+REPO_KEYS=$(python3 -c "import sys; sys.path.insert(0, '$HERE'); import policy; print(','.join(sorted(policy.RANGES)))")
+NEW_KEYS=$(python3 -c "import sys; a, b = set(sys.argv[1].split(',')), set(sys.argv[2].split(',')); print(' '.join(sorted(b - a)))" "$IMG_KEYS" "$REPO_KEYS")
+if [ -n "$IMG_KEYS" ] && [ -n "$NEW_KEYS" ]; then
+  echo "SKIPPED copy: policy.py adds keys the running seller's policy.py lacks ($NEW_KEYS);"
+  echo "         rebuild the image and recreate the container (podman compose up -d) first"
+  DRY="--dry-run"
+  SKIPPED=1
+fi
+[ -z "$IMG_KEYS" ] && echo "note: could not read the image's policy.py RANGES (container down?); copying anyway"
 
 rsync -ai --checksum $DRY \
   --include='/market_buyer.py' --include='/restock.py' --include='/review.py' --include='/policy.py' \
@@ -36,8 +52,8 @@ if grep -q '^updated: policy.py$' "$LIST"; then
 fi
 rm -f "$LIST"
 
-if [ -z "$DRY" ]; then
-  for f in market_buyer.py restock.py review.py policy.py; do python3 -m py_compile "$DATA/$f"; done
+if [ -z "${USER_DRY:-}" ]; then
+  [ -z "$DRY" ] && for f in market_buyer.py restock.py review.py policy.py; do python3 -m py_compile "$DATA/$f"; done
   # the loop's pid is in its heartbeat (the slim image has no procps); a new loop then starts detached
   T0=$(date +%s)
   $COMPOSE exec -d market as-agent sh -c 'pid=$(python -c "import json;print(json.load(open(\"/data/strategist-home/heartbeat.json\"))[\"pid\"])" 2>/dev/null); [ -n "$pid" ] && kill "$pid" 2>/dev/null; sleep 2; mkdir -p /data/strategist-home && exec python -m strategist >> /data/strategist-home/console.log 2>&1' >/dev/null 2>&1 || true

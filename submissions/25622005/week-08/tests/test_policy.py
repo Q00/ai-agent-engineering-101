@@ -59,7 +59,9 @@ class RangeTests(unittest.TestCase):
         self.assertTrue(any(e.startswith("stock.big_ticket_share") for e in policy.validate(p)))
         p["stock"]["big_ticket_share"] = 0.4
         p["buyer"]["min_kept"] = 0.7                                # above RANGES (0.0, 0.6)
-        self.assertTrue(any(e.startswith("buyer.min_kept") for e in policy.validate(p)))
+        p["buyer"]["min_kept_C"] = 0.9                              # above RANGES (0.0, 0.85)
+        self.assertTrue(any(e.startswith("buyer.min_kept:") for e in policy.validate(p)))
+        self.assertTrue(any(e.startswith("buyer.min_kept_C:") for e in policy.validate(p)))
 
 
 class FillDefaultsTests(unittest.TestCase):

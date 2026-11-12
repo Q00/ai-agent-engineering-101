@@ -14,6 +14,7 @@ the policy (strategy/SKILL.md); the few priors below are assumptions until the m
 """
 from statistics import median
 
+import policy
 from memory import query
 from tools.pricing import FOOD_GRADE_CUTS
 
@@ -35,14 +36,20 @@ def list_price(catalog, sku):
     return int(v) if isinstance(v, (int, float)) and v > 0 else None
 
 
-def kept_floor(pol):
-    """The least share of list a deal must keep: max(buyer.min_surplus_list, buyer.min_kept). Saved (Patch 3.4) is
-    the average share kept, so a deal below the running average lowers the score; min_kept pins the floor there."""
+def kept_floor(pol, grade=None):
+    """The least share of list a deal must keep: max(buyer.min_surplus_list, buyer.min_kept, and once a quote or a
+    receipt names the unit's grade, buyer.min_kept_<grade>). Saved (Patch 3.6) is the share of the shop's margin
+    a deal took, (list - price) / (list - cost) at most 1, and the cost is drawn by grade (policy.COST_SHARE:
+    an A costs 0.55-0.75 of list, so a kept of 0.45 already scores 1; a C costs 0.25-0.45, so the same kept
+    scores 0.6-0.8): the per-grade floors let the buyer stop haggling an A once it scores 1 and hold out on a C."""
     b = pol["buyer"]
-    return max(b["min_surplus_list"], b.get("min_kept", 0.0))
+    f = max(b["min_surplus_list"], b.get("min_kept", 0.0))
+    if grade in policy.COST_SHARE:
+        f = max(f, b.get(f"min_kept_{grade}") or 0.0)
+    return f
 
 
-def break_top(kind, warranty_h, q_upper, pol):
+def break_top(kind, warranty_h, q_upper, pol, grade=None):
     """The most of list a goods deal may cost when a break counts buyer.break_penalty against Saved (the market's
     rule: a deal that served nothing counts -1, 0 when refunded, so a warranted break costs nothing). With q the
     break chance the warranty leaves uncovered (q_upper, or q_prior before a measurement, times the part of the
@@ -56,27 +63,28 @@ def break_top(kind, warranty_h, q_upper, pol):
     q = min(1.0, max(0.0, q)) * (1 - min(1.0, (warranty_h or 0) / WARRANTY_FULL_H))
     if q >= 1:
         return 0.0
-    return round(max(0.0, 1 - (kept_floor(pol) + q * pen) / (1 - q)), 6)
+    return round(max(0.0, 1 - (kept_floor(pol, grade) + q * pen) / (1 - q)), 6)
 
 
-def cap_share(kind, warranty_h, q_upper, pol):
-    """D6 price cap as a share of the shipped SKU's list price, never above 1 - kept_floor, and for goods
-    without the full warranty never above break_top (the break chance priced at buyer.break_penalty)."""
+def cap_share(kind, warranty_h, q_upper, pol, grade=None):
+    """D6 price cap as a share of the shipped SKU's list price, never above 1 - kept_floor (of the grade, once
+    named), and for goods without the full warranty never above break_top (the break chance priced at
+    buyer.break_penalty)."""
     b = pol["buyer"]
-    top = round(1 - kept_floor(pol), 6)          # never a cap that leaves less than the minimum share kept
+    top = round(1 - kept_floor(pol, grade), 6)   # never a cap that leaves less than the minimum share kept
     if kind == "food":
         return min(b["cap_food"], top)
     if warranty_h and warranty_h >= WARRANTY_FULL_H:
         return min(b["cap_goods_warranty"], top)
-    top = min(top, break_top(kind, warranty_h, q_upper, pol))
+    top = min(top, break_top(kind, warranty_h, q_upper, pol, grade))
     if q_upper is not None:                      # measured break rate replaces the 0.70 start value
         return max(0.0, min(1 - q_upper - b["min_surplus_list"], top))
     return min(b["cap_goods_no_warranty"], top)
 
 
-def cap(V, kind, warranty_h, q_upper, budget, pol):
+def cap(V, kind, warranty_h, q_upper, budget, pol, grade=None):
     """Highest whole price worth paying: min(share x V, budget)."""
-    return max(0, min(int(V * cap_share(kind, warranty_h, q_upper, pol)), int(budget)))
+    return max(0, min(int(V * cap_share(kind, warranty_h, q_upper, pol, grade)), int(budget)))
 
 
 def expected_surplus(V, p, kind, q, warranty_h):
@@ -171,7 +179,10 @@ def fold_ask(asks, url, kind, share, now, warranty=False):
 def candidates(order, shops, catalog, summary, pol, asks=None):
     """One best SKU per shop from offers ∩ acceptable, best first, at most buyer.max_shops shops.
 
-    score = kept x p_checkout x p. kept is the expected share of list kept (Patch 3.4 Saved) at the likely price:
+    score = saved_est x p_checkout x p. kept is the expected share of list kept at the likely price, and
+    saved_est the Saved that kept scores (Patch 3.6: the share of the shop's margin, policy.expected_margin_share
+    over the grades supply draws for the kind, at most 1 each; a cheaper shop past the point where every grade
+    scores 1 gains nothing): the shop's settled share of list from the public ledger (query.shop_price: its sales of the SKU, else of
     the shop's settled share of list from the public ledger (query.shop_price: its sales of the SKU, else of
     the category, in 24 h) x V, else its estimated first ask (its ask share in asks x V, from ASK_MIN_N first
     asks of the kind), when below the cap, else the cap. p is p_price of that estimated ask, or the P0 p_reach without one. A goods shop that
@@ -211,18 +222,19 @@ def candidates(order, shops, catalog, summary, pol, asks=None):
             c_est = cap(V, k, wh, q_upper, budget, pol) if wh else c
             p_est = c_est if ask_est is None else min(c_est, ask_est)
             kept = expected_surplus(V, p_est, k, qk, wh) / V
+            saved_est = policy.expected_margin_share(kept, k)
             pr = p_reach(c, V) if ask_est is None else p_price(ask_est, c_est, V)
-            score = kept * pc * pr
+            score = saved_est * pc * pr
             q_grade = {} if k == "food" else {g: r for g in ("A", "B", "C") if (r := query.break_q(summary, sku, g, leaf))}
             cand = {"shop": url, "shop_name": shop.get("name"), "sku": sku,
                     "name": offer.get("name") or catalog[sku].get("name") or sku, "V": V, "kind": k,
                     "cap": c, "q": q, "q_upper": q_upper, "q_grade": q_grade, "surplus_at_cap": round(surplus),
                     "ask_est": ask_est, "price_src": "ledger" if settled else "ask" if known else None,
-                    "kept": round(kept, 4),
+                    "kept": round(kept, 4), "saved_est": round(saved_est, 4),
                     "p_checkout": round(pc, 4), "p_reach": round(pr, 4), "score": round(score, 4),
                     "shop_stats": stats,
                     "memory_refs": [query.summary_ref("shop", url), query.summary_ref("cat", leaf)],
-                    "why": f"kept {kept:.3f} of list at {p_est} x p_checkout {pc:.2f} x "
+                    "why": f"kept {kept:.3f} of list at {p_est} (saved {saved_est:.3f}) x p_checkout {pc:.2f} x "
                            + (f"p_reach {pr:.2f}" if ask_est is None else
                               f"p_price {pr:.2f} ({'settled' if settled else 'ask'} est {ask_est}"
                               + (f", {wh} h warranty cap {c_est})" if wh else ")"))}

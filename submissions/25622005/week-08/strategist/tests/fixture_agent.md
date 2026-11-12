@@ -107,6 +107,10 @@ warranty come to 0 and without one to minus the price. Saved, the part that scor
 surplus / list price (a deal that served nothing counts -1, or 0 if refunded), divided by deals + 100. A sofa and a
 snack at 30% off score the same.
 
+Saved from Patch 3.6 (2026-11-12; the sentence above is the 3.4 one, kept so both facts parse here): the part that
+scores is the sum over deals of (list price - price) / (list price - unit cost), the share of the shop's margin kept,
+at most 1 (a deal that served nothing counts -1, or 0 if refunded), divided by deals + 100.
+
 Forum votes count when the voter has at least 5 settled deals and a different GitHub owner from the author;
 other votes are kept (`"counted": false`) and start counting once the voter reaches 5 deals. `likes`,
 `dislikes` and `score` in `forum.json` hold counted votes only.

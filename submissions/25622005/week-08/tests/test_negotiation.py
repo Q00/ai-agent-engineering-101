@@ -291,6 +291,16 @@ class NegotiationTests(unittest.TestCase):
         r = self.go(shop, c=c)                                     # min(1 - 0.03 - 0.05, 1 - 0.08 / 0.97) x 100000
         self.assertEqual((r["grade"], r["cap"], r["receipt"]["price"]), ("A", 91752, 60000))
 
+    def test_quoted_food_grade_recaps_at_the_grade_floor(self):
+        # Patch 3.6: a C costs 0.25-0.45 of list, so buyer.min_kept_C holds out where the generic floor would pay
+        shop = FakeShop(first_ask=80000, floor=60000, data={"grade": "C"})
+        p = pol(min_kept=0.3, min_kept_C=0.6)
+        r = self.go(shop, c=cand(shop, kind="food", cap=70000), order=ORDER | {"kind": "food"}, p=p)
+        self.assertEqual((r["grade"], r["cap"], r["receipt"]), ("C", 40000, None))
+        shop = FakeShop(first_ask=80000, floor=60000, data={"grade": "A"})     # an A keeps the generic cap
+        r = self.go(shop, c=cand(shop, kind="food", cap=70000), order=ORDER | {"kind": "food"}, p=p)
+        self.assertEqual((r["grade"], r["cap"], r["receipt"]["price"]), ("A", 70000, 60000))
+
     def test_step_list_offers_once_under_the_cap_before_the_final_offer(self):
         shop = FakeShop(first_ask=90000, floor=58000)                       # cap 70000: the floor is under the step
         r = self.go(shop, p=pol(step_list=0.1, open_list=0.2))

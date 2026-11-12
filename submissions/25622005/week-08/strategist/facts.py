@@ -48,6 +48,11 @@ PRESENCE = {
     # Patch 3.4: strategist/objective.py (score_twin) runs only while this is the Saved rule
     "saved_is_kept_share_over_deals_plus_100":
         r"Saved, the part that scores, is the sum over deals of surplus / list price.{0,120}divided by deals \+ 100",
+    # Patch 3.6 (11-12): the Saved rule the buyer's per-grade kept floors (buyer.min_kept_<grade>, policy.COST_SHARE
+    # and policy.margin_share) are built on, and the cost bands they assume
+    "saved_is_margin_share_capped_1":
+        r"\(list price - price\) / \(list price - unit cost\), the share of the shop.s margin kept, at most 1",
+    "cost_share_bands_A55_75_B40_60_C25_45": r"Cost, as a share of list price: A 55-75%, B 40-60%, C 25-45%",
 }
 POST_LIMIT = r"one post per (?:[^.;)]|\.(?=\d))*"   # every number in it must agree (shop and buyer)
 POST_GAP = (1, 60)

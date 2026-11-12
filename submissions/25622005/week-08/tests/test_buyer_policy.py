@@ -114,8 +114,9 @@ class CandidateTests(unittest.TestCase):
         self.assertEqual(cs[0]["cap"], 38000)
         self.assertIn("shop:http://a", cs[0]["memory_refs"])
         self.assertIn("cat:김치", cs[0]["memory_refs"])
-        # F1 and F2 both keep 5 % of list at the cap: the tie goes to the higher list price
-        self.assertEqual((cs[0]["ask_est"], cs[0]["kept"], cs[0]["score"]), (None, 0.05, 0.045))
+        # F1 and F2 both keep 5 % of list at the cap: the tie goes to the higher list price. The score is the
+        # Saved that kept scores (Patch 3.6, food grades A .25 / B .5 / C .25 at the middle cost): 0.1049 x 0.9
+        self.assertEqual((cs[0]["ask_est"], cs[0]["kept"], cs[0]["saved_est"], cs[0]["score"]), (None, 0.05, 0.1049, 0.0945))
 
     def known(self, url, share, n=3, kind="food", w=0.0):
         return {bp.ask_key(url, kind): {"n": n, "share": share, "w": w, "ts": 1}}
@@ -124,7 +125,7 @@ class CandidateTests(unittest.TestCase):
         shops = [shop("http://a", ("F2", 1)), shop("http://b", ("F2", 1))]
         cs = bp.candidates(FOOD, shops, CATALOG, {}, POL, self.known("http://b", 0.80))
         self.assertEqual([c["shop"] for c in cs], ["http://b", "http://a"])
-        self.assertEqual((cs[0]["ask_est"], cs[0]["kept"], cs[0]["p_reach"], cs[0]["score"]), (32000, 0.2, 1.0, 0.18))
+        self.assertEqual((cs[0]["ask_est"], cs[0]["kept"], cs[0]["p_reach"], cs[0]["score"]), (32000, 0.2, 1.0, 0.3778))  # saved_est 0.4198 x 0.9
         self.assertIn("ask est 32000", cs[0]["why"])
 
     def test_min_kept_caps_goods_without_dropping_them(self):
@@ -136,6 +137,25 @@ class CandidateTests(unittest.TestCase):
         self.assertEqual(bp.cap(30000, "food", 0, None, 99999, pol), 21600)          # min(0.95, 0.72)
         cs = bp.candidates(GOODS, [shop("http://a", ("G1", 1))], CATALOG, {}, pol)
         self.assertEqual([(c["shop"], c["cap"]) for c in cs], [("http://a", 70000)])   # q-adjusted kept < 0.28, still a candidate
+
+    def test_grade_floors_raise_the_cap_floor_once_the_grade_is_named(self):
+        # Patch 3.6: an A (cost 0.55-0.75 of list) scores a full 1 from a kept of 0.45, a C (0.25-0.45) needs 0.75
+        pol = json.loads(json.dumps(POL)); pol["buyer"].update(min_kept=0.30, min_kept_A=0.0, min_kept_B=0.40, min_kept_C=0.55)
+        self.assertEqual((bp.kept_floor(pol), bp.kept_floor(pol, "A"), bp.kept_floor(pol, "B"), bp.kept_floor(pol, "C")),
+                         (0.30, 0.30, 0.40, 0.55))
+        self.assertEqual(bp.cap(30000, "food", 0, None, 99999, pol), 21000)                 # min(0.95, 1 - 0.30)
+        self.assertEqual(bp.cap(30000, "food", 0, None, 99999, pol, grade="C"), 13500)      # 1 - 0.55
+        self.assertEqual(bp.cap(30000, "food", 0, None, 99999, pol, grade="A"), 21000)      # the generic floor
+        pol["buyer"]["break_penalty"] = 0
+        self.assertEqual(bp.cap(100000, "goods", 6, None, 999999, pol, grade="B"), 60000)   # min(0.94, 1 - 0.40)
+        self.assertEqual(bp.cap(100000, "goods", 6, None, 999999, pol, grade="X"), 70000)   # unknown grade: generic
+        # the deal's Saved by grade and cost band (policy.margin_share) and over the kind's grade prior
+        self.assertEqual(policy.margin_share(0.45, "A", 0), 1.0)                            # the widest A margin
+        self.assertEqual(round(policy.margin_share(0.55, "C"), 4), 0.8462)                  # 0.55 / 0.65
+        self.assertEqual(round(policy.margin_share(0.55, "C", 1), 4), 1.0)                  # at its high cost
+        self.assertIsNone(policy.margin_share(0.5, "D"))
+        self.assertEqual(round(policy.expected_margin_share(0.55, "food"), 4), 0.9615)      # .25 x 1 + .5 x 1 + .25 x .8462
+        self.assertEqual(round(policy.expected_margin_share(0.30, "goods"), 4), 0.7662)     # .7 x .857 + .2 x .6 + .1 x .4615
 
     def test_settled_price_in_the_ledger_outranks_first_asks(self):
         shops = [shop("http://a", ("F2", 1)), shop("http://b", ("F2", 1))]
@@ -158,7 +178,7 @@ class CandidateTests(unittest.TestCase):
     def test_fewer_than_ask_min_n_first_asks_are_ignored(self):
         cs = bp.candidates(FOOD, [shop("http://a", ("F2", 1))], CATALOG, {}, POL,
                            self.known("http://a", 0.5, n=bp.ASK_MIN_N - 1))
-        self.assertEqual((cs[0]["ask_est"], cs[0]["score"]), (None, 0.045))
+        self.assertEqual((cs[0]["ask_est"], cs[0]["score"]), (None, 0.0945))
 
     def test_food_and_goods_asks_are_separate(self):
         cs = bp.candidates(FOOD, [shop("http://a/", ("F2", 1))], CATALOG, {}, POL,
