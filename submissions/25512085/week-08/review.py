@@ -28,6 +28,7 @@ from typing import Any
 from market_buyer import load_memory, update_memory
 from forum_writer import build_analysis_brief, check_post
 from store import (
+    HubLockTimeout,
     load_catalog,
     load_json_safe,
     mutate_hub,
@@ -203,8 +204,12 @@ def main() -> None:
     deal_data = load_json_safe(deal_path, {}) or {}
 
     # Read, update and save the hub under one lock so concurrent writers' updates are not overwritten
-    with mutate_hub() as hub:
-        stars, review = evaluate_settled_deal(deal_data, hub, market_dir)
+    try:
+        with mutate_hub() as hub:
+            stars, review = evaluate_settled_deal(deal_data, hub, market_dir)
+    except HubLockTimeout:
+        print('[hub-lock-skipped] post-settlement review analytics', file=sys.stderr, flush=True)
+        stars, review = None, 'Review analytics unavailable: shared hub busy.'
 
     print(json.dumps({"stars": stars, "review": review}, ensure_ascii=False), flush=True)
 

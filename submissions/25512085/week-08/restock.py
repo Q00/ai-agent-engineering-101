@@ -17,7 +17,7 @@ import seller_market_research as market_research
 from seller_forum import queue_availability_notice
 from visibility_guard import own_sale, paused, read_json
 from store import (
-    ROUND_END_TS, STOP_BUYING_BEFORE_END_S, apply_ledger_rows,
+    ROUND_END_TS, STOP_BUYING_BEFORE_END_S, HubLockTimeout, apply_ledger_rows,
     fetch_ledger_rows, fetch_own_shop_urls, fetch_public_buying_data, load_catalog, load_hub,
     load_inventory, migrate_no_rebuy, mutate_hub, queue_forum_action,
     update_capital_stage,
@@ -137,14 +137,18 @@ def build_restock_plan(market_dir: Path, *, visibility_guard=False) -> dict[str,
         fresh = 0 <= time.time() - (market_dir / "inventory.json").stat().st_mtime <= 120
     except OSError:
         fresh = False
-    with mutate_hub() as hub:
-        hub["own_shop_urls"] = sorted(set(hub.get("own_shop_urls", [])) | set(own_urls))
-        if window and not hub.get("restock_windows"):
-            hub.setdefault("restock_windows", {})[str(window)] = {
-                "baseline_actual": 0, "reserved": 0, "blocked": True}
-        return plan_with_hub(hub, market_dir, catalog, inv, rows, inventory_fresh=fresh,
-                             ratio_observation=observation,
-                             visibility_state=read_json(market_dir / "visibility_guard.json") if visibility_guard else None)
+    try:
+        with mutate_hub() as hub:
+            hub["own_shop_urls"] = sorted(set(hub.get("own_shop_urls", [])) | set(own_urls))
+            if window and not hub.get("restock_windows"):
+                hub.setdefault("restock_windows", {})[str(window)] = {
+                    "baseline_actual": 0, "reserved": 0, "blocked": True}
+            return plan_with_hub(hub, market_dir, catalog, inv, rows, inventory_fresh=fresh,
+                                 ratio_observation=observation,
+                                 visibility_state=read_json(market_dir / "visibility_guard.json") if visibility_guard else None)
+    except HubLockTimeout:
+        print('[hub-lock-refused] restock; retry next cycle', file=sys.stderr, flush=True)
+        return {"buy": []}
 
 
 def plan_with_hub(hub, market_dir, catalog, inv, rows, *, inventory_fresh=False, ratio_observation=None,

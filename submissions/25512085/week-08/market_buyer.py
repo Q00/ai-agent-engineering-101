@@ -36,6 +36,7 @@ from adaptive_strategy import filter_candidates, record_failure
 from store import (
     BREAK_RATE,
     GOODS_BREAK_WINDOW_H,
+    HubLockTimeout,
     load_catalog,
     load_hub,
     load_json_safe,
@@ -1054,11 +1055,14 @@ def run_attempt(chosen_shop, target_sku_info, reason, memory, hub, catalog,
             failure_diagnostic(result["review"], active.get("seller_text", ""))
         if not selected and active.get("pending") is not None:
             # Remove only this attempt's record, not a concurrent replacement.
-            with mutate_hub() as current_hub:
-                pending = current_hub.get("pending_deals", {})
-                key = str(order_data.get("order"))
-                if pending.get(key) == active["pending"]:
-                    del pending[key]
+            try:
+                with mutate_hub() as current_hub:
+                    pending = current_hub.get("pending_deals", {})
+                    key = str(order_data.get("order"))
+                    if pending.get(key) == active["pending"]:
+                        del pending[key]
+            except HubLockTimeout:
+                diagnostic('[hub-lock-skipped] pending cleanup')
         if (order_data.get("acceptable") and active.get("id")
                 and active.get("state") not in ("TASK_STATE_COMPLETED", "TASK_STATE_REJECTED", "TASK_STATE_CANCELED")):
             cleanup_token = REQUEST_DEADLINE.set(cleanup_deadline if cleanup_deadline is not None
@@ -1073,9 +1077,12 @@ def run_attempt(chosen_shop, target_sku_info, reason, memory, hub, catalog,
         # Local persistence must also retain expired attempts; no network is done
         # under this lock, and a deadline failure never becomes a successful deal.
         if order_data.get("acceptable") and not selected and active.get("failure"):
-            with mutate_hub() as current_hub:
-                record_failure(current_hub, order_data.get("order"), chosen_shop["url"],
-                               target_sku_info["sku"], active["failure"], time.time())
+            try:
+                with mutate_hub() as current_hub:
+                    record_failure(current_hub, order_data.get("order"), chosen_shop["url"],
+                                   target_sku_info["sku"], active["failure"], time.time())
+            except HubLockTimeout:
+                diagnostic('[hub-lock-skipped] attempt failure analytics')
 
 
 def _run_attempt(chosen_shop, target_sku_info, reason, memory, hub, catalog,
@@ -1525,21 +1532,26 @@ def _run_attempt(chosen_shop, target_sku_info, reason, memory, hub, catalog,
         matched_sku = rec_item if rec_item in catalog else target_sku_info["sku"]
         sku_meta = catalog.get(matched_sku) or {}
         now_ts = int(time.time())
-        with mutate_hub() as hub:
-            request_timeout(1)  # Lock acquisition can itself take several seconds.
-            pending = hub.setdefault("pending_deals", {})
-            pending[str(order_data.get("order"))] = {
-                "order": order_data.get("order"), "sku": matched_sku,
-                "name": sku_meta.get("name") or target_sku_info["name"],
-                "category": sku_meta.get("category") or order_data.get("category") or item,
-                "shop_url": shop_url, "shop_name": shop_name, "price": recorded_price,
-                "list_price": int(sku_meta.get("list_price") or list_price),
-                "warranty_hours": raw_receipt.get("warranty_hours") or 0, "ts": now_ts,
-                "memory": {"item": item, "budget": budget, "price": recorded_price, "rounds": rounds},
-            }
-            active["pending"] = pending[str(order_data.get("order"))].copy()
-            for k in [k for k, v in pending.items() if now_ts - int(v.get("ts") or 0) > 21600]:
-                del pending[k]
+        try:
+            with mutate_hub() as hub:
+                request_timeout(1)  # Lock acquisition can itself take several seconds.
+                pending = hub.setdefault("pending_deals", {})
+                pending[str(order_data.get("order"))] = {
+                    "order": order_data.get("order"), "sku": matched_sku,
+                    "name": sku_meta.get("name") or target_sku_info["name"],
+                    "category": sku_meta.get("category") or order_data.get("category") or item,
+                    "shop_url": shop_url, "shop_name": shop_name, "price": recorded_price,
+                    "list_price": int(sku_meta.get("list_price") or list_price),
+                    "warranty_hours": raw_receipt.get("warranty_hours") or 0, "ts": now_ts,
+                    "memory": {"item": item, "budget": budget, "price": recorded_price, "rounds": rounds},
+                }
+                active["pending"] = pending[str(order_data.get("order"))].copy()
+                for k in [k for k, v in pending.items() if now_ts - int(v.get("ts") or 0) > 21600]:
+                    del pending[k]
+        except HubLockTimeout:
+            # Pending is attribution only, not an authorization to pay. Keep the
+            # already validated receipt/accept gate; never save the older snapshot.
+            diagnostic('[hub-lock-skipped] pending checkout analytics')
 
     return result_line
 
