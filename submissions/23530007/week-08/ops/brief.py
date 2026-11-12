@@ -114,7 +114,7 @@ def score_race(S, S0, key, label):
             q = L[j]
             gap = mine - S[q][0][key]
             gap0 = (mine0 - S0[q][0][key]) if mine0 is not None and q in S0 and S0[q][0].get(key) is not None else None
-            word, sign = moving(gap, gap0, 0.004)
+            word, sign = moving(gap, gap0, 0.008)     # 11-12: under ~2 small rank steps is noise, not 'closing'
             out["near"].append({"role": role, "rank": j + 1, "player": q, "score": S[q][0][key], "gap": round(gap, 3),
                                 "gap_before": None if gap0 is None else round(gap0, 3), "trend": word, "good": sign})
     # 11-12 16:40 (user: 'only whether they are getting closer'): on the class total, also the student closing on
@@ -126,11 +126,11 @@ def score_race(S, S0, key, label):
             if q == NAME or q in shown or q not in S0 or S0[q][0].get(key) is None:
                 continue
             gap, gap0 = mine - S[q][0][key], mine0 - S0[q][0][key]
-            if 0 < gap < 0.15 and gap - gap0 < -0.004 and (best is None or gap - gap0 < best[2]):
+            if 0 < gap < 0.15 and gap - gap0 < -0.008 and (best is None or gap - gap0 < best[2]):
                 best = (q, gap, gap - gap0, gap0)
         if best:
             q, gap, _, gap0 = best
-            word, sign = moving(gap, gap0, 0.004)
+            word, sign = moving(gap, gap0, 0.008)
             out["near"].append({"role": "가장 빨리 따라오는", "rank": L.index(q) + 1, "player": q, "score": S[q][0][key],
                                 "gap": round(gap, 3), "gap_before": round(gap0, 3), "trend": word, "good": sign})
     return out

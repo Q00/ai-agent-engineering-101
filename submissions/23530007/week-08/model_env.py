@@ -153,7 +153,7 @@ def alert_user(role, items, min_gap=1800):
         return []
     name = {"shop": "상점 에이전트", "buyer": "구매 에이전트", "curator": "큐레이터", "ops": "운영", "guard": "가드"}.get(role, role)
     subprocess.run([sys.executable, str(Path(__file__).resolve().parent / "notify.py"),
-                    f"[yms979] {name} 경보", "\n\n".join(fresh)], capture_output=True, text=True)
+                    f"[yms979] {name} 알림", "\n\n".join(fresh)], capture_output=True, text=True)
     for x in fresh:
         sent[x[:120]] = now
     st["sent"], st.setdefault("last", {})[role] = sent, now

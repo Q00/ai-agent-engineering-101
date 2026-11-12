@@ -462,9 +462,7 @@ def main():
                         wake(role, f"G14 projected final rank {comp['us']['rank_end']} by parts; ahead: {msg}. {mine_txt}. "
                                    "Tool final_rank shows every part; gaps under .03 are a tie.")
                     fires.append("G14")
-                    if cooled(st, "G14a", 12 * 3600, now):
-                        alert([f"G14 최종 예상 {comp['us']['rank_end']}위 ({comp['us']['total_end']}); 앞: {msg}"])
-                        fired(st, "G14a", now)
+                    # 11-12 23:20 (user: no future ranks to the phone): the wake stays, the phone alert is gone
             else:
                 pr = _fr.project(float(v6_.get("deals_h") or 30), float(v6_.get("all") or 0.40))
                 st["final_rank"] = {"damped": pr["us"]["rank_damped"], "trend": pr["us"]["rank_trend"], "t": now}

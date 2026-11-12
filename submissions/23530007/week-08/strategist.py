@@ -546,7 +546,7 @@ holds no reply to it) after ~60 minutes is yours to decide the same way. Only th
 for no sale (e.g. paid dislike votes), anything aimed at a classmate (conduct rule: no unjustified hits), and a change
 to the goals themselves.
 ALERTING THE USER (user 11-08: 'why did I find this and not the agent?'): when you find something the user must
-know now, put it in "alert_user" (it goes to their phone at once); keep it empty otherwise.
+know now, put it in "alert_user" (it goes to their phone at once); keep it empty otherwise. User 11-12 23:20 ('the alerts keep saying danger'): alert only when the user must act or when CLASS TOTAL 1st is under real threat now; a tight neighbour in a sub-race (saved within .01, buyer rank 9 vs 10) is normal and NOT an alert; never send future ranks or end-of-round projections; when you already fixed something, say it is fixed in one line, calmly.
 Answer with one JSON object only:
 {{"market_read": "<what is happening and why, 6-12 sentences>",
   "moves": [{{"knob": "...", "sku": "...", "value": n, "why": "...", "uses": ["L3"], "prediction": {{...}}}}],
