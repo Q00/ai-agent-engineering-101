@@ -1,0 +1,21 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "action": {"type": "string", "enum": ["allocate_budget"]},
+    "price": {"type": "null"},
+    "item_id": {"type": "null"},
+    "offer": {"type": "null"},
+    "allocations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {"key": {"type": "string"}, "budget": {"type": "number"}},
+        "required": ["key", "budget"]
+      }
+    },
+    "reason": {"type": "string"}
+  },
+  "required": ["action", "price", "item_id", "offer", "allocations", "reason"]
+}
