@@ -36,6 +36,7 @@ class MarketCycle:
         self.stop=threading.Event();self.thread=None;self.last_kick=None
         self.prepare_lane=BackgroundLane('cycle-preparation')
         self.research_lane=BackgroundLane('cycle-research')
+        self.capability_lane=BackgroundLane('cycle-capability')
         self.supply_lane=BackgroundLane('cycle-supply')
         self.last_analysis=0;self.args=None
         atexit.register(self.stop.set)
@@ -117,6 +118,8 @@ class MarketCycle:
         now=time.time() if now is None else now
         self.prepare_lane.submit(self.prepare)
         self.research_lane.submit(self.research)
+        if self.cfg.get('capability_llm_enabled'):
+            self.capability_lane.submit(self.capabilities)
         inv=self.j.snapshot('inventory.json',{})
         window=inv.get('restock') or {};opens=window.get('opens_at');closes=window.get('closes_at')
         if (self.args and type(opens) in (int,float) and type(closes) in (int,float)
@@ -133,7 +136,13 @@ class MarketCycle:
                     self.j.add('cycle_supply_error',{'error_type':type(exc).__name__})
             self.supply_lane.submit(supply)
         self.j.put('cycle-heartbeat',{'at':now,'preparing':self.prepare_lane.busy,'researching':self.research_lane.busy,
+                                    'capability_designing':self.capability_lane.busy,
+                                    'capability_error':self.capability_lane.last_error,
                                     'preparation_error':self.prepare_lane.last_error,'research_error':self.research_lane.last_error})
+
+    def capabilities(self):
+        from .capability import update
+        update(self.j,self.cfg)
 
     def research(self):
         from .research import update

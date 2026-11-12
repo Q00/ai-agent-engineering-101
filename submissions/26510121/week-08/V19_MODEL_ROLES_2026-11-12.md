@@ -69,6 +69,18 @@ and payment history are preserved.
 
 Deployment and final live verification are recorded below after completion.
 
+## Source promotion
+
+Final isolated regression: **407 passed**, one pre-existing Starlette deprecation
+warning. Immutable console: `logs/stage-v19-full-regression-04.txt`.
+
+Source-only promotion completed at **2026-11-12 13:44:26 KST**. Manifest:
+`logs/v19-source-promotion-20261112T044426258719Z.json`. The prior runtime and
+watcher released their leases after the Buyer reached its pre-payment maintenance
+point. New runtime PID 45640, session `6c29c1da70274402afe79c4075b057af`, started at
+13:44:28 KST. Public tunnel readiness and live actuation are still being verified;
+a successful source copy is not a claim that public connectivity is restored.
+
 ## Sources for model assignment and pricing
 
 - https://developers.openai.com/api/docs/guides/model-selection

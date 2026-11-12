@@ -41,12 +41,23 @@
   "research_budget_mode": "observe",
   "market_cycle_enabled": true,
   "research_enabled": true,
-  "research_model": "gpt-6-luna",
   "research_interval_seconds": 1200,
   "cache_prices_usd_per_million": {
     "gpt-6-luna": [
       0.01,
       0.125
+    ],
+    "gpt-6.1-terra": [
+      0.05,
+      1.25
+    ],
+    "gpt-6.1-sol": [
+      0.1,
+      2.5
+    ],
+    "gpt-6-astra": [
+      1,
+      12.5
     ]
   },
   "model_timeout_seconds": 18,
@@ -80,6 +91,14 @@
     "gpt-6.1-terra": [
       1.0,
       5.0
+    ],
+    "gpt-6-astra": [
+      10,
+      50
+    ],
+    "gpt-6.1-sol": [
+      2,
+      10
     ]
   },
   "buyer_market_quality_enabled": true,
@@ -97,10 +116,38 @@
   "buyer_contract_probe_percent": 8,
   "autonomy_v14_enabled": true,
   "buyer_worker_enabled": true,
-  "execution_revision": "v18-objective-alternatives-context-1",
+  "execution_revision": "v19-role-reasoning-analytic-skills-1",
   "objective_feedback_enabled": true,
   "agent_policy_selection_enabled": true,
   "discovery_priority_enabled": true,
   "cooperative_recovery_enabled": true,
-  "objective_decision_enabled": true
+  "objective_decision_enabled": true,
+  "capability_llm_enabled": true,
+  "capability_interval_seconds": 900,
+  "background_llm_roles": {
+    "market_research_analyst": {
+      "model": "gpt-6.1-sol",
+      "reasoning": "medium",
+      "max_output_tokens": 8192,
+      "timeout_seconds": 75
+    },
+    "market_research_critic": {
+      "model": "gpt-6.1-terra",
+      "reasoning": "medium",
+      "max_output_tokens": 8192,
+      "timeout_seconds": 75
+    },
+    "capability_triage": {
+      "model": "gpt-6-luna",
+      "reasoning": "low",
+      "max_output_tokens": 2048,
+      "timeout_seconds": 25
+    },
+    "capability_designer": {
+      "model": "gpt-6.1-sol",
+      "reasoning": "medium",
+      "max_output_tokens": 8192,
+      "timeout_seconds": 75
+    }
+  }
 }
