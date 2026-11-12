@@ -1,0 +1,262 @@
+{
+ "seed": 0,
+ "shops": 20,
+ "items": 4,
+ "budget": 1641,
+ "total": 1170.0,
+ "all_bought": true,
+ "duplicates": 0,
+ "fits": true,
+ "seller_deals": 4,
+ "feasibility": {
+  "sum_cheapest_fit": 618,
+  "sum_cheapest_shop_max_fit": 1313,
+  "budget_factor": 1.25
+ },
+ "seconds": 83,
+ "negotiations": [
+  "round 1, item 1 at Shop 12 (Linden Seating Co.), cap 280: product Nanese Modern Leather Office Chair (C01303); asks 279 > 239 > 222 > 217; our offers 190, 205, 212, 217; bought; paid 217.0",
+  "round 1, item 2 at Shop 1 (Foxglove Lighting), cap 180: product Losara Japanese Brass Pendant Lamp (C02402); asks 98 > 84 > 79 > 78; our offers 70, 75, 77, 78; bought; paid 78.0",
+  "round 1, item 3 at Shop 6 (Saffron Bedroom Studio), cap 430: product Riorlu Bohemian Pine Bed Frame (C01972); asks 429 > 389 > 365 > 357; our offers 320, 340, 350, 357; bought; paid 357.0",
+  "round 1, item 4 at Shop 18 (Amber Table Works), cap 700: product Isneve Minimalist Teak Dining Table (C00909); asks 640 > 585 > 545 > 525; our offers 450, 490, 510, 518; bought; paid 518.0"
+ ],
+ "details": [
+  {
+   "target": "C02603",
+   "request": "Something leather to sit on at my desk through long workdays, rated for at least 100 kg, no wider than 60 cm.",
+   "constraints": {
+    "category": "office chair",
+    "material_family": "leather",
+    "min": {
+     "max_load_kg": 100
+    },
+    "equal": {},
+    "max": {
+     "width_cm": 60
+    }
+   },
+   "fitting_items": 15,
+   "shops_carrying": {
+    "2": {
+     "min": 247,
+     "max": 343
+    },
+    "3": {
+     "min": 146,
+     "max": 203
+    },
+    "12": {
+     "min": 146,
+     "max": 203
+    },
+    "13": {
+     "min": 183,
+     "max": 254
+    }
+   },
+   "cheapest_fit": 146,
+   "cheapest_shop_max_fit": 203,
+   "item": 1,
+   "bought": [
+    {
+     "item": "Nanese Modern Leather Office Chair",
+     "seller": "Linden Seating Co.",
+     "price": 217.0,
+     "item_id": "C01303"
+    }
+   ],
+   "shop": [
+    "Linden Seating Co."
+   ],
+   "fits": [
+    true
+   ],
+   "bought_attrs": [
+    {
+     "category": "office chair",
+     "material": "leather",
+     "material_family": "leather",
+     "style": "modern",
+     "colour": "honey",
+     "height_cm": 123,
+     "width_cm": 60,
+     "depth_cm": 62,
+     "max_load_kg": 145
+    }
+   ]
+  },
+  {
+   "target": "C02482",
+   "request": "A metal light to hang from the ceiling above my dining table, at least 2100 lumens, no wider than 30 cm.",
+   "constraints": {
+    "category": "pendant lamp",
+    "material_family": "metal",
+    "min": {
+     "lumens": 2100
+    },
+    "equal": {},
+    "max": {
+     "width_cm": 30
+    }
+   },
+   "fitting_items": 6,
+   "shops_carrying": {
+    "1": {
+     "min": 34,
+     "max": 65
+    },
+    "5": {
+     "min": 34,
+     "max": 65
+    },
+    "15": {
+     "min": 58,
+     "max": 109
+    }
+   },
+   "cheapest_fit": 34,
+   "cheapest_shop_max_fit": 65,
+   "item": 2,
+   "bought": [
+    {
+     "item_id": "C02402",
+     "seller": "Foxglove Lighting",
+     "price": 78.0,
+     "item": "Losara Japanese Brass Pendant Lamp"
+    }
+   ],
+   "shop": [
+    "Foxglove Lighting"
+   ],
+   "fits": [
+    true
+   ],
+   "bought_attrs": [
+    {
+     "category": "pendant lamp",
+     "material": "brass",
+     "material_family": "metal",
+     "style": "Japanese",
+     "colour": "charcoal",
+     "height_cm": 52,
+     "width_cm": 26,
+     "depth_cm": 26,
+     "lumens": 2100
+    }
+   ]
+  },
+  {
+   "target": "C02072",
+   "request": "Something wooden to put my double mattress on, no taller than 110 cm.",
+   "constraints": {
+    "category": "bed frame",
+    "material_family": "wood",
+    "min": {},
+    "equal": {
+     "mattress": "double"
+    },
+    "max": {
+     "height_cm": 110
+    }
+   },
+   "fitting_items": 25,
+   "shops_carrying": {
+    "6": {
+     "min": 184,
+     "max": 588
+    },
+    "16": {
+     "min": 230,
+     "max": 735
+    }
+   },
+   "cheapest_fit": 184,
+   "cheapest_shop_max_fit": 588,
+   "item": 3,
+   "bought": [
+    {
+     "price": 357.0,
+     "item": "Riorlu Bohemian Pine Bed Frame",
+     "seller": "Saffron Bedroom Studio",
+     "item_id": "C01972"
+    }
+   ],
+   "shop": [
+    "Saffron Bedroom Studio"
+   ],
+   "fits": [
+    true
+   ],
+   "bought_attrs": [
+    {
+     "category": "bed frame",
+     "material": "pine",
+     "material_family": "wood",
+     "style": "bohemian",
+     "colour": "cream",
+     "height_cm": 68,
+     "width_cm": 151,
+     "depth_cm": 218,
+     "mattress": "double",
+     "mattress_width_cm": 140
+    }
+   ]
+  },
+  {
+   "target": "C01549",
+   "request": "A wooden table for family meals that seats at least 2 people, no longer than 90 cm.",
+   "constraints": {
+    "category": "dining table",
+    "material_family": "wood",
+    "min": {
+     "seats": 2
+    },
+    "equal": {},
+    "max": {
+     "width_cm": 90
+    }
+   },
+   "fitting_items": 8,
+   "shops_carrying": {
+    "15": {
+     "min": 298,
+     "max": 536
+    },
+    "18": {
+     "min": 254,
+     "max": 457
+    }
+   },
+   "cheapest_fit": 254,
+   "cheapest_shop_max_fit": 457,
+   "item": 4,
+   "bought": [
+    {
+     "price": 518.0,
+     "seller": "Amber Table Works",
+     "item_id": "C00909",
+     "item": "Isneve Minimalist Teak Dining Table"
+    }
+   ],
+   "shop": [
+    "Amber Table Works"
+   ],
+   "fits": [
+    true
+   ],
+   "bought_attrs": [
+    {
+     "category": "dining table",
+     "material": "teak",
+     "material_family": "wood",
+     "style": "minimalist",
+     "colour": "terracotta",
+     "height_cm": 75,
+     "width_cm": 85,
+     "depth_cm": 85,
+     "seats": 2
+    }
+   ]
+  }
+ ]
+}

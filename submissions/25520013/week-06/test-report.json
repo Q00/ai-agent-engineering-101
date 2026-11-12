@@ -1,0 +1,176 @@
+{
+  "kit_version": "1",
+  "kit_sha256": "8e00baa43b319e6c0067eab8eedc6834cbe4b9dc3e9e2ab5bd16e9572c99f120",
+  "started": "2026-10-17T07:47:34+00:00",
+  "harness": "Claude Code: claude -p --model opus (claude-opus-5-5) --tools \"\" --setting-sources \"\" --no-session-persistence",
+  "seller_cmd": "uv run python seller.py --port {port}",
+  "buyer_cmd": "uv run python buyer.py --url {url} --item {item} --budget {budget}",
+  "seller_card": {
+    "name": "Oak & Brass Workshop",
+    "description": "Premium furniture workshop: desk lamps in genuine solid brass (no plating), chairs and bookshelves in solid hardwood (no veneer), each made by hand and covered by a 2-year warranty. Prices reflect the materials and the craft.",
+    "supportedInterfaces": [
+      {
+        "url": "http://127.0.0.1:53855/",
+        "protocolBinding": "JSONRPC",
+        "protocolVersion": "1.0"
+      }
+    ],
+    "version": "1.0.0",
+    "capabilities": {
+      "streaming": true
+    },
+    "defaultInputModes": [
+      "text/plain"
+    ],
+    "defaultOutputModes": [
+      "application/json",
+      "text/plain"
+    ],
+    "skills": [
+      {
+        "id": "negotiate",
+        "name": "Negotiate a purchase",
+        "description": "Name the piece you want (lamp, chair or bookshelf) and we quote a price for it. Send your offer as a number; we answer with a counteroffer or close the sale with a receipt.",
+        "tags": [
+          "shopping",
+          "furniture",
+          "premium",
+          "handmade"
+        ],
+        "examples": [
+          "I want to buy a lamp",
+          "150"
+        ]
+      }
+    ]
+  },
+  "results": [
+    {
+      "test": "seller_card",
+      "run": 1,
+      "pass": true,
+      "detail": "name='Oak & Brass Workshop' binding=JSONRPC version=1.0 skills=1"
+    },
+    {
+      "test": "seller_opens",
+      "run": 1,
+      "pass": true,
+      "detail": "first message -> TASK_STATE_INPUT_REQUIRED, ask 240"
+    },
+    {
+      "test": "seller_deal",
+      "run": 1,
+      "pass": true,
+      "detail": "TASK_STATE_COMPLETED, receipt price 120.0, asks [240, 215, 195, 180, 160, 145, 130]"
+    },
+    {
+      "test": "seller_terminal",
+      "run": 1,
+      "pass": true,
+      "detail": "error returned"
+    },
+    {
+      "test": "seller_deal",
+      "run": 2,
+      "pass": true,
+      "detail": "TASK_STATE_COMPLETED, receipt price 120.0, asks [250, 210, 180, 140, 125]"
+    },
+    {
+      "test": "seller_deal",
+      "run": 3,
+      "pass": true,
+      "detail": "TASK_STATE_COMPLETED, receipt price 120.0, asks [240, 210, 185, 160, 140, 130]"
+    },
+    {
+      "test": "seller_holds_reserve",
+      "run": 1,
+      "pass": true,
+      "detail": "TASK_STATE_INPUT_REQUIRED, asks [480, 440, 410, 380, 350, 330, 295, 270, 260]"
+    },
+    {
+      "test": "seller_holds_reserve",
+      "run": 2,
+      "pass": true,
+      "detail": "TASK_STATE_INPUT_REQUIRED, asks [420, 385, 360, 340, 320, 305, 285, 270, 260]"
+    },
+    {
+      "test": "seller_holds_reserve",
+      "run": 3,
+      "pass": true,
+      "detail": "TASK_STATE_INPUT_REQUIRED, asks [450, 420, 390, 365, 340, 325, 305, 280, 260]"
+    },
+    {
+      "test": "buyer_deal",
+      "run": 1,
+      "pass": true,
+      "detail": "deals [100] (budget 120)"
+    },
+    {
+      "test": "buyer_protocol_deal",
+      "run": 1,
+      "pass": true,
+      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1"
+    },
+    {
+      "test": "buyer_deal",
+      "run": 2,
+      "pass": true,
+      "detail": "deals [100] (budget 120)"
+    },
+    {
+      "test": "buyer_protocol_deal",
+      "run": 2,
+      "pass": true,
+      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1"
+    },
+    {
+      "test": "buyer_deal",
+      "run": 3,
+      "pass": true,
+      "detail": "deals [100] (budget 120)"
+    },
+    {
+      "test": "buyer_protocol_deal",
+      "run": 3,
+      "pass": true,
+      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1"
+    },
+    {
+      "test": "buyer_holds_budget",
+      "run": 1,
+      "pass": true,
+      "detail": "deals [] (budget 230 < reserve 260)"
+    },
+    {
+      "test": "buyer_protocol_holds_budget",
+      "run": 1,
+      "pass": true,
+      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 0"
+    },
+    {
+      "test": "buyer_holds_budget",
+      "run": 2,
+      "pass": true,
+      "detail": "deals [] (budget 230 < reserve 260)"
+    },
+    {
+      "test": "buyer_protocol_holds_budget",
+      "run": 2,
+      "pass": true,
+      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 0"
+    },
+    {
+      "test": "buyer_holds_budget",
+      "run": 3,
+      "pass": true,
+      "detail": "deals [] (budget 230 < reserve 260)"
+    },
+    {
+      "test": "buyer_protocol_holds_budget",
+      "run": 3,
+      "pass": true,
+      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 0"
+    }
+  ],
+  "passed": true
+}
