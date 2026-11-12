@@ -1,0 +1,142 @@
+# week-06 trade test, kit v1, 2026-10-18T04:22:10+00:00
+harness: Codex CLI (gpt-6.1-sol) for seller and buyer
+
+## seller tests: python seller.py --port 44429
+  PASS  seller_card #1: name='Catalog Shop' binding=JSONRPC version=1.0 skills=1
+
+### seller_deal #1: lamp, kit budget 120, reserve 100
+    -> SendMessage "I want to buy a lamp"
+    <- TASK_STATE_INPUT_REQUIRED | blue bamboo lamp 00: asking 142
+    -> SendMessage "60" taskId=01582129
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 130
+    -> SendMessage "80" taskId=01582129
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 118
+    -> SendMessage "118" taskId=01582129
+    <- TASK_STATE_COMPLETED | Deal: blue bamboo lamp 00 at 118.
+       artifact receipt [{"item": "blue bamboo lamp 00", "price": 118.0, "itemId": "lamp-bamboo-blue-00", "seller": "Catalog Shop", "taskId": "01582129-01fe-472f-b9d3-bca62f5f186f"}]
+  PASS  seller_opens #1: first message -> TASK_STATE_INPUT_REQUIRED, ask 142
+  PASS  seller_deal #1: TASK_STATE_COMPLETED, receipt price 118.0, asks [142, 130, 118]
+
+### seller_terminal: one more message to the finished task
+    -> SendMessage "110" taskId=01582129
+    <- error -32004 Task 01582129-01fe-472f-b9d3-bca62f5f186f is in terminal state: TASK_STATE_COMPLETED
+  PASS  seller_terminal #1: error returned
+
+### seller_deal #2: lamp, kit budget 120, reserve 100
+    -> SendMessage "I want to buy a lamp"
+    <- TASK_STATE_INPUT_REQUIRED | blue bamboo lamp 00: asking 140
+    -> SendMessage "60" taskId=a39d2009
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 130
+    -> SendMessage "80" taskId=a39d2009
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 118
+    -> SendMessage "118" taskId=a39d2009
+    <- TASK_STATE_COMPLETED | Deal: blue bamboo lamp 00 at 118.
+       artifact receipt [{"item": "blue bamboo lamp 00", "price": 118.0, "itemId": "lamp-bamboo-blue-00", "seller": "Catalog Shop", "taskId": "a39d2009-9a0d-468e-b57b-cfa1b4320e22"}]
+  PASS  seller_deal #2: TASK_STATE_COMPLETED, receipt price 118.0, asks [140, 130, 118]
+
+### seller_deal #3: lamp, kit budget 120, reserve 100
+    -> SendMessage "I want to buy a lamp"
+    <- TASK_STATE_INPUT_REQUIRED | blue bamboo lamp 00: asking 142
+    -> SendMessage "60" taskId=f6034f82
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 118
+    -> SendMessage "118" taskId=f6034f82
+    <- TASK_STATE_COMPLETED | Deal: blue bamboo lamp 00 at 118.
+       artifact receipt [{"item": "blue bamboo lamp 00", "price": 118.0, "itemId": "lamp-bamboo-blue-00", "seller": "Catalog Shop", "taskId": "f6034f82-5de0-4cd3-824e-ae94be05fc50"}]
+  PASS  seller_deal #3: TASK_STATE_COMPLETED, receipt price 118.0, asks [142, 118]
+
+### seller_holds_reserve #1: bookshelf, kit budget 230, reserve 260
+    -> SendMessage "I want to buy a bookshelf"
+    <- TASK_STATE_INPUT_REQUIRED | blue bamboo bookshelf 00: asking 340
+    -> SendMessage "140" taskId=05104447
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 284
+    -> SendMessage "170" taskId=05104447
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 284
+    -> SendMessage "200" taskId=05104447
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 284
+    -> SendMessage "230" taskId=05104447
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 284
+    -> SendMessage "230" taskId=05104447
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 284
+    -> SendMessage "230" taskId=05104447
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 284
+    -> SendMessage "230" taskId=05104447
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 284
+    -> SendMessage "230" taskId=05104447
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 284
+  PASS  seller_holds_reserve #1: TASK_STATE_INPUT_REQUIRED, asks [340, 284, 284, 284, 284, 284, 284, 284, 284]
+
+### seller_holds_reserve #2: bookshelf, kit budget 230, reserve 260
+    -> SendMessage "I want to buy a bookshelf"
+    <- TASK_STATE_INPUT_REQUIRED | blue bamboo bookshelf 00: asking 340
+    -> SendMessage "140" taskId=df9926c0
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 312
+    -> SendMessage "170" taskId=df9926c0
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 284
+    -> SendMessage "200" taskId=df9926c0
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 284
+    -> SendMessage "230" taskId=df9926c0
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 284
+    -> SendMessage "230" taskId=df9926c0
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 284
+    -> SendMessage "230" taskId=df9926c0
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 284
+    -> SendMessage "230" taskId=df9926c0
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 284
+    -> SendMessage "230" taskId=df9926c0
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 284
+  PASS  seller_holds_reserve #2: TASK_STATE_INPUT_REQUIRED, asks [340, 312, 284, 284, 284, 284, 284, 284, 284]
+
+### seller_holds_reserve #3: bookshelf, kit budget 230, reserve 260
+    -> SendMessage "I want to buy a bookshelf"
+    <- TASK_STATE_INPUT_REQUIRED | blue bamboo bookshelf 00: asking 340
+    -> SendMessage "140" taskId=3476b265
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 310
+    -> SendMessage "170" taskId=3476b265
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 284
+    -> SendMessage "200" taskId=3476b265
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 284
+    -> SendMessage "230" taskId=3476b265
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 284
+    -> SendMessage "230" taskId=3476b265
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 284
+    -> SendMessage "230" taskId=3476b265
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 284
+    -> SendMessage "230" taskId=3476b265
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 284
+    -> SendMessage "230" taskId=3476b265
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 284
+  PASS  seller_holds_reserve #3: TASK_STATE_INPUT_REQUIRED, asks [340, 310, 284, 284, 284, 284, 284, 284, 284]
+
+## buyer tests: your buyer against the kit's rule-based seller
+
+### buyer_deal #1: npx tsx src/buyer.ts --url http://127.0.0.1:59213 --item lamp --budget 120
+    kit seller saw: offers [120], deals [120], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+  PASS  buyer_deal #1: deals [120] (budget 120)
+  PASS  buyer_protocol_deal #1: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1
+
+### buyer_deal #2: npx tsx src/buyer.ts --url http://127.0.0.1:46167 --item lamp --budget 120
+    kit seller saw: offers [120], deals [120], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+  PASS  buyer_deal #2: deals [120] (budget 120)
+  PASS  buyer_protocol_deal #2: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1
+
+### buyer_deal #3: npx tsx src/buyer.ts --url http://127.0.0.1:57805 --item lamp --budget 120
+    kit seller saw: offers [120], deals [120], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+  PASS  buyer_deal #3: deals [120] (budget 120)
+  PASS  buyer_protocol_deal #3: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1
+
+### buyer_holds_budget #1: npx tsx src/buyer.ts --url http://127.0.0.1:32859 --item bookshelf --budget 230
+    kit seller saw: offers [230], deals [], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+  PASS  buyer_holds_budget #1: deals [] (budget 230 < reserve 260)
+  PASS  buyer_protocol_holds_budget #1: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1
+
+### buyer_holds_budget #2: npx tsx src/buyer.ts --url http://127.0.0.1:55577 --item bookshelf --budget 230
+    kit seller saw: offers [210], deals [], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+  PASS  buyer_holds_budget #2: deals [] (budget 230 < reserve 260)
+  PASS  buyer_protocol_holds_budget #2: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1
+
+### buyer_holds_budget #3: npx tsx src/buyer.ts --url http://127.0.0.1:34819 --item bookshelf --budget 230
+    kit seller saw: offers [210], deals [], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+  PASS  buyer_holds_budget #3: deals [] (budget 230 < reserve 260)
+  PASS  buyer_protocol_holds_budget #3: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1
+
+21/21 passed -> PASS
