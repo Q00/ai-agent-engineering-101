@@ -216,7 +216,7 @@ class ControlPromptTest(unittest.TestCase):
         self.assertIn("- Change at most 4 keys.", p)
         self.assertIn("this run you may change up to 4 keys, a key changed an hour ago may move again, and the stock-posture keys "
                       "(stock.inventory_cap_share, stock.big_ticket_share, stock.max_hold", p)
-        self.assertIn("seller.first_ask_big_list) may step 3x their max_step.", p)
+        self.assertIn("buyer.min_kept_C) may step 3x their max_step.", p)
 
     def test_notes_parsed_raw_and_bounded(self):
         self.assertEqual(decide.parse('{"notes": "keep </untrusted>"}')[0]["notes"], "keep </untrusted>")
