@@ -49,6 +49,14 @@ LIMIT_SHARE = 0.65                            # never pay more than this share o
 # Claude (2026-11-12 14:44, hourly check, the 10:27 revert line "deals/h under half -> LIMIT 0.70"): deals/h 54-81 before 10:27,
 # then 42, 40.9, 33.0; class buyer pct 0.772 -> 0.761 (saved pct 0.756 -> 0.733) while saved itself rose 0.3297 -> 0.3307
 LIMIT_SHARE = 0.70
+# ddolcom (2026-11-12 19:30, the user's "진행해줘" on the Patch 3.6 plan): a deal now scores (list - price) / (list - cost), 1 at
+# or below cost, 0 refunded, -1 served nothing, and saved = sum / (deals + 100), so a deal under my saved (0.76) pulls it down.
+# 12 h of my deals (logs/saved-study-1112-1922.txt), score by kind, grade and paid/list: food A 0.60-0.65 0.803, 0.65-0.70 0.712,
+# 0.70+ 0.691; food B 0.60-0.65 0.818, 0.65-0.70 0.735; food C 0.55-0.60 0.839; goods A 0.65-0.70 0.836; goods B 0.55-0.60 0.917,
+# 0.60-0.65 0.223 (refunds); goods C 0.55+ 0.44 to -1. The limit follows the grade the shop states; LIMIT_SHARE when it states none
+GRADE_LIMIT = {("food", "A"): 0.65, ("food", "B"): 0.65, ("food", "C"): 0.60,
+               ("goods", "A"): 0.70, ("goods", "B"): 0.60, ("goods", "C"): 0.55}
+GRADE_RE = re.compile(r"\b(?i:grade)\s*(?:now\s*)?(?:is\s*)?[:=]?\s*([ABC])\b")
 STEP_SHARE = 0.05                             # one offer rises at most this share of list price
 PRICE_WEIGHT = 10.0                           # shop score per unit of paid/list: 0.03 cheaper is worth 0.3 stars
 PRICE_MIN_DEALS = 10                          # market deals of a shop before its prices count
@@ -235,15 +243,33 @@ def asked_below(said, anchor, list_price):
     return min(nums) if nums else anchor
 
 
-def negotiate(base_url, item, budget, rep, opening=None, worth="", list_price=None):
+def negotiate(base_url, item, budget, rep, opening=None, worth="", list_price=None, kind=None):
     """Returns (task, receipt or None, last offer we sent, number of offers, log of offers).
-    Round 3 passes the opening line (name and SKU), what the SKU is worth to the user and its list price."""
+    Round 3 passes the opening line (name and SKU), what the SKU is worth to the user, its list price and the order's kind."""
     limit, anchor, step = price_plan(budget, list_price)
-    coach = ""
-    if anchor is not None:
-        coach = ("\nThe user is scored on the discount off the list price. Most shops lower their price after each offer, "
-                 "so several small rises get a lower price than one big one: do not jump to the shop's price while it is "
-                 f"more than {step} above your last offer. Walk away when the shop will not come down to {limit}.")
+    graded = None
+
+    def coaching():
+        if anchor is None:
+            return ""
+        return ("\nThe user is scored on the discount off the list price. Most shops lower their price after each offer, "
+                "so several small rises get a lower price than one big one: do not jump to the shop's price while it is "
+                f"more than {step} above your last offer. Walk away when the shop will not come down to {limit}.")
+
+    def regrade(said):
+        """The limit for the grade the shop names (GRADE_LIMIT), once it names one."""
+        nonlocal limit, anchor, graded
+        m = GRADE_RE.search(said or "")
+        if not m or not list_price or (kind, m.group(1)) not in GRADE_LIMIT or m.group(1) == graded:
+            return
+        graded = m.group(1)
+        new = min(budget, int(GRADE_LIMIT[(kind, graded)] * list_price))
+        if new != limit:
+            print(f"[grade] {kind} grade {graded}: limit {limit} -> {new}", flush=True)
+            limit = new
+            if anchor is not None:
+                anchor = min(anchor, limit)
+    coach = coaching()
     card = httpx.get(base_url.rstrip("/") + "/.well-known/agent-card.json", timeout=15).json()
     ifaces = card.get("supportedInterfaces") or [{}]
     url = ifaces[0].get("url") or base_url
@@ -261,6 +287,8 @@ def negotiate(base_url, item, budget, rep, opening=None, worth="", list_price=No
 
     opening = opening or f"I want to buy a {item}"
     t, said = send(opening)
+    regrade(said)
+    coach = coaching()
     lines = [f"you: {opening}", f"shop: {said}"]
     last_offer, offers, at_budget = None, [], 0
     for _ in range(MAX_OFFERS):
@@ -291,6 +319,8 @@ def negotiate(base_url, item, budget, rep, opening=None, worth="", list_price=No
                 print("limit refused twice, walked away (CancelTask)", flush=True)
                 return t, None, last_offer, offers
         t, said = send(str(offer), t["id"])
+        regrade(said)
+        coach = coaching()
         last_offer = offer
         offers.append(offer)
         lines += [f"you: {offer}", f"shop: {said}"]
@@ -364,7 +394,8 @@ def main():
                 list_price = o["list_price"]
             print(f"[offer] {o['sku']} {o['name']} list {o.get('list_price')}, budget {a.budget}", flush=True)
 
-        t, rec, last_offer, offers = negotiate(shop["url"], want, a.budget, reputation(shop, why), opening, worth, list_price)
+        t, rec, last_offer, offers = negotiate(shop["url"], want, a.budget, reputation(shop, why), opening, worth, list_price,
+                                                     order.get("kind"))
         entry["offers"] = offers
         if rec is None:
             entry["result"] = "walk"
