@@ -1089,77 +1089,117 @@ TURNOVER_H = 24  # [가게 회전]: window
 CARD_OPTIONAL = {"shop": ("가게 회전", "묶인 돈 수익", "실험 중간값", "커널 밖 변경"),
                  "buyer": ("실험 중간값", "커널 밖 변경")}
 OUTSIDE_LOOP = "icrl/state/loop.json"  # the state file of attempt 1's experiment loop (the kernel only reads it)
+OUTSIDE_MAX = 12  # lines shown; the loop runs a handful of lanes, a malformed file must not fill the card
+OUTSIDE_VAL_CHARS = 40  # a policy value is a number or a short word; anything longer is cut
+
+
+def _loop_parts(path):
+    """Attempt 1's own split of a policy path (r3 icrl/space.py split): a category name may hold dots, so under
+    categories. the name is everything up to the last dot."""
+    if path.startswith("categories."):
+        cat, _, key = path[len("categories."):].rpartition(".")
+        return ["categories", cat, key]
+    return path.split(".")
 
 
 def _at(d, parts):
-    """The value at a dotted path whose segments may themselves hold dots (a category name): longest segment first."""
-    if not parts:
-        return d
-    if not isinstance(d, dict):
-        return None
-    for i in range(len(parts), 0, -1):
-        k = ".".join(parts[:i])
-        if k in d:
-            v = _at(d[k], parts[i:])
-            if v is not None:
-                return v
-    return None
+    """(value, found) at the keys in order; found False when a key is missing or a level is not a mapping."""
+    for k in parts:
+        if not isinstance(d, dict) or k not in d:
+            return None, False
+        d = d[k]
+    return d, True
+
+
+def _epoch(v):
+    """A time that can be shown as a date: a number between 2017 and 2100, else None (NaN, inf, milliseconds, 5)."""
+    return float(v) if _is_num(v) and 1.5e9 < v < 4.1e9 else None
+
+
+def _shown(v, limit=OUTSIDE_VAL_CHARS):
+    """A value from a file as one short printable piece of a line."""
+    s = v if isinstance(v, str) else json.dumps(v, ensure_ascii=False)
+    s = "".join(ch if ch.isprintable() else " " for ch in s)
+    return s if len(s) <= limit else s[:limit] + "…"
 
 
 def outside_switching(root):
-    """Policy values an experiment loop outside the kernel is switching now: attempt 1's loop holds each value at one of
+    """Policy values an experiment loop outside the kernel is switching: attempt 1's loop holds each value at one of
     two settings for a block of time and writes policy.json itself, so the kernel's edit history and its experiment
     ledger do not show it (live 11-12: three such values, blocks of about 21 and 42 minutes, one in the section of a
     running kernel experiment). Read from the loop's own state file; [] when it is missing, unreadable or idle.
-    -> [{"path", "a", "b", "id", "since", "blocks", "block_min", "arm_ts"}], block_min and arm_ts None when unknown."""
+    Entries that cannot be stated are left out (a path that is not a printable dotted name, two equal values), and
+    so are the parts of a line that cannot (a time that is not a date, a block without two ends).
+    -> [{"path", "a", "b", "id", "since", "blocks", "block_min", "arm_ts"}]: block_min the median length of the
+    finished blocks, arm_ts the start of the last block when it has no end yet; None when unknown."""
     try:
         lanes = c.load_json(os.path.join(c.data_root(root), OUTSIDE_LOOP), {}).get("lanes")
     except (ValueError, OSError, AttributeError):
         return []
+    same = lambda x, y: json.dumps(x, sort_keys=True) == json.dumps(y, sort_keys=True)
     out = []
     for lane in (lanes or {}).values() if isinstance(lanes, dict) else ():
         a = lane.get("active") if isinstance(lane, dict) else None
         if not isinstance(a, dict) or a.get("status") != "running":
             continue
         bl = [x for x in a.get("blocks") or [] if isinstance(x, dict)] if isinstance(a.get("blocks"), list) else []
-        spans = sorted(x["t1"] - x["t0"] for x in bl if _is_num(x.get("t0")) and _is_num(x.get("t1")) and x["t1"] > x["t0"])
-        last = bl[-1].get("t0") if bl else None
+        ends = [(_epoch(x.get("t0")), _epoch(x.get("t1"))) for x in bl]
+        spans = [t1 - t0 for t0, t1 in ends if t0 and t1 and 0 < t1 - t0 <= 7 * 86400]
+        last = bl[-1] if bl else {}
+        xid = a.get("id")
         for e in a.get("edits") or [] if isinstance(a.get("edits"), list) else []:
-            if isinstance(e, dict) and isinstance(e.get("path"), str) and e["path"] and "current" in e and "value" in e:
-                out.append({"path": e["path"], "a": e["current"], "b": e["value"], "id": a.get("id"),
-                            "since": a.get("t_start") if _is_num(a.get("t_start")) else None, "blocks": len(bl),
-                            "block_min": spans[len(spans) // 2] / 60 if spans else None,
-                            "arm_ts": last if _is_num(last) else None})
+            path = e.get("path") if isinstance(e, dict) else None
+            if not (isinstance(path, str) and path.isprintable() and len(path) <= 200 and all(_loop_parts(path))):
+                continue
+            if "current" not in e or "value" not in e or same(e["current"], e["value"]):
+                continue
+            out.append({"path": path, "a": e["current"], "b": e["value"],
+                        "id": xid if isinstance(xid, str) and xid.isprintable() and 0 < len(xid) <= 24 else None,
+                        "since": _epoch(a.get("t_start")), "blocks": len(bl),
+                        "block_min": st.median(spans) / 60 if spans else None,
+                        "arm_ts": _epoch(last.get("t0")) if "t1" not in last else None})
     return sorted(out, key=lambda it: it["path"])
 
 
 def section_outside(root, role=None, part=None):
-    """[커널 밖 변경]: the values of outside_switching with the value policy.json holds now. role: only that side's
+    """[커널 밖 변경]: the values of outside_switching with the value policy.json holds now and when the loop's state
+    file was last written (the lines are that file's content, not a reading of the present). role: only that side's
     values (buyer: paths under buyer.); part: only paths holding that text. [] when there is none. Facts only."""
-    items = [it for it in outside_switching(root)
+    every = outside_switching(root)
+    items = [it for it in every
              if (role is None or (role == "buyer") == it["path"].startswith("buyer."))
              and (not part or part in it["path"])]
     if not items:
         return []
+    base = c.data_root(root)
     try:
-        pol = c.load_json(os.path.join(c.data_root(root), "policy.json"), None)
+        pol = c.load_json(os.path.join(base, "policy.json"), None)
     except (ValueError, OSError):
         pol = None
-    val = lambda v: json.dumps(v, ensure_ascii=False) if not isinstance(v, str) else v
-    out = [f"[커널 밖 변경] 시도 1의 실험 루프가 구간마다 두 값 중 하나로 두는 정책 값 {len(items)}개 "
-           "(그 루프가 policy.json에 직접 써서 정책 수정 기록과 실험 장부에는 나오지 않음)"]
-    for it in items:
+    try:
+        written = _epoch(os.path.getmtime(os.path.join(base, OUTSIDE_LOOP)))
+    except OSError:
+        written = None
+    side = {"buyer": "구매 쪽 ", "shop": "가게 쪽 "}.get(role) or ("이 구역 " if part else "")
+    count = f"{len(every)}개 가운데 {side}{len(items)}개" if len(items) != len(every) else f"{len(items)}개"
+    out = [f"[커널 밖 변경] 시도 1의 실험 루프가 구간마다 두 값 중 하나로 두는 정책 값 {count} "
+           "(그 루프가 policy.json에 직접 써서 정책 수정 기록과 실험 장부에는 나오지 않음"
+           + (f"; 루프 상태 파일이 마지막으로 쓰인 때 {c.kst(written)}" if written else "") + ")"]
+    for it in items[:OUTSIDE_MAX]:
         sec, _, key = it["path"].rpartition(".")
         sec = sec[len("categories."):] if sec.startswith("categories.") else sec
-        now_v = _at(pol, it["path"].split("."))
+        now_v, found = _at(pol, _loop_parts(it["path"]))
         out.append(
-            f"  {sec} {key}: {val(it['a'])} 또는 {val(it['b'])}"
-            + (f", 구간 약 {it['block_min']:.0f}분" if it["block_min"] else "")
+            f"  {sec} {key}: {_shown(it['a'])} 또는 {_shown(it['b'])}"
+            + (f", 구간 약 {it['block_min']:.0f}분" if it["block_min"] and it["block_min"] >= 1 else "")
             + (f", {c.kst(it['since'])}부터" if it["since"] else "") + f" 구간 {it['blocks']}개"
-            + (f", 지금 구간은 {c.kst(it['arm_ts'], '%H:%M')}부터" if it["arm_ts"] else "")
-            + (f", policy.json의 지금 값 {val(now_v)}" if now_v is not None else ", policy.json에 지금 값 없음")
-            + f" (루프의 실험 {it['id']})"
+            + (f", 마지막 구간은 {c.kst(it['arm_ts'], '%H:%M')}부터" if it["arm_ts"] else "")
+            + (", policy.json을 읽지 못함" if not isinstance(pol, dict)
+               else f", policy.json의 지금 값 {_shown(now_v)}" if found else ", policy.json에 이 키 없음")
+            + (f" (루프의 실험 {it['id']})" if it["id"] else "")
         )
+    if len(items) > OUTSIDE_MAX:
+        out.append(f"  외 {len(items) - OUTSIDE_MAX}개")
     return out
 
 
