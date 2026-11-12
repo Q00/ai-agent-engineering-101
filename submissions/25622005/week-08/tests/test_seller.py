@@ -273,6 +273,20 @@ class SellerA2A(unittest.TestCase):
         inv = {"round": 3, "units": [old, self.goods("u-new", cost=60000)]}
         self.assertEqual(seller.find_unit("G000f6cda", inv, now=self.now)["unit"], "u-old")   # no policy: oldest
 
+    def test_goods_offered_best_grade_first_then_oldest(self):
+        # 11-12: the oldest unit of a SKU is the C the A and B sales left behind; buyers pay for A and B
+        c_old = dict(self.goods("u-c", cost=60000), grade="C", supplied_at=self.now - 40 * H)
+        b_mid = dict(self.goods("u-b", cost=60000), grade="B", supplied_at=self.now - 20 * H)
+        a_old = dict(self.goods("u-a1", cost=60000), grade="A", supplied_at=self.now - 10 * H)
+        a_new = dict(self.goods("u-a2", cost=60000), grade="A", supplied_at=self.now - 1 * H)
+        inv = {"round": 3, "units": [c_old, b_mid, a_new, a_old]}
+        self.assertEqual(seller.find_unit("G000f6cda", inv, now=self.now)["unit"], "u-a1")      # A, the older one
+        self.assertEqual(seller.find_unit("G000f6cda", inv, promised=("u-a1", "u-a2"), now=self.now)["unit"], "u-b")
+        self.assertEqual(seller.find_unit("G000f6cda", inv, promised=("u-a1", "u-a2", "u-b"), now=self.now)["unit"], "u-c")
+        over = dict(a_old, cost=98000)                                      # an overpriced A still comes after a fair C
+        self.assertEqual(seller.find_unit("G000f6cda", {"round": 3, "units": [c_old, over]}, now=self.now,
+                                          pol=policy.DEFAULTS)["unit"], "u-c")
+
     def test_promised_unit_is_not_sold_twice_until_the_promise_expires(self):
         first, second = self.talk(("I want to buy G000f6cda", "a"), ("I want to buy G000f6cda", "b"))
         self.assertEqual(first[0]["status"]["state"], "TASK_STATE_INPUT_REQUIRED")

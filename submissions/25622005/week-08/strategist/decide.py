@@ -187,7 +187,18 @@ Supply and depth:
   and buyer.min_kept is yours. saved.peers lists the best saved among the other buyers with 1000+ deals with
   their paid; under margin_share a low paid is not what makes a high saved (0.38 kept on A units scores 1).
 - Big-ticket goods (list above stock.big_ticket_list) are first asked at seller.first_ask_big_list x list, the
-  rest at seller.first_ask_list; the market clears big-ticket goods at about 0.67-0.72 of list.
+  rest at seller.first_ask_list. The seller offers a SKU's best grade first (A, then B, then C, the oldest within
+  the grade; before 11-12 the oldest unit, which was the C the A and B sales had left behind). Buyers' accept
+  terms name the grades they pay for and the market's big settles are A and B almost entirely, so a sign on a C
+  unit is not a sale (11-12: C signs paid 1 of 13, A signs 13 of 14, and three quarters of the buyers offered a
+  C canceled). The brief's big_ticket section is the evidence: by_grade (our first replies, cancels, signs, paid
+  and sign price/list per grade), market (the window's big settles, grade share, median price/list by grade,
+  warranty hours) and sellers (the top big-ticket shops with their price/list, warranty hours and A share).
+  Set seller.first_ask_big_list and seller.floor_list from market.price_list_by_grade and the top sellers, not
+  from our sign rate: on 11-12 the market paid 0.70 of list for A while we asked 0.62 and signed at 0.55, the
+  cheapest of the top 15 shops with the lowest conversion, so underpricing bought no sales. seller.warranty_hours
+  is at most 6 (every break happens within 6 h); a few buyers settle only with 72 h warranties (market.warranty_h),
+  which we cannot give.
 - forum.min_gap_min spaces our buyer posts; it is set from the market's post limit automatically, not by you.
 - History sources "migration" (an old shipped default, once), "linked" (same food cap) and "objective"
   (score_twin's buyer.min_kept) are code's, not yours.

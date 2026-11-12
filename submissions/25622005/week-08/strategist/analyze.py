@@ -840,6 +840,58 @@ def _seller(rows, pol=None, warranted=None):
             "warranty": _warranty(first, signs, pol, warranted)}
 
 
+def _big_ticket(rows, ledger, catalog, pol, me, our_url, shops):
+    """Big-ticket goods (list price at or over stock.big_ticket_list), ours and the market's, in the window.
+    by_grade: our first replies by the grade of the unit offered (grade_now), how many of those tasks the buyer
+    canceled, our signs by the grade claimed, how many of them a market settle paid (the unit in a settle of the
+    window: a sign at the window's end may pay after it), and the signs' median price/list. market: the window's
+    big settles, their grade share, median price/list by grade and the warranty hours they carried. sellers:
+    the shops with the most big settles (board name, else untrusted_shop: the URL clipped), with their median
+    price/list, usual warranty hours and A share."""
+    bmax = _num(_dict(_dict(pol).get("stock")).get("big_ticket_list")) or 200000
+    inp = lambda r: _dict(r.get("inputs"))
+    ch = lambda r: _dict(r.get("choice"))
+    lp = lambda r: _num(inp(r).get("list_price")) or _num(ch(r).get("list_price")) or 0
+    rows = _rows(rows)
+    first = {_dict(r.get("ref")).get("task"): r for r in rows
+             if r.get("kind") == "quote" and str(r.get("why") or "").startswith("first reply") and lp(r) >= bmax}
+    canceled = Counter(inp(first[_dict(r.get("ref")).get("task")]).get("grade_now") for r in rows
+                       if r.get("kind") == "reject" and ch(r).get("action") == "canceled"
+                       and _dict(r.get("ref")).get("task") in first)
+    offered = Counter(inp(r).get("grade_now") for r in first.values())
+    signs = [r for r in rows if r.get("kind") == "sign" and lp(r) >= bmax]
+    settles = [_dict(r.get("data")) for r in _rows(ledger) if r.get("kind") == "settle"]
+    paid_units = {str(d.get("unit")) for d in settles if d.get("unit")}
+    by = {}
+    for g in ("A", "B", "C"):
+        sg = [r for r in signs if ch(r).get("claim") == g]
+        paid = sum(1 for r in sg if str(ch(r).get("unit")) in paid_units)
+        by[g] = {"first": offered.get(g, 0), "canceled": canceled.get(g, 0),
+                 "cancel_rate": _ratio(canceled.get(g, 0), offered.get(g, 0)), "signed": len(sg), "paid": paid,
+                 "paid_rate": _ratio(paid, len(sg)),
+                 "sign_price_list": _median([round(p / l, 4) for p, l in ((_num(ch(r).get("price")), lp(r)) for r in sg) if p and l])}
+    cat_list = lambda d: _num(_dict(_dict(catalog).get(d.get("sku"))).get("list_price")) or 0
+    big = [d for d in settles if cat_list(d) >= bmax]
+    pl = lambda d: round((_num(d.get("amount")) or 0) / cat_list(d), 4)
+    market = {"settles": len(big), "ours": sum(1 for d in big if _ours(d.get("shop"), me, our_url)),
+              "grade_share": {g: _ratio(sum(1 for d in big if d.get("grade") == g), len(big)) for g in ("A", "B", "C")},
+              "price_list_by_grade": {g: _median([pl(d) for d in big if d.get("grade") == g]) for g in ("A", "B", "C")},
+              "warranty_h": dict(Counter(_num(d.get("warranty_hours")) or 0 for d in big).most_common(4))}
+    names = {str(_dict(r.get("card")).get("url") or "").rstrip("/"): r.get("name") for r in _rows(shops)}
+    per = {}
+    for d in big:
+        per.setdefault(str(d.get("shop") or "").rstrip("/"), []).append(d)
+    sellers = []
+    for u, ds in sorted(per.items(), key=lambda x: -len(x[1]))[:5]:
+        row = {"shop": names.get(u), "settles": len(ds), "price_list": _median([pl(d) for d in ds]),
+               "warranty_h": Counter(_num(d.get("warranty_hours")) or 0 for d in ds).most_common(1)[0][0],
+               "grade_A": _ratio(sum(1 for d in ds if d.get("grade") == "A"), len(ds))}
+        if row["shop"] is None:
+            row["untrusted_shop"] = _clip(u, 60)
+        sellers.append(row)
+    return {"list_from": bmax, "by_grade": by, "market": market, "sellers": sellers}
+
+
 def _off_policy(ver):
     """True when a decision row's policy_ver says the process did not read SKILL.md: policy.load fell back to the
     last good file ("<ver>+lastgood") or to DEFAULTS ("defaults")."""
@@ -1145,6 +1197,7 @@ def brief(raw, own, prev, pol, now, me=ME, window_h=1, flows=None, known=(), foc
     b["ops"] = _ops(own, raw.get("forum"), since, me)
     dec = _dict(own.get("decisions"))
     b["seller"] = _seller(_rows(dec.get("seller")), pol, own.get("warranted_6h"))
+    b["big_ticket"] = _big_ticket(dec.get("seller"), ledger, catalog, pol, me, url, shops)
     b["buyer_log"] = _buyer_log(_rows(dec.get("buyer")))
     b["saved"] = _saved(buyers, _find(buyers, me), b["me"].get("buyer"), _rows(dec.get("buyer")), pol, b["hours_left"], window_h,
                         _rows(dec.get("review")), _dict(_dict(market).get("facts")))

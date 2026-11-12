@@ -732,6 +732,33 @@ class NewSectionsTest(unittest.TestCase):
                               "no_price": 1, "no_stock": 1, "llm_exception": 1, "warranty_req": 1, "warranty_sold": 1,
                               "sign_price_list": 0.85, "reject_offer_list": 0.5, "policy_ver": {}, "off_policy": 0})
 
+    def test_big_ticket_funnel_by_grade_and_the_market(self):
+        # 11-12: our first replies offered C units a third of the time; C signs go unpaid, A signs pay
+        o = own()
+        lp = {"list_price": 1000000}
+        q = lambda t, g: {"kind": "quote", "why": "first reply: fact line", "ref": {"task": t}, "choice": {"action": "quote"},
+                          "inputs": lp | {"grade_now": g}}
+        canc = lambda t: {"kind": "reject", "ref": {"task": t}, "choice": {"action": "canceled"}, "why": "buyer canceled the task"}
+        sign = lambda u, g, p: {"kind": "sign", "ref": {"task": u}, "inputs": lp, "choice": {"unit": u, "claim": g, "price": p, "list_price": 1000000}}
+        o["decisions"]["seller"] = [q("t1", "A"), q("t2", "A"), q("t3", "C"), q("t4", "C"), q("t5", "B"), canc("t3"), canc("t4"), canc("t1"),
+                                    sign("u-a", "A", 700000), sign("u-c1", "C", 550000), sign("u-c2", "C", 560000),
+                                    {"kind": "quote", "why": "first reply: fact line", "ref": {"task": "small"}, "inputs": {"list_price": 5000, "grade_now": "C"}}]
+        r = raw()
+        r["catalog"] = {"G1": {"list_price": 1000000}, "G9": {"list_price": 5000}}
+        st = lambda shop, unit, grade, amount, w, sku="G1": {"kind": "settle", "ts": NOW - 30, "data": {"shop": shop, "unit": unit, "sku": sku, "grade": grade, "amount": amount, "warranty_hours": w}}
+        r["ledger"] += [st(US, "u-a", "A", 700000, 6), st("https://s1.example", "x1", "A", 720000, 72), st("https://s1.example", "x2", "B", 600000, 72),
+                        st("https://unknown.example", "x3", "A", 680000, None), st("https://s2.example", "x4", "C", 10, None, sku="G9")]
+        pol = {"stock": {"end_ts": NOW + 100 * 3600, "big_ticket_list": 200000}}
+        bt = analyze.brief(r, o, None, pol, NOW)["big_ticket"]
+        self.assertEqual(bt["list_from"], 200000)
+        self.assertEqual(bt["by_grade"]["A"], {"first": 2, "canceled": 1, "cancel_rate": 0.5, "signed": 1, "paid": 1, "paid_rate": 1.0, "sign_price_list": 0.7})
+        self.assertEqual(bt["by_grade"]["C"], {"first": 2, "canceled": 2, "cancel_rate": 1.0, "signed": 2, "paid": 0, "paid_rate": 0.0, "sign_price_list": 0.555})
+        self.assertEqual(bt["by_grade"]["B"]["first"], 1)
+        self.assertEqual(bt["market"], {"settles": 4, "ours": 1, "grade_share": {"A": 0.75, "B": 0.25, "C": 0.0},
+                                        "price_list_by_grade": {"A": 0.7, "B": 0.6, "C": None}, "warranty_h": {72.0: 2, 6.0: 1, 0: 1}})
+        self.assertEqual([(s["shop"], s.get("untrusted_shop"), s["settles"], s["price_list"], s["warranty_h"], s["grade_A"]) for s in bt["sellers"]],
+                         [("s1", None, 2, 0.66, 72.0, 0.5), ("psyoung82", None, 1, 0.7, 6.0, 1.0), (None, "https://unknown.example", 1, 0.68, 0, 1.0)])
+
     def test_seller_rows_on_defaults_or_lastgood_raise_an_alert(self):
         o = own()
         row = lambda ver: {"kind": "quote", "choice": {"action": "quote"}, "inputs": {"list_price": 10000}, "policy_ver": ver}

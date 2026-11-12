@@ -158,11 +158,18 @@ def with_shelf(unit, catalog):
     return u
 
 
+GRADE_RANK = {"A": 0, "B": 1, "C": 2}     # the order goods are offered in (find_unit)
+
+
 def find_unit(text, inv, promised=(), need_hours=None, catalog=None, now=None, pol=None):
     """The unit to sell for what the buyer asked: a SKU named in the text first, then a product name, then a
     category leaf. Skips expired units and units promised in other open negotiations. For food with
-    need_hours, only units with at least that many hours left; of those, the one that expires first
-    (goods: the oldest, overpriced units last when pol is given)."""
+    need_hours, only units with at least that many hours left; of those, the one that expires first.
+    Goods: the best grade first (A, then B, then C), the oldest within the grade, overpriced units last when
+    pol is given. Until 11-12 goods went oldest first, which was the C unit the A and B sales had left behind:
+    a third of the big-ticket first replies offered a C while the market's big settles are A and B almost
+    entirely and buyers' accept terms name the grades they pay for, so those signs went unpaid (1 of 13 paid
+    against 13 of 14 for A) and three quarters of those buyers canceled."""
     if (inv.get("round") or 0) < 3:
         return None
     now = time.time() if now is None else now
@@ -177,6 +184,7 @@ def find_unit(text, inv, promised=(), need_hours=None, catalog=None, now=None, p
     if need_hours is not None:
         fit = [u for u in fit if u.get("kind") != "food" or (pricing.hours_left(u, now) or 0) >= need_hours]
     return min(fit, key=lambda u: (pol is not None and pricing.overpriced(u, pol),
+                                   GRADE_RANK.get(u.get("grade"), 3) if u.get("kind") == "goods" else 0,
                                    u.get("expires_at") or float("inf"), u.get("supplied_at") or 0), default=None)
 
 
