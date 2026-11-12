@@ -39,8 +39,9 @@ def expected_surplus(list_price, price, failure=0, covered_failure=0):
 
 
 def shop_statistics(journal, sku, category=None):
-    visits = [e for e in history(journal, 'shop_opportunity', 10000) if e.get('sku') == sku]
-    paid = [e for e in history(journal, 'shop_settled', 10000) if e.get('sku') == sku]
+    cut=journal.get('market_rules',{}).get('buyer_score_epoch',0)
+    visits = [e for e in history(journal, 'shop_opportunity', 10000) if e.get('sku') == sku and e['_ts']>=cut]
+    paid = [e for e in history(journal, 'shop_settled', 10000) if e.get('sku') == sku and e['_ts']>=cut]
     return {"opportunities": len(visits), "settled": len(paid),
             "settlement_rate": (len(paid) + 1) / (len(visits) + 2),
             "prices": [e["price"] for e in paid[:20]],
@@ -112,6 +113,11 @@ def shop_candidates(unit, inv, catalog, journal, config, *, offer=None, previous
         recovery_floor = max(1, math.ceil(cost*.98/max(.01,1-stress_refund)))
     ceiling = previous_ask or int(1.05 * L)
     prices = {max(recovery_floor, int(reference * f)) for f in (.9, 1, 1.1)}
+    saved_risk=None
+    if config.get('book_growth_v23_enabled') and journal.get('market_rules',{}).get('buyer_saved_formula')=='margin_share_v36':
+        from .shop_offer import target_prices
+        saved_risk=goods_risk(journal,unit.get('grade'),warranty,config,now) if unit.get('kind')=='goods' else {'failure_upper':0,'covered_lower':0}
+        prices.update(p for p in target_prices(unit,saved_risk,journal) if recovery_floor<=p<=ceiling)
     long_contract=None;rating=None
     if config.get('system_framework_enabled'):
         from .long_memory import contract_summary,rating_summary
@@ -150,10 +156,15 @@ def shop_candidates(unit, inv, catalog, journal, config, *, offer=None, previous
             completion=dict(completion,completion=(completion['paid']+2*prior)/(completion['samples']+2),
                             price_response_prior=prior,reference_price=reference,
                             scenario='shrunk observed completion plus monotone price response')
+        saved_evidence={}
+        if saved_risk:
+            from .shop_offer import completion as contract_completion
+            probability,saved_evidence=contract_completion(completion['completion'],unit,p,saved_risk,journal,completion['samples'])
+            completion=dict(completion,completion=probability)
         result.append({"id": "quote:" + str(p), "action": "counter", "price": p,
                        "warranty_hours": warranty, "score": sale_delta(p, cost, completion['completion'], stress_refund)['book'],
                        "evidence": dict(stats, quote_completion=completion, customer_memory=memory_evidence,
-                                        long_contract_memory=long_contract,rating_shadow=rating),
+                                        long_contract_memory=long_contract,rating_shadow=rating,buyer_saved_contract=saved_evidence),
                        'expected_delta': sale_delta(p, cost, completion['completion'], stress_refund),
                        "recovery_floor": recovery_floor,
                            "risk": "conservative grade risk; full gross reserve remains required" if warranty else "food expiry or uninsured goods"})
@@ -335,6 +346,12 @@ def restock_candidates(inv, catalog, demand, journal, config, now=None):
     count = {}
     for u in units:
         count[u["sku"]] = count.get(u["sku"], 0) + 1
+    reserved_counts={}
+    if config.get('book_growth_v23_enabled'):
+        with journal.connect() as db:
+            reserved={r[0] for r in db.execute('SELECT unit FROM reservations WHERE until>?',(now,))}
+        from collections import Counter
+        reserved_counts=Counter(u['sku'] for u in units if u.get('unit') in reserved)
     from .shop_growth import inventory_limit,stock_caps_enabled
     target = inventory_limit(config)
     if target is not None and len(units) >= target:
@@ -418,7 +435,8 @@ def restock_candidates(inv, catalog, demand, journal, config, now=None):
                 public_limit=config.get('shop_public_demand_caps',{}).get(sku,6),coverage_hours=coverage)
         else:
             desired = max(1, math.ceil(rate * config.get('supply_cycle_seconds', 1200) / 3600 * 1.5))
-        needed=desired-count.get(sku,0)
+        buffer=reserved_counts.get(sku,0) if (growth.get('service_loss_adjustment') or {}).get('qualified') else 0
+        needed=desired+buffer-count.get(sku,0)
         if needed<=0:
             continue
         held_room=config['restock_max_qty']-count.get(sku,0) if stock_caps_enabled(config) else 20
@@ -501,6 +519,7 @@ def restock_candidates(inv, catalog, demand, journal, config, now=None):
                                            uncapped_inventory=not stock_caps_enabled(config),
                                            adaptive_coverage_hours=coverage if velocity else None,
                                            growth=growth, arrival_rate_scenario=rate,
+                                           reserved_pipeline_buffer=buffer,
                                            planning_hours=hours,scenario_unit_cost=cost_ratio*p['list_price'],
                                            resale_price_scenario=price,resale_terms_scenario=terms)
         if config.get('objective_feedback_enabled'):candidates[-1]['evidence']['trend_factor_scenario']=trend

@@ -137,7 +137,9 @@ def quote_completion(journal, sku, price, now=None, grade=None, warranty=None):
     from .decision_view import fact, history
     paid = fact(journal, 'completion-paid-tasks', lambda: {x.get('task') for x in history(journal, 'shop_settled', 10000)})
     comparable = {}
+    cut=journal.get('market_rules',{}).get('buyer_score_epoch',0)
     for e in history(journal, 'shop_quote', 10000):
+        if e['_ts']<cut:continue
         if grade is not None and e.get('grade')!=grade:continue
         if warranty is not None and e.get('warranty_hours')!=warranty:continue
         if e.get("sku") == sku and abs(e["price"] - price) <= max(1, price * .1):

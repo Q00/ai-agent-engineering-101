@@ -28,16 +28,18 @@ def refresh(journal,now=None):
             selected={k:sale.get(k) for k in ('task','unit','sku','category','grade','warranty_hours','price','cost','paid_at','strategy_version')}
             c.execute('INSERT OR IGNORE INTO memory_episodes VALUES(?,?,?,?,?)',
                 ('sale:'+eid,'shop_sale',at,None,json.dumps(selected)))
-        saved=c.execute("SELECT body FROM memory_episodes WHERE kind='shop_sale' AND at>=?",(now-172800,)).fetchall()
+        saved=c.execute("SELECT body,at FROM memory_episodes WHERE kind='shop_sale' AND at>=?",(now-172800,)).fetchall()
     if rows:journal.put('memory-sale-watermark',rows[-1][1])
     catalog=journal.snapshot('catalog.json',{});groups=defaultdict(list)
-    for (body,) in saved:
+    score_epoch=journal.get('market_rules',{}).get('buyer_score_epoch',0)
+    for body,episode_at in saved:
         sale=json.loads(body);product=catalog.get(sale.get('sku'),{})
+        if (sale.get('paid_at') if type(sale.get('paid_at')) in (int,float) else episode_at)<score_epoch:continue
         value=product.get('list_price');price=sale.get('price')
         if type(value) not in (int,float) or value<=0 or type(price) not in (int,float):continue
         key=identity([sale.get('category'),sale.get('grade'),sale.get('warranty_hours') or 0])
         groups[key].append(price/value)
-    journal.put('memory-contract-facts:v2',{'at':now,'groups':{k:{'samples':len(v),
+    journal.put('memory-contract-facts:v2',{'at':now,'score_epoch':score_epoch,'groups':{k:{'samples':len(v),
         'median_paid_to_list_ratio':statistics.median(v)} for k,v in groups.items()}})
     # Reviews are linked only through explicit market ledger references. Missing
     # authors are retained as observations, never guessed account means.
@@ -93,13 +95,14 @@ def archive_customer(c,task,data):
 def contract_summary(journal,unit,warranty=None,now=None):
     now=time.time() if now is None else now
     category=unit.get('category');grade=unit.get('grade')
-    version=journal.get('memory-refreshed-at',0);cache_key=(str(getattr(journal,'md',id(journal))),version)
+    epoch=journal.get('market_rules',{}).get('buyer_score_epoch',0)
+    version=journal.get('memory-refreshed-at',0);cache_key=(str(getattr(journal,'md',id(journal))),version,epoch)
     facts=_FACT_CACHE.get(cache_key)
     if facts is None:
         facts=journal.get('memory-contract-facts:v2',{})
         if len(_FACT_CACHE)>8:_FACT_CACHE.clear()
         _FACT_CACHE[cache_key]=facts
-    row=facts.get('groups',{}).get(identity([category,grade,warranty or 0]),{}) if 0<=now-facts.get('at',0)<=600 else {}
+    row=facts.get('groups',{}).get(identity([category,grade,warranty or 0]),{}) if 0<=now-facts.get('at',0)<=600 and facts.get('score_epoch',0)==epoch else {}
     return {'schema':SCHEMA,'samples':row.get('samples',0),'median_paid_to_list_ratio':row.get('median_paid_to_list_ratio'),
             'grade':grade,'warranty_hours':warranty,'source':'own settled contracts; 48h; exact category/grade/warranty',
             'not_a_conversion_probability':True}

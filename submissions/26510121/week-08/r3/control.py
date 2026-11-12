@@ -40,6 +40,8 @@ def audit_rules(journal, text, now=None):
               'forum_vote_min_deals':50 if 'at least 50 settled deals' in text else 5,
               'stance_scoring':'one stance per' in text,'dislike_costs_shop_cash':'next_dislike_fee' in text}
     previous = journal.get('market_rules', {})
+    result['buyer_score_epoch']=(previous.get('buyer_score_epoch',now) if
+        previous.get('buyer_saved_formula')==score_formula else now)
     journal.put('market_rules', result)
     if previous.get('sha256') != result['sha256']:
         journal.add('market_rules_observed', result)

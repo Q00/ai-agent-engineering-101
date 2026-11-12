@@ -174,7 +174,8 @@ def paid(journal, task, price, sku, ledger, trusted_receipt=None):
 
 def profile(journal, subject, category=None):
     """Compact history for a verified signing key or market-confirmed payer label."""
-    visits = journal.events('customer_visit', LIMIT)
+    epoch=journal.get('market_rules',{}).get('buyer_score_epoch',0)
+    visits = [r for r in journal.events('customer_visit', LIMIT) if r['_ts']>=epoch]
     payers = {e['task']: e['payer'] for e in journal.events('customer_identity', LIMIT)}
     tasks = {e['task'] for e in visits if e.get('signer') == subject or payers.get(e['task']) == subject}
     purchases = [e for e in journal.events('customer_paid', LIMIT) if e['task'] in tasks]
@@ -198,7 +199,8 @@ def profile(journal, subject, category=None):
 
 
 def summary(journal, task, unit):
-    visits = {e['task']: e for e in journal.events('customer_visit', LIMIT)}
+    epoch=journal.get('market_rules',{}).get('buyer_score_epoch',0)
+    visits = {e['task']: e for e in journal.events('customer_visit', LIMIT) if e['_ts']>=epoch}
     current = journal.get('customer-visit:' + task, {})
     turns = journal.events('customer_turn', LIMIT)
     recent = sorted((e for e in turns if e['task'] == task), key=lambda e: e['_ts'])

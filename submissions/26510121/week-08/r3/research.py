@@ -189,7 +189,14 @@ def call(journal, config, facts, evidence, role, proposal=None, client=None, key
             'Quantity follows finite demand quantiles, marginal Book, available cash, storage/refund reserves '
             'and executable supply time. Probe-unit probability decreases with existing inventory and depth. '
             'Distinguish estimated low demand from a quantity ceiling; do not request buying just to fill space.')
-    if config.get('shop_adaptive_demand_enabled'):
+    if config.get('book_growth_v23_enabled'):
+        instructions+=(' The cover_cycles operating control is active: it multiplies the empirical supply-protection '
+            'period within the finite planning horizon. Compare actual alternative lots and Book stress. '
+            'Service-loss increments are qualified, deduplicated reservation scenarios, not guaranteed lost sales. '
+            'When all legal line portfolios fit cash, supply slots/time are scarce: maximize conservative absolute '
+            'Book per supply opportunity rather than Book per credit. Never use missing healthy exact rewards '
+            'as evidence of a poor cohort; inspect exact_reward_coverage and diagnostic_since. ')
+    elif config.get('shop_adaptive_demand_enabled'):
         instructions+=(' Shop demand now uses an evidence-derived posterior multiplier, not a fixed 0.5. '
             'The protection period uses observed attempted supply-window reliability and current time to supply, '
             'limited by evaluated economics and shelf life, not fixed 1/2/3 cycle ceilings. Legacy cover_cycles '
@@ -337,6 +344,8 @@ def update(journal, config, now=None, client=None, key=None):
             or capability_plan_id is not None and previous.get('capability_plan_id')!=capability_plan_id)
     interval=config.get('research_interval_seconds',1200)
     changed_revision=previous.get('execution_revision')!=config.get('execution_revision')
+    if config.get('research_event_driven_enabled'):
+        urgent=operating_state is not None and previous.get('operating_state')!=operating_state
     if now-previous.get('at',0)<(300 if urgent or preopen or changed_revision or previous.get('rules_hash')!=rules['sha256'] else interval):
         return None
     journal.put('research-last-attempt',{'at':now,'window':window if preopen else previous.get('window'),'rules_hash':rules['sha256'],

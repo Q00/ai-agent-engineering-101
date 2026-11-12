@@ -53,7 +53,9 @@ def observe_forum(journal, now):
 def buyer_evidence(journal, now):
     from .buyer_scoring import formula,same_formula,MARGIN
     version=formula(journal)
-    orders = {r['order']: r for r in journal.events('buyer_order', 4000) if 0 <= now-r['_ts'] <= 3600}
+    from .policy_learning import epoch
+    diagnostic_start=max(now-3600,epoch(journal))
+    orders = {r['order']: r for r in journal.events('buyer_order', 4000) if diagnostic_start<=r['_ts']<=now}
     results = {r['order']: r for r in journal.events('market_result', 4000) if r.get('order') in orders}
     purchases = {r['order']: r for r in journal.events('purchase', 10000)}
     canonical = {}
@@ -87,10 +89,14 @@ def buyer_evidence(journal, now):
                    and canonical[p['order']].get('matured')
                    and canonical[p['order']].get('refund_status')!='expected_by_warranty_rule'
                    and type(canonical[p['order']].get('saved_contribution')) in (int,float)]
+        exact_complete=len(confirmed)==len(eligible) and bool(eligible)
         mature_cohorts[kind]={'age_window_hours':[6,48],'eligible_paid':len(eligible),
             'confirmed_paid':len(confirmed),'pending':len(eligible)-len(confirmed),
             'sum_confirmed_saved_contribution':sum(r['saved_contribution'] for r in confirmed),
-            'confirmed_saved_paid_mean':sum(r['saved_contribution'] for r in confirmed)/len(confirmed) if confirmed else None}
+            'confirmed_saved_paid_mean':sum(r['saved_contribution'] for r in confirmed)/len(confirmed) if exact_complete else None,
+            'known_subset_saved_mean':sum(r['saved_contribution'] for r in confirmed)/len(confirmed) if confirmed else None,
+            'exact_reward_coverage':len(confirmed)/len(eligible) if eligible else None,
+            'incomplete_subset_is_not_cohort_quality':not exact_complete}
     scored = {}
     for row in journal.events('forum_objective_observation', 3000):
         if row.get('post_id') not in scored and 0 <= now-row.get('post_at', 0) <= 86400:
@@ -112,6 +118,7 @@ def buyer_evidence(journal, now):
         'objective_weights':{'saved_percentile':.5,'forum_raw':.3,'deals_percentile':.1,'posts_percentile':.1},
         'decision_contract':'joint expected ALL progress per execution second; compare purchase/counter/outside option',
         'saved_average_is_not_a_purchase_veto':True,
+        'diagnostic_since':diagnostic_start,
         'current_saved':own.get('saved'), 'current_deals':own.get('deals'), 'current_forum':own.get('forum'),
         'forum_raw_all_gain_per_0_01':.003 if journal.get('market_rules',{}).get('buyer_forum_metric')=='raw' else None,
         'segments_60min':segments,'mature_quality_cohorts':mature_cohorts,

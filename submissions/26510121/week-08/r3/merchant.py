@@ -18,14 +18,18 @@ def observe_inventory(journal, inv, now=None):
         return
     counts = dict(Counter(u['sku'] for u in inv.get('units', []) if
                           not u.get('expires_at') or u['expires_at'] > now))
+    with journal.connect() as db:
+        reserved={r[0] for r in db.execute('SELECT unit FROM reservations WHERE until>?',(now,))}
+    offerable=dict(Counter(u['sku'] for u in inv.get('units',[]) if u.get('unit') not in reserved and
+                          (not u.get('expires_at') or u['expires_at']>now)))
     health=journal.snapshot('shop-health.json',{})
     reachable=(health.get('status')=='healthy' and health.get('market_board_alive') is True
                and not health.get('pending_registration') and 0<=now-health.get('checked_at',0)<45)
     history = journal.get('merchant_stock_timeline', [])
-    if history and history[-1]['counts'] == counts and history[-1].get('reachable')==reachable and now-history[-1]['at'] < 30:
+    if history and history[-1]['counts'] == counts and history[-1].get('offerable_counts')==offerable and history[-1].get('reachable')==reachable and now-history[-1]['at'] < 30:
         return
     history = [r for r in history if now-HORIZON <= r['at'] <= now]
-    history.append({'at': now, 'counts': counts,'reachable':reachable})
+    history.append({'at': now, 'counts': counts,'offerable_counts':offerable,'reachable':reachable})
     journal.put('merchant_stock_timeline', history[-1024:])
 
 
@@ -41,9 +45,14 @@ def context(journal, catalog, now=None, config=None):
     config=config or {}
     from .demand_policy import context as demand_context
     adaptive=demand_context(journal,config,now)
+    learning={}
     demand_id=adaptive.get('id') if adaptive else 'uncalibrated-neutral' if config.get('shop_adaptive_demand_enabled') else None
+    if config.get('book_growth_v23_enabled'):
+        from .policy_learning import packet
+        learning=packet(journal,now)
     cached = journal.get('merchant_context_v5', {})
-    if 0 <= now-cached.get('at', -1000) < 30 and cached.get('demand_policy_id')==demand_id:
+    if (0 <= now-cached.get('at', -1000) < 30 and cached.get('demand_policy_id')==demand_id
+            and cached.get('service_policy_at')==learning.get('at')):
         return cached
     book = {s: dict(row, samples=row.get('external_samples', row['samples']))
             for s,row in market_book(journal, catalog, now).items()}
@@ -152,13 +161,18 @@ def context(journal, catalog, now=None, config=None):
             fallback=((len(positive_paid[sku])+.25*raw)/(observed_hours+.25)
                       if observed_hours>=2/60 else raw)
             selected=calibrated['rate_per_hour'] if calibrated else fallback
+            service={}
+            if config.get('book_growth_v23_enabled'):
+                from .policy_learning import service_adjust
+                selected,service=service_adjust(journal,sku,selected,raw,config,now,learning=learning)
             rows[sku].update(arrival_rate_scenario=selected,paid_arrival_rate_scenario=selected,
+                service_loss_adjustment=service,
                 demand_calibration=calibrated,
                 rate_note='data-derived time-decayed posterior; neutral raw-public fallback when calibration unavailable')
     # Persist compact aggregates; never grow an unbounded stream of raw chats.
     selected = sorted(rows, key=lambda s: (rows[s]['lost_exact_requests'], rows[s]['public'].get('samples', 0),
                                            rows[s]['available_requests'], s), reverse=True)[:1500]
-    result = {'at': now,'demand_policy_id':demand_id, 'skus': {s: rows[s] for s in selected}, 'coverage_weights': dict(weights),
+    result = {'at': now,'demand_policy_id':demand_id,'service_policy_at':learning.get('at'), 'skus': {s: rows[s] for s in selected}, 'coverage_weights': dict(weights),
               'summary': {'tracked_skus': len(selected), 'observed_baskets': len(baskets),
                           'top_unserved_categories': category_lost.most_common(10),
                           'exposure_started_at': coverage_start,

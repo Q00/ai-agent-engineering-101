@@ -44,6 +44,8 @@ def target_stock(rate, paid, config, public_qualified=False, public_limit=6,cove
     supported=paid>=3 or public_qualified and config.get('objective_feedback_enabled')
     if config.get('shop_adaptive_demand_enabled'):
         hours=coverage_hours if type(coverage_hours) in (int,float) and math.isfinite(coverage_hours) and coverage_hours>0 else config.get('supply_cycle_seconds',1200)/3600
+        if config.get('book_growth_v23_enabled'):
+            hours=min(config.get('planning_horizon_hours',6),hours*max(1,min(3,config.get('shop_demand_horizon_cycles',1))))
         arrivals=max(0,rate)*hours
     elif supported and config.get('objective_feedback_enabled'):
         arrivals*=max(1,min(3 if paid>=3 else 2,config.get('shop_demand_horizon_cycles',1)))
@@ -125,6 +127,11 @@ def marginal(candidate,quantity,held=0):
 
 def allocate_velocity(candidates,inv,capacity,config,existing,merchant):
     total=capacity['spendable'];slots=planning_slots(config,existing,candidates)
+    # If even the most expensive legal set of lines fits, scarce resources
+    # are supply lines/time, not cash. Do not optimize pennies per credit then.
+    lines=min(10,config['restock_max_lines'])
+    cash_abundant=bool(config.get('book_growth_v23_enabled') and
+        sum(sorted((c['capital_commitment'] for c in candidates),reverse=True)[:lines])<=total)
     held={};coverage=set();weights=merchant.get('coverage_weights',{})
     for unit in existing:
         held[unit['sku']]=held.get(unit['sku'],0)+1
@@ -150,12 +157,22 @@ def allocate_velocity(candidates,inv,capacity,config,existing,merchant):
         coverage.update(c['evidence'].get('growth',{}).get('coverage_keys',[]))
     breadth=total*config.get('assortment_coverage_fraction',.35)
     while True:
+        if cash_abundant:break
         available=[c for c in candidates if feasible(c) and c['sku'] not in selected and gain(c)>0 and
                    len(selected)<max(1,config['restock_max_lines']//3) and used+unit_cost(c)<=breadth]
         if not available:break
         add(max(available,key=lambda c:(gain(c)/max(1,unit_cost(c))**.5,marginal_row(c)['book'])))
     def priority(c):
         delta=marginal_row(c)
+        if cash_abundant:
+            # A new line is valued as its feasible positive-margin lot. One
+            # tiny unit must not crowd out a valuable multi-unit supply slot.
+            if c['sku'] not in selected:
+                lot=[marginal(c,q,held.get(c['sku'],0)) for q in range(1,c['qty']+1)]
+                value=sum(max(0,r['book']) for r in lot)
+                duration=max(1/3,max(r['holding'] for r in lot))
+            else:value=delta['book'];duration=delta['holding']
+            return (value/max(1/3,duration),delta['book']/max(1/3,delta['holding']),delta['book'])
         slot_cost=0 if c['sku'] in selected else config.get('shop_supply_slot_capital',100000)
         capital_time=(unit_cost(c)+slot_cost)*delta['holding']
         scaled=(c.get('rank_progress_surrogate') or 0)*delta['book']/max(1,c['expected_delta']['book'])
@@ -172,6 +189,7 @@ def allocate_velocity(candidates,inv,capacity,config,existing,merchant):
             score=sum(d['book'] for d in deltas),
             expected_delta={key:sum(d[key] for d in deltas) for key in ['book','profit','revenue']},
             allocation_book='capital_velocity',evidence=dict(c['evidence'],
+                scarce_resource='supply_lines_and_time' if cash_abundant else 'capital_and_time',
                 marginal_units=deltas,portfolio_used=used,
                 capital_velocity_scenario=sum(d['book']/d['holding'] for d in deltas)/max(1,unit_cost(c)*qty))))
     return sorted(result,key=lambda c:(c['expected_delta']['book']/
@@ -217,7 +235,7 @@ def demand_diagnostics(inv,merchant,config):
         'held_skus_target_at_most_two':low,'held_skus_with_repeat_paid_evidence':repeat,
         'target_shortfall_units_scenario':shortfall,'merchant_context_at':merchant.get('at'),
         'supply_cycle_seconds':config.get('supply_cycle_seconds',1200),
-        'repeat_coverage_cycles':None if config.get('shop_adaptive_demand_enabled') else max(1,min(3,config.get('shop_demand_horizon_cycles',1))),
+        'repeat_coverage_cycles':None if config.get('shop_adaptive_demand_enabled') and not config.get('book_growth_v23_enabled') else max(1,min(3,config.get('shop_demand_horizon_cycles',1))),
         'public_only_coverage_cycles':None if config.get('shop_adaptive_demand_enabled') else max(1,min(2,config.get('shop_demand_horizon_cycles',1))),
         'public_equal_share_prior_multiplier':'data-derived' if config.get('shop_adaptive_demand_enabled') else .5,
         'demand_policy_id':merchant.get('demand_policy_id'),

@@ -11,7 +11,7 @@ import statistics
 import time
 from .state import atomic_json, identity
 
-REVISION = 'objective-feedback-v16-1'
+REVISION = 'objective-feedback-v23-1'
 FILE = 'operating-policy-v16.json'
 LIMITS = {'shop': {'shop_demand_horizon_cycles': (1., 3.), 'shop_inventory_ceiling': (120, 240),
                     'shop_sku_trend_factors': None,'shop_public_demand_skus':None,'shop_public_demand_caps':None},
@@ -67,7 +67,8 @@ def update(journal, config, now=None, force=False):
         sales = list({r['unit']: r for r in rows('shop_settled')}.values())
         blocks = rows('restock_blocked')
         shortages = rows('stockout')
-        orders = {r['order']: r for r in rows('buyer_order')}
+        from .policy_learning import epoch
+        orders = {r['order']: r for r in rows('buyer_order') if r['_ts']>=epoch(journal)}
         results = {r['order']: r for r in rows('market_result') if r.get('order') in orders}
         purchases = {r['order']: r for r in rows('purchase')}
         attempts = rows('attempt')
@@ -168,7 +169,7 @@ def update(journal, config, now=None, force=False):
                 qualified.append(sku['sku'])
                 if agent_selected and config.get('shop_inventory_caps_enabled',True):
                     caps[sku['sku']]=min(selected['initial_batch_limit'],20 if current>=50 and sku.get('buyers20',0)>=5 else 6)
-        if factors:patches['shop']['shop_sku_trend_factors']=factors
+        if factors and not config.get('book_growth_v23_enabled'):patches['shop']['shop_sku_trend_factors']=factors
         if qualified:patches['shop']['shop_public_demand_skus']=sorted(qualified)
         if caps:patches['shop']['shop_public_demand_caps']=caps
     if not evidence_ok: reasons.append('facts_stale_or_rules_unverified')

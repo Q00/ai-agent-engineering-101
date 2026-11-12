@@ -18,7 +18,7 @@ def cfg(**patch):
 def test_call_slot_prefers_absolute_growth_when_cash_is_abundant():
     cheap=candidate('cheap',10000,5000,rate=8,qty=12)
     goods=candidate('goods',1200000,100000,rate=1,qty=1)
-    config=cfg(restock_max_lines=1)
+    config=cfg(restock_max_lines=1,book_growth_v23_enabled=False)
     old=allocate_velocity([cheap,goods],{}, {'spendable':3000000},config,[],{})
     new=allocate_championship([cheap,goods],{}, {'spendable':3000000},config,[],{})
     assert old[0]['sku']=='cheap'

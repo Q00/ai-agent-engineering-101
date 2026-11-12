@@ -38,9 +38,11 @@ def prepare(journal, config, strategy, now=None):
     from .demand_policy import context as demand_context
     demand=demand_context(journal,config,now)
     demand_id=demand.get('id') if demand else None
+    from .policy_learning import packet as learning_packet
+    learning_at=learning_packet(journal,now).get('at') if config.get('book_growth_v23_enabled') else None
     phase = 'early' if now < opens - 90 else 'checked' if now < opens - 15 else 'ready'
     if (old.get('window') == [opens, closes] and old.get('phase') == phase
-            and old.get('policy_hash') == config_hash(config) and old.get('demand_policy_id')==demand_id
+            and old.get('policy_hash') == config_hash(config) and old.get('demand_policy_id')==demand_id and old.get('service_policy_at')==learning_at
             and 0 <= now - old.get('at', 0) < 45):
         return old
     from .economy import restock_candidates, cash_capacity
@@ -62,7 +64,7 @@ def prepare(journal, config, strategy, now=None):
     summaries = [{k: c.get(k) for k in ('id', 'buy', 'score', 'capital_commitment', 'expected_delta', 'objective_utility')}
                  for c in options]
     packet = {'schema': 1, 'at': now, 'expires_at': closes - 15, 'window': [opens, closes], 'phase': phase,
-              'rules_hash': rules['sha256'], 'policy_hash': config_hash(config),'demand_policy_id':demand_id, 'strategy_version': strategy['version'],
+              'rules_hash': rules['sha256'], 'policy_hash': config_hash(config),'demand_policy_id':demand_id,'service_policy_at':learning_at, 'strategy_version': strategy['version'],
               'selected': chosen['id'], 'options': summaries,
               'held': dict(Counter(u['sku'] for u in virtual['units'])),
               'unit_commitments': {c['sku']: c['capital_commitment'] / c['qty'] for c in candidates},
@@ -91,11 +93,14 @@ def _consume(journal, config, strategy, inv, now=None):
     from .demand_policy import context as demand_context
     demand=demand_context(journal,config,now)
     demand_id=demand.get('id') if demand else None
+    from .policy_learning import packet as learning_packet
+    learning_at=learning_packet(journal,now).get('at') if config.get('book_growth_v23_enabled') else None
     if (not supply_open(inv, now) or packet.get('schema') != 1
             or packet.get('window') != [window.get('opens_at'), window.get('closes_at')]
             or packet.get('rules_hash') != journal.get('market_rules', {}).get('sha256')
             or packet.get('policy_hash') != config_hash(config)
             or packet.get('demand_policy_id')!=demand_id
+            or packet.get('service_policy_at')!=learning_at
             or packet.get('strategy_version') != strategy['version']
             or not 0 <= now - packet.get('at', 0) <= 90 or now >= packet.get('expires_at', 0)):
         return None

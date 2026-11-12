@@ -12,7 +12,7 @@ from .buyer_scoring import formula
 PROFILES={'contract_frontier':{'buyer_contract_probe_percent':8,'buyer_contract_gap_power':2,'buyer_contract_diverse_quotes':False},
           'coverage_probe':{'buyer_contract_probe_percent':15,'buyer_contract_gap_power':1,'buyer_contract_diverse_quotes':True},
           'selective_contracts':{'buyer_contract_probe_percent':4,'buyer_contract_gap_power':3,'buyer_contract_diverse_quotes':False}}
-REVISION='system-v13-contract-frontier'
+REVISION='system-v23-regime-counter-frontier'
 
 
 def assign(journal,order,config):
@@ -40,7 +40,9 @@ def assign(journal,order,config):
 
 
 def summarize(journal,now):
-    orders={r['order']:r for r in journal.events('buyer_order',4000) if 0<=now-r['_ts']<=14400}
+    from .policy_learning import epoch
+    cutoff=max(now-14400,epoch(journal))
+    orders={r['order']:r for r in journal.events('buyer_order',4000) if cutoff<=r['_ts']<=now}
     results={r['order']:r for r in journal.events('market_result',4000) if r.get('order') in orders}
     paid={r['order']:r for r in journal.events('purchase',4000) if r.get('order') in orders}
     quotes=journal.events('quote_comparison',6000);segments={}
@@ -49,7 +51,8 @@ def summarize(journal,now):
         rows=[r for r in quotes if r.get('order') in ids]
         segments[kind]={'orders':len(ids),'closed':len(closed),'paid':len(ids&paid.keys()),
                         'conversion':len(ids&paid.keys())/max(1,len(closed)),
-                        'quotes':len(rows),'above_cap':sum(r['ask']>r['assessment']['cap'] for r in rows)}
+                        'quotes':len(rows),'above_cap':sum(r['ask']>r['assessment']['cap'] for r in rows),
+                        'diagnostic_since':cutoff}
     return segments
 
 

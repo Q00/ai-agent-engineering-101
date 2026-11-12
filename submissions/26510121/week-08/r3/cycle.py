@@ -67,6 +67,9 @@ class MarketCycle:
         if now-self.last_analysis>=60:
             self.last_analysis=now
             roles={'market_observer':lambda:analytics(self.j,time.time())}
+            if self.cfg.get('book_growth_v23_enabled'):
+                from .policy_learning import update as learning_update
+                roles['policy_learning_observer']=lambda:learning_update(self.j,self.cfg,time.time())
             if self.cfg.get('buyer_joint_objective_enabled'):
                 from .buyer_costs import update as buyer_cost_update
                 roles['buyer_cost_observer']=lambda:buyer_cost_update(self.j,self.cfg,time.time())

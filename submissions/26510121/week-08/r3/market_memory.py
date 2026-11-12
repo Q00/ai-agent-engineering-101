@@ -15,14 +15,15 @@ _BOOK_CACHE = {}
 def market_book(journal, catalog, now=None):
     now = time.time() if now is None else now
     seq=journal.get('public_ledger_seq')
-    cache_key=(str(getattr(journal,'md',id(journal))),len(catalog),seq,int(now//15))
+    cut=journal.get('market_rules',{}).get('buyer_score_epoch',0)
+    cache_key=(str(getattr(journal,'md',id(journal))),len(catalog),seq,int(now//15),cut)
     if seq is not None and cache_key in _BOOK_CACHE:
         return _BOOK_CACHE[cache_key]
     grouped = {}
     for e in journal.events('public_settle', 20000):
         sku = e.get('sku') or e.get('item')
         price = e.get('amount', e.get('price'))
-        if (sku not in catalog or not 0 <= now - e['_ts'] <= HORIZON or
+        if (sku not in catalog or e['_ts']<cut or not 0 <= now - e['_ts'] <= HORIZON or
                 type(price) not in (int, float) or not math.isfinite(price) or price <= 0):
             continue
         row = grouped.setdefault(sku, {'prices': [], 'external_prices': [], 'buyers': Counter(),
@@ -70,7 +71,8 @@ def market_book(journal, catalog, now=None):
 
 
 def buyer_price_actions(ask, cap, product, reference, ratio, turn, max_turns, previous_offer=None,
-                        failure_stress=0, covered=False, covered_failure=None, saved_state=None):
+                        failure_stress=0, covered=False, covered_failure=None, saved_state=None,
+                        counter_model=None,target_saved=None):
     """Monotone concessions with a final feasible acceptance; no repeated bids.
 
     Completion priors below are explicit engineering scenarios. They are not
@@ -105,13 +107,27 @@ def buyer_price_actions(ask, cap, product, reference, ratio, turn, max_turns, pr
         # repeat our previous bid even when the peer repeats/decreases its ask.
         destination = min(ask, cap)
         bid = min(cap, max(previous_offer + 1, math.ceil((previous_offer + destination) / 2)))
-    if bid < ask and (previous_offer is None or bid > previous_offer):
+    opening_bid=bid;bids={bid}
+    if target_saved and saved_state and saved_state.get('score_formula')=='margin_share_v36':
+        from .buyer_scoring import saved_price_cap
+        recovery=(failure_stress if covered else 0) if covered_failure is None else covered_failure
+        for target in target_saved:
+            if type(target) not in (int,float) or not 0<target<1:continue
+            ceiling,_=saved_price_cap(L,dict(saved_state,saved=target),failure_stress,recovery,margin=0)
+            if 0<ceiling<=cap and (previous_offer is None or ceiling>previous_offer):bids.add(ceiling)
+    for bid in sorted(bids):
+        if not (bid<ask and (previous_offer is None or bid>previous_offer)):continue
         probability = min(.85, .55 + .1 * turn)
+        if counter_model is not None:
+            from .policy_learning import counter_probability
+            probability=counter_probability(counter_model,bid/max(1,ask),probability)
         score,change = expected(bid,probability)
-        actions.append({'id': 'counter', 'price': bid, 'score': score,
+        actions.append({'id': 'counter' if bid==opening_bid else 'counter:'+str(bid),
+                        'action':'counter','price': bid, 'score': score,
                         'completion_probability': probability,
                         'expected_delta': change,
-                        'success_prior': 'engineering scenario, not an empirical success estimate'})
+                        'success_prior': 'shrunk observed first-counter completion; selected cohort' if counter_model is not None else
+                            'engineering scenario, not an empirical success estimate'})
     return actions
 
 
@@ -154,7 +170,12 @@ def buyer_assessment(product, order, terms, journal, config, *, shop=None):
                                                config.get('buyer_saved_target_margin',.002))
         if not (config.get('buyer_joint_objective_enabled') and current.get('score_formula')==MARGIN):
             cap=min(cap,normalized_cap)
+    negotiation=None
+    if config.get('buyer_frontier_v23_enabled'):
+        from .policy_learning import packet
+        negotiation=packet(journal).get('counter_completion_by_kind',{}).get(product.get('kind'),{})
     return {'cap': cap, 'required_warranty': required, 'failure': stress,
+            'negotiation_model':negotiation,
             'required_grade':declared,'conditional_terms':conditional,
             'covered_failure': covered, 'risk_evidence': risk,'saved_state':current,'target_contribution':target,
             'cost_scenario':cost,'saved_reference_cap':normalized_cap,

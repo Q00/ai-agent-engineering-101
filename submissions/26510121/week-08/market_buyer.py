@@ -275,7 +275,9 @@ def execute(order, journal, chooser, peer_factory, cfg, strategy, registry, rank
                                               cfg['buyer_counter_ratio'], turn,
                                               max_turns, previous_offer,
                                               stress, required_warranty >= 6, assessment['covered_failure'],
-                                              assessment['saved_state'] if assessment['saved_state']['metric']=='saved' else None)
+                                              assessment['saved_state'] if assessment['saved_state']['metric']=='saved' else None,
+                                              counter_model=assessment.get('negotiation_model'),
+                                              target_saved=cfg.get('buyer_saved_bid_targets') if cfg.get('buyer_frontier_v23_enabled') else None)
                 if not actions:
                     break
                 if cfg.get('buyer_throughput_enabled'):
@@ -284,7 +286,7 @@ def execute(order, journal, chooser, peer_factory, cfg, strategy, registry, rank
                 if cfg.get('system_framework_enabled'):
                     from r3.contracts import probability
                     for action in actions:
-                        if action['id']!='counter':continue
+                        if action.get('action',action['id'])!='counter':continue
                         old_probability=action.get('completion_probability',1)
                         calibrated=probability(journal,order,c,assessment,ask,old_probability)
                         factor=calibrated/max(.000001,old_probability)
@@ -306,9 +308,10 @@ def execute(order, journal, chooser, peer_factory, cfg, strategy, registry, rank
                     break
                 agreed = move["price"]
                 previous_offer = agreed
-                if move['id'] == 'counter':
+                if move.get('action',move['id']) == 'counter':
                     journal.add('buyer_counter', {'order': order['order'], 'shop': c['shop'], 'ask': ask,
-                                'price': agreed, 'strategy_version': strategy['version']}, role='buyer')
+                                'price': agreed, 'sku':c['sku'],'score_formula':formula(journal),
+                                'strategy_version': strategy['version']}, role='buyer')
                 if cfg.get('buyer_throughput_enabled') and hasattr(peer,'deadline'):
                     peer.deadline=min(deadline,time.time()+cfg.get('buyer_rpc_timeout_seconds',4))
                 task = peer.send(str(agreed), task["id"])
