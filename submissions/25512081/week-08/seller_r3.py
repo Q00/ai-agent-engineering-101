@@ -132,6 +132,14 @@ WARRANTY = {"A": 72}      # goods grade -> warranty hours; B and C goods carry n
 # "broken" entry on the ledger: restock.py counts them per grade against goods settles (.market/break_rates.json).
 # The warranty stays while the grade's rate (with a prior of 1 in 20) is under MAX_BREAK_FOR_WARRANTY.
 MAX_BREAK_FOR_WARRANTY = 0.10
+# Grade B/C goods get the same warranty when the buyer's first message mentions one: Nov 12 18:17-Nov 13 06:17,
+# of the B/C goods deals (list >= 100k) we agreed without a warranty, buyers that had asked for one paid 9 of 111
+# (grade A with our warranty, the same buyers paid ~all), buyers that had not asked 21 of 47. Every refund is the
+# whole price, so the floor becomes
+# floor / (1 - break rate): the expected sale keeps what the plain floor keeps. Not above list, rate under the cap.
+ASKS_WARRANTY = re.compile(r"warrant", re.I)
+NO_WARRANTY = re.compile(r"without (?:\w+ )*?warrant|no warrant", re.I)
+MAX_BREAK_ON_REQUEST = 0.30
 # Our buyer collects every competitor's first ask (.market/competitors.json); we open at most UNDERCUT of the
 # lowest recent one for the same SKU, never under the floor.
 UNDERCUT, COMP_FRESH = 0.98, 6 * 3600
@@ -441,6 +449,20 @@ def warranty_for(u):
     return hours
 
 
+def requested_warranty(u, text, ask, floor, warranty):
+    """(ask, floor, warranty) for a grade B/C goods unit when the buyer asks for a warranty; unchanged otherwise."""
+    if (warranty or u["unit"] is None or u["kind"] != "goods" or u["grade"] not in ("B", "C")
+            or not ASKS_WARRANTY.search(text) or NO_WARRANTY.search(text)):
+        return ask, floor, warranty
+    broken, sold = _load("break_rates.json", {}).get(u["grade"], [0, 0])
+    rate = (broken + 1) / (sold + 20)
+    wfloor = math.ceil(floor / (1 - rate)) if rate < MAX_BREAK_ON_REQUEST else None
+    if wfloor is None or wfloor > u["list_price"]:
+        return ask, floor, warranty
+    log(f"[warranty] {u['sku']} grade {u['grade']}: buyer asks for one, floor {floor} -> {wfloor} (break rate {rate:.3f})")
+    return max(ask, wfloor), wfloor, WARRANTY["A"]
+
+
 def facts(u, warranty):
     """What the buyer's kit checks before paying, stated as it is."""
     if u["unit"] is None:
@@ -543,6 +565,7 @@ class Seller(AgentExecutor):
                 await up.reject(say("Sorry, none of that in stock."))
                 return
             ask, floor, warranty, arm = terms(u)
+            ask, floor, warranty = requested_warranty(u, text, ask, floor, warranty)
             # profit is half the shop's score: concede at most MAX_DISCOUNT, and never below cost
             floor = max(floor, int(ask * (1 - MAX_DISCOUNT)))
             deal = self.open[task.id] = {"unit": u, "ask": ask, "opening": ask, "floor": floor,
