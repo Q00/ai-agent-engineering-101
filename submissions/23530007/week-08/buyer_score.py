@@ -126,8 +126,10 @@ def build(now=None):
     hours_left = max(0.0, (END - now) / 3600)
     if m_now is not None and out["v24"]["all"] is not None and n:
         s = m_now * (n + 100)
-        add = out["v24"]["deals_h"] * hours_left
-        proj = (s + out["v24"]["all"] * add) / (n + 100 + add)
+        # 11-12: the last 6 h pace and value (the patch 3.6 rebuild doubled deals/h; the 24 h pace understated m*)
+        src = out["v6"] if out["v6"]["all"] is not None and out["v6"]["deals"] >= 60 else out["v24"]
+        add = src["deals_h"] * hours_left
+        proj = (s + src["all"] * add) / (n + 100 + add)
         m_star = round(min(max(proj, m_now), m_now + 0.15), 4)
     else:
         m_star = old.get("m_star")

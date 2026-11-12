@@ -26,6 +26,7 @@ def finals(rate=30.0, v=0.40):
     import sys
     sys.path.insert(0, str(HERE))
     import board_api
+    import buyer_value as _bv
     b = board_api.fetch(timeout=20)                             # 11-11: see board_api.py
     P = [p for p in b["players"] if p.get("student")]
     names = {(p.get("buyer") or {}).get("name"): p["player"] for p in P}
@@ -37,7 +38,7 @@ def finals(rate=30.0, v=0.40):
     pace = {}
     for d in deals:
         u = d.get("unit")
-        dv = (0.0 if broken[u] else -1.0) if u in broken else 1 - d["x"]
+        dv = _bv._saved(d, broken)                       # 11-12: patch 3.6 score (list-price)/(list-cost)
         e = pace.setdefault(d.get("buyer"), [0, 0.0])
         e[0] += 1
         e[1] += dv
