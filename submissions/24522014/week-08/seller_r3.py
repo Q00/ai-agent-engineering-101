@@ -44,7 +44,7 @@ from sale_order import grade_c_last, order_key
 from strategy_policy import effective
 
 NAME = "kcwarni Inventory Shop"
-FEATURES = ["actual_grade_receipt", "bounded_warranty_v1", "coded_seller_rules", "model_breaker", "food_pricing_v2", "price_cap_v1", "sale_order_v1", "a_grade_six_hour_v1", "pq1_v1", "food_floor_108_v1", "a_warranty_90m_v1", "shelf_need_fit_v1", "shelf_need_days_pct_v1"]
+FEATURES = ["actual_grade_receipt", "bounded_warranty_v1", "coded_seller_rules", "model_breaker", "food_pricing_v2", "price_cap_v1", "sale_order_v1", "a_grade_six_hour_v1", "pq1_v1", "food_floor_108_v1", "a_warranty_90m_v1", "shelf_need_fit_v1", "shelf_need_days_pct_v1", "food_hours_need_v1"]
 MARKET_DIR = Path(os.environ.get("MARKET_DIR", ".market"))
 
 PROMPT = """You are a Round 3 inventory sales agent. A buyer is negotiating for one {name}.
@@ -131,8 +131,35 @@ CLUE_TERMS = (
     ("use by", re.compile(r"use\s+by", re.I)), ("left", re.compile(r"\bleft\b", re.I)),
     ("remaining", re.compile(r"remaining", re.I)), ("at least", re.compile(r"at\s+least", re.I)),
     ("min_hours_left", re.compile(r"min_hours_left", re.I)), ("유통기한", re.compile(r"유통기한")), ("신선", re.compile(r"신선")),
-    ("이상", re.compile(r"이상")),
+    ("이상", re.compile(r"이상")), ("use within", re.compile(r"use\s+within", re.I)), ("within", re.compile(r"\bwithin\b", re.I)),
+    ("need", re.compile(r"\bneed", re.I)), ("use_within_hours", re.compile(r"use_within_hours", re.I)),
 )
+# Every hours number in a food request is the need (the user's 11-12 choice in the Orchestrator session, about 12:5x KST: "식품 요청의
+# 시간 숫자는 모두 읽기 (권장)"): the market gives each food order a use_within_hours (the kit log shows 42/84/126 and 180/360/540 h,
+# 25/50/75% of shelf life, each 200+ times), the 2 star reviews say "I needed Y h" with those same Y, and in the 2 h after the 11-12
+# 10:44 restart 8 of 41 food requests carried an hours number in wording the patterns above do not read. A number in a delivery or
+# reply window ("deliver within 3 h", "respond within 2 hours") or followed by "ago" is not read. Only which unit is picked changes.
+FOOD_HOURS = re.compile(r"(\d+(?:\.\d+)?)\s*(?:(?:h|hrs?|hours?)\b|시간)", re.I)
+WINDOW_WORDS = r"(?:deliver|ship|arriv|dispatch|respond|response|repl|answer|valid|배송|발송|도착|응답|답변|회신)"
+# The window word at most three words before the number ("deliver within 3 h", "respond within the next 2 hours"), or at most two
+# words after it with no punctuation between ("3시간 이내 배송", "2 hour delivery").
+NOT_SHELF_BEFORE = re.compile(WINDOW_WORDS + r"\w*(?:[^\w.;,!?\n]+\w+){0,3}[^\w.;,!?\n]*$", re.I)
+# The order's own field, when a buyer passes it on as data ("use_within_hours": 126).
+USE_WITHIN_KEY = re.compile(r"use_within_hours\W{0,3}(\d+(?:\.\d+)?)", re.I)
+NOT_SHELF_AFTER = re.compile(r"[^\S\n]*(?:-?[^\W\d]+[^\S\n]+){0,2}" + WINDOW_WORDS + r"|\s*ago\b", re.I)
+
+
+def food_need_hours(text):
+    """For a food request: the largest number with an hours unit outside delivery and reply windows, or None when there is none."""
+    text = str(text or "")
+    found = []
+    for m in FOOD_HOURS.finditer(text):
+        if NOT_SHELF_BEFORE.search(text[max(0, m.start() - 60):m.start()]) or NOT_SHELF_AFTER.match(text, m.end()):
+            continue
+        found.append(float(m.group(1)))
+    found += [float(m.group(1)) for m in USE_WITHIN_KEY.finditer(text)]
+    found = [h for h in found if 0 < h <= 10000]
+    return max(found) if found else None
 # "grade A or B", "grades A, B": each letter named after "grade" is logged as "grade A" and so on.
 CLUE_GRADES = re.compile(r"\b(?i:grades?)\s+([ABC]\b(?:\s*(?:,|/|or|and)\s*[ABC]\b)*)")
 CLUE_NUMBER = re.compile(r"(\d+(?:\.\d+)?)\s*(%|hours?|hrs?|h\b|days?|d\b|weeks?|시간|일|주)", re.I)
@@ -188,10 +215,11 @@ def shelf_hours_by_sku():
     return _SHELF["hours"]
 
 
-def unit_need_hours(unit, hours, percent, shelf):
-    """The hours this unit must have left: the larger of the stated hours and the stated share of its SKU's full shelf life; None
-    when neither applies to it."""
-    found = [x for x in (hours, percent / 100 * shelf[unit["sku"]] if percent is not None and unit.get("sku") in shelf else None)
+def unit_need_hours(unit, hours, percent, shelf, food=None):
+    """The hours this unit must have left: the largest of the stated hours, the stated share of its SKU's full shelf life and, for a
+    food unit, the food request's hours number (food_need_hours); None when none applies to it."""
+    found = [x for x in (hours, percent / 100 * shelf[unit["sku"]] if percent is not None and unit.get("sku") in shelf else None,
+                         food if unit.get("kind") == "food" else None)
              if x is not None]
     return max(found) if found else None
 
@@ -220,12 +248,12 @@ def find_unit(text, taken=()):
             or u["sku"].lower() in want)]
     named = [u for u in fit if u["sku"].lower() in want]
     fit = named or fit                                   # a SKU the buyer named comes first
-    need, percent = stated_need_hours(text), stated_need_percent(text)
-    if need is not None or percent is not None:
+    need, percent, food = stated_need_hours(text), stated_need_percent(text), food_need_hours(text)
+    if need is not None or percent is not None or food is not None:
         now = time.time()
         shelf = shelf_hours_by_sku() if percent is not None else {}
         def meets(u):
-            left, wanted = hours_left(u, now), unit_need_hours(u, need, percent, shelf)
+            left, wanted = hours_left(u, now), unit_need_hours(u, need, percent, shelf, food)
             return left is None or wanted is None or left >= wanted
         enough = [u for u in fit if meets(u)]
         fit = enough or fit
@@ -355,12 +383,14 @@ class Seller(AgentExecutor):
         log_dir = Path(__file__).resolve().parent / "logs" / "pricing"
         log_dir.mkdir(parents=True, exist_ok=True)
         need_hours, need_percent = stated_need_hours(deal.get("request")), stated_need_percent(deal.get("request"))
+        need_food = food_need_hours(deal.get("request")) if u.get("kind") == "food" else None
         (log_dir / (uuid4().hex + ".json")).write_text(json.dumps(
             {"at": datetime.now(timezone.utc).isoformat(), "task": task.id,
              "unit": u.get("unit"), "sku": u["sku"], "cost": u["cost"],
              "grade_observed": u.get("grade"), "expires_at": u.get("expires_at"), "request_form": request_form(deal.get("request"), u),
-             "stated_need_hours": need_hours, "stated_need_percent": need_percent,
-             "need_for_unit_hours": unit_need_hours(u, need_hours, need_percent, shelf_hours_by_sku() if need_percent is not None else {}),
+             "stated_need_hours": need_hours, "stated_need_percent": need_percent, "food_need_hours": need_food,
+             "need_for_unit_hours": unit_need_hours(u, need_hours, need_percent, shelf_hours_by_sku() if need_percent is not None else {},
+                                                    need_food),
              "shelf_clues": shelf_clues(deal.get("request")) if u.get("kind") == "food" else None, **terms},
             ensure_ascii=False, indent=2), encoding="utf-8")
         if deal["ask"] is not None and deal["offer"] == deal["ask"] and deal["offer"] >= reserve:

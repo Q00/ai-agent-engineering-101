@@ -154,6 +154,50 @@ class R3Contract(unittest.TestCase):
         self.assertEqual(seller_r3.shelf_clues("grades are good, grade a lot, upgrade Apple")["terms"], [])
         self.assertEqual(len(seller_r3.shelf_clues(" ".join(f"{i}h" for i in range(1, 40)))["numbers"]), 12)
 
+    # Every hours number in a food request, the user's 11-12 choice ("식품 요청의 시간 숫자는 모두 읽기 (권장)").
+    def test_food_need_hours_reads_hours_numbers_outside_delivery_and_reply_windows(self):
+        need = seller_r3.food_need_hours
+        self.assertEqual(need("G4a998429 x1, use within 126.0 h"), 126)
+        self.assertEqual(need('{"sku": "G476cc094", "use_within_hours": 540}'), 540)
+        self.assertEqual(need("use_within_hours=180.0, budget 30000"), 180)
+        self.assertEqual(need("I'll eat it over 360.5 hours"), 360.5)
+        self.assertEqual(need("at least 74 h please"), 74)
+        self.assertEqual(need("72.5h"), 72.5)
+        self.assertEqual(need("126시간 안에 먹을 예정"), 126)
+        self.assertEqual(need("deliver by tomorrow and use within 126 h"), 126)
+        self.assertEqual(need("Deliver within 3 hours. Use within 540 h."), 540)
+        self.assertEqual(need("540 h, delivery to Seoul"), 540)
+        for none in ("deliver within 3 hours", "respond within the next 2 hours", "please reply in 2 h", "offer valid for 24 hours",
+                     "3시간 이내 배송", "2 hour delivery", "posted 5 hours ago", "budget 30000, G4a998429", "0 h", None, ""):
+            self.assertIsNone(need(none), none)
+
+    def test_a_food_request_hours_number_picks_a_food_unit_that_meets_it(self):
+        now = 1794390000.0
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            units = [dict(unit=str(i), sku="G00001", name="food", category="food", grade=grade, expires_at=now + hours * 3600,
+                          supplied_at=0, kind="food")
+                     for i, grade, hours in ((3, "C", 54), (2, "A", 150), (4, "B", 100))]
+            units.append(dict(unit="g", sku="G00009", name="lamp", category="home", grade="B", expires_at=now + 10 * 3600, supplied_at=0,
+                              kind="goods"))
+            units.append(dict(unit="h", sku="G00009", name="lamp", category="home", grade="A", expires_at=now + 900 * 3600, supplied_at=1,
+                              kind="goods"))
+            (root / "inventory.json").write_text(json.dumps({"round": 3, "units": units}), encoding="utf-8")
+            with patch.object(seller_r3, "MARKET_DIR", root), patch.object(seller_r3.time, "time", return_value=now):
+                self.assertEqual(seller_r3.find_unit("G00001")["unit"], "3")
+                self.assertEqual(seller_r3.find_unit("G00001, use within 126 h")["unit"], "2")
+                self.assertEqual(seller_r3.find_unit("G00001 at least 84 h")["unit"], "4")
+                self.assertEqual(seller_r3.find_unit("G00001, deliver within 3 hours")["unit"], "3")
+                # No unit meets it: picked as before, never refused.
+                self.assertEqual(seller_r3.find_unit("G00001, use within 540 h")["unit"], "3")
+                # Goods units are not held to a food hours number.
+                self.assertEqual(seller_r3.find_unit("G00009, use within 500 h")["unit"], "g")
+        unit = dict(unit="x", sku="G00001", kind="food")
+        self.assertEqual(seller_r3.unit_need_hours(unit, 100, None, {}, 126), 126)
+        self.assertEqual(seller_r3.unit_need_hours(unit, 200, None, {}, 126), 200)
+        self.assertEqual(seller_r3.unit_need_hours(dict(unit, kind="goods"), None, None, {}, 126), None)
+        self.assertEqual(seller_r3.shelf_clues("use within 126 h, need it")["terms"], ["use within", "within", "need"])
+
     def test_balanced_food_order_retains_stock_filter_and_time_constraints(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
