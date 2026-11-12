@@ -926,7 +926,7 @@ def price_plan(order, q, rows, book, adv):
     cost = q.get("cost")
     if cost and lp > cost:                      # patch 3.6: judge by the shop's margin we keep, r = (lp - p)/(lp - cost)
         r_cap = price_for_r(lp, cost, T.get("r_cap", 0.85))
-        r_min = price_for_r(lp, cost, T.get("r_group_min", 0.3) if target else T.get("r_min", 0.65))
+        r_min = price_for_r(lp, cost, T.get("r_group_min", 0.3) if target else T.get("r_min", 0.75))
         cap = min(cap, max(r_cap, int(cost)))  # haggle no higher than r 0.85
         low = min(max(int(cost), min(low, price_for_r(lp, cost, T.get("r_open", 0.95)))), cap)   # open near
                                                 # r 0.95, not under cost (r is 1 there already), never over the cap
@@ -1036,7 +1036,7 @@ def round3(a, order, shops, mem, started):
     if dp == "B":
         close_at = max(close_at, min(order["budget"], int(lp * T.get("deal_push_close", 0.76) + 1e-6)))
         if pick.get("cost") and lp > pick["cost"]:   # patch 3.6: the push never takes an ask under r_min
-            close_at = min(close_at, max(price_for_r(lp, pick["cost"], T.get("r_min", 0.65)), int(pick["cost"])))
+            close_at = min(close_at, max(price_for_r(lp, pick["cost"], T.get("r_min", 0.75)), int(pick["cost"])))
     pm, note = tactic_arm(order, "price_match2"), None
     book_low = ((book.get("prices") or {}).get(sku) or {}).get("low")
     # MBT TF: a price-match request took 30% off our own first ask. v1 (09:40-11:15) set the opening TO the ledger
