@@ -322,6 +322,28 @@ def egg_off(text, q):
     return dict(q, price=price, least=max(q["floor"], int(q["least"] * (1 - d))), why=q["why"] + f"; egg -{off}"), off
 
 
+C_W_NOTE = "72 h, at a price that covers the grade's defect risk"
+
+
+def c_warranty_ev(u):
+    """MST TF 11-13: grade C goods with a warranty again, priced for the risk. Since C went without one (11-12 16:23)
+    the shop's C goods quotes went from 93 deals / 143 misses (20 h) to 97 / 564 (15 h), big-ticket C sales to 0 in
+    12 h, and 329 C units (22.9M at cost) sit at 1%/day storage. A C unit breaks 35% of the time (market rule), so
+    with a warranty the unit sells only at cost / (1 - 0.35) or more: then the expected refund is paid for."""
+    return bool(u and u.get("kind") == "goods" and u.get("grade") == "C" and promo.theta().get("c_warranty_ev", True))
+
+
+def c_warranty_floor(u, q, asked):
+    """The quote for a C unit whose buyer asked for a warranty: no price under cost / (1 - c_defect_p)."""
+    if not (asked and c_warranty_ev(u)):
+        return q
+    f = int(u["cost"] / (1 - promo.theta().get("c_defect_p", 0.35))) + 1
+    if q["floor"] >= f:
+        return q
+    return dict(q, floor=f, price=max(q["price"], f), least=max(q["least"], f),
+                why=q["why"] + f"; C warranty floor {f} (cost / 0.65)")
+
+
 def warranty_for(asked, u=None):
     """HQ 11-04 18:50: a warranty only when the buyer asks for one. With 3 h on every goods sale, 41 of 67 broken units
     were refunded in full: 7,775,432 out of the balance (ledger 'broken' entries, 11-03 23:23 to 11-04 18:50).
@@ -343,7 +365,8 @@ def warranty_for(asked, u=None):
     settles from 16:42 to 19:05: clearance paid 0 in the last hour while 73% agreed). 72 h settles (ours from 16:10,
     other shops'). The warranty is capped at theta warranty_max_h (72) whatever the other settings say."""
     t = promo.theta()
-    if u is not None and u.get("kind") == "goods" and u.get("grade") not in t.get("warranty_grades", ("A", "B")):
+    if u is not None and u.get("kind") == "goods" and u.get("grade") not in t.get("warranty_grades", ("A", "B")) \
+            and not c_warranty_ev(u):
         return 0          # MBT TF 11-12 (3rd): grade C hides a defect 35% of the time (market rule) and breaks within 6 h;
                           # 24 h: C margin 6.5M, C refunds 14.9M. yms979 ships A/B with 72 h, C with none; we do the same
     w = t.get("warranty_goods_h") or 0
@@ -352,6 +375,9 @@ def warranty_for(asked, u=None):
         long_h = max(long_h, round((t["warranty_until"] - time.time()) / 3600, 1))
     cap = t.get("warranty_max_h", 72)
     w, long_h = min(w, cap), min(long_h, cap)
+    if c_warranty_ev(u) and u.get("grade") not in t.get("warranty_grades", ("A", "B")):
+        return long_h if asked else 0   # MST TF 11-13: C only when asked (its price then carries the risk floor),
+                                        # never through the clearance-on-every-sale path
     if u is not None and u.get("kind") == "goods" and u.get("sku") in clearance_skus() \
             and t.get("clearance_warranty_all", False):
         return max(w, long_h)
@@ -379,8 +405,11 @@ def warranty_note(u, asked=False):
     h = warranty_for(asked, u)
     if u.get("kind") != "goods":
         return ""
-    if u.get("grade") not in promo.theta().get("warranty_grades", ("A", "B")):
+    if u.get("grade") not in promo.theta().get("warranty_grades", ("A", "B")) and not c_warranty_ev(u):
         return f" | grade {u.get('grade')}: no warranty (warranty is for grade A/B only), sold as is"
+    if c_warranty_ev(u) and u.get("grade") not in promo.theta().get("warranty_grades", ("A", "B")):
+        return (f" | grade {u.get('grade')}: warranty={h}h, full refund if it breaks (priced for the grade's defect risk)"
+                if h else f" | grade {u.get('grade')}: sold as is unless you ask for a warranty (then {C_W_NOTE})")
     if h and promo.theta().get("warranty_until") and h > 72:      # HQ 11-10 "평생, 무기한 둘다 병기해"
         return (f" | warranty={h}h: lifetime/unlimited (평생·무기한) until the market closes 2026-11-17 23:59 KST; "
                 f"product defects only (단 제품 하자 시), not damage from use (사용 파손 제외); full refund for a defect")
@@ -495,6 +524,7 @@ class Shop(AgentExecutor):
             q, ab = price_ab(task.id, u, q)
             q = standing_price(self.c, code, u, q)
             q, egg = egg_off(text, q)
+            q = c_warranty_floor(u, q, need["warranty"])  # MST TF 11-13: a C unit with a warranty pays for its risk
             deal = self.open[task.id] = {"unit": u, "q": q, "ask": q["price"], "turns": 0, "code": code, "vip": vip,
                                          "ts": time.time(),
                                          "egg": bool(egg),
@@ -587,12 +617,23 @@ class Shop(AgentExecutor):
             deal["turns"] -= 1
             need = needs(text)
             deal["warranty_asked"] = deal.get("warranty_asked") or need["warranty"]
+            if deal["warranty_asked"] and c_warranty_ev(u):     # MST TF 11-13: the receipt gives C the warranty now
+                q = deal["q"] = c_warranty_floor(u, q, True)
+                deal["ask"] = max(deal["ask"], q["floor"])
             vip = deal["vip"] or is_vip(self.c, text)
             no_w = need["warranty"] and u.get("kind") == "goods" \
                 and u.get("grade") not in promo.theta().get("warranty_grades", ("A", "B"))   # asked for one on a C unit
             if need["hours"] or need["grades"] or no_w or (vip and not deal["vip"]):
                 taken = {d["unit"]["unit"] for k, d in self.open.items() if k != task.id} | set(self.sold)
                 v, _, _ = find_unit(f"{text} {u['sku']}", taken, need)
+                c_only = no_w and c_warranty_ev(u) and not (need["hours"] or need["grades"] or (vip and not deal["vip"]))
+                if v is None and c_only:                # MST TF 11-13: no A/B unit -- this C unit, warranty priced in
+                    q = deal["q"] = c_warranty_floor(u, q, True)
+                    deal["ask"] = max(deal["ask"], q["floor"])
+                    log(f"{task.id[:8]} clerk: warranty on C {u['unit']} -> ask {deal['ask']}")
+                    await up.requires_input(say_offer(f"clerk: {facts(u, deal['ask'], q, deal['code'])}"
+                                                      f"{warranty_note(u, True)} | asking {deal['ask']}. Reply with a number."))
+                    return
                 if v is None:
                     await up.requires_input(say_offer(f"clerk: no unit of {u['sku']} or its category passes "
                                                 f"{ {k: (sorted(x) if isinstance(x, set) else x) for k, x in need.items() if x} } now;"
@@ -600,6 +641,7 @@ class Shop(AgentExecutor):
                                                 f" | asking {deal['ask']}. Reply with a number."))
                     return
                 q = promo.quote(self.c, v, deal["code"], me=NAME, stock_n=v.get("stock_n", 1), vip=bool(vip))
+                q = c_warranty_floor(v, q, deal.get("warranty_asked"))
                 deal.update(unit=v, q=q, ask=min(q["price"], deal["ask"]) if v["sku"] == u["sku"] else q["price"], vip=vip)
                 log(f"{task.id[:8]} clerk: {need} -> unit {v['unit']} ask {deal['ask']}" + (f" VIP {vip}" if vip else ""))
                 await up.requires_input(say_offer(f"clerk: picked a unit that passes | {facts(v, deal['ask'], q, deal['code'])}"
