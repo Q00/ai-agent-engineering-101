@@ -73,7 +73,7 @@ MARKET_NAME = os.environ.get("SHOP_MARKET_NAME", "mjforge")
 BASE_DIR = Path(__file__).resolve().parent
 MARKET_DIR = Path(os.environ.get("MARKET_DIR", str(BASE_DIR / ".market")))
 SELLER_HISTORY_FILE = BASE_DIR / "seller_history.json"
-COMMITTED_RESERVATION_S = 15 * 60  # ACP has no session TTL; conservative local safety cap.
+COMMITTED_RESERVATION_S = 10 * 60  # User-selected cap; ACP itself has no session TTL.
 NEGOTIATION_IDLE_S = 90
 NEGOTIATION_MAX_S = 15 * 60
 
