@@ -519,6 +519,11 @@ class Shop(AgentExecutor):
         now = time.time()
         self.sweep(now)
         d = self.open.get(task.id)
+        if d is not None:
+            # 11-12 (user: favouring specific generous accounts is allowed): the market hides the buyer during the
+            # talk, so accounts can only be told apart by how they write; every later message is logged too, so the
+            # ledger's receipt task ids can be joined with whole conversations (identify_buyers.py)
+            record(event="msg", task=task.id, text=text[:300])
 
         if d is None:
             # who writes how: the ledger names the buyer of each task id, so these lines tell later which buyers
