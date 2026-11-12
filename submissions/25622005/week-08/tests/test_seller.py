@@ -271,7 +271,7 @@ class SellerA2A(unittest.TestCase):
         (only, _, _), = self.talk(("I want to buy G000f6cda", "b"))     # rarely, not never
         self.assertEqual(self.data(only)["unit"], "u-old")
         inv = {"round": 3, "units": [old, self.goods("u-new", cost=60000)]}
-        self.assertEqual(seller.find_unit("G000f6cda", inv, now=self.now)["unit"], "u-old")   # no policy: oldest
+        self.assertEqual(seller.find_unit("G000f6cda", inv, now=self.now)["unit"], "u-new")   # no policy: the cheaper unit (11-12)
 
     def test_goods_offered_best_grade_first_then_oldest(self):
         # 11-12: the oldest unit of a SKU is the C the A and B sales left behind; buyers pay for A and B
@@ -286,6 +286,12 @@ class SellerA2A(unittest.TestCase):
         over = dict(a_old, cost=98000)                                      # an overpriced A still comes after a fair C
         self.assertEqual(seller.find_unit("G000f6cda", {"round": 3, "units": [c_old, over]}, now=self.now,
                                           pol=policy.DEFAULTS)["unit"], "u-c")
+        # the cheapest unit of the grade first: its cost is its floor, and buyers cap big goods near 0.70 of list
+        a_cheap = dict(self.goods("u-a3", cost=50000), grade="A", supplied_at=self.now - 1 * H)
+        self.assertEqual(seller.find_unit("G000f6cda", {"round": 3, "units": [c_old, b_mid, a_old, a_cheap]}, now=self.now)["unit"], "u-a3")
+        # the cheapest unit of the grade first: its cost is its floor, and buyers cap big goods near 0.70 of list
+        a_cheap = dict(self.goods("u-a3", cost=50000), grade="A", supplied_at=self.now - 1 * H)
+        self.assertEqual(seller.find_unit("G000f6cda", {"round": 3, "units": [c_old, b_mid, a_old, a_cheap]}, now=self.now)["unit"], "u-a3")
 
     def test_promised_unit_is_not_sold_twice_until_the_promise_expires(self):
         first, second = self.talk(("I want to buy G000f6cda", "a"), ("I want to buy G000f6cda", "b"))

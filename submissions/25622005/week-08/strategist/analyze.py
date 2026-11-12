@@ -55,6 +55,7 @@ SCORE_F = {"shop": ("book", "revenue", "stars"), "buyer": ("saved", "forum", "de
 PEER_TOP = 5                # buyers listed in saved.peers (the best saved among those with PEER_MIN_DEALS deals)
 PEER_MIN_DEALS = 1000       # a peer must have closed this many deals: a kept share proven at volume
 SAVED_TARGETS = (0.40, 0.45)
+NEAR_MARKET_OFFER = 0.68      # big_ticket.floor_refusals: an offer at this share of list or more is at the market's price
 # SAVED_TARGETS: kept-per-deal values the saved projection is shown for, besides the current one
 NEAR_CAP = 0.10                 # a failed try whose last ask is within this of the cap
 BAND_NAMES = ("<20k", "20k-50k", "50k-100k", "100k-200k", "200k-500k", "500k-1M", ">=1M")
@@ -844,7 +845,10 @@ def _big_ticket(rows, ledger, catalog, pol, me, our_url, shops):
     """Big-ticket goods (list price at or over stock.big_ticket_list), ours and the market's, in the window.
     by_grade: our first replies by the grade of the unit offered (grade_now), how many of those tasks the buyer
     canceled, our signs by the grade claimed, how many of them a market settle paid (the unit in a settle of the
-    window: a sign at the window's end may pay after it), and the signs' median price/list. market: the window's
+    window: a sign at the window's end may pay after it), and the signs' median price/list.
+    floor_refusals: the big offers our seller refused under its floor after the final price (n), those at
+    NEAR_MARKET_OFFER of list or more (offer_at_market: the market's price, which a cheaper unit of the same
+    grade would have closed), and the median floor/list and offer/list of them. market: the window's
     big settles, their grade share, median price/list by grade and the warranty hours they carried. sellers:
     the shops with the most big settles (board name, else untrusted_shop: the URL clipped), with their median
     price/list, usual warranty hours and A share."""
@@ -871,6 +875,12 @@ def _big_ticket(rows, ledger, catalog, pol, me, our_url, shops):
                  "paid_rate": _ratio(paid, len(sg)),
                  "sign_price_list": _median([round(p / l, 4) for p, l in ((_num(ch(r).get("price")), lp(r)) for r in sg) if p and l])}
     cat_list = lambda d: _list_price(catalog, d.get("sku")) or 0      # collect.fetch_public: sku -> [name, category, list, kind, shelf]
+    rej = [r for r in rows if r.get("kind") == "reject" and str(r.get("why") or "").startswith("offer below the floor after")
+           and lp(r) >= bmax and _num(inp(r).get("offer"))]
+    near = [r for r in rej if _num(inp(r).get("offer")) / lp(r) >= NEAR_MARKET_OFFER]
+    refusals = {"n": len(rej), "offer_at_market": len(near),
+                "floor_list_median": _median([round(_num(inp(r).get("floor")) / lp(r), 4) for r in rej if _num(inp(r).get("floor"))]),
+                "offer_list_median": _median([round(_num(inp(r).get("offer")) / lp(r), 4) for r in rej])}
     big = [d for d in settles if cat_list(d) >= bmax]
     pl = lambda d: round((_num(d.get("amount")) or 0) / cat_list(d), 4)
     market = {"settles": len(big), "ours": sum(1 for d in big if _ours(d.get("shop"), me, our_url)),
@@ -889,7 +899,7 @@ def _big_ticket(rows, ledger, catalog, pol, me, our_url, shops):
         if row["shop"] is None:
             row["untrusted_shop"] = _clip(u, 60)
         sellers.append(row)
-    return {"list_from": bmax, "by_grade": by, "market": market, "sellers": sellers}
+    return {"list_from": bmax, "by_grade": by, "floor_refusals": refusals, "market": market, "sellers": sellers}
 
 
 def _off_policy(ver):

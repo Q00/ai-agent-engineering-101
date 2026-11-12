@@ -198,8 +198,11 @@ Supply and depth:
   and buyer.min_kept is yours. saved.peers lists the best saved among the other buyers with 1000+ deals with
   their paid; under margin_share a low paid is not what makes a high saved (0.38 kept on A units scores 1).
 - Big-ticket goods (list above stock.big_ticket_list) are first asked at seller.first_ask_big_list x list, the
-  rest at seller.first_ask_list. The seller offers a SKU's best grade first (A, then B, then C, the oldest within
-  the grade; before 11-12 the oldest unit, which was the C the A and B sales had left behind). Buyers' accept
+  rest at seller.first_ask_list. The seller offers a SKU's best grade first (A, then B, then C) and within the
+  grade its cheapest unit (a unit's floor is its cost x seller.floor_cost_mult, and buyers cap big goods near
+  the market's 0.70 of list: big_ticket.floor_refusals counts the offers refused under our floor after the final
+  price, offer_at_market those at 0.68 of list or more, which a cheaper unit of the grade would have closed;
+  before 11-12 the oldest unit was offered, which was the C the A and B sales had left behind). Buyers' accept
   terms name the grades they pay for and the market's big settles are A and B almost entirely, so a sign on a C
   unit is not a sale (11-12: C signs paid 1 of 13, A signs 13 of 14, and three quarters of the buyers offered a
   C canceled). The brief's big_ticket section is the evidence: by_grade (our first replies, cancels, signs, paid

@@ -743,6 +743,10 @@ class NewSectionsTest(unittest.TestCase):
         o["decisions"]["seller"] = [q("t1", "A"), q("t2", "A"), q("t3", "C"), q("t4", "C"), q("t5", "B"), canc("t3"), canc("t4"), canc("t1"),
                                     sign("u-a", "A", 700000), sign("u-c1", "C", 550000), sign("u-c2", "C", 560000),
                                     {"kind": "quote", "why": "first reply: fact line", "ref": {"task": "small"}, "inputs": {"list_price": 5000, "grade_now": "C"}}]
+        rej = lambda offer, floor: {"kind": "reject", "choice": {"action": "reject"}, "why": "offer below the floor after the final price",
+                                    "inputs": lp | {"offer": offer, "floor": floor, "grade_now": "A"}}
+        o["decisions"]["seller"] += [rej(700000, 720000), rej(690000, 720000), rej(500000, 710000),
+                                     {"kind": "reject", "why": "offer below the floor after the final price", "inputs": {"list_price": 5000, "offer": 3000, "floor": 4000}}]
         r = raw()
         r["catalog"] = {"G1": ["소파", "가구", 1000000, "goods", None], "G9": ["간식", "식품", 5000, "food", 720]}
         st = lambda shop, unit, grade, amount, w, sku="G1": {"kind": "settle", "ts": NOW - 30, "data": {"shop": shop, "unit": unit, "sku": sku, "grade": grade, "amount": amount, "warranty_hours": w}}
@@ -754,6 +758,7 @@ class NewSectionsTest(unittest.TestCase):
         self.assertEqual(bt["by_grade"]["A"], {"first": 2, "canceled": 1, "cancel_rate": 0.5, "signed": 1, "paid": 1, "paid_rate": 1.0, "sign_price_list": 0.7})
         self.assertEqual(bt["by_grade"]["C"], {"first": 2, "canceled": 2, "cancel_rate": 1.0, "signed": 2, "paid": 0, "paid_rate": 0.0, "sign_price_list": 0.555})
         self.assertEqual(bt["by_grade"]["B"]["first"], 1)
+        self.assertEqual(bt["floor_refusals"], {"n": 3, "offer_at_market": 2, "floor_list_median": 0.72, "offer_list_median": 0.69})
         self.assertEqual(bt["market"], {"settles": 4, "ours": 1, "grade_share": {"A": 0.75, "B": 0.25, "C": 0.0},
                                         "price_list_by_grade": {"A": 0.7, "B": 0.6, "C": None}, "warranty_h": {72.0: 2, 6.0: 1, 0: 1}})
         self.assertEqual([(s["shop"], s.get("untrusted_shop"), s["settles"], s["price_list"], s["warranty_h"], s["grade_A"]) for s in bt["sellers"]],
