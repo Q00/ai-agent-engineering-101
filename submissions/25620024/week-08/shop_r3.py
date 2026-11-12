@@ -171,8 +171,19 @@ def find_unit(text, taken=(), need=None):
     # day and hold no expired units, so a buyer who states no shelf need now gets the freshest unit; a buyer who
     # states one still gets the first-to-expire unit that passes it.
     fresh_first = not need.get("hours") and SHOP_THETA_FRESH()
-    age = lambda u: (-(u.get("expires_at") or 0) if fresh_first and u.get("kind") == "food" and u.get("expires_at")
-                     else u.get("expires_at") or float("inf"))
+    # MBT 11-12: freshest-first made our stock last-in-first-out -- with a restock every 20 min the oldest food never
+    # sold and spoiled (G9df06998, 24 h shelf: 50 of 292 bought in 48 h expired, 1.42M of food in 48 h). Now a buyer
+    # with no shelf need gets the OLDEST unit that still has at least half its shelf life left; only when none has,
+    # the freshest. A stated need still gets the first-to-expire unit that passes it.
+    keep = promo.theta().get("food_fifo_share", 0.5)
+
+    def age(u):
+        exp = u.get("expires_at")
+        if not (fresh_first and u.get("kind") == "food" and exp):
+            return (0, exp or float("inf"))
+        life = exp - (u.get("supplied_at") or exp)
+        share = (exp - time.time()) / life if life > 0 else 1.0
+        return (0, exp) if share >= keep else (1, -exp)
     wg = promo.theta().get("warranty_grades", ("A", "B"))   # review 11-12: a buyer who asks for a warranty gets a
     gpen = lambda u: 1 if u.get("kind") == "goods" and u.get("grade") == "C" and (not c_ok or (need.get("warranty") and "C" not in wg)) else 0   # unit that carries one
     if m:
