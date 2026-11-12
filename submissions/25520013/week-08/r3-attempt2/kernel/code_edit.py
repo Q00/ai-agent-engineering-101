@@ -988,7 +988,8 @@ def run_tests(root, sid, new_texts, runner):
     h = _tree_hash(base)
     cache = c.load_json(os.path.join(root, BASELINE), {})
     cache = cache if isinstance(cache, dict) else {}
-    if cache.get("hash") == h and isinstance(cache.get("failed"), list):
+    # a cache written before the passed count was kept is run again, else a skipped test would go unseen
+    if cache.get("hash") == h and isinstance(cache.get("failed"), list) and "passed" in cache:
         base_failed = set(cache["failed"])
         base_passed = cache.get("passed")
     else:

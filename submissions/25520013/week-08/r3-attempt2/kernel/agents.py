@@ -209,7 +209,7 @@ class CreatedAgent(op.Operator):
             questions.add_finding(self.root, base_q, m(ans["finding"]), [m(e) for e in ev], m(ans.get("suggest") or ""),
                                   None if q else self.row["for"], now, by=self.row["name"])
             if q:
-                questions.close(self.root, q["id"], "done", now)
+                questions.close(self.root, q["id"], "done", c.now_ts())  # the time the answer exists, not the run start
             result["answer"] = {"ok": True, **({"id": q["id"]} if q else {})}
             self._extra.append("- 조사 결과: 실림")
         elif q is not None:
@@ -225,7 +225,7 @@ class CreatedAgent(op.Operator):
         checked = " / ".join(" ".join(str(k).split()) for k in self._kept or []) or "남긴 결론 없음"
         text = c.mask(f"조사 미완 ({why}). 확인한 것: {checked}. 남은 것: 질문의 답은 확인 못 함", self.secrets)
         questions.add_finding(self.root, q, text, [], "", None, now, status="failed", by=self.row["name"])
-        questions.close(self.root, q["id"], "failed", now)
+        questions.close(self.root, q["id"], "failed", c.now_ts())
 
     def _end(self, reason, steps, status, result):
         if status != "done":
@@ -286,7 +286,7 @@ def poll(root, terra, secrets=(), now=None, harness_root=op.HARNESS, dry=False):
                 os.replace(reg.state_path(root, row["name"]) + ".tmp", reg.state_path(root, row["name"]))
                 if q is not None and any(r["id"] == q["id"] and r.get("status") == "open" for r in questions.load(root)):
                     questions.add_finding(root, q, "조사 미완 (실행 오류)", [], "", None, t, status="failed", by=row["name"])
-                    questions.close(root, q["id"], "failed", t)
+                    questions.close(root, q["id"], "failed", c.now_ts())
             except Exception:  # the record must not stop the runner either
                 pass
             out.append((row["name"], {"status": "crash", "error": type(e).__name__}))

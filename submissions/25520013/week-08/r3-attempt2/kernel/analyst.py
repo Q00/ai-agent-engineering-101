@@ -237,7 +237,7 @@ class Analyst(op.Operator):
                 ans.get("for"),
                 now,
             )
-            questions.close(self.root, self._question["id"], "done", now)
+            questions.close(self.root, self._question["id"], "done", c.now_ts())  # the time the answer exists, not the run start
             result["answer"] = {"ok": True, "id": self._question["id"]}
         else:
             result["answer"] = {"ok": False, "error": "answer.finding 없음"}
@@ -266,7 +266,7 @@ class Analyst(op.Operator):
             now,
             status="failed",
         )
-        questions.close(self.root, q["id"], "failed", now)
+        questions.close(self.root, q["id"], "failed", c.now_ts())
 
     def _end(self, reason, steps, status, result):
         if status != "done":

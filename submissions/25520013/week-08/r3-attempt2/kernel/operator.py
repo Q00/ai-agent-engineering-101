@@ -912,8 +912,9 @@ class Operator:
         last = st.get("last_wake_ts")
         since = max(seen, last) if _num(last) else seen  # an answer that came before its last wake was on that page
         answers = [q for q in questions.load(self.root) if q.get("from") == self.role
-                   and q.get("status") in ("done", "failed") and _num(q.get("answered_ts")) and q["answered_ts"] > since]
-        self._seen_next = max([seen] + [x["ended_ts"] for x in exps + codes] + [q["answered_ts"] for q in answers])
+                   and q.get("status") in ("done", "failed") and _num(q.get("answered_ts")) and since < q["answered_ts"] <= now]
+        # a stamp ahead of the clock never moves the mark past now
+        self._seen_next = max([seen] + [min(now, x["ended_ts"]) for x in exps + codes] + [q["answered_ts"] for q in answers])
         return exps, codes, answers
 
     def _window_reason(self, now, last):

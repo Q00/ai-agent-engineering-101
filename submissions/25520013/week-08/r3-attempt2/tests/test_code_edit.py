@@ -1797,3 +1797,38 @@ def test_hardening_fewer_passed_tests_refused(tmp_path, monkeypatch):
                  {"failed": [], "summary": "7 passed, 3 skipped", "error": None, "passed": 7}])
     out = ce.run_tests(str(root), "t1", {"policy.py": "X = 2\n"}, lambda d, t: next(runs))
     assert out["ok"] is False and out["cls"] == "tests" and "10 -> 7" in out["error"]
+
+
+def _passed_case(tmp_path, base, new, cache=None):
+    from kernel import code_edit as ce
+
+    root = tmp_path
+    for d in ("hooks", "tests", "a2"):
+        (root / d).mkdir(parents=True, exist_ok=True)
+    (root / "policy.py").write_text("X = 1\n")
+    if cache is not None:
+        import json
+
+        (root / ce.BASELINE).write_text(json.dumps(dict(cache, hash=ce._tree_hash(str(root)))))
+    runs = iter([base, new] if base else [new])
+    return ce.run_tests(str(root), "t1", {"policy.py": "X = 2\n"}, lambda d, t: next(runs))
+
+
+def _run(passed, failed=()):
+    return {"failed": list(failed), "summary": f"{passed} passed", "error": None, "passed": passed}
+
+
+def test_hardening_one_fewer_passed_test_is_refused_and_the_same_count_is_not(tmp_path):
+    out = _passed_case(tmp_path / "a", _run(3), _run(2))
+    assert out["ok"] is False and "3 -> 2" in out["error"]
+    assert _passed_case(tmp_path / "b", _run(3), _run(3))["ok"] is True
+
+
+def test_hardening_a_new_skip_is_refused_when_the_baseline_already_fails(tmp_path):
+    out = _passed_case(tmp_path, _run(9, ["tests/t.py::a"]), _run(8, ["tests/t.py::a"]))
+    assert out["ok"] is False and "9 -> 8" in out["error"]
+
+
+def test_hardening_a_baseline_cached_without_a_passed_count_is_run_again(tmp_path):
+    out = _passed_case(tmp_path, _run(5), _run(4), cache={"failed": [], "summary": "5 passed"})
+    assert out["ok"] is False and "5 -> 4" in out["error"]

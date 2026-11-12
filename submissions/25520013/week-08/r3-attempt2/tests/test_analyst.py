@@ -147,8 +147,11 @@ def test_standing_questions_by_interval_without_duplicates(env, monkeypatch, tmp
 
 
 # ------------------------------------------------------------ runs
-def test_run_writes_the_finding_and_logs_analyst_rows(env):
+def test_run_writes_the_finding_and_logs_analyst_rows(env, monkeypatch):
     root, make = env
+    from kernel import common as c
+
+    monkeypatch.setattr(c, "now_ts", lambda: NOW + 300)  # the answer is written after the run began
     qs.ask(root, "shop", "별점 낮은 구간은?", NOW)
     a = make("analyst")
     a.terra = Rec(
@@ -174,7 +177,7 @@ def test_run_writes_the_finding_and_logs_analyst_rows(env):
         and f[0]["for"] == ["shop"]
         and f[0]["status"] == "done"
     )
-    assert _q(root, 1)["status"] == "done" and _q(root, 1)["answered_ts"] == NOW
+    assert _q(root, 1)["status"] == "done" and _q(root, 1)["answered_ts"] == NOW + 300
     rows = _rows(root)
     assert rows and all(
         r["agent"] == "analyst" and r["role"] == "analyst" for r in rows

@@ -480,6 +480,34 @@ def test_an_answer_to_its_own_question_wakes_the_role_that_asked_once(env):
     assert shop.wake_reason(NOW + 240) is None
 
 
+def test_a_failed_answer_wakes_and_a_bad_stamp_neither_wakes_nor_moves_the_mark(env):
+    from kernel import questions as qs
+
+    root, make = env
+    shop = make("shop")
+    shop.wake_reason(NOW)
+    shop._save_state(dict(shop._state(), last_wake_ts=NOW, next_wake_ts=NOW + 30 * 60))
+    a = qs.add(root, "shop", "왜 거절됐나", NOW + 5)["id"]
+    qs.close(root, a, "failed", NOW + 90)
+    assert shop.wake_reason(NOW + 120) == f"네 조사 질문의 답 도착 #{a} (findings 도구로 전문을 봄)"
+    shop.terra = Script({"done": {}})
+    shop.wake(shop.wake_reason(NOW + 120), NOW + 120)
+    # closed rows with no stamp, a stamp ahead of the clock, or an infinite one do not wake it now
+    for i, ts in enumerate([None, NOW + 10**6, float("inf")]):
+        q = qs.add(root, "shop", f"질문 {i}", NOW + 130)["id"]
+        qs.close(root, q, "done", NOW + 140)
+        rows = qs.load(root)
+        for r in rows:
+            if r["id"] == q:
+                r["answered_ts"] = ts
+        qs._save(root, rows)
+    assert shop.wake_reason(NOW + 200) is None
+    assert shop._seen_next is None or shop._seen_next <= NOW + 200
+    # once the clock reaches the early stamp, that answer wakes it
+    late = [r["id"] for r in qs.load(root) if r.get("answered_ts") == NOW + 10**6]
+    assert f"네 조사 질문의 답 도착 #{late[0]} " in (shop.wake_reason(NOW + 10**6 + 1) or "")
+
+
 # ------------------------------------------------------------ restock window
 def _inv(root, **restock):
     os.makedirs(os.path.join(root, ".market"), exist_ok=True)
