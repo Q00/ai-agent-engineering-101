@@ -26,6 +26,7 @@ PRICE_GAP_LIST = 0.15   # D8 p_price falls linearly to 0 when the ask is this sh
 ASK_ALPHA = 0.25        # weight of the newest first ask in a shop's ask share (exponentially weighted mean)
 ASK_MIN_N = 3           # first asks seen from a shop and kind before its ask share replaces the P0 prior
 ASK_KEEP_H = 48         # a shop not quoted for this long is forgotten
+GB_MIN_N = 2            # a grade's own settled share counts from this many sales in the shop's grade book
 ASK_SHARE_LO, ASK_SHARE_HI = 0.2, 2.0   # a first ask outside this share of list is a misread price: not folded
 # the most shelf life a claimed food grade can have left (agent.md 'Supply' cuts; update by hand if they change)
 GRADE_TOP = {"A": 1.0, "B": FOOD_GRADE_CUTS[0], "C": FOOD_GRADE_CUTS[1]}
@@ -176,6 +177,23 @@ def fold_ask(asks, url, kind, share, now, warranty=False):
     return out
 
 
+def grade_expected(gb, kind, warranty_h, q_upper, pol, fallback_share):
+    """The Saved a deal at a shop is expected to score from its grade book (query.shop_grade_book: what its
+    sales of the kind kept of list per grade over 24 h, and its grade mix): per grade, the shop's settled share
+    (its overall share, fallback_share, under GB_MIN_N sales of the grade), 0 when that share is over the grade's
+    cap (the grade's kept floor: no deal closes there), else policy.margin_share of the kept at that share,
+    weighted by the mix. A shop that ships A and B under their floors outranks one that ships cheap C units,
+    which the plain share of list (the old score) could not tell apart (Patch 3.6)."""
+    total = 0.0
+    for g, w in (gb.get("mix") or {}).items():
+        e = gb.get(g) or {}
+        share = e["share"] if (e.get("n") or 0) >= GB_MIN_N else fallback_share
+        if share is None or share > cap_share(kind, warranty_h, q_upper, pol, grade=g) + 1e-9:
+            continue
+        total += w * (policy.margin_share(1 - share, g) or 0.0)
+    return round(total, 4)
+
+
 def candidates(order, shops, catalog, summary, pol, asks=None):
     """One best SKU per shop from offers ∩ acceptable, best first, at most buyer.max_shops shops.
 
@@ -222,7 +240,8 @@ def candidates(order, shops, catalog, summary, pol, asks=None):
             c_est = cap(V, k, wh, q_upper, budget, pol) if wh else c
             p_est = c_est if ask_est is None else min(c_est, ask_est)
             kept = expected_surplus(V, p_est, k, qk, wh) / V
-            saved_est = policy.expected_margin_share(kept, k)
+            gb = query.shop_grade_book(summary, url, k)
+            saved_est = grade_expected(gb, k, wh, q_upper, pol, p_est / V) if gb else policy.expected_margin_share(kept, k)
             pr = p_reach(c, V) if ask_est is None else p_price(ask_est, c_est, V)
             score = saved_est * pc * pr
             q_grade = {} if k == "food" else {g: r for g in ("A", "B", "C") if (r := query.break_q(summary, sku, g, leaf))}
@@ -231,10 +250,12 @@ def candidates(order, shops, catalog, summary, pol, asks=None):
                     "cap": c, "q": q, "q_upper": q_upper, "q_grade": q_grade, "surplus_at_cap": round(surplus),
                     "ask_est": ask_est, "price_src": "ledger" if settled else "ask" if known else None,
                     "kept": round(kept, 4), "saved_est": round(saved_est, 4),
+                    "grade_book": {g: gb[g] for g in ("A", "B", "C") if g in gb} if gb else None,
                     "p_checkout": round(pc, 4), "p_reach": round(pr, 4), "score": round(score, 4),
                     "shop_stats": stats,
                     "memory_refs": [query.summary_ref("shop", url), query.summary_ref("cat", leaf)],
-                    "why": f"kept {kept:.3f} of list at {p_est} (saved {saved_est:.3f}) x p_checkout {pc:.2f} x "
+                    "why": f"kept {kept:.3f} of list at {p_est} (saved {saved_est:.3f}"
+                           + (f", grade book {gb['n']} sales" if gb else "") + f") x p_checkout {pc:.2f} x "
                            + (f"p_reach {pr:.2f}" if ask_est is None else
                               f"p_price {pr:.2f} ({'settled' if settled else 'ask'} est {ask_est}"
                               + (f", {wh} h warranty cap {c_est})" if wh else ")"))}

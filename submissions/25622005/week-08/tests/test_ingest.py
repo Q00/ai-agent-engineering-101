@@ -622,6 +622,27 @@ class MarketTest(unittest.TestCase):
                          (0.0, 0, 0.61))
         self.assertEqual(query.market_covered_h(s), 72.0)
 
+    def test_price_book_by_grade_and_the_shop_grade_book(self):
+        # Patch 3.6: a shop that ships A at 0.65 scores more than one that ships C at 0.5; the book tells them apart
+        now = T0 + 100 * H + 1800
+        market = {"since": now - 72 * H}
+        a, b = "https://a.example", "https://b.example"
+        rows = [("settle", now - 60, {"item": "F", "amount": 650, "shop": a, "grade": "A"})] * 3 \
+            + [("settle", now - 60, {"item": "F", "amount": 600, "shop": a, "grade": "B"})] \
+            + [("settle", now - 60, {"item": "F", "amount": 500, "shop": b, "grade": "C"})] * 2 \
+            + [("settle", now - 60, {"item": "F", "amount": 700, "shop": b})]                # no grade: not in it
+        self.fold(market, rows)
+        m = ingest.render_market({"market": market}, now)
+        self.assertEqual(m["price_book"][a]["grade"], {"food:A": {"n": 3, "med": 0.65}, "food:B": {"n": 1, "med": 0.6}})
+        s = {"built_at": now, "market": m}
+        self.assertEqual(query.shop_grade_book(s, a, "food"),
+                         {"A": {"share": 0.65, "n": 3}, "B": {"share": 0.6, "n": 1}, "mix": {"A": 0.75, "B": 0.25}, "n": 4})
+        self.assertIsNone(query.shop_grade_book(s, b, "food"))                  # 2 graded sales: under min_n
+        self.assertEqual(query.shop_grade_book(s, b, "food", min_n=2)["mix"], {"C": 1.0})
+        self.assertIsNone(query.shop_grade_book(s, a, "goods"))
+        self.fold(market, [("settle", now - 60, {"item": "F", "amount": 100, "shop": a, "grade": "A"})] * 20)
+        self.assertEqual(len(market["price_book"]["grade"][a]["food:A"]), ingest.PB_GRADE_KEEP)   # bounded
+
     def test_price_book_by_shop_sku_and_category(self):
         now = T0 + 100 * H + 1800
         market = {"since": now - 72 * H}

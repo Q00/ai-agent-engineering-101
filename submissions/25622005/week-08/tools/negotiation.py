@@ -122,8 +122,9 @@ def model_ask(task, cand, r, pol, deadline, ver=None):
 
 
 def first_message(cand, order):
-    text = f"I want to buy {cand['name']} ({cand['sku']}). Please include the unit in the receipt."
-    meta = {"sku": cand["sku"], "unit_in_receipt": True}
+    text = (f"I want to buy {cand['name']} ({cand['sku']}). Please include the unit in the receipt."
+            " Please offer a grade A or B unit if you have one.")   # Patch 3.6: the same price scores more on A
+    meta = {"sku": cand["sku"], "unit_in_receipt": True, "grades": ["A", "B"]}
     if cand["kind"] == "food" and isinstance(order.get("use_within_hours"), (int, float)):
         text += f" I need it to last {order['use_within_hours']} hours."
         meta["use_within_hours"] = order["use_within_hours"]

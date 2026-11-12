@@ -183,8 +183,10 @@ Supply and depth:
   score_at_median, and at the lower quartile) scores about 0.86, a B about 0.80, a C about 0.70; a deal at the
   lower quartile scores 1 / 0.9 / 0.77. Levers: buyer.min_kept, the kept floor of every cap before a quote
   names the unit's grade, and buyer.min_kept_A / _B / _C, the floor once a quote or receipt names that grade
-  (tools/negotiation re-caps at (1 - the larger floor) x list; the candidate score weighs a shop's likely price by
-  the Saved it scores over the kind's grade mix): derive each grade floor from market_by_grade (the kept at the
+  (tools/negotiation re-caps at (1 - the larger floor) x list, and the opening message asks for an A or B unit;
+  the candidate score weighs a shop by the Saved its deals are expected to score from its own grade book, its
+  sales of the kind by grade over 24 h with their prices, a grade priced over its floor counting 0, or over the
+  kind's grade mix when it has no book): derive each grade floor from market_by_grade (the kept at the
   price whose score you want, between the median and the lower quartile: a floor over the quartile's kept
   closes few deals), set min_kept low enough that the generic cap does not refuse the A and B quotes a grade
   floor would take (an A at 0.70 needs min_kept at or under 0.30), and keep break_penalty pricing uncovered

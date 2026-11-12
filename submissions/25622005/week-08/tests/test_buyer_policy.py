@@ -138,6 +138,21 @@ class CandidateTests(unittest.TestCase):
         cs = bp.candidates(GOODS, [shop("http://a", ("G1", 1))], CATALOG, {}, pol)
         self.assertEqual([(c["shop"], c["cap"]) for c in cs], [("http://a", 70000)])   # q-adjusted kept < 0.28, still a candidate
 
+    def test_shop_grade_book_ranks_an_a_shop_over_a_cheaper_c_shop(self):
+        # Patch 3.6: shop a ships A at 0.65 and B at 0.6 (scores 1.0 / 0.8), shop b ships C at 0.5 (0.77)
+        pol = json.loads(json.dumps(POL)); pol["buyer"].update(min_kept=0.3, min_kept_C=0.5)
+        book = {"https://a": {"grade": {"food:A": {"n": 5, "med": 0.65}, "food:B": {"n": 5, "med": 0.6}}},
+                "https://b": {"grade": {"food:C": {"n": 10, "med": 0.5}}},
+                "https://c": {"grade": {"food:C": {"n": 10, "med": 0.55}}}}       # C over its 0.5 cap: no deal
+        summary = {"market": {"price_book": book}}
+        cs = bp.candidates(FOOD, [shop("https://b", ("F1", 1)), shop("https://a", ("F1", 1)), shop("https://c", ("F1", 1))],
+                           CATALOG, summary, pol)
+        self.assertEqual([(c["shop"], c["saved_est"]) for c in cs], [("https://a", 0.9), ("https://b", 0.7692), ("https://c", 0.0)])
+        self.assertEqual(cs[0]["grade_book"], {"A": {"share": 0.65, "n": 5}, "B": {"share": 0.6, "n": 5}})
+        self.assertIn("grade book 10 sales", cs[0]["why"])
+        gb = {"A": {"share": 0.65, "n": 1}, "mix": {"A": 1.0}, "n": 1}          # one sale: the shop's overall share
+        self.assertEqual(bp.grade_expected(gb, "food", 0, None, pol, 0.6), 1.0)   # kept 0.4 on A
+
     def test_grade_floors_raise_the_cap_floor_once_the_grade_is_named(self):
         # Patch 3.6: an A (cost 0.55-0.75 of list) scores a full 1 from a kept of 0.45, a C (0.25-0.45) needs 0.75
         pol = json.loads(json.dumps(POL)); pol["buyer"].update(min_kept=0.30, min_kept_A=0.0, min_kept_B=0.40, min_kept_C=0.55)

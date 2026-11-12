@@ -45,6 +45,8 @@ SUPPLY_BUCKET_S = 300                                        # market supply uni
 P_CLEAR_MIN_N = 20                                           # fewer settles of a kind in 6 h: p_clear None
 PB_KEEP_H = 24                                               # price book: each shop's settled paid/list, by SKU and
 PB_SKU_KEEP, PB_CAT_KEEP = 4, 8
+PB_GRADE_KEEP = 12                                           # price book by kind x grade (Patch 3.6: the grade's cost
+                                                             # band decides what a price scores): newest rows per shop
 GRADES = ("A", "B", "C")
 BRK_MIN_N = 5                                                # a SKU x grade breakage row needs this many sales to render                              # by category leaf, the newest few sales kept 24 h
 SEQ_KEEP = 3                                                 # newest settle seqs per SKU: the refs a forum report cites
@@ -234,6 +236,9 @@ def ledger_rows(row, catalog, market, me, our_ledgers):
                     pb = market.setdefault("price_book", {})
                     _pb_add(pb.setdefault("sku", {}).setdefault(shop, {}), sku, share, int(hour), PB_SKU_KEEP)
                     _pb_add(pb.setdefault("cat", {}).setdefault(shop, {}), leaf, share, int(hour), PB_CAT_KEEP)
+                    if d.get("grade") in GRADES:
+                        _pb_add(pb.setdefault("grade", {}).setdefault(shop, {}), f"{item['kind']}:{d['grade']}", share,
+                                int(hour), PB_GRADE_KEEP)
             if (catalog.get(sku) or {}).get("kind") == "goods":
                 g = market.setdefault("cat_goods", {}).setdefault(leaf, [0, 0])
                 g[0] += 1
@@ -740,7 +745,7 @@ def render_market(cursor, now):
         c_kind[kind] = round(paid / listed, 4) if listed else None
     book, first_pb = {}, int(now // 3600) - PB_KEEP_H
     pb = m.get("price_book") if isinstance(m.get("price_book"), dict) else {}
-    for level in ("sku", "cat"):
+    for level in ("sku", "cat", "grade"):
         for shop, keys in (pb.get(level) or {}).items():
             for key, rows in (keys.items() if isinstance(keys, dict) else []):
                 vals = [r[0] for r in rows if isinstance(r, list) and len(r) == 2 and r[1] >= first_pb

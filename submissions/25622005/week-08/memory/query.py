@@ -136,6 +136,30 @@ def shop_price(summary, shop_url, sku, leaf, min_sku_n=2, min_cat_n=3):
     return None
 
 
+def shop_grade_book(summary, shop_url, kind, min_n=3):
+    """What one shop's settled sales of a kind kept of list per grade over the last 24 h, and its grade mix:
+    {"A": {"share": median paid/list, "n"}, ..., "mix": {grade: its part of the shop's graded sales}, "n": total},
+    or None with fewer than min_n graded sales (the price book's grade level, memory/ingest). Patch 3.6 scores a
+    deal by the share of the grade's margin it took, so a shop's grade mix and its price per grade say what a
+    deal there is worth before it is quoted."""
+    book = _market(summary, "price_book")
+    if book is None:
+        return None
+    levels = _d(_d(book.get(str(shop_url or "").rstrip("/"))).get("grade"))
+    out, total = {}, 0
+    for g in ("A", "B", "C"):
+        e = _d(levels.get(f"{kind}:{g}"))
+        n, med = int(_num(e.get("n")) or 0), _num(e.get("med"))
+        if n > 0 and med is not None:
+            out[g] = {"share": med, "n": n}
+            total += n
+    if total < min_n:
+        return None
+    out["mix"] = {g: round(e["n"] / total, 4) for g, e in out.items()}
+    out["n"] = total
+    return out
+
+
 def sku_seqs(summary, sku):
     """Newest public settle seqs of one SKU (at most 3), for a post's refs; [] without data."""
     r = _market(summary, "sku_seqs")
