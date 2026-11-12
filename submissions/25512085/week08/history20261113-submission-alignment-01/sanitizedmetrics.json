@@ -1,0 +1,293 @@
+{
+  "observed_utc": "2026-11-12T16:23:21.836360+00:00",
+  "read_policy": {
+    "board_get_limit": 1,
+    "log_max_bytes_each": 4194304,
+    "raw_board_or_logs_exported": false,
+    "sampling": "tail, not random; not full round"
+  },
+  "board": {
+    "source": "https://market.ourolabs.ai/api/board",
+    "http_status": 200,
+    "observed_utc": "2026-11-12T16:23:22.201325+00:00",
+    "round": 3,
+    "current": 3,
+    "top_level_schema_keys": [
+      "buyers",
+      "current",
+      "github",
+      "players",
+      "reviews",
+      "round",
+      "shops",
+      "totals"
+    ],
+    "own": {
+      "shops": [
+        {
+          "house": false,
+          "alive": true,
+          "deals": 17732,
+          "share": 0.029,
+          "visits": 41337,
+          "stars": 4.56,
+          "reviews": 17044,
+          "revenue": 3493464080,
+          "profit": 439194932,
+          "stock_units": 1100,
+          "stock_cost": 95120578,
+          "book": 534315510,
+          "bankruptcies": 0,
+          "stars_rank": 4.34,
+          "refunds": 559,
+          "broken": 950,
+          "claims": 17732,
+          "honest_claims": 17732,
+          "all": 0.775,
+          "schema_keys_without_values": [
+            "alive",
+            "all",
+            "bankruptcies",
+            "book",
+            "broken",
+            "card",
+            "claims",
+            "deals",
+            "forum",
+            "honest_claims",
+            "house",
+            "joined",
+            "name",
+            "owner",
+            "profit",
+            "refunds",
+            "revenue",
+            "reviews",
+            "share",
+            "stars",
+            "stars_rank",
+            "stock_cost",
+            "stock_units",
+            "visits"
+          ]
+        }
+      ],
+      "buyers": [
+        {
+          "house": false,
+          "alive": true,
+          "orders": 27840,
+          "deals": 17954,
+          "saved": 0.6615,
+          "all": 0.657,
+          "schema_keys_without_values": [
+            "alive",
+            "all",
+            "deals",
+            "forum",
+            "held",
+            "hopeless",
+            "house",
+            "joined",
+            "name",
+            "orders",
+            "owner",
+            "paid",
+            "posts",
+            "saved",
+            "served",
+            "surplus"
+          ]
+        }
+      ],
+      "players": [
+        {
+          "house": false,
+          "total": 1.432,
+          "student_shop": 0.724,
+          "student_buyer": 0.599,
+          "student": true,
+          "student_total": 1.323,
+          "student_pct": 0.644,
+          "shop": {
+            "all": 0.775
+          },
+          "buyer": {
+            "all": 0.657
+          },
+          "schema_keys_without_values": [
+            "buyer",
+            "house",
+            "owner",
+            "player",
+            "shop",
+            "student",
+            "student_buyer",
+            "student_pct",
+            "student_shop",
+            "student_total",
+            "total"
+          ]
+        }
+      ]
+    },
+    "shops_rows": 90,
+    "buyers_rows": 131,
+    "players_rows": 69,
+    "student_players_denominator": 46,
+    "student_rank_competition_desc_student_total": 17,
+    "student_rank_score_denominator": 46,
+    "student_score_tie_count_including_self": 1,
+    "timestamp_fields": {}
+  },
+  "logs": [
+    {
+      "name": "market-kit.log.1",
+      "exists": true,
+      "bytes_at_open": 20166378,
+      "mtime_utc_at_open": "2026-11-12T15:45:46.786594+00:00",
+      "inode": 776071,
+      "offset": 15972074,
+      "bytes_read": 4194304,
+      "tail_sha256": "d9bf390c9acfab23b5e38c250970901cc808e67b5b7b0d6294407fcf9e1b0d93",
+      "bytes_after": 20166378,
+      "stable_during_read": true,
+      "complete_lines_scanned": 1585,
+      "first_clock_without_date": "15:32:00",
+      "last_clock_without_date": "15:45:46",
+      "counts": {
+        "seller_acp_settled_lines": 3,
+        "buyer_acp_paid_lines": 4,
+        "settle_refused_lines": 0,
+        "checkout_refused_lines": 1,
+        "payment_not_completed_lines": 0,
+        "payment_failed_lines": 0,
+        "buyer_harness_warning_lines": 0,
+        "gemini_fallback_warning_lines": 0,
+        "goods_nonpositive_saved_lines": 13,
+        "food_lifetime_precheck_lines": 0,
+        "buyer_failure_telemetry_lines": 0
+      },
+      "reason_phrase_line_counts_nonexclusive": {
+        "timeout": 22,
+        "out of stock": 18,
+        "declined-price-policy": 13,
+        "nonpositive expected Saved": 13
+      },
+      "settlement_sequences": {
+        "seller": {
+          "line_count_with_seq": 3,
+          "unique_count": 3,
+          "min": 5701957,
+          "max": 5703603
+        },
+        "buyer": {
+          "line_count_with_seq": 4,
+          "unique_count": 4,
+          "min": 5702172,
+          "max": 5703628
+        }
+      },
+      "exact_substring_examples_NOT_FULL_LOG_LINES": [
+        {
+          "role": "buyer",
+          "clock_only": "15:41:25",
+          "exact_substrings": [
+            "[acp] paid",
+            "ledger #5703000"
+          ]
+        },
+        {
+          "role": "seller",
+          "clock_only": "15:43:24",
+          "exact_substrings": [
+            "[acp] settled",
+            "ledger #5703603"
+          ]
+        },
+        {
+          "role": "buyer",
+          "clock_only": "15:43:28",
+          "exact_substrings": [
+            "[acp] paid",
+            "ledger #5703628"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "market-kit.log",
+      "exists": true,
+      "bytes_at_open": 10504288,
+      "mtime_utc_at_open": "2026-11-12T16:23:21.096373+00:00",
+      "inode": 776067,
+      "offset": 6309984,
+      "bytes_read": 4194304,
+      "tail_sha256": "c68869b095b128795f9f0abe7cf4e12bed463f90a3225607f0aed92999e9e707",
+      "bytes_after": 10504288,
+      "stable_during_read": true,
+      "complete_lines_scanned": 1501,
+      "first_clock_without_date": "16:08:30",
+      "last_clock_without_date": "16:23:21",
+      "counts": {
+        "seller_acp_settled_lines": 0,
+        "buyer_acp_paid_lines": 2,
+        "settle_refused_lines": 0,
+        "checkout_refused_lines": 1,
+        "payment_not_completed_lines": 0,
+        "payment_failed_lines": 0,
+        "buyer_harness_warning_lines": 0,
+        "gemini_fallback_warning_lines": 0,
+        "goods_nonpositive_saved_lines": 18,
+        "food_lifetime_precheck_lines": 0,
+        "buyer_failure_telemetry_lines": 0
+      },
+      "reason_phrase_line_counts_nonexclusive": {
+        "timeout": 21,
+        "out of stock": 33,
+        "not paying:": 1,
+        "declined-price-policy": 18,
+        "nonpositive expected Saved": 18
+      },
+      "settlement_sequences": {
+        "seller": {
+          "line_count_with_seq": 0,
+          "unique_count": 0,
+          "min": null,
+          "max": null
+        },
+        "buyer": {
+          "line_count_with_seq": 2,
+          "unique_count": 2,
+          "min": 5712910,
+          "max": 5714330
+        }
+      },
+      "exact_substring_examples_NOT_FULL_LOG_LINES": [
+        {
+          "role": "buyer",
+          "clock_only": "16:17:50",
+          "exact_substrings": [
+            "[acp] paid",
+            "ledger #5712910"
+          ]
+        },
+        {
+          "role": "buyer",
+          "clock_only": "16:23:08",
+          "exact_substrings": [
+            "[acp] paid",
+            "ledger #5714330"
+          ]
+        }
+      ]
+    }
+  ],
+  "coverage_limitations": [
+    "Board cumulative counts and bounded log event counts have different denominators.",
+    "Log clocks have no calendar date; mtime is not the first event date.",
+    "A seller settlement and buyer payment can refer to one transaction; do not sum into unique trades.",
+    "Phrase counts overlap and include non-settlement refusals; not a disjoint rejection rate.",
+    "No model success payload was read; configured names do not prove successful model calls."
+  ]
+}
