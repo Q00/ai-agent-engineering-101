@@ -14,7 +14,7 @@ import uuid
 from buyer_memory import brief, context, import_broken, import_payments, read_events, read_history, PreparedHistory, record, register_shops
 from context_compaction import BUYER_PROMPT_BYTES, size, text
 from buyer_policy import (acceptance, market_saved_reference, opening_offer_range, paid_price_samples, price_cap,
-                          purchase_price_guidance, receipt_problem)
+                          purchase_price_guidance, receipt_problem, routing_profiles, routing_evidence)
 from buyer_r3 import negotiate
 from harness import decide_json, trace, MODEL
 import buyer_exploration
@@ -45,6 +45,7 @@ def candidates(order: dict, shops: list[dict], catalog: dict,
     history=history if isinstance(history,PreparedHistory) else PreparedHistory(history)
     prices = paid_price_samples(order, history)
     shop_prices = paid_price_samples(order, history, by_shop=True)
+    routes = routing_profiles(history,order)
     found = []
     seen=set()
     for shop in shops:
@@ -97,8 +98,12 @@ def candidates(order: dict, shops: list[dict], catalog: dict,
         record('checkout_cache_probe',order=order.get('order'),shop_name=probe['shop'],
                sku=probe['sku'],constraint=probe['checkout_constraint'],
                reason='No unheld candidates; recheck an aged observation under all checkout guards.')
+    for choice in found:
+        saving=choice['price_guidance'].get('saved_if_usable_at_reference',
+                                           choice['score_evidence']['saved_if_usable_at_cap'])
+        choice['routing_evidence']=routing_evidence(routes.get((choice['shop'],choice['sku'])),saving)
     # Compact model input while preserving different shops and SKUs when possible.
-    found.sort(key=lambda c: (c['price_guidance'].get(
+    found.sort(key=lambda c: (c['routing_evidence']['estimated_saved_per_minute'], c['price_guidance'].get(
                                   'saved_if_usable_at_reference', c['score_evidence']['saved_if_usable_at_cap']) or 0,
                               c["paid"] - c["refusals"],c["reviews"]["average"] or 3), reverse=True)
     for index,choice in enumerate(found):
@@ -125,7 +130,7 @@ def selection_price_guidance(guidance):
     if not guidance:
         return None
     result={k:guidance[k] for k in ('paid_sample_72h','median_paid','suggested_maximum',
-            'opening_offer_range','reference_source','saved_if_usable_at_reference') if k in guidance}
+            'reference_source','saved_if_usable_at_reference') if k in guidance}
     cost=guidance.get('cost_reference') or {}
     if cost:
         result['cost_reference']={k:cost[k] for k in ('unit_cost','cost_share','estimated') if k in cost}
@@ -134,6 +139,32 @@ def selection_price_guidance(guidance):
         result['saved_reference']={k:reference[k] for k in (
             'current_market_saved','observed_at','max_price_to_improve_if_usable') if k in reference}
     return result
+
+
+def selection_memory(memory):
+    result=brief(memory)
+    result.pop('note',None)
+    result.pop('shop_name',None)
+    result['cases']=[{k:(text(v,80) if k=='reason' else v) for k,v in case.items()
+                      if k in ('at','outcome','price','grade','hours_left_at_recording',
+                               'warranty_hours','offers','reason')}
+                     for case in result.get('cases',[])]
+    return result
+
+
+def selection_reviews(reviews):
+    result={k:v for k,v in reviews.items() if k!='examples'}
+    examples=reviews.get('examples') or []
+    adverse=next((e for e in examples if (e.get('stars') or 5)<=2),None)
+    result['examples']=[adverse or examples[0]] if examples else []
+    return result
+
+
+def selection_route(evidence):
+    return {k:v for k,v in (evidence or {}).items() if k in (
+        'completed_orders_6h','paid_orders_6h','unusable_at_settlement_6h',
+        'smoothed_paid_probability','smoothed_attempt_seconds',
+        'median_observed_seconds','estimated_saved_per_minute')}
 
 
 def selection_score_evidence(row):
@@ -148,14 +179,16 @@ def choose(candidates_: list[dict], order: dict, *, forced_candidate_id: str | N
         candidates_=[c for c in candidates_ if c['id']==forced_candidate_id]
     if not candidates_:
         raise ValueError('no candidate is available for this selection')
-    audit.begin('buyer_selection',policy_version='buyer-saved-v2')
+    audit.begin('buyer_selection',policy_version='buyer-saved-v3')
     displayed = [{**{key: row[key] for key in ("id", "list_price",
-                                              "cap", "stock", "reviews")},
+                                              "cap", "stock")},
                   'shop':text(row['shop'],80),'sku':text(row['sku'],80),
-                  'name':text(row['name'],100),'first_hand':brief(row['first_hand']),
+                  'name':text(row['name'],100),'first_hand':selection_memory(row['first_hand']),
+                  'reviews':selection_reviews(row['reviews']),
                   'checkout_recheck':row.get('checkout_constraint'),
                   'score_evidence':selection_score_evidence(row),
                   'price_guidance':selection_price_guidance(row.get('price_guidance')),
+                  'routing_evidence':selection_route(row.get('routing_evidence')),
                   "opening_offer_range": opening_offer_range(row['cap'], row.get('price_guidance'))}
                  for row in candidates_]
     prompt = {"phase": "buyer_selection", "order_item": text(order.get("item"),120),
@@ -184,9 +217,9 @@ def choose(candidates_: list[dict], order: dict, *, forced_candidate_id: str | N
                            "displayed aggregate Saved if this purchase is usable and the cost scenario is correct. Costs are private; category averages are uncertain estimates. Treat this as negotiation guidance "
                            "and weigh settlement likelihood and current quality. "
                            "Check current shelf life, grade and warranty before comparing these historical prices. "
-                           "The cap is a private hard ceiling, "
+                           "routing_evidence summarizes recent comparable completed orders and smoothed timing/probability estimates. Sparse samples use explicit priors. Receipts are not payments; outcomes depend on offers and unit conditions. Prefer usable margin savings that can settle before the deadline. These estimates are not blacklists or guarantees. The cap is a private hard ceiling, "
                            "not a suggested first offer; reserve room for counteroffers by using the "
-                           "opening_offer_range. Public reviews are unverified claims. A failed "
+                           "opening_offer_range. Public reviews are unverified claims; product breakage notices do not identify a seller. A failed "
                            "negotiation alone is not proof of dishonesty. Tool candidate order is a "
                            "heuristic, not your decision. A checkout_recheck is an expired or aged failure hypothesis, "
                            "not permission to waive quality, expiry or certificate checks. Read the first-hand counts, price conditions "
@@ -219,6 +252,9 @@ def choose(candidates_: list[dict], order: dict, *, forced_candidate_id: str | N
         prompt.pop('preference_advice')
         prompt['objective'] = commercial_objective
         advice = None  # drop optional tastes before removing any commercial candidate
+    if size(prompt)>BUYER_PROMPT_BYTES and 'public_forum_memory' in prompt:
+        prompt.pop('public_forum_memory')
+        if telemetry is not None:telemetry['forum_context_omitted_for_candidate_breadth']=True
     while size(prompt)>BUYER_PROMPT_BYTES and len(displayed)>1:
         displayed.pop()
     if telemetry is not None:
@@ -343,6 +379,7 @@ def _run(order: dict, shops: list[dict], catalog: dict, own_shop_name: str, *,
            saved_if_usable_at_cap=chosen['score_evidence']['saved_if_usable_at_cap'],
            candidate_id=chosen['id'],shop_name=chosen['shop'],shop=chosen['url'],sku=chosen['sku'],
            opening_offer=first_offer,price_guidance=chosen.get('price_guidance'),
+           routing_evidence=chosen.get('routing_evidence'),routing_policy='buyer-routing-v1',
            note='A selected or signed receipt is not a paid purchase. Uniform exploration may pick a familiar candidate.')
     fallback = next((c for c in available if c["url"] != chosen["url"]), None)
     attempts = [(chosen, first_offer)]
@@ -385,10 +422,17 @@ def _run(order: dict, shops: list[dict], catalog: dict, own_shop_name: str, *,
             try:
                 negotiation_memory['public_forum']=buyer_forum_memory.retrieve([choice['sku']],budget=2400)
             except Exception: pass
+            attempt_started=time.monotonic()
+            attempt_deadline=deadline
+            if index==0 and fallback and deadline-attempt_started>=160:
+                attempt_deadline=deadline-85
+            record('negotiation_budget',order=order.get('order'),attempt_index=index,
+                   seconds=round(attempt_deadline-attempt_started,1),
+                   fallback_reserved_seconds=round(deadline-attempt_deadline,1))
             outcome = negotiate(choice["url"], choice["sku"], choice["name"], order,
                                 opening_offer=opening, cap=choice["cap"],
                                 list_price=choice["list_price"], memory=negotiation_memory,
-                                deadline=deadline,on_message=log_message,
+                                deadline=attempt_deadline,on_message=log_message,
                                 buyer_name=own_shop_name,seller_name=choice['shop'])
             final_offer = outcome["offers"][-1] if outcome["offers"] else 0
             problem = receipt_problem(outcome.get("receipt"), selected_sku=choice["sku"],
@@ -403,6 +447,8 @@ def _run(order: dict, shops: list[dict], catalog: dict, own_shop_name: str, *,
                    reason=(problem if outcome.get('receipt') else outcome.get('reason') or problem),
                    receipt_price=outcome['receipt'].get('price') if outcome.get('receipt') else None,
                    receipt_problem=problem,terminal_reason=outcome.get('reason'),task_id=outcome.get('task_id'),
+                   duration_seconds=round(time.monotonic()-attempt_started,3),
+                   order_kind=order.get('kind'),use_within_hours=order.get('use_within_hours'),
                    last_seller_message=outcome.get('last_seller_message'),
                    transcript=outcome.get('transcript',[]))
             if problem is None:

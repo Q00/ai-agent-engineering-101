@@ -140,6 +140,25 @@ class BuyerExplorationTests(unittest.TestCase):
         self.assertEqual(buyer_memory.context('https://shop-00','F1')['same_sku_payment_outcomes'],{'paid':1})
         self.assertEqual(buyer_memory.context('https://shop-17','F1')['same_sku_payment_outcomes'],{})
 
+    def test_slow_primary_leaves_time_for_guarded_fallback(self):
+        clock=[1000.]
+        deadlines=[]
+        def negotiate(*args,**kwargs):
+            deadlines.append(kwargs['deadline'])
+            if len(deadlines)==1:
+                clock[0]=kwargs['deadline']+.1
+                return {'receipt':None,'reason':'first shop timed out','offers':[650],'task_id':'t1'}
+            self.assertGreaterEqual(kwargs['deadline']-clock[0],80)
+            return self.outcome(700,'t2')
+        with patch.object(buyer.time,'monotonic',side_effect=lambda:clock[0]),              patch.object(buyer,'decide_json',return_value={
+                 'candidate_id':'0','opening_offer':650,'reason':'compare'}),              patch.object(buyer,'negotiate',side_effect=negotiate):
+            result=buyer.run(self.order,self.shops,self.catalog,'own',epsilon=0)
+        self.assertEqual(len(deadlines),2)
+        self.assertLess(deadlines[0],deadlines[1])
+        self.assertEqual(result['receipt']['task'],'t2')
+        self.assertTrue(result['accept']['cert'])
+        self.assertEqual(result['accept']['min_hours_left'],4)
+
     def test_expired_order_logs_no_attempt_instead_of_a_failed_exploration(self):
         self.order['expires']=time.time()-1
         with patch.object(buyer,'decide_json',return_value={

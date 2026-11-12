@@ -76,7 +76,8 @@ def run(deal: dict, catalog: dict, *, life=None,allow_forum_publish=False) -> di
             life.acquire(deal,catalog)
         except Exception as error:
             record('buyer_life_import_failed', ledger=ledger, error=type(error).__name__)
-    recent_posts = [e.get("epoch", 0) for e in read_events() if e["event"] == "forum_post"]
+    recent_posts = ([e.get("epoch", 0) for e in read_events() if e["event"] == "forum_post"]
+                    if allow_forum_publish and life is None else [])
     if (allow_forum_publish and life is None and value > 0 and list_price > 0 and price <= list_price * 0.8
             and isinstance(ledger, int) and time.time() - max(recent_posts, default=0) >= POST_INTERVAL):
         discount_pct = round((1 - price / list_price) * 100)

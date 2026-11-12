@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Any
 import decision_audit
 from context_compaction import (BUYER_MEMORY_BYTES, BUYER_BRIEF_BYTES, MAX_TURNS,
-                                bounded, price_ranges, select_cases, text)
+                                bounded, price_ranges, select_cases, text, epoch)
 
 
 EVENTS = Path("logs/buyer-events.jsonl")
@@ -68,8 +68,13 @@ def read_history(path: Path = EVENTS, *, db_path=None, now=None):
                 at = datetime.fromisoformat(event['at'].replace('Z','+00:00')).timestamp()
             except (KeyError,ValueError,TypeError,AttributeError):
                 at = now  # unknown age must not discard a possible checkout guard
-            if at >= now-15*60:
-                rows.append(event)
+            if at >= now-6*3600:
+                rows.append(event if at>=now-15*60 else {k:event.get(k) for k in (
+                    'event','at','order','order_kind','use_within_hours','order_budget')})
+        elif event.get('event') == 'buyer_policy_selection':
+            if (epoch(event.get('at')) or 0)>=now-6*3600:
+                rows.append({k:event.get(k) for k in (
+                    'event','at','order','shop','shop_name','sku')})
 
     try:
         source = path.open('rb')
@@ -97,11 +102,11 @@ def read_history(path: Path = EVENTS, *, db_path=None, now=None):
                     raise ValueError('indexed prefix has no verifiable event')
                 query = """SELECT event,at,order_id,shop_url,shop_name,
                            CASE WHEN event IN ('shop_identity','payment','settled','negotiation','broken')
-                             OR event='selection_opportunities' AND (at IS NULL OR at>=?)
+                             OR event IN ('selection_opportunities','buyer_policy_selection') AND (at IS NULL OR at>=?)
                            THEN payload END
                            FROM events WHERE source=? AND generation=? AND byte_offset<?
                            ORDER BY byte_offset"""
-                cutoff=datetime.fromtimestamp(now-15*60,timezone.utc).isoformat(timespec='seconds')
+                cutoff=datetime.fromtimestamp(now-6*3600,timezone.utc).isoformat(timespec='seconds')
                 for kind,at,order,url,name,payload in db.execute(
                         query,(cutoff,'logs/buyer-events.jsonl',generation,offset)):
                     if name and url:
@@ -139,11 +144,14 @@ class PreparedHistory(list):
         self.by_sku={}
         self.broken_names=Counter()
         self.opportunities={}
+        self.selection_starts={}
         for e in self:
             if e.get('shop_name') and e.get('shop'):
                 self.alias_names.setdefault(e['shop'],set()).add(e['shop_name'])
                 if e.get('order'):
                     self.order_names.setdefault((e['order'],e['shop']),set()).add(e['shop_name'])
+            if e.get('event')=='buyer_policy_selection' and e.get('order'):
+                self.selection_starts[e['order']]=e
             if e.get('event')=='broken':
                 self.broken_names[e.get('name')]+=1
             if e.get('event')=='selection_opportunities' and e.get('order'):

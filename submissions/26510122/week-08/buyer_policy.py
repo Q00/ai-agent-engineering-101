@@ -12,7 +12,7 @@ import json
 import math
 import os
 from pathlib import Path
-from statistics import median_low
+from statistics import median_low, median
 import time
 from urllib.request import urlopen
 
@@ -179,6 +179,84 @@ def purchase_price_guidance(cap, prices, *, list_price=None, saved_baseline=None
     low = min(baseline[0], max(1, math.floor(median * .92)))
     result.update(suggested_maximum=min(cap, upper_quartile), opening_offer_range=[low, high])
     return result
+
+
+def routing_profiles(history, order, *, now=None):
+    """Recent comparable completed shop/SKU orders, with conservative smoothing.
+
+    Unsigned receipts and unresolved checkouts are not paid. These are
+    price/condition-dependent observations, not honesty labels or blacklists.
+    """
+    now=time.time() if now is None else now
+    profiles={}
+    for name, rows in getattr(history,'by_name',{}).items():
+        episodes={}
+        for e in rows:
+            at=epoch(e.get('at'))
+            if at is None or not 0<=now-at<=6*3600 or not e.get('order') or not e.get('sku'):
+                continue
+            requirement=history.opportunities.get(e['order'],{})
+            if order.get('kind')=='food':
+                # A refusal on a much harder shelf horizon is not evidence
+                # against serving this order. Unknown old requirements stay out.
+                if (requirement.get('order_kind')!='food'
+                        or requirement.get('use_within_hours')!=order.get('use_within_hours')):
+                    continue
+            key=(e['order'],e['sku'])
+            item=episodes.setdefault(key,{'outcome':None,'at':at,'duration':None,'unusable':False})
+            item['at']=max(item['at'],at)
+            if e['event']=='negotiation':
+                if item['outcome']!='paid' and e.get('result') in ('no_receipt','invalid_receipt','shop_error'):
+                    item['outcome']='failed'
+                elif item['outcome']!='paid' and e.get('result')=='receipt_pending':
+                    item['outcome']=None  # unresolved new receipt is not a completed failure
+                duration=e.get('duration_seconds')
+                start=history.selection_starts.get(e['order'],{})
+                if type(duration) not in (int,float) and start.get('shop_name')==name and start.get('sku')==e['sku']:
+                    begin=epoch(start.get('at'))
+                    duration=at-begin if begin is not None else None
+                if type(duration) in (int,float) and math.isfinite(duration) and 0<=duration<=600:
+                    item['duration']=duration
+            elif e['event']=='payment':
+                if e.get('paid') is True and e.get('ledger') is not None:
+                    item['outcome']='paid'
+                elif e.get('paid') is False and item['outcome']!='paid':
+                    item['outcome']='failed'
+            elif e['event']=='settled' and e.get('ledger') is not None:
+                item['outcome']='paid'
+                item['unusable']=type(e.get('value')) in (int,float) and e['value']<=0
+        by_sku=defaultdict(list)
+        for (_,sku),item in episodes.items():
+            if item['outcome'] is not None:
+                by_sku[sku].append(item)
+        for sku,items in by_sku.items():
+            paid=sum(e['outcome']=='paid' for e in items)
+            unusable=sum(e['unusable'] for e in items)
+            durations=[e['duration'] for e in items if e['duration'] is not None]
+            # A neutral 3/5 prior and three one-minute observations avoid
+            # treating one lucky payment or failure as a permanent rule.
+            seconds=(sum(min(180,max(5,t)) for t in durations)+3*60)/(len(durations)+3)
+            profiles[(name,sku)]={'completed_orders_6h':len(items),'paid_orders_6h':paid,
+                'unusable_at_settlement_6h':unusable,
+                'smoothed_paid_probability':round((paid+3)/(len(items)+5),4),
+                'smoothed_unusable_probability':round(unusable/(len(items)+5),4),
+                'observed_duration_count':len(durations),
+                'median_observed_seconds':round(median(durations),1) if durations else None,
+                'smoothed_attempt_seconds':round(seconds,1)}
+    return profiles
+
+
+def routing_evidence(profile, saving):
+    evidence=dict(profile or {'completed_orders_6h':0,'paid_orders_6h':0,
+        'unusable_at_settlement_6h':0,'smoothed_paid_probability':.6,
+        'smoothed_unusable_probability':0.,'observed_duration_count':0,
+        'median_observed_seconds':None,'smoothed_attempt_seconds':60.})
+    contribution=saving if type(saving) in (int,float) and math.isfinite(saving) else 0.
+    expectation=(evidence['smoothed_paid_probability']*contribution
+                 - evidence['smoothed_unusable_probability']*(1+contribution))
+    evidence['estimated_saved_per_minute']=round(
+        expectation*60/max(5,evidence['smoothed_attempt_seconds']),6)
+    return evidence
 
 
 def acceptance(order: dict, receipt: dict | None = None) -> dict:

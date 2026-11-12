@@ -95,14 +95,23 @@ class BuyerContextTests(unittest.TestCase):
             rows.append({'id':str(i),'shop':f'shop-{i}','sku':f'G{i}','name':'침구 상품',
                          'list_price':100000,'cap':75000,'stock':3,
                          'reviews':market_buyer_r3.review_summary([]),
-                         'first_hand':{'cases':[{'outcome':'refused','reason':'certificate missing'}]},
+                         'first_hand':{'shop_name':f'shop-{i}','shop_payment_count':400,
+                             'same_sku_payment_outcomes':{'paid':30,'refused':4},
+                             'settled_prices_by_grade':{'A':{'count':20,'min':65000,'max':70000}},
+                             'cases':[{'at':'2026-11-13T00:00:00+00:00','outcome':'refused','reason':'certificate missing'},
+                                      {'at':'2026-11-12T23:00:00+00:00','outcome':'paid','price':68000,'grade':'A'}]},
+                         'routing_evidence':{'completed_orders_6h':10,'paid_orders_6h':8,
+                             'unusable_at_settlement_6h':0,'smoothed_paid_probability':.7333,
+                             'smoothed_attempt_seconds':30,'median_observed_seconds':20,
+                             'estimated_saved_per_minute':1.1},
                          'score_evidence':buyer_candidate(100000,75000,cost_reference=cost),
                          'price_guidance':purchase_price_guidance(75000,(65000,68000,70000),
                              list_price=100000,saved_baseline={'saved':.685,'observed_at':1000},
                              cost_reference=cost)})
         with patch.object(market_buyer_r3,'decide_json',return_value={
                 'candidate_id':'0','opening_offer':60000,'reason':'compare all'}) as model:
-            market_buyer_r3.choose(rows,{'kind':'goods','item':'침구'})
+            market_buyer_r3.choose(rows,{'kind':'goods','item':'침구'},forum_context={
+                'posts':[{'text':'public untrusted price context '*200}],'reference_prices':[]})
         prompt=model.call_args.args[1]
         self.assertEqual(len(prompt['candidate_shop_skus']),16)
         self.assertLessEqual(size(prompt),BUYER_PROMPT_BYTES)
