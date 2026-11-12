@@ -1,7 +1,8 @@
 """Key-level revert and the own-key voiding rule (verifier probes p3/p8, 11-12): a revert puts back only the
 experiment's own key inside a shared base (per-grade dict, accept_c block, c_first_leaves list), a write voids only
 the experiments whose own value it writes, a scope-only touch is named on the verdict, and a split's arm goes before
-policy.json changes. Fixed clock values, attempt 1's real policy.load as validate."""
+policy.json changes. Fixed clock values, attempt 1's real policy.load as validate. Since 11-12 a verdict only
+measures; the put-back runs from the tick helper below through the same key-level restore."""
 
 import copy
 import json
@@ -43,7 +44,20 @@ def force(monkeypatch, by_id):
 
 
 def tick(root, a1, now):
-    return [(e["id"], e["status"]) for e in ex.tick(root, now, _traj(root), CATS, validate=a1.load)]
+    """Tick once. A verdict never writes policy.json (byte-identical across the tick, 11-12); each row it ended
+    measured on a worse verdict then has its own key put back through ex._restore, the key-level restore the kernel
+    still uses to roll back a failed registration (and verdicts used before 11-12): the put-back these tests check."""
+    before = _bytes(root)
+    ended = ex.tick(root, now, _traj(root), CATS, validate=a1.load)
+    assert _bytes(root) == before
+    for e in ended:
+        if e["status"] == "measured" and e["verdict"].get("decision") == "worse":
+            for x in e["items"] if e.get("mode") in ex.GROUP_MODES else [e]:
+                if isinstance(x.get("raw"), dict):
+                    r = ex._restore(root, x["section"], x["key"], x["raw"], _traj(root), now, "test",
+                                    pe.kernel_tag(now, e["id"]), a1.load)
+                    assert r["ok"], r
+    return [(e["id"], e["status"]) for e in ended]
 
 
 def st(root):
@@ -88,7 +102,7 @@ def test_later_direct_write_of_a_sibling_grade_survives_the_revert(root, a1, mon
     out = ap(root, a1, [it("defaults.goods", "fresh_discount.C", 0.45)], now=S + 600)
     assert out["voided"] == [] and st(root) == {1: "running"}
     force(monkeypatch, {})
-    assert tick(root, a1, S + 100 * H) == [(1, "reverted")]
+    assert tick(root, a1, S + 100 * H) == [(1, "measured")]
     assert _pol(root)["defaults"]["goods"]["fresh_discount"] == {"B": 0.08, "C": 0.45}
     v = ex.load(root)[0]["verdict"]
     assert v["mixed_by"] == ["defaults.goods fresh_discount.C"]
@@ -113,8 +127,8 @@ def test_two_experiments_on_sibling_grades_in_one_done(root, a1, monkeypatch):
     assert all(r["ok"] for r in out["results"]), out
     e = {x["id"]: x for x in ex.load(root)}
     force(monkeypatch, {1: BETTER, 2: WORSE})
-    assert tick(root, a1, e[1]["eval_ts"] + 1) == [(1, "kept")]
-    assert tick(root, a1, e[2]["eval_ts"] + 1) == [(2, "reverted")]
+    assert tick(root, a1, e[1]["eval_ts"] + 1) == [(1, "measured")]
+    assert tick(root, a1, e[2]["eval_ts"] + 1) == [(2, "measured")]
     assert _pol(root)["defaults"]["goods"]["fresh_discount"] == {"B": 0.2, "C": 0.3}  # #1's kept B stays
 
 
@@ -123,7 +137,7 @@ def test_shop_grade_floor_list_sibling(root, a1, monkeypatch):
                         it("shop", "grade_floor_list.B", 0.5)])
     assert all(r["ok"] for r in out["results"]), out
     force(monkeypatch, {})
-    assert tick(root, a1, S + 100 * H) == [(1, "reverted")]
+    assert tick(root, a1, S + 100 * H) == [(1, "measured")]
     assert _pol(root)["shop"]["grade_floor_list"] == {"C": 0.55, "B": 0.5}  # A had no floor: removed again
 
 
@@ -134,7 +148,7 @@ def test_buyer_accept_c_later_sibling_write_survives(root, a1, monkeypatch):
     out = ap(root, a1, [it("buyer.defaults.food", "accept_c.open_frac", 0.3)], now=S + 600, role="buyer")
     assert out["results"][0]["ok"] and out["voided"] == [], out
     force(monkeypatch, {})
-    assert tick(root, a1, S + 100 * H) == [(1, "reverted")]
+    assert tick(root, a1, S + 100 * H) == [(1, "measured")]
     assert _pol(root)["buyer"]["defaults"]["food"]["accept_c"] == {"max_pay_frac": 0.6, "open_frac": 0.3}
 
 
@@ -144,7 +158,7 @@ def test_c_first_leaves_restores_that_leaf_only(root, a1, monkeypatch):
     assert _pol(root)["shop"]["c_first_leaves"] == ["소파/의자/스툴", "침대/매트리스"]
     ap(root, a1, [it("shop", "c_first_leaves.소파/의자/스툴", 0)], now=S + 600)
     force(monkeypatch, {})
-    assert tick(root, a1, S + 100 * H) == [(1, "reverted")]
+    assert tick(root, a1, S + 100 * H) == [(1, "measured")]
     assert _pol(root)["shop"]["c_first_leaves"] == []  # the later removal of the other leaf stays
 
 
@@ -155,7 +169,7 @@ def test_group_revert_restores_each_members_own_key(root, a1, monkeypatch):
     ap(root, a1, [it("defaults.goods", "fresh_discount.C", 0.45)], now=S + 600)
     assert st(root) == {1: "running"}
     force(monkeypatch, {})
-    assert tick(root, a1, S + 100 * H) == [(1, "reverted")]
+    assert tick(root, a1, S + 100 * H) == [(1, "measured")]
     P = _pol(root)
     assert P["defaults"]["goods"]["fresh_discount"] == {"B": 0.08, "C": 0.45}
     assert "max_spend_frac" not in P["shop"]
@@ -192,7 +206,7 @@ def test_unchanged_base_revert_is_byte_identical_to_the_whole_base_restore(root,
         assert out["results"][0]["ok"], (x, out)
         e = ex.load(root)[-1]
         want = _old_whole_base_restore(_pol(root), x["section"], e["raw"])
-        assert tick(root, a1, t + 100 * H) == [(e["id"], "reverted")]
+        assert tick(root, a1, t + 100 * H) == [(e["id"], "measured")]
         assert _bytes(root) == want, x
         assert _pol(root) == before, x
 
@@ -208,7 +222,7 @@ def test_legacy_raw_row_without_inherited_reverts(root, a1, monkeypatch):
     ex.save(root, rows)
     ap(root, a1, [it(BED, "price_mult", 0.85)], now=S + 600)  # another key of the same category entry
     force(monkeypatch, {})
-    assert tick(root, a1, S + 100 * H) == [(1, "reverted")]
+    assert tick(root, a1, S + 100 * H) == [(1, "measured")]
     assert _pol(root)["categories"][BED] == {"stock_target": 36, "price_mult": 0.85}
 
 
@@ -220,14 +234,14 @@ def test_legacy_raw_row_present_dict_reverts_its_grade(root, a1, monkeypatch):
     assert _pol(root)["defaults"]["food"]["fresh_discount"] == {"B": 0.1, "C": 0.3}
 
 
-def test_row_without_raw_still_reverts_through_kernel_set(root, a1, monkeypatch):
+def test_row_without_raw_ends_measured_and_keeps_the_value(root, a1, monkeypatch):
     ap(root, a1, [it("defaults.goods", "price_mult", 0.8, test="before_after")])
     rows = ex.load(root)
     del rows[0]["raw"]
     ex.save(root, rows)
     force(monkeypatch, {})
-    assert tick(root, a1, S + 100 * H) == [(1, "reverted")]
-    assert _pol(root)["defaults"]["goods"]["price_mult"] == 0.9
+    assert tick(root, a1, S + 100 * H) == [(1, "measured")]
+    assert _pol(root)["defaults"]["goods"]["price_mult"] == 0.8
 
 
 # --- inherited per-grade dicts: no pinned copy stays
@@ -238,7 +252,7 @@ def test_inherited_dict_goes_back_to_inheriting_after_a_parent_change(root, a1, 
     assert _pol(root)["categories"][BED]["fresh_discount"] == {"B": 0.1, "C": 0.3}  # materialised copy
     ap(root, a1, [it("defaults.goods", "fresh_discount.C", 0.45)], now=S + 600)
     force(monkeypatch, {})
-    assert tick(root, a1, S + 100 * H) == [(1, "reverted")]
+    assert tick(root, a1, S + 100 * H) == [(1, "measured")]
     P = _pol(root)
     assert P["categories"][BED] == {"stock_target": 36}  # no pinned C=0.3
     assert pe.effective(P, BED, "fresh_discount.C") == 0.45
@@ -248,7 +262,7 @@ def test_inherited_dict_keeps_a_later_own_grade(root, a1, monkeypatch):
     ap(root, a1, [it(SOFA, "fresh_discount.B", 0.1, test="before_after")])
     ap(root, a1, [it(SOFA, "fresh_discount.C", 0.2)], now=S + 600)
     force(monkeypatch, {})
-    assert tick(root, a1, S + 100 * H) == [(1, "reverted")]
+    assert tick(root, a1, S + 100 * H) == [(1, "measured")]
     assert _pol(root)["categories"][SOFA] == {"fresh_discount": {"B": 0.08, "C": 0.2}}
 
 
@@ -264,7 +278,7 @@ def test_unrelated_shop_write_voids_nothing_and_is_named_on_the_verdicts(root, a
     assert r["voided"] == [] and set(st(root).values()) == {"running"}
     force(monkeypatch, {})
     got = tick(root, a1, S + 100 * H)
-    assert sorted(got) == [(1, "reverted"), (2, "reverted"), (3, "reverted")]
+    assert sorted(got) == [(1, "measured"), (2, "measured"), (3, "measured")]
     assert all(e["verdict"]["mixed_by"] == ["shop grade_floor_list.A"] for e in ex.load(root))
     P = _pol(root)
     assert P["shop"]["grade_floor_list"] == {"C": 0.55, "A": 0.6}

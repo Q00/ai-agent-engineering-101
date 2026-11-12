@@ -19,8 +19,8 @@
 ## 실험 규칙 (커널이 강제함)
 
 - 모든 policy 수정은 실험으로 등록됨. 방식은 커널이 고름
-- 동시 비교: 판매 쪽 값(price_mult, min_margin, concession, max_rounds, warranty_uplift, fresh_discount, warranty_hours, grade_floor_list)은 팔리는 물건의 절반에만 새 값을 적용해 같은 시간에 나란히 비교함. policy.json은 판정 때까지 옛 값 그대로임. 새 값 쪽이 좋으면 채택(그때 policy.json에 씀), 아니면 버림
-- 전후 비교: 구매 쪽 값과 재고 값(stock_target, qty_per_buy 등)은 바로 적용한 뒤 수정 전후 같은 길이 구간을 비교함. 나빠지면 커널이 되돌리고 아니면 유지함
+- 동시 비교: 판매 쪽 값(price_mult, min_margin, concession, max_rounds, warranty_uplift, fresh_discount, warranty_hours, grade_floor_list)은 팔리는 물건의 절반에만 새 값을 적용해 같은 시간에 나란히 비교함. policy.json은 옛 값 그대로이고, 판정 때 절반 적용이 끝남. 커널은 판정 숫자만 알려 주고 새 값을 쓰지 않음: 새 값을 쓰려면 네가 다시 적용함
+- 전후 비교: 구매 쪽 값과 재고 값(stock_target, qty_per_buy 등)은 바로 적용한 뒤 수정 전후 같은 길이 구간을 비교함. 커널은 판정 숫자만 알려 주고 값은 그대로 둠: 되돌릴지는 네가 정함
 - 판정 기준: 판매 쪽은 시간당 순이익(보증 환불 차감)에 매출의 점수 값을 더한 것과 별점, 구매 쪽은 saved 비율을 올린 양. 차이가 잡음(표준오차 2배)을 넘어야 분명한 판정이고, 불분명하면 구간을 한 번 늘린 뒤 점 추정으로 정함
 - 진행 중인 실험과 범위가 겹치는 수정은 거절됨. 판정 시각은 상태 카드의 [실험] 줄에 있음
 - 되돌려진 값을 같은 방향으로 다시 걸려면 그때와 다른 근거가 있어야 함. 근거는 reason에 적음

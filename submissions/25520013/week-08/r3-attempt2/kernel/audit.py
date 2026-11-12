@@ -23,7 +23,7 @@ from kernel import experiments as ex
 TRAJ = os.path.join("a2", "trajectory.jsonl")
 TRAJ_BYTES = 30_000_000
 GROUPS = ("sale", "restock", "buyer", "shop")
-ENDED = ("adopted", "kept", "dropped", "reverted", "voided")
+ENDED = ("adopted", "kept", "dropped", "reverted", "voided", "measured")  # measured: report-only verdicts since 11-12
 REASON_CHARS = 40
 LINES_MAX = 6
 LINE_CHARS = 200
@@ -188,7 +188,7 @@ def report(root, now, hours=24, since=None, listed=None, role=None, agent="opera
     running = [e for e in rows if e.get("status") == "running"]
     exps = {
         s: sum(1 for e in ended if e["status"] == s)
-        for s in ("adopted", "kept", "dropped", "reverted", "voided")
+        for s in ENDED
     }
     exps = {
         "started": len(started),

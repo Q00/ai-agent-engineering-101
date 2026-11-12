@@ -294,7 +294,7 @@ def test_corrupt_arms_file_is_rebuilt_from_the_ledger(root, a1):
     assert [a["id"] for a in a1.load_arms(os.path.join(root, "policy.json"), S)] == [r["experiment"]]
 
 
-def test_thin_arm_is_never_adopted(root, a1):
+def test_thin_arm_ends_measured(root, a1):
     r = _start(root, a1, item={"window_h": 8})
     rows, k, got = [], 0, {"a": 0, "b": 0}
     while got["a"] < 2 or got["b"] < 9:
@@ -306,7 +306,7 @@ def test_thin_arm_is_never_adopted(root, a1):
         rows += _sale(S + k * 300, "BED1", 1_500_000, 1_000_000, unit=f"t{k}")
     _write_events(root, rows)
     ex.tick(root, r["eval_ts"] + 1, _traj(root), CATS, validate=a1.load)
-    assert ex.load(root)[0]["status"] == "dropped"
+    assert ex.load(root)[0]["status"] == "measured" and ex.load_arms(root) == []
 
 
 def test_no_split_when_the_seller_code_has_no_arms(root, a1):
@@ -345,34 +345,20 @@ def test_sequential_is_not_overwritten_by_a_split_elsewhere_in_scope(root, a1):
 
 
 @pytest.mark.parametrize(
-    "section,key,value,check",
+    "section,key,value",
     [
-        (
-            BED,
-            "price_mult",
-            0.8,
-            lambda p: p["categories"][BED] == {"stock_target": 36, "price_mult": 0.8},
-        ),
-        (
-            BED,
-            "fresh_discount.B",
-            0.1,  # inherited from defaults.goods: the whole dict lands in the category
-            lambda p: p["categories"][BED]["fresh_discount"] == {"B": 0.1, "C": 0.3},
-        ),
-        (
-            "shop",
-            "grade_floor_list.A",
-            0.5,  # a grade that did not exist
-            lambda p: p["shop"]["grade_floor_list"] == {"C": 0.55, "A": 0.5},
-        ),
+        (BED, "price_mult", 0.8),
+        (BED, "fresh_discount.B", 0.1),  # inherited from defaults.goods
+        ("shop", "grade_floor_list.A", 0.5),  # a grade that did not exist
     ],
 )
-def test_better_b_is_adopted(root, a1, section, key, value, check):
+def test_better_b_is_measured_and_not_written(root, a1, section, key, value):
+    before = _bytes(root)
     r = _start(root, a1, section, key, value)
     assert r["ok"] and r["mode"] == "split", r
     _write_events(root, _balanced(1, S, 3, "BED1", 100_000, 400_000, per_arm=4))
     out = ex.tick(root, r["eval_ts"] + 1, _traj(root), CATS, validate=a1.load)
-    assert [x["status"] for x in out] == ["adopted"], ex.load(root)
+    assert [x["status"] for x in out] == ["measured"], ex.load(root)
     e = ex.load(root)[0]
     v = e["verdict"]
     assert (v["decision"], v["reason"], v["final"], v["n_a"], v["n_b"]) == (
@@ -383,24 +369,18 @@ def test_better_b_is_adopted(root, a1, section, key, value, check):
         12,
     )
     assert v["b"] > v["a"] and v["effect"] > 2 * v["se"]
-    pol = _pol(root)
-    assert check(pol) and pe.effective(pol, section, key) == value
-    a1.load(os.path.join(root, "policy.json"))
+    assert "적용되지 않음" in v["note"]
+    assert _bytes(root) == before and pe.effective(_pol(root), section, key) != value
     assert ex.load_arms(root) == []
-    k = [x for x in _rows(root, "policy_edit") if x.get("by") == "kernel"]
-    assert (
-        len(k) == 1
-        and "#1" in k[0]["reason"]
-        and k[0]["backup"].startswith("a2/policy_bak/")
-    )
+    assert not [x for x in _rows(root, "policy_edit") if x.get("by") == "kernel"]
 
 
-def test_worse_b_is_dropped_and_policy_untouched(root, a1):
+def test_worse_b_is_measured_and_policy_untouched(root, a1):
     before = _bytes(root)
     r = _start(root, a1)
     _write_events(root, _balanced(1, S, 3, "BED1", 400_000, 100_000, per_arm=4))
     out = ex.tick(root, r["eval_ts"] + 1, _traj(root), CATS, validate=a1.load)
-    assert [x["status"] for x in out] == ["dropped"]
+    assert [x["status"] for x in out] == ["measured"]
     assert ex.load(root)[0]["verdict"]["decision"] == "worse"
     assert _bytes(root) == before and ex.load_arms(root) == []
     assert not [x for x in _rows(root, "policy_edit") if x.get("by") == "kernel"]
@@ -457,7 +437,7 @@ def test_unit_missing_is_counted_and_thin_above_20_percent(root, a1):
     )
 
 
-def test_unclear_extends_with_the_arm_then_status_quo_wins(root, a1):
+def test_unclear_extends_with_the_arm_then_ends_measured(root, a1):
     r = _start(root, a1)
     _write_events(root, _balanced(1, S, 6, "BED1", 100_000, 100_000))
     ex.tick(root, r["eval_ts"] + 1, _traj(root), CATS, validate=a1.load)
@@ -472,12 +452,12 @@ def test_unclear_extends_with_the_arm_then_status_quo_wins(root, a1):
     assert ex.load_arms(root)[0]["until"] == S + 8 * H + 1800 == e["arm"]["until"]
     ex.tick(root, e["eval_ts"] + 1, _traj(root), CATS, validate=a1.load)
     e = ex.load(root)[0]
-    assert e["status"] == "dropped" and e["verdict"]["final"] == "point_estimate"
-    assert e["verdict"]["adopt"] is False and ex.load_arms(root) == []
+    assert e["status"] == "measured" and e["verdict"]["final"] == "point_estimate"
+    assert "adopt" not in e["verdict"] and ex.load_arms(root) == []
     assert "점추정" in "\n".join(ex.lines(root, e["ended_ts"]))
 
 
-def test_weak_final_adopts_b_above_one_se(root, a1):
+def test_weak_final_above_one_se_is_measured_not_adopted(root, a1):
     r = _start(root, a1, item={"window_h": 8})
     rows = []
     for h, gb in enumerate(
@@ -491,7 +471,7 @@ def test_weak_final_adopts_b_above_one_se(root, a1):
     assert not e["extended"]  # window 8 already: decided at once
     assert v["se"] < v["effect"] < 2 * v["se"] and v["final"] == "point_estimate"
     assert (
-        e["status"] == "adopted" and _pol(root)["categories"][BED]["price_mult"] == 0.8
+        e["status"] == "measured" and "price_mult" not in _pol(root)["categories"][BED]
     )
 
 
@@ -502,46 +482,47 @@ def test_expired_arm_is_decided_at_once(root, a1):
         root, r["eval_ts"] + 3600, _traj(root), CATS, validate=a1.load
     )  # daemon down past until
     e = ex.load(root)[0]
-    assert e["status"] == "dropped" and not e["extended"]
+    assert e["status"] == "measured" and not e["extended"]
 
 
-def test_adopt_failure_retries_then_voids(root, a1):
+def test_split_evaluation_failure_retries_then_voids(root, a1, monkeypatch):
     r = _start(root, a1)
     _write_events(root, _balanced(1, S, 3, "BED1", 100_000, 400_000, per_arm=4))
 
-    def bad(p):
+    def bad(*a, **k):
         raise ValueError("disk full")
 
+    monkeypatch.setattr(ex, "evaluate_split", bad)
     t = r["eval_ts"] + 1
     for i in range(5):
-        assert ex.tick(root, t + i * 601, _traj(root), CATS, validate=bad) == []
+        assert ex.tick(root, t + i * 601, _traj(root), CATS, validate=a1.load) == []
     e = ex.load(root)[0]
     assert (
         e["status"] == "running" and e["fails"] == 5 and "disk full" in e["last_error"]
     )
-    assert (
-        ex.load_arms(root) == []
-    )  # the arm goes before the write, so a retry sees the old value
-    out = ex.tick(root, t + 5 * 601, _traj(root), CATS, validate=bad)
+    out = ex.tick(root, t + 5 * 601, _traj(root), CATS, validate=a1.load)
     e = ex.load(root)[0]
     assert [x["status"] for x in out] == ["voided"] and e["verdict"][
         "reason"
     ] == "eval_error"
-    assert _pol(root)["categories"][BED].get("price_mult") is None
+    assert ex.load_arms(root) == [] and _pol(root)["categories"][BED].get("price_mult") is None
 
 
-def test_adopt_retry_succeeds(root, a1):
+def test_split_evaluation_retry_ends_measured(root, a1, monkeypatch):
     r = _start(root, a1)
     _write_events(root, _balanced(1, S, 3, "BED1", 100_000, 400_000, per_arm=4))
+    real = ex.evaluate_split
 
-    def bad(p):
+    def bad(*a, **k):
         raise ValueError("disk full")
 
+    monkeypatch.setattr(ex, "evaluate_split", bad)
     t = r["eval_ts"] + 1
-    assert ex.tick(root, t, _traj(root), CATS, validate=bad) == []
+    assert ex.tick(root, t, _traj(root), CATS, validate=a1.load) == []
+    monkeypatch.setattr(ex, "evaluate_split", real)
     out = ex.tick(root, t + 601, _traj(root), CATS, validate=a1.load)
-    assert [x["status"] for x in out] == ["adopted"]
-    assert _pol(root)["categories"][BED]["price_mult"] == 0.8
+    assert [x["status"] for x in out] == ["measured"]
+    assert _pol(root)["categories"][BED].get("price_mult") is None
 
 
 def test_split_register_failure_leaves_nothing(root, a1, monkeypatch):
@@ -583,8 +564,8 @@ def test_old_format_entry_still_evaluates(root, a1):
     }
     ex.save(root, [old])
     out = ex.tick(root, S + 5 * H + 1, _traj(root), CATS, validate=a1.load)
-    assert [x["status"] for x in out] == ["reverted"]
-    assert _pol(root)["categories"][BED]["price_mult"] == 0.9
+    assert [x["status"] for x in out] == ["measured"]
+    assert _pol(root)["categories"][BED]["price_mult"] == 0.8
 
 
 # --- briefing
@@ -636,7 +617,7 @@ def test_lines_both_modes_fit(root):
     text = "\n".join(out)
     print(text)
     assert len(text) <= 1400
-    assert out[0] == "[실험] 진행 8건, 최근 판정 5건 중 유지 1, 되돌림 1, 채택 0, 버림 1"
+    assert out[0] == "[실험] 진행 8건, 최근 판정 5건 중 판정만 (값 그대로) 0, 유지 1, 되돌림 1, 채택 0, 버림 1"
     assert sum(1 for x in out if x.startswith("  진행 #")) == 6 and "  … 진행 2건 더" in out
     assert sum(1 for x in out if x.startswith("  #")) == 5
     assert any(x.startswith("  진행 #1 침대/매트리스 price_mult 0.1235→0.1, 판정 ") for x in out)
@@ -697,5 +678,6 @@ def test_split_ended_line_and_summary(root):
         "voided": 1,
         "adopted": 1,
         "dropped": 1,
+        "measured": 0,
     }
     assert s["hit_rate"] == 0.5

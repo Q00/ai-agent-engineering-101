@@ -1,5 +1,5 @@
-"""DESIGN 14.4 step 1: experiment ledger, before/after verdict and automatic revert, on synthetic data roots.
-Reverted policy files are checked with attempt 1's real policy.load (r3/policy.py, read only). Fixed clock values."""
+"""DESIGN 14.4 step 1: experiment ledger and before/after verdict (report-only since 11-12), on synthetic data roots.
+Restored policy files are checked with attempt 1's real policy.load (r3/policy.py, read only). Fixed clock values."""
 
 import copy
 import importlib.util
@@ -615,7 +615,7 @@ def _due(e):
     return e["eval_ts"] + 1
 
 
-def test_tick_kept(root, a1):
+def test_tick_better_is_measured(root, a1):
     _set_pol(root, lambda p: p["categories"][BED].update(price_mult=0.8))
     _write_events(
         root, _hourly(S - 3 * H, 3, "BED1", 100_000) + _hourly(S, 3, "BED1", 300_000)
@@ -623,10 +623,10 @@ def test_tick_kept(root, a1):
     e = _exp(BED, "price_mult", old=0.9, new=0.8)
     _put_ledger(root, [e])
     out = ex.tick(root, _due(e), _traj(root), CATS, validate=a1.load)
-    assert [x["status"] for x in out] == ["kept"]
+    assert [x["status"] for x in out] == ["measured"]
     assert _pol(root)["categories"][BED]["price_mult"] == 0.8
     end = _rows(root, "experiment_end")
-    assert end[0]["status"] == "kept" and end[0]["verdict"]["decision"] == "better"
+    assert end[0]["status"] == "measured" and end[0]["verdict"]["decision"] == "better"
 
 
 def _worse(root):
@@ -636,64 +636,36 @@ def _worse(root):
 
 
 @pytest.mark.parametrize(
-    "section,key,old,new,setup,check",
+    "section,key,old,new,setup",
     [
-        (
-            BED,
-            "price_mult",
-            0.9,
-            0.8,
-            lambda p: p["categories"][BED].update(price_mult=0.8),
-            lambda p: p["categories"][BED]["price_mult"] == 0.9,
-        ),
+        (BED, "price_mult", 0.9, 0.8, lambda p: p["categories"][BED].update(price_mult=0.8)),
         (
             "defaults.goods",
             "fresh_discount.C",
             0.3,
             0.25,
             lambda p: p["defaults"]["goods"]["fresh_discount"].update(C=0.25),
-            lambda p: p["defaults"]["goods"]["fresh_discount"] == {"B": 0.08, "C": 0.3},
         ),
-        (
-            "shop",
-            "c_first_leaves.침대/매트리스",
-            0,
-            1,
-            lambda p: p["shop"].update(c_first_leaves=["침대/매트리스"]),
-            lambda p: p["shop"]["c_first_leaves"] == [],
-        ),
-        (
-            "shop",
-            "grade_floor_list.C",
-            0.55,
-            0.6,
-            lambda p: p["shop"]["grade_floor_list"].update(C=0.6),
-            lambda p: p["shop"]["grade_floor_list"] == {"C": 0.55},
-        ),
+        ("shop", "c_first_leaves.침대/매트리스", 0, 1, lambda p: p["shop"].update(c_first_leaves=["침대/매트리스"])),
+        ("shop", "grade_floor_list.C", 0.55, 0.6, lambda p: p["shop"]["grade_floor_list"].update(C=0.6)),
     ],
 )
-def test_tick_reverted(root, a1, section, key, old, new, setup, check):
+def test_tick_worse_is_measured_and_the_value_stays(root, a1, section, key, old, new, setup):
     _set_pol(root, setup)
     _worse(root)
     e = _exp(section, key, old=old, new=new)
     _put_ledger(root, [e])
+    before = open(os.path.join(root, "policy.json"), "rb").read()
     out = ex.tick(root, _due(e), _traj(root), CATS, validate=a1.load)
-    assert [x["status"] for x in out] == ["reverted"], ex.load(root)
-    pol = _pol(root)
-    assert check(pol)
-    a1.validate(pol)
-    a1.load(os.path.join(root, "policy.json"))
-    assert pe.effective(pol, section, key) == old
-    edit = [r for r in _rows(root, "policy_edit") if r.get("by") == "kernel"]
-    assert (
-        len(edit) == 1
-        and edit[0]["new"] == old
-        and edit[0]["backup"].startswith("a2/policy_bak/")
-    )
-    assert _rows(root, "experiment_end")[0]["status"] == "reverted"
+    assert [x["status"] for x in out] == ["measured"], ex.load(root)
+    assert open(os.path.join(root, "policy.json"), "rb").read() == before
+    assert pe.effective(_pol(root), section, key) == new
+    assert not [r for r in _rows(root, "policy_edit") if r.get("by") == "kernel"]
+    end = _rows(root, "experiment_end")[0]
+    assert end["status"] == "measured" and end["verdict"]["decision"] == "worse"
 
 
-def test_tick_reverts_a_created_grade_floor(root, a1):
+def test_tick_leaves_a_created_grade_floor_and_kernel_set_removes_it(root, a1):
     res = pe.apply(
         root,
         [
@@ -714,9 +686,9 @@ def test_tick_reverts_a_created_grade_floor(root, a1):
     _worse(root)
     assert [
         x["status"] for x in ex.tick(root, _due(e), _traj(root), CATS, validate=a1.load)
-    ] == ["reverted"]
+    ] == ["measured"]
     pol = _pol(root)
-    assert pol["shop"]["grade_floor_list"] == {"C": 0.55}
+    assert pol["shop"]["grade_floor_list"] == {"C": 0.55, "A": 0.5}  # the verdict wrote nothing
     a1.validate(pol)
     # the only grade: the dict goes too
     _set_pol(root, lambda p: p["shop"].update(grade_floor_list={"A": 0.5}))
@@ -772,8 +744,8 @@ def test_tick_not_due_does_nothing(root, a1):
     assert ex.load(root)[0]["status"] == "running"
 
 
-@pytest.mark.parametrize("after_g,status", [(-50_000, "reverted"), (50_000, "kept")])
-def test_tick_extends_then_point_estimate(root, a1, after_g, status):
+@pytest.mark.parametrize("after_g", [-50_000, 50_000])
+def test_tick_extends_then_point_estimate(root, a1, after_g):
     _set_pol(root, lambda p: p["categories"][BED].update(price_mult=0.8))
     # 2 sales before (0 gross), 2 after: thin both times
     _write_events(
@@ -798,13 +770,11 @@ def test_tick_extends_then_point_estimate(root, a1, after_g, status):
     out = ex.tick(root, x["eval_ts"] + 1, _traj(root), CATS, validate=a1.load)
     x = ex.load(root)[0]
     assert (
-        x["status"] == status
+        x["status"] == "measured"
         and x["verdict"]["final"] == "point_estimate"
         and x["verdict"]["n_after"] == 2
     )
-    assert _pol(root)["categories"][BED]["price_mult"] == (
-        0.9 if status == "reverted" else 0.8
-    )
+    assert _pol(root)["categories"][BED]["price_mult"] == 0.8  # either sign: the value stays
 
 
 def test_extension_at_max_window_keeps_8(root, a1):
@@ -816,7 +786,7 @@ def test_extension_at_max_window_keeps_8(root, a1):
     assert x["window_h"] == 8 and x["extended"] and x["status"] == "running"
 
 
-def test_tick_zero_activity_kept(root, a1):
+def test_tick_zero_activity_measured(root, a1):
     _set_pol(root, lambda p: p["categories"][BED].update(price_mult=0.8))
     # an old row elsewhere in the shop: the events read reach back past the before window, which just had no sales
     _write_events(root, _sale(S - 20 * H, "SOFA1", 1_100_000, 1_000_000))
@@ -828,22 +798,24 @@ def test_tick_zero_activity_kept(root, a1):
     x = ex.load(root)[0]
     assert (
         len(out) == 1
-        and x["status"] == "kept"
+        and x["status"] == "measured"
         and x["verdict"]["final"] == "no_activity"
     )
 
 
-def test_tick_revert_failure_is_retried(root, a1):
+def test_tick_evaluation_failure_is_retried(root, a1, monkeypatch):
     _set_pol(root, lambda p: p["categories"][BED].update(price_mult=0.8))
     _worse(root)
     e = _exp(BED, "price_mult", old=0.9, new=0.8)
     _put_ledger(root, [e])
+    real = ex.evaluate
 
-    def bad(p):
+    def bad(*a, **k):
         raise ValueError("disk full")
 
+    monkeypatch.setattr(ex, "evaluate", bad)
     t = _due(e)
-    assert ex.tick(root, t, _traj(root), CATS, validate=bad) == []
+    assert ex.tick(root, t, _traj(root), CATS, validate=a1.load) == []
     x = ex.load(root)[0]
     assert (
         x["status"] == "running"
@@ -855,11 +827,12 @@ def test_tick_revert_failure_is_retried(root, a1):
         ex.tick(root, t + 300, _traj(root), CATS, validate=a1.load) == []
     )  # inside the 10 min wait
     assert ex.load(root)[0]["status"] == "running"
+    monkeypatch.setattr(ex, "evaluate", real)
     out = ex.tick(root, t + 601, _traj(root), CATS, validate=a1.load)
-    assert [x["status"] for x in out] == ["reverted"] and "last_error" not in ex.load(
+    assert [x["status"] for x in out] == ["measured"] and "last_error" not in ex.load(
         root
     )[0]
-    assert _pol(root)["categories"][BED]["price_mult"] == 0.9
+    assert _pol(root)["categories"][BED]["price_mult"] == 0.8
 
 
 def test_tick_never_raises_on_corrupt_entries(root, a1):
@@ -941,7 +914,7 @@ def test_lines_and_summary(root):
     out = ex.lines(root, S + 7 * H)
     text = "\n".join(out)
     print(text)
-    assert out[0] == "[실험] 진행 1건, 최근 판정 3건 중 유지 1, 되돌림 1"
+    assert out[0] == "[실험] 진행 1건, 최근 판정 3건 중 판정만 (값 그대로) 0, 유지 1, 되돌림 1"
     assert out[1].startswith("  진행 #4 buyer.goods max_pay_frac 0.85→0.9, 판정 ")
     assert "가설: 상한을" in out[1] and len(out[1]) < 160
     assert any(
@@ -972,6 +945,7 @@ def test_lines_and_summary(root):
         "voided": 1,
         "adopted": 0,
         "dropped": 0,
+        "measured": 0,
     }
     assert s["hit_rate"] == 0.5
     assert ex.summary(root, S + 40 * H)["counts"]["kept"] == 0
@@ -1109,7 +1083,7 @@ def test_cost_unknown_at_final_keeps_the_value(root, a1):
     e = _exp(BED, "price_mult", old=0.9, new=0.8, extended=True)
     _put_ledger(root, [e])
     out = ex.tick(root, _due(e), _traj(root), CATS, validate=a1.load)
-    assert [x["status"] for x in out] == ["kept"]
+    assert [x["status"] for x in out] == ["measured"]
     v = ex.load(root)[0]["verdict"]
     assert (v["reason"], v["final"]) == ("cost_unknown", "cost_unknown")
     assert _pol(root)["categories"][BED]["price_mult"] == 0.8
@@ -1131,7 +1105,7 @@ def test_no_baseline_extends_then_keeps(root, a1, first):
     assert x["first_verdict"]["baseline"] is False
     ex.tick(root, x["eval_ts"] + 1, _traj(root), CATS, validate=a1.load)
     x = ex.load(root)[0]
-    assert x["status"] == "kept" and x["verdict"]["final"] == "no_baseline"
+    assert x["status"] == "measured" and x["verdict"]["final"] == "no_baseline"
     assert (
         x["verdict"]["decision"] == "no_baseline"
     )  # never "better" from an empty baseline
@@ -1310,7 +1284,7 @@ def test_eval_error_voids_after_six_failures(root, a1):
         ),  # a scalar the entry held
     ],
 )
-def test_sequential_revert_restores_the_raw_state(root, a1, item, sku):
+def test_sequential_raw_state_restores_exactly_and_the_verdict_never_does(root, a1, item, sku):
     traj = _traj(root)
     res = ex.start(
         root,
@@ -1330,8 +1304,14 @@ def test_sequential_revert_restores_the_raw_state(root, a1, item, sku):
         _hourly(S - exp["window_h"] * H, exp["window_h"], sku, 300_000)
         + _hourly(S, exp["window_h"], sku, 100_000),
     )
+    after = _pol(root)
     out = ex.tick(root, exp["eval_ts"] + 1, traj, CATS, validate=a1.load)
-    assert [x["status"] for x in out] == ["reverted"], ex.load(root)
+    assert [x["status"] for x in out] == ["measured"], ex.load(root)
+    assert _pol(root) == after  # the verdict wrote nothing
+    # the raw state the ledger keeps (used to roll back a failed registration) puts the key back exactly
+    r = ex._restore(root, exp["section"], exp["key"], exp["raw"], traj, S + 100 * H, "test",
+                    pe.kernel_tag(S + 100 * H, exp["id"]), a1.load)
+    assert r["ok"], r
     assert (
         _pol(root) == POLICY
     )  # exactly as before: no pinned copy of an inherited value

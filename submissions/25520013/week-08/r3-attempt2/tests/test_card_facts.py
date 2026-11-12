@@ -296,10 +296,9 @@ def _root_like(root, tag, exps, rows):
 
 
 STARS = "; 리뷰가 양쪽 10건 이상이고 별점이 0.15 넘게 낮아지면 차이와 상관없이 악화 판정"  # the shop side's guard
-LAST_SPLIT = ("마지막 구간이라 못 미치면 B가 A보다 1se(±{}) 넘게 좋고 표본이 각 5 이상일 때만 B를 채택하고 아니면 A로 둠 "
-              "(원가나 단위를 모르는 판매가 많아도 A로 둠)")
-LAST_SEQ = ("마지막 구간이라 못 미치면 차이의 부호로 정함 (0 이상이면 값 유지, 음이면 되돌림; "
-            "원가 모르는 판매가 많거나 전후 모두 판매가 없으면 값 유지)")
+LAST_SPLIT = ("마지막 구간이라 못 미치면 점추정으로 판정만 냄 (1se ±{}); 판정 때 반쪽 적용이 끝나고 값은 A 그대로이며 "
+              "B는 네가 쓸 때만 적용됨")
+LAST_SEQ = "마지막 구간이라 못 미치면 점추정으로 판정만 내고 값은 네가 둔 그대로임"
 
 
 def _ab_sales(ua, ub, net_a, net_b):
@@ -472,12 +471,11 @@ def test_interim_line_of_a_buyer_experiment_matches_hand_arithmetic(root, monkey
         "    지금까지 2.0/3시간: 거래 전 3 → 후 2 (이 속도면 판정 때 후 약 3, 판정에 필요한 표본 5), 전 보정 0.200/h, "
         "후 0.300/h, 차이 +0.100/h. 시간별 흔들림이 이대로면 뚜렷한 판정에 필요한 차이는 ±0.200/h부터 "
         "(잡음(2se)과 전 보정 값의 10% 기준 중 큰 쪽), 못 미치면 커널이 구간을 6시간으로 늘려 한 번 더 봄")
-    # once extended the sign decides; the buyer side has no stars guard and no unknown-cost exception
+    # once extended a weak verdict is only reported; the buyer side has no stars guard
     rx = _root_like(root, "-bx", [dict(e, extended=True)], [json.loads(x) for x in open(
         os.path.join(root, ".r3/events.jsonl"), encoding="utf-8") if x.strip()])
     assert ex.lines(rx, S + 2 * H, interim=True)[2].endswith(
-        "(잡음(2se)과 전 보정 값의 10% 기준 중 큰 쪽), 마지막 구간이라 못 미치면 차이의 부호로 정함 "
-        "(0 이상이면 값 유지, 음이면 되돌림; 전후 모두 거래가 없으면 값 유지)")
+        "(잡음(2se)과 전 보정 값의 10% 기준 중 큰 쪽), " + LAST_SEQ)
 
 
 def test_interim_noise_of_a_before_after_experiment_does_not_move_with_the_wake_time(root):

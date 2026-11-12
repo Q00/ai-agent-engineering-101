@@ -46,7 +46,8 @@ OPERATOR_STORE = ("harness_edit", "reflection", "version_result")
 # kernel verdicts, investigator findings and wake summaries: what the compact structure learns
 ALWAYS_STORE = ("experiment_end", "code_edit_end", "finding", "wake_summary")
 ROLES = ("shop", "buyer", "analyst")  # a row a role operator's process wrote carries its role; memories keep it as metadata
-EXP_STATUS = {"adopted": "채택", "dropped": "버림", "kept": "유지", "reverted": "되돌림", "voided": "무효"}
+EXP_STATUS = {"adopted": "채택", "dropped": "버림", "kept": "유지", "reverted": "되돌림", "voided": "무효",
+              "measured": "판정만 (값 그대로)"}
 FIELD_CAP = 200
 TEXT_CAP = 4_000  # a finding's or a wake summary's text
 METRIC_LABELS = (
@@ -162,6 +163,8 @@ def _experiment_text(row):
         f" ({'동시 비교' if row.get('mode') == 'split' else '전후 비교'})",
         f"판정 {EXP_STATUS.get(row.get('status'), row.get('status'))}",
     ]
+    if row.get("status") == "measured" and v.get("decision"):
+        parts.append(f"결과 {v['decision']}")
     for k, label in (("a", "기존 값 쪽 시간당"), ("b", "새 값 쪽 시간당"), ("before", "수정 전"), ("after", "수정 후"),
                      ("effect", "차이"), ("se", "표준오차"), ("n_a", "기존 쪽 판매 수"), ("n_b", "새 쪽 판매 수"),
                      ("hours", "비교 시간")):

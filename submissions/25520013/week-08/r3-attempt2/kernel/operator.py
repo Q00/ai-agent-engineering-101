@@ -229,8 +229,8 @@ COMPACT_SCHEMA = """한 단계에 JSON 객체 하나로만 답함. 도구는 이
   "code": {"edits": [{"file": "<policy.py|hooks/restock.py|hooks/market_buyer.py|hooks/seller.py>", "old": "<바꿀 원문 그대로>", "new": "<새 글>"}], "reason": "<근거>", "expect": "<기대 효과>"},
   "note": "<이번 점검 한 줄 요약>"}}
 done의 모든 항목은 선택임. 지금 값과 범위(최소, 최대)는 policy 도구로 봄. 범위 밖 값은 거절됨.
-policy 항목은 몇 개든 한 번에 함께 적용됨. test는 바꾼 값의 효과를 커널이 재는 방식임: none은 그냥 적용함(커널의 판정도 되돌림도 없음). before_after는 바로 적용하고 수정 전후 window_h시간을 비교해 나빠지면 커널이 되돌림. 같은 group 이름의 before_after 항목은 실험 하나로 함께 판정되고 나빠지면 함께 되돌려짐.
-split은 판매 구역의 price_mult, min_margin, concession, max_rounds, warranty_uplift, fresh_discount, warranty_hours, grade_floor_list에만 되고, 판매되는 물건의 절반에만 새 값을 적용해 같은 시간에 비교한 뒤 판정 때 채택하거나 버림.
+policy 항목은 몇 개든 한 번에 함께 적용됨. test는 바꾼 값의 효과를 커널이 재는 방식임. 커널은 재서 숫자로 알려 주기만 하고 값을 되돌리거나 채택하지 않음: 값은 네가 둔 그대로이고, 판정을 보고 바꿀지는 네가 정함. none은 그냥 적용함(판정 없음). before_after는 바로 적용하고 수정 전후 window_h시간을 비교한 판정을 알려 줌. 같은 group 이름의 before_after 항목은 실험 하나로 함께 판정됨.
+split은 판매 구역의 price_mult, min_margin, concession, max_rounds, warranty_uplift, fresh_discount, warranty_hours, grade_floor_list에만 되고, 판매되는 물건의 절반에만 새 값을 적용해 같은 시간에 비교함. 판정 때 절반 적용이 끝나고 policy 값은 기존 값 그대로임: 새 값을 쓰려면 네가 다시 적용함.
 진행 중인 실험의 범위를 다시 바꾸면 그 실험은 무효로 끝나고 새 값이 적용됨. 실험 판정은 상태 카드의 [실험] 줄에, 그냥 적용한 값은 experiments 도구에 나옴.
 strategy는 네 전략 메모임: 쓰면 다음 점검부터 프롬프트 위쪽에 계속 나옴. next_wake_min은 다음 점검을 몇 분 뒤에 할지 정함. 실험이나 코드 수정의 판정, 순위 급변, 경보가 오면 그 전에도 깨어남.
 code는 규칙 코드를 고침: 고칠 파일은 이번 점검에서 code_read로 먼저 읽음. old는 파일에 정확히 한 번 나오는 원문임.

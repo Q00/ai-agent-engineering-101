@@ -1,27 +1,28 @@
-"""Experiment ledger, verdicts and automatic revert or adoption for operator policy edits (human code, not editable by
-the model).
+"""Experiment ledger and verdicts for operator policy edits (human code, not editable by the model).
 
 DESIGN 14.4 step 1. apply_policy() (and start(), its one-item wrapper) checks, writes and registers as
-one step and never raises. Modes of an experiment:
+one step and never raises. Since 11-12 (성수님: agents decide all strategy) a verdict never changes a policy value:
+it reports its numbers and ends the experiment as "measured"; the operator decides what to write. Modes:
 
 - sequential: the edit goes into policy.json and the experiment compares the metric over the window_h hours after it
   with the window_h hours before it (shop side: the before value scaled by the market's revenue rate in the same
-  scope; buyer side: by the other buyers' deal rate), then keeps the edit, puts its own key back from the section's
-  raw state (policy_edit.kernel_restore, key level: a newer value of another grade or field in the same base stays)
-  or extends the window once.
+  scope; buyer side: by the other buyers' deal rate), then reports the verdict (the value stays) or extends the
+  window once.
 - split (v2.12 arms): for sale-side keys the seller reads after the unit pick (SPLIT_KEYS), policy.json keeps the old
   value and <root>/policy_arms.json gives the new value to the sales whose unit id hashes into arm "b" (attempt 1
   policy.arm_pick, reimplemented here as arm_b). The verdict compares the two arms over the same hours, so no before
-  window and no market adjustment; "better" writes the new value (policy_edit.kernel_set) and removes the arm.
+  window and no market adjustment; at the verdict the arm is removed and policy.json keeps the old value.
 - group (11-11): the before/after items of one done with the same "group" label, judged as one sequential experiment
-  on the role's whole side (scope "shop:all" or "buyer:all"); a worse verdict puts every item's raw state back.
+  on the role's whole side (scope "shop:all" or "buyer:all"); the verdict is reported, every item's value stays.
   Ledger entries of mode "bet" (the same thing under its first name) are judged the same way.
+Until 11-12 a verdict put the old value back (reverted), kept it, or adopted or dropped a split's new value; those
+statuses stay in the ledger as history.
 
 Since 11-11 (성수님: the strategy, including how to measure, belongs to the operator) apply_policy takes a whole
 done.policy list: each item is applied directly (no experiment) unless it asks for a test, everything is written in one
 write, and a change ends the running experiments of its role whose own value it writes (voided, "overwritten"); one
 that only touches an experiment's scope is named on that experiment's verdict (mixed_by). Nothing is
-refused because an experiment runs or recently ended. Entries started before keep their automatic verdicts.
+refused because an experiment runs or recently ended. Entries started before end report-only too.
 
 Ledger: <root>/a2/experiments.json. Plain code, no model calls.
 """
@@ -63,7 +64,7 @@ CLEAR_SE = 2  # "clear" needs |effect| > CLEAR_SE x se
 FLOOR = {"shop": 100_000, "buyer": 0.05}
 R_CLAMP = (0.5, 2.0)
 RETRY_S = (
-    600  # a failed revert or a failed evaluation is retried at most once per 10 min
+    600  # a failed evaluation is retried at most once per 10 min
 )
 MAX_FAILS = (
     6  # then the experiment ends as voided (eval_error), the value left as it is
@@ -82,7 +83,7 @@ GONE = (
     "dropped",
     "voided",
     "adopted",
-)  # a value that was live and is no longer: before windows stop there
+)  # a value that was live and is no longer: before windows stop there (also a measured split: its arm ended)
 
 # split mode
 ARMS_FILE = "policy_arms.json"
@@ -111,7 +112,9 @@ STATUS_KO = {
     "voided": "무효",
     "adopted": "채택",
     "dropped": "버림",
+    "measured": "판정만 (값 그대로)",
 }
+DECISION_KO = {"better": "좋아짐", "worse": "나빠짐"}  # a measured verdict's direction (the status no longer says it)
 REASON_KO = {
     "stars": "별점 하락",
     "thin": "표본 적음",
@@ -328,7 +331,8 @@ def _before(rows, pairs, now):
     for e in rows:
         try:
             t = e.get("ended_ts")
-            if (isinstance(e, dict) and e.get("status") in GONE and _num_ok(t)
+            gone = e.get("status") in GONE or (e.get("status") == "measured" and e.get("mode") == "split")
+            if (isinstance(e, dict) and gone and _num_ok(t)
                     and any(_hits(s, k, e) for s, k in pairs)):
                 if now - t < CONTAM_S:
                     mixed.append(e["id"])
@@ -655,10 +659,10 @@ def apply_policy(root, items, now, traj, role=None, rev_weight=0.0, categories=(
     measure it). Any number of items; each may carry "test":
     - "none" (default, or absent): the value is written; no experiment, no verdict, no revert (trajectory row by
       "direct").
-    - "before_after": written, then judged as a sequential experiment (kept or put back); items with the same
-      "group" label are one experiment on their side, judged and put back together.
+    - "before_after": written, then measured as a sequential experiment (the verdict is reported, the value stays);
+      items with the same "group" label are one experiment on their side, measured together.
     - "split": sell-side keys (SPLIT_KEYS) only, when split_ok and the seller reads arms: policy.json keeps the old
-      value, half the units get the new one, adopted or dropped at the verdict.
+      value, half the units get the new one until the verdict, which ends the arm and only reports.
     Every written item goes into policy.json in one write (policy_edit.apply_many). A change ends as voided every
     running experiment of the same role whose own value it writes (void_overlaps; a scope-only touch is noted on the
     experiment's verdict instead); the other role's never. Nothing is
@@ -1571,7 +1575,7 @@ def overlapping(rows, exp):
 
 def _judge(exp, v, traj):
     """The before/after rule of sequential experiments and bets on verdict v (sets v["final"]): -> None when the window
-    was extended, True to keep the value, False to put it back."""
+    was extended, True when v is the final verdict (reported only; the value is never touched)."""
     if v["decision"] in ("better", "worse"):
         v["final"] = "decision"
     elif not exp.get("extended"):
@@ -1587,17 +1591,20 @@ def _judge(exp, v, traj):
         v.update(final="no_activity")
     else:
         v.update(final="point_estimate")
-    return v["decision"] == "better" or (
-        v["decision"] != "worse"
-        and (
-            v["final"] in ("no_activity", "no_baseline", "cost_unknown")
-            or v["effect"] >= 0
-        )
-    )
+    return True
+
+
+def _measured(exp, v, now, traj, note):
+    """End exp report-only: the verdict numbers with note (what happened to the value) and status "measured"."""
+    v["note"] = note
+    _end(exp, "measured", v, now, traj)
+
+
+VALUE_STAYS = "값은 운영자가 둔 그대로 (커널은 재기만 함)"
 
 
 def _step_sequential(root, exp, now, traj, categories, validate):
-    """Decide one due sequential experiment. -> True when it ended or was extended; raises when the revert failed."""
+    """Measure one due sequential experiment. -> True when it ended or was extended. The value is never written."""
     cur = pe.effective(_policy(root), exp["section"], exp["key"])
     if not _same(cur, exp["new"]):
         _end(
@@ -1616,84 +1623,52 @@ def _step_sequential(root, exp, now, traj, categories, validate):
         v["before_mixed"] = exp["before_mixed"]
     if exp.get("mixed_by"):
         v["mixed_by"] = exp["mixed_by"]
-    keep = _judge(exp, v, traj)
-    if keep is None:
+    if _judge(exp, v, traj) is None:
         return True
-    if keep:
-        _end(exp, "kept", v, now, traj)
-        return True
-    why = (
-        f"실험 #{exp['id']} 판정 {v['decision']} ({v['reason']}): {exp['old']}로 되돌림"
-    )
-    tag = pe.kernel_tag(now, exp["id"])
-    raw = exp.get("raw")
-    if isinstance(raw, dict) and "base" in raw:
-        res = _restore(root, exp["section"], exp["key"], raw, traj, now, why, tag, validate)
-    else:  # entries registered before raw states were kept
-        res = pe.kernel_set(
-            root,
-            exp["section"],
-            exp["key"],
-            exp["old"],
-            traj,
-            now,
-            why,
-            categories,
-            validate,
-            tag=tag,
-        )
-    if not res.get("ok"):
-        raise RuntimeError(f"revert failed: {res.get('error')}")
-    _end(exp, "reverted", v, now, traj)
+    _measured(exp, v, now, traj, VALUE_STAYS)
     return True
 
 
 def _step_group(root, exp, now, traj, categories, validate):
-    """Decide one due group (mode "group", or "bet" from before) like a sequential experiment (evaluate on the whole side, _judge), with the ids of the other
-    experiments of the side in its window (overlapping) on the verdict. Worse: every item's raw state goes back
-    (policy_edit.kernel_restore, as a sequential revert). A restore that fails raises; the items already restored are
-    marked and the verdict kept, so the retry restores only the rest. -> True when it ended or was extended."""
+    """Measure one due group (mode "group", or "bet" from before) like a sequential experiment (evaluate on the whole
+    side, _judge), with the ids of the other experiments of the side in its window (overlapping) on the verdict. No item
+    is written. A group left "reverting" by the code before 11-12 (a worse verdict whose restore failed) ends measured
+    on that verdict, without restoring the rest; the items it had already put back are named on it (restored).
+    -> True when it ended or was extended."""
     items = exp.get("items") or []
-    v = exp.get("reverting")
-    if not isinstance(v, dict):
-        pol, moved = _policy(root), {}
-        for x in items:
-            cur = pe.effective(pol, x["section"], x["key"])
-            if not _same(cur, x["new"]):
-                moved[f"{x['section']} {x['key']}"] = cur
-        if moved:
-            _end(exp, "voided", {"decision": "voided", "reason": "value_changed", "value_now": moved}, now, traj)
-            return True
-        v = evaluate(root, exp, now)
-        ov = overlapping(load(root), exp)
-        if ov:
-            v["overlap"] = ov
-        if exp.get("before_mixed"):
-            v["before_mixed"] = exp["before_mixed"]
-        if exp.get("mixed_by"):
-            v["mixed_by"] = exp["mixed_by"]
-        keep = _judge(exp, v, traj)
-        if keep is None:
-            return True
-        if keep:
-            _end(exp, "kept", v, now, traj)
-            return True
-        exp["reverting"] = v
-    why = f"묶음 #{exp['id']} '{exp['key']}' 판정 {v['decision']} ({v['reason']}): 키 {len(items)}개를 모두 되돌림"
+    v = exp.pop("reverting", None)
+    if isinstance(v, dict):
+        done = [f"{x['section']} {x['key']}" for x in items if x.get("restored")]
+        if done:
+            v["restored"] = done
+        _measured(exp, v, now, traj, VALUE_STAYS + (f"; 예전 커널이 이미 되돌린 키 {len(done)}개는 되돌린 값 그대로"
+                                                    if done else ""))
+        return True
+    pol, moved = _policy(root), {}
     for x in items:
-        if x.get("restored"):
-            continue
-        res = _restore(root, x["section"], x["key"], x["raw"], traj, now, why, pe.kernel_tag(now, exp["id"]), validate)
-        if not res.get("ok"):
-            raise RuntimeError(f"revert failed: {x['section']} {x['key']}: {res.get('error')}")
-        x["restored"] = True  # each item puts back its own key only (siblings in the same base go back themselves)
-    exp.pop("reverting", None)
-    _end(exp, "reverted", v, now, traj)
+        cur = pe.effective(pol, x["section"], x["key"])
+        if not _same(cur, x["new"]):
+            moved[f"{x['section']} {x['key']}"] = cur
+    if moved:
+        _end(exp, "voided", {"decision": "voided", "reason": "value_changed", "value_now": moved}, now, traj)
+        return True
+    v = evaluate(root, exp, now)
+    ov = overlapping(load(root), exp)
+    if ov:
+        v["overlap"] = ov
+    if exp.get("before_mixed"):
+        v["before_mixed"] = exp["before_mixed"]
+    if exp.get("mixed_by"):
+        v["mixed_by"] = exp["mixed_by"]
+    if _judge(exp, v, traj) is None:
+        return True
+    _measured(exp, v, now, traj, VALUE_STAYS)
     return True
 
 
 def _step_split(root, exp, now, traj, categories, validate):
-    """Decide one due split experiment. -> True when it ended or was extended; raises when a write failed."""
+    """Measure one due split experiment: the arm ends, policy.json keeps its value (the old one: a split never wrote
+    the new one). -> True when it ended or was extended."""
     eid = exp["id"]
     cur = pe.effective(_policy(root), exp["section"], exp["key"])
     if not _same(cur, exp["old"]):
@@ -1712,7 +1687,6 @@ def _step_split(root, exp, now, traj, categories, validate):
     arm = exp.get("arm") or {}
     if v["decision"] in ("better", "worse"):
         v["final"] = "decision"
-        adopt = v["decision"] == "better"
     elif (
         not exp.get("extended")
         and exp["window_h"] < EXT_MAX_WINDOW_H
@@ -1724,36 +1698,10 @@ def _step_split(root, exp, now, traj, categories, validate):
         exp["arm"] = dict(arm, until=until)
         return True
     else:
-        # weak final: b only when its point estimate beats a by more than one se; the status quo wins a tie
         v["final"] = "point_estimate"
-        adopt = (
-            v["reason"] not in ("no_unit", "cost_unknown", "thin")
-            and v["n_a"] >= THIN_N
-            and v["n_b"] >= THIN_N
-            and v["se"] is not None
-            and v["effect"] > 0
-            and v["effect"] > v["se"]
-        )
-    v["adopt"] = adopt
     _remove_arm(root, eid)
-    if not adopt:
-        _end(exp, "dropped", v, now, traj)
-        return True
-    res = pe.kernel_set(
-        root,
-        exp["section"],
-        exp["key"],
-        exp["new"],
-        traj,
-        now,
-        f"실험 #{eid} 동시 비교 채택 ({v['reason']}): {exp['old']}→{exp['new']}",
-        categories,
-        validate,
-        tag=pe.kernel_tag(now, eid),
-    )
-    if not res.get("ok"):
-        raise RuntimeError(f"adopt failed: {res.get('error')}")
-    _end(exp, "adopted", v, now, traj)
+    _measured(exp, v, now, traj, f"반쪽 적용 끝남, policy.json은 기존 값 {_val(exp['old'])} 그대로. "
+                                 f"새 값 {_val(exp['new'])}은 운영자가 쓰지 않으면 적용되지 않음")
     return True
 
 
@@ -1917,8 +1865,8 @@ def interim_line(e, now, data):
     needs, the values and their difference, the smallest difference a clear verdict needs (the larger of CLEAR_SE x se
     at the verdict time, when sales keep coming as they have, and REL_MIN of the base value or of FLOOR) with the
     stars guard that overrides it, and what the kernel does below that (_after_undecided): one more look on another
-    window, or on the last window the weak rule with its exceptions (split: B only when it beats A by more than one
-    se; before/after: the sign of the difference). A split also says whether the present
+    window, or on the last window a weak verdict (point estimate) that is only reported; the value is never touched
+    (a split's arm ends at the verdict, policy.json keeps A). A split also says whether the present
     difference would clear the noise inside the last window at this pace (se of a split falls with 1 / sqrt(hours)).
     "" when too early or without data.
     Live 11-12: experiments ended on 3 against 5 sales; nothing on the card showed that before the verdict."""
@@ -1957,8 +1905,8 @@ def interim_line(e, now, data):
                 ". " + ("" if done else "판매가 이대로면 ")
                 + f"뚜렷한 판정에 필요한 차이는 ±{_num(max(CLEAR_SE * se_end, rel), 'shop')}부터 ({noise}과 {rel_name} 중 큰 쪽{stars})"
                 + (f", 못 미치면 {ext}" if ext
-                   else f", 마지막 구간이라 못 미치면 B가 A보다 1se(±{_num(se_end, 'shop')}) 넘게 좋고 표본이 각 {THIN_N} "
-                        "이상일 때만 B를 채택하고 아니면 A로 둠 (원가나 단위를 모르는 판매가 많아도 A로 둠)")
+                   else f", 마지막 구간이라 못 미치면 점추정으로 판정만 냄 (1se ±{_num(se_end, 'shop')}); 판정 때 "
+                        "반쪽 적용이 끝나고 값은 A 그대로이며 B는 네가 쓸 때만 적용됨")
             )
             if diff:
                 h = el * (CLEAR_SE * v["se"] / abs(diff)) ** 2
@@ -1998,8 +1946,7 @@ def interim_line(e, now, data):
         + f"판정에 필요한 표본 {THIN_N}), 전 보정 {_num(adj, side)}, 후 {_num(a['value'], side)}, "
         f"차이 {_num(a['value'] - adj, side, sign=True)}"
     )
-    sign = ("차이의 부호로 정함 (0 이상이면 값 유지, 음이면 되돌림; "
-            + ("" if side == "buyer" else "원가 모르는 판매가 많거나 ") + f"전후 모두 {unit}가 없으면 값 유지)")
+    sign = "점추정으로 판정만 내고 값은 네가 둔 그대로임"
     if side == "buyer":
         stars = ""  # the stars guard is the shop side's
     bb = [x * r for x in b["buckets"]]
@@ -2024,6 +1971,8 @@ def interim_line(e, now, data):
 def _ended_line(e):
     v, side = e.get("verdict") or {}, e.get("side")
     status = STATUS_KO.get(e["status"], e["status"])
+    if e["status"] == "measured" and v.get("decision") in DECISION_KO:
+        status += " " + DECISION_KO[v["decision"]]
     if e.get("mode") in GROUP_MODES:
         head = f"  #{e['id']} 묶음 '{e.get('key')}' 키 {len(e.get('items') or [])}개 {status}"
     else:
@@ -2042,6 +1991,7 @@ def _ended_line(e):
             + f"{se}, 판매 A {v.get('n_a', '-')} / B {v.get('n_b', '-')})"
             + (f", {reason}" if reason else "")
             + mixed
+            + (", 새 값은 네가 쓰지 않으면 적용 안 됨" if e["status"] == "measured" else "")
         )
     return (
         head
@@ -2087,7 +2037,9 @@ def lines(root, now, last=LINES_ENDED, role=None, interim=False):
         key=lambda e: e.get("ended_ts") if _num_ok(e.get("ended_ts")) else 0,
     )[-last:]
     n = lambda s: sum(1 for e in ended if e["status"] == s)
-    head = f"[실험] 진행 {len(run)}건, 최근 판정 {len(ended)}건 중 유지 {n('kept')}, 되돌림 {n('reverted')}"
+    head = f"[실험] 진행 {len(run)}건, 최근 판정 {len(ended)}건 중 {STATUS_KO['measured']} {n('measured')}"
+    if n("kept") or n("reverted"):  # verdicts before 11-12, when the kernel still kept or put values back
+        head += f", 유지 {n('kept')}, 되돌림 {n('reverted')}"
     if n("adopted") or n("dropped"):
         head += f", 채택 {n('adopted')}, 버림 {n('dropped')}"
     out = [head]
@@ -2119,17 +2071,23 @@ def lines(root, now, last=LINES_ENDED, role=None, interim=False):
 
 def summary(root, now, hours=24):
     """Counts by status of experiments ended in the last `hours` (running: all now running) and the hit rate
-    (kept + adopted) / (kept + reverted + adopted + dropped), None when none of those happened."""
+    (kept + adopted + measured better) / (kept + reverted + adopted + dropped + measured better or worse), None when
+    none of those happened."""
     rows = [e for e in load(root) if isinstance(e, dict)]
     since = now - hours * 3600
     out = {s: 0 for s in STATUS_KO}
+    better = worse = 0
     for e in rows:
         s = e.get("status")
         t = e.get("ended_ts")
         if s == "running" or (s in out and _num_ok(t) and t >= since):
             out[s] += 1
-    good = out["kept"] + out["adopted"]
-    judged = good + out["reverted"] + out["dropped"]
+            if s == "measured":
+                d = e["verdict"].get("decision") if isinstance(e.get("verdict"), dict) else None
+                better += d == "better"
+                worse += d == "worse"
+    good = out["kept"] + out["adopted"] + better
+    judged = good + out["reverted"] + out["dropped"] + worse
     return {
         "hours": hours,
         "counts": out,

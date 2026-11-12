@@ -152,7 +152,7 @@ def test_duplicate_key_and_unknown_test_are_refused(root, a1):
 # ------------------------------------------------------------ none, before_after, split
 
 
-def test_before_after_reverts_when_worse_and_none_is_left_alone(root, a1):
+def test_before_after_worse_is_measured_and_none_is_left_alone(root, a1):
     out = _apply(
         root,
         a1,
@@ -174,10 +174,10 @@ def test_before_after_reverts_when_worse_and_none_is_left_alone(root, a1):
     assert [
         x["status"]
         for x in ex.tick(root, e["eval_ts"] + 1, _traj(root), CATS, validate=a1.load)
-    ] == ["reverted"]
+    ] == ["measured"]
     pol = _pol(root)
     assert (
-        "price_mult" not in pol["categories"][BED]
+        pol["categories"][BED]["price_mult"] == 0.8
         and pol["defaults"]["food"]["max_rounds"] == 5
     )
 
@@ -219,8 +219,9 @@ GROUP = [
 ]
 
 
-def test_group_is_one_experiment_restored_together_when_worse(root, a1):
+def test_group_is_one_experiment_measured_together_when_worse(root, a1):
     out = _apply(root, a1, GROUP)
+    applied = _pol(root)
     r = out["results"]
     assert all(x["ok"] and x["experiment"] == 1 and x["mode"] == "group" for x in r), r
     e = ex.load(root)[0]
@@ -241,10 +242,9 @@ def test_group_is_one_experiment_restored_together_when_worse(root, a1):
     assert [
         x["status"]
         for x in ex.tick(root, e["eval_ts"] + 1, _traj(root), CATS, validate=a1.load)
-    ] == ["reverted"]
-    assert _pol(root) == POLICY
-    back = [x for x in _rows(root, "policy_edit") if x.get("by") == "kernel"]
-    assert {x["key"] for x in back} == {"price_mult", "stock_target", "max_rounds"}
+    ] == ["measured"]
+    assert _pol(root) == applied
+    assert not [x for x in _rows(root, "policy_edit") if x.get("by") == "kernel"]
 
 
 def test_group_refused_member_refuses_only_itself(root, a1):
@@ -271,8 +271,9 @@ def test_group_of_two_sides_is_refused_whole(root, a1):
     assert _pol(root) == POLICY and ex.load(root) == []
 
 
-def test_legacy_bet_row_is_judged_and_restored_like_a_group(root, a1):
+def test_legacy_bet_row_is_measured_like_a_group(root, a1):
     _apply(root, a1, GROUP)
+    applied = _pol(root)
     rows = ex.load(root)
     rows[0].update(mode="bet")  # an entry written by the 11-11 evening bet code
     ex.save(root, rows)
@@ -284,8 +285,8 @@ def test_legacy_bet_row_is_judged_and_restored_like_a_group(root, a1):
     assert [
         x["status"]
         for x in ex.tick(root, e["eval_ts"] + 1, _traj(root), CATS, validate=a1.load)
-    ] == ["reverted"]
-    assert _pol(root) == POLICY
+    ] == ["measured"]
+    assert _pol(root) == applied
     assert [
         x["id"] for x in ex.overlaps(root, BED, "price_mult")
     ] == []  # ended: overlaps nothing
@@ -490,9 +491,10 @@ def test_kept_and_observations_stay_bounded_over_a_long_wake():
 # ------------------------------------------------------------ HEAD ledger compatibility
 
 
-def test_head_ledger_is_judged_exactly_as_head_did(tmp_path, a1, monkeypatch):
+def test_head_ledger_ends_measured_on_the_same_numbers(tmp_path, a1, monkeypatch):
     """The fixture was made by HEAD's kernel/experiments.py (git archive; sequential and split entries, their files and
-    HEAD's tick results). The new code must tick the same ledger to the same entries and the same policy files."""
+    HEAD's tick results). Since 11-12 the same running rows end on the same verdict numbers, but as "measured": the
+    statuses HEAD wrote (reverted, dropped, kept) and its split "adopt" flag are gone, and policy.json never changes."""
     # written on the pre-3.6 saved scale: the share of list kept, s0 as recorded
     monkeypatch.setattr(ex, "COST_FRAC", {"food": 0.0, "goods": 0.0})
     monkeypatch.setattr(ex, "SAVED_V36_TS", 0)
@@ -504,10 +506,20 @@ def test_head_ledger_is_judged_exactly_as_head_did(tmp_path, a1, monkeypatch):
             f.write(text)
     os.makedirs(os.path.join(r, "a2/board"), exist_ok=True)
     traj = _traj(r)
+    pol0 = open(os.path.join(r, "policy.json"), "rb").read()
+    rest = lambda e: {k: v for k, v in e.items() if k not in ("status", "verdict")}
     for t, want in zip(fx["ticks"], fx["after"]):
         ex.tick(r, t, traj, CATS, validate=a1.load)
-        assert ex.load(r) == want["ledger"]
-        assert _pol(r) == want["policy"]
+        got = ex.load(r)
+        assert [e["status"] for e in got] == [
+            "running" if w["status"] == "running" else "measured" for w in want["ledger"]
+        ]
+        for g, w in zip(got, want["ledger"]):
+            assert rest(g) == rest(w)
+            assert {k: v for k, v in (g.get("verdict") or {}).items() if k != "note"} == {
+                k: v for k, v in (w.get("verdict") or {}).items() if k != "adopt"
+            }
+        assert open(os.path.join(r, "policy.json"), "rb").read() == pol0
         assert (
             json.load(open(os.path.join(r, "policy_arms.json"), encoding="utf-8"))
             == want["arms"]
