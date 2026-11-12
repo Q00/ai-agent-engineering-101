@@ -1,6 +1,6 @@
 # Seller 예약·hub 잠금·JSON 캐시 로컬 수정
 
-> 최신 사용자 결정(2026-11-13): **committed 600초(10분), 협상 absolute cap 900초 유지**. 아래 기존 900초 committed/15분 비교는 당시의 구현·조사 기록이며 현재 설정은 마지막 「사용자 결정 반영」 절을 따른다.
+> 최신 사용자 재결정(2026-11-13): **committed 300초(5분), 협상 absolute cap 900초 유지**. 아래 기존 900초/600초 committed 비교는 당시의 구현·조사 기록이며 현재 설정은 마지막 「사용자 재결정 반영」 절을 따른다.
 
 ## 범위와 보존
 
@@ -199,3 +199,12 @@ tracked `history/**/*.md`에서 ACP/정산 소요시간·분포·latency/duratio
 - green `cap600-green.log`: 집중 **30개 통과**. `cap600-all.log`: 전체 **726개, 실패 0/오류 0/skip 3**(기존 자식 프로세스 skip). `cap600-compile.log`: 격리 복사본 **65개 py_compile 통과**. runner 인자는 각각 `cap600-green focused`, `cap600-all all`, `cap600-compile compile`이며 신규 고유 evidence/로그/SHA256 manifest를 사용했다.
 - `git diff a058e45 --check` 통과. source diff는 상수 한 줄 및 테스트 숫자 두 곳뿐이며 협상 상수/로직은 변경하지 않았다. VM 접속/배포/push는 하지 않았다.
 - 구현·정책·green 검증 커밋: **`92ce2e0`**. 이 보고서 갱신은 별도 documentation 커밋이다.
+
+## 사용자 재결정 반영 — committed 300초 (2026-11-13)
+
+- `seller.py:76`의 **COMMITTED_RESERVATION_S만 600→300초(5분)**로 변경했다. 별도 상수 `NEGOTIATION_MAX_S=900`(78행)과 idle TTL 90초 및 나머지 예약 로직은 그대로다.
+- `test_seller_locks_cache_offline.py:57,96`: **299초 유지·301초 해제** 및 시나리오 사이 정리 대기를 301초로 갱신했다. 협상 cap 테스트는 변경하지 않았다. `POLICY.md:739,741`도 300초로 갱신했다.
+- 근거는 동일한 **사용자 제공 실측**(58분 표본, 정산 최대 9초, 2분 초과 0건, 미결제 4/24 전부 이탈)이다. 300초는 표본 최대의 약 33.3배이며 ACP 만료 보장은 아니다. 이번 작업에서 VM 접속/원본 재측정/배포/push는 하지 않았다. 상한 이후 재발급 위험은 남는다.
+- baseline `cap300-baseline.log`: 집중 **30개 통과**. red `cap300-red.log`: 600초 코드에 새 테스트를 적용하면 **30개 중 실패 2/오류 0**. red 커밋 **`5cccf66`**에 로그/manifest를 보존했다.
+- green `cap300-green.log`: 집중 **30개 통과**. 전체 `cap300-all.log`: **726개, 실패 0/오류 0/skip 3**(기존 자식 프로세스 skip). `cap300-compile.log`: 격리 복사본 **65개 py_compile 통과**. 기존 runner에 각각 `cap300-green focused`, `cap300-all all`, `cap300-compile compile`을 전달했고 새 evidence/로그/SHA256 manifest만 생성했다.
+- `git diff fdeeea2 --check` **exit 0**(`cap300-diff-check.log`). 구현·정책·green 증거 커밋은 **`fea6951`**이며 보고서는 별도 documentation 커밋이다. 기존 로그/원본과 협상 cap은 변경하지 않았다.
