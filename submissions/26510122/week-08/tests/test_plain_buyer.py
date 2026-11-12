@@ -40,19 +40,35 @@ class PlainBuyerTests(unittest.TestCase):
         self.assertEqual(followup_offer(**kwargs, offers_remaining=1), 700)
 
     def test_saved_reference_is_strict_and_separate_from_market_prices(self):
-        baseline = {'saved': .2733, 'observed_at': 1000}
+        baseline = {'saved': .6, 'observed_at': 1000}
+        cost = {'unit_cost': 50000, 'estimated': False}
         prices = (71000, 73000, 74000)
-        guidance = purchase_price_guidance(80000, prices, list_price=100000, saved_baseline=baseline)
+        guidance = purchase_price_guidance(80000, prices, list_price=100000, saved_baseline=baseline, cost_reference=cost)
         self.assertEqual(guidance['suggested_maximum'], 74000)
-        self.assertEqual(guidance['saved_reference']['max_price_to_improve_if_usable'], 72669)
-        sparse = purchase_price_guidance(80000, prices[:1], list_price=100000, saved_baseline=baseline)
+        self.assertEqual(guidance['saved_reference']['max_price_to_improve_if_usable'], 69999)
+        sparse = purchase_price_guidance(80000, prices[:1], list_price=100000, saved_baseline=baseline, cost_reference=cost)
         self.assertIsNone(sparse['suggested_maximum'])
         self.assertEqual(sparse['saved_reference'], guidance['saved_reference'])
-        kwargs = {'message': 'asking 75000', 'last_offer': 70000, 'cap': 80000, 'sku': 'F1',
+        kwargs = {'message': 'asking 75000', 'last_offer': 65000, 'cap': 80000, 'sku': 'F1',
                   'list_price': 100000, 'memory': {'price_guidance': guidance},
                   'deadline': time.monotonic() + 20}
-        self.assertEqual(followup_offer(**kwargs, offers_remaining=2), 71334)
+        self.assertEqual(followup_offer(**kwargs, offers_remaining=2), 67499)
         self.assertEqual(followup_offer(**kwargs, offers_remaining=1), 75000)
+
+    def test_negotiation_prompt_uses_margin_cost_scenario(self):
+        kwargs={'message':'asking 75000','last_offer':65000,'cap':80000,'sku':'G1',
+                'list_price':100000,'memory':{'price_guidance':{
+                    'cost_reference':{'unit_cost':50000,'estimated':True}}},
+                'deadline':time.monotonic()+150}
+        with patch('buyer_r3.decide_json',return_value={
+                'action':'offer','price':75000,'reason':'valid margin scenario'}) as model:
+            self.assertEqual(followup_offer(**kwargs),75000)
+        prompt=model.call_args.args[1]
+        self.assertEqual(prompt['saved_if_usable']['at_last_offer'],.7)
+        self.assertEqual(prompt['saved_if_usable']['at_seller_ask'],.5)
+        self.assertEqual(prompt['saved_if_usable']['at_cap'],.4)
+        self.assertTrue(prompt['saved_if_usable']['cost_reference']['estimated'])
+        self.assertIn('(list_price-paid)/(list_price-unit_cost)',prompt['objective'])
 
     def test_saved_reference_uses_recent_cache_during_board_failure(self):
         board = {'round': 3, 'buyers': [{'name': 'buyer', 'deals': 10, 'saved': .2733}]}
@@ -66,6 +82,22 @@ class PlainBuyerTests(unittest.TestCase):
             with patch('buyer_policy.urlopen', side_effect=TimeoutError):
                 self.assertEqual(market_saved_reference('buyer', path=path, now=1300), baseline)
                 self.assertIsNone(market_saved_reference('buyer', path=path, now=1901))
+
+    def test_pre_patch_saved_cache_is_not_reused_as_margin_saved(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory)/'saved.json'
+            path.write_text(json.dumps({'name':'buyer','saved':.27,
+                                        'observed_at':1000,'checked_at':1000}))
+            with patch('buyer_policy.urlopen', side_effect=TimeoutError):
+                self.assertIsNone(market_saved_reference('buyer',path=path,now=1001))
+
+    def test_missing_unit_cost_does_not_silently_use_list_discount(self):
+        guidance = purchase_price_guidance(80000, (60000,65000,70000),
+                                          list_price=100000,
+                                          saved_baseline={'saved':.68,'observed_at':1000})
+        self.assertNotIn('saved_reference',guidance)
+        self.assertNotIn('saved_if_usable_at_reference',guidance)
+        self.assertEqual(guidance['median_paid'],65000)
 
     def test_candidate_prices_are_shop_specific_and_ranked_by_observed_saving(self):
         now=time.time()

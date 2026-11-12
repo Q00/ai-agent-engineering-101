@@ -17,6 +17,7 @@ import time
 from urllib.request import urlopen
 
 from context_compaction import epoch
+from market_scoring import saved_at_price, BUYER_RANKING_VERSION
 
 
 FOOD_MAX_SHARE = 0.85
@@ -103,13 +104,14 @@ def market_saved_reference(name, *, path=SAVED_CACHE, now=None):
     now = time.time() if now is None else now
     try:
         cache = json.loads(path.read_text())
-        if not isinstance(cache, dict) or cache.get('name') != name:
+        if (not isinstance(cache, dict) or cache.get('name') != name
+                or cache.get('ranking_version') != BUYER_RANKING_VERSION):
             cache = {}
     except (OSError, ValueError):
         cache = {}
     checked = cache.get('checked_at')
     if type(checked) not in (int, float) or not 0 <= now - checked < SAVED_REFRESH_SECONDS:
-        cache.update(name=name, checked_at=now)
+        cache.update(name=name, checked_at=now, ranking_version=BUYER_RANKING_VERSION)
         try:
             with urlopen(SAVED_BOARD, timeout=2) as response:
                 board = json.load(response)
@@ -137,30 +139,41 @@ def market_saved_reference(name, *, path=SAVED_CACHE, now=None):
     return None
 
 
-def saved_price_reference(list_price, baseline):
-    """Greatest whole price that strictly improves the published Saved if usable."""
+def saved_price_reference(list_price, baseline, *, cost_reference=None):
+    """Soft price for improving displayed Saved under the given unit-cost scenario."""
     if not baseline or type(list_price) is not int or list_price <= 0:
         return None
-    saved = baseline['saved']
-    cutoff = Decimal(list_price) * (1 - Decimal(str(saved)))
+    cost = (cost_reference or {}).get('unit_cost')
+    if (type(cost) not in (int, float) or not math.isfinite(cost)
+            or not 0 <= cost < list_price):
+        return None
+    saved = baseline.get('saved')
+    if type(saved) not in (int, float) or not math.isfinite(saved) or not -1 <= saved < 1:
+        return None
+    cutoff = Decimal(list_price) - Decimal(str(saved)) * (Decimal(list_price) - Decimal(str(cost)))
     whole_price = math.ceil(cutoff) - 1
     return {'current_market_saved': saved, 'observed_at': baseline['observed_at'],
-            'max_price_to_improve_if_usable': whole_price if whole_price > 0 else None}
+            'max_price_to_improve_if_usable': whole_price if whole_price > 0 else None,
+            'cost_reference': cost_reference, 'ranking_version': BUYER_RANKING_VERSION,
+            'note': 'Conditional on this cost and usable settlement; displayed Saved is rounded. '
+                    'This is a soft negotiation reference, not an exact aggregate-score guarantee.'}
 
 
-def purchase_price_guidance(cap, prices, *, list_price=None, saved_baseline=None):
+def purchase_price_guidance(cap, prices, *, list_price=None, saved_baseline=None, cost_reference=None):
     """Suggest a market-supported range while retaining the mandate ceiling."""
     baseline = opening_offer_range(cap)
     result = {'paid_sample_72h': len(prices), 'median_paid': median_low(prices) if prices else None,
-              'suggested_maximum': None, 'opening_offer_range': baseline}
-    saved = saved_price_reference(list_price, saved_baseline)
+              'suggested_maximum': None, 'opening_offer_range': baseline, 'cost_reference': cost_reference}
+    saved = saved_price_reference(list_price, saved_baseline, cost_reference=cost_reference)
     if saved is not None:
         result['saved_reference'] = saved
     if len(prices) < 3:
         return result
     median = result['median_paid']
     if type(list_price) is int and list_price > 0:
-        result['saved_if_usable_at_reference'] = round(1 - median / list_price, 6)
+        contribution = saved_at_price(list_price, median, (cost_reference or {}).get('unit_cost'))
+        if contribution is not None:
+            result['saved_if_usable_at_reference'] = contribution
     upper_quartile = prices[math.ceil(.75 * len(prices)) - 1]
     high = min(baseline[1], median)
     low = min(baseline[0], max(1, math.floor(median * .92)))

@@ -11,7 +11,7 @@ import time
 
 from buyer_memory import read_events, record, resolve_shop_name
 from context_compaction import hours_left
-from market_scoring import saved_at_price,VERSION
+from market_scoring import saved_at_price,buyer_cost_reference,VERSION
 import decision_audit
 
 
@@ -36,6 +36,7 @@ def run(deal: dict, catalog: dict, *, life=None,allow_forum_publish=False) -> di
     product = catalog.get(sku, {})
     price = int(deal["receipt"]["price"])
     list_price = int(product.get("list_price") or 0)
+    cost_reference = buyer_cost_reference(product)
     value = int(settled.get("value") or 0)
     grade = settled.get("grade")
     ledger = settled.get("ledger")
@@ -49,8 +50,9 @@ def run(deal: dict, catalog: dict, *, life=None,allow_forum_publish=False) -> di
            claim_honest=settled.get("claim_honest"),
            warranty_hours=settled.get("warranty_hours"),expires_at=settled.get('expires_at'),
            score_version=VERSION,score_metric='saved',
-           saved_if_usable_at_payment=saved_at_price(list_price,price) if list_price>0 else None,
-           saved_maturity='payment-time condition only; later breakage and refunds are resolved by the market',
+           saved_if_usable_at_payment=saved_at_price(list_price,price,(cost_reference or {}).get("unit_cost")) if list_price>0 else None,
+           score_cost_reference=cost_reference,
+           saved_maturity='estimated payment-time condition only; seller cost is private; market resolves actual cost, breakage and refunds',
            **{k:v for k,v in linked.items() if k not in ('order','shop','shop_name','sku','score_version')},
            outcome_source='kit_settled_review',
            hours_left_at_recording=hours_left(settled.get('expires_at'),

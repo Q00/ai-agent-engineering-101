@@ -50,8 +50,8 @@ class BookMathTests(unittest.TestCase):
 
 class SavedPolicyTests(unittest.TestCase):
     def test_normalized_saving_beats_absolute_money_saved(self):
-        rich=scoring.buyer_candidate(1_000_000,700_000)
-        cheap=scoring.buyer_candidate(10_000,6_000)
+        rich=scoring.buyer_candidate(1_000_000,700_000,cost_reference={"unit_cost":500_000})
+        cheap=scoring.buyer_candidate(10_000,6_000,cost_reference={"unit_cost":5_000})
         self.assertGreater(cheap['saved_if_usable_at_cap'],rich['saved_if_usable_at_cap'])
         self.assertEqual(cheap['virtual_zero_deals'],100)
         self.assertIn('NOT a seller quote',cheap['assumption'])
@@ -66,7 +66,8 @@ class SavedPolicyTests(unittest.TestCase):
                 shops=[{'name':'other','url':'https://other','offers':[{'sku':s,'qty':1} for s in catalog]}]
                 found=buyer.candidates(order,shops,catalog,'own')
                 self.assertEqual([c['sku'] for c in found],['cheap','rich'])
-                self.assertEqual(found[0]['score_evidence']['saved_if_usable_at_cap'],.25)
+                self.assertEqual(found[0]['score_evidence']['saved_if_usable_at_cap'],round(.25/.41,6))
+                self.assertTrue(found[0]['score_evidence']['cost_reference']['estimated'])
                 with patch.object(buyer,'decide_json',return_value={'candidate_id':'0','opening_offer':600,'reason':'usable rate'} ) as model:
                     chosen,price=buyer.choose(found,order)
                 self.assertEqual(chosen['sku'],'cheap');self.assertLessEqual(price,chosen['cap'])
@@ -74,7 +75,41 @@ class SavedPolicyTests(unittest.TestCase):
                 self.assertEqual(prompt['score_contract']['weights']['saved'],.5)
                 self.assertEqual(prompt['score_contract']['scales']['forum'],'raw_rating_0_to_1')
                 self.assertEqual(prompt['score_contract']['scales']['saved'],'percentile')
-                self.assertEqual(prompt['score_contract']['ranking_version'],'round3-patch3.5')
+                self.assertEqual(prompt['score_contract']['ranking_version'],'round3-patch3.6')
                 self.assertIn('paid votes reduce shop cash and Book',prompt['score_contract']['all_definition'])
                 self.assertIn('not absolute currency surplus',prompt['objective'])
+            finally:os.chdir(old)
+
+class MarginSavedTests(unittest.TestCase):
+    def test_equal_margin_points_are_equal_across_food_and_furniture(self):
+        self.assertEqual(scoring.saved_at_price(100000,76000,52000),.5)
+        self.assertEqual(scoring.saved_at_price(100000,80500,61000),.5)
+        self.assertEqual(scoring.saved_at_price(100000,40000,52000),1)
+        self.assertIsNone(scoring.saved_at_price(100000,70000))
+        for cost in (float('nan'),100000,110000,-1,True):
+            self.assertIsNone(scoring.saved_at_price(100000,70000,cost))
+
+    def test_same_discount_is_more_margin_saved_on_high_cost_product(self):
+        food=scoring.saved_at_price(100000,70000,52000)
+        furniture=scoring.saved_at_price(100000,70000,61000)
+        self.assertGreater(furniture,food)
+        self.assertEqual(scoring.buyer_cost_reference(
+            {'kind':'goods','category':'가구/침구>침구','list_price':100000})['cost_share'],.61)
+
+    def test_candidates_compare_margin_and_keep_estimate_visible(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            old=Path.cwd();os.chdir(tmp)
+            try:
+                catalog={sku:{'kind':'goods','list_price':100000,'category':category}
+                         for sku,category in [('other','주방용품'),('furniture','가구/침구>침대')]}
+                order={'kind':'goods','budget':100000,'acceptable':list(catalog)}
+                shops=[{'name':'other-shop','url':'https://other','offers':[
+                    {'sku':sku,'qty':1} for sku in catalog]}]
+                with patch.object(buyer,'read_events',return_value=[]):
+                    found=buyer.candidates(order,shops,catalog,'own',
+                                          saved_baseline={'saved':.6823,'observed_at':1000})
+                self.assertEqual(found[0]['sku'],'furniture')
+                reference=found[0]['price_guidance']['saved_reference']
+                self.assertEqual(reference['max_price_to_improve_if_usable'],73390)
+                self.assertTrue(reference['cost_reference']['estimated'])
             finally:os.chdir(old)

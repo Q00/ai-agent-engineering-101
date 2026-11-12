@@ -20,7 +20,7 @@ from harness import decide_json, trace, MODEL
 import buyer_exploration
 import buyer_forum_memory
 import buyer_checkout_memory
-from market_scoring import (buyer_candidate,BUYER_WEIGHTS,SAVED_CONTRACT,VERSION,
+from market_scoring import (buyer_candidate,buyer_cost_reference,BUYER_WEIGHTS,SAVED_CONTRACT,VERSION,
                             BUYER_RANKING_VERSION,BUYER_SCORE_SCALES,BUYER_ALL_CONTRACT)
 import decision_audit as audit
 
@@ -71,8 +71,10 @@ def candidates(order: dict, shops: list[dict], catalog: dict,
             source = 'same_shop_sku' if len(samples) >= 3 else 'same_sku'
             if len(samples) < 3:
                 samples = prices.get(sku, ())
+            cost_reference = buyer_cost_reference(product)
             guidance = purchase_price_guidance(
-                cap, samples, list_price=product['list_price'], saved_baseline=saved_baseline)
+                cap, samples, list_price=product['list_price'], saved_baseline=saved_baseline,
+                cost_reference=cost_reference)
             guidance['reference_source'] = source
             found.append({"shop": shop["name"], "url": shop["url"], "sku": sku,
                           "name": product.get("name") or offer.get("name") or sku,
@@ -81,7 +83,7 @@ def candidates(order: dict, shops: list[dict], catalog: dict,
                           "list_price": product["list_price"], "cap": cap,
                           "stock": offer["qty"], "reviews": review_summary(shop.get("reviews") or []),
                           "first_hand": first_hand, "paid": paid, "refusals": refusals,
-                          'score_evidence':buyer_candidate(product['list_price'],cap),
+                          'score_evidence':buyer_candidate(product['list_price'],cap,cost_reference=cost_reference),
                           'price_guidance':guidance})
     found, held, probe = buyer_checkout_memory.filter_candidates(found,order,history)
     record('checkout_cache_summary',order=order.get('order'),allowed=len(found),
@@ -96,7 +98,7 @@ def candidates(order: dict, shops: list[dict], catalog: dict,
                reason='No unheld candidates; recheck an aged observation under all checkout guards.')
     # Compact model input while preserving different shops and SKUs when possible.
     found.sort(key=lambda c: (c['price_guidance'].get(
-                                  'saved_if_usable_at_reference', c['score_evidence']['saved_if_usable_at_cap']),
+                                  'saved_if_usable_at_reference', c['score_evidence']['saved_if_usable_at_cap']) or 0,
                               c["paid"] - c["refusals"],c["reviews"]["average"] or 3), reverse=True)
     for index,choice in enumerate(found):
         choice['id']=str(index)
@@ -124,7 +126,7 @@ def choose(candidates_: list[dict], order: dict, *, forced_candidate_id: str | N
         candidates_=[c for c in candidates_ if c['id']==forced_candidate_id]
     if not candidates_:
         raise ValueError('no candidate is available for this selection')
-    audit.begin('buyer_selection',policy_version='buyer-saved-v1')
+    audit.begin('buyer_selection',policy_version='buyer-saved-v2')
     displayed = [{**{key: row[key] for key in ("id", "list_price",
                                               "cap", "stock", "reviews")},
                   'shop':text(row['shop'],80),'sku':text(row['sku'],80),
@@ -146,13 +148,13 @@ def choose(candidates_: list[dict], order: dict, *, forced_candidate_id: str | N
                                          'The buyer may still negotiate or walk away later. All checkout guards apply.'},
               "objective": "Choose one available SKU and shop, plus a first offer. Maximize likely "
                            "positive normalized Saved contribution and valid settlement chance, not absolute currency surplus. "
-                           "A cheaper product at a better usable saving rate can beat an expensive product. "
+                           "Compare the share of seller margin saved, not the discount as a share of list price. "
                            "The saved-at-cap candidate order is conditional, not an actual quote or guaranteed deal. "
                            "Use the recent exact-SKU paid median and suggested maximum where available. "
                            "same_shop_sku samples describe this seller; same_sku samples pool other sellers. "
                            "saved_if_usable_at_reference is a historical comparison, not a current quote. "
                            "Separately, saved_reference is the largest whole price that would improve the "
-                           "published aggregate Saved if this purchase is usable. Treat it as negotiation guidance "
+                           "displayed aggregate Saved if this purchase is usable and the cost scenario is correct. Costs are private; category averages are uncertain estimates. Treat this as negotiation guidance "
                            "and weigh settlement likelihood and current quality. "
                            "Check current shelf life, grade and warranty before comparing these historical prices. "
                            "The cap is a private hard ceiling, "

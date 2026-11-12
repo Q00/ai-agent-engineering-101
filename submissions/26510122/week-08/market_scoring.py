@@ -1,10 +1,10 @@
-"""Inspectable Book/Saved contracts and Patch 3.5 mixed-scale buyer ranking."""
+"""Inspectable Book/Saved contracts and Patch 3.6 margin-normalized Saved."""
 import math
 
-VERSION = 'round3-book-saved-v1'
+VERSION = 'round3-book-saved-v2'
 SELLER_WEIGHTS = {'book':.5,'revenue':.3,'stars':.2}
 BUYER_WEIGHTS = {'saved':.5,'forum':.3,'deals':.1,'posts':.1}
-BUYER_RANKING_VERSION = 'round3-patch3.5'
+BUYER_RANKING_VERSION = 'round3-patch3.6'
 BUYER_SCORE_SCALES = {'saved':'percentile','forum':'raw_rating_0_to_1','deals':'percentile','posts':'percentile'}
 BUYER_ALL_CONTRACT = ('Buyer ALL = .5 Saved percentile + .3 raw forum rating (Wilson lower bound, 0..1) '
                       '+ .1 deals percentile + .1 posts percentile. Only forum uses its value directly. '
@@ -13,10 +13,11 @@ BUYER_ALL_CONTRACT = ('Buyer ALL = .5 Saved percentile + .3 raw forum rating (Wi
                       'New negative-author hourly fees are separate; paid power alone is not the whole voting cost. '
                       'Counted votes require at least 50 settled deals and a different owner. '
                       'Voting eligibility and fees remain enforced by the market; a posted note is not a paid vote.')
-SAVED_CONTRACT = ('Saved uses normalized realized surplus per list price, divided by deals+100. '
-                  'At a usable settlement its contribution is 1-paid/list; expensive goods get no extra weight. '
-                  'Unusable food and broken goods can lower it; a covered full refund neutralizes that loss. '
-                  'Final Saved is the market value, not an average of quoted discounts. '
+SAVED_CONTRACT = ('Saved = sum of realized deal contributions / (deals+100), retroactive for all Round 3. '
+                  'A usable deal contributes min(1, (list-paid)/(list-unit_cost)): share of the shop margin saved. '
+                  'An unusable deal contributes -1, or 0 if refunded. Expensive goods get no extra weight. '
+                  'The seller unit cost is private; category cost references are estimates, never verified costs. '
+                  'Final Saved is the market value, not an average of quotes or estimated contributions. '
                   'Keep checkout validity and settlement likelihood; do not skip issued orders merely to chase a rate.')
 BOOK_CONTRACT = ('Book = cash balance - starting capital - bankruptcy injections + unsold inventory acquisition cost. '
                  'Buying inventory at its paid cost is initially Book-neutral, not a profit or a score boost. '
@@ -24,17 +25,45 @@ BOOK_CONTRACT = ('Book = cash balance - starting capital - bankruptcy injections
                  'Stock credit persists at round end, but is not a cash buyback. '
                  'Shop ALL components use percentiles, not raw currency and stars. Buyer forum rating uses its raw 0..1 value.')
 
-def saved_at_price(list_price,price):
+def saved_at_price(list_price, price, unit_cost=None):
+    """Conditional usable contribution; unknown/nonpositive margin stays unknown."""
     if type(list_price) not in (int,float) or not math.isfinite(list_price) or list_price<=0:
         raise ValueError('positive finite list price required')
     if type(price) not in (int,float) or not math.isfinite(price) or price<0:
         raise ValueError('nonnegative finite price required')
-    return round(1-price/list_price,6)
+    if (type(unit_cost) not in (int,float) or not math.isfinite(unit_cost)
+            or not 0 <= unit_cost < list_price):
+        return None
+    return round(min(1., (list_price-price)/(list_price-unit_cost)), 6)
 
-def buyer_candidate(list_price,cap):
-    return {'metric':'saved','version':VERSION,'saved_if_usable_at_cap':saved_at_price(list_price,cap),
+
+def buyer_cost_reference(product):
+    """Public category averages are soft scenarios, not this seller's unit cost."""
+    price = product.get('list_price')
+    if type(price) is not int or price <= 0:
+        return None
+    category = str(product.get('category') or '')
+    if product.get('kind') == 'food':
+        share, source = .52, 'patch3.6 announced approximate food mean'
+    elif category.startswith('가구/침구'):
+        share, source = .61, 'patch3.6 announced approximate furniture/bedding mean'
+    elif product.get('kind') == 'goods':
+        share, source = .59, 'published goods grade odds and cost-range midpoints; prior, not observed mean'
+    else:
+        return None
+    return {'unit_cost': price * share, 'cost_share': share, 'estimated': True, 'source': source,
+            'note': 'Unknown seller unit, original grade and purchase-time surge can differ. '
+                    'This is a negotiation scenario, not a certificate, floor price or guaranteed score.'}
+
+
+def buyer_candidate(list_price, cap, *, cost_reference=None):
+    cost = (cost_reference or {}).get('unit_cost')
+    return {'metric':'saved','version':VERSION,
+            'saved_if_usable_at_cap':saved_at_price(list_price,cap,cost),
+            'cost_reference':cost_reference,
             'assumption':'cap is an authorization ceiling, NOT a seller quote or predicted price; '
-                         'conditional saving only if a valid usable deal settles at that price',
+                         'conditional margin saving only if a valid usable deal settles at that price. '
+                         'With an estimated cost, the contribution is also estimated.',
             'virtual_zero_deals':100}
 
 def book_metrics(inventory,now):
