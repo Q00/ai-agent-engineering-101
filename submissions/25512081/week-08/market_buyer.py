@@ -317,8 +317,33 @@ def collect_quotes(shops, budget, order=None):
                     out.append(q)
         except FuturesTimeout:
             log(f"[quote] some shops did not answer within {QUOTE_WAIT} s")
+    for q in out:
+        q["score"] = margin_score(q)
     # a first ask far over the budget rarely comes down to it: those go last
-    return sorted(out, key=lambda q: (q["reply"].ask > budget * 1.15, bool(q["short"]), -q["surplus"]))
+    return sorted(out, key=lambda q: (q["reply"].ask > budget * 1.15, bool(q["short"]), -q["score"], -q["surplus"]))
+
+
+# Patch 3.6 (Nov 12): Saved scores each deal (list - price) / (list - the unit's cost), at most 1; a deal that served
+# nothing counts -1 and a refunded one 0. A lower grade costs the shop a little less but sells for much less (ledger,
+# Nov 12 20:00, 150k rows, 20,351 settles with the unit's supply cost: food A/B/C cost 0.53/0.51/0.48 of list and sold
+# at 0.68/0.60/0.53, scoring 0.676/0.800/0.853; goods A/B/C cost 0.61/0.56/0.51, sold at 0.70/0.62/0.53), so at the
+# same share of list a lower grade scores higher. Goods that break without a warranty served nothing (-1); with one
+# they are refunded (0).
+COST_SHARE = {("food", "A"): 0.53, ("food", "B"): 0.51, ("food", "C"): 0.48,
+              ("goods", "A"): 0.61, ("goods", "B"): 0.56, ("goods", "C"): 0.51}
+
+
+def margin_score(q):
+    """Expected Patch 3.6 score of a quote: the share of the shop's margin we keep, less the chance it breaks."""
+    if not q.get("value"):
+        return 0.0
+    kind = (CATALOG.get(q["sku"]["sku"]) or {}).get("kind", "goods")
+    c = COST_SHARE.get((kind, q.get("grade") or "A"), 0.6)
+    s = min(1.0, (1 - (q.get("expect") or q["reply"].ask) / q["value"]) / (1 - c))
+    if kind != "goods":
+        return s
+    pg = memory.break_rate(q.get("grade"))
+    return (1 - pg) * s - (0 if q.get("warranty", 0) >= 6 else pg)
 
 
 def describe(q):
