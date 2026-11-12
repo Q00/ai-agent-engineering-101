@@ -6,6 +6,8 @@ import time
 import unittest
 from unittest.mock import patch
 
+from market_scoring import buyer_cost_reference,buyer_candidate
+from buyer_policy import purchase_price_guidance
 import buyer_memory
 import buyer_r3
 import market_buyer_r3
@@ -84,6 +86,31 @@ class BuyerContextTests(unittest.TestCase):
             self.assertEqual(view['same_sku_payment_outcomes'],{'paid':50,'refused':50})
             self.assertLessEqual(len(view['cases']),3)
             self.assertEqual(p.read_bytes(),raw)
+
+    def test_real_cost_guidance_does_not_remove_sixteen_commercial_choices(self):
+        rows=[]
+        for i in range(16):
+            product={'list_price':100000,'kind':'goods','category':'가구/침구>침구'}
+            cost=buyer_cost_reference(product)
+            rows.append({'id':str(i),'shop':f'shop-{i}','sku':f'G{i}','name':'침구 상품',
+                         'list_price':100000,'cap':75000,'stock':3,
+                         'reviews':market_buyer_r3.review_summary([]),
+                         'first_hand':{'cases':[{'outcome':'refused','reason':'certificate missing'}]},
+                         'score_evidence':buyer_candidate(100000,75000,cost_reference=cost),
+                         'price_guidance':purchase_price_guidance(75000,(65000,68000,70000),
+                             list_price=100000,saved_baseline={'saved':.685,'observed_at':1000},
+                             cost_reference=cost)})
+        with patch.object(market_buyer_r3,'decide_json',return_value={
+                'candidate_id':'0','opening_offer':60000,'reason':'compare all'}) as model:
+            market_buyer_r3.choose(rows,{'kind':'goods','item':'침구'})
+        prompt=model.call_args.args[1]
+        self.assertEqual(len(prompt['candidate_shop_skus']),16)
+        self.assertLessEqual(size(prompt),BUYER_PROMPT_BYTES)
+        guidance=prompt['candidate_shop_skus'][0]['price_guidance']
+        self.assertTrue(guidance['cost_reference']['estimated'])
+        self.assertIn('prior',prompt['score_contract']['cost_reference_policy'])
+        self.assertEqual(rows[0]['price_guidance']['cost_reference']['source'],
+                         'patch3.6 announced approximate furniture/bedding mean')
 
     def test_selector_sees_reputation_evidence_within_input_budget(self):
         memory={'shop_name':'known','shop_payment_count':3,'same_sku_payment_outcomes':{'paid':2,'refused':1},

@@ -119,6 +119,27 @@ def shortlist(found: list[dict]) -> list[dict]:
     return selected
 
 
+def selection_price_guidance(guidance):
+    """Keep per-candidate numbers; explain shared uncertainty once in the contract."""
+    if not guidance:
+        return None
+    result={k:guidance[k] for k in ('paid_sample_72h','median_paid','suggested_maximum',
+            'opening_offer_range','reference_source','saved_if_usable_at_reference') if k in guidance}
+    cost=guidance.get('cost_reference') or {}
+    if cost:
+        result['cost_reference']={k:cost[k] for k in ('unit_cost','cost_share','estimated') if k in cost}
+    reference=guidance.get('saved_reference') or {}
+    if reference:
+        result['saved_reference']={k:reference[k] for k in (
+            'current_market_saved','observed_at','max_price_to_improve_if_usable') if k in reference}
+    return result
+
+
+def selection_score_evidence(row):
+    evidence=row.get('score_evidence') or buyer_candidate(row['list_price'],row['cap'])
+    return {k:evidence[k] for k in ('metric','saved_if_usable_at_cap') if k in evidence}
+
+
 def choose(candidates_: list[dict], order: dict, *, forced_candidate_id: str | None = None,
            telemetry: dict | None = None,life_context: dict | None = None,
            forum_context: dict | None = None) -> tuple[dict, int]:
@@ -132,8 +153,8 @@ def choose(candidates_: list[dict], order: dict, *, forced_candidate_id: str | N
                   'shop':text(row['shop'],80),'sku':text(row['sku'],80),
                   'name':text(row['name'],100),'first_hand':brief(row['first_hand']),
                   'checkout_recheck':row.get('checkout_constraint'),
-                  'score_evidence':row.get('score_evidence') or buyer_candidate(row['list_price'],row['cap']),
-                  'price_guidance':row.get('price_guidance'),
+                  'score_evidence':selection_score_evidence(row),
+                  'price_guidance':selection_price_guidance(row.get('price_guidance')),
                   "opening_offer_range": opening_offer_range(row['cap'], row.get('price_guidance'))}
                  for row in candidates_]
     prompt = {"phase": "buyer_selection", "order_item": text(order.get("item"),120),
@@ -141,7 +162,12 @@ def choose(candidates_: list[dict], order: dict, *, forced_candidate_id: str | N
               "candidate_shop_skus": displayed,
               'score_contract':{'version':VERSION,'ranking_version':BUYER_RANKING_VERSION,
                                 'weights':BUYER_WEIGHTS,'scales':BUYER_SCORE_SCALES,
-                                'definition':SAVED_CONTRACT,'all_definition':BUYER_ALL_CONTRACT},
+                                'definition':SAVED_CONTRACT,'all_definition':BUYER_ALL_CONTRACT,
+                                'cost_reference_policy':'All supplied costs and conditional Saved values are estimates. '
+                                    'Food .52 and furniture/bedding .61 are announced approximate category means; '
+                                    'other goods .59 is a prior from published grade odds and cost-range midpoints. '
+                                    'Seller unit, grade and purchase-time surge may differ. Never treat these as '
+                                    'verified costs, floor prices or guaranteed score improvements.'},
               'selection_policy':{'mode':'forced_exploration' if forced_candidate_id is not None else 'model_choice',
                                   'forced_candidate_id':forced_candidate_id,
                                   'note':'In exploration the harness fixes the candidate; choose its opening price. '
