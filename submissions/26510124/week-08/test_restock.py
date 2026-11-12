@@ -126,7 +126,7 @@ class RestockTests(unittest.TestCase):
         self.assertEqual(self.plan()[0], {"buy": []})
 
     def test_total_and_food_stock_caps_include_already_held_units(self):
-        self.inv["units"] = [unit(unit=str(i), sku="G00008", category="appliances") for i in range(self.cfg["max_stock_units"] - 1)]
+        self.inv["units"] = [unit(unit=str(i), sku="G00008", category="appliances") for i in range(self.cfg["restock"]["max_stock_units"] - 1)]
         decision, _ = self.plan()
         self.assertLessEqual(sum(b["qty"] for b in decision["buy"]), 1)
         self.inv["units"] = [unit(sku="F00001", category="furniture", kind="food")]
