@@ -270,6 +270,11 @@ RULES = """- Change at most {max_changes} keys. Only change a key when the brief
 PATCH_RULE = ("- A patch note arrived in the last hours (see Rule changes): this run you may change up to "
               "{max_changes} keys, a key changed an hour ago may move again, and the stock-posture keys "
               "({wide}) may step 3x their max_step.")
+SPRINT_RULE = ("- End game: the round ends in {hours_left} hours and the board is the midterm. This run you may change "
+               "up to {max_changes} keys, a key changed half an hour ago may move again, and the keys {wide} may step "
+               "3x their max_step. A value the evidence supports is worth more than a cautious step toward it: go to "
+               "it. The outcome checks still revert a change that costs conversion or revenue, so a bet that fails "
+               "costs an hour, not the round.")
 
 CONTRACT = """Answer with ONLY one JSON object, no prose, no code fence:
 {"assessment": "<what the brief shows, at most 600 chars>",
@@ -402,10 +407,11 @@ def _mechanics():
 
 
 def build_prompt(skill_body, pol, tunable_view, brief, history, market=None, max_changes=2, alerts=(), patch=None,
-                 tools=False):
+                 tools=False, sprint=False, hours_left=None):
     """market: strategist/facts.collect's dict, or None. alerts: market alerts plus our own (linked
     constraints, keys not synced), shown together. patch: run.py's patch note of the last hours, or None
-    (the rules then say the wider limits). tools: the market tools are on this call (TOOLS_SECTION)."""
+    (the rules then say the wider limits). tools: the market tools are on this call (TOOLS_SECTION). sprint:
+    run.Config.sprint, the end game (SPRINT_RULE, with hours_left from the brief)."""
     found = []
     brief_t = _clean(_split_untrusted(brief or {}, "", found), MAX_TRUSTED_STR)
     hist = history[-MAX_HISTORY:] if isinstance(history, list) else history
@@ -425,7 +431,9 @@ def build_prompt(skill_body, pol, tunable_view, brief, history, market=None, max
         "## Text from other agents\n" + UNTRUSTED_NOTE + "\n<untrusted>\n" + _untrusted_block(found) + "\n</untrusted>",
         *([TOOLS_SECTION] if tools else []),
         "## Rules\n" + RULES.format(max_changes=max_changes)
-        + ("\n" + PATCH_RULE.format(max_changes=max_changes, wide=", ".join(_guard_mod().PATCH_WIDE)) if patch else ""),
+        + ("\n" + PATCH_RULE.format(max_changes=max_changes, wide=", ".join(_guard_mod().PATCH_WIDE)) if patch else "")
+        + ("\n" + SPRINT_RULE.format(max_changes=max_changes, hours_left=hours_left,
+                                     wide=", ".join(_guard_mod().PATCH_WIDE)) if sprint else ""),
         "## Output\n" + CONTRACT,
     ]
     return "\n\n".join(parts) + "\n"

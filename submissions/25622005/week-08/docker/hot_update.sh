@@ -56,7 +56,9 @@ if [ -z "${USER_DRY:-}" ]; then
   [ -z "$DRY" ] && for f in market_buyer.py restock.py review.py policy.py; do python3 -m py_compile "$DATA/$f"; done
   # the loop's pid is in its heartbeat (the slim image has no procps); a new loop then starts detached
   T0=$(date +%s)
-  $COMPOSE exec -d market as-agent sh -c 'pid=$(python -c "import json;print(json.load(open(\"/data/strategist-home/heartbeat.json\"))[\"pid\"])" 2>/dev/null); [ -n "$pid" ] && kill "$pid" 2>/dev/null; sleep 2; mkdir -p /data/strategist-home && exec python -m strategist >> /data/strategist-home/console.log 2>&1' >/dev/null 2>&1 || true
+  $COMPOSE exec -d market as-agent sh -c 'pid=$(python -c "import json;print(json.load(open(\"/data/strategist-home/heartbeat.json\"))[\"pid\"])" 2>/dev/null); [ -n "$pid" ] && kill "$pid" 2>/dev/null; sleep 2; mkdir -p /data/strategist-home && STRATEGIST_SPRINT=${STRATEGIST_SPRINT:-1} exec python -m strategist >> /data/strategist-home/console.log 2>&1' >/dev/null 2>&1 || true
+  # STRATEGIST_SPRINT=1 (the end game, from 11-12 22:00): 5 keys a run, a 30 min cooldown, x3 steps, the model asked
+  # during outcome waits (strategist/run.Config.sprint). STRATEGIST_SPRINT=0 sh docker/hot_update.sh turns it off.
   sleep 65                                        # the new loop writes its first heartbeat after HEARTBEAT_S
   # only a heartbeat written after this restart counts: `python -m strategist health` also accepts a fresh
   # state.json, which a run minutes earlier leaves behind, and on 11-12 02:32 that said "healthy" for a loop

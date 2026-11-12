@@ -943,6 +943,25 @@ class ControlTest(Base):
         self.assertIn("market.surge_free not synced: the market's surge_free is unknown, kept at 40", rec["alerts"])
         self.assertEqual(skillfile.read(self.skill)[1]["policy"]["market"]["surge_free"], 40)
 
+    def test_sprint_limits_and_asks_the_model_during_an_outcome_wait(self):
+        # the end game (11-12): 5 keys, a 30 min cooldown, x3 steps, no waiting for outcomes
+        self.reply([{"key": "seller.first_ask_list", "value": 0.8}])
+        rec = self.run_at(NOW, sprint=True)
+        self.assertEqual(rec["status"], "applied")
+        prompt = (self.home / "prompts" / f"{rec['run_id']}.txt").read_text(encoding="utf-8")
+        self.assertIn("- Change at most 5 keys.", prompt)
+        self.assertIn("- End game: the round ends in", prompt)
+        self.assertNotIn("A patch note arrived", prompt)
+        self.reply([{"key": "stock.max_hold", "value": 50}, {"key": "seller.first_ask_list", "value": 0.75}])
+        rec = self.run_at(NOW + 1200, sprint=True)                      # a check is pending: asked anyway
+        self.assertEqual(rec["status"], "applied", rec)
+        self.assertEqual([(a["key"], a["new"]) for a in rec["applied"]], [("stock.max_hold", 50)])    # 3x step
+        self.assertEqual(rec["rejected"][0]["key"], "seller.first_ask_list")          # changed 20 min ago: cooldown
+        self.reply([{"key": "seller.first_ask_list", "value": 0.75}])
+        rec = self.run_at(NOW + 1900, sprint=True)                      # 32 min: past the 30 min cooldown
+        self.assertEqual([(a["key"], a["new"]) for a in rec["applied"]], [("seller.first_ask_list", 0.75)], rec)
+        self.assertFalse(run.Config(shop_home=W, home=W).sprint)
+
     def test_a_recent_patch_note_asks_the_model_during_an_outcome_wait(self):
         # 11-12: Patch 3.6 rescored the buyer; a 0.05 step and then an hour's wait would have taken the night
         page = PAGE.replace('<article class="patch latest">', '<article class="patch latest"><header><span class="v">'

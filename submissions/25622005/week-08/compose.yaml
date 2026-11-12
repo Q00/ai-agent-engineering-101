@@ -45,6 +45,9 @@ services:
       STRATEGIST_HARNESS_CMD: 'claude -p --model claude-opus-5-5 --tools "" --setting-sources "" --no-session-persistence'
       STRATEGIST_MODE: "${STRATEGIST_MODE:-apply}"
       STRATEGIST_INTERVAL_S: "1800"
+      # End game (from 11-12 22:00): 5 keys a run, 30 min cooldown, x3 steps, the model asked during outcome
+      # waits (strategist/run.Config.sprint). docker/hot_update.sh sets it on the loop it starts as well.
+      STRATEGIST_SPRINT: "${STRATEGIST_SPRINT:-1}"
       # After each run, push the records to this private repository; empty disables it. The deploy
       # key goes in the data folder's home/.ssh/ (seen as /data/home/.ssh/), never in the image.
       STRATEGIST_LOG_REPO: "${STRATEGIST_LOG_REPO:-}"

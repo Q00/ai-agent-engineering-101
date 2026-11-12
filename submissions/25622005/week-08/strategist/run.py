@@ -75,6 +75,9 @@ class Config:
     patch_h: float = 6                  # after a new patch note on /rules, for this long:
     patch_max_changes: int = 4          #   model changes per run
     patch_cooldown_h: float = 1         #   cooldown
+    sprint: bool = False                # end game (STRATEGIST_SPRINT=1, from 11-12 22:00 to the round's end): every run
+    sprint_max_changes: int = 5         #   gets these limits, the guard's x3 steps (guard.PATCH_WIDE) and the model is
+    sprint_cooldown_h: float = 0.5      #   asked during outcome waits; the outcome checks still revert a drop
     llm_timeout: int = 300
     me: str = "psyoung82"
     log_repo: str = ""                  # strategist/publish.py: empty disables publishing
@@ -110,6 +113,7 @@ def config(shop=None, home=None, mode=None, interval=None):
                   mode=mode,
                   interval_s=int(interval or os.environ.get("STRATEGIST_INTERVAL_S", 1800)),
                   market_url=os.environ.get("MARKET_URL", "https://market.ourolabs.ai"),
+                  sprint=os.environ.get("STRATEGIST_SPRINT", "") == "1",
                   log_repo=os.environ.get("STRATEGIST_LOG_REPO", ""),
                   log_branch=os.environ.get("STRATEGIST_LOG_BRANCH") or "main",
                   log_key=os.environ.get("STRATEGIST_LOG_KEY", ""))
@@ -303,13 +307,13 @@ def _steps(cfg, now, client, state, rec):
         notes = None
         if reverts:
             rec["status"] = "outcome revert"            # the model sees the result next run
-        elif wait and not rules_changed and not guard.linked_alerts(pol, linked) and not rec["patch"]:
-            rec["status"] = f"waiting for outcome of {wait}"     # while a patch note is recent the model is asked
-        else:
-            if wait:                                             # a patch note is recent (or the rules changed): asked
-                rec["alerts"].append(f"outcome check of {wait} pending: the model is asked anyway "     # anyway, the
-                                     f"(patch {(rec['patch'] or {}).get('version') or 'none'}, rules changed "  # guard's cooldown
-                                     f"{rules_changed}); the keys it changed are under cooldown")        # holds its keys
+        elif wait and not rules_changed and not guard.linked_alerts(pol, linked) and not rec["patch"] and not cfg.sprint:
+            rec["status"] = f"waiting for outcome of {wait}"     # while a patch note is recent (or in the sprint) the
+        else:                                                    # model is asked anyway; the guard's cooldown holds
+            if wait:                                             # the keys just changed
+                rec["alerts"].append(f"outcome check of {wait} pending: the model is asked anyway "
+                                     f"(patch {(rec['patch'] or {}).get('version') or 'none'}, rules changed "
+                                     f"{rules_changed}, sprint {cfg.sprint}); the keys it changed are under cooldown")
             state["last_model_ts"] = now
             model_rows, notes = _ask(cfg, body, gpol, brief, market, rec)
             rows += model_rows
@@ -519,7 +523,10 @@ def _patch(cfg, market, now):
 
 
 def _limits(cfg, rec):
-    """(max_changes, cooldown_h) for the model's rows this run."""
+    """(max_changes, cooldown_h) for the model's rows this run: the sprint's, else a recent patch note's, else
+    the usual."""
+    if cfg.sprint:
+        return cfg.sprint_max_changes, cfg.sprint_cooldown_h
     return (cfg.patch_max_changes, cfg.patch_cooldown_h) if rec.get("patch") else (cfg.max_changes, cfg.cooldown_h)
 
 
@@ -544,7 +551,8 @@ def _ask(cfg, body, pol, brief, market, rec):
         tools = None
         rec["errors"].append(f"tools: {type(e).__name__}: {str(e)[:120]}")
     prompt = decide.build_prompt(body, pol, guard.tunable_view(pol), brief, _history(cfg.home), market,
-                                 _limits(cfg, rec)[0], rec["alerts"], patch=rec.get("patch"), tools=bool(tools))
+                                 _limits(cfg, rec)[0], rec["alerts"], patch=rec.get("patch"), tools=bool(tools),
+                                 sprint=cfg.sprint, hours_left=brief.get("hours_left"))
     _write_text(cfg.home / "prompts" / f"{rid}.txt", prompt)
     obj, raw_answer, err = decide.ask(prompt, cfg.llm_timeout, tools=tools)
     _write_text(cfg.home / "raw" / f"{rid}.txt", raw_answer or "")
@@ -574,7 +582,7 @@ def _guard(cfg, now, pol, rows, state, rec, p_clear=None):
     max_changes, cooldown_h = _limits(cfg, rec)
     accepted, rejected = guard.guard(rows, pol, last_ts, now, max_changes, cooldown_h,
                                      last=_last_change(state, cfg.home), blocked=state.get("blocked"), p_clear=p_clear,
-                                     patch=bool(rec.get("patch")))
+                                     patch=bool(rec.get("patch")) or cfg.sprint)
     rec["rejected"] += rejected
     if not accepted and rec["status"] is None:
         rec["status"] = "no change"
