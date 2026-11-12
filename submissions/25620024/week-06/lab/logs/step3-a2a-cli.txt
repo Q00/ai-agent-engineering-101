@@ -1,0 +1,17 @@
+$ a2a card get http://127.0.0.1:9000
+Name:         Hello Agent
+Description:  Says hello back.
+Version:      1.0.0
+Interfaces:
+  JSONRPC      http://127.0.0.1:9000/
+Streaming:    false
+Skills:
+  hello                Say hello
+
+$ a2a send -a http://127.0.0.1:9000 "hi there"
+Task:     e01a4df7-f7c9-42ba-a6a2-067abcae9817
+Context:  48173d8a-4c0f-4c57-8222-ade0957b3eb5
+Status:   completed (2026-10-13T10:32:27Z)
+  Hello! You said: hi there
+History:
+  [user] hi there

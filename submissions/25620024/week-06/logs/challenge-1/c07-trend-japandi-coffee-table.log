@@ -1,0 +1,11 @@
+
+### c07-trend-japandi-coffee-table [trend] budget 400
+    -> "Something in the Japandi style everyone is doing these days: a low coffee table."
+    <- TASK_STATE_INPUT_REQUIRED | I can offer the Natural Oak Coffee Table 120 [TB-0161] (oak, seats 0, W120 D45 H42 cm). The natural oak with Scandinavian styling captures the Japandi aesthetic perfectly—warm wood tones and clean minimalism are core to the style. Price: asking 235. Send your offer as a number.
+    [test] offered TB-0161: Natural Oak Coffee Table 120 (reserve 160)
+    -> "200" taskId=a6fce87a
+    <- TASK_STATE_INPUT_REQUIRED | 200 is too low. Counteroffer: 220.
+    -> "220" taskId=a6fce87a
+    <- TASK_STATE_COMPLETED | Deal: Natural Oak Coffee Table 120 [TB-0161] at 220.
+       artifact receipt [{"item": "Natural Oak Coffee Table 120", "seller": "Harness Furniture Store (25620024)", "price": 220.0, "item_id": "TB-0161"}]
+  PASS  c07-trend-japandi-coffee-table: item TB-0161 (oak coffee table, reserve 160), asks [235, 220], 0 question(s), deal at 220.0 {'right_item': True, 'reserve': True, 'receipt': True} (35 s)

@@ -1,0 +1,13 @@
+
+### c03-vague-living-room [vague] budget 900
+    -> "I want something nice for my living room"
+    <- TASK_STATE_INPUT_REQUIRED | Which kind of furniture are you looking for? We sell bookshelves, desks, office and dining chairs, sofas, beds, wardrobes, chests of drawers, tables and lamps.
+    -> "a sofa for three people, nothing too pricey" taskId=e63ce641
+    <- TASK_STATE_INPUT_REQUIRED | I can offer the Beige Fabric 3-Seat Sofa 180 [SF-0087] (fabric, seats 3, W180 D85 H82 cm). It's a stylish, budget-friendly option in a neutral beige that works with any living room décor and seats three people comfortably. Price: asking 649. Send your offer as a number.
+    [test] offered SF-0087: Beige Fabric 3-Seat Sofa 180 (reserve 465)
+    -> "450" taskId=e63ce641
+    <- TASK_STATE_INPUT_REQUIRED | 450 is too low. Counteroffer: 550.
+    -> "550" taskId=e63ce641
+    <- TASK_STATE_COMPLETED | Deal: Beige Fabric 3-Seat Sofa 180 [SF-0087] at 550.
+       artifact receipt [{"item": "Beige Fabric 3-Seat Sofa 180", "seller": "Harness Furniture Store (25620024)", "price": 550.0, "item_id": "SF-0087"}]
+  PASS  c03-vague-living-room: item SF-0087 (fabric 3-seat sofa, reserve 465), asks [649, 550], 1 question(s), deal at 550.0 {'right_item': True, 'reserve': True, 'receipt': True} (52 s)

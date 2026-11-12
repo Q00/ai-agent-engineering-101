@@ -1,0 +1,32 @@
+# challenge2_test.py with buyer v2, 2026-10-18 -- the user's terminal output, copied here because
+# logs/challenge-2/normal/buyer.log came out empty: writing it on Google Drive failed with
+# "TimeoutError: [Errno 60] Operation timed out", and the API credit ran out in the same minute.
+# (part B/C lines and the quotes/awarded boards trimmed to the lines below; the rest verbatim)
+
+=== scenario normal: budget 800 (about 1.2 x the sum of typical reserves) ===
+  part D  'a lamp to read in bed': awarded to Lamp Corner at 28, standby ['Bright Ideas Lighting', 'City Home Store']
+  part D  'a three-seat fabric sofa for the living room': awarded to Comfy Couches at 580, standby ['City Home Store', 'Sofa House']
+  part D  'something wooden to keep about 40 books, not taller than my desk': awarded to Book Nook Shelving at 150, standby ['Study Space', 'City Home Store']
+  part D  'an office chair to sit in all day': awarded to Desk & Chair Works at 125, standby ['Ergo Office', 'City Home Store']
+  part D  floor estimates (lowest quote / 1.5): {'a lamp to read in bed': 19, 'a three-seat fabric sofa for the living room': 387, 'something wooden to keep about 40 books, not taller than my desk': 100, 'an office chair to sit in all day': 83}
+    ledger: budget 800 | spent 0 {} | held 797 {'a lamp to read in bed': 25, 'a three-seat fabric sofa for the living room': 525, 'something wooden to keep about 40 books, not taller than my desk': 135, 'an office chair to sit in all day': 112} | free 3
+
+  part E  negotiating 4 items in parallel
+  [Lamp Corner / a lamp to read in bed] harness: offer 14 (ask 28, target 19, cap 25, prompt 941 chars)
+  [Comfy Couches / a three-seat fabric sofa] harness: offer 310 (ask 580, target 387, cap 525, prompt 974 chars)
+  [Desk & Chair Works / an office chair to sit i] harness: offer 70 (ask 125, target 83, cap 112, prompt 968 chars)
+  [Book Nook Shelving / something wooden to keep] harness: offer 100 (ask 150, target 100, cap 135, prompt 1000 chars)
+  [Desk & Chair Works / an office chair to sit i] harness: offer 78 (ask 105, target 83, cap 112, prompt 976 chars)
+  [Lamp Corner / a lamp to read in bed] harness: offer 17 (ask 24, target 19, cap 25, prompt 948 chars)
+  [Book Nook Shelving / something wooden to keep] harness: offer 110 (ask 130, target 100, cap 135, prompt 1009 chars)
+  [Comfy Couches / a three-seat fabric sofa] harness: offer 365 (ask 480, target 387, cap 525, prompt 983 chars)
+  [Desk & Chair Works / an office chair to sit i] harness: offer 80 (ask 95, target 83, cap 112, prompt 987 chars)
+  [Book Nook Shelving / something wooden to keep] harness error (harness exited 1: Credit balance is too low); offering the cap
+Traceback (most recent call last):
+  File ".../week-06/challenge2_test.py", line 121, in <module>
+    main()
+  File ".../week-06/challenge2_test.py", line 107, in main
+    r, verdict = run_scenario(sc, items)
+  File ".../week-06/challenge2_test.py", line 70, in run_scenario
+    blog.write(line)
+TimeoutError: [Errno 60] Operation timed out

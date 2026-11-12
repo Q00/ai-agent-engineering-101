@@ -1,0 +1,85 @@
+Harness Shop (25620024) on http://127.0.0.1:63887  (harness: claude -p --model haiku)
+[3b6b03cf] harness opening ask 170 for lamp (reserve 100)
+[3b6b03cf] offer 60 -> harness {"action": "counter", "price": 140}
+[3b6b03cf] offer 80 -> harness {"action": "counter", "price": 120}
+[3b6b03cf] offer 120 >= current ask 120: accept without asking the harness
+[3b6b03cf] DEAL lamp at 120 (reserve 100)
+Failed to detach context
+Traceback (most recent call last):
+  File "/Users/dragonash/.venvs/a2a-w06/lib/python3.12/site-packages/opentelemetry/trace/__init__.py", line 602, in use_span
+    yield span
+  File "/Users/dragonash/.venvs/a2a-w06/lib/python3.12/site-packages/opentelemetry/trace/__init__.py", line 504, in start_as_current_span
+    yield span
+  File "/Users/dragonash/.venvs/a2a-w06/lib/python3.12/site-packages/opentelemetry/trace/__init__.py", line 441, in start_as_current_span
+    yield span
+  File "/Users/dragonash/.venvs/a2a-w06/lib/python3.12/site-packages/a2a/utils/telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+GeneratorExit
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/dragonash/.venvs/a2a-w06/lib/python3.12/site-packages/opentelemetry/context/__init__.py", line 127, in detach
+    _RUNTIME_CONTEXT.detach(token)
+  File "/Users/dragonash/.venvs/a2a-w06/lib/python3.12/site-packages/opentelemetry/context/contextvars_context.py", line 40, in detach
+    self._current_context.reset(token)
+ValueError: <Token var=<ContextVar name='current_context' default={} at 0x104abab10> at 0x10513c880> was created in a different Context
+Task was destroyed but it is pending!
+task: <Task pending name='Task-56' coro=<EventQueueSource._dispatch_loop() done, defined at /Users/dragonash/.venvs/a2a-w06/lib/python3.12/site-packages/a2a/utils/telemetry.py:225> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+Failed to detach context
+Traceback (most recent call last):
+  File "/Users/dragonash/.venvs/a2a-w06/lib/python3.12/site-packages/opentelemetry/trace/__init__.py", line 602, in use_span
+    yield span
+  File "/Users/dragonash/.venvs/a2a-w06/lib/python3.12/site-packages/opentelemetry/trace/__init__.py", line 504, in start_as_current_span
+    yield span
+  File "/Users/dragonash/.venvs/a2a-w06/lib/python3.12/site-packages/opentelemetry/trace/__init__.py", line 441, in start_as_current_span
+    yield span
+  File "/Users/dragonash/.venvs/a2a-w06/lib/python3.12/site-packages/a2a/utils/telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+GeneratorExit
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/dragonash/.venvs/a2a-w06/lib/python3.12/site-packages/opentelemetry/context/__init__.py", line 127, in detach
+    _RUNTIME_CONTEXT.detach(token)
+  File "/Users/dragonash/.venvs/a2a-w06/lib/python3.12/site-packages/opentelemetry/context/contextvars_context.py", line 40, in detach
+    self._current_context.reset(token)
+ValueError: <Token var=<ContextVar name='current_context' default={} at 0x104abab10> at 0x10513eb80> was created in a different Context
+Task was destroyed but it is pending!
+task: <Task pending name='Task-57' coro=<EventQueueSource._dispatch_loop() done, defined at /Users/dragonash/.venvs/a2a-w06/lib/python3.12/site-packages/a2a/utils/telemetry.py:225> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+[ffc380a6] harness opening ask 150 for lamp (reserve 100)
+[ffc380a6] offer 60 -> harness {"action": "counter", "price": 130}
+[ffc380a6] offer 80 -> harness {"action": "counter", "price": 115}
+[ffc380a6] offer 115 >= current ask 115: accept without asking the harness
+[ffc380a6] DEAL lamp at 115 (reserve 100)
+[07dfc1af] harness opening ask 180 for lamp (reserve 100)
+[07dfc1af] offer 60 -> harness {"action": "counter", "price": 140}
+[07dfc1af] offer 80 -> harness {"action": "counter", "price": 120}
+[07dfc1af] offer 120 >= current ask 120: accept without asking the harness
+[07dfc1af] DEAL lamp at 120 (reserve 100)
+[bd259ca5] harness opening ask 380 for bookshelf (reserve 260)
+[bd259ca5] offer 140 -> harness {"action": "counter", "price": 340}
+[bd259ca5] offer 170 -> harness {"action": "counter", "price": 300}
+[bd259ca5] offer 200 -> harness {"action": "counter", "price": 270}
+[bd259ca5] offer 230 -> harness {"action": "counter", "price": 265}
+[bd259ca5] offer 230 -> harness {"action": "counter", "price": 260}
+[bd259ca5] harness error (int() argument must be a string, a bytes-like object or a real number, not 'NoneType'); holding ask 260
+[bd259ca5] offer 230 -> harness {"action": "counter", "price": 260}
+[bd259ca5] REJECT after 6 offers (last offer 230)
+[d3395e57] harness opening ask 385 for bookshelf (reserve 260)
+[d3395e57] offer 140 -> harness {"action": "counter", "price": 330}
+[d3395e57] offer 170 -> harness {"action": "counter", "price": 285}
+[d3395e57] offer 200 -> harness {"action": "counter", "price": 265}
+[d3395e57] offer 230 -> harness {"action": "counter", "price": 255}
+[d3395e57] GUARD counter 255 < reserve 260: raised to 260
+[d3395e57] offer 230 -> harness {"action": "reject", "price": 260}
+[d3395e57] REJECT after 5 offers (last offer 230)
+[ea3fb06b] harness opening ask 380 for bookshelf (reserve 260)
+[ea3fb06b] offer 140 -> harness {"action": "counter", "price": 320}
+[ea3fb06b] offer 170 -> harness {"action": "counter", "price": 280}
+[ea3fb06b] offer 200 -> harness {"action": "counter", "price": 260}
+[ea3fb06b] offer 230 -> harness {"action": "reject", "price": 260}
+[ea3fb06b] REJECT after 4 offers (last offer 230)
