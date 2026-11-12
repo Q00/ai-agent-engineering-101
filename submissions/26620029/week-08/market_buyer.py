@@ -46,6 +46,9 @@ MAX_OFFERS = 8
 # ranks 12th of 46 at 0.3297 with 5th at 0.3382 (logs/top-shops-1112-1008.txt). Deals weigh 0.1, saved 0.5. Was 0.55, 0.75, 0.07
 OPEN_SHARE = 0.50                             # first offer as a share of list price, sent by the code
 LIMIT_SHARE = 0.65                            # never pay more than this share of list price
+# Claude (2026-11-12 14:44, hourly check, the 10:27 revert line "deals/h under half -> LIMIT 0.70"): deals/h 54-81 before 10:27,
+# then 42, 40.9, 33.0; class buyer pct 0.772 -> 0.761 (saved pct 0.756 -> 0.733) while saved itself rose 0.3297 -> 0.3307
+LIMIT_SHARE = 0.70
 STEP_SHARE = 0.05                             # one offer rises at most this share of list price
 PRICE_WEIGHT = 10.0                           # shop score per unit of paid/list: 0.03 cheaper is worth 0.3 stars
 PRICE_MIN_DEALS = 10                          # market deals of a shop before its prices count
