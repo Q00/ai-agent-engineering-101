@@ -20,6 +20,10 @@ from collections import defaultdict
 from pathlib import Path
 
 PROMO_GAP = 15 * 60          # seconds between my shop posts; the market allows 5 min. Plan: 15 min for the first 6 h
+# Claude (2026-11-12 16:44, hourly check, the plan's 6 h line "no lift -> one post an hour"): promo_eval 10:42:51 at 6.03 h, deals/h
+# before -> after: hot test 27.3 -> 41.0 (x1.50), hot control 9.7 -> 24.1 (x2.48); other test 7.0 -> 4.0, other control 3.7 -> 4.6.
+# 23 posts, 0 dislikes; the advertised half grew less than the control, so the ads bring no asks I can see
+PROMO_GAP = 60 * 60
 PER_POST = 4                 # SKUs per post
 HOT_MIN = 6                  # market deals in 3 h for "hot"
 OLD_HOURS = 12
