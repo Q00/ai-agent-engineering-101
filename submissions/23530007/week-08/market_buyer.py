@@ -616,9 +616,12 @@ def choose(shops, mem, item, budget, ask_model=True, ctx=None):
             v[1] += t.get("outcome") == "deal"
     # 11-05: kcwarni closed 4 of 119 visits, bjeon01 7 of 69, while Kiro729 closed 85 %: a shop that rarely
     # closes with us costs the order's time (and orders only come after the last one ends)
-    good = [s for s in allowed if seen.get(s["name"], [0, 0])[0] < LOW_VISITS
-            or seen[s["name"]][1] / seen[s["name"]][0] >= LOW_RATE]
-    allowed = good or allowed
+    # 11-12 14:00: replaced by the per-kind visit model in the ctx branch (dead_p, 6 h); this 24 h all-kind filter cut
+    # 12-13 goods candidates to 2-3 and, with the visit model on top, left goods orders no shop (close .41 -> .19)
+    if ctx is None:
+        good = [s for s in allowed if seen.get(s["name"], [0, 0])[0] < LOW_VISITS
+                or seen[s["name"]][1] / seen[s["name"]][0] >= LOW_RATE]
+        allowed = good or allowed
     stage.append(f"closes {len(allowed)}")
     # 11-05: yeonsong2 and leeuichann took 30-55 s per answer, so one order there took 3-4 minutes and no new
     # order came meanwhile (orders/h fell from ~130 to 66). Skip shops whose visits take SLOW_SECS (median).
