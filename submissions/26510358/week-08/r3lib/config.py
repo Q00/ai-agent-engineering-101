@@ -169,6 +169,11 @@ BANDIT_ASK_ENABLED = True           # L1: the shop's first ask x one of ASK_ARMS
 ASK_ARMS = (0.9, 1.0, 1.1)          # within +-20% of the rule's ask; floors (L0) are untouched
 PREMIUM_ASK_ARMS = (0.9, 1.0, 1.1)  # E2 proposes (1.0, 1.2, 1.5) for premium furniture: beyond +-20%, needs the human's yes
 # --- shop: the grade shown first and grade C's first ask (r3lib/shelf.py), the human's yes 2026-11-11 ~10:45 KST --
+TASTE_EVERY_S = 600                 # F (r3lib/taste.py): the CEO tick rebuilds each buyer style's preferred grades this often
+TASTE_HOURS = 72                    # market-wide stars by (buyer, kind, grade) over this window
+TASTE_MIN_N = 10                    # reviews a (buyer, kind, grade) cell needs to count
+TASTE_MIN_SPREAD = 0.5              # best minus worst grade, in stars, before a kind gets a preference
+TASTE_STYLE_SHARE = 0.7             # one buyer must have this share of a style's results on our shop
 SHELF_EVERY_S = 600                 # the CEO tick judges the order of each mixed-grade goods SKU this often
 SHELF_TTL_H = 2                     # a pushed grade stays first this long, then it is judged again on what it sold
 SHELF_MIN_HELD = 3                  # units of a grade that must have waited SHELF_MIN_AGE_H before it is a candidate

@@ -16,7 +16,7 @@ memory and pricing rules. The departments decide on the slow path (every 60 s or
 import json
 import time
 
-from .. import config, initiative, market, markdown, pricing, score_model, scout, shelf
+from .. import config, initiative, market, markdown, pricing, score_model, scout, shelf, taste
 
 GRADES = ("A", "B", "C")
 ABNORMAL_OFFER_X = 3                  # a "deal" above this multiple of list is left out of the price KPIs
@@ -211,6 +211,17 @@ def marketing_shelf(mem, args, call, now=None):
             "live": shelf.live(mem, now)}
 
 
+def marketing_taste(mem, args, call, now=None):
+    """F: every TASTE_EVERY_S rebuild, per buyer style, the grades that buyer rates best (r3lib/taste.py)."""
+    now = now or time.time()
+    if now - (mem.get("taste_ts") or 0) < config.TASTE_EVERY_S:
+        return {"due": False}
+    mem.put("taste_ts", now)
+    prefs = taste.tick(mem, now=now)
+    return {"due": True, "styles": len(prefs),
+            "accounts": sorted({p["account"] for p in prefs.values()})}
+
+
 # ------------------------------------------------------------------------------------------- ceo
 def ceo_tick(mem, args, call):
     """One restock cycle. Returns the kit's restock answer ({"buy": [...]}, maybe "bankrupt" or "wait")."""
@@ -227,6 +238,10 @@ def ceo_tick(mem, args, call):
         pass
     try:
         call("marketing", "shelf", {"state": md})       # unprompted: which grade each mixed-grade SKU shows first
+    except Exception:
+        pass
+    try:
+        call("marketing", "taste", {"state": md})       # F: which grade each buyer style rates best
     except Exception:
         pass
     if config.hours_left_in_round() <= config.GOODS_STOP_BUYING_HOURS:   # food stops earlier, inside the plan
@@ -312,6 +327,7 @@ SKILLS = {
     "marketing": {"stats": (marketing_stats, "our buyer posts, votes and member codes"),
                   "markdown": (marketing_markdown, "unprompted markdown of overstocked SKUs, judged by p > C/(B+C)"),
                   "shelf": (marketing_shelf, "unprompted: the grade a mixed-grade SKU shows first, by p > C/(B+C)"),
+                  "taste": (marketing_taste, "per buyer style, the grades that buyer rates best (stars by grade)"),
                   "pricing": (marketing_pricing, "close rate, ask and final price ratios, premium pilot")},
 }
 

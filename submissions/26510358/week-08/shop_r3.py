@@ -31,7 +31,7 @@ from a2a.server.routes import create_agent_card_routes, create_jsonrpc_routes
 from a2a.server.tasks import InMemoryTaskStore, TaskUpdater
 from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 
-from r3lib import bandit, config, markdown, market, pricing, score_model, scout, shelf
+from r3lib import bandit, config, markdown, market, pricing, score_model, scout, shelf, taste
 from r3lib.memory import Memory
 
 LEGACY = {"lamp": (100, 130), "chair": (180, 234), "bookshelf": (260, 338)}   # reserve, first ask (Round 0-2)
@@ -98,14 +98,16 @@ def wanted_hours(text):
     return float(m.group(1)) if m else 0.0
 
 
-def find_unit(text, taken, grade_ratio=None, first=None):
+def find_unit(text, taken, grade_ratio=None, first=None, prefer=None):
     """In-stock unit for what the buyer asked (SKU first, else category or name). Among fitting units, the one
     that expires first while still lasting what the buyer asked for; goods: best grade first, then oldest.
     A goods SKU with more than OVERSTOCK_SKU_UNITS on hand offers its widest-margin grade first instead
     (pricing.overstock_order; needs grade_ratio = Memory.grade_price_ratio). The unit comes back with sku_units,
     the units of its SKU on hand.
     first: {sku: grade} from the CEO tick's shelf pass (r3lib/shelf.py): the SKU shows that grade first, oldest
-    unit, while it has one (pushed=grade on the unit)."""
+    unit, while it has one (pushed=grade on the unit).
+    prefer: grades best first that this buyer rates well (r3lib/taste.py); the first one held wins over the order
+    above and the shelf push (food: among units that still last the need)."""
     inv = market.read_json("inventory.json", {}) or {}
     if (inv.get("round") or 0) < 3:
         want = (text or "").lower()
@@ -129,6 +131,10 @@ def find_unit(text, taken, grade_ratio=None, first=None):
         needs = [need] if need or not shelf else [f * shelf for f in config.UNSTATED_NEED_SHARES]
         for n in needs:
             lasting = [u for u in fit if not u.get("expires_at") or (u["expires_at"] - now) / 3600 >= n + 1]
+            for g in prefer or ():
+                liked = [u for u in lasting if u.get("grade") == g]
+                if liked:
+                    return dict(min(liked, key=lambda u: (u.get("expires_at") or float("inf"))), taste=g), inv
             if lasting:
                 return min(lasting, key=lambda u: (u.get("expires_at") or float("inf"))), inv
         # Nothing lasts what the order needs (stated, or at least the smallest unstated share): a unit that does not
@@ -143,6 +149,10 @@ def find_unit(text, taken, grade_ratio=None, first=None):
             best = pricing.overstock_order(same, grade_ratio)
         except Exception as e:                        # memory trouble must not lose a sale
             log("overstock_error", error=str(e)[:200])
+    for g in prefer or ():
+        liked = [u for u in same if u.get("grade") == g]
+        if liked:
+            return dict(min(liked, key=lambda u: u.get("supplied_at") or 0), sku_units=on_hand, taste=g), inv
     pushed = [u for u in same if u.get("grade") == (first or {}).get(best["sku"])]
     if pushed:
         return dict(min(pushed, key=lambda u: u.get("supplied_at") or 0), sku_units=on_hand,
@@ -325,6 +335,12 @@ class Shop(AgentExecutor):
                 await up.reject(say("Sorry, none of that in stock."))
                 return
             style = buyer_style(text, u)
+            liked = taste.prefer(self.mem, style, u.get("kind")) if not u.get("legacy") else None
+            if liked and u.get("grade") != liked[0]:
+                u2, _ = find_unit(text, taken, self.mem.grade_price_ratio, shelf.live(self.mem), prefer=liked)
+                if u2 is not None and u2.get("grade") != u.get("grade"):
+                    log("taste", style=style, sku=u2["sku"], grade=u2.get("grade"), was=u.get("grade"), prefer=liked)
+                    u = u2
             harsh = (self.mem.get("harsh_styles") or {}).get(style) if not u.get("legacy") else None
             if harsh:
                 log("declined_harsh_style", style=style, ratings=harsh[0], mean_stars=harsh[1])
