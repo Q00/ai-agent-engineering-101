@@ -313,6 +313,7 @@ def unit_skip(mem):
         oc = str(t.get("outcome", ""))
         if t.get("shop") and t.get("item") and ((oc.startswith("unpaid") and "shelf life" in oc)
                                                 or (oc == "deal" and "receipt names" in str(t.get("void")))
+                                                or oc.startswith("wrong item")
                                                 or (oc == "rejected" and not t.get("asks"))):
             out.add(f"{t['shop']}|{t['item']}")
     return out
@@ -1169,7 +1170,16 @@ def main():
                 outcome = "deal"
                 claim = rec.get("claim")
                 warranty = as_int(rec.get("warranty_hours")) or 0
-                if acceptable and order.get("kind") == "goods" and warranty < WARRANTY_MIN:
+                if acceptable and rec.get("sig_seller") and rec.get("item") not in {a.item, *acceptable}:
+                    # 11-12: Kiro729 answered our low goods offers with a receipt for ANOTHER SKU (17 of our 48 goods
+                    # 'deals' there in 24 h, e.g. 261,807 'for' a 1.6 M sofa): never paid (the market checks the item),
+                    # but the order ended there and the record read as a deal at .84 saved, which raised the shop's
+                    # realized value and sent it more goods orders. Now it is a turned-away visit: the next shop is
+                    # tried and that SKU is not asked for at that shop for 2 h (unit_skip).
+                    log("buyer", f"{pick['name']} signed a receipt for {rec.get('item')!r}, not {item} or another of the "
+                                 f"order's items; not paying, trying elsewhere")
+                    outcome, rec, price = f"wrong item on receipt ({rec.get('item')})", None, None
+                elif acceptable and order.get("kind") == "goods" and warranty < WARRANTY_MIN:
                     # 11-11: a goods receipt without a 6 h warranty is never paid (an unrefunded break scores -1;
                     # unwarranted goods ran .185 per deal over 48 h)
                     log("buyer", f"{pick['name']} signed {item} without a warranty; not paying, trying elsewhere")
@@ -1199,7 +1209,7 @@ def main():
         except (RpcError, Exception) as e:
             log("buyer", f"trade failed: {e!r}")
             outcome = f"error ({type(e).__name__})"
-        turned_away = (outcome == "rejected" and not asks) or outcome.startswith(("error", "grade ", "too short", "no warranty"))
+        turned_away = (outcome == "rejected" and not asks) or outcome.startswith(("error", "grade ", "too short", "no warranty", "wrong item"))
         on_price = vctx is not None and outcome in RETRY_ON_PRICE   # Round 3: the next-best shop may take our price
         others = [s for s in shops if s["name"] != pick["name"]]
         if (turned_away or on_price) and others and attempt < max_shops - 1 and time.time() - start < DEADLINE - 60:

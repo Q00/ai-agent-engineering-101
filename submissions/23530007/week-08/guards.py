@@ -172,8 +172,8 @@ def main():
         fires.append("G2")
 
     # G3 deals collapse (orders steady)
-    deals1 = sum(1 for t in h1 if t.get("outcome") == "deal")
-    deals6 = sum(1 for t in h6 if t.get("outcome") == "deal") / 6
+    deals1 = sum(1 for t in h1 if t.get("outcome") == "deal" and t.get("signed") is not False)
+    deals6 = sum(1 for t in h6 if t.get("outcome") == "deal" and t.get("signed") is not False) / 6
     orders1 = len({t.get("order") for t in h1 if t.get("order")})
     orders6 = len({t.get("order") for t in h6 if t.get("order")}) / 6
     if deals6 >= 30 and orders6 and orders1 >= 0.8 * orders6 and deals1 < 0.5 * deals6:

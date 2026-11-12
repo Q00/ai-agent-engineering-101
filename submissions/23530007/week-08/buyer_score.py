@@ -67,7 +67,7 @@ def build(now=None):
         hist.append({"t": round(now), "saved": bd["saved"], "deals": bd["deals"]})
     out = {"t": round(now), "board": bd, "hist": hist[-HIST_KEEP:]}
 
-    deals = [t for t in trades if t.get("outcome") == "deal" and t.get("list") and t.get("price")]
+    deals = [t for t in trades if t.get("outcome") == "deal" and t.get("signed") is not False and t.get("list") and t.get("price")]
     orders24 = {t["order"] for t in trades if now - t["t"] < 86400 and t.get("order")}
     d24 = [t for t in deals if now - t["t"] < 86400]
     d6 = [t for t in deals if now - t["t"] < 6 * 3600]
@@ -140,7 +140,7 @@ def build(now=None):
             last[t["order"]] = t
     arms = {}
     for o, t in last.items():
-        v = score(t) if t.get("outcome") == "deal" and t.get("list") and t.get("price") else 0.0
+        v = score(t) if t.get("outcome") == "deal" and t.get("signed") is not False and t.get("list") and t.get("price") else 0.0
         for flag in ("aimtop", "aim15", "cheapfood", "cheapgoods", "pricefirst", "talk", "soft"):
             if flag in t:
                 arms.setdefault(f"{flag}={bool(t[flag])}", []).append(v)

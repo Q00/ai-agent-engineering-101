@@ -43,7 +43,7 @@ def score(t):
 
 def buyer_pace(now, hours):
     trades = (read("buyer_memory.json", {}) or {}).get("trades", [])
-    d = [t for t in trades if now - t["t"] < hours * 3600 and t.get("outcome") == "deal" and t.get("list") and t.get("price")]
+    d = [t for t in trades if now - t["t"] < hours * 3600 and t.get("outcome") == "deal" and t.get("signed") is not False and t.get("list") and t.get("price")]
     mean = lambda xs: round(sum(xs) / len(xs), 3) if xs else None
     food = [score(t) for t in d if t.get("kind") == "food"]
     goods = [score(t) for t in d if t.get("kind") == "goods"]

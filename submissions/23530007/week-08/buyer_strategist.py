@@ -119,7 +119,7 @@ def trades(since, until=None):
         if t.get("t", 0) < since or (until and t["t"] > until):
             continue
         lp = (cat.get(t.get("item")) or {}).get("list_price")
-        saved = 1 - t["price"] / lp if t.get("outcome") == "deal" and t.get("price") and lp else None
+        saved = 1 - t["price"] / lp if t.get("outcome") == "deal" and t.get("signed") is not False and t.get("price") and lp else None
         if saved is not None and t.get("broken"):          # the score: a break is -1, or 0 when refunded (agent.md; +1 before 11-10 was wrong)
             saved = 0.0 if (t.get("warranty") or 0) >= 6 else -1.0
         out.append(dict(t, list=lp, saved=saved))
@@ -129,7 +129,7 @@ def trades(since, until=None):
 def summary(rows):
     skipped = sum(str(r.get("outcome", "")).startswith("skipped") for r in rows)
     rows = [r for r in rows if not str(r.get("outcome", "")).startswith("skipped")]
-    deals = [r for r in rows if r.get("outcome") == "deal"]
+    deals = [r for r in rows if r.get("outcome") == "deal" and r.get("signed") is not False]
     sv = [r["saved"] for r in deals if r["saved"] is not None]
     return {"visits": len(rows), "skipped_orders": skipped, "deals": len(deals), "conversion": round(len(deals) / len(rows), 2) if rows else None,
             "mean_saved": round(sum(sv) / len(sv), 3) if sv else None,
@@ -168,7 +168,7 @@ def rules_by_shop(r6):
         la = [r["asks"][-1] / lp(r) for r in rows if r.get("asks") and lp(r)]
         cp = [r["cap"] / lp(r) for r in rows if r.get("cap") and lp(r)]
         med = lambda v: round(sorted(v)[len(v) // 2], 3) if v else None
-        out[name] = {"visits": len(rows), "deals": sum(r.get("outcome") == "deal" for r in rows),
+        out[name] = {"visits": len(rows), "deals": sum(r.get("outcome") == "deal" and r.get("signed") is not False for r in rows),
                      "outcomes": dict(Counter(str(r.get("outcome"))[:16] for r in rows).most_common(4)),
                      "first_ask": med(fa), "last_ask": med(la), "cap": med(cp)}
     return out
@@ -179,7 +179,7 @@ def throughput(r6):
     ~20 s, so time under that per order is free and max_shops can rise while visits stay short."""
     orders = {r.get("order") for r in r6}
     secs = sorted(r.get("secs") or 0 for r in r6 if not str(r.get("outcome", "")).startswith("skipped"))
-    return {"orders_per_h": round(len(orders) / 6), "deals_per_h": round(sum(r.get("outcome") == "deal" for r in r6) / 6),
+    return {"orders_per_h": round(len(orders) / 6), "deals_per_h": round(sum(r.get("outcome") == "deal" and r.get("signed") is not False for r in r6) / 6),
             "skipped_per_h": round(sum(str(r.get("outcome", "")).startswith("skipped") for r in r6) / 6),
             "median_secs_per_visit": secs[len(secs) // 2] if secs else None}
 
@@ -194,7 +194,7 @@ def market_value(r6):
         return {"error": str(e)}
     ours = {}
     for r in r6:
-        if r.get("outcome") == "deal":
+        if r.get("outcome") == "deal" and r.get("signed") is not False:
             ours[r["shop"]] = ours.get(r["shop"], 0) + 1
     out = {}
     for kind in ("food", "goods"):
