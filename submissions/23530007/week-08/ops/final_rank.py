@@ -77,6 +77,9 @@ def _board_pair(hours=6.0, new=None):
     return json.loads(row[1]), row[0], new, now
 
 
+PATCH36_T = 1794472800          # 2026-11-12 ~08:40 UTC, the board rescored saved (patch 3.6)
+
+
 def project_components(rate=None, v=None, hours=6.0, overrides=None, top=10, board=None):
     """11-11 (user: 'build the scenario that keeps us 1st'): the final class totals projected PART BY PART. Each
     student's book, revenue, deals and posts continue at their slope over the last `hours` (two board snapshots);
@@ -114,7 +117,10 @@ def project_components(rate=None, v=None, hours=6.0, overrides=None, top=10, boa
               "deals": (c["deals"] - (x0.get("deals") or 0)) / span if x0 else 0.0,
               "posts": (c["posts"] - (x0.get("posts") or 0)) / span if x0 else 0.0}
         dn = c["deals"] - (x0.get("deals") or 0) if x0 else 0
-        vv = ((c["saved"] * (c["deals"] + 100) - x0["saved"] * (x0["deals"] + 100)) / dn) if x0 and dn > 20 else c["saved"]
+        # 11-12: across patch 3.6 (~08:40 UTC, every buyer rescored to (list-price)/(list-cost)) the two snapshots are on
+        # different scales; until the window lies after the patch, the per-deal value is the current mean
+        same = not x0 or tA >= PATCH36_T or tB < PATCH36_T
+        vv = ((c["saved"] * (c["deals"] + 100) - x0["saved"] * (x0["deals"] + 100)) / dn) if x0 and dn > 20 and same else c["saved"]
         for f in ("book", "rev", "deals", "posts"):
             sl[f] = over.get((p, f + "_rate"), sl[f])
         vv = over.get((p, "v"), vv)

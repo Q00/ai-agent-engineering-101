@@ -36,13 +36,16 @@ def read(p, default=None):
 
 
 def score(t):
-    if t.get("broken"):
-        return 0.0 if (t.get("warranty") or 0) >= 6 else -1.0
-    return 1 - t["price"] / t["list"]
+    """11-12: the patch 3.6 score (buyer_score.score: (list - price)/(list - unit cost)); costs() must run first."""
+    import buyer_score
+    return buyer_score.score(t)
 
 
 def buyer_pace(now, hours):
     trades = (read("buyer_memory.json", {}) or {}).get("trades", [])
+    import buyer_score
+    if not buyer_score._COST:
+        buyer_score.costs(trades, now)
     d = [t for t in trades if now - t["t"] < hours * 3600 and t.get("outcome") == "deal" and t.get("signed") is not False and t.get("list") and t.get("price")]
     mean = lambda xs: round(sum(xs) / len(xs), 3) if xs else None
     food = [score(t) for t in d if t.get("kind") == "food"]

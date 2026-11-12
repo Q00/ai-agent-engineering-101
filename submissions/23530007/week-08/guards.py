@@ -165,8 +165,8 @@ def main():
         pass
     if b3.get("n", 0) >= 60 and b3.get("share") is not None and b3["share"] > max(0.06, 3 * (market_share or 0.02)):
         if cooled(st, "G2", 6 * 3600, now):
-            override(ov, "goods_delta", 0.05, 6, now)
-            wake("buyer", f"G2 breaks: goods broke {b3['share']:.0%} over 3 h (market {market_share}); goods_delta 0.05 for 6 h")
+            override(ov, "goods_delta", 0.10, 6, now)   # 11-12: patch 3.6 scale
+            wake("buyer", f"G2 breaks: goods broke {b3['share']:.0%} over 3 h (market {market_share}); goods_delta 0.10 for 6 h")
             alert([f"G2 고장 급증: 3h 공산품 고장 {b3['share']:.0%} (시장 {market_share}); 등급 상한을 6h 조입니다."])
             fired(st, "G2", now)
         fires.append("G2")

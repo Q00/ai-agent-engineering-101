@@ -103,20 +103,37 @@ BREAK_P = {"A": 0.03, "B": 0.13, "C": 0.40}   # 11-11 23:00: B .08 -> .13, C .29
 SCORE_FILE = Path(__file__).resolve().parent / ".market" / "buyer_score.json"
 
 
+# 11-12 patch 3.6: a deal now scores v = min(1, (list - price) / (list - unit cost)), so the ceiling depends on the
+# unit's cost share c (cost_model.cost_share: the SKU+grade median over 72 h of the ledger):
+#   (1 - p_g) x (1 - x) / (1 - c) >= m* + delta   <=>   x <= 1 - (m* + delta) (1 - c) / (1 - p_g)
+# A grade A unit (thin margin, c ~.62) scores more at the same price than a C (c ~.50): at m* .75, A ~.73 of list,
+# B ~.62, C ~.41. m* and the expectations below are on the new scale (buyer_score.json scale 'patch3.6').
+
+
 def m_star(bp):
     try:
-        v = json.loads(SCORE_FILE.read_text()).get("m_star")
-        if v is not None and 0.2 <= float(v) <= 0.6:
+        sc = json.loads(SCORE_FILE.read_text())
+        v = sc.get("m_star")
+        if v is not None and sc.get("scale") == "patch3.6" and 0.4 <= float(v) <= 1.0:
             return float(v)
     except (OSError, ValueError, AttributeError):
         pass
-    return float(bp.get("target_mean", 0.33))
+    return float(bp.get("target_mean", 0.74))
 
 
-def x_bar(grade, bp):
-    """Highest price/list at which a warranted unit of this grade still beats m* + goods_delta."""
+def cshare(sku, grade, kind):
+    try:
+        import cost_model
+        return cost_model.cost_share(sku, grade, kind)
+    except Exception:
+        return {"A": 0.62, "B": 0.55, "C": 0.48}.get(grade or "B", 0.55)
+
+
+def x_bar(grade, bp, sku=None, kind="goods"):
+    """Highest price/list at which a warranted unit of this grade (and SKU) still beats m* + goods_delta."""
     p = BREAK_P.get(grade or "B", 0.08)
-    return round(max(0.3, 1 - (m_star(bp) + float(bp.get("goods_delta", 0.02))) / (1 - p)), 3)
+    c = cshare(sku, grade, kind)
+    return round(min(0.97, max(0.3, 1 - (m_star(bp) + float(bp.get("goods_delta", 0.03))) * (1 - c) / (1 - p))), 3)
 GRADE_C_MEMORY = 6 * 3600   # a shop that offered a grade-C unit of a SKU is not asked for that SKU again for this long
 FAIL_MEMORY = 6 * 3600  # a failed visit keeps a shop out for this long; shops restart and get fixed
 REJECT_SHOP_SECS = 15 * 60   # 11-09: an out-of-stock turn-away keeps the shop out this long (other items)
@@ -511,7 +528,8 @@ def graded_best(shop, cat):
                 if not d.get("goods") or d.get("grade") not in ("B", "C") or not d.get("w") or t1 - d["ts"] > 6 * 3600:
                     continue
                 u = d.get("unit")
-                vv = (0.0 if br[u] else -1.0) if u in br else 1 - d["x"]
+                c_ = d.get("c") if d.get("c") is not None else cshare(d.get("sku"), d.get("grade"), "goods")
+                vv = (0.0 if br[u] else -1.0) if u in br else min(1.0, (1 - d["x"]) / max(0.05, 1 - c_))   # patch 3.6
                 m.setdefault((d["shop"], d.get("cat")), []).append(vv)
             _GB["m"] = {k: (sum(v) / len(v), len(v)) for k, v in m.items()}
         except (OSError, ValueError):
@@ -618,12 +636,14 @@ def choose(shops, mem, item, budget, ask_model=True, ctx=None):
                     # settles): expect that edge + .04 of list, less a 4% break haircut (a warranted break = 0);
                     # the grade ceilings at the receipt still refuse anything that would score under the bar
                     le = low_edge(s["name"], "goods")
-                    if le is not None and (1 - le - 0.04) * 0.96 > e["saved"]:
-                        e = dict(e, saved=round((1 - le - 0.04) * 0.96, 4), low_edge=le)
+                    c_ = e.get("c50") or 0.6                     # patch 3.6: the shop's median cost share
+                    v_le = min(1.0, (1 - le - 0.04) / max(0.05, 1 - c_)) * 0.96 if le is not None else None
+                    if v_le is not None and v_le > e["saved"]:
+                        e = dict(e, saved=round(v_le, 4), low_edge=le)
             if ctx.get("wpen") and ctx["kind"] == "goods":
                 # 11-07 A/B "wpen": our no-warranty goods ran 0.244 per deal (16 breaks at -1 in 439) against 0.324
                 # with a warranty, below our running mean; charge a shop for the share of its goods sold without one
-                e = dict(e, saved=round(e["saved"] - bp.get("wpen_cost", 0.06) * (1 - (e.get("warranty") or 0)), 4))
+                e = dict(e, saved=round(e["saved"] - bp.get("wpen_cost", 0.12) * (1 - (e.get("warranty") or 0)), 4))
             v = seen.get(s["name"], [0, 0])
             conv = (v[1] + 1) / (v[0] + 2) if v[0] >= 5 else 0.6
             sa = (bp.get("shop_auto") or {}).get(s["name"]) or {}
@@ -636,7 +656,7 @@ def choose(shops, mem, item, budget, ask_model=True, ctx=None):
         # user 11-06: food 0.279 vs goods 0.194 saved per deal (goods breaks count -1): a bar per kind
         thr = bp.get(f"skip_below_{ctx['kind']}", bp["skip_below"])
         if ctx.get("m_star"):      # 11-11: a deal under the mean our saved will end at (m*) lowers the final score
-            thr = max(thr, ctx["m_star"] + bp.get(f"skip_delta_{ctx['kind']}", 0.0 if ctx["kind"] == "food" else -0.02))
+            thr = max(thr, ctx["m_star"] + bp.get(f"skip_delta_{ctx['kind']}", -0.08 if ctx["kind"] == "food" else -0.04))
         worth = [r for r in ranked if r[0][1]["saved"] >= thr]
     if ctx is not None and ranked:
         (score, e, conv), pick = (worth or ranked)[0]
@@ -892,7 +912,7 @@ def main():
             mem["trades"].append({"t": int(time.time()), "secs": 0, "shop": "", "item": "", "budget": a.budget,
                                   "order": order.get("order"), "category": a.item, "kind": order.get("kind"),
                                   "outcome": "skipped (low value)", "price": None, "asks": [], "agreed": None,
-                                  "honest": True, "signed": True, "void": "", "expected": expected_in(why),
+                                  "honest": True, "signed": True, "void": "", "expected": expected_in(why), "scale": 36,
                                   "shopsel": "pricefirst" if pricefirst else "base", "wpen": wpen, "cheapfood": cheapfood, "cheapgoods": cheapgoods,
                                   "aimtop": aimtop, "aim15": aim15, "elapsed": int(time.time() - start)})
             save_memory(mem)
@@ -911,6 +931,13 @@ def main():
             if ev["n"] >= 10:      # do not pay above what this shop usually takes from other buyers
                 p25 = ev["p25"]
                 cap = min(cap, int(want["list_price"] * (((ev.get("p15") or ev["p25"]) if aim15 else ev["p25"] if aimtop else ev["p50"]) + bp["cap_margin"])))
+            if order.get("kind") == "food":
+                # 11-12 patch 3.6: food pays at most what still scores m* + skip_delta_food at the SKU's cost share
+                # (grade unknown before the shop answers: B, the median food grade)
+                fx = 1 - (vctx["m_star"] + bp.get("skip_delta_food", -0.08)) * (1 - cshare(item, "B", "food"))
+                if want["list_price"] * fx < cap:
+                    log("buyer", f"food value ceiling: cap {cap} -> {int(want['list_price'] * fx)} ({fx:.2f} of list)")
+                    cap = max(1, int(want["list_price"] * fx))
             adj = ((bp.get("shop_auto") or {}).get(pick["name"]) or {}).get("shop_cap", 0)   # strategist, per shop
             if adj:
                 cap = max(1, min(a.budget, int(cap + want["list_price"] * adj)))
@@ -999,10 +1026,10 @@ def main():
                     graded = unit_terms(said(t))
                     g_, w_ = graded
                     if g_ in ("A", "B", "C"):
-                        gcap = int(want["list_price"] * x_bar(g_, bp))
+                        gcap = int(want["list_price"] * x_bar(g_, bp, item))
                         gceil = gcap
                         if gcap < cap:
-                            log("buyer", f"{pick['name']} offers grade {g_}: cap {cap} -> {gcap} ({x_bar(g_, bp):.2f} of list, m* {m_star(bp):.3f})")
+                            log("buyer", f"{pick['name']} offers grade {g_}: cap {cap} -> {gcap} ({x_bar(g_, bp, item):.2f} of list, m* {m_star(bp):.3f})")
                             cap = max(1, gcap)
                         elif bp.get("goods_cap_ceiling") and gcap > cap and (g_ in ("A", "B") or w_ >= WARRANTY_MIN):
                             # 11-11 22:00 (user: 'now raise the volume a lot'): the cap was the shop's low-quartile
@@ -1184,14 +1211,14 @@ def main():
                     # unwarranted goods ran .185 per deal over 48 h)
                     log("buyer", f"{pick['name']} signed {item} without a warranty; not paying, trying elsewhere")
                     outcome, rec, price = "no warranty on receipt", None, None
-                elif acceptable and order.get("kind") == "goods" and price and price > want["list_price"] * (x_bar(claim, bp) + bp["near_cap"]):
+                elif acceptable and order.get("kind") == "goods" and price and price > want["list_price"] * (x_bar(claim, bp, item) + bp["near_cap"]):
                     # (near_cap tolerance: a price we agreed is paid; the ceiling binds before the agreement)
                     # 11-11: the claimed grade's price ceiling (a refunded break scores 0, so a warranted C at x .60
                     # is worth .28, below m*); unpaid, the next shop is tried at a price that pays
                     if claim == "C":
                         mem.setdefault("grade_c", {})[f"{pick['name']}|{item}"] = time.time()
                     log("buyer", f"{pick['name']} signed {item} as grade {claim or '?'} at {price / want['list_price']:.2f} of list, "
-                                 f"above the grade's ceiling {x_bar(claim, bp):.2f}; not paying, trying elsewhere")
+                                 f"above the grade's ceiling {x_bar(claim, bp, item):.2f}; not paying, trying elsewhere")
                     outcome, rec, price = "too dear", None, None
                 elif acceptable and order.get("kind") == "goods":
                     accept["grades"] = ["A", "B", "C"]
@@ -1220,7 +1247,7 @@ def main():
                                   "agreed": agreed, "honest": True, "signed": True, "void": "",
                                   "shopsel": "pricefirst" if pricefirst else "base", "wpen": wpen, "cheapfood": cheapfood, "cheapgoods": cheapgoods,
                                   "aimtop": aimtop, "aim15": aim15, "cap": cap if acceptable else None,
-                                  "list": want.get("list_price") if acceptable else None, "expected": expected_in(why),
+                                  "list": want.get("list_price") if acceptable else None, "expected": expected_in(why), "scale": 36,
                                   "push": (f"{arm}-pushed" if pushed else f"{arm}-arm") if push else "control2", "talk": talk, "soft": soft,
                                   "elapsed": int(time.time() - start)})
             log("buyer", f"{pick['name']} {'turned me away' if turned_away else 'did not meet my price'} ({outcome}); "
@@ -1260,6 +1287,9 @@ def main():
                           "warranty": as_int((rec or {}).get("warranty_hours")) or 0 if outcome == "deal" else 0,
                           "cap": cap, "list": want["list_price"] if acceptable else None,
                           "expected": expected_in(why),      # the shop's expected saved per deal when chosen
+                          "scale": 36,                        # 11-12: expected is on the patch 3.6 scale
+                          "c": round(cshare(item, (rec or {}).get("claim") or (graded[0] if graded else None),
+                                            order.get("kind") or "food"), 4) if acceptable and outcome == "deal" else None,
                           "shopsel": "pricefirst" if pricefirst else "base", "wpen": wpen, "cheapfood": cheapfood, "cheapgoods": cheapgoods, "regraded": regraded, "skubest": skubest, "aimtop": aimtop, "aim15": aim15, "needwarr": needwarr,
                           "gradeaware": gradeaware, "graded": list(graded) if graded else None,
                           "push": (f"{arm}-pushed" if pushed else f"{arm}-arm") if push else "control2", "talk": talk, "soft": soft})   # 11-07 A/B

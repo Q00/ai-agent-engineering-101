@@ -322,9 +322,9 @@ def markdown(o):
     sr = f"{bu['saved_rank']}위" + (f" ({bu['saved_rank_before']}위에서)" if bu.get("saved_rank_before") not in (None, bu["saved_rank"]) else "")
     sd = f" ({bu['saved'] - bu['saved_before']:+.4f})" if bu.get("saved_before") is not None else ""
     L.append(f"- saved {bu['saved']:.4f}{sd}, 반 {sr}")
-    L.append(f"- 최근 2시간: 시간당 **{p2['deals_h']}건**, 건당 절약 **{p2['v']}** (식품 {p2['food_h']}건 {p2['food_v']} / 가구 {p2['goods_h']}건 {p2['goods_v']})")
+    L.append(f"- 최근 2시간: 시간당 **{p2['deals_h']}건**, 건당 값 **{p2['v']}** (새 공식: 상점 마진 중 깎은 몫) (식품 {p2['food_h']}건 {p2['food_v']} / 가구 {p2['goods_h']}건 {p2['goods_v']})")
     if bu.get("m_star"):
-        L.append(f"- 건당 절약이 {bu['m_star']:.3f}보다 높으면 saved가 오름")
+        L.append(f"- 건당 값이 {bu['m_star']:.3f}(종료 시 예상 평균)보다 높으면 saved가 오름")
     if o.get("end"):
         e = o["end"]
         others = ", ".join(f"{r}위 {p} {t:.2f}" for r, p, t in e["top"] if p != NAME)

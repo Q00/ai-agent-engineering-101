@@ -28,20 +28,58 @@ MEM = HERE / "buyer_memory.json"
 OUT = HERE / ".market" / "buyer_score.json"
 MARKET = "https://market.ourolabs.ai"
 END = 1794927540            # 2026-11-17 23:59 KST
-# Patch 3.6 (11-12 ~08:40 UTC): the board's saved became sum of (list - price)/(list - unit cost) / (deals + 100),
-# rescored over all past deals (ours .3081 -> .7163). The buyer still prices on 1 - price/list, so this file keeps
-# every internal number (m_now, m_star, hist, reconcile) on that old scale: the last old-scale board reading plus our
-# own old-scale deals since then. The board's new value is kept as board.saved_board / m_now_board.
-PATCH36_ANCHOR = {"t": 1794472203, "saved": 0.3081, "deals": 14194}
+# Patch 3.6 (11-12 ~08:40 UTC): the board's saved is the sum of min(1, (list - price)/(list - unit cost)) / (deals + 100),
+# all past deals rescored (ours .3081 -> .7163). Every number here is on that scale since 11-12 ~10:30 UTC: our deals
+# get their unit's exact cost from the ledger (settle -> unit -> supply, cost_model.py), else the buyer's estimate at
+# the deal ("c"), else the SKU+grade estimate. v_old (1 - price/list) is kept for comparison.
 RECONCILE_TOL = 0.03        # per-deal v: ours vs board-implied over the same window
 HIST_KEEP = 96              # snapshots kept (24 h at 15 min)
 KINDS = ("food", "goods")
 
 
-def score(t):
+def score_old(t):
     if t.get("broken"):
         return 0.0 if (t.get("warranty") or 0) >= 6 else -1.0
     return 1 - t["price"] / t["list"]
+
+
+_COST = {}
+
+
+def costs(trades, now):
+    """order -> cost / list for our deals of the last 25 h: exact from the ledger where archived, else estimates."""
+    import sqlite3
+    import cost_model
+    try:
+        arc = sqlite3.connect(f"file:{HERE / 'data' / 'market_archive.db'}?mode=ro", uri=True, timeout=30)
+        rows = [json.loads(d).get("data") or {} for (d,) in arc.execute(
+            "SELECT data FROM ledger WHERE kind='settle' AND buyer='yms979' AND ts > ?", (now - 25 * 3600,))]
+    except Exception:
+        rows = []
+    uc = cost_model.unit_costs([r.get("unit") for r in rows])
+    by_order = {r.get("order"): r for r in rows}
+    for t in trades:
+        if t.get("outcome") != "deal" or not t.get("list") or now - t["t"] > 25 * 3600:
+            continue
+        r = by_order.get(t.get("order")) or {}
+        if r.get("unit") in uc:
+            _COST[t["order"]] = (uc[r["unit"]] / t["list"], "exact")
+        elif t.get("c") is not None:
+            _COST[t["order"]] = (t["c"], "est")
+        else:
+            _COST[t["order"]] = (cost_model.cost_share(t.get("item"), r.get("grade") or (t.get("graded") or [None])[0],
+                                                       t.get("kind") or "food"), "est")
+
+
+def score(t):
+    """Patch 3.6 score of one of our deals."""
+    if t.get("broken"):
+        return 0.0 if (t.get("warranty") or 0) >= 6 else -1.0
+    c = (_COST.get(t.get("order")) or (None,))[0]
+    if c is None:
+        import cost_model
+        c = cost_model.cost_share(t.get("item"), None, t.get("kind") or "food")
+    return 1.0 if c >= 1 else max(-1.0, min(1.0, (1 - t["price"] / t["list"]) / (1 - c)))
 
 
 def mean(xs):
@@ -67,12 +105,8 @@ def build(now=None):
         bd = board()
     except Exception as e:                       # the board is down: keep the last snapshot's numbers
         bd = dict(old.get("board") or {}, error=repr(e))
-    hist = [h for h in old.get("hist", []) if now - h["t"] < HIST_KEEP * 900 and h.get("saved", 0) < 0.5]
-    if bd.get("saved") is not None and bd["saved"] >= 0.5:      # new-scale board value: carry the old scale on
-        a = PATCH36_ANCHOR
-        since = [score(t) for t in trades if t.get("outcome") == "deal" and t.get("list") and t.get("price") and t["t"] > a["t"]]
-        bd["saved_board"] = bd["saved"]
-        bd["saved"] = round((a["saved"] * (a["deals"] + 100) + sum(since)) / (a["deals"] + 100 + len(since)), 4)
+    hist = [h for h in old.get("hist", []) if now - h["t"] < HIST_KEEP * 900 and h.get("saved", 0) >= 0.5]
+    costs(trades, now)
     if bd.get("saved") is not None:
         hist.append({"t": round(now), "saved": bd["saved"], "deals": bd["deals"]})
     out = {"t": round(now), "board": bd, "hist": hist[-HIST_KEEP:]}
@@ -94,17 +128,19 @@ def build(now=None):
         s = m_now * (n + 100)
         add = out["v24"]["deals_h"] * hours_left
         proj = (s + out["v24"]["all"] * add) / (n + 100 + add)
-        m_star = round(min(max(proj, m_now), m_now + 0.08), 4)
+        m_star = round(min(max(proj, m_now), m_now + 0.15), 4)
     else:
         m_star = old.get("m_star")
-    out.update(m_now=m_now, m_star=m_star, hours_left=round(hours_left, 1), m_now_board=bd.get("saved_board"))
+    out.update(m_now=m_now, m_star=m_star, hours_left=round(hours_left, 1), scale="patch3.6",
+               v24_old={"all": mean([score_old(t) for t in d24]), **{k: mean([score_old(t) for t in d24 if t.get("kind") == k]) for k in KINDS}},
+               cost_exact_share_24h=round(sum(1 for t in d24 if (_COST.get(t.get("order")) or (0, ""))[1] == "exact") / max(1, len(d24)), 3))
 
     # our realized v per shop|kind (24 h) and calibration vs the expectation at order time
     ours, cal = {}, {}
     for t in d24:
         k = f"{t.get('shop')}|{t.get('kind')}"
         ours.setdefault(k, []).append(score(t))
-        if t.get("expected") is not None:
+        if t.get("expected") is not None and t.get("scale") == 36:
             cal.setdefault(t.get("kind"), []).append(score(t) - t["expected"])
             cal.setdefault(k, []).append(score(t) - t["expected"])
     out["ours"] = {k: {"n": len(v), "v": mean(v)} for k, v in ours.items() if len(v) >= 3}

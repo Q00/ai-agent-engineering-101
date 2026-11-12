@@ -4,6 +4,8 @@
     t = table()                      # refreshed from the public ledger at most every REFRESH s (file lock)
     e = expected(t, shop_name, kind, category)   # {"saved": .., "n": .., "p50": .., "p25": .., "warranty": ..}
 
+11-12 patch 3.6: 'saved' below is the new per-deal score min(1, (list - price) / (list - unit cost)) with each
+unit's cost from cost_model.py; p50/p25 stay price / list; c50 is the median cost / list.
 Since patch 3.4 the buyer's main score (0.5) is the saved rate: per deal (list - price + refund) / list, a deal
 that served nothing -1, or 0 if refunded (agent.md; we counted a refund as +1 until 11-10), averaged over deals + 100. What one deal
 adds therefore depends mostly on WHERE we buy: on 11-06 (2 h of ledger, 5456 deals) food sold at 0.62-0.65 of list
@@ -146,6 +148,17 @@ def refresh(st):
     st["seq"] = after
     cut = time.time() - WINDOW
     st["deals"] = [r for r in rows if r["ts"] >= cut]
+    # 11-12 patch 3.6: each deal's unit cost / list (cost_model.py, synced every tick; units supplied in the last
+    # minutes may not be there yet and fall back to the SKU+grade estimate in _saved)
+    try:
+        import cost_model
+        need = [r for r in st["deals"] if r.get("c") is None and r.get("unit")]
+        cm = cost_model.unit_costs([r["unit"] for r in need])
+        for r in need:
+            if r["unit"] in cm and r.get("amt") and r["x"]:
+                r["c"] = round(cm[r["unit"]] / (r["amt"] / r["x"]), 4)
+    except Exception:
+        pass
     st["our_ratings"] = [x for x in st.get("our_ratings", []) if x[0] >= time.time() - 24 * 3600]
     st["rating_hours"] = {h: v for h, v in st.get("rating_hours", {}).items() if int(h) * 3600 >= time.time() - 48 * 3600}
     units = {r["unit"] for r in st["deals"]}
@@ -160,7 +173,12 @@ def _saved(r, broken):
         # 11-10: agent.md 'a deal that served nothing counts -1, or 0 if refunded'; we had +1 for a refund, which
         # made warranted C goods look like the best leg (.56) when they score ~.35 and broke 12% of our deals
         return 0.0 if broken[r["unit"]] else -1.0
-    return 1 - r["x"]
+    # 11-12 patch 3.6: (list - price) / (list - unit cost), at most 1
+    c = r.get("c")
+    if c is None:
+        import cost_model
+        c = cost_model.cost_share(r.get("sku"), r.get("grade"), "goods" if r.get("goods") else "food")
+    return 1.0 if c >= 1 else max(-1.0, min(1.0, (1 - r["x"]) / (1 - c)))
 
 
 def half_life():
@@ -205,6 +223,7 @@ def summarize(st):
                   "saved_top": round(sum(_saved(r, broken) for r in rs if r["x"] <= xs[len(xs) // 4])
                                      / max(1, sum(1 for r in rs if r["x"] <= xs[len(xs) // 4])), 4),
                   "warranty": round(sum(wi * r["w"] for wi, r in zip(w, rs)) / sw, 3),
+                  "c50": round(statistics.median([r["c"] for r in rs if r.get("c") is not None] or [0.55]), 4),
                   "broke": round(sum(r["unit"] in broken for r in rs) / len(rs), 4)}
     return out
 

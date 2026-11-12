@@ -71,10 +71,10 @@ GLOBAL = {                                    # role, bounds, step
     "cheapfood_share": ((0.0, 1.0), 0.3),     # food: ask for the cheapest unit that lasts and open low
     "cheapfood_open": ((0.2, 0.6), 0.05),     # food opening offer, share of list
     "cheapgoods_share": ((0.0, 1.0), 0.3),
-    "skip_delta_food": ((-0.05, 0.05), 0.01),  # 11-11: skip bar = m* + delta (m* from buyer_score.json)
-    "skip_delta_goods": ((-0.10, 0.05), 0.01),   # floor -0.06 -> -0.10 on 11-11 (user: volume; the grade ceilings at the receipt guard the value)
-    "target_mean": ((0.28, 0.40), 0.01),      # 11-11: the mean a goods deal must beat (m*) until buyer_score.json writes it
-    "goods_delta": ((0.0, 0.08), 0.01),       # 11-11: margin over m* a goods deal must clear after its grade's break rate
+    "skip_delta_food": ((-0.15, 0.10), 0.02),   # 11-12 patch 3.6: the saved scale is ~2x wider (mean .72 vs .31)  # 11-11: skip bar = m* + delta (m* from buyer_score.json)
+    "skip_delta_goods": ((-0.20, 0.10), 0.02),   # floor -0.06 -> -0.10 on 11-11 (user: volume; the grade ceilings at the receipt guard the value)
+    "target_mean": ((0.60, 0.90), 0.02),      # 11-11: the mean a goods deal must beat (m*) until buyer_score.json writes it
+    "goods_delta": ((0.0, 0.15), 0.02),       # 11-11: margin over m* a goods deal must clear after its grade's break rate
     "needwarr_share": ((0.0, 1.0), 0.3),      # 11-09 (user): goods orders that require a 6 h warranty before haggling
     "aim15_share": ((0.0, 1.0), 0.3),         # 11-09 (user): of the aimtop orders, the share capped at p15, not p25
     "aimtop_share": ((0.0, 1.0), 0.3),        # 11-09: cap at the shop's p25 (what the best buyers pay), not p50    # goods: ask for C/B with a warranty first, A only if nothing else
@@ -355,13 +355,18 @@ final mean on the last 24 h pace), and we must gain per-deal value faster than t
 Fewer goods deals are accepted for that; do not take deals under m* to lift the deals percentile (one deals rank
 is worth 0.0022, one saved rank 0.0111). Forum and posts are fine and not yours to move.
 
+SCALE (11-12 patch 3.6): every saved number here (m*, v, expected, market_value) is on the new scale
+min(1, (list - price)/(list - unit cost)); values before 11-12 ~10:30 UTC in old memory or notes were 1 - price/list
+(about half as large). Do not compare across the two.
+
 THE CODE BUYER (11-11): per order the code (no model call) scores the shops that hold an acceptable SKU by the
 market's realized saved per deal there (evidence "market_value_6h"), calibrated with what WE realized at that shop
 over 24 h (goods were overpredicted by .04-.08), plus conv_weight x our close rate, minus rival_penalty for a
 classmate above us, plus your shop_bias and per-kind bias_food/bias_goods; it skips the order when the best
 expectation is under max(fixed skip bar, m* + skip_delta_kind); it caps the price at min(category cap or
 value_share, the shop's p50 (aimtop arm: p25, aim15: p15) + cap_margin) x list; when a shop states the unit's grade
-the cap falls to that grade's ceiling x_bar_g = 1 - (m* + goods_delta)/(1 - p_g) (A .64, B .62, C .51 today) and
+the cap falls to that grade's ceiling x_bar_g = 1 - (m* + goods_delta)(1 - c)/(1 - p_g), c = the SKU's cost share
+for that grade (patch 3.6, 11-12: about A .70, B .61, C .36 at m* .75); food is capped at 1 - (m* + skip_delta_food)(1 - c), and
 the same ceiling is checked on the receipt; every goods receipt must carry a 6 h warranty or it is not paid; the
 goods opener asks for B or A with a warranty, no C; food must last its hours + food_extra_hours; haggling opens at
 the shop's p25 - open_offset, counters once or twice in the push arms, takes any ask <= quick_accept x list.
@@ -372,8 +377,8 @@ Shared memory digest (the curator's summary for you): {digest}
 
 Knobs (only these; the steps allowed now: {steps}): global "value_share" (0.65-0.85), "quick_accept" (0.55-0.75),
 "food_extra_hours" (0.25-12), "skip_below" (0.15-0.33), "skip_below_food" (0.05-0.33), "skip_below_goods" (0.15-0.4),
-"skip_delta_food" (-0.05..0.05) and "skip_delta_goods" (-0.10..0.05) (the bar is max(fixed bar, m* + delta)),
-"target_mean" (0.28-0.40, used only when buyer_score.json has no m*), "goods_delta" (0-0.08, margin over m* a goods
+"skip_delta_food" (-0.15..0.10) and "skip_delta_goods" (-0.20..0.10) (the bar is max(fixed bar, m* + delta)),
+"target_mean" (0.60-0.90, used only when buyer_score.json has no m*), "goods_delta" (0-0.15, margin over m* a goods
 deal must clear after its grade's break rate), "conv_weight" (0-0.3), "rival_penalty" (0-0.1), "cap_margin"
 (0-0.1), "near_cap" (0-0.04), "open_offset" (0-0.08), "max_shops" (1-6), "value_half_life_h" (0-6: how fast the
 shop values follow the newest market deals); the arms (share of orders, 0-1): "push_share", "push3_share", "talk_share" (asks for the shop's lowest price before any number; compare talk=True/False
