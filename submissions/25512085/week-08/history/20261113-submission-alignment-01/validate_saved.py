@@ -9,7 +9,7 @@ import subprocess
 import sys
 
 OUT = Path(__file__).resolve().parent
-REPO = OUT.parents[3]
+REPO = OUT.parents[4]
 def load(n): return json.loads((OUT / n).read_text(encoding='utf-8'))
 manifest = load('runtime-manifest.json')
 metrics = load('sanitizedmetrics.json')
@@ -54,7 +54,7 @@ assert abs(p['student_shop'] + p['student_buyer'] - p['student_total']) < 1e-12
 assert b['student_rank_competition_desc_student_total'] == 17 and b['student_players_denominator'] == 46
 assert p['student_pct'] == .644
 changed = subprocess.check_output(['git', 'diff', '--name-only', '5513728f30532c577dee48ba5f42edb86d1c5105'], cwd=REPO).decode().splitlines()
-assert all(n.startswith('submissions/25512085/week08/history20261113-submission-alignment-01/') for n in changed), 'outside-scope tracked change'
+assert all(n.startswith('submissions/25512085/week-08/history/20261113-submission-alignment-01/') for n in changed), 'outside-scope tracked change'
 summary = {'validated_utc': datetime.datetime.now(datetime.timezone.utc).isoformat(),
            'offline_only': True, 'files_scanned': len(files), 'python_ast_files': py_count,
            'mirror_hashes_match_vm_manifest': True, 'original_local_source_and_log_hashes_preserved': True,

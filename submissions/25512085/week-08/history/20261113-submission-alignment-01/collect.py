@@ -10,7 +10,7 @@ import sys
 import zlib
 
 OUT = Path(__file__).resolve().parent
-REPO = OUT.parents[3]
+REPO = OUT.parents[4]
 def save(name, obj):
     p = OUT / name
     p.parent.mkdir(parents=True, exist_ok=True)

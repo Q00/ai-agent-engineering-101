@@ -1,0 +1,10 @@
+Path correction only; no VM/network/application execution.
+Preflight: destination absent; dedicated source directory had exactly 33 tracked, unchanged files; index empty.
+Action: git mv of the dedicated evidence directory into submissions/25512085/week-08/history/20261113-submission-alignment-01/.
+Reference edits only: README.md, collect.py, validate_saved.py; repository-root traversal changed to OUT.parents[4].
+First integrity attempt: strict worktree-byte versus Git-blob comparison failed on final-validation.json because its Windows CRLF worktree representation differs from Git's LF blob. No data repair or rewrite performed.
+Follow-up integrity check: 29 unedited artifacts byte-identical to prior Git blobs; final-validation.json differs only in CRLF/LF representation; all 30 unedited artifacts have identical Git-normalized content.
+Runtime source mirror text attributes remain unset; mirror SHA-256 checks and original local source/log hash checks passed.
+Old dedicated directory absent; obsolete self-path references absent.
+validate_saved.py passed offline: 18 Python AST files, credential-pattern/private-JSON-field checks, board/log invariants, original preservation, no out-of-scope tracked changes.
+Prior collection logs and verification JSON retained as historical evidence. Added relocation validation/integrity logs are new files only.

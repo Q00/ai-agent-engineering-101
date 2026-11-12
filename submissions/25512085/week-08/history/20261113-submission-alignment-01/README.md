@@ -4,7 +4,7 @@
 
 ## 경로 주의
 
-사용자가 쓰기를 허용한 정확한 새 경로 `submissions/25512085/week08/history20261113-submission-alignment-01/`를 사용했다. 실제 기존 제출·VM 경로는 **week-08**이다. 이 evidence 폴더가 공식 제출 디렉터리를 대체하지 않으며, 이번 범위 밖 이동·동기화는 수행하지 않았다.
+정확한 산출물 경로는 `submissions/25512085/week-08/history/20261113-submission-alignment-01/`이다. 최초 작성 시 담당 assistant가 경로를 잘못 해석했고, 사용자 정정에 따라 목적지 부재 및 전용 파일 33개의 tracked/무변경 상태를 확인한 뒤 `git mv`로 이 폴더만 이동했다. 수집 데이터·운영 mirror·기존 검증 기록의 내용은 보존했으며, 자체 경로 참조와 Python의 저장소 root 계산만 수정했다. 기존 제출·운영 파일은 변경하지 않았다. 이 evidence 폴더는 제출 필수 전체 원본 로그를 대체하지 않는다.
 
 ## 필수 산출물
 
@@ -20,23 +20,31 @@
 
 ## 실제 수행 명령
 
-저장소 root의 기존 Python에서, 각 명령을 한 번씩 실행했다.
+저장소 root의 기존 Python에서 각 수집·검증 명령을 최초 경로에서 한 번씩 실행했다. 아래는 이동 후의 동일 스크립트 경로이며, 경로 정정 작업에서는 live 수집을 재실행하지 않았다.
 
 ```powershell
-python -B submissions/25512085/week08/history20261113-submission-alignment-01/collect.py source
-python -B submissions/25512085/week08/history20261113-submission-alignment-01/collect.py metrics
-python -B submissions/25512085/week08/history20261113-submission-alignment-01/verify_evidence.py
+python -B submissions/25512085/week-08/history/20261113-submission-alignment-01/collect.py source
+python -B submissions/25512085/week-08/history/20261113-submission-alignment-01/collect.py metrics
+python -B submissions/25512085/week-08/history/20261113-submission-alignment-01/verify_evidence.py
 ```
 
 모든 SSH는 기존 gcloud compute ssh, project/zone/VM을 명시하며 Python `-B -c`로 읽기 전용 probe를 실행했다. mutation helper는 import하지 않았다. app import, API POST, 원장 대량조회, log 전체 전송 없음.
 
 **위 명령은 live 재조회 명령이다. 동일 폴더 재실행 금지**: writer는 `xb`로 기존 evidence 덮어쓰기를 거부하지만 SSH 조회는 파일 충돌 검사보다 앞선다. 재관측은 별도 허용된 새 경로가 필요하다. 기존 snapshot 재검증만 하려면 `python -B .../validate_saved.py`를 사용한다. 이 명령은 네트워크를 사용하지 않는다.
 
+이동 후 오프라인 재검증 명령:
+
+```powershell
+python -B submissions/25512085/week-08/history/20261113-submission-alignment-01/validate_saved.py
+```
+
 ## commit 단위
 
 1. `7d0eba0`: read-only source probe/transport 구현.
 2. `e2afb33`: 운영 소스·board·bounded 로그 집계·검증 결과와 수집 코드.
 3. 후속 문서/저장 snapshot 검사 commit: 안전한 handoff 및 byte-preserving attributes. commit을 squash/rewrite하지 않음. push하지 않음.
+4. `dc9e5f1`: 규칙 기반 결정과 무작위 후기 템플릿 구분.
+5. 경로 정정 commit: 전용 산출물만 `git mv`, 자체 경로·root 계산 수정, 오프라인 `validate_saved.py` 재검증. 기존 로그와 검증 JSON은 과거 기록으로 보존.
 
 ## 남은 작업 / 미실행
 
