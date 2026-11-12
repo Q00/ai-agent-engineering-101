@@ -38,9 +38,20 @@ def _load(name):
     return mod.decide
 
 
-def say_for(c, price, first):
+def say_for(c, price, first, warranty=True):
+    # 11/13 01:5x: the warranty is promised only while the strategy gives one (v232 drops it)
+    if not warranty:
+        return (f"{c['name']}: {price} KRW, a certified unit with its true grade." if first
+                else f"For this certified unit I can do {price} KRW.")
     return (f"{c['name']}: {price} KRW, a premium unit with the market's certificate, its true grade and our "
             "full-refund guarantee." if first else f"For this guaranteed unit I can do {price} KRW.")
+
+
+def deal_say(price, warranty=True):
+    if not warranty:
+        return f"Deal at {price} KRW. A certified unit, its grade stated truly."
+    return (f"Deal at {price} KRW. Every unit is guaranteed: the market's certificate, its true grade "
+            "and a full refund if it breaks within the warranty.")
 
 
 def run_forged(name, ctx, v, c, unit):
@@ -56,8 +67,7 @@ def run_forged(name, ctx, v, c, unit):
     elif m["action"] == "accept":
         if v.get("offer") is None:
             return None
-        args = {"say": f"Deal at {v['offer']} KRW. Every unit is guaranteed: the market's certificate, its true grade "
-                       "and a full refund if it breaks within the warranty.", "unit": unit, "price": int(v["offer"])}
+        args = {"say": deal_say(v["offer"], bool(ctx.strategy.get("warranty"))), "unit": unit, "price": int(v["offer"])}
         if c.get("grade_now") in ("A", "B", "C"):
             args["claim"] = c["grade_now"]
         r = call(ctx, "act.accept", args)
@@ -66,7 +76,8 @@ def run_forged(name, ctx, v, c, unit):
             price = int(m["price"])
         except (KeyError, TypeError, ValueError):
             return None
-        r = call(ctx, "act.counter", {"price": price, "say": say_for(c, price, v.get("ask") is None), "unit": unit})
+        r = call(ctx, "act.counter", {"price": price, "say": say_for(c, price, v.get("ask") is None, bool(ctx.strategy.get("warranty"))),
+                                      "unit": unit})
     return dict(r["result"], thought=f"forged {name}") if r["ok"] else None
 
 

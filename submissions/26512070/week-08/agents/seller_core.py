@@ -330,7 +330,8 @@ class SellerCore:
                 "hot_open_share": pb.get("hot_open_share"), "hot_n": pb.get("hot_n", 5),
                 "food_fit": pb.get("food_fit", False), "food_unknown_share": pb.get("food_unknown_share"),
                 "food_fresh_unknown": pb.get("food_fresh_unknown", False),
-                "food_review_need": pb.get("food_review_need", False)}
+                "food_review_need": pb.get("food_review_need", False),
+                "food_open_share": pb.get("food_open_share")}
 
     @staticmethod
     def hot_skus(ctx, pb):
@@ -358,20 +359,21 @@ class SellerCore:
         lp, offer, ask = c["list_price"], st["offer"], st["ask"]
         floor = max(math.ceil(c["cost"] * (1 + pb["min_margin"])), act.unit_floor(ctx, unit, st.get("first_time")))
         share = pb["hot_open_share"] if pb["hot_open_share"] and c.get("sku") in self.hot_skus(ctx, pb) else pb["open_share"]
+        if c.get("kind") == "food" and pb["food_open_share"]:
+            # 11/13 01:5x: sergiobuilds sells 1,026 food a day at a median 58% of list, we sold 191 at 70%
+            share = pb["food_open_share"]
         top = max(floor, round(lp * share))
         new_ask = top if ask is None else max(floor, ask - round(lp * pb["step_share"]))
         last = st["turns"] >= MAX_TURNS - 1
         if offer is not None and (offer >= new_ask or (offer >= floor and (st["turns"] >= pb["accept_from_turn"] or last))):
             claim = c.get("grade_now") if c.get("grade_now") in ("A", "B", "C") else None
-            args = {"say": f"Deal at {offer} KRW. Every unit is guaranteed: the market's certificate, its true grade "
-                           "and a full refund if it breaks within the warranty.", "unit": unit, "price": offer}
+            args = {"say": trade.deal_say(offer, bool(ctx.strategy.get("warranty"))), "unit": unit, "price": offer}
             if claim:
                 args["claim"] = claim
             r = call(ctx, "act.accept", args)
         else:
             price = floor if last else new_ask
-            say = (f"{c['name']}: {price} KRW, a premium unit with the market's certificate, its true grade and our "
-                   "full-refund guarantee." if ask is None else f"For this guaranteed unit I can do {price} KRW.")
+            say = trade.say_for(c, price, ask is None, bool(ctx.strategy.get("warranty")))
             r = call(ctx, "act.counter", {"price": price, "say": say, "unit": unit})
         if not r["ok"]:
             return None

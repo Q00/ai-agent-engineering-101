@@ -198,17 +198,18 @@ STRATEGY = {
                 "hold": {"type": "object", "properties": {
                     "skus": {"type": "array", "items": {"type": "string"}},
                     "words": {"type": "array", "items": {"type": "string"}}}},
+                # 11/13 01:5x: maxes raised for volume (sergiobuilds bought 1,680 units a day, we 739)
                 "restock": {"type": "object", "properties": {
                     "mode": {"type": "string", "enum": ["rules", "agent"]},
                     "cover_windows": {"type": "number", "minimum": 0.5, "maximum": 6},
-                    "market_top": {"type": "integer", "minimum": 0, "maximum": 30},
-                    "market_units": {"type": "integer", "minimum": 0, "maximum": 8},
+                    "market_top": {"type": "integer", "minimum": 0, "maximum": 60},
+                    "market_units": {"type": "integer", "minimum": 0, "maximum": 20},
                     # one line's share of the money the window may spend (breadth over depth), 1 = no cap
                     "max_line_share": {"type": "number", "minimum": 0.05, "maximum": 1},
                     "food_top": {"type": "integer", "minimum": 0, "maximum": 30},
-                    "food_units": {"type": "integer", "minimum": 0, "maximum": 8},
+                    "food_units": {"type": "integer", "minimum": 0, "maximum": 20},
                     "food_min_shelf_hours": {"type": "number", "minimum": 0},
-                    "top_n": {"type": "integer", "minimum": 0, "maximum": 10},
+                    "top_n": {"type": "integer", "minimum": 0, "maximum": 30},
                     "top_units": {"type": "integer", "minimum": 1, "maximum": 40},
                     "top_line_share": {"type": "number", "minimum": 0.05, "maximum": 1},
                     "units_cap": {"type": "integer", "minimum": 1, "maximum": 20},
@@ -235,6 +236,7 @@ STRATEGY = {
                     "clearance_hours": {"type": "number", "minimum": 1},
                     "hot_open_share": {"type": "number", "minimum": 0.5, "maximum": 1.5},
                     "hot_n": {"type": "integer", "minimum": 0, "maximum": 20},
+                    "food_open_share": {"type": "number", "minimum": 0.5, "maximum": 1.5},   # 11/13: food opens here
                     # 11/5 01:2x: food goes to a buyer only in a unit that lasts the hours it states
                     "food_fit": {"type": "boolean"},
                     # 11/5 02:4x: a buyer stating no hours gets food with at least this share of its shelf left
