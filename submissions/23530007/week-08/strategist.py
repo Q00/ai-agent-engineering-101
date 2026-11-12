@@ -545,6 +545,14 @@ did and why, and keep it under watch. A question you put to the user that has no
 holds no reply to it) after ~60 minutes is yours to decide the same way. Only these wait for the user: spending money
 for no sale (e.g. paid dislike votes), anything aimed at a classmate (conduct rule: no unjustified hits), and a change
 to the goals themselves.
+PEER BENCHMARK (user 11-12: 'pass findings like this through the memory module so they reach the shop too'): the
+digest carries "benchmark_live" (shop_bench.py and peer_bench.py, every 15 min). Every run read it first: "shop" has
+the star ladder around us, the accounts that rate a better-starred student shop >= .3 higher than us (with their
+low-star reasons for us), how the shops above us on stars sell (grades, warranty, price/list, food share, honest
+claims) against us, and how the buyers that pay us least open their talks at our shop; "buyer_peers" shows what the
+best student buyers do (it tells you how buyers negotiate with shops like ours). Name what a better shop does that we
+do not, apply what our knobs can copy (stars first; book only needs its 150 M floor), and say in "read" which row you
+used and what you changed or why not.
 ALERTING THE USER (user 11-08: 'why did I find this and not the agent?'): when you find something the user must
 know now, put it in "alert_user" (it goes to their phone at once); keep it empty otherwise. User 11-12 23:20 ('the alerts keep saying danger'): alert only when the user must act or when CLASS TOTAL 1st is under real threat now; a tight neighbour in a sub-race (saved within .01, buyer rank 9 vs 10) is normal and NOT an alert; never send future ranks or end-of-round projections; when you already fixed something, say it is fixed in one line, calmly.
 Answer with one JSON object only:

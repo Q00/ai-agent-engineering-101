@@ -139,6 +139,12 @@ answers 6 each, briefings 6 each, wanted_data 4; texts under 300 chars (market_f
 WATCH (rules, rank, our buyer's components and formula, saved_speed, our last 24 h): {watch}
 
 MARKET (the whole market's last 6 h, measured in code): {market}
+BENCHMARKS (user 11-12: 'when there is something like this, pass it to the shop and the buyer'): MARKET.benchmarks has
+the live peer comparisons: buyer_peers (student buyers beating our per-deal v at the same shops, how they open) and
+shop_peers (accounts that rate a better-starred student shop higher than us, how the shops above us on stars sell,
+how buyers open at our shop). Put the one or two most actionable rows in briefing_buyer / briefing_shop each run, with
+the numbers, and add a for_shop / for_buyer note when one side's finding matters to the other (e.g. a buyer tactic
+that works on shops like ours).
 
 PROBES (code results for the strategists' requests, by the role that asked): {probes}
 
@@ -823,6 +829,10 @@ def main(force=False):
         try:
             import market_picture as mp
             market = mp.picture()
+            # 11-12 (user: 'pass findings like the peer benchmark through the memory module to the shop too'): the
+            # live benchmarks go to the curator model with the market picture, so its briefings use them
+            if isinstance(market, dict):
+                market["benchmarks"] = benchmarks()
         except Exception as e:
             market = {"error": repr(e)}
             log(f"market picture failed: {e!r}")
@@ -837,6 +847,26 @@ def main(force=False):
         if changed and done:
             wake_strategists()
         trim_buyer_memory()
+
+
+def benchmarks():
+    """The live peer benchmarks (peer_bench.py for the buyer, shop_bench.py for the shop; every tick), trimmed."""
+    out = {}
+    try:
+        pb = json.loads((HERE / ".market" / "peer_bench.json").read_text())
+        out["buyer_peers"] = {"ours": pb.get("ours"), "better": [
+            {k: e.get(k) for k in ("name", "player", "v", "v_6h", "v_gap", "deals_h", "at_or_under_cost",
+                                   "opening_at_our_shop")} | {"same_shop": (e.get("same_shop") or [])[:3]}
+            for e in (pb.get("better") or [])[:4]], "window_h": pb.get("window_h")}
+    except (OSError, ValueError):
+        pass
+    try:
+        sb = json.loads((HERE / ".market" / "shop_bench.json").read_text())
+        out["shop_peers"] = {k: sb.get(k) for k in ("stars_ladder", "accounts", "ours", "above_us", "buyers_at_our_shop")}
+        out["shop_peers"]["buyers_at_our_shop"] = dict(list((sb.get("buyers_at_our_shop") or {}).items())[:8])
+    except (OSError, ValueError):
+        pass
+    return out
 
 
 def read_digest(role):
@@ -854,7 +884,9 @@ def read_digest(role):
                 "briefing_for_you": dg.get("briefing_buyer"), "rules_change": dg.get("rules_change"),
                 "rank_change": dg.get("rank_change"), "answers_to_your_requests": dg.get("answers_for_buyer")}
         return json.dumps(view, ensure_ascii=False)
-    view = {"updated_minutes_ago": round((time.time() - t) / 60), "facts": dg.get("facts"),
+    bm = benchmarks()                                   # 11-12: always the live benchmark, not the digest's copy
+    view = {"benchmark_live": {"shop": bm.get("shop_peers"), "buyer_peers": bm.get("buyer_peers")},
+            "updated_minutes_ago": round((time.time() - t) / 60), "facts": dg.get("facts"),
             "decisions_in_effect": dg.get("decisions"), "open_questions": dg.get("open_questions"),
             "notes_for_you": dg.get(f"for_{role}"), "conflicts": dg.get("conflicts"),
             "briefing_for_you": dg.get(f"briefing_{role}"), "rules_change": dg.get("rules_change"),
