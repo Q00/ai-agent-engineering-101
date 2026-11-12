@@ -36,7 +36,7 @@ PAST_N = 5  # earlier findings shown in the prompt
 # role operator sees its non-recommended tools). 11-12: the full list was a third of the fixed prompt.
 TOOL_LINE = 90
 TOOL_FULL = ("analyze",)  # shown with its whole description: its load() interface is what the analysis code needs
-TOOL_MORE = "- 도구마다 설명 전체와 인자 이름은 tool_search(query=도구 이름)로 봄. 위 이름은 그대로 부를 수 있음"
+TOOL_MORE = "- 도구마다 설명 전체는 tool_search(query=도구 이름)로 봄. 위 이름은 괄호 안 인자 이름으로 그대로 부를 수 있음"
 _SENTENCE = re.compile(r"(?<=\.)\s")
 REFUSED = (
     "policy",
@@ -75,6 +75,14 @@ def _short(doc):
     if len(text) <= TOOL_LINE:
         return text
     return text[:TOOL_LINE].rsplit(" ", 1)[0] + " …"
+
+
+def _arg_names(root):
+    """{tool name: argument names} for every tool tool_search can find (made q_ tools included)."""
+    try:
+        return {name: args for name, _, args, _ in tools._search_entries(root)}
+    except Exception:  # a broken made-tool row must not stop the investigator; the names alone still work
+        return {}
 
 
 def _steps():
@@ -123,7 +131,11 @@ class Analyst(op.Operator):
         return {}
 
     def _tool_text(self, listed):
-        lines = [f"- {name}: {doc if name in TOOL_FULL else _short(doc)}" for name, doc in listed]
+        # 11-12 20:30: the argument names ride on each line; without them the investigator looked each tool up again
+        # on every question (166 tool_search calls in 3 h, 28 distinct, most of them a listed tool's own name)
+        args = _arg_names(self.root)
+        lines = [f"- {name}({', '.join(args.get(name, ()))}): {doc if name in TOOL_FULL else _short(doc)}"
+                 for name, doc in listed]
         return "\n".join(lines + [TOOL_MORE])
 
     # ------------------------------------------------------------ one question

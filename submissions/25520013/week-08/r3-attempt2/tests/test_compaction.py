@@ -472,8 +472,10 @@ def test_investigator_tool_list_is_short_and_keeps_its_rules(env, monkeypatch):
     tool_part = base.split("\n\n## 도구\n\n", 1)[1].split("\n\n## 답 형식", 1)[0]
     full = "\n".join(f"- {n}: {d}" for n, d in a.listed())
     assert len(tool_part) < 0.75 * len(full)
-    for name, _ in a.listed():
-        assert f"- {name}: " in tool_part
+    args = an._arg_names(root)
+    for name, _ in a.listed():  # each listed tool carries its argument names (no lookup needed to call it)
+        assert f"- {name}({', '.join(args.get(name, ()))}): " in tool_part
+    assert "- tool_search(query): " in tool_part and len(args) >= len(a.listed()) - 2
     assert "tool_search" in tool_part
     assert sum(sizes.values()) == len(base)
     for must in (

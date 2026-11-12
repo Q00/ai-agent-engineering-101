@@ -166,8 +166,8 @@ def test_run_writes_the_finding_and_logs_analyst_rows(env, monkeypatch):
     assert (
         "## 이번 질문\n\n#1 " in p
         and "별점 낮은 구간은?" in p
-        and "- tool_search: " in p
-        and "- stockouts: " in p
+        and "- tool_search(query): " in p
+        and "- stockouts(" in p
     )
     assert "- 그 밖의 도구" not in p and "policy, code, forum, ask는 받지 않음" in p
     f = qs.findings(root)
