@@ -38,12 +38,14 @@ class Settings(unittest.TestCase):
         # On 11-10 12:04 with the food floor, off 11-10 19:50:25 KST (net negative on stars), on again 11-11 about 18:0x KST (the
         # user's choice in the Orchestrator session) with the same SKUs, units and cost limit; at most 4 picks a run from 11-11 20:18:17
         # KST (an Orchestrator tightening within the user's food approval); the SKU with the most room filled first from 11-11 22:40:21
-        # KST (the same kind of tightening).
+        # KST (the same kind of tightening). Off again 11-12 18:33:17 KST (the user's choice in the Orchestrator session, about 18:2x
+        # KST: "지금 중지 (권장)"): the shelf-life notice moved nothing for buyers who state no need, lows ran about 6 an hour and no
+        # new rating account came. The SKUs, units, cost limit, run cap and pick order stay in the file; only "enabled" is off.
         value = json.loads(fp.CONFIG.read_text(encoding="utf-8"))
-        self.assertIs(value["enabled"], True)
+        self.assertIs(value["enabled"], False)
         self.assertEqual((value["skus"], value["units_per_sku"], value["max_total_estimated_cost"]), (GOOD["skus"], 3, 310000))
-        self.assertEqual(fp.settings()["max_units_per_run"], 4)
-        self.assertEqual(fp.settings()["pick_order"], "most_room_first")
+        self.assertEqual((value["max_units_per_run"], value["pick_order"]), (4, "most_room_first"))
+        self.assertIsNone(fp.settings())
 
     def test_only_a_valid_file_turns_it_on(self):
         with TemporaryDirectory() as folder:
