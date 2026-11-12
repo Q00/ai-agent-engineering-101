@@ -274,6 +274,12 @@ def test_pricing():
                            food_floor="high")["floor"] == 5000
           and pricing.plan(dict(food, kind="goods"), now, sku_market=own, food_floor="high")["market_floor"] is False,
           (fm, fc))
+    fx = pricing.plan(food, now, catalog=CATALOG, sku_market=own, food_floor="max")
+    check("...the \"max\" arm asks 8% of list more (0.78: 15,600) and holds the market itself (0.68: 13,600); the seller then "
+          "says the price is about the middle of what other shops have been paid, the \"high\" arm 2% under it",
+          (fx["ask"], fx["floor"], fx["market_floor"], fx["market_gap"], fm["market_gap"]) == (15600, 13600, True, 0.0, 0.02)
+          and "about the middle of what other shops have been paid" in seller.Seller.reason(None, {"plan": fx})
+          and "about 2% of its list price under" in seller.Seller.reason(None, {"plan": fm}), fx)
     p = pricing.plan(goods_a, now, warranty=True, sku_market={"A": {"n": 30, "median": 0.70}, "A_w": {"n": 12, "median": 0.72}})
     check("with a warranty it is set by the market's warranty settles (0.72 + 2% = 74%)", (p["ask"], p["sku_ref"]) == (29526, 0.72), p)
     check("...and never under the floor (cost + 2% + 2.5%) while the unit is fresh",

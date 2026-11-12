@@ -109,6 +109,8 @@ def run(now: float | None = None) -> str:
 # what the order adds to saved, times deals + 100.
 HAGGLE_ARMS = ("accept", "counter")
 HAGGLE_MIN = 100
+HAGGLE_LEAN = 0.8    # 11/12 (the person's call, aggressive): once both arms have HAGGLE_MIN orders, the arm adding more
+                     # to saved gets this before a verdict (on 11/12 counter kept 0.3371 against 0.3282, z 1.27)
 
 
 def haggle_path():
@@ -162,11 +164,17 @@ def run_haggle(now: float | None = None) -> str:
                                           .get("our_broken_orders") or []))
     ready = all((s["talks"] or 0) >= HAGGLE_MIN for s in stats.values())
     best, z = leader(stats) if ready else (None, None)
-    weights = {a: (BEST if a == best else round(1 - BEST, 4)) for a in stats} if best else {a: 0.5 for a in stats}
+    lead = max(stats, key=lambda a: stats[a]["reward_per_talk"] if stats[a]["reward_per_talk"] is not None else -1) if ready else None
+    if best:
+        weights = {a: (BEST if a == best else round(1 - BEST, 4)) for a in stats}
+    elif lead:
+        weights = {a: (HAGGLE_LEAN if a == lead else round(1 - HAGGLE_LEAN, 4)) for a in stats}
+    else:
+        weights = {a: 0.5 for a in stats}
     common.write_json(haggle_path(), {"at": int(now), "on": old.get("on", True), "weights": weights, "best": best, "z": z,
                                       "saved": saved, "stats": stats})
     parts = ", ".join(f"{a}: {s['talks']} orders, close {s['close']}, kept {s['kept']}" for a, s in stats.items())
-    why = f"best {best} by {z} SE" if best else (f"even: no arm {Z} SE ahead (z {z})" if ready else f"even until {HAGGLE_MIN} each")
+    why = f"best {best} by {z} SE" if best else (f"leaning {lead}: no arm {Z} SE ahead (z {z})" if ready else f"even until {HAGGLE_MIN} each")
     return f"haggling ({why}): {parts}"
 
 
@@ -182,10 +190,13 @@ def run_haggle(now: float | None = None) -> str:
 # gets FOOD_LEAN (lean to the bolder arm, the cost arm still measured); then the leader gets BEST.
 # analysis/food_floor.json; the seller reads it while FRESH. Watch the food expiry (records/stock_flow.jsonl): a price
 # that leaves units unsold to expiry is a loss this score cannot see.
-FOOD_ARMS = ("cost", "high")
+# 11/12 later (the person's call, bolder still): a third arm, "max", asks pricing.FOOD_MAX_LIFT over the anchored ask
+# and holds the floor at the market itself, to find how far up food still sells; before a verdict the two bolder arms
+# share FOOD_LEAN.
+FOOD_ARMS = ("cost", "high", "max")
 FOOD_MIN = 200                       # talks (kept for the brief)
 FOOD_MIN_DEALS = 100
-FOOD_LEAN = 0.8
+FOOD_LEAN = 0.8                      # the bolder arms' share before a verdict (split evenly between them)
 
 
 def food_path():
@@ -193,7 +204,7 @@ def food_path():
 
 
 def food_arm(task_id: str, now: float | None = None, state: dict | None = None) -> str | None:
-    """"cost" or "high" for this talk, or None (the cost floor, as before) without a fresh food_floor.json."""
+    """One of FOOD_ARMS for this talk, or None (the cost floor, as before) without a fresh food_floor.json."""
     st_ = state if state is not None else common.read_json(food_path(), None)
     now = now or time.time()
     if not isinstance(st_, dict) or not st_.get("on", True) or now - (st_.get("at") or 0) > FRESH:
@@ -245,14 +256,16 @@ def run_food(now: float | None = None) -> str:
     stats = food_score(rows, lam)
     ready = all((s["deals"] or 0) >= FOOD_MIN_DEALS for s in stats.values())
     best, z = food_leader(stats) if ready else (None, None)
-    lean = {a: (FOOD_LEAN if a == "high" else round(1 - FOOD_LEAN, 4)) for a in stats}
-    weights = {a: (BEST if a == best else round(1 - BEST, 4)) for a in stats} if best else lean
+    bold = [a for a in stats if a != "cost"]
+    lean = {a: (round(FOOD_LEAN / len(bold), 4) if a in bold else round(1 - FOOD_LEAN, 4)) for a in stats}
+    rest = round((1 - BEST) / max(1, len(stats) - 1), 4)
+    weights = {a: (BEST if a == best else rest) for a in stats} if best else lean
     common.write_json(food_path(), {"at": int(now), "on": old.get("on", True), "weights": weights, "best": best, "z": z,
                                     "stats": stats})
     parts = ", ".join(f"{a}: {s['talks']} talks, {s['deals']} deals, close {s['close']}, {s['reward_per_deal']}/deal"
                       for a, s in stats.items())
-    why = f"best {best} by {z} SE" if best else (f"leaning high: no arm {Z} SE ahead (z {z})" if ready
-                                                  else f"leaning high until {FOOD_MIN_DEALS} deals each")
+    why = f"best {best} by {z} SE" if best else (f"leaning bold: no arm {Z} SE ahead (z {z})" if ready
+                                                  else f"leaning bold until {FOOD_MIN_DEALS} deals each")
     return f"food price ({why}): {parts}"
 
 

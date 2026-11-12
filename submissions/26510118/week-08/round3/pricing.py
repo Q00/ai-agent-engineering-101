@@ -59,6 +59,8 @@ ANCHOR, ASK_OVER = True, 0.02
 FOOD_FLOOR_GAP = 0.02   # the "high" food arm's floor under the SKU's market (0.05 for the "market" arm, 11/9-11/12)
 FOOD_HIGH_LIFT = 0.04   # and its first ask over the anchored ask (11/12, the person's call: food is short of stock;
                         # see experiments.FOOD_ARMS)
+FOOD_MAX_GAP, FOOD_MAX_LIFT = 0.0, 0.08   # the "max" arm (11/12, the person's call, bolder still): the floor at the
+                                          # market itself, the first ask 8% of list over the anchored ask
 # 11/9 23:30 (the person's call), an experiment (experiments.food_arm): our food sold 0.06-0.10 of list under other
 # shops' price for the same product and grade (24 h, 2,770 sales: A 0.640 against 0.715, costing 0.676; B 0.551 against
 # 0.637; C 0.452 against 0.580), haggled down toward a floor at cost + MARGIN (22% of food deals within 2% of it). In the
@@ -248,8 +250,8 @@ def plan(unit: dict, now: float | None = None, warranty: bool = False, adjust: f
     anchored = ANCHOR and sref is not None and not clearing
     if anchored:                                                # Kiro 2.0: the SKU's own market + ASK_OVER
         want = sref + (ASK_OVER if ask_over is None else ask_over) + adjust
-        if food_floor == "high" and unit.get("kind") != "goods":          # 11/12: the bolder food arm asks more
-            want += FOOD_HIGH_LIFT
+        if food_floor in ("high", "max") and unit.get("kind") != "goods":  # 11/12: the bolder food arms ask more
+            want += FOOD_HIGH_LIFT if food_floor == "high" else FOOD_MAX_LIFT
         if comp_ask is not None and g == "A":                   # not over what other shops first ask (shop_model)
             want = min(want, comp_ask - 0.005)
         nudge, start = round(want - start, 4), want
@@ -287,9 +289,10 @@ def plan(unit: dict, now: float | None = None, warranty: bool = False, adjust: f
         floor = min(floor, math.ceil(cost * (1 - STORAGE * max(0.0, to_end) / 24)))
     if w:
         floor += round(lp * extra[g])
-    market_floor = False
-    if food_floor == "high" and not goods and anchored and clearance is None:      # 11/12: the food price experiment
-        held = round(lp * (sref - FOOD_FLOOR_GAP))
+    market_floor, market_gap = False, None
+    if food_floor in ("high", "max") and not goods and anchored and clearance is None:   # 11/12: the food price experiment
+        market_gap = FOOD_FLOOR_GAP if food_floor == "high" else FOOD_MAX_GAP
+        held = round(lp * (sref - market_gap))
         if held > floor:
             floor, market_floor = held, True
     dead = (anchored and unit.get("kind") == "goods" and clearance is None and not held_down
@@ -307,7 +310,7 @@ def plan(unit: dict, now: float | None = None, warranty: bool = False, adjust: f
     ask = max(floor, round(lp * start))
     return {"ask": ask, "floor": floor, "grade": g, "hours_left": hours_left(unit, now), "age_days": age,
             "at_cost": clearance is None and not held_down and not dead, "dead": dead, "stuck": stuck, "anchored": anchored,
-            "market_floor": market_floor,
+            "market_floor": market_floor, "market_gap": market_gap,
             "warranty_hours": WARRANTY_HOURS if w else None, "ref": ref, "late": late,
             "sku_ref": sref, "nudge": nudge, "solo": bool(in_line and solo and SOLO_ON),
             "solo_floor": solo_floor if in_line and solo and SOLO_ON else None}

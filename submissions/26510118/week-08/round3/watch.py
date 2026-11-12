@@ -56,6 +56,53 @@ TASTE_OVERLAP, BUDGET_MOVE, RATE_LOW, RATE_HIGH, TASTE_MIN = 0.8, 0.15, 0.6, 1.6
 TREND_PRICE_MOVE, TREND_OVERLAP, TREND_MIN = 0.03, 0.85, 500
 BREAK_FROM, BREAK_TO, BREAK_MIN, BREAK_TIMES = 18 * 3600, 6 * 3600, 5, 2.0   # goods break within 6 h of the sale
 BRIEF_HOURS = 3
+# 11/12 (the person's call): the stop-loss lines of the "retake 1st" changes (0de7635 and after). Each raises an alert
+# once when it is crossed (again after it has cleared); a person then reverts that one change.
+SL_FOOD_EXPIRY, SL_FOOD_RECEIVED_MIN = 0.02, 100   # S1 (food for 3 h of its pace): food expired / received over 12 h
+SL_FOOD_STALE_HOURS, SL_FOOD_STALE_N = 6, 60       # S2 (food priced higher): food units on hand 6 h or longer. Not 3 h:
+                                                   # S1 holds 3 h of a product's pace on purpose
+SL_DEAR, SL_DEAR_HOURS, SL_DEAR_COST = 500_000, 6, 150_000_000   # S3 (a wider line): 500k+ goods held 6 h+, at cost
+SL_DEALS_H, SL_ORDERS_MIN = 40, 30                 # B1 (the goods floor): our buyer's deals an hour over 3 h
+SL_SAVED_HOURS = 12                                # B1: saved not up over this long (scoreboard history)
+
+
+def stoploss(now: float, flow: list, units: list, orders: list, catalog: dict, history: list) -> tuple[dict, dict]:
+    """(the numbers, {flag: text}) for the stop-loss lines above."""
+    kind = lambda s: (catalog.get(s) or {}).get("kind")
+    lp = lambda s: (catalog.get(s) or {}).get("list_price") or 0
+    f, flags = {}, {}
+    food12 = [x for x in flow if (x.get("ts") or 0) >= now - 12 * 3600 and kind(x.get("sku")) == "food"]
+    rec, exp = sum(1 for x in food12 if x.get("what") == "received"), sum(1 for x in food12 if x.get("what") == "expired")
+    f["food_expired_12h"] = [exp, rec]
+    if rec >= SL_FOOD_RECEIVED_MIN and exp / rec > SL_FOOD_EXPIRY:
+        flags["stoploss:S1"] = (f"S1: {exp} of {rec} food units received in 12 h expired (over {SL_FOOD_EXPIRY:.0%}): "
+                                "revert restock.FOOD_COVER_HOURS")
+    age = lambda u: now - (u.get("supplied_at") or now)
+    stale = sum(1 for u in units if kind(u.get("sku")) == "food" and age(u) >= SL_FOOD_STALE_HOURS * 3600)
+    f["food_on_hand_6h"] = stale
+    if stale >= SL_FOOD_STALE_N:
+        flags["stoploss:S2"] = (f"S2: {stale} food units on hand {SL_FOOD_STALE_HOURS} h or longer: the bolder food asks "
+                                "may be too high (experiments.FOOD_ARMS)")
+    dear = sum(u.get("cost") or 0 for u in units if lp(u.get("sku")) >= SL_DEAR and age(u) >= SL_DEAR_HOURS * 3600)
+    f["dear_held_6h_cost"] = int(dear)
+    if dear >= SL_DEAR_COST:
+        flags["stoploss:S3"] = (f"S3: {dear / 1e6:.0f}M at cost of 500k+ goods held {SL_DEAR_HOURS} h or longer: narrow the "
+                                "line (linewatch.LINE_MAX_SKUS, EM_FIND)")
+    o3 = [o for o in orders if (o.get("ts") or 0) >= now - 3 * 3600]
+    deals_h = sum(1 for o in o3 if o.get("deal")) / 3
+    f["buyer_deals_h"] = round(deals_h, 1)
+    if len(o3) >= SL_ORDERS_MIN and deals_h < SL_DEALS_H:
+        flags["stoploss:B1-deals"] = (f"B1: our buyer closed {deals_h:.0f} deals an hour over 3 h (under {SL_DEALS_H}): "
+                                      "lower the goods floor (objective.goods_floor)")
+    mine = sorted((r.get("at") or 0, v[0]) for r in history for k, v in (r.get("buyers") or {}).items()
+                  if common.is_ours(k) and isinstance(v, list) and v and isinstance(v[0], (int, float)))
+    then = [s for at, s in mine if at <= now - SL_SAVED_HOURS * 3600]
+    if mine and then:
+        f["saved_12h"] = [then[-1], mine[-1][1]]
+        if mine[-1][1] <= then[-1]:
+            flags["stoploss:B1-saved"] = (f"B1: saved {then[-1]} -> {mine[-1][1]} over {SL_SAVED_HOURS} h, not up: "
+                                          "look at the goods floor and the threshold")
+    return f, flags
 
 
 def shares(c) -> dict:
@@ -317,7 +364,11 @@ def run(now: float | None = None, get_json=None, get_text=None, log_path: Path =
     for name, (got, flags) in (("taste", taste(orders, now)),
                                ("trend", trend(settles, common.read_json(common.MARKET_DIR / "market_summary.json", {}) or {}, catalog, now)),
                                ("breakage", breakage(common.read_jsonl(common.MARKET_DIR / "buyer" / "purchases.jsonl"),
-                                                     common.read_jsonl(common.MARKET_DIR / "buyer" / "breaks.jsonl"), now))):
+                                                     common.read_jsonl(common.MARKET_DIR / "buyer" / "breaks.jsonl"), now)),
+                               ("stoploss", stoploss(now, common.read_jsonl(common.MARKET_DIR / "records" / "stock_flow.jsonl",
+                                                                            since=now - 12 * 3600),
+                                                     inv.get("units") or [], orders, catalog,
+                                                     common.read_jsonl(folder() / "scoreboard_history.jsonl")))):
         facts[name] = got
         slow.update(flags)
     for key, text in slow.items():                               # raised once when it starts, again after it has cleared

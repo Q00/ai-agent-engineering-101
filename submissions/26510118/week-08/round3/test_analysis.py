@@ -1469,6 +1469,14 @@ def test_stage2():
         h = common.read_json(experiments.haggle_path())
         check("...100 orders each and counter ahead by 2+ standard errors: counter gets 0.8", h["best"] == "counter"
               and h["weights"] == {"accept": 0.2, "counter": 0.8} and "best counter" in note, (h, note))
+        close = orders("accept", 100, 60, 620) + orders("counter", 100, 61, 618)
+        with open(rec_o, "w", encoding="utf-8") as f:
+            for r in close:
+                f.write(json.dumps(r) + "\n")
+        note = experiments.run_haggle(t)
+        h = common.read_json(experiments.haggle_path())
+        check("11/12: ahead, but not by 2 standard errors: the arm adding more to saved still gets 0.8 (no verdict)",
+              h["best"] is None and h["weights"] == {"accept": 0.2, "counter": 0.8} and "leaning counter" in note, (h, note))
     finally:
         experiments.haggle_path().unlink(missing_ok=True)
         if kept_o is None:
@@ -1493,17 +1501,18 @@ def test_stage2():
                 f.write(json.dumps(r) + "\n")
         experiments.run_food(t)
         fl = common.read_json(experiments.food_path())
-        check("11/12: until each arm has 100 deals the weights lean to the bolder arm (high 0.8, cost 0.2)",
-              fl["best"] is None and fl["weights"] == {"cost": 0.2, "high": 0.8}, fl)
+        check("11/12: until each arm has 100 deals the weights lean to the bolder arms (high and max 0.4 each, cost 0.2)",
+              fl["best"] is None and fl["weights"] == {"cost": 0.2, "high": 0.4, "max": 0.4}, fl)
         with open(rec_n, "w", encoding="utf-8") as f:
             for r in ([row("cost", outcome="deal", price=5_600, cost=5_000)] * 200
-                      + [row("high", outcome="deal", price=6_500, cost=5_000)] * 100 + [row("high", outcome="walked")] * 200):
+                      + [row("high", outcome="deal", price=6_500, cost=5_000)] * 100 + [row("high", outcome="walked")] * 200
+                      + [row("max", outcome="deal", price=6_200, cost=5_000)] * 100 + [row("max", outcome="walked")] * 300):
                 f.write(json.dumps(r) + "\n")
         note = experiments.run_food(t)
         fl = common.read_json(experiments.food_path())
         check("...scored per unit SOLD, food being short of stock: \"high\" closes a third (0.333 against 1.0) and earns less "
-              "a talk (0.05 of list against 0.06) but 0.15 a unit against 0.06, so it leads and keeps 0.8",
-              fl["best"] == "high" and fl["weights"] == {"cost": 0.2, "high": 0.8}
+              "a talk (0.05 of list against 0.06) but 0.15 a unit against 0.06 (and max's 0.12), so it leads and gets 0.8",
+              fl["best"] == "high" and fl["weights"] == {"cost": 0.1, "high": 0.8, "max": 0.1}
               and fl["stats"]["high"]["reward_per_talk"] == 0.05 and fl["stats"]["cost"]["reward_per_talk"] == 0.06
               and fl["stats"]["high"]["reward_per_deal"] == 0.15 and "best high" in note, (fl, note))
     finally:
@@ -1670,6 +1679,20 @@ def test_watch():
     f, flags = watch.breakage(purchases, breaks, t)
     check("breakage: grade A bought 6-18 h ago breaking 20% against 2% before: flagged; B and C quiet",
           set(flags) == {"breakage:A"} and f["A"] == [0.2, 0.02, 40], (f, flags))
+    scat = {"F1": {"kind": "food", "list_price": 20000}, "D1": {"kind": "goods", "list_price": 3_000_000}}
+    flow = ([{"ts": t - 3600, "sku": "F1", "what": "received"}] * 200 + [{"ts": t - 3600, "sku": "F1", "what": "expired"}] * 5)
+    units = ([{"sku": "F1", "supplied_at": t - 7 * H, "cost": 10000}] * 61
+             + [{"sku": "D1", "supplied_at": t - 7 * H, "cost": 60_000_000}] * 3)
+    ords = [{"ts": t - 600, "deal": i < 30} for i in range(60)]
+    hist = [{"at": t - 13 * H, "buyers": {"Kiro729": [0.33, 0.8, 1, 1]}}, {"at": t - 60, "buyers": {"Kiro729": [0.33, 0.8, 2, 2]}}]
+    f, flags = watch.stoploss(t, flow, units, ords, scat, hist)
+    check("11/12, the stop-loss lines: food expiring 2.5% of what came in (S1), 61 food units 6 h old (S2), 180M of 500k+ "
+          "goods held 6 h (S3), 10 buyer deals an hour (B1) and saved flat over 12 h (B1): five flags",
+          set(flags) == {"stoploss:S1", "stoploss:S2", "stoploss:S3", "stoploss:B1-deals", "stoploss:B1-saved"}
+          and f["food_expired_12h"] == [5, 200] and f["dear_held_6h_cost"] == 180_000_000, (f, flags))
+    hist[-1]["buyers"]["Kiro729"][0] = 0.34
+    f, flags = watch.stoploss(t, flow[:200], units[:10], [{"ts": t - 600, "deal": True}] * 150, scat, hist)
+    check("...a healthy hour: none", flags == {}, (f, flags))
     log.unlink()
     for f in ("watch_state.json", "watch.json", "watch_log.jsonl"):
         (MD / "analysis" / f).unlink(missing_ok=True)

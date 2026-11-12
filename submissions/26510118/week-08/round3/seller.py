@@ -524,10 +524,12 @@ class Seller(AgentExecutor):
         p = d["plan"]
         if not p["at_cost"]:
             return "this is already a clearance price"
-        if p.get("market_floor"):                   # 11/9: the food-floor experiment holds it under the market, not at cost
-            return (f"it is grade {p['grade']}, with its certificate, and this price is about "
-                    f"{round(pricing.FOOD_FLOOR_GAP * 100)}% of its list price under what other shops have been paid for it "
-                    f"in the last hours")
+        if p.get("market_floor"):                   # 11/9: the food price experiment holds it at the market, not at cost
+            gap = p.get("market_gap")
+            gap = pricing.FOOD_FLOOR_GAP if gap is None else gap
+            where = (f"about {round(gap * 100)}% of its list price under what other shops have been paid for it"
+                     if gap >= 0.005 else "about the middle of what other shops have been paid for it")
+            return f"it is grade {p['grade']}, with its certificate, and this price is {where} in the last hours"
         what = "it is top grade (A)" if p["grade"] == "A" else f"it is grade {p['grade']}"
         extra = " plus the 6-hour warranty" if p["warranty_hours"] else ""
         return (f"{what}, with its certificate, and this price is only about {round(pricing.MARGIN * 100)}% over what this unit "
