@@ -115,11 +115,11 @@ OBS_HEADS = 6_000  # chars of those call lines; beyond it only their count
 # Compaction (like Claude Code's): when the carried part of a wake (kept conclusions + retained observations, raw chars)
 # reaches COMPACT_AT and its older part (all but the last COMPACT_RECENT tool steps) is at least COMPACT_MIN_OLD, one
 # extra model call rewrites the older part (and any earlier summary) as a structured summary that replaces it.
-# COMPACT_AT = OBS_BUDGET + OBS_TRIM_BUDGET: past it _obs_text starts showing old results as their call only, so the
-# summary takes over where the trimming would begin to drop results. COMPACT_MIN_OLD: one summary call is spent per
-# 16,000 chars of new material at least (a 26k-43k chars investigator step carried mostly results; at 8,000 chars of
-# results per step that is one extra call per two steps, at 3,000 one per five). Env A2_COMPACT_SUMMARY=0 turns it off
-# (trimming only). Never shown to the agent: its prompt only gets the section COMPACT_HEAD.
+# COMPACT_AT = OBS_BUDGET + OBS_TRIM_BUDGET: past it _obs_text would start showing old results as their call only, so
+# the summary takes over before results drop from the page (between OBS_BUDGET and COMPACT_AT older results show cut
+# to OBS_TRIM for a step or two; the summary call still gets them whole, up to SUMMARY_IN). COMPACT_MIN_OLD: one
+# summary call per 30,000 chars of new older material at least, and after a failed call 30,000 more before the retry.
+# Env A2_COMPACT_SUMMARY=0 turns it off (trimming only). Never shown to the agent: its prompt only gets COMPACT_HEAD.
 COMPACT_AT = OBS_BUDGET + OBS_TRIM_BUDGET  # 60,000
 # 11-12 23:50 (24,000 / 16,000 before): live 24 h, 351 summary calls took 10.9 h of model time against 4.8 h for
 # the agents' own calls (investigator 9.6 h vs 3.3 h), median 103 s each, and chars_after had a median of 29k, so a
@@ -132,9 +132,11 @@ SUMMARY_MAX = 30_000  # (20,000 until 11-12 23:50: 44 of 351 live summaries in 2
 COMPACT_EFFORT = "medium"  # 11-11 성수님: 추론 강도는 모두 medium
 COMPACT_HEAD = "## 이번 점검에서 지금까지 (커널이 간추림)"
 SUMMARY_HEADS = ("## 확인된 숫자와 출처", "## 세운 가설과 결과", "## 이미 한 변경과 요청", "## 아직 안 풀린 것", "## 다음에 하려던 것")
-SUMMARY_IN = 60_000  # chars of old observations handed to the summary call; each result is cut in proportion beyond it
+SUMMARY_IN = 120_000  # chars of old observations handed to the summary call; each result is cut in proportion beyond it.
+# (60,000 until 11-12 23:59) At least COMPACT_AT + COMPACT_MIN_OLD plus a step: a retry after a failed summary sees about
+# 80k older chars, and results cut here are marked gone once the summary is used. Input is cheap (live: 40-80 KB 7.8 s)
 COMPACT_FAILS = 2  # after this many failed summary calls a wake stays on the trimming path
-COMPACT_TIMEOUT_S = 300  # live 11-12: 2 of 6 summary calls (30k to 42k chars in, about 9k out) ran past 120 s
+COMPACT_TIMEOUT_S = 450  # (300 until 11-12 23:59: live summary output 30-40 KB took a median 221 s, about 1.43 bytes per char, so a 30k-char summary runs near 300 s) live 11-12: 2 of 6 summary calls (30k to 42k chars in, about 9k out) ran past 120 s
 WAKE_MEMO_CHARS = 4_000  # the wake's carried summary handed to long-term memory (kernel.memfeed, kind wake_summary)
 SUMMARY_JOB = """너는 커널의 기록 정리 담당임. 아래 자료는 한 에이전트가 이번 점검에서 지금까지 한 도구 호출과 그 결과, 에이전트가 남긴 결론, 앞선 간추림임. 이것을 아래 다섯 절의 간추림 하나로 다시 씀. 에이전트는 다음 단계부터 원문 대신 이 간추림을 읽음.
 

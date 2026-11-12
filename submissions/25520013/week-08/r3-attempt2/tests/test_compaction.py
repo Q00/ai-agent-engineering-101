@@ -575,3 +575,19 @@ def test_summary_job_states_the_length_line():
     """The rejecting line (SUMMARY_MAX) and the asked length are in the instruction the summary call reads."""
     assert f"{op.SUMMARY_MAX:,}자를 넘으면" in op.SUMMARY_JOB and f"{op.SUMMARY_TARGET:,}자 안팎" in op.SUMMARY_JOB
     assert op.SUMMARY_TARGET < op.SUMMARY_MAX
+
+
+def test_retry_after_a_failed_summary_waits_min_old_and_gets_every_result_whole(env, monkeypatch):
+    """At the real values: the first summary (before step 11, 48,000 older chars) fails; the retry waits for
+    COMPACT_MIN_OLD more older chars (before step 16, 78,000) and its prompt holds every older result in full, since
+    those results are marked gone once the summary is used (with SUMMARY_IN 60,000 they reached it cut, live 11-12)."""
+    root, make = env
+    monkeypatch.setattr(op, "COMPACT_AT", DEFAULTS[0])
+    monkeypatch.setattr(op, "COMPACT_MIN_OLD", DEFAULTS[1])
+    assert op.SUMMARY_IN >= DEFAULTS[0] + DEFAULTS[1] + 6_000
+    m = Model(_acts(16), ["", SUMMARY_1])
+    make("shop", m).wake("주기 점검", NOW)
+    rows = _rows(root, "compact")
+    assert [(r["step"], r["status"]) for r in rows] == [(11, "failed"), (16, "ok")]
+    retry = m.summary_prompts[1]
+    assert all(_obs("events", {"i": i, "j": j}) in retry for i in range(13) for j in (0, 1))
