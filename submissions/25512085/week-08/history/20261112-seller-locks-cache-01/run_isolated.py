@@ -1,5 +1,6 @@
 """Copy only tracked code, block network/processes and confine all writes."""
 import json
+import hashlib
 import os
 from pathlib import Path
 import subprocess
@@ -22,12 +23,16 @@ for rel in tracked:
     if (src.parent == SOURCE and src.suffix in ('.py', '.sh')) or (src.parent == REPO/'scripts' and src.suffix == '.py') or rel.endswith('/seller_cash_policy.json'):
         dst = tree / rel
         dst.parent.mkdir(parents=True, exist_ok=True)
-        baseline = OUT / 'evidence/baseline-v3' / rel
-        dst.write_bytes((baseline if mode == 'baseline' and baseline.exists() else src).read_bytes())
+        data = (subprocess.check_output(['git', 'show', '3f65cdd:' + rel], cwd=REPO)
+                if mode == 'baseline' else src.read_bytes())
+        dst.write_bytes(data)
 # New focused tests are explicitly allowed before their first commit.
 test = SOURCE / 'test_seller_locks_cache_offline.py'
 if test.exists() and mode != 'baseline':
     (cwd / test.name).write_bytes(test.read_bytes())
+(OUT / (label+'-sha256.json')).write_text(json.dumps({
+    str(p.relative_to(tree)): hashlib.sha256(p.read_bytes()).hexdigest()
+    for p in tree.rglob('*') if p.is_file()}, indent=2), encoding='utf-8')
 scratch = tree / 'scratch'
 scratch.mkdir()
 home = Path('C:/Users/clair/AppData/Local/Temp/opencode/fake-home-seller-locks-cache')
@@ -53,6 +58,13 @@ sys.addaudithook(audit)
 sys.dont_write_bytecode = True
 os.chdir(cwd)
 sys.path.insert(0, str(cwd))
+if mode == 'compile':
+    import py_compile
+    files = sorted(cwd.glob('*.py'))
+    for source in files:
+        py_compile.compile(str(source), cfile=str(scratch/(source.stem+'.pyc')), doraise=True)
+    print('PY_COMPILE_OK=' + str(len(files)))
+    sys.exit(0)
 import test_visibility_guard_offline as visibility
 import test_seller_forum_offline as forum_tests
 forum_tests.select_temp_parent = lambda: scratch
