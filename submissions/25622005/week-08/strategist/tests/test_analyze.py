@@ -744,7 +744,7 @@ class NewSectionsTest(unittest.TestCase):
                                     sign("u-a", "A", 700000), sign("u-c1", "C", 550000), sign("u-c2", "C", 560000),
                                     {"kind": "quote", "why": "first reply: fact line", "ref": {"task": "small"}, "inputs": {"list_price": 5000, "grade_now": "C"}}]
         r = raw()
-        r["catalog"] = {"G1": {"list_price": 1000000}, "G9": {"list_price": 5000}}
+        r["catalog"] = {"G1": ["소파", "가구", 1000000, "goods", None], "G9": ["간식", "식품", 5000, "food", 720]}
         st = lambda shop, unit, grade, amount, w, sku="G1": {"kind": "settle", "ts": NOW - 30, "data": {"shop": shop, "unit": unit, "sku": sku, "grade": grade, "amount": amount, "warranty_hours": w}}
         r["ledger"] += [st(US, "u-a", "A", 700000, 6), st("https://s1.example", "x1", "A", 720000, 72), st("https://s1.example", "x2", "B", 600000, 72),
                         st("https://unknown.example", "x3", "A", 680000, None), st("https://s2.example", "x4", "C", 10, None, sku="G9")]

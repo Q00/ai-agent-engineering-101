@@ -870,7 +870,7 @@ def _big_ticket(rows, ledger, catalog, pol, me, our_url, shops):
                  "cancel_rate": _ratio(canceled.get(g, 0), offered.get(g, 0)), "signed": len(sg), "paid": paid,
                  "paid_rate": _ratio(paid, len(sg)),
                  "sign_price_list": _median([round(p / l, 4) for p, l in ((_num(ch(r).get("price")), lp(r)) for r in sg) if p and l])}
-    cat_list = lambda d: _num(_dict(_dict(catalog).get(d.get("sku"))).get("list_price")) or 0
+    cat_list = lambda d: _list_price(catalog, d.get("sku")) or 0      # collect.fetch_public: sku -> [name, category, list, kind, shelf]
     big = [d for d in settles if cat_list(d) >= bmax]
     pl = lambda d: round((_num(d.get("amount")) or 0) / cat_list(d), 4)
     market = {"settles": len(big), "ours": sum(1 for d in big if _ours(d.get("shop"), me, our_url)),
