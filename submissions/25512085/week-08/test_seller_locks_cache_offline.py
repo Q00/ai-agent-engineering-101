@@ -54,7 +54,7 @@ class ReservationTests(unittest.TestCase):
     def test_long_cap_releases_without_refreshing_on_read(self):
         self.stock()
         self.close()
-        self.now += 899
+        self.now += 599
         self.agent.cleanup_reservations(self.inventory, self.now)
         self.assertTrue(self.agent.committed_units)
         self.now += 2
@@ -93,7 +93,7 @@ class ReservationTests(unittest.TestCase):
                         self.turn('999999' if negotiated else 'G021aae64 offer 999999')
                 self.assertFalse(self.agent.open)
                 self.assertIn('unit-1', seller.Seller(0).committed_units)
-                self.now += 901
+                self.now += 601
                 self.agent.cleanup_reservations(self.inventory, self.now)
 
     def test_activity_sliding_ttl_and_absolute_cap(self):
