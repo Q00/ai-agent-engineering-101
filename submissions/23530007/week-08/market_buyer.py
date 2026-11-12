@@ -645,7 +645,11 @@ def choose(shops, mem, item, budget, ask_model=True, ctx=None):
         def _raw(n):                     # deals / visits without the shrink
             p_, nv_, _ = vm[n]
             return (p_ * (nv_ + 3) - 0.9) / max(1, nv_)
-        live = [s for s in allowed if not (vm.get(s["name"], (1, 0, 0))[1] >= 10 and _raw(s["name"]) < dead_p)]
+        elapsed0 = time.time() - ctx.get("start", time.time())
+        # 11-12 14:20: dead shops fail fast (a grade C claim or 'no warranty' takes 0-1 s), so inside the free slot a
+        # visit costs nothing and still closes now and then; they are skipped only when their time would run past it
+        live = [s for s in allowed if not (vm.get(s["name"], (1, 0, 0))[1] >= 10 and _raw(s["name"]) < dead_p
+                                           and elapsed0 + (vm[s["name"]][2] or 5) > SLOT_SECS - 2)]
         if live and len(live) < len(allowed):
             log("buyer", "visit model: not visiting " + ", ".join(
                 f"{s['name']} ({vm[s['name']][1]} visits)" for s in allowed if s not in live))
@@ -706,6 +710,10 @@ def choose(shops, mem, item, budget, ask_model=True, ctx=None):
         thr = bp.get(f"skip_below_{ctx['kind']}", bp.get("skip_below", 0.0))   # 11-12: fixed bars gone; m* + delta rules
         if ctx.get("m_star"):      # 11-11: a deal under the mean our saved will end at (m*) lowers the final score
             thr = max(thr, ctx["m_star"] + bp.get(f"skip_delta_{ctx['kind']}", -0.08 if ctx["kind"] == "food" else -0.04))
+        # 11-12 14:20: a shop worth <= 0 whose time runs past the slot is passed over, not the end of the order
+        def _over(sh):
+            return elapsed + (vm.get(sh["name"], (0, 0, None))[2] or 5) > SLOT_SECS
+        ranked = [r for r in ranked if not (r[0][0] <= 0 and _over(r[1]))] or ranked
         worth = [r for r in ranked if r[0][1]["saved"] >= thr]
     if ctx is not None and ranked:
         (score, e, conv), pick = (worth or ranked)[0]
