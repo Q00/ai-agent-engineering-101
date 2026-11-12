@@ -13,7 +13,9 @@ more keys with a shorter cooldown (Config.patch_*), so it can re-derive the valu
 Each applied model change-set is checked an hour later (strategist/outcome.py): the result goes to
 changes.jsonl and the model's history, a food conversion drop after buyer.cap_food or
 buyer.min_surplus_list is reverted (source "revert", no model call that run), and while a check is
-pending the model is not asked unless the market's rules changed or a linked constraint is broken.
+pending the model is not asked unless the market's rules changed, a linked constraint is broken or a
+patch note is recent (Config.patch_h; on 11-12 Patch 3.6 rescored the buyer and a 0.05 step then an hour's
+wait would have taken the night).
 In apply mode logs/strategist/ in the shop (strategist/visible.py) gets the live policy numbers and the
 change table.
 
@@ -301,9 +303,13 @@ def _steps(cfg, now, client, state, rec):
         notes = None
         if reverts:
             rec["status"] = "outcome revert"            # the model sees the result next run
-        elif wait and not rules_changed and not guard.linked_alerts(pol, linked):
-            rec["status"] = f"waiting for outcome of {wait}"
+        elif wait and not rules_changed and not guard.linked_alerts(pol, linked) and not rec["patch"]:
+            rec["status"] = f"waiting for outcome of {wait}"     # while a patch note is recent the model is asked
         else:
+            if wait:                                             # a patch note is recent (or the rules changed): asked
+                rec["alerts"].append(f"outcome check of {wait} pending: the model is asked anyway "     # anyway, the
+                                     f"(patch {(rec['patch'] or {}).get('version') or 'none'}, rules changed "  # guard's cooldown
+                                     f"{rules_changed}); the keys it changed are under cooldown")        # holds its keys
             state["last_model_ts"] = now
             model_rows, notes = _ask(cfg, body, gpol, brief, market, rec)
             rows += model_rows

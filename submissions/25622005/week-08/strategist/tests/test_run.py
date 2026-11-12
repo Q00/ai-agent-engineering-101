@@ -702,7 +702,7 @@ class OutcomeVisibleTest(Base):
         self.assertTrue((self.home / "prompts" / f"{rec['run_id']}.txt").exists())
         self.assertEqual([a["source"] for a in rec["applied"]], ["market-rule"])
 
-    def test_new_patch_note_calls_the_model_while_waiting_once(self):
+    def test_new_patch_note_calls_the_model_while_waiting(self):
         self.answer_with([{"key": "seller.first_ask_list", "value": 0.8}])
         self.assertEqual(self.run_at(NOW)["status"], "applied")         # the first sight of /rules: no entry
         self.answer_with([])
@@ -715,8 +715,9 @@ class OutcomeVisibleTest(Base):
         changes = prompt[prompt.index("## Rule changes in the last 24 h"):prompt.index("## Market facts")]
         self.assertIn("Patch 3.4 (Nov 7, 2026): New fee", changes)
         self.assertIn("Storage is 2% a day.", changes)
-        rec = self.run_at(NOW + 2400, handler=handler)                  # the same page: back to waiting
-        self.assertTrue(rec["status"].startswith("waiting for outcome of "), rec["status"])
+        rec = self.run_at(NOW + 2400, handler=handler)                  # the same page, the note still recent:
+        self.assertEqual(rec["status"], "no change", rec["status"])     # asked again (11-12), not back to waiting
+        self.assertTrue(any(a.startswith("outcome check of ") and "asked anyway" in a for a in rec["alerts"]), rec["alerts"])
 
     def test_food_drop_reverts_cap_food_without_a_model_call_then_history_shows_it(self):
         self.food_orders((140, 200), [(12, 50), (13, 50)])
@@ -941,6 +942,22 @@ class ControlTest(Base):
         self.assertEqual(rec["applied"], [])
         self.assertIn("market.surge_free not synced: the market's surge_free is unknown, kept at 40", rec["alerts"])
         self.assertEqual(skillfile.read(self.skill)[1]["policy"]["market"]["surge_free"], 40)
+
+    def test_a_recent_patch_note_asks_the_model_during_an_outcome_wait(self):
+        # 11-12: Patch 3.6 rescored the buyer; a 0.05 step and then an hour's wait would have taken the night
+        page = PAGE.replace('<article class="patch latest">', '<article class="patch latest"><header><span class="v">'
+                            'Patch 3.4</span><span class="d">Nov 7, 2026</span><span class="t">Storage</span></header>'
+                            '<ul><li>Storage is 2% a day.</li></ul></article><article class="patch">', 1)
+        handler = lambda r: page_response(page) if r.url.path == "/rules" else market_handler(r)
+        self.reply([{"key": "seller.first_ask_list", "value": 0.8}])
+        self.assertEqual(self.run_at(NOW)["status"], "applied")         # the first sight of /rules: no entry
+        self.reply([{"key": "stock.cover_min", "value": 40}, {"key": "seller.first_ask_list", "value": 0.75}])
+        rec = self.run_at(NOW + 1800, handler=handler)                  # a check is pending, but a patch note is new
+        self.assertEqual(rec["patch"]["version"], "3.4")
+        self.assertEqual(rec["status"], "applied", rec)
+        self.assertEqual([(a["key"], a["new"]) for a in rec["applied"]], [("stock.cover_min", 40)])
+        self.assertEqual(rec["rejected"][0]["key"], "seller.first_ask_list")          # the changed key: cooldown
+        self.assertTrue(any(a.startswith("outcome check of ") and "asked anyway" in a for a in rec["alerts"]), rec["alerts"])
 
     def test_patch_note_widens_the_limits_for_a_while(self):
         self.reply([{"key": "seller.first_ask_list", "value": 0.8}])
