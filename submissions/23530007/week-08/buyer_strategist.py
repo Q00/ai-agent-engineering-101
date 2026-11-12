@@ -53,7 +53,8 @@ GLOBAL = {                                    # role, bounds, step (11-12 patch 
     "step_v": ((0.01, 0.10), 0.01),           # each later counter concedes this much v
     "rounds": ((1, 6), 1),                    # counters before we take any ask at or under the cap (else walk)
     "soft_rounds": ((1, 4), 1),               # the same at shops that end talks on low offers (reject share >= 30%)
-    "food_delta": ((-0.10, 0.10), 0.02),      # food floor = m* + this (the least a food deal may score)
+    "v_floor": ((0.70, 0.82), 0.01),          # 11-12: the price floor's base, the break-even v (not m*): floor = v_floor + delta
+    "food_delta": ((-0.10, 0.10), 0.02),      # food floor = v_floor + this (the least a food deal may score)
     "goods_delta": ((0.0, 0.15), 0.02),       # goods floor = (m* + this) / (1 - break rate of the stated grade)
     "near_v": ((0.0, 0.08), 0.01),            # a receipt within this v under the floor is still paid
     "skip_delta_food": ((-0.15, 0.10), 0.02), # skip an order when the best shop's expected v < m* + this
@@ -378,7 +379,9 @@ under m* + skip_delta_kind. At the shop it asks for the acceptable SKU with the 
 cheapest unit that lasts the order's hours + food_extra_hours; goods: grade A with a 6 h warranty (B only if much
 cheaper, never C). PRICE POLICY (vprice.py), all in v = (list - price)/(list - unit cost) with the SKU's cost share
 by grade from the ledger (cost_model.py): floor_v = m* + food_delta (food) or (m* + goods_delta)/(1 - p_break)
-(goods: A 3%, B 13%, C 40%, so a C can never reach the floor and is refused); cap = the price at floor_v; an ask at
+(goods: A 3%, B 13%, C 40%, so a C can never reach the floor and is refused). SINCE 11-12 15:00 THE FLOOR'S BASE IS
+v_floor (.745, the break-even: one more deal at that v neither lifts nor lowers our projected final class rank),
+not m*; m* only sets the skip bar; cap = the price at floor_v; an ask at
 take_v or better is taken at once; otherwise we counter at open_v, then open_v - step_v, ... for `rounds` counters
 (soft_rounds at shops that ended >= 30% of our talks), then take any ask at or under the cap, else walk to the next
 shop (max_shops). When the shop states the grade the plan is redone for it. A receipt is paid only with a 6 h
@@ -393,7 +396,7 @@ Shared memory digest (the curator's summary for you): {digest}
 
 Knobs (only these; the steps allowed now: {steps}): global "take_v" (0.80-0.98), "open_v" (0.85-1.0), "step_v"
 (0.01-0.10), "rounds" (1-6), "soft_rounds" (1-4), "food_delta" (-0.10..0.10), "goods_delta" (0-0.15), "near_v"
-(0-0.08), "v_breakeven" (0.70-0.80), "slot_value" (0-0.15), "dead_p" (0-0.15), "hurry_secs" (8-30),
+(0-0.08), "v_floor" (0.70-0.82), "v_breakeven" (0.70-0.80), "slot_value" (0-0.15), "dead_p" (0-0.15), "hurry_secs" (8-30),
 "skip_delta_food" (-0.15..0.10), "skip_delta_goods" (-0.20..0.10), "target_mean" (0.60-0.90, m*
 fallback only), "food_extra_hours" (0.25-12), "conv_weight" (0-0.3), "rival_penalty" (0-0.1), "max_shops" (1-6),
 "value_half_life_h" (0-6), "talk_share" (0-1; compare talk=True/False in arms_per_order_24h). Per shop (give

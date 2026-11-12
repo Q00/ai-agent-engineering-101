@@ -49,10 +49,15 @@ def price_for(v, lp, c):
 
 
 def floor_v(kind, grade, m_star, bp):
+    """11-12 15:00 (user: 'the rule changed a lot, change our buyer policy a lot'): the floor is the BREAK-EVEN v
+    (v_floor, the per-deal v at which one more deal neither lifts nor lowers our projected final class rank: the
+    saved-mean loss equals the deals-percentile gain), not m* (the mean): goods A deals at EV .745-.80 were refused at
+    ~27 orders/h under the m* + .02 floor. Without v_floor it falls back to m*."""
+    base = bp.get("v_floor") or m_star
     if kind == "food":
-        return m_star + knob(bp, "food_delta")
+        return base + knob(bp, "food_delta")
     p = BREAK_P.get(grade or "A", 0.03)
-    return (m_star + knob(bp, "goods_delta")) / (1 - p)
+    return (base + knob(bp, "goods_delta")) / (1 - p)
 
 
 def plan(kind, lp, sku, grade, m_star, bp, budget, soft=False):
