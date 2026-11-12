@@ -10,7 +10,7 @@ import sys
 import time
 from collections import defaultdict
 
-from core import paths
+from core import paths, score
 from harness import out_dir, trajectory
 from outer.position import snapshots
 
@@ -38,7 +38,9 @@ def _saved_share(paid):
         a = t["after"]
         if a.get("value") is None:
             continue                               # not reviewed yet: worth unknown
-        shares.append(-1.0 if not a["value"] else (a.get("surplus") or 0) / a["value"])
+        # patch 3.6: the share of the margin kept - surplus / worth is the share of list, turned by the kind's cost
+        shares.append(-1.0 if not a["value"] else
+                      score.margin_share(1 - (a.get("surplus") or 0) / a["value"], (t.get("input") or {}).get("kind")))
     return round(sum(shares) / len(shares), 4) if shares else None
 
 
@@ -79,7 +81,7 @@ def compute(trs, evs, since, until, book=None):
     return {
         "since": since, "until": until,
         "buyer": {
-            # patch 3.4: the score is the share of list kept per deal (surplus / worth; a deal that served
+            # patch 3.6: the score is the share of the margin kept per deal (score.margin_share; a deal that served
             # nothing, worth 0, counts -1); over a window without the board's +100 smoothing
             "saved_share": _saved_share(paid),
             "surplus": sum(t["after"].get("surplus") or 0 for t in paid),

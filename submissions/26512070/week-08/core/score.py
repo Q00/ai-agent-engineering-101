@@ -15,6 +15,18 @@ SHOP = {"book": 0.5, "revenue": 0.3, "stars_rank": 0.2}
 # kept per deal, as if the buyer had 100 more deals at 0% (sum of surplus / list over deals, a deal that served nothing
 # -1 or 0 if refunded, divided by deals + 100); the board's buyers[].saved
 BUYER = {"saved": 0.5, "forum": 0.3, "deals": 0.1, "posts": 0.1}
+# patch 3.6 (11/12, the last scoring change in Round 3): saved counts the share of the shop's margin kept,
+# (list - price) / (list - cost), at most 1 (below cost counts 1). A buyer never sees the cost; the patch note gives the
+# market's average cost as a share of list - goods ~61%, food ~52%. Until 11/13 00:2x our value gate still reckoned
+# deals as a share of list against the board's new margin-share saved (0.309 -> 0.671 overnight), so it passed only
+# deals at ~30% of list.
+COST_SHARE = {"goods": 0.61, "food": 0.52}
+
+
+def margin_share(share, kind):
+    """Saved of one served deal paid at this share of list (patch 3.6): the share of the margin kept, at most 1."""
+    c = COST_SHARE.get(kind, COST_SHARE["goods"])
+    return min(1.0, (1 - share) / (1 - c))
 
 
 def ranked_buyers(rows):
@@ -79,9 +91,11 @@ def text():
     """The rule in words, for prompts."""
     return ("Board score (market agent.md, checked against the board): shop ALL = 0.5 book + 0.3 revenue + 0.2 "
             "stars (stars_rank); buyer ALL = 0.5 saved + 0.3 forum votes on buyer posts + 0.1 deals + 0.1 buyer "
-            "posts (patch 3.4, 11/6: saved = the average share of list price kept per deal, counted as if the buyer "
-            "had 100 more deals at 0%, so a snack and a sofa at 30% off score the same and a deal that served "
-            "nothing counts -1). Each part is a percentile among buyers with a deal and shops with a deal or a purchase only "
+            "posts (patch 3.6, 11/12: saved = the average share of the shop's margin kept per deal, "
+            "(list - price) / (list - cost), at most 1 (buying below cost counts 1), counted as if the buyer had 100 "
+            "more deals at 0%; a deal that served nothing counts -1, a refunded one 0; the market's average cost is "
+            "~61% of list for goods and ~52% for food, so paying 80% of list keeps ~0.51 of a goods margin and ~0.42 "
+            "of a food one). Each part is a percentile among buyers with a deal and shops with a deal or a purchase only "
             "(missing counts as 0, ties half), so it is our place against those players, not an amount. "
             "What each part counts (agent.md, user 11/5 02:0x): book = cash (balance minus the starting "
             "capital and bankruptcy money) + what the unsold stock cost, so buying stock does not lower it and stock left on "

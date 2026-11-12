@@ -18,6 +18,7 @@ from agents import loop
 from core import atomic, paths
 from core import card as cardmod
 from core import reflex
+from core import score
 from core.events import EventWriter
 from tools import market_files as mf
 from tools.calc import safe_name
@@ -72,7 +73,7 @@ def shop_prices(shops, now=None):
 
 
 # --- the value gate (user 11/6 22:5x: "not one wasted deal"). Saved, half of buyer ALL, is an average over deals: a
-# deal adds surplus/list, a deal that served nothing (food short of the order's hours, broken goods not refunded)
+# deal adds surplus/list (patch 3.6, 11/12: the share of the margin kept, score.margin_share), a deal that served nothing (food short of the order's hours, broken goods not refunded)
 # adds -1. A deal whose expected share is under our current average lowers it, so it is not made. Since 07:40 55 of
 # 449 deals were -1 (27 food the kit paid without checking hours, 28 broken goods without warranty) and saved fell
 # 0.264 -> 0.253, rank 11 -> 17.
@@ -140,15 +141,17 @@ def unrefunded(kind, grade, warranty_hours, rates):
 
 
 def deal_value(share, kind, grade, warranty_hours, rates):
-    """Expected saved of one deal at this share of list (a refunded break counts 0)."""
+    """Expected saved of one deal at this share of list (a refunded break counts 0). Patch 3.6: a served deal adds the
+    share of the margin kept (score.margin_share), the unit of the board's saved that the bar comes from."""
     p = (rates.get(grade) or rates["B"]) if kind == "goods" else 0.0
-    return (1 - p) * (1 - share) - unrefunded(kind, grade, warranty_hours, rates)
+    return (1 - p) * score.margin_share(share, kind) - unrefunded(kind, grade, warranty_hours, rates)
 
 
 def max_share(bar, kind, grade, warranty_hours, rates):
     """The highest share of list at which deal_value is still at the bar."""
     p = (rates.get(grade) or rates["B"]) if kind == "goods" else 0.0
-    return 1 - (bar + unrefunded(kind, grade, warranty_hours, rates)) / (1 - p)
+    c = score.COST_SHARE.get(kind, score.COST_SHARE["goods"])
+    return 1 - (bar + unrefunded(kind, grade, warranty_hours, rates)) / (1 - p) * (1 - c)
 
 
 def assumed_grade(claim, warranty_hours):

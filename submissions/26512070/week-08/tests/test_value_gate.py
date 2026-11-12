@@ -8,12 +8,14 @@ RATES = {"A": 0.03, "B": 0.12, "C": 0.32}
 
 class ValueGate(unittest.TestCase):
     def test_food_value_is_the_share_kept(self):
-        self.assertAlmostEqual(b.deal_value(0.7, "food", None, 0, RATES), 0.3)
+        # patch 3.6: the share of the margin kept - food cost ~52% of list, so 30% off keeps 0.30 / 0.48 of it
+        self.assertAlmostEqual(b.deal_value(0.7, "food", None, 0, RATES), 0.625)
+        self.assertAlmostEqual(b.deal_value(0.4, "food", None, 0, RATES), 1.0)   # below cost counts the whole margin
 
     def test_claimed_grade_counts_as_it_is(self):
         self.assertEqual(b.assumed_grade("C", 0), "C")           # 11/7: was reckoned as A and refused at payment
         self.assertEqual(b.assumed_grade(None, 0), "A")
-        self.assertLess(b.deal_value(0.6, "goods", b.assumed_grade("C", 0), 0, RATES), 0.27)
+        self.assertLess(b.deal_value(0.6, "goods", b.assumed_grade("C", 0), 0, RATES), 0.67)
 
     def test_no_stock_replies(self):
         for t in ("Sorry, we have none of that in stock.", "Sorry, none of that in stock right now.", "Out of stock",
@@ -38,7 +40,7 @@ class ValueGate(unittest.TestCase):
             self.assertAlmostEqual(b.deal_value(s, kind, g, w, RATES), 0.27)
 
     def test_grade_c_without_warranty_is_never_worth_it_near_list(self):
-        self.assertLess(b.deal_value(0.6, "goods", "C", 0, RATES), 0)
+        self.assertLess(b.deal_value(0.9, "goods", "C", 0, RATES), 0)
 
 
 if __name__ == "__main__":
