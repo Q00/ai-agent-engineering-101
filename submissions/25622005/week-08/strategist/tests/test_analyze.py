@@ -884,6 +884,33 @@ class NewSectionsTest(unittest.TestCase):
         sv = analyze.brief(r, o, None, pol, NOW, market={"facts": {"saved_is_kept_share_over_deals_plus_100": True}})["saved"]
         self.assertEqual((sv["rule"], sv["projection"]["as_now_per_deal"]), ("kept_of_list", 0.45))
 
+    def test_saved_market_by_grade_peers_volume_and_scenarios(self):
+        # 11-12: the top buyers' edge is volume; the market's price by grade says what a floor there scores
+        r = raw()
+        r["board"]["buyers"] = [
+            {"name": "psyoung82", "owner": {"login": "psyoung82"}, "house": False, "orders": 2000, "deals": 1000, "served": 1000, "paid": 0.5, "saved": 0.6},
+            {"name": "top", "house": False, "orders": 2000, "deals": 1500, "served": 1500, "paid": 0.55, "saved": 0.8, "forum": 0.9}]
+        r["catalog"] = {"F": ["김치", "식품", 10000, "food", 720], "G": ["소파", "가구", 100000, "goods", None]}
+        st = lambda buyer, sku, grade, amount: {"kind": "settle", "ts": NOW - 30, "data": {"buyer": buyer, "shop": "https://s1.example", "unit": buyer + sku + str(amount), "sku": sku, "grade": grade, "amount": amount}}
+        r["ledger"] += [st("top", "F", "A", 7000), st("top", "F", "A", 6500), st("top", "F", "A", 6000), st("top", "G", "B", 60000),
+                        st("psyoung82", "F", "C", 5000), st("psyoung82", "F", "C", 5500)]
+        o = own()
+        o["decisions"]["buyer"] = [{"kind": "order", "inputs": {"kind": "food"}, "choice": {"shop": "s"}}] * 2
+        pol = {"stock": {"end_ts": NOW + 100 * 3600}, "buyer": {"min_kept": 0.3}}
+        sv = analyze.brief(r, o, None, pol, NOW, market={"facts": {"saved_is_margin_share_capped_1": True}})["saved"]
+        # food A: p/L 0.7, 0.65, 0.6 -> median 0.65 (kept 0.35 -> 1.0), q25 0.6 (kept 0.4 -> 1.0); food C 0.5 / 0.55: median 0.55 (0.45 / 0.65 = 0.6923), q25 0.5 (0.7692)
+        self.assertEqual(sv["market_by_grade"], {
+            "food_A": {"n": 3, "p_list_median": 0.65, "p_list_q25": 0.6, "score_at_median": 1.0, "score_at_q25": 1.0},
+            "food_C": {"n": 2, "p_list_median": 0.55, "p_list_q25": 0.5, "score_at_median": 0.6923, "score_at_q25": 0.7692},
+            "goods_B": {"n": 1, "p_list_median": 0.6, "p_list_q25": 0.6, "score_at_median": 0.8, "score_at_q25": 0.8}})
+        peer, = sv["peers"]
+        self.assertEqual((peer["conv"], peer["window"]["deals_h"], peer["window"]["food"], peer["window"]["grades"]), (0.75, 4.0, 0.75, {"A": 0.75, "B": 0.25, "C": 0.0}))
+        self.assertEqual(peer["window"]["est"], round((0.3 / 0.35 + 1.0 + 1.0 + 0.8) / 4, 4))     # A at 0.70 scores 0.857 at the middle cost
+        self.assertEqual(sv["ours"], {"conv": 0.5, "window": {"deals_h": 2.0, "est": round((0.7692 + 0.6923) / 2, 4), "food": 1.0, "grades": {"A": 0.0, "B": 0.0, "C": 1.0}}})
+        sc = sv["projection"]["scenarios"]           # 2 deals/h x 100 h = 200 left, history 1100 at 0.6
+        self.assertEqual(sc["rate_x1"]["score_1.0"], round((0.6 * 1100 + 200) / 1300, 4))
+        self.assertEqual(sc["rate_x2"]["score_0.9"], round((0.6 * 1100 + 400 * 0.9) / 1500, 4))
+
     def test_closing_at_the_cap_or_under_it_and_the_failed_tries_near_the_cap(self):
         o = own()
         deal = lambda price, cap, shop="s1", turns=3, el=0.5: {
@@ -904,7 +931,7 @@ class NewSectionsTest(unittest.TestCase):
     def test_saved_without_a_board_row(self):
         r = raw(); r["board"]["buyers"] = []
         sv = analyze.brief(r, own(), None, POL, NOW)["saved"]
-        self.assertEqual(list(sv), ["policy", "rule", "by_grade", "window_est", "closing"])
+        self.assertEqual(list(sv), ["policy", "rule", "by_grade", "window_est", "market_by_grade", "closing"])
 
     def test_restock_excluded_and_surge_from_the_last_planning_run(self):
         o = own()

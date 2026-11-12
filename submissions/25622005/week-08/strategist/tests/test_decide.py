@@ -166,7 +166,7 @@ class PromptTest(unittest.TestCase):
     def test_untrusted_is_truncated(self):
         brief = {"forum": {"untrusted_top": [{"text": "x" * 50_000}]}, "untrusted_note": "y" * 50_000}
         p = _prompt(brief=brief)
-        self.assertLess(len(p), 28_000)          # the template itself is ~21k; the 100k of untrusted text must not show
+        self.assertLess(len(p), 30_000)          # the template itself is ~22k; the 100k of untrusted text must not show
         self.assertEqual(p.count("</untrusted>"), 1)
 
     def test_trusted_strings_cannot_open_or_close_the_block(self):

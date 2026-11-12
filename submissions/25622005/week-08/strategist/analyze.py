@@ -1020,7 +1020,45 @@ def _by_grade(reviews):
     return out, (_r(est_sum / n_all) if n_all else None)
 
 
-def _saved(buyers, me_row, me_b, rows, pol, hours_left, window_h, reviews=None, facts=None):
+def _market_by_grade(ledger, catalog):
+    """The window's market settles by kind x grade: n, the median and lower-quartile price/list, and the Saved a
+    deal at each scores (policy.margin_share at the grade's middle cost): what a kept floor set at the market's
+    price buys, and how far under the median a deal has to close to score more."""
+    import policy
+    groups = {}
+    for r in _rows(ledger):
+        if r.get("kind") != "settle":
+            continue
+        d = _dict(r.get("data"))
+        lp, g, p = _list_price(catalog, d.get("sku")), d.get("grade"), _num(d.get("amount"))
+        if not lp or not p or g not in policy.COST_SHARE:
+            continue
+        groups.setdefault(f"{_kind_of(catalog, d.get('sku')) or 'goods'}_{g}", []).append(round(p / lp, 4))
+    out = {}
+    for k, xs in sorted(groups.items()):
+        xs.sort()
+        med, q25, g = xs[len(xs) // 2], xs[len(xs) // 4], k[-1]
+        out[k] = {"n": len(xs), "p_list_median": med, "p_list_q25": q25,
+                  "score_at_median": _r(policy.margin_share(1 - med, g)), "score_at_q25": _r(policy.margin_share(1 - q25, g))}
+    return out
+
+
+def _peer_window(ledger, catalog, name, window_h):
+    """A buyer's settles in the window's ledger: deals per hour, the mean Saved they score (middle cost), the food
+    share and the grade mix."""
+    import policy
+    ds = [_dict(r.get("data")) for r in _rows(ledger) if r.get("kind") == "settle" and _dict(r.get("data")).get("buyer") == name]
+    scored = [(policy.margin_share(1 - _num(d.get("amount")) / _list_price(catalog, d.get("sku")), d.get("grade")),
+               _kind_of(catalog, d.get("sku")), d.get("grade"))
+              for d in ds if _list_price(catalog, d.get("sku")) and _num(d.get("amount")) and d.get("grade") in policy.COST_SHARE]
+    if not scored:
+        return {}
+    return {"deals_h": _r(len(ds) / window_h, 1) if window_h else None, "est": _r(statistics.mean(s for s, _, _ in scored)),
+            "food": _ratio(sum(1 for _, k, _ in scored if k == "food"), len(scored)),
+            "grades": {g: _ratio(sum(1 for _, _, x in scored if x == g), len(scored)) for g in ("A", "B", "C")}}
+
+
+def _saved(buyers, me_row, me_b, rows, pol, hours_left, window_h, reviews=None, facts=None, ledger=None, catalog=None):
     """The buyer's Saved, taken apart. rule: the market's Saved rule in force (facts: margin_share, Patch 3.6,
     a deal scores (list - price) / (list - cost) at most 1; kept_of_list, Patch 3.4, surplus / list; None when
     neither sentence is there), a deal that served nothing -1 or 0 when refunded, over deals + 100. by_grade and
@@ -1039,6 +1077,7 @@ def _saved(buyers, me_row, me_b, rows, pol, hours_left, window_h, reviews=None, 
     out["rule"] = ("margin_share" if f.get("saved_is_margin_share_capped_1") else
                    "kept_of_list" if f.get("saved_is_kept_share_over_deals_plus_100") else None)
     out["by_grade"], out["window_est"] = _by_grade(reviews)
+    out["market_by_grade"] = _market_by_grade(ledger, _dict(catalog))
     orders = [r for r in _rows(rows) if r.get("kind") == "order"]
     won = [r for r in orders if isinstance(r.get("choice"), dict)]
     out["closing"] = _closing(orders, won, pol)
@@ -1067,6 +1106,10 @@ def _saved(buyers, me_row, me_b, rows, pol, hours_left, window_h, reviews=None, 
         for k in SAVED_TARGETS:
             ends[f"kept_{k}"] = _r((saved * hist + left * k) / (hist + left))
         proj["saved_end"] = ends
+        # the history is fixed: only the deals still to come move saved, so volume x score decides the end.
+        # scenarios: the final saved at the window's deal rate and at twice it, when every deal left scores s
+        proj["scenarios"] = {f"rate_x{m}": {f"score_{s}": _r((saved * hist + left * m * s) / (hist + left * m))
+                                             for s in (0.8, 0.9, 1.0)} for m in (1, 2)}
         out["projection"] = proj
     peers = []
     for r in _rows(buyers):
@@ -1075,9 +1118,13 @@ def _saved(buyers, me_row, me_b, rows, pol, hours_left, window_h, reviews=None, 
             continue
         pd = _num(r.get("paid"))
         peers.append({"saved": _r(r["saved"]), "paid": _r(pd), "kept": round(1 - pd, 4) if pd is not None else None,
-                      "deals": int(d), "forum": _r(_num(r.get("forum")))})
+                      "deals": int(d), "conv": _ratio(d, _num(r.get("orders"))), "forum": _r(_num(r.get("forum"))),
+                      "window": _peer_window(ledger, _dict(catalog), r.get("name"), window_h)})
     peers.sort(key=lambda x: -x["saved"])
     out["peers"] = peers[:PEER_TOP]
+    me_d = _num(_dict(me_b).get("deals"))
+    out["ours"] = {"conv": _ratio(me_d, _num(_dict(me_b).get("orders"))),
+                   "window": _peer_window(ledger, _dict(catalog), _dict(me_row).get("name"), window_h)}
     return out
 
 
@@ -1200,7 +1247,7 @@ def brief(raw, own, prev, pol, now, me=ME, window_h=1, flows=None, known=(), foc
     b["big_ticket"] = _big_ticket(dec.get("seller"), ledger, catalog, pol, me, url, shops)
     b["buyer_log"] = _buyer_log(_rows(dec.get("buyer")))
     b["saved"] = _saved(buyers, _find(buyers, me), b["me"].get("buyer"), _rows(dec.get("buyer")), pol, b["hours_left"], window_h,
-                        _rows(dec.get("review")), _dict(_dict(market).get("facts")))
+                        _rows(dec.get("review")), _dict(_dict(market).get("facts")), ledger, catalog)
     b["forum"] = _forum(raw.get("forum"), since)
     b["reviews_of_us"] = _reviews(raw.get("shop_reviews"))
     b["inventory"] = _inventory(own.get("inventory"), ledger, url, me, pol, now, ledger_h, flows, known)

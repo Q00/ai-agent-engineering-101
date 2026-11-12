@@ -172,14 +172,23 @@ Supply and depth:
   saved.by_grade is the window's paid deals by kind x grade (n, share, kept, est: the score at the band's middle
   cost, est_band at its low and high cost), saved.window_est their mean score, and saved.projection the final
   saved if the deals left score as the window does (as_now, basis as_now_per_deal) or every deal left scores k
-  (kept_k keys). A deal scoring above the running saved raises it: while window_est is above saved, more deals
-  (conversion; deals weigh 0.1 too) raise Saved, and a lower floor that closes more A and B deals costs nothing
-  until it lets a C through under its score. Levers: buyer.min_kept, the kept floor of every cap before a quote
+  (kept_k keys). The history is fixed, so saved moves only with the deals still to come: volume x score
+  (saved.projection.scenarios: the end at the window's deal rate and at twice it, for 0.8 / 0.9 / 1.0 a deal).
+  On 11-12 the top buyers scored 0.80-0.85 a deal in the window, as we did, and stood at 0.76-0.81 on the
+  board from a cheaper history; their edge now is volume: 75-115 deals an hour from orders -> deals conversion
+  of 0.5-0.74 against our 0.35 (saved.peers[].conv and .window, saved.ours; buyer_log per kind: our goods
+  orders, 40% of all, converted 6%, since every goods cap sat under 1 - buyer.min_kept while the market's A
+  goods clear at 0.70 of list). A deal scoring above the running saved raises it (and deals weigh 0.1), so take
+  every deal that scores above saved: an A at the market's median (saved.market_by_grade: p_list_median,
+  score_at_median, and at the lower quartile) scores about 0.86, a B about 0.80, a C about 0.70; a deal at the
+  lower quartile scores 1 / 0.9 / 0.77. Levers: buyer.min_kept, the kept floor of every cap before a quote
   names the unit's grade, and buyer.min_kept_A / _B / _C, the floor once a quote or receipt names that grade
   (tools/negotiation re-caps at (1 - the larger floor) x list; the candidate score weighs a shop's likely price by
-  the Saved it scores over the kind's grade mix): set the grade floors from kept_for_1 and by_grade (an A floor at
-  0.45 or under, a C floor between its score and its conversion), and min_kept low enough that the generic cap
-  does not refuse the A and B quotes a grade floor would take. Under kept_of_list (Patch 3.4, fact
+  the Saved it scores over the kind's grade mix): derive each grade floor from market_by_grade (the kept at the
+  price whose score you want, between the median and the lower quartile: a floor over the quartile's kept
+  closes few deals), set min_kept low enough that the generic cap does not refuse the A and B quotes a grade
+  floor would take (an A at 0.70 needs min_kept at or under 0.30), and keep break_penalty pricing uncovered
+  breaks (a broken unit without a warranty is a -1 deal, a refunded one 0). Under kept_of_list (Patch 3.4, fact
   saved_is_kept_share_over_deals_plus_100) a deal scores its kept share of list and buyer.min_kept is code's each
   run (score_twin, history source "objective": a step toward max(our saved, the rank-3 saved) + 0.02 or the rank-3
   kept share among buyers with 1000+ deals, raised only at a window conversion of 0.30+, a step down under 0.20;

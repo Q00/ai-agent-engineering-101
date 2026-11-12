@@ -71,7 +71,10 @@ TUNABLE = {
     "buyer.cap_goods_warranty": (0.80, 1.00, 0.04),
     "buyer.cap_food": (0.85, 1.00, 0.03),
     "buyer.min_surplus_list": (0.0, 0.15, 0.02),
-    "buyer.min_kept": (0.0, 0.50, 0.03),           # Patch 3.4: Saved is an average share kept; keep this at or above the board's saved
+    "buyer.min_kept": (0.0, 0.50, 0.03),           # the kept floor of every cap before a quote names the grade
+    "buyer.min_kept_A": (0.0, 0.80, 0.05),         # Patch 3.6: the floor once the grade is named; a deal scores
+    "buyer.min_kept_B": (0.0, 0.80, 0.05),         # kept / (1 - cost share), at most 1 (A 0.45, B 0.60, C 0.75
+    "buyer.min_kept_C": (0.0, 0.80, 0.05),         # kept score 1 at any cost of the grade's band)
     "buyer.break_penalty": (0.0, 1.0, 0.25),       # what an uncovered break costs in the goods cap (Saved: -1 a deal that served nothing)
     "buyer.step_list": (0.0, 0.15, 0.05),          # an offer this share of list under the cap before the final one (0: none)
     "buyer.open_list": (0.20, 0.80, 0.05),
