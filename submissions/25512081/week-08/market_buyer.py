@@ -253,8 +253,7 @@ def quote(shop, budget, order=None):
     peer = Peer(shop["url"], timeout=60)
     first = pick_sku(shop, budget)
     rest = [o for o in shop.get("offers") or [] if o.get("qty", 1) > 0 and o["sku"] != first["sku"]]
-    rest.sort(key=lambda o: ((CATALOG.get(o["sku"]) or {}).get("list_price") or 0) if first and (CATALOG.get(
-        first["sku"]) or {}).get("kind") == "goods" else abs(((CATALOG.get(o["sku"]) or {}).get("list_price") or 0) * 0.85 - budget))
+    rest.sort(key=lambda o: abs(((CATALOG.get(o["sku"]) or {}).get("list_price") or 0) * 0.85 - budget))
     for sku in ([first] + rest)[:QUOTE_TRIES]:
         opening = f"I want to buy {sku['name']} ({sku['sku']})"
         if (order or {}).get("kind") == "food" and order.get("use_within_hours"):
@@ -319,8 +318,7 @@ def collect_quotes(shops, budget, order=None):
         except FuturesTimeout:
             log(f"[quote] some shops did not answer within {QUOTE_WAIT} s")
     # a first ask far over the budget rarely comes down to it: those go last
-    # rank on the share of list kept, which is what the buyer's score averages, not on the amount
-    return sorted(out, key=lambda q: (q["reply"].ask > budget * 1.15, bool(q["short"]), -q["surplus"] / (q["value"] or 1)))
+    return sorted(out, key=lambda q: (q["reply"].ask > budget * 1.15, bool(q["short"]), -q["surplus"]))
 
 
 def describe(q):
@@ -361,11 +359,6 @@ def pick_sku(shop, budget):
     if not offers:
         return None
     lp = lambda o: (CATALOG.get(o["sku"]) or {}).get("list_price") or 0
-    # goods: the cheapest SKU on the list. The buyer's score keeps the share of list saved, not the amount, and our
-    # goods deals kept 0.72-0.79 of list on SKUs listed at 0.4-0.6 of the budget, 0.51 at 0.8, 0.35 at 1.0-1.2
-    # (Nov 12 15:00, 1,004 goods deals in .market/buyer_memory.json); food kept 0.40-0.43 at every ratio
-    if offers and all((CATALOG.get(o["sku"]) or {}).get("kind") == "goods" for o in offers):
-        return min(offers, key=lp)
     fit = [o for o in offers if lp(o) * 0.85 <= budget]
     return max(fit, key=lp) if fit else min(offers, key=lp)
 
