@@ -26,6 +26,7 @@ from db import DB
 HERE = Path(__file__).resolve().parent
 SELF = "real_yellow"                      # same owner: our own shop can never settle with us
 BLACKLIST_PATH = HERE / "market_buyer_blacklist.json"
+HAGGLE_ERRORS_PATH = HERE / ".market" / "haggle_errors.jsonl"
 DEFAULT_POLICY = {"target_ratio": 0.55,   # first offer, as a share of list price
                   "rounds": 6, "tries": 2}
 GOODS_WARRANTY_MIN_PRICE = 15000          # require a warranty on goods at or above this list price
@@ -198,6 +199,17 @@ def main():
         if refused.get(c["url"]):
             scores[c["name"]] = scores.get(c["name"], 0.6) - 0.2 * min(refused[c["url"]], 3)
 
+    # a shop whose haggle() call keeps raising (dead tunnel, timeout...) never reaches payment, so the
+    # refused-payment penalty above never sees it and keeps re-trying it at full score (measured live:
+    # totato2203-r3 timed out on us repeatedly across hours while its own score barely moved, 0.975 ->
+    # 0.769, because nothing was tracking the exception itself)
+    flaky = {}
+    for p in load_jsonl(HAGGLE_ERRORS_PATH):
+        flaky[p.get("shop")] = flaky.get(p.get("shop"), 0) + 1
+    for c in cands:
+        if flaky.get(c["url"]):
+            scores[c["name"]] = scores.get(c["name"], 0.6) - 0.15 * min(flaky[c["url"]], 4)
+
     ranked = sorted(cands, key=lambda c: scores.get(c["name"], 0.6), reverse=True)
     top = ranked[:3]
     first = random.choices(top, weights=[0.6, 0.25, 0.15][:len(top)])[0]
@@ -212,6 +224,11 @@ def main():
         except Exception as e:                   # a dead tunnel or a bad card: try the next shop
             print(f"[haggle] {shop['name']}: {type(e).__name__}: {e}")
             result = {"deal": False, "offers": []}
+            try:
+                with open(HAGGLE_ERRORS_PATH, "a", encoding="utf-8") as f:
+                    f.write(json.dumps({"shop": shop["url"], "error": type(e).__name__}, ensure_ascii=False) + "\n")
+            except OSError:
+                pass
         if result["deal"]:
             break
 
