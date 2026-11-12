@@ -135,7 +135,9 @@ def by_value(c, buy, now=None):
 
     def key(b):                                        # HQ 11-10: profit per day (units x profit per unit) first --
         n, tk, pr = ours.get(b["sku"], (0, 0, 0))      # pace, ticket and margin in one number
-        return (n * pr, tier(n), tk)
+        # MST 11-12: a food-expansion SKU has no sales of ours yet, so it went last and missed the window (the kit
+        # buys the first 10 lines; G022ce883 x12 refused at 21:30, closed); it ranks by its expected profit a day
+        return (max(n * pr, EXPAND.get(b["sku"], 0)), tier(n), tk)
     return sorted(buy, key=key, reverse=True)
 
 
@@ -193,6 +195,9 @@ def hits(c, now, t):
     return [(a, b, w) for a, b, w, _ in sorted(out, key=lambda x: -x[3])]
 
 
+EXPAND = {}      # sku -> expected profit a day for food_expand lines (by_value ranks them by it)
+
+
 def food_expand(c, now, t, cat, stock):
     """MST TF 11-12 (HQ approved "고마진 식품으로 매입 확대"): food has no defects, so no warranty refunds -- the
     furniture refunds (44.9M in 24 h) are what kept Book flat. The market's food with a shelf of 48 h+ that sells
@@ -218,6 +223,7 @@ def food_expand(c, now, t, cat, stock):
         target = max(2, min(t.get("food_max_target", 12),
                             math.ceil(rate * t.get("food_share", 0.05) * t.get("food_cover_h", 8))))
         qty = target - stock.get(sku, 0)
+        EXPAND[sku] = rate * 24 * t.get("food_share", 0.05) * (med - avg_cost)
         if qty > 0:
             out.append((rate * (med - avg_cost), sku, qty,
                         f"food expand: market {len(v)}/24 h, median {med:,.0f}, avg cost {avg_cost:,.0f} ({margin:.0%}) -> keep {target}"))
