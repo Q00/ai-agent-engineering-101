@@ -1,0 +1,200 @@
+{
+  "kit_version": "1",
+  "kit_sha256": "d610bc15448f5960d0b9b6bb9f181b38829bfb2ee863ab6c2a96abb9cb78f04d",
+  "started": "2026-10-21T08:37:14+00:00",
+  "harness": "Codex CLI 0.162.0-alpha.17.2 / gpt-6-luna / medium reasoning / real structured decisions / bounded role lanes",
+  "seller_cmd": "python3 seller.py --port {port}",
+  "market_buyer_cmd": "python3 market_buyer.py --shops {shops} --item {item} --budget {budget}",
+  "seller_card": {
+    "name": "Ssadassa Shop",
+    "description": "Opening asks: lamp 101, chair 183, bookshelf 265 credits or less. Offer the ask and the reply is your Ed25519-signed receipt at exactly that price, so the deal counts. Lower offers get one counter at our floor; from your second message any offer at or above the floor is accepted. Whole-credit prices, no add-ons.",
+    "supportedInterfaces": [
+      {
+        "url": "http://127.0.0.1:37081/",
+        "protocolBinding": "JSONRPC",
+        "protocolVersion": "1.0"
+      }
+    ],
+    "version": "1.0.0",
+    "capabilities": {
+      "streaming": false
+    },
+    "defaultInputModes": [
+      "text/plain"
+    ],
+    "defaultOutputModes": [
+      "application/json",
+      "text/plain"
+    ],
+    "skills": [
+      {
+        "id": "negotiate",
+        "name": "Catalog search and price negotiation",
+        "description": "Opening asks: lamp 101, chair 183, bookshelf 265 credits or less. Offer the ask and the reply is your Ed25519-signed receipt at exactly that price, so the deal counts. Lower offers get one counter at our floor; from your second message any offer at or above the floor is accepted. Whole-credit prices, no add-ons.",
+        "tags": [
+          "shopping",
+          "lamp",
+          "chair",
+          "bookshelf"
+        ],
+        "examples": [
+          "I want to buy a lamp",
+          "A wooden shelf for 40 books"
+        ]
+      }
+    ]
+  },
+  "results": [
+    {
+      "test": "seller_card",
+      "run": 1,
+      "pass": true,
+      "detail": "name='Ssadassa Shop' binding=JSONRPC version=1.0 skills=1"
+    },
+    {
+      "test": "seller_opens",
+      "run": 1,
+      "pass": true,
+      "detail": "first message -> TASK_STATE_INPUT_REQUIRED, ask 101"
+    },
+    {
+      "test": "seller_deal",
+      "run": 1,
+      "pass": true,
+      "detail": "TASK_STATE_COMPLETED, receipt price 101.0, asks [101]"
+    },
+    {
+      "test": "seller_signed_receipt",
+      "run": 1,
+      "pass": true,
+      "detail": "sig_seller verifies with shop_key.pem"
+    },
+    {
+      "test": "seller_terminal",
+      "run": 1,
+      "pass": true,
+      "detail": "error returned"
+    },
+    {
+      "test": "seller_deal",
+      "run": 2,
+      "pass": true,
+      "detail": "TASK_STATE_COMPLETED, receipt price 101.0, asks [101]"
+    },
+    {
+      "test": "seller_signed_receipt",
+      "run": 2,
+      "pass": true,
+      "detail": "sig_seller verifies with shop_key.pem"
+    },
+    {
+      "test": "seller_deal",
+      "run": 3,
+      "pass": true,
+      "detail": "TASK_STATE_COMPLETED, receipt price 101.0, asks [101]"
+    },
+    {
+      "test": "seller_signed_receipt",
+      "run": 3,
+      "pass": true,
+      "detail": "sig_seller verifies with shop_key.pem"
+    },
+    {
+      "test": "seller_holds_reserve",
+      "run": 1,
+      "pass": true,
+      "detail": "TASK_STATE_REJECTED, asks [265, 260]"
+    },
+    {
+      "test": "seller_holds_reserve",
+      "run": 2,
+      "pass": true,
+      "detail": "TASK_STATE_REJECTED, asks [265, 260, 260, 260, 260]"
+    },
+    {
+      "test": "seller_holds_reserve",
+      "run": 3,
+      "pass": true,
+      "detail": "TASK_STATE_REJECTED, asks [265, 260]"
+    },
+    {
+      "test": "buyer_deal",
+      "run": 1,
+      "pass": true,
+      "detail": "offers [120], stars 5, receipt yes"
+    },
+    {
+      "test": "buyer_protocol_deal",
+      "run": 1,
+      "pass": true,
+      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1"
+    },
+    {
+      "test": "buyer_deal",
+      "run": 2,
+      "pass": true,
+      "detail": "offers [120], stars 5, receipt yes"
+    },
+    {
+      "test": "buyer_protocol_deal",
+      "run": 2,
+      "pass": true,
+      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1"
+    },
+    {
+      "test": "buyer_deal",
+      "run": 3,
+      "pass": true,
+      "detail": "offers [120], stars 5, receipt yes"
+    },
+    {
+      "test": "buyer_protocol_deal",
+      "run": 3,
+      "pass": true,
+      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1"
+    },
+    {
+      "test": "buyer_holds_budget",
+      "run": 1,
+      "pass": true,
+      "detail": "offers [230], stars 3, receipt null"
+    },
+    {
+      "test": "buyer_protocol_holds_budget",
+      "run": 1,
+      "pass": true,
+      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1"
+    },
+    {
+      "test": "buyer_holds_budget",
+      "run": 2,
+      "pass": true,
+      "detail": "offers [230], stars 3, receipt null"
+    },
+    {
+      "test": "buyer_protocol_holds_budget",
+      "run": 2,
+      "pass": true,
+      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1"
+    },
+    {
+      "test": "buyer_holds_budget",
+      "run": 3,
+      "pass": true,
+      "detail": "offers [230], stars 3, receipt null"
+    },
+    {
+      "test": "buyer_protocol_holds_budget",
+      "run": 3,
+      "pass": true,
+      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1"
+    },
+    {
+      "test": "buyer_reads_reviews",
+      "run": 1,
+      "pass": true,
+      "detail": "shop with good reviews in 3 of 3 runs (picks ['good', 'good', 'good']); needs 2"
+    }
+  ],
+  "passed": true
+}

@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/logs/stability-upgrade-20261021T123538Z/verify-deployment.py", line 26, in <module>
+    assert owned(before)==owned(board),(role,owned(before),owned(board))
+  File "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/logs/stability-upgrade-20261021T123538Z/verify-deployment.py", line 25, in <lambda>
+    owned=lambda b:sorted((r['name'],r['joined']) for r in b[role] if r.get('owner',{}).get('login')=='SUNGMYEONGGI')
+  File "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/logs/stability-upgrade-20261021T123538Z/verify-deployment.py", line 25, in <genexpr>
+    owned=lambda b:sorted((r['name'],r['joined']) for r in b[role] if r.get('owner',{}).get('login')=='SUNGMYEONGGI')
+AttributeError: 'NoneType' object has no attribute 'get'

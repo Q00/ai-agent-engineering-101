@@ -1,0 +1,328 @@
+{
+  "schemaVersion": 1,
+  "items": [
+    {
+      "id": "traffic-gap",
+      "title": "우리 가게의 유입 증가가 상위권보다 작습니다.",
+      "queries": [
+        {
+          "id": "board-counters",
+          "source": {
+            "label": "Agent Market 공식 보드",
+            "files": [
+              {
+                "label": "board-comparison.json"
+              },
+              {
+                "label": "board-latest.json"
+              },
+              {
+                "label": "20:46 board-before.json"
+              }
+            ],
+            "links": [
+              {
+                "label": "공식 보드",
+                "href": "https://market.ourolabs.ai/board"
+              }
+            ],
+            "metricDefinitions": [
+              {
+                "label": "방문과 거래",
+                "definition": "방문과 거래는 공식 Round 2 보드의 상점별 누적 집계이며, 증가분은 20:46:50과 21:20:41 관측의 차이입니다."
+              }
+            ],
+            "caveats": [
+              "방문은 고유 사람 수나 HTTP 페이지 조회수로 해석하지 않습니다.",
+              "성사 비율은 집계 비율이며 유입 감소의 인과 기여율이 아닙니다."
+            ]
+          },
+          "rows": [
+            {
+              "shop": "lee-sungsoo",
+              "visits": 8832,
+              "deals": 6816,
+              "conversion_pct": 77.17,
+              "new_visits": 259,
+              "new_deals": 197
+            },
+            {
+              "shop": "11im",
+              "visits": 9082,
+              "deals": 6566,
+              "conversion_pct": 72.3,
+              "new_visits": 238,
+              "new_deals": 117
+            },
+            {
+              "shop": "dragonash",
+              "visits": 6939,
+              "deals": 5451,
+              "conversion_pct": 78.56,
+              "new_visits": 348,
+              "new_deals": 272
+            },
+            {
+              "shop": "myeonggi",
+              "visits": 1030,
+              "deals": 700,
+              "conversion_pct": 67.96,
+              "new_visits": 7,
+              "new_deals": 3
+            }
+          ],
+          "columns": [
+            {
+              "field": "shop",
+              "label": "상점"
+            },
+            {
+              "field": "new_visits",
+              "label": "방문 증가"
+            },
+            {
+              "field": "new_deals",
+              "label": "거래 증가"
+            },
+            {
+              "field": "conversion_pct",
+              "label": "누적 거래/방문 (%)"
+            }
+          ],
+          "reportingPeriod": "2026-10-21 20:46:50~21:20:41 KST",
+          "methods": [
+            {
+              "language": "calculation",
+              "code": "myeonggi: visits 1030 - 1023 = 7; deals 700 - 697 = 3; 700 / 1030 × 100 = 67.96%.\nlee-sungsoo: visits 8832 - 8573 = 259; deals 6816 - 6619 = 197.\n11im: visits 9082 - 8844 = 238; deals 6566 - 6449 = 117.\ndragonash: visits 6939 - 6591 = 348; deals 5451 - 5179 = 272."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "recent-reviews",
+      "title": "buyer에게 전달되는 최근 리뷰가 동일 작성자의 3점으로 집중되어 있습니다.",
+      "queries": [
+        {
+          "id": "kit-visible-reviews",
+          "source": {
+            "label": "공식 shop 목록과 공개 리뷰",
+            "files": [
+              {
+                "label": "shops-confirmed.json"
+              },
+              {
+                "label": "reviews-confirmed.json"
+              }
+            ],
+            "links": [],
+            "metricDefinitions": [
+              {
+                "label": "최근 리뷰",
+                "definition": "마켓 shop 목록에 실린 우리 상점의 최근 리뷰 10개를 공개 리뷰 목록과 대조했습니다."
+              }
+            ],
+            "caveats": [
+              "타 buyer의 선택 로그가 없어 이 리뷰가 각 buyer의 선택을 얼마나 바꿨는지는 확인할 수 없습니다.",
+              "반복 평점과 작성자는 관측된 사실이며 상품 품질이나 작성 의도를 독립적으로 검증한 것은 아닙니다."
+            ]
+          },
+          "rows": [
+            {
+              "scope": "buyer에게 전달되는 최근 10개",
+              "count": 10,
+              "same_author": 10,
+              "mean_stars": 3.0
+            },
+            {
+              "scope": "공개 최근 40개",
+              "count": 40,
+              "same_author": 26,
+              "mean_stars": 3.6
+            }
+          ],
+          "columns": [
+            {
+              "field": "scope",
+              "label": "범위"
+            },
+            {
+              "field": "count",
+              "label": "리뷰 수"
+            },
+            {
+              "field": "same_author",
+              "label": "cheapest-in-town 작성 수"
+            },
+            {
+              "field": "mean_stars",
+              "label": "평균 별점"
+            }
+          ],
+          "reportingPeriod": "2026-10-21 21:21 조회 시점의 최근 리뷰",
+          "methods": [
+            {
+              "language": "calculation",
+              "code": "Latest 10 kit-visible reviews: 10 ratings of 3; mean = 30 / 10 = 3.0.\nSame author in latest 40: 26 / 40 × 100 = 65%."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "operating-friction",
+      "title": "전체 재시작 때마다 주소가 바뀌고 재등록 대기가 발생했습니다.",
+      "queries": [
+        {
+          "id": "restart-windows",
+          "source": {
+            "label": "배포 및 판매자 실행 기록",
+            "files": [
+              {
+                "label": "seller-runtime-analysis.json"
+              },
+              {
+                "label": "세 번의 deployment-start.json 및 market-console.log"
+              }
+            ],
+            "links": [],
+            "metricDefinitions": [
+              {
+                "label": "재등록 대기",
+                "definition": "전체 kit 재시작 시점부터 동일 상점의 등록 완료 로그까지의 간격입니다."
+              }
+            ],
+            "caveats": [
+              "세 구간의 합계는 426.19초이며, 외부 접속 불가 시간을 연속 측정한 값은 아닙니다.",
+              "판매자 로그에는 운영자 확인 요청도 포함되며 일부 응답 지연과 429 오류가 관측됐습니다."
+            ]
+          },
+          "rows": [
+            {
+              "started": "2026-10-21T20:56:05.681794+09:00",
+              "registered": "2026-10-21T20:58:24+09:00",
+              "seconds": 138.32
+            },
+            {
+              "started": "2026-10-21T21:07:56.759206+09:00",
+              "registered": "2026-10-21T21:10:20+09:00",
+              "seconds": 143.24
+            },
+            {
+              "started": "2026-10-21T21:13:21.373404+09:00",
+              "registered": "2026-10-21T21:15:46+09:00",
+              "seconds": 144.63
+            }
+          ],
+          "columns": [
+            {
+              "field": "started",
+              "label": "재시작"
+            },
+            {
+              "field": "registered",
+              "label": "재등록 완료"
+            },
+            {
+              "field": "seconds",
+              "label": "간격 (초)"
+            }
+          ],
+          "reportingPeriod": "2026-10-21 20:56~21:16 KST",
+          "methods": [
+            {
+              "language": "calculation",
+              "code": "Restart-to-registration intervals: 138.318206 + 143.240794 + 144.626596 = 426.185596 seconds = 7.1031 minutes."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "price-tie",
+      "title": "관측한 1위 거래 가격이 우리 공세 가격과 같습니다.",
+      "queries": [
+        {
+          "id": "verified-prices",
+          "source": {
+            "label": "공식 공개 원장과 우리 가격 설정",
+            "files": [
+              {
+                "label": "peer-verified-prices.json"
+              },
+              {
+                "label": "pricing-observation.json"
+              }
+            ],
+            "links": [],
+            "metricDefinitions": [
+              {
+                "label": "검증 거래 가격",
+                "definition": "공개 원장 200개 항목 중 Round 2의 검증된 1위 상점 거래 가격을 품목별로 집계했습니다."
+              }
+            ],
+            "caveats": [
+              "표본에 관측된 가격이며 이후 모든 견적의 가격을 보장하지 않습니다.",
+              "우리 REVIEW10은 회복 모드의 신규 견적에만 적용되며 현재 공세 모드에서는 적용되지 않습니다."
+            ]
+          },
+          "rows": [
+            {
+              "shop": "lee-sungsoo",
+              "item": "bookshelf",
+              "verified_deals": 3,
+              "min_price": 260,
+              "median_price": 260,
+              "max_price": 260
+            },
+            {
+              "shop": "lee-sungsoo",
+              "item": "chair",
+              "verified_deals": 3,
+              "min_price": 180,
+              "median_price": 180,
+              "max_price": 180
+            },
+            {
+              "shop": "lee-sungsoo",
+              "item": "lamp",
+              "verified_deals": 5,
+              "min_price": 100,
+              "median_price": 100,
+              "max_price": 100
+            }
+          ],
+          "columns": [
+            {
+              "field": "item",
+              "label": "품목"
+            },
+            {
+              "field": "verified_deals",
+              "label": "검증 거래 수"
+            },
+            {
+              "field": "median_price",
+              "label": "중앙 가격"
+            },
+            {
+              "field": "min_price",
+              "label": "최저 가격"
+            },
+            {
+              "field": "max_price",
+              "label": "최고 가격"
+            }
+          ],
+          "reportingPeriod": "원장 #125765~125964 표본",
+          "methods": [
+            {
+              "language": "calculation",
+              "code": "Observed verified lee-sungsoo prices: 5 lamp transactions at 100, 3 chair transactions at 180, 3 bookshelf transactions at 260. These equal our configured acquisition quotes for the same base items."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

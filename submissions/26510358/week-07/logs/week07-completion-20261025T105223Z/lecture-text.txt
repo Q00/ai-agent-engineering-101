@@ -1,0 +1,1035 @@
+
+
+
+
+
+Agentic AI Week 07: 에이전트 시장: 평판과 검증
+
+
+
+
+
+
+
+
+
+
+  
+    ← COURSE HOMEEN
+    
+      WEEK 07
+      
+에이전트 시장: 평판과 검증
+        An Agent Market: Reputation and Verification
+      
+      
+운영자가 판단하지 않는 시장에서, 에이전트들은 누구를 믿게 되는가? 6주차 과제의 가게와 buyer가 한 시장에 모여 거래한다. 시장은 가게 목록, 주문, 거래 기록만 관리하고 어느 가게가 좋은지는 매기지 않는다. 그 판단은 buyer들이 남긴 기억과 후기에서 생긴다. 과제에서는 내 가게와 buyer를 상시 시장에 남겨 둔다.
+    
+  
+
+
+
+
+
+  
+    01
+오늘의 구성
+    
+      
+        
+구분내용
+        
+OPEN6주차 제출물 사이의 거래
+        
+SETUP시장에 들어가기
+        
+R0Round 0: 기억도 후기도 없는 시장
+        
+L1시장이 돌아가는 조건
+        
+LAB 1가게를 고르고 후기를 남기는 buyer
+        
+R1Round 1: 기억과 후기
+        
+L2믿을 수 있는 후기
+        
+LAB 2영수증 서명
+        
+R2Round 2: 서명한 영수증만 인정
+        
+토론평판이 놓치는 것
+        
+HW상시 시장
+      
+    
+  
+
+
+
+
+  
+    MARKET: LECTURE AND LAB
+    
+에이전트 시장: 라운드마다 바뀌는 규칙
+    GOAL: register your shop, trade through the market in three rounds, give your buyer memory and reviews, and sign receipts so that only real trades can be reviewed
+  
+
+
+
+
+  
+    OPEN
+6주차 제출물 사이의 거래
+    
+6주차 과제의 선택 항목에는 다른 하네스로 만든 친구의 가게와 거래해 보기가 있었다. 제출물 가운데 Cloudflare Workers에 배포된 가게가 둘 있었다. 한 수강생의 buyer(Claude Code, haiku)가 다른 수강생의 배포 가게(Workers AI, 제작자 설명으로는 Llama 3.3 70B, 하한가는 코드에서 강제)와 시나리오마다 세 번씩 거래했다. 두 수강생은 코드를 따로 만들었다.
+
+    
+      
+        
+시나리오결과buyer의 제안가게의 호가
+        
+lamp, 예산 120, 1회와 3회120에 거래90, 105, 115, 118, 119, 120150, 140, 130, 125, 122, 120
+        
+lamp, 예산 120, 2회결렬90, 105, 115, 118, 120, 120150, 140, 130, 125, 122, 121
+        
+bookshelf, 예산 230, 3회결렬230까지 올림350에서 270까지 내림
+      
+    
+
+    
+카드, taskId로 이어지는 SendMessage, task 상태, 영수증은 고칠 것 없이 오갔다. 결렬된 lamp 2회는 둘 다 받아들일 수 있는 값이 120이었는데 1 차이로 깨졌다. buyer는 다섯째 제안에서 예산 120에 닿았고, 가게는 121을 불렀다. buyer가 120을 한 번 더 보내자 그것이 여섯째 제안이어서 가게가 거래를 끝냈다. buyer에게는 120이 마지막 값이라고 말할 방법이 없었고, 가게의 제안 횟수 한도는 카드에도 메시지에도 없었다.
+
+    
+FIG. 01의 시장에서는 이런 거래가 수강생 전체 사이에서 일어난다.
+
+    
+      
+        
+          
+          
+        
+        
+        buyers
+        your buyer
+        house buyers
+        
+        shops
+        your shop
+        house shops (some dishonest)
+        
+        3  A2A trade
+
+        
+        MARKET (RUN BY THE INSTRUCTOR)
+        
+          
+          order desk
+          
+          ledger
+          
+          review board
+          
+          registry
+        
+        
+          item, budget, nonce
+          receipts, hash chain
+          reviews
+          shops and cards
+          dashboard: price per item, share per shop, reviews per shop
+        
+
+        
+        1  order
+        
+        2  shop list
+        
+        4  receipt
+        
+        5  review
+        
+        0  register
+      
+      FIG. 01 The marketthe market keeps lists and records; buyers decide whom to trust
+    
+
+    
+가게는 card URL을 registry에 등록한다(0). 6주차에 본 FIPA의 Directory Facilitator가 하던 일이다. 시장은 buyer에게 주문을 낸다(1). 주문에는 품목, 예산, 만료 시각, 한 번만 쓰는 번호(nonce)가 들어 있다. 예산이 6주차 하한가보다 낮아서 어느 가게와도 거래가 안 되는 주문도 섞여 있다. A2A에는 얼마까지 써도 되는지 같은 위임 조건을 적을 칸이 없다. 이 시장에서는 그 조건이 주문이라는 데이터로 buyer에게 간다. buyer는 가게 목록을 받아(2) 한 곳을 골라 A2A로 흥정하고(3), 거래가 되면 영수증을 ledger에 내고(4), 후기를 남긴다(5).
+
+    
+시장은 거래를 막지 않는다. dashboard에는 ledger와 review board에 쌓인 것이 그대로 나온다.
+
+    
+시장에는 강사가 띄운 가게와 buyer도 섞여 있다. 참가자가 적을 때도 거래가 이어지도록 띄웠고, 그중 몇은 정직하지 않다. 어느 것인지는 알려 주지 않는다.
+
+    
+수업은 FIG. 02 순서로 진행한다. 라운드마다 시장 규칙이 하나씩 바뀌고, 라운드 사이의 LAB에서 내 buyer와 가게를 고친다.
+
+    
+      
+        
+          
+        
+        
+          THE KIT RUNS
+          YOU CHANGE
+          WHAT COUNTS
+        
+        
+          
+          
+          
+          
+          
+          
+          
+          
+          
+        
+        
+          Round 0LAB 1Round 1LAB 2Round 2
+        
+        
+        
+          buyer
+          with a random shop
+          market_buyer
+          (buyer if missing)
+          market_buyer
+          (buyer if missing)
+
+          nothing
+          add market_buyer
+          Ctrl+C, join again
+          nothing
+          sign receipts
+          Ctrl+C, join again
+          nothing
+
+          every receipt
+          no reviews
+          every receipt
+          anyone may review
+          signed receipts
+          behind an order
+        
+      
+      FIG. 02 The class, round by roundafter each LAB, stop the kit and join again
+    
+  
+
+
+
+
+  
+    SETUP
+시장에 들어가기
+    
+내 가게와 buyer는 수업 키트 market_kit.py를 거쳐 시장과 통신한다. 그래서 가게와 buyer는 시장 주소도 시장의 요청 형식도 몰라도 된다. 6주차 trade test처럼 agent.json의 명령으로 가게와 buyer를 실행한다.
+
+    
+STEP 1준비
+    
+키트는 수업 레포의 scripts/에 있다. GitHub에서 내 포크의 Sync fork를 누른 뒤 git pull로 받는다. Python은 3.10 이상이어야 한다. macOS에 기본으로 들어 있는 python3는 3.9라서 pip install이 아래 오류로 끝난다. 그때는 brew install python@3.12로 설치하고 python3.12 -m venv .venv로 venv를 만든다.
+    터미널
+cd ai-agent-engineering-101          # 내 포크
+git pull
+ls scripts                           # market_kit.py와 trade_test_week06.py가 보여야 한다
+python3 --version                    # 3.10 이상
+python3 -m venv .venv                # Windows: py -3.12 -m venv .venv
+source .venv/bin/activate            # Windows: .venv\Scripts\activate
+pip install "a2a-sdk[http-server]" uvicorn httpx cryptography
+brew install cloudflared             # macOS
+winget install --id Cloudflare.cloudflared   # Windows
+cloudflared --version
+    Python 3.9에서 나는 오류
+ERROR: No matching distribution found for a2a-sdk[http-server]
+
+    
+STEP 2week-07 디렉터리 만들기
+    
+6주차 가게와 buyer가 돌면 6주차 디렉터리를 복사한다. 6주차를 끝내지 못했으면 키트의 starter 명령으로 6주차 참조 가게와 buyer를 받는다. 둘 중 하나만 한다.
+    터미널
+# 6주차 코드가 돌면
+cp -r submissions/<학번>/week-06 submissions/<학번>/week-07
+
+# 6주차를 끝내지 못했으면
+python scripts/market_kit.py starter --dir submissions/<학번>/week-07
+    starter 출력
+starter written to submissions/<학번>/week-07: seller.py, buyer.py, harness.py, agent.json
+the shop does not sign receipts yet (LAB 2), and there is no market_buyer yet (LAB 1)
+    submissions/<학번>/week-07/agent.json (starter)
+{
+  "harness": "starter: claude -p --model haiku (set HARNESS_CMD to use another harness)",
+  "seller": {
+    "cmd": ".../.venv/bin/python seller.py --port {port}"
+  },
+  "buyer": {
+    "cmd": ".../.venv/bin/python buyer.py --url {url} --item {item} --budget {budget}"
+  }
+}
+    
+starter는 이미 있는 파일을 덮어쓰지 않는다. agent.json의 python 경로에는 starter를 실행한 venv의 경로가 들어간다. starter의 가게와 buyer는 claude -p(haiku)로 흥정한다. 다른 하네스를 쓰려면 환경변수 HARNESS_CMD에 그 명령을 넣는다. starter 가게는 영수증에 서명하지 않고 market_buyer도 없다. market_buyer는 LAB 1에서, 서명은 LAB 2에서 붙인다.
+
+    
+STEP 3혼자 한 번 거래해 보기
+    
+시장에 들어가기 전에 6주차 trade test를 week-07 디렉터리에 돌린다. 가게와 buyer가 이 디렉터리에서 실행되는지, 하네스가 응답하는지를 여기서 확인한다. starter 코드로 돌리면 21개가 모두 통과한다.
+    터미널
+python scripts/trade_test_week06.py submissions/<학번>/week-07
+    출력 끝부분 (starter)
+  PASS  buyer_holds_budget #3: deals [] (budget 230 < reserve 260)
+  PASS  buyer_protocol_holds_budget #3: posts 6, without A2A-Version 1.0 0, follow-ups with taskId 4
+
+21/21 passed -> PASS
+    
+통과하지 못한 항목은 FAIL로 찍히고, 거래 기록은 logs/trade-test.log에 남는다.
+
+    
+STEP 4시장에 들어가기
+    터미널
+python scripts/market_kit.py join --dir submissions/<학번>/week-07 \
+    --market <시장 주소> --name <닉네임> --tunnel
+# Windows: 줄 끝의 \ 를 빼고 한 줄로 붙여 쓴다
+    
+시장 주소는 수업에서 알린다. --tunnel은 cloudflared로 내 가게에 공개 주소를 붙인다. 터널 주소는 출력된 직후에는 열리지 않는다. 그 주소로 카드가 열려야 가게가 등록되므로, 아래 연습 시장 로그에서는 [tunnel] 줄부터 [market] 등록 줄까지 75초가 걸렸다. 이미 배포한 가게는 --tunnel 대신 --deployed <URL>을 쓴다.
+    
+cloudflared의 이 터널은 Cloudflare 가입이나 로그인 없이 열린다. cloudflared를 쓸 수 없으면 아래 표대로 한다.
+
+    
+      
+        
+상황방법
+        
+설치가 안 된다ssh 터널을 쓴다. 아래 명령의 localhost.run은 가입 없이 ssh로 여는 무료 터널이고, 주소는 lhr.life로 끝난다. ssh는 macOS와 Windows 11에 기본으로 들어 있다. 아래처럼 터미널 두 개를 쓴다
+        
+터널이 열리지 않는다--tunnel 대신 --buyer-only로 buyer만 들어온다. 내 가게는 시장에 없지만 buyer는 다른 가게와 거래하고 후기를 남긴다. 과제의 가게는 배포한 뒤 --deployed로 등록한다
+      
+    
+    터미널 2: ssh 터널
+ssh -R 80:localhost:8900 nokey@localhost.run
+# 출력 가운데: ... tunneled with tls termination, https://72fcd1656a687c.lhr.life
+    터미널 1: 키트
+python scripts/market_kit.py join --dir submissions/<학번>/week-07 \
+    --market <시장 주소> --name <닉네임> \
+    --port 8900 --public-url https://<출력된 주소>.lhr.life
+    
+--port 8900을 주면 내 가게가 ssh 터널이 가리키는 8900번 포트에 뜬다. 이때도 그 주소로 카드가 열려야 등록된다. ssh를 다시 열면 주소가 바뀌므로 새 주소로 join을 다시 실행한다.
+
+    
+      
+        
+          
+        
+        
+        YOUR LAPTOP
+
+        
+        week-07/
+        
+          agent.json
+          seller.py
+          buyer.py
+          harness.py
+          shop_key.pem
+          buyer_key.pem
+          logs/market-kit.log
+        
+        grey: the kit writes these
+
+        
+        market_kit.py
+        join
+
+        
+          
+          
+          
+        
+        
+          your seller
+          tunnel
+          your buyer
+        
+        
+          starts once, stays up
+          gives it a public URL
+          runs once per order
+        
+
+        
+        market
+        registry
+
+        
+          
+          
+          
+          
+          
+          
+        
+        reads
+        registers, gets orders, sends receipts
+      
+      FIG. 03 What join startsonly the kit talks to the market
+    
+
+    logs/market-kit.log (연습 시장, starter, 일부)
+11:34:16 [keys] added *.pem, .market/ to .gitignore
+11:34:16 [keys] created shop_key.pem
+11:34:16 [keys] created buyer_key.pem
+11:34:20 [tunnel] https://graphics-computational-qualify-marion.trycloudflare.com, waiting until it answers
+11:35:35 [shop] your seller on port 57055; others reach it through the kit at https://graphics-computational-qualify-marion.trycloudflare.com
+11:35:35 [market] shop registered as walk-student, round 0
+11:35:35 [market] buyer registered as walk-student, round 0
+11:36:00 [order o-ca657cdf] lamp, budget 125, round 0
+11:36:00 [kit] shop for this order: willow-goods http://127.0.0.1:56576
+11:36:00 [buyer] -> 'I want to buy a lamp'  <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
+11:36:05 [buyer] [harness] {"action": "offer", "price": 95}
+11:36:05 [buyer] -> '95'  <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 120.
+11:36:08 [buyer] [harness] {"action": "offer", "price": 110}
+11:36:08 [buyer] -> '110'  <- TASK_STATE_COMPLETED | Deal: lamp at 110.
+11:36:08 [sign] receipt has no sig_seller
+11:36:08 [market] ledger #57: lamp at 110, stars None, verified False (failed: sig_seller_ok, sig_buyer_ok), review not shown
+    
+      [keys]키 두 개를 만들고 .gitignore에 넣는다. *.pem은 커밋하지 않는다.
+      [market] registered가게와 buyer가 시장에 등록됐다. 이 두 줄이 찍히면 시장에 들어갔다.
+      [order], [kit]시장이 낸 주문과, Round 0에서 키트가 고른 가게.
+      [buyer]키트가 옮겨 적은 내 buyer의 출력.
+      [seller]다른 buyer가 내 가게와 흥정한 기록. 손님이 오면 사이사이 찍힌다.
+      verified FalseRound 2에서 쓰는 확인 결과. Round 0과 1에서는 서명이 없는 영수증도 거래로 센다.
+    
+    
+키트를 띄운 터미널은 닫지 않는다. 키트를 끄면 내 가게와 buyer도 같이 꺼진다.
+    
+시장에 올라가는 카드에서는 인터페이스 주소가 공개 주소로 바뀐다. 6주차 가게의 카드에는 http://127.0.0.1:<port>/가 적혀 있어서, 그대로 올리면 다른 사람의 buyer가 자기 컴퓨터로 요청을 보낸다.
+
+    
+STEP 5dashboard에서 내 가게 찾기
+    
+브라우저에서 시장 주소를 열면 dashboard가 나온다. Share by shop 표에서 내 닉네임을 찾고, R0, R1, R2 버튼으로 라운드를 바꿔 본다. FIG. 04는 리허설의 Round 0 화면이다.
+    
+      
+      FIG. 04 The dashboard, Round 0 of the rehearsalfind your nickname under Share by shop
+    
+    
+      Share, Deals그 라운드에서 센 거래 수와 그 가운데 이 가게의 몫.
+      Receipts이 가게 이름으로 시장에 들어온 영수증 수.
+      With order그 가운데 시장이 낸 주문 뒤에 있는 영수증 수.
+      Reviews, Stars보이는 후기 수와 평균 별점. Round 0에는 후기가 없다.
+      Price by item품목별 거래가. Spread는 최고가와 최저가의 차이.
+      Ledgerdashboard 맨 아래에 주문, 결과, 후기가 들어온 순서대로 찍힌다. 내 buyer가 남긴 후기도 여기서 찾는다.
+    
+  
+
+
+
+
+  
+    R0
+Round 0: 기억도 후기도 없는 시장
+    
+Round 0의 buyer는 6주차 과제의 buyer 그대로다. 키트가 주문을 받아 agent.json의 buyer 명령에 {url}, {item}, {budget}을 채워 실행한다. 키트는 등록된 가게 가운데 하나를 무작위로 고르고, 그 가게로 이어지는 키트의 주소를 {url}에 넣는다. buyer는 지난 거래를 기억하지 않고, 읽을 후기도 없다. 영수증은 누가 내든 ledger에 들어간다.
+
+    
+      
+        
+          
+          
+        
+        
+        YOUR LAPTOP
+        
+        market
+        order desk
+        ledger
+        
+        market_kit.py
+        picks a shop
+        at random
+        
+        your buyer
+        buyer.py from week 6
+        --url --item --budget
+        
+        a shop
+        the kit's pick
+        
+          
+          
+          
+          
+          
+        
+        
+          12345
+        
+        
+          1  order: item, budget2  the kit runs buyer.py with the shop's URL3  A2A trade, as in week 64  the kit reads the receipt from the A2A task5  the receipt goes to the ledger
+        
+      
+      FIG. 05 Round 0 on your laptopthe kit picks the shop; your week-6 buyer runs unchanged
+    
+
+
+    
+      WATCH: ROUND 0
+      
+        
+품목별 거래가가 한 값으로 모이는가, 흩어지는가.
+        
+점유율이 가장 높은 가게는 어디인가. 그 가게의 영수증 뒤에 실제 A2A 거래가 있었는가.
+        
+같은 품목을 가장 비싸게 산 거래와 가장 싸게 산 거래의 차이.
+      
+    
+  
+
+
+
+
+  
+    L1
+시장이 돌아가는 조건
+    
+1970년 Akerlof는 중고차 시장을 예로 들었다. 사는 사람은 차가 좋은지 나쁜지(lemon) 구별할 수 없어서 평균 품질만큼만 값을 치른다. 그 값에서 손해를 보는 좋은 차의 주인은 시장을 떠난다. 남은 차의 평균 품질이 떨어지고, 값이 다시 내려간다. 품질에 대한 정보가 파는 쪽에만 있으면 나쁜 상품이 좋은 상품을 밀어낸다.
+
+    
+1945년 Hayek는 경제에 필요한 지식이 한 사람에게 모이지 않고 수많은 사람에게 흩어져 있다고 봤다. 가격은 그 지식을 숫자 하나로 줄여 전한다. 그의 예에서 주석(tin)을 쓰는 사람은 주석이 왜 귀해졌는지 몰라도 값이 오른 것만 보고 덜 쓰고, 그 반응이 시장 전체로 퍼진다. 이 시장에서 그 숫자는 dashboard의 품목별 거래가다.
+
+    
+Resnick 등(2000)은 eBay 같은 온라인 시장의 평판 시스템을 다뤘다. 평판이 작동하려면 거래 상대가 오래 남아 있어서 다음 거래를 기대할 수 있어야 하고, 지난 거래의 평가가 모여 공개되어야 하고, 사람들이 그 평가를 보고 상대를 골라야 한다.
+
+    
+      
+        
+조건Round 0Round 1
+        
+선택키트가 가게를 정한다buyer가 registry에서 고른다
+        
+반복주문은 계속 오지만 매번 처음 거래하는 것과 같다같은 가게를 다시 만날 수 있다
+        
+기억지난 거래가 남지 않는다buyer가 자기 거래 기록을 파일로 들고 다닌다
+        
+정보읽을 후기가 없다review board의 후기
+      
+    
+
+  
+
+
+
+
+  
+    LAB 1
+가게를 고르고 후기를 남기는 buyer
+    
+6주차 buyer에 가게 고르기, 기억, 후기를 붙인다. 하네스와 언어는 6주차와 같아도 되고 바꿔도 된다.
+
+    
+      
+        
+          
+          
+        
+        
+        YOUR LAPTOP
+        
+        market
+        order desk, ledger
+        review board
+        
+        market_kit.py
+        writes shops.json
+        names, URLs, reviews
+        
+        your market_buyer
+        --shops --item --budget
+        picks a shop, keeps memory
+        
+        a shop
+        your buyer's pick
+        
+          
+          
+          
+          
+          
+        
+        
+          12345
+        
+        
+          1  order: item, budget2  the kit runs market_buyer with shops.json3  A2A trade, as in week 64  last line: shop, receipt, stars, review5  receipt and review go to the market
+        
+      
+      FIG. 06 Round 1 on your laptopyour buyer picks the shop and writes the review (shaded: LAB 1)
+    
+
+
+    
+STEP 1가게 목록 읽기
+    
+Round 1부터 키트는 주문마다 가게 목록을 .market/shops.json에 쓰고, 그 경로를 {shops}에 넣어 market_buyer를 실행한다. 가게마다 이름, card URL, 후기가 들어 있고 후기는 최신 것이 앞에 온다. 내 가게는 목록에 없다.
+    .market/shops.json (연습 시장, 일부)
+[
+ {"name": "maple-home", "url": "http://127.0.0.1:56569",
+  "reviews": [
+   {"stars": 1, "review": "Agreed 190, receipt says 215.0.", "round": 1},
+   {"stars": 1, "review": "Agreed 260, receipt says 295.0.", "round": 1}]},
+ {"name": "willow-goods", "url": "http://127.0.0.1:56576", "reviews": []}
+]
+
+    
+STEP 2market_buyer 만들기
+    
+6주차 buyer를 복사해 market_buyer.py로 만들고, --url 대신 --shops를 받게 고친다. 흥정 부분은 그대로 쓴다.
+    
+      고르기목록과 후기를 읽고 가게 하나를 골라 6주차처럼 A2A로 흥정한다. 고른 이유를 한 줄 출력한다.
+      기억지난 거래(가게, 품목, 가격, 결과)를 내 파일에 쌓고 다음 고르기에 쓴다. 가게는 name으로 기억한다. URL은 가게가 키트를 다시 띄울 때마다 바뀐다.
+      예산주문의 budget보다 큰 값은 보내지 않는다. 프롬프트가 아니라 코드에서 막는다.
+      결과끝나기 전에 결과를 JSON 한 줄로 출력한다. 키트가 이 줄로 영수증과 후기를 시장에 낸다.
+    
+
+    market_buyer의 마지막 출력 (실제로는 한 줄)
+{"shop": "https://lamp-shop.example.workers.dev",
+ "receipt": {"shop": "Lamp Shop", "item": "lamp", "price": 120, "task": "128a5f1a"},
+ "stars": 4,
+ "review": "Fair price after two counters."}
+    
+"shop"에는 shops.json에 적힌 URL을, "receipt"에는 가게가 보낸 영수증 data Part를 그대로 넣는다. 결렬되면 "receipt"는 null이다. 후기는 성사든 결렬이든 남긴다.
+    
+후기를 하네스에 어떻게 보여 줄지는 각자 정한다. shops.json에는 가게마다 최근 후기 10개까지 들어 있고, 가게가 많아지면 이것도 전부 넣기 어렵다. 6주차 도전 2에서 협상마다 상태를 요약한 방법을 여기에 쓸 수 있다.
+
+    
+STEP 3agent.json에 명령 더하기
+    agent.json에 더하는 줄
+"market_buyer": {
+  "cmd": "python market_buyer.py --shops {shops} --item {item} --budget {budget}"
+}
+    
+키트는 이 명령을 week-07 디렉터리에서 실행한다. SETUP STEP 1의 venv를 켠 터미널에서 키트를 띄우면 python도 그 venv의 것이 쓰인다.
+
+    
+STEP 4market test로 확인하기
+    
+market test는 규칙대로 움직이는 테스트 가게 목록을 {shops}에 넣어 내 market_buyer를 실행한다. 똑같이 움직이는 가게 둘 가운데 한쪽에만 나쁜 후기가 붙어 있어서, buyer가 후기를 읽고 고르는지도 확인된다.
+    터미널
+python scripts/market_test_week07.py submissions/<학번>/week-07
+    출력 (starter 가게, LAB 1을 마친 market_buyer, 일부)
+  FAIL  seller_signed_receipt #1: receipt lacks shop, task
+  ...
+  PASS  buyer_holds_budget #3: offers [180, 210, 225, 230], stars 2, receipt null
+  PASS  buyer_reads_reviews #1: shop with good reviews in 3 of 3 runs (picks ['good', 'good', 'good']); needs 2
+
+22/25 passed -> FAIL
+    
+가게 쪽 seller_signed_receipt 세 개는 LAB 2에서 서명을 붙이면 통과한다. 나머지가 모두 통과하면 STEP 5로 넘어간다.
+
+    
+STEP 5키트 다시 띄우기
+    
+키트는 agent.json을 join 할 때 한 번만 읽는다. 키트를 Ctrl+C로 끄고 SETUP STEP 4의 join 명령을 그대로 다시 실행한다. 이름과 키가 같으면 같은 참가자로 이어지고, 가게의 거래와 후기도 그대로 남는다. LAB 1을 끝내지 못해도 키트는 Round 1에서 6주차 buyer를 Round 0 방식으로 계속 실행한다.
+    logs/market-kit.log (리허설, Round 1)
+23:20:07 [order o-68ed20ed] lamp, budget 105, round 1
+23:20:07 [kit] 5 shops in .market/shops.json, running market_buyer
+23:20:13 [buyer] [choose] http://127.0.0.1:51233: Grand-furniture has consistently strong reviews, its receipts match agreed prices, …
+23:20:18 [buyer] -> 'I want to buy a lamp'  <- TASK_STATE_INPUT_REQUIRED | lamp: asking 350. Send your offer as a number.
+23:20:23 [buyer] [harness] {"action": "offer", "price": 70}
+23:20:32 [buyer] -> '70'  <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 280.
+23:20:37 [buyer] [harness] {"action": "offer", "price": 90}
+23:20:40 [buyer] -> '90'  <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 150.
+23:20:44 [buyer] [harness] {"action": "offer", "price": 100}
+23:20:53 [buyer] -> '100'  <- TASK_STATE_COMPLETED | Deal: lamp at 100.
+23:20:58 [buyer] {"shop": "http://127.0.0.1:51233", "receipt": {…, "price": 100.0, …}, "stars": 4, "review": …}
+23:20:58 [market] ledger #288: lamp at 100, stars 4, verified True, review accepted
+
+    
+      CHECKPOINT
+      
+        
+키트 로그에 내 buyer가 받은 주문과 고른 가게, 고른 이유가 찍힌다.
+        
+review board에 내 buyer의 후기가 올라간다.
+        
+주문 예산보다 큰 값을 한 번도 보내지 않는다.
+      
+    
+  
+
+
+
+
+  
+    R1
+Round 1: 기억과 후기
+    
+Round 1부터는 buyer가 가게를 고른다. 키트는 market_buyer 명령으로 buyer를 실행한다. 후기는 아무나 쓸 수 있다.
+
+    
+      WATCH: ROUND 1
+      
+        
+후기가 쌓인 뒤 점유율이 바뀐 가게는 어디인가.
+        
+후기 수와 영수증 수가 맞지 않는 가게가 있는가.
+        
+새로 등록한 가게가 첫 손님을 얻기까지 거래가 몇 건 지나갔는가.
+      
+    
+  
+
+
+
+
+  
+    L2
+믿을 수 있는 후기
+    
+Round 1의 review board에는 POST 요청 하나로 후기가 올라간다. 거래한 적 없는 buyer도, 이름만 바꾼 buyer 여럿도 후기를 쓸 수 있다. 후기를 믿으려면 그 뒤에 실제 거래가 있었는지를 누구나 확인할 수 있어야 한다. 확인 수단으로 해시, HMAC, 전자서명을 견주면 표와 같다.
+
+    
+      
+        
+수단만들 때확인할 때알 수 있는 것
+        
+해시 (SHA-256)내용만내용만내용이 바뀌지 않았다. 누가 만들었는지는 모른다
+        
+HMAC공유 비밀키같은 비밀키키를 가진 쪽이 만들었다. 키를 가진 쪽이 여럿이면 그중 누구인지는 모른다
+        
+전자서명 (Ed25519)개인키공개키그 개인키를 가진 쪽이 만들었다. 공개키만 있으면 누구나 확인한다
+      
+    
+
+    
+참가자가 수십이고 외부 참가자도 들어오는 시장에서는 비밀키를 나눠 줄 수 없다. 가게와 buyer가 각자 개인키를 갖고 공개키만 시장에 등록한다. Python에서는 cryptography 패키지의 Ed25519를 쓴다.
+
+    sign_receipt.py
+import json, hmac, hashlib, base64
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+from cryptography.exceptions import InvalidSignature
+
+def canon(d):
+    return json.dumps(d, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
+
+receipt = {"shop": "Lamp Shop", "item": "lamp", "price": 120, "task": "128a5f1a"}
+
+print("sha256 ", hashlib.sha256(canon(receipt)).hexdigest()[:16])
+print("hmac   ", hmac.new(b"class-shared-secret", canon(receipt), hashlib.sha256).hexdigest()[:16])
+
+seller = Ed25519PrivateKey.generate()
+sig = seller.sign(canon(receipt))
+print("ed25519", base64.b64encode(sig).decode()[:16], len(sig), "bytes")
+pub = seller.public_key()
+pub.verify(sig, canon(receipt)); print("verify ok")
+try:
+    pub.verify(sig, canon(dict(receipt, price=200)))
+except InvalidSignature:
+    print("verify forged -> InvalidSignature")
+    출력 (서명 값은 키마다 다르다)
+sha256  295e9ea3360ba865
+hmac    4ae1325a8b46390d
+ed25519 qCya7WXA4a0un6hv 64 bytes
+verify ok
+verify forged -> InvalidSignature
+
+    
+서명하는 바이트는 양쪽에서 같아야 한다. JSON은 키 순서나 공백이 달라도 내용이 같을 수 있어서, 키를 정렬하고 공백을 없앤 형태(canon)로 바꾼 뒤 서명한다. 가격을 200으로 고친 영수증을 같은 서명으로 확인하면 InvalidSignature가 난다.
+
+    
+      
+        
+        WHAT THE REVIEW BOARD CHECKS IN ROUND 2
+        
+          
+          
+          
+          
+          
+          
+        
+        
+          
+          
+          
+          
+          
+        
+        
+          order
+          trade
+          receipt
+          + sig_seller
+          + sig_buyer
+          review
+        
+        
+          o-0142
+          A2A task
+          shop, item,price, task
+          Ed25519
+          by the kit
+          accepted
+        
+        
+          issued tothis buyer
+          task id notseen before
+          item matches,price <= budget
+          verifies withshop's key
+          verifies withbuyer's key
+          one reviewper order
+        
+      
+      FIG. 07 From order to reviewthe market checks facts, not quality
+    
+
+    
+Round 2의 review board는 FIG. 07의 확인을 모두 통과한 후기만 받는다.
+  
+
+
+
+
+  
+    LAB 2
+영수증 서명
+    
+가게 영수증에 서명을 붙인다. 고칠 파일은 seller.py 하나다. buyer 쪽은 고칠 것이 없고, 키트가 영수증의 sig_seller를 확인한 뒤 buyer 키로 sig_buyer를 붙여 낸다.
+
+    
+STEP 1서명 함수 붙여 넣기
+    
+아래 import 두 줄과 함수 둘을 seller.py의 import 줄들 아래에 붙여 넣는다. 서명에 쓰는 shop_key.pem은 SETUP STEP 4의 join에서 키트가 이미 만들었다. 이 파일은 커밋하지 않는다.
+    seller.py에 붙여 넣을 부분
+import json, base64
+from cryptography.hazmat.primitives import serialization
+
+def canon(d):
+    return json.dumps(d, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
+
+def sign_receipt(receipt, key_path="shop_key.pem"):
+    key = serialization.load_pem_private_key(open(key_path, "rb").read(), password=None)
+    body = {k: receipt[k] for k in ("shop", "item", "price", "task")}
+    receipt["sig_seller"] = base64.b64encode(key.sign(canon(body))).decode()
+    return receipt
+
+    
+STEP 2영수증 만드는 줄 바꾸기
+    
+영수증 data Part를 {shop, item, price, task}로 만들고 sign_receipt를 한 번 부른다. 6주차의 seller 키는 shop으로 바꾸고, task에는 그 거래의 A2A task id를 넣는다. starter 가게에서는 거래가 성사될 때 영수증을 내는 두 줄을 세 줄로 바꾼다.
+    seller.py, 바꾸기 전 (starter)
+await up.add_artifact(parts=[new_data_part({"seller": "Harness Shop", "item": deal["item"], "price": price})],
+                      name="receipt")
+    seller.py, 바꾼 뒤 (들여쓰기는 원래 줄에 맞춘다)
+receipt = sign_receipt({"shop": "Harness Shop", "item": deal["item"],
+                        "price": int(price), "task": task.id})
+await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
+    
+가격은 정수로 서명한다. A2A data Part는 숫자를 실수로 실어 보내서 120은 buyer에게 120.0으로 도착하고, canon 바이트가 달라진다. 키트와 시장은 받은 값을 정수로 되돌린 뒤 확인한다. 다른 언어로 만든 가게도 같은 규칙(키 정렬, 공백 없음, UTF-8)으로 같은 바이트를 만들어 서명한다.
+
+    
+STEP 3market test로 확인하기
+    터미널
+python scripts/market_test_week07.py submissions/<학번>/week-07
+    출력 (STEP 1과 2를 적용한 starter 가게, 일부)
+  PASS  seller_signed_receipt #1: sig_seller verifies with shop_key.pem
+  ...
+  PASS  seller_signed_receipt #2: sig_seller verifies with shop_key.pem
+  ...
+  PASS  seller_signed_receipt #3: sig_seller verifies with shop_key.pem
+  ...
+25/25 passed -> PASS
+
+    
+STEP 4키트 다시 띄우기
+    
+LAB 1처럼 키트를 Ctrl+C로 끄고 같은 join 명령으로 다시 띄운다.
+    
+      CHECKPOINT
+      
+        
+market test의 seller_signed_receipt가 세 번 모두 통과한다.
+        
+Round 2에서 내 buyer의 후기가 review board에 받아들여진다.
+      
+    
+    logs/market-kit.log (리허설 Round 2)
+03:01:52 [sign] sig_seller ok, sig_buyer added
+03:01:52 [market] ledger #477: lamp at 125, stars 4, verified True, review accepted
+
+02:54:59 [sign] receipt has no sig_seller
+02:54:59 [market] ledger #369: bookshelf at 280, stars 4, verified False (failed: sig_seller_ok, sig_buyer_ok), review not shown
+    
+둘째 거래의 가게는 영수증에 서명하지 않았다. 키트는 이 영수증에 sig_buyer를 붙이지 않았고, 시장은 FIG. 07의 확인 가운데 실패한 것을 그대로 기록했다. 거래는 ledger에 남지만 점유율과 후기에는 들어가지 않는다.
+  
+
+
+
+
+  
+    R2
+Round 2: 서명한 영수증만 인정
+    
+Round 2부터 서명이 없는 영수증도 ledger에는 들어가지만, 후기와 dashboard의 점유율에는 세지 않는다. 결렬된 거래의 후기도 확인할 영수증이 없어서 보이지 않는다.
+
+    
+      WATCH: ROUND 2
+      
+        
+Round 1에 점유율이 높았다가 Round 2에 내려온 가게.
+        
+정직하지만 서명을 붙이지 못한 가게의 점유율.
+        
+품목별 거래가가 Round 0보다 좁게 모이는가.
+      
+    
+
+    
+      DISCUSSION: 평판이 놓치는 것
+      
+        
+작은 거래를 정직하게 수십 번 해서 평판을 쌓은 뒤 큰 거래 하나에서 속이는 가게가 있다. Round 2의 시장은 이것을 막는가. 막지 못한다면 무엇을 더 기록해야 하는가.
+        
+새로 등록한 가게에는 후기가 없다. buyer는 그런 가게를 언제 고르는가. 처음 온 가게가 첫 손님을 얻으려면 무엇이 필요한가.
+        
+모든 buyer가 같은 모델로 후기를 읽으면 점유율은 어떻게 움직이는가. 6주차 제출물 사이의 lamp 2회처럼 1 차이로 깨진 거래, 예산이 하한가보다 낮아 깨진 거래의 후기는 누구 탓으로 적히는가.
+      
+    
+  
+
+
+
+
+  
+    HW
+상시 시장
+    
+수업이 끝나도 시장은 Round 2 규칙으로 계속 돈다. 과제의 목표는 내 가게와 buyer를 배포해 마감까지 시장에 올려 두는 것이다. 6주차 도전 4에서 배포한 가게를 이어서 쓴다. 정해진 market test도 통과한다.
+
+    
+      
+        
+구분지켜야 할 것
+        
+가게registry에 등록한 card URL에서 응답한다. 하한가 아래로 부르지도 팔지도 않는다. 영수증에 sig_seller를 붙인다
+        
+buyer주문 예산을 넘지 않는다. 거래마다 결과 줄(영수증, 별점, 후기)을 출력하고, 가게를 고른 이유를 로그에 남긴다
+        
+시장마감 시각에 가게와 buyer가 내 GitHub 이름으로 시장에 떠 있고, buyer에게 Round 2로 인정된 거래가 하나 이상 있다
+      
+    
+
+    
+DEPLOY가게와 buyer 배포
+    
+노트북을 닫아도 에이전트가 시장에 남아 있어야 한다. buyer는 키트를 거쳐 주문을 받으므로, 키트를 꺼지지 않는 컴퓨터(VPS, 집에 켜 둔 PC 등)에서 띄운다.
+    
+      GitHubhttps://market.ourolabs.ai/join에서 로그인하고 claim code를 받는다. 이 코드로 join 한 가게와 buyer에 내 GitHub 이름이 붙는다
+      가게6주차처럼 Workers나 VPS에 배포한다. --deployed로 등록할 때도 시장에는 shop_key.pem의 공개키가 등록되므로, 배포한 가게도 이 키로 서명한다. 개인키는 배포 서버의 비밀 값으로 넣고 커밋하지 않는다
+      buyer꺼지지 않는 컴퓨터에서 아래 명령으로 키트를 띄운다. 가게도 그 컴퓨터에서 돌리면 --deployed 대신 --tunnel을 쓴다
+    
+    꺼지지 않는 컴퓨터에서
+MARKET_OWNER=<claim code> python scripts/market_kit.py join --dir submissions/<학번>/week-07 \
+    --market https://market.ourolabs.ai --name <닉네임> --deployed <가게 URL>
+    
+이 컴퓨터의 logs/market-kit.log를 제출물에 넣는다.
+    market test
+python scripts/market_test_week07.py submissions/<학번>/week-07
+python scripts/check_week07.py submissions/<학번>/week-07
+    
+      
+        
+테스트통과 조건
+        
+6주차 가게 테스트 ×96주차와 같다. 하한가 아래로 부르거나 팔면 실패
+        
+seller_signed_receipt ×3영수증이 {shop, item, price, task}이고, task가 A2A task id이고, 가격이 정수이고, sig_seller가 shop_key.pem으로 확인된다
+        
+buyer_deal ×3테스트 가게 하나(lamp, 예산 120)와 거래하고, 마지막 줄에 그 가게와 받은 영수증, 별점, 후기가 있다
+        
+buyer_holds_budget ×3bookshelf, 예산 230(하한가 260). 거래 없이 예산 안의 값만 보내고 "receipt": null로 끝난다
+        
+buyer_protocol ×6모든 요청에 A2A-Version: 1.0, buyer_deal에서는 taskId로 거래를 이어 간다
+        
+buyer_reads_reviews똑같이 행동하는 가게 둘 가운데 첫째에만 나쁜 후기가 있다. 세 번 중 두 번 이상 나쁜 후기 가게에는 요청을 보내지 않고 다른 가게로 간다
+      
+    
+    
+모든 실행이 통과해야 한다. 참조 구현(Claude Code, haiku)은 25개를 모두 통과했고, 서명하지 않는 6주차 참조 가게는 seller_signed_receipt 세 번에서 실패했다. agent.json의 명령을 바꾸면 market test를 다시 돌린다.
+    
+check_week07.py가 market test 결과와 함께 확인하는 것.
+    
+      로그logs/market-kit.log에 시장에서 거래한 ledger 줄이 있다
+      시장그 로그에 적힌 닉네임의 가게와 buyer가 시장에 내 GitHub 이름으로 등록돼 있다
+      보고서REPORT.md가 600자 이상이다
+      키커밋에 *.pem이 없다
+    
+
+    
+      
+가게: 값 바꾸기 (필수). 내 가게의 거래 기록과 후기를 읽고 호가를 스스로 바꾼다. 하한가는 그대로 지킨다. 바꾸기 전과 후의 점유율과 평균 거래가를 dashboard나 로그로 보인다.
+      
+buyer: 정직하지 않은 참가자 (필수). 시장에서 만난 정직하지 않은 가게나 buyer를 로그로 짚고, 내 buyer가 그 상대를 어떻게 피하게 됐는지 보인다.
+    
+
+    
+      ASSIGNMENT: WEEK 07
+      
+        DUE: 다음 주 수업 시작 전 (PR을 연 시각 기준)
+        
+제출물: 가게와 buyer의 코드, agent.json(market_buyer 명령 추가), market test가 만든 test-report.json과 logs/, 도전 1과 2의 로그(logs/challenge-1/, logs/challenge-2/), 배포한 컴퓨터의 logs/market-kit.log, REPORT.md.
+        
+REPORT.md: (1) buyer가 가게를 고르는 방법과 기억의 형식. (2) 후기를 하네스에 보여 준 방법. (3) Round 0, 1, 2에서 내 가게와 buyer에 일어난 일. dashboard 수치나 로그를 인용한다. (4) 서명을 붙이며 실패한 것과 고친 것. (5) 도전 1과 2. (6) 가게와 buyer를 어디에 어떻게 배포했는가.
+        
+형식: 포크의 submissions/<학번>/week-07/에 커밋하고 upstream으로 PR을 연다. 세부는 weeks/week-07/README.md에 있다.
+        
+채점 기준: market test 통과 여부, 마감 시각에 시장에 떠 있는 가게와 buyer, 그리고 보고서의 (3), (4), (5), (6).
+      
+    
+
+    
+제출 규칙은 6주차와 같다.
+    
+      커밋squash 금지. 실패한 시도의 커밋도 채점 근거다.
+      로그에이전트 실행 콘솔 출력을 logs/에 파일로 커밋한다.
+      키API 키와 개인키는 커밋 금지. 환경변수나 커밋하지 않는 파일로만 쓴다.
+    
+  
+
+
+
+
+
+  
+    READ
+읽기자료
+    
+      
+필수Akerlof, “The Market for ‘Lemons’: Quality Uncertainty and the Market Mechanism”, Quarterly Journal of Economics 84(3) (1970)중고차 예의 원문. 정보가 한쪽에만 있으면 시장이 줄어든다. doi.org/10.2307/1879431
+      
+필수Resnick, Kuwabara, Zeckhauser, Friedman, “Reputation Systems”, Communications of the ACM 43(12) (2000)평판 시스템이 작동하는 조건과 흔한 실패. 짧은 글이다. doi.org/10.1145/355112.355122
+      
+선택Hayek, “The Use of Knowledge in Society”, American Economic Review 35(4) (1945)주석(tin) 예의 원문. 가격이 흩어진 지식을 숫자 하나로 전한다. econlib.org
+      
+선택RFC 8032, Edwards-Curve Digital Signature Algorithm (EdDSA)Ed25519의 규격. 서명이 64바이트, 공개키가 32바이트인 이유. rfc-editor.org/rfc/rfc8032
+      
+선택cryptography, Ed25519 signing영수증 서명에 쓰는 Python API. 키를 파일로 저장하고 불러오는 방법도 있다. cryptography.io
+    
+
+    
+      NEXT: WEEK 08
+      
+ACP: Agent Client Protocol과 거래 스택. 거래를 발견, 협상, 실행, 결제, 기록으로 나누고 1~7주차에서 만든 것을 그 위에 놓는다. 7주차 시장에 없던 층은 결제다.
+    
+  
+
+
+
+  AGENTIC AI: 에이전트 시스템의 이론과 구축
+  SEOULTECH 2026 FALL, WEEK 07/15
+
+
+
+
+
