@@ -63,6 +63,10 @@ STEP_SHARE = 0.05                             # one offer rises at most this sha
 # Smaller rises and two more offers let a deal settle nearer the shop's floor. Revert to 0.05 and 8 if deals/h fall under 35
 STEP_SHARE = 0.03
 MAX_OFFERS = 10
+# Claude (2026-11-13 01:44, hourly check, the 21:44 revert line "deals/h under 35"): 00:44-01:44 18 deals on 52 orders, 14 walks
+# and 22 "No deal" (was 53/h at 0.05); class deals pct 0.711 -> 0.689, posts 0.622 -> 0.600, total 1.503 -> 1.499
+STEP_SHARE = 0.05
+MAX_OFFERS = 8
 PRICE_WEIGHT = 10.0                           # shop score per unit of paid/list: 0.03 cheaper is worth 0.3 stars
 PRICE_MIN_DEALS = 10                          # market deals of a shop before its prices count
 SHOP_PRICES = Path("shop_prices.json")        # paid/list per shop and kind, from the ledger (restock.py writes it)
