@@ -35,11 +35,23 @@ def talks(orders: list) -> list:
         for t in o.get("tries") or []:
             if t.get("shop") and t.get("list"):
                 out.append({"ts": o.get("ts") or 0, "shop": t["shop"], "sku": t.get("sku"), "kind": kind, "list": t["list"],
-                            "asks": t.get("asks") or [], "deal": False, "price": None})
+                            "asks": t.get("asks") or [], "deal": False, "price": None, "ended": ENDED in str(t.get("left") or "")})
         if o.get("shop") and o.get("list_price"):
             out.append({"ts": o.get("ts") or 0, "shop": o["shop"], "sku": o.get("sku"), "kind": kind, "list": o["list_price"],
-                        "asks": o.get("asks") or [], "deal": bool(o.get("deal")), "price": o.get("price")})
+                        "asks": o.get("asks") or [], "deal": bool(o.get("deal")), "price": o.get("price"),
+                        "ended": ENDED in str(o.get("left") or "")})
     return out
+
+
+ENDED = "ended the talk after our offer"      # market_buyer's words when the shop closes on our offer
+NOHAGGLE_ENDS = 0.5     # 11/12: a shop that ends this share of our talks (of a kind, CELL_MIN talks or more) on our offer
+                        # is asked once at its own price: 698 talks a day ended so, 318 at psyoung82, 169 at winun1127,
+                        # 145 at mjforge, their first ask a median 0.8 of list against our first offer 0.5
+
+
+def nohaggle(model: dict, shop: str, kind: str) -> bool:
+    c = ((model.get("shops") or {}).get(shop) or {}).get(kind) or {}
+    return (c.get("n") or 0) >= CELL_MIN and (c.get("ends") or 0) >= NOHAGGLE_ENDS
 
 
 def build(orders: list, now: float) -> tuple[dict, dict]:
@@ -55,7 +67,7 @@ def build(orders: list, now: float) -> tuple[dict, dict]:
         conc = [t["asks"][1] / t["asks"][0] for t in ts if len(t["asks"]) >= 2 and t["asks"][0]]
         paid = [t["price"] / t["list"] for t in ts if t["deal"] and t["price"]]
         shops[shop][kind] = {"n": len(ts), "first_ask": med(first), "concede": med(conc), "deal_rate": round(len(paid) / len(ts), 3),
-                             "paid": med(paid), "deals": len(paid)}
+                             "paid": med(paid), "deals": len(paid), "ends": round(sum(1 for t in ts if t.get("ended")) / len(ts), 3)}
     by_sku = defaultdict(list)
     for t in rows:
         if t["ts"] >= now - MAP_WINDOW and t["sku"] and not common.is_ours(t["shop"]):     # other shops only

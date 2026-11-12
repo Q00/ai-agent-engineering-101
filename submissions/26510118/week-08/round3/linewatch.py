@@ -93,7 +93,10 @@ FIND_LIST_MIN, FIND_N, FIND_MEDIAN, FIND_SELLERS = 200_000, 8, 0.66, 99    # sel
 # grades (A 70%, B 20%, C 10%; mid costs 0.65, 0.50, 0.35 times the surge), sold at its grade's market with the
 # warranty (others_6h "_w" cells, 10+; a missing B or C taken 0.05 / 0.10 under A) less the refunds (pricing.BREAK).
 # A line product under EM_EXIT leaves; a new one needs EM_FIND. Unknown (no A market of its own): the old rules.
-EM_EXIT, EM_FIND, EM_BACK = 0.01, 0.04, 0.02
+EM_EXIT, EM_FIND, EM_BACK = 0.01, 0.02, 0.02
+# EM_FIND 0.04 until 11/12 (the person's call, "retake 1st", aggressive): revenue is 0.3 of the shop's score and 79% of
+# the market's money is in goods of 500k or more, where we sold 203 units a day against 1,174 at the busiest shop. A
+# unit held unsold costs the book only its storage (1% of its cost a day): the stock counts at cost.
 # EM_EXIT 0.02 until 11/9 11:30 (the person's call; 0.03 until 11/6 13:10). Restock's limit is lines, not money: at most
 # 10 a run, every 20 minutes, and most runs use all 10. Over 48 h a line earned 100.6k net on dear goods (500k+), 9.8k
 # on other goods and 1.2k on food (expired food counted), and the lines the line gave up went to food (1,238 of 2,585);
@@ -111,7 +114,14 @@ REAL_WINDOW, REAL_MIN, CAL_MIN, CAL_MAX = 36 * 3600, 15, 3, 0.05
 # first count, 0.028-0.109, took only the refunds the ledger still held (24 h of breaks). An exited product whose
 # realized margin is EM_BACK or more comes back at FIND_CAP after EXIT_REST.
 FIND_CAP = 3            # 2 until 11/6 13:10
-LINE_MAX_SKUS = 40       # 20 until 11/5 01:00, 30 until 09:20
+FIND_CAP_DEAR, DEAR = 2, 500_000   # 11/12: a new product of 500k or more starts at 2 units (breadth, not depth: dear
+                                   # units sat a median 15 h, food 0.3 h)
+LINE_MAX_SKUS = 80       # 20 until 11/5 01:00, 30 until 09:20, 40 until 11/12 (the person's call, aggressive)
+TOP_Q = 0.75             # 11/12 (the person's idea: the upper segment, not the average): a candidate is ranked by the
+                         # money the top quarter of its buyers paid, at that quarter's price: settles at or over the SKU's
+                         # TOP_Q quantile of paid / list, times list, times (that quantile - COST_GUESS). The median still
+                         # gates (FIND_MEDIAN); the rank picks where buyers pay up. On 11/12 the top quarter of one 3.8M
+                         # bed's settles carried 319M of its 975M a day
 UNMET_WINDOW, UNMET_MIN, UNMET_LIST_MIN, UNMET_CAP, UNMET_MAX = 12 * 3600, 3, 300_000, 2, 10   # 1 order until 11/6:
                          # overnight 48 products joined on one unmet order each; most left 4 h later unsold
                          # 6 h, 2 orders, 500k, cap 1, 5 until 11/5 02:20 (the first beds sold within minutes)
@@ -295,10 +305,11 @@ def calibration(real: dict, model) -> float:
 
 def discover(settles: list, names: dict, catalog: dict, line: dict, caps: dict, now: float, unmet: list | None = None,
              params: dict | None = None, margin=None) -> dict:
-    """{sku: {n, median, sellers, list, at}}: new products for the line from other shops' settles of the last
-    FIND_WINDOW, best expected margin (settles x list x (median - COST_GUESS)) first, as many as leave the line at
-    LINE_MAX_SKUS products with a cap above 0. params: an experiment's find_median, find_sellers, line_max_skus;
-    what it adds is marked exp."""
+    """{sku: {n, median, top, sellers, list, at}}: new products for the line from other shops' settles of the last
+    FIND_WINDOW, the most top-quarter money first (TOP_Q: settles at or over that quantile x list x (quantile -
+    COST_GUESS); until 11/12 all settles at the median), as many as leave the line at LINE_MAX_SKUS products with a cap
+    above 0; one of DEAR or more starts at FIND_CAP_DEAR. params: an experiment's find_median, find_sellers,
+    line_max_skus; what it adds is marked exp."""
     params = params or {}
     least, most = params.get("find_median", FIND_MEDIAN), params.get("find_sellers", FIND_SELLERS)
     room = params.get("line_max_skus", LINE_MAX_SKUS) - sum(1 for s in line if caps.get(s, line[s]) > 0)
@@ -316,13 +327,18 @@ def discover(settles: list, names: dict, catalog: dict, line: dict, caps: dict, 
         lp = (catalog.get(sku) or {}).get("list_price") or 0
         if lp < FIND_LIST_MIN or len(rows) < FIND_N:
             continue
-        m = st.median(a / lp for a, _ in rows)
+        ratios = sorted(a / lp for a, _ in rows)
+        m = st.median(ratios)
+        top = ratios[min(len(ratios) - 1, int(TOP_Q * len(ratios)))]
+        n_top = sum(1 for r in ratios if r >= top)
         sellers = len({sh for _, sh in rows})
         em = margin(sku) if margin else None
         if m >= least and sellers <= most and (em is None or em >= EM_FIND):
-            picks.append((len(rows) * lp * (m - COST_GUESS), sku, {"n": len(rows), "median": round(m, 4), "sellers": sellers, "list": lp}))
+            picks.append((n_top * lp * (top - COST_GUESS), sku,
+                          {"n": len(rows), "median": round(m, 4), "top": round(top, 4), "sellers": sellers, "list": lp}))
     picks.sort(key=lambda x: -x[0])
-    out = {sku: dict(info, at=int(now), cap=FIND_CAP, source="market", **({"exp": True} if params else {}))
+    out = {sku: dict(info, at=int(now), cap=FIND_CAP_DEAR if info["list"] >= DEAR else FIND_CAP, source="market",
+                     **({"exp": True} if params else {}))
            for _, sku, info in picks[:room]}
     room -= len(out)
     for sku, info in list(unmet_wanted(unmet or [], catalog, line, now).items())[:max(0, min(room, UNMET_MAX))]:

@@ -174,15 +174,33 @@ def run(now: float | None = None, board: dict | None = None) -> dict:
             out["buyer_min_share"] = min(CLAMP[1], max(CLAMP[0], best)) if best is not None else None
             if out["buyer_min_share"] is not None:
                 out["probe"] = {"share": PROBE_SHARE, "min_share": round(max(CLAMP[0], out["buyer_min_share"] - PROBE_DROP), 2)}
+        floor = goods_floor(out["lambda"], scoreboard.num(me_b, "saved"), scoreboard.num(me_b, "deals"))
+        if floor is not None:
+            out["goods_floor"] = floor
     common.write_json(folder() / "objective.json", out)
     return out
+
+
+PRIOR_DEALS = 100        # the board counts saved as if the buyer had this many more deals at 0% (Patch 3.4)
+
+
+def goods_floor(lam: dict, saved, deals) -> float | None:
+    """The least share a goods deal must keep in expectation, its breaks counted (11/12, the person's call): a deal
+    keeping k moves saved by (k - saved) / (deals + PRIOR_DEALS) and deals by one, worth lam_saved and lam_deals each
+    (the prices above), so it pays only over saved - lam_deals x (deals + PRIOR_DEALS) / lam_saved. Over 48 h to 11/12
+    our grade A goods with the warranty kept 0.297 after their breaks (933 deals), against saved 0.335 and that line at
+    0.313; food kept 0.426. Clamped to CLAMP; None without the prices."""
+    ls, ld = (lam or {}).get("saved"), (lam or {}).get("deals")
+    if not ls or ld is None or saved is None or deals is None:
+        return None
+    return round(min(CLAMP[1], max(CLAMP[0], saved - ld * (deals + PRIOR_DEALS) / ls)), 4)
 
 
 def brief(now: float) -> dict | None:
     o = common.read_json(folder() / "objective.json", None)
     if not isinstance(o, dict):
         return None
-    return {k: o.get(k) for k in ("at", "view", "buyer_min_share", "probe", "options", "lambda", "basis")}
+    return {k: o.get(k) for k in ("at", "view", "buyer_min_share", "probe", "goods_floor", "options", "lambda", "basis")}
 
 
 if __name__ == "__main__":

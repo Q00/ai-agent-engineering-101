@@ -224,6 +224,30 @@ def test_terms():
     (common.MARKET_DIR / "analysis" / "objective.json").unlink()
     check("the share a deal must keep: food 1 - 0.27; goods without a warranty pay for the break too (A at 2.8%: 69.3%)",
           round(mb.share_cap("food", None, True, 0.27), 3) == 0.73 and round(mb.share_cap("goods", "A", False, 0.27), 3) == 0.693)
+    # 11/12: goods keep at least objective.json's goods_floor after their breaks
+    common.write_json(common.MARKET_DIR / "analysis" / "objective.json", {"at": time.time(), "buyer_min_share": 0.20, "goods_floor": 0.35})
+    flow[:] = [reply("Sofa (G2): grade C (refurbished), with a 6-hour warranty. Asking 700000.", {"ask": 700000, "grade": "C",
+                                                                                                   "warranty_hours": 6}),
+               reply("Asking 700000.", {"ask": 700000, "warranty_hours": 6})]
+    shop_ = Shop()
+    r = asyncio.run(mb.trade(shop_, sofa, order(1_500_000, ["G2"], "goods"), {}, {}, RULES, False))
+    check("11/12: a goods deal keeps the goods floor (0.35) when it is over the order's share (0.20): the C sofa's ceiling "
+          "is set at 0.35 after its breaks; a stale objective.json: no floor",
+          mb.goods_floor() == 0.35 and mb.goods_floor(time.time() + 3 * 3600) == 0.0 and r["goods_floor"] == 0.35
+          and r["cap"] == round(1_000_000 * mb.share_cap("goods", "C", True, 0.35)), (r.get("cap"), r.get("goods_floor")))
+    (common.MARKET_DIR / "analysis" / "objective.json").unlink()
+    flow[:] = [reply("Kimchi (K1): grade A, certificate attached. Asking 14000.", {"ask": 14000})]
+    shop_ = Shop()
+    r = asyncio.run(mb.trade(shop_, dict(kim, nohaggle=True), order(22000, ["K1"], "food"), {}, {}, RULES, False))
+    check("11/12: a shop that ends talks on lower offers is offered its own ask when it is within our ceiling (14,000), "
+          "not our opening 10,000", r["offers"][:1] == [14000] and shop_.sent[1] == "14000" and r.get("nohaggle"),
+          (shop_.sent, r["offers"]))
+    flow[:] = [reply("Kimchi (K1): grade A, certificate attached. Asking 18000.", {"ask": 18000})]
+    shop_ = Shop()
+    r = asyncio.run(mb.trade(shop_, dict(kim, nohaggle=True), order(22000, ["K1"], "food"), {}, {}, RULES, False))
+    check("...and left at once when its ask (18,000) is over our ceiling (14,600): no offer, the next shop is tried",
+          not r["offers"] and "ends talks on lower offers" in (r["left"] or "") and shop_.sent[-1] == "(cancel)",
+          (shop_.sent, r.get("left")))
     check("a warranty for goods listed at 100,000 or more", mb.wants_warranty(dict(goods, list=168000), {}, False, RULES))
     check("...from a shop whose goods broke on us", mb.wants_warranty(goods, {"K": {"broken": 1}}, False, RULES))
     check("...when every choice was poor", mb.wants_warranty(goods, {}, True, RULES))

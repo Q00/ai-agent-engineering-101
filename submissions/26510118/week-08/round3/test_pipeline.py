@@ -263,14 +263,16 @@ def test_pricing():
           and pricing.plan(food, now, catalog=CATALOG, sku_market=own, late=True)["ask"] == 14000)
     check("...the offset comes from the caller when given (an experiment's arm: market - 2%)",
           pricing.plan(food, now, catalog=CATALOG, sku_market=own, ask_over=-0.02)["ask"] == 13200)
-    fm = pricing.plan(food, now, catalog=CATALOG, sku_market=own, food_floor="market")
+    fm = pricing.plan(food, now, catalog=CATALOG, sku_market=own, food_floor="high")
     fc = pricing.plan(food, now, catalog=CATALOG, sku_market=own, food_floor="cost")
-    check("11/9, the food-floor experiment: the \"market\" arm holds food at its market less 5% of list (0.63: 12,600) over "
-          "the cost floor (12,240) and says so; the \"cost\" arm, food on clearance and goods keep the cost floor",
-          (fm["floor"], fm["market_floor"], fc["floor"], fc["market_floor"]) == (12600, True, 12240, False)
+    check("11/12, the food price experiment: the \"high\" arm asks 4% of list more (0.74: 14,800 against 14,000) and holds "
+          "food at its market less 2% of list (0.66: 13,200) over the cost floor (12,240), and says so; the \"cost\" arm, "
+          "food on clearance and goods keep the cost floor",
+          (fm["ask"], fm["floor"], fm["market_floor"], fc["ask"], fc["floor"], fc["market_floor"])
+          == (14800, 13200, True, 14000, 12240, False)
           and pricing.plan(dict(food, cost=10000, expires_at=now + 10 * H), now, catalog=CATALOG, sku_market=own,
-                           food_floor="market")["floor"] == 5000
-          and pricing.plan(dict(food, kind="goods"), now, sku_market=own, food_floor="market")["market_floor"] is False,
+                           food_floor="high")["floor"] == 5000
+          and pricing.plan(dict(food, kind="goods"), now, sku_market=own, food_floor="high")["market_floor"] is False,
           (fm, fc))
     p = pricing.plan(goods_a, now, warranty=True, sku_market={"A": {"n": 30, "median": 0.70}, "A_w": {"n": 12, "median": 0.72}})
     check("with a warranty it is set by the market's warranty settles (0.72 + 2% = 74%)", (p["ask"], p["sku_ref"]) == (29526, 0.72), p)
@@ -382,8 +384,9 @@ def test_restock(fake: Fake):
     shelf1 = [unit_row(f"u-{s}", s, CATALOG[s]["list_price"] // 2, 500 if CATALOG[s]["kind"] == "food" else None) for s in one]
     fast = [{"sku": WATER, "ts": NOW - H}] * 45
     out, info = restock.plan(inv(shelf1), CATALOG, DEMAND, {}, fast, [], rules, NOW, stocked=set(one))
-    check("a fast seller is stocked for its pace: 45 sold in 3 h -> 10 for the next two windows, one line",
-          out["buy"][0] == {"sku": WATER, "qty": 9} and info["deep"] == 1, out["buy"][:2])
+    check("a fast seller is stocked for its pace: 45 sold in 3 h, food: 3 hours of it (11/12; 40 minutes before) -> a "
+          "line's most, 20 (19 with the one held), one line",
+          out["buy"][0] == {"sku": WATER, "qty": 19} and info["deep"] == 1, out["buy"][:2])
     sold10 = [{"sku": s, "ts": NOW - H} for s in FILLERS[:10]]
     out, info = restock.plan(inv([]), CATALOG, DEMAND, {}, sold10, [], rules, NOW, stocked=set(FILLERS[:10]))
     skus = [b["sku"] for b in out["buy"]]
@@ -412,8 +415,9 @@ def test_restock(fake: Fake):
     sales = [{"sku": PAKIMCHI, "ts": NOW - H}] * 10
     out, info = restock.plan(inv(shelf), CATALOG, DEMAND, {}, sales, [], rules, NOW)
     skus = [b["sku"] for b in out["buy"]]
-    check("10 sales open the gate: the sold product first (target 3, so 2 more), then stage 2",
-          out["buy"][0] == {"sku": PAKIMCHI, "qty": 2} and {PAD, BED, KIMCHI} <= set(skus), f"{out['buy']} {info['gate']}")
+    check("10 sales open the gate: the sold product first (food: 3 hours of its pace since 11/12, so 10, 9 more with the one "
+          "held; 2 more before), then stage 2",
+          out["buy"][0] == {"sku": PAKIMCHI, "qty": 9} and {PAD, BED, KIMCHI} <= set(skus), f"{out['buy']} {info['gate']}")
     out, _ = restock.plan(inv(shelf), CATALOG, DEMAND, {}, [], [{"sku": WATER, "ts": NOW - H}], rules, NOW)
     check("a buyer turned away for lack of it: one more", out["buy"] == [{"sku": WATER, "qty": 1}], out)
     away = lambda n, cat, age=H, sku=None: [{"ts": NOW - age, "sku": sku, "category": cat, "reason": "out"}] * n

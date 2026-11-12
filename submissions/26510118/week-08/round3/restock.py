@@ -128,6 +128,10 @@ SUPPLY_GAP = 10          # seconds between the kit's supply calls
 MAX_TARGET = 4
 PACE_HOURS = 3           # our recent sales of a product, over this many hours, set its pace
 COVER = 2                # runs' worth of that pace kept on the shelf (the next window may not have lines to spare)
+FOOD_COVER_HOURS = 3     # 11/12 (the user's call, "retake 1st", aggressive): food is bought for 3 hours of its pace, not
+                         # COVER runs (40 min). Lines are the limit, and food lines were nearly empty: over 48 h 3,721
+                         # food units came in and 3,803 sold, 1 expired, units on hand a median 0.3 h old, yet a food
+                         # line carried 2.3 units on average (797 food lines a day, 53% of all) against 20 allowed
 MAX_DEPTH = 20           # one line's quantity at most
 EXPLORE_SHARE = {"explore": 0.4, "focus": 0.1}   # share of a run's lines for products never stocked yet
 GATE = 10                # our settled sales before stage 2
@@ -407,7 +411,8 @@ def plan(inv: dict, catalog: dict, demand: list, summary: dict, sales: list, ref
         if market.get(catalog[s]["category"], 0) >= HOT:
             targets[s] = max(targets[s], HOT_TARGET)
     pace = Counter(s["sku"] for s in sales if s.get("ts", 0) >= now - PACE_HOURS * 3600)
-    depth = {s: min(MAX_DEPTH, math.ceil(n / (PACE_HOURS * 3600) * COVER * RUN_EVERY)) for s, n in pace.items()}
+    cover = lambda s: FOOD_COVER_HOURS * 3600 if (catalog.get(s) or {}).get("kind") == "food" else COVER * RUN_EVERY
+    depth = {s: min(MAX_DEPTH, math.ceil(n / (PACE_HOURS * 3600) * cover(s))) for s, n in pace.items()}
     for s in sold:
         if s in catalog:
             targets[s] = max(targets.get(s, 0), SOLD_TARGET, depth.get(s, 0))

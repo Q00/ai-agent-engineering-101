@@ -56,7 +56,9 @@ BREAK = {"A": 0.026, "B": 0.107, "C": 0.30}           # the market's 24 h breaka
 # SOLO asks are off). Before: 53% of our dear grade A talks had a floor above the SKU's market + 0.01 and closed 9-10%
 # (78-81% left without an offer); with the floor at or under it they closed 23-29% at three times the margin a talk.
 ANCHOR, ASK_OVER = True, 0.02
-FOOD_FLOOR_GAP = 0.05
+FOOD_FLOOR_GAP = 0.02   # the "high" food arm's floor under the SKU's market (0.05 for the "market" arm, 11/9-11/12)
+FOOD_HIGH_LIFT = 0.04   # and its first ask over the anchored ask (11/12, the person's call: food is short of stock;
+                        # see experiments.FOOD_ARMS)
 # 11/9 23:30 (the person's call), an experiment (experiments.food_arm): our food sold 0.06-0.10 of list under other
 # shops' price for the same product and grade (24 h, 2,770 sales: A 0.640 against 0.715, costing 0.676; B 0.551 against
 # 0.637; C 0.452 against 0.580), haggled down toward a floor at cost + MARGIN (22% of food deals within 2% of it). In the
@@ -223,7 +225,8 @@ def plan(unit: dict, now: float | None = None, warranty: bool = False, adjust: f
     dear_default: dear goods (default_warranty) get the warranty unasked, except on clearance (unsold a
     week, or the round's last day), where it would lift the clearance floor by its extra.
     ref: the market median the ask moved toward, or None. food_floor: the talk's arm of the food-floor experiment
-    ("market": see FOOD_FLOOR_GAP; market_floor in the plan says it raised the floor)."""
+    ("high": FOOD_HIGH_LIFT on the ask, the floor at the market less FOOD_FLOOR_GAP; market_floor in the plan says it
+    raised the floor)."""
     extra = extra or WARRANTY_EXTRA
     now = now or time.time()
     lp, cost = unit["list_price"], unit["cost"]
@@ -245,6 +248,8 @@ def plan(unit: dict, now: float | None = None, warranty: bool = False, adjust: f
     anchored = ANCHOR and sref is not None and not clearing
     if anchored:                                                # Kiro 2.0: the SKU's own market + ASK_OVER
         want = sref + (ASK_OVER if ask_over is None else ask_over) + adjust
+        if food_floor == "high" and unit.get("kind") != "goods":          # 11/12: the bolder food arm asks more
+            want += FOOD_HIGH_LIFT
         if comp_ask is not None and g == "A":                   # not over what other shops first ask (shop_model)
             want = min(want, comp_ask - 0.005)
         nudge, start = round(want - start, 4), want
@@ -283,7 +288,7 @@ def plan(unit: dict, now: float | None = None, warranty: bool = False, adjust: f
     if w:
         floor += round(lp * extra[g])
     market_floor = False
-    if food_floor == "market" and not goods and anchored and clearance is None:    # 11/9: the food-floor experiment
+    if food_floor == "high" and not goods and anchored and clearance is None:      # 11/12: the food price experiment
         held = round(lp * (sref - FOOD_FLOOR_GAP))
         if held > floor:
             floor, market_floor = held, True

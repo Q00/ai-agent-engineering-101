@@ -377,6 +377,7 @@ def candidates(order: dict, shops: list, catalog: dict, nb: dict, summary: dict,
             out.append({"shop": sh, "sku": o["sku"], "name": o.get("name") or c.get("name"), "list": lp,
                         "kind": c.get("kind"), "expected": round(expected), "gain": round(lp - expected),
                         "trust": t, "odds": p, "score": score, "flags": flags,
+                        "nohaggle": shop_model.nohaggle(model or {}, sh["name"], c.get("kind") or "goods"),
                         "market": row.get("price_ratio") if seen else None, "low": row.get("p25") if seen else None,
                         "cells": row.get("others_6h") or {}})
     return out
@@ -490,6 +491,14 @@ def order_share(order_id: str, now: float | None = None) -> tuple[float, bool]:
         if h < float(pr.get("share") or 0):
             return float(pr["min_share"]), True
     return min_share(now), False
+
+
+def goods_floor(now: float | None = None) -> float:
+    """objective.json's goods_floor while fresh (the least a goods deal keeps after its breaks, 11/12), else 0."""
+    o = common.read_json(common.MARKET_DIR / "analysis" / "objective.json", None)
+    now = now or time.time()
+    v = o.get("goods_floor") if isinstance(o, dict) and now - (o.get("at") or 0) < OBJECTIVE_FRESH else None
+    return float(v) if isinstance(v, (int, float)) and 0.1 <= v <= 0.5 else 0.0
 
 
 def share_cap(kind, g, covered: bool, lam: float) -> float:
@@ -616,7 +625,8 @@ async def trade(client: A2A, c: dict, order: dict, catalog: dict, nb: dict, rule
                 break
             g = grade_of(t) if c["kind"] == "goods" else None
             if c["kind"] == "goods":                                    # Kiro 2.0: the share this grade must keep, and
-                caps = [round(c["list"] * share_cap("goods", g, covered, lam))]     # its own market
+                gf = r.setdefault("goods_floor", goods_floor())          # (11/12) never under the goods floor, and
+                caps = [round(c["list"] * share_cap("goods", g, covered, max(lam, gf)))]     # its own market
                 gm = grade_market(c, g, covered)
                 if gm is not None:
                     caps.append(round(c["list"] * gm))
@@ -632,9 +642,16 @@ async def trade(client: A2A, c: dict, order: dict, catalog: dict, nb: dict, rule
                         r["left"] = f"the ask stayed at {ask}, above our ceiling {ceiling}"
                         break
                 prev = ask
+            if c.get("nohaggle") and ask is not None and not r["offers"]:   # 11/12: a shop that ends the talk on a lower
+                r["nohaggle"] = True                                         # offer (698 talks a day): its ask or nothing
+                if ask > ceiling:
+                    r["left"] = f"a shop that ends talks on lower offers asks {ask}, over our ceiling {ceiling}"
+                    break
             offer = min(round(c["list"] * step * scale), ceiling)
             meet = False
-            if ask is not None and ask <= offer:
+            if c.get("nohaggle") and ask is not None and ask <= ceiling and not r["offers"]:
+                offer = ask
+            elif ask is not None and ask <= offer:
                 offer = ask                                         # it fits: take it
             elif ask is not None and r["offers"] and ask <= ceiling:
                 could = not r.get("pushed") and k < len(steps) - 1   # a step left to take the shop's answer

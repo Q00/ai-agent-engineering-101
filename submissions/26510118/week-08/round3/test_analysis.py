@@ -1051,9 +1051,17 @@ def test_discover():
     check("picked: 200k+ (500k+ until 11/9), 8+ settles in 6 h, 0.66+ of list (12 and 0.70 until 11/6 15:40), any number of sellers (14 here); "
           "best margin first", list(got) == ["Gsofa0003", "Gsofa0001", "Gsofa0002"] and got["Gsofa0001"]["n"] == 30
           and got["Gsofa0002"]["sellers"] == 6 and got["Gsofa0003"]["sellers"] == 14, got)
-    em = {"Gsofa0003": 0.02, "Gsofa0001": 0.08}
-    check("...a known expected margin under 0.04 of list keeps one out (unknown: the old rules)",
+    em = {"Gsofa0003": 0.015, "Gsofa0001": 0.08}
+    check("...a known expected margin under 0.02 of list (0.04 until 11/12) keeps one out (unknown: the old rules)",
           list(linewatch.discover(settles, {}, cat, {BEDDING: 3}, {}, t, margin=em.get)) == ["Gsofa0001", "Gsofa0002"])
+    tops = (sold("Gsofa0002", 20, 0.70, 6)
+            + [dict(r, amount=round(1_500_000 * (0.68 if i < 12 else 0.85))) for i, r in enumerate(sold("Gsofa0003", 20, 0.70, 6))])
+    got = linewatch.discover(tops, {}, cat, {}, {}, t)
+    check("11/12, the upper segment: ranked by the money its top quarter paid at that quarter's price -- a 1.5M sofa "
+          "with 8 of 20 sold at 0.85 (median 0.68) before a 1M one sold 20 times at 0.70 (the median rank had it the "
+          "other way); 500k or more starts at 2 units",
+          list(got) == ["Gsofa0003", "Gsofa0002"] and got["Gsofa0003"]["top"] == 0.85 and got["Gsofa0003"]["cap"] == 2
+          and got["Gsofa0002"]["cap"] == 2, got)
     a_w = lambda m, n=20: {"by_sku": {"Gx": {"others_6h": {"A_w": {"n": n, "median": m}}}}}
     check("expected margin: A at 0.80 (B, C taken 0.05, 0.10 under), mid costs, refunds: 0.1378; at surge 1.2: 0.0198; "
           "A at 0.62: -0.0295 (B breaks 11.1%, breakage.DEFAULT since 11/7); an A market of 9 settles: unknown",
@@ -1066,7 +1074,7 @@ def test_discover():
                                                               "s4": "Kiro729"}, cat, {}, {}, t) == {}
           and list(linewatch.discover(sold("Gmat00002", 20, 0.80, 4), {}, cat, {}, {}, t)) == ["Gmat00002"])
     full = {f"Gx{i}": 2 for i in range(linewatch.LINE_MAX_SKUS - 1)}
-    check("only as many as leave the line at 40 products with a cap above 0 (one exited does not count)",
+    check(f"only as many as leave the line at {linewatch.LINE_MAX_SKUS} products with a cap above 0 (one exited does not count)",
           list(linewatch.discover(settles, {}, cat, dict(full, Gout=2), {"Gout": 0}, t)) == ["Gsofa0003"])
     bed = dict(cat, Gbed00001={"name": "bed", "category": "가구/침구>가구>침대", "list_price": 2_000_000},
                Gbed00002={"name": "bed 2", "category": "가구/침구>가구>침대", "list_price": 4_000_000},
@@ -1092,10 +1100,10 @@ def test_discover():
     finally:
         common.catalog = saved
     st_ = common.read_json(MD / "analysis" / "line_state.json")
-    check("a run adds them at cap 3 (2 until 11/6 13:10), logged with their numbers, into line.json for restock",
-          [(c["sku"], c["from"], c["to"]) for c in ch] == [("Gsofa0003", 0, 3), ("Gsofa0001", 0, 3), ("Gsofa0002", 0, 3)]
+    check("a run adds them at cap 2 (500k or more since 11/12; 3 below), logged with their numbers, into line.json for restock",
+          [(c["sku"], c["from"], c["to"]) for c in ch] == [("Gsofa0003", 0, 2), ("Gsofa0001", 0, 2), ("Gsofa0002", 0, 2)]
           and "added" in ch[0]["why"]
-          and common.read_json(MD / "analysis" / "line.json")["skus"] == {BEDDING: 3, "Gsofa0003": 3, "Gsofa0001": 3, "Gsofa0002": 3}
+          and common.read_json(MD / "analysis" / "line.json")["skus"] == {BEDDING: 3, "Gsofa0003": 2, "Gsofa0001": 2, "Gsofa0002": 2}
           and set(st_["found"]) == {"Gsofa0003", "Gsofa0001", "Gsofa0002"}, (ch, st_.get("found")))
     st_["caps"]["Gsofa0002"] = 0
     st_["exit_at"]["Gsofa0002"] = int(t - linewatch.FIND_DROP - 60)
@@ -1126,7 +1134,7 @@ def test_discover():
     check("...one sold is too few: it ends there", not v["kept"] and common.read_json(exp_path)["until"] == int(t), v)
     exp_path.unlink()
     check("one out for 12 hours is let go; the others stay", set(st_["found"]) == {"Gsofa0003", "Gsofa0001"} and "Gsofa0002" not in st_["caps"]
-          and common.read_json(MD / "analysis" / "line.json")["skus"] == {BEDDING: 3, "Gsofa0003": 3, "Gsofa0001": 3}, st_)
+          and common.read_json(MD / "analysis" / "line.json")["skus"] == {BEDDING: 3, "Gsofa0003": 2, "Gsofa0001": 2}, st_)
     summary_path = MD / "market_summary.json"
     kept_summary = summary_path.read_bytes() if summary_path.exists() else None
     common.write_json(summary_path, {"by_sku": {"Gsofa0001": {"others_6h": {"A_w": {"n": 20, "median": 0.62}}}}})
@@ -1140,7 +1148,7 @@ def test_discover():
         else:
             summary_path.write_bytes(kept_summary)
     check("a line product whose expected margin falls under 0.02 of list leaves (A market 0.62: -0.029), said with its number",
-          [(c["sku"], c["from"], c["to"]) for c in ch] == [("Gsofa0001", 3, 0)] and "expected margin -0.029" in ch[0]["why"], ch)
+          [(c["sku"], c["from"], c["to"]) for c in ch] == [("Gsofa0001", 2, 0)] and "expected margin -0.029" in ch[0]["why"], ch)
     # 11/9: what a product earned us decides, and the model is shifted by its error on the products that have both
     sale = lambda sku, i, price, cost, grade="A", w=True: {"sku": sku, "ts": t - 3 * 3600 - i * 600, "price": price, "cost": cost,
                                                           "list_price": 1_000_000, "grade": grade, "warranty": w}
@@ -1177,7 +1185,7 @@ def test_discover():
     caps = common.read_json(MD / "analysis" / "line.json")["skus"]
     check("...so a product the model puts under 0.02 (A market 0.62) stays when it earned us 0.08 over 36 h, and one out "
           "for 2 h comes back at cap 3 on the same",
-          caps.get("Gsofa0003") == 3 and [(c["sku"], c["from"], c["to"]) for c in ch] == [("Gsofa0001", 0, 3)]
+          caps.get("Gsofa0003") == 2 and [(c["sku"], c["from"], c["to"]) for c in ch] == [("Gsofa0001", 0, 3)]
           and "back in: our realized margin" in ch[0]["why"], (caps, ch))
     for f in ("line_state.json", "line.json", "line_log.jsonl"):
         (MD / "analysis" / f).unlink(missing_ok=True)
@@ -1324,6 +1332,11 @@ def test_objective_model():
               o.get("probe") == {"share": objective.PROBE_SHARE,
                                  "min_share": round(max(objective.CLAMP[0], o["buyer_min_share"] - objective.PROBE_DROP), 2)}, o.get("probe"))
         objective.MIN_DEALS = saved_min
+        lam = {"saved": 6.66, "deals": 1.1056e-05}
+        check("11/12, the goods floor: a deal pays only over saved - lam_deals x (deals + 100) / lam_saved: 0.3354 - "
+              "0.0224 = 0.313 (the 11/12 numbers); no prices: none; never under the clamp",
+              objective.goods_floor(lam, 0.3354, 13367) == 0.313 and objective.goods_floor({}, 0.3354, 13367) is None
+              and objective.goods_floor(lam, 0.3354, 10**7) == objective.CLAMP[0])
     finally:
         if kept is None:
             pfile.unlink()
@@ -1340,8 +1353,14 @@ def test_objective_model():
     model = {"shops": shops}
     check("the shop model: S1 closed 10 of 15 at 0.70 of list; S2 (met in tries) first asked 0.90 and never closed; "
           "talks older than 24 h left out", shops["S1"]["goods"] == {"n": 15, "first_ask": 0.8, "concede": 0.97, "deal_rate": 0.667,
-                                                                   "paid": 0.7, "deals": 10}
+                                                                   "paid": 0.7, "deals": 10, "ends": 0.0}
           and shops["S2"]["goods"]["deal_rate"] == 0.0 and shops["S2"]["goods"]["first_ask"] == 0.9, shops)
+    enders = ([dict(talk("S4", 800), left="the shop ended the talk after our offer 500 (its ask 800)") for _ in range(8)]
+              + [talk("S4", 800) for _ in range(4)])
+    sh4, _ = shop_model.build(enders, t)
+    check("11/12: a shop that ended 8 of its 12 talks on our offer is a no-haggle shop (asked once at its price); S1 is not",
+          sh4["S4"]["goods"]["ends"] == 0.667 and shop_model.nohaggle({"shops": sh4}, "S4", "goods")
+          and not shop_model.nohaggle(model, "S1", "goods"), sh4)
     e2 = shop_model.expected(model, "S2", "goods")
     check("expected: S1 its paid median (5+ deals) and rate; S2 its first ask after two concessions (0.86); a shop under 10 talks: none",
           shop_model.expected(model, "S1", "goods") == (0.7, 0.667) and round(e2[0], 4) == 0.8605 and e2[1] == 0.0
@@ -1457,10 +1476,10 @@ def test_stage2():
         else:
             rec_o.write_bytes(kept_o)
 
-    even = {"at": t, "on": True, "weights": {"cost": 0.5, "market": 0.5}}
+    even = {"at": t, "on": True, "weights": {"cost": 0.5, "high": 0.5}}
     split = collections.Counter(experiments.food_arm(f"task-{i}", t, even) for i in range(600))
-    check("11/9, the food-floor experiment: a talk's arm by a hash of its task id, about half each; a stale file: none",
-          250 <= split["market"] <= 350 and split["cost"] + split["market"] == 600
+    check("the food price experiment: a talk's arm by a hash of its task id, about half each at even weights; a stale "
+          "file: none", 250 <= split["high"] <= 350 and split["cost"] + split["high"] == 600
           and experiments.food_arm("task-1", t + experiments.FRESH + 60, even) is None, split)
     rec_n = MD / "records" / "negotiations.jsonl"
     kept_n = rec_n.read_bytes() if rec_n.exists() else None
@@ -1470,15 +1489,23 @@ def test_stage2():
     row = lambda a, **k: dict({"ts": t - 600, "food_floor": a, "list_price": 10_000}, **k)
     try:
         with open(rec_n, "w", encoding="utf-8") as f:
-            for r in ([row("cost", outcome="deal", price=5_600, cost=5_000)] * 150 + [row("cost", outcome="walked")] * 50
-                      + [row("market", outcome="deal", price=6_300, cost=5_000)] * 130 + [row("market", outcome="walked")] * 70):
+            for r in ([row("cost", outcome="deal", price=5_600, cost=5_000)] * 50 + [row("high", outcome="deal", price=6_500, cost=5_000)] * 50):
+                f.write(json.dumps(r) + "\n")
+        experiments.run_food(t)
+        fl = common.read_json(experiments.food_path())
+        check("11/12: until each arm has 100 deals the weights lean to the bolder arm (high 0.8, cost 0.2)",
+              fl["best"] is None and fl["weights"] == {"cost": 0.2, "high": 0.8}, fl)
+        with open(rec_n, "w", encoding="utf-8") as f:
+            for r in ([row("cost", outcome="deal", price=5_600, cost=5_000)] * 200
+                      + [row("high", outcome="deal", price=6_500, cost=5_000)] * 100 + [row("high", outcome="walked")] * 200):
                 f.write(json.dumps(r) + "\n")
         note = experiments.run_food(t)
         fl = common.read_json(experiments.food_path())
-        check("...scored per talk per list price: the market floor closes less (0.65 against 0.75) but earns more a talk, "
-              "and once 200 talks each lead by 2+ standard errors it gets 0.8",
-              fl["best"] == "market" and fl["weights"] == {"cost": 0.2, "market": 0.8}
-              and fl["stats"]["market"]["close"] == 0.65 and fl["stats"]["cost"]["close"] == 0.75 and "best market" in note, (fl, note))
+        check("...scored per unit SOLD, food being short of stock: \"high\" closes a third (0.333 against 1.0) and earns less "
+              "a talk (0.05 of list against 0.06) but 0.15 a unit against 0.06, so it leads and keeps 0.8",
+              fl["best"] == "high" and fl["weights"] == {"cost": 0.2, "high": 0.8}
+              and fl["stats"]["high"]["reward_per_talk"] == 0.05 and fl["stats"]["cost"]["reward_per_talk"] == 0.06
+              and fl["stats"]["high"]["reward_per_deal"] == 0.15 and "best high" in note, (fl, note))
     finally:
         experiments.food_path().unlink(missing_ok=True)
         if kept_obj is None:
