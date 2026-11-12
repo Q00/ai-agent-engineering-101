@@ -20,7 +20,7 @@ near_v (tolerance on the receipt), soft_rounds.
 """
 BREAK_P = {"A": 0.03, "B": 0.13, "C": 0.40}   # 11-11: 3,909 goods sold 6.5-54 h ago: A 2.3%, B 13.4%, C 34-46%
 DEFAULTS = {"take_v": 0.90, "open_v": 0.96, "step_v": 0.05, "rounds": 3, "soft_rounds": 2,
-            "food_delta": 0.0, "goods_delta": 0.03, "near_v": 0.03}
+            "food_delta": 0.0, "goods_delta": 0.03, "near_v": 0.03, "anchor_x": 0.45, "anchor_share": 0.5}
 
 
 def knob(bp, k):
@@ -70,9 +70,14 @@ def plan(kind, lp, sku, grade, m_star, bp, budget, soft=False):
     rounds = int(knob(bp, "soft_rounds" if soft else "rounds"))
     offers = [round(knob(bp, "open_v") - i * knob(bp, "step_v"), 3) for i in range(max(0, rounds))]
     offers = [max(fv, o) for o in offers]
+    # 11-12 23:40 A/B 'anchor' (SungJinho's buyer 25620027: .888 per deal vs our .839 over 12 h, same shops, e.g.
+    # psyoung82 goods .935 at .62 of list vs ours .79 at .69; its first number is ~.45 of list, under cost, and it takes
+    # the shop's counter; shops counter between their ask and the offer, so a low anchor pulls the counter to cost)
+    import random
+    anchor = random.random() < knob(bp, "anchor_share")
     return {"kind": kind, "lp": lp, "sku": sku, "grade": g, "c": round(c, 4), "floor_v": round(fv, 4), "cap": cap,
-            "take_v": knob(bp, "take_v"), "offers": offers, "soft": soft, "impossible": fv > 1.0,
-            "near_v": knob(bp, "near_v")}
+            "take_v": knob(bp, "take_v"), "offers": offers, "soft": soft and not anchor, "impossible": fv > 1.0,
+            "near_v": knob(bp, "near_v"), "anchor": anchor, "anchor_x": knob(bp, "anchor_x")}
 
 
 def move(pl, ask, n_offers, last_offer, prev_asks, hurry=False):
@@ -89,6 +94,8 @@ def move(pl, ask, n_offers, last_offer, prev_asks, hurry=False):
         if pl["soft"] and n_offers == 0:              # a shop that ends talks on low offers: start halfway to its ask
             target_v = (target_v + va) / 2 if va < target_v else target_v
         offer = price_for(target_v, lp, c)
+        if pl.get("anchor") and n_offers == 0:        # the first number: far under cost (see plan)
+            offer = min(offer, int(lp * pl["anchor_x"]))
         offer = min(offer, pl["cap"] or offer, ask)
         if last_offer:
             offer = max(offer, last_offer)

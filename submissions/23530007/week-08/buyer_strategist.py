@@ -71,7 +71,9 @@ GLOBAL = {                                    # role, bounds, step (11-12 patch 
     "rival_penalty": ((0.0, 0.1), 0.02),      # shop pick: minus this for a classmate shop ranked above us
     "max_shops": ((1, 6), 1),                 # shops tried per order
     "value_half_life_h": ((0, 6), 1),         # weight half-life of market deals in the shop values (0 = flat 6 h)
-    "talk_share": ((0.0, 1.0), 0.25),         # share of orders that first ask the shop for its lowest price, then haggle
+    "talk_share": ((0.0, 1.0), 0.25),
+    "anchor_share": ((0.0, 1.0), 0.25),       # 11-12 23:40 A/B: share of orders whose first number is anchor_x of list
+    "anchor_x": ((0.30, 0.60), 0.05),         # (SungJinho's buyer opens at ~.45 of list, under cost, and takes the counter)         # share of orders that first ask the shop for its lowest price, then haggle
 }
 
 SHOP = {                                      # per shop (user 11-06: the strategist steers the rule-based buyer)
@@ -399,7 +401,9 @@ Knobs (only these; the steps allowed now: {steps}): global "take_v" (0.80-0.98),
 (0-0.08), "v_floor" (0.70-0.82), "v_breakeven" (0.70-0.80), "slot_value" (0-0.15), "dead_p" (0-0.15), "hurry_secs" (8-30),
 "skip_delta_food" (-0.15..0.10), "skip_delta_goods" (-0.20..0.10), "target_mean" (0.60-0.90, m*
 fallback only), "food_extra_hours" (0.25-12), "conv_weight" (0-0.3), "rival_penalty" (0-0.1), "max_shops" (1-6),
-"value_half_life_h" (0-6), "talk_share" (0-1; compare talk=True/False in arms_per_order_24h). Per shop (give
+"value_half_life_h" (0-6), "talk_share" (0-1; compare talk=True/False in arms_per_order_24h), "anchor_share"
+(0-1) and "anchor_x" (.30-.60): the A/B arm 'anchor' opens at anchor_x of list (compare anchor=True/False|kind in
+arms_per_order_24h: score per ORDER, n >= 100 each, before widening it). Per shop (give
 "shop": a name from the evidence): "bias_food"/"bias_goods" (-0.1..0.1, routing for orders of that kind),
 "shop_bias" (-0.1..0.1).
 

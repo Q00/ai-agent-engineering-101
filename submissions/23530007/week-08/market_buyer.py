@@ -989,7 +989,8 @@ def main():
             soft = rej_rate is not None and rej_rate >= SOFT_REJECT
             vp = vprice.plan(vctx["kind"], want["list_price"], item, None, vctx["m_star"], bp, a.budget, soft)
             cap = max(1, vp["cap"])
-            vplan_rec = {"floor": vp["floor_v"], "take": vp["take_v"], "open": vp["offers"][:1], "c": vp["c"], "soft": soft}
+            vplan_rec = {"floor": vp["floor_v"], "take": vp["take_v"], "open": vp["offers"][:1], "c": vp["c"], "soft": soft,
+                         "anchor": vp["anchor"]}
             if order.get("kind") == "food":
                 first = (f"I want to buy {label}." + (f" It must last {hours:g} hours." if hours else "")
                          + " Any grade is fine as long as it lasts that long: please quote your cheapest unit that"
@@ -1043,7 +1044,9 @@ def main():
                     g_, w_ = graded
                     if g_ in ("A", "B", "C"):
                         # the plan is redone for the stated grade: its cost share and break rate set the floor
+                        _anc = vp.get("anchor")
                         vp = vprice.plan(vctx["kind"], want["list_price"], item, g_, vctx["m_star"], bp, a.budget, soft)
+                        vp["anchor"], vp["soft"] = _anc, soft and not _anc
                         vplan_rec.update(floor=vp["floor_v"], c=vp["c"], grade=g_)
                         if vp["impossible"] or (g_ == "C" and w_ < WARRANTY_MIN):
                             log("buyer", f"{pick['name']} offers grade {g_}: no price beats m* after a {vprice.BREAK_P[g_]:.0%} break rate: next shop")

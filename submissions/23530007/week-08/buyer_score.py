@@ -192,6 +192,8 @@ def build(now=None):
         for flag in ("aimtop", "aim15", "cheapfood", "cheapgoods", "pricefirst", "talk", "soft"):
             if flag in t:
                 arms.setdefault(f"{flag}={bool(t[flag])}", []).append(v)
+        if isinstance(t.get("vplan"), dict) and "anchor" in t["vplan"]:      # 11-12 23:40 A/B anchor
+            arms.setdefault(f"anchor={bool(t['vplan']['anchor'])}|{t.get('kind')}", []).append(v)
         if t.get("push"):
             arms.setdefault(f"push={t['push']}", []).append(v)
     out["arms_per_order_24h"] = {k: {"orders": len(v), "score": mean(v), "deals_per_order": round(sum(1 for x in v if x != 0) / len(v), 3)}
