@@ -6,6 +6,7 @@ refund probabilities below are estimates; no statistic is a guaranteed margin.
 from __future__ import annotations
 
 import collections
+import copy
 import json
 import math
 import re
@@ -207,11 +208,11 @@ def config():
         stat = CONFIG_PATH.stat()
         key = (str(CONFIG_PATH.resolve()), stat.st_mtime_ns, stat.st_size)
         if _config_cache is not None and _config_cache[0] == key:
-            return dict(_config_cache[1])
+            return copy.deepcopy(_config_cache[1])
         value = json.loads(CONFIG_PATH.read_text(encoding='utf-8'))
         value = value if isinstance(value, dict) else {'enabled': False}
         _config_cache = (key, value)
-        return dict(value)
+        return copy.deepcopy(value)
     except (OSError, ValueError):
         return {'enabled': False}
 

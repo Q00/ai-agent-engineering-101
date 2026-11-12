@@ -328,8 +328,10 @@ def save_hub(hub: dict[str, Any], path: Path = STATE_FILE) -> None:
 
 
 @contextlib.contextmanager
-def mutate_hub(path: Path = STATE_FILE, timeout: float = 8.0):
+def mutate_hub(path: Path = STATE_FILE, timeout: float = 0.1):
     """Context manager to safely load, mutate, and save state_hub.json under an exclusive lock."""
+    # Default callers are checkout analytics or retryable planning jobs. Do not
+    # consume their negotiation deadline waiting eight seconds for a busy writer.
     batches = _buyer_outcome_batches.get()
     outermost = batches is None
     if outermost:
