@@ -74,9 +74,16 @@ def tidy_tunnels():
 def main():
     say("watching")
     last_restart = time.time()      # the kit may have just started with the log still stale (11-12 07:12)
+    # idle = time since the log last grew, measured by reading its size: the log is on NFS, and its mtime lagged by
+    # 10 minutes while the kit was writing (the first version restarted a working kit at 07:19:35)
+    last_size, last_change = -1, time.time()
     while True:
         try:
-            idle = time.time() - KIT_LOG.stat().st_mtime
+            with KIT_LOG.open("rb") as f:
+                size = f.seek(0, 2)
+            if size != last_size:
+                last_size, last_change = size, time.time()
+            idle = time.time() - last_change
             pids = kit_pids()
             if idle > STALL and time.time() - last_restart > GRACE and pids:
                 for pid in pids:                    # the kit and its seller and buyer (the tunnel is tidied below)
