@@ -19,7 +19,7 @@ cwd.mkdir(parents=True)
 tracked = subprocess.check_output(['git', 'ls-files', 'submissions/25512085/week-08', 'scripts'], cwd=REPO, text=True).splitlines()
 for rel in tracked:
     src = REPO / rel
-    if (src.parent == SOURCE and src.suffix == '.py') or (src.parent == REPO/'scripts' and src.suffix == '.py') or rel.endswith('/seller_cash_policy.json'):
+    if (src.parent == SOURCE and src.suffix in ('.py', '.sh')) or (src.parent == REPO/'scripts' and src.suffix == '.py') or rel.endswith('/seller_cash_policy.json'):
         dst = tree / rel
         dst.parent.mkdir(parents=True, exist_ok=True)
         dst.write_bytes(src.read_bytes())
@@ -29,8 +29,7 @@ if test.exists():
     (cwd / test.name).write_bytes(test.read_bytes())
 scratch = tree / 'scratch'
 scratch.mkdir()
-home = scratch / 'home'
-home.mkdir()
+home = Path('C:/Users/clair/AppData/Local/Temp/opencode/fake-home-seller-locks-cache')
 for key in ('HOME', 'USERPROFILE'):
     os.environ[key] = str(home)
 os.environ['TEMP'] = os.environ['TMP'] = str(scratch)
@@ -44,7 +43,7 @@ def audit(event, args):
         raise AssertionError('network/child process forbidden: ' + event)
     if event == 'open' and isinstance(args[0], (str, bytes, os.PathLike)):
         path = Path(os.fsdecode(args[0])).resolve()
-        if REPO in path.parents and tree not in path.parents and REPO/'.venv' not in path.parents:
+        if REPO in path.parents and tree not in path.parents and REPO/'.venv' not in path.parents and path != Path(__file__).resolve():
             raise AssertionError('live repository read forbidden: ' + path.name)
         flags = args[2]
         if isinstance(flags, int) and flags & (os.O_WRONLY | os.O_RDWR | os.O_CREAT | os.O_TRUNC | os.O_APPEND) and tree not in path.parents:
@@ -54,6 +53,10 @@ sys.dont_write_bytecode = True
 os.chdir(cwd)
 sys.path.insert(0, str(cwd))
 import test_visibility_guard_offline as visibility
+import test_seller_forum_offline as forum_tests
+forum_tests.select_temp_parent = lambda: scratch
+import test_buyer_outcomes_p2_offline as outcomes_tests
+outcomes_tests.P2Tests.test_cross_process_journal_lock_fails_closed = unittest.skip('child processes forbidden; new lock tests run in-process')(outcomes_tests.P2Tests.test_cross_process_journal_lock_fails_closed)
 for name in ('test_bash_stub_preserves_auth_loop_and_other_python_forwarding', 'test_bash_stub_structure_failure_cannot_fall_back_to_vanilla'):
     setattr(visibility.LauncherTests, name, unittest.skip('isolated runner forbids child processes')(getattr(visibility.LauncherTests, name)))
 suite = (unittest.defaultTestLoader.loadTestsFromName('test_seller_locks_cache_offline') if mode == 'focused'
