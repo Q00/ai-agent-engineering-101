@@ -710,7 +710,7 @@ def choose(shops, mem, item, budget, ask_model=True, ctx=None):
                + "; next: " + ", ".join(f"{s['name']} {v[0]:.3f} (P {v[2]:.2f}, v {v[1]['saved']:.3f})" for v, s in ranked[1:4]))
         if e["saved"] < thr:
             return None, f"skip: best expected saved {e['saved']:.3f} < bar {thr:.3f} (m* {ctx.get('m_star')}) ({why})", skipped, views
-        if ctx.get("attempt", 0) > 0 and score <= 0:
+        if ctx.get("attempt", 0) > 0 and score <= 0 and elapsed >= SLOT_SECS - 5:   # inside the slot a visit is free
             return None, f"skip: stop after {ctx['attempt']} shops, {elapsed:.0f} s in: the next visit is worth {score:.3f} ({why})", skipped, views
         return pick, why, skipped, views
     lower = [s for s in allowed if s["name"] not in rivals]
