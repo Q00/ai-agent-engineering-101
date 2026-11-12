@@ -1,0 +1,15 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+__ test_tactical_limit_counts_valid_changes_instead_of_the_first_input_fields __
+tests/test_r3_policy_boundary_regressions.py:201: in test_tactical_limit_counts_valid_changes_instead_of_the_first_input_fields
+    assert kept == {
+E   AssertionError: assert {} == {'seller.conc...margin': 0.16}
+E     
+E     Right contains 3 more items:
+E     {'buyer.quick_accept_ratio': 0.73,
+E      'seller.accept_margin': 0.16,
+E      'seller.concession': 0.31}
+E     Use -v to get more diff
+=========================== short test summary info ============================
+FAILED tests/test_r3_policy_boundary_regressions.py::test_tactical_limit_counts_valid_changes_instead_of_the_first_input_fields
+1 failed in 0.28s

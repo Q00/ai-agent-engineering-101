@@ -1,0 +1,121 @@
+E501 Line too long (89 > 88)
+   --> market_a2a/memory_selection.py:112:89
+    |
+110 |                             "record": json_value(trade),
+111 |                             "settlement_evidence": None,
+112 |                             "proof_status": "receipt_observed_not_a_verified_settlement",
+    |                                                                                         ^
+113 |                         }
+114 |                     )
+    |
+
+TC002 Move third-party import `pydantic.JsonValue` into a type-checking block
+  --> tests/test_r3_buyer_boundaries.py:11:22
+   |
+ 9 | import pytest
+10 | from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+11 | from pydantic import JsonValue
+   |                      ^^^^^^^^^
+12 | from scripts import market_kit as kit
+13 | from starlette.applications import Starlette
+   |
+help: Move into type-checking block
+   |
+5  | from functools import partial
+   - from typing import Literal, assert_never
+6  + from typing import Literal, assert_never, TYPE_CHECKING
+7  |
+8  | import anyio
+9  | import pytest
+10 | from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+   - from pydantic import JsonValue
+11 | from scripts import market_kit as kit
+--------------------------------------------------------------------------------
+20 |
+21 + if TYPE_CHECKING:
+22 +     from pydantic import JsonValue
+23 +
+24 |
+   |
+note: This is an unsafe fix and may change runtime behavior
+
+TC002 Move third-party import `starlette.requests.Request` into a type-checking block
+  --> tests/test_r3_buyer_boundaries.py:14:32
+   |
+12 | from scripts import market_kit as kit
+13 | from starlette.applications import Starlette
+14 | from starlette.requests import Request
+   |                                ^^^^^^^
+15 | from starlette.responses import JSONResponse
+16 | from starlette.routing import Route
+   |
+help: Move into type-checking block
+   |
+5  | from functools import partial
+   - from typing import Literal, assert_never
+6  + from typing import Literal, assert_never, TYPE_CHECKING
+7  |
+--------------------------------------------------------------------------------
+13 | from starlette.applications import Starlette
+   - from starlette.requests import Request
+14 | from starlette.responses import JSONResponse
+--------------------------------------------------------------------------------
+20 |
+21 + if TYPE_CHECKING:
+22 +     from starlette.requests import Request
+23 +
+24 |
+   |
+note: This is an unsafe fix and may change runtime behavior
+
+C901 `test_payer_stops_before_complete_when_checkout_is_dishonest` is too complex (12 > 10)
+  --> tests/test_r3_buyer_boundaries.py:24:5
+   |
+23 | @pytest.mark.parametrize("malice", ["signature", "price", "item", "task", "endpoint"])
+24 | def test_payer_stops_before_complete_when_checkout_is_dishonest(
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+25 |     monkeypatch: pytest.MonkeyPatch,
+26 |     malice: Literal["signature", "price", "item", "task", "endpoint"],
+   |
+
+C901 `run` is too complex (11 > 10)
+  --> tests/test_r3_buyer_boundaries.py:29:15
+   |
+27 | ) -> None:
+28 |     # Given: the signed A2A receipt remains100; only merchant checkout is altered.
+29 |     async def run() -> None:
+   |               ^^^
+30 |         async with scenario(monkeypatch) as scene:
+31 |             completed: list[bool] = []
+   |
+
+TC002 Move third-party import `pydantic.JsonValue` into a type-checking block
+  --> tests/test_r3_rejection.py:11:22
+   |
+ 9 | import anyio
+10 | import pytest
+11 | from pydantic import JsonValue
+   |                      ^^^^^^^^^
+12 | from scripts import market_kit as kit
+   |
+help: Move into type-checking block
+   |
+6  | from enum import StrEnum
+   - from typing import Final, Literal, assert_never
+7  + from typing import Final, Literal, assert_never, TYPE_CHECKING
+8  |
+9  | import anyio
+10 | import pytest
+   - from pydantic import JsonValue
+11 | from scripts import market_kit as kit
+--------------------------------------------------------------------------------
+16 |
+17 + if TYPE_CHECKING:
+18 +     from pydantic import JsonValue
+19 +
+20 |
+   |
+note: This is an unsafe fix and may change runtime behavior
+
+Found 6 errors.
+3 unsafe fixes available with `--fix --unsafe-fixes`.

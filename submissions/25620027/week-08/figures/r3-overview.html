@@ -1,0 +1,226 @@
+<!doctype html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>R3 에이전트 구조도</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet">
+<style>*{box-sizing:border-box} :root{--paper:#FFFFFF;--ink:#1C1917;--body:#44403C;--muted:#78716C;--faint:#A8A29E;--line:#E7E5E4;--wash:#FAFAF9;--mono:'IBM Plex Mono','Pretendard',ui-monospace,monospace;--r:8px} body{margin:0;background:var(--paper);color:var(--body)} main{max-width:680px;margin:40px auto} .fig{margin:40px 0;border:1px solid var(--line);border-radius:var(--r);padding:26px 22px 14px} .fig .cap{font-family:var(--mono);font-size:10.5px;letter-spacing:.04em;color:var(--faint);margin-top:12px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}.fig .cap b{color:var(--muted);font-weight:500}.fig svg{width:100%;height:auto;display:block}svg text{font-family:var(--mono)}</style>
+<main>
+<div class="fig" id="r3-fig1">
+<svg viewBox="0 0 680 584" role="img" aria-label="시장 주문은 방어막과 규칙 판매자·바이어를 거쳐 즉시 답하고, 관리자 루프가 정책표를 고치며, 크론·자문·헤르메스가 텔레그램과 옵시디언으로 사용자와 이어지고, 사용자가 승인하면 Claude가 구현해 VPS와 PR에 반영한다">
+<defs>
+<marker id="a1" viewBox="0 0 8 12" refX="8" refY="6" markerWidth="8" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1 L7 6 L1 11" fill="none" stroke="#1C1917" stroke-width="1.5"/></marker>
+<marker id="a1d" viewBox="0 0 8 12" refX="8" refY="6" markerWidth="8" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1 L7 6 L1 11" fill="none" stroke="#78716C" stroke-width="1.5"/></marker>
+</defs>
+<!-- top row -->
+<g fill="#FFFFFF" stroke="#1C1917" stroke-width="1.5">
+<rect x="0" y="0" width="140" height="56"/><rect x="180" y="0" width="140" height="56"/><rect x="360" y="0" width="140" height="56"/><rect x="540" y="0" width="140" height="56"/>
+</g>
+<g text-anchor="middle" fill="#1C1917" font-size="11.5" font-weight="600">
+<text x="70" y="24">시장 서버</text><text x="250" y="24">GitHub PR #372</text><text x="430" y="24">Claude Code</text><text x="610" y="24">사용자</text>
+</g>
+<g text-anchor="middle" fill="#78716C" font-size="9.5">
+<text x="70" y="42">market.ourolabs.ai</text><text x="250" y="42">11/17 23:59 마감</text><text x="430" y="42">Mac · 승인 건 구현</text><text x="610" y="42">텔레그램 확인·승인</text>
+</g>
+<g fill="none" stroke="#1C1917" stroke-width="1.5">
+<path d="M359 34 L321 34" marker-end="url(#a1)"/>
+<path d="M539 34 L501 34" marker-end="url(#a1)"/>
+</g>
+<g fill="#1C1917" font-size="9.5" text-anchor="middle"><text x="340" y="24">push</text><text x="520" y="24">승인</text></g>
+<!-- VPS + container boundaries -->
+<rect x="0" y="100" width="680" height="368" fill="none" stroke="#A8A29E" stroke-width="1" stroke-dasharray="3 4"/>
+<text x="160" y="117" fill="#A8A29E" font-size="9.5" letter-spacing="1">VPS 72.62.196.24</text>
+<rect x="14" y="126" width="430" height="330" fill="none" stroke="#A8A29E" stroke-width="1" stroke-dasharray="3 4"/>
+<text x="160" y="143" fill="#A8A29E" font-size="9.5" letter-spacing="1">컨테이너 r3</text>
+<!-- market <-> trade -->
+<path d="M50 57 L50 171" fill="none" stroke="#1C1917" stroke-width="1.5" marker-end="url(#a1)"/>
+<path d="M110 171 L110 57" fill="none" stroke="#78716C" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#a1d)"/>
+<text x="118" y="74" fill="#1C1917" font-size="9.5">주문·제안 (바이어당 약 20초)</text>
+<text x="118" y="88" fill="#78716C" font-size="9.5">호가·수락·서명 영수증</text>
+<!-- Claude -> VPS -->
+<path d="M430 57 L430 125" fill="none" stroke="#1C1917" stroke-width="1.5" marker-end="url(#a1)"/>
+<text x="438" y="80" fill="#1C1917" font-size="9.5">release 교체</text>
+<!-- trade row -->
+<g fill="#FFFFFF" stroke="#1C1917" stroke-width="1.5">
+<rect x="28" y="172" width="120" height="46"/><rect x="172" y="172" width="126" height="46" stroke-width="2.5"/><rect x="322" y="172" width="108" height="46"/>
+</g>
+<g text-anchor="middle" fill="#1C1917" font-size="11.5" font-weight="600">
+<text x="88" y="191">방어막 guard</text><text x="235" y="191">판매자·바이어</text><text x="376" y="191">통역 Haiku</text>
+</g>
+<g text-anchor="middle" fill="#78716C" font-size="9.5">
+<text x="88" y="208">속임수 문장 차단</text><text x="235" y="208">규칙 · 즉시 응답</text><text x="376" y="208">말로만 올 때 3초</text>
+</g>
+<path d="M148 195 L171 195" fill="none" stroke="#1C1917" stroke-width="1.5" marker-end="url(#a1)"/>
+<path d="M298 195 L321 195" fill="none" stroke="#78716C" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#a1d)"/>
+<!-- policy table -->
+<rect x="150" y="244" width="170" height="34" fill="#FAFAF9" stroke="#1C1917" stroke-width="1.5"/>
+<text x="235" y="265" text-anchor="middle" fill="#1C1917" font-size="10">정책표 r3-policy.json</text>
+<path d="M235 243 L235 219" fill="none" stroke="#78716C" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#a1d)"/>
+<text x="243" y="235" fill="#78716C" font-size="9.5">읽기</text>
+<!-- manager row -->
+<text x="28" y="304" fill="#A8A29E" font-size="9.5" letter-spacing="1">관리자 루프 · 라운드3부터 켜짐</text>
+<g fill="#FFFFFF" stroke="#1C1917" stroke-width="1.5">
+<rect x="28" y="316" width="120" height="46"/><rect x="172" y="316" width="126" height="46"/><rect x="322" y="316" width="108" height="46"/>
+</g>
+<g text-anchor="middle" fill="#1C1917" font-size="11.5" font-weight="600">
+<text x="88" y="335">정찰 Haiku</text><text x="235" y="335">전술 Haiku</text><text x="376" y="335">전략 Sonnet</text>
+</g>
+<g text-anchor="middle" fill="#78716C" font-size="9.5">
+<text x="88" y="352">5분 · 신뢰·인기 품목</text><text x="235" y="352">15분 · 3칸 이하·60분</text><text x="376" y="352">30분 · 기준·범위</text>
+</g>
+<g fill="none" stroke="#1C1917" stroke-width="1.5">
+<path d="M148 339 L171 339" marker-end="url(#a1)"/>
+<path d="M298 339 L321 339" marker-end="url(#a1)"/>
+<path d="M235 315 L235 279" marker-end="url(#a1)"/>
+<path d="M376 315 L376 261 L321 261" marker-end="url(#a1)"/>
+</g>
+<text x="243" y="300" fill="#1C1917" font-size="9.5">고치기</text>
+<!-- inputs row -->
+<g fill="#FFFFFF" stroke="#1C1917" stroke-width="1.5">
+<rect x="28" y="396" width="170" height="44"/><rect x="230" y="396" width="200" height="44"/>
+</g>
+<g text-anchor="middle" fill="#1C1917" font-size="11.5" font-weight="600">
+<text x="113" y="414">상위 10 비교</text><text x="330" y="414">리뷰 분석 Haiku</text>
+</g>
+<g text-anchor="middle" fill="#78716C" font-size="9.5">
+<text x="113" y="430">30분 · 1~10등 지표</text><text x="330" y="430">30분 · 불만 주제 요약</text>
+</g>
+<g fill="none" stroke="#1C1917" stroke-width="1.5">
+<path d="M400 395 L400 363" marker-end="url(#a1)"/>
+<path d="M113 395 L113 378 L356 378 L356 363" marker-end="url(#a1)"/>
+</g>
+<!-- right column: crons -->
+<g fill="#FFFFFF" stroke="#1C1917" stroke-width="1.5">
+<rect x="462" y="126" width="204" height="42"/><rect x="462" y="180" width="204" height="42"/>
+<rect x="462" y="236" width="96" height="46"/><rect x="570" y="236" width="96" height="46"/>
+<rect x="462" y="318" width="204" height="42"/><rect x="462" y="396" width="204" height="44"/>
+<rect x="462" y="492" width="204" height="44"/><rect x="262" y="492" width="160" height="44"/>
+</g>
+<g text-anchor="middle" fill="#1C1917" font-size="11.5" font-weight="600">
+<text x="564" y="143">자동 전환 arm</text><text x="564" y="197">복구 health</text>
+<text x="510" y="255">경고 notify</text><text x="618" y="255">자문 Sonnet</text>
+<text x="564" y="335">헤르메스(자비스)</text><text x="564" y="414">작업 큐</text>
+<text x="564" y="510">Mac 워커</text><text x="342" y="510">Obsidian 볼트</text>
+</g>
+<g text-anchor="middle" fill="#78716C" font-size="9.5">
+<text x="564" y="159">2분 · 라운드3 감시</text><text x="564" y="213">3분 · 점검·재시작</text>
+<text x="510" y="272">5분 · 변경·매시</text><text x="618" y="272">6시간 · 개선안</text>
+<text x="564" y="351">텔레그램 발송</text><text x="564" y="430">/srv/hermes-jobs</text>
+<text x="564" y="526">5분 · 볼트에 반영</text><text x="342" y="526">자문 보고·반영 기록</text>
+</g>
+<g fill="none" stroke="#1C1917" stroke-width="1.5">
+<path d="M461 147 L445 147" marker-end="url(#a1)"/>
+<path d="M461 201 L445 201" marker-end="url(#a1)"/>
+<path d="M510 283 L510 317" marker-end="url(#a1)"/>
+<path d="M618 283 L618 317" marker-end="url(#a1)"/>
+<path d="M666 339 L674 339 L674 57" marker-end="url(#a1)"/>
+<path d="M564 361 L564 395" marker-end="url(#a1)"/>
+<path d="M564 441 L564 491" marker-end="url(#a1)"/>
+<path d="M461 514 L423 514" marker-end="url(#a1)"/>
+</g>
+<text x="668" y="80" text-anchor="end" fill="#1C1917" font-size="9.5">텔레그램 알림</text>
+<text x="572" y="380" fill="#78716C" font-size="9.5">기록 요청</text>
+<path d="M431 350 L450 350 L450 259 L461 259" fill="none" stroke="#78716C" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#a1d)"/>
+<text x="436" y="372" fill="#78716C" font-size="9.5">루프 기록</text>
+<!-- legend -->
+<g fill="none" stroke-width="1.5"><path d="M0 566 L28 566" stroke="#1C1917"/><path d="M150 566 L178 566" stroke="#78716C" stroke-dasharray="5 4"/><path d="M360 566 L388 566" stroke="#A8A29E" stroke-width="1" stroke-dasharray="3 4"/></g>
+<g font-size="9.5" fill="#78716C"><text x="34" y="569">전달·쓰기</text><text x="184" y="569">응답·읽기·조건부</text><text x="394" y="569">서버·컨테이너 경계</text><text x="530" y="569">굵은 테두리 = 핵심</text></g>
+</svg>
+<div class="cap"><span><b>FIG. 1</b> R3 에이전트 전체 흐름</span><span>거래는 규칙, 모델은 정책표만 고친다 · release ea7d4ac</span></div>
+</div>
+
+<div class="fig" id="r3-fig2">
+<svg viewBox="0 0 680 500" role="img" aria-label="전술 15분 한 번: 우리 숫자로 코드가 행동 조건을 계산하고, Haiku가 제안하면 검사를 거쳐 정책표에 저장하며, 아무것도 안 바꿨는데 조건이 서 있으면 코드가 한 칸 움직이고, 모든 결과는 기록되어 텔레그램으로 간다">
+<defs>
+<marker id="b1" viewBox="0 0 8 12" refX="8" refY="6" markerWidth="8" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1 L7 6 L1 11" fill="none" stroke="#1C1917" stroke-width="1.5"/></marker>
+<marker id="b1d" viewBox="0 0 8 12" refX="8" refY="6" markerWidth="8" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1 L7 6 L1 11" fill="none" stroke="#78716C" stroke-width="1.5"/></marker>
+</defs>
+<text x="0" y="10" fill="#A8A29E" font-size="9.5" letter-spacing="1">전술 한 번 (15분마다)</text>
+<g fill="#FFFFFF" stroke="#1C1917" stroke-width="1.5">
+<rect x="0" y="24" width="130" height="50"/><rect x="170" y="24" width="130" height="50"/><rect x="340" y="24" width="130" height="50"/><rect x="510" y="24" width="170" height="50"/>
+<rect x="530" y="134" width="130" height="50" stroke-width="2.5"/><rect x="310" y="134" width="160" height="50"/>
+</g>
+<g text-anchor="middle" fill="#1C1917" font-size="11.5" font-weight="600">
+<text x="65" y="45">우리 숫자</text><text x="235" y="45">행동 조건 · 코드</text><text x="405" y="45">전술 Haiku</text><text x="595" y="45">검사 filter</text>
+<text x="595" y="155">정책표 저장</text><text x="390" y="155">코드가 한 칸 이동</text>
+</g>
+<g text-anchor="middle" fill="#78716C" font-size="9.5">
+<text x="65" y="62">1시간·6시간·식품 노화</text><text x="235" y="62">네 가지 검사</text><text x="405" y="62">요약+조건 읽고 제안</text><text x="595" y="62">띠 안 · 3칸 · 역방향 금지</text>
+<text x="595" y="172">60분 · 거래가 읽음</text><text x="390" y="172">첫 조건 필드, 띠의 1/4</text>
+</g>
+<g fill="none" stroke="#1C1917" stroke-width="1.5">
+<path d="M131 49 L169 49" marker-end="url(#b1)"/><path d="M301 49 L339 49" marker-end="url(#b1)"/><path d="M471 49 L509 49" marker-end="url(#b1)"/>
+<path d="M595 75 L595 133" marker-end="url(#b1)"/>
+<path d="M471 159 L529 159" marker-end="url(#b1)"/>
+</g>
+<path d="M540 75 L540 104 L390 104 L390 133" fill="none" stroke="#78716C" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#b1d)"/>
+<text x="603" y="108" fill="#1C1917" font-size="9.5">통과분</text>
+<text x="398" y="122" fill="#78716C" font-size="9.5">바꾼 게 0건인데 조건이 서 있으면</text>
+<text x="484" y="152" fill="#78716C" font-size="9.5">검사</text>
+<!-- condition list -->
+<path d="M235 75 L235 113" fill="none" stroke="#78716C" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#b1d)"/>
+<rect x="0" y="114" width="282" height="112" fill="#FAFAF9" stroke="#1C1917" stroke-width="1.5"/>
+<g font-size="9.5" fill="#1C1917">
+<text x="12" y="134">바이어 합의 60% 미만 (주문 6건+)</text><text x="12" y="160">첫 호가에 80% 이상 팔림 (5건+)</text><text x="12" y="186">1시간 판매 0 (6시간엔 3건+)</text><text x="12" y="212">처분 임박 식품 3개+</text>
+</g>
+<g font-size="9.5" fill="#78716C" text-anchor="end">
+<text x="272" y="134">즉시 수락선 ↑</text><text x="272" y="160">수락 마진 ↑</text><text x="272" y="186">양보폭 ↑</text><text x="272" y="212">처분 앞당김 ↑</text>
+</g>
+<g stroke="#E7E5E4" stroke-width="1"><path d="M8 144 L274 144"/><path d="M8 170 L274 170"/><path d="M8 196 L274 196"/></g>
+<!-- record -->
+<rect x="170" y="268" width="340" height="50" fill="#FFFFFF" stroke="#1C1917" stroke-width="1.5"/>
+<text x="340" y="289" text-anchor="middle" fill="#1C1917" font-size="11.5" font-weight="600">실행 기록 loop_runs</text>
+<text x="340" y="306" text-anchor="middle" fill="#78716C" font-size="9.5">판독·변경·조건 발동·유지·거부·실패 + 이유</text>
+<g fill="none" stroke="#1C1917" stroke-width="1.5">
+<path d="M595 185 L595 293 L511 293" marker-end="url(#b1)"/>
+<path d="M390 185 L390 267" marker-end="url(#b1)"/>
+</g>
+<path d="M672 75 L672 240 L470 240 L470 267" fill="none" stroke="#78716C" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#b1d)"/>
+<text x="480" y="234" fill="#78716C" font-size="9.5">유지·거부·실패도</text>
+<text x="0" y="250" fill="#A8A29E" font-size="9.5">정찰(5분)·전략(30분)도 같은 표에 기록</text>
+<path d="M120 256 L120 293 L169 293" fill="none" stroke="#78716C" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#b1d)"/>
+<!-- report -->
+<g fill="#FFFFFF" stroke="#1C1917" stroke-width="1.5">
+<rect x="170" y="360" width="160" height="50"/><rect x="370" y="360" width="140" height="50"/><rect x="550" y="360" width="130" height="50"/>
+</g>
+<g text-anchor="middle" fill="#1C1917" font-size="11.5" font-weight="600"><text x="250" y="381">경고 notify</text><text x="440" y="381">헤르메스</text><text x="615" y="381">사용자</text></g>
+<g text-anchor="middle" fill="#78716C" font-size="9.5"><text x="250" y="398">5분마다 표 읽기</text><text x="440" y="398">텔레그램 발송</text><text x="615" y="398">휴대폰</text></g>
+<g fill="none" stroke="#1C1917" stroke-width="1.5">
+<path d="M250 319 L250 359" marker-end="url(#b1)"/><path d="M331 385 L369 385" marker-end="url(#b1)"/><path d="M511 385 L549 385" marker-end="url(#b1)"/>
+</g>
+<path d="M0 432 L680 432" stroke="#E7E5E4" stroke-width="1"/>
+<g font-size="10" fill="#1C1917">
+<text x="0" y="454">정책 변경</text><text x="0" y="472">매시 정각</text><text x="0" y="490">이상</text>
+</g>
+<g font-size="10" fill="#44403C">
+<text x="90" y="454">바뀌면 5분 안에 한 줄 — 누가, 무엇을, 왜</text>
+<text x="90" y="472">지난 1시간 루프 요약 — 역할별 횟수, 바꾼 것, 안 바꾼 이유, 정찰 최근</text>
+<text x="90" y="490">라운드3에서 루프가 40분 무실행이면 경고 · 09시 요약에 24시간 루프 줄</text>
+</g>
+</svg>
+<div class="cap"><span><b>FIG. 2</b> 전술 한 번이 도는 길과 보고</span><span>조건이 서면 반드시 움직이고, 안 움직여도 이유가 남는다</span></div>
+</div>
+
+<div class="fig" id="r3-fig3">
+<svg viewBox="0 0 680 392" role="img" aria-label="주기별로 무엇이 어떤 모델로 무엇을 내는지 정리한 표">
+<g fill="#A8A29E" font-size="9.5" letter-spacing="1"><text x="0" y="14">주기</text><text x="150" y="14">담당</text><text x="330" y="14">모델</text><text x="420" y="14">결과</text></g>
+<path d="M0 24 L680 24" stroke="#1C1917" stroke-width="1"/>
+<g font-size="10.5" fill="#1C1917">
+<text x="0" y="46">주문마다</text><text x="150" y="46">판매자·바이어</text><text x="330" y="46">규칙</text><text x="420" y="46">호가·수락, 밀리초</text>
+<text x="0" y="72">말로만 올 때</text><text x="150" y="72">통역</text><text x="330" y="72">Haiku</text><text x="420" y="72">숫자 없는 답변, 3초 안</text>
+<text x="0" y="98">2분</text><text x="150" y="98">자동 전환 arm</text><text x="330" y="98">없음</text><text x="420" y="98">라운드3 감지 시 전환</text>
+<text x="0" y="124">3분</text><text x="150" y="124">복구 health</text><text x="330" y="124">없음</text><text x="420" y="124">멈추면 재시작</text>
+<text x="0" y="150">5분</text><text x="150" y="150">정찰</text><text x="330" y="150">Haiku</text><text x="420" y="150">가게 신뢰·인기 품목</text>
+<text x="0" y="176">5분</text><text x="150" y="176">경고 notify</text><text x="330" y="176">없음</text><text x="420" y="176">정책 변경 즉시·이상 경고</text>
+<text x="0" y="202">15분</text><text x="150" y="202">전술</text><text x="330" y="202">Haiku+조건</text><text x="420" y="202">조건 서면 최소 1칸, 60분 유효</text>
+<text x="0" y="228">30분</text><text x="150" y="228">전략</text><text x="330" y="228">Sonnet</text><text x="420" y="228">6칸 이하와 범위</text>
+<text x="0" y="254">30분</text><text x="150" y="254">상위 10·리뷰 분석</text><text x="330" y="254">규칙·Haiku</text><text x="420" y="254">전략의 입력</text>
+<text x="0" y="280">매시 정각</text><text x="150" y="280">루프 요약</text><text x="330" y="280">없음</text><text x="420" y="280">횟수·바꾼 것·안 바꾼 이유</text>
+<text x="0" y="306">매일 09시</text><text x="150" y="306">아침 요약</text><text x="330" y="306">없음</text><text x="420" y="306">텔레그램, 24시간 루프 줄</text>
+<text x="0" y="332">03·09·15·21시</text><text x="150" y="332">자문</text><text x="330" y="332">Sonnet</text><text x="420" y="332">번호 붙은 개선안</text>
+</g>
+<g stroke="#E7E5E4" stroke-width="1"><path d="M0 56 L680 56"/><path d="M0 82 L680 82"/><path d="M0 108 L680 108"/><path d="M0 134 L680 134"/><path d="M0 160 L680 160"/><path d="M0 186 L680 186"/><path d="M0 212 L680 212"/><path d="M0 238 L680 238"/><path d="M0 264 L680 264"/><path d="M0 290 L680 290"/><path d="M0 316 L680 316"/></g>
+<path d="M0 342 L680 342" stroke="#1C1917" stroke-width="1"/>
+<text x="0" y="364" fill="#78716C" font-size="9.5">비용 사다리 · 하루 6달러: 1배 넘으면 전략도 Haiku, 2배면 느린 루프 정지, 3배면 통역 정지</text>
+<text x="0" y="382" fill="#78716C" font-size="9.5">결제 오류면 30분 쉬고 재개 · 어떤 단계에서도 거래는 규칙으로 계속</text>
+</svg>
+<div class="cap"><span><b>FIG. 3</b> 무엇이 몇 분마다 도는가</span><span>지금은 라운드2, 관리자 루프 꺼짐</span></div>
+</div>
+</main></html>

@@ -1,0 +1,12 @@
+# Live smoke of the OpenAI-compatible Anthropic path (2026-10-31, local Mac, before release)
+# Key loaded from the private env file; nothing but length/prefix printed. No market traffic.
+key length=106 prefix=sk-ant- model_env=claude-haiku-5-5
+haiku buyer read: intent='ask_discount' offer=None screened='' 1.28s effort_supported= True
+   input: "Hmm, that's a bit steep for a lamp. Could you come down a little?" (ask 38000)
+haiku seller read: intent='quote' ask=48000 screened='' 1.18s
+   input: "Sure! For the kimchi our best price today is 48,000 won, certificate included." (list 52000)
+sonnet strategy: {'model': 'claude-sonnet-5-5', 'latency_ms': 3648, 'input_tokens': 2787, 'output_tokens': 431, 'cost_usd': 0.009884} 3.6s
+arguments: {"changes": {"buyer.max_price_ratio": 0.88}, "reason": "Market median price-to-list is 0.81, but the buyer will pay up to 0.95 of list. Lowering the cap to 0.88 should raise surplus per deal. Agreement rate is high at 95 of 120, so there is room to do this. Other fields are unchanged because the data doesn't show a problem. Grade A break rate is 5%."}
+effort_supported after sonnet: True
+# Conclusions: reasoning_effort is accepted by the compatibility endpoint; Sonnet 5.5 answers
+# with tool_choice=auto; Haiku reads return in ~1.2-1.3 s (inside the 2.5 s read budget).

@@ -1,0 +1,81 @@
+{
+  "code_commit": "8ca3d3bbff62bebccb9d91540d362e4186f6635b",
+  "release": "8ca3d3bbff62",
+  "deployed_at_kst": "2026-11-03T19:18:30+09:00",
+  "local_tests": {
+    "passed": 533,
+    "seconds": 33.82,
+    "log": "final-source-local-pytest.log"
+  },
+  "server_tests": {
+    "tests": 513,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "excluded_server_tests": [
+    "tests/test_price_page.py",
+    "tests/test_price_promotion.py"
+  ],
+  "exclusion_reason": "Runtime/QA image has no Node.js; these 20 cases passed in the local 532-test run",
+  "code_and_notifier_match": true,
+  "all_three_contexts_have_version_review": true,
+  "all_three_contexts_have_review_digest": true,
+  "all_three_contexts_have_leaders_now": true,
+  "live_market_round": 2,
+  "manager_model_enabled": false,
+  "trade_model_enabled": true,
+  "real_r3_performance_measured": false,
+  "real_r3_each_role_20_settles_complete": false,
+  "approval_transport_test": {
+    "release": "795090a07483",
+    "proposal_id": 3,
+    "synthetic_test": true,
+    "failed_send_simulated": true,
+    "retained_after_failed_send": true,
+    "real_telegram_send": true,
+    "outbox_cleared_after_ack": true,
+    "no_model_called_by_test": true,
+    "no_policy_change": true,
+    "checked_at": 1793700567.2672255,
+    "delivery_reported": true,
+    "status_after_delivery": "pending",
+    "test_final_status": "expired"
+  },
+  "configuration_and_limits_changed": false,
+  "cron_changed": false,
+  "tunnel_recreated": false,
+  "usage_ledger_reset": false,
+  "limits": {
+    "AX_R3_MANAGER_MODEL": "0",
+    "AX_BUYER_MODE": "fast",
+    "AX_SELLER_MODE": "r3",
+    "AX_R3_STRATEGY_MODEL": "claude-sonnet-5-5",
+    "AX_R3_TACTICAL_MODEL": "claude-haiku-5-5",
+    "AX_R3_DAILY_USD": "6",
+    "AX_R3_TRADE_MODEL": "1",
+    "AX_PAID_DAILY_LIMIT": "5000",
+    "AX_PAID_QUOTA_PATH": "/data/r3/paid-quota.sqlite3"
+  },
+  "runtime_before_and_after": {
+    "market_url": "https://market.ourolabs.ai",
+    "public_url": "https://ax-week07.treasuresky.xyz",
+    "port": 18088,
+    "remaining_orders": 0,
+    "stop_at": "2026-11-03T23:59:00+09:00",
+    "run_directory": "/data/r3",
+    "private_directory": "/private"
+  },
+  "diagnostic_corrections": {
+    "post-deploy-check.json": "Initial ACP URL /acp.json was incorrect (404); correct /.well-known/acp.json is 200. Initial kit process detector omitted file-path argv; protocol-recheck.json verifies actual process. Original records preserved."
+  },
+  "ci": {
+    "code_commit_pr_check": "success",
+    "run_id": 41616545523
+  },
+  "separate_concurrent_edits_preserved": [],
+  "separate_edits_note": "Commit8ca3d3b arrived during deployment; reviewed its three-file change, passed local533/server513 tests, verified it is the final running image. First release/test evidence is preserved.",
+  "first_deployment_record": "summary-first-795090a.json",
+  "final_evidence": "final-8ca3d3b/final-verification.json",
+  "approval_and_guard_modules_identical_to_transport_test": true
+}

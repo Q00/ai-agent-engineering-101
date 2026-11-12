@@ -1,0 +1,101 @@
+{
+  "record_created_at": "2026-11-03T09:56:38.420828+00:00",
+  "scope": "Local implementation audit and read-only VPS/PR observation; not a new deployment or submission",
+  "formal_source": {
+    "url": "https://wpti.dev/ai-agent-engineering-101/week-08.html",
+    "html_sha256": "b2d438c8cd83847b847a3e71baea942a599b0210a1fe8a111daec0e7f819c0a2",
+    "weights": {
+      "components": 40,
+      "architecture": 30,
+      "players_percentile": 30
+    },
+    "r3_each_role_minimum_settles": 20,
+    "deadline_kst": "2026-11-17T23:59:59+09:00"
+  },
+  "local_code_commits": [
+    "d7f0c25",
+    "03a05fb",
+    "dc79eef"
+  ],
+  "validation": {
+    "pytest": {
+      "passed": 532,
+      "seconds": 33.4,
+      "log": "logs/harness-audit-20261103-complete.log",
+      "sha256": "4c50eee2c3636e90a4f8a6af3281aedaa3c65af3676fb96926bdd872e6c8aab9",
+      "real_model_requests": 0,
+      "real_market_trades": 0
+    },
+    "architecture_pdf": {
+      "pages": 1,
+      "sha256": "747566d609f5eea2e0d4c369375605222a3d399d74165aecceb07dac3e770411"
+    },
+    "ruff": {
+      "changed_python_files": 10,
+      "lint": "PASS",
+      "format": "PASS",
+      "version": "0.17.3"
+    },
+    "ownership": {
+      "actor": "SungJinho",
+      "changed_paths": 18,
+      "result": "PASS"
+    },
+    "credential_pattern_scan": {
+      "changed_paths": 18,
+      "result": "PASS",
+      "limitation": "Pattern scan is not a full secret-discovery guarantee"
+    }
+  },
+  "read_only_observations": {
+    "query_date_kst": "2026-11-03",
+    "server_release": "11f627c9dbb8",
+    "market_round": 2,
+    "container_running": true,
+    "manager_enabled": false,
+    "trade_model_enabled": true,
+    "round3_mirror_settles": 0,
+    "public_card_recheck_status": 200,
+    "public_acp_recheck_status": 200,
+    "availability_caveat": "One offline seller observation and GET error preceded successful rechecks; uninterrupted availability is not established",
+    "model_rows_24h": [
+      {
+        "role": "strategy",
+        "model": "claude-sonnet-5-5",
+        "calls": 1,
+        "rows_with_tool_arguments": 1
+      },
+      {
+        "role": "trade",
+        "model": "claude-haiku-5-5",
+        "calls": 71,
+        "rows_with_tool_arguments": 66
+      }
+    ],
+    "model_row_caveat": "Tool-argument presence is not policy adoption, semantic accuracy, or transaction success"
+  },
+  "pr": {
+    "url": "https://github.com/Q00/ai-agent-engineering-101/pull/372",
+    "state": "OPEN",
+    "draft": false,
+    "head": "0870e0886deb4797383eee8e9402f3106dc48ce3",
+    "created_at": "2026-10-30T05:28:03Z",
+    "latest_local_changes_present": false
+  },
+  "deployment_changes": false,
+  "push_performed": false,
+  "cron_changes": false,
+  "telegram_send_performed": false,
+  "remaining": [
+    "Linux/VPS verification of the matching image and host notifier",
+    "Authorized PR refresh and deployment",
+    "Round 3 shop and buyer 20 real settlements each",
+    "Deployment machine settlement log and final Players evidence"
+  ],
+  "limits": [
+    "Descriptive before/after windows do not establish causality",
+    "Advisor prose evidence still requires human fact checking",
+    "At-least-once notification may repeat the same proposal id",
+    "A delivery acknowledgement never grants approval or applies a change"
+  ]
+}

@@ -1,0 +1,38 @@
+E501 Line too long (89 > 88)
+  --> tests/test_memory_journal.py:68:89
+   |
+66 |         repository.record(f"shop-{index}", observation(f"task-{index}"))
+67 |         timings.append((perf_counter_ns() - started) / 1_000_000)
+68 |     # Then: all were stored without export; report measured latency, not a universal SLA.
+   |                                                                                         ^
+69 |     assert len(repository.load().profiles) == 100
+70 |     assert not repository.snapshot_path.exists()
+   |
+
+ASYNC240 Async functions should not perform blocking pathlib.Path operations
+   --> tests/test_memory_journal.py:99:17
+    |
+ 97 |                 str(snapshot),
+ 98 |             ),
+ 99 |             cwd=Path(__file__).resolve().parents[1],
+    |                 ^^^^^^^^^^^^^^^^^^^^^^
+100 |             stdout=None,
+101 |             stderr=None,
+    |
+
+ASYNC110 Use `anyio.Event` instead of awaiting `anyio.sleep` in a `while` loop
+   --> tests/test_memory_journal.py:110:21
+    |
+108 |                       )
+109 |                   with anyio.fail_after(5):
+110 | /                     while (
+111 | |                         not snapshot.exists()
+112 | |                         or len(Memory.load(snapshot).profiles) != 100
+113 | |                     ):
+114 | |                         await anyio.sleep(0.05)
+    | |_______________________________________________^
+115 |                   # Then: all shop notebooks are present and both roles remained alive.
+116 |                   assert worker.returncode is None
+    |
+
+Found 3 errors.

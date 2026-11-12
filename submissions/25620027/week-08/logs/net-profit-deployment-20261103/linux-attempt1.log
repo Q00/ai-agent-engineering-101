@@ -1,0 +1,20 @@
+{"verified_runtime_files": 87, "source_commit": "53b092a7ec2a053ce977aa5f2c8ec77b7d1006c3", "kit_sha256": "4a0f48b33a6c0b207401325cd1e48086c364a0c89177fb5b347703affe774272"}
+{"command": ["docker", "build", "--progress=plain", "-t", "ax-week08-25620027:53b092a-prepared"], "log": "runtime-build.log", "exit_code": 0}
+{"command": ["docker", "build", "--progress=plain", "-t", "ax-week08-25620027:53b092a-qa"], "log": "qa-build.log", "exit_code": 0}
+{"command": ["docker", "run", "--rm", "--network", "none"], "log": "server-full.log", "exit_code": 2}
+
+==================================== ERRORS ====================================
+____________ ERROR collecting tests/test_operator_feedback_demo.py _____________
+ImportError while importing test module '/workspace/submissions/25620027/week-08/tests/test_operator_feedback_demo.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/local/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_operator_feedback_demo.py:9: in <module>
+    from examples.operator_feedback_demo import DemoResult, run_demo
+E   ModuleNotFoundError: No module named 'examples'
+=========================== short test summary info ============================
+ERROR tests/test_operator_feedback_demo.py
+!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!
+1 error in 3.64s

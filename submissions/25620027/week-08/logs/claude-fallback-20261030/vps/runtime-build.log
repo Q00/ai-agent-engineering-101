@@ -1,0 +1,56 @@
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 663B done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for ghcr.io/astral-sh/uv:0.9.5
+#2 DONE 0.8s
+
+#3 [internal] load metadata for docker.io/library/python:3.12.11-slim
+#3 DONE 1.4s
+
+#4 [internal] load .dockerignore
+#4 transferring context: 2B done
+#4 DONE 0.0s
+
+#5 [uv 1/1] FROM ghcr.io/astral-sh/uv:0.9.5@sha256:f459f6f73a8c4ef5d69f4e6fbbdb8af751d6fa40ec34b39a1ab469acd6e289b7
+#5 resolve ghcr.io/astral-sh/uv:0.9.5@sha256:f459f6f73a8c4ef5d69f4e6fbbdb8af751d6fa40ec34b39a1ab469acd6e289b7 0.0s done
+#5 DONE 0.0s
+
+#6 [stage-1 1/7] FROM docker.io/library/python:3.12.11-slim@sha256:47ae396f09c1303b8653019811a8498470603d7ffefc29cb07c88f1f8cb3d19f
+#6 resolve docker.io/library/python:3.12.11-slim@sha256:47ae396f09c1303b8653019811a8498470603d7ffefc29cb07c88f1f8cb3d19f 0.0s done
+#6 DONE 0.0s
+
+#7 [internal] load build context
+#7 transferring context: 1.25MB 0.0s done
+#7 DONE 0.0s
+
+#8 [stage-1 3/7] WORKDIR /app
+#8 CACHED
+
+#9 [stage-1 4/7] COPY requirements-kit.lock ./
+#9 CACHED
+
+#10 [stage-1 2/7] COPY --from=uv /uv /usr/local/bin/uv
+#10 CACHED
+
+#11 [stage-1 5/7] RUN uv pip install --system --no-deps -r requirements-kit.lock     && useradd --uid 10001 --create-home app
+#11 CACHED
+
+#12 [stage-1 6/7] COPY . /app/
+#12 DONE 0.1s
+
+#13 [stage-1 7/7] RUN ln -s /data/r3/shop_key.pem /app/shop_key.pem     && ln -s /data/r3/comparison-cache /app/.market
+#13 DONE 0.2s
+
+#14 exporting to image
+#14 exporting layers 0.1s done
+#14 exporting manifest sha256:416c5b52cae2aead0229dd0ce5a4d2a100c068e4dc19731bb6d0619ec5543b96
+#14 exporting manifest sha256:416c5b52cae2aead0229dd0ce5a4d2a100c068e4dc19731bb6d0619ec5543b96 0.0s done
+#14 exporting config sha256:2955f68ddd8e5bbe3428c3cb98c1a3eecfa0e9338a90358c9a370545b9e42384 0.0s done
+#14 exporting attestation manifest sha256:a10b3090069fcb5c41cebf4a80d4e1e32fd4cef7fc0858f0ce2e6671302b08d6 0.0s done
+#14 exporting manifest list sha256:bc9748458f119ba38a5f031503ac801e0cc37195a074556b1f37a5051db4064a 0.0s done
+#14 naming to docker.io/library/ax-week08-25620027:20763f6-prepared done
+#14 unpacking to docker.io/library/ax-week08-25620027:20763f6-prepared 0.0s done
+#14 DONE 0.2s

@@ -1,0 +1,297 @@
+.{'shops': 100, 'record_ms_median': 0.7301875, 'record_ms_p95': 1.08125, 'record_ms_max': 1.576833}
+...{'input_records': 40000, 'retained': 2048, 'file_bytes': 996543}
+...{"records": 2000, "prior_bytes": 609, "full_memory_bytes": 944036}
+....[MARKET SELECTION] {"index":0,"reason":"Inspect own observation before choosing"}
+[A2A HTTP] {"method": "GET", "url": "http://south.test/.well-known/agent-card.json", "version": "1.0"}
+[A2A CARD] {"name":"Stable Seller","skills":[],"supportedInterfaces":[{"url":"http://south.test/rpc","protocolBinding":"JSONRPC","protocolVersion":"1.0"}]}
+[A2A REQUEST] {"jsonrpc": "2.0", "id": "448953b3-8bb7-4efd-b841-3673f9e13117", "method": "SendMessage", "params": {"message": {"role": "ROLE_USER", "messageId": "ef81f3fb-8f8d-4214-9095-a5348dc0f125", "parts": [{"text": "I want to buy lamp"}]}}}
+[A2A HTTP] {"method": "POST", "url": "http://south.test/rpc", "version": "1.0"}
+[A2A RESPONSE] {"result":{"task":{"id":"trade-1","contextId":"context-1","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"parts":[{"text":"The asking price is 120."}]}}}}}
+[NEGOTIATION SUMMARY] {"requested_item": "lamp", "item": "lamp", "budget": 120, "rounds": 0, "last_offer": null, "seller_ask": null, "offered_prices": [], "remaining_rounds": 12, "pricing_context": {"selected_shop_trades": [{"item": "lamp", "budget": 120, "completed": true, "price": 90, "receipt_present": true, "operator_directive_observed": false, "incident_response_count": 0}], "observed_same_item_prices": [90]}, "recent_observations": [{"state": "TASK_STATE_INPUT_REQUIRED", "ask": null}], "operator_directive_observed": false, "directive_response_count": 0}
+[A2A REQUEST] {"jsonrpc": "2.0", "id": "61ce202b-5870-49cd-80a9-1b2b8d54c33e", "method": "SendMessage", "params": {"message": {"role": "ROLE_USER", "messageId": "b66a5ed2-a9cb-4d2e-822d-a886a4bec5f3", "parts": [{"text": "120"}], "taskId": "trade-1", "contextId": "context-1"}}}
+[A2A HTTP] {"method": "POST", "url": "http://south.test/rpc", "version": "1.0"}
+[A2A RESPONSE] {"result":{"task":{"id":"trade-1","contextId":"context-1","status":{"state":"TASK_STATE_COMPLETED","message":{"parts":[{"text":"The asking price is 120."}]}},"artifacts":[{"parts":[{"data":{"shop":"Stable Seller","item":"lamp","price":120.0,"task":"trade-1","sig_seller":"original-signature","extension":{"number":3.0}}}]}]}}}
+[NEGOTIATION RESULT] {"completed":true,"item":"lamp","sku":"","price":120,"task_id":"trade-1","shop":"http://south.test/rpc","failure_observation":"","receipt":{"shop":"Stable Seller","item":"lamp","price":120.0,"task":"trade-1","sig_seller":"original-signature","extension":{"number":3.0}},"safety":{"operator_directive_observed":false,"response_count":0,"evidence_sha256":[]},"initial_ask":null,"offer_count":1}
+...[MARKET SELECTION] {"index":1,"reason":"Try South"}
+[A2A HTTP] {"method": "GET", "url": "http://south.test/.well-known/agent-card.json", "version": "1.0"}
+[A2A CARD] {"name":"Stable Seller","skills":[],"supportedInterfaces":[{"url":"http://south.test/rpc","protocolBinding":"JSONRPC","protocolVersion":"1.0"}]}
+[A2A REQUEST] {"jsonrpc": "2.0", "id": "d0dc8a22-4ae4-4d42-94ef-c53b695e9a4a", "method": "SendMessage", "params": {"message": {"role": "ROLE_USER", "messageId": "f4442b53-cbb8-4626-bf75-a133d87574cd", "parts": [{"text": "I want to buy lamp"}]}}}
+[A2A HTTP] {"method": "POST", "url": "http://south.test/rpc", "version": "1.0"}
+[A2A RESPONSE] {"result":{"task":{"id":"trade-1","contextId":"context-1","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"parts":[{"text":"The asking price is 120."}]}}}}}
+[NEGOTIATION SUMMARY] {"requested_item": "lamp", "item": "lamp", "budget": 100, "rounds": 0, "last_offer": null, "seller_ask": null, "offered_prices": [], "remaining_rounds": 12, "pricing_context": {"selected_shop_trades": [], "observed_same_item_prices": []}, "recent_observations": [{"state": "TASK_STATE_INPUT_REQUIRED", "ask": null}], "operator_directive_observed": false, "directive_response_count": 0}
+[BUYER WALK] No acceptable deal
+[NEGOTIATION RESULT] {"completed":false,"item":"lamp","sku":"","price":null,"task_id":"trade-1","shop":"http://south.test/rpc","failure_observation":"TASK_STATE_INPUT_REQUIRED: The asking price is 120.","receipt":null,"safety":{"operator_directive_observed":false,"response_count":0,"evidence_sha256":[]},"initial_ask":null,"offer_count":0}
+[MARKET SELECTION] {"index":0,"reason":"Remember the previous no-deal"}
+[A2A HTTP] {"method": "GET", "url": "http://restarted.test/.well-known/agent-card.json", "version": "1.0"}
+[A2A CARD] {"name":"Stable Seller","skills":[],"supportedInterfaces":[{"url":"http://restarted.test/rpc","protocolBinding":"JSONRPC","protocolVersion":"1.0"}]}
+[A2A REQUEST] {"jsonrpc": "2.0", "id": "acbe766b-ba9d-4262-92b9-31333940972a", "method": "SendMessage", "params": {"message": {"role": "ROLE_USER", "messageId": "4d0bf03b-7f6b-4166-a3dd-22abb30401a2", "parts": [{"text": "I want to buy lamp"}]}}}
+[A2A HTTP] {"method": "POST", "url": "http://restarted.test/rpc", "version": "1.0"}
+[A2A RESPONSE] {"result":{"task":{"id":"trade-1","contextId":"context-1","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"parts":[{"text":"The asking price is 120."}]}}}}}
+[NEGOTIATION SUMMARY] {"requested_item": "lamp", "item": "lamp", "budget": 100, "rounds": 0, "last_offer": null, "seller_ask": null, "offered_prices": [], "remaining_rounds": 12, "pricing_context": {"selected_shop_trades": [{"item": "lamp", "budget": 100, "completed": false, "price": null, "receipt_present": false, "operator_directive_observed": false, "incident_response_count": 0}], "observed_same_item_prices": []}, "recent_observations": [{"state": "TASK_STATE_INPUT_REQUIRED", "ask": null}], "operator_directive_observed": false, "directive_response_count": 0}
+[BUYER WALK] Still too expensive
+[NEGOTIATION RESULT] {"completed":false,"item":"lamp","sku":"","price":null,"task_id":"trade-1","shop":"http://restarted.test/rpc","failure_observation":"TASK_STATE_INPUT_REQUIRED: The asking price is 120.","receipt":null,"safety":{"operator_directive_observed":false,"response_count":0,"evidence_sha256":[]},"initial_ask":null,"offer_count":0}
+.[MARKET SELECTION] {"index":0,"reason":"Try this shop"}
+[A2A HTTP] {"method": "GET", "url": "http://north.test/.well-known/agent-card.json", "version": "1.0"}
+[A2A CARD] {"name":"Stable Seller","skills":[],"supportedInterfaces":[{"url":"http://north.test/rpc","protocolBinding":"JSONRPC","protocolVersion":"1.0"}]}
+[A2A REQUEST] {"jsonrpc": "2.0", "id": "4d8f4b8a-1fa0-4174-b792-a36abce50c1c", "method": "SendMessage", "params": {"message": {"role": "ROLE_USER", "messageId": "e392ec0d-3897-4ac0-a5fc-4ee134df2b55", "parts": [{"text": "I want to buy lamp"}]}}}
+[A2A HTTP] {"method": "POST", "url": "http://north.test/rpc", "version": "1.0"}
+[A2A RESPONSE] {"result":{"task":{"id":"trade-1","contextId":"context-1","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"parts":[{"text":"The asking price is 120."}]}}}}}
+[NEGOTIATION SUMMARY] {"requested_item": "lamp", "item": "lamp", "budget": 100, "rounds": 0, "last_offer": null, "seller_ask": null, "offered_prices": [], "remaining_rounds": 12, "pricing_context": {"selected_shop_trades": [], "observed_same_item_prices": []}, "recent_observations": [{"state": "TASK_STATE_INPUT_REQUIRED", "ask": null}], "operator_directive_observed": false, "directive_response_count": 0}
+[BUYER WALK] No affordable offer
+[NEGOTIATION RESULT] {"completed":false,"item":"lamp","sku":"","price":null,"task_id":"trade-1","shop":"http://north.test/rpc","failure_observation":"TASK_STATE_INPUT_REQUIRED: The asking price is 120.","receipt":null,"safety":{"operator_directive_observed":false,"response_count":0,"evidence_sha256":[]},"initial_ask":null,"offer_count":0}
+....[MARKET SELECTION] {"index":0,"reason":"Try the listed shop"}
+[MARKET FAILURE] Purchase failed: ConnectError
+......F
+=================================== FAILURES ===================================
+_________ test_deadline_stops_a_real_local_child_without_market_entry __________
+
+tmp_path = PosixPath('/private/var/folders/c5/ymn8pr5s1ts6q1_8zt7b_k480000gn/T/pytest-of-sungjinho/pytest-14/test_deadline_stops_a_real_loc0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x108f434d0>
+
+    def test_deadline_stops_a_real_local_child_without_market_entry(
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        # Given: a fake private identity and a sleeper replacing only the kit command.
+        app = tmp_path / "build"
+        _ = build_context(Path(__file__).resolve().parents[1], app)
+        config = settings(tmp_path).model_copy(
+            update={"stop_at": datetime.now(UTC) + timedelta(seconds=0.5)}
+        )
+        config.private_directory.mkdir()
+        for name in ("shop_key.pem", "buyer_key.pem"):
+            _ = (config.private_directory / name).write_text("local-test-placeholder")
+        for key, value in {
+            "AX_R3_ACTIVATE": "1",
+            "AX_MODEL_PROVIDER": "openrouter-free",
+            "AX_OPENAI_FALLBACK": "0",
+            "MARKET_OWNER": "local-only-placeholder",
+            "OPENROUTER_API_KEY": "local-only-placeholder",
+        }.items():
+            monkeypatch.setenv(key, value)
+    
+        def sleeper(_settings: LaunchSettings, _app: Path) -> tuple[str, ...]:
+            return (sys.executable, "-c", "import time; time.sleep(60)")
+    
+        monkeypatch.setattr(LaunchSettings, "command", sleeper)
+        # When: exercise the real launch/timeout/finally-stop path with no market code.
+        started = datetime.now(UTC)
+>       code = anyio.run(partial(activate, config, app))
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_r3_deployment.py:104: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/anyio/_core/_eventloop.py:83: in run
+    return async_backend.run(func, args, {}, backend_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2548: in run
+    return runner.run(wrapper())
+           ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2531: in wrapper
+    return await func(*args)
+           ^^^^^^^^^^^^^^^^^
+deploy/vps/launch.py:129: in activate
+    async with await anyio.open_process(
+.venv/lib/python3.12/site-packages/anyio/_core/_subprocesses.py:184: in open_process
+    return await get_async_backend().open_process(
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2810: in open_process
+    transport, protocol = await loop.subprocess_exec(
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/base_events.py:1756: in subprocess_exec
+    transport = await self._make_subprocess_transport(
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/unix_events.py:211: in _make_subprocess_transport
+    transp = _UnixSubprocessTransport(self, protocol, args, shell,
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/base_subprocess.py:36: in __init__
+    self._start(args=args, shell=shell, stdin=stdin, stdout=stdout,
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/unix_events.py:820: in _start
+    self._proc = subprocess.Popen(
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/subprocess.py:1026: in __init__
+    self._execute_child(args, executable, preexec_fn, close_fds,
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <Popen: returncode: 255 args: ('python', '/private/var/folders/c5/ymn8pr5s1t...>
+args = ['python', '/private/var/folders/c5/ymn8pr5s1ts6q1_8zt7b_k480000gn/T/pytest-of-sungjinho/pytest-14/test_deadline_stops...8pr5s1ts6q1_8zt7b_k480000gn/T/pytest-of-sungjinho/pytest-14/test_deadline_stops_a_real_loc0/runtime/buyer-memory.json']
+executable = b'python', preexec_fn = None, close_fds = True, pass_fds = ()
+cwd = None
+env = {'RUST_LOG': 'warn', 'CODEX_SANDBOX_NETWORK_DISABLED': '1', 'CODEX_TASK_WORKSPACE_VERIFYING_IDENTITY': 'MCowBQYDK2VwAyEAc/7i1U7qeWaebkjp9heVgfj6M60jtZ1H0+gvGvJNLqU=', 'TERM': 'dumb', ...}
+startupinfo = None, creationflags = 0, shell = False, p2cread = 8, p2cwrite = 9
+c2pread = -1, c2pwrite = -1, errread = -1, errwrite = -1, restore_signals = True
+gid = None, gids = None, uid = None, umask = -1, start_new_session = False
+process_group = -1
+
+    def _execute_child(self, args, executable, preexec_fn, close_fds,
+                       pass_fds, cwd, env,
+                       startupinfo, creationflags, shell,
+                       p2cread, p2cwrite,
+                       c2pread, c2pwrite,
+                       errread, errwrite,
+                       restore_signals,
+                       gid, gids, uid, umask,
+                       start_new_session, process_group):
+        """Execute program (POSIX version)"""
+    
+        if isinstance(args, (str, bytes)):
+            args = [args]
+        elif isinstance(args, os.PathLike):
+            if shell:
+                raise TypeError('path-like args is not allowed when '
+                                'shell is true')
+            args = [args]
+        else:
+            args = list(args)
+    
+        if shell:
+            # On Android the default shell is at '/system/bin/sh'.
+            unix_shell = ('/system/bin/sh' if
+                      hasattr(sys, 'getandroidapilevel') else '/bin/sh')
+            args = [unix_shell, "-c"] + args
+            if executable:
+                args[0] = executable
+    
+        if executable is None:
+            executable = args[0]
+    
+        sys.audit("subprocess.Popen", executable, args, cwd, env)
+    
+        if (_USE_POSIX_SPAWN
+                and os.path.dirname(executable)
+                and preexec_fn is None
+                and not close_fds
+                and not pass_fds
+                and cwd is None
+                and (p2cread == -1 or p2cread > 2)
+                and (c2pwrite == -1 or c2pwrite > 2)
+                and (errwrite == -1 or errwrite > 2)
+                and not start_new_session
+                and process_group == -1
+                and gid is None
+                and gids is None
+                and uid is None
+                and umask < 0):
+            self._posix_spawn(args, executable, env, restore_signals,
+                              p2cread, p2cwrite,
+                              c2pread, c2pwrite,
+                              errread, errwrite)
+            return
+    
+        orig_executable = executable
+    
+        # For transferring possible exec failure from child to parent.
+        # Data format: "exception name:hex errno:description"
+        # Pickle is not used; it is complex and involves memory allocation.
+        errpipe_read, errpipe_write = os.pipe()
+        # errpipe_write must not be in the standard io 0, 1, or 2 fd range.
+        low_fds_to_close = []
+        while errpipe_write < 3:
+            low_fds_to_close.append(errpipe_write)
+            errpipe_write = os.dup(errpipe_write)
+        for low_fd in low_fds_to_close:
+            os.close(low_fd)
+        try:
+            try:
+                # We must avoid complex work that could involve
+                # malloc or free in the child process to avoid
+                # potential deadlocks, thus we do all this here.
+                # and pass it to fork_exec()
+    
+                if env is not None:
+                    env_list = []
+                    for k, v in env.items():
+                        k = os.fsencode(k)
+                        if b'=' in k:
+                            raise ValueError("illegal environment variable name")
+                        env_list.append(k + b'=' + os.fsencode(v))
+                else:
+                    env_list = None  # Use execv instead of execve.
+                executable = os.fsencode(executable)
+                if os.path.dirname(executable):
+                    executable_list = (executable,)
+                else:
+                    # This matches the behavior of os._execvpe().
+                    executable_list = tuple(
+                        os.path.join(os.fsencode(dir), executable)
+                        for dir in os.get_exec_path(env))
+                fds_to_keep = set(pass_fds)
+                fds_to_keep.add(errpipe_write)
+                self.pid = _fork_exec(
+                        args, executable_list,
+                        close_fds, tuple(sorted(map(int, fds_to_keep))),
+                        cwd, env_list,
+                        p2cread, p2cwrite, c2pread, c2pwrite,
+                        errread, errwrite,
+                        errpipe_read, errpipe_write,
+                        restore_signals, start_new_session,
+                        process_group, gid, gids, uid, umask,
+                        preexec_fn, _USE_VFORK)
+                self._child_created = True
+            finally:
+                # be sure the FD is closed no matter what
+                os.close(errpipe_write)
+    
+            self._close_pipe_fds(p2cread, p2cwrite,
+                                 c2pread, c2pwrite,
+                                 errread, errwrite)
+    
+            # Wait for exec to fail or succeed; possibly raising an
+            # exception (limited in size)
+            errpipe_data = bytearray()
+            while True:
+                part = os.read(errpipe_read, 50000)
+                errpipe_data += part
+                if not part or len(errpipe_data) > 50000:
+                    break
+        finally:
+            # be sure the FD is closed no matter what
+            os.close(errpipe_read)
+    
+        if errpipe_data:
+            try:
+                pid, sts = os.waitpid(self.pid, 0)
+                if pid == self.pid:
+                    self._handle_exitstatus(sts)
+                else:
+                    self.returncode = sys.maxsize
+            except ChildProcessError:
+                pass
+    
+            try:
+                exception_name, hex_errno, err_msg = (
+                        errpipe_data.split(b':', 2))
+                # The encoding here should match the encoding
+                # written in by the subprocess implementations
+                # like _posixsubprocess
+                err_msg = err_msg.decode()
+            except ValueError:
+                exception_name = b'SubprocessError'
+                hex_errno = b'0'
+                err_msg = 'Bad exception data from child: {!r}'.format(
+                              bytes(errpipe_data))
+            child_exception_type = getattr(
+                    builtins, exception_name.decode('ascii'),
+                    SubprocessError)
+            if issubclass(child_exception_type, OSError) and hex_errno:
+                errno_num = int(hex_errno, 16)
+                if err_msg == "noexec:chdir":
+                    err_msg = ""
+                    # The error must be from chdir(cwd).
+                    err_filename = cwd
+                elif err_msg == "noexec":
+                    err_msg = ""
+                    err_filename = None
+                else:
+                    err_filename = orig_executable
+                if errno_num != 0:
+                    err_msg = os.strerror(errno_num)
+                if err_filename is not None:
+>                   raise child_exception_type(errno_num, err_msg, err_filename)
+E                   FileNotFoundError: [Errno 2] No such file or directory: 'python'
+
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/subprocess.py:1955: FileNotFoundError
+=========================== short test summary info ============================
+FAILED tests/test_r3_deployment.py::test_deadline_stops_a_real_local_child_without_market_entry
+1 failed, 25 passed in 1.35s

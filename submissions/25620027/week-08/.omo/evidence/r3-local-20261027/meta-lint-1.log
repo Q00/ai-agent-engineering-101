@@ -1,0 +1,38 @@
+I001 [*] Import block is un-sorted or un-formatted
+  --> market_a2a/meta_profile.py:19:5
+   |
+18 |   if TYPE_CHECKING:
+19 | /     from pydantic import JsonValue
+20 | |     from market_a2a.memory_journal import MemoryJournal
+   | |_______________________________________________________^
+help: Organize imports
+   |
+19 |     from pydantic import JsonValue
+20 +
+21 |     from market_a2a.memory_journal import MemoryJournal
+   |
+
+PLR2004 Magic value used in comparison, consider replacing `65536` with a constant variable
+  --> market_a2a/meta_profile.py:76:40
+   |
+74 |     if not paths.feedback.exists():
+75 |         return False
+76 |     if paths.feedback.stat().st_size > 65536:
+   |                                        ^^^^^
+77 |         message = "Operator feedback exceeds its input bound"
+78 |         raise HarnessError(message)
+   |
+
+PLR2004 Magic value used in comparison, consider replacing `16384` with a constant variable
+   --> market_a2a/meta_profile.py:138:30
+    |
+136 |     if not path.exists():
+137 |         return {}
+138 |     if path.stat().st_size > 16384:
+    |                              ^^^^^
+139 |         message = "Strategy profile exceeds its context bound"
+140 |         raise HarnessError(message)
+    |
+
+Found 3 errors.
+[*] 1 fixable with `--fix`.

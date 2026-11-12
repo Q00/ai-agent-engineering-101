@@ -1,0 +1,12 @@
+C901 `negotiate` is too complex (11 > 10)
+  --> market_a2a/seller_turn.py:81:15
+   |
+79 |         self.price_history: SellerHistory = SellerHistory()
+80 |
+81 |     async def negotiate(self, task: Task, text: str, queue: EventQueue) -> None:
+   |               ^^^^^^^^^
+82 |         """Expose retrieval and guarded commercial actions for one model turn."""
+83 |         updater = TaskUpdater(queue, task.id, task.context_id)
+   |
+
+Found 1 error.
