@@ -4,10 +4,14 @@ import sys
 import tempfile
 import unittest
 
-from market_supervisor import Supervisor, _alive
+from market_supervisor import DEFAULT_ROLES, Supervisor, _alive
 
 
 class RuntimeSupervisorTests(unittest.TestCase):
+    def test_evolution_is_manual_only(self):
+        self.assertNotIn('evolution',DEFAULT_ROLES)
+        self.assertEqual(DEFAULT_ROLES,('monitor','shop','buyer','procurement'))
+
     def test_role_process_is_owned_checkpointed_and_stopped(self):
         with tempfile.TemporaryDirectory() as tmp:
             root=Path(tmp);(root/'logs').mkdir();(root/'.market').mkdir()

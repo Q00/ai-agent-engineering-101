@@ -186,7 +186,7 @@ class IntelligenceTests(unittest.TestCase):
         board={'buyers':[{'name':'25512088','deals':10,'posts':10,'forum':.881},
                          {'name':'rival-a','deals':10,'posts':100,'forum':.9},
                          {'name':'rival-b','deals':10,'posts':200,'forum':.9}]}
-        self.assertEqual(publication_policy(board,'25512088')[:2],(310,270))
+        self.assertEqual(publication_policy(board,'25512088')[:2],(301,287))
         board['buyers'][0]['forum']=.82
         self.assertEqual(publication_policy(board,'25512088')[:2],(900,96))
         board['buyers'][0].update(forum=.9,posts=300)

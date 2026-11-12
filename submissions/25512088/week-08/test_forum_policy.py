@@ -25,10 +25,10 @@ class ForumPolicyTests(unittest.TestCase):
     def test_buyer_rolling_limit_is_aggressive_but_below_official_maximum(self):
         with tempfile.TemporaryDirectory() as tmp:
             c=Control(tmp)
-            for n in range(270):
+            for n in range(287):
                 ok,_,reason=c.allow_publication('buyer',f'고유 시장 정보 {n}',[n],now=1000+n*301)
                 self.assertTrue(ok,reason)
-            ok,_,reason=c.allow_publication('buyer','한도 초과 정보',[999],now=1000+270*301)
+            ok,_,reason=c.allow_publication('buyer','한도 초과 정보',[999],now=1000+287*301)
             self.assertFalse(ok);self.assertEqual(reason,'daily_limit')
             c.close()
 

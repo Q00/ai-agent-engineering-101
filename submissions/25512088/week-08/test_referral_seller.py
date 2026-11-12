@@ -45,6 +45,15 @@ class SellerIntegrationTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(seller.select_unit(text,units,set(),{})['unit'],'long')
         self.assertIsNone(seller.select_unit(text,[units[0]],set(),{}))
 
+    def test_overstocked_exact_sku_leads_with_low_cost_b(self):
+        units=[]
+        for n,grade,cost in [(0,'A',170),(1,'B',140),(2,'B',120),(3,'C',90),
+                             (4,'A',180),(5,'A',175),(6,'A',172),(7,'A',171)]:
+            units.append(dict(unit=str(n),sku='SOFA',name='sofa',category='goods',kind='goods',
+                              grade=grade,cost=cost,expires_at=None,supplied_at=n))
+        self.assertEqual(seller.select_unit('SOFA',units,set(),{})['unit'],'2')
+        self.assertEqual(seller.select_unit('SOFA',units,set(),{},prefer_c=True)['grade'],'C')
+
     def test_c_drain_slot_is_deterministic_and_pressure_bounded(self):
         units=[{'unit':str(i),'grade':'C' if i<5 else 'A'} for i in range(10)]
         first=seller.c_drain_slot('task-1',units,set())

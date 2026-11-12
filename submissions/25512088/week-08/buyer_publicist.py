@@ -11,8 +11,8 @@ from shop_copy import paid_post
 from adaptive_control import Control
 
 
-AGGRESSIVE_INTERVAL = 310       # official limit is one buyer post per 300 seconds
-AGGRESSIVE_DAILY_LIMIT = 270    # below the theoretical 288/day maximum
+AGGRESSIVE_INTERVAL = 301       # official limit is one buyer post per 300 seconds
+AGGRESSIVE_DAILY_LIMIT = 287    # one below the theoretical 288/day maximum
 CAUTIOUS_INTERVAL = 900
 CAUTIOUS_DAILY_LIMIT = 96
 MAINTENANCE_INTERVAL = 1800
