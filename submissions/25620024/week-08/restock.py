@@ -168,7 +168,7 @@ def hits(c, now, t):
                                    join supply_units su on su.unit = x.unit where su.shop = 'dragonash' and s.ts > ?
                                    group by s.sku""", (now - hours * 3600,)):
             sold.setdefault(sku, {})[hours] = n
-    out, econ = [], _ours(c, now)
+    out, econ, cat = [], _ours(c, now), market_model.catalog()
     breaks = dict(c.execute("select sku, count(*) from broken where ts > ? group by sku", (now - 86400,)).fetchall())
     mkt = dict(c.execute("select sku, count(*) from settles where ts > ? group by sku", (now - 86400,)).fetchall())
     for sku, n in sold.items():
@@ -183,6 +183,13 @@ def hits(c, now, t):
         brk = breaks.get(sku, 0) / max(1, mkt.get(sku, 0))     # HQ 11-11: the market's 24 h break rate; a refund
         if mkt.get(sku, 0) >= 30 and brk > t.get("hit_max_break", 0.11) and tk and pr / tk < 0.15:   # costs the
             continue                                          # whole price, so breaky thin lines are not refilled
+        r_ = cat.get(sku) or {}
+        if r_.get("kind") == "food" and (r_.get("shelf_hours") or 0) >= t.get("long_food_shelf_h", 168) \
+                and tk and pr / tk >= t.get("long_food_min_margin", 0.15):
+            # MST TF 11-13 (HQ "잘 팔리는 상품 재고 공격적으로"): cash is 323M of a 432M Book, idle. Food that keeps
+            # a week+ has no defect refund and no expiry inside the round, and storage is 1%/day against a 17-25%
+            # margin; our proven ones (rice, nuts, juice, chili powder, doenjang) held 3.5-5 h of sales. Keep 24 h.
+            cover = max(cover, t.get("long_food_cover_windows", 72))
         target = max(2, math.ceil(per_window * cover))
         cost = tk - pr
         if cost > 0:                                          # no single SKU above hit_max_value at cost
