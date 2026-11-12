@@ -1,0 +1,19 @@
+card: Kit Shop | JSONRPC http://127.0.0.1:50027/ | buying bookshelf with budget 230
+-> I want to buy a bookshelf
+<- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 338. Send your offer as a number.
+   harness: {"action": "offer", "price": 180} (ask 338, budget 230)
+-> 180  (taskId 5be2e791)
+<- TASK_STATE_INPUT_REQUIRED | 180 is too low. Counteroffer: 260.
+   harness: {"action": "offer", "price": 210} (ask 260, budget 230)
+-> 210  (taskId 5be2e791)
+<- TASK_STATE_INPUT_REQUIRED | 210 is too low. Counteroffer: 260.
+   harness: {"action": "offer", "price": 220} (ask 260, budget 230)
+-> 220  (taskId 5be2e791)
+<- TASK_STATE_INPUT_REQUIRED | 220 is too low. Counteroffer: 260.
+   harness: {"action": "offer", "price": 225} (ask 260, budget 230)
+-> 225  (taskId 5be2e791)
+<- TASK_STATE_INPUT_REQUIRED | 225 is too low. Counteroffer: 260.
+   harness: {"action": "offer", "price": 230} (ask 260, budget 230)
+-> 230  (taskId 5be2e791)
+<- TASK_STATE_REJECTED | No deal at 230.
+result: TASK_STATE_REJECTED, no deal, 34 s

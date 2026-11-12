@@ -1,0 +1,22 @@
+[choose] Kit Shop http://127.0.0.1:51974: the only shop left after my memory filter
+card: Kit Shop | JSONRPC http://127.0.0.1:51974/ | buying bookshelf with budget 230
+-> I want to buy a bookshelf
+<- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 338. Send your offer as a number.
+   harness: {"action": "offer", "price": 230} (ask 338, budget 230)
+-> 230  (taskId ee50cb1f)
+<- TASK_STATE_INPUT_REQUIRED | 230 is too low. Counteroffer: 284.
+   harness: {"action": "offer", "price": 225} (ask 284, budget 230)
+-> 225  (taskId ee50cb1f)
+<- TASK_STATE_INPUT_REQUIRED | 225 is too low. Counteroffer: 260.
+   harness: {"action": "offer", "price": 230} (ask 260, budget 230)
+-> 230  (taskId ee50cb1f)
+<- TASK_STATE_INPUT_REQUIRED | 230 is too low. Counteroffer: 260.
+   harness: {"action": "offer", "price": 230} (ask 260, budget 230)
+-> 230  (taskId ee50cb1f)
+<- TASK_STATE_INPUT_REQUIRED | 230 is too low. Counteroffer: 260.
+   harness: {"action": "offer", "price": 230} (ask 260, budget 230)
+-> 230  (taskId ee50cb1f)
+<- TASK_STATE_REJECTED | No deal at 230.
+[review] 4 stars: The bookshelf’s ask came down from 338 to 284 to 260, but it was still too high for me. The negotiation was in good faith.
+result: no deal, 43 s
+{"shop": "http://127.0.0.1:51974", "receipt": null, "stars": 4, "review": "The bookshelf’s ask came down from 338 to 284 to 260, but it was still too high for me. The negotiation was in good faith."}

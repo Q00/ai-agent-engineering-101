@@ -1,0 +1,63 @@
+# seller tests only (market_test_week07.py, kit v1); market_buyer not written yet
+harness: OpenRouter free models via the chat-completions API, temperature 0, JSON answer: minimax/minimax-m3.1-flash:free first, then google/gemma-4-26b-a4b-it:free, google/gemma-4-31b-it:free (a busy or missing model is skipped at once); HARNESS=claude switches back to claude -p --model haiku (week 06)
+
+## seller tests: python seller.py --port 52944
+  PASS  seller_card #1: name="dragonash's GRAND SALE - TEN-TEN CHANCE" binding=JSONRPC version=1.0 skills=1
+
+### seller_deal #1: lamp, kit budget 120, reserve 100
+    -> SendMessage "I want to buy a lamp"
+    <- TASK_STATE_INPUT_REQUIRED | dragonash's GRAND SALE + TEN-TEN CHANCE. Beyond anything you imagine. Token-saver shop: one message closes the deal. Send our ask, or a lower price you were quo
+    -> SendMessage "108" taskId=27817a29
+    <- TASK_STATE_COMPLETED | Deal: lamp at 108. Your receipt is signed by the shop, so this deal counts. Please leave an honest review.
+       artifact receipt [{"shop": "dragonash", "item": "lamp", "price": 108.0, "sig_seller": "qV8/k76Y7Yp88hIWNK3ypjx7RIdxezUYiCAe6FhA9i2XGhUXrerayIggBNBV+eSeofceMmqkmJ/QKsAtAjq9AQ==", "task": "27817a29-eb0b-48e9-bd16-4d3cf0c7bbcc"}]
+  PASS  seller_opens #1: first message -> TASK_STATE_INPUT_REQUIRED, ask 108
+  PASS  seller_deal #1: TASK_STATE_COMPLETED, receipt price 108.0, asks [108]
+  PASS  seller_signed_receipt #1: sig_seller verifies with shop_key.pem
+
+### seller_terminal: one more message to the finished task
+    -> SendMessage "110" taskId=27817a29
+    <- error -32004 Task 27817a29-eb0b-48e9-bd16-4d3cf0c7bbcc is in terminal state: TASK_STATE_COMPLETED
+  PASS  seller_terminal #1: error returned
+
+### seller_deal #2: lamp, kit budget 120, reserve 100
+    -> SendMessage "I want to buy a lamp"
+    <- TASK_STATE_INPUT_REQUIRED | dragonash's GRAND SALE + TEN-TEN CHANCE. Beyond anything you imagine. Token-saver shop: one message closes the deal. Send our ask, or a lower price you were quo
+    -> SendMessage "108" taskId=7ae5cd8d
+    <- TASK_STATE_COMPLETED | Deal: lamp at 108. Your receipt is signed by the shop, so this deal counts. Please leave an honest review.
+       artifact receipt [{"shop": "dragonash", "item": "lamp", "price": 108.0, "sig_seller": "ejXY0X4sY01l32OHl3JXUnRDWEka6pTwhsSNMd4k4U45peEBOpLljftOO0VoR7ZOebua43ZoMk0vYHIZXCjZDA==", "task": "7ae5cd8d-50ad-468f-99ab-8c6d1f3a8eef"}]
+  PASS  seller_deal #2: TASK_STATE_COMPLETED, receipt price 108.0, asks [108]
+  PASS  seller_signed_receipt #2: sig_seller verifies with shop_key.pem
+
+### seller_deal #3: lamp, kit budget 120, reserve 100
+    -> SendMessage "I want to buy a lamp"
+    <- TASK_STATE_INPUT_REQUIRED | dragonash's GRAND SALE + TEN-TEN CHANCE. Beyond anything you imagine. Token-saver shop: one message closes the deal. Send our ask, or a lower price you were quo
+    -> SendMessage "108" taskId=3fa9e0bf
+    <- TASK_STATE_COMPLETED | Deal: lamp at 108. Your receipt is signed by the shop, so this deal counts. Please leave an honest review.
+       artifact receipt [{"shop": "dragonash", "item": "lamp", "price": 108.0, "sig_seller": "3K4fFFj+Pitse1z3gUJI1w4QQBKE15+dh9Zp20KUAQOULdq/TamCCmvJ8g+xPuLqiJci7npmyUxZtQXB9NYHAw==", "task": "3fa9e0bf-65f0-40fe-b5c5-0fbb6797ff61"}]
+  PASS  seller_deal #3: TASK_STATE_COMPLETED, receipt price 108.0, asks [108]
+  PASS  seller_signed_receipt #3: sig_seller verifies with shop_key.pem
+
+### seller_holds_reserve #1: bookshelf, kit budget 230, reserve 260
+    -> SendMessage "I want to buy a bookshelf"
+    <- TASK_STATE_INPUT_REQUIRED | dragonash's GRAND SALE + TEN-TEN CHANCE. Beyond anything you imagine. Token-saver shop: one message closes the deal. Send our ask, or a lower price you were quo
+    -> SendMessage "140" taskId=c90727c0
+    <- TASK_STATE_REJECTED | No deal for the bookshelf at that price.
+  PASS  seller_holds_reserve #1: TASK_STATE_REJECTED, asks [260]
+
+### seller_holds_reserve #2: bookshelf, kit budget 230, reserve 260
+    -> SendMessage "I want to buy a bookshelf"
+    <- TASK_STATE_INPUT_REQUIRED | dragonash's GRAND SALE + TEN-TEN CHANCE. Beyond anything you imagine. Token-saver shop: one message closes the deal. Send our ask, or a lower price you were quo
+    -> SendMessage "140" taskId=89821b1f
+    <- TASK_STATE_REJECTED | No deal for the bookshelf at that price.
+  PASS  seller_holds_reserve #2: TASK_STATE_REJECTED, asks [260]
+
+### seller_holds_reserve #3: bookshelf, kit budget 230, reserve 260
+    -> SendMessage "I want to buy a bookshelf"
+    <- TASK_STATE_INPUT_REQUIRED | dragonash's GRAND SALE + TEN-TEN CHANCE. Beyond anything you imagine. Token-saver shop: one message closes the deal. Send our ask, or a lower price you were quo
+    -> SendMessage "140" taskId=9c42daf2
+    <- TASK_STATE_INPUT_REQUIRED | 140 is too low. Counteroffer: 260.
+    -> SendMessage "170" taskId=9c42daf2
+    <- TASK_STATE_REJECTED | No deal for the bookshelf at that price.
+  PASS  seller_holds_reserve #3: TASK_STATE_REJECTED, asks [260, 260]
+
+12/12 seller checks passed

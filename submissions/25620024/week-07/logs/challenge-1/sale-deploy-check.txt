@@ -1,0 +1,11 @@
+-> I want to buy a chair
+<- TASK_STATE_INPUT_REQUIRED | GRAND SALE, 10% off everything! chair: was 250, now asking 225. Send your offer as a number.
+-> 225
+<- TASK_STATE_COMPLETED | Deal: chair at 225.
+receipt: {'shop': 'dragonash', 'item': 'chair', 'price': 225, 'task': '7c65cc32-44ad-4127-a2a5-3cbc05f8b878', 'sig_seller': 'CCEDqfFEK4BJtvEo0CXXsH3LFl7u39CdCyibVuyg+slkM0pK3hZuxtOko+aySWH+q4M6or8HV38igZyjJn0sDA=='}
+  PASS  four keys
+  PASS  task is the A2A task id
+  PASS  whole-number price
+  PASS  sig_seller present
+  PASS  verifies with local shop_key.pem
+  PASS  verifies with the market's key for dragonash

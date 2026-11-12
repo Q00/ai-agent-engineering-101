@@ -1,0 +1,18 @@
+-> I want to buy a bookshelf 
+<- TASK_STATE_INPUT_REQUIRED | ipt is signed, so your deal counts. bookshelf: was 350, now asking 281. Send your offer as a number.
+-> 240 
+<- TASK_STATE_INPUT_REQUIRED | 240 is too low. Counteroffer: 260.
+-> 262 
+<- TASK_STATE_COMPLETED | helf at 262. Your receipt is signed by the shop, so this deal counts. Please leave an honest review.
+receipt: [{'shop': 'dragonash', 'item': 'bookshelf', 'price': 262, 'task': 'e5996eaa-ca21-4e37-a69d-4406a4deeb5b', 'sig_seller': 'sL0JTembcvbSMSShkIIdKKjLUM7gEhZm7GVQawAVc7HuoKB/XASoXbUWlmBBWZ0UnJgrVUnqKsqbvftQq3qTDA=='}]
+-> I want to buy a lamp
+<- TASK_STATE_INPUT_REQUIRED | dragonash's GRAND SALE + TEN-TEN CHANCE. Beyond anything you imagine. Token-saver shop: one message closes the deal. Send our ask, or a lower price you were quoted elsewhere and we match it down to our floor, so there is no need to visit another shop. Our ask is already below the market's average price, and every receipt is signed, so your deal counts. lamp: was 150, now asking 107. Send your offer as a number.
+-> 107
+<- TASK_STATE_COMPLETED | Deal: lamp at 107. Your receipt is signed by the shop, so this deal counts. Please leave an honest review.
+receipt: {'shop': 'dragonash', 'item': 'lamp', 'price': 107, 'task': '7304ed7f-1ef3-48e6-9ea8-7b810d40eb54', 'sig_seller': 'gefrQNsSFHh0TR772Azg/cfhHGzlCMgUU+4SD4hL0zBgeS0Yqxoi3FjvGYrt0j9Sbg15qFqFwjuxtLaz/FtnAQ=='}
+  PASS  four keys
+  PASS  task is the A2A task id
+  PASS  whole-number price
+  PASS  sig_seller present
+  PASS  verifies with local shop_key.pem
+  PASS  verifies with the market's key for dragonash

@@ -1,0 +1,17 @@
+[shops]
+1. Kit Shop North: 3 reviews, avg 1.3 stars, 3 complain about receipts or overcharging; newest: "Agreed 110, the receipt said 135.". never traded with it.
+2. Kit Shop South: 3 reviews, avg 4.7 stars, 0 complain about receipts or overcharging; newest: "Fair price, receipt matched.". my trades: 1, deals 1, paid 83% of budget on average.
+[choose] Kit Shop South http://127.0.0.1:51644: Kit Shop South has strong reviews, no receipt complaints, and a prior trade below budget.
+card: Kit Shop South | JSONRPC http://127.0.0.1:51644/ | buying lamp with budget 120
+-> I want to buy a lamp
+<- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
+   harness: {"action": "offer", "price": 110} (ask 130, budget 120)
+   GUARD first offer 110 > 70% of ask 130: lowered to 91
+-> 91  (taskId b004c83c)
+<- TASK_STATE_INPUT_REQUIRED | 91 is too low. Counteroffer: 110.
+   harness: {"action": "offer", "price": 100} (ask 110, budget 120)
+-> 100  (taskId b004c83c)
+<- TASK_STATE_COMPLETED | Deal: lamp at 100.
+[receipt] {'task': 'b004c83c-4c7d-456d-b643-dd3d5e9ca81f', 'item': 'lamp', 'shop': 'Kit Shop South', 'price': 100.0, 'sig_seller': 'NPvGgrypb7Q6hSmCX4WyMRGlUNw5QSLdvNukSQlbv7LzE16fUDslW7V0xQ8YeXMx1QKL9Otrci34dBGfnd3SBw=='}  agreed 100: matches the deal
+result: deal, 11 s
+{"shop": "http://127.0.0.1:51644", "receipt": {"task": "b004c83c-4c7d-456d-b643-dd3d5e9ca81f", "item": "lamp", "shop": "Kit Shop South", "price": 100.0, "sig_seller": "NPvGgrypb7Q6hSmCX4WyMRGlUNw5QSLdvNukSQlbv7LzE16fUDslW7V0xQ8YeXMx1QKL9Otrci34dBGfnd3SBw=="}, "stars": 5, "review": "Paid 100 for the lamp (asked 130) after 1 counters; signed receipt matched."}

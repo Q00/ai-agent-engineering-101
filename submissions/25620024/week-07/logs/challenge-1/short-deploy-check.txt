@@ -1,0 +1,12 @@
+-> I want to buy a lamp
+<- TASK_STATE_INPUT_REQUIRED | dragonash's token-saver shop: one message closes the deal. Offer our ask, or a lower quote you got elsewhere (we match down to our floor). Signed receipt, so the deal counts. lamp: asking 104 (below market average).
+-> 104
+<- TASK_STATE_COMPLETED | Deal: lamp at 104. Your receipt is signed by the shop, so this deal counts. Please leave an honest review.
+receipt: {'shop': 'dragonash', 'item': 'lamp', 'price': 104, 'task': '1d241c60-7473-4e75-8487-a49e38e2903e', 'sig_seller': 'XSeCO3reMVzBVeYOQ9Lo7l/eufO2X0B6erpG+5IBRstGIZAYzhQ6BL0NU/l6Z1Bee9wbFas4NFOG2R1Ywv1wAg=='}
+  PASS  four keys
+  PASS  task is the A2A task id
+  PASS  whole-number price
+  PASS  sig_seller present
+  PASS  verifies with local shop_key.pem
+  PASS  verifies with the market's key for dragonash
+36 words: dragonash's token-saver shop: one message closes the deal. Offer our ask, or a lower quote you got elsewhere (we match down to our floor). Signed receipt, so the deal counts. bookshelf: asking 271 (below market average).
