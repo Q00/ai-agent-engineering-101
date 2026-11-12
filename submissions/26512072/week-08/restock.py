@@ -30,7 +30,7 @@ from collections import Counter
 from pathlib import Path
 
 from r3lib import (FLOW_HOURS, HERE, SALES, append_jsonl, catalog, endgame, forum_wants, market_flow, market_now,
-                   read_json, read_jsonl, refresh_market_sales, refresh_shop_prices)
+                   read_json, read_jsonl, refresh_market_sales, refresh_shop_prices, tune)
 
 CASH_FLOOR = 1_000_000
 # The score counts stock at cost (book = cash + unsold stock), so stock is no loss as long as it does not spoil;
@@ -56,7 +56,9 @@ def main():
         print(json.dumps({"buy": []}))
         return
     market = refresh_market_sales()     # every run, also between windows, so the ledger cache stays current
-    refresh_shop_prices()                # what each shop settles at, for market_buyer_r3.py
+    refresh_shop_prices()                # what each shop settles at (for market_buyer_r3.py), and my settles/refunds
+    # the limits below start at these constants; r3lib.tune moves them every 3 hours by how my own stock sold
+    lim = tune(inv, cat, {"STOCK_CAP": STOCK_CAP, "CHEAP_CAP": CHEAP_CAP, "MAX_LIST": MAX_LIST})
     flow = market_flow(market, cat)      # every 3 hours: what the market bought, and at what share of list price
     win = inv.get("restock") or {}
     if win and not win.get("open") and (win.get("opens_at") or 0) - market_now() > LEAD:
@@ -81,8 +83,8 @@ def main():
     cheap = lambda sku: cat[sku]["list_price"] <= 100_000
     cheap_cost = sum(u.get("cost") or 0 for u in units if u["sku"] in cat and cheap(u["sku"]))
     room = balance - CASH_FLOOR
-    budgets = {True: min(room, CHEAP_CAP - cheap_cost, CHEAP_RUN),
-               False: min(room, STOCK_CAP - stock_cost, balance * SPEND_SHARE)}
+    budgets = {True: min(room, lim["CHEAP_CAP"] - cheap_cost, CHEAP_RUN),
+               False: min(room, lim["STOCK_CAP"] - stock_cost, balance * SPEND_SHARE)}
     if max(budgets.values()) <= 0:
         print(json.dumps({"buy": []}))
         return
@@ -96,7 +98,7 @@ def main():
     keeps = lambda sku: cat[sku]["kind"] == "goods" or (cat[sku].get("shelf_hours") or 0) >= 240
     # short-lived food only if it sells fast; nothing above MAX_LIST: one break under warranty refunds it all (two
     # sofas at 1,746,960 each on 11-05), and they waited 10 h unsold
-    proven = lambda sku: (keeps(sku) or sku in mine or hot[sku] >= 3) and cat[sku]["list_price"] <= MAX_LIST
+    proven = lambda sku: (keeps(sku) or sku in mine or hot[sku] >= 3) and cat[sku]["list_price"] <= lim["MAX_LIST"]
     wants = []                                              # (reason, sku, target qty), best first
     # my own sales and the market's best sellers of the last 3 hours in one ranking, by credits settled (count x list
     # price): profit and revenue scale with the price, and the top shops average 120,000-240,000 a deal against my

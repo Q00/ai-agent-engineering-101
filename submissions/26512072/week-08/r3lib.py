@@ -49,6 +49,12 @@ def read_jsonl(path):
     return out
 
 
+def write_json(path, obj):
+    tmp = Path(path).with_suffix(".tmp")
+    tmp.write_text(json.dumps(obj, ensure_ascii=False), encoding="utf-8")
+    os.replace(tmp, path)
+
+
 def append_jsonl(path, row):
     Path(path).parent.mkdir(parents=True, exist_ok=True)
     with open(path, "a", encoding="utf-8") as f:
@@ -157,6 +163,8 @@ def refresh_shop_prices(max_pages=40):
     refresh_market_sales; the first run starts 100,000 rows back (about 4 hours)."""
     cache = read_json(SHOP_PRICES, {}) or {}
     shops, alias = cache.get("shops", {}), cache.get("alias", {})
+    urls = cache.get("urls", {})                    # every tunnel URL a shop joined with (mine change ~30 min)
+    mine = cache.get("mine", [])                    # my settles and refunds: [ts, kind, credits, sku]
     seq = cache.get("seq")
     cat = catalog()
     # a receipt names the shop as its seller wrote it ("Nocha Furniture"); the buyer knows the market name
@@ -166,6 +174,7 @@ def refresh_shop_prices(max_pages=40):
         url2name = {(b.get("card") or {}).get("url", "").rstrip("/"): b["name"] for b in board if b.get("card")}
     except (httpx.HTTPError, ValueError, KeyError):
         url2name = {}
+    urls.update(url2name)
     if seq is None:
         try:
             tip = httpx.get(f"{MARKET}/api/ledger", params={"after": -1}, timeout=20).json()
@@ -180,7 +189,13 @@ def refresh_shop_prices(max_pages=40):
         if not rows:
             break
         for e in rows:
-            r = (e.get("data") or {}).get("receipt") if e.get("kind") == "result" else None
+            d, kind = e.get("data") or {}, e.get("kind")
+            if kind == "join" and d.get("role") == "shop" and d.get("url"):
+                urls[d["url"].rstrip("/")] = d.get("name")
+            elif kind in ("settle", "broken") and urls.get(str(d.get("shop") or "").rstrip("/")) == SHOP_NAME:
+                mine.append([e.get("ts", 0), kind, d.get("amount") if kind == "settle" else d.get("refunded") or 0,
+                             d.get("item")])
+            r = d.get("receipt") if kind == "result" else None
             if isinstance(r, dict) and r.get("shop") and r.get("item") in cat and isinstance(r.get("price"), (int, float)):
                 url = str(e["data"].get("shop") or "").rstrip("/")
                 name = url2name.get(url) or (url.split("/shop/")[-1] if "/shop/" in url else None)
@@ -195,10 +210,76 @@ def refresh_shop_prices(max_pages=40):
         seq = rows[-1]["seq"]
         if len(rows) < 500:
             break
+    mine = [m for m in mine if m[0] >= market_now() - 24 * 3600]
     tmp = SHOP_PRICES.with_suffix(".tmp")
-    tmp.write_text(json.dumps({"seq": seq, "updated": time.time(), "shops": shops, "alias": alias}), encoding="utf-8")
+    tmp.write_text(json.dumps({"seq": seq, "updated": time.time(), "shops": shops, "alias": alias, "urls": urls,
+                               "mine": mine, "mine_since": cache.get("mine_since") or market_now()}),
+                   encoding="utf-8")
     os.replace(tmp, SHOP_PRICES)
     return shops
+
+
+TUNE = HERE / "tune.json"
+TUNE_LOG = HERE / "logs" / "tune.log"
+# the range each restock limit may move in; a step is x1.2 (stock) or x1.3 (MAX_LIST) up, x0.8 / x0.75 down
+TUNE_BOUNDS = {"STOCK_CAP": (8_000_000, 30_000_000), "CHEAP_CAP": (2_000_000, 8_000_000),
+               "MAX_LIST": (300_000, 3_000_000)}
+
+
+def tune(inv, cat, defaults):
+    """Every FLOW_HOURS, moves restock's limits inside TUNE_BOUNDS by what my own shop did (11-12, owner asked for
+    code that adjusts the strategy by itself). Reads my settles and refunds from refresh_shop_prices and my stock
+    from inventory.json:
+      - stock that waited over 24 h is under 15% of all stock (it turns over): more stock (STOCK_CAP x1.2); over
+        35%: less (x0.8). The same for cheap SKUs and CHEAP_CAP.
+      - MAX_LIST (the dearest SKU it buys): warranty refunds over 12% of my goods revenue in the last 12 h, or over
+        30% of the dear stock (list above half of MAX_LIST) unsold after 48 h: x0.75. Refunds under 6% and under
+        15% of it that old: x1.3, so dearer goods (sofas: 39% of the market's credits on 11-12) get tried step by
+        step. (Dear goods take about a day to sell, and unsold stock still counts at cost, so 48 h, not 24.)
+    Waits until the ledger has 3 hours of my own records. Logs every decision to logs/tune.log; returns the values."""
+    t = read_json(TUNE, {}) or {}
+    vals = {**defaults, **(t.get("values") or {})}
+    now = market_now()
+    sp = read_json(SHOP_PRICES, {}) or {}
+    if now - t.get("at", 0) < FLOW_HOURS * 3600 or now - (sp.get("mine_since") or now) < FLOW_HOURS * 3600:
+        return vals
+    mine = sp.get("mine") or []
+    goods = lambda sku: (cat.get(sku) or {}).get("kind") == "goods"
+    rev = sum(m[2] or 0 for m in mine if m[1] == "settle" and goods(m[3]) and m[0] >= now - 12 * 3600)
+    refunds = sum(m[2] or 0 for m in mine if m[1] == "broken" and m[0] >= now - 12 * 3600)
+    refund_rate = refunds / rev if rev else 0.0
+    units = [u for u in inv.get("units", []) if u.get("grade") != "expired"]
+    old = lambda u: now - (u.get("supplied_at") or now) > 24 * 3600
+    share = lambda us: sum(u["cost"] for u in us if old(u)) / max(1, sum(u["cost"] for u in us))
+    cheap = [u for u in units if u.get("list_price", 0) <= 100_000]
+    dear = [u for u in units if u.get("list_price", 0) > vals["MAX_LIST"] / 2]
+    dear_old = sum(u["cost"] for u in dear if now - (u.get("supplied_at") or now) > 48 * 3600) / max(1, sum(
+        u["cost"] for u in dear))
+    new, why = dict(vals), []
+    for key, us in (("STOCK_CAP", units), ("CHEAP_CAP", cheap)):
+        sh = share(us)
+        if sh < 0.15:
+            new[key], w = vals[key] * 1.2, "up"
+        elif sh > 0.35:
+            new[key], w = vals[key] * 0.8, "down"
+        else:
+            w = "keep"
+        why.append(f"{key} {w}: {sh:.0%} of it waited over 24 h")
+    if refund_rate > 0.12 or dear_old > 0.30:
+        new["MAX_LIST"], w = vals["MAX_LIST"] * 0.75, "down"
+    elif refund_rate < 0.06 and dear_old < 0.15:
+        new["MAX_LIST"], w = vals["MAX_LIST"] * 1.3, "up"
+    else:
+        w = "keep"
+    why.append(f"MAX_LIST {w}: refunds {refund_rate:.1%} of goods revenue (12 h), {dear_old:.0%} of the dear stock "
+               f"waited over 48 h")
+    for k, (lo, hi) in TUNE_BOUNDS.items():
+        new[k] = int(min(hi, max(lo, new[k])))
+    write_json(TUNE, {"at": now, "values": new})
+    append_jsonl(TUNE_LOG, {"time": time.strftime("%Y-%m-%d %H:%M:%S"), "before": {k: vals[k] for k in TUNE_BOUNDS},
+                            "after": {k: new[k] for k in TUNE_BOUNDS}, "goods_revenue_12h": rev, "refunds_12h": refunds,
+                            "why": why})
+    return new
 
 
 def shop_ratio(name, shops=None):
