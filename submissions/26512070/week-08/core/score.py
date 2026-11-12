@@ -20,7 +20,9 @@ BUYER = {"saved": 0.5, "forum": 0.3, "deals": 0.1, "posts": 0.1}
 # market's average cost as a share of list - goods ~61%, food ~52%. Until 11/13 00:2x our value gate still reckoned
 # deals as a share of list against the board's new margin-share saved (0.309 -> 0.671 overnight), so it passed only
 # deals at ~30% of list.
-COST_SHARE = {"goods": 0.61, "food": 0.52}
+# 11/13 02:1x: the supply ledger's real unit costs of the top buyers' deals (11/11-12) have a median of 0.57-0.62 of
+# list for goods and 0.49-0.51 for food
+COST_SHARE = {"goods": 0.60, "food": 0.50}
 
 
 def margin_share(share, kind):

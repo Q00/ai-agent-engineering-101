@@ -473,6 +473,8 @@ class BuyerCore:
             o_share, t_share = min(o_share, ceil_share), min(t_share, ceil_share)
         now = o_share + (ceil_share - o_share) * min(1.0, (turn - 1) / max(1, MAX_TURNS - 2))
         bid = min(budget, round(lp * now))
+        if getattr(self, "_firm", None):
+            bid = min(budget, self._firm)                  # the retry at the lowest price the shop named
         if offers:
             bid = max(bid, offers[-1])                     # never go down
         ask = asks[-1] if asks else None
@@ -615,8 +617,40 @@ class BuyerCore:
             if NO_STOCK.search(said):
                 reflex.record_stock_miss(shop["name"], sku, ctx.now(), refill_by(ctx))
                 outcome = "no stock"
-            return self.finish_none(shop, f"no deal ({outcome})", shop_obj=shop, agreed=None, list_price=c.get("list_price"))
+            out = self.finish_none(shop, f"no deal ({outcome})", shop_obj=shop, agreed=None, list_price=c.get("list_price"))
+            firm = self.firm_retry_price(c, kind, hist) if outcome == "rejected" else None
+            if firm:
+                # 11/13 02:1x: shops end with their lowest ("No deal; our lowest is 7367") - 79 of 86 food rejections
+                # in 3 h named a price our value gate passes, and the order went on to another shop. One more talk
+                # with that shop, offering that price from the first turn
+                self.events.emit("buyer.firm_retry", {"price": firm, "list_price": c.get("list_price"), "kind": kind},
+                                 order=o.get("order"), counterpart=shop["name"])
+                self._firm = firm
+                try:
+                    return self._negotiate(shop, sku, kind)
+                finally:
+                    self._firm = None
+            return out
         return self.check_and_finish(shop, sku, c, kind, receipt, offers, hist)
+
+    def firm_retry_price(self, c, kind, hist):
+        """The lowest price a rejecting shop named in its last message, when one more talk at it is worth it: rules,
+        not already a retry, within the budget, and its expected saved at the value bar (when the gate is on)."""
+        if not self.rules() or getattr(self, "_firm", None) or not hist or hist[-1]["from"] != "shop":
+            return None
+        p, lp = hist[-1].get("price"), c.get("list_price")
+        if not isinstance(p, (int, float)) or not lp or not 0.2 * lp <= p <= min(self.order["budget"], lp):
+            return None
+        if self.deadline() - self.clock() < 40:
+            return None
+        bar = self.bar()
+        if bar is not None:
+            said = [h for h in hist if h["from"] == "shop"]
+            w = next((h["warranty_hours"] for h in reversed(said) if h.get("warranty_hours")), None) or 0
+            g = assumed_grade(next((h["claimed_grade"] for h in reversed(said) if h.get("claimed_grade")), None), w)                 if kind == "goods" else None
+            if deal_value(p / lp, kind, g, w, break_rates()) < bar:
+                return None
+        return int(p)
 
     def big_goods_line(self, c, kind):
         """User 11/3 22:3x: surplus (list price - paid) is half of buyer ALL, and the top buyers make it on goods with a

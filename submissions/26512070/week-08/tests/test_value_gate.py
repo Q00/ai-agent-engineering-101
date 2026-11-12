@@ -8,8 +8,8 @@ RATES = {"A": 0.03, "B": 0.12, "C": 0.32}
 
 class ValueGate(unittest.TestCase):
     def test_food_value_is_the_share_kept(self):
-        # patch 3.6: the share of the margin kept - food cost ~52% of list, so 30% off keeps 0.30 / 0.48 of it
-        self.assertAlmostEqual(b.deal_value(0.7, "food", None, 0, RATES), 0.625)
+        # patch 3.6: the share of the margin kept - food cost ~50% of list, so 30% off keeps 0.30 / 0.50 of it
+        self.assertAlmostEqual(b.deal_value(0.7, "food", None, 0, RATES), 0.6)
         self.assertAlmostEqual(b.deal_value(0.4, "food", None, 0, RATES), 1.0)   # below cost counts the whole margin
 
     def test_claimed_grade_counts_as_it_is(self):
@@ -41,6 +41,22 @@ class ValueGate(unittest.TestCase):
 
     def test_grade_c_without_warranty_is_never_worth_it_near_list(self):
         self.assertLess(b.deal_value(0.9, "goods", "C", 0, RATES), 0)
+
+    def test_firm_retry_takes_the_named_lowest_once(self):
+        class Fake(b.BuyerCore):
+            def __init__(self):
+                self.order, self.clock, self.ctx = {"budget": 20000}, lambda: 0, None
+            def rules(self): return True
+            def deadline(self): return 200
+            def bar(self): return 0.69
+        f = Fake()
+        c = {"list_price": 14900}
+        said = lambda p: [{"from": "shop", "price": p, "claimed_grade": None, "warranty_hours": None}]
+        self.assertEqual(f.firm_retry_price(c, "food", said(7367)), 7367)        # 0.49 of list: below cost, 1.0
+        self.assertIsNone(f.firm_retry_price(c, "food", said(12000)))            # 0.81 of list: under the bar
+        self.assertIsNone(f.firm_retry_price(c, "food", said(25000)))            # over the budget and the list
+        f._firm = 7367
+        self.assertIsNone(f.firm_retry_price(c, "food", said(7000)))             # only one retry
 
 
 if __name__ == "__main__":
