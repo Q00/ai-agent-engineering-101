@@ -6,6 +6,7 @@ shows up as a fact instead of a crash. Other participants appear only as hashed 
 
 import functools
 import json
+import math
 import os
 import time
 import statistics as st
@@ -1094,29 +1095,42 @@ def section_turnover(b, old, hours, login):
     ours, over the snapshot gap `hours` (about TURNOVER_H): the gain of book, revenue and deals, the stock cost now
     and at the start, and the revenue gain divided by the stock cost now. Other shops by hashed name. Numbers only
     (live 11-12: the card held ranks and gaps, never how fast the shops above turn their stock)."""
-    shops = [s for s in (b or {}).get("shops") or [] if isinstance(s, dict) and _is_num(s.get("all"))]
+    fin = lambda v: _is_num(v) and math.isfinite(v)  # a NaN or inf on the board is a missing value
+    now_rows = [s for s in (b or {}).get("shops") or [] if isinstance(s, dict)]
+    shops = [s for s in now_rows if fin(s.get("all"))]
     me = next((s for s in shops if c.is_mine(s, login)), None)
-    if me is None or not _is_num(hours) or hours < 1:
+    if not fin(hours) or hours < 1:
         return ["[가게 회전] 순위표 비교 불가 (스냅샷 부족)"]
-    prev = {str(s.get("name")): s for s in (old or {}).get("shops") or [] if isinstance(s, dict)}
+    if me is None:
+        return ["[가게 회전] 순위표 비교 불가 (순위표에 우리 가게 행이 없거나 all 값이 없음)"]
+    olds = [s for s in (old or {}).get("shops") or [] if isinstance(s, dict)]
+    # the old row of another shop is found by its name, so a name two rows share (in either snapshot) finds none; ours
+    # is found by owner
+    n_now, n_old = (Counter(str(s.get("name")) for s in rows) for rows in (now_rows, olds))
+    old_me = next((s for s in olds if c.is_mine(s, login)), None)
+    prev = {str(s.get("name")): s for s in olds if n_old[str(s.get("name"))] == 1 and s is not old_me}
     rank = sorted(shops, key=lambda s: -s["all"])
     at = rank.index(me)
     rows = rank[: min(RIVALS_MAX, at)] + [me] if at else rank[:4]
-    signed = lambda v: ("+" if _is_num(v) and v > 0 else "") + c.fmt(v)  # "-" for a column the board did not give
-    out = [f"[가게 회전 {hours:.0f}시간] 가게 all 순서로 우리 위 가게와 우리 (우리 {at + 1}/{len(rank)}위). book, 매출, 거래는 "
+    show = lambda v: c.fmt(v) if fin(v) else "-"  # "-" for a column the board did not give
+    signed = lambda v: ("+" if fin(v) and v > 0 else "") + show(v)
+    what = ("우리가 1위라 우리와 바로 아래 가게" if not at
+            else f"우리 위 {at}곳 중 위에서 {RIVALS_MAX}곳과 우리" if at > RIVALS_MAX else "우리 위 가게와 우리")
+    out = [f"[가게 회전 {hours:.0f}시간] 가게 all 순서로 {what} (우리 {at + 1}/{len(rank)}위). book, 매출, 거래는 "
            "이 구간의 증가, 재고 원가는 지금 값(괄호는 구간 시작 때), 끝은 매출 증가를 지금 재고 원가로 나눈 배수"]
     for s in rows:
         who = f"  {rank.index(s) + 1}위 " + ("우리" if s is me else c.hid(s.get("name")))
-        o = prev.get(str(s.get("name")))
+        name = str(s.get("name"))
+        o = old_me if s is me else prev.get(name) if n_now[name] == 1 else None
         if not o:
-            out.append(f"{who}: {hours:.0f}시간 전 기록 없음, 재고 원가 {c.fmt(s.get('stock_cost'))}")
+            out.append(f"{who}: {hours:.0f}시간 전 기록 없음, 재고 원가 {show(s.get('stock_cost'))}")
             continue
-        d = lambda k: s[k] - o[k] if _is_num(s.get(k)) and _is_num(o.get(k)) else None
+        d = lambda k: s[k] - o[k] if fin(s.get(k)) and fin(o.get(k)) else None
         cost, rev, deals = s.get("stock_cost"), d("revenue"), d("deals")
         out.append(
             f"{who}: book {signed(d('book'))}, 매출 {signed(rev)}, 거래 {f'{deals:+,.0f}' if deals is not None else '-'}, "
-            f"재고 원가 {c.fmt(cost)} ({c.fmt(o.get('stock_cost'))})"
-            + (f", 매출/재고 원가 {rev / cost:.1f}배" if rev is not None and _is_num(cost) and cost > 0 else "")
+            f"재고 원가 {show(cost)} ({show(o.get('stock_cost'))})"
+            + (f", 매출/재고 원가 {rev / cost:.1f}배" if rev is not None and fin(cost) and cost > 0 else "")
         )
     return out
 

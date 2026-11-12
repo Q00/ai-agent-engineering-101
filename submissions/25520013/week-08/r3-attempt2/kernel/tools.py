@@ -550,7 +550,7 @@ def code_read(root, file, start=1, lines=120, end=None, count=None, func=None):
 
 
 def experiments(root, hours=6, now=None):
-    """실험 장부 전체: 진행 중인 실험 모두(범위, 키, 값, 판정 시각, 건 운영자)와 각 실험의 지금까지 표본, 값, 판정 때 잡음을 넘는 차이의 크기(판정 아님), 최근 hours시간에 끝난 실험의 판정, 그리고 같은 시간에 실험 없이 그냥 적용한 값 수정(시각, 구역, 키, 전 값 → 새 값)."""
+    """실험 장부 전체: 진행 중인 실험 모두(범위, 키, 값, 판정 시각, 건 운영자)와 각 실험의 지금까지 표본, 값, 뚜렷한 판정에 필요한 차이와 그에 못 미칠 때 커널이 하는 일(판정 아님), 최근 hours시간에 끝난 실험의 판정, 그리고 같은 시간에 실험 없이 그냥 적용한 값 수정(시각, 구역, 키, 전 값 → 새 값)."""
     from kernel import experiments as ex
 
     now = c.now_ts() if now is None else now

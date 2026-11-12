@@ -129,7 +129,6 @@ REASON_KO = {
 EXPECT_CHARS = 40
 LINES_RUN, LINES_ENDED = 6, 5
 INTERIM_MIN_H = 0.25  # a running experiment younger than this gets no interim line
-INTERIM_FAR_H = 72  # hours for the present difference to clear the noise are printed up to this
 ROLES = ("shop", "buyer")  # the role operators (kernel.operator --role)
 OTHER = " (다른 운영자)"  # a role's state card marks the other role's lines
 TESTS = ("none", "before_after", "split")  # what a policy item may ask for (apply_policy)
@@ -1876,42 +1875,64 @@ def interim_data(root, run, now):
     return read_events(root, min(lo), now, now=now) if lo else None
 
 
+def _last_window_h(e):
+    """The longest window a running experiment is judged on: its own once it was extended (or is at the kernel's
+    extension limit), else the one extension the kernel makes of an undecided window (_extend)."""
+    wh = e["window_h"]
+    return wh if e.get("extended") or wh >= EXT_MAX_WINDOW_H else min(EXT_MAX_WINDOW_H, wh * 2)
+
+
 def interim_line(e, now, data):
     """What a running experiment holds so far, as one card line (no writes, no verdict): hours run of the window, the
     sample (per arm, or before and after) with the pace projected to the verdict time next to the sample the verdict
-    needs, the values and their difference, and the smallest difference the verdict would call clear (the larger of
-    CLEAR_SE x se at the verdict time, when sales keep coming as they have, and REL_MIN of the base value). A split also gets the hours from its start that the present difference
-    would need to clear at this pace (se of a split falls with 1 / sqrt(hours)). "" when too early or without data.
+    needs, the values and their difference, the smallest difference a clear verdict needs (the larger of CLEAR_SE x se
+    at the verdict time, when sales keep coming as they have, and REL_MIN of the base value or of FLOOR), and what the
+    kernel does below that: one extension of the window, then on the last window the weak rule (split: B only when it
+    beats A by more than one se; before/after: the sign of the difference). A split also says whether the present
+    difference would clear the noise inside the last window at this pace (se of a split falls with 1 / sqrt(hours)).
+    "" when too early or without data.
     Live 11-12: experiments ended on 3 against 5 sales; nothing on the card showed that before the verdict."""
     t, wh = e.get("started_ts"), e.get("window_h")
     if data is None or not (_num_ok(t) and _num_ok(wh) and wh > 0) or e.get("status") != "running":
         return ""
+    done = now >= t + wh * 3600  # the window is over; the verdict waits for late breaks (maturity)
     el = (min(now, t + wh * 3600) - t) / 3600
     if el < INTERIM_MIN_H:
         return ""
     k = wh / el  # the verdict window over the hours run
-    head = f"    지금까지 {el:.1f}/{wh:g}시간: "
+    last = _last_window_h(e)
+    head = (f"    지금까지 {wh:g}/{wh:g}시간 (구간 끝남, 판정 대기): " if done
+            else f"    지금까지 {math.floor(el * 10 + 1e-6) / 10:.1f}/{wh:g}시간: ")
     noise = f"잡음({CLEAR_SE}se)"
+    ext = f"커널이 구간을 {last:g}시간으로 늘려 한 번 더 봄" if last > wh else ""  # else this window is the last
     if e.get("mode") == "split":
         v = evaluate_split(None, dict(e, window_h=el), now, data)
         diff = v["b"] - v["a"]
         out = (
             head
-            + f"판매 A {v['n_a']} / B {v['n_b']} (이 속도면 판정 때 약 {v['n_a'] * k:.0f} / {v['n_b'] * k:.0f}, "
-            f"판정에 필요한 표본 각 {THIN_N} 합 {SPLIT_THIN_N}), 값 A {_num(v['a'], 'shop')}, B {_num(v['b'], 'shop')}, "
+            + f"판매 A {v['n_a']} / B {v['n_b']} ("
+            + ("" if done else f"이 속도면 판정 때 약 {v['n_a'] * k:.0f} / {v['n_b'] * k:.0f}, ")
+            + f"판정에 필요한 표본 각 {THIN_N} 합 {SPLIT_THIN_N}), 값 A {_num(v['a'], 'shop')}, B {_num(v['b'], 'shop')}, "
             f"차이 {_num(diff, 'shop', sign=True)}"
         )
         if v["se"]:
             rel = REL_MIN * max(abs(v["a"]), FLOOR["shop"])  # the verdict's second condition
-            out += (f". 판매가 이대로면 판정 때 넘어야 하는 차이는 ±{_num(max(CLEAR_SE * v['se'] / math.sqrt(k), rel), 'shop')}부터 "
-                    f"({noise}과 A 값의 {REL_MIN:.0%} 기준 중 큰 쪽)")
+            rel_name = f"A 값의 {REL_MIN:.0%} 기준" if abs(v["a"]) >= FLOOR["shop"] else "최소 기준"
+            se_end = v["se"] / math.sqrt(k)
+            out += (
+                ". " + ("" if done else "판매가 이대로면 ")
+                + f"뚜렷한 판정에 필요한 차이는 ±{_num(max(CLEAR_SE * se_end, rel), 'shop')}부터 ({noise}과 {rel_name} 중 큰 쪽)"
+                + (f", 못 미치면 {ext}" if ext
+                   else f", 마지막 구간이라 못 미치면 B가 A보다 1se(±{_num(se_end, 'shop')}) 넘게 좋고 표본이 각 {THIN_N} "
+                        "이상일 때만 B를 채택하고 아니면 A로 둠")
+            )
             if diff:
                 h = el * (CLEAR_SE * v["se"] / abs(diff)) ** 2
-                out += ", 지금 차이는 " + (
-                    f"A 값의 {REL_MIN:.0%} 기준(±{_num(rel, 'shop')})에 못 미침" if abs(diff) <= rel
-                    else "이미 지금의 잡음을 넘음" if h <= el
-                    else f"이어지면 잡음을 넘는 데 시작부터 약 {h:.0f}시간" if h <= INTERIM_FAR_H
-                    else f"이어져도 잡음을 넘는 데 시작부터 {INTERIM_FAR_H}시간 넘게"
+                out += ". 지금 차이는 " + (
+                    f"{rel_name}(±{_num(rel, 'shop')})에 못 미침" if abs(diff) <= rel
+                    else "이미 지금의 잡음을 넘음" if h < el
+                    else f"이어지면 시작부터 약 {h:.0f}시간에 잡음을 넘음" if h <= last
+                    else f"이어져도 마지막 구간({last:g}시간) 안에 잡음을 넘지 못함"
                 )
         return out
     side, scope, w = e.get("side"), e["scope"], wh * 3600
@@ -1927,29 +1948,40 @@ def interim_line(e, now, data):
         r = _ratio(a["market"], a["hours"], b["market"], b["hours"])
     adj = b["value"] * r
     unit = "거래" if side == "buyer" else "판매"
-    if t - b0 < MIN_BEFORE_H * 3600:  # the verdict will be no_baseline whatever the after window holds
-        return (head + f"{unit} 후 {a['n']} (이 속도면 판정 때 후 약 {a['n'] * k:.0f}), 후 {_num(a['value'], side)}. "
-                f"전 구간이 {(t - b0) / 3600:.1f}시간이라 비교 기준이 없음 (기준 {MIN_BEFORE_H}시간)")
+    pace = "" if done else f"이 속도면 판정 때 후 약 {a['n'] * k:.0f}"
+    # the two ways evaluate() has no baseline, whatever the after window holds: a clipped before window, or an events
+    # read that does not reach its start
+    earliest = data.get("earliest", b0)
+    short = t - b0 < MIN_BEFORE_H * 3600
+    if short or earliest is None or earliest > b0 + BASELINE_SLACK_S:
+        return (head + f"{unit} 후 {a['n']}" + (f" ({pace})" if pace else "") + f", 후 {_num(a['value'], side)}. "
+                + (f"전 구간이 {int((t - b0) // 60)}분이라 비교 기준이 없음 (기준 {MIN_BEFORE_H * 60}분)" if short
+                   else "거래 기록이 전 구간의 시작까지 닿지 않아 비교 기준이 없음")
+                + ", 비교 없이 값이 유지됨")
     out = (
         head
-        + f"{unit} 전 {b['n']} → 후 {a['n']} (이 속도면 판정 때 후 약 {a['n'] * k:.0f}, "
-        f"판정에 필요한 표본 {THIN_N}), 전 보정 {_num(adj, side)}, 후 {_num(a['value'], side)}, "
+        + f"{unit} 전 {b['n']} → 후 {a['n']} (" + (pace + ", " if pace else "")
+        + f"판정에 필요한 표본 {THIN_N}), 전 보정 {_num(adj, side)}, 후 {_num(a['value'], side)}, "
         f"차이 {_num(a['value'] - adj, side, sign=True)}"
     )
+    sign = "차이의 부호로 정함 (0 이상이면 값 유지, 음이면 되돌림)"
     bb = [x * r for x in b["buckets"]]
-    if len(bb) >= 2:
-        # the after variance over whole elapsed hours only: a partial last hour would read as a swing of its own
-        whole = int(el + 1e-9)
-        ab = (buyer_metric(data, scope, t, t + whole * 3600, e.get("s0")) if side == "buyer"
-              else shop_metric(data, scope, t, t + whole * 3600, e.get("rev_weight") or 0.0))["buckets"] if whole >= 2 else []
-        own = len(ab) >= 2
-        va = st.variance(ab) if own else st.variance(bb)
-        need = max(CLEAR_SE * math.sqrt(va / max(1, int(round(wh))) + st.variance(bb) / len(bb)),
-                   REL_MIN * max(abs(adj), FLOOR[side]))
-        out += (f". 시간별 흔들림이 이대로면 판정 때 넘어야 하는 차이는 ±{_num(need, side)}부터 "
-                f"({noise}과 전 보정 값의 {REL_MIN:.0%} 기준 중 큰 쪽"
-                + ("" if own else ", 후 구간이 온전한 2시간 미만이라 전 구간의 흔들림으로 셈") + ")")
-    return out
+    if len(bb) < 2:
+        return (out + ". 전 구간이 1시간 구간 하나라 잡음을 셀 수 없어 이 구간에서는 뚜렷한 판정이 나오지 않음, "
+                + (ext or f"마지막 구간이라 {sign}"))
+    # the after variance over whole elapsed hours only: a partial last hour would read as a swing of its own
+    whole = int(el + 1e-9)
+    ab = (buyer_metric(data, scope, t, t + whole * 3600, e.get("s0")) if side == "buyer"
+          else shop_metric(data, scope, t, t + whole * 3600, e.get("rev_weight") or 0.0))["buckets"] if whole >= 2 else []
+    own = len(ab) >= 2
+    va = st.variance(ab) if own else st.variance(bb)
+    need = max(CLEAR_SE * math.sqrt(va / max(1, int(round(wh))) + st.variance(bb) / len(bb)),
+               REL_MIN * max(abs(adj), FLOOR[side]))
+    rel_name = f"전 보정 값의 {REL_MIN:.0%} 기준" if abs(adj) >= FLOOR[side] else "최소 기준"
+    return (out + ". " + ("" if done else "시간별 흔들림이 이대로면 ")
+            + f"뚜렷한 판정에 필요한 차이는 ±{_num(need, side)}부터 ({noise}과 {rel_name} 중 큰 쪽"
+            + ("" if own else ", 후 구간이 온전한 2시간 미만이라 전 구간의 흔들림으로 셈") + ")"
+            + (f", 못 미치면 {ext}" if ext else f", 마지막 구간이라 못 미치면 {sign}"))
 
 
 def _ended_line(e):

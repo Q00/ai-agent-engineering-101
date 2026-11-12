@@ -69,13 +69,19 @@ def test_turnover_caps_the_shops_above_and_handles_first_place_and_no_snapshot()
             + [_shop("LSS Shop", 0.5, 1e6, 1e6, 1, 1e6, owner=LOGIN)]}
     out = brief.section_turnover(many, many, 24.0, LOGIN)
     assert len(out) == 1 + brief.RIVALS_MAX + 1 and out[-1].startswith("  13위 우리:")
+    assert out[0].startswith("[가게 회전 24시간] 가게 all 순서로 우리 위 12곳 중 위에서 8곳과 우리 (우리 13/13위).")
     assert [ln.split(":")[0] for ln in out[1:9]] == [f"  {i + 1}위 {c.hid(f'S{i}')}" for i in range(8)]  # the top eight
     now, old = _boards()
     now["shops"][2]["all"] = 0.99
     out = brief.section_turnover(now, old, 24.0, LOGIN)
     assert out[1].startswith("  1위 우리:") and len(out) == 5  # first place: ours and the next three
-    for b, o, h in ((now, old, 0.5), (now, old, None), ({}, {}, 24.0), ({"shops": old["shops"][:2]}, old, 24.0)):
-        assert brief.section_turnover(b, o, h, LOGIN) == ["[가게 회전] 순위표 비교 불가 (스냅샷 부족)"]
+    assert out[0].startswith("[가게 회전 24시간] 가게 all 순서로 우리가 1위라 우리와 바로 아래 가게 (우리 1/5위).")
+    for h in (0.5, None, float("nan"), float("inf")):
+        assert brief.section_turnover(now, old, h, LOGIN) == ["[가게 회전] 순위표 비교 불가 (스냅샷 부족)"]
+    no_all = {"shops": [dict(x, all=None) if x["owner"] == LOGIN else x for x in now["shops"]]}
+    for b in ({}, {"shops": old["shops"][:2]}, no_all):
+        assert brief.section_turnover(b, old, 24.0, LOGIN) == [
+            "[가게 회전] 순위표 비교 불가 (순위표에 우리 가게 행이 없거나 all 값이 없음)"]
 
 
 def test_turnover_shows_a_missing_column_as_missing_not_as_zero():
@@ -88,6 +94,41 @@ def test_turnover_shows_a_missing_column_as_missing_not_as_zero():
     out = brief.section_turnover(now, old, 24.0, LOGIN)
     assert out[1] == f"  1위 {c.hid('Alpha Shop')}: book +50.0M, 매출 -, 거래 -, 재고 원가 100.0M (80.0M)"
     assert out[4] == "  4위 우리: book +10.0M, 매출 +100.0M, 거래 +200, 재고 원가 - (150.0M)"
+
+
+def test_turnover_reads_nan_and_inf_as_missing():
+    now, old = _boards()
+    now["shops"][0].update(book=float("nan"), revenue=float("inf"))
+    now["shops"][1]["stock_cost"] = float("inf")
+    old["shops"][2]["stock_cost"] = float("nan")
+    now["shops"][3]["all"] = float("nan")  # a row without a rank value is not ranked
+    out = brief.section_turnover(now, old, 24.0, LOGIN)
+    assert out[0].startswith("[가게 회전 24시간] 가게 all 순서로 우리 위 가게와 우리 (우리 4/4위).")
+    assert out[1] == f"  1위 {c.hid('Alpha Shop')}: book -, 매출 -, 거래 +2,000, 재고 원가 100.0M (80.0M)"
+    assert out[2] == f"  2위 {c.hid('Beta Shop')}: book -10.0M, 매출 +100.0M, 거래 +200, 재고 원가 - (10.0M)"
+    assert out[4] == "  4위 우리: book +10.0M, 매출 +100.0M, 거래 +200, 재고 원가 200.0M (-), 매출/재고 원가 0.5배"
+    assert "nan" not in "\n".join(out) and "inf" not in "\n".join(out)
+
+
+def test_turnover_does_not_pair_rows_by_a_name_two_shops_share():
+    now, old = _boards()
+    # a rival took our shop's name: our old row is found by owner, the rival's old row is not guessed
+    now["shops"][0]["name"] = old["shops"][0]["name"] = "LSS Shop"
+    # two rivals share a name a day ago; numeric and text names that print alike are one name
+    now["shops"][1]["name"], now["shops"][4]["name"] = 12345, "12345"
+    old["shops"][1]["name"] = 12345
+    out = brief.section_turnover(now, old, 24.0, LOGIN)
+    assert out[1] == f"  1위 {c.hid('LSS Shop')}: 24시간 전 기록 없음, 재고 원가 100.0M"
+    assert out[2] == f"  2위 {c.hid(12345)}: 24시간 전 기록 없음, 재고 원가 0"
+    assert out[3] == f"  3위 {c.hid('12345')}: 24시간 전 기록 없음, 재고 원가 5.0M"
+    assert out[4] == "  4위 우리: book +10.0M, 매출 +100.0M, 거래 +200, 재고 원가 200.0M (150.0M), 매출/재고 원가 0.5배"
+    assert "LSS" not in "\n".join(out)
+    # a name shared only in the old snapshot: which of the two old rows is this shop's is not known
+    now, old = _boards()
+    old["shops"].append(_shop("Alpha Shop", 0.1, 1e6, 1e6, 1, 1e6))
+    out = brief.section_turnover(now, old, 24.0, LOGIN)
+    assert out[1] == f"  1위 {c.hid('Alpha Shop')}: 24시간 전 기록 없음, 재고 원가 100.0M"
+    assert out[2].startswith(f"  2위 {c.hid('Beta Shop')}: book -10.0M")
 
 
 def _board_root(tmp_path, hours=(25, 6, 0)):
@@ -200,78 +241,115 @@ def _split_exp(window_h=8, **kw):
     return _exp(BED, mode="split", window_h=window_h, arm={"share": ex.ARM_SHARE}, **kw)
 
 
+def _root_like(root, tag, exps, rows):
+    """A second data root with root's policy and catalog, its own ledger and events."""
+    r = root + tag
+    for d in (".r3", ".market", "a2"):
+        os.makedirs(os.path.join(r, d))
+    for f in ("policy.json", ".market/catalog.json"):
+        open(os.path.join(r, f), "w").write(open(os.path.join(root, f)).read())
+    open(os.path.join(r, ".r3/events.jsonl"), "w").close()
+    _put_ledger(r, exps)
+    _write_events(r, rows)
+    return r
+
+
+LAST_SPLIT = ("마지막 구간이라 못 미치면 B가 A보다 1se(±{})  넘게 좋고 표본이 각 5 이상일 때만 B를 채택하고 아니면 A로 둠"
+              .replace("  ", " "))
+LAST_SEQ = "마지막 구간이라 못 미치면 차이의 부호로 정함 (0 이상이면 값 유지, 음이면 되돌림)"
+
+
+def _ab_sales(ua, ub, net_a, net_b):
+    rows = []
+    for i, u in enumerate(ua):
+        rows += _sale(S + 600 + i * 1800, "BED1", 1_000_000 + net_a, 1_000_000, unit=u)
+    for i, u in enumerate(ub):
+        rows += _sale(S + 900 + i * 1800, "BED1", 1_000_000 + net_b, 1_000_000, unit=u)
+    return rows
+
+
 def test_interim_line_of_a_split_matches_hand_arithmetic(root):
-    e = _split_exp()
+    e = _split_exp()  # window 8 h: the kernel does not extend it, so this window is the last
     _put_ledger(root, [e])
     ua, ub = _arm_units(1, 2, 2)
-    rows = []
-    for i, u in enumerate(ua):  # arm a: two sales, net 100k each
-        rows += _sale(S + 600 + i * 1800, "BED1", 1_100_000, 1_000_000, unit=u)
-    for i, u in enumerate(ub):  # arm b: two sales, net 300k each
-        rows += _sale(S + 900 + i * 1800, "BED1", 1_300_000, 1_000_000, unit=u)
+    rows = _ab_sales(ua, ub, 100_000, 300_000)  # arm a: two sales, net 100k each; arm b: two, net 300k each
     rows += _sale(S + 3 * H, "BED1", 9_000_000, 1_000_000, unit=ua[0] + "-later")  # after now: not counted
     _write_events(root, rows)
     out = ex.lines(root, S + 2 * H, interim=True)
-    # a 200k / 2 h, b 600k / 2 h; se = sqrt(2 x 1e10 + 2 x 9e10) / 2 h = 223,607; at 8 h it halves x 2se = 223,607;
-    # hours for +200k/h to clear: 2 x (2 x 223,607 / 200,000)^2 = 10
+    # a 200k / 2 h, b 600k / 2 h; se = sqrt(2 x 1e10 + 2 x 9e10) / 2 h = 223,607; over 8 h it halves: 111,803, and
+    # 2se = 223,607; hours for +200k/h to clear: 2 x (2 x 223,607 / 200,000)^2 = 10, past the 8 h of the last window
     assert out[2] == (
         "    지금까지 2.0/8시간: 판매 A 2 / B 2 (이 속도면 판정 때 약 8 / 8, 판정에 필요한 표본 각 5 합 10), "
-        "값 A 0.10M/h, B 0.30M/h, 차이 +0.20M/h. 판매가 이대로면 판정 때 넘어야 하는 차이는 ±0.22M/h부터 "
-        "(잡음(2se)과 A 값의 10% 기준 중 큰 쪽), 지금 차이는 이어지면 잡음을 넘는 데 시작부터 약 10시간")
+        "값 A 0.10M/h, B 0.30M/h, 차이 +0.20M/h. 판매가 이대로면 뚜렷한 판정에 필요한 차이는 ±0.22M/h부터 "
+        "(잡음(2se)과 A 값의 10% 기준 중 큰 쪽), " + LAST_SPLIT.format("0.11M/h")
+        + ". 지금 차이는 이어져도 마지막 구간(8시간) 안에 잡음을 넘지 못함")
     # at a time that is not a whole hour the values are over the hours run (the bucket mean would say +0.20M/h):
-    # a 200k / 2.25 h, b 600k / 2.25 h; se = 447,214 / 2.25; at 8 h: 2 x 198,762 / sqrt(8 / 2.25) = 210,819;
-    # hours for +177,778/h to clear: 2.25 x (2 x 198,762 / 177,778)^2 = 11.25
+    # a 200k / 2.25 h = 88,889 (under the 100,000 floor, so the second rule is the floor's 10%), b 600k / 2.25 h;
+    # se = 447,214 / 2.25 = 198,762; over 8 h: 198,762 / sqrt(8 / 2.25) = 105,409, 2se = 210,819
     assert ex.lines(root, S + 2.25 * H, interim=True)[2] == (
         "    지금까지 2.2/8시간: 판매 A 2 / B 2 (이 속도면 판정 때 약 7 / 7, 판정에 필요한 표본 각 5 합 10), "
-        "값 A 88,889/h, B 0.27M/h, 차이 +0.18M/h. 판매가 이대로면 판정 때 넘어야 하는 차이는 ±0.21M/h부터 "
-        "(잡음(2se)과 A 값의 10% 기준 중 큰 쪽), 지금 차이는 이어지면 잡음을 넘는 데 시작부터 약 11시간")
+        "값 A 88,889/h, B 0.27M/h, 차이 +0.18M/h. 판매가 이대로면 뚜렷한 판정에 필요한 차이는 ±0.21M/h부터 "
+        "(잡음(2se)과 최소 기준 중 큰 쪽), " + LAST_SPLIT.format("0.11M/h")
+        + ". 지금 차이는 이어져도 마지막 구간(8시간) 안에 잡음을 넘지 못함")
     assert out[1].startswith("  진행 #1 동시 비교 ") and len(out) == 3
     assert ex.lines(root, S + 2 * H) == [out[0], out[1]]  # off by default (auditor, investigator, made agents)
     assert out[2] in tools.experiments(root, hours=2, now=S + 2 * H)
+    # hours shown are cut, not rounded up: 2.96 h is not "3.0"
+    assert ex.lines(root, S + 2.96 * H, interim=True)[2].startswith("    지금까지 2.9/8시간: ")
 
 
-def test_interim_line_of_a_split_far_from_or_already_past_the_noise(root):
+def test_interim_line_of_a_split_names_the_extension_and_the_last_window_rule(root):
+    ua, ub = _arm_units(1, 2, 2)
+    # window 4 h, not extended: an undecided verdict doubles it to 8 h. Same sales as above: se over 4 h is
+    # 223,607 / sqrt(2) = 158,114, 2se = 316,228
+    r4 = _root_like(root, "-w4", [_split_exp(window_h=4)], _ab_sales(ua, ub, 100_000, 300_000))
+    assert ex.lines(r4, S + 2 * H, interim=True)[2].endswith(
+        "판매가 이대로면 뚜렷한 판정에 필요한 차이는 ±0.32M/h부터 (잡음(2se)과 A 값의 10% 기준 중 큰 쪽), "
+        "못 미치면 커널이 구간을 8시간으로 늘려 한 번 더 봄. 지금 차이는 이어져도 마지막 구간(8시간) 안에 잡음을 넘지 못함")
+    # the same window once extended is the last one
+    rx = _root_like(root, "-w4x", [_split_exp(window_h=4, extended=True)], _ab_sales(ua, ub, 100_000, 300_000))
+    assert ex.lines(rx, S + 2 * H, interim=True)[2].endswith(
+        "(잡음(2se)과 A 값의 10% 기준 중 큰 쪽), " + LAST_SPLIT.format("0.16M/h")
+        + ". 지금 차이는 이어져도 마지막 구간(4시간) 안에 잡음을 넘지 못함")
+    # b net 400k each: diff 300k/h, se = sqrt(2e10 + 32e10) / 2 = 291,548; hours to clear 2 x (583,095 / 300,000)^2
+    # = 7.6: inside the 8 h window but not yet (the present noise is compared with the hours run, not the window)
+    r8 = _root_like(root, "-w8", [_split_exp()], _ab_sales(ua, ub, 100_000, 400_000))
+    assert ex.lines(r8, S + 2 * H, interim=True)[2].endswith(". 지금 차이는 이어지면 시작부터 약 8시간에 잡음을 넘음")
+
+
+def test_interim_line_of_a_split_under_the_share_rule_or_already_past_the_noise(root):
     e = _split_exp()
-    _put_ledger(root, [e])
-    ua, ub = _arm_units(1, 6, 6)
+    ua, ub = _arm_units(1, 120, 120)
     rows = []
-    for i in range(6):  # a net 100k, b net 101k: the difference is far inside the noise
-        rows += _sale(S + 60 + i * 500, "BED1", 1_100_000, 1_000_000, unit=ua[i])
-        rows += _sale(S + 90 + i * 500, "BED1", 1_101_000, 1_000_000, unit=ub[i])
+    for i in range(120):  # a net 100k, b net 101k, 120 sales each inside the first hour
+        rows += _sale(S + 5 + i * 29, "BED1", 1_100_000, 1_000_000, unit=ua[i])
+        rows += _sale(S + 9 + i * 29, "BED1", 1_101_000, 1_000_000, unit=ub[i])
+    _put_ledger(root, [e])
     _write_events(root, rows)
     line = ex.lines(root, S + H, interim=True)[2]
-    assert "판매 A 6 / B 6 (이 속도면 판정 때 약 48 / 48" in line
-    # a 600k/h, b 606k/h: +6,000/h is under 10% of the A value, which the verdict also asks for
-    assert line.endswith("지금 차이는 A 값의 10% 기준(±60,000/h)에 못 미침")
-    # one sale each, net 100k against 120k: +20,000/h is over the 10,000/h floor of that rule; se = sqrt(1e10 +
-    # 1.44e10) = 156,205, hours to clear 1 x (2 x 156,205 / 20,000)^2 = 244
-    root3 = root + "-c"
-    for d in (".r3", ".market", "a2"):
-        os.makedirs(os.path.join(root3, d))
-    for f in ("policy.json", ".market/catalog.json"):
-        open(os.path.join(root3, f), "w").write(open(os.path.join(root, f)).read())
-    _put_ledger(root3, [e])
-    open(os.path.join(root3, ".r3/events.jsonl"), "w").close()
-    _write_events(root3, _sale(S + 60, "BED1", 1_100_000, 1_000_000, unit=ua[0])
-                  + _sale(S + 90, "BED1", 1_120_000, 1_000_000, unit=ub[0]))
-    line = ex.lines(root3, S + H, interim=True)[2]
-    assert line.endswith(f"±0.11M/h부터 (잡음(2se)과 A 값의 10% 기준 중 큰 쪽), 지금 차이는 이어져도 잡음을 넘는 데 시작부터 {ex.INTERIM_FAR_H}시간 넘게")
-    # only arm b sells, a lot: the difference is past the present noise
-    root2 = root + "-b"
-    os.makedirs(os.path.join(root2, ".r3"))
-    os.makedirs(os.path.join(root2, ".market"))
-    for f in ("policy.json", ".market/catalog.json"):
-        open(os.path.join(root2, f), "w").write(open(os.path.join(root, f)).read())
-    open(os.path.join(root2, ".r3/events.jsonl"), "w").close()
-    os.makedirs(os.path.join(root2, "a2"))
-    _put_ledger(root2, [e])
-    _write_events(root2, [x for i in range(6) for x in _sale(S + 60 + i * 500, "BED1", 1_300_000, 1_000_000, unit=ub[i])])
-    line = ex.lines(root2, S + H, interim=True)[2]
-    assert "판매 A 0 / B 6" in line and line.endswith("지금 차이는 이미 지금의 잡음을 넘음")
+    assert "판매 A 120 / B 120 (이 속도면 판정 때 약 960 / 960" in line
+    # a 12.0M/h, b 12.12M/h; se = sqrt(120e10 + 120 x 1.0201e10) = 1,556,920, over 8 h 550,454, 2se = 1,100,909:
+    # under 10% of the A value (1.2M), so the share rule is the bar, and +120,000/h is under it
+    assert line.endswith(
+        "차이 +0.12M/h. 판매가 이대로면 뚜렷한 판정에 필요한 차이는 ±1.20M/h부터 (잡음(2se)과 A 값의 10% 기준 중 큰 쪽), "
+        + LAST_SPLIT.format("0.55M/h") + ". 지금 차이는 A 값의 10% 기준(±1.20M/h)에 못 미침")
+    # only arm b sells, six sales of net 300k in the first hour: the difference is past the present noise
+    r2 = _root_like(root, "-b", [e], [x for i in range(6)
+                                      for x in _sale(S + 60 + i * 500, "BED1", 1_300_000, 1_000_000, unit=ub[i])])
+    line = ex.lines(r2, S + H, interim=True)[2]
+    assert "판매 A 0 / B 6" in line and line.endswith(". 지금 차이는 이미 지금의 잡음을 넘음")
+    # the window over (the verdict waits for late breaks): no pace, and the figures are those of the whole window.
+    # b 1.8M / 8 h = 225,000/h; se = sqrt(6 x 9e10) / 8 = 91,856, 2se = 183,712; a is 0, so the second rule is the floor
+    assert ex.lines(r2, S + 9 * H, interim=True)[2] == (
+        "    지금까지 8/8시간 (구간 끝남, 판정 대기): 판매 A 0 / B 6 (판정에 필요한 표본 각 5 합 10), 값 A 0/h, B 0.23M/h, "
+        "차이 +0.23M/h. 뚜렷한 판정에 필요한 차이는 ±0.18M/h부터 (잡음(2se)과 최소 기준 중 큰 쪽), "
+        + LAST_SPLIT.format("91,856/h") + ". 지금 차이는 이미 지금의 잡음을 넘음")
+    v = ex.evaluate_split(r2, e, S + 9 * H)
+    assert abs(v["se"] - 91_855.87) < 0.01 and v["effect"] == 225_000 and v["decision"] == "thin"  # a has no sale
 
 
 def test_interim_line_of_a_before_after_experiment(root):
-    e = _exp(BED)  # window 3 h, sequential
+    e = _exp(BED)  # window 3 h, sequential, not extended: an undecided verdict doubles it to 6 h
     _put_ledger(root, [e])
     _write_events(root, _hourly(S - 3 * H, 3, "BED1", 100_000) + _hourly(S, 2, "BED1", 200_000))
     one = ex.lines(root, S + H, interim=True)[2]
@@ -281,16 +359,59 @@ def test_interim_line_of_a_before_after_experiment(root):
     adj = 300_000 * r
     var_b = r * r * 225e6  # sample variance of 285k, 300k, 315k
     assert 2 * math.sqrt(var_b / 3 + var_b / 3) < 0.1 * adj  # the noise (26,5xx) is under 10% of the base (32,4xx)
+    more = ", 못 미치면 커널이 구간을 6시간으로 늘려 한 번 더 봄"
     assert one == (
         f"    지금까지 1.0/3시간: 판매 전 9 → 후 3 (이 속도면 판정 때 후 약 9, 판정에 필요한 표본 5), "
         f"전 보정 {adj / 1e6:.2f}M/h, 후 0.57M/h, 차이 +{(570_000 - adj) / 1e6:.2f}M/h. "
-        f"시간별 흔들림이 이대로면 판정 때 넘어야 하는 차이는 ±{0.1 * adj:,.0f}/h부터 "
-        "(잡음(2se)과 전 보정 값의 10% 기준 중 큰 쪽, 후 구간이 온전한 2시간 미만이라 전 구간의 흔들림으로 셈)")
+        f"시간별 흔들림이 이대로면 뚜렷한 판정에 필요한 차이는 ±{0.1 * adj:,.0f}/h부터 "
+        "(잡음(2se)과 전 보정 값의 10% 기준 중 큰 쪽, 후 구간이 온전한 2시간 미만이라 전 구간의 흔들림으로 셈)" + more)
+    # after 2 h: buckets 570k, 600k (variance 4.5e8), r2 = (7.17M / 2 h) / 3.3M; the after variance is spread over the
+    # 3 h of the window, not the 2 h run: 2 x sqrt(4.5e8 / 3 + r2^2 x 2.25e8 / 3) = 30,9xx, under the 10% rule (32,5xx)
+    r2 = (3 * 1_190_000 + 3 * 1_200_000) / 2 / (9_900_000 / 3)
+    noise2 = 2 * math.sqrt(4.5e8 / 3 + r2 * r2 * 2.25e8 / 3)
+    assert noise2 < 0.1 * 300_000 * r2 < 2 * math.sqrt(4.5e8 / 2 + r2 * r2 * 2.25e8 / 3)
     two = ex.lines(root, S + 2 * H, interim=True)[2]
     assert two.startswith("    지금까지 2.0/3시간: 판매 전 9 → 후 6 (이 속도면 판정 때 후 약 9, ")
-    assert "넘어야 하는 차이는 ±" in two and "전 구간의 흔들림으로 셈" not in two
-    # past the window end the line stops at the window
-    assert ex.lines(root, S + 5 * H, interim=True)[2].startswith("    지금까지 3.0/3시간: ")
+    assert two.endswith(f"시간별 흔들림이 이대로면 뚜렷한 판정에 필요한 차이는 ±{0.1 * 300_000 * r2:,.0f}/h부터 "
+                        "(잡음(2se)과 전 보정 값의 10% 기준 중 큰 쪽)" + more)
+    # past the window end: no pace, and the figure is the one evaluate() uses
+    v = ex.evaluate(root, e, S + 5 * H)
+    need = max(2 * v["se"], 0.1 * abs(v["before_adj"]))
+    assert abs(v["before_adj"]) > ex.FLOOR["shop"]
+    assert ex.lines(root, S + 5 * H, interim=True)[2] == (
+        "    지금까지 3/3시간 (구간 끝남, 판정 대기): 판매 전 9 → 후 6 (판정에 필요한 표본 5), "
+        f"전 보정 {ex._num(v['before_adj'], 'shop')}, 후 {ex._num(v['after'], 'shop')}, "
+        f"차이 {ex._num(v['effect'], 'shop', sign=True)}. 뚜렷한 판정에 필요한 차이는 ±{ex._num(need, 'shop')}부터 "
+        "(잡음(2se)과 전 보정 값의 10% 기준 중 큰 쪽)" + more)
+    # once extended, the window is the last and the sign decides
+    rx = _root_like(root, "-x", [_exp(BED, extended=True)],
+                    _hourly(S - 3 * H, 3, "BED1", 100_000) + _hourly(S, 2, "BED1", 200_000))
+    assert ex.lines(rx, S + H, interim=True)[2] == one[: -len(more)] + ", " + LAST_SEQ
+
+
+def test_interim_line_of_a_small_before_after_experiment_names_the_floor(root):
+    # 30k/h before (buckets 28.5k, 30k, 31.5k): 10% of that is under the rule's floor, 10% of 100,000
+    _put_ledger(root, [_exp(BED)])
+    _write_events(root, _hourly(S - 3 * H, 3, "BED1", 10_000) + _hourly(S, 2, "BED1", 20_000))
+    assert ex.lines(root, S + H, interim=True)[2].endswith(
+        "시간별 흔들림이 이대로면 뚜렷한 판정에 필요한 차이는 ±10,000/h부터 "
+        "(잡음(2se)과 최소 기준 중 큰 쪽, 후 구간이 온전한 2시간 미만이라 전 구간의 흔들림으로 셈), "
+        "못 미치면 커널이 구간을 6시간으로 늘려 한 번 더 봄")
+
+
+def test_interim_line_of_a_buyer_experiment_matches_hand_arithmetic(root):
+    # s0 0.3; before: one deal an hour with saved share 0.4, 0.5, 0.6 -> gains 0.1, 0.2, 0.3 (0.2/h, variance 0.01);
+    # after: 0.5 then 0.7 -> gains 0.2, 0.4 (0.3/h over 2 h, variance 0.02); no other buyers, so r = 1
+    e = _exp("buyer.defaults.food", key="max_pay_frac", old=0.65, new=0.7, window_h=3, s0=0.3)
+    _put_ledger(root, [e])
+    _write_events(root, _buy(S - 3 * H + 60, "SNK1", 6_000, 10_000) + _buy(S - 2 * H + 60, "SNK1", 5_000, 10_000)
+                  + _buy(S - H + 60, "SNK1", 4_000, 10_000) + _buy(S + 60, "SNK1", 5_000, 10_000)
+                  + _buy(S + H + 60, "SNK1", 3_000, 10_000))
+    # 2 x sqrt(0.02 / 3 + 0.01 / 3) = 0.2, over the 10% rule (0.02)
+    assert ex.lines(root, S + 2 * H, interim=True)[2] == (
+        "    지금까지 2.0/3시간: 거래 전 3 → 후 2 (이 속도면 판정 때 후 약 3, 판정에 필요한 표본 5), 전 보정 0.200/h, "
+        "후 0.300/h, 차이 +0.100/h. 시간별 흔들림이 이대로면 뚜렷한 판정에 필요한 차이는 ±0.200/h부터 "
+        "(잡음(2se)과 전 보정 값의 10% 기준 중 큰 쪽), 못 미치면 커널이 구간을 6시간으로 늘려 한 번 더 봄")
 
 
 def test_interim_noise_of_a_before_after_experiment_does_not_move_with_the_wake_time(root):
@@ -307,7 +428,7 @@ def test_interim_noise_of_a_before_after_experiment_does_not_move_with_the_wake_
 
     def need(el):
         line = ex.lines(root, S + el * H, interim=True)[2]
-        return line.split("넘어야 하는 차이는 ±")[1].split("부터")[0], "전 구간의 흔들림으로 셈" in line
+        return line.split("필요한 차이는 ±")[1].split("부터")[0], "전 구간의 흔들림으로 셈" in line
 
     # r = (sales so far / hours run) / (9 / 3 h); whole hours of the after window are flat (variance 0), so from 2 h on
     # the noise is 2 x sqrt(r^2 x 4e10 / 3) = 230,940 r; before that the before variance stands in: 326,599 r
@@ -320,12 +441,30 @@ def test_interim_noise_of_a_before_after_experiment_does_not_move_with_the_wake_
 
 
 def test_interim_line_says_when_there_is_no_baseline(root):
+    rows = _hourly(S - 3 * H, 3, "BED1", 100_000) + _hourly(S, 2, "BED1", 200_000)
     _put_ledger(root, [_exp(BED, before_from=S - 0.5 * H)])
-    _write_events(root, _hourly(S - 3 * H, 3, "BED1", 100_000) + _hourly(S, 2, "BED1", 200_000))
+    _write_events(root, rows)
     line = ex.lines(root, S + H, interim=True)[2]
     assert line == ("    지금까지 1.0/3시간: 판매 후 3 (이 속도면 판정 때 후 약 9), 후 0.57M/h. "
-                    "전 구간이 0.5시간이라 비교 기준이 없음 (기준 1시간)")
+                    "전 구간이 30분이라 비교 기준이 없음 (기준 60분), 비교 없이 값이 유지됨")
     assert ex.evaluate(root, ex.load(root)[0], S + 3 * H)["decision"] == "no_baseline"
+    # 59.9 minutes is still short of the line; it does not read as "1.0시간"
+    r2 = _root_like(root, "-59", [_exp(BED, before_from=S - 0.999 * H)], rows)
+    assert "전 구간이 59분이라 비교 기준이 없음 (기준 60분)" in ex.lines(r2, S + H, interim=True)[2]
+    assert ex.evaluate(r2, ex.load(r2)[0], S + 3 * H)["decision"] == "no_baseline"
+    # the other way evaluate() has no baseline: the events on file start after the before window does
+    late = [dict(x, ts=S - 0.4 * H) if x["type"] == "unit_gone" else x  # the cost rows sit 30 h back in the helper
+            for x in rows if x["type"] == "unit_gone" or x["ts"] >= S - 0.5 * H]
+    r3 = _root_like(root, "-late", [_exp(BED)], late)
+    assert ex.evaluate(r3, ex.load(r3)[0], S + 3 * H)["decision"] == "no_baseline"
+    assert ex.lines(r3, S + H, interim=True)[2] == (
+        "    지금까지 1.0/3시간: 판매 후 3 (이 속도면 판정 때 후 약 9), 후 0.57M/h. "
+        "거래 기록이 전 구간의 시작까지 닿지 않아 비교 기준이 없음, 비교 없이 값이 유지됨")
+    # a before window of one hourly bucket has a baseline but no noise figure
+    r4 = _root_like(root, "-1b", [_exp(BED, before_from=S - 1.2 * H)], rows)
+    assert ex.evaluate(r4, ex.load(r4)[0], S + 3 * H)["se"] is None
+    assert ex.lines(r4, S + H, interim=True)[2].endswith(
+        ". 전 구간이 1시간 구간 하나라 잡음을 셀 수 없어 이 구간에서는 뚜렷한 판정이 나오지 않음, 커널이 구간을 6시간으로 늘려 한 번 더 봄")
 
 
 def test_interim_lines_only_for_the_role_and_not_too_early(root):
