@@ -2,7 +2,8 @@
 
 Board totals for the top N students and me, then from the ledger's last HOURS: per shop the deals, paid/list, grade mix,
 price tiers, top categories, warranty share, stars, breaks, supply spend and expiries; per buyer the deals and paid/list.
-Usage (inside market-kit, from week-08): python -X utf8 top_shops.py HOURS [N]
+Usage (inside market-kit, from week-08): python -X utf8 top_shops.py HOURS [N] [shop]
+  shop: rank students by their shop's score (student_shop) instead of the total (the user's 11-12 19:50 "1위부터 20위까지 가게")
 """
 import json
 import sys
@@ -21,7 +22,9 @@ def main():
     top_n = int(sys.argv[2]) if len(sys.argv) > 2 else 13
     cat = json.loads((Path(".market") / "catalog.json").read_text(encoding="utf-8"))
     b = m.get("/api/board")
-    students = sorted((p for p in b["players"] if p.get("student")), key=lambda p: -p["student_total"])
+    by_shop = len(sys.argv) > 3 and sys.argv[3] == "shop"
+    students = sorted((p for p in b["players"] if p.get("student")),
+                      key=lambda p: -((p.get("student_shop") or 0) if by_shop else p["student_total"]))
     pick = students[:top_n] + [p for p in students[top_n:] if p["player"] == m.ME]
     shops = {s["name"]: s for s in b["shops"]}
     buyers = {x["name"]: x for x in b["buyers"]}
@@ -87,6 +90,16 @@ def main():
             if d.get("shop") in names:
                 sh[d["shop"]]["expire"].append(d.get("cost") or 0)
     span = (entries[-1]["ts"] - entries[0]["ts"]) / 3600 if entries else hours
+    unit_cost = {u: (e["data"].get("total") or 0) / max(e["data"].get("qty") or 1, 1)
+                 for e in entries if e["kind"] == "supply" for u in e["data"].get("units") or []}
+    margin = defaultdict(lambda: [0, 0, 0])          # shop -> [margin, paid, deals] for units supplied in the window
+    for e in entries:
+        d = e["data"]
+        if e["kind"] == "settle" and d.get("unit") in unit_cost:
+            r = margin[shop_of(d)]
+            r[0] += d["amount"] - unit_cost[d["unit"]]
+            r[1] += d["amount"]
+            r[2] += 1
     print(f"\n== shops in the ledger, last {span:.1f} h (per hour)")
     print("player: deals/h, paid/h, avg paid/list (A, B, C goods), grade mix, food share, tiers low/mid/high, top categories"
           " | warranty share, stars, refunds/h | supply/h, expired/h")
@@ -115,7 +128,8 @@ def main():
               f" {', '.join(f'{c} {v / tot:.0%}' for c, v in val.most_common(3))}"
               f" | {war:.0%}, {avg(stars)}, {sum(r.get('broken', [])) / span / 1e4:,.0f}만"
               f" | {sum(t for t, _, _ in sup) / span / 1e4:,.0f}만 ({sum(q for _, q, _ in sup) / span:.0f} units),"
-              f" {sum(r.get('expire', [])) / span / 1e4:,.1f}만")
+              f" {sum(r.get('expire', [])) / span / 1e4:,.1f}만"
+              f" | margin {margin[n][0] / max(margin[n][1], 1):.1%} of paid on {margin[n][2]} deals with known cost")
     print(f"\n== buyers in the ledger, last {span:.1f} h: deals/h, avg paid/list")
     for p in pick:
         n = (p.get("buyer") or {}).get("name")
