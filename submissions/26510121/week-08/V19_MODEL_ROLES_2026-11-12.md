@@ -81,6 +81,43 @@ point. New runtime PID 45640, session `6c29c1da70274402afe79c4075b057af`, starte
 13:44:28 KST. Public tunnel readiness and live actuation are still being verified;
 a successful source copy is not a claim that public connectivity is restored.
 
+## Live observation and protocol correction
+
+At 13:46:44 KST the new public URL, both account registrations, all four HTTP
+checks, source hashes and independent recovery guard were verified. Real sales,
+restocking and Buyer payments resumed. All four configured model roles were
+observed with **zero Astra calls**. A new independently reviewed operating policy
+was linked to 13 actual Shop and 9 Buyer decisions by 13:51:44 KST.
+
+One initial live Sol designer response was incomplete at its 8192-token output
+limit (85.938 seconds, $0.0901475 conservative recorded estimate). It was rejected,
+not executed; Main and the other background lanes continued. This is evidence of
+an output-completion failure, not proof of its internal generation cause.
+
+The designer now returns its proposal through exactly one forced
+`submit_background_decision` function call with parallel calls disabled, the same
+strict schema and exact evidence enum. This function only returns data for local
+validation. It does not grant an execution capability. The designer's output
+limit is reduced to 2048 and its configured HTTP timeout to 35 seconds. A request
+timeout is not an absolute total wall-clock guarantee; stale publications remain
+blocked independently.
+
+The final protocol smoke test
+`logs/v19-live-model-smoke-20261112T045031936180Z.json` passed all four roles; the
+designer function response completed in 5.016 seconds. The final regression
+`logs/stage-v19-full-regression-05.txt` passed **411 tests**, including rejection of
+missing, unknown, duplicate and incomplete decision-function calls. One read-only
+proof bug was also corrected: journal insertion time must not overwrite the
+research packet's generation timestamp when linking Main decisions.
+
+Reference: https://developers.openai.com/api/docs/guides/function-calling
+
+The protocol correction was promoted at **13:53:05 KST**, retaining the same
+Sol/Terra/Luna role assignments. Source manifest:
+`logs/v19-source-promotion-20261112T045305805166Z.json`; safe drain:
+`logs/buyer-v12-drain-20261112T045247020421Z.json`. Final public and end-to-end
+verification follows this second startup.
+
 ## Sources for model assignment and pricing
 
 - https://developers.openai.com/api/docs/guides/model-selection

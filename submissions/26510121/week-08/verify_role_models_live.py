@@ -12,7 +12,7 @@ def main():
     with sqlite3.connect((ROOT/'.market/r3.sqlite3').as_uri()+'?mode=ro',uri=True) as db:
         db.execute('BEGIN')
         def events(kind):
-            return [dict(json.loads(raw),at=at) for at,raw in db.execute(
+            return [dict(json.loads(raw),event_at=at) for at,raw in db.execute(
                 'SELECT ts,data FROM events WHERE kind=? AND ts>=? AND ts<=? ORDER BY ts,rowid',(kind,start,now))]
         def kv(key):
             row=db.execute('SELECT value FROM kv WHERE key=?',(key,)).fetchone()

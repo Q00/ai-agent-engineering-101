@@ -26,10 +26,10 @@ def save(kind,row):
 
 
 def checkpoint():
-    tests=STAGE/'logs/v19-full-regression-04.txt'
+    tests=STAGE/'logs/v19-full-regression-05.txt'
     raw=tests.read_bytes();text=raw.decode('utf-16' if raw.startswith((b'\xff\xfe',b'\xfe\xff')) else 'utf-8-sig')
     match=re.search(r'(\d+) passed',text)
-    assert match and int(match[1])>=407 and not re.search(r'\d+ failed|\d+ errors',text)
+    assert match and int(match[1])>=411 and not re.search(r'\d+ failed|\d+ errors',text)
     assert all((STAGE/n).stat().st_mtime<=tests.stat().st_ctime for n in FILES),'Source changed after tests began'
     paths={kind:sorted((ROOT/'logs').glob(kind+'-*.json'))[-1]
            for kind in ['v19-live-model-smoke','v19-preparation-benchmark']}
@@ -39,6 +39,8 @@ def checkpoint():
     cfg=json.loads((STAGE/'policy.json').read_text(encoding='utf-8-sig'))
     expected=cfg['background_llm_roles']
     assert all(v['model']!='gpt-6-astra' for v in expected.values()),'Astra explicitly excluded by owner'
+    assert cfg['background_llm_roles']['capability_designer']['response_mode']=='function'
+    assert cfg['background_llm_roles']['capability_designer']['max_output_tokens']<=2048
     assert {r['role']:r['model'] for r in smoke['usage']}=={k:v['model'] for k,v in expected.items()}
     assert all(r['reasoning_effort']==expected[r['role']]['reasoning'] for r in smoke['usage'])
     assert bench['restock_same_output'] and bench['buyer_routes_identical'] and bench['prepared_plan_used']

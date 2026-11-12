@@ -116,7 +116,7 @@
   "buyer_contract_probe_percent": 8,
   "autonomy_v14_enabled": true,
   "buyer_worker_enabled": true,
-  "execution_revision": "v19-role-reasoning-analytic-skills-1",
+  "execution_revision": "v19-role-reasoning-analytic-skills-2",
   "objective_feedback_enabled": true,
   "agent_policy_selection_enabled": true,
   "discovery_priority_enabled": true,
@@ -146,8 +146,9 @@
     "capability_designer": {
       "model": "gpt-6.1-sol",
       "reasoning": "medium",
-      "max_output_tokens": 8192,
-      "timeout_seconds": 75
+      "max_output_tokens": 2048,
+      "timeout_seconds": 35,
+      "response_mode": "function"
     }
   }
 }

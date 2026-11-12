@@ -5,7 +5,7 @@ import time
 import httpx
 import pytest
 from r3 import capability, research
-from r3.llm_roles import profile, call_json
+from r3.llm_roles import profile, call_json, decision_text
 from r3.model import ModelError
 from r3.state import policy
 from r3.cycle import MarketCycle
@@ -45,8 +45,9 @@ class CapabilityAPI:
         else:
             value={'tools':['stock_depth_audit','eligibility_intervals'],'reason':'Calculate supported gaps.','evidence_ids':e[:2]}
             if self.broken:value['tools']=['shell']
-        return httpx.Response(200,json={'status':'completed','usage':{'input_tokens':50,'output_tokens':100},
-            'output':[{'type':'message','phase':'final_answer','content':[{'type':'output_text','text':json.dumps(value)}]}]})
+        output=([{'type':'function_call','name':'submit_background_decision','arguments':json.dumps(value)}]
+            if b.get('tools') else [{'type':'message','phase':'final_answer','content':[{'type':'output_text','text':json.dumps(value)}]}])
+        return httpx.Response(200,json={'status':'completed','usage':{'input_tokens':50,'output_tokens':100},'output':output})
 
 
 def test_tool_designer_produces_facts_without_policy_or_payment_authority(tmp_path):
@@ -59,6 +60,8 @@ def test_tool_designer_produces_facts_without_policy_or_payment_authority(tmp_pa
     assert interval['reference_price_min']==pytest.approx(1000/1.5)
     assert interval['reference_price_max']==2000
     assert cfg==old_config and j.get('research-last-result')==before and not j.events('purchase')
+    assert api.requests[1]['tool_choice']=={'type':'function','name':'submit_background_decision'}
+    assert api.requests[1]['parallel_tool_calls'] is False
     assert j.get('capability-plan-v19')['effects']=='read_only_analysis'
     assert capability.context(j,now+181) is None
     j.put('market_rules',{'sha256':'changed'})
@@ -118,3 +121,13 @@ def test_capability_lane_cannot_block_preparation_research_or_supply(tmp_path,mo
         assert entered.wait(1) and prepared.wait(1) and researched.wait(1)
         assert cycle.capability_lane.busy and not cycle.supply_lane.busy
     finally:barrier.set();cycle.stop.set()
+
+
+@pytest.mark.parametrize('calls',[
+    [],
+    [{'type':'function_call','name':'shell','arguments':'{}'}],
+    [{'type':'function_call','name':'submit_background_decision','arguments':'{}'}]*2,
+    [{'type':'function_call','name':'submit_background_decision','status':'in_progress','arguments':'{}'}]])
+def test_forced_function_rejects_missing_unknown_duplicate_or_incomplete_calls(calls):
+    with pytest.raises(ModelError,match='decision_function_contract_invalid'):
+        decision_text({'output':calls},'function')
