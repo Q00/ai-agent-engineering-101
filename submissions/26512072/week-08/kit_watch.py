@@ -9,7 +9,10 @@ running (11 of them on 11-12). The kit itself is read-only (scripts/), so this s
   1. no new line in logs/market-kit.log for STALL seconds (the buyer alone writes several a minute): kill the kit
      process; the tmux wrapper loop starts it again in 10 s, with a fresh tunnel and a fresh join;
   2. cloudflared processes for the kit's port other than the newest: kill them (their tunnels are dead).
+  3. the kit moves market-kit.log to market-kit.log.1 at 20 MB and overwrites the old .1, so a second rotation
+     loses logs (11/3-11/6 were lost that way on 11-10). Each .1 is copied to market-kit.rot-<time>.log first.
 """
+import shutil
 import os
 import signal
 import subprocess
@@ -71,6 +74,15 @@ def tidy_tunnels():
             pass
 
 
+def keep_rotated():
+    rot = KIT_LOG.with_name("market-kit.log.1")
+    if rot.exists():
+        dst = rot.with_name(time.strftime("market-kit.rot-%Y%m%d-%H%M%S.log", time.gmtime(rot.stat().st_mtime)))
+        if not dst.exists():
+            shutil.copy2(rot, dst)
+            say(f"kept the rotated kit log as {dst.name}")
+
+
 def main():
     say("watching")
     last_restart = time.time()      # the kit may have just started with the log still stale (11-12 07:12)
@@ -95,6 +107,7 @@ def main():
                 say(f"kit log idle {idle / 60:.0f} min: killed kit {pids}; the wrapper restarts it")
                 last_restart = time.time()
             tidy_tunnels()
+            keep_rotated()
         except Exception as e:                      # never die: this is the thing that keeps the shop up
             say(f"error {type(e).__name__}: {e}")
         time.sleep(60)
