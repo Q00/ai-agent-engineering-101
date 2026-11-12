@@ -265,6 +265,10 @@ def sku_wants(catalog, have_sku, p, now, hours_left, market_sku, mkt_units=None,
     rival_rate, rival_gain = {}, {}
     try:
         rv_ = set((json.loads((HERE / ".market" / "price_rivals.json").read_text()).get("shops") or {}).keys())
+        try:                                    # 11-12: + the nearest challenger on the class total (guards.py)
+            rv_ |= set((json.loads((HERE / ".market" / "stock_rivals.json").read_text()).get("shops") or {}).keys())
+        except (OSError, ValueError):
+            pass
         dl_ = json.loads((HERE / ".market" / "shop_value.json").read_text()).get("deals") or []
         t1_ = max((d["ts"] for d in dl_), default=0)
         xs_ = {}

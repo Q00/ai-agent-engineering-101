@@ -444,6 +444,15 @@ def main():
                         for r in comp["rows"] if r["player"] != "yms979" and r["total_end"] > comp["us"]["total_end"]}
                 if not DRY:
                     (MD / "contenders.json").write_text(json.dumps({"t": now, "shops": cont}, ensure_ascii=False))
+                # 11-12 (user: 'its shop is rising, can we hold it back?'): the shop of the nearest challenger on the
+                # projected class total (within .03, a tie) is a STOCK rival only: restock.py holds its best sellers so
+                # its buyers find them with us too. Not a price rival: the seller's prices do not follow it.
+                ch_ = sorted((r for r in comp["rows"] if r["player"] != "yms979"
+                              and abs(r["total_end"] - comp["us"]["total_end"]) < 0.03),
+                             key=lambda r: abs(r["total_end"] - comp["us"]["total_end"]))
+                sr_ = {r["shop_name"]: f"{r['player']} projected {r['total_end']} (us {comp['us']['total_end']})" for r in ch_[:1]}
+                if not DRY:
+                    (MD / "stock_rivals.json").write_text(json.dumps({"t": now, "shops": sr_}, ensure_ascii=False))
                 if comp["us"]["rank_end"] > 1:
                     ahead = [r for r in comp["rows"] if r["rank_end"] < comp["us"]["rank_end"]]
                     msg = ", ".join(f"{r['player']} {r['total_end']} (shop {r['shop'][0]}>{r['shop'][1]}, buyer {r['buyer'][0]}>{r['buyer'][1]})" for r in ahead[:4])
