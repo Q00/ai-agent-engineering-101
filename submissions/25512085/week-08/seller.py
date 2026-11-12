@@ -73,6 +73,9 @@ MARKET_NAME = os.environ.get("SHOP_MARKET_NAME", "mjforge")
 BASE_DIR = Path(__file__).resolve().parent
 MARKET_DIR = Path(os.environ.get("MARKET_DIR", str(BASE_DIR / ".market")))
 SELLER_HISTORY_FILE = BASE_DIR / "seller_history.json"
+COMMITTED_RESERVATION_S = 15 * 60  # ACP has no session TTL; conservative local safety cap.
+NEGOTIATION_IDLE_S = 90
+NEGOTIATION_MAX_S = 15 * 60
 
 # Analytics must never block the A2A event loop on the shared hub's eight-second file lock.
 _INQUIRY_QUEUE=queue.Queue(maxsize=256)
@@ -942,7 +945,60 @@ class Seller(AgentExecutor):
         self.open: dict[str, dict[str, Any]] = {}
         # committed_units tracks units for which a signed receipt has been issued,
         # guarding them against concurrent sales until ACP settlement is finalized.
-        self.committed_units: dict[str, float] = {}
+        self.reservation_file = BASE_DIR / 'seller_reservations.json'
+        try:
+            restored = json.loads(self.reservation_file.read_text(encoding='utf-8'))
+        except FileNotFoundError:
+            restored = {}
+        # Corrupt/unreadable reservations fail closed rather than allowing resale.
+        if not isinstance(restored, dict) or any(
+                not isinstance(uid, str) or not isinstance(ts, (int, float))
+                or isinstance(ts, bool) or not math.isfinite(ts)
+                for uid, ts in restored.items()):
+            raise ValueError('invalid seller reservations')
+        self.committed_units: dict[str, float] = restored
+
+    def _save_reservations(self, reservations):
+        """Single seller event loop owns this file; replace before updating memory."""
+        tmp = self.reservation_file.with_suffix(f'.{os.getpid()}.{threading.get_ident()}.tmp')
+        try:
+            with tmp.open('w', encoding='utf-8') as stream:
+                json.dump(reservations, stream, separators=(',', ':'), allow_nan=False)
+                stream.flush()
+                os.fsync(stream.fileno())
+            os.replace(tmp, self.reservation_file)
+        finally:
+            tmp.unlink(missing_ok=True)
+        self.committed_units = reservations
+
+    def cleanup_reservations(self, inv, now):
+        """Callable while idle too; missing/invalid inventory is not settlement evidence."""
+        current = ({u.get('unit') for u in inv['units']} if isinstance(inv.get('units'), list)
+                   and all(isinstance(u, dict) and u.get('unit') for u in inv['units']) else None)
+        kept = {uid: ts for uid, ts in self.committed_units.items()
+                if now-ts < COMMITTED_RESERVATION_S and (current is None or uid in current)}
+        if kept != self.committed_units:
+            self._save_reservations(kept)
+        for tid, deal in list(self.open.items()):
+            created = float(deal.get('created_at', now))
+            active = float(deal.get('last_activity_at', created))
+            if now-active > NEGOTIATION_IDLE_S or now-created >= NEGOTIATION_MAX_S:
+                self.open.pop(tid, None)
+
+    async def _publish_receipt(self, up, receipt):
+        uid, tid = receipt['unit'], receipt['task']
+        try:
+            self._save_reservations({**self.committed_units, uid: time.time()})
+            signed = sign_receipt(receipt)
+            await up.add_artifact(parts=[new_data_part(signed)], name='receipt')
+        except BaseException:
+            # Only the pre-publication boundary rolls back. Disk errors leave a
+            # conservative reservation, never a receipt without durable protection.
+            if uid in self.committed_units:
+                self._save_reservations({u: ts for u, ts in self.committed_units.items() if u != uid})
+            self.open.pop(tid, None)
+            raise
+        self.open.pop(tid, None)
 
     async def execute(self, context: RequestContext, event_queue: EventQueue) -> None:
         task = context.current_task
@@ -955,29 +1011,16 @@ class Seller(AgentExecutor):
         text = get_message_text(context.message) or ""
         now_ts = time.time()
 
-        # Session TTL Cleanup: purge abandoned negotiations (> 90s) so reserved units return to stock
-        stale_tids = [tid for tid, d in self.open.items() if (now_ts - float(d.get("created_at") or now_ts)) > 90.0]
-        for tid in stale_tids:
-            self.open.pop(tid, None)
-
-        # Committed Units TTL Cleanup: purge after 120s timeout
-        stale_committed = [u for u, ts in self.committed_units.items() if (now_ts - ts) > 120.0]
-        for u in stale_committed:
-            self.committed_units.pop(u, None)
-
         inv = load_inventory(MARKET_DIR)
+        self.cleanup_reservations(inv, now_ts)
         is_round3_stock = int(inv.get("round", 0)) >= 3
 
-        # If a committed unit is already absent from the fresh market inventory, ACP settlement finished!
-        current_inv_unit_ids = {u.get("unit") for u in (inv.get("units") or [])}
-        settled_uids = [u for u in self.committed_units if u not in current_inv_unit_ids]
-        for u in settled_uids:
-            self.committed_units.pop(u, None)
-
         deal = self.open.get(task.id)
+        # One snapshot per round-3 request, shared by selection, live-grade and
+        # profit-floor checks (including food follow-ups).
+        catalog = load_catalog(MARKET_DIR) if is_round3_stock or (deal and deal.get('mode') == 'round3_stock') else None
         if deal is None:
             if is_round3_stock:
-                catalog = load_catalog(MARKET_DIR)
                 # Combined Lock: Negotiation Locks (self.open) + Checkout Settlement Locks (committed_units)
                 negotiating_units = {
                     d["unit"]["unit"]
@@ -1025,8 +1068,6 @@ class Seller(AgentExecutor):
                         return
                     # Instant 1-message close if buyer offered at or above our opening ask!
                     final_price = ask
-                    # Instantly lock in committed_units so no concurrent buyer can grab this unit during checkout
-                    self.committed_units[unit["unit"]] = now_ts
                     receipt = {
                         "shop": SHOP_NAME,
                         "item": unit["sku"],
@@ -1039,8 +1080,7 @@ class Seller(AgentExecutor):
                     if unit.get('kind')=='goods':
                         receipt["warranty_hours"] = warranty
                     receipt.update(care_terms(unit.get("kind", ""), warranty))
-                    receipt = sign_receipt(receipt)
-                    await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
+                    await self._publish_receipt(up, receipt)
                     await up.complete(say(
                         f"Deal: {unit['name']} ({unit['sku']}) at {final_price} "
                         f"(grade {grade}, cert=true, warranty={warranty}h{' market maximum / 시장 허용 최대 보증' if warranty==72 else ''})."
@@ -1159,6 +1199,7 @@ class Seller(AgentExecutor):
             return
 
         # --- Subsequent Turns: Process Buyer's Offer ---
+        deal['last_activity_at'] = now_ts
         # Parsed by rules only. The per-turn Codex CLI call (2.5 s timeout) was unlikely to answer in time, added
         # up to ~3 s to every turn, and could leave codex processes running after a timeout on a 1 GB VM. The
         # model is used outside the negotiation path instead, where latency does not matter.
@@ -1181,7 +1222,7 @@ class Seller(AgentExecutor):
                 previous = deal.get("required_use_hours")
                 deal["required_use_hours"] = max(previous, required_hours) if previous is not None else required_hours
                 deal["awaiting_use_period"] = False
-            live_grade, hours_left = compute_live_unit_grade(deal["unit"], load_catalog(MARKET_DIR))
+            live_grade, hours_left = compute_live_unit_grade(deal["unit"], catalog)
             required_hours = deal.get("required_use_hours")
             if live_grade == "expired" or (required_hours is not None and not food_has_use_time(deal["unit"], required_hours)):
                 self.open.pop(task.id, None)
@@ -1212,7 +1253,6 @@ class Seller(AgentExecutor):
 
         if deal.get("mode") == "round3_stock":
             u = deal["unit"]
-            catalog = load_catalog(MARKET_DIR)
             live_grade, hours_left = compute_live_unit_grade(u, catalog)
             if live_grade == "expired":
                 await up.reject(say("Sorry, that unit just passed its shelf-life window; transaction cancelled safely."))
@@ -1304,9 +1344,7 @@ class Seller(AgentExecutor):
                 if is_goods:
                     receipt["warranty_hours"] = warranty
                 receipt.update(care_terms(u.get("kind", ""), warranty))
-                receipt = sign_receipt(receipt)
-
-                await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
+                await self._publish_receipt(up, receipt)
                 await up.complete(say(
                     f"Deal: {u['name']} ({u['sku']}) at {final_price} "
                     f"(unit={u['unit']}, grade={live_grade}, cert=true, warranty={warranty}h{' market maximum / 시장 허용 최대 보증' if warranty==72 else ''})."
@@ -1318,9 +1356,6 @@ class Seller(AgentExecutor):
                     f"task={task.id}, first_quote_accepted={final_price == deal.get('initial_ask')}) in {deal['rounds']} turn(s); receipt signed, payment not yet confirmed.",
                     flush=True,
                 )
-                # Elevate to committed lock before deleting negotiation state
-                self.committed_units[u["unit"]] = now_ts
-                del self.open[task.id]
                 return
 
             # Reject if buyer stalls below cost for >= 4 rounds
