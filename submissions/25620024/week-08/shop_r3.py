@@ -63,13 +63,20 @@ def number(text):
 HOURS_RE = re.compile(r"(\d+(?:\.\d+)?)\s*(?:h\b|hrs?\b|hours?|시간)", re.I)
 # the grade letters are capitals and stand alone: "grade and" is not "grade A"
 GRADE_RE = re.compile(r"(?i:\bgrades?)\s*[:=]?\s*\[?\s*\"?([ABC](?:\"?\s*[,/]\s*\"?[ABC])*)\b|\b([ABC])\s*등급")
+GRADE_OK_RE = re.compile(r"\bgrades?\s+[ABC](?:\s*(?:,|/|or|and)\s*[ABC])*\s+(?:is|are)\s+(?:also\s+)?(?:fine|ok|okay|acceptable)", re.I)
+WARRANTY_HOURS_RE = re.compile(r"\d+(?:\.\d+)?\s*(?:h|hrs?|hours?|시간)\b\s*(?:of\s+)?(?:warrant\w*|보증)"
+                               r"|(?:warrant\w*|보증)\s*(?:of|for|:|=)?\s*\d+(?:\.\d+)?\s*(?:h|hrs?|hours?|시간)\b", re.I)
 
 
 def needs(text):
     """What a buyer said it needs, read by the clerk: shelf hours, acceptable grades, a warranty."""
-    h = [float(x) for x in HOURS_RE.findall(text)] + [float(x) for x in re.findall(
-        r"(?:hours?_left|use_within_hours|use within|within)\D{0,6}(\d+(?:\.\d+)?)", text, re.I)]
-    g = GRADE_RE.search(text)
+    # MBT 11-12: "I need a 6 h warranty ... Grade B or C is fine if it is cheaper" read as shelf 6 h and grade B ONLY,
+    # so with no B in stock the clerk said "not in stock" (166 such requests in 24 h, 103 in the last 6 h). Hours
+    # that belong to a warranty are not a shelf need, and "grade X or Y is fine" widens the grades, it does not limit them.
+    shelf_text = WARRANTY_HOURS_RE.sub(" ", text)
+    h = [float(x) for x in HOURS_RE.findall(shelf_text)] + [float(x) for x in re.findall(
+        r"(?:hours?_left|use_within_hours|use within|within)\D{0,6}(\d+(?:\.\d+)?)", shelf_text, re.I)]
+    g = None if GRADE_OK_RE.search(text) else GRADE_RE.search(text)
     grades = set(re.findall(r"[ABC]", (g.group(1) or g.group(2) or "").upper())) if g else None
     return {"hours": max(h) if h else None, "grades": grades or None,
             "warranty": bool(re.search(r"warrant|보증", text, re.I))}
