@@ -233,6 +233,16 @@ def default_need(sku):
 # and all our food stock cost 1.3M, so C units that expire unsold cost little.
 
 
+# Four buyers rate food by grade whatever the price and word their orders their own way, so they get the best grade
+# even when it cost more than the market pays (its floor then follows the market, down to cost x STALE_FLOOR). Since
+# food went to units priced at the market first (Nov 10 20:49), nohaggle-hero got grade C in 71 of 224 food deals
+# (14% before) and its mean fell 3.88 to 3.71; it rates A/B 4.9, C 3.9; 11im A/B 4, C 3; 25620027 A 5, B 4, C 3;
+# lee-sungsoo A/B 5, C 4. Over 4,178 of our talks joined to reviews (Nov 12 21:00) this pattern matched only these
+# four, in 232/239, 335/398, 24/24 and 725/753 of their talks.
+GRADE_FIRST = re.compile(r"\(G[0-9a-f]{8}\)(?:; I need it|, it must last at least|, need \d+(?:\.\d+)? ?h|"
+                         r"\. The unit must last at least)")
+
+
 def find_unit(text, taken=()):
     """The in-stock unit for what the buyer asked (SKU, then name, then category). Among several units of the
     same product: goods and food ship the best grade (food: then the one that expires first among those that last)."""
@@ -267,6 +277,8 @@ def find_unit(text, taken=()):
                 # 0.66 of list, B 0.52, C 0.37, buyers paid about 0.62, so leading with A ended most talks without a
                 # deal (Nov 10 05:07-20:30: food deals 58/h to 10/h; 20:00-20:28, 11 deals in 199 talks)
                 above = lambda u: (mk := market_price(u)) is not None and u["cost"] * (1 + FLOOR_MARGIN) > mk
+                if GRADE_FIRST.search(text):      # these buyers rate food by grade: best grade even if dearer
+                    return min(ok, key=lambda u: (GRADE_RANK.get(u["grade"], 3), u["expires_at"] or math.inf))
                 return min(ok, key=lambda u: (above(u), GRADE_RANK.get(u["grade"], 3), u["expires_at"] or math.inf))
             # a unit whose floor (cost x 1.05) is over the most it may open at (max_share) can only sell above the
             # market, so it goes behind the others (Nov 5 10:27-12:17: 4 surge-cost grade A Zinus Q mattresses
