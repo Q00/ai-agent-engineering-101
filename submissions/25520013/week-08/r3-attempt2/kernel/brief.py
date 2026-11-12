@@ -1084,6 +1084,43 @@ def section_rivals(b, b6, login, hours6, settles=None, cat=None):
     return out
 
 
+TURNOVER_H = 24  # [가게 회전]: window
+# kernel card parts the auditor may take off a role's state card (uncard) and put back (card)
+CARD_OPTIONAL = {"shop": ("가게 회전", "묶인 돈 수익", "실험 중간값"), "buyer": ("실험 중간값",)}
+
+
+def section_turnover(b, old, hours, login):
+    """[가게 회전]: per shop above us by shop all (at most RIVALS_MAX; the next three below when we are first) and
+    ours, over the snapshot gap `hours` (about TURNOVER_H): the gain of book, revenue and deals, the stock cost now
+    and at the start, and the revenue gain divided by the stock cost now. Other shops by hashed name. Numbers only
+    (live 11-12: the card held ranks and gaps, never how fast the shops above turn their stock)."""
+    shops = [s for s in (b or {}).get("shops") or [] if isinstance(s, dict) and _is_num(s.get("all"))]
+    me = next((s for s in shops if c.is_mine(s, login)), None)
+    if me is None or not _is_num(hours) or hours < 1:
+        return ["[가게 회전] 순위표 비교 불가 (스냅샷 부족)"]
+    prev = {str(s.get("name")): s for s in (old or {}).get("shops") or [] if isinstance(s, dict)}
+    rank = sorted(shops, key=lambda s: -s["all"])
+    at = rank.index(me)
+    rows = rank[: min(RIVALS_MAX, at)] + [me] if at else rank[:4]
+    signed = lambda v: ("+" if _is_num(v) and v > 0 else "") + c.fmt(v)  # "-" for a column the board did not give
+    out = [f"[가게 회전 {hours:.0f}시간] 가게 all 순서로 우리 위 가게와 우리 (우리 {at + 1}/{len(rank)}위). book, 매출, 거래는 "
+           "이 구간의 증가, 재고 원가는 지금 값(괄호는 구간 시작 때), 끝은 매출 증가를 지금 재고 원가로 나눈 배수"]
+    for s in rows:
+        who = f"  {rank.index(s) + 1}위 " + ("우리" if s is me else c.hid(s.get("name")))
+        o = prev.get(str(s.get("name")))
+        if not o:
+            out.append(f"{who}: {hours:.0f}시간 전 기록 없음, 재고 원가 {c.fmt(s.get('stock_cost'))}")
+            continue
+        d = lambda k: s[k] - o[k] if _is_num(s.get(k)) and _is_num(o.get(k)) else None
+        cost, rev, deals = s.get("stock_cost"), d("revenue"), d("deals")
+        out.append(
+            f"{who}: book {signed(d('book'))}, 매출 {signed(rev)}, 거래 {f'{deals:+,.0f}' if deals is not None else '-'}, "
+            f"재고 원가 {c.fmt(cost)} ({c.fmt(o.get('stock_cost'))})"
+            + (f", 매출/재고 원가 {rev / cost:.1f}배" if rev is not None and _is_num(cost) and cost > 0 else "")
+        )
+    return out
+
+
 # [가게 목표]: 성수님 목표(2026-11-06 17시) 가게 all 0.90. The formula below reproduces the board's shop all for all
 # 58 shops within 0.0005 (11-06 16:50 snapshot): stars_rank, not stars, and a mid-rank percentile over every shop.
 SHOP_GOAL = 0.90
@@ -1747,6 +1784,15 @@ class _Ctx:
         b6 = (c.load_json(p6, {}) or {}) if ts6 < bts else {}
         return bts, b, ts6, b6, (bts - ts6) / 3600
 
+    @functools.cached_property
+    def board_day(self):
+        """(b, old, hours): the newest snapshot and the one nearest TURNOVER_H before it ({} and 0 without one)."""
+        if not self.board:
+            return {}, {}, 0.0
+        bts, b = self.board[0], self.board[1]
+        ts, p = _snapshot_near(self.snaps, bts - TURNOVER_H * 3600)
+        return b, ((c.load_json(p, {}) or {}) if ts < bts else {}), (bts - ts) / 3600
+
     @property
     def goal_args(self):
         _, b, _, b6, hours6 = self.board
@@ -1758,7 +1804,8 @@ class _Ctx:
 
 
 # (name, one-line description, thunk, need): build() order. need "snaps" = only built when board snapshots exist,
-# "board" = also reads the snapshots (section() says they are missing).
+# "board" = also reads the snapshots (section() says they are missing), "ask" = as "board" but built only when asked
+# for by name (section(), the card), so build() stays what it was.
 SECTIONS = [
     ("시각", "지금 시각, 회차 남은 시간, 목표",
      lambda x: section_time(x.now, x.board[0] if x.board else None), None),
@@ -1773,6 +1820,8 @@ SECTIONS = [
     ("판별 성과", "판매자·구매자 지금 판과 이전 판 지표", lambda x: section_versions(x.root, x.now), None),
     ("상위 가게", "위 가게들의 시간당 증가와 판 상품군",
      lambda x: section_rivals(*x.goal_args, market_settles(x.root, x.board[2]), _catalog(x.root)), "board"),
+    ("가게 회전", "24시간 위 가게와 우리의 book·매출·거래 증가, 재고 원가",
+     lambda x: section_turnover(*x.board_day, x.login), "ask"),
     ("동시 비교", "판매자 후보 판 동시 비교 상태", lambda x: section_trial(x.root, x.now), None),
     ("지난 반성", "판마다 마지막 반성과 그 뒤 결정 수", lambda x: section_reflections(x.root, x.now), "snaps"),
     ("상품군 흐름", "2시간 단위 상품군별 우리 제시와 판매",
@@ -1800,7 +1849,7 @@ def build(root=None, now=None, last_brief_ts=None):
     x = _Ctx(root, now, last_brief_ts)
     out = []
     for _, _, fn, need in SECTIONS:
-        if need is None or x.snaps:
+        if need is None or (x.snaps and need != "ask"):
             out += fn(x)
     return c.mask("\n".join(out), (x.login,))
 
@@ -1810,12 +1859,13 @@ def section(root, name, now=None):
     x = _Ctx(root, now, None)
     for n, _, fn, need in SECTIONS:
         if n == name:
-            lines = [f"[{n}] 순위표 스냅샷 없음"] if need == "board" and not x.snaps else fn(x)
+            lines = [f"[{n}] 순위표 스냅샷 없음"] if need in ("board", "ask") and not x.snaps else fn(x)
             return c.mask("\n".join(lines), (x.login,))
     return f"섹션 없음: {name}. 쓸 수 있는 이름: " + ", ".join(n for n, *_ in SECTIONS)
 
 
-COMPACT_CHARS = 8_000  # build_compact hard cap; typical output is near 6,000 (DESIGN 14.2: always-on bundle)
+COMPACT_CHARS = 10_000  # build_compact hard cap (DESIGN 14.2: always-on bundle). 11-12: 8,000 -> 10,000, the shop card
+# grew from about 4,600 to 6,300 chars before the caller's lines with [가게 회전], the leaf returns and the interim lines
 COMPACT_GAP_S = 1200  # [지난 깨어남 이후]: reference this long before now when the caller gives no last brief time
 COMPACT_NET_N = 3  # best and worst leaf x grade x warranty rows by net
 COMPACT_FULL = ("시각",)  # registry sections build_compact prints whole, so the index leaves them out
@@ -1979,10 +2029,12 @@ HUMAN_NOTE_N = 5  # the newest ones
 HUMAN_NOTE_CHARS = 200
 
 
-def _money_compact(x):
+def _money_compact(x, ret=True):
     """[돈이 있는 곳]: cash, stock cost per leaf with its units, the last NET_PROFIT_H hours' sales and the stock
     divided by that pace, and the last hours' restock runs. Facts only (live 11-12: the card showed stock in units,
-    so where the money sat was never on it)."""
+    so where the money sat was never on it). ret: each leaf also gets those hours' net profit (gross over sales with
+    a known cost minus warranty refunds, the [순이익] rule) and that net scaled to a day over the leaf's stock cost
+    now, which reads against the storage rate in the header (live 11-12: 218.8M sat in a leaf at price/cost 1.05)."""
     inv = c.load_json(os.path.join(x.root, ".market/inventory.json"))
     if not isinstance(inv, dict):
         return []
@@ -1998,16 +2050,31 @@ def _money_compact(x):
     rate = inv.get("storage_per_day") if _is_num(inv.get("storage_per_day")) and 0 < inv["storage_per_day"] < 1 else None
     keep = lambda cost: f", 보관비 하루 {c.fmt(cost * rate)}" if rate else ""
     age = lambda hs: f", 들어온 지 중앙 {st.median(hs):.0f}시간(가장 오래된 것 {max(hs):.0f}시간)" if hs else ""
-    sold = Counter(s["leaf"] for s in net_profit_data(x.root, x.now, NET_PROFIT_H, x.login, cat)[0])
+    sales = net_profit_data(x.root, x.now, NET_PROFIT_H, x.login, cat)[0]
+    sold = Counter(s["leaf"] for s in sales)
+    net = defaultdict(lambda: [0.0, 0])  # leaf -> [gross over sales with a cost minus refunds, sales without a cost]
+    for s in sales:
+        net[s["leaf"]][0] += (s["amount"] - s["cost"] if s["cost"] is not None else 0.0) - s["refund"]
+        net[s["leaf"]][1] += s["cost"] is None
+
+    def earned(leaf, cost):
+        if not ret or not sold.get(leaf):
+            return ""
+        g, unknown = net[leaf]
+        return (f", 순이익 {c.fmt(g)}"
+                + (f" (하루로 환산하면 원가 합의 {g * 24 / NET_PROFIT_H / cost:.1%})" if cost > 0 else "")
+                + (f", 원가 모르는 판매 {unknown}개는 총이익 0으로 셈" if unknown else ""))
+
     rows = sorted(by.items(), key=lambda kv: -kv[1][1])
     out = [f"[돈이 있는 곳] 현금 {c.fmt(inv.get('balance'))}, 재고 원가 합 {c.fmt(sum(v[1] for v in by.values()))} "
            f"({sum(v[0] for v in by.values())}개)"
            + (f", 보관비 하루 {c.fmt(sum(v[1] for v in by.values()) * rate)} (원가의 {rate:.1%})" if rate else "")
-           + f". 아래는 원가가 큰 상품군부터, 최근 {NET_PROFIT_H}시간 판매 수와 그 속도로 지금 재고를 나눈 시간"]
+           + f". 아래는 원가가 큰 상품군부터, 최근 {NET_PROFIT_H}시간 판매 수와 그 속도로 지금 재고를 나눈 시간"
+           + (f", 같은 {NET_PROFIT_H}시간의 순이익(보증 환불 뺌)과 그것을 하루로 환산해 지금 원가 합으로 나눈 값" if ret else "")]
     for leaf, (n, cost, hs) in rows[:MONEY_TOP]:
         k = sold.get(leaf, 0)
         pace = f"판매 {k}개, 그 속도로 {n / k * NET_PROFIT_H:.0f}시간 치" if k else "판매 0개"
-        out.append(f"  {leaf}: {n}개 원가 합 {c.fmt(cost)}, {pace}{keep(cost)}{age(hs)}")
+        out.append(f"  {leaf}: {n}개 원가 합 {c.fmt(cost)}, {pace}{earned(leaf, cost)}{keep(cost)}{age(hs)}")
     if rows[MONEY_TOP:]:
         rest = rows[MONEY_TOP:]
         out.append(f"  그 밖 {len(rest)}개 상품군: {sum(v[0] for _, v in rest)}개 원가 합 {c.fmt(sum(v[1] for _, v in rest))}, "
@@ -2134,24 +2201,27 @@ def _alerts(x):
     return ["[알림]"] + out if out else []
 
 
-def build_compact(root=None, now=None, last_brief_ts=None, extra=None, role=None):
+def build_compact(root=None, now=None, last_brief_ts=None, extra=None, role=None, off=()):
     """Always-on brief (DESIGN 14.2): time, standing, score position, changes since the last wake, `extra` (caller's
     lines), net profit, shop state, alerts, then an index of the registry sections for the brief_section tool.
     Each part returns fewer lines when its source is missing; COMPACT_CHARS caps the whole, index kept.
     role: a role operator's card leaves out the other side's parts (shop: no buy attempts; buyer: no net profit and
-    stock money); None shows both."""
+    stock money); None shows both. off: CARD_OPTIONAL names left out (the auditor took them off this card)."""
     x = _Ctx(root, now, last_brief_ts)
+    off = set(off or ())
     board = lambda f: (lambda: f(x) if x.board else [])
     parts = [
         ("시각", lambda: section_time(x.now, x.board[0] if x.board else None)),
         ("순위", lambda: _standing(x) if x.board else ["[순위] 순위표 스냅샷 없음"]),
         ("점수 위치", board(_positions)),
+        ("가게 회전", lambda: section_turnover(*x.board_day, x.login)
+         if x.board and role != "buyer" and "가게 회전" not in off else []),
         ("지난 깨어남 이후", board(_changes)),
         ("extra", lambda: [str(ln) for ln in extra or []]),
         ("시간대별", lambda: _hourly(x, role)),
         ("순이익", lambda: _net_compact(x) if role != "buyer" else []),
         ("가게 상태", lambda: _shop_compact(x)),
-        ("돈이 있는 곳", lambda: _money_compact(x) if role != "buyer" else []),
+        ("돈이 있는 곳", lambda: _money_compact(x, "묶인 돈 수익" not in off) if role != "buyer" else []),
         ("구매 시도", lambda: _buy_compact(x) if role != "shop" else []),
         ("사람이 적은 것", lambda: _human_notes(x)),
         ("알림", lambda: _alerts(x)),

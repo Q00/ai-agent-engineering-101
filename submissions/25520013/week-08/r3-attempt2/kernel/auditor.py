@@ -69,7 +69,7 @@ HISTORY_MAX = 12
 HISTORY_SHOWN = 4
 DESC_CHARS = 160
 TOOL_CHANGES_MAX = 4
-PROMPT_CHARS = 24_000
+PROMPT_CHARS = 26_000  # 11-12: 24,000 held the blocks at about 23,000; the board block adds about 1,200
 NOTES_SHOWN = 800
 WAKES_SHOWN = 3
 RUNS_MAX = 12  # the auditor's own memory: its past runs kept in the state file
@@ -130,7 +130,7 @@ SCHEMA_ROLES = """JSON 객체 하나로만 답함. 모든 항목은 선택임:
  "tools": {"hide": ["<도구 이름>"], "show": ["<도구 이름>"], "describe": {"<도구 이름>": "<새 설명 160자 안>"},
            "remove": ["q_<운영자가 만든 도구>"],
            "recommend": {"shop": ["<도구 이름>"], "buyer": ["<도구 이름>"]}, "unrecommend": {"shop": ["<도구 이름>"], "buyer": ["<도구 이름>"]},
-           "card": {"shop": ["q_<만든 도구>"], "buyer": ["q_<만든 도구>"]}, "uncard": {"shop": ["q_<만든 도구>"], "buyer": ["q_<만든 도구>"]}},
+           "card": {"shop": ["q_<만든 도구> 또는 뗐던 카드 칸 이름"], "buyer": ["q_<만든 도구> 또는 뗐던 카드 칸 이름"]}, "uncard": {"shop": ["q_<만든 도구> 또는 카드 칸 이름"], "buyer": ["q_<만든 도구> 또는 카드 칸 이름"]}},
  "ask": [{"q": "<조사원에게 맡길 일: 운영자가 못 보는 사실을 세는 q_ 도구를 만들어 저장해 달라는 것 등>", "for": ["shop", "buyer"]}],
  "agents": [{"op": "create|update|retire", "name": "<영소문자_숫자>", "job": "<에이전트의 일 문서 전체>", "wake": {"every_min": <분>, "on_ask": true}, "for": ["shop", "buyer"], "reason": "<근거 숫자>"}],
  "note": "<이번 감사 한 줄 요약>"}
@@ -217,6 +217,20 @@ def card_state(root):
     return {r: [n for n in d.get(r) if isinstance(n, str)] if isinstance(d.get(r), list) else [] for r in ROLES}
 
 
+def card_off(root):
+    """The kernel card parts the auditor took off each role's state card: {role: [brief.CARD_OPTIONAL names]}.
+    Never raises (a broken state file takes nothing off)."""
+    from kernel import brief
+
+    try:
+        st = c.load_json(_path(root, TOOL_STATE), {})
+        d = st.get("card_off") if isinstance(st, dict) and isinstance(st.get("card_off"), dict) else {}
+        return {r: [n for n in (d.get(r) if isinstance(d.get(r), list) else []) if n in brief.CARD_OPTIONAL[r]]
+                for r in ROLES}
+    except Exception:  # noqa: BLE001
+        return {r: [] for r in ROLES}
+
+
 def card_lines(root, now, role):
     """State-card lines of the pinned tools of a role: each tool's current output, cut. Never raises."""
     out = []
@@ -255,10 +269,22 @@ def _gaps_block(root, now, hours=24):
     out.append("상태 카드에 붙인 도구: " + (", ".join(f"{r} {card[r]}" for r in ROLES if card[r]) or "없음"))
     from kernel import brief
 
+    off = card_off(root)
     for r in ROLES:  # what each operator's card holds now, so the auditor can tell what is not on it
-        heads = re.findall(r"^\[([^\]\n]{1,20})\]", brief.build_compact(root, now, now - 3600, role=r), re.M)
-        out.append(f"{ROLE_KO[r]} 상태 카드의 칸: " + ", ".join(dict.fromkeys(h.split(" ")[0] for h in heads)))
+        heads = re.findall(r"^\[([^\]\n]{1,20})\]", brief.build_compact(root, now, now - 3600, role=r, off=off[r]), re.M)
+        out.append(f"{ROLE_KO[r]} 상태 카드의 칸: " + ", ".join(dict.fromkeys(re.split(r"\s+(?=\S*\d)", h)[0] for h in heads)))  # the name up to its first number
+    out.append("커널이 넣는 칸 중 네가 떼고(uncard) 다시 붙일(card) 수 있는 것: "
+               + "; ".join(f"{r} {', '.join(brief.CARD_OPTIONAL[r])}" for r in ROLES)
+               + ". 지금 뗀 것: " + ("; ".join(f"{r} {', '.join(off[r])}" for r in ROLES if off[r]) or "없음"))
     return "\n".join(out)
+
+
+def _board_block(root, now):
+    """Other shops' board columns next to ours over about a day (brief.section_turnover), so the auditor can tell a
+    gap nobody asked about: its gap finding otherwise starts only from 'could not confirm' sentences."""
+    from kernel import brief
+
+    return brief.section(root, "가게 회전", now)
 
 
 def rec_state(root):
@@ -838,6 +864,7 @@ def build_prompt(root, now, secrets=(), listed=None, roles=None, sizes=None):
         (f"## 감사 숫자 (지난 감사 {c.kst(last)} 이후, 0 아닌 항목만)", rep),
         ("## 도구 표 (최근 24시간)", _tool_block(root, now, listed, ts)),
         ("## 정보 빈칸 (조사 결과에서 커널이 찾은 문장, 해석 없음)", _safe(lambda: _gaps_block(root, now))),
+        ("## 다른 가게와 우리 (순위표의 가게 열, 커널이 셈. 해석 없음)", _safe(lambda: _board_block(root, now))),
         ("## 실험 기록 (커널 판정)", exp),
         (
             "## 코드 수정 (운영자가 규칙 코드를 고친 기록)",
@@ -1047,13 +1074,22 @@ def _apply_tools(root, now, ask, listed, secrets, traj, roles=None):
                     if (name in recommended(root, role, rs)) != (op == "recommend"):
                         rs[keep][role].append(name)
                     applied.append({"op": op, "role": role, "name": name})
-    card = card_state(root)
+    from kernel import brief
+
+    card, off = card_state(root), card_off(root)
     for op in ("card", "uncard") if roles else ():
         d = ask.get(op) if isinstance(ask.get(op), dict) else {}
         for role, names in d.items():
             for name in _names(names):
                 if role not in roles:
                     refused.append({"op": op, "role": str(role)[:20], "name": name, "why": "역할은 shop 또는 buyer"})
+                elif name in brief.CARD_OPTIONAL.get(role, ()):  # a kernel card part: uncard takes it off, card puts it back
+                    if (name in off[role]) == (op == "uncard"):
+                        refused.append({"op": op, "role": role, "name": name,
+                                        "why": "이미 떼어져 있음" if op == "uncard" else "이미 붙어 있음"})
+                    elif room(op, name):
+                        off[role] = [n for n in off[role] if n != name] + ([name] if op == "uncard" else [])
+                        applied.append({"op": op, "role": role, "name": name})
                 elif op == "card" and name not in _made_names(root):
                     refused.append({"op": op, "role": role, "name": name, "why": "만든 도구(q_) 중에 없음"})
                 elif op == "card" and name in card[role]:
@@ -1070,7 +1106,7 @@ def _apply_tools(root, now, ask, listed, secrets, traj, roles=None):
     if applied:
         raw = c.load_json(_path(root, TOOL_STATE), {})
         raw = raw if isinstance(raw, dict) else {}
-        raw.update(hidden=hidden, desc=desc, card=card)
+        raw.update(hidden=hidden, desc=desc, card=card, card_off=off)
         if rs is not None:
             raw.update(rs)
         _atomic_json(_path(root, TOOL_STATE), raw)

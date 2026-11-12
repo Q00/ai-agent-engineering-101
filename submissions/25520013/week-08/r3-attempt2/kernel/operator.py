@@ -1074,6 +1074,7 @@ class Operator:
         except Exception:
             guidance = ""
         code_lines = code_edit.lines(self.root, now, **self._role_kw())  # never raises
+        off = auditor.card_off(self.root).get(self.role, [])  # kernel card parts the auditor took off this card
         base, sizes = sized(
             [
                 job,
@@ -1083,9 +1084,10 @@ class Operator:
                 tools.guide_always(),
                 "## 상태 카드 (커널이 모은 사실, 해석 없음)",
                 b.build_compact(self.root, now, last_brief,
-                                extra=list(ex.lines(self.root, now, **self._role_kw())) + list(code_lines) + list(audit_lines)
+                                extra=list(ex.lines(self.root, now, interim="실험 중간값" not in off, **self._role_kw()))
+                                + list(code_lines) + list(audit_lines)
                                 + auditor.card_lines(self.root, now, self._role_kw().get("role")),
-                                **self._role_kw()),
+                                off=off, **self._role_kw()),
                 "## 지난 점검에 네가 낸 것의 결과 (커널 기록. 거절된 것은 적용되지 않았음)",
                 _last_done_text((st.get("last_done") or {}).get("lines")) or "없음",
                 *self._findings_block(now),

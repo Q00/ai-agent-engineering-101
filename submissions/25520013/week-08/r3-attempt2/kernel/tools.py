@@ -550,7 +550,7 @@ def code_read(root, file, start=1, lines=120, end=None, count=None, func=None):
 
 
 def experiments(root, hours=6, now=None):
-    """실험 장부 전체: 진행 중인 실험 모두(범위, 키, 값, 판정 시각, 건 운영자), 최근 hours시간에 끝난 실험의 판정, 그리고 같은 시간에 실험 없이 그냥 적용한 값 수정(시각, 구역, 키, 전 값 → 새 값)."""
+    """실험 장부 전체: 진행 중인 실험 모두(범위, 키, 값, 판정 시각, 건 운영자)와 각 실험의 지금까지 표본, 값, 판정 때 잡음을 넘는 차이의 크기(판정 아님), 최근 hours시간에 끝난 실험의 판정, 그리고 같은 시간에 실험 없이 그냥 적용한 값 수정(시각, 구역, 키, 전 값 → 새 값)."""
     from kernel import experiments as ex
 
     now = c.now_ts() if now is None else now
@@ -562,11 +562,21 @@ def experiments(root, hours=6, now=None):
     who = lambda e: f" [{ex.role_of(e) or '-'}]"
     run = [e for e in rows if e.get("status") == "running"]
     out = [f"진행 중 {len(run)}건"]
+    try:
+        data = ex.interim_data(root, run, now)
+    except Exception:  # noqa: BLE001 - the interim lines are an addition
+        data = None
     for e in run:
         try:
             out.append(ex._run_line(e) + f", 범위 {e.get('section')}" + who(e))
         except Exception:  # noqa: BLE001 - a malformed entry is shown by id only
             out.append(f"  진행 #{e.get('id')}")
+        try:
+            more = ex.interim_line(e, now, data)
+        except Exception:  # noqa: BLE001
+            more = ""
+        if more:
+            out.append(more)
     ended = [e for e in rows if e.get("status") != "running" and ex._num_ok(e.get("ended_ts")) and e["ended_ts"] >= now - hours * 3600]
     out.append(f"최근 {hours:g}시간에 끝난 실험 {len(ended)}건")
     for e in sorted(ended, key=lambda e: -e["ended_ts"]):

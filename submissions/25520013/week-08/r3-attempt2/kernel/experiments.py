@@ -128,6 +128,8 @@ REASON_KO = {
 }
 EXPECT_CHARS = 40
 LINES_RUN, LINES_ENDED = 6, 5
+INTERIM_MIN_H = 0.25  # a running experiment younger than this gets no interim line
+INTERIM_FAR_H = 72  # hours for the present difference to clear the noise are printed up to this
 ROLES = ("shop", "buyer")  # the role operators (kernel.operator --role)
 OTHER = " (다른 운영자)"  # a role's state card marks the other role's lines
 TESTS = ("none", "before_after", "split")  # what a policy item may ask for (apply_policy)
@@ -1863,6 +1865,93 @@ def _run_line(e):
     )
 
 
+def interim_data(root, run, now):
+    """One events read that covers the before and after windows, up to now, of every experiment in `run` (None when
+    none has a start and a window)."""
+    lo = []
+    for e in run:
+        t, wh = e.get("started_ts"), e.get("window_h")
+        if _num_ok(t) and _num_ok(wh) and wh > 0:
+            lo.append((t if e.get("mode") == "split" else t - wh * 3600) - JOIN_LOOKBACK_H * 3600)
+    return read_events(root, min(lo), now, now=now) if lo else None
+
+
+def interim_line(e, now, data):
+    """What a running experiment holds so far, as one card line (no writes, no verdict): hours run of the window, the
+    sample (per arm, or before and after) with the pace projected to the verdict time next to the sample the verdict
+    needs, the values and their difference, and the smallest difference the verdict would call clear (the larger of
+    CLEAR_SE x se at the verdict time, when sales keep coming as they have, and REL_MIN of the base value). A split also gets the hours from its start that the present difference
+    would need to clear at this pace (se of a split falls with 1 / sqrt(hours)). "" when too early or without data.
+    Live 11-12: experiments ended on 3 against 5 sales; nothing on the card showed that before the verdict."""
+    t, wh = e.get("started_ts"), e.get("window_h")
+    if data is None or not (_num_ok(t) and _num_ok(wh) and wh > 0) or e.get("status") != "running":
+        return ""
+    el = (min(now, t + wh * 3600) - t) / 3600
+    if el < INTERIM_MIN_H:
+        return ""
+    k = wh / el  # the verdict window over the hours run
+    head = f"    지금까지 {el:.1f}/{wh:g}시간: "
+    noise = f"잡음({CLEAR_SE}se)"
+    if e.get("mode") == "split":
+        v = evaluate_split(None, dict(e, window_h=el), now, data)
+        diff = v["b"] - v["a"]
+        out = (
+            head
+            + f"판매 A {v['n_a']} / B {v['n_b']} (이 속도면 판정 때 약 {v['n_a'] * k:.0f} / {v['n_b'] * k:.0f}, "
+            f"판정에 필요한 표본 각 {THIN_N} 합 {SPLIT_THIN_N}), 값 A {_num(v['a'], 'shop')}, B {_num(v['b'], 'shop')}, "
+            f"차이 {_num(diff, 'shop', sign=True)}"
+        )
+        if v["se"]:
+            rel = REL_MIN * max(abs(v["a"]), FLOOR["shop"])  # the verdict's second condition
+            out += (f". 판매가 이대로면 판정 때 넘어야 하는 차이는 ±{_num(max(CLEAR_SE * v['se'] / math.sqrt(k), rel), 'shop')}부터 "
+                    f"({noise}과 A 값의 {REL_MIN:.0%} 기준 중 큰 쪽)")
+            if diff:
+                h = el * (CLEAR_SE * v["se"] / abs(diff)) ** 2
+                out += ", 지금 차이는 " + (
+                    f"A 값의 {REL_MIN:.0%} 기준(±{_num(rel, 'shop')})에 못 미침" if abs(diff) <= rel
+                    else "이미 지금의 잡음을 넘음" if h <= el
+                    else f"이어지면 잡음을 넘는 데 시작부터 약 {h:.0f}시간" if h <= INTERIM_FAR_H
+                    else f"이어져도 잡음을 넘는 데 시작부터 {INTERIM_FAR_H}시간 넘게"
+                )
+        return out
+    side, scope, w = e.get("side"), e["scope"], wh * 3600
+    bf = e.get("before_from")
+    b0 = min(max(t - w, bf) if _num_ok(bf) else t - w, t)
+    t1 = t + el * 3600
+    if side == "buyer":
+        b, a = buyer_metric(data, scope, b0, t, e.get("s0")), buyer_metric(data, scope, t, t1, e.get("s0"))
+        r = _ratio(a["others"], a["hours"], b["others"], b["hours"])
+    else:
+        rw = e.get("rev_weight") or 0.0
+        b, a = shop_metric(data, scope, b0, t, rw), shop_metric(data, scope, t, t1, rw)
+        r = _ratio(a["market"], a["hours"], b["market"], b["hours"])
+    adj = b["value"] * r
+    unit = "거래" if side == "buyer" else "판매"
+    if t - b0 < MIN_BEFORE_H * 3600:  # the verdict will be no_baseline whatever the after window holds
+        return (head + f"{unit} 후 {a['n']} (이 속도면 판정 때 후 약 {a['n'] * k:.0f}), 후 {_num(a['value'], side)}. "
+                f"전 구간이 {(t - b0) / 3600:.1f}시간이라 비교 기준이 없음 (기준 {MIN_BEFORE_H}시간)")
+    out = (
+        head
+        + f"{unit} 전 {b['n']} → 후 {a['n']} (이 속도면 판정 때 후 약 {a['n'] * k:.0f}, "
+        f"판정에 필요한 표본 {THIN_N}), 전 보정 {_num(adj, side)}, 후 {_num(a['value'], side)}, "
+        f"차이 {_num(a['value'] - adj, side, sign=True)}"
+    )
+    bb = [x * r for x in b["buckets"]]
+    if len(bb) >= 2:
+        # the after variance over whole elapsed hours only: a partial last hour would read as a swing of its own
+        whole = int(el + 1e-9)
+        ab = (buyer_metric(data, scope, t, t + whole * 3600, e.get("s0")) if side == "buyer"
+              else shop_metric(data, scope, t, t + whole * 3600, e.get("rev_weight") or 0.0))["buckets"] if whole >= 2 else []
+        own = len(ab) >= 2
+        va = st.variance(ab) if own else st.variance(bb)
+        need = max(CLEAR_SE * math.sqrt(va / max(1, int(round(wh))) + st.variance(bb) / len(bb)),
+                   REL_MIN * max(abs(adj), FLOOR[side]))
+        out += (f". 시간별 흔들림이 이대로면 판정 때 넘어야 하는 차이는 ±{_num(need, side)}부터 "
+                f"({noise}과 전 보정 값의 {REL_MIN:.0%} 기준 중 큰 쪽"
+                + ("" if own else ", 후 구간이 온전한 2시간 미만이라 전 구간의 흔들림으로 셈") + ")")
+    return out
+
+
 def _ended_line(e):
     v, side = e.get("verdict") or {}, e.get("side")
     status = STATUS_KO.get(e["status"], e["status"])
@@ -1911,9 +2000,10 @@ def _ended_line(e):
     )
 
 
-def lines(root, now, last=LINES_ENDED, role=None):
+def lines(root, now, last=LINES_ENDED, role=None, interim=False):
     """[실험] briefing lines: counts, up to LINES_RUN running experiments and the last `last` ended ones, one compact
-    line each with its mode. With a role, the other role's lines end with OTHER."""
+    line each with its mode. With a role, the other role's lines end with OTHER. interim: each running experiment
+    (with a role: of that role) is followed by its interim_line."""
 
     def mark(e):
         return OTHER if role and role_of(e) != role else ""
@@ -1932,11 +2022,22 @@ def lines(root, now, last=LINES_ENDED, role=None):
     if n("adopted") or n("dropped"):
         head += f", 채택 {n('adopted')}, 버림 {n('dropped')}"
     out = [head]
+    mine = [e for e in run[:LINES_RUN] if not role or role_of(e) == role] if interim else []
+    try:
+        data = interim_data(root, mine, now)
+    except Exception:  # noqa: BLE001 - the interim lines are an addition; the ledger lines still go out
+        data = None
     for e in run[:LINES_RUN]:
         try:
             out.append(_run_line(e) + mark(e))
         except Exception:  # noqa: BLE001 - a malformed entry is shown by id only
             out.append(f"  진행 #{e.get('id')}")
+        try:
+            more = interim_line(e, now, data) if any(e is m for m in mine) else ""
+        except Exception:  # noqa: BLE001
+            more = ""
+        if more:
+            out.append(more)
     if len(run) > LINES_RUN:
         out.append(f"  … 진행 {len(run) - LINES_RUN}건 더")
     for e in reversed(ended):
