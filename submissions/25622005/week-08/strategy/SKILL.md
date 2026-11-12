@@ -79,7 +79,10 @@ policy:
     cap_goods_warranty: 0.94
     cap_food: 0.95
     min_surplus_list: 0.05
-    min_kept: 0.0                 # D6 every cap <= (1 - this) x list: Saved is an average share kept, a deal below it lowers the score
+    min_kept: 0.0                 # D6 every cap <= (1 - this) x list before a quote names the unit's grade
+    min_kept_A: 0.0               # D6 the kept floor once a quote or receipt names the grade (Patch 3.6 Saved: an A
+    min_kept_B: 0.0               #    costs 0.55-0.75 of list, so 0.45 kept already scores 1; a C costs 0.25-0.45,
+    min_kept_C: 0.0               #    so the same kept scores 0.6-0.8); 0 leaves min_kept in charge
     open_list: 0.60
     max_shops: 3
     food_margin_h: 0.2            # D7 min_hours_left = use_within_hours + this (settle follows payment)
@@ -187,9 +190,12 @@ The reasoning behind each value is in `strategy.md` (local only, not committed).
 ## Buyer
 
 - Expected surplus is computed on the list price of the SKU that will ship.
-- Saved (Patch 3.4) is the average share of list kept per deal, so a deal that keeps less than the running
-  average lowers the score however many deals we close: every cap is at most (1 - `buyer.min_kept`) x list,
-  and `buyer.min_kept` stays at or above the board's saved for our buyer. Walking away costs nothing in Saved.
+- Saved (Patch 3.6) is the mean over deals of (list - price) / (list - unit cost), at most 1 each: the share
+  of the shop's margin a deal took. A deal scoring under the running mean lowers it however many deals we
+  close, one scoring above raises it. The cost is drawn by grade (A 0.55-0.75 of list, B 0.40-0.60, C
+  0.25-0.45), so the kept share of list that scores 1 whatever the cost is A 0.45, B 0.60, C 0.75: every cap
+  is at most (1 - `buyer.min_kept`) x list, and once the quote names the grade (1 - `buyer.min_kept_<grade>`)
+  x list when that is lower. Walking away costs nothing in Saved.
 - The food cap is min(`buyer.cap_food`, 1 - `buyer.min_surplus_list`); raising `cap_food` above
   that has no effect.
 - Rank shops by what their sales kept of list in the public ledger (the price book: the shop's settled
