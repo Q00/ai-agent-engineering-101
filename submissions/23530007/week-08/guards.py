@@ -471,6 +471,41 @@ def main():
     except Exception as e:
         log(f"G14 skipped: {e!r}")
 
+    # G18 flat raters (user 11-12 14:40, chose 'stop selling'): an account that gives EVERY shop the same low stars
+    # whatever the price or grade (sergiobuilds: 4,340 reviews in 36 h, all 2.00, 104 of our sales a day; at that
+    # pace our stars_rank -0.017 by the end, 3-5 star ranks) is declined by the seller (blocked_buyers.json, matched on
+    # its first-message shape, unique to it in 116 of 116 joined uses). Released automatically when its last 24 h
+    # stop being flat (mean > 2.5 or sd > 0.3 over >= 100 paid reviews of all shops).
+    try:
+        import sqlite3
+        import statistics as _st
+        FLAT = {"sergiobuilds": [r"^I want to buy .+\(G[0-9a-f]{8}\)\. What is your price\?$"]}
+        db_ = sqlite3.connect(f"file:{HERE / 'data' / 'market_archive.db'}?mode=ro", uri=True, timeout=30)
+        stars_ = {k: [] for k in FLAT}
+        for (d_,) in db_.execute("SELECT data FROM ledger WHERE kind='result' AND ts > ?", (now - 24 * 3600,)):
+            x_ = json.loads(d_).get("data") or {}
+            if x_.get("buyer") in stars_ and x_.get("receipt") and x_.get("verified") and x_.get("stars") is not None:
+                stars_[x_["buyer"]].append(x_["stars"])
+        bl_path = HERE / "blocked_buyers.json"
+        bl = json.loads(bl_path.read_text()) if bl_path.exists() else {}
+        changed = False
+        for name, pats in FLAT.items():
+            L_ = stars_[name]
+            flat = len(L_) >= 100 and _st.mean(L_) <= 2.5 and _st.pstdev(L_) <= 0.3
+            if flat and name not in bl:
+                bl[name] = pats
+                changed = True
+                alert([f"G18 {name}: 24시간 리뷰 {len(L_)}건 평균 {_st.mean(L_):.2f} (모든 상점에 같은 점수) -> 판매 중단"])
+            elif not flat and name in bl and len(L_) >= 100:
+                bl.pop(name)
+                changed = True
+                alert([f"G18 {name}: 24시간 평균 {_st.mean(L_):.2f}, 편차 {_st.pstdev(L_):.2f} -> 정상 평가로 판단, 판매 재개"])
+        if changed and not DRY:
+            bl_path.write_text(json.dumps(bl, ensure_ascii=False, indent=1))
+            log(f"G18 blocked_buyers -> {sorted(bl)}")
+    except Exception as e:
+        log(f"G18 skipped: {e!r}")
+
     # price rivals (user 11-11 23:00: 'no need to be the cheapest in the market; match the rival shop for each part,
     # revenue: inextro and so on, and sell a little under THAT shop'): the student shops next to us on each part of
     # the shop score, written for seller_r3 every tick.
