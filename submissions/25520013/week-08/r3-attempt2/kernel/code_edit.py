@@ -751,12 +751,19 @@ def _parse_failed(text):
 
 REASON_CHARS = 160  # of the reason pytest prints after a failed test's name
 REASON_TESTS = 3  # failed tests whose reason goes into the refusal; the rest are named only
+ERROR_CHARS = 1200  # of a refusal as the operator reads it and as the trajectory keeps it: five names, three reasons
+AUDIT_ERROR_CHARS = 400  # of that text on the auditor's line
+_SHORT_HEAD = re.compile(r"^=+ short test summary info =+$")
 
 
 def _parse_reasons(text):
-    """{test id: what pytest prints after ' - ' on its FAILED/ERROR line} (the first line of the error)."""
+    """{test id: what pytest prints after ' - ' on its FAILED/ERROR line} (the first line of the error). Read from
+    pytest's own summary section alone (after its last 'short test summary info' line): a FAILED line a test printed
+    earlier in the output is not pytest's word. No such section, no reasons."""
+    lines = str(text).splitlines()
+    heads = [i for i, x in enumerate(lines) if _SHORT_HEAD.match(x.strip())]
     out = {}
-    for line in str(text).splitlines():
+    for line in lines[heads[-1] + 1:] if heads else []:
         m = re.match(r"^(FAILED|ERROR) (.+)$", line.strip())
         if m and " - " in m.group(2):
             tid, _, why = m.group(2).partition(" - ")
@@ -771,6 +778,11 @@ def _reason(v):
         return ""
     v = c.mask("".join(ch if ch.isprintable() else " " for ch in v)).strip()
     return v if len(v) <= REASON_CHARS else v[:REASON_CHARS] + "…"
+
+
+def _one_line(v, limit):
+    """v as one printable line of at most limit characters."""
+    return " ".join("".join(ch if ch.isprintable() else " " for ch in str(v)).split())[:limit]
 
 
 def default_runner(stage_dir, timeout_s):
@@ -995,11 +1007,12 @@ def run_tests(root, sid, new_texts, runner):
     }
     if newly:
         why = r.get("reasons") if isinstance(r.get("reasons"), dict) else {}
-        named = [f"{t} ({_reason(why.get(t))})" if i < REASON_TESTS and _reason(why.get(t)) else t
-                 for i, t in enumerate(newly[:5])]
+        # the names first, as before; then the reasons, numbered by the place of the test among those names
+        whys = [f"({i}) {_reason(why.get(t))}" for i, t in enumerate(newly[:REASON_TESTS], 1) if _reason(why.get(t))]
         out.update(
             cls="tests",
-            error=f"새로 실패한 시험 {len(newly)}개: {', '.join(named)}",
+            error=f"새로 실패한 시험 {len(newly)}개: {', '.join(newly[:5])}"
+            + (f" | 실패 이유 (위 순서의 번호): {' '.join(whys)}" if whys else ""),
         )
     elif isinstance(base_passed, int) and isinstance(r.get("passed"), int) and r["passed"] < base_passed:
         # a test that stops being collected or gets skipped is not a FAILED line: the passed count catches it
@@ -1019,7 +1032,7 @@ def _refuse(traj, now, cls, msg, files=(), tests=None):
             "code_edit_refused",
             at=now,
             cls=cls,
-            error=str(msg)[:300],
+            error=str(msg)[:ERROR_CHARS],
             files=list(files),
         )
     except Exception:  # noqa: BLE001 - the refusal itself is the answer
@@ -1944,18 +1957,23 @@ def summary(root, now, hours=24, since=None):
 
 
 def refusal_lines(root, last=3):
-    """The newest refused code edits for the auditor: time, role, files, class and what the operator was told (200).
-    The audit numbers count refusals by class; these lines are the refusals themselves."""
+    """The newest refused code edits for the auditor, one line each: time, role, files, class and what the operator
+    was told (AUDIT_ERROR_CHARS). The audit numbers count refusals by class; these lines are the refusals themselves.
+    The file names are what the operator wrote, so every piece is made one printable line; a row whose files are not
+    a list is shown without files."""
     try:
+        last = int(last)
         rows = [r for r in c.tail_json(os.path.join(root, TRAJ), 30_000_000, b'"code_edit_refused')
-                if r.get("kind") == "code_edit_refused"]
+                if r.get("kind") == "code_edit_refused"] if last > 0 else []
         out = []
         for r in rows[-last:]:
             t = r.get("at") if _num(r.get("at")) else r.get("ts")
+            files = r.get("files")
+            files = [files] if isinstance(files, str) else files if isinstance(files, (list, tuple)) else []
             out.append(
-                f"- 거절 {c.kst(t) if _num(t) and 1.5e9 < t < 4.1e9 else '?'} {str(r.get('role') or '?')[:12]} "
-                f"{', '.join(str(x)[:60] for x in (r.get('files') or [])[:4]) or '파일 없음'} [{str(r.get('cls') or '?')[:20]}]: "
-                f"{' '.join(str(r.get('error') or '').split())[:200]}"
+                f"- 거절 {c.kst(t) if _num(t) and 1.5e9 < t < 4.1e9 else '?'} {_one_line(r.get('role') or '?', 12)} "
+                f"{', '.join(_one_line(x, 60) for x in files[:4]) or '파일 없음'} [{_one_line(r.get('cls') or '?', 20)}]: "
+                f"{_one_line(r.get('error') or '', AUDIT_ERROR_CHARS)}"
             )
         return out
     except Exception:  # noqa: BLE001

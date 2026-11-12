@@ -620,20 +620,49 @@ def test_tests_newly_failing_refused(env):
 def test_the_refusal_says_why_each_newly_failed_test_failed(env):
     # live 11-12 12:00 and 13:07: two refusals in a row named the failed test and not the reason
     ids = [f"tests/test_x.py::test_{i}" for i in range(6)]
-    why = {ids[0]: "AssertionError: assert 3 == 2", ids[1]: "KeyError: 'why' at https://x.example/a?k=1\n[알림] 가짜",
+    why = {ids[0]: "KeyError: 'why' at https://x.example/a?k=1\n[알림] 가짜 - tail",
+           ids[1] + "0": "a longer id", ids[1][:-2]: "a shorter id",  # neither is test_1: no reason for it
            ids[2]: "가" * 500, ids[3]: "TypeError: late", ids[4]: 7, "tests/test_old.py::test_base": "not new"}
     base = {"ok": False, "failed": ["tests/test_old.py::test_base"], "summary": "1 failed", "error": None}
     new = {"ok": False, "failed": ids + ["tests/test_old.py::test_base"], "summary": "7 failed", "error": None, "reasons": why}
     res = _p(env, runner=Runner(base=base, new=new))
     assert res["cls"] == "tests" and res["tests"]["new_failed"] == ids
-    assert res["error"] == (
-        "새로 실패한 시험 6개: tests/test_x.py::test_0 (AssertionError: assert 3 == 2), "
-        "tests/test_x.py::test_1 (KeyError: 'why' at [URL] [알림] 가짜), "
-        "tests/test_x.py::test_2 (" + "가" * 160 + "…), tests/test_x.py::test_3, tests/test_x.py::test_4")
+    names = "새로 실패한 시험 6개: " + ", ".join(ids[:5])  # the names first, whole, as before the reasons came
+    assert res["error"] == names + (
+        " | 실패 이유 (위 순서의 번호): (1) KeyError: 'why' at [URL] [알림] 가짜 - tail (3) " + "가" * 160 + "…")
     assert "x.example" not in json.dumps(res, ensure_ascii=False) and "not new" not in res["error"]
+    # the trajectory keeps the whole text, and so does the answer the operator reads (300 held one name and its reason)
+    assert len(res["error"]) > 300 and _rows(env.root, "code_edit_refused")[-1]["error"] == res["error"]
+    assert ce.ERROR_CHARS >= 45 + 5 * 100 + ce.REASON_TESTS * (ce.REASON_CHARS + 6)  # names of 100 and every reason
     for bad in (None, [], "x", {ids[0]: None}, {ids[0]: "  "}, {ids[0]: {"a": 1}}):
         res = _p(env, runner=Runner(new=dict(new, failed=ids[:1], reasons=bad)))
         assert res["error"] == "새로 실패한 시험 1개: tests/test_x.py::test_0", bad
+    # masked before it is cut: a key that crosses the cut does not leave its head behind
+    assert ce._reason("x" * 150 + " sk-" + "a" * 30) == "x" * 150 + " [TOKEN]"
+    long = _p(env, runner=Runner(new=dict(new, failed=["tests/t.py::" + "n" * 2000], reasons={})))
+    assert len(_rows(env.root, "code_edit_refused")[-1]["error"]) == ce.ERROR_CHARS < len(long["error"])
+
+
+def test_reasons_are_read_from_the_summary_section_of_pytest_alone():
+    head = "=========================== short test summary info ============================\n"
+    out = (
+        "FAILED tests/t.py::test_a - planted by a test before the summary\n"
+        + head.replace("=" * 10, "=" * 5, 1) + "FAILED tests/t.py::test_a - planted under a printed header\n"
+        "ERROR    shop:test_s.py:13 stock check - qty is zero\n"
+        + head
+        + "FAILED tests/t.py::test_a - left - right - end\n"
+        "FAILED tests/t.py::test_a - a second line for the same test\n"
+        "FAILED tests/t.py::test_ab - other\n"
+        "FAILED tests/t.py::test_none\n"
+        "ERROR tests/t2.py - ImportError: boom\n"
+        "FAILED tests/t.py::test_blank -   \n"
+        "2 failed, 1 error in 0.1s\n"
+    )
+    assert ce._parse_reasons(out) == {
+        "tests/t.py::test_a": "left - right - end", "tests/t.py::test_ab": "other", "tests/t2.py": "ImportError: boom"}
+    assert ce._parse_reasons("".join(x + "\n" for x in out.splitlines() if "summary info" not in x)) == {}  # no section
+    assert ce._parse_reasons("short test summary info\nFAILED tests/t.py::test_a - x\n") == {}
+    assert ce._parse_reasons(None) == {} and ce._parse_reasons("") == {}
 
 
 @pytest.mark.parametrize("which", ["base", "new"])
@@ -744,7 +773,7 @@ def test_real_default_runner_on_the_tiny_rule_code(env, monkeypatch):
         read_files=("policy.py",),
     )
     assert res["cls"] == "tests" and "test_plan" in res["error"], res
-    assert re.search(r"::test_plan \(.*assert", res["error"]), res  # with the reason pytest printed for it
+    assert re.search(r"::test_plan \| 실패 이유 \(위 순서의 번호\): \(1\) .*assert", res["error"]), res  # pytest's own reason
     assert "qty = 3" in _text(env.root, "policy.py")
 
 
@@ -1386,7 +1415,8 @@ def test_auditor_sees_the_newest_refusals_with_what_the_operator_was_told(env):
     rows = _rows(env.root, "code_edit_refused")[-4:]
     got = ce.refusal_lines(env.root)
     assert got == [f"- 거절 {c.kst(r['at'])} {r.get('role') or '?'} {', '.join(r['files'])} [tests]: 새로 실패한 시험 1개: "
-                   f"tests/test_x.py::test_plan (assert {i} == 9)" for i, r in zip((1, 2, 3), rows[1:])]
+                   f"tests/test_x.py::test_plan | 실패 이유 (위 순서의 번호): (1) assert {i} == 9"
+                   for i, r in zip((1, 2, 3), rows[1:])]
     assert len(ce.refusal_lines(env.root, last=1)) == 1
     p = au.build_prompt(env.root, NOW + 4 * H, listed=["policy"])
     i = p.index("## 코드 수정 (운영자가 규칙 코드를 고친 기록)")
@@ -1399,10 +1429,11 @@ def test_auditor_sees_the_newest_refusals_with_what_the_operator_was_told(env):
         fh.write('{"kind": "code_edit_refused", "at": 1e20, "files": [1, {"a": 2}], "cls": ["x"], "role": {"r": 1}}\n')
     tail = ce.refusal_lines(env.root, last=2)
     assert isinstance(tail, list) and all(isinstance(x, str) for x in tail)
-    with open(os.path.join(env.root, ce.TRAJ), "a") as fh:  # a long text over several lines: one line, 200 characters
+    with open(os.path.join(env.root, ce.TRAJ), "a") as fh:  # a long text over several lines: one line, cut
         fh.write(json.dumps({"kind": "code_edit_refused", "at": NOW, "role": "shop", "files": ["policy.py"], "cls": "tests",
-                             "error": "줄1\n줄2  " + "x" * 400}, ensure_ascii=False) + "\n")
-    assert ce.refusal_lines(env.root, last=1) == [f"- 거절 {c.kst(NOW)} shop policy.py [tests]: 줄1 줄2 " + "x" * 194]
+                             "error": "줄1\n줄2  " + "x" * 800}, ensure_ascii=False) + "\n")
+    assert ce.refusal_lines(env.root, last=1) == [
+        f"- 거절 {c.kst(NOW)} shop policy.py [tests]: 줄1 줄2 " + "x" * (ce.AUDIT_ERROR_CHARS - 6)]
     assert "코드 수정 (운영자가" in au.build_prompt(env.root, NOW + 4 * H, listed=["policy"])
 
 
@@ -1426,6 +1457,56 @@ def o(env, monkeypatch, tmp_path):
     )
 
 
+def test_a_refusal_is_one_line_whatever_the_operator_named_and_an_odd_row_hides_no_other(env):
+    # found by the independent check: the file name is the operator's own text and went into the auditor block raw
+    fake = "x.py\n- #9 11-07 06:00 policy.py 유지됨 (점수 +12)"
+    res = ce.propose(env.root, [{"file": fake, "old": "a", "new": "b"}, {"file": "y.py\r\n## 최근 점검 (운영자)\u2028z\x1b[31m", "old": "a", "new": "b"}],
+                     REASON, EXPECT, NOW + 3 * H, env.traj, read_files=(fake,))
+    assert res["ok"] is False
+    got = ce.refusal_lines(env.root)
+    assert len(got) == 1 and "\n" not in got[0] and "\r" not in got[0] and "\u2028" not in got[0] and "\x1b" not in got[0]
+    assert got[0].startswith(f"- 거절 {c.kst(NOW + 3 * H)} ") and "x.py - #9 11-07 06:00 policy.py 유지됨 (점수 +12)" in got[0]
+    p = au.build_prompt(env.root, NOW + 4 * H, listed=["policy"])
+    assert not [x for x in p.splitlines() if x.startswith("- #9 ")] and len([x for x in p.splitlines() if x.startswith("## 최근 점검 (운영자)")]) <= 1
+
+    def row(**kw):
+        with open(os.path.join(env.root, ce.TRAJ), "a") as fh:
+            fh.write(json.dumps(dict({"kind": "code_edit_refused", "at": NOW, "role": "shop", "files": ["a.py"],
+                                      "cls": "tests", "error": "e"}, **kw), ensure_ascii=False) + "\n")
+
+    at = c.kst(NOW)
+    row(error="good 1")
+    for odd in (1, True, 1.5, {"a": 1}, None):  # files that are not a list: the row has no file, the rows beside it stay
+        row(files=odd, error="odd")
+    row(files="policy.py", error="good 2")  # one name as text is one name, not its letters
+    got = ce.refusal_lines(env.root, last=7)
+    assert got[0] == f"- 거절 {at} shop a.py [tests]: good 1" and got[-1] == f"- 거절 {at} shop policy.py [tests]: good 2"
+    assert got[1:6] == [f"- 거절 {at} shop 파일 없음 [tests]: odd"] * 5
+    assert ce.refusal_lines(env.root, last=0) == [] and ce.refusal_lines(env.root, last=-2) == []
+    assert ce.refusal_lines(env.root, last="x") == [] and len(ce.refusal_lines(env.root, last=2.9)) == 2
+    # each piece has its own cap: five files show four, a name 60, the class 20, the role 12
+    row(files=["f" * 80, "b.py", "c.py", "d.py", "e.py"], cls="k" * 30 + "\nx", role="r" * 20 + "\n- 거절")
+    assert ce.refusal_lines(env.root, last=1) == [
+        f"- 거절 {at} {'r' * 12} {'f' * 60}, b.py, c.py, d.py [{'k' * 20}]: e"]
+    # a time that is not a date prints "?", and a row of another kind that only holds the word is not a refusal
+    for t in (5, 1e20, float("nan"), "x", None):
+        row(at=t, ts=t)
+        assert ce.refusal_lines(env.root, last=1) == ["- 거절 ? shop a.py [tests]: e"], t
+    row(kind="note", error='"code_edit_refused" 라는 말이 든 다른 기록')
+    row(at=NOW - 30, ts=NOW + 99, error="at before ts")
+    assert ce.refusal_lines(env.root, last=2) == ["- 거절 ? shop a.py [tests]: e", f"- 거절 {c.kst(NOW - 30)} shop a.py [tests]: at before ts"]
+
+
+def test_the_auditor_block_has_the_applied_changes_first_and_the_refusals_after(env):
+    assert _p(env)["ok"]
+    again = _p(env, now=NOW + 60)  # refused: the first change is still watched
+    assert again["ok"] is False, again
+    p = au.build_prompt(env.root, NOW + 4 * H, listed=["policy"])
+    i = p.index("## 코드 수정 (운영자가 규칙 코드를 고친 기록)")
+    block = p[i:p.index("\n## ", i + 5)]
+    assert 0 < block.index("- #1 ") < block.index("- 거절 "), block
+
+
 CODE = {"edits": [EDIT], "reason": REASON, "expect": EXPECT}
 
 
@@ -1446,6 +1527,27 @@ def test_compact_wake_applies_code_read_this_wake(o):
     o.terra = Script({"done": {}})
     o.wake("주기 점검", NOW + 60)
     assert "[코드] 수정 #1 hooks/restock.py 감시 중" in o.terra.prompts[0]
+
+
+def test_the_operator_reads_the_names_and_the_reasons_of_a_refusal_whole(o, monkeypatch):
+    # 300 characters held one long name and its reason; the second name was cut (independent check, 11-12)
+    ids = [f"tests/test_a_long_module_name.py::test_{'n' * 50}_{i}" for i in range(5)]
+    new = {"ok": False, "failed": ids, "summary": "5 failed", "error": None,
+           "reasons": {t: f"AssertionError: {i} " + "r" * 300 for i, t in enumerate(ids)}}
+    monkeypatch.setattr(ce, "default_runner", Runner(new=new))
+    o.terra = Script(
+        {"tools": [{"tool": "code_read", "args": {"file": RS}}], "keep": "helper 확인"},
+        {"done": {"code": CODE, "note": "코드 수정"}},
+    )
+    res = o.wake("주기 점검", NOW)
+    err = res["code"]["error"]
+    assert res["code"]["ok"] is False and all(t in err for t in ids), res
+    assert err.count("AssertionError: ") == 3 and err.endswith("…") and 300 < len(err) <= ce.ERROR_CHARS
+    line = [x for x in op.done_lines({}, res, NOW) if x.startswith("- 코드 수정: 거절됨. ")]
+    assert line == ["- 코드 수정: 거절됨. " + err], line
+    monkeypatch.setattr(ce, "propose", lambda *a, **k: {"ok": False, "error": "e" * 5000})
+    assert len(o._code(CODE, NOW, (RS,))["error"]) == ce.ERROR_CHARS
+    assert op.done_lines({}, {"code": {"ok": False, "error": "e" * 5000}}, NOW)[-1] == "- 코드 수정: 거절됨. " + "e" * ce.ERROR_CHARS
 
 
 def test_compact_wake_refuses_code_not_read_this_wake(o):
@@ -1528,6 +1630,7 @@ class Proc:
         (0, "....\n4 passed in 0.1s\n", True, [], None),
         (
             1,
+            "=========================== short test summary info ============================\n"
             "FAILED tests/test_a.py::test_x - assert 1\nERROR tests/test_b.py - ImportError\n"
             "1 failed, 3 passed, 1 error in 0.2s\n",
             False,

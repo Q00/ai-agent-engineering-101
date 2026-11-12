@@ -492,7 +492,7 @@ def done_lines(done, result, now):
     r = result.get("code")
     if isinstance(r, dict):
         out.append(f"- 코드 수정: " + (f"적용됨 (#{r.get('id')}, {r.get('status')})" if r.get("ok")
-                                    else f"거절됨. {str(r.get('error'))[:300]}"))
+                                    else f"거절됨. {str(r.get('error'))[:code_edit.ERROR_CHARS]}"))
     r = result.get("forum")
     if isinstance(r, dict):
         out.append(f"- 포럼 글: 대기열에 {r.get('queued', 0)}개" + (f", 거절: {r['refused']}" if r.get("refused") else ""))
@@ -1327,7 +1327,7 @@ class Operator:
         r = code_edit.propose(self.root, code.get("edits"), code.get("reason"), code.get("expect"), now, self.traj,
                               read_files=read_files, rev_weight=weight, **self._role_kw())
         return {"ok": r.get("ok"), "id": r.get("id"), "status": r.get("status"),
-                "error": c.mask(str(r["error"]), self.secrets)[:300] if r.get("error") else None,
+                "error": c.mask(str(r["error"]), self.secrets)[:code_edit.ERROR_CHARS] if r.get("error") else None,
                 "tests": (r.get("tests") or {}).get("summary")}
 
     def _forum_done(self, posts):
