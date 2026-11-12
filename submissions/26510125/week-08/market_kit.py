@@ -985,6 +985,11 @@ def outbox(market, md):
     with open(md / "outbox.sent.jsonl", "a", encoding="utf-8") as f:
         for x in sent:
             f.write(json.dumps(x, ensure_ascii=False) + "\n")
+    if len(keep) > 20:                                  # week-08: a backlog is re-POSTed every 10 s and refused; keep only the newest
+        stale, keep = keep[:-20], keep[-20:]
+        with open(md / "outbox.sent.jsonl", "a", encoding="utf-8") as f:
+            f.write(json.dumps({"dropped": len(stale), "error": "backlog over 20 lines"}) + "\n")
+        log(f"[forum] dropped {len(stale)} stale outbox lines")
     if keep:
         with open(box, "a", encoding="utf-8") as f:
             f.write("\n".join(keep) + "\n")
