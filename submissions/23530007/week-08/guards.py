@@ -525,6 +525,17 @@ def main():
                 pr_.setdefault(L_[i_ - 1]["name"], []).append(f"{part_} ahead of us")
             if i_ + 1 < len(L_):
                 pr_.setdefault(L_[i_ + 1]["name"], []).append(f"{part_} right behind us")
+        # 11-12 16:30 (user: 'can we hold inextro back?'): the nearest challenger on the projected class TOTAL
+        # (stock_rivals.json, G14) is a price rival too: the seller sits just under its median settle of each SKU and
+        # grade, so price-led buyers of its best sellers (which restock already holds) can buy them from us. Same price
+        # for every buyer. Its book is projected 4th -> 2nd (+1.8 M/h, ~.022 to its total); ours only needs its 150 M
+        # floor (projected ~1.5 B vs ~1.04 B), and price_ctl raises prices again if that floor is threatened.
+        try:
+            for n_, w_ in (json.loads((MD / "stock_rivals.json").read_text()).get("shops") or {}).items():
+                if n_ != "yms979":
+                    pr_.setdefault(n_, []).append(f"class total challenger ({w_})")
+        except (OSError, ValueError):
+            pass
         if pr_ and not DRY:
             (MD / "price_rivals.json").write_text(json.dumps({"t": now, "shops": pr_}, ensure_ascii=False))
         st["price_rivals"] = pr_
