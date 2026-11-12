@@ -142,7 +142,8 @@ def record_ask(cand, res, now):
 
 
 def _brief(cands):
-    return [{k: c[k] for k in ("shop", "sku", "V", "cap", "ask_est", "kept", "score", "p_checkout", "p_reach")}
+    return [{k: c.get(k) for k in ("shop", "sku", "V", "cap", "ask_est", "kept", "saved_est", "grade_book", "score",
+                                    "p_checkout", "p_reach")}       # saved_est / grade_book: Patch 3.6 (tools/buyer_policy)
             for c in cands]
 
 
