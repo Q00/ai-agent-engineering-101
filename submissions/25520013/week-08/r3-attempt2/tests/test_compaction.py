@@ -569,3 +569,9 @@ def test_summary_input_is_bounded(env, monkeypatch):
     m = Model(_acts(4), [SUMMARY_1, SUMMARY_2])
     make("shop", m).wake("주기 점검", NOW)
     assert m.summary_prompts and all(len(p) < len(op.SUMMARY_JOB) + 5_000 + 4_000 + len(SUMMARY_1) for p in m.summary_prompts)
+
+
+def test_summary_job_states_the_length_line():
+    """The rejecting line (SUMMARY_MAX) and the asked length are in the instruction the summary call reads."""
+    assert f"{op.SUMMARY_MAX:,}자를 넘으면" in op.SUMMARY_JOB and f"{op.SUMMARY_TARGET:,}자 안팎" in op.SUMMARY_JOB
+    assert op.SUMMARY_TARGET < op.SUMMARY_MAX
