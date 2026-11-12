@@ -580,7 +580,8 @@ def test_summary_job_states_the_length_line():
 def test_retry_after_a_failed_summary_waits_min_old_and_gets_every_result_whole(env, monkeypatch):
     """At the real values: the first summary (before step 11, 48,000 older chars) fails; the retry waits for
     COMPACT_MIN_OLD more older chars (before step 16, 78,000) and its prompt holds every older result in full, since
-    those results are marked gone once the summary is used (with SUMMARY_IN 60,000 they reached it cut, live 11-12)."""
+    those results are marked gone once the summary is used (with SUMMARY_IN 60,000 they reached it cut: verifier
+    simulation 11-12, 18 of them)."""
     root, make = env
     monkeypatch.setattr(op, "COMPACT_AT", DEFAULTS[0])
     monkeypatch.setattr(op, "COMPACT_MIN_OLD", DEFAULTS[1])
@@ -591,3 +592,18 @@ def test_retry_after_a_failed_summary_waits_min_old_and_gets_every_result_whole(
     assert [(r["step"], r["status"]) for r in rows] == [(11, "failed"), (16, "ok")]
     retry = m.summary_prompts[1]
     assert all(_obs("events", {"i": i, "j": j}) in retry for i in range(13) for j in (0, 1))
+
+
+def test_no_summary_while_the_older_part_is_under_min_old(env, monkeypatch):
+    """At the real values: a small first step and two large recent ones carry 60,000+ chars, but the older part (the
+    first step, 6,000) is under COMPACT_MIN_OLD: no summary call, the recent steps stay verbatim."""
+    root, make = env
+    monkeypatch.setattr(op, "COMPACT_AT", DEFAULTS[0])
+    monkeypatch.setattr(op, "COMPACT_MIN_OLD", DEFAULTS[1])
+    big = lambda i: {"tools": [{"tool": "events", "args": {"i": i, "j": j}} for j in range(10)], "keep": f"결론 {i}"}
+    acts = [{"tools": [{"tool": "events", "args": {"i": 0, "j": j}} for j in (0, 1)], "keep": "결론 0"}, big(1), big(2),
+            {"done": {"note": "끝"}}]
+    m = Model(acts, [SUMMARY_1])
+    make("shop", m).wake("주기 점검", NOW)
+    assert m.summary_prompts == [] and _rows(root, "compact") == []
+    assert all(_marker(2, j) in m.prompts[3] for j in range(10))
