@@ -195,6 +195,11 @@ def build(hours=6.0):
                           "top": [(r["rank_end"], r["player"], r["total_end"]) for r in comp["rows"][:4]]}
     except Exception as e:  # noqa: BLE001
         out["end_error"] = repr(e)[:120]
+    try:                                  # 11-12: odds instead of one point (ops/buyer_end.total_odds)
+        import buyer_end
+        out["odds"] = buyer_end.total_odds()
+    except Exception as e:  # noqa: BLE001
+        out["odds_error"] = repr(e)[:120]
     # what needs the user's eye: (level, text), level "warn" or "info"
     chk = []
     shop, kit, gs = me[1], status.kit_state(), status.read(".market/guard_state.json", {}) or {}
@@ -230,9 +235,11 @@ def build(hours=6.0):
     p2 = out["buyer"]["pace_2h"]
     if p2.get("v") is not None and out["buyer"]["m_star"] and p2["v"] < out["buyer"]["m_star"]:
         chk.append(("warn", f"buyer 건당 값 {p2['v']}이 기준({out['buyer']['m_star']:.3f})보다 낮음: saved가 내려가는 중"))
-    e = out.get("end")
-    if e and e["rank"] > out["ranks"][0]["rank"]:
-        chk.append(("warn", f"지금 추세 그대로면 종료 시 전체 {e['rank']}위로 내려감 (종료 예상 참고)"))
+    od = out.get("odds")
+    if od and od["p_first"] < 0.5:
+        chk.append(("warn", f"종료 시 전체 1위 확률 {od['p_first']:.0%}: {od['rival']}에게 밀릴 가능성이 더 큼 (종료 예상 참고)"))
+    elif od and od["p_first"] < 0.7:
+        chk.append(("info", f"종료 시 전체 1위 확률 {od['p_first']:.0%} (경쟁자 {od['rival']}, 박빙)"))
     out["check"] = chk
     out["shop_state"] = {"alive": shop.get("alive"), "kit": kit.get("kit_running"), "last_task_min": task_age}
     pc = status.read(".market/price_ctl.json", {}) or {}
@@ -328,9 +335,14 @@ def markdown(o):
     if o.get("end"):
         e = o["end"]
         others = ", ".join(f"{r}위 {p} {t:.2f}" for r, p, t in e["top"] if p != NAME)
-        L += ["", f"### 4. 종료 시 예상 (최근 {e['window_h']:.0f}시간 추세 그대로일 때)", "",
-              f"- **우리 {e['rank']}위** ({e['total']:.3f}): 상점 {e['shop'][0]:.3f} → {e['shop'][1]:.3f}, buyer {e['buyer'][0]:.3f} → {e['buyer'][1]:.3f}",
-              f"- 다른 학생: {others}", "- 차이 0.03 이내는 동률로 봐야 함"]
+        od = o.get("odds")
+        L += ["", "### 4. 종료 시 예상", ""]
+        if od:
+            L += [f"- **전체 1위 확률 {od['p_first']:.0%}** (주 경쟁자 {od['rival']}), 2위와 격차 중간값 {od['lead_med']:+.3f} "
+                  f"(10~90% 범위 {od['lead_p10']:+.3f} ~ {od['lead_p90']:+.3f})",
+                  f"- 계산: 다른 학생은 최근 {od['window_h']:.0f}시간 속도 그대로(±30% 변동), 우리 buyer는 최근 {od['us_hours']}시간 속도 "
+                  f"(시간당 {od['us_pace'][0]}건 × v {od['us_pace'][1]}), {od['runs']}번 시뮬레이션"]
+        L += [f"- 6시간 추세 한 줄 계산: 우리 {e['rank']}위 ({e['total']:.3f}), {others}"]
     L += ["", "### 5. 확인할 것", ""]
     L += [f"- {ICON[lv]} {c}" for lv, c in o["check"]] or ["- 없음 (상점 정상 운영 중)"]
     if o.get("api"):
@@ -358,9 +370,13 @@ def text(o):
             L.append(f"  saved {o['buyer']['saved']:.4f} (반 {o['buyer']['saved_rank']}위)")
     if o.get("end"):
         e = o["end"]
-        L += ["", f"[종료 예상] 우리 {e['rank']}위 ({e['total']:.3f})",
-              f"  상점 {e['shop'][0]:.3f} → {e['shop'][1]:.3f}, buyer {e['buyer'][0]:.3f} → {e['buyer'][1]:.3f}",
-              "  " + ", ".join(f"{r}위 {p} {t:.2f}" for r, p, t in e["top"] if p != NAME)]
+        od = o.get("odds")
+        L += ["", "[종료 예상]"]
+        if od:
+            L += [f"  전체 1위 확률 {od['p_first']:.0%} (경쟁자 {od['rival']})",
+                  f"  격차 {od['lead_med']:+.3f} (범위 {od['lead_p10']:+.3f}~{od['lead_p90']:+.3f})"]
+        L += [f"  6시간 추세 한 줄: 우리 {e['rank']}위 ({e['total']:.3f}), "
+              + ", ".join(f"{r}위 {p} {t:.2f}" for r, p, t in e["top"] if p != NAME)]
     if not o["check"]:
         L += ["", "확인할 것: 없음"]
     return "\n".join(L)
