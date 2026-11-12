@@ -328,9 +328,9 @@ def restock_candidates(inv, catalog, demand, journal, config, now=None):
     count = {}
     for u in units:
         count[u["sku"]] = count.get(u["sku"], 0) + 1
-    from .shop_growth import inventory_limit
+    from .shop_growth import inventory_limit,stock_caps_enabled
     target = inventory_limit(config)
-    if len(units) >= target:
+    if target is not None and len(units) >= target:
         return []
     capacity = cash_capacity(inv, journal, config, now)
     if config.get('market_control_enabled'):
@@ -379,7 +379,7 @@ def restock_candidates(inv, catalog, demand, journal, config, now=None):
         factor = surge_factor(inv, sku)
         per_unit = supply_bound(p, inv, sku)
         commitment = per_unit * (1 + fee)
-        if count.get(sku, 0) >= config["restock_max_qty"] or commitment > spendable:
+        if (stock_caps_enabled(config) and count.get(sku, 0) >= config["restock_max_qty"]) or commitment > spendable:
             continue
         if p.get("kind") == "food" and (p.get("shelf_hours") or 0) < 6:
             continue
@@ -408,7 +408,8 @@ def restock_candidates(inv, catalog, demand, journal, config, now=None):
         needed=desired-count.get(sku,0)
         if needed<=0:
             continue
-        qty = min(20, config['restock_max_qty'] - count.get(sku, 0),
+        held_room=config['restock_max_qty']-count.get(sku,0) if stock_caps_enabled(config) else 20
+        qty = min(20, held_room,
                   needed, max(0, math.floor(spendable / commitment)))
         if qty <= 0:
             continue
@@ -447,7 +448,7 @@ def restock_candidates(inv, catalog, demand, journal, config, now=None):
             price,refund_stress=terms['price'],terms['refund_stress']
         expected_storage = cost_ratio * p['list_price'] * .01 * holding_hours / 24 if fee else 0
         # Small lots: only own observed repeat sales justify multiple new units.
-        if probe_sku:
+        if probe_sku and stock_caps_enabled(config):
             qty = 1
         existing_exposure = sum(u.get('cost', 0) * (1 + fee) for u in units if u['sku'] == sku)
         max_exposure = min(spendable, max(0, inv.get('balance', 0) *
@@ -484,6 +485,7 @@ def restock_candidates(inv, catalog, demand, journal, config, now=None):
                                         'refund_stress': refund_stress, 'exploration': probe_sku,
                                         "adaptive_category_weight": weight}})
         candidates[-1]['evidence'].update(kind=p.get('kind'), list_price=p['list_price'],
+                                           uncapped_inventory=not stock_caps_enabled(config),
                                            growth=growth, arrival_rate_scenario=rate,
                                            planning_hours=hours,scenario_unit_cost=cost_ratio*p['list_price'],
                                            resale_price_scenario=price,resale_terms_scenario=terms)

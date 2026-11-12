@@ -9,14 +9,37 @@ import math
 def poisson_tail(arrivals, quantity):
     if quantity<=0:return 1.0
     if arrivals<=0:return 0.0
-    term=math.exp(-arrivals);cdf=term
-    for index in range(1,quantity):
-        term*=arrivals/index;cdf+=term
-    return max(0.0,min(1.0,1-cdf))
+    # Sum from the requested boundary toward the smaller tail. Starting at
+    # exp(-lambda) underflows for large demand once fixed quantity caps are gone.
+    if not math.isfinite(arrivals):raise ValueError('nonfinite_poisson_mean')
+    k=int(quantity)
+    if k>arrivals:
+        term=math.exp(k*math.log(arrivals)-arrivals-math.lgamma(k+1));total=term
+        while term>max(1e-300,total*1e-14):
+            k+=1;term*=arrivals/k;total+=term
+        return max(0.,min(1.,total))
+    k-=1;term=math.exp(k*math.log(arrivals)-arrivals-math.lgamma(k+1));cdf=term
+    while k>0 and term>max(1e-300,cdf*1e-14):
+        term*=k/arrivals;k-=1;cdf+=term
+    return max(0.,min(1.,1-cdf))
+
+
+def stock_caps_enabled(config):
+    return config.get('shop_inventory_caps_enabled',True)
+
+
+def poisson_target(arrivals,service):
+    """Finite demand quantile, without an arbitrary inventory-unit ceiling."""
+    if not math.isfinite(arrivals) or arrivals<0:raise ValueError('invalid_demand_mean')
+    low=1;high=max(1,math.ceil(arrivals+10*math.sqrt(arrivals)+10))
+    while low<high:
+        mid=(low+high)//2
+        if poisson_tail(arrivals,mid+1)>1-service:low=mid+1
+        else:high=mid
+    return low
 
 
 def target_stock(rate, paid, config, public_qualified=False, public_limit=6):
-    maximum=min(20,config['restock_max_qty'])
     arrivals=max(0,rate)*config.get('supply_cycle_seconds',1200)/3600
     supported=paid>=3 or public_qualified and config.get('objective_feedback_enabled')
     if supported and config.get('objective_feedback_enabled'):
@@ -24,6 +47,8 @@ def target_stock(rate, paid, config, public_qualified=False, public_limit=6):
     # Proven repeat demand can use the legal 20-unit lot capacity. A raw
     # request or peer announcement alone never qualifies as paid evidence.
     service=config.get('shop_stock_service_level',.9) if paid>=3 else .8 if supported else .65
+    if not stock_caps_enabled(config):return poisson_target(arrivals,service)
+    maximum=min(20,config['restock_max_qty'])
     target=1
     while target<maximum and poisson_tail(arrivals,target+1)>1-service:
         target+=1
@@ -74,8 +99,18 @@ def marginal(candidate,quantity,held=0):
     evidence=candidate['evidence']
     rate=evidence.get('arrival_rate_scenario',0)
     horizon=evidence.get('planning_hours',6)
-    probability=(evidence.get('sale_probability_scenario',.25) if evidence.get('exploration') else
-                 poisson_tail(max(0,rate)*horizon,held+quantity))
+    if evidence.get('exploration') and not evidence.get('uncapped_inventory'):
+        probability=evidence.get('sale_probability_scenario',.25)
+    else:
+        arrivals=max(0,rate)*horizon
+        if evidence.get('exploration'):
+            prior=max(0.,min(.999999,evidence.get('sale_probability_scenario',.25)))
+            # Unknown is not known-zero demand. Apply the first-unit discovery
+            # prior once to an arrival process, then price additional depth.
+            arrivals=max(arrivals,-math.log1p(-prior))
+        probability=poisson_tail(arrivals,held+quantity)
+        if evidence.get('exploration'):
+            probability=min(evidence.get('sale_probability_scenario',.25),probability)
     holding=min(horizon,max(1/3,(held+quantity)/max(.01,rate)))
     price=evidence['resale_price_scenario'];cost=evidence['scenario_unit_cost']
     revenue=probability*price*(1-evidence['refund_stress'])
@@ -86,7 +121,7 @@ def marginal(candidate,quantity,held=0):
 
 
 def allocate_velocity(candidates,inv,capacity,config,existing,merchant):
-    total=capacity['spendable'];slots=max(0,config['inventory_target_units']-len(existing))
+    total=capacity['spendable'];slots=planning_slots(config,existing,candidates)
     held={};coverage=set();weights=merchant.get('coverage_weights',{})
     for unit in existing:
         held[unit['sku']]=held.get(unit['sku'],0)+1
@@ -142,8 +177,45 @@ def allocate_velocity(candidates,inv,capacity,config,existing,merchant):
 
 def inventory_limit(config):
     """A bounded capacity ceiling, never a requirement to buy or spend cash."""
+    if not stock_caps_enabled(config):return None
     base=config['inventory_target_units']
     return max(base,min(240,config.get('shop_inventory_ceiling',180))) if config.get('shop_championship_enabled') else base
+
+
+def planning_slots(config,existing,candidates):
+    limit=inventory_limit(config)
+    return sum(c['qty'] for c in candidates) if limit is None else max(0,limit-len(existing))
+
+
+def demand_diagnostics(inv,merchant,config):
+    """Expose target-setting mechanisms to background research, never commands."""
+    from collections import Counter
+    counts=Counter(u['sku'] for u in inv.get('units',[]))
+    rows=[];low=repeat=shortfall=0
+    for sku,held in counts.items():
+        g=merchant.get('skus',{}).get(sku,{})
+        paid=g.get('positive_paid_while_available',0)
+        trend=config.get('shop_sku_trend_factors',{}).get(sku,1)
+        rate=g.get('paid_arrival_rate_scenario',0) if paid>=3 else g.get('arrival_rate_scenario',0)
+        rate=max(.01,rate*trend) if paid>=3 else max(0,rate*trend)
+        public=sku in config.get('shop_public_demand_skus',[])
+        target=target_stock(rate,paid,config,public,config.get('shop_public_demand_caps',{}).get(sku,6))
+        low+=target<=2;repeat+=paid>=3;shortfall+=max(0,target-held)
+        rows.append({'sku':sku,'held':held,'target_scenario':target,'rate_per_hour_scenario':rate,
+            'rate_source':'own_positive_paid' if paid>=3 else 'public_prior_or_request_conversion',
+            'own_positive_paid':paid,'public_qualified':public,
+            'observed_availability_hours':g.get('available_hours_observed'),
+            'lost_exact_requests_not_directly_added_to_rate':g.get('lost_exact_requests',0)})
+    return {'inventory_unit_caps_enabled':stock_caps_enabled(config),
+        'total_unit_ceiling':inventory_limit(config),'held_skus':len(counts),
+        'held_skus_target_at_most_two':low,'held_skus_with_repeat_paid_evidence':repeat,
+        'target_shortfall_units_scenario':shortfall,'merchant_context_at':merchant.get('at'),
+        'supply_cycle_seconds':config.get('supply_cycle_seconds',1200),
+        'repeat_coverage_cycles':max(1,min(3,config.get('shop_demand_horizon_cycles',1))),
+        'public_only_coverage_cycles':max(1,min(2,config.get('shop_demand_horizon_cycles',1))),
+        'public_equal_share_prior_multiplier':.5,
+        'examples':sorted(rows,key=lambda r:r['target_scenario']-r['held'],reverse=True)[:4],
+        'interpretation':'Low rate/coverage can retain small targets without a unit cap. Prior and Poisson arrivals are scenarios, not identified hidden demand. Lost requests require feasibility attribution before adding demand.'}
 
 
 def allocate_championship(candidates,inv,capacity,config,existing,merchant):
@@ -157,7 +229,7 @@ def allocate_championship(candidates,inv,capacity,config,existing,merchant):
     velocity=allocate_velocity(candidates,inv,capacity,cfg,existing,merchant)
     total=capacity['spendable'];held={};selected={};used=probes=0;categories={}
     for u in existing:held[u['sku']]=held.get(u['sku'],0)+1
-    slots=max(0,cfg['inventory_target_units']-len(existing))
+    slots=planning_slots(cfg,existing,candidates)
     def cost(c):return c['capital_commitment']/c['qty']
     def selected_qty(c):return len(selected.get(c['sku'],{}).get('deltas',[]))
     def delta(c):return marginal(c,selected_qty(c)+1,held.get(c['sku'],0))
@@ -166,7 +238,8 @@ def allocate_championship(candidates,inv,capacity,config,existing,merchant):
         return max(0,c.get('rank_progress_surrogate') or 0)*d['book']/max(1,c['expected_delta']['book'])*weight
     def feasible(c):
         q=selected_qty(c)
-        return (slots>0 and q<min(c['qty'],20,max(0,cfg['restock_max_qty']-held.get(c['sku'],0))) and used+cost(c)<=total+1e-6 and
+        held_room=max(0,cfg['restock_max_qty']-held.get(c['sku'],0)) if stock_caps_enabled(cfg) else 20
+        return (slots>0 and q<min(c['qty'],20,held_room) and used+cost(c)<=total+1e-6 and
                 (c['sku'] in selected or len(selected)<min(10,cfg['restock_max_lines'])) and
                 categories.get(c['category'],0)+cost(c)<=total*.6+1e-6 and
                 (not c['evidence']['exploration'] or probes+cost(c)<=total*cfg['exploration_fraction']+1e-6) and

@@ -98,6 +98,7 @@ def _consume(journal, config, strategy, inv, now=None):
     if option is None:
         return None
     counts = Counter(u['sku'] for u in inv.get('units', []) if not u.get('expires_at') or u['expires_at'] > now)
+    from .shop_growth import stock_caps_enabled
     lines, committed = [], 0
     for row in option['buy'][:config['restock_max_lines']]:
         sku = row['sku']
@@ -105,8 +106,8 @@ def _consume(journal, config, strategy, inv, now=None):
                 or sku not in catalog or type(packet['unit_commitments'].get(sku)) not in (int,float)
                 or not __import__('math').isfinite(packet['unit_commitments'][sku]) or packet['unit_commitments'][sku]<=0):
             return None
-        qty = min(row['qty'], max(0, row['qty'] - max(0, counts[sku] - packet['held'].get(sku, 0))),
-                  max(0, config['restock_max_qty'] - counts[sku]))
+        held_room=max(0,config['restock_max_qty']-counts[sku]) if stock_caps_enabled(config) else 20
+        qty = min(row['qty'], max(0, row['qty'] - max(0, counts[sku] - packet['held'].get(sku, 0))),held_room)
         if qty:
             lines.append({'sku': sku, 'qty': qty})
             committed += packet['unit_commitments'][sku] * qty

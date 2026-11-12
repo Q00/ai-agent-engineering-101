@@ -173,6 +173,13 @@ def call(journal, config, facts, evidence, role, proposal=None, client=None, key
             'biased and preserve format exploration. No vote trading, unverifiable posts or quality promises. '
             'Forum raw score contributes .3 directly, not a second percentile term. '
             'Explain which numerical alternatives justify changing or retaining the current policy.')
+    if config.get('shop_inventory_caps_enabled') is False:
+        instructions+=(' Inventory unit ceilings are disabled: there is no total-held or per-SKU-held '
+            'quantity cap and no 1/2/6/20-unit demand-target ceiling. The legal supply limit remains 20 per '
+            'POST. initial_batch_limit is a legacy schema field with no inventory authority in this mode. '
+            'Quantity follows finite demand quantiles, marginal Book, available cash, storage/refund reserves '
+            'and executable supply time. Probe-unit probability decreases with existing inventory and depth. '
+            'Distinguish estimated low demand from a quantity ceiling; do not request buying just to fill space.')
     from .objective_context import curate
     try:
         facts, compacted = curate(facts)
@@ -327,7 +334,7 @@ def update(journal, config, now=None, client=None, key=None):
     facts={'observed_at':now,'market':market,'control':{k:control.get(k) for k in ('status','reasons','leader_gap','suggestions')},
            'framework':{k:framework.get(k) for k in ('issues','evaluation','segments')},
            'supply_plan':{k:plan.get(k) for k in ('window','phase','selected','options')},
-           'parameters':{k:config.get(k) for k in ('buyer_contract_probe_percent','shop_stock_service_level')},
+           'parameters':{k:config.get(k) for k in ('buyer_contract_probe_percent','shop_stock_service_level','shop_inventory_caps_enabled')},
            'meta':journal.get('cycle-meta-state',{}),
            'evidence_ids':evidence}
     if capability_brief:

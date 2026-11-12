@@ -139,7 +139,7 @@ def update(journal, config, now=None, force=False):
         if regime == 'shock': cycles = min(cycles, 1.5)
         if 'stock_coverage' in intents:
             patches['shop']['shop_demand_horizon_cycles'] = cycles
-            if len(inv.get('units', [])) >= .8*config.get('shop_inventory_ceiling', 180):
+            if config.get('shop_inventory_caps_enabled',True) and len(inv.get('units', [])) >= .8*config.get('shop_inventory_ceiling', 180):
                 patches['shop']['shop_inventory_ceiling'] = min(240, config.get('shop_inventory_ceiling', 180)+30)
         else: reasons.append('stock_coverage_review_pending')
     if evidence_ok and segments['goods']['closed'] >= 20 and segments['goods']['conversion'] < .3:
@@ -164,7 +164,7 @@ def update(journal, config, now=None, force=False):
                 factors[sku['sku']]=round(max(.75,min(1.5,1+(ratio-1)*.5))*20)/20
             if n>=20 and current>=10 and sku.get('buyers20',0)>=3:
                 qualified.append(sku['sku'])
-                if agent_selected:
+                if agent_selected and config.get('shop_inventory_caps_enabled',True):
                     caps[sku['sku']]=min(selected['initial_batch_limit'],20 if current>=50 and sku.get('buyers20',0)>=5 else 6)
         if factors:patches['shop']['shop_sku_trend_factors']=factors
         if qualified:patches['shop']['shop_public_demand_skus']=sorted(qualified)

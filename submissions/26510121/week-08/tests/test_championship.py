@@ -12,7 +12,7 @@ from test_shop_velocity import candidate
 
 
 def cfg(**patch):
-    return dict(policy(),**dict(shop_championship_enabled=True,buyer_championship_enabled=True,**patch))
+    return dict(policy(),**dict(shop_inventory_caps_enabled=True,shop_championship_enabled=True,buyer_championship_enabled=True,**patch))
 
 
 def test_call_slot_prefers_absolute_growth_when_cash_is_abundant():

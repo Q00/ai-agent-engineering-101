@@ -167,12 +167,14 @@ def shop_alternatives(journal, config, now):
     with journal.connect() as db:
         reserved = {r[0] for r in db.execute('SELECT unit FROM reservations WHERE until>?',(now,))}
     unreserved = sum(u.get('unit') not in reserved for u in units)
+    from .shop_growth import demand_diagnostics
+    diagnostic=demand_diagnostics(dict(inv,units=units),shadow.get('merchant_context_v5',{}),cfg)
     return {'at':now, 'rules_hash':journal.get('market_rules',{}).get('sha256'),
         'physical_live_units':len(units),'unreserved_live_units':unreserved,'inventory_ceiling':inventory_limit(cfg),
         'food_under_2h_units':sum(u.get('kind')=='food' and remaining(u,now)<2 for u in units),
         'cash':inv.get('balance'), 'spendable':cap['spendable'],
         'refund_liability':cap['refund_liability'],'execution_guard_reasons':control.get('reasons',[]),
-        'execution_permitted':False, 'alternatives':rows,
+        'execution_permitted':False, 'alternatives':rows,'demand_diagnostics':diagnostic,
         'note':'Shared-data forecasts, not measured lift. Cash converts to inventory; acquisition alone adds no Book. '
                'Stars effect unmodeled; retain validated quality and full refund guards. '
                'Select repeat-demand depth by marginal Book/rank, cash and supply delay; raw peer quantities are not targets.'}

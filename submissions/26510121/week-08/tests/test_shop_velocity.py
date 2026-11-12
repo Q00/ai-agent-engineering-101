@@ -11,7 +11,7 @@ from r3.model import Chooser
 
 def config(**kwargs):
     return dict(policy(),**dict(shop_velocity_enabled=True,shop_fast_execution_enabled=True,
-        restock_max_qty=12,**kwargs))
+        restock_max_qty=12,shop_inventory_caps_enabled=True,**kwargs))
 
 
 def test_paid_demand_can_batch_beyond_six_but_unknown_demand_cannot():

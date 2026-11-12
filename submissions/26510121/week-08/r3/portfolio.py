@@ -15,7 +15,8 @@ def allocate(candidates, inv, capacity, config, existing_units, merchant=None):
     if config.get('shop_growth_v5'):
         return allocate_growth(candidates, inv, capacity, config, existing_units, merchant or {})
     total = capacity['spendable']
-    slots = config['inventory_target_units'] - len(existing_units)
+    from .shop_growth import planning_slots
+    slots = planning_slots(config,existing_units,candidates)
     chosen, category_spent, bucket_spent = [], {}, {'core': 0, 'cashflow': 0, 'discovery': 0}
     pressure = min(1, capacity['refund_liability'] / max(1, inv.get('balance', 0)))
     core_fraction = max(.3, .7 - .5 * pressure)
@@ -86,7 +87,8 @@ def allocate_growth(candidates, inv, capacity, config, existing_units, merchant)
         coverage.update(merchant.get('skus', {}).get(unit['sku'], {}).get('coverage_keys', []))
     selected, cat_used = {}, {}
     used = probes = 0
-    slots = config['inventory_target_units'] - len(existing_units)
+    from .shop_growth import planning_slots
+    slots = planning_slots(config,existing_units,candidates)
     def per_unit(c): return c['capital_commitment'] / c['qty']
     def feasible(c):
         quantity = selected.get(c['sku'], {}).get('qty', 0)

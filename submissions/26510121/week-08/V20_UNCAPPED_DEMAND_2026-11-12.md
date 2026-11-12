@@ -121,4 +121,18 @@ in uncapped mode. No extra LLM call is added to Main.
 
 The current frozen portfolio is unchanged, and the new boundary behavior is
 tested. Future realized profit, ratings and rank superiority are not proven.
-Deployment and live verification are recorded after promotion.
+Deployment and live verification are recorded below.
+
+## Deployment
+
+Source promotion completed at **14:34:41 KST**, manifest
+`logs/v20-source-promotion-20261112T053441246238Z.json`. Buyer was drained before
+negotiation/payment; the old watcher and runtime released their leases. Identity,
+credentials, cash, stock, reservations and ledger were preserved. New runtime:
+PID 15636, session `6689840b259d4bf8989670719a3bff4e`.
+
+The source/config check confirms `inventory_limit=None` and unbounded demand
+targets in the new mode. Startup public tunnel readiness and fresh background
+demand diagnostics are checked separately; a source copy is not connectivity
+proof. Supply is currently closed, so actual new supply execution is not yet
+evidence for this release's quantity behavior.

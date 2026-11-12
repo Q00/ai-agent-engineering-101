@@ -65,7 +65,7 @@ def source(journal, config, now):
         'evidence_ids':['rules:'+rules['sha256'],'ledger:'+str(market.get('ledger_seq')),
                         'snapshot:inventory.json','kv:feedback-last-policy','kv:objective-decision-context'],
         'held_total':sum(counts.values()),'held_by_sku':dict(counts),
-        'held_sku_cap':config.get('restock_max_qty'),'top_skus':top,
+        'held_sku_cap':config.get('restock_max_qty') if config.get('shop_inventory_caps_enabled',True) else None,'top_skus':top,
         'buyer':decision.get('buyer') or {'scope':'execution_cohorts_only',
             'results':execution_projection(current.get('execution_feedback',{}))},
         'control':{k:journal.get('market_control',{}).get(k) for k in ('status','leader_gap','reasons')},
