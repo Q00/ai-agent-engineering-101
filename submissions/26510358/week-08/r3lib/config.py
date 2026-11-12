@@ -280,6 +280,11 @@ BUYER_THRESHOLD_BAND = 0.20         # the score model may move the threshold thi
 FIRST_OFFER_RATIO = 0.55            # first offer as a share of list price
 MAX_OFFERS = 6
 SHOPS_TO_TRY = 3
+BUYER_FANOUT_SHARE = 0.20          # canary (2026-11-12): this share of orders asks every candidate shop at once and
+                                    #   negotiates with the cheapest quotes first (cheapest shop 9.3% of list under the
+                                    #   median one on the same SKU and grade; we paid 8.8% over the cheapest)
+BUYER_FANOUT_MAX = 8               # shops asked at once (one best candidate each)
+BUYER_QUOTE_TIMEOUT_S = 20         # quotes not in by then are ignored and cancelled when they come
 HOURS_MARGIN = 0.25                 # food must last use_within_hours + this (2 h refused 8 deals worth paying)
 
 

@@ -10,6 +10,8 @@ list saved, not won; until 2026-11-06 the score was in won and favoured big-tick
 The last JSON line is what the kit reads. An order without the Round 3 fields is declined.
 """
 import argparse
+import hashlib
+import threading
 import json
 import os
 import re
@@ -186,13 +188,22 @@ def stated_shelf_hours(text):
     return float(m.group(1)) if m else None
 
 
-def negotiate(c, order, deadline):
-    """Returns (receipt or None, transcript)."""
-    client = a2a.Client(c["shop"], timeout=60)
+def opening_line(c, order):
     want = f"I want to buy {c['item_name']} ({c['sku']})."
     if c["kind"] == "food":
         want += f" Need at least {accept_policy(order)['min_hours_left']:.0f} h of shelf life."
-    t = client.send(want)
+    return want
+
+
+def negotiate(c, order, deadline, opened=None):
+    """Returns (receipt or None, transcript). opened: (client, first task, our first line) when the shop was already
+    asked (fan-out quotes); the talk goes on in that task."""
+    if opened:
+        client, t, want = opened
+    else:
+        client = a2a.Client(c["shop"], timeout=60)
+        want = opening_line(c, order)
+        t = client.send(want)
     lines, ask, offer, n, final = [("me", want), ("shop", a2a.said(t))], None, None, 0, False
     try:
         if c["kind"] == "food":
@@ -272,6 +283,115 @@ def valid(rec, c, order):
     return None
 
 
+def fanout_arm(order_id):
+    """True for the BUYER_FANOUT_SHARE of orders that get fan-out quotes; stable per order id."""
+    h = int(hashlib.sha256(str(order_id).encode()).hexdigest()[:8], 16)
+    return h % 10_000 < config.BUYER_FANOUT_SHARE * 10_000
+
+
+def fanout_quotes(cands, order):
+    """Ask each shop (its best candidate, up to BUYER_FANOUT_MAX shops) at once. Returns [(c, opened, ask)] of the
+    shops that answered within BUYER_QUOTE_TIMEOUT_S and can sell, cheapest expected saved first; every other open
+    task is cancelled, a late one as soon as it answers."""
+    picked, seen = [], set()
+    for c in cands:
+        if c["shop"] not in seen:
+            seen.add(c["shop"])
+            picked.append(c)
+        if len(picked) >= config.BUYER_FANOUT_MAX:
+            break
+    lock, closed, got = threading.Lock(), [False], []
+
+    def ask_one(c):
+        client = a2a.Client(c["shop"], timeout=60)
+        want = opening_line(c, order)
+        try:
+            t = client.send(want)
+        except Exception:
+            client.close()
+            return
+        with lock:
+            if not closed[0]:
+                got.append((c, (client, t, want)))
+                return
+        client.cancel(t.get("id"))                     # answered after the deadline: release the shop's unit
+        client.close()
+
+    threads = [threading.Thread(target=ask_one, args=(c,), daemon=True) for c in picked]
+    for th in threads:
+        th.start()
+    end = time.time() + config.BUYER_QUOTE_TIMEOUT_S
+    for th in threads:
+        th.join(max(0.0, end - time.time()))
+    with lock:
+        closed[0] = True
+        answers = list(got)
+    out, need = [], accept_policy(order).get("min_hours_left") if order.get("kind") == "food" else None
+    for c, (client, t, want) in answers:
+        said = a2a.said(t)
+        left = stated_shelf_hours(said) if c["kind"] == "food" else None
+        if a2a.state(t) != "TASK_STATE_INPUT_REQUIRED" or (left is not None and need and left < need):
+            client.cancel(t.get("id"))
+            client.close()
+            continue
+        try:
+            ask = read_ask(said, c)
+        except Exception:
+            ask = None
+        out.append((c, (client, t, want), ask))
+    key = lambda x: -(1 - x[2] / x[0]["list"]) * x[0].get("reliability", 1.0) if x[2] else 1.0
+    return sorted(out, key=key)
+
+
+def close_quotes(rest):
+    for _, (client, t, _), _ in rest:
+        client.cancel(t.get("id"))
+        client.close()
+
+
+def run_order(cands, order, mem, deadline, arm="serial"):
+    """Try shops until one deal passes valid(); returns the line the kit reads."""
+    quotes = fanout_quotes(cands, order) if arm == "fanout" else None
+    if quotes is not None:
+        decision_log({"order": order.get("order"), "arm": arm, "asked": min(len({c["shop"] for c in cands}),
+                      config.BUYER_FANOUT_MAX), "quotes": [(c["shop"], c["sku"], ask, c["list"]) for c, _, ask in quotes]})
+        plan = [(c, op) for c, op, _ in quotes]
+    else:
+        plan = [(c, None) for c in cands]
+    tried = set()
+    try:
+        while plan:
+            c, op = plan.pop(0)
+            if c["shop"] in tried or len(tried) >= config.SHOPS_TO_TRY or time.time() > deadline - 20:
+                if op:
+                    close_quotes([(c, op, None)])
+                continue
+            tried.add(c["shop"])
+            try:
+                rec, talk = negotiate(c, order, min(deadline, time.time() + PER_SHOP_S), opened=op)
+            except Exception as e:
+                rec, talk = None, {"error": f"{type(e).__name__}: {str(e)[:160]}"}
+            problem = valid(rec, c, order)
+            mem.record_negotiation("buyer", order.get("order"), c["shop"], c["sku"], talk.get("ask"),
+                                   rec and rec.get("price"), talk.get("lines"), "deal" if not problem else "no_deal")
+            decision_log({"order": order.get("order"), "arm": arm, "shop": c["shop"], "sku": c["sku"],
+                          "max_pay": c["max_pay"], "hint": c.get("hint"), "claim": rec and rec.get("claim"),
+                          "warranty_hours": rec and rec.get("warranty_hours"),
+                          "talk": talk, "problem": problem, "price": rec and rec.get("price")})
+            if problem:
+                say("no_deal", shop=c["name"], reason=problem, ask=talk.get("ask"), offer=talk.get("offer"))
+                continue
+            mem.record_purchase_intent(order, c["shop"], c["name"], rec)
+            say("deal", shop=c["name"], sku=c["sku"], price=rec["price"], list=c["list"], arm=arm)
+            return {"shop": c["shop"], "receipt": rec, "stars": 4,
+                    "review": f"Agreed {c['item_name']} at {rec['price']} (list {c['list']}, "
+                              f"surplus {c['list'] - rec['price']}).",
+                    "accept": accept_policy(order, rec)}
+        return {"shop": "", "receipt": None, "stars": None, "review": None}
+    finally:
+        close_quotes([(c, op, None) for c, op in plan if op])
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--shops", required=True)
@@ -309,7 +429,8 @@ def main():
         say("score_model_error", error=str(e)[:200])
     theta = pricing.buyer_threshold(model_theta)
     cands = candidates(order, shops, mem, mem.my_shop_urls(), theta=theta)
-    decision_log({"order": order.get("order"), "category": order.get("category"), "budget": a.budget,
+    arm = "fanout" if fanout_arm(order.get("order")) else "serial"
+    decision_log({"order": order.get("order"), "arm": arm, "category": order.get("category"), "budget": a.budget,
                   "theta": round(theta, 4), "model_theta": model_theta and round(model_theta, 4),
                   "kind": order.get("kind"), "use_within_hours": order.get("use_within_hours"),
                   "candidates": cands[:8], "filter": getattr(candidates, "last_filter", None)})
@@ -318,33 +439,9 @@ def main():
         mem.put("unmet_" + str(order.get("order")), {"category": order.get("category"), "ts": time.time()})
         print(json.dumps({"shop": "", "receipt": None, "stars": None, "review": None}))
         return
-    tried = set()
-    for c in cands:
-        if c["shop"] in tried or len(tried) >= config.SHOPS_TO_TRY or time.time() > deadline - 20:
-            continue
-        tried.add(c["shop"])
-        try:
-            rec, talk = negotiate(c, order, min(deadline, time.time() + PER_SHOP_S))
-        except Exception as e:
-            rec, talk = None, {"error": f"{type(e).__name__}: {str(e)[:160]}"}
-        problem = valid(rec, c, order)
-        mem.record_negotiation("buyer", order.get("order"), c["shop"], c["sku"], talk.get("ask"),
-                               rec and rec.get("price"), talk.get("lines"), "deal" if not problem else "no_deal")
-        decision_log({"order": order.get("order"), "shop": c["shop"], "sku": c["sku"], "max_pay": c["max_pay"],
-                      "hint": c.get("hint"), "claim": rec and rec.get("claim"),
-                      "warranty_hours": rec and rec.get("warranty_hours"),
-                      "talk": talk, "problem": problem, "price": rec and rec.get("price")})
-        if problem:
-            say("no_deal", shop=c["name"], reason=problem, ask=talk.get("ask"), offer=talk.get("offer"))
-            continue
-        mem.record_purchase_intent(order, c["shop"], c["name"], rec)
-        surplus = c["list"] - rec["price"]
-        say("deal", shop=c["name"], sku=c["sku"], price=rec["price"], list=c["list"], seconds=round(time.time() - started))
-        print(json.dumps({"shop": c["shop"], "receipt": rec, "stars": 4,
-                          "review": f"Agreed {c['item_name']} at {rec['price']} (list {c['list']}, surplus {surplus}).",
-                          "accept": accept_policy(order, rec)}, ensure_ascii=False))
-        return
-    print(json.dumps({"shop": "", "receipt": None, "stars": None, "review": None}))
+    out = run_order(cands, order, mem, deadline, arm=arm)
+    say("done", arm=arm, seconds=round(time.time() - started), deal=bool(out.get("receipt")))
+    print(json.dumps(out, ensure_ascii=False))
 
 
 if __name__ == "__main__":
