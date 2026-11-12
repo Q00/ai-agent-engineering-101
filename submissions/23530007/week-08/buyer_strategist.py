@@ -564,8 +564,11 @@ def run(force=False):
                     log(f"reverted {e['knob']} {e.get('sku') or ''} to {b4}: its prediction failed")
     rec = mem.record()
     for knob, k in rec["by_kind"].items():
+        spec_k = GLOBAL.get(knob) or CAT.get(knob) or SHOP.get(knob)
+        if spec_k is None:                     # 11-12: a knob removed in the patch 3.6 rebuild (its history stays)
+            continue
         if len(k["last"]) >= 8:
-            base = (GLOBAL.get(knob) or CAT.get(knob) or SHOP.get(knob))[1]
+            base = spec_k[1]
             old = mem.d["steps"].get(knob, base)
             rate = sum(k["last"]) / len(k["last"])
             new = max(base / 2, old / 2) if rate < 0.5 else min(base, old * 1.5) if rate > 0.75 else old   # 11-11: floor base/2 (cap sat at 0.005)
