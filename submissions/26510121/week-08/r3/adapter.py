@@ -140,7 +140,10 @@ def install(kit, journal=None, config=None):
                       if product and type(quantity) is int and 1<=quantity<=20 else float('inf'))
             if diagnosis.get('pause_restock',True) or time.time()-diagnosis.get('at',0)>900 or required>cap['spendable']:
                 j.add('supply_blocked', {'sku':item.get('sku'),'qty':quantity,'reason':'fresh_cash_or_control_guard'})
-                return httpx.Response(429,json={'error':'local capital guard','wait':30})
+                # This is a local pre-POST refusal, not a supplier throttle.
+                # Returning 429 makes the kit sleep 30s up to three times and
+                # strands the remaining lots in a three-minute window.
+                return httpx.Response(409,json={'error':'local capital/control guard closed; replan'})
         supply_claim = None
         if (cfg.get('market_cycle_enabled') and cfg.get('market_control_enabled') and
                 method == 'POST' and path == '/api/supply' and isinstance(current.get('restock'),dict)):

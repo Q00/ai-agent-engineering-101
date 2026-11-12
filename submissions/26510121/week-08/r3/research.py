@@ -9,7 +9,7 @@ import math
 import time
 import httpx
 from .state import atomic_json, identity
-from .model import api_key, ModelError
+from .model import api_key, ModelError, response_text
 
 SKILLS = ['stock_coverage', 'buyer_price_gap', 'buyer_transport', 'buyer_protocol',
           'buyer_preparation', 'shop_rating_holdout', 'feed_stale']
@@ -23,7 +23,8 @@ SCHEMA = {'type': 'object', 'additionalProperties': False, 'properties': {
     'buyer_diverse_quotes': {'type': 'boolean'},
     'shop_service_level': {'type': 'number', 'minimum': .85, 'maximum': .95},
     'shop_plan': {'type': 'string', 'enum': ['diversified', 'breadth', 'cautious', 'wait']},
-    'operating_actions': {'type':'array','items':{'type':'string','enum':['stock_coverage','buyer_price_gap']},'maxItems':2},
+    'forum_focus': {'type':'string','enum':['balanced','same_terms_price','acceptable_alternatives','mature_quality']},
+    'operating_actions': {'type':'array','items':{'type':'string','enum':['stock_coverage','buyer_price_gap','buyer_information']},'maxItems':3},
     'operating_policy': {'type':'object','additionalProperties':False,'properties':{
         'cover_cycles':{'type':'number','enum':[1,1.5,2,3]},
         'initial_batch_limit':{'type':'integer','enum':[2,6,10,20]},
@@ -32,7 +33,7 @@ SCHEMA = {'type': 'object', 'additionalProperties': False, 'properties': {
         'required':['cover_cycles','initial_batch_limit','frontier_min_orders','recheck_seconds']},
     'approve_trial': {'type': 'boolean'}}, 'required': [
         'summary','hypotheses','evidence_ids','skills','skill_steps','buyer_probe_percent','buyer_gap_power',
-        'buyer_diverse_quotes','shop_service_level','shop_plan','operating_actions','operating_policy','approve_trial']}
+        'buyer_diverse_quotes','shop_service_level','shop_plan','forum_focus','operating_actions','operating_policy','approve_trial']}
 
 
 def valid_operating(value):
@@ -118,8 +119,9 @@ def validate(value, evidence):
     return (validate_buyer(patch) and type(value['shop_service_level']) in (int,float)
             and math.isfinite(value['shop_service_level']) and .85 <= value['shop_service_level'] <= .95
             and value['shop_plan'] in ('diversified','breadth','cautious','wait') and type(value['approve_trial']) is bool
-            and isinstance(value['operating_actions'],list) and len(value['operating_actions'])<=2
-            and all(x in ('stock_coverage','buyer_price_gap') for x in value['operating_actions'])
+            and value['forum_focus'] in ('balanced','same_terms_price','acceptable_alternatives','mature_quality')
+            and isinstance(value['operating_actions'],list) and len(value['operating_actions'])<=3
+            and all(x in ('stock_coverage','buyer_price_gap','buyer_information') for x in value['operating_actions'])
             and valid_operating(value['operating_policy'])
             and isinstance(value['summary'],str) and len(value['summary']) <= 800
             and isinstance(value['hypotheses'],list) and len(value['hypotheses']) <= 4
@@ -161,17 +163,36 @@ def call(journal, config, facts, evidence, role, proposal=None, client=None, key
         'does not support change; preserve the supplied current_operating_policy exactly instead of assuming '
         'the first enum value is the baseline. Rank/cash/quality objectives and money guards remain authoritative. '
         'Inspect Main execution_feedback, peer trends, inventory, supply blocks and regime changes; explain why to act or wait. '
-        'Use <=3 short hypotheses and a concise summary. '
+        'Return exactly ONE JSON object matching the schema, with no explanation outside it and no second object. '
+        'Use <=3 short hypotheses of <=100 characters each and a summary of <=160 characters. '
         + ('Independently challenge the proposed explanation; approve_trial only if evidence supports a bounded test, '
            'not because the analyst agreed. Check counterexamples, price frontier, maturity and data gaps.'
            if role == 'critic' else 'Diagnose bottlenecks and choose useful skills and a bounded experiment.'))
+    if config.get('objective_decision_enabled'):
+        instructions += (' Compare objective_decisions.shop.alternatives for 1/1.5/2/3 supply-cycle coverage. '
+            'Choose the supported policy with stronger conservative Book/revenue/rank progress, accounting for '
+            'spendable cash, upper-mean-cost stress, eligibility and observed supply delays; do not retain a '
+            'low coverage baseline solely because the market-wide trade rate is flat when own profitable repeat '
+            'demand and marginal-unit evidence support depth. Forecasts are not measured superiority. '
+            'Buyer uses official normalized Saved, not absolute surplus. Compare closed-order throughput and '
+            'confirmed mature Saved separately from pending initial results. buyer_information permits choosing '
+            'forum_focus among already ledger-backed formats; retain balanced when comparisons are sparse or '
+            'biased and preserve format exploration. No vote trading, unverifiable posts or quality promises. '
+            'Forum raw score contributes .3 directly, not a second percentile term. '
+            'Explain which numerical alternatives justify changing or retaining the current policy.')
+    from .objective_context import curate
+    try:
+        facts, compacted = curate(facts)
+    except ValueError:
+        raise ModelError('research_essential_context_budget') from None
+    journal.add('research_context_prepared',dict(compacted,role=role))
     body = {'model': model, 'instructions': instructions,
             'input': json.dumps({'facts': facts, 'valid_evidence_ids': evidence, 'proposal': proposal},ensure_ascii=False),
             'reasoning': {'effort': 'none'}, 'text': {'format': {'type':'json_schema','name':'market_research','strict':True,'schema':SCHEMA}},
-            'max_output_tokens': 800, 'store': False}
+            'max_output_tokens': 1200, 'store': False}
     if len(body['input'].encode()) > 32_000:
         raise ModelError('research_input_budget')
-    reserve = ((len(json.dumps(body).encode())+4096)*rates[0]*1.25 + 800*rates[1])/1e6
+    reserve = ((len(json.dumps(body).encode())+4096)*rates[0]*1.25 + 1200*rates[1])/1e6
     ticket = journal.hold_budget(reserve, cap)
     if ticket is None:
         raise ModelError('daily_budget_exhausted')
@@ -189,9 +210,22 @@ def call(journal, config, facts, evidence, role, proposal=None, client=None, key
                     'estimated_usd':actual,'seconds':time.monotonic()-started,'accounting':'conservative_input_1.25x'})
         if result.get('status') not in (None,'completed'):
             raise ModelError('research_incomplete')
-        raw = ''.join(p.get('text','') for out in result.get('output',[]) if out.get('type')=='message'
-                      for p in out.get('content',[]) if p.get('type')=='output_text')
+        raw = response_text(result)
         value = json.loads(raw)
+        # Explanation length is presentation, not policy authority. A complete
+        # typed decision must not be discarded solely for a verbose summary;
+        # never coerce/truncate executable fields, evidence IDs or skill names.
+        clipped={}
+        if isinstance(value,dict):
+            if isinstance(value.get('summary'),str) and len(value['summary'])>800:
+                clipped['summary_chars']=len(value['summary'])
+                value['summary']=value['summary'][:797]+'...'
+            if isinstance(value.get('hypotheses'),list):
+                for index,text in enumerate(value['hypotheses']):
+                    if isinstance(text,str) and len(text)>400:
+                        clipped['hypothesis_'+str(index)+'_chars']=len(text)
+                        value['hypotheses'][index]=text[:397]+'...'
+        if clipped:journal.add('research_explanation_compacted',dict(role=role,**clipped))
         if not validate(value, evidence):
             journal.add('research_invalid_response',{'role':role,
                 'fields':sorted(value) if isinstance(value,dict) else type(value).__name__,
@@ -247,6 +281,8 @@ def publish(journal, config, facts, analyst, critic, rules_hash, now=None):
     if config.get('objective_feedback_enabled'):
         packet['operating_intents']=sorted(set(analyst['operating_actions']) & set(critic['operating_actions']))
         packet['operating_actions_reviewed']=True
+        packet['forum_focus']=critic['forum_focus'] if analyst['forum_focus']==critic['forum_focus'] else 'balanced'
+        packet['objective_context_id']=(facts.get('objective_decisions') or {}).get('id')
         if config.get('agent_policy_selection_enabled'):
             a,b=analyst['operating_policy'],critic['operating_policy']
             packet['operating_policy']={'cover_cycles':min(a['cover_cycles'],b['cover_cycles']),
@@ -331,6 +367,15 @@ def update(journal, config, now=None, client=None, key=None):
         facts['parameters'].update({k:config.get(k) for k in ('buyer_contract_gap_power','buyer_contract_diverse_quotes',
             'shop_inventory_ceiling','shop_demand_horizon_cycles')})
         evidence.extend(['kv:feedback-last-policy','kv:quality-holdout-summary'])
+    if config.get('objective_decision_enabled'):
+        from .objective_context import build
+        try:
+            facts['objective_decisions']=build(journal,config,now)
+            evidence.append('kv:objective-decision-context')
+        except (ValueError,TypeError,KeyError,OverflowError) as exc:
+            journal.add('objective_context_error',{'error_type':type(exc).__name__})
+            # Existing guards and research remain available with an explicit gap.
+            facts['objective_decisions']={'status':'unavailable','error_type':type(exc).__name__}
     try:
         analyst=call(journal,config,facts,evidence,'analyst',client=client,key=key)
         critic=call(journal,config,facts,evidence,'critic',proposal=analyst,client=client,key=key)

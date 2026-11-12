@@ -6,6 +6,14 @@ def schedule(journal,config,book,catalog,now):
     interval=max(300,config.get('buyer_forum_post_interval_seconds',300))
     bucket=int(now//interval)
     if journal.get('buyer_insight_bucket')==bucket:return
+    focus='balanced';policy_id=None
+    if config.get('objective_decision_enabled'):
+        from .feedback import get
+        operating=get(journal,config,now)
+        if operating:
+            focus=operating.get('patches',{}).get('buyer',{}).get('buyer_forum_focus','balanced')
+            policy_id=operating['id']
+    effective_focus=focus if bucket%5 else 'balanced'
     recent=[p for p in journal.events('purchase',1000) if type(p.get('ledger')) is int and
             p.get('sku') in catalog and p.get('value',0)>0 and 0<=now-p.get('paid_at',p['_ts'])<1800]
     recent.sort(key=lambda p:((p['value']-p['price'])/catalog[p['sku']]['list_price'],p['_ts']),reverse=True)
@@ -29,11 +37,11 @@ def schedule(journal,config,book,catalog,now):
               f"최근 6h 같은 등급·보증 정산 {matched['n']}건의 중앙값 {matched['median']:,.0f}. "
               f"{quality}. 과거 정산이며 현재 재고·호가나 미래 품질을 보장하지 않습니다.")
         signature=identity(['price',p['ledger'],refs])
-        drafts.append((signature,text,refs))
-    if config.get('buyer_championship_enabled') and bucket%3==1:
+        drafts.append((signature,text,refs,'same_terms_price'))
+    if config.get('buyer_championship_enabled') and (bucket%3==1 or effective_focus=='acceptable_alternatives'):
         from .buyer_insights import alternatives
-        drafts=list(alternatives(journal,book,catalog,now))+drafts
-    if bucket%3==2:
+        drafts=[(*row,'acceptable_alternatives') for row in alternatives(journal,book,catalog,now)]+drafts
+    if bucket%3==2 or effective_focus=='mature_quality':
         broken={e.get('unit'):e for e in journal.events('public_broken',20000)}
         for p in journal.events('purchase',1000):
             if p.get('kind')!='goods' or not 21600<=now-p.get('paid_at',now)<=172800:continue
@@ -46,17 +54,27 @@ def schedule(journal,config,book,catalog,now):
                   f"실결제 {p['price']:,}, 보증 {(p.get('warranty_hours') or 0):g}h; "
                   f"공개 원장에 고장과 환불 {refund:,}이 기록됐습니다. "
                   '전액 환불된 실패 거래의 Saved 기여는 0입니다. 한 거래의 관측이며 전체 상품 고장률은 아닙니다.')
-            drafts.insert(0,(identity(['fault',p['ledger'],seq,refund]),text,[p['ledger'],int(seq)]))
+            drafts.insert(0,(identity(['fault',p['ledger'],seq,refund]),text,[p['ledger'],int(seq)],'mature_quality'))
             break
-    for signature,text,refs in drafts:
+    if config.get('objective_decision_enabled'):
+        # One in five slots retains the baseline mix; missing evidence never
+        # causes a fabricated draft or blocks another valid information format.
+        if effective_focus!='balanced':
+            drafts.sort(key=lambda row:row[3]!=effective_focus)
+    for signature,text,refs,information_kind in drafts:
         if journal.get('buyer_insight_used:'+signature):continue
         journal.queue_post({'post':text,'refs':refs,'as':'buyer','priority':6,
-                            'expires_at':now+interval},'buyer-insight:'+str(bucket))
+                            'expires_at':now+interval,'information_kind':information_kind,
+                            'policy_id':policy_id},'buyer-insight:'+str(bucket))
         journal.put('buyer_insight_used:'+signature,now)
         if config.get('buyer_championship_enabled'):
             for p in recent:
                 if p['ledger'] in refs:journal.put('buyer_insight_sku:'+p['sku'],now)
         journal.put('buyer_insight_bucket',bucket)
-        journal.add('buyer_insight_queued',{'kind':'fault' if text.startswith('[확인된') else 'same_terms_price',
+        journal.add('buyer_insight_queued',{'kind':information_kind,
                                          'refs':refs,'signature':signature},role='buyer')
+        if config.get('objective_decision_enabled'):
+            journal.add('buyer_forum_policy_choice',{'policy_id':policy_id,'focus':focus,
+                'chosen_kind':information_kind,'refs':refs,'available_drafts':len(drafts),
+                'baseline_exploration_slot':bucket%5==0},role='buyer')
         break

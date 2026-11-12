@@ -233,7 +233,19 @@ def deliver(market, journal, config, now=None):
                 continue
         body = {'text': payload['post'], 'refs': payload.get('refs', []), 'thread': payload.get('thread')}
         response = market.call('POST', '/api/forum', role, json=body)
-        journal.add('forum_delivery', {'key': key, 'status': response.status_code, 'role': role})
+        observation={'key':key,'status':response.status_code,'role':role,
+                     'information_kind':payload.get('information_kind'),'policy_id':payload.get('policy_id')}
+        if response.status_code in (200,201) and callable(getattr(response,'json',None)):
+            try:
+                returned=response.json()
+                if isinstance(returned,dict):
+                    post=returned.get('post') if isinstance(returned.get('post'),dict) else returned
+                    if type(post.get('id')) is int:observation['post_id']=post['id']
+                    elif type(returned.get('post_id')) is int:observation['post_id']=returned['post_id']
+                    elif type(returned.get('post')) is int:observation['post_id']=returned['post']
+            except (ValueError,TypeError):
+                pass
+        journal.add('forum_delivery', observation)
         if response.status_code in (200, 201):
             journal.sent_post(key)
             journal.put('forum_last_sent:' + role, now)

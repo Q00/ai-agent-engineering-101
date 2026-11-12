@@ -62,15 +62,22 @@ class Seller(AgentExecutor):
         if minimum_grade:required_grades=set('ABC'[:'ABC'.index(minimum_grade[1].upper())+1])
         # Parse only explicit requirements, not incidental descriptions or a
         # hypothetical list of grades in an RFQ.
-        choices = [u for u in inv.get("units", []) if grade(u, cat) != "expired" and
+        matching = [u for u in inv.get('units',[]) if
+                   ((u['sku'].casefold() in {x.casefold() for x in skus}) if skus else
+                    (u['name'].casefold() in want or u['category'].split('>')[-1].casefold() in want))]
+        choices = [u for u in matching if grade(u, cat) != "expired" and
                    (not required_grades or grade(u,cat) in required_grades) and
-                   (u.get('kind') != 'food' or remaining(u) >= min_hours + self.cfg['checkout_buffer_seconds'] / 3600) and
-                   ((u["sku"].casefold() in {x.casefold() for x in skus}) if skus else
-                    (u["name"].casefold() in want or u["category"].split(">")[ -1].casefold() in want))]
+                   (u.get('kind') != 'food' or remaining(u) >= min_hours + self.cfg['checkout_buffer_seconds'] / 3600)]
         for u in sorted(choices, key=lambda x: (remaining(x), x.get("supplied_at", 0))):
             if self.j.reserve(u["unit"], task, self.cfg["session_ttl_seconds"]):
                 return dict(u, requested_use_hours=min_hours, minimum_warranty_hours=requested_warranty)
-        self.j.add("stockout", {"sku": skus[0] if skus else None, "request": text[:300]}, role="shop")
+        live=[u for u in matching if grade(u,cat)!='expired']
+        grade_ok=[u for u in live if not required_grades or grade(u,cat) in required_grades]
+        reason=('no_matching_stock' if not matching else 'expired_stock' if not live else
+                'grade_requirement' if not grade_ok else 'shelf_life' if not choices else 'reserved_stock')
+        self.j.add("stockout", {"sku": skus[0] if skus else None, "request": text[:300],
+            'task':task,'reason':reason,'physical_matching_units':len(matching),
+            'eligible_units':len(choices),'required_use_hours':min_hours}, role="shop")
         return None
 
     async def execute(self, context, event_queue):

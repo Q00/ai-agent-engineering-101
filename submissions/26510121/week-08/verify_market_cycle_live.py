@@ -35,6 +35,9 @@ def main():
         if cfg.get('objective_feedback_enabled'):
             kinds+=['feedback_policy_created','feedback_main_choice','quality_holdout_evaluation']
         if cfg.get('agent_policy_selection_enabled'):kinds+=['analytical_role_error']
+        if cfg.get('objective_decision_enabled'):
+            kinds+=['objective_alternatives_prepared','objective_context_error','research_context_prepared',
+                    'buyer_forum_policy_choice','forum_objective_observation']
         counts={kind:db.execute('SELECT count(*) FROM events WHERE kind=? AND ts>=?',(kind,runtime.get('started_at',now))).fetchone()[0] for kind in kinds}
         models=[json.loads(raw) for raw, in db.execute('SELECT data FROM events WHERE kind=? AND ts>=?',('model_usage',runtime.get('started_at',now)))]
         heartbeat=kv('cycle-heartbeat');meta=kv('cycle-meta-state');last_research=kv('research-last-result')
@@ -43,7 +46,7 @@ def main():
     try:
         with lease(ROOT/'.market/shop-recovery-guard.lock'):guard_active=False
     except RuntimeError:guard_active=True
-    release='v17' if cfg.get('agent_policy_selection_enabled') else 'v16' if cfg.get('objective_feedback_enabled') else 'v15'
+    release='v18' if cfg.get('objective_decision_enabled') else 'v17' if cfg.get('agent_policy_selection_enabled') else 'v16' if cfg.get('objective_feedback_enabled') else 'v15'
     promotion=sorted((ROOT/'logs').glob(release+'-source-promotion-*.json'))[-1]
     manifest=read_json(promotion,{})
     mismatches=[r['path'] for r in manifest['files'] if hashlib.sha256((ROOT/r['path']).read_bytes()).hexdigest()!=r['candidate_sha256']]
@@ -54,6 +57,7 @@ def main():
             'meta':meta,'last_research':last_research,'model_usage':[{'role':r.get('role'),'model':r.get('model'),'usage':r.get('usage'),'estimated_usd':r.get('estimated_usd')} for r in models],
             'operating_policy':{k:operating.get(k) for k in ('at','id','status','regime','policy_authority','source_times','patches','reasons','execution_feedback')},
             'quality_holdout':quality,
+            'objective_context':kv('objective-decision-context') if cfg.get('objective_decision_enabled') else {},
             'analytical_roles':kv('analytical-role-status'),
             'recovery_request':read_json(ROOT/'.market/recovery-request.json',{}),
             'recovery_response':read_json(ROOT/'.market/recovery-response.json',{}),

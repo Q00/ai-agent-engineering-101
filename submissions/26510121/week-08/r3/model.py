@@ -24,6 +24,25 @@ class ModelError(RuntimeError):
     pass
 
 
+def response_text(result):
+    """Parse only the final assistant message, never concatenate commentary.
+
+    Responses phase distinguishes intermediate updates from the final answer.
+    Legacy unphased single-message responses remain supported. Ambiguous or
+    incomplete outputs cannot select a financial or operating decision.
+    """
+    if result.get('status') not in (None,'completed'):
+        raise ModelError('api_incomplete')
+    messages=[o for o in result.get('output',[]) if o.get('type')=='message'
+              and o.get('role') in (None,'assistant') and o.get('status') in (None,'completed')]
+    final=[o for o in messages if o.get('phase')=='final_answer']
+    selected=final if final else [o for o in messages if o.get('phase') is None]
+    if len(selected)!=1:raise ModelError('api_final_answer_missing_or_ambiguous')
+    parts=selected[0].get('content',[])
+    if any(p.get('type')=='refusal' for p in parts):raise ModelError('api_refused')
+    return ''.join(p.get('text','') for p in parts if p.get('type')=='output_text')
+
+
 def compact(value):
     """Keep decision evidence; full inputs remain in the prediction journal."""
     if isinstance(value,dict):
@@ -221,8 +240,7 @@ class Chooser:
                                         "seconds": time.monotonic() - started}, role=role)
             if result.get("status") not in (None, "completed"):
                 raise ModelError("api_incomplete")
-            raw = "".join(p.get("text", "") for o in result.get("output", []) if o.get("type") == "message"
-                          for p in o.get("content", []) if p.get("type") == "output_text")
+            raw = response_text(result)
             value = json.loads(raw)
             selected = next((c for c in candidates if c["id"] == value.get("candidate_id")), None)
             if selected is None:

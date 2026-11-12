@@ -16,14 +16,17 @@ FILE = 'operating-policy-v16.json'
 LIMITS = {'shop': {'shop_demand_horizon_cycles': (1., 3.), 'shop_inventory_ceiling': (120, 240),
                     'shop_sku_trend_factors': None,'shop_public_demand_skus':None,'shop_public_demand_caps':None},
           'buyer': {'buyer_frontier_category_enabled': (False, True),
-                    'buyer_frontier_min_orders':(4,12),'buyer_frontier_recheck_seconds':(60,300)}}
+                    'buyer_frontier_min_orders':(4,12),'buyer_frontier_recheck_seconds':(60,300),
+                    'buyer_forum_focus':None}}
 
 
 def valid_patch(role, patch):
     if not isinstance(patch, dict) or set(patch)-LIMITS[role].keys():
         return False
     for key, value in patch.items():
-        if key=='shop_public_demand_caps':
+        if key=='buyer_forum_focus':
+            if value not in ('balanced','same_terms_price','acceptable_alternatives','mature_quality'):return False
+        elif key=='shop_public_demand_caps':
             if not isinstance(value,dict) or len(value)>20 or any(not isinstance(k,str) or not k.startswith('G')
                 or len(k)>64 or type(v) is not int or not 1<=v<=20 for k,v in value.items()):return False
         elif key=='shop_public_demand_skus':
@@ -146,6 +149,10 @@ def update(journal, config, now=None, force=False):
                 patches['buyer'].update(buyer_frontier_min_orders=selected['frontier_min_orders'],
                     buyer_frontier_recheck_seconds=selected['recheck_seconds'])
         else: reasons.append('buyer_frontier_review_pending')
+    if config.get('objective_decision_enabled') and evidence_ok and 'buyer_information' in intents:
+        focus=issued.get('forum_focus')
+        if isinstance(focus,str) and valid_patch('buyer',{'buyer_forum_focus':focus}):
+            patches['buyer']['buyer_forum_focus']=focus
     if evidence_ok and 'stock_coverage' in intents:
         factors={}
         qualified=[]
