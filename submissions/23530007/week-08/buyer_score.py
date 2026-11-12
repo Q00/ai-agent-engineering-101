@@ -28,6 +28,11 @@ MEM = HERE / "buyer_memory.json"
 OUT = HERE / ".market" / "buyer_score.json"
 MARKET = "https://market.ourolabs.ai"
 END = 1794927540            # 2026-11-17 23:59 KST
+# Patch 3.6 (11-12 ~08:40 UTC): the board's saved became sum of (list - price)/(list - unit cost) / (deals + 100),
+# rescored over all past deals (ours .3081 -> .7163). The buyer still prices on 1 - price/list, so this file keeps
+# every internal number (m_now, m_star, hist, reconcile) on that old scale: the last old-scale board reading plus our
+# own old-scale deals since then. The board's new value is kept as board.saved_board / m_now_board.
+PATCH36_ANCHOR = {"t": 1794472203, "saved": 0.3081, "deals": 14194}
 RECONCILE_TOL = 0.03        # per-deal v: ours vs board-implied over the same window
 HIST_KEEP = 96              # snapshots kept (24 h at 15 min)
 KINDS = ("food", "goods")
@@ -62,7 +67,12 @@ def build(now=None):
         bd = board()
     except Exception as e:                       # the board is down: keep the last snapshot's numbers
         bd = dict(old.get("board") or {}, error=repr(e))
-    hist = [h for h in old.get("hist", []) if now - h["t"] < HIST_KEEP * 900]
+    hist = [h for h in old.get("hist", []) if now - h["t"] < HIST_KEEP * 900 and h.get("saved", 0) < 0.5]
+    if bd.get("saved") is not None and bd["saved"] >= 0.5:      # new-scale board value: carry the old scale on
+        a = PATCH36_ANCHOR
+        since = [score(t) for t in trades if t.get("outcome") == "deal" and t.get("list") and t.get("price") and t["t"] > a["t"]]
+        bd["saved_board"] = bd["saved"]
+        bd["saved"] = round((a["saved"] * (a["deals"] + 100) + sum(since)) / (a["deals"] + 100 + len(since)), 4)
     if bd.get("saved") is not None:
         hist.append({"t": round(now), "saved": bd["saved"], "deals": bd["deals"]})
     out = {"t": round(now), "board": bd, "hist": hist[-HIST_KEEP:]}
@@ -87,7 +97,7 @@ def build(now=None):
         m_star = round(min(max(proj, m_now), m_now + 0.08), 4)
     else:
         m_star = old.get("m_star")
-    out.update(m_now=m_now, m_star=m_star, hours_left=round(hours_left, 1))
+    out.update(m_now=m_now, m_star=m_star, hours_left=round(hours_left, 1), m_now_board=bd.get("saved_board"))
 
     # our realized v per shop|kind (24 h) and calibration vs the expectation at order time
     ours, cal = {}, {}
