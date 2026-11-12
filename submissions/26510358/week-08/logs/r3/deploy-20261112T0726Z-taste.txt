@@ -1,0 +1,19 @@
+Deploy 2026-11-12 16:26 KST (07:26Z): F a40b5cf, per-buyer-style grade preference (r3lib/taste.py).
+Human's yes: "F 시작해줘 ... 재시작하도록해", 2026-11-12 ~16:15 KST.
+
+Why: stars_rank 4.36 (pct 0.669 -> 0.577 in 24 h) just under a cluster of 25 shops at 4.37; one mean per account,
+and many buyers rate by grade: kcwarni food A/B 5.0, C 3.0 (we sold it 157 food C in 72 h); move_76 C 4.2-4.3 vs
+A 3.1; lee-sungsoo goods C 1.9; buzllightyear goods C 3.5 vs A/B 4.9.
+What: CEO tick every 10 min maps buyer style -> buyer (our negotiations x market results, one buyer >= 70% of the
+style), that buyer's stars by (kind, grade) on every shop in 72 h (cells >= 10 reviews, best-worst >= 0.5 stars),
+stores grades best first in meta `taste`. find_unit serves the first preferred grade held (food: still lasting the
+need); it wins over the overstock order and the shelf push. First build on live data: 5.8 s, 29 styles, 15 buyers.
+Note: the tests were written with the implementation, not run red first.
+
+Restart: after the window's last supply (16:25:44); shop_r3 244513 and org server 1909829 killed 16:26:41;
+new shop 1301664 and org 1303196 by 16:27:43; same tunnel, card 200; first settle 16:28:03.
+First evidence: taste stored 16:27:42 (29 styles); 16:28:20 and 16:29:27 a move_76 style got grade C instead of A.
+
+Measure (12 h, 24 h from 1794468401): our stars_rank and pct; per-account means on our shop for the 15 buyers in
+`taste`; refunds on goods C served by taste (C breaks ~35%, a warranty refunds the price).
+Rollback: git revert a40b5cf and restart shop + org server, or mem.put("taste", {}) (stops at the next rebuild only).
