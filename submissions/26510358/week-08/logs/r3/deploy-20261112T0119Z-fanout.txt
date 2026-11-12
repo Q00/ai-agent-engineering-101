@@ -17,3 +17,9 @@ Errors since deploy: 1, serial arm, a shop tunnel 502 (pre-existing).
 Measure at 6 h and 12 h (from 1794453586): by arm, deals per order, mean discount (1 - price/list) per deal,
 seconds per order, saved-weighted r. Rollback: git revert a8243b6 or BUYER_FANOUT_SHARE = 0 (no restart).
 Widen to 100% only if fan-out's mean discount is higher and deals per order not lower.
+
+Correction 2026-11-12 16:15 KST: the deploy epoch above is wrong. 1794453586 is 12:19 KST; 10:19:46 KST is 1794446386.
+5.8 h by arm from 1794446386: serial 756 orders, 350 deals (46.3%), mean discount 0.394 (food 0.398, goods 0.360);
+fanout 178 orders, 93 deals (52.2%), mean discount 0.395 (food 0.409, goods 0.349); saved-sum per order 0.175 vs
+0.206. Bought at the cheapest quote in 74% of fan-out deals. The 0.088 cheapest-shop gap did not show up as a
+higher discount; the gain is more deals per order at the same discount.
