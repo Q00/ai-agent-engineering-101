@@ -72,9 +72,10 @@ TUNABLE = {
     "buyer.cap_food": (0.85, 1.00, 0.03),
     "buyer.min_surplus_list": (0.0, 0.15, 0.02),
     "buyer.min_kept": (0.0, 0.50, 0.03),           # the kept floor of every cap before a quote names the grade
-    "buyer.min_kept_A": (0.0, 0.80, 0.05),         # Patch 3.6: the floor once the grade is named; a deal scores
-    "buyer.min_kept_B": (0.0, 0.80, 0.05),         # kept / (1 - cost share), at most 1 (A 0.45, B 0.60, C 0.75
-    "buyer.min_kept_C": (0.0, 0.80, 0.05),         # kept score 1 at any cost of the grade's band)
+    "buyer.min_kept_A": (0.0, 0.80, 0.15),         # Patch 3.6: the floor once the grade is named; a deal scores
+    "buyer.min_kept_B": (0.0, 0.80, 0.15),         # kept / (1 - cost share), at most 1 (A 0.45, B 0.60, C 0.75
+    "buyer.min_kept_C": (0.0, 0.80, 0.15),         # kept score 1 at any cost of the grade's band). They start at
+                                                    # 0 (no floor): a 0.05 step took the 21:14 run nowhere, so 0.15
     "buyer.break_penalty": (0.0, 1.0, 0.25),       # what an uncovered break costs in the goods cap (Saved: -1 a deal that served nothing)
     "buyer.step_list": (0.0, 0.15, 0.05),          # an offer this share of list under the cap before the final one (0: none)
     "buyer.open_list": (0.20, 0.80, 0.05),
@@ -111,7 +112,9 @@ SOURCES = ("model", "market-rule", "revert", "bounds", "migration", "linked", "o
 # in hours when a rule makes holding stock dear, and each run at the old values is a day of storage on the shelf
 PATCH_WIDE = ("stock.inventory_cap_share", "stock.big_ticket_share", "stock.max_hold", "stock.trend_share",
               "seller.goods_stale_days", "seller.stale_floor_cost_mult", "seller.floor_list",
-              "seller.first_ask_list", "seller.first_ask_big_list")
+              "seller.first_ask_list", "seller.first_ask_big_list",
+              # Patch 3.6 (11-12) rescored every buyer: the kept floors have to reach the market's prices in hours
+              "buyer.min_kept", "buyer.min_kept_A", "buyer.min_kept_B", "buyer.min_kept_C")
 PATCH_STEP_MULT = 3
 OBJECTIVE_KEYS = ("buyer.min_kept",)    # the only keys a source "objective" row (strategist/objective.py) may set
 LINKED_REPAIR = ("buyer.cap_food",)     # the only key a "linked" row may set (linked_rows)
