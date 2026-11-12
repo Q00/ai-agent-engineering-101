@@ -1276,16 +1276,21 @@ def run(
 def _route_findings(root, now, findings, roles):
     """The findings tagged [shop] / [buyer] go to that operator the way the investigator's do: one findings row per
     role (questions.add_finding), shown in its prompt's 조사 결과 section and by the findings tool. Before 11-12 they
-    stayed in the auditor's state file and no operator saw them. Never raises."""
+    stayed in the auditor's state file and no operator saw them. The same text as the role's last auditor row in the
+    prompt window is not written again. Never raises."""
     from kernel import questions
 
     for r in roles:
-        mine = [f for f in findings if f"[{r}]" in f]
-        if not mine:
-            continue
         try:
-            questions.add_finding(root, {"id": None, "from": "auditor", "q": "감사자가 짚은 것"}, " / ".join(mine),
-                                  [], "", [r], now)
+            mine = [f for f in findings if isinstance(f, str) and f"[{r}]" in f]
+            if not mine:
+                continue
+            text = " / ".join(mine)
+            past = [x for x in questions.findings(root, since=now - questions.PROMPT_HOURS * 3600, role=r)
+                    if x.get("from") == "auditor"]
+            if past and past[-1].get("finding") == text[:questions.FINDING_CHARS]:
+                continue
+            questions.add_finding(root, {"id": None, "from": "auditor", "q": "감사자가 짚은 것"}, text, [], "", [r], now)
         except Exception:  # noqa: BLE001 - delivery is best effort, the audit itself is done
             pass
 

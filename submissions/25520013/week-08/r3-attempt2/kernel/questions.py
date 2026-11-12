@@ -250,7 +250,9 @@ def _who(r):
 def prompt_lines(root, role, now):
     """A role operator's prompt section body: the newest PROMPT_N findings for it from the last PROMPT_HOURS hours,
     newest first, a few lines each; [] when there are none."""
-    rows = findings(root, since=now - PROMPT_HOURS * 3600, role=role)[-PROMPT_N:]
+    rows = findings(root, since=now - PROMPT_HOURS * 3600, role=role)
+    aud = [i for i, r in enumerate(rows) if r.get("from") == "auditor"]
+    rows = [r for i, r in enumerate(rows) if r.get("from") != "auditor" or i == aud[-1]][-PROMPT_N:]  # one auditor slot
     out = []
     for r in reversed(rows):
         mark = " (조사 미완)" if r.get("status") == "failed" else ""
