@@ -241,15 +241,23 @@ def plan(md, c, t, now=None):
             return live[sku]
         return min(0.5, 0.002 * max(0, n1h.get(sku, 0) - 50))
 
-    dear_memo = {}
+    dear_memo, sold24 = {}, _ours(c, now)
+    brk24 = dict(c.execute("select sku, count(*) from broken where ts > ? group by sku", (now - 86400,)).fetchall())
 
-    def dear(sku):                                            # HQ 11-12: our last buys of this SKU cost more than
-        if sku not in dear_memo:                              # market median x buy_cap (sofa G0e4deffc: 1.335M against
-            rows = [r[0] for r in c.execute(                  # a 1.367M median, 2% left before storage and breaks)
+    def dear(sku):                                            # HQ 11-12 "매입가가 비싸졌다면 사지마": what we pay now
+        if sku not in dear_memo:                              # leaves too little against what we sell it for.
+            rows = [r[0] for r in c.execute(                  # MBT 11-12 (2nd): 6 buys were too few -- a unit's cost
                 "select cost from supply_units where shop = 'dragonash' and sku = ? and ts > ? and cost > 0 "
-                "order by ts desc limit 6", (sku, now - 86400))]
-            med = market_model.market_price(c, sku)[0] if rows else None
-            dear_memo[sku] = bool(med and sum(rows) / len(rows) > med * t.get("buy_cap", 0.93))
+                "order by ts desc limit 20", (sku, now - 3 * 86400))]   # depends on its random grade (sofa G00327e80:
+            n, tk, _ = sold24.get(sku, (0, 0, 0))           # last 6 1.436M, last 20 1.246M), and the market median is
+            if not rows:                                      # not our price (G9df06998: we sell 28.6k, median 26.3k,
+                dear_memo[sku] = False                        # cost 20.8k, 27% margin, was blocked). Our own 24 h price
+            elif n >= 5 and tk:                               # when we sold 5+, the median otherwise. Review 11-12:
+                net = tk * (1 - brk24.get(sku, 0) / max(n, 1))   # refunds of broken units come off our price, and the
+                dear_memo[sku] = sum(rows) / len(rows) > net * (1 - t.get("buy_min_margin", 0.10))   # margin matches hits()
+            else:
+                med = market_model.market_price(c, sku)[0]
+                dear_memo[sku] = bool(med and sum(rows) / len(rows) > med * t.get("buy_cap", 0.93))
         return dear_memo[sku]
 
     def add(sku, qty, reason, any_price=False):
