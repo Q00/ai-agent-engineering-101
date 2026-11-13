@@ -295,7 +295,9 @@ def main():
                 pa = json.loads(pa_path.read_text())
                 g20 = pa.setdefault("globals", {})
                 end_m = st["book_lead_at_end_M"]
-                want_b = 1 if end_m < 120 else 0 if end_m > 200 else g20.get("sell_b", 0)
+                # 11-13 09:55: grade B is on again for everyone but the accounts that rate it lower (seller
+                # a_only_buyers.json), so G20 only ever turns it ON (it no longer switches B off over 200 M)
+                want_b = 1 if end_m < 120 else g20.get("sell_b", 1)
                 if want_b != g20.get("sell_b", 0) and not DRY:
                     g20["sell_b"] = want_b
                     pa_path.write_text(json.dumps(pa, ensure_ascii=False, indent=1) + "\n")

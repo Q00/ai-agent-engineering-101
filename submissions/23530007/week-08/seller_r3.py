@@ -345,7 +345,10 @@ def pick_unit(text, held, now, asks=None):
     # overall). Our grade B goods rate 4.30 vs A 4.56 (24 h; 25620027 and fair-furniture give A 5, B 4); without the B
     # goods of the last 24 h our per-account star mean would be +0.005. Policy knob sell_b (0 = A only; unsold B stays
     # in the book at cost)
-    if not shop_policy_now().get("sell_b", 1):
+    # 11-13: grade B is sold again except to the accounts that rate B lower than A (a_only_buyers.json): 60% of our
+    # 'none in stock' answers (157 an hour) came with B or C on the shelf; by account, only 25620027 (A 5 / B 4),
+    # fair-furniture (A 5 / B 4) and dyishappy (A 3.0 / B 2.75) rate B lower, iyen-dori and real_yellow rate it higher
+    if not shop_policy_now().get("sell_b", 1) or a_only(text):
         ab = [u for u in ab if (u.get("grade") or "A") == "A"]
     if not ab:
         return None
@@ -458,6 +461,18 @@ def wtext(hours):
 RECENT_HOLD = 300   # s an agreed unit is kept from other buyers while its checkout settles
 RIVALS = HERE / "rival_buyers.json"
 _rivals = [0.0, {}]
+
+
+A_ONLY = HERE / "a_only_buyers.json"
+_aonly = [0.0, []]
+
+
+def a_only(text):
+    """True when the first message matches an account in a_only_buyers.json (accounts that rate grade B lower)."""
+    if time.time() - _aonly[0] > 60:
+        _aonly[0] = time.time()
+        _aonly[1] = [re.compile(x, re.I) for v in read_json(A_ONLY, {}).values() if isinstance(v, list) for x in v]
+    return any(r.search(text) for r in _aonly[1])
 
 
 STAR_BUYERS = HERE / "star_buyers.json"
