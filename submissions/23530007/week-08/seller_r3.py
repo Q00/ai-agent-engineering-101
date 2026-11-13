@@ -642,7 +642,11 @@ class Shop(AgentExecutor):
                 # 11-13 (user: 'raise a lot of cash; keep only enough stock not to run out'): a slow unit is not held
                 # up to the rival shops' price; its own floor (slow_floor_mult x cost) and ask cut stand, so it turns
                 # into cash at no book loss and stops paying storage
-                if ref and not slow:
+                # 11-13 13:00: reverted to 'if ref:' for every unit: with slow units at a cost floor and no rival
+                # floor, SungJinho's buyer (25620027) took 65 of its 108 goods deals from us in 2.8 h at x .626, 38%
+                # at or under cost (v .916), i.e. our clearance fed the class-total runner-up's saved. Cash now comes
+                # from buying less (restock limits), not from selling at cost
+                if ref:
                     # 23:30 (user: 'balance it dynamically and get both'; 'some items can cost a little more'):
                     # price_ctl.py moves `under` (all goods: up when the book lead is thin, down when the book is safe
                     # and revenue is behind) and a per-SKU `adj` (up on strong demand or when nearly out, down when
