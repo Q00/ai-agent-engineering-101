@@ -930,7 +930,7 @@ def default_restock(inv, demand):
 
 def sync_loop(a, agent, d, market, state):
     """Round 3: refresh .market/ (inventory and wallet for a shop, catalog, demand, forum), run the restock,
-    and send what the agents wrote to .market/outbox.jsonl. Never raises."""
+    (the agents' .market/outbox.jsonl goes out through outbox_loop). Never raises."""
     md = d / ".market"
     md.mkdir(exist_ok=True)
     last_restock, last_forum, forum = 0, 0, []
@@ -956,8 +956,7 @@ def sync_loop(a, agent, d, market, state):
                 if r.status_code == 200:
                     state["demand"] = r.json()
                     write_json(md / "demand.json", state["demand"])
-            outbox(market, md)
-            if "buyer" in market.token:
+            if "buyer" in market.token:          # 11-13: the outbox has its own 1 s sender (outbox_loop)
                 broken_news(market, md, state)
             if shop and inv and inv.get("round", 0) >= ECON_ROUND and time.time() - last_restock > RESTOCK_EVERY \
                     and not (state.get("restocking") and state["restocking"].is_alive()):
@@ -1047,9 +1046,30 @@ def broken_news(market, md, state):
             return
 
 
-def outbox(market, md):
+POST_EVERY = 300                                    # the market's limit: one post per 5 minutes per role
+POST_RETRY = 5                                      # seconds before a 429'd or 5xx'd post is tried again
+POST_TRIES = 3                                      # 5xx answers before a post goes to outbox.sent.jsonl anyway
+
+
+def outbox_loop(market, md):
+    """11-13: the outbox's own sender, once a second. In sync_loop (10 s cycle) buyer posts went out 306.3 s apart
+    (220 gaps, 11.75/h, not 12/h) and 4 posts were lost to 502 (the 5 posts answered 500 were taken: our next 200
+    came ~300 s later). Started after the buyer's join, so a buyer line never goes out as the shop. Never raises."""
+    gate = {"last": {}, "try": {}}                      # role -> last 200 post time; role -> next try time
+    while True:
+        time.sleep(1)
+        try:
+            outbox_once(market, md, gate)
+        except Exception as e:
+            log(f"[kit] outbox: {type(e).__name__}: {e}")
+
+
+def outbox_once(market, md, gate):
     """Each line of .market/outbox.jsonl: {"post": text, "refs": [..], "thread": id, "as": "shop"|"buyer"}
-    or {"vote": post id, "value": 1|-1, "as": ...}. Sent lines move to outbox.sent.jsonl with the market's answer."""
+    or {"vote": post id, "value": 1|-1, "as": ...}. Sent lines move to outbox.sent.jsonl with the market's answer.
+    Votes go at once. A post goes when its role's last 200 is POST_EVERY s old and no retry wait is on; a 429 or
+    5xx keeps it and retries in POST_RETRY s (a 429 in the market's `wait` s), and after POST_TRIES 5xx answers it
+    goes to sent with its status. A 429 on a post retried after a 5xx means the market took it then: it goes to sent."""
     box = md / "outbox.jsonl"
     if not box.exists() or box.stat().st_size == 0:
         return
@@ -1060,21 +1080,44 @@ def outbox(market, md):
         try:
             m = json.loads(line)
         except ValueError:
-            sent.append({"line": line[:200], "error": "not JSON"})
+            sent.append({"line": line[:200], "error": "not JSON", "t": round(time.time(), 1)})
             continue
         role = m.get("as") if m.get("as") in market.token else next(iter(market.token), None)
         if role is None:
             keep.append(line)
             continue
+        now = time.time()
         if "vote" in m:
             r = market.call("POST", "/api/forum/vote", role, json={"post": m["vote"], "value": m.get("value")})
         else:
+            if now < gate["last"].get(role, 0) + POST_EVERY or now < gate["try"].get(role, 0):
+                keep.append(line)                       # not yet: this role posted < 5 min ago or waits a retry
+                continue
             body = {"text": m.get("post"), "refs": m.get("refs") or [], "thread": m.get("thread")}
             r = market.call("POST", "/api/forum", role, json=body)
-            if r.status_code == 429:                    # one post per 5 minutes: keep it for later
+            if r.status_code == 429 and m.get("_tries"):   # the market took it at its 5xx (our 500s: next 200 came
+                gate["last"][role] = m.get("_at", now)      # ~300 s later; 502s: ~70 s): no second copy, no 429 storm
+                log(f"[forum] post as {role}: 429 after a {m.get('_status')}, the market took it then")
+            elif r.status_code == 429:                  # one post per 5 minutes: keep it for later
+                try:
+                    wait = min(max(float(r.json().get("wait")), POST_RETRY), POST_EVERY)
+                except Exception:
+                    wait = POST_RETRY
+                gate["try"][role] = now + wait
+                log(f"[forum] post as {role}: 429, retry in {wait:.0f} s")
                 keep.append(line)
                 continue
-        sent.append({"sent": m, "status": r.status_code, "answer": r.text[:300]})
+            elif r.status_code >= 500:                  # 11-13: 4 buyer posts were lost to 502 (500s were taken)
+                m["_tries"] = m.get("_tries", 0) + 1
+                m["_at"], m["_status"] = round(now, 1), r.status_code
+                gate["try"][role] = now + POST_RETRY
+                log(f"[forum] post as {role}: {r.status_code}, try {m['_tries']} of {POST_TRIES}")
+                if m["_tries"] < POST_TRIES:
+                    keep.append(json.dumps(m, ensure_ascii=False))
+                    continue
+            elif r.status_code == 200:
+                gate["last"][role] = now
+        sent.append({"sent": m, "status": r.status_code, "answer": r.text[:300], "t": round(now, 1)})
         log(f"[forum] {'vote' if 'vote' in m else 'post'} as {role}: {r.status_code}")
     with open(md / "outbox.sent.jsonl", "a", encoding="utf-8") as f:
         for x in sent:
@@ -1143,6 +1186,7 @@ def cmd_join(a):
             syncing.append(threading.Thread(target=sync_loop, args=(a, agent, d, market, state), daemon=True))
             syncing[0].start()
         if a.shop_only:
+            threading.Thread(target=outbox_loop, args=(market, d / ".market"), daemon=True).start()
             log("[kit] shop only; Ctrl-C to leave the market")
             while True:
                 time.sleep(3600)
@@ -1150,6 +1194,9 @@ def cmd_join(a):
         log(f"[market] buyer registered as {j['name']}, round {j['round']}")
         if not syncing:                                 # buyer only: catalog, demand and forum, and the outbox
             threading.Thread(target=sync_loop, args=(a, agent, d, market, state), daemon=True).start()
+        # 11-13: after the buyer's join (not next to the shop's sync_loop): until then market.token has only the
+        # shop, and a queued buyer post or vote would go out as the shop
+        threading.Thread(target=outbox_loop, args=(market, d / ".market"), daemon=True).start()
         bproxy = Proxy(free_port(), same_host=True)
         n = 0
         while a.orders == 0 or n < a.orders:

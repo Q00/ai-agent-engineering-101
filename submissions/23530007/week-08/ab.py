@@ -9,7 +9,7 @@ An experiment:
     {"side": "buyer" | "seller", "knob": "<param name>", "arms": [v0, v1, ...], "kind": "food" | "goods" | null,
      "grade": "A" | "B" | null (seller), "min_n": 150, "promote_p": 0.95, "floor": 0.10, "start": <epoch>}
 
-assign(side, kind, grade) -> {name: [arm index, value]} for the running experiments that match; the caller applies the
+assign(side, kind, grade) -> {name: [arm index, value, knob]} for the running experiments that match; the caller applies the
 values to its own parameters and records the indices (buyer: every trade record of the order as "ab"; seller: the ask's
 open deal and its deal/canceled/lapsed events as "ab"). It never raises: an error means no experiment for that call.
 
@@ -79,7 +79,7 @@ def assign(side, kind=None, grade=None):
             while i < len(w) - 1 and r > w[i]:
                 r -= w[i]
                 i += 1
-            out[name] = [i, e["arms"][i]]
+            out[name] = [i, e["arms"][i], e.get("knob")]
         return out
     except Exception:  # noqa: BLE001 - an experiment must never break an order or an ask
         return {}

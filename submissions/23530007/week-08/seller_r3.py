@@ -71,7 +71,9 @@ RESERVE = {"lamp": 100, "chair": 180, "bookshelf": 260}   # Rounds 0-2: the week
 FOOD_CUTS = (0.80, 0.45)                                  # shelf life left for grade A, B (market rule)
 POLICY_CACHE = 30                                        # seconds between policy reads
 MAX_OFFERS = 8
-HOLD_IDLE = 120
+# 11-13 (U4, verified live_bugs): an open talk holds its unit; max settle latency measured 43.9 s, and 504 of 1,024
+# asks since 15:08 left with no offer after our first quote, so their units sat held 120 s from other buyers
+HOLD_IDLE = 60
 DOOM_HOURS = 24          # food this close to its date goes out first, said plainly and at <= DOOM_ASK of list,
 UNSTATED_NEED = 0.75     # 11-09: a buyer that states no need (buyer-01/02/03) needs 75 % of the shelf life
 DOOM_SHARE = 0.25        # once under DOOM_SHARE of its shelf life is left too (orders ask 10/25/50/75 % of it):
@@ -283,7 +285,7 @@ def sellable_first(fit, asks):
     return ok or fit
 
 
-def pick_unit(text, held, now, asks=None):
+def pick_unit(text, held, now, asks=None, star=False, unpaid=None):
     inv = read_json(MARKET_DIR / "inventory.json", {})
     if inv.get("round", 0) < 3:
         item = next((k for k in RESERVE if k in text.lower()), None)
@@ -304,6 +306,13 @@ def pick_unit(text, held, now, asks=None):
         # 11-13: a buyer that names only the category (q00: 'I want to buy a 침구') has a budget we cannot see; we
         # handed it the oldest grade A unit of any SKU and q00 rated 1 star: 'RIPOFF. Asked 97806 for a 침구; my
         # budget was 36120'. The cheapest SKU of the category goes first
+        # 11-13 (U4, verified live_bugs S3): q00 ('I want to buy a 침구', 30-59/h) got G054ff120 (list 7,900), outside
+        # its order's price band: all 82 checkout refusals since 15:08 (89 closes, 8 settles), the units re-agreed after
+        # each hold. A SKU with >= 2 unpaid category deals in the last hour is no longer offered to category asks
+        if unpaid:
+            fit = [u for u in fit if sum(1 for t in unpaid.get(u["sku"], ()) if now - t < 3600) < 2]
+            if not fit:
+                return None
         cheapest = min((u.get("list_price") or 0) for u in fit)
         fit = [u for u in fit if (u.get("list_price") or 0) <= cheapest * 1.15]
     if fit[0].get("kind") == "food":
@@ -379,7 +388,9 @@ def pick_unit(text, held, now, asks=None):
     # 11-13 (user: 'raise a lot of cash' after 'grade C may be sold'): ~620 grade C goods units (167 M at cost) sat
     # unsold since 11-11; a buyer whose message accepts C (7% of first messages) now gets a C unit first, without a
     # warranty (warranty_grades A/B), so it turns into cash with no refund risk to us
-    if shop_policy_now().get("sell_c") and ACCEPTS_C.search(text or ""):
+    # 11-13 (U4): only when the buyer's stated grades allow C (want None or C in it): NO_C, ONLY_A and C_WITH_WARRANTY
+    # all leave C out of want
+    if shop_policy_now().get("sell_c") and ACCEPTS_C.search(text or "") and (want is None or "C" in want):
         cs = [u for u in fit if u.get("grade") == "C"]
         if cs:
             return min(cs, key=lambda u: u.get("supplied_at") or 0)
@@ -393,6 +404,13 @@ def pick_unit(text, held, now, asks=None):
     # fair-furniture (A 5 / B 4) and dyishappy (A 3.0 / B 2.75) rate B lower, iyen-dori and real_yellow rate it higher
     if not shop_policy_now().get("sell_b", 1) or a_only(text):
         ab = [u for u in ab if (u.get("grade") or "A") == "A"]
+    if star:
+        # 11-13 (U4, S1, verified shop_stars): a price-rated star account (star_buyers.json) gets the grade A unit with
+        # the lowest cost/list, so its star price (dyishappy x .55, iyen-dori x .64) clears the refund break-even
+        # floor on more sales; at the oldest unit 132 star sales lost 7.4 M of book on 11-13
+        aa = [u for u in ab if (u.get("grade") or "A") == "A" and u.get("list_price")]
+        if aa:
+            return min(aa, key=lambda u: (u.get("cost") or 0) / u["list_price"])
     if not ab:
         # 11-13 17:30 (user: 'the goal is the highest score; any shop rule may change'): with no A or B unit of the
         # SKU, a buyer who stated no grade and asked for no warranty gets a grade C unit (honest claim, no warranty)
@@ -424,13 +442,43 @@ FOOD_SHELF_FLOOR = 0.80       # share of its shelf life a food unit must still h
 #                               under 45% 4.5 stars, 45-60% 4.66, 60-75% 4.80, 75-90% 4.83; every low review under 75% names the
 #                               shelf life or grade B (25620027 rates older food 3.70 and fresh 4.67, nohaggle-hero 4.62 vs 5.00)
 GRADE_ORDER = {"A": 0, "B": 1, "C": 2}
-ACCEPTS_C = re.compile(r"grade\s*C\b|refurb|any\s*grade|cheapest\s*grade|lowest\s*grade|\bC\s*grade", re.I)
+# 11-13 (U4, verified rules_opportunities): the 'Compare B/C' stream (~150 asks/h) and 'clearance'/'near-expiry'/
+# 'cheapest unit' asks accept C too; C goods settle market-wide at .4-.7 of list and rate 4.6-4.9 (2,500 reviews)
+ACCEPTS_C = re.compile(r"grade\s*C\b|refurb|any\s*grade|cheapest\s*grade|lowest\s*grade|\bC\s*grade|compare\s+B\s*/\s*C|"
+                       r"\bB\s*/\s*C\b|clearance|near-expiry|cheapest unit", re.I)
+# 11-13 (U4): '| need: grade A/B, warranty 6 h' (dragonash) restricts to A/B; 'grade A/B/C' does not
 NO_C = re.compile(r"(grade\s*)?A\s*(or|/)\s*B\s*(grade\s*)?only|only\s*grade\s*A|not\s*(buy|pay\s*for|take)\s*grade\s*C|"
                   r"no\s*grade\s*C|grade\s*C\s*(is\s*)?not|A\s*/\s*B\s*only|I buy grade A|"
-                  r"grade\s*A\s*or\s*B\b(?![^.]{0,20}\bC\b)", re.I)   # 11-13: 'Please offer a grade A or B'
-ONLY_A = re.compile(r"(only|just)\s*grade\s*A\b|grade\s*A\s*only", re.I)
-WANTS_WARRANTY = re.compile(r"\band warranty\b|include (a |the )?warranty|with (a |the )?warranty|-hour warranty|warranty (covering|required|please)|require[sd]? (a |the )?warranty|\"warranty_hours\": *[1-9]", re.I)
+                  r"grade\s*A\s*or\s*B\b(?![^.]{0,20}\bC\b)|"     # 11-13: 'Please offer a grade A or B'
+                  r"grade\s*A\s*/\s*B\b(?!\s*/\s*C)", re.I)
+# 11-13 (U4, verified live_bugs): 'Only grade A or B is acceptable' matched ONLY_A and withheld B (29 of 2,324 asks
+# since 15:08, all of them this phrase); A or B after 'only grade A' is no longer A-only
+ONLY_A = re.compile(r"(only|just)\s*grade\s*A\b(?!\s*(or|/|,|and)\s*(grade\s*)?B)|grade\s*A\s*only\b", re.I)
+# 11-13 (U4, verified rules_opportunities): WANTS_WARRANTY matched ~50% of asks, 926 of 986 totato asks through 'and
+# warranty' in 'State price, grade and warranty hours', so a buyer that prefers C got A/B only; it is replaced by a
+# test for a REQUIRED warranty, and a soft one ('if offered', 'preferred, not required') does not restrict grades
+WARRANTY_REQUIRED = re.compile(r"\band warranty\b(?!\s*(hours|duration|terms|length))|include (a |the )?warranty\b|"
+                               r"with (a |the )?warranty\b|warranty (covering|required|please)|"
+                               r"require[sd]?\s+(a |the )?(\d+\s*-?\s*h(ours?)?\s+)?warranty|requires? at least|"
+                               r"warranty of at least|at least (a |an )?\d+\s*-?\s*h(ours?)?\s+warranty|"
+                               r"with a \d+\s*-?\s*h(ours?)? warranty|need:[^|.]*warranty|\"warranty_hours\": *[1-9]", re.I)
+SOFT_WARRANTY = re.compile(r"if (a warranty is )?(offered|available)|when offered|preferred,? not required|if you offer", re.I)
+# 11-13 (U4): any mention of a warranty gets the full warranty_hours; a silent goods ask gets warranty_default_h
+# (refunds ~9.1 M/day, all breaks within 6 h of the sale; most buyers never state a warranty)
+MENTIONS_WARRANTY = re.compile(r"warrant", re.I)
 C_WITH_WARRANTY = re.compile(r"grade\s*C[^.]{0,80}warranty|C\s*\(refurbished\)[^.]{0,80}warranty", re.I)
+
+
+def warranty_required(text):
+    return bool(WARRANTY_REQUIRED.search(text)) and not SOFT_WARRANTY.search(text)
+
+
+def be_mult(grade, wh):
+    """11-13 (U4, verified L7): least price of a goods unit as a multiple of its cost so a sale is book-neutral after
+    warranty refunds (A breaks ~2.5% of price inside 6 h, B 6-10%; C carries no warranty)."""
+    return {"A": 1.025 if wh >= 6 else 1.012 if wh > 0 else 1.0,
+            "B": 1.15 if wh >= 6 else 1.075 if wh > 0 else 1.0,
+            "C": 1.0}.get(grade, 1.025)
 
 
 def ok_grades(text):
@@ -448,7 +496,8 @@ def ok_grades(text):
     # 11-09: 'Please quote your best price with market certificate (cert=true) and warranty.' and 'Please include a
     # warranty' agreed on grade C (no warranty here) and then did not pay: 85 of 119 such C deals in 5 h never
     # settled (C goods 40 % unpaid, A 0 %). A buyer that asks for a warranty gets only warranted grades
-    if WANTS_WARRANTY.search(text) and warranted:
+    # 11-13 (U4): only a REQUIRED warranty restricts grades (see WARRANTY_REQUIRED)
+    if warranty_required(text) and warranted:
         return {"A", "B", "C"} & warranted
     return None
 
@@ -507,9 +556,15 @@ def blocked(text):
     return next((k for k, pats in _blocked[1].items() if any(r.search(text) for r in pats)), None)
 
 
-def wtext(hours):
+def wtext(hours, p_wh=None):
     """How a warranty is said: from a year up it is a lifetime warranty (user 11-08: goods only break within 6 h
-    of the sale, so any length past that costs the same and a lifetime one reads better)."""
+    of the sale, so any length past that costs the same and a lifetime one reads better). p_wh: the full warranty a
+    buyer gets by asking for one (11-13, U4)."""
+    # 11-13 (U4): a silent ask gets the shorter default warranty (or none); the quote says so and how to get p_wh h
+    if p_wh and 0 < hours < 6:
+        return f"{hours:g} h warranty (ask for a warranty and you get {p_wh:g} h at the same price)"
+    if p_wh and hours == 0:
+        return f"no warranty (ask for one and you get {p_wh:g} h at the same price)"
     # 11-13: yeonsong2 (741 reviews of us, 3.45 over 12 h) rated 2-3 '72-hour warranty is concerningly short for a
     # carpet'; 72 h is the longest the market settles (8760 h failed its well-formed check on 11-08), and goods only
     # break within 6 h of the sale, so 72 h covers every break: say so
@@ -518,7 +573,9 @@ def wtext(hours):
             if hours >= 6 else f"{hours:g} h warranty")
 
 
-RECENT_HOLD = 300   # s an agreed unit is kept from other buyers while its checkout settles
+# 11-13 (U4): 300 -> 90 s; the slowest settle measured 43.9 s, and an agreed unit that is never paid (q00's category
+# asks, unasked C) was kept from other buyers for 5 min
+RECENT_HOLD = 90    # s an agreed unit is kept from other buyers while its checkout settles
 RIVALS = HERE / "rival_buyers.json"
 _rivals = [0.0, {}]
 
@@ -567,6 +624,8 @@ class Shop(AgentExecutor):
     def __init__(self):
         self.open = {}      # task id -> deal
         self.closed = {}    # 11-08: unit -> when we agreed it; held RECENT_HOLD s so it is not sold twice before it settles
+        #                     11-13 (U4): unit -> (t, sku, category the buyer asked by or None)
+        self.unpaid_cat = {}  # 11-13 (U4): sku -> times a category-only deal of it aged out of the hold unpaid
         self.cached = (0, None)
         self.asks = {}                                    # category -> competitors' first asks / list price
         self.scarce = set()                               # SKUs that keep selling out
@@ -593,7 +652,7 @@ class Shop(AgentExecutor):
         for tid, d in list(self.open.items()):
             if now - d["seen"] > HOLD_IDLE:
                 record(event="lapsed", sku=d["unit"]["sku"], category=d["unit"].get("category"), ask=d["ask"],
-                       offers=d["offers"])
+                       offers=d["offers"], task=tid, ab=d.get("ab") or None)
                 del self.open[tid]
 
     async def words(self, move, d, text, fallback):
@@ -643,9 +702,22 @@ class Shop(AgentExecutor):
             # 11-08: a unit we agreed stays in inventory.json until the market settles it, and we sold it again: 38
             # units went 2-10 times in 3 h and the later buyer's checkout was refused 'unit not in stock' (10-14/h).
             # Hold an agreed unit for RECENT_HOLD s; if that buyer never pays it comes back after that
-            self.closed = {k: v for k, v in self.closed.items() if now - v < RECENT_HOLD}
+            # 11-13 (U4, verified live_bugs S3): a category-only deal still in inventory.json (refreshed every 10 s) when
+            # its hold ends was not paid; q00's refused checkouts re-agreed the same G054ff120 units after every hold
+            gone = [(k, v) for k, v in self.closed.items() if now - v[0] >= RECENT_HOLD]
+            if any(v[2] for _, v in gone):
+                stock = {x.get("unit") for x in read_json(MARKET_DIR / "inventory.json", {}).get("units", [])}
+                for k, v in gone:
+                    if v[2] and k in stock:
+                        self.unpaid_cat.setdefault(v[1], []).append(now)
+            for k, _ in gone:
+                del self.closed[k]
+            self.unpaid_cat = {k: [t for t in v if now - t < 3600] for k, v in self.unpaid_cat.items()}
+            self.unpaid_cat = {k: v for k, v in self.unpaid_cat.items() if v}
             held |= set(self.closed)
-            u = pick_unit(text, held, now, self.asks)
+            # 11-13 (U4, S1): the star account is known before the unit is chosen, so it gets the A unit of least cost/list
+            star_who, star_x = star_buyer(text)
+            u = pick_unit(text, held, now, self.asks, star=bool(star_who), unpaid=self.unpaid_cat)
             if u is None:
                 log("seller", f"task {task.id[:8]} nothing in stock for {text[:80]!r}")
                 record(event="no_stock", text=text[:120], skus=SKU.findall(text))
@@ -653,6 +725,18 @@ class Shop(AgentExecutor):
                 return
             grade = grade_now(u, now) or "A"
             regime, p, _, _ = self.policy(now)
+            # 11-13 (U4, verified R4): the warranty is decided first, as the refund break-even floor depends on it. A goods
+            # ask that mentions a warranty gets warranty_hours; a silent one gets warranty_default_h (77% of our refund
+            # value, 12.9 of 16.72 M in 24 h, comes from breaks after 3 h). Every buyer is told how to get the full one
+            wh = 0
+            if u.get("kind") == "goods" and grade in p["warranty_grades"] and p["warranty_hours"]:
+                dflt = p.get("warranty_default_h")
+                try:                                    # 11-13 (U4 review): a bad knob value must not break a quote
+                    dflt = None if dflt is None else max(0, min(int(dflt), int(p["warranty_hours"])))
+                except (TypeError, ValueError):
+                    dflt = None
+                wh = (p["warranty_hours"] if MENTIONS_WARRANTY.search(text) or dflt is None
+                      else dflt)
             c = self.clear_factor(u, now)               # 1 = sells in time at full price; below 1 = clear it now
             mult = min(p["floor_mult"], max(p["clear_floor"], p["floor_mult"] * c))
             age = (now - (u.get("supplied_at") or now)) / 3600 if u.get("unit") else 0
@@ -684,7 +768,9 @@ class Shop(AgentExecutor):
                 # that rate on price give 5 stars under ~.66 of list: real_yellow 5.0 at .50-.58 vs 3.0 above .75)
                 share = min(share, STAR_ASK)
                 floor = min(floor, round(u["list_price"] * STAR_FLOOR))
-            if u.get("kind") == "goods" and u.get("unit") and regime not in ("LIQUIDATE", "LIQUIDATE_LAST"):
+            # 11-13 (U4): the market reference applies in every regime (was: not while liquidating); under it, a
+            # liquidation floor fed rival buyers' saved (SJ's buyer took 65 of its 108 goods deals from us at x .626)
+            if u.get("kind") == "goods" and u.get("unit"):
                 # 11-11 23:00, user: 'cheaper than the others, but only very slightly; no need to be the cheapest in the
                 # market: match the rival shop of each part (revenue: inextro, ...) and sell a little under it'. Two days
                 # of our sales net of refunds: grade A +.063 of list at a price of .728, B +.025 at .608 (13.4% of B
@@ -706,8 +792,12 @@ class Shop(AgentExecutor):
                     # and revenue is behind) and a per-SKU `adj` (up on strong demand or when nearly out, down when
                     # nobody takes it) every 15 min from what it measures; the seller only reads the file
                     ctl = price_ctl()
-                    under = ctl.get("under", p.get("rival_under", RIVAL_UNDER))
-                    level = ref - under + (ctl.get("sku") or {}).get(u["sku"], 0.0)
+                    # 11-13 (U4, verified shop_book_revenue): price_ctl's global 'under' went 0 -> -.01 -> -.02 'price UP
+                    # (book thin)' while revenue fell 39.6 -> 10.5 M/h; it is no longer read. The params knob rival_under
+                    # sets it (grade C sits at the reference: under 0), and the per-SKU adj is clamped to -.03..+.02
+                    under = 0.0 if grade == "C" else p.get("rival_under", 0.0)
+                    adj = max(-0.03, min(0.02, (ctl.get("sku") or {}).get(u["sku"], 0.0)))
+                    level = ref - under + adj
                     floor = max(floor, round(u["list_price"] * level))
                     share = level + p.get("rival_over", RIVAL_OVER) + 0.01
                     # 11-13 18:15 (user: 'sell what SungJinho sells; split the pie'): REVENUE DEFENSE. A unit of a SKU
@@ -721,14 +811,12 @@ class Shop(AgentExecutor):
                         dfloor = max(round(u["list_price"] * level), round(u["cost"] * (1 - DEF_MAX_LOSS)))
                         if dfloor < floor:
                             floor, defense = dfloor, True
-            who, min_share = rival(text)
-            if who:                                     # a rival above us in class: no deep discount (user 11-07)
-                floor = max(floor, round(u["list_price"] * min_share))
-                record(event="rival", task=task.id, who=who, sku=u["sku"], floor=floor)
-            star_who, star_x = star_buyer(text)
+            # 11-13 (U4, verified live_bugs): the rival() floor (rival_buyers.json, Kiro729 x .68) is dormant since 11-12
+            # 06:00 and is no longer called; the function stays
             if star_who and grade == "A":               # 11-13: a price-rated account gets the price its rubric rates 5
-                floor = round(u["list_price"] * star_x)
-                share = star_x
+                # 11-13 (U4, S1): a CAP, not a set price: the star price never lifts a floor or ask that sits under it
+                floor = min(floor, round(u["list_price"] * star_x))
+                share = min(share, star_x)
                 # 11-13 15:00: goods never under the unit's cost. Uncapped, x .55 (dyishappy, manual) and .64 (iyen-dori)
                 # sold 132 grade A units from 09:25 for -7.4 M of book (-6.4 M in the last 3 h: furniture at cost/list
                 # .70-.73 went at .55, 22-25% under cost) while a 5-star review from an account with 688 reviews of us
@@ -741,23 +829,50 @@ class Shop(AgentExecutor):
                     floor = int(u["cost"] * STAR_COST_MULT)
                     share = max(share, floor / u["list_price"])
                 record(event="star_buyer", task=task.id, who=star_who, sku=u["sku"], price=floor, at_cost=at_cost)
-            ask = round100(min(u["list_price"], max(floor, u["list_price"] * share)))
             asked = None
             if not SKU.search(text) and u.get("category"):
                 leaf = u["category"].split(">")[-1]
                 asked = leaf if leaf.lower() in text.lower() else None
+            if asked:
+                # 11-13 (U4, verified live_bugs S3): a category-only order accepts SKUs priced .5-1.5x a reference we
+                # cannot see; q00 rated 1 star 'RIPOFF. Asked 97806 for a 침구; my budget was 36120'. Ask <= .70 of list
+                share = min(share, 0.70)
+            if u.get("kind") == "goods" and u.get("unit"):
+                # 11-13 (U4, verified L7/R3): nothing goes under the refund break-even, in any regime (slow, clearance,
+                # rev_defense, star): at exactly cost a warranted A unit loses its refunds (~2.5% of price), B 6-10%
+                floor = max(floor, math.ceil(u["cost"] * be_mult(grade, wh)))
+            # 11-13 (user: 'keep moving the strategy to the better side through A/B tests'): live arms (ab.py) on the
+            # goods ask: the arm's offset replaces the knob ask_offset_<grade> for this ask; the floor is untouched
+            ab_arms = {}
+            if u.get("kind") == "goods" and u.get("unit"):
+                off = p.get(f"ask_offset_{grade}", 0.0) or 0.0
+                try:
+                    import ab as _ab
+                    ab_arms = _ab.assign("seller", grade=grade)
+                except Exception:   # noqa: BLE001 - an experiment never breaks a quote
+                    ab_arms = {}
+                for _n, _v in ab_arms.items():
+                    if len(_v) > 2 and _v[2] == f"ask_offset_{grade}":
+                        off = _v[1]
+                share += off
+            ask = round100(min(u["list_price"], max(floor, u["list_price"] * share)))
             d = self.open[task.id] = {"unit": u, "grade": grade, "floor": floor, "ask": max(ask, floor), "asked": asked,
                                       "offers": [], "seen": now, "regime": regime, "meet": p["meet_frac"],
-                                      "warranty": p["warranty_hours"] if grade in p["warranty_grades"] else 0,
+                                      "warranty": wh,
+                                      "p_wh": (p["warranty_hours"] if u.get("kind") == "goods" and u.get("unit")
+                                               and grade in p["warranty_grades"] else 0),
                                       "clear": round(c, 2),
                                       "comp": None if comp is None else round(comp, 3), "slow": slow,
-                                      "defense": defense}
+                                      "defense": defense, "ab": {k: v[0] for k, v in ab_arms.items()}}
+            if ab_arms:
+                record(event="quote", task=task.id, sku=u["sku"], grade=grade, ask=d["ask"], floor=floor, ab=d["ab"])
             d["first_ask"] = d["ask"]
             hl = hours_left(u, now)
             facts = (f"{u['name']} ({u['sku']}), grade {grade}"
                      + (f", NOTE: only {hl:.0f} hours left before its date, so it is priced down" if doomed else
                         f", lasts {hl:.0f} more hours" if hl is not None else "")
-                     + (f", {wtext(d['warranty'])}" if u.get("kind") == "goods" and u["unit"] and d["warranty"] else "")
+                     + (f", {wtext(d['warranty'], p['warranty_hours'])}" if u.get("kind") == "goods" and u["unit"]
+                        and (d["warranty"] or (grade in p["warranty_grades"] and p["warranty_hours"])) else "")
                      + ", market certificate included")
             line = await self.words("open with an asking price", d, text, "Thanks for asking!")
             log("seller", f"task {task.id[:8]} {u['sku']} unit {u['unit']} grade {grade} cost {u['cost']} "
@@ -768,9 +883,17 @@ class Shop(AgentExecutor):
             return
 
         d["seen"] = now
+        # 11-13 (U4 review): the quote tells a buyer with the short default warranty 'ask for a warranty and you get
+        # p_wh h at the same price'; a later message that asks for it gets it (asking price unchanged, the floor up to
+        # the full warranty's refund break-even but never above the current ask), and the reply says so
+        wnote = ""
+        if d.get("p_wh") and d["warranty"] < d["p_wh"] and MENTIONS_WARRANTY.search(text):
+            d["warranty"] = d["p_wh"]
+            d["floor"] = min(d["ask"], max(d["floor"], math.ceil(d["unit"]["cost"] * be_mult(d["grade"], d["p_wh"]))))
+            wnote = f" Done: this unit now carries a {d['p_wh']:g} h warranty at the same price."
         offer = last_number(text, d["ask"])
         if offer is None:
-            await up.requires_input(say(f"Please send your offer as a number. Asking {d['ask']}.", d["ask"]))
+            await up.requires_input(say(f"Please send your offer as a number. Asking {d['ask']}.{wnote}", d["ask"]))
             return
         d["offers"].append(offer)
         n, ask, floor = len(d["offers"]), d["ask"], d["floor"]
@@ -794,7 +917,7 @@ class Shop(AgentExecutor):
         d["ask"] = min(ask, new)
         line = await self.words("make a counteroffer, warmly", d, text, "We can meet you partway.")
         note = " That is our floor." if d["ask"] == floor else ""
-        await up.requires_input(say(f"{line}{note} Counteroffer: {d['ask']}.", d["ask"]))
+        await up.requires_input(say(f"{line}{note} Counteroffer: {d['ask']}.{wnote}", d["ask"]))
 
     async def close(self, up, say, tid, d, price):
         u = d["unit"]
@@ -810,12 +933,13 @@ class Shop(AgentExecutor):
         await up.add_artifact(parts=[new_data_part(rec)], name="receipt")
         record(event="deal", task=tid, sku=u["sku"], category=u.get("category"), price=price, cost=u["cost"],
                grade=d["grade"], unit=u["unit"], offers=d["offers"], regime=d["regime"], first_ask=d["first_ask"],
-               clear=d["clear"], comp=d["comp"], slow=d["slow"], defense=d.get("defense", False))
+               clear=d["clear"], comp=d["comp"], slow=d["slow"], defense=d.get("defense", False),
+               ab=d.get("ab") or None)
         if d.get("defense"):
             defense_add(u["cost"] - price)
         log("seller", f"task {tid[:8]} deal {u['sku']} at {price} (cost {u['cost']}, floor {d['floor']})")
         if u.get("unit"):
-            self.closed[u["unit"]] = time.time()
+            self.closed[u["unit"]] = (time.time(), u["sku"], d.get("asked"))
         del self.open[tid]
         await up.complete(say(f"Deal: {u['name']} at {price}. The receipt is signed; the unit ships with the "
                               f"market's certificate. An honest review helps us.", price))
@@ -825,7 +949,7 @@ class Shop(AgentExecutor):
         d = self.open.pop(task.id, None)
         if d:
             record(event="canceled", sku=d["unit"]["sku"], category=d["unit"].get("category"), ask=d["ask"],
-                   offers=d["offers"])
+                   offers=d["offers"], task=task.id, ab=d.get("ab") or None)
         await TaskUpdater(event_queue=event_queue, task_id=task.id, context_id=task.context_id).cancel()
 
 
@@ -839,7 +963,11 @@ def build(port):
         pass
     from shop_guard import grades_now           # the card states what the deals carry (book-lead guard, 11-07)
     warranty, grades = base.get("warranty_hours", 0), grades_now(base.get("warranty_grades", []))
-    cover = (f"grade {' and '.join(grades)} goods carry a {wtext(warranty)} (other grades: none)"
+    # 11-13 (U4): the warranty follows the buyer's message (full when asked for, warranty_default_h otherwise); the
+    # card says exactly that, and that C goes only to buyers who accept C, without a warranty
+    cover = (f"grade {' and '.join(grades)} goods: a {warranty:g} h warranty when your message asks for a warranty; "
+             f"otherwise the shorter warranty stated in our quote and on the receipt (0-{warranty:g} h). Grade C goods "
+             f"only to buyers who accept C, sold as C without a warranty"
              if warranty and grades else "goods are sold as graded, without a warranty (no refund if one breaks)")
     card = AgentCard(
         name=NAME,
