@@ -43,6 +43,10 @@ MAX_TRIES = 4
 # cost + (1 - MIN_CAPTURE) x margin; shops are ranked by the share of their margin buyers kept there.
 MIN_CAPTURE = 0.65        # walk away when a deal would keep less of the margin than this (my average was 0.60)
 MARKET_CAPTURE = 0.75     # what buyers keep at a shop I have no settles for
+# An order takes about 30 s and the next one comes only when it is done, so a round of haggling (4-5 s) costs deals.
+# Code opens at the estimated cost (no model call), and takes the shop's price without another round when it already
+# keeps GOOD_CAPTURE of the margin, or when the shop repeats a price that is inside the cap.
+GOOD_CAPTURE = 0.80
 WARRANTY = 6              # goods break up to 6 h after the sale; a warranty refunds them (0 instead of -1)
 
 CHOOSE = """You are a buying agent in an online market. The order: one item from the category "{item}", budget {budget}{food}.
@@ -329,7 +333,7 @@ def main():
                 row.update(grade_said=grade, est_cost=cost, cap=cap)
                 print(f"[cost] the shop says grade {grade}{', unit lot cost %d' % lot if lot else ''}: "
                       f"est cost {cost}, cap {cap}", flush=True)
-            offers, told = [], False
+            offers, told, last_ask, fast = [], False, None, False
             for _ in range(MAX_OFFERS):
                 if t["status"]["state"] != "TASK_STATE_INPUT_REQUIRED":
                     break
@@ -339,11 +343,24 @@ def main():
                     lines += [f"you: use within {use_h:g}h", f"shop: {said}"]
                     if t["status"]["state"] != "TASK_STATE_INPUT_REQUIRED":
                         break
-                move, raw = safe_ask_json(OFFER.format(name=pick["name"], list_price=pick["list"], cap=cap, cost=cost,
-                                                       open=min(cost, cap),
-                                                       card=card.get("description", "")[:300], transcript="\n".join(lines)))
-                print(f"[harness] {raw}", flush=True)
                 ask = shop_ask(said)
+                kept = capture(pick["list"], ask, cost) if ask else 0
+                if not offers and not (ask and ask <= cap and kept >= GOOD_CAPTURE):
+                    move, raw = {"action": "offer", "price": min(cost, cap)}, ""     # the opening offer: the cost
+                    print(f"[open] {move['price']} (the estimated cost)", flush=True)
+                elif ask and ask <= cap and not fast and (kept >= GOOD_CAPTURE or ask == last_ask):
+                    move, raw, fast = {"action": "offer", "price": ask}, "", True    # once: a misread ask must not loop
+                    print(f"[take] the ask {ask} keeps {kept:.2f} of the margin"
+                          f"{' and the shop repeats it' if ask == last_ask else ''}: accept", flush=True)
+                elif offers and ask and ask > cap and ask == last_ask:
+                    move, raw = {"action": "offer", "price": cap}, ""                # it will not move: my cap, once
+                    print(f"[last] the shop repeats {ask}, above the cap: offer the cap {cap}", flush=True)
+                else:
+                    move, raw = safe_ask_json(OFFER.format(name=pick["name"], list_price=pick["list"], cap=cap, cost=cost,
+                                                           open=min(cost, cap), card=card.get("description", "")[:300],
+                                                           transcript="\n".join(lines)))
+                    print(f"[harness] {raw}", flush=True)
+                last_ask = ask
                 if raw.startswith("[harness failed]"):        # my model is down: take a fair ask, else leave politely
                     move = {"action": "offer", "price": ask} if ask is not None and ask <= cap else None
                     print(f"[fallback] {'accept the ask ' + str(ask) if move else 'walk away'}", flush=True)
