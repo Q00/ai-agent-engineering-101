@@ -1,5 +1,6 @@
 """Stock rejections schedule a short retry; they do not establish incompatibility."""
 from copy import deepcopy
+from datetime import datetime, timezone
 import unittest
 from buyer_selection import reuse_failures
 from buyer_policy import load_policy
@@ -9,7 +10,7 @@ from test_buyer_selection import shop
 class StockCooldownTests(unittest.TestCase):
     def setUp(self):
         self.shops = [shop('sold'), shop('alternative')]
-        self.row = dict(time=1000, round=3, name='sold', url=self.shops[0]['url'], item='G00001',
+        self.row = dict(time=datetime.fromtimestamp(1000, timezone.utc).isoformat(), round=3, name='sold', url=self.shops[0]['url'], item='G00001',
             result='no_deal', observed_stock_qty=1, observed_receipt=None,
             negotiation_diagnostics={'reason': 'seller_rejected', 'receipt_seen': False,
                 'seller_terminal': {'state': 'TASK_STATE_REJECTED', 'reported_tags': ['stock']}})
@@ -32,7 +33,7 @@ class StockCooldownTests(unittest.TestCase):
         for change in ({'round':2}, {'observed_receipt':{'price':100}},
                        {'negotiation_diagnostics':{'reason':'protocol_or_network_error'}}):
             self.assertEqual(len(self.select(rows=[{**self.row, **change}])[0]), 2)
-        success = {**self.row, 'time':1050, 'result':'settled', 'ledger':1}
+        success = {**self.row, 'time':datetime.fromtimestamp(1050, timezone.utc).isoformat(), 'result':'settled', 'ledger':1}
         self.assertEqual(len(self.select(rows=[self.row, success])[0]), 2)
 
     def test_all_cooling_remains_retryable(self):
