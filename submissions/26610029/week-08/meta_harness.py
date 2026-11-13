@@ -37,9 +37,16 @@ BOUNDS = {
         "warranty_hours": (6, 72), "concede_threshold": (0.08, 0.30),
     },
     "restock": {
-        "window_budget": (0.05, 0.25), "lookback_h": (1, 6), "max_skus": (3, 10),
+        "window_budget": (0.05, 0.25), "lookback_h": (1, 6), "max_skus": (3, 14),
+        # max_skus upper bound raised 10 -> 14: already pinned at 10 (the old ceiling), capping how many
+        # categories we can be a candidate in at once
         "goods_target": (2, 10), "food_target": (1, 4), "food_min_sales": (3, 10), "goods_min_sales": (2, 6),
-        "max_units": (60, 220),
+        "max_units": (60, 350),
+        # upper bound raised 220 -> 350: already pinned at 220 (the old ceiling) with 571 "stock is full"
+        # log lines and balance sitting at 4.25M won against a 500k bankrupt_line -- 3.75M won of capital
+        # that could be growing Book (50% of shop_ALL) was sitting idle instead. "Cash" on the board is
+        # balance minus starting capital, not one of shop_ALL's three terms, so tying more of it up in
+        # stock costs nothing score-wise
     },
     "shop_forum": {"threshold": (0.3, 0.7), "quiet_after": (300, 1800)},
     "buyer": {"target_ratio": (0.35, 0.75), "rounds": (4, 8), "tries": (1, 3)},
