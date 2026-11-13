@@ -227,14 +227,18 @@ def food_expand(c, now, t, cat, stock):
         if margin < t.get("food_min_margin", 0.15):
             continue
         rate = len(v) / 24
-        target = max(2, min(t.get("food_max_target", 12),
-                            math.ceil(rate * t.get("food_share", 0.05) * t.get("food_cover_h", 8))))
+        # MST TF 11-13 14:30: food a week+ on the shelf cannot expire inside the round, so it is stocked for 24 h of
+        # our share of the market (nocha12 earns 11.6M a day on 35 food SKUs; five 168 h kimchi lines it sells, we had none)
+        long_ = (r.get("shelf_hours") or 0) >= t.get("long_food_shelf_h", 168)
+        cover_h = t.get("food_long_cover_h", 24) if long_ else t.get("food_cover_h", 8)
+        target = max(2, min(t.get("food_long_max_target", 40) if long_ else t.get("food_max_target", 12),
+                            math.ceil(rate * t.get("food_share", 0.05) * cover_h)))
         qty = target - stock.get(sku, 0)
-        EXPAND[sku] = rate * 24 * t.get("food_share", 0.05) * (med - avg_cost)
+        EXPAND[sku] = rate * 24 * t.get("food_share", 0.05) * (med - avg_cost) * (1 if long_ else 0.8)   # no expiry risk
         if qty > 0:
             out.append((rate * (med - avg_cost), sku, qty,
                         f"food expand: market {len(v)}/24 h, median {med:,.0f}, avg cost {avg_cost:,.0f} ({margin:.0%}) -> keep {target}"))
-    return [(s, q, w) for _, s, q, w in sorted(out, reverse=True)[:t.get("food_expand_lines", 8)]]
+    return [(s, q, w) for _, s, q, w in sorted(out, reverse=True)[:t.get("food_expand_lines", 16)]]
 
 
 def plan(md, c, t, now=None):
