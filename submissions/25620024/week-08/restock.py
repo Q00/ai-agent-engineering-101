@@ -115,6 +115,14 @@ def load(md, name, default):
         return default
 
 
+def skip_text(skipped):
+    """{sku: reason} as 'dear: [..]; surge: [..]' for the log."""
+    by = {}
+    for k, r in skipped.items():
+        by.setdefault(r, []).append(k)
+    return "; ".join(f"{r}: {sorted(v)}" for r, v in sorted(by.items()))
+
+
 def _ours(c, now, hours=24):
     """{sku: (units sold, average ticket, average profit per unit)} for our shop over the last `hours`."""
     out = {}
@@ -273,7 +281,7 @@ def plan(md, c, t, now=None):
     buy, why = {}, []
 
     low = low_value(c, now, t, cat)
-    skipped = set()
+    skipped = {}                                      # sku -> why it was not bought (11-14: was one set, logged as 'surge skip')
     # 11-07: 214M of furniture at cost sat in stock at 6% quote conversion (cost above the market's price for what
     # was left: grade A units priced against an all-grade median); no more furniture while the stock is over the cap
     big_stock = sum(u.get("cost") or 0 for u in units if (u.get("list_price") or 0) >= 500000)
@@ -291,6 +299,9 @@ def plan(md, c, t, now=None):
 
     dear_memo, sold24 = {}, _ours(c, now)
     brk24 = dict(c.execute("select sku, count(*) from broken where ts > ? group by sku", (now - 86400,)).fetchall())
+    # 11-14: brk24 counts the whole market's breaks; it was divided by OUR sales (fridge G4e4eabdb: market breaks over
+    # our 5 sales = a break rate above 100%, net price under 0, "dear" every window). Divide by the market's sales.
+    mkt24 = dict(c.execute("select sku, count(*) from settles where ts > ? group by sku", (now - 86400,)).fetchall())
 
     def dear(sku):                                            # HQ 11-12 "매입가가 비싸졌다면 사지마": what we pay now
         if sku not in dear_memo:                              # leaves too little against what we sell it for.
@@ -301,7 +312,7 @@ def plan(md, c, t, now=None):
             if not rows:                                      # not our price (G9df06998: we sell 28.6k, median 26.3k,
                 dear_memo[sku] = False                        # cost 20.8k, 27% margin, was blocked). Our own 24 h price
             elif n >= 5 and tk:                               # when we sold 5+, the median otherwise. Review 11-12:
-                net = tk * (1 - brk24.get(sku, 0) / max(n, 1))   # refunds of broken units come off our price, and the
+                net = tk * (1 - min(0.5, brk24.get(sku, 0) / max(mkt24.get(sku, 0), n, 1)))   # refunds come off our price, and the
                 dear_memo[sku] = sum(rows) / len(rows) > net * (1 - t.get("buy_min_margin", 0.10))   # margin matches hits()
             else:
                 med = market_model.market_price(c, sku)[0]
@@ -316,20 +327,20 @@ def plan(md, c, t, now=None):
         if sku in low:                                        # HQ 11-04: low ticket and low profit -- not stocked
             return
         if reason != "HQ order" and sku in set(t.get("restock_hold") or []):   # HQ 11-11: lines that lose per unit
-            skipped.add(sku)
+            skipped[sku] = "hold"
             return
         if reason != "HQ order" and dear(sku):                # HQ 11-12 "매입가가 비싸졌다면 사지마"
-            skipped.add(sku)
+            skipped[sku] = "dear"
             return
         if reason != "HQ order" and stock.get(sku, 0) > 1 and stock.get(sku, 0) / max(our_rate.get(sku, 0), 1 / 48) >= 48:
-            skipped.add(sku)                                  # HQ 11-10: no more of a SKU we hold 48 h+ of our sales of
+            skipped[sku] = "48h stock"                                  # HQ 11-10: no more of a SKU we hold 48 h+ of our sales of
             return
         if r["list_price"] >= 500000 and reason != "HQ order" and big_stock >= t.get("furniture_stock_cap", 120e6):
-            skipped.add(sku)
+            skipped[sku] = "furniture cap"
             return
         # HQ 11-07 "상한은 올리되, 공급가가 급등한 제품은 걸러": skip at +5% or more, half at +2% (was 15% / 5%)
         if reason != "HQ order" and surge(sku) >= t.get("surge_skip", 0.05):
-            skipped.add(sku)
+            skipped[sku] = "surge"
             return
         if reason != "HQ order" and surge(sku) >= t.get("surge_half", 0.02):
             qty = max(1, qty // 2)
@@ -387,7 +398,7 @@ def plan(md, c, t, now=None):
     if t.get("profit_first"):                                 # HQ 11-10: only proven earners until profit is back
         cash = min(cash, general)
         return [{"sku": k, "qty": v} for k, v in buy.items()], why + ["profit-first: proven earners only"] + \
-            ([f"surge skip: {sorted(skipped)}"] if skipped else []), cash, \
+            ([f"not bought: {skip_text(skipped)}"] if skipped else []), cash, \
             {"window": wid, "spent": spent + sum(cat[k]["list_price"] * t["cost_guess"] * v for k, v in buy.items())}
     for x in mk.get("skus") or []:
         add(x.get("sku"), int(x.get("qty") or 0) - stock.get(x.get("sku"), 0) - buy.get(x.get("sku"), 0),
@@ -412,7 +423,7 @@ def plan(md, c, t, now=None):
         hq_open = False
     if mk.get("mode") == "focus" and fresh and not hq_open:                   # marketing: only regulars and its picks for now
         return [{"sku": k, "qty": v} for k, v in buy.items()], why + ["marketing focus mode"] + \
-            ([f"surge skip: {sorted(skipped)}"] if skipped else []), cash, \
+            ([f"not bought: {skip_text(skipped)}"] if skipped else []), cash, \
             {"window": wid, "spent": spent + sum(cat[k]["list_price"] * t["cost_guess"] * v for k, v in buy.items())}
     # 2. demand, by market revenue per hour (rate x list): 85% of market revenue is goods listed 500k+ (11-07: 14.5B
     # of 17.0B in 24 h, our share 0.03%), so with max_skus lines per window the dear SKUs go first
@@ -451,7 +462,7 @@ def plan(md, c, t, now=None):
             add(r["sku"], 1, "display")
     st = {"window": wid, "spent": spent + sum(cat[k]["list_price"] * t["cost_guess"] * v for k, v in buy.items())}
     if skipped:
-        why.append(f"surge skip: {sorted(skipped)}")
+        why.append(f"not bought: {skip_text(skipped)}")
     return [{"sku": k, "qty": v} for k, v in buy.items()], why, cash, st
 
 
