@@ -154,6 +154,29 @@ def refresh_market_sales(max_pages=40):
 
 SHOP_PRICES = HERE / "shop_prices.json"
 SHOP_KEEP = 100
+UNIT_COSTS = HERE / "unit_costs.json"   # unit -> [ts, cost, shop] from the ledger's supply rows, until the unit settles
+COST_KEEP_HOURS = 72
+# patch 3.6 (11-12): saved = (list - price) / (list - unit cost), the share of the shop's margin the buyer keeps.
+# The market's cost ranges per grade, as a share of the list price (agent.md), and the midpoint used as an estimate.
+GRADE_COST = {"A": (0.55, 0.75), "B": (0.40, 0.60), "C": (0.25, 0.45)}
+KIND_COST = {"food": 0.52, "goods": 0.61}   # the market's own averages (patch 3.6 notice), when nothing else is known
+
+
+def cost_estimate(list_price, kind, lot_cost=None, grade=None):
+    """What a shop paid for a unit, estimated. The ledger gives the average cost of the lot it came in (lot_cost);
+    the shop may state the unit's grade, which bounds the cost (GRADE_COST). Without either: the kind's average."""
+    share = lot_cost / list_price if lot_cost else None
+    if grade in GRADE_COST:
+        lo, hi = GRADE_COST[grade]
+        share = min(max(share, lo), hi) if share else (lo + hi) / 2
+    if not share or not 0.2 <= share < 0.95:
+        share = KIND_COST.get(kind, 0.55)
+    return share * list_price
+
+
+def capture(list_price, price, cost):
+    """The share of the shop's margin the buyer keeps at this price: the market's saved for one served deal."""
+    return 1.0 if list_price <= cost else max(0.0, min(1.0, (list_price - price) / (list_price - cost)))
 
 
 def refresh_shop_prices(max_pages=40):
@@ -163,6 +186,11 @@ def refresh_shop_prices(max_pages=40):
     refresh_market_sales; the first run starts 100,000 rows back (about 4 hours)."""
     cache = read_json(SHOP_PRICES, {}) or {}
     shops, alias = cache.get("shops", {}), cache.get("alias", {})
+    # patch 3.6: what each shop paid (supply rows name the shop, the SKU, the lot's total and its units), and from
+    # that the share of its margin a buyer kept in each of its last SHOP_KEEP settles
+    costs = cache.get("costs", {})                  # shop -> sku -> [ts, average unit cost of its newest lot]
+    kept = cache.get("capture", {})                 # shop -> [share of the margin the buyer kept, ...]
+    units = read_json(UNIT_COSTS, {}) or {}         # unit -> [ts, cost, shop], dropped when it settles
     urls = cache.get("urls", {})                    # every tunnel URL a shop joined with (mine change ~30 min)
     mine = cache.get("mine", [])                    # my settles and refunds: [ts, kind, credits, sku]
     seq = cache.get("seq")
@@ -192,9 +220,21 @@ def refresh_shop_prices(max_pages=40):
             d, kind = e.get("data") or {}, e.get("kind")
             if kind == "join" and d.get("role") == "shop" and d.get("url"):
                 urls[d["url"].rstrip("/")] = d.get("name")
+            elif kind == "supply" and d.get("qty") and d.get("sku") in cat and d.get("shop"):
+                each = round(d.get("total", 0) / d["qty"])
+                costs.setdefault(d["shop"], {})[d["sku"]] = [e.get("ts", 0), each]
+                for u in d.get("units") or []:
+                    units[u] = [e.get("ts", 0), each, d["shop"]]
             elif kind in ("settle", "broken") and urls.get(str(d.get("shop") or "").rstrip("/")) == SHOP_NAME:
                 mine.append([e.get("ts", 0), kind, d.get("amount") if kind == "settle" else d.get("refunded") or 0,
                              d.get("item")])
+            if kind == "settle" and d.get("unit") in units and d.get("sku") in cat:
+                _, each, seller = units.pop(d["unit"])
+                lp = cat[d["sku"]]["list_price"]
+                if lp > each > 0 and isinstance(d.get("amount"), (int, float)):
+                    lst = kept.setdefault(seller, [])
+                    lst.append(round(capture(lp, d["amount"], each), 3))
+                    del lst[:-SHOP_KEEP]
             r = d.get("receipt") if kind == "result" else None
             if isinstance(r, dict) and r.get("shop") and r.get("item") in cat and isinstance(r.get("price"), (int, float)):
                 url = str(e["data"].get("shop") or "").rstrip("/")
@@ -211,9 +251,16 @@ def refresh_shop_prices(max_pages=40):
         if len(rows) < 500:
             break
     mine = [m for m in mine if m[0] >= market_now() - 24 * 3600]
+    cut = market_now() - COST_KEEP_HOURS * 3600     # a unit that old was sold before I started reading, or expired
+    units = {u: v for u, v in units.items() if v[0] >= cut}
+    costs = {s: kv for s, kv in ((s, {k: v for k, v in per.items() if v[0] >= cut}) for s, per in costs.items()) if kv}
+    tmp = UNIT_COSTS.with_suffix(".tmp")
+    tmp.write_text(json.dumps(units), encoding="utf-8")
+    os.replace(tmp, UNIT_COSTS)
     tmp = SHOP_PRICES.with_suffix(".tmp")
     tmp.write_text(json.dumps({"seq": seq, "updated": time.time(), "shops": shops, "alias": alias, "urls": urls,
-                               "mine": mine, "mine_since": cache.get("mine_since") or market_now()}),
+                               "mine": mine, "mine_since": cache.get("mine_since") or market_now(),
+                               "costs": costs, "capture": kept}),
                    encoding="utf-8")
     os.replace(tmp, SHOP_PRICES)
     return shops
@@ -280,6 +327,13 @@ def tune(inv, cat, defaults):
                             "after": {k: new[k] for k in TUNE_BOUNDS}, "goods_revenue_12h": rev, "refunds_12h": refunds,
                             "why": why})
     return new
+
+
+def shop_capture(name, kept=None):
+    """Median share of the margin buyers kept at a shop in its recent settles (the market's saved), or None with
+    fewer than 5 settles whose cost I know."""
+    lst = (kept if kept is not None else (read_json(SHOP_PRICES, {}) or {}).get("capture", {})).get(name) or []
+    return sorted(lst)[len(lst) // 2] if len(lst) >= 5 else None
 
 
 def shop_ratio(name, shops=None):
