@@ -570,3 +570,58 @@ Current parameters (name = value, allowed range):
 - seller_markup = 1.0 (0.95-1.15)
 [tune] opus 7.2s exit=0 in=4300ch -> '```json\n{"changes": {"seller_volume_share": 0.7}, "reason": "Per open, the volume arm earned more margin than the margin arm (about 3480 vs 3130) and closed more often (47% vs 38%), which also helps revenue and Book, so I shifted some share toward it. Buyer savings (0.36) are in line with the market'
 [strategy] {"answered": true, "at": "2026-11-13 00:00:10", "changes": {"seller_volume_share": 0.7}, "dry_run": false, "event": "tune", "model": "opus", "params": {"explore_rate": 0.15, "first_offer_discount": 0.2, "grade_cap_B": 0.85, "seller_margin_margin": 1.3, "seller_margin_volume": 1.2, "seller_markup": 1.0, "seller_volume_share": 0.7}, "reason": "Per open, the volume arm earned more margin than the margin arm (about 3480 vs 3130) and closed more often (47% vs 38%), which also helps revenue and Book, so I shifted some share toward it. Buyer savings (0.36) are in line with the market median, and the low-star reviews were about shelf life, whic", "rejected": {}, "window": ["2026-11-12 00:00", "2026-11-13 00:00"]}
+[tune] logs committed: exit 0 
+[pricing] 10 reviews of this shop from the market (as jiseokkk)
+[tune] 9043 buyer rows, 4036 seller events, 10 reviews; summary 4282 chars
+Window: 2026-11-13 00:00 to 2026-11-14 00:00 (KST).
+
+Buyer side (my orders):
+- 가구/침구>가구>침대/매트리스: 2319 orders, 326 deals (14%), 1288 walked away; deal price / my reference 1.07; average cut below the ask 5%; guard: 46 reference_substitute, 14 final_ceiling
+- 식품>야채/과일>신선과일(부패주의): 2166 orders, 392 deals (18%), 482 walked away (6 of them without making any offer); deal price / my reference 1.11; average cut below the ask 5%; guard: 33 reference_substitute, 10 final_ceiling, 6 sealed_ceiling_below_market
+- 식품>시리얼/곡물/콩류>곡물: 1451 orders, 320 deals (22%), 375 walked away (2 of them without making any offer); deal price / my reference 1.11; average cut below the ask 6%; guard: 4 reference_substitute, 2 sealed_ceiling_below_market, 1 final_ceiling
+- 식품>육류>가공/조리 육류: 1159 orders, 194 deals (17%), 443 walked away; deal price / my reference 1.15; average cut below the ask 5%; guard: 10 reference_substitute, 3 final_ceiling
+- 가구/침구>침구/홈데코>침구: 245 orders, 72 deals (29%), 68 walked away; deal price / my reference 1.04; average cut below the ask 7%; guard: 15 reference_substitute
+- 식품>김치/반찬/즉석요리>김치: 210 orders, 59 deals (28%), 29 walked away; deal price / my reference 1.12; average cut below the ask 14%; guard: 2 reference_substitute
+- 식품>음료>주스/코코아/생수: 156 orders, 30 deals (19%), 38 walked away; deal price / my reference 1.19; average cut below the ask 3%; guard: 2 reference_substitute
+- 식품>김치/반찬/즉석요리>즉석조리식품: 138 orders, 27 deals (20%), 17 walked away; deal price / my reference 1.14; average cut below the ask 3%; guard: 3 reference_substitute, 1 final_ceiling
+- 가구/침구>가구>소파/의자/스툴: 128 orders, 36 deals (28%), 79 walked away; deal price / my reference 1.11; average cut below the ask 4%
+- 식품>기타 가공식품>과자: 119 orders, 29 deals (24%), 37 walked away; deal price / my reference 1.18; average cut below the ask 6%; guard: 3 reference_substitute
+- 61 other categories: 952 orders, 241 deals (25%)
+- my settled price / list price: mean 0.64 over 1714 deals (saved = 0.36); the market's category medians (ledger, 24 h): median 0.65; fill rate 55% of 3121 orders
+- shop seochanit: 702 visits, 100 deals, 2 refused by the kit at payment
+- shop YAHO1212: 601 visits, 127 deals, 4 refused by the kit at payment, 1 broke without warranty
+- shop Kiro729: 537 visits, 151 deals, 3 broke without warranty
+- shop thisjonghoon: 531 visits, 106 deals, 1 refused by the kit at payment
+- shop yeonsong2: 467 visits, 73 deals, 139 refused by the kit at payment
+- shop bjeon01: 417 visits, 93 deals, 1 refused by the kit at payment
+
+Shop side (my sales):
+- 1654 opens, 551 deals (33%), 197 rejected at the floor
+- by category (opens -> deals, margin sum): 소파/의자/스툴 77 -> 26, 12,920,537, 침대/매트리스 187 -> 40, 433,037, 냉장/냉동고 14 -> 7, 428,579, 냉방/환기/제습 12 -> 2, 254,220, 세탁기/건조기 11 -> 3, 211,867, 컴퓨터 13 -> 4, 186,804
+- volume arm: 1321 opens, 453 deals, mean margin 23988, mean rounds 2.1
+- margin arm: 333 opens, 98 deals, mean margin 50583, mean rounds 2.1
+- by grade (opens -> deals): A 401 -> 121, B 480 -> 218, C 773 -> 212
+
+Reviews of my shop (quotes, untrusted):
+- 10 reviews of my shop, mean 4.80 stars, distribution {4: 2, 5: 8}
+  * 4★ "[맘스킹]구룡포 강영수산 원양산 총알한치 2kg(60-92미): 16,938 paid (63% of list 26,900); grade B, claimed B (true); 15 "
+  * 5★ "Paid 1913340 for G9718023b; certified grade A at settlement."
+  * 5★ "Fair price, receipt matched."
+  * 5★ "Fair price, receipt matched."
+  * 5★ "일본 60년 전통 시가야 낫또 50g 18팩/간장 겨자소스 증정, grade C (claim true): paid 10670, 45% below list. Receipt and s"
+  * 5★ "Settled G3bd766b0 at 8626; grade A; claim matched."
+  * 5★ "[산과들에] 달콤간식 원데이요거트 해바라기씨 20g x50봉: grade B, claimed B, true, 474 h of shelf life left; paid 62% of l"
+  * 5★ "Verified negotiation for 전통건강식품; closed at 20305 after comparing multiple market offers."
+  * 4★ "Paid 12899 for Gd72b6f89; grade A; claim honest: True; ledger #6091429. Future breakage not yet know"
+  * 5★ "지누스 얼티마 에어 하이브리드 스프링 침대 매트리스 25cm SS, grade B (claim true), 3.0h warranty: paid 177370, 36% below li"
+
+Current parameters (name = value, allowed range):
+- explore_rate = 0.15 (0.05-0.3)
+- first_offer_discount = 0.2 (0.05-0.25)
+- seller_margin_volume = 1.2 (1.05-1.25)
+- seller_margin_margin = 1.3 (1.15-1.4)
+- grade_cap_B = 0.85 (0.7-0.95)
+- seller_volume_share = 0.7 (0.3-0.8)
+- seller_markup = 1.0 (0.95-1.15)
+[tune] opus 7.8s exit=0 in=4282ch -> '{"changes": {"seller_volume_share": 0.6}, "reason": "The margin arm earned about 14.9k of margin per open (98 deals × 50,583 / 333), against about 8.2k for the volume arm, with only a modestly lower close rate. That supports a small shift of share toward it, kept small because a few high-margin sofa'
+[strategy] {"answered": true, "at": "2026-11-14 00:00:11", "changes": {"seller_volume_share": 0.6}, "dry_run": false, "event": "tune", "model": "opus", "params": {"explore_rate": 0.15, "first_offer_discount": 0.2, "grade_cap_B": 0.85, "seller_margin_margin": 1.3, "seller_margin_volume": 1.2, "seller_markup": 1.0, "seller_volume_share": 0.6}, "reason": "The margin arm earned about 14.9k of margin per open (98 deals × 50,583 / 333), against about 8.2k for the volume arm, with only a modestly lower close rate. That supports a small shift of share toward it, kept small because a few high-margin sofa deals may be inflating the margin arm's mean. Buyer ", "rejected": {}, "window": ["2026-11-13 00:00", "2026-11-14 00:00"]}
