@@ -24,7 +24,7 @@ sys.path.insert(0, str(HERE))
 
 from agents import loop  # noqa: E402
 from core import card  # noqa: E402
-from core import atomic, bus, paths  # noqa: E402
+from core import atomic, bus, market_state, paths  # noqa: E402
 from core.events import EventWriter  # noqa: E402
 from tools import check  # noqa: E402
 from tools import market_files as mf  # noqa: E402
@@ -64,6 +64,7 @@ def playbook(ctx):
             "own_sales": pb.get("own_sales", False), "own_cover": pb.get("own_cover", 1.5),
             "own_floor": pb.get("own_floor", False), "react": pb.get("react", False),
             "probe_units": pb.get("probe_units", 2), "food_cap": pb.get("food_cap", 3),
+            "scarce_top": pb.get("scarce_top", 0),
             # 11/5 09:0x: food sized by its own sales per window (None = the fixed baseline above)
             "food_windows": pb.get("food_windows"), "food_fresh_share": pb.get("food_fresh_share", 0.5),
             "food_old_windows": pb.get("food_old_windows", 2), "food_min": pb.get("food_min", 2),
@@ -133,6 +134,18 @@ def build_buy_list(ctx, now=None):
     for x in market[:pb["market_top"]]:
         add(x["sku"], min(lim["max_units_per_sku"], pb["market_units"]), f"market sold {x.get('sold')} in 6 h",
             x.get("sold", 0) * (cat[x["sku"]].get("list_price") or 0))
+    ms = market_state.load() if pb["scarce_top"] else None
+    if ms:
+        # 11/13 10:4x: SKUs that sold at least twice what the whole market still holds (core.market_state) - 151 on
+        # 11/13 10:29, most held by nobody we compete with for long; they come first, weighted by the scarcity
+        sc = [(s, x) for s, x in ms["skus"].items() if s in cat and keeps(s) and x["n6"] >= 6
+              and x["scarcity"] >= market_state.SCARCE]
+        sc.sort(key=lambda sx: -sx[1]["n6"] * (cat[sx[0]].get("list_price") or 0))
+        for s, x in sc[:pb["scarce_top"]]:
+            per = pb["food_units"] if cat[s].get("kind") == "food" else pb["market_units"]
+            add(s, min(lim["max_units_per_sku"], per),
+                f"scarce: sold {x['n6']} in 6 h, the market holds {x['held']}",
+                x["n6"] * (cat[s].get("list_price") or 0) * min(3.0, x["scarcity"]))
     food = [x for x in ((sell_food["result"].get("market") or []) if sell_food["ok"] else [])
             if x.get("kind") == "food" and x["sku"] in cat and keeps(x["sku"])]
     for x in food[:pb["food_top"]]:

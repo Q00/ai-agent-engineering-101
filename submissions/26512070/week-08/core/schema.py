@@ -225,7 +225,9 @@ STRATEGY = {
                     "food_old_windows": {"type": "number", "minimum": 0, "maximum": 12},
                     "food_min": {"type": "integer", "minimum": 0, "maximum": 20},
                     # 11/4 17:2x: the expected cost as a share of list, for planning (A units cost 55-75% of list)
-                    "cost_share": {"type": "number", "minimum": 0.55, "maximum": 0.75}}},
+                    "cost_share": {"type": "number", "minimum": 0.55, "maximum": 0.75},
+                    # 11/13 10:4x: this many scarce SKUs (core.market_state) join the buy list first
+                    "scarce_top": {"type": "integer", "minimum": 0, "maximum": 40}}},
                 "seller": {"type": "object", "properties": {     # 11/4 02:5x: the seller's rules
                     "mode": {"type": "string", "enum": ["rules", "shadow", "agent"]},
                     "forged": {"type": "string"},        # 11/10: the B arm of a forged tool's A/B (harness.forge)
@@ -237,6 +239,7 @@ STRATEGY = {
                     "hot_open_share": {"type": "number", "minimum": 0.5, "maximum": 1.5},
                     "hot_n": {"type": "integer", "minimum": 0, "maximum": 20},
                     "food_open_share": {"type": "number", "minimum": 0.5, "maximum": 1.5},   # 11/13: food opens here
+                    "market_price": {"type": "boolean"},   # 11/13 10:4x: open/floor from the SKU's market (core.market_state)
                     # 11/5 01:2x: food goes to a buyer only in a unit that lasts the hours it states
                     "food_fit": {"type": "boolean"},
                     # 11/5 02:4x: a buyer stating no hours gets food with at least this share of its shelf left
@@ -273,7 +276,9 @@ STRATEGY = {
                     "open_share": {"type": "number", "minimum": 0, "maximum": 1},
                     "target_share": {"type": "number", "minimum": 0, "maximum": 1},
                     "food_open_share": {"type": "number", "minimum": 0, "maximum": 1},
-                    "food_target_share": {"type": "number", "minimum": 0, "maximum": 1}}}}},
+                    "food_target_share": {"type": "number", "minimum": 0, "maximum": 1},
+                    # 11/13 10:4x: aim at the SKU's market median, go first to shops that hold it (core.market_state)
+                    "market_target": {"type": "boolean"}}}}},
     },
 }
 

@@ -18,7 +18,7 @@ import time
 from pathlib import Path
 
 from agents import loop
-from core import atomic, paths
+from core import atomic, market_state, paths
 from core import card as cardmod
 from core.events import EventWriter
 from tools import act, trade  # noqa: F401  (trade registers trade.seller_rules)
@@ -331,7 +331,7 @@ class SellerCore:
                 "food_fit": pb.get("food_fit", False), "food_unknown_share": pb.get("food_unknown_share"),
                 "food_fresh_unknown": pb.get("food_fresh_unknown", False),
                 "food_review_need": pb.get("food_review_need", False),
-                "food_open_share": pb.get("food_open_share")}
+                "food_open_share": pb.get("food_open_share"), "market_price": pb.get("market_price", False)}
 
     @staticmethod
     def hot_skus(ctx, pb):
@@ -362,6 +362,14 @@ class SellerCore:
         if c.get("kind") == "food" and pb["food_open_share"]:
             # 11/13 01:5x: sergiobuilds sells 1,026 food a day at a median 58% of list, we sold 191 at 70%
             share = pb["food_open_share"]
+        m = market_state.sku(c.get("sku")) if pb["market_price"] else None
+        if m:
+            # 11/13 10:4x: the SKU's own market - open at the upper quartile of what it settled at in 6 h; a SKU that
+            # sold twice what the market still holds opens 5 points higher and keeps the lower quartile as its floor
+            share = min(0.95, max(m["p75"], m["p50"] + 0.02))
+            if m["scarcity"] >= market_state.SCARCE:
+                share = min(0.95, share + 0.05)
+                floor = max(floor, math.ceil(lp * m["p25"]))
         top = max(floor, round(lp * share))
         new_ask = top if ask is None else max(floor, ask - round(lp * pb["step_share"]))
         last = st["turns"] >= MAX_TURNS - 1

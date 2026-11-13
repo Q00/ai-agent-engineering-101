@@ -111,6 +111,9 @@ def once(state, now, shadow=False):
             if isinstance(done.get("rules"), dict) else False
     if due("collect"):
         job("collect", collect_round)
+        if not shadow:                          # 11/13 10:4x: the ledger lines collect just appended, per SKU
+            from core import market_state
+            job("market_state", lambda: market_state.update(now))
     if due("forum"):
         job("forum", run_forum)
     if shadow and now - state.get("usage", 0) >= EVERY["health"]:

@@ -15,7 +15,7 @@ import time
 import uuid
 
 from agents import loop
-from core import atomic, paths
+from core import atomic, market_state, paths
 from core import card as cardmod
 from core import reflex
 from core import score
@@ -373,7 +373,7 @@ class BuyerCore:
                 "shelf_guard": pb.get("shelf_guard", False), "skip_unsigned": pb.get("skip_unsigned", False),
                 "min_pay_rate": pb.get("min_pay_rate", 0),
                 "value_gate": pb.get("value_gate", False), "value_margin": pb.get("value_margin", 0.02),
-                "pay_refused_skip_h": pb.get("pay_refused_skip_h", 0)}
+                "pay_refused_skip_h": pb.get("pay_refused_skip_h", 0), "market_target": pb.get("market_target", False)}
 
     def bar(self):
         """The expected saved a deal must reach: our board average plus the margin (None when the gate is off)."""
@@ -438,6 +438,12 @@ class BuyerCore:
                 # longer than the order's use window is far more likely to arrive with the hours left
                 keeps = [k for k in fit if (cat[k].get("shelf_hours") or 0) >= 1.5 * need]
                 fit = keeps or fit
+            if fit and self.playbook()["market_target"]:
+                # 11/13 10:4x: 41 of 335 talks in an hour ended 'no stock' - the ledger shows what each shop holds
+                held = [k for k in fit if market_state.holds(s["name"], k) != 0]
+                if not held:
+                    continue
+                fit = held
             if fit:
                 sku = max(fit, key=lambda k: cat[k]["list_price"])
                 r = call(self.ctx, "act.pick", {"shop": s["name"], "sku": sku,
@@ -460,6 +466,11 @@ class BuyerCore:
         if turn > 2 and not asks:
             return None                                    # the shop names no price: the agent reads it
         o_share, t_share = self.shares(lp, kind)
+        m = market_state.sku(c.get("sku")) if self.playbook()["market_target"] else None
+        if m:
+            # 11/13 10:4x: the SKU's own market - aim at its median paid share in 6 h, open under its lower quartile
+            t_share = min(t_share, max(o_share, m["p50"]))
+            o_share = min(o_share, max(0.3, m["p25"] - 0.05))
         ceil_share = max(t_share, self.playbook()["ceiling_share"])
         if self.bar() is not None:
             # the value gate: what the shop said so far (grade, warranty) sets the highest share worth paying

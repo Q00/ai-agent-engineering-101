@@ -198,6 +198,25 @@ def checkout_refusals(now=None, window_s=3600):
     return n, units
 
 
+def agreed_unsettled(now=None, window_s=3600):
+    """{kind: (agreed, settled)} of our shop in the last hour: seller.closed completed vs seller.settled. 11/13: goods
+    receipts without a warranty were agreed 125 times in 8 h and settled 18 - the buyers' kits did not pay, and nothing
+    in our logs refused, so no check saw it until the user asked."""
+    from core import index
+    now = now or time.time()
+    cat = atomic.read_json(paths.root() / ".market" / "catalog.json", default=None) or {}
+    cat = cat.get("items", cat) if isinstance(cat, dict) else {c["sku"]: c for c in cat}
+    out = {}
+    for kind, i in (("seller.closed", 0), ("seller.settled", 1)):
+        for e in index.events([kind], since=now - window_s):
+            d = e["data"]
+            if e["ts"] < now - window_s or (i == 0 and d.get("outcome") != "completed"):
+                continue
+            k = (cat.get(d.get("sku")) or {}).get("kind") or "?"
+            out.setdefault(k, [0, 0])[i] += 1
+    return {k: tuple(v) for k, v in out.items()}
+
+
 def health(now=None, rules_changed=False):
     """ops.health: findings with their level; alerts once per finding and hour; emergency actions when due."""
     now = now or time.time()
@@ -218,6 +237,13 @@ def health(now=None, rules_changed=False):
                                  "promises units the kit will not ship"))
     except Exception as e:
         found.append(("warn", f"checkout refusal count failed: {type(e).__name__}"))
+    try:
+        for k, (agreed, settled) in agreed_unsettled(now).items():
+            if agreed >= 10 and settled < 0.5 * agreed:
+                found.append(("now", f"our shop settled {settled} of {agreed} agreed {k} deals in the last hour: buyers "
+                                     "agree and do not pay (what the receipt promises, e.g. the warranty?)"))
+    except Exception as e:
+        found.append(("warn", f"agreed/settled check failed: {type(e).__name__}"))
     try:
         reach = shop_reach(now)
         if reach:
