@@ -49,6 +49,11 @@ MARKET_CAPTURE = 0.75     # what buyers keep at a shop I have no settles for
 # Code opens at the estimated cost (no model call), and takes the shop's price without another round when it already
 # keeps GOOD_CAPTURE of the margin, or when the shop repeats a price that is inside the cap.
 GOOD_CAPTURE = 0.80
+# The model's pick (with its tools) took 10 of an order's 25 s. It is asked only when the pick needs judgment: code
+# takes the best-scored candidate itself when I know its shop well (FAST_SETTLED deals settled, never a dishonest
+# grade, no warning on the forum) and it leads every other shop's best candidate by FAST_LEAD (11-13, owner agreed).
+FAST_SETTLED = 20
+FAST_LEAD = 1.15
 WARRANTY = 6              # goods break up to 6 h after the sale; a warranty refunds them (0 instead of -1)
 
 CHOOSE = """You are a buying agent in an online market. The order: one item from the category "{item}", budget {budget}{food}.
@@ -260,13 +265,23 @@ def main():
                       f"{rv(c['shop'])} | {mem_text(mem.get(c['shop']['name']))} | {forum_text(forum[c['shop']['name']])}"
                       for c in top)
     food = f", the food must last {use_h} h" if use_h else ""
-    move, raw = safe_ask_json(CHOOSE.format(item=a.item, budget=a.budget, food=food, lines=lines),
-                              {"SHOPS_FILE": Path(a.shops).resolve(), "MARKET_DIR": MD, "BUYER_MEMORY_R3": BUYER_MEM})
-    print(f"[harness] {raw}", flush=True)
-    pick = next((c for c in top if move and c["shop"]["name"] == move.get("shop") and c["sku"] == move.get("sku")), None)
-    reason = (move or {}).get("reason", "")
-    if pick is None:
-        pick, reason = top[0], "fallback: the best code score (the model named no listed candidate)"
+    best, known = top[0], mem.get(top[0]["shop"]["name"])
+    rival = next((c for c in cands if c["shop"]["name"] != best["shop"]["name"]), None)
+    if (known and known["settled"] >= FAST_SETTLED and not known["lied"] and not forum[best["shop"]["name"]]["warn"]
+            and (rival is None or best["score"] >= FAST_LEAD * rival["score"])):
+        pick = best                                     # a clear pick: no model call
+        reason = (f"clear by code: {known['settled']} deals settled with this shop, no dishonest grade, score "
+                  f"{best['score']:.2f} against {rival['score']:.2f} for {rival['shop']['name']}" if rival else
+                  f"clear by code: {known['settled']} deals settled with this shop, the only shop with a fitting SKU")
+        print(f"[fast] {reason}", flush=True)
+    else:
+        move, raw = safe_ask_json(CHOOSE.format(item=a.item, budget=a.budget, food=food, lines=lines),
+                                  {"SHOPS_FILE": Path(a.shops).resolve(), "MARKET_DIR": MD, "BUYER_MEMORY_R3": BUYER_MEM})
+        print(f"[harness] {raw}", flush=True)
+        pick = next((c for c in top if move and c["shop"]["name"] == move.get("shop") and c["sku"] == move.get("sku")), None)
+        reason = (move or {}).get("reason", "")
+        if pick is None:
+            pick, reason = top[0], "fallback: the best code score (the model named no listed candidate)"
     print(f"[choose] {pick['shop']['name']}: {pick['sku']} {pick['name'][:40]}: {reason}", flush=True)
 
     def negotiate(pick):
