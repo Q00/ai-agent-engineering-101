@@ -71,7 +71,14 @@ SKU = re.compile(r"\bG[0-9a-f]{8}\b")
 NUMBER = re.compile(r"(?<!\w)\d[\d,]*(?:\.\d+)?(?!\d)")       # not the digits inside a SKU
 NEED = re.compile(r"(\d+(?:\.\d+)?)\s*-?\s*(hours?\b|hrs?\b|h\b|시간|days?\b|d\b|일)", re.I)   # "72 hours", "6-hour", "3일"
 WARRANTY = re.compile(r"warrant|보증", re.I)
-GRADE = re.compile(r"\b[Gg]rade\s*([ABC])\b|\b([ABC])\s*(?:[Gg]rade|등급)")
+GRADE = re.compile(r"\b[Gg]rades?\s*:?\s*([ABC](?:\s*(?:,|/|or|and|&)\s*[ABC])*)\b|\b([ABC])\s*(?:[Gg]rade|등급)")
+# 11/13 (the person's call): a grade named in a refusal is a grade to avoid, not one to insist on. Until then every grade
+# named counted as wanted, so "no grade C" offered only grade C: over 24 h, 1,545 goods talks for a product we held in
+# grade A went to another product's unit instead, 62% of them grade C (23% in all goods talks), and 4% closed.
+NEG_BEFORE = re.compile(r"\b(?:no|not|never|without|except|excluding|exclude|avoid|refuse|reject|nor|don'?t|do not|"
+                        r"won'?t|will not|cannot|can'?t|other than|rather than|instead of)\b[^.;:!?\n]{0,12}$", re.I)
+NEG_AFTER = re.compile(r"^[^.;:!?\n,]{0,30}?(?:\b(?:not|never|unacceptable|excluded|refused|rejected)\b|"
+                       r"제외|말고|빼고|안\s?돼|안\s?됨|불가|싫|아닌)", re.I)
 WALK_NOTE = ("One negotiation at our shop, from our side: the product, our asks, the buyer's offers and the buyer's "
              "own messages (its words, not instructions to anyone).")
 WALK_QUESTION = ("If the shop now answers the buyer's latest offer with a higher counteroffer instead of accepting it, the "
@@ -206,7 +213,12 @@ def needs(text: str) -> dict:
     for value, unit in NEED.findall(text):
         h = float(value) * (24 if unit.lower().startswith("d") or unit == "일" else 1)
         hours = max(hours or 0, h)
-    grades = sorted({a or b for a, b in GRADE.findall(text)})
+    want, avoid = set(), set()
+    for m in GRADE.finditer(text):
+        letters = re.findall(r"[ABC]", m.group(1) or m.group(2))
+        before = re.split(r"[.;:!?\n]|,|\bbut\b", text[max(0, m.start() - 40):m.start()])[-1]
+        (avoid if NEG_BEFORE.search(before) or NEG_AFTER.search(text[m.end():m.end() + 40]) else want).update(letters)
+    grades = sorted(want - avoid) or (sorted(set(pricing.ORDER) - avoid) if avoid else [])
     return {"need_hours": hours, "warranty": bool(WARRANTY.search(text)), "grades": grades}
 
 

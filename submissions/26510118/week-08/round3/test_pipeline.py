@@ -457,6 +457,17 @@ def test_restock(fake: Fake):
     check("...a buyer who asks for grade A gets the A under its market, not the dear one listed first",
           _seller.pick([a_dear, a_ok, b, c], dict(req, grades=["A"]), NOW)["unit"] == "u-a2")
     check("...a dear A alone is still offered (the least over its market)", _seller.pick([a_dear], req, NOW)["unit"] == "u-a1")
+    said = {"No grade C please.": ["A", "B"], "grade C is not acceptable for me": ["A", "B"],
+            "Grade C refurbished items are not acceptable.": ["A", "B"], "I don't want grade C": ["A", "B"],
+            "Grade A or B only, no grade C.": ["A", "B"], "not grade C but grade A": ["A"], "Grade A only.": ["A"],
+            "C등급 말고 A등급으로 주세요": ["A"], "C등급 제외": ["A", "B"], "Please quote grade A, avoid grade B and C": ["A"],
+            "I prefer grade A with the warranty; grade B with the warranty otherwise. Please state the grade.": ["A", "B"],
+            "Any grade is fine, 72 hours of shelf life": []}
+    got = {t: _seller.needs(t)["grades"] for t in said}
+    check("11/13: a grade named in a refusal is avoided, not insisted on (\"no grade C\" -> A or B; until then it read as C only)",
+          got == said, {t: g for t, g in got.items() if g != said[t]})
+    check("...so a buyer who says \"no grade C\" is offered the A, never the C",
+          _seller.pick([a_ok, c], dict(req, grades=_seller.needs("No grade C please.")["grades"]), NOW)["unit"] == "u-a2")
     p0, p4 = _seller.priced(a_ok, NOW, False), _seller.priced(a_ok, NOW, False, 0.04)
     check("Kiro 2.0 stage 2: a talk's arm sets its anchored first ask over the market (+0.04 against the usual +0.02: 2% of list more)",
           p0["anchored"] and abs((p4["ask"] - p0["ask"]) - 0.02 * 344640) <= 2, (p0["ask"], p4["ask"]))
