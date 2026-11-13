@@ -1,0 +1,52 @@
+{
+ "_note": "E1 (shop: expensive goods, bigger stock) and E2/E3 (buyer: bid ladder, faster orders) started 2026-11-13. Remove a key to fall back to the baseline in shop_strategy.DEFAULTS.",
+ "shop": {
+  "cash_reserve": 3000000,
+  "stock_cost_cap": 15000000,
+  "stock_cap_share": 0.85,
+  "max_units": 150,
+  "max_sku_units": 3,
+  "per_run_spend": 10000000,
+  "food_cost_share": 0.1,
+  "sku_cap_share": 0.3,
+  "max_list_price": 4500000,
+  "max_surge": 1.15,
+  "min_sales": 3,
+  "sales_exp": 1.0,
+  "price_exp": 1.0,
+  "category_penalty": 0.3,
+  "share_divisor": 12,
+  "max_line_qty": 3,
+  "one_per_category_run": false,
+  "worst_surge": 1.03,
+  "ledger_pages": 3,
+  "margin": {
+   "A": 1.04,
+   "B": 1.05,
+   "C": 1.05
+  },
+  "aged_minutes": 60,
+  "aged_margin": 1.0,
+  "aged_floor_cut": 0.97,
+  "aged_ask_cut": 0.04,
+  "stale_minutes": 180,
+  "stale_margin": 1.0
+ },
+ "buyer": {
+  "order_interval": 45,
+  "max_bids": 4,
+  "ladder": true,
+  "anchor": {
+   "A": 0.6,
+   "B": 0.46,
+   "C": 0.32
+  },
+  "step": 0.045,
+  "ceiling": {
+   "A": 0.78,
+   "B": 0.69,
+   "C": 0.6
+  },
+  "warranty_bonus": 0.03
+ }
+}

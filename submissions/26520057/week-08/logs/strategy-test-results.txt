@@ -1,0 +1,19 @@
+TEST verify_guardrails.py
+PASS local-only model identity, invalid JSON and no fallback
+PASS offers cannot exceed budget or an explicit current asking price
+
+TEST verify_shop_strategy.py
+PASS grade-specific positive margin floors, including high-cost stock
+PASS bid parsing does not treat SKU digits or warranty hours as offers
+PASS stock/cash/food bounds, closed supply window, surge and expiry guards
+PASS quoted and committed warranty exposure cannot exceed 500,000 credits
+
+TEST verify_loopback.py
+loopback seconds 2.75 exit 0
+card: cheapest-in-town -> http://127.0.0.1:52425/
+-> 'I want to buy a G00000001'  <- TASK_STATE_INPUT_REQUIRED | Test lamp (G00000001), grade A. Market certificate included; warranty 6 h. Asking price: 7800. Send one price as a number, or accept. 
+[harness] {"action": "offer", "price": 7800}
+-> '7800'  <- TASK_STATE_COMPLETED | Deal: Test lamp at 7800; grade A, certificate included, warranty 6 h.
+{"state": "TASK_STATE_COMPLETED", "artifacts": [{"artifactId": "ab7e7e9d-910c-455b-bf96-55057ddb7ef9", "name": "receipt", "parts": [{"data": {"sig_seller": "4O89O8pWcaOKL4ICX4m0Oszw/aKgdhAH/nozwS2PTLjYGZU3lb5aVPJUhDPlvRMPAJJqO99mD9jnRCKkiH2UCw==", "item": "G00000001", "task": "8403d364-aa05-4890-9170-410cfc72a788", "unit": "test-unit", "price": 7800.0, "claim": "A", "cert": true, "shop": "cheapest-in-town", "warranty_hours": 6.0}}]}]}
+
+PASS: signed receipt; cost floor; buyer budget; actual local model; no market transactions
