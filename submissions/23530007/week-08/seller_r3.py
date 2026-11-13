@@ -460,6 +460,23 @@ RIVALS = HERE / "rival_buyers.json"
 _rivals = [0.0, {}]
 
 
+STAR_BUYERS = HERE / "star_buyers.json"
+_stars = [0.0, {}]
+
+
+def star_buyer(text):
+    """(name, price share of list) of a price-rated account in star_buyers.json whose pattern matches this first
+    message, else (None, None). 11-13 (user allowed favouring specific accounts): dyishappy rates by price alone
+    (48 h, every shop: goods A at .55 of list 5.0, .60 3.9, .65-.70 3.0; food A .55 4.4, .60 3.9) and has 688 reviews
+    of us at 2.82; at .55 an A unit loses ~.07 of list against its cost, ~3 M per 100 sales, for ~+.004 stars_rank.
+    Re-read once a minute."""
+    if time.time() - _stars[0] > 60:
+        _stars[0] = time.time()
+        _stars[1] = {k: (float(v.get("x", 0.55)), [re.compile(x, re.I) for x in v.get("patterns", [])])
+                     for k, v in read_json(STAR_BUYERS, {}).items() if isinstance(v, dict)}
+    return next(((k, x) for k, (x, pats) in _stars[1].items() if any(r.search(text) for r in pats)), (None, None))
+
+
 def rival(text):
     """(name, min_share) of the rival buyer in rival_buyers.json whose pattern matches this first message, else
     (None, 0). User 11-07: a classmate ranked above us bought our goods at our cost floor (0.525 of list) and
@@ -614,6 +631,11 @@ class Shop(AgentExecutor):
             if who:                                     # a rival above us in class: no deep discount (user 11-07)
                 floor = max(floor, round(u["list_price"] * min_share))
                 record(event="rival", task=task.id, who=who, sku=u["sku"], floor=floor)
+            star_who, star_x = star_buyer(text)
+            if star_who and grade == "A":               # 11-13: a price-rated account gets the price its rubric rates 5
+                floor = round(u["list_price"] * star_x)
+                share = star_x
+                record(event="star_buyer", task=task.id, who=star_who, sku=u["sku"], price=floor)
             ask = round100(min(u["list_price"], max(floor, u["list_price"] * share)))
             asked = None
             if not SKU.search(text) and u.get("category"):
