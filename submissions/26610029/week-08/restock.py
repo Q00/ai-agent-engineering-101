@@ -48,6 +48,15 @@ OWN_RATE_FLOOR = 0.20     # a SKU can sell well market-wide (what the ranking be
                          # negotiations for it landed an 18% deal rate (2 of 11, most cancels with zero
                          # counter-offer), tying capital up in stock we can't actually move
 
+OWN_RATE_SHORT_H = 1        # a short, low-sample second check alongside the main lookback_h window above --
+OWN_RATE_SHORT_MIN_SAMPLE = 3   # measured live: G0b0ca441's own deal rate fell 0.11 -> 0.077 margin and
+OWN_RATE_SHORT_FLOOR = 0.15     # 11.1% deal rate over 6h, but it still got re-bought at 20:40:46 because
+                                # at that exact restock call the trailing 6h window hadn't yet accumulated
+                                # 5 samples -- the 6 cancels that pushed it over the floor landed in the
+                                # ~40 min *after* that buy. A short window needs fewer samples to react
+                                # one cycle sooner to a SKU that is degrading fast, not just one that has
+                                # always been mediocre
+
 # Horvitz threshold for a shop promo post: post a "hot drop" at once when we just bought something
 # that is clearly selling fast elsewhere (high usefulness), otherwise only after staying quiet a while
 # (threshold drops with quiet_bonus past quiet_after) -- never spam, never go silent either.
@@ -132,6 +141,7 @@ def plan(inv, d, policy, now, catalog):
     budget = inv.get("balance", 0) * policy["window_budget"]
     per_sku_cap = budget * 0.3                          # one sofa must not eat the whole window
     own_rates = own_deal_rates(d, now, policy["lookback_h"])
+    own_rates_short = own_deal_rates(d, now, OWN_RATE_SHORT_H)
     buy, why = [], []
 
     # categories nobody stocks at all: no sales history to rank by, so a settles-based ranking never finds
@@ -164,6 +174,9 @@ def plan(inv, d, policy, now, catalog):
         own_rate, own_n = own_rates.get(sku, (None, 0))
         if own_n >= OWN_RATE_MIN_SAMPLE and own_rate < OWN_RATE_FLOOR:
             continue          # sells well market-wide but not for us: don't keep tying up capital in it
+        short_rate, short_n = own_rates_short.get(sku, (None, 0))
+        if short_n >= OWN_RATE_SHORT_MIN_SAMPLE and short_rate < OWN_RATE_SHORT_FLOOR:
+            continue          # degrading fast enough that the main lookback_h window hasn't caught up yet
         unit_cost = lp * 0.75                           # worst case: an A unit at the top of its range
         if unit_cost <= 0 or unit_cost > budget:
             continue
