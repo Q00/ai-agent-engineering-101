@@ -39,7 +39,9 @@ STOCK_CAP = 15_000_000  # all stock at cost; expensive SKUs only below it
 CHEAP_CAP = 5_000_000   # cheap SKUs (list <= 100,000) at cost
 CHEAP_RUN = 600_000     # cheap SKUs a run
 SPEND_SHARE = 0.40
-MAX_LINES = 10
+MAX_LINES = 10            # cheap SKUs a run (food and goods with list <= 100,000)
+DEAR_LINES = 4            # expensive SKUs a run, counted apart (see below)
+CHEAP_TOP, DEAR_TOP = 45, 15   # candidates per ranking
 MAX_LIST = 700_000
 EST_COST = 0.65            # expected cost as a share of list price (A 55-75%, B 40-60%, C 25-45%)
 LEAD = 60                  # start a run this many seconds before the window opens (the kit waits for it)
@@ -104,8 +106,13 @@ def main():
     # price): profit and revenue scale with the price, and the top shops average 120,000-240,000 a deal against my
     # 16,000 (board, 11-04). When the flow moves (mattresses today), the next snapshot moves the buying with it.
     seen_by = lambda sku: 3 * mine[sku] + hot[sku]           # a sale of mine counts as three market settles
-    for sku in sorted((k for k in set(mine) | set(hot) if k in cat and proven(k)),
-                      key=lambda k: -seen_by(k) * cat[k]["list_price"])[:60]:
+    # Cheap and expensive SKUs are ranked apart. In one ranking by credits, once tune raised MAX_LIST to 1.5-2M
+    # (11-13 03:42), 48 of the top 60 were sofas and mattresses: they took the run's lines, food buying fell from
+    # 50-86 units an hour to 16-30, food stock fell to 67 units, and my settles halved (80 -> 40 an hour) while the
+    # market's stayed at 3,100 an hour. Food is 80% of what I sell.
+    pool = [k for k in set(mine) | set(hot) if k in cat and proven(k)]
+    rank = lambda ks, n: sorted(ks, key=lambda k: -seen_by(k) * cat[k]["list_price"])[:n]
+    for sku in rank([k for k in pool if cheap(k)], CHEAP_TOP) + rank([k for k in pool if not cheap(k)], DEAR_TOP):
         n = seen_by(sku)
         if cat[sku]["list_price"] <= 100_000:
             target = min(5, max(3 if sku in mine else 1, 1 + n // 6))   # what I sold has to last to the next window
@@ -127,9 +134,9 @@ def main():
             mid = min(skus, key=lambda s: abs(cat[s]["list_price"] - d["median_price"]))
             wants.append(("cold start: middle of the category", mid, 1))
 
-    buy, spent, seen = [], {True: 0.0, False: 0.0}, set()
+    buy, spent, seen, lines = [], {True: 0.0, False: 0.0}, set(), Counter()
     for why, sku, target in wants:
-        if sku in seen or sku in stale or len(buy) >= MAX_LINES:
+        if sku in seen or sku in stale or lines[cheap(sku)] >= (MAX_LINES if cheap(sku) else DEAR_LINES):
             continue
         seen.add(sku)
         qty = target - have.get(sku, 0)
@@ -141,6 +148,7 @@ def main():
         if qty <= 0:
             continue
         buy.append({"sku": sku, "qty": qty})
+        lines[kind] += 1
         spent[kind] += qty * price
         append_jsonl(LOG, {"time": time.strftime("%Y-%m-%d %H:%M:%S"), "sku": sku, "name": cat[sku]["name"],
                            "qty": qty, "why": why, "est_cost": round(qty * price), "balance": balance,
