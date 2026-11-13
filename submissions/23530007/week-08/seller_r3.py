@@ -285,7 +285,8 @@ def pick_unit(text, held, now, asks=None):
     if fit[0].get("kind") == "food":
         # 11-11: food under FOOD_SHELF_FLOOR of its shelf life is never sold (it drew 3-4 stars from every rubric:
         # shelf share < .25 rated 4.33, .25-.45 4.55, >= .8 4.85; the units are ~0.7% of stock at cost)
-        fresh = [u for u in fit if not shelf_hours(u["sku"]) or hours_left(u, now) >= FOOD_SHELF_FLOOR * shelf_hours(u["sku"])]
+        fsf = shop_policy_now().get("food_shelf_floor", FOOD_SHELF_FLOOR)   # 11-13: the shop strategist's knob
+        fresh = [u for u in fit if not shelf_hours(u["sku"]) or hours_left(u, now) >= fsf * shelf_hours(u["sku"])]
         if not fresh:
             return None
         fit = fresh

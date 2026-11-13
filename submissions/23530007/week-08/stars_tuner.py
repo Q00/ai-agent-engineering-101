@@ -184,6 +184,14 @@ def apply(out, dry=False):
 
 
 def main():
+    try:
+        sys.path.insert(0, str(HERE))
+        from policy import shop_params
+        pol = next((x for x in shop_params() if isinstance(x, dict)), {})
+        if not pol.get("star_tuner_on", 1):
+            return
+    except Exception:
+        pass
     out = build()
     out["applied"] = apply(out, dry="--dry" in sys.argv)
     OUT.write_text(json.dumps(out, ensure_ascii=False, indent=1))

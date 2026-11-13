@@ -94,7 +94,12 @@ GLOBAL = {                            # whitelisted shared parameters: role, bou
     "grade_first": ("shop", (0, 1), 1),            # 11-11: 1 = hand A before B before C to buyers who state no grade (stars +, margin -: C made 130k/deal)         # 11-11: the +-step policy adds to every ask share when the last 10 reviews are high/low (was hidden)
     # -- stock and restock
     "buy": ("shop", (0, 1), 1),                    # 0 stops all restock
-    "keep_cash": ("shop", (500000, 50000000), 1000000),
+    "keep_cash": ("shop", (500000, 300000000), 10000000),   # 11-13: up to 300 M (cash target)
+    # 11-13 (user: 'hand the shop agent the settings the operator changed by hand'): grades sold, food age, the stars tuner
+    "sell_b": ("shop", (0, 1), 1),                 # 1 = grade B goods sold (except a_only_buyers.json accounts)
+    "sell_c": ("shop", (0, 1), 1),                 # 1 = grade C goods to buyers whose message accepts C (no warranty)
+    "food_shelf_floor": ("shop", (0.0, 0.9), 0.1),  # least share of its shelf life a food unit must have to be sold
+    "star_tuner_on": ("shop", (0, 1), 1),          # 1 = stars_tuner.py writes per-account price/grade terms each tick
     "max_stock_share": ("shop", (0.3, 0.95), 0.05),     # stock cost cap as a share of equity
     "extra": ("shop", (0, 8), 1),                  # units over the expected sales a SKU line holds
     "max_goods_price": ("shop", (200000, 2000000), 100000),
@@ -553,6 +558,16 @@ claims) against us, and how the buyers that pay us least open their talks at our
 best student buyers do (it tells you how buyers negotiate with shops like ours). Name what a better shop does that we
 do not, apply what our knobs can copy (stars first; book only needs its 150 M floor), and say in "read" which row you
 used and what you changed or why not.
+YOU OWN THE SHOP NOW (user 11-13 14:30: 'the agents seem to do nothing; hand them the settings the operator kept
+changing by hand'). The operator no longer moves your knobs; it fixes code bugs and feeds you evidence. Yours since
+11-13: sell_b, sell_c, food_shelf_floor, star_tuner_on, keep_cash (to 300 M), max_stock_share, the slow-stock and
+price knobs, restock. A guard wake (G9 book, G18 flat raters, G21 'our shop feeds a contender's buyer', G22 'our
+sales collapsed') REQUIRES a concrete move or, if you hold, the number that shows the cause is already gone; never
+'watching'. After every move of yours, check its side effects on the next run: our paid deals/h, stars, the
+contenders' buyers' share and v at our shop (G21 state in evidence), cash. Facts from 11-13 to start from: food
+sold at 45-60% of its shelf life rated 4.66 and under 45% 4.50 (both above our 4.43), so food_shelf_floor .8 left
+~210 asks an hour unanswered; grade C goods rate 4.22 (below our mean); a cost-floor clearance on 11-13 fed
+SungJinho's buyer (65 of its 108 goods deals from us at v .916) and was reverted.
 ALERTING THE USER (user 11-08: 'why did I find this and not the agent?'): when you find something the user must
 know now, put it in "alert_user" (it goes to their phone at once); keep it empty otherwise. User 11-12 23:20 ('the alerts keep saying danger'): alert only when the user must act or when CLASS TOTAL 1st is under real threat now; a tight neighbour in a sub-race (saved within .01, buyer rank 9 vs 10) is normal and NOT an alert; never send future ranks or end-of-round projections; when you already fixed something, say it is fixed in one line, calmly.
 Answer with one JSON object only:
