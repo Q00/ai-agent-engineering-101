@@ -167,6 +167,10 @@ def shop_alternatives(journal, config, now):
         cycles_grid=[1.]
         while cycles_grid[-1]*2<end:cycles_grid.append(cycles_grid[-1]*2)
         cycles_grid=sorted(set(cycles_grid+[end,max(1,cfg.get('shop_demand_horizon_cycles',1))]))
+    if config.get('inventory_portfolio_v27_enabled'):
+        # The allocator already compares baseline, robust lots and safe depth.
+        # Do not recompute that entire frontier for redundant global multipliers.
+        cycles_grid=[max(1,cfg.get('shop_demand_horizon_cycles',1))]
     for cycles in cycles_grid:
         policy = dict(cfg, shop_demand_horizon_cycles=cycles, restock_max_lines=min(10,cfg['restock_max_lines']))
         candidates = restock_candidates(virtual, catalog, [], shadow, policy, now)
@@ -204,6 +208,7 @@ def shop_alternatives(journal, config, now):
         'cash':inv.get('balance'), 'spendable':cap['spendable'],
         'refund_liability':cap['refund_liability'],'execution_guard_reasons':control.get('reasons',[]),
         'execution_permitted':False, 'alternatives':rows,'demand_diagnostics':diagnostic,
+        'lot_portfolio_comparison':shadow.get('inventory-portfolio:v27',{}) if config.get('inventory_portfolio_v27_enabled') else {},
         'note':'Shared-data forecasts, not measured lift. Cash converts to inventory; acquisition alone adds no Book. '
                'Stars effect unmodeled; retain validated quality and full refund guards. '
                'Select repeat-demand depth by marginal Book/rank, cash and supply delay; raw peer quantities are not targets.'}

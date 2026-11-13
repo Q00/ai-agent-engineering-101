@@ -340,9 +340,12 @@ def cash_capacity(inv, journal, config, now=None):
             'discharged_refund_reserve': released}
 
 
+@decision
 def restock_candidates(inv, catalog, demand, journal, config, now=None):
     now = time.time() if now is None else now
     velocity=config.get('shop_velocity_enabled',False)
+    strategic=bool(config.get('inventory_portfolio_v27_enabled') and velocity and config.get('shop_championship_enabled')
+        and config.get('shop_inventory_caps_enabled') is False and config.get('shop_internal_capital_caps_enabled') is False)
     end = now + planning_hours(config, now)*3600
     if end - now < 3600 or not supply_open(inv, now):
         return []
@@ -446,6 +449,13 @@ def restock_candidates(inv, catalog, demand, journal, config, now=None):
             from .service_policy import need_plan
             service_need=need_plan(journal,config,sku,p,units,rate,desired,coverage,paid,now)
             if service_need:needed=max(needed,service_need['needed'])
+        baseline_needed=needed
+        depth_supported=False
+        if strategic:
+            from .inventory_portfolio import supported
+            depth_supported=supported(growth,observed,now)
+            if p.get('kind')=='food' and .45*p.get('shelf_hours',0)<min(6,(end-now)/3600):depth_supported=False
+            if depth_supported:needed=max(needed,20)
         if needed<=0:
             continue
         held_room=config['restock_max_qty']-count.get(sku,0) if stock_caps_enabled(config) else 20
@@ -534,6 +544,9 @@ def restock_candidates(inv, catalog, demand, journal, config, now=None):
                                            planning_hours=hours,scenario_unit_cost=cost_ratio*p['list_price'],
                                            resale_price_scenario=price,resale_terms_scenario=terms)
         if service_need:candidates[-1]['evidence']['service_eligibility']=service_need
+        if config.get('inventory_portfolio_v27_enabled'):
+            candidates[-1]['evidence']['v27_baseline_qty']=max(0,min(qty,baseline_needed))
+            candidates[-1]['evidence']['v27_depth_supported']=depth_supported
         if config.get('objective_feedback_enabled'):candidates[-1]['evidence']['trend_factor_scenario']=trend
     from .meta import rank_progress
     board = journal.snapshot('board.json', {})
@@ -542,4 +555,13 @@ def restock_candidates(inv, catalog, demand, journal, config, now=None):
     for c in candidates:
         c['rank_progress_surrogate'] = rank_progress(board, 'shop', 'seochanit', c['expected_delta'])
     from .portfolio import allocate
+    if strategic:
+        from .inventory_portfolio import allocate as strategic_allocate
+        packet={}
+        selected=strategic_allocate(candidates,inv,capacity,dict(config,_v27_rules_hash=journal.get('market_rules',{}).get('sha256')),
+            units,dict(merchant,_v27_board=board),now,audit=packet)
+        if packet:
+            journal.put('inventory-portfolio:v27',packet)
+            journal.add('inventory_portfolio_prepared',packet,role='shop')
+        return selected
     return allocate(candidates, inv, capacity, dict(config,inventory_target_units=target), units, merchant=merchant)

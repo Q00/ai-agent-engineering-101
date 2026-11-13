@@ -91,7 +91,8 @@ def resale_terms(product,public,journal,config,now):
             warranty=term['warranty_hours'];price=min(product['list_price'],term['median'])
             if config.get('shop_championship_enabled'):
                 from .risk import shop_refund_risk
-                refund=shop_refund_risk(journal,grade,warranty,config,now)['refund_upper']
+                from .decision_view import fact
+                refund=fact(journal,('stock-seller-risk',grade,warranty),lambda:shop_refund_risk(journal,grade,warranty,config,now))['refund_upper']
             else:
                 refund=goods_risk(journal,grade,warranty,config,now)['failure_upper'] if warranty else 0
             # This is an opportunity-cost scenario, not a market fee.
@@ -103,7 +104,8 @@ def resale_terms(product,public,journal,config,now):
             # A new insured contract cannot borrow an old uninsured margin.
             from .risk import shop_refund_risk
             hours=config.get('shop_new_goods_warranty_hours',6)
-            risk=shop_refund_risk(journal,grade,hours,config,now)['refund_upper']
+            from .decision_view import fact
+            risk=fact(journal,('stock-seller-risk',grade,hours),lambda:shop_refund_risk(journal,grade,hours,config,now))['refund_upper']
             choices=[{'grade':grade,'weight':weight,'price':base,'refund_stress':risk,
                 'warranty_hours':hours,'observations':0,'selection_value':base*(1-risk),
                 'fallback':'mixed public price; actual insured seller-risk scenario'}]

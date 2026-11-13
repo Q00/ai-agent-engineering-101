@@ -374,6 +374,12 @@ def update(journal, config, now=None, client=None, key=None):
     if not valid_operating(baseline):
         baseline={'cover_cycles':1,'initial_batch_limit':6,'frontier_min_orders':8,'recheck_seconds':120}
     facts['current_operating_policy']=baseline
+    if config.get('inventory_portfolio_v27_enabled'):
+        from .inventory_portfolio import context as inventory_context
+        p=inventory_context(journal,now)
+        facts['inventory_portfolio']={k:p.get(k) for k in ('at','id','selection','alternatives','goods_units')}
+        facts['inventory_portfolio']['note']='Whole-lot comparison at shared demand, per-unit cost/refund/storage/expiry sensitivity. Support-qualified durable SKU depth is not bounded by one common replenishment multiplier. Numeric baseline dominance is not causal or competitor superiority.'
+        evidence.append('kv:inventory-portfolio:v27')
     if config.get('service_contract_v26_enabled'):
         from .service_policy import context as service_context
         service=service_context(journal,now)

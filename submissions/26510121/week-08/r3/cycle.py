@@ -84,6 +84,9 @@ class MarketCycle:
             if self.cfg.get('shop_adaptive_demand_enabled'):
                 from .demand_policy import update as demand_update
                 roles['shop_demand_observer']=lambda:demand_update(self.j,self.cfg,time.time())
+            if self.cfg.get('inventory_portfolio_v27_enabled'):
+                from .inventory_portfolio import observe as inventory_observe
+                roles['inventory_opportunity_observer']=lambda:inventory_observe(self.j,self.cfg,time.time())
             if self.cfg.get('objective_decision_enabled'):
                 from .objective_context import observe_forum
                 roles['forum_objective_observer']=lambda:observe_forum(self.j,time.time())
