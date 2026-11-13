@@ -5,6 +5,7 @@ import json
 import os
 from pathlib import Path
 import tempfile
+import time
 from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
@@ -150,7 +151,7 @@ class ShopOperationsTests(unittest.TestCase):
         with patch("seller_agent.load_shop_key", return_value=key):
             seller = InventorySeller({**DEFAULT, "name": "ours", "market_dir": self.md})
         seller.events = self.logs / "seller.jsonl"
-        clock = SimpleNamespace(time=lambda: self.end - 6 * 3600 - 30)
+        clock = SimpleNamespace(time=lambda: self.end - 6 * 3600 - 30, monotonic=time.monotonic)
         def decide(prompt, context, validate, **kwargs):
             self.assertEqual(context["negotiation"]["opening_bounds"]["source"], "round_end_stock_clearance")
             self.assertEqual(context["sales_terms"]["warranty_hours"], 6)

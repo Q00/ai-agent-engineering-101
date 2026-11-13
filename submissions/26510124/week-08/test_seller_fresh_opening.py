@@ -15,14 +15,14 @@ class FreshOpeningTests(unittest.TestCase):
 
     def test_fresh_quote_and_receipt_keep_floor_and_identity(self):
         seller, _ = self.seller()
-        reference = {'target':80000, 'source':'own_settled_sales', 'created_at':time.time()}
+        reference = {'target':80000, 'source':'own_settled_sales', 'created_at':time.time(), 'measured':True}
         with patch.object(seller.openings, 'for_product', return_value=reference), \
                 patch('seller_r3.inventory_decision', side_effect=AssertionError('no model')) as model, \
                 TestClient(build(DEFAULT, seller)) as client:
             first = send(client, 'G00001')
             ask = first['status']['message']['metadata']['ask']
             self.assertEqual(ask, 80000)
-            done = send(client, str(ask), first['id'])
+            done = send(client, str(int(ask)), first['id'])
             self.assertTrue(done['artifacts'])
         model.assert_not_called()
         rows = [json.loads(line) for line in seller.events.read_text().splitlines()]
@@ -32,11 +32,11 @@ class FreshOpeningTests(unittest.TestCase):
         self.assertEqual(rows[-1]['first_response_seconds'], quote['first_response_seconds'])
 
     def test_stale_future_manual_and_missing_evidence_keep_model(self):
-        for ref in (None, {'source':'own_settled_sales','created_at':time.time()-3601},
+        for ref in (None, {'source':'own_settled_sales', 'created_at':time.time(), 'measured':False}, {'source':'own_settled_sales','created_at':time.time()-3601},
                     {'source':'comparable_market_sales','created_at':time.time()+600},
-                    {'source':'manual_pilot_policy','created_at':time.time()}):
+                    {'source':'manual_pilot_policy','created_at':time.time(), 'measured':True}):
             seller, _ = self.seller()
-            reference = {**ref, 'target':80000} if ref else None
+            reference = {'measured':True, **ref, 'target':80000} if ref else None
             with patch.object(seller.openings, 'for_product', return_value=reference), \
                     patch('seller_r3.inventory_decision', return_value=fixtures.counter(80000)) as model, \
                     TestClient(build(DEFAULT, seller)) as client:

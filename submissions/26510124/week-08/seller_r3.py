@@ -238,7 +238,7 @@ class InventorySeller(Seller):
                                           "terms": self.warranty_trial.terms(
                                               product, selling_terms(product, self.policy), self.policy, rnd, now)}
                 reference = self.openings.for_product(product, deal["terms"]["warranty_hours"], rnd)
-                deal["fresh_opening"] = bool(reference and reference.get("source") in
+                deal["fresh_opening"] = bool(reference and reference.get("measured") is True and reference.get("source") in
                     {"own_settled_sales", "comparable_market_sales"}
                     and type(reference.get("created_at")) in (int, float)
                     and 0 <= now - reference["created_at"] <= 3600)

@@ -140,7 +140,12 @@ class OpeningReader:
                 or row.get("source") not in SOURCES):
             return None
         # No raw market text or another shop's instructions reach the seller.
-        return {"target": row["target"], "source": row.get("source"), "created_at": row["created_at"]}
+        comparable = row.get("comparables")
+        measured = (isinstance(comparable, dict) and type(comparable.get("samples")) is int
+                    and comparable["samples"] >= 3 and type(comparable.get("price")) is int
+                    and comparable["price"] > 0)
+        return {"target": row["target"], "source": row.get("source"), "created_at": row["created_at"],
+                "measured": measured}
 
 
 def bounds(product, terms, reference, policy, now, *, rnd=None):
