@@ -1101,11 +1101,17 @@ def test_discover():
     finally:
         common.catalog = saved
     st_ = common.read_json(MD / "analysis" / "line_state.json")
-    check("a run adds them at cap 2 (500k or more since 11/12; 3 below), logged with their numbers, into line.json for restock",
-          [(c["sku"], c["from"], c["to"]) for c in ch] == [("Gsofa0003", 0, 2), ("Gsofa0001", 0, 2), ("Gsofa0002", 0, 2)]
+    check("11/13: the market's most settled dear products, most first (others' settles of 500k or more in 6 h; the 7 h old "
+          "ones and the 150k mattress left out)",
+          linewatch.demand_top(settles, {}, cat, t) == ["Gsofa0003", "Gsofa0002", "Gsofa0004", "Gsofa0001"])
+    check("a run adds them at cap 4 (DEMAND_CAP: among the market's 40 most settled dear products; 2 for other dear ones "
+          "since 11/12, 3 below), logged with their numbers, into line.json for restock",
+          [(c["sku"], c["from"], c["to"]) for c in ch] == [("Gsofa0003", 0, 4), ("Gsofa0001", 0, 4), ("Gsofa0002", 0, 4)]
           and "added" in ch[0]["why"]
-          and common.read_json(MD / "analysis" / "line.json")["skus"] == {BEDDING: 3, "Gsofa0003": 2, "Gsofa0001": 2, "Gsofa0002": 2}
+          and common.read_json(MD / "analysis" / "line.json")["skus"] == {BEDDING: 3, "Gsofa0003": 4, "Gsofa0001": 4, "Gsofa0002": 4}
           and set(st_["found"]) == {"Gsofa0003", "Gsofa0001", "Gsofa0002"}, (ch, st_.get("found")))
+    got = linewatch.discover(settles, {}, cat, {BEDDING: 3}, {}, t, demand={"Gsofa0001"})
+    check("...a product outside the top keeps the dear start of 2", (got["Gsofa0001"]["cap"], got["Gsofa0003"]["cap"]) == (4, 2), got)
     st_["caps"]["Gsofa0002"] = 0
     st_["exit_at"]["Gsofa0002"] = int(t - linewatch.FIND_DROP - 60)
     common.write_json(MD / "analysis" / "line_state.json", st_)
@@ -1135,7 +1141,7 @@ def test_discover():
     check("...one sold is too few: it ends there", not v["kept"] and common.read_json(exp_path)["until"] == int(t), v)
     exp_path.unlink()
     check("one out for 12 hours is let go; the others stay", set(st_["found"]) == {"Gsofa0003", "Gsofa0001"} and "Gsofa0002" not in st_["caps"]
-          and common.read_json(MD / "analysis" / "line.json")["skus"] == {BEDDING: 3, "Gsofa0003": 2, "Gsofa0001": 2}, st_)
+          and common.read_json(MD / "analysis" / "line.json")["skus"] == {BEDDING: 3, "Gsofa0003": 4, "Gsofa0001": 4}, st_)
     summary_path = MD / "market_summary.json"
     kept_summary = summary_path.read_bytes() if summary_path.exists() else None
     common.write_json(summary_path, {"by_sku": {"Gsofa0001": {"others_6h": {"A_w": {"n": 20, "median": 0.62}}}}})
@@ -1149,7 +1155,7 @@ def test_discover():
         else:
             summary_path.write_bytes(kept_summary)
     check("a line product whose expected margin falls under 0.02 of list leaves (A market 0.62: -0.029), said with its number",
-          [(c["sku"], c["from"], c["to"]) for c in ch] == [("Gsofa0001", 2, 0)] and "expected margin -0.029" in ch[0]["why"], ch)
+          [(c["sku"], c["from"], c["to"]) for c in ch] == [("Gsofa0001", 4, 0)] and "expected margin -0.029" in ch[0]["why"], ch)
     # 11/9: what a product earned us decides, and the model is shifted by its error on the products that have both
     sale = lambda sku, i, price, cost, grade="A", w=True: {"sku": sku, "ts": t - 3 * 3600 - i * 600, "price": price, "cost": cost,
                                                           "list_price": 1_000_000, "grade": grade, "warranty": w}
@@ -1186,8 +1192,18 @@ def test_discover():
     caps = common.read_json(MD / "analysis" / "line.json")["skus"]
     check("...so a product the model puts under 0.02 (A market 0.62) stays when it earned us 0.08 over 36 h, and one out "
           "for 2 h comes back at cap 3 on the same",
-          caps.get("Gsofa0003") == 2 and [(c["sku"], c["from"], c["to"]) for c in ch] == [("Gsofa0001", 0, 3)]
+          caps.get("Gsofa0003") == 4 and [(c["sku"], c["from"], c["to"]) for c in ch] == [("Gsofa0001", 0, 3)]
           and "back in: our realized margin" in ch[0]["why"], (caps, ch))
+    for f in ("line_state.json", "line.json", "line_log.jsonl"):
+        (MD / "analysis" / f).unlink(missing_ok=True)
+    common.catalog = lambda *a, **k: cat
+    try:
+        ch = linewatch.run(t, settles=settles, inv={"units": []}, sales=[], line={BEDDING: 3, "Gsofa0002": 2}, stars=4.9)
+    finally:
+        common.catalog = saved
+    held = [c for c in ch if c["sku"] == "Gsofa0002"]
+    check("11/13: a line product at 2 among the market's most settled dear products is held at 4 (DEMAND_CAP), said so",
+          [(c["from"], c["to"]) for c in held] == [(2, 4)] and "most settled dear products" in held[0]["why"], ch)
     for f in ("line_state.json", "line.json", "line_log.jsonl"):
         (MD / "analysis" / f).unlink(missing_ok=True)
 

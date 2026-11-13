@@ -48,7 +48,7 @@ exited on the first pass and never came back; our own settles counted as the mar
 import importlib
 import json
 import statistics as st
-from collections import defaultdict
+from collections import Counter, defaultdict
 
 import common
 import breakage
@@ -117,6 +117,12 @@ FIND_CAP = 3            # 2 until 11/6 13:10
 FIND_CAP_DEAR, DEAR = 2, 500_000   # 11/12: a new product of 500k or more starts at 2 units (breadth, not depth: dear
                                    # units sat a median 15 h, food 0.3 h)
 LINE_MAX_SKUS = 80       # 20 until 11/5 01:00, 30 until 09:20, 40 until 11/12 (the person's call, aggressive)
+DEMAND_N, DEMAND_CAP = 40, 4   # 11/13 (the person's call): the market's DEMAND_N most settled products of DEAR or more
+                         # (other shops, FIND_WINDOW) join at DEMAND_CAP units, and a line product among them is held at
+                         # DEMAND_CAP or more while it stays in (the exits still apply). On 11/13 those 40 carried 91% of
+                         # the market's dear settles (275 an hour); we held 22 of them, mostly 1-3 units, 16 of the 23 dear
+                         # products we sold in 6 h were down to 0-1, and we had 2.8% of the dear settles against
+                         # yms979's 7.9% with 1,075 dear units (ours 70). Cash sat idle (512M); stock costs 1% a day
 TOP_Q = 0.75             # 11/12 (the person's idea: the upper segment, not the average): a candidate is ranked by the
                          # money the top quarter of its buyers paid, at that quarter's price: settles at or over the SKU's
                          # TOP_Q quantile of paid / list, times list, times (that quantile - COST_GUESS). The median still
@@ -303,13 +309,21 @@ def calibration(real: dict, model) -> float:
     return round(max(-CAL_MAX, min(CAL_MAX, st.median(errs))), 4)
 
 
+def demand_top(settles: list, names: dict, catalog: dict, now: float) -> list:
+    """The DEMAND_N products of DEAR or more that other shops settled most in the last FIND_WINDOW, most first."""
+    n = Counter(s.get("item") for s in settles
+                if (s.get("ts") or 0) >= now - FIND_WINDOW and ((catalog.get(s.get("item")) or {}).get("list_price") or 0) >= DEAR
+                and not ledger.is_ours(names.get(s.get("shop"), s.get("shop"))))
+    return [sku for sku, _ in n.most_common(DEMAND_N)]
+
+
 def discover(settles: list, names: dict, catalog: dict, line: dict, caps: dict, now: float, unmet: list | None = None,
-             params: dict | None = None, margin=None) -> dict:
+             params: dict | None = None, margin=None, demand=()) -> dict:
     """{sku: {n, median, top, sellers, list, at}}: new products for the line from other shops' settles of the last
     FIND_WINDOW, the most top-quarter money first (TOP_Q: settles at or over that quantile x list x (quantile -
     COST_GUESS); until 11/12 all settles at the median), as many as leave the line at LINE_MAX_SKUS products with a cap
-    above 0; one of DEAR or more starts at FIND_CAP_DEAR. params: an experiment's find_median, find_sellers,
-    line_max_skus; what it adds is marked exp."""
+    above 0; one of DEAR or more starts at FIND_CAP_DEAR, one in `demand` (demand_top) at DEMAND_CAP. params: an
+    experiment's find_median, find_sellers, line_max_skus; what it adds is marked exp."""
     params = params or {}
     least, most = params.get("find_median", FIND_MEDIAN), params.get("find_sellers", FIND_SELLERS)
     room = params.get("line_max_skus", LINE_MAX_SKUS) - sum(1 for s in line if caps.get(s, line[s]) > 0)
@@ -337,7 +351,8 @@ def discover(settles: list, names: dict, catalog: dict, line: dict, caps: dict, 
             picks.append((n_top * lp * (top - COST_GUESS), sku,
                           {"n": len(rows), "median": round(m, 4), "top": round(top, 4), "sellers": sellers, "list": lp}))
     picks.sort(key=lambda x: -x[0])
-    out = {sku: dict(info, at=int(now), cap=FIND_CAP_DEAR if info["list"] >= DEAR else FIND_CAP, source="market",
+    out = {sku: dict(info, at=int(now), cap=DEMAND_CAP if sku in demand else FIND_CAP_DEAR if info["list"] >= DEAR else FIND_CAP,
+                     source="market",
                      **({"exp": True} if params else {}))
            for _, sku, info in picks[:room]}
     room -= len(out)
@@ -396,7 +411,8 @@ def run(now: float, settles: list | None = None, inv: dict | None = None, sales:
     summary = common.read_json(common.MARKET_DIR / "market_summary.json", {}) or {}
     surge = {s.get("sku"): float(s.get("factor") or 1.0) for s in inv.get("surge") or [] if isinstance(s, dict)}
     margin, real, cal = margins(now, summary, surge, given_sales)
-    for sku, info in discover(settles, names, catalog, line, caps, now, unmet, experiment(now), margin).items():
+    top = set(demand_top(settles, names, catalog, now))
+    for sku, info in discover(settles, names, catalog, line, caps, now, unmet, experiment(now), margin, top).items():
         found[sku], line[sku] = info, info["cap"]
         why = (f"added: others sold it {info['n']} times in {FIND_WINDOW // 3600} h at {info['median']:.3f} of list, {info['sellers']} sellers"
                if info["source"] == "market" else
@@ -425,6 +441,8 @@ def run(now: float, settles: list | None = None, inv: dict | None = None, sales:
         elif (new == 0 and caps.get(sku, default) == 0 and sku in real and real[sku][0] >= EM_BACK and not g["hold"]
               and now - (exits.get(sku) or 0) >= EXIT_REST):
             new, why = FIND_CAP, f"back in: our realized margin {real[sku][0]:.3f} of list over {REAL_WINDOW // 3600} h ({real[sku][1]} sold)"
+        if 0 < new < DEMAND_CAP and sku in top and not g["hold"]:
+            new, why = DEMAND_CAP, f"among the market's {DEMAND_N} most settled dear products: held at {DEMAND_CAP}"
         if cut and new > 1 and new >= caps.get(sku, default) and not fresh:   # one step down, not on top of a shrink
             new, why = new - 1, f"our stars {g['stars']} are under {STARS_MIN}" + ("" if why.startswith("keep") else f"; {why}")
         if new != caps.get(sku, default):
