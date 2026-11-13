@@ -151,10 +151,25 @@ def shelf_left(u):
     return max(0.0, (u["expires_at"] - time.time()) / (hours * 3600))
 
 
+# ddolcom (2026-11-13 11:50, the user's "오래된 재고를 원가와 비슷하게 팔다가 그래도 안팔리면 원가 이하로 내려서 팔아도 좋아"):
+# goods unsold OLD_BELOW_HOURS (24 h) open at cost (+2%, see is_dead and dead_markup) and come down to the floor; still unsold
+# OLD_DEEP_HOURS they may go to OLD_BELOW_SHARE (0.90) of cost whatever the market pays, grade C included (no C_GOODS_FLOOR).
+# At 11:44: 24 h+ goods 144 units, of which A/B at cost 39 (1,004만), C above cost 75 (1,711만), already below cost 30 (1,658만)
+OLD_DEEP_HOURS = 48
+
+
+def goods_age_hours(u):
+    return (time.time() - (u.get("supplied_at") or time.time())) / 3600 if is_goods(u) else 0.0
+
+
 def floor_price(u):
-    """Lowest price for this unit (see _floor), and for grade C goods never under C_GOODS_FLOOR of list."""
+    """Lowest price for this unit (see _floor), and for grade C goods never under C_GOODS_FLOOR of list, until OLD_DEEP_HOURS."""
     f = _floor(u)
-    if is_goods(u) and u.get("grade") == "C" and u.get("unit") not in BELOW_COST_FLOOR:
+    if u.get("unit") in BELOW_COST_FLOOR:
+        return f
+    if goods_age_hours(u) >= OLD_DEEP_HOURS:
+        return min(f, int(OLD_BELOW_SHARE * u["cost"]))
+    if is_goods(u) and u.get("grade") == "C":
         f = max(f, int(C_GOODS_FLOOR * (u.get("list_price") or 0)))
     return f
 
@@ -183,7 +198,7 @@ OLD_BELOW_SHARE = 0.90
 
 def is_dead(u):
     """A named clearance unit, or old goods whose cost is at or above the market price of their grade."""
-    if u.get("unit") in DEAD_UNITS:
+    if u.get("unit") in DEAD_UNITS or goods_age_hours(u) >= OLD_BELOW_HOURS:
         return True
     lp = u.get("list_price") or 0
     return (is_goods(u) and lp >= DEAD_MIN_LIST and u.get("grade") in DEAD_GRADE_SHARE

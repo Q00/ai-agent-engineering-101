@@ -77,6 +77,10 @@ HIGH_A_MIN = 0.72            # Claude (2026-11-09 20:22, hourly check): high tie
 # paid 2,371-2,841만 an hour against my 991만 (logs/top-shops-1112-1008.txt). Blocked at 0.72: G24f5f979 (market A 0.672, 22 deals/h),
 # G00327e80 0.699, Gf6b70da8 0.700, Gbec2b68f 0.692
 HIGH_A_MIN = 0.66
+# Claude (2026-11-13 11:50, the user's "고가 사입기준도 권해준 대로 진행해"): my 1M+ grade A units cost 0.68-0.75 of list and the
+# floor is the cost, while the market's A sells at 0.65-0.70 (trend 07:44 "COST ABOVE": G47788edd 0.75, Ge5fe0d41 0.72-0.73,
+# G6cd0e9d4 0.73); sofas sold 0 and 3 at 06:43 and 07:44. High tier now only where the market's A sells at 0.70+ of list
+HIGH_A_MIN = 0.70
 A_MIN_DEALS = 5              # grade A settles seen (customers.py sku_a) before a high-tier SKU is judged; until then it is not bought
 BREAK_MAX = 0.15             # Claude (2026-11-10 19:22, the user's plan step 3): a SKU with BREAK_MIN_SETTLES+ market settles
 # Claude (2026-11-11 03:22, plan 2 step 3): spread SKUs that pass every filter above (3+ shops, A price x surge, breaks) keep one
