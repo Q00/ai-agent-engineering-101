@@ -108,7 +108,8 @@ def run(now: float | None = None) -> str:
 # The buyer's haggling experiment (11/6 16:40, 몫 사냥꾼 ②): an order's arm by a hash of its id; scored over the
 # orders where the choice arose (could_counter), each by (share of list kept - our saved now) if it closed, else 0:
 # what the order adds to saved, times deals + 100.
-HAGGLE_ARMS = ("accept", "counter")
+HAGGLE_ARMS = ("accept", "counter", "deep")   # "deep" since 11/13 22:40 (market_buyer.DEEP: two pushes)
+HAGGLE_START = {"accept": 0.25, "counter": 0.25, "deep": 0.5}   # before HAGGLE_MIN each: deep gets half, to learn fast
 HAGGLE_MIN = 100
 HAGGLE_LEAN = 0.8    # 11/12 (the person's call, aggressive): once both arms have HAGGLE_MIN orders, the arm adding more
                      # to saved gets this before a verdict (on 11/12 counter kept 0.3371 against 0.3282, z 1.27)
@@ -119,11 +120,14 @@ def haggle_path():
 
 
 def haggle_arm(order_id: str, now: float | None = None, state: dict | None = None) -> str | None:
-    """"accept" or "counter" for this order, or None (accept, as before) without a fresh haggle.json."""
+    """One of HAGGLE_ARMS for this order, or None (accept, as before) without a fresh haggle.json. A person may set
+    "fixed" in haggle.json to one arm: every order then takes it (11/13: to settle the deep arm fast)."""
     st_ = state if state is not None else common.read_json(haggle_path(), None)
     now = now or time.time()
     if not isinstance(st_, dict) or not st_.get("on", True) or now - (st_.get("at") or 0) > FRESH:
         return None
+    if st_.get("fixed") in HAGGLE_ARMS:
+        return st_["fixed"]
     arms = sorted((a, float(w)) for a, w in (st_.get("weights") or {}).items() if a in HAGGLE_ARMS and float(w) > 0)
     if not arms:
         return None
@@ -173,9 +177,9 @@ def run_haggle(now: float | None = None) -> str:
     elif lead:
         weights = {a: (HAGGLE_LEAN if a == lead else round(1 - HAGGLE_LEAN, 4)) for a in stats}
     else:
-        weights = {a: 0.5 for a in stats}
+        weights = {a: HAGGLE_START.get(a, 0.5) for a in stats}
     common.write_json(haggle_path(), {"at": int(now), "on": old.get("on", True), "weights": weights, "best": best, "z": z,
-                                      "saved": saved, "stats": stats})
+                                      "saved": saved, "stats": stats, **({"fixed": old["fixed"]} if old.get("fixed") else {})})
     parts = ", ".join(f"{a}: {s['talks']} orders, close {s['close']}, kept {s['kept']}" for a, s in stats.items())
     why = f"best {best} by {z} SE" if best else (f"leaning {lead}: no arm {Z} SE ahead (z {z})" if ready else f"even until {HAGGLE_MIN} each")
     return f"haggling ({why}): {parts}"

@@ -583,6 +583,12 @@ def test_shop_around():
     check("몫 사냥꾼 ② counter arm: an ask inside our ceiling (33,000) is answered once with 96% of it (31,680); the shop's "
           "next ask (32,000) is taken", r["deal"] and r["price"] == 32000 and r["offers"][1] == 31680 and r["pushed"]
           and r["could_counter"] and r["haggle"] == "counter", (r["offers"], r.get("left")))
+    deep_ = [task("TASK_STATE_INPUT_REQUIRED", "Asking 34000.", ask=34000), task("TASK_STATE_INPUT_REQUIRED", "Asking 33000.", ask=33000),
+             task("TASK_STATE_INPUT_REQUIRED", "Asking 32000.", ask=32000), task("TASK_STATE_COMPLETED", "Deal", rec(31040))]
+    r = asyncio.run(mb.trade(Shops({"http://B.test": deep_}), cb, bed, CATALOG, {}, dict(RULES, haggle="deep"), False))
+    check("11/13 deep arm: an ask inside our ceiling is answered twice, at 93% (30,690 of 33,000) and 97% (31,040 of the "
+          "shop's 32,000); the shop takes the second", r["deal"] and r["price"] == 31040 and r["offers"][1:] == [30690, 31040]
+          and r.get("pushes") == 2 and r["haggle"] == "deep", (r["offers"], r.get("left")))
     taking = [task("TASK_STATE_INPUT_REQUIRED", "Asking 34000.", ask=34000), task("TASK_STATE_INPUT_REQUIRED", "Asking 33000.", ask=33000),
               task("TASK_STATE_COMPLETED", "Deal", rec(33000))]
     r = asyncio.run(mb.trade(Shops({"http://B.test": taking}), cb, bed, CATALOG, {}, dict(RULES, haggle="accept"), False))

@@ -1515,7 +1515,8 @@ def test_stage2():
     def orders(arm, n, deals, price, could=True):
         return [{"ts": t - 600, "haggle": arm, "could_counter": could, "list_price": 1000, "deal": i < deals,
                  "price": price if i < deals else None} for i in range(n)]
-    rows = orders("accept", 100, 95, 650) + orders("counter", 100, 95, 560) + orders("counter", 50, 50, 500, could=False)
+    rows = (orders("accept", 100, 95, 650) + orders("counter", 100, 95, 560) + orders("counter", 50, 50, 500, could=False)
+            + orders("deep", 100, 95, 640))
     hs = experiments.haggle_score(rows, 0.27)
     ka, kc = round(margin.kept(0.65, None, "goods"), 4), round(margin.kept(0.56, None, "goods"), 4)
     check(f"scored on the orders where the choice arose, each deal by its expected margin share (Patch 3.6): accept "
@@ -1531,15 +1532,25 @@ def test_stage2():
         note = experiments.run_haggle(t)
         h = common.read_json(experiments.haggle_path())
         check("...100 orders each and counter ahead by 2+ standard errors: counter gets 0.8", h["best"] == "counter"
-              and h["weights"] == {"accept": 0.2, "counter": 0.8} and "best counter" in note, (h, note))
-        close = orders("accept", 100, 60, 620) + orders("counter", 100, 61, 618)
+              and h["weights"] == {"accept": 0.2, "counter": 0.8, "deep": 0.2} and "best counter" in note, (h, note))
+        close = orders("accept", 100, 60, 620) + orders("counter", 100, 61, 618) + orders("deep", 100, 60, 620)
         with open(rec_o, "w", encoding="utf-8") as f:
             for r in close:
                 f.write(json.dumps(r) + "\n")
         note = experiments.run_haggle(t)
         h = common.read_json(experiments.haggle_path())
         check("11/12: ahead, but not by 2 standard errors: the arm adding more to saved still gets 0.8 (no verdict)",
-              h["best"] is None and h["weights"] == {"accept": 0.2, "counter": 0.8} and "leaning counter" in note, (h, note))
+              h["best"] is None and h["weights"] == {"accept": 0.2, "counter": 0.8, "deep": 0.2} and "leaning counter" in note, (h, note))
+        with open(rec_o, "w", encoding="utf-8") as f:
+            for r in orders("accept", 100, 60, 620) + orders("counter", 100, 61, 618) + orders("deep", 40, 30, 600):
+                f.write(json.dumps(r) + "\n")
+        common.write_json(experiments.haggle_path(), dict(common.read_json(experiments.haggle_path()), fixed="deep"))
+        experiments.run_haggle(t)
+        h = common.read_json(experiments.haggle_path())
+        check("11/13: before 100 orders each the deep arm gets half the orders (accept and counter a quarter each); a "
+              "person's \"fixed\" arm is kept by the run and every order takes it",
+              h["weights"] == experiments.HAGGLE_START and h.get("fixed") == "deep"
+              and {experiments.haggle_arm(f"o-{i}", t) for i in range(50)} == {"deep"}, h)
     finally:
         experiments.haggle_path().unlink(missing_ok=True)
         if kept_o is None:

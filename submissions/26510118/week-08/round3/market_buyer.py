@@ -140,6 +140,11 @@ FOOD_WORDS = " Please say how many hours of shelf life it has left, and its grad
 # to take the shop's answer); the "accept" arm takes it as before. Both record could_counter, so the experiment
 # compares the orders where the choice arose.
 PUSH = 0.96
+DEEP = (0.93, 0.97)       # 11/13 22:40 (the person's call): the "deep" haggle arm answers an ask inside our ceiling twice,
+                          # at 93% then 97% of it, before taking it (STEPS 4: our opener offer, two pushes, the ask).
+                          # The counter arm's one push at 96% saved 1% (69 talks, 1 ended by the shop); in talks of 3+
+                          # asks shops came down a median 3% (p25 9%), and SungJinho paid 2.7 points of list less for
+                          # the same grade A goods (dae-yangkim 0.629 against our 0.685)
 ASK_HOURS = True          # 11/6 21:30: food quoted without its shelf life is asked for it once before any offer
 ASK_BETTER = True         # 11/7: a refurbished unit without the warranty: ask once for a grade A or B before leaving
 GRADE_SAID = re.compile(r"\bgrade\s*[:=]?\s*([ABC])\b", re.I)
@@ -601,6 +606,7 @@ async def trade(client: A2A, c: dict, order: dict, catalog: dict, nb: dict, rule
         prev, holds, asked_warranty, refurb, covered, split = None, 0, r["warranty"], False, False, False
         scale = 1.0                                                 # the ladder, scaled to a B's or a C's ceiling
         push = rules.get("haggle") == "counter"
+        deep = rules.get("haggle") == "deep"
         r["haggle"] = rules.get("haggle")
         for k, step in enumerate(steps):
             if state(t) != "TASK_STATE_INPUT_REQUIRED":
@@ -701,7 +707,10 @@ async def trade(client: A2A, c: dict, order: dict, catalog: dict, nb: dict, rule
             elif ask is not None and r["offers"] and ask <= ceiling:
                 could = not r.get("pushed") and k < len(steps) - 1   # a step left to take the shop's answer
                 r["could_counter"] = r.get("could_counter") or could
-                if push and could:                                  # 몫 사냥꾼 ②: once more, PUSH of its ask
+                n_push = r.get("pushes", 0)
+                if deep and n_push < len(DEEP) and k < len(steps) - 1:   # 11/13: the deep arm, DEEP of its ask
+                    offer, r["pushes"], r["pushed"] = max(r["offers"][-1], round(ask * DEEP[n_push])), n_push + 1, True
+                elif push and could:                                # 몫 사냥꾼 ②: once more, PUSH of its ask
                     offer, r["pushed"] = max(r["offers"][-1], round(ask * PUSH)), True
                 elif split or not c.get("market") or ask <= round(c["list"] * c["market"]):
                     offer = ask                                     # the shop's answer, within our ceiling: take it
@@ -936,7 +945,8 @@ async def amain(a) -> dict:
                   error=r["error"], left=r["left"], tries=tries, rival=c["shop"]["name"] in rivals,
                   cap=r.get("cap"), market=c.get("market"), said=r.get("said"), grade=r.get("grade"),
                   min_share=r.get("min_share"), probe=r.get("probe"), policy=r.get("policy"), haggle=r.get("haggle"),
-                  could_counter=r.get("could_counter"), pushed=r.get("pushed"), asked_hours=r.get("asked_hours"),
+                  could_counter=r.get("could_counter"), pushed=r.get("pushed"), pushes=r.get("pushes"),
+                  asked_hours=r.get("asked_hours"),
                   asked_better=r.get("asked_better"), better=r.get("better"),
                   margin_floor=r.get("margin_floor"), nohaggle=r.get("nohaggle"))     # 11/13: Patch 3.6's floor; B2
     if r["deal"]:
