@@ -54,7 +54,7 @@ def is_ours(name) -> bool:
 # (only in the focus phase, within its limits); a missing file or key keeps these defaults.
 RULES = {
     "seller": {"focus_categories": [], "drop_categories": [], "price_adjust": 0.0,
-               "warranty_extra": {"A": 0.025, "B": 0.08, "C": 0.20}, "walk_threshold": 0.7},
+               "warranty_extra": {"A": 0.03, "B": 0.11, "C": 0.33}, "walk_threshold": 0.7},   # pricing.WARRANTY_EXTRA
     "buyer": {"avoid_shops": [], "prefer_shops": [], "open_ratio": 0.50, "max_ratio": 0.90,
               "warranty_all_goods": False, "over_budget_try": True},
 }

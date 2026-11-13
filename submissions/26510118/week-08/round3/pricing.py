@@ -47,10 +47,14 @@ MARGIN = 0.02           # over cost on the floor (0.05 until 11/6 12:40, Kiro 2.
                         # list they keep, and 70% of our dear talks left without an offer while the margin per sale held)
 FOOD_CUTS = (0.8, 0.45)                        # share of shelf life left for food grades A and B (the market's)
 WARRANTY_HOURS = 6
-WARRANTY_EXTRA = {"A": 0.025, "B": 0.08, "C": 0.20}   # 0.05 / 0.10 / 0.20 until 11/6 12:40: goods broke 2.6% (A),
-                                                       # 10.7% (B), 30% (C) within 6 h in 24 h, and the market paid
-                                                       # only 2.3% of list more for an A with a warranty
-BREAK = {"A": 0.026, "B": 0.107, "C": 0.30}           # the market's 24 h breakage by grade (the share refunded)
+WARRANTY_EXTRA = {"A": 0.03, "B": 0.11, "C": 0.33}    # 11/13 11:50 (the person's call; .025/.08/.20 since 11/6 12:40,
+                                                       # .05/.10/.20 before): our 500k+ goods over 24.6 h earned 29.8M over
+                                                       # cost and refunded 20.2M (C 13 of 34 broke, 10.2M; B 13.9%, A 3.3%).
+                                                       # A warranty breaks even at break x price / (1 - break): A ~0.024,
+                                                       # B ~0.10, C ~0.34 of list. The extra lifts the floor (the anchored
+                                                       # ask is the SKU's market), so it binds where the market asks less
+BREAK = {"A": 0.031, "B": 0.110, "C": 0.362}          # the market's 24 h breakage by grade (the share refunded), 11/13
+                                                       # (0.026 / 0.107 / 0.30 on 11/6)
 # Kiro 2.0 (11/6 12:40): every unit whose SKU has a market of its own grade and warranty (others_6h, 10+ settles) is
 # first asked at that market + ASK_OVER (the A/C nudges, the line's "never under its own market" and the uncontested
 # SOLO asks are off). Before: 53% of our dear grade A talks had a floor above the SKU's market + 0.01 and closed 9-10%
