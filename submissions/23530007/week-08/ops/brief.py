@@ -75,7 +75,8 @@ def gap_series(field, me_shop, rival_shop, olds, now, live_gap):
     pts = []
     for t, b in olds:
         sh = {s["name"]: s for s in b["shops"]}
-        if sh.get(me_shop, {}).get(field) is not None and sh.get(rival_shop, {}).get(field) is not None:
+        # 11-13: a snapshot where a shop's field reads 0 (dead / not yet listed) gave a 'range -3,929 ~ +10,618 M'
+        if sh.get(me_shop, {}).get(field) and sh.get(rival_shop, {}).get(field):
             pts.append((t, sh[me_shop][field] - sh[rival_shop][field]))
     return pts + [(now, live_gap)]
 
@@ -240,8 +241,13 @@ def build(hours=6.0):
         ok = task_age is not None and task_age <= 10
         chk.append(("info", f"시장 장애 중: 상점 {len(live)}곳 중 {dead}곳 정지. 우리 상점은 "
                             + ("주문을 받고 있음 (주소 교대 재등록)" if ok else "주문이 끊김")))
+    # 11-13 (user: 'an alert came, what is going on?' -> it was G15, an internal buyer wake): only guards that need
+    # the user's eye are shown, in words; the agents' own wakes (G3 G6 G7 G15 G19 ...) stay in logs/guards.log
+    USER_GUARDS = {"G1": "점수 계산이 보드와 어긋남", "G9": "장부 1위 격차가 빠르게 줄어듦",
+                   "G10": "API 비용이 하루 한도를 넘음", "G12": "전체 2위와 격차 .03 미만", "G18": "모두에게 같은 낮은 별점을 주는 계정 차단/해제"}
     for f in (gs.get("fires") or []):
-        chk.append(("warn", "경보: " + str(f)[:110]))
+        if str(f) in USER_GUARDS:
+            chk.append(("warn", USER_GUARDS[str(f)]))
     for n in out["ranks"][0]["near"]:
         if n["role"] == "아래" and n["gap"] < 0.03:
             chk.append(("warn", f"전체 {n['rank']}위 {n['player']}와 차이 {n['gap']:.3f} (0.03 미만)"))
