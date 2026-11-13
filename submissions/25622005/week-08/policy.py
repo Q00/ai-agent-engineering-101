@@ -34,6 +34,7 @@ DEFAULTS = {
         "warranty_premium": 0.15, "warranty_cap_6h": 500000, "warranty_premium_floor": 0.02, "warranty_q_mult": 1.5,
         "fact_block": True, "claim_food_margin_h": 1.0, "promise_ttl_s": 180,
         "intro_price_enabled": False,
+        "market_list_A": 0.70, "market_list_B": 0.61, "market_list_C": 0.55,
     },
     "stock": {
         "inventory_cap_share": 0.30, "cash_floor": 1000000, "worst_cost_share": 0.75,
@@ -93,6 +94,7 @@ def expected_margin_share(kept, kind, point=0.5):
 RANGES = {
     "seller.first_ask_list": (0.3, 1.5), "seller.first_ask_big_list": (0.3, 1.5),
     "seller.floor_cost_mult": (0.0, 2.0), "seller.floor_list": (0.0, 1.5), "seller.stale_floor_cost_mult": (0.3, 1.0),
+    "seller.market_list_A": (0.0, 1.5), "seller.market_list_B": (0.0, 1.5), "seller.market_list_C": (0.0, 1.5),
     "seller.warranty_hours": (0, 6), "seller.warranty_premium": (0.0, 1.0), "seller.promise_ttl_s": (10, 3600),
     "seller.warranty_cap_6h": (0, 80000000), "seller.warranty_premium_floor": (0.0, 0.5), "seller.warranty_q_mult": (0.5, 5.0),
     "stock.inventory_cap_share": (0.0, 1.0), "stock.cash_floor": (0, 5000000), "stock.worst_cost_share": (0.25, 1.0),

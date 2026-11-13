@@ -273,6 +273,25 @@ class SellerA2A(unittest.TestCase):
         inv = {"round": 3, "units": [old, self.goods("u-new", cost=60000)]}
         self.assertEqual(seller.find_unit("G000f6cda", inv, now=self.now)["unit"], "u-new")   # no policy: the cheaper unit (11-12)
 
+    def test_goods_offer_first_a_unit_the_market_price_of_its_grade_clears(self):
+        # 11-13: an A costing 0.72 of list cannot sell at the market's 0.70; the B of the same SKU sells at 0.61
+        pol = json.loads(json.dumps(policy.DEFAULTS))
+        pol["seller"].update(floor_cost_mult=1.0, floor_list=0.57, goods_stale_days=30)
+        a_dear = dict(self.goods("u-a", cost=72000), grade="A")
+        b_fair = dict(self.goods("u-b", cost=51000), grade="B")
+        c_fair = dict(self.goods("u-c", cost=34000), grade="C")          # floor 0.57 over the C price 0.55
+        inv = {"round": 3, "units": [a_dear, b_fair, c_fair]}
+        self.assertEqual(seller.find_unit("G000f6cda", inv, now=self.now, pol=pol)["unit"], "u-b")
+        self.assertEqual(seller.find_unit("G000f6cda", inv, now=self.now)["unit"], "u-a")           # no policy: best grade
+        a_fair = dict(self.goods("u-a2", cost=69000), grade="A")
+        inv["units"].append(a_fair)
+        self.assertEqual(seller.find_unit("G000f6cda", inv, now=self.now, pol=pol)["unit"], "u-a2")  # a fair A still first
+        inv = {"round": 3, "units": [a_dear, c_fair]}                                                # none clears: best grade
+        self.assertEqual(seller.find_unit("G000f6cda", inv, now=self.now, pol=pol)["unit"], "u-a")
+        pol["seller"]["market_list_B"] = 0                                                            # 0: no market price known
+        inv = {"round": 3, "units": [a_dear, b_fair]}
+        self.assertEqual(seller.find_unit("G000f6cda", inv, now=self.now, pol=pol)["unit"], "u-b")
+
     def test_goods_offered_best_grade_first_then_oldest(self):
         # 11-12: the oldest unit of a SKU is the C the A and B sales left behind; buyers pay for A and B
         c_old = dict(self.goods("u-c", cost=60000), grade="C", supplied_at=self.now - 40 * H)

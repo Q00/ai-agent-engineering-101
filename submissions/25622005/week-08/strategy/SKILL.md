@@ -24,6 +24,9 @@ policy:
     claim_food_margin_h: 1.0      # L5 claim a food grade only with this much margin to the next grade cut
     promise_ttl_s: 180            # a unit promised in an open negotiation is held this long
     intro_price_enabled: false    # L4 (conditional, day-1 data)
+    market_list_A: 0.70           # D3 the market's price/list for a grade: goods offer first a unit whose floor is at or under it
+    market_list_B: 0.61
+    market_list_C: 0.55
   stock:
     inventory_cap_share: 0.30     # D1 inventory cost <= share x (cash + inventory cost)
     cash_floor: 1000000           # D1 bankruptcy line 500,000 + refund reserve 500,000

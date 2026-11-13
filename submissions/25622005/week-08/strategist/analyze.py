@@ -1120,6 +1120,16 @@ def _saved(buyers, me_row, me_b, rows, pol, hours_left, window_h, reviews=None, 
         # scenarios: the final saved at the window's deal rate and at twice it, when every deal left scores s
         proj["scenarios"] = {f"rate_x{m}": {f"score_{s}": _r((saved * hist + left * m * s) / (hist + left * m))
                                              for s in (0.8, 0.9, 1.0)} for m in (1, 2)}
+        # the deals of a grade whose estimate is under the end as_now pull the end down: the end without them
+        end = ends.get("as_now")
+        bg = {k: v for k, v in _dict(out["by_grade"]).items() if _num(_dict(v).get("est")) is not None and _num(v.get("share"))}
+        drags = sorted(k for k, v in bg.items() if end is not None and v["est"] < end)
+        keep = {k: v for k, v in bg.items() if k not in drags}
+        sh = sum(v["share"] for v in keep.values())
+        if drags and sh:
+            per_k = sum(v["share"] * v["est"] for v in keep.values()) / sh
+            proj["drop_under_end"] = {"grades": drags, "share_dropped": _r(1 - sh), "per_deal": _r(per_k),
+                                      "saved_end": _r((saved * hist + left * sh * per_k) / (hist + left * sh))}
         out["projection"] = proj
     peers = []
     for r in _rows(buyers):

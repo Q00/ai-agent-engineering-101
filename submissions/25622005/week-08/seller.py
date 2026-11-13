@@ -172,7 +172,10 @@ def find_unit(text, inv, promised=(), need_hours=None, catalog=None, now=None, p
     went unpaid (1 of 13 paid against 13 of 14 for A) and three quarters of those buyers canceled. The cheapest
     unit comes first because a unit's floor is its cost and buyers cap big goods near the market's 0.70 of
     list: on 11-12 (3 h) 46 offers at 0.69-0.71 of list met the oldest A unit's floor over 0.70 and were
-    refused, while 33 of the 37 big-ticket A SKUs held a unit costing under 0.70 (159 of 228 A units)."""
+    refused, while 33 of the 37 big-ticket A SKUs held a unit costing under 0.70 (159 of 228 A units).
+    With pol, goods first offer a unit the market's price for its grade clears (its floor at or under list x
+    seller.market_list_<grade>): on 11-13 (6 h) 911 of 1,345 big first replies offered an A whose cost put its
+    floor over the market's 0.70 and signed 10% against 17%, while 764 of those SKUs held a B under the B price."""
     if (inv.get("round") or 0) < 3:
         return None
     now = time.time() if now is None else now
@@ -187,7 +190,13 @@ def find_unit(text, inv, promised=(), need_hours=None, catalog=None, now=None, p
     if need_hours is not None:
         fit = [u for u in fit if u.get("kind") != "food" or (pricing.hours_left(u, now) or 0) >= need_hours]
     goods = lambda u: u.get("kind") == "goods"
+
+    def unsellable(u):                     # goods whose floor is over the market's price for their grade
+        m = pol and pol["seller"].get(f"market_list_{u.get('grade')}")
+        return bool(goods(u) and m and u.get("list_price")
+                    and pricing.floor(u, None, pol, now) > u["list_price"] * m)
     return min(fit, key=lambda u: (pol is not None and pricing.overpriced(u, pol),
+                                   unsellable(u),
                                    GRADE_RANK.get(u.get("grade"), 3) if goods(u) else 0,
                                    u.get("expires_at") or float("inf"),
                                    (u.get("cost") or 0) if goods(u) else 0,

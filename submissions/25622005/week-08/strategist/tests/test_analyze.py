@@ -886,6 +886,13 @@ class NewSectionsTest(unittest.TestCase):
         pj = sv["projection"]
         self.assertEqual(pj["as_now_per_deal"], 0.7949)
         self.assertEqual(pj["saved_end"]["as_now"], round((0.6 * 1000 + 300 * 0.7949) / 1300, 4))
+        self.assertNotIn("drop_under_end", pj)                    # every grade scores over the end of 0.645
+        r["board"]["buyers"][0]["saved"] = 0.75                    # end 0.7604: the C deals (0.6923) pull it down
+        pj = analyze.brief(r, o, None, pol, NOW, market={"facts": {"saved_is_margin_share_capped_1": True}})["saved"]["projection"]
+        self.assertEqual(pj["drop_under_end"], {"grades": ["food_C"], "share_dropped": 0.6667, "per_deal": 1.0,
+                                                "saved_end": round((0.75 * 1000 + 300 * 0.3333) / (1000 + 300 * 0.3333), 4)})
+        self.assertGreater(pj["drop_under_end"]["saved_end"], pj["saved_end"]["as_now"])
+        r["board"]["buyers"][0]["saved"] = 0.6
         sv = analyze.brief(r, o, None, pol, NOW, market={"facts": {"saved_is_kept_share_over_deals_plus_100": True}})["saved"]
         self.assertEqual((sv["rule"], sv["projection"]["as_now_per_deal"]), ("kept_of_list", 0.45))
 

@@ -42,6 +42,9 @@ TUNABLE = {
     "seller.food_clear_uwh_factor": (1.0, 4.0, 0.5),
     "seller.goods_stale_days": (2, 10, 1),
     "seller.stale_floor_cost_mult": (0.60, 1.00, 0.10),   # clearance: stale goods floor as a share of cost
+    "seller.market_list_A": (0.50, 0.90, 0.03),           # the market's price/list per grade (big_ticket.market
+    "seller.market_list_B": (0.40, 0.85, 0.03),           # .price_list_by_grade): goods offer first a unit whose
+    "seller.market_list_C": (0.30, 0.80, 0.03),           # floor it clears
     "stock.inventory_cap_share": (0.15, 0.90, 0.05),   # Patch 3.3: stock counts at cost in Book, so this is a liquidity limit
     "stock.per_sku_qty": (1, 10, 1),
     "stock.demand_window_h": (2, 24, 2),

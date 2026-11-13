@@ -197,8 +197,15 @@ Supply and depth:
   your change to it is then discarded as a duplicate); under any other rule score_twin is paused with an alert
   and buyer.min_kept is yours. saved.peers lists the best saved among the other buyers with 1000+ deals with
   their paid; under margin_share a low paid is not what makes a high saved (0.38 kept on A units scores 1).
+  saved.projection.drop_under_end lists the grades whose deals score under the projected end (they pull it
+  down: the history is fixed, so a deal under the end lowers it) and the end without them; it costs only the
+  deals part of buyer ALL (0.1), so when its saved_end is above saved_end.as_now raise those grades' floors
+  (buyer.min_kept_<grade>) to where their deals score over the end, or past them.
 - Big-ticket goods (list above stock.big_ticket_list) are first asked at seller.first_ask_big_list x list, the
-  rest at seller.first_ask_list. The seller offers a SKU's best grade first (A, then B, then C) and within the
+  rest at seller.first_ask_list. Goods first offer a unit whose floor the market's price for its grade clears
+  (floor at or under list x seller.market_list_<grade>; set them from market.price_list_by_grade: 11-13, 911 of
+  1,345 big first replies offered an A whose cost floor was over the market's 0.70 and signed 10% against 17%).
+  Among those (or among all when none clears) the seller offers a SKU's best grade first (A, then B, then C) and within the
   grade its cheapest unit (a unit's floor is its cost x seller.floor_cost_mult, and buyers cap big goods near
   the market's 0.70 of list: big_ticket.floor_refusals counts the offers refused under our floor after the final
   price, offer_at_market those at 0.68 of list or more, which a cheaper unit of the grade would have closed;
