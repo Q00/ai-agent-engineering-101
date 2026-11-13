@@ -287,6 +287,23 @@ def main():
             # now 1.5 x the hours left (at least 72 h); the phone alert goes out under 1.15 x the hours left.
             left9 = max(0.0, (1794927540 - now) / 3600)
             st["book_lead_at_end_M"] = round((lead - (theirs - ours) * left9) / 1e6) if theirs > ours else round(lead / 1e6)
+            # G20 (11-13): grade B goods back on sale when the book lead projected to the end falls under 120 M, off
+            # again over 200 M (sell_b 0 since 11-12 15:46 for stars; book 1st only needs a positive lead, but the
+            # lead fell 1.2 M/h on the evening of 11-13 as 25620027 gained 1.26 M/h)
+            try:
+                pa_path = HERE / "params_auto.json"
+                pa = json.loads(pa_path.read_text())
+                g20 = pa.setdefault("globals", {})
+                end_m = st["book_lead_at_end_M"]
+                want_b = 1 if end_m < 120 else 0 if end_m > 200 else g20.get("sell_b", 0)
+                if want_b != g20.get("sell_b", 0) and not DRY:
+                    g20["sell_b"] = want_b
+                    pa_path.write_text(json.dumps(pa, ensure_ascii=False, indent=1) + "\n")
+                    log(f"G20 sell_b -> {want_b} (book lead at the end {end_m} M)")
+                    alert([f"상점 B등급 판매 {'재개' if want_b else '중단'}: 장부 1위 격차가 종료 시 약 {end_m}M 예상"])
+                    fires.append("G20")
+            except (OSError, ValueError) as e:
+                log(f"G20 skipped: {e!r}")
             if eta is not None and 0 < eta < max(72, 1.5 * left9) and cooled(st, "G9", 3 * 3600, now):
                 wake("shop", f"G9 book: lead {lead / 1e6:.0f}M over {rival['name']} closes in {eta:.0f} h (us {ours / 1e6:+.1f} M/h, them {theirs / 1e6:+.1f} M/h)")
                 if eta < max(72, 1.15 * left9) and cooled(st, "G9a", 6 * 3600, now):
