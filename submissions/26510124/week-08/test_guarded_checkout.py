@@ -165,6 +165,11 @@ class GuardedCheckoutTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual((await self.request(session, "complete", PAYMENT)).status_code, 200)
         self.assertEqual((await self.request(session, "cancel")).status_code, 409)
         self.assertEqual(self.market.calls.count(("POST", "/api/settle")), 1)
+        rows = [json.loads(line) for line in (self.folder / "checkout-events.jsonl").read_text().splitlines()]
+        self.assertEqual([r["stage"] for r in rows],
+                         ["checkout_created", "settlement_started", "settlement_confirmed"])
+        self.assertEqual(rows[-1]["ledger"], 8)
+        self.assertTrue(all(set(r) == {"time", "task", "unit", "stage", "ledger"} for r in rows))
 
     async def test_timeout_or_ambiguous_refusal_retains_hold_past_deadline(self):
         for failure in (httpx.ReadTimeout("fixture timeout"), httpx.Response(503, json={"error": "fixture"})):

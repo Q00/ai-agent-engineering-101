@@ -91,6 +91,20 @@ class RestockCoverageTests(unittest.TestCase):
             atomic_json(path, value)
         return md
 
+    def test_breadth_prefers_less_held_category_among_eligible_first_units(self):
+        # Disable the earlier optional allocations to isolate general coverage.
+        self.rules["turnover_goods"]["enabled"] = False
+        self.rules["replenishment"]["food_priority_units"] = 0
+        self.only_demand(HIGH[:2])
+        self.inv["units"] = [unit(unit="old", sku="Gheld", category="high-0", cost=10000)]
+        decision, detail = self.plan()
+        self.assertEqual(detail["choices"][0]["sku"], HIGH[1])
+        self.assertLessEqual(sum(r["qty"] for r in decision["buy"]) + len(self.inv["units"]), 60)
+        # Removing market demand must not force the missing category into stock.
+        self.only_demand(HIGH[:1])
+        decision, _ = self.plan()
+        self.assertNotIn(HIGH[1], [r["sku"] for r in decision["buy"]])
+
     def test_twelve_eligible_candidates_fill_eight_not_four_without_fixed_focus(self):
         previous = deepcopy(self.cfg)
         previous["max_units_per_sku"] = 2

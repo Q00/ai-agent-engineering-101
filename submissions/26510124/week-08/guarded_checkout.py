@@ -11,6 +11,7 @@ import uuid
 
 from starlette.responses import JSONResponse
 
+from feedback import append_event
 from receipt_leases import LeaseError, ReceiptLeaseStore
 from vendor import market_kit_v4 as kit
 
@@ -40,6 +41,19 @@ class GuardedAcpShop(kit.AcpShop):
         self.gate = asyncio.Lock()
         self.runtime_id = uuid.uuid4().hex
         self.started_at = time.time()
+
+    def event(self, task, unit, stage, *, ledger=None):
+        """Append identifiers only; round is obtained by matching seller receipts.
+
+        Logging cannot affect payment/lease state. No mandates, signatures,
+        checkout tokens, customer details or prices enter this stream.
+        """
+        try:
+            append_event(self.leases.folder / "checkout-events.jsonl",
+                         {"time": time.time(), "task": task, "unit": unit,
+                          "stage": stage, "ledger": ledger})
+        except OSError:
+            kit.log("[acp] could not append checkout diagnostic event")
 
     def card(self, public):
         return {**super().card(public), "x_receipt_guard": {
@@ -97,6 +111,7 @@ class GuardedAcpShop(kit.AcpShop):
             if session.get("unit") != lease["unit"]:
                 raise LeaseError("Checkout did not select the reserved unit")
             self.leases.checkout(task, session["id"])
+            self.event(task, lease["unit"], "checkout_created")
             return response
         except LeaseError as exc:
             self._forget(task, before)
@@ -145,6 +160,7 @@ class GuardedAcpShop(kit.AcpShop):
                 if parts[2] == "cancel":
                     self.leases.cancel(session["task"], session["id"])
                     session["status"] = "canceled"
+                    self.event(session["task"], session["unit"], "checkout_cancelled")
                     return JSONResponse(session)
                 if parts[2] != "complete":
                     return self.refused("unknown ACP path", 404)
@@ -158,6 +174,7 @@ class GuardedAcpShop(kit.AcpShop):
                     return self.refused("payment_data is incomplete", 400)
                 self.leases.begin_settle(session["task"], session["id"])
                 session["status"] = "processing"
+                self.event(session["task"], session["unit"], "settlement_started")
             except LeaseError as exc:
                 return self.refused(str(exc))
             except OSError:
@@ -166,6 +183,7 @@ class GuardedAcpShop(kit.AcpShop):
 
     def _uncertain(self, session):
         session["status"] = "payment_uncertain"
+        self.event(session["task"], session["unit"], "settlement_uncertain")
         try:
             self.leases.finish(session["task"], "uncertain")
         except (OSError, LeaseError):
@@ -183,6 +201,7 @@ class GuardedAcpShop(kit.AcpShop):
             if explicit_validation_refusal(response.status_code, result):
                 self.leases.refuse(session["task"], session["id"])
                 session["status"] = "canceled"
+                self.event(session["task"], session["unit"], "settlement_refused")
                 failed = [name for name, valid in result["checks"].items() if not valid]
                 kit.log(f"[acp] settle refused: {failed}; receipt revoked")
                 return JSONResponse({"error": "payment refused by the market", "market": {
@@ -197,6 +216,7 @@ class GuardedAcpShop(kit.AcpShop):
                 return self.refused("payment was not confirmed; stock remains reserved", 502)
             self.leases.finish(session["task"], "completed")
             session["status"] = "completed"
+            self.event(session["task"], session["unit"], "settlement_confirmed", ledger=result["ledger"])
             session["order"] = {"status": "confirmed", "mandate_receipt": receipt}
         except asyncio.CancelledError:
             self._uncertain(session)

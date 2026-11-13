@@ -204,6 +204,50 @@ def evidence_summary(state, source, polls, rnd, now, since):
             "note": "Missing/stale evidence is not zero market demand. Counts cover bounded local records."}
 
 
+def response_summary(events, rnd, now, since):
+    """One latency sample and latest observed negotiation stage per task."""
+    first, last = {}, {}
+    for row in events:
+        if not recent(row, rnd, now, since) or not identifier(row.get("task")):
+            continue
+        task = row["task"]
+        duration = row.get("first_response_seconds")
+        if number(duration) and duration >= 0:
+            first.setdefault(task, duration)
+        if task not in last or row["time"] >= last[task]["time"]:
+            last[task] = row
+    samples = sorted(first.values())
+    stages = {"opening", "negotiate", "close", "final_offer", "final_reply"}
+    return {"first_response_samples": len(samples),
+            "first_response_p50_seconds": samples[(len(samples)-1)//2] if samples else None,
+            "first_response_p95_seconds": samples[max(0, math.ceil(len(samples)*.95)-1)] if samples else None,
+            "last_stage_by_task": dict(Counter(r.get("stage") if r.get("stage") in stages else "unknown"
+                                                for r in last.values())),
+            "note": "Successful first quote publication latency; missing samples are unknown, not zero."}
+
+
+def checkout_summary(rows, receipts, now):
+    """Correlate bounded events to current-round receipts; no missing=failed inference."""
+    by_task = {r["task"]: r for r in receipts}
+    allowed = {"checkout_created", "checkout_cancelled", "settlement_started",
+               "settlement_refused", "settlement_uncertain", "settlement_confirmed"}
+    seen, confirmed = {}, set()
+    for row in rows:
+        receipt = by_task.get(row.get("task")) if identifier(row.get("task")) else None
+        if (not receipt or row.get("unit") != receipt.get("unit")
+                or not number(row.get("time")) or not receipt["time"] <= row["time"] <= now
+                or row.get("stage") not in allowed):
+            continue
+        if row["stage"] == "settlement_confirmed":
+            if type(row.get("ledger")) is not int or row["ledger"] <= 0:
+                continue
+            confirmed.add(row["task"])
+        seen.setdefault(row["stage"], set()).add(row["task"])
+    return {"matched_tasks_by_stage": {k: len(v) for k, v in seen.items()},
+            "receipt_without_observed_checkout": len(set(by_task) - seen.get("checkout_created", set())),
+            "note": "Stages may overlap. Only events matched by task, unit and receipt time count. Missing checkout evidence is unknown."}, confirmed
+
+
 def build_report(root=ROOT, *, hours=24, rnd=None, now=None):
     """Return only aggregate observations; never update cache or live state."""
     root, now = Path(root), time.time() if now is None else now
@@ -229,6 +273,7 @@ def build_report(root=ROOT, *, hours=24, rnd=None, now=None):
     restock, sources["restock_decisions"] = read_tail(root / "logs/restock-decisions.jsonl", now)
     evidence_polls, sources["market_evidence_polls"] = read_tail(root / "logs/market-evidence.jsonl", now)
     kit, sources["kit_log"] = read_tail(root / "logs/market-kit.log", now, jsonl=False)
+    checkout_events, sources["checkout_events"] = read_tail(root / ".market/checkout-events.jsonl", now)
     tasks, excluded = {}, Counter()
     for row in events:
         if not recent(row, rnd, now, since):
@@ -281,6 +326,8 @@ def build_report(root=ROOT, *, hours=24, rnd=None, now=None):
                 or ledger.get((unit, sku, price), 0) >= receipt["time"]
                 or (unit, price) in kit_settled):
             confirmations.add(receipt["task"])
+    pipeline, local_confirmed = checkout_summary(checkout_events, receipts, now)
+    confirmations.update(local_confirmed)
     counts = Counter({"observed_tasks": len(tasks), "opened_tasks": 0, "tasks_without_open_event": 0,
                       "receipt_issued": 0, "settled": 0, "receipt_unconfirmed": 0,
                       "open_or_missing_end": 0})
@@ -336,6 +383,8 @@ def build_report(root=ROOT, *, hours=24, rnd=None, now=None):
                     plans["unknown_or_invalid"] += 1
     return {"schema": 1, "generated_at": now, "round": rnd, "since": since, "requested_hours": hours,
             "tasks": dict(counts), "terminal_reasons": dict(reasons),
+            "response_timing": response_summary(events, rnd, now, since),
+            "checkout_pipeline": pipeline,
             "checkout": {"status": "UNCONFIRMED" if counts["receipt_unconfirmed"] else "no_unconfirmed_receipt_in_sample",
                          "unconfirmed_tasks": counts["receipt_unconfirmed"], "confirmed_failed_tasks": None,
                          "undated_tail_settle_refusal_attempts": (sum(bool(SETTLE_REFUSED.fullmatch(line)) for line in kit)
@@ -370,6 +419,8 @@ def format_report(report):
     lines.extend(f"  {key}: {value}" for key, value in report["terminal_reasons"].items())
     inv = report["inventory"]
     lines.append(f"Inventory: {inv['status']}; units={inv.get('units', 'unknown')}; blocked by issued receipt={inv.get('blocked_by_issued_receipt', 'unknown')}; blocked SKUs={inv.get('blocked_skus', 'unknown')}")
+    lines.append("Response timing: " + json.dumps(report.get("response_timing", {}), sort_keys=True))
+    lines.append("Checkout pipeline: " + json.dumps(report.get("checkout_pipeline", {}), sort_keys=True))
     lifecycle = report.get("receipt_lifecycle")
     if lifecycle is not None:
         lines.append("Receipt lifecycle: " + lifecycle["status"] + "; " + "; ".join(

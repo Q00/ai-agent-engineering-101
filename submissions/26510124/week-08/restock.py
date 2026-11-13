@@ -203,7 +203,7 @@ def plan(inv, catalog, demand, memory, attempts, cfg, now, public=None, *, lifec
             eligible = [sku for sku in available() if sku in hourly_priority and buy[sku] == 0]
             if not eligible:
                 break
-            sku = min(eligible, key=lambda s: hourly_priority[s])
+            sku = min(eligible, key=lambda s: (categories_held[candidates[s]["category"]], hourly_priority[s]))
             add(sku, "hourly_market_demand")
     if adaptive and turnover_enabled:
         priority = {sku: rank for rank, sku in enumerate(adaptive)}
@@ -270,7 +270,8 @@ def plan(inv, catalog, demand, memory, attempts, cfg, now, public=None, *, lifec
                     # Compare current activity only after proven profitability.
                     # Ratios balance coverage across SKUs; they are not forecasts
                     # of guaranteed sales or margins. Breadth is a soft target.
-                    return (tier, 0 if diverse else (held[s] + buy[s]) / stock_cap(s),
+                    return (tier, categories_held[candidates[s]["category"]] if diverse else 0,
+                            0 if diverse else (held[s] + buy[s]) / stock_cap(s),
                             -adaptive[s]["evidence"]["sampled_turnover_value"], priority[s])
                 return tier, priority[s]
             sku = min(eligible, key=mix_rank)

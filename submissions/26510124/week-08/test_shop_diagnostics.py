@@ -15,6 +15,31 @@ NOW = 1800000000
 
 
 class ShopDiagnosticsTests(unittest.TestCase):
+    def test_checkout_events_require_receipt_identity_and_time(self):
+        receipt = self.receipt()
+        self.events([receipt])
+        event = {"time": receipt["time"] + 1, "task": receipt["task"], "unit": receipt["unit"],
+                 "stage": "settlement_confirmed", "ledger": 9}
+        for bad in ({"unit":"wrong"}, {"task":"wrong"}, {"time":receipt["time"]-1}, {"ledger":True}):
+            pipeline, confirmed = diagnostics.checkout_summary([{**event, **bad}], [receipt], NOW)
+            self.assertFalse(confirmed)
+        self.events([{**event, "stage":"checkout_created", "ledger":None}, event, event],
+                    ".market/checkout-events.jsonl")
+        report = self.report()
+        self.assertEqual(report["tasks"]["settled"], 1)
+        self.assertEqual(report["checkout_pipeline"]["matched_tasks_by_stage"],
+                         {"checkout_created":1, "settlement_confirmed":1})
+
+    def test_response_latency_is_unique_and_unknown_is_not_zero(self):
+        events = [self.event("one", "quote", first_response_seconds=2.5, stage="opening"),
+                  self.event("one", "cancelled", first_response_seconds=2.5, stage="negotiate"),
+                  self.event("old", "quote", round=2, first_response_seconds=999),
+                  self.event("unknown", "opened")]
+        result = diagnostics.response_summary(events, 3, NOW, NOW-3600)
+        self.assertEqual(result["first_response_samples"], 1)
+        self.assertEqual(result["first_response_p95_seconds"], 2.5)
+        self.assertEqual(result["last_stage_by_task"], {"negotiate":1, "unknown":1})
+
     def test_empty_plan_is_not_a_purchase_and_invalid_legacy_plan_stays_unknown(self):
         self.events([
             {"time": NOW - 30, "round": 3, "status": "planned", "buy": []},

@@ -158,6 +158,7 @@ class InventorySeller(Seller):
                                       "terminal": terminal,
                                       "reservation_kind": reservation_kind,
                                       "stage": negotiation.get("stage"),
+                                      "first_response_seconds": deal.get("first_response_seconds"),
                                       "buyer_offers": len(deal.get("offers", [])),
                                       "active_floor": negotiation.get("price_floor"),
                                       "discount_reason": negotiation.get("discount_reason"),
@@ -191,6 +192,7 @@ class InventorySeller(Seller):
             state = None
         if state and state["round"] < 3:
             return await super().execute(context, event_queue)
+        request_started = time.monotonic()
         task = context.current_task
         if task is None:
             task = new_task_from_user_message(context.message)
@@ -236,6 +238,10 @@ class InventorySeller(Seller):
                                           "terms": self.warranty_trial.terms(
                                               product, selling_terms(product, self.policy), self.policy, rnd, now)}
                 reference = self.openings.for_product(product, deal["terms"]["warranty_hours"], rnd)
+                deal["fresh_opening"] = bool(reference and reference.get("source") in
+                    {"own_settled_sales", "comparable_market_sales"}
+                    and type(reference.get("created_at")) in (int, float)
+                    and 0 <= now - reference["created_at"] <= 3600)
                 deal["opening_bounds"] = opening_bounds(product, deal["terms"], reference, self.policy, now, rnd=rnd)
                 self.event(task.id, "opened", product, deal=deal)
             else:
@@ -281,7 +287,10 @@ class InventorySeller(Seller):
         receipt_issued = False
         phase = "decision"
         try:
-            if offer is not None and deal["ask"] is not None and offer >= deal["ask"]:
+            if offer is None and deal.get("fresh_opening") and deal.get("opening_bounds"):
+                choice = capacity_choice(product, offer, deal["ask"], deal["negotiation"])
+                deal["decision_source"] = "fresh_evidence_opening"
+            elif offer is not None and deal["ask"] is not None and offer >= deal["ask"]:
                 # Honor a quote already selected by the seller; no new model judgment needed.
                 choice = {"action": "accept", "price": offer}
                 deal["decision_source"] = "quoted_price_accepted"
@@ -327,6 +336,8 @@ class InventorySeller(Seller):
                     await up.requires_input(up.new_agent_message(
                         parts=[new_text_part(reply), new_data_part(facts)],
                         metadata={k: facts[k] for k in ("ask", "sku", "unit", "final")}))
+                    if offer is None:
+                        deal["first_response_seconds"] = round(time.monotonic() - request_started, 3)
                     self.event(task.id, "final_offer" if final else "quote", product, price, deal=deal)
                 elif action == "accept":
                     receipt = sign_receipt(self.signing_key, shop=self.cfg["name"], item=product["sku"],
@@ -376,6 +387,7 @@ class InventorySeller(Seller):
             self.locks.pop(task.id, None)
 
     async def cancel(self, context, event_queue):
+        request_started = time.monotonic()
         task = context.current_task
         if task.id in self.open:
             return await super().cancel(context, event_queue)
