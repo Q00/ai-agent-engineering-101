@@ -52,8 +52,11 @@ GOOD_CAPTURE = 0.80
 # The model's pick (with its tools) took 10 of an order's 25 s. It is asked only when the pick needs judgment: code
 # takes the best-scored candidate itself when I know its shop well (FAST_SETTLED deals settled, never a dishonest
 # grade, no warning on the forum) and it leads every other shop's best candidate by FAST_LEAD (11-13, owner agreed).
+# A rival inside FAST_LEAD that I know just as well is no reason to ask: either is a good pick (in the first 7 minutes
+# every one of 15 model picks was such a pair, psyoung82 1.26 against Kiro729 1.12).
 FAST_SETTLED = 20
 FAST_LEAD = 1.15
+RECENT = 40               # a shop's last trades with me: how often asking it ends in a deal (a walk costs 15-20 s)
 WARRANTY = 6              # goods break up to 6 h after the sale; a warranty refunds them (0 instead of -1)
 
 CHOOSE = """You are a buying agent in an online market. The order: one item from the category "{item}", budget {budget}{food}.
@@ -138,11 +141,12 @@ def shop_memory():
     out = {}
     def s(name):
         return out.setdefault(name, {"trades": 0, "settled": 0, "gain": 0, "lied": 0, "broken": 0, "refused": 0,
-                                     "errors": 0, "nostock": 0, "nowarranty": 0, "goods_ok": 0})
+                                     "errors": 0, "nostock": 0, "nowarranty": 0, "goods_ok": 0, "recent": []})
     for m in mem:
         if m.get("kind") == "trade":
             x = s(m["shop"])
             x["trades"] += 1
+            x["recent"] = (x["recent"] + [m.get("outcome") == "deal"])[-RECENT:]
             x["errors"] += m.get("outcome") == "error"
             x["nostock"] += m.get("outcome") == "no stock"
         elif m.get("kind") == "settled" and m.get("order") in by_order:
@@ -244,6 +248,8 @@ def main():
             gain = keep
             if usual > a.budget * 1.05 or keep < MIN_CAPTURE - 0.1:
                 gain *= 0.3                                         # it rarely goes as low as I may pay
+            if x and len(x["recent"]) >= 10:                        # how often asking this shop ends in a deal
+                gain *= 0.25 + 0.75 * sum(x["recent"]) / len(x["recent"])
             cands.append({"shop": s, "sku": sku, "name": c["name"], "list": c["list_price"], "qty": off["qty"],
                           "kind": c["kind"], "ratio": ratio, "lot": lot, "keep": keep,
                           "score": trust(x, s.get("reviews"), forum[s["name"]]) * gain})
@@ -267,8 +273,19 @@ def main():
     food = f", the food must last {use_h} h" if use_h else ""
     best, known = top[0], mem.get(top[0]["shop"]["name"])
     rival = next((c for c in cands if c["shop"]["name"] != best["shop"]["name"]), None)
-    if (known and known["settled"] >= FAST_SETTLED and not known["lied"] and not forum[best["shop"]["name"]]["warn"]
-            and (rival is None or best["score"] >= FAST_LEAD * rival["score"])):
+    def clean(name):                                    # a shop I know well and have nothing against
+        k = mem.get(name)
+        return bool(k and k["settled"] >= FAST_SETTLED and not k["lied"] and not forum[name]["warn"])
+    doubt = (f"only {known['settled'] if known else 0} deals settled with {best['shop']['name']}"
+             if not known or known["settled"] < FAST_SETTLED else
+             f"{best['shop']['name']} gave a dishonest grade once" if known["lied"] else
+             f"the forum warns about {best['shop']['name']}" if forum[best["shop"]["name"]]["warn"] else
+             f"close to a shop I know less: {best['shop']['name']} {best['score']:.2f}, "
+             f"{rival['shop']['name']} {rival['score']:.2f}"
+             if rival and best["score"] < FAST_LEAD * rival["score"] and not clean(rival["shop"]["name"]) else None)
+    if doubt:
+        print(f"[judge] the model picks: {doubt}", flush=True)
+    if not doubt:
         pick = best                                     # a clear pick: no model call
         reason = (f"clear by code: {known['settled']} deals settled with this shop, no dishonest grade, score "
                   f"{best['score']:.2f} against {rival['score']:.2f} for {rival['shop']['name']}" if rival else
