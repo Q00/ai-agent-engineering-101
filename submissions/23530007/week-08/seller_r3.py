@@ -362,6 +362,17 @@ def pick_unit(text, held, now, asks=None):
     if not shop_policy_now().get("sell_b", 1) or a_only(text):
         ab = [u for u in ab if (u.get("grade") or "A") == "A"]
     if not ab:
+        # 11-13 17:30 (user: 'the goal is the highest score; any shop rule may change'): with no A or B unit of the
+        # SKU, a buyer who stated no grade and asked for no warranty gets a grade C unit (honest claim, no warranty)
+        # instead of 'none in stock'. The asks we turned away were mostly C-only SKUs (G117d7562: 10 C units, 25
+        # asks in 2 h); 624 C goods units (167 M at cost, cost/list .25-.45) paid 1%/day storage for 18-79 h. Market
+        # 48 h: C goods at .4-.7 of list rate 4.6-4.9 (2,500 reviews), above our 4.45 mean. Each paid C adds about
+        # .15-.25 of list to the book, with no refund risk. Unasked C was paid 10-19% of the time on 11-11; an unpaid
+        # one only holds the unit 300 s
+        if shop_policy_now().get("sell_c") and want is None and not a_only(text):
+            cs = [u for u in fit if u.get("grade") == "C"]
+            if cs:
+                return min(cs, key=lambda u: u.get("supplied_at") or 0)
         return None
     fits = {id(u) for u in sellable_first(ab, asks)}      # units whose floor fits under the market price go first
     if shop_policy_now().get("grade_first"):
