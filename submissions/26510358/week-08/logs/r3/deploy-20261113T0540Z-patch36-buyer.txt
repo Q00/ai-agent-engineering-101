@@ -1,0 +1,20 @@
+Deploy 2026-11-13 14:40 KST (epoch 1794548395, buyer_r3.py saved; live on save, no restart) — commit 4d15d1eb
+
+What: step 1 of 20261113_market_strategy_analysis.md §4 — the buyer scores deals the way patch 3.6 does:
+  margin share = (list - price) / (list - cost), at most 1; cost/list from the market supply ledger (72 h):
+  food 0.508, A 0.618, B 0.561, C 0.495 (unknown goods grade 0.594 mix).
+  theta = score_model.saved_threshold + 0.03, kept in 0.72-0.85. At deploy: model 0.7019 -> theta 0.7319.
+  Limits at deploy (share of list): food 0.640, A+warranty 0.712, A no warranty 0.701, B+warranty 0.635, C 0 (never).
+  Before: theta = share of list pinned at 0.36 (band max) -> every grade capped ~0.63-0.64.
+Incident: one order failed at 14:39:23 KST (AttributeError BUYER_THETA_BOUNDS) between saving pricing.py and config.py.
+
+Baseline, 2 h before deploy (buyer-decisions.jsonl + purchases):
+  orders 233 (116/h), deals/order 0.348 (serial 0.341 n=185, fanout 0.375 n=48)
+  food deals/order 0.664 (n=116), goods deals/order 0.034 (n=116)
+  purchases: food 75 (price/list 0.575, est margin share 0.85), goods A 1, B 1
+  kpi 14:26 KST: rank 15/69, total 1.516, saved 0.7213 (pct 0.646), deals 18061, buyer ALL 0.756
+
+Measure at +2 h (16:40 KST): python3 -I <scratchpad>/measure36.py 1794548395 2
+Keep if: goods deals/order up and est margin share of new deals >= theta, saved not falling.
+Roll back (git revert 4d15d1eb) if: saved falls over 2 board reads, or new goods deals break without warranty.
+Next: step 2 (BUYER_FANOUT_SHARE 0.2 -> 1.0) after the +2 h read.
