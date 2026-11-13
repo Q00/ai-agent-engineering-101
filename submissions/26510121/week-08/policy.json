@@ -116,7 +116,7 @@
   "buyer_contract_probe_percent": 8,
   "autonomy_v14_enabled": true,
   "buyer_worker_enabled": true,
-  "execution_revision": "v24-account-reputation-and-capital-1",
+  "execution_revision": "v25-efficient-background-routing-1",
   "objective_feedback_enabled": true,
   "agent_policy_selection_enabled": true,
   "discovery_priority_enabled": true,
@@ -126,10 +126,10 @@
   "capability_interval_seconds": 900,
   "background_llm_roles": {
     "market_research_analyst": {
-      "model": "gpt-6.1-sol",
-      "reasoning": "medium",
-      "max_output_tokens": 8192,
-      "timeout_seconds": 75
+      "model": "gpt-6-luna",
+      "reasoning": "low",
+      "max_output_tokens": 4096,
+      "timeout_seconds": 45
     },
     "market_research_critic": {
       "model": "gpt-6.1-terra",
@@ -139,13 +139,13 @@
     },
     "capability_triage": {
       "model": "gpt-6-luna",
-      "reasoning": "low",
-      "max_output_tokens": 2048,
+      "reasoning": "none",
+      "max_output_tokens": 1024,
       "timeout_seconds": 25
     },
     "capability_designer": {
-      "model": "gpt-6.1-sol",
-      "reasoning": "medium",
+      "model": "gpt-6-luna",
+      "reasoning": "low",
       "max_output_tokens": 2048,
       "timeout_seconds": 35,
       "response_mode": "function"
@@ -169,5 +169,6 @@
   ],
   "shop_internal_capital_caps_enabled": false,
   "shop_reputation_v24_enabled": true,
-  "shop_new_goods_warranty_hours": 6
+  "shop_new_goods_warranty_hours": 6,
+  "llm_cost_v25_enabled": true
 }

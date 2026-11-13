@@ -14,12 +14,12 @@ from test_market_cycle import fixture, opinion, FakeAPI
 
 def test_production_role_models_and_reasoning_are_supported():
     cfg=policy()
-    expected={'market_research_analyst':'gpt-6.1-sol','market_research_critic':'gpt-6.1-terra',
-              'capability_triage':'gpt-6-luna','capability_designer':'gpt-6.1-sol'}
+    expected={'market_research_analyst':'gpt-6-luna','market_research_critic':'gpt-6.1-terra',
+              'capability_triage':'gpt-6-luna','capability_designer':'gpt-6-luna'}
     for role,model in expected.items():
         assert profile(cfg,role)['model']==model
     assert cfg['actor_model']=='gpt-6-luna' and cfg['daily_api_budget_usd'] is None
-    cfg=copy.deepcopy(cfg);cfg['background_llm_roles']['market_research_analyst']['reasoning']='none'
+    cfg=copy.deepcopy(cfg);cfg['background_llm_roles']['market_research_analyst']['reasoning']='unsupported'
     with pytest.raises(ModelError,match='role_profile_invalid'):profile(cfg,'market_research_analyst')
     cfg['background_llm_roles']['market_research_analyst']['model']='gpt-6-astra'
     with pytest.raises(ModelError,match='role_profile_invalid'):profile(cfg,'market_research_analyst')
@@ -29,11 +29,11 @@ def test_analyst_and_critic_send_different_models_and_record_effort(tmp_path):
     j,cfg,now=fixture(tmp_path);api=FakeAPI();facts={'evidence_ids':['one']}
     a=research.call(j,cfg,facts,['one'],'analyst',client=api,key='synthetic')
     research.call(j,cfg,facts,['one'],'critic',proposal=a,client=api,key='synthetic')
-    assert [r['model'] for r in api.requests]==['gpt-6.1-sol','gpt-6.1-terra']
-    assert all(r['reasoning']['effort']=='medium' and r['max_output_tokens']==8192 for r in api.requests)
+    assert [r['model'] for r in api.requests]==['gpt-6-luna','gpt-6.1-terra']
+    assert [(r['reasoning']['effort'],r['max_output_tokens']) for r in api.requests]==[('low',4096),('medium',8192)]
     assert all(r['text']['format']['schema']['properties']['evidence_ids']['items']['enum']==['one'] for r in api.requests)
     assert 'enum' not in research.SCHEMA['properties']['evidence_ids']['items']
-    assert {r['reasoning_effort'] for r in j.events('model_usage')}=={'medium'}
+    assert {r['reasoning_effort'] for r in j.events('model_usage')}=={'low','medium'}
 
 
 class CapabilityAPI:

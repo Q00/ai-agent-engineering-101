@@ -14,7 +14,7 @@ def test_live_configuration_removes_inventory_caps_not_market_lot_limit():
     assert cfg['shop_inventory_caps_enabled'] is False
     assert inventory_limit(cfg) is None
     assert cfg['restock_max_qty']==20 and cfg['restock_max_lines']==10
-    assert cfg['background_llm_roles']['market_research_analyst']['model']=='gpt-6.1-sol'
+    assert cfg['background_llm_roles']['market_research_analyst']['model']=='gpt-6-luna'
 
 
 def test_demand_targets_can_exceed_twenty_and_sparse_fixed_batch_limits():

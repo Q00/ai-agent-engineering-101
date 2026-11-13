@@ -13,6 +13,18 @@ EFFORTS = {
 }
 
 
+def token_cost(config,model,usage):
+    """Token-price estimate, separate from conservative reservation accounting."""
+    rates=config['prices_usd_per_million'][model]
+    cache=config.get('cache_prices_usd_per_million',{}).get(model)
+    total=max(0,usage.get('input_tokens',0));details=usage.get('input_tokens_details') or {}
+    cached=min(total,max(0,details.get('cached_tokens',0)))
+    written=min(total-cached,max(0,details.get('cache_write_tokens',0)))
+    ordinary=total-cached-written
+    return ((ordinary*rates[0]+cached*(cache[0] if cache else rates[0])+
+        written*(cache[1] if cache else rates[0]*1.25)+max(0,usage.get('output_tokens',0))*rates[1])/1e6)
+
+
 def profile(config, role):
     profiles = config.get('background_llm_roles', {})
     value = profiles.get(role)
@@ -68,6 +80,10 @@ def call_json(journal, config, role, schema, instructions, payload, client=None,
           'reasoning':{'effort':settings['reasoning']},
           'text':{'format':{'type':'json_schema','name':'background_decision','strict':True,'schema':schema}},
           'max_output_tokens':settings['max_output_tokens'],'store':False}
+    if config.get('llm_cost_v25_enabled'):
+        # Stable role routing aids prefix reuse; it is not a cached decision.
+        # All current evidence, IDs and the independent critic still get sent.
+        body['prompt_cache_key']='r3-v25:'+role+':'+model
     mode=settings.get('response_mode','json_schema')
     if mode=='function':
         body.pop('text')
@@ -98,6 +114,7 @@ def call_json(journal, config, role, schema, instructions, payload, client=None,
         journal.add('model_usage',{'role':role,'model':model,'reasoning_effort':settings['reasoning'],
             'response_mode':mode,
             'usage':usage,'estimated_usd':actual,'seconds':time.monotonic()-started,
+            'priced_token_estimate_usd':token_cost(config,model,usage) if usage else None,
             'completion_status':result.get('status'),'accounting':'conservative_input_1.25x',
             'automatic_model_fallback':False})
         if result.get('status') not in (None,'completed'):
