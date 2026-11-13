@@ -1,0 +1,851 @@
+--- a/policy.json
++++ b/policy.json
+@@ -1,176 +1,177 @@
+ {
+-    "version":  "r3-market-observer-book-v6",
+-    "market_control_enabled":  true,
+-    "tunnel_provider":  "cloudflare",
+-    "shop_recovery_v15_enabled":  true,
+-    "market_control_interval_seconds":  300,
+-    "shop_growth_v5":  true,
+-    "shop_strategy_revision":  "shop-v26-eligible-service-regions",
+-    "shop_championship_enabled":  true,
+-    "shop_championship_allocation_enabled":  true,
+-    "shop_inventory_ceiling":  180,
+-    "shop_velocity_enabled":  true,
+-    "shop_velocity_allocation_enabled":  true,
+-    "shop_fast_execution_enabled":  true,
+-    "shop_stock_service_level":  0.9,
+-    "shop_supply_slot_capital":  100000,
+-    "shop_warranty_liquidity_penalty":  0.02,
+-    "warranty_menu_enabled":  true,
+-    "checkout_recovery_enabled":  true,
+-    "buyer_patch34_enabled":  true,
+-    "buyer_strategy_revision":  "buyer-v26-exact-contract-continuation",
+-    "buyer_forum_metric":  "raw",
+-    "buyer_championship_enabled":  true,
+-    "buyer_saved_target_margin":  0.002,
+-    "buyer_rank_scope":  "everyone",
+-    "buyer_forum_post_interval_seconds":  300,
+-    "checkout_max_attempts":  2,
+-    "buyer_fast_food_enabled":  true,
+-    "buyer_food_time_seconds":  22,
+-    "buyer_goods_time_seconds":  32,
+-    "planning_horizon_hours":  6,
+-    "storage_reserve_hours":  48,
+-    "market_end_at":  null,
+-    "assortment_coverage_fraction":  0.35,
+-    "shop_margin_fraction":  0.02,
+-    "food_clearance_hours":  6,
+-    "goods_clearance_hours":  96,
+-    "actor_model":  "gpt-6-luna",
+-    "critic_model":  "gpt-6-luna",
+-    "daily_api_budget_usd":  null,
+-    "research_budget_mode":  "observe",
+-    "market_cycle_enabled":  true,
+-    "research_enabled":  true,
+-    "research_interval_seconds":  1200,
+-    "cache_prices_usd_per_million":  {
+-                                         "gpt-6-luna":  [
+-                                                            0.01,
+-                                                            0.125
+-                                                        ],
+-                                         "gpt-6.1-terra":  [
+-                                                               0.05,
+-                                                               1.25
+-                                                           ],
+-                                         "gpt-6.1-sol":  [
+-                                                             0.1,
+-                                                             2.5
+-                                                         ],
+-                                         "gpt-6-astra":  [
+-                                                             1,
+-                                                             12.5
+-                                                         ]
+-                                     },
+-    "model_timeout_seconds":  18,
+-    "critic_cash_fraction":  0.1,
+-    "cash_reserve_fraction":  0.2,
+-    "cash_floor":  750000,
+-    "forum_post_interval_seconds":  600,
+-    "supply_cycle_seconds":  1200,
+-    "inventory_target_units":  60,
+-    "restock_max_lines":  10,
+-    "restock_max_qty":  20,
+-    "max_sku_capital_fraction":  0.35,
+-    "goods_warranty_by_grade":  {
+-                                    "A":  3,
+-                                    "B":  3,
+-                                    "C":  6
+-                                },
+-    "quote_compare_min_budget":  100000,
+-    "exploration_fraction":  0.1,
+-    "max_shop_candidates":  3,
+-    "max_negotiation_turns":  4,
+-    "checkout_buffer_seconds":  30,
+-    "unknown_goods_failure_stress":  0.3,
+-    "session_ttl_seconds":  180,
+-    "end_at":  null,
+-    "prices_usd_per_million":  {
+-                                   "gpt-6-luna":  [
+-                                                      0.1,
+-                                                      0.5
+-                                                  ],
+-                                   "gpt-6.1-terra":  [
+-                                                         1.0,
+-                                                         5.0
+-                                                     ],
+-                                   "gpt-6-astra":  [
+-                                                       10,
+-                                                       50
+-                                                   ],
+-                                   "gpt-6.1-sol":  [
+-                                                       2,
+-                                                       10
+-                                                   ]
+-                               },
+-    "buyer_market_quality_enabled":  true,
+-    "buyer_contract_routing_enabled":  true,
+-    "buyer_negotiation_turns":  3,
+-    "buyer_throughput_enabled":  true,
+-    "buyer_route_candidates":  4,
+-    "buyer_rpc_timeout_seconds":  4,
+-    "buyer_rfq_food_seconds":  3,
+-    "buyer_rfq_goods_seconds":  5,
+-    "buyer_compare_grace_seconds":  0.35,
+-    "buyer_fast_accept_margin":  0.04,
+-    "system_framework_enabled":  true,
+-    "framework_experiments_enabled":  true,
+-    "buyer_contract_probe_percent":  8,
+-    "autonomy_v14_enabled":  true,
+-    "buyer_worker_enabled":  true,
+-    "execution_revision":  "v26-explicit-service-and-complete-contracts-1",
+-    "objective_feedback_enabled":  true,
+-    "agent_policy_selection_enabled":  true,
+-    "discovery_priority_enabled":  true,
+-    "cooperative_recovery_enabled":  true,
+-    "objective_decision_enabled":  true,
+-    "capability_llm_enabled":  true,
+-    "capability_interval_seconds":  900,
+-    "background_llm_roles":  {
+-                                 "market_research_analyst":  {
+-                                                                 "model":  "gpt-6-luna",
+-                                                                 "reasoning":  "low",
+-                                                                 "max_output_tokens":  4096,
+-                                                                 "timeout_seconds":  45
+-                                                             },
+-                                 "market_research_critic":  {
+-                                                                "model":  "gpt-6.1-terra",
+-                                                                "reasoning":  "medium",
+-                                                                "max_output_tokens":  8192,
+-                                                                "timeout_seconds":  75
+-                                                            },
+-                                 "capability_triage":  {
+-                                                           "model":  "gpt-6-luna",
+-                                                           "reasoning":  "none",
+-                                                           "max_output_tokens":  1024,
+-                                                           "timeout_seconds":  25
+-                                                       },
+-                                 "capability_designer":  {
+-                                                             "model":  "gpt-6-luna",
+-                                                             "reasoning":  "low",
+-                                                             "max_output_tokens":  2048,
+-                                                             "timeout_seconds":  35,
+-                                                             "response_mode":  "function"
+-                                                         }
+-                             },
+-    "shop_inventory_caps_enabled":  false,
+-    "shop_adaptive_demand_enabled":  true,
+-    "shop_demand_half_life_hours":  1,
+-    "shop_demand_calibration_prior_events":  5,
+-    "shop_demand_prior_hours":  0.25,
+-    "shop_replenishment_service_level":  0.9,
+-    "shop_supply_delivery_seconds":  30,
+-    "buyer_patch36_enabled":  true,
+-    "buyer_joint_objective_enabled":  true,
+-    "book_growth_v23_enabled":  true,
+-    "buyer_frontier_v23_enabled":  true,
+-    "research_event_driven_enabled":  true,
+-    "buyer_saved_bid_targets":  [
+-                                    0.8,
+-                                    0.9
+-                                ],
+-    "shop_internal_capital_caps_enabled":  false,
+-    "shop_reputation_v24_enabled":  true,
+-    "shop_new_goods_warranty_hours":  6,
+-    "llm_cost_v25_enabled":  true,
+-    "service_contract_v26_enabled":  true,
+-    "buyer_terms_clarify_seconds":  2
++  "version": "r3-market-observer-book-v6",
++  "market_control_enabled": true,
++  "tunnel_provider": "cloudflare",
++  "shop_recovery_v15_enabled": true,
++  "market_control_interval_seconds": 300,
++  "shop_growth_v5": true,
++  "shop_strategy_revision": "shop-v27-opportunity-cost-inventory",
++  "shop_championship_enabled": true,
++  "shop_championship_allocation_enabled": true,
++  "shop_inventory_ceiling": 180,
++  "shop_velocity_enabled": true,
++  "shop_velocity_allocation_enabled": true,
++  "shop_fast_execution_enabled": true,
++  "shop_stock_service_level": 0.9,
++  "shop_supply_slot_capital": 100000,
++  "shop_warranty_liquidity_penalty": 0.02,
++  "warranty_menu_enabled": true,
++  "checkout_recovery_enabled": true,
++  "buyer_patch34_enabled": true,
++  "buyer_strategy_revision": "buyer-v26-exact-contract-continuation",
++  "buyer_forum_metric": "raw",
++  "buyer_championship_enabled": true,
++  "buyer_saved_target_margin": 0.002,
++  "buyer_rank_scope": "everyone",
++  "buyer_forum_post_interval_seconds": 300,
++  "checkout_max_attempts": 2,
++  "buyer_fast_food_enabled": true,
++  "buyer_food_time_seconds": 22,
++  "buyer_goods_time_seconds": 32,
++  "planning_horizon_hours": 6,
++  "storage_reserve_hours": 48,
++  "market_end_at": null,
++  "assortment_coverage_fraction": 0.35,
++  "shop_margin_fraction": 0.02,
++  "food_clearance_hours": 6,
++  "goods_clearance_hours": 96,
++  "actor_model": "gpt-6-luna",
++  "critic_model": "gpt-6-luna",
++  "daily_api_budget_usd": null,
++  "research_budget_mode": "observe",
++  "market_cycle_enabled": true,
++  "research_enabled": true,
++  "research_interval_seconds": 1200,
++  "cache_prices_usd_per_million": {
++    "gpt-6-luna": [
++      0.01,
++      0.125
++    ],
++    "gpt-6.1-terra": [
++      0.05,
++      1.25
++    ],
++    "gpt-6.1-sol": [
++      0.1,
++      2.5
++    ],
++    "gpt-6-astra": [
++      1,
++      12.5
++    ]
++  },
++  "model_timeout_seconds": 18,
++  "critic_cash_fraction": 0.1,
++  "cash_reserve_fraction": 0.2,
++  "cash_floor": 750000,
++  "forum_post_interval_seconds": 600,
++  "supply_cycle_seconds": 1200,
++  "inventory_target_units": 60,
++  "restock_max_lines": 10,
++  "restock_max_qty": 20,
++  "max_sku_capital_fraction": 0.35,
++  "goods_warranty_by_grade": {
++    "A": 3,
++    "B": 3,
++    "C": 6
++  },
++  "quote_compare_min_budget": 100000,
++  "exploration_fraction": 0.1,
++  "max_shop_candidates": 3,
++  "max_negotiation_turns": 4,
++  "checkout_buffer_seconds": 30,
++  "unknown_goods_failure_stress": 0.3,
++  "session_ttl_seconds": 180,
++  "end_at": null,
++  "prices_usd_per_million": {
++    "gpt-6-luna": [
++      0.1,
++      0.5
++    ],
++    "gpt-6.1-terra": [
++      1.0,
++      5.0
++    ],
++    "gpt-6-astra": [
++      10,
++      50
++    ],
++    "gpt-6.1-sol": [
++      2,
++      10
++    ]
++  },
++  "buyer_market_quality_enabled": true,
++  "buyer_contract_routing_enabled": true,
++  "buyer_negotiation_turns": 3,
++  "buyer_throughput_enabled": true,
++  "buyer_route_candidates": 4,
++  "buyer_rpc_timeout_seconds": 4,
++  "buyer_rfq_food_seconds": 3,
++  "buyer_rfq_goods_seconds": 5,
++  "buyer_compare_grace_seconds": 0.35,
++  "buyer_fast_accept_margin": 0.04,
++  "system_framework_enabled": true,
++  "framework_experiments_enabled": true,
++  "buyer_contract_probe_percent": 8,
++  "autonomy_v14_enabled": true,
++  "buyer_worker_enabled": true,
++  "execution_revision": "v27-robust-sku-lot-portfolio-1",
++  "objective_feedback_enabled": true,
++  "agent_policy_selection_enabled": true,
++  "discovery_priority_enabled": true,
++  "cooperative_recovery_enabled": true,
++  "objective_decision_enabled": true,
++  "capability_llm_enabled": true,
++  "capability_interval_seconds": 900,
++  "background_llm_roles": {
++    "market_research_analyst": {
++      "model": "gpt-6-luna",
++      "reasoning": "low",
++      "max_output_tokens": 4096,
++      "timeout_seconds": 45
++    },
++    "market_research_critic": {
++      "model": "gpt-6.1-terra",
++      "reasoning": "medium",
++      "max_output_tokens": 8192,
++      "timeout_seconds": 75
++    },
++    "capability_triage": {
++      "model": "gpt-6-luna",
++      "reasoning": "none",
++      "max_output_tokens": 1024,
++      "timeout_seconds": 25
++    },
++    "capability_designer": {
++      "model": "gpt-6-luna",
++      "reasoning": "low",
++      "max_output_tokens": 2048,
++      "timeout_seconds": 35,
++      "response_mode": "function"
++    }
++  },
++  "shop_inventory_caps_enabled": false,
++  "shop_adaptive_demand_enabled": true,
++  "shop_demand_half_life_hours": 1,
++  "shop_demand_calibration_prior_events": 5,
++  "shop_demand_prior_hours": 0.25,
++  "shop_replenishment_service_level": 0.9,
++  "shop_supply_delivery_seconds": 30,
++  "buyer_patch36_enabled": true,
++  "buyer_joint_objective_enabled": true,
++  "book_growth_v23_enabled": true,
++  "buyer_frontier_v23_enabled": true,
++  "research_event_driven_enabled": true,
++  "buyer_saved_bid_targets": [
++    0.8,
++    0.9
++  ],
++  "shop_internal_capital_caps_enabled": false,
++  "shop_reputation_v24_enabled": true,
++  "shop_new_goods_warranty_hours": 6,
++  "llm_cost_v25_enabled": true,
++  "service_contract_v26_enabled": true,
++  "buyer_terms_clarify_seconds": 2,
++  "inventory_portfolio_v27_enabled": true
+ }
+--- a/r3/economy.py
++++ b/r3/economy.py
+@@ -340,9 +340,12 @@
+             'discharged_refund_reserve': released}
+ 
+ 
++@decision
+ def restock_candidates(inv, catalog, demand, journal, config, now=None):
+     now = time.time() if now is None else now
+     velocity=config.get('shop_velocity_enabled',False)
++    strategic=bool(config.get('inventory_portfolio_v27_enabled') and velocity and config.get('shop_championship_enabled')
++        and config.get('shop_inventory_caps_enabled') is False and config.get('shop_internal_capital_caps_enabled') is False)
+     end = now + planning_hours(config, now)*3600
+     if end - now < 3600 or not supply_open(inv, now):
+         return []
+@@ -446,6 +449,13 @@
+             from .service_policy import need_plan
+             service_need=need_plan(journal,config,sku,p,units,rate,desired,coverage,paid,now)
+             if service_need:needed=max(needed,service_need['needed'])
++        baseline_needed=needed
++        depth_supported=False
++        if strategic:
++            from .inventory_portfolio import supported
++            depth_supported=supported(growth,observed,now)
++            if p.get('kind')=='food' and .45*p.get('shelf_hours',0)<min(6,(end-now)/3600):depth_supported=False
++            if depth_supported:needed=max(needed,20)
+         if needed<=0:
+             continue
+         held_room=config['restock_max_qty']-count.get(sku,0) if stock_caps_enabled(config) else 20
+@@ -534,6 +544,9 @@
+                                            planning_hours=hours,scenario_unit_cost=cost_ratio*p['list_price'],
+                                            resale_price_scenario=price,resale_terms_scenario=terms)
+         if service_need:candidates[-1]['evidence']['service_eligibility']=service_need
++        if config.get('inventory_portfolio_v27_enabled'):
++            candidates[-1]['evidence']['v27_baseline_qty']=max(0,min(qty,baseline_needed))
++            candidates[-1]['evidence']['v27_depth_supported']=depth_supported
+         if config.get('objective_feedback_enabled'):candidates[-1]['evidence']['trend_factor_scenario']=trend
+     from .meta import rank_progress
+     board = journal.snapshot('board.json', {})
+@@ -542,4 +555,13 @@
+     for c in candidates:
+         c['rank_progress_surrogate'] = rank_progress(board, 'shop', 'seochanit', c['expected_delta'])
+     from .portfolio import allocate
++    if strategic:
++        from .inventory_portfolio import allocate as strategic_allocate
++        packet={}
++        selected=strategic_allocate(candidates,inv,capacity,dict(config,_v27_rules_hash=journal.get('market_rules',{}).get('sha256')),
++            units,dict(merchant,_v27_board=board),now,audit=packet)
++        if packet:
++            journal.put('inventory-portfolio:v27',packet)
++            journal.add('inventory_portfolio_prepared',packet,role='shop')
++        return selected
+     return allocate(candidates, inv, capacity, dict(config,inventory_target_units=target), units, merchant=merchant)
+--- a/r3/shop_growth.py
++++ b/r3/shop_growth.py
+@@ -91,7 +91,8 @@
+             warranty=term['warranty_hours'];price=min(product['list_price'],term['median'])
+             if config.get('shop_championship_enabled'):
+                 from .risk import shop_refund_risk
+-                refund=shop_refund_risk(journal,grade,warranty,config,now)['refund_upper']
++                from .decision_view import fact
++                refund=fact(journal,('stock-seller-risk',grade,warranty),lambda:shop_refund_risk(journal,grade,warranty,config,now))['refund_upper']
+             else:
+                 refund=goods_risk(journal,grade,warranty,config,now)['failure_upper'] if warranty else 0
+             # This is an opportunity-cost scenario, not a market fee.
+@@ -103,7 +104,8 @@
+             # A new insured contract cannot borrow an old uninsured margin.
+             from .risk import shop_refund_risk
+             hours=config.get('shop_new_goods_warranty_hours',6)
+-            risk=shop_refund_risk(journal,grade,hours,config,now)['refund_upper']
++            from .decision_view import fact
++            risk=fact(journal,('stock-seller-risk',grade,hours),lambda:shop_refund_risk(journal,grade,hours,config,now))['refund_upper']
+             choices=[{'grade':grade,'weight':weight,'price':base,'refund_stress':risk,
+                 'warranty_hours':hours,'observations':0,'selection_value':base*(1-risk),
+                 'fallback':'mixed public price; actual insured seller-risk scenario'}]
+--- a/r3/inventory_portfolio.py
++++ b/r3/inventory_portfolio.py
+@@ -0,0 +1,182 @@
++"""Whole-lot inventory competition with a preserved baseline and downside checks.
++
++These are conditional six-hour planning scenarios, not observed future demand.
++An extra unit must pay its own acquisition removal, refund, storage and expiry
++costs. Legal cash and line bounds remain independent of forecast optimism.
++"""
++import copy
++import math
++import time
++from .state import identity
++
++KEY='inventory-portfolio:v27'
++
++
++def context(journal,now=None):
++    now=time.time() if now is None else now;r=journal.get(KEY,{})
++    return r if (0<=now-r.get('at',0)<180 and now<r.get('expires_at',0)
++        and r.get('rules_hash')==journal.get('market_rules',{}).get('sha256')) else {}
++
++
++def supported(growth,public,now):
++    own=growth.get('positive_paid_while_available',0)
++    buyers={name for name,n in public.get('external_buyers',[]) if name not in ('unknown','seochanit') and n>0}
++    return own>=3 or (public.get('external_samples',0)>=20 and len(buyers)>=3 and
++        0<=now-public.get('latest_at',0)<3600)
++
++
++def scale(candidate,quantity):
++    fraction=quantity/candidate['qty']
++    return dict(candidate,qty=quantity,max_cost=candidate['max_cost']*fraction,
++        capital_commitment=candidate['capital_commitment']*fraction,score=candidate['score']*fraction,
++        expected_delta={k:v*fraction for k,v in candidate['expected_delta'].items()},
++        evidence=copy.deepcopy(candidate['evidence']))
++
++
++def downside(candidate):
++    row=copy.deepcopy(candidate);e=row['evidence'];g=e.get('growth',{})
++    n=max(0,g.get('positive_paid_while_available',0))
++    # Explicit sensitivity, not a confidence interval or calibrated prediction.
++    factor=1/(1+1/math.sqrt(n)) if n>=3 else .5
++    e['arrival_rate_scenario']*=factor
++    if e.get('exploration'):e['sale_probability_scenario']*=factor
++    if e.get('service_eligibility'):
++        e['service_eligibility']['need_rate']*=factor
++    upper=(.60 if e['kind']=='food' else .69)*e['list_price']*e.get('supply_surge_factor',1)
++    e['scenario_unit_cost']=max(e['scenario_unit_cost'],upper)
++    row['evidence']['stress_rate_factor']=factor
++    return row
++
++
++def unit_scenarios(candidate,held):
++    from .shop_growth import marginal
++    adverse=downside(candidate)
++    return [(marginal(candidate,q,held),marginal(adverse,q,held)) for q in range(1,candidate['qty']+1)]
++
++
++def materialize(candidate,quantity,pairs,kind):
++    row=scale(candidate,quantity);selected=pairs[:quantity]
++    row.update(score=sum(a['book'] for a,b in selected),allocation_book=kind,
++        expected_delta={k:sum(a[k] for a,b in selected) for k in ('book','profit','revenue')})
++    row['evidence'].update(marginal_units=[a for a,b in selected],
++        inventory_stress_units=[b for a,b in selected],
++        downside_rate_factor=downside(candidate)['evidence']['stress_rate_factor'])
++    return row
++
++
++def forecast(rows,board):
++    from .meta import rank_progress
++    delta={k:sum(r['expected_delta'].get(k,0) for r in rows) for k in ('book','revenue')}
++    stress=sum(m['book'] for r in rows for m in r['evidence']['inventory_stress_units'])
++    return dict(delta,stress_book=stress,rank_progress=rank_progress(board,'shop','seochanit',delta),
++        units=sum(r['qty'] for r in rows),lines=len(rows),
++        capital=sum(r['capital_commitment'] for r in rows))
++
++
++def dominates(after,before):
++    eps=1e-6
++    return (after['book']>=before['book']-eps and after['stress_book']>=before['stress_book']-eps
++        and (before['rank_progress'] is None or after['rank_progress'] is not None and
++            after['rank_progress']>=before['rank_progress']-1e-12))
++
++
++def allocate(candidates,inv,capacity,config,existing,merchant,now=None,*,audit=None):
++    from .portfolio import allocate as legacy_allocate
++    from .meta import rank_progress
++    now=time.time() if now is None else now
++    if config.get('shop_inventory_caps_enabled',True) or config.get('shop_internal_capital_caps_enabled',True):
++        return legacy_allocate(candidates,inv,capacity,dict(config,inventory_portfolio_v27_enabled=False),existing,merchant)
++    held={}
++    for u in existing:held[u['sku']]=held.get(u['sku'],0)+1
++    originals={c['sku']:c for c in candidates};pairs={s:unit_scenarios(c,held.get(s,0)) for s,c in originals.items()}
++    baseline_candidates=[scale(c,min(c['qty'],c['evidence'].get('v27_baseline_qty',c['qty'])))
++        for c in candidates if c['evidence'].get('v27_baseline_qty',c['qty'])>0]
++    board=merchant.get('_v27_board',{})
++    for c in baseline_candidates:c['rank_progress_surrogate']=rank_progress(board,'shop','seochanit',c['expected_delta'])
++    baseline=legacy_allocate(baseline_candidates,inv,capacity,dict(config,inventory_portfolio_v27_enabled=False),existing,merchant)
++    baseline=[materialize(originals[r['sku']],r['qty'],pairs[r['sku']],r.get('allocation_book','v26_preserved_baseline')) for r in baseline]
++    total=capacity['spendable'];line_limit=min(10,config['restock_max_lines'])
++
++    book_scale=rank_progress(board,'shop','seochanit',{'book':100000})
++    revenue_scale=rank_progress(board,'shop','seochanit',{'revenue':100000})
++    book_scale=book_scale/100000 if book_scale is not None else 1
++    revenue_scale=revenue_scale/100000 if revenue_scale is not None else 0
++
++    def solve(seed,weight=0,strict=False):
++        chosen={r['sku']:r['qty'] for r in seed};used=sum(r['capital_commitment'] for r in seed)
++        processed=set()
++        while True:
++            offers=[]
++            for sku,c in originals.items():
++                if sku in processed:continue
++                start=chosen.get(sku,0)
++                if not c['evidence'].get('v27_depth_supported') and not start:continue
++                if not start and len(chosen)>=line_limit:continue
++                cost=c['capital_commitment']/c['qty'];affordable=min(c['qty'],start+int(max(0,total-used+1e-6)/cost))
++                mean_book=mean_revenue=stress_book=stress_revenue=0;best=None
++                for q in range(start+1,affordable+1):
++                    normal,stress=pairs[sku][q-1]
++                    if normal['book']<=0 or strict and stress['book']<=0:break
++                    mean_book+=normal['book'];mean_revenue+=normal['revenue']
++                    stress_book+=stress['book'];stress_revenue+=stress['revenue']
++                    value=book_scale*(mean_book+weight*stress_book)+revenue_scale*mean_revenue
++                    key=(value,mean_book,stress_book)
++                    if value>0 and (best is None or key>best[0]):best=(key,sku,q,(q-start)*cost)
++                if best:offers.append(best)
++            if not offers:break
++            value,sku,end,cost=max(offers);chosen[sku]=end;used+=cost;processed.add(sku)
++        return [materialize(originals[s],q,pairs[s],'sku_lot_competition') for s,q in chosen.items()]
++
++    proposals={'baseline':baseline,'baseline_plus_robust_depth':solve(baseline,strict=True)}
++    for weight in (0,.25,1,4):proposals['lot_risk_'+str(weight)]=solve([],weight)
++    forecasts={name:forecast(rows,board) for name,rows in proposals.items()}
++    # Search the portfolio downside frontier rather than vetoing every SKU on
++    # its own adverse draw. The prior portfolio defines the risk benchmark.
++    low,high=4.,8.;bracket=None
++    for _ in range(6):
++        key='lot_risk_'+str(high);proposals[key]=solve([],high);forecasts[key]=forecast(proposals[key],board)
++        if forecasts[key]['stress_book']>=forecasts['baseline']['stress_book']:
++            bracket=(low,high);break
++        low,high=high,high*2
++    if bracket:
++        low,high=bracket
++        for _ in range(3):
++            weight=(low+high)/2;key='lot_risk_'+str(weight);proposals[key]=solve([],weight);forecasts[key]=forecast(proposals[key],board)
++            if forecasts[key]['stress_book']>=forecasts['baseline']['stress_book']:high=weight
++            else:low=weight
++    admissible=[name for name,f in forecasts.items() if dominates(f,forecasts['baseline'])]
++    name=max(admissible,key=lambda n:(forecasts[n]['rank_progress'] or 0,forecasts[n]['book'],forecasts[n]['stress_book']))
++    rows=proposals[name]
++    assert len(rows)<=line_limit and sum(r['capital_commitment'] for r in rows)<=total+1e-5
++    assert all(1<=r['qty']<=20 for r in rows)
++    result={'at':now,'expires_at':now+180,'rules_hash':config.get('_v27_rules_hash'),
++        'candidate_counts':{'all':len(candidates),'supported_goods':sum(c['evidence'].get('v27_depth_supported',False) and c['evidence']['kind']=='goods' for c in candidates),
++            'supported_food':sum(c['evidence'].get('v27_depth_supported',False) and c['evidence']['kind']=='food' for c in candidates)},
++        'selection':name,'dominance_guard_passed':dominates(forecasts[name],forecasts['baseline']),
++        'alternatives':forecasts,'goods_units':sum(r['qty'] for r in rows if r['evidence']['kind']=='goods'),
++        'selected':[{'sku':r['sku'],'qty':r['qty'],'held':held.get(r['sku'],0),
++            'book':r['expected_delta']['book'],'stress_book':sum(m['book'] for m in r['evidence']['inventory_stress_units'])} for r in rows],
++        'interpretation':'Shared-fact forecast dominance and explicit cost/demand sensitivity; not causal uplift or a competitor guarantee.'}
++    # The caller persists this numerical packet; no runtime state in this allocator.
++    result['id']=identity([result['rules_hash'],result['selection'],result['alternatives'],result['selected']])
++    for row in rows:
++        row['evidence']['inventory_portfolio_v27']={k:result[k] for k in ('id','selection','dominance_guard_passed')}
++        rate=row['evidence'].get('arrival_rate_scenario',0)
++        row['evidence']['economic_stock_cover_scenario_hours']=(held.get(row['sku'],0)+row['qty'])/rate if rate>0 else None
++    if audit is not None:audit.update(result)
++    return rows
++
++
++def observe(journal,config,now=None):
++    if not config.get('inventory_portfolio_v27_enabled'):return None
++    now=time.time() if now is None else now
++    packet=context(journal,now)
++    from .demand_policy import context as demand_context
++    demand=demand_context(journal,config,now) or {}
++    row={'at':now,'rules_hash':journal.get('market_rules',{}).get('sha256'),
++        'demand_policy_id':demand.get('id'),'demand_at':demand.get('at'),
++        'portfolio_at':packet.get('at'),'selection':packet.get('selection'),
++        'alternatives':packet.get('alternatives',{}),'goods_units':packet.get('goods_units'),
++        'scope':'Background demand/stock/lot competition; Main uses numerical prepared plans, not additional LLMs.'}
++    journal.put('inventory-observer:v27',row)
++    return row
+--- a/r3/cycle.py
++++ b/r3/cycle.py
+@@ -84,6 +84,9 @@
+             if self.cfg.get('shop_adaptive_demand_enabled'):
+                 from .demand_policy import update as demand_update
+                 roles['shop_demand_observer']=lambda:demand_update(self.j,self.cfg,time.time())
++            if self.cfg.get('inventory_portfolio_v27_enabled'):
++                from .inventory_portfolio import observe as inventory_observe
++                roles['inventory_opportunity_observer']=lambda:inventory_observe(self.j,self.cfg,time.time())
+             if self.cfg.get('objective_decision_enabled'):
+                 from .objective_context import observe_forum
+                 roles['forum_objective_observer']=lambda:observe_forum(self.j,time.time())
+--- a/r3/research.py
++++ b/r3/research.py
+@@ -374,6 +374,12 @@
+     if not valid_operating(baseline):
+         baseline={'cover_cycles':1,'initial_batch_limit':6,'frontier_min_orders':8,'recheck_seconds':120}
+     facts['current_operating_policy']=baseline
++    if config.get('inventory_portfolio_v27_enabled'):
++        from .inventory_portfolio import context as inventory_context
++        p=inventory_context(journal,now)
++        facts['inventory_portfolio']={k:p.get(k) for k in ('at','id','selection','alternatives','goods_units')}
++        facts['inventory_portfolio']['note']='Whole-lot comparison at shared demand, per-unit cost/refund/storage/expiry sensitivity. Support-qualified durable SKU depth is not bounded by one common replenishment multiplier. Numeric baseline dominance is not causal or competitor superiority.'
++        evidence.append('kv:inventory-portfolio:v27')
+     if config.get('service_contract_v26_enabled'):
+         from .service_policy import context as service_context
+         service=service_context(journal,now)
+--- a/r3/objective_context.py
++++ b/r3/objective_context.py
+@@ -167,6 +167,10 @@
+         cycles_grid=[1.]
+         while cycles_grid[-1]*2<end:cycles_grid.append(cycles_grid[-1]*2)
+         cycles_grid=sorted(set(cycles_grid+[end,max(1,cfg.get('shop_demand_horizon_cycles',1))]))
++    if config.get('inventory_portfolio_v27_enabled'):
++        # The allocator already compares baseline, robust lots and safe depth.
++        # Do not recompute that entire frontier for redundant global multipliers.
++        cycles_grid=[max(1,cfg.get('shop_demand_horizon_cycles',1))]
+     for cycles in cycles_grid:
+         policy = dict(cfg, shop_demand_horizon_cycles=cycles, restock_max_lines=min(10,cfg['restock_max_lines']))
+         candidates = restock_candidates(virtual, catalog, [], shadow, policy, now)
+@@ -204,6 +208,7 @@
+         'cash':inv.get('balance'), 'spendable':cap['spendable'],
+         'refund_liability':cap['refund_liability'],'execution_guard_reasons':control.get('reasons',[]),
+         'execution_permitted':False, 'alternatives':rows,'demand_diagnostics':diagnostic,
++        'lot_portfolio_comparison':shadow.get('inventory-portfolio:v27',{}) if config.get('inventory_portfolio_v27_enabled') else {},
+         'note':'Shared-data forecasts, not measured lift. Cash converts to inventory; acquisition alone adds no Book. '
+                'Stars effect unmodeled; retain validated quality and full refund guards. '
+                'Select repeat-demand depth by marginal Book/rank, cash and supply delay; raw peer quantities are not targets.'}
+--- a/tests/test_market_cycle.py
++++ b/tests/test_market_cycle.py
+@@ -12,7 +12,8 @@
+ 
+ def fixture(tmp_path):
+     now=time.time(); j=Journal(tmp_path); cfg=policy()
+-    cfg=dict(cfg,market_cycle_enabled=True,research_enabled=True,daily_api_budget_usd=5,shop_adaptive_demand_enabled=False)
++    cfg=dict(cfg,market_cycle_enabled=True,research_enabled=True,daily_api_budget_usd=5,shop_adaptive_demand_enabled=False,
++        inventory_portfolio_v27_enabled=False)  # Preserve this fixture's v26 regression baseline.
+     j.put('market_rules',{'sha256':'official','compatible':True,'buyer_compatible':True})
+     j.put('public_feed_caught_up_at',now);j.put('public_ledger_seq',100)
+     j.put('market_control',{'at':now,'pause_restock':False,'status':'observe_and_trade'})
+--- a/tests/test_v27_inventory_portfolio.py
++++ b/tests/test_v27_inventory_portfolio.py
+@@ -0,0 +1,156 @@
++"""Demand-supported depth, whole-lot competition, downside and financial invariants."""
++import copy
++import json
++import time
++import pytest
++from r3.state import policy,Journal,atomic_json
++from r3.inventory_portfolio import allocate,supported,dominates,context,observe
++from test_market_cycle import fixture
++
++
++def candidate(sku='G111',rate=3,cost=590,price=950,qty=20,baseline=2,kind='goods',supported=True):
++    return {'sku':sku,'id':sku,'qty':qty,'capital_commitment':1125*qty,'max_cost':1125*qty,
++        'category':sku,'score':qty*(price-cost),'rank_progress_surrogate':None,
++        'expected_delta':{'book':qty*(price-cost),'profit':qty*price,'revenue':qty*price},
++        'evidence':{'kind':kind,'list_price':1000,'growth':{'positive_paid_while_available':20},
++            'arrival_rate_scenario':rate,'planning_hours':6,'scenario_unit_cost':cost,
++            'resale_price_scenario':price,'refund_stress':.02 if kind=='goods' else 0,
++            'exploration':False,'expected_holding_hours':1,'adaptive_category_weight':1,
++            'supply_surge_factor':1,'v27_baseline_qty':baseline,'v27_depth_supported':supported}}
++
++
++def run(cs,cash=10000000,held=None,**patch):
++    audit={};cfg=dict(policy(),restock_max_lines=2);cfg.update(patch)
++    rows=allocate(cs,{}, {'spendable':cash},cfg,held or [],{},audit=audit)
++    return rows,audit
++
++
++def test_supported_depth_needs_real_payments_or_diverse_fresh_public_activity():
++    now=time.time();pub={'external_samples':20,'external_buyers':[('a',10),('b',5),('c',5)],'latest_at':now-1}
++    assert supported({},pub,now) and supported({'positive_paid_while_available':3},{},now)
++    assert not supported({},dict(pub,external_samples=19),now)
++    assert not supported({},dict(pub,external_buyers=[('a',20)]),now)
++    assert not supported({},dict(pub,latest_at=now-3601),now)
++    assert not supported({},dict(pub,external_buyers=[('a',15),('seochanit',3),('unknown',2)]),now)
++
++
++def test_strategic_depth_increases_only_with_better_shared_economics():
++    cs=[candidate()];before=copy.deepcopy(cs);rows,audit=run(cs)
++    assert cs==before and rows[0]['qty']>2
++    assert audit['dominance_guard_passed'] and dominates(audit['alternatives'][audit['selection']],audit['alternatives']['baseline'])
++    assert rows[0]['expected_delta']['book']>audit['alternatives']['baseline']['book']
++    assert len(json.dumps(rows[0]['evidence']['inventory_portfolio_v27']))<250
++    assert '_inventory_portfolio_packet' not in rows[0]
++
++
++def test_more_than_twenty_held_is_allowed_but_one_post_stays_legal():
++    rows,audit=run([candidate(rate=30,baseline=0)],held=[{'sku':'G111'} for _ in range(60)])
++    assert rows and rows[0]['qty']==20
++    assert audit['selected'][0]['held']==60
++
++
++def test_high_existing_inventory_prevents_repeated_demand_double_counting():
++    rows,audit=run([candidate(rate=1,baseline=0)],held=[{'sku':'G111'} for _ in range(100)])
++    assert rows==[] and audit['alternatives'][audit['selection']]['book']==0
++
++
++@pytest.mark.parametrize('cash',[0,1,1124,1125,2500,10000])
++def test_lots_never_bypass_worst_case_cash_or_line_bounds(cash):
++    rows,audit=run([candidate('G111',baseline=0),candidate('G222',baseline=0)],cash=cash)
++    assert sum(r['capital_commitment'] for r in rows)<=cash+1e-6
++    assert len(rows)<=2 and all(1<=r['qty']<=20 for r in rows)
++
++
++def test_unsupported_new_demand_cannot_receive_a_large_strategic_lot():
++    rows,audit=run([candidate(baseline=0,supported=False)])
++    assert rows==[]
++
++
++def test_empty_and_zero_rate_portfolios_return_auditable_wait():
++    rows,audit=run([]);assert rows==[] and audit['dominance_guard_passed']
++    rows,audit=run([candidate(rate=0,baseline=0)])
++    assert rows==[] and audit['alternatives']['baseline']['capital']==0
++
++
++def test_surge_can_remove_a_supported_opportunity():
++    c=candidate(cost=885,price=850,baseline=0);c['evidence']['supply_surge_factor']=1.5
++    rows,audit=run([c]);assert rows==[]
++
++
++def test_whole_legal_lot_value_can_beat_a_single_high_roi_item():
++    cheap=candidate('G111',cost=590,price=950,qty=1,baseline=0)
++    valuable=candidate('G222',cost=590,price=900,qty=20,baseline=0)
++    rows,audit=run([cheap,valuable],restock_max_lines=1)
++    assert rows[0]['sku']=='G222' and rows[0]['qty']>1
++
++
++def test_downside_and_mean_guard_are_independent():
++    b={'book':10,'stress_book':2,'rank_progress':.01}
++    assert not dominates(dict(b,book=9),b)
++    assert not dominates(dict(b,stress_book=1),b)
++    assert not dominates(dict(b,rank_progress=.009),b)
++    assert dominates(dict(b,book=11,stress_book=3),b)
++
++
++def test_every_selected_proposal_retains_the_old_portfolio_benchmark():
++    cs=[candidate('G111',rate=3,kind='food'),candidate('G222',rate=2,price=800),candidate('G333',rate=.5,price=720)]
++    rows,audit=run(cs)
++    selected=audit['alternatives'][audit['selection']];old=audit['alternatives']['baseline']
++    assert selected['book']>=old['book']-1e-6 and selected['stress_book']>=old['stress_book']-1e-6
++    assert len(audit['alternatives'])>=7
++
++
++def test_expiring_packet_or_changed_rules_cannot_enter_llm_context(tmp_path):
++    j=Journal(tmp_path);now=time.time();j.put('market_rules',{'sha256':'one'})
++    j.put('inventory-portfolio:v27',{'at':now,'expires_at':now+180,'rules_hash':'one','selection':'baseline'})
++    assert context(j,now) and not context(j,now+181)
++    j.put('market_rules',{'sha256':'two'});assert not context(j,now)
++
++
++def test_observer_is_numeric_and_does_not_trade_or_call_models(tmp_path):
++    j=Journal(tmp_path);cfg=policy();row=observe(j,cfg)
++    assert row and j.get('inventory-observer:v27')==row
++    assert not j.events('model_usage') and not j.events('purchase') and not j.events('shop_settled')
++
++
++def test_seller_risk_is_cached_only_within_a_single_forecast(tmp_path,monkeypatch):
++    from r3.shop_growth import resale_terms
++    from r3.decision_view import frame
++    j=Journal(tmp_path);calls=[]
++    monkeypatch.setattr('r3.risk.shop_refund_risk',lambda *a: calls.append(1) or {'refund_upper':.1})
++    for _ in range(2):
++        with frame(j):
++            for n in range(10):resale_terms({'kind':'goods','list_price':1000},{},j,policy(),time.time())
++    assert len(calls)==6
++
++
++def test_economy_expands_supported_depth_without_changing_the_baseline_definition(tmp_path):
++    from r3.economy import restock_candidates
++    j,cfg,now=fixture(tmp_path);inv=j.snapshot('inventory.json');inv['restock']={'open':True,'opens_at':now-1,'closes_at':now+180}
++    j.put('merchant_context_v5',{'at':now,'demand_policy_id':None,'service_policy_at':None,'skus':{
++        'G111':{'arrival_rate_scenario':3,'paid_arrival_rate_scenario':3,'positive_paid_while_available':20}},'coverage_weights':{}})
++    old=restock_candidates(inv,j.snapshot('catalog.json'),[],j,cfg,now)
++    rows=restock_candidates(inv,j.snapshot('catalog.json'),[],j,dict(cfg,inventory_portfolio_v27_enabled=True),now)
++    audit=j.get('inventory-portfolio:v27');b=audit['alternatives']['baseline']
++    assert b['units']==sum(r['qty'] for r in old) and b['book']==pytest.approx(sum(r['expected_delta']['book'] for r in old))
++    assert sum(r['qty'] for r in rows)>sum(r['qty'] for r in old)
++
++
++def test_cost_routing_and_buyer_policy_remain_unchanged():
++    cfg=policy();assert cfg['inventory_portfolio_v27_enabled'] and cfg['buyer_strategy_revision']=='buyer-v26-exact-contract-continuation'
++    assert cfg['daily_api_budget_usd'] is None and not cfg['shop_inventory_caps_enabled'] and not cfg['shop_internal_capital_caps_enabled']
++    assert cfg['background_llm_roles']['market_research_analyst']['model']=='gpt-6-luna'
++    assert cfg['background_llm_roles']['market_research_critic']['model']=='gpt-6.1-terra'
++    assert all('astra' not in r['model'] for r in cfg['background_llm_roles'].values())
++
++
++def test_strategic_portfolio_is_prepared_and_consumed_without_an_extra_model_call(tmp_path,monkeypatch):
++    from r3.prewindow import prepare,consume
++    j,cfg,now=fixture(tmp_path);cfg=dict(cfg,inventory_portfolio_v27_enabled=True)
++    monkeypatch.setenv('R3_MODEL_MODE','offline')
++    plan=prepare(j,cfg,{'version':1},now);assert plan
++    inv=j.snapshot('inventory.json');inv['restock']['open']=True
++    result=consume(j,cfg,{'version':1},inv,now+61)
++    assert result is not None and j.events('shop_prepared_plan_used')
++    assert j.get('inventory-portfolio:v27')['dominance_guard_passed']
++    assert not j.events('model_usage')
+--- a/verify_market_cycle_live.py
++++ b/verify_market_cycle_live.py
+@@ -38,6 +38,7 @@
+         if cfg.get('service_contract_v26_enabled'):
+             kinds+=['shop_service_need','service_policy_prepared','negotiation_path_prepared',
+                 'buyer_terms_confirmation','buyer_counter_route','buyer_negotiation_step','buyer_route_terminal']
++        if cfg.get('inventory_portfolio_v27_enabled'):kinds+=['inventory_portfolio_prepared']
+         if cfg.get('objective_decision_enabled'):
+             kinds+=['objective_alternatives_prepared','objective_context_error','research_context_prepared',
+                     'buyer_forum_policy_choice','forum_objective_observation']
+@@ -50,6 +51,7 @@
+         with lease(ROOT/'.market/shop-recovery-guard.lock'):guard_active=False
+     except RuntimeError:guard_active=True
+     release='v26' if cfg.get('service_contract_v26_enabled') else 'v25' if cfg.get('llm_cost_v25_enabled') else 'v24' if cfg.get('shop_reputation_v24_enabled') else 'v23' if cfg.get('book_growth_v23_enabled') else 'v22' if cfg.get('buyer_patch36_enabled') else 'v21' if cfg.get('shop_adaptive_demand_enabled') else 'v20' if cfg.get('shop_inventory_caps_enabled') is False else 'v19' if cfg.get('capability_llm_enabled') else 'v18' if cfg.get('objective_decision_enabled') else 'v17' if cfg.get('agent_policy_selection_enabled') else 'v16' if cfg.get('objective_feedback_enabled') else 'v15'
++    if cfg.get('inventory_portfolio_v27_enabled'):release='v27'
+     promotion=sorted((ROOT/'logs').glob(release+'-source-promotion-*.json'))[-1]
+     manifest=read_json(promotion,{})
+     mismatches=[r['path'] for r in manifest['files'] if hashlib.sha256((ROOT/r['path']).read_bytes()).hexdigest()!=r['candidate_sha256']]
