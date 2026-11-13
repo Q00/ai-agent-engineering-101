@@ -12,6 +12,18 @@ from .state import identity
 KEY='inventory-portfolio:v27'
 
 
+def brief(packet):
+    """One baseline and one selected forecast; full search stays in the journal."""
+    if not packet:return {'status':'no_fresh_portfolio'}
+    alternatives=packet.get('alternatives',{})
+    keys=('book','revenue','stress_book','rank_progress','units','lines','capital')
+    result={k:packet.get(k) for k in ('at','id','selection','dominance_guard_passed','goods_units','candidate_counts')}
+    result['baseline']={k:alternatives.get('baseline',{}).get(k) for k in keys}
+    result['selected']={k:alternatives.get(packet.get('selection'),{}).get(k) for k in keys}
+    result['forecast_not_realized']=True
+    return result
+
+
 def context(journal,now=None):
     now=time.time() if now is None else now;r=journal.get(KEY,{})
     return r if (0<=now-r.get('at',0)<180 and now<r.get('expires_at',0)

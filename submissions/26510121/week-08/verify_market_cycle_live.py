@@ -52,6 +52,7 @@ def main():
     except RuntimeError:guard_active=True
     release='v26' if cfg.get('service_contract_v26_enabled') else 'v25' if cfg.get('llm_cost_v25_enabled') else 'v24' if cfg.get('shop_reputation_v24_enabled') else 'v23' if cfg.get('book_growth_v23_enabled') else 'v22' if cfg.get('buyer_patch36_enabled') else 'v21' if cfg.get('shop_adaptive_demand_enabled') else 'v20' if cfg.get('shop_inventory_caps_enabled') is False else 'v19' if cfg.get('capability_llm_enabled') else 'v18' if cfg.get('objective_decision_enabled') else 'v17' if cfg.get('agent_policy_selection_enabled') else 'v16' if cfg.get('objective_feedback_enabled') else 'v15'
     if cfg.get('inventory_portfolio_v27_enabled'):release='v27'
+    if cfg.get('execution_revision','').startswith('v27.1-'):release='v271'
     promotion=sorted((ROOT/'logs').glob(release+'-source-promotion-*.json'))[-1]
     manifest=read_json(promotion,{})
     mismatches=[r['path'] for r in manifest['files'] if hashlib.sha256((ROOT/r['path']).read_bytes()).hexdigest()!=r['candidate_sha256']]

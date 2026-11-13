@@ -146,6 +146,7 @@ def shop_alternatives(journal, config, now):
     from .adaptive import effective
     from .meta import rank_progress
     from .shop_growth import inventory_limit
+    from .inventory_portfolio import brief
     shadow = Shadow(journal)
     inv = copy.deepcopy(journal.snapshot('inventory.json', {}))
     cfg, _ = effective(shadow, 'shop', base=config)
@@ -208,7 +209,7 @@ def shop_alternatives(journal, config, now):
         'cash':inv.get('balance'), 'spendable':cap['spendable'],
         'refund_liability':cap['refund_liability'],'execution_guard_reasons':control.get('reasons',[]),
         'execution_permitted':False, 'alternatives':rows,'demand_diagnostics':diagnostic,
-        'lot_portfolio_comparison':shadow.get('inventory-portfolio:v27',{}) if config.get('inventory_portfolio_v27_enabled') else {},
+        'lot_portfolio_comparison':brief(shadow.get('inventory-portfolio:v27',{})) if config.get('inventory_portfolio_v27_enabled') else {},
         'note':'Shared-data forecasts, not measured lift. Cash converts to inventory; acquisition alone adds no Book. '
                'Stars effect unmodeled; retain validated quality and full refund guards. '
                'Select repeat-demand depth by marginal Book/rank, cash and supply delay; raw peer quantities are not targets.'}
@@ -240,6 +241,26 @@ def curate(facts):
     """Keep the diagnosis, bounded alternatives and totals; never duplicate cohorts."""
     source_bytes = len(json.dumps(facts,ensure_ascii=False).encode())
     row = copy.deepcopy(facts)
+    from .inventory_portfolio import brief
+    # Defend callers that still provide the full search, without enlarging the
+    # context ceiling or silently altering any executable trading decision.
+    stock=row.get('inventory_portfolio')
+    if isinstance(stock,dict) and 'alternatives' in stock:row['inventory_portfolio']=brief(stock)
+    shop=((row.get('objective_decisions') or {}).get('shop') or {})
+    stock=shop.get('lot_portfolio_comparison')
+    if isinstance(stock,dict) and 'alternatives' in stock:shop['lot_portfolio_comparison']=brief(stock)
+    service=row.get('service_contracts') or {}
+    needs=service.get('needs') or {}
+    if any('buckets' in r for r in needs.values() if isinstance(r,dict)):
+        summary={}
+        for sku,r in sorted(needs.items(),key=lambda p:p[1].get('paid_sku_support',0),reverse=True)[:4]:
+            buckets=r.get('buckets') or [];dominant=max(buckets,key=lambda b:b.get('weight',0)) if buckets else {}
+            summary[sku]={k:r.get(k) for k in ('paid_sku_support','distinct_minutes','need_fraction_scenario')}
+            summary[sku].update(bucket_count=len(buckets),minimum_hours=min((b.get('minimum_hours',0) for b in buckets),default=None),
+                maximum_hours=max((b.get('minimum_hours',0) for b in buckets),default=None),
+                dominant_requirement={k:dominant.get(k) for k in ('minimum_hours','grades','warranty_hours','weight','paid')})
+        service['provided_need_skus']=len(needs);service['needs']=summary
+        service['needs_are_examples']='Four supported examples; all buckets remain in numerical service-policy memory.'
     meta = row.get('meta') or {}
     row['meta'] = {k:meta.get(k) for k in ('at','issues','source_evaluation_at','skills_executed','research_at',
         'next_actions','promotion_authority','analytical_roles')}
@@ -252,6 +273,17 @@ def curate(facts):
     row = _bounded(row)
     reductions = []
     def size():return len(json.dumps(row,ensure_ascii=False).encode())
+    if size()>FACT_BYTES:
+        capability=row.get('capability_evidence') or {};calculations=capability.get('calculations') or {}
+        if 'buyer_frontier_audit' in calculations and (row.get('objective_decisions') or {}).get('buyer'):
+            # Keep the current canonical buyer cohort once. Capability output
+            # has its own timestamp/ID and remains inspectable in long memory;
+            # do not pretend a separately timed cohort is numerically identical.
+            calculations['buyer_frontier_audit']={'full_calculation_ref':'kv:capability-brief-v19',
+                'brief_id':capability.get('id'),'calculated_at':capability.get('at'),
+                'current_cohort_context':'objective_decisions.buyer',
+                'separately_timed_full_cohort_omitted_for_context_budget':True}
+            reductions.append('capability_buyer_cohort_reference')
     if size()>FACT_BYTES:
         market = row.get('market') or {}
         market['top_skus'] = (market.get('top_skus') or [])[:8]
