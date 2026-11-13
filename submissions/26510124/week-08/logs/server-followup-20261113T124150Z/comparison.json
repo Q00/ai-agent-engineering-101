@@ -1,0 +1,88 @@
+{
+  "source_generated_at": "2026-11-13T12:53:25+00:00",
+  "clock_note": "Server clock; supply clock offset about -763 seconds. Do not equate this to market wall time.",
+  "before_source": "market-followup-20261113T0720Z/server-diagnostic-summary.json",
+  "comparison": {
+    "buyer": {
+      "attempts": {
+        "before_per_hour": 197.667,
+        "now_per_hour": 218.667
+      },
+      "confirmed": {
+        "before_per_hour": 34.833,
+        "now_per_hour": 53.333
+      },
+      "receipts": {
+        "before_per_hour": 38.833,
+        "now_per_hour": 59.333
+      },
+      "stock_reports": {
+        "before_per_hour": 77.167,
+        "now_per_hour": 85.333
+      },
+      "walk_aways": {
+        "before_per_hour": 73.5,
+        "now_per_hour": 61.667
+      },
+      "fast_accepts": {
+        "before_per_hour": 0.0,
+        "now_per_hour": 0.0
+      },
+      "payment_refusals": {
+        "before_per_hour": 3.833,
+        "now_per_hour": 6.0
+      },
+      "stock_report_fraction": {
+        "before": 0.39038785834738615,
+        "now": 0.3902439024390244
+      },
+      "payment_refusal_per_receipt": {
+        "before": 0.09871244635193133,
+        "now": 0.10112359550561797
+      }
+    },
+    "shop": {
+      "receipts": {
+        "before_per_hour": 15.833,
+        "now_per_hour": 10.333
+      },
+      "confirmed": {
+        "before_per_hour": 3.833,
+        "now_per_hour": 6.667
+      },
+      "cancelled": {
+        "before_per_hour": 71.5,
+        "now_per_hour": 105.667
+      },
+      "expired": {
+        "before_per_hour": 51.0,
+        "now_per_hour": 22.0
+      }
+    }
+  },
+  "checkout": {
+    "receipts": 31,
+    "created": 22,
+    "started": 20,
+    "confirmed": 20,
+    "cancelled": 2,
+    "without_observed_checkout": 9,
+    "confirmed_per_created": 0.9090909090909091
+  },
+  "latency": {
+    "p50_seconds": 5.659,
+    "p95_seconds": 7.518,
+    "samples": 446,
+    "last_stage_opening": 292
+  },
+  "findings": [
+    "No capacity/model/internal errors in latest shop sample.",
+    "Pre-receipt negotiation is the larger observed shop bottleneck; all 20 observed settlement starts confirmed. Nine receipts without checkout evidence remain unknown.",
+    "More shop confirmations can reflect new checkout event correlation, not solely better trading. Receipt issuance/hour fell while cancellations/hour rose.",
+    "Buyer observed confirmations/hour increased but stock report proportion remains about 39% and fast acceptance remains zero.",
+    "Price/identity skip reasons are first blocking checks per decision, not distinct orders or proven malformed sellers.",
+    "Cannot infer why buyers cancelled or payment refused without matching trace evidence.",
+    "Successful first-quote latency has no prior comparable baseline or decision-source breakdown.",
+    "No source strategy edits or server mutations in this follow-up."
+  ]
+}
