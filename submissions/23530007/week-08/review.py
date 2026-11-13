@@ -127,9 +127,15 @@ def market_line(catalog, sku, now):
 
 BOYCOTT = re.compile(r"거래 쉬어가기[\s\S]*yms979")
 ABOUT_US = re.compile(r"yms979|YMS'?s Market", re.I)
-PRAISE = re.compile(r"honest|정직|명예|claim (matched|true)|주장 [\d/]+ 참|fair|추천합니다|good deal|싸게|낮음", re.I)
-NEGATIVE = re.compile(r"불만|고장|broke|짧|부족|모자|못 미쳐|비추|비싸|높음|overpric|above (its )?list|거짓|불일치|mismatch|"
-                      r"dishonest|scam|사기|주의|피하|avoid|warning|최악|bad|only [\d.]+ ?h|shelf life|쉬어가기|끊어", re.I)
+# 11-13 (conduct review): '모두 참' - thisjonghoon 62464 named us among shops whose claims were all true, next to
+# '거짓' for other shops, and was flagged as negative
+PRAISE = re.compile(r"honest|정직|명예|claim (matched|true)|주장 [\d/]+ 참|모두 참|fair|추천합니다|good deal|싸게|낮음", re.I)
+# 11-13 (conduct audit): bare '주의' hit the food category label '(부패주의)' (kimauve 3243 disliked 11-04) and bare
+# '고장' hit '고장은 없었습니다' (inextro 43115 disliked 11-08); now only a warning to readers or a breakdown that happened
+NEGATIVE = re.compile(r"불만|고장(?!\S*\s*(은|이)?\s*(없|안 ?났))|broke|짧|부족|모자|못 미쳐|비추|비싸|높음|overpric|"
+                      r"above (its )?list|거짓|불일치|mismatch|dishonest|scam|사기|주의하세요|주의 요망|조심|피하|avoid|"
+                      r"warning|최악|bad|only [\d.]+ ?h|shelf life|쉬어가기|끊어", re.I)
+LABEL = re.compile(r"\([^)]*주의\)")   # product/category labels such as '신선과일(부패주의)' are not a warning about a shop
 VOTES = Path(os.environ.get("VOTE_STATE", HERE / "vote_state.json"))
 NO_VOTES = os.environ.get("NO_VOTES") == "1"     # buyer2/ (11-06): only the main buyer votes
 STANCES_PER_HOUR = None         # no hourly cap (user 11-06): the 4th+ new stance in an hour costs 20,000 x (k-3) from
@@ -146,6 +152,7 @@ SMEAR = re.compile(r"사기|scam|fraud|거짓말|\blie[sd]?\b|lying|cheat|속이
 def smears_us(text):
     """A post that names our shop in a sentence or list item with an accusation, a boycott call or an insult."""
     for part in re.split(r"[\n•|;]|(?<=[.!?。])\s", text):
+        part = LABEL.sub("", part)
         if ABOUT_US.search(part) and SMEAR.search(part) and not PRAISE.search(part):
             return True
     return False
@@ -158,6 +165,7 @@ def about_us_badly(text):
     # only the sentence or list item that names us: a market list that names us next to a complaint about
     # another shop must not cost its author a dislike (user, 11-05: no unfair hits on classmates)
     for part in re.split(r"[\n•|;]|(?<=[.!?。])\s", text):
+        part = LABEL.sub("", part)
         if ABOUT_US.search(part) and NEGATIVE.search(part) and not PRAISE.search(part):
             return True
     return False
@@ -204,15 +212,23 @@ FROM_US = re.compile(r"(판매|from|bought at|샵|shop|가게)\s*[:：]?\s*(yms9
                      r"^\W*(\[[^\]]*\]\s*)?(yms979|YMS'?s Market)\b", re.I)   # we are the seller in it
 
 
+TOTAL_RIVALS = 5        # 11-13: never like the buyers of the 5 highest class totals besides ours (461 likes went to
+                        # 25620027 11-07..11-12 while it was 2nd on the total; 11-13 17:50 the safe list held inextro, 3rd)
+
+
 def safe_authors(st):
     """Buyer names that stay under our BUYER score even with our likes (user 11-07: by buyer rank, not the class
     total): a student whose class buyer score (student_buyer) is at least LIKE_MARGIN under ours; any other buyer
-    by the board's buyer ALL against ours. Cached 10 min."""
-    if time.time() - st.get("safe_t", 0) > 600:
+    by the board's buyer ALL against ours. Never the buyers of the TOTAL_RIVALS students with the highest
+    student_total besides us (st['rivals']). Cached 10 min."""
+    if time.time() - st.get("safe_t", 0) > 600 or "rivals" not in st:
         try:
             with urllib.request.urlopen(f"{MARKET}/api/board?round=3", timeout=15) as r:
                 b = json.load(r)
             me = next(p for p in b["players"] if p["player"] == "yms979")
+            top = sorted((p for p in b["players"] if p.get("student") and p.get("player") != "yms979"
+                          and p.get("student_total") is not None), key=lambda p: -p["student_total"])[:TOTAL_RIVALS]
+            rivals = [n for n in ((p.get("buyer") or {}).get("name") for p in top) if n]
             my_student = me.get("student_buyer") or 0
             my_board = next((x.get("all") or 0 for x in b["buyers"] if x["name"] == "yms979"), 0)
             by_buyer = {(p.get("buyer") or {}).get("name"): p for p in b["players"] if p.get("buyer")}
@@ -225,12 +241,14 @@ def safe_authors(st):
                     ok = p["student_buyer"] <= my_student - LIKE_MARGIN
                 else:
                     ok = x["all"] <= my_board - LIKE_MARGIN
-                if ok:
+                if ok and x["name"] not in rivals:
                     safe.append(x["name"])
-            st["safe"], st["safe_t"] = safe, time.time()
+            st["safe"], st["rivals"], st["safe_t"] = safe, rivals, time.time()
         except Exception:
             pass
-    return set(st.get("safe", []))
+    if "rivals" not in st:          # no board answer yet since this rule: like no one rather than a rival
+        return set()
+    return set(st.get("safe", [])) - set(st["rivals"])
 
 
 def like_our_reviewers(forum, outbox):
