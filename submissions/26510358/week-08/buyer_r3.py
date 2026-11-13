@@ -78,11 +78,13 @@ def limit_for(c, grade, warranty_hours):
     if p is None:
         return c["max_pay"]
     return pricing.buyer_limits(c["list"], c["budget"], "goods", p,
-                                warranty=warranty_hours >= config.BUYER_C_MIN_WARRANTY_H, min_surplus=c.get("theta"))
+                                warranty=warranty_hours >= config.BUYER_C_MIN_WARRANTY_H, min_surplus=c.get("theta"),
+                                grade=grade)
 
 
 def candidates(order, shops, mem, my_urls, theta=None):
-    """theta: expected surplus / list a deal must reach (pricing.buyer_threshold); MIN_SURPLUS_RATIO when None."""
+    """theta: expected margin share a deal must reach (pricing.buyer_threshold, patch 3.6); MIN_SAVED_SHARE when
+    None."""
     cat = market.catalog()
     acceptable = set(order.get("acceptable") or [])
     out = []
@@ -125,10 +127,9 @@ def candidates(order, shops, mem, my_urls, theta=None):
             reliability = (1 - rep["lie_rate"]) * max(0.1, 1 - bad) * ours
             if rep["talks_24h"] >= 4 and rep["deals_24h"] == 0:
                 reliability *= 0.5                    # talked a lot, never closed: likely too expensive or broken
-            surplus = L - min(exp, max_pay)
-            # The market scores buyers by saved = sum(surplus / list) / (deals + 100) ("a sofa and a snack at 30%
-            # off score the same", /agent.md), so rank by the expected share of list saved, not by won.
-            saved = surplus / L
+            # The market scores buyers by saved = sum((list - price) / (list - cost)) / (deals + 100) (patch 3.6,
+            # 2026-11-12; share of list before), so rank by the expected margin share, not by won.
+            saved = pricing.margin_share(min(exp, max_pay), L, info.get("kind"))
             opening = pricing.memory_opening(L, max_pay, ask(("profile", url), lambda: mem.shop_profile(url)))
             out.append({"shop": url, "name": s.get("name"), "sku": sku, "item_name": info.get("name"), "list": L,
                         "kind": info.get("kind"), "max_pay": max_pay, "expected": exp, "budget": order["budget"],
@@ -248,7 +249,8 @@ def judge_buy(rec, c, order, p_break, bought):
         b = score_model.cached()
         if b is None:
             return None
-        covered, disc = bool(c_covered(rec)), 1 - rec["price"] / c["list"]
+        covered = bool(c_covered(rec))
+        disc = pricing.margin_share(rec["price"], c["list"], "goods", rec.get("claim"))
         gain = score_model.delta(b, {"kind": "buy", "r": disc})[1]
         loss = -score_model.delta(b, {"kind": "buy", "r": 0.0 if covered else -1.0})[1]
         return initiative.judge("buy", 1 - p_break, max(0.0, gain), max(0.0, loss), "saved, breaks without a warranty",
@@ -274,12 +276,14 @@ def valid(rec, c, order):
     if order.get("kind") != "food" and p is not None and c.get("list"):
         # What the receipt actually promises decides, not what the reply said: expected surplus / list of this
         # grade with this warranty against the threshold the price limit was built on.
-        theta = pricing.buyer_threshold(c.get("theta"))
-        r = score_model.expected_r(1 - price / c["list"], p, warranty=c_covered(rec))
+        theta = c["theta"] if isinstance(c.get("theta"), (int, float)) else config.MIN_SAVED_SHARE   # already final
+        r = score_model.expected_r(pricing.margin_share(price, c["list"], "goods", rec.get("claim")), p,
+                                   warranty=c_covered(rec))
         judge_buy(rec, c, order, p, r >= theta - 1e-6)
         if r < theta - 1e-6:
             return (f"expected saved {r:.3f} under {theta:.3f}: grade {rec.get('claim')} breaks {p:.1%}, "
-                    f"warranty {rec.get('warranty_hours') or 0:g} h, discount {1 - price / c['list']:.3f}")
+                    f"warranty {rec.get('warranty_hours') or 0:g} h, discount {1 - price / c['list']:.3f}, "
+                    f"margin share {pricing.margin_share(price, c['list'], 'goods', rec.get('claim')):.3f}")
     return None
 
 
@@ -338,9 +342,12 @@ def fanout_quotes(cands, order):
             ask = read_ask(said, c)
         except Exception:
             ask = None
-        out.append((c, (client, t, want), ask))
-    key = lambda x: -(1 - x[2] / x[0]["list"]) * x[0].get("reliability", 1.0) if x[2] else 1.0
-    return sorted(out, key=key)
+        grade = quote_hints(said)[0] if c["kind"] == "goods" else None
+        out.append((c, (client, t, want), ask, grade))
+    # Highest expected margin share first (patch 3.6): the same discount on a grade C unit is worth less than on A.
+    key = lambda x: (-pricing.margin_share(x[2], x[0]["list"], x[0]["kind"], x[3]) * x[0].get("reliability", 1.0)
+                     if x[2] else 1.0)
+    return [(c, op, ask) for c, op, ask, _ in sorted(out, key=key)]
 
 
 def close_quotes(rest):

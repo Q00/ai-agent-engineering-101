@@ -1,4 +1,4 @@
-"""buyer_r3 ranks candidates by expected share of list saved (the market's buyer score), not by won."""
+"""buyer_r3 ranks candidates by expected margin share saved (the market's buyer score since patch 3.6), not by won."""
 from unittest.mock import patch
 
 import buyer_r3
@@ -31,4 +31,4 @@ def test_bigger_discount_beats_bigger_won():
         out = buyer_r3.candidates(order, shops, Mem(), set())
     # BIG saves 375k (25%), SMALL saves 200k (40%): the market scores SMALL higher
     assert [c["sku"] for c in out] == ["SMALL", "BIG"]
-    assert out[0]["saved"] == 0.4
+    assert out[0]["saved"] == round(0.4 / (1 - 0.508), 4)          # patch 3.6: share of the margin

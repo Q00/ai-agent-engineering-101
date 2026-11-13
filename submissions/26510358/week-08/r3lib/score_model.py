@@ -4,7 +4,8 @@
   Shop ALL  = 0.5 book(pct) + 0.3 revenue(pct) + 0.2 stars(pct)
   Buyer ALL = 0.5 saved(pct) + 0.3 forum rating(value) + 0.1 deals(pct) + 0.1 posts(pct)
   Book      = balance - starting capital - bankruptcy money + unsold stock at cost
-  Saved     = S / (D + 100),  S = sum over deals of surplus / list (broken goods: 0 under a warranty, -1 without)
+  Saved     = S / (D + 100),  S = sum over deals of (list - price) / (list - cost), at most 1 (patch 3.6,
+              2026-11-12; surplus / list before); broken goods: 0 under a warranty, -1 without
 
 The bandit's reward, Horvitz's B and C and the paid-dislike decision all read this one function, so "is it worth
 it" is answered in the unit the round is ranked in.
@@ -129,7 +130,7 @@ def delta(b, action):
       sale          price, cost            book += price - cost, revenue += price
       hold          cost, days             goods: book -= 1% of cost per day
       expire        cost                   food past its date leaves book at its cost
-      buy           r                      one more deal with surplus / list = r (use expected_r for goods)
+      buy           r                      one more deal scoring r (margin share) (use expected_r for goods)
       post                                 one more buyer post; d_forum when its effect on the rating is known
       paid_dislike  n, unit                unit x (n - 1)^2 leaves the shop's cash
       raw           d_book, d_revenue, d_stars, d_S, d_deals, d_forum, d_posts

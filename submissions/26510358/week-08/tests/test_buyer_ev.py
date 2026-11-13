@@ -16,7 +16,7 @@ P = {"A": 0.03, "B": 0.12, "C": 0.34}
 ORDER = {"kind": "goods", "budget": 900_000, "acceptable": ["G1"]}
 
 
-def cand(theta=0.30, **kw):
+def cand(theta=0.75, **kw):
     return {"list": 1_000_000, "budget": 900_000, "kind": "goods", "theta": theta, "p_grade": P,
             "max_pay": 600_000, **kw}
 
@@ -25,24 +25,35 @@ def rec(price, **kw):
     return {"item": "G1", "price": price, **kw}
 
 
+M = {"food": 1 - 0.508, "A": 1 - 0.618, "B": 1 - 0.561, "C": 1 - 0.495}   # margin / list (config.COST_RATIO)
+
+
 def test_limits_follow_the_saved_rule():
+    """Patch 3.6: a deal scores (L - price) / (L - cost), so the limit is L (1 - margin x need)."""
     L = 1_000_000
-    assert pricing.buyer_limits(L, 10**7, "food", min_surplus=0.30) == 700_000
-    a_w = pricing.buyer_limits(L, 10**7, "goods", 0.03, warranty=True, min_surplus=0.30)
-    a = pricing.buyer_limits(L, 10**7, "goods", 0.03, min_surplus=0.30)
-    b = pricing.buyer_limits(L, 10**7, "goods", 0.12, min_surplus=0.30)
-    c = pricing.buyer_limits(L, 10**7, "goods", 0.34, min_surplus=0.30)
-    assert a_w == int(L * (1 - 0.30 / 0.97)) and a == int(L * (1 - 0.33 / 0.97))
-    assert a_w > a > b > c and c < 0.05 * L                 # C without warranty: nearly never
-    assert pricing.buyer_limits(L, 500_000, "goods", 0.03, warranty=True) == 500_000        # the order's budget
+    assert pricing.buyer_limits(L, 10**7, "food", min_surplus=0.75) == int(L * (1 - M["food"] * 0.75))
+    a_w = pricing.buyer_limits(L, 10**7, "goods", 0.03, warranty=True, min_surplus=0.75, grade="A")
+    a = pricing.buyer_limits(L, 10**7, "goods", 0.03, min_surplus=0.75, grade="A")
+    b = pricing.buyer_limits(L, 10**7, "goods", 0.12, min_surplus=0.75, grade="B")
+    c = pricing.buyer_limits(L, 10**7, "goods", 0.34, min_surplus=0.75, grade="C")
+    assert a_w == int(L * (1 - M["A"] * 0.75 / 0.97)) and a == int(L * (1 - M["A"] * 0.78 / 0.97))
+    assert a_w > 0.70 * L                                    # grade A under a warranty at the market's 0.70 of list
+    assert a_w > a > b and c == 0                            # C without warranty can never reach the threshold
+    assert pricing.buyer_limits(L, 500_000, "goods", 0.03, warranty=True, grade="A") == 500_000   # the order's budget
 
 
-def test_threshold_follows_the_model_inside_a_band():
-    m = config.MIN_SURPLUS_RATIO
-    assert pricing.buyer_threshold(None) == m
-    assert pricing.buyer_threshold(0.2938) == 0.2938
-    assert pricing.buyer_threshold(0.05) == m * (1 - config.BUYER_THRESHOLD_BAND)
-    assert pricing.buyer_threshold(0.90) == m * (1 + config.BUYER_THRESHOLD_BAND)
+def test_margin_share_is_capped_at_the_whole_margin():
+    assert abs(pricing.margin_share(700_000, 1_000_000, "goods", "A") - 0.30 / M["A"]) < 1e-12
+    assert pricing.margin_share(400_000, 1_000_000, "goods", "A") == 1.0                   # below cost
+    assert abs(pricing.margin_share(600_000, 1_000_000, "food") - 0.40 / M["food"]) < 1e-12
+
+
+def test_threshold_follows_the_model_inside_bounds():
+    lo, hi = config.BUYER_THETA_BOUNDS
+    assert pricing.buyer_threshold(None) == config.MIN_SAVED_SHARE
+    assert abs(pricing.buyer_threshold(0.75) - (0.75 + config.BUYER_THETA_MARGIN)) < 1e-12
+    assert pricing.buyer_threshold(0.30) == lo                # a pre-3.6 value never drags it to a share of list
+    assert pricing.buyer_threshold(0.95) == hi
 
 
 def test_quote_hints_read_grade_and_warranty_in_the_formats_shops_use():
@@ -59,7 +70,7 @@ def test_quote_hints_read_grade_and_warranty_in_the_formats_shops_use():
 
 def test_limit_moves_to_the_named_grade_and_warranty():
     c = cand()
-    assert buyer_r3.limit_for(c, "A", 72) == int(1_000_000 * (1 - 0.30 / 0.97))
+    assert buyer_r3.limit_for(c, "A", 72) == int(1_000_000 * (1 - M["A"] * 0.75 / 0.97))
     assert buyer_r3.limit_for(c, "A", 72) > buyer_r3.limit_for(c, "A", 0) > buyer_r3.limit_for(c, "B", 0)
     assert buyer_r3.limit_for(c, "B", 3) == buyer_r3.limit_for(c, "B", 0)          # 3 h does not cover a break
     assert buyer_r3.limit_for(cand(p_grade={}), "A", 72) == 600_000                # no table: the limit stays
@@ -67,12 +78,11 @@ def test_limit_moves_to_the_named_grade_and_warranty():
 
 def test_the_receipt_decides_by_expected_saved():
     c = cand(max_pay=900_000)
-    assert buyer_r3.valid(rec(680_000, claim="A", warranty_hours=72), c, ORDER) is None        # 0.97 x 0.32 = 0.310
-    assert "expected saved" in buyer_r3.valid(rec(680_000, claim="A"), c, ORDER)                # 0.310 - 0.03
-    assert "expected saved" in buyer_r3.valid(rec(551_000, claim="B"), c, ORDER)                # the 0.449 case
-    assert buyer_r3.valid(rec(500_000, claim="B"), c, ORDER) is None                            # 0.88 x 0.5 - 0.12
-    assert "expected saved" in buyer_r3.valid(rec(600_000, claim="C", warranty_hours=6), c, ORDER)   # 0.66 x 0.40
-    assert buyer_r3.valid(rec(500_000, claim="C", warranty_hours=6), c, ORDER) is None          # 0.66 x 0.50
+    assert buyer_r3.valid(rec(700_000, claim="A", warranty_hours=72), c, ORDER) is None        # 0.97 x 0.785 = 0.762
+    assert "expected saved" in buyer_r3.valid(rec(700_000, claim="A"), c, ORDER)                # 0.762 - 0.03
+    assert "expected saved" in buyer_r3.valid(rec(600_000, claim="B"), c, ORDER)                # 0.88 x 0.911 - 0.12
+    assert buyer_r3.valid(rec(560_000, claim="B"), c, ORDER) is None                            # 0.88 x 1 - 0.12
+    assert "expected saved" in buyer_r3.valid(rec(495_000, claim="C", warranty_hours=6), c, ORDER)   # 0.66 x 1
     assert "grade C" in buyer_r3.valid(rec(100_000, claim="C"), c, ORDER)
     assert buyer_r3.valid(rec(680_000, claim="A"), c, {**ORDER, "kind": "food"}) is None
 

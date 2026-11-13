@@ -281,7 +281,14 @@ MIN_SURPLUS_RATIO = 0.30            # keep at least this share of list (0.05 unt
                                     #   (sum of surplus/list over deals + 100), so a deal below our saved (0.2955)
                                     #   lowers it. 72 h replay: 0.30 keeps 64% of deals at mean 0.374 -> end-of-round
                                     #   saved 0.330 (rank ~8) vs 0.312 (rank ~17) keeping all; deals stay top-10
-BUYER_THRESHOLD_BAND = 0.20         # the score model may move the threshold this far from MIN_SURPLUS_RATIO (0.24-0.36)
+BUYER_THRESHOLD_BAND = 0.20         # pre-3.6 band, no longer read by the buyer (kept for old replays)
+# Patch 3.6 (2026-11-12 17:39 KST, the last scoring change): a deal scores (list - price) / (list - cost), at most 1.
+# The buyer's threshold and limits are in that unit since 2026-11-13.
+COST_RATIO = {"food": 0.508, "A": 0.618, "B": 0.561, "C": 0.495,   # median unit cost / list on the market supply
+              "goods": 0.594}                                       #   ledger (72 h to 11-13); goods = 0.7A+0.2B+0.1C mix
+MIN_SAVED_SHARE = 0.75              # threshold without a board (our saved 0.721 on 11-13 + margin)
+BUYER_THETA_MARGIN = 0.03           # threshold = score-model break-even + this (cost estimates are medians)
+BUYER_THETA_BOUNDS = (0.72, 0.85)   # the threshold never leaves this range
 FIRST_OFFER_RATIO = 0.55            # first offer as a share of list price
 MAX_OFFERS = 6
 SHOPS_TO_TRY = 3

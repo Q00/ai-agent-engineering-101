@@ -144,26 +144,48 @@ def warranty_floor(floor, u, price, warranty_hours, p_break, slow=False):
 
 # ------------------------------------------------------------------------------------------- buyer
 def buyer_threshold(model_value=None):
-    """The expected surplus / list a deal must reach: the score model's break-even for one more deal
-    (score_model.saved_threshold, near our current saved), kept within BUYER_THRESHOLD_BAND of MIN_SURPLUS_RATIO;
-    the constant itself without a board."""
-    m = config.MIN_SURPLUS_RATIO
+    """The expected margin share (patch 3.6) a deal must reach: the score model's break-even for one more deal
+    (score_model.saved_threshold, near our current saved) plus BUYER_THETA_MARGIN, kept within BUYER_THETA_BOUNDS;
+    MIN_SAVED_SHARE without a board.
+    Until 2026-11-13 this was a share of list clamped to 0.24-0.36: after patch 3.6 moved saved to ~0.72 the model
+    value sat over the band and the threshold was pinned at 0.36 of list for every grade."""
     if not isinstance(model_value, (int, float)):
-        return m
-    return min(m * (1 + config.BUYER_THRESHOLD_BAND), max(m * (1 - config.BUYER_THRESHOLD_BAND), model_value))
+        return config.MIN_SAVED_SHARE
+    lo, hi = config.BUYER_THETA_BOUNDS
+    return min(hi, max(lo, model_value + config.BUYER_THETA_MARGIN))
 
 
-def buyer_limits(list_price, budget, kind, p_break=0.1, warranty=False, min_surplus=None):
-    """Most we will pay, from how a deal scores (/agent.md): surplus / list is the discount when the unit serves,
-    0 when goods break under a warranty and -1 when they break without one. Expected value m or more:
-      (1 - p)(1 - price / L) - (0 or p) >= m   ->   price <= L (1 - (m + (0 or p)) / (1 - p))
-    Until 2026-11-10 every goods offer was limited as if it had no warranty at one average p (0.077): a grade A
-    unit under warranty needed a 42% discount where 30.3% already scores above our saved."""
-    m = config.MIN_SURPLUS_RATIO if min_surplus is None else min_surplus
-    cap = list_price * (1 - m)
-    if kind == "goods":
-        p = min(0.9, max(0.0, p_break or 0.0))
-        cap = list_price * (1 - (m + (0 if warranty else p)) / (1 - p))
+def cost_ratio(kind, grade=None):
+    """Expected unit cost / list price a shop paid (market supply ledger, 72 h to 2026-11-13): food one value, goods
+    by grade, the A/B/C supply mix when the grade is not named yet."""
+    if kind != "goods":
+        return config.COST_RATIO["food"]
+    return config.COST_RATIO.get(grade) or config.COST_RATIO["goods"]
+
+
+def margin_share(price, list_price, kind, grade=None):
+    """What one deal adds to saved (patch 3.6): (list - price) / (list - cost), at most 1 (below cost = the whole
+    margin), at least -1."""
+    m = 1 - cost_ratio(kind, grade)
+    if not list_price or m <= 0:
+        return 0.0
+    return max(-1.0, min(1.0, (1 - price / list_price) / m))
+
+
+def buyer_limits(list_price, budget, kind, p_break=0.1, warranty=False, min_surplus=None, grade=None):
+    """Most we will pay, from how a deal scores (/agent.md, patch 3.6): s = (L - price) / (L - cost) when the unit
+    serves (at most 1), 0 when goods break under a warranty and -1 when they break without one. Expected value
+    theta or more, with m = 1 - cost / L:
+      (1 - p) s - (0 or p) >= theta   ->   price <= L (1 - m (theta + (0 or p)) / (1 - p))
+    When that needs s > 1 no price reaches theta and the limit is 0.
+    Until 2026-11-13 s was the share of list (pre-3.6) and theta 0.36 of list for every grade: grade A under a
+    warranty was capped near 0.63 of list where 0.70-0.72 already beats our saved."""
+    theta = config.MIN_SAVED_SHARE if min_surplus is None else min_surplus
+    p = min(0.9, max(0.0, p_break or 0.0)) if kind == "goods" else 0.0
+    need = (theta + (0 if warranty or kind != "goods" else p)) / (1 - p)
+    if need > 1:
+        return 0
+    cap = list_price * (1 - (1 - cost_ratio(kind, grade)) * need)
     return int(max(0, min(budget, cap)))
 
 
