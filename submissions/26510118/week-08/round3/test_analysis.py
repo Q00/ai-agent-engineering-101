@@ -1724,18 +1724,21 @@ def test_watch():
           set(flags) == {"breakage:A"} and f["A"] == [0.2, 0.02, 40], (f, flags))
     scat = {"F1": {"kind": "food", "list_price": 20000}, "D1": {"kind": "goods", "list_price": 3_000_000}}
     flow = ([{"ts": t - 3600, "sku": "F1", "what": "received"}] * 200 + [{"ts": t - 3600, "sku": "F1", "what": "expired"}] * 5)
-    units = ([{"sku": "F1", "supplied_at": t - 7 * H, "cost": 10000}] * 61
+    units = ([{"sku": "F1", "supplied_at": t - 7 * H, "cost": 10000, "expires_at": t + 200 * H}] * 70
+             + [{"sku": "F1", "supplied_at": t - 2 * H, "cost": 10000, "expires_at": t + 20 * H}] * 31
              + [{"sku": "D1", "supplied_at": t - 7 * H, "cost": 60_000_000}] * 3)
     ords = [{"ts": t - 600, "deal": i < 30} for i in range(60)]
     hist = [{"at": t - 13 * H, "buyers": {"Kiro729": [0.33, 0.8, 1, 1]}}, {"at": t - 60, "buyers": {"Kiro729": [0.33, 0.8, 2, 2]}}]
     f, flags = watch.stoploss(t, flow, units, ords, scat, hist)
-    check("11/12, the stop-loss lines: food expiring 2.5% of what came in (S1), 61 food units 6 h old (S2), 180M of 500k+ "
-          "goods held 6 h (S3), 10 buyer deals an hour (B1) and saved flat over 12 h (B1): five flags",
+    check("11/12, the stop-loss lines: food expiring 2.5% of what came in (S1), 31 food units expiring within 24 h (S2, "
+          "11/13; the 70 held 7 h with 200 h left do not count), 180M of 500k+ goods held 6 h (S3), 10 buyer deals an "
+          "hour (B1) and saved flat over 12 h (B1): five flags",
           set(flags) == {"stoploss:S1", "stoploss:S2", "stoploss:S3", "stoploss:B1-deals", "stoploss:B1-saved"}
-          and f["food_expired_12h"] == [5, 200] and f["dear_held_6h_cost"] == 180_000_000, (f, flags))
+          and f["food_expired_12h"] == [5, 200] and f["food_expiring_24h"] == 31
+          and f["dear_held_6h_cost"] == 180_000_000, (f, flags))
     hist[-1]["buyers"]["Kiro729"][0] = 0.34
-    f, flags = watch.stoploss(t, flow[:200], units[:10], [{"ts": t - 600, "deal": True}] * 150, scat, hist)
-    check("...a healthy hour: none", flags == {}, (f, flags))
+    f, flags = watch.stoploss(t, flow[:200], units[:70], [{"ts": t - 600, "deal": True}] * 150, scat, hist)
+    check("...a healthy hour (70 food units held 7 h, 200 h of shelf life left): none", flags == {}, (f, flags))
     log.unlink()
     for f in ("watch_state.json", "watch.json", "watch_log.jsonl"):
         (MD / "analysis" / f).unlink(missing_ok=True)

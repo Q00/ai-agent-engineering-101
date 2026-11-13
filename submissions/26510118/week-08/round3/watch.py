@@ -59,8 +59,10 @@ BRIEF_HOURS = 3
 # 11/12 (the person's call): the stop-loss lines of the "retake 1st" changes (0de7635 and after). Each raises an alert
 # once when it is crossed (again after it has cleared); a person then reverts that one change.
 SL_FOOD_EXPIRY, SL_FOOD_RECEIVED_MIN = 0.02, 100   # S1 (food for 3 h of its pace): food expired / received over 12 h
-SL_FOOD_STALE_HOURS, SL_FOOD_STALE_N = 6, 60       # S2 (food priced higher): food units on hand 6 h or longer. Not 3 h:
-                                                   # S1 holds 3 h of a product's pace on purpose
+SL_FOOD_EXPIRING_HOURS, SL_FOOD_EXPIRING_N = 24, 30   # S2 (food priced higher): food units on hand that expire within
+                                                      # 24 h. Until 11/13 11:50 (the person's call): 60 units held 6 h,
+                                                      # which fired on 214 units with a median 203 h of shelf life left
+                                                      # (0 expired): stock counts at cost in the book, only expiry loses
 SL_DEAR, SL_DEAR_HOURS, SL_DEAR_COST = 500_000, 6, 150_000_000   # S3 (a wider line): 500k+ goods held 6 h+, at cost
 SL_DEALS_H, SL_ORDERS_MIN = 25, 30                 # B1 (the margin floor since 11/13): our buyer's deals an hour, 3 h
                                                    # (40 until 11/13 11:40: the floor of 0.70 trades some deals away)
@@ -79,11 +81,12 @@ def stoploss(now: float, flow: list, units: list, orders: list, catalog: dict, h
         flags["stoploss:S1"] = (f"S1: {exp} of {rec} food units received in 12 h expired (over {SL_FOOD_EXPIRY:.0%}): "
                                 "revert restock.FOOD_COVER_HOURS")
     age = lambda u: now - (u.get("supplied_at") or now)
-    stale = sum(1 for u in units if kind(u.get("sku")) == "food" and age(u) >= SL_FOOD_STALE_HOURS * 3600)
-    f["food_on_hand_6h"] = stale
-    if stale >= SL_FOOD_STALE_N:
-        flags["stoploss:S2"] = (f"S2: {stale} food units on hand {SL_FOOD_STALE_HOURS} h or longer: the bolder food asks "
-                                "may be too high (experiments.FOOD_ARMS)")
+    expiring = sum(1 for u in units if kind(u.get("sku")) == "food" and u.get("expires_at")
+                   and u["expires_at"] - now < SL_FOOD_EXPIRING_HOURS * 3600)
+    f["food_expiring_24h"] = expiring
+    if expiring >= SL_FOOD_EXPIRING_N:
+        flags["stoploss:S2"] = (f"S2: {expiring} food units on hand expire within {SL_FOOD_EXPIRING_HOURS} h: the bolder "
+                                "food asks may be too high (experiments.FOOD_ARMS) or restock too deep (FOOD_COVER_HOURS)")
     dear = sum(u.get("cost") or 0 for u in units if lp(u.get("sku")) >= SL_DEAR and age(u) >= SL_DEAR_HOURS * 3600)
     f["dear_held_6h_cost"] = int(dear)
     if dear >= SL_DEAR_COST:
