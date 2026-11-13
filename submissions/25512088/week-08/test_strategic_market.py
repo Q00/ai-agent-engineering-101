@@ -23,7 +23,9 @@ class StrategyTests(unittest.TestCase):
   self.assertNotIn('0',[r['sku'] for r in rows])
   self.assertTrue(any(r['sku']=='food' for r in rank_products(cat,trades,shops,now=now)))
   self.assertEqual(next(r for r in rows if r['sku']=='1')['competitor_same_units'],0)
-  self.assertEqual(rank_products(cat,trades[:1],shops),[])
+  # A profitable observed grade may enter research ranking; procurement still
+  # requires multiple distinct buyers before it can spend.
+  self.assertEqual(len(rank_products(cat,trades[:1],shops)),1)
  def test_active_distinct_buyers_and_substitute_competition_are_explicit(self):
   now=time.time();cat={'x':dict(kind='goods',name='x',list_price=100000,category='chairs'),
    'y':dict(kind='goods',name='y',list_price=110000,category='chairs')}

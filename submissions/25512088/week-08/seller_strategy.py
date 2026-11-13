@@ -115,6 +115,20 @@ def protected_floor(unit, policy, hazard=.15):
                math.ceil((cost*(1-acquisition)+reserve)/(survival-acquisition)))
 
 
+def score_floor(unit, hazard=.15):
+    """Preserve expected Book for an ordinary public sale.
+
+    New referral enrollment is closed. A buyer without a legacy credential
+    therefore covers unit principal, one day of storage, and measured refund
+    risk. Legacy members still use ``protected_floor`` so old promises remain
+    fully funded.
+    """
+    principal=unit['cost']+math.ceil(unit['cost']*.01)
+    if not warranty_hours(unit):return principal
+    survival=max(.5,1-max(0,min(.49,hazard)))
+    return math.ceil(principal/survival)
+
+
 def observed_hazard(intel,shop_name='25512088'):
     if intel:
         board=intel.source('board',{},max_age=900) or {}
@@ -148,7 +162,8 @@ def liquidation_discount(unit, holdings, recent_sales_6h, now=None, failed_quote
 
 def negotiate(unit, current, offered, catalog, program, token='', ref=''):
     hazard=current.get('hazard_probability',.15)
-    floor=protected_floor(unit,program.p,hazard)
+    legacy=bool(token or ref)
+    floor=protected_floor(unit,program.p,hazard) if legacy else score_floor(unit,hazard)
     minimum=program.quote(floor,unit['cost'],token=token,ref=ref)
     if offered>=minimum['price']:
         lo,hi=floor,current['base']
@@ -160,7 +175,8 @@ def negotiate(unit, current, offered, catalog, program, token='', ref=''):
     else:
         q=program.quote(max(floor,(current['base']+floor)//2),unit['cost'],token=token,ref=ref)
     q['warranty_hours']=warranty_hours(unit,program)
-    if q['price']*((1-hazard) if q['warranty_hours'] else 1)-q['reward'] < unit['cost']+math.ceil(unit['cost']*.09):
+    required=unit['cost']+math.ceil(unit['cost']*(.09 if legacy else .01))
+    if q['price']*((1-hazard) if q['warranty_hours'] else 1)-q['reward'] < required:
         return current
     q['hazard_probability']=hazard;q['hazard_basis']=current.get('hazard_basis','conservative-unmeasured')
     return q if q['price']<current['price'] else current
@@ -221,7 +237,9 @@ def sale_quote(unit, catalog, program, intel=None, token='', ref='', *, record=T
         (unit['sku'],time.time()-21600)).fetchone()[0]
     markdown=liquidation_discount(unit,holdings,recent_sales,failed_quotes_6h=quotes)
     hazard,hazard_basis=observed_hazard(intel,program.p.get('shop_name','25512088'))
-    protected=protected_floor(unit,program.p,hazard);floor=protected;loss_leader=False
+    legacy=bool(token or ref)
+    protected=protected_floor(unit,program.p,hazard) if legacy else score_floor(unit,hazard)
+    floor=protected;loss_leader=False
     projected_loss=max(0,unit['cost']-(comp.get('p10') or unit['cost']))
     loss_used=program.db.execute(
         'SELECT COALESCE(SUM(CASE WHEN cost>amount THEN cost-amount ELSE 0 END),0) FROM sales WHERE refunded=0').fetchone()[0]
@@ -241,13 +259,15 @@ def sale_quote(unit, catalog, program, intel=None, token='', ref='', *, record=T
     q['liquidation']=bool(markdown);q['liquidation_discount']=markdown
     q['liquidation_basis']='excess_stock_no_own_sale_6h' if markdown else None
     q['loss_leader']=loss_leader;q['loss_budget_remaining']=max(0,LOSS_LEADER_BUDGET-loss_used-projected_loss)
-    safe_margin=q['price']*((1-hazard) if q['warranty_hours'] else 1)-q['reward'] >= unit['cost']+math.ceil(unit['cost']*.09)
+    required=unit['cost']+math.ceil(unit['cost']*(.09 if legacy else .01))
+    safe_margin=q['price']*((1-hazard) if q['warranty_hours'] else 1)-q['reward'] >= required
     bounded_trial=(loss_leader and q['reward']==0 and q['price']>=cohort_floor)
     if not (safe_margin or bounded_trial):
         raise ValueError('Net margin guard rejected quote')
     if intel and record:
         intel.decision('seller_quote',{'sku':unit['sku'],'cost':unit['cost'],'price':q['price'],
                        'reward':q['reward'],'floor':floor,'protected_floor':protected,
+                       'floor_policy':('legacy_benefit_protected' if legacy else 'public_book_preserving'),
                        'comparable':comp,'market_adjustment':adjustment,
                        'buyer_preference_target':preference,'buyer_preference_applied':preference_applied,
                        'pricing_basis':('buyer_preference_lower_quartile' if preference_applied else

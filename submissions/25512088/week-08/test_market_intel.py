@@ -6,7 +6,7 @@ import unittest
 from unittest.mock import patch
 import httpx
 from market_intel import Intel,BUYER_SCORE_WEIGHTS
-from seller_strategy import sale_quote,restock_plan,cost_floor,protected_floor,buyer_preference_target
+from seller_strategy import sale_quote,restock_plan,cost_floor,protected_floor,score_floor,buyer_preference_target
 from seller_ledger import Program
 from buyer_publicist import queue_update,publication_policy,forum_strategy,STRATEGY_REVIEW_SECONDS
 from buyer_r3 import Buyer
@@ -108,7 +108,7 @@ class IntelligenceTests(unittest.TestCase):
         self.i.ingest(self.rows(price=5000))
         q=sale_quote(self.u,{},self.p,self.i)
         self.assertGreaterEqual(q['price'],8720)
-        self.assertEqual(q['base'],protected_floor(self.u,self.p.p))
+        self.assertEqual(q['base'],score_floor(self.u))
     def test_benefit_variants_preserve_net_margin(self):
         # Force founder and referral branches through actual membership records.
         seed=self.p.quote(12000,8000)

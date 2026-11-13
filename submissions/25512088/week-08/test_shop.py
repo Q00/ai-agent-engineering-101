@@ -9,7 +9,7 @@ from market_intel import Intel
 from seller_ledger import Program
 from seller_offers import offers
 from seller_market import rank_products
-from seller_strategy import protected_floor, sale_quote
+from seller_strategy import score_floor, sale_quote
 
 
 class ShopDiscoveryTests(unittest.TestCase):
@@ -34,7 +34,7 @@ class ShopDiscoveryTests(unittest.TestCase):
                                               buyer_preferences=preferences)
                         preview = offers(root, program, intel, limit=1)[0]
                         self.assertEqual(preview['price'], expected['price'])
-                        self.assertGreaterEqual(preview['price'], protected_floor(unit, program.p))
+                        self.assertGreaterEqual(preview['price'], score_floor(unit))
                         if age == 0:
                             self.assertLess(preview['price'], baseline)
                         else:

@@ -1,7 +1,7 @@
 import json,math,tempfile,time,unittest
 from pathlib import Path
 from seller_ledger import Program
-from seller_strategy import sale_quote,negotiate,protected_floor,observed_hazard
+from seller_strategy import sale_quote,negotiate,protected_floor,score_floor,observed_hazard
 from buyer_memory import Memory
 from seller_offers import offers
 from market_intel import Intel
@@ -16,8 +16,9 @@ class RolloutTests(unittest.TestCase):
   for offer in (1,10000,14000,20000):
    n=negotiate(self.u,q,offer,{},self.p)
    self.assertLessEqual(n['price'],q['price']);self.assertEqual(n['warranty_hours'],6)
-   self.assertGreaterEqual(n['price']*.85-n['reward'],self.u['cost']+math.ceil(self.u['cost']*.09))
+   self.assertGreaterEqual(n['price']*.85-n['reward'],self.u['cost']+math.ceil(self.u['cost']*.01))
   self.assertLess(negotiate(self.u,q,14000,{},self.p)['price'],q['price'])
+  self.assertGreaterEqual(q['base'],score_floor(self.u))
  def test_mature_public_breakage_cohort_lowers_floor_without_removing_margin(self):
   class Evidence:
    def source(self,*args,**kwargs):return {'shops':[{'name':'25512088','claims':139,'broken':11}]}

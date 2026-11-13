@@ -342,7 +342,10 @@ def rank_products(catalog, trades, shops, own_name='25512088', local_demand=None
             # capital and referral reserves stay explicit; missing trade price
             # is treated as an unsold unit rather than fabricated demand.
             hazard=.10 if product.get('kind')=='food' else goods_hazard
-            net=typical*(1-hazard)*.95-cost*1.09-2000 if typical else -cost
+            # Missing grade observations are uncertainty, not a guaranteed
+            # total loss. Initial lots remain capped at 2/3 units and live
+            # pricing still enforces the Book-preserving floor.
+            net=typical*(1-hazard)-cost*1.01 if typical else 0
             expected+=arrival*net
             scenarios.append(dict(grade=grade,arrival_probability=arrival,
                 acquisition_cost_range=[cost_lo,cost_hi],samples=len(prices),median_6h=typical,
