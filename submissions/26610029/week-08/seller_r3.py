@@ -47,7 +47,17 @@ DEFAULT_POLICY = {"undercut": 0.02,           # price this far (share of list) u
                   "min_margin": 0.05,         # never below cost * (1 + min_margin) ...
                   "clearance_hours": 6,       # ... except food with fewer hours left than this
                   "clearance_floor": 0.6,     # which may go down to cost * this
-                  "warranty_max_break": 0.06, # give a warranty when the grade's break rate is under this
+                  "warranty_max_break": 0.12, # give a warranty when the grade's break rate is under this --
+                                              # was 0.06: grade B's measured market-wide break rate
+                                              # (0.115-0.117 all through round 3) sat just above that,
+                                              # so grade B never qualified either, same as grade C
+                                              # (0.35+). That meant goods >= 15,000 (market_buyer's own
+                                              # GOODS_WARRANTY_MIN_PRICE) at grade B or C could never
+                                              # get a warranty from us, and buyers requiring one (the
+                                              # same rule, market-wide) cancelled before offering --
+                                              # measured live: G81ade83e grade B/C, 6-10 zero-offer
+                                              # cancels an hour. 0.12 lets grade B (but not grade C)
+                                              # clear it
                   "warranty_hours": 72,       # goods only break within 6 h of the sale, so 72 h costs the
                                               # same as 6 h and passes any buyer's accept.warranty_hours (max 72)
                   "concede_threshold": 0.15}  # first offer this far under ask -> concede straight to target

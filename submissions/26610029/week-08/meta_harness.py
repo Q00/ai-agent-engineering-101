@@ -28,7 +28,12 @@ LOOKBACK = 2100           # how far back the stats look -- kept close to INTERVA
 BOUNDS = {
     "seller": {
         "undercut": (0.0, 0.06), "open_premium": (0.0, 0.08), "min_margin": (0.03, 0.12),
-        "clearance_hours": (3, 12), "clearance_floor": (0.5, 0.8), "warranty_max_break": (0.02, 0.10),
+        "clearance_hours": (3, 12), "clearance_floor": (0.5, 0.8), "warranty_max_break": (0.02, 0.13),
+        # upper bound raised 0.10 -> 0.13: measured live, grade B's market-wide break rate sits at
+        # 0.115-0.117, just above the old 0.10 ceiling, so grade B goods could never clear
+        # warranty_max_break and never got a warranty -- which then made every grade-B unit of a
+        # high-list-price SKU (e.g. G81ade83e, list 34,740) unsellable to any buyer requiring one,
+        # with buyers cancelling before even making an offer
         "warranty_hours": (6, 72), "concede_threshold": (0.08, 0.30),
     },
     "restock": {
