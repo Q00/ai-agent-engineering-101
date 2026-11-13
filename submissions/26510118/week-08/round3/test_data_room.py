@@ -72,8 +72,9 @@ def test_replay():
     r = tools.replay("seller.price_adjust", -0.05)
     check("asks 5% lower: four deals still, each closing lower", r["replayed"]["deals"] == 4 and r["replayed"]["revenue"] < 72800,
           r["replayed"])
-    r = tools.replay("seller.warranty_extra", {"C": 0.25})
-    check("the warranty for grade C at 25%: the refurbished deal is lost", r["replayed"]["deals"] == 3, r["replayed"])
+    r = tools.replay("seller.warranty_extra", {"C": 0.38})       # 0.25 against 0.20 until 11/13 (now 0.33 in force)
+    check("the warranty for grade C at 38% (5 points over the rules in force): the refurbished deal is lost",
+          r["replayed"]["deals"] == 3, r["replayed"])
     r = tools.replay("buyer.max_ratio", 0.85)
     check("our buyer's ceiling at 85%: the 17,500 deal is lost (surplus 8,500 -> 6,000)",
           (r["recorded"]["surplus"], r["replayed"]["deals"], r["replayed"]["surplus"]) == (8500, 1, 6000), r)
