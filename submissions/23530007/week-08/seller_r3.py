@@ -270,10 +270,18 @@ def pick_unit(text, held, now, asks=None):
     skus = set(SKU.findall(text))
     low = text.lower()
     fit = ([u for u in units if u["sku"] in skus]
-           or [u for u in units if (u.get("name") or "").lower() in low]
-           or [u for u in units if (u.get("category") or "").split(">")[-1].lower() in low])
+           or [u for u in units if (u.get("name") or "").lower() in low])
+    by_category = not fit
+    if by_category:
+        fit = [u for u in units if (u.get("category") or "").split(">")[-1].lower() in low]
     if not fit:
         return None
+    if by_category and fit[0].get("kind") != "food":
+        # 11-13: a buyer that names only the category (q00: 'I want to buy a 침구') has a budget we cannot see; we
+        # handed it the oldest grade A unit of any SKU and q00 rated 1 star: 'RIPOFF. Asked 97806 for a 침구; my
+        # budget was 36120'. The cheapest SKU of the category goes first
+        cheapest = min((u.get("list_price") or 0) for u in fit)
+        fit = [u for u in fit if (u.get("list_price") or 0) <= cheapest * 1.15]
     if fit[0].get("kind") == "food":
         # 11-11: food under FOOD_SHELF_FLOOR of its shelf life is never sold (it drew 3-4 stars from every rubric:
         # shelf share < .25 rated 4.33, .25-.45 4.55, >= .8 4.85; the units are ~0.7% of stock at cost)
@@ -439,8 +447,12 @@ def blocked(text):
 def wtext(hours):
     """How a warranty is said: from a year up it is a lifetime warranty (user 11-08: goods only break within 6 h
     of the sale, so any length past that costs the same and a lifetime one reads better)."""
+    # 11-13: yeonsong2 (741 reviews of us, 3.45 over 12 h) rated 2-3 '72-hour warranty is concerningly short for a
+    # carpet'; 72 h is the longest the market settles (8760 h failed its well-formed check on 11-08), and goods only
+    # break within 6 h of the sale, so 72 h covers every break: say so
     return (f"lifetime warranty ({hours:g} h on the receipt; every break is refunded in full)" if hours >= 8760
-            else f"{hours:g} h warranty")
+            else f"{hours:g} h warranty (goods only break within 6 h of the sale, so this covers every break; full refund)"
+            if hours >= 6 else f"{hours:g} h warranty")
 
 
 RECENT_HOLD = 300   # s an agreed unit is kept from other buyers while its checkout settles
