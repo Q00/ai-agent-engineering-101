@@ -18,3 +18,13 @@ Measure at +2 h (16:40 KST): python3 -I <scratchpad>/measure36.py 1794548395 2
 Keep if: goods deals/order up and est margin share of new deals >= theta, saved not falling.
 Roll back (git revert 4d15d1eb) if: saved falls over 2 board reads, or new goods deals break without warranty.
 Next: step 2 (BUYER_FANOUT_SHARE 0.2 -> 1.0) after the +2 h read.
+
++2 h read (16:36 KST, measure36.py 1794548395 2) — KEEP:
+  orders 265 (136/h, was 116/h), deals/order 0.472 (was 0.348); serial 0.426, fanout 0.673 (n=49)
+  goods deals/order 0.26 (was 0.034), food 0.655 (was 0.664)
+  purchases: A 18 (9.2/h, price/list 0.679, est margin share 0.834), B 8 (0.923), food 93 (0.863) - all above theta 0.732
+  breaks of new goods purchases: 0. kpi 16:28: saved 0.7213 -> 0.7219, deals 18061 -> 18174, total 1.514.
+
+Step 2 deployed 16:44 KST (epoch 1794555446): BUYER_FANOUT_SHARE 0.20 -> 1.0 (live on save).
+  Measure at +2 h and +6 h: deals/order (serial 0.426 / fanout 0.673 before), est margin share of new deals, orders/h.
+  Roll back to 0.20 if deals/order falls under 0.47 or orders/h drops (8 parallel quotes per order take longer).

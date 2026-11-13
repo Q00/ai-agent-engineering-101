@@ -292,7 +292,8 @@ BUYER_THETA_BOUNDS = (0.72, 0.85)   # the threshold never leaves this range
 FIRST_OFFER_RATIO = 0.55            # first offer as a share of list price
 MAX_OFFERS = 6
 SHOPS_TO_TRY = 3
-BUYER_FANOUT_SHARE = 0.20          # canary (2026-11-12): this share of orders asks every candidate shop at once and
+BUYER_FANOUT_SHARE = 1.0           # 1.0 since 2026-11-13 16:40 KST (canary 0.20 from 11-12: fanout 0.542 vs serial 0.386
+                                    #   deals/order over 29 h; 0.673 vs 0.426 in the 2 h after the patch-3.6 buyer). Orders ask every candidate shop at once and
                                     #   negotiates with the cheapest quotes first (cheapest shop 9.3% of list under the
                                     #   median one on the same SKU and grade; we paid 8.8% over the cheapest)
 BUYER_FANOUT_MAX = 8               # shops asked at once (one best candidate each)
