@@ -523,6 +523,64 @@ def main():
     except Exception as e:
         log(f"G18 skipped: {e!r}")
 
+    # G21 / G22 (user 11-13 14:00: 'you should handle these yourself, why do I have to point them out?'): side effects
+    # of our own shop settings, checked every tick. G21: a class-total contender's buyer (total within .15 of ours)
+    # buying >= 20% of its deals from us over 3 h at a per-deal v >= .03 above what it gets elsewhere (our clearance
+    # at cost fed 25620027 65 of 108 goods deals at v .916 on 11-13). G22: our shop's paid deals over 2 h under half
+    # of the trailing 12 h rate (grade-A-only cut them 120 -> 30/h on 11-12 and nobody noticed for 6 h).
+    try:
+        import sqlite3
+        import cost_model as _cm
+        db21 = sqlite3.connect(f"file:{HERE / 'data' / 'market_archive.db'}?mode=ro", uri=True, timeout=30)
+        names21, ours21 = {}, set()
+        for (d_,) in db21.execute("SELECT data FROM ledger WHERE kind='join'"):
+            x_ = json.loads(d_).get("data") or {}
+            if x_.get("url") and x_.get("name"):
+                names21[x_["url"].rstrip("/")] = x_["name"]
+                if x_["name"] == "yms979":
+                    ours21.add(x_["url"].rstrip("/"))
+        ch_ = [json.loads(l_) for l_ in open(MD / "class_history.jsonl")][-1]["p"]
+        me_t = ch_["yms979"][0]
+        contenders = {p_: v_ for p_, v_ in ch_.items() if p_ != "yms979" and me_t - v_[0] < 0.15}
+        bname = {p_["player"]: (p_.get("buyer") or {}).get("name") for p_ in bd["players"]}
+        cat21 = json.loads((MD / "catalog.json").read_text(encoding="utf-8"))
+        rows21 = [(ts_, json.loads(d_).get("data") or {}) for ts_, d_ in db21.execute(
+            "SELECT ts, data FROM ledger WHERE kind='settle' AND ts > ?", (now - 12 * 3600,))]
+        uc21 = _cm.unit_costs([r_["unit"] for _, r_ in rows21 if now - _ < 3 * 3600])
+        why21 = []
+        for p_ in contenders:
+            bn_ = bname.get(p_)
+            L_ = [r_ for ts_, r_ in rows21 if now - ts_ < 3 * 3600 and r_.get("buyer") == bn_ and r_.get("sku") in cat21
+                  and r_["unit"] in uc21]
+            if len(L_) < 30:
+                continue
+            def v_(r_):
+                lp_ = cat21[r_["sku"]]["list_price"]; c_ = uc21[r_["unit"]]
+                return 1.0 if lp_ <= c_ else min(1.0, (lp_ - r_["amount"]) / (lp_ - c_))
+            us_ = [v_(r_) for r_ in L_ if str(r_.get("shop")).rstrip("/") in ours21]
+            el_ = [v_(r_) for r_ in L_ if str(r_.get("shop")).rstrip("/") not in ours21]
+            if len(us_) >= 0.2 * len(L_) and el_ and sum(us_) / len(us_) >= sum(el_) / len(el_) + 0.03:
+                why21.append(f"{p_} (buyer {bn_}, total {contenders[p_][0]}) bought {len(us_)} of its {len(L_)} deals in 3 h from us "
+                             f"at v {sum(us_) / len(us_):.3f} vs {sum(el_) / len(el_):.3f} elsewhere")
+        if why21 and cooled(st, "G21", 3 * 3600, now):
+            fired(st, "G21", now)
+            wake("shop", "G21 our shop feeds a class-total contender's buyer: " + " | ".join(why21)
+                 + ". Find which of our prices (clearance, star_buyers, slow units, rival_under) gives it this and fix it for everyone.")
+            alert(["상점이 경쟁 학생 buyer에게 유리하게 팔고 있음: " + " / ".join(why21)[:300] + " -> 상점 전략가가 가격 점검 중"])
+            fires.append("G21")
+        mine22 = [ts_ for ts_, r_ in rows21 if str(r_.get("shop")).rstrip("/") in ours21]
+        r2 = sum(1 for t_ in mine22 if now - t_ < 2 * 3600) / 2
+        r12 = len(mine22) / 12
+        if r12 >= 20 and r2 < 0.5 * r12 and cooled(st, "G22", 3 * 3600, now):
+            fired(st, "G22", now)
+            wake("shop", f"G22 our paid sales fell to {r2:.0f}/h over 2 h from {r12:.0f}/h over 12 h: find the cause "
+                         "(a setting we changed, stock, prices, the market) and fix it")
+            alert([f"상점 판매 급감: 최근 2시간 시간당 {r2:.0f}건 (12시간 평균 {r12:.0f}건) -> 상점 전략가가 원인 점검 중"])
+            fires.append("G22")
+        st["g21_g22"] = {"contenders": list(contenders), "shop_deals_h_2h": r2, "shop_deals_h_12h": round(r12, 1), "g21": why21}
+    except Exception as e:
+        log(f"G21/G22 skipped: {e!r}")
+
     # G19 saved watch (user 11-12 23:50: 'saved changes in real time; when it moves past a threshold, wake the buyer
     # or adjust the negotiation'). The floors already follow m* every tick (vprice v_floor_rel); this wakes the buyer
     # strategist (no phone alert) when (a) our board-implied v over the last 2 h runs .03 under its 6 h value or
