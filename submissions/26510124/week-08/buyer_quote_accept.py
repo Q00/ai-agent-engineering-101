@@ -48,9 +48,27 @@ def certified_choice(task, *, item, shop_name, order, policy, market_dir, second
     if not isinstance(parts, list) or len(parts) > 32 or any(not isinstance(p, dict) for p in parts):
         return skip("invalid_quote_parts")
     data = [p["data"] for p in parts if "data" in p]
-    if len(data) != 1 or not isinstance(data[0], dict):
+    metadata = message.get("metadata") or {}
+    if not isinstance(metadata, dict):
+        return skip("invalid_quote_metadata")
+    if len(data) > 1 or any(not isinstance(d, dict) for d in data) or not (data or metadata):
         return skip("structured_quote_missing_or_ambiguous")
-    quote = data[0]
+    # Only merge fields from THIS message. Never reuse an earlier unit/quote.
+    quote = dict(data[0]) if data else {}
+    for key in ("ask", "sku", "unit", "cert", "grade", "grade_now", "warranty_hours", "expires_at"):
+        if key in metadata:
+            if key in quote and quote[key] != metadata[key]:
+                return skip("quote_metadata_conflict")
+            quote[key] = metadata[key]
+    # The signed certificate can supply identity; verified_body below verifies
+    # its signature and binds it to the requested SKU, shop and current unit.
+    envelope = quote.get("cert")
+    identity = envelope.get("cert") if isinstance(envelope, dict) else None
+    if isinstance(identity, dict):
+        for key in ("sku", "unit"):
+            quote.setdefault(key, identity.get(key))
+    if "grade" in quote and "grade_now" in quote and quote["grade"] != quote["grade_now"]:
+        return skip("grade_not_accepted_or_conflicting")
     # Observe certified lifetime independently of the quote's price or formatting.
     body = verified_body(quote, item, shop_name, order)
     food_clock = None

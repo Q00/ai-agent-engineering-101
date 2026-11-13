@@ -131,3 +131,29 @@ class CertifiedQuoteTests(unittest.TestCase):
         self.assertEqual(row["negotiation_diagnostics"]["fast_accept_skip_reasons"],
                          {"food_lifetime_or_checkout_headroom_insufficient": 1})
         self.assertEqual(filter_recent_short_life([shop], [row], args["order"], load_policy()), ([], 1))
+
+    def test_split_metadata_quote_and_signed_identity(self):
+        task, args, _ = self.inputs()
+        message = task["status"]["message"]
+        quote = message["parts"][1]["data"]
+        message["metadata"] = {k: quote.pop(k) for k in ("ask", "warranty_hours", "grade")}
+        quote.pop("sku"); quote.pop("unit")
+        self.assertEqual(certified_choice(task, **args)["price"], 60000)
+        message["metadata"]["unit"] = "other-unit"
+        self.assertIsNone(certified_choice(task, **args))
+
+    def test_full_metadata_quote_and_no_history_certificate_reuse(self):
+        task, args, _ = self.inputs()
+        message = task["status"]["message"]
+        message["metadata"] = message["parts"].pop()["data"]
+        self.assertIsNotNone(certified_choice(task, **args))
+        task["history"] = [deepcopy(message)]
+        del message["metadata"]["cert"]
+        self.assertIsNone(certified_choice(task, **args))
+
+    def test_conflicting_terms_across_data_and_metadata_fail_closed(self):
+        task, args, _ = self.inputs()
+        for extra in ({"warranty_hours": 0}, {"grade": "A"}, {"grade_now": "A"}, {"cert": {}}):
+            altered = deepcopy(task)
+            altered["status"]["message"]["metadata"] = extra
+            self.assertIsNone(certified_choice(altered, **args))

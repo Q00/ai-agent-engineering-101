@@ -184,7 +184,7 @@ def reuse_failures(shops, memory, *, item, budget, config, order, catalog=None, 
                 or not isinstance(row.get("item"), str)):
             continue
         timestamp = record_time(row.get("time"))
-        if timestamp is None or not now - seconds <= timestamp <= now:
+        if timestamp is None or not now - max(seconds, 300) <= timestamp <= now:
             continue
         key = (row["name"], row.get("item"))
         if key not in latest or timestamp >= latest[key][0]:
@@ -204,7 +204,7 @@ def reuse_failures(shops, memory, *, item, budget, config, order, catalog=None, 
             previous, refused, success = latest.get(key), refusals.get(key), successes.get(key)
             product = catalog.get(sku) if catalog is not None else None
             terms = None
-            if refused and seconds > 0:
+            if refused and seconds > 0 and now - refused[0] <= seconds:
                 record = refused[1]
                 old_terms = record.get("purchase_policy")
                 superseded = success and success[0] >= refused[0] and _same_acceptance(
@@ -228,9 +228,29 @@ def reuse_failures(shops, memory, *, item, budget, config, order, catalog=None, 
             retryable.append(offer)
             cooling = False
             if (previous and previous[1].get("result") == "no_deal" and seconds > 0
+                    and now - previous[0] <= seconds
                     and isinstance(previous[1].get("selection_fingerprint"), str)):
                 terms = terms or buying_terms(budget, product=product, order=order, config=config)
                 cooling = previous[1].get("selection_fingerprint") == offer_fingerprint(shop, sku, terms, round_number)
+            # Stock claims are a short scheduling hint, never proof of inventory.
+            # Unlike price failures, budget/review changes cannot cure them.
+            if previous:
+                record = previous[1]
+                diagnostics = record.get("negotiation_diagnostics") or {}
+                terminal = diagnostics.get("seller_terminal") or {}
+                stock_rejection = (record.get("result") == "no_deal"
+                    and diagnostics.get("reason") == "seller_rejected"
+                    and terminal.get("state") == "TASK_STATE_REJECTED"
+                    and "stock" in terminal.get("reported_tags", [])
+                    and diagnostics.get("receipt_seen") is False
+                    and record.get("observed_receipt") is None)
+                if stock_rejection:
+                    # Use the shorter stock TTL even if the generic hash matches.
+                    cooling = (0 <= now - previous[0] < 300
+                        and record.get("url", "").rstrip("/") == shop.get("url", "").rstrip("/")
+                        and bool(shop.get("url"))
+                        and type(record.get("observed_stock_qty")) is int
+                        and record["observed_stock_qty"] == offer.get("qty"))
             if cooling:
                 skipped += 1
             else:
