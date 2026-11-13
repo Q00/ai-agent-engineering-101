@@ -40,8 +40,10 @@ class Settings(unittest.TestCase):
         value = json.loads(mb.CONFIG.read_text(encoding="utf-8"))
         self.assertIs(value["enabled"], True)  # switched on 11-10 after the install commit cc24e1db; 3 a SKU and 17M from 11-11 (23786019)
         # At most 2 lines a run from 11-11 11:3x KST, a tightening after the 11:21 FALLBACK_B signal. Back to 1 a SKU and 6M from
-        # 11-11 13:35:36 KST, the pre-agreed fallback taken before the 15:21 check (Orchestrator, a tightening).
-        self.assertEqual((value["skus"], value["units_per_sku"], value["max_worst_cost_total"], value["max_lines_per_run"]), (SKUS, 1, 6000000, 2))
+        # 11-11 13:35:36 KST, the pre-agreed fallback taken before the 15:21 check (Orchestrator, a tightening). Back to 3 a SKU and 17M
+        # from 11-13 about 09:3x KST, still 2 lines (user, Orchestrator session: "3개/17M, 2품목 유지 (권장)").
+        self.assertEqual((value["skus"], value["units_per_sku"], value["max_worst_cost_total"], value["max_lines_per_run"]), (SKUS, 3, 17000000, 2))
+        self.assertEqual((mb.settings()["units_per_sku"], mb.settings()["max_worst_cost_total"]), (3, 17000000))
         self.assertEqual(mb.settings()["max_lines_per_run"], 2)
 
     def test_only_a_valid_file_turns_it_on(self):
