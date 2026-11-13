@@ -286,11 +286,19 @@ def pick_unit(text, held, now, asks=None):
         # 11-11: food under FOOD_SHELF_FLOOR of its shelf life is never sold (it drew 3-4 stars from every rubric:
         # shelf share < .25 rated 4.33, .25-.45 4.55, >= .8 4.85; the units are ~0.7% of stock at cost)
         fsf = shop_policy_now().get("food_shelf_floor", FOOD_SHELF_FLOOR)   # 11-13: the shop strategist's knob
-        fresh = [u for u in fit if not shelf_hours(u["sku"]) or hours_left(u, now) >= fsf * shelf_hours(u["sku"])]
+        m = NEED.search(text)
+        # 11-13 17:30 (user: 'is none in stock really none? buyers may see other stock than we sell'): in the last
+        # hour 240 asks got 'none in stock' and not one named a SKU we lacked; 80 were food whose units all sat under
+        # the shelf floor (610 grade C food units the market lists to buyers, so their agents learn our food visits
+        # fail). A buyer that states its need gets any unit that lasts it (the lasting check below), grade C too;
+        # the floor now guards only buyers that state no need. Grades a buyer names are honoured for food as well
+        want_f = ok_grades(text)
+        if want_f:
+            fit = [u for u in fit if (grade_now(u, now) or "A") in want_f]
+        fresh = [u for u in fit if m or not shelf_hours(u["sku"]) or hours_left(u, now) >= fsf * shelf_hours(u["sku"])]
         if not fresh:
             return None
         fit = fresh
-        m = NEED.search(text)
         if not m:
             # need unknown: the freshest, so it lasts. 11-08: we handed doomed units here ('its last chance') and
             # the house buyers, who never state their hours, rated them 2 ("Only 9.8 h of shelf life left; I
@@ -390,7 +398,8 @@ FOOD_SHELF_FLOOR = 0.80       # share of its shelf life a food unit must still h
 GRADE_ORDER = {"A": 0, "B": 1, "C": 2}
 ACCEPTS_C = re.compile(r"grade\s*C\b|refurb|any\s*grade|cheapest\s*grade|lowest\s*grade|\bC\s*grade", re.I)
 NO_C = re.compile(r"(grade\s*)?A\s*(or|/)\s*B\s*(grade\s*)?only|only\s*grade\s*A|not\s*(buy|pay\s*for|take)\s*grade\s*C|"
-                  r"no\s*grade\s*C|grade\s*C\s*(is\s*)?not|A\s*/\s*B\s*only|I buy grade A", re.I)
+                  r"no\s*grade\s*C|grade\s*C\s*(is\s*)?not|A\s*/\s*B\s*only|I buy grade A|"
+                  r"grade\s*A\s*or\s*B\b(?![^.]{0,20}\bC\b)", re.I)   # 11-13: 'Please offer a grade A or B'
 ONLY_A = re.compile(r"(only|just)\s*grade\s*A\b|grade\s*A\s*only", re.I)
 WANTS_WARRANTY = re.compile(r"\band warranty\b|include (a |the )?warranty|with (a |the )?warranty|-hour warranty|warranty (covering|required|please)|require[sd]? (a |the )?warranty|\"warranty_hours\": *[1-9]", re.I)
 C_WITH_WARRANTY = re.compile(r"grade\s*C[^.]{0,80}warranty|C\s*\(refurbished\)[^.]{0,80}warranty", re.I)
