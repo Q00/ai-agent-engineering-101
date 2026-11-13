@@ -27,9 +27,35 @@ HERE = Path(__file__).resolve().parent
 SELF = "real_yellow"                      # same owner: our own shop can never settle with us
 BLACKLIST_PATH = HERE / "market_buyer_blacklist.json"
 HAGGLE_ERRORS_PATH = HERE / ".market" / "haggle_errors.jsonl"
-DEFAULT_POLICY = {"target_ratio": 0.55,   # first offer, as a share of list price
+DEFAULT_POLICY = {"target_ratio": 0.55,   # first offer, as a share of list price (goods)
+                  "food_target_ratio": 0.50,  # lower than goods: Round 3 patch 3.6 moved the buyer
+                                              # "saved" score from discount-ratio to margin-based
+                                              # ((list-paid)/(list-cost)), and measured live we were
+                                              # already capturing ~92.8% of goods' available margin but
+                                              # only ~84.4% of food's (avg paid ratio food 0.595 vs cost
+                                              # ~0.52 of list, goods 0.638 vs cost ~0.61) -- food is also
+                                              # the bulk of our order volume, so a harder first offer
+                                              # there is where the new score formula pays off most
                   "rounds": 6, "tries": 2}
-GOODS_WARRANTY_MIN_PRICE = 15000          # require a warranty on goods at or above this list price
+GOODS_WARRANTY_MIN_PRICE = 150000         # require a warranty on goods at or above this list price --
+                                          # was 15,000: measured live, that threshold made us abandon
+                                          # far more value in haggle-succeeded-but-never-paid goods deals
+                                          # (~1.3-1.4M won/hour, mostly curtains/rugs 13k-160k whose
+                                          # seller just wouldn't grant a warranty) than the one-time
+                                          # 1,090,586 won break loss that justified requiring one at all.
+                                          # Raised so the requirement only guards the few truly big-ticket
+                                          # purchases (sofas, TVs, fridges: 300k-1.5M+) where an
+                                          # unwarrantied break actually hurts
+OWN_RATE_WINDOW_H = 24        # recency window for my_rate below -- a shop's recent swing (e.g. psyoung82
+                              # measured live: 40.4% all-time -> 26%/24h -> 12-17%/1h across several
+                              # hourly checks) should move its score faster than diluting it against
+                              # everything we have ever tried with that shop
+OWN_RATE_MIN_SAMPLE_RECENT = 5    # need this many recent tries before trusting the recent rate over all-time
+OWN_RATE_HARD_FLOOR = 0.05         # a shop this bad, at this sample size, is not bad luck
+OWN_RATE_HARD_MIN_SAMPLE = 20      # measured live: "ㅋㅋㅋ내이름뭐게" went 0/85 all-time on the same
+                                   # fresh-fruit category yet kept scoring 0.57-0.58 and getting picked
+                                   # into the top 3 every time, because my_rate is only 30% of the score
+                                   # and the other terms (market ratio, honesty, low break) covered for it
 
 
 def load_json(path, default):
@@ -96,7 +122,7 @@ def haggle(url, sku, name, list_price, budget, target_ratio, rounds, need_h=None
     return {"deal": False, "receipt": None, "price": None, "offers": offers}
 
 
-def shop_scores(d, cands):
+def shop_scores(d, cands, now):
     """name -> score. Unknown shops get a neutral prior instead of zero, so new shops still get tried.
     A shop's own measured break rate already pulls its score down (-3 * brk below) -- that is the only
     place break rate should act: it used to also force a hard warranty requirement on any goods purchase
@@ -109,19 +135,37 @@ def shop_scores(d, cands):
         "avg(CASE WHEN s.claim_honest IS FALSE THEN 0 ELSE 1 END) AS honest, count(b.unit) AS broke "
         "FROM settles s JOIN shops sh ON sh.url = s.shop_url LEFT JOIN broken b ON b.unit = s.unit "
         "WHERE sh.name = ANY($1) AND s.list_price > 0 GROUP BY sh.name", names)}
-    mine = {r["shop"]: r for r in d.q(
+    # all-time: used both as the fallback when we have too few recent tries, and as the hard-floor check
+    # below (a shop that has been bad for a very long time and a very large sample is a structural no,
+    # not a recent blip the window below would otherwise need time to pick up)
+    mine_all = {r["shop"]: r for r in d.q(
         "SELECT context->>'shop' AS shop, count(*) AS n, "
         "sum(CASE WHEN (outcome->>'deal')::boolean THEN 1 ELSE 0 END) AS ok "
         "FROM trajectory WHERE role = 'buyer' AND context->>'shop' = ANY($1) GROUP BY 1", names)}
+    mine_recent = {r["shop"]: r for r in d.q(
+        "SELECT context->>'shop' AS shop, count(*) AS n, "
+        "sum(CASE WHEN (outcome->>'deal')::boolean THEN 1 ELSE 0 END) AS ok "
+        "FROM trajectory WHERE role = 'buyer' AND context->>'shop' = ANY($1) AND ts > $2 GROUP BY 1",
+        names, now - OWN_RATE_WINDOW_H * 3600)}
     scores = {}
     for c in cands:
-        m, me = market.get(c["name"]), mine.get(c["name"])
+        m, all_, rec = market.get(c["name"]), mine_all.get(c["name"]), mine_recent.get(c["name"])
         n = int(m["n"]) if m else 0
         ratio = float(m["ratio"]) if m else 0.65
         honest = float(m["honest"]) if m else 0.9
         brk = int(m["broke"]) / n if n else 0.02
-        my_rate = (int(me["ok"]) + 1) / (int(me["n"]) + 2) if me else 0.5
-        scores[c["name"]] = (1 - ratio) + 0.3 * honest + 0.3 * my_rate - 3 * brk + 0.03 * math.log1p(n)
+        rec_n = int(rec["n"]) if rec else 0
+        if rec_n >= OWN_RATE_MIN_SAMPLE_RECENT:        # a recent trend outweighs the all-time average
+            my_rate = (int(rec["ok"]) + 1) / (rec_n + 2)
+        else:
+            all_n = int(all_["n"]) if all_ else 0
+            my_rate = (int(all_["ok"]) + 1) / (all_n + 2) if all_ else 0.5
+        score = (1 - ratio) + 0.3 * honest + 0.3 * my_rate - 3 * brk + 0.03 * math.log1p(n)
+        all_n = int(all_["n"]) if all_ else 0
+        if all_n >= OWN_RATE_HARD_MIN_SAMPLE and (int(all_["ok"]) / all_n) < OWN_RATE_HARD_FLOOR:
+            score -= 2      # a large, consistently near-zero sample: don't let a good market ratio or
+                            # low break rate paper over a shop that structurally never closes with us
+        scores[c["name"]] = score
     return scores
 
 
@@ -186,7 +230,7 @@ def main():
                      (now, s["name"], o["sku"], o["name"], o["qty"], order.get("category")))
                     for s in shops for o in s.get("offers") or [])
             policy.update(d.get_policy("buyer", {}))
-            scores = shop_scores(d, cands)
+            scores = shop_scores(d, cands, now)
     except Exception as e:                       # no DB: still buy, with every shop on the prior
         print(f"[db] {type(e).__name__}: {e}")
 
@@ -215,12 +259,14 @@ def main():
     first = random.choices(top, weights=[0.6, 0.25, 0.15][:len(top)])[0]
     queue = [first] + [c for c in ranked if c is not first]
 
+    target_ratio = policy["food_target_ratio"] if kind == "food" else policy["target_ratio"]
+
     result, shop, sku, name, lp = {"deal": False}, None, None, None, 0
     for shop in queue[:policy["tries"]]:
         sku, name, lp = pick_sku(shop["offers"], catalog, args.budget)
         print(f"[choose] {shop['name']} score {scores.get(shop['name'], 0.6):.3f}: {name} ({sku}), list {lp}")
         try:
-            result = haggle(shop["url"], sku, name, lp, args.budget, policy["target_ratio"], policy["rounds"], need_h)
+            result = haggle(shop["url"], sku, name, lp, args.budget, target_ratio, policy["rounds"], need_h)
         except Exception as e:                   # a dead tunnel or a bad card: try the next shop
             print(f"[haggle] {shop['name']}: {type(e).__name__}: {e}")
             result = {"deal": False, "offers": []}
@@ -255,8 +301,8 @@ def main():
         # require a warranty on pricier goods, so a break comes out of the shop's balance, not ours
         # (agent.md: surplus = value - price + refund, so an unwarrantied break is -price). A high-break
         # shop is handled in shop_scores() instead (lower score -> picked less often): gating payment on
-        # warranty_hours here too meant a flat refusal whenever that shop wouldn't grant it, which measured
-        # live as 23 missed deals / ~5.35M won an hour in refused payments ("warranty 0 h, policy asks for 6")
+        # warranty_hours here too meant a flat refusal whenever that shop wouldn't grant it -- see
+        # GOODS_WARRANTY_MIN_PRICE's comment for why the threshold itself moved from 15,000 to 150,000
         accept["warranty_hours"] = 6
 
     if result["deal"]:
