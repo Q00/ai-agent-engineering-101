@@ -1,0 +1,51 @@
+{
+  "source": "Selected fields transcribed from user-provided diagnostics; not direct SSH access",
+  "shop": {
+    "generated_at": "2026-11-13T07:33:57+00:00",
+    "hours": 6,
+    "tasks": 1159,
+    "opened": 877,
+    "receipts": 95,
+    "confirmed_settlements": 23,
+    "unconfirmed": 72,
+    "buyer_cancelled": 429,
+    "negotiation_expired": 306,
+    "stock_reserved": 279,
+    "price_rejected": 46,
+    "model_error": 0,
+    "inventory_units": 59,
+    "blocked_receipts": 1,
+    "nonempty_plans": 12,
+    "empty_plans": 6
+  },
+  "buyer": {
+    "generated_at": "2026-11-13T07:33:58.160323+00:00",
+    "hours": 6,
+    "attempts": 1186,
+    "distinct_orders": 663,
+    "receipts": 233,
+    "confirmed_settlements": 209,
+    "seller_rejected": 491,
+    "model_walk_away": 441,
+    "decision_limit": 21,
+    "seller_reported_stock": 463,
+    "payment_refusal_observed": 23,
+    "receipt_unconfirmed": 1,
+    "selection_failures": 1,
+    "fast_accepts": 0,
+    "model_decisions": 1298,
+    "fast_accept_skip_reasons": {
+      "price_above_target": 55,
+      "structured_quote_missing_or_ambiguous": 996,
+      "invalid_quote_identity_or_price": 221,
+      "certificate_missing_or_invalid": 18,
+      "price_above_limit": 8
+    }
+  },
+  "limits": [
+    "Local bounded tails; unconfirmed is not failed payment.",
+    "Seller stock reports are unverified claims.",
+    "Fast-accept skips count first blocker per decision, not failed orders.",
+    "Local server clock approximately 763 seconds ahead of market."
+  ]
+}
