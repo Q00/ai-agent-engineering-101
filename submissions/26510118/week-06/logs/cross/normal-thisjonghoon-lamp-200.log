@@ -1,0 +1,16 @@
+[buyer] shopping for lamp, budget 200, at https://a2a-lamp-shop.thisjonghoon.workers.dev
+[buyer] card: 'Llama Furniture Shop on Workers' via JSONRPC https://a2a-lamp-shop.thisjonghoon.workers.dev/
+[buyer] skills: ['negotiate']
+[buyer] -> 'I want to buy a lamp'
+[buyer] <- TASK_STATE_INPUT_REQUIRED | lamp: A beautiful lamp, perfect for any room in the house. Asking 250. Send your offer as a number.
+[buyer] ask 250 budget 200 round 1: harness '160' -> 160
+[buyer] -> '160' taskId=e7802f11
+[buyer] <- TASK_STATE_INPUT_REQUIRED | That's a good start, but I can do a bit better than that. Counteroffer: 200.
+[buyer] ask 200 budget 200 round 2: harness '180' -> 180
+[buyer] -> '180' taskId=e7802f11
+[buyer] <- TASK_STATE_INPUT_REQUIRED | I can do a bit better Counteroffer: 190.
+[buyer] ask 190 budget 200 round 3: harness '185' -> 185
+[buyer] -> '185' taskId=e7802f11
+[buyer] <- TASK_STATE_COMPLETED | I can meet you halfway Deal: lamp at 185.
+[buyer] bought lamp at 185
+[harness] 3 call(s), 0 failed, 12s total
