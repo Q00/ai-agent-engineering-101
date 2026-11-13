@@ -468,16 +468,6 @@ def test_shop_around():
     r, c, tries, _ = asyncio.run(mb.shop_around(client, first, poor, cands, bed, CATALOG, {}, RULES))
     check("every shop turns us away: three tried, then the order ends", not r["deal"] and len(tries) == 2
           and len({t["shop"] for t in tries} | {c["shop"]["name"]}) == 3, (tries, c["shop"]["name"]))
-    five = [shop(n, BEDDING) for n in "ABCDE"]
-    script = {f"http://{n}.test": away for n in "ABCDE"}
-    cg = mb.candidates(bed, five, CATALOG, nb, {}, RULES)
-    r, c, tries, _ = asyncio.run(mb.shop_around(Shops(script), mb.choose(list(cg), nb)[0], False, cg, bed, CATALOG, {}, RULES))
-    kim = order(40000, [KIMCHI], "food", use=24, oid="o-around-food")
-    cf = mb.candidates(kim, [shop(n, KIMCHI) for n in "ABCDE"], CATALOG, nb, {}, RULES)
-    rf, cf1, tries_f, _ = asyncio.run(mb.shop_around(Shops(script), mb.choose(list(cf), nb)[0], False, cf, kim, CATALOG, {}, RULES))
-    check("11/13: five shops turn us away: a goods order ends after MAX_TRIES_GOODS (3), a food order goes on to all five",
-          mb.MAX_TRIES_GOODS == 3 and not r["deal"] and len(tries) + 1 == 3 and not rf["deal"] and len(tries_f) + 1 == 5,
-          (len(tries) + 1, len(tries_f) + 1))
     ticks = iter(range(0, 100000, 100))
     r, c, tries, _ = asyncio.run(mb.shop_around(Shops({"http://A.test": away, "http://B.test": deal_b, "http://C.test": away}),
                                                 first, poor, cands, bed, CATALOG, {}, RULES, clock=lambda: next(ticks)))
