@@ -129,6 +129,7 @@ timeout 120 "$HERE/.venv/bin/python" "$HERE/cost_model.py" --quiet >>"$HERE/logs
 "$HERE/.venv/bin/python" "$HERE/buyer_score.py" >/dev/null 2>&1 || true          # 11-11: scorekeeper (m*, calibration, reconcile)
 timeout 120 "$HERE/.venv/bin/python" "$HERE/peer_bench.py" >/dev/null 2>&1 || true   # 11-12: peer benchmark for the buyer
 timeout 120 "$HERE/.venv/bin/python" "$HERE/shop_bench.py" >/dev/null 2>&1 || true   # 11-12: shop benchmark (stars by account)
+timeout 120 "$HERE/.venv/bin/python" "$HERE/stars_tuner.py" >/dev/null 2>&1 || true   # 11-13: per-account star terms (star_buyers / a_only_buyers)
 timeout 90 "$HERE/.venv/bin/python" "$HERE/guards.py" >/dev/null 2>&1 || true   # 11-11: code guards G1-G11 (logs/guards.log)
 "$HERE/.venv/bin/python" "$HERE/market_probe.py" --check >/dev/null 2>&1 || true   # its watch list may wake it early
 nohup "$HERE/.venv/bin/python" "$HERE/strategist.py" >/dev/null 2>&1 &
