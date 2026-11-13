@@ -1,0 +1,120 @@
+# week-06 trade test, kit v1, 2026-10-20T10:35:29+00:00
+harness: Claude Code CLI 2.1.268 (claude -p), model claude-sonnet-5
+
+## seller tests: python seller.py --port 56935
+  PASS  seller_card #1: name='Kiro Furniture' binding=JSONRPC version=1.0 skills=1
+
+### seller_deal #1: lamp, kit budget 120, reserve 100
+    -> SendMessage "I want to buy a lamp"
+    <- TASK_STATE_INPUT_REQUIRED | The lamp is 150
+    -> SendMessage "60" taskId=e7071eb2
+    <- TASK_STATE_INPUT_REQUIRED | Too low at 60. The lamp is 130
+    -> SendMessage "80" taskId=e7071eb2
+    <- TASK_STATE_INPUT_REQUIRED | Too low at 80. The lamp is 115
+    -> SendMessage "115" taskId=e7071eb2
+    <- TASK_STATE_COMPLETED | Deal: lamp at 115.
+       artifact receipt [{"item": "lamp", "item_id": "lamp", "price": 115.0, "seller": "Kiro Furniture"}]
+  PASS  seller_opens #1: first message -> TASK_STATE_INPUT_REQUIRED, ask 150
+  PASS  seller_deal #1: TASK_STATE_COMPLETED, receipt price 115.0, asks [150, 130, 115]
+
+### seller_terminal: one more message to the finished task
+    -> SendMessage "110" taskId=e7071eb2
+    <- error -32004 Task e7071eb2-3c6a-4ca3-871a-0a3e74943f05 is in terminal state: TASK_STATE_COMPLETED
+  PASS  seller_terminal #1: error returned
+
+### seller_deal #2: lamp, kit budget 120, reserve 100
+    -> SendMessage "I want to buy a lamp"
+    <- TASK_STATE_INPUT_REQUIRED | The lamp is 150
+    -> SendMessage "60" taskId=5db885c0
+    <- TASK_STATE_INPUT_REQUIRED | Too low at 60. The lamp is 130
+    -> SendMessage "80" taskId=5db885c0
+    <- TASK_STATE_INPUT_REQUIRED | Too low at 80. The lamp is 115
+    -> SendMessage "115" taskId=5db885c0
+    <- TASK_STATE_COMPLETED | Deal: lamp at 115.
+       artifact receipt [{"item": "lamp", "item_id": "lamp", "price": 115.0, "seller": "Kiro Furniture"}]
+  PASS  seller_deal #2: TASK_STATE_COMPLETED, receipt price 115.0, asks [150, 130, 115]
+
+### seller_deal #3: lamp, kit budget 120, reserve 100
+    -> SendMessage "I want to buy a lamp"
+    <- TASK_STATE_INPUT_REQUIRED | The lamp is 150
+    -> SendMessage "60" taskId=aecf46da
+    <- TASK_STATE_INPUT_REQUIRED | Too low at 60. The lamp is 130
+    -> SendMessage "80" taskId=aecf46da
+    <- TASK_STATE_INPUT_REQUIRED | Too low at 80. The lamp is 115
+    -> SendMessage "115" taskId=aecf46da
+    <- TASK_STATE_COMPLETED | Deal: lamp at 115.
+       artifact receipt [{"item": "lamp", "item_id": "lamp", "price": 115.0, "seller": "Kiro Furniture"}]
+  PASS  seller_deal #3: TASK_STATE_COMPLETED, receipt price 115.0, asks [150, 130, 115]
+
+### seller_holds_reserve #1: bookshelf, kit budget 230, reserve 260
+    -> SendMessage "I want to buy a bookshelf"
+    <- TASK_STATE_INPUT_REQUIRED | The bookshelf is 360
+    -> SendMessage "140" taskId=0423797f
+    <- TASK_STATE_INPUT_REQUIRED | Too low at 140. The bookshelf is 320
+    -> SendMessage "170" taskId=0423797f
+    <- TASK_STATE_INPUT_REQUIRED | Too low at 170. The bookshelf is 280
+    -> SendMessage "200" taskId=0423797f
+    <- TASK_STATE_INPUT_REQUIRED | Too low at 200. The bookshelf is 265
+    -> SendMessage "230" taskId=0423797f
+    <- TASK_STATE_REJECTED | No deal at 230.
+  PASS  seller_holds_reserve #1: TASK_STATE_REJECTED, asks [360, 320, 280, 265]
+
+### seller_holds_reserve #2: bookshelf, kit budget 230, reserve 260
+    -> SendMessage "I want to buy a bookshelf"
+    <- TASK_STATE_INPUT_REQUIRED | The bookshelf is 360
+    -> SendMessage "140" taskId=4ae643a4
+    <- TASK_STATE_INPUT_REQUIRED | Too low at 140. The bookshelf is 320
+    -> SendMessage "170" taskId=4ae643a4
+    <- TASK_STATE_INPUT_REQUIRED | Too low at 170. The bookshelf is 280
+    -> SendMessage "200" taskId=4ae643a4
+    <- TASK_STATE_INPUT_REQUIRED | Too low at 200. The bookshelf is 260
+    -> SendMessage "230" taskId=4ae643a4
+    <- TASK_STATE_REJECTED | No deal at 230.
+  PASS  seller_holds_reserve #2: TASK_STATE_REJECTED, asks [360, 320, 280, 260]
+
+### seller_holds_reserve #3: bookshelf, kit budget 230, reserve 260
+    -> SendMessage "I want to buy a bookshelf"
+    <- TASK_STATE_INPUT_REQUIRED | The bookshelf is 360
+    -> SendMessage "140" taskId=0d681c5a
+    <- TASK_STATE_INPUT_REQUIRED | Too low at 140. The bookshelf is 320
+    -> SendMessage "170" taskId=0d681c5a
+    <- TASK_STATE_INPUT_REQUIRED | Too low at 170. The bookshelf is 280
+    -> SendMessage "200" taskId=0d681c5a
+    <- TASK_STATE_INPUT_REQUIRED | Too low at 200. The bookshelf is 265
+    -> SendMessage "230" taskId=0d681c5a
+    <- TASK_STATE_REJECTED | No deal at 230.
+  PASS  seller_holds_reserve #3: TASK_STATE_REJECTED, asks [360, 320, 280, 265]
+
+## buyer tests: your buyer against the kit's rule-based seller
+
+### buyer_deal #1: python buyer.py http://127.0.0.1:49976 lamp 120
+    kit seller saw: offers [100], deals [100], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+  PASS  buyer_deal #1: deals [100] (budget 120)
+  PASS  buyer_protocol_deal #1: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1
+
+### buyer_deal #2: python buyer.py http://127.0.0.1:49996 lamp 120
+    kit seller saw: offers [100], deals [100], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+  PASS  buyer_deal #2: deals [100] (budget 120)
+  PASS  buyer_protocol_deal #2: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1
+
+### buyer_deal #3: python buyer.py http://127.0.0.1:50017 lamp 120
+    kit seller saw: offers [100], deals [100], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+  PASS  buyer_deal #3: deals [100] (budget 120)
+  PASS  buyer_protocol_deal #3: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1
+
+### buyer_holds_budget #1: python buyer.py http://127.0.0.1:50038 bookshelf 230
+    kit seller saw: offers [160, 190], deals [], canceled 1, continued 2, posts without A2A-Version 1.0: 0
+  PASS  buyer_holds_budget #1: deals [] (budget 230 < reserve 260)
+  PASS  buyer_protocol_holds_budget #1: posts 4, without A2A-Version 1.0 0, follow-ups with taskId 2
+
+### buyer_holds_budget #2: python buyer.py http://127.0.0.1:50111 bookshelf 230
+    kit seller saw: offers [160, 190], deals [], canceled 1, continued 2, posts without A2A-Version 1.0: 0
+  PASS  buyer_holds_budget #2: deals [] (budget 230 < reserve 260)
+  PASS  buyer_protocol_holds_budget #2: posts 4, without A2A-Version 1.0 0, follow-ups with taskId 2
+
+### buyer_holds_budget #3: python buyer.py http://127.0.0.1:57426 bookshelf 230
+    kit seller saw: offers [160, 185], deals [], canceled 1, continued 2, posts without A2A-Version 1.0: 0
+  PASS  buyer_holds_budget #3: deals [] (budget 230 < reserve 260)
+  PASS  buyer_protocol_holds_budget #3: posts 4, without A2A-Version 1.0 0, follow-ups with taskId 2
+
+21/21 passed -> PASS

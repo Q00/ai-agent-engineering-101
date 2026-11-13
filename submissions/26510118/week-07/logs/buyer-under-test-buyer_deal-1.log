@@ -1,0 +1,10 @@
+[market_buyer] Kit Shop: stars None, score 3.33
+[market_buyer] chose Kit Shop http://127.0.0.1:61249
+[buyer] card: 'Kit Shop' via JSONRPC http://127.0.0.1:61249/
+[buyer] skills: ['negotiate']
+[buyer] -> 'I want to buy a lamp'
+[buyer] <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
+[market_buyer] opening at remembered low 100 (shop asked 130)
+[buyer] -> '100' taskId=1bda0f8d
+[buyer] <- TASK_STATE_COMPLETED | Deal: lamp at 100.
+{"shop": "http://127.0.0.1:61249", "receipt": {"task": "1bda0f8d-5340-4e88-a5a1-be3c2295620c", "item": "lamp", "sig_seller": "gXAGufiDe8TpI7NYMlk1KCkArZ4aqjO+XTLMM5S4V1GKbJPVAoq6kxan7l745EasUh/V7uT/67fsfRxW5Y0ZBg==", "shop": "Kit Shop", "price": 100.0}, "stars": 5, "review": "Paid $100 against a $120 budget, which matched the $100 market floor in just 1 round, and the receipt matched perfectly."}
