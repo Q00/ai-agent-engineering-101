@@ -340,6 +340,13 @@ def pick_unit(text, held, now, asks=None):
     # unsold; even a buyer who asks for C or the cheapest grade gets A or B (asked-for C was 1 sale in 48 h, and
     # accounts that rate by grade give a C 3 stars 'as claimed').
     ab = [u for u in fit if (u.get("grade") or "A") != "C"]
+    # 11-13 (user: 'raise a lot of cash' after 'grade C may be sold'): ~620 grade C goods units (167 M at cost) sat
+    # unsold since 11-11; a buyer whose message accepts C (7% of first messages) now gets a C unit first, without a
+    # warranty (warranty_grades A/B), so it turns into cash with no refund risk to us
+    if shop_policy_now().get("sell_c") and ACCEPTS_C.search(text or ""):
+        cs = [u for u in fit if u.get("grade") == "C"]
+        if cs:
+            return min(cs, key=lambda u: u.get("supplied_at") or 0)
     # 11-12 15:50 (user: 'do it all yourself' after the shop review): book 1st and revenue 2nd cannot move either way,
     # stars_rank is the only shop part left and decides the class total (4.43 -> 4.40 drops us 5 star ranks and to 2nd
     # overall). Our grade B goods rate 4.30 vs A 4.56 (24 h; 25620027 and fair-furniture give A 5, B 4); without the B
@@ -632,7 +639,10 @@ class Shop(AgentExecutor):
                 # (guards.py -> price_rivals.json), else the market's median for the SKU. We do not go under
                 # ref - RIVAL_UNDER and open at ref + RIVAL_OVER; the cost floor still holds above that.
                 ref = rival_price(u["sku"], grade, u.get("category"), self.asks)
-                if ref:
+                # 11-13 (user: 'raise a lot of cash; keep only enough stock not to run out'): a slow unit is not held
+                # up to the rival shops' price; its own floor (slow_floor_mult x cost) and ask cut stand, so it turns
+                # into cash at no book loss and stops paying storage
+                if ref and not slow:
                     # 23:30 (user: 'balance it dynamically and get both'; 'some items can cost a little more'):
                     # price_ctl.py moves `under` (all goods: up when the book lead is thin, down when the book is safe
                     # and revenue is behind) and a per-SKU `adj` (up on strong demand or when nearly out, down when
