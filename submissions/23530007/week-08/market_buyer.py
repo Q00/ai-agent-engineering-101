@@ -549,6 +549,26 @@ VISIT_HOURS = 6        # 11-12: our own visits per shop|kind that the visit mode
 SLOT_SECS = 20         # the market issues one order per 20 s per buyer; time past that costs the next order
 
 
+def claim_honesty(shop):
+    """Share of `shop`'s grade claims the ledger found true (board: honest_claims / claims), cached 10 min in
+    .market/shop_honesty.json; None when unknown."""
+    path = HERE / ".market" / "shop_honesty.json"
+    try:
+        c = json.loads(path.read_text())
+        if time.time() - c["t"] < 600:
+            return c["h"].get(shop)
+    except (OSError, ValueError, KeyError):
+        pass
+    try:
+        import board_api
+        b = board_api.fetch(timeout=10, tries=1)
+        h = {s_["name"]: (s_["honest_claims"] / s_["claims"]) for s_ in b["shops"] if s_.get("claims")}
+        path.write_text(json.dumps({"t": time.time(), "h": h}))
+        return h.get(shop)
+    except Exception:
+        return None
+
+
 def visit_model(mem, kind, hours=VISIT_HOURS):
     """11-12 (user: 'think harder, the optimal strategy'): shop -> (P(deal) per visit, visits, median secs) for
     `kind` over our last `hours`, P shrunk toward 0.3 with 3 pseudo-visits. 3 h after the rebuild 391 orders lost
@@ -1085,6 +1105,9 @@ def main():
                         warr_ok = True
                         log("buyer", f"{pick['name']} states no warranty but {ev['warranty']:.0%} of its market goods "
                                      "deals carry one: haggling, the receipt decides")
+                    elif graded and graded[0] == "A" and (claim_honesty(pick["name"]) or 0) >= 0.99:
+                        warr_ok = True                       # 11-13: an honest grade A without a warranty: the receipt decides
+                        log("buyer", f"{pick['name']} states grade A without a warranty (claims {claim_honesty(pick['name']):.0%} honest): haggling, the receipt decides")
                     else:
                         log("buyer", f"{pick['name']} still states no warranty: next shop")
                         seller.cancel(tid)
@@ -1173,9 +1196,15 @@ def main():
                     log("buyer", f"{pick['name']} signed a receipt for {rec.get('item')!r}, not {item} or another of the "
                                  f"order's items; not paying, trying elsewhere")
                     outcome, rec, price = f"wrong item on receipt ({rec.get('item')})", None, None
-                elif acceptable and order.get("kind") == "goods" and warranty < WARRANTY_MIN:
+                elif acceptable and order.get("kind") == "goods" and warranty < WARRANTY_MIN and not (
+                        claim == "A" and (claim_honesty(pick["name"]) or 0) >= 0.99 and price
+                        and 0.97 * vprice.v_of(price, want["list_price"], cshare(item, "A", "goods")) - 0.03
+                        >= 0.97 * vprice.floor_v("goods", "A", vctx["m_star"], bp)):
                     # 11-11: a goods receipt without a 6 h warranty is never paid (an unrefunded break scores -1;
-                    # unwarranted goods ran .185 per deal over 48 h)
+                    # unwarranted goods ran .185 per deal over 48 h, mostly B/C). 11-13: except a grade A claim from a
+                    # shop whose claims the ledger found >= 99% true, when .97 v - .03 (A breaks 3%, an unrefunded break
+                    # is -1) still clears the A floor: 87 goods visits in 6 h ended here with an ask at or over our floor
+                    # (yeonsong2 166,473 for a 412,402 list, x .40, five times)
                     log("buyer", f"{pick['name']} signed {item} without a warranty; not paying, trying elsewhere")
                     outcome, rec, price = "no warranty on receipt", None, None
                 elif (acceptable and order.get("kind") == "goods" and claim in ("B", "C")
@@ -1192,6 +1221,10 @@ def main():
                     log("buyer", f"{pick['name']} signed {item} as grade {claim or '?'} at {price / want['list_price']:.2f} of list "
                                  f"(v {_v}, under the grade's floor {_fv}); not paying, trying elsewhere")
                     outcome, rec, price = "too dear", None, None
+                elif acceptable and order.get("kind") == "goods" and warranty < WARRANTY_MIN:
+                    accept["grades"] = ["A"]                 # 11-13: an honest grade A claim at a price worth the risk
+                    log("buyer", f"{pick['name']} signed {item} as grade A without a warranty at {price / want['list_price']:.2f} "
+                                 "of list: paying (A breaks 3%, the price clears the floor after that risk)")
                 elif acceptable and order.get("kind") == "goods":
                     accept["grades"] = ["A", "B", "C"]
                     accept["warranty_hours"] = WARRANTY_MIN
