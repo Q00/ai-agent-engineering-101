@@ -1,0 +1,1629 @@
+--- a/policy.json
++++ b/policy.json
+@@ -1,174 +1,176 @@
+ {
+-  "version": "r3-market-observer-book-v6",
+-  "market_control_enabled": true,
+-  "tunnel_provider": "cloudflare",
+-  "shop_recovery_v15_enabled": true,
+-  "market_control_interval_seconds": 300,
+-  "shop_growth_v5": true,
+-  "shop_strategy_revision": "shop-v24-account-reputation-and-unrestricted-capital",
+-  "shop_championship_enabled": true,
+-  "shop_championship_allocation_enabled": true,
+-  "shop_inventory_ceiling": 180,
+-  "shop_velocity_enabled": true,
+-  "shop_velocity_allocation_enabled": true,
+-  "shop_fast_execution_enabled": true,
+-  "shop_stock_service_level": 0.9,
+-  "shop_supply_slot_capital": 100000,
+-  "shop_warranty_liquidity_penalty": 0.02,
+-  "warranty_menu_enabled": true,
+-  "checkout_recovery_enabled": true,
+-  "buyer_patch34_enabled": true,
+-  "buyer_strategy_revision": "buyer-v23-empirical-counter-frontier",
+-  "buyer_forum_metric": "raw",
+-  "buyer_championship_enabled": true,
+-  "buyer_saved_target_margin": 0.002,
+-  "buyer_rank_scope": "everyone",
+-  "buyer_forum_post_interval_seconds": 300,
+-  "checkout_max_attempts": 2,
+-  "buyer_fast_food_enabled": true,
+-  "buyer_food_time_seconds": 22,
+-  "buyer_goods_time_seconds": 32,
+-  "planning_horizon_hours": 6,
+-  "storage_reserve_hours": 48,
+-  "market_end_at": null,
+-  "assortment_coverage_fraction": 0.35,
+-  "shop_margin_fraction": 0.02,
+-  "food_clearance_hours": 6,
+-  "goods_clearance_hours": 96,
+-  "actor_model": "gpt-6-luna",
+-  "critic_model": "gpt-6-luna",
+-  "daily_api_budget_usd": null,
+-  "research_budget_mode": "observe",
+-  "market_cycle_enabled": true,
+-  "research_enabled": true,
+-  "research_interval_seconds": 1200,
+-  "cache_prices_usd_per_million": {
+-    "gpt-6-luna": [
+-      0.01,
+-      0.125
+-    ],
+-    "gpt-6.1-terra": [
+-      0.05,
+-      1.25
+-    ],
+-    "gpt-6.1-sol": [
+-      0.1,
+-      2.5
+-    ],
+-    "gpt-6-astra": [
+-      1,
+-      12.5
+-    ]
+-  },
+-  "model_timeout_seconds": 18,
+-  "critic_cash_fraction": 0.1,
+-  "cash_reserve_fraction": 0.2,
+-  "cash_floor": 750000,
+-  "forum_post_interval_seconds": 600,
+-  "supply_cycle_seconds": 1200,
+-  "inventory_target_units": 60,
+-  "restock_max_lines": 10,
+-  "restock_max_qty": 20,
+-  "max_sku_capital_fraction": 0.35,
+-  "goods_warranty_by_grade": {
+-    "A": 3,
+-    "B": 3,
+-    "C": 6
+-  },
+-  "quote_compare_min_budget": 100000,
+-  "exploration_fraction": 0.1,
+-  "max_shop_candidates": 3,
+-  "max_negotiation_turns": 4,
+-  "checkout_buffer_seconds": 30,
+-  "unknown_goods_failure_stress": 0.3,
+-  "session_ttl_seconds": 180,
+-  "end_at": null,
+-  "prices_usd_per_million": {
+-    "gpt-6-luna": [
+-      0.1,
+-      0.5
+-    ],
+-    "gpt-6.1-terra": [
+-      1.0,
+-      5.0
+-    ],
+-    "gpt-6-astra": [
+-      10,
+-      50
+-    ],
+-    "gpt-6.1-sol": [
+-      2,
+-      10
+-    ]
+-  },
+-  "buyer_market_quality_enabled": true,
+-  "buyer_contract_routing_enabled": true,
+-  "buyer_negotiation_turns": 3,
+-  "buyer_throughput_enabled": true,
+-  "buyer_route_candidates": 4,
+-  "buyer_rpc_timeout_seconds": 4,
+-  "buyer_rfq_food_seconds": 3,
+-  "buyer_rfq_goods_seconds": 5,
+-  "buyer_compare_grace_seconds": 0.35,
+-  "buyer_fast_accept_margin": 0.04,
+-  "system_framework_enabled": true,
+-  "framework_experiments_enabled": true,
+-  "buyer_contract_probe_percent": 8,
+-  "autonomy_v14_enabled": true,
+-  "buyer_worker_enabled": true,
+-  "execution_revision": "v25-efficient-background-routing-1",
+-  "objective_feedback_enabled": true,
+-  "agent_policy_selection_enabled": true,
+-  "discovery_priority_enabled": true,
+-  "cooperative_recovery_enabled": true,
+-  "objective_decision_enabled": true,
+-  "capability_llm_enabled": true,
+-  "capability_interval_seconds": 900,
+-  "background_llm_roles": {
+-    "market_research_analyst": {
+-      "model": "gpt-6-luna",
+-      "reasoning": "low",
+-      "max_output_tokens": 4096,
+-      "timeout_seconds": 45
+-    },
+-    "market_research_critic": {
+-      "model": "gpt-6.1-terra",
+-      "reasoning": "medium",
+-      "max_output_tokens": 8192,
+-      "timeout_seconds": 75
+-    },
+-    "capability_triage": {
+-      "model": "gpt-6-luna",
+-      "reasoning": "none",
+-      "max_output_tokens": 1024,
+-      "timeout_seconds": 25
+-    },
+-    "capability_designer": {
+-      "model": "gpt-6-luna",
+-      "reasoning": "low",
+-      "max_output_tokens": 2048,
+-      "timeout_seconds": 35,
+-      "response_mode": "function"
+-    }
+-  },
+-  "shop_inventory_caps_enabled": false,
+-  "shop_adaptive_demand_enabled": true,
+-  "shop_demand_half_life_hours": 1,
+-  "shop_demand_calibration_prior_events": 5,
+-  "shop_demand_prior_hours": 0.25,
+-  "shop_replenishment_service_level": 0.9,
+-  "shop_supply_delivery_seconds": 30,
+-  "buyer_patch36_enabled": true,
+-  "buyer_joint_objective_enabled": true,
+-  "book_growth_v23_enabled": true,
+-  "buyer_frontier_v23_enabled": true,
+-  "research_event_driven_enabled": true,
+-  "buyer_saved_bid_targets": [
+-    0.8,
+-    0.9
+-  ],
+-  "shop_internal_capital_caps_enabled": false,
+-  "shop_reputation_v24_enabled": true,
+-  "shop_new_goods_warranty_hours": 6,
+-  "llm_cost_v25_enabled": true
++    "version":  "r3-market-observer-book-v6",
++    "market_control_enabled":  true,
++    "tunnel_provider":  "cloudflare",
++    "shop_recovery_v15_enabled":  true,
++    "market_control_interval_seconds":  300,
++    "shop_growth_v5":  true,
++    "shop_strategy_revision":  "shop-v26-eligible-service-regions",
++    "shop_championship_enabled":  true,
++    "shop_championship_allocation_enabled":  true,
++    "shop_inventory_ceiling":  180,
++    "shop_velocity_enabled":  true,
++    "shop_velocity_allocation_enabled":  true,
++    "shop_fast_execution_enabled":  true,
++    "shop_stock_service_level":  0.9,
++    "shop_supply_slot_capital":  100000,
++    "shop_warranty_liquidity_penalty":  0.02,
++    "warranty_menu_enabled":  true,
++    "checkout_recovery_enabled":  true,
++    "buyer_patch34_enabled":  true,
++    "buyer_strategy_revision":  "buyer-v26-exact-contract-continuation",
++    "buyer_forum_metric":  "raw",
++    "buyer_championship_enabled":  true,
++    "buyer_saved_target_margin":  0.002,
++    "buyer_rank_scope":  "everyone",
++    "buyer_forum_post_interval_seconds":  300,
++    "checkout_max_attempts":  2,
++    "buyer_fast_food_enabled":  true,
++    "buyer_food_time_seconds":  22,
++    "buyer_goods_time_seconds":  32,
++    "planning_horizon_hours":  6,
++    "storage_reserve_hours":  48,
++    "market_end_at":  null,
++    "assortment_coverage_fraction":  0.35,
++    "shop_margin_fraction":  0.02,
++    "food_clearance_hours":  6,
++    "goods_clearance_hours":  96,
++    "actor_model":  "gpt-6-luna",
++    "critic_model":  "gpt-6-luna",
++    "daily_api_budget_usd":  null,
++    "research_budget_mode":  "observe",
++    "market_cycle_enabled":  true,
++    "research_enabled":  true,
++    "research_interval_seconds":  1200,
++    "cache_prices_usd_per_million":  {
++                                         "gpt-6-luna":  [
++                                                            0.01,
++                                                            0.125
++                                                        ],
++                                         "gpt-6.1-terra":  [
++                                                               0.05,
++                                                               1.25
++                                                           ],
++                                         "gpt-6.1-sol":  [
++                                                             0.1,
++                                                             2.5
++                                                         ],
++                                         "gpt-6-astra":  [
++                                                             1,
++                                                             12.5
++                                                         ]
++                                     },
++    "model_timeout_seconds":  18,
++    "critic_cash_fraction":  0.1,
++    "cash_reserve_fraction":  0.2,
++    "cash_floor":  750000,
++    "forum_post_interval_seconds":  600,
++    "supply_cycle_seconds":  1200,
++    "inventory_target_units":  60,
++    "restock_max_lines":  10,
++    "restock_max_qty":  20,
++    "max_sku_capital_fraction":  0.35,
++    "goods_warranty_by_grade":  {
++                                    "A":  3,
++                                    "B":  3,
++                                    "C":  6
++                                },
++    "quote_compare_min_budget":  100000,
++    "exploration_fraction":  0.1,
++    "max_shop_candidates":  3,
++    "max_negotiation_turns":  4,
++    "checkout_buffer_seconds":  30,
++    "unknown_goods_failure_stress":  0.3,
++    "session_ttl_seconds":  180,
++    "end_at":  null,
++    "prices_usd_per_million":  {
++                                   "gpt-6-luna":  [
++                                                      0.1,
++                                                      0.5
++                                                  ],
++                                   "gpt-6.1-terra":  [
++                                                         1.0,
++                                                         5.0
++                                                     ],
++                                   "gpt-6-astra":  [
++                                                       10,
++                                                       50
++                                                   ],
++                                   "gpt-6.1-sol":  [
++                                                       2,
++                                                       10
++                                                   ]
++                               },
++    "buyer_market_quality_enabled":  true,
++    "buyer_contract_routing_enabled":  true,
++    "buyer_negotiation_turns":  3,
++    "buyer_throughput_enabled":  true,
++    "buyer_route_candidates":  4,
++    "buyer_rpc_timeout_seconds":  4,
++    "buyer_rfq_food_seconds":  3,
++    "buyer_rfq_goods_seconds":  5,
++    "buyer_compare_grace_seconds":  0.35,
++    "buyer_fast_accept_margin":  0.04,
++    "system_framework_enabled":  true,
++    "framework_experiments_enabled":  true,
++    "buyer_contract_probe_percent":  8,
++    "autonomy_v14_enabled":  true,
++    "buyer_worker_enabled":  true,
++    "execution_revision":  "v26-explicit-service-and-complete-contracts-1",
++    "objective_feedback_enabled":  true,
++    "agent_policy_selection_enabled":  true,
++    "discovery_priority_enabled":  true,
++    "cooperative_recovery_enabled":  true,
++    "objective_decision_enabled":  true,
++    "capability_llm_enabled":  true,
++    "capability_interval_seconds":  900,
++    "background_llm_roles":  {
++                                 "market_research_analyst":  {
++                                                                 "model":  "gpt-6-luna",
++                                                                 "reasoning":  "low",
++                                                                 "max_output_tokens":  4096,
++                                                                 "timeout_seconds":  45
++                                                             },
++                                 "market_research_critic":  {
++                                                                "model":  "gpt-6.1-terra",
++                                                                "reasoning":  "medium",
++                                                                "max_output_tokens":  8192,
++                                                                "timeout_seconds":  75
++                                                            },
++                                 "capability_triage":  {
++                                                           "model":  "gpt-6-luna",
++                                                           "reasoning":  "none",
++                                                           "max_output_tokens":  1024,
++                                                           "timeout_seconds":  25
++                                                       },
++                                 "capability_designer":  {
++                                                             "model":  "gpt-6-luna",
++                                                             "reasoning":  "low",
++                                                             "max_output_tokens":  2048,
++                                                             "timeout_seconds":  35,
++                                                             "response_mode":  "function"
++                                                         }
++                             },
++    "shop_inventory_caps_enabled":  false,
++    "shop_adaptive_demand_enabled":  true,
++    "shop_demand_half_life_hours":  1,
++    "shop_demand_calibration_prior_events":  5,
++    "shop_demand_prior_hours":  0.25,
++    "shop_replenishment_service_level":  0.9,
++    "shop_supply_delivery_seconds":  30,
++    "buyer_patch36_enabled":  true,
++    "buyer_joint_objective_enabled":  true,
++    "book_growth_v23_enabled":  true,
++    "buyer_frontier_v23_enabled":  true,
++    "research_event_driven_enabled":  true,
++    "buyer_saved_bid_targets":  [
++                                    0.8,
++                                    0.9
++                                ],
++    "shop_internal_capital_caps_enabled":  false,
++    "shop_reputation_v24_enabled":  true,
++    "shop_new_goods_warranty_hours":  6,
++    "llm_cost_v25_enabled":  true,
++    "service_contract_v26_enabled":  true,
++    "buyer_terms_clarify_seconds":  2
+ }
+--- a/seller_r3.py
++++ b/seller_r3.py
+@@ -44,7 +44,7 @@
+         self.locks = {}
+         self.work_slots = asyncio.Semaphore(4)
+ 
+-    def select_unit(self, text, task):
++    def select_unit(self, text, task, contract=None):
+         inv = self.j.snapshot("inventory.json", {})
+         if inv.get("round", 0) < 3:
+             return None  # Never advertise legacy floor items as real R3 stock.
+@@ -60,6 +60,18 @@
+         required_grades={token.upper() for pair in grade_matches for token in pair if token}
+         minimum_grade=re.search(r'\b(?:at least|minimum)\s+grade\s+([ABC])\b',text,re.I)
+         if minimum_grade:required_grades=set('ABC'[:'ABC'.index(minimum_grade[1].upper())+1])
++        spec=None
++        if self.cfg.get('service_contract_v26_enabled'):
++            from r3.service_contracts import parse
++            spec=contract or parse(text)
++            if not spec['valid']:
++                from r3.service_contracts import record
++                record(self.j,task,spec)
++                return None
++            min_hours=spec['minimum_hours'];requested_warranty=spec['warranty_hours']
++            required_grades=set(spec['grades'] or ())
++            if spec.get('sku'):skus=[spec['sku']]
++            elif len(skus)==1:spec=dict(spec,sku=skus[0])
+         # Parse only explicit requirements, not incidental descriptions or a
+         # hypothetical list of grades in an RFQ.
+         matching = [u for u in inv.get('units',[]) if
+@@ -68,13 +80,24 @@
+         choices = [u for u in matching if grade(u, cat) != "expired" and
+                    (not required_grades or grade(u,cat) in required_grades) and
+                    (u.get('kind') != 'food' or remaining(u) >= min_hours + self.cfg['checkout_buffer_seconds'] / 3600)]
+-        if self.cfg.get('shop_reputation_v24_enabled'):
++        if self.cfg.get('service_contract_v26_enabled'):
++            from r3.service_contracts import priority,record
++            from r3.service_policy import context as service_context
++            now=time.time()
++            with self.j.connect() as db:reserved={r[0] for r in db.execute('SELECT unit FROM reservations WHERE until>?',(now,))}
++            available=[u for u in choices if u['unit'] not in reserved]
++            packet=service_context(self.j,now)
++            choices=sorted(choices,key=lambda u:priority(u,available,cat,spec,
++                packet.get('shop_needs',{}).get(u['sku'],{}).get('buckets',[]),now))
++        elif self.cfg.get('shop_reputation_v24_enabled'):
+             from r3.reputation import unit_priority
+             choices=sorted(choices,key=lambda u:unit_priority(u,grade(u,cat),remaining(u),self.cfg))
+         else:choices=sorted(choices,key=lambda x:(remaining(x),x.get('supplied_at',0)))
+         for u in choices:
+             if self.j.reserve(u["unit"], task, self.cfg["session_ttl_seconds"]):
+-                return dict(u, requested_use_hours=min_hours, minimum_warranty_hours=requested_warranty)
++                if spec:record(self.j,task,dict(spec,sku=u['sku']),u)
++                return dict(u, requested_use_hours=min_hours, minimum_warranty_hours=requested_warranty,
++                    **({'service_contract':dict(spec,sku=u['sku'])} if spec else {}))
+         live=[u for u in matching if grade(u,cat)!='expired']
+         grade_ok=[u for u in live if not required_grades or grade(u,cat) in required_grades]
+         reason=('no_matching_stock' if not matching else 'expired_stock' if not live else
+@@ -82,6 +105,7 @@
+         self.j.add("stockout", {"sku": skus[0] if skus else None, "request": text[:300],
+             'task':task,'reason':reason,'physical_matching_units':len(matching),
+             'eligible_units':len(choices),'required_use_hours':min_hours}, role="shop")
++        if spec:record(self.j,task,spec)
+         return None
+ 
+     async def execute(self, context, event_queue):
+@@ -93,8 +117,8 @@
+             async with self.work_slots:
+                 await self._execute(task, context, event_queue)
+ 
+-    async def reserve_unit(self, text, task_id):
+-        pending = asyncio.create_task(asyncio.to_thread(self.select_unit, text, task_id))
++    async def reserve_unit(self, text, task_id, contract=None):
++        pending = asyncio.create_task(asyncio.to_thread(self.select_unit, text, task_id,contract)) if contract else asyncio.create_task(asyncio.to_thread(self.select_unit,text,task_id))
+         try:
+             return await asyncio.shield(pending)
+         except asyncio.CancelledError:
+@@ -136,6 +160,7 @@
+             deal = self.deals[task.id] = {"unit": unit, "ask": None, "turns": 0,
+                                          "until": time.time() + self.cfg["session_ttl_seconds"],
+                                          "config": config, "strategy": strategy}
++            if self.cfg.get('service_contract_v26_enabled'):deal['service_contract']=unit['service_contract']
+             self.j.put('shop_strategy:' + task.id, {'strategy': strategy, 'category': unit.get('category'),
+                                                   'cost': unit['cost']})
+             self.j.add("shop_opportunity", {"task": task.id, "unit": unit["unit"], "sku": unit["sku"],
+@@ -148,6 +173,27 @@
+             await up.add_artifact(parts=[new_data_part(deal["receipt"])], name="receipt")
+             await up.complete(say("Previously agreed receipt; no new sale."))
+             return
++        if self.cfg.get('service_contract_v26_enabled'):
++            from r3.service_contracts import parse,eligible,record
++            spec=parse(text,deal['service_contract']);deal['service_contract']=spec
++            current=next((u for u in self.j.snapshot('inventory.json',{}).get('units',[]) if u['unit']==deal['unit']['unit']),None)
++            catalog=self.j.snapshot('catalog.json',{})
++            if not spec['valid']:
++                record(self.j,task.id,spec,current)
++                self.j.release(task.id);self.deals.pop(task.id,None)
++                await up.reject(say('Conflicting or unsupported requirements; request a new quote.'))
++                return
++            if current and not eligible(current,catalog,spec,buffer_seconds=self.cfg['checkout_buffer_seconds']):
++                self.j.release(task.id)
++                replacement=await self.reserve_unit(text,task.id,spec)
++                if replacement is None:
++                    self.deals.pop(task.id,None)
++                    await up.reject(say('No unit meets the updated grade or shelf-life requirement.'))
++                    return
++                deal['unit']=replacement;current=replacement
++                self.j.put('shop_strategy:'+task.id,{'strategy':deal['strategy'],'category':replacement.get('category'),'cost':replacement['cost']})
++            if current:record(self.j,task.id,spec,current)
++            deal['unit']=dict(deal['unit'],requested_use_hours=spec['minimum_hours'],minimum_warranty_hours=spec['warranty_hours'])
+         inv = self.j.snapshot("inventory.json", {})
+         unit = next((u for u in inv.get("units", []) if u["unit"] == deal["unit"]["unit"]), None)
+         cat = self.j.snapshot("catalog.json", {})
+@@ -189,6 +235,13 @@
+                                           critical=unit["cost"] > inv.get("balance", 1) * self.cfg["critic_cash_fraction"],
+                                           deadline=deal["until"] - 5)
+         price = selected["price"]
++        if self.cfg.get('service_contract_v26_enabled') and selected['action']!='hold':
++            from r3.service_contracts import eligible
++            if (not eligible(unit,cat,deal['service_contract'],buffer_seconds=self.cfg['checkout_buffer_seconds']) or
++                    selected['warranty_hours']<deal['service_contract']['warranty_hours']):
++                self.j.release(task.id);self.deals.pop(task.id,None)
++                await up.reject(say('The current contract no longer meets the requested conditions.'))
++                return
+         if selected['action'] == 'hold':
+             customer_memory.finish(self.j, task.id, 'retain_inventory')
+             self.j.release(task.id)
+--- a/market_buyer.py
++++ b/market_buyer.py
+@@ -133,6 +133,8 @@
+                 task = peer.send(request_text(c, order))
+                 from r3.protocol import observe_quote
+                 observe_quote(journal,task,c['shop'],order,'direct')
++                task=clarify(peer,task,c,order,journal,cfg,deadline)
++            if cfg.get('service_contract_v26_enabled') and cached:
+                 task=clarify(peer,task,c,order,journal,cfg,deadline)
+             agreed = None
+             previous_offer = None
+@@ -256,6 +258,10 @@
+                 if terms.get('sku') not in (None, c['sku']):
+                     raise ValueError('quote_sku_mismatch')
+                 assessment = buyer_assessment(dict(product, sku=c['sku']), order, terms, journal, cfg,shop=c['shop'])
++                if cfg.get('service_contract_v26_enabled'):
++                    journal.add('quote_comparison',{'order':order['order'],'shop':c['shop'],'sku':c['sku'],
++                        'task':task['id'],'ask':ask,'assessment':assessment,'source':'selected_live_contract',
++                        'turn':turn,'feasible_at_ask':ask<=assessment['cap'] and not assessment['conditional_terms']},role='buyer')
+                 if cfg.get('system_framework_enabled'):
+                     from r3.contracts import observe
+                     observe(journal,order,c,terms,assessment,ask)
+@@ -277,7 +283,8 @@
+                                               stress, required_warranty >= 6, assessment['covered_failure'],
+                                               assessment['saved_state'] if assessment['saved_state']['metric']=='saved' else None,
+                                               counter_model=assessment.get('negotiation_model'),
+-                                              target_saved=cfg.get('buyer_saved_bid_targets') if cfg.get('buyer_frontier_v23_enabled') else None)
++                                              target_saved=assessment.get('bid_targets') or (cfg.get('buyer_saved_bid_targets') if cfg.get('buyer_frontier_v23_enabled') else None),
++                                              path_model=assessment.get('negotiation_path_model'))
+                 if not actions:
+                     break
+                 if cfg.get('buyer_throughput_enabled'):
+@@ -287,6 +294,7 @@
+                     from r3.contracts import probability
+                     for action in actions:
+                         if action.get('action',action['id'])!='counter':continue
++                        if action.get('continuation_model_id'):continue
+                         old_probability=action.get('completion_probability',1)
+                         calibrated=probability(journal,order,c,assessment,ask,old_probability)
+                         factor=calibrated/max(.000001,old_probability)
+@@ -305,16 +313,35 @@
+                 if move['id']=='continue_search':
+                     journal.add('buyer_objective_skip',{'order':order['order'],'shop':c['shop'],
+                         'sku':c['sku'],'stage':'price'},role='buyer')
++                    if cfg.get('service_contract_v26_enabled'):
++                        journal.add('buyer_route_terminal',{'order':order['order'],'shop':c['shop'],'sku':c['sku'],
++                            'task':task['id'],'reason':'own_objective_skip','turn':turn},role='buyer')
+                     break
+                 agreed = move["price"]
+                 previous_offer = agreed
+                 if move.get('action',move['id']) == 'counter':
+                     journal.add('buyer_counter', {'order': order['order'], 'shop': c['shop'], 'ask': ask,
+                                 'price': agreed, 'sku':c['sku'],'score_formula':formula(journal),
++                                'task':task['id'],'turn':turn,
+                                 'strategy_version': strategy['version']}, role='buyer')
++                    if cfg.get('service_contract_v26_enabled'):
++                        from r3.state import identity
++                        journal.add('buyer_counter_route',{'order':order['order'],'shop':c['shop'],'sku':c['sku'],
++                            'task':task['id'],'turn':turn,'ask':ask,'price':agreed,'grade':required_grade,
++                            'warranty_hours':required_warranty,'terms_complete':not conditional_requirements,
++                            'score_formula':formula(journal),'observed_at':time.time()},
++                            eid='counter-route:'+identity([order['order'],task['id'],turn,agreed]),role='buyer')
+                 if cfg.get('buyer_throughput_enabled') and hasattr(peer,'deadline'):
+                     peer.deadline=min(deadline,time.time()+cfg.get('buyer_rpc_timeout_seconds',4))
+                 task = peer.send(str(agreed), task["id"])
++                if cfg.get('service_contract_v26_enabled'):
++                    from r3.protocol import quote as observed_ask
++                    response_state=task.get('status',{}).get('state');next_price=None
++                    try:
++                        if response_state=='TASK_STATE_INPUT_REQUIRED':next_price=observed_ask(task)
++                    except ValueError:pass
++                    journal.add('buyer_negotiation_step',{'order':order['order'],'shop':c['shop'],'sku':c['sku'],
++                        'task':task.get('id'),'turn':turn,'offered':agreed,'response_state':response_state,'next_ask':next_price},role='buyer')
+                 try:
+                     from r3.protocol import observe_quote
+                     observe_quote(journal,task,c['shop'],order,'negotiation')
+@@ -328,6 +355,10 @@
+                                     "kind": "no_agreement", "seconds": time.monotonic() - started,
+                                     "score_formula": formula(journal)}, role="buyer")
+         except Exception as exc:
++            if cfg.get('service_contract_v26_enabled'):
++                journal.add('buyer_route_terminal',{'order':order['order'],'shop':c['shop'],'sku':c['sku'],
++                    'task':task.get('id') if task else None,'reason':'protocol_or_transport',
++                    'error_type':type(exc).__name__},role='buyer')
+             if not isinstance(exc, ValueError):
+                 ranked = [x for x in ranked if x['shop'] != c['shop']]
+             reason = str(exc) if isinstance(exc, ValueError) and str(exc) in {
+--- a/r3/service_contracts.py
++++ b/r3/service_contracts.py
+@@ -0,0 +1,90 @@
++"""Small explicit customer requirements; no inferred identity or executable prose."""
++import math
++import re
++import time
++from .state import identity
++
++
++def parse(text, previous=None):
++    old=previous or {}
++    result={'minimum_hours':old.get('minimum_hours',0.),'grades':old.get('grades'),
++        'warranty_hours':old.get('warranty_hours',0.),'explicit_use':old.get('explicit_use',False),
++        'explicit_grade':old.get('explicit_grade',False),'explicit_warranty':old.get('explicit_warranty',False),
++        'sku':old.get('sku'),'valid':old.get('valid',True),'reason':old.get('reason')}
++    text=text[:2000]
++    num=r'(-?\d+(?:\.\d+)?)'
++    unit=r'(hours?|hrs?|h|days?|시간|일)\b'
++    patterns=[r'(?:last\s+at\s+least|must\s+last\s+(?:for\s+)?|use\s+within|minimum\s+shelf\s+life(?:\s+after\s+checkout)?\s*:?)[ ]*'+num+r'\s*'+unit,
++        r'(?:need|require)\s+(?:at\s+least\s+)?'+num+r'\s*'+unit+r'\s+(?:of\s+)?(?:shelf\s+life|remaining)',
++        r'(?:유통기한|잔여\s*수명)\s*(?:최소|:|=)?\s*'+num+r'\s*(시간|일)']
++    hours=[]
++    for pattern in patterns:
++        for value,u in re.findall(pattern,text,re.I):
++            hours.append(float(value)*(24 if u.lower() in ('day','days','일') else 1))
++    if hours:
++        if any(h<0 for h in hours):result.update(valid=False,reason='negative_requirement')
++        result['minimum_hours']=max(result['minimum_hours'],*hours);result['explicit_use']=True
++    minimum=re.findall(r'\b(?:at least|minimum)\s+(?:certified\s+)?grade\s+([ABC])\b',text,re.I)
++    exact=re.findall(r'\b(?:require|need)\s+(?:certified\s+)?grade\s+([ABC])\b|\bonly\s+(?:certified\s+)?(?:grade\s+)?([ABC])\b|\bgrade\s+([ABC])\s+(?:only|required)\b',text,re.I)
++    restrictions=[set('ABC'[:'ABC'.index(g.upper())+1]) for g in minimum]
++    if exact:restrictions.append({g.upper() for pair in exact for g in pair if g})
++    if restrictions:
++        allowed=set(result['grades'] or 'ABC')
++        for group in restrictions:allowed&=group
++        result['grades']=sorted(allowed);result['explicit_grade']=True
++        if not allowed:result.update(valid=False,reason='conflicting_grade_requirements')
++    warranty=re.findall(r'(?:minimum|at least)\s*'+num+r'\s*(?:hours?|hrs?|h)\s*(?:of\s*)?warranty|warranty\s*(?:of\s*)?(?:at least|minimum)\s*'+num,text,re.I)
++    if warranty:
++        result['warranty_hours']=max(result['warranty_hours'],*(float(v) for pair in warranty for v in pair if v))
++        result['explicit_warranty']=True
++    if not all(math.isfinite(result[k]) and result[k]>=0 for k in ('minimum_hours','warranty_hours')):
++        result.update(valid=False,reason='nonfinite_requirement')
++    if result['warranty_hours']>72:result.update(valid=False,reason='unsupported_warranty')
++    tokens=re.findall(r'\bG[0-9a-f]{3,}\b',text,re.I)
++    skus={s.casefold() for s in tokens}
++    if not result['sku'] and len(skus)==1:result['sku']=tokens[0]
++    if result['sku'] and skus and result['sku'].casefold() not in skus:
++        result.update(valid=False,reason='different_sku_requires_new_task')
++    return result
++
++
++def eligible(unit,catalog,spec,now=None,buffer_seconds=30):
++    from .economy import grade,remaining
++    now=time.time() if now is None else now
++    if not spec.get('valid',True) or remaining(unit,now)<=0:return False
++    if spec.get('sku') and unit['sku'].casefold()!=spec['sku'].casefold():return False
++    if spec.get('grades') is not None and grade(unit,catalog,now) not in spec['grades']:return False
++    return unit.get('kind')!='food' or remaining(unit,now)>=spec['minimum_hours']+buffer_seconds/3600
++
++
++def record(journal,task,spec,unit=None,now=None):
++    from .economy import remaining,grade
++    now=time.time() if now is None else now
++    catalog=journal.snapshot('catalog.json',{})
++    row={'task':task,'sku':(unit or {}).get('sku') or spec.get('sku'),
++        'minimum_hours':spec['minimum_hours'],'grades':spec['grades'],'warranty_hours':spec['warranty_hours'],
++        'explicit_use':spec['explicit_use'],'explicit_grade':spec['explicit_grade'],
++        'explicit_warranty':spec['explicit_warranty'],'valid':spec['valid'],'reason':spec.get('reason'),
++        'selected_unit':(unit or {}).get('unit'),'grade':grade(unit,catalog,now) if unit else None,
++        'remaining_hours':remaining(unit,now) if unit and unit.get('kind')=='food' else None,
++        'source':'explicit_customer_text_only','schema':1}
++    journal.add('shop_service_need',row,eid='shop-need:'+identity({k:v for k,v in row.items() if k not in ('remaining_hours','grade')}),role='shop',ts=now)
++    return row
++
++
++def priority(unit,choices,catalog,spec,profiles,now=None):
++    """Protect scarce declared service regions; unknown preferences retain quality-first."""
++    from .economy import remaining,grade
++    now=time.time() if now is None else now
++    quality={'A':0,'B':1,'C':2}.get(grade(unit,catalog,now),3);regret=0.
++    if spec.get('explicit_use'):
++        for bucket in profiles:
++            if bucket['minimum_hours']<=spec['minimum_hours']:continue
++            future=dict(bucket,valid=True,sku=unit['sku'])
++            if eligible(unit,catalog,future,now):
++                count=sum(eligible(u,catalog,future,now) for u in choices)
++                regret+=bucket['weight']/max(1,count)
++    # Cross-grade conservation needs an explicit permitted grade set. With no
++    # declared grade preference, do not infer that lower quality is acceptable.
++    if spec.get('explicit_grade'):return (regret,quality,remaining(unit,now),unit.get('supplied_at',0))
++    return (quality,regret,remaining(unit,now),unit.get('supplied_at',0))
+--- a/r3/service_policy.py
++++ b/r3/service_policy.py
+@@ -0,0 +1,150 @@
++"""Background service regions and explicit-contract completion evidence."""
++from collections import Counter,defaultdict
++import math
++import time
++from .state import identity
++from .service_contracts import eligible
++
++KEY='service-policy:v26'
++
++
++def context(journal,now=None):
++    from .decision_view import fact
++    now=time.time() if now is None else now
++    row=fact(journal,'service-policy-v26',lambda:journal.get(KEY,{}))
++    if (not -2<=now-row.get('at',-1000)<180 or now>=row.get('expires_at',0)
++            or row.get('rules_hash')!=journal.get('market_rules',{}).get('sha256')):return {}
++    return row
++
++
++def update(journal,config,now=None):
++    if not config.get('service_contract_v26_enabled'):return None
++    now=time.time() if now is None else now;old=journal.get(KEY,{})
++    if 0<=now-old.get('at',0)<60:return old
++    catalog=journal.snapshot('catalog.json',{});inv=journal.snapshot('inventory.json',{})
++    sales=[r for r in journal.events('shop_settled',10000) if 0<=now-r['_ts']<21600]
++    paid={r.get('task'):r for r in sales if r.get('price',0)>r.get('cost',math.inf)}
++    paid_counts=Counter(r.get('sku') for r in paid.values());needs={}
++    for r in journal.events('shop_service_need',10000):
++        if 0<=now-r['_ts']<21600 and r.get('valid') and r.get('explicit_use'):
++            needs.setdefault(r['task'],r)
++    for r in journal.events('stockout',4000):
++        if 0<=now-r['_ts']<21600 and r.get('reason')=='shelf_life' and r.get('required_use_hours',0)>0:
++            needs.setdefault(r.get('task'),dict(r,minimum_hours=r['required_use_hours'],grades=None,warranty_hours=0))
++    groups=defaultdict(lambda:defaultdict(dict))
++    canonical={s.casefold():s for s in catalog}
++    for task,r in needs.items():
++        r=dict(r,sku=canonical.get(str(r.get('sku')).casefold(),r.get('sku')))
++        p=catalog.get(r.get('sku'),{});h=r.get('minimum_hours',0)
++        if p.get('kind')!='food' or not 0<h<=p.get('shelf_hours',0):continue
++        key=(round(h,6),tuple(r.get('grades') or ()),r.get('warranty_hours',0))
++        # Real paid tasks retain weight; anonymous requests are minute-deduped.
++        dedup=('paid',task) if task in paid else ('request',int(r['_ts']//60))
++        groups[r['sku']][key].setdefault(dedup,r)
++    offered=defaultdict(set)
++    for r in journal.events('shop_opportunity',10000):
++        if 0<=now-r['_ts']<21600 and r.get('sku') and r.get('task'):offered[r['sku']].add(r['task'])
++    profiles={}
++    for sku,cells in groups.items():
++        minutes={int(r['_ts']//60) for rows in cells.values() for r in rows.values()}
++        if paid_counts[sku]<2 or len(minutes)<3:continue
++        rows=[]
++        for (h,grades,warranty),seen in cells.items():
++            weight=sum(1 if key[0]=='paid' else .25 for key in seen)
++            rows.append({'minimum_hours':h,'grades':list(grades) if grades else None,'warranty_hours':warranty,
++                'weight':weight,'paid':sum(key[0]=='paid' for key in seen),'observed':len(seen)})
++        explicit_weight=sum(r['weight'] for r in rows)
++        # An explicit-use cohort is not the whole SKU's demand. Unknown requests
++        # remain in the denominator; unmatched unpaid bursts get only .25 weight.
++        unpaid={int(r['_ts']//60) for seen in cells.values() for key,r in seen.items() if key[0]=='request'}
++        denominator=max(explicit_weight,len(offered[sku]|{t for t,r in paid.items() if r.get('sku')==sku})+.25*len(unpaid))
++        profiles[sku]={'paid_sku_support':paid_counts[sku],'distinct_minutes':len(minutes),'buckets':rows,
++            'need_fraction_scenario':explicit_weight/max(1,denominator),'opportunity_denominator':denominator}
++    # Only arrivals seen promptly enter the supply eligibility cohort. Current
++    # old stock is a survivor sample and must not masquerade as random supply.
++    draws=[r for r in journal.events('shop_service_draw',10000) if 0<=now-r['_ts']<21600]
++    seen={r['unit'] for r in draws};new=[]
++    for u in inv.get('units',[]):
++        p=catalog.get(u.get('sku'),{});shelf=p.get('shelf_hours')
++        if (u.get('unit') in seen or u.get('kind')!='food' or not shelf or not u.get('expires_at')
++                or not 0<=now-u.get('supplied_at',0)<=120):continue
++        fraction=(u['expires_at']-u['supplied_at'])/3600/shelf
++        if not 0<fraction<=1.01:continue
++        row={'unit':u['unit'],'fraction':fraction,'source':'fresh_own_supply_observation'}
++        new.append(('shop_service_draw',row,'service-draw:'+u['unit'],'shop'));draws.append(row)
++    if new:journal.add_batch(new,ts=now)
++    from .contracts import shop_identity
++    contracts=defaultdict(dict)
++    for q in reversed(journal.events('quote_comparison',6000)):
++        if not 0<=now-q['_ts']<7200:continue
++        a=q.get('assessment',{});state=a.get('saved_state',{})
++        if state.get('score_formula')!=journal.get('market_rules',{}).get('buyer_saved_formula'):continue
++        p=catalog.get(q.get('sku'),{});kind=p.get('kind')
++        if not kind:continue
++        key=shop_identity(journal,q['shop'])+'|'+kind
++        complete=not a.get('conditional_terms') and a.get('required_grade') in ('A','B','C') if kind=='goods' else not a.get('conditional_terms')
++        from .buyer_scoring import contribution,score_inputs
++        try:value=contribution(q['ask'],p['list_price'],a['failure'],a['covered_failure'],**score_inputs(state))
++        except (KeyError,ValueError):continue
++        contracts[key][(q['order'],q['sku'])]={'complete':complete,'positive':complete and q['ask']<=a['cap'] and value>=state.get('saved',0)}
++    summaries={key:{'n':len(rows),'complete':sum(v['complete'] for v in rows.values()),
++        'positive':sum(v['positive'] for v in rows.values())} for key,rows in contracts.items()}
++    result={'at':now,'expires_at':now+180,'rules_hash':journal.get('market_rules',{}).get('sha256'),
++        'shop_needs':profiles,'buyer_contracts':summaries,'draw_fractions':[r['fraction'] for r in draws],
++        'source':'explicit own requests; minute-deduped unpaid; paid support; observed quote terms',
++        'selected_cohorts_not_causal':True}
++    result['generation']=identity([result['rules_hash'],profiles,summaries,result['draw_fractions']])
++    journal.put(KEY,result);journal.add('service_policy_prepared',{'at':now,'generation':result['generation'],
++        'qualified_need_skus':len(profiles),'contract_groups':len(summaries),'supply_draws':len(draws)})
++    return result
++
++
++def need_plan(journal,config,sku,product,units,rate,desired,coverage,paid,now):
++    from .shop_growth import target_stock
++    from .risk import wilson
++    packet=context(journal,now);profile=packet.get('shop_needs',{}).get(sku,{})
++    rows=profile.get('buckets',[])
++    if not rows or product.get('kind')!='food':return None
++    hold=min(config.get('planning_horizon_hours',6),1/max(.01,rate))
++    relevant=[u for u in units if u['sku']==sku];weight=sum(r['weight'] for r in rows);choices=[]
++    for bucket in rows:
++        fraction=(bucket['minimum_hours']+hold+config.get('checkout_buffer_seconds',30)/3600)/product['shelf_hours']
++        if fraction>1:continue
++        # Published lower bounds give no invented within-grade distribution.
++        lower=0 if bucket.get('grades') else .75 if fraction<=.45 else .25 if fraction<=.8 else 0
++        samples=packet.get('draw_fractions',[])
++        if len(samples)>=20 and not bucket.get('grades'):
++            lower=max(lower,wilson(sum(v>=fraction for v in samples),len(samples),False))
++        if lower<=0:continue
++        demand_share=sum(r['weight'] for r in rows if r['minimum_hours']>=bucket['minimum_hours'] and r.get('grades')==bucket.get('grades'))/weight
++        rrate=rate*demand_share*profile.get('need_fraction_scenario',0)
++        target=target_stock(rrate,paid,config,coverage_hours=coverage)
++        spec=dict(bucket,sku=sku,valid=True)
++        held=sum(eligible(u,{sku:product},spec,now+hold*3600,config.get('checkout_buffer_seconds',30)) for u in relevant)
++        deficit=target-held
++        if deficit<=0:continue
++        needed=math.ceil(deficit/lower)
++        choices.append({'needed':needed,'minimum_hours':bucket['minimum_hours'],'eligible_held':held,
++            'need_rate':rrate,'eligible_draw_probability':lower,'target':target,'holding_scenario':hold,
++            'profile_generation':packet['generation'],'kind':'food','planning_scenario_not_guarantee':True,
++            'conditional_cost_ratio':.65 if fraction>.45 else .60})
++    return max(choices,key=lambda r:r['needed']) if choices else None
++
++
++def strict_sale_probability(row,quantity,horizon):
++    from .shop_growth import poisson_tail
++    p=row['eligible_draw_probability'];n=quantity-1;lam=row['need_rate']*horizon
++    return p*sum(math.comb(n,k)*p**k*(1-p)**(n-k)*poisson_tail(lam,row['eligible_held']+k+1) for k in range(n+1))
++
++
++def route_adjust(candidate,journal,now=None):
++    from .contracts import shop_identity
++    row=context(journal,now).get('buyer_contracts',{}).get(shop_identity(journal,candidate['shop'])+'|'+candidate['product'].get('kind',''),{})
++    n=row.get('n',0)
++    if n<8:return candidate
++    chance=(row['positive']+2)/(n+4);factor=min(1,chance/.5)
++    candidate['score']*=factor
++    candidate['expected_delta']={k:v*factor for k,v in candidate['expected_delta'].items()}
++    candidate.setdefault('evidence',{})['complete_contract_scenario']={'samples':n,'positive_quotes':row['positive'],
++        'complete_quotes':row['complete'],'factor':factor,'not_a_seller_price_rejection':True}
++    return candidate
+--- a/r3/negotiation_path.py
++++ b/r3/negotiation_path.py
+@@ -0,0 +1,151 @@
++"""Exact-task continuation price scenarios, gated by temporal predictive checks."""
++from collections import defaultdict
++import math
++import json
++import statistics
++import time
++from .state import identity
++
++KEY='buyer-negotiation-path:v26'
++
++
++def bootstrap(journal,now=None):
++    """Recover historical task IDs only from an unambiguous logged decision.
++
++    Raw events are immutable. Derived records retain both source event IDs.
++    Incomplete contracts and ambiguous joins do not enter the new cohort.
++    """
++    now=time.time() if now is None else now;cut=max(now-21600,journal.get('market_rules',{}).get('buyer_score_epoch',0))
++    with journal.connect() as db:
++        decisions={r.get('decision'):r.get('chosen') for raw, in db.execute(
++            'SELECT data FROM events WHERE kind=? AND role=? AND ts>=? AND ts<=?',('decision','buyer',cut,now)) for r in [json.loads(raw)]}
++        predictions=[dict(json.loads(raw),_event_id=eid,_ts=at) for eid,at,raw in db.execute(
++            'SELECT id,ts,data FROM events WHERE kind=? AND role=? AND ts>=? AND ts<=?',('prediction','buyer',cut,now))]
++    raw=defaultdict(list)
++    for r in journal.events('buyer_counter',10000):
++        if r['_ts']>=cut and not r.get('task'):raw[(r['order'],r['shop'],r.get('sku'),r['price'])].append(r)
++    quotes=defaultdict(list)
++    for r in journal.events('quote_comparison',10000):
++        if r['_ts']>=cut:quotes[(r['order'],r['shop'],r['sku'])].append(r)
++    matches=defaultdict(list)
++    for p in predictions:
++        if p['_ts']<cut or p.get('role')!='buyer':continue
++        ctx=p.get('context',{});oid=(ctx.get('order') or {}).get('order')
++        if ctx.get('operation')!='price' or not ctx.get('task'):continue
++        chosen=next((c for c in p.get('candidates',[]) if c.get('id')==decisions.get(p.get('decision'))),{})
++        if chosen.get('action',chosen.get('id','').partition(':')[0])!='counter':continue
++        key=(oid,ctx.get('shop'),ctx.get('sku'),chosen.get('price'))
++        for r in raw.get(key,[]):
++            if 0<=r['_ts']-p['_ts']<=3:matches[r['_event_id']].append((r,p,ctx))
++    new=[]
++    for candidates in matches.values():
++        if len(candidates)!=1:continue
++        r,p,ctx=candidates[0];qs=[q for q in quotes[(r['order'],r['shop'],r['sku'])] if q['_ts']<=p['_ts']]
++        if not qs:continue
++        a=max(qs,key=lambda q:q['_ts'])['assessment']
++        if a.get('conditional_terms'):continue
++        row={k:r.get(k) for k in ('order','shop','sku','ask','price','score_formula')}
++        row.update(task=ctx['task'],turn=ctx.get('turn',0),grade=a.get('required_grade'),
++            warranty_hours=a.get('required_warranty',0),terms_complete=True,source_counter=r['_event_id'],
++            source_prediction=p['_event_id'],observed_at=r['_ts'],derived=True)
++        new.append(('buyer_counter_route',row,'counter-derived:'+r['_event_id'],'buyer'))
++    if new:journal.add_batch(new,ts=now)
++    return len(new)
++
++
++def group(row):
++    return '|'.join((row['kind'],str(row.get('grade')),str(row.get('warranty_hours',0)>=6),str(min(19,int(row['price']/row['ask']*20)))))
++
++
++def fit(rows):
++    groups=defaultdict(list)
++    for r in rows:groups[group(r)].append(r)
++    base=(sum(r['paid'] for r in rows)+1)/(len(rows)+2)
++    out={}
++    for key,rs in groups.items():
++        positive=[r for r in rs if r['paid']];ratios=sorted(r['final_ratio'] for r in positive)
++        out[key]={'n':len(rs),'paid':len(positive),'probability':(len(positive)+4*base)/(len(rs)+4),
++            'final_price_ratios':[ratios[round((len(ratios)-1)*q)] for q in (.25,.5,.75)] if ratios else [],
++            'seconds':statistics.median(r['seconds'] for r in rs)}
++    return {'groups':out,'baseline_probability':base}
++
++
++def evaluate(rows):
++    split=int(len(rows)*.7);train,test=rows[:split],rows[split:];m=fit(train)
++    errors=[];base=[];price=[];ask=[];covered=0
++    for r in test:
++        cell=m['groups'].get(group(r),{});p=cell.get('probability',m['baseline_probability'])
++        errors.append((r['paid']-p)**2);base.append((r['paid']-m['baseline_probability'])**2)
++        if cell.get('n',0)>=4:covered+=1
++        if r['paid'] and cell.get('final_price_ratios'):
++            price.append(abs(r['final_ratio']-statistics.median(cell['final_price_ratios'])))
++            ask.append(abs(r['final_ratio']-1))
++    mse=statistics.mean(errors) if errors else None;b=statistics.mean(base) if base else None
++    ready=(len(train)>=30 and len(test)>=15 and covered>=len(test)*.5 and mse is not None and b>0
++        and mse<b*.98 and len(price)>=5 and statistics.mean(price)<=statistics.mean(ask))
++    return {'mode':'validated_predictive_scenario' if ready else 'shadow','train':len(train),'test':len(test),
++        'brier':mse,'baseline_brier':b,'covered_test':covered,'price_test':len(price),
++        'price_mae':statistics.mean(price) if price else None,'ask_mae':statistics.mean(ask) if ask else None,
++        'temporal_split':.7,'not_causal':True}
++
++
++def update(journal,config,now=None):
++    if not config.get('service_contract_v26_enabled'):return None
++    now=time.time() if now is None else now;old=journal.get(KEY,{})
++    if 0<=now-old.get('at',0)<60:return old
++    cut=max(now-21600,journal.get('market_rules',{}).get('buyer_score_epoch',0))
++    catalog=journal.snapshot('catalog.json',{});first={}
++    for r in reversed(journal.events('buyer_counter_route',10000)):
++        at=r.get('observed_at',r['_ts'])
++        if not cut<=at<now-30 or not r.get('terms_complete') or not r.get('task') or r.get('ask',0)<=0:continue
++        if r.get('score_formula')!=journal.get('market_rules',{}).get('buyer_saved_formula'):continue
++        first.setdefault((r['order'],r['shop'],r['sku'],r['task']),dict(r,at=at))
++    purchases={r['order']:r for r in reversed(journal.events('purchase',5000)) if r['_ts']>=cut}
++    results={r['order']:r for r in reversed(journal.events('market_result',5000)) if r['_ts']>=cut}
++    agreements=defaultdict(list)
++    for a in journal.events('agreement',10000):
++        if a['_ts']>=cut:agreements[a['order']].append(a)
++    attempts=journal.events('attempt',10000);samples=[]
++    for key,r in first.items():
++        oid,shop,sku,task=key
++        if oid not in results:continue
++        p=purchases.get(oid);same=bool(p and p.get('shop')==shop and p.get('sku')==sku and
++            any(a.get('task')==task and a.get('shop')==shop and a.get('sku')==sku and
++                a.get('price')==p['price'] for a in agreements[oid]))
++        technical=any(a.get('order')==oid and a.get('shop')==shop and a['_ts']>=r['at'] and
++            a.get('kind') in ('ReadTimeout','TimeoutError','ConnectError','HTTPStatusError') for a in attempts)
++        if technical and not same:continue  # Uncertain transport is not a price refusal.
++        end=p.get('paid_at',p['_ts']) if same else results[oid]['_ts']
++        if not 0<=end-r['at']<=180:continue
++        samples.append(dict(r,kind=catalog.get(sku,{}).get('kind','goods'),paid=same,
++            final_ratio=p['price']/r['ask'] if same else None,seconds=max(1,end-r['at'])))
++    samples.sort(key=lambda r:r['at']);summary=evaluate(samples)
++    row={'at':now,'expires_at':now+180,'rules_hash':journal.get('market_rules',{}).get('sha256'),
++        'model':fit(samples),'summary':summary,'samples':len(samples),
++        'join':'order+shop+sku+task+settled price','source':'observed entire policy continuation; not seller acceptance probability'}
++    row['id']=identity(row);journal.put(KEY,row)
++    journal.add('negotiation_path_prepared',{'at':now,'id':row['id'],'summary':summary,'samples':len(samples)})
++    return row
++
++
++def context(journal,product,grade,warranty,now=None):
++    from .decision_view import fact
++    now=time.time() if now is None else now
++    row=fact(journal,'negotiation-path-v26',lambda:journal.get(KEY,{}))
++    if (not -2<=now-row.get('at',-1000)<180 or now>=row.get('expires_at',0) or
++            row.get('rules_hash')!=journal.get('market_rules',{}).get('sha256') or
++            row.get('summary',{}).get('mode')!='validated_predictive_scenario'):return None
++    return {'id':row['id'],'kind':product.get('kind'),'grade':grade,'warranty_hours':warranty,
++        'model':row['model'],'summary':row['summary']}
++
++
++def scenario(model,bid,ask,cap):
++    if not model:return None
++    key=group(dict(model,price=bid,ask=ask))
++    row=model['model']['groups'].get(key,{})
++    if row.get('n',0)<8 or not row.get('final_price_ratios'):return None
++    prices=[max(bid,math.ceil(ask*r)) for r in row['final_price_ratios']]
++    valid=[p for p in prices if p<=cap]
++    if not valid:return {'probability':0,'prices':[],'seconds':row['seconds'],'id':model['id']}
++    return {'probability':row['probability']*len(valid)/len(prices),'prices':valid,
++        'seconds':row['seconds'],'id':model['id'],'selected_policy_not_causal':True}
+--- a/r3/cycle.py
++++ b/r3/cycle.py
+@@ -67,6 +67,11 @@
+         if now-self.last_analysis>=60:
+             self.last_analysis=now
+             roles={'market_observer':lambda:analytics(self.j,time.time())}
++            if self.cfg.get('service_contract_v26_enabled'):
++                from .service_policy import update as service_update
++                from .negotiation_path import update as path_update
++                roles['service_region_observer']=lambda:service_update(self.j,self.cfg,time.time())
++                roles['negotiation_path_observer']=lambda:path_update(self.j,self.cfg,time.time())
+             if self.cfg.get('shop_reputation_v24_enabled'):
+                 from .reputation import update as reputation_update
+                 roles['account_reputation_observer']=lambda:reputation_update(self.j,self.cfg,time.time())
+--- a/r3/policy_learning.py
++++ b/r3/policy_learning.py
+@@ -64,11 +64,15 @@
+     first={}
+     for r in reversed(journal.events('buyer_counter',6000)):
+         if cut<=r['_ts']<=now-30 and r.get('order') in orders and r.get('ask',0)>0:
+-            first.setdefault((r['order'],r['shop']),r)
++            first.setdefault((r['order'],r['shop'],r.get('sku'),r.get('task')),r)
+     negotiations=defaultdict(lambda:defaultdict(lambda:{'n':0,'paid':0}))
++    agreements=journal.events('agreement',5000)
+     for key,r in first.items():
+-        purchase=paid.get(key[0]);same=bool(purchase and purchase.get('shop')==key[1])
+-        if not same and key not in failed:continue  # Pending/transport ambiguity is not a price failure.
++        purchase=paid.get(key[0]);same=bool(purchase and purchase.get('shop')==key[1] and purchase.get('sku')==key[2])
++        if same and key[3]:
++            same=any(a.get('order')==key[0] and a.get('task')==key[3] and a.get('sku')==key[2]
++                and a.get('shop')==key[1] and a.get('price')==purchase.get('price') for a in agreements)
++        if not same and key[:2] not in failed:continue  # Pending/transport ambiguity is not a price failure.
+         kind=orders[key[0]].get('kind');bucket=str(min(19,max(0,int(r['price']/r['ask']*20))))
+         row=negotiations[kind][bucket];row['n']+=1
+         row['paid']+=bool(same and purchase['price']<=r['price'])
+--- a/r3/market_memory.py
++++ b/r3/market_memory.py
+@@ -72,7 +72,7 @@
+ 
+ def buyer_price_actions(ask, cap, product, reference, ratio, turn, max_turns, previous_offer=None,
+                         failure_stress=0, covered=False, covered_failure=None, saved_state=None,
+-                        counter_model=None,target_saved=None):
++                        counter_model=None,target_saved=None,path_model=None):
+     """Monotone concessions with a final feasible acceptance; no repeated bids.
+ 
+     Completion priors below are explicit engineering scenarios. They are not
+@@ -108,6 +108,11 @@
+         destination = min(ask, cap)
+         bid = min(cap, max(previous_offer + 1, math.ceil((previous_offer + destination) / 2)))
+     opening_bid=bid;bids={bid}
++    if path_model is not None:
++        # Near-ask actions let the whole Saved/deal objective price a smaller
++        # discount, instead of considering only very deep target rewards.
++        bids.update(min(cap,math.floor(ask*f)) for f in (.97,.99)
++            if previous_offer is None or min(cap,math.floor(ask*f))>previous_offer)
+     if target_saved and saved_state and saved_state.get('score_formula')=='margin_share_v36':
+         from .buyer_scoring import saved_price_cap
+         recovery=(failure_stress if covered else 0) if covered_failure is None else covered_failure
+@@ -122,12 +127,24 @@
+             from .policy_learning import counter_probability
+             probability=counter_probability(counter_model,bid/max(1,ask),probability)
+         score,change = expected(bid,probability)
++        continuation=None
++        if path_model and path_model.get('model'):
++            from .negotiation_path import scenario
++            continuation=scenario(path_model,bid,ask,cap)
++            if continuation:
++                probability=continuation['probability']
++                values=[expected(p,probability) for p in continuation['prices']]
++                score=sum(v[0] for v in values)/len(values) if values else 0
++                change={k:sum(v[1].get(k,0) for v in values)/len(values) for k in ('saved','surplus','deals')} if values else {'saved':0,'surplus':0,'deals':0}
+         actions.append({'id': 'counter' if bid==opening_bid else 'counter:'+str(bid),
+                         'action':'counter','price': bid, 'score': score,
+                         'completion_probability': probability,
+                         'expected_delta': change,
+                         'success_prior': 'shrunk observed first-counter completion; selected cohort' if counter_model is not None else
+                             'engineering scenario, not an empirical success estimate'})
++        if continuation:
++            actions[-1].update(payment_price_scenarios=continuation['prices'],path_expected_seconds=continuation['seconds'],
++                continuation_model_id=continuation['id'],success_prior='temporally validated exact-task final-price continuation scenario')
+     return actions
+ 
+ 
+@@ -174,12 +191,26 @@
+     if config.get('buyer_frontier_v23_enabled'):
+         from .policy_learning import packet
+         negotiation=packet(journal).get('counter_completion_by_kind',{}).get(product.get('kind'),{})
++    path=None;targets=None
++    if config.get('service_contract_v26_enabled'):
++        from .negotiation_path import context as path_context
++        path=path_context(journal,product,declared,required)
++        # Even a cold path model gets the new near-ask candidate grid; it does
++        # not get to assert a learned completion probability before validation.
++        path=path or {'cold_start':True}
++        from .decision_view import fact
++        board=fact(journal,'v26-bid-target-board',lambda:journal.snapshot('board.json',{}))
++        ahead=[r['saved'] for r in board.get('buyers',[]) if type(r.get('saved')) in (int,float) and r['saved']>current.get('saved',0)]
++        targets=sorted(set(config.get('buyer_saved_bid_targets',[.8,.9])+[
++            current.get('saved',0)+config.get('buyer_saved_target_margin',.002)]+
++            ([min(ahead)+.00001] if ahead else [])))
+     return {'cap': cap, 'required_warranty': required, 'failure': stress,
+             'negotiation_model':negotiation,
+             'required_grade':declared,'conditional_terms':conditional,
+             'covered_failure': covered, 'risk_evidence': risk,'saved_state':current,'target_contribution':target,
+             'cost_scenario':cost,'saved_reference_cap':normalized_cap,
+-            'saved_target_is_hard_cap':not (config.get('buyer_joint_objective_enabled') and current.get('score_formula')==MARGIN)}
++            'saved_target_is_hard_cap':not (config.get('buyer_joint_objective_enabled') and current.get('score_formula')==MARGIN),
++            'bid_targets':targets,'negotiation_path_model':path}
+ 
+ 
+ def buyer_terms(product, order, terms, journal, config):
+--- a/r3/buyer_execution.py
++++ b/r3/buyer_execution.py
+@@ -71,6 +71,8 @@
+     base=max(1,candidate.get('execution_seconds',5))
+     for action in actions:
+         action['execution_seconds']=base if action['id']=='accept' else base+max(2,base*.75)
++        if action.get('path_expected_seconds'):
++            action['execution_seconds']=max(action['execution_seconds'],action['path_expected_seconds'])
+         action['time_model']='bounded request/checkout scenario; counter may need another round trip'
+     return actions
+ 
+--- a/r3/quote_market.py
++++ b/r3/quote_market.py
+@@ -38,17 +38,46 @@
+             task.get('status',{}).get('state')!='TASK_STATE_INPUT_REQUIRED' or deadline-time.time()<6):return task
+     try:
+         terms=quote_terms(task);quote(task)
+-        if config.get('buyer_throughput_enabled'):return task
++        if config.get('buyer_throughput_enabled') and not config.get('service_contract_v26_enabled'):return task
+         missing=terms.get('grade') not in ('A','B','C') or terms.get('warranty_hours') is None
+     except ValueError as exc:
+         if str(exc)!='ambiguous_ask':return task
+         missing=True
+     if not missing:return task
++    if config.get('service_contract_v26_enabled'):
++        if candidate.get('_v26_terms_attempted'):return task
++        assessment=buyer_assessment(dict(candidate['product'],sku=candidate['sku']),order,terms if 'terms' in locals() else {},journal,config,shop=candidate['shop'])
++        from .market_memory import buyer_price_actions
++        current=assessment['saved_state']
++        ask_value=quote(task) if 'terms' in locals() and 'ask' in terms else candidate.get('reference_price',0)
++        actions=buyer_price_actions(ask_value,assessment['cap'],candidate['product'],ask_value,
++            config.get('buyer_counter_ratio',.92),0,config.get('buyer_negotiation_turns',3),
++            failure_stress=assessment['failure'],covered_failure=assessment['covered_failure'],saved_state=current,
++            target_saved=assessment.get('bid_targets'),path_model=assessment.get('negotiation_path_model'))
++        worthwhile=('grade' in assessment.get('conditional_terms',[]) or current['metric']!='saved' or
++            any(a.get('expected_delta',{}).get('saved',0)>=0 and a.get('expected_delta',{}).get('deals',0)>0 for a in actions))
++        if not worthwhile:return task
++        candidate['_v26_terms_attempted']=True
+     text=(f"Please clarify ONE current offer for {candidate['sku']} on this task: ask, sku, unit, grade "
+           "(A/B/C), warranty_hours. Use a structured data part if possible. I require the market certificate "
+           "at checkout; without a declared grade my offer will be conditional on certified grade A, "
+           "and without stated coverage I will require a minimum 6-hour warranty. This message is not acceptance.")
+-    reply=peer.send(text,task['id'])
++    if config.get('service_contract_v26_enabled'):
++        text+=' Quote the actual priced warranty; say warranty_hours=0 if none. Do not assume free coverage.'
++        started=time.monotonic();original=task
++        if hasattr(peer,'deadline'):peer.deadline=min(deadline-2,time.time()+config.get('buyer_terms_clarify_seconds',2))
++        try:
++            reply=peer.send(text,task['id'])
++            if reply.get('id')!=task.get('id'):raise ValueError('conflicting_offer_terms')
++        except Exception as exc:
++            journal.add('buyer_terms_confirmation',{'order':order['order'],'shop':candidate['shop'],'sku':candidate['sku'],
++                'task':task['id'],'status':'unconfirmed','error_type':type(exc).__name__,'seconds':time.monotonic()-started},role='buyer')
++            return original
++        finally:
++            if hasattr(peer,'deadline'):peer.deadline=deadline
++        journal.add('buyer_terms_confirmation',{'order':order['order'],'shop':candidate['shop'],'sku':candidate['sku'],
++            'task':task['id'],'status':'response_received','seconds':time.monotonic()-started},role='buyer')
++    else:reply=peer.send(text,task['id'])
+     from .protocol import observe_quote
+     observe_quote(journal,reply,candidate['shop'],order,'clarification')
+     journal.add('buyer_terms_clarified',{'order':order['order'],'shop':candidate['shop'],'sku':candidate['sku']},role='buyer')
+@@ -121,10 +150,10 @@
+                 # option; do not pretend the capped price is actually offered.
+                 price = ask if price_feasible else min(cap, int(ask * .92))
+                 completion = 1 if feasible else .35 if price_feasible else .25
+-                from .buyer_scoring import contribution,terms_delta
++                from .buyer_scoring import contribution,terms_delta,score_inputs
+                 current=assessment['saved_state']
+                 surplus = max(0, (1-q)*c['product']['list_price'] - (1-qc)*price)
+-                c['score'] = ((contribution(price,c['product']['list_price'],q,qc) if current['metric']=='saved'
++                c['score'] = ((contribution(price,c['product']['list_price'],q,qc,**score_inputs(current)) if current['metric']=='saved'
+                                else surplus)*completion)
+                 c['expected_delta'] = terms_delta(current,price,c['product']['list_price'],q,qc,completion)
+                 c['evidence']['live_quote'] = dict(assessment, ask=ask, terms=terms,
+@@ -204,7 +233,8 @@
+         try:
+             if hasattr(peer,'deadline'):peer.deadline=min(deadline-1,time.time()+timeout)
+             peer.discover(c['shop']);task=peer.send(request_text(c,order))
+-            task=clarify(peer,task,c,order,journal,config,min(deadline,time.time()+timeout))
++            if not config.get('service_contract_v26_enabled'):
++                task=clarify(peer,task,c,order,journal,config,min(deadline,time.time()+timeout))
+             seconds=time.monotonic()-started
+             journal.add('buyer_quote_latency',{'order':order['order'],'shop':c['shop'],'sku':c['sku'],'seconds':seconds},role='buyer')
+             from .protocol import observe_quote
+@@ -238,7 +268,7 @@
+             try:
+                 terms=quote_terms(task);ask=quote(task)
+                 if terms.get('sku') not in (None,c['sku']):raise ValueError('quote_sku_mismatch')
+-                from .buyer_scoring import offer_ineligible,contribution,terms_delta
++                from .buyer_scoring import offer_ineligible,contribution,terms_delta,score_inputs
+                 reason=offer_ineligible(terms,order,config)
+                 if reason:
+                     c['quote_failed']=True
+@@ -253,7 +283,7 @@
+                     from .contracts import observe,probability
+                     observe(journal,order,c,terms,a,ask)
+                     if not feasible:completion=probability(journal,order,c,a,ask,completion)
+-                c['score']=completion*contribution(price,c['product']['list_price'],a['failure'],a['covered_failure'])
++                c['score']=completion*contribution(price,c['product']['list_price'],a['failure'],a['covered_failure'],**score_inputs(a['saved_state']))
+                 c['expected_delta']=terms_delta(a['saved_state'],price,c['product']['list_price'],a['failure'],a['covered_failure'],completion)
+                 c['execution_seconds']=max(1,seconds+2)
+                 c['evidence']['live_quote']=dict(a,ask=ask,terms=terms,feasible_at_ask=feasible)
+--- a/r3/buyer_routes.py
++++ b/r3/buyer_routes.py
+@@ -50,4 +50,7 @@
+     candidate['evidence']['route_reliability']={'recent_technical_failures':failures,'factor':reliability,
+                                               'window_seconds':900,'not_a_price_rejection_model':True}
+     candidate['evidence']['public_sku_prices']={k:v for k,v in observed.items() if k!='seller_prices'}
++    if config.get('service_contract_v26_enabled'):
++        from .service_policy import route_adjust
++        candidate=route_adjust(candidate,journal)
+     return candidate
+--- a/r3/economy.py
++++ b/r3/economy.py
+@@ -441,6 +441,11 @@
+             desired = max(1, math.ceil(rate * config.get('supply_cycle_seconds', 1200) / 3600 * 1.5))
+         buffer=reserved_counts.get(sku,0) if (growth.get('service_loss_adjustment') or {}).get('qualified') else 0
+         needed=desired+buffer-count.get(sku,0)
++        service_need=None
++        if velocity and config.get('service_contract_v26_enabled'):
++            from .service_policy import need_plan
++            service_need=need_plan(journal,config,sku,p,units,rate,desired,coverage,paid,now)
++            if service_need:needed=max(needed,service_need['needed'])
+         if needed<=0:
+             continue
+         held_room=config['restock_max_qty']-count.get(sku,0) if stock_caps_enabled(config) else 20
+@@ -528,6 +533,7 @@
+                                            reserved_pipeline_buffer=buffer,
+                                            planning_hours=hours,scenario_unit_cost=cost_ratio*p['list_price'],
+                                            resale_price_scenario=price,resale_terms_scenario=terms)
++        if service_need:candidates[-1]['evidence']['service_eligibility']=service_need
+         if config.get('objective_feedback_enabled'):candidates[-1]['evidence']['trend_factor_scenario']=trend
+     from .meta import rank_progress
+     board = journal.snapshot('board.json', {})
+--- a/r3/shop_growth.py
++++ b/r3/shop_growth.py
+@@ -133,6 +133,15 @@
+             probability=min(evidence.get('sale_probability_scenario',.25),probability)
+     holding=min(horizon,max(1/3,(held+quantity)/max(.01,rate)))
+     price=evidence['resale_price_scenario'];cost=evidence['scenario_unit_cost']
++    strict=evidence.get('service_eligibility')
++    if strict:
++        from .service_policy import strict_sale_probability
++        strict_probability=strict_sale_probability(strict,quantity,horizon)
++        if strict_probability>probability:
++            probability=strict_probability
++            # Eligible fresh draws can be a costlier selected grade cohort.
++            cost=max(cost,evidence['list_price']*evidence.get('supply_surge_factor',1)*strict['conditional_cost_ratio'])
++            holding=min(horizon,max(1/3,(strict['eligible_held']+quantity*strict['eligible_draw_probability'])/max(.01,strict['need_rate'])))
+     revenue=probability*price*(1-evidence['refund_stress'])
+     storage=cost*.01*holding/24 if evidence['kind']=='goods' else 0
+     expiry=(1-probability)*cost*.25 if evidence['kind']=='food' else 0
+--- a/r3/prewindow.py
++++ b/r3/prewindow.py
+@@ -8,6 +8,18 @@
+ def config_hash(config):
+     # Remaining line budget is narrowed by the foreground on each invocation.
+     return identity({k: v for k, v in config.items() if k != 'restock_max_lines'})
++
++
++def service_fingerprint(journal,config,inv,now):
++    if not config.get('service_contract_v26_enabled'):return None
++    from .service_policy import context
++    from .service_contracts import eligible
++    from .economy import grade
++    packet=context(journal,now);catalog=journal.snapshot('catalog.json',{})
++    return identity([packet.get('generation'),sorted(
++        (u['unit'],u['sku'],u.get('expires_at'),str(grade(u,catalog,now)),tuple(
++            eligible(u,catalog,dict(b,valid=True,sku=u['sku']),now,config.get('checkout_buffer_seconds',30))
++            for b in packet.get('shop_needs',{}).get(u['sku'],{}).get('buckets',[]))) for u in inv.get('units',[]))])
+ 
+ 
+ class PreviewJournal:
+@@ -35,6 +47,7 @@
+             or not opens - 310 <= now < closes - 20):
+         return None
+     old = journal.snapshot('shop-plan-v15.json', {})
++    service_id=service_fingerprint(journal,config,inv,now)
+     from .demand_policy import context as demand_context
+     demand=demand_context(journal,config,now)
+     demand_id=demand.get('id') if demand else None
+@@ -43,7 +56,7 @@
+     phase = 'early' if now < opens - 90 else 'checked' if now < opens - 15 else 'ready'
+     if (old.get('window') == [opens, closes] and old.get('phase') == phase
+             and old.get('policy_hash') == config_hash(config) and old.get('demand_policy_id')==demand_id and old.get('service_policy_at')==learning_at
+-            and 0 <= now - old.get('at', 0) < 45):
++            and old.get('service_eligibility_id')==service_id and 0 <= now - old.get('at', 0) < 45):
+         return old
+     from .economy import restock_candidates, cash_capacity
+     from .model import Chooser
+@@ -66,6 +79,7 @@
+     packet = {'schema': 1, 'at': now, 'expires_at': closes - 15, 'window': [opens, closes], 'phase': phase,
+               'rules_hash': rules['sha256'], 'policy_hash': config_hash(config),'demand_policy_id':demand_id,'service_policy_at':learning_at, 'strategy_version': strategy['version'],
+               'selected': chosen['id'], 'options': summaries,
++              'service_eligibility_id':service_id,
+               'held': dict(Counter(u['sku'] for u in virtual['units'])),
+               'unit_commitments': {c['sku']: c['capital_commitment'] / c['qty'] for c in candidates},
+               'catalog_hash': identity({c['sku']: catalog.get(c['sku']) for c in candidates}),
+@@ -102,6 +116,7 @@
+             or packet.get('demand_policy_id')!=demand_id
+             or packet.get('service_policy_at')!=learning_at
+             or packet.get('strategy_version') != strategy['version']
++            or packet.get('service_eligibility_id')!=service_fingerprint(journal,config,inv,now)
+             or not 0 <= now - packet.get('at', 0) <= 90 or now >= packet.get('expires_at', 0)):
+         return None
+     catalog = journal.snapshot('catalog.json', {})
+--- a/r3/research.py
++++ b/r3/research.py
+@@ -374,6 +374,17 @@
+     if not valid_operating(baseline):
+         baseline={'cover_cycles':1,'initial_batch_limit':6,'frontier_min_orders':8,'recheck_seconds':120}
+     facts['current_operating_policy']=baseline
++    if config.get('service_contract_v26_enabled'):
++        from .service_policy import context as service_context
++        service=service_context(journal,now)
++        path=journal.get('buyer-negotiation-path:v26',{})
++        facts['service_contracts']={'generation':service.get('generation'),
++            'needs':dict(list(service.get('shop_needs',{}).items())[:8]),
++            'contract_groups':dict(list(service.get('buyer_contracts',{}).items())[:8]),
++            'fresh_draws':len(service.get('draw_fractions',[])),
++            'negotiation_holdout':path.get('summary'),
++            'interpretation':'Explicit needs are selected observed demand, not all buyers. Whole continuation labels are not first-bid acceptance. Never infer free warranty, unknown private preferences or causal uplift.'}
++        evidence.extend(['kv:service-policy:v26','kv:buyer-negotiation-path:v26'])
+     if config.get('objective_feedback_enabled'):
+         operating=journal.get('feedback-last-policy',{})
+         facts['operating_feedback']={k:operating.get(k) for k in ('at','regime','facts','peer_trends','objective_targets','patches','reasons','execution_feedback','constraints')}
+--- a/tests/test_uncapped_stock.py
++++ b/tests/test_uncapped_stock.py
+@@ -88,7 +88,11 @@
+     after=copy.deepcopy(inv);sku=planned['buy'][0]['sku']
+     after['units'] += [dict(inv['units'][0],unit='new'+str(n)) for n in range(planned['buy'][0]['qty'])]
+     repeated=prewindow.consume(j,cfg,{'version':1},after,now)
+-    assert repeated is not None and repeated['buy']==[]
++    if cfg.get('service_contract_v26_enabled'):
++        # Different physical units can cover different service requirements.
++        # V26 discards the cached plan and computes again from fresh eligibility.
++        assert repeated is None
++    else:assert repeated is not None and repeated['buy']==[]
+ 
+ 
+ def test_cash_and_storage_obligations_still_block_unaffordable_supply(tmp_path):
+--- a/tests/test_strategy_v4.py
++++ b/tests/test_strategy_v4.py
+@@ -140,4 +140,7 @@
+     assert result['shop'] == 'cheaper' and result['accept']['grades'] == ['A']
+     assert sorted(requests) == ['cheaper', 'expensive'] and bids == ['cheaper']
+     assert cancelled == ['expensive'] and sorted(closed) == ['cheaper', 'expensive']
+-    assert len(j.events('quote_comparison')) == 2
++    comparisons=j.events('quote_comparison')
++    assert len([r for r in comparisons if r.get('source')!='selected_live_contract'])==2
++    if policy().get('service_contract_v26_enabled'):
++        assert any(r.get('source')=='selected_live_contract' and r['shop']=='cheaper' for r in comparisons)
+--- a/tests/test_v26_service_contracts.py
++++ b/tests/test_v26_service_contracts.py
+@@ -0,0 +1,277 @@
++"""Explicit services, exact continuation labels and bounded contract confirmation."""
++import copy
++import time
++from types import SimpleNamespace
++import pytest
++from r3.state import Journal,atomic_json,policy
++from r3 import service_contracts as sc,service_policy as sp,negotiation_path as np
++from r3.market_memory import buyer_price_actions,buyer_assessment
++from r3.shop_growth import marginal
++from r3.quote_market import clarify
++from test_market_cycle import fixture
++from seller_r3 import Seller
++
++
++def food(now,uid,left):
++    return {'unit':uid,'sku':'G111','kind':'food','name':'food','category':'food>one',
++        'list_price':1000,'cost':500,'expires_at':now+left*3600,'supplied_at':now-10}
++
++
++@pytest.mark.parametrize('text,hours',[
++    ('Food must last at least 12 hours after payment',12),
++    ('minimum shelf life after checkout: 2 days',48),
++    ('I need 5 hours of shelf life',5),('Use within 3h',3)])
++def test_explicit_use_units(text,hours):
++    s=sc.parse(text);assert s['valid'] and s['minimum_hours']==hours and s['explicit_use']
++
++
++def test_followup_only_tightens_and_does_not_read_articles_as_grades():
++    old=sc.parse('I need a quote for G111. Food must last at least 4 hours. minimum grade B')
++    assert old['grades']==['A','B'] and old['sku']=='G111'
++    new=sc.parse('Food must last at least 8 hours. require grade A',old)
++    assert new['minimum_hours']==8 and new['grades']==['A']
++    assert sc.parse('800',new)==new
++    assert sc.parse('Please state grade and warranty',new)['valid']
++    assert not sc.parse('only grade C',new)['valid']
++    assert not sc.parse('I want G222 instead',new)['valid']
++
++
++@pytest.mark.parametrize('text',['Food must last at least -2h','at least 73h warranty'])
++def test_invalid_requirements_are_rejected(text):assert not sc.parse(text)['valid']
++
++
++def test_eligibility_has_checkout_time_buffer_and_record_dedup(tmp_path):
++    j,cfg,now=fixture(tmp_path);cat=j.snapshot('catalog.json');u=food(now,'u',12)
++    s=sc.parse('G111 Food must last at least 12h')
++    assert not sc.eligible(u,cat,s,now)
++    s=sc.parse('G111 Food must last at least 8h')
++    assert sc.eligible(u,cat,s,now)
++    sc.record(j,'t',s,u,now);sc.record(j,'t',s,u,now+10)
++    assert len(j.events('shop_service_need'))==1
++    assert 'text' not in j.events('shop_service_need')[0]
++
++
++def test_declared_flexible_grade_protects_scarce_fresh_stock(tmp_path):
++    j,cfg,now=fixture(tmp_path);cat=j.snapshot('catalog.json')
++    a,b=food(now,'A',65),food(now,'B',40);units=[a,b]
++    buckets=[{'minimum_hours':48,'grades':None,'weight':3}]
++    explicit=sc.parse('G111 minimum grade B Food must last at least 4h')
++    unknown=sc.parse('G111 Food must last at least 4h')
++    assert min(units,key=lambda u:sc.priority(u,units,cat,explicit,buckets,now))['unit']=='B'
++    assert min(units,key=lambda u:sc.priority(u,units,cat,unknown,buckets,now))['unit']=='A'
++
++
++def test_seller_selects_eligible_unit_and_records_stockout(tmp_path):
++    j,cfg,now=fixture(tmp_path);cfg=dict(cfg,service_contract_v26_enabled=True)
++    inv=j.snapshot('inventory.json');inv['units']=[food(now,'old',10),food(now,'fresh',60)]
++    atomic_json(j.md/'inventory.json',inv)
++    s=Seller.__new__(Seller);s.j=j;s.cfg=cfg
++    u=s.select_unit('G111 Food must last at least 48h','t')
++    assert u['unit']=='fresh' and u['service_contract']['minimum_hours']==48
++    j.release('t');inv['units']=inv['units'][:1];atomic_json(j.md/'inventory.json',inv)
++    assert s.select_unit('G111 Food must last at least 48h','unavailable') is None
++    assert j.events('stockout')[0]['reason']=='shelf_life'
++
++
++def seed_profile(j,now):
++    for n in range(12):
++        j.add('shop_opportunity',{'task':'task'+str(n),'sku':'G111'},ts=now-1000+n)
++        if n<3:
++            j.add('shop_settled',{'task':'task'+str(n),'sku':'G111','price':850,'cost':500},ts=now-500+n)
++            sc.record(j,'task'+str(n),sc.parse('G111 Food must last at least 48h'),now=now-400+n*61)
++
++
++def test_service_share_is_not_the_whole_sku_and_replenishes_eligible_depth(tmp_path):
++    j,cfg,now=fixture(tmp_path);seed_profile(j,now)
++    packet=sp.update(j,cfg,now);p=packet['shop_needs']['G111']
++    assert p['need_fraction_scenario']==pytest.approx(.25)
++    row=sp.need_plan(j,cfg,'G111',j.snapshot('catalog.json')['G111'],[food(now,str(i),10) for i in range(20)],
++        12,20,1,3,now)
++    assert row['needed']>0 and row['eligible_held']==0 and row['need_rate']==3
++    assert row['eligible_draw_probability']==.25 and row['planning_scenario_not_guarantee']
++
++
++def test_anonymous_burst_is_not_qualified_need(tmp_path):
++    j,cfg,now=fixture(tmp_path)
++    for n in range(100):sc.record(j,str(n),sc.parse('G111 Food must last at least 48h'),now=now-1)
++    assert not sp.update(j,cfg,now)['shop_needs']
++
++
++def test_supply_draw_observer_excludes_survivor_inventory(tmp_path):
++    j,cfg,now=fixture(tmp_path);inv=j.snapshot('inventory.json')
++    old=food(now,'old',10);old['supplied_at']=now-300
++    inv['units']=[old,food(now,'fresh',60)];atomic_json(j.md/'inventory.json',inv)
++    p=sp.update(j,cfg,now)
++    assert len(p['draw_fractions'])==1 and len(j.events('shop_service_draw'))==1
++    sp.update(j,cfg,now+61);assert len(j.events('shop_service_draw'))==1
++
++
++def test_strict_probability_diminishes_and_restores_only_positive_book():
++    strict={'eligible_draw_probability':.25,'eligible_held':0,'need_rate':3,'conditional_cost_ratio':.65}
++    ps=[sp.strict_sale_probability(strict,n,1) for n in range(1,21)]
++    assert 0<ps[-1]<ps[0]<=.25 and all(a>=b for a,b in zip(ps,ps[1:]))
++    c={'evidence':{'arrival_rate_scenario':3,'planning_hours':6,'kind':'food','exploration':False,
++        'scenario_unit_cost':500,'resale_price_scenario':950,'refund_stress':0,'list_price':1000}}
++    old=marginal(c,1,100);c['evidence']['service_eligibility']=strict
++    new=marginal(c,1,100)
++    assert old['book']<new['book']<0 and new['probability']<=.25
++    strict['eligible_draw_probability']=.75
++    assert marginal(c,1,100)['book']>0
++    c['evidence']['resale_price_scenario']=400;assert marginal(c,1,100)['book']<0
++
++
++def test_service_packet_expires_and_prewindow_rejects_inventory_change(tmp_path):
++    from r3 import prewindow
++    j,cfg,now=fixture(tmp_path);seed_profile(j,now);sp.update(j,cfg,now)
++    assert sp.context(j,now) and not sp.context(j,now+181)
++    packet=prewindow.prepare(j,cfg,{'version':1},now);assert packet
++    inv=j.snapshot('inventory.json');inv['restock']['open']=True;inv['units']=[food(now,'new',60)]
++    assert prewindow.consume(j,cfg,{'version':1},inv,now+61) is None
++
++
++def seed_route(j,now,oid,sku='G111',task='t',outcome='paid',price=900):
++    j.add('buyer_counter_route',{'order':oid,'shop':'peer','sku':sku,'task':task,'ask':1000,'price':800,
++        'terms_complete':True,'score_formula':'margin_share_v36','grade':'A','warranty_hours':6},ts=now-90)
++    j.add('market_result',{'order':oid,'verified':outcome=='paid'},ts=now-50)
++    if outcome=='paid':
++        j.add('purchase',{'order':oid,'shop':'peer','sku':sku,'price':price},ts=now-50)
++        j.add('agreement',{'order':oid,'shop':'peer','sku':sku,'price':price,'task':task},ts=now-55)
++    elif outcome=='transport':j.add('attempt',{'order':oid,'shop':'peer','kind':'ReadTimeout'},ts=now-60)
++
++
++def test_path_learning_does_not_credit_other_sku_or_task_and_excludes_transport(tmp_path):
++    j,cfg,now=fixture(tmp_path);j.put('market_rules',{'sha256':'official','buyer_saved_formula':'margin_share_v36'})
++    seed_route(j,now,'same');seed_route(j,now,'other_sku');seed_route(j,now,'other_task');seed_route(j,now,'transport',outcome='transport')
++    j.add('purchase',{'order':'other_sku','shop':'peer','sku':'G222','price':700},ts=now-40)
++    j.add('agreement',{'order':'other_task','shop':'peer','sku':'G111','price':900,'task':'different'},ts=now-40)
++    # Remove ambiguity: latest purchase is same task's changed agreement for this case.
++    j.add('purchase',{'order':'other_task','shop':'peer','sku':'G111','price':901},ts=now-39)
++    row=np.update(j,cfg,now);model=row['model']
++    assert row['samples']==3 and sum(r['paid'] for r in model['groups'].values())==1
++    assert next(iter(model['groups'].values()))['final_price_ratios']==[.9]*3
++    assert row['summary']['mode']=='shadow' and np.context(j,{'kind':'food'},'A',6,now) is None
++
++
++def test_continuation_model_prices_final_outcome_and_discards_over_cap_samples():
++    model={'id':'tested','kind':'goods','grade':'A','warranty_hours':6,'model':{'groups':{
++        'goods|A|True|16':{'n':30,'paid':20,'probability':.6,'final_price_ratios':[.85,.9,1.1],'seconds':8}}}}
++    scenario=np.scenario(model,800,1000,1000)
++    assert scenario['prices']==[850,900] and scenario['probability']==pytest.approx(.4)
++    state={'metric':'saved','score_formula':'margin_share_v36','unit_cost':600,'saved':.5,'deals':100}
++    actions=buyer_price_actions(1000,1000,{'list_price':1200},1000,.8,0,3,saved_state=state,path_model=model)
++    c=next(a for a in actions if a['price']==800)
++    assert c['payment_price_scenarios']==[850,900] and c['path_expected_seconds']==8
++    assert c['completion_probability']==pytest.approx(.4)
++    from r3.buyer_scoring import terms_delta
++    expected=sum(terms_delta(state,p,1200,0,0,.4)['saved'] for p in (850,900))/2
++    assert c['expected_delta']['saved']==pytest.approx(expected)
++
++
++def test_temporal_gate_rejects_uninformative_models_and_accepts_predictive_fixture():
++    bad=[dict(kind='goods',grade='A',warranty_hours=6,ask=1000,price=800,paid=i%2==0,
++        final_ratio=.9 if i%2==0 else None,seconds=8) for i in range(100)]
++    assert np.evaluate(bad)['mode']=='shadow'
++    good=[dict(kind='goods',grade='A',warranty_hours=6,ask=1000,price=800 if i%2 else 990,
++        paid=i%2==0,final_ratio=.995 if i%2==0 else None,seconds=8) for i in range(100)]
++    assert np.evaluate(good)['mode']=='validated_predictive_scenario'
++
++
++def task(terms):return {'id':'t','status':{'state':'TASK_STATE_INPUT_REQUIRED','message':{'parts':[{'kind':'data','data':terms}]}}}
++
++
++def test_confirmation_is_once_bounded_and_original_quote_survives_timeout(tmp_path):
++    j,cfg,now=fixture(tmp_path);j.put('market_rules',{'buyer_metric':'saved','buyer_saved_formula':'margin_share_v36'})
++    order={'order':'o','kind':'goods','budget':1000};c={'shop':'peer','sku':'G111','product':{'kind':'goods','list_price':1000},'reference_price':900}
++    original=task({'ask':900,'sku':'G111'});calls=[]
++    class Peer:
++        deadline=now+30
++        def send(self,text,tid):
++            calls.append((text,self.deadline));raise TimeoutError()
++    p=Peer();assert clarify(p,original,c,order,j,cfg,now+30) is original
++    assert len(calls)==1 and calls[0][1]-time.time()<=2 and 'actual priced warranty' in calls[0][0]
++    assert p.deadline==now+30 and j.events('buyer_terms_confirmation')[0]['status']=='unconfirmed'
++    assert clarify(p,original,c,order,j,cfg,now+30) is original and len(calls)==1
++
++
++def test_complete_contract_needs_no_extra_round_trip(tmp_path):
++    j,cfg,now=fixture(tmp_path);original=task({'ask':900,'grade':'A','warranty_hours':6})
++    p=SimpleNamespace(send=lambda *a:pytest.fail('complete quote must not be re-queried'))
++    assert clarify(p,original,{'shop':'peer','sku':'G111'}, {'kind':'goods'},j,cfg,now+30) is original
++
++
++def test_bid_frontier_has_near_ask_and_saved_targets_without_creating_a_spending_cap(tmp_path):
++    j,cfg,now=fixture(tmp_path);j.put('market_rules',{'buyer_metric':'saved','buyer_saved_formula':'margin_share_v36'})
++    atomic_json(j.md/'board.json',{'buyers':[{'name':'seochanit','saved':.55,'deals':100},{'name':'other','saved':.57,'deals':110}]})
++    p={'kind':'goods','list_price':1000};o={'budget':1000};a=buyer_assessment(p,o,{'grade':'A','warranty_hours':6},j,cfg)
++    assert min(a['bid_targets'],key=lambda x:abs(x-.57001))==pytest.approx(.57001)
++    assert not a['saved_target_is_hard_cap'] and a['cap']==1000
++    prices=buyer_price_actions(900,1000,p,900,.92,0,4,saved_state=a['saved_state'],path_model=a['negotiation_path_model'],target_saved=a['bid_targets'])
++    assert {873,891,900}<={r['price'] for r in prices}
++
++
++def test_configuration_preserves_cost_routing_and_unrestricted_optional_capital():
++    cfg=policy();assert cfg['service_contract_v26_enabled'] and cfg['daily_api_budget_usd'] is None
++    assert not cfg['shop_inventory_caps_enabled'] and not cfg['shop_internal_capital_caps_enabled']
++    assert cfg['background_llm_roles']['market_research_analyst']['model']=='gpt-6-luna'
++    assert cfg['background_llm_roles']['market_research_critic']['model']=='gpt-6.1-terra'
++    assert not any('astra' in v['model'] for v in cfg['background_llm_roles'].values())
++
++
++@pytest.mark.parametrize('fast',[True,False])
++def test_both_rfq_paths_use_margin_share_instead_of_list_discount(tmp_path,monkeypatch,fast):
++    from r3 import quote_market as qm
++    j,cfg,now=fixture(tmp_path);cfg=dict(cfg,buyer_throughput_enabled=fast,system_framework_enabled=False,
++        buyer_fast_accept_margin=10,buyer_patch34_enabled=True)
++    def assessment(product,order,terms,*args,**kwargs):
++        return {'cap':1000,'failure':0,'covered_failure':0,'conditional_terms':[],
++            'saved_state':{'metric':'saved','score_formula':'margin_share_v36','saved':.5,'deals':100,
++                'unit_cost':700 if terms['grade']=='A' else 250},'required_grade':terms['grade'],'required_warranty':0}
++    monkeypatch.setattr(qm,'buyer_assessment',assessment)
++    class Peer:
++        def discover(self,s):self.shop=s
++        def send(self,text,*args):return task({'ask':600 if self.shop=='A' else 400,'grade':self.shop,'warranty_hours':0,'sku':'G111'})
++        def close(self):pass
++        def cancel(self,*a):pass
++    rows=[{'id':s,'shop':s,'sku':'G111','score':0,'evidence':{},'product':{'kind':'goods','list_price':1000}} for s in ('A','C')]
++    prepared,contacted=qm.compare_quotes({'order':'o','kind':'goods','budget':1000},rows,
++        {s:{'pubkey':'synthetic'} for s in ('A','C')},j,cfg,Peer,now+30)
++    assert contacted==2 and {r['shop']:r['score'] for r in rows}==pytest.approx({'A':1,'C':.8})
++    qm.close_quotes(prepared)
++
++
++def test_confirmed_quote_uses_actual_new_price_and_same_task(tmp_path):
++    from r3.protocol import quote,quote_terms
++    j,cfg,now=fixture(tmp_path);c={'shop':'peer','sku':'G111','product':{'kind':'goods','list_price':1000},'reference_price':800}
++    original=task({'ask':800,'sku':'G111'})
++    p=SimpleNamespace(deadline=now+30,send=lambda text,tid:task({'ask':850,'sku':'G111','grade':'B','warranty_hours':6}))
++    actual=clarify(p,original,c,{'order':'o','kind':'goods','budget':1000},j,cfg,now+30)
++    assert actual['id']==original['id'] and quote(actual)==850 and quote_terms(actual)['grade']=='B'
++    assert p.deadline==now+30
++
++
++def test_seller_followup_replaces_unit_and_preserves_new_cost_accounting(tmp_path,monkeypatch):
++    import asyncio
++    import seller_r3 as sr
++    j,cfg,now=fixture(tmp_path);inv=j.snapshot('inventory.json')
++    old,fresh=food(now,'old',10),food(now,'fresh',60);fresh['cost']=650
++    inv['units']=[old,fresh];atomic_json(j.md/'inventory.json',inv)
++    messages=[]
++    class Updater:
++        def __init__(self,**kwargs):pass
++        def new_agent_message(self,**kwargs):return SimpleNamespace(**kwargs)
++        async def reject(self,*args):messages.append('rejected')
++        async def update_status(self,*args,**kwargs):messages.append(kwargs.get('metadata'))
++    # A deterministic quote avoids any API/key requirement and real signing.
++    monkeypatch.setattr(sr,'TaskUpdater',Updater)
++    monkeypatch.setattr(sr,'get_message_text',lambda message:message.text)
++    monkeypatch.setattr(sr,'prepare_quote',lambda *a:({},[{'id':'q','action':'counter','price':850,'warranty_hours':0,'expected_delta':{'book':200}}]))
++    s=Seller.__new__(Seller);s.j=j;s.cfg=cfg;s.deals={};s.chooser=SimpleNamespace(choose=lambda role,cs,*a,**k:cs[0])
++    spec=sc.parse('G111 Food must last at least 4h')
++    s.deals['t']={'unit':dict(old,requested_use_hours=4),'ask':850,'turns':1,'until':now+180,
++        'config':cfg,'strategy':{'version':1},'service_contract':spec}
++    j.reserve('old','t',180,now)
++    context=SimpleNamespace(message=SimpleNamespace(text='Food must last at least 48h',message_id='m',metadata={}))
++    asyncio.run(s._execute(SimpleNamespace(id='t',context_id='c'),context,None))
++    assert s.deals['t']['unit']['unit']=='fresh' and j.get('shop_strategy:t')['cost']==650
++    assert messages[-1]['unit']=='fresh'
++    with j.connect() as db:assert db.execute('SELECT unit FROM reservations WHERE task=?',('t',)).fetchall()==[('fresh',)]
+--- a/verify_market_cycle_live.py
++++ b/verify_market_cycle_live.py
+@@ -35,6 +35,9 @@
+         if cfg.get('objective_feedback_enabled'):
+             kinds+=['feedback_policy_created','feedback_main_choice','quality_holdout_evaluation']
+         if cfg.get('agent_policy_selection_enabled'):kinds+=['analytical_role_error']
++        if cfg.get('service_contract_v26_enabled'):
++            kinds+=['shop_service_need','service_policy_prepared','negotiation_path_prepared',
++                'buyer_terms_confirmation','buyer_counter_route','buyer_negotiation_step','buyer_route_terminal']
+         if cfg.get('objective_decision_enabled'):
+             kinds+=['objective_alternatives_prepared','objective_context_error','research_context_prepared',
+                     'buyer_forum_policy_choice','forum_objective_observation']
+@@ -46,7 +49,7 @@
+     try:
+         with lease(ROOT/'.market/shop-recovery-guard.lock'):guard_active=False
+     except RuntimeError:guard_active=True
+-    release='v25' if cfg.get('llm_cost_v25_enabled') else 'v24' if cfg.get('shop_reputation_v24_enabled') else 'v23' if cfg.get('book_growth_v23_enabled') else 'v22' if cfg.get('buyer_patch36_enabled') else 'v21' if cfg.get('shop_adaptive_demand_enabled') else 'v20' if cfg.get('shop_inventory_caps_enabled') is False else 'v19' if cfg.get('capability_llm_enabled') else 'v18' if cfg.get('objective_decision_enabled') else 'v17' if cfg.get('agent_policy_selection_enabled') else 'v16' if cfg.get('objective_feedback_enabled') else 'v15'
++    release='v26' if cfg.get('service_contract_v26_enabled') else 'v25' if cfg.get('llm_cost_v25_enabled') else 'v24' if cfg.get('shop_reputation_v24_enabled') else 'v23' if cfg.get('book_growth_v23_enabled') else 'v22' if cfg.get('buyer_patch36_enabled') else 'v21' if cfg.get('shop_adaptive_demand_enabled') else 'v20' if cfg.get('shop_inventory_caps_enabled') is False else 'v19' if cfg.get('capability_llm_enabled') else 'v18' if cfg.get('objective_decision_enabled') else 'v17' if cfg.get('agent_policy_selection_enabled') else 'v16' if cfg.get('objective_feedback_enabled') else 'v15'
+     promotion=sorted((ROOT/'logs').glob(release+'-source-promotion-*.json'))[-1]
+     manifest=read_json(promotion,{})
+     mismatches=[r['path'] for r in manifest['files'] if hashlib.sha256((ROOT/r['path']).read_bytes()).hexdigest()!=r['candidate_sha256']]
