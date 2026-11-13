@@ -700,8 +700,14 @@ def choose(shops, mem, item, budget, ask_model=True, ctx=None):
             # at that shop over 24 h (goods were overpredicted by .04-.08), else by the kind's measured gap
             o = (ctx.get("ours") or {}).get(f"{s['name']}|{ctx['kind']}")
             if o and o.get("n", 0) >= 3 and o.get("v") is not None:
+                # 11-13 18:50 (user: 'go more often where it sells well'): the market prior weighed 10 deals and was not
+                # calibrated, so a shop where we realized little kept its first visits (ovotnwjd-maker goods: our v
+                # .605 in 7 deals, 41 first visits in 6 h) while moss-and-oak (P .39, v .832) got 33 visits. The
+                # prior now carries the kind's calibration gap and weighs 4 deals
+                g_ = ((ctx.get("cal") or {}).get(ctx["kind"]) or {}).get("gap") or 0.0
+                prior = e["saved"] + max(-0.08, min(0.02, g_))
                 k_ = min(o["n"], 40)
-                e = dict(e, saved=round((10 * e["saved"] + k_ * o["v"]) / (10 + k_), 4), market_saved=e["saved"])
+                e = dict(e, saved=round((4 * prior + k_ * o["v"]) / (4 + k_), 4), market_saved=e["saved"])
             else:
                 g_ = ((ctx.get("cal") or {}).get(ctx["kind"]) or {}).get("gap")
                 if g_ is not None:
