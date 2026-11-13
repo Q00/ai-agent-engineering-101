@@ -414,6 +414,9 @@ def run(now: float, settles: list | None = None, inv: dict | None = None, sales:
     top = set(demand_top(settles, names, catalog, now))
     for sku, info in discover(settles, names, catalog, line, caps, now, unmet, experiment(now), margin, top).items():
         found[sku], line[sku] = info, info["cap"]
+        caps[sku] = defaults[sku] = info["cap"]          # 11/13: a product found again starts at its new cap. Its old
+        exits.pop(sku, None)                             # exit (cap 0) stayed in caps, so decide() kept it "out": the
+        base.pop(sku, None)                              # same products were "added" every 20 min and never bought
         why = (f"added: others sold it {info['n']} times in {FIND_WINDOW // 3600} h at {info['median']:.3f} of list, {info['sellers']} sellers"
                if info["source"] == "market" else
                f"added: {info['orders']} of our buyer's orders in {UNMET_WINDOW // 3600} h wanted it and no shop had it "

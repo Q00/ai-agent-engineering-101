@@ -1204,6 +1204,19 @@ def test_discover():
     held = [c for c in ch if c["sku"] == "Gsofa0002"]
     check("11/13: a line product at 2 among the market's most settled dear products is held at 4 (DEMAND_CAP), said so",
           [(c["from"], c["to"]) for c in held] == [(2, 4)] and "most settled dear products" in held[0]["why"], ch)
+    st_ = common.read_json(MD / "analysis" / "line_state.json")
+    st_["caps"]["Gsofa0003"], st_["exit_at"]["Gsofa0003"] = 0, int(t - linewatch.FIND_DROP - 60)
+    common.write_json(MD / "analysis" / "line_state.json", st_)
+    common.catalog = lambda *a, **k: cat
+    try:
+        ch = linewatch.run(t + 60, settles=settles, inv={"units": []}, sales=[], line={BEDDING: 3, "Gsofa0002": 2}, stars=4.9)
+    finally:
+        common.catalog = saved
+    st_ = common.read_json(MD / "analysis" / "line_state.json")
+    check("11/13: a product out for 12 h and found again starts at its new cap (4), its old exit let go (until then its cap "
+          "stayed 0: \"added\" every 20 min and never bought)",
+          common.read_json(MD / "analysis" / "line.json")["skus"].get("Gsofa0003") == 4 and "Gsofa0003" not in st_["exit_at"]
+          and [(c["from"], c["to"]) for c in ch if c["sku"] == "Gsofa0003"] == [(0, 4)], (ch, st_["caps"].get("Gsofa0003")))
     for f in ("line_state.json", "line.json", "line_log.jsonl"):
         (MD / "analysis" / f).unlink(missing_ok=True)
 
