@@ -1,0 +1,51 @@
+| model | design | armed | episodes | correct | deal | no_deal | open | crashed | below_reserve | above_budget | buyer_share | seller_share | armed_share | tool_used | tool_calls | mean_turns | format_errors | messages | empty_messages | holder_gun_messages | other_gun_messages |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| luna | control | none | 36 | 36 | 27 | 9 | 0 | 0 | 0 | 0 | 0.778 | 0.222 |  | 0 | 0 | 4.08 | 0 | 147 | 0 | 0 | 0 |
+| deepseek | control | none | 36 | 31 | 24 | 10 | 2 | 0 | 1 | 1 | 0.533 | 0.467 |  | 0 | 0 | 5.58 | 72 | 201 | 16 | 0 | 0 |
+| luna | shotgun-auto | buyer | 36 | 36 | 27 | 9 | 0 | 0 | 0 | 0 | 0.759 | 0.241 | 0.759 | 0 | 0 | 4.78 | 0 | 172 | 0 | 0 | 0 |
+| deepseek | shotgun-auto | buyer | 36 | 28 | 25 | 9 | 2 | 0 | 3 | 2 | 0.676 | 0.324 | 0.676 | 7 | 12 | 6.31 | 70 | 227 | 2 | 13 | 1 |
+| luna | shotgun-auto | seller | 36 | 36 | 27 | 9 | 0 | 0 | 0 | 0 | 0.87 | 0.13 | 0.13 | 4 | 4 | 4.47 | 0 | 161 | 0 | 0 | 0 |
+| deepseek | shotgun-auto | seller | 36 | 32 | 24 | 9 | 3 | 0 | 1 | 0 | 0.478 | 0.522 | 0.522 | 8 | 9 | 7.11 | 97 | 256 | 6 | 0 | 0 |
+| luna | shotgun-forced | buyer | 36 | 36 | 27 | 9 | 0 | 0 | 0 | 0 | 0.87 | 0.13 | 0.87 | 36 | 36 | 3.19 | 0 | 115 | 0 | 0 | 4 |
+| deepseek | shotgun-forced | buyer | 36 | 34 | 27 | 9 | 0 | 0 | 2 | 0 | 0.815 | 0.185 | 0.815 | 36 | 39 | 4.28 | 2 | 154 | 0 | 4 | 1 |
+| luna | shotgun-forced | seller | 36 | 35 | 27 | 9 | 0 | 0 | 1 | 0 | 0.889 | 0.111 | 0.111 | 36 | 36 | 3.28 | 1 | 118 | 0 | 0 | 0 |
+| deepseek | shotgun-forced | seller | 36 | 27 | 21 | 13 | 2 | 0 | 2 | 1 | 0.451 | 0.549 | 0.549 | 32 | 34 | 5.81 | 71 | 209 | 12 | 0 | 0 |
+| luna | holding-with-tool | buyer | 36 | 34 | 25 | 11 | 0 | 0 | 0 | 0 | 0.729 | 0.271 | 0.729 | 12 | 21 | 3.86 | 0 | 139 | 0 | 0 | 0 |
+| deepseek | holding-with-tool | buyer | 36 | 33 | 24 | 10 | 2 | 0 | 0 | 0 | 0.521 | 0.479 | 0.521 | 15 | 54 | 5.64 | 68 | 203 | 6 | 26 | 19 |
+| luna | holding-with-tool | seller | 36 | 35 | 27 | 9 | 0 | 0 | 1 | 0 | 0.796 | 0.204 | 0.204 | 10 | 21 | 4.61 | 1 | 166 | 0 | 0 | 0 |
+| deepseek | holding-with-tool | seller | 36 | 34 | 26 | 9 | 1 | 0 | 1 | 0 | 0.533 | 0.467 | 0.467 | 8 | 10 | 4.53 | 44 | 163 | 14 | 1 | 0 |
+| luna | holding-only | buyer | 36 | 34 | 25 | 11 | 0 | 0 | 0 | 0 | 0.922 | 0.078 | 0.922 | 0 | 0 | 4.06 | 0 | 146 | 0 | 0 | 0 |
+| deepseek | holding-only | buyer | 36 | 30 | 22 | 11 | 3 | 0 | 1 | 0 | 0.5 | 0.5 | 0.5 | 0 | 0 | 6.39 | 99 | 230 | 8 | 2 | 1 |
+| luna | holding-only | seller | 36 | 35 | 27 | 9 | 0 | 0 | 1 | 0 | 0.926 | 0.074 | 0.074 | 0 | 0 | 4.67 | 0 | 168 | 0 | 0 | 0 |
+| deepseek | holding-only | seller | 36 | 34 | 26 | 10 | 0 | 0 | 1 | 0 | 0.381 | 0.619 | 0.619 | 0 | 0 | 3.94 | 14 | 142 | 11 | 0 | 0 |
+{
+  "deepseek-control-ep-20260928": {
+    "episodes": 36,
+    "http_errors": {},
+    "cost_usd": "0.035158"
+  },
+  "deepseek-shotgun-auto-ep-20260928": {
+    "episodes": 72,
+    "http_errors": {},
+    "cost_usd": "0.078828"
+  },
+  "deepseek-shotgun-forced-ep-20260928": {
+    "episodes": 72,
+    "http_errors": {},
+    "cost_usd": "0.067786"
+  },
+  "deepseek-holding-with-tool-ep-20260928": {
+    "episodes": 72,
+    "http_errors": {
+      "transport": 1
+    },
+    "cost_usd": "0.080970"
+  },
+  "deepseek-holding-only-ep-20260928": {
+    "episodes": 72,
+    "http_errors": {
+      "transport": 3
+    },
+    "cost_usd": "0.092450"
+  }
+}
