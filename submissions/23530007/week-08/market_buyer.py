@@ -324,14 +324,27 @@ def unit_skip(mem):
     policy, a receipt that named another SKU, or a turn-away before any ask (asking the same shop for the same SKU
     again ended the same way 215 times of 252 in 48 h; for another SKU 45%, whatever the wait). That SKU is not
     asked for at that shop for UNIT_FAIL_SECS."""
-    since, out = time.time() - UNIT_FAIL_SECS, set()
+    since, out, seen = time.time() - UNIT_FAIL_SECS, set(), set()
     for t in reversed(mem["trades"]):
         if t.get("t", 0) < since:
             break
+        # 11-13 18:35: only the NEWEST outcome of a pair counts, so a later deal there clears the skip
+        key_ = f"{t.get('shop')}|{t.get('item')}"
+        if key_ in seen:
+            continue
+        seen.add(key_)
         oc = str(t.get("outcome", ""))
+        asks_ = t.get("asks") or []
+        # 11-13 18:30 (verified, workflow buyer_saved BS2): a 'grade C claimed' or 'no warranty' answer repeats for the
+        # same shop|SKU (854 of 981 and 265 of 315 in 6 h were repeats; 5,152 such revisits in 24 h made 55 deals) and
+        # burned the 6 tries of an order; 'no warranty on receipt' also wasted the shop's talk each time (we agreed and
+        # then did not pay), and a shop whose ask never moves above our cap (nocha12 ~100 visits in 6 h) never closes
         if t.get("shop") and t.get("item") and ((oc.startswith("unpaid") and "shelf life" in oc)
                                                 or (oc == "deal" and "receipt names" in str(t.get("void")))
                                                 or oc.startswith("wrong item")
+                                                or oc in ("grade C claimed", "no warranty", "no warranty on receipt")
+                                                or (oc in ("too dear", "over budget") and len(asks_) >= 2
+                                                    and max(asks_) == min(asks_))
                                                 or (oc == "rejected" and not t.get("asks"))):
             out.add(f"{t['shop']}|{t['item']}")
     return out
