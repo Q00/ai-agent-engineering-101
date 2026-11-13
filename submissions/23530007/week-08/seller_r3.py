@@ -326,7 +326,10 @@ def pick_unit(text, held, now, asks=None):
     # 11-11 07:45 REVERTED to oldest-first by default: in the 2.5 h with A-first, margin fell from 5.8 M/h to
     # 1.1 M/h (C units made 130k per deal vs A 14k / B 15k; big-ticket deals 119 -> 8 per 6 h) and the book lead
     # started shrinking. Book 1st outranks stars (user). A-first is the policy knob grade_first (strategist).
-    fit = sellable_first(fit, asks)
+    # 11-13 14:30 BUG FIX: sellable_first used to run here and keep ONLY the units whose cost fits under the market
+    # price; for a SKU holding a cheap grade C unit next to surge-priced A units that left the C alone, which the
+    # no-C rule below then dropped: 'none in stock' while A units sat on the shelf (~155 asks an hour, e.g. Gb67975ff
+    # with 8 A units). The grade rules now run first and the market-fit order is only a preference (below)
     accepts_c = bool(ACCEPTS_C.search(text)) or (want is not None and "C" in want)
     # 11-11 20:30, USER DECISION ('then we just sell B or A'): goods go out as grade A or B; a grade C unit only to a
     # buyer whose message accepts C. 48 h of paid reviews joined to our sales: A 4.72 stars (2,574 sales), B 4.51
@@ -359,9 +362,10 @@ def pick_unit(text, held, now, asks=None):
         ab = [u for u in ab if (u.get("grade") or "A") == "A"]
     if not ab:
         return None
+    fits = {id(u) for u in sellable_first(ab, asks)}      # units whose floor fits under the market price go first
     if shop_policy_now().get("grade_first"):
-        return min(ab, key=lambda u: (GRADE_ORDER.get(u.get("grade") or "A", 1), u.get("supplied_at") or 0))
-    return min(ab, key=lambda u: u.get("supplied_at") or 0)
+        return min(ab, key=lambda u: (id(u) not in fits, GRADE_ORDER.get(u.get("grade") or "A", 1), u.get("supplied_at") or 0))
+    return min(ab, key=lambda u: (id(u) not in fits, u.get("supplied_at") or 0))
 
 
 CHEAP_LIST, CHEAP_SHARE = 50000, 0.58   # 11-11: concession on cheap items from the 3rd offer (<= ~1M/day)
