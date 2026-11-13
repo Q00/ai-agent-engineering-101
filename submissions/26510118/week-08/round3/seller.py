@@ -355,6 +355,7 @@ def priced(u: dict, now: float, warranty: bool, arm: float | None = None, food: 
     comp = shop_model.comp_ask(market_file("analysis/price_map.json"), u.get("sku"))    # Kiro 2.0 stage 1
     return pricing.plan(u, now, warranty=warranty, adjust=float(r["price_adjust"] or 0), catalog=catalog(),
                         extra=r["warranty_extra"], market=by_grade, late=late, dear_default=True,
+                        dear_a=bool(r.get("warranty_dear_a", True)),
                         sku_market=sku_market, in_line=in_line, solo=solo, solo_floor=learned, comp_ask=comp, ask_over=arm,
                         food_floor=food)
 

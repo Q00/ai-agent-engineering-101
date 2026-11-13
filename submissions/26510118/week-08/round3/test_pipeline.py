@@ -229,6 +229,12 @@ def test_pricing():
     check("with a warranty: A 78%, B 81%, C 93% (each grade's extra follows its breakage, 11/13)",
           [pricing.plan(u, now, warranty=True)["ask"] for u in (goods_a, goods_b, goods_c)] == [31122, 32319, 37107])
     check("no warranty on food", pricing.plan(food, now, warranty=True, catalog=CATALOG)["warranty_hours"] is None)
+    dear_a_unit, dear_b_unit = dict(goods_a, list_price=2_000_000, cost=1_300_000), dict(goods_b, list_price=2_000_000, cost=1_000_000)
+    wh = lambda u, **k: pricing.plan(u, now, dear_default=True, **k)["warranty_hours"]
+    check("11/13 trial switch: dear grade A goods carry the warranty unasked only while dear_a is on; asked, they carry it; "
+          "dear B and A under 500k keep it unasked",
+          (wh(dear_a_unit), wh(dear_a_unit, dear_a=False), wh(dear_a_unit, dear_a=False, warranty=True),
+           wh(dear_b_unit, dear_a=False), wh(dict(goods_a, list_price=400_000), dear_a=False)) == (6, None, 6, 6, 6))
     shelf = CATALOG[KIMCHI]["shelf_hours"]
     edge = dict(food, expires_at=now + pricing.FOOD_CUTS[1] * shelf * H + 120)
     check("food dropping to C within the claim margin is claimed C (true at settle)",

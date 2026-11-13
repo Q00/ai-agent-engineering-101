@@ -49,7 +49,7 @@ import watch
 
 FIELDS = {
     "seller": {"focus_categories": "categories", "drop_categories": "categories", "price_adjust": (-0.10, 0.15),
-               "warranty_extra": "grades", "walk_threshold": (0.5, 0.95)},
+               "warranty_extra": "grades", "walk_threshold": (0.5, 0.95), "warranty_dear_a": "bool"},
     "buyer": {"avoid_shops": "shops", "prefer_shops": "shops", "open_ratio": (0.40, 0.70), "max_ratio": (0.60, 0.95),
               "warranty_all_goods": "bool", "over_budget_try": "bool"},
 }
@@ -214,7 +214,9 @@ FIELD_NOTES = {
                "warranty_extra": "the paid 6-hour warranty's price by grade, a share of the list price added to both "
                                  "the ask and the floor",
                "walk_threshold": "an offer at or above the floor is taken at once when the decision model's odds that "
-                                 "the buyer walks away if countered reach this"},
+                                 "the buyer walks away if countered reach this",
+               "warranty_dear_a": "true: goods of 500,000 or more in grade A come with the 6-hour warranty unasked; false: "
+                                  "only when the buyer asks (grades B and C keep it)"},
     "buyer": {"avoid_shops": "our buyer passes these shops over unless every choice is poor",
               "prefer_shops": "our buyer ranks these shops' offers higher",
               "open_ratio": "our first offer as a share of the list price",

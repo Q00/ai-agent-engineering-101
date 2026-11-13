@@ -125,6 +125,11 @@ def default_warranty(unit: dict) -> bool:
     return unit.get("kind") == "goods" and (unit.get("list_price") or 0) >= WARRANTY_DEFAULT_MIN
 
 
+DEAR_A_MIN = 500_000    # 11/13 (the person's call, a trial): with plan(dear_a=False) grade A goods of this list price or more
+                        # carry the warranty only when asked. Over 18.4 h they sold 140 with it and kept 1.69M of a
+                        # 7.54M margin after 5.85M of refunds; in 24 h 107 of 192 such deals got it unasked
+
+
 def market_ref(by_grade: dict | None, g: str, warranty: bool):
     """The market's median paid share of the list price for grade g, with a warranty or without, or None."""
     d = (by_grade or {}).get(g) or {}
@@ -218,7 +223,7 @@ def plan(unit: dict, now: float | None = None, warranty: bool = False, adjust: f
          catalog: dict | None = None, extra: dict | None = None, market: dict | None = None,
          late: bool = False, dear_default: bool = False, sku_market: dict | None = None,
          in_line: bool = False, solo: bool = False, solo_floor: float | None = None, ask_over: float | None = None,
-         comp_ask: float | None = None, food_floor: str | None = None) -> dict:
+         comp_ask: float | None = None, food_floor: str | None = None, dear_a: bool = True) -> dict:
     """{ask, floor, grade, hours_left, age_days, at_cost, warranty_hours, ref, late, sku_ref, nudge} for one unit.
     sku_market: the SKU's others_6h; a grade A ask well above it comes down, a grade C ask well under it goes up
     (not for the premium line, in_line, nor on clearance); nudge: by how much (share of list), or None. A premium
@@ -240,7 +245,9 @@ def plan(unit: dict, now: float | None = None, warranty: bool = False, adjust: f
     age = (now - unit.get("supplied_at", now)) / 86400
     to_end = (common.ROUND_END - now) / 3600
     clearing = age > DUD_DAYS or near_expiry(unit, now) or to_end < LAST_DAY
-    w = (bool(warranty) or (dear_default and default_warranty(unit) and not clearing)
+    unasked = dear_default and default_warranty(unit) and not clearing and (
+        dear_a or g != "A" or (unit.get("list_price") or 0) < DEAR_A_MIN)
+    w = (bool(warranty) or unasked
          or (C_WARRANTY and g == "C" and not clearing)) and unit.get("kind") == "goods"
     rule = START[g] + (extra[g] if w else 0)
     ref = market_ref(market, g, w)
