@@ -667,8 +667,21 @@ def ask_model(prompt, role):
             return ""
 
 
-def measure(m, pred, since, now):
-    w = pm.window(m, pred["sku"], max(1, round((now - since) / 3600)), now)
+def measure(m, pred, since, now, knob=None):
+    hours = max(1, round((now - since) / 3600))
+    skus = [pred["sku"]]
+    if knob in GLOBAL and knob not in KNOBS:
+        # 11-13 17:45 BUG FIX: a shop-wide knob was scored on the one SKU its prediction named: food_shelf_floor .7
+        # (14:17) was reverted at 16:15 because G200e39a3 sold 0, while other food sold. A shop-wide knob is scored
+        # on every SKU of the named SKU's kind (food or goods), or on all SKUs
+        cat = read(HERE / ".market" / "catalog.json", {})
+        kind = (cat.get(pred.get("sku")) or {}).get("kind")
+        skus = [s for s in m.get("skus", {}) if kind is None or (cat.get(s) or {}).get("kind") == kind]
+    w = dict.fromkeys(("sold", "no_stock", "cancels", "lost", "margin"), 0)
+    for s in skus:
+        for k, x in pm.window(m, s, hours, now).items():
+            if k in w:
+                w[k] += x
     return {"sold_next_6h": w["sold"], "no_stock_next_6h": w["no_stock"],
             "cancels_next_6h": w["cancels"] + w["lost"], "margin_next_6h": w["margin"]}[pred["metric"]]
 
@@ -677,7 +690,7 @@ def learn(m, mem, auto):
     now, new_misses = time.time(), 0
     for e in mem.due(now):
         p = e["prediction"]
-        got = measure(m, p, e["t"], now)
+        got = measure(m, p, e["t"], now, e.get("knob"))
         ok = got >= p["value"] if p["op"] == ">=" else got <= p["value"]
         mem.score(e, got, ok)
         log(f"scored {e['knob']} {e.get('sku') or ''} {p['metric']} {p['op']} {p['value']}: got {got} -> "
