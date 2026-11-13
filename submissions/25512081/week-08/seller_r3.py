@@ -139,6 +139,11 @@ MAX_BREAK_FOR_WARRANTY = 0.10
 # floor / (1 - break rate): the expected sale keeps what the plain floor keeps. Not above list, rate under the cap.
 ASKS_WARRANTY = re.compile(r"warrant", re.I)
 NO_WARRANTY = re.compile(r"without (?:\w+ )*?warrant|no warrant", re.I)
+# Buyers whose first message asks for grade A or B ("grade A or B only", "need: grade A/B", not "A/B/C") almost never
+# pay for a grade C goods unit: Nov 13 00:17-12:17, 2 of 43 such C deals (list >= 100k, 17.4M agreed) settled vs 9
+# of 28 for other buyers, while we held A units of the same SKU (G021aae64 4 A / 6 C, G24f5f979 9 A / 2 C) that
+# went behind the C units because their floor is over the opening cap. For these buyers grade C goods go last.
+WANTS_AB = re.compile(r"grade A(?: or |/)B(?!/)", re.I)
 MAX_BREAK_ON_REQUEST = 0.30
 # Our buyer collects every competitor's first ask (.market/competitors.json); we open at most UNDERCUT of the
 # lowest recent one for the same SKU, never under the floor.
@@ -301,7 +306,9 @@ def find_unit(text, taken=()):
                 if u["sku"] not in cap:
                     cap[u["sku"]] = u["list_price"] * max_share(u)
             over = lambda u: math.ceil(u["cost"] * (1 + FLOOR_MARGIN)) > cap[u["sku"]]
-            return min(fit, key=lambda u: (over(u), u["grade"], u["cost"] if over(u) else u["supplied_at"]))
+            no_c = bool(WANTS_AB.search(text))
+            return min(fit, key=lambda u: (no_c and u["grade"] == "C", over(u), u["grade"],
+                                           u["cost"] if over(u) else u["supplied_at"]))
     return None
 
 
