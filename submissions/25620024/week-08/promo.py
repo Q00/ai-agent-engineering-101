@@ -227,7 +227,7 @@ def quote(c, unit, code=None, me=None, now=None, stock_n=1, vip=False):
         price, why = price * (1 - t["vip_discount"]), why + [f"VIP -{t['vip_discount']:.0%}"]
     if any(w.startswith(("shelf", "in stock", "scm clear")) or " in stock" in w for w in why) and "clear_floor_margin" in t:
         floor = int(cost * (1 + min(t["min_margin"], t["clear_floor_margin"]))) + 1   # clearing may go lower
-    if follow and median:
+    if follow is not None and median:   # 11-13 benchmark: follow 0 ("at the median") skipped this and fell to cost + 1
         fm = t["follow_margin"]
         if dear:                                      # 11-07: Book counts unsold stock at cost, so a dear unit whose cost
             fm = min(fm, 0.0 if over else t.get("big_follow_margin", 0.03))   # sits above the market median sells
