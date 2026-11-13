@@ -83,6 +83,9 @@ PARALLEL, QUOTES, QUOTE_WAIT = True, 3, 20   # 11/13 19:40 (the person's call): 
 # others are cancelled as soon as a deal closes. Since the 0.70 floor (7.5 h, 710 orders) an order took 38 s on average
 # against the market's 20 s per order: 228 orders went through all 6 shops one after another (48 s each, 6% closed),
 # 43% of the buyer's time. Asked at once, an order takes about its longest single talk: ~150 orders an hour, not 95
+QUOTE_READ = True         # 11/13 20:50 (the person's call): a quote's ask is read from its text when the reply carries no
+                          # metadata.ask (468 of 569 replies), so the lowest ask is traded first. Over 522 deals a first ask
+                          # 5+ points of list lower ended lower in 74% of pairs (rank correlation 0.57): likely, not sure
 MAX_TRIES, TRY_BUDGET, HARD_STOP = 6, 150, 240  # 3 and 90 until 11/7 02:10 (61% of orders ended without a deal, most
                                                  # after 3 shops, with a median of 47 holding the product); shops per
                                                  # order; seconds from the order's start to begin
@@ -264,10 +267,17 @@ async def asked(t):
             if n.replace(",", "").replace(".", "", 1).isdigit()]
     if len(set(nums)) <= 1:
         return nums[-1] if nums else None
+    key = ((t or {}).get("id"), text)
+    if key in _ASKED:                                       # 11/13: a quote's reply is read once, for its rank and
+        return _ASKED[key]                                  # again when the trade starts on it: one model call
     got = re.search(r"\d[\d,]*", await asyncio.to_thread(harness.ask, READ_PROMPT.format(text=text[:300]),
                                                          system=READ_SYSTEM) or "")
     pick = int(got.group().replace(",", "")) if got else None
-    return pick if pick in nums else nums[-1]
+    _ASKED[key] = pick if pick in nums else nums[-1]
+    return _ASKED[key]
+
+
+_ASKED = {}               # (task id, text) -> the ask the model read (one order's process)
 
 
 def receipt_of(t):
@@ -776,15 +786,26 @@ def broke_off(c: dict, error: str = "TimeoutError") -> dict:
     return r
 
 
-def quote_rank(c: dict, t) -> tuple:
+def quote_rank(c: dict, t, ask=None) -> tuple:
     """Order of the quoted shops: a shop that already ended the talk first (nothing to wait for), then the lowest
-    first ask as a share of list, an ask we cannot read after those, a shop that never answered last."""
+    first ask as a share of list, an ask we cannot read after those, a shop that never answered last. ask: the one
+    asked() read from the reply (82% of replies carry no metadata.ask on 11/13)."""
     if t is None:
         return (3, 0.0)
     if state(t) != "TASK_STATE_INPUT_REQUIRED":
         return (0, 0.0)
-    ask = meta(t).get("ask")
+    ask = ask if ask is not None else meta(t).get("ask")
     return (1, ask / c["list"]) if isinstance(ask, (int, float)) and ask > 0 and c.get("list") else (2, 0.0)
+
+
+async def quote_ask(t):
+    """The first ask in a quote's reply (asked: the metadata, the one number, or the cheap model), or None."""
+    if t is None or state(t) != "TASK_STATE_INPUT_REQUIRED":
+        return None
+    try:
+        return await asked(t)
+    except Exception:                                    # noqa: BLE001  (the rank falls back to unknown)
+        return None
 
 
 async def shop_around_parallel(factory, c: dict, poor, cands: list, order: dict, catalog: dict, nb: dict, rules: dict,
@@ -807,9 +828,10 @@ async def shop_around_parallel(factory, c: dict, poor, cands: list, order: dict,
         got = await asyncio.gather(*[asyncio.wait_for(quote(factory, x, order, nb, rules, bool(p)), QUOTE_WAIT)
                                      for x, p in batch], return_exceptions=True)
         got = [g if isinstance(g, tuple) else (None, None) for g in got]
-        print("[buyer] quotes: " + "; ".join(f"{x['shop']['name']} {meta(t).get('ask') if t else None}"
-                                             for (x, _), (_, t) in zip(batch, got)), flush=True)
-        ranked = sorted(range(len(batch)), key=lambda i: quote_rank(batch[i][0], got[i][1]))
+        asks = await asyncio.gather(*[quote_ask(t) for _, t in got]) if QUOTE_READ else [None] * len(got)
+        print("[buyer] quotes: " + "; ".join(f"{x['shop']['name']} {a if a is not None else (meta(t).get('ask') if t else None)}"
+                                             for (x, _), (_, t), a in zip(batch, got, asks)), flush=True)
+        ranked = sorted(range(len(batch)), key=lambda i: quote_rank(batch[i][0], got[i][1], asks[i]))
         try:
             for j, i in enumerate(ranked):
                 (x, p), (cl, t) = batch[i], got[i]

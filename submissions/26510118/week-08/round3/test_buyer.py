@@ -519,6 +519,16 @@ def test_shop_around():
           r["deal"] and c["shop"]["name"] == "B" and [t["shop"] for t in tries] == ["A"]
           and log["http://C.test"][-1] == "(cancel)" and len(log["http://C.test"]) == 2
           and all(len(v) >= 1 for v in log.values()), (c["shop"]["name"], tries, log))
+    log.clear()
+    text_c = [task("TASK_STATE_INPUT_REQUIRED", "Grade A, warranty included. Asking 29000."),
+              task("TASK_STATE_INPUT_REQUIRED", "Asking 29000."), task("TASK_STATE_COMPLETED", "Deal", dict(signed, shop="C", price=29000))]
+    r2, c2, _, _ = asyncio.run(mb.shop_around(None, first, False, cands, bed, CATALOG, {}, RULES,
+                                              factory=lambda: One(dict(script, **{"http://C.test": text_c}))))
+    check("11/13 (QUOTE_READ): an ask said only in the reply's text (C: 29000, no metadata) is read and ranks before "
+          "B's 30000: C is traded first and closes, B is cancelled",
+          r2["deal"] and c2["shop"]["name"] == "C" and log["http://B.test"][-1] == "(cancel)", (c2["shop"]["name"], log))
+    log.clear()
+    r, c, tries, _ = asyncio.run(mb.shop_around(None, first, False, cands, bed, CATALOG, {}, RULES, factory=lambda: One(script)))
     check("...the openers carry no price: every shop's first message names the product only",
           all(not mb.NUMBER.search(mb.SKU.sub(" ", v[0])) or "hour" in v[0] for v in log.values()), {k: v[0] for k, v in log.items()})
     log.clear()
