@@ -10,7 +10,8 @@ from r3.state import ROOT,read_json,policy
 
 def main():
     now=time.time();runtime=read_json(ROOT/'.market/runtime.json');cfg=policy();since=runtime['started_at']
-    manifest=json.loads(sorted((ROOT/'logs').glob('v27-source-promotion-*.json'))[-1].read_text(encoding='utf-8'))
+    release='v271' if cfg.get('execution_revision','').startswith('v27.1-') else 'v27'
+    manifest=json.loads(sorted((ROOT/'logs').glob(release+'-source-promotion-*.json'))[-1].read_text(encoding='utf-8'))
     mismatch=[e['path'] for e in manifest['files'] if hashlib.sha256((ROOT/e['path']).read_bytes()).hexdigest()!=e['candidate_sha256']]
     with sqlite3.connect((ROOT/'.market/r3.sqlite3').as_uri()+'?mode=ro',uri=True) as db:
         db.execute('BEGIN')
@@ -36,12 +37,13 @@ def main():
             'console_confirmed_acquired':acquired,'console_confirmed_acquired_units':sum(r['qty'] for r in acquired),
             'supply_console_source':str(source.relative_to(ROOT)),
             'verified_buyer_results':sum(r.get('verified') is True for r in results),
+            'recent_diagnostics':{k:events(k)[-3:] for k in ('buyer_worker_error','market_research_deferred')},
             'buyer_revision_unchanged':kv('buyer_strategy_revision')==oldbuyer,
             'no_additional_llm_roles':True,'models':cfg['background_llm_roles'],
             'astra_excluded':all('astra' not in r['model'] for r in cfg['background_llm_roles'].values()),
             'limits':['Early trades and forecasting dominance are not realized causal profit lift or first-place evidence.',
                 'Supply status alone is not the acquisition count: console-confirmed units are reported separately.']}
-    p=ROOT/'logs'/('v27-inventory-live-proof-'+datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')+'.json')
+    p=ROOT/'logs'/(release+'-inventory-live-proof-'+datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')+'.json')
     p.open('x',encoding='utf-8').write(json.dumps(report,ensure_ascii=False,indent=2));print('SOURCE',p)
     print(json.dumps({k:report[k] for k in ('minutes_live','source_mismatches','counts','successful_supply_lots','console_confirmed_acquired_units','verified_buyer_results','buyer_revision_unchanged')},ensure_ascii=True))
 

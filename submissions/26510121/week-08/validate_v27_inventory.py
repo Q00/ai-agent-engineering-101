@@ -56,7 +56,15 @@ def replay():
     sys.path.insert(0,str(STAGE))
     from r3.state import read_json
     from r3.economy import restock_candidates
-    old=read_json(ROOT/'policy.json');new=read_json(STAGE/'policy.json');now=time.time()
+    baseline_source=ROOT/'policy.json';old=read_json(baseline_source)
+    if old.get('inventory_portfolio_v27_enabled'):
+        manifest=read_json(sorted((ROOT/'logs').glob('v27-source-promotion-*.json'))[-1])
+        baseline_source=(ROOT/manifest['backup']/'policy.json').resolve()
+        assert baseline_source.is_relative_to((ROOT/'.market').resolve())
+        expected=next(e['baseline_sha256'] for e in manifest['files'] if e['path']=='policy.json')
+        assert hashlib.sha256(baseline_source.read_bytes()).hexdigest()==expected
+        old=read_json(baseline_source)
+    new=read_json(STAGE/'policy.json');now=time.time()
     assert old['background_llm_roles']==new['background_llm_roles'] and old['buyer_strategy_revision']==new['buyer_strategy_revision']
     results={}
     with sqlite3.connect((ROOT/'.market/r3.sqlite3').as_uri()+'?mode=ro',uri=True) as db:
@@ -79,7 +87,8 @@ def replay():
     assert baseline['units']==results['v26']['units']
     for key in ('book','revenue'):assert abs(baseline[key]-results['v26']['delta'][key])<1e-5,'Baseline changed'
     assert abs(baseline['capital']-results['v26']['capital'])<1e-5
-    report={'at':now,'source_hashes':hashes(),'comparisons':results,'models_unchanged':True,'buyer_unchanged':True,
+    report={'at':now,'source_hashes':hashes(),'baseline_policy_source':str(baseline_source.relative_to(ROOT)),
+        'comparisons':results,'models_unchanged':True,'buyer_unchanged':True,
         'model_calls':0,'market_transactions':0,'live_policy_writes':0,
         'limits':['Shared frozen snapshot and engineering stress scenarios, not causal uplift or superiority over competitors.',
             'Unavailable future orders and acquisition draws cannot be replayed as observed profits.']}
