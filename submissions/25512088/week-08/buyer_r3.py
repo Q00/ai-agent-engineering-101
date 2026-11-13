@@ -69,25 +69,35 @@ def quote_fields(task):
     return result
 
 
+GRADE_PRICE_CAP = {'A':69, 'B':60, 'C':55}
+GRADE_COST_MIDPOINT = {'A':.65, 'B':.50, 'C':.35}
+SAVED_TARGET = .78
+
+
+def estimated_margin_saved(product, price, grade=None):
+    """Patch 3.6 Saved proxy using the official grade cost distribution.
+
+    Actual unit cost is hidden from buyers, so ranking uses the published
+    midpoint while checkout remains bounded by a conservative price cap.
+    """
+    listed=product.get('list_price');cost_ratio=GRADE_COST_MIDPOINT.get(grade,.50)
+    if (not isinstance(listed,(int,float)) or listed<=0 or
+            not isinstance(price,(int,float)) or price<0):return -1.0
+    margin=listed*(1-cost_ratio)
+    return max(-1.0,min(1.0,(listed-price)/margin)) if margin>0 else -1.0
+
+
 def limit(order, product, grade=None):
-    # Initial risk policy, not a learned optimum; actual conditions are checked
-    # by the kit against its signed checkout certificate before any payment.
-    rates = {'A':95, 'B':80, 'C':60}
-    pct = rates.get(grade, 75 if order.get('kind')=='food' else 60)
+    # Patch 3.6 scores the share of shop margin saved, not list discount.
+    # These caps track the current Top-10 settlement band while preserving
+    # enough eligible sellers for Deals throughput.
+    pct = GRADE_PRICE_CAP.get(grade, 60)
     return min(order['budget'], math.floor(product['list_price']*pct/100))
 
 
-SAVED_GUARD=.305
-
-
-def deals_cap(order,product,grade,portfolio,guard=SAVED_GUARD):
-    """Spend the accumulated Saved buffer on Deals without crossing its guard."""
-    conservative=limit(order,product,grade)
-    if not portfolio or portfolio.get('deals',0)<100:return conservative
-    needed=guard*(portfolio['deals']+101)-portfolio['discount_sum']
-    required_discount=max(0.0,min(1.0,needed))
-    portfolio_cap=math.floor(product['list_price']*(1-required_discount))
-    return min(order['budget'],product['list_price'],max(conservative,portfolio_cap))
+def deals_cap(order,product,grade,portfolio=None):
+    """Never spend a historical list-discount buffer under Patch 3.6."""
+    return limit(order,product,grade)
 
 
 def own_shop_identity():
@@ -117,7 +127,7 @@ BREAKAGE_PRIORS = {
 }
 
 
-def expected_offer(order, product, price, checkout_probability=1, reliability=1):
+def expected_offer(order, product, price, checkout_probability=1, reliability=1, grade=None):
     """Comparable absolute surplus with explicitly uncertain breakage.
 
     Warranty refunds are not credited before a matured cohort exists.  This
@@ -129,6 +139,7 @@ def expected_offer(order, product, price, checkout_probability=1, reliability=1)
     expected_surplus=value-price
     valid=max(0,min(1,checkout_probability))*max(0,min(1,reliability))
     return {'expected_surplus':expected_surplus,'valid_checkout_probability':valid,
+            'estimated_margin_saved':estimated_margin_saved(product,price,grade),
             'breakage_probability':prior['probability'],'breakage_basis':prior['basis']}
 
 
@@ -154,13 +165,12 @@ def candidates(order, shops, catalog, memory, intel=None):
             # simply because we clipped the estimate to our budget.
             deal=memory.deal_estimate(shop['url'])
             metrics=expected_offer(order,product,estimate,deal['probability'],reliability)
-            # Feasible, large absolute gain and likely valid checkout come
-            # before tiny percentage discounts.  Price caps are never raised.
-            ranked.append((estimate>cap,-metrics['expected_surplus'],
-                           -metrics['valid_checkout_probability'],shop['name'],
+            ranked.append((estimate>cap,
+                           -metrics['estimated_margin_saved']*metrics['valid_checkout_probability'],
+                           -metrics['valid_checkout_probability'],-metrics['expected_surplus'],shop['name'],
                            offer['sku'],shop,offer))
     ranked.sort(key=lambda r:r[:5])
-    return [(r[5],r[6]) for r in ranked]
+    return [(r[6],r[7]) for r in ranked]
 
 
 def surplus_score(value, price, reliability=1):
@@ -174,10 +184,12 @@ def quote_rank(session, catalog, intel=None, order=None):
     ask=session['ask']
     order=order or {'kind':'goods'}
     deal=session.get('deal_estimate',{'probability':1})
-    metrics=expected_offer(order,catalog[session['sku']],ask,deal['probability'],reliability)
+    metrics=expected_offer(order,catalog[session['sku']],ask,deal['probability'],reliability,
+                           session.get('grade'))
     session['expected']=metrics
-    return (ask>session['cap'],-metrics['expected_surplus']*metrics['valid_checkout_probability'],
-            -metrics['expected_surplus'],-metrics['valid_checkout_probability'],ask,
+    return (ask>session['cap'],
+            -metrics['estimated_margin_saved']*metrics['valid_checkout_probability'],
+            -metrics['valid_checkout_probability'],-metrics['expected_surplus'],ask,
             session['shop']['name'],session['sku'])
 
 
@@ -330,8 +342,7 @@ class Buyer:
             missing=sorted(set(self.o['acceptable'])-offered_skus)
             if missing:
                 self.m.record(self.o['order'],'','',None,'no_stock',details={'skus':missing})
-            # Burst mode: wider quote waves, then transact as soon as four
-            # independently usable quotes exist instead of exhausting the market.
+            # Compare a wider market sample under Patch 3.6 before committing.
             for start in range(0,len(picks),12):
                 if time.time()>=self.deadline-5:break
                 wave=picks[start:start+12]
@@ -345,7 +356,7 @@ class Buyer:
                     if not fields['price']:continue
                     unsuitable=(self.o.get('kind')=='food' and fields['hours'] is not None and fields['hours']<self.o['use_within_hours']) or (self.o.get('kind')!='food' and fields['warranty'] is not None and fields['warranty']<6)
                     usable+=not unsuitable
-                if usable>=4:break
+                if usable>=8:break
             for s in self.sessions:
                 shop=s['shop'];sku=s['sku']
                 if s.get('error'):
@@ -374,8 +385,8 @@ class Buyer:
             self.m.record(self.o['order'],'','',None,'selection_v4',details={
                 'eligible_pairs':len(picks),'eligible_shops':len({s['url'] for s,_ in picks}),
                 'eligible_skus':sorted(offered_skus),'quoted_pairs':len(self.sessions),
-                'parallel_limit':12,'early_quote_target':4,'deadline_seconds':85,
-                'saved_guard':SAVED_GUARD,'saved_portfolio':self.portfolio,
+                'parallel_limit':12,'early_quote_target':8,'deadline_seconds':85,
+                'saved_target':SAVED_TARGET,'saved_portfolio':self.portfolio,
                 'breakage_prior':BREAKAGE_PRIORS['food' if self.o.get('kind')=='food' else 'goods'],
                 'ranked_quotes':[{'shop':s['shop']['name'],'sku':s['sku'],'ask':s['ask'],'cap':s['cap'],
                   'deal_estimate':s['deal_estimate'],**s['expected']} for s in quotes]})
@@ -385,7 +396,9 @@ class Buyer:
                 if time.time()>=self.deadline:break
                 # Reserve time for other competitors; no fixed negotiation turn count.
                 stop=min(self.deadline,time.time()+(self.deadline-time.time())/(len(quotes)-index))
-                while time.time()<stop:
+                attempts=0
+                while time.time()<stop and attempts<2:
+                    attempts+=1
                     amount=min(s['ask'],s['cap'])
                     if s['ask']>s['cap']:
                         self.m.record(self.o['order'],s['shop']['url'],s['sku'],s.get('task'),'price_rejected',s['ask'],{'cap':s['cap']})
@@ -406,8 +419,7 @@ class Buyer:
                     ask=quote_fields(task)['price']
                     if not ask:break
                     s['ask']=int(ask)
-                    if ask>s['cap']:
-                        time.sleep(min(2,max(0,stop-time.time())))
+                    if ask>s['cap']:break
                 self.m.defer_rival(s['shop']['url'],s['sku'],'retry_new_conversation')
                 self.m.record(self.o['order'],s['shop']['url'],s['sku'],s.get('task'),'candidate_exhausted')
             self.m.state(self.o['order'],'no_deal');return self.result()

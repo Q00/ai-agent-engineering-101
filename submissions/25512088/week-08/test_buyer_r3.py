@@ -46,9 +46,9 @@ class BuyerTests(unittest.TestCase):
         self.assertEqual(self.m.db.execute('SELECT COUNT(*) FROM payments').fetchone()[0],1)
 
     def test_limit_uses_sku_and_grade_not_identical_budget_fraction(self):
-        self.assertEqual(limit(self.o,self.cat['SKU1'],'A'),9500)
-        self.assertEqual(limit(self.o,self.cat['SKU1'],'C'),6000)
-        self.assertEqual(limit(self.o,dict(list_price=2000),'A'),1900)
+        self.assertEqual(limit(self.o,self.cat['SKU1'],'A'),6900)
+        self.assertEqual(limit(self.o,self.cat['SKU1'],'C'),5500)
+        self.assertEqual(limit(self.o,dict(list_price=2000),'A'),1380)
 
     def test_all_shops_with_acceptable_stock_are_visited(self):
         shops=[dict(self.shop,name=str(i)) for i in range(8)]+[dict(self.shop,name='bad',offers=[dict(sku='wrong',qty=1)])]
@@ -108,11 +108,11 @@ class BuyerTests(unittest.TestCase):
         self.assertEqual(set(visited),{'SKU1','SKU2'})
         self.assertEqual(self.m.db.execute("SELECT COUNT(*) FROM events WHERE kind='network_error'").fetchone()[0],2)
 
-    def test_absolute_surplus_beats_discount_ratio(self):
+    def test_patch36_margin_saved_beats_absolute_surplus(self):
         cat={'small':dict(list_price=10000),'large':dict(list_price=30000)}
         small=dict(shop=self.shop,sku='small',ask=5000,cap=9000)
         large=dict(shop=self.shop,sku='large',ask=18000,cap=20000)
-        self.assertEqual(sorted([small,large],key=lambda s:quote_rank(s,cat))[0],large)
+        self.assertEqual(sorted([small,large],key=lambda s:quote_rank(s,cat))[0],small)
         # An unaffordable quote must not displace an immediately feasible one.
         large['cap']=17000
         self.assertEqual(sorted([small,large],key=lambda s:quote_rank(s,cat))[0],small)
@@ -130,20 +130,19 @@ class BuyerTests(unittest.TestCase):
         self.assertEqual(asking('Counteroffer: 7,000.'),7000)
         self.assertEqual(asking('final total 7,100 KRW'),7100)
 
-    def test_deals_cap_spends_buffer_but_preserves_saved_guard(self):
+    def test_deals_cap_does_not_spend_obsolete_list_discount_buffer(self):
         portfolio={'deals':1000,'discount_sum':340.0,'saved':340/1100}
         cap=deals_cap(self.o,self.cat['SKU1'],'C',portfolio)
-        discount=1-cap/self.cat['SKU1']['list_price']
-        self.assertGreater(cap,limit(self.o,self.cat['SKU1'],'C'))
-        self.assertGreaterEqual((portfolio['discount_sum']+discount)/(portfolio['deals']+101),.305)
+        self.assertEqual(cap,limit(self.o,self.cat['SKU1'],'C'))
 
     def test_saved_portfolio_uses_only_paid_catalogued_deals(self):
         with self.m.db:
             self.m.db.execute("INSERT INTO payments VALUES('p1','s','SKU1',7000,1,1,NULL)")
             self.m.db.execute("INSERT INTO payments VALUES('p2','s','SKU1',9000,0,2,NULL)")
+            self.m.db.execute("INSERT INTO outcomes VALUES(?,?)",('p1',json.dumps({'grade':'A'})))
         portfolio=self.m.saved_portfolio(self.cat)
         self.assertEqual(portfolio['deals'],1)
-        self.assertAlmostEqual(portfolio['discount_sum'],.3)
+        self.assertAlmostEqual(portfolio['estimated_margin_saved_sum'],.3/.35)
 
     def test_receipt_signature_and_exact_sku(self):
         task={'artifacts':[{'parts':[{'data':self.receipt()}]}]}
@@ -190,8 +189,8 @@ class BuyerTests(unittest.TestCase):
                 return httpx.Response(200,json={'supportedInterfaces':[{'url':'https://shop.test/','protocolBinding':'JSONRPC'}]})
             b=json.loads(req.content); requests.append(b)
             text=b.get('params',{}).get('message',{}).get('parts',[{}])[0].get('text','')
-            if text=='7000':
-                task=dict(id='t1',status={'state':'TASK_STATE_COMPLETED'},artifacts=[{'parts':[{'data':self.receipt()}]}])
+            if text=='6900':
+                task=dict(id='t1',status={'state':'TASK_STATE_COMPLETED'},artifacts=[{'parts':[{'data':self.receipt(6900)}]}])
             else:
                 task=dict(id='t1',status={'state':'TASK_STATE_INPUT_REQUIRED','message':{'parts':[{'text':'Grade A. Asking 7000'}]}})
             return httpx.Response(200,json={'result':{'task':task}})
@@ -241,15 +240,15 @@ class BuyerTests(unittest.TestCase):
                     if req.url.host=='shop.test':
                         if uncertain:raise httpx.ReadTimeout('lost',request=req)
                         task={'id':'t1','status':{'state':'TASK_STATE_REJECTED'}}
-                    else:task={'id':'t1','status':{'state':'TASK_STATE_COMPLETED'},'artifacts':[{'parts':[{'data':self.receipt(7000)}]}]}
-                else:task={'id':'t1','status':{'state':'TASK_STATE_INPUT_REQUIRED','message':{'parts':[{'text':'Grade A. Asking '+('6000' if req.url.host=='shop.test' else '7000')}]}}}
+                    else:task={'id':'t1','status':{'state':'TASK_STATE_COMPLETED'},'artifacts':[{'parts':[{'data':self.receipt(6900)}]}]}
+                else:task={'id':'t1','status':{'state':'TASK_STATE_INPUT_REQUIRED','message':{'parts':[{'text':'Grade A. Asking '+('6000' if req.url.host=='shop.test' else '6900')}]}}}
                 return httpx.Response(200,json={'result':task})
             with httpx.Client(transport=httpx.MockTransport(handler)) as c:
                 out=Buyer(order,self.m,c,self.cat).run([self.shop,other])
             self.assertEqual(offers,['shop.test'] if uncertain else ['shop.test','other.test'])
             self.assertEqual(out['receipt'] is None,uncertain)
 
-    def test_negotiation_continues_beyond_two_offers_without_exceeding_cap(self):
+    def test_negotiation_stops_after_two_identical_counters(self):
         amounts=[]
         def handler(req):
             if req.method=='GET':return httpx.Response(200,json={'supportedInterfaces':[]})
@@ -264,9 +263,9 @@ class BuyerTests(unittest.TestCase):
         self.m.begin(self.o)
         with httpx.Client(transport=httpx.MockTransport(handler)) as c, patch('buyer_r3.time.sleep'):
             out=Buyer(self.o,self.m,c,self.cat).run([self.shop])
-        self.assertEqual(len(amounts),4)
-        self.assertTrue(all(a<=9500 for a in amounts))
-        self.assertIsNotNone(out['receipt'])
+        self.assertEqual(len(amounts),1)
+        self.assertTrue(all(a<=6900 for a in amounts))
+        self.assertIsNone(out['receipt'])
 
     def test_quotes_actually_overlap_without_sharing_sqlite(self):
         import threading

@@ -110,16 +110,25 @@ class Memory:
         return {'probability':(won+2)/(len(rows)+4),'trials':len(rows),'wins':won}
 
     def saved_portfolio(self, catalog):
-        """Rebuild the official-style Saved numerator from settled local payments."""
-        rows=self.db.execute('SELECT sku,price FROM payments WHERE paid=1').fetchall()
+        """Estimate Patch-3.6 Saved with published grade cost midpoints.
+
+        Unit cost is hidden from buyers; this is diagnostic only and never
+        relaxes the live price cap.
+        """
+        rows=self.db.execute('''SELECT p.sku,p.price,x.details FROM payments p
+          JOIN outcomes x ON x.order_id=p.order_id WHERE p.paid=1''').fetchall()
         total=0.0;deals=0
         for row in rows:
             product=catalog.get(row['sku'],{})
             listed=product.get('list_price');price=row['price']
             if not isinstance(listed,(int,float)) or listed<=0 or not isinstance(price,(int,float)):continue
-            total+=max(0.0,min(1.0,1-price/listed));deals+=1
-        return {'deals':deals,'discount_sum':total,
-            'saved':total/(deals+100) if deals or total else 0.0}
+            try:grade=json.loads(row['details']).get('grade')
+            except (TypeError,ValueError):grade=None
+            cost_ratio={'A':.65,'B':.50,'C':.35}.get(grade,.50)
+            total+=max(-1.0,min(1.0,(listed-price)/(listed*(1-cost_ratio))));deals+=1
+        return {'deals':deals,'estimated_margin_saved_sum':total,
+            'estimated_saved':total/(deals+100) if deals or total else 0.0,
+            'basis':'patch3.6-grade-cost-midpoint'}
 
     def remember_key(self, shop, key):
         with self.db:

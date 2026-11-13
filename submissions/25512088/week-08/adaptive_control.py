@@ -17,7 +17,7 @@ import unicodedata
 import uuid
 
 
-RULE_VERSION = "round3-patch3.5"
+RULE_VERSION = "round3-patch3.6"
 SECRET_FIELDS = ("secret", "token", "password", "private", "signature", "owner_env", "member_key")
 
 MUTATION_EDGES = {
