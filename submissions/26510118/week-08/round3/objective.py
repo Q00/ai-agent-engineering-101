@@ -178,9 +178,9 @@ def run(now: float | None = None, board: dict | None = None) -> dict:
         if k is not None:
             o3 = [o for o in common.read_jsonl(common.MARKET_DIR / "records" / "orders.jsonl", since=now - 3 * 3600)]
             deals_h = sum(1 for o in o3 if o.get("deal")) / 3
-            if len(o3) >= RELAX_ORDERS and deals_h < RELAX_DEALS_H:      # the stop-loss acts (11/13): looser, at once
-                k = max(K_CLAMP[0], round(k - RELAX, 4))
-                out["basis"]["relaxed"] = {"deals_h": round(deals_h, 1), "by": RELAX}
+            if len(o3) >= GUARD_ORDERS and deals_h < GUARD_DEALS_H:      # the stop-loss acts: one step down, no further
+                k = min(k, GUARD_K)
+                out["basis"]["guard"] = {"deals_h": round(deals_h, 1), "to": GUARD_K}
             out["margin_floor"] = k
     common.write_json(folder() / "objective.json", out)
     return out
@@ -189,16 +189,22 @@ def run(now: float | None = None, board: dict | None = None) -> dict:
 LEGACY = False           # 11/13: the threshold on the share of LIST kept (OPTIONS, choose(), the probe) judged deals by
                          # the old measure against the new saved after Patch 3.6 and went to its 0.45 clamp; with
                          # goods_floor (0.45 too) our buyer closed 21 deals an hour for 17 h (goods 0-7 of ~250 per 3 h)
-K_CLAMP = (0.35, 0.85)
-RELAX, RELAX_DEALS_H, RELAX_ORDERS = 0.10, 40, 30
+K_CLAMP = (0.70, 0.85)   # 0.35 until 11/13 11:40 (the person's call): saved is a mean, so a deal under it pulls it down.
+                         # Our deals since Patch 3.6 keep ~0.84 of the margin (goods A 0.90, food A 0.95, B 0.85, C 0.75)
+                         # and the board's next saved rows (+0.0104 -> +0.011, +0.0142 -> +0.033) are worth far more than
+                         # the deals' (+273 -> +0.0066). Replayed over 48 h of our deals: a floor of 0.35-0.60 changes
+                         # nothing, 0.70 lifts the mean to 0.865 for 12% fewer deals (+0.0142 in 39 h, not 44 h)
+GUARD_K, GUARD_DEALS_H, GUARD_ORDERS = 0.60, 25, 30   # under 25 deals an hour over 3 h (30+ orders), the floor drops to
+                                                      # 0.60 and no lower; 11/13 10:54-11:40 RELAX lowered it by 0.10
+                                                      # under 40 an hour, to 0.35, and deals at 0.34-0.49 came in
 
 
 def margin_floor(lam: dict, saved, deals) -> float | None:
     """The least expected share of the shop's margin a deal must keep (Patch 3.6, margin.py), 11/13: a deal keeping k
     moves saved by (k - saved) / (deals + PRIOR_DEALS) and deals by one, worth lam_saved and lam_deals each, so it pays
     over saved - lam_deals x (deals + PRIOR_DEALS) / lam_saved (0.442 on 11/13: saved 0.731, a deal worth the
-    percentile of 91 more). Clamped to K_CLAMP; None without the prices. When our buyer closes under RELAX_DEALS_H
-    an hour over 3 h (RELAX_ORDERS orders or more), run() lowers it by RELAX: the stop-loss acts, not only alerts."""
+    percentile of 91 more). Clamped to K_CLAMP; None without the prices. When our buyer closes under GUARD_DEALS_H
+    an hour over 3 h (GUARD_ORDERS orders or more), run() takes GUARD_K: the stop-loss acts, not only alerts."""
     ls, ld = (lam or {}).get("saved"), (lam or {}).get("deals")
     if not ls or ld is None or saved is None or deals is None:
         return None

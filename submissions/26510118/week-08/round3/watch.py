@@ -62,7 +62,8 @@ SL_FOOD_EXPIRY, SL_FOOD_RECEIVED_MIN = 0.02, 100   # S1 (food for 3 h of its pac
 SL_FOOD_STALE_HOURS, SL_FOOD_STALE_N = 6, 60       # S2 (food priced higher): food units on hand 6 h or longer. Not 3 h:
                                                    # S1 holds 3 h of a product's pace on purpose
 SL_DEAR, SL_DEAR_HOURS, SL_DEAR_COST = 500_000, 6, 150_000_000   # S3 (a wider line): 500k+ goods held 6 h+, at cost
-SL_DEALS_H, SL_ORDERS_MIN = 40, 30                 # B1 (the margin floor since 11/13): our buyer's deals an hour, 3 h
+SL_DEALS_H, SL_ORDERS_MIN = 25, 30                 # B1 (the margin floor since 11/13): our buyer's deals an hour, 3 h
+                                                   # (40 until 11/13 11:40: the floor of 0.70 trades some deals away)
 SL_SAVED_HOURS = 12                                # B1: saved not up over this long (scoreboard history)
 
 
@@ -93,7 +94,7 @@ def stoploss(now: float, flow: list, units: list, orders: list, catalog: dict, h
     f["buyer_deals_h"] = round(deals_h, 1)
     if len(o3) >= SL_ORDERS_MIN and deals_h < SL_DEALS_H:
         flags["stoploss:B1-deals"] = (f"B1: our buyer closed {deals_h:.0f} deals an hour over 3 h (under {SL_DEALS_H}): "
-                                      "objective lowers the margin floor by itself (objective.RELAX)")
+                                      "objective takes the margin floor down to objective.GUARD_K by itself")
     mine = sorted((r.get("at") or 0, v[0]) for r in history for k, v in (r.get("buyers") or {}).items()
                   if common.is_ours(k) and isinstance(v, list) and v and isinstance(v[0], (int, float)))
     then = [s for at, s in mine if at <= now - SL_SAVED_HOURS * 3600]

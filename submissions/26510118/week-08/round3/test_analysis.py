@@ -1340,9 +1340,10 @@ def test_objective_model():
               o["buyer_min_share"] is None and "probe" not in o and o.get("margin_floor") == k and k is not None, o)
         objective.MIN_DEALS = saved_min
         lam36 = {"saved": 1.466960352423, "deals": 2.9864253e-05}
-        check("11/13, the margin floor: a deal pays only over saved - lam_deals x (deals + 100) / lam_saved: 0.7309 - 0.2884 "
-              "= 0.4425 (the 11/13 numbers); no prices: none; within K_CLAMP",
-              objective.margin_floor(lam36, 0.7309, 14066) == 0.4425 and objective.margin_floor({}, 0.7309, 14066) is None
+        check("11/13, the margin floor: a deal pays only over saved - lam_deals x (deals + 100) / lam_saved: 0.99 - 0.2884 "
+              "= 0.7016; the 11/13 numbers (0.7309 - 0.2884 = 0.4425) under K_CLAMP's 0.70 take 0.70; no prices: none",
+              objective.K_CLAMP[0] == 0.70 and objective.margin_floor(lam36, 0.99, 14066) == 0.7016
+              and objective.margin_floor(lam36, 0.7309, 14066) == 0.70 and objective.margin_floor({}, 0.7309, 14066) is None
               and objective.margin_floor(lam36, 0.7309, 10**7) == objective.K_CLAMP[0]
               and objective.margin_floor(lam36, 0.99, 0) == objective.K_CLAMP[1])
         rec_o = MD / "records" / "orders.jsonl"
@@ -1351,9 +1352,15 @@ def test_objective_model():
             for i in range(60):
                 f.write(json.dumps({"ts": int(t) - 600, "order": f"r{i}", "deal": i < 30}) + "\n")
         o2 = objective.run(t, board)
-        check("...the stop-loss acts: 10 deals an hour over 3 h (under 40) lowers it by 0.10 at once (never under K_CLAMP)",
-              o2.get("margin_floor") == max(objective.K_CLAMP[0], round(k - objective.RELAX, 4))
-              and o2["basis"].get("relaxed", {}).get("deals_h") == 10.0, o2)
+        check("...the stop-loss acts: 10 deals an hour over 3 h (under 25) takes the floor to GUARD_K (0.60), no lower",
+              o2.get("margin_floor") == min(k, objective.GUARD_K) == 0.60
+              and o2["basis"].get("guard", {}).get("deals_h") == 10.0, o2)
+        with open(rec_o, "w", encoding="utf-8") as f:
+            for i in range(90):
+                f.write(json.dumps({"ts": int(t) - 600, "order": f"r{i}", "deal": i < 80}) + "\n")
+        o3 = objective.run(t, board)
+        check("...and 26.7 deals an hour (25 or more) keeps the floor at its 0.70",
+              o3.get("margin_floor") == k == 0.70 and "guard" not in o3["basis"], o3)
         if kept_o is None:
             rec_o.unlink(missing_ok=True)
         else:
