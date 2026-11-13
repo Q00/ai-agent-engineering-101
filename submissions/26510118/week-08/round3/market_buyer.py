@@ -78,6 +78,11 @@ PREFER = 1.2
 RIVAL = 1.0               # 0.95 until 11/6 16:40 (the person's call, 몫 사냥꾼 ④): the goods shops selling cheapest were rivals'
                           # (lee-sungsoo 0.685, inextro 0.700, yms979 0.701 of list); what we add to their revenue is
                           # well under 0.1% of it, what we keep counts in our saved
+PARALLEL, QUOTES, QUOTE_WAIT = True, 3, 20   # 11/13 19:40 (the person's call): the opening request goes to QUOTES shops
+# at once (it carries no price, so no shop can close on it); then one at a time, the lowest first ask first, and the
+# others are cancelled as soon as a deal closes. Since the 0.70 floor (7.5 h, 710 orders) an order took 38 s on average
+# against the market's 20 s per order: 228 orders went through all 6 shops one after another (48 s each, 6% closed),
+# 43% of the buyer's time. Asked at once, an order takes about its longest single talk: ~150 orders an hour, not 95
 MAX_TRIES, TRY_BUDGET, HARD_STOP = 6, 150, 240  # 3 and 90 until 11/7 02:10 (61% of orders ended without a deal, most
                                                  # after 3 shops, with a median of 47 holding the product); shops per
                                                  # order; seconds from the order's start to begin
@@ -551,23 +556,44 @@ def shelf_hours(t):
     return float(found.group(1)) if found else None
 
 
+def opener(c: dict, order: dict, warranty: bool) -> str:
+    """The first message to a shop: the product, the food's hours, the warranty and grade wanted. No price."""
+    need = order.get("use_within_hours")
+    first = f"I want to buy {c['name']} ({c['sku']})."
+    if order.get("kind") == "food" and need:
+        first += f" It must last at least {need + MARGIN_HOURS:.0f} hours." + FOOD_WORDS
+    if warranty:
+        first += f" Please include a {WARRANTY_HOURS}-hour warranty."
+        if c["kind"] == "goods":
+            first += GRADE_WORDS
+    return first
+
+
+async def quote(factory, c: dict, order: dict, nb: dict, rules: dict, poor: bool):
+    """(its own client, the shop's reply to our opener, or None): one shop's first ask, nothing offered."""
+    cl = factory()
+    try:
+        await cl.open(c["shop"]["url"])
+        return cl, await cl.send(opener(c, order, wants_warranty(c, nb, poor, rules)))
+    except Exception as e:                                       # noqa: BLE001  (a hung or broken shop)
+        print(f"[buyer] quote from {c['shop']['name']} broke off: {type(e).__name__}: {e}", flush=True)
+        return cl, None
+
+
 async def trade(client: A2A, c: dict, order: dict, catalog: dict, nb: dict, rules: dict, poor: bool,
-                others: bool = False) -> dict:
-    """One negotiation. Returns the facts the order record, the notebook and the result line need."""
+                others: bool = False, opened: dict | None = None) -> dict:
+    """One negotiation. Returns the facts the order record, the notebook and the result line need. opened: the
+    shop's reply to our opener when quote() sent it already (client is then that shop's own)."""
     r = {"deal": False, "receipt": None, "price": None, "asks": [], "offers": [], "error": None, "left": None,
          "switched": None, "warranty": wants_warranty(c, nb, poor, rules), "said": [], "cap": None}
     r["margin_floor"], r["min_share"], r["probe"] = margin_floor(), None, False     # 11/13: Patch 3.6 (the probe of 11/8
     need = order.get("use_within_hours")                                            # and the list share retired)
     try:
-        await client.open(c["shop"]["url"])
-        first = f"I want to buy {c['name']} ({c['sku']})."
-        if order.get("kind") == "food" and need:
-            first += f" It must last at least {need + MARGIN_HOURS:.0f} hours." + FOOD_WORDS
-        if r["warranty"]:
-            first += f" Please include a {WARRANTY_HOURS}-hour warranty."
-            if c["kind"] == "goods":
-                first += GRADE_WORDS
-        t = await client.send(first)
+        if opened is None:
+            await client.open(c["shop"]["url"])
+            t = await client.send(opener(c, order, r["warranty"]))
+        else:
+            t = opened
         steps = ladder(rules, memory.paid_ratio(nb, c["shop"]["name"])[1])
         lam = r["margin_floor"]
         base = cap_of(c, order, steps[-1], None)                    # the budget, the top step, the item's market
@@ -742,12 +768,99 @@ def note_outcome(nb: dict, c: dict, r: dict, order: dict) -> None:
                            list_price=c["list"], price=r["price"], warranty=warranty_of(r["receipt"]) >= WARRANTY_HOURS)
 
 
+def broke_off(c: dict, error: str = "TimeoutError") -> dict:
+    """A trade that never ran or was cut: the record trade() would have left."""
+    r = {"deal": False, "receipt": None, "price": None, "asks": [], "offers": [], "error": error,
+         "left": None, "switched": None, "warranty": False, "c": c}
+    r["margin_floor"], r["min_share"], r["probe"] = margin_floor(), None, False   # the order's floor, as in trade()
+    return r
+
+
+def quote_rank(c: dict, t) -> tuple:
+    """Order of the quoted shops: a shop that already ended the talk first (nothing to wait for), then the lowest
+    first ask as a share of list, an ask we cannot read after those, a shop that never answered last."""
+    if t is None:
+        return (3, 0.0)
+    if state(t) != "TASK_STATE_INPUT_REQUIRED":
+        return (0, 0.0)
+    ask = meta(t).get("ask")
+    return (1, ask / c["list"]) if isinstance(ask, (int, float)) and ask > 0 and c.get("list") else (2, 0.0)
+
+
+async def shop_around_parallel(factory, c: dict, poor, cands: list, order: dict, catalog: dict, nb: dict, rules: dict,
+                               clock=time.time, start: float | None = None, dear: bool = False):
+    """shop_around with the openers sent at once (PARALLEL): QUOTES shops a batch, the first ask read from each reply,
+    then a trade with one at a time, the lowest ask first; the talks not used are cancelled. Same return and the same
+    limits (MAX_TRIES shops, a new batch only within TRY_BUDGET, each trade cut at HARD_STOP)."""
+    start = clock() if start is None else start
+    clean_only = not poor
+    tries, used, batch, last = [], {c["shop"]["name"]}, [(c, poor)], None
+    others = len({x["shop"]["name"] for x in cands}) > 1
+    while batch:
+        while len(batch) < QUOTES and len(tries) + len(batch) < MAX_TRIES:
+            rest = [x for x in cands if x["shop"]["name"] not in used and (not clean_only or not x["flags"])]
+            nxt, nxt_poor = choose(rest, nb, dear) if rest else (None, None)
+            if nxt is None:
+                break
+            batch.append((nxt, nxt_poor))
+            used.add(nxt["shop"]["name"])
+        got = await asyncio.gather(*[asyncio.wait_for(quote(factory, x, order, nb, rules, bool(p)), QUOTE_WAIT)
+                                     for x, p in batch], return_exceptions=True)
+        got = [g if isinstance(g, tuple) else (None, None) for g in got]
+        print("[buyer] quotes: " + "; ".join(f"{x['shop']['name']} {meta(t).get('ask') if t else None}"
+                                             for (x, _), (_, t) in zip(batch, got)), flush=True)
+        ranked = sorted(range(len(batch)), key=lambda i: quote_rank(batch[i][0], got[i][1]))
+        try:
+            for j, i in enumerate(ranked):
+                (x, p), (cl, t) = batch[i], got[i]
+                if t is None:
+                    r = broke_off(x, "no quote")
+                else:
+                    try:
+                        r = await asyncio.wait_for(trade(cl, x, order, catalog, nb, rules, bool(p), others, opened=t),
+                                                   timeout=max(5.0, HARD_STOP - (clock() - start)))
+                    except asyncio.TimeoutError:
+                        r = broke_off(x)
+                x = r.pop("c")
+                note_outcome(nb, x, r, order)
+                if last is not None:
+                    tries.append(last)
+                last = {"shop": x["shop"]["name"], "sku": x["sku"], "left": r["left"] or r["error"], "list": x["list"],
+                        "asks": r["asks"], "offers": r["offers"], "_r": r, "_c": x, "_p": p}
+                if r["deal"] or len(tries) + 1 >= MAX_TRIES or clock() - start > TRY_BUDGET:
+                    for i2 in ranked[j + 1:]:                         # free the shops' units we will not buy
+                        cl2, t2 = got[i2]
+                        if cl2 is not None and t2 is not None and state(t2) == "TASK_STATE_INPUT_REQUIRED":
+                            await cl2.cancel(t2["id"])
+                    batch = []
+                    break
+                print(f"[buyer] next quoted shop (after {x['shop']['name']}: {last['left']})", flush=True)
+            else:
+                batch = []
+                rest = [x for x in cands if x["shop"]["name"] not in used and (not clean_only or not x["flags"])]
+                if rest and len(tries) + 1 < MAX_TRIES and clock() - start <= TRY_BUDGET:
+                    nxt, nxt_poor = choose(rest, nb, dear)
+                    if nxt is not None:
+                        batch = [(nxt, nxt_poor)]
+                        used.add(nxt["shop"]["name"])
+        finally:
+            for cl, _ in got:
+                if cl is not None:
+                    await cl.close()
+    r, x, p = last.pop("_r"), last.pop("_c"), last.pop("_p")
+    return r, x, [{k: v for k, v in t.items() if not k.startswith("_")} for t in tries], bool(p)
+
+
 async def shop_around(client, c: dict, poor, cands: list, order: dict, catalog: dict, nb: dict, rules: dict,
-                      clock=time.time, start: float | None = None, dear: bool = False) -> tuple[dict, dict, list, bool]:
+                      clock=time.time, start: float | None = None, dear: bool = False,
+                      factory=None) -> tuple[dict, dict, list, bool]:
     """(the last trade's result, its candidate, the earlier tries [{shop, sku, left, list, asks, offers}], whether
     that candidate was a poor choice): the best candidate first, then, while there is no deal, the next from a shop
     not yet tried (a clean one when the first was clean), up to MAX_TRIES. A new try starts only within
-    TRY_BUDGET seconds of `start` (the order's start), and a trade is cut at HARD_STOP."""
+    TRY_BUDGET seconds of `start` (the order's start), and a trade is cut at HARD_STOP. With a client factory and
+    PARALLEL, the openers go out at once (shop_around_parallel)."""
+    if factory is not None and PARALLEL:
+        return await shop_around_parallel(factory, c, poor, cands, order, catalog, nb, rules, clock, start, dear)
     start = clock() if start is None else start
     tries = []
     while True:
@@ -812,7 +925,8 @@ async def amain(a) -> dict:
           + (f", every choice poor: {c['flags']}" if poor else ""), flush=True)
     client = A2A()
     try:
-        r, c, tries, poor = await shop_around(client, c, poor, cands, order, catalog, nb, rules, start=began, dear=dear)
+        r, c, tries, poor = await shop_around(client, c, poor, cands, order, catalog, nb, rules, start=began, dear=dear,
+                                              factory=A2A)
     finally:
         await client.close()
     memory.save(nb)

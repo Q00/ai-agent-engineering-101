@@ -500,6 +500,51 @@ def test_shop_around():
     check("a receipt not as agreed counts against the shop as unpaid, and the order goes on (the try keeps its asks)",
           nb2["A"]["recent"][-1] == "unpaid" and r["deal"] and tries[0]["asks"] == [30000, 30000] and tries[0]["list"] == 39900,
           (nb2["A"]["recent"], tries))
+    # 11/13: parallel quotes. Each quote gets its own client (as A2A() does); the log of what each shop was sent is shared
+    log = {}
+
+    class One(Shops):
+        def __init__(self, script):
+            super().__init__(script)
+            self.sent = log
+
+        async def close(self):
+            pass
+    deal_c = [task("TASK_STATE_INPUT_REQUIRED", "Asking 35000.", ask=35000), task("TASK_STATE_INPUT_REQUIRED", "Asking 35000.", ask=35000),
+              task("TASK_STATE_COMPLETED", "Deal", dict(signed, shop="C", price=35000))]
+    script = {"http://A.test": away, "http://B.test": deal_b, "http://C.test": deal_c}
+    r, c, tries, _ = asyncio.run(mb.shop_around(None, first, False, cands, bed, CATALOG, {}, RULES, factory=lambda: One(script)))
+    check("11/13 parallel quotes: the opener goes to 3 shops at once; A turned us away, B asked 30000 and C 35000 (of "
+          "39900): B is traded first and closes, A is a try, C's talk is cancelled with no offer made to it",
+          r["deal"] and c["shop"]["name"] == "B" and [t["shop"] for t in tries] == ["A"]
+          and log["http://C.test"][-1] == "(cancel)" and len(log["http://C.test"]) == 2
+          and all(len(v) >= 1 for v in log.values()), (c["shop"]["name"], tries, log))
+    check("...the openers carry no price: every shop's first message names the product only",
+          all(not mb.NUMBER.search(mb.SKU.sub(" ", v[0])) or "hour" in v[0] for v in log.values()), {k: v[0] for k, v in log.items()})
+    log.clear()
+    five = [shop(n, BEDDING) for n in "ABCDE"]
+    c5 = mb.candidates(bed, five, CATALOG, {}, {}, RULES)
+    f5, p5 = mb.choose(list(c5), {})
+    r, c, tries, _ = asyncio.run(mb.shop_around(None, f5, p5, c5, bed, CATALOG, {}, RULES,
+                                                factory=lambda: One({f"http://{n}.test": away for n in "ABCDE"})))
+    check("...five shops that all turn us away: two batches (3, then 2), each shop asked once, no deal",
+          not r["deal"] and len(tries) + 1 == 5 and sorted(log) == [f"http://{n}.test" for n in "ABCDE"]
+          and all(len(v) == 1 for v in log.values()), (tries, log))
+    log.clear()
+
+    class Hung(One):
+        async def send(self, text, task_id=None):
+            if self.url == "http://A.test":
+                await asyncio.sleep(10)
+            return await super().send(text, task_id)
+    saved_wait = mb.QUOTE_WAIT
+    mb.QUOTE_WAIT = 0.5
+    try:
+        r, c, tries, _ = asyncio.run(mb.shop_around(None, first, False, cands, bed, CATALOG, {}, RULES, factory=lambda: Hung(script)))
+    finally:
+        mb.QUOTE_WAIT = saved_wait
+    check("...a shop that does not answer the opener within QUOTE_WAIT is passed over; B closes, C is cancelled",
+          r["deal"] and c["shop"]["name"] == "B" and tries == [] and log["http://C.test"][-1] == "(cancel)", (c["shop"]["name"], tries, log))
     locked = {"A": {"recent": ["error"] * 3, "recent_at": [time.time()] * 3, "ratios": []}}
     lc = mb.candidates(bed, [shop("A", BEDDING)], CATALOG, locked, {}, RULES)
     check("a shop that failed us 3 times in a row: no choice for an ordinary order, still tried for a dear one",
