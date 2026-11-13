@@ -18,7 +18,7 @@ import time
 from pathlib import Path
 
 from agents import loop
-from core import atomic, market_state, paths
+from core import atomic, market_state, paths, price_curve
 from core import card as cardmod
 from core.events import EventWriter
 from tools import act, trade  # noqa: F401  (trade registers trade.seller_rules)
@@ -331,7 +331,8 @@ class SellerCore:
                 "food_fit": pb.get("food_fit", False), "food_unknown_share": pb.get("food_unknown_share"),
                 "food_fresh_unknown": pb.get("food_fresh_unknown", False),
                 "food_review_need": pb.get("food_review_need", False),
-                "food_open_share": pb.get("food_open_share"), "market_price": pb.get("market_price", False)}
+                "food_open_share": pb.get("food_open_share"), "market_price": pb.get("market_price", False),
+                "curve": pb.get("curve", False)}
 
     @staticmethod
     def hot_skus(ctx, pb):
@@ -370,6 +371,12 @@ class SellerCore:
             if m["scarcity"] >= market_state.SCARCE:
                 share = min(0.95, share + 0.05)
                 floor = max(floor, math.ceil(lp * m["p25"]))
+        if pb["curve"]:
+            # 11/13 11:2x: our own acceptance curve (core.price_curve) - goods closed 51% of talks opened at 0.68 and
+            # 9% at 0.76, so the market's p75 (0.70-0.80) cost deals; the curve's open wins, a scarce floor stays
+            cs = price_curve.open_share(c.get("kind"), lp, self.playbook_raw(ctx))
+            if cs:
+                share = cs
         top = max(floor, round(lp * share))
         new_ask = top if ask is None else max(floor, ask - round(lp * pb["step_share"]))
         last = st["turns"] >= MAX_TURNS - 1

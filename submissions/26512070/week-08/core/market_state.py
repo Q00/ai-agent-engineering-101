@@ -50,6 +50,8 @@ def _apply(cur, d, cat):
     if k == "supply":
         for u in x.get("units") or []:
             held[u] = [x.get("shop"), x.get("sku")]
+            if x.get("shop") == ME:                 # core.price_curve joins our talks (by unit) to their SKU
+                cur.setdefault("ours", {})[u] = [x.get("sku"), round(d["ts"])]
     elif k == "settle":
         held.pop(x.get("unit"), None)
         c = cat.get(x.get("sku")) or {}
@@ -89,11 +91,18 @@ def update(now=None):
         cur["files"][f.name] = pos + end
     cur["files"] = {n: p for n, p in sorted(cur["files"].items())[-3:]}
     cur["recent"] = [r for r in cur["recent"] if r[0] >= now - WINDOW_S]
+    cur["ours"] = {u: v for u, v in (cur.get("ours") or {}).items() if v[1] >= now - BOOT_DAYS * 86400}
     atomic.write_json(_cursor_path(), cur)
     doc = build(cur, cat, now)
     atomic.write_json(out_path(), doc)
     _CACHE.clear()
     return {"lines": lines, "units_held": len(cur["held"]), "skus": len(doc["skus"]), "scarce": doc["scarce_n"]}
+
+
+def our_units():
+    """{unit: sku} of every unit our shop bought in the last BOOT_DAYS (from the cursor)."""
+    cur = atomic.read_json(_cursor_path(), default=None) or {}
+    return {u: v[0] for u, v in (cur.get("ours") or {}).items()}
 
 
 def _q(xs, f):

@@ -240,6 +240,12 @@ STRATEGY = {
                     "hot_n": {"type": "integer", "minimum": 0, "maximum": 20},
                     "food_open_share": {"type": "number", "minimum": 0.5, "maximum": 1.5},   # 11/13: food opens here
                     "market_price": {"type": "boolean"},   # 11/13 10:4x: open/floor from the SKU's market (core.market_state)
+                    # 11/13 11:2x: open where our acceptance curve says (core.price_curve), keeping deals: a bucket is chosen
+                    # only with a deal rate of at least curve_min_p of the best, by rate x (margin + weight x price)
+                    "curve": {"type": "boolean"},
+                    "curve_volume_weight": {"type": "number", "minimum": 0, "maximum": 5},
+                    "curve_min_p": {"type": "number", "minimum": 0, "maximum": 1},
+                    "curve_explore": {"type": "number", "minimum": 0, "maximum": 0.5},
                     # 11/5 01:2x: food goes to a buyer only in a unit that lasts the hours it states
                     "food_fit": {"type": "boolean"},
                     # 11/5 02:4x: a buyer stating no hours gets food with at least this share of its shelf left
