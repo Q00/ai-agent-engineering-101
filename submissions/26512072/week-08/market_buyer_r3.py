@@ -56,7 +56,9 @@ GOOD_CAPTURE = 0.80
 # every one of 15 model picks was such a pair, psyoung82 1.26 against Kiro729 1.12).
 FAST_SETTLED = 20
 FAST_LEAD = 1.15
-RECENT = 40               # a shop's last trades with me: how often asking it ends in a deal (a walk costs 15-20 s)
+RECENT = 40               # a shop's last trades with me: how often asking it ends in a paid deal (a walk costs 15-20 s)
+COOL_OFF = 1800           # s: after a failed ask with nothing bought since, a shop (or its SKU) waits this long
+HOPELESS = 1.10           # an ask this far above my cap after my opening offer will not come down: my cap, then leave
 WARRANTY = 6              # goods break up to 6 h after the sale; a warranty refunds them (0 instead of -1)
 
 CHOOSE = """You are a buying agent in an online market. The order: one item from the category "{item}", budget {budget}{food}.
@@ -138,15 +140,22 @@ def shop_memory():
     """Per shop name: what my own records say."""
     mem = read_jsonl(BUYER_MEM)
     by_order = {m["order"]: m for m in mem if m.get("kind") == "trade"}
+    since = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time() - COOL_OFF))
+    unpaid = {m.get("order") for m in mem if m.get("kind") == "payment" and m.get("paid") is False}
     out = {}
     def s(name):
         return out.setdefault(name, {"trades": 0, "settled": 0, "gain": 0, "lied": 0, "broken": 0, "refused": 0,
-                                     "errors": 0, "nostock": 0, "nowarranty": 0, "goods_ok": 0, "recent": []})
+                                     "errors": 0, "nostock": 0, "nowarranty": 0, "goods_ok": 0, "recent": [],
+                                     "lately": {}})
     for m in mem:
         if m.get("kind") == "trade":
             x = s(m["shop"])
             x["trades"] += 1
-            x["recent"] = (x["recent"] + [m.get("outcome") == "deal"])[-RECENT:]
+            good = m.get("outcome") == "deal" and m.get("order") not in unpaid
+            if m.get("outcome") != "no stock":              # a stale listing is counted on its own (nostock)
+                x["recent"] = (x["recent"] + [good])[-RECENT:]
+                if str(m.get("time", "")) >= since:         # the last half hour: SKU -> did every ask fail
+                    x["lately"][m.get("sku")] = good or x["lately"].get(m.get("sku"), False)
             x["errors"] += m.get("outcome") == "error"
             x["nostock"] += m.get("outcome") == "no stock"
         elif m.get("kind") == "settled" and m.get("order") in by_order:
@@ -248,8 +257,11 @@ def main():
             gain = keep
             if usual > a.budget * 1.05 or keep < MIN_CAPTURE - 0.1:
                 gain *= 0.3                                         # it rarely goes as low as I may pay
-            if x and len(x["recent"]) >= 10:                        # how often asking this shop ends in a deal
+            if x and len(x["recent"]) >= 10:                        # how often asking this shop ends in a paid deal
                 gain *= 0.25 + 0.75 * sum(x["recent"]) / len(x["recent"])
+            if x and (x["lately"].get(sku) is False                 # I just failed on this SKU here, or on two others
+                      or (len(x["lately"]) >= 2 and not any(x["lately"].values()))):
+                gain *= 0.3
             cands.append({"shop": s, "sku": sku, "name": c["name"], "list": c["list_price"], "qty": off["qty"],
                           "kind": c["kind"], "ratio": ratio, "lot": lot, "keep": keep,
                           "score": trust(x, s.get("reviews"), forum[s["name"]]) * gain})
@@ -388,9 +400,13 @@ def main():
                     move, raw, fast = {"action": "offer", "price": ask}, "", True    # once: a misread ask must not loop
                     print(f"[take] the ask {ask} keeps {kept:.2f} of the margin"
                           f"{' and the shop repeats it' if ask == last_ask else ''}: accept", flush=True)
-                elif offers and ask and ask > cap and ask == last_ask:
-                    move, raw = {"action": "offer", "price": cap}, ""                # it will not move: my cap, once
-                    print(f"[last] the shop repeats {ask}, above the cap: offer the cap {cap}", flush=True)
+                elif offers and offers[-1] == cap and (ask is None or ask > cap):
+                    move, raw = None, ""                                             # my cap was refused: leave
+                    print(f"[last] the cap {cap} was refused (ask {ask})", flush=True)
+                elif offers and ask and ask > cap and (ask == last_ask or ask > cap * HOPELESS):
+                    move, raw = {"action": "offer", "price": cap}, ""                # it will not come down: my cap, once
+                    print(f"[last] the ask {ask} is {'repeated' if ask == last_ask else 'far'} above the cap: "
+                          f"offer the cap {cap}", flush=True)
                 else:
                     move, raw = safe_ask_json(OFFER.format(name=pick["name"], list_price=pick["list"], cap=cap, cost=cost,
                                                            open=min(cost, cap), card=card.get("description", "")[:300],
