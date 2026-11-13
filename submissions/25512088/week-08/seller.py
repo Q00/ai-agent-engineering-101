@@ -37,6 +37,7 @@ from adaptive_control import Control
 
 STATE = Path(os.environ.get('MARKET_DIR', '.market'))
 CHECKOUT_CONDITION_BUFFER_SECONDS = 60
+SELLER_VERSION = '1.3.0'
 
 
 def sign(receipt):
@@ -324,7 +325,7 @@ def build(port, publish=True):
     async def lifespan(app):
         startup_control=Control(STATE)
         startup_control.event('seller','role_started',{'pid':os.getpid(),'publish':bool(publish)})
-        startup_control.checkpoint('seller',{'seller_version':'1.2.0'},{'pid':os.getpid()})
+        startup_control.checkpoint('seller',{'seller_version':SELLER_VERSION},{'pid':os.getpid()})
         startup_control.close()
         # The campaign lock prevents duplicate workers; spend stays in SQLite.
         procurement_log = None
@@ -353,7 +354,7 @@ def build(port, publish=True):
             except asyncio.CancelledError:
                 pass
     card = AgentCard(name=SHOP_DISPLAY_NAME, description=SHOP_DESCRIPTION,
-        version='1.2.0', default_input_modes=['text/plain'], default_output_modes=['application/json','text/plain'],
+        version=SELLER_VERSION, default_input_modes=['text/plain'], default_output_modes=['application/json','text/plain'],
         capabilities=AgentCapabilities(streaming=False), supported_interfaces=[AgentInterface(
             protocol_binding='JSONRPC', url=f'http://127.0.0.1:{port}/', protocol_version='1.0')],
         skills=[AgentSkill(id='shop', name='Check stock and buy', description='Ask by SKU; reply with a numeric offer on the same task. Returns actual grade, cert=true, applicable shelf-life or evidence-scaled warranty, and a signed receipt.',
