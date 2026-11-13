@@ -7,7 +7,8 @@ param(
 $ErrorActionPreference = "Stop"
 $TaskName = "OuroMarket-25512088-Round3"
 $SubmissionPath = "/home/ohs/projects/ai-agent-engineering-101/submissions/25512088/week-08"
-$ExpectedArguments = "-d Ubuntu -- bash -lc `"cd '$SubmissionPath' && bash run_ubuntu.sh supervisor start`""
+$ExpectedArguments = "-d Ubuntu -- bash -lc `"cd '$SubmissionPath' && bash run_ubuntu.sh supervisor run`""
+$LegacyArguments = "-d Ubuntu -- bash -lc `"cd '$SubmissionPath' && bash run_ubuntu.sh supervisor start`""
 $ExpectedExecutable = "wsl.exe"
 
 function Get-ExistingTask {
@@ -20,6 +21,14 @@ function Test-ExpectedTask($Task) {
     $taskAction = $Task.Actions[0]
     return (($taskAction.Execute -ieq $ExpectedExecutable) -and
             ($taskAction.Arguments -ceq $ExpectedArguments))
+}
+
+function Test-LegacyTask($Task) {
+    if ($null -eq $Task) { return $false }
+    if ($Task.Actions.Count -ne 1) { return $false }
+    $taskAction = $Task.Actions[0]
+    return (($taskAction.Execute -ieq $ExpectedExecutable) -and
+            ($taskAction.Arguments -ceq $LegacyArguments))
 }
 
 function Write-Result($State, $Matched) {
@@ -40,12 +49,16 @@ $matches = Test-ExpectedTask $existing
 switch ($Action) {
     "install" {
         if ($null -ne $existing) {
-            if (-not $matches) {
+            if (Test-LegacyTask $existing) {
+                Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false
+                $existing = $null
+            } elseif (-not $matches) {
                 Write-Result "conflict" $false
                 exit 3
+            } else {
+                Write-Result "already_installed" $true
+                exit 0
             }
-            Write-Result "already_installed" $true
-            exit 0
         }
         $taskAction = New-ScheduledTaskAction -Execute $ExpectedExecutable -Argument $ExpectedArguments
         $trigger = New-ScheduledTaskTrigger -AtLogOn

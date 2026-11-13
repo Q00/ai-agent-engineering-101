@@ -10,6 +10,7 @@ class WindowsRecoveryTests(unittest.TestCase):
         text=SCRIPT.read_text()
         self.assertIn('OuroMarket-25512088-Round3',text)
         self.assertIn('/home/ohs/projects/ai-agent-engineering-101/submissions/25512088/week-08',text)
+        self.assertIn('bash run_ubuntu.sh supervisor run',text)
         self.assertIn('bash run_ubuntu.sh supervisor start',text)
         self.assertIn('wsl.exe',text)
 
