@@ -176,6 +176,29 @@ RIVAL_UNDER, RIVAL_OVER = 0.01, 0.0      # 11-11: floor and opening ask around t
 # quote (G07ec17d5: 9 quotes at .727-.747 of list against 25620027's .705, no deal); we now open AT the settle.
 GRADE_OFF = {"A": 0.0, "B": -0.07, "C": -0.15}   # a grade's usual distance from the SKU median when the grade has no data
 _RV = {"t": 0, "shops": [], "by": {}, "sku": {}}
+DEF_MAX_LOSS = 0.12          # 11-13 18:15: revenue defense (see the ref block): most under cost a unit may go
+DEF_BUDGET_DAY = 10e6        # ... and most loss (cost - price of agreed defense deals) per UTC day
+DEF_FILE = HERE / ".market" / "rev_defense.json"
+
+
+def _def_state():
+    day = time.strftime("%Y-%m-%d", time.gmtime())
+    try:
+        st = json.loads(DEF_FILE.read_text())
+    except (OSError, ValueError):
+        st = {}
+    return st if st.get("day") == day else {"day": day, "loss": 0, "deals": 0}
+
+
+def defense_left():
+    return DEF_BUDGET_DAY - _def_state().get("loss", 0)
+
+
+def defense_add(loss):
+    st = _def_state()
+    st["loss"] = st.get("loss", 0) + max(0, loss)
+    st["deals"] = st.get("deals", 0) + 1
+    DEF_FILE.write_text(json.dumps(st))
 
 
 _PC = {"t": 0, "d": {}}
@@ -638,6 +661,7 @@ class Shop(AgentExecutor):
             if comp is not None:                        # just under the competitors' usual first ask, within a band
                 moved = min(share + p["intel_band"], max(share - p["intel_band"], comp - p["intel_undercut"]))
                 share = min(share, moved) if c < 1 else moved
+            defense = False
             doomed = u.get("kind") == "food" and u.get("unit") and is_doomed(u, now)
             share *= (p.get("sku_auto", {}).get(u["sku"]) or {}).get("ask", 1.0)   # strategist.py, per SKU
             if slow:                                    # after the competitor move, so it cannot undo these cuts
@@ -681,6 +705,17 @@ class Shop(AgentExecutor):
                     level = ref - under + (ctl.get("sku") or {}).get(u["sku"], 0.0)
                     floor = max(floor, round(u["list_price"] * level))
                     share = level + p.get("rival_over", RIVAL_OVER) + 0.01
+                    # 11-13 18:15 (user: 'sell what SungJinho sells; split the pie'): REVENUE DEFENSE. A unit of a SKU
+                    # the rival shop (price_rivals.json) sold >= 3 times in 6 h, whose cost floor sits above the rival's
+                    # level (the expensive tail left after a lot's cheap units sold: cost .70-.75 of list against the
+                    # rival's .61-.65), may go down to that level, at most DEF_MAX_LOSS under its cost, while the day's
+                    # loss stays under DEF_BUDGET_DAY. A sale taken from the rival moves the revenue gap by twice its
+                    # price while both books lose about the same (our loss against its lost margin)
+                    if (shop_policy_now().get("rev_defense") and floor > u["list_price"] * level + 1
+                            and u["sku"] in {k[1] for k in _RV.get("sku", {})} and defense_left() > 0):
+                        dfloor = max(round(u["list_price"] * level), round(u["cost"] * (1 - DEF_MAX_LOSS)))
+                        if dfloor < floor:
+                            floor, defense = dfloor, True
             who, min_share = rival(text)
             if who:                                     # a rival above us in class: no deep discount (user 11-07)
                 floor = max(floor, round(u["list_price"] * min_share))
@@ -708,7 +743,8 @@ class Shop(AgentExecutor):
                                       "offers": [], "seen": now, "regime": regime, "meet": p["meet_frac"],
                                       "warranty": p["warranty_hours"] if grade in p["warranty_grades"] else 0,
                                       "clear": round(c, 2),
-                                      "comp": None if comp is None else round(comp, 3), "slow": slow}
+                                      "comp": None if comp is None else round(comp, 3), "slow": slow,
+                                      "defense": defense}
             d["first_ask"] = d["ask"]
             hl = hours_left(u, now)
             facts = (f"{u['name']} ({u['sku']}), grade {grade}"
@@ -767,7 +803,9 @@ class Shop(AgentExecutor):
         await up.add_artifact(parts=[new_data_part(rec)], name="receipt")
         record(event="deal", task=tid, sku=u["sku"], category=u.get("category"), price=price, cost=u["cost"],
                grade=d["grade"], unit=u["unit"], offers=d["offers"], regime=d["regime"], first_ask=d["first_ask"],
-               clear=d["clear"], comp=d["comp"], slow=d["slow"])
+               clear=d["clear"], comp=d["comp"], slow=d["slow"], defense=d.get("defense", False))
+        if d.get("defense"):
+            defense_add(u["cost"] - price)
         log("seller", f"task {tid[:8]} deal {u['sku']} at {price} (cost {u['cost']}, floor {d['floor']})")
         if u.get("unit"):
             self.closed[u["unit"]] = time.time()

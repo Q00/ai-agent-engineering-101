@@ -86,6 +86,13 @@ WINDOW_MAX_COST = 120e6      # ... and most one window may cost (90M -> 150M the
 # 11-12 08:17 KST: 150M -> 120M: goods stock at cost went 363M -> 831M in 26 h (bought ~87 M/h vs ~40 M/h sold at cost), storage 1%/day ~.35 M/h and rising; one step down
 COST_A, SURGE_MARGIN = 0.65, 0.03   # 11-11: typical grade A cost share; margin kept under the market median x
 RIVAL_MIN, RIVAL_SHARE, RIVAL_COVER_H, RIVAL_LINES = 6, 0.5, 2.0, 5   # 11-12: the book rival's best sellers (sku_wants)
+# 11-13 18:10 (user: 'sell what SungJinho sells and split the pie'): the rival line needed the rival's median >= .69
+# of list (COST_A .65 + .03), but 25620027 sells its top furniture at .61-.65, so no rival line was ever bought; our
+# supply lots of those SKUs average .59 of list (same as 25620027's lots). Now: rival median >= RIVAL_MIN_X, gain
+# ranked on COST_LOT, and more of the rival's rate held
+RIVAL_MIN_X, COST_LOT = 0.61, 0.59
+RIVAL_SHARE, RIVAL_LINES = 0.7, 8
+DEEP_OVER = 1.10             # a unit whose floor is over 1.10 x the SKU's market median counts 0 in the cover
 COST_GUESS = 0.6             # cost as a share of list price before a unit arrives (A 55-75 %, B 40-60 %, C 25-45 %)
 
 
@@ -277,9 +284,9 @@ def sku_wants(catalog, have_sku, p, now, hours_left, market_sku, mkt_units=None,
                 xs_.setdefault(d["sku"], []).append(d["x"])
         for k, v_ in xs_.items():
             x_ = sorted(v_)[len(v_) // 2]
-            if len(v_) >= RIVAL_MIN and k in catalog and x_ - 0.01 >= COST_A + SURGE_MARGIN:
+            if len(v_) >= RIVAL_MIN and k in catalog and x_ >= RIVAL_MIN_X:
                 rival_rate[k] = len(v_) / 6
-                rival_gain[k] = len(v_) / 6 * (x_ - COST_A) * catalog[k]["list_price"]
+                rival_gain[k] = len(v_) / 6 * (x_ - COST_LOT) * catalog[k]["list_price"]
     except (OSError, ValueError):
         pass
     for sku in sorted(rival_gain, key=lambda k: -rival_gain[k]):
@@ -481,7 +488,10 @@ def main():
         # not refilled and lost their asks: paid deals fell 120 -> 30-56/h from 17:00 while asks and 'no_stock' stayed
         if (u.get("grade") == "B" and not p.get("sell_b", 1)) or u.get("grade") == "C":
             continue
-        sellable_sku[u["sku"]] += OVER_UNIT if over_ else 1
+        # 11-13 18:10: a unit far over the market (cost .70-.75 of list against a .61-.65 market: the tail left after
+        # the cheap units of a lot sold) never sells, and counting it as cover kept the rival's best sellers unbought
+        deep_ = x_ is not None and (u.get("cost") or 0) * fm_ > DEEP_OVER * x_ * (u.get("list_price") or 1)
+        sellable_sku[u["sku"]] += 0 if deep_ else OVER_UNIT if over_ else 1
     wants = sku_wants(catalog, {k: int(v) for k, v in sellable_sku.items()}, p, now, sig["hours_left"], st["sku"],
                       st.get("mkt_units"), st.get("mkt_shops"))   # (priority, category, sku, qty)
     for _, cat, v, qty in wants:                            # the category loop sees these as stock already
