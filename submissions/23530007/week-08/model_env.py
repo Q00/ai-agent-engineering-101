@@ -22,7 +22,7 @@ def env(use_key=True):
 
 
 SPEND = Path(__file__).resolve().parent / ".market" / "spend.jsonl"
-CREDIT_ANCHOR = (1794372842.0, 173.0)        # 11-11 ~04:55 UTC: ~$181 at 02:20 (ops_cost estimate) minus ~$8 spent since
+CREDIT_ANCHOR = (1794589358.0, 148.0)        # 11-13 17:02 UTC: $148 on the console (user); the 11-11 anchor ($173) ran ~$19 under it
 
 
 def _model_of(cmd):

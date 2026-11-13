@@ -65,7 +65,7 @@ STRINGS = {"rules_change": 3, "rank_change": 3, "market_flow": 4}      # one par
 ITEM_KEYS = ("id", "text", "source", "since", "last_confirmed", "who", "what", "when", "why", "role", "numbers",
              "request", "answer")
 REFRESH_MIN = 120                                 # a digest older than this is rewritten even without new entries
-MIN_GAP_MIN = 110                                 # 11-10 (API budget): at most one model call per this many minutes
+MIN_GAP_MIN = 50                                  # 11-13 17:10 (early design paced to the round end): was 110 (11-10, API budget)
 LOCK_WAIT = 480                                    # s a run waits for another curator (a model call takes ~90 s)
 PROBE_CHARS = 2500                                 # a code result for one request, at most
 RULES_URLS = ("https://market.ourolabs.ai/rules", "https://market.ourolabs.ai/agent.md")

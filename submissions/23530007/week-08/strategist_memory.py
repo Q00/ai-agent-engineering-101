@@ -185,12 +185,15 @@ class Memory:
 
 
 EXCHANGE = HERE / ".market" / "strategy_exchange.db"   # shared by the shop and buyer strategists (SQLite)
-SLOT = 900                                                # they alternate 15-minute slots (user, 11-06)
+# 11-13 17:10 (user: 'the early design scored best and widened the gap; go back to it, paced to the round end'):
+# alternating 20-minute slots, buyer even and shop odd, each every ~40 min on the 15-min watch tick (36 runs a
+# day each), and run_gate runs the model on every turn while the spend keeps pace (see pace). Was 900 (11-06).
+SLOT = 1200
 
 
 def my_turn(role, now=None):
-    """The buyer analyses in even 15-minute slots (:00, :30), the shop in odd ones (:15, :45): each every 30 min,
-    each reading what the other wrote 15 minutes earlier. Returns the slot number when it is this role's turn."""
+    """The buyer analyses in even 20-minute slots, the shop in odd ones: each about every 40 min, each reading what
+    the other wrote 20 minutes earlier. Returns the slot number when it is this role's turn."""
     # 11-10 (user: the API key had $195 left for 172 h after $304 in 67 h): the buyer every hour at :00, the shop
     # every 3 h at :30 (01:30, 04:30, ... UTC; book lead 340M, safe), down from every 30 min each. Same day, later
     # (user: Round 4 opens right after Round 3 and the credit refills only on the 20th): the shop every 6 h
@@ -328,12 +331,19 @@ CREDIT_END = 1795219200       # 2026-11-21 00:00 UTC: the promotional credit exp
 # budget = credit left / days to expiry; spend in the last 24 h under 85 % of it -> every check may run (min gap
 # 30 min, max gap buyer 1 h / shop 2 h, effort high); 85-115 % -> min gap buyer 40 / shop 60 min, max 2 h / 4 h,
 # effort high; over 115 % -> the frugal setting above (effort medium unless something hard happened)
-PACE = {"under": ({"buyer": 0.5, "shop": 3.0}, {"buyer": 1.0, "shop": 6.0}, True),
-        "on": ({"buyer": 40 / 60, "shop": 3.0}, {"buyer": 2.0, "shop": 6.0}, True),
+PACE = {"under": ({"buyer": 25 / 60, "shop": 25 / 60}, {"buyer": 1.0, "shop": 1.0}, True),   # 11-13 17:10: every turn
+        "on": ({"buyer": 25 / 60, "shop": 25 / 60}, {"buyer": 1.0, "shop": 1.0}, True),
         "over": ({"buyer": 50 / 60, "shop": 3.0}, GATE_MAX_GAP_H, False)}
 # 11-12 15:50 (user: 'do it all yourself' after the shop review): book 1st and revenue 2nd are fixed both ways and
 # stars move slowly, so the shop model runs at most every 3 h (wakes and new operator notes still bypass the gap);
 # the credit goes to the buyer, where the class total is decided
+
+
+# 11-13 17:10 (user chose 'early design, paced to the Round 3 end' over keeping a Round 4 reserve): the budget is
+# the credit left (minus a small reserve) over the days to the round end, and while the 24 h spend is within 115 %
+# of it both strategists run the model on every turn (run_gate); over 115 % they fall back to the gated setting
+ROUND_END = 1794927540        # 2026-11-17 14:59 UTC
+RESERVE = 5.0
 
 
 def pace(now=None):
@@ -343,7 +353,8 @@ def pace(now=None):
     try:
         import model_env
         sp = model_env.spend_summary(now)
-        budget = (sp.get("credit_left") or 0) / max(0.5, (CREDIT_END - now) / 86400)
+        end = ROUND_END if now < ROUND_END - 6 * 3600 else CREDIT_END
+        budget = max(0.0, (sp.get("credit_left") or 0) - RESERVE) / max(0.5, (end - now) / 86400)
         r = (sp.get("today") or 0) / budget if budget > 0 else 9
         return ("under" if r < 0.85 else "on" if r <= 1.15 else "over"), sp.get("today"), round(budget, 2)
     except Exception:
@@ -440,6 +451,8 @@ def run_gate(role, mem_d, woken=False, now=None):
     min_gap, max_gap, always_high = PACE[mode]
     if age_h >= max_gap.get(role, 6):
         why.append(f"{age_h:.1f} h since the last model run")
+    if mode in ("under", "on") and not why:
+        why.append("every turn (early design, paced to the round end)")
     run = bool(why)
     urgent = woken or "new operator note" in why
     if run and not urgent and old and age_h < min_gap.get(role, 1.0):
