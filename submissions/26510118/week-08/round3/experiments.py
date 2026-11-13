@@ -22,6 +22,7 @@ import statistics as st
 import time
 
 import common
+import margin
 
 ARMS = (-0.03, 0.0, 0.03, 0.06)      # (-0.02, 0, 0.02, 0.04) until 11/6 13:10 (the person's call: bolder, sooner)
 MIN_TALKS = 100                      # 150 until then
@@ -136,9 +137,11 @@ def haggle_arm(order_id: str, now: float | None = None, state: dict | None = Non
 
 
 def haggle_score(rows: list, saved: float, broken: set | None = None) -> dict:
-    """broken: our orders whose goods broke (refunded under the warranty: a share of 0, 11/7)."""
+    """broken: our orders whose goods broke (refunded under the warranty: a share of 0, 11/7). A deal keeps its expected
+    share of the shop's margin (Patch 3.6, margin.kept; the share of list until 11/13), to compare with saved."""
     out, broken = {}, broken or set()
-    keep = lambda r: 0.0 if r.get("order") in broken else 1 - r["price"] / r["list_price"]
+    keep = lambda r: 0.0 if r.get("order") in broken else \
+        round(margin.kept(r["price"] / r["list_price"], r.get("grade"), r.get("kind") or "goods"), 4)
     for a in HAGGLE_ARMS:
         rs = [r for r in rows if r.get("haggle") == a and r.get("could_counter") and r.get("list_price")]
         vals = [(keep(r) - saved) if r.get("deal") and r.get("price") else 0.0 for r in rs]
@@ -248,25 +251,48 @@ def food_leader(stats: dict) -> tuple[str | None, float | None]:
     return leader({a: {"reward_per_talk": s.get("reward_per_deal"), "se": s.get("se_deal")} for a, s in stats.items()})
 
 
-def run_food(now: float | None = None) -> str:
+FOOD_AMPLE_UNITS, FOOD_AMPLE_HOURS = 60, 6   # 11/13 (the person's call): food units on hand this old, this many: food is
+                                             # no longer short of stock, so a talk lost to a higher price is a unit
+                                             # left on the shelf, and the arms are judged per TALK again (watch's S2 line).
+                                             # On 11/13 "max" won per deal (0.1415 of list against 0.1131) while 205 food
+                                             # units sat 6 h or more; per talk "high" led (0.0332 against 0.0306)
+FOOD_TALK_LEAD = 0.6                         # ...the leader per talk before a verdict gets this, the rest share the rest
+
+
+def food_ample(now: float, inv: dict | None = None) -> bool:
+    inv = inv if inv is not None else (common.market_file("inventory.json", {}) or {})
+    return sum(1 for u in inv.get("units") or [] if u.get("kind") == "food"
+               and now - (u.get("supplied_at") or now) >= FOOD_AMPLE_HOURS * 3600) >= FOOD_AMPLE_UNITS
+
+
+def run_food(now: float | None = None, inv: dict | None = None) -> str:
     now = now or time.time()
     old = common.read_json(food_path(), {}) or {}
     rows = [r for r in common.records("negotiations") if (r.get("ts") or 0) >= now - WINDOW and r.get("food_floor")]
     lam = (common.read_json(common.MARKET_DIR / "analysis" / "objective.json", {}) or {}).get("lambda") or {}
     stats = food_score(rows, lam)
     ready = all((s["deals"] or 0) >= FOOD_MIN_DEALS for s in stats.values())
-    best, z = food_leader(stats) if ready else (None, None)
+    ample = food_ample(now, inv)
+    metric = "talk" if ample else "deal"
+    best, z = ((leader(stats) if ample else food_leader(stats)) if ready else (None, None))
     bold = [a for a in stats if a != "cost"]
-    lean = {a: (round(FOOD_LEAN / len(bold), 4) if a in bold else round(1 - FOOD_LEAN, 4)) for a in stats}
     rest = round((1 - BEST) / max(1, len(stats) - 1), 4)
-    weights = {a: (BEST if a == best else rest) for a in stats} if best else lean
+    if best:
+        weights = {a: (BEST if a == best else rest) for a in stats}
+    elif ample and ready:
+        lead = max(stats, key=lambda a: stats[a]["reward_per_talk"] if stats[a]["reward_per_talk"] is not None else -1)
+        weights = {a: (FOOD_TALK_LEAD if a == lead else round((1 - FOOD_TALK_LEAD) / max(1, len(stats) - 1), 4)) for a in stats}
+    elif ample:
+        weights = {a: round(1 / len(stats), 4) for a in stats}
+    else:
+        weights = {a: (round(FOOD_LEAN / len(bold), 4) if a in bold else round(1 - FOOD_LEAN, 4)) for a in stats}
     common.write_json(food_path(), {"at": int(now), "on": old.get("on", True), "weights": weights, "best": best, "z": z,
-                                    "stats": stats})
-    parts = ", ".join(f"{a}: {s['talks']} talks, {s['deals']} deals, close {s['close']}, {s['reward_per_deal']}/deal"
-                      for a, s in stats.items())
-    why = f"best {best} by {z} SE" if best else (f"leaning bold: no arm {Z} SE ahead (z {z})" if ready
-                                                  else f"leaning bold until {FOOD_MIN_DEALS} deals each")
-    return f"food price ({why}): {parts}"
+                                    "metric": metric, "stats": stats})
+    parts = ", ".join(f"{a}: {s['talks']} talks, {s['deals']} deals, close {s['close']}, {s['reward_per_deal']}/deal, "
+                      f"{s['reward_per_talk']}/talk" for a, s in stats.items())
+    why = (f"best {best} by {z} SE per {metric}" if best else
+           (f"no arm {Z} SE ahead per {metric} (z {z})" if ready else f"until {FOOD_MIN_DEALS} deals each"))
+    return f"food price ({why}{', food ample' if ample else ''}): {parts}"
 
 
 def brief(now: float) -> dict | None:

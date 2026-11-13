@@ -29,6 +29,7 @@ import forum      # noqa: E402
 import harness    # noqa: E402
 import insights   # noqa: E402
 import journal    # noqa: E402
+import margin     # noqa: E402
 import notes      # noqa: E402
 import ledger     # noqa: E402
 import restock    # noqa: E402
@@ -1324,14 +1325,39 @@ def test_objective_model():
               "no threshold (the buyer keeps its own)", o["lambda"].get("book") == round(0.5 / 101, 12) and o["buyer_min_share"] is None
               and o["basis"]["purchases_in_window"] == 4 and common.read_json(MD / "analysis" / "objective.json")["at"] == int(t), o)
         saved_min, objective.MIN_DEALS = objective.MIN_DEALS, 3
+        objective.LEGACY = True                                  # the list-share threshold, kept for the record
         o = objective.run(t, board)
-        check("...with enough purchases a threshold within CLAMP (0.15-0.45 since 11/6 13:10), and its options",
+        check("...(legacy) with enough purchases a threshold within CLAMP (0.15-0.45 since 11/6 13:10), and its options",
               o["buyer_min_share"] is not None and objective.CLAMP[0] <= o["buyer_min_share"] <= objective.CLAMP[1]
               and len(o["options"]) == len(objective.OPTIONS), o)
         check("...and the probe: a third of the orders at 0.10 under the pick (never under CLAMP)",
               o.get("probe") == {"share": objective.PROBE_SHARE,
                                  "min_share": round(max(objective.CLAMP[0], o["buyer_min_share"] - objective.PROBE_DROP), 2)}, o.get("probe"))
+        objective.LEGACY = False
+        o = objective.run(t, board)
+        k = objective.margin_floor(o["lambda"], 0.30, 100)
+        check("11/13, Patch 3.6: no list-share threshold nor probe; the margin floor from the prices instead",
+              o["buyer_min_share"] is None and "probe" not in o and o.get("margin_floor") == k and k is not None, o)
         objective.MIN_DEALS = saved_min
+        lam36 = {"saved": 1.466960352423, "deals": 2.9864253e-05}
+        check("11/13, the margin floor: a deal pays only over saved - lam_deals x (deals + 100) / lam_saved: 0.7309 - 0.2884 "
+              "= 0.4425 (the 11/13 numbers); no prices: none; within K_CLAMP",
+              objective.margin_floor(lam36, 0.7309, 14066) == 0.4425 and objective.margin_floor({}, 0.7309, 14066) is None
+              and objective.margin_floor(lam36, 0.7309, 10**7) == objective.K_CLAMP[0]
+              and objective.margin_floor(lam36, 0.99, 0) == objective.K_CLAMP[1])
+        rec_o = MD / "records" / "orders.jsonl"
+        kept_o = rec_o.read_bytes() if rec_o.exists() else None
+        with open(rec_o, "w", encoding="utf-8") as f:
+            for i in range(60):
+                f.write(json.dumps({"ts": int(t) - 600, "order": f"r{i}", "deal": i < 30}) + "\n")
+        o2 = objective.run(t, board)
+        check("...the stop-loss acts: 10 deals an hour over 3 h (under 40) lowers it by 0.10 at once (never under K_CLAMP)",
+              o2.get("margin_floor") == max(objective.K_CLAMP[0], round(k - objective.RELAX, 4))
+              and o2["basis"].get("relaxed", {}).get("deals_h") == 10.0, o2)
+        if kept_o is None:
+            rec_o.unlink(missing_ok=True)
+        else:
+            rec_o.write_bytes(kept_o)
         lam = {"saved": 6.66, "deals": 1.1056e-05}
         check("11/12, the goods floor: a deal pays only over saved - lam_deals x (deals + 100) / lam_saved: 0.3354 - "
               "0.0224 = 0.313 (the 11/12 numbers); no prices: none; never under the clamp",
@@ -1453,12 +1479,13 @@ def test_stage2():
     def orders(arm, n, deals, price, could=True):
         return [{"ts": t - 600, "haggle": arm, "could_counter": could, "list_price": 1000, "deal": i < deals,
                  "price": price if i < deals else None} for i in range(n)]
-    rows = orders("accept", 100, 95, 650) + orders("counter", 100, 85, 610) + orders("counter", 50, 50, 500, could=False)
+    rows = orders("accept", 100, 95, 650) + orders("counter", 100, 95, 560) + orders("counter", 50, 50, 500, could=False)
     hs = experiments.haggle_score(rows, 0.27)
-    check("scored on the orders where the choice arose: accept closes 95% keeping 0.35 (0.076 a order over saved 0.27), "
-          "counter 85% keeping 0.39 (0.102): counter adds more to saved",
-          hs["accept"]["talks"] == 100 and hs["counter"]["talks"] == 100 and hs["accept"]["reward_per_talk"] == 0.076
-          and hs["counter"]["reward_per_talk"] == 0.102 and hs["counter"]["kept"] == 0.39, hs)
+    ka, kc = round(margin.kept(0.65, None, "goods"), 4), round(margin.kept(0.56, None, "goods"), 4)
+    check(f"scored on the orders where the choice arose, each deal by its expected margin share (Patch 3.6): accept "
+          f"closes 95% at 0.65 of list keeping {ka}, counter 95% at 0.56 keeping {kc}: counter adds more to saved",
+          hs["accept"]["talks"] == 100 and hs["counter"]["talks"] == 100 and hs["accept"]["kept"] == ka
+          and hs["counter"]["kept"] == kc and hs["counter"]["reward_per_talk"] > hs["accept"]["reward_per_talk"], hs)
     rec_o = MD / "records" / "orders.jsonl"
     kept_o = rec_o.read_bytes() if rec_o.exists() else None
     try:
@@ -1499,7 +1526,7 @@ def test_stage2():
         with open(rec_n, "w", encoding="utf-8") as f:
             for r in ([row("cost", outcome="deal", price=5_600, cost=5_000)] * 50 + [row("high", outcome="deal", price=6_500, cost=5_000)] * 50):
                 f.write(json.dumps(r) + "\n")
-        experiments.run_food(t)
+        experiments.run_food(t, {})
         fl = common.read_json(experiments.food_path())
         check("11/12: until each arm has 100 deals the weights lean to the bolder arms (high and max 0.4 each, cost 0.2)",
               fl["best"] is None and fl["weights"] == {"cost": 0.2, "high": 0.4, "max": 0.4}, fl)
@@ -1508,13 +1535,20 @@ def test_stage2():
                       + [row("high", outcome="deal", price=6_500, cost=5_000)] * 100 + [row("high", outcome="walked")] * 200
                       + [row("max", outcome="deal", price=6_200, cost=5_000)] * 100 + [row("max", outcome="walked")] * 300):
                 f.write(json.dumps(r) + "\n")
-        note = experiments.run_food(t)
+        note = experiments.run_food(t, {})
         fl = common.read_json(experiments.food_path())
         check("...scored per unit SOLD, food being short of stock: \"high\" closes a third (0.333 against 1.0) and earns less "
               "a talk (0.05 of list against 0.06) but 0.15 a unit against 0.06 (and max's 0.12), so it leads and gets 0.8",
-              fl["best"] == "high" and fl["weights"] == {"cost": 0.1, "high": 0.8, "max": 0.1}
+              fl["best"] == "high" and fl["weights"] == {"cost": 0.1, "high": 0.8, "max": 0.1} and fl["metric"] == "deal"
               and fl["stats"]["high"]["reward_per_talk"] == 0.05 and fl["stats"]["cost"]["reward_per_talk"] == 0.06
               and fl["stats"]["high"]["reward_per_deal"] == 0.15 and "best high" in note, (fl, note))
+        stale = {"units": [{"kind": "food", "supplied_at": t - 7 * 3600}] * experiments.FOOD_AMPLE_UNITS}
+        note = experiments.run_food(t, stale)
+        fl = common.read_json(experiments.food_path())
+        check("11/13: with 60 food units on hand 6 h or more, food is no longer short of stock and the same talks are "
+              "judged per TALK: \"cost\" (0.06 a talk) leads and gets 0.8",
+              fl["metric"] == "talk" and fl["best"] == "cost" and fl["weights"] == {"cost": 0.8, "high": 0.1, "max": 0.1}
+              and "food ample" in note, (fl, note))
     finally:
         experiments.food_path().unlink(missing_ok=True)
         if kept_obj is None:
@@ -1617,9 +1651,11 @@ def test_breakage():
           and r_ours["B"] == breakage.DEFAULT["B"] and breakage.rates(table, "ours", t + 4 * 3600) == breakage.DEFAULT, (r_ours, r_mkt))
     rows = [{"ts": t, "haggle": "counter", "could_counter": True, "list_price": 1000, "deal": True, "price": 600, "order": f"h{i}"}
             for i in range(10)]
-    check("the haggling experiment counts a broken order as 0 kept (refunded under the warranty)",
-          experiments.haggle_score(rows, 0.27, {"h0", "h1"})["counter"]["kept"] == 0.32
-          and experiments.haggle_score(rows, 0.27)["counter"]["kept"] == 0.4)
+    k6 = round(margin.kept(0.6, None, "goods"), 4)
+    check("the haggling experiment counts a broken order as 0 kept (refunded under the warranty); since 11/13 a deal keeps "
+          f"its expected share of the margin (at 0.60 of list, goods: {k6})",
+          experiments.haggle_score(rows, 0.27, {"h0", "h1"})["counter"]["kept"] == round(0.8 * k6, 4)
+          and experiments.haggle_score(rows, 0.27)["counter"]["kept"] == k6)
 
 
 def test_watch():

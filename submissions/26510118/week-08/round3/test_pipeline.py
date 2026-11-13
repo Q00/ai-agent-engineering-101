@@ -730,6 +730,8 @@ def main() -> int:
                               stdout=seller_log, stderr=subprocess.STDOUT)
     url = f"http://127.0.0.1:{port}"
     shop = lambda offers: fake.write("shops.json", [{"name": "test-shop", "url": url, "reviews": [], "offers": offers}])
+    common.write_json(common.MARKET_DIR / "analysis" / "objective.json", {"at": int(time.time()), "margin_floor": 0.44})
+    # 11/13: the margin floor as objective.py wrote it on 11/13 (Patch 3.6), for the buyer runs below
     buyer = lambda order, shops: fake.run("market_buyer.py", "--shops", str(shops), "--item", order["item"],
                                           "--budget", str(order["budget"]), "--order", str(fake.md / "order.json"))
     offer = lambda sku, qty=1: {"sku": sku, "name": CATALOG[sku]["name"], "qty": qty}

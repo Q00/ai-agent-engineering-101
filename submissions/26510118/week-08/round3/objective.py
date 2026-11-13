@@ -166,7 +166,7 @@ def run(now: float | None = None, board: dict | None = None) -> dict:
         out["basis"] = {"purchases_in_window": len(recent), "hours_left": round(hours_left), "pace_from": "history" if then else "average",
                         "orders_in_window": len(orders_u) if orders_u is not None else None,
                         "orders_by_threshold": {str(u): c for u, c in sorted(Counter(orders_u or []).items())}}
-        if len(recent) >= MIN_DEALS:
+        if LEGACY and len(recent) >= MIN_DEALS:
             best, scores = choose({"saved": scoreboard.num(me_b, "saved"), "deals": scoreboard.num(me_b, "deals")},
                                   others, recent, hours_left, WINDOW / 3600, bw.get("saved", 0), bw.get("deals", 0), orders_u,
                                   current)
@@ -174,11 +174,35 @@ def run(now: float | None = None, board: dict | None = None) -> dict:
             out["buyer_min_share"] = min(CLAMP[1], max(CLAMP[0], best)) if best is not None else None
             if out["buyer_min_share"] is not None:
                 out["probe"] = {"share": PROBE_SHARE, "min_share": round(max(CLAMP[0], out["buyer_min_share"] - PROBE_DROP), 2)}
-        floor = goods_floor(out["lambda"], scoreboard.num(me_b, "saved"), scoreboard.num(me_b, "deals"))
-        if floor is not None:
-            out["goods_floor"] = floor
+        k = margin_floor(out["lambda"], scoreboard.num(me_b, "saved"), scoreboard.num(me_b, "deals"))
+        if k is not None:
+            o3 = [o for o in common.read_jsonl(common.MARKET_DIR / "records" / "orders.jsonl", since=now - 3 * 3600)]
+            deals_h = sum(1 for o in o3 if o.get("deal")) / 3
+            if len(o3) >= RELAX_ORDERS and deals_h < RELAX_DEALS_H:      # the stop-loss acts (11/13): looser, at once
+                k = max(K_CLAMP[0], round(k - RELAX, 4))
+                out["basis"]["relaxed"] = {"deals_h": round(deals_h, 1), "by": RELAX}
+            out["margin_floor"] = k
     common.write_json(folder() / "objective.json", out)
     return out
+
+
+LEGACY = False           # 11/13: the threshold on the share of LIST kept (OPTIONS, choose(), the probe) judged deals by
+                         # the old measure against the new saved after Patch 3.6 and went to its 0.45 clamp; with
+                         # goods_floor (0.45 too) our buyer closed 21 deals an hour for 17 h (goods 0-7 of ~250 per 3 h)
+K_CLAMP = (0.35, 0.85)
+RELAX, RELAX_DEALS_H, RELAX_ORDERS = 0.10, 40, 30
+
+
+def margin_floor(lam: dict, saved, deals) -> float | None:
+    """The least expected share of the shop's margin a deal must keep (Patch 3.6, margin.py), 11/13: a deal keeping k
+    moves saved by (k - saved) / (deals + PRIOR_DEALS) and deals by one, worth lam_saved and lam_deals each, so it pays
+    over saved - lam_deals x (deals + PRIOR_DEALS) / lam_saved (0.442 on 11/13: saved 0.731, a deal worth the
+    percentile of 91 more). Clamped to K_CLAMP; None without the prices. When our buyer closes under RELAX_DEALS_H
+    an hour over 3 h (RELAX_ORDERS orders or more), run() lowers it by RELAX: the stop-loss acts, not only alerts."""
+    ls, ld = (lam or {}).get("saved"), (lam or {}).get("deals")
+    if not ls or ld is None or saved is None or deals is None:
+        return None
+    return round(min(K_CLAMP[1], max(K_CLAMP[0], saved - ld * (deals + PRIOR_DEALS) / ls)), 4)
 
 
 PRIOR_DEALS = 100        # the board counts saved as if the buyer had this many more deals at 0% (Patch 3.4)
@@ -200,7 +224,7 @@ def brief(now: float) -> dict | None:
     o = common.read_json(folder() / "objective.json", None)
     if not isinstance(o, dict):
         return None
-    return {k: o.get(k) for k in ("at", "view", "buyer_min_share", "probe", "goods_floor", "options", "lambda", "basis")}
+    return {k: o.get(k) for k in ("at", "view", "margin_floor", "buyer_min_share", "probe", "options", "lambda", "basis")}
 
 
 if __name__ == "__main__":

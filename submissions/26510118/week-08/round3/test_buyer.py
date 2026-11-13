@@ -41,6 +41,8 @@ CATALOG = {s["sku"]: s for s in [
     {"sku": SOFA, "name": "테스트 소파", "category": "가구/침구>가구>소파/의자/스툴", "list_price": 168000, "kind": "goods", "shelf_hours": None},
 ]}
 RULES = common.RULES["buyer"]
+mb.K_DEFAULT = 0.2      # 11/13: the haggling checks below assume the ceiling at the top step (90% of list); the margin
+                        # floor's own checks read mb.K_DEFAULT or write objective.json
 results = []
 
 
@@ -194,12 +196,14 @@ def test_terms():
     sofa = {"shop": {"name": "K", "url": "http://k"}, "sku": "G2", "name": "Sofa", "list": 1_000_000, "kind": "goods"}
     r = asyncio.run(mb.trade(shop_, sofa, order(1_500_000, ["G2"], "goods"), {}, {}, RULES, False))
     offers = [int(__import__("re").findall(r"\d+", x)[0]) for x in shop_.sent[1:] if x != "(cancel)"]
-    cap_c = round(1_000_000 * mb.share_cap("goods", "C", True, mb.MIN_SHARE))
-    check("dear goods: the warranty asked for, any grade welcome; a C under its warranty keeps 27% after its 29% breakage "
-          "(by order on the ledger since 11/7; ceiling 1 - 0.27 / 0.71 = 62.0% of list), and the ladder scales down to it",
+    cap_c = round(1_000_000 * mb.margin_cap("goods", "C", True, mb.K_DEFAULT))
+    check("dear goods: the warranty asked for, A first since 11/13; a C under its warranty must keep the margin floor "
+          f"({mb.K_DEFAULT} without objective.json) of its margin after its breaks (Patch 3.6: ceiling {cap_c / 1e6:.3f} of "
+          "list), and the ladder scales down to it",
           shop_.sent[0] == "I want to buy Sofa (G2). Please include a 6-hour warranty." + mb.GRADE_WORDS
-          and r["cap"] == cap_c == 619_718 and r["grade"] == "C" and offers[0] == round(1_000_000 * 0.50 * (cap_c / 1_000_000) / 0.90)
-          and max(offers) <= cap_c, (shop_.sent, r.get("cap")))
+          and "grade A with the warranty" in mb.GRADE_WORDS
+          and r["cap"] == cap_c and r["grade"] == "C" and offers[0] == round(1_000_000 * 0.50 * (cap_c / 1_000_000) / 0.90)
+          and max(offers) <= cap_c, (shop_.sent, r.get("cap"), cap_c))
     flow[:] = [reply("Kimchi (K1): grade A, 50 h of shelf life left, certificate attached. Asking 15000.", {"ask": 15000})]
     shop_ = Shop()
     kim = {"shop": {"name": "K", "url": "http://k"}, "sku": "K1", "name": "Kimchi", "list": 20000, "kind": "food"}
@@ -224,28 +228,36 @@ def test_terms():
     (common.MARKET_DIR / "analysis" / "objective.json").unlink()
     check("the share a deal must keep: food 1 - 0.27; goods without a warranty pay for the break too (A at 2.8%: 69.3%)",
           round(mb.share_cap("food", None, True, 0.27), 3) == 0.73 and round(mb.share_cap("goods", "A", False, 0.27), 3) == 0.693)
-    # 11/12: goods keep at least objective.json's goods_floor after their breaks
-    common.write_json(common.MARKET_DIR / "analysis" / "objective.json", {"at": time.time(), "buyer_min_share": 0.20, "goods_floor": 0.35})
+    # 11/13, Patch 3.6: the margin floor from objective.json sets every ceiling
+    common.write_json(common.MARKET_DIR / "analysis" / "objective.json", {"at": time.time(), "margin_floor": 0.6})
     flow[:] = [reply("Sofa (G2): grade C (refurbished), with a 6-hour warranty. Asking 700000.", {"ask": 700000, "grade": "C",
                                                                                                    "warranty_hours": 6}),
                reply("Asking 700000.", {"ask": 700000, "warranty_hours": 6})]
     shop_ = Shop()
     r = asyncio.run(mb.trade(shop_, sofa, order(1_500_000, ["G2"], "goods"), {}, {}, RULES, False))
-    check("11/12: a goods deal keeps the goods floor (0.35) when it is over the order's share (0.20): the C sofa's ceiling "
-          "is set at 0.35 after its breaks; a stale objective.json: no floor",
-          mb.goods_floor() == 0.35 and mb.goods_floor(time.time() + 3 * 3600) == 0.0 and r["goods_floor"] == 0.35
-          and r["cap"] == round(1_000_000 * mb.share_cap("goods", "C", True, 0.35)), (r.get("cap"), r.get("goods_floor")))
+    check("11/13: the margin floor comes from objective.json while fresh (0.6), else K_DEFAULT; the C sofa's ceiling keeps "
+          "0.6 of its margin after its breaks; no list-share threshold nor probe any more",
+          mb.margin_floor() == 0.6 and mb.margin_floor(time.time() + 3 * 3600) == mb.K_DEFAULT and r["margin_floor"] == 0.6
+          and r["cap"] == round(1_000_000 * mb.margin_cap("goods", "C", True, 0.6)) and r["min_share"] is None
+          and r["probe"] is False, (r.get("cap"), r.get("margin_floor")))
     (common.MARKET_DIR / "analysis" / "objective.json").unlink()
+    ka, kb, kc = (round(mb.margin.kept(0.66, g, "goods"), 3) for g in "ABC")
+    check(f"Patch 3.6: at 0.66 of list grade A keeps {ka} of the margin, B {kb}, C {kc} (cost A 55-75%, B 40-60%, C 25-45%); "
+          "a price under every cost keeps 1; the ceiling falls as the floor rises; A gets the highest ceiling",
+          ka > kb > kc and mb.margin.kept(0.2, "A") == 1.0
+          and mb.margin_cap("goods", "A", True, 0.5) > mb.margin_cap("goods", "A", True, 0.7)
+          and mb.margin_cap("food", "A", True, 0.5) > mb.margin_cap("food", "B", True, 0.5) > mb.margin_cap("food", "C", True, 0.5),
+          (ka, kb, kc))
     flow[:] = [reply("Kimchi (K1): grade A, certificate attached. Asking 14000.", {"ask": 14000})]
     shop_ = Shop()
     r = asyncio.run(mb.trade(shop_, dict(kim, nohaggle=True), order(22000, ["K1"], "food"), {}, {}, RULES, False))
     check("11/12: a shop that ends talks on lower offers is offered its own ask when it is within our ceiling (14,000), "
           "not our opening 10,000", r["offers"][:1] == [14000] and shop_.sent[1] == "14000" and r.get("nohaggle"),
           (shop_.sent, r["offers"]))
-    flow[:] = [reply("Kimchi (K1): grade A, certificate attached. Asking 18000.", {"ask": 18000})]
+    flow[:] = [reply("Kimchi (K1): grade A, certificate attached. Asking 19000.", {"ask": 19000})]
     shop_ = Shop()
     r = asyncio.run(mb.trade(shop_, dict(kim, nohaggle=True), order(22000, ["K1"], "food"), {}, {}, RULES, False))
-    check("...and left at once when its ask (18,000) is over our ceiling (14,600): no offer, the next shop is tried",
+    check(f"...and left at once when its ask (19,000) is over our ceiling ({r.get('cap')}): no offer, the next shop is tried",
           not r["offers"] and "ends talks on lower offers" in (r["left"] or "") and shop_.sent[-1] == "(cancel)",
           (shop_.sent, r.get("left")))
     check("a warranty for goods listed at 100,000 or more", mb.wants_warranty(dict(goods, list=168000), {}, False, RULES))
@@ -566,9 +578,9 @@ def test_shop_around():
     check("each shop's share of food agreements refused for shelf life (5 or more to count): O 0.4; Q too few; "
           "a food candidate's trust drops by it", fails == {"O": 0.4}
           and {x["shop"]["name"]: x["trust"] for x in two}["O"] < {x["shop"]["name"]: x["trust"] for x in two}["P"], (fails, two and [(x["shop"]["name"], x["trust"]) for x in two]))
-    check("goods are asked for as grade B with the warranty, then A with it; never C (11/8: B with the warranty keeps the "
-          "most of list once breaks count; the words go with every goods ask that carries the warranty, checked above)",
-          "I prefer grade B (damaged box) with the warranty" in mb.GRADE_WORDS and "grade A with the warranty" in mb.GRADE_WORDS
+    check("goods are asked for as grade A with the warranty, then B with it; never C (11/13, Patch 3.6: A keeps the most "
+          "of the margin and breaks least; B first 11/8-11/13; the words go with every goods ask that carries the warranty)",
+          "I prefer grade A with the warranty" in mb.GRADE_WORDS and "grade B with the warranty" in mb.GRADE_WORDS
           and "grade C" not in mb.GRADE_WORDS and "refurbished" not in mb.GRADE_WORDS, mb.GRADE_WORDS)
     mb.MIN_SHARE, mb.MARKET_SLACK = saved_rules
 

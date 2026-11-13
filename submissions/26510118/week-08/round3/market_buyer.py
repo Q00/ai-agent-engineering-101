@@ -69,6 +69,7 @@ import common
 import experiments
 import shop_model
 import harness
+import margin
 
 MARGIN_HOURS = 1          # food must last this much longer than the order needs
 DEFAULT_RATIO = 0.70      # expected price as a share of the list price, with nothing better to go on
@@ -105,15 +106,23 @@ BUYER_BREAK = {"A": 0.028, "B": 0.136, "C": 0.29}   # our goods' breaks by order
                                                     # amain() takes breakage.json's when fresh (5.5/8.5/11% until 11/7,
                                                     # matched by product name, which missed most)
 OBJECTIVE_FRESH = 2 * 3600
+# 11/13, Patch 3.6 (margin.py): saved counts the share of the shop's MARGIN kept. The ceiling is now the most a deal can
+# pay and still keep K, the margin floor objective.py writes (margin_floor, the break-even of saved against deals:
+# 0.44 on 11/13), in expectation over the unit's cost (its grade's range, or the kind's supply mix before the grade is
+# known) and, for goods, its breaks (margin.cap). MIN_SHARE, min_share(), order_share() and share_cap() measured the
+# share of LIST kept and are no longer used by trade(): kept for the record and the tests.
+K_DEFAULT = 0.5           # the margin floor without a fresh objective.json
 SHELF_SAID = re.compile(r"(\d+(?:\.\d+)?)\s*(?:h(?:ours?)?\s+(?:of shelf life|left)|시간\s*(?:남|의\s*유통|이\s*남))", re.I)
-GRADE_WORDS = (" I prefer grade B (damaged box) with the warranty, priced for its grade; grade A with the warranty "
-               "otherwise. Please state the grade and whether the warranty is included.")
+GRADE_WORDS = (" I prefer grade A with the warranty; grade B with the warranty otherwise. Please state the grade and "
+               "whether the warranty is included.")
+# 11/13 (Patch 3.6): A first. A unit's cost sits closest to its price, so the same bargain keeps more of the margin
+# (48 h to 11/13: A 0.848, B 0.802, C 0.719), and A breaks least (3% against 12-33%). B first from 11/8 to 11/13:
 # 11/8 23:00 (the person's call): B first, then A, and no ask for C. Over 24 h of the market's goods, with its breakage
 # (a break under the warranty keeps 0, without it -1), the share of list kept is B with the warranty 0.310 (paid 0.648,
 # breaks 12.1%), A with it 0.275, C with it 0.262, C without -0.07. The C-first ask of 11/6 16:40 rested on "C kept
 # 0.417", counted before breaks were matched by order (11/7); since then 1,154 goods talks a day ended on a refurbished
 # unit without the warranty, and goods orders closed 1% (22 of 1,981 paid).
-FOOD_WORDS = " Please say how many hours of shelf life it has left."
+FOOD_WORDS = " Please say how many hours of shelf life it has left, and its grade (A, the freshest, preferred)."
                                                         # 11/6 19:10: "the unit nearest its expiry that still lasts that
                                                         # long" (16:40-19:10) made olstjr and choo-chu offer units far short
                                                         # of the need (541 h asked, 220 h given): 31 shelf-life refusals at
@@ -493,12 +502,19 @@ def order_share(order_id: str, now: float | None = None) -> tuple[float, bool]:
     return min_share(now), False
 
 
-def goods_floor(now: float | None = None) -> float:
-    """objective.json's goods_floor while fresh (the least a goods deal keeps after its breaks, 11/12), else 0."""
+def margin_floor(now: float | None = None) -> float:
+    """objective.json's margin_floor while fresh (Patch 3.6: the least expected share of the shop's margin a deal
+    keeps), else K_DEFAULT. 11/12-11/13 goods_floor (the old share of list, B1) stood here."""
     o = common.read_json(common.MARKET_DIR / "analysis" / "objective.json", None)
     now = now or time.time()
-    v = o.get("goods_floor") if isinstance(o, dict) and now - (o.get("at") or 0) < OBJECTIVE_FRESH else None
-    return float(v) if isinstance(v, (int, float)) and 0.1 <= v <= 0.5 else 0.0
+    v = o.get("margin_floor") if isinstance(o, dict) and now - (o.get("at") or 0) < OBJECTIVE_FRESH else None
+    return float(v) if isinstance(v, (int, float)) and 0.2 <= v <= 0.95 else K_DEFAULT
+
+
+def margin_cap(kind, g, covered: bool, k: float) -> float:
+    """The most to pay as a share of list for an expected margin share of k (margin.cap), goods with our breakage."""
+    return margin.cap(k, g, "goods" if kind == "goods" else "food", covered,
+                      BUYER_BREAK.get(g or "A", BUYER_BREAK["A"]) if kind == "goods" else 0.0)
 
 
 def share_cap(kind, g, covered: bool, lam: float) -> float:
@@ -521,8 +537,8 @@ def cap_of(c: dict, order: dict, top: float, lam: float | None = None) -> int:
     cap = min(order["budget"], round(c["list"] * top))
     if c.get("market"):
         cap = min(cap, round(c["list"] * (c["market"] + MARKET_SLACK)))
-    if lam is not None and c.get("kind") != "goods":
-        cap = min(cap, round(c["list"] * share_cap(c.get("kind"), None, True, lam)))
+    if lam is not None and c.get("kind") != "goods":              # lam: the margin floor (11/13, Patch 3.6)
+        cap = min(cap, round(c["list"] * margin_cap("food", None, True, lam)))
     return cap
 
 
@@ -540,8 +556,8 @@ async def trade(client: A2A, c: dict, order: dict, catalog: dict, nb: dict, rule
     """One negotiation. Returns the facts the order record, the notebook and the result line need."""
     r = {"deal": False, "receipt": None, "price": None, "asks": [], "offers": [], "error": None, "left": None,
          "switched": None, "warranty": wants_warranty(c, nb, poor, rules), "said": [], "cap": None}
-    r["min_share"], r["probe"] = order_share(order.get("order") or "")      # 11/8: a third of the orders probe lower
-    need = order.get("use_within_hours")
+    r["margin_floor"], r["min_share"], r["probe"] = margin_floor(), None, False     # 11/13: Patch 3.6 (the probe of 11/8
+    need = order.get("use_within_hours")                                            # and the list share retired)
     try:
         await client.open(c["shop"]["url"])
         first = f"I want to buy {c['name']} ({c['sku']})."
@@ -553,7 +569,8 @@ async def trade(client: A2A, c: dict, order: dict, catalog: dict, nb: dict, rule
                 first += GRADE_WORDS
         t = await client.send(first)
         steps = ladder(rules, memory.paid_ratio(nb, c["shop"]["name"])[1])
-        lam = r["min_share"]
+        lam = r["margin_floor"]
+        base = cap_of(c, order, steps[-1], None)                    # the budget, the top step, the item's market
         ceiling = r["cap"] = cap_of(c, order, steps[-1], lam)
         prev, holds, asked_warranty, refurb, covered, split = None, 0, r["warranty"], False, False, False
         scale = 1.0                                                 # the ladder, scaled to a B's or a C's ceiling
@@ -623,16 +640,18 @@ async def trade(client: A2A, c: dict, order: dict, catalog: dict, nb: dict, rule
                              f"({need + MARGIN_HOURS:.0f} h)")                                          # failure
                 r["policy"] = True
                 break
-            g = grade_of(t) if c["kind"] == "goods" else None
-            if c["kind"] == "goods":                                    # Kiro 2.0: the share this grade must keep, and
-                gf = r.setdefault("goods_floor", goods_floor())          # (11/12) never under the goods floor, and
-                caps = [round(c["list"] * share_cap("goods", g, covered, max(lam, gf)))]     # its own market
+            g = grade_of(t)
+            if c["kind"] == "goods":                                    # the margin this grade must keep (Patch 3.6),
+                caps = [round(c["list"] * margin_cap("goods", g, covered, lam))]     # and its own market
                 gm = grade_market(c, g, covered)
                 if gm is not None:
                     caps.append(round(c["list"] * gm))
                 if min(caps) < ceiling:
                     ceiling = r["cap"] = min(caps)
                     scale, r["grade"] = (ceiling / c["list"]) / steps[-1], g
+            elif g in margin.RANGE and r.get("grade") != g:             # food: its grade's cost range once it is said
+                ceiling = r["cap"] = min(base, round(c["list"] * margin_cap("food", g, True, lam)))
+                r["grade"] = g
             ask = await asked(t)
             if ask is not None:
                 r["asks"].append(ask)
@@ -739,7 +758,7 @@ async def shop_around(client, c: dict, poor, cands: list, order: dict, catalog: 
         except asyncio.TimeoutError:
             r = {"deal": False, "receipt": None, "price": None, "asks": [], "offers": [], "error": "TimeoutError",
                  "left": None, "switched": None, "warranty": False, "c": c}
-            r["min_share"], r["probe"] = order_share(order.get("order") or "")     # the order's threshold, as trade() had it
+            r["margin_floor"], r["min_share"], r["probe"] = margin_floor(), None, False   # the order's floor, as in trade()
         c = r.pop("c")
         note_outcome(nb, c, r, order)
         if r["deal"] or len(tries) + 1 >= MAX_TRIES or clock() - start > TRY_BUDGET:
@@ -805,7 +824,7 @@ async def amain(a) -> dict:
                   min_share=r.get("min_share"), probe=r.get("probe"), policy=r.get("policy"), haggle=r.get("haggle"),
                   could_counter=r.get("could_counter"), pushed=r.get("pushed"), asked_hours=r.get("asked_hours"),
                   asked_better=r.get("asked_better"), better=r.get("better"),
-                  goods_floor=r.get("goods_floor"), nohaggle=r.get("nohaggle"))       # 11/12: to measure B1 and B2
+                  margin_floor=r.get("margin_floor"), nohaggle=r.get("nohaggle"))     # 11/13: Patch 3.6's floor; B2
     if r["deal"]:
         review = f"Agreed {r['price']} for {c['name']} (list {c['list']}) after {len(r['offers'])} offer(s)."
         stars = 4                                                   # the review hook rewrites it once the deal settles
