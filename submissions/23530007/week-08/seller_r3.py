@@ -669,7 +669,16 @@ class Shop(AgentExecutor):
             if star_who and grade == "A":               # 11-13: a price-rated account gets the price its rubric rates 5
                 floor = round(u["list_price"] * star_x)
                 share = star_x
-                record(event="star_buyer", task=task.id, who=star_who, sku=u["sku"], price=floor)
+                # 11-13 15:00: goods never under the unit's cost. Uncapped, x .55 (dyishappy, manual) and .64 (iyen-dori)
+                # sold 132 grade A units from 09:25 for -7.4 M of book (-6.4 M in the last 3 h: furniture at cost/list
+                # .70-.73 went at .55, 22-25% under cost) while a 5-star review from an account with 688 reviews of us
+                # moves its mean, and stars_rank, ~2e-5. Book 1st (SungJinho is the runner-up) outweighs a stars rank 5x.
+                # Food keeps the small under-cost star prices the user approved (11-11)
+                at_cost = u.get("kind") == "goods" and floor < u["cost"]
+                if at_cost:
+                    floor = int(u["cost"])
+                    share = max(share, u["cost"] / u["list_price"])
+                record(event="star_buyer", task=task.id, who=star_who, sku=u["sku"], price=floor, at_cost=at_cost)
             ask = round100(min(u["list_price"], max(floor, u["list_price"] * share)))
             asked = None
             if not SKU.search(text) and u.get("category"):
