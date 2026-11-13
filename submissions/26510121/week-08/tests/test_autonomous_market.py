@@ -95,7 +95,7 @@ def test_new_warranty_menu_preserves_existing_promises(tmp_path):
     j=Journal(tmp_path);now=time.time()
     u={'sku':'G1','kind':'goods','list_price':10000,'cost':6000,'grade':'A','supplied_at':now}
     cs=shop_candidates(u,{'balance':5000000},{'G1':{}},j,policy(),now=now)
-    assert {0,3,6}<={c['warranty_hours'] for c in cs if c['action']!='hold'}
+    assert {6,24,72}=={c['warranty_hours'] for c in cs if c['action']!='hold'}
     u['promised_warranty_hours']=6
     assert all(c['warranty_hours']>=6 for c in shop_candidates(u,{}, {'G1':{}},j,policy(),now=now))
 

@@ -129,7 +129,7 @@ def test_verified_customer_summary_reaches_real_a2a_decision(tmp_path):
 def test_history_price_candidate_obeys_existing_floor_and_quote_ceiling(tmp_path):
     j, u = setup(tmp_path)
     memory_context = {'category_behavior': {'paid_visits': 3, 'median_paid_to_list_ratio': .8}}
-    candidates = shop_candidates(u, {}, {}, j, policy(), customer_memory=memory_context)
+    candidates = shop_candidates(u, {}, {}, j, dict(policy(),shop_reputation_v24_enabled=False), customer_memory=memory_context)
     assert any(c['price'] == 8000 for c in candidates)
     memory_context['category_behavior']['median_paid_to_list_ratio'] = .1
     candidates = shop_candidates(u, {}, {}, j, policy(), previous_ask=8500, customer_memory=memory_context)

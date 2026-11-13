@@ -37,7 +37,7 @@ def test_capital_constrained_portfolio_still_funds_affordable_goods():
 def test_new_portfolio_keeps_cash_category_exploration_and_legal_lot_caps():
     inputs=[candidate(str(n),10000,3000,rate=5,qty=12,
                       category='same' if n<5 else str(n),explore=n>=8) for n in range(12)]
-    rows=allocate_championship(inputs,{}, {'spendable':300000},cfg(restock_max_lines=4),[],{})
+    rows=allocate_championship(inputs,{}, {'spendable':300000},cfg(restock_max_lines=4,shop_internal_capital_caps_enabled=True),[],{})
     assert len(rows)<=4
     assert sum(r['capital_commitment'] for r in rows)<=300000
     assert sum(r['capital_commitment'] for r in rows if r['category']=='same')<=180000

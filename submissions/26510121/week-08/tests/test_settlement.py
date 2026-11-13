@@ -48,6 +48,11 @@ def test_end_to_end_payment_moves_credits_once(tmp_path, monkeypatch,championshi
     shop_key, buyer_key, market_key = (Ed25519PrivateKey.generate() for _ in range(3))
     product = {'name': 'synthetic appliance', 'category': 'goods>appliance', 'kind': 'goods', 'list_price': 10000}
     atomic_json(j.md / 'catalog.json', {'G111': product})
+    if championship:
+        for n in range(100):
+            j.add('shop_settled',{'sku':'G111','unit':'past-own'+str(n),'grade':'A',
+                'price':7000,'cost':6000,'warranty_hours':6,'task':'past'+str(n),
+                'paid_at':time.time()-25000},ts=time.time()-25000)
     u = unit()
     if market_cohort:
         u['cost']=4000

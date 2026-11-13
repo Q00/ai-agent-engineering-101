@@ -144,7 +144,7 @@ def test_shop_category_allocation_requires_own_and_public_sales_and_affects_rest
     update(j, NOW)
     cfg, _ = effective(j, 'shop')
     assert cfg['category_weights'] == {'x': 1.1}
-    candidates = restock_candidates({'balance': 5000000, 'units': []}, cat, [], j, cfg, now=NOW)
+    candidates = restock_candidates({'balance': 5000000, 'units': []}, cat, [], j, dict(cfg,shop_reputation_v24_enabled=False), now=NOW)
     assert candidates[0]['evidence']['adaptive_category_weight'] == 1.1
     assert candidates[0]['max_cost'] <= 5000000 * .8
 

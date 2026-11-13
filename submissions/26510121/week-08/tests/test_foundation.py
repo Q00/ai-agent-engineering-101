@@ -75,9 +75,10 @@ def test_already_owned_expiring_stock_can_be_sold_below_cost(tmp_path):
 
 def test_restock_bounds_and_zero_capital(tmp_path):
     j = Journal(tmp_path)
+    cfg=dict(policy(),shop_reputation_v24_enabled=False)
     cat = {'a': {'category': 'x', 'list_price': 10000, 'kind': 'goods'}}
-    assert not restock_candidates({'balance': 0}, cat, [], j, policy())
-    cs = restock_candidates({'balance': 5000000}, cat, [], j, policy())
+    assert not restock_candidates({'balance': 0}, cat, [], j, cfg)
+    cs = restock_candidates({'balance': 5000000}, cat, [], j, cfg)
     assert len(cs) == 1 and cs[0]['qty'] == 1 and cs[0]['max_cost'] == 11250
 
 

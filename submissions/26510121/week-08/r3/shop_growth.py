@@ -4,6 +4,7 @@ Quantiles and marginal sale probabilities are explicit Poisson scenarios, not
 identified demand distributions. Cash affordability remains worst-case bounded.
 """
 import math
+from .limits import capital_caps,fraction as capital_fraction
 
 
 def poisson_tail(arrivals, quantity):
@@ -45,7 +46,9 @@ def target_stock(rate, paid, config, public_qualified=False, public_limit=6,cove
     if config.get('shop_adaptive_demand_enabled'):
         hours=coverage_hours if type(coverage_hours) in (int,float) and math.isfinite(coverage_hours) and coverage_hours>0 else config.get('supply_cycle_seconds',1200)/3600
         if config.get('book_growth_v23_enabled'):
-            hours=min(config.get('planning_horizon_hours',6),hours*max(1,min(3,config.get('shop_demand_horizon_cycles',1))))
+            multiplier=max(1,config.get('shop_demand_horizon_cycles',1))
+            if capital_caps(config):multiplier=min(3,multiplier)
+            hours=min(config.get('planning_horizon_hours',6),hours*multiplier)
         arrivals=max(0,rate)*hours
     elif supported and config.get('objective_feedback_enabled'):
         arrivals*=max(1,min(3 if paid>=3 else 2,config.get('shop_demand_horizon_cycles',1)))
@@ -80,7 +83,11 @@ def resale_terms(product,public,journal,config,now):
     for grade,weight in [('A',.7),('B',.2),('C',.1)]:
         choices=[]
         for term in public.get('term_prices',[]):
-            if term.get('grade')!=grade or term.get('n',0)<3 or term.get('warranty_hours') not in (0,3,6):continue
+            allowed=(0,3,6)
+            if config.get('shop_reputation_v24_enabled'):
+                minimum=config.get('shop_new_goods_warranty_hours',6)
+                allowed=tuple(h for h in (6,24,72) if h>=minimum)
+            if term.get('grade')!=grade or term.get('n',0)<3 or term.get('warranty_hours') not in allowed:continue
             warranty=term['warranty_hours'];price=min(product['list_price'],term['median'])
             if config.get('shop_championship_enabled'):
                 from .risk import shop_refund_risk
@@ -92,6 +99,14 @@ def resale_terms(product,public,journal,config,now):
             choices.append({'grade':grade,'weight':weight,'price':price,'refund_stress':refund,
                 'warranty_hours':warranty,'observations':term['n'],
                 'selection_value':price*(1-refund)-liquidity})
+        if not choices and config.get('shop_reputation_v24_enabled'):
+            # A new insured contract cannot borrow an old uninsured margin.
+            from .risk import shop_refund_risk
+            hours=config.get('shop_new_goods_warranty_hours',6)
+            risk=shop_refund_risk(journal,grade,hours,config,now)['refund_upper']
+            choices=[{'grade':grade,'weight':weight,'price':base,'refund_stress':risk,
+                'warranty_hours':hours,'observations':0,'selection_value':base*(1-risk),
+                'fallback':'mixed public price; actual insured seller-risk scenario'}]
         rows.append(max(choices,key=lambda r:r['selection_value']) if choices else
                     {'grade':grade,'weight':weight,'price':base,'refund_stress':.15,
                      'warranty_hours':None,'observations':0,'fallback':'mixed-term conservative prior'})
@@ -144,8 +159,8 @@ def allocate_velocity(candidates,inv,capacity,config,existing,merchant):
         quantity=selected.get(c['sku'],{}).get('qty',0);cost=unit_cost(c)
         return (slots>0 and quantity<c['qty'] and used+cost<=total+1e-6 and
             (c['sku'] in selected or len(selected)<min(10,config['restock_max_lines'])) and
-            categories.get(c['category'],0)+cost<=total*.6+1e-6 and
-            (not c['evidence']['exploration'] or exploration+cost<=total*config['exploration_fraction']+1e-6) and
+            (not capital_caps(config) or categories.get(c['category'],0)+cost<=total*.6+1e-6) and
+            (not c['evidence']['exploration'] or exploration+cost<=total*capital_fraction(config,'exploration_fraction',.1)+1e-6) and
             marginal_row(c)['book']>0)
     def add(c):
         nonlocal used,exploration,slots
@@ -155,7 +170,7 @@ def allocate_velocity(candidates,inv,capacity,config,existing,merchant):
         used+=cost;slots-=1;categories[c['category']]=categories.get(c['category'],0)+cost
         if c['evidence']['exploration']:exploration+=cost
         coverage.update(c['evidence'].get('growth',{}).get('coverage_keys',[]))
-    breadth=total*config.get('assortment_coverage_fraction',.35)
+    breadth=total*capital_fraction(config,'assortment_coverage_fraction',.35)
     while True:
         if cash_abundant:break
         available=[c for c in candidates if feasible(c) and c['sku'] not in selected and gain(c)>0 and
@@ -235,7 +250,7 @@ def demand_diagnostics(inv,merchant,config):
         'held_skus_target_at_most_two':low,'held_skus_with_repeat_paid_evidence':repeat,
         'target_shortfall_units_scenario':shortfall,'merchant_context_at':merchant.get('at'),
         'supply_cycle_seconds':config.get('supply_cycle_seconds',1200),
-        'repeat_coverage_cycles':None if config.get('shop_adaptive_demand_enabled') and not config.get('book_growth_v23_enabled') else max(1,min(3,config.get('shop_demand_horizon_cycles',1))),
+        'repeat_coverage_cycles':None if config.get('shop_adaptive_demand_enabled') and not config.get('book_growth_v23_enabled') else max(1,min(3,config.get('shop_demand_horizon_cycles',1))) if capital_caps(config) else max(1,config.get('shop_demand_horizon_cycles',1)),
         'public_only_coverage_cycles':None if config.get('shop_adaptive_demand_enabled') else max(1,min(2,config.get('shop_demand_horizon_cycles',1))),
         'public_equal_share_prior_multiplier':'data-derived' if config.get('shop_adaptive_demand_enabled') else .5,
         'demand_policy_id':merchant.get('demand_policy_id'),
@@ -266,8 +281,8 @@ def allocate_championship(candidates,inv,capacity,config,existing,merchant):
         held_room=max(0,cfg['restock_max_qty']-held.get(c['sku'],0)) if stock_caps_enabled(cfg) else 20
         return (slots>0 and q<min(c['qty'],20,held_room) and used+cost(c)<=total+1e-6 and
                 (c['sku'] in selected or len(selected)<min(10,cfg['restock_max_lines'])) and
-                categories.get(c['category'],0)+cost(c)<=total*.6+1e-6 and
-                (not c['evidence']['exploration'] or probes+cost(c)<=total*cfg['exploration_fraction']+1e-6) and
+                (not capital_caps(config) or categories.get(c['category'],0)+cost(c)<=total*.6+1e-6) and
+                (not c['evidence']['exploration'] or probes+cost(c)<=total*capital_fraction(cfg,'exploration_fraction',.1)+1e-6) and
                 delta(c)['book']>0)
     while True:
         available=[c for c in candidates if feasible(c)]

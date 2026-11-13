@@ -34,7 +34,7 @@ def test_agents_select_operating_parameters_and_main_uses_consensus(tmp_path):
 
 
 @pytest.mark.parametrize('bad',[None,{'cover_cycles':3},
-    {'cover_cycles':100,'initial_batch_limit':20,'frontier_min_orders':4,'recheck_seconds':60},
+    {'cover_cycles':float('inf'),'initial_batch_limit':20,'frontier_min_orders':4,'recheck_seconds':60},
     {'cover_cycles':True,'initial_batch_limit':20,'frontier_min_orders':4,'recheck_seconds':60},
     {'cover_cycles':3,'initial_batch_limit':20,'frontier_min_orders':0,'recheck_seconds':60}])
 def test_agent_policy_cannot_escape_typed_parameter_space(bad):

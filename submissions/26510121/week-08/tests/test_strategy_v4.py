@@ -74,21 +74,22 @@ def test_public_price_above_budget_does_not_become_fake_affordable_offer(tmp_pat
 
 def test_core_capital_can_buy_hot_expensive_sku_without_breaching_gross_reserves(tmp_path):
     from r3.economy import restock_candidates
+    cfg=dict(policy(),shop_internal_capital_caps_enabled=True,shop_reputation_v24_enabled=False)
     j, now = Journal(tmp_path), time.time()
     cat = {'G1': {'kind': 'goods', 'category': 'sofa', 'list_price': 2320000}}
     for n in range(80):
         j.add('public_settle', {'sku': 'G1', 'amount': 1900000, 'shop': 'peer'}, ts=now-n)
     inv = {'balance': 6250000, 'units': []}
     j.add('shop_settled', {'price': 200000, 'paid_at': now, 'warranty_hours': 6})
-    cs = restock_candidates(inv, cat, [], j, policy(), now)
+    cs = restock_candidates(inv, cat, [], j, cfg, now)
     assert cs == []  # The maximum surge draw cannot fit this SKU's capital cap.
     inv['balance']=9000000
-    cs = restock_candidates(inv, cat, [], j, policy(), now)
+    cs = restock_candidates(inv, cat, [], j, cfg, now)
     assert cs == []  # v7 also caps concentration against deployable working capital.
     inv['balance']=11000000
-    cs = restock_candidates(inv, cat, [], j, policy(), now)
+    cs = restock_candidates(inv, cat, [], j, cfg, now)
     assert len(cs) == 1 and cs[0]['sku'] == 'G1'
-    capacity = cash_capacity(inv, j, policy(), now)
+    capacity = cash_capacity(inv, j, cfg, now)
     assert sum(c['capital_commitment'] for c in cs) <= capacity['spendable']
     assert cs[0]['capital_commitment'] <= .35 * inv['balance']
     assert cs[0]['capital_commitment'] <= .35 * capacity['spendable']

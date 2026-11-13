@@ -26,7 +26,7 @@ SCHEMA = {'type': 'object', 'additionalProperties': False, 'properties': {
     'forum_focus': {'type':'string','enum':['balanced','same_terms_price','acceptable_alternatives','mature_quality']},
     'operating_actions': {'type':'array','items':{'type':'string','enum':['stock_coverage','buyer_price_gap','buyer_information']},'maxItems':3},
     'operating_policy': {'type':'object','additionalProperties':False,'properties':{
-        'cover_cycles':{'type':'number','enum':[1,1.5,2,3]},
+        'cover_cycles':{'type':'number','minimum':1},
         'initial_batch_limit':{'type':'integer','enum':[2,6,10,20]},
         'frontier_min_orders':{'type':'integer','enum':[4,8,12]},
         'recheck_seconds':{'type':'integer','enum':[60,120,300]}},
@@ -40,7 +40,8 @@ def valid_operating(value):
     choices={'cover_cycles':(1,1.5,2,3),'initial_batch_limit':(2,6,10,20),
              'frontier_min_orders':(4,8,12),'recheck_seconds':(60,120,300)}
     return isinstance(value,dict) and set(value)==set(choices) and all(
-        type(value[key]) in (int,float) and not isinstance(value[key],bool) and value[key] in allowed
+        type(value[key]) in (int,float) and not isinstance(value[key],bool) and math.isfinite(value[key])
+        and (value[key]>=1 if key=='cover_cycles' else value[key] in allowed)
         and (key=='cover_cycles' or type(value[key]) is int) for key,allowed in choices.items())
 
 
@@ -162,7 +163,7 @@ def call(journal, config, facts, evidence, role, proposal=None, client=None, key
            'not because the analyst agreed. Check counterexamples, price frontier, maturity and data gaps.'
            if role == 'critic' else 'Diagnose bottlenecks and choose useful skills and a bounded experiment.'))
     if config.get('objective_decision_enabled'):
-        instructions += (' Compare objective_decisions.shop.alternatives for 1/1.5/2/3 supply-cycle coverage. '
+        instructions += (' Compare all supplied objective_decisions.shop.alternatives for supply-cycle coverage. '
             'Choose the supported policy with stronger conservative Book/revenue/rank progress, accounting for '
             'spendable cash, upper-mean-cost stress, eligibility and observed supply delays; do not retain a '
             'low coverage baseline solely because the market-wide trade rate is flat when own profitable repeat '
@@ -196,6 +197,11 @@ def call(journal, config, facts, evidence, role, proposal=None, client=None, key
             'When all legal line portfolios fit cash, supply slots/time are scarce: maximize conservative absolute '
             'Book per supply opportunity rather than Book per credit. Never use missing healthy exact rewards '
             'as evidence of a poor cohort; inspect exact_reward_coverage and diagnostic_since. ')
+        if not config.get('shop_internal_capital_caps_enabled',True):
+            instructions+=(' Fixed cash/SKU/category/discovery capital fractions and the three-cycle ceiling are disabled. '
+                'Only actual cash obligations, legal supply limits, finite economic forecasts and positive marginal Book '
+                'bound execution. Account-balanced reputation predictions and supported downside cohorts affect actual '
+                'sales, including accept actions. Never claim future ratings cannot fall or assume a buyer identity. ')
     elif config.get('shop_adaptive_demand_enabled'):
         instructions+=(' Shop demand now uses an evidence-derived posterior multiplier, not a fixed 0.5. '
             'The protection period uses observed attempted supply-window reliability and current time to supply, '

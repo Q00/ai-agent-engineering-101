@@ -57,6 +57,9 @@ def shop_candidates(unit, inv, catalog, journal, config, *, offer=None, previous
         minimum=max(unit.get('minimum_warranty_hours',0),unit.get('promised_warranty_hours') or 0)
         # Never change a warranty after quoting; a new task can request more.
         choices=[minimum] if unit.get('promised_warranty_hours') is not None else sorted({minimum,3,6})
+        if config.get('shop_reputation_v24_enabled') and unit.get('promised_warranty_hours') is None:
+            minimum=max(minimum,config.get('shop_new_goods_warranty_hours',6))
+            choices=sorted(h for h in {minimum,6,24,72} if minimum<=h<=72)
         result=[];hold=None
         pressure=journal.get('market_control',{}).get('cash_capacity',{})
         for hours in choices:
@@ -323,7 +326,8 @@ def cash_capacity(inv, journal, config, now=None):
     liability = sum(e.get('price', 0) for e in pending) - released
     storage = sum(u.get('cost', 0) for u in inv.get('units', []) if u.get('kind') == 'goods') * .01 * days
     balance = inv.get('balance', 0)
-    floor = max(config.get('cash_floor', 750000), balance * config['cash_reserve_fraction'])
+    from .limits import capital_caps
+    floor = max(config.get('cash_floor', 750000), balance * config['cash_reserve_fraction']) if capital_caps(config) else 0
     schedule = {}
     for e in pending:
         if closed.get((e.get('unit'), e.get('sku')), 0) < e.get('price', 0):
@@ -484,10 +488,12 @@ def restock_candidates(inv, catalog, demand, journal, config, now=None):
         existing_exposure = sum(u.get('cost', 0) * (1 + fee) for u in units if u['sku'] == sku)
         max_exposure = min(spendable, max(0, inv.get('balance', 0) *
                            config.get('max_sku_capital_fraction', .15) - existing_exposure))
+        from .limits import capital_caps
+        if not capital_caps(config):max_exposure=spendable
         if velocity:
             working=sum(u.get('cost',0) for u in units)+spendable
-            max_exposure=min(max_exposure,max(0,working*config.get('max_sku_capital_fraction',.35)-existing_exposure))
-        if probe_sku:
+            if capital_caps(config):max_exposure=min(max_exposure,max(0,working*config.get('max_sku_capital_fraction',.35)-existing_exposure))
+        if probe_sku and capital_caps(config):
             max_exposure = min(max_exposure, capacity['spendable'] * config['exploration_fraction'])
         qty = min(qty, max(0, math.floor(max_exposure / commitment)))
         if qty <= 0:

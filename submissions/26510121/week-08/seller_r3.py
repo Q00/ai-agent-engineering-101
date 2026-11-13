@@ -68,7 +68,11 @@ class Seller(AgentExecutor):
         choices = [u for u in matching if grade(u, cat) != "expired" and
                    (not required_grades or grade(u,cat) in required_grades) and
                    (u.get('kind') != 'food' or remaining(u) >= min_hours + self.cfg['checkout_buffer_seconds'] / 3600)]
-        for u in sorted(choices, key=lambda x: (remaining(x), x.get("supplied_at", 0))):
+        if self.cfg.get('shop_reputation_v24_enabled'):
+            from r3.reputation import unit_priority
+            choices=sorted(choices,key=lambda u:unit_priority(u,grade(u,cat),remaining(u),self.cfg))
+        else:choices=sorted(choices,key=lambda x:(remaining(x),x.get('supplied_at',0)))
+        for u in choices:
             if self.j.reserve(u["unit"], task, self.cfg["session_ttl_seconds"]):
                 return dict(u, requested_use_hours=min_hours, minimum_warranty_hours=requested_warranty)
         live=[u for u in matching if grade(u,cat)!='expired']

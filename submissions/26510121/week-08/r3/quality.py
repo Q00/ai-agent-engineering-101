@@ -84,6 +84,9 @@ def update(journal, config, now=None):
 
 
 def augment(journal, config, unit, candidates, now=None):
+    if config.get('shop_reputation_v24_enabled'):
+        from .reputation import augment as account_augment
+        return account_augment(journal,config,unit,candidates,now)
     if not config.get('objective_feedback_enabled'): return candidates
     now = time.time() if now is None else now
     from .decision_view import fact

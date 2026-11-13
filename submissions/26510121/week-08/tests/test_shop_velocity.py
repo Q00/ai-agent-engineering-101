@@ -27,7 +27,7 @@ def test_paid_demand_can_batch_beyond_six_but_unknown_demand_cannot():
 def test_uninsured_observed_sales_do_not_have_fictitious_refund_cost(tmp_path):
     j=Journal(tmp_path);public={'median':7000,'term_prices':[
         {'grade':g,'warranty_hours':0,'median':8000,'n':10} for g in ['A','B','C']]}
-    result=resale_terms({'kind':'goods','list_price':10000},public,j,config(),time.time())
+    result=resale_terms({'kind':'goods','list_price':10000},public,j,config(shop_reputation_v24_enabled=False),time.time())
     assert abs(result['price']-8000)<1e-8 and result['refund_stress']==0
     assert all(r['warranty_hours']==0 for r in result['terms'])
 
@@ -69,7 +69,7 @@ def test_capital_velocity_prefers_fast_profitable_repeat_inventory():
 def test_allocation_caps_cash_category_lines_and_exploration():
     rows=[candidate(str(n),10000,3000,rate=5,qty=12,category='same' if n<5 else str(n),
                     explore=n>=8) for n in range(12)]
-    cfg=config(restock_max_lines=4)
+    cfg=config(restock_max_lines=4,shop_internal_capital_caps_enabled=True)
     selected=allocate_velocity(rows,{}, {'spendable':300000},cfg,[],{})
     assert len(selected)<=4 and sum(r['capital_commitment'] for r in selected)<=300000
     assert sum(r['capital_commitment'] for r in selected if r['category']=='same')<=180000

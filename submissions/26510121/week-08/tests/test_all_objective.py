@@ -91,10 +91,11 @@ def test_observed_high_value_goods_compete_with_food_without_relaxing_reserves(t
     j = Journal(tmp_path)
     cat = stocked_catalog(j, now)
     inv = {'balance': 5000000, 'units': []}
-    candidates = restock_candidates(inv, cat, [], j, policy(), now)
+    cfg=dict(policy(),shop_reputation_v24_enabled=False,shop_internal_capital_caps_enabled=True)
+    candidates = restock_candidates(inv, cat, [], j, cfg, now)
     assert candidates[0]['sku'] in {'G1', 'G3'}
     assert {'G1', 'G3'} <= {c['sku'] for c in candidates}  # Same category need not exclude another SKU.
-    capacity = cash_capacity(inv, j, policy(), now)
+    capacity = cash_capacity(inv, j, cfg, now)
     assert sum(c['capital_commitment'] for c in candidates) <= capacity['spendable']
     assert all(c['capital_commitment'] <= policy()['max_sku_capital_fraction'] * inv['balance'] for c in candidates)
     assert all(c['evidence']['expected_holding_hours'] < capacity['remaining_days'] * 24 for c in candidates)

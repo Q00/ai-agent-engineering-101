@@ -13,7 +13,7 @@ from .state import atomic_json, identity
 
 REVISION = 'objective-feedback-v23-1'
 FILE = 'operating-policy-v16.json'
-LIMITS = {'shop': {'shop_demand_horizon_cycles': (1., 3.), 'shop_inventory_ceiling': (120, 240),
+LIMITS = {'shop': {'shop_demand_horizon_cycles': (1., None), 'shop_inventory_ceiling': (120, 240),
                     'shop_sku_trend_factors': None,'shop_public_demand_skus':None,'shop_public_demand_caps':None},
           'buyer': {'buyer_frontier_category_enabled': (False, True),
                     'buyer_frontier_min_orders':(4,12),'buyer_frontier_recheck_seconds':(60,300),
@@ -36,7 +36,8 @@ def valid_patch(role, patch):
                 or type(factor) not in (int,float) or not math.isfinite(factor) or not .75<=factor<=1.5 for sku,factor in value.items())):return False
         elif key.endswith('_enabled'):
             if type(value) is not bool: return False
-        elif type(value) not in (int, float) or not math.isfinite(value) or not LIMITS[role][key][0] <= value <= LIMITS[role][key][1]:
+        elif (type(value) not in (int, float) or not math.isfinite(value) or value<LIMITS[role][key][0]
+              or LIMITS[role][key][1] is not None and value>LIMITS[role][key][1]):
             return False
         elif key in {'shop_inventory_ceiling','buyer_frontier_min_orders','buyer_frontier_recheck_seconds'} and type(value) is not int:
             return False
@@ -137,9 +138,10 @@ def update(journal, config, now=None, force=False):
     if evidence_ok and positive > 0 and len(sales) >= 5 and (len(blocks)>=2 or len(shortages) >= 3) and cap.get('spendable', 0) > 1000000:
         # Supply failures justify a larger coverage horizon only for SKUs with
         # repeat own paid demand. Candidate economics still reject bad units.
-        cycles = min(3., 1.25 + min(1.75, len(blocks)/4))
+        from .limits import capital_caps
+        cycles = min(3., 1.25 + min(1.75, len(blocks)/4)) if capital_caps(config) else 1.25+len(blocks)/4
         if agent_selected:cycles=selected['cover_cycles']
-        if regime == 'shock': cycles = min(cycles, 1.5)
+        if regime == 'shock' and capital_caps(config): cycles = min(cycles, 1.5)
         if 'stock_coverage' in intents:
             patches['shop']['shop_demand_horizon_cycles'] = cycles
             if config.get('shop_inventory_caps_enabled',True) and len(inv.get('units', [])) >= .8*config.get('shop_inventory_ceiling', 180):

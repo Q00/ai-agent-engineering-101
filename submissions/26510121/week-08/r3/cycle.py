@@ -67,6 +67,9 @@ class MarketCycle:
         if now-self.last_analysis>=60:
             self.last_analysis=now
             roles={'market_observer':lambda:analytics(self.j,time.time())}
+            if self.cfg.get('shop_reputation_v24_enabled'):
+                from .reputation import update as reputation_update
+                roles['account_reputation_observer']=lambda:reputation_update(self.j,self.cfg,time.time())
             if self.cfg.get('book_growth_v23_enabled'):
                 from .policy_learning import update as learning_update
                 roles['policy_learning_observer']=lambda:learning_update(self.j,self.cfg,time.time())

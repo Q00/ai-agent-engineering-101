@@ -172,7 +172,7 @@ def test_verbose_explanation_is_bounded_but_unsafe_policy_is_still_rejected(tmp_
         def post(self,*a,**kw):
             value=opinion(['one']);value['summary']='long explanation '*200
             value['hypotheses']=['long hypothesis '*100]
-            if unsafe:value['operating_policy']['cover_cycles']=999
+            if unsafe:value['operating_policy']['cover_cycles']=float('inf')
             return httpx.Response(200,json={'status':'completed','usage':{'input_tokens':1,'output_tokens':1},
                 'output':[{'type':'message','content':[{'type':'output_text','text':json.dumps(value)}]}]})
     if unsafe:

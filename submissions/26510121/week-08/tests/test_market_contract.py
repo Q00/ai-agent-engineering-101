@@ -53,6 +53,13 @@ def test_actual_a2a_server_and_buyer_interoperate(tmp_path, monkeypatch,patch34)
     u = unit()
     atomic_json(j.md / 'inventory.json', {'round': 3, 'balance': 5000000, 'units': [u]})
     atomic_json(j.md / 'catalog.json', {'G111': {'name': u['name'], 'category': u['category'], 'list_price': 10000, 'kind': 'goods'}})
+    if patch34:
+        # The new insured contract needs a mature seller-risk cohort too.
+        # A cheap uninsured fixture is no longer the production menu.
+        for n in range(100):
+            j.add('shop_settled',{'sku':'G111','unit':'past'+str(n),'grade':'A',
+                'price':7000,'cost':6000,'warranty_hours':6,'task':'past'+str(n),
+                'paid_at':time.time()-25000},ts=time.time()-25000)
     key = Ed25519PrivateKey.generate()
     keypath = tmp_path / 'synthetic.pem'
     keypath.write_bytes(key.private_bytes(serialization.Encoding.PEM, serialization.PrivateFormat.PKCS8, serialization.NoEncryption()))

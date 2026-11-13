@@ -8,7 +8,7 @@ from r3.shop_growth import target_stock
 
 
 def market(tmp_path):
-    now=time.time();j=Journal(tmp_path);cfg=dict(policy(),objective_feedback_enabled=True,shop_inventory_caps_enabled=True,shop_adaptive_demand_enabled=False)
+    now=time.time();j=Journal(tmp_path);cfg=dict(policy(),objective_feedback_enabled=True,shop_inventory_caps_enabled=True,shop_adaptive_demand_enabled=False,shop_internal_capital_caps_enabled=True,shop_reputation_v24_enabled=False)
     j.put('market_rules',{'sha256':'rules','compatible':True,'buyer_compatible':True})
     j.put('board_checked_at',now);j.put('public_feed_caught_up_at',now)
     atomic_json(j.md/'board.json',{'round':3,'shops':[

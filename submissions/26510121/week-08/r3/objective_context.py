@@ -158,7 +158,16 @@ def shop_alternatives(journal, config, now):
     if not -2 <= now-journal.get('board_checked_at',0) < 180:
         board = {}
     rows = []
-    for cycles in (1, 1.5, 2, 3):
+    cycles_grid=[1,1.5,2,3]
+    if config.get('shop_internal_capital_caps_enabled') is False:
+        # Logarithmic alternatives reach the finite forecast boundary without
+        # turning each background observation into an unbounded grid search.
+        from .finance import planning_hours
+        end=max(1,planning_hours(cfg,now)*3600/max(1,cfg.get('supply_cycle_seconds',1200)))
+        cycles_grid=[1.]
+        while cycles_grid[-1]*2<end:cycles_grid.append(cycles_grid[-1]*2)
+        cycles_grid=sorted(set(cycles_grid+[end,max(1,cfg.get('shop_demand_horizon_cycles',1))]))
+    for cycles in cycles_grid:
         policy = dict(cfg, shop_demand_horizon_cycles=cycles, restock_max_lines=min(10,cfg['restock_max_lines']))
         candidates = restock_candidates(virtual, catalog, [], shadow, policy, now)
         delta = {k:sum(c['expected_delta'].get(k,0) for c in candidates) for k in ('book','revenue')}

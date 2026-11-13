@@ -3,6 +3,7 @@
 Budgets are planning envelopes, not predictions. Genuine refund obligations
 have already been fully collateralized by cash_capacity before this runs.
 """
+from .limits import capital_caps,fraction as capital_fraction
 
 
 def allocate(candidates, inv, capacity, config, existing_units, merchant=None):
@@ -23,6 +24,7 @@ def allocate(candidates, inv, capacity, config, existing_units, merchant=None):
     budgets = {'core': total * core_fraction,
                'cashflow': total * (1 - core_fraction - config['exploration_fraction']),
                'discovery': total * config['exploration_fraction']}
+    if not capital_caps(config):budgets={k:total for k in budgets}
     for c in candidates:
         c['allocation_book'] = ('discovery' if c['evidence']['exploration'] else
                                 'cashflow' if c['evidence']['kind'] == 'food' or c['evidence']['list_price'] < 100000
@@ -43,7 +45,7 @@ def allocate(candidates, inv, capacity, config, existing_units, merchant=None):
         if any(x['sku'] == c['sku'] for x in chosen):
             return False
         per_unit = c['capital_commitment'] / c['qty']
-        cat_left = total * .6 - category_spent.get(c['category'], 0)
+        cat_left = total * .6 - category_spent.get(c['category'], 0) if capital_caps(config) else total-used
         quantity = min(c['qty'], slots, int(max(0, min(total-used, envelope, cat_left)) / per_unit))
         if quantity < 1:
             return False
@@ -95,8 +97,8 @@ def allocate_growth(candidates, inv, capacity, config, existing_units, merchant)
         cost = per_unit(c)
         return (slots > 0 and quantity < c['qty'] and used + cost <= total and
                 (c['sku'] in selected or len(selected) < min(10, config['restock_max_lines'])) and
-                cat_used.get(c['category'], 0) + cost <= total*.6 and
-                (not c['evidence']['exploration'] or probes+cost <= total*config['exploration_fraction']))
+                (not capital_caps(config) or cat_used.get(c['category'], 0) + cost <= total*.6) and
+                (not c['evidence']['exploration'] or probes+cost <= total*capital_fraction(config,'exploration_fraction',.1)))
     def gain(c):
         return sum(weights.get(k, 0) for k in c['evidence']['growth'].get('coverage_keys', []) if k not in coverage)
     def add(c):
@@ -108,7 +110,7 @@ def allocate_growth(candidates, inv, capacity, config, existing_units, merchant)
         cat_used[c['category']] = cat_used.get(c['category'], 0) + cost
         if c['evidence']['exploration']: probes += cost
         coverage.update(c['evidence']['growth'].get('coverage_keys', []))
-    breadth_budget = total * config.get('assortment_coverage_fraction', .35)
+    breadth_budget = total * capital_fraction(config,'assortment_coverage_fraction',.35)
     # A three-minute window admits only ten lines. Reserve line slots for
     # meaningful book growth; cheap discovery must not consume every slot.
     breadth_lines=max(1,config['restock_max_lines']//3)
