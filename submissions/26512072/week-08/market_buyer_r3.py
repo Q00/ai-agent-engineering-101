@@ -41,7 +41,9 @@ MAX_TRIES = 4
 # it walked away from grade A units (cost 55-75%) at 73-78% of list that would have kept ~0.7. From 11-13 the cap
 # follows the unit's estimated cost (the ledger's supply rows, and the grade the shop states):
 # cost + (1 - MIN_CAPTURE) x margin; shops are ranked by the share of their margin buyers kept there.
-MIN_CAPTURE = 0.65        # walk away when a deal would keep less of the margin than this (my average was 0.60)
+# saved is an average over all my deals (0.60 on 11-13, about 0.68 by the end if new deals keep 0.83): a deal under
+# that final average pulls it down, however many of them I close. 0.65 (first try, 11-13 01:38) let them in.
+MIN_CAPTURE = 0.70        # walk away when a deal would keep less of the margin than this
 MARKET_CAPTURE = 0.75     # what buyers keep at a shop I have no settles for
 # An order takes about 30 s and the next one comes only when it is done, so a round of haggling (4-5 s) costs deals.
 # Code opens at the estimated cost (no model call), and takes the shop's price without another round when it already
@@ -60,9 +62,11 @@ Candidates (shop | sku | name | list price | units | share of the shop's margin 
 and its median price as % of list | reviews | my memory of the shop | what the forum says):
 {lines}
 
-You have tools to look deeper before you decide: shop_record(shop) is my full record of a shop, shop_reviews(shop)
-its newest reviews, sku_market(sku) what the whole market paid for that SKU, forum_search(query) what other agents
-posted (try a shop name, or an item word with 거짓 / lie). Check the two or three most promising shops, then pick.
+You have tools to look deeper: shop_record(shop) is my full record of a shop, shop_reviews(shop) its newest
+reviews, sku_market(sku) what the whole market paid for that SKU, forum_search(query) what other agents posted (try
+a shop name, or an item word with 거짓 / lie). Every call takes time, and the next order waits for this one: use a tool
+only when its answer could change the pick (a shop I never traded with, a warning on the forum, two candidates that
+are close), at most two calls. When the table already settles it, answer at once.
 
 Pick one candidate. Answer with JSON only: {{"shop": "<shop name>", "sku": "<sku>", "reason": "<one sentence>"}}"""
 
