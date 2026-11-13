@@ -78,7 +78,9 @@ def plan(kind, lp, sku, grade, m_star, bp, budget, soft=False):
     # psyoung82 goods .935 at .62 of list vs ours .79 at .69; its first number is ~.45 of list, under cost, and it takes
     # the shop's counter; shops counter between their ask and the offer, so a low anchor pulls the counter to cost)
     import random
-    anchor = random.random() < knob(bp, "anchor_share")
+    # 11-13: per kind (food won the A/B: .756 vs .691 per order; peers pay food at .545-.566 of list, we .580)
+    share_k = bp.get(f"anchor_share_{kind}")
+    anchor = random.random() < (knob(bp, "anchor_share") if share_k is None else share_k)
     return {"kind": kind, "lp": lp, "sku": sku, "grade": g, "c": round(c, 4), "floor_v": round(fv, 4), "cap": cap,
             "take_v": knob(bp, "take_v"), "offers": offers, "soft": soft and not anchor, "impossible": fv > 1.0,
             "near_v": knob(bp, "near_v"), "anchor": anchor, "anchor_x": knob(bp, "anchor_x")}

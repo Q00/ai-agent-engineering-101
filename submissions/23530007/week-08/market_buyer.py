@@ -867,12 +867,23 @@ def pick_sku(shop, acceptable, catalog, budget, share=0.97, skip=(), stats=None)
     price = lambda o: (catalog.get(o["sku"]) or {}).get("list_price") or 0
     fits = [o for o in offers if 0 < price(o) * share <= budget]
     if stats is not None and len(fits) > 1:
-        def sku_saved(o):
+        # 11-13 (user: 'analyse the buyers' strategies and raise ours fast'): shops price most SKUs at a similar share
+        # of list, so the SKU with the highest COST share scores most at that price: at ddolcom 25620027 paid .664 of
+        # list for .929 and we .669 for .816 (its units' cost share .638 vs ours .594; over 12 h goods c .621 vs .597).
+        # Each fitting SKU is valued at the shop's usual price for the kind over its cost share (goods grade A, food
+        # grade B), blended with the realized v of that SKU at that shop when there are 3+ market deals
+        def sku_value(o):
+            it = catalog.get(o["sku"]) or {}
+            kind = it.get("kind") or "goods"
+            c = cshare(o["sku"], "A" if kind == "goods" else "B", kind)
+            st_ = stats.get(f"{shop.get('name')}|{kind}") or {}
+            x = st_.get("p50") or (0.66 if kind == "goods" else 0.58)
+            v_est = 1.0 if c >= 1 else min(1.0, (1 - x) / (1 - c))
             g = stats.get(f"{shop.get('name')}|sku|{o['sku']}") or {}
-            return g["saved"] if g.get("n", 0) >= 3 else -1.0
-        best = max(fits, key=lambda o: (sku_saved(o), price(o)))
-        if sku_saved(best) > -1.0:
-            fits = [best]
+            if g.get("n", 0) >= 3 and g.get("saved") is not None:
+                return (g["n"] * g["saved"] + 3 * v_est) / (g["n"] + 3)
+            return v_est
+        fits = [max(fits, key=lambda o: (sku_value(o), price(o)))]
     o = max(fits, key=price) if fits else min(offers, key=price, default=None)
     return o and {"sku": o["sku"], "name": o.get("name") or o["sku"], "list_price": price(o)}
 
@@ -996,9 +1007,8 @@ def main():
                          + " Any grade is fine as long as it lasts that long: please quote your cheapest unit that"
                            " does, and say how many hours it has left.")
             else:
-                first = (f"I want to buy {label}. Grade A with a warranty of at least {WARRANTY_MIN} hours on the"
-                         " receipt, please (grade B only if it is much cheaper, no grade C). Please quote your"
-                         " cheapest such unit and its price.")
+                first = (f"I want to buy {label}. Grade A only, with a warranty of at least {WARRANTY_MIN} hours on"
+                         " the receipt, please (no grade B or C). Please quote your cheapest such unit and its price.")
             accept = {"cert": True}
             if order.get("kind") == "food" and hours:
                 accept["min_hours_left"] = hours + bp["food_extra_hours"]
@@ -1048,7 +1058,8 @@ def main():
                         vp = vprice.plan(vctx["kind"], want["list_price"], item, g_, vctx["m_star"], bp, a.budget, soft)
                         vp["anchor"], vp["soft"] = _anc, soft and not _anc
                         vplan_rec.update(floor=vp["floor_v"], c=vp["c"], grade=g_)
-                        if vp["impossible"] or (g_ == "C" and w_ < WARRANTY_MIN):
+                        # 11-13: goods_grades ['A'] (B broke 10.6% on our deals and has the lower cost share)
+                        if vp["impossible"] or (g_ == "C" and w_ < WARRANTY_MIN) or g_ not in (bp.get("goods_grades") or ["A", "B"]):
                             log("buyer", f"{pick['name']} offers grade {g_}: no price beats m* after a {vprice.BREAK_P[g_]:.0%} break rate: next shop")
                             outcome = "grade C claimed"
                             seller.cancel(tid)
@@ -1167,6 +1178,10 @@ def main():
                     # unwarranted goods ran .185 per deal over 48 h)
                     log("buyer", f"{pick['name']} signed {item} without a warranty; not paying, trying elsewhere")
                     outcome, rec, price = "no warranty on receipt", None, None
+                elif (acceptable and order.get("kind") == "goods" and claim in ("B", "C")
+                      and claim not in (bp.get("goods_grades") or ["A", "B"])):
+                    log("buyer", f"{pick['name']} signed {item} as grade {claim}; we buy grade A goods only: not paying, trying elsewhere")
+                    outcome, rec, price = f"grade {claim} on receipt", None, None
                 elif acceptable and price and not vprice.receipt_ok(price, want["list_price"], item, claim, order.get("kind") or "goods", vctx["m_star"], bp)[0]:
                     # (near_cap tolerance: a price we agreed is paid; the ceiling binds before the agreement)
                     # 11-11: the claimed grade's price ceiling (a refunded break scores 0, so a warranted C at x .60
