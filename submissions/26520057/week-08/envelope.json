@@ -1,0 +1,211 @@
+{
+ "_note": "What the strategist may change without asking. [min, max] or a list of allowed values. Everything else goes to approvals/pending.jsonl and waits for the student.",
+ "_api_budget_usd": 40,
+ "shop.cash_reserve": [
+  2000000,
+  10000000
+ ],
+ "shop.stock_cost_cap": [
+  1000000,
+  15000000
+ ],
+ "shop.stock_cap_share": [
+  0.3,
+  0.9
+ ],
+ "shop.max_units": [
+  30,
+  300
+ ],
+ "shop.max_sku_units": [
+  1,
+  6
+ ],
+ "shop.per_run_spend": [
+  500000,
+  15000000
+ ],
+ "shop.food_cost_share": [
+  0,
+  0.5
+ ],
+ "shop.sku_cap_share": [
+  0.1,
+  0.6
+ ],
+ "shop.min_list_price": [
+  1000,
+  500000
+ ],
+ "shop.max_list_price": [
+  100000,
+  6000000
+ ],
+ "shop.max_surge": [
+  1.0,
+  1.3
+ ],
+ "shop.min_sales": [
+  1,
+  20
+ ],
+ "shop.sales_exp": [
+  0.3,
+  1.5
+ ],
+ "shop.price_exp": [
+  0,
+  1.5
+ ],
+ "shop.category_penalty": [
+  0,
+  1.5
+ ],
+ "shop.share_divisor": [
+  4,
+  60
+ ],
+ "shop.max_line_qty": [
+  1,
+  6
+ ],
+ "shop.one_per_category_run": [
+  true,
+  false
+ ],
+ "shop.worst_surge": [
+  1.0,
+  1.5
+ ],
+ "shop.ledger_pages": [
+  1,
+  6
+ ],
+ "shop.food_min_shelf_hours": [
+  24,
+  2000
+ ],
+ "shop.margin.A": [
+  1.0,
+  1.3
+ ],
+ "shop.margin.B": [
+  1.0,
+  1.3
+ ],
+ "shop.margin.C": [
+  1.0,
+  1.3
+ ],
+ "shop.aged_minutes": [
+  20,
+  600
+ ],
+ "shop.aged_margin": [
+  1.0,
+  1.1
+ ],
+ "shop.aged_floor_cut": [
+  0.9,
+  1.0
+ ],
+ "shop.aged_ask_cut": [
+  0,
+  0.1
+ ],
+ "shop.stale_minutes": [
+  60,
+  2000
+ ],
+ "shop.stale_margin": [
+  1.0,
+  1.1
+ ],
+ "shop.concession": [
+  0.005,
+  0.08
+ ],
+ "shop.max_counters": [
+  2,
+  8
+ ],
+ "shop.warranty_exposure_cap": [
+  0,
+  3000000
+ ],
+ "shop.reply_note": {
+  "max_chars": 200
+ },
+ "buyer.order_interval": [
+  20,
+  180
+ ],
+ "buyer.max_bids": [
+  2,
+  6
+ ],
+ "buyer.max_shops": [
+  2,
+  5
+ ],
+ "buyer.ladder": [
+  true,
+  false
+ ],
+ "buyer.anchor.A": [
+  0.5,
+  0.75
+ ],
+ "buyer.anchor.B": [
+  0.38,
+  0.62
+ ],
+ "buyer.anchor.C": [
+  0.25,
+  0.5
+ ],
+ "buyer.step": [
+  0.01,
+  0.08
+ ],
+ "buyer.ceiling.A": [
+  0.68,
+  0.9
+ ],
+ "buyer.ceiling.B": [
+  0.58,
+  0.85
+ ],
+ "buyer.ceiling.C": [
+  0.45,
+  0.8
+ ],
+ "buyer.warranty_bonus": [
+  0,
+  0.1
+ ],
+ "buyer.no_warranty_penalty": [
+  0,
+  0.2
+ ],
+ "model.provider": [
+  "local",
+  "anthropic"
+ ],
+ "model.name": [
+  "claude-haiku-5-5",
+  "claude-sonnet-5-5",
+  "claude-opus-5-5"
+ ],
+ "model.effort": [
+  "low",
+  "medium",
+  "high"
+ ],
+ "prompts.seller_classify": {
+  "max_chars": 1200
+ },
+ "prompts.buyer_extract": {
+  "max_chars": 1200
+ }
+}

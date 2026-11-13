@@ -1,0 +1,18 @@
+{
+ "harness": "Local Ollama qwen3:4b, CPU-only, no cloud or paid fallback",
+ "seller": {
+  "cmd": "/home/danayou/submissions/26520057/week-07/runtime/venv/bin/python seller_r3.py --port {port}"
+ },
+ "buyer": {
+  "cmd": "/home/danayou/submissions/26520057/week-07/runtime/venv/bin/python buyer.py --url {url} --item {item} --budget {budget}"
+ },
+ "market_buyer": {
+  "cmd": "/home/danayou/submissions/26520057/week-07/runtime/venv/bin/python market_buyer.py --shops {shops} --order {order} --item {item} --budget {budget}"
+ },
+ "restock": {
+  "cmd": "/home/danayou/submissions/26520057/week-07/runtime/venv/bin/python restock.py --state {state}"
+ },
+ "review": {
+  "cmd": "/home/danayou/submissions/26520057/week-07/runtime/venv/bin/python review.py --deal {deal}"
+ }
+}
