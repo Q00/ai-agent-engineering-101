@@ -6,6 +6,7 @@ from kernel import experiments as ex
 from tests.test_experiments import (  # noqa: F401 - root and a1 are fixtures
     BED,
     CATS,
+    SNACK,
     SOFA,
     H,
     S,
@@ -66,3 +67,32 @@ def test_interim_line_gives_the_difference_as_a_share_of_the_needed_one(root, a1
     line = ex.interim_line(e, S + wh * H, ex.interim_data(root, [e], S + wh * H))
     assert "뚜렷한 판정에 필요한 차이는" in line and "지금 차이는 필요한 차이의 " in line, line
     assert line.rstrip().endswith("%"), line
+
+
+def _row(eid, scope, section, mode="sequential", t=S):
+    return {"id": eid, "side": "shop", "scope": scope, "section": section, "mode": mode, "started_ts": t,
+            "window_h": 4, "items": [{"section": section, "key": "price_mult"}] if mode == "group" else None}
+
+
+def test_leaf_group_lists_only_experiments_whose_sales_it_sees():
+    bed = ex.scope_of(BED)[1]
+    g = _row(1, bed, BED, mode="group")
+    rows = [g, _row(2, ex.scope_of(SNACK)[1], SNACK, t=S + 60), _row(3, ex.scope_of(SOFA)[1], SOFA),
+            _row(4, "shop:all", "shop"), _row(5, bed, BED), _row(6, "kind:goods", "defaults.goods"),
+            _row(7, "kind:food", "defaults.food")]
+    assert ex.overlapping(rows, g) == [4, 5, 6]
+
+
+def test_whole_side_group_still_lists_every_experiment_of_the_side():
+    g = _row(1, "shop:all", BED, mode="group")
+    rows = [g, _row(2, ex.scope_of(SNACK)[1], SNACK), _row(3, ex.scope_of(SOFA)[1], SOFA)]
+    assert ex.overlapping(rows, g) == [2, 3]
+
+
+def test_share_is_left_out_while_the_after_sample_is_thin(root, a1):
+    _apply(root, a1, [_it("price_mult", 0.6, BED, "침대"), _it("stock_target", 60, BED, "침대")])
+    e = ex.load(root)[0]
+    wh = e["window_h"]
+    _write_events(root, _hourly(S - wh * H, wh, "BED1", 200_000))  # nothing sold after the change
+    line = ex.interim_line(e, S + wh * H, ex.interim_data(root, [e], S + wh * H))
+    assert "뚜렷한 판정에 필요한 차이는" in line and "지금 차이는 필요한 차이의" not in line, line

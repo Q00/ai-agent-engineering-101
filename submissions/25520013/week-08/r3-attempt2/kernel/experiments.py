@@ -13,7 +13,8 @@ it reports its numbers and ends the experiment as "measured"; the operator decid
   policy.arm_pick, reimplemented here as arm_b). The verdict compares the two arms over the same hours, so no before
   window and no market adjustment; at the verdict the arm is removed and policy.json keeps the old value.
 - group (11-11): the before/after items of one done with the same "group" label, judged as one sequential experiment
-  on the role's whole side (scope "shop:all" or "buyer:all"); the verdict is reported, every item's value stays.
+  on the items' one shared scope, else the role's whole side (group_scope, 11-13); the verdict is reported, every
+  item's value stays.
   Ledger entries of mode "bet" (the same thing under its first name) are judged the same way.
 Until 11-12 a verdict put the old value back (reverted), kept it, or adopted or dropped a split's new value; those
 statuses stay in the ledger as history.
@@ -907,7 +908,7 @@ def _start_split(
 
 def _register_group(root, label, xs, raws, now, traj, role, rev_weight, validate):
     """Register the written items xs [(index, item, edit result)] of one group as ONE experiment of mode "group" on
-    their side's whole scope ("shop:all" or "buyer:all"); a worse verdict puts every item's raw state back. A failed
+    their one shared scope, else their side's whole scope (group_scope); the verdict is reported only. A failed
     registration puts the items back at once. -> the result each item of the group gets."""
     items = [it for _, it, _ in xs]
     got = [
@@ -1573,6 +1574,26 @@ def _policy(root):
     return pol
 
 
+def _sales_overlap(exp, e):
+    """False only when a group measured on one scope cannot see e's change: e's scope is another leaf or kind of the
+    same side (live 11-13: a bed group listed an unrelated snack experiment as mixing its comparison)."""
+    a = exp.get("scope")
+    if exp.get("mode") not in GROUP_MODES or not a or a.endswith(":all"):
+        return True
+    b = e.get("scope")
+    if not isinstance(b, str) or b.endswith(":all") or a == b:
+        return True
+    if exp.get("side") == "buyer":
+        return False
+    ka, kb = (a.split(":", 1)[1] if a.startswith("kind:") else None), (b.split(":", 1)[1] if b.startswith("kind:") else None)
+    if ka is None and kb is None:
+        return False  # two different leaves
+    items = exp.get("items") or []
+    leaf_kind = (pe._kind(items[0]["section"]) if ka is None and items else ka)
+    other_kind = kb if kb is not None else pe._kind(e.get("section") or "")
+    return leaf_kind == other_kind
+
+
 def overlapping(rows, exp):
     """Ids of the other experiments of exp's side whose live time [started_ts, ended_ts) overlaps exp's after window
     [started_ts, started_ts + window_h): their changes are inside a before/after comparison of that side (a bet, a
@@ -1583,6 +1604,8 @@ def overlapping(rows, exp):
     for e in rows:
         try:
             if not isinstance(e, dict) or e.get("id") == exp.get("id") or e.get("side") != exp.get("side"):
+                continue
+            if not _sales_overlap(exp, e):
                 continue
             t_end = e.get("ended_ts")
             if e["started_ts"] < end and (not _num_ok(t_end) or t_end > t):
@@ -1649,8 +1672,8 @@ def _step_sequential(root, exp, now, traj, categories, validate):
 
 
 def _step_group(root, exp, now, traj, categories, validate):
-    """Measure one due group (mode "group", or "bet" from before) like a sequential experiment (evaluate on the whole
-    side, _judge), with the ids of the other experiments of the side in its window (overlapping) on the verdict. No item
+    """Measure one due group (mode "group", or "bet" from before) like a sequential experiment (evaluate on its
+    scope, _judge), with the ids of the other experiments in its window whose sales it sees (overlapping) on the verdict. No item
     is written. A group left "reverting" by the code before 11-12 (a worse verdict whose restore failed) ends measured
     on that verdict, without restoring the rest; the items it had already put back are named on it (restored).
     -> True when it ended or was extended."""
@@ -1984,7 +2007,8 @@ def interim_line(e, now, data):
                REL_MIN * max(abs(adj), FLOOR[side]))
     rel_name = f"전 보정 값의 {REL_MIN:.0%} 기준" if abs(adj) >= FLOOR[side] else "최소 기준"
     # live 11-13: operators waited for verdicts whose difference was a fraction of the needed one; the ratio says so
-    share = f". 지금 차이는 필요한 차이의 {abs(a['value'] - adj) / need:.0%}" if need > 0 else ""
+    gap = abs(a["value"] - adj) / need if need > 0 else math.nan
+    share = f". 지금 차이는 필요한 차이의 {gap:.0%}" if math.isfinite(gap) and a["n"] >= THIN_N else ""
     return (out + ". " + ("" if done else "시간별 흔들림이 이대로면 ")
             + f"뚜렷한 판정에 필요한 차이는 ±{_num(need, side)}부터 ({noise}과 {rel_name} 중 큰 쪽"
             + ("" if own else ", 후 구간이 온전한 2시간 미만이라 전 구간의 흔들림으로 셈") + stars + ")"
