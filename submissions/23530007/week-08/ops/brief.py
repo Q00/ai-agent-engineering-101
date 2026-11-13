@@ -137,7 +137,7 @@ def score_race(S, S0, key, label):
     return out
 
 
-def part_race(S, S0, field, label, weight, olds, now, left):
+def part_race(S, S0, field, label, weight, olds, now, left, below=False):
     """One shop part among the students' shops: our rank, the shop we race (right behind when we lead, right ahead
     when we trail), the gap, its fitted speed (trendfit: flat unless the slope is over 2 standard errors) and where
     it lands at the round's end."""
@@ -148,8 +148,11 @@ def part_race(S, S0, field, label, weight, olds, now, left):
     i = L.index(NAME)
     rank = 1 + sum(1 for p in vals if vals[p] > vals[NAME])
     out = {"field": field, "label": label, "weight": weight, "rank": rank, "of": len(L), "value": vals[NAME]}
-    j = i + 1 if rank == 1 else i - 1
-    if field == "stars_rank":                      # ties are common: race the next DIFFERENT value up (down when 1st)
+    j = i + 1 if rank == 1 or below else i - 1
+    if field == "stars_rank" and below:            # the next DIFFERENT value down
+        downs = [p for p in L if vals[p] < vals[NAME]]
+        j = L.index(downs[0]) if downs else -1
+    elif field == "stars_rank":                    # ties are common: race the next DIFFERENT value up (down when 1st)
         ups = [p for p in L if vals[p] > vals[NAME]]
         downs = [p for p in L if vals[p] < vals[NAME]]
         q = (ups[-1] if ups else (downs[0] if downs else None))
@@ -194,6 +197,14 @@ def build(hours=6.0):
            "ranks": [score_race(S, S0, "student_total", "전체"), score_race(S, S0, "student_shop", "상점"),
                      score_race(S, S0, "student_buyer", "buyer")],
            "parts": [r for r in (part_race(S, S0, f, lab, w, olds, now, left) for f, lab, w, _ in PARTS) if r]}
+    # 11-13 17:40 (user: highest score): a part we do not lead also races the shop right behind; shown when it closes
+    # in (SungJinho's revenue gained 176 M per 6 h on ours while the report showed only the gap to inextro above)
+    for p in out["parts"]:
+        if p["rank"] > 1:
+            f, lab, w, _ = next(x for x in PARTS if x[0] == p["field"])
+            b2 = part_race(S, S0, f, lab, w, olds, now, left, below=True)
+            if b2 and "rival" in b2 and b2.get("good") == -1:
+                p["below"] = b2
     # buyer: saved rank, the last 2 h of our own deals, the projected final mean a deal has to beat
     sv = {p: S[p][2].get("saved") for p in S if S[p][2].get("saved") is not None}
     sv0 = {p: S0[p][2].get("saved") for p in S0 if S0[p][2].get("saved") is not None} if S0 else {}
@@ -324,6 +335,9 @@ def markdown(o):
     for p in o["parts"]:
         who, t = part_words(p)
         L.append(f"| **{p['label']}** ({p['weight']:.0%}) | {p['rank']}위 | {who} | {MARK[p.get('good', 0)]} {t} |")
+        if p.get("below"):
+            who2, t2 = part_words(p["below"])
+            L.append(f"| ↳ 아래 | | {who2} | {MARK[p['below'].get('good', 0)]} {t2} |")
     pc = o.get("price_ctl")
     if pc:
         u = pc["under"] or 0
@@ -358,6 +372,9 @@ def text(o):
             for p in o["parts"]:
                 who, t = part_words(p)
                 L += ["", f"  {p['label']} {p['rank']}위: {who}", f"  {MARK[p.get('good', 0)]} {t}"]
+                if p.get("below"):
+                    who2, t2 = part_words(p["below"])
+                    L += [f"  아래 {who2}", f"  {MARK[p['below'].get('good', 0)]} {t2}"]
         if r["label"] == "buyer":
             p2 = o["buyer"]["pace_2h"]
             L.append(f"  최근 2시간: 시간당 {p2['deals_h']}건, 건당 {p2['v']}")
