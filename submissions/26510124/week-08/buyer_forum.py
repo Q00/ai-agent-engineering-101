@@ -1,7 +1,7 @@
 """Buyer-role settlement reports without model calls or vendor outbox races.
 
 The review hook queues sanitized confirmed receipts. The kit's sync loop drains
-this independent spool at most once per 10 minutes. A durable in-flight marker
+this independent spool at most once per 5 minutes. A durable in-flight marker
 is never automatically replayed after a crash or an unknown transport outcome.
 """
 from contextlib import contextmanager
@@ -19,7 +19,7 @@ import uuid
 
 from receipt_leases import durable_json
 
-INTERVAL_SECONDS = 600
+INTERVAL_SECONDS = 300
 FRESH_SECONDS = 6 * 3600
 MAX_PENDING = 64
 MAX_SEEN = 65536
