@@ -400,7 +400,11 @@ def pick_unit(text, held, now, asks=None):
         # 48 h: C goods at .4-.7 of list rate 4.6-4.9 (2,500 reviews), above our 4.45 mean. Each paid C adds about
         # .15-.25 of list to the book, with no refund risk. Unasked C was paid 10-19% of the time on 11-11; an unpaid
         # one only holds the unit 300 s
-        if shop_policy_now().get("sell_c") and want is None and not a_only(text):
+        # 11-13 18:20 REVERTED (verified by the score-levers workflow): 0 paid of 15 agreed C fallbacks (q00 11,
+        # iyen-dori 4): their kits refuse a C they did not ask for, the talk is wasted and the unit held 300 s. C goes
+        # only to asks that accept C (the ACCEPTS_C branch above); the knob c_fallback turns this back on
+        if (shop_policy_now().get("sell_c") and shop_policy_now().get("c_fallback") and want is None
+                and not a_only(text)):
             cs = [u for u in fit if u.get("grade") == "C"]
             if cs:
                 return min(cs, key=lambda u: u.get("supplied_at") or 0)
