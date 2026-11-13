@@ -40,6 +40,21 @@ class ShopDiagnosticsTests(unittest.TestCase):
         self.assertEqual(result["first_response_p95_seconds"], 2.5)
         self.assertEqual(result["last_stage_by_task"], {"negotiate":1, "unknown":1})
 
+    def test_opening_sources_and_cancellations_count_tasks_not_event_rows(self):
+        opening = self.event("one", "quote", stage="opening", decision_source="recent_unit_quote")
+        cancelled = self.event("one", "cancelled", stage="negotiate", reason_code="buyer_cancelled",
+                               quoted_ask=80, list_price=100)
+        events = [opening, opening, cancelled, cancelled,
+                  self.event("old", "quote", round=2, stage="opening", decision_source="model"),
+                  self.event("unknown", "quote", stage="opening", decision_source=["PRIVATE"]),
+                  self.event("missing", "cancelled", reason_code="buyer_cancelled")]
+        report = diagnostics.response_summary(events, 3, NOW, NOW-3600)
+        self.assertEqual(report["first_quote_sources"], {"recent_unit_quote": 1, "unknown": 1})
+        self.assertEqual(report["cancelled_last_stages"], {"negotiate": 1, "unknown": 1})
+        self.assertEqual(report["cancelled_ask_to_list_samples"], 1)
+        self.assertEqual(report["cancelled_mean_ask_to_list"], 0.8)
+        self.assertNotIn("PRIVATE", json.dumps(report))
+
     def test_empty_plan_is_not_a_purchase_and_invalid_legacy_plan_stays_unknown(self):
         self.events([
             {"time": NOW - 30, "round": 3, "status": "planned", "buy": []},

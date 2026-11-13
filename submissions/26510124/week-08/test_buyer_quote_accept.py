@@ -157,3 +157,13 @@ class CertifiedQuoteTests(unittest.TestCase):
             altered = deepcopy(task)
             altered["status"]["message"]["metadata"] = extra
             self.assertIsNone(certified_choice(altered, **args))
+
+    def test_missing_fields_telemetry_has_no_quote_payload(self):
+        task, args, _ = self.inputs()
+        message = task["status"]["message"]
+        message["parts"] = [{"text":"Asking price: 60000"}]
+        message["metadata"] = {"ask":60000, "private":"DO-NOT-RECORD"}
+        observation = {}
+        self.assertIsNone(certified_choice(task, **args, observation=observation))
+        self.assertEqual(set(observation["missing_fields"]), {"sku", "unit", "cert", "warranty_hours"})
+        self.assertNotIn("DO-NOT-RECORD", json.dumps(observation))

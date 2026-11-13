@@ -7,10 +7,11 @@ from collections import Counter, defaultdict
 from datetime import datetime, timezone
 import json
 import math
+import re
 from pathlib import Path
 import time
 
-from payment_memory import record_time
+from payment_memory import record_time, acceptance_refusal
 
 REASONS = frozenset({"model_walk_away", "seller_rejected", "seller_cancelled",
     "decision_limit", "price_limit", "concession_limit", "receipt_mismatch",
@@ -107,6 +108,29 @@ def _review_matches(record, review):
     return True
 
 
+def payment_refusal_kind(reason, policy):
+    """Classify only pinned kit messages from correlated local payments."""
+    if not isinstance(reason, str) or len(reason) > 240:
+        return "unknown"
+    known = acceptance_refusal(reason, policy)
+    if known:
+        return known["kind"]
+    if reason in {
+        "not paying: the unit certificate is not the market's certificate of this unit",
+        "not paying: no certificate, and the policy asks for one",
+        "not paying: no certificate to show the shelf life",
+        "not paying: no certificate to show the grade"}:
+        return "certificate"
+    match = re.fullmatch(r"not paying: (-?[0-9]+(?:\.[0-9]+)?) h of shelf life left, the policy asks for ([0-9]+(?:\.[0-9]+)?)", reason)
+    accept = policy.get("accept") if isinstance(policy, dict) else None
+    required = accept.get("min_hours_left") if isinstance(accept, dict) else None
+    if match and isinstance(policy, dict) and policy.get("kind") == "food" and _number(required):
+        observed, reported = map(float, match.groups())
+        if _number(observed) and reported == required and observed <= required:
+            return "shelf_life"
+    return "unknown"
+
+
 def summarize(root=ROOT, *, hours=24, round_number=3, now=None, byte_limit=4_000_000, row_limit=5000):
     if not _number(hours) or not 0 < hours <= 24 * 31:
         raise ValueError("hours must be between zero and 744")
@@ -164,6 +188,7 @@ def summarize(root=ROOT, *, hours=24, round_number=3, now=None, byte_limit=4_000
     statuses, proofs, durations, decisions = {}, {}, [], []
     decision_sources = {"fast_accepts": [], "model_decisions": []}
     fast_skips, fast_skip_attempts = Counter(), 0
+    missing_fields, refusal_kinds = Counter(), defaultdict(set)
     skip_codes = {"not_applicable", "invalid_quote_parts", "structured_quote_missing_or_ambiguous",
                   "invalid_quote_identity_or_price", "price_above_limit", "price_above_target",
                   "invalid_quote_metadata", "quote_metadata_conflict", "text_price_missing_or_conflicting",
@@ -179,6 +204,11 @@ def summarize(root=ROOT, *, hours=24, round_number=3, now=None, byte_limit=4_000
         stage = diag.get("stage") if valid else None
         stages[stage if isinstance(stage, str) and stage in STAGES else "unknown"] += 1
         if valid:
+            fields = diag.get("fast_accept_missing_fields")
+            if isinstance(fields, dict):
+                for field, count in fields.items():
+                    if field in {"ask", "sku", "unit", "cert", "warranty_hours"} and type(count) is int and count >= 0:
+                        missing_fields[field] += count
             skips = diag.get("fast_accept_skip_reasons")
             if isinstance(skips, dict):
                 fast_skip_attempts += 1
@@ -217,6 +247,7 @@ def summarize(root=ROOT, *, hours=24, round_number=3, now=None, byte_limit=4_000
                     ledgers.add(payment["ledger"])
                 elif payment.get("paid") is False:
                     refusal = True
+                    refusal_kinds[key].add(payment_refusal_kind(payment.get("reason"), row.get("purchase_policy")))
         for review in review_index[row["order"]]:
             if _review_matches(row, review):
                 ledgers.add(review["settled"]["ledger"])
@@ -251,6 +282,10 @@ def summarize(root=ROOT, *, hours=24, round_number=3, now=None, byte_limit=4_000
             "terminal_reasons": dict(reasons), "stages": dict(stages),
             "seller_reported_unconfirmed": dict(seller_reports),
             "settlement_status": dict(status_counts),
+            "payment_refusal_kinds": dict(Counter(kind for key, kinds in refusal_kinds.items()
+                if statuses.get(key) == "payment_refusal_observed" for kind in kinds)),
+            "fast_accept_missing_fields": {"counts": dict(missing_fields),
+                "basis": "Missing fields in a mergeable current quote; overlapping per-decision counts, not orders. Missing telemetry is unknown."},
             "confirmed_settlements": status_counts["confirmed_settlement"],
             "receipts_observed": sum(row.get("result") == "receipt_issued" for row in records.values()),
             "selection_failures": len(selections),

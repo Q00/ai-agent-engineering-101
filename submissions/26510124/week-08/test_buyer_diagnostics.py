@@ -232,6 +232,24 @@ class LocalDiagnosticsTests(unittest.TestCase):
         self.write("payments", [{**self.payment, "paid": False}])
         self.assertEqual(self.report()["settlement_status"], {"payment_refusal_observed": 1})
 
+    def test_refusal_labels_are_correlated_deduplicated_and_superseded_by_payment(self):
+        self.write("memory", [{**self.record, "purchase_policy": {
+            "kind": "goods", "accept": {"warranty_hours": 3}}}])
+        refusal = {**self.payment, "paid": False,
+                   "reason": "not paying: warranty 0 h, the policy asks for 3"}
+        self.write("payments", [refusal, refusal, {**refusal, "price": 49, "reason": "PRIVATE"}])
+        self.assertEqual(self.report()["payment_refusal_kinds"], {"warranty": 1})
+        self.write("payments", [refusal, self.payment])
+        self.assertEqual(self.report()["payment_refusal_kinds"], {})
+
+    def test_missing_fields_are_whitelisted_and_legacy_rows_remain_unknown(self):
+        self.write("memory", [self.record, {**self.record, "order": "o2", "negotiation_diagnostics": {
+            "version": 1, "fast_accept_missing_fields": {"cert": 2, "unit": 1,
+                "PRIVATE": 50, "sku": -1, "ask": True}}}])
+        report = self.report()
+        self.assertEqual(report["fast_accept_missing_fields"]["counts"], {"cert": 2, "unit": 1})
+        self.assertNotIn("PRIVATE", json.dumps(report))
+
     def test_conflicting_ledgers_or_reused_ledger_never_double_count(self):
         self.write("memory", [self.record])
         self.write("payments", [self.payment, {**self.payment, "ledger": 18}])
@@ -268,6 +286,20 @@ class LocalDiagnosticsTests(unittest.TestCase):
         self.assertTrue(status["partial_tail"])
         _, status = read_tail(path, byte_limit=20)
         self.assertTrue(status["byte_truncated"])
+
+
+class PaymentReasonTests(unittest.TestCase):
+    def test_only_known_correlated_kit_reasons_get_labels(self):
+        from buyer_diagnostics import payment_refusal_kind
+        food={"kind":"food", "accept":{"min_hours_left":361}}
+        self.assertEqual(payment_refusal_kind("not paying: 138.00 h of shelf life left, the policy asks for 361",food),"shelf_life")
+        self.assertEqual(payment_refusal_kind("not paying: 138.00 h of shelf life left, the policy asks for 24",food),"unknown")
+        self.assertEqual(payment_refusal_kind("seller says certificate invalid; PRIVATE",food),"unknown")
+        self.assertEqual(payment_refusal_kind("not paying: no certificate, and the policy asks for one",food),"certificate")
+        goods={"kind":"goods", "accept":{"warranty_hours":3,"grades":["A","B"]}}
+        self.assertEqual(payment_refusal_kind("not paying: warranty 0 h, the policy asks for 3",goods),"warranty")
+        self.assertEqual(payment_refusal_kind("not paying: grade C, the policy accepts ['A', 'B']",goods),"grade")
+        self.assertEqual(payment_refusal_kind("unknown", {"accept": []}), "unknown")
 
 
 if __name__ == "__main__":

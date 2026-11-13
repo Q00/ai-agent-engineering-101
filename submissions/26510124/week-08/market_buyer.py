@@ -242,6 +242,7 @@ class Buyer:
         self.order, self.market_dir, self.shop_name = order or {}, market_dir, shop_name
         self.fast_accepts, self.model_decisions = 0, 0
         self.fast_accept_skip_reasons = {}
+        self.fast_accept_missing_fields = {}
         self.food_lifetime_observation = None
         self.price_limit = min(budget, self.policy["price_limit"])
         self.no_deal_reason = ""
@@ -267,6 +268,7 @@ class Buyer:
         return {"version": 1, "reason": self.reason_code, "stage": self.stage,
                 "fast_accepts": self.fast_accepts, "model_decisions": self.model_decisions,
                 "fast_accept_skip_reasons": dict(self.fast_accept_skip_reasons),
+                "fast_accept_missing_fields": dict(self.fast_accept_missing_fields),
                 "decisions": self.decisions, "last_parsed_ask": self.last_parsed_ask,
                 "last_authorized_bid": self.authorized_price,
                 "elapsed_seconds": round(max(0, time.monotonic() - self.started_at), 3),
@@ -512,7 +514,10 @@ class Buyer:
             else:
                 skip_reason = observation.get("reason", "unknown")
                 self.fast_accept_skip_reasons[skip_reason] = self.fast_accept_skip_reasons.get(skip_reason, 0) + 1
-                log("FAST ACCEPT SKIPPED", {"reason": skip_reason})
+                missing = observation.get("missing_fields", [])
+                for field in missing:
+                    self.fast_accept_missing_fields[field] = self.fast_accept_missing_fields.get(field, 0) + 1
+                log("FAST ACCEPT SKIPPED", {"reason": skip_reason, "missing_fields": missing})
                 self.model_decisions += 1
                 decision = buyer_decision(item=self.item, budget=self.budget,
                                       **compact,

@@ -69,6 +69,9 @@ def certified_choice(task, *, item, shop_name, order, policy, market_dir, second
             quote.setdefault(key, identity.get(key))
     if "grade" in quote and "grade_now" in quote and quote["grade"] != quote["grade_now"]:
         return skip("grade_not_accepted_or_conflicting")
+    observation["missing_fields"] = [k for k in ("ask", "sku", "unit", "cert") if quote.get(k) is None]
+    if order.get("kind") == "goods" and quote.get("warranty_hours") is None:
+        observation["missing_fields"].append("warranty_hours")
     # Observe certified lifetime independently of the quote's price or formatting.
     body = verified_body(quote, item, shop_name, order)
     food_clock = None

@@ -206,19 +206,32 @@ def evidence_summary(state, source, polls, rnd, now, since):
 
 def response_summary(events, rnd, now, since):
     """One latency sample and latest observed negotiation stage per task."""
-    first, last = {}, {}
+    first, last, opening_sources = {}, {}, {}
     for row in events:
         if not recent(row, rnd, now, since) or not identifier(row.get("task")):
             continue
         task = row["task"]
         duration = row.get("first_response_seconds")
+        if row.get("outcome") == "quote" and row.get("stage") == "opening":
+            source = row.get("decision_source")
+            opening_sources.setdefault(task, source if isinstance(source, str) and source in
+                {"model", "fresh_evidence_opening", "recent_unit_quote", "capacity_fallback"} else "unknown")
         if number(duration) and duration >= 0:
             first.setdefault(task, duration)
         if task not in last or row["time"] >= last[task]["time"]:
             last[task] = row
     samples = sorted(first.values())
     stages = {"opening", "negotiate", "close", "final_offer", "final_reply"}
-    return {"first_response_samples": len(samples),
+    cancelled = [r for r in last.values() if r.get("reason_code") == "buyer_cancelled"]
+    ratios = [r["quoted_ask"] / r["list_price"] for r in cancelled
+              if number(r.get("quoted_ask")) and r["quoted_ask"] > 0
+              and number(r.get("list_price")) and r["list_price"] > 0]
+    return {"first_quote_sources": dict(Counter(opening_sources.values())),
+            "cancelled_last_stages": dict(Counter(r.get("stage") if r.get("stage") in stages else "unknown"
+                                                  for r in cancelled)),
+            "cancelled_ask_to_list_samples": len(ratios),
+            "cancelled_mean_ask_to_list": round(sum(ratios)/len(ratios), 4) if ratios else None,
+            "first_response_samples": len(samples),
             "first_response_p50_seconds": samples[(len(samples)-1)//2] if samples else None,
             "first_response_p95_seconds": samples[max(0, math.ceil(len(samples)*.95)-1)] if samples else None,
             "last_stage_by_task": dict(Counter(r.get("stage") if r.get("stage") in stages else "unknown"

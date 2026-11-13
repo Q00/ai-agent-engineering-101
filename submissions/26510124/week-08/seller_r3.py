@@ -16,6 +16,7 @@ from feedback import append_event
 from harness import HarnessError, decide, parse_seller
 from inventory import Inventory, StockError, requested_skus
 from market_clock import schedule_now
+from opening_quote_cache import OpeningQuoteCache
 from opening_strategy import OpeningReader, bounds as opening_bounds
 from receipt_signing import sign_receipt
 from sales_advisor import AdviceReader, config_at
@@ -110,6 +111,7 @@ class InventorySeller(Seller):
         self.r3 = {}
         self.policy = cfg.get("shop_policy") or policy_at()
         self.openings = OpeningReader(self.inventory.folder)
+        self.opening_quotes = OpeningQuoteCache()
         self.warranty_trial = WarrantyTrial(self.inventory.folder)
         # A retained strategy cache cannot reactivate an intentionally disabled
         # analyst, even if a stale caller still passes advisor_enabled=True.
@@ -159,6 +161,9 @@ class InventorySeller(Seller):
                                       "reservation_kind": reservation_kind,
                                       "stage": negotiation.get("stage"),
                                       "first_response_seconds": deal.get("first_response_seconds"),
+                                      "list_price": product.get("list_price"),
+                                      "quoted_ask": deal.get("ask"),
+                                      "last_buyer_offer": deal.get("offers", [None])[-1] if deal.get("offers") else None,
                                       "buyer_offers": len(deal.get("offers", [])),
                                       "active_floor": negotiation.get("price_floor"),
                                       "discount_reason": negotiation.get("discount_reason"),
@@ -234,7 +239,7 @@ class InventorySeller(Seller):
                 deal = self.r3[task.id] = {"history": [], "ask": None, "offers": [], "touched": now,
                                           "round": rnd, "advice": advice,
                                           "product": {k: product.get(k) for k in
-                                                      ("unit", "sku", "category", "cost", "kind", "grade", "supplied_at", "expires_at")},
+                                                      ("unit", "sku", "category", "cost", "list_price", "kind", "grade", "supplied_at", "expires_at")},
                                           "terms": self.warranty_trial.terms(
                                               product, selling_terms(product, self.policy), self.policy, rnd, now)}
                 reference = self.openings.for_product(product, deal["terms"]["warranty_hours"], rnd)
@@ -287,7 +292,12 @@ class InventorySeller(Seller):
         receipt_issued = False
         phase = "decision"
         try:
-            if offer is None and deal.get("fresh_opening") and deal.get("opening_bounds"):
+            opening_key = self.opening_quotes.key(product, deal) if offer is None else None
+            cached_opening = self.opening_quotes.get(opening_key) if opening_key else None
+            if cached_opening is not None:
+                choice = cached_opening
+                deal["decision_source"] = "recent_unit_quote"
+            elif offer is None and deal.get("fresh_opening") and deal.get("opening_bounds"):
                 choice = capacity_choice(product, offer, deal["ask"], deal["negotiation"])
                 deal["decision_source"] = "fresh_evidence_opening"
             elif offer is not None and deal["ask"] is not None and offer >= deal["ask"]:
@@ -337,6 +347,8 @@ class InventorySeller(Seller):
                         parts=[new_text_part(reply), new_data_part(facts)],
                         metadata={k: facts[k] for k in ("ask", "sku", "unit", "final")}))
                     if offer is None:
+                        if deal["decision_source"] != "recent_unit_quote":
+                            self.opening_quotes.remember(opening_key, price)
                         deal["first_response_seconds"] = round(time.monotonic() - request_started, 3)
                     self.event(task.id, "final_offer" if final else "quote", product, price, deal=deal)
                 elif action == "accept":
