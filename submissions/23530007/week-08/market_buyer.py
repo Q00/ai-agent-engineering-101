@@ -704,8 +704,11 @@ def choose(shops, mem, item, budget, ask_model=True, ctx=None):
                 # calibrated, so a shop where we realized little kept its first visits (ovotnwjd-maker goods: our v
                 # .605 in 7 deals, 41 first visits in 6 h) while moss-and-oak (P .39, v .832) got 33 visits. The
                 # prior now carries the kind's calibration gap and weighs 4 deals
-                g_ = ((ctx.get("cal") or {}).get(ctx["kind"]) or {}).get("gap") or 0.0
-                prior = e["saved"] + max(-0.08, min(0.02, g_))
+                cal_ = ctx.get("cal") or {}
+                g_ = (((cal_.get(f"{s['name']}|{ctx['kind']}") or {}).get("gap"))     # the shop's own gap first
+                      if (cal_.get(f"{s['name']}|{ctx['kind']}") or {}).get("gap") is not None
+                      else (cal_.get(ctx["kind"]) or {}).get("gap")) or 0.0
+                prior = e["saved"] + max(-0.30, min(0.10, g_))
                 k_ = min(o["n"], 40)
                 e = dict(e, saved=round((4 * prior + k_ * o["v"]) / (4 + k_), 4), market_saved=e["saved"])
             else:
