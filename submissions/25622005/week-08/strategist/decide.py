@@ -200,7 +200,11 @@ Supply and depth:
   saved.projection.drop_under_end lists the grades whose deals score under the projected end (they pull it
   down: the history is fixed, so a deal under the end lowers it) and the end without them; it costs only the
   deals part of buyer ALL (0.1), so when its saved_end is above saved_end.as_now raise those grades' floors
-  (buyer.min_kept_<grade>) to where their deals score over the end, or past them.
+  (buyer.min_kept_<grade>) to where their deals score over the end, or past them. Raising floors costs deals;
+  buyer.max_shops wins them back: on 11-14 114 of 124 failed orders in 3 h ended "no deal after 5 shop(s)" with
+  about 50 acceptable shops left (ops.buyer.no_deal_why), the market hands every buyer about 175 orders an hour
+  and ours take 8.5 s at the median, so trying more shops loses few orders and finds the deals that clear the
+  floors. The saved ladder is steep from 0.72 to 0.75 (percentile 0.63 to 0.82 on 11-14).
 - Big-ticket goods (list above stock.big_ticket_list) are first asked at seller.first_ask_big_list x list, the
   rest at seller.first_ask_list. Goods first offer a unit whose floor the market's price for its grade clears
   (floor at or under list x seller.market_list_<grade>; set them from market.price_list_by_grade: 11-13, 911 of

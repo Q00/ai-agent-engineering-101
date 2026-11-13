@@ -85,7 +85,9 @@ TUNABLE = {
     "buyer.break_penalty": (0.0, 1.0, 0.25),       # what an uncovered break costs in the goods cap (Saved: -1 a deal that served nothing)
     "buyer.step_list": (0.0, 0.15, 0.05),          # an offer this share of list under the cap before the final one (0: none)
     "buyer.open_list": (0.20, 0.80, 0.05),
-    "buyer.max_shops": (1, 5, 1),
+    "buyer.max_shops": (1, 10, 2),                 # 11-14: 114 of 124 failed orders in 3 h ended after 5 shops with
+                                                   # ~50 acceptable shops left; orders come at ~175/h to every buyer
+                                                   # and ours take 8.5 s (median), so more shops cost few orders
     "buyer.target_s": (10, 40, 5),
     "buyer.continue_p": (0.5, 0.95, 0.05),
 }
