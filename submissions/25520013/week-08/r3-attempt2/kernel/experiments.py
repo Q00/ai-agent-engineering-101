@@ -938,6 +938,25 @@ def _register_group(root, label, xs, raws, now, traj, role, rev_weight, validate
     }
 
 
+def group_scope(items, side):
+    """The scope a group is measured on: its items' one shared scope, else the side's whole scope (live 11-13: the
+    two keys of one fruit leaf were measured on every shop sale, so the verdict needed +-1.58M/h against a fruit
+    net of a few hundred thousand won an hour and could not be reached)."""
+    scopes = {scope_of(x["section"])[1] for x in items}
+    return scopes.pop() if len(scopes) == 1 else side + ":all"
+
+
+def _scope_ko(scope):
+    """Card name of a scope: what a group's verdict counts."""
+    if scope in ("shop:all", "buyer:all"):
+        return "가게 전체 판매" if scope == "shop:all" else "구매 전체"
+    if scope.startswith("kind:"):
+        return f"{scope[5:]} 전체 판매"
+    if scope.startswith("buyer:"):
+        return f"{scope[6:]} 구매"
+    return f"{scope} 판매"
+
+
 def _register_group_entry(root, label, got, role, side, rev_weight, window_h, expect, now, traj):
     rows = load(root)
     rw = rev_weight if side == "shop" and _num_ok(rev_weight) and rev_weight > 0 else 0.0
@@ -954,7 +973,7 @@ def _register_group_entry(root, label, got, role, side, rev_weight, window_h, ex
         "started_ts": now,
         "window_h": _window(window_h, side, "") if _num_ok(window_h) else GROUP_WINDOW_H,
         "maturity_h": MATURITY_H[side],
-        "scope": side + ":all",
+        "scope": group_scope(got, side),
         "side": side,
         "metric": SCORE_METRIC if rw > 0 else METRIC[side],
         "rev_weight": float(rw),
@@ -1821,6 +1840,8 @@ def _run_line(e):
     when = c.kst(e["eval_ts"], "%H:%M") if _num_ok(e.get("eval_ts")) else "-"
     if e.get("mode") in GROUP_MODES:
         head = f"  진행 #{e['id']} 묶음 '{e.get('key')}' 키 {len(e.get('items') or [])}개"
+        if e.get("scope"):
+            head += f" ({_scope_ko(e['scope'])}로 잼)"
     elif e.get("mode") == "split":
         head = f"  진행 #{e['id']} 동시 비교 {_label(e.get('section'))} {e.get('key')} A {_val(e.get('old'))} / B {_val(e.get('new'))}"
     else:
@@ -1962,10 +1983,12 @@ def interim_line(e, now, data):
     need = max(CLEAR_SE * math.sqrt(va / max(1, int(round(wh))) + st.variance(bb) / len(bb)),
                REL_MIN * max(abs(adj), FLOOR[side]))
     rel_name = f"전 보정 값의 {REL_MIN:.0%} 기준" if abs(adj) >= FLOOR[side] else "최소 기준"
+    # live 11-13: operators waited for verdicts whose difference was a fraction of the needed one; the ratio says so
+    share = f". 지금 차이는 필요한 차이의 {abs(a['value'] - adj) / need:.0%}" if need > 0 else ""
     return (out + ". " + ("" if done else "시간별 흔들림이 이대로면 ")
             + f"뚜렷한 판정에 필요한 차이는 ±{_num(need, side)}부터 ({noise}과 {rel_name} 중 큰 쪽"
             + ("" if own else ", 후 구간이 온전한 2시간 미만이라 전 구간의 흔들림으로 셈") + stars + ")"
-            + (f", 못 미치면 {ext}" if ext else f", 마지막 구간이라 못 미치면 {sign}"))
+            + (f", 못 미치면 {ext}" if ext else f", 마지막 구간이라 못 미치면 {sign}") + share)
 
 
 def _ended_line(e):

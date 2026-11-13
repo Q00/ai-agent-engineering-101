@@ -232,7 +232,7 @@ def test_group_is_one_experiment_measured_together_when_worse(root, a1):
         and e["role"] == "shop"
     )
     assert e["window_h"] == ex.GROUP_WINDOW_H and e["scope"] == "shop:all"
-    assert f"묶음 '침대 공세' 키 3개, 판정 {c.kst(e['eval_ts'], '%H:%M')}" in "\n".join(
+    assert f"묶음 '침대 공세' 키 3개 (가게 전체 판매로 잼), 판정 {c.kst(e['eval_ts'], '%H:%M')}" in "\n".join(
         ex.lines(root, S)
     )
     wh = e["window_h"]
