@@ -93,6 +93,12 @@ SPREAD_BONUS = 1
 BREAK_MAX = 0.10
 FOCUS_MAX_LINES = 6
 FOOD_MAX_QTY = 6
+# ddolcom (2026-11-13 18:30, the user's "1번 진행해줘" on the food plan): 6 h of my sales: food 334 deals, paid 713만, margin 234만
+# (32.8%, no warranty refunds); goods 297 deals, paid 1.13억, margin 941만 less 490만 refunds (about 4%). Food stock was 2-19 units at
+# every check and cash sits at 1.98억. Food now gets 6 of 10 lines and 8 units a category. 3 h test: revert to 6 and 6 if spoiled
+# food rises (0 expired at 18:30) or food stock piles up unsold
+FOCUS_MAX_LINES = 4
+FOOD_MAX_QTY = 8
 BREAK_MIN_SETTLES = 100     # breaking above BREAK_MAX is not bought. 12 h ledger: goods break 0.090 on average and mostly evenly
 #   (chi2 50 on 28 df); only G07ec17d5 (29 of 163, 0.178) and G03cab593 (19 of 117, 0.162) stood out. A broken unit under warranty
 #   refunds the whole price, and a mid-tier A nets about 0.07 of list, so a 0.15+ break rate loses money on every sale
