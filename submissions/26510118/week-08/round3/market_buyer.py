@@ -78,6 +78,10 @@ PREFER = 1.2
 RIVAL = 1.0               # 0.95 until 11/6 16:40 (the person's call, 몫 사냥꾼 ④): the goods shops selling cheapest were rivals'
                           # (lee-sungsoo 0.685, inextro 0.700, yms979 0.701 of list); what we add to their revenue is
                           # well under 0.1% of it, what we keep counts in our saved
+MAX_TRIES_GOODS = 3       # 11/13 13:30 (the person's call): a goods order tries 3 shops at most (food keeps MAX_TRIES).
+                          # Over 12 h (1,553 orders, mean 27.8 s an order, the market's 20 s per order binding on half),
+                          # 442 goods orders went past 3 shops and closed 12 deals there; ending them at 3 frees ~103 min,
+                          # ~52 more deals at the 24% an order closes: +40 a 12 h. Food at 3 would lose 31 for ~19
 MAX_TRIES, TRY_BUDGET, HARD_STOP = 6, 150, 240  # 3 and 90 until 11/7 02:10 (61% of orders ended without a deal, most
                                                  # after 3 shops, with a median of 47 holding the product); shops per
                                                  # order; seconds from the order's start to begin
@@ -746,9 +750,10 @@ async def shop_around(client, c: dict, poor, cands: list, order: dict, catalog: 
                       clock=time.time, start: float | None = None, dear: bool = False) -> tuple[dict, dict, list, bool]:
     """(the last trade's result, its candidate, the earlier tries [{shop, sku, left, list, asks, offers}], whether
     that candidate was a poor choice): the best candidate first, then, while there is no deal, the next from a shop
-    not yet tried (a clean one when the first was clean), up to MAX_TRIES. A new try starts only within
-    TRY_BUDGET seconds of `start` (the order's start), and a trade is cut at HARD_STOP."""
+    not yet tried (a clean one when the first was clean), up to MAX_TRIES (MAX_TRIES_GOODS for goods). A new try
+    starts only within TRY_BUDGET seconds of `start` (the order's start), and a trade is cut at HARD_STOP."""
     start = clock() if start is None else start
+    cap = MAX_TRIES_GOODS if order.get("kind") == "goods" else MAX_TRIES
     tries = []
     while True:
         try:
@@ -761,7 +766,7 @@ async def shop_around(client, c: dict, poor, cands: list, order: dict, catalog: 
             r["margin_floor"], r["min_share"], r["probe"] = margin_floor(), None, False   # the order's floor, as in trade()
         c = r.pop("c")
         note_outcome(nb, c, r, order)
-        if r["deal"] or len(tries) + 1 >= MAX_TRIES or clock() - start > TRY_BUDGET:
+        if r["deal"] or len(tries) + 1 >= cap or clock() - start > TRY_BUDGET:
             return r, c, tries, bool(poor)
         done = {x["shop"] for x in tries} | {c["shop"]["name"]}
         rest = [x for x in cands if x["shop"]["name"] not in done and (poor or not x["flags"])]
