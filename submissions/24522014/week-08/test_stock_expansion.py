@@ -182,7 +182,8 @@ class Surge(Plan):
 class Bounds(unittest.TestCase):
     def test_settings_load_and_values_past_the_bounds_are_refused(self):
         settings = restock_capacity.config()
-        self.assertEqual((settings["max_total_units"], settings["max_proven_units_per_sku"], settings["max_units_per_run"], settings["max_lines_per_run"], settings["max_unproven_units"]), (80, 3, 12, 6, 2))
+        # 16 units and 8 lines a run from 11-13 about 11:2x KST (user, Orchestrator session: "8품목/16개 (권장)"); 12 and 6 before.
+        self.assertEqual((settings["max_total_units"], settings["max_proven_units_per_sku"], settings["max_units_per_run"], settings["max_lines_per_run"], settings["max_unproven_units"]), (80, 3, 16, 8, 2))
         for key, value in (("max_total_units", 81), ("max_proven_units_per_sku", 4), ("max_units_per_run", 17), ("max_units_per_run", 0), ("max_lines_per_run", 11), ("max_lines_per_run", 0), ("max_lines_per_run", "6"), ("max_unproven_units", 3)):
             with self.subTest(key=key, value=value), patch.object(restock_capacity, "read", return_value=dict(settings, **{key: value})):
                 with self.assertRaises(ValueError):
