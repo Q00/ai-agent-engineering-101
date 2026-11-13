@@ -65,7 +65,7 @@ def goods_notice(inv, cat, now):
     if not rows:
         return None
     med = statistics.median(d["x"] for d in ours)
-    return (f"[yms979 상점 · 가구] A·B등급만 판매하고 C등급(리퍼)은 팔지 않습니다. 72시간 보증과 마켓 인증서 포함. "
+    return (f"[yms979 상점 · 가구] A·B등급은 72시간 보증과 마켓 인증서 포함. C등급(리퍼)은 C등급을 원하는 분께만 보증 없이 C로 표기해 판매합니다. "
             f"최근 6시간 {len(ours)}건 체결, 중앙값 정가의 {med:.0%}. 재고: " + "; ".join(rows) + ".")
 
 

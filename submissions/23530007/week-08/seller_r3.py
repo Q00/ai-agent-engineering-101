@@ -176,6 +176,7 @@ RIVAL_UNDER, RIVAL_OVER = 0.01, 0.0      # 11-11: floor and opening ask around t
 # quote (G07ec17d5: 9 quotes at .727-.747 of list against 25620027's .705, no deal); we now open AT the settle.
 GRADE_OFF = {"A": 0.0, "B": -0.07, "C": -0.15}   # a grade's usual distance from the SKU median when the grade has no data
 _RV = {"t": 0, "shops": [], "by": {}, "sku": {}}
+STAR_COST_MULT = 1.025      # 11-13: least price of a goods unit to a star buyer, as a multiple of its cost
 DEF_MAX_LOSS = 0.12          # 11-13 18:15: revenue defense (see the ref block): most under cost a unit may go
 DEF_BUDGET_DAY = 10e6        # ... and most loss (cost - price of agreed defense deals) per UTC day
 DEF_FILE = HERE / ".market" / "rev_defense.json"
@@ -733,10 +734,12 @@ class Shop(AgentExecutor):
                 # .70-.73 went at .55, 22-25% under cost) while a 5-star review from an account with 688 reviews of us
                 # moves its mean, and stars_rank, ~2e-5. Book 1st (SungJinho is the runner-up) outweighs a stars rank 5x.
                 # Food keeps the small under-cost star prices the user approved (11-11)
-                at_cost = u.get("kind") == "goods" and floor < u["cost"]
+                # 11-13 18:25 (verified L7): at exactly cost a warranted unit loses its refunds (A ~2.5% of price);
+                # x 1.025 keeps a star sale book-neutral
+                at_cost = u.get("kind") == "goods" and floor < u["cost"] * STAR_COST_MULT
                 if at_cost:
-                    floor = int(u["cost"])
-                    share = max(share, u["cost"] / u["list_price"])
+                    floor = int(u["cost"] * STAR_COST_MULT)
+                    share = max(share, floor / u["list_price"])
                 record(event="star_buyer", task=task.id, who=star_who, sku=u["sku"], price=floor, at_cost=at_cost)
             ask = round100(min(u["list_price"], max(floor, u["list_price"] * share)))
             asked = None
