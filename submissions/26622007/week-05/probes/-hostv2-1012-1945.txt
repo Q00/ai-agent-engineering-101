@@ -1,0 +1,22 @@
+{"event": "probe_start", "model": "openai/gpt-6-luna openai luna", "provider": "", "reasoning": "low", "response_format": "turn_summary"}
+{"event": "llm_request_wire", "url": "https://openrouter.ai/api/v1/chat/completions", "model": "openai/gpt-6-luna openai luna", "response_format": {"type": "json_schema", "json_schema": {"name": "turn_summary", "strict": true, "schema": {"type": "object", "additionalProperties": false, "required": ["action", "price", "reason"], "properties": {"action": {"type": "string", "enum": ["propose", "accept_proposal", "reject_proposal", "refuse", "none"]}, "price": {"type": ["integer", "null"]}, "reason": {"type": "string"}}}}}, "reasoning": {"effort": "low"}, "provider": {"only": [""], "allow_fallbacks": false, "require_parameters": true}, "tool_choice": "required", "temperature_sent": false, "tools_sha": "70843ca7feb2", "n_messages": 2, "keys": ["messages", "model", "provider", "reasoning", "response_format", "tool_choice", "tools"]}
+{"event": "llm_error", "attempt": 1, "status": 400, "error": "Error code: 400 - {'error': {'message': 'openai/gpt-6-luna openai luna is not a valid model ID', 'code': 400}, 'user_id': 'user_2ueQ9BXz7unl5UV6ONBMS10lBn8'}"}
+Traceback (most recent call last):
+  File "/Users/junseok/Desktop/AX의 이해와 활용/submissions/26622007/week-05/probe_luna.py", line 45, in <module>
+    resp = llm.chat(messages, TOOLS, tool_choice="auto" if moved else "required")   # host v2
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/junseok/Desktop/AX의 이해와 활용/submissions/26622007/week-05/llm.py", line 94, in chat
+    resp = self.client.chat.completions.create(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/junseok/Desktop/AX의 이해와 활용/submissions/26622007/week-05/.venv/lib/python3.12/site-packages/openai/_utils/_utils.py", line 298, in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/junseok/Desktop/AX의 이해와 활용/submissions/26622007/week-05/.venv/lib/python3.12/site-packages/openai/resources/chat/completions/completions.py", line 1318, in create
+    return self._post(
+           ^^^^^^^^^^^
+  File "/Users/junseok/Desktop/AX의 이해와 활용/submissions/26622007/week-05/.venv/lib/python3.12/site-packages/openai/_base_client.py", line 1440, in post
+    return cast(ResponseT, self.request(cast_to, opts, stream=stream, stream_cls=stream_cls))
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/junseok/Desktop/AX의 이해와 활용/submissions/26622007/week-05/.venv/lib/python3.12/site-packages/openai/_base_client.py", line 1213, in request
+    raise self._make_status_error_from_response(err.response) from None
+openai.BadRequestError: Error code: 400 - {'error': {'message': 'openai/gpt-6-luna openai luna is not a valid model ID', 'code': 400}, 'user_id': 'user_2ueQ9BXz7unl5UV6ONBMS10lBn8'}
