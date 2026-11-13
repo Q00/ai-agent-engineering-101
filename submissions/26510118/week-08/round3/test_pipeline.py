@@ -208,9 +208,9 @@ def test_pricing():
     check("fresh food, grade A: ask 75% of list, floor cost + 2%", (p["ask"], p["floor"], p["grade"]) == (15000, 12240, "A"), p)
     goods_c = {"sku": BEDDING, "list_price": 39900, "cost": 14000, "kind": "goods", "grade": "C", "supplied_at": now - DAY}
     p = pricing.plan(goods_c, now)
-    check("refurbished goods always come with the warranty: 60% + 20% (31920), floor cost + 2% + 20% of list (22260)",
-          (p["ask"], p["floor"], p["warranty_hours"]) == (31920, 22260, 6), p)
-    check("3.5 days unsold: 5% of list lower", pricing.plan(dict(goods_c, supplied_at=now - 3.5 * DAY), now)["ask"] == 29925)
+    check("refurbished goods always come with the warranty: 60% + 33% (37107), floor cost + 2% + 33% of list (27447; "
+          "20% until 11/13)", (p["ask"], p["floor"], p["warranty_hours"]) == (37107, 27447, 6), p)
+    check("3.5 days unsold: 5% of list lower", pricing.plan(dict(goods_c, supplied_at=now - 3.5 * DAY), now)["ask"] == 35112)
     p = pricing.plan(dict(goods_c, supplied_at=now - 8 * DAY), now)
     check("8 days unsold goods, 5 days before the end: the floor goes under cost only by what holding it costs (5 x 1%: 13,300)",
           (p["floor"], p["at_cost"]) == (13300, False), p)
@@ -223,11 +223,11 @@ def test_pricing():
     check("last 6 h: no fire sale either", p["floor"] == 12240, p)
     goods_a = dict(goods_c, cost=26000, grade="A")
     p = pricing.plan(goods_a, now, warranty=True)
-    check("warranty on grade A goods: +2.5% of list on ask and floor (its breakage is 2.6%)",
-          (p["ask"], p["floor"], p["warranty_hours"]) == (30922, 27518, 6), p)
+    check("warranty on grade A goods: +3% of list on ask and floor (its breakage is 3.1%)",
+          (p["ask"], p["floor"], p["warranty_hours"]) == (31122, 27717, 6), p)
     goods_b = dict(goods_c, cost=20000, grade="B")
-    check("with a warranty: A 77.5%, B 78%, C 80% (each grade's extra follows its breakage)",
-          [pricing.plan(u, now, warranty=True)["ask"] for u in (goods_a, goods_b, goods_c)] == [30922, 31122, 31920])
+    check("with a warranty: A 78%, B 81%, C 93% (each grade's extra follows its breakage, 11/13)",
+          [pricing.plan(u, now, warranty=True)["ask"] for u in (goods_a, goods_b, goods_c)] == [31122, 32319, 37107])
     check("no warranty on food", pricing.plan(food, now, warranty=True, catalog=CATALOG)["warranty_hours"] is None)
     shelf = CATALOG[KIMCHI]["shelf_hours"]
     edge = dict(food, expires_at=now + pricing.FOOD_CUTS[1] * shelf * H + 120)
@@ -239,13 +239,13 @@ def test_pricing():
     mk = {"A": {"w_n": 40, "w_median": 0.78, "nw_n": 30, "nw_median": 0.77}, "B": {"w_n": 25, "w_median": 0.74, "nw_n": 5, "nw_median": 0.60},
           "C": {"w_n": 25, "w_median": 0.70, "nw_n": 20, "nw_median": 0.69}}
     p = pricing.plan(goods_c, now, market=mk)
-    check("no market of its own SKU: the category's (refurbished with a warranty 0.70 + 2%) moves our 80% to 72%",
-          (p["ask"], p["ref"]) == (28728, 0.7), p)
+    check("no market of its own SKU: the category's (refurbished with a warranty 0.70 + 2%) moves our 93% by at most 10 "
+          "points, to 83%", (p["ask"], p["ref"]) == (33117, 0.7), p)
     p = pricing.plan(goods_b, now, warranty=True, market=mk)
-    check("B with a warranty: the category's 0.74 + 2% is within 3% of our 78%: unchanged; floor cost + 2% + 8%",
-          (p["ask"], p["floor"]) == (31122, 20400 + 3192), p)
-    check("A with a warranty: 0.78 + 2% is within 3% of our 77.5%: unchanged",
-          (lambda q: (q["ask"], q["ref"]))(pricing.plan(goods_a, now, warranty=True, market=mk)) == (30922, None))
+    check("B with a warranty: the category's 0.74 + 2% is 5% under our 81%: 76%; floor cost + 2% + 11%",
+          (p["ask"], p["floor"]) == (30324, 20400 + 4389), p)
+    check("A with a warranty: 0.78 + 2% is within 3% of our 78%: unchanged",
+          (lambda q: (q["ask"], q["ref"]))(pricing.plan(goods_a, now, warranty=True, market=mk)) == (31122, None))
     check("B without a warranty: 5 market settles are too few to count", pricing.plan(goods_b, now, market=mk)["ref"] is None)
     check("exactly 3% of list apart is within the band (no float edge): food A 75% stays with the market at 0.70 + 2%",
           pricing.plan(food, now, catalog=CATALOG, market={"A": {"nw_n": 30, "nw_median": 0.70}})["ask"] == 15000)
@@ -282,8 +282,8 @@ def test_pricing():
           and "about 2% of its list price under" in seller.Seller.reason(None, {"plan": fm}), fx)
     p = pricing.plan(goods_a, now, warranty=True, sku_market={"A": {"n": 30, "median": 0.70}, "A_w": {"n": 12, "median": 0.72}})
     check("with a warranty it is set by the market's warranty settles (0.72 + 2% = 74%)", (p["ask"], p["sku_ref"]) == (29526, 0.72), p)
-    check("...and never under the floor (cost + 2% + 2.5%) while the unit is fresh",
-          pricing.plan(dict(goods_a, supplied_at=now - 3600), now, warranty=True, sku_market={"A_w": {"n": 12, "median": 0.60}})["ask"] == 27518)
+    check("...and never under the floor (cost + 2% + 3%) while the unit is fresh",
+          pricing.plan(dict(goods_a, supplied_at=now - 3600), now, warranty=True, sku_market={"A_w": {"n": 12, "median": 0.60}})["ask"] == 27717)
     p = pricing.plan(goods_c, now, sku_market={"C_w": {"n": 15, "median": 0.70}})
     check("a refurbished unit (always with its warranty) is set by the C-with-a-warranty market (0.70 + 2% = 72%)",
           (p["ask"], p["anchored"]) == (28728, True), p)
@@ -292,14 +292,14 @@ def test_pricing():
           and pricing.plan(dict(goods_b, supplied_at=now - 3600), now, sku_market={"B": {"n": 50, "median": 0.50}})["ask"] == 20748)
     dear_a = dict(goods_a, list_price=2_000_000, cost=1_200_000)
     p = pricing.plan(dear_a, now, warranty=True, in_line=True, solo=True)
-    check("the uncontested asks and floors are off: an uncontested line product is priced by the rules (77.5%, cost + 2% + 2.5%)",
-          (p["ask"], p["floor"], p["solo"]) == (1_550_000, 1_274_000, False), p)
+    check("the uncontested asks and floors are off: an uncontested line product is priced by the rules (78%, cost + 2% + 3%)",
+          (p["ask"], p["floor"], p["solo"]) == (1_560_000, 1_284_000, False), p)
     check("...and the uncontested floor learning with them",
           not pricing.learn_solo({}, "S", p, [1_375_000, 1_472_000], 2_000_000, now))
     p = pricing.plan(dear_a, now, warranty=True, in_line=True, sku_market={"A_w": {"n": 20, "median": 0.86}})
     check("a line product with its own market (0.86 with a warranty) is asked at it + 2% (88%)",
-          p["ask"] == 1_760_000 and p["nudge"] == 0.105, p)
-    check("...and with a market of 0.70: at 72%, not held at the rule's 77.5%",
+          p["ask"] == 1_760_000 and p["nudge"] == 0.1, p)
+    check("...and with a market of 0.70: at 72%, not held at the rule's 78%",
           pricing.plan(dear_a, now, warranty=True, in_line=True, sku_market={"A_w": {"n": 20, "median": 0.70}})["ask"] == 1_440_000)
     check("other shops' first asks for the SKU (price_map, 0.84) cap a grade A first ask at them - 0.5% (83.5%); none: as before",
           pricing.plan(dear_a, now, warranty=True, in_line=True, sku_market={"A_w": {"n": 20, "median": 0.86}}, comp_ask=0.84)["ask"] == 1_670_000
@@ -308,14 +308,14 @@ def test_pricing():
           pricing.plan(dict(goods_b, supplied_at=now - 3600), now, sku_market={"B": {"n": 50, "median": 0.50}}, comp_ask=0.30)["ask"] == 20748)
     dead_mk = {"A_w": {"n": 20, "median": 0.60}}
     p = pricing.plan(dict(dear_a, supplied_at=now - 3 * 3600), now, warranty=True, in_line=True, sku_market=dead_mk)
-    check("dead stock: a unit held 3 h whose floor (63.7%) is over its market + 1% (61%): floor at cost / (1 - 2.6%), asked at the market",
-          (p["floor"], p["ask"], p["dead"], p["stuck"], p["at_cost"]) == (1_232_033, 1_232_033, True, False, False), p)
+    check("dead stock: a unit held 3 h whose floor (64.2%) is over its market + 1% (61%): floor at cost / (1 - 3.1%), asked at the market",
+          (p["floor"], p["ask"], p["dead"], p["stuck"], p["at_cost"]) == (1_238_391, 1_238_391, True, False, False), p)
     p = pricing.plan(dear_a, now, warranty=True, in_line=True, sku_market=dead_mk)
     check("...held 6 h+ and still over its market at cost (11/7): at the market (60%), never more than 5% under its cost (57%)",
           (p["floor"], p["ask"], p["stuck"]) == (1_200_000, 1_200_000, True)
           and pricing.plan(dear_a, now, warranty=True, in_line=True, sku_market={"A_w": {"n": 20, "median": 0.50}})["floor"] == 1_140_000, p)
     p = pricing.plan(dict(dear_a, supplied_at=now - 3600), now, warranty=True, in_line=True, sku_market=dead_mk)
-    check("...held only an hour: still at its floor (cost + 2% + 2.5%)", (p["floor"], p["dead"]) == (1_274_000, False), p)
+    check("...held only an hour: still at its floor (cost + 2% + 3%)", (p["floor"], p["dead"]) == (1_284_000, False), p)
     win = {"open": False, "opens_at": now + 300, "closes_at": now + 480}
     shelf_h = CATALOG[KIMCHI]["shelf_hours"]
     edge = {"sku": KIMCHI, "unit": "u-edge", "kind": "food", "cost": 12000, "list_price": 20000,
@@ -766,12 +766,14 @@ def main() -> int:
               out and out["review"])
 
         print("\n[D] goods deal through market_buyer: 차렵이불 (list 39900, above the budget 30000); stock: one refurbished unit")
-        inv = fake.inventory([fake.unit("u-b1-c", BEDDING, "C", 14000)])
+        # cost 10000 (14000 until 11/13): with the warranty at 33% of list the floor is 10200 + 13167 = 23367, under our
+        # buyer's ceiling for refurbished goods with the warranty at the margin floor 0.44 (23960); at 14000 it was 27447
+        inv = fake.inventory([fake.unit("u-b1-c", BEDDING, "C", 10000)])
         order = fake.order("o-d", "침구", 30000, [BEDDING], "goods")
         out, log = buyer(order, shop([offer(BEDDING)]))
         rec = (out or {}).get("receipt") or {}
-        check("B1 tries a product listed above the budget; S3 quotes refurbished goods with the 6 h warranty unasked (80%: 31920)",
-              "Asking 31920" in "\n".join(log) and "with a 6-hour warranty" in "\n".join(log), rec.get("price"))
+        check("B1 tries a product listed above the budget; S3 quotes refurbished goods with the 6 h warranty unasked (93%: 37107)",
+              "Asking 37107" in "\n".join(log) and "with a 6-hour warranty" in "\n".join(log), rec.get("price"))
         check("B3: the warranty came with the quote, so the buyer did not need to ask for it",
               "Please include a 6-hour warranty." not in "\n".join(log))
         check("deal within the budget, with the warranty on the receipt", rec.get("warranty_hours") == 6
@@ -783,13 +785,13 @@ def main() -> int:
         check("kit: refurbished goods without a warranty would not be paid for (grades A and B only)",
               kit.check_accept(order, dict(co, warranty_hours=None), {"cert": True, "grades": ["A", "B"]}) is not None)
 
-        print("\n[W] warranty asked for in the first message: the same refurbished unit, budget 35000")
-        order = fake.order("o-w", "침구", 35000, [BEDDING], "goods")
-        t = run([f"I want to buy {CATALOG[BEDDING]['name']} ({BEDDING}) with a 6-hour warranty", "31920"])
-        check("quoted with the warranty at 80% of list", meta(t[0]).get("ask") == 31920 and meta(t[0]).get("warranty_hours") == 6,
+        print("\n[W] warranty asked for in the first message: the same refurbished unit, budget 40000")
+        order = fake.order("o-w", "침구", 40000, [BEDDING], "goods")
+        t = run([f"I want to buy {CATALOG[BEDDING]['name']} ({BEDDING}) with a 6-hour warranty", "37107"])
+        check("quoted with the warranty at 93% of list", meta(t[0]).get("ask") == 37107 and meta(t[0]).get("warranty_hours") == 6,
               said(t[0]))
         rec = next((p["data"] for a in t[-1].get("artifacts") or [] for p in a.get("parts") or [] if "data" in p), {})
-        check("the receipt carries the 6 h warranty", rec.get("warranty_hours") == 6 and rec.get("price") == 31920, rec)
+        check("the receipt carries the 6 h warranty", rec.get("warranty_hours") == 6 and rec.get("price") == 37107, rec)
         co, refuse = kit_checks(fake, rec, order, inv, {"warranty_hours": 6})
         check("kit: a buyer requiring a 6 h warranty pays", refuse is None and co.get("warranty_hours") == 6, refuse)
 
