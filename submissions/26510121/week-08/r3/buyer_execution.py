@@ -71,6 +71,8 @@ def price_times(actions,candidate,assessment,config):
     base=max(1,candidate.get('execution_seconds',5))
     for action in actions:
         action['execution_seconds']=base if action['id']=='accept' else base+max(2,base*.75)
+        if action.get('path_expected_seconds'):
+            action['execution_seconds']=max(action['execution_seconds'],action['path_expected_seconds'])
         action['time_model']='bounded request/checkout scenario; counter may need another round trip'
     return actions
 

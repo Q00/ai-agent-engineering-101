@@ -140,4 +140,7 @@ def test_high_value_rfq_compares_live_quotes_reuses_task_and_cancels_unused(tmp_
     assert result['shop'] == 'cheaper' and result['accept']['grades'] == ['A']
     assert sorted(requests) == ['cheaper', 'expensive'] and bids == ['cheaper']
     assert cancelled == ['expensive'] and sorted(closed) == ['cheaper', 'expensive']
-    assert len(j.events('quote_comparison')) == 2
+    comparisons=j.events('quote_comparison')
+    assert len([r for r in comparisons if r.get('source')!='selected_live_contract'])==2
+    if policy().get('service_contract_v26_enabled'):
+        assert any(r.get('source')=='selected_live_contract' and r['shop']=='cheaper' for r in comparisons)

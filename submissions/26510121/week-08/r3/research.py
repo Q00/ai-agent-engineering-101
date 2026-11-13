@@ -374,6 +374,17 @@ def update(journal, config, now=None, client=None, key=None):
     if not valid_operating(baseline):
         baseline={'cover_cycles':1,'initial_batch_limit':6,'frontier_min_orders':8,'recheck_seconds':120}
     facts['current_operating_policy']=baseline
+    if config.get('service_contract_v26_enabled'):
+        from .service_policy import context as service_context
+        service=service_context(journal,now)
+        path=journal.get('buyer-negotiation-path:v26',{})
+        facts['service_contracts']={'generation':service.get('generation'),
+            'needs':dict(list(service.get('shop_needs',{}).items())[:8]),
+            'contract_groups':dict(list(service.get('buyer_contracts',{}).items())[:8]),
+            'fresh_draws':len(service.get('draw_fractions',[])),
+            'negotiation_holdout':path.get('summary'),
+            'interpretation':'Explicit needs are selected observed demand, not all buyers. Whole continuation labels are not first-bid acceptance. Never infer free warranty, unknown private preferences or causal uplift.'}
+        evidence.extend(['kv:service-policy:v26','kv:buyer-negotiation-path:v26'])
     if config.get('objective_feedback_enabled'):
         operating=journal.get('feedback-last-policy',{})
         facts['operating_feedback']={k:operating.get(k) for k in ('at','regime','facts','peer_trends','objective_targets','patches','reasons','execution_feedback','constraints')}

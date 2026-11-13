@@ -441,6 +441,11 @@ def restock_candidates(inv, catalog, demand, journal, config, now=None):
             desired = max(1, math.ceil(rate * config.get('supply_cycle_seconds', 1200) / 3600 * 1.5))
         buffer=reserved_counts.get(sku,0) if (growth.get('service_loss_adjustment') or {}).get('qualified') else 0
         needed=desired+buffer-count.get(sku,0)
+        service_need=None
+        if velocity and config.get('service_contract_v26_enabled'):
+            from .service_policy import need_plan
+            service_need=need_plan(journal,config,sku,p,units,rate,desired,coverage,paid,now)
+            if service_need:needed=max(needed,service_need['needed'])
         if needed<=0:
             continue
         held_room=config['restock_max_qty']-count.get(sku,0) if stock_caps_enabled(config) else 20
@@ -528,6 +533,7 @@ def restock_candidates(inv, catalog, demand, journal, config, now=None):
                                            reserved_pipeline_buffer=buffer,
                                            planning_hours=hours,scenario_unit_cost=cost_ratio*p['list_price'],
                                            resale_price_scenario=price,resale_terms_scenario=terms)
+        if service_need:candidates[-1]['evidence']['service_eligibility']=service_need
         if config.get('objective_feedback_enabled'):candidates[-1]['evidence']['trend_factor_scenario']=trend
     from .meta import rank_progress
     board = journal.snapshot('board.json', {})

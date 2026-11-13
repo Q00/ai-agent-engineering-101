@@ -133,6 +133,15 @@ def marginal(candidate,quantity,held=0):
             probability=min(evidence.get('sale_probability_scenario',.25),probability)
     holding=min(horizon,max(1/3,(held+quantity)/max(.01,rate)))
     price=evidence['resale_price_scenario'];cost=evidence['scenario_unit_cost']
+    strict=evidence.get('service_eligibility')
+    if strict:
+        from .service_policy import strict_sale_probability
+        strict_probability=strict_sale_probability(strict,quantity,horizon)
+        if strict_probability>probability:
+            probability=strict_probability
+            # Eligible fresh draws can be a costlier selected grade cohort.
+            cost=max(cost,evidence['list_price']*evidence.get('supply_surge_factor',1)*strict['conditional_cost_ratio'])
+            holding=min(horizon,max(1/3,(strict['eligible_held']+quantity*strict['eligible_draw_probability'])/max(.01,strict['need_rate'])))
     revenue=probability*price*(1-evidence['refund_stress'])
     storage=cost*.01*holding/24 if evidence['kind']=='goods' else 0
     expiry=(1-probability)*cost*.25 if evidence['kind']=='food' else 0

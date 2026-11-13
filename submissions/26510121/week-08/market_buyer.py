@@ -134,6 +134,8 @@ def execute(order, journal, chooser, peer_factory, cfg, strategy, registry, rank
                 from r3.protocol import observe_quote
                 observe_quote(journal,task,c['shop'],order,'direct')
                 task=clarify(peer,task,c,order,journal,cfg,deadline)
+            if cfg.get('service_contract_v26_enabled') and cached:
+                task=clarify(peer,task,c,order,journal,cfg,deadline)
             agreed = None
             previous_offer = None
             required_warranty = 0
@@ -256,6 +258,10 @@ def execute(order, journal, chooser, peer_factory, cfg, strategy, registry, rank
                 if terms.get('sku') not in (None, c['sku']):
                     raise ValueError('quote_sku_mismatch')
                 assessment = buyer_assessment(dict(product, sku=c['sku']), order, terms, journal, cfg,shop=c['shop'])
+                if cfg.get('service_contract_v26_enabled'):
+                    journal.add('quote_comparison',{'order':order['order'],'shop':c['shop'],'sku':c['sku'],
+                        'task':task['id'],'ask':ask,'assessment':assessment,'source':'selected_live_contract',
+                        'turn':turn,'feasible_at_ask':ask<=assessment['cap'] and not assessment['conditional_terms']},role='buyer')
                 if cfg.get('system_framework_enabled'):
                     from r3.contracts import observe
                     observe(journal,order,c,terms,assessment,ask)
@@ -277,7 +283,8 @@ def execute(order, journal, chooser, peer_factory, cfg, strategy, registry, rank
                                               stress, required_warranty >= 6, assessment['covered_failure'],
                                               assessment['saved_state'] if assessment['saved_state']['metric']=='saved' else None,
                                               counter_model=assessment.get('negotiation_model'),
-                                              target_saved=cfg.get('buyer_saved_bid_targets') if cfg.get('buyer_frontier_v23_enabled') else None)
+                                              target_saved=assessment.get('bid_targets') or (cfg.get('buyer_saved_bid_targets') if cfg.get('buyer_frontier_v23_enabled') else None),
+                                              path_model=assessment.get('negotiation_path_model'))
                 if not actions:
                     break
                 if cfg.get('buyer_throughput_enabled'):
@@ -287,6 +294,7 @@ def execute(order, journal, chooser, peer_factory, cfg, strategy, registry, rank
                     from r3.contracts import probability
                     for action in actions:
                         if action.get('action',action['id'])!='counter':continue
+                        if action.get('continuation_model_id'):continue
                         old_probability=action.get('completion_probability',1)
                         calibrated=probability(journal,order,c,assessment,ask,old_probability)
                         factor=calibrated/max(.000001,old_probability)
@@ -305,16 +313,35 @@ def execute(order, journal, chooser, peer_factory, cfg, strategy, registry, rank
                 if move['id']=='continue_search':
                     journal.add('buyer_objective_skip',{'order':order['order'],'shop':c['shop'],
                         'sku':c['sku'],'stage':'price'},role='buyer')
+                    if cfg.get('service_contract_v26_enabled'):
+                        journal.add('buyer_route_terminal',{'order':order['order'],'shop':c['shop'],'sku':c['sku'],
+                            'task':task['id'],'reason':'own_objective_skip','turn':turn},role='buyer')
                     break
                 agreed = move["price"]
                 previous_offer = agreed
                 if move.get('action',move['id']) == 'counter':
                     journal.add('buyer_counter', {'order': order['order'], 'shop': c['shop'], 'ask': ask,
                                 'price': agreed, 'sku':c['sku'],'score_formula':formula(journal),
+                                'task':task['id'],'turn':turn,
                                 'strategy_version': strategy['version']}, role='buyer')
+                    if cfg.get('service_contract_v26_enabled'):
+                        from r3.state import identity
+                        journal.add('buyer_counter_route',{'order':order['order'],'shop':c['shop'],'sku':c['sku'],
+                            'task':task['id'],'turn':turn,'ask':ask,'price':agreed,'grade':required_grade,
+                            'warranty_hours':required_warranty,'terms_complete':not conditional_requirements,
+                            'score_formula':formula(journal),'observed_at':time.time()},
+                            eid='counter-route:'+identity([order['order'],task['id'],turn,agreed]),role='buyer')
                 if cfg.get('buyer_throughput_enabled') and hasattr(peer,'deadline'):
                     peer.deadline=min(deadline,time.time()+cfg.get('buyer_rpc_timeout_seconds',4))
                 task = peer.send(str(agreed), task["id"])
+                if cfg.get('service_contract_v26_enabled'):
+                    from r3.protocol import quote as observed_ask
+                    response_state=task.get('status',{}).get('state');next_price=None
+                    try:
+                        if response_state=='TASK_STATE_INPUT_REQUIRED':next_price=observed_ask(task)
+                    except ValueError:pass
+                    journal.add('buyer_negotiation_step',{'order':order['order'],'shop':c['shop'],'sku':c['sku'],
+                        'task':task.get('id'),'turn':turn,'offered':agreed,'response_state':response_state,'next_ask':next_price},role='buyer')
                 try:
                     from r3.protocol import observe_quote
                     observe_quote(journal,task,c['shop'],order,'negotiation')
@@ -328,6 +355,10 @@ def execute(order, journal, chooser, peer_factory, cfg, strategy, registry, rank
                                     "kind": "no_agreement", "seconds": time.monotonic() - started,
                                     "score_formula": formula(journal)}, role="buyer")
         except Exception as exc:
+            if cfg.get('service_contract_v26_enabled'):
+                journal.add('buyer_route_terminal',{'order':order['order'],'shop':c['shop'],'sku':c['sku'],
+                    'task':task.get('id') if task else None,'reason':'protocol_or_transport',
+                    'error_type':type(exc).__name__},role='buyer')
             if not isinstance(exc, ValueError):
                 ranked = [x for x in ranked if x['shop'] != c['shop']]
             reason = str(exc) if isinstance(exc, ValueError) and str(exc) in {

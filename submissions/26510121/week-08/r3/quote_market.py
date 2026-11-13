@@ -38,17 +38,46 @@ def clarify(peer,task,candidate,order,journal,config,deadline):
             task.get('status',{}).get('state')!='TASK_STATE_INPUT_REQUIRED' or deadline-time.time()<6):return task
     try:
         terms=quote_terms(task);quote(task)
-        if config.get('buyer_throughput_enabled'):return task
+        if config.get('buyer_throughput_enabled') and not config.get('service_contract_v26_enabled'):return task
         missing=terms.get('grade') not in ('A','B','C') or terms.get('warranty_hours') is None
     except ValueError as exc:
         if str(exc)!='ambiguous_ask':return task
         missing=True
     if not missing:return task
+    if config.get('service_contract_v26_enabled'):
+        if candidate.get('_v26_terms_attempted'):return task
+        assessment=buyer_assessment(dict(candidate['product'],sku=candidate['sku']),order,terms if 'terms' in locals() else {},journal,config,shop=candidate['shop'])
+        from .market_memory import buyer_price_actions
+        current=assessment['saved_state']
+        ask_value=quote(task) if 'terms' in locals() and 'ask' in terms else candidate.get('reference_price',0)
+        actions=buyer_price_actions(ask_value,assessment['cap'],candidate['product'],ask_value,
+            config.get('buyer_counter_ratio',.92),0,config.get('buyer_negotiation_turns',3),
+            failure_stress=assessment['failure'],covered_failure=assessment['covered_failure'],saved_state=current,
+            target_saved=assessment.get('bid_targets'),path_model=assessment.get('negotiation_path_model'))
+        worthwhile=('grade' in assessment.get('conditional_terms',[]) or current['metric']!='saved' or
+            any(a.get('expected_delta',{}).get('saved',0)>=0 and a.get('expected_delta',{}).get('deals',0)>0 for a in actions))
+        if not worthwhile:return task
+        candidate['_v26_terms_attempted']=True
     text=(f"Please clarify ONE current offer for {candidate['sku']} on this task: ask, sku, unit, grade "
           "(A/B/C), warranty_hours. Use a structured data part if possible. I require the market certificate "
           "at checkout; without a declared grade my offer will be conditional on certified grade A, "
           "and without stated coverage I will require a minimum 6-hour warranty. This message is not acceptance.")
-    reply=peer.send(text,task['id'])
+    if config.get('service_contract_v26_enabled'):
+        text+=' Quote the actual priced warranty; say warranty_hours=0 if none. Do not assume free coverage.'
+        started=time.monotonic();original=task
+        if hasattr(peer,'deadline'):peer.deadline=min(deadline-2,time.time()+config.get('buyer_terms_clarify_seconds',2))
+        try:
+            reply=peer.send(text,task['id'])
+            if reply.get('id')!=task.get('id'):raise ValueError('conflicting_offer_terms')
+        except Exception as exc:
+            journal.add('buyer_terms_confirmation',{'order':order['order'],'shop':candidate['shop'],'sku':candidate['sku'],
+                'task':task['id'],'status':'unconfirmed','error_type':type(exc).__name__,'seconds':time.monotonic()-started},role='buyer')
+            return original
+        finally:
+            if hasattr(peer,'deadline'):peer.deadline=deadline
+        journal.add('buyer_terms_confirmation',{'order':order['order'],'shop':candidate['shop'],'sku':candidate['sku'],
+            'task':task['id'],'status':'response_received','seconds':time.monotonic()-started},role='buyer')
+    else:reply=peer.send(text,task['id'])
     from .protocol import observe_quote
     observe_quote(journal,reply,candidate['shop'],order,'clarification')
     journal.add('buyer_terms_clarified',{'order':order['order'],'shop':candidate['shop'],'sku':candidate['sku']},role='buyer')
@@ -121,10 +150,10 @@ def compare_quotes(order, ranked, registry, journal, config, peer_factory, deadl
                 # option; do not pretend the capped price is actually offered.
                 price = ask if price_feasible else min(cap, int(ask * .92))
                 completion = 1 if feasible else .35 if price_feasible else .25
-                from .buyer_scoring import contribution,terms_delta
+                from .buyer_scoring import contribution,terms_delta,score_inputs
                 current=assessment['saved_state']
                 surplus = max(0, (1-q)*c['product']['list_price'] - (1-qc)*price)
-                c['score'] = ((contribution(price,c['product']['list_price'],q,qc) if current['metric']=='saved'
+                c['score'] = ((contribution(price,c['product']['list_price'],q,qc,**score_inputs(current)) if current['metric']=='saved'
                                else surplus)*completion)
                 c['expected_delta'] = terms_delta(current,price,c['product']['list_price'],q,qc,completion)
                 c['evidence']['live_quote'] = dict(assessment, ask=ask, terms=terms,
@@ -204,7 +233,8 @@ def race_quotes(order,ranked,registry,journal,config,peer_factory,deadline):
         try:
             if hasattr(peer,'deadline'):peer.deadline=min(deadline-1,time.time()+timeout)
             peer.discover(c['shop']);task=peer.send(request_text(c,order))
-            task=clarify(peer,task,c,order,journal,config,min(deadline,time.time()+timeout))
+            if not config.get('service_contract_v26_enabled'):
+                task=clarify(peer,task,c,order,journal,config,min(deadline,time.time()+timeout))
             seconds=time.monotonic()-started
             journal.add('buyer_quote_latency',{'order':order['order'],'shop':c['shop'],'sku':c['sku'],'seconds':seconds},role='buyer')
             from .protocol import observe_quote
@@ -238,7 +268,7 @@ def race_quotes(order,ranked,registry,journal,config,peer_factory,deadline):
             try:
                 terms=quote_terms(task);ask=quote(task)
                 if terms.get('sku') not in (None,c['sku']):raise ValueError('quote_sku_mismatch')
-                from .buyer_scoring import offer_ineligible,contribution,terms_delta
+                from .buyer_scoring import offer_ineligible,contribution,terms_delta,score_inputs
                 reason=offer_ineligible(terms,order,config)
                 if reason:
                     c['quote_failed']=True
@@ -253,7 +283,7 @@ def race_quotes(order,ranked,registry,journal,config,peer_factory,deadline):
                     from .contracts import observe,probability
                     observe(journal,order,c,terms,a,ask)
                     if not feasible:completion=probability(journal,order,c,a,ask,completion)
-                c['score']=completion*contribution(price,c['product']['list_price'],a['failure'],a['covered_failure'])
+                c['score']=completion*contribution(price,c['product']['list_price'],a['failure'],a['covered_failure'],**score_inputs(a['saved_state']))
                 c['expected_delta']=terms_delta(a['saved_state'],price,c['product']['list_price'],a['failure'],a['covered_failure'],completion)
                 c['execution_seconds']=max(1,seconds+2)
                 c['evidence']['live_quote']=dict(a,ask=ask,terms=terms,feasible_at_ask=feasible)

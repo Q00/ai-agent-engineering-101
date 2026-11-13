@@ -50,4 +50,7 @@ def adjust(candidate,order,journal,config,route_context):
     candidate['evidence']['route_reliability']={'recent_technical_failures':failures,'factor':reliability,
                                               'window_seconds':900,'not_a_price_rejection_model':True}
     candidate['evidence']['public_sku_prices']={k:v for k,v in observed.items() if k!='seller_prices'}
+    if config.get('service_contract_v26_enabled'):
+        from .service_policy import route_adjust
+        candidate=route_adjust(candidate,journal)
     return candidate

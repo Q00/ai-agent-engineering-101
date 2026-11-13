@@ -88,7 +88,11 @@ def test_prepared_execution_does_not_reintroduce_held_cap_and_rechecks_new_stock
     after=copy.deepcopy(inv);sku=planned['buy'][0]['sku']
     after['units'] += [dict(inv['units'][0],unit='new'+str(n)) for n in range(planned['buy'][0]['qty'])]
     repeated=prewindow.consume(j,cfg,{'version':1},after,now)
-    assert repeated is not None and repeated['buy']==[]
+    if cfg.get('service_contract_v26_enabled'):
+        # Different physical units can cover different service requirements.
+        # V26 discards the cached plan and computes again from fresh eligibility.
+        assert repeated is None
+    else:assert repeated is not None and repeated['buy']==[]
 
 
 def test_cash_and_storage_obligations_still_block_unaffordable_supply(tmp_path):

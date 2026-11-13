@@ -72,7 +72,7 @@ def market_book(journal, catalog, now=None):
 
 def buyer_price_actions(ask, cap, product, reference, ratio, turn, max_turns, previous_offer=None,
                         failure_stress=0, covered=False, covered_failure=None, saved_state=None,
-                        counter_model=None,target_saved=None):
+                        counter_model=None,target_saved=None,path_model=None):
     """Monotone concessions with a final feasible acceptance; no repeated bids.
 
     Completion priors below are explicit engineering scenarios. They are not
@@ -108,6 +108,11 @@ def buyer_price_actions(ask, cap, product, reference, ratio, turn, max_turns, pr
         destination = min(ask, cap)
         bid = min(cap, max(previous_offer + 1, math.ceil((previous_offer + destination) / 2)))
     opening_bid=bid;bids={bid}
+    if path_model is not None:
+        # Near-ask actions let the whole Saved/deal objective price a smaller
+        # discount, instead of considering only very deep target rewards.
+        bids.update(min(cap,math.floor(ask*f)) for f in (.97,.99)
+            if previous_offer is None or min(cap,math.floor(ask*f))>previous_offer)
     if target_saved and saved_state and saved_state.get('score_formula')=='margin_share_v36':
         from .buyer_scoring import saved_price_cap
         recovery=(failure_stress if covered else 0) if covered_failure is None else covered_failure
@@ -122,12 +127,24 @@ def buyer_price_actions(ask, cap, product, reference, ratio, turn, max_turns, pr
             from .policy_learning import counter_probability
             probability=counter_probability(counter_model,bid/max(1,ask),probability)
         score,change = expected(bid,probability)
+        continuation=None
+        if path_model and path_model.get('model'):
+            from .negotiation_path import scenario
+            continuation=scenario(path_model,bid,ask,cap)
+            if continuation:
+                probability=continuation['probability']
+                values=[expected(p,probability) for p in continuation['prices']]
+                score=sum(v[0] for v in values)/len(values) if values else 0
+                change={k:sum(v[1].get(k,0) for v in values)/len(values) for k in ('saved','surplus','deals')} if values else {'saved':0,'surplus':0,'deals':0}
         actions.append({'id': 'counter' if bid==opening_bid else 'counter:'+str(bid),
                         'action':'counter','price': bid, 'score': score,
                         'completion_probability': probability,
                         'expected_delta': change,
                         'success_prior': 'shrunk observed first-counter completion; selected cohort' if counter_model is not None else
                             'engineering scenario, not an empirical success estimate'})
+        if continuation:
+            actions[-1].update(payment_price_scenarios=continuation['prices'],path_expected_seconds=continuation['seconds'],
+                continuation_model_id=continuation['id'],success_prior='temporally validated exact-task final-price continuation scenario')
     return actions
 
 
@@ -174,12 +191,26 @@ def buyer_assessment(product, order, terms, journal, config, *, shop=None):
     if config.get('buyer_frontier_v23_enabled'):
         from .policy_learning import packet
         negotiation=packet(journal).get('counter_completion_by_kind',{}).get(product.get('kind'),{})
+    path=None;targets=None
+    if config.get('service_contract_v26_enabled'):
+        from .negotiation_path import context as path_context
+        path=path_context(journal,product,declared,required)
+        # Even a cold path model gets the new near-ask candidate grid; it does
+        # not get to assert a learned completion probability before validation.
+        path=path or {'cold_start':True}
+        from .decision_view import fact
+        board=fact(journal,'v26-bid-target-board',lambda:journal.snapshot('board.json',{}))
+        ahead=[r['saved'] for r in board.get('buyers',[]) if type(r.get('saved')) in (int,float) and r['saved']>current.get('saved',0)]
+        targets=sorted(set(config.get('buyer_saved_bid_targets',[.8,.9])+[
+            current.get('saved',0)+config.get('buyer_saved_target_margin',.002)]+
+            ([min(ahead)+.00001] if ahead else [])))
     return {'cap': cap, 'required_warranty': required, 'failure': stress,
             'negotiation_model':negotiation,
             'required_grade':declared,'conditional_terms':conditional,
             'covered_failure': covered, 'risk_evidence': risk,'saved_state':current,'target_contribution':target,
             'cost_scenario':cost,'saved_reference_cap':normalized_cap,
-            'saved_target_is_hard_cap':not (config.get('buyer_joint_objective_enabled') and current.get('score_formula')==MARGIN)}
+            'saved_target_is_hard_cap':not (config.get('buyer_joint_objective_enabled') and current.get('score_formula')==MARGIN),
+            'bid_targets':targets,'negotiation_path_model':path}
 
 
 def buyer_terms(product, order, terms, journal, config):

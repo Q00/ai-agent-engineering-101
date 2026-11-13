@@ -10,6 +10,18 @@ def config_hash(config):
     return identity({k: v for k, v in config.items() if k != 'restock_max_lines'})
 
 
+def service_fingerprint(journal,config,inv,now):
+    if not config.get('service_contract_v26_enabled'):return None
+    from .service_policy import context
+    from .service_contracts import eligible
+    from .economy import grade
+    packet=context(journal,now);catalog=journal.snapshot('catalog.json',{})
+    return identity([packet.get('generation'),sorted(
+        (u['unit'],u['sku'],u.get('expires_at'),str(grade(u,catalog,now)),tuple(
+            eligible(u,catalog,dict(b,valid=True,sku=u['sku']),now,config.get('checkout_buffer_seconds',30))
+            for b in packet.get('shop_needs',{}).get(u['sku'],{}).get('buckets',[]))) for u in inv.get('units',[]))])
+
+
 class PreviewJournal:
     def __init__(self, journal):
         self.journal = journal
@@ -35,6 +47,7 @@ def prepare(journal, config, strategy, now=None):
             or not opens - 310 <= now < closes - 20):
         return None
     old = journal.snapshot('shop-plan-v15.json', {})
+    service_id=service_fingerprint(journal,config,inv,now)
     from .demand_policy import context as demand_context
     demand=demand_context(journal,config,now)
     demand_id=demand.get('id') if demand else None
@@ -43,7 +56,7 @@ def prepare(journal, config, strategy, now=None):
     phase = 'early' if now < opens - 90 else 'checked' if now < opens - 15 else 'ready'
     if (old.get('window') == [opens, closes] and old.get('phase') == phase
             and old.get('policy_hash') == config_hash(config) and old.get('demand_policy_id')==demand_id and old.get('service_policy_at')==learning_at
-            and 0 <= now - old.get('at', 0) < 45):
+            and old.get('service_eligibility_id')==service_id and 0 <= now - old.get('at', 0) < 45):
         return old
     from .economy import restock_candidates, cash_capacity
     from .model import Chooser
@@ -66,6 +79,7 @@ def prepare(journal, config, strategy, now=None):
     packet = {'schema': 1, 'at': now, 'expires_at': closes - 15, 'window': [opens, closes], 'phase': phase,
               'rules_hash': rules['sha256'], 'policy_hash': config_hash(config),'demand_policy_id':demand_id,'service_policy_at':learning_at, 'strategy_version': strategy['version'],
               'selected': chosen['id'], 'options': summaries,
+              'service_eligibility_id':service_id,
               'held': dict(Counter(u['sku'] for u in virtual['units'])),
               'unit_commitments': {c['sku']: c['capital_commitment'] / c['qty'] for c in candidates},
               'catalog_hash': identity({c['sku']: catalog.get(c['sku']) for c in candidates}),
@@ -102,6 +116,7 @@ def _consume(journal, config, strategy, inv, now=None):
             or packet.get('demand_policy_id')!=demand_id
             or packet.get('service_policy_at')!=learning_at
             or packet.get('strategy_version') != strategy['version']
+            or packet.get('service_eligibility_id')!=service_fingerprint(journal,config,inv,now)
             or not 0 <= now - packet.get('at', 0) <= 90 or now >= packet.get('expires_at', 0)):
         return None
     catalog = journal.snapshot('catalog.json', {})

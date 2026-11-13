@@ -67,6 +67,11 @@ class MarketCycle:
         if now-self.last_analysis>=60:
             self.last_analysis=now
             roles={'market_observer':lambda:analytics(self.j,time.time())}
+            if self.cfg.get('service_contract_v26_enabled'):
+                from .service_policy import update as service_update
+                from .negotiation_path import update as path_update
+                roles['service_region_observer']=lambda:service_update(self.j,self.cfg,time.time())
+                roles['negotiation_path_observer']=lambda:path_update(self.j,self.cfg,time.time())
             if self.cfg.get('shop_reputation_v24_enabled'):
                 from .reputation import update as reputation_update
                 roles['account_reputation_observer']=lambda:reputation_update(self.j,self.cfg,time.time())

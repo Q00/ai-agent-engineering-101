@@ -44,7 +44,7 @@ class Seller(AgentExecutor):
         self.locks = {}
         self.work_slots = asyncio.Semaphore(4)
 
-    def select_unit(self, text, task):
+    def select_unit(self, text, task, contract=None):
         inv = self.j.snapshot("inventory.json", {})
         if inv.get("round", 0) < 3:
             return None  # Never advertise legacy floor items as real R3 stock.
@@ -60,6 +60,18 @@ class Seller(AgentExecutor):
         required_grades={token.upper() for pair in grade_matches for token in pair if token}
         minimum_grade=re.search(r'\b(?:at least|minimum)\s+grade\s+([ABC])\b',text,re.I)
         if minimum_grade:required_grades=set('ABC'[:'ABC'.index(minimum_grade[1].upper())+1])
+        spec=None
+        if self.cfg.get('service_contract_v26_enabled'):
+            from r3.service_contracts import parse
+            spec=contract or parse(text)
+            if not spec['valid']:
+                from r3.service_contracts import record
+                record(self.j,task,spec)
+                return None
+            min_hours=spec['minimum_hours'];requested_warranty=spec['warranty_hours']
+            required_grades=set(spec['grades'] or ())
+            if spec.get('sku'):skus=[spec['sku']]
+            elif len(skus)==1:spec=dict(spec,sku=skus[0])
         # Parse only explicit requirements, not incidental descriptions or a
         # hypothetical list of grades in an RFQ.
         matching = [u for u in inv.get('units',[]) if
@@ -68,13 +80,24 @@ class Seller(AgentExecutor):
         choices = [u for u in matching if grade(u, cat) != "expired" and
                    (not required_grades or grade(u,cat) in required_grades) and
                    (u.get('kind') != 'food' or remaining(u) >= min_hours + self.cfg['checkout_buffer_seconds'] / 3600)]
-        if self.cfg.get('shop_reputation_v24_enabled'):
+        if self.cfg.get('service_contract_v26_enabled'):
+            from r3.service_contracts import priority,record
+            from r3.service_policy import context as service_context
+            now=time.time()
+            with self.j.connect() as db:reserved={r[0] for r in db.execute('SELECT unit FROM reservations WHERE until>?',(now,))}
+            available=[u for u in choices if u['unit'] not in reserved]
+            packet=service_context(self.j,now)
+            choices=sorted(choices,key=lambda u:priority(u,available,cat,spec,
+                packet.get('shop_needs',{}).get(u['sku'],{}).get('buckets',[]),now))
+        elif self.cfg.get('shop_reputation_v24_enabled'):
             from r3.reputation import unit_priority
             choices=sorted(choices,key=lambda u:unit_priority(u,grade(u,cat),remaining(u),self.cfg))
         else:choices=sorted(choices,key=lambda x:(remaining(x),x.get('supplied_at',0)))
         for u in choices:
             if self.j.reserve(u["unit"], task, self.cfg["session_ttl_seconds"]):
-                return dict(u, requested_use_hours=min_hours, minimum_warranty_hours=requested_warranty)
+                if spec:record(self.j,task,dict(spec,sku=u['sku']),u)
+                return dict(u, requested_use_hours=min_hours, minimum_warranty_hours=requested_warranty,
+                    **({'service_contract':dict(spec,sku=u['sku'])} if spec else {}))
         live=[u for u in matching if grade(u,cat)!='expired']
         grade_ok=[u for u in live if not required_grades or grade(u,cat) in required_grades]
         reason=('no_matching_stock' if not matching else 'expired_stock' if not live else
@@ -82,6 +105,7 @@ class Seller(AgentExecutor):
         self.j.add("stockout", {"sku": skus[0] if skus else None, "request": text[:300],
             'task':task,'reason':reason,'physical_matching_units':len(matching),
             'eligible_units':len(choices),'required_use_hours':min_hours}, role="shop")
+        if spec:record(self.j,task,spec)
         return None
 
     async def execute(self, context, event_queue):
@@ -93,8 +117,8 @@ class Seller(AgentExecutor):
             async with self.work_slots:
                 await self._execute(task, context, event_queue)
 
-    async def reserve_unit(self, text, task_id):
-        pending = asyncio.create_task(asyncio.to_thread(self.select_unit, text, task_id))
+    async def reserve_unit(self, text, task_id, contract=None):
+        pending = asyncio.create_task(asyncio.to_thread(self.select_unit, text, task_id,contract)) if contract else asyncio.create_task(asyncio.to_thread(self.select_unit,text,task_id))
         try:
             return await asyncio.shield(pending)
         except asyncio.CancelledError:
@@ -136,6 +160,7 @@ class Seller(AgentExecutor):
             deal = self.deals[task.id] = {"unit": unit, "ask": None, "turns": 0,
                                          "until": time.time() + self.cfg["session_ttl_seconds"],
                                          "config": config, "strategy": strategy}
+            if self.cfg.get('service_contract_v26_enabled'):deal['service_contract']=unit['service_contract']
             self.j.put('shop_strategy:' + task.id, {'strategy': strategy, 'category': unit.get('category'),
                                                   'cost': unit['cost']})
             self.j.add("shop_opportunity", {"task": task.id, "unit": unit["unit"], "sku": unit["sku"],
@@ -148,6 +173,27 @@ class Seller(AgentExecutor):
             await up.add_artifact(parts=[new_data_part(deal["receipt"])], name="receipt")
             await up.complete(say("Previously agreed receipt; no new sale."))
             return
+        if self.cfg.get('service_contract_v26_enabled'):
+            from r3.service_contracts import parse,eligible,record
+            spec=parse(text,deal['service_contract']);deal['service_contract']=spec
+            current=next((u for u in self.j.snapshot('inventory.json',{}).get('units',[]) if u['unit']==deal['unit']['unit']),None)
+            catalog=self.j.snapshot('catalog.json',{})
+            if not spec['valid']:
+                record(self.j,task.id,spec,current)
+                self.j.release(task.id);self.deals.pop(task.id,None)
+                await up.reject(say('Conflicting or unsupported requirements; request a new quote.'))
+                return
+            if current and not eligible(current,catalog,spec,buffer_seconds=self.cfg['checkout_buffer_seconds']):
+                self.j.release(task.id)
+                replacement=await self.reserve_unit(text,task.id,spec)
+                if replacement is None:
+                    self.deals.pop(task.id,None)
+                    await up.reject(say('No unit meets the updated grade or shelf-life requirement.'))
+                    return
+                deal['unit']=replacement;current=replacement
+                self.j.put('shop_strategy:'+task.id,{'strategy':deal['strategy'],'category':replacement.get('category'),'cost':replacement['cost']})
+            if current:record(self.j,task.id,spec,current)
+            deal['unit']=dict(deal['unit'],requested_use_hours=spec['minimum_hours'],minimum_warranty_hours=spec['warranty_hours'])
         inv = self.j.snapshot("inventory.json", {})
         unit = next((u for u in inv.get("units", []) if u["unit"] == deal["unit"]["unit"]), None)
         cat = self.j.snapshot("catalog.json", {})
@@ -189,6 +235,13 @@ class Seller(AgentExecutor):
                                           critical=unit["cost"] > inv.get("balance", 1) * self.cfg["critic_cash_fraction"],
                                           deadline=deal["until"] - 5)
         price = selected["price"]
+        if self.cfg.get('service_contract_v26_enabled') and selected['action']!='hold':
+            from r3.service_contracts import eligible
+            if (not eligible(unit,cat,deal['service_contract'],buffer_seconds=self.cfg['checkout_buffer_seconds']) or
+                    selected['warranty_hours']<deal['service_contract']['warranty_hours']):
+                self.j.release(task.id);self.deals.pop(task.id,None)
+                await up.reject(say('The current contract no longer meets the requested conditions.'))
+                return
         if selected['action'] == 'hold':
             customer_memory.finish(self.j, task.id, 'retain_inventory')
             self.j.release(task.id)

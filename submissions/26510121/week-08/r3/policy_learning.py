@@ -64,11 +64,15 @@ def update(journal,config,now=None):
     first={}
     for r in reversed(journal.events('buyer_counter',6000)):
         if cut<=r['_ts']<=now-30 and r.get('order') in orders and r.get('ask',0)>0:
-            first.setdefault((r['order'],r['shop']),r)
+            first.setdefault((r['order'],r['shop'],r.get('sku'),r.get('task')),r)
     negotiations=defaultdict(lambda:defaultdict(lambda:{'n':0,'paid':0}))
+    agreements=journal.events('agreement',5000)
     for key,r in first.items():
-        purchase=paid.get(key[0]);same=bool(purchase and purchase.get('shop')==key[1])
-        if not same and key not in failed:continue  # Pending/transport ambiguity is not a price failure.
+        purchase=paid.get(key[0]);same=bool(purchase and purchase.get('shop')==key[1] and purchase.get('sku')==key[2])
+        if same and key[3]:
+            same=any(a.get('order')==key[0] and a.get('task')==key[3] and a.get('sku')==key[2]
+                and a.get('shop')==key[1] and a.get('price')==purchase.get('price') for a in agreements)
+        if not same and key[:2] not in failed:continue  # Pending/transport ambiguity is not a price failure.
         kind=orders[key[0]].get('kind');bucket=str(min(19,max(0,int(r['price']/r['ask']*20))))
         row=negotiations[kind][bucket];row['n']+=1
         row['paid']+=bool(same and purchase['price']<=r['price'])
