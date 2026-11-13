@@ -958,8 +958,19 @@ def main():
     pricefirst = wpen = cheapfood = cheapgoods = skubest = gradeaware = aimtop = False
     md = Path(a.order).parent if a.order else HERE / ".market"
     regime, bp = "STEADY", {}
+    ab_rec = {}
     if acceptable:
         regime, bp, _ = buyer_params()
+        # 11-13 (user: 'keep moving the strategy to the better side through A/B tests'): this order's live arms
+        # (ab.py); an arm's value replaces its knob for this order only, and every trade record carries the arm
+        try:
+            import ab as _ab
+            ab_arms = _ab.assign("buyer", kind=order.get("kind") or "goods")
+        except Exception:   # noqa: BLE001 - an experiment never breaks an order
+            ab_arms = {}
+        if ab_arms:
+            bp = dict(bp, **{v[2]: v[1] for v in ab_arms.values() if len(v) > 2 and v[2]})
+            ab_rec = {k: v[0] for k, v in ab_arms.items()}
         # 11-12 patch 3.6 rebuild: the A/B arms (pricefirst, wpen, cheapfood, cheapgoods, skubest, aimtop, aim15,
         # gradeaware, push2/3/5) are gone; one price policy in v (vprice.py), food always asks for the cheapest unit
         # that lasts, goods for grade A with a warranty, the SKU with the best realized v at the shop (skubest)
@@ -1016,7 +1027,7 @@ def main():
         t_shop = time.time()
         if pick is None:                           # every shop is expected under skip_below: no deal beats a bad one
             log("buyer", why)
-            mem["trades"].append({"t": int(time.time()), "secs": 0, "shop": "", "item": "", "budget": a.budget,
+            mem["trades"].append({"ab": ab_rec or None, "t": int(time.time()), "secs": 0, "shop": "", "item": "", "budget": a.budget,
                                   "order": order.get("order"), "category": a.item, "kind": order.get("kind"),
                                   "outcome": "skipped (low value)", "price": None, "asks": [], "agreed": None,
                                   "honest": True, "signed": True, "void": "", "expected": expected_in(why), "scale": 36,
@@ -1267,7 +1278,7 @@ def main():
         on_price = vctx is not None and outcome in RETRY_ON_PRICE   # Round 3: the next-best shop may take our price
         others = [s for s in shops if s["name"] != pick["name"]]
         if (turned_away or on_price) and others and attempt < max_shops - 1 and time.time() - start < DEADLINE - 60:
-            mem["trades"].append({"t": int(time.time()), "secs": int(time.time() - t_shop), "shop": pick["name"],
+            mem["trades"].append({"ab": ab_rec or None, "t": int(time.time()), "secs": int(time.time() - t_shop), "shop": pick["name"],
                                   "item": item, "budget": a.budget,
                                   "order": order.get("order"), "category": a.item if acceptable else None,
                                   "kind": order.get("kind"), "outcome": outcome, "price": None, "asks": asks,
@@ -1304,7 +1315,7 @@ def main():
                                    ensure_ascii=False) + "\n")
         except OSError:
             pass
-    mem["trades"].append({"t": int(time.time()), "secs": int(time.time() - t_shop), "shop": pick["name"],
+    mem["trades"].append({"ab": ab_rec or None, "t": int(time.time()), "secs": int(time.time() - t_shop), "shop": pick["name"],
                           "item": item, "budget": a.budget,
                           "order": order.get("order"), "category": a.item if acceptable else None,
                           "name": want["name"] if acceptable else None, "kind": order.get("kind"),

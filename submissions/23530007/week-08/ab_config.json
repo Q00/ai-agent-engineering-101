@@ -1,10 +1,62 @@
 {
  "_doc": "Live A/B experiments (ab.py). Activate by setting active true and start = epoch; ab.py promotes the winner into params_auto*.json and starts the next queued one.",
  "experiments": {
-  "buyer_goods_delta": {"side": "buyer", "knob": "goods_delta", "arms": [0.0, 0.02], "kind": "goods", "min_n": 200, "promote_p": 0.95, "floor": 0.15, "active": false},
-  "buyer_food_delta": {"side": "buyer", "knob": "food_delta", "arms": [0.0, -0.02], "kind": "food", "min_n": 200, "promote_p": 0.95, "floor": 0.15, "active": false},
-  "seller_ask_offset_A": {"side": "seller", "knob": "ask_offset_A", "arms": [0.0, -0.02], "grade": "A", "min_n": 300, "promote_p": 0.95, "floor": 0.15, "active": false},
-  "seller_ask_offset_B": {"side": "seller", "knob": "ask_offset_B", "arms": [0.0, 0.02], "grade": "B", "min_n": 200, "promote_p": 0.95, "floor": 0.15, "active": false}
+  "buyer_goods_delta": {
+   "side": "buyer",
+   "knob": "goods_delta",
+   "arms": [
+    0.0,
+    0.02
+   ],
+   "kind": "goods",
+   "min_n": 200,
+   "promote_p": 0.95,
+   "floor": 0.15,
+   "active": true,
+   "start": 1794597328.4675305
+  },
+  "buyer_food_delta": {
+   "side": "buyer",
+   "knob": "food_delta",
+   "arms": [
+    0.0,
+    -0.02
+   ],
+   "kind": "food",
+   "min_n": 200,
+   "promote_p": 0.95,
+   "floor": 0.15,
+   "active": true,
+   "start": 1794597328.4675305
+  },
+  "seller_ask_offset_A": {
+   "side": "seller",
+   "knob": "ask_offset_A",
+   "arms": [
+    0.0,
+    -0.02
+   ],
+   "grade": "A",
+   "min_n": 300,
+   "promote_p": 0.95,
+   "floor": 0.15,
+   "active": true,
+   "start": 1794597328.4675305
+  },
+  "seller_ask_offset_B": {
+   "side": "seller",
+   "knob": "ask_offset_B",
+   "arms": [
+    0.0,
+    0.02
+   ],
+   "grade": "B",
+   "min_n": 200,
+   "promote_p": 0.95,
+   "floor": 0.15,
+   "active": true,
+   "start": 1794597328.4675305
+  }
  },
  "queue": []
 }
