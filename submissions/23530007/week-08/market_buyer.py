@@ -1007,8 +1007,8 @@ def main():
                          + " Any grade is fine as long as it lasts that long: please quote your cheapest unit that"
                            " does, and say how many hours it has left.")
             else:
-                first = (f"I want to buy {label}. Grade A only, with a warranty of at least {WARRANTY_MIN} hours on"
-                         " the receipt, please (no grade B or C). Please quote your cheapest such unit and its price.")
+                first = (f"I want to buy {label}. Grade A or B with a warranty of at least {WARRANTY_MIN} hours on"
+                         " the receipt, please (no grade C). Please quote your cheapest such unit and its price.")
             accept = {"cert": True}
             if order.get("kind") == "food" and hours:
                 accept["min_hours_left"] = hours + bp["food_extra_hours"]
