@@ -21,6 +21,18 @@ SHOP_REVIEW_FILE='shop-reviews.json'
 SHOP_REVIEW_MAX_AGE=30*60
 
 
+def dominant_goods_profit_probability(list_price, median_price, hazard_probability):
+    """Probability that an A-grade supply draw preserves expected Book.
+
+    The official supply draw charges 55-75% of list for grade A.  A is 70% of
+    goods arrivals, so B/C upside must not disguise an A cohort that is likely
+    to lose principal.
+    """
+    if not list_price or not median_price:return 0.0
+    max_cost_ratio=median_price*(1-hazard_probability)/(list_price*1.01)
+    return max(0.0,min(1.0,(max_cost_ratio-.55)/.20))
+
+
 def procurement_candidate_limit():
     """Return the configured breadth without silently restoring a unit cap."""
     try:
@@ -382,6 +394,9 @@ def rank_products(catalog, trades, shops, own_name='25512088', local_demand=None
                 acquisition_cost_range=[cost_lo,cost_hi],samples=len(prices),median_6h=typical,
                 mean_cost=cost,net_estimate=net,hazard_probability=hazard,
                 hazard_basis='food-conservative' if product.get('kind')=='food' else hazard_basis))
+        dominant=next((row for row in scenarios if row['grade']=='A'),{})
+        dominant_profit_probability=dominant_goods_profit_probability(
+            product['list_price'],dominant.get('median_6h'),dominant.get('hazard_probability',0))
         review=reviews.get(sku,{'count':0,'average':None,'shops':0})
         verified_review=buyer_review_preferences.get(sku,{})
         evidence=(len(one_hour)*2+len(observed)+len(active_6h)*1.5+
@@ -416,6 +431,8 @@ def rank_products(catalog, trades, shops, own_name='25512088', local_demand=None
             own_order_mentions_6h=local_demand.get(sku,0),own_inquiries_6h=inquiries,
             own_stockouts_6h=rejected,own_orders_bias='personal evidence only; not purchasing obligations',
             exact_grade_warranty_trades=len(observed),grade_scenarios=scenarios,
+            dominant_grade_profit_probability=round(dominant_profit_probability,4),
+            dominant_grade_samples=dominant.get('samples',0),
             expected_net=expected,expected_revenue=expected_revenue,
             estimated_sale_likelihood=round(likelihood,4),
             competitor_same_units=same_units.get(sku,0),competitor_same_shops=len(same_vendors.get(sku,set())),

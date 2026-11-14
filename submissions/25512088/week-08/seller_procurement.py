@@ -167,6 +167,12 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
     choices=[]
     for row in ranked:
         if row.get('sku') in blocked or row.get('expected_net',0)<=0:continue
+        if row.get('kind')=='goods':
+            min_samples=policy.get('min_goods_a_profit_samples',0)
+            min_probability=policy.get('min_goods_a_profit_probability',0)
+            if (row.get('dominant_grade_samples',0)<min_samples or
+                    row.get('dominant_grade_profit_probability',0)<min_probability):
+                continue
         # Supply calls and cash are both scarce.  Stop opening additional goods
         # trials while too much principal is already tied up in goods that have
         # not sold from our shop in the last hour. Proven goods keep restocking,

@@ -4,6 +4,7 @@ import tempfile
 import unittest
 from network_reads import retry_read
 from seller_procurement import choose,allocation_plan,capital_available,supply_result,own_registration,own_board_registration,retry_join,join_current_registration,preserve_stale_pending,breadth_window_blocks,warranty_risk_reserve,observed_warranty_hazard,active_warranty_amounts,supply_interval_wait
+from seller_market import dominant_goods_profit_probability
 class PurchaseTests(unittest.TestCase):
  def test_successful_supply_cooldown_avoids_predictable_rate_limit(self):
   self.assertAlmostEqual(supply_interval_wait(100,101,10.05),9.05)
@@ -90,6 +91,18 @@ class PurchaseTests(unittest.TestCase):
   self.assertEqual(allocation_plan(ranked,one,10000)[0]['qty'],1)
   full={'units':[{'sku':'food','kind':'food','cost':100} for _ in range(2)]}
   self.assertEqual(allocation_plan(ranked,full,10000),[])
+
+ def test_goods_procurement_requires_dominant_a_grade_profit_evidence(self):
+  base=dict(kind='goods',expected_net=50000,score=3,upper_cost=100,
+            sales_1h=8,sales_6h=12,distinct_buyers_6h=4,
+            estimated_sale_likelihood=.8,dominant_grade_samples=10)
+  ranked=[dict(base,sku='risky',dominant_grade_profit_probability=.69),
+          dict(base,sku='safe',dominant_grade_profit_probability=.70)]
+  policy={'max_sku_capital_share':1,'min_goods_a_profit_samples':3,
+          'min_goods_a_profit_probability':.70}
+  plan=allocation_plan(ranked,{'units':[]},10000,policy=policy)
+  self.assertEqual([row['sku'] for row in plan],['safe'])
+  self.assertAlmostEqual(dominant_goods_profit_probability(10000,6969,0),.70)
  def test_fast_food_can_hold_three_units_only_with_hourly_sales_evidence(self):
   ranked=[dict(sku='food',kind='food',expected_net=50000,score=3,upper_cost=100,
                sales_1h=12,sales_6h=20,distinct_buyers_6h=4,estimated_sale_likelihood=.8)]
