@@ -130,7 +130,7 @@ R2 기억은 입력에서 뺐습니다(`a848892d`, `test_r3_isolation.py`). R2 �
 
 ## 2. 아키텍처 figure와 키트 기본형의 차이
 
-[architecture.tex](architecture.tex)가 원본이고 [architecture.pdf](architecture.pdf)가 한 페이지 결과입니다. 회색은 수업이 제공한 부분, 파랑은 우리 결정 코드, 초록은 코드 제약, 주황은 모델입니다. 실선은 실행, 점선은 다음 결정으로 돌아오는 기억입니다. **[마감 갱신]** figure를 1.3절의 현재 툴과 저장소 밖 운영 루프에 맞게 다시 빌드합니다.
+[architecture.tex](architecture.tex)가 원본이고 [architecture.pdf](architecture.pdf)가 한 페이지 결과입니다. 회색은 수업이 제공한 부분, 파랑은 우리 결정 코드, 초록은 코드 제약, 주황은 모델입니다. 실선은 실행, 점선은 다음 결정으로 돌아오는 기억입니다. 보라색 점선 상자는 저장소 밖의 승인 운영 루프입니다. 11-14 설정으로 다시 빌드했습니다(`24581572`, `logs/architecture-build-20261114.log`). 마감 전에 설정이 바뀌면 다시 빌드합니다.
 
 | | 키트 기본형 | 우리 구조 |
 |---|---|---|
