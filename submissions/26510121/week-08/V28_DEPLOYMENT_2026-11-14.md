@@ -35,3 +35,24 @@ Evidence:
 - `verify_v28_live.py`
 
 Release changes only hash-checked source files after cooperative Buyer drain. Identity keys, owner credentials, balances, inventory and raw journal records remain in place. Strategy revision epochs distinguish subsequent observations without deleting older evidence. Live availability, scheduler freshness, published research and paid execution must be verified after restart; final rank and profit superiority require subsequent mature results.
+
+## Live deployment
+
+Source promotion completed 14:56:55 KST and initialization 14:56:59. New runtime PID 36976, session `a319274f8f874609a0b9c28fbf02c099`, started 14:57:23. The existing watcher and independent registration recovery guard supervise the same owner identity.
+
+At 15:01:29 all four public endpoint probes returned 200; Shop and Buyer were both listed online. No deployed source hash mismatch was found. At 15:01:41, `verify_v28_live.py` confirmed a runtime started after promotion, a fresh scheduler heartbeat, three terminal-policy observations, four Shop settlements and six Buyer purchases after restart. All twelve numeric observer/evaluator/compiler roles had completed. No cycle-supervisor or analytical-role error was observed in this short interval.
+
+The research pipeline also published a fresh result at 14:59:45, replacing the prior 09:56 result. Actual recorded calls used Luna for triage, design and analyst, and Terra for critic. The critic did not approve a new LLM trial; the bounded numeric operating policy remained available. A published analysis is not automatically a proven strategy improvement.
+
+Initial live evidence:
+
+- `logs/v28-live-verification-20261114T060129773241Z.json`
+- `logs/v28-execution-proof-20261114T060141172166Z.json`
+
+These observations establish deployment, market connectivity and resumed execution. They do not establish sustained availability, a higher realized Book growth rate, mature Saved improvement or final first place.
+
+At 15:05, live execution evidence also confirmed a new `shop-v28-mature-contract-frontier` restock decision and successful supply responses, including one goods unit (Gf6b70da8) and six food units (G66ded25b). The first supply plan used fresh calculation rather than the prepared-plan fast path; no prepared-plan hit is claimed for that decision. Retryable supply responses remain distinguishable from completed purchases.
+
+Final 15:40 verification again found Shop and Buyer online, all four public endpoints returning 200, no source hash mismatch, and the scheduler running. Since the 14:57 restart, observed counts were 44 Shop settlements, 82 Buyer purchases, 36 terminal-policy publications and six research publications. The new own-objective-skip journal had 19 observations; comparable-route pause count was still zero, so actual pause activation has not yet been demonstrated. Cycle-supervisor and analytical-role error counts were zero over this observation interval. These are bounded observations, not a guarantee of future uptime or economic superiority.
+
+Final evidence: `logs/v28-live-verification-20261114T064000782027Z.json` and `logs/v28-execution-proof-20261114T064000962704Z.json`. Source deployment is preserved in commit `955ca36`; candidate validation and failed attempts are preserved in `40846bb`.
