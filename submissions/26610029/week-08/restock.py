@@ -57,6 +57,16 @@ OWN_RATE_SHORT_FLOOR = 0.15     # 11.1% deal rate over 6h, but it still got re-b
                                 # one cycle sooner to a SKU that is degrading fast, not just one that has
                                 # always been mediocre
 
+HELD_COST_MIN_SAMPLE = 2    # need at least this many currently-held units of a SKU before trusting their
+                            # average cost -- a single unit's grade draw can be a fluke either way
+HELD_COST_SURPRISE = 0.10   # skip a SKU whose currently-held units cost this much more (as a share of
+                            # list) than EXPECTED_COST assumes for its kind -- measured live: G81ade83e's
+                            # held units averaged cost 25,360-25,955 on a 34,740 list (73-75%, almost all
+                            # grade A) against EXPECTED_COST["goods"]=0.595, so the ranking below kept
+                            # rating it "profitable" off the kind-wide average while our own actual cost
+                            # basis for it left almost no room to negotiate (floor sat near 77% of list,
+                            # well above what most buyers were offering -- mostly zero-offer cancels)
+
 # Horvitz threshold for a shop promo post: post a "hot drop" at once when we just bought something
 # that is clearly selling fast elsewhere (high usefulness), otherwise only after staying quiet a while
 # (threshold drops with quiet_bonus past quiet_after) -- never spam, never go silent either.
@@ -107,8 +117,12 @@ def plan(inv, d, policy, now, catalog):
         print(f"[restock] stock is full ({len(units)}/{policy['max_units']}), not buying")
         return [], []          # why must stay a list of dicts, same shape as the normal return below
     held = {}
+    held_cost_ratios = {}
     for u in units:
         held[u["sku"]] = held.get(u["sku"], 0) + 1
+        lp = u.get("list_price") or 0
+        if lp:
+            held_cost_ratios.setdefault(u["sku"], []).append(u["cost"] / lp)
     surging = {s["sku"] for s in (inv.get("surge") or []) if s.get("factor", 1) > 1.05}
 
     rows = d.q("SELECT sku, max(kind) AS kind, max(list_price) AS lp, max(category) AS category, "
@@ -177,6 +191,11 @@ def plan(inv, d, policy, now, catalog):
         short_rate, short_n = own_rates_short.get(sku, (None, 0))
         if short_n >= OWN_RATE_SHORT_MIN_SAMPLE and short_rate < OWN_RATE_SHORT_FLOOR:
             continue          # degrading fast enough that the main lookback_h window hasn't caught up yet
+        costs = held_cost_ratios.get(sku)
+        if costs and len(costs) >= HELD_COST_MIN_SAMPLE and \
+           sum(costs) / len(costs) > EXPECTED_COST.get(kind, 0.6) + HELD_COST_SURPRISE:
+            continue          # our own held stock for this SKU costs far more than the kind-wide average
+                              # the margin score above assumes -- that score is stale for this SKU specifically
         unit_cost = lp * 0.75                           # worst case: an A unit at the top of its range
         if unit_cost <= 0 or unit_cost > budget:
             continue
