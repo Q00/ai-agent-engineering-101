@@ -8,9 +8,8 @@ from market_supervisor import DEFAULT_ROLES, Supervisor, _alive
 
 
 class RuntimeSupervisorTests(unittest.TestCase):
-    def test_evolution_is_manual_only(self):
-        self.assertNotIn('evolution',DEFAULT_ROLES)
-        self.assertEqual(DEFAULT_ROLES,('monitor','shop','buyer','procurement'))
+    def test_evolution_is_supervised_with_market_roles(self):
+        self.assertEqual(DEFAULT_ROLES,('monitor','shop','buyer','procurement','evolution'))
 
     def test_role_process_is_owned_checkpointed_and_stopped(self):
         with tempfile.TemporaryDirectory() as tmp:

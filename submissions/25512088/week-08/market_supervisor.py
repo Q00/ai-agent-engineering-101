@@ -21,7 +21,7 @@ EVENTS = SUPERVISOR / "runtime-events.jsonl"
 PIDS = SUPERVISOR / "pids.json"
 PIDFILE = SUPERVISOR / "supervisor.pid"
 LOG = ROOT / "logs" / "adaptive-supervisor.log"
-DEFAULT_ROLES = ('monitor','shop','buyer','procurement')
+DEFAULT_ROLES = ('monitor','shop','buyer','procurement','evolution')
 
 
 def _alive(pid):
@@ -131,9 +131,8 @@ class Supervisor:
         PIDFILE.parent.mkdir(parents=True,exist_ok=True);PIDFILE.write_text(str(os.getpid())+'\n')
         self.emit('supervisor','supervisor_started',pid=os.getpid())
         try:
-            # Evolution is intentionally manual-only after it failed to produce
-            # a successful deployment. Keep the market roles live, but never
-            # mutate or redeploy code without an explicit operator decision.
+            # Evolution runs under its own one-hour evidence gate.  It can only
+            # deploy a tested role-scoped patch and must canary or roll it back.
             for role in DEFAULT_ROLES:self.start_role(role)
             while not self.stop_requested:
                 self.handle_requests()

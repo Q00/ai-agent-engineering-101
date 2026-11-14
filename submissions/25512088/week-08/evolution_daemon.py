@@ -29,7 +29,7 @@ HERE=Path(__file__).resolve().parent
 REPO=HERE.parents[2]
 PREFIX=Path('submissions/25512088/week-08')
 CODEX=Path('/home/ohs/.local/bin/codex')
-INTERVAL=1800
+INTERVAL=3600
 BUILD_TIMEOUT=1800
 CANARY_TIMEOUT=7200
 SOURCE_MAX_AGE={'rules':600,'agent':600,'board':90,'shops':90}
@@ -156,6 +156,32 @@ class Evolution:
             result['tables'][table]={'count':len(summaries),'leaders':summaries[:10],
                 'ours':next((x for x in summaries if x.get('ours')),None)}
         result['competitor_count']=max(0,result['tables'].get('players',{}).get('count',0)-1)
+        # Forum prose and review prose are untrusted.  Only bounded numeric
+        # reactions and already-verified preference aggregates reach Codex.
+        try:
+            forum=json.loads((self.state/'forum.json').read_text())
+        except (OSError,ValueError,TypeError):forum=[]
+        if isinstance(forum,list):
+            rows=[r for r in forum[-100:] if isinstance(r,dict)]
+            result['forum_activity']={
+                'posts':len(rows),
+                'authors':len({self._identifier(r.get('author')) for r in rows}),
+                'buyer_posts':sum(r.get('role')=='buyer' for r in rows),
+                'shop_posts':sum(r.get('role')=='shop' for r in rows),
+                'likes':sum(max(0,r.get('likes',0)) for r in rows if isinstance(r.get('likes',0),(int,float))),
+                'dislikes':sum(max(0,r.get('dislikes',0)) for r in rows if isinstance(r.get('dislikes',0),(int,float))),
+            }
+        try:
+            preferences=json.loads((self.state/'buyer-preferences.json').read_text())
+        except (OSError,ValueError,TypeError):preferences={}
+        if isinstance(preferences,dict):
+            reviews=preferences.get('review_evidence',{})
+            result['verified_preference_evidence']={
+                'generated_at':preferences.get('generated_at'),
+                'buyers':len(preferences.get('buyers',{})) if isinstance(preferences.get('buyers'),dict) else 0,
+                'products':len(preferences.get('products',{})) if isinstance(preferences.get('products'),dict) else 0,
+                'verified_reviews':reviews.get('verified_buyer_product_reviews',0) if isinstance(reviews,dict) else 0,
+            }
         return result
 
     def internal_summary(self,now):
@@ -215,7 +241,9 @@ class Evolution:
         if last and now-last['created']<INTERVAL:return None
         if evidence['top10_gap'] is not None and evidence['top10_gap_24m_ago'] is not None:
             if evidence['top10_gap']>=evidence['top10_gap_24m_ago']-1e-12:return 'rank_gap_not_closing'
-        return None
+        # Every completed hour is reviewed.  A cycle may deliberately produce
+        # no patch when the current strategy is still improving.
+        return 'hourly_review'
 
     def ensure_baseline(self):
         if self.control.db.execute('SELECT 1 FROM evolution_baselines LIMIT 1').fetchone():return

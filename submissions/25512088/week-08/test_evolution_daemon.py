@@ -32,13 +32,20 @@ class EvolutionDaemonTests(unittest.TestCase):
         evolution.control.event('procurement','observation',{},'internal1')
         return evolution
 
-    def test_first_review_then_30_min_stall_trigger(self):
+    def test_first_review_then_hourly_stall_trigger(self):
         with tempfile.TemporaryDirectory() as tmp:
             e=self.make(tmp);ev=e.evidence()
             self.assertEqual(e.trigger(ev),'scheduled_review')
             e._cycle('first','scheduled_review','shop',ev,'abc')
             self.assertIsNone(e.trigger(ev,10_000+INTERVAL-1))
             self.assertEqual(e.trigger(ev,10_000+INTERVAL),'rank_gap_not_closing')
+            e.control.close()
+
+    def test_hourly_review_runs_even_without_comparable_gap_sample(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            e=self.make(tmp);ev=e.evidence();e._cycle('first','scheduled_review','shop',ev,'abc')
+            ev['top10_gap_24m_ago']=None
+            self.assertEqual(e.trigger(ev,10_000+INTERVAL),'hourly_review')
             e.control.close()
 
     def test_rule_change_bypasses_interval_and_role_uses_official_components(self):

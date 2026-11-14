@@ -1,6 +1,6 @@
 import unittest
 from network_reads import retry_read
-from seller_procurement import choose,allocation_plan,capital_available,supply_result,own_registration,retry_join,join_current_registration
+from seller_procurement import choose,allocation_plan,capital_available,supply_result,own_registration,retry_join,join_current_registration,preserve_stale_pending
 class PurchaseTests(unittest.TestCase):
  def setUp(self):
   self.p={'budget':2500000,'cash_floor':500000,'priority':['a','b','c','d']}
@@ -73,10 +73,22 @@ class PurchaseTests(unittest.TestCase):
   self.assertEqual(plan[0]['evidence']['trusted_inquiries_6h'],2)
   full={'units':[{'sku':'a'} for _ in range(4)]}
   self.assertEqual(allocation_plan(ranked,full,10000,aggression=4,policy=policy),[])
- def test_unknown_or_invalid_supply_result_stops_for_reconciliation(self):
+ def test_accepted_supply_records_actual_cost_even_above_estimate(self):
   self.assertEqual(supply_result(503,{},100),('uncertain',None))
-  self.assertEqual(supply_result(200,{'total':101},100),('reconcile',None))
+  self.assertEqual(supply_result(200,{'total':101},100),('paid',101))
   self.assertEqual(supply_result(200,{'total':90},100),('paid',90))
+  self.assertEqual(supply_result(200,{},100),('reconcile',None))
+ def test_stale_unknown_is_preserved_once_and_never_retried(self):
+  import sqlite3
+  db=sqlite3.connect(':memory:');db.row_factory=sqlite3.Row
+  db.execute('CREATE TABLE purchases(id INTEGER PRIMARY KEY,campaign TEXT,sku TEXT,upper_cost INTEGER,cost INTEGER,status TEXT,created REAL,detail TEXT)')
+  db.executemany('INSERT INTO purchases(campaign,sku,upper_cost,status,created,detail) VALUES(?,?,?,?,?,?)',[
+   ('c','old',100,'uncertain',100,'timeout'),('c','fresh',200,'sent',390,None)])
+  rows=preserve_stale_pending(db,'c',now=400,hold=300)
+  self.assertEqual([r['sku'] for r in rows],['old'])
+  self.assertEqual(db.execute("SELECT status FROM purchases WHERE sku='old'").fetchone()[0],'preserved')
+  self.assertEqual(db.execute("SELECT status FROM purchases WHERE sku='fresh'").fetchone()[0],'sent')
+  self.assertEqual(preserve_stale_pending(db,'c',now=800,hold=300)[0]['sku'],'fresh')
  def test_missing_registration_snapshot_is_retryable_read_failure(self):
   attempts=[]
   def registration():

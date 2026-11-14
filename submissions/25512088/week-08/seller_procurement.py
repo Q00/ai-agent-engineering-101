@@ -6,6 +6,7 @@ from seller_market import snapshot
 from market_intel import read_json
 
 ROOT=Path(__file__).resolve().parent
+PENDING_HOLD_SECONDS=300
 
 def settings():return json.loads((ROOT/'procurement_policy.json').read_text())
 
@@ -93,8 +94,29 @@ def supply_result(status, body, upper):
     if status>=500:return 'uncertain',None
     if status!=200:return 'refused',None
     cost=body.get('total') if isinstance(body,dict) else None
-    if type(cost) is not int or not 0<cost<=upper:return 'reconcile',None
+    # HTTP 200 is an accepted supply purchase.  The market may legitimately
+    # charge above our estimate because grade and surge are drawn server-side;
+    # treating that accepted purchase as unknown used to stop all procurement.
+    if type(cost) is not int or cost<=0:return 'reconcile',None
     return 'paid',cost
+
+def preserve_stale_pending(db,campaign,now=None,hold=PENDING_HOLD_SECONDS):
+    """Release the global pipeline without ever repeating an unknown POST.
+
+    A fresh unknown request keeps its capital reserved and its SKU blocked.
+    Once it is older than the reconciliation window it becomes ``preserved``:
+    it is never retried, but unrelated evidence-backed products may be bought.
+    """
+    now=time.time() if now is None else now
+    rows=db.execute("SELECT id,sku,upper_cost,created,detail FROM purchases WHERE campaign=? AND status IN ('sent','uncertain')",
+                    (campaign,)).fetchall()
+    stale=[r for r in rows if now-r['created']>=hold]
+    with db:
+        for row in stale:
+            detail=json.dumps({'previous':row['detail'],'resolution':'preserved_no_retry',
+                               'resolved_at':now},sort_keys=True)
+            db.execute("UPDATE purchases SET status='preserved',detail=? WHERE id=?",(detail,row['id']))
+    return stale
 
 def own_registration(body, name='25512088'):
     rows=body.get('shops',[]) if isinstance(body,dict) else body
@@ -133,9 +155,17 @@ def main():
     def log(**data):print(json.dumps(dict(ts=time.time(),**data),ensure_ascii=False),flush=True)
     log(event='started',campaign=policy['campaign'],capital_policy=policy['budget_basis'])
     while True:
+        stale=preserve_stale_pending(db,policy['campaign'])
+        for row in stale:
+            log(event='uncertain_preserved',purchase_id=row['id'],sku=row['sku'],
+                reserved=row['upper_cost'],action='never_retry_continue_other_skus')
         rows=db.execute('SELECT * FROM purchases WHERE campaign=?',(policy['campaign'],)).fetchall()
         spent=sum(r['cost'] or 0 for r in rows if r['status']=='paid');pending=sum(r['upper_cost'] for r in rows if r['status'] in ('sent','uncertain'))
-        if pending:log(event='uncertain_stop',spent=spent,reserved=pending);break
+        pending_skus={r['sku'] for r in rows if r['status'] in ('sent','uncertain')}
+        if pending:
+            blocked.update(pending_skus)
+            log(event='uncertain_isolated',spent=spent,reserved=pending,
+                blocked_skus=sorted(pending_skus),action='continue_other_skus')
         def get_inventory():
             response=market.call('GET','/api/inventory','shop');response.raise_for_status();return response.json()
         inv=retry_read(get_inventory, attempts=None, report=log)
@@ -188,7 +218,9 @@ def main():
             result=market.call('POST','/api/supply','shop',json={'sku':sku,'qty':qty})
         except Exception as exc:
             with db:db.execute("UPDATE purchases SET status='uncertain',detail=? WHERE id=?",(type(exc).__name__,rid))
-            log(event='uncertain_stop',sku=sku);break
+            blocked.add(sku)
+            log(event='uncertain_isolated',sku=sku,purchase_id=rid,
+                action='never_retry_continue_other_skus');time.sleep(5);continue
         body=result.json() if result.status_code==200 else {}
         outcome,cost=supply_result(result.status_code,body,upper)
         if outcome=='paid':
@@ -196,13 +228,17 @@ def main():
                 log(event='unexpected_cost_stop',sku=sku);break
             with db:db.execute("UPDATE purchases SET status='paid',cost=?,detail=? WHERE id=?",(cost,json.dumps({'balance':body.get('balance')}),rid))
             log(event='purchased',sku=sku,qty=qty,cost=cost,spent=spent+cost,balance=body.get('balance'),
+                estimated_upper=upper,cost_overrun=max(0,cost-upper),
                 allocation={'holding':sum(u['sku']==sku for u in inv['units']),
                             'sales_1h':selected['evidence'].get('sales_1h'),
                             'next_window_need':qty,'expected_net':selected['evidence'].get('expected_net'),
                             'demand_windows':aggression})
         elif outcome in ('uncertain','reconcile'):
             with db:db.execute("UPDATE purchases SET status='uncertain',detail=? WHERE id=?",(str(result.status_code),rid))
-            log(event='uncertain_stop' if outcome=='uncertain' else 'reconciliation_stop',sku=sku,status=result.status_code);break
+            blocked.add(sku)
+            log(event='uncertain_isolated' if outcome=='uncertain' else 'reconciliation_isolated',
+                sku=sku,purchase_id=rid,status=result.status_code,
+                action='never_retry_continue_other_skus');time.sleep(5);continue
         else:
             with db:db.execute("UPDATE purchases SET status='refused',detail=? WHERE id=?",(str(result.status_code),rid))
             log(event='refused',sku=sku,status=result.status_code,reason=result.text[:180])
