@@ -40,7 +40,12 @@ create table if not exists supplies (seq integer primary key, ts real, shop text
 create table if not exists supply_units (unit text primary key, shop text, sku text, cost real, ts real);
 create table if not exists gaps (ts real, category text, kind text, budget integer, skus text);
 create table if not exists settle_warranty (seq integer primary key, hours real);   -- MST TF 11-14: per-buyer warranty
-create index if not exists settles_sku on settles(sku);
+-- HQ 11-15 07:40: settles reached 787k rows; with settles_sku the planner scanned the whole table for every
+-- "s.ts > ?" query (group by sku), 9-11 s each, so restock's plan() ran past the kit's 300 s stop from 02:07 and the
+-- forum tick behind it (buyer posts) never ran. A ts index alone is ignored while settles_sku exists; dropped,
+-- the same queries take 0.2-1.9 s and a one-SKU count 0.5 s (copy of the live DB).
+drop index if exists settles_sku;
+create index if not exists settles_ts on settles(ts);
 create index if not exists settles_cat on settles(category);
 """
 
