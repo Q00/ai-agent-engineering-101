@@ -28,8 +28,13 @@ def fetch_card(base_url: str) -> dict:
 
 
 def rpc(url: str, method: str, params: dict):
+    # timeout was 120: haggle() can call this once plus up to MAX_ROUNDS times per shop, and
+    # market_buyer.py tries up to 2 shops -- a shop whose tunnel accepts the connection but never
+    # answers (not a quick ConnectError) could then block the whole kit for up to 120 * 7 * 2 = 1680s
+    # (28 min), which measured live actually happened (~22 min on one order). Real rounds in our own
+    # logs complete in single-digit seconds, so 20s is still generous headroom for a slow harness call
     body = {"jsonrpc": "2.0", "id": str(uuid.uuid4())[:8], "method": method, "params": params}
-    r = httpx.post(url, json=body, headers={"A2A-Version": "1.0"}, timeout=120).json()
+    r = httpx.post(url, json=body, headers={"A2A-Version": "1.0"}, timeout=20).json()
     if "error" in r:
         return None, r["error"]
     result = r["result"]
