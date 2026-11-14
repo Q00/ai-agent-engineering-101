@@ -113,7 +113,14 @@ class Market:
             if hours_left < p["clearance_hours"]:   # skew: it is worth nothing once it expires
                 floor = cost * p["clearance_floor"]
         target = max(floor, lp * (self.ratio.get((u["kind"], u["grade"]), 0.65) - p["undercut"]))
-        ask = min(lp, max(target, lp * (self.ratio.get((u["kind"], u["grade"]), 0.65) + p["open_premium"])))
+        # ask was lp * (ratio + open_premium) -- anchored on the raw market ratio, completely independent
+        # of undercut/target. That meant meta_harness raising undercut (0.03 -> 0.06 over many cycles,
+        # trying to fix a low shop deal rate) never once moved the price a buyer actually sees, and with
+        # open_premium already tuned to its floor (0), ask sat at lp*ratio -- often far above target --
+        # while the buyer never gets to see how low we would actually go before bailing. Measured live:
+        # 75-91% of food cancels most hours had zero counter-offers at all. Anchoring ask on target
+        # instead means undercut and open_premium both reach the price a buyer actually sees
+        ask = min(lp, max(target, target * (1 + p["open_premium"])))
         warranty = None
         if u["kind"] == "goods" and self.brk.get(u["grade"], 1) < p["warranty_max_break"]:
             warranty = p["warranty_hours"]
