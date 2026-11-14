@@ -269,14 +269,25 @@ def vote_forum(md: Path, mem: dict, limit=3):
     mem["voted"] = sorted(voted)[-500:]
 
 
+def due(stamp: Path, seconds: float) -> bool:
+    """True once per `seconds`, remembered in the stamp file. The time is written into the file: on this NFS the
+    mtime runs 761 s behind the clock, so an mtime-based 10-minute throttle never held (24 posts/h instead of 6)."""
+    try:
+        last = float(stamp.read_text())
+    except (OSError, ValueError):
+        last = 0.0
+    if time.time() - last < seconds:
+        return False
+    stamp.write_text(str(time.time()))
+    return True
+
+
 def forum_post(md: Path, text: str, refs=()):
-    """One buyer post per 10 minutes: posts now count 0.1 of buyer ALL (week-09 rule), but a 5-min stream reads as spam."""
-    stamp = md / "last_buyer_post"
-    if time.time() - (stamp.stat().st_mtime if stamp.exists() else 0) < 600:
+    """One buyer post per 10 minutes: posts count 0.1 of buyer ALL (week-09 rule), but a 5-min stream reads as spam."""
+    if not due(md / "last_buyer_post", 600):
         return
     with (md / "outbox.jsonl").open("a", encoding="utf-8") as f:
         f.write(json.dumps({"post": text, "refs": list(refs), "as": "buyer"}, ensure_ascii=False) + "\n")
-    stamp.touch()
 
 
 # ---------------------------------------------------------------- main

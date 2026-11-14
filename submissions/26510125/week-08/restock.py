@@ -11,6 +11,7 @@ import argparse, collections, json, time
 from pathlib import Path
 
 from market_price import settled, median_price
+from market_buyer import due
 
 MAX_UNITS, PER_SKU_SHARE, TOP = 400, 0.08, 30   # goods do not decay and Book counts stock at cost: idle cash earns nothing
 
@@ -93,12 +94,10 @@ def main():
                 out["buy"].append({"sku": sku, "qty": qty}); room -= qty
         print(f"[restock] balance {balance} units {len(units)} hot={len(hot)} surged={sorted(hot_now)[:5]} -> buy {out['buy']}", flush=True)
     # forum, once an hour: the shop's price list (week-10 LAB "first move"), see notice()
-    stamp = md / "last_shop_post"
-    text = notice(units) if units and time.time() - (stamp.stat().st_mtime if stamp.exists() else 0) > 3600 else None
+    text = notice(units) if units and due(md / "last_shop_post", 3600) else None
     if text:
         with (md / "outbox.jsonl").open("a", encoding="utf-8") as f:
             f.write(json.dumps({"post": text, "refs": [], "as": "shop"}, ensure_ascii=False) + "\n")
-        stamp.touch()
     print(json.dumps(out, ensure_ascii=False), flush=True)
 
 

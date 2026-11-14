@@ -56,6 +56,9 @@ assert mb.price_cap(400, 300) == 225 and mb.price_cap(200, 300) == 200 and mb.pr
 wmem = {"shops": {"none": {"trades": [{"warranty": 0}, {"warranty": 0}]}, "some": {"trades": [{"warranty": 0}, {"warranty": 6}]},
                   "once": {"trades": [{"warranty": 0}]}, "food": {"trades": [{}, {}]}}}
 assert [n for n in wmem["shops"] if mb.no_warranty(wmem, n)] == ["none"]
+st = md / "due_probe"
+assert mb.due(st, 60) and not mb.due(st, 60)                   # second call inside the window is held back
+st.write_text(str(time.time() - 61)); assert mb.due(st, 60)   # the stamp holds a clock value, not an mtime (NFS skew)
 mb.forum_post(md, "hello"); mb.forum_post(md, "again")
 assert sum(1 for l in (md / "outbox.jsonl").read_text().splitlines() if '"buyer"' in l) == 1   # 5-min limit
 

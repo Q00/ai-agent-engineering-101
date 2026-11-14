@@ -125,7 +125,7 @@ class Seller(AgentExecutor):
         hours = (u["expires_at"] - time.time()) / 3600 if u.get("expires_at") else None
         urgent = (hours is not None and hours < 12) or u.get("grade") == "C"
         med, n = median_price(u["sku"])
-        target = int(med * 0.95) if med else int(u["list_price"] * 0.75)   # a notch under the market: faster yes, better reviews
+        target = int(med * 0.95) if med else int(u["list_price"] * 0.6)    # a notch under the market; no median: the market now settles ~55-60 % of list
         reserve = floor_price(u["cost"], u.get("kind"), urgent, target)
         if urgent:
             target = reserve                        # grade C / short shelf life: 98 C units sat unsold; move them at cost
