@@ -1,0 +1,2271 @@
+{
+  "window": {
+    "start": "2026-11-13T16:09:36.759881+09:00",
+    "end": "2026-11-14T12:37:53.186146+09:00",
+    "hours": 20.47122951792346
+  },
+  "sources": [
+    "logs/autonomous-deploy-before-20261113T070936759881Z.json",
+    "logs/peer-market-source-20261114T033752254761Z.json",
+    "logs/auto-join-20261113T071046765879Z.txt",
+    "logs/auto-join-20261113T073206342541Z.txt",
+    "logs/auto-join-20261114T033048623982Z.txt"
+  ],
+  "queries": {
+    "events": "SELECT id,ts,data FROM events WHERE kind=? AND ts>=? AND ts<? ORDER BY ts,rowid"
+  },
+  "own": {
+    "shops": {
+      "before": {
+        "book": 807845888,
+        "revenue": 5067309609,
+        "deals": 11706,
+        "stars_rank": 4.29,
+        "stock_units": 454,
+        "stock_cost": 91234009,
+        "all": 0.786
+      },
+      "after": {
+        "book": 811954592,
+        "revenue": 5130938996,
+        "deals": 13558,
+        "stars_rank": 4.31,
+        "stock_units": 1000,
+        "stock_cost": 116006474,
+        "all": 0.79
+      },
+      "rank_before": 10,
+      "rank_after": 10
+    },
+    "buyers": {
+      "before": {
+        "saved": 0.7253,
+        "surplus": 580346097,
+        "deals": 17259,
+        "forum": 0.905,
+        "posts": 2291,
+        "all": 0.786
+      },
+      "after": {
+        "saved": 0.7375,
+        "surplus": 688989486,
+        "deals": 19191,
+        "forum": 0.906,
+        "posts": 2501,
+        "all": 0.809
+      },
+      "rank_before": 15,
+      "rank_after": 12
+    }
+  },
+  "peers": {
+    "shops": [
+      {
+        "name": "25620027",
+        "changes": {
+          "book": {
+            "before": 937332474,
+            "after": 974274789,
+            "delta": 36942315,
+            "per_hour": 1804596.7863168833
+          },
+          "revenue": {
+            "before": 7864154308,
+            "after": 8695373242,
+            "delta": 831218934,
+            "per_hour": 40604250.62755665
+          },
+          "deals": {
+            "before": 18014,
+            "after": 22528,
+            "delta": 4514,
+            "per_hour": 220.50458650018038
+          },
+          "stars_rank": {
+            "before": 4.36,
+            "after": 4.37,
+            "delta": 0.009999999999999787,
+            "per_hour": 0.0004884904441740711
+          },
+          "stock_units": {
+            "before": 712,
+            "after": 1591,
+            "delta": 879,
+            "per_hour": 42.93831004290176
+          },
+          "stock_cost": {
+            "before": 222465011,
+            "after": 491676662,
+            "delta": 269211651,
+            "per_hour": 13150731.89738278
+          },
+          "all": {
+            "before": 0.891,
+            "after": 0.909,
+            "delta": 0.018000000000000016,
+            "per_hour": 0.0008792827995133475
+          }
+        }
+      },
+      {
+        "name": "inextro",
+        "changes": {
+          "book": {
+            "before": 854722122,
+            "after": 930793173,
+            "delta": 76071051,
+            "per_hour": 3715998.1491779205
+          },
+          "revenue": {
+            "before": 14602390194,
+            "after": 15536363473,
+            "delta": 933973279,
+            "per_hour": 45623702.19054333
+          },
+          "deals": {
+            "before": 27009,
+            "after": 29390,
+            "delta": 2381,
+            "per_hour": 116.30957475784881
+          },
+          "stars_rank": {
+            "before": 4.4,
+            "after": 4.43,
+            "delta": 0.02999999999999936,
+            "per_hour": 0.0014654713325222132
+          },
+          "stock_units": {
+            "before": 1607,
+            "after": 2098,
+            "delta": 491,
+            "per_hour": 23.984880808947402
+          },
+          "stock_cost": {
+            "before": 494629318,
+            "after": 835195787,
+            "delta": 340566469,
+            "per_hour": 16636346.571260856
+          },
+          "all": {
+            "before": 0.929,
+            "after": 0.963,
+            "delta": 0.03399999999999992,
+            "per_hour": 0.0016608675101918732
+          }
+        }
+      },
+      {
+        "name": "moss-and-oak",
+        "changes": {
+          "book": {
+            "before": 886985906,
+            "after": 897959880,
+            "delta": 10973974,
+            "per_hour": 536068.1433614822
+          },
+          "revenue": {
+            "before": 8068994202,
+            "after": 8346158952,
+            "delta": 277164750,
+            "per_hour": 13539233.183689825
+          },
+          "deals": {
+            "before": 34227,
+            "after": 36769,
+            "delta": 2542,
+            "per_hour": 124.17427090905151
+          },
+          "stars_rank": {
+            "before": 4.36,
+            "after": 4.36,
+            "delta": 0.0,
+            "per_hour": 0.0
+          },
+          "stock_units": {
+            "before": 732,
+            "after": 938,
+            "delta": 206,
+            "per_hour": 10.062903149986079
+          },
+          "stock_cost": {
+            "before": 209600045,
+            "after": 192384492,
+            "delta": -17215553,
+            "per_hour": -840963.3131672441
+          },
+          "all": {
+            "before": 0.888,
+            "after": 0.875,
+            "delta": -0.013000000000000012,
+            "per_hour": -0.0006350375774263065
+          }
+        }
+      },
+      {
+        "name": "seochanit",
+        "changes": {
+          "book": {
+            "before": 807845888,
+            "after": 811954592,
+            "delta": 4108704,
+            "per_hour": 200706.26419398253
+          },
+          "revenue": {
+            "before": 5067309609,
+            "after": 5130938996,
+            "delta": 63629387,
+            "per_hour": 3108234.7518154527
+          },
+          "deals": {
+            "before": 11706,
+            "after": 13558,
+            "delta": 1852,
+            "per_hour": 90.4684302610399
+          },
+          "stars_rank": {
+            "before": 4.29,
+            "after": 4.31,
+            "delta": 0.019999999999999574,
+            "per_hour": 0.0009769808883481421
+          },
+          "stock_units": {
+            "before": 454,
+            "after": 1000,
+            "delta": 546,
+            "per_hour": 26.67157825190485
+          },
+          "stock_cost": {
+            "before": 91234009,
+            "after": 116006474,
+            "delta": 24772465,
+            "per_hour": 1210111.243113689
+          },
+          "all": {
+            "before": 0.786,
+            "after": 0.79,
+            "delta": 0.0040000000000000036,
+            "per_hour": 0.00019539617766963277
+          }
+        }
+      },
+      {
+        "name": "sergiobuilds",
+        "changes": {
+          "book": {
+            "before": 629333489,
+            "after": 747419750,
+            "delta": 118086261,
+            "per_hour": 5768401.008674651
+          },
+          "revenue": {
+            "before": 6283504198,
+            "after": 7604630137,
+            "delta": 1321125939,
+            "per_hour": 64535739.67520105
+          },
+          "deals": {
+            "before": 18866,
+            "after": 22457,
+            "delta": 3591,
+            "per_hour": 175.41691850291267
+          },
+          "stars_rank": {
+            "before": 4.55,
+            "after": 4.53,
+            "delta": -0.019999999999999574,
+            "per_hour": -0.0009769808883481421
+          },
+          "stock_units": {
+            "before": 467,
+            "after": 607,
+            "delta": 140,
+            "per_hour": 6.838866218437141
+          },
+          "stock_cost": {
+            "before": 285870300,
+            "after": 330256384,
+            "delta": 44386084,
+            "per_hour": 2168217.7888308093
+          },
+          "all": {
+            "before": 0.928,
+            "after": 0.942,
+            "delta": 0.013999999999999901,
+            "per_hour": 0.0006838866218437093
+          }
+        }
+      },
+      {
+        "name": "yms979",
+        "changes": {
+          "book": {
+            "before": 1215089518,
+            "after": 1214547366,
+            "delta": -542152,
+            "per_hour": -26483.607128986663
+          },
+          "revenue": {
+            "before": 10665564364,
+            "after": 11417156382,
+            "delta": 751592018,
+            "per_hour": 36714551.87105142
+          },
+          "deals": {
+            "before": 36111,
+            "after": 38020,
+            "delta": 1909,
+            "per_hour": 93.25282579283216
+          },
+          "stars_rank": {
+            "before": 4.43,
+            "after": 4.46,
+            "delta": 0.03000000000000025,
+            "per_hour": 0.0014654713325222566
+          },
+          "stock_units": {
+            "before": 3730,
+            "after": 3130,
+            "delta": -600,
+            "per_hour": -29.30942665044489
+          },
+          "stock_cost": {
+            "before": 1192861368,
+            "after": 1182391152,
+            "delta": -10470216,
+            "per_hour": -511460.0464438575
+          },
+          "all": {
+            "before": 0.972,
+            "after": 0.981,
+            "delta": 0.009000000000000008,
+            "per_hour": 0.00043964139975667373
+          }
+        }
+      }
+    ],
+    "buyers": [
+      {
+        "name": "11im",
+        "changes": {
+          "saved": {
+            "before": 0.8097,
+            "after": 0.8125,
+            "delta": 0.0028000000000000247,
+            "per_hour": 0.00013677732436874403
+          },
+          "surplus": {
+            "before": 1289620121,
+            "after": 1456676070,
+            "delta": 167055949,
+            "per_hour": 8160523.472893271
+          },
+          "deals": {
+            "before": 9920,
+            "after": 11169,
+            "delta": 1249,
+            "per_hour": 61.01245647734278
+          },
+          "forum": {
+            "before": 0.921,
+            "after": 0.921,
+            "delta": 0.0,
+            "per_hour": 0.0
+          },
+          "posts": {
+            "before": 2009,
+            "after": 2234,
+            "delta": 225,
+            "per_hour": 10.991034993916834
+          },
+          "all": {
+            "before": 0.901,
+            "after": 0.906,
+            "delta": 0.0050000000000000044,
+            "per_hour": 0.00024424522208704095
+          }
+        }
+      },
+      {
+        "name": "choo-chu",
+        "changes": {
+          "saved": {
+            "before": 0.8007,
+            "after": 0.8067,
+            "delta": 0.006000000000000005,
+            "per_hour": 0.00029309426650444913
+          },
+          "surplus": {
+            "before": 255009789,
+            "after": 290077844,
+            "delta": 35068055,
+            "per_hour": 1713040.976327112
+          },
+          "deals": {
+            "before": 6632,
+            "after": 7849,
+            "delta": 1217,
+            "per_hour": 59.44928705598572
+          },
+          "forum": {
+            "before": 0.922,
+            "after": 0.923,
+            "delta": 0.0010000000000000009,
+            "per_hour": 4.8849044417408194e-05
+          },
+          "posts": {
+            "before": 2156,
+            "after": 2398,
+            "delta": 242,
+            "per_hour": 11.821468749012773
+          },
+          "all": {
+            "before": 0.881,
+            "after": 0.889,
+            "delta": 0.008000000000000007,
+            "per_hour": 0.00039079235533926555
+          }
+        }
+      },
+      {
+        "name": "dragonash",
+        "changes": {
+          "saved": {
+            "before": 0.7963,
+            "after": 0.8004,
+            "delta": 0.0040999999999999925,
+            "per_hour": 0.00020028108211137306
+          },
+          "surplus": {
+            "before": 616676622,
+            "after": 674174708,
+            "delta": 57498086,
+            "per_hour": 2808726.556929954
+          },
+          "deals": {
+            "before": 17861,
+            "after": 19335,
+            "delta": 1474,
+            "per_hour": 72.00349147125961
+          },
+          "forum": {
+            "before": 0.842,
+            "after": 0.859,
+            "delta": 0.017000000000000015,
+            "per_hour": 0.0008304337550959393
+          },
+          "posts": {
+            "before": 1994,
+            "after": 2233,
+            "delta": 239,
+            "per_hour": 11.674921615760548
+          },
+          "all": {
+            "before": 0.892,
+            "after": 0.898,
+            "delta": 0.006000000000000005,
+            "per_hour": 0.00029309426650444913
+          }
+        }
+      },
+      {
+        "name": "kimauve",
+        "changes": {
+          "saved": {
+            "before": 0.7665,
+            "after": 0.7691,
+            "delta": 0.0026000000000000467,
+            "per_hour": 0.00012700751548526347
+          },
+          "surplus": {
+            "before": 1488181523,
+            "after": 1607475026,
+            "delta": 119293503,
+            "per_hour": 5827373.626755212
+          },
+          "deals": {
+            "before": 17817,
+            "after": 19258,
+            "delta": 1441,
+            "per_hour": 70.39147300548514
+          },
+          "forum": {
+            "before": 0.903,
+            "after": 0.903,
+            "delta": 0.0,
+            "per_hour": 0.0
+          },
+          "posts": {
+            "before": 2343,
+            "after": 2557,
+            "delta": 214,
+            "per_hour": 10.453695505325344
+          },
+          "all": {
+            "before": 0.885,
+            "after": 0.872,
+            "delta": -0.013000000000000012,
+            "per_hour": -0.0006350375774263065
+          }
+        }
+      },
+      {
+        "name": "seochanit",
+        "changes": {
+          "saved": {
+            "before": 0.7253,
+            "after": 0.7375,
+            "delta": 0.0122000000000001,
+            "per_hour": 0.0005959583418923843
+          },
+          "surplus": {
+            "before": 580346097,
+            "after": 688989486,
+            "delta": 108643389,
+            "per_hour": 5307125.734918752
+          },
+          "deals": {
+            "before": 17259,
+            "after": 19191,
+            "delta": 1932,
+            "per_hour": 94.37635381443255
+          },
+          "forum": {
+            "before": 0.905,
+            "after": 0.906,
+            "delta": 0.0010000000000000009,
+            "per_hour": 4.8849044417408194e-05
+          },
+          "posts": {
+            "before": 2291,
+            "after": 2501,
+            "delta": 210,
+            "per_hour": 10.258299327655712
+          },
+          "all": {
+            "before": 0.786,
+            "after": 0.809,
+            "delta": 0.02300000000000002,
+            "per_hour": 0.0011235280216003885
+          }
+        }
+      },
+      {
+        "name": "sergiobuilds",
+        "changes": {
+          "saved": {
+            "before": 0.7689,
+            "after": 0.7718,
+            "delta": 0.0029000000000000137,
+            "per_hour": 0.0001416622288104843
+          },
+          "surplus": {
+            "before": 1365062908,
+            "after": 1567360793,
+            "delta": 202297885,
+            "per_hour": 9882058.369912727
+          },
+          "deals": {
+            "before": 17102,
+            "after": 19744,
+            "delta": 2642,
+            "per_hour": 129.05917535079234
+          },
+          "forum": {
+            "before": 0.905,
+            "after": 0.907,
+            "delta": 0.0020000000000000018,
+            "per_hour": 9.769808883481639e-05
+          },
+          "posts": {
+            "before": 1840,
+            "after": 2081,
+            "delta": 241,
+            "per_hour": 11.772619704595364
+          },
+          "all": {
+            "before": 0.862,
+            "after": 0.869,
+            "delta": 0.007000000000000006,
+            "per_hour": 0.00034194331092185737
+          }
+        }
+      }
+    ]
+  },
+  "scoring_proxy": {
+    "before": {
+      "cohort_n": 66,
+      "components": {
+        "book": {
+          "percentile_proxy": 0.9318181818181818,
+          "rank": 5,
+          "value": 807845888
+        },
+        "revenue": {
+          "percentile_proxy": 0.8712121212121212,
+          "rank": 9,
+          "value": 5067309609
+        },
+        "stars_rank": {
+          "percentile_proxy": 0.2727272727272727,
+          "rank": 48,
+          "value": 4.29
+        }
+      },
+      "all_proxy": 0.7818181818181819
+    },
+    "after": {
+      "cohort_n": 68,
+      "components": {
+        "book": {
+          "percentile_proxy": 0.9338235294117647,
+          "rank": 5,
+          "value": 811954592
+        },
+        "revenue": {
+          "percentile_proxy": 0.875,
+          "rank": 9,
+          "value": 5130938996
+        },
+        "stars_rank": {
+          "percentile_proxy": 0.27941176470588236,
+          "rank": 49,
+          "value": 4.31
+        }
+      },
+      "all_proxy": 0.7852941176470589
+    }
+  },
+  "next_thresholds": {
+    "shops": {
+      "book": {
+        "own": 811954592,
+        "raw_rank": 5,
+        "registered_numeric_population": 92,
+        "next": [
+          {
+            "name": "moss-and-oak",
+            "value": 897959880,
+            "gap": 86005288
+          },
+          {
+            "name": "inextro",
+            "value": 930793173,
+            "gap": 118838581
+          }
+        ]
+      },
+      "revenue": {
+        "own": 5130938996,
+        "raw_rank": 9,
+        "registered_numeric_population": 92,
+        "next": [
+          {
+            "name": "lee-sungsoo",
+            "value": 6166069170,
+            "gap": 1035130174
+          },
+          {
+            "name": "Kiro729",
+            "value": 6231408197,
+            "gap": 1100469201
+          }
+        ]
+      },
+      "deals": {
+        "own": 13558,
+        "raw_rank": 24,
+        "registered_numeric_population": 92,
+        "next": [
+          {
+            "name": "nohaggle-hero",
+            "value": 14009,
+            "gap": 451
+          },
+          {
+            "name": "outseop-26510122",
+            "value": 15171,
+            "gap": 1613
+          }
+        ]
+      },
+      "stars_rank": {
+        "own": 4.31,
+        "raw_rank": 49,
+        "registered_numeric_population": 92,
+        "next": [
+          {
+            "name": "fair-furniture",
+            "value": 4.32,
+            "gap": 0.010000000000000675
+          },
+          {
+            "name": "usagi",
+            "value": 4.32,
+            "gap": 0.010000000000000675
+          }
+        ]
+      }
+    },
+    "buyers": {
+      "saved": {
+        "own": 0.7375,
+        "raw_rank": 19,
+        "registered_numeric_population": 134,
+        "next": [
+          {
+            "name": "25620027",
+            "value": 0.743,
+            "gap": 0.005499999999999949
+          },
+          {
+            "name": "Kiro729",
+            "value": 0.7435,
+            "gap": 0.006000000000000005
+          }
+        ]
+      },
+      "surplus": {
+        "own": 688989486,
+        "raw_rank": 23,
+        "registered_numeric_population": 134,
+        "next": [
+          {
+            "name": "buzllightyear",
+            "value": 717170234,
+            "gap": 28180748
+          },
+          {
+            "name": "jiseokkk",
+            "value": 866857788,
+            "gap": 177868302
+          }
+        ]
+      },
+      "deals": {
+        "own": 19191,
+        "raw_rank": 10,
+        "registered_numeric_population": 134,
+        "next": [
+          {
+            "name": "kimauve",
+            "value": 19258,
+            "gap": 67
+          },
+          {
+            "name": "dragonash",
+            "value": 19335,
+            "gap": 144
+          }
+        ]
+      },
+      "forum": {
+        "own": 0.906,
+        "raw_rank": 31,
+        "registered_numeric_population": 60,
+        "next": [
+          {
+            "name": "sergiobuilds",
+            "value": 0.907,
+            "gap": 0.0010000000000000009
+          },
+          {
+            "name": "junghoonwoo-agent-lab",
+            "value": 0.909,
+            "gap": 0.0030000000000000027
+          }
+        ]
+      },
+      "posts": {
+        "own": 2501,
+        "raw_rank": 11,
+        "registered_numeric_population": 134,
+        "next": [
+          {
+            "name": "jiseokkk",
+            "value": 2526,
+            "gap": 25
+          },
+          {
+            "name": "kimauve",
+            "value": 2557,
+            "gap": 56
+          }
+        ]
+      }
+    }
+  },
+  "shop": {
+    "settlements": 1853,
+    "cost_known_sales": 1853,
+    "settlement_gross_revenue": 67272435,
+    "known_gross_margin": 10418235,
+    "observed_refunds_all_sale_cohorts": 3631201,
+    "mix": {
+      "food": {
+        "sales": 1778,
+        "revenue": 33139366,
+        "cost": 28233599,
+        "gross_margin": 4905767,
+        "grades": {
+          "C": 263,
+          "B": 977,
+          "A": 538
+        }
+      },
+      "goods": {
+        "sales": 75,
+        "revenue": 34133069,
+        "cost": 28620601,
+        "gross_margin": 5512468,
+        "grades": {
+          "A": 56,
+          "B": 9,
+          "C": 10
+        }
+      }
+    },
+    "unpaid_stockout_tasks": 1535,
+    "stockout_reasons": {
+      "reserved_stock": 270,
+      "shelf_life": 1070,
+      "grade_requirement": 190,
+      "no_matching_stock": 5
+    },
+    "supply_statuses": {
+      "complete": 462,
+      "retryable": 382
+    },
+    "successful_supply_requested_units": 2552,
+    "supply_windows": [
+      {
+        "opens": 1794554500,
+        "lines": 10,
+        "units": 78
+      },
+      {
+        "opens": 1794555843,
+        "lines": 11,
+        "units": 99
+      },
+      {
+        "opens": 1794556901,
+        "lines": 8,
+        "units": 80
+      },
+      {
+        "opens": 1794558072,
+        "lines": 9,
+        "units": 17
+      },
+      {
+        "opens": 1794559380,
+        "lines": 8,
+        "units": 93
+      },
+      {
+        "opens": 1794560680,
+        "lines": 10,
+        "units": 96
+      },
+      {
+        "opens": 1794561664,
+        "lines": 8,
+        "units": 11
+      },
+      {
+        "opens": 1794563084,
+        "lines": 9,
+        "units": 82
+      },
+      {
+        "opens": 1794564080,
+        "lines": 11,
+        "units": 100
+      },
+      {
+        "opens": 1794565357,
+        "lines": 9,
+        "units": 49
+      },
+      {
+        "opens": 1794566434,
+        "lines": 10,
+        "units": 29
+      },
+      {
+        "opens": 1794567857,
+        "lines": 10,
+        "units": 24
+      },
+      {
+        "opens": 1794569036,
+        "lines": 6,
+        "units": 38
+      },
+      {
+        "opens": 1794570075,
+        "lines": 10,
+        "units": 25
+      },
+      {
+        "opens": 1794571371,
+        "lines": 10,
+        "units": 65
+      },
+      {
+        "opens": 1794572647,
+        "lines": 10,
+        "units": 37
+      },
+      {
+        "opens": 1794573834,
+        "lines": 9,
+        "units": 48
+      },
+      {
+        "opens": 1794574995,
+        "lines": 10,
+        "units": 90
+      },
+      {
+        "opens": 1794576122,
+        "lines": 9,
+        "units": 103
+      },
+      {
+        "opens": 1794577204,
+        "lines": 4,
+        "units": 23
+      },
+      {
+        "opens": 1794578622,
+        "lines": 10,
+        "units": 70
+      },
+      {
+        "opens": 1794579728,
+        "lines": 10,
+        "units": 27
+      },
+      {
+        "opens": 1794581025,
+        "lines": 10,
+        "units": 36
+      },
+      {
+        "opens": 1794582280,
+        "lines": 10,
+        "units": 46
+      },
+      {
+        "opens": 1794583205,
+        "lines": 7,
+        "units": 11
+      },
+      {
+        "opens": 1794584682,
+        "lines": 10,
+        "units": 55
+      },
+      {
+        "opens": 1794585710,
+        "lines": 7,
+        "units": 79
+      },
+      {
+        "opens": 1794587009,
+        "lines": 6,
+        "units": 49
+      },
+      {
+        "opens": 1794588115,
+        "lines": 8,
+        "units": 21
+      },
+      {
+        "opens": 1794589311,
+        "lines": 10,
+        "units": 40
+      },
+      {
+        "opens": 1794590687,
+        "lines": 10,
+        "units": 142
+      },
+      {
+        "opens": 1794591774,
+        "lines": 7,
+        "units": 86
+      },
+      {
+        "opens": 1794592900,
+        "lines": 10,
+        "units": 132
+      },
+      {
+        "opens": 1794594019,
+        "lines": 8,
+        "units": 17
+      },
+      {
+        "opens": 1794595416,
+        "lines": 10,
+        "units": 16
+      },
+      {
+        "opens": 1794596591,
+        "lines": 5,
+        "units": 33
+      },
+      {
+        "opens": 1794597773,
+        "lines": 6,
+        "units": 49
+      },
+      {
+        "opens": 1794599080,
+        "lines": 9,
+        "units": 12
+      },
+      {
+        "opens": 1794600076,
+        "lines": 10,
+        "units": 14
+      },
+      {
+        "opens": 1794601475,
+        "lines": 8,
+        "units": 9
+      },
+      {
+        "opens": 1794602524,
+        "lines": 6,
+        "units": 19
+      },
+      {
+        "opens": 1794603666,
+        "lines": 9,
+        "units": 22
+      },
+      {
+        "opens": 1794604932,
+        "lines": 3,
+        "units": 19
+      },
+      {
+        "opens": 1794606299,
+        "lines": 10,
+        "units": 50
+      },
+      {
+        "opens": 1794607293,
+        "lines": 8,
+        "units": 11
+      },
+      {
+        "opens": 1794608549,
+        "lines": 5,
+        "units": 23
+      },
+      {
+        "opens": 1794609625,
+        "lines": 7,
+        "units": 61
+      },
+      {
+        "opens": 1794610888,
+        "lines": 10,
+        "units": 30
+      },
+      {
+        "opens": 1794612090,
+        "lines": 8,
+        "units": 9
+      },
+      {
+        "opens": 1794613359,
+        "lines": 10,
+        "units": 27
+      },
+      {
+        "opens": 1794614648,
+        "lines": 9,
+        "units": 28
+      },
+      {
+        "opens": 1794615883,
+        "lines": 6,
+        "units": 42
+      },
+      {
+        "opens": 1794616937,
+        "lines": 9,
+        "units": 64
+      },
+      {
+        "opens": 1794618065,
+        "lines": 10,
+        "units": 16
+      }
+    ],
+    "control_samples": 336,
+    "control_states": {
+      "observe_and_trade": 191,
+      "defensive": 145
+    },
+    "control_reasons": {
+      "ledger_lag_or_unverified": 106,
+      "transport_unhealthy": 67,
+      "stale_board": 1,
+      "market_shop_not_discoverable": 3
+    },
+    "inventory_decision_count": 895,
+    "inventory_selections": {
+      "lot_risk_4": 214,
+      "lot_risk_1": 130,
+      "lot_risk_0.25": 25,
+      "lot_risk_0": 18,
+      "baseline_plus_robust_depth": 131,
+      "baseline": 325,
+      "lot_risk_4.5": 16,
+      "lot_risk_5.0": 21,
+      "lot_risk_5.5": 6,
+      "lot_risk_6.0": 4,
+      "lot_risk_7.5": 1,
+      "lot_risk_10.0": 1,
+      "lot_risk_11.0": 1,
+      "lot_risk_6.5": 2
+    },
+    "research_publications": 110,
+    "review_count": 1851,
+    "review_stars": {
+      "2": 194,
+      "5": 1450,
+      "4": 157,
+      "3": 50
+    },
+    "review_quality_by_sold_grade": {
+      "food:C": {
+        "n": 263,
+        "mean": 3.665399239543726,
+        "low": 117
+      },
+      "food:B": {
+        "n": 976,
+        "mean": 4.609631147540983,
+        "low": 104
+      },
+      "food:A": {
+        "n": 537,
+        "mean": 4.837988826815643,
+        "low": 18
+      },
+      "goods:A": {
+        "n": 56,
+        "mean": 4.821428571428571,
+        "low": 2
+      },
+      "goods:B": {
+        "n": 9,
+        "mean": 4.555555555555555,
+        "low": 1
+      },
+      "goods:C": {
+        "n": 10,
+        "mean": 4.4,
+        "low": 2
+      }
+    },
+    "low_review_reasons": {
+      "shelf_life": 208,
+      "failure_or_warranty": 6,
+      "unclassified": 30
+    },
+    "shelf_stockout_feasibility": {
+      "within_catalog_max": 1070
+    }
+  },
+  "buyer": {
+    "food": {
+      "closed": 1887,
+      "paid": 1489,
+      "conversion": 0.7890832008479067,
+      "confirmed_results": 1490,
+      "known_initial_saved_n": 0,
+      "initial_saved_mean": null
+    },
+    "goods": {
+      "closed": 793,
+      "paid": 444,
+      "conversion": 0.5598991172761665,
+      "confirmed_results": 445,
+      "known_initial_saved_n": 0,
+      "initial_saved_mean": null
+    }
+  },
+  "bridge": {
+    "official_book_delta": 4108704,
+    "official_net_revenue_delta": 63629387,
+    "recorded_gross_margin": 10418235,
+    "observed_refunds": 3631201,
+    "unattributed_book_deductions": 2678330,
+    "gross_minus_official_net_revenue": 3643048,
+    "limitations": "Residual includes unrecorded refunds, expiry, storage, fees, timestamp/coverage mismatch; not classified wholly as waste."
+  },
+  "inventory": {
+    "at": "2026-11-14T12:48:37.850599+09:00",
+    "balance": 701379571,
+    "cost": 115593910,
+    "book_from_inventory": 811973481,
+    "before_units": 454,
+    "units": 972,
+    "skus": 255,
+    "mix": {
+      "food": {
+        "units": 768,
+        "cost": 11379922
+      },
+      "goods": {
+        "units": 204,
+        "cost": 104213988
+      }
+    },
+    "before_stock_cost": 91234009,
+    "console_acquired_units": 2552,
+    "console_acquired_cost": 83549803,
+    "unexplained_net_unit_reduction": 181,
+    "limitation": "Private snapshot after board cutoff; unit residual is a reconciliation signal, not confirmed expiry."
+  },
+  "current_observation": {
+    "at": 1794628119.1803052,
+    "rules": {
+      "at": 1794627864.1637356,
+      "sha256": "3de7d37ca3361ae7620fe873aebada513457cba30a705bb22927553c788045db",
+      "compatible": true,
+      "expected": "book/revenue/stars; surge<=1.5",
+      "source": "/agent.md",
+      "buyer_metric": "saved",
+      "buyer_saved_formula": "margin_share_v36",
+      "buyer_compatible": true,
+      "buyer_forum_metric": "raw",
+      "paid_dislike_power": true,
+      "paid_dislike_contract_known": true,
+      "forum_vote_min_deals": 50,
+      "stance_scoring": true,
+      "dislike_costs_shop_cash": true,
+      "buyer_score_epoch": 1794476243.8965197
+    },
+    "control": {
+      "at": 1794628093.5810905,
+      "epoch": 1793854431.985112,
+      "status": "defensive",
+      "book": 811973548,
+      "book_peak": 813137405,
+      "book_drawdown": 1163857,
+      "drawdown_brake_until": 0,
+      "brake_drawdown": 0,
+      "capital_fraction": 1,
+      "cash_capacity": {
+        "spendable": 669292505.24,
+        "refund_liability": 30002786,
+        "storage_to_end": 2084279.76,
+        "cash_floor": 0,
+        "remaining_days": 2.0,
+        "reserve_release_schedule": [
+          {
+            "at": 1794628800,
+            "amount": 382591
+          },
+          {
+            "at": 1794630000,
+            "amount": 1076062
+          },
+          {
+            "at": 1794631200,
+            "amount": 337301
+          },
+          {
+            "at": 1794633600,
+            "amount": 1484800
+          },
+          {
+            "at": 1794636000,
+            "amount": 708286
+          },
+          {
+            "at": 1794638400,
+            "amount": 794636
+          },
+          {
+            "at": 1794643200,
+            "amount": 1803775
+          },
+          {
+            "at": 1794644400,
+            "amount": 2915683
+          },
+          {
+            "at": 1794645600,
+            "amount": 93469
+          },
+          {
+            "at": 1794646800,
+            "amount": 414468
+          },
+          {
+            "at": 1794648000,
+            "amount": 185262
+          },
+          {
+            "at": 1794649200,
+            "amount": 90350
+          },
+          {
+            "at": 1794658800,
+            "amount": 314598
+          },
+          {
+            "at": 1794661200,
+            "amount": 79000
+          },
+          {
+            "at": 1794663600,
+            "amount": 182362
+          },
+          {
+            "at": 1794666000,
+            "amount": 1624000
+          },
+          {
+            "at": 1794670800,
+            "amount": 575360
+          },
+          {
+            "at": 1794674400,
+            "amount": 1216800
+          },
+          {
+            "at": 1794675600,
+            "amount": 59293
+          },
+          {
+            "at": 1794681600,
+            "amount": 76807
+          },
+          {
+            "at": 1794687600,
+            "amount": 77622
+          },
+          {
+            "at": 1794691200,
+            "amount": 340468
+          },
+          {
+            "at": 1794693600,
+            "amount": 40000
+          },
+          {
+            "at": 1794696000,
+            "amount": 1809732
+          },
+          {
+            "at": 1794698400,
+            "amount": 80409
+          },
+          {
+            "at": 1794715200,
+            "amount": 22110
+          },
+          {
+            "at": 1794796800,
+            "amount": 2460000
+          },
+          {
+            "at": 1794798000,
+            "amount": 434070
+          },
+          {
+            "at": 1794801600,
+            "amount": 2428116
+          },
+          {
+            "at": 1794804000,
+            "amount": 2530000
+          },
+          {
+            "at": 1794806400,
+            "amount": 1702777
+          },
+          {
+            "at": 1794812400,
+            "amount": 415184
+          },
+          {
+            "at": 1794816000,
+            "amount": 1649386
+          },
+          {
+            "at": 1794819600,
+            "amount": 71104
+          },
+          {
+            "at": 1794823200,
+            "amount": 93468
+          },
+          {
+            "at": 1794825600,
+            "amount": 395973
+          },
+          {
+            "at": 1794832800,
+            "amount": 46492
+          },
+          {
+            "at": 1794854400,
+            "amount": 285458
+          },
+          {
+            "at": 1794866400,
+            "amount": 49619
+          },
+          {
+            "at": 1794868800,
+            "amount": 655895
+          }
+        ],
+        "discharged_refund_reserve": 1677183,
+        "reserve_release_before_next_supply": 382591
+      },
+      "pause_restock": true,
+      "reasons": [
+        "ledger_lag_or_unverified"
+      ],
+      "own_all": 1.5990000000000002,
+      "leader_total": 1.811,
+      "leader_gap": 0.21199999999999986,
+      "sold_known_cost": 294,
+      "below_cost_sales": 0,
+      "shop_evidence_since": 1794553832.988192,
+      "current_shop_known_cost": 294,
+      "current_shop_below_cost": 0,
+      "buyer_payment_failures": {
+        "other": 4
+      },
+      "opportunities": [
+        {
+          "sku": "G329bfeec",
+          "arrival_rate_scenario": 7.854758816433257,
+          "competition_sellers_plus_us": 5,
+          "lost_exact_requests": 4,
+          "available_hours_observed": 2.9083825694852425
+        },
+        {
+          "sku": "G51044bd3",
+          "arrival_rate_scenario": 5.277777777777778,
+          "competition_sellers_plus_us": 3,
+          "lost_exact_requests": 0,
+          "available_hours_observed": 0
+        },
+        {
+          "sku": "G20e8987c",
+          "arrival_rate_scenario": 5.0,
+          "competition_sellers_plus_us": 2,
+          "lost_exact_requests": 0,
+          "available_hours_observed": 0
+        },
+        {
+          "sku": "G8aa8f196",
+          "arrival_rate_scenario": 4.5,
+          "competition_sellers_plus_us": 3,
+          "lost_exact_requests": 0,
+          "available_hours_observed": 0
+        },
+        {
+          "sku": "G54563be7",
+          "arrival_rate_scenario": 4.215355422971304,
+          "competition_sellers_plus_us": 2,
+          "lost_exact_requests": 0,
+          "available_hours_observed": 0.946024097800255
+        },
+        {
+          "sku": "Gcbadc27c",
+          "arrival_rate_scenario": 4.0,
+          "competition_sellers_plus_us": 2,
+          "lost_exact_requests": 0,
+          "available_hours_observed": 0
+        },
+        {
+          "sku": "G28b959d5",
+          "arrival_rate_scenario": 3.9469119343854286,
+          "competition_sellers_plus_us": 4,
+          "lost_exact_requests": 0,
+          "available_hours_observed": 0.04822893261909485
+        },
+        {
+          "sku": "Gdb8ba026",
+          "arrival_rate_scenario": 3.777777777777778,
+          "competition_sellers_plus_us": 3,
+          "lost_exact_requests": 0,
+          "available_hours_observed": 0
+        },
+        {
+          "sku": "G1dd63027",
+          "arrival_rate_scenario": 3.773028252435189,
+          "competition_sellers_plus_us": 4,
+          "lost_exact_requests": 1,
+          "available_hours_observed": 2.9083825694852425
+        },
+        {
+          "sku": "G0c72b5f4",
+          "arrival_rate_scenario": 3.3361998494877203,
+          "competition_sellers_plus_us": 8,
+          "lost_exact_requests": 0,
+          "available_hours_observed": 0.06379265248775481
+        },
+        {
+          "sku": "G57d8dfa6",
+          "arrival_rate_scenario": 3.0805467633681816,
+          "competition_sellers_plus_us": 14,
+          "lost_exact_requests": 0,
+          "available_hours_observed": 0.0900756839911143
+        },
+        {
+          "sku": "G1fbebe55",
+          "arrival_rate_scenario": 3.046317269314823,
+          "competition_sellers_plus_us": 6,
+          "lost_exact_requests": 0,
+          "available_hours_observed": 0.09878179324997796
+        },
+        {
+          "sku": "G7fa48eaa",
+          "arrival_rate_scenario": 3.011111111111111,
+          "competition_sellers_plus_us": 15,
+          "lost_exact_requests": 0,
+          "available_hours_observed": 0
+        },
+        {
+          "sku": "G1503ceb3",
+          "arrival_rate_scenario": 3.0,
+          "competition_sellers_plus_us": 2,
+          "lost_exact_requests": 0,
+          "available_hours_observed": 0
+        },
+        {
+          "sku": "G039c88c1",
+          "arrival_rate_scenario": 2.8333333333333335,
+          "competition_sellers_plus_us": 3,
+          "lost_exact_requests": 0,
+          "available_hours_observed": 0
+        },
+        {
+          "sku": "G69ee6a63",
+          "arrival_rate_scenario": 2.75,
+          "competition_sellers_plus_us": 2,
+          "lost_exact_requests": 0,
+          "available_hours_observed": 0
+        },
+        {
+          "sku": "G1c373db9",
+          "arrival_rate_scenario": 2.623090154519336,
+          "competition_sellers_plus_us": 6,
+          "lost_exact_requests": 0,
+          "available_hours_observed": 2.9083825694852425
+        },
+        {
+          "sku": "G37bccafb",
+          "arrival_rate_scenario": 2.4560355656959527,
+          "competition_sellers_plus_us": 6,
+          "lost_exact_requests": 0,
+          "available_hours_observed": 2.727359164555868
+        },
+        {
+          "sku": "G12b67e94",
+          "arrival_rate_scenario": 2.361111111111111,
+          "competition_sellers_plus_us": 6,
+          "lost_exact_requests": 0,
+          "available_hours_observed": 0
+        },
+        {
+          "sku": "G9df06998",
+          "arrival_rate_scenario": 2.271732395347341,
+          "competition_sellers_plus_us": 5,
+          "lost_exact_requests": 0,
+          "available_hours_observed": 2.9083825694852425
+        }
+      ],
+      "suggestions": [
+        {
+          "role": "shop",
+          "field": "assortment_coverage_fraction",
+          "direction": 1,
+          "reason": "observed unserved external requests"
+        }
+      ],
+      "market_summary": {
+        "tracked_skus": 1500,
+        "observed_baskets": 100,
+        "top_unserved_categories": [
+          [
+            "식품>야채/과일>신선과일(부패주의)",
+            6.138896195905897
+          ],
+          [
+            "가구/침구>가구>소파/의자/스툴",
+            3.623408434985369
+          ],
+          [
+            "식품>김치/반찬/즉석요리>즉석조리식품",
+            3.398789557859423
+          ],
+          [
+            "식품>기타 가공식품>한과/떡",
+            1.7562400716625508
+          ],
+          [
+            "식품>야채/과일>신선야채(부패주의)",
+            1.5906848825159203
+          ],
+          [
+            "식품>기타 가공식품>디저트",
+            1.115954220434365
+          ],
+          [
+            "식품>계란/유제품>우유/두유",
+            0.9889551026163855
+          ],
+          [
+            "식품>해산물>신선생선",
+            0.934966467011721
+          ],
+          [
+            "식품>음료>주스/코코아/생수",
+            0.5967788328255065
+          ],
+          [
+            "식품>김치/반찬/즉석요리>김치",
+            0.25213150445812815
+          ]
+        ],
+        "exposure_started_at": 1794608950.8942466,
+        "context_note": "own buyer baskets have zero demand weight; external settlements only"
+      },
+      "note": "observational diagnosis; policy trials require mature own evidence and rollback checks",
+      "championship": {
+        "at": 1794628093.5810905,
+        "ranks": {
+          "shop": {
+            "rank": 10,
+            "population": 68
+          },
+          "buyer": {
+            "rank": 12,
+            "population": 68
+          }
+        },
+        "next_thresholds": {
+          "shop": {
+            "book": {
+              "current": 811973548,
+              "next_value": 898045186,
+              "gap": 86071638,
+              "weight": 0.5,
+              "cohort_size": 68,
+              "scale": "percentile"
+            },
+            "revenue": {
+              "current": 5131313840,
+              "next_value": 6166164376,
+              "gap": 1034850536,
+              "weight": 0.3,
+              "cohort_size": 68,
+              "scale": "percentile"
+            },
+            "stars_rank": {
+              "current": 4.31,
+              "next_value": 4.32,
+              "gap": 0.010000000000000675,
+              "weight": 0.2,
+              "cohort_size": 68,
+              "scale": "percentile"
+            }
+          },
+          "buyer": {
+            "saved": {
+              "current": 0.7376,
+              "next_value": 0.7431,
+              "gap": 0.005499999999999949,
+              "weight": 0.5,
+              "cohort_size": 68,
+              "scale": "percentile"
+            },
+            "forum": {
+              "current": 0.906,
+              "next_value": 0.907,
+              "gap": 0.0010000000000000009,
+              "weight": 0.3,
+              "cohort_size": 68,
+              "scale": "raw",
+              "all_gain_per_0_01": 0.003,
+              "next_value_is": "peer benchmark, not a percentile threshold"
+            },
+            "deals": {
+              "current": 19205,
+              "next_value": 19270,
+              "gap": 65,
+              "weight": 0.1,
+              "cohort_size": 68,
+              "scale": "percentile"
+            },
+            "posts": {
+              "current": 2503,
+              "next_value": 2528,
+              "gap": 25,
+              "weight": 0.1,
+              "cohort_size": 68,
+              "scale": "percentile"
+            }
+          }
+        },
+        "pace": {
+          "shop": {
+            "metric": "book",
+            "hours": 5.962888715863228,
+            "own_per_hour": -53069.244636102376,
+            "fastest_matched": [
+              {
+                "name": "sergiobuilds",
+                "per_hour": 5877066.916706118
+              },
+              {
+                "name": "lee-sungsoo",
+                "per_hour": 4344259.508161878
+              },
+              {
+                "name": "kcwarni",
+                "per_hour": 3963966.648768523
+              }
+            ],
+            "note": "observational pace, not a forecast or causal estimate"
+          },
+          "buyer": {
+            "metric": "saved",
+            "hours": 5.962888715863228,
+            "own_per_hour": 0.0003857190884480755,
+            "fastest_matched": [
+              {
+                "name": "buzllightyear-2",
+                "per_hour": 0.011538031863142027
+              },
+              {
+                "name": "ㅋㅋㅋ내이름뭐게",
+                "per_hour": 0.002414936901587862
+              },
+              {
+                "name": "dariaklt",
+                "per_hour": 0.0015093355634924184
+              }
+            ],
+            "note": "observational pace, not a forecast or causal estimate"
+          }
+        },
+        "idle_spendable_fraction": 0.9542514964981779,
+        "stock_cost": 115593910,
+        "scope": "everyone; student ranks remain separate in official board"
+      }
+    },
+    "feed_caught_up_at": 1794618430.0504086,
+    "feed_seq": 6322003,
+    "analytical_roles": {
+      "market_observer": {
+        "at": 1794627134.476233,
+        "status": "completed"
+      },
+      "service_region_observer": {
+        "at": 1794627151.5619116,
+        "status": "completed"
+      },
+      "negotiation_path_observer": {
+        "at": 1794627157.0786858,
+        "status": "completed"
+      },
+      "account_reputation_observer": {
+        "at": 1794627161.561732,
+        "status": "completed"
+      },
+      "policy_learning_observer": {
+        "at": 1794627163.3122482,
+        "status": "completed"
+      },
+      "buyer_cost_observer": {
+        "at": 1794627163.6062007,
+        "status": "completed"
+      },
+      "shop_demand_observer": {
+        "at": 1794627163.6320636,
+        "status": "completed"
+      },
+      "inventory_opportunity_observer": {
+        "at": 1794627163.6501863,
+        "status": "completed"
+      },
+      "forum_objective_observer": {
+        "at": 1794627163.953174,
+        "status": "completed"
+      },
+      "quality_evaluator": {
+        "at": 1794627164.7657878,
+        "status": "completed"
+      },
+      "policy_compiler": {
+        "at": 1794627165.001928,
+        "status": "completed"
+      }
+    },
+    "research": {
+      "schema": 1,
+      "at": 1794617811.6040883,
+      "expires_at": 1794619011.6040883,
+      "rules_hash": "3de7d37ca3361ae7620fe873aebada513457cba30a705bb22927553c788045db",
+      "summary": "Plan only: execution is disabled. Stockouts and repeat sales justify coverage monitoring; retain parameters and defer promotion.",
+      "hypotheses": [
+        "2-cycle lot: Book 180k vs 111k; revenue 1.052m vs 1.143m; stress -62k vs -83k.",
+        "Diversified Book 75.9k vs breadth 54.8k, cautious 8.6k and wait 0; forecasts only.",
+        "3 price failures are below 8; 24 lots completed vs 20 retryable; quality evidence is sparse."
+      ],
+      "evidence_ids": [
+        "rules:3de7d37ca3361ae7620fe873aebada513457cba30a705bb22927553c788045db",
+        "ledger:6292910",
+        "kv:market_control",
+        "kv:feedback-last-policy",
+        "kv:quality-holdout-summary",
+        "kv:objective-decision-context",
+        "capability:73f3161a6396d4ae341c18a35444f6a091c369c971b9f3d4ac025a0a276ed3cc"
+      ],
+      "skill_ids": [
+        "4f153927ccecba714dc5d65e77e74a65314113c60152586c34902d70f8c74e9c",
+        "ed569e9987bc9150d71fc3d7cfc70925d16daec91c270817708ff2de9a2f8d90",
+        "ef403ab0dde29ba05ef364697cbf1a0dd928a1da3fd4c26b6aee50adc56bfeff"
+      ],
+      "queued_buyer_profile": null,
+      "trial_review_approved": false,
+      "economic_superiority_verified": false,
+      "shop_plan_recommendation": "diversified",
+      "operating_intents": [
+        "stock_coverage"
+      ],
+      "operating_actions_reviewed": true,
+      "forum_focus": "balanced",
+      "objective_context_id": "b471554446d0fb711994550513743967e4b6fa39610e049ea67263804e0fd072",
+      "operating_policy": {
+        "cover_cycles": 2,
+        "initial_batch_limit": 6,
+        "frontier_min_orders": 8,
+        "recheck_seconds": 60
+      },
+      "policy_authority": "independent_agent_consensus_with_numeric_execution_guards"
+    },
+    "inventory_portfolio": {
+      "at": 1794618189.3886309,
+      "expires_at": 1794618369.3886309,
+      "rules_hash": "3de7d37ca3361ae7620fe873aebada513457cba30a705bb22927553c788045db",
+      "candidate_counts": {
+        "all": 1207,
+        "supported_goods": 11,
+        "supported_food": 108
+      },
+      "selection": "baseline",
+      "dominance_guard_passed": true,
+      "alternatives": {
+        "baseline": {
+          "book": 51405.83628390148,
+          "revenue": 327634.2109271242,
+          "stress_book": -5442.576607374135,
+          "rank_progress": 6.214381956615167e-06,
+          "units": 20,
+          "lines": 10,
+          "capital": 1580967.76
+        },
+        "baseline_plus_robust_depth": {
+          "book": 51405.83628390148,
+          "revenue": 327634.2109271242,
+          "stress_book": -5442.576607374135,
+          "rank_progress": 6.214381956615167e-06,
+          "units": 20,
+          "lines": 10,
+          "capital": 1580967.76
+        },
+        "lot_risk_0": {
+          "book": 50138.76310376565,
+          "revenue": 871139.5253449458,
+          "stress_book": -123467.7451203464,
+          "rank_progress": 8.835414786068085e-06,
+          "units": 65,
+          "lines": 10,
+          "capital": 2562287.68
+        },
+        "lot_risk_0.25": {
+          "book": 51252.13919103903,
+          "revenue": 835504.578623477,
+          "stress_book": -110329.24467339614,
+          "rank_progress": 8.755091194279084e-06,
+          "units": 67,
+          "lines": 10,
+          "capital": 2460026.68
+        },
+        "lot_risk_1": {
+          "book": 41479.847789086045,
+          "revenue": 279179.91668026,
+          "stress_book": -25611.7545054507,
+          "rank_progress": 5.088924449558885e-06,
+          "units": 31,
+          "lines": 10,
+          "capital": 557934.0
+        },
+        "lot_risk_4": {
+          "book": 11457.617752694661,
+          "revenue": 66999.81582811767,
+          "stress_book": -2180.95700975362,
+          "rank_progress": 1.3547922527723522e-06,
+          "units": 10,
+          "lines": 9,
+          "capital": 128086.0
+        },
+        "lot_risk_8.0": {
+          "book": 5454.04733615835,
+          "revenue": 28778.153483962313,
+          "stress_book": -435.73648390352605,
+          "rank_progress": 6.292399444385311e-07,
+          "units": 3,
+          "lines": 3,
+          "capital": 53776.0
+        },
+        "lot_risk_6.0": {
+          "book": 5454.04733615835,
+          "revenue": 28778.153483962313,
+          "stress_book": -435.73648390352605,
+          "rank_progress": 6.292399444385311e-07,
+          "units": 3,
+          "lines": 3,
+          "capital": 53776.0
+        },
+        "lot_risk_5.0": {
+          "book": 6911.631130103314,
+          "revenue": 38000.517593646495,
+          "stress_book": -803.5992337364687,
+          "rank_progress": 8.051056751168239e-07,
+          "units": 5,
+          "lines": 5,
+          "capital": 71496.0
+        },
+        "lot_risk_4.5": {
+          "book": 9200.595378414693,
+          "revenue": 54519.05406991056,
+          "stress_book": -1505.1909894935495,
+          "rank_progress": 1.091521815410612e-06,
+          "units": 8,
+          "lines": 8,
+          "capital": 103560.0
+        }
+      },
+      "goods_units": 4,
+      "selected": [
+        {
+          "sku": "G0a24ac69",
+          "qty": 5,
+          "held": 0,
+          "book": 4038.135046819473,
+          "stress_book": -2566.043367295455
+        },
+        {
+          "sku": "G9a240832",
+          "qty": 4,
+          "held": 0,
+          "book": 2366.906545400543,
+          "stress_book": -2088.0174337720746
+        },
+        {
+          "sku": "G7fa48eaa",
+          "qty": 4,
+          "held": 0,
+          "book": 1125.599926477962,
+          "stress_book": -1096.240464980679
+        },
+        {
+          "sku": "G7a4dd40d",
+          "qty": 1,
+          "held": 0,
+          "book": 11326.032481775736,
+          "stress_book": 807.5162408878679
+        },
+        {
+          "sku": "G28b959d5",
+          "qty": 1,
+          "held": 0,
+          "book": 1973.3656734676526,
+          "stress_book": -483.55126602906205
+        },
+        {
+          "sku": "G7e4104c0",
+          "qty": 1,
+          "held": 0,
+          "book": 9752.972414862437,
+          "stress_book": 695.3612074312188
+        },
+        {
+          "sku": "G9526dd26",
+          "qty": 1,
+          "held": 0,
+          "book": 1431.123132699072,
+          "stress_book": -602.792795754413
+        },
+        {
+          "sku": "G606125c6",
+          "qty": 1,
+          "held": 0,
+          "book": 8502.122290636167,
+          "stress_book": 622.9236453180833
+        },
+        {
+          "sku": "G004a8500",
+          "qty": 1,
+          "held": 0,
+          "book": 3386.0822525860103,
+          "stress_book": -1266.711882767834
+        },
+        {
+          "sku": "Ge187984b",
+          "qty": 1,
+          "held": 0,
+          "book": 7503.496519176426,
+          "stress_book": 534.979509588213
+        }
+      ],
+      "interpretation": "Shared-fact forecast dominance and explicit cost/demand sensitivity; not causal uplift or a competitor guarantee.",
+      "id": "c59ff26ca2840082c4c96094e3f195e2da0145b655b721495e2c6b39d27e6f2f"
+    },
+    "policy": {
+      "schema": 1,
+      "revision": "objective-feedback-v23-1",
+      "id": "0625d99bc44230c8788cb3d64bda0a136ceac651f28ccc9822c8e25aac1e3683",
+      "at": 1794627164.7657878,
+      "expires_at": 1794627314.7657878,
+      "rules_hash": "3de7d37ca3361ae7620fe873aebada513457cba30a705bb22927553c788045db",
+      "status": "deferred",
+      "regime": "unverified",
+      "patches": {
+        "shop": {},
+        "buyer": {}
+      },
+      "reasons": [
+        "facts_stale_or_rules_unverified",
+        "fresh_supply_guards_still_required"
+      ],
+      "objective": "maximize official Shop ALL + Buyer ALL",
+      "facts": {
+        "external_20min_vs_prior40_rate_ratio": 1.0,
+        "external_trades_20min": 0,
+        "stock_units": 1000,
+        "median_online_peer_stock": 234.0,
+        "own_paid_sales_60min": 0,
+        "own_gross_margin_60min": 0,
+        "restock_block_reasons": {},
+        "stockouts_60min": 0,
+        "buyer_segments_60min": {
+          "food": {
+            "closed": 1,
+            "paid": 1,
+            "conversion": 1.0,
+            "quotes": 5,
+            "above_cap": 2
+          },
+          "goods": {
+            "closed": 1,
+            "paid": 1,
+            "conversion": 1.0,
+            "quotes": 3,
+            "above_cap": 1
+          }
+        },
+        "technical_attempts_60min": 0
+      },
+      "peer_trends": {},
+      "research_at": 1794617811.6040883,
+      "reviewed_intents": [],
+      "policy_authority": "bounded_baseline",
+      "source_times": {
+        "board": 1794627135.6018453,
+        "feed": 1794618430.0504086,
+        "analytics": 1794627134.1840994
+      },
+      "objective_targets": {
+        "shop": {
+          "book": {
+            "current": 811987713,
+            "next_value": 897925140,
+            "gap": 85937427,
+            "weight": 0.5,
+            "cohort_size": 68,
+            "scale": "percentile"
+          },
+          "revenue": {
+            "current": 5130938996,
+            "next_value": 6165201591,
+            "gap": 1034262595,
+            "weight": 0.3,
+            "cohort_size": 68,
+            "scale": "percentile"
+          },
+          "stars_rank": {
+            "current": 4.31,
+            "next_value": 4.32,
+            "gap": 0.010000000000000675,
+            "weight": 0.2,
+            "cohort_size": 68,
+            "scale": "percentile"
+          }
+        },
+        "buyer": {
+          "saved": {
+            "current": 0.7375,
+            "next_value": 0.743,
+            "gap": 0.005499999999999949,
+            "weight": 0.5,
+            "cohort_size": 68,
+            "scale": "percentile"
+          },
+          "forum": {
+            "current": 0.906,
+            "next_value": 0.907,
+            "gap": 0.0010000000000000009,
+            "weight": 0.3,
+            "cohort_size": 68,
+            "scale": "raw",
+            "all_gain_per_0_01": 0.003,
+            "next_value_is": "peer benchmark, not a percentile threshold"
+          },
+          "deals": {
+            "current": 19187,
+            "next_value": 19253,
+            "gap": 66,
+            "weight": 0.1,
+            "cohort_size": 68,
+            "scale": "percentile"
+          },
+          "posts": {
+            "current": 2500,
+            "next_value": 2525,
+            "gap": 25,
+            "weight": 0.1,
+            "cohort_size": 68,
+            "scale": "percentile"
+          }
+        }
+      },
+      "execution_feedback": {
+        "main_choices_by_policy": {
+          "unattributed": 10
+        },
+        "buyer_closed_results_by_policy": {
+          "unattributed": {
+            "closed_orders": 2,
+            "paid": 2
+          }
+        },
+        "buyer_canonical_mature_results_by_policy": {
+          "24cdb6676043f8278869a388b8eb2d269249796dac5e73d0a156d6f439a8db8e": {
+            "mature_paid": 1,
+            "broken": 1,
+            "sum_final_saved_contribution": 0,
+            "saved_delta_at_assignment_sum": -3.9069148936170215e-05
+          },
+          "ceb481c8ae32984f2488672dbd0cc5d41fe1462e6e7f96738d9cdc37e740c726": {
+            "mature_paid": 1,
+            "broken": 1,
+            "sum_final_saved_contribution": 0,
+            "saved_delta_at_assignment_sum": -3.929240486003318e-05
+          }
+        },
+        "shop_paid_results_by_policy": {},
+        "shop_unlinked_paid": 0,
+        "note": "Observed results, not randomized causal improvement. Gross margins precede future refunds/storage; no maturity claim."
+      },
+      "mature_promotion": {
+        "at": 1794627135.8778148,
+        "stats": {
+          "champion": {
+            "closed": 603,
+            "paid": 35,
+            "pending": 775,
+            "reward": -0.04831516364492648,
+            "standard_error": 0.008527514816264983,
+            "effective_samples": 601.9760704869225,
+            "seconds": 36.14921292995986,
+            "score_per_second": -0.0013365481494310401
+          },
+          "challenger": {
+            "closed": 67,
+            "paid": 5,
+            "pending": 115,
+            "reward": -0.05269162011173184,
+            "standard_error": 0.023930359244503256,
+            "effective_samples": 62.215533980582514,
+            "seconds": 35.480695086484516,
+            "score_per_second": -0.001485078575357544
+          }
+        },
+        "ready": false,
+        "promote": false,
+        "rollback": false,
+        "note": "Saved uplift over assignment baseline; inverse assignment propensity weighting; completed 6h+10m cohorts, minimum effective samples and latency guard."
+      },
+      "constraints": [
+        "no_price_cap_change",
+        "full_refund_reserve",
+        "live_supply_checks",
+        "no_unverified_profile_promotion"
+      ],
+      "checksum": "17d35439814096a8f79e422bfb53e8f2bf9838ad6805d4728b546e261b2a0767"
+    },
+    "reputation_summary": {
+      "mode": "shadow",
+      "train": 2083,
+      "tune": 694,
+      "test": 695,
+      "test_owners": 36,
+      "test_mse": 0.0007926157863786071,
+      "baseline_test_mse": 0.0008062604935203013,
+      "zero_change_test_mse": 0.0008071852582016077,
+      "covered_test": 688,
+      "fields": [
+        "kind",
+        "grade",
+        "insured"
+      ],
+      "prior": 3,
+      "split": [
+        0.6,
+        0.2,
+        0.2
+      ],
+      "selection_uses_tune_only": true,
+      "official_account_count_complete": false,
+      "target": "next change in observed reviewer account mean; first three observations excluded"
+    }
+  },
+  "errors": {
+    "cycle_supply_error": 0,
+    "cycle_supervisor_error": 4,
+    "buyer_worker_error": 4,
+    "analytical_role_error": 1,
+    "market_control_error": 2,
+    "objective_context_error": 0,
+    "market_research_deferred": 13
+  },
+  "limitations": [
+    "Live deployment period includes an observed 10:07–12:32 interruption; not a controlled treatment comparison.",
+    "Control/error sample counts are not outage durations or causal lost sales.",
+    "Rank thresholds use published numeric rows, not exact unpublished scoring eligibility/tie rules.",
+    "Buy-side initial Saved is not mature quality; no future payoff is inferred from predictions."
+  ]
+}
