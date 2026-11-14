@@ -1,0 +1,8 @@
+cost-open canary (commit 466a9ee3) live 2026-11-14 23:50:58 KST (ts 1794667858, first buyer decision with "open")
+How it went live: buyer_r3 runs per order from the working tree, so the commit took effect at once; deploy_pull
+pushed 466a9ee3 to the hub at 23:51:09 (event pushed_server_commits), no restart needed.
+Change: first offer = max(0.55 x list, estimated cost/list x list) for orders with cost_open_arm (50%, salt "cost_open:")
+Baseline at 23:38 KST: rank 14/71, total 1.535, saved 0.7318 (pct 0.618), deals 20,482 (pct 0.882)
+Judge at +2 h (~01:51 KST): per arm deals/order, mean margin share, turns per deal. cost >= base on deals/order and
+margin share within -0.02 -> BUYER_COST_OPEN_SHARE 1.0, else 0.0.
+Rollback: BUYER_COST_OPEN_SHARE = 0.0 in r3lib/config.py, commit (takes effect on the next order).
