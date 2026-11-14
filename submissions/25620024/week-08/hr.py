@@ -36,15 +36,24 @@ def _load(path, default):
         return default
 
 
+CONTINGENCY = OUT / "contingency.json"   # HQ 11-15 contingency plan: rewards for rank-up (see rank_rewards)
+
+
+def contingency():
+    """{"on": bool, "since": ts, "amnesty_before": ts} or {} -- HQ 11-15 "HR 순위 상승을 위한 리워드 준비해"."""
+    return _load(CONTINGENCY, {}) or {}
+
+
 PROBATION_H = 2            # hours after the handoff (new teams) with no demotion
 TARGETS = OUT / "targets.json"
 REWARDS = OUT / "rewards.json"
 
 
-def kpi_row(name, value, target, higher=True, near=0.2, unit=""):
+def kpi_row(name, value, target, higher=True, near=0.2, unit="", fixed=False):
     """One KPI: met (100) / near (50, within `near` of the target) / missed (0). None value scores nothing.
-    The target is the challenge level from targets.json when HR has raised it."""
-    target = (_load(TARGETS, {}) or {}).get(name, target)
+    The target is the challenge level from targets.json when HR has raised it (not when fixed)."""
+    if not fixed:
+        target = (_load(TARGETS, {}) or {}).get(name, target)
     if value is None:
         return {"kpi": name, "value": None, "target": target, "score": None, "unit": unit}
     if higher:
@@ -72,6 +81,20 @@ def pct(rows, key, me):
 TARGET = 0.8      # every scored component in the top 20% of the field
 
 
+def next_up(rows, key, me, as_pct=True):
+    """HQ 11-15 contingency: the target is the entry one place above us on this component (beat the next one up);
+    our own value when we lead. As a percentile (the pct() formula) or as the raw value."""
+    vals = [r.get(key) for r in rows if r.get(key) is not None]
+    mine = (me or {}).get(key)
+    if mine is None or not vals:
+        return None
+    above = [v for v in vals if v > mine]
+    v = min(above) if above else mine
+    if not as_pct:
+        return v
+    return round((sum(x < v for x in vals) + 0.5 * (sum(x == v for x in vals) - 1)) / max(1, len(vals) - 1), 3)
+
+
 def measure(board):
     """KPIs are the midterm's own scoring (week-08 / agent.md): Players = shop ALL + buyer ALL; shop ALL = 0.5 Book
     + 0.3 revenue + 0.2 stars, buyer ALL = 0.5 saved rate + 0.3 forum rating (as itself) + 0.1 deals + 0.1 posts (patch 3.4)
@@ -85,6 +108,16 @@ def measure(board):
     players = board.get("players", [])
     me_p = next((x for x in players if (x.get("owner") or {}).get("login") == kpi.OWNER), {})
     k = lambda name, v: kpi_row(name, v, TARGET, near=0.25)
+    if contingency().get("on"):           # HQ 11-15: met = we passed the one above us on our own component
+        tbl = {"shop ALL": (shops, "all", me_s), "Book": (shops, "book", me_s), "revenue": (shops, "revenue", me_s),
+               "stars": (shops, "stars", me_s), "saved-rate": (buyers, "saved", me_b), "deals": (buyers, "deals", me_b),
+               "posts": (buyers, "posts", me_b), "forum": (buyers, "forum", me_b)}
+
+        def k(name, v):
+            rows_, key_, me_ = tbl[next(x for x in tbl if name.startswith(x))]
+            raw = name.startswith("forum")
+            tg = next_up(rows_, key_, me_, as_pct=not raw)
+            return kpi_row(name, v, tg if tg is not None else TARGET, near=0.02 if not raw else 0.03, fixed=True)
     rank = kpi.rank(board)
     # diagnostics: what drives the scored numbers
     inv = _load(MD / "inventory.json", {})
@@ -143,7 +176,8 @@ def grade(m, history):
         s = round(statistics.mean(scores)) if scores else None
         prev = [x["teams"][t]["status"] for x in history[-2:] if t in x.get("teams", {})]
         status = None if s is None else "good" if s >= 70 else "warning" if s >= 40 else "fire candidate"
-        if status == "warning" and len(prev) == 2 and all(p in ("warning", "fire candidate") for p in prev):
+        if status == "warning" and len(prev) == 2 and all(p in ("warning", "fire candidate") for p in prev) \
+                and not contingency().get("on"):  # HQ 11-15: near the one above us is chasing, not a fire candidate
             status = "fire candidate"
         out[t] = {"score": s, "status": status, "kpis": m[t]}
     return out
@@ -151,6 +185,8 @@ def grade(m, history):
 
 def challenge(teams, history):
     """A KPI met in this run and the two before gets a 10% harder target (ranks: one place better)."""
+    if contingency().get("on"):           # HQ 11-15: the target already moves with the one above us
+        return []
     tg, raised = _load(TARGETS, {}) or {}, []
     for t, v in teams.items():
         for r in v["kpis"]:
@@ -186,6 +222,8 @@ def levers(team):
     log = [x for x in rewards()["log"] if x["team"] == team]
     new = [i for i, x in enumerate(log) if x.get("new_team")]  # a team replaced by HQ starts fresh: the old team's
     log = log[new[-1]:] if new else log                         # raises and demotions leave with it (HQ 11-04)
+    amn = contingency().get("amnesty_before") or 0              # HQ 11-15: demotions earned against the 0.99 targets
+    log = [x for x in log if not (x["kind"] == "demotion" and x["ts"] < amn)]   # (every team, 11-14) are lifted
     return max(1, min(6, 2 + sum(x["kind"] == "raise" for x in log) + sum(x.get("grades", 0) for x in log
                                                                          if x["kind"] == "promotion")
                       - sum(x["kind"] == "demotion" for x in log)))
@@ -270,6 +308,8 @@ def auto_rewards(teams, history):
                 n = sum(x["kind"] == "commendation" for x in mine) + 1
                 reward(t, "raise" if n % 3 == 0 else "commendation", f"good three runs in a row (score {v['score']})")
                 out.append(f"{NAMES[t]}: {'연봉 인상' if n % 3 == 0 else '표창'}")
+        if contingency().get("on"):       # HQ 11-15: no demotions in the contingency; audit reds still go to HQ
+            continue
         hired = (HERE / "private" / "handoff.md").stat().st_mtime if (HERE / "private" / "handoff.md").exists() else 0
         hired = max([hired] + [x["ts"] for x in mine if x["kind"] == "hired"])   # a team replaced on its own
         if time.time() - hired < PROBATION_H * 3600:  # new teams get a probation period: graded, not demoted
@@ -280,6 +320,67 @@ def auto_rewards(teams, history):
             reward(t, "demotion", f"fire candidate (score {v['score']})")
             out.append(f"{NAMES[t]}: 강등(자율권 축소)")
     return out
+
+
+RANK_STATE = OUT / "rank_state.json"
+REWARD_RULES = ("HQ 11-15 contingency rewards (autonomy = levers you may change per run, 1-6): "
+                "(1) OVERTAKE: your KPI passes the shop/buyer one place above us -> commendation (once per 3 h); "
+                "(2) RANK-UP: our Players rank reaches a new best -> every team +1 lever (raise); "
+                "(3) MVP: at that rank-up, the team whose component gained the most percentile since the last best "
+                "-> promotion +1 more; (4) ADOPTED: a proposal of yours the TF applied and your KPI rose within 6 h "
+                "-> commendation. No demotions during the contingency; audit reds still go to HQ.")
+
+
+def rank_rewards(teams, board_m):
+    """HQ 11-15 contingency: rewards that pay for rank, not for scores. Returns what was given."""
+    if not contingency().get("on"):
+        return []
+    st = _load(RANK_STATE, {}) or {}
+    now, out = time.time(), []
+    vals = {t: next((r["value"] for r in v["kpis"] if r["value"] is not None), None) for t, v in teams.items()}
+    log = rewards()["log"]
+    for t, v in teams.items():            # (1) overtake
+        if any(r["score"] == 100 for r in v["kpis"]) and not any(
+                x["team"] == t and x.get("rule") == "overtake" and now - x["ts"] < 3 * 3600 for x in log):
+            reward(t, "commendation", f"overtake: {v['kpis'][0]['kpi'][:40]} {v['kpis'][0]['value']} passed the one "
+                                      f"above us ({v['kpis'][0]['target']})", by="HR (contingency)")
+            rewards_set_rule(t, "overtake")
+            out.append(f"{NAMES[t]}: 추월 표창")
+    pr = board_m.get("players_rank")
+    best = st.get("best_rank")
+    if pr and best and pr < best:         # (2) rank-up and (3) MVP
+        base = st.get("vals_at_best") or {}
+        gain = {t: (vals[t] or 0) - (base.get(t) or 0) for t in teams if vals[t] is not None and t != "review"}
+        mvp = max(gain, key=gain.get) if gain else None
+        for t in teams:
+            reward(t, "raise", f"rank-up: Players {best} -> {pr}", by="HR (contingency)")
+        if mvp:
+            r = rewards()
+            r["log"].append({"ts": now, "team": mvp, "kind": "promotion", "grades": 1, "by": "HR (contingency)",
+                             "reason": f"MVP of rank-up {best} -> {pr}: +{gain[mvp]:.3f} on its component"})
+            REWARDS.write_text(json.dumps(r, ensure_ascii=False, indent=1), encoding="utf-8")
+        out.append(f"순위 상승 {best}→{pr}: 전 팀 레버 +1, MVP {NAMES.get(mvp, '-')}")
+    if pr and (not best or pr < best):
+        st.update(best_rank=pr, vals_at_best=vals, best_ts=now)
+    st.update(last_rank=pr, last_vals=vals, ts=now)
+    OUT.mkdir(parents=True, exist_ok=True)
+    RANK_STATE.write_text(json.dumps(st, ensure_ascii=False, indent=1), encoding="utf-8")
+    return out
+
+
+def rewards_set_rule(team, rule):
+    """Tag the team's latest reward with the contingency rule that gave it (for the once-per-3-h check)."""
+    r = rewards()
+    for x in reversed(r["log"]):
+        if x["team"] == team:
+            x["rule"] = rule
+            break
+    REWARDS.write_text(json.dumps(r, ensure_ascii=False, indent=1), encoding="utf-8")
+
+
+def adopted(team, what, by="TF"):
+    """(4) ADOPTED: the TF applied a team's proposal and its KPI rose within 6 h -- called by hand or by the TF."""
+    reward(team, "commendation", f"adopted: {what}", by=by)
 
 
 def hq_warning(team):
@@ -336,6 +437,10 @@ def report(teams, board, history, raised=(), given=(), diag=None):
     lines += [f"- {NAMES[t]}: 자율권 레버 {levers(t)}개" + "".join(
         f" · {x['kind']} ({x['reason'][:60]})" for x in [y for y in rewards()["log"] if y["team"] == t][-2:])
         for t in TEAMS]
+    if contingency().get("on"):
+        rs = _load(RANK_STATE, {}) or {}
+        lines.append(f"- 컨틴전시 리워드 ON: 추월 표창 · 순위 상승 시 전 팀 레버 +1 · MVP 승진 · 채택 표창 · 강등 없음 "
+                     f"(최고 순위 {rs.get('best_rank')}, 직전 {rs.get('last_rank')})")
     lines += [f"- 이번 보상: {', '.join(given)}" if given else "- 이번 보상: 없음",
               f"- 목표 상향(챌린지): {'; '.join(raised)}" if raised else "- 목표 상향(챌린지): 없음"]
     lines += ["", f"진단 지표 (점수 아님): {diag}", f"시장 고가 히트 top5 (24h 판매): {board['market_hits']}",
@@ -359,6 +464,7 @@ def run(board=None):
     m = measure(board)
     teams = grade(m, history)
     raised, given = challenge(teams, history), auto_rewards(teams, history)
+    given = list(given) + rank_rewards(teams, m["_board"])
     md = report(teams, m["_board"], history, raised, given, m.get("_diag"))
     alarms = buyer_alarms(board)
     w = hq_warning("buyer")
@@ -438,7 +544,10 @@ def grade_of(team):
     g = (_load(OUT / "grades.json", {}) or {}).get(team)
     if g is None:
         return None
-    return dict(g, levers_per_run=levers(team), rewards=[x for x in rewards()["log"] if x["team"] == team][-3:])
+    out = dict(g, levers_per_run=levers(team), rewards=[x for x in rewards()["log"] if x["team"] == team][-3:])
+    if contingency().get("on"):
+        out["reward_rules"] = REWARD_RULES
+    return out
 
 
 if __name__ == "__main__":
