@@ -64,7 +64,7 @@ def playbook(ctx):
             "own_sales": pb.get("own_sales", False), "own_cover": pb.get("own_cover", 1.5),
             "own_floor": pb.get("own_floor", False), "react": pb.get("react", False),
             "probe_units": pb.get("probe_units", 2), "food_cap": pb.get("food_cap", 3),
-            "scarce_top": pb.get("scarce_top", 0),
+            "scarce_top": pb.get("scarce_top", 0), "surge_skip": pb.get("surge_skip", SURGE_SKIP),
             # 11/5 09:0x: food sized by its own sales per window (None = the fixed baseline above)
             "food_windows": pb.get("food_windows"), "food_fresh_share": pb.get("food_fresh_share", 0.5),
             "food_old_windows": pb.get("food_old_windows", 2), "food_min": pb.get("food_min", 2),
@@ -250,7 +250,7 @@ def build_buy_list(ctx, now=None):
         f = mf.surge_factor(ctx, x["sku"])
         if f > 1.0:
             x["surge"] = f
-        if f > SURGE_SKIP:
+        if f > pb["surge_skip"]:                   # 11/14: 1.05 in the playbook - a unit's floor stays under ~0.68 of list
             x["target"] = min(x["target"], x["have"])
     # User 11/4 02:1x: plan within the money we may spend - each line gets what the cash and the stock cap allow
     from tools import act

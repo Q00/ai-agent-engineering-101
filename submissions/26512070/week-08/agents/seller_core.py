@@ -332,7 +332,21 @@ class SellerCore:
                 "food_fresh_unknown": pb.get("food_fresh_unknown", False),
                 "food_review_need": pb.get("food_review_need", False),
                 "food_open_share": pb.get("food_open_share"), "market_price": pb.get("market_price", False),
-                "curve": pb.get("curve", False)}
+                "curve": pb.get("curve", False), "clearance_hours": pb.get("clearance_hours"),
+                "clearance_margin": pb.get("clearance_margin")}
+
+    @staticmethod
+    def margin_for(ctx, unit, pb):
+        """min_margin, or clearance_margin for a unit held clearance_hours or longer. 11/14 13:3x: units drawn at a
+        high cost (46% of our goods cost over 0.65 of list) kept a floor over what buyers take (~0.68 of list) and
+        piled up; at cost the sale leaves book as it is, adds revenue and a deal, and frees the cash."""
+        cm = pb.get("clearance_margin")
+        if cm is None or not pb.get("clearance_hours"):
+            return pb["min_margin"]
+        u = mf.unit(ctx, unit) or {}
+        if u.get("supplied_at") and ctx.now() - u["supplied_at"] >= pb["clearance_hours"] * 3600:
+            return min(cm, pb["min_margin"])
+        return pb["min_margin"]
 
     @staticmethod
     def hot_skus(ctx, pb):
@@ -358,7 +372,7 @@ class SellerCore:
         if c is None or not c.get("list_price"):
             return None
         lp, offer, ask = c["list_price"], st["offer"], st["ask"]
-        floor = max(math.ceil(c["cost"] * (1 + pb["min_margin"])), act.unit_floor(ctx, unit, st.get("first_time")))
+        floor = max(math.ceil(c["cost"] * (1 + self.margin_for(ctx, unit, pb))), act.unit_floor(ctx, unit, st.get("first_time")))
         share = pb["hot_open_share"] if pb["hot_open_share"] and c.get("sku") in self.hot_skus(ctx, pb) else pb["open_share"]
         if c.get("kind") == "food" and pb["food_open_share"]:
             # 11/13 01:5x: sergiobuilds sells 1,026 food a day at a median 58% of list, we sold 191 at 70%
@@ -402,7 +416,7 @@ class SellerCore:
         c = next((c for c in st["candidates"] if c["unit"] == unit), None)
         if c is None or not c.get("list_price"):
             return None, None, None
-        floor = max(math.ceil(c["cost"] * (1 + pb["min_margin"])), act.unit_floor(ctx, unit, st.get("first_time")))
+        floor = max(math.ceil(c["cost"] * (1 + self.margin_for(ctx, unit, pb))), act.unit_floor(ctx, unit, st.get("first_time")))
         v = jev.seller_view(c.get("kind"), c["list_price"], st["turns"], st["offer"], st["ask"],
                             not st.get("first_time"))
         v.update(cost=c["cost"], floor=floor, ask=st["ask"], offer=st["offer"], max_turns=MAX_TURNS,

@@ -227,7 +227,9 @@ STRATEGY = {
                     # 11/4 17:2x: the expected cost as a share of list, for planning (A units cost 55-75% of list)
                     "cost_share": {"type": "number", "minimum": 0.55, "maximum": 0.75},
                     # 11/13 10:4x: this many scarce SKUs (core.market_state) join the buy list first
-                    "scarce_top": {"type": "integer", "minimum": 0, "maximum": 40}}},
+                    "scarce_top": {"type": "integer", "minimum": 0, "maximum": 40},
+                    # 11/14 13:3x: a SKU whose surge factor is over this waits for a later window
+                    "surge_skip": {"type": "number", "minimum": 1, "maximum": 1.5}}},
                 "seller": {"type": "object", "properties": {     # 11/4 02:5x: the seller's rules
                     "mode": {"type": "string", "enum": ["rules", "shadow", "agent"]},
                     "forged": {"type": "string"},        # 11/10: the B arm of a forged tool's A/B (harness.forge)
@@ -243,6 +245,8 @@ STRATEGY = {
                     # 11/13 11:2x: open where our acceptance curve says (core.price_curve), keeping deals: a bucket is chosen
                     # only with a deal rate of at least curve_min_p of the best, by rate x (margin + weight x price)
                     "curve": {"type": "boolean"},
+                    # 11/14 13:3x: the margin over cost for a unit held clearance_hours or longer (0 = at cost)
+                    "clearance_margin": {"type": "number", "minimum": 0, "maximum": 1},
                     "curve_volume_weight": {"type": "number", "minimum": 0, "maximum": 5},
                     "curve_min_p": {"type": "number", "minimum": 0, "maximum": 1},
                     "curve_explore": {"type": "number", "minimum": 0, "maximum": 0.5},
