@@ -114,6 +114,17 @@ class PurchaseTests(unittest.TestCase):
   self.assertEqual(allocation_plan(ranked,{'units':[]},10000,aggression=4,policy=policy)[0]['qty'],5)
   ranked[0]['sales_1h']=11
   self.assertEqual(allocation_plan(ranked,{'units':[]},10000,aggression=4,policy=policy)[0]['qty'],2)
+ def test_repeated_own_food_stockouts_allow_one_extra_unit_only_while_evidenced(self):
+  ranked=[dict(sku='food',kind='food',expected_net=50000,score=3,upper_cost=100,
+               sales_1h=4,sales_6h=8,distinct_buyers_6h=4,
+               own_stockouts_6h=2,estimated_sale_likelihood=.8)]
+  policy={'max_food_units_per_sku':2,
+          'max_repeated_stockout_food_units_per_sku':3,
+          'repeated_food_stockouts_6h':2,
+          'max_sku_capital_share':1}
+  self.assertEqual(allocation_plan(ranked,{'units':[]},10000,aggression=4,policy=policy)[0]['qty'],3)
+  ranked[0]['own_stockouts_6h']=1
+  self.assertEqual(allocation_plan(ranked,{'units':[]},10000,aggression=4,policy=policy)[0]['qty'],2)
  def test_fast_goods_can_hold_five_only_after_two_normal_lots_sell_in_an_hour(self):
   ranked=[dict(sku='goods',kind='goods',expected_net=50000,score=3,upper_cost=100,
                sales_1h=6,own_sales_1h=6,sales_6h=12,distinct_buyers_6h=4,estimated_sale_likelihood=.8)]

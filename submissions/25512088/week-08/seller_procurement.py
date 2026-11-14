@@ -221,6 +221,13 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
         is_food=row.get('kind')=='food'
         if is_food:
             unit_cap=policy.get('max_food_units_per_sku',2)
+            # A repeated, canonical stockout is stronger evidence than a broad
+            # market velocity threshold: buyers asked this shop for the exact
+            # SKU while it was unavailable.  Add only one unit and only while
+            # that six-hour evidence remains live; ordinary food stays capped
+            # at two and shelf-life checks still govern every eventual sale.
+            if row.get('own_stockouts_6h',0)>=policy.get('repeated_food_stockouts_6h',math.inf):
+                unit_cap=max(unit_cap,policy.get('max_repeated_stockout_food_units_per_sku',unit_cap))
             if row.get('sales_1h',0)>=policy.get('fast_food_sales_1h',math.inf):
                 unit_cap=max(unit_cap,policy.get('max_fast_food_units_per_sku',unit_cap))
             if row.get('sales_1h',0)>=policy.get('ultra_fast_food_sales_1h',math.inf):
