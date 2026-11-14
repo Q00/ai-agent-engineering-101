@@ -144,7 +144,16 @@ def sign(receipt):
 
 def find_unit(text, taken=()):
     """The in-stock unit that fits what the buyer asked for (SKU first, then name or category), oldest-expiring
-    first, skipping units already promised in another open negotiation."""
+    first, skipping units already promised in another open negotiation.
+
+    After expiry, units are ranked by cost ascending rather than supply order. terms() derives floor/target
+    from each unit's own cost, so when one SKU holds units bought at very different prices, the oldest-supplied
+    one was always offered first regardless of cost -- measured live on G006cebbb: two units bought later at
+    20,580/22,353 (vs. 8,350-11,885 for the rest) sat at the front of the FIFO queue and absorbed every
+    negotiation, rejecting 13/13 times against buyer offers of 16,800-17,000 that the cheaper units would
+    have cleared comfortably. Offering the cheapest unit first instead maximizes the chance a given buyer
+    offer clears, and leaves the expensive unit to wait for a buyer who is willing to pay more.
+    """
     want = text.lower()
     try:
         inv = json.loads((MARKET_DIR / "inventory.json").read_text(encoding="utf-8"))
@@ -155,7 +164,7 @@ def find_unit(text, taken=()):
     named = [u for u in units if u["sku"].lower() in want]
     fit = named or [u for u in units if (u.get("name") or "").lower() in want
                     or (u.get("category") or "").split(">")[-1].lower() in want]
-    return min(fit, key=lambda u: (u["expires_at"] or float("inf"), u["supplied_at"]), default=None)
+    return min(fit, key=lambda u: (u["expires_at"] or float("inf"), u["cost"], u["supplied_at"]), default=None)
 
 
 def ask_move(prompt):
