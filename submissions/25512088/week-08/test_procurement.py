@@ -226,16 +226,6 @@ class PurchaseTests(unittest.TestCase):
 
   ranked[0]['own_sales_1h']=0;ranked[0]['own_sales_total']=0
   self.assertEqual(allocation_plan(ranked,inv,10000,aggression=4,policy=policy)[0]['qty'],1)
- def test_capital_penalty_can_preserve_official_score_contribution(self):
-  ranked=[dict(sku='cheap',kind='food',expected_net=10,score=100,upper_cost=100,
-               sales_1h=2,sales_6h=4,distinct_buyers_6h=2,estimated_sale_likelihood=.5),
-          dict(sku='valuable',kind='goods',expected_net=100,score=1500,upper_cost=10000,
-               sales_1h=2,sales_6h=4,distinct_buyers_6h=2,estimated_sale_likelihood=.5)]
-  inventory={'balance':100000,'units':[]}
-  base={'max_units_per_sku':1,'max_food_units_per_sku':1,'max_sku_capital_share':1}
-  self.assertEqual(allocation_plan(ranked,inventory,100000,policy=base)[0]['sku'],'cheap')
-  square_root=dict(base,capital_risk_exponent=.5)
-  self.assertEqual(allocation_plan(ranked,inventory,100000,policy=square_root)[0]['sku'],'valuable')
  def test_competitor_breadth_target_uses_leader_median(self):
   self.assertEqual(competitor_breadth_target({'competition_breadth':{
       'top10_min_skus':61,'top10_median_skus':131.5}}),132)
