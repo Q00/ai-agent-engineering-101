@@ -4,6 +4,15 @@ from seller_market import (rank_products,owned_targets,restrict_order,snapshot,o
                            build_buyer_preferences,write_buyer_preferences)
 
 class StrategyTests(unittest.TestCase):
+ def test_rank_limit_can_expand_procurement_breadth(self):
+  now=time.time()
+  catalog={f's{i}':dict(kind='food',category='food',name=f'food {i}',list_price=10000)
+           for i in range(15)}
+  trades=[dict(sku=f's{i}',buyer=buyer,ts=now-60,grade='B',price=7000,
+               hours=24,honest=True) for i in range(15) for buyer in ('a','b')]
+  self.assertEqual(len(rank_products(catalog,trades,[],now=now)),10)
+  self.assertEqual(len(rank_products(catalog,trades,[],now=now,limit=30)),15)
+
  def test_mature_own_breakage_cohort_replaces_conservative_prior(self):
   hazard,basis=own_goods_hazard({'shops':[{'name':'25512088','claims':139,'broken':11}]})
   self.assertAlmostEqual(hazard,13/143);self.assertIn('139',basis)

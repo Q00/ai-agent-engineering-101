@@ -214,7 +214,7 @@ def main():
             log(event='waiting_selection',select_at=opening-180,spent=spent)
             time.sleep(min(20,max(1,opening-180-time.time())));continue
         ranked=[dict(row,kind=catalog.get(row.get('sku'),{}).get('kind'))
-                for row in strategy.get('top10',[])]
+                for row in (strategy.get('candidates') or strategy.get('top10',[]))]
         if not ranked:
             log(event='no_qualified_top10');time.sleep(20);continue
         ranked=[r for r in ranked if r.get('expected_net',0)>0]

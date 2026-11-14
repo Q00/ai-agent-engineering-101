@@ -253,8 +253,8 @@ def write_buyer_preferences(state,intel,catalog,shops=None,board=None,forum=None
 
 def rank_products(catalog, trades, shops, own_name='25512088', local_demand=None,
                   own_signals=None, alive_buyers=None, now=None, goods_hazard=.15,
-                  hazard_basis='conservative-unmeasured',buyer_review_preferences=None):
-    """Version-3 evidence TOP10: likelihood x net contribution, never price alone."""
+                  hazard_basis='conservative-unmeasured',buyer_review_preferences=None,limit=10):
+    """Rank evidence-backed products by likelihood x net contribution."""
     now=time.time() if now is None else now
     local_demand=local_demand or {}
     own_signals=own_signals or {}
@@ -386,8 +386,11 @@ def rank_products(catalog, trades, shops, own_name='25512088', local_demand=None
             competitor_substitute_units=substitute_units,
             competitor_substitute_shops=len(substitute_vendors),substitute_skus=len(substitute_skus),
             score=score,upper_cost=math.ceil(product['list_price']*.75)))
-    # Negative contribution never becomes a forced purchase. Fewer than ten is valid.
-    return sorted((r for r in rows if r['expected_net']>0),key=lambda r:(-r['score'],-r['expected_net'],r['sku']))[:10]
+    # Negative contribution never becomes a forced purchase.  The default
+    # remains ten for display callers; procurement requests a wider pool so
+    # accumulated cash can buy breadth instead of refilling only a few SKUs.
+    return sorted((r for r in rows if r['expected_net']>0),
+                  key=lambda r:(-r['score'],-r['expected_net'],r['sku']))[:max(1,int(limit))]
 
 
 def own_goods_hazard(board,own_name='25512088'):
@@ -443,9 +446,9 @@ def snapshot(state,catalog,opens_at,market):
         preference_snapshot=write_buyer_preferences(state,intel,catalog,preference_shops,board,
                                 read_json(Path(state)/'forum.json',[]),reviews=review_rows)
         goods_hazard,hazard_basis=own_goods_hazard(board)
-        top=rank_products(catalog,rows,shop_rows,local_demand=demand,own_signals=own_signals,
+        ranked=rank_products(catalog,rows,shop_rows,local_demand=demand,own_signals=own_signals,
                           alive_buyers=alive,goods_hazard=goods_hazard,hazard_basis=hazard_basis,
-                          buyer_review_preferences=preference_snapshot.get('products',{}))
+                          buyer_review_preferences=preference_snapshot.get('products',{}),limit=30)
         feedback=[]
         buyer_db=Path(state)/'buyer.sqlite3'
         if buyer_db.exists():
@@ -453,7 +456,7 @@ def snapshot(state,catalog,opens_at,market):
                 if db.execute("SELECT 1 FROM sqlite_master WHERE name='rival_feedback'").fetchone():
                     feedback=[dict(order=r[0],sku=r[1],ledger=r[2],observed_at=r[3],stock=json.loads(r[4]),error=r[5]) for r in db.execute('SELECT * FROM rival_feedback ORDER BY observed_at DESC LIMIT 20')]
         result=dict(version=3,buyer_feedback=feedback,opens_at=opens_at,selected_at=time.time(),ledger_through=through,
-                    late=time.time()>opens_at-150,top10=top,
+                    late=time.time()>opens_at-150,top10=ranked[:10],candidates=ranked,
                     fetch_bounds={'ledger_after':-1000,'ledger_rows':len(recent),'max_age_seconds':900},
                     goods_hazard={'probability':goods_hazard,'basis':hazard_basis},
                     demand_basis=('48h buyer favourite categories weighted by current/recent activity; exact grade+6h '
