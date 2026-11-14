@@ -110,7 +110,7 @@ class Market:
         if r.status_code != 200:
             raise SystemExit(f"[market] join refused: {r.status_code} {r.text[:300]}")
         self.token = r.json()["token"]
-        log(f"[market] shop registered as {name} at {url}: {json.dumps(r.json(), ensure_ascii=False)[:200]}")
+        log(f"[market] shop registered as {name} at {url}, round {r.json().get('round')}")   # never the token
 
     def call(self, method, path, **kw):
         return self.c.request(method, f"{self.base}{path}", headers={"Authorization": f"Bearer {self.token}"}, **kw)
