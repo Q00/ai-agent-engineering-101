@@ -124,6 +124,14 @@ def own_registration(body, name='25512088'):
     if not me:raise ConnectionError('own shop absent from registry snapshot')
     return me
 
+def own_board_registration(body,name='25512088'):
+    """Return the live card URL from the authoritative leaderboard snapshot."""
+    rows=body.get('shops',[]) if isinstance(body,dict) else []
+    me=next((s for s in rows if str(s.get('name'))==str(name)),None)
+    url=(me.get('card') or {}).get('url') if me else None
+    if not url:raise ConnectionError('own live shop card absent from board snapshot')
+    return {'name':name,'url':url}
+
 def retry_join(operation, report=None, attempts=None, sleep=time.sleep):
     def guarded():
         try:return operation()
@@ -148,8 +156,13 @@ def main():
     key=kit.load_key(ROOT/'shop_key.pem');market=kit.Market('https://market.ourolabs.ai',os.environ.get('MARKET_OWNER'))
     def log(**data):print(json.dumps(dict(ts=time.time(),**data),ensure_ascii=False),flush=True)
     def get_registration():
-        response=market.c.get(market.base+'/api/shops');response.raise_for_status()
-        return own_registration(response.json())
+        # /api/shops may retain the previous tunnel briefly after a restart;
+        # the board card is the URL buyers actually use.
+        response=market.c.get(market.base+'/api/board');response.raise_for_status()
+        try:return own_board_registration(response.json())
+        except ConnectionError:
+            response=market.c.get(market.base+'/api/shops');response.raise_for_status()
+            return own_registration(response.json())
     retry_join(lambda:join_current_registration(market,key,get_registration),report=log)
     catalog=json.loads((state/'catalog.json').read_text());blocked=set();window=None
     def log(**data):print(json.dumps(dict(ts=time.time(),**data),ensure_ascii=False),flush=True)

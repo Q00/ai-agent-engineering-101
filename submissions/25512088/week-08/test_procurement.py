@@ -1,6 +1,6 @@
 import unittest
 from network_reads import retry_read
-from seller_procurement import choose,allocation_plan,capital_available,supply_result,own_registration,retry_join,join_current_registration,preserve_stale_pending
+from seller_procurement import choose,allocation_plan,capital_available,supply_result,own_registration,own_board_registration,retry_join,join_current_registration,preserve_stale_pending
 class PurchaseTests(unittest.TestCase):
  def setUp(self):
   self.p={'budget':2500000,'cash_floor':500000,'priority':['a','b','c','d']}
@@ -96,6 +96,9 @@ class PurchaseTests(unittest.TestCase):
    return own_registration([] if len(attempts)<3 else [{'name':'25512088'}])
   self.assertEqual(retry_read(registration,attempts=3,sleep=lambda _:None)['name'],'25512088')
   self.assertEqual(len(attempts),3)
+ def test_board_card_is_authoritative_registration_url(self):
+  body={'shops':[{'name':'25512088','url':'stale','card':{'url':'https://live.example'}}]}
+  self.assertEqual(own_board_registration(body)['url'],'https://live.example')
  def test_join_card_timeout_system_exit_is_retried(self):
   attempts=[]
   def join():
