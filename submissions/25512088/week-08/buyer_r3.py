@@ -326,10 +326,13 @@ class Buyer:
         sku=offer['sku']; product=self.catalog[sku]
         session=dict(shop=shop,sku=sku,cap=deals_cap(self.o,product,None,self.portfolio),deal_estimate=memory.deal_estimate(shop['url']))
         try:
-            card=self.c.get(shop['url'].rstrip('/')+'/.well-known/agent-card.json',timeout=5)
-            card.raise_for_status()
-            urls=[i['url'] for i in card.json().get('supportedInterfaces',[]) if i.get('protocolBinding')=='JSONRPC']
-            session['rpc']=next((u for u in urls if urlsplit(u).netloc==urlsplit(shop['url']).netloc),shop['url'].rstrip('/')+'/')
+            session['rpc']=memory.endpoint(shop['url'])
+            if not session['rpc']:
+                card=self.c.get(shop['url'].rstrip('/')+'/.well-known/agent-card.json',timeout=5)
+                card.raise_for_status()
+                urls=[i['url'] for i in card.json().get('supportedInterfaces',[]) if i.get('protocolBinding')=='JSONRPC']
+                session['rpc']=next((u for u in urls if urlsplit(u).netloc==urlsplit(shop['url']).netloc),shop['url'].rstrip('/')+'/')
+                memory.remember_endpoint(shop['url'],session['rpc'])
             request=f"I want to buy {offer.get('name',product['name'])} ({sku}). Quote price, grade and warranty."
             request+=(f" Must last at least {self.o['use_within_hours']} hours." if self.o.get('kind')=='food' else ' Require 6-hour warranty.')
             key=memory.key(shop['url'])
@@ -337,8 +340,10 @@ class Buyer:
             print('QUOTE_REQUEST',shop['name'],sku,flush=True)
             worker.send(session,request)
         except (httpx.TimeoutException,httpx.NetworkError) as exc:
+            memory.forget_endpoint(shop['url'])
             session['error']='network';session['error_type']=type(exc).__name__
         except Exception as exc:
+            memory.forget_endpoint(shop['url'])
             session['error']='protocol';session['error_type']=type(exc).__name__
         finally:
             memory.close()

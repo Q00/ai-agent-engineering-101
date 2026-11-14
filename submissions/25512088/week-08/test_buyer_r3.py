@@ -45,6 +45,13 @@ class BuyerTests(unittest.TestCase):
         self.assertIsNone(self.m.reference(self.shop['url'],'SKU2'))
         self.assertEqual(self.m.db.execute('SELECT COUNT(*) FROM payments').fetchone()[0],1)
 
+    def test_registered_url_endpoint_cache_expires_and_can_be_invalidated(self):
+        self.m.remember_endpoint('https://shop.test','https://shop.test/rpc',now=100)
+        self.assertEqual(self.m.endpoint('https://shop.test',now=1899),'https://shop.test/rpc')
+        self.assertIsNone(self.m.endpoint('https://shop.test',now=1901))
+        self.m.forget_endpoint('https://shop.test')
+        self.assertIsNone(self.m.endpoint('https://shop.test',now=101))
+
     def test_limit_uses_sku_and_grade_not_identical_budget_fraction(self):
         self.assertEqual(limit(self.o,self.cat['SKU1'],'A'),6900)
         self.assertEqual(limit(self.o,self.cat['SKU1'],'C'),4800)
