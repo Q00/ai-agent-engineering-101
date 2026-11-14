@@ -247,6 +247,7 @@ STRATEGY = {
                     "curve": {"type": "boolean"},
                     # 11/14 13:3x: the margin over cost for a unit held clearance_hours or longer (0 = at cost)
                     "clearance_margin": {"type": "number", "minimum": 0, "maximum": 1},
+                    "clearance_margin_hours": {"type": "number", "minimum": 1},   # 11/15: held this long (else clearance_hours)
                     "curve_volume_weight": {"type": "number", "minimum": 0, "maximum": 5},
                     "curve_min_p": {"type": "number", "minimum": 0, "maximum": 1},
                     "curve_explore": {"type": "number", "minimum": 0, "maximum": 0.5},

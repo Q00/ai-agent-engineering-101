@@ -333,7 +333,8 @@ class SellerCore:
                 "food_review_need": pb.get("food_review_need", False),
                 "food_open_share": pb.get("food_open_share"), "market_price": pb.get("market_price", False),
                 "curve": pb.get("curve", False), "clearance_hours": pb.get("clearance_hours"),
-                "clearance_margin": pb.get("clearance_margin")}
+                "clearance_margin": pb.get("clearance_margin"),
+                "clearance_margin_hours": pb.get("clearance_margin_hours")}
 
     @staticmethod
     def margin_for(ctx, unit, pb):
@@ -341,10 +342,12 @@ class SellerCore:
         high cost (46% of our goods cost over 0.65 of list) kept a floor over what buyers take (~0.68 of list) and
         piled up; at cost the sale leaves book as it is, adds revenue and a deal, and frees the cash."""
         cm = pb.get("clearance_margin")
-        if cm is None or not pb.get("clearance_hours"):
+        hours = pb.get("clearance_margin_hours") or pb.get("clearance_hours")
+        if cm is None or not hours:
             return pb["min_margin"]
+        # 11/15 01:0x: at 8 h, 662 of 896 units sold at cost and book stood still (+5M in 11.5 h); its own hours (24)
         u = mf.unit(ctx, unit) or {}
-        if u.get("supplied_at") and ctx.now() - u["supplied_at"] >= pb["clearance_hours"] * 3600:
+        if u.get("supplied_at") and ctx.now() - u["supplied_at"] >= hours * 3600:
             return min(cm, pb["min_margin"])
         return pb["min_margin"]
 
