@@ -5,7 +5,8 @@
     cap            the highest price worth paying for one SKU (D6); break_top prices an uncovered break at
                    buyer.break_penalty (Saved counts a deal that served nothing as -1)
     p_success      chance of closing = p_price x p_checkout (D8, P0 form)
-    verify_receipt does a signed receipt fit the order and what was agreed
+    verify_receipt does a signed receipt fit the order and what was agreed, and does its claimed grade score
+                   RECEIPT_MIN_SAVED
     build_accept   the accept terms the kit checks before paying (D7, D12)
     rate_deal      stars and review text from facts only (§4.5)
 
@@ -30,6 +31,15 @@ GB_MIN_N = 2            # a grade's own settled share counts from this many sale
 ASK_SHARE_LO, ASK_SHARE_HI = 0.2, 2.0   # a first ask outside this share of list is a misread price: not folded
 # the most shelf life a claimed food grade can have left (agent.md 'Supply' cuts; update by hand if they change)
 GRADE_TOP = {"A": 1.0, "B": FOOD_GRADE_CUTS[0], "C": FOOD_GRADE_CUTS[1]}
+# D6 Saved check: a signed receipt that claims a grade is paid only when the deal scores at least this Saved at the
+# grade's middle cost (policy.margin_share); otherwise the buyer goes on to the next candidate shop. buyer.min_kept_<grade>
+# binds only when a quote's data part names the grade, which the deals that close almost never do: on 11-14 (12:00-15:00)
+# 45 food deals settled as C at a median 0.584 of list (Saved ~0.64 at the C band's middle cost, the window's mean ~0.77)
+# while 35 of their receipts claimed C. 0.70 is about the projected final saved (11-14: 0.708), so a deal under it
+# lowers the end; at 0.70 a C pays at most 0.545 of list, a B 0.65, an A 0.755. A constant until the next recreate:
+# a new policy.RANGES key stops docker/hot_update.sh while the running seller's policy.py lacks it.
+RECEIPT_MIN_SAVED = 0.70
+SAVED_CHECK = "Saved check"       # the receipt_problem prefix strategist/analyze counts (buyer_log.saved_check)
 
 
 def list_price(catalog, sku):
@@ -298,6 +308,9 @@ def verify_receipt(order, receipt, cand, catalog, pol, promised_unit=None, warra
         c = cap(V, cand["kind"], warranty_h, cand.get("q_upper"), order.get("budget", 0), pol)
         if price > c:
             return f"price {price} above the cap {c} for {item} (list {V})"
+        s = policy.margin_share(1 - price / V, claim) if isinstance(claim, str) else None
+        if s is not None and s < RECEIPT_MIN_SAVED:     # D6 Saved check (RECEIPT_MIN_SAVED)
+            return f"{SAVED_CHECK}: claim {claim} at {price / V:.3f} of list scores {s:.3f}, under {RECEIPT_MIN_SAVED}"
     elif price > cand["cap"]:
         return f"price {price} above the cap {cand['cap']}"
     return None

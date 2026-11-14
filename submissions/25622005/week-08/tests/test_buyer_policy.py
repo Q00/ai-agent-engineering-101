@@ -320,6 +320,20 @@ class AcceptAndReceiptTests(unittest.TestCase):
             with self.subTest(why=why):
                 self.assertIn(why, bp.verify_receipt(FOOD, rec, self.food, CATALOG, POL, "u7"))
 
+    def test_receipt_saved_check(self):
+        # F1 list 30000; at the bands' middle cost (A 0.65, B 0.50, C 0.35) and RECEIPT_MIN_SAVED 0.70 a C pays at
+        # most 0.545 of list (16350), a B 0.65, an A 0.755
+        ok = {"item": "F1", "price": 17520, "unit": "u7", "sig_seller": "x"}       # 0.584 of list
+        why = bp.verify_receipt(FOOD, dict(ok, claim="C"), self.food, CATALOG, POL, "u7")
+        self.assertTrue(why.startswith(bp.SAVED_CHECK), why)
+        self.assertIn("claim C at 0.584 of list scores 0.640", why)
+        for rec in (dict(ok, claim="B"), dict(ok, claim="A"), ok, dict(ok, claim="X"),   # B 0.83, A 1, no claim
+                    dict(ok, claim="C", price=16200)):                                  # C at 0.54 scores 0.71
+            with self.subTest(rec=rec):
+                self.assertIsNone(bp.verify_receipt(FOOD, rec, self.food, CATALOG, POL, "u7"))
+        self.assertTrue(bp.verify_receipt(FOOD, dict(ok, claim="B", price=19800), self.food, CATALOG, POL,
+                                          "u7").startswith(bp.SAVED_CHECK))             # B at 0.66 scores 0.68
+
     def test_receipt_cert_false(self):
         ok = {"item": "F1", "price": 25000, "unit": "u7", "sig_seller": "x"}
         self.assertIn("cert: false", bp.verify_receipt(FOOD, dict(ok, cert=False), self.food, CATALOG, POL))
@@ -335,8 +349,8 @@ class AcceptAndReceiptTests(unittest.TestCase):
         self.assertIn("cert: false", bp.verify_receipt(FOOD, dict(ok, cert=False), self.food, CATALOG, p))
 
     def test_food_claim_must_cover_use_within(self):
-        ok = {"item": "F1", "price": 25000, "unit": "u7", "sig_seller": "x"}     # F1 shelf 720 h: C < 324, B < 576
-        long = dict(FOOD, use_within_hours=400)
+        ok = {"item": "F1", "price": 16000, "unit": "u7", "sig_seller": "x"}     # F1 shelf 720 h: C < 324, B < 576
+        long = dict(FOOD, use_within_hours=400)                                  # (0.533 of list: passes the Saved check)
         self.assertIn("claim C", bp.verify_receipt(long, dict(ok, claim="C"), self.food, CATALOG, POL))
         self.assertIsNone(bp.verify_receipt(long, dict(ok, claim="B"), self.food, CATALOG, POL))
         self.assertIsNone(bp.verify_receipt(FOOD, dict(ok, claim="C"), self.food, CATALOG, POL))
@@ -345,7 +359,8 @@ class AcceptAndReceiptTests(unittest.TestCase):
         equal = dict(FOOD, use_within_hours=323.8)                               # C means under 324 h, the kit wants 324
         self.assertIn("claim C", bp.verify_receipt(equal, dict(ok, claim="C"), self.food, CATALOG, POL))
         self.assertIsNone(bp.verify_receipt(FOOD, dict(ok, claim=["C"]), self.food, CATALOG, POL))
-        goods = {"item": "G1", "price": 90000, "sig_seller": "x", "claim": "C"}   # goods have no shelf life
+        goods = {"item": "G1", "price": 50000, "sig_seller": "x", "claim": "C"}   # goods have no shelf life (0.5 of
+                                                                                    # list: passes the Saved check)
         order = dict(GOODS, use_within_hours=400)
         self.assertIsNone(bp.verify_receipt(order, goods, self.goods, CATALOG, POL, warranty_h=6))
 
