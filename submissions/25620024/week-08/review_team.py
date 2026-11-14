@@ -24,7 +24,8 @@ ARMS = ["summary:json", "summary:text", "summary:short", "records:json", "record
 TAGS = {"summary:json": "{market_summary}", "summary:text": "[시세]", "summary:short": "[시세]",
         "records:json": "{purchase_records}", "records:text": "[구매 기록]", "records:short": "[구매 기록]",
         "reply:text": "{addendum}"}                     # HQ 11-04: a reply under a post the forum already likes
-EPSILON, MIN_N, AGE = 0.2, 3, "15"   # 30 min never came: the forum's newest-100 list drops our posts before that
+EPSILON, MIN_N, AGE, MIN_AGE_MIN = 0.2, 3, "last", 8   # 11-14: "15" was never reached (newest 100 = ~12 min)
+_OLD_AGE = "15"   # 30 min never came: the forum's newest-100 list drops our posts before that
 ME = "dragonash"
 
 
@@ -40,6 +41,8 @@ def measured():
     out = {a: [] for a in ARMS}
     for p in load(TRACK, {}).values():
         if p.get("author") != ME or AGE not in (p.get("likes") or {}):
+            continue                                 # AGE "last": likes when the post was last seen, at least
+        if AGE == "last" and (p.get("last_age") or 0) < MIN_AGE_MIN:   # MIN_AGE_MIN minutes old (MST TF 11-14)
             continue
         for arm, tag in TAGS.items():               # a text post is long, a short one is short (tracker's "long")
             if arm == "reply:text":

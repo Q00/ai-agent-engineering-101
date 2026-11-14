@@ -665,6 +665,10 @@ def track_forum(md=Path(".market"), now=None):
         for a in AGES:
             if age >= a and str(a) not in e["likes"]:
                 e["likes"][str(a)] = p.get("likes") or 0
+        # MST TF 11-14: the forum lists only the newest 100 posts (~12 min at ~500 posts an hour), so the 15-minute
+        # age never came and the review team's format experiment had 0 measured posts. Keep the last count seen.
+        e["likes"]["last"] = p.get("likes") or 0
+        e["last_age"] = round(age, 1)
     cut = now - 24 * 3600
     tr = {k: v for k, v in tr.items() if (v.get("ts") or 0) > cut}
     FORUM_TRACK.parent.mkdir(parents=True, exist_ok=True)
