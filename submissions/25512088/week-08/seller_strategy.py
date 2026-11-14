@@ -17,6 +17,25 @@ LOSS_LEADER_BUDGET=100_000
 LOSS_LEADER_TRIALS_PER_SKU=5
 
 
+def score_safe_loss_budget(intel, already_used, own_name='25512088'):
+    """Add only a quarter of the live Book-rank headroom to the base trial.
+
+    ``already_used`` is historical and is already reflected in the current
+    official Book value.  The dynamic allowance therefore applies only to new
+    trials.  Missing/stale official evidence keeps the original fixed cap.
+    """
+    if not intel:return LOSS_LEADER_BUDGET
+    board=intel.source('board',None,max_age=300)
+    if not isinstance(board,dict):return LOSS_LEADER_BUDGET
+    rows=sorted((r for r in board.get('shops',[]) if not r.get('house') and
+                 isinstance(r.get('book'),int)),key=lambda r:r['book'])
+    index=next((n for n,row in enumerate(rows) if str(row.get('name'))==str(own_name)),None)
+    if index is None or index==0:return LOSS_LEADER_BUDGET
+    headroom=max(0,rows[index]['book']-rows[index-1]['book'])
+    extra=min(LOSS_LEADER_BUDGET,headroom//4)
+    return max(LOSS_LEADER_BUDGET,already_used+extra)
+
+
 def buyer_preference_target(preferences,sku,now=None):
     """Return an equal-buyer lower-quartile price from the live estimate."""
     now=time.time() if now is None else now
@@ -279,33 +298,36 @@ def sale_quote(unit, catalog, program, intel=None, token='', ref='', *, record=T
     legacy=bool(token or ref)
     protected=protected_floor(unit,program.p,hazard) if legacy else score_floor(unit,hazard)
     offer_target=None;offer_target_applied=False
-    if not legacy and quotes>=10 and len(own_offers)>=10 and sold/quotes<.10:
+    poor_local_conversion=bool(not legacy and quotes>=10 and len(own_offers)>=10 and sold/quotes<.15)
+    if poor_local_conversion:
         # A buyer's numeric offer is stronger local conversion evidence than a
         # market-wide settlement from another shop.  When this SKU repeatedly
-        # receives offers but converts poorly, open at the upper quartile of
-        # those offers, bounded by the expected-Book-preserving floor.  This
-        # adaptation cannot trade Book for Revenue, and it stops after
-        # conversion recovers above ten percent.
+        # receives offers but converts poorly, use the upper quartile of those
+        # offers as the opening demand target.  The floor and bounded-loss gate
+        # below still decide whether that target is safe to expose.
         own_offers.sort()
         offer_target=own_offers[math.ceil(.75*len(own_offers))-1]
-        demand_price=max(protected,offer_target)
-        if demand_price<base:
-            base=demand_price;offer_target_applied=True
+        if offer_target<base:
+            base=offer_target;offer_target_applied=True
     floor=protected;loss_leader=False
-    evidence_prices=[price for price in (comp.get('p10'),grade_target_price)
+    market_evidence=[price for price in (comp.get('p10'),grade_target_price)
                      if isinstance(price,(int,float)) and price>0]
-    score_evidence_floor=max(evidence_prices) if evidence_prices else None
-    projected_loss=max(0,unit['cost']-(score_evidence_floor or unit['cost']))
     loss_used=program.db.execute(
         'SELECT COALESCE(SUM(CASE WHEN cost>amount THEN cost-amount ELSE 0 END),0) FROM sales WHERE refunded=0').fetchone()[0]
+    loss_budget=score_safe_loss_budget(intel,loss_used,program.p.get('shop_name','25512088'))
     loss_trials=program.db.execute(
         'SELECT COUNT(*) FROM sales WHERE sku=? AND amount<cost',(unit['sku'],)).fetchone()[0]
     cohort_floor=math.ceil(unit['cost']*(1-LOSS_LEADER_RATE))
+    local_evidence=(offer_target if poor_local_conversion and offer_target is not None and
+                    offer_target>=cohort_floor else None)
+    score_evidence_floor=local_evidence if local_evidence is not None else (
+        max(market_evidence) if market_evidence else None)
+    projected_loss=max(0,unit['cost']-(score_evidence_floor or unit['cost']))
     if (score_evidence_floor is not None and score_evidence_floor<protected
             and not token and not ref and score_evidence_floor>=cohort_floor
-            and loss_used+projected_loss<=LOSS_LEADER_BUDGET
+            and loss_used+projected_loss<=loss_budget
             and (not projected_loss or loss_trials<LOSS_LEADER_TRIALS_PER_SKU)):
-        # A bounded public cohort may trade up to 3% raw principal for direct
+        # A bounded public cohort may trade up to 4% raw principal for direct
         # conversion evidence. Legacy benefits never stack with this experiment.
         floor=score_evidence_floor;loss_leader=floor<protected
     if markdown:
@@ -314,7 +336,7 @@ def sale_quote(unit, catalog, program, intel=None, token='', ref='', *, record=T
     q['warranty_hours']=warranty;q['hazard_probability']=hazard;q['hazard_basis']=hazard_basis
     q['liquidation']=bool(markdown);q['liquidation_discount']=markdown
     q['liquidation_basis']='excess_stock_no_own_sale_6h' if markdown else None
-    q['loss_leader']=loss_leader;q['loss_budget_remaining']=max(0,LOSS_LEADER_BUDGET-loss_used-projected_loss)
+    q['loss_leader']=loss_leader;q['loss_budget_remaining']=max(0,loss_budget-loss_used-projected_loss)
     required=unit['cost']+math.ceil(unit['cost']*(.09 if legacy else .01))
     safe_margin=q['price']*((1-hazard) if q['warranty_hours'] else 1)-q['reward'] >= required
     bounded_trial=(loss_leader and q['reward']==0 and q['price']>=cohort_floor)
@@ -340,9 +362,12 @@ def sale_quote(unit, catalog, program, intel=None, token='', ref='', *, record=T
                        'own_offer_target':offer_target,
                        'own_offer_samples':len(own_offers),
                        'own_offer_target_applied':offer_target_applied,
+                       'poor_local_conversion':poor_local_conversion,
                        'liquidation':bool(markdown),'liquidation_discount':markdown,
                        'loss_leader':loss_leader,'projected_raw_loss':projected_loss,
-                       'loss_leader_evidence':('top10_grade_or_exact_condition' if score_evidence_floor else None),
+                       'loss_budget':loss_budget,
+                       'loss_leader_evidence':('own_offer_upper_quartile' if local_evidence is not None else
+                           ('top10_grade_or_exact_condition' if score_evidence_floor else None)),
                        'loss_budget_remaining':q['loss_budget_remaining'],
                        'source':('buyer_preference_lower_quartile' if preference_applied else
                            ('top10_grade_median' if grade_target_applied else

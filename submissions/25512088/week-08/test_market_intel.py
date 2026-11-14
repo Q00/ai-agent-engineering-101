@@ -7,7 +7,8 @@ from unittest.mock import patch
 import httpx
 from market_intel import Intel,BUYER_SCORE_WEIGHTS
 from seller_strategy import (sale_quote,restock_plan,cost_floor,protected_floor,score_floor,
-                             buyer_preference_target,top_seller_grade_target,warranty_hours)
+                             buyer_preference_target,top_seller_grade_target,warranty_hours,
+                             score_safe_loss_budget)
 from seller_ledger import Program
 from buyer_publicist import queue_update,publication_policy,forum_strategy,STRATEGY_REVIEW_SECONDS
 from buyer_r3 import Buyer
@@ -121,6 +122,13 @@ class IntelligenceTests(unittest.TestCase):
         unit['cost']=10500
         q=sale_quote(unit,{},self.p,self.i)
         self.assertFalse(q['loss_leader']);self.assertGreater(q['price'],10000)
+    def test_loss_budget_uses_only_quarter_of_fresh_official_book_headroom(self):
+        self.assertEqual(score_safe_loss_budget(self.i,99999),100000)
+        self.i.save_source('board',{'shops':[
+            {'name':'below','book':900000,'house':False},
+            {'name':'25512088','book':1000000,'house':False},
+            {'name':'above','book':2000000,'house':False}]})
+        self.assertEqual(score_safe_loss_budget(self.i,99999),124999)
     def test_repeated_unconverted_local_offers_lower_opening_ask_without_losing_book(self):
         now=time.time();rows=[]
         for n,price in enumerate(range(10000,11000,100),1):
@@ -141,6 +149,23 @@ class IntelligenceTests(unittest.TestCase):
         self.assertTrue(body['own_offer_target_applied'])
         self.assertEqual(body['own_offer_samples'],10)
         self.assertEqual(body['own_offer_target'],6007)
+        bounded=sale_quote(dict(unit,cost=6250),{},self.p,self.i)
+        self.assertEqual(bounded['price'],6007)
+        self.assertTrue(bounded['loss_leader'])
+        below_four_percent=sale_quote(dict(unit,cost=6300),{},self.p,self.i)
+        self.assertGreater(below_four_percent['price'],6007)
+        self.assertFalse(below_four_percent['loss_leader'])
+        low_market=[]
+        for n in range(10):
+            low_market.append(dict(seq=400+n,ts=now,kind='settle',round=3,data=dict(
+                shop='https://shop',sku='y',grade='A',amount=5000,
+                warranty_hours=6,claim_honest=True,buyer=f'low-market-{n}')))
+            self.i.decision('seller_quote',{'sku':'y','price':5000})
+            self.i.decision('seller_offer_received',{'sku':'y','offered':6000+n})
+        self.i.ingest(low_market)
+        direct_offer_evidence=sale_quote(dict(unit,sku='y',cost=6250),{},self.p,self.i)
+        self.assertEqual(direct_offer_evidence['price'],6007)
+        self.assertTrue(direct_offer_evidence['loss_leader'])
     def test_food_comparison_life_and_expiry(self):
         self.i.ingest(self.rows(expiry=time.time()+12*3600))
         self.assertEqual(self.i.comparable('x','A',12)['count'],4)
