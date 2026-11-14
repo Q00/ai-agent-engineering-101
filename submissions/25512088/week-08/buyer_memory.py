@@ -25,7 +25,6 @@ class Memory:
         CREATE TABLE IF NOT EXISTS rival_feedback(order_id TEXT PRIMARY KEY, sku TEXT, ledger INTEGER,
           observed_at REAL, stock_json TEXT, error TEXT);
         CREATE TABLE IF NOT EXISTS credentials(shop TEXT PRIMARY KEY, member_key TEXT, updated REAL);
-        CREATE TABLE IF NOT EXISTS rival_endpoints(shop TEXT PRIMARY KEY, rpc TEXT, updated REAL);
         ''')
 
     def begin(self, order):
@@ -138,19 +137,6 @@ class Memory:
     def key(self, shop):
         row = self.db.execute('SELECT member_key FROM credentials WHERE shop=?', (shop,)).fetchone()
         return row[0] if row else ''
-
-    def endpoint(self, shop, now=None, max_age=1800):
-        now=time.time() if now is None else now
-        row=self.db.execute('SELECT rpc,updated FROM rival_endpoints WHERE shop=?',(shop,)).fetchone()
-        return row['rpc'] if row and now-row['updated']<=max_age else None
-
-    def remember_endpoint(self, shop, rpc, now=None):
-        now=time.time() if now is None else now
-        with self.db:
-            self.db.execute('INSERT OR REPLACE INTO rival_endpoints VALUES(?,?,?)',(shop,rpc,now))
-
-    def forget_endpoint(self, shop):
-        with self.db:self.db.execute('DELETE FROM rival_endpoints WHERE shop=?',(shop,))
 
     def close(self):
         self.db.close()
