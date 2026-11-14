@@ -1,18 +1,45 @@
 """Evidence-based post-settlement review hook. No model or network calls."""
 
 import argparse
+from contextlib import redirect_stdout
 from datetime import datetime, timezone
 import hashlib
 import json
 import math
 from pathlib import Path
+import sys
 import time
 
 from r3_policy import buyer_accept
 from buyer_portfolio import save_deal
-from forum_policy import queue_report
+from forum_policy import posting_limits, queue_report
 
 ROOT = Path(__file__).resolve().parent
+
+
+def buyer_note(md, now=None):
+    """Also run the buyer's market-note pass from this hook (the user's 11-14 choice in the Orchestrator session, about 21:3x KST:
+    "후기 훅에도 추가 (권장)"). Only the restock hook ran it, and its runs leave gaps of up to 13 minutes in supply windows, so about
+    48 of the market's 288 five-minute slots a day went unused. This hook runs once per settled deal. forum_buyer_posts.run keeps the
+    300 s interval and the daily limit, rechecked under the outbox lock, so this only fills slots the restock hook missed. Off unless
+    forum_posting.json sets buyer_notes_from_review to true. Skipped while the restock hook holds the forum lock. Nothing here may cost
+    the review: every error is caught, and anything printed goes to stderr, never into the result line."""
+    try:
+        with redirect_stdout(sys.stderr):
+            now = time.time() if now is None else now
+            if posting_limits(md, now).get("buyer_notes_from_review") is not True:
+                return "off"
+            from strategy_controller import acquire, release
+            handle = acquire(md / "forum-engagement.lock")
+            if handle is None:
+                return "busy"
+            try:
+                import forum_buyer_posts
+                return forum_buyer_posts.run(md, now)
+            finally:
+                release(handle)
+    except Exception as error:  # the review goes out whatever happens here
+        return f"note_error: {type(error).__name__}"
 
 
 def evaluate(deal, now=None):
@@ -89,10 +116,11 @@ def main():
         status = queue_report(ROOT / ".market", deal, result)
     except (OSError, ValueError, TypeError) as error:
         status = f"queue_error: {type(error).__name__}: {error}"
+    note = buyer_note(ROOT / ".market")
     (ROOT / "logs" / "forum-policy").mkdir(parents=True, exist_ok=True)
     attempt = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
     (ROOT / "logs" / "forum-policy" / f"{attempt}-{key[:8]}.json").write_text(
-        json.dumps({"ledger": ledger, "status": status, "posted": "left to kit outbox"}) + "\n", encoding="utf8")
+        json.dumps({"ledger": ledger, "status": status, "buyer_note": note, "posted": "left to kit outbox"}) + "\n", encoding="utf8")
     print(json.dumps(result, ensure_ascii=False))
 
 
