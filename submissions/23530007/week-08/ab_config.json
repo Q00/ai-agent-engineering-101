@@ -9,11 +9,12 @@
     0.02
    ],
    "kind": "goods",
-   "min_n": 200,
-   "promote_p": 0.95,
+   "min_n": 100,
+   "promote_p": 0.9,
    "floor": 0.15,
    "active": false,
-   "start": 1794597328.4675305
+   "start": 1794597328.4675305,
+   "max_h": 6
   },
   "buyer_food_delta": {
    "side": "buyer",
@@ -23,11 +24,12 @@
     -0.02
    ],
    "kind": "food",
-   "min_n": 200,
-   "promote_p": 0.95,
+   "min_n": 100,
+   "promote_p": 0.9,
    "floor": 0.15,
-   "active": true,
-   "start": 1794597328.4675305
+   "active": false,
+   "start": 1794597328.4675305,
+   "max_h": 6
   },
   "seller_ask_offset_A": {
    "side": "seller",
@@ -37,11 +39,12 @@
     -0.02
    ],
    "grade": "A",
-   "min_n": 300,
-   "promote_p": 0.95,
+   "min_n": 150,
+   "promote_p": 0.9,
    "floor": 0.15,
    "active": false,
-   "start": 1794597328.4675305
+   "start": 1794597328.4675305,
+   "max_h": 6
   },
   "seller_ask_offset_B": {
    "side": "seller",
@@ -51,11 +54,12 @@
     0.02
    ],
    "grade": "B",
-   "min_n": 200,
-   "promote_p": 0.95,
+   "min_n": 150,
+   "promote_p": 0.9,
    "floor": 0.15,
-   "active": true,
-   "start": 1794597328.4675305
+   "active": false,
+   "start": 1794597328.4675305,
+   "max_h": 6
   },
   "seller_ask_offset_A_up": {
    "side": "seller",
@@ -65,11 +69,12 @@
     0.02
    ],
    "grade": "A",
-   "min_n": 400,
-   "promote_p": 0.95,
+   "min_n": 150,
+   "promote_p": 0.9,
    "floor": 0.15,
    "active": true,
-   "start": 1794653936.0854445
+   "start": 1794653936.0854445,
+   "max_h": 6
   },
   "buyer_slot_value": {
    "side": "buyer",
@@ -79,12 +84,62 @@
     0.06
    ],
    "kind": null,
-   "min_n": 300,
-   "promote_p": 0.95,
+   "min_n": 100,
+   "promote_p": 0.9,
    "floor": 0.15,
    "active": true,
-   "start": 1794653936.0854445
+   "start": 1794653936.0854445,
+   "max_h": 6
   }
  },
- "queue": []
+ "queue": [
+  {
+   "buyer_v_breakeven": {
+    "side": "buyer",
+    "kind": null,
+    "min_n": 100,
+    "promote_p": 0.9,
+    "max_h": 6,
+    "floor": 0.15,
+    "active": true,
+    "knob": "v_breakeven",
+    "arms": [
+     0.752,
+     0.77
+    ]
+   }
+  },
+  {
+   "buyer_dead_p": {
+    "side": "buyer",
+    "kind": null,
+    "min_n": 100,
+    "promote_p": 0.9,
+    "max_h": 6,
+    "floor": 0.15,
+    "active": true,
+    "knob": "dead_p",
+    "arms": [
+     0.03,
+     0.06
+    ]
+   }
+  },
+  {
+   "buyer_near_v": {
+    "side": "buyer",
+    "kind": null,
+    "min_n": 100,
+    "promote_p": 0.9,
+    "max_h": 6,
+    "floor": 0.15,
+    "active": true,
+    "knob": "near_v",
+    "arms": [
+     0.02,
+     0.03
+    ]
+   }
+  }
+ ]
 }

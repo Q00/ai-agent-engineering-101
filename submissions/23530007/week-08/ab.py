@@ -190,8 +190,14 @@ def update():
         w = [x / sum(w) for x in w]
         s.update(t=now, stats=[[n, round(m, 5), round(v, 6)] for n, m, v in stats], p_best=[round(p, 3) for p in pb],
                  weights=[round(x, 3) for x in w])
-        if all(n >= e.get("min_n", 150) for n, _, _ in stats) and max(pb) >= e.get("promote_p", 0.95):
-            i = pb.index(max(pb))
+        # 11-14 (user: 'it takes too long'): decide at P(best) >= promote_p (.90) with min_n per arm, or when the
+        # experiment is max_h old (6 h): then the leader if its P(best) >= .75, else the control arm (index 0)
+        done = all(n >= e.get("min_n", 100) for n, _, _ in stats) and max(pb) >= e.get("promote_p", 0.90)
+        timed = (now - since) >= e.get("max_h", 6) * 3600 and all(n >= 30 for n, _, _ in stats)
+        if done or timed:
+            i = pb.index(max(pb)) if (done or max(pb) >= 0.75) else 0
+            if timed and not done:
+                log(f"{name}: {e.get('max_h', 6)} h limit, P(best) {max(pb):.2f} -> arm {i}")
             promote(name, e, e["arms"][i])
             s["status"] = f"promoted:{i}"
             e["active"] = False
