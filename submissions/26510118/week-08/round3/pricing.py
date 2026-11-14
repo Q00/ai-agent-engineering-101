@@ -85,6 +85,12 @@ LAST_DAY, LAST_DAY_CUT, LAST_DAY_FLOOR = 0, 0.15, 0.25        # off (24 h until 
 LAST_HOURS, LAST_FLOOR = 0, 0.10                               # off (6 h until 11/5 15:40)
 STORAGE = 0.01           # goods in stock pay 1% of their cost a day (/agent.md)
 MAX_ROUNDS = 4           # offers before the shop closes: take one at or above the floor, else no deal
+LAST_MARGIN = 0.02       # 11/14 (the person's call, "둘 다 진행"): the buyer's LAST offer on goods is taken under the floor when
+                         # it keeps this share of the price over the unit's cost and its expected refund (cost / (1 - break
+                         # - LAST_MARGIN); seller rule last_offer_take). Over 24 h we ended 1,501 goods talks at the 4th offer
+                         # under the floor; 180 of those offers cleared this line: 61.9M of sales and 4.4M expected profit a
+                         # day, while the counters, and so the deals that closed higher, stay as they are. A floor for every
+                         # offer at that line would have added 115M of sales but cost 5.0M on deals that closed higher.
 QUICK = 0.95             # an offer this close to the ask is taken at once
 CLAIM_MARGIN = 300       # seconds a grade claim must stay true (deal to settle: 99% within 4 minutes)
 LIFT = 0.02              # a market-referenced ask: the market's median for the grade plus this
@@ -205,14 +211,17 @@ def near_expiry(unit: dict, now: float) -> bool:
     return h is not None and h < NEAR_HOURS
 
 
-def respond(ask: int, floor: int, offer: int, rounds: int) -> tuple[str, int]:
+def respond(ask: int, floor: int, offer: int, rounds: int, last_floor: int | None = None) -> tuple[str, int]:
     """S3, the shop's answer to the buyer's offer number `rounds`: ("sell", price), ("reject", 0) or
     ("counter", the new ask, halfway to the offer and never below the floor). The seller answers with
-    it, and the replay tool (tools.py) runs the same rule over past negotiations."""
+    it, and the replay tool (tools.py) runs the same rule over past negotiations. last_floor (the plan's, 11/14):
+    the lowest LAST offer taken, under the floor."""
     last = rounds >= MAX_ROUNDS
     if offer >= ask:
         return "sell", ask
     if offer >= floor and (offer >= QUICK * ask or last):
+        return "sell", offer
+    if last and last_floor is not None and offer >= last_floor:
         return "sell", offer
     if last:
         return "reject", 0
@@ -223,13 +232,15 @@ def plan(unit: dict, now: float | None = None, warranty: bool = False, adjust: f
          catalog: dict | None = None, extra: dict | None = None, market: dict | None = None,
          late: bool = False, dear_default: bool = False, sku_market: dict | None = None,
          in_line: bool = False, solo: bool = False, solo_floor: float | None = None, ask_over: float | None = None,
-         comp_ask: float | None = None, food_floor: str | None = None, dear_a: bool = True) -> dict:
+         comp_ask: float | None = None, food_floor: str | None = None, dear_a: bool = True,
+         last_take: bool = False) -> dict:
     """{ask, floor, grade, hours_left, age_days, at_cost, warranty_hours, ref, late, sku_ref, nudge} for one unit.
     sku_market: the SKU's others_6h; a grade A ask well above it comes down, a grade C ask well under it goes up
     (not for the premium line, in_line, nor on clearance); nudge: by how much (share of list), or None. A premium
     line product is never asked under its own market (11/5: a bed sold at 0.63 where others got 0.80), and solo
     (uncontested, SOLO_OTHERS) is asked at SOLO_ASK and held at SOLO_FLOOR, or at solo_floor (share of list, from
-    learn_solo) when that is lower.
+    learn_solo) when that is lower. last_floor: with last_take, goods only, the lowest last offer taken (LAST_MARGIN
+    over the cost and the expected refund, never over the floor); else None.
     at_cost: the floor is cost + 5% (no clearance), which is what the seller may say.
     adjust and extra come from the rules in force (price_adjust, warranty_extra); market is the
     category's by_grade from market_summary.json; late: the end of the supply cycle (late_in_cycle);
@@ -319,7 +330,10 @@ def plan(unit: dict, now: float | None = None, warranty: bool = False, adjust: f
         hold = SOLO_FLOOR[g] + (extra[g] / 2 if w else 0)
         floor = max(floor, round(lp * (min(hold, solo_floor) if solo_floor is not None else hold)))
     ask = max(floor, round(lp * start))
-    return {"ask": ask, "floor": floor, "grade": g, "hours_left": hours_left(unit, now), "age_days": age,
+    last_floor = None
+    if last_take and goods:
+        last_floor = min(floor, math.ceil(cost / (1 - (BREAK.get(g, 0.0) if w else 0.0) - LAST_MARGIN)))
+    return {"ask": ask, "floor": floor, "last_floor": last_floor, "grade": g, "hours_left": hours_left(unit, now), "age_days": age,
             "at_cost": clearance is None and not held_down and not dead, "dead": dead, "stuck": stuck, "anchored": anchored,
             "market_floor": market_floor, "market_gap": market_gap,
             "warranty_hours": WARRANTY_HOURS if w else None, "ref": ref, "late": late,

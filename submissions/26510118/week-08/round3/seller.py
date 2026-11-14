@@ -355,7 +355,7 @@ def priced(u: dict, now: float, warranty: bool, arm: float | None = None, food: 
     comp = shop_model.comp_ask(market_file("analysis/price_map.json"), u.get("sku"))    # Kiro 2.0 stage 1
     return pricing.plan(u, now, warranty=warranty, adjust=float(r["price_adjust"] or 0), catalog=catalog(),
                         extra=r["warranty_extra"], market=by_grade, late=late, dear_default=True,
-                        dear_a=bool(r.get("warranty_dear_a", True)),
+                        dear_a=bool(r.get("warranty_dear_a", True)), last_take=bool(r.get("last_offer_take", True)),
                         sku_market=sku_market, in_line=in_line, solo=solo, solo_floor=learned, comp_ask=comp, ask_over=arm,
                         food_floor=food)
 
@@ -383,6 +383,7 @@ class Seller(AgentExecutor):
                       asked_warranty=d["warranty"],
                       warranty=bool(p.get("warranty_hours")), how=d["how"], asks=d["asks"], offers=d["offers"],
                       walk_odds=d.get("walk") or None, taken_early=d.get("early", False), outcome=outcome, price=price,
+                      last_floor=p.get("last_floor"), last_take=d.get("last_take", False),
                       arm=d.get("arm"), anchored=p.get("anchored"),
                       food_floor=d.get("food_floor") if u.get("kind") != "goods" else None, market_floor=p.get("market_floor"))
         print(f"[seller] {u['sku']} {outcome}" + (f" at {price}" if price else ""), flush=True)
@@ -511,7 +512,11 @@ class Seller(AgentExecutor):
                 await self.refit(up, say, task.id, d, now)
                 return
         d["offers"].append(offer)
-        what, new = pricing.respond(ask, floor, offer, len(d["offers"]))
+        last_floor = d["plan"].get("last_floor")
+        take = last_floor is not None and last_floor < floor     # 11/14: a last offer under the floor may still be taken
+        what, new = pricing.respond(ask, floor, offer, len(d["offers"]), last_floor)
+        if what == "sell" and new < floor:
+            d["last_take"] = True
         if what == "counter" and offer >= floor and any(LEAVING.search(s) for s in d["said"][-3:]):
             # within reach, and the buyer talks of leaving: would a counter lose it?
             odds = await asyncio.to_thread(walk_odds, d)
@@ -526,10 +531,11 @@ class Seller(AgentExecutor):
             await self.sell(up, say, task.id, new, now)
         elif what == "reject":
             self.close(task.id, "rejected")
-            await up.reject(say(f"No deal at {offer}; our lowest is {floor}."))
-        else:
+            await up.reject(say(f"No deal at {offer}." if take else f"No deal at {offer}; our lowest is {floor}."))
+        else:                                   # with a last offer under the floor taken, the floor is not "our lowest"
             d["asks"].append(new)
-            await up.requires_input(say(f"{new} is our lowest: {self.reason(d)}." if new == floor
+            low = "the lowest we can counter" if take else "our lowest"
+            await up.requires_input(say(f"{new} is {low}: {self.reason(d)}." if new == floor
                                         else f"Counteroffer: {new}.", d))
 
     def reason(self, d: dict) -> str:

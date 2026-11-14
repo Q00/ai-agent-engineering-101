@@ -55,7 +55,8 @@ def is_ours(name) -> bool:
 RULES = {
     "seller": {"focus_categories": [], "drop_categories": [], "price_adjust": 0.0,
                "warranty_extra": {"A": 0.03, "B": 0.11, "C": 0.33}, "walk_threshold": 0.7,   # pricing.WARRANTY_EXTRA
-               "warranty_dear_a": True},   # 11/13: false = dear grade A goods carry the warranty only when asked
+               "warranty_dear_a": True,    # 11/13: false = dear grade A goods carry the warranty only when asked
+               "last_offer_take": True},   # 11/14: the buyer's last offer on goods taken under the floor (pricing.LAST_MARGIN)
     "buyer": {"avoid_shops": [], "prefer_shops": [], "open_ratio": 0.50, "max_ratio": 0.90,
               "warranty_all_goods": False, "over_budget_try": True},
 }

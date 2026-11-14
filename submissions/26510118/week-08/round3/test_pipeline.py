@@ -235,6 +235,18 @@ def test_pricing():
           "dear B and A under 500k keep it unasked",
           (wh(dear_a_unit), wh(dear_a_unit, dear_a=False), wh(dear_a_unit, dear_a=False, warranty=True),
            wh(dear_b_unit, dear_a=False), wh(dict(goods_a, list_price=400_000), dear_a=False)) == (6, None, 6, 6, 6))
+    pa = pricing.plan(dear_a_unit, now, dear_default=True, last_take=True)
+    lf = pa["last_floor"]
+    check("11/14 last offer: a goods plan's last_floor covers the cost, the expected refund and 2% of the price, under its floor; "
+          "none for food or with the rule off",
+          lf is not None and lf < pa["floor"] and lf * (1 - pricing.BREAK["A"] - pricing.LAST_MARGIN) >= 1_300_000 - 1
+          and pricing.plan(food, now, catalog=CATALOG, last_take=True)["last_floor"] is None
+          and pricing.plan(dear_a_unit, now, dear_default=True)["last_floor"] is None, (lf, pa["floor"]))
+    check("...the 4th offer between it and the floor sells at the offer; under it, no deal; an earlier offer is countered as before",
+          pricing.respond(pa["ask"], pa["floor"], lf + 10, pricing.MAX_ROUNDS, lf) == ("sell", lf + 10)
+          and pricing.respond(pa["ask"], pa["floor"], lf - 10, pricing.MAX_ROUNDS, lf) == ("reject", 0)
+          and pricing.respond(pa["ask"], pa["floor"], lf + 10, 2, lf) == pricing.respond(pa["ask"], pa["floor"], lf + 10, 2)
+          and pricing.respond(pa["ask"], pa["floor"], lf + 10, pricing.MAX_ROUNDS) == ("reject", 0))
     shelf = CATALOG[KIMCHI]["shelf_hours"]
     edge = dict(food, expires_at=now + pricing.FOOD_CUTS[1] * shelf * H + 120)
     check("food dropping to C within the claim margin is claimed C (true at settle)",

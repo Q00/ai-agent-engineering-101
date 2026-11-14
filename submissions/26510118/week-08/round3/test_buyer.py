@@ -648,6 +648,9 @@ def start_seller():
               "list_price": CATALOG[s]["list_price"], "kind": "food", "cost": cost, "grade": "A",
               "supplied_at": NOW - H, "expires_at": NOW + 150 * H}
              for u, s, cost in (("u-k", KIMCHI, 12000), ("u-g", GEOTJEORI, 8000))]
+    units += [{"unit": u, "sku": SOFA, "name": CATALOG[SOFA]["name"], "category": CATALOG[SOFA]["category"],    # 11/14
+               "list_price": CATALOG[SOFA]["list_price"], "kind": "goods", "cost": 110000, "grade": "A",
+               "supplied_at": NOW - H} for u in ("u-s1", "u-s2")]
     (md / "inventory.json").write_text(json.dumps({"round": 3, "units": units}, ensure_ascii=False), encoding="utf-8")
     import socket
     with socket.socket() as so:
@@ -711,6 +714,31 @@ def test_against_our_shop():
             await c.cancel(task)
             await c.close()
         asyncio.run(release())
+
+        print("\n[S3] against our seller: the buyer's last offer under the floor (11/14)")
+        async def haggle(price):
+            c = mb.A2A()
+            await c.open(url)
+            t = await c.send(f"I want to buy {CATALOG[SOFA]['name']} ({SOFA})")
+            texts = [mb.said(t)]
+            for _ in range(4):
+                t = await c.send(str(price), task_id=t["id"])
+                texts.append(mb.said(t))
+            await c.close()
+            return t, texts
+        neg = lambda: common.read_jsonl(ROOT / "shop" / ".market" / "records" / "negotiations.jsonl")
+        # floor = cost x 1.02 + 3% of list for the warranty (117,240); the last offer's line = cost / (1 - 0.031 - 0.02) (115,912)
+        t, texts = asyncio.run(haggle(116500))
+        rec, row = mb.receipt_of(t) or {}, (neg() or [{}])[-1]
+        check("a 4th offer under the floor that covers cost, the expected refund and 2% sells at that offer, with the warranty",
+              rec.get("price") == 116500 and rec.get("warranty_hours") == 6 and row.get("last_take") is True
+              and row.get("floor", 0) > 116500 >= row.get("last_floor", 10 ** 9), (rec.get("price"), row.get("floor"), row.get("last_floor")))
+        check("...and no reply called a price our lowest", not any("our lowest" in x for x in texts), texts)
+        t, texts = asyncio.run(haggle(100000))
+        row = (neg() or [{}])[-1]
+        check("a 4th offer under that line: no deal, said without a floor it would not hold",
+              mb.receipt_of(t) is None and row.get("outcome") == "rejected" and row.get("last_take") is False
+              and texts[-1].startswith("No deal at 100000.") and "our lowest" not in texts[-1], texts[-1])
     finally:
         seller.kill()
 
