@@ -40,6 +40,12 @@ class Intel:
         CREATE TABLE IF NOT EXISTS evolution_events(
           id INTEGER PRIMARY KEY, ts REAL, correlation TEXT, role TEXT,
           phase TEXT, rule_version TEXT, body TEXT);
+        CREATE INDEX IF NOT EXISTS trades_shop_ts_honest
+          ON trades(shop,ts,honest);
+        CREATE INDEX IF NOT EXISTS trades_sku_grade_ts
+          ON trades(sku,grade,ts);
+        CREATE INDEX IF NOT EXISTS observations_shop_ts_kind
+          ON observations(shop,ts,kind);
         ''')
         columns={r[1] for r in self.db.execute('PRAGMA table_info(trades)')}
         if 'buyer' not in columns:

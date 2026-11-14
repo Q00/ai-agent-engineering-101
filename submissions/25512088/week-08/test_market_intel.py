@@ -29,6 +29,13 @@ class IntelligenceTests(unittest.TestCase):
         rows=self.rows();rows += [dict(rows[0],seq=9,round=2),dict(rows[0],seq=10,kind='result')]
         self.i.ingest(rows);self.i.ingest(rows)
         self.assertEqual(self.i.db.execute('select count(*) from trades').fetchone()[0],4)
+
+    def test_live_reliability_and_comparable_queries_are_indexed(self):
+        indexes={row[0] for row in self.i.db.execute(
+            "SELECT name FROM sqlite_master WHERE type='index'")}
+        self.assertIn('trades_shop_ts_honest',indexes)
+        self.assertIn('trades_sku_grade_ts',indexes)
+        self.assertIn('observations_shop_ts_kind',indexes)
     def test_ingest_preserves_public_buyer_identity_for_distinct_demand(self):
         rows=self.rows();rows[0]['data']['buyer']='buyer-a'
         self.i.ingest(rows)
