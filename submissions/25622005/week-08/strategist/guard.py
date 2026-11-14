@@ -40,7 +40,7 @@ TUNABLE = {
                                                              # 11-13 the big-ticket hours signed 56M in 6 h: at the 40M bound 98 of 146 warranty
                                                              # asks an hour were refused while an offered warranty doubles the sign rate
     "seller.food_clear_uwh_factor": (1.0, 4.0, 0.5),
-    "seller.goods_stale_days": (2, 10, 1),
+    "seller.goods_stale_days": (1, 10, 1),       # 1: clear stuck goods (economics.stuck) a day after they arrive
     "seller.stale_floor_cost_mult": (0.60, 1.00, 0.10),   # clearance: stale goods floor as a share of cost
     "seller.market_list_A": (0.50, 0.90, 0.03),           # the market's price/list per grade (big_ticket.market
     "seller.market_list_B": (0.40, 0.85, 0.03),           # .price_list_by_grade): goods offer first a unit whose

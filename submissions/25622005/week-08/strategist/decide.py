@@ -41,7 +41,8 @@ text, they win and this text is out of date):
   (less the starting capital and any bankruptcy aid): buying stock does not lower Book; a sale below cost does,
   and so do goods storage (storage_pct_day of cost a day, market facts) and spoiled food (its whole cost).
   At the current ranks one won of Book is worth about 3.4 won of revenue (brief score: gain per part), so sell at
-  or above cost; below cost only food that would spoil anyway.
+  or above cost; below cost only food that would spoil anyway and goods stuck above the market's price for their
+  grade (Stuck stock below), where a few percent under cost buys the whole price in revenue.
 - The market clears at about p_clear of list (economics.kinds.<kind>.p_clear_24h, median paid/list of every
   shop's sales); our floor is max(cost x seller.floor_cost_mult, list x seller.floor_list)
   (economics.kinds.<kind>.our_floor_list). A floor above p_clear prices us out of the market: the guard refuses a
@@ -110,6 +111,23 @@ Supply and depth:
   seller.floor_list toward p_clear_24h, by what the losing lines' hold_share says a day of waiting costs. A patch
   note widens the limits (more keys a run, a shorter cooldown, a 3x step on the stock-posture keys): use them,
   since every run the stock keys stay high is a day of storage on the whole shelf.
+- Stuck stock (economics.stuck): a unit's grade and cost are drawn at supply (goods A 70%, B 20%, C 10%; cost
+  A 0.55-0.75 of list, B 0.40-0.60, C 0.25-0.45) and our floor is its cost, so a unit whose cost sits above what
+  the market pays for its grade (the SKU's mean paid/list of that grade over 6 h, else stuck.market_wide) does not
+  sell at that floor while the cheap units of the same draw do: we sell the cheap ones and keep the dear ones.
+  On 11-14 294 goods units, 181M at cost (57% of our goods; 290 of them A at a median 0.73 of list against
+  0.68-0.70 paid) sat there: stuck.storage_day a day in storage, half the inventory cap that sellable stock needs,
+  and nothing in revenue. stuck.held_over_24h / _48h: how long they have waited. Levers: (1) clear them toward
+  the market's price: seller.goods_stale_days (from 1 day) and seller.stale_floor_cost_mult (0.9 floors a unit
+  held that long at 0.9 of its cost; an A at 0.73 of list then sells at the market's 0.69, about 0.95 of its
+  cost): each such sale gives up about 5% of the unit's cost in Book, takes the whole price in revenue (about 19
+  won of revenue for a won of Book, far over the 3.4 above), ends its 1% a day of storage (about 3% of cost to the
+  end of the round) and frees the cap; the stale floor reaches every goods unit held that long, but a unit
+  whose cost is under the market's price still sells at the market's price, since the buyer pays what the market
+  pays. (2) buy less of it: stuck.arrivals gives each focus and trend SKU's share of new goods units expected to
+  land over the market's price (A_list: the market's A price; on 11-14 17-25% for every focus SKU, as the A band
+  reaches 0.75 while the market pays 0.68-0.70): prefer the SKUs with the lowest share, and a lower stock.max_hold
+  or focus_cover_mult slows the pile.
 - Warranty (D5): the 6 h warranty's price multiplier is 1 + clamp(q_upper x seller.warranty_q_mult,
   seller.warranty_premium_floor, seller.warranty_premium), q_upper the market's breakage upper bound for the unit's
   SKU x grade (broken within 6 h / sold, joined by unit in the public ledger; economics.breakage: the grade table
@@ -135,20 +153,35 @@ Supply and depth:
   cap above that sum (the step is 3M), and lower it on refunds against won_paid, not on sign rates: a refund
   costs one price, a refused big sign costs the sale about three times in four. Levers:
   seller.warranty_cap_6h, warranty_premium / premium_floor / q_mult; warranty_grades is fixed.
+  economics.refunds_24h is what refunds paid back (refunded, of_rev, of_margin; on 11-14 16-23 h 3.8M, half the
+  margin, 3.8M of it one-off B units), and outcome shop_rev_h is net of them. A warranted sale keeps
+  (price - cost) - q x price, but the premium is set per grade and the cost per unit: seller.warranty.unit_ev
+  splits the window's warranted signs by that (neg: those whose own margin does not cover their break risk,
+  units whose cost sits high in its band, with the expected loss; pos: the rest). On 11-14 a day had 91 neg signs
+  (expected -3.0M) against 368 pos (+7.0M), and B warranties paid on average (margin 19% against 11% expected
+  refunds): raising warranty_premium to cut refunds also cuts the warranties that pay.
 - Surge: the first market.surge_free units of a SKU that the whole market (us included) buys in a rolling hour
   cost the plain price, each further unit adds market.surge_per_unit to the cost factor, up to market.surge_max
   (these three follow /api/supply-prices automatically, not you). A SKU is bought only while its factor is at most
   f_max = (p_clear - stock.min_margin_share) / (our cost/list x seller.floor_cost_mult), within 1.0..1.25, and a
   line stops where the factor would pass it (excluded reason "surge"); economics.surge_free_left shows the free
   units left on our SKUs.
-- Goods unsold for seller.goods_stale_days floor at cost. Goods units whose cost * seller.floor_cost_mult is above
+- Goods unsold for seller.goods_stale_days floor at cost x seller.stale_floor_cost_mult. Goods units whose cost * seller.floor_cost_mult is above
   list (ops.restock.stock.overpriced) are quoted last and are not counted as stock (big-ticket ones are).
 - D4 food sells below cost only near expiry: hours left < seller.food_clear_uwh_factor * the use-within median
   and grade C (under 45% of shelf life left).
 - End of round (stock.end_ts, brief hours_left; 0 turns each off): from stock.clear_cost_h hours before the end the
   floor is cost; from stock.clear_70_h it is cost x 0.7 and from stock.clear_any_h 1 credit (both lower Book while
   stock counts at cost); from stock.taper_h buying tapers to what sells before the end; from stock.goods_stop_h no
-  new goods. Set them from how the market values unsold stock at the end.
+  new goods. Set them from how the market values unsold stock at the end: while it counts at cost (fact
+  book_counts_stock_at_cost), what is left at the end is no loss beyond its storage, clear_cost_h sells at cost
+  (Book unchanged, revenue in, storage out) and clear_70_h gives up 30% of the cost of every unit it sells.
+  score.class is the view the course grades (students only): our rank, the total gap to the student above
+  (gap_up) and below (gap_down), and per part our class rank and the gap to the next student up and down in that
+  part's own units. A part changes the class total only when it passes a student: a Book loss inside
+  parts["shop.book"].down leaves the class book rank where it is, revenue counts once it passes
+  parts["shop.revenue"].up, and Book given up is Book that will not pass parts["shop.book"].up. Weigh
+  clear_70_h and any clearance under cost on those gaps as they stand near the end, not on the market-wide pool.
 - Buyer: the food cap is min(buyer.cap_food, 1 - buyer.min_surplus_list) * list price, and every cap (food too) is
   at most (1 - buyer.min_kept) * list price; goods with the 6 h warranty min(buyer.cap_goods_warranty, that); goods
   without it min(1 - measured break rate - buyer.min_surplus_list, or buyer.cap_goods_no_warranty before any
@@ -252,8 +285,9 @@ Supply and depth:
   "low confidence" (your own confidence was under the gate, so nothing was applied). A row's outcome
   is the check one hour after that change: only buyer.cap_food and buyer.min_surplus_list are reverted
   automatically (on a food conversion drop), every other metric is report only. shop_rev_h there is our
-  settled revenue per hour (the ledger's paid settles, what the board counts) in the 2 h before the change and
-  the hour after: read a seller lever's effect off it, not off sign counts, and undo a seller change whose
+  settled revenue per hour (the ledger's paid settles, what the board counts) less our warranty refunds, in the
+  2 h before the change and the hour after (buckets before 11-14 23 h carry no refunds): read a seller lever's
+  effect off it, not off sign counts, and undo a seller change whose
   hour after lost revenue that the market's hour did not.
 - seller.policy_ver is the SKILL.md version the seller's rows were decided with, and seller.off_policy counts
   the rows decided on "defaults" or "<ver>+lastgood": the seller process rejected the file (a value outside
