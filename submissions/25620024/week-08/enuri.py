@@ -76,8 +76,14 @@ def load(path, default):
 
 
 def settings():
-    """DEFAULTS, overridden by the buyer team's plan ("enuri" section)."""
-    return {**DEFAULTS, **(load(PLAN, {}).get("enuri") or {})}
+    """DEFAULTS, overridden by the buyer team's plan ("enuri" section), then by the Enuri team's own agent
+    (enuri_agent.py, HQ 11-14: the Enuri team owns its knobs while its report is fresh)."""
+    try:
+        import enuri_agent
+        own = enuri_agent.settings()
+    except Exception:
+        own = {}
+    return {**DEFAULTS, **(load(PLAN, {}).get("enuri") or {}), **own}
 
 
 def prices(c, hours=24):
@@ -614,9 +620,13 @@ def book():
 def requested(max_age_h=6):
     """SKUs the marketing team asked us to price (newest request only, while fresh)."""
     r = load(REQUESTS, {})
-    if time.time() - (r.get("ts") or 0) > max_age_h * 3600:
-        return []
-    return [x for x in (r.get("skus") or []) if isinstance(x, str) and re.fullmatch(r"G[0-9a-f]{8}", x)][:10]
+    mk = (r.get("skus") or []) if time.time() - (r.get("ts") or 0) <= max_age_h * 3600 else []
+    try:                                     # HQ 11-14: then the Enuri agent's own survey list
+        import enuri_agent
+        own = enuri_agent.survey_skus()
+    except Exception:
+        own = []
+    return [x for x in dict.fromkeys(mk + own) if isinstance(x, str) and re.fullmatch(r"G[0-9a-f]{8}", x)][:10]
 
 
 SKU_ID = re.compile(r"\bG[0-9a-f]{8}\b")

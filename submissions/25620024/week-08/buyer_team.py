@@ -80,6 +80,9 @@ it down, a walk-away leaves it unchanged but costs a deal. forum is the rating i
 author, voters need 50+ deals), the others are percentiles. You are
 the LEAD team of the buyer unit (HQ 11-04): improve yourselves without waiting for approval, except critical risks. The Enuri team (price scouts, never buys) keeps the book the
 buyer follows; it answers for every missed opportunity and wrong purchase (brief.enuri.enuri_accountability, first).
+HQ 11-14 reorg (last three days): the Enuri team now has its own agent (Claude) and owns its knobs (survey_quotes,
+min_honest, max_broken; yours still apply when its report is stale). Act on its report, brief.enuri_agent.buyer_brief,
+and say in your rationale what you took from it. The unit heads' meeting opens only when HQ calls the TF.
 brief.accountability.hq_warning: headquarters has given the buyer team a FIRST WARNING -- one more error left running
 (see brief.internal_audit and brief.diagnosis: red findings in the buyer area) and the team is dismissed. Read the
 audit first every run and say in the rationale what you do about each buyer finding.
@@ -440,7 +443,9 @@ def brief(board=None, now=None):
                                 leaders_plan=__import__("leaders_meeting").summary(),
                                 private_from_hq=__import__("hr").contest_for("buyer"),
                                 hq_warning=__import__("hr").hq_warning("buyer")), "time": time.strftime("%Y-%m-%d %H:%M", time.localtime(now)), "our_buyer": me, "top_buyers": top,
-         "enuri": summ, "our_trades_by_budget_24h": bands(now=now), "meta_harness": meta_tail(),
+         "enuri": summ, "enuri_agent": {k: __import__("enuri_agent").report().get(k) for k in
+                                        ("written", "buyer_brief", "survey_skus", "settings", "changed", "watch")},
+         "our_trades_by_budget_24h": bands(now=now), "meta_harness": meta_tail(),
          "diagnosis": diagnosis(board, now), "internal_audit": __import__("qa").summary(),
          "audit_team": __import__("audit").summary(),   # the audit team's buyer-unit findings: fix each red first
          "mbt_tf": (__import__("mbt").summary() or {}).get("knowhow"),   # what buyers do that works at our shop

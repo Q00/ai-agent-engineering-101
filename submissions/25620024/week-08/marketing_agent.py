@@ -343,7 +343,9 @@ def brief():
 # other stands in only while the first is blocked. Before: Codex ran research, SCM, finance, buyer and the buyer head
 # (4-5 calls a meeting), Claude only sales and the chair -- so Codex hit its plan limit and Claude then did everything.
 MODEL_FOR = {"research": "codex", "scm": "codex", "buyer": "codex", "leaders_buyer": "codex",
-             "sales": "claude", "finance": "claude", "leaders_chair": "claude"}
+             "sales": "claude", "finance": "claude", "leaders_chair": "claude",
+             "enuri": "claude"}                  # HQ 11-14 reorg: the Enuri team's own agent (enuri_agent.py)
+LEADERS_ON_CALL = True   # HQ 11-14: the unit heads meet only when HQ calls the TF (python leaders_meeting.py), not hourly
 BLOCK = HERE / "private" / "model_block.json"
 TRY_AGAIN_RE = re.compile(r"try again (?:at|in)\s+([^.\n]+)", re.I)
 
@@ -807,6 +809,14 @@ def run(a, t0):
             fin = finance_agent.load(finance_agent.LIMITS, {})
     except Exception as e:
         print(f"[finance] skipped: {type(e).__name__}: {e}")
+    try:                                             # HQ 11-14: the Enuri team's agent (Claude), hourly, before the
+        import enuri_agent                           # buyer team, which reads its report
+        h = enuri_agent.history()
+        if time.time() - (h[-1].get("ts", 0) if h else 0) >= SLOW_GAP:
+            en, _ = enuri_agent.run(lambda t, s: ask("enuri", t, s), dry=a.dry)
+            print(f"[enuri] changed {en['changed']}, survey {len(en['survey_skus'])} SKUs: {en['buyer_brief'][:200]}")
+    except Exception as e:
+        print(f"[enuri] skipped: {type(e).__name__}: {e}")
     buyer = None                                     # the buyer team (Codex), once an hour, before the decision
     try:
         import buyer_team
@@ -874,7 +884,7 @@ def run(a, t0):
         import leaders_meeting                       # their own -- sales chairs, the buyer head speaks first -- and
         lp_ = leaders_meeting.summary() or {}        # the joint plan goes into every team's brief
         age = time.time() - time.mktime(time.strptime(lp_["written"], "%Y-%m-%d %H:%M:%S")) if lp_.get("written") else 1e9
-        if age >= 3600:
+        if age >= 3600 and not LEADERS_ON_CALL:
             jp = leaders_meeting.meet(ask_codex, ask_claude)
             print("[leaders] joint plan: " + json.dumps({k: jp.get(k) for k in ("goal_gap", "coordination")},
                                                          ensure_ascii=False)[:600])
