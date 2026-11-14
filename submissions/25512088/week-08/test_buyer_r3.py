@@ -100,6 +100,21 @@ class BuyerTests(unittest.TestCase):
         shop=dict(self.shop,offers=self.shop['offers']+[dict(sku='SKU2',qty=1)])
         self.assertEqual([o['sku'] for _,o in candidates(order,[shop],catalog,self.m)],['SKU2','SKU1'])
 
+    def test_candidates_compute_shop_conversion_once_for_all_its_skus(self):
+        catalog=dict(self.cat,SKU2=dict(name='larger',list_price=20000))
+        order=dict(self.o,acceptable=['SKU1','SKU2'],budget=20000)
+        shop=dict(self.shop,offers=self.shop['offers']+[dict(sku='SKU2',qty=1)])
+        original=self.m.deal_estimate; calls=[]
+        with patch.object(self.m,'deal_estimate',side_effect=lambda url:(calls.append(url),original(url))[1]):
+            candidates(order,[shop],catalog,self.m)
+        self.assertEqual(calls,[self.shop['url']])
+
+    def test_buyer_history_indexes_cover_live_ranking_queries(self):
+        indexes={row[0] for row in self.m.db.execute(
+            "SELECT name FROM sqlite_master WHERE type='index'")}
+        self.assertIn('events_shop_kind_ts_order',indexes)
+        self.assertIn('payments_shop_sku_paid_order',indexes)
+
     def test_execution_keeps_food_and_every_acceptable_sku_independent_of_our_stock(self):
         order=dict(self.o,acceptable=['SKU1','SKU2'])
         self.assertEqual(execution_order(order),order)

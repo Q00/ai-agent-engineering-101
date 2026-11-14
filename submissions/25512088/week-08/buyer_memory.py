@@ -25,6 +25,10 @@ class Memory:
         CREATE TABLE IF NOT EXISTS rival_feedback(order_id TEXT PRIMARY KEY, sku TEXT, ledger INTEGER,
           observed_at REAL, stock_json TEXT, error TEXT);
         CREATE TABLE IF NOT EXISTS credentials(shop TEXT PRIMARY KEY, member_key TEXT, updated REAL);
+        CREATE INDEX IF NOT EXISTS events_shop_kind_ts_order
+          ON events(shop,kind,ts,order_id);
+        CREATE INDEX IF NOT EXISTS payments_shop_sku_paid_order
+          ON payments(shop,sku,paid,order_id);
         ''')
 
     def begin(self, order):

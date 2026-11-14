@@ -175,6 +175,9 @@ def candidates(order, shops, catalog, memory, intel=None):
         if not options:
             continue
         reliability = intel.reliability(shop['url']) if intel else 1
+        # Conversion evidence is shop-level.  Computing it once per SKU used
+        # to rescan the growing event history hundreds of times per order.
+        deal=memory.deal_estimate(shop['url'])
         for offer in options:
             product=catalog[offer['sku']]
             reference=memory.condition_reference(shop['url'],offer['sku'],order)
@@ -183,7 +186,6 @@ def candidates(order, shops, catalog, memory, intel=None):
             cap=limit(order,product)
             # Above-cap prices may negotiate down, but must not look affordable
             # simply because we clipped the estimate to our budget.
-            deal=memory.deal_estimate(shop['url'])
             metrics=expected_offer(order,product,estimate,deal['probability'],reliability)
             ranked.append((estimate>cap,
                            -metrics['estimated_margin_saved']*metrics['valid_checkout_probability'],
