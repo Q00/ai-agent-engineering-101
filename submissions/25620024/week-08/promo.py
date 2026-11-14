@@ -336,8 +336,29 @@ def quote(c, unit, code=None, me=None, now=None, stock_n=1, vip=False):
         # ([[24, 0.04], [48, 0.01]]: +4% to 24 h, +1% to 48 h); after the last step the rules above clear it as before
         age = (now - unit["supplied_at"]) / 3600
         m = next((m for h, m in sorted(ladder) if age < h), None)
+        flex = t.get("big_ladder_flex")
+        if m is not None and flex is not None and gmk and m > flex and cost * (1 + flex) < gmk:
+            # HQ 11-14 agenda #2 (B, sales team): the +4% step held asks over the median (41% conversion under it,
+            # 8% at 1.00-1.03 x); when cost + flex still fits under the grade median, the step is cost + flex
+            m, why = flex, why + [f"ladder flex +{flex:.0%} (cost+{flex:.0%} under median {gmk:.0f})"]
         if m is not None and int(cost * (1 + m)) + 1 > floor:
             floor, why = int(cost * (1 + m)) + 1, why + [f"cost ladder {age:.0f} h: floor cost +{m:.0%}"]
+    if t.get("slow_clear") and t.get("round_end") and unit.get("kind") in ("goods", "food") and (gmk or median) \
+            and (unit.get("kind") == "goods" or (unit.get("expires_at") or 0) > t["round_end"]):
+        # HQ 11-14 agenda #2 (C): a line our pace cannot sell before the round ends (cover > hours left) is counted at
+        # cost at the end and pays 1%/day storage meanwhile, so selling at the hold line cost x (1 - 1% x days left)
+        # loses no Book against holding and adds revenue. Ask max(hold line, slow_clear_at x market median).
+        hrs_left = max(0.0, (t["round_end"] - now) / 3600)
+        rate_s = market_model.our_sales(c, unit["sku"], hours=24)
+        cover_s = stock_n / rate_s if rate_s > 0 else float("inf")
+        if cover_s > hrs_left:
+            hold_s = int(cost * (1 - 0.01 * hrs_left / 24)) + 1
+            tgt_s = max(hold_s, int((gmk or median) * t.get("slow_clear_at", 0.97)))
+            if tgt_s < price:
+                price = tgt_s
+            floor = max(hold_s, min(floor, int(tgt_s * (1 - t["haggle_room"]))))
+            why = why + [f"slow clear: {cover_s:.0f} h of stock vs {hrs_left:.0f} h left, "
+                                        f"ask {tgt_s} floor hold {hold_s}"]
     eg = t.get("endgame_at")
     if eg and now >= eg and unit.get("kind") in ("goods", "food"):
         # HQ 11-14 endgame: Book counts unsold stock at cost, so in the last hours a sale near cost loses no Book and

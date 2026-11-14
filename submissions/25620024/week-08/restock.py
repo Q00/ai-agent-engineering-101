@@ -318,6 +318,11 @@ def furniture_expand(c, now, t, cat, stock):
                 STALL[sku] = stall[sku]
                 continue
             hold = t.get("furniture_hold_max", 2)
+            # HQ 11-14 agenda #2 (A): a line both high-margin and fast for us holds more -- real margin >=
+            # furniture_hot_margin and our own 24 h sales >= furniture_hot_sold24 keep up to furniture_hold_hot
+            if real["margin"] >= t.get("furniture_hot_margin", 0.07) \
+                    and (ours24.get(sku) or 0) >= t.get("furniture_hot_sold24", 10):
+                hold = max(hold, t.get("furniture_hold_hot", hold))
             if stock.get(sku, 0) >= hold:             # guard 2: the next line only after these sell
                 continue
             probe = not ours24.get(sku)               # guard 1: a SKU we never sold starts with one unit
@@ -496,7 +501,7 @@ def plan(md, c, t, now=None):
         for sku, qty, why_ in furniture_expand(c, now, t, cat, stock):
             add(sku, qty - buy.get(sku, 0), why_)
         for sku in STALL:
-            skipped[sku] = "furniture stall 12 h"
+            skipped[sku] = f"furniture stall {t.get('furniture_stall_h', 12)} h"
         cash = before - (min(before, t.get("furniture_expand_budget", 15_000_000)) - cash)
     if t.get("profit_first"):                                 # HQ 11-10: only proven earners until profit is back
         cash = min(cash, general)
