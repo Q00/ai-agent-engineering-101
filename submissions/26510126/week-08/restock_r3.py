@@ -607,8 +607,12 @@ def main():
                 # run the own-price gate opened 9 dear lines, 58 units (~25M) in one window, 10-11 deep on SKUs we agree
                 # on 2-3 times in 6 h
                 own_n = sum(len(v) for k, v in deals_mine.items() if k.split("|")[0] == c["sku"])
+                # a hot, unsurged, non-stale 300k+ SKU floors that cap at half its depth: 6 h: 300k+ settled 509 an hour and we
+                # got 7.2%, holding 0-9 of the top sellers (133, 100 and 310 sold), so own_n / 4 left them at 2
+                own_floor = math.ceil(depth / 2) if (full and c["list_price"] >= 300_000 and surge.get(c["sku"], 1.0) <= 1.05
+                                                     and c["sku"] not in stale) else 2
                 if depth and own_n:
-                    depth = min(depth, max(2, math.ceil(own_n / 4)))
+                    depth = min(depth, max(own_floor, math.ceil(own_n / 4)))
                 qty = depth - held[c["sku"]]
             else:                     # a cheap SKU no deeper than sku_cap: 22-24 of one blanket sat in stock on 11/5
                 # 6 h: the 100-300k band sold 1.0 an hour with 46 units held (46 h of stock) while 300k+ sold 6.0 an hour

@@ -555,6 +555,16 @@ for since in (7, 1):
 restock_r3.strategy = real
 case("a dear line holds at most the market's settles of the SKU in 6 h (2 of 40), once 6 h of history exists",
      qs[0] == 2 and qs[1] > 2, qs)
+# one own deal of SB in 24 h capped a hot 300k+ line at 2 (own_n / 4); now the cap floors at half the depth (40 -> 20)
+(md / "restock_state.json").write_text(json.dumps({"after": 1, "seen": [], "t": time.time() - 30, "score": {}, "sku_score": {"SB": 1500},
+                                                   "deals": {"SB|A": [[0.7, time.time() - 600]]}}), encoding="utf-8")
+restock_r3.strategy = lambda: dict(real(), reserve_cash=0, stock_value=500_000_000, goods_frac=1.0, max_list=1_500_000, dear_depth=8)
+out = io.StringIO()
+with contextlib.redirect_stdout(out):
+    restock_r3.main()
+restock_r3.strategy = real
+q = {b["sku"]: b["qty"] for b in json.loads(out.getvalue().splitlines()[-1])["buy"]}.get("SB", 0)
+case("a hot 300k+ SKU with 1 own deal is capped at half its depth (20 of 40), not 2", q == 20, q)
 
 # leak audit #29: the A cost draws keep sold units (a_hist, 48 h); the seed reads goods A talks, one per (sku, cost)
 td = Path(tempfile.mkdtemp(prefix="restock-seed-"))
