@@ -216,6 +216,14 @@ class PurchaseTests(unittest.TestCase):
   policy={'max_units_per_sku':3,'initial_trial_units':3,'max_sku_capital_share':.08}
   plan=allocation_plan(ranked,{'units':[]},1000000,aggression=4,policy=policy)
   self.assertEqual(plan,[])
+ def test_concentration_uses_total_wealth_not_cash_after_liability_reserve(self):
+  ranked=[dict(sku='high',kind='goods',expected_net=500000,score=999,
+               upper_cost=1749000,sales_1h=3,sales_6h=20,distinct_buyers_6h=8,
+               own_sales_1h=1,estimated_sale_likelihood=.6)]
+  inventory={'balance':6500000,'units':[{'sku':'old','cost':13000000}]}
+  policy={'max_units_per_sku':3,'max_sku_capital_share':.10}
+  plan=allocation_plan(ranked,inventory,1950000,aggression=2,policy=policy)
+  self.assertEqual([(row['sku'],row['qty']) for row in plan],[('high',1)])
  def test_accepted_supply_records_actual_cost_even_above_estimate(self):
   self.assertEqual(supply_result(503,{},100),('uncertain',None))
   self.assertEqual(supply_result(200,{'total':101},100),('paid',101))

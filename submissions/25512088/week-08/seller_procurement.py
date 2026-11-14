@@ -154,7 +154,11 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
         holding_cost[sku]=holding_cost.get(sku,0)+unit.get('cost',0)
     blocked=set(blocked)|set(policy.get('blocked_skus',()))
     blocked|={sku for sku in policy.get('blocked_until_zero_skus',()) if holding.get(sku,0)>0}
-    portfolio_capital=sum(holding_cost.values())+max(0,available)
+    # Concentration is a share of total wealth, not of cash left after warranty
+    # reserves. ``available`` still strictly caps spending below; using it as
+    # the denominator made a larger safety reserve paradoxically classify a
+    # single sub-10%-of-wealth unit as over-concentrated.
+    portfolio_capital=sum(holding_cost.values())+max(0,inventory.get('balance',available))
     ranked_by_sku={row.get('sku'):row for row in ranked if row.get('sku')}
     recent_goods={row.get('sku') for row in ranked
                   if row.get('kind')=='goods' and
