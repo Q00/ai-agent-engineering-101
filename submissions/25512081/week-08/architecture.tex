@@ -1,0 +1,128 @@
+% Architecture of the kimauve shop and buyer in Round 3 (week-08 midterm). Build: pdflatex architecture.tex
+\documentclass[border=8pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{tikz}
+\usetikzlibrary{positioning,fit,backgrounds,arrows.meta,calc}
+
+\definecolor{code}{HTML}{2F6DB5}
+\definecolor{model}{HTML}{B5462F}
+\definecolor{mem}{HTML}{5E7D2F}
+\definecolor{kit}{HTML}{7A7A7A}
+\definecolor{ours}{HTML}{FFF4D6}
+
+\tikzset{
+  box/.style={draw, rounded corners=2pt, align=center, font=\footnotesize, inner sep=3pt, minimum height=0.9cm, fill=white},
+  codebox/.style={box, draw=code, line width=0.9pt},
+  modelbox/.style={box, draw=model, line width=0.9pt, fill=model!6},
+  membox/.style={box, draw=mem, line width=0.8pt, fill=mem!7, font=\scriptsize, minimum height=0.6cm},
+  kitbox/.style={box, draw=kit, dashed, fill=kit!6},
+  flow/.style={-{Latex[length=2mm]}, line width=0.6pt},
+  feed/.style={-{Latex[length=2mm]}, line width=0.6pt, mem!80!black},
+  fix/.style={-{Latex[length=2mm]}, line width=0.9pt, model, dashed},
+  lbl/.style={font=\scriptsize\itshape, fill=white, inner sep=1pt},
+  band/.style={font=\scriptsize\bfseries, text=black!60, anchor=east, align=right},
+  group/.style={draw=black!25, rounded corners=4pt, inner sep=6pt},
+}
+
+\begin{document}
+\begin{tikzpicture}[node distance=0.55cm and 0.6cm]
+
+% ---------------- market (top) ----------------
+\node[box, minimum width=17.2cm, fill=black!4, font=\small] (market) at (0,0)
+  {\textbf{Market} (market.ourolabs.ai)\quad orders $\cdot$ supply windows (3 min / 20 min) $\cdot$ public ledger (supply, settle, result, broken) $\cdot$ board $\cdot$ forum};
+
+% ---------------- kit (unchanged) ----------------
+\node[kitbox, below=0.55cm of market, minimum width=17.2cm] (kit)
+  {\textbf{market\_kit.py v4} (course kit, unchanged): A2A proxy for the shop $\cdot$ ACP checkout and signatures $\cdot$ runs our hooks: seller, restock (60 s), market\_buyer (per order), review};
+
+% ---------------- shop column ----------------
+\node[codebox, anchor=north, text width=3.9cm] (seller) at (-6.3,-2.75)
+  {\textbf{seller\_r3.py} \hfill\textcolor{code}{code}\\[1pt]
+   per message, $\sim$1 s: picks the unit (shelf life, grade), opens under rivals, floors from cost and market,
+   last-call close, warranty 72 h};
+\node[codebox, below=of seller, text width=3.9cm] (restock)
+  {\textbf{restock.py} \hfill\textcolor{code}{code}\\[1pt]
+   every minute: demand from the ledger, stock sized to assets, surge cut, buys what no shop has};
+\node[modelbox, below=of restock, text width=3.9cm] (planner)
+  {\textbf{planner.py} \hfill\textcolor{model}{opus}\\[1pt]
+   every 2 h: shop manager with 9 MCP tools (market\_tools.py); plan\_restock / set\_prices re-checked in code};
+\node[modelbox, below=0.35cm of planner, text width=3.9cm, minimum height=0.6cm] (lessons)
+  {\textbf{lessons.py} \hfill\textcolor{model}{haiku}: what last plans did};
+
+% ---------------- buyer column ----------------
+\node[codebox, anchor=north, text width=3.9cm] (mbuyer) at (6.3,-2.75)
+  {\textbf{market\_buyer.py} \hfill\textcolor{code}{code}\\[1pt]
+   per order: shortlist from past deals, quotes from up to 6 shops, ranks on the expected Patch 3.6 score
+   (share of the shop's margin kept, break risk)};
+\node[codebox, below=of mbuyer, text width=3.9cm] (nego)
+  {\textbf{negotiation} \hfill\textcolor{code}{code}\,/\,\textcolor{model}{sonnet}\\[1pt]
+   price ladder in code; the model only when a shop answers in prose};
+\node[codebox, below=of nego, text width=3.9cm] (review)
+  {\textbf{review.py} \hfill\textcolor{code}{code}\\[1pt] stars from the settlement record only};
+\node[modelbox, below=0.35cm of review, text width=3.9cm, minimum height=0.6cm] (forum)
+  {\textbf{forum.py} \hfill\textcolor{model}{haiku}: ledger-backed posts};
+
+% ---------------- shared memory (middle) ----------------
+\node[membox, text width=4.6cm, anchor=north] (m1) at (0,-3.0) {\texttt{competitors.json}, \texttt{unmet.jsonl}: rivals' asks and orders no shop filled, seen by our buyer};
+\node[membox, text width=4.6cm, below=0.12cm of m1] (m2) {\texttt{fingerprints.jsonl}: first-message wording $\to$ reviewing account (91\%)};
+\node[membox, text width=4.6cm, below=0.12cm of m2] (m3) {\texttt{restock\_state.json}: demand, prices paid per SKU, break rates, surge};
+\node[membox, text width=4.6cm, below=0.12cm of m3] (m4) {\texttt{shop-metrics.json} (shop\_metrics.py, 5 min): our reviews per account, price, grade};
+\node[membox, text width=4.6cm, below=0.12cm of m4] (m5) {\texttt{buyer\_memory}, \texttt{purchases}, \texttt{payments}: past deals, stock-outs, breaks};
+\node[membox, text width=4.6cm, below=0.12cm of m5] (m6) {\texttt{plan.json}, \texttt{prices.json}, \texttt{lessons.json}};
+\begin{scope}[on background layer]
+  \node[group, draw=mem, fill=mem!3, fit=(m1)(m6), label={[font=\scriptsize\bfseries, text=mem]above:shared memory (.market/, files only)}] (memg) {};
+\end{scope}
+
+% ---------------- overseer (bottom) ----------------
+\node[modelbox, anchor=north, minimum width=17.2cm, text width=16.8cm] (over) at ($(0,0 |- lessons.south)+(0,-1.3)$)
+  {\textbf{overseer.sh} (server cron, every 6 h) \hfill\textcolor{model}{opus, up to 60 turns}\\[1pt]
+   reads OVERSEER.md (goals, rules, standing checks), kit logs, ledger and shop-metrics $\to$ finds what lost score $\to$
+   edits code, runs tests, commits with the numbers, restarts the shop between supply windows $\to$ report in overseer/MMDD-HHMM.md.
+   usage\_guard.py pauses it near the weekly limit.};
+
+% ---------------- time bands (left) ----------------
+\node[band] at ($(seller.west)+(-0.25,0)$) {1 s};
+\node[band] at ($(restock.west)+(-0.25,0)$) {1 min};
+\node[band] at ($(planner.west)+(-0.25,0)$) {2 h};
+\node[band] at ($(over.west)+(-0.25,0)$) {6 h};
+
+% ---------------- groups ----------------
+\begin{scope}[on background layer]
+  \node[group, fill=ours, fit=(seller)(lessons), label={[font=\small\bfseries, anchor=south west]north west:Shop}] (shopg) {};
+  \node[group, fill=ours, fit=(mbuyer)(forum), label={[font=\small\bfseries, anchor=south east]north east:Buyer}] (buyg) {};
+\end{scope}
+
+% ---------------- arrows ----------------
+\draw[flow] (0,-0.45) -- node[lbl, right]{orders, supply, ledger} (kit.north);
+\draw[flow] (seller.north |- kit.south) -- node[lbl, right]{hooks} (seller.north);
+\draw[flow] (mbuyer.north |- kit.south) -- node[lbl, left]{hooks} (mbuyer.north);
+\draw[flow] (mbuyer) -- (nego);
+\draw[flow] (nego) -- (review);
+\draw[flow] (planner) -- node[lbl, right]{plan, price rules} (restock);
+\draw[flow] (lessons) -- (planner);
+
+% memory feeds
+\draw[feed] (mbuyer.west) -- ++(-0.35,0) |- node[lbl, above, pos=0.75]{rivals' asks, unmet} (m1.east);
+\draw[feed] (m1.west) -- node[lbl, above]{open 2\% under} ([yshift=5pt]seller.east |- m1.west);
+\draw[feed] (m2.west) -- ++(-0.35,0) |- node[lbl, below, pos=0.75]{best grade first} ([yshift=-8pt]seller.east);
+\draw[feed] (m3.west) -- ++(-0.35,0) |- node[lbl, above, pos=0.75]{demand, prices} (restock.east);
+\draw[feed] (m4.west) -- ++(-0.35,0) |- node[lbl, above, pos=0.75]{per-account stars} (planner.east);
+\draw[feed] (m5.east) -- ++(0.35,0) |- node[lbl, above, pos=0.75]{past deals} (nego.west);
+
+% overseer fixes code
+\draw[fix] (over.north -| shopg.south) -- (shopg.south);
+\draw[fix] (over.north -| buyg.south) -- (buyg.south);
+\draw[fix] (over.north) -- node[lbl, right]{edits code + commits} (memg.south);
+
+% ---------------- legend ----------------
+\node[below=0.35cm of over, font=\scriptsize, align=left, anchor=north] (legend)
+  {\tikz{\draw[code, line width=0.9pt, rounded corners=1pt] (0,0) rectangle (0.4,0.22);} code\quad
+   \tikz{\draw[model, line width=0.9pt, fill=model!6, rounded corners=1pt] (0,0) rectangle (0.4,0.22);} model call (claude -p via harness.py, no tools, no session, JSON schema)\quad
+   \tikz{\draw[mem, fill=mem!7, rounded corners=1pt] (0,0) rectangle (0.4,0.22);} memory file\quad
+   \tikz{\draw[kit, dashed, fill=kit!6, rounded corners=1pt] (0,0) rectangle (0.4,0.22);} kit default\quad
+   \tikz{\fill[ours] (0,0) rectangle (0.4,0.22);} ours\quad
+   \tikz{\draw[fix] (0,0.11) -- (0.5,0.11);} changes code};
+
+\end{tikzpicture}
+\end{document}
