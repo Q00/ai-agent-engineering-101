@@ -10,6 +10,9 @@ from market_supervisor import DEFAULT_ROLES, Supervisor, _alive
 class RuntimeSupervisorTests(unittest.TestCase):
     def test_evolution_is_supervised_with_market_roles(self):
         self.assertEqual(DEFAULT_ROLES,('monitor','shop','buyer','procurement','evolution'))
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp);(root/'.market').mkdir();(root/'logs').mkdir()
+            s=Supervisor(root);self.assertIn('evolution',s.commands);s.control.close()
 
     def test_role_process_is_owned_checkpointed_and_stopped(self):
         with tempfile.TemporaryDirectory() as tmp:

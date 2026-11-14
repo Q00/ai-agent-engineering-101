@@ -48,6 +48,15 @@ class EvolutionDaemonTests(unittest.TestCase):
             self.assertEqual(e.trigger(ev,10_000+INTERVAL),'hourly_review')
             e.control.close()
 
+    def test_runtime_failure_is_reviewed_at_most_hourly(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            e=self.make(tmp);ev=e.evidence();e._cycle('first','scheduled_review','shop',ev,'abc')
+            e.control.event('procurement','role_exited',{'returncode':1})
+            failed=e.evidence()
+            self.assertIsNone(e.trigger(failed,10_001))
+            self.assertEqual(e.trigger(failed,10_000+INTERVAL),'runtime_failure')
+            e.control.close()
+
     def test_rule_change_bypasses_interval_and_role_uses_official_components(self):
         with tempfile.TemporaryDirectory() as tmp:
             e=self.make(tmp);ev=e.evidence();e._cycle('first','scheduled_review','shop',ev,'abc')

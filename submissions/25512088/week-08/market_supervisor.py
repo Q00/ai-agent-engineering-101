@@ -109,7 +109,7 @@ class Supervisor:
             try:
                 request=json.loads(path.read_text())
                 request_id=path.stem;role=request.get('role')
-                if request.get('action')!='restart' or role not in {'buyer','shop','procurement','monitor'}:
+                if request.get('action')!='restart' or role not in {'buyer','shop','procurement','monitor','evolution'}:
                     raise ValueError('invalid supervisor request')
                 healthy=self.replace_role(role,lambda pid:_alive(pid))
                 result={'request_id':request_id,'role':role,'healthy':healthy,

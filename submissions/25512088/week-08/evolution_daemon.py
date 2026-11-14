@@ -196,12 +196,35 @@ class Evolution:
         for row in buyer_rows:
             try:paid+=int(json.loads(row[0]).get('receipt') is True)
             except (ValueError,TypeError):pass
+        procurement={}
+        procurement_db=self.state/'procurement.sqlite3'
+        if procurement_db.exists():
+            try:
+                with sqlite3.connect('file:'+str(procurement_db)+'?mode=ro',uri=True) as db:
+                    procurement['purchase_states']=dict(db.execute(
+                        'SELECT status,COUNT(*) FROM purchases GROUP BY status').fetchall())
+                    procurement['pending_capital']=db.execute(
+                        "SELECT COALESCE(SUM(upper_cost),0) FROM purchases WHERE status IN ('sent','uncertain')").fetchone()[0]
+            except sqlite3.Error:procurement['database_readable']=False
+        try:
+            inventory=json.loads((self.state/'inventory.json').read_text())
+            units=inventory.get('units',[]) if isinstance(inventory,dict) else []
+            procurement['inventory']={'units':len(units),'distinct_skus':len({u.get('sku') for u in units}),
+                'cost':sum(u.get('cost',0) for u in units),'balance':inventory.get('balance'),
+                'restock_open':bool((inventory.get('restock') or {}).get('open'))}
+        except (OSError,ValueError,TypeError):procurement['inventory_readable']=False
+        try:
+            strategy=json.loads((self.state/'strategy.json').read_text())
+            procurement['strategy']={'age_seconds':max(0,now-float(strategy.get('selected_at',0))),
+                'candidates':len(strategy.get('top10',[])),'opens_at':strategy.get('opens_at')}
+        except (OSError,ValueError,TypeError):procurement['strategy_readable']=False
         return {'window':{'start':start,'end':now,'seconds':7200},'event_counts':counts,
             'seller_funnel':{'quotes':seller_quotes,'sales':seller_sales,
                 'conversion':seller_sales/seller_quotes if seller_quotes else 0.0},
             'buyer_funnel':{'orders':len(buyer_rows),'paid':paid,
                 'conversion':paid/len(buyer_rows) if buyer_rows else 0.0},
-            'failures':{k:v for k,v in counts.items() if any(token in k for token in ('failed','exited','no_stock','rejected'))}}
+            'failures':{k:v for k,v in counts.items() if any(token in k for token in ('failed','exited','no_stock','rejected'))},
+            'procurement':procurement}
 
     @staticmethod
     def evidence_readiness(official,competition,internal,now):
@@ -236,9 +259,9 @@ class Evolution:
         if last and last['state'] in {'QUARANTINED','ROLLBACK_FAILED'}:
             current=self.runner(['git','rev-parse','HEAD'],REPO,30)[1].decode().strip()
             if current and current!=last['base_commit']:return 'implementation_updated'
-        if evidence['event_counts_30m'].get('role_exited',0):return 'runtime_failure'
         if not last:return 'scheduled_review'
         if last and now-last['created']<INTERVAL:return None
+        if evidence['event_counts_30m'].get('role_exited',0):return 'runtime_failure'
         if evidence['top10_gap'] is not None and evidence['top10_gap_24m_ago'] is not None:
             if evidence['top10_gap']>=evidence['top10_gap_24m_ago']-1e-12:return 'rank_gap_not_closing'
         # Every completed hour is reviewed.  A cycle may deliberately produce
