@@ -151,13 +151,16 @@ def checks(c, inv, now):
         import market_model
         cat = market_model.catalog()
         # (a) deals closed under cost in the last hour: Book (x0.5) loses on each
-        r = c.execute("select sku, grade, cost, price from quotes where outcome='deal' and ts>? and price<cost",
-                      (now - 3600,)).fetchall()
+        # a sale at cost x (1 - 1%/day x days left) equals holding to the end and paying storage (HQ 11-11 hold
+        # floor), so only sales under that line lose Book
+        days = max(0.0, (_load(HERE / "private" / "shop_theta.json", {}).get("round_end", now) - now) / 86400)
+        r = c.execute("select sku, grade, cost, price from quotes where outcome='deal' and ts>? and price<cost*?",
+                      (now - 3600, 1 - 0.01 * days - 0.001)).fetchall()
         loss = sum(x[2] - x[3] for x in r)
         goods = [x for x in r if (cat.get(x[0]) or {}).get("kind") == "goods"]
         if r:
             add("red" if goods or loss > 300_000 else "yellow",
-                f"{len(r)} deals under cost in 1 h ({len(goods)} goods), {loss:,.0f} under cost",
+                f"{len(r)} deals under the hold line (cost x {1 - 0.01 * days:.3f}) in 1 h ({len(goods)} goods), {loss:,.0f} under cost",
                 [list(x) for x in sorted(r, key=lambda x: x[3] - x[2])[:5]])
         # (b) the price cliff: big goods (list >= 500k) convert ~50% under the grade median and under 15% over it
         bins = collections.defaultdict(lambda: [0, 0])
