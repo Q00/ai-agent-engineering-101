@@ -81,6 +81,16 @@ class PurchaseTests(unittest.TestCase):
   plan=allocation_plan(ranked,{'units':[]},100000,aggression=100)
   self.assertEqual(len(plan),100)
   self.assertEqual(sum(row['qty'] for row in plan),300)
+ def test_live_competitor_breadth_floor_prioritizes_new_sku(self):
+  ranked=[dict(sku='hot',expected_net=10000,score=100,upper_cost=100,
+               sales_1h=20,sales_6h=30,distinct_buyers_6h=5,estimated_sale_likelihood=1),
+          dict(sku='new',expected_net=100,score=1,upper_cost=100,
+               sales_1h=2,sales_6h=4,distinct_buyers_6h=2,estimated_sale_likelihood=.5)]
+  inv={'units':[{'sku':'hot','cost':100}]}
+  policy={'breadth_target_skus':2,'max_units_per_sku':3,'new_sku_bonus':1}
+  self.assertEqual(allocation_plan(ranked,inv,10000,policy=policy)[0]['sku'],'new')
+  policy['breadth_target_skus']=1
+  self.assertEqual(allocation_plan(ranked,inv,10000,policy=policy)[0]['sku'],'hot')
  def test_accepted_supply_records_actual_cost_even_above_estimate(self):
   self.assertEqual(supply_result(503,{},100),('uncertain',None))
   self.assertEqual(supply_result(200,{'total':101},100),('paid',101))

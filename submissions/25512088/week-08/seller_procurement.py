@@ -75,13 +75,18 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
         if need<=0:continue
         evidence=dict(row,trusted_inquiries_6h=trusted_inquiries,
                       trusted_stockouts_6h=trusted_stockouts,sku_inventory_ceiling=sku_ceiling)
-        diversity=policy.get('new_sku_bonus',1) if not holding.get(row['sku']) else 1
-        choices.append((-(row.get('score',0)*row['expected_net']/max(1,row['upper_cost'])*diversity),row['sku'],need,evidence))
+        is_new=not holding.get(row['sku'])
+        breadth_target=max(0,policy.get('breadth_target_skus',0) or 0)
+        breadth_priority=0 if len(holding)<breadth_target and is_new else 1
+        diversity=policy.get('new_sku_bonus',1) if is_new else 1
+        choices.append((breadth_priority,
+                        -(row.get('score',0)*row['expected_net']/max(1,row['upper_cost'])*diversity),
+                        row['sku'],need,evidence))
     # Each candidate is already capped at two food or three goods units.  When
     # no explicit test/canary slot limit is supplied, capital and those per-SKU
     # caps determine the total portfolio instead of an arbitrary 250 units.
-    plan=[];slots=sum(row[2] for row in choices) if available_slots is None else available_slots
-    for _,sku,need,row in sorted(choices):
+    plan=[];slots=sum(row[3] for row in choices) if available_slots is None else available_slots
+    for _,_,sku,need,row in sorted(choices):
         # Official supply API accepts at most 20 units per call. Remaining
         # evidenced need is purchased on subsequent inventory refreshes.
         qty=min(policy.get('max_lot_units',20),need,int(available//row['upper_cost']),max(0,slots))
@@ -226,7 +231,10 @@ def main():
         # Starting capital is 5M. More accumulated cash funds more demand
         # windows, while capital_available still preserves cash/liabilities.
         aggression=max(1.0,min(policy.get('max_demand_windows',4),inv.get('balance',0)/3_000_000))
-        plan=allocation_plan(ranked,inv,available,blocked,slots,aggression,policy)
+        runtime_policy=dict(policy)
+        target=(strategy.get('competition_breadth') or {}).get('top10_min_skus')
+        if type(target) is int and target>0:runtime_policy['breadth_target_skus']=target
+        plan=allocation_plan(ranked,inv,available,blocked,slots,aggression,runtime_policy)
         if not plan:
             if blocked:time.sleep(10);continue
             log(event='evidence_or_capacity_wait',lifetime_spent=spent,inventory_cost=inventory_cost,

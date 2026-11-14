@@ -1,7 +1,7 @@
 import json,sqlite3,tempfile,time,unittest
 from pathlib import Path
 from seller_market import (rank_products,owned_targets,restrict_order,snapshot,own_goods_hazard,
-                           procurement_candidate_limit,
+                           procurement_candidate_limit,competitor_breadth,
                            build_buyer_preferences,write_buyer_preferences)
 
 class StrategyTests(unittest.TestCase):
@@ -14,6 +14,14 @@ class StrategyTests(unittest.TestCase):
   self.assertEqual(len(rank_products(catalog,trades,[],now=now)),10)
   self.assertEqual(len(rank_products(catalog,trades,[],now=now,limit=30)),15)
   self.assertGreater(procurement_candidate_limit(),30)
+
+ def test_competitor_breadth_tracks_live_top10_floor(self):
+  board={'shops':[{'name':'own','all':1.0},{'name':'a','all':.9},{'name':'b','all':.8}]}
+  shops=[{'name':'own','stock':{'x':1}},
+         {'name':'a','offers':[{'sku':'x','qty':2},{'sku':'y','qty':1}]},
+         {'name':'b','stock':{'x':3,'z':0}}]
+  result=competitor_breadth(board,shops,own_name='own')
+  self.assertEqual(result,{'leaders_observed':2,'top10_min_skus':1,'top10_median_skus':1.5})
 
  def test_mature_own_breakage_cohort_replaces_conservative_prior(self):
   hazard,basis=own_goods_hazard({'shops':[{'name':'25512088','claims':139,'broken':11}]})

@@ -30,6 +30,27 @@ def procurement_candidate_limit():
     return max(30,min(500,int(value)))
 
 
+def competitor_breadth(board, shops, own_name='25512088'):
+    """Measure the live SKU breadth floor among the leading rival shops."""
+    registry={str(row.get('name')):row for row in shops if row.get('name')}
+    leaders=[row for row in sorted(board.get('shops',[]),
+                                   key=lambda row:row.get('all',0),reverse=True)
+             if row.get('name')!=own_name][:10]
+    breadth=[]
+    for leader in leaders:
+        row=registry.get(str(leader.get('name')))
+        if not row:continue
+        offers=row.get('offers') or []
+        if offers:
+            count=sum(type(item.get('qty')) is int and item.get('qty',0)>0 for item in offers)
+        else:
+            count=sum(type(qty) is int and qty>0 for qty in (row.get('stock') or {}).values())
+        if count:breadth.append(count)
+    return {'leaders_observed':len(breadth),
+            'top10_min_skus':min(breadth) if breadth else None,
+            'top10_median_skus':median(breadth) if breadth else None}
+
+
 def _shop_offers(shop):
     offers=shop.get('offers') or []
     if offers:return [(o.get('sku'),o.get('qty',0)) for o in offers]
@@ -467,6 +488,7 @@ def snapshot(state,catalog,opens_at,market):
                     feedback=[dict(order=r[0],sku=r[1],ledger=r[2],observed_at=r[3],stock=json.loads(r[4]),error=r[5]) for r in db.execute('SELECT * FROM rival_feedback ORDER BY observed_at DESC LIMIT 20')]
         result=dict(version=3,buyer_feedback=feedback,opens_at=opens_at,selected_at=time.time(),ledger_through=through,
                     late=time.time()>opens_at-150,top10=ranked[:10],candidates=ranked,
+                    competition_breadth=competitor_breadth(board,shop_rows),
                     fetch_bounds={'ledger_after':-1000,'ledger_rows':len(recent),'max_age_seconds':900},
                     goods_hazard={'probability':goods_hazard,'basis':hazard_basis},
                     demand_basis=('48h buyer favourite categories weighted by current/recent activity; exact grade+6h '
