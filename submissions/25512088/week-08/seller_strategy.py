@@ -12,7 +12,7 @@ from seller_procurement import settings
 
 
 RATES={'goods':{'A':95,'B':80,'C':60},'food':{'A':95,'B':75,'C':45}}
-LOSS_LEADER_RATE=.03
+LOSS_LEADER_RATE=.04
 LOSS_LEADER_BUDGET=100_000
 LOSS_LEADER_TRIALS_PER_SKU=5
 

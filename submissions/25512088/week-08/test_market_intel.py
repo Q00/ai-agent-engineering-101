@@ -117,8 +117,8 @@ class IntelligenceTests(unittest.TestCase):
         q=sale_quote(unit,{},self.p,self.i)
         self.assertEqual(q['price'],10000);self.assertTrue(q['loss_leader'])
         self.assertEqual(q['loss_budget_remaining'],99700)
-        # A price below the 3% principal-loss bound is never copied.
-        unit['cost']=11000
+        # A price below the 4% principal-loss bound is never copied.
+        unit['cost']=10500
         q=sale_quote(unit,{},self.p,self.i)
         self.assertFalse(q['loss_leader']);self.assertGreater(q['price'],10000)
     def test_food_comparison_life_and_expiry(self):
