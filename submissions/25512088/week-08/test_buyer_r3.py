@@ -9,7 +9,7 @@ import httpx
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from cryptography.hazmat.primitives import serialization
 from buyer_memory import Memory
-from buyer_r3 import Buyer, asking, candidates, limit, deals_cap, signed_receipt, exclude_own_shop, quote_rank, execution_order, expected_offer, EARLY_QUOTE_TARGET
+from buyer_r3 import Buyer, asking, candidates, limit, stretch_limit, deals_cap, signed_receipt, exclude_own_shop, quote_rank, execution_order, expected_offer, EARLY_QUOTE_TARGET
 from buyer_review import review
 
 
@@ -49,6 +49,9 @@ class BuyerTests(unittest.TestCase):
         self.assertEqual(limit(self.o,self.cat['SKU1'],'A'),6900)
         self.assertEqual(limit(self.o,self.cat['SKU1'],'C'),4800)
         self.assertEqual(limit(self.o,dict(list_price=2000),'A'),1380)
+        self.assertEqual(stretch_limit(self.o,self.cat['SKU1'],'A'),6850)
+        self.assertEqual(stretch_limit(self.o,self.cat['SKU1'],'B'),5500)
+        self.assertEqual(stretch_limit(self.o,self.cat['SKU1'],'C'),4149)
 
     def test_quote_comparison_target_matches_observed_conversion_step(self):
         self.assertEqual(EARLY_QUOTE_TARGET,11)
@@ -243,7 +246,7 @@ class BuyerTests(unittest.TestCase):
                     if req.url.host=='shop.test':
                         if uncertain:raise httpx.ReadTimeout('lost',request=req)
                         task={'id':'t1','status':{'state':'TASK_STATE_REJECTED'}}
-                    else:task={'id':'t1','status':{'state':'TASK_STATE_COMPLETED'},'artifacts':[{'parts':[{'data':self.receipt(6900)}]}]}
+                    else:task={'id':'t1','status':{'state':'TASK_STATE_COMPLETED'},'artifacts':[{'parts':[{'data':self.receipt(int(text))}]}]}
                 else:task={'id':'t1','status':{'state':'TASK_STATE_INPUT_REQUIRED','message':{'parts':[{'text':'Grade A. Asking '+('6000' if req.url.host=='shop.test' else '6900')}]}}}
                 return httpx.Response(200,json={'result':task})
             with httpx.Client(transport=httpx.MockTransport(handler)) as c:
@@ -266,7 +269,7 @@ class BuyerTests(unittest.TestCase):
         self.m.begin(self.o)
         with httpx.Client(transport=httpx.MockTransport(handler)) as c, patch('buyer_r3.time.sleep'):
             out=Buyer(self.o,self.m,c,self.cat).run([self.shop])
-        self.assertEqual(len(amounts),1)
+        self.assertEqual(amounts,[6850,6900])
         self.assertTrue(all(a<=6900 for a in amounts))
         self.assertIsNone(out['receipt'])
 

@@ -72,6 +72,7 @@ def quote_fields(task):
 GRADE_PRICE_CAP = {'A':69, 'B':60, 'C':48}
 GRADE_COST_MIDPOINT = {'A':.65, 'B':.50, 'C':.35}
 SAVED_TARGET = .80
+SAVED_STRETCH_TARGET = .90
 EARLY_QUOTE_TARGET = 11
 
 
@@ -95,6 +96,19 @@ def limit(order, product, grade=None):
     # capping new Saved evidence below the current Top-10 band.
     pct = GRADE_PRICE_CAP.get(grade, 60)
     return min(order['budget'], math.floor(product['list_price']*pct/100))
+
+
+def stretch_limit(order, product, grade=None):
+    """First-offer ceiling targeting stronger Saved without losing fallback.
+
+    A rejected first offer is followed once by the ordinary ``limit``.  This
+    makes a lower accepted price pure upside while retaining the existing
+    maximum price and its observed conversion rate on the second attempt.
+    """
+    listed=product.get('list_price');cost_ratio=GRADE_COST_MIDPOINT.get(grade,.50)
+    if not isinstance(listed,(int,float)) or listed<=0:return limit(order,product,grade)
+    ratio=1-SAVED_STRETCH_TARGET*(1-cost_ratio)
+    return min(limit(order,product,grade),order['budget'],math.floor(listed*ratio))
 
 
 def deals_cap(order,product,grade,portfolio=None):
@@ -367,6 +381,7 @@ class Buyer:
                     continue
                 task=s['last'];fields=quote_fields(task)
                 s['grade']=fields['grade'];s['cap']=deals_cap(self.o,self.catalog[sku],s['grade'],self.portfolio)
+                s['stretch_cap']=stretch_limit(self.o,self.catalog[sku],s['grade'])
                 if task_state(task).endswith('COMPLETED'):
                     # A certificate, not a parsed claim, enforces the actual grade at payment.
                     return self.completed(s)
@@ -401,10 +416,11 @@ class Buyer:
                 attempts=0
                 while time.time()<stop and attempts<2:
                     attempts+=1
-                    amount=min(s['ask'],s['cap'])
+                    amount=min(s['ask'],s['stretch_cap'] if attempts==1 else s['cap'])
                     if s['ask']>s['cap']:
                         self.m.record(self.o['order'],s['shop']['url'],s['sku'],s.get('task'),'price_rejected',s['ask'],{'cap':s['cap']})
-                    self.m.record(self.o['order'],s['shop']['url'],s['sku'],s.get('task'),'offer',amount)
+                    self.m.record(self.o['order'],s['shop']['url'],s['sku'],s.get('task'),'offer',amount,
+                                  {'attempt':attempts,'ceiling':'stretch' if attempts==1 else 'fallback'})
                     self.m.state(self.o['order'],'offer_in_flight')
                     print('OFFER',s['shop']['name'],s['sku'],amount,flush=True)
                     try:task=self.send_offer(s,amount)
@@ -421,7 +437,6 @@ class Buyer:
                     ask=quote_fields(task)['price']
                     if not ask:break
                     s['ask']=int(ask)
-                    if ask>s['cap']:break
                 self.m.defer_rival(s['shop']['url'],s['sku'],'retry_new_conversation')
                 self.m.record(self.o['order'],s['shop']['url'],s['sku'],s.get('task'),'candidate_exhausted')
             self.m.state(self.o['order'],'no_deal');return self.result()
