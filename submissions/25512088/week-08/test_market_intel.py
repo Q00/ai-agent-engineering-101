@@ -7,7 +7,7 @@ from unittest.mock import patch
 import httpx
 from market_intel import Intel,BUYER_SCORE_WEIGHTS
 from seller_strategy import (sale_quote,restock_plan,cost_floor,protected_floor,score_floor,
-                             buyer_preference_target,top_seller_grade_target)
+                             buyer_preference_target,top_seller_grade_target,warranty_hours)
 from seller_ledger import Program
 from buyer_publicist import queue_update,publication_policy,forum_strategy,STRATEGY_REVIEW_SECONDS
 from buyer_r3 import Buyer
@@ -131,6 +131,13 @@ class IntelligenceTests(unittest.TestCase):
         q=sale_quote(self.u,{},self.p,self.i)
         self.assertGreaterEqual(q['price'],8720)
         self.assertEqual(q['base'],score_floor(self.u))
+    def test_goods_warranty_never_expands_from_unreconciled_local_refund_flag(self):
+        with self.p.db:
+            for n in range(40):
+                self.p.db.execute('INSERT INTO sales(task,unit,sku,amount,cost,ledger,settled,refunded) '
+                                  'VALUES(?,?,?,?,?,?,?,0)',
+                                  (f't{n}',f'u{n}','x',10000,8000,n+1,time.time()))
+        self.assertEqual(warranty_hours(self.u,self.p),6)
     def test_benefit_variants_preserve_net_margin(self):
         # Force founder and referral branches through actual membership records.
         seed=self.p.quote(12000,8000)

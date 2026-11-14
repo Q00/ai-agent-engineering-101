@@ -114,17 +114,15 @@ def cost_floor(cost, policy):
 
 
 def warranty_hours(unit, program=None):
-    """Expand warranty only after settled, non-refunded cohorts mature."""
+    """Use the market-compatible six-hour warranty for every good.
+
+    Historical code expanded to 24/48/72 hours when the local sale row showed
+    no refund. Official refunds are not reconciled back into that local flag,
+    so the apparent zero-refund cohort was false evidence and kept extending
+    liabilities. Six hours satisfies the common buyer requirement without
+    inventing safety evidence that the official ledger does not provide.
+    """
     if unit.get('kind')!='goods':return 0
-    if program is None:return 6
-    settled=program.db.execute(
-        'SELECT COUNT(*) FROM sales WHERE sku=? AND ledger IS NOT NULL',(unit.get('sku'),)).fetchone()[0]
-    refunded=program.db.execute(
-        'SELECT COUNT(*) FROM sales WHERE sku=? AND ledger IS NOT NULL AND refunded=1',(unit.get('sku'),)).fetchone()[0]
-    if refunded:return 6
-    if settled>=30:return 72
-    if settled>=15:return 48
-    if settled>=5:return 24
     return 6
 
 
