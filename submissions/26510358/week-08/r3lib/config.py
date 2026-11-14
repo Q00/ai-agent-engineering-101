@@ -290,6 +290,9 @@ MIN_SAVED_SHARE = 0.75              # threshold without a board (our saved 0.721
 BUYER_THETA_MARGIN = 0.03           # threshold = score-model break-even + this (cost estimates are medians)
 BUYER_THETA_BOUNDS = (0.72, 0.85)   # the threshold never leaves this range
 FIRST_OFFER_RATIO = 0.55            # first offer as a share of list price
+BUYER_COST_OPEN_SHARE = 0.5         # canary from 2026-11-15: this share of orders opens at the estimated cost / list
+                                    #   (COST_RATIO) when that is above FIRST_OFFER_RATIO (A 0.618, goods 0.594): under
+                                    #   patch 3.6 a price below cost scores 1 like one at cost, so lower only adds turns
 MAX_OFFERS = 6
 SHOPS_TO_TRY = 3
 BUYER_FANOUT_SHARE = 1.0           # 1.0 since 2026-11-13 16:40 KST (canary 0.20 from 11-12: fanout 0.542 vs serial 0.386

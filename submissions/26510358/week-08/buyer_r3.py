@@ -223,7 +223,8 @@ def negotiate(c, order, deadline, opened=None):
                     c["max_pay"] = limit_for(c, grade, hours)
             final = got is not None and is_final(a2a.said(t))
             action, price = pricing.buyer_next_offer(c["list"], c["max_pay"], ask, offer, n, opening=c.get("opening"),
-                                                     final=final)
+                                                     final=final,
+                                                     open_floor=open_floor(c) if cost_open_arm(order.get("order")) else None)
             if action == "walk":
                 break                                  # a final price over our limit: the next shop, not 6 more turns
             if offer is not None and price <= offer and action == "offer":
@@ -291,6 +292,18 @@ def fanout_arm(order_id):
     """True for the BUYER_FANOUT_SHARE of orders that get fan-out quotes; stable per order id."""
     h = int(hashlib.sha256(str(order_id).encode()).hexdigest()[:8], 16)
     return h % 10_000 < config.BUYER_FANOUT_SHARE * 10_000
+
+
+def cost_open_arm(order_id):
+    """True for the BUYER_COST_OPEN_SHARE of orders that open at the estimated cost; stable per order id and
+    independent of fanout_arm (its own salt)."""
+    h = int(hashlib.sha256(f"cost_open:{order_id}".encode()).hexdigest()[:8], 16)
+    return h % 10_000 < config.BUYER_COST_OPEN_SHARE * 10_000
+
+
+def open_floor(c):
+    """Estimated cost / list of a candidate: the grade the shop named, else the kind's market mix."""
+    return pricing.cost_ratio(c.get("kind"), (c.get("hint") or {}).get("grade"))
 
 
 def fanout_quotes(cands, order):
@@ -437,7 +450,8 @@ def main():
     theta = pricing.buyer_threshold(model_theta)
     cands = candidates(order, shops, mem, mem.my_shop_urls(), theta=theta)
     arm = "fanout" if fanout_arm(order.get("order")) else "serial"
-    decision_log({"order": order.get("order"), "arm": arm, "category": order.get("category"), "budget": a.budget,
+    decision_log({"order": order.get("order"), "arm": arm, "open": "cost" if cost_open_arm(order.get("order")) else "base",
+                  "category": order.get("category"), "budget": a.budget,
                   "theta": round(theta, 4), "model_theta": model_theta and round(model_theta, 4),
                   "kind": order.get("kind"), "use_within_hours": order.get("use_within_hours"),
                   "candidates": cands[:8], "filter": getattr(candidates, "last_filter", None)})
