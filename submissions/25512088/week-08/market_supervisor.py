@@ -21,7 +21,7 @@ EVENTS = SUPERVISOR / "runtime-events.jsonl"
 PIDS = SUPERVISOR / "pids.json"
 PIDFILE = SUPERVISOR / "supervisor.pid"
 LOG = ROOT / "logs" / "adaptive-supervisor.log"
-DEFAULT_ROLES = ('monitor','shop','buyer','procurement','evolution')
+DEFAULT_ROLES = ('monitor','shop','buyer','procurement')
 
 
 def _alive(pid):
@@ -48,8 +48,7 @@ class Supervisor:
         self.commands=commands or {
             'monitor':['bash',runner,'monitor'],
             'shop':['bash',runner,'shop'],'buyer':['bash',runner,'buyer'],
-            'procurement':['bash',runner,'procurement'],
-            'evolution':['bash',runner,'evolution']}
+            'procurement':['bash',runner,'procurement']}
         self.children={};self.logs={};self.stop_requested=False;self.control=Control(self.state)
 
     def emit(self, role, event, **body):
@@ -104,12 +103,12 @@ class Supervisor:
         return healthy
 
     def handle_requests(self):
-        """Process atomic, allowlisted role restart requests from evolution."""
+        """Process atomic, allowlisted role restart requests."""
         for path in sorted(self.requests.glob('*.json')):
             try:
                 request=json.loads(path.read_text())
                 request_id=path.stem;role=request.get('role')
-                if request.get('action')!='restart' or role not in {'buyer','shop','procurement','monitor','evolution'}:
+                if request.get('action')!='restart' or role not in {'buyer','shop','procurement','monitor'}:
                     raise ValueError('invalid supervisor request')
                 healthy=self.replace_role(role,lambda pid:_alive(pid))
                 result={'request_id':request_id,'role':role,'healthy':healthy,
@@ -131,8 +130,6 @@ class Supervisor:
         PIDFILE.parent.mkdir(parents=True,exist_ok=True);PIDFILE.write_text(str(os.getpid())+'\n')
         self.emit('supervisor','supervisor_started',pid=os.getpid())
         try:
-            # Evolution runs under its own one-hour evidence gate.  It can only
-            # deploy a tested role-scoped patch and must canary or roll it back.
             for role in DEFAULT_ROLES:self.start_role(role)
             while not self.stop_requested:
                 self.handle_requests()
