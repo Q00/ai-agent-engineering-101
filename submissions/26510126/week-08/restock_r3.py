@@ -341,7 +341,12 @@ def main():
             price_lines = {}
 
         def dead_dear(u):
+            # only units held over 6 h: a fresh unit above the market was just bought at this depth (its share of draws
+            # that cannot sell is already taken off the depth), and leaving it out at once rebought the same line every
+            # window (01:02 and 01:42: 12 + 11 of G85a1a856, 13 + 14 of Gf27f8931)
             if u.get("kind") != "goods" or u.get("grade") not in ("A", "B") or (u.get("list_price") or 0) < 150_000:
+                return False
+            if now - first.get(u["unit"], now) < 6 * 3600:
                 return False
             st_u = price_lines.get(f"{u['sku']}|{u['grade']}")
             if not st_u or st_u.get("n", 0) < 3 or not st_u.get("median") or not u.get("cost"):
