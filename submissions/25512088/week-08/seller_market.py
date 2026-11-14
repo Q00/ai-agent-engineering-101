@@ -363,7 +363,7 @@ def rank_products(catalog, trades, shops, own_name='25512088', local_demand=None
             op=catalog.get(other,{})
             if other!=sku and op.get('category')==cat and lo<=op.get('list_price',0)<=hi:
                 substitute_units+=qty;substitute_vendors.add(vendor);substitute_skus.add(other)
-        scenarios=[];expected=0
+        scenarios=[];expected=0;expected_revenue=0
         for grade,(cost_lo,cost_hi,cost_mean,arrival) in GRADE_COSTS.items():
             prices=[r['price'] for r in observed if r.get('grade')==grade]
             typical=median(prices) if prices else None
@@ -377,6 +377,7 @@ def rank_products(catalog, trades, shops, own_name='25512088', local_demand=None
             # pricing still enforces the Book-preserving floor.
             net=typical*(1-hazard)-cost*1.01 if typical else 0
             expected+=arrival*net
+            expected_revenue+=arrival*(typical or 0)
             scenarios.append(dict(grade=grade,arrival_probability=arrival,
                 acquisition_cost_range=[cost_lo,cost_hi],samples=len(prices),median_6h=typical,
                 mean_cost=cost,net_estimate=net,hazard_probability=hazard,
@@ -394,7 +395,11 @@ def rank_products(catalog, trades, shops, own_name='25512088', local_demand=None
         verified_average=verified_review.get('verified_buyer_review_average')
         verified_count=verified_review.get('verified_buyer_review_count',0)
         verified_factor=(1+(verified_average-3)/40*min(1,verified_count/5)) if verified_average is not None else 1
-        score=likelihood*contribution/max(1,product['list_price']*.75)*review_factor*verified_factor
+        # Optimize the official Shop ALL components. Stock retains its cost in
+        # Book; a sale adds expected net to Book and its paid amount to Revenue.
+        # Dividing by price here previously collapsed procurement into cheap
+        # food even while substantial capital was idle.
+        score=likelihood*(.5*contribution+.3*expected_revenue)*review_factor*verified_factor
         rows.append(dict(version=3,sku=sku,name=product.get('name',sku),category=cat,
             kind=product.get('kind'),
             sales_1h=len(one_hour),sales_6h=len(observed),distinct_buyers_1h=len(buyers_1h),
@@ -411,7 +416,8 @@ def rank_products(catalog, trades, shops, own_name='25512088', local_demand=None
             own_order_mentions_6h=local_demand.get(sku,0),own_inquiries_6h=inquiries,
             own_stockouts_6h=rejected,own_orders_bias='personal evidence only; not purchasing obligations',
             exact_grade_warranty_trades=len(observed),grade_scenarios=scenarios,
-            expected_net=expected,estimated_sale_likelihood=round(likelihood,4),
+            expected_net=expected,expected_revenue=expected_revenue,
+            estimated_sale_likelihood=round(likelihood,4),
             competitor_same_units=same_units.get(sku,0),competitor_same_shops=len(same_vendors.get(sku,set())),
             competitor_substitute_units=substitute_units,
             competitor_substitute_shops=len(substitute_vendors),substitute_skus=len(substitute_skus),

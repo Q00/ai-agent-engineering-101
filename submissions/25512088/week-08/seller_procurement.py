@@ -68,8 +68,11 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
         need=min(need,max(0,sku_ceiling-holding.get(row['sku'],0)))
         trial_units=(policy.get('initial_food_trial_units',2) if is_food else
                      policy.get('initial_trial_units',policy.get('min_trial_units',2)))
+        # Always permit one evidence-backed trial, but an expensive SKU may
+        # not bypass the portfolio share merely because the normal trial lot
+        # is two or three units.
         capital_ceiling=max(portfolio_capital*policy.get('max_sku_capital_share',1),
-                            trial_units*row['upper_cost'])
+                            row['upper_cost'])
         capital_room=max(0,capital_ceiling-holding_cost.get(row['sku'],0))
         need=min(need,int(capital_room//max(1,row['upper_cost'])))
         if need<=0:continue
@@ -79,8 +82,7 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
         breadth_target=max(0,policy.get('breadth_target_skus',0) or 0)
         breadth_priority=0 if len(holding)<breadth_target and is_new else 1
         diversity=policy.get('new_sku_bonus',1) if is_new else 1
-        choices.append((breadth_priority,
-                        -(row.get('score',0)*row['expected_net']/max(1,row['upper_cost'])*diversity),
+        choices.append((breadth_priority,-(row.get('score',0)*diversity),
                         row['sku'],need,evidence))
     # Each candidate is already capped at two food or three goods units.  When
     # no explicit test/canary slot limit is supplied, capital and those per-SKU

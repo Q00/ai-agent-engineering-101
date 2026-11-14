@@ -27,12 +27,13 @@ class PurchaseTests(unittest.TestCase):
                distinct_buyers_6h=4,own_stockouts_6h=2,own_inquiries_6h=1,estimated_sale_likelihood=.8),
           dict(sku='b',expected_net=-1,score=99,upper_cost=1,sales_1h=100,sales_6h=100,
                distinct_buyers_6h=4,own_stockouts_6h=0,own_inquiries_6h=0,estimated_sale_likelihood=1)]
-  plan=allocation_plan(ranked,{'units':[{'sku':'a'}]},900000)
+  policy={'max_sku_capital_share':1}
+  plan=allocation_plan(ranked,{'units':[{'sku':'a'}]},900000,policy=policy)
   self.assertEqual(plan[0]['sku'],'a');self.assertEqual(plan[0]['qty'],2)
   self.assertNotIn('b',[r['sku'] for r in plan])
-  aggressive=allocation_plan(ranked,{'units':[{'sku':'a'}]},900000,aggression=3)
+  aggressive=allocation_plan(ranked,{'units':[{'sku':'a'}]},900000,aggression=3,policy=policy)
   self.assertEqual(aggressive[0]['qty'],2)
-  huge=allocation_plan(ranked,{'units':[]},10000000,aggression=100)
+  huge=allocation_plan(ranked,{'units':[]},10000000,aggression=100,policy=policy)
   self.assertEqual(huge[0]['qty'],3)
  def test_food_is_capped_at_two_units_per_sku(self):
   ranked=[dict(sku='food',kind='food',expected_net=50000,score=3,upper_cost=100,
@@ -91,6 +92,13 @@ class PurchaseTests(unittest.TestCase):
   self.assertEqual(allocation_plan(ranked,inv,10000,policy=policy)[0]['sku'],'new')
   policy['breadth_target_skus']=1
   self.assertEqual(allocation_plan(ranked,inv,10000,policy=policy)[0]['sku'],'hot')
+ def test_expensive_trial_respects_portfolio_share(self):
+  ranked=[dict(sku='expensive',expected_net=500000,expected_revenue=1000000,score=999,
+               upper_cost=600000,sales_1h=8,sales_6h=12,distinct_buyers_6h=4,
+               estimated_sale_likelihood=.8)]
+  policy={'max_units_per_sku':3,'initial_trial_units':3,'max_sku_capital_share':.08}
+  plan=allocation_plan(ranked,{'units':[]},1000000,aggression=4,policy=policy)
+  self.assertEqual(plan[0]['qty'],1)
  def test_accepted_supply_records_actual_cost_even_above_estimate(self):
   self.assertEqual(supply_result(503,{},100),('uncertain',None))
   self.assertEqual(supply_result(200,{'total':101},100),('paid',101))

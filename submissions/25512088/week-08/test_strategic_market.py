@@ -23,6 +23,18 @@ class StrategyTests(unittest.TestCase):
   result=competitor_breadth(board,shops,own_name='own')
   self.assertEqual(result,{'leaders_observed':2,'top10_min_skus':1,'top10_median_skus':1.5})
 
+ def test_procurement_ranking_follows_absolute_shop_score_contribution(self):
+  now=time.time()
+  cat={'cheap':dict(kind='goods',category='c',name='cheap',list_price=10000),
+       'valuable':dict(kind='goods',category='v',name='valuable',list_price=100000)}
+  trades=[]
+  for sku,price in [('cheap',8000),('valuable',80000)]:
+   trades += [dict(sku=sku,buyer='b'+str(i),ts=now-10,grade=g,price=price,
+                   hours=None,warranty=6,honest=1) for i,g in enumerate('ABC')]
+  rows=rank_products(cat,trades,[],now=now)
+  self.assertEqual(rows[0]['sku'],'valuable')
+  self.assertGreater(rows[0]['expected_revenue'],rows[1]['expected_revenue'])
+
  def test_mature_own_breakage_cohort_replaces_conservative_prior(self):
   hazard,basis=own_goods_hazard({'shops':[{'name':'25512088','claims':139,'broken':11}]})
   self.assertAlmostEqual(hazard,13/143);self.assertIn('139',basis)
