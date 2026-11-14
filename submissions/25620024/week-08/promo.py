@@ -171,7 +171,9 @@ def quote(c, unit, code=None, me=None, now=None, stock_n=1, vip=False):
         over = (stock_n / rate_ if rate_ > 0 else float("inf")) >= t.get("overstock_h", 48)
     dear = lp >= t.get("big_follow_list", 500000) or over
     if dear:                                    # 11-07: HQ big_follow is the least undercut on furniture, even for SKUs
-        follow = max(follow or 0, t.get("big_follow", 0.02))   # the sales plan follows at 2%    # 11-07: furniture sells at ~0.70-0.74 of list market-wide; our arms (0.80+)
+        follow = max(follow or 0, t.get("big_follow", 0.02))   # the sales plan follows at 2%
+        if t.get("big_ask_over", 0) > 0 and not over:   # MST TF 11-14 benchmark: inextro asks 1.04 x the grade median,
+            follow = -t["big_ask_over"]                # nocha12 sells at 1.05; we asked 1.00 (margin 6% vs their 9-16%)    # 11-07: furniture sells at ~0.70-0.74 of list market-wide; our arms (0.80+)
                                               # would never sell the dear SKUs restock now buys -- follow their median
     if follow is not None:
         follow = min(follow, t.get("max_undercut", 0.05))      # finance caps how far under the median we go
@@ -203,6 +205,10 @@ def quote(c, unit, code=None, me=None, now=None, stock_n=1, vip=False):
     try:                                                 # the SCM team's clearance markdowns
         import scm_agent
         md = (scm_agent.scm_plan().get("clearance") or {}).get(unit["sku"])
+        # MST TF 11-14: the SCM plan was last written 11-10 02:11 and still took 30% off 20 SKUs, new furniture and
+        # the expanded kimchi among them (Samsung TV A asked 395k on a 430k cost). A plan older than scm_max_age_h is off.
+        if md and time.time() - os.path.getmtime(scm_agent.PLAN) > t.get("scm_max_age_h", 12) * 3600:
+            md = None
         if unit["sku"] in ((plan().get("scm_veto") or {}).get("no_clearance") or []):
             md = None                                    # the sales team (top department) vetoed this markdown
     except Exception:
@@ -285,7 +291,8 @@ def quote(c, unit, code=None, me=None, now=None, stock_n=1, vip=False):
             if tgt > price:
                 price, why = tgt, why + [f"overstock market {tgt} (median {gmk:.0f} >= cost+5%)"]
             floor = max(floor, int(cost) + 1)
-        elif not over and max(price, floor) > gmk * 1.02 and gmk > cost * 1.003:
+        elif not over and max(price, floor) > gmk * (1.02 if not (dear and t.get("big_ask_over", 0) > 0)
+                                                      else 1.005 + t["big_ask_over"]) and gmk > cost * 1.003:
             # live 21:19: a G30604071 A unit bought at ~227k (median 229,950, 2%-under target 225k) still asked
             # cost x 1.12 = 254k; a unit bought under the median asks max(target, cost) and never closes under cost
             tgt = max(tgt, int(cost) + 1)
