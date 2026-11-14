@@ -249,6 +249,45 @@ def food_expand(c, now, t, cat, stock):
     return [(s, q, w) for _, s, q, w in sorted(out, reverse=True)[:t.get("food_expand_lines", 16)]]
 
 
+def furniture_expand(c, now, t, cat, stock):
+    """MST TF 11-14 (HQ "Yes, all three"): the top-5 shops make 64-91% of revenue on list 500k+ furniture (Downing
+    Plana/Agio, Jakomo Ward/Goodmuse, Simmons, La Cloud Luna, NAMU) at 7-11% margin; we had 10% after the sofa refunds,
+    which came from pricing 4% under the median (fixed 11-13 15:32). A line is bought only when the market's recent
+    supply cost leaves furniture_min_margin after a 3% haggle and the SKU's own market break rate (refunds):
+        avg supply cost (6 h, else 24 h) <= median (24 h, all grades) x 0.97 x (1 - breaks/sales) x (1 - margin)
+    stocked to our furniture_share of the market's 24 h pace (1-furniture_max_units, at most hit_max_value at cost).
+    Returns [(sku, qty, why)] by expected profit a day, best first."""
+    sold, costs6, costs24 = {}, {}, {}
+    for sku, a in c.execute("select sku, amount from settles where ts > ? and list_price >= ?",
+                            (now - 86400, t.get("big_follow_list", 500000))):
+        sold.setdefault(sku, []).append(a)
+    for sku, co, ts in c.execute("select sku, cost, ts from supply_units where ts > ? and cost > 0", (now - 86400,)):
+        if sku in sold:
+            costs24.setdefault(sku, []).append(co)
+            if ts > now - 6 * 3600:
+                costs6.setdefault(sku, []).append(co)
+    brk = dict(c.execute("select sku, count(*) from broken where ts > ? group by sku", (now - 86400,)).fetchall())
+    out = []
+    for sku, v in sold.items():
+        r = cat.get(sku) or {}
+        cs = costs6.get(sku) if len(costs6.get(sku, [])) >= 3 else costs24.get(sku, [])
+        if r.get("kind") != "goods" or len(v) < t.get("furniture_min_sold24", 20) or len(cs) < 3 \
+                or r.get("list_price", 0) > t.get("max_list", 4_000_000):
+            continue
+        med, cost = sorted(v)[len(v) // 2], sum(cs) / len(cs)
+        net = med * 0.97 * (1 - min(0.5, brk.get(sku, 0) / len(v)))
+        if cost > net * (1 - t.get("furniture_min_margin", 0.08)):
+            continue
+        rate = len(v) / 24
+        qty = max(1, min(t.get("furniture_max_units", 6), math.ceil(rate * t.get("furniture_share", 0.05) * 24),
+                         int(t.get("hit_max_value", 10_000_000) // cost)))
+        EXPAND[sku] = rate * 24 * t.get("furniture_share", 0.05) * (net - cost)
+        if qty - stock.get(sku, 0) > 0:
+            out.append((EXPAND[sku], sku, qty, f"furniture expand: market {len(v)}/24 h, median {med:,.0f}, net {net:,.0f}, "
+                                                f"supply cost {cost:,.0f} ({(net - cost) / net:.0%}) -> keep {qty}"))
+    return [(s, q, w) for _, s, q, w in sorted(out, reverse=True)[:t.get("furniture_expand_lines", 6)]]
+
+
 def plan(md, c, t, now=None):
     now = now or time.time()
     inv, cat, demand = load(md, "inventory.json", {}), market_model.catalog(md), load(md, "demand.json", [])
@@ -329,7 +368,7 @@ def plan(md, c, t, now=None):
         if reason != "HQ order" and sku in set(t.get("restock_hold") or []):   # HQ 11-11: lines that lose per unit
             skipped[sku] = "hold"
             return
-        if reason != "HQ order" and dear(sku):                # HQ 11-12 "매입가가 비싸졌다면 사지마"
+        if reason != "HQ order" and not reason.startswith("furniture expand") and dear(sku):   # HQ 11-12 "매입가가 비싸졌다면 사지마"; furniture expand checks the market's current cost itself
             skipped[sku] = "dear"
             return
         if reason != "HQ order" and stock.get(sku, 0) > 1 and stock.get(sku, 0) / max(our_rate.get(sku, 0), 1 / 48) >= 48:
@@ -395,6 +434,12 @@ def plan(md, c, t, now=None):
         for sku, qty, why_ in food_expand(c, now, t, cat, stock):
             add(sku, qty - buy.get(sku, 0), why_)
         cash = before - (min(before, t.get("food_expand_budget", 4_000_000)) - cash)
+    if t.get("furniture_expand", True):                       # 1b'''. MST TF 11-14: the top-5 shops' furniture
+        before = cash
+        cash = min(cash, t.get("furniture_expand_budget", 15_000_000))
+        for sku, qty, why_ in furniture_expand(c, now, t, cat, stock):
+            add(sku, qty - buy.get(sku, 0), why_)
+        cash = before - (min(before, t.get("furniture_expand_budget", 15_000_000)) - cash)
     if t.get("profit_first"):                                 # HQ 11-10: only proven earners until profit is back
         cash = min(cash, general)
         return [{"sku": k, "qty": v} for k, v in buy.items()], why + ["profit-first: proven earners only"] + \
