@@ -238,7 +238,7 @@ def sale_quote(unit, catalog, program, intel=None, token='', ref='', *, record=T
         # verified market already demonstrates a lower acceptance point. The
         # cost/refund floor below remains authoritative.
         base=grade_target_price
-    adjustment=1.0;competitors=0;substitutes=0;sold=0;quotes=0
+    adjustment=1.0;competitors=0;substitutes=0;sold=0;quotes=0;own_offers=[]
     if intel:
         shops=intel.source('shops',None,max_age=180)
         if shops:
@@ -254,8 +254,15 @@ def sale_quote(unit, catalog, program, intel=None, token='', ref='', *, record=T
                     elif product.get('category')==category and listed*.5<=product.get('list_price',0)<=listed*1.5:
                         substitutes+=qty
             sold=program.db.execute('SELECT COUNT(*) FROM sales WHERE sku=? AND settled>? AND refunded=0',(unit['sku'],time.time()-21600)).fetchone()[0]
-            for row in intel.db.execute("SELECT body FROM decisions WHERE role='seller_quote' AND ts>?",(time.time()-21600,)):
-                if json.loads(row[0]).get('sku')==unit['sku']:quotes+=1
+            for row in intel.db.execute(
+                    "SELECT role,body FROM decisions "
+                    "WHERE role IN ('seller_quote','seller_offer_received') AND ts>?",
+                    (time.time()-21600,)):
+                signal=json.loads(row[1])
+                if signal.get('sku')!=unit['sku']:continue
+                if row[0]=='seller_quote':quotes+=1
+                elif isinstance(signal.get('offered'),int) and signal['offered']>0:
+                    own_offers.append(signal['offered'])
             # Scarcity is never sufficient: an increase also requires observed
             # quote conversion and actual sales. Substitute stock counts as competition.
             if (not acceptance_first and quotes>=5 and sold>=2 and sold/quotes>=.2
@@ -271,6 +278,19 @@ def sale_quote(unit, catalog, program, intel=None, token='', ref='', *, record=T
     hazard,hazard_basis=observed_hazard(intel,program.p.get('shop_name','25512088'))
     legacy=bool(token or ref)
     protected=protected_floor(unit,program.p,hazard) if legacy else score_floor(unit,hazard)
+    offer_target=None;offer_target_applied=False
+    if not legacy and quotes>=10 and len(own_offers)>=10 and sold/quotes<.10:
+        # A buyer's numeric offer is stronger local conversion evidence than a
+        # market-wide settlement from another shop.  When this SKU repeatedly
+        # receives offers but converts poorly, open at the upper quartile of
+        # those offers, bounded by the expected-Book-preserving floor.  This
+        # adaptation cannot trade Book for Revenue, and it stops after
+        # conversion recovers above ten percent.
+        own_offers.sort()
+        offer_target=own_offers[math.ceil(.75*len(own_offers))-1]
+        demand_price=max(protected,offer_target)
+        if demand_price<base:
+            base=demand_price;offer_target_applied=True
     floor=protected;loss_leader=False
     evidence_prices=[price for price in (comp.get('p10'),grade_target_price)
                      if isinstance(price,(int,float)) and price>0]
@@ -281,7 +301,8 @@ def sale_quote(unit, catalog, program, intel=None, token='', ref='', *, record=T
     loss_trials=program.db.execute(
         'SELECT COUNT(*) FROM sales WHERE sku=? AND amount<cost',(unit['sku'],)).fetchone()[0]
     cohort_floor=math.ceil(unit['cost']*(1-LOSS_LEADER_RATE))
-    if (score_evidence_floor is not None and not token and not ref and score_evidence_floor>=cohort_floor
+    if (score_evidence_floor is not None and score_evidence_floor<protected
+            and not token and not ref and score_evidence_floor>=cohort_floor
             and loss_used+projected_loss<=LOSS_LEADER_BUDGET
             and (not projected_loss or loss_trials<LOSS_LEADER_TRIALS_PER_SKU)):
         # A bounded public cohort may trade up to 3% raw principal for direct
@@ -316,6 +337,9 @@ def sale_quote(unit, catalog, program, intel=None, token='', ref='', *, record=T
                        'warranty_hours':warranty,
                        'hazard_probability':hazard,'hazard_basis':hazard_basis,
                        'holdings':holdings,'recent_sales_6h':recent_sales,
+                       'own_offer_target':offer_target,
+                       'own_offer_samples':len(own_offers),
+                       'own_offer_target_applied':offer_target_applied,
                        'liquidation':bool(markdown),'liquidation_discount':markdown,
                        'loss_leader':loss_leader,'projected_raw_loss':projected_loss,
                        'loss_leader_evidence':('top10_grade_or_exact_condition' if score_evidence_floor else None),

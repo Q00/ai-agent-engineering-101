@@ -121,6 +121,26 @@ class IntelligenceTests(unittest.TestCase):
         unit['cost']=10500
         q=sale_quote(unit,{},self.p,self.i)
         self.assertFalse(q['loss_leader']);self.assertGreater(q['price'],10000)
+    def test_repeated_unconverted_local_offers_lower_opening_ask_without_losing_book(self):
+        now=time.time();rows=[]
+        for n,price in enumerate(range(10000,11000,100),1):
+            rows.append(dict(seq=300+n,ts=now,kind='settle',round=3,data=dict(
+                shop='https://shop',sku='x',grade='A',amount=price,
+                warranty_hours=6,claim_honest=True,buyer=f'market-{n}')))
+        self.i.ingest(rows)
+        for n in range(10):
+            self.i.decision('seller_quote',{'sku':'x','price':10000})
+            self.i.decision('seller_offer_received',{'sku':'x','offered':6000+n})
+        self.i.save_source('shops',{'shops':[{'name':'rival','offers':[]}]})
+        unit=dict(self.u,cost=5000,list_price=20000)
+        q=sale_quote(unit,{},self.p,self.i)
+        self.assertEqual(q['price'],6007)
+        self.assertGreaterEqual(q['price'],score_floor(unit))
+        body=json.loads(self.i.db.execute(
+            "SELECT body FROM decisions WHERE role='seller_quote' ORDER BY id DESC LIMIT 1").fetchone()[0])
+        self.assertTrue(body['own_offer_target_applied'])
+        self.assertEqual(body['own_offer_samples'],10)
+        self.assertEqual(body['own_offer_target'],6007)
     def test_food_comparison_life_and_expiry(self):
         self.i.ingest(self.rows(expiry=time.time()+12*3600))
         self.assertEqual(self.i.comparable('x','A',12)['count'],4)
