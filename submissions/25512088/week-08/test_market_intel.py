@@ -91,6 +91,9 @@ class IntelligenceTests(unittest.TestCase):
         self.assertEqual((target['ratio'],target['samples'],target['shops']),(.7,60,3))
         q=sale_quote(dict(self.u,cost=1000),catalog,self.p,self.i)
         self.assertEqual(q['price'],7000)
+        bounded=sale_quote(dict(self.u,cost=7200),catalog,self.p,self.i)
+        self.assertEqual(bounded['price'],7000)
+        self.assertTrue(bounded['loss_leader'])
 
     def test_buyer_preference_target_requires_three_active_buyers_and_fresh_data(self):
         now=time.time();base={'version':3,'generated_at':now,'buyers':{

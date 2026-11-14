@@ -233,12 +233,13 @@ def sale_quote(unit, catalog, program, intel=None, token='', ref='', *, record=T
         # active-buyer cohort. The protected floor below remains authoritative.
         base=min(base,preference['price'])
     grade_target=top_seller_grade_target(intel,catalog,unit.get('grade'),unit.get('kind'))
-    grade_target_applied=bool(listed and grade_target and math.ceil(listed*grade_target['ratio'])<base)
+    grade_target_price=math.ceil(listed*grade_target['ratio']) if listed and grade_target else None
+    grade_target_applied=bool(grade_target_price and grade_target_price<base)
     if grade_target_applied:
         # Never open above the condition-matched top-shop median when the
         # verified market already demonstrates a lower acceptance point. The
         # cost/refund floor below remains authoritative.
-        base=math.ceil(listed*grade_target['ratio'])
+        base=grade_target_price
     adjustment=1.0;competitors=0;substitutes=0;sold=0;quotes=0
     if intel:
         shops=intel.source('shops',None,max_age=180)
@@ -273,18 +274,21 @@ def sale_quote(unit, catalog, program, intel=None, token='', ref='', *, record=T
     legacy=bool(token or ref)
     protected=protected_floor(unit,program.p,hazard) if legacy else score_floor(unit,hazard)
     floor=protected;loss_leader=False
-    projected_loss=max(0,unit['cost']-(comp.get('p10') or unit['cost']))
+    evidence_prices=[price for price in (comp.get('p10'),grade_target_price)
+                     if isinstance(price,(int,float)) and price>0]
+    score_evidence_floor=max(evidence_prices) if evidence_prices else None
+    projected_loss=max(0,unit['cost']-(score_evidence_floor or unit['cost']))
     loss_used=program.db.execute(
         'SELECT COALESCE(SUM(CASE WHEN cost>amount THEN cost-amount ELSE 0 END),0) FROM sales WHERE refunded=0').fetchone()[0]
     loss_trials=program.db.execute(
         'SELECT COUNT(*) FROM sales WHERE sku=? AND amount<cost',(unit['sku'],)).fetchone()[0]
     cohort_floor=math.ceil(unit['cost']*(1-LOSS_LEADER_RATE))
-    if (acceptance_first and not token and not ref and comp['p10']>=cohort_floor
+    if (score_evidence_floor is not None and not token and not ref and score_evidence_floor>=cohort_floor
             and loss_used+projected_loss<=LOSS_LEADER_BUDGET
             and (not projected_loss or loss_trials<LOSS_LEADER_TRIALS_PER_SKU)):
         # A bounded public cohort may trade up to 3% raw principal for direct
         # conversion evidence. Legacy benefits never stack with this experiment.
-        floor=comp['p10'];loss_leader=floor<protected
+        floor=score_evidence_floor;loss_leader=floor<protected
     if markdown:
         base=max(floor,math.ceil(base*(1-markdown)))
     q=program.quote(max(base,floor),unit['cost'],token=token,ref=ref)
@@ -316,6 +320,7 @@ def sale_quote(unit, catalog, program, intel=None, token='', ref='', *, record=T
                        'holdings':holdings,'recent_sales_6h':recent_sales,
                        'liquidation':bool(markdown),'liquidation_discount':markdown,
                        'loss_leader':loss_leader,'projected_raw_loss':projected_loss,
+                       'loss_leader_evidence':('top10_grade_or_exact_condition' if score_evidence_floor else None),
                        'loss_budget_remaining':q['loss_budget_remaining'],
                        'source':('buyer_preference_lower_quartile' if preference_applied else
                            ('top10_grade_median' if grade_target_applied else
