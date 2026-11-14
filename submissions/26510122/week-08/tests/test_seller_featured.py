@@ -182,3 +182,22 @@ class FeaturedContractTests(unittest.TestCase):
         with patch.object(seller_r3,'decide_json',side_effect=AssertionError('invalid code')):asyncio.run(flow())
 
 if __name__=='__main__':unittest.main()
+
+
+class MidpriceVisibilityTests(unittest.TestCase):
+    def test_middle_ab_unit_remains_visible_among_many_cheap_and_c_units(self):
+        now=time.time()
+        base={'name':'Goods','grade':'B','kind':'goods','supplied_at':now,
+              'expires_at':None,'cost':1000,'list_price':3000}
+        low=[{**base,'sku':f'cheap{i}','unit':f'low{i}'} for i in range(30)]
+        middle={**base,'sku':'middle','unit':'good-mid','cost':120000,'list_price':270000}
+        c={**middle,'unit':'c-mid','grade':'C','cost':30000}
+        with tempfile.TemporaryDirectory() as tmp:
+            choices=featured.proposals(low+[middle,c],Path(tmp),now)
+            mid=[o for o in choices if o['sku']=='middle']
+            self.assertTrue(mid)
+            self.assertEqual({o['unit'] for o in mid},{'good-mid'})
+            self.assertTrue(any(o['margin_scenario']==.02 for o in mid))
+            self.assertTrue(all(o['price']>featured.floor(middle,now) for o in mid))
+            self.assertLessEqual(len(choices),24)
+            self.assertTrue(any(o['sku'].startswith('cheap') for o in choices))

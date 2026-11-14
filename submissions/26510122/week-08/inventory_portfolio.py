@@ -461,6 +461,7 @@ def _run(inventory, catalog, history, now, model, refresh, rng, path,prepare_onl
                                'at current supply cost. Rank by projected contribution times proven sales. Cover these deficits first. '
                                'The general unit cost ceiling here limits exploration and other candidates; an eligible '
                                'upper_midprice candidate still reserves its full worst-case cost. '
+                               'A limited_one_unit_recovery has only sparse recent evidence: at most one unit per SKU, two such candidates per window, current projected margin must stay positive. It is not deep proven stock. '
                                'Then cover profitable midprice_priority deficits across several proven SKUs. '
                                'If skipping an affordable upper_midprice or midprice '
                                'deficit, explain the concrete constraint in reason. Keep room for required exploration. '

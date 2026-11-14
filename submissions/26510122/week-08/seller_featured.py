@@ -35,6 +35,10 @@ def proposals(units, market_dir, now, *, price_caps=None):
         base=floor(unit,now)
         if price_caps is None:
             prices = [(math.ceil(base * (1 + margin)), margin) for margin in (.10, .20)]
+            value_price=math.ceil(base*1.02)
+            if (unit.get('kind')=='goods' and unit['grade'] in ('A','B')
+                    and 100_000<=value_price<=300_000):
+                prices.append((value_price,.02))
         else:
             cap = min(price_caps.get(unit['unit'], 0), math.floor(reference * .90))
             price = min(math.ceil(base * 1.10), cap)
@@ -46,14 +50,29 @@ def proposals(units, market_dir, now, *, price_caps=None):
                 'grade':unit['grade'],'price':price,'list_price':reference,'price_floor':base,
                 'savings_ratio':round(1-price/reference,6),'expires_at':unit.get('expires_at'),
                 'warranty_hours':seller_warranty.hours(unit),'created_at':now,'valid_until':now+TTL,
-                'margin_scenario':margin,'caution':'Cost/holding and 10% goods refund scenario covered; actual breakage odds are unknown. Not a market-lowest claim.'})
+                'margin_scenario':margin,'acquisition_spread_before_holding_refunds':price-unit['cost'],
+                'usable_margin_saved_reference':round(min(1,(reference-price)/(reference-unit['cost'])),6)
+                    if reference>unit['cost'] else None,
+                'caution':'Cost/holding and 10% goods refund scenario covered; actual breakage odds are unknown. Not a market-lowest claim.'})
     rows.sort(key=lambda r:(-r['savings_ratio'],r['price'],r['id']))
     # Many interchangeable units must not crowd every other product out of the
     # bounded editor context. Offer both price choices for one real unit per SKU.
     preferred={}
     for row in rows:preferred.setdefault(row['sku'],row['unit'])
+    middle_units={}
+    for row in rows:
+        if row['grade'] in ('A','B') and 100_000<=row['price']<=300_000:
+            middle_units.setdefault(row['sku'],row['unit'])
+    preferred.update(middle_units)
     unique={r['id']:r for r in rows if r['unit']==preferred[r['sku']]}
-    return list(unique.values())[:24]
+    options=list(unique.values())
+    # Reserve context space for genuine profitable100k-300k A/B quotes;
+    # editor choice and all public-cap/availability guards remain authoritative.
+    mid=[r for r in options if r['grade'] in ('A','B') and 100_000<=r['price']<=300_000]
+    selected=mid[:6]
+    seen={r['id'] for r in selected}
+    selected.extend(r for r in options if r['id'] not in seen)
+    return selected[:24]
 
 
 def active(path,now):

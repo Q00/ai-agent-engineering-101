@@ -64,3 +64,37 @@ class UpperMidpriceTests(unittest.TestCase):
                                    unprofitable_upper_midprice={'upper'})
         self.assertEqual(buys, [{'sku': 'lower', 'qty': 1}])
         self.assertEqual(audit[0]['reasons'], ['upper_midprice_margin_no_longer_positive'])
+
+
+class MidpriceStockoutRecoveryTests(unittest.TestCase):
+    now=UpperMidpriceTests.now
+    catalog=UpperMidpriceTests.catalog
+    history=UpperMidpriceTests.history
+    def sparse(self):
+        rows=self.history()
+        rows=[e for e in rows if e['sku']=='upper']
+        for e in rows:
+            if e.get('unit')=='upper-0':e['at']=self.now-13*3600
+        return rows
+
+    def test_sparse_profitable_repeat_stockout_can_recover_only_one_unit(self):
+        rows=replenishment_candidates(self.catalog,{'balance':10_000_000,'units':[]},
+                                      self.sparse(),self.now)
+        self.assertEqual(len(rows),1)
+        row=rows[0]
+        self.assertTrue(row['midprice_stockout_recovery'])
+        self.assertEqual({o['qty'] for o in row['target_options']},{1})
+        self.assertEqual(row['upper_midprice']['evidence_status'],'limited_one_unit_recovery')
+        self.assertGreater(row['cost_ceiling_per_unit'],300_000)
+
+    def test_existing_stock_pending_or_new_loss_do_not_add_recovery_units(self):
+        unit={'sku':'upper','kind':'goods','grade':'A','cost':120000,'category':'upper'}
+        for inventory,pending,blocked in [
+            ({'balance':10_000_000,'units':[unit]},None,()),
+            ({'balance':10_000_000,'units':[]},{'upper':1},()),
+            ({'balance':10_000_000,'units':[]},None,{'upper'}),
+            ({'balance':10_000_000,'units':[],
+              'surge':[{'sku':'upper','factor':1.5}]},None,())]:
+            rows=replenishment_candidates(self.catalog,inventory,self.sparse(),self.now,
+                                          pending=pending,blocked=blocked)
+            self.assertFalse(any(r.get('midprice_stockout_recovery') for r in rows))
