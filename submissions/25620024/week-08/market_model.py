@@ -39,6 +39,7 @@ create table if not exists credits_used (seq integer primary key, buyer text, am
 create table if not exists supplies (seq integer primary key, ts real, shop text, sku text, qty integer, total integer);
 create table if not exists supply_units (unit text primary key, shop text, sku text, cost real, ts real);
 create table if not exists gaps (ts real, category text, kind text, budget integer, skus text);
+create table if not exists settle_warranty (seq integer primary key, hours real);   -- MST TF 11-14: per-buyer warranty
 create index if not exists settles_sku on settles(sku);
 create index if not exists settles_cat on settles(category);
 """
@@ -91,6 +92,7 @@ def sync(c=None, md=Path(".market"), budget_s=20):
                                (cat.get(sku) or {}).get("list_price"), d.get("grade"), d.get("claim"),
                                None if d.get("claim_honest") is None else int(bool(d["claim_honest"]))))
                     c.execute("insert or ignore into settle_units values (?,?)", (e["seq"], d.get("unit")))
+                    c.execute("insert or ignore into settle_warranty values (?,?)", (e["seq"], d.get("warranty_hours") or 0))
                     n += 1
                 elif e.get("kind") == "supply":
                     units = d.get("units") or []

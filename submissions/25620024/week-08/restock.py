@@ -622,6 +622,12 @@ def main():
                   flush=True)
     except Exception as e:
         print(f"[forum] skipped: {type(e).__name__}: {e}", flush=True)
+    try:                                   # MST TF 11-14: per-buyer warranty table for the shop (every run, < 1 s)
+        import warranty_memo
+        wm = warranty_memo.build(c)
+        print(f"[warranty memo] {len(wm['fp'])} wordings, {wm['buyers']} buyers", flush=True)
+    except Exception as e:
+        print(f"[warranty memo] skipped: {type(e).__name__}: {e}", flush=True)
     try:                                   # the Enuri team's book for the buyer: passive, rebuilt every tick_s
         import enuri
         card = enuri.tick(md, c)
