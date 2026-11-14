@@ -310,6 +310,15 @@ def quote(c, unit, code=None, me=None, now=None, stock_n=1, vip=False):
             tgt = int(gmk * 0.98)
             price, why = min(price, tgt), why + [f"food at market {tgt} ({left:.0%} shelf left; expiry loses the cost)"]
             floor = min(floor, int(gmk * 0.9))
+    fcap = t.get("food_market_cap")
+    if fcap and gmk and unit.get("kind") == "food" and max(price, floor) > gmk * fcap:
+        # MST TF 11-14 (3rd): food conversion falls from 65% at 0.95-1.00 x the market median to 19% over 1.10; in 6 h
+        # 1,405 food quotes asked >= 1.03 x and 58% of those units cost <= 0.95 x the median -- the 12% margin floor,
+        # not the cost, held the ask over the market. Ask the median when cost + food_cap_margin still fits under it.
+        tgt, fl = int(gmk * fcap), int(cost * (1 + t.get("food_cap_margin", 0.03))) + 1
+        if tgt >= fl:
+            price, why = min(price, tgt), why + [f"food cap {tgt} ({fcap:.2f} x median {gmk:.0f})"]
+            floor = min(floor, max(fl, int(tgt * (1 - t["haggle_room"]))))
     ladder = t.get("big_cost_ladder")
     if ladder and unit.get("kind") == "goods" and lp >= t.get("big_follow_list", 500000) and unit.get("supplied_at"):
         # MST TF 11-14 (2nd): in 3 h 54 big sales, 85% of revenue, made a gross of 0 and an EV of -0.49M/h. A line's
