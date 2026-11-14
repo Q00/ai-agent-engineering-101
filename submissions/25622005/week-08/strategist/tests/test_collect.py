@@ -167,6 +167,14 @@ class LedgerBucketTest(unittest.TestCase):
         lb = collect.ledger_buckets(lb, [], self.CAT, ours, NOW + 600)  # the next run reads no new rows
         self.assertEqual(collect.bucket_total(lb, NOW - 3600, NOW + 600)["settle"], 3)
 
+    def test_our_refunds_on_broken_rows(self):
+        ours = lambda d: d.get("shop") == "me"
+        broken = lambda shop, refunded: {"ts": NOW - 50, "kind": "broken",
+                                         "data": {"shop": shop, "unit": "u1", "item": "SOFA", "refunded": refunded}}
+        rows = [broken("me", 2_500_000), broken("me", 0), broken("other", 900_000), broken("me", None)]
+        tot = collect.bucket_total(collect.ledger_buckets(None, rows, self.CAT, ours, NOW), NOW - 3600, NOW + 600)
+        self.assertEqual((tot["ours_ref"], tot["ours_ref_n"], tot["settle"]), (2_500_000, 1, 0))
+
     def test_old_buckets_expire_and_partial_buckets_are_left_out(self):
         lb = collect.ledger_buckets({}, [self.settle("FOOD", NOW - 100)], self.CAT, lambda d: False, NOW)
         start = int((NOW - 100) // 600 * 600)

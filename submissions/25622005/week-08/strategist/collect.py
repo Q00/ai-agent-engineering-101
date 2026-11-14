@@ -570,19 +570,25 @@ def band(list_price):
 
 def ledger_buckets(lb, ledger, catalog, ours, now):
     """lb (state["ledger_buckets"], or None) with this run's settle rows added: bucket start (str) ->
-    {settle, ours, settle.b<i>, rev.b<i>, ours.b<i>, ours_rev.b<i>}, i the list price band. Every ledger
-    row is read once (the cursor), so each settle is counted once. ours(data) -> bool. Buckets older than
-    BUCKETS_KEEP_S are dropped."""
+    {settle, ours, settle.b<i>, rev.b<i>, ours.b<i>, ours_rev.b<i>, ours_ref, ours_ref_n}, i the list price band;
+    ours_ref is what our shop refunded on broken rows (a warranted unit that broke: the full price goes back).
+    Every ledger row is read once (the cursor), so each row is counted once. ours(data) -> bool. Buckets older
+    than BUCKETS_KEEP_S are dropped."""
     lb = {k: v for k, v in (lb.items() if isinstance(lb, dict) else ()) if isinstance(v, dict)
           and k.isdigit() and int(k) + BUCKET_S > now - BUCKETS_KEEP_S}
     catalog = catalog if isinstance(catalog, dict) else {}
     for r in ledger or []:
-        if not isinstance(r, dict) or r.get("kind") != "settle" or not isinstance(r.get("data"), dict):
+        if not isinstance(r, dict) or r.get("kind") not in ("settle", "broken") or not isinstance(r.get("data"), dict):
             continue
         ts = r.get("ts")
         if not _number(ts) or ts <= now - BUCKETS_KEEP_S:
             continue
         d = r["data"]
+        if r["kind"] == "broken":
+            if _number(d.get("refunded")) and d["refunded"] > 0 and ours(d):
+                b = lb.setdefault(str(int(ts // BUCKET_S * BUCKET_S)), {})
+                b["ours_ref"], b["ours_ref_n"] = b.get("ours_ref", 0) + d["refunded"], b.get("ours_ref_n", 0) + 1
+            continue
         b = lb.setdefault(str(int(ts // BUCKET_S * BUCKET_S)), {})
         mine = bool(ours(d))
         amount = d["amount"] if _number(d.get("amount")) else 0
@@ -626,10 +632,12 @@ def sku_tables(t, ledger, catalog, ours, me, cost_of, now):
     cursor), so each is counted once. ours(data) -> bool says a settle is ours; our supply and expire rows carry
     our shop name (me). cost_of(unit id) -> the unit's cost or None (then list x our mean cost/list of its kind).
       b: 10-minute bucket start (str) -> {"s": {sku: market settles}, "o": {sku: our settles},
-         "pl": {sku: [sum paid/list, n]}, "k": {kind: {paid/list bin: n}}, "u": {sku: market supply units},
-         "ou": {sku: our supply units}}, kept TBL_KEEP_S;
+         "pl": {sku: [sum paid/list, n]}, "pg": {sku: {grade: [sum paid/list, n]}} (market settles by grade),
+         "k": {kind: {paid/list bin: n}}, "u": {sku: market supply units}, "ou": {sku: our supply units}},
+         kept TBL_KEEP_S;
       h: hour start (str) -> {"k": {kind: {bin: n}}, "c": {kind: [sum cost/list, units]} (our supply),
-         "cogs", "rev" (our settles' cost and amount), "exp" (our expired cost), "o": {sku: our settles}}, kept 24 h;
+         "cogs", "rev" (our settles' cost and amount), "exp" (our expired cost), "ref" (what we refunded on
+         broken rows), "o": {sku: our settles}}, kept 24 h;
       since: when the counts began (the oldest row of the first fold); h_since: the same for the hourly buckets."""
     t = t if isinstance(t, dict) else {}
     b = {k: v for k, v in (t.get("b") or {}).items() if isinstance(v, dict) and str(k).isdigit()
@@ -645,7 +653,7 @@ def sku_tables(t, ledger, catalog, ours, me, cost_of, now):
         if not isinstance(r, dict) or not isinstance(r.get("data"), dict) or not _number(r.get("ts")):
             continue
         ts, d, kind_ = r["ts"], r["data"], r.get("kind")
-        if ts <= now - DAY_S or kind_ not in ("settle", "supply", "expire"):
+        if ts <= now - DAY_S or kind_ not in ("settle", "supply", "expire", "broken"):
             continue
         hb = h.setdefault(str(int(ts // HOUR_S * HOUR_S)), {})
         first_h.append(ts)
@@ -655,6 +663,10 @@ def sku_tables(t, ledger, catalog, ours, me, cost_of, now):
         if kind_ == "expire":
             if d.get("shop") == me and _number(d.get("cost")):
                 _add(hb, "exp", d["cost"])
+            continue
+        if kind_ == "broken":
+            if _number(d.get("refunded")) and d["refunded"] > 0 and ours(d):
+                _add(hb, "ref", d["refunded"])
             continue
         sku = d.get("sku") or d.get("item")
         if not isinstance(sku, str) or not SKU_RE.fullmatch(sku):
@@ -683,6 +695,9 @@ def sku_tables(t, ledger, catalog, ours, me, cost_of, now):
                     _hist_add(bb.setdefault("k", {}), kind, x)
                     pl = bb.setdefault("pl", {}).setdefault(sku, [0, 0])
                     pl[0], pl[1] = round(pl[0] + x, 4), pl[1] + 1
+                    if d.get("grade") in ("A", "B", "C"):
+                        pg = bb.setdefault("pg", {}).setdefault(sku, {}).setdefault(d["grade"], [0, 0])
+                        pg[0], pg[1] = round(pg[0] + x, 4), pg[1] + 1
         else:                                           # supply
             qty = d["qty"] if _number(d.get("qty")) else 0
             if bb is not None:
@@ -720,10 +735,11 @@ def _hist_median(hists):
 
 def table_view(t, now):
     """The tables as numbers: {"covered_h", "h1", "h6" (hours the 1 h and 6 h counts span),
-    "sku": {sku: {"s1", "s6", "o6", "u1", "ou1", "pl6" (mean paid/list or None), "pl_n"}},
+    "sku": {sku: {"s1", "s6", "o6", "u1", "ou1", "pl6" (mean paid/list or None), "pl_n", "pg6" ({grade:
+    [mean paid/list of the market's settles of that grade, n]}, only grades seen)}},
     "p_clear": {kind: {"h6", "n6", "h24", "n24"}} (median paid/list of market settles), "c_kind": {kind: our mean
-    supply cost/list over 24 h or None}, "day": {"cogs", "rev", "exp", "o": {sku: our settles}, "h" (hours the
-    24 h sums span)}}."""
+    supply cost/list over 24 h or None}, "day": {"cogs", "rev", "exp", "ref", "o": {sku: our settles}, "h" (hours
+    the 24 h sums span)}}."""
     t = t if isinstance(t, dict) else {}
     b, h = t.get("b") or {}, t.get("h") or {}
     since = t.get("since") if _number(t.get("since")) else now
@@ -743,9 +759,15 @@ def table_view(t, now):
             r = rows.setdefault(sku, {"s1": 0, "s6": 0, "o6": 0, "u1": 0, "ou1": 0, "pl": [0, 0]})
             r["pl"][0] += x
             r["pl"][1] += n
+        for sku, gs in (v.get("pg") or {}).items():
+            r = rows.setdefault(sku, {"s1": 0, "s6": 0, "o6": 0, "u1": 0, "ou1": 0, "pl": [0, 0]})
+            for g, (x, n) in (gs or {}).items():
+                acc = r.setdefault("pg", {}).setdefault(g, [0, 0])
+                acc[0], acc[1] = acc[0] + x, acc[1] + n
     for r in rows.values():
         x, n = r.pop("pl")
         r["pl6"], r["pl_n"] = (round(x / n, 3) if n else None), n
+        r["pg6"] = {g: [round(x / n, 3), n] for g, (x, n) in r.pop("pg", {}).items() if n}
     p_clear = {}
     for kind in C_FALLBACK:
         m6, n6 = _hist_median([(v.get("k") or {}).get(kind) for v in b.values()])
@@ -760,7 +782,7 @@ def table_view(t, now):
     for v in h.values():
         o24.update({k: n for k, n in (v.get("o") or {}).items() if _number(n)})
     h_since = t.get("h_since") if _number(t.get("h_since")) else since
-    day = {f: round(sum(v.get(f) or 0 for v in h.values())) for f in ("cogs", "rev", "exp")} | {
+    day = {f: round(sum(v.get(f) or 0 for v in h.values())) for f in ("cogs", "rev", "exp", "ref")} | {
         "o": dict(o24), "h": round(min(DAY_S, max(0.0, now - h_since)) / 3600, 2)}
     return {"covered_h": round(covered / 3600, 2), "h1": span(HOUR_S), "h6": span(TBL_KEEP_S),
             "sku": rows, "p_clear": p_clear, "c_kind": c_kind, "day": day}

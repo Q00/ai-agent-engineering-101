@@ -11,7 +11,9 @@ direction for BLOCK_H. Goods conversion, our share of market settles, our settle
 per hour swing too much between half-hours (goods 0.55-0.96 with no change) to judge a change by: they are
 reported, never acted on. shop_rev_h is there because a seller lever's effect is in paid revenue, which the
 seller log cannot show (a sign is not a sale): on 11-10 four warranty cap cuts went through with only buyer
-and forum metrics in their outcome rows while settled revenue halved.
+and forum metrics in their outcome rows while settled revenue halved. It is net of our warranty refunds
+(ours_ref): on 11-14 16-23 h refunds took 3.8M of 70.6M paid, half the margin, and a lever that sells more
+warranties looked better than it was (buckets folded before 11-14 23 h carry no refunds).
 While a check is pending the model is not asked (run.py), so one change-set is judged before the next.
 """
 import math
@@ -48,9 +50,10 @@ def measure(hist, buckets, m, t0, t1):
     elif m == "shop_share":
         tot = collect.bucket_total(buckets, t0, t1)
         num, den = tot["ours"], tot["settle"]
-    elif m == "shop_rev_h":             # our settled (paid) revenue per hour, from the ledger's settles: what the
-        tot = collect.bucket_total(buckets, t0, t1)                   # board counts, where a seller lever shows
-        num, den = round(sum(v for k, v in tot.items() if k.startswith("ours_rev."))), (t1 - t0) / 3600
+    elif m == "shop_rev_h":             # our settled (paid) revenue per hour less what warranty refunds paid back,
+        tot = collect.bucket_total(buckets, t0, t1)  # from the ledger: where a seller lever shows, refunds included
+        rev = sum(v for k, v in tot.items() if k.startswith("ours_rev."))
+        num, den = round(rev - (tot.get("ours_ref") or 0)), (t1 - t0) / 3600
     else:                               # posts_h: per hour
         num = sum(1 for r in hist.get("forum") or [] if _in(r, t0, t1)
                   and isinstance(r.get("choice"), dict) and r["choice"].get("posted") is True)

@@ -111,6 +111,15 @@ class OutcomeTest(unittest.TestCase):
         self.assertEqual(outs[0]["metrics"]["shop_rev_h"], [2_200_000.0, 1_000_000.0])     # 4.4M over the 2 h base; 1M over the hour after
         self.assertEqual(outs[0]["n"]["shop_rev_h"], [2.0, 1.0])
 
+    def test_settled_revenue_is_net_of_our_refunds(self):
+        buckets = {str(int(T - 3600)): {"settle": 10, "ours": 5, "ours_rev.b3": 4_000_000},
+                   str(int(T + 600)): {"settle": 10, "ours": 1, "ours_rev.b3": 1_000_000, "ours_ref": 600_000}}
+        h = {"buyer": [], "forum": []}
+        rows = [{"key": "seller.warranty_cap_6h", "old": 10_000_000, "new": 7_000_000, "source": "model"}]
+        state = self.registered(h, rows, buckets)
+        _, outs = outcome.check(state, h, buckets, pol(), T + 3700)
+        self.assertEqual(outs[0]["metrics"]["shop_rev_h"], [2_000_000.0, 400_000.0])
+
     def test_only_model_rows_register(self):
         state = {}
         outcome.register(state, "r1", [{"key": "forum.min_gap_min", "old": 10, "new": 5, "source": "market-rule"},

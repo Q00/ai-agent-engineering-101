@@ -69,7 +69,7 @@ class TablesTest(unittest.TestCase):
         self.assertEqual(v["c_kind"], {"food": 0.55, "goods": None})          # our supply only
         self.assertEqual((v["sku"]["NOPE"]["s6"], v["sku"]["NOPE"]["pl6"]), (1, None))   # not in the catalog: no paid/list
         # our 3 settles: no unit cost known, so list x the goods fallback 0.61
-        self.assertEqual(v["day"], {"cogs": 3 * 61000, "rev": 240000, "exp": 0, "o": {"GA": 3}, "h": 5.75})
+        self.assertEqual(v["day"], {"cogs": 3 * 61000, "rev": 240000, "exp": 0, "ref": 0, "o": {"GA": 3}, "h": 5.75})
 
     def test_each_row_once_and_pruning(self):
         t = collect.sku_tables(None, [settle("GA", NOW - 60, 1000)], CAT, lambda d: False, ME, lambda u: None, NOW)
@@ -90,7 +90,20 @@ class TablesTest(unittest.TestCase):
                 {"seq": 2, "ts": NOW - 50, "kind": "expire", "data": {"shop": ME, "units": ["u8"], "cost": 4000}},
                 {"seq": 3, "ts": NOW - 40, "kind": "expire", "data": {"shop": "other", "cost": 999}}]
         v = view(rows, cost_of=lambda u: 52000 if u == "u7" else None)
-        self.assertEqual(v["day"], {"cogs": 52000, "rev": 90000, "exp": 4000, "o": {"GA": 1}, "h": 0.02})
+        self.assertEqual(v["day"], {"cogs": 52000, "rev": 90000, "exp": 4000, "ref": 0, "o": {"GA": 1}, "h": 0.02})
+
+    def test_market_price_by_grade_and_our_refunds(self):
+        graded = lambda amount, g, ts: {**settle("GA", ts, amount), "data": {**settle("GA", ts, amount)["data"], "grade": g}}
+        rows = [graded(70000, "A", NOW - 600), graded(72000, "A", NOW - 500), graded(60000, "B", NOW - 400),
+                settle("GA", NOW - 300, 50000),                                    # no grade: pl6 only
+                {"seq": 4, "ts": NOW - 200, "kind": "broken",
+                 "data": {"shop": "https://us.example", "unit": "u9", "item": "GA", "refunded": 66000}},
+                {"seq": 5, "ts": NOW - 100, "kind": "broken",
+                 "data": {"shop": "https://other.example", "unit": "u1", "item": "GA", "refunded": 50000}}]
+        v = view(rows)
+        self.assertEqual(v["sku"]["GA"]["pg6"], {"A": [0.71, 2], "B": [0.6, 1]})
+        self.assertEqual(v["sku"]["GA"]["pl_n"], 4)
+        self.assertEqual(v["day"]["ref"], 66000)
 
     def test_bounded_state(self):
         rows = [settle(f"G{i:08x}", NOW - (i % 360) * 60, 1000) for i in range(5000)]
