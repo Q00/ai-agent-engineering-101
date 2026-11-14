@@ -53,13 +53,13 @@ GUARD = HERE / "private" / "team_guard.json"
 #   overnight (until the shop is back on its feet): every 30 min; normal: every 2 h
 #   a usage/rate-limit error from Codex or Claude: cool down 3 h; 3 failures in a row: 1 h; at most 40 runs a day;
 #   headquarters can pause it by setting "paused": true
-LIMITS = {"overnight_min": 29, "normal_min": 118, "max_runs_day": 60,   # 11-07: 10 min -> 30 min. Every 10 min the
+LIMITS = {"overnight_min": 179, "normal_min": 179, "max_runs_day": 60,  # HQ 11-14: 30 min -> 3 h. 11-07: 10 -> 30 min. Every 10 min the
     # model teams (4 Codex calls of ~75k-char briefs) used up the owner's Codex plan in about a day (limit hit 11-05
     # 01:08, back 11-07 05:47); the code loops (restock, buyer, self-improvement) still run every 10 min
           "limit_cooldown_h": 3, "fail_cooldown_h": 1,
           "normal_when_all": 2.0}   # HQ 11-04: no rest, all night (ALL never reaches 2)             # HQ 11-04: rest only near the top (0.6 put the team to sleep at rank 18)
-TEAM_GAP = {"overnight": 29 * 60, "normal": 55 * 60}
-SLOW_GAP = 59 * 60          # SCM (Codex) and finance (Claude, advisory) meet hourly     # HQ 11-04: every meeting (10 min)   # how often SCM, finance and the buyer team meet
+TEAM_GAP = {"overnight": 179 * 60, "normal": 179 * 60}   # HQ 11-14 "30분마다는 너무 빨라! 3시간 마다로": every team
+SLOW_GAP = 179 * 60  # meets once per 3 h meeting (was: buyer 30 min, SCM/finance/Enuri hourly)         # SCM (Codex) and finance (Claude, advisory) meet hourly     # HQ 11-04: every meeting (10 min)   # how often SCM, finance and the buyer team meet
 MODE = {"now": "overnight"}
 LIMIT_RE = re.compile(r"usage limit|rate.?limit|quota|429|too many requests|limit reached|exceeded", re.I)
 REPORTS = Path(os.environ.get("TEAM_REPORTS", "/mnt/gdrive-imajason-kimdaehakwon/week08-reports"))
