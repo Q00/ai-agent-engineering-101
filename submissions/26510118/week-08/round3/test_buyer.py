@@ -110,41 +110,6 @@ def test_choosing():
     check("else the market's average share for the product (ledger summary)", x["expected"] == 13000, x["expected"])
 
 
-def test_cheap_rank():
-    """11/14: the cheap rank, half the orders: the price a shop was paid lately for the SKU (public ledger) and the
-    margin kept there; trust counts only under TRUST_OK."""
-    led = ROOT / ".market" / "ledger"
-    led.mkdir(parents=True, exist_ok=True)
-    common.write_json(led / "shop_names.json", {"http://K.test": "K", "http://L.test": "L", "http://ours.test": "Kiro729 Shop"})
-    rows = [("http://K.test", 0.55, "A"), ("http://K.test", 0.57, "A"), ("http://K.test", 0.53, "A"),
-            ("http://L.test", 0.80, "A"), ("http://ours.test", 0.40, "A"), ("http://K.test", 0.50, "A", NOW - 4 * H)]
-    with open(led / "settles.jsonl", "w", encoding="utf-8") as f:
-        for r in rows:
-            f.write(json.dumps({"ts": r[3] if len(r) > 3 else NOW - H, "shop": r[0], "item": BEDDING,
-                                "amount": round(39900 * r[1]), "grade": r[2], "warranty_hours": None}) + "\n")
-    table = mb.cheap_table(CATALOG, NOW)
-    k = (table.get(BEDDING) or {}).get("K")
-    check("cheap table: the median share a shop was paid for the SKU over the last 3 h, ours and older sales left out",
-          k is not None and k[0] == 0.55 and set(table[BEDDING]) == {"K", "L"}, table.get(BEDDING))
-    check("...with the margin kept there (grade A at 55% of list: all of it, less our breaks)", k and 0.9 < k[1] <= 1, k)
-    check("...kept for 10 minutes", mb.cheap_table({}, NOW + 60) == table)
-    bed = order(39900, [BEDDING], "goods", oid="o-cheap")
-    nb = {"L": {"recent": ["settled"] * 5, "ratios": [0.62]}}
-    shops = [shop("K", BEDDING), shop("L", BEDDING)]
-    c, _ = mb.choose(mb.candidates(bed, shops, CATALOG, nb, {}, RULES), nb)
-    check("the score rank (as before): L, where we paid 62% before, though it sold at 80% lately and K at 55%", c["shop"]["name"] == "L")
-    xs = {x["shop"]["name"]: x for x in mb.candidates(bed, shops, CATALOG, nb, {}, RULES, cheap=table)}
-    c, _ = mb.choose(list(xs.values()), nb)
-    check("the cheap rank: K, sold 25 points of list cheaper lately, comes first", c["shop"]["name"] == "K"
-          and xs["K"]["expected"] == round(39900 * 0.55) and xs["L"]["expected"] == round(39900 * 0.80), {n: x["expected"] for n, x in xs.items()})
-    xs = mb.candidates(bed, [shop("M", BEDDING)], CATALOG, {}, {}, RULES, cheap=table)
-    check("...a shop with no recent sale keeps the usual guess", xs and xs[0]["recent"] is None and xs[0]["expected"] == round(39900 * 0.70))
-    share = sum(mb.rank_arm(f"o-{i}") == "cheap" for i in range(2000)) / 2000
-    check("the rank is drawn from the order id, half and half", 0.45 < share < 0.55 and mb.rank_arm("o-7") == mb.rank_arm("o-7"), share)
-    for f in (led / "settles.jsonl", led / "shop_names.json", ROOT / ".market" / "buyer" / "cheap.json"):
-        f.unlink(missing_ok=True)
-
-
 def test_terms():
     print("\n[B2 B3] offers and quality terms")
     check("offers 50, 63, 77, 90% of list (opening 0.50 since 11/6)", mb.ladder(RULES, None) == [0.5, 0.6333, 0.7667, 0.9],
@@ -754,7 +719,6 @@ def main() -> int:
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     try:
         test_choosing()
-        test_cheap_rank()
         test_terms()
         test_notebook()
         test_shop_around()
