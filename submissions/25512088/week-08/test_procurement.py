@@ -95,6 +95,22 @@ class PurchaseTests(unittest.TestCase):
   self.assertEqual(allocation_plan(ranked,{'units':[]},10000,aggression=4,policy=policy)[0]['qty'],5)
   ranked[0]['own_sales_1h']=5
   self.assertEqual(allocation_plan(ranked,{'units':[]},10000,aggression=4,policy=policy)[0]['qty'],3)
+ def test_cold_goods_capital_pauses_only_unproven_goods_trials(self):
+  common=dict(expected_net=5000,score=3,upper_cost=100,sales_1h=8,sales_6h=12,
+              distinct_buyers_6h=4,estimated_sale_likelihood=.8)
+  ranked=[dict(common,sku='cold-new',kind='goods',own_sales_1h=0),
+          dict(common,sku='proven',kind='goods',own_sales_1h=2),
+          dict(common,sku='food',kind='food',own_sales_1h=0)]
+  inventory={'units':[{'sku':'old-cold','kind':'goods','cost':800}]}
+  policy={'max_cold_goods_capital_share':.30,'cold_goods_min_own_sales_1h':1,
+          'max_sku_capital_share':1}
+  plan=allocation_plan(ranked,inventory,1000,policy=policy)
+  self.assertNotIn('cold-new',[row['sku'] for row in plan])
+  self.assertIn('proven',[row['sku'] for row in plan])
+  self.assertIn('food',[row['sku'] for row in plan])
+  inventory={'units':[{'sku':'old-cold','kind':'goods','cost':100}]}
+  plan=allocation_plan(ranked,inventory,1000,policy=policy)
+  self.assertIn('cold-new',[row['sku'] for row in plan])
  def test_sofa_is_blocked_until_zero_then_returns_under_normal_cap(self):
   ranked=[dict(sku='Gc2f7811b',expected_net=999999,score=99,upper_cost=100000,sales_1h=20,sales_6h=20,
                distinct_buyers_6h=10,estimated_sale_likelihood=1),

@@ -124,9 +124,25 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
     blocked=set(blocked)|set(policy.get('blocked_skus',()))
     blocked|={sku for sku in policy.get('blocked_until_zero_skus',()) if holding.get(sku,0)>0}
     portfolio_capital=sum(holding_cost.values())+max(0,available)
+    ranked_by_sku={row.get('sku'):row for row in ranked if row.get('sku')}
+    recent_goods={row.get('sku') for row in ranked
+                  if row.get('kind')=='goods' and
+                  row.get('own_sales_1h',0)>=policy.get('cold_goods_min_own_sales_1h',1)}
+    cold_goods_cost=sum(unit.get('cost',0) for unit in inventory.get('units',[])
+                        if (unit.get('kind') or ranked_by_sku.get(unit.get('sku'),{}).get('kind'))=='goods'
+                        and unit.get('sku') not in recent_goods)
+    cold_goods_limit=portfolio_capital*policy.get('max_cold_goods_capital_share',1)
+    cold_goods_frozen=cold_goods_cost>cold_goods_limit
     choices=[]
     for row in ranked:
         if row.get('sku') in blocked or row.get('expected_net',0)<=0:continue
+        # Supply calls and cash are both scarce.  Stop opening additional goods
+        # trials while too much principal is already tied up in goods that have
+        # not sold from our shop in the last hour. Proven goods keep restocking,
+        # and trials reopen automatically as the cold cohort sells down.
+        if (cold_goods_frozen and row.get('kind')=='goods' and
+                row.get('own_sales_1h',0)<policy.get('cold_goods_min_own_sales_1h',1)):
+            continue
         velocity=row.get('sales_1h',0)+row.get('sales_6h',0)/6
         distinct=max(0,row.get('distinct_buyers_6h',0))
         if row.get('sales_1h',0)<policy.get('require_sales_1h',0):continue
@@ -166,7 +182,9 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
         need=min(need,int(capital_room//max(1,row['upper_cost'])))
         if need<=0:continue
         evidence=dict(row,trusted_inquiries_6h=trusted_inquiries,
-                      trusted_stockouts_6h=trusted_stockouts,sku_inventory_ceiling=sku_ceiling)
+                      trusted_stockouts_6h=trusted_stockouts,sku_inventory_ceiling=sku_ceiling,
+                      cold_goods_cost=cold_goods_cost,cold_goods_limit=cold_goods_limit,
+                      cold_goods_frozen=cold_goods_frozen)
         is_new=not holding.get(row['sku'])
         breadth_target=max(0,policy.get('breadth_target_skus',0) or 0)
         breadth_priority=0 if len(holding)<breadth_target and is_new else 1
