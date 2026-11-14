@@ -100,6 +100,16 @@ how it maps to THIS market of LLM buyer agents and to the shop's levers (prices,
 VIP, lowest-price guarantee, clerk replies, forum posts, stock) and what experiment would test it. The sales team
 turns this into contingency_plan and starts the first experiments now."""
 
+def emergency_text():
+    """HQ's agenda for this contingency meeting (kpi.agenda, written by the TF) or the standing one."""
+    try:
+        import kpi
+        ag = kpi.agenda()
+    except Exception:
+        ag = None
+    return ("EMERGENCY MEETING (contingency plan), called by the headquarters. AGENDA:\n" + ag) if ag else EMERGENCY
+
+
 RESEARCH_PROMPT = """You are the marketing research team of an agent shop named "dragonash" in a classroom agent
 market (Round 3). The buyers are other students' LLM agents. You work for the sales team (Claude), the brain of the
 shop: your job is to give it what it needs to maximise sales and profit. Answer its requests (brief.sales_requests)
@@ -751,7 +761,7 @@ def run(a, t0):
     except Exception as e:
         b["experiments"] = {"error": str(e)[:200]}
     if getattr(a, "emergency", False):
-        b["emergency_meeting"] = EMERGENCY
+        b["emergency_meeting"] = emergency_text()
     try:                                             # the Enuri team's book: marketing and the buyer's scouts are allies
         import enuri
         b["enuri"] = enuri.summary()
@@ -773,7 +783,7 @@ def run(a, t0):
             b["audit_seller"] = {"error": f"{type(e).__name__}: {e}"[:200]}
     except Exception as e:
         b = {"accountability": {"error": f"{type(e).__name__}: {e}"[:200]}, **b}
-    research = json.loads(ask_codex((EMERGENCY + "\n\n" if getattr(a, "emergency", False) else "")
+    research = json.loads(ask_codex((emergency_text() + "\n\n" if getattr(a, "emergency", False) else "")
                                     + RESEARCH_PROMPT.replace("{accountable}", ACCOUNTABLE.format(where="findings"))
                                     + json.dumps(b, ensure_ascii=False), RESEARCH_SCHEMA))
     print(f"[marketing] research: {len(research['findings'])} findings, "
@@ -792,7 +802,7 @@ def run(a, t0):
         import scm_agent
         last = max((json.loads(x)["metrics"]["ts"] for x in scm_agent.HISTORY.read_text(encoding="utf-8").splitlines()
                     if x.strip()), default=0) if scm_agent.HISTORY.exists() else 0
-        if time.time() - last >= SLOW_GAP:             # SCM and finance hourly (11-07 model budget)
+        if getattr(a, "emergency", False) or time.time() - last >= SLOW_GAP:   # SCM and finance hourly (11-07 model budget)
             scm, _ = scm_agent.run(ask_codex, dry=a.dry)
             print(f"[scm] {len(scm['orders'])} orders, {len(scm['clearance'])} markdowns, alerts {scm['alerts'][:2]}")
     except Exception as e:
@@ -802,7 +812,7 @@ def run(a, t0):
         import finance_agent
         last = max((json.loads(x)["snapshot"]["ts"] for x in finance_agent.HISTORY.read_text(encoding="utf-8").splitlines()
                     if x.strip()), default=0) if finance_agent.HISTORY.exists() else 0
-        if time.time() - last >= SLOW_GAP:
+        if getattr(a, "emergency", False) or time.time() - last >= SLOW_GAP:
             fin, _ = finance_agent.run(ask_codex, b["our_shop"], dry=a.dry)
             print(f"[finance] {fin['verdict']}: {fin['limits']}, forecast {fin['forecast_profit_per_h']}/h")
         else:
@@ -812,7 +822,7 @@ def run(a, t0):
     try:                                             # HQ 11-14: the Enuri team's agent (Claude), hourly, before the
         import enuri_agent                           # buyer team, which reads its report
         h = enuri_agent.history()
-        if time.time() - (h[-1].get("ts", 0) if h else 0) >= SLOW_GAP:
+        if getattr(a, "emergency", False) or time.time() - (h[-1].get("ts", 0) if h else 0) >= SLOW_GAP:
             en, _ = enuri_agent.run(lambda t, s: ask("enuri", t, s), dry=a.dry)
             print(f"[enuri] changed {en['changed']}, survey {len(en['survey_skus'])} SKUs: {en['buyer_brief'][:200]}")
     except Exception as e:
@@ -822,7 +832,7 @@ def run(a, t0):
         import buyer_team
         last = max((json.loads(x)["snapshot"]["ts"] for x in buyer_team.HISTORY.read_text(encoding="utf-8").splitlines()
                     if x.strip()), default=0) if buyer_team.HISTORY.exists() else 0
-        if time.time() - last >= TEAM_GAP[MODE["now"]]:
+        if getattr(a, "emergency", False) or time.time() - last >= TEAM_GAP[MODE["now"]]:
             buyer, _ = buyer_team.run(ask_codex, board=LAST.get("board"), dry=a.dry)
             print(f"[buyer] changed {buyer['changed']}, forecast {buyer['forecast_surplus_per_h']}/h, "
                   f"enuri {buyer.get('accountability')}")
@@ -849,6 +859,10 @@ def run(a, t0):
                      + "\n\nBUYER UNIT (our buyer team and the Enuri price scouts; what they learned about prices "
                        "and buyers, shared with you as they read your plan):\n"
                      + json.dumps(buyer or {}, ensure_ascii=False)
+                     + "\n\nENURI TEAM'S BUYER STUDY FOR THE SELLER UNIT (HQ 11-14: what the market's buyer agents are "
+                       "like and what the shop should do for each group; build your plan on it):\n"
+                     + json.dumps({k: __import__("enuri_agent").report().get(k) for k in ("written", "sales_brief")},
+                                  ensure_ascii=False)
                      + "\n\nHEADQUARTERS DIRECTIVES (follow them):\n"
                      + directives + "\n\nAnswer with one JSON object with exactly these keys: "
                      + json.dumps(list(SCHEMA["properties"])) + ", shaped as in this JSON Schema: " + json.dumps(SCHEMA))

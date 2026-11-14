@@ -443,6 +443,7 @@ def brief(board=None, now=None):
                                 leaders_plan=__import__("leaders_meeting").summary(),
                                 private_from_hq=__import__("hr").contest_for("buyer"),
                                 hq_warning=__import__("hr").hq_warning("buyer")), "time": time.strftime("%Y-%m-%d %H:%M", time.localtime(now)), "our_buyer": me, "top_buyers": top,
+         "hq_agenda": kpi.agenda(),      # HQ 11-14 contingency meeting: answer it in your rationale
          "enuri": summ, "enuri_agent": {k: __import__("enuri_agent").report().get(k) for k in
                                         ("written", "buyer_brief", "survey_skus", "settings", "changed", "watch")},
          "our_trades_by_budget_24h": bands(now=now), "meta_harness": meta_tail(),

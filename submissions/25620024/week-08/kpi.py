@@ -157,7 +157,22 @@ def accountability(team, c=None, shop=None, board=None):
     h = handoff()
     if h:
         out["handoff"] = h          # read it before anything else: what the team before you learned and got wrong
+    ag = agenda()
+    if ag:
+        out["hq_agenda"] = ag       # HQ 11-14: the contingency meeting's agenda -- answer it from your own role
     return out
+
+
+AGENDA = Path(__file__).parent / "private" / "emergency_agenda.json"
+
+
+def agenda(max_age_h=6):
+    """HQ's contingency-meeting agenda while fresh ({"ts", "text"} written by the TF), else None."""
+    try:
+        a = json.loads(AGENDA.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    return a.get("text") if time.time() - (a.get("ts") or 0) < max_age_h * 3600 else None
 
 
 if __name__ == "__main__":

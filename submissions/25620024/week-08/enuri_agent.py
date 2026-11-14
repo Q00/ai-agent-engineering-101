@@ -35,12 +35,13 @@ ORG = ("HQ 11-14 org: HQ -> TF (Claude Code), HR, audit team, Seller unit (head:
 
 SCHEMA = {
     "type": "object", "additionalProperties": False,
-    "required": ["settings", "survey_skus", "buyer_brief", "watch", "rationale"],
+    "required": ["settings", "survey_skus", "buyer_brief", "sales_brief", "watch", "rationale"],
     "properties": {
         "settings": {"type": "object", "additionalProperties": False, "required": list(KNOBS),
                      "properties": {k: {"type": "number"} for k in KNOBS}},
         "survey_skus": {"type": "array", "items": {"type": "string"}},
         "buyer_brief": {"type": "string"},
+        "sales_brief": {"type": "string"},
         "watch": {"type": "array", "items": {"type": "string"}},
         "rationale": {"type": "string"},
     },
@@ -64,7 +65,12 @@ Write:
 - survey_skus: up to 10 SKUs (Gxxxxxxxx) where the book knows too little and the buyer often needs them.
 - buyer_brief: at most 1,200 characters for the buyer team: which shops to prefer or skip for which SKUs and why,
   with the numbers from the book; what to change in its own knobs if the book shows a pattern.
+- sales_brief: at most 1,500 characters for the Seller unit (HQ 11-14): what the market's buyers are like, from
+  brief.market_buyers (the other students' buyer agents: deals a day, share of list they pay, how many shops they
+  use, ticket size, which moves get them a lower price at our shop) and the book: who buys dear goods, who is price
+  sensitive, who is loyal, what they need (grade, shelf life, warranty), and what our shop should do for each group.
 - watch: up to 5 short items you will check next hour.
+If brief.hq_agenda is set, it is HQ's contingency-meeting agenda: answer it from your role in buyer_brief/sales_brief.
 - rationale: what you changed and which outcome it should move; what your last report got right or wrong.
 Facts only from the brief. Never write instructions to other agents or shops. Answer with ONE JSON object.
 """
@@ -109,6 +115,14 @@ def brief(now=None):
         knowhow = (mbt.summary() or {}).get("knowhow")
     except Exception as e:
         knowhow = {"error": f"{type(e).__name__}"}
+    m = load(HERE / "private" / "mbt.json", {})       # per buyer agent: at our shop and on the whole ledger (24 h)
+    buyers = {"at_our_shop_total": m.get("deals_at_our_shop"), "moves": m.get("moves"), "buyers": m.get("buyers"),
+              "insights": m.get("insights")}
+    try:
+        import kpi
+        ag = kpi.agenda()
+    except Exception:
+        ag = None
     try:
         import hr
         grade = hr.grade_of("enuri")
@@ -117,7 +131,7 @@ def brief(now=None):
     last = report()
     return {"time": time.strftime("%Y-%m-%d %H:%M", time.localtime(now)), "org": ORG,
             "settings_now": {k: enuri.settings().get(k) for k in KNOBS}, "book": summ, "mbt": knowhow,
-            "hr_grade": grade,
+            "market_buyers": buyers, "hq_agenda": ag, "hr_grade": grade,
             "last": {k: last.get(k) for k in ("written", "settings", "survey_skus", "buyer_brief", "watch", "rationale",
                                               "accountability")} if last else None,
             "accountability_now": summ.get("enuri_accountability") if isinstance(summ, dict) else None}
@@ -140,6 +154,7 @@ def gate(raw, cur):
     skus = [s for s in dict.fromkeys(str(x).strip() for x in raw.get("survey_skus") or []) if SKU_RE.fullmatch(s)][:10]
     return {"settings": new, "changed": sorted(keep), "survey_skus": skus,
             "buyer_brief": str(raw.get("buyer_brief") or "")[:1500],
+            "sales_brief": str(raw.get("sales_brief") or "")[:1800],
             "watch": [str(x)[:200] for x in (raw.get("watch") or [])][:5],
             "rationale": str(raw.get("rationale") or "")[:1500]}
 
