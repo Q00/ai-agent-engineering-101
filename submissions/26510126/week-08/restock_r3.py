@@ -357,7 +357,11 @@ def main():
         held = Counter(u["sku"] for u in live
                        if not (u.get("kind") == "goods" and u.get("grade") == "C") and not dead_dear(u))
         slow_held = sum(1 for u in live if slow_dead(u))
-        stale = {u["sku"] for u in live if now - first[u["unit"]] > 24 * 3600}
+        # grade C goods do not make a SKU stale: they sit because the C floor is above the market's C median, not because
+        # the SKU does not sell (leak audit #38: G0667d440, G75f11c19, G03d0199f, Gb5d0dde7, scores 253-600, were held at
+        # heat 1 by one old C unit, and Gf27f8931, our top seller, was ~6 h from depth 18 -> 6 for the same reason)
+        stale = {u["sku"] for u in live if now - first[u["unit"]] > 24 * 3600
+                 and not (u.get("kind") == "goods" and u.get("grade") == "C")}
         by_cat = defaultdict(list)
         for sku, c in catalog.items():
             by_cat[c["category"]].append(dict(c, sku=sku))
