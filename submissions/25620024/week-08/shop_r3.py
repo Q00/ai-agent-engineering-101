@@ -364,6 +364,19 @@ def skip_warranty(fp, grade):
     return g.get("n", 0) >= t.get("warranty_memo_min_n", 10) and g.get("no_w", 0) >= t.get("warranty_memo_share", 0.9)
 
 
+def buyer_of(fp):
+    """The buyer a wording belongs to (warranty_memo.py, from our paid deals), or None."""
+    if not fp:
+        return None
+    if time.time() - _W_MEMO["ts"] > 300 or not _W_MEMO["d"]:
+        try:
+            _W_MEMO["d"] = json.loads(W_MEMO.read_text(encoding="utf-8")).get("fp", {})
+            _W_MEMO["ts"] = time.time()
+        except (OSError, ValueError):
+            pass
+    return (_W_MEMO["d"].get(fp) or {}).get("buyer")
+
+
 def w_note(u, deal):
     """The warranty line for this talk: plain 'none' when the buyer asked and its own record says it pays without."""
     if u.get("kind") == "goods" and deal.get("w_declined") and not deal.get("warranty_asked"):
@@ -549,6 +562,15 @@ class Shop(AgentExecutor):
                 await up.reject(say(f"[sku {sku}] not in stock now. Reserved for the next supply window{next_window()};"
                                     f" ask again after it. receipt=Ed25519 shop_fp={FP}" if sku in cat else
                                     f"Not in stock. Ask for a SKU from shops.json: 'I want to buy <name> (<sku>)'."))
+                return
+            who = buyer_of(fingerprint(text, u))
+            if who and who in set(promo.theta().get("block_buyers") or []):
+                # MST TF 11-14 (HQ "Do 1 and 2"; inextro blocked 50 such buyers, stars 4.394 -> 4.452): buyers that
+                # rate every shop low (sergiobuilds 2.16 to all, 2.0 to us over 32 paid deals) cost the stars score
+                # 0.2 of shop ALL; paid reviews average 4.33 with them, 4.57 without. A refused talk has no receipt,
+                # and the board counts reviews of deals (25,924 reviews, 27,601 deals).
+                log(f"{task.id[:8]} not served: wording of {who} (block_buyers)")
+                await up.reject(say("We are not taking this order. No offer."))
                 return
             m = CODE_RE.search(text)
             code = m.group(1).upper() if m else None
