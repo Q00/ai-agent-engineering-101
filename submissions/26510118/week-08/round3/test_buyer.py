@@ -739,6 +739,20 @@ def test_against_our_shop():
         check("a 4th offer under that line: no deal, said without a floor it would not hold",
               mb.receipt_of(t) is None and row.get("outcome") == "rejected" and row.get("last_take") is False
               and texts[-1].startswith("No deal at 100000.") and "our lowest" not in texts[-1], texts[-1])
+
+        print("[S2] against our seller: a request by category gets the category on its receipt (11/14)")
+        async def by_category():
+            c = mb.A2A()
+            await c.open(url)
+            t = await c.send("I want to buy 김치")
+            first = mb.said(t)
+            t = await c.send("ok, I accept", task_id=t["id"])
+            await c.close()
+            return first, t
+        first, t = asyncio.run(by_category())
+        rec = mb.receipt_of(t) or {}
+        check("asked by category (김치): the receipt's item is 김치 and its unit is a 김치 unit",
+              rec.get("item") == "김치" and rec.get("unit") in ("u-k", "u-g"), (first[:80], rec.get("item"), rec.get("unit")))
     finally:
         seller.kill()
 
