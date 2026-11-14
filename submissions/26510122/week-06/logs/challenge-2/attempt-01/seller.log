@@ -1,0 +1,21 @@
+{"event": "harness_input", "role": "seller", "model": "gpt-5.6-luna", "prompt": {"phase": "opening", "item": "chair", "private_reserve": 180, "buyer_message": "I want to buy a chair", "objective": "Choose a reasonable opening ask near the reserve. A buyer with a modest budget should have a path to a deal."}}
+{"event": "harness_input", "role": "seller", "model": "gpt-5.6-luna", "prompt": {"phase": "opening", "item": "bookshelf", "private_reserve": 260, "buyer_message": "I want to buy a bookshelf", "objective": "Choose a reasonable opening ask near the reserve. A buyer with a modest budget should have a path to a deal."}}
+{"event": "harness_input", "role": "seller", "model": "gpt-5.6-luna", "prompt": {"phase": "opening", "item": "lamp", "private_reserve": 100, "buyer_message": "I want to buy a lamp", "objective": "Choose a reasonable opening ask near the reserve. A buyer with a modest budget should have a path to a deal."}}
+{"event": "harness_answer", "role": "seller", "answer": {"action": "ask", "price": 220}, "seconds": 5.02}
+{"event": "seller_open", "task_id": "16c50318-9510-4cdf-b665-e7e2360cc983", "item": "chair", "product_id": "chair", "reserve": 180, "ask": 220}
+{"event": "harness_answer", "role": "seller", "answer": {"action": "ask", "price": 300}, "seconds": 5.32}
+{"event": "seller_open", "task_id": "ebe227fc-7d85-41b1-9df9-8056480ae872", "item": "bookshelf", "product_id": "bookshelf", "reserve": 260, "ask": 300}
+{"event": "harness_answer", "role": "seller", "answer": {"action": "ask", "price": 120}, "seconds": 5.5}
+{"event": "seller_open", "task_id": "a2e8104a-799c-4e4d-a889-2483307a3736", "item": "lamp", "product_id": "lamp", "reserve": 100, "ask": 120}
+{"event": "harness_input", "role": "seller", "model": "gpt-5.6-luna", "prompt": {"phase": "follow_up", "item": "chair", "private_reserve": 180, "current_ask": 220, "buyer_offer": 180, "history": [{"buyer_offer": 180, "seller_ask": 220}], "objective": "Accept a fair offer at or above reserve promptly. Otherwise counter above reserve or reject if agreement is hopeless."}}
+{"event": "harness_input", "role": "seller", "model": "gpt-5.6-luna", "prompt": {"phase": "follow_up", "item": "lamp", "private_reserve": 100, "current_ask": 120, "buyer_offer": 120, "history": [{"buyer_offer": 120, "seller_ask": 120}], "objective": "Accept a fair offer at or above reserve promptly. Otherwise counter above reserve or reject if agreement is hopeless."}}
+{"event": "harness_input", "role": "seller", "model": "gpt-5.6-luna", "prompt": {"phase": "follow_up", "item": "bookshelf", "private_reserve": 260, "current_ask": 300, "buyer_offer": 240, "history": [{"buyer_offer": 240, "seller_ask": 300}], "objective": "Accept a fair offer at or above reserve promptly. Otherwise counter above reserve or reject if agreement is hopeless."}}
+{"event": "harness_answer", "role": "seller", "answer": {"action": "deal", "price": 180}, "seconds": 5.69}
+{"event": "seller_deal", "task_id": "16c50318-9510-4cdf-b665-e7e2360cc983", "item": "chair", "price": 180}
+{"event": "harness_answer", "role": "seller", "answer": {"action": "counter", "price": 280}, "seconds": 5.38}
+{"event": "seller_counter", "task_id": "ebe227fc-7d85-41b1-9df9-8056480ae872", "item": "bookshelf", "offer": 240, "ask": 280}
+{"event": "harness_answer", "role": "seller", "answer": {"action": "deal", "price": 120}, "seconds": 5.93}
+{"event": "seller_deal", "task_id": "a2e8104a-799c-4e4d-a889-2483307a3736", "item": "lamp", "price": 120}
+{"event": "harness_input", "role": "seller", "model": "gpt-5.6-luna", "prompt": {"phase": "follow_up", "item": "bookshelf", "private_reserve": 260, "current_ask": 280, "buyer_offer": 260, "history": [{"buyer_offer": 240, "seller_ask": 300}, {"buyer_offer": 260, "seller_ask": 280}], "objective": "Accept a fair offer at or above reserve promptly. Otherwise counter above reserve or reject if agreement is hopeless."}}
+{"event": "harness_answer", "role": "seller", "answer": {"action": "deal", "price": 260}, "seconds": 5.26}
+{"event": "seller_deal", "task_id": "ebe227fc-7d85-41b1-9df9-8056480ae872", "item": "bookshelf", "price": 260}
