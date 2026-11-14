@@ -74,6 +74,13 @@ import margin
 MARGIN_HOURS = 1          # food must last this much longer than the order needs
 DEFAULT_RATIO = 0.70      # expected price as a share of the list price, with nothing better to go on
 EXPLORE = 1.05            # a shop we have not dealt with gets this edge in a tie
+CHEAP_SHARE, CHEAP_WINDOW, CHEAP_TTL, TRUST_OK = 0.5, 3 * 3600, 600, 0.7
+# 11/14 (the person's call, a trial for Top 3): for CHEAP_SHARE of the orders (by a hash of the order id, rank "cheap")
+# a candidate's price is what that shop was paid for that SKU over the last CHEAP_WINDOW on the public ledger (the
+# median share of list), its gain the median expected margin share kept at those prices (margin.expected: each sale's
+# grade, warranty and our breakage, as Patch 3.6 counts saved), and its trust counts only under TRUST_OK. Over 12 h
+# 820 of our 1,065 purchases had another shop sell the same SKU and grade within an hour; we paid a median 4.4 points
+# of list more than the cheapest, and 64% had one 2+ points cheaper: trust weighed more than price in the score
 PREFER = 1.2
 RIVAL = 1.0               # 0.95 until 11/6 16:40 (the person's call, 몫 사냥꾼 ④): the goods shops selling cheapest were rivals'
                           # (lee-sungsoo 0.685, inextro 0.700, yms979 0.701 of list); what we add to their revenue is
@@ -341,10 +348,48 @@ def bad_faith(names) -> set:
     return known | {n for n in names if any(str(n).lower().startswith(o) for o in common.BAD_FAITH_OWNERS)}
 
 
+def rank_arm(order_id: str) -> str:
+    """"cheap" for CHEAP_SHARE of the orders (a hash of the order id), else "score" (the ranking as before)."""
+    h = int(hashlib.sha1(("rank:" + str(order_id)).encode()).hexdigest()[:8], 16) / 0x100000000
+    return "cheap" if h < CHEAP_SHARE else "score"
+
+
+def cheap_table(catalog: dict, now: float | None = None) -> dict:
+    """{sku: {shop name: [median share of list paid there, median expected margin share kept]}} over the last
+    CHEAP_WINDOW of the public ledger's settles at other shops, kept in buyer/cheap.json for CHEAP_TTL."""
+    now = now or time.time()
+    path = common.MARKET_DIR / "buyer" / "cheap.json"
+    got = common.read_json(path, None)
+    if isinstance(got, dict) and now - (got.get("at") or 0) < CHEAP_TTL and isinstance(got.get("table"), dict):
+        return got["table"]
+    names = common.read_json(common.MARKET_DIR / "ledger" / "shop_names.json", {}) or {}
+    shares = {}
+    for s in common.read_jsonl(common.MARKET_DIR / "ledger" / "settles.jsonl", since=now - CHEAP_WINDOW):
+        c = catalog.get(s.get("item")) or {}
+        if not c.get("list_price") or not isinstance(s.get("amount"), (int, float)):
+            continue
+        shop = names.get(s.get("shop"), s.get("shop"))
+        if common.is_ours(str(shop)):
+            continue
+        kind, g, share = c.get("kind") or "goods", s.get("grade"), s["amount"] / c["list_price"]
+        k = margin.expected(share, g, kind, bool(s.get("warranty_hours")), BUYER_BREAK.get(g, 0.0))
+        shares.setdefault(s["item"], {}).setdefault(shop, []).append((share, k))
+    mid = lambda v: sorted(v)[len(v) // 2]
+    table = {sku: {sh: [round(mid([a for a, _ in v]), 4), round(mid([b for _, b in v]), 4)] for sh, v in by.items()}
+             for sku, by in shares.items()}
+    try:
+        common.write_json(path, {"at": int(now), "table": table})
+    except OSError:
+        pass
+    return table
+
+
 def candidates(order: dict, shops: list, catalog: dict, nb: dict, summary: dict, rules: dict,
-               odds: dict | None = None, rivals: set | None = None, bad: set | None = None, model: dict | None = None) -> list:
+               odds: dict | None = None, rivals: set | None = None, bad: set | None = None, model: dict | None = None,
+               cheap: dict | None = None) -> list:
     """Every (shop, SKU) worth asking for, with its expected price, gain, trust and red flags. bad: shops of owners
-    who rate in bad faith, flagged so that choose() takes them only when no clean shop has the order's product."""
+    who rate in bad faith, flagged so that choose() takes them only when no clean shop has the order's product.
+    cheap: cheap_table() for an order of the "cheap" rank (the recent price there, trust only under TRUST_OK)."""
     by_sku, by_cat = summary.get("by_sku") or {}, summary.get("by_category") or {}
     budget, out = order["budget"], []
     for sh in shops:
@@ -380,6 +425,9 @@ def candidates(order: dict, shops: list, catalog: dict, nb: dict, summary: dict,
             learned = shop_model.expected(model or {}, sh["name"], c.get("kind") or "goods")   # Kiro 2.0 stage 1
             if learned:
                 ratio = learned[0]
+            recent = ((cheap or {}).get(o["sku"]) or {}).get(sh["name"]) if cheap is not None else None
+            if recent:
+                ratio = recent[0]                                       # 11/14: what this shop was paid for it lately
             expected = lp * min(ratio, rules.get("max_ratio", 0.9))
             if expected > budget or (lp > budget and not rules.get("over_budget_try", True)):
                 continue
@@ -388,13 +436,19 @@ def candidates(order: dict, shops: list, catalog: dict, nb: dict, summary: dict,
                 t = round((1 - ODDS_BLEND) * t + ODDS_BLEND * p, 3)
             if c.get("kind") == "food":                                  # 11/6 21:30: its food refused for shelf life
                 t = round(t * max(0.1, 1 - shop_model.shelf_fail(model or {}, sh["name"])), 3)
-            score = (1 - expected / lp) * t * (max(0.05, learned[1]) if learned else 1) * (EXPLORE if sh["name"] not in nb else 1) \
+            weight = min(1.0, t / TRUST_OK) if cheap is not None else t   # 11/14: the cheap rank, trust as a gate only
+            gain = 1 - expected / lp
+            if cheap is not None:                       # the cheap rank: the margin kept there lately, else at the guess
+                kind = "goods" if c.get("kind") == "goods" else "food"
+                gain = max(0.0, recent[1]) if recent else margin.expected(expected / lp, None, kind, True, sum(
+                    w * BUYER_BREAK.get(g, 0.0) for g, w in margin.MIX[kind].items()) if kind == "goods" else 0.0)
+            score = gain * weight * (max(0.05, learned[1]) if learned else 1) * (EXPLORE if sh["name"] not in nb else 1) \
                 * (PREFER if sh["name"] in (rules.get("prefer_shops") or []) else 1) \
                 * (RIVAL if sh["name"] in (rivals or set()) else 1)
             row = by_sku.get(o["sku"]) or {}
             seen = (row.get("sold_24h") or 0) >= MARKET_SEEN
             out.append({"shop": sh, "sku": o["sku"], "name": o.get("name") or c.get("name"), "list": lp,
-                        "kind": c.get("kind"), "expected": round(expected), "gain": round(lp - expected),
+                        "kind": c.get("kind"), "expected": round(expected), "gain": round(lp - expected), "recent": recent,
                         "trust": t, "odds": p, "score": score, "flags": flags,
                         "nohaggle": shop_model.nohaggle(model or {}, sh["name"], c.get("kind") or "goods"),
                         "market": row.get("price_ratio") if seen else None, "low": row.get("p25") if seen else None,
@@ -918,7 +972,9 @@ async def amain(a) -> dict:
     rivals = set(riv.get("shops") or []) if isinstance(riv, dict) and time.time() - (riv.get("at") or 0) < RIVALS_FRESH else set()
     bad = bad_faith(sh["name"] for sh in shops)
     model = common.read_json(common.MARKET_DIR / "analysis" / "shop_model.json", {}) or {}
-    cands = candidates(order, shops, catalog, nb, summary, rules, odds, rivals, bad, model) if order.get("acceptable") else []
+    rank = rank_arm(order.get("order") or "")
+    cheap = cheap_table(catalog) if rank == "cheap" and order.get("acceptable") else None
+    cands = candidates(order, shops, catalog, nb, summary, rules, odds, rivals, bad, model, cheap) if order.get("acceptable") else []
     dear = (base["median_list"] or 0) >= DEAR_ORDER
     c, poor = choose(cands, nb, dear) if cands else (None, "no shop has an acceptable product in stock")
     if c is None:
@@ -948,7 +1004,8 @@ async def amain(a) -> dict:
                   could_counter=r.get("could_counter"), pushed=r.get("pushed"), pushes=r.get("pushes"),
                   asked_hours=r.get("asked_hours"),
                   asked_better=r.get("asked_better"), better=r.get("better"),
-                  margin_floor=r.get("margin_floor"), nohaggle=r.get("nohaggle"))     # 11/13: Patch 3.6's floor; B2
+                  margin_floor=r.get("margin_floor"), nohaggle=r.get("nohaggle"),     # 11/13: Patch 3.6's floor; B2
+                  rank=rank, recent=c.get("recent"))                                   # 11/14: the cheap-rank trial
     if r["deal"]:
         review = f"Agreed {r['price']} for {c['name']} (list {c['list']}) after {len(r['offers'])} offer(s)."
         stars = 4                                                   # the review hook rewrites it once the deal settles
