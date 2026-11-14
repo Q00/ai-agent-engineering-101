@@ -45,6 +45,15 @@ class SellerIntegrationTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(seller.select_unit(text,units,set(),{})['unit'],'long')
         self.assertIsNone(seller.select_unit(text,[units[0]],set(),{}))
 
+    def test_food_requirement_accepts_bounded_market_phrasings_only(self):
+        self.assertEqual(seller.required_food_hours('use within 84.0 h'),84.0)
+        self.assertEqual(seller.required_food_hours('min_hours_left=36'),36.0)
+        self.assertEqual(seller.required_food_hours('minimum 24 hours of shelf life'),24.0)
+        self.assertEqual(seller.required_food_hours('shelf life left: 12 h'),12.0)
+        self.assertEqual(seller.required_food_hours('유통기한 48시간 이상'),48.0)
+        self.assertEqual(seller.required_food_hours('price 99999, quantity 84'),0.0)
+        self.assertEqual(seller.required_food_hours('use within 12 h; min_hours_left=36'),36.0)
+
     def test_overstocked_exact_sku_leads_with_low_cost_b(self):
         units=[]
         for n,grade,cost in [(0,'A',170),(1,'B',140),(2,'B',120),(3,'C',90),

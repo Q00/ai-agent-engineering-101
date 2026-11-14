@@ -56,11 +56,27 @@ def credentials(text):
 
 
 def required_food_hours(text):
-    match=re.search(r'\bmust\s+last\s+at\s+least\s+(\d+(?:\.\d+)?)\s*hours?\b',text,flags=re.I)
-    if not match:return 0.0
-    try:value=float(match.group(1))
-    except ValueError:return 0.0
-    return value if 0<=value<=8760 else 0.0
+    # Buyer implementations describe the same official ``use_within``
+    # condition in several bounded forms. Parse only a number attached to an
+    # explicit shelf-life anchor; unrelated prices, quantities and prompts can
+    # never become a condition. The maximum matching requirement wins.
+    patterns=(
+        r'\bmust\s+last\s+at\s+least\s+(\d+(?:\.\d+)?)\s*(?:h|hours?)\b',
+        r'\buse\s+within\s+(\d+(?:\.\d+)?)\s*(?:h|hours?)\b',
+        r'\bmin(?:imum)?[_\s-]*hours(?:[_\s-]*left)?\s*[:=]\s*(\d+(?:\.\d+)?)\b',
+        r'\b(?:minimum|at\s+least)\s+(\d+(?:\.\d+)?)\s*(?:h|hours?)'
+            r'(?:\s+(?:of\s+)?shelf\s*life(?:\s+left)?)?\b',
+        r'\bshelf\s*life(?:\s+left)?\s*(?:of|at\s+least|>=|:|=)\s*'
+            r'(\d+(?:\.\d+)?)\s*(?:h|hours?)\b',
+        r'(?:유통기한|최소)\s*(\d+(?:\.\d+)?)\s*시간(?:\s*이상)?',
+    )
+    values=[]
+    for pattern in patterns:
+        for match in re.finditer(pattern,text,flags=re.I):
+            try:value=float(match.group(1))
+            except ValueError:continue
+            if 0<=value<=8760:values.append(value)
+    return max(values,default=0.0)
 
 
 def is_food(unit):
