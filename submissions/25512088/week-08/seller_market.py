@@ -21,6 +21,15 @@ SHOP_REVIEW_FILE='shop-reviews.json'
 SHOP_REVIEW_MAX_AGE=30*60
 
 
+def procurement_candidate_limit():
+    """Return the configured breadth without silently restoring a unit cap."""
+    try:
+        value=json.loads(Path(__file__).with_name('procurement_policy.json').read_text()).get('candidate_limit',180)
+    except (OSError,ValueError,TypeError):
+        value=180
+    return max(30,min(500,int(value)))
+
+
 def _shop_offers(shop):
     offers=shop.get('offers') or []
     if offers:return [(o.get('sku'),o.get('qty',0)) for o in offers]
@@ -448,7 +457,8 @@ def snapshot(state,catalog,opens_at,market):
         goods_hazard,hazard_basis=own_goods_hazard(board)
         ranked=rank_products(catalog,rows,shop_rows,local_demand=demand,own_signals=own_signals,
                           alive_buyers=alive,goods_hazard=goods_hazard,hazard_basis=hazard_basis,
-                          buyer_review_preferences=preference_snapshot.get('products',{}),limit=30)
+                          buyer_review_preferences=preference_snapshot.get('products',{}),
+                          limit=procurement_candidate_limit())
         feedback=[]
         buyer_db=Path(state)/'buyer.sqlite3'
         if buyer_db.exists():

@@ -60,11 +60,11 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
         unmet=trusted_stockouts*.5+trusted_inquiries*.2
         forecast=(velocity+unmet)*row.get('estimated_sale_likelihood',0)*max(1.0,float(aggression))
         need=max(0,math.ceil(forecast)-holding.get(row['sku'],0))
-        exposed=policy.get('max_exposed_units',250)
-        share=policy.get('max_sku_share',.20)
         is_food=row.get('kind')=='food'
         unit_cap=policy.get('max_food_units_per_sku',2) if is_food else policy.get('max_units_per_sku',3)
-        sku_ceiling=min(unit_cap,max(policy.get('min_trial_units',2),math.ceil(exposed*share)))
+        # Portfolio size is bounded by available capital and evidence-backed
+        # SKU breadth.  A fixed global unit count used to strand growing cash.
+        sku_ceiling=unit_cap
         need=min(need,max(0,sku_ceiling-holding.get(row['sku'],0)))
         trial_units=(policy.get('initial_food_trial_units',2) if is_food else
                      policy.get('initial_trial_units',policy.get('min_trial_units',2)))
@@ -77,7 +77,10 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
                       trusted_stockouts_6h=trusted_stockouts,sku_inventory_ceiling=sku_ceiling)
         diversity=policy.get('new_sku_bonus',1) if not holding.get(row['sku']) else 1
         choices.append((-(row.get('score',0)*row['expected_net']/max(1,row['upper_cost'])*diversity),row['sku'],need,evidence))
-    plan=[];slots=(250-len(inventory.get('units',[]))) if available_slots is None else available_slots
+    # Each candidate is already capped at two food or three goods units.  When
+    # no explicit test/canary slot limit is supplied, capital and those per-SKU
+    # caps determine the total portfolio instead of an arbitrary 250 units.
+    plan=[];slots=sum(row[2] for row in choices) if available_slots is None else available_slots
     for _,sku,need,row in sorted(choices):
         # Official supply API accepts at most 20 units per call. Remaining
         # evidenced need is purchased on subsequent inventory refreshes.
@@ -219,7 +222,7 @@ def main():
             log(event='no_qualified_top10');time.sleep(20);continue
         ranked=[r for r in ranked if r.get('expected_net',0)>0]
         available=capital_available(policy,inv,exposure,pending)
-        slots=max(0,policy.get('max_exposed_units',250)-len(inv.get('units',[])))
+        slots=None
         # Starting capital is 5M. More accumulated cash funds more demand
         # windows, while capital_available still preserves cash/liabilities.
         aggression=max(1.0,min(policy.get('max_demand_windows',4),inv.get('balance',0)/3_000_000))
@@ -227,7 +230,7 @@ def main():
         if not plan:
             if blocked:time.sleep(10);continue
             log(event='evidence_or_capacity_wait',lifetime_spent=spent,inventory_cost=inventory_cost,
-                deployable_capital=available,available_slots=slots,protected_liabilities=exposure,
+                deployable_capital=available,available_slots='capital_and_per_sku_bounded',protected_liabilities=exposure,
                 demand_windows=aggression)
             time.sleep(60);continue
         if not restock.get('open'):

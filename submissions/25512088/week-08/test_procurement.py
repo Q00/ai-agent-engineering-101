@@ -73,6 +73,14 @@ class PurchaseTests(unittest.TestCase):
   self.assertEqual(plan[0]['evidence']['trusted_inquiries_6h'],2)
   full={'units':[{'sku':'a'} for _ in range(4)]}
   self.assertEqual(allocation_plan(ranked,full,10000,aggression=4,policy=policy),[])
+ def test_portfolio_breadth_scales_past_old_fixed_250_unit_limit(self):
+  ranked=[dict(sku=f's{i}',expected_net=5000,score=3,upper_cost=100,
+               sales_1h=8,sales_6h=12,distinct_buyers_6h=4,
+               own_stockouts_6h=0,own_inquiries_6h=0,estimated_sale_likelihood=.8)
+          for i in range(100)]
+  plan=allocation_plan(ranked,{'units':[]},100000,aggression=100)
+  self.assertEqual(len(plan),100)
+  self.assertEqual(sum(row['qty'] for row in plan),300)
  def test_accepted_supply_records_actual_cost_even_above_estimate(self):
   self.assertEqual(supply_result(503,{},100),('uncertain',None))
   self.assertEqual(supply_result(200,{'total':101},100),('paid',101))

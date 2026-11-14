@@ -1,6 +1,7 @@
 import json,sqlite3,tempfile,time,unittest
 from pathlib import Path
 from seller_market import (rank_products,owned_targets,restrict_order,snapshot,own_goods_hazard,
+                           procurement_candidate_limit,
                            build_buyer_preferences,write_buyer_preferences)
 
 class StrategyTests(unittest.TestCase):
@@ -12,6 +13,7 @@ class StrategyTests(unittest.TestCase):
                hours=24,honest=True) for i in range(15) for buyer in ('a','b')]
   self.assertEqual(len(rank_products(catalog,trades,[],now=now)),10)
   self.assertEqual(len(rank_products(catalog,trades,[],now=now,limit=30)),15)
+  self.assertGreater(procurement_candidate_limit(),30)
 
  def test_mature_own_breakage_cohort_replaces_conservative_prior(self):
   hazard,basis=own_goods_hazard({'shops':[{'name':'25512088','claims':139,'broken':11}]})
