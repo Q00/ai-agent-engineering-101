@@ -1001,7 +1001,27 @@ def _buyer_log(rows):
     out["tries"] = sum(len(_rows(r.get("tried"))) for r in orders)
     out["receipt_problems"] = sum(problems.values())
     out["untrusted_receipt_problem_why"] = [{"n": n, "why": w} for w, n in problems.most_common(3)]
+    out["saved_check"] = _saved_check(orders)
     return out
+
+
+def _saved_check(orders):
+    """The receipts the buyer refused because their claimed grade scored under buyer_policy.RECEIPT_MIN_SAVED
+    (D6 Saved check): refused, by claimed grade, and rescued, the orders with such a refusal that still closed
+    a deal at a later shop. Only the grade letter is read from the text."""
+    try:
+        from tools import buyer_policy as bp
+        min_saved, prefix = bp.RECEIPT_MIN_SAVED, bp.SAVED_CHECK
+    except Exception:                               # the strategist's tests run without tools/ on the path
+        min_saved, prefix = None, "Saved check"
+    pat = re.compile(re.escape(prefix) + r": claim ([ABC]) ")
+    by, rescued = Counter(), 0
+    for r in orders:
+        hits = [m.group(1) for t in _rows(r.get("tried")) for m in [pat.match(str(t.get("receipt_problem") or ""))] if m]
+        by.update(hits)
+        rescued += bool(hits) and isinstance(r.get("choice"), dict)
+    return {"min_saved": min_saved, "refused": sum(by.values()), "by_grade": dict(sorted(by.items())),
+            "rescued": rescued}
 
 
 def _by_grade(reviews):

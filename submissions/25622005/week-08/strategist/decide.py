@@ -182,7 +182,7 @@ Supply and depth:
   every deal that scores above saved: an A at the market's median (saved.market_by_grade: p_list_median,
   score_at_median, and at the lower quartile) scores about 0.86, a B about 0.80, a C about 0.70; a deal at the
   lower quartile scores 1 / 0.9 / 0.77. Levers: buyer.min_kept, the kept floor of every cap before a quote
-  names the unit's grade, and buyer.min_kept_A / _B / _C, the floor once a quote or receipt names that grade
+  names the unit's grade, and buyer.min_kept_A / _B / _C, the floor once a quote's data part names that grade
   (tools/negotiation re-caps at (1 - the larger floor) x list, and the opening message asks for an A or B unit;
   the candidate score weighs a shop by the Saved its deals are expected to score from its own grade book, its
   sales of the kind by grade over 24 h with their prices, a grade priced over its floor counting 0, or over the
@@ -205,6 +205,14 @@ Supply and depth:
   about 50 acceptable shops left (ops.buyer.no_deal_why), the market hands every buyer about 175 orders an hour
   and ours take 8.5 s at the median, so trying more shops loses few orders and finds the deals that clear the
   floors. The saved ladder is steep from 0.72 to 0.75 (percentile 0.63 to 0.82 on 11-14).
+  The deals that close almost never had the grade in a quote, so buyer.min_kept, not the grade floors, bound
+  them: on 11-14 (12:00-15:00) 45 food deals settled as C at a median 0.584 of list (score ~0.64 at the C band's
+  middle cost) with buyer.min_kept_C at 0.75, while 35 of their receipts claimed C. Since 11-14 the D6 Saved
+  check refuses a receipt whose claimed grade scores under buyer_policy.RECEIPT_MIN_SAVED (0.70, a code constant,
+  not a policy key until the next recreate) at the grade's middle cost: a C pays at most 0.545 of list, a B 0.65,
+  an A 0.755, and the buyer goes on to the next shop. buyer_log.saved_check counts the refusals by claimed grade
+  and the orders rescued at a later shop. It already drops the C deals drop_under_end means, so min_kept_C need not
+  carry that; many refusals with few rescued cost deals (0.1 of buyer ALL): buyer.max_shops wins them back.
 - Big-ticket goods (list above stock.big_ticket_list) are first asked at seller.first_ask_big_list x list, the
   rest at seller.first_ask_list. Goods first offer a unit whose floor the market's price for its grade clears
   (floor at or under list x seller.market_list_<grade>; set them from market.price_list_by_grade: 11-13, 911 of

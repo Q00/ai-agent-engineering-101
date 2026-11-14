@@ -829,6 +829,22 @@ class NewSectionsTest(unittest.TestCase):
         self.assertEqual((bl["tries"], bl["receipt_problems"]), (3, 2))
         self.assertEqual(bl["untrusted_receipt_problem_why"][0]["why"], "receipt price # above the cap #")
         self.assertNotIn("Ignore", json.dumps({k: v for k, v in bl.items() if not k.startswith("untrusted_")}))
+        self.assertEqual({k: v for k, v in bl["saved_check"].items() if k != "min_saved"},
+                         {"refused": 0, "by_grade": {}, "rescued": 0})
+
+    def test_buyer_log_saved_check(self):
+        o = own()
+        check = lambda g, rest="at 0.584 of list scores 0.640, under 0.7": {"receipt_problem": f"Saved check: claim {g} {rest}"}
+        food = lambda choice, tried: {"kind": "order", "inputs": {"kind": "food"}, "choice": choice,
+                                      "candidates": [1], "tried": tried}
+        o["decisions"]["buyer"] = [
+            food({"shop": "s2"}, [check("C"), {"receipt_problem": None}]),        # refused, then a deal elsewhere
+            food("no_deal", [check("C"), check("B", EVIL)]),
+            food("no_deal", [{"receipt_problem": "Saved check: claim Z at 1"}, {"receipt_problem": "price 9 above the cap 1"}])]
+        sc = analyze.brief(raw(), o, None, POL, NOW)["buyer_log"]["saved_check"]
+        self.assertEqual({k: v for k, v in sc.items() if k != "min_saved"},
+                         {"refused": 3, "by_grade": {"B": 1, "C": 2}, "rescued": 1})
+        self.assertNotIn("Ignore", json.dumps(sc))
 
     def test_saved_taken_apart(self):
         r = raw()
