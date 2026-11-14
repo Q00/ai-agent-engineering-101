@@ -330,7 +330,27 @@ def main():
         # held counts what sells: grade C goods are left out (11/10: most buyers' kits never pay for C, so a SKU holding
         # C units stopped being restocked with A and buyers were offered only the C that goes unpaid)
         count = Counter(u["category"] for u in live)
-        held = Counter(u["sku"] for u in live if not (u.get("kind") == "goods" and u.get("grade") == "C"))
+        # and so are 150k+ A/B units whose floor sits above the market's median for the SKU and grade (the seller's floor:
+        # cost x (1 + min_margin) / (1 - refund), seller_r3.py:470): leak audit #36, the cheap A units sold out and the
+        # A left (0.70-0.75 of list, 6-11% of talks closed vs 61-74% under 0.66) filled the depth, so restock bought
+        # nothing: Gf27f8931 went 28 deals (20h) -> 0 (23h) with no purchase 22:04-00:21, then 9 deals in 25 min
+        try:
+            import prices_r3 as _prices
+            price_lines = (_prices.read(md) or {}).get("skus") or {}
+        except Exception:
+            price_lines = {}
+
+        def dead_dear(u):
+            if u.get("kind") != "goods" or u.get("grade") not in ("A", "B") or (u.get("list_price") or 0) < 150_000:
+                return False
+            st_u = price_lines.get(f"{u['sku']}|{u['grade']}")
+            if not st_u or st_u.get("n", 0) < 3 or not st_u.get("median") or not u.get("cost"):
+                return False
+            fl_u = u["cost"] * (1 + s.get("min_margin", 0.02)) / (1 - REFUND.get(u["grade"], 0))
+            return fl_u / u["list_price"] > st_u["median"]
+
+        held = Counter(u["sku"] for u in live
+                       if not (u.get("kind") == "goods" and u.get("grade") == "C") and not dead_dear(u))
         slow_held = sum(1 for u in live if slow_dead(u))
         stale = {u["sku"] for u in live if now - first[u["unit"]] > 24 * 3600}
         by_cat = defaultdict(list)
