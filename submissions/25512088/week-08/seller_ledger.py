@@ -22,8 +22,9 @@ def policy():
 class Program:
     def __init__(self, state, config=None):
         self.p = config or policy()
-        Path(state).mkdir(parents=True, exist_ok=True)
-        self.db = sqlite3.connect(Path(state) / 'referrals.sqlite3', timeout=15)
+        self.state = Path(state)
+        self.state.mkdir(parents=True, exist_ok=True)
+        self.db = sqlite3.connect(self.state / 'referrals.sqlite3', timeout=15)
         self.db.row_factory = sqlite3.Row
         self.db.executescript('''
         PRAGMA journal_mode=WAL;
@@ -135,9 +136,13 @@ class Program:
                     'SELECT w.amount FROM warranties w JOIN sales s ON s.task=w.task '
                     'WHERE s.refunded=0 AND (s.settled IS NULL OR s.settled>?)',
                     (time.time()-21600,))]
-                from seller_procurement import reserve_cash,warranty_risk_reserve
+                from seller_procurement import (reserve_cash,warranty_risk_reserve,
+                                                observed_warranty_hazard,settings)
                 reserve=reserve_cash(inventory)
-                warranty_reserve=warranty_risk_reserve(amounts+[q['price']])
+                reserve_policy=settings()
+                reserve_policy['warranty_reserve_hazard']=observed_warranty_hazard(
+                    self.state/'market-report.json',reserve_policy)
+                warranty_reserve=warranty_risk_reserve(amounts+[q['price']],reserve_policy)
                 other_liabilities=self.db.execute(
                     'SELECT COALESCE(SUM(credit),0) FROM members').fetchone()[0]
                 other_liabilities+=self.db.execute(

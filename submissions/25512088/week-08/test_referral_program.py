@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 import sqlite3
 import tempfile
+import time
 import unittest
 from unittest.mock import patch
 from seller_ledger import Program, policy
@@ -55,6 +56,22 @@ class ReferralTests(unittest.TestCase):
                        data=dict(shop=shop, buyer='A', unit='u', item='sku', amount=amount))
             self.assertFalse(self.program.settle(row, ['https://ours']))
         self.assertFalse(self.program.status(secret)['active'])
+
+    def test_warranty_acceptance_uses_fresh_official_hazard(self):
+        now=time.time()
+        with self.program.db:
+            for n in range(20):
+                self.program.db.execute(
+                    'INSERT INTO sales(task,unit,sku,amount,cost,settled) VALUES(?,?,?,?,?,?)',
+                    (f'old-{n}',f'old-unit-{n}','old',1000000,800000,now))
+                self.program.db.execute('INSERT INTO warranties VALUES(?,?,?)',
+                                        (f'old-{n}',1000000,now))
+        Path(self.tmp.name,'market-report.json').write_text(json.dumps({
+            'at':now,'board':{'shops':[{'name':'25512088','claims':1520,'broken':37}]}}))
+        q=self.program.quote(100000,80000);q['warranty_hours']=6
+        self.assertIsNone(self.program.accept('fresh','fresh-unit','fresh',80000,q,
+                                               inventory={'balance':6000000,'bankrupt_line':500000},
+                                               enroll=False))
 
     def test_founder_needs_paid_review_and_own_forum_not_stars(self):
         token, row, _ = self.buy('A')
