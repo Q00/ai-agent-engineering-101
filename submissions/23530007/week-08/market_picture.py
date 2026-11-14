@@ -1377,3 +1377,66 @@ if __name__ == "__main__":
     else:
         res = picture()
     print(json.dumps(res, ensure_ascii=False, indent=1))
+
+
+def book_causes(hours=6, now=None):
+    """11-14 (user: 'when a warning goes out, do you find the cause and act?'): what moved OUR book over `hours`:
+    paid margin (true unit costs from the seller log), warranty refunds, storage, expiry, and the biggest refunds.
+    Returns {'margin','refunds','storage','expire','net' (M credits), 'top_refunds': [(M, sku, grade, warranty)],
+    'line': one Korean sentence}. Never raises (returns {} on any error)."""
+    try:
+        import sqlite3
+        now = now or time.time()
+        since = now - hours * 3600
+        db = sqlite3.connect(f"file:{HERE / 'data' / 'market_archive.db'}?mode=ro", uri=True, timeout=30)
+        urls = set()
+        for (d,) in db.execute("SELECT data FROM ledger WHERE kind='join'"):
+            x = json.loads(d).get("data") or {}
+            if x.get("name") == OURS and x.get("url"):
+                urls.add(x["url"].rstrip("/"))
+        cost = {}
+        with open(HERE / "seller_r3_log.jsonl", "rb") as f:
+            f.seek(0, 2)
+            f.seek(max(0, f.tell() - 40_000_000))
+            f.readline()
+            for line in f:
+                if b'"event": "deal"' in line:
+                    try:
+                        e = json.loads(line)
+                    except ValueError:
+                        continue
+                    if e.get("unit") and e.get("cost") is not None:
+                        cost[e["unit"]] = e["cost"]
+        out = {"margin": 0.0, "refunds": 0.0, "storage": 0.0, "expire": 0.0}
+        sold = {}
+        for ts, d in db.execute("SELECT ts, data FROM ledger WHERE kind='settle' AND ts > ?", (since - 7 * 3600,)):
+            x = json.loads(d).get("data") or {}
+            if str(x.get("shop")).rstrip("/") in urls:
+                sold[x.get("unit")] = x
+                if ts >= since and x.get("unit") in cost:
+                    out["margin"] += x["amount"] - cost[x["unit"]]
+        top = []
+        for kind in ("broken", "storage", "expire"):
+            for (d,) in db.execute("SELECT data FROM ledger WHERE kind=? AND ts > ?", (kind, since)):
+                if OURS not in d and not any(u in d for u in urls):
+                    continue
+                x = json.loads(d).get("data") or {}
+                if kind == "broken":
+                    r = x.get("refunded") or 0
+                    out["refunds"] -= r
+                    s = sold.get(x.get("unit")) or {}
+                    top.append((round(r / 1e6, 2), x.get("item") or s.get("sku"), s.get("grade"), s.get("warranty_hours")))
+                elif kind == "storage":
+                    out["storage"] -= x.get("fee") or 0
+                else:
+                    out["expire"] -= x.get("cost") or 0
+        out = {k: round(v / 1e6, 2) for k, v in out.items()}
+        out["net"] = round(sum(out.values()), 2)
+        out["top_refunds"] = sorted(top, key=lambda t: -t[0])[:3]
+        big = max(("margin", "refunds", "storage", "expire"), key=lambda k: abs(out[k]) if out[k] < 0 else 0)
+        out["line"] = (f"원인({hours}h): 마진 {out['margin']:+.1f}M, 환불 {out['refunds']:+.1f}M, 보관료 {out['storage']:+.1f}M, "
+                       f"폐기 {out['expire']:+.1f}M → 순 {out['net']:+.1f}M"
+                       + (f"; 가장 큰 손실은 {'환불' if big == 'refunds' else '보관료' if big == 'storage' else '폐기'}" if out[big] < 0 else ""))
+        return out
+    except Exception:  # noqa: BLE001
+        return {}

@@ -307,7 +307,17 @@ def main():
             except (OSError, ValueError) as e:
                 log(f"G20 skipped: {e!r}")
             if eta is not None and 0 < eta < max(72, 1.5 * left9) and cooled(st, "G9", 3 * 3600, now):
-                wake("shop", f"G9 book: lead {lead / 1e6:.0f}M over {rival['name']} closes in {eta:.0f} h (us {ours / 1e6:+.1f} M/h, them {theirs / 1e6:+.1f} M/h)")
+                # 11-14 (user: 'do you find the cause and act?'): the wake carries the 6 h cause breakdown
+                try:
+                    import market_picture as _mp
+                    cz_ = _mp.book_causes(6)
+                    cz_txt = (f"; 6 h causes: margin {cz_['margin']:+.1f} M, refunds {cz_['refunds']:+.1f} M, storage "
+                              f"{cz_['storage']:+.1f} M, expiry {cz_['expire']:+.1f} M, net {cz_['net']:+.1f} M; biggest refunds "
+                              f"{cz_['top_refunds']}. Act on the largest negative item or say with numbers why it is gone"
+                              ) if cz_ else ""
+                except Exception:  # noqa: BLE001
+                    cz_txt = ""
+                wake("shop", f"G9 book: lead {lead / 1e6:.0f}M over {rival['name']} closes in {eta:.0f} h (us {ours / 1e6:+.1f} M/h, them {theirs / 1e6:+.1f} M/h){cz_txt}")
                 if eta < max(72, 1.15 * left9) and cooled(st, "G9a", 6 * 3600, now):
                     alert([f"G9 장부 격차 {lead / 1e6:.0f}M이 {eta:.0f}h 안에 닫힐 속도입니다 (남은 시간 {left9:.0f}h; {rival['name']} {theirs / 1e6:+.1f} M/h, 우리 {ours / 1e6:+.1f} M/h)"])
                     fired(st, "G9a", now)

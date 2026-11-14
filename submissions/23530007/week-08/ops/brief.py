@@ -258,7 +258,17 @@ def build(hours=6.0):
                    "G10": "API 비용이 하루 한도를 넘음", "G12": "전체 2위와 격차 .03 미만", "G18": "모두에게 같은 낮은 별점을 주는 계정 차단/해제"}
     for f in (gs.get("fires") or []):
         if str(f) in USER_GUARDS:
-            chk.append(("warn", USER_GUARDS[str(f)]))
+            msg = USER_GUARDS[str(f)]
+            if str(f) == "G9":     # 11-14 (user: 'do you find the cause and act?'): the cause goes with the warning
+                try:
+                    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+                    import market_picture as _mp
+                    cz = _mp.book_causes(6)
+                    if cz.get("line"):
+                        msg += f" — {cz['line']} (상점 에이전트에 전달됨)"
+                except Exception:  # noqa: BLE001
+                    pass
+            chk.append(("warn", msg))
     for n in out["ranks"][0]["near"]:
         if n["role"] == "아래" and n["gap"] < 0.03:
             chk.append(("warn", f"전체 {n['rank']}위 {n['player']}와 차이 {n['gap']:.3f} (0.03 미만)"))
