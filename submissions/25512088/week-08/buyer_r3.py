@@ -190,7 +190,30 @@ def candidates(order, shops, catalog, memory, intel=None):
                            -metrics['valid_checkout_probability'],-metrics['expected_surplus'],shop['name'],
                            offer['sku'],shop,offer))
     ranked.sort(key=lambda r:r[:5])
-    return [(r[6],r[7]) for r in ranked]
+    return diversify_shop_candidates([(r[6],r[7]) for r in ranked])
+
+
+def diversify_shop_candidates(pairs):
+    """Keep every pair while leading each wave with distinct sellers.
+
+    A shop can expose dozens of acceptable SKUs.  Sending the first wave to
+    many SKUs from the same slow shop wastes the order deadline and yields
+    little price diversity.  Round-robin preserves the original rank within
+    each shop and across each shop's best candidate without discarding any
+    SKU.
+    """
+    buckets={}
+    for pair in pairs:
+        shop=pair[0];key=shop.get('url') or shop.get('name')
+        buckets.setdefault(key,[]).append(pair)
+    ordered=[]
+    while buckets:
+        empty=[]
+        for key,rows in buckets.items():
+            ordered.append(rows.pop(0))
+            if not rows:empty.append(key)
+        for key in empty:del buckets[key]
+    return ordered
 
 
 def surplus_score(value, price, reliability=1):
