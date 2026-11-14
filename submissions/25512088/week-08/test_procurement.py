@@ -72,16 +72,16 @@ class PurchaseTests(unittest.TestCase):
   self.assertEqual(allocation_plan(ranked,{'units':[]},10000,aggression=4,policy=policy)[0]['qty'],2)
  def test_fast_goods_can_hold_five_only_after_two_normal_lots_sell_in_an_hour(self):
   ranked=[dict(sku='goods',kind='goods',expected_net=50000,score=3,upper_cost=100,
-               sales_1h=6,sales_6h=12,distinct_buyers_6h=4,estimated_sale_likelihood=.8)]
+               sales_1h=6,own_sales_1h=6,sales_6h=12,distinct_buyers_6h=4,estimated_sale_likelihood=.8)]
   policy={'max_units_per_sku':3,'max_fast_goods_units_per_sku':5,
           'fast_goods_sales_1h':6,'max_sku_capital_share':1}
   self.assertEqual(allocation_plan(ranked,{'units':[]},10000,aggression=4,policy=policy)[0]['qty'],5)
-  ranked[0]['sales_1h']=5
+  ranked[0]['own_sales_1h']=5
   self.assertEqual(allocation_plan(ranked,{'units':[]},10000,aggression=4,policy=policy)[0]['qty'],3)
  def test_sofa_is_blocked_until_zero_then_returns_under_normal_cap(self):
   ranked=[dict(sku='Gc2f7811b',expected_net=999999,score=99,upper_cost=100000,sales_1h=20,sales_6h=20,
                distinct_buyers_6h=10,estimated_sale_likelihood=1),
-          dict(sku='fresh',expected_net=50000,score=3,upper_cost=100000,sales_1h=5,sales_6h=12,
+          dict(sku='fresh',expected_net=50000,score=3,upper_cost=100000,sales_1h=8,sales_6h=12,
                distinct_buyers_6h=4,own_stockouts_6h=0,own_inquiries_6h=0,estimated_sale_likelihood=.8)]
   inv={'units':[{'sku':'Gc2f7811b','cost':100000}]+[{'sku':'fresh','cost':100000} for _ in range(2)]}
   plan=allocation_plan(ranked,inv,10000000)
@@ -115,7 +115,7 @@ class PurchaseTests(unittest.TestCase):
           for i in range(100)]
   plan=allocation_plan(ranked,{'units':[]},100000,aggression=100)
   self.assertEqual(len(plan),100)
-  self.assertEqual(sum(row['qty'] for row in plan),500)
+  self.assertEqual(sum(row['qty'] for row in plan),300)
  def test_live_competitor_breadth_floor_prioritizes_new_sku(self):
   ranked=[dict(sku='hot',expected_net=10000,score=100,upper_cost=100,
                sales_1h=20,sales_6h=30,distinct_buyers_6h=5,estimated_sale_likelihood=1),
@@ -132,7 +132,7 @@ class PurchaseTests(unittest.TestCase):
         {'sku':'refused','status':'refused','created':102}]
   inv={'units':[{'sku':'held'}]}
   self.assertEqual(breadth_window_blocks(rows,100,inv,3),{'new-a'})
-  self.assertEqual(breadth_window_blocks(rows,100,inv,1),set())
+  self.assertEqual(breadth_window_blocks(rows,100,inv,1),{'new-a'})
  def test_expensive_single_unit_cannot_bypass_portfolio_share(self):
   ranked=[dict(sku='expensive',expected_net=500000,expected_revenue=1000000,score=999,
                upper_cost=600000,sales_1h=8,sales_6h=12,distinct_buyers_6h=4,

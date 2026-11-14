@@ -57,15 +57,13 @@ def capital_available(policy,inv,exposure=0,pending=0):
     return max(0,min(liquid,capacity))
 
 def breadth_window_blocks(rows, opening, inventory, target):
-    """Avoid duplicate SKU buys while the supply API is still reflecting a purchase.
+    """Avoid duplicate SKU buys while inventory reflection can lag.
 
-    During breadth expansion, one successful purchase is enough for a SKU in a
-    single supply window.  The purchase journal is authoritative here because
-    the inventory endpoint can lag by several seconds after a paid POST.
+    ``allocation_plan`` already fills the evidenced need for one supply cadence
+    in its first successful call.  A second call in the same short window is a
+    stale-inventory duplicate, wastes a rate-limited slot, and can exceed the
+    per-SKU cap. The journal is authoritative regardless of breadth target.
     """
-    if not isinstance(target,int) or target<=0:return set()
-    holding={u.get('sku') for u in inventory.get('units',[]) if u.get('sku')}
-    if len(holding)>=target:return set()
     return {r['sku'] for r in rows
             if r['status']=='paid' and r['created']>=opening and r['sku']}
 
@@ -120,7 +118,7 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
             # actually sold through two full normal lots in the last hour may
             # hold a slightly deeper cohort between supply windows.
             if (row.get('sku') not in policy.get('blocked_until_zero_skus',())
-                    and row.get('sales_1h',0)>=policy.get('fast_goods_sales_1h',math.inf)):
+                    and row.get('own_sales_1h',0)>=policy.get('fast_goods_sales_1h',math.inf)):
                 unit_cap=max(unit_cap,policy.get('max_fast_goods_units_per_sku',unit_cap))
         # Portfolio size is bounded by available capital and evidence-backed
         # SKU breadth.  A fixed global unit count used to strand growing cash.
@@ -291,7 +289,12 @@ def main():
         if strategy.get('opens_at')!=opening or strategy.get('version')!=3:
             log(event='waiting_selection',select_at=opening-180,spent=spent)
             time.sleep(min(20,max(1,opening-180-time.time())));continue
-        ranked=[dict(row,kind=catalog.get(row.get('sku'),{}).get('kind'))
+        with sqlite3.connect(state/'referrals.sqlite3') as referrals:
+            own_sales_1h={row[0]:row[1] for row in referrals.execute(
+                'SELECT sku,COUNT(*) FROM sales WHERE settled>? AND refunded=0 GROUP BY sku',
+                (time.time()-3600,))}
+        ranked=[dict(row,kind=catalog.get(row.get('sku'),{}).get('kind'),
+                     own_sales_1h=own_sales_1h.get(row.get('sku'),0))
                 for row in (strategy.get('candidates') or strategy.get('top10',[]))]
         if not ranked:
             log(event='no_qualified_top10');time.sleep(20);continue
