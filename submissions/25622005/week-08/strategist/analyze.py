@@ -59,6 +59,13 @@ NEAR_MARKET_OFFER = 0.68      # big_ticket.floor_refusals: an offer at this shar
 # SAVED_TARGETS: kept-per-deal values the saved projection is shown for, besides the current one
 NEAR_CAP = 0.10                 # a failed try whose last ask is within this of the cap
 BAND_NAMES = ("<20k", "20k-50k", "50k-100k", "100k-200k", "200k-500k", "500k-1M", ">=1M")
+STUCK_MIN_N = 3             # market settles of a SKU's grade in 6 h before its mean price is used for that SKU
+STUCK_TOP = 6               # SKUs listed in economics.stuck
+ARRIVE_TOP = 10             # focus/trend SKUs listed in economics.stuck.arrivals
+# market rules ("Supply: a unit's grade and cost are drawn when it arrives"): goods A 70%, B 20%, C 10%
+GOODS_DRAW = {"A": 0.70, "B": 0.20, "C": 0.10}
+# the class view the course grades (students only): the board fields behind student_shop and student_buyer
+CLASS_F = {"shop": ("book", "revenue", "stars_rank"), "buyer": ("saved", "deals", "posts", "forum")}
 
 
 # --- small helpers: every input may be missing or of the wrong type
@@ -509,7 +516,10 @@ def _economics(tables, own, pol, market, catalog, now):
     unit of (their ACP sessions in the window: created, completed), with the market's 6 h settles (s6); demand they
     carried that our shelf cannot serve (sold_out_share: of the big-ticket SKUs we sold, the share sold out); and
     slow lines (held cost whose cover at our 24 h rate is over SLOW_COVER_H hours, or that sold none).
-    holding: _holding, every goods line against the storage rule."""
+    holding: _holding, every goods line against the storage rule. refunds_24h: what our warranty refunds paid back
+    over the 24 h sums (a refund is the full price, and the unit is gone), as a share of paid revenue and of the
+    margin (revenue - cost of goods sold). stuck: _stuck, goods whose cost is above the market's price for their
+    grade, and the focus/trend SKUs whose new units would land there."""
     t = _dict(tables)
     if not t:
         return None
@@ -560,6 +570,10 @@ def _economics(tables, own, pol, market, catalog, now):
                        (_num(st.get("end_ts")) - now) / 3600 if _num(st.get("end_ts")) is not None else None)
     ok = {k: (v >= EXPAND[k] if k in ("turnover_day", "balance") else v <= EXPAND[k] if k == "unsold_goods_share"
               else v < EXPAND[k]) if v is not None else None for k, v in cond.items()}
+    rev, ref = _num(day.get("rev")) or 0, _num(day.get("ref")) or 0
+    refunds = {"refunded": round(ref), "of_rev": round(ref / rev, 4) if rev else None,
+               "of_margin": round(ref / (rev - cogs), 3) if rev > cogs else None}
+    stuck = _stuck(units, rows, st, catalog, now, capital.get("storage_pct_day"))
     return {"covered_h": _num(t.get("covered_h")),
             "lines": {"lines_h": _r(lines_h, 2), "lines_window": round(lines_h * every / 60, 1) if lines_h else None,
                       "units_line": round(got / lines, 1) if lines and got is not None else None, "skus_held": skus,
@@ -569,7 +583,8 @@ def _economics(tables, own, pol, market, catalog, now):
                            "of_budget": round(cost(big) / budget, 3) if budget else None, "share_key": share},
             "surge_free_left": {_name(s): v for s, v in left[:FREE_TOP]},
             "kinds": kinds, "expand": cond, "expand_ok": ok, "expand_all_ok": all(v is True for v in ok.values()),
-            "capital": capital, "stockouts": stockouts, "holding": holding, "breakage": breakage, "demand": dem}
+            "capital": capital, "stockouts": stockouts, "holding": holding, "breakage": breakage, "demand": dem,
+            "refunds_24h": refunds, "stuck": stuck}
 
 
 def _demand_model(own, st, now):
@@ -677,6 +692,82 @@ def _holding(units, o24, day_h, pct, margin, hours_left):
             "losing_cost": round(sum(x["cost"] for x in losing)) if pct is not None else None,
             "losing_share": round(sum(x["cost"] for x in losing) / goods, 3) if pct is not None and goods else None,
             "lines": lines[:HOLD_TOP]}
+
+
+def _over(p, grade):
+    """The share of a grade's supply draws whose cost/list lands above p, the costs spread evenly over the
+    grade's band (policy.COST_SHARE); None without p."""
+    import policy
+    lo, hi = policy.COST_SHARE.get(grade, (None, None))
+    if p is None or lo is None:
+        return None
+    return round(min(1.0, max(0.0, (hi - p) / (hi - lo))), 3)
+
+
+def _stuck(units, rows, st, catalog, now, pct):
+    """See _economics. Goods units whose cost/list is above what the market pays for their grade: our floor is the
+    cost, so they do not sell at it, while the cheaper units of the same draw do (we sell the cheap ones and keep
+    the dear ones). The market price is the mean paid/list of the SKU's settles of that grade over 6 h
+    (table_view pg6) with STUCK_MIN_N or more, else the goods-wide mean of the grade over the same 6 h; no_price:
+    units with neither. storage_day: what they pay in storage a day. arrivals: for the focus and trend SKUs, the
+    share of new goods units expected to land over the market (GOODS_DRAW x _over per grade): a SKU with a high
+    share adds stuck stock with every refill."""
+    goods = [u for u in units if u.get("kind") == "goods"]
+    wide = {}
+    for g in ("A", "B", "C"):
+        x = n = 0
+        for s, r in rows.items():
+            if _kind_of(catalog, s) == "goods":
+                p, k = (_dict(r).get("pg6") or {}).get(g) or (None, 0)
+                if _num(p) and _num(k):
+                    x, n = x + p * k, n + k
+        wide[g] = round(x / n, 3) if n else None
+
+    def price(sku, g):
+        p, k = (_dict(_dict(rows.get(sku)).get("pg6")).get(g)) or (None, 0)
+        return p if _num(p) and (_num(k) or 0) >= STUCK_MIN_N else wide.get(g)
+
+    stuck, no_price = [], []
+    for u in goods:
+        lp, c, g = _list_price(catalog, u.get("sku")) or _num(u.get("list_price")), _num(u.get("cost")), u.get("grade")
+        p = price(u.get("sku"), g)
+        if not lp or c is None:
+            continue
+        if p is None:
+            no_price.append(u)
+        elif c / lp > p:
+            stuck.append(u)
+    cost = lambda us: round(sum(_num(u.get("cost")) or 0 for u in us))
+    age = lambda u: (now - (_num(u.get("supplied_at")) or now)) / 3600
+    focus, trend = set(st.get("focus_skus") or ()), set(st.get("trend_skus") or ())
+    by = {}
+    for u in stuck:
+        by.setdefault(u.get("sku"), []).append(u)
+    held = Counter(u.get("sku") for u in goods)
+    skus = []
+    for s, us in sorted(by.items(), key=lambda kv: -cost(kv[1]))[:STUCK_TOP]:
+        lp = _list_price(catalog, s) or _num(us[0].get("list_price"))
+        skus.append({"sku": _name(s), "held": held[s], "stuck": len(us), "stuck_cost": cost(us),
+                     "cost_list": _r(_median([_num(u.get("cost")) / lp for u in us]), 3) if lp else None,
+                     "market_list": {g: price(s, g) for g in sorted({u.get("grade") for u in us})},
+                     "age_h": round(_median([age(u) for u in us]), 1), "focus": s in focus, "trend": s in trend})
+    arrivals = []
+    for s in focus | trend:
+        shares = {g: _over(price(s, g), g) for g in GOODS_DRAW}
+        if _kind_of(catalog, s) != "goods" or any(v is None for v in shares.values()):
+            continue
+        arrivals.append({"sku": _name(s), "over_market": round(sum(GOODS_DRAW[g] * v for g, v in shares.items()), 3),
+                         "A_list": price(s, "A"), "focus": s in focus})
+    arrivals.sort(key=lambda x: -x["over_market"])
+    gc = cost(goods)
+    return {"n": len(stuck), "cost": cost(stuck), "share_of_goods": round(cost(stuck) / gc, 3) if gc else None,
+            "storage_day": round(cost(stuck) * pct / 100) if pct is not None else None,
+            "by_grade": {g: {"n": sum(1 for u in stuck if u.get("grade") == g),
+                             "cost": cost([u for u in stuck if u.get("grade") == g])} for g in ("A", "B", "C")},
+            "held_over_24h": {"n": sum(1 for u in stuck if age(u) >= 24), "cost": cost([u for u in stuck if age(u) >= 24])},
+            "held_over_48h": {"n": sum(1 for u in stuck if age(u) >= 48), "cost": cost([u for u in stuck if age(u) >= 48])},
+            "no_price": {"n": len(no_price), "cost": cost(no_price)}, "market_wide": wide,
+            "skus": skus, "arrivals": arrivals[:ARRIVE_TOP]}
 
 
 def _stockouts(big, rows, o24, day_h, acp, catalog, bmax):
@@ -797,6 +888,40 @@ def _score(shops, buyers, me, weights):
         if w and all(p["pct"] is not None for p in parts):
             d["recon"] = round(sum(p["w"] * p["pct"] for p in parts), 4)
         out[side] = d
+    return out
+
+
+def _class(players, shops, buyers, me):
+    """The class view (students only, board players with student true), which the course grades: our place by
+    student_total, the total gap to the student above and below, and per ALL part (CLASS_F) our value, our place
+    among the students and how far the next student up and down is (value units). A part moves the class total only
+    when it passes a student, so a change inside both gaps leaves that part's class percentile where it is. None
+    without our player row."""
+    studs = [p for p in players if isinstance(p, dict) and p.get("student") is True and _num(p.get("student_total")) is not None]
+    mine = next((p for p in studs if p.get("player") == me), None)
+    if not mine:
+        return None
+    totals = sorted((p["student_total"] for p in studs), reverse=True)
+    t = mine["student_total"]
+    up, down = [x for x in totals if x > t], [x for x in totals if x < t]
+    out = {"rank": 1 + len(up), "of": len(studs), "total": t, "pct": _num(mine.get("student_pct")),
+           "gap_up": round(min(up) - t, 4) if up else None, "gap_down": round(t - max(down), 4) if down else None,
+           "parts": {}}
+    for side, rows in (("shop", shops), ("buyer", buyers)):
+        byname = {r.get("name"): r for r in rows if isinstance(r, dict)}
+        ours = byname.get(_dict(mine.get(side)).get("name"))
+        peers = [byname.get(_dict(p.get(side)).get("name")) for p in studs]
+        peers = [r for r in peers if r is not None and r is not ours]
+        if ours is None:
+            continue
+        for f in CLASS_F[side]:
+            v = _num(ours.get(f))
+            vals = [x for x in (_num(r.get(f)) for r in peers) if x is not None]
+            if v is None or not vals:
+                continue
+            hi, lo = [x for x in vals if x > v], [x for x in vals if x < v]
+            out["parts"][f"{side}.{f}"] = {"value": _r(v), "rank": 1 + len(hi), "up": _r(min(hi) - v) if hi else None,
+                                           "down": _r(v - max(lo)) if lo else None}
     return out
 
 
@@ -936,7 +1061,10 @@ def _warranty(first, signs, pol, warranted=None):
     seller.warranty_cap_6h) is the number that confirms it. food_asked: food never carries a
     warranty. sign_rate: goods signs / first replies by whether the buyer asked and whether we offered, so the
     worth of a warranty to a sale is read off the two asked rows. break_q_upper: the median breakage upper
-    bound per grade among the goods asked. premium_mult: the median price multiplier of the offers."""
+    bound per grade among the goods asked. premium_mult: the median price multiplier of the offers. unit_ev: the
+    warranted signs split by what each is expected to keep, (price - cost) - break_q.upper x price (a broken unit
+    under warranty refunds the full price and is gone): neg, the ones whose own margin does not cover their break
+    risk (the premium is set per grade, the cost is the unit's), with the expected loss; pos, the rest."""
     s, st = _dict(_dict(pol).get("seller")), _dict(_dict(pol).get("stock"))
     grades, end_h = s.get("warranty_grades") or ("A", "B"), _num(st.get("no_warranty_h")) or 0
     inp = lambda r: _dict(r.get("inputs"))
@@ -976,7 +1104,18 @@ def _warranty(first, signs, pol, warranted=None):
     if w6 and cap is not None:
         w6["cap"] = cap
         w6["over_cap"] = (_num(w6.get("sum_list_paid")) or 0) >= cap
+    ev = {"neg": {"n": 0, "rev": 0, "exp": 0}, "pos": {"n": 0, "rev": 0, "exp": 0}}
+    for r in signs:
+        c, i = _dict(r.get("choice")), inp(r)
+        p, cost, q = _num(c.get("price")), _num(i.get("cost")), _num(_dict(i.get("break_q")).get("upper"))
+        if (_num(c.get("warranty_hours")) or 0) <= 0 or None in (p, cost, q):
+            continue
+        e = (p - cost) - q * p                  # kept if it holds, minus the refund (the full price) times the risk
+        side = ev["neg" if e < 0 else "pos"]
+        side["n"], side["rev"], side["exp"] = side["n"] + 1, side["rev"] + p, side["exp"] + e
+    ev = {k: {"n": v["n"], "rev": round(v["rev"]), "exp": round(v["exp"])} for k, v in ev.items()}
     return {"goods_asked": len(asked), "offered": len(offered), "refused": dict(refused), "warranted_6h": w6,
+            "unit_ev": ev,
             "food_asked": sum(1 for r in first if inp(r).get("kind") == "food" and inp(r).get("warranty_req")),
             "sold": sum(1 for r in signs if (_num(_dict(r.get("choice")).get("warranty_hours")) or 0) > 0),
             "sign_rate": rate, "break_q_upper": bq,
@@ -1275,6 +1414,9 @@ def brief(raw, own, prev, pol, now, me=ME, window_h=1, flows=None, known=(), foc
          "me": _me(shops, buyers, players, me)}
     b["delta"] = _delta(b["me"], prev, now)
     b["score"] = _score(shops, buyers, me, _dict(weights))
+    cls = _class(players, shops, buyers, me)
+    if cls:
+        b["score"]["class"] = cls
     b["leaders"] = _leaders(shops, me)
     b["market"] = _market(board, raw.get("stats"))
     b["prices"] = _prices(raw.get("trades"), ledger, catalog, since, me, url)

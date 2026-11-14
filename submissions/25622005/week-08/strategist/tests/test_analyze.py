@@ -1003,5 +1003,85 @@ class NewSectionsTest(unittest.TestCase):
         self.assertEqual(analyze.brief(r, o, None, POL, NOW)["ledger_h"], round(120 / 3600, 4))
 
 
+class StuckRefundsClassTest(unittest.TestCase):
+    """economics.stuck (goods whose cost is above the market's price for their grade), refunds_24h,
+    seller.warranty.unit_ev and score.class (the students-only view)."""
+    CAT = {"GS": ["sofa", "가구>소파", 1_000_000, "goods", None], "GT": ["bed", "가구>침대", 1_000_000, "goods", None],
+           "GF": ["rice", "식품>쌀", 20000, "food", 2000]}
+
+    def unit(self, u, sku, grade, cost, age_h, kind="goods"):
+        return {"unit": u, "sku": sku, "kind": kind, "grade": grade, "cost": cost, "supplied_at": NOW - age_h * 3600}
+
+    def test_stuck_units_against_the_market_price_of_their_grade(self):
+        units = [self.unit("a1", "GS", "A", 730_000, 30), self.unit("a2", "GS", "A", 640_000, 2),
+                 self.unit("a3", "GS", "A", 720_000, 50), self.unit("b1", "GS", "B", 450_000, 5),
+                 self.unit("t1", "GT", "A", 720_000, 1),                     # GT: 2 sales only, the goods-wide A price
+                 self.unit("f1", "GF", "A", 15000, 1, kind="food")]           # food is left out
+        rows = {"GS": {"pg6": {"A": [0.70, 5], "B": [0.60, 3]}}, "GT": {"pg6": {"A": [0.75, 2]}}}
+        st = {"focus_skus": ["GS"], "trend_skus": ["GT"]}
+        s = analyze._stuck(units, rows, st, self.CAT, NOW, 1.0)
+        self.assertEqual(s["market_wide"], {"A": round((0.70 * 5 + 0.75 * 2) / 7, 3), "B": 0.6, "C": None})
+        self.assertEqual((s["n"], s["cost"]), (3, 2_170_000))               # a1, a3 (GS A 0.70); t1 0.72 over 0.714
+        self.assertEqual(s["by_grade"]["A"], {"n": 3, "cost": 2_170_000})
+        self.assertEqual(s["held_over_24h"], {"n": 2, "cost": 1_450_000})
+        self.assertEqual(s["held_over_48h"], {"n": 1, "cost": 720_000})
+        self.assertEqual(s["storage_day"], 21700)
+        self.assertEqual(s["share_of_goods"], round(2_170_000 / 3_260_000, 3))
+        self.assertEqual(s["skus"][0], {"sku": "GS", "held": 4, "stuck": 2, "stuck_cost": 1_450_000, "cost_list": 0.725,
+                                        "market_list": {"A": 0.7}, "age_h": 40.0, "focus": True, "trend": False})
+        # arrivals: GS A at 0.70 -> 0.25 of A draws over; B at 0.60 -> 0; C has no price -> GS is not rated
+        self.assertEqual(s["arrivals"], [])
+        rows["GS"]["pg6"]["C"] = [0.40, 3]
+        s = analyze._stuck(units, rows, st, self.CAT, NOW, 1.0)
+        self.assertEqual(s["arrivals"][0]["sku"], "GS")
+        self.assertEqual(s["arrivals"][0]["over_market"], round(0.7 * 0.25 + 0.2 * 0 + 0.1 * 0.25, 3))
+        self.assertEqual(analyze._over(0.80, "A"), 0.0)
+        self.assertEqual(analyze._over(0.50, "A"), 1.0)
+        self.assertIsNone(analyze._over(None, "A"))
+
+    def test_refunds_and_stuck_in_the_economics_section(self):
+        o = own()
+        o["inventory"] = {"balance": 1_000_000, "units": [self.unit("a1", "GS", "A", 730_000, 30)]}
+        r = raw()
+        r["catalog"] = self.CAT
+        tables = {"covered_h": 6, "h1": 1, "h6": 6, "sku": {"GS": {"pg6": {"A": [0.70, 4]}}},
+                  "p_clear": {"food": {}, "goods": {}}, "c_kind": {},
+                  "day": {"cogs": 6_000_000, "rev": 7_000_000, "exp": 0, "ref": 350_000, "o": {}, "h": 24}}
+        pol = {"stock": {"end_ts": NOW + 36000, "inventory_cap_share": 0.5, "focus_skus": ["GS"]},
+               "seller": {"floor_list": 0.57, "floor_cost_mult": 1.0}}
+        e = analyze.brief(r, o, None, pol, NOW, tables=tables, market={"facts": {"storage_pct_day": 1.0}})["economics"]
+        self.assertEqual(e["refunds_24h"], {"refunded": 350_000, "of_rev": 0.05, "of_margin": 0.35})
+        self.assertEqual((e["stuck"]["n"], e["stuck"]["storage_day"]), (1, 7300))
+
+    def test_warranty_unit_ev_splits_signs_by_their_own_margin(self):
+        sign = lambda price, cost, upper, wh=6: {"kind": "sign", "choice": {"price": price, "warranty_hours": wh},
+                                                 "inputs": {"kind": "goods", "cost": cost, "break_q": {"upper": upper}}}
+        signs = [sign(2_530_000, 2_340_000, 0.12),        # keeps 190k, risks 0.12 x 2.53M = 303.6k: a loss
+                 sign(1_000_000, 700_000, 0.12),          # keeps 300k, risks 120k
+                 sign(500_000, 300_000, 0.12, wh=0),      # no warranty: not counted
+                 sign(500_000, 300_000, None)]            # no break data: not counted
+        ev = analyze._warranty([], signs, {})["unit_ev"]
+        self.assertEqual(ev, {"neg": {"n": 1, "rev": 2_530_000, "exp": round(190_000 - 0.12 * 2_530_000)},
+                              "pos": {"n": 1, "rev": 1_000_000, "exp": 180_000}})
+
+    def test_class_view_rank_gaps_and_parts(self):
+        players = [{"player": p, "student": True, "student_total": t, "student_pct": None,
+                    "shop": {"name": p}, "buyer": {"name": p}} for p, t in (("x1", 1.8), ("psyoung82", 1.3), ("x2", 1.25))]
+        players.append({"player": "house", "student": False, "student_total": None, "shop": {"name": "house"}})
+        shops = [{"name": "x1", "book": 900, "revenue": 50, "stars_rank": 4.5}, {"name": "psyoung82", "book": 400,
+                  "revenue": 60, "stars_rank": 4.4}, {"name": "x2", "book": 200, "revenue": 40, "stars_rank": 4.4},
+                 {"name": "house", "book": 10_000, "revenue": 1, "stars_rank": 5}]
+        buyers = [{"name": "x1", "saved": 0.8, "deals": 10}, {"name": "psyoung82", "saved": 0.7, "deals": 20},
+                  {"name": "x2", "saved": 0.6, "deals": 5}]
+        c = analyze._class(players, shops, buyers, "psyoung82")
+        self.assertEqual((c["rank"], c["of"], c["gap_up"], c["gap_down"]), (2, 3, 0.5, 0.05))
+        self.assertEqual(c["parts"]["shop.book"], {"value": 400, "rank": 2, "up": 500, "down": 200})   # the house shop is not a student
+        self.assertEqual(c["parts"]["shop.revenue"], {"value": 60, "rank": 1, "up": None, "down": 10})
+        self.assertEqual(c["parts"]["shop.stars_rank"], {"value": 4.4, "rank": 2, "up": 0.1, "down": None})  # a tie is neither
+        self.assertEqual(c["parts"]["buyer.saved"]["rank"], 2)
+        self.assertNotIn("buyer.posts", c["parts"])
+        self.assertIsNone(analyze._class(players, shops, buyers, "nobody"))
+
+
 if __name__ == "__main__":
     unittest.main()
