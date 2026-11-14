@@ -318,8 +318,11 @@ def sale_quote(unit, catalog, program, intel=None, token='', ref='', *, record=T
     loss_trials=program.db.execute(
         'SELECT COUNT(*) FROM sales WHERE sku=? AND amount<cost',(unit['sku'],)).fetchone()[0]
     cohort_floor=math.ceil(unit['cost']*(1-LOSS_LEADER_RATE))
+    near_floor_demand=bool(poor_local_conversion and offer_target is not None and
+                           offer_target<cohort_floor and
+                           offer_target>=math.ceil(cohort_floor*.97))
     local_evidence=(offer_target if poor_local_conversion and offer_target is not None and
-                    offer_target>=cohort_floor else None)
+                    offer_target>=cohort_floor else (cohort_floor if near_floor_demand else None))
     score_evidence_floor=local_evidence if local_evidence is not None else (
         max(market_evidence) if market_evidence else None)
     projected_loss=max(0,unit['cost']-(score_evidence_floor or unit['cost']))
@@ -366,7 +369,8 @@ def sale_quote(unit, catalog, program, intel=None, token='', ref='', *, record=T
                        'liquidation':bool(markdown),'liquidation_discount':markdown,
                        'loss_leader':loss_leader,'projected_raw_loss':projected_loss,
                        'loss_budget':loss_budget,
-                       'loss_leader_evidence':('own_offer_upper_quartile' if local_evidence is not None else
+                       'loss_leader_evidence':(('own_offer_near_raw_loss_floor' if near_floor_demand else
+                                                'own_offer_upper_quartile') if local_evidence is not None else
                            ('top10_grade_or_exact_condition' if score_evidence_floor else None)),
                        'loss_budget_remaining':q['loss_budget_remaining'],
                        'source':('buyer_preference_lower_quartile' if preference_applied else
