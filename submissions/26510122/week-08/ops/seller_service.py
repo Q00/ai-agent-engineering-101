@@ -4,6 +4,7 @@ Prepare once from reviewed source. Running the service never reloads unfinished
 buyer work. Private keys stay in their existing location through local symlinks.
 """
 import argparse
+from contextlib import closing
 import hashlib
 import json
 import os
@@ -12,6 +13,7 @@ from pathlib import Path
 import shlex
 import shutil
 import signal
+import sqlite3
 import subprocess
 import time
 import urllib.request
@@ -111,6 +113,27 @@ def registry_matches(url):
         return any(s.get('name') == 'outseop-26510122' and s.get('url') == url for s in shops)
     except (OSError, ValueError):
         return None
+
+
+def serving_recent_buyers(runtime, url, now):
+    """A stale registry address alone cannot override fresh private trade evidence."""
+    inventory=runtime/'.market/inventory.json'
+    try:
+        if not 0<=now-inventory.stat().st_mtime<30:
+            return False
+        with closing(sqlite3.connect(
+                (runtime/'state/seller.sqlite3').resolve().as_uri()+'?mode=ro',
+                uri=True,timeout=.5)) as db:
+            at=db.execute('SELECT MAX(updated_at) FROM purchase_contexts').fetchone()[0]
+        if type(at) not in (int,float) or not 0<=now-at<=180:
+            return False
+        with urllib.request.urlopen(url+'/.well-known/agent-card.json',timeout=3) as response:
+            card=json.load(response)
+        return (isinstance(card,dict) and card.get('name')=='outseop-26510122'
+                and isinstance(card.get('supportedInterfaces'),list)
+                and bool(card['supportedInterfaces']))
+    except (OSError,ValueError,TypeError,sqlite3.Error):
+        return False
 
 
 def safe_tunnel_renewal(runtime, now):
@@ -220,7 +243,10 @@ def run(args):
                     clock=time.monotonic()
                     if clock>=next_health:
                         registered=registry_matches(url)
-                        missing_checks=missing_checks+1 if registered is False else 0
+                        active=registered is False and serving_recent_buyers(runtime,url,time.time())
+                        if active:
+                            log('Registry address differs, but fresh buyer activity and public card are healthy; keeping tunnel')
+                        missing_checks=missing_checks+1 if registered is False and not active else 0
                         next_health=time.monotonic()+60
                     if (clock>=until or missing_checks>=2) and safe_tunnel_renewal(runtime,time.time()):
                         if missing_checks>=2:

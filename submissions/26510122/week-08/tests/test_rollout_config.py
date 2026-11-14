@@ -125,3 +125,22 @@ class TunnelContinuityTests(unittest.TestCase):
             self.assertFalse(safe_tunnel_renewal(root,1010))
             inventory(False,1050)
             self.assertFalse(safe_tunnel_renewal(root,1010))
+
+class RegistryTradeEvidenceTests(unittest.TestCase):
+    def test_live_trade_and_public_card_prevent_stale_address_restart_only(self):
+        import os,sqlite3
+        from unittest.mock import patch,MagicMock
+        from ops.seller_service import serving_recent_buyers
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory);(root/'.market').mkdir();(root/'state').mkdir()
+            p=root/'.market/inventory.json';p.write_text('{}');os.utime(p,(1000,1000))
+            db=sqlite3.connect(root/'state/seller.sqlite3')
+            db.execute('create table purchase_contexts(updated_at real)')
+            db.execute('insert into purchase_contexts values (1000)');db.commit();db.close()
+            response=MagicMock()
+            response.__enter__.return_value.read.return_value=b'{"name":"outseop-26510122","supportedInterfaces":[{}]}'
+            with patch('ops.seller_service.urllib.request.urlopen',return_value=response):
+                self.assertTrue(serving_recent_buyers(root,'https://shop.example',1010))
+                self.assertFalse(serving_recent_buyers(root,'https://shop.example',1200))
+                response.__enter__.return_value.read.return_value=b'{"name":"another-shop","supportedInterfaces":[{}]}'
+                self.assertFalse(serving_recent_buyers(root,'https://shop.example',1010))
