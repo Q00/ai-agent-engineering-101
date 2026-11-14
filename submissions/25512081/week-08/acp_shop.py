@@ -15,8 +15,9 @@ What the kit does for the main shop and this file does itself:
   POST /api/join (role shop), GET /api/inventory every 10 s -> .market/inventory.json, POST /api/supply in the window,
   a cloudflared tunnel for the public URL.
 
-It joins without an owner claim code, so it is a separate test shop and does not change the Players score of the
-main shop (kimauve, run by the kit). The unit, certificate, claim and warranty in a session come from the receipt
+The market takes no shop without the owner's claim code (MARKET_OWNER), and a second shop under the same GitHub
+account would muddle the Players score, so it runs as the main shop itself: same name, same shop_key.pem and .market
+folder, with the kit stopped (Nov 14: run for one settled deal through this checkout, then the kit again). The unit, certificate, claim and warranty in a session come from the receipt
 our seller made (recorded when it signed), never from the buyer's copy: only shop, item, price and task are signed.
 """
 import argparse
@@ -103,6 +104,8 @@ class Market:
         ts = int(time.time())
         body = {"name": name, "role": "shop", "pubkey": pub_b64(self.key), "url": url, "ts": ts,
                 "sig": base64.b64encode(self.key.sign(canon({"name": name, "role": "shop", "url": url, "ts": ts}))).decode()}
+        if os.environ.get("MARKET_OWNER"):              # the market takes no shop without the owner's claim code
+            body["owner"] = os.environ["MARKET_OWNER"]
         r = self.c.post(f"{self.base}/api/join", json=body)
         if r.status_code != 200:
             raise SystemExit(f"[market] join refused: {r.status_code} {r.text[:300]}")
