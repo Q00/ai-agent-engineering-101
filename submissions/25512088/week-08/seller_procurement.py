@@ -116,6 +116,12 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
                 unit_cap=max(unit_cap,policy.get('max_ultra_fast_food_units_per_sku',unit_cap))
         else:
             unit_cap=policy.get('max_units_per_sku',3)
+            # Preserve the normal three-unit diversity cap. Only a SKU that
+            # actually sold through two full normal lots in the last hour may
+            # hold a slightly deeper cohort between supply windows.
+            if (row.get('sku') not in policy.get('blocked_until_zero_skus',())
+                    and row.get('sales_1h',0)>=policy.get('fast_goods_sales_1h',math.inf)):
+                unit_cap=max(unit_cap,policy.get('max_fast_goods_units_per_sku',unit_cap))
         # Portfolio size is bounded by available capital and evidence-backed
         # SKU breadth.  A fixed global unit count used to strand growing cash.
         sku_ceiling=unit_cap
@@ -141,9 +147,9 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
         risk_adjusted=row.get('score',0)/max(1,row['upper_cost'])**.75
         choices.append((breadth_priority,-(risk_adjusted*diversity),
                         row['sku'],need,evidence))
-    # Each candidate is already capped at two food or three goods units.  When
-    # no explicit test/canary slot limit is supplied, capital and those per-SKU
-    # caps determine the total portfolio instead of an arbitrary 250 units.
+    # Each candidate is bounded by condition-specific per-SKU caps. When no
+    # explicit test/canary slot limit is supplied, capital and those caps
+    # determine the total portfolio instead of an arbitrary 250 units.
     plan=[];slots=sum(row[3] for row in choices) if available_slots is None else available_slots
     for _,_,sku,need,row in sorted(choices):
         # Official supply API accepts at most 20 units per call. Remaining
