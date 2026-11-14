@@ -155,14 +155,23 @@ def main():
     assert (ROOT/'shop_key.pem').exists()
     key=kit.load_key(ROOT/'shop_key.pem');market=kit.Market('https://market.ourolabs.ai',os.environ.get('MARKET_OWNER'))
     def log(**data):print(json.dumps(dict(ts=time.time(),**data),ensure_ascii=False),flush=True)
+    registration_attempt=0
     def get_registration():
-        # /api/shops may retain the previous tunnel briefly after a restart;
-        # the board card is the URL buyers actually use.
-        response=market.c.get(market.base+'/api/board');response.raise_for_status()
-        try:return own_board_registration(response.json())
-        except ConnectionError:
-            response=market.c.get(market.base+'/api/shops');response.raise_for_status()
-            return own_registration(response.json())
+        # The board and shop registry are eventually consistent and either one
+        # may briefly retain the previous tunnel.  Alternate the preferred
+        # source after a failed join so a fresh URL is never hidden by a stale
+        # but otherwise valid record.
+        nonlocal registration_attempt
+        sources=(('/api/shops',own_registration),('/api/board',own_board_registration))
+        if registration_attempt%2:sources=tuple(reversed(sources))
+        registration_attempt+=1
+        error=None
+        for endpoint,parser in sources:
+            try:
+                response=market.c.get(market.base+endpoint);response.raise_for_status()
+                return parser(response.json())
+            except Exception as exc:error=exc
+        raise ConnectionError('own live shop absent from both registries') from error
     retry_join(lambda:join_current_registration(market,key,get_registration),report=log)
     catalog=json.loads((state/'catalog.json').read_text());blocked=set();window=None
     def log(**data):print(json.dumps(dict(ts=time.time(),**data),ensure_ascii=False),flush=True)
