@@ -6,7 +6,8 @@ import unittest
 from unittest.mock import patch
 import httpx
 from market_intel import Intel,BUYER_SCORE_WEIGHTS
-from seller_strategy import sale_quote,restock_plan,cost_floor,protected_floor,score_floor,buyer_preference_target
+from seller_strategy import (sale_quote,restock_plan,cost_floor,protected_floor,score_floor,
+                             buyer_preference_target,top_seller_grade_target)
 from seller_ledger import Program
 from buyer_publicist import queue_update,publication_policy,forum_strategy,STRATEGY_REVIEW_SECONDS
 from buyer_r3 import Buyer
@@ -72,6 +73,24 @@ class IntelligenceTests(unittest.TestCase):
         expensive=dict(self.u,cost=13000,list_price=20000)
         protected=sale_quote(expensive,{},self.p,self.i,buyer_preferences=prefs)
         self.assertGreater(protected['price'],13000)
+
+    def test_top_seller_grade_target_lowers_sparse_initial_quote(self):
+        now=time.time();leaders=[];shops=[];rows=[]
+        for n in range(3):
+            name=f'leader-{n}';url=f'https://leader-{n}'
+            leaders.append({'name':name,'all':1-n*.1});shops.append({'name':name,'url':url})
+            for i in range(20):
+                rows.append(dict(seq=1000+n*20+i,ts=now,kind='settle',round=3,data=dict(
+                    shop=url,sku='other',grade='A',amount=7000,warranty_hours=6,
+                    claim_honest=True,buyer=f'b-{n}-{i}')))
+        self.i.save_source('board',{'shops':leaders});self.i.save_source('shops',{'shops':shops})
+        self.i.ingest(rows)
+        catalog={'x':{'kind':'goods','list_price':10000},
+                 'other':{'kind':'goods','list_price':10000}}
+        target=top_seller_grade_target(self.i,catalog,'A','goods',now)
+        self.assertEqual((target['ratio'],target['samples'],target['shops']),(.7,60,3))
+        q=sale_quote(dict(self.u,cost=1000),catalog,self.p,self.i)
+        self.assertEqual(q['price'],7000)
 
     def test_buyer_preference_target_requires_three_active_buyers_and_fresh_data(self):
         now=time.time();base={'version':3,'generated_at':now,'buyers':{

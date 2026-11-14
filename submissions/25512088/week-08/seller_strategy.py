@@ -38,6 +38,32 @@ def buyer_preference_target(preferences,sku,now=None):
             'basis':'active_buyer_item_lower_quartile'}
 
 
+def top_seller_grade_target(intel,catalog,grade,kind,now=None):
+    """Return the live top-shop median paid/list ratio for this condition."""
+    if intel is None or grade not in ('A','B','C') or kind not in ('goods','food'):
+        return None
+    now=time.time() if now is None else now
+    board=intel.source('board',None,max_age=300)
+    shops=intel.source('shops',None,max_age=300)
+    if not isinstance(board,dict) or not shops:return None
+    registry=shops.get('shops',[]) if isinstance(shops,dict) else shops
+    urls={str(row.get('name')):row.get('url') for row in registry if row.get('name') and row.get('url')}
+    leaders=[row for row in sorted(board.get('shops',[]),key=lambda row:row.get('all',0),reverse=True)
+             if str(row.get('name'))!='25512088'][:10]
+    leader_urls={urls.get(str(row.get('name'))) for row in leaders}- {None}
+    if not leader_urls:return None
+    ratios=[];seen=set()
+    for row in intel.db.execute('SELECT shop,sku,price FROM trades WHERE grade=? AND ts>?',(grade,now-3600)):
+        if row['shop'] not in leader_urls:continue
+        product=catalog.get(row['sku'],{});listed=product.get('list_price')
+        if product.get('kind')!=kind or not isinstance(listed,(int,float)) or listed<=0:continue
+        ratio=row['price']/listed
+        if 0<ratio<=1.5:ratios.append(ratio);seen.add(row['shop'])
+    if len(ratios)<50 or len(seen)<3:return None
+    return {'ratio':median(ratios),'samples':len(ratios),'shops':len(seen),
+            'basis':'top10_verified_settlement_grade_median_1h'}
+
+
 def receipt_grade(unit,catalog=None,now=None):
     """Grade at issuance; omit uncertain food claims near a transition."""
     now=time.time() if now is None else now;product=(catalog or {}).get(unit['sku'],{})
@@ -206,6 +232,13 @@ def sale_quote(unit, catalog, program, intel=None, token='', ref='', *, record=T
         # Aim at a price already accepted by roughly three quarters of the
         # active-buyer cohort. The protected floor below remains authoritative.
         base=min(base,preference['price'])
+    grade_target=top_seller_grade_target(intel,catalog,unit.get('grade'),unit.get('kind'))
+    grade_target_applied=bool(listed and grade_target and math.ceil(listed*grade_target['ratio'])<base)
+    if grade_target_applied:
+        # Never open above the condition-matched top-shop median when the
+        # verified market already demonstrates a lower acceptance point. The
+        # cost/refund floor below remains authoritative.
+        base=math.ceil(listed*grade_target['ratio'])
     adjustment=1.0;competitors=0;substitutes=0;sold=0;quotes=0
     if intel:
         shops=intel.source('shops',None,max_age=180)
@@ -270,9 +303,12 @@ def sale_quote(unit, catalog, program, intel=None, token='', ref='', *, record=T
                        'floor_policy':('legacy_benefit_protected' if legacy else 'public_book_preserving'),
                        'comparable':comp,'market_adjustment':adjustment,
                        'buyer_preference_target':preference,'buyer_preference_applied':preference_applied,
+                       'top_seller_grade_target':grade_target,
+                       'top_seller_grade_target_applied':grade_target_applied,
                        'pricing_basis':('buyer_preference_lower_quartile' if preference_applied else
-                           ('exact_condition_p10' if acceptance_first else
-                            ('settlement_median' if comp['median'] else 'grade_formula'))),
+                           ('top10_grade_median' if grade_target_applied else
+                            ('exact_condition_p10' if acceptance_first else
+                             ('settlement_median' if comp['median'] else 'grade_formula')))),
                        'same_competitor_units':competitors,'substitute_competitor_units':substitutes,
                        'quotes_6h':quotes,'sales_6h':sold,
                        'warranty_hours':warranty,
@@ -282,8 +318,9 @@ def sale_quote(unit, catalog, program, intel=None, token='', ref='', *, record=T
                        'loss_leader':loss_leader,'projected_raw_loss':projected_loss,
                        'loss_budget_remaining':q['loss_budget_remaining'],
                        'source':('buyer_preference_lower_quartile' if preference_applied else
-                           ('exact_condition_p10' if acceptance_first else
-                            ('settlement_median' if comp['median'] else 'grade_formula_cost_protected')))})
+                           ('top10_grade_median' if grade_target_applied else
+                            ('exact_condition_p10' if acceptance_first else
+                             ('settlement_median' if comp['median'] else 'grade_formula_cost_protected'))))})
     return q
 
 
