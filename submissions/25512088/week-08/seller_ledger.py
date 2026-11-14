@@ -131,10 +131,20 @@ class Program:
             self.db.execute('CREATE TABLE IF NOT EXISTS warranties(task TEXT PRIMARY KEY, amount INTEGER, issued REAL)')
             if q.get('warranty_hours'):
                 if inventory is None:raise ValueError('Missing warranty cash evidence')
-                exposure=self.db.execute('SELECT COALESCE(SUM(w.amount),0) FROM warranties w JOIN sales s ON s.task=w.task WHERE s.refunded=0 AND (s.settled IS NULL OR s.settled>?)',(time.time()-21600,)).fetchone()[0]
-                from seller_procurement import reserve_cash
+                amounts=[row[0] for row in self.db.execute(
+                    'SELECT w.amount FROM warranties w JOIN sales s ON s.task=w.task '
+                    'WHERE s.refunded=0 AND (s.settled IS NULL OR s.settled>?)',
+                    (time.time()-21600,))]
+                from seller_procurement import reserve_cash,warranty_risk_reserve
                 reserve=reserve_cash(inventory)
-                if inventory.get('balance',0)-exposure-q['price']<reserve:raise ValueError('Warranty reserve unavailable')
+                warranty_reserve=warranty_risk_reserve(amounts+[q['price']])
+                other_liabilities=self.db.execute(
+                    'SELECT COALESCE(SUM(credit),0) FROM members').fetchone()[0]
+                other_liabilities+=self.db.execute(
+                    'SELECT COALESCE(SUM(reward),0) FROM sales '
+                    'WHERE awarded=0 AND refunded=0').fetchone()[0]
+                if inventory.get('balance',0)-warranty_reserve-other_liabilities<reserve:
+                    raise ValueError('Warranty reserve unavailable')
                 self.db.execute('INSERT INTO warranties VALUES(?,?,?)',(task,q['price'],time.time()))
             mid = q['member']
             if mid and q['spent']:

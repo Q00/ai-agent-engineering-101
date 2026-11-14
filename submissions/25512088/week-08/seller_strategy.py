@@ -369,7 +369,12 @@ def restock_plan(inv,catalog,intel,now=None):
         import sqlite3
         with sqlite3.connect(str(db)) as conn:
             if conn.execute("SELECT 1 FROM sqlite_master WHERE name='warranties'").fetchone():
-                exposure=conn.execute('SELECT COALESCE(SUM(w.amount),0) FROM warranties w JOIN sales s ON s.task=w.task WHERE s.refunded=0 AND (s.settled IS NULL OR s.settled>?)',(now-21600,)).fetchone()[0]
+                amounts=[row[0] for row in conn.execute(
+                    'SELECT w.amount FROM warranties w JOIN sales s ON s.task=w.task '
+                    'WHERE s.refunded=0 AND (s.settled IS NULL OR s.settled>?)',
+                    (now-21600,))]
+                from seller_procurement import warranty_risk_reserve
+                exposure=warranty_risk_reserve(amounts)
     reserve+=exposure
     inventory_cost=sum(u.get('cost',0) for u in stock)
     from seller_procurement import capital_available

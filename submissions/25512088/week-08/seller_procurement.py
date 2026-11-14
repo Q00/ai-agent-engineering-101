@@ -10,6 +10,27 @@ PENDING_HOLD_SECONDS=300
 
 def settings():return json.loads((ROOT/'procurement_policy.json').read_text())
 
+def warranty_risk_reserve(amounts, policy=None):
+    """Reserve a conservative tail estimate instead of every warranty at once.
+
+    The market can refund the full price of any warranted good, so the largest
+    single claim is always covered.  Freezing every active warranty assumes a
+    100% simultaneous break rate and eventually stops a successful shop from
+    restocking.  The configured hazard deliberately exceeds our mature public
+    breakage cohort; four standard deviations retain a wide tail buffer while
+    allowing accumulated cash to keep earning Book and Revenue.
+    """
+    policy=policy or settings()
+    clean=[int(value) for value in amounts
+           if isinstance(value,(int,float)) and not isinstance(value,bool) and value>0]
+    if not clean:return 0
+    total=sum(clean)
+    hazard=max(.01,min(1.0,float(policy.get('warranty_reserve_hazard',.15))))
+    sigma=max(0.0,min(10.0,float(policy.get('warranty_reserve_sigma',4.0))))
+    expected=hazard*total
+    deviation=math.sqrt(hazard*(1-hazard)*sum(value*value for value in clean))
+    return min(total,max(max(clean),math.ceil(expected+sigma*deviation)))
+
 def reserve_cash(inv,exposure=0):
     return max(settings()['cash_floor'],inv.get('bankrupt_line',500000))+exposure
 
@@ -228,7 +249,11 @@ def main():
         exposure=0
         with sqlite3.connect(state/'referrals.sqlite3') as referrals:
             if referrals.execute("SELECT 1 FROM sqlite_master WHERE name='warranties'").fetchone():
-                exposure=referrals.execute('SELECT COALESCE(SUM(w.amount),0) FROM warranties w JOIN sales s ON s.task=w.task WHERE s.refunded=0 AND (s.settled IS NULL OR s.settled>?)',(time.time()-21600,)).fetchone()[0]
+                amounts=[row[0] for row in referrals.execute(
+                    'SELECT w.amount FROM warranties w JOIN sales s ON s.task=w.task '
+                    'WHERE s.refunded=0 AND (s.settled IS NULL OR s.settled>?)',
+                    (time.time()-21600,))]
+                exposure=warranty_risk_reserve(amounts,policy)
         with sqlite3.connect(state/'referrals.sqlite3') as referrals:
             exposure+=referrals.execute('SELECT COALESCE(SUM(credit),0) FROM members').fetchone()[0]
             exposure+=referrals.execute('SELECT COALESCE(SUM(reward),0) FROM sales WHERE awarded=0 AND refunded=0').fetchone()[0]

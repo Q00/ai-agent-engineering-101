@@ -1,6 +1,7 @@
+import math
 import unittest
 from network_reads import retry_read
-from seller_procurement import choose,allocation_plan,capital_available,supply_result,own_registration,own_board_registration,retry_join,join_current_registration,preserve_stale_pending,breadth_window_blocks
+from seller_procurement import choose,allocation_plan,capital_available,supply_result,own_registration,own_board_registration,retry_join,join_current_registration,preserve_stale_pending,breadth_window_blocks,warranty_risk_reserve
 class PurchaseTests(unittest.TestCase):
  def setUp(self):
   self.p={'budget':2500000,'cash_floor':500000,'priority':['a','b','c','d']}
@@ -22,6 +23,16 @@ class PurchaseTests(unittest.TestCase):
   self.assertEqual(choose(self.p,self.cat,1900000,0,5000000,0,0),('a',300000))
  def test_reward_and_warranty_liabilities_limit_cash(self):
   self.assertIsNone(choose(self.p,self.cat,0,0,1000000,300000,0))
+ def test_warranty_reserve_covers_single_claim_and_bounded_tail(self):
+  policy={'warranty_reserve_hazard':.15,'warranty_reserve_sigma':4}
+  self.assertEqual(warranty_risk_reserve([2000000],policy),2000000)
+  amounts=[2000000,1000000]+[200000 for _ in range(50)]
+  reserve=warranty_risk_reserve(amounts,policy)
+  self.assertGreaterEqual(reserve,max(amounts))
+  self.assertLess(reserve,sum(amounts))
+  expected=.15*sum(amounts)
+  deviation=(.15*.85*sum(value*value for value in amounts))**.5
+  self.assertEqual(reserve,math.ceil(expected+4*deviation))
  def test_allocation_uses_sellthrough_and_small_diversified_lots(self):
   ranked=[dict(sku='a',expected_net=50000,score=3,upper_cost=100000,sales_1h=8,sales_6h=12,
                distinct_buyers_6h=4,own_stockouts_6h=2,own_inquiries_6h=1,estimated_sale_likelihood=.8),
