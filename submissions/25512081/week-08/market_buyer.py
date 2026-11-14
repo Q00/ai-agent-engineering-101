@@ -294,6 +294,11 @@ def collect_quotes(shops, budget, order=None):
                     log(f"[quote] {q['shop']['name']} says {left:g} h of shelf life, the order needs {need}: "
                         "my kit would not pay; left out")
                     walk(q["peer"], r.id)
+                elif goods and grade_of(r.text) == "C" and (warranty_of(r.text) or 0) < 6:
+                    # Patch 3.6: a grade C unit without a warranty scores about (1 - 0.27) x 1 - 0.27 = 0.47 even at
+                    # half of list, under our Saved (0.769), so every such deal lowers it (Nov 14 12:17)
+                    log(f"[quote] {q['shop']['name']} offers grade C without a warranty: left out")
+                    walk(q["peer"], r.id)
                 else:
                     q["warranty"] = warranty_of(r.text) if goods else 0
                     q["grade"] = grade_of(r.text)
@@ -405,25 +410,6 @@ def accept_policy(order, warranty=0, grade_c=False):
         # receipt carried 6 h (tomato&potato, 10 orders / 14.6M of budget lost on Nov 12 00:17-06:17)
         acc["warranty_hours"] = min(warranty, BREAK_HOURS)
     return acc
-
-
-def swapped_c(order, outcome, receipt, warranty, grade_c):
-    """The quote promised a warranty, but in the talk the shop swapped to a refurbished grade C unit sold without
-    one, and the receipt says C. The promise was for the quoted unit, so drop it from the accept line when the C
-    unit still pays: (1 - C break rate) x list - price > 0 (no refund if it breaks). Nov 5 12:28-14:17: inextro
-    did this 8 times; the kit refused 3 agreed C deals (149-172k on lists 279-345k) for 'warranty 0 h, the
-    policy asks for 6.0', and each order was lost."""
-    if not (warranty and outcome == "deal" and isinstance(receipt, dict) and order.get("kind") == "goods"
-            and str(receipt.get("claim") or "").upper() == "C"):
-        return warranty, grade_c
-    value = (CATALOG.get(receipt.get("item")) or {}).get("list_price") or 0
-    price = float(receipt.get("price") or 0)
-    pc = memory.break_rate("C")
-    if price > 0 and (1 - pc) * value - price > 0:
-        log(f"[buyer] shop swapped to a grade C unit without warranty at {price:.0f} (list {value}, C break rate "
-            f"{pc:.2f}): paying without the {warranty:g} h warranty")
-        return 0, True
-    return warranty, grade_c
 
 
 LAST = {}
@@ -553,9 +539,9 @@ def main():
             # grade C goods are worth the full list price too unless they break: the market's own count was 14
             # broken of 181 C settles (7.7%) on Nov 3, and our kit refused 7 agreed C deals. Accept C whenever
             # the expected surplus with C's break rate is positive, whatever grade the quote named
-            pc = memory.break_rate("C")
-            grade_c = (order.get("kind") == "goods" and (q.get("warranty", 0) >= 6 or
-                       (1 - pc) * q["value"] - (q.get("expect") or q["reply"].ask) > 0))
+            # Patch 3.6 (Nov 14 12:17): only with a warranty now. Unwarranted C broke 50 of 223 on the market
+            # (Nov 14 06:00-12:20) and 5 of our 6 unrefunded breaks there were C; each counts -1 in Saved
+            grade_c = order.get("kind") == "goods" and q.get("warranty", 0) >= 6
             tried.add(id(q))
             alt = describe(quotes[i + 1]) if i + 1 < len(quotes) else None
             rest = [x["reply"].ask for x in quotes[i + 1:] if x["reply"].ask <= a.budget]
@@ -587,7 +573,6 @@ def main():
         except Exception as e:                    # the forum must never cost a deal
             log(f"[forum] skipped: {type(e).__name__}: {e}")
     if r3:
-        warranty, grade_c = swapped_c(order, outcome, receipt, warranty, grade_c)
         line["accept"] = accept_policy(order, warranty, grade_c)
     print(json.dumps(line, ensure_ascii=False), flush=True)
     return 0
