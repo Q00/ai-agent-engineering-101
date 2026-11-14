@@ -267,12 +267,12 @@ def signed_receipt(task, shop, sku, maximum, task_id, failures=None):
 
 
 class Buyer:
-    def __init__(self, order, memory, client, catalog, intel=None, control=None):
+    def __init__(self, order, memory, client, catalog, intel=None, control=None, portfolio=None):
         self.o, self.m, self.c, self.catalog = order, memory, client, catalog
         self.sessions = []
         self.intel = intel
         self.control = control
-        self.portfolio = memory.saved_portfolio(catalog)
+        self.portfolio = portfolio if portfolio is not None else memory.saved_portfolio(catalog)
         self.deadline = min(time.time()+85, order['expires']-3)
 
     def result(self, session=None, receipt=None, reason='No acceptable deal'):
@@ -347,10 +347,11 @@ class Buyer:
         return self.result(s,r,'Agreement only; checkout certificate and actual payment still required')
 
     def open_session(self, shop, offer):
-        # Each worker owns its SQLite connection; only network discovery is parallel.
-        memory=Memory(self.m.root)
-        control=Control(self.m.root) if self.control is not None else None
-        worker=Buyer(self.o,memory,self.c,self.catalog,control=control)
+        # Each worker owns a connection, but the main order already initialized
+        # the schema and computed the portfolio.  Re-running DDL and the full
+        # portfolio query in every parallel quote serialized discovery.
+        memory=Memory(self.m.root,initialize=False)
+        worker=Buyer(self.o,memory,self.c,self.catalog,portfolio=self.portfolio)
         worker.deadline=self.deadline
         sku=offer['sku']; product=self.catalog[sku]
         session=dict(shop=shop,sku=sku,cap=deals_cap(self.o,product,None,self.portfolio),deal_estimate=memory.deal_estimate(shop['url']))
@@ -371,7 +372,6 @@ class Buyer:
             session['error']='protocol';session['error_type']=type(exc).__name__
         finally:
             memory.close()
-            if control is not None:control.close()
         return session
 
     def run(self, shops):

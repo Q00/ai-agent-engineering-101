@@ -115,6 +115,23 @@ class BuyerTests(unittest.TestCase):
         self.assertIn('events_shop_kind_ts_order',indexes)
         self.assertIn('payments_shop_sku_paid_order',indexes)
 
+    def test_quote_worker_reuses_initialized_schema_and_portfolio(self):
+        initialized=[]
+        class SecondaryMemory:
+            def __init__(inner,root,initialize=True):initialized.append(initialize)
+            def key(inner,url):return ''
+            def deal_estimate(inner,url):return {'probability':.5,'trials':0,'wins':0}
+            def close(inner):pass
+        class Card:
+            def raise_for_status(inner):pass
+            def json(inner):return {'supportedInterfaces':[]}
+        class Client:
+            def get(inner,*args,**kwargs):return Card()
+        buyer=Buyer(self.o,self.m,Client(),self.cat,portfolio={'deals':1})
+        with patch('buyer_r3.Memory',SecondaryMemory),patch.object(Buyer,'send',return_value={}):
+            buyer.open_session(self.shop,self.shop['offers'][0])
+        self.assertEqual(initialized,[False])
+
     def test_execution_keeps_food_and_every_acceptable_sku_independent_of_our_stock(self):
         order=dict(self.o,acceptable=['SKU1','SKU2'])
         self.assertEqual(execution_order(order),order)

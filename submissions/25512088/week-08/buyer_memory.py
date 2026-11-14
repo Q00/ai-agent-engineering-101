@@ -7,12 +7,14 @@ import time
 
 
 class Memory:
-    def __init__(self, root):
+    def __init__(self, root, initialize=True):
         self.root = Path(root)
         self.root.mkdir(parents=True, exist_ok=True)
         self.db = sqlite3.connect(self.root/'buyer.sqlite3', timeout=15)
         os.chmod(self.root/'buyer.sqlite3', 0o600)
         self.db.row_factory = sqlite3.Row
+        if not initialize:
+            return
         self.db.executescript('''
         CREATE TABLE IF NOT EXISTS orders(id TEXT PRIMARY KEY, context TEXT, state TEXT, updated REAL);
         CREATE TABLE IF NOT EXISTS events(id INTEGER PRIMARY KEY, order_id TEXT, shop TEXT,
