@@ -622,13 +622,18 @@ def main():
         if last_ok > g.get("last_ok_ts", 0):
             g["last_ok_ts"] = last_ok
             save_guard(g)
-        if not g.get("paused") and last_ok and t0 - last_ok > 90 * 60 \
+        if not g.get("paused") and last_ok and t0 - last_ok > (LIMITS["overnight_min"] + 60) * 60 \
                 and t0 - g.get("alerted", 0) > 3 * 3600:                     # 11-07: the teams were down for two
             g["alerted"] = t0                                                # days and nobody was told
             save_guard(g)
             with (HERE / "private" / "hq_decisions.md").open("a", encoding="utf-8") as f:
                 f.write(f"\n## {time.strftime('%Y-%m-%d %H:%M')} ALERT: no team meeting for "
                         f"{(t0 - last_ok) / 3600:.1f} h ({why}); code loops (restock, buyer, self-improvement) still run\n")
+        try:                     # HQ 11-14 (HQ away): the audit team's code checks every 30 min, no model calls;
+            import audit_seller      # new reds go to hq_decisions.md and Drive AUDIT_SELLER.md
+            audit_seller.run(interview_ok=False)
+        except Exception as e:
+            print(f"[audit] skipped: {type(e).__name__}: {e}")
         try:                     # the code-only self-improvement loop runs every tick, model cooldown or not (11-05:
             import mbt, buyer_team   # a 3 h usage-limit cooldown had frozen auto_adopt with a losing move on A/B)
             mbt.analyse()

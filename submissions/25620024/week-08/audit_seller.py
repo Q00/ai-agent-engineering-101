@@ -146,6 +146,53 @@ def checks(c, inv, now):
     stock = sum(u["cost"] for u in inv.get("units", []))
     if (inv.get("balance") or 0) < 3 * 0.01 * stock:
         add("red", f"cash {inv.get('balance'):,} under 3 days of storage ({3 * 0.01 * stock:,.0f})")
+    # HQ 11-14 (HQ away): the checks the TF ran by hand today, every 30 min, code only
+    try:
+        import market_model
+        cat = market_model.catalog()
+        # (a) deals closed under cost in the last hour: Book (x0.5) loses on each
+        r = c.execute("select sku, grade, cost, price from quotes where outcome='deal' and ts>? and price<cost",
+                      (now - 3600,)).fetchall()
+        loss = sum(x[2] - x[3] for x in r)
+        goods = [x for x in r if (cat.get(x[0]) or {}).get("kind") == "goods"]
+        if r:
+            add("red" if goods or loss > 300_000 else "yellow",
+                f"{len(r)} deals under cost in 1 h ({len(goods)} goods), {loss:,.0f} under cost",
+                [list(x) for x in sorted(r, key=lambda x: x[3] - x[2])[:5]])
+        # (b) the price cliff: big goods (list >= 500k) convert ~50% under the grade median and under 15% over it
+        bins = collections.defaultdict(lambda: [0, 0])
+        med = {}
+        for sku, g, ask, out in c.execute("select sku, grade, ask, outcome from quotes where ts>? and kind='goods' "
+                                          "and list_price>=500000 and ask>0", (now - 3 * 3600,)):
+            if (sku, g) not in med:
+                med[(sku, g)] = market_model.market_price(c, sku, grade=g)[0]
+            m = med[(sku, g)]
+            if m:
+                b = "under 1.00" if ask < m else "1.00-1.03" if ask < m * 1.03 else "over 1.03"
+                bins[b][0] += 1
+                bins[b][1] += out == "deal"
+        n = sum(v[0] for v in bins.values())
+        over = bins["1.00-1.03"][0] + bins["over 1.03"][0]
+        if n >= 20 and over / n > 0.5:
+            add("yellow", f"big goods: {over} of {n} quotes in 3 h asked at or over the grade median (cliff)",
+                {k: f"{v[1]}/{v[0]}" for k, v in bins.items()})
+        # (c) Book per hour from the public board, against the value this check saw 3 h ago
+        st = _load(HERE / "private" / "audit_book.json", {"seen": []})
+        import httpx
+        me = next((x for x in httpx.get("https://market.ourolabs.ai/api/board", timeout=20).json().get("shops", [])
+                   if x.get("name") == "dragonash"), {})
+        if me.get("book") is not None:
+            st["seen"] = [s for s in st["seen"] if s[0] > now - 6 * 3600] + [[now, me["book"], me.get("revenue")]]
+            Path(HERE / "private" / "audit_book.json").write_text(json.dumps(st), encoding="utf-8")
+            old = min((s for s in st["seen"] if s[0] <= now - 2.5 * 3600), key=lambda s: abs(s[0] - (now - 3 * 3600)),
+                      default=None)
+            if old:
+                per_h = (me["book"] - old[1]) / ((now - old[0]) / 3600)
+                if per_h < 0:
+                    add("red", f"Book fell {per_h:,.0f}/h over the last {(now - old[0]) / 3600:.1f} h",
+                        {"book_now": me["book"], "book_then": old[1]})
+    except Exception as e:
+        add("yellow", f"TF checks failed: {type(e).__name__}: {e}"[:200])
     return f
 
 
@@ -170,7 +217,8 @@ def interview(findings, research_rows):
     return out
 
 
-def run(force=False):
+def run(force=False, interview_ok=True):
+    """interview_ok=False (HQ 11-14 auto run every 30 min from the team timer): code checks only, no model calls."""
     import market_model
     now = time.time()
     last = _load(OUT, {})
@@ -180,7 +228,7 @@ def run(force=False):
     inv = _load(MD / "inventory.json", {})
     res = {"ts": now, "at": time.strftime("%m-%d %H:%M"), "research": research(c, inv, now),
            "findings": checks(c, inv, now)}
-    if force or now - last.get("interview_ts", 0) >= INTERVIEW_EVERY:
+    if interview_ok and (force or now - last.get("interview_ts", 0) >= INTERVIEW_EVERY):
         res["interview"], res["interview_ts"] = interview(res["findings"], res["research"]), now
     else:
         res["interview"], res["interview_ts"] = last.get("interview"), last.get("interview_ts", 0)

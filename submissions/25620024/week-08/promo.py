@@ -308,8 +308,16 @@ def quote(c, unit, code=None, me=None, now=None, stock_n=1, vip=False):
         left = (unit["expires_at"] - now) / (unit["shelf_hours"] * 3600)
         if left < t.get("food_fix_left", 0.7):
             tgt = int(gmk * 0.98)
-            price, why = min(price, tgt), why + [f"food at market {tgt} ({left:.0%} shelf left; expiry loses the cost)"]
-            floor = min(floor, int(gmk * 0.9))
+            # MST TF 11-14 audit: 13 food deals in 1 h closed 1-12% under cost (G50d60e61 B cost 39.7k at 36.7k) on
+            # lines that sell out long before expiry (39 h of sales vs ~30% shelf left). Under cost only when our
+            # stock would not sell in the hours left (cover > food_fix_cover x hours left); otherwise never under cost.
+            hrs = (unit["expires_at"] - now) / 3600
+            rate_f = market_model.our_sales(c, unit["sku"], hours=24)
+            cover = stock_n / rate_f if rate_f > 0 else float("inf")
+            risk = cover > hrs * t.get("food_fix_cover", 0.8)
+            price, why = min(price, tgt), why + [f"food at market {tgt} ({left:.0%} shelf left, {cover:.0f} h of "
+                                                 f"sales vs {hrs:.0f} h; {'expiry risk' if risk else 'sells in time'})"]
+            floor = min(floor, int(gmk * 0.9) if risk else max(int(cost) + 1, int(gmk * 0.9)))
     fcap = t.get("food_market_cap")
     if fcap and gmk and unit.get("kind") == "food" and max(price, floor) > gmk * fcap:
         # MST TF 11-14 (3rd): food conversion falls from 65% at 0.95-1.00 x the market median to 19% over 1.10; in 6 h
@@ -330,6 +338,14 @@ def quote(c, unit, code=None, me=None, now=None, stock_n=1, vip=False):
         m = next((m for h, m in sorted(ladder) if age < h), None)
         if m is not None and int(cost * (1 + m)) + 1 > floor:
             floor, why = int(cost * (1 + m)) + 1, why + [f"cost ladder {age:.0f} h: floor cost +{m:.0%}"]
+    eg = t.get("endgame_at")
+    if eg and now >= eg and unit.get("kind") in ("goods", "food"):
+        # HQ 11-14 endgame: Book counts unsold stock at cost, so in the last hours a sale near cost loses no Book and
+        # adds revenue (0.3). Ask the lower of today's price and max(cost + endgame_margin, 0.97 x market median);
+        # the floor is cost + endgame_margin for every unit (it replaces the ladder, hold and clearance floors).
+        egf = int(cost * (1 + t.get("endgame_margin", 0.02))) + 1
+        price = min(price, max(egf, int((gmk or median or 0) * 0.97)))
+        floor, why = egf, why + [f"endgame: floor cost +{t.get('endgame_margin', 0.02):.0%}"]
     price = max(int(price), floor)
     least = max(int(price * (1 - t["haggle_room"])), floor)
     return {"price": price, "least": least, "arm": arm if isinstance(arm, str) else f"{arm:.2f}", "floor": floor,

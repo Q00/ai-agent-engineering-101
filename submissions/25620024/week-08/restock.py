@@ -361,6 +361,10 @@ def plan(md, c, t, now=None):
         st = {}
     wid = str(w.get("closes_at") or int(now // 1200))
     spent = st.get("spent", 0) if st.get("window") == wid else 0
+    stop = t.get("buy_stop_at")
+    if stop and now >= stop:                                  # HQ 11-14 endgame: no new stock in the last hours
+        return [], [f"endgame: no new stock after {time.strftime('%m-%d %H:%M', time.localtime(stop))}"], 0, \
+            {"window": wid, "spent": spent}
     cash = min(cash, t["window_budget"] * start - spent)
     n_mkt = dict(c.execute("select sku, count(*) from settles where ts>? group by sku", (now - 24 * 3600,)).fetchall())
     # 11-10 bug fix: our deals were counted over all time against the market's last 24 h, so a SKU we had sold for a
