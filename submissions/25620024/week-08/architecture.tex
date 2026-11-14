@@ -1,0 +1,136 @@
+% Week 08 (midterm) architecture figure, one page. Build: tectonic architecture.tex (or xelatex architecture.tex)
+% Korean labels need a CJK font: Apple SD Gothic Neo on macOS; change \setCJKmainfont for another system.
+\documentclass[11pt]{article}
+\usepackage[a4paper,landscape,margin=7mm]{geometry}
+\usepackage{fontspec}
+\usepackage{xeCJK}
+\setCJKmainfont{Apple SD Gothic Neo}
+\setmainfont{Helvetica Neue}
+\xeCJKsetup{CJKspace=true, CJKglue={\hskip 0pt plus 0.02em}}
+\usepackage{newunicodechar}
+\newunicodechar{→}{\ensuremath{\rightarrow}}
+\usepackage{tikz}
+\usetikzlibrary{positioning,fit,arrows.meta,backgrounds,calc}
+\pagestyle{empty}
+\hyphenpenalty=10000 \exhyphenpenalty=10000
+
+\definecolor{hq}{HTML}{1C1917}
+\definecolor{staff}{HTML}{7C3AED}
+\definecolor{seller}{HTML}{2563EB}
+\definecolor{buyer}{HTML}{059669}
+\definecolor{code}{HTML}{57534E}
+\definecolor{mem}{HTML}{B45309}
+\definecolor{mkt}{HTML}{DC2626}
+
+\tikzset{
+  box/.style={draw=#1, line width=0.8pt, rounded corners=3pt, fill=#1!7, align=center,
+              font=\scriptsize\linespread{1.05}\selectfont, inner sep=3pt, text width=38mm, minimum height=12mm},
+  unit/.style={draw=#1, line width=1.3pt, rounded corners=6pt, inner sep=4mm, fill=white},
+  tag/.style={font=\tiny\bfseries, text=#1, fill=white, inner sep=1.5pt},
+  flow/.style={-{Stealth[length=2.2mm]}, line width=0.9pt, draw=#1},
+  both/.style={{Stealth[length=2.2mm]}-{Stealth[length=2.2mm]}, line width=0.9pt, draw=#1},
+}
+
+\begin{document}
+\noindent
+\begin{minipage}[t]{70mm}\raggedright
+{\large\bfseries 회사처럼 일하는 하네스}\\[1mm]
+{\small dragonash (가게 + 구매자), Round 3, VPS 한 대}\\[3mm]
+{\scriptsize
+판단을 시간 척도로 나눴다. 매 견적과 매 주문은 빠른 \textbf{코드 층}이 처리하고, 몇 시간 단위의 전략은 \textbf{모델 팀 회의}(3시간)가 정하고, 그 위의 \textbf{HQ 직속 조직}(TF·인사·감사)이 팀을 평가하고 고친다.\\[3mm]
+
+\textbf{\color{staff}메타 하네스: 세 고리}\\[0.7mm]
+(1) 실험: arm A/B → 견적당 이익 비교 → 승자가 다음 가격 밴드가 된다 (11-15: 첫 호가 0.74가 0.72를 5배로 이김)\\[0.5mm]
+(2) 감사 → 팀 인터뷰 → 코드·설정 수정\\[0.5mm]
+(3) 인사: KPI 점수 → 레버 수, 즉 모델이 바꿀 수 있는 행동 공간\\[3mm]
+
+\textbf{\color{hq}Wooldridge \& Jennings 4속성}\\[0.7mm]
+\textbf{자율성}: 모든 층이 타이머로 돌고, 팀은 레버 범위 안에서 설정을 스스로 바꾼다.\\[0.5mm]
+\textbf{반응성}: 코드 층이 매 견적마다 원장을 읽는다 (등급 중앙값, 가격 절벽, 원가선).\\[0.5mm]
+\textbf{사전능동성}: 컨틴전시 회의. 목표 = Players 표에서 바로 위 참가자의 KPI, 추월하면 보상.\\[0.5mm]
+\textbf{사회성}: 팀 간 인터뷰, A2A 협상, 게시판.\\[3mm]
+
+\textbf{\color{hq}BDI}\quad Belief = 원장·장부 (메모리)\quad Desire = 팀 KPI (인사팀)\quad Intention = 계획 파일과 레버\\[3mm]
+
+\textbf{\color{hq}키트 기본형과 다른 점}\\[0.7mm]
+기본형: 모델 하나가 협상 루프 안에서 매번 판단한다.\\[0.5mm]
+이 구조: 협상은 코드가 가드와 함께 처리하고, 모델은 3시간마다 JSON 계획을 내고 게이트를 통과해야 반영된다. 팀은 KPI, 보상·강등, 감사로 조직된다. 한 모델이 사용량 한도에 걸리면 다른 모델이 대신 회의한다.\\[3mm]
+
+{\color{staff}\rule{1.6mm}{1.6mm}} HQ 직속\quad {\color{seller}\rule{1.6mm}{1.6mm}} 셀러 유닛\quad {\color{buyer}\rule{1.6mm}{1.6mm}} 바이어 유닛\quad {\color{code}\rule{1.6mm}{1.6mm}} 코드\quad {\color{mem}\rule{1.6mm}{1.6mm}} 메모리\quad {\color{mkt}\rule{1.6mm}{1.6mm}} 시장
+}
+\end{minipage}\hfill
+\begin{minipage}[t]{205mm}\vspace{0pt}
+\begin{tikzpicture}[x=1mm, y=1mm]
+
+% ---------------- row 1-2: HQ and staff ----------------
+\node[box=hq, text width=110mm] (hq) at (100, 0)
+  {\textbf{HQ (사람)}\quad owner\_directives.md · hq\_decisions.md · owner\_override.json (설정 최종 우선)\\
+   순위가 밀리면 비상 안건 emergency\_agenda.json → 전 팀 즉시 회의 (\texttt{--emergency})};
+
+\node[box=staff] (tf) at (30, -24) {\textbf{TF} (Claude Code)\\ MST(셀러) · MBT(바이어)\\ 노하우 전수, 교차 인터뷰,\\ 코드 수정과 구조 변경};
+\node[box=staff, text width=46mm] (hr) at (100, -24) {\textbf{인사팀} hr.py · kpi.py (코드)\\ 팀 KPI 채점 → 보상·강등 → 레버 수\\ levers = 2 + 승급 + 진급 − 강등\\ 컨틴전시: 목표 = 바로 위 참가자};
+\node[box=staff] (audit) at (170, -24) {\textbf{감사팀} audit.py · audit\_seller.py\\ qa.py: 코드 점검 30분마다\\ (담당 팀·심각도·걸린 돈·근거)\\ 3시간마다 팀 인터뷰 (모델)};
+
+\foreach \n in {tf, hr, audit} \draw[flow=hq] (hq) -- (\n);
+
+% bus from staff to both units
+\draw[line width=0.9pt, draw=staff] (30, -36) -- (170, -36);
+\foreach \n in {tf, hr, audit} \draw[line width=0.9pt, draw=staff] (\n.south) -- (\n.south |- 0,-36);
+\node[tag=staff] at (100, -36) {평가 · 지적 · 보상 · 안건이 팀 브리프로};
+\draw[flow=staff] (50, -36) -- (50, -42);
+\draw[flow=staff] (150, -36) -- (150, -42);
+
+% ---------------- row 3: two units ----------------
+\node[box=seller] (sales) at (27, -52) {\textbf{세일즈팀} (Claude, 대표)\\ 가격 밴드·마진·실험\\ → marketing\_plan.json};
+\node[box=seller] (mkting) at (73, -52) {\textbf{마케팅팀} (Codex)\\ 시장 조사·단독 상품 후보\\ 버그 리포트};
+\node[box=seller] (fin) at (27, -68) {\textbf{재경팀} (Claude)\\ 현금 하한·지출 한도\\ → finance\_limits.json};
+\node[box=seller] (scm) at (73, -68) {\textbf{SCM팀} (Codex)\\ 매입 주문·가격 인하\\ → scm\_plan.json};
+\begin{scope}[on background layer]
+\node[unit=seller, fit=(sales)(mkting)(fin)(scm)] (sellerunit) {};
+\end{scope}
+\node[tag=seller, anchor=west] at (sellerunit.south west) {\ 셀러 유닛 · 모델 팀 회의 3시간 · JSON 스키마 + 게이트};
+
+\node[box=buyer] (buyerteam) at (127, -52) {\textbf{바이어팀} (Codex, 대표)\\ 협상 파라미터·회피 규칙\\ → buyer\_plan.json};
+\node[box=buyer] (enuri) at (173, -52) {\textbf{에누리팀}\\ Claude 에이전트 + enuri.py\\ 가격·품질 장부, 견적 정찰};
+\node[box=buyer] (review) at (127, -68) {\textbf{리뷰팀} (코드)\\ review\_team.py · forum.py\\ 게시글 형식 실험·투표};
+\node[box=buyer] (leaders) at (173, -68) {\textbf{리더 회의} (Claude 의장)\\ leaders\_meeting.py\\ 두 유닛 조정, HQ 소집 시만};
+\begin{scope}[on background layer]
+\node[unit=buyer, fit=(buyerteam)(enuri)(review)(leaders)] (buyerunit) {};
+\end{scope}
+\node[tag=buyer, anchor=west] at (buyerunit.south west) {\ 바이어 유닛 · 모델 팀 회의 3시간};
+
+% ---------------- row 4: config overlay ----------------
+\node[box=code, text width=196mm, fill=code!4] (cfg) at (100, -96)
+  {\textbf{설정 겹치기 (뒤가 이김)}\quad DEFAULTS → shop\_theta.json → 팀 계획 (marketing / buyer / scm plan) → finance\_limits.json → owner\_override.json (HQ)\\
+   안전장치는 코드와 HQ 설정이 지킨다: 원가 밑 판매 금지 · 보증 72 h 상한 · 원가 비공개 · 파산 가드 · 인젝션 필터};
+\draw[flow=seller] (sellerunit.south -| 50,0) ++(0,-3) -- (50, -89.5);
+\draw[flow=buyer] (buyerunit.south -| 150,0) ++(0,-3) -- (150, -89.5);
+
+% ---------------- row 5: fast code layer ----------------
+\node[box=code, text width=42mm] (clerk) at (25, -121) {\textbf{점원} shop\_r3.py · promo.py\\ 매 견적: 등급 중앙값, 가격 절벽,\\ 원가 사다리, 보증, ACP checkout};
+\node[box=code, text width=42mm] (restock) at (75, -121) {\textbf{매입} restock.py (5분)\\ 공급 창: 20분마다 3분\\ 판매 속도로 재고 깊이};
+\node[box=code, text width=42mm] (bloop) at (125, -121) {\textbf{구매 루프} market\_buyer.py\\ 매 주문: 상점 고르기,\\ GUARD·CLOSE 가드, 서명 검증};
+\node[box=code, text width=42mm] (fforum) at (175, -121) {\textbf{게시판·장부} forum.py · enuri.py\\ 5분: 게시글·투표,\\ 에누리 장부 재계산};
+\begin{scope}[on background layer]
+\node[unit=code, fit=(clerk)(restock)(bloop)(fforum), inner ysep=5mm] (fast) {};
+\end{scope}
+\node[tag=code, anchor=west] at (fast.north west) {\ 빠른 코드 층 · 반응성 (매 견적 / 매 주문 / 5분)};
+\draw[flow=code] (cfg.south) -- (fast.north -| cfg.south);
+
+% ---------------- row 6: market and memory ----------------
+\node[box=mkt, text width=90mm] (market) at (50, -150)
+  {\textbf{시장} market.ourolabs.ai\\ A2A 협상 · ACP checkout · AP2 mandate · 원장 · 게시판 · 공급};
+\node[box=mem, text width=90mm] (memory) at (150, -150)
+  {\textbf{메모리 (Belief)}\quad market.db: 원장 사본, 정산 79만 건, 5분 동기화\\
+   enuri\_book.json · buyer\_memory · 레슨 · handoff*.md · hq\_decisions.md};
+\draw[both=mkt] (25, -144) -- (25, -131.5);
+\draw[both=mkt] (75, -144) -- (75, -131.5);
+\draw[flow=mem] (market.east) -- node[tag=mem, above]{동기화} (memory.west);
+
+% memory → briefs (context), along the right margin
+\draw[flow=mem, dashed] (memory.east) -- (202, -150) -- (202, -44) -- (buyerunit.east |- 0,-44);
+\node[tag=mem, rotate=90] at (202, -110) {브리프 조립 (컨텍스트): 원장 숫자·장부·레슨 → 모든 팀};
+
+\end{tikzpicture}
+\end{minipage}
+\end{document}
