@@ -89,7 +89,7 @@ what it came from and when it is to be reviewed; a rule past its review conditio
    [since 11/14 02:3x; from: the supervisor; review: never]
 14. Values whose own verdict closed negative (order 9's return clause applies: returning to one needs a new
    measurement taken after it, cited with its window). Check this list before proposing any of these numbers:
-   dear_depth 4 (11/13), dear_first 2.5 (11/13), max_list 600k (11/12-13) and 1.15M or more (1.15M->1.0M judged +38% shop points/h), floor_frac 0.68 (11/12, -41%), sku_depth 4 (11/13), sku_cap 18 (11/13, -21% paid share),
+   dear_depth 4 (11/13) and 7 (11/12, 7->6 judged +32%), dear_first 2.5 (11/13), max_list 600k (11/12-13) and 1.15M or more (1.15M->1.0M judged +38% shop points/h), floor_frac 0.68 (11/12, -41%), sku_depth 4 (11/13), sku_cap 18 (11/13, -21% paid share),
    window_depth 2.8 (11/12, -39%) and 1.5 (11/13, fast guard), clear_hours 14 (11/12, -20%), sku_depth 2 (11/13),
    floor_frac_food 0.54 (11/12, -33%), market_ask 0.95 (11/13, 1.0 judged +63%), fresh_premium 0.15 (11/12, 0.15->0.18 judged +33%)
    and 0.2 (11/12, -39%), max_turns 7 (11/12, -17%). dear_depth 5->4 at 11/14 04:38 was
