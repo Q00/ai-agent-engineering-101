@@ -78,6 +78,8 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
             unit_cap=policy.get('max_food_units_per_sku',2)
             if row.get('sales_1h',0)>=policy.get('fast_food_sales_1h',math.inf):
                 unit_cap=max(unit_cap,policy.get('max_fast_food_units_per_sku',unit_cap))
+            if row.get('sales_1h',0)>=policy.get('ultra_fast_food_sales_1h',math.inf):
+                unit_cap=max(unit_cap,policy.get('max_ultra_fast_food_units_per_sku',unit_cap))
         else:
             unit_cap=policy.get('max_units_per_sku',3)
         # Portfolio size is bounded by available capital and evidence-backed
