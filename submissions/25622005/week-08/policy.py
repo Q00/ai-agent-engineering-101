@@ -96,7 +96,9 @@ RANGES = {
     "seller.floor_cost_mult": (0.0, 2.0), "seller.floor_list": (0.0, 1.5), "seller.stale_floor_cost_mult": (0.3, 1.0),
     "seller.market_list_A": (0.0, 1.5), "seller.market_list_B": (0.0, 1.5), "seller.market_list_C": (0.0, 1.5),
     "seller.warranty_hours": (0, 6), "seller.warranty_premium": (0.0, 1.0), "seller.promise_ttl_s": (10, 3600),
-    "seller.warranty_cap_6h": (0, 80000000), "seller.warranty_premium_floor": (0.0, 0.5), "seller.warranty_q_mult": (0.5, 5.0),
+    # warranty_cap_6h 120M from 11-15 (was 80M, binding with the cap counted per unit): strategist/guard keeps 80M
+    # until the seller runs this file (a recreate), or a value over 80M sends the running seller to DEFAULTS
+    "seller.warranty_cap_6h": (0, 120000000), "seller.warranty_premium_floor": (0.0, 0.5), "seller.warranty_q_mult": (0.5, 5.0),
     "stock.inventory_cap_share": (0.0, 1.0), "stock.cash_floor": (0, 5000000), "stock.worst_cost_share": (0.25, 1.0),
     "stock.per_sku_qty": (1, 20), "stock.max_lines": (0, 10), "stock.max_qty": (1, 20),
     "buyer.cap_goods_no_warranty": (0.0, 1.5), "buyer.cap_goods_warranty": (0.0, 1.5), "buyer.cap_food": (0.0, 1.5),
