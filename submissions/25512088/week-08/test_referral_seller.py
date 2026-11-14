@@ -19,13 +19,13 @@ class SellerIntegrationTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual((first['unit'],second['unit']),('u1','u2'))
         self.assertIsNotNone(seller.select_unit('G00001',units,set(),{'u1':5,'u2':5}))
 
-    def test_sale_selection_prefers_settleable_grade_before_old_c_stock(self):
+    def test_sale_selection_prefers_observed_conversion_order(self):
         units=[dict(unit='c',sku='G00001',name='item',category='food',grade='C',expires_at=None,supplied_at=1),
                dict(unit='b',sku='G00001',name='item',category='food',grade='B',expires_at=None,supplied_at=2),
                dict(unit='a',sku='G00001',name='item',category='food',grade='A',expires_at=None,supplied_at=3)]
-        self.assertEqual(seller.select_unit('G00001',units,set(),{})['unit'],'a')
-        self.assertEqual(seller.select_unit('G00001',units,{'a'}, {})['unit'],'b')
-        self.assertEqual(seller.select_unit('G00001',units,{'a','b'}, {})['unit'],'c')
+        self.assertEqual(seller.select_unit('G00001',units,set(),{})['unit'],'b')
+        self.assertEqual(seller.select_unit('G00001',units,{'b'}, {})['unit'],'c')
+        self.assertEqual(seller.select_unit('G00001',units,{'b','c'}, {})['unit'],'a')
 
     def test_sale_selection_can_use_c_drain_lane(self):
         units=[dict(unit='c',sku='G00001',name='item',category='food',grade='C',expires_at=None,supplied_at=1),

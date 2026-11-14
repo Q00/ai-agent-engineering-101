@@ -78,11 +78,11 @@ def select_unit(text, units, reserved, soft_counts=None, prefer_c=False):
     fits = named or [u for u in valid if any(str(v).lower() in want for v in
                     [u.get('name'), u.get('category', '').split('>')[-1]] if v)]
     soft_counts=soft_counts or {}
-    # For a deeply overstocked exact SKU, lead with the affordable B cohort.
-    # This matches observed buyer budgets without lowering any protected floor.
+    # Lead with the grades that actually settle. The recent mature cohort has
+    # B/C converting materially above high-cost A. Food that cannot satisfy a
+    # requested remaining-life condition was already removed from ``valid``.
     overstocked=bool(named and sum(u.get('sku')==named[0].get('sku') for u in valid)>=8)
-    grade_order=({'C':0,'A':1,'B':2} if prefer_c else
-                 ({'B':0,'A':1,'C':2} if overstocked else {'A':0,'B':1,'C':2}))
+    grade_order=({'C':0,'B':1,'A':2} if prefer_c else {'B':0,'C':1,'A':2})
     return min(fits, key=lambda u: (grade_order.get(u.get('grade'),3),
         u.get('cost',0) if overstocked else 0,soft_counts.get(u['unit'],0),
         u.get('expires_at') or float('inf'),u.get('supplied_at',0)),default=None)
