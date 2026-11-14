@@ -92,13 +92,13 @@ class PurchaseTests(unittest.TestCase):
   self.assertEqual(allocation_plan(ranked,inv,10000,policy=policy)[0]['sku'],'new')
   policy['breadth_target_skus']=1
   self.assertEqual(allocation_plan(ranked,inv,10000,policy=policy)[0]['sku'],'hot')
- def test_expensive_trial_respects_portfolio_share(self):
+ def test_expensive_single_unit_cannot_bypass_portfolio_share(self):
   ranked=[dict(sku='expensive',expected_net=500000,expected_revenue=1000000,score=999,
                upper_cost=600000,sales_1h=8,sales_6h=12,distinct_buyers_6h=4,
                estimated_sale_likelihood=.8)]
   policy={'max_units_per_sku':3,'initial_trial_units':3,'max_sku_capital_share':.08}
   plan=allocation_plan(ranked,{'units':[]},1000000,aggression=4,policy=policy)
-  self.assertEqual(plan[0]['qty'],1)
+  self.assertEqual(plan,[])
  def test_accepted_supply_records_actual_cost_even_above_estimate(self):
   self.assertEqual(supply_result(503,{},100),('uncertain',None))
   self.assertEqual(supply_result(200,{'total':101},100),('paid',101))
