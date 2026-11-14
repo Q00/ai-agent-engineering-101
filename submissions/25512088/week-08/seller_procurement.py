@@ -74,7 +74,12 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
         forecast=(velocity+unmet)*row.get('estimated_sale_likelihood',0)*max(1.0,float(aggression))
         need=max(0,math.ceil(forecast)-holding.get(row['sku'],0))
         is_food=row.get('kind')=='food'
-        unit_cap=policy.get('max_food_units_per_sku',2) if is_food else policy.get('max_units_per_sku',3)
+        if is_food:
+            unit_cap=policy.get('max_food_units_per_sku',2)
+            if row.get('sales_1h',0)>=policy.get('fast_food_sales_1h',math.inf):
+                unit_cap=max(unit_cap,policy.get('max_fast_food_units_per_sku',unit_cap))
+        else:
+            unit_cap=policy.get('max_units_per_sku',3)
         # Portfolio size is bounded by available capital and evidence-backed
         # SKU breadth.  A fixed global unit count used to strand growing cash.
         sku_ceiling=unit_cap

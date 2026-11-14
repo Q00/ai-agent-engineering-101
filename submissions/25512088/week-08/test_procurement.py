@@ -44,6 +44,14 @@ class PurchaseTests(unittest.TestCase):
   self.assertEqual(allocation_plan(ranked,one,10000)[0]['qty'],1)
   full={'units':[{'sku':'food','kind':'food','cost':100} for _ in range(2)]}
   self.assertEqual(allocation_plan(ranked,full,10000),[])
+ def test_fast_food_can_hold_three_units_only_with_hourly_sales_evidence(self):
+  ranked=[dict(sku='food',kind='food',expected_net=50000,score=3,upper_cost=100,
+               sales_1h=12,sales_6h=20,distinct_buyers_6h=4,estimated_sale_likelihood=.8)]
+  policy={'max_food_units_per_sku':2,'max_fast_food_units_per_sku':3,
+          'fast_food_sales_1h':12,'max_sku_capital_share':1}
+  self.assertEqual(allocation_plan(ranked,{'units':[]},10000,aggression=4,policy=policy)[0]['qty'],3)
+  ranked[0]['sales_1h']=11
+  self.assertEqual(allocation_plan(ranked,{'units':[]},10000,aggression=4,policy=policy)[0]['qty'],2)
  def test_sofa_is_blocked_until_zero_then_returns_under_normal_cap(self):
   ranked=[dict(sku='Gc2f7811b',expected_net=999999,score=99,upper_cost=100000,sales_1h=20,sales_6h=20,
                distinct_buyers_6h=10,estimated_sale_likelihood=1),
