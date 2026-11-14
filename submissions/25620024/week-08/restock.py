@@ -275,11 +275,17 @@ def furniture_expand(c, now, t, cat, stock):
                 or r.get("list_price", 0) > t.get("max_list", 4_000_000):
             continue
         med, cost = sorted(v)[len(v) // 2], sum(cs) / len(cs)
+        # 11-14 09:25: the market's 6 h average (G19a70f63 906k) was under what we paid in the window (A 1.15M,
+        # 1.25M; unit costs rise within a line); our own recent buys of the SKU count when they are dearer
+        own = [x for (x,) in c.execute("select cost from supply_units where shop = 'dragonash' and sku = ? and ts > ? "
+                                       "and cost > 0 order by ts desc limit 6", (sku, now - 86400))]
+        if len(own) >= 2:
+            cost = max(cost, sum(own) / len(own))
         net = med * 0.97 * (1 - min(0.5, brk.get(sku, 0) / len(v)))
         if cost > net * (1 - t.get("furniture_min_margin", 0.08)):
             continue
         rate = len(v) / 24
-        qty = max(1, min(t.get("furniture_max_units", 6), math.ceil(rate * t.get("furniture_share", 0.05) * 24),
+        qty = max(1, min(t.get("furniture_max_units", 3), math.ceil(rate * t.get("furniture_share", 0.05) * 24),
                          int(t.get("hit_max_value", 10_000_000) // cost)))
         EXPAND[sku] = rate * 24 * t.get("furniture_share", 0.05) * (net - cost)
         if qty - stock.get(sku, 0) > 0:
