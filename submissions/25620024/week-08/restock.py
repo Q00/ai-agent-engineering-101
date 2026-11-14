@@ -211,6 +211,7 @@ def hits(c, now, t):
 
 
 EXPAND = {}      # sku -> expected profit a day for food_expand lines (by_value ranks them by it)
+STALL = {}       # sku -> why furniture_expand stopped buying it (bought 12 h+ ago, none sold since)
 
 
 def food_expand(c, now, t, cat, stock):
@@ -267,6 +268,32 @@ def furniture_expand(c, now, t, cat, stock):
             if ts > now - 6 * 3600:
                 costs6.setdefault(sku, []).append(co)
     brk = dict(c.execute("select sku, count(*) from broken where ts > ? group by sku", (now - 86400,)).fetchall())
+    proven = stall = ours24 = None
+    if t.get("furniture_proven"):
+        # MST TF 11-14 (2nd), HQ "Do 1 and 2": the 6 h average supply cost said -2..7% on the SKUs the top shops live
+        # on, but sellers kept 9-14% of each sale (cheap draws sell first; dear ones wait). A SKU qualifies on that
+        # realized margin (24 h, every shop) less warranty refunds (market breaks / sales x share sold with a
+        # warranty). No more bulk furniture (11-07: 214M sat at cost): 1 unit to probe a SKU we never sold, at most
+        # furniture_hold_max held, none while a unit bought 12 h+ ago has not sold, and the furniture cap in add().
+        proven, stall, ours24 = {}, {}, {}
+        rows = c.execute("""select s.sku, s.amount, su.cost, su.shop, w.hours from settles s
+                            join settle_units x on x.seq = s.seq join supply_units su on su.unit = x.unit
+                            left join settle_warranty w on w.seq = s.seq
+                            where s.ts > ? and s.list_price >= ?""", (now - 86400, t.get("big_follow_list", 500000)))
+        acc = {}
+        for sku, a, co, sh, hrs in rows:
+            r = acc.setdefault(sku, [0, 0.0, 0, set()])
+            r[0] += 1; r[1] += (a - co) / a if a else 0; r[2] += 1 if hrs else 0; r[3].add(sh)
+        for sku, (n, g, nw, shops) in acc.items():
+            refund = min(0.5, brk.get(sku, 0) / n) * nw / n
+            proven[sku] = {"gross": g / n, "refund": refund, "margin": g / n - refund, "shops": len(shops)}
+        ours = market_model.ours(c)
+        ours24 = dict(c.execute(f"select sku, count(*) from settles where ts > ? and seq in ({ours}) group by sku",
+                                (now - 86400,)).fetchall())
+        last_sale = dict(c.execute(f"select sku, max(ts) from settles where seq in ({ours}) group by sku").fetchall())
+        for sku, ts in c.execute("select sku, max(ts) from supply_units where shop = 'dragonash' group by sku"):
+            if ts < now - t.get("furniture_stall_h", 12) * 3600 and stock.get(sku) and (last_sale.get(sku) or 0) < ts:
+                stall[sku] = f"bought {(now - ts) / 3600:.0f} h ago, none sold since"
     out = []
     for sku, v in sold.items():
         r = cat.get(sku) or {}
@@ -282,6 +309,25 @@ def furniture_expand(c, now, t, cat, stock):
         if len(own) >= 2:
             cost = max(cost, sum(own) / len(own))
         net = med * 0.97 * (1 - min(0.5, brk.get(sku, 0) / len(v)))
+        real = proven.get(sku) if proven is not None else None
+        if proven is not None:                        # MST TF 11-14 (2nd): judge on what sellers actually kept
+            if real is None or real["margin"] < t.get("furniture_real_margin", 0.06) \
+                    or len(v) < t.get("furniture_proven_sold24", 30) or real["shops"] < t.get("furniture_min_shops", 5):
+                continue
+            if stall.get(sku):                        # guard 4: bought 12 h+ ago and none sold since -- no more
+                STALL[sku] = stall[sku]
+                continue
+            hold = t.get("furniture_hold_max", 2)
+            if stock.get(sku, 0) >= hold:             # guard 2: the next line only after these sell
+                continue
+            probe = not ours24.get(sku)               # guard 1: a SKU we never sold starts with one unit
+            qty = 1 if probe else hold
+            EXPAND[sku] = len(v) * t.get("furniture_share", 0.05) * med * real["margin"]
+            if qty - stock.get(sku, 0) > 0:
+                out.append((EXPAND[sku], sku, qty - stock.get(sku, 0), f"furniture expand: market {len(v)}/24 h at {real['shops']} shops, "
+                            f"median {med:,.0f}, sellers kept {real['gross']:.0%} - refunds {real['refund']:.0%} = "
+                            f"{real['margin']:.0%}{', probe' if probe else f', we sold {ours24[sku]}'} -> keep {qty}"))
+            continue
         if cost > net * (1 - t.get("furniture_min_margin", 0.08)):
             continue
         rate = len(v) / 24
@@ -445,6 +491,8 @@ def plan(md, c, t, now=None):
         cash = min(cash, t.get("furniture_expand_budget", 15_000_000))
         for sku, qty, why_ in furniture_expand(c, now, t, cat, stock):
             add(sku, qty - buy.get(sku, 0), why_)
+        for sku in STALL:
+            skipped[sku] = "furniture stall 12 h"
         cash = before - (min(before, t.get("furniture_expand_budget", 15_000_000)) - cash)
     if t.get("profit_first"):                                 # HQ 11-10: only proven earners until profit is back
         cash = min(cash, general)
