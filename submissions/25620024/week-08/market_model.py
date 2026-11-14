@@ -141,19 +141,25 @@ def ours(c):
     return "select s.seq from settle_units s join our_units o on s.unit = o.unit"
 
 
+# one settle (s) shipped a unit our shop bought: checked per row by primary key, not by building ours() in full
+OURS_ROW = "select 1 from settle_units x join our_units o on o.unit = x.unit where x.seq = s.seq"
+
+
 def market_low(c, sku, me=None, hours=12):
     """The lowest price another shop settled this SKU at lately, or None. Our own sales are left out: comparing
     with the name 'dragonash' against settles that carry a URL counted them as a competitor's, so each of our
     sales lowered our next hero price by one credit (found 2026-11-03)."""
-    row = c.execute(f"select min(amount) from settles where sku=? and ts>? and seq not in ({ours(c)})",
+    # HQ 11-15: "seq not in (ours)" built the 29k-seq list from a full settle_units scan on every call (1.9 s);
+    # the same check per candidate row by primary key gives the same answers (20 SKUs checked) at 0.13 s.
+    row = c.execute(f"select min(s.amount) from settles s where s.sku=? and s.ts>? and not exists ({OURS_ROW})",
                     (sku, time.time() - hours * 3600)).fetchone()
     return row[0] if row and row[0] else None
 
 
 def our_sales(c, sku=None, hours=6):
     """Our settled sales lately: per SKU per hour (sku=None gives a dict for all SKUs)."""
-    q = (f"select sku, count(*) from settles where ts>? and seq in ({ours(c)})"
-         + (" and sku=?" if sku else "") + " group by sku")
+    q = (f"select s.sku, count(*) from settles s where s.ts>? and exists ({OURS_ROW})"   # HQ 11-15: was seq in
+         + (" and s.sku=?" if sku else "") + " group by s.sku")                       # (ours), 1.9 s a call
     rows = c.execute(q, (time.time() - hours * 3600,) + ((sku,) if sku else ())).fetchall()
     rates = {k: n / hours for k, n in rows}
     return rates.get(sku, 0.0) if sku else rates
