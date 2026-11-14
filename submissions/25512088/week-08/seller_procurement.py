@@ -167,18 +167,24 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
     choices=[]
     for row in ranked:
         if row.get('sku') in blocked or row.get('expected_net',0)<=0:continue
+        cold_safe_trial=False
         if row.get('kind')=='goods':
             min_samples=policy.get('min_goods_a_profit_samples',0)
             min_probability=policy.get('min_goods_a_profit_probability',0)
             if (row.get('dominant_grade_samples',0)<min_samples or
                     row.get('dominant_grade_profit_probability',0)<min_probability):
                 continue
+            cold_safe_trial=(cold_goods_frozen and not holding.get(row['sku']) and
+                row.get('sales_1h',0)>=policy.get('cold_safe_trial_sales_1h',math.inf) and
+                row.get('dominant_grade_profit_probability',0)>=
+                    policy.get('cold_safe_trial_profit_probability',1.1))
         # Supply calls and cash are both scarce.  Stop opening additional goods
         # trials while too much principal is already tied up in goods that have
         # not sold from our shop in the last hour. Proven goods keep restocking,
         # and trials reopen automatically as the cold cohort sells down.
         if (cold_goods_frozen and row.get('kind')=='goods' and
-                row.get('own_sales_1h',0)<policy.get('cold_goods_min_own_sales_1h',1)):
+                row.get('own_sales_1h',0)<policy.get('cold_goods_min_own_sales_1h',1) and
+                not cold_safe_trial):
             continue
         velocity=row.get('sales_1h',0)+row.get('sales_6h',0)/6
         distinct=max(0,row.get('distinct_buyers_6h',0))
@@ -209,6 +215,8 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
         # SKU breadth.  A fixed global unit count used to strand growing cash.
         sku_ceiling=unit_cap
         need=min(need,max(0,sku_ceiling-holding.get(row['sku'],0)))
+        if cold_safe_trial:
+            need=min(need,policy.get('max_cold_safe_trial_units',1))
         trial_units=(policy.get('initial_food_trial_units',2) if is_food else
                      policy.get('initial_trial_units',policy.get('min_trial_units',2)))
         # A single unit above the portfolio share is not a "small trial" and
@@ -221,7 +229,7 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
         evidence=dict(row,trusted_inquiries_6h=trusted_inquiries,
                       trusted_stockouts_6h=trusted_stockouts,sku_inventory_ceiling=sku_ceiling,
                       cold_goods_cost=cold_goods_cost,cold_goods_limit=cold_goods_limit,
-                      cold_goods_frozen=cold_goods_frozen)
+                      cold_goods_frozen=cold_goods_frozen,cold_safe_trial=cold_safe_trial)
         is_new=not holding.get(row['sku'])
         breadth_target=max(0,policy.get('breadth_target_skus',0) or 0)
         breadth_priority=0 if len(holding)<breadth_target and is_new else 1
