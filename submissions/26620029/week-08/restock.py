@@ -99,6 +99,14 @@ FOOD_MAX_QTY = 6
 # food rises (0 expired at 18:30) or food stock piles up unsold
 FOCUS_MAX_LINES = 4
 FOOD_MAX_QTY = 8
+# ddolcom (2026-11-14 18:50, the user's "A등급 판매가 기준(HIGH_A_MIN 0.70)을 풀고, 사입을 최대한 늘려줘"): high_ok at 0.70 kept
+# 7 of the market's top 8 1M+ SKUs out (market A at 0.651-0.700 of list); stock cost fell 170.8M (11-13 19:44) -> 76.1M with
+# 337M cash. A dry run of focus_lines: 0.70/bonus 1/25 SKUs wants 29 lines, 65 units (2 of them 1M+); 0/2/40 wants 98 lines,
+# 316 units (62 of them 1M+), about 137M at 0.65 of list. The A price gate is off (A_MIN_DEALS data still needed), every spread
+# SKU keeps one more unit, and each tier keeps 40 best sellers. Kept: CASH_FLOOR 40M, MIN_SHOPS 3, UNIT_SHARE 0.25, BREAK_MAX
+HIGH_A_MIN = 0.0
+SPREAD_BONUS = 2
+TIER_SKUS = 40
 BREAK_MIN_SETTLES = 100     # breaking above BREAK_MAX is not bought. 12 h ledger: goods break 0.090 on average and mostly evenly
 #   (chi2 50 on 28 df); only G07ec17d5 (29 of 163, 0.178) and G03cab593 (19 of 117, 0.162) stood out. A broken unit under warranty
 #   refunds the whole price, and a mid-tier A nets about 0.07 of list, so a 0.15+ break rate loses money on every sale
