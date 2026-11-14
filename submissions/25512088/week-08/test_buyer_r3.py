@@ -9,7 +9,7 @@ import httpx
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from cryptography.hazmat.primitives import serialization
 from buyer_memory import Memory
-from buyer_r3 import Buyer, asking, candidates, limit, stretch_limit, middle_limit, deals_cap, signed_receipt, exclude_own_shop, quote_rank, execution_order, expected_offer, EARLY_QUOTE_TARGET
+from buyer_r3 import Buyer, asking, candidates, limit, stretch_limit, middle_limit, deals_cap, signed_receipt, exclude_own_shop, quote_rank, execution_order, expected_offer, EARLY_QUOTE_TARGET, QUOTE_WAVE_SIZE
 from buyer_review import review
 
 
@@ -58,6 +58,7 @@ class BuyerTests(unittest.TestCase):
 
     def test_quote_comparison_target_matches_observed_conversion_step(self):
         self.assertEqual(EARLY_QUOTE_TARGET,11)
+        self.assertEqual(QUOTE_WAVE_SIZE,24)
 
     def test_all_shops_with_acceptable_stock_are_visited(self):
         shops=[dict(self.shop,name=str(i)) for i in range(8)]+[dict(self.shop,name='bad',offers=[dict(sku='wrong',qty=1)])]

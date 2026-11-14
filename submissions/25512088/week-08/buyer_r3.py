@@ -75,6 +75,7 @@ SAVED_TARGET = .80
 SAVED_STRETCH_TARGET = .95
 SAVED_MIDDLE_TARGET = .90
 EARLY_QUOTE_TARGET = 11
+QUOTE_WAVE_SIZE = 24
 
 
 def estimated_margin_saved(product, price, grade=None):
@@ -362,10 +363,10 @@ class Buyer:
             if missing:
                 self.m.record(self.o['order'],'','',None,'no_stock',details={'skus':missing})
             # Compare a wider market sample under Patch 3.6 before committing.
-            for start in range(0,len(picks),12):
+            for start in range(0,len(picks),QUOTE_WAVE_SIZE):
                 if time.time()>=self.deadline-5:break
-                wave=picks[start:start+12]
-                with ThreadPoolExecutor(max_workers=min(12,len(wave))) as pool:
+                wave=picks[start:start+QUOTE_WAVE_SIZE]
+                with ThreadPoolExecutor(max_workers=min(QUOTE_WAVE_SIZE,len(wave))) as pool:
                     results=list(pool.map(lambda pair:self.open_session(*pair),wave))
                 self.sessions.extend(results)
                 usable=0
@@ -406,7 +407,7 @@ class Buyer:
             self.m.record(self.o['order'],'','',None,'selection_v4',details={
                 'eligible_pairs':len(picks),'eligible_shops':len({s['url'] for s,_ in picks}),
                 'eligible_skus':sorted(offered_skus),'quoted_pairs':len(self.sessions),
-                'parallel_limit':12,'early_quote_target':EARLY_QUOTE_TARGET,'deadline_seconds':85,
+                'parallel_limit':QUOTE_WAVE_SIZE,'early_quote_target':EARLY_QUOTE_TARGET,'deadline_seconds':85,
                 'saved_target':SAVED_TARGET,'saved_stretch_target':SAVED_STRETCH_TARGET,
                 'saved_middle_target':SAVED_MIDDLE_TARGET,
                 'saved_portfolio':self.portfolio,
