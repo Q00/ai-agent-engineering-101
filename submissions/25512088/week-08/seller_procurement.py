@@ -22,6 +22,19 @@ def capital_available(policy,inv,exposure=0,pending=0):
     capacity=max(0,inventory_ceiling-inventory_cost-pending)
     return max(0,min(liquid,capacity))
 
+def breadth_window_blocks(rows, opening, inventory, target):
+    """Avoid duplicate SKU buys while the supply API is still reflecting a purchase.
+
+    During breadth expansion, one successful purchase is enough for a SKU in a
+    single supply window.  The purchase journal is authoritative here because
+    the inventory endpoint can lag by several seconds after a paid POST.
+    """
+    if not isinstance(target,int) or target<=0:return set()
+    holding={u.get('sku') for u in inventory.get('units',[]) if u.get('sku')}
+    if len(holding)>=target:return set()
+    return {r['sku'] for r in rows
+            if r['status']=='paid' and r['created']>=opening and r['sku']}
+
 def choose(policy,catalog,spent,reserved,balance,exposure,turn,blocked=()):
     # spent is current inventory principal, not lifetime procurement spend.
     remaining=min(policy['budget']-spent-reserved,balance-policy['cash_floor']-exposure)
@@ -239,7 +252,9 @@ def main():
         runtime_policy=dict(policy)
         target=(strategy.get('competition_breadth') or {}).get('top10_min_skus')
         if type(target) is int and target>0:runtime_policy['breadth_target_skus']=target
-        plan=allocation_plan(ranked,inv,available,blocked,slots,aggression,runtime_policy)
+        window_blocks=breadth_window_blocks(rows,opening,inv,target)
+        plan=allocation_plan(ranked,inv,available,set(blocked)|window_blocks,
+                             slots,aggression,runtime_policy)
         if not plan:
             if blocked:time.sleep(10);continue
             log(event='evidence_or_capacity_wait',lifetime_spent=spent,inventory_cost=inventory_cost,

@@ -1,6 +1,6 @@
 import unittest
 from network_reads import retry_read
-from seller_procurement import choose,allocation_plan,capital_available,supply_result,own_registration,own_board_registration,retry_join,join_current_registration,preserve_stale_pending
+from seller_procurement import choose,allocation_plan,capital_available,supply_result,own_registration,own_board_registration,retry_join,join_current_registration,preserve_stale_pending,breadth_window_blocks
 class PurchaseTests(unittest.TestCase):
  def setUp(self):
   self.p={'budget':2500000,'cash_floor':500000,'priority':['a','b','c','d']}
@@ -92,6 +92,13 @@ class PurchaseTests(unittest.TestCase):
   self.assertEqual(allocation_plan(ranked,inv,10000,policy=policy)[0]['sku'],'new')
   policy['breadth_target_skus']=1
   self.assertEqual(allocation_plan(ranked,inv,10000,policy=policy)[0]['sku'],'hot')
+ def test_breadth_expansion_blocks_paid_sku_for_same_supply_window(self):
+  rows=[{'sku':'new-a','status':'paid','created':101},
+        {'sku':'old','status':'paid','created':99},
+        {'sku':'refused','status':'refused','created':102}]
+  inv={'units':[{'sku':'held'}]}
+  self.assertEqual(breadth_window_blocks(rows,100,inv,3),{'new-a'})
+  self.assertEqual(breadth_window_blocks(rows,100,inv,1),set())
  def test_expensive_single_unit_cannot_bypass_portfolio_share(self):
   ranked=[dict(sku='expensive',expected_net=500000,expected_revenue=1000000,score=999,
                upper_cost=600000,sales_1h=8,sales_6h=12,distinct_buyers_6h=4,
