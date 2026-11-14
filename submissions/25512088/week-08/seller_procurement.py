@@ -7,6 +7,19 @@ from market_intel import read_json
 
 ROOT=Path(__file__).resolve().parent
 PENDING_HOLD_SECONDS=300
+SUPPLY_INTERVAL_SECONDS=10.05
+
+def supply_interval_wait(last_success, now=None, interval=SUPPLY_INTERVAL_SECONDS):
+    """Return the remaining successful-supply cooldown.
+
+    The supply endpoint accepts roughly one successful request every ten
+    seconds. Retrying after the generic one-second loop delay wastes a network
+    round trip on a predictable 429 and reduces breadth within the short
+    supply window.
+    """
+    now=time.time() if now is None else now
+    if not isinstance(last_success,(int,float)) or last_success<=0:return 0.0
+    return max(0.0,last_success+max(0.0,float(interval))-now)
 
 def settings():return json.loads((ROOT/'procurement_policy.json').read_text())
 
@@ -230,6 +243,7 @@ def main():
     catalog=json.loads((state/'catalog.json').read_text());blocked=set();window=None
     def log(**data):print(json.dumps(dict(ts=time.time(),**data),ensure_ascii=False),flush=True)
     log(event='started',campaign=policy['campaign'],capital_policy=policy['budget_basis'])
+    last_supply_success=0.0
     while True:
         stale=preserve_stale_pending(db,policy['campaign'])
         for row in stale:
@@ -297,6 +311,13 @@ def main():
             log(event='waiting_supply',opens_at=restock.get('opens_at'),spent=spent)
             time.sleep(min(20,max(2,restock.get('opens_at',time.time()+20)-time.time())));continue
         selected=plan[0];sku=selected['sku'];qty=selected['qty'];upper=selected['capital']
+        cooldown=supply_interval_wait(last_supply_success)
+        if cooldown:
+            closes=restock.get('closes_at')
+            if isinstance(closes,(int,float)) and time.time()+cooldown>=closes:
+                time.sleep(max(1,min(5,closes-time.time())))
+                continue
+            time.sleep(cooldown)
         with db:
             cursor=db.execute('INSERT INTO purchases(campaign,sku,upper_cost,status,created) VALUES(?,?,?,?,?)',(policy['campaign'],sku,upper,'sent',time.time()));rid=cursor.lastrowid
         try:
@@ -309,6 +330,7 @@ def main():
         body=result.json() if result.status_code==200 else {}
         outcome,cost=supply_result(result.status_code,body,upper)
         if outcome=='paid':
+            last_supply_success=time.time()
             if cost is None:
                 log(event='unexpected_cost_stop',sku=sku);break
             with db:db.execute("UPDATE purchases SET status='paid',cost=?,detail=? WHERE id=?",(cost,json.dumps({'balance':body.get('balance')}),rid))

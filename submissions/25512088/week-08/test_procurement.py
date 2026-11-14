@@ -1,8 +1,12 @@
 import math
 import unittest
 from network_reads import retry_read
-from seller_procurement import choose,allocation_plan,capital_available,supply_result,own_registration,own_board_registration,retry_join,join_current_registration,preserve_stale_pending,breadth_window_blocks,warranty_risk_reserve
+from seller_procurement import choose,allocation_plan,capital_available,supply_result,own_registration,own_board_registration,retry_join,join_current_registration,preserve_stale_pending,breadth_window_blocks,warranty_risk_reserve,supply_interval_wait
 class PurchaseTests(unittest.TestCase):
+ def test_successful_supply_cooldown_avoids_predictable_rate_limit(self):
+  self.assertAlmostEqual(supply_interval_wait(100,101,10.05),9.05)
+  self.assertEqual(supply_interval_wait(100,110.05,10.05),0)
+  self.assertEqual(supply_interval_wait(0,101,10.05),0)
  def setUp(self):
   self.p={'budget':2500000,'cash_floor':500000,'priority':['a','b','c','d']}
   self.cat={k:dict(kind='goods',list_price=400000) for k in 'abcd'}
