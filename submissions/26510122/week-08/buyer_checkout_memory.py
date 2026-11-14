@@ -102,3 +102,26 @@ def filter_candidates(choices, order, history, *, now=None):
             probe=oldest
             allowed=[oldest]  # A recheck, never permission to bypass acceptance.
     return allowed,held,probe
+
+def refused_unit_ids(choice,order,history,*,now=None):
+    """Exact C units learned from kit-refused payments; never blacklist a shop."""
+    if order.get('kind')!='goods':return []
+    now=time.time() if now is None else now
+    rows=getattr(history,'by_sku',{}).get(choice['sku'],[]) if hasattr(history,'by_sku') else history
+    refused=[e for e in rows if e.get('event')=='payment' and e.get('paid') is False
+             and "not paying: grade C," in (e.get('reason') or '')
+             and now-86400<=epoch(e.get('at'))<=now]
+    result=set()
+    for payment in refused:
+        for e in rows:
+            if (e.get('event')!='negotiation' or not e.get('receipt_unit')
+                    or e.get('order')!=payment.get('order') or e.get('shop')!=payment.get('shop')
+                    or e.get('sku')!=choice['sku'] or e.get('receipt_price')!=payment.get('price')):
+                continue
+            if (payment.get('attempt_id') and e.get('attempt_id')!=payment['attempt_id']):
+                continue
+            if e.get('shop_name') and e['shop_name']!=choice['shop']:continue
+            if not e.get('shop_name') and e.get('shop')!=choice['url']:continue
+            unit=e['receipt_unit']
+            if isinstance(unit,str) and re.fullmatch(r'[A-Za-z0-9_-]{1,80}',unit):result.add(unit)
+    return sorted(result)[:5]

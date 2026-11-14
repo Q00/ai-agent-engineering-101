@@ -76,7 +76,7 @@ class PlainBuyerTests(unittest.TestCase):
             path = Path(directory)/'saved.json'
             with patch('buyer_policy.urlopen', return_value=io.StringIO(json.dumps(board))) as fetch:
                 baseline = market_saved_reference('buyer', path=path, now=1000)
-                self.assertEqual(baseline, {'saved': .2733, 'observed_at': 1000})
+                self.assertEqual(baseline, {'saved': .2733, 'observed_at': 1000,'deals':10})
                 self.assertEqual(market_saved_reference('buyer', path=path, now=1299), baseline)
                 fetch.assert_called_once()
             with patch('buyer_policy.urlopen', side_effect=TimeoutError):

@@ -121,7 +121,7 @@ def market_saved_reference(name, *, path=SAVED_CACHE, now=None):
             saved = row['saved']
             if type(saved) not in (int, float) or not -1 <= saved < 1:
                 raise ValueError('invalid market Saved')
-            cache.update(saved=saved, observed_at=now)
+            cache.update(saved=saved, observed_at=now, deals=row.get('deals'))
         except (OSError, ValueError, TypeError, KeyError, AttributeError, StopIteration):
             pass
         try:
@@ -135,7 +135,7 @@ def market_saved_reference(name, *, path=SAVED_CACHE, now=None):
     saved = cache.get('saved')
     if (type(seen) in (int, float) and 0 <= now - seen <= SAVED_MAX_AGE_SECONDS
             and type(saved) in (int, float) and -1 <= saved < 1):
-        return {'saved': saved, 'observed_at': seen}
+        return {'saved': saved, 'observed_at': seen, **({'deals':cache['deals']} if type(cache.get('deals')) is int else {})}
     return None
 
 
@@ -155,6 +155,7 @@ def saved_price_reference(list_price, baseline, *, cost_reference=None):
     return {'current_market_saved': saved, 'observed_at': baseline['observed_at'],
             'max_price_to_improve_if_usable': whole_price if whole_price > 0 else None,
             'cost_reference': cost_reference, 'ranking_version': BUYER_RANKING_VERSION,
+            'official_score_status':baseline.get('official_score_status','reported_snapshot'),
             'note': 'Conditional on this cost and usable settlement; displayed Saved is rounded. '
                     'This is a soft negotiation reference, not an exact aggregate-score guarantee.'}
 
@@ -254,6 +255,7 @@ def routing_evidence(profile, saving):
     contribution=saving if type(saving) in (int,float) and math.isfinite(saving) else 0.
     expectation=(evidence['smoothed_paid_probability']*contribution
                  - evidence['smoothed_unusable_probability']*(1+contribution))
+    evidence['estimated_saved_per_attempt']=round(expectation,6)
     evidence['estimated_saved_per_minute']=round(
         expectation*60/max(5,evidence['smoothed_attempt_seconds']),6)
     return evidence
