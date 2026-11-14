@@ -11,6 +11,9 @@ Before anyone orders, decide what to hold until the next supply window (one 3-mi
    category, so being stocked in only one or two hot categories (apples, dates...) caps how often we are
    even a candidate, no matter how good our reviews or forum posts are,
 4. top each picked SKU up to a small target, inside a per-window share of the balance.
+5. L1 first move: once a window, trial-enter the priciest category we have never held a single unit of
+   (demand.json, independent of whether we have personally seen a stockout there yet) and post about it
+   right away -- see uncovered_high_value_categories() and first_move_text().
 Food is held only where it sells fast; goods may be held deeper, they only pay 1% a day.
 """
 import argparse
@@ -100,6 +103,37 @@ def low_competition_categories(d, now, lookback_h=24, max_shops=5):
     return {r["category"] for r in rows}
 
 
+DEMAND_MIN_MEDIAN_PRICE = 50000   # only bet a trial unit on a category worth it -- a thin, cheap one
+                                  # isn't worth the (small but real) capital tied up while we wait to see
+
+# L1 Horvitz table for this first move, written before the code below:
+#   opponent's goal   -- a buyer with an order in this category finds real_yellow as a candidate at all
+#   P(we're right)    -- medium-high: demand.json's median_price * skus is the market's own catalog
+#                         depth for this category, not a guess -- a category that large keeps generating
+#                         orders somewhere
+#   cost if wrong     -- one cheap trial unit (same cap as the stockout trial below) + one forum post;
+#                         both already have an existing budget guard, so a wrong bet costs little
+#   metric to check   -- settles count for this category attributed to real_yellow, baseline 0 (we have
+#                         never held a unit there) -- re-measured in week 11
+
+
+def uncovered_high_value_categories(inv, catalog, demand, min_median_price=DEMAND_MIN_MEDIAN_PRICE):
+    """L1 first move: demand.json lists every category's market-wide catalog depth (skus, median_price),
+    independent of our own order history. stockout_categories() above only reacts once our own buyer has
+    already failed there 3+ times in a lookback window -- this acts before that ever happens, on the
+    probability that a category this large will send us an order eventually anyway, instead of waiting
+    to be asked."""
+    held_cats = set()
+    for u in inv.get("units", []):
+        cat = (catalog.get(u["sku"]) or {}).get("category")
+        if cat:
+            held_cats.add(cat)
+    out = [c for c in demand if c.get("category") and c["category"] not in held_cats
+          and (c.get("median_price") or 0) >= min_median_price and c.get("skus")]
+    out.sort(key=lambda c: -(c["median_price"] * c["skus"]))
+    return out
+
+
 def own_deal_rates(d, now, lookback_h):
     """Our own shop's recent negotiation outcomes per SKU, independent of how well that SKU sells
     market-wide (settles, used below) -- buyer mix, our own ask, and warranty terms can make a SKU a
@@ -111,7 +145,7 @@ def own_deal_rates(d, now, lookback_h):
     return {r["sku"]: (float(r["rate"]), int(r["n"])) for r in rows}
 
 
-def plan(inv, d, policy, now, catalog):
+def plan(inv, d, policy, now, catalog, demand):
     units = inv.get("units", [])
     if len(units) >= policy["max_units"]:
         print(f"[restock] stock is full ({len(units)}/{policy['max_units']}), not buying")
@@ -184,6 +218,29 @@ def plan(inv, d, policy, now, catalog):
         budget -= unit_cost
         covered.add(cat)
 
+    # one L1 first move per window: the priciest category demand.json shows we have never held a unit
+    # of, picked before any buyer ever asks (see uncovered_high_value_categories() and the Horvitz table
+    # above it) -- kept to a single slot so a wrong bet stays cheap
+    for gap in uncovered_high_value_categories(inv, catalog, demand):
+        cat = gap["category"]
+        if cat in covered:
+            continue
+        candidates = [(sku, v) for sku, v in catalog.items()
+                     if v.get("category") == cat and sku not in surging and v.get("list_price")]
+        if not candidates:
+            continue
+        sku, v = min(candidates, key=lambda x: x[1]["list_price"])      # cheapest: smallest trial risk
+        lp = v["list_price"]
+        unit_cost = lp * 0.75
+        if unit_cost > per_sku_cap or unit_cost > budget or held.get(sku):
+            continue
+        buy.append({"sku": sku, "qty": 1})
+        why.append({"sku": sku, "kind": v.get("kind"), "list": lp, "sold": 0, "margin": None,
+                   "qty": 1, "trial": True, "first_move": True, "median_price": gap["median_price"]})
+        budget -= unit_cost
+        covered.add(cat)
+        break
+
     for value, sku, kind, lp, n, margin in ranked:
         own_rate, own_n = own_rates.get(sku, (None, 0))
         if own_n >= OWN_RATE_MIN_SAMPLE and own_rate < OWN_RATE_FLOOR:
@@ -251,25 +308,45 @@ def promo_text(inv, why, now, stat=None):
             f"\n✅ {trust} | ⏱️ 비식품 72h 보증\n느린 흥정 싫으면 real_yellow 👋")
 
 
+def first_move_text(inv, entry):
+    """L1 first move post: we just entered a category nobody has asked real_yellow for yet, picked from
+    demand.json's market-wide catalog depth rather than waiting on our own buyer's stockout log. Worded
+    and tagged distinctly (🆕 선점) so it reads apart from the routine "오늘의 재고" cycle in
+    outbox.sent.jsonl when checking the LAB's pass criteria."""
+    u = next((u for u in inv.get("units", []) if u["sku"] == entry["sku"]), None)
+    if not u:
+        return None
+    return (f"🆕 선점 입고: {u['name'][:30]} ({u['sku']}) {u['grade']}등급\n"
+            f"이 카테고리는 시장 정가 중앙값 {entry['median_price']:,}원대인데 저희가 처음 들여왔습니다 -- "
+            f"아직 아무도 안 물어봤지만 먼저 채워뒀어요.\n느린 흥정 싫으면 real_yellow 👋")
+
+
 def shop_forum(d, inv, why, now, md):
     policy = dict(DEFAULT_PROMO, **d.get_policy("shop_forum", {}))
     last = float(d.get_state("last_post_shop", 0))
     if now - last < policy["post_every"]:
         return
+    first_move = next((x for x in why if x.get("first_move")), None)
     hot = any(x.get("margin") is not None and x["margin"] >= 0.1 and x["sold"] >= 50 for x in why)
-    usefulness = policy["hot_usefulness"] if hot else policy["base_usefulness"]
+    if first_move:
+        usefulness = 0.95       # treat our own first move like the existing "hot drop" tier: post it
+                                # the moment it happens rather than folding it into the next quiet-timer post
+    else:
+        usefulness = policy["hot_usefulness"] if hot else policy["base_usefulness"]
     bar = policy["threshold"] - (policy["quiet_bonus"] if now - last > policy["quiet_after"] else 0)
     if usefulness < bar:
         print(f"[forum] shop skip: usefulness {usefulness} < {bar}")
         return
-    text = promo_text(inv, why, now, honesty_stat(d))
+    text = first_move_text(inv, first_move) if first_move else promo_text(inv, why, now, honesty_stat(d))
     if not text:
         print("[forum] shop skip: no live stock to show")
         return
     with open(md / "outbox.jsonl", "a", encoding="utf-8") as f:
         f.write(json.dumps({"post": text, "as": "shop"}, ensure_ascii=False) + "\n")
     d.set_state("last_post_shop", now)
-    d.log_trajectory(now, "shop", "forum_post", {"usefulness": usefulness, "bar": bar, "hot": hot}, {"text": text})
+    d.log_trajectory(now, "shop", "forum_post",
+                     {"usefulness": usefulness, "bar": bar, "hot": hot, "first_move": bool(first_move)},
+                     {"text": text})
     print(f"[forum] shop posted (usefulness {usefulness} >= {bar}):\n{text}")
 
 
@@ -302,11 +379,12 @@ def main():
         print(f"[restock] collector failed: {type(e).__name__}: {e}")
 
     catalog = json.loads((md / "catalog.json").read_text(encoding="utf-8"))
+    demand = json.loads((md / "demand.json").read_text(encoding="utf-8"))
     buy, why = [], []
     try:
         with DB() as d:
             policy = dict(DEFAULT_POLICY, **d.get_policy("restock", {}))
-            buy, why = plan(inv, d, policy, now, catalog)
+            buy, why = plan(inv, d, policy, now, catalog, demand)
             d.log_trajectory(now, "shop", "restock", {"balance": inv.get("balance"), "units": len(inv.get("units", [])),
                                                         "window": w, "policy": policy}, {"buy": why})
             try:
@@ -316,7 +394,10 @@ def main():
     except Exception as e:          # the DB being unreachable (not the market) shouldn't skip a real window
         print(f"[restock] DB unreachable, skipping this window's buy: {type(e).__name__}: {e}")
     for x in why:
-        if x.get("trial"):
+        if x.get("first_move"):
+            print(f"[restock] FIRST MOVE {x['qty']} x {x['sku']} ({x['kind']}, list {x['list']}) -- "
+                 f"demand.json median {x['median_price']}, never held this category before")
+        elif x.get("trial"):
             print(f"[restock] TRIAL {x['qty']} x {x['sku']} ({x['kind']}, list {x['list']}) -- "
                  f"{x['stockouts_seen']} recent stockouts for this category, no sales history yet")
         else:
