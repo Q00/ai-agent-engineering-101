@@ -9,7 +9,7 @@ import httpx
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from cryptography.hazmat.primitives import serialization
 from buyer_memory import Memory
-from buyer_r3 import Buyer, asking, candidates, limit, deals_cap, signed_receipt, exclude_own_shop, quote_rank, execution_order, expected_offer
+from buyer_r3 import Buyer, asking, candidates, limit, deals_cap, signed_receipt, exclude_own_shop, quote_rank, execution_order, expected_offer, EARLY_QUOTE_TARGET
 from buyer_review import review
 
 
@@ -49,6 +49,9 @@ class BuyerTests(unittest.TestCase):
         self.assertEqual(limit(self.o,self.cat['SKU1'],'A'),6900)
         self.assertEqual(limit(self.o,self.cat['SKU1'],'C'),4800)
         self.assertEqual(limit(self.o,dict(list_price=2000),'A'),1380)
+
+    def test_quote_comparison_target_matches_observed_conversion_step(self):
+        self.assertEqual(EARLY_QUOTE_TARGET,11)
 
     def test_all_shops_with_acceptable_stock_are_visited(self):
         shops=[dict(self.shop,name=str(i)) for i in range(8)]+[dict(self.shop,name='bad',offers=[dict(sku='wrong',qty=1)])]

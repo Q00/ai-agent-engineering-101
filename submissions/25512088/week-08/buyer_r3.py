@@ -72,6 +72,7 @@ def quote_fields(task):
 GRADE_PRICE_CAP = {'A':69, 'B':60, 'C':48}
 GRADE_COST_MIDPOINT = {'A':.65, 'B':.50, 'C':.35}
 SAVED_TARGET = .80
+EARLY_QUOTE_TARGET = 11
 
 
 def estimated_margin_saved(product, price, grade=None):
@@ -357,7 +358,7 @@ class Buyer:
                     if not fields['price']:continue
                     unsuitable=(self.o.get('kind')=='food' and fields['hours'] is not None and fields['hours']<self.o['use_within_hours']) or (self.o.get('kind')!='food' and fields['warranty'] is not None and fields['warranty']<6)
                     usable+=not unsuitable
-                if usable>=8:break
+                if usable>=EARLY_QUOTE_TARGET:break
             for s in self.sessions:
                 shop=s['shop'];sku=s['sku']
                 if s.get('error'):
@@ -386,7 +387,7 @@ class Buyer:
             self.m.record(self.o['order'],'','',None,'selection_v4',details={
                 'eligible_pairs':len(picks),'eligible_shops':len({s['url'] for s,_ in picks}),
                 'eligible_skus':sorted(offered_skus),'quoted_pairs':len(self.sessions),
-                'parallel_limit':12,'early_quote_target':8,'deadline_seconds':85,
+                'parallel_limit':12,'early_quote_target':EARLY_QUOTE_TARGET,'deadline_seconds':85,
                 'saved_target':SAVED_TARGET,'saved_portfolio':self.portfolio,
                 'breakage_prior':BREAKAGE_PRIORS['food' if self.o.get('kind')=='food' else 'goods'],
                 'ranked_quotes':[{'shop':s['shop']['name'],'sku':s['sku'],'ask':s['ask'],'cap':s['cap'],
