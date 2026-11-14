@@ -190,7 +190,9 @@ class Checkout:
             "checkout_mandate": pay.get("checkout_mandate"), "payment_mandate": pay.get("payment_mandate")})
         res = r.json() if r.headers.get("content-type", "").startswith("application/json") else {"error": r.text[:200]}
         if r.status_code != 200:
-            log(f"[acp] settle refused: {r.status_code} {json.dumps(res, ensure_ascii=False)[:300]}")
+            bad = [k for k, v in (res.get("checks") or {}).items() if not v]
+            log(f"[acp] settle refused: {r.status_code} failed checks {bad} "
+                f"{json.dumps({k: v for k, v in res.items() if k != 'checks'}, ensure_ascii=False)[:300]}")
             return JSONResponse({"error": "payment refused by the market", "market": res}, status_code=402)
         s["status"] = "completed"
         s["order"] = {"status": "confirmed", "mandate_receipt": res["mandate_receipt"]}
