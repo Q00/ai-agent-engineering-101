@@ -13,6 +13,7 @@ from seller_ledger import Program
 from buyer_publicist import queue_update,publication_policy,forum_strategy,STRATEGY_REVIEW_SECONDS
 from buyer_r3 import Buyer
 from buyer_memory import Memory
+from seller_market import fetch_shop_reviews,SHOP_REVIEW_FILE
 
 
 class IntelligenceTests(unittest.TestCase):
@@ -36,6 +37,28 @@ class IntelligenceTests(unittest.TestCase):
         self.assertIn('trades_shop_ts_honest',indexes)
         self.assertIn('trades_sku_grade_ts',indexes)
         self.assertIn('observations_shop_ts_kind',indexes)
+
+    def test_fresh_review_cache_fetches_only_new_shop(self):
+        now=time.time();cached_at=now-60
+        (self.root/SHOP_REVIEW_FILE).write_text(json.dumps({
+            'round':3,'fetched_at':cached_at,
+            'by_shop':{'old':[{'shop':'old','stars':5,'review':'verified'}]}}))
+        called=[]
+        class Response:
+            def raise_for_status(inner):pass
+            def json(inner):return []
+        class Client:
+            def __enter__(inner):return inner
+            def __exit__(inner,*args):pass
+            def get(inner,url,params):called.append(params['shop']);return Response()
+        shops=[{'name':'old','url':'https://old'},{'name':'new','url':'https://new'}]
+        with patch('seller_market.httpx.Client',return_value=Client()):
+            rows=fetch_shop_reviews(self.root,'https://market.test',shops,now=now)
+        self.assertEqual(called,['new'])
+        self.assertEqual(len(rows),1)
+        cache=json.loads((self.root/SHOP_REVIEW_FILE).read_text())
+        self.assertEqual(cache['fetched_at'],cached_at)
+        self.assertEqual(set(cache['by_shop']),{'old','new'})
     def test_ingest_preserves_public_buyer_identity_for_distinct_demand(self):
         rows=self.rows();rows[0]['data']['buyer']='buyer-a'
         self.i.ingest(rows)

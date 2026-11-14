@@ -97,11 +97,18 @@ def fetch_shop_reviews(state,market,shops,round_no=3,now=None):
     targets={str(s.get('name')):str(s.get('url') or (s.get('card') or {}).get('url') or '')
              for s in shops if s.get('name')}
     names=set(targets)
-    if (cached.get('round')==round_no and now-cached.get('fetched_at',0)<SHOP_REVIEW_MAX_AGE
-            and names.issubset(set((cached.get('by_shop') or {}).keys()))):
-        return [r for rows in cached.get('by_shop',{}).values() for r in rows]
+    cache_fresh=(cached.get('round')==round_no and
+                 now-cached.get('fetched_at',0)<SHOP_REVIEW_MAX_AGE)
     previous=cached.get('by_shop',{}) if cached.get('round')==round_no else {}
-    by_shop={};errors=[]
+    if cache_fresh and names.issubset(set(previous)):
+        return [r for rows in cached.get('by_shop',{}).values() for r in rows]
+    # A newly joined shop must not invalidate the still-fresh reviews of every
+    # existing shop.  Fetch only missing shops until the global cache expires;
+    # a stale cache still receives a complete refresh.
+    by_shop=({name:previous[name] for name in names if name in previous}
+             if cache_fresh else {})
+    fetch_names=names-set(by_shop)
+    errors=[]
     def get(name):
         with httpx.Client(timeout=12) as client:
             response=client.get(market+'/api/shop-reviews',params={'shop':name,'round':round_no})
@@ -112,14 +119,16 @@ def fetch_shop_reviews(state,market,shops,round_no=3,now=None):
                       'review':str(r.get('review') or '')[:2000]} for r in rows[:40]
                      if isinstance(r,dict)]
     with ThreadPoolExecutor(max_workers=6) as pool:
-        futures={pool.submit(get,name):name for name in sorted(names)}
+        futures={pool.submit(get,name):name for name in sorted(fetch_names)}
         for future in as_completed(futures):
             name=futures[future]
             try:key,rows=future.result();by_shop[key]=rows
             except Exception as exc:
                 errors.append({'shop':name,'error':type(exc).__name__})
                 if name in previous:by_shop[name]=previous[name]
-    result={'version':1,'fetched_at':now,'round':round_no,'shops_requested':len(names),
+    result={'version':1,
+            'fetched_at':cached.get('fetched_at',now) if cache_fresh else now,
+            'round':round_no,'shops_requested':len(names),
             'shops_loaded':len(by_shop),'errors':errors,'by_shop':by_shop}
     tmp=path.with_suffix('.tmp');tmp.write_text(json.dumps(result,ensure_ascii=False,sort_keys=True));os.replace(tmp,path)
     return [r for rows in by_shop.values() for r in rows]
