@@ -3,7 +3,7 @@ import json
 import tempfile
 import unittest
 from network_reads import retry_read
-from seller_procurement import choose,allocation_plan,capital_available,supply_result,own_registration,own_board_registration,retry_join,join_current_registration,preserve_stale_pending,breadth_window_blocks,warranty_risk_reserve,observed_warranty_hazard,active_warranty_amounts,supply_interval_wait
+from seller_procurement import choose,allocation_plan,capital_available,supply_result,own_registration,own_board_registration,retry_join,join_current_registration,preserve_stale_pending,breadth_window_blocks,competitor_breadth_target,warranty_risk_reserve,observed_warranty_hazard,active_warranty_amounts,supply_interval_wait
 from seller_market import dominant_goods_profit_probability
 class PurchaseTests(unittest.TestCase):
  def test_successful_supply_cooldown_avoids_predictable_rate_limit(self):
@@ -199,9 +199,14 @@ class PurchaseTests(unittest.TestCase):
                sales_1h=2,sales_6h=4,distinct_buyers_6h=2,estimated_sale_likelihood=.5)]
   inv={'units':[{'sku':'hot','cost':100}]}
   policy={'breadth_target_skus':2,'max_units_per_sku':3,'new_sku_bonus':1}
-  self.assertEqual(allocation_plan(ranked,inv,10000,policy=policy)[0]['sku'],'new')
+  first=allocation_plan(ranked,inv,10000,policy=policy)[0]
+  self.assertEqual((first['sku'],first['qty']),('new',1))
   policy['breadth_target_skus']=1
   self.assertEqual(allocation_plan(ranked,inv,10000,policy=policy)[0]['sku'],'hot')
+ def test_competitor_breadth_target_uses_leader_median(self):
+  self.assertEqual(competitor_breadth_target({'competition_breadth':{
+      'top10_min_skus':61,'top10_median_skus':131.5}}),132)
+  self.assertEqual(competitor_breadth_target({}),0)
  def test_breadth_expansion_blocks_paid_sku_for_same_supply_window(self):
   rows=[{'sku':'new-a','status':'paid','created':101},
         {'sku':'old','status':'paid','created':99},

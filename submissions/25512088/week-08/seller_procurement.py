@@ -130,6 +130,11 @@ def breadth_window_blocks(rows, opening, inventory, target):
     return {r['sku'] for r in rows
             if r['status']=='paid' and r['created']>=opening and r['sku']}
 
+def competitor_breadth_target(strategy):
+    """Match the typical leading shop, not the weakest observed outlier."""
+    value=(strategy.get('competition_breadth') or {}).get('top10_median_skus')
+    return math.ceil(value) if isinstance(value,(int,float)) and value>0 else 0
+
 def choose(policy,catalog,spent,reserved,balance,exposure,turn,blocked=()):
     # spent is current inventory principal, not lifetime procurement spend.
     remaining=min(policy['budget']-spent-reserved,balance-policy['cash_floor']-exposure)
@@ -221,6 +226,11 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
         need=min(need,max(0,sku_ceiling-holding.get(row['sku'],0)))
         if cold_safe_trial:
             need=min(need,policy.get('max_cold_safe_trial_units',1))
+        is_new=not holding.get(row['sku'])
+        breadth_target=max(0,policy.get('breadth_target_skus',0) or 0)
+        breadth_expansion=len(holding)<breadth_target and is_new
+        if breadth_expansion:
+            need=min(need,policy.get('max_breadth_trial_units',1))
         trial_units=(policy.get('initial_food_trial_units',2) if is_food else
                      policy.get('initial_trial_units',policy.get('min_trial_units',2)))
         # A single unit above the portfolio share is not a "small trial" and
@@ -234,9 +244,7 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
                       trusted_stockouts_6h=trusted_stockouts,sku_inventory_ceiling=sku_ceiling,
                       cold_goods_cost=cold_goods_cost,cold_goods_limit=cold_goods_limit,
                       cold_goods_frozen=cold_goods_frozen,cold_safe_trial=cold_safe_trial)
-        is_new=not holding.get(row['sku'])
-        breadth_target=max(0,policy.get('breadth_target_skus',0) or 0)
-        breadth_priority=0 if len(holding)<breadth_target and is_new else 1
+        breadth_priority=0 if breadth_expansion else 1
         diversity=policy.get('new_sku_bonus',1) if is_new else 1
         # Official score contribution remains primary, with a sub-linear
         # capital-risk adjustment. This preserves high-value goods without
@@ -404,8 +412,8 @@ def main():
         # windows, while capital_available still preserves cash/liabilities.
         aggression=max(1.0,min(policy.get('max_demand_windows',4),inv.get('balance',0)/3_000_000))
         runtime_policy=dict(policy)
-        target=(strategy.get('competition_breadth') or {}).get('top10_min_skus')
-        if type(target) is int and target>0:runtime_policy['breadth_target_skus']=target
+        target=competitor_breadth_target(strategy)
+        if target>0:runtime_policy['breadth_target_skus']=target
         window_blocks=breadth_window_blocks(rows,opening,inv,target)
         plan=allocation_plan(ranked,inv,available,set(blocked)|window_blocks,
                              slots,aggression,runtime_policy)
