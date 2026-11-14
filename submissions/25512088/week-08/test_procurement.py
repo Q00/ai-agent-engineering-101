@@ -3,7 +3,7 @@ import json
 import tempfile
 import unittest
 from network_reads import retry_read
-from seller_procurement import choose,allocation_plan,capital_available,supply_result,own_registration,own_board_registration,retry_join,join_current_registration,preserve_stale_pending,breadth_window_blocks,competitor_breadth_target,warranty_risk_reserve,observed_warranty_hazard,active_warranty_amounts,supply_interval_wait
+from seller_procurement import choose,allocation_plan,capital_available,supply_result,own_registration,own_board_registration,retry_join,join_current_registration,preserve_stale_pending,breadth_window_blocks,refresh_window_blocks,competitor_breadth_target,warranty_risk_reserve,observed_warranty_hazard,active_warranty_amounts,supply_interval_wait
 from seller_market import dominant_goods_profit_probability
 class PurchaseTests(unittest.TestCase):
  def test_successful_supply_cooldown_avoids_predictable_rate_limit(self):
@@ -203,6 +203,18 @@ class PurchaseTests(unittest.TestCase):
   self.assertEqual((first['sku'],first['qty']),('new',1))
   policy['breadth_target_skus']=1
   self.assertEqual(allocation_plan(ranked,inv,10000,policy=policy)[0]['sku'],'hot')
+ def test_sold_out_proven_sku_scales_during_breadth_expansion(self):
+  ranked=[dict(sku='proven',kind='goods',expected_net=10000,score=100,upper_cost=100,
+               sales_1h=12,sales_6h=24,own_sales_1h=2,own_sales_total=2,
+               distinct_buyers_6h=5,estimated_sale_likelihood=1)]
+  inv={'units':[{'sku':'held','cost':100}]}
+  policy={'breadth_target_skus':5,'max_units_per_sku':3,
+          'max_breadth_trial_units':1,'max_sku_capital_share':1}
+  plan=allocation_plan(ranked,inv,10000,aggression=4,policy=policy)
+  self.assertEqual([(row['sku'],row['qty']) for row in plan],[('proven',3)])
+
+  ranked[0]['own_sales_1h']=0;ranked[0]['own_sales_total']=0
+  self.assertEqual(allocation_plan(ranked,inv,10000,aggression=4,policy=policy)[0]['qty'],1)
  def test_competitor_breadth_target_uses_leader_median(self):
   self.assertEqual(competitor_breadth_target({'competition_breadth':{
       'top10_min_skus':61,'top10_median_skus':131.5}}),132)
@@ -214,6 +226,11 @@ class PurchaseTests(unittest.TestCase):
   inv={'units':[{'sku':'held'}]}
   self.assertEqual(breadth_window_blocks(rows,100,inv,3),{'new-a'})
   self.assertEqual(breadth_window_blocks(rows,100,inv,1),{'new-a'})
+ def test_new_window_clears_old_blocks_but_never_pending_unknown_posts(self):
+  self.assertEqual(refresh_window_blocks({'old-refusal','pending'},100,200,{'pending'}),
+                   {'pending'})
+  self.assertEqual(refresh_window_blocks({'same-window'},200,200,{'pending'}),
+                   {'same-window','pending'})
  def test_expensive_single_unit_cannot_bypass_portfolio_share(self):
   ranked=[dict(sku='expensive',expected_net=500000,expected_revenue=1000000,score=999,
                upper_cost=600000,sales_1h=8,sales_6h=12,distinct_buyers_6h=4,

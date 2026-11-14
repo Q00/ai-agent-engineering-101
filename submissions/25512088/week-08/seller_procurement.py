@@ -130,6 +130,19 @@ def breadth_window_blocks(rows, opening, inventory, target):
     return {r['sku'] for r in rows
             if r['status']=='paid' and r['created']>=opening and r['sku']}
 
+def refresh_window_blocks(blocked, previous_window, current_window, pending_skus):
+    """Clear old-window refusals without clearing unresolved POSTs.
+
+    A restart can inherit a ``sent`` supply journal row whose HTTP outcome is
+    unknown.  The old ordering added that SKU to ``blocked`` and immediately
+    erased it when initializing the current window, permitting a duplicate
+    POST.  Pending/uncertain rows remain blocked across every window because
+    they are never safe to retry.
+    """
+    pending=set(pending_skus)
+    if previous_window!=current_window:return pending
+    return set(blocked)|pending
+
 def competitor_breadth_target(strategy):
     """Match the typical leading shop, not the weakest observed outlier."""
     value=(strategy.get('competition_breadth') or {}).get('top10_median_skus')
@@ -226,10 +239,17 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
         need=min(need,max(0,sku_ceiling-holding.get(row['sku'],0)))
         if cold_safe_trial:
             need=min(need,policy.get('max_cold_safe_trial_units',1))
-        is_new=not holding.get(row['sku'])
+        is_missing=not holding.get(row['sku'])
+        # A sold-out SKU with an actual settled sale is proven inventory, not
+        # a new trial.  Treating every zero-holding SKU as new kept capping our
+        # fastest sellers at one unit just when they needed replenishment.
+        # ``own_sales_total`` survives a quiet hour; callers that have not yet
+        # supplied it retain the conservative recent-sale fallback.
+        own_sales_total=row.get('own_sales_total',row.get('own_sales_1h',0))
+        is_new=is_missing and own_sales_total<1
         breadth_target=max(0,policy.get('breadth_target_skus',0) or 0)
-        breadth_expansion=len(holding)<breadth_target and is_new
-        if breadth_expansion:
+        breadth_expansion=len(holding)<breadth_target and is_missing
+        if breadth_expansion and is_new:
             need=min(need,policy.get('max_breadth_trial_units',1))
         trial_units=(policy.get('initial_food_trial_units',2) if is_food else
                      policy.get('initial_trial_units',policy.get('min_trial_units',2)))
@@ -384,7 +404,9 @@ def main():
             exposure+=referrals.execute('SELECT COALESCE(SUM(reward),0) FROM sales WHERE awarded=0 AND refunded=0').fetchone()[0]
         inventory_cost=sum(u['cost'] for u in inv['units'])
         restock=inv.get('restock',{})
-        if window!=restock.get('opens_at'):window=restock.get('opens_at');blocked.clear()
+        current_window=restock.get('opens_at')
+        blocked=refresh_window_blocks(blocked,window,current_window,pending_skus)
+        window=current_window
         opening=restock.get('opens_at')
         strategy=read_json(state/'strategy.json',{})
         if not isinstance(opening,(int,float)):
@@ -400,8 +422,11 @@ def main():
             own_sales_1h={row[0]:row[1] for row in referrals.execute(
                 'SELECT sku,COUNT(*) FROM sales WHERE settled>? AND refunded=0 GROUP BY sku',
                 (time.time()-3600,))}
+            own_sales_total={row[0]:row[1] for row in referrals.execute(
+                'SELECT sku,COUNT(*) FROM sales WHERE refunded=0 GROUP BY sku')}
         ranked=[dict(row,kind=catalog.get(row.get('sku'),{}).get('kind'),
-                     own_sales_1h=own_sales_1h.get(row.get('sku'),0))
+                     own_sales_1h=own_sales_1h.get(row.get('sku'),0),
+                     own_sales_total=own_sales_total.get(row.get('sku'),0))
                 for row in (strategy.get('candidates') or strategy.get('top10',[]))]
         if not ranked:
             log(event='no_qualified_top10');time.sleep(20);continue
