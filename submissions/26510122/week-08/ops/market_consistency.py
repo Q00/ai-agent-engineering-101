@@ -28,11 +28,11 @@ def compare(board, seller, buyer, previous=None, *, now=None):
     own=next((r for r in buyers if r.get('name')==NAME),{})
     digest=hashlib.sha256(json.dumps(board,sort_keys=True,separators=(',',':')).encode()).hexdigest()
     issues=[]
-    if type(shop.get('deals')) is int and seller['settled']>shop['deals']:
+    if type(shop.get('deals')) is int and (seller['settled']>shop['deals']+5 or shop['deals']==0 and seller['settled']>0):
         issues.append('seller_paid_count_below_local_verified_lower_bound')
-    if type(shop.get('revenue')) in (int,float) and seller['revenue']>shop['revenue']:
+    if shop.get('deals')==0 and shop.get('revenue')==0 and seller['revenue']>0:
         issues.append('seller_revenue_below_local_verified_lower_bound')
-    if type(own.get('deals')) is int and buyer['settled']>own['deals']:
+    if type(own.get('deals')) is int and (buyer['settled']>own['deals']+5 or own['deals']==0 and buyer['settled']>0):
         issues.append('buyer_paid_count_below_local_verified_lower_bound')
     first_seen=now
     if previous and previous.get('board_digest')==digest:
@@ -42,7 +42,10 @@ def compare(board, seller, buyer, previous=None, *, now=None):
         if progressed and now-first_seen>=60:
             issues.append('board_unchanged_while_new_paid_ledgers_arrived')
     return {'at':now,'board_digest':digest,'same_board_first_seen':first_seen,
-            'official_seller':{k:shop.get(k) for k in ('deals','revenue','book','all')},
+            'official_seller':{k:shop.get(k) for k in ('deals','revenue','book','all','refunds')},
+            'gross_local_minus_official_revenue':seller['revenue']-(shop.get('revenue') or 0),
+            'revenue_comparison_note':'Local gross paid amount and official revenue can differ due to refunds and historical coverage; difference alone does not invalidate official ranking.',
+            'count_tolerance_for_request_timing':5,
             'official_buyer':{k:own.get(k) for k in ('deals','saved','all')},
             'seller':seller,'buyer':buyer,'issues':issues,
             'official_ranking_reliable':not issues,

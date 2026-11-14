@@ -26,3 +26,11 @@ class ConsistencyTests(unittest.TestCase):
         r=compare(self.board(),{'settled':3,'revenue':200,'latest_ledger':30},
                   {'settled':4,'revenue':500,'latest_ledger':31},now=100)
         self.assertTrue(r['official_ranking_reliable'])
+
+
+    def test_refund_adjusted_revenue_is_not_misreported_as_stale_board(self):
+        b=self.board();b['shops'][0].update(revenue=900,refunds=1)
+        r=compare(b,{'settled':10,'revenue':1000,'latest_ledger':30},
+                  {'settled':20,'revenue':2000,'latest_ledger':31},now=100)
+        self.assertTrue(r['official_ranking_reliable'])
+        self.assertEqual(r['gross_local_minus_official_revenue'],100)
