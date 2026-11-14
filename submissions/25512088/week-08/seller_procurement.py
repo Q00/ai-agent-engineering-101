@@ -273,10 +273,14 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
                       cold_goods_frozen=cold_goods_frozen,cold_safe_trial=cold_safe_trial)
         breadth_priority=0 if breadth_expansion else 1
         diversity=policy.get('new_sku_bonus',1) if is_new else 1
-        # Official score contribution remains primary, with a sub-linear
-        # capital-risk adjustment. This preserves high-value goods without
-        # letting a handful of million-credit units consume an entire window.
-        risk_adjusted=row.get('score',0)/max(1,row['upper_cost'])**.75
+        # Official score contribution remains primary, with a configurable
+        # sub-linear capital-risk adjustment.  A three-quarter-power penalty
+        # still over-selected cheap food after candidate scores had already
+        # incorporated Book and Revenue.  Live sold-through evidence supports
+        # a square-root penalty; the independent per-SKU and cold-goods caps
+        # continue to bound concentrated or unproven inventory.
+        capital_exponent=max(0.0,min(1.0,float(policy.get('capital_risk_exponent',.75))))
+        risk_adjusted=row.get('score',0)/max(1,row['upper_cost'])**capital_exponent
         choices.append((breadth_priority,-(risk_adjusted*diversity),
                         row['sku'],need,evidence))
     # Each candidate is bounded by condition-specific per-SKU caps. When no
