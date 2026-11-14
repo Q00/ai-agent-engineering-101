@@ -655,8 +655,8 @@ class Seller(AgentExecutor):
         await TaskUpdater(event_queue=event_queue, task_id=task.id, context_id=task.context_id).cancel()
 
 
-def build(port):
-    url = f"http://127.0.0.1:{port}/"
+def build(port, url=None):
+    url = url or f"http://127.0.0.1:{port}/"          # acp_shop.py passes its public URL: no kit proxy rewrites the card
     card = AgentCard(
         name=NAME,
         description=("Real stock, honest grades. Every reply states the unit's true grade, the market "
