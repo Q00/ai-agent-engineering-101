@@ -23,15 +23,15 @@ def capital_available(policy,inv,exposure=0,pending=0):
     return max(0,min(liquid,capacity))
 
 def breadth_window_blocks(rows, opening, inventory, target):
-    """Avoid buying the same SKU twice while inventory reflection can lag.
+    """Avoid duplicate SKU buys while the supply API is still reflecting a purchase.
 
-    A successful call already fills the evidence-backed per-SKU need returned
-    by ``allocation_plan``.  Supply calls, not cash, are the scarce resource in
-    the three-minute window, so a lagging inventory snapshot must never spend a
-    second call on the same SKU.  ``target`` remains in the signature for old
-    callers and replay compatibility; the journal is authoritative regardless
-    of whether the breadth floor has already been reached.
+    During breadth expansion, one successful purchase is enough for a SKU in a
+    single supply window.  The purchase journal is authoritative here because
+    the inventory endpoint can lag by several seconds after a paid POST.
     """
+    if not isinstance(target,int) or target<=0:return set()
+    holding={u.get('sku') for u in inventory.get('units',[]) if u.get('sku')}
+    if len(holding)>=target:return set()
     return {r['sku'] for r in rows
             if r['status']=='paid' and r['created']>=opening and r['sku']}
 
@@ -99,22 +99,19 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
                       trusted_stockouts_6h=trusted_stockouts,sku_inventory_ceiling=sku_ceiling)
         is_new=not holding.get(row['sku'])
         breadth_target=max(0,policy.get('breadth_target_skus',0) or 0)
-        # Breadth is valuable because it exposes the shop to more orders, but
-        # it must not make a near-zero-contribution trial outrank every proven
-        # product.  Below the live top-shop breadth floor, new SKUs receive a
-        # bounded bonus; official Book/Revenue contribution remains primary.
-        # Cash, per-SKU capital and unit caps already bound expensive products,
-        # while the supply API makes successful calls the scarce resource.
-        diversity=(policy.get('new_sku_bonus',1)
-                   if len(holding)<breadth_target and is_new else 1)
-        official_point_priority=row.get('score',0)*diversity
-        choices.append((-official_point_priority,
+        breadth_priority=0 if len(holding)<breadth_target and is_new else 1
+        diversity=policy.get('new_sku_bonus',1) if is_new else 1
+        # Official score contribution remains primary, with a sub-linear
+        # capital-risk adjustment. This preserves high-value goods without
+        # letting a handful of million-credit units consume an entire window.
+        risk_adjusted=row.get('score',0)/max(1,row['upper_cost'])**.75
+        choices.append((breadth_priority,-(risk_adjusted*diversity),
                         row['sku'],need,evidence))
     # Each candidate is already capped at two food or three goods units.  When
     # no explicit test/canary slot limit is supplied, capital and those per-SKU
     # caps determine the total portfolio instead of an arbitrary 250 units.
-    plan=[];slots=sum(row[2] for row in choices) if available_slots is None else available_slots
-    for _,sku,need,row in sorted(choices):
+    plan=[];slots=sum(row[3] for row in choices) if available_slots is None else available_slots
+    for _,_,sku,need,row in sorted(choices):
         # Official supply API accepts at most 20 units per call. Remaining
         # evidenced need is purchased on subsequent inventory refreshes.
         qty=min(policy.get('max_lot_units',20),need,int(available//row['upper_cost']),max(0,slots))

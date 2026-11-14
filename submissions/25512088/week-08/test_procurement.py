@@ -93,15 +93,13 @@ class PurchaseTests(unittest.TestCase):
   plan=allocation_plan(ranked,{'units':[]},100000,aggression=100)
   self.assertEqual(len(plan),100)
   self.assertEqual(sum(row['qty'] for row in plan),300)
- def test_live_competitor_breadth_is_bonus_not_absolute_override(self):
+ def test_live_competitor_breadth_floor_prioritizes_new_sku(self):
   ranked=[dict(sku='hot',expected_net=10000,score=100,upper_cost=100,
                sales_1h=20,sales_6h=30,distinct_buyers_6h=5,estimated_sale_likelihood=1),
           dict(sku='new',expected_net=100,score=1,upper_cost=100,
                sales_1h=2,sales_6h=4,distinct_buyers_6h=2,estimated_sale_likelihood=.5)]
   inv={'units':[{'sku':'hot','cost':100}]}
-  policy={'breadth_target_skus':2,'max_units_per_sku':3,'new_sku_bonus':1.5}
-  self.assertEqual(allocation_plan(ranked,inv,10000,policy=policy)[0]['sku'],'hot')
-  ranked[0]['score']=1
+  policy={'breadth_target_skus':2,'max_units_per_sku':3,'new_sku_bonus':1}
   self.assertEqual(allocation_plan(ranked,inv,10000,policy=policy)[0]['sku'],'new')
   policy['breadth_target_skus']=1
   self.assertEqual(allocation_plan(ranked,inv,10000,policy=policy)[0]['sku'],'hot')
@@ -111,7 +109,7 @@ class PurchaseTests(unittest.TestCase):
         {'sku':'refused','status':'refused','created':102}]
   inv={'units':[{'sku':'held'}]}
   self.assertEqual(breadth_window_blocks(rows,100,inv,3),{'new-a'})
-  self.assertEqual(breadth_window_blocks(rows,100,inv,1),{'new-a'})
+  self.assertEqual(breadth_window_blocks(rows,100,inv,1),set())
  def test_expensive_single_unit_cannot_bypass_portfolio_share(self):
   ranked=[dict(sku='expensive',expected_net=500000,expected_revenue=1000000,score=999,
                upper_cost=600000,sales_1h=8,sales_6h=12,distinct_buyers_6h=4,
