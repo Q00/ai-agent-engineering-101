@@ -9,7 +9,7 @@ import httpx
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from cryptography.hazmat.primitives import serialization
 from buyer_memory import Memory
-from buyer_r3 import Buyer, asking, candidates, limit, stretch_limit, deals_cap, signed_receipt, exclude_own_shop, quote_rank, execution_order, expected_offer, EARLY_QUOTE_TARGET
+from buyer_r3 import Buyer, asking, candidates, limit, stretch_limit, middle_limit, deals_cap, signed_receipt, exclude_own_shop, quote_rank, execution_order, expected_offer, EARLY_QUOTE_TARGET
 from buyer_review import review
 
 
@@ -52,6 +52,9 @@ class BuyerTests(unittest.TestCase):
         self.assertEqual(stretch_limit(self.o,self.cat['SKU1'],'A'),6675)
         self.assertEqual(stretch_limit(self.o,self.cat['SKU1'],'B'),5250)
         self.assertEqual(stretch_limit(self.o,self.cat['SKU1'],'C'),3825)
+        self.assertEqual(middle_limit(self.o,self.cat['SKU1'],'A'),6850)
+        self.assertEqual(middle_limit(self.o,self.cat['SKU1'],'B'),5500)
+        self.assertEqual(middle_limit(self.o,self.cat['SKU1'],'C'),4149)
 
     def test_quote_comparison_target_matches_observed_conversion_step(self):
         self.assertEqual(EARLY_QUOTE_TARGET,11)
@@ -254,7 +257,7 @@ class BuyerTests(unittest.TestCase):
             self.assertEqual(offers,['shop.test'] if uncertain else ['shop.test','other.test'])
             self.assertEqual(out['receipt'] is None,uncertain)
 
-    def test_negotiation_stops_after_two_identical_counters(self):
+    def test_negotiation_tries_middle_before_proven_fallback(self):
         amounts=[]
         def handler(req):
             if req.method=='GET':return httpx.Response(200,json={'supportedInterfaces':[]})
@@ -269,7 +272,7 @@ class BuyerTests(unittest.TestCase):
         self.m.begin(self.o)
         with httpx.Client(transport=httpx.MockTransport(handler)) as c, patch('buyer_r3.time.sleep'):
             out=Buyer(self.o,self.m,c,self.cat).run([self.shop])
-        self.assertEqual(amounts,[6675,6900])
+        self.assertEqual(amounts,[6675,6850,6900])
         self.assertTrue(all(a<=6900 for a in amounts))
         self.assertIsNone(out['receipt'])
 

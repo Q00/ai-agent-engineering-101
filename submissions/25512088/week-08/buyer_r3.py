@@ -73,6 +73,7 @@ GRADE_PRICE_CAP = {'A':69, 'B':60, 'C':48}
 GRADE_COST_MIDPOINT = {'A':.65, 'B':.50, 'C':.35}
 SAVED_TARGET = .80
 SAVED_STRETCH_TARGET = .95
+SAVED_MIDDLE_TARGET = .90
 EARLY_QUOTE_TARGET = 11
 
 
@@ -98,17 +99,19 @@ def limit(order, product, grade=None):
     return min(order['budget'], math.floor(product['list_price']*pct/100))
 
 
-def stretch_limit(order, product, grade=None):
-    """First-offer ceiling targeting stronger Saved without losing fallback.
-
-    A rejected first offer is followed once by the ordinary ``limit``.  This
-    makes a lower accepted price pure upside while retaining the existing
-    maximum price and its observed conversion rate on the second attempt.
-    """
+def saved_target_limit(order, product, grade, target):
     listed=product.get('list_price');cost_ratio=GRADE_COST_MIDPOINT.get(grade,.50)
     if not isinstance(listed,(int,float)) or listed<=0:return limit(order,product,grade)
-    ratio=1-SAVED_STRETCH_TARGET*(1-cost_ratio)
+    ratio=1-target*(1-cost_ratio)
     return min(limit(order,product,grade),order['budget'],math.floor(listed*ratio))
+
+def stretch_limit(order, product, grade=None):
+    """First-offer ceiling targeting stronger Saved without losing fallback."""
+    return saved_target_limit(order,product,grade,SAVED_STRETCH_TARGET)
+
+def middle_limit(order, product, grade=None):
+    """One evidence-gathering step between the stretch and proven fallback."""
+    return saved_target_limit(order,product,grade,SAVED_MIDDLE_TARGET)
 
 
 def deals_cap(order,product,grade,portfolio=None):
@@ -382,6 +385,7 @@ class Buyer:
                 task=s['last'];fields=quote_fields(task)
                 s['grade']=fields['grade'];s['cap']=deals_cap(self.o,self.catalog[sku],s['grade'],self.portfolio)
                 s['stretch_cap']=stretch_limit(self.o,self.catalog[sku],s['grade'])
+                s['middle_cap']=middle_limit(self.o,self.catalog[sku],s['grade'])
                 if task_state(task).endswith('COMPLETED'):
                     # A certificate, not a parsed claim, enforces the actual grade at payment.
                     return self.completed(s)
@@ -404,6 +408,7 @@ class Buyer:
                 'eligible_skus':sorted(offered_skus),'quoted_pairs':len(self.sessions),
                 'parallel_limit':12,'early_quote_target':EARLY_QUOTE_TARGET,'deadline_seconds':85,
                 'saved_target':SAVED_TARGET,'saved_stretch_target':SAVED_STRETCH_TARGET,
+                'saved_middle_target':SAVED_MIDDLE_TARGET,
                 'saved_portfolio':self.portfolio,
                 'breakage_prior':BREAKAGE_PRIORS['food' if self.o.get('kind')=='food' else 'goods'],
                 'ranked_quotes':[{'shop':s['shop']['name'],'sku':s['sku'],'ask':s['ask'],'cap':s['cap'],
@@ -415,13 +420,15 @@ class Buyer:
                 # Reserve time for other competitors; no fixed negotiation turn count.
                 stop=min(self.deadline,time.time()+(self.deadline-time.time())/(len(quotes)-index))
                 attempts=0
-                while time.time()<stop and attempts<2:
+                while time.time()<stop and attempts<3:
                     attempts+=1
-                    amount=min(s['ask'],s['stretch_cap'] if attempts==1 else s['cap'])
+                    ceilings=(s['stretch_cap'],s['middle_cap'],s['cap'])
+                    labels=('stretch','middle','fallback')
+                    amount=min(s['ask'],ceilings[attempts-1])
                     if s['ask']>s['cap']:
                         self.m.record(self.o['order'],s['shop']['url'],s['sku'],s.get('task'),'price_rejected',s['ask'],{'cap':s['cap']})
                     self.m.record(self.o['order'],s['shop']['url'],s['sku'],s.get('task'),'offer',amount,
-                                  {'attempt':attempts,'ceiling':'stretch' if attempts==1 else 'fallback'})
+                                  {'attempt':attempts,'ceiling':labels[attempts-1]})
                     self.m.state(self.o['order'],'offer_in_flight')
                     print('OFFER',s['shop']['name'],s['sku'],amount,flush=True)
                     try:task=self.send_offer(s,amount)
