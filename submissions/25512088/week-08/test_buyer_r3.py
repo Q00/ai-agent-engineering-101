@@ -47,7 +47,7 @@ class BuyerTests(unittest.TestCase):
 
     def test_limit_uses_sku_and_grade_not_identical_budget_fraction(self):
         self.assertEqual(limit(self.o,self.cat['SKU1'],'A'),6900)
-        self.assertEqual(limit(self.o,self.cat['SKU1'],'C'),5500)
+        self.assertEqual(limit(self.o,self.cat['SKU1'],'C'),4800)
         self.assertEqual(limit(self.o,dict(list_price=2000),'A'),1380)
 
     def test_all_shops_with_acceptable_stock_are_visited(self):

@@ -69,9 +69,9 @@ def quote_fields(task):
     return result
 
 
-GRADE_PRICE_CAP = {'A':69, 'B':60, 'C':55}
+GRADE_PRICE_CAP = {'A':69, 'B':60, 'C':48}
 GRADE_COST_MIDPOINT = {'A':.65, 'B':.50, 'C':.35}
-SAVED_TARGET = .78
+SAVED_TARGET = .80
 
 
 def estimated_margin_saved(product, price, grade=None):
@@ -89,8 +89,9 @@ def estimated_margin_saved(product, price, grade=None):
 
 def limit(order, product, grade=None):
     # Patch 3.6 scores the share of shop margin saved, not list discount.
-    # These caps track the current Top-10 settlement band while preserving
-    # enough eligible sellers for Deals throughput.
+    # A/B already imply at least 0.80 expected margin saved at the published
+    # cost midpoints.  C must stay at 48% of list to avoid mathematically
+    # capping new Saved evidence below the current Top-10 band.
     pct = GRADE_PRICE_CAP.get(grade, 60)
     return min(order['budget'], math.floor(product['list_price']*pct/100))
 
