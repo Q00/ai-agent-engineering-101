@@ -43,7 +43,7 @@ class MarketCycle:
 
     def start(self, args):
         self.args=args
-        if self.thread is None:
+        if self.thread is None or not self.thread.is_alive():
             self.thread=threading.Thread(target=self.run,name='market-cycle-v15',daemon=True)
             self.thread.start()
 
@@ -67,6 +67,9 @@ class MarketCycle:
         if now-self.last_analysis>=60:
             self.last_analysis=now
             roles={'market_observer':lambda:analytics(self.j,time.time())}
+            if self.cfg.get('reversal_v28_enabled'):
+                from .reversal import update as reversal_update
+                roles['terminal_contract_observer']=lambda:reversal_update(self.j,self.cfg,time.time())
             if self.cfg.get('service_contract_v26_enabled'):
                 from .service_policy import update as service_update
                 from .negotiation_path import update as path_update
@@ -95,9 +98,18 @@ class MarketCycle:
                 from .feedback import update as feedback_update
                 roles.update(quality_evaluator=lambda:quality_update(self.j,self.cfg,time.time()),
                              policy_compiler=lambda:feedback_update(self.j,self.cfg,time.time()))
+            if self.cfg.get('reversal_v28_enabled'):
+                # Publish analytics AFTER slow observers, immediately before
+                # compilation. Its timestamp must describe current facts.
+                observer=roles.pop('market_observer')
+                compiler=roles.pop('policy_compiler',None)
+                roles['market_observer']=observer
+                if compiler:roles['policy_compiler']=compiler
             status={}
             for role,work in roles.items():
                 try:
+                    if self.cfg.get('reversal_v28_enabled'):
+                        self.j.put('analytical-role-current',{'role':role,'started_at':time.time()})
                     work();status[role]={'at':time.time(),'status':'completed'}
                 except Exception as exc:
                     status[role]={'at':time.time(),'status':'failed','error_type':type(exc).__name__}
@@ -173,5 +185,8 @@ class MarketCycle:
             try:
                 self.tick()
             except Exception as exc:
-                self.j.add('cycle_supervisor_error',{'error_type':type(exc).__name__})
+                # A busy/full evidence store must not kill the only scheduler
+                # while attempting to report that same storage failure.
+                try:self.j.add('cycle_supervisor_error',{'error_type':type(exc).__name__})
+                except Exception:pass
             self.stop.wait(5)

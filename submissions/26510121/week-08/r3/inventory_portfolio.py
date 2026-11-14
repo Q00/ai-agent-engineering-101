@@ -56,6 +56,7 @@ def downside(candidate):
         e['service_eligibility']['need_rate']*=factor
     upper=(.60 if e['kind']=='food' else .69)*e['list_price']*e.get('supply_surge_factor',1)
     e['scenario_unit_cost']=max(e['scenario_unit_cost'],upper)
+    e['refund_stress']=max(e.get('refund_stress',0),e.get('refund_upper_scenario',0))
     row['evidence']['stress_rate_factor']=factor
     return row
 

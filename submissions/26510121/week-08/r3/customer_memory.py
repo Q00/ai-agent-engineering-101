@@ -190,6 +190,8 @@ def profile(journal, subject, category=None):
     lengths = [sum(e['task'] == t for e in turns) for t in paid_tasks]
     lengths = [n for n in lengths if n]
     return {'subject': subject, 'observed_visits': len(tasks), 'paid_visits': len(purchases),
+            'market_buyers':sorted({payers[t].partition('market-round3:')[2] for t in tasks
+                if payers.get(t,'').startswith('market-round3:')})[:3],
             'purchased_categories': dict(sorted(categories.items(), key=lambda p: p[1], reverse=True)[:5]),
             'category_paid_visits': len(relevant),
             'median_paid_to_list_ratio': statistics.median(ratios) if ratios else None,

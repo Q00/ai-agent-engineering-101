@@ -14,10 +14,17 @@ def _benchmark(journal):
     return values[len(values)//2] if values else .7
 
 
-def target_prices(unit,risk,journal):
+def target_prices(unit,risk,journal,customer_memory=None):
     L,C=unit['list_price'],unit['cost'];f=risk['failure_upper'];covered=risk['covered_lower']
     if not 0<=C<L or f>=1:return []
     targets={benchmark(journal),.8,.9}
+    memory=customer_memory or {}
+    if memory.get('identity_status') in ('verified_key','market_confirmed_payer'):
+        names=set(memory.get('customer_profile',{}).get('market_buyers',[]))
+        for row in journal.snapshot('board.json',{}).get('buyers',[]):
+            s=row.get('saved')
+            if row.get('name') in names and type(s) in (int,float) and 0<=s<1:
+                targets.update((s,min(.99,s+.02)))
     return [math.floor(L-(t+f-covered)/(1-f)*(L-C)) for t in targets if 0<=(t+f-covered)/(1-f)<=1]
 
 

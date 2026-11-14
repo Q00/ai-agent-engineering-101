@@ -66,7 +66,7 @@ def target_stock(rate, paid, config, public_qualified=False, public_limit=6,cove
     return min(maximum,target if paid>=3 else min(max(1,min(20,public_limit)) if supported else 2,target))
 
 
-def resale_terms(product,public,journal,config,now):
+def resale_terms(product,public,journal,config,now,quantile=None):
     """Match grade and warranty instead of taxing every goods sale as insured."""
     base=min(product['list_price'],public.get('median',.85*product['list_price']))
     if product.get('kind')!='goods':
@@ -89,32 +89,48 @@ def resale_terms(product,public,journal,config,now):
                 allowed=tuple(h for h in (6,24,72) if h>=minimum)
             if term.get('grade')!=grade or term.get('n',0)<3 or term.get('warranty_hours') not in allowed:continue
             warranty=term['warranty_hours'];price=min(product['list_price'],term['median'])
+            segment=1
+            if quantile is not None:
+                frontier=next((f for f in term.get('price_frontier',[]) if f['quantile']==quantile),None)
+                if not frontier:continue
+                price=min(product['list_price'],frontier['price'])
+                segment=min(1,frontier['n_ge']/term['n'])
             if config.get('shop_championship_enabled'):
                 from .risk import shop_refund_risk
                 from .decision_view import fact
-                refund=fact(journal,('stock-seller-risk',grade,warranty),lambda:shop_refund_risk(journal,grade,warranty,config,now))['refund_upper']
+                risk=fact(journal,('stock-seller-risk',grade,warranty),lambda:shop_refund_risk(journal,grade,warranty,config,now))
+                from .reversal import mean_refund
+                refund=mean_refund(risk,journal,config,now)
             else:
                 refund=goods_risk(journal,grade,warranty,config,now)['failure_upper'] if warranty else 0
             # This is an opportunity-cost scenario, not a market fee.
             liquidity=price*(warranty/6)*config.get('shop_warranty_liquidity_penalty',.02)
             choices.append({'grade':grade,'weight':weight,'price':price,'refund_stress':refund,
+                'refund_upper':risk['refund_upper'] if config.get('shop_championship_enabled') else refund,
+                'observed_price_segment_fraction':segment,
                 'warranty_hours':warranty,'observations':term['n'],
-                'selection_value':price*(1-refund)-liquidity})
+                'selection_value':segment*(price*(1-refund)-liquidity)})
         if not choices and config.get('shop_reputation_v24_enabled'):
             # A new insured contract cannot borrow an old uninsured margin.
             from .risk import shop_refund_risk
             hours=config.get('shop_new_goods_warranty_hours',6)
             from .decision_view import fact
-            risk=fact(journal,('stock-seller-risk',grade,hours),lambda:shop_refund_risk(journal,grade,hours,config,now))['refund_upper']
-            choices=[{'grade':grade,'weight':weight,'price':base,'refund_stress':risk,
-                'warranty_hours':hours,'observations':0,'selection_value':base*(1-risk),
+            risk=fact(journal,('stock-seller-risk',grade,hours),lambda:shop_refund_risk(journal,grade,hours,config,now))
+            from .reversal import mean_refund
+            expected=mean_refund(risk,journal,config,now)
+            choices=[{'grade':grade,'weight':weight,'price':base,'refund_stress':expected,'refund_upper':risk['refund_upper'],
+                'warranty_hours':hours,'observations':0,'selection_value':base*(1-expected),
                 'fallback':'mixed public price; actual insured seller-risk scenario'}]
         rows.append(max(choices,key=lambda r:r['selection_value']) if choices else
                     {'grade':grade,'weight':weight,'price':base,'refund_stress':.15,
                      'warranty_hours':None,'observations':0,'fallback':'mixed-term conservative prior'})
     price=sum(r['weight']*r['price'] for r in rows)
     refund=sum(r['weight']*r['price']*r['refund_stress'] for r in rows)/max(1,price)
-    return {'price':price,'refund_stress':refund,'terms':rows}
+    upper=sum(r['weight']*r['price']*r.get('refund_upper',r['refund_stress']) for r in rows)/max(1,price)
+    segment=sum(r['weight']*r.get('observed_price_segment_fraction',1) for r in rows)
+    return {'price':price,'refund_stress':refund,'refund_upper':upper,'terms':rows,
+        'observed_price_segment_fraction':segment,'quantile':quantile,
+        'segment_is_realized_price_tail_not_counterfactual_elasticity':True}
 
 
 def marginal(candidate,quantity,held=0):

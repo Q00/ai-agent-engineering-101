@@ -311,6 +311,9 @@ def execute(order, journal, chooser, peer_factory, cfg, strategy, registry, rank
                                            'buyer_execution':True,'operation':'price',
                                            "product": product, "strategy": strategy}, deadline=deadline)
                 if move['id']=='continue_search':
+                    if cfg.get('reversal_v28_enabled'):
+                        from r3.reversal import record_skip
+                        record_skip(journal,order,c,assessment,ask,task.get('id'))
                     journal.add('buyer_objective_skip',{'order':order['order'],'shop':c['shop'],
                         'sku':c['sku'],'stage':'price'},role='buyer')
                     if cfg.get('service_contract_v26_enabled'):

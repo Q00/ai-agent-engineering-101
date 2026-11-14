@@ -101,7 +101,9 @@ def shop_candidates(unit, inv, catalog, journal, config, *, offer=None, previous
                 if unit.get('kind') == 'goods' else 0)
     if config.get('shop_championship_enabled'):
         from .risk import shop_refund_risk
-        stress_refund=shop_refund_risk(journal,unit.get('grade'),warranty,config,now)['refund_upper']
+        refund_model=shop_refund_risk(journal,unit.get('grade'),warranty,config,now)
+        from .reversal import mean_refund
+        stress_refund=mean_refund(refund_model,journal,config,now)
     else:
         stress_refund = goods_risk(journal, unit.get('grade'), warranty, config, now)['failure_upper'] if warranty else 0
     matching=next((r for r in public.get('term_prices',[]) if r['grade']==grade(unit,catalog,now)
@@ -113,14 +115,25 @@ def shop_candidates(unit, inv, catalog, journal, config, *, offer=None, previous
     recovery_floor = (max(1, int(cost * max(.05, left/6)*.9)) if liquidation else
                       max(1, math.ceil(cost*(1+config.get('shop_margin_fraction', .02))/max(.01,1-stress_refund))))
     if unit.get('kind') == 'goods' and age > config.get('goods_clearance_hours', 96):
-        recovery_floor = max(1, math.ceil(cost*.98/max(.01,1-stress_refund)))
+        from .finance import reserve_days
+        recover=.98
+        if config.get('reversal_v28_enabled') and config.get('market_end_at'):
+            recover=1-min(.02,.01*reserve_days(config,now))
+        recovery_floor = max(1, math.ceil(cost*recover/max(.01,1-stress_refund)))
     ceiling = previous_ask or int(1.05 * L)
     prices = {max(recovery_floor, int(reference * f)) for f in (.9, 1, 1.1)}
+    if config.get('reversal_v28_enabled') and matching:
+        prices.update(int(f['price']) for f in matching.get('price_frontier',[])
+            if recovery_floor<=f['price']<=ceiling)
     saved_risk=None
     if config.get('book_growth_v23_enabled') and journal.get('market_rules',{}).get('buyer_saved_formula')=='margin_share_v36':
         from .shop_offer import target_prices
         saved_risk=goods_risk(journal,unit.get('grade'),warranty,config,now) if unit.get('kind')=='goods' else {'failure_upper':0,'covered_lower':0}
-        prices.update(p for p in target_prices(unit,saved_risk,journal) if recovery_floor<=p<=ceiling)
+        if unit.get('kind')=='goods':
+            from .reversal import buyer_failure
+            f,c=buyer_failure(saved_risk,warranty,journal,config,now)
+            saved_risk=dict(saved_risk,bound_failure_upper=saved_risk['failure_upper'],failure_upper=f,covered_lower=c)
+        prices.update(p for p in target_prices(unit,saved_risk,journal,customer_memory=customer_memory if config.get('reversal_v28_enabled') else None) if recovery_floor<=p<=ceiling)
     long_contract=None;rating=None
     if config.get('system_framework_enabled'):
         from .long_memory import contract_summary,rating_summary
@@ -167,6 +180,7 @@ def shop_candidates(unit, inv, catalog, journal, config, *, offer=None, previous
         result.append({"id": "quote:" + str(p), "action": "counter", "price": p,
                        "warranty_hours": warranty, "score": sale_delta(p, cost, completion['completion'], stress_refund)['book'],
                        "evidence": dict(stats, quote_completion=completion, customer_memory=memory_evidence,
+                                        seller_refund_model=refund_model if config.get('shop_championship_enabled') else None,
                                         long_contract_memory=long_contract,rating_shadow=rating,buyer_saved_contract=saved_evidence),
                        'expected_delta': sale_delta(p, cost, completion['completion'], stress_refund),
                        "recovery_floor": recovery_floor,
@@ -291,9 +305,11 @@ def buyer_candidates(order, shops, catalog, journal, config=None):
                 from .buyer_execution import route_adjust
                 route_adjust(result[-1],order,journal,config,execution_context)
                 result[-1]['checkout_buffer_seconds']=config.get('checkout_buffer_seconds',30)
-    result=sorted(result, key=lambda x:x['score']/max(1,x.get('execution_seconds',1)),reverse=True)
+    from .reversal import route_key
+    result=sorted(result,key=lambda x:route_key(x,journal,config or {}),reverse=True)
     from .contracts import prepare
-    return prepare(result,order,journal,config or {})
+    from .reversal import prune_routes
+    return prepare(prune_routes(result,order,journal,config or {}),order,journal,config or {})
 
 
 def supply_open(inv, now=None):
@@ -496,6 +512,21 @@ def restock_candidates(inv, catalog, demand, journal, config, now=None):
             from .shop_growth import resale_terms
             terms=resale_terms(p,observed,journal,config,now)
             price,refund_stress=terms['price'],terms['refund_stress']
+            if config.get('reversal_v28_enabled') and p.get('kind')=='goods' and observed.get('external_samples',0)>=20:
+                # A historical high-price segment is a smaller observed market,
+                # never the same traffic at an arbitrarily raised asking price.
+                alternatives=[(terms,rate)]
+                for quantile in (.75,.9):
+                    option=resale_terms(p,observed,journal,config,now,quantile=quantile)
+                    alternatives.append((option,rate*option['observed_price_segment_fraction']))
+                def option_value(row):
+                    t,r=row;prob=1-math.exp(-max(0,r)*hours)
+                    storage=cost_ratio*p['list_price']*.01*min(hours,max(1/3,1/max(.01,r)))/24
+                    return prob*(t['price']*(1-t['refund_stress'])-cost_ratio*p['list_price'])-storage
+                terms,rate=max(alternatives,key=option_value)
+                price,refund_stress=terms['price'],terms['refund_stress']
+                sale_probability=min(.98,1-math.exp(-max(.01,rate)*hours))
+                holding_hours=min(hours,max(config.get('supply_cycle_seconds',1200)/3600,1/max(.01,rate)))
         expected_storage = cost_ratio * p['list_price'] * .01 * holding_hours / 24 if fee else 0
         # Small lots: only own observed repeat sales justify multiple new units.
         if probe_sku and stock_caps_enabled(config):
@@ -537,6 +568,7 @@ def restock_candidates(inv, catalog, demand, journal, config, now=None):
                                         'refund_stress': refund_stress, 'exploration': probe_sku,
                                         "adaptive_category_weight": weight}})
         candidates[-1]['evidence'].update(kind=p.get('kind'), list_price=p['list_price'],
+                                           refund_upper_scenario=terms.get('refund_upper',refund_stress),
                                            uncapped_inventory=not stock_caps_enabled(config),
                                            adaptive_coverage_hours=coverage if velocity else None,
                                            growth=growth, arrival_rate_scenario=rate,

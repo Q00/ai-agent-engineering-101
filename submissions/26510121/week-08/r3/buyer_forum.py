@@ -61,12 +61,23 @@ def schedule(journal,config,book,catalog,now):
         # causes a fabricated draft or blocks another valid information format.
         if effective_focus!='balanced':
             drafts.sort(key=lambda row:row[3]!=effective_focus)
+    audience=journal.get('buyer-insight-audience:v28',{}) if config.get('reversal_v28_enabled') else {}
+    ref_category={p.get('ledger'):catalog.get(p.get('sku'),{}).get('category') for p in journal.events('purchase',1000)} if config.get('reversal_v28_enabled') else {}
+    if config.get('reversal_v28_enabled'):
+        def category_of(row):return next((ref_category[r] for r in row[2] if ref_category.get(r)),None)
+        drafts.sort(key=lambda row:((row[3]!=effective_focus) if effective_focus!='balanced' else False,
+            audience.get(category_of(row),0)))
     for signature,text,refs,information_kind in drafts:
         if journal.get('buyer_insight_used:'+signature):continue
         journal.queue_post({'post':text,'refs':refs,'as':'buyer','priority':6,
                             'expires_at':now+interval,'information_kind':information_kind,
                             'policy_id':policy_id},'buyer-insight:'+str(bucket))
         journal.put('buyer_insight_used:'+signature,now)
+        if config.get('reversal_v28_enabled'):
+            category=category_of((signature,text,refs,information_kind))
+            if category:
+                audience[category]=now
+                journal.put('buyer-insight-audience:v28',dict(sorted(audience.items(),key=lambda p:-p[1])[:32]))
         if config.get('buyer_championship_enabled'):
             for p in recent:
                 if p['ledger'] in refs:journal.put('buyer_insight_sku:'+p['sku'],now)

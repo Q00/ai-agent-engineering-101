@@ -6,10 +6,17 @@ Peer/forum prose never enters these numerical summaries.
 import math
 import statistics
 import time
+from bisect import bisect_left
 from collections import Counter
 
 HORIZON = 21600
 _BOOK_CACHE = {}
+
+def price_frontier(prices):
+    if len(prices)<12:return []
+    ordered=sorted(prices);n=len(ordered)
+    return [{'quantile':q,'price':ordered[int((n-1)*q)],
+        'n_ge':n-bisect_left(ordered,ordered[int((n-1)*q)])} for q in (.75,.9)]
 
 
 def market_book(journal, catalog, now=None):
@@ -53,6 +60,7 @@ def market_book(journal, catalog, now=None):
                        'external_median': statistics.median(row['external_prices']) if row['external_prices'] else None,
                        'external_buyers': row['buyers'].most_common(5),
                        'term_prices': [{'grade': g, 'warranty_hours': w, 'n': len(ps), 'median': statistics.median(ps),
+                                        'price_frontier':price_frontier(ps),
                                         'refs':row['term_refs'].get((g,w),[])}
                                        for (g,w),ps in row['terms'].items()],
                        'seller_prices':[{'shop':s,'grade':g,'warranty_hours':w,'n':len(ps),'median':statistics.median(ps)}
@@ -167,7 +175,8 @@ def buyer_assessment(product, order, terms, journal, config, *, shop=None):
         if config.get('buyer_market_quality_enabled'):
             from .buyer_quality import estimate
             risk=estimate(journal,product,declared,required,shop,config)
-        stress, covered = risk['failure_upper'], risk['covered_lower']
+        from .reversal import buyer_failure
+        stress,covered=buyer_failure(risk,required,journal,config)
         if required < 6:
             cap = min(cap, int(product['list_price'] * (1 - stress) / max(.000001, 1 - covered)))
     from .buyer_scoring import state,saved_price_cap,cost_scenario,MARGIN

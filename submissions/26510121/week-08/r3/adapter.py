@@ -371,6 +371,8 @@ def install(kit, journal=None, config=None):
             # The kit passes agent/directory to its restock callback. Capture
             # them there; observations and preplans start immediately.
             cycle.start(None)
+        elif cycle is not None and cfg.get('reversal_v28_enabled') and not cycle.stop.is_set():
+            cycle.start(cycle.args)
         if not cfg.get('autonomy_v14_enabled'):
             return analytical_outbox(market, md)
         analytics_lane.submit(lambda: analytical_outbox(market, md))

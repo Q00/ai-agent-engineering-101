@@ -170,7 +170,8 @@ def compare_quotes(order, ranked, registry, journal, config, peer_factory, deadl
                                  'quote_sku_mismatch','invalid_money','task_required','peer_rpc_error'} else None}, role='buyer')
                 c['quote_failed'] = True
     ranked[:] = [c for c in ranked if not c.get('quote_failed')]
-    ranked.sort(key=lambda c: c['score'], reverse=True)
+    from .reversal import route_key
+    ranked.sort(key=lambda c:route_key(c,journal,config) if config.get('reversal_v28_enabled') else (c['score'],),reverse=True)
     return prepared, len(selected)
 
 
@@ -306,7 +307,8 @@ def race_quotes(order,ranked,registry,journal,config,peer_factory,deadline):
             if peer:threading.Thread(target=_close_quote,args=(peer,task),daemon=True).start()
     pending={c['id'] for c in selected if c['id'] not in prepared}
     ranked[:]=[c for c in ranked if not c.get('quote_failed') and c['id'] not in pending]
-    ranked.sort(key=lambda c:c['score']/max(1,c.get('execution_seconds',1)),reverse=True)
+    from .reversal import route_key
+    ranked.sort(key=lambda c:route_key(c,journal,config),reverse=True)
     journal.add('buyer_quote_race',{'order':order['order'],'contacted':len(selected),'received':received,
         'strong_offer':strong,'pending_discarded':len(pending)},role='buyer')
     return prepared,len(selected)

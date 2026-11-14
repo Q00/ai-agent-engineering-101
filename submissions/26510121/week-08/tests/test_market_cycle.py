@@ -13,7 +13,7 @@ from r3.cycle import claim_supply, finish_supply, MarketCycle
 def fixture(tmp_path):
     now=time.time(); j=Journal(tmp_path); cfg=policy()
     cfg=dict(cfg,market_cycle_enabled=True,research_enabled=True,daily_api_budget_usd=5,shop_adaptive_demand_enabled=False,
-        inventory_portfolio_v27_enabled=False)  # Preserve this fixture's v26 regression baseline.
+        inventory_portfolio_v27_enabled=False,reversal_v28_enabled=False,market_end_at=None)  # Preserve v26 fixture semantics.
     j.put('market_rules',{'sha256':'official','compatible':True,'buyer_compatible':True})
     j.put('public_feed_caught_up_at',now);j.put('public_ledger_seq',100)
     j.put('market_control',{'at':now,'pause_restock':False,'status':'observe_and_trade'})

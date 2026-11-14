@@ -137,7 +137,8 @@ def test_economy_expands_supported_depth_without_changing_the_baseline_definitio
 
 
 def test_cost_routing_and_buyer_policy_remain_unchanged():
-    cfg=policy();assert cfg['inventory_portfolio_v27_enabled'] and cfg['buyer_strategy_revision']=='buyer-v26-exact-contract-continuation'
+    cfg=policy();expected='buyer-v28-all-progress-per-second' if cfg.get('reversal_v28_enabled') else 'buyer-v26-exact-contract-continuation'
+    assert cfg['inventory_portfolio_v27_enabled'] and cfg['buyer_strategy_revision']==expected
     assert cfg['daily_api_budget_usd'] is None and not cfg['shop_inventory_caps_enabled'] and not cfg['shop_internal_capital_caps_enabled']
     assert cfg['background_llm_roles']['market_research_analyst']['model']=='gpt-6-luna'
     assert cfg['background_llm_roles']['market_research_critic']['model']=='gpt-6.1-terra'

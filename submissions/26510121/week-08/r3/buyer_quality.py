@@ -78,7 +78,12 @@ def estimate(journal,product,grade,warranty,shop,config,now=None):
     if seller.get('n',0)>=80:upper=max(upper,min(1,wilson(seller['broken'],seller['n'])+.02))
     if own['mature_samples']>=20:upper=max(upper,own['failure_upper'])
     covered=upper if warranty>=6 else (wilson(row['within3'],n,False) if warranty>=3 else 0)
-    return {'failure_upper':upper,'covered_lower':min(upper,covered),'grade':grade,
+    mean=(k+1)/(n+2)
+    if own['mature_samples']>=40 and own.get('failure_mean') is not None:mean=max(mean,own['failure_mean'])
+    return {'failure_upper':upper,'failure_mean':min(upper,mean),
+            'mean_validated':own.get('mean_validated',False),
+            'mean_validation':own.get('mean_validation',{}),
+            'covered_lower':min(upper,covered),'grade':grade,
             'mature_samples':n,'observed_broken':k,'cohort':key,'shift_buffer':buffer,
             'own_mature_samples':own['mature_samples'],'source':public['source'],
             'own_risk_crosscheck':own['failure_upper'] if own['mature_samples']>=20 else None,

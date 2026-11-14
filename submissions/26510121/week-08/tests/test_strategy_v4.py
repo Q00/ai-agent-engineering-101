@@ -35,7 +35,8 @@ def test_matured_grade_risk_excludes_ambiguous_and_immature_purchases(tmp_path):
     j.add('outcome', {'order': 'ambiguous', 'matured': True})
     j.add('ambiguous_break', {'orders': ['ambiguous']})
     row = quality_book(j, now)['A']
-    assert row == {'n': 100, 'broken': 2, 'within3': 0}
+    assert {k:row[k] for k in ('n','broken','within3')} == {'n': 100, 'broken': 2, 'within3': 0}
+    assert not row.get('mean_validation',{}).get('validated')  # Same-time purchases cannot create a temporal holdout.
     assessment = goods_risk(j, 'A', 6, policy(), now)
     assert .02 < assessment['failure_upper'] < .15
     assert assessment['covered_lower'] == assessment['failure_upper']

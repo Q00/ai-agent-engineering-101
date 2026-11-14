@@ -321,20 +321,23 @@ def update(journal, config, now=None, client=None, key=None):
     rules = journal.get('market_rules',{})
     if (not rules.get('compatible') or not rules.get('buyer_compatible') or
             not 0<=now-journal.get('public_feed_caught_up_at',0)<180):
+        if config.get('reversal_v28_enabled'):journal.put('research-ready-status',{'at':now,'status':'waiting_facts','reason':'rules_or_feed_not_current'})
         return None
     market=journal.get('cycle-market-analytics',{})
     if not 0<=now-market.get('at',0)<180:
+        if config.get('reversal_v28_enabled'):journal.put('research-ready-status',{'at':now,'status':'waiting_facts','reason':'market_analytics_not_current'})
         return None
     if config.get('agent_policy_selection_enabled'):
         from .feedback import update as refresh_operating
         operating=journal.get('feedback-last-policy',{})
         if operating.get('status')!='active' or operating.get('at',0)<market.get('at',0):
-            operating=refresh_operating(journal,config,now,force=True) or {}
+            operating=refresh_operating(journal,config,time.time() if config.get('reversal_v28_enabled') else now,force=True) or {}
         # Do not pay a model to reconsider a known stale diagnosis. The
         # observer must first publish a coherent, current evidence generation.
         if (operating.get('status')!='active' or operating.get('rules_hash')!=rules.get('sha256')
                 or operating.get('at',0)<market.get('at',0)
                 or not -2<=now-market.get('feed_at',journal.get('public_feed_caught_up_at',0))<180):
+            if config.get('reversal_v28_enabled'):journal.put('research-ready-status',{'at':now,'status':'waiting_facts','reason':'operating_policy_not_current'})
             return None
     previous=journal.get('research-last-attempt',{})
     capability_brief=None
@@ -353,6 +356,7 @@ def update(journal, config, now=None, client=None, key=None):
     if config.get('research_event_driven_enabled'):
         urgent=operating_state is not None and previous.get('operating_state')!=operating_state
     if now-previous.get('at',0)<(300 if urgent or preopen or changed_revision or previous.get('rules_hash')!=rules['sha256'] else interval):
+        if config.get('reversal_v28_enabled'):journal.put('research-ready-status',{'at':now,'status':'scheduled','last_attempt':previous.get('at')})
         return None
     journal.put('research-last-attempt',{'at':now,'window':window if preopen else previous.get('window'),'rules_hash':rules['sha256'],
                                       'execution_revision':config.get('execution_revision'),'operating_state':operating_state,
@@ -414,11 +418,19 @@ def update(journal, config, now=None, client=None, key=None):
             journal.add('objective_context_error',{'error_type':type(exc).__name__})
             # Existing guards and research remain available with an explicit gap.
             facts['objective_decisions']={'status':'unavailable','error_type':type(exc).__name__}
+    if config.get('reversal_v28_enabled'):
+        from .reversal import context as reversal_context,brief as reversal_brief
+        facts['terminal_contract_policy']=reversal_brief(reversal_context(journal,now))
+        evidence.append('kv:reversal-policy:v28')
     try:
+        if config.get('reversal_v28_enabled'):journal.put('research-ready-status',{'at':time.time(),'status':'running'})
         analyst=call(journal,config,facts,evidence,'analyst',client=client,key=key)
         critic=call(journal,config,facts,evidence,'critic',proposal=analyst,client=client,key=key)
-        return publish(journal,config,facts,analyst,critic,rules['sha256'],time.time())
+        result=publish(journal,config,facts,analyst,critic,rules['sha256'],time.time())
+        if config.get('reversal_v28_enabled'):journal.put('research-ready-status',{'at':time.time(),'status':'published' if result else 'not_published'})
+        return result
     except ModelError as exc:
+        if config.get('reversal_v28_enabled'):journal.put('research-ready-status',{'at':time.time(),'status':'deferred','reason':str(exc)})
         journal.add('market_research_deferred',{'at':now,'reason':str(exc)})
         return None
 
