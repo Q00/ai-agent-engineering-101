@@ -604,8 +604,14 @@ def main():
         save_guard(g)
         publish_status(g)
         print(f"[team] skipped: {why}")
-        last_ok = max((r["ts"] for r in g["runs"] if r.get("ok")), default=0)
-        if t0 - last_ok > 90 * 60 and t0 - g.get("alerted", 0) > 3 * 3600:   # 11-07: the teams were down for two
+        # 11-14: the guard keeps the last 200 runs, so after ~33 h of skips no ok run was left and the alert read
+        # "498,510 h" (since 1970) every 3 h. The last ok run is now remembered, and a pause HQ chose is not an alarm.
+        last_ok = max([r["ts"] for r in g["runs"] if r.get("ok")] + [g.get("last_ok_ts", 0)])
+        if last_ok > g.get("last_ok_ts", 0):
+            g["last_ok_ts"] = last_ok
+            save_guard(g)
+        if not g.get("paused") and last_ok and t0 - last_ok > 90 * 60 \
+                and t0 - g.get("alerted", 0) > 3 * 3600:                     # 11-07: the teams were down for two
             g["alerted"] = t0                                                # days and nobody was told
             save_guard(g)
             with (HERE / "private" / "hq_decisions.md").open("a", encoding="utf-8") as f:
