@@ -310,6 +310,17 @@ def quote(c, unit, code=None, me=None, now=None, stock_n=1, vip=False):
             tgt = int(gmk * 0.98)
             price, why = min(price, tgt), why + [f"food at market {tgt} ({left:.0%} shelf left; expiry loses the cost)"]
             floor = min(floor, int(gmk * 0.9))
+    ladder = t.get("big_cost_ladder")
+    if ladder and unit.get("kind") == "goods" and lp >= t.get("big_follow_list", 500000) and unit.get("supplied_at"):
+        # MST TF 11-14 (2nd): in 3 h 54 big sales, 85% of revenue, made a gross of 0 and an EV of -0.49M/h. A line's
+        # cost is a random draw (ours 0.99 x the market's); a unit drawn over its grade median took the dear path
+        # (median, big_loss_max 8% under cost; a new SKU with no sales of ours counts as overstock) and went under cost
+        # (sofa G0e4deffc: cost 1,552k, least 1,460k). A fresh big unit now keeps cost x (1 + m) by its hours in stock
+        # ([[24, 0.04], [48, 0.01]]: +4% to 24 h, +1% to 48 h); after the last step the rules above clear it as before
+        age = (now - unit["supplied_at"]) / 3600
+        m = next((m for h, m in sorted(ladder) if age < h), None)
+        if m is not None and int(cost * (1 + m)) + 1 > floor:
+            floor, why = int(cost * (1 + m)) + 1, why + [f"cost ladder {age:.0f} h: floor cost +{m:.0%}"]
     price = max(int(price), floor)
     least = max(int(price * (1 - t["haggle_room"])), floor)
     return {"price": price, "least": least, "arm": arm if isinstance(arm, str) else f"{arm:.2f}", "floor": floor,
