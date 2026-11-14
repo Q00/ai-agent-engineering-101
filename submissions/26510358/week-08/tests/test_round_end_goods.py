@@ -50,3 +50,21 @@ def test_ceo_tick_stops_everything_at_the_goods_stop(org, monkeypatch):  # noqa:
     monkeypatch.setattr(config, "hours_left_in_round", lambda now=None: config.GOODS_STOP_BUYING_HOURS - 1)
     out = client.call("hook", "ceo", "tick", {"state": str(config.MARKET_DIR)}, mem=m)
     assert out["buy"] == [] and "last hours" in out["wait"]
+
+
+import pytest  # noqa: E402
+from r3lib import pricing  # noqa: E402
+
+
+@pytest.mark.parametrize("hl", [71, 35, 11, 1])
+def test_goods_floor_never_below_cost_near_end(hl):
+    """2026-11-15 rehearsal of the last 72 h: book counts unsold goods at cost, so no goods floor goes under it
+    (a slow SKU held 48 h+ is the one exception, cost minus the storage left: tests/test_slow_floor.py)."""
+    u = {"kind": "goods", "cost": 500_000, "list_price": 800_000, "supplied_at": 0}
+    assert pricing.unit_floor(u, now=1, hours_left_round=hl) >= 500_000
+
+
+def test_food_floor_falls_toward_salvage_inside_clearance():
+    u = {"kind": "food", "cost": 10_000, "list_price": 20_000, "expires_at": 10 ** 9, "shelf_hours": 10 ** 6}
+    assert pricing.unit_floor(u, now=1, hours_left_round=config.CLEARANCE_HOURS + 1) >= 10_000
+    assert pricing.unit_floor(u, now=1, hours_left_round=config.CLEARANCE_HOURS / 2) < 10_000
