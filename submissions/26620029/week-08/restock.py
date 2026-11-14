@@ -107,6 +107,11 @@ FOOD_MAX_QTY = 8
 HIGH_A_MIN = 0.0
 SPREAD_BONUS = 2
 TIER_SKUS = 40
+# Claude (2026-11-15 01:44, hourly check, following the user's 11-14 19:15 "장부가 줄기 시작하면 A등급 판매가 기준을 0.66 정도로
+# 다시 걸어줘"): the book fell 4억 3,271만 -> 4억 2,986만 and refunds beat margin over 3 h (11.62M vs 10.27M; this hour 5.88M vs
+# 2.46M, three of them 1.2-2.4M high-tier units). Stock cost rose to 173.5M. The A gate comes back at 0.66 (most top 1M+ SKUs sit
+# at 0.65-0.70 of list, so about half still pass); SPREAD_BONUS 2 and TIER_SKUS 40 stay.
+HIGH_A_MIN = 0.66
 BREAK_MIN_SETTLES = 100     # breaking above BREAK_MAX is not bought. 12 h ledger: goods break 0.090 on average and mostly evenly
 #   (chi2 50 on 28 df); only G07ec17d5 (29 of 163, 0.178) and G03cab593 (19 of 117, 0.162) stood out. A broken unit under warranty
 #   refunds the whole price, and a mid-tier A nets about 0.07 of list, so a 0.15+ break rate loses money on every sale
