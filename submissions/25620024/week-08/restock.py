@@ -226,6 +226,7 @@ def food_expand(c, now, t, cat, stock):
     for sku, co in c.execute("select sku, cost from supply_units where ts > ? and cost > 0", (now - 86400,)):
         costs.setdefault(sku, []).append(co)
     out = []
+    ours_f = market_model.our_sales(c, hours=24)
     for sku, v in sold.items():
         r = cat.get(sku) or {}
         if r.get("kind") != "food" or (r.get("shelf_hours") or 0) < t.get("food_min_shelf", 48) \
@@ -242,6 +243,11 @@ def food_expand(c, now, t, cat, stock):
         cover_h = t.get("food_long_cover_h", 24) if long_ else t.get("food_cover_h", 8)
         target = max(2, min(t.get("food_long_max_target", 40) if long_ else t.get("food_max_target", 12),
                             math.ceil(rate * t.get("food_share", 0.05) * cover_h)))
+        # HQ 11-14 agenda #2 (2): the target follows the market's pace, ours can be far slower -- G1d5141af got 28
+        # in 24 h while our 23 held would take 144 h to sell. No more while our stock outlasts food_slow_cover_h.
+        mine = ours_f.get(sku, 0)
+        if stock.get(sku, 0) and (stock[sku] / mine if mine else float("inf")) > t.get("food_slow_cover_h", 1e9):
+            continue
         qty = target - stock.get(sku, 0)
         EXPAND[sku] = rate * 24 * t.get("food_share", 0.05) * (med - avg_cost) * (1 if long_ else 0.8)   # no expiry risk
         if qty > 0:

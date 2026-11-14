@@ -141,6 +141,35 @@ def SHOP_THETA_FRESH():
         return True
 
 
+_SLOWC = {"t": 0, "r": {}}
+
+
+def slow_profit_grades(units):
+    """HQ 11-14 agenda #2 (1): {sku: {grade: grade median}} for goods lines our pace cannot sell before the round
+    ends (cover > hours left). G75f11c19/G5cd4ffbc held 134 grade C units bought at 45-74k against C medians of
+    74-136k that were never quoted: the C penalty in find_unit put them behind 265 dear grade A units that sell at the
+    hold line (break-even). Refreshed every 10 min."""
+    if time.time() - _SLOWC["t"] > 600:
+        _SLOWC["t"] = time.time()
+        try:
+            c, t = market_model.db(), promo.theta()
+            left = max(0.0, (t.get("round_end", 0) - time.time()) / 3600)
+            rate = market_model.our_sales(c, hours=24)
+            held, grades = {}, {}
+            for u in units:
+                if u.get("kind") == "goods" and u.get("grade") not in (None, "expired"):
+                    held[u["sku"]] = held.get(u["sku"], 0) + 1
+                    grades.setdefault(u["sku"], set()).add(u["grade"])
+            r = {}
+            for sku, n in held.items():
+                if (n / rate[sku] if rate.get(sku) else float("inf")) > left:
+                    r[sku] = {g: market_model.market_price(c, sku, grade=g)[0] for g in grades[sku]}
+            _SLOWC["r"] = r
+        except Exception:
+            pass
+    return _SLOWC["r"]
+
+
 def find_unit(text, taken=(), need=None):
     """The in-stock unit for what the buyer asked (SKU first, then name or category) that expires first, among
     units that pass what the buyer said it needs. If the asked SKU has none that pass (or none at all), the clerk
@@ -192,7 +221,17 @@ def find_unit(text, taken=(), need=None):
         share = (exp - time.time()) / life if life > 0 else 1.0
         return (0, exp) if share >= keep else (1, -exp)
     wg = promo.theta().get("warranty_grades", ("A", "B"))   # review 11-12: a buyer who asks for a warranty gets a
-    gpen = lambda u: 1 if u.get("kind") == "goods" and u.get("grade") == "C" and (not c_ok or (need.get("warranty") and "C" not in wg)) else 0   # unit that carries one
+    gpen0 = lambda u: 1 if u.get("kind") == "goods" and u.get("grade") == "C" and (not c_ok or (need.get("warranty") and "C" not in wg)) else 0   # unit that carries one
+    # HQ 11-14 agenda #2 (1): on a slow line, a buyer who named no grade and no warranty is offered the unit that
+    # sells at a profit (cost + 3% <= 0.97 x its grade median) -- often grade C, stated as C, sold as is
+    slow = slow_profit_grades(units) if promo.theta().get("slow_c_first") and not need.get("grades") \
+        and not need.get("warranty") else {}
+
+    def gpen(u):
+        gm = (slow.get(u["sku"]) or {}).get(u.get("grade"))
+        if gm and (u.get("cost") or 0) * 1.03 <= gm * 0.97:
+            return 0
+        return gpen0(u)
     if m:
         # HQ 11-10 16:05 "니즈를 만들어": a named goods order got the oldest unit, often the dearest one we bought
         # (G75f11c19: missed quotes asked 76.8k on average, agreed ones 58.3k; the market settles it at ~80k). Goods
