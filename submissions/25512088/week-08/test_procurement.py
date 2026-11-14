@@ -3,7 +3,7 @@ import json
 import tempfile
 import unittest
 from network_reads import retry_read
-from seller_procurement import choose,allocation_plan,capital_available,supply_result,own_registration,own_board_registration,retry_join,join_current_registration,preserve_stale_pending,breadth_window_blocks,warranty_risk_reserve,observed_warranty_hazard,supply_interval_wait
+from seller_procurement import choose,allocation_plan,capital_available,supply_result,own_registration,own_board_registration,retry_join,join_current_registration,preserve_stale_pending,breadth_window_blocks,warranty_risk_reserve,observed_warranty_hazard,active_warranty_amounts,supply_interval_wait
 class PurchaseTests(unittest.TestCase):
  def test_successful_supply_cooldown_avoids_predictable_rate_limit(self):
   self.assertAlmostEqual(supply_interval_wait(100,101,10.05),9.05)
@@ -54,6 +54,20 @@ class PurchaseTests(unittest.TestCase):
    self.assertEqual(observed_warranty_hazard(path,policy,now=1010),.15)
    write(900,1306,33)
    self.assertEqual(observed_warranty_hazard(path,policy,now=1010),.15)
+ def test_active_warranty_reconstructs_legacy_expansion_and_new_six_hours(self):
+  import sqlite3
+  db=sqlite3.connect(':memory:')
+  db.execute('create table sales(task text,sku text,settled real,refunded integer)')
+  db.execute('create table warranties(task text,amount integer,issued real)')
+  # The sixth old sale had five predecessors, so the old code granted 24 h.
+  for n in range(6):
+   db.execute('insert into sales values(?,?,?,0)',(f'old{n}','sku',100+n))
+   db.execute('insert into warranties values(?,?,?)',(f'old{n}',1000,100+n))
+  db.execute('insert into sales values(?,?,?,0)',('new','sku',1001))
+  db.execute('insert into warranties values(?,?,?)',('new',2000,1001))
+  policy={'fixed_warranty_hours_at':1000}
+  amounts=active_warranty_amounts(db,policy,now=100+10*3600)
+  self.assertEqual(amounts,[1000])
  def test_allocation_uses_sellthrough_and_small_diversified_lots(self):
   ranked=[dict(sku='a',expected_net=50000,score=3,upper_cost=100000,sales_1h=8,sales_6h=12,
                distinct_buyers_6h=4,own_stockouts_6h=2,own_inquiries_6h=1,estimated_sale_likelihood=.8),

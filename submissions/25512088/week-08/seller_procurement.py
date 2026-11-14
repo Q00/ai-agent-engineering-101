@@ -76,6 +76,37 @@ def observed_warranty_hazard(report_path, policy=None, now=None):
     floor=max(.01,min(prior,float(policy.get('warranty_hazard_floor',.08))))
     return min(prior,max(floor,upper*multiplier))
 
+def active_warranty_amounts(referrals, policy=None, now=None):
+    """Reconstruct still-live legacy warranties plus the new six-hour cohort.
+
+    Before ``fixed_warranty_hours_at`` the seller expanded warranty duration
+    from the count of earlier settled sales for the same SKU.  The duration was
+    not stored with the warranty row, so a six-hour lookback silently omitted
+    valid 24/48/72-hour liabilities after the expansion code was removed.
+    Replaying the same chronological thresholds restores those liabilities.
+    Official refunds are not reconciled into the local flag, so already-refunded
+    rows may remain reserved until expiry; that bias is deliberately safe.
+    """
+    policy=policy or settings();now=time.time() if now is None else now
+    fixed=float(policy.get('fixed_warranty_hours_at',0) or 0)
+    rows=referrals.execute('''
+        SELECT w.amount,w.issued,s.sku,s.task,s.settled
+        FROM warranties w JOIN sales s ON s.task=w.task
+        WHERE s.refunded=0
+        ORDER BY s.sku,COALESCE(s.settled,w.issued),s.task''').fetchall()
+    previous={};active=[]
+    for amount,issued,sku,task,settled in rows:
+        prior=previous.get(sku,0);previous[sku]=prior+1
+        if not isinstance(amount,(int,float)) or amount<=0 or not isinstance(issued,(int,float)):
+            continue
+        if fixed and issued>=fixed:hours=6
+        elif prior>=30:hours=72
+        elif prior>=15:hours=48
+        elif prior>=5:hours=24
+        else:hours=6
+        if issued+hours*3600>now:active.append(int(amount))
+    return active
+
 def reserve_cash(inv,exposure=0):
     return max(settings()['cash_floor'],inv.get('bankrupt_line',500000))+exposure
 
@@ -320,10 +351,7 @@ def main():
             state/'market-report.json',policy)
         with sqlite3.connect(state/'referrals.sqlite3') as referrals:
             if referrals.execute("SELECT 1 FROM sqlite_master WHERE name='warranties'").fetchone():
-                amounts=[row[0] for row in referrals.execute(
-                    'SELECT w.amount FROM warranties w JOIN sales s ON s.task=w.task '
-                    'WHERE s.refunded=0 AND (s.settled IS NULL OR s.settled>?)',
-                    (time.time()-21600,))]
+                amounts=active_warranty_amounts(referrals,policy)
                 exposure=warranty_risk_reserve(amounts,reserve_policy)
         with sqlite3.connect(state/'referrals.sqlite3') as referrals:
             exposure+=referrals.execute('SELECT COALESCE(SUM(credit),0) FROM members').fetchone()[0]
