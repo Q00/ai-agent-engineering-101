@@ -44,6 +44,38 @@ def warranty_risk_reserve(amounts, policy=None):
     deviation=math.sqrt(hazard*(1-hazard)*sum(value*value for value in clean))
     return min(total,max(max(clean),math.ceil(expected+sigma*deviation)))
 
+def observed_warranty_hazard(report_path, policy=None, now=None):
+    """Use a fresh, mature official cohort without trusting a point estimate.
+
+    The board's cumulative ``claims``/``broken`` counters are authoritative.
+    Until the cohort is large and the local official snapshot is fresh, the
+    original conservative prior remains in force.  A 99.9% Wilson upper bound,
+    enlarged again by a safety multiplier and an absolute floor, prevents a
+    short lucky run from releasing warranty capital too aggressively.
+    """
+    policy=policy or settings();now=time.time() if now is None else now
+    prior=max(.01,min(1.0,float(policy.get('warranty_reserve_hazard',.15))))
+    try:report=read_json(Path(report_path),{})
+    except (OSError,ValueError,TypeError):return prior
+    observed_at=report.get('at') if isinstance(report,dict) else None
+    max_age=max(1.0,float(policy.get('warranty_hazard_max_age_seconds',90)))
+    if not isinstance(observed_at,(int,float)) or now-observed_at<0 or now-observed_at>max_age:
+        return prior
+    shops=((report.get('board') or {}).get('shops') or [])
+    own=next((row for row in shops if str(row.get('name'))=='25512088'),None)
+    if not isinstance(own,dict):return prior
+    claims,broken=own.get('claims'),own.get('broken')
+    minimum=max(1,int(policy.get('warranty_hazard_min_claims',200)))
+    if (not isinstance(claims,(int,float)) or isinstance(claims,bool) or
+            not isinstance(broken,(int,float)) or isinstance(broken,bool) or
+            claims<minimum or broken<0 or broken>claims):return prior
+    z=max(0.0,float(policy.get('warranty_hazard_wilson_z',3.29)))
+    n=float(claims);p=float(broken)/n;z2=z*z
+    upper=(p+z2/(2*n)+z*math.sqrt(p*(1-p)/n+z2/(4*n*n)))/(1+z2/n)
+    multiplier=max(1.0,float(policy.get('warranty_hazard_safety_multiplier',1.5)))
+    floor=max(.01,min(prior,float(policy.get('warranty_hazard_floor',.08))))
+    return min(prior,max(floor,upper*multiplier))
+
 def reserve_cash(inv,exposure=0):
     return max(settings()['cash_floor'],inv.get('bankrupt_line',500000))+exposure
 
@@ -265,13 +297,16 @@ def main():
         inv=retry_read(get_inventory, attempts=None, report=log)
         if inv.get('round')!=3:log(event='wrong_round');break
         exposure=0
+        reserve_policy=dict(policy)
+        reserve_policy['warranty_reserve_hazard']=observed_warranty_hazard(
+            state/'market-report.json',policy)
         with sqlite3.connect(state/'referrals.sqlite3') as referrals:
             if referrals.execute("SELECT 1 FROM sqlite_master WHERE name='warranties'").fetchone():
                 amounts=[row[0] for row in referrals.execute(
                     'SELECT w.amount FROM warranties w JOIN sales s ON s.task=w.task '
                     'WHERE s.refunded=0 AND (s.settled IS NULL OR s.settled>?)',
                     (time.time()-21600,))]
-                exposure=warranty_risk_reserve(amounts,policy)
+                exposure=warranty_risk_reserve(amounts,reserve_policy)
         with sqlite3.connect(state/'referrals.sqlite3') as referrals:
             exposure+=referrals.execute('SELECT COALESCE(SUM(credit),0) FROM members').fetchone()[0]
             exposure+=referrals.execute('SELECT COALESCE(SUM(reward),0) FROM sales WHERE awarded=0 AND refunded=0').fetchone()[0]

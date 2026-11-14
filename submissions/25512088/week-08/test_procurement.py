@@ -1,7 +1,9 @@
 import math
+import json
+import tempfile
 import unittest
 from network_reads import retry_read
-from seller_procurement import choose,allocation_plan,capital_available,supply_result,own_registration,own_board_registration,retry_join,join_current_registration,preserve_stale_pending,breadth_window_blocks,warranty_risk_reserve,supply_interval_wait
+from seller_procurement import choose,allocation_plan,capital_available,supply_result,own_registration,own_board_registration,retry_join,join_current_registration,preserve_stale_pending,breadth_window_blocks,warranty_risk_reserve,observed_warranty_hazard,supply_interval_wait
 class PurchaseTests(unittest.TestCase):
  def test_successful_supply_cooldown_avoids_predictable_rate_limit(self):
   self.assertAlmostEqual(supply_interval_wait(100,101,10.05),9.05)
@@ -37,6 +39,21 @@ class PurchaseTests(unittest.TestCase):
   expected=.15*sum(amounts)
   deviation=(.15*.85*sum(value*value for value in amounts))**.5
   self.assertEqual(reserve,math.ceil(expected+4*deviation))
+ def test_warranty_hazard_uses_only_fresh_mature_official_cohort(self):
+  policy={'warranty_reserve_hazard':.15,'warranty_hazard_min_claims':200,
+          'warranty_hazard_max_age_seconds':90,'warranty_hazard_wilson_z':3.29,
+          'warranty_hazard_safety_multiplier':1.5,'warranty_hazard_floor':.08}
+  with tempfile.TemporaryDirectory() as root:
+   path=root+'/report.json'
+   def write(at,claims,broken):
+    with open(path,'w') as f:json.dump({'at':at,'board':{'shops':[
+      {'name':'25512088','claims':claims,'broken':broken}]}},f)
+   write(1000,1306,33)
+   self.assertEqual(observed_warranty_hazard(path,policy,now=1010),.08)
+   write(1000,199,0)
+   self.assertEqual(observed_warranty_hazard(path,policy,now=1010),.15)
+   write(900,1306,33)
+   self.assertEqual(observed_warranty_hazard(path,policy,now=1010),.15)
  def test_allocation_uses_sellthrough_and_small_diversified_lots(self):
   ranked=[dict(sku='a',expected_net=50000,score=3,upper_cost=100000,sales_1h=8,sales_6h=12,
                distinct_buyers_6h=4,own_stockouts_6h=2,own_inquiries_6h=1,estimated_sale_likelihood=.8),
