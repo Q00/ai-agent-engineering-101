@@ -72,7 +72,7 @@ def quote_fields(task):
 GRADE_PRICE_CAP = {'A':69, 'B':60, 'C':48}
 GRADE_COST_MIDPOINT = {'A':.65, 'B':.50, 'C':.35}
 SAVED_TARGET = .80
-SAVED_STRETCH_TARGET = .90
+SAVED_STRETCH_TARGET = .95
 EARLY_QUOTE_TARGET = 11
 
 
@@ -403,7 +403,8 @@ class Buyer:
                 'eligible_pairs':len(picks),'eligible_shops':len({s['url'] for s,_ in picks}),
                 'eligible_skus':sorted(offered_skus),'quoted_pairs':len(self.sessions),
                 'parallel_limit':12,'early_quote_target':EARLY_QUOTE_TARGET,'deadline_seconds':85,
-                'saved_target':SAVED_TARGET,'saved_portfolio':self.portfolio,
+                'saved_target':SAVED_TARGET,'saved_stretch_target':SAVED_STRETCH_TARGET,
+                'saved_portfolio':self.portfolio,
                 'breakage_prior':BREAKAGE_PRIORS['food' if self.o.get('kind')=='food' else 'goods'],
                 'ranked_quotes':[{'shop':s['shop']['name'],'sku':s['sku'],'ask':s['ask'],'cap':s['cap'],
                   'deal_estimate':s['deal_estimate'],**s['expected']} for s in quotes]})

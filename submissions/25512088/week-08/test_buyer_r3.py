@@ -49,9 +49,9 @@ class BuyerTests(unittest.TestCase):
         self.assertEqual(limit(self.o,self.cat['SKU1'],'A'),6900)
         self.assertEqual(limit(self.o,self.cat['SKU1'],'C'),4800)
         self.assertEqual(limit(self.o,dict(list_price=2000),'A'),1380)
-        self.assertEqual(stretch_limit(self.o,self.cat['SKU1'],'A'),6850)
-        self.assertEqual(stretch_limit(self.o,self.cat['SKU1'],'B'),5500)
-        self.assertEqual(stretch_limit(self.o,self.cat['SKU1'],'C'),4149)
+        self.assertEqual(stretch_limit(self.o,self.cat['SKU1'],'A'),6675)
+        self.assertEqual(stretch_limit(self.o,self.cat['SKU1'],'B'),5250)
+        self.assertEqual(stretch_limit(self.o,self.cat['SKU1'],'C'),3825)
 
     def test_quote_comparison_target_matches_observed_conversion_step(self):
         self.assertEqual(EARLY_QUOTE_TARGET,11)
@@ -269,7 +269,7 @@ class BuyerTests(unittest.TestCase):
         self.m.begin(self.o)
         with httpx.Client(transport=httpx.MockTransport(handler)) as c, patch('buyer_r3.time.sleep'):
             out=Buyer(self.o,self.m,c,self.cat).run([self.shop])
-        self.assertEqual(amounts,[6850,6900])
+        self.assertEqual(amounts,[6675,6900])
         self.assertTrue(all(a<=6900 for a in amounts))
         self.assertIsNone(out['receipt'])
 
