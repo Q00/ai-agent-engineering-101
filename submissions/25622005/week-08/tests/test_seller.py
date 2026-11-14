@@ -261,6 +261,54 @@ class SellerA2A(unittest.TestCase):
         (old, _, _), = self.talk((ask, "b"))
         self.assertIn("no warranty", self.said(old))
 
+    def cap(self, won):
+        skill = self.home / "strategy" / "SKILL.md"
+        skill.write_text(skill.read_text(encoding="utf-8").replace("warranty_cap_6h: 500000", f"warranty_cap_6h: {won}"),
+                         encoding="utf-8")
+        os.utime(skill, ns=(time.time_ns(), time.time_ns() + 10**9))
+
+    def test_a_unit_counts_once_for_the_cap(self):
+        self.cap(250000)
+        self.write_inventory([self.goods("u-1"), self.goods("u-2")])
+        ask = "I want to buy Curtain (G000f6cda) with a 6 h warranty"
+        for key in ("a", "b"):                                        # u-1 signed twice; the first buyer never paid
+            steps = self.talk((ask, key), ("I accept", key))
+            self.assertEqual(self.receipt(steps[1][0])["unit"], "u-1")
+            self.now += 181
+        self.write_inventory([self.goods("u-2")])                     # u-1 paid once: 100,000 + 100,000 <= 250,000
+        (third, _, _), = self.talk((ask, "c"))
+        self.assertIn("warranty 6 h included", self.said(third))
+
+    def test_a_warranty_lost_to_a_plain_receipt_does_not_fill_the_cap(self):
+        self.cap(150000)
+        self.write_inventory([self.goods("u-1"), self.goods("u-2")])
+        steps = self.talk(("I want to buy Curtain (G000f6cda) with a 6 h warranty", "a"), ("I accept", "a"))
+        self.assertEqual(int(self.receipt(steps[1][0])["warranty_hours"]), 6)
+        self.now += 181
+        steps = self.talk(("I want to buy Curtain (G000f6cda), no warranty", "b"), ("I accept", "b"))
+        self.assertEqual((self.receipt(steps[1][0])["unit"], self.receipt(steps[1][0]).get("warranty_hours")), ("u-1", None))
+        self.now += 181
+        self.write_inventory([self.goods("u-2")])                     # u-1 went to the plain receipt
+        (next_, _, _), = self.talk(("I want to buy Curtain (G000f6cda) with a 6 h warranty", "c"))
+        self.assertIn("warranty 6 h included", self.said(next_))
+
+    def test_restart_reads_the_whole_window_and_the_last_receipt(self):
+        self.cap(150000)
+        log = self.home / "logs" / "decisions" / "seller.jsonl"
+        log.parent.mkdir(parents=True, exist_ok=True)
+        row = lambda ago, **c: json.dumps({"kind": "sign", "ts": self.now - ago, "choice": dict(list_price=100000, **c)})
+        pad = "\n".join(json.dumps({"kind": "quote", "ts": self.now - 3000, "pad": "x" * 1000}) for _ in range(400))
+        self.write_inventory([self.goods("u-2")])
+        log.write_text("\n".join([row(5000, unit="u-1", warranty_hours=6), pad]) + "\n", encoding="utf-8")
+        self.app = seller.build(9301, self.md, self.key_path, clock=lambda: self.now)
+        (far, _, _), = self.talk(("I want to buy Curtain (G000f6cda) with a 6 h warranty", "a"))
+        self.assertIn("no warranty", self.said(far))                  # 400 KB back: still in the window, still counted
+        log.write_text("\n".join([row(5000, unit="u-1", warranty_hours=6), row(4000, unit="u-1", warranty_hours=0), pad])
+                       + "\n", encoding="utf-8")
+        self.app = seller.build(9301, self.md, self.key_path, clock=lambda: self.now)
+        (lost, _, _), = self.talk(("I want to buy Curtain (G000f6cda) with a 6 h warranty", "b"))
+        self.assertIn("warranty 6 h included", self.said(lost))       # u-1's last receipt was plain
+
     def test_overpriced_old_unit_does_not_block_the_sku(self):
         old = dict(self.goods("u-old", cost=98000), supplied_at=self.now - 30 * H)   # 98,000 x 1.08 > list
         self.write_inventory([old, self.goods("u-new", cost=60000)])

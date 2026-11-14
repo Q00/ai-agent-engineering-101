@@ -40,7 +40,7 @@ from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 
 import policy
 from memory import decisions
-from memory.store import HOME, LOGS, hook_log, read_json, tail_jsonl
+from memory.store import HOME, LOGS, hook_log, read_json
 from tools import llm_fallback, pricing
 
 NAME = "psyoung82"
@@ -247,6 +247,34 @@ def summary_ref(kind, key):
         return f"{kind}:{key}"
 
 
+WARRANTY_WINDOW_S = 6 * 3600                      # seller.warranty_cap_6h counts the warranted sales of these seconds
+SIGN_TAIL_BYTES = 32 * 2 ** 20                    # the seller log read at start: 16 MB held 8.6 h of it on 11-15
+
+
+def recent_signs(path, since, max_bytes=SIGN_TAIL_BYTES):
+    """The sign rows of the seller log at or after since, oldest first, from its last max_bytes. The rebuild of
+    the warranty counter needs every sign of the window (a later plain sign on a unit undoes an earlier
+    warranted one), and the 256 KB of memory.store.tail_jsonl held only minutes of it."""
+    try:
+        with open(path, "rb") as f:
+            f.seek(0, os.SEEK_END)
+            f.seek(max(0, f.tell() - max_bytes))
+            data = f.read()
+    except OSError:
+        return []
+    rows = []
+    for line in data.split(b"\n"):
+        if b'"sign"' not in line:
+            continue
+        try:
+            r = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(r, dict) and r.get("kind") == "sign" and isinstance(r.get("ts"), (int, float)) and r["ts"] >= since:
+            rows.append(r)
+    return rows
+
+
 def sign_receipt(receipt, key):
     body = {k: receipt[k] for k in RECEIPT_KEYS}
     data = json.dumps(body, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
@@ -260,13 +288,15 @@ class Shop(AgentExecutor):
         self.open = {}            # task -> deal
         self.promised = {}        # unit -> (task, until)
         self.warranted = []       # (ts, list_price, unit) of warranted receipts we signed
+        self.last_sign = {}       # unit -> ts of our latest receipt for it, warranted or not
         self.summary, self.summary_at = {}, 0.0
         self.catalog, self.catalog_mtime = {}, None
         self.err_ver = None
-        cutoff = clock() - 6 * 3600
-        for r in tail_jsonl(LOGS / "decisions" / "seller.jsonl", 2000):
+        for r in recent_signs(LOGS / "decisions" / "seller.jsonl", clock() - WARRANTY_WINDOW_S):
             c = r.get("choice") if isinstance(r.get("choice"), dict) else {}
-            if r.get("kind") == "sign" and c.get("warranty_hours") and (r.get("ts") or 0) >= cutoff:
+            if c.get("unit"):
+                self.last_sign[c["unit"]] = max(self.last_sign.get(c["unit"], r["ts"]), r["ts"])
+            if c.get("warranty_hours"):
                 self.warranted.append((r["ts"], c.get("list_price") or c.get("price") or 0, c.get("unit")))
 
     # files
@@ -295,15 +325,26 @@ class Shop(AgentExecutor):
             self.summary_at = now
         return self.summary
 
+    def _warranted_6h(self, now, held, ttl):
+        """The list prices of the warranted sales of the window, paid or still pending: a warranted receipt counts
+        when it is the unit's latest receipt (the buyer who pays is the last one signed: an earlier receipt on the
+        unit lost, warranted or not) and the unit left the inventory, or it is inside the promise TTL (ttl s).
+        Counting every warranted receipt of a unit that left (until 11-15) also counted the repeat receipts on
+        one unit and the ones whose unit went to a later plain receipt: 80.0M against the ledger's 54.5M of
+        warranted sales in the 6 h to 11-15 01:18, which this rule matched exactly. A row without a unit (older
+        logs) counts on its own."""
+        cut = now - WARRANTY_WINDOW_S
+        self.warranted = [w for w in self.warranted if w[0] >= cut]
+        self.last_sign = {u: t for u, t in self.last_sign.items() if t >= cut}
+        return sum(lp for ts, lp, u in self.warranted
+                   if (u is None or self.last_sign.get(u, ts) == ts) and (u not in held or now - ts < ttl))
+
     def _ctx(self, unit, now, inv, ttl):
-        """warranted_6h counts paid or still pending warranties: a signed unit that left the inventory was
-        paid; one still held after the promise TTL (ttl s) was not."""
         leaf = (unit.get("category") or "").split(">")[-1]
-        self.warranted = [w for w in self.warranted if w[0] >= now - 6 * 3600]
         held = {u["unit"] for u in inv.get("units") or [] if u.get("unit")}
         summary = self._summary(now)
         return {"uwh": category_uwh(summary, leaf), "category": leaf, "break_q": unit_break_q(summary, unit, leaf),
-                "warranted_6h": sum(w[1] for w in self.warranted if w[2] not in held or now - w[0] < ttl)}
+                "warranted_6h": self._warranted_6h(now, held, ttl)}
 
     def _prune(self, now):
         self.promised = {u: v for u, v in self.promised.items() if v[1] > now}
@@ -534,6 +575,7 @@ class Shop(AgentExecutor):
             "The signed receipt names the unit; the market certificate comes with the checkout.")]))
         self.open.pop(task_id, None)
         self.promised[u["unit"]] = (task_id, now + pol["seller"]["promise_ttl_s"])
+        self.last_sign[u["unit"]] = now
         if w:
             self.warranted.append((now, u.get("list_price") or 0, u["unit"]))
         self._decide("sign", ver, task_id, deal, t0, inputs=inputs, rules=deal["rules"],
