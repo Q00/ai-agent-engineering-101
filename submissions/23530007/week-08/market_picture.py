@@ -791,20 +791,20 @@ def _s(fits, h=6):
     return fits[h]["slope"] if fits.get(h) else None
 
 
-def _neighbour(name, value, ours, us_fits, n_fits, side, H, part, snap, runner_up):
+def _neighbour(name, value, ours, us_fits, n_fits, side, H, part, snap, runner_up, h=6):
     """One student next to us on a part: gap, slopes and the chance the order flips by the round end
     (normal on the 6 h fits: mu = gap - closing x H, sd = SE x H plus 2% of the gap for model error)."""
     gap = abs(ours - value)
     nb = {"name": name, "as": snap.get(name, {}).get("shop" if part in SHOP_PARTS else "buyer"),
           "value": _num(value), "gap": _num(gap), **_slopes(n_fits), "vs_runner_up": name == runner_up}
-    su, sn = _s(us_fits), _s(n_fits)
+    su, sn = _s(us_fits, h), _s(n_fits, h)
     nb["proj_end"] = _num(value + sn * H) if sn is not None else None
-    if su is None or sn is None:
+    if su is None or sn is None or not us_fits.get(h) or not n_fits.get(h):
         nb.update(dslope=None, mu=None, sd=None, p_flip=None, eta_h=None)
         return nb
     dslope = (su - sn) if side == "above" else (sn - su)          # > 0: the gap closes
     mu = gap - dslope * H
-    sd = math.sqrt(us_fits[6]["se"] ** 2 + n_fits[6]["se"] ** 2) * H + 0.02 * gap
+    sd = math.sqrt(us_fits[h]["se"] ** 2 + n_fits[h]["se"] ** 2) * H + 0.02 * gap
     p = _phi(-mu / sd) if sd > 0 else (1.0 if mu < 0 else 0.0)
     nb.update(dslope=_num(dslope), mu=_num(mu), sd=_num(sd), p_flip=round(p, 3),
               eta_h=round(gap / dslope, 1) if dslope > 0 else None)
@@ -848,6 +848,29 @@ def _part_view(part, snap, series, now, H, runner_up):
         if lst:
             n, v = pick(lst, key=lambda kv: kv[1])
             out[side] = _neighbour(n, v, ours, us_fits, _fits(series[n][part], now), side, H, part, snap, runner_up)
+            # 11-14 (user: 'do you act on the warnings?'): the shop agent read book as decided (P(flip) .002 against
+            # SungJinho, the student right behind) while inextro, 3rd, closed 2.5-3.6 M/h and projected to pass by
+            # the end on the 24 h fit. The neighbour on each side is now the student among the 6 nearest with the
+            # HIGHEST P(flip), and the adjacent one stays as '<side>_adjacent'
+            near = sorted(lst, key=lambda kv: (ours - kv[1]) if side == "below" else (kv[1] - ours))[:6]
+            best = out[side]
+            for n2, v2 in near[1:]:
+                try:
+                    f2 = _fits(series[n2][part], now)
+                    # a non-adjacent student counts on the MORE conservative of its 6 h and 12 h fits: seochanit's
+                    # revenue read +154 M/h on 6 h and -6 M/h on 12 h (a board jump), P(flip) .65 from a 6,490 M gap
+                    cs = [c_ for c_ in (_neighbour(n2, v2, ours, us_fits, f2, side, H, part, snap, runner_up, hh)
+                                        for hh in (6, 12)) if c_.get("p_flip") is not None]
+                    if len(cs) < 2:
+                        continue
+                    c = min(cs, key=lambda c_: c_["p_flip"])
+                except Exception:   # noqa: BLE001
+                    continue
+                if (c.get("p_flip") or 0) > (best.get("p_flip") or 0):
+                    best = c
+            if best is not out[side]:
+                out[f"{side}_adjacent"] = out[side]
+                out[side] = best
         else:
             out[side] = None
     if part == "saved":
