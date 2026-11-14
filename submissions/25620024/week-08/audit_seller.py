@@ -129,10 +129,20 @@ def checks(c, inv, now):
     if st.get("self_promo_off_until", 0) > now:
         add("yellow", "forum guard has stopped the buyer's posts about our shop (rating or dislikes)")
     # shop card and cash
+    # 11-14: the kit gives the shop a new port on every restart (56121 -> 42893); the fixed port raised a false red
+    port = None
+    for p in Path("/proc").glob("[0-9]*/cmdline"):
+        try:
+            argv = p.read_bytes().split(b"\0")
+        except OSError:
+            continue
+        if any(a.endswith(b"shop_r3.py") for a in argv) and b"--port" in argv:
+            port = argv[argv.index(b"--port") + 1].decode()
+            break
     try:
-        urllib.request.urlopen("http://127.0.0.1:56121/.well-known/agent-card.json", timeout=5)
+        urllib.request.urlopen(f"http://127.0.0.1:{port or 56121}/.well-known/agent-card.json", timeout=5)
     except Exception as e:
-        add("red", f"shop card not answering: {type(e).__name__}")
+        add("red", f"shop card not answering on port {port}: {type(e).__name__}")
     stock = sum(u["cost"] for u in inv.get("units", []))
     if (inv.get("balance") or 0) < 3 * 0.01 * stock:
         add("red", f"cash {inv.get('balance'):,} under 3 days of storage ({3 * 0.01 * stock:,.0f})")
