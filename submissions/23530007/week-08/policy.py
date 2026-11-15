@@ -135,6 +135,13 @@ def merged(cfg, role, regime):
             p["buy"] = v >= 0.5
         elif k in p:
             p[k] = v
+    # 11-15 (user: 'raise it slowly'): keep_cash_ramp {t0, from, to, per_h} moves keep_cash up gradually, so restock
+    # slows instead of stopping (60 M at once stopped it and our revenue fell to 10.7 M/h)
+    kr = p.get("keep_cash_ramp") if role == "shop" else None
+    if isinstance(kr, dict) and kr.get("t0"):
+        import time as _t
+        p["keep_cash"] = int(min(kr.get("to", p.get("keep_cash", 0)),
+                                 kr.get("from", 0) + kr.get("per_h", 0) * max(0.0, _t.time() - kr["t0"]) / 3600))
     return p
 
 
