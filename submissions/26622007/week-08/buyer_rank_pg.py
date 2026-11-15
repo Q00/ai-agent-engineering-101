@@ -22,7 +22,8 @@ No-fit requires the versioned A/B switch documented in rank-integrity.md; old no
 A and B share adaptive statistics, so A is not a fixed holdout and this is not a full-ON causal estimate.
 
 Switch: .market/buyer_rank_pg.json {"enabled": true}; missing, unreadable or anything else is off, and off is the
-current order exactly. BUYER_RANK_PG=0 in the environment is off too. Read at every order, so no restart either way.
+current order exactly. "gain_base": a number in (0, 1) ranks by P x (g - gain_base) where g is Patch 3.6's score
+(buyer_margin_cap on, a quote not priced as a short warranty); missing or anything else is P x g as before. BUYER_RANK_PG=0 in the environment is off too. Read at every order, so no restart either way.
 
 "ledger_cover": true in the switch (exactly true) reads the ledger back to the oldest paid seq of the order window
 (LEDGER_MAX_BYTES at most) instead of the fixed TAIL_BYTES tail. Every order and both arms of any study read the same
@@ -482,7 +483,10 @@ def state(md, order, env=None, now=None):
     sw = _switch(md, env)
     if sw is None:
         return None
+    gb = sw.get('gain_base')
     rk = dict(stats={}, per_time=sw.get('per_time') is True, nofit=False)
+    if _num(gb) and 0 < gb < 1:
+        rk['gain_base'] = gb
     active = _experiment(sw, now)
     if active:
         oid = order.get('order') if isinstance(order, dict) else None
@@ -609,15 +613,18 @@ def nofit_p(rk, shop, kind):
     return p if _num(p) and 0 <= p <= 1 else None
 
 
-def score(rk, shop, kind, ask, list_price, g_of, quote_seconds, penalty=0.0):
-    """P x (g - penalty) / T for one quote, or None when it cannot be scored (no P, no price). g_of(p): the share of list
-    a deal at p = price / list keeps in expectation (the caller's, with the break chance and any short warranty)."""
+def score(rk, shop, kind, ask, list_price, g_of, quote_seconds, penalty=0.0, base=None):
+    """P x (g - penalty - base) / T for one quote, or None when it cannot be scored (no P, no price). g_of(p): the share
+    of list a deal at p = price / list keeps in expectation (the caller's, with the break chance and any short warranty).
+    base (the switch's gain_base, the caller passes it only where g is Patch 3.6's score): a deal moves Saved by
+    (g - S) / (deals + 101), so P x g ranked a likely deal that lowers Saved over a less likely one that raises it;
+    base = S less what one more deal is worth in the deals percentile, in units of Saved (see the switch's why)."""
     if not (_num(ask) and _num(list_price) and list_price > 0):
         return None
     P, ratio, talk = cell(rk, shop, kind)
     if P is None:
         return None
-    g = g_of(ask * ratio / list_price) - penalty
+    g = g_of(ask * ratio / list_price) - penalty - (base or 0.0)
     if g <= 0:          # a deal that keeps nothing: ranked by g alone (P and T would flip it), under any that keeps some
         return g
     if talk is None or (rk or {}).get("per_time") is not True:

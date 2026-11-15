@@ -1741,6 +1741,31 @@ def short_cap(o, b, order, name, q, shop=None):
         return 0
 
 
+def close_limit(o, b, order, name, q, shop, budget, cfg, short=True):
+    """The most a talk with this quote can close at, as main works it out for the shop it keeps: value_limit and
+    saved_cap, a short warranty's cap (no take there), the margin cap that only lowers it, and with the margin cap take
+    on the take's top, min(cap, value_limit) over a limit the cap is above (buyer_margin_cap.take_top; buyer.talk
+    walk_take and buyer_accept_band close a final ask up to it). best_quote's fit, its talk band and the no-fit cap read
+    this, so a quote the talk would take is no longer ranked as one nothing can buy (11/15: 94.7% of goods orders were
+    no-fit by saved_cap). b is the SKU's chance (chance_of); the band of plan A is left out: never more than the cap.
+    short False leaves the short warranty's cap out (best_quote's reach, as before)."""
+    k = order.get("kind")
+    most = value_limit(o, budget, b or 0, cfg)
+    lim = min(most, saved_cap(o, b or 0))
+    sc = short_cap(o, b, order, name, q, shop)
+    mc = margin_limit(o, k, q, b)
+    if sc is not None:      # main: a short warranty expected has no take
+        return min(lim, *([sc] if short else []), *([mc["cap"]] if mc else []))
+    if not mc:
+        return lim
+    if mc["cap"] < lim:
+        return mc["cap"]
+    if (order.get("_saved_floor") or {}).get("band_off"):
+        return lim
+    take = buyer_margin_cap.take_top((MARGIN_CAP or {}).get("cfg"), mc["cap"], lim, most)
+    return take if take is not None else lim
+
+
 def quotes_enough(shops, got, budget, cfg, order=None):
     """QUOTE_ENOUGH asks in got from shops (start_quotes set their _offer), one within my limit: what ends the wait."""
     asks, fit = 0, False
@@ -1806,11 +1831,7 @@ def best_quote(chosen, others, order, catalog, budget, chance_of, cfg, wait=QUOT
     def fits(s):
         """The opening ask is within what I would pay that shop: it can close now, so it goes before any ask above it."""
         o = s["_offer"]
-        b = chance_of(o["sku"]) or 0
-        sc = short_cap(o, chance_of(o["sku"]), order, s["name"], got[s["name"]], s)
-        mc = margin_limit(o, order.get("kind"), got[s["name"]], chance_of(o["sku"]))
-        return got[s["name"]]["ask"] <= min(value_limit(o, budget, b, cfg), saved_cap(o, b), *([sc] if sc is not None else []),
-                                            *([mc["cap"]] if mc else []))
+        return got[s["name"]]["ask"] <= close_limit(o, chance_of(o["sku"]), order, s["name"], got[s["name"]], s, budget, cfg)
 
     def reach(s):
         """buyer_margin_cap on: the ask is within the talk band of what I would pay that shop, the cap included, so a
@@ -1818,9 +1839,7 @@ def best_quote(chosen, others, order, catalog, budget, chance_of, cfg, wait=QUOT
         if not MARGIN_CAP:
             return True
         o = s["_offer"]
-        b = chance_of(o["sku"]) or 0
-        mc = margin_limit(o, order.get("kind"), got[s["name"]], chance_of(o["sku"]))
-        lim = min(value_limit(o, budget, b, cfg), saved_cap(o, b), *([mc["cap"]] if mc else []))
+        lim = close_limit(o, chance_of(o["sku"]), order, s["name"], got[s["name"]], s, budget, cfg, short=False)
         return lim > 0 and got[s["name"]]["ask"] <= lim * (1 + TALK_OVER_SHARE)
     extra = order.get("kind") == "goods" and order.get("_goods_extra_quote_probe") == "B" and rounds == 1 and not late
     for r in range(rounds + int(extra)):
@@ -1914,11 +1933,8 @@ def best_quote(chosen, others, order, catalog, budget, chance_of, cfg, wait=QUOT
             # share kept at the limit; none in the band, or one it cannot score, keeps the order above (buyer_rank_pg)
             try:
                 def cap(s):
-                    o, b = s["_offer"], chance_of(s["_offer"]["sku"])
-                    sc = short_cap(o, b, order, s["name"], got[s["name"]], s)
-                    mc = margin_limit(o, order.get("kind"), got[s["name"]], b)
-                    return min(value_limit(o, budget, b or 0, cfg), saved_cap(o, b or 0), *([sc] if sc is not None else []),
-                               *([mc["cap"]] if mc else []))
+                    o = s["_offer"]
+                    return close_limit(o, chance_of(o["sku"]), order, s["name"], got[s["name"]], s, budget, cfg)
 
                 def keep_at(s, c):
                     o, b = s["_offer"], chance_of(s["_offer"]["sku"])
@@ -1957,9 +1973,12 @@ def best_quote(chosen, others, order, catalog, budget, chance_of, cfg, wait=QUOT
         elapsed = time.time() - STARTED
         rk["plain"] = best["name"]
         try:
+            # gain_base only where g is Patch 3.6's score (the margin cap on, not a short warranty's share of list)
+            base = lambda s: rk.get("gain_base") if MARGIN_CAP and buyer_short_warranty.hours_for(
+                order.get("_sw"), s["name"], got.get(s["name"])) is None else None
             pg = {s["name"]: buyer_rank_pg.score(rk, s["name"], order.get("kind"), got[s["name"]]["ask"],
                                                  s["_offer"]["list_price"], g_of(s), elapsed,
-                                                 rival_deny.penalty(s["name"], rival)) for _, _, s in scored}
+                                                 rival_deny.penalty(s["name"], rival), base(s)) for _, _, s in scored}
             if all(v is not None for v in pg.values()):
                 # ties (e.g. P 0 for all): the ask's share as before
                 best = max(scored, key=lambda x: (normal(x[2]), fits(x[2]), reach(x[2]), pg[x[2]["name"]],
