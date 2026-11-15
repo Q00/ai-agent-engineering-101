@@ -422,6 +422,8 @@ class PurchaseTests(unittest.TestCase):
               dominant_grade_profit_probability=.8)
   policy={'max_units_per_sku':3,'max_sku_capital_share':.10,
           'max_proven_sku_capital_share':.20,
+          'min_goods_a_profit_samples':3,
+          'min_goods_a_profit_probability':.60,
           'min_proven_scale_grade_samples':3,
           'min_proven_scale_grade_profit_probability':.70}
   cold=allocation_plan([dict(common,sku='cold',own_sales_total=0)],
@@ -435,9 +437,14 @@ class PurchaseTests(unittest.TestCase):
   marginal=dict(common,sku='marginal',own_sales_total=17,own_sales_1h=4,
                 own_gross_total=1853251,own_profitable_sales=16,
                 dominant_grade_samples=15,dominant_grade_profit_probability=.5313)
+  policy['high_value_lane_min_unit_cost']=500000
   limited=allocation_plan([marginal],{'units':[],'balance':10000000},10000000,
                           policy=policy)
-  self.assertEqual([(row['sku'],row['qty']) for row in limited],[('marginal',1)])
+  self.assertEqual(limited,[])
+  marginal['upper_cost']=400000
+  limited=allocation_plan([marginal],{'units':[],'balance':10000000},10000000,
+                          policy=policy)
+  self.assertEqual([(row['sku'],row['qty']) for row in limited],[('marginal',2)])
   self.assertTrue(limited[0]['evidence']['own_profit_proven'])
   self.assertFalse(limited[0]['evidence']['proven_scale_ready'])
  def test_active_unproven_good_blocks_another_cold_safe_trial(self):

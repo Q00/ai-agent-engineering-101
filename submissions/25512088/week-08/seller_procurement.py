@@ -383,8 +383,18 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
                 row.get('own_gross_total',0)>0 and
                 own_profitable/own_sales_total>=
                     policy.get('min_own_profitable_goods_share',.70))
-            if (row.get('dominant_grade_samples',0)<min_samples or
-                    row.get('dominant_grade_profit_probability',0)<min_probability) and not own_profit_proven:
+            weak_grade_economics=(
+                row.get('dominant_grade_samples',0)<min_samples or
+                row.get('dominant_grade_profit_probability',0)<min_probability)
+            # A few profitable local sales may rescue a cheap SKU whose grade
+            # prior is still noisy. They must not rescue a high-value lot: one
+            # unfavorable draw can immobilize over 500k and the current market
+            # may clear below its cost. Expensive goods therefore always pass
+            # the same minimum grade-economics gate before procurement.
+            high_value_grade_guard=(
+                row.get('upper_cost',0)>=
+                policy.get('high_value_lane_min_unit_cost',math.inf))
+            if weak_grade_economics and (high_value_grade_guard or not own_profit_proven):
                 continue
             cold_safe_trial=(cold_goods_frozen and not active_unproven_goods_present and
                 not holding.get(row['sku']) and
