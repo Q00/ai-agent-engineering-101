@@ -131,12 +131,23 @@ def build(cur, cat, now):
         if p:
             x.update(p25=_q(p, 0.25), p50=round(st.median(p), 4), p75=_q(p, 0.75))
         skus[sku] = x
+    # 11/16 04:xx: the paid share per kind and grade (goods A p25 0.65, B 0.57, C 0.48) - grade is drawn at supply and
+    # buyers pay by it; our floor (cost-based) sold 85% of our C goods under the market's C p25
+    by = {}
+    for ts, sku, shop, share, grade, *_ in cur["recent"]:
+        k = (cat.get(sku) or {}).get("kind")
+        if k and grade:
+            by.setdefault(f"{k}|{grade}", []).append(share)
+    grades = {}
+    for k, v in by.items():
+        v.sort()
+        grades[k] = {"n": len(v), "p25": _q(v, 0.25), "p50": round(st.median(v), 4), "p75": _q(v, 0.75)}
     shops = {}
     for shop, _ in cur["held"].values():
         shops[shop] = shops.get(shop, 0) + 1
     return {"ts": now, "window_h": WINDOW_S / 3600, "skus": skus,
             "holders": {s: h for s, h in holders.items()},
-            "shops": shops, "scarce_n": sum(1 for x in skus.values() if x["n6"] >= 6 and x["scarcity"] >= SCARCE)}
+            "shops": shops, "grades": grades, "scarce_n": sum(1 for x in skus.values() if x["n6"] >= 6 and x["scarcity"] >= SCARCE)}
 
 
 _CACHE = {}
@@ -164,6 +175,13 @@ def sku(code, now=None):
     doc = load(now)
     x = (doc or {}).get("skus", {}).get(code)
     return x if x and x.get("n6", 0) >= MIN_N else None
+
+
+def grade_price(kind, grade, now=None):
+    """{n, p25, p50, p75} of what the market paid, as a share of list, for this kind and grade in the window, or None."""
+    doc = load(now)
+    x = (doc or {}).get("grades", {}).get(f"{kind}|{grade}")
+    return x if x and x.get("n", 0) >= 50 else None
 
 
 def holds(shop, code, now=None):

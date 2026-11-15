@@ -334,7 +334,8 @@ class SellerCore:
                 "food_open_share": pb.get("food_open_share"), "market_price": pb.get("market_price", False),
                 "curve": pb.get("curve", False), "clearance_hours": pb.get("clearance_hours"),
                 "clearance_margin": pb.get("clearance_margin"),
-                "clearance_margin_hours": pb.get("clearance_margin_hours")}
+                "clearance_margin_hours": pb.get("clearance_margin_hours"),
+                "market_floor": pb.get("market_floor", False)}
 
     @staticmethod
     def margin_for(ctx, unit, pb):
@@ -388,6 +389,12 @@ class SellerCore:
             if m["scarcity"] >= market_state.SCARCE:
                 share = min(0.95, share + 0.05)
                 floor = max(floor, math.ceil(lp * m["p25"]))
+        gp = market_state.grade_price(c.get("kind"), c.get("grade_now")) if pb["market_floor"] else None
+        if gp:
+            # 11/16 04:xx: never under what the market pays for this kind and grade (its p25) - the cost floor sold B
+            # goods at cost (0.50 of list, market B p25 0.57) and 85% of C goods under the market's C p25; in 24 h our
+            # gross margin was 16M on 158M of sales. Clearance at cost stops there too
+            floor = max(floor, math.ceil(lp * gp["p25"]))
         if pb["curve"]:
             # 11/13 11:2x: our own acceptance curve (core.price_curve) - goods closed 51% of talks opened at 0.68 and
             # 9% at 0.76, so the market's p75 (0.70-0.80) cost deals; the curve's open wins, a scarce floor stays
@@ -420,6 +427,9 @@ class SellerCore:
         if c is None or not c.get("list_price"):
             return None, None, None
         floor = max(math.ceil(c["cost"] * (1 + self.margin_for(ctx, unit, pb))), act.unit_floor(ctx, unit, st.get("first_time")))
+        gp = market_state.grade_price(c.get("kind"), c.get("grade_now")) if pb["market_floor"] else None
+        if gp:                                       # the same market floor as rule_decide, for forged tools
+            floor = max(floor, math.ceil(c["list_price"] * gp["p25"]))
         v = jev.seller_view(c.get("kind"), c["list_price"], st["turns"], st["offer"], st["ask"],
                             not st.get("first_time"))
         v.update(cost=c["cost"], floor=floor, ask=st["ask"], offer=st["offer"], max_turns=MAX_TURNS,
