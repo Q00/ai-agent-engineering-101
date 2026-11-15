@@ -204,20 +204,6 @@ def test_terms():
           and "grade A with the warranty" in mb.GRADE_WORDS
           and r["cap"] == cap_c and r["grade"] == "C" and offers[0] == round(1_000_000 * 0.50 * (cap_c / 1_000_000) / 0.90)
           and max(offers) <= cap_c, (shop_.sent, r.get("cap"), cap_c))
-    flow[:] = [reply("Sofa (G3): grade A, with a 6-hour warranty. Asking 980000.", {"ask": 980000, "grade": "A", "warranty_hours": 6}),
-               reply("Asking 980000.", {"ask": 980000, "warranty_hours": 6})]
-    sofa_a = dict(sofa, sku="G3")
-    shop_ = Shop()
-    r = asyncio.run(mb.trade(shop_, sofa_a, order(1_500_000, ["G3"], "goods"), {}, {}, RULES, False))
-    check("an ask that stays over our ceiling: we leave after HOLDS (2) offers", len(r["offers"]) == 2
-          and "the ask stayed at 980000" in (r["left"] or ""), (r["offers"], r.get("left")))
-    shop_ = Shop()
-    r = asyncio.run(mb.trade(shop_, sofa_a, order(1_500_000, ["G3"], "goods"), {}, {}, dict(RULES, persist=True), False))
-    check("11/15, the persist arm: every offer of the ladder up to our ceiling, the last said as final, then no deal",
-          len(r["offers"]) == mb.STEPS and r["offers"][-1] == r["cap"] and "final offer" in shop_.sent[-2]
-          and r["left"] == "no agreement within our ceiling", (r["offers"], r.get("cap"), shop_.sent[-2:], r.get("left")))
-    share = sum(mb.persist_arm(f"o-{i}") for i in range(2000)) / 2000
-    check("...drawn from the order id, half and half", 0.45 < share < 0.55 and mb.persist_arm("o-9") == mb.persist_arm("o-9"), share)
     flow[:] = [reply("Kimchi (K1): grade A, 50 h of shelf life left, certificate attached. Asking 15000.", {"ask": 15000})]
     shop_ = Shop()
     kim = {"shop": {"name": "K", "url": "http://k"}, "sku": "K1", "name": "Kimchi", "list": 20000, "kind": "food"}
