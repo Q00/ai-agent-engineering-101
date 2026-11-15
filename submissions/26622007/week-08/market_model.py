@@ -143,7 +143,7 @@ def load_rows(md, name=ROWS):
                     r = json.loads(line)
                 except ValueError:
                     continue
-                if r.get("seq") not in seen:
+                if isinstance(r, dict) and r.get("seq") not in seen:
                     seen.add(r.get("seq"))
                     rows.append(_shared(r))
     except OSError:
@@ -163,7 +163,7 @@ def load_break_rows(md):
                     r = json.loads(line)
                 except ValueError:
                     continue
-                if r.get("seq") in seen:
+                if not isinstance(r, dict) or r.get("seq") in seen:
                     continue
                 seen.add(r.get("seq"))
                 ts = r.get("ts")

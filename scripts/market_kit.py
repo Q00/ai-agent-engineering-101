@@ -92,6 +92,8 @@ SELLER_MEMORY_CAP = int(os.environ.get("KIT_SELLER_MEMORY_MB", "3072")) << 20   
                                                     # restart: drain (seller_drain.py), then TERM once quiet. 0: off
 SELLER_DRAIN_WAIT = 1200                            # seconds the drain may take; then the restart is given up (no force)
 SELLER_CAP_RETRY = 1800                             # and tried again this long after
+SELLER_STATUS_FRESH = 15                            # seconds a quiet drain status stays good (the seller writes it every 5)
+SELLER_TERM_WAIT = 60                               # seconds a quiet seller may take to exit after TERM; it is never killed
 LOG_FILE = None
 LOG_MAX = 20_000_000                                # bytes; then market-kit.log moves to market-kit.log.1
 LOG_LOCK = threading.Lock()
@@ -1307,29 +1309,40 @@ def seller_cap(cap, proc, md, now, cap_bytes=None, log=log):
     """One watchdog step of the memory cap; True when the seller is quiet and flushed and may be stopped now.
     cap: {"since": drain start or None, "retry_at"}. Over the cap, .market/seller.drain gets the seller's pid: it refuses
     new talks, the talks under way go on, and its status says when it is quiet. A drain longer than SELLER_DRAIN_WAIT
-    is given up (the marker goes, new talks are welcome again) and tried again SELLER_CAP_RETRY later: never a kill."""
+    is given up (the kit's marker goes, new talks are welcome again) and tried again SELLER_CAP_RETRY later. A marker
+    someone else wrote (an owner's drain for a deploy) is left alone: no cap drain starts while it is there. A seller
+    whose status never names its pid (a shell between the kit and it, or a seller without seller_drain) turns it off."""
     cap_bytes = SELLER_MEMORY_CAP if cap_bytes is None else cap_bytes
     marker = Path(md) / "seller.drain"
     if cap.get("since") is None:
-        if not cap_bytes or now < cap.get("retry_at", 0):
+        if not cap_bytes or cap.get("off") or now < cap.get("retry_at", 0) or marker.exists():
             return False
         held = footprint(proc.pid)
         if held is None or held <= cap_bytes:
             return False
         marker.write_text(str(proc.pid))
-        cap["since"] = now
+        cap["since"], cap["marker"] = now, str(proc.pid)
         log(f"[kit] your seller holds {held >> 20} MB (cap {cap_bytes >> 20} MB): draining it for a restart")
         return False
     try:
         st = json.loads((Path(md) / "seller_drain_status.json").read_text())
     except (OSError, ValueError):
         st = {}
-    if st.get("pid") == proc.pid and (st.get("at") or 0) > cap["since"] and st.get("quiet") and st.get("flushed"):
+    if not isinstance(st, dict):
+        st = {}
+    at = st.get("at") if isinstance(st.get("at"), (int, float)) else 0
+    if st.get("pid") == proc.pid:
+        cap["seen"] = True
+    if (st.get("pid") == proc.pid and cap["since"] < at <= now + 1 and now - at <= SELLER_STATUS_FRESH
+            and st.get("quiet") is True and st.get("flushed") is True
+            and all(st.get(k) == 0 for k in ("inflight", "open", "held", "agreed", "late", "stale"))):
         cap["since"] = None
         return True
     if now - cap["since"] > SELLER_DRAIN_WAIT:
-        with contextlib.suppress(OSError):
-            marker.unlink()
+        drop_marker(cap, md)
+        if not cap.get("seen"):
+            cap["off"] = True
+            log(f"[kit] your seller's drain status never named pid {proc.pid}: the memory cap is off for this seller")
         log(f"[kit] the seller did not drain in {SELLER_DRAIN_WAIT} s (" + ", ".join(
             f"{k} {st.get(k)}" for k in ("inflight", "open", "stale", "held", "agreed", "late")) + "): restart given up, "
             f"new talks welcome again; next try in {SELLER_CAP_RETRY} s")
@@ -1337,23 +1350,64 @@ def seller_cap(cap, proc, md, now, cap_bytes=None, log=log):
     return False
 
 
+def drop_marker(cap, md):
+    """Remove .market/seller.drain only when the kit wrote it (it still holds the pid the kit wrote)."""
+    marker, mine = Path(md) / "seller.drain", cap.pop("marker", None)
+    with contextlib.suppress(OSError, ValueError):
+        if mine is not None and marker.read_text().strip() == mine:
+            marker.unlink()
+
+
+def stale_marker(md):
+    """At the kit's start: remove a marker whose pid is no longer alive (it names a seller that is gone)."""
+    marker = Path(md) / "seller.drain"
+    try:
+        pid = int(marker.read_text().strip())
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        with contextlib.suppress(OSError):
+            marker.unlink()
+    except (OSError, ValueError):
+        pass
+
+
+def cap_restart(cap, proc, md, now, log=log, wait=SELLER_TERM_WAIT):
+    """One watchdog step: when seller_cap says the seller is quiet, TERM it (its group) and wait for it to exit; True
+    when it exited (the watchdog starts the new one). A seller that does not exit in `wait` s is not killed: the kit's
+    marker goes, so it takes new talks again, and the cap tries again SELLER_CAP_RETRY later."""
+    if proc.poll() is not None or not seller_cap(cap, proc, md, now, log=log):
+        return False
+    log(f"[kit] your seller (pid {proc.pid}) drained and flushed: restarting it to give its memory back")
+    try:
+        if os.name != "nt":
+            os.killpg(proc.pid, signal.SIGTERM)
+        else:
+            proc.terminate()
+        proc.wait(timeout=wait)
+    except subprocess.TimeoutExpired:
+        drop_marker(cap, md)
+        cap["retry_at"] = now + SELLER_CAP_RETRY
+        log(f"[kit] your seller did not exit {wait} s after TERM: left running (no kill), new talks welcome again")
+        return False
+    except OSError as e:
+        log(f"[kit] could not stop your seller: {e}")
+    drop_marker(cap, md)
+    return proc.poll() is not None
+
+
 def watchdog(a, agent, d, market, keys, procs, proxy, sport, pport, state, every=60):
     """Bring the shop back by itself: restart a crashed seller, restart a seller over SELLER_MEMORY_CAP once it has
     drained, and replace a dead quick tunnel (join again with the new URL; the market moves the shop's history to it)."""
     misses, cap, md = 0, {"since": None}, d / ".market"
-    with contextlib.suppress(OSError):
-        (md / "seller.drain").unlink()               # a marker from an earlier kit names a seller that is gone
+    stale_marker(md)
     while True:
         time.sleep(every)
         try:
-            if procs[0].poll() is None and seller_cap(cap, procs[0], md, time.time()):
-                log(f"[kit] your seller (pid {procs[0].pid}) drained and flushed: restarting it to give its memory back")
-                stop(procs[0])
-                with contextlib.suppress(OSError):
-                    (md / "seller.drain").unlink()
+            cap_restart(cap, procs[0], md, time.time())
             if procs[0].poll() is not None:
                 log(f"[kit] your seller exited (code {procs[0].returncode}), starting it again")
-                cap["since"] = None
+                drop_marker(cap, md)
+                cap = {"since": None}
                 procs[0] = start(fill(agent["seller"]["cmd"], port=sport), d)
                 pump(procs[0], "[seller]")
                 wait_card(f"http://127.0.0.1:{sport}")

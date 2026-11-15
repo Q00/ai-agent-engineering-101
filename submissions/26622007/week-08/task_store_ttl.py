@@ -20,9 +20,13 @@ class ExpiringTaskStore(InMemoryTaskStore):
         self.terminal_ttl, self.idle_ttl, self.sweep_every, self.clock = terminal_ttl, idle_ttl, sweep_every, clock
         self.saved = {}         # (owner, task id) -> (last save, finished)
         self.last_sweep = clock()
+        impl = getattr(self, "_impl", None)     # the SDK's private store (a2a-sdk 1.2.2): without it, store as the SDK does
+        self.on = all(hasattr(impl, a) for a in ("tasks", "lock", "owner_resolver"))
 
     async def save(self, task, context):
         await super().save(task, context)
+        if not self.on:
+            return
         now = self.clock()
         self.saved[(self._impl.owner_resolver(context), task.id)] = (now, task.status.state in TERMINAL)
         if now - self.last_sweep >= self.sweep_every:
@@ -30,7 +34,8 @@ class ExpiringTaskStore(InMemoryTaskStore):
 
     async def delete(self, task_id, context):
         await super().delete(task_id, context)
-        self.saved.pop((self._impl.owner_resolver(context), task_id), None)
+        if self.on:
+            self.saved.pop((self._impl.owner_resolver(context), task_id), None)
 
     def sweep(self, now=None):
         """Drop the tasks past their TTL; the number dropped."""

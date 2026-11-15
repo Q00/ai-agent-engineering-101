@@ -38,6 +38,7 @@ import os
 import random
 import re
 import sys
+import threading
 import time
 
 import uvicorn
@@ -124,7 +125,7 @@ import sol_seller_margin
 MARGIN_STUDY = sol_seller_margin.MarginStudy()
 import shop_forum
 import shop_memory
-from shop_stock import StockBook, last_segment, markdown
+from shop_stock import HOLD_SECONDS, StockBook, last_segment, markdown
 
 MAX_ROUNDS = 10   # hard stop in code; the harness normally ends the talk earlier
 # a turn's harness attempt and its slot wait each at most this long (CODEX_TIMEOUT 60 s otherwise): turns took a median 4 s and a p90 4-6 s
@@ -335,17 +336,27 @@ def stock_line(u):
 
 def break_chance(sku, grade=None):
     """The chance this goods unit (SKU and grade) breaks after the sale, from the ledger rows restock.py keeps (read every
-    10 min), or None."""
+    10 min), or None. The first read is made here; the later ones on a thread while the last rates answer (a read of
+    the 526 MB ledger takes ~5 s, and every talk waited for it on the event loop, 11/15)."""
     if time.time() - _breaks["at"] > 600:
         _breaks["at"] = time.time()
-        md = os.environ.get("MARKET_DIR", ".market")
-        try:
-            with open(os.path.join(md, "catalog.json"), encoding="utf-8") as f:
-                _breaks["stats"] = market_model.break_stats(market_model.load_break_rows(md), json.load(f), mature_only=True)
-        except (OSError, ValueError, KeyError, TypeError) as e:
-            log(f"break rates unavailable: {type(e).__name__}: {e}")
-            _breaks["stats"] = None
-    return market_model.unit_break_chance(_breaks["stats"], sku, grade) if _breaks["stats"] else None
+        if _breaks.get("read"):
+            threading.Thread(target=_read_breaks, daemon=True).start()
+        else:
+            _read_breaks()
+    stats = _breaks["stats"]
+    return market_model.unit_break_chance(stats, sku, grade) if stats else None
+
+
+def _read_breaks():
+    md = os.environ.get("MARKET_DIR", ".market")
+    try:
+        with open(os.path.join(md, "catalog.json"), encoding="utf-8") as f:
+            stats = market_model.break_stats(market_model.load_break_rows(md), json.load(f), mature_only=True)
+    except (OSError, ValueError, KeyError, TypeError, AttributeError) as e:
+        log(f"break rates unavailable: {type(e).__name__}: {e}")
+        stats = None
+    _breaks["stats"], _breaks["read"] = stats, True
 
 
 
@@ -429,29 +440,41 @@ class Seller(AgentExecutor):
         self._task_turns = {}  # same-task producers share a gate, including waiters
         self.open = {}  # task id -> {"id", "name", "reserve", "ask", "rounds", "history"}, plus "unit" from Round 3
         self.touched = {}  # task id -> its last message (sweep_stale)
-        self.last_sweep = time.time()
 
-    def sweep_stale(self, now=None):
-        """Forget the talks silent task_store_ttl.IDLE_TTL whose hold ran out (Drain.census counts them as stale): a
-        buyer who stops answering leaves its talk in self.open for good, 4938 of them after three days (11/15), and they
-        kept the drain from ever being quiet. A talk that holds its unit, or waits for its payment, stays."""
+    def sweep_stale(self, now=None, draining=False):
+        """Forget the talks silent task_store_ttl.IDLE_TTL that hold no unit (Drain.census counts those with a unit as
+        stale): a buyer who stops answering left its talk in self.open for good, 4938 of them after three days (11/15),
+        and they kept the drain from ever being quiet. While draining the limit is HOLD_SECONDS, the shop's own rule for
+        a silent talk (its unit already went back on sale): ~55 talks an hour go silent, so a 6 h limit always left ~330
+        and the drain never ended. A talk that holds its unit, or waits for its payment, stays."""
         now = time.time() if now is None else now
-        self.last_sweep = now
+        limit = HOLD_SECONDS if draining else task_store_ttl.IDLE_TTL
         stock, gone = self.stock, 0
-        waiting = {i.get("task") for i in (*stock.agreed.values(), *stock.late.values()) if isinstance(i, dict)}
-        for task_id, deal in list(self.open.items()):
-            unit = deal.get("unit")
-            if not unit or (unit in stock.held and stock.owner.get(unit) == task_id) or task_id in waiting:
-                continue
-            if now - self.touched.get(task_id, now) >= task_store_ttl.IDLE_TTL:
-                del self.open[task_id]
-                self.touched.pop(task_id, None)
-                gone += 1
-        for task_id in [t for t in self.touched if t not in self.open and now - self.touched[t] >= task_store_ttl.IDLE_TTL]:
-            del self.touched[task_id]
+        with stock._lock:
+            waiting = {i.get("task") for i in (*stock.agreed.values(), *stock.late.values()) if isinstance(i, dict)}
+            holds = {stock.owner.get(u) for u in stock.held}
+            for task_id, deal in list(self.open.items()):
+                if task_id in holds or task_id in waiting:
+                    continue
+                if now - self.touched.setdefault(task_id, now) >= limit:
+                    del self.open[task_id]
+                    self.touched.pop(task_id, None)
+                    gone += 1
+        for task_id in [t for t, at in list(self.touched.items()) if t not in self.open and now - at >= task_store_ttl.IDLE_TTL]:
+            self.touched.pop(task_id, None)
         if gone:
-            log(f"SWEEP {gone} talks silent {task_store_ttl.IDLE_TTL // 3600} h with no unit held left out ({len(self.open)} open)")
+            log(f"SWEEP {gone} talks silent {limit} s with no unit held left out ({len(self.open)} open)")
         return gone
+
+    async def sweep_loop(self, every=task_store_ttl.SWEEP_EVERY):
+        """sweep_stale every `every` s, every TICK while draining; never stops the shop."""
+        while True:
+            draining = DRAIN.active()
+            try:
+                self.sweep_stale(draining=draining)
+            except Exception as e:      # noqa: BLE001
+                log(f"sweep failed: {type(e).__name__}: {e}")
+            await asyncio.sleep(seller_drain.TICK if draining else every)
 
     @contextlib.asynccontextmanager
     async def _task_turn(self, task_id):
@@ -846,8 +869,6 @@ class Seller(AgentExecutor):
         text = full_text[:MAX_TEXT]
         QUOTE_HOLD.touch(task.id)
         self.touched[task.id] = time.time()
-        if self.touched[task.id] - self.last_sweep >= task_store_ttl.SWEEP_EVERY:
-            self.sweep_stale(self.touched[task.id])
         deal = self.open.get(task.id)
         if task.id in self.margin_blocked:
             await up.failed(say("The previous quote's publication is unconfirmed; please start a new task."))
@@ -1242,12 +1263,14 @@ def build(url, catalog, name):
         log('SOL_MARGIN_LOAD '+json.dumps(dict(disk_snapshot_sha256=sol_seller_margin.DISK_SNAPSHOT_SHA256,
             load_valid=proof['valid'], **proof['claim'], pid=os.getpid()), sort_keys=True))
         drain = asyncio.create_task(DRAIN.loop(shop, functools.partial(flush_memory, strict=True), log))
+        sweep = asyncio.create_task(shop.sweep_loop())
         try:
             yield
         finally:
-            drain.cancel()
-            with contextlib.suppress(asyncio.CancelledError):
-                await drain
+            for t in (drain, sweep):
+                t.cancel()
+                with contextlib.suppress(asyncio.CancelledError):
+                    await t
 
     return Starlette(routes=create_agent_card_routes(card, card_modifier=fresh_card) + acp.routes() + [Route("/_kitlog", kitlog)]
                      + create_jsonrpc_routes(handler, "/"), lifespan=lifespan)
