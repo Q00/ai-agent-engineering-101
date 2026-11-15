@@ -207,6 +207,14 @@ def negotiate(unit, current, offered, catalog, program, token='', ref=''):
     hazard=current.get('hazard_probability',.15)
     legacy=bool(token or ref)
     floor=protected_floor(unit,program.p,hazard) if legacy else score_floor(unit,hazard)
+    # Once verified market evidence has already opened a bounded public
+    # loss-leader cohort, do not reject a buyer merely because its offer is a
+    # few won below that cohort's initial evidence price.  An offer at or above
+    # raw unit cost improves Book immediately; the six-hour warranty keeps the
+    # measured downside short-lived.  Legacy benefits never use this path.
+    public_cost_recovery=bool(not legacy and current.get('loss_leader'))
+    if public_cost_recovery:
+        floor=min(floor,unit['cost'])
     minimum=program.quote(floor,unit['cost'],token=token,ref=ref)
     if offered>=minimum['price']:
         lo,hi=floor,current['base']
@@ -219,7 +227,10 @@ def negotiate(unit, current, offered, catalog, program, token='', ref=''):
         q=program.quote(max(floor,(current['base']+floor)//2),unit['cost'],token=token,ref=ref)
     q['warranty_hours']=warranty_hours(unit,program)
     required=unit['cost']+math.ceil(unit['cost']*(.09 if legacy else .01))
-    if q['price']*((1-hazard) if q['warranty_hours'] else 1)-q['reward'] < required:
+    score_safe=q['price']*((1-hazard) if q['warranty_hours'] else 1)-q['reward'] >= required
+    bounded_cost_recovery=(public_cost_recovery and q['reward']==0 and
+                           q['price']>=unit['cost'])
+    if not (score_safe or bounded_cost_recovery):
         return current
     q['hazard_probability']=hazard;q['hazard_basis']=current.get('hazard_basis','conservative-unmeasured')
     return q if q['price']<current['price'] else current

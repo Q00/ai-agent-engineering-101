@@ -19,6 +19,15 @@ class RolloutTests(unittest.TestCase):
    self.assertGreaterEqual(n['price']*.85-n['reward'],self.u['cost']+math.ceil(self.u['cost']*.01))
   self.assertLess(negotiate(self.u,q,14000,{},self.p)['price'],q['price'])
   self.assertGreaterEqual(q['base'],score_floor(self.u))
+ def test_public_loss_leader_accepts_raw_cost_recovery_but_not_a_raw_loss(self):
+  q=dict(base=9000,price=9000,reward=0,spent=0,member=None,referrer=None,
+         benefit='none',warranty_hours=6,hazard_probability=.02,
+         hazard_basis='public-matured',loss_leader=True)
+  accepted=negotiate(self.u,q,8500,{},self.p)
+  self.assertEqual(accepted['price'],8500)
+  counter=negotiate(self.u,q,7999,{},self.p)
+  self.assertGreaterEqual(counter['price'],self.u['cost'])
+  self.assertGreater(counter['price'],7999)
  def test_mature_public_breakage_cohort_lowers_floor_without_removing_margin(self):
   class Evidence:
    def source(self,*args,**kwargs):return {'shops':[{'name':'25512088','claims':139,'broken':11}]}
