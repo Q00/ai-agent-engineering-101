@@ -4,6 +4,7 @@ import os
 import sqlite3
 import time
 import uuid
+from functools import lru_cache
 from pathlib import Path
 from statistics import median
 import httpx
@@ -16,6 +17,22 @@ SHOP_SCORE_WEIGHTS={'book':.50,'revenue':.30,'stars':.20}
 def read_json(path, default):
     try:
         return json.loads(Path(path).read_text())
+    except (OSError, ValueError):
+        return default
+
+
+@lru_cache(maxsize=16)
+def _read_json_snapshot(path, inode, mtime_ns, size):
+    """Read an atomically replaced JSON snapshot only once per version."""
+    return json.loads(Path(path).read_text())
+
+
+def read_json_snapshot(path, default):
+    """Return cached immutable-by-convention JSON until the file changes."""
+    try:
+        path = Path(path)
+        stat = path.stat()
+        return _read_json_snapshot(str(path), stat.st_ino, stat.st_mtime_ns, stat.st_size)
     except (OSError, ValueError):
         return default
 

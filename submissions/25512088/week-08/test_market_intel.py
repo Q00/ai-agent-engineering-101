@@ -5,7 +5,7 @@ import time
 import unittest
 from unittest.mock import patch
 import httpx
-from market_intel import Intel,BUYER_SCORE_WEIGHTS
+from market_intel import Intel,BUYER_SCORE_WEIGHTS,read_json_snapshot
 from seller_strategy import (sale_quote,restock_plan,cost_floor,protected_floor,score_floor,
                              buyer_preference_target,top_seller_grade_target,warranty_hours,
                              score_safe_loss_budget)
@@ -26,6 +26,15 @@ class IntelligenceTests(unittest.TestCase):
     def rows(self,price=9500,grade='A',expiry=None,warranty=0):
         now=time.time()
         return [dict(seq=n,ts=now,kind='settle',round=3,data=dict(shop='https://shop',sku='x',grade=grade,amount=price,expires_at=expiry,warranty_hours=warranty,claim_honest=True)) for n in range(1,5)]
+    def test_json_snapshot_cache_invalidates_after_atomic_replace(self):
+        path=self.root/'snapshot.json';path.write_text('{"version":1}')
+        first=read_json_snapshot(path,{})
+        self.assertIs(first,read_json_snapshot(path,{}))
+        replacement=self.root/'snapshot.tmp';replacement.write_text('{"version":2}')
+        replacement.replace(path)
+        second=read_json_snapshot(path,{})
+        self.assertEqual(second,{'version':2})
+        self.assertIsNot(first,second)
     def test_idempotent_only_real_round3_settlements(self):
         rows=self.rows();rows += [dict(rows[0],seq=9,round=2),dict(rows[0],seq=10,kind='result')]
         self.i.ingest(rows);self.i.ingest(rows)

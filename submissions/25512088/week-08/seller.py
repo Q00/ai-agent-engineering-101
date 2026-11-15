@@ -29,7 +29,7 @@ from cryptography.hazmat.primitives import serialization
 from seller_ledger import Program, policy
 from seller_forum import tick
 from seller_strategy import sale_quote, negotiate, receipt_grade
-from market_intel import Intel, read_json
+from market_intel import Intel, read_json_snapshot
 from shop_copy import SHOP_DESCRIPTION, SHOP_DISPLAY_NAME
 from seller_offers import offers
 from seller_procurement import settings
@@ -204,7 +204,7 @@ class Seller(AgentExecutor):
             holdings=Counter(u['sku'] for u in inv.get('units',[]))
             catalog_path = STATE/'catalog.json'
             catalog = json.loads(catalog_path.read_text()) if catalog_path.exists() else {}
-            preferences = read_json(STATE/'buyer-preferences.json',{})
+            preferences = read_json_snapshot(STATE/'buyer-preferences.json',{})
             if inv.get('round', 0) != 3:
                 await up.reject(say('This seller requires Round 3 inventory.'))
                 return
