@@ -128,6 +128,15 @@ assert (d["ask_factor"], d["first_offer"], d["price_cap"]) == (0.9, 0.9, 0.75), 
 assert buyer.first_move(130, 120, 110, 0.8) == ("offer", 88) and mb.price_cap(400, 300, 0.7) == 210
 print("ok: tuner")
 
+import acp_buyer
+se = acp_buyer.schema_errors
+sch = {"type": "object", "required": ["id", "payment_data"], "properties": {"id": {"type": "string"},
+       "payment_data": {"type": "object", "required": ["order"], "properties": {"order": {"type": "string"}}}}}
+assert se(sch, {"id": "a", "payment_data": {"order": "o"}}) is None and se(None, {}) is None and se("desc", {}) is None
+assert se(sch, {"id": "a"}) == "missing ['payment_data']" and se(sch, {"id": 1, "payment_data": {"order": "o"}}) == "id should be string"
+assert se(sch, {"id": "a", "payment_data": {}}) == "payment_data: missing ['order']"
+print("ok: schema")
+
 # ---- acp_buyer: tools built from the kit's acp.json shape, against a mock shop (no market, no LLM)
 import base64, hashlib, httpx
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey

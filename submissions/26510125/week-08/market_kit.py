@@ -327,12 +327,24 @@ class AcpShop:
         self.terms = collections.OrderedDict()           # task -> the receipt the seller sent (Proxy.observe)
 
     def card(self, public):
+        # week-08 (26510125): each tool carries a JSON Schema for its input, so a buyer can build and validate a tool
+        # from the card alone (the course's suggested change; the kit's own checkout ignores "input")
+        receipt = {"type": "object", "required": ["shop", "item", "price", "task", "sig_seller"],
+                   "properties": {"shop": {"type": "string"}, "item": {"type": "string"}, "price": {"type": "integer"},
+                                  "task": {"type": "string"}, "sig_seller": {"type": "string"}}}
+        mandate = {"type": "object", "required": ["mandate", "sig"], "properties": {"mandate": {"type": "object"}, "sig": {"type": "string"}}}
         tools = [("create_checkout_session", "POST", "/checkout_sessions",
-                  {"line_items": "[{id: item, quantity: 1}]", "receipt": "the receipt the shop signed over A2A"}),
-                 ("get_checkout_session", "GET", "/checkout_sessions/{id}", {}),
+                  {"type": "object", "required": ["line_items", "receipt"], "properties": {
+                      "line_items": {"type": "array", "items": {"type": "object", "required": ["id", "quantity"],
+                                     "properties": {"id": {"type": "string", "description": "the SKU"}, "quantity": {"type": "integer", "const": 1}}}},
+                      "receipt": dict(receipt, description="the receipt the shop signed over A2A"),
+                      "acceptable": {"type": "array", "items": {"type": "string"}, "description": "SKUs the order accepts"}}}),
+                 ("get_checkout_session", "GET", "/checkout_sessions/{id}", {"type": "object", "required": ["id"], "properties": {"id": {"type": "string"}}}),
                  ("complete_checkout_session", "POST", "/checkout_sessions/{id}/complete",
-                  {"payment_data": "{order, checkout_mandate, payment_mandate}"}),
-                 ("cancel_checkout_session", "POST", "/checkout_sessions/{id}/cancel", {})]
+                  {"type": "object", "required": ["id", "payment_data"], "properties": {"id": {"type": "string"}, "payment_data": {
+                      "type": "object", "required": ["order", "checkout_mandate", "payment_mandate"],
+                      "properties": {"order": {"type": "string"}, "checkout_mandate": mandate, "payment_mandate": mandate}}}}),
+                 ("cancel_checkout_session", "POST", "/checkout_sessions/{id}/cancel", {"type": "object", "required": ["id"], "properties": {"id": {"type": "string"}}})]
         return {"protocol": "acp", "version": "2026-04-17", "endpoint": f"{public}/acp",
                 "capabilities": {"services": ["checkout"], "payment_methods": ["ap2-mandate"]},
                 "tools": [{"name": n, "method": m, "path": p, "input": i} for n, m, p, i in tools]}

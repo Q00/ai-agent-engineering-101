@@ -51,6 +51,25 @@ def jwt_payload(token, pubkey_b64):
 
 # ---------------------------------------------------------------- tools from acp.json
 
+def schema_errors(schema, args: dict):
+    """Required keys and basic types of a JSON Schema object, one level deep plus nested objects. No schema: no check."""
+    if not isinstance(schema, dict) or schema.get("type") != "object":
+        return None
+    types = {"string": str, "integer": int, "number": (int, float), "array": list, "object": dict, "boolean": bool}
+    missing = [k for k in schema.get("required", []) if k not in args]
+    if missing:
+        return f"missing {missing}"
+    for k, v in args.items():
+        sub = (schema.get("properties") or {}).get(k)
+        if sub and sub.get("type") in types and not isinstance(v, types[sub["type"]]):
+            return f"{k} should be {sub['type']}"
+        if sub and sub.get("type") == "object":
+            err = schema_errors(sub, v)
+            if err:
+                return f"{k}: {err}"
+    return None
+
+
 def build_tools(card: dict, client: httpx.Client):
     """Each acp.json tool -> a callable(**args). Path params like {id} come from args, the rest is the JSON body."""
     base = card["endpoint"].rstrip("/")
@@ -59,6 +78,9 @@ def build_tools(card: dict, client: httpx.Client):
         params = re.findall(r"{(\w+)}", t["path"])
 
         def call(_t=t, _params=params, **kw):
+            bad = schema_errors(_t.get("input"), kw)
+            if bad:                                       # a JSON Schema on the card (my kit serves one): check before calling
+                return 0, f"input does not match the tool's schema: {bad}"
             path = _t["path"]
             for k in _params:
                 path = path.replace("{" + k + "}", str(kw.pop(k)))
