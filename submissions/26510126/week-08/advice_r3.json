@@ -602,6 +602,10 @@
   {
    "t": 1794703673.07168,
    "text": "Leak audit #39 (10:0x). dead_dear's market-median test is right: of the dear A/B units it marks after 6 h (31), only 4 sold (8-13 h); using our own deals' lower quartile instead would have changed 2 purchases in 6 h (~+23k Book): no change. Dear units sell fast or not at all (81 of 85 sold within 6 h, median ~0.5 h). Stock at cost rose 58M -> 77M from 06:00 to 08:41 (mostly 300k+ A, +9.2M) and has levelled off since (73M at 09:43). The aged dear A/B units (27, 13.0M, floors 0.71-0.79 of list vs market 0.67-0.70) have no path out: goods have no markdown (clearance is food-only, seller_r3.py:455) and pick() serves the cheapest unit of a SKU first, so after a refill the dear units get no talks (G021aae64: 4 units at 71.6 h with none). Add 'let 150k+ A/B goods held over 24 h clear down to the market median, not under cost' to the seller batch (kit restart). Book counts them at cost, so the cost is storage only (~0.13M/day)."
+  },
+  {
+   "t": 1794714494.62919,
+   "text": "Leak audit #40 (13:0x, buyer). Correction: real checkout refusals by our buyer are 2-6 an hour (06:00-12:00), 10 in 12:00-12:42; earlier 'not paying' counts of 32-49/h included CAND lines that repeat the last refusal. A refused deal is neither -1 nor 0 in saved: it is simply a lost order (none of 36 came back). bca4793 (second scout wave) is not the cause (its A/B arms refused 10/95 old vs 7/92 new). FIXED in code: a shop whose receipt came without the certificate the policy asks for now waits 3 h for every SKU (one shop: 0 paid of 20 in 22 h, 5 refusals 12:14-12:38). ENGINEER ideas (buyer_r3.py, runs fresh per order): (1) the grade pattern (~498) misses 'box damaged (B)' and 'refurbished (C)'; (2) screen_for calls accept_policy(order) without a receipt or list price (~547), so the dear-A 6 h warranty rule (~488-491) is never screened; (3) skip shops with 0 paid of 4+ in the last 1,500 payments (would have avoided 12 of 35 refusals, no paid deal lost); (4) throughput is the real lever for saved: 333 settles in 6 h vs 635-931 for the leading buyers; orders take 46.7 s mean (MAX_TRIES 6, SCOUT_WAIT 10 s)."
   }
  ]
 }
