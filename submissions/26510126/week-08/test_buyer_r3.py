@@ -604,6 +604,15 @@ def main():
          not plan_calls and got.get("offers") and got["offers"][0] <= 24000 and max(got["offers"]) <= 30000,
          str((len(plan_calls), got.get("offers"))))
 
+    # 24c. plan mode keeps the CLOSE_GAP share on later turns: an ask far above `most` is not taken as "close to our offer"
+    harness.ask = planner
+    got = asyncio.run(buyer_r3.buyer.shop(base_p, "포기김치 5kg", 40000, opening="I want to buy 포기김치 5kg (F1)",
+                                         max_raise=0.4, order_id="o-plan", plan=True, market=20000))
+    harness.ask = scripted
+    case("plan mode: no ask above the planned most is taken on turn 3 or later",
+         len(got.get("offers") or []) > 3 and max(got["offers"][:-1]) <= 20000,
+         str((got.get("state"), got.get("offers"), got.get("asks"))))
+
     # 20. pre-screen (11/10): the shop's words the old screen missed, each from a receipt the kit then refused to pay
     gs = buyer_r3.screen_for({"kind": "goods"}, 30000)
     fs = buyer_r3.screen_for({"kind": "food", "use_within_hours": 540}, 25800, 720)       # needs 621 h

@@ -243,8 +243,12 @@ async def shop(base, item, budget, memory="", max_raise=None, max_offers=MAX_OFF
                     offer = ask
                     log("GUARD", f"ask {ask} within our planned most {result['most']}, taking it")
                 else:
-                    gap = ask - (last_offer or 0)
-                    offer = min(result["most"], (last_offer or 0) + max(1, int((max_raise or 0.4) * gap)))
+                    # 11/16: `gap` here replaced the CLOSE_GAP share from turn 3, so the close-to-our-offer take above was
+                    # true for any ask under the cap and `most` never bound: 61 of 181 deals paid above it
+                    room = ask - (last_offer or 0)
+                    if not code_ab_r3.on("cde849cf1e47", order_id):
+                        gap = room
+                    offer = min(result["most"], (last_offer or 0) + max(1, int((max_raise or 0.4) * room)))
                 if last_offer is not None and offer < last_offer:
                     offer = last_offer
             else:
