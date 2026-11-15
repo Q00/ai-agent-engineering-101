@@ -500,7 +500,15 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
         # proven item compete for scarce capital without granting any bonus to
         # a new or historically loss-making SKU.
         contribution=row.get('score',0)+realized_hourly_contribution
-        risk_adjusted=contribution/max(1,row['upper_cost'])**.75
+        # A live pace comparison showed that this shop was completing more
+        # deals than the class top-10 median while producing only about 42%
+        # of their Revenue growth.  Keep the adjustment sub-linear and
+        # configurable, but relax it one measured step so official Revenue
+        # opportunities are not systematically buried behind cheap turnover.
+        # Per-SKU capital caps, grade economics, conversion vetoes, refund
+        # vetoes, and the cash/liability reserve remain unchanged.
+        risk_exponent=max(.5,min(1.0,float(policy.get('capital_risk_exponent',.75))))
+        risk_adjusted=contribution/max(1,row['upper_cost'])**risk_exponent
         choices.append((breadth_priority,-(risk_adjusted*diversity),
                         row['sku'],need,evidence))
     # Each candidate is bounded by condition-specific per-SKU caps. When no

@@ -341,6 +341,17 @@ class PurchaseTests(unittest.TestCase):
   self.assertEqual((first['sku'],first['qty']),('new',1))
   policy['breadth_target_skus']=1
   self.assertEqual(allocation_plan(ranked,inv,10000,policy=policy)[0]['sku'],'hot')
+ def test_capital_risk_exponent_can_make_revenue_opportunity_compete(self):
+  common=dict(kind='food',expected_net=1,sales_1h=8,sales_6h=12,
+              distinct_buyers_6h=4,estimated_sale_likelihood=.8)
+  ranked=[dict(common,sku='cheap',score=1,upper_cost=100),
+          dict(common,sku='revenue',score=28,upper_cost=10000)]
+  conservative={'max_sku_capital_share':1,'capital_risk_exponent':.75}
+  measured={'max_sku_capital_share':1,'capital_risk_exponent':.70}
+  self.assertEqual(allocation_plan(
+      ranked,{'units':[]},30000,policy=conservative)[0]['sku'],'cheap')
+  self.assertEqual(allocation_plan(
+      ranked,{'units':[]},30000,policy=measured)[0]['sku'],'revenue')
  def test_sold_out_proven_sku_scales_during_breadth_expansion(self):
   ranked=[dict(sku='proven',kind='goods',expected_net=10000,score=100,upper_cost=100,
                sales_1h=12,sales_6h=24,own_sales_1h=2,own_sales_total=2,
