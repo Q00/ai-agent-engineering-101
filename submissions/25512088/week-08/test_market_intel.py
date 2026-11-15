@@ -171,6 +171,19 @@ class IntelligenceTests(unittest.TestCase):
             {'name':'25512088','book':1000000,'house':False},
             {'name':'above','book':2000000,'house':False}]})
         self.assertEqual(score_safe_loss_budget(self.i,99999),124999)
+    def test_loss_budget_switches_to_book_after_near_revenue_boundary_is_crossed(self):
+        players=[{'student':True,'shop':{'name':name}}
+                 for name in ('below','25512088','above')]
+        shops=[{'name':'below','book':900000,'revenue':900000,'house':False},
+               {'name':'25512088','book':1000000,'revenue':1000000,'house':False},
+               {'name':'above','book':1100000,'revenue':2000000,'house':False}]
+        self.i.save_source('board',{'players':players,'shops':shops})
+        # Weighted Book effort is 100k/.5; Revenue is 1m/.3, so preserve Book.
+        self.assertEqual(score_safe_loss_budget(self.i,99999),99999)
+        shops[-1]['revenue']=1050000
+        self.i.save_source('board',{'players':players,'shops':shops})
+        # A nearby Revenue step is cheaper, so the bounded trial remains live.
+        self.assertEqual(score_safe_loss_budget(self.i,99999),124999)
     def test_repeated_unconverted_local_offers_lower_opening_ask_without_losing_book(self):
         now=time.time();rows=[]
         for n,price in enumerate(range(10000,11000,100),1):

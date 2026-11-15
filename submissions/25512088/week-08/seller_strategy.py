@@ -18,15 +18,44 @@ LOSS_LEADER_TRIALS_PER_SKU=5
 
 
 def score_safe_loss_budget(intel, already_used, own_name='25512088'):
-    """Add only a quarter of the live Book-rank headroom to the base trial.
+    """Add loss trials only while Revenue is the cheaper class-score step.
 
     ``already_used`` is historical and is already reflected in the current
-    official Book value.  The dynamic allowance therefore applies only to new
-    trials.  Missing/stale official evidence keeps the original fixed cap.
+    official Book value.  When the official student cohort proves that the
+    next weighted Book step is cheaper than the next weighted Revenue step,
+    preserve Book by returning the amount already spent: no new principal
+    loss can pass the caller's budget check.  This lets a bounded loss trial
+    help cross a nearby Revenue boundary, then switches it off after that
+    boundary is crossed.  Missing/stale class evidence keeps the original
+    fixed-cap behaviour.
     """
     if not intel:return LOSS_LEADER_BUDGET
     board=intel.source('board',None,max_age=300)
     if not isinstance(board,dict):return LOSS_LEADER_BUDGET
+    players=board.get('players')
+    if isinstance(players,list):
+        student_shops={str(row.get('shop',{}).get('name')) for row in players
+                       if isinstance(row,dict) and row.get('student') is True
+                       and isinstance(row.get('shop'),dict)
+                       and row.get('shop',{}).get('name') is not None}
+        if str(own_name) in student_shops:
+            class_rows=[row for row in board.get('shops',[])
+                        if isinstance(row,dict) and str(row.get('name')) in student_shops]
+            own=next((row for row in class_rows
+                      if str(row.get('name'))==str(own_name)),None)
+            def next_gap(metric):
+                value=own.get(metric) if isinstance(own,dict) else None
+                if not isinstance(value,(int,float)) or isinstance(value,bool):return None
+                higher=[row.get(metric) for row in class_rows
+                        if isinstance(row.get(metric),(int,float))
+                        and not isinstance(row.get(metric),bool) and row.get(metric)>value]
+                return min(higher)-value if higher else None
+            book_gap=next_gap('book');revenue_gap=next_gap('revenue')
+            # Round 3 Shop ALL = .5 Book + .3 Revenue + .2 Stars.
+            # Compare currency needed per unit of score weight, not raw gaps.
+            if (revenue_gap is None or
+                    book_gap is not None and book_gap/.5<=revenue_gap/.3):
+                return max(0,int(already_used or 0))
     rows=sorted((r for r in board.get('shops',[]) if not r.get('house') and
                  isinstance(r.get('book'),int)),key=lambda r:r['book'])
     index=next((n for n,row in enumerate(rows) if str(row.get('name'))==str(own_name)),None)
