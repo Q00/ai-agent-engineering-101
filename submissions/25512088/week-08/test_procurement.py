@@ -390,6 +390,36 @@ class PurchaseTests(unittest.TestCase):
   self.assertEqual(allocation_plan(
       [cheap,high],{'units':[],'balance':1000000},1000000,
       policy=policy)[0]['sku'],'cheap')
+ def test_one_demanded_high_value_canary_can_precede_cheap_stock(self):
+  cheap=dict(sku='cheap',kind='food',expected_net=1000,score=100000,
+             upper_cost=100,sales_1h=20,sales_6h=40,
+             distinct_buyers_6h=10,estimated_sale_likelihood=1)
+  canary=dict(sku='canary',kind='goods',expected_net=60000,score=1000,
+              upper_cost=1200000,sales_1h=3,sales_6h=9,
+              distinct_buyers_6h=6,estimated_sale_likelihood=.33,
+              own_sales_total=0,dominant_grade_samples=5,
+              dominant_grade_profit_probability=.65)
+  policy={'max_sku_capital_share':1,'max_units_per_sku':3,
+          'max_high_value_units_per_sku':1,
+          'high_value_lane_min_unit_cost':500000,
+          'high_value_canary_window_limit':1,
+          'min_goods_a_profit_samples':3,
+          'min_goods_a_profit_probability':.60,
+          'max_cold_goods_capital_share':0,
+          'active_unproven_goods_present':False}
+  plan=allocation_plan([cheap,canary],{'units':[],'balance':2000000},
+                       2000000,policy=policy)
+  self.assertEqual((plan[0]['sku'],plan[0]['qty']),('canary',1))
+  self.assertTrue(plan[0]['evidence']['high_value_canary'])
+  policy['high_value_window_count']=1
+  self.assertEqual(allocation_plan(
+      [cheap,canary],{'units':[],'balance':2000000},2000000,
+      policy=policy)[0]['sku'],'cheap')
+  policy['high_value_window_count']=0
+  policy['active_unproven_goods_present']=True
+  self.assertEqual(allocation_plan(
+      [cheap,canary],{'units':[],'balance':2000000},2000000,
+      policy=policy)[0]['sku'],'cheap')
  def test_evidence_backed_policy_can_open_exactly_three_high_value_slots(self):
   cheap=dict(sku='cheap',kind='food',expected_net=1000,score=100,
              upper_cost=100,sales_1h=8,sales_6h=12,

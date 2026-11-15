@@ -338,6 +338,11 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
             (unit.get('kind') or ranked_by_sku.get(unit.get('sku'),{}).get('kind'))=='goods'
             and ranked_by_sku.get(unit.get('sku'),{}).get('own_sales_total')==0
             for unit in inventory.get('units',[]))
+    high_value_count=policy.get('high_value_window_count')
+    if high_value_count is None:
+        high_value_count=int(bool(policy.get('high_value_window_used',False)))
+    high_value_count=max(0,int(high_value_count))
+    high_value_canary_limit=max(0,int(policy.get('high_value_canary_window_limit',0)))
     recent_goods={row.get('sku') for row in ranked
                   if row.get('kind')=='goods' and
                   row.get('own_sales_1h',0)>=policy.get('cold_goods_min_own_sales_1h',1)}
@@ -364,6 +369,7 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
                 local_rate<policy.get('min_own_a_conversion_rate',.10)):
             continue
         cold_safe_trial=False
+        high_value_canary=False
         own_profit_proven=False
         if row.get('kind')=='goods':
             min_samples=policy.get('min_goods_a_profit_samples',0)
@@ -396,6 +402,22 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
                 policy.get('high_value_lane_min_unit_cost',math.inf))
             if weak_grade_economics and (high_value_grade_guard or not own_profit_proven):
                 continue
+            # Revenue is the live seller bottleneck, but the old proven-only
+            # priority could leave every scarce supply slot to cheap stock.
+            # Admit at most one demanded, grade-supported high-value canary in
+            # a window. It remains one unit per SKU, and any unsold canary
+            # blocks another new-goods trial on later refreshes/windows.
+            high_value_canary=(
+                high_value_count<high_value_canary_limit and
+                own_sales_total==0 and not active_unproven_goods_present and
+                not holding.get(row['sku']) and high_value_grade_guard and
+                row.get('sales_1h',0)>=policy.get('high_value_canary_min_sales_1h',2) and
+                row.get('distinct_buyers_6h',0)>=
+                    policy.get('high_value_canary_min_distinct_buyers_6h',5) and
+                row.get('estimated_sale_likelihood',0)>=
+                    policy.get('high_value_canary_min_sale_likelihood',.30) and
+                row.get('dominant_grade_samples',0)>=min_samples and
+                row.get('dominant_grade_profit_probability',0)>=min_probability)
             cold_safe_trial=(cold_goods_frozen and not active_unproven_goods_present and
                 not holding.get(row['sku']) and
                 row.get('sales_1h',0)>=policy.get('cold_safe_trial_sales_1h',math.inf) and
@@ -410,7 +432,7 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
         if (cold_goods_frozen and row.get('kind')=='goods' and
                 row.get('own_sales_1h',0)<policy.get('cold_goods_min_own_sales_1h',1) and
                 not proven_good and
-                not cold_safe_trial):
+                not cold_safe_trial and not high_value_canary):
             continue
         velocity=row.get('sales_1h',0)+row.get('sales_6h',0)/6
         distinct=max(0,row.get('distinct_buyers_6h',0))
@@ -521,11 +543,8 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
         # only after five recent guarded high-value settlements remained
         # positive and refund-free, including both lots in the first two-slot
         # window; callers without that explicit policy retain one slot.
-        high_value_priority=1
+        high_value_priority=2
         high_value_min=policy.get('high_value_lane_min_unit_cost',math.inf)
-        high_value_count=policy.get('high_value_window_count')
-        if high_value_count is None:
-            high_value_count=int(bool(policy.get('high_value_window_used',False)))
         high_value_limit=max(0,int(policy.get('high_value_window_limit',1)))
         if (high_value_count<high_value_limit and
                 row.get('kind')=='goods' and not holding.get(row['sku']) and
@@ -536,7 +555,10 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
                 row.get('dominant_grade_profit_probability',0)>=
                     policy.get('min_proven_scale_grade_profit_probability',.70)):
             high_value_priority=0
-        evidence['high_value_priority']=(high_value_priority==0)
+        elif high_value_canary:
+            high_value_priority=1
+        evidence['high_value_priority']=(high_value_priority<2)
+        evidence['high_value_canary']=high_value_canary
         evidence['high_value_window_count']=high_value_count
         evidence['high_value_window_limit']=high_value_limit
         choices.append((high_value_priority,-(risk_adjusted*diversity),
