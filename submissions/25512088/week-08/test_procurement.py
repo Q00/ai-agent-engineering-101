@@ -249,6 +249,23 @@ class PurchaseTests(unittest.TestCase):
   policy={'max_units_per_sku':3,'initial_trial_units':3,'max_sku_capital_share':.08}
   plan=allocation_plan(ranked,{'units':[]},1000000,aggression=4,policy=policy)
   self.assertEqual(plan,[])
+ def test_active_unproven_good_blocks_another_cold_safe_trial(self):
+  held=dict(sku='held',kind='goods',expected_net=0,score=0,upper_cost=100,
+            sales_1h=0,sales_6h=1,own_sales_total=0,distinct_buyers_6h=2,
+            dominant_grade_samples=3,dominant_grade_profit_probability=.8,
+            estimated_sale_likelihood=.5)
+  candidate=dict(sku='candidate',kind='goods',expected_net=100,score=100,upper_cost=100,
+                 sales_1h=3,sales_6h=6,own_sales_total=0,distinct_buyers_6h=3,
+                 dominant_grade_samples=3,dominant_grade_profit_probability=.8,
+                 estimated_sale_likelihood=.5)
+  inventory={'balance':1000,'units':[{'sku':'held','kind':'goods','cost':100}]}
+  policy={'max_cold_goods_capital_share':0,'cold_safe_trial_sales_1h':3,
+          'cold_safe_trial_profit_probability':.7,'max_units_per_sku':3,
+          'max_sku_capital_share':1}
+  self.assertEqual(allocation_plan([held,candidate],inventory,1000,policy=policy),[])
+  held['own_sales_total']=1
+  self.assertEqual(allocation_plan([held,candidate],inventory,1000,policy=policy)[0]['sku'],
+                   'candidate')
  def test_concentration_uses_total_wealth_not_cash_after_liability_reserve(self):
   ranked=[dict(sku='high',kind='goods',expected_net=500000,score=999,
                upper_cost=1749000,sales_1h=3,sales_6h=20,distinct_buyers_6h=8,

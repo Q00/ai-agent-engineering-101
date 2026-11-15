@@ -178,6 +178,16 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
     # single sub-10%-of-wealth unit as over-concentrated.
     portfolio_capital=sum(holding_cost.values())+max(0,inventory.get('balance',available))
     ranked_by_sku={row.get('sku'):row for row in ranked if row.get('sku')}
+    # Keep cold-goods experiments attributable and bounded.  A share cap alone
+    # still allowed one "safe" trial every supply window while earlier trials
+    # remained unsold.  Proven restocks continue, but another unproven good is
+    # not opened until every explicitly observed active trial has sold once.
+    active_unproven_goods_present=policy.get('active_unproven_goods_present')
+    if active_unproven_goods_present is None:
+        active_unproven_goods_present=any(
+            (unit.get('kind') or ranked_by_sku.get(unit.get('sku'),{}).get('kind'))=='goods'
+            and ranked_by_sku.get(unit.get('sku'),{}).get('own_sales_total')==0
+            for unit in inventory.get('units',[]))
     recent_goods={row.get('sku') for row in ranked
                   if row.get('kind')=='goods' and
                   row.get('own_sales_1h',0)>=policy.get('cold_goods_min_own_sales_1h',1)}
@@ -196,7 +206,8 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
             if (row.get('dominant_grade_samples',0)<min_samples or
                     row.get('dominant_grade_profit_probability',0)<min_probability):
                 continue
-            cold_safe_trial=(cold_goods_frozen and not holding.get(row['sku']) and
+            cold_safe_trial=(cold_goods_frozen and not active_unproven_goods_present and
+                not holding.get(row['sku']) and
                 row.get('sales_1h',0)>=policy.get('cold_safe_trial_sales_1h',math.inf) and
                 row.get('dominant_grade_profit_probability',0)>=
                     policy.get('cold_safe_trial_profit_probability',1.1))
@@ -444,6 +455,13 @@ def main():
         # windows, while capital_available still preserves cash/liabilities.
         aggression=max(1.0,min(policy.get('max_demand_windows',4),inv.get('balance',0)/3_000_000))
         runtime_policy=dict(policy)
+        # Use the complete settled-sales history, not merely the current ranked
+        # candidate list, to decide whether a cold-goods experiment is active.
+        # This prevents a new expensive trial while any held good has never sold.
+        runtime_policy['active_unproven_goods_present']=any(
+            (unit.get('kind') or catalog.get(unit.get('sku'),{}).get('kind'))=='goods'
+            and unit.get('sku') not in own_sales_total
+            for unit in inv.get('units',[]))
         target=competitor_breadth_target(strategy)
         if target>0:runtime_policy['breadth_target_skus']=target
         window_blocks=breadth_window_blocks(rows,opening,inv,target)
