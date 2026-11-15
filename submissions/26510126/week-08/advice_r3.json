@@ -642,6 +642,10 @@
   {
    "t": 1794783272.508986,
    "text": "07:5x supervisor correction to the 07:27 note: goods recovered after 07:27 (deals 64/h, walks 24/h vs 65/16 before 07:10), so the 07:10-07:27 dip (28 deals/h, 46 walks/h) was a 17-minute blip, not a verdict on floor_frac 0.62; judge it at 2 h as usual. Direction of step: the seller counters at ask - step*(ask - offer) (seller_r3.py:717), so a LOWER step concedes less and raises prices. step 0.4 is a further raise, not a take-back; taking back the 07:27 move means step 0.6. Goods deal value/h: 19.2M before 07:10, 12.9M since 07:27 (65 vs 64 deals/h), so the mix shifted to cheaper goods; watch that in the 2 h verdict."
+  },
+  {
+   "t": 1794783515.311667,
+   "text": "08:0x re-measure of audit #46: the warranty-word fix (5b73c2e) changed nothing measurable: warranty_ask 30.4% before vs 31.1% after (food 22.5 vs 23.5%), because buyers' own templates say 'warranty' (e.g. 'a grade B or C unit with at least a 6 h warranty'); the audit's as/has/was attribution was wrong. Treat warranty_ask as 'mentions warranty', as before. Revenue: our share of market paid value fell from ~4% (04:00-06:54) to 2.1% (07:00-07:30) and 2.9% (07:30-08:00); paid count held (97, 78 per 30 min). The drop is 300k+ goods: talks/h A 116->67, B 54->9 (B 300k+ held: 5 units), deals/h A 21->7, B 11->2, C 14->11. It started 06:56 (before floor_frac 0.62 at 07:10), so it is mostly stock (300k+ B ran out, A 48 units) and the post-restart reach dip, not the price moves alone. Buying 300k+ A/B where it sells (dear_depth/window_depth, within order 14) is the lever to look at; floor_frac/step get their normal 2 h verdicts."
   }
  ]
 }
