@@ -35,12 +35,12 @@ TUNABLE = {
     "seller.warranty_premium": (0.05, 0.30, 0.05),
     "seller.warranty_premium_floor": (0.0, 0.10, 0.01),   # breakage-priced warranty: the floor of the premium
     "seller.warranty_q_mult": (1.0, 3.0, 0.25),           # safety on the measured breakage upper bound
-    "seller.warranty_cap_6h": (100000, 80000000, 10000000),  # a step that clears a window run over the cap (1M did not on 11-09; 3M took
+    "seller.warranty_cap_6h": (100000, 120000000, 10000000),  # a step that clears a window run over the cap (1M did not on 11-09; 3M took
                                                              # 13 runs to cross 40M on 11-13); a busy night signs 20-32M in 6 h (11-10), and on
                                                              # 11-13 the big-ticket hours signed 56M in 6 h: at the 40M bound 98 of 146 warranty
                                                              # asks an hour were refused while an offered warranty doubles the sign rate.
-                                                             # policy.py allows 120M from 11-15; 80M stays here until the seller
-                                                             # is recreated on that policy.py (the running one rejects > 80M)
+                                                             # 120M from the 11-15 09:42 recreate (policy.py RANGES, the seller's
+                                                             # per-unit count: the old count read 102.5M for 68.3M of sales then)
     "seller.food_clear_uwh_factor": (1.0, 4.0, 0.5),
     "seller.goods_stale_days": (1, 10, 1),       # 1: clear stuck goods (economics.stuck) a day after they arrive
     "seller.stale_floor_cost_mult": (0.60, 1.00, 0.10),   # clearance: stale goods floor as a share of cost

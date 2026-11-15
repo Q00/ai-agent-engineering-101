@@ -226,7 +226,7 @@ class Bounds(unittest.TestCase):
         for key, b in (("clear_cost_h", (0, 72, 12)), ("clear_70_h", (0, 48, 6)), ("clear_any_h", (0, 24, 3)),
                        ("taper_h", (0, 96, 12)), ("goods_stop_h", (0, 48, 6))):
             self.assertEqual(g.bounds(f"stock.{key}"), b)
-        self.assertEqual(g.bounds("seller.warranty_cap_6h"), (100000, 80000000, 10000000))
+        self.assertEqual(g.bounds("seller.warranty_cap_6h"), (100000, 120000000, 10000000))
         self.assertNotIn("forum.min_gap_min", g.TUNABLE)
 
     def test_focus_max_not_below_the_focus_list(self):
