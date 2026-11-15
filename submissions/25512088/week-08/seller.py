@@ -37,7 +37,8 @@ from adaptive_control import Control
 
 STATE = Path(os.environ.get('MARKET_DIR', '.market'))
 CHECKOUT_CONDITION_BUFFER_SECONDS = 60
-SELLER_VERSION = '1.3.0'
+DEFAULT_UNSPECIFIED_FOOD_HOURS = 48
+SELLER_VERSION = '1.3.1'
 
 
 def sign(receipt):
@@ -79,17 +80,40 @@ def required_food_hours(text):
     return max(values,default=0.0)
 
 
+def food_hours_requirement(text, unit=None):
+    """Protect checkout when a buyer omits its structured food condition.
+
+    The market checks ``accept.min_hours_left`` only after the seller signs a
+    receipt, and some buyers do not repeat that condition in their A2A text.
+    Recent official outcomes showed that short-life C receipts consequently
+    settled only about half the time.  A bounded 48-hour default covers the
+    observed hidden condition while an explicit textual requirement remains
+    authoritative, including a shorter one from a buyer that can use the food
+    sooner.  Inventory records always carry ``kind``; the optional unit guard
+    keeps generic/category-only test fixtures and non-food stock unaffected.
+    """
+    explicit=required_food_hours(text)
+    if explicit:return explicit
+    if unit is None or unit.get('kind')=='food':
+        return float(DEFAULT_UNSPECIFIED_FOOD_HOURS)
+    return 0.0
+
+
 def is_food(unit):
     return unit.get('kind')=='food' or unit.get('category','').lower().startswith('food')
 
 
 def select_unit(text, units, reserved, soft_counts=None, prefer_c=False):
     want = re.sub(r'\b(?:ref|member)=[A-Za-z0-9_-]+', '', text).lower()
-    min_hours=required_food_hours(text);now=time.time()
+    explicit_hours=required_food_hours(text);now=time.time()
+    def required_hours(unit):
+        return explicit_hours or (float(DEFAULT_UNSPECIFIED_FOOD_HOURS)
+                                  if unit.get('kind')=='food' else 0.0)
     valid = [u for u in units if u['unit'] not in reserved and u.get('grade') != 'expired'
              and (not u.get('expires_at') or u['expires_at'] > now)
-             and (not min_hours or not is_food(u) or
-                  (u.get('expires_at') and u['expires_at']-now >= min_hours*3600+CHECKOUT_CONDITION_BUFFER_SECONDS))]
+             and (not required_hours(u) or not is_food(u) or
+                  (u.get('expires_at') and u['expires_at']-now >=
+                   required_hours(u)*3600+CHECKOUT_CONDITION_BUFFER_SECONDS))]
     named = [u for u in valid if u['sku'].lower() in want]
     fits = named or [u for u in valid if any(str(v).lower() in want for v in
                     [u.get('name'), u.get('category', '').split('>')[-1]] if v)]
@@ -193,7 +217,6 @@ class Seller(AgentExecutor):
                 for hold in self.open.values():
                     uid=hold['unit']['unit'];soft_counts[uid]=soft_counts.get(uid,0)+1
                 eligible=list(inv['units'])
-                min_hours=required_food_hours(text)
                 drain_c,c_rate=c_drain_slot(task.id,eligible,reserved)
                 unit = select_unit(text, eligible, reserved, soft_counts, prefer_c=drain_c)
                 if not unit:
@@ -201,6 +224,7 @@ class Seller(AgentExecutor):
                     available=offers(STATE,program,intel,limit=2)
                     await up.reject(say('No matching stock available. Alternatives: '+json.dumps(available,ensure_ascii=False)))
                     return
+                min_hours=food_hours_requirement(text,unit)
                 try:
                     q = sale_quote(unit, catalog, program, intel, token=cred['member'], ref='',
                                    holdings=holdings[unit['sku']],buyer_preferences=preferences)

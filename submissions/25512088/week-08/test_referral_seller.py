@@ -54,6 +54,18 @@ class SellerIntegrationTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(seller.required_food_hours('price 99999, quantity 84'),0.0)
         self.assertEqual(seller.required_food_hours('use within 12 h; min_hours_left=36'),36.0)
 
+    def test_unspecified_food_condition_uses_safe_default_but_explicit_shorter_wins(self):
+        now=time.time()
+        short=dict(unit='short',sku='FOOD1',name='food',category='food',kind='food',grade='C',
+                   expires_at=now+20*3600,supplied_at=1)
+        long=dict(unit='long',sku='FOOD1',name='food',category='food',kind='food',grade='C',
+                  expires_at=now+80*3600,supplied_at=2)
+        self.assertEqual(seller.food_hours_requirement('I want FOOD1',long),48.0)
+        self.assertEqual(seller.select_unit('I want FOOD1',[short,long],set(),{})['unit'],'long')
+        self.assertIsNone(seller.select_unit('I want FOOD1',[short],set(),{}))
+        self.assertEqual(seller.food_hours_requirement('use within 12 h',short),12.0)
+        self.assertEqual(seller.select_unit('FOOD1; use within 12 h',[short],set(),{})['unit'],'short')
+
     def test_overstocked_exact_sku_leads_with_low_cost_b(self):
         units=[]
         for n,grade,cost in [(0,'A',170),(1,'B',140),(2,'B',120),(3,'C',90),
