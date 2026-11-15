@@ -252,6 +252,59 @@ class ShopMemoryParseOnceTests(unittest.TestCase):
                 self.assertEqual(shop_memory.paid_prices("G1"), [1])
                 self.assertEqual(len(calls), 2)
 
+    def test_readers_beside_record_do_not_parse_again(self):
+        import shop_memory
+        import threading
+        with tempfile.TemporaryDirectory() as td:
+            target = os.path.join(td, "m.json")
+            with open(target, "w", encoding="utf-8") as f:
+                json.dump({"negotiations": [{"task": f"t{i}", "result": "deal", "sku": "G1", "price": i}
+                                            for i in range(2000)]}, f)
+            real, calls, stop, errors = json.load, [], threading.Event(), []
+            def counting(f, *a, **kw):
+                calls.append(1)
+                return real(f, *a, **kw)
+            def read():
+                try:
+                    while not stop.is_set():
+                        shop_memory.paid_prices("G1")
+                        shop_memory.recent("x")
+                except Exception as e:      # noqa: BLE001
+                    errors.append(e)
+            with mock.patch.object(shop_memory, "path", return_value=target), \
+                    mock.patch.object(shop_memory.json, "load", counting):
+                shop_memory._DOC.clear()
+                readers = [threading.Thread(target=read) for _ in range(3)]
+                for t in readers:
+                    t.start()
+                for i in range(60):
+                    shop_memory.record({"task": f"n{i}", "result": "deal", "sku": "G1", "price": 10_000 + i})
+                stop.set()
+                for t in readers:
+                    t.join()
+                self.assertEqual((errors, len(calls)), ([], 1))
+                with open(target, encoding="utf-8") as f:
+                    on_disk = real(f)
+                self.assertEqual(on_disk, shop_memory.load())
+                self.assertEqual(len(on_disk["negotiations"]), 2060)
+
+    def test_a_file_replaced_by_another_writer_is_read_again(self):
+        import shop_memory
+        with tempfile.TemporaryDirectory() as td:
+            target = os.path.join(td, "m.json")
+            body = json.dumps({"negotiations": [{"task": "a", "result": "deal", "sku": "G1", "price": 1}]})
+            with open(target, "w", encoding="utf-8") as f:
+                f.write(body)
+            with mock.patch.object(shop_memory, "path", return_value=target):
+                shop_memory._DOC.clear()
+                self.assertEqual(shop_memory.paid_prices("G1"), [1])
+                st = os.stat(target)
+                with open(target + ".x", "w", encoding="utf-8") as f:      # same size and mtime, a new inode
+                    f.write(body.replace('"price": 1', '"price": 2'))
+                os.utime(target + ".x", ns=(st.st_atime_ns, st.st_mtime_ns))
+                os.replace(target + ".x", target)
+                self.assertEqual(shop_memory.paid_prices("G1"), [2])
+
     def test_a_failed_write_reads_the_file_again(self):
         import shop_memory
         with tempfile.TemporaryDirectory() as td:

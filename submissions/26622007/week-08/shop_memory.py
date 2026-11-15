@@ -57,19 +57,23 @@ def path():
     return MEMORY
 
 
-_DOC = {}       # path -> ((size, mtime_ns), the file's document): load() and record() parse it once while it is unchanged
+_DOC = {}       # path -> ((inode, size, mtime_ns), the file's document): load() and record() parse it once while it stays
+
+
+def _key(st):
+    return st.st_ino, st.st_size, st.st_mtime_ns
 
 
 def _stamp(target):
-    st = os.stat(target)
-    return st.st_size, st.st_mtime_ns
+    return _key(os.stat(target))
 
 
-def _load(target):
+def _load(target, locked=False):
     """The memory file, parsed once while its size and mtime stay (record() keeps the parsed copy current). The shop's
     file is 99 MB, 198 k talks (11/15), ~1 s a parse: record() parsed it for every remembered talk (~880 an hour) and
     paid_prices, note and choose_opening on the event loop, which kept seller.py at 85-100% of a core and its memory
-    churning. Read-only for the callers: only record() adds to it."""
+    churning. Read-only for the callers: never change the document it returns (only record() adds to it). A reader
+    whose copy is old takes _lock and looks again, so it does not parse the file record() has just written."""
     try:
         key = _stamp(target)
     except OSError:
@@ -77,6 +81,9 @@ def _load(target):
     hit = _DOC.get(target)
     if hit is not None and hit[0] == key:
         return hit[1]
+    if not locked:
+        with _lock:
+            return _load(target, locked=True)
     try:
         with open(target, encoding="utf-8") as f:
             m = json.load(f)
@@ -96,18 +103,23 @@ def load():
 def record(entry):
     with _lock:
         target = path()
-        m = _load(target)
-        m["negotiations"].append({"time": time.strftime("%Y-%m-%dT%H:%M:%S"), **entry})
+        m = _load(target, locked=True)
+        rows = m["negotiations"]
+        rows.append({"time": time.strftime("%Y-%m-%dT%H:%M:%S"), **entry})
         try:
             os.makedirs(os.path.dirname(target) or ".", exist_ok=True)
             tmp = target + ".tmp"
             with open(tmp, "w", encoding="utf-8") as f:
-                json.dump(m, f, ensure_ascii=False, indent=1)
+                # one line, written at once: json.dump with indent=1 took 2.4 s for the 99 MB file on the shop's
+                # Python 3.12 (11/15), dumps 0.3 s; every reader parses it with json.load
+                f.write(json.dumps(m, ensure_ascii=False))
+                f.flush()
+                key = _key(os.fstat(f.fileno()))      # a rename keeps the inode, size and mtime
             os.replace(tmp, target)
             _DOC.clear()
-            _DOC[target] = (_stamp(target), m)
+            _DOC[target] = (key, m)
         except BaseException:
-            _DOC.pop(target, None)      # the entry is not on disk: the next read is the file again, as before
+            rows.pop()                  # the entry is not on disk: as before, it is not remembered
             raise
 
 
