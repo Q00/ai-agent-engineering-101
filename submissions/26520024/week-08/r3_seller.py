@@ -264,6 +264,13 @@ class Reservations:
             if isinstance(evidence, dict):
                 by_unit.setdefault(evidence.get('unit'), []).append(event)
         with self.transaction() as db:
+            for row in db.execute("SELECT * FROM deals WHERE status='recovery_hold'"):
+                data = json.loads(row['data'])
+                rows.append(dict(task=row['task'], unit=row['unit'], sku=data.get('sku'),
+                                 status='recovery_hold', in_inventory=row['unit'] in live,
+                                 released_to_inventory=False, checkout_id=None, settlement=None,
+                                 recovery_action='retain_missing_database_hold',
+                                 reason='original_host_database_unavailable'))
             for row in db.execute("SELECT * FROM deals WHERE status IN ('signed_pending','quarantined','settled')"):
                 data = json.loads(row['data'])
                 receipt = data.get('receipt')
@@ -342,6 +349,7 @@ class Reservations:
                                  released_to_inventory=canceled, reason=reason, settlement=proof))
         report = dict(observed_at=now, signed_pending=sum(r['status'] == 'signed_pending' for r in rows),
                       quarantined=sum(r['status'] == 'quarantined' for r in rows),
+                      recovery_held=sum(r['status'] == 'recovery_hold' for r in rows),
                       settled=sum(r['status'] == 'settled' for r in rows),
                       blocked_in_inventory=sum(r['in_inventory'] for r in rows), units=rows,
                       revoked=sum(r['status'] == 'revoked' for r in rows),
