@@ -16,17 +16,18 @@
 \node[kit] (kits) at (5,-2.3) {kit v4, shop side (unchanged)\\inventory.json / catalog.json\\ACP checkout ships a unit, settles\\default restock = random SKUs};
 
 \node[mine] (acp) at (-9.3,-5.6) {acp\_buyer.py\\tools built from the shop's acp.json; LLM plans the call order; code checks JWT, mandate cap, \texttt{accept}; signs AP2 mandates};
-\node[mine,text width=54mm] (mb) at (-3.6,-5.6) {market\_buyer.py\\drop shops the kit refused twice\\choose shop: reviews + memory \emph{notes} (LLM)\\pick SKU: max list value $\le$ budget, not broken\\\texttt{accept} = cert, grade A/B, min\_hours\_left};
-\node[mine,text width=48mm] (sl) at (3.4,-5.6) {seller.py (A2A)\\opens near the market's settled median for the SKU; floor = unit cost\\receipt + unit, claim, cert, warranty};
-\node[mine,text width=36mm] (rs) at (8.9,-5.6) {restock.py (no LLM)\\buys what the ledger says sells; 40 units cap, 5\,\% of balance per SKU, short-shelf food discounted};
+\node[mine,text width=60mm] (mb) at (-3.6,-5.7) {market\_buyer.py\\drop shops refused twice / never a warranty\\proven shop from memory, else LLM + \emph{notes}\\SKU: list$\times$0.75 $\le$ budget, 2+ units; cap at 75 \% of list\\first offer = median $\times$ first\_offer (no LLM)\\\texttt{accept} = cert, grade A/B, min\_hours\_left};
+\node[mine,text width=48mm] (sl) at (3.4,-5.6) {seller.py (A2A), rule-based\\ask = median $\times$ ask\_factor; floor = cost (+10 \% goods, $\le$ 90 \% of median); accept at once $\ge$ floor; unit that meets the asked shelf life, A/B first\\receipt + unit, honest claim, cert, 6 h warranty};
+\node[mine,text width=36mm] (rs) at (8.9,-5.6) {restock.py (no LLM)\\buys the SKUs with the most settled revenue, skips surged ones; 400 A/B cap; food only $\ge$ 10 days; hourly price list to the forum};
 
-\node[mine] (rev) at (-9.3,-8.6) {review.py\\stars from the real grade, claim\_honest, shelf life $\rightarrow$ marks liars in memory};
-\node[file] (fb) at (-3.6,-8.6) {.market/ (buyer): order, shops, catalog, payments.jsonl, broken.jsonl, deal.json, pay.json, outbox.jsonl\\buyer\_memory.json (trades + notes)};
-\node[file,text width=44mm] (fs) at (3.4,-8.6) {.market/ (shop): inventory.json, catalog.json, outbox.jsonl};
-\node[mine,text width=36mm] (mp) at (8.9,-8.6) {market\_price.py\\ledger \texttt{settle} entries, cached 60 s: what sold and at what price};
+\node[mine] (rev) at (-9.3,-9.2) {review.py\\stars from the real grade, claim\_honest, shelf life $\rightarrow$ liars and warranties into memory; ledger-referenced purchase record to the forum};
+\node[file] (fb) at (-3.6,-9.2) {.market/ (buyer): order, shops, catalog, payments.jsonl, broken.jsonl, deal.json, pay.json, outbox.jsonl\\buyer\_memory.json (trades + notes)};
+\node[file,text width=44mm] (fs) at (3.4,-9.2) {.market/ (shop): inventory.json, catalog.json, outbox.jsonl};
+\node[mine,text width=36mm] (mp) at (8.9,-9.2) {market\_price.py\\ledger \texttt{settle} entries, cached 60 s: what sold and at what price};
 
-\node[box,fill=orange!15,text width=100mm] (h) at (-1.5,-11) {harness.py: Claude Code headless (haiku), one JSON answer per decision, code fallback on a bad answer};
-\node[box,fill=gray!8,text width=40mm,font=\scriptsize] (wd) at (8.9,-11.1) {watchdog.sh: restarts run\_kit.sh when the kit dies or its log goes silent 20 min};
+\node[box,fill=orange!15,text width=100mm] (h) at (-1.5,-11.9) {harness.py: Claude Code headless (haiku), one JSON answer per decision, code fallback on a bad answer};
+\node[mine,text width=40mm] (tu) at (8.9,-12.3) {tuner.py (meta-harness)\\hourly: 12 metrics from the last hour of the log $\rightarrow$ LLM moves one of ask\_factor / first\_offer / price\_cap by $\le$ 0.05 inside bounds $\rightarrow$ params.json (read per request)};
+\node[box,fill=gray!8,text width=40mm,font=\scriptsize] (wd) at (-9.3,-11.9) {watchdog.sh: restarts run\_kit.sh when the kit dies or its log goes silent 20 min};
 
 \draw[a] (market) -- (kitb) node[lbl,midway] {order};
 \draw[a] (market) -- (kits) node[lbl,midway] {supply / settle};
@@ -37,6 +38,9 @@
 \draw[a,blue!60!black] (mb) -- (sl) node[bl,midway,above=1pt] {A2A negotiate};
 \draw[d] (mb) -- (fb); \draw[d] (acp) -- (rev); \draw[d] (rev) -- (fb); \draw[d] (sl) -- (fs); \draw[d] (rs) -- (mp);
 \draw[d] (fb) -- (h); \draw[d] (fs) -- (h);
+\draw[loop,draw=violet!70!black] (tu.north) -- (mp.south) node[lbl,midway,text=violet!70!black] {reads logs/market-kit.log};
+\draw[loop,draw=violet!70!black] (tu.west) -- (h.east);
+\node[lbl,text=violet!70!black] at (5.2,-11.9) {one LLM call/hour};
 \draw[loop] (market.east) to[out=0,in=90] (11.2,-5.6) to[out=-90,in=0] (mp.east);
 \node[rl] at (11.4,-2.4) {ledger};
 \draw[loop] (mp.north) -- (rs.south) node[rl,midway] {what sells};
@@ -45,8 +49,8 @@
 \draw[loop] (mp.south west) to[out=200,in=-20] (fb.south east);
 \node[rl] at (1.6,-10.05) {median $\rightarrow$ buyer's first offer, price report on the forum};
 \begin{scope}[on background layer]
-\node[fit=(acp)(mb)(sl)(rs)(rev)(mp),draw=blue!40,rounded corners,inner sep=4pt] (frame) {};
+\node[fit=(acp)(mb)(sl)(rs)(rev)(mp)(tu),draw=blue!40,rounded corners,inner sep=4pt] (frame) {};
 \end{scope}
-\node[blue!60!black,font=\scriptsize,below=2mm of h] {blue = my code, grey = kit v4 (one patch: the \texttt{pay} hook), dashed = files, red = the market-price feedback loop};
+\node[blue!60!black,font=\scriptsize] at (0,-15.2) {blue = my code, grey = kit v4 (patched: \texttt{pay} hook, tunnel retries, outbox cap), dashed = files, red = market-price loop, violet = self-tuning loop};
 \end{tikzpicture}
 \end{document}

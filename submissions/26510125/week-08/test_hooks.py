@@ -107,6 +107,25 @@ harness.ask_json = lambda *a, **k: (_ for _ in ()).throw(AssertionError("harness
 assert mb.choose([{"name": "p", "url": "u1", "reviews": []}, {"name": "q", "url": "u2", "reviews": []}], pmem, "x", 100)["name"] == "p"
 print("ok: first_move + proven shop")
 
+# tuner: metrics from log lines, one clamped step per hour, params fallback
+import tuner
+tuner.PARAMS = md / "params.json"
+assert tuner.params() == tuner.DEFAULT
+(md / "params.json").write_text('{"ask_factor": 2.0, "first_offer": "x"}')
+assert tuner.params() == {"ask_factor": 1.05, "first_offer": 0.85, "price_cap": 0.75}       # clamped / defaulted
+hh = time.strftime("%H:%M:%S")
+lines = [f"{hh} [seller] [visit] 'x' -> G1 grade A cost 1", f"{hh} [seller] [deal] G1 grade A at 120 (cost 100)",
+         f"{hh} [seller] [walk] G1 grade A: rejected at offer 90 vs floor 100", f"{hh} [order o-1] x", f"{hh} [buyer] [done] bought",
+         f"{hh} [buyer] [acp-buyer] done: paid",
+         time.strftime("%H:%M:%S", time.localtime(time.time() - 7200)) + " [seller] [deal] G1 grade A at 999 (cost 1)"]   # two hours ago: out
+m = tuner.measure(lines, time.time() - 3600)
+assert (m["visits"], m["deals"], m["walks"], m["margin_pct"], m["paid"], m["walk_offer_over_floor"]) == (1, 1, 1, 20.0, 1, 0.9), m
+harness.ask_json = lambda *a, **k: {"ask_factor": 0.5, "first_offer": 0.9, "price_cap": 0.75, "why": "test"}
+d = tuner.decide(m, dict(tuner.DEFAULT), log=lambda s: None)
+assert (d["ask_factor"], d["first_offer"], d["price_cap"]) == (0.9, 0.9, 0.75), d           # one 0.05 step, bounded
+assert buyer.first_move(130, 120, 110, 0.8) == ("offer", 88) and mb.price_cap(400, 300, 0.7) == 210
+print("ok: tuner")
+
 # ---- acp_buyer: tools built from the kit's acp.json shape, against a mock shop (no market, no LLM)
 import base64, hashlib, httpx
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey

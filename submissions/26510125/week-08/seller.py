@@ -27,6 +27,7 @@ from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 
 from harness import COMMAND as CMD
 from market_price import median_price
+from tuner import params
 
 NAME = "yeonsong2"
 RESERVE = {"lamp": 100, "chair": 180, "bookshelf": 260}     # Rounds 0-2 have no stock: the week-07 items
@@ -125,7 +126,8 @@ class Seller(AgentExecutor):
         hours = (u["expires_at"] - time.time()) / 3600 if u.get("expires_at") else None
         urgent = (hours is not None and hours < 12) or u.get("grade") == "C"
         med, n = median_price(u["sku"])
-        target = int(med * 0.95) if med else int(u["list_price"] * 0.6)    # a notch under the market; no median: the market now settles ~55-60 % of list
+        knobs = params()                                 # tuner.py moves ask_factor hourly from the log
+        target = int(med * knobs["ask_factor"]) if med else int(u["list_price"] * 0.6)   # no median: the market settles ~55-60 % of list
         reserve = floor_price(u["cost"], u.get("kind"), urgent, target)
         if urgent:
             target = reserve                        # grade C / short shelf life: 98 C units sat unsold; move them at cost

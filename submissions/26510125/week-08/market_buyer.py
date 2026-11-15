@@ -33,6 +33,7 @@ from pathlib import Path
 import harness
 from buyer import negotiate
 from market_price import median_price, settled
+from tuner import params
 
 MEMORY = Path("buyer_memory.json")
 MISMATCH_WORDS = ("receipt said", "receipt says", "receipt price", "overcharg", "higher than", "charged more", "rip")
@@ -216,10 +217,10 @@ def no_warranty(mem: dict, shop_name: str) -> bool:
     return len(w) >= 2 and not any(w)
 
 
-def price_cap(budget: int, list_price) -> int:
+def price_cap(budget: int, list_price, share=0.75) -> int:
     """Saved = sum of (1 - price/list) / (deals + 100): a deal only lifts it when its discount beats the running
     average (~0.23), so never pay more than 75 % of list. Fewer deals, each one counting for more."""
-    return min(budget, int(list_price * 0.75)) if list_price else budget
+    return min(budget, int(list_price * share)) if list_price else budget
 
 
 def pick_sku(shop: dict, order: dict, catalog: dict, broken: set):
@@ -347,11 +348,12 @@ def main():
             if med:
                 hint = f"Other buyers recently paid about {med} for this exact item ({n} settled deals); offer below that first. "
                 log(f"[anchor] market median {med} over {n} deals")
-        cap = price_cap(args.budget, catalog.get(offer["sku"], {}).get("list_price")) if offer else args.budget
+        knobs = params()                                 # tuner.py moves price_cap and first_offer hourly from the log
+        cap = price_cap(args.budget, catalog.get(offer["sku"], {}).get("list_price"), knobs["price_cap"]) if offer else args.budget
         if cap < args.budget:
-            log(f"[cap] paying at most {cap} (75 % of list) of budget {args.budget}")
+            log(f"[cap] paying at most {cap} ({knobs['price_cap']:.0%} of list) of budget {args.budget}")
         st = negotiate(shop["url"], args.item, cap, request_text=request, shop=shop["name"], hint=hint,
-                       anchor=min(med, cap) if offer and med else None)
+                       anchor=min(med, cap) if offer and med else None, first_offer=knobs["first_offer"])
         others = [s for s in shops if s["url"] != shop["url"]]
         if st["status"] != "no_offer" or attempt == 2 or not others:
             break

@@ -7,7 +7,7 @@ Rules: keep stock under 400 A/B units (storage is 1 %/day of cost), spend at mos
 food only with >= 10 days of shelf life (buyers refuse grade C, and food gets there fast), file for bankruptcy only
 when below the line with nothing left to sell. Also posts the shop's price list to the forum once an hour (week-10 LAB first move).
 """
-import argparse, collections, json, time
+import argparse, collections, json, subprocess, sys, time
 from pathlib import Path
 
 from market_price import settled, median_price
@@ -98,6 +98,8 @@ def main():
     if text:
         with (md / "outbox.jsonl").open("a", encoding="utf-8") as f:
             f.write(json.dumps({"post": text, "refs": [], "as": "shop"}, ensure_ascii=False) + "\n")
+    if due(md / "last_tune", 3600):                  # meta-harness, once an hour, in the background: see tuner.py
+        subprocess.Popen([sys.executable, "tuner.py"], stdout=open("logs/tuner.out", "a"), stderr=subprocess.STDOUT, start_new_session=True)
     print(json.dumps(out, ensure_ascii=False), flush=True)
 
 
