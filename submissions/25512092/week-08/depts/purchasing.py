@@ -193,6 +193,7 @@ def make_plan(inv, units, catalog, budget, log, record=True):
             log(f"[surge] {len(late)} SKUs with surge >= {C['surge_min']} moved to the end")
     try:                                         # 11/08 ~13:45: request-based candidates (depts/request_buy.py)
         from depts import request_buy
+        req_before = request_buy._state()        # 11/15 ~15:00: which request SKUs are new this plan
         reqc = request_buy.candidates(catalog, held, surge, log=log)
     except Exception as e:
         log(f"[request] failed: {type(e).__name__}: {e}")
@@ -214,6 +215,10 @@ def make_plan(inv, units, catalog, budget, log, record=True):
         request_buy.bought([s for s, _, _, _ in reqc if s in line_of])
     if record:                                   # 11/15 ~14:20 (person): 6 request lines, guard 10M + 6 h report
         from depts import request_six
+        try:
+            request_six.note_plan([(s, w) for s, _, _, w in reqc if s in line_of], req_before)
+        except Exception as e:
+            log(f"[request six] plan note failed: {type(e).__name__}: {e}")
         request_six.check(units, log=log)
     try:                                         # 11/08 ~20:35: hot SKUs that turn in <= 1 h get my_share 0.8
         from depts import hot_fast

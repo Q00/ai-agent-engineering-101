@@ -38,6 +38,18 @@ def make_db(d):
             db.execute("INSERT INTO my_stock VALUES (?,?,?,?,?,?,?)", (u, sku, sku, 5000, "A", NOW - 5 * 3600, 0))
             db.execute("INSERT INTO settles (ts, buyer, shop, sku, amount, unit) VALUES (?,?,?,?,?,?)",
                        (NOW - 4.5 * 3600, "b", RB.ME, sku, 9000, u))
+    db.execute("CREATE TABLE shop_deals (task TEXT, ts REAL, unit TEXT, outcome TEXT, cost INTEGER)")
+    db.execute("CREATE TABLE shop_msgs (task TEXT, ts REAL, who TEXT, sku TEXT, text TEXT)")
+    # 11/15 ~15:00 items: inextro bought R1 from me 2 h ago (first reply 0.04 s) and Z9 / R2 at nocha12 (R2 held then)
+    db.execute("INSERT INTO my_stock VALUES ('u-i', 'R1', 'r1', 5000, 'A', ?, 0)", (NOW - 3 * 3600,))
+    db.execute("INSERT INTO settles (ts, buyer, shop, sku, amount, unit) VALUES (?, 'inextro', ?, 'R1', 9000, 'u-i')",
+               (NOW - 2 * 3600, RB.ME))
+    db.execute("INSERT INTO shop_deals VALUES ('tk', ?, 'u-i', 'receipt', 5000)", (NOW - 2 * 3600 - 30,))
+    db.executemany("INSERT INTO shop_msgs VALUES ('tk', ?, ?, 'R1', 'x')", [(NOW - 2 * 3600 - 30, "buyer"),
+                                                                            (NOW - 2 * 3600 - 29.96, "shop")])
+    db.execute("INSERT INTO my_stock VALUES ('u-h', 'R2', 'r2', 5000, 'A', ?, 0)", (NOW - 3 * 3600,))
+    db.executemany("INSERT INTO settles (ts, buyer, shop, sku, amount, unit) VALUES (?, 'inextro', 'nocha12', ?, 9000, ?)",
+                   [(NOW - 3600, "R2", "x1"), (NOW - 3600, "Z9", "x2")])
     db.commit()
     db.close()
 
@@ -66,6 +78,7 @@ def plan(lines, trial, units, rules_extra=None, sent=None):
     with contextlib.ExitStack() as es:
         for obj, name, val in (
                 (RB, "HERE", d), (RB, "STATE", st), (RB, "LINES", rl), (R6, "RULES", rl), (R6, "HERE", d),
+                (R6, "PLANS", os.path.join(d, "plans.jsonl")),
                 (top_high, "last_costs", lambda *a, **k: {}), (PU, "load_stats", lambda: st_),
                 (PU, "price_of", lambda k, s=None: (None, 0)), (PU, "busy_categories", lambda c, top=5: []),
                 (PU, "c_rules", lambda: {}), (PU, "excluded", lambda: {}), (PU, "guard_check", lambda *a: None),
@@ -84,6 +97,8 @@ def plan(lines, trial, units, rules_extra=None, sent=None):
         es.enter_context(mock.patch.object(R6, "window", lambda t0, t1, db: (10, 100_000, 20_000)))
         p = PU.make_plan({"balance": 10 ** 9, "units": units}, units, catalog(), 10 ** 9, logs.append, record=True)
     req = [m for m in logs if "request-based" in m and "-> buy" in m]
+    pl = os.path.join(d, "plans.jsonl")
+    plan.rows = [json.loads(x) for x in open(pl, encoding="utf-8")] if os.path.exists(pl) else []
     return p, req, logs, json.load(open(rl, encoding="utf-8")), sent
 
 
@@ -96,6 +111,9 @@ def test_six_lines():
     assert len(req) == 6, (req, logs)
     assert sum("trial" in m for m in req) == 1 and sum("target 8" in m for m in req) == 5, req
     assert not sent and not r.get("off_ts")
+    # the plan's request lines are kept: 5 regular + 1 trial, the trial SKU new (no first_buy before)
+    row = plan.rows[-1]
+    assert row["regular"] == 5 and row["trial"] == 1 and row["new"] == ["N1"], plan.rows
     # 4 lines (as before): 3 regular + 1 trial
     _, req, _, _, _ = plan(4, 1, [])
     assert len(req) == 4 and sum("trial" in m for m in req) == 1, req
@@ -118,6 +136,11 @@ def test_report():
     assert r.get("six_reported") and len(sent) == 1 and sent[0][0] == "daily", (r, sent)
     t = sent[0][2]
     assert "요청 기반 매입 6줄 6.0시간 점검" in t and "일반 판매/h 1.7 vs 1.7" in t and "12시간+ 미판매 일반 재고: 지금 3개 30,000 vs 적용 때 5개 400,000" in t, t
+    assert "1) 다섯 buyer가 nocha12/nohaggle-hero/25620027/11im에서 산 저가 거래 중 그때 우리 재고에 있던 SKU: 1/2 (50.0%)" in t, t
+    assert "2) 다섯 buyer 첫 메시지에 대한 우리 첫 응답(판매자 내부 기록): 중앙 0.04s / 90% 0.04s (n 1)" in t, t
+    assert "3) 요청 기반 줄: 계획 1번, 요청 줄 정식 5 / 시험 1 (5+1 다 찬 계획 1번), 새 SKU 1개 (N1)" in t, t
+    assert "일반 SKU 수: 지금 3개 vs 기준 184개" in t and "다섯 buyer 우리 몫(시간당 건수) 합 0.2 vs" in t, t
+    assert "추가 항목 계산 실패" not in t, t
     # not before 6 h
     _, _, _, r, sent = plan(6, 1, [], dict(ex, six_since=NOW - 5 * 3600))
     assert not r.get("six_reported") and not sent
