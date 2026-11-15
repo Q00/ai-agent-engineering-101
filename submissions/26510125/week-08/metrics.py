@@ -12,7 +12,12 @@ LOG = Path("logs/market-kit.log")
 
 
 def log_lines():
-    return LOG.read_text(encoding="utf-8", errors="ignore").splitlines() if LOG.exists() else []
+    """The kit rotates at 20 MB: market-kit.log.2, .1, then the live file, oldest first."""
+    out = []
+    for f in sorted(LOG.parent.glob("market-kit.log.*"), key=lambda f: -int(f.suffix[1:])) + [LOG]:
+        if f.exists():
+            out += f.read_text(encoding="utf-8", errors="ignore").splitlines()
+    return out
 
 
 def by_day(lines):
