@@ -51,6 +51,7 @@ CASH_FLOOR, CASH_FLOOR_LOW = 100_000_000, 100_000_000   # never under 1억
 FRESH_SELL, FRESH_LOW, FRESH_HIGH = 0.39, 0.05, 1.0
 EXPECTED_COST = {"food": 0.50, "goods": 0.59}           # restock.EXPECTED_COST
 MAX_SURGE = 1.05
+FAST_FOOD_HOURS = 0.5      # a held food lasting less goes before the goods refills (urgent_listed)
 MAX_WINDOW_HOURS = 12
 
 
@@ -177,29 +178,33 @@ def counted(units, cfg, catalog, factors=None, now=None):
         return plain, {}
 
 
-def unit_net(sku, catalog, model, s, prior_break=0.0):
-    """Expected net of one more unit of the SKU before the close: goods list x (ratio x (1 - break) - 0.59) x fresh_sell,
-    food list x (ratio - 0.50). None without a list price or a model price ratio."""
+def unit_net(sku, catalog, model, s, prior_break=0.0, factor=1.0):
+    """Expected net of one more unit of the SKU before the close: goods list x (ratio x (1 - break) - 0.59 x surge)
+    x fresh_sell, food list x (ratio - 0.50 x surge). prior_break: the SKU's break chance (restock passes the measured
+    ledger rate as fill_listed does, else prior_break). None without a list price or a model price ratio."""
+    f = factor if _num(factor) and factor > 0 else 1.0
     x = catalog.get(sku) or {}
     m = ((model or {}).get("skus") or {}).get(sku) if isinstance(model, dict) else None
     lp, ratio = x.get("list_price"), (m or {}).get("price_ratio") if isinstance(m, dict) else None
     if not (_num(lp) and lp > 0 and _num(ratio)):
         return None
     if x.get("kind") == "food":
-        return lp * (ratio - EXPECTED_COST["food"])
+        return lp * (ratio - EXPECTED_COST["food"] * f)
     b = prior_break if _num(prior_break) and 0 <= prior_break < 1 else 0.0
-    return lp * (ratio * (1 - b) - EXPECTED_COST["goods"]) * s["fresh_sell"]
+    return lp * (ratio * (1 - b) - EXPECTED_COST["goods"] * f) * s["fresh_sell"]
 
 
-def call_value(sku, cfg, catalog, model, have, counts):
+def call_value(sku, cfg, catalog, model, have, counts, brk=None, factor=1.0):
     """need x unit_net for a listed SKU with a target (need: target - counted units, held and on their way, at most
     20); None when the model gives no net. have / counts: Counters of every unit and of the counted ones."""
     s = on(cfg)
     if s is None:
         return None
-    net = unit_net(sku, catalog, model, s, cfg.get("prior_break"))
+    net = unit_net(sku, catalog, model, s, cfg.get("prior_break") if brk is None else brk, factor)
     t = (cfg.get("sku_target_units") or {}).get(sku) if isinstance(cfg.get("sku_target_units"), dict) else None
     if net is None or type(t) is not int:
         return None
-    need = max(0, min(20, t - counts[sku], s["hold_times"] * t - have[sku]))
+    top = cfg.get("max_units_per_sku", 20)
+    top = top if _num(top) else 20      # the guard's unit cap on every unit held (review ad9cee9 M2)
+    need = max(0, min(20, t - counts[sku], s["hold_times"] * t - have[sku], top - have[sku]))
     return need * net

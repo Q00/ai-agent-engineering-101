@@ -167,7 +167,7 @@ def fresh_extra(cfg, inv, catalog, waiting=(), now=None):
         return set()
 
 
-def urgent_listed(cfg, inv, catalog, waiting=(), model=None):
+def urgent_listed(cfg, inv, catalog, waiting=(), model=None, breaks=None):
     """listed(cfg) with the SKUs that have no live unit held or on its way first (food before goods), then the refills
     (food before goods), each in list order. With the demand model the refills go by the hours their stock lasts at
     rate x my_share (or our own last price_hours' sales when faster), lowest first, and those it has no rate for after them in list order: in the 06:23 window (11/07) run 2
@@ -205,10 +205,20 @@ def urgent_listed(cfg, inv, catalog, waiting=(), model=None):
         counts = slot_count(live, cfg, catalog, surge(inv), now)[0]
         for w in waiting or ():
             counts[w.get("sku")] += w.get("qty") or 0
-        value = {s: restock_sellable_slots.call_value(s, cfg, catalog, model, have, counts) for s in listed(cfg)}
+        factors = surge(inv)
+
+        def brk(s):     # fill_listed's refund chance: the SKU's measured ledger break rate, else prior_break
+            got = market_model.break_chance(breaks, s) if breaks and not food(s) else None
+            return got if got is not None else cfg.get("prior_break")
+        value = {s: restock_sellable_slots.call_value(s, cfg, catalog, model, have, counts, brk(s), factors.get(s, 1.0))
+                 for s in listed(cfg)}
+        # a held food that lasts under FAST_FOOD_HOURS goes right after the empty SKUs: the goods refills take ~3 windows
+        # of lines when the switch opens, and Gb909a9c8 (0.41 h held) would sell out between them (review ad9cee9 M1)
+        fast = lambda s: food(s) and lasts(s) is not None and lasts(s) < restock_sellable_slots.FAST_FOOD_HOURS
         return sorted(listed(cfg), key=lambda s: (0, not food(s), 0) if have[s] <= 0
-                      else (1, 0, -value[s]) if value[s] is not None
-                      else (2, 0, lasts(s)) if lasts(s) is not None else (3, not food(s), 0))
+                      else (1, 0, lasts(s)) if fast(s)
+                      else (2, 0, -value[s]) if value[s] is not None
+                      else (3, 0, lasts(s)) if lasts(s) is not None else (4, not food(s), 0))
     # empty (food first), then refills with a rate by hours left, then refills without one as before (food first)
     return sorted(listed(cfg), key=lambda s: (3, 0, 0) if s in extra else (0, not food(s), 0) if have[s] <= 0
                   else (1, 0, lasts(s)) if lasts(s) is not None else (2, not food(s), 0))
@@ -262,7 +272,7 @@ def plan(inv, catalog, demand, cfg, model=None, breaks=None, waiting=()):
         # proven / priority SKUs first, so the guard gives them the stock-cost room and the line limit cannot cut them:
         # ranked per won a mattress came below the cut (04:59 run left out G1515d951 that the guard allowed 3 of, and
         # G75f11c19 got 0 room in every run 04:44-05:02), and proven_first() only sees the lines plan() returns
-        first = urgent_listed(cfg, inv, catalog, waiting, model)
+        first = urgent_listed(cfg, inv, catalog, waiting, model, breaks)
         extra = fresh_extra(cfg, inv, catalog, waiting, now)      # default off: none; after the unlisted lines too
         ranked.sort(key=lambda r: len(first) + 1 if r[1] in extra else first.index(r[1]) if r[1] in first
                     else len(first))                                                      # stable: the rest keep their order
@@ -430,6 +440,14 @@ def guard(buy, inv, catalog, cfg, breaks=None, waiting=()):
     slots = slot_count(live, cfg, catalog, surge(inv), now)[0]
     sellable = restock_sellable_slots.on(cfg)      # its extra units keep its cash floor (None: off)
     spent = sum(w["worst"] * w.get("cash_qty", w["qty"]) for w in waiting)
+    if sellable is not None:
+        # the cash every line of today's rule would take is kept first (the same lines guarded off), so the extra units
+        # come only from what is over the floor after all of them, wherever they stand in the run (review ad9cee9 I2:
+        # extras on the listed lines up front, then today's lines behind them, left 89.4M of 130M)
+        with contextlib.redirect_stderr(io.StringIO()):
+            base = guard(buy, inv, catalog, {**cfg, "sellable_slots": None}, breaks, waiting)
+        spent += sum(worst(x["sku"], x["qty"], catalog, surge(inv)) * (1 + hard_limits.BUY_STORAGE) * x["qty"]
+                     for x in base if (catalog.get(x["sku"]) or {}).get("list_price"))
     held = sum(u.get("cost") or 0 for u in live)
     food = sum(u.get("cost") or 0 for u in live if u.get("kind") == "food")
     for w in waiting:
@@ -490,6 +508,7 @@ def guard(buy, inv, catalog, cfg, breaks=None, waiting=()):
                 print(f"[restock] guard: {b['sku']} sellable_slots {capped - plain} -> {extra} over today's room "
                       f"(cash floor {sellable['cash_floor']:.0f})", file=sys.stderr)
             capped = plain + extra
+            spent += each * extra       # today's part of the line is in spent already
         # priced on the capped line, not the line the cash leaves: a few won high at most, never low
         unit = worst(b["sku"], capped, catalog, factors) if x.get("list_price") else float("inf")
         paid = unit * (1 + hard_limits.BUY_STORAGE)      # the cash a unit takes: its cost and the storage it adds
@@ -514,7 +533,6 @@ def guard(buy, inv, catalog, cfg, breaks=None, waiting=()):
         count[b["sku"]] += qty
         slots[b["sku"]] += qty
         spare, room = spare - paid * qty, room - unit * qty
-        spent += paid * qty
         if x.get("kind") == "food":
             food_room -= unit * qty
     return out
@@ -1188,7 +1206,7 @@ def main():
             # those go first in either case (proven_first); agent lines they push past max_lines are queued again
             extra, small = fresh_extra(cfg, inv, catalog, waiting), small_food(catalog, inv, waiting)
             send, back = batch(lines, [] if queued else out["buy"], out["buy"], keep, cfg,
-                               urgent_listed(cfg, inv, catalog, waiting, model if model and model.get("active") else None),
+                               urgent_listed(cfg, inv, catalog, waiting, model if model and model.get("active") else None, breaks),
                                line_class(extra, small))                                   # extra: after the agent's too
             agent_skus = {x.get("sku") for x in lines}
             if hold and not trial:         # agent lines for the trial's SKUs wait in the queue until the trial ends

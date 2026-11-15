@@ -153,6 +153,41 @@ class ValueTest(unittest.TestCase):
             off = restock.urgent_listed({**cfg, "sellable_slots": None}, inv, CATALOG, (), model)
         self.assertEqual(off, ["G2", "F1", "G1"])         # today: by the hours the held units last
 
+    def test_the_order_uses_the_measured_break_rate_not_prior_break(self):
+        # review ad9cee9 I1: at prior_break 0.15 both nets go negative and the small line came first; the ledger's
+        # rates (5-10%) make them positive and the line that nets most goes first
+        cat = {**CATALOG, "G3": {"kind": "goods", "category": "가구>책상", "list_price": 1000000}}
+        cfg = {**CFG, "priority_skus": ["G3", "G1"], "sku_target_units": {"G1": 10, "G3": 2},
+               "sellable_slots": ON, "fresh_now": NOW, "prior_break": 0.15}
+        model = {"skus": {s: {"rate": 2, "my_share": 0.1, "price_ratio": 0.68} for s in ("G1", "G3")}}
+        inv = {"units": [unit("G1", 0.72, 3)] * 9 + [{**unit("G1", 0.72, 3), "sku": "G3"}]}
+        breaks = {"sold": 1000, "rate": 0.06, "by_sku": {"G1": {"sold": 500, "broke": 30}, "G3": {"sold": 500, "broke": 30}}}
+        with mock.patch.object(restock.time, "time", return_value=NOW):
+            self.assertEqual(restock.urgent_listed(cfg, inv, cat, (), model, breaks), ["G1", "G3"])
+        self.assertGreater(ss.unit_net("G1", cat, model, ON, prior_break=0.06), 0)
+        self.assertLess(ss.unit_net("G1", cat, model, ON, prior_break=0.15), 0)
+
+    def test_surge_raises_the_expected_cost(self):
+        a = ss.unit_net("G1", CATALOG, self.MODEL, ON, prior_break=0.05)
+        self.assertLess(ss.unit_net("G1", CATALOG, self.MODEL, ON, prior_break=0.05, factor=1.04), a)
+
+    def test_need_keeps_to_max_units_per_sku(self):
+        cfg = {**CFG, "sku_target_units": {"G1": 10}, "sellable_slots": ON, "fresh_now": NOW, "max_units_per_sku": 12}
+        have, counts = collections.Counter({"G1": 10}), collections.Counter({"G1": 0})
+        v = ss.call_value("G1", cfg, CATALOG, self.MODEL, have, counts, 0.05)
+        self.assertAlmostEqual(v, 2 * ss.unit_net("G1", CATALOG, self.MODEL, ON, prior_break=0.05))
+
+    def test_a_fast_selling_held_food_goes_before_the_goods_refills(self):
+        # review ad9cee9 M1: a food that lasts 0.4 h is not left behind ~3 windows of goods refills
+        cfg = {**CFG, "priority_skus": ["G1", "F1"], "sellable_slots": ON, "fresh_now": NOW, "prior_break": 0.05}
+        model = {"skus": {"G1": {"rate": 2, "my_share": 0.1, "price_ratio": 0.68},
+                          "F1": {"rate": 50, "my_share": 0.5, "price_ratio": 0.70}}}
+        inv = {"units": [unit("G1", 0.72, 3)] * 4 + [unit("F1", 0.5, 0.2, kind="food")] * 8}     # F1: 8 / 25 an hour
+        with mock.patch.object(restock.time, "time", return_value=NOW):
+            self.assertEqual(restock.urgent_listed(cfg, inv, CATALOG, (), model), ["F1", "G1"])
+            slow = {"skus": {**model["skus"], "F1": {"rate": 2, "my_share": 0.5, "price_ratio": 0.70}}}
+            self.assertEqual(restock.urgent_listed(cfg, inv, CATALOG, (), slow), ["G1", "F1"])
+
 
 class PlanGuardTest(unittest.TestCase):
     def setUp(self):
@@ -187,6 +222,25 @@ class PlanGuardTest(unittest.TestCase):
         # today's room is not held to the floor: under it the old cap still buys
         self.assertEqual(self.guard(ON, balance=50_000_000, held=self.held[:2] + [unit("G1", 0.72, 3)]),
                          [{"sku": "G1", "qty": 1}])
+
+    def test_the_floor_holds_over_the_whole_run_with_todays_lines_behind_the_extras(self):
+        # review ad9cee9 I2: extras on a listed line first, then a line of today's rule behind it; the run must leave
+        # the balance at the floor or over it, and today's line keeps its units
+        cat = {**CATALOG, "G4": {"kind": "goods", "category": "가구>의자", "list_price": 1000000}}
+        cfg = {**self.cfg, "priority_skus": ["G1", "G4"], "sku_target_units": {"G1": 4, "G4": 4}}
+        each = 1000000 * restock.WORST_COST * (1 + restock.hard_limits.BUY_STORAGE)
+        balance = 100_000_000 + int(4.5 * each)
+        inv = {"balance": balance, "units": list(self.held)}         # G1: 1 sellable of 4 held; G4: none
+        with mock.patch.object(restock.time, "time", return_value=NOW):
+            got = restock.guard([{"sku": "G1", "qty": 10}, {"sku": "G4", "qty": 4}], inv, cat,
+                                {**cfg, "sellable_slots": ON})
+        self.assertEqual(got, [{"sku": "G4", "qty": 4}])       # 4 of today's room kept, 0.5 unit over: no extra
+        with mock.patch.object(restock.time, "time", return_value=NOW):
+            got = restock.guard([{"sku": "G1", "qty": 10}, {"sku": "G4", "qty": 4}], dict(inv, balance=balance + int(2 * each)),
+                                cat, {**cfg, "sellable_slots": ON})
+        self.assertEqual(got, [{"sku": "G1", "qty": 2}, {"sku": "G4", "qty": 4}])
+        spent = sum(x["qty"] for x in got) * each
+        self.assertGreaterEqual(balance + int(2 * each) - spent, 100_000_000 - 1)
 
     def test_plan_asks_the_sellable_gap_through_fill_listed(self):
         model = {"active": True, "skus": {"G1": {"rate": 2, "my_share": 0.1, "price_ratio": 0.70, "mine_rate": 0.2}},
