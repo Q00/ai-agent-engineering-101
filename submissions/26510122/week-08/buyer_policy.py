@@ -247,7 +247,7 @@ def routing_profiles(history, order, *, now=None):
     return profiles
 
 
-def routing_evidence(profile, saving):
+def routing_evidence(profile, saving, quality=None):
     evidence=dict(profile or {'completed_orders_6h':0,'paid_orders_6h':0,
         'unusable_at_settlement_6h':0,'smoothed_paid_probability':.6,
         'smoothed_unusable_probability':0.,'observed_duration_count':0,
@@ -255,6 +255,12 @@ def routing_evidence(profile, saving):
     contribution=saving if type(saving) in (int,float) and math.isfinite(saving) else 0.
     expectation=(evidence['smoothed_paid_probability']*contribution
                  - evidence['smoothed_unusable_probability']*(1+contribution))
+    from buyer_breakage import contribution_debit
+    debit=contribution_debit(quality,contribution)
+    expectation-=evidence['smoothed_paid_probability']*debit
+    if quality:
+        evidence['post_sale_breakage']=quality
+        evidence['post_sale_contribution_debit']=round(debit,6)
     evidence['estimated_saved_per_attempt']=round(expectation,6)
     evidence['estimated_saved_per_minute']=round(
         expectation*60/max(5,evidence['smoothed_attempt_seconds']),6)

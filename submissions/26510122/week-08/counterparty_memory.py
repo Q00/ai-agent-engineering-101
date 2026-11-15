@@ -16,6 +16,7 @@ import time
 from collections import Counter, defaultdict
 
 import httpx
+import buyer_breakage
 
 from context_compaction import epoch
 from market_memory import ATTEMPT_EVENTS, EVENTS, _attempts, events, record
@@ -175,6 +176,7 @@ def refresh(own_name: str, *, cache_path=CACHE,event_path=EVENTS,now=None) -> li
             result_rows={e['seq']:e for e in cache.get('rows',[])+rows
                          if e.get('kind')=='result' and isinstance(e.get('data'),dict)}
             cache['rows']=[result_rows[k] for k in sorted(result_rows)[-512:]]
+            cache['buyer_breakages'] = buyer_breakage.collect(cache.get('buyer_breakages',[]),rows,own_name,now)
             cache['recent_purchases'] = recent_market_purchases(
                 cache.get('recent_purchases', []), latest, now)
         except (httpx.HTTPError,ValueError,KeyError,TypeError):

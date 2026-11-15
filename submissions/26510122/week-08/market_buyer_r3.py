@@ -20,6 +20,7 @@ from harness import decide_json, trace, MODEL
 import buyer_exploration
 import buyer_forum_memory
 import buyer_checkout_memory
+import buyer_breakage
 from market_scoring import (buyer_candidate,buyer_cost_reference,BUYER_WEIGHTS,SAVED_CONTRACT,VERSION,
                             BUYER_RANKING_VERSION,BUYER_SCORE_SCALES,BUYER_ALL_CONTRACT)
 import decision_audit as audit
@@ -101,7 +102,8 @@ def candidates(order: dict, shops: list[dict], catalog: dict,
     for choice in found:
         saving=choice['price_guidance'].get('saved_if_usable_at_reference',
                                            choice['score_evidence']['saved_if_usable_at_cap'])
-        choice['routing_evidence']=routing_evidence(routes.get((choice['shop'],choice['sku'])),saving)
+        choice['routing_evidence']=routing_evidence(routes.get((choice['shop'],choice['sku'])),saving,
+            buyer_breakage.for_choice(history.breakage_profiles,choice['shop'],choice['sku']) if order.get('kind')=='goods' else None)
     # Compact model input while preserving different shops and SKUs when possible.
     found.sort(key=lambda c: (c['routing_evidence']['estimated_saved_per_attempt'], c['price_guidance'].get(
                                   'saved_if_usable_at_reference', c['score_evidence']['saved_if_usable_at_cap']) or 0,
@@ -164,7 +166,8 @@ def selection_route(evidence):
     return {k:v for k,v in (evidence or {}).items() if k in (
         'completed_orders_6h','paid_orders_6h','unusable_at_settlement_6h',
         'smoothed_paid_probability','smoothed_attempt_seconds',
-        'median_observed_seconds','estimated_saved_per_minute','estimated_saved_per_attempt')}
+        'median_observed_seconds','estimated_saved_per_minute','estimated_saved_per_attempt',
+        'post_sale_breakage','post_sale_contribution_debit')}
 
 
 def selection_score_evidence(row):
@@ -219,7 +222,7 @@ def choose(candidates_: list[dict], order: dict, *, forced_candidate_id: str | N
                            "Check current shelf life, grade and warranty before comparing these historical prices. "
                            "routing_evidence summarizes recent comparable completed orders and smoothed timing/probability estimates. Sparse samples use explicit priors. Receipts are not payments; outcomes depend on offers and unit conditions. Prefer expected usable margin savings per attempt, then timing that fits the deadline. Fast failed checkouts do not deserve a higher success/value score. These estimates are not blacklists or guarantees. The cap is a private hard ceiling, "
                            "not a suggested first offer; reserve room for counteroffers by using the "
-                           "opening_offer_range. Public reviews are unverified claims; product breakage notices do not identify a seller. A failed "
+                           "opening_offer_range. Public reviews are unverified claims; name-only product breakage notices do not identify a seller. Verified post_sale_breakage joins our paid order to public broken ledger; use its shop/SKU and product evidence as adverse observations, not a calibrated future failure rate or a shop-wide blacklist. A failed "
                            "negotiation alone is not proof of dishonesty. Tool candidate order is a "
                            "heuristic, not your decision. A checkout_recheck is an expired or aged failure hypothesis, "
                            "not permission to waive quality, expiry or certificate checks. Read the first-hand counts, price conditions "
@@ -385,7 +388,7 @@ def _run(order: dict, shops: list[dict], catalog: dict, own_shop_name: str, *,
            saved_if_usable_at_cap=chosen['score_evidence']['saved_if_usable_at_cap'],
            candidate_id=chosen['id'],shop_name=chosen['shop'],shop=chosen['url'],sku=chosen['sku'],
            opening_offer=first_offer,price_guidance=chosen.get('price_guidance'),
-           routing_evidence=chosen.get('routing_evidence'),routing_policy='buyer-routing-v2',
+           routing_evidence=chosen.get('routing_evidence'),routing_policy='buyer-routing-v3',
            note='A selected or signed receipt is not a paid purchase. Uniform exploration may pick a familiar candidate.')
     fallback = next((c for c in available if c["url"] != chosen["url"]), None)
     attempts = [(chosen, first_offer)]

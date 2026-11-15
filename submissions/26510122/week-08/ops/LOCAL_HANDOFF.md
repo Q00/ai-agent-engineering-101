@@ -186,3 +186,12 @@ Saved 개선 가격은 `정가-Saved*(정가-원가 시나리오)` 미만의 정
   응답 시간은 함께 보되 성공 확률과 품질을 대신하지 않는다.
 - 정책 식별자 `buyer-saved-v4`, `buyer-routing-v2`. 공식 거래 수가 실제 로컬 정산 하한보다
   뒤처진 Saved 참고선에는 지연 경고를 붙인다. 공식 Saved 상승 확인과 원가 시나리오 추정을 분리한다.
+
+
+## 2026-11-16: hard selling floors and verified buyer breakage
+
+- Sufficient-life food (>3h), unknown-expiry food, and goods require a positive price above verified acquisition cost; goods also cover accrued holding and the existing warranty stress floor. Recheck at opening, counter and before signing, including restored unsigned negotiations. Only finite, unexpired food within 3h permits model-chosen loss mitigation. Already signed receipts retain their original terms; public quote ceilings and checkout conditions remain binding.
+- Existing counterparty ledger polling now retains bounded own-buyer `broken` proofs. Buyer preparation reads those proofs and `state/buyer-breakage-backfill.json` locally, without a new synchronous market request. Join exact own paid order+SKU; resolve shop identity from our paid order, not a mutable tunnel URL. Name-only notices do not attribute a shop.
+- Seven-day shop/SKU and product evidence reduces candidate Saved estimates by a smoothed observed adverse-contribution debit. Refunded failure contributes zero instead of minus one; overlapping product/shop evidence is charged once. This is adverse evidence with censored/unknown outcomes, not a calibrated lifetime failure probability or a blanket shop blacklist. Candidate availability, exploration and hard A/B/certificate checks remain. Routing version is buyer-routing-v3.
+- Backfill: recent 6h 15 notices resolved to 15 exact public ledger broken events and own paid orders. Repeat examples include inextro bedding/mattresses; 25620027 warranty-refunded failures are distinguished. No keys, DB rows or supply intents were reset.
+- Tests: 548 passed. Earlier failed audit-name compatibility runs are preserved in logs. Deployment uses the existing state-preserving Linux rollout; see COSTQUALITY20261116A report and subsequent live verification.

@@ -12,6 +12,7 @@ import time
 from pathlib import Path
 from typing import Any
 import decision_audit
+import buyer_breakage
 from context_compaction import (BUYER_MEMORY_BYTES, BUYER_BRIEF_BYTES, MAX_TURNS,
                                 bounded, price_ranges, select_cases, text, epoch)
 
@@ -129,6 +130,7 @@ def read_history(path: Path = EVENTS, *, db_path=None, now=None):
                 continue
         rows.extend({'event':'identity_observation','order':order,'shop':url,'shop_name':name}
                     for order,url,name in sorted(identities,key=lambda x:tuple(str(v) for v in x)))
+    rows.extend(buyer_breakage.load(rows,path,now=now))
     return rows
 
 
@@ -164,6 +166,8 @@ class PreparedHistory(list):
                 self.by_name.setdefault(name,[]).append(e)
             self.by_url.setdefault(e.get('shop'),[]).append(e)
             self.by_sku.setdefault(e.get('sku'),[]).append(e)
+
+        self.breakage_profiles=buyer_breakage.profiles(self)
 
     def resolved(self,url,order=None):
         names=self.order_names.get((order,url)) or self.alias_names.get(url,set())
@@ -307,6 +311,7 @@ def context(shop_url: str, sku: str, *, shop_name: str | None = None,
             'cases':select_cases(same),
             'observed_receipt_problems':sum(e.get('result')=='invalid_receipt' for e in first_hand if e['event']=='negotiation' and e.get('sku')==sku),
             'same_product_broken_reports':rows.broken_names[product_name] if product_name else 0,
+            'verified_breakage_evidence':buyer_breakage.for_choice(rows.breakage_profiles,name,sku),
             'note':'Only confirmed payment/settlement is paid. Cases are observations, not rules. '
                    'Breakage reports identify a product, not its seller. Unknown grade stays unknown.'}
     return bounded(view,('cases',),BUYER_MEMORY_BYTES)
@@ -315,7 +320,7 @@ def context(shop_url: str, sku: str, *, shop_name: str | None = None,
 def brief(memory: dict) -> dict:
     """Give the selector evidence behind a tool score, not just a score."""
     result = {k:memory.get(k) for k in ('shop_name','shop_payment_count','same_sku_payment_outcomes',
-                                      'settled_prices_by_grade','observed_receipt_problems','same_product_broken_reports')}
+                                      'settled_prices_by_grade','observed_receipt_problems','same_product_broken_reports','verified_breakage_evidence')}
     result['cases'] = memory.get('cases',[])[:2]
     result['note'] = 'First-hand observations; public reviews are separate claims. More history may be omitted.'
     return bounded(result,('cases',),BUYER_BRIEF_BYTES)
