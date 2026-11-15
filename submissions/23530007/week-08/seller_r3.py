@@ -614,6 +614,35 @@ def star_buyer(text):
     return next(((k, x) for k, (x, pats) in _stars[1].items() if any(r.search(text) for r in pats)), (None, None))
 
 
+def star_terms(who):
+    """11-15: the raw star_buyers.json entry of an account (max_loss, max_list for capped-loss star prices)."""
+    return (read_json(STAR_BUYERS, {}) or {}).get(who) or {}
+
+
+STAR_LOSS_DAY = 10e6          # 11-15: most loss (cost - price) of capped-loss star sales per UTC day
+STAR_LOSS_FILE = HERE / ".market" / "star_loss.json"
+
+
+def _star_loss_state():
+    day = time.strftime("%Y-%m-%d", time.gmtime())
+    try:
+        st = json.loads(STAR_LOSS_FILE.read_text())
+    except (OSError, ValueError):
+        st = {}
+    return st if st.get("day") == day else {"day": day, "loss": 0, "deals": 0}
+
+
+def star_loss_left():
+    return STAR_LOSS_DAY - _star_loss_state().get("loss", 0)
+
+
+def star_loss_add(loss):
+    st = _star_loss_state()
+    st["loss"] = st.get("loss", 0) + max(0, loss)
+    st["deals"] = st.get("deals", 0) + 1
+    STAR_LOSS_FILE.write_text(json.dumps(st))
+
+
 def rival(text):
     """(name, min_share) of the rival buyer in rival_buyers.json whose pattern matches this first message, else
     (None, 0). User 11-07: a classmate ranked above us bought our goods at our cost floor (0.525 of list) and
@@ -769,6 +798,7 @@ class Shop(AgentExecutor):
                 moved = min(share + p["intel_band"], max(share - p["intel_band"], comp - p["intel_undercut"]))
                 share = min(share, moved) if c < 1 else moved
             defense = False
+            star_loss = False
             doomed = u.get("kind") == "food" and u.get("unit") and is_doomed(u, now)
             share *= (p.get("sku_auto", {}).get(u["sku"]) or {}).get("ask", 1.0)   # strategist.py, per SKU
             if slow:                                    # after the competitor move, so it cannot undo these cuts
@@ -842,7 +872,19 @@ class Shop(AgentExecutor):
                 # Food keeps the small under-cost star prices the user approved (11-11)
                 # 11-13 18:25 (verified L7): at exactly cost a warranted unit loses its refunds (A ~2.5% of price);
                 # x 1.025 keeps a star sale book-neutral
-                at_cost = u.get("kind") == "goods" and floor < u["cost"] * STAR_COST_MULT
+                # 11-15 (user: 'act toward the scenarios we win'): the simulation's deciding event is SungJinho's stars
+                # passing ours (win 58% if so, 100% if not). An account with max_loss in star_buyers.json (dyishappy:
+                # 1,323 reviews of us at 3.25, ~10/h, rates .55 of list 5.0 and .65+ 3.0) gets its 5-star price down to
+                # max_loss under cost on goods listed <= max_list, while the day's loss stays under STAR_LOSS_DAY
+                tm = star_terms(star_who)
+                star_loss = bool(u.get("kind") == "goods" and tm.get("max_loss")
+                                 and (u.get("list_price") or 0) <= tm.get("max_list", 1e18) and star_loss_left() > 0)
+                if star_loss:
+                    floor = max(round(u["list_price"] * star_x), int(u["cost"] * (1 - float(tm["max_loss"]))))
+                    share = floor / u["list_price"]
+                    at_cost = False
+                else:
+                    at_cost = u.get("kind") == "goods" and floor < u["cost"] * STAR_COST_MULT
                 if at_cost:
                     floor = int(u["cost"] * STAR_COST_MULT)
                     share = max(share, floor / u["list_price"])
@@ -858,7 +900,8 @@ class Shop(AgentExecutor):
             if u.get("kind") == "goods" and u.get("unit"):
                 # 11-13 (U4, verified L7/R3): nothing goes under the refund break-even, in any regime (slow, clearance,
                 # rev_defense, star): at exactly cost a warranted A unit loses its refunds (~2.5% of price), B 6-10%
-                floor = max(floor, math.ceil(u["cost"] * be_mult(grade, wh)))
+                if not star_loss:
+                    floor = max(floor, math.ceil(u["cost"] * be_mult(grade, wh)))
             # 11-13 (user: 'keep moving the strategy to the better side through A/B tests'): live arms (ab.py) on the
             # goods ask: the arm's offset replaces the knob ask_offset_<grade> for this ask; the floor is untouched
             if u.get("kind") == "goods" and u.get("unit"):
@@ -875,7 +918,8 @@ class Shop(AgentExecutor):
                                                and grade in p["warranty_grades"] else 0),
                                       "clear": round(c, 2),
                                       "comp": None if comp is None else round(comp, 3), "slow": slow,
-                                      "defense": defense, "ab": {k: v[0] for k, v in ab_arms.items()}}
+                                      "defense": defense, "star_loss": star_loss,
+                                      "ab": {k: v[0] for k, v in ab_arms.items()}}
             if ab_arms:
                 record(event="quote", task=task.id, sku=u["sku"], grade=grade, ask=d["ask"], floor=floor, ab=d["ab"])
             d["first_ask"] = d["ask"]
@@ -953,6 +997,8 @@ class Shop(AgentExecutor):
                ab=d.get("ab") or None)
         if d.get("defense"):
             defense_add(u["cost"] - price)
+        if d.get("star_loss"):
+            star_loss_add(u["cost"] - price)
         log("seller", f"task {tid[:8]} deal {u['sku']} at {price} (cost {u['cost']}, floor {d['floor']})")
         if u.get("unit"):
             self.closed[u["unit"]] = (time.time(), u["sku"], d.get("asked"))
