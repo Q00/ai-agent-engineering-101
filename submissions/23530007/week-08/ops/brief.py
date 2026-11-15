@@ -368,10 +368,40 @@ def markdown(o):
     return "\n".join(L)
 
 
+WP_NAMES = {"rival_stars_above": "SungJinho 별점이 우리 위", "our_saved_top12": "우리 saved 12위 이내",
+            "our_saved_top13": "우리 saved 13위 이내", "rival_saved_top10": "SungJinho saved 10위 이내",
+            "our_posts_1st": "우리 게시글 1위", "our_deals_top8": "우리 거래 수 8위 이내", "book_lost": "장부 1위 상실",
+            "revenue_lost": "매출 2위 상실", "our_stars_top3": "우리 별점 3위 이내"}
+
+
+def winprob_lines():
+    """11-15 (user: 'put the probability in the regular report'): ops/win_prob.py's simulation, if under 90 min old."""
+    try:
+        d = json.loads((Path(__file__).resolve().parent.parent / ".market" / "win_prob.json").read_text())
+    except (OSError, ValueError):
+        return []
+    if time.time() - d.get("t", 0) > 5400:
+        return []
+    lose = 1 - d["p_first"]
+    others = ", ".join(f"{k} {v:.0%}" for k, v in d.get("winners", {}).items() if k != "yms979")
+    m = d.get("margin") or {}
+    out = [f"[1위 확률] {d['p_first']:.0%} (뺏길 확률 {lose:.0%}: {others or '-'}; 시뮬레이션 {d['n']}회)",
+           f"  종료 시 2위와 격차: 중앙 {m.get('p50', 0):+.3f} (나쁜 10% {m.get('p10', 0):+.3f}, 좋은 10% {m.get('p90', 0):+.3f})"]
+    w = [(k, v) for k, v in (d.get("win_if") or {}).items()
+         if v.get("yes") is not None and v.get("no") is not None and 0.05 <= v.get("freq", 0) <= 0.95]
+    w.sort(key=lambda kv: -abs(kv[1]["yes"] - kv[1]["no"]))
+    for k, v in w[:3]:
+        out.append(f"  승부처: {WP_NAMES.get(k, k)} ({v['freq']:.0%}) → 승률 {v['yes']:.0%}, 아니면 {v['no']:.0%}")
+    return out
+
+
 def text(o):
     """Plain text for the phone: short lines, one blank line between blocks, what to check first."""
     w = o["window_h"]
     L = [f"{o['kst']} KST · 종료까지 {o['hours_left']:.0f}시간"]
+    wp = winprob_lines()
+    if wp:
+        L += [""] + wp
     if o["check"]:
         L += [""] + [f"{ICON[lv]} {c}" for lv, c in o["check"]]
     for r in o["ranks"]:
