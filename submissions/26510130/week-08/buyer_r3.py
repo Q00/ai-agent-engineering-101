@@ -56,7 +56,8 @@ CAP_SHARE = 0.72               # 11-11 17:00: was 0.70. Board 16:51: saved 0.254
                                # 0.70 they keep 379 deals and lift saved per deal from 0.321 to 0.353.
 OPEN_SHARE, STEP_SHARE = 0.52, 0.04   # offer ceiling per round: 0.56, 0.60, ... of list, up to the cap
                                # (272 of 516 deals closed in round 1, mostly by taking the shop's first ask)
-C_SKIP_H = 6                   # hours a (shop, SKU) refused at payment for grade C is passed over
+HAGGLE_LLM = False             # True: the harness proposes each move (the code still clamps it); see haggle()
+C_SKIP_H = 6                  # hours a (shop, SKU) refused at payment for grade C is passed over
 SHOWN = 5                     # pairs put in front of the harness
 T0 = time.time()
 
@@ -318,11 +319,20 @@ def cap_of(row, order, grade):
 def haggle(row, order, mkt, ask, last, rnd, said, grade=None):
     cap = cap_of(row, order, grade)
     step_cap = min(cap, int(row["list"] * (OPEN_SHARE + STEP_SHARE * rnd)))   # concede slowly, in code
-    d = harness.ask(HAGGLE.format(name=row["name"][:60], list=row["list"], cap=cap, said=said[:200], ask=ask,
-                                  last=last, round=rnd, max_rounds=MAX_ROUNDS,
-                                  ratio=mm.paid_ratio(mkt, (mm_cat(row) or ""), 0.8)),
-                    want=("action",), tag=" haggle")
-    action, price = str(d.get("action", "")).lower(), harness.as_int(d.get("price"))
+    # 11-15 13:11: orders took 147 s on average (24 an hour; the student median took ~160 an hour), and each
+    # haggle round spent ~3.5 s on a harness call whose price the code then clamped to step_cap anyway. The
+    # moves are now made in code: accept at or under this round's cap, else counter at it. A shop that repeats
+    # a "final" price above my cap gets a walk-away from round 2 instead of 4 more rounds.
+    if ask is not None and ask > cap and rnd >= 2 and "final" in (said or "").lower():
+        return "walk_away", None
+    if not HAGGLE_LLM:
+        action, price = ("accept", ask) if ask is not None and ask <= step_cap else ("counter", step_cap)
+    else:
+        d = harness.ask(HAGGLE.format(name=row["name"][:60], list=row["list"], cap=cap, said=said[:200], ask=ask,
+                                      last=last, round=rnd, max_rounds=MAX_ROUNDS,
+                                      ratio=mm.paid_ratio(mkt, (mm_cat(row) or ""), 0.8)),
+                        want=("action",), tag=" haggle")
+        action, price = str(d.get("action", "")).lower(), harness.as_int(d.get("price"))
     if action == "accept" and (ask is None or ask > step_cap):
         log(f"[buyer] REFUSED harness accept at {ask} > this round's cap {step_cap}")
         action, price = "counter", None
