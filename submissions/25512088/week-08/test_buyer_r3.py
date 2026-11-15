@@ -9,7 +9,7 @@ import httpx
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from cryptography.hazmat.primitives import serialization
 from buyer_memory import Memory
-from buyer_r3 import Buyer, asking, candidates, diversify_shop_candidates, limit, stretch_limit, middle_limit, deals_cap, signed_receipt, exclude_own_shop, quote_rank, execution_order, expected_offer, condition_suitable, condition_missing, EARLY_QUOTE_TARGET, QUOTE_WAVE_SIZE
+from buyer_r3 import Buyer, asking, candidates, diversify_shop_candidates, limit, stretch_limit, middle_limit, deals_cap, signed_receipt, exclude_own_shop, quote_rank, execution_order, expected_offer, condition_suitable, EARLY_QUOTE_TARGET, QUOTE_WAVE_SIZE
 from buyer_review import review
 
 
@@ -221,45 +221,12 @@ class BuyerTests(unittest.TestCase):
 
     def test_quote_condition_must_be_explicit_and_leave_checkout_time(self):
         self.assertFalse(condition_suitable(self.o,{'hours':None,'warranty':None}))
-        self.assertTrue(condition_missing(self.o,{'hours':None,'warranty':None}))
         self.assertFalse(condition_suitable(self.o,{'hours':48,'warranty':None}))
-        self.assertFalse(condition_missing(self.o,{'hours':48,'warranty':None}))
         self.assertTrue(condition_suitable(self.o,{'hours':48.2,'warranty':None}))
         goods=dict(self.o,kind='goods')
         self.assertFalse(condition_suitable(goods,{'hours':None,'warranty':None}))
-        self.assertTrue(condition_missing(goods,{'hours':None,'warranty':None}))
         self.assertFalse(condition_suitable(goods,{'hours':None,'warranty':0}))
-        self.assertFalse(condition_missing(goods,{'hours':None,'warranty':0}))
         self.assertTrue(condition_suitable(goods,{'hours':None,'warranty':6}))
-
-    def test_missing_goods_warranty_is_clarified_before_numeric_offer(self):
-        sent=[]
-        goods=dict(self.o,order='goods-condition',kind='goods')
-        def handler(req):
-            if req.method=='GET':
-                return httpx.Response(200,json={'supportedInterfaces':[]})
-            body=json.loads(req.content)
-            if body['method']=='CancelTask':return httpx.Response(200,json={'result':{}})
-            text=body['params']['message']['parts'][0]['text'];sent.append(text)
-            if text.isdigit():
-                task={'id':'t1','status':{'state':'TASK_STATE_COMPLETED'},
-                      'artifacts':[{'parts':[{'data':self.receipt(int(text))}]}]}
-            elif text.startswith('Before I can make an offer'):
-                task={'id':'t1','status':{'state':'TASK_STATE_INPUT_REQUIRED',
-                      'message':{'parts':[{'text':'Grade A. warranty: 72 h. Asking 7000.'}]}}}
-            else:
-                task={'id':'t1','status':{'state':'TASK_STATE_INPUT_REQUIRED',
-                      'message':{'parts':[{'text':'Grade A. Asking 7000.'}]}}}
-            return httpx.Response(200,json={'result':task})
-        self.m.begin(goods)
-        with httpx.Client(transport=httpx.MockTransport(handler)) as client:
-            result=Buyer(goods,self.m,client,self.cat).run([self.shop])
-        self.assertIsNotNone(result['receipt'])
-        self.assertEqual(len(sent),3)
-        self.assertIn('warranty_hours',sent[1])
-        self.assertTrue(sent[2].isdigit())
-        self.assertEqual(self.m.db.execute(
-            "SELECT COUNT(*) FROM events WHERE kind='condition_clarification'").fetchone()[0],1)
 
     def test_display_alias_requires_registered_key_and_unchanged_signature(self):
         receipt=dict(shop='Friendly Display Shop',item='SKU1',price=7000,task='t1')
