@@ -1,6 +1,7 @@
 import math
 import json
 import tempfile
+import time
 import unittest
 from network_reads import retry_read
 from seller_procurement import choose,allocation_plan,capital_available,supply_result,own_registration,own_board_registration,retry_join,join_current_registration,preserve_stale_pending,breadth_window_blocks,refresh_window_blocks,competitor_breadth_target,warranty_risk_reserve,observed_warranty_hazard,active_warranty_amounts,supply_interval_wait,own_sales_evidence,recent_refund_cooldown_skus,mature_refund_risk_skus,active_high_value_warranty_skus,own_a_conversion_evidence,own_quote_conversion_evidence
@@ -234,6 +235,22 @@ class PurchaseTests(unittest.TestCase):
   self.assertEqual(allocation_plan(ranked,one,10000)[0]['qty'],1)
   full={'units':[{'sku':'food','kind':'food','cost':100} for _ in range(2)]}
   self.assertEqual(allocation_plan(ranked,full,10000),[])
+
+ def test_short_food_allows_only_one_fresh_replacement(self):
+  now=time.time()
+  ranked=[dict(sku='food',kind='food',expected_net=50000,score=3,upper_cost=100,
+               sales_1h=8,sales_6h=12,distinct_buyers_6h=4,
+               own_stockouts_6h=8,estimated_sale_likelihood=.8)]
+  policy={'max_food_units_per_sku':2,'food_sellable_min_hours':48,
+          'max_short_food_replacement_units':1,'max_sku_capital_share':1}
+  short={'sku':'food','kind':'food','cost':100,'expires_at':now+4*3600}
+  full={'units':[dict(short),dict(short)]}
+  plan=allocation_plan(ranked,full,10000,policy=policy)
+  self.assertEqual([(row['sku'],row['qty']) for row in plan],[('food',1)])
+  self.assertTrue(plan[0]['evidence']['short_food_replacement'])
+  self.assertEqual(plan[0]['evidence']['sellable_holding'],0)
+  mixed={'units':[dict(short),dict(short,expires_at=now+72*3600)]}
+  self.assertEqual(allocation_plan(ranked,mixed,10000,policy=policy),[])
 
  def test_goods_procurement_requires_dominant_a_grade_profit_evidence(self):
   base=dict(kind='goods',expected_net=50000,score=3,upper_cost=100,

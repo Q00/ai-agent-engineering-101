@@ -341,10 +341,24 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
     Buy small, evidence-backed lots across distinct SKUs. Quantity is bounded
     by demand, per-SKU unit/capital caps, available cash, and exposure slots.
     """
-    policy=policy or settings();holding={};holding_cost={}
+    policy=policy or settings()
+    ranked_by_sku={row.get('sku'):row for row in ranked if row.get('sku')}
+    holding={};sellable_holding={};short_food_holding={};holding_cost={}
+    now=time.time()
+    food_sellable_seconds=max(0.0,float(policy.get('food_sellable_min_hours',48)))*3600
     for unit in inventory.get('units',[]):
         sku=unit['sku'];holding[sku]=holding.get(sku,0)+1
         holding_cost[sku]=holding_cost.get(sku,0)+unit.get('cost',0)
+        kind=unit.get('kind') or ranked_by_sku.get(sku,{}).get('kind')
+        expires=unit.get('expires_at')
+        short_food=(kind=='food' and isinstance(expires,(int,float)) and
+                    expires-now<food_sellable_seconds)
+        if short_food:
+            short_food_holding[sku]=short_food_holding.get(sku,0)+1
+        else:
+            # Missing expiry remains conservative: it blocks replacement
+            # procurement instead of allowing an unbounded duplicate lot.
+            sellable_holding[sku]=sellable_holding.get(sku,0)+1
     blocked=set(blocked)|set(policy.get('blocked_skus',()))
     blocked|={sku for sku in policy.get('blocked_until_zero_skus',()) if holding.get(sku,0)>0}
     # Concentration is a share of total wealth, not of cash left after warranty
@@ -352,7 +366,6 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
     # the denominator made a larger safety reserve paradoxically classify a
     # single sub-10%-of-wealth unit as over-concentrated.
     portfolio_capital=sum(holding_cost.values())+max(0,inventory.get('balance',available))
-    ranked_by_sku={row.get('sku'):row for row in ranked if row.get('sku')}
     # Keep cold-goods experiments attributable and bounded.  A share cap alone
     # still allowed one "safe" trial every supply window while earlier trials
     # remained unsold.  Proven restocks continue, but another unproven good is
@@ -468,8 +481,10 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
         trusted_stockouts=min(row.get('own_stockouts_6h',0),max(2,distinct*2))
         unmet=trusted_stockouts*.5+trusted_inquiries*.2
         forecast=(velocity+unmet)*row.get('estimated_sale_likelihood',0)*max(1.0,float(aggression))
-        need=max(0,math.ceil(forecast)-holding.get(row['sku'],0))
         is_food=row.get('kind')=='food'
+        effective_holding=(sellable_holding.get(row['sku'],0) if is_food
+                           else holding.get(row['sku'],0))
+        need=max(0,math.ceil(forecast)-effective_holding)
         food_scale_ready=False
         if is_food:
             unit_cap=policy.get('max_food_units_per_sku',2)
@@ -500,7 +515,19 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
         # Portfolio size is bounded by available capital and evidence-backed
         # SKU breadth.  A fixed global unit count used to strand growing cash.
         sku_ceiling=unit_cap
-        need=min(need,max(0,sku_ceiling-holding.get(row['sku'],0)))
+        short_food_replacement=False
+        if is_food:
+            actual=holding.get(row['sku'],0)
+            ordinary_room=max(0,sku_ceiling-actual)
+            replacement_limit=max(0,int(policy.get('max_short_food_replacement_units',1)))
+            replacement_room=(replacement_limit if actual>=sku_ceiling and
+                              sellable_holding.get(row['sku'],0)==0 and
+                              short_food_holding.get(row['sku'],0)>0 else 0)
+            inventory_room=max(ordinary_room,replacement_room)
+            short_food_replacement=bool(replacement_room)
+        else:
+            inventory_room=max(0,sku_ceiling-holding.get(row['sku'],0))
+        need=min(need,inventory_room)
         if cold_safe_trial:
             need=min(need,policy.get('max_cold_safe_trial_units',1))
         is_missing=not holding.get(row['sku'])
@@ -548,6 +575,9 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
         evidence=dict(row,trusted_inquiries_6h=trusted_inquiries,
                       trusted_stockouts_6h=trusted_stockouts,sku_inventory_ceiling=sku_ceiling,
                       food_scale_ready=food_scale_ready,
+                      sellable_holding=effective_holding,
+                      short_food_holding=short_food_holding.get(row['sku'],0),
+                      short_food_replacement=short_food_replacement,
                       cold_goods_cost=cold_goods_cost,cold_goods_limit=cold_goods_limit,
                       cold_goods_frozen=cold_goods_frozen,cold_safe_trial=cold_safe_trial,
                       own_profit_proven=own_profit_proven,
