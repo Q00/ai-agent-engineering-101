@@ -130,6 +130,33 @@ def own_sales_evidence(referrals, now=None):
             {row[0]:row[2] for row in rows},
             {row[0]:row[3] for row in rows})
 
+def recent_refund_cooldown_skus(referrals, intel_path, now=None, cooldown_hours=6):
+    """Temporarily stop restocking a SKU after our own official breakage.
+
+    The public ledger supplies the actual breakage time while the local sales
+    ledger proves ownership of the globally unique unit.  This avoids both
+    trusting a competitor's claim and permanently banning a SKU on one small
+    sample.  Held units remain sellable; only new procurement is cooled down.
+    """
+    now=time.time() if now is None else now
+    hours=max(0.0,float(cooldown_hours or 0))
+    path=Path(intel_path)
+    if hours<=0 or not path.exists():return set()
+    try:
+        with sqlite3.connect('file:'+str(path)+'?mode=ro',uri=True) as intel:
+            units={row[0] for row in intel.execute(
+                'SELECT unit FROM breakages WHERE refunded>0 AND ts>? AND unit IS NOT NULL',
+                (now-hours*3600,))}
+    except sqlite3.Error:
+        return set()
+    if not units:return set()
+    try:
+        return {sku for sku,unit in referrals.execute(
+            'SELECT sku,unit FROM sales WHERE refunded=1')
+            if unit in units}
+    except sqlite3.Error:
+        return set()
+
 def reserve_cash(inv,exposure=0):
     return max(settings()['cash_floor'],inv.get('bankrupt_line',500000))+exposure
 
@@ -493,6 +520,9 @@ def main():
         with sqlite3.connect(state/'referrals.sqlite3') as referrals:
             (own_sales_1h,own_sales_total,own_gross_total,
              own_profitable_sales)=own_sales_evidence(referrals)
+            refund_cooldowns=recent_refund_cooldown_skus(
+                referrals,state/'market_intel.sqlite3',
+                cooldown_hours=policy.get('refund_restock_cooldown_hours',6))
         ranked=[dict(row,kind=catalog.get(row.get('sku'),{}).get('kind'),
                      own_sales_1h=own_sales_1h.get(row.get('sku'),0),
                      own_sales_total=own_sales_total.get(row.get('sku'),0),
@@ -518,7 +548,8 @@ def main():
         target=competitor_breadth_target(strategy)
         if target>0:runtime_policy['breadth_target_skus']=target
         window_blocks=breadth_window_blocks(rows,opening,inv,target)
-        plan=allocation_plan(ranked,inv,available,set(blocked)|window_blocks,
+        plan=allocation_plan(ranked,inv,available,
+                             set(blocked)|window_blocks|refund_cooldowns,
                              slots,aggression,runtime_policy)
         if not plan:
             if blocked:time.sleep(10);continue

@@ -3,7 +3,7 @@ import json
 import tempfile
 import unittest
 from network_reads import retry_read
-from seller_procurement import choose,allocation_plan,capital_available,supply_result,own_registration,own_board_registration,retry_join,join_current_registration,preserve_stale_pending,breadth_window_blocks,refresh_window_blocks,competitor_breadth_target,warranty_risk_reserve,observed_warranty_hazard,active_warranty_amounts,supply_interval_wait,own_sales_evidence
+from seller_procurement import choose,allocation_plan,capital_available,supply_result,own_registration,own_board_registration,retry_join,join_current_registration,preserve_stale_pending,breadth_window_blocks,refresh_window_blocks,competitor_breadth_target,warranty_risk_reserve,observed_warranty_hazard,active_warranty_amounts,supply_interval_wait,own_sales_evidence,recent_refund_cooldown_skus
 from seller_market import dominant_goods_profit_probability
 class PurchaseTests(unittest.TestCase):
  def test_successful_supply_cooldown_avoids_predictable_rate_limit(self):
@@ -80,6 +80,22 @@ class PurchaseTests(unittest.TestCase):
   self.assertEqual(total,{'x':2})
   self.assertEqual(gross,{'x':-80})
   self.assertEqual(profitable,{'x':1})
+ def test_recent_official_refund_cools_only_matching_local_sku(self):
+  import sqlite3
+  local=sqlite3.connect(':memory:')
+  local.execute('create table sales(sku text,unit text,refunded integer)')
+  local.executemany('insert into sales values(?,?,?)',[
+   ('ours','unit-ours',1),('old','unit-old',1),('not-refunded','unit-safe',0)])
+  with tempfile.TemporaryDirectory() as root:
+   path=root+'/intel.sqlite3';intel=sqlite3.connect(path)
+   intel.execute('create table breakages(unit text,refunded integer,ts real)')
+   intel.executemany('insert into breakages values(?,?,?)',[
+    ('unit-ours',100,990),('unit-foreign',100,995),('unit-old',100,700)])
+   intel.commit();intel.close()
+   self.assertEqual(recent_refund_cooldown_skus(
+    local,path,now=1000,cooldown_hours=.05),{'ours'})
+   self.assertEqual(recent_refund_cooldown_skus(
+    local,path,now=1000,cooldown_hours=0),set())
  def test_mature_negative_local_goods_cohort_blocks_restock(self):
   ranked=[dict(sku='lossy',kind='goods',expected_net=500000,score=999,
                upper_cost=100000,sales_1h=20,sales_6h=50,distinct_buyers_6h=10,
