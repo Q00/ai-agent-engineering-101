@@ -73,6 +73,7 @@ SWITCHES += (".market/restock_first_slot.json",)  # separate finite transmission
 SWITCHES += (".market/restock_first_slot_default.json",)  # adopted policy belongs to its owner
 SWITCHES += (".market/restock_first_stock.json",)  # finite supply allocation trial
 SWITCHES += (".market/restock_demand_catchup.json",)  # finite quantity allocation belongs to its owner
+SWITCHES += (".market/restock_sellable_slots.json",)  # finite target-count study (W-20261115-1605-AX매입칸)
 SWITCHES += (".market/market_ref_read.json",)   # market_ref_read.py (지시23 11/10)
 SWITCHES += (".market/buyer_margin_cap.json",)  # buyer_margin_cap.py: the owner's limit policy (Patch 3.6 Saved)
 

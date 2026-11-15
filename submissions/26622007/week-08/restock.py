@@ -46,6 +46,7 @@ import restock_first_slot
 import restock_demand_catchup
 import restock_food_stockout
 import restock_fresh_slots
+import restock_sellable_slots
 import restock_turnover_targets
 import restock_window_fast
 import rival_vote
@@ -138,12 +139,22 @@ def listed(cfg):
     return out
 
 
+def slot_count(live, cfg, catalog, factors, now):
+    """(Counter, changed): the units of each SKU as its sku_target_units counts them. restock_sellable_slots when its
+    switch is on (cfg["sellable_slots"]), else restock_fresh_slots (default off too: every live unit)."""
+    if restock_sellable_slots.on(cfg) is not None:
+        return restock_sellable_slots.counted(live, cfg, catalog, factors, now)
+    return restock_fresh_slots.counted(live, cfg, catalog, factors, now)
+
+
 def fresh_extra(cfg, inv, catalog, waiting=(), now=None):
     """restock_fresh_slots (default off: empty): the SKUs that hold their target, units on their way included, and are
     asked again only because units of theirs waited. Their lines go after every other line of a run, listed or not,
     the agent's too (plan, urgent_listed, main), so today's lines keep their places in the window's ~14-18 calls
     (independent reviews 8023a19 I1, 798955a I4). Never raises: empty on any trouble."""
     try:
+        if restock_sellable_slots.on(cfg) is not None:      # that study orders its refills by net per call instead
+            return set()
         now = now or time.time()
         live = [u for u in inv.get("units") or [] if isinstance(u, dict) and not gone(u, now)]
         have = collections.Counter(u.get("sku") for u in live)
@@ -188,6 +199,16 @@ def urgent_listed(cfg, inv, catalog, waiting=(), model=None):
         return have[s] / max(r * sh, mine if num(mine) and mine > 0 else 0)
     if not isinstance(skus, dict):
         return sorted(listed(cfg), key=lambda s: (s in extra, have[s] > 0, not food(s)))     # stable: list order within each group
+    if restock_sellable_slots.on(cfg) is not None:
+        # restock_sellable_slots: the empty SKUs first as today, then the refills by what one call nets (need x unit
+        # net, highest first), then those the model gives no net for in today's order (Astra 11/15 원인 ②)
+        counts = slot_count(live, cfg, catalog, surge(inv), now)[0]
+        for w in waiting or ():
+            counts[w.get("sku")] += w.get("qty") or 0
+        value = {s: restock_sellable_slots.call_value(s, cfg, catalog, model, have, counts) for s in listed(cfg)}
+        return sorted(listed(cfg), key=lambda s: (0, not food(s), 0) if have[s] <= 0
+                      else (1, 0, -value[s]) if value[s] is not None
+                      else (2, 0, lasts(s)) if lasts(s) is not None else (3, not food(s), 0))
     # empty (food first), then refills with a rate by hours left, then refills without one as before (food first)
     return sorted(listed(cfg), key=lambda s: (3, 0, 0) if s in extra else (0, not food(s), 0) if have[s] <= 0
                   else (1, 0, lasts(s)) if lasts(s) is not None else (2, not food(s), 0))
@@ -230,7 +251,7 @@ def plan(inv, catalog, demand, cfg, model=None, breaks=None, waiting=()):
     live = [u for u in units if u.get("grade") != "expired" and not (u.get("expires_at") and u["expires_at"] <= now)]
     have = collections.Counter(u.get("category") for u in live)
     # the units of each SKU as its target counts them (restock_fresh_slots, default off: every live unit)
-    have_sku = restock_fresh_slots.counted(live, cfg, catalog, surge(inv), now)[0]
+    have_sku = slot_count(live, cfg, catalog, surge(inv), now)[0]
     active = bool(model and model.get("active"))
     hours_left = (cfg["round_ends_at"] - now) / 3600 if cfg.get("round_ends_at") else float("inf")
     picks = []
@@ -406,7 +427,9 @@ def guard(buy, inv, catalog, cfg, breaks=None, waiting=()):
     # set by main() from its switch) a listed goods SKU's units that waited past its hours leave room, a step at a
     # time. Only the target reads it: max_units_per_sku, the high-price and surge caps count every unit held
     # (independent review 8023a19 I2: a target of 12 could have held 24 past the 20 a SKU may hold)
-    slots = restock_fresh_slots.counted(live, cfg, catalog, surge(inv), now)[0]
+    slots = slot_count(live, cfg, catalog, surge(inv), now)[0]
+    sellable = restock_sellable_slots.on(cfg)      # its extra units keep its cash floor (None: off)
+    spent = sum(w["worst"] * w.get("cash_qty", w["qty"]) for w in waiting)
     held = sum(u.get("cost") or 0 for u in live)
     food = sum(u.get("cost") or 0 for u in live if u.get("kind") == "food")
     for w in waiting:
@@ -457,6 +480,16 @@ def guard(buy, inv, catalog, cfg, breaks=None, waiting=()):
             cap //= 2               # half the units held + waiting + new, not half of each run's line
         # off, slots is count and cap <= other: cap - count, as before
         asked, capped = qty, min(qty, cap - slots[b["sku"]], other - count[b["sku"]])
+        plain = max(0, min(qty, cap - count[b["sku"]], other - count[b["sku"]]))      # today's room: every unit counts
+        if sellable is not None and capped > plain and x.get("list_price"):
+            # restock_sellable_slots: the units over today's room only from cash over its floor after the lines before
+            each = worst(b["sku"], capped, catalog, factors) * (1 + hard_limits.BUY_STORAGE)
+            free = balance - spent - sellable["cash_floor"]
+            extra = min(capped - plain, max(0, int(free // each)) if each > 0 else 0)
+            if extra < capped - plain:
+                print(f"[restock] guard: {b['sku']} sellable_slots {capped - plain} -> {extra} over today's room "
+                      f"(cash floor {sellable['cash_floor']:.0f})", file=sys.stderr)
+            capped = plain + extra
         # priced on the capped line, not the line the cash leaves: a few won high at most, never low
         unit = worst(b["sku"], capped, catalog, factors) if x.get("list_price") else float("inf")
         paid = unit * (1 + hard_limits.BUY_STORAGE)      # the cash a unit takes: its cost and the storage it adds
@@ -481,6 +514,7 @@ def guard(buy, inv, catalog, cfg, breaks=None, waiting=()):
         count[b["sku"]] += qty
         slots[b["sku"]] += qty
         spare, room = spare - paid * qty, room - unit * qty
+        spent += paid * qty
         if x.get("kind") == "food":
             food_room -= unit * qty
     return out
@@ -1031,6 +1065,7 @@ def main():
     cfg["demand_catchup"] = restock_demand_catchup.config(args.state, inv)
     cfg["fresh_slots"] = restock_fresh_slots.config(args.state)      # its own switch file, None when off: today's count
     cfg["fresh_now"] = time.time()                                   # the run's one clock for that count
+    cfg["sellable_slots"] = restock_sellable_slots.config(args.state)  # its own switch, None when off; over fresh_slots
     cfg["turnover_targets"] = restock_turnover_targets.config(args.state)
     if cfg["turnover_targets"]:
         cfg["sku_target_units"], raised = restock_turnover_targets.targets(cfg, cfg.get("sku_target_units"))
@@ -1048,7 +1083,13 @@ def main():
         cfg["priority_skus"], cfg["sku_target_units"], added = restock_food_stockout.listing(cfg, catalog)
         print(f"[restock] food_stockout {cfg['food_stockout']['study']}: {len(added)} food SKUs listed for the window: "
               + ", ".join(f"{sku} x{units}" for sku, units in added.items()), file=sys.stderr, flush=True)
-    if cfg["fresh_slots"]:
+    if restock_sellable_slots.on(cfg):
+        _, moved = restock_sellable_slots.counted([u for u in inv.get("units") or [] if isinstance(u, dict)
+                                                   and not gone(u, time.time())], cfg, catalog, surge(inv))
+        print(f"[restock] sellable_slots {cfg['sellable_slots']['study']}: {len(moved)} listed goods SKUs count fewer "
+              f"units than held ({sum(m['held'] - m['counted'] for m in moved.values())} stuck units left out): "
+              + ", ".join(f"{k} {m['held']}->{m['counted']}" for k, m in sorted(moved.items())), file=sys.stderr, flush=True)
+    elif cfg["fresh_slots"]:
         _, moved = restock_fresh_slots.counted([u for u in inv.get("units") or [] if isinstance(u, dict)
                                                 and not gone(u, time.time())], cfg, catalog, surge(inv))
         print(f"[restock] fresh_slots {cfg['fresh_slots']['study']}: {len(moved)} listed goods SKUs count fewer units "
