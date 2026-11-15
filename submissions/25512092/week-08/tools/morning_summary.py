@@ -295,10 +295,10 @@ def needs_items(t0, t1, now=None):
     now = now or t1
     from datetime import datetime as _dt
     end = _dt(2026, 11, 13, 12, 0).timestamp()
-    try:
-        pins = json.load(open(os.path.join(HERE, "policy_pins.json"), encoding="utf-8"))
+    try:                                          # 11/15 (person): only until the pin's end (11/13 12:00), then gone
+        pins = json.load(open(os.path.join(HERE, "policy_pins.json"), encoding="utf-8")) if now < end else {}
         pol = json.load(open(os.path.join(HERE, "policy.json"), encoding="utf-8")).get("purchasing") or {}
-        for k, want in (("high_share", 0.7), ("high_max", 200)):   # 11/13 ~00:00 (person): high_max 100 -> 200
+        for k, want in ((("high_share", 0.7), ("high_max", 200)) if now < end else ()):   # 11/13 ~00:00: 100 -> 200
             if float(pins.get(f"purchasing.{k}") or 0) < end or pol.get(k) != want:
                 out.append(f"{k} {want} 고정 11/13 12:00까지가 적용 안 됨 (고정 {pins.get(f'purchasing.{k}')}, 값 {pol.get(k)})")
     except (OSError, ValueError) as e:
