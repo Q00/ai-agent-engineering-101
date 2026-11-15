@@ -634,6 +634,10 @@
   {
    "t": 1794779726.271499,
    "text": "Leak audit #46 (11/16 06:4x, 6 h). FIXED in code: seller warranty words matched 'as/has/was' (33% of talks flagged as warranty asks, 959 food); 5b73c2e, kit restarted 06:54, so warranty-demand signals before 06:54 are inflated, do not use them. DATA for numbers (not code): 1) 500k+ A goods: 101 of 131 deals closed within 1% of our floor, and 88 goods deals paid below other shops' median for the same SKU/grade, about 1.7M per 6 h under the market median. Levers: step (concession share per turn), floor_frac (0.61 vs market ~0.68 of list), min_margin. floor_frac 0.68 is on the order-14 negative list, so test the middle (0.64-0.65) or step, one at a time, judged on board revenue+Book. 2) Market top sellers we never stock: food Gf0e58a76/G29fc9227 (kimchi-type, 168 h shelf < min_shelf_hours 192) and cheap goods G0be9ed07/Ge62449c9/G12b895c1; we hold 421 units over 80 cheap SKUs that sold only 109 times market-wide. min_shelf_hours 168 is a candidate if food 50-150k share (0.6-1.8% vs our 5.2% overall) matters. 3) Goods warranty floor cost*1.02/(1-Q) overrides the aged/endgame cuts for every A/B/C good; after 11/16 23:59 the endgame floor will not bite on goods. Aged cheap A sits at 1.05x cost."
+  },
+  {
+   "t": 1794781642.096871,
+   "text": "07:2x supervisor data: after floor_frac 0.62 (07:10), goods walks went 15/h -> 48/h and goods deals 61/h -> 20/h in the first 15 min (small sample, re-measured 07:45). step 0.5 (07:27) pushes the same way (higher prices) on the same goods talks, so the two cannot be told apart at 2 h. Do not stack another price-raising move (floor_frac, step, min_margin, market_ask) until floor_frac 0.62 has its 2 h verdict; if goods deals stay below half, take back the later one (step) first."
   }
  ]
 }
