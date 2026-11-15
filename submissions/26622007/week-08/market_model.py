@@ -151,10 +151,16 @@ def load_rows(md, name=ROWS):
     return rows
 
 
-def _load_some(md, keep):
-    """The rows keep(row) takes, each seq once, then one {"k": "last", "ts"} row with the latest time of any row (what
-    break_stats' mature_only measures from). Every line is still parsed; only the rows kept are held."""
-    seen, rows, last = set(), [], None
+ALWAYS = ("settle", "broken", "supply")     # kinds every keep() below takes on their first line
+
+
+def _load_some(md, keep, last_row=True):
+    """The rows keep(row) takes, each seq once as in load_rows, then one {"k": "last", "ts"} row with the latest time of
+    any row (what break_stats' mature_only measures from). Every line is still parsed; only the rows kept are held.
+    A seq is remembered only for a row kept: a line of another kind at or under the highest seq so far that was not
+    kept is a run added again after a crash (the ledger's seqs only grow, 194 such lines on 11/15, every one a repeat)
+    and is left out, so a repeated result row of another shop cannot come back after my result of the same order."""
+    seen, rows, last, top = set(), [], None, None
     try:
         with open(os.path.join(md, ROWS), encoding="utf-8") as f:
             for line in f:
@@ -167,14 +173,26 @@ def _load_some(md, keep):
                 ts = r.get("ts")
                 if isinstance(ts, (int, float)) and (last is None or ts > last):
                     last = ts
-                if keep(r) and r.get("seq") not in seen:      # a seq names one row: the rows left out need no seen
-                    seen.add(r.get("seq"))
+                seq = r.get("seq")
+                again = type(seq) is int and top is not None and seq <= top
+                if type(seq) is int and (top is None or seq > top):
+                    top = seq
+                if again and (seq in seen or r.get("k") not in ALWAYS):
+                    continue
+                if keep(r) and seq not in seen:
+                    seen.add(seq)
                     rows.append(_shared(r))
     except OSError:
         pass
-    if last is not None:
+    if last is not None and last_row:
         rows.append({"k": "last", "ts": last})
     return rows
+
+
+def load_rows_where(md, keep):
+    """The rows keep(row) takes (the others are parsed, not held), each seq once, then the "last" row (_load_some). For
+    a reader that needs only some of the 2.4 M rows (1.3 GB as load_rows on 11/15)."""
+    return _load_some(md, keep)
 
 
 def load_break_rows(md):
@@ -188,8 +206,9 @@ def load_stock_rows(md, shops=None):
     opening, measure, loss_watch, the forums) read: the settle, broken and supply rows, the result rows of my shops
     (my_shops(), as those readers use), every result row of an order whose settle names no shop (estimate's shop_of) or
     that one of mine names (the last one wins in their dicts), and the "last" row. The 1.6 M result rows of other shops
-    were two thirds of the 2.4 M rows a restock run held on 11/15 (RSS 2.7-2.8 GB every minute). Two passes only when a
-    shop-less settle comes after its result (none in the ledger of 11/15 12:00: each settle is written before its result)."""
+    were two thirds of the 2.4 M rows a restock run held on 11/15 (RSS 2.7-2.8 GB every minute). A second pass, for the
+    result rows only, when a shop-less settle comes after its result (no settle of 11/15 12:00 is without its shop; a
+    result came before its settle in 1,584 orders)."""
     shops = my_shops() if shops is None else set(shops)
     need, mine = set(), set()
 
@@ -207,12 +226,14 @@ def load_stock_rows(md, shops=None):
         return r.get("order") in need or r.get("order") in mine or r.get("order") in before
 
     rows = _load_some(md, keep)
-    named = {r.get("order") for r in rows if r.get("k") == "result"}
-    late = frozenset(need - named)
-    if late:            # (also a shop-less settle with no result at all: a second pass each run, ~4 s on 11/15)
-        need.clear()
-        mine.clear()
-        rows = _load_some(md, lambda r: keep(r, late))
+    late = need - {r.get("order") for r in rows if r.get("k") == "result"}
+    if late:
+        # every result of these orders came before its settle, so none was kept: they go in file order before "last"
+        # (each order's own rows keep their order, which is all estimate and my_sales look at). A settle whose order
+        # never has a result costs this pass on every run (~4 s on 11/15), not memory
+        more = _load_some(md, lambda r: r.get("k") == "result" and r.get("order") in late, last_row=False)
+        at = len(rows) - 1 if rows and rows[-1].get("k") == "last" else len(rows)
+        rows[at:at] = more
     return rows
 
 
@@ -349,11 +370,13 @@ def estimate(rows, catalog, me_buyers=(), me_shops=(), now=None, cfg=None):
     now = now or time.time()
     me_buyers, me_shops = set(me_buyers), set(me_shops)
     shop_of = {r["order"]: r["shop"] for r in rows if r["k"] == "result" and r.get("order")}
-    mine = {r["order"]: r["seller"] for r in rows if r["k"] == "result" and r.get("seller") in me_shops}
-    shop = lambda r: mine.get(r.get("order")) or r.get("shop") or shop_of.get(r.get("order"))
-    # a copy only when the shop changes (read, never written): a copy of each of the 0.8 M settles took ~0.45 GB on 11/15
-    settles = [r if shop(r) == r.get("shop") else dict(r, shop=shop(r)) for r in rows
-               if r["k"] == "settle" and r.get("sku") in catalog and r.get("ts")]
+    mine = {r["order"]: r["seller"] for r in rows if r["k"] == "result" and r.get("seller") in me_shops and r.get("order")}
+    settles = []
+    for r in rows:
+        if r["k"] == "settle" and r.get("sku") in catalog and r.get("ts"):
+            shop = mine.get(r.get("order")) or r.get("shop") or shop_of.get(r.get("order"))
+            # a copy only when the shop changes (read, never written): a copy of each of the 0.8 M settles took ~0.45 GB
+            settles.append(r if shop == r.get("shop") else dict(r, shop=shop))
     captive = captive_buyers(settles, me_shops, cfg)
     hl = cfg["half_life_hours"] * 3600
     weight = lambda ts: 0.5 ** (max(0, now - ts) / hl)

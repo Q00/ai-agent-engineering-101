@@ -10,7 +10,7 @@ try:
 except OSError:
     catalog = {}
 out = []
-for r in reversed(mm.load_rows(md)):
+for r in reversed(mm.load_break_rows(md)):     # it reads the settle rows only
     if r["k"] != "settle":
         continue
     x = catalog.get(r.get("sku")) or {}

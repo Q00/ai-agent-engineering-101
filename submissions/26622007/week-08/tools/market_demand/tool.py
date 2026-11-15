@@ -7,7 +7,7 @@ import market_model as mm
 args, md = json.load(sys.stdin), os.environ["MARKET_DIR"]
 catalog = json.load(open(os.path.join(md, "catalog.json"), encoding="utf-8"))
 me = {os.environ.get("SHOP_MARKET_NAME", "nocha12")}
-m = mm.estimate(mm.load_rows(md), catalog, me, mm.my_shops(), cfg=None)
+m = mm.estimate(mm.load_stock_rows(md), catalog, me, mm.my_shops(), cfg=None)    # the rows estimate reads
 want = args.get("category") or ""
 rows = sorted(((k, v) for k, v in m["skus"].items() if want in catalog[k]["category"]), key=lambda kv: -kv[1]["rate"])
 out = {"reachable_deals": m["n"], "active": m["active"], "captive_buyers": len(m["captive"]),

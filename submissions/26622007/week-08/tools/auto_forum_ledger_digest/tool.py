@@ -51,7 +51,13 @@ def main():
             forum = json.load(f)
     except (OSError, ValueError):
         forum = []
-    print(json.dumps(digest(forum, market_model.load_rows(md), args.get('limit', 20)), ensure_ascii=False))
+    # only the rows digest can use: the settle rows and the rows a post names by seq (not the 2.4 M rows)
+    posts = forum.get('posts', forum.get('items', [])) if isinstance(forum, dict) else forum
+    named = {ref.get('seq') if isinstance(ref, dict) else ref for p in (posts if isinstance(posts, list) else [])
+             if isinstance(p, dict) and isinstance(p.get('refs'), list) for ref in p['refs'][:100]}
+    named = {s for s in named if type(s) is int}
+    rows = market_model.load_rows_where(md, lambda r: r.get('k') == 'settle' or r.get('seq') in named)
+    print(json.dumps(digest(forum, rows, args.get('limit', 20)), ensure_ascii=False))
 
 
 if __name__ == '__main__':

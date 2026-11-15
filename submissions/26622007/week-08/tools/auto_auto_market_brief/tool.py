@@ -39,7 +39,7 @@ def main():
     md = os.environ['MARKET_DIR']
     with open(os.path.join(md, 'catalog.json'), encoding='utf-8') as f:
         catalog = json.load(f)
-    print(json.dumps(search(catalog, market_model.load_rows(md), args), ensure_ascii=False))
+    print(json.dumps(search(catalog, market_model.load_break_rows(md), args), ensure_ascii=False))   # settle rows only
 
 
 if __name__ == '__main__':

@@ -59,7 +59,7 @@ def main():
         forum = read('forum.json')
     except FileNotFoundError:
         forum = None
-    print(json.dumps(research(read('catalog.json'), market_model.load_rows(md),
+    print(json.dumps(research(read('catalog.json'), market_model.load_break_rows(md),   # search reads settle rows only
                               read('inventory.json'), forum, args), ensure_ascii=False))
 
 

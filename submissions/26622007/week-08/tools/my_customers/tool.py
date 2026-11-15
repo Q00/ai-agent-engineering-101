@@ -14,7 +14,7 @@ try:
     catalog = json.load(open(os.path.join(md, "catalog.json"), encoding="utf-8"))
 except (OSError, ValueError):
     catalog = {}
-rows = market_model.load_rows(md)
+rows = market_model.load_break_rows(md)       # the settle and broken rows it reads
 broke = {s["seq"] for _, s in market_model.link_broken(rows)}
 by = collections.defaultdict(lambda: {"deals": 0, "ratios": [], "skus": collections.Counter(), "broke": 0})
 for r in rows:

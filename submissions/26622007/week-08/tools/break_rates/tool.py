@@ -6,7 +6,7 @@ import market_model as mm
 
 args, md = json.load(sys.stdin), os.environ["MARKET_DIR"]
 catalog = json.load(open(os.path.join(md, "catalog.json"), encoding="utf-8"))
-s = mm.break_stats(mm.load_rows(md), catalog)
+s = mm.break_stats(mm.load_break_rows(md), catalog)       # the settle and broken rows it reads
 n = args.get("limit", 10)
 worst = lambda t: dict(sorted(t.items(), key=lambda kv: -(kv[1]["broke"] / max(1, kv[1]["sold"])))[:n])
 out = {"goods_sold": s["sold"], "goods_broke": s["broke"], "rate": s["rate"], "by_grade": s["by_grade"], "worst_shops": worst(s["by_shop"]),

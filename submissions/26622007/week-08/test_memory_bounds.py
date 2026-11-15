@@ -164,6 +164,85 @@ class StockRowsTests(unittest.TestCase):
         self.same(full, slim)
         self.assertEqual({r["order"] for r in slim if r["k"] == "result"} - {"m0", "m1", "m2"}, {"n1", "n2"})
 
+    def test_a_run_added_again_keeps_my_result_last(self):
+        """Review 333282d M1: another shop's result, then mine for the same order, then the first line again (a sync run
+        repeated after a crash). load_rows drops the repeat; it must not come back as the order's last result."""
+        rows = stock_ledger()
+        seq = rows[-1]["seq"]
+        other = {"seq": seq + 1, "k": "result", "ts": 1_000_500.0, "buyer": "b2", "order": "x1", "shop": "https://s5",
+                 "seller": "Shop Five"}
+        rows += [other,
+                 {"seq": seq + 2, "k": "settle", "ts": 1_000_501.0, "buyer": "b2", "order": "x1", "sku": "G1", "amount": 990,
+                  "grade": "A", "honest": True, "shop": "https://tunnel-9", "warranty": 12},
+                 {"seq": seq + 3, "k": "result", "ts": 1_000_502.0, "buyer": "b2", "order": "x1", "shop": "https://tunnel-9",
+                  "seller": MINE}]
+        with open(os.path.join(self.md, market_model.ROWS), "w", encoding="utf-8") as f:
+            for r in rows + [other] + rows[-2:]:
+                f.write(json.dumps(r, ensure_ascii=False) + "\n")
+        import decision_memory
+        full, slim = market_model.load_rows(self.md), market_model.load_stock_rows(self.md)
+        self.same(full, slim)
+        self.assertIn(seq + 2, {s["seq"] for s in decision_memory.my_sales(slim, market_model.my_shops())})
+
+    def test_the_late_pass_reads_only_the_result_rows_it_misses(self):
+        rows = stock_ledger()
+        seq = rows[-1]["seq"]
+        rows += [{"seq": seq + 1, "k": "result", "ts": 1_000_400.0, "buyer": "b3", "order": "n1", "shop": "https://s3",
+                  "seller": "Shop Three"},
+                 {"seq": seq + 2, "k": "settle", "ts": 1_000_401.0, "buyer": "b3", "order": "n1", "sku": "G2",
+                  "amount": 1500, "grade": "B", "honest": True, "shop": None, "warranty": 12}]
+        self.write(rows)
+        calls = []
+        real = market_model._load_some
+        def spy(md, keep, last_row=True):
+            out = real(md, keep, last_row)
+            calls.append([r["k"] for r in out])
+            return out
+        with mock.patch.object(market_model, "_load_some", side_effect=spy):
+            slim = market_model.load_stock_rows(self.md)
+        self.assertEqual(calls[1], ["result"])                         # the second pass holds the one row it needs
+        self.assertEqual(slim[-1]["k"], "last")
+        self.same(market_model.load_rows(self.md), slim)
+
+    def test_the_agent_tools_answer_as_with_the_whole_ledger(self):
+        """Review 333282d I1: the restock, forum and buyer agents' tools read the whole ledger in a child process."""
+        import re
+        import subprocess
+        with open(os.path.join(self.md, "catalog.json"), "w", encoding="utf-8") as f:
+            json.dump({k: {**v, "name": k, "kind": v["kind"]} for k, v in STOCK_CATALOG.items()}, f)
+        with open(os.path.join(self.md, "inventory.json"), "w", encoding="utf-8") as f:
+            json.dump({"units": []}, f)
+        with open(os.path.join(self.md, "loss_state.json"), "w", encoding="utf-8") as f:
+            json.dump({"mine": {"81": {}, "83": {}}}, f)
+        with open(os.path.join(self.md, "forum.json"), "w", encoding="utf-8") as f:
+            json.dump([{"id": "p1", "ts": 5, "refs": [1, 2, 80, 9999, {"seq": 4}]}], f)
+        tools = os.path.join(HERE, "tools")
+        names = sorted(n for n in os.listdir(tools) if os.path.exists(os.path.join(tools, n, "tool.py")))
+        old = os.path.join(self.md, "old")
+        env = {**os.environ, "MARKET_DIR": self.md, "PYTHONPATH": HERE, "PYTHONDONTWRITEBYTECODE": "1",
+               "BUYER_MEMORY": os.path.join(self.md, "none.json")}
+        def run(path):
+            p = subprocess.run([sys.executable, path], input=json.dumps({"limit": 50}), text=True, capture_output=True,
+                               env=env, cwd=HERE, timeout=60)
+            return p.returncode, p.stdout
+        checked = 0
+        for name in names:
+            with open(os.path.join(tools, name, "tool.py"), encoding="utf-8") as f:
+                code = f.read()
+            self.assertNotIn("load_rows(", code, name)
+            if not re.search(r"load_(break|stock)_rows\(|load_rows_where\(", code):
+                continue
+            was = re.sub(r"load_rows_where\(md, [^\n]*\)$", "load_rows(md)", code, flags=re.M)
+            was = re.sub(r"load_(break|stock)_rows\(md\)", "load_rows(md)", was)
+            os.makedirs(os.path.join(old, name), exist_ok=True)
+            with open(os.path.join(old, name, "tool.py"), "w", encoding="utf-8") as f:
+                f.write(was)
+            new_out, old_out = run(os.path.join(tools, name, "tool.py")), run(os.path.join(old, name, "tool.py"))
+            self.assertEqual(new_out[0], 0, name)
+            self.assertEqual(json.loads(new_out[1]), json.loads(old_out[1]), name)
+            checked += 1
+        self.assertEqual(checked, 9)
+
     def test_missing_file(self):
         self.assertEqual(market_model.load_stock_rows(os.path.join(self.md, "none")), [])
 

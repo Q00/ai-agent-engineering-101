@@ -39,7 +39,7 @@ def main():
             trades = json.load(f).get('trades', [])
     except (OSError, ValueError):
         trades = []
-    print(json.dumps(research(catalog, market_model.load_rows(md), trades, args), ensure_ascii=False))
+    print(json.dumps(research(catalog, market_model.load_break_rows(md), trades, args), ensure_ascii=False))   # settles
 
 
 if __name__ == '__main__':
