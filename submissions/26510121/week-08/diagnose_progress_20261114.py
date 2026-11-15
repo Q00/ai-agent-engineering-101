@@ -13,7 +13,8 @@ KST=timezone(timedelta(hours=9))
 def iso(at):return datetime.fromtimestamp(at,KST).isoformat()
 
 
-def main():
+def main(baseline_path=BASE,source_path=SOURCE,console_logs=None):
+    BASE,SOURCE=baseline_path,source_path
     source=read_json(ROOT/SOURCE);baseline=read_json(ROOT/BASE)
     before,after=baseline['board'],source['responses']['/api/board']['data']
     lo,hi=baseline['at'],source['responses']['/api/board']['finished_at'];now=time.time();duration=(hi-lo)/3600
@@ -127,7 +128,7 @@ def main():
             'review_quality_by_sold_grade':quality,'low_review_reasons':dict(review_reasons),'shelf_stockout_feasibility':dict(shelf_support)}
     # Independently parse successful supply lines. Handle midnight across logs.
     acquired=[]
-    logs=['logs/auto-join-20261113T071046765879Z.txt','logs/auto-join-20261113T073206342541Z.txt',
+    logs=console_logs or ['logs/auto-join-20261113T071046765879Z.txt','logs/auto-join-20261113T073206342541Z.txt',
           'logs/auto-join-20261114T033048623982Z.txt']
     for name in logs:
         day=datetime.strptime(name.split('auto-join-')[1][:8],'%Y%m%d').date();previous=None
@@ -158,7 +159,7 @@ def main():
     report={'window':{'start':iso(lo),'end':iso(hi),'hours':duration},'sources':[BASE,SOURCE,*logs],
         'queries':queries,'own':own,'peers':peers,'scoring_proxy':scoring_proxy,'next_thresholds':targets,'shop':shop,'buyer':segments,
         'bridge':bridge,'inventory':inventory,'current_observation':snapshot,'errors':errors,
-        'limitations':['Live deployment period includes an observed 10:07–12:32 interruption; not a controlled treatment comparison.',
+        'limitations':['Comparison may include deployment, downtime and settlement boundary effects; not a controlled treatment comparison.',
             'Control/error sample counts are not outage durations or causal lost sales.',
             'Rank thresholds use published numeric rows, not exact unpublished scoring eligibility/tie rules.',
             'Buy-side initial Saved is not mature quality; no future payoff is inferred from predictions.']}
@@ -168,4 +169,8 @@ def main():
     print('SHOP',json.dumps(shop,ensure_ascii=True))
 
 
-if __name__=='__main__':main()
+if __name__=='__main__':
+    import argparse
+    p=argparse.ArgumentParser();p.add_argument('--baseline',default=BASE);p.add_argument('--source',default=SOURCE)
+    p.add_argument('--console-log',action='append');args=p.parse_args()
+    main(args.baseline,args.source,args.console_log)

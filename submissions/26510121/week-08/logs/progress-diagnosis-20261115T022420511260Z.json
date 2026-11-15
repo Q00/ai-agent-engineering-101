@@ -1,0 +1,2890 @@
+{
+  "window": {
+    "start": "2026-11-14T14:56:14.487025+09:00",
+    "end": "2026-11-15T11:22:56.206943+09:00",
+    "hours": 20.444922199514178
+  },
+  "sources": [
+    "logs/autonomous-deploy-before-20261114T055614486450Z.json",
+    "logs/v28-progress-source-20261115T022256766670Z.json",
+    "logs/auto-join-20261114T033048623982Z.txt",
+    "logs/auto-join-20261114T055722661399Z.txt"
+  ],
+  "queries": {
+    "events": "SELECT id,ts,data FROM events WHERE kind=? AND ts>=? AND ts<? ORDER BY ts,rowid"
+  },
+  "own": {
+    "shops": {
+      "before": {
+        "book": 812515473,
+        "revenue": 5136937516,
+        "deals": 13799,
+        "stars_rank": 4.3,
+        "stock_units": 967,
+        "stock_cost": 113032560,
+        "all": 0.787
+      },
+      "after": {
+        "book": 810285994,
+        "revenue": 5194570499,
+        "deals": 15433,
+        "stars_rank": 4.32,
+        "stock_units": 1019,
+        "stock_cost": 116171496,
+        "all": 0.776
+      },
+      "rank_before": 11,
+      "rank_after": 12
+    },
+    "buyers": {
+      "before": {
+        "saved": 0.739,
+        "surplus": 706096953,
+        "deals": 19487,
+        "forum": 0.906,
+        "posts": 2528,
+        "all": 0.812
+      },
+      "after": {
+        "saved": 0.7506,
+        "surplus": 847103338,
+        "deals": 21768,
+        "forum": 0.907,
+        "posts": 2765,
+        "all": 0.808
+      },
+      "rank_before": 12,
+      "rank_after": 12
+    }
+  },
+  "peers": {
+    "shops": [
+      {
+        "name": "25620027",
+        "changes": {
+          "book": {
+            "before": 976105748,
+            "after": 1001043720,
+            "delta": 24937972,
+            "per_hour": 1219763.6047053575
+          },
+          "revenue": {
+            "before": 8786433314,
+            "after": 9604802603,
+            "delta": 818369289,
+            "per_hour": 40027997.221698724
+          },
+          "deals": {
+            "before": 23070,
+            "after": 29197,
+            "delta": 6127,
+            "per_hour": 299.6832142577482
+          },
+          "stars_rank": {
+            "before": 4.38,
+            "after": 4.4,
+            "delta": 0.020000000000000462,
+            "per_hour": 0.0009782380096548234
+          },
+          "stock_units": {
+            "before": 1708,
+            "after": 2323,
+            "delta": 615,
+            "per_hour": 30.080818796885122
+          },
+          "stock_cost": {
+            "before": 488403790,
+            "after": 486055953,
+            "delta": -2347837,
+            "per_hour": -114837.16969369492
+          },
+          "all": {
+            "before": 0.909,
+            "after": 0.922,
+            "delta": 0.013000000000000012,
+            "per_hour": 0.000635854706275621
+          }
+        }
+      },
+      {
+        "name": "inextro",
+        "changes": {
+          "book": {
+            "before": 938049979,
+            "after": 959692375,
+            "delta": 21642396,
+            "per_hour": 1058570.719360051
+          },
+          "revenue": {
+            "before": 15655651790,
+            "after": 16150609595,
+            "delta": 494957805,
+            "per_hour": 24209326.90131545
+          },
+          "deals": {
+            "before": 29748,
+            "after": 31894,
+            "delta": 2146,
+            "per_hour": 104.96493843596012
+          },
+          "stars_rank": {
+            "before": 4.45,
+            "after": 4.46,
+            "delta": 0.009999999999999787,
+            "per_hour": 0.0004891190048273899
+          },
+          "stock_units": {
+            "before": 2061,
+            "after": 2470,
+            "delta": 409,
+            "per_hour": 20.004967297440675
+          },
+          "stock_cost": {
+            "before": 853495986,
+            "after": 852768210,
+            "delta": -727776,
+            "per_hour": -35596.907285726615
+          },
+          "all": {
+            "before": 0.967,
+            "after": 0.969,
+            "delta": 0.0020000000000000018,
+            "per_hour": 9.782380096548015e-05
+          }
+        }
+      },
+      {
+        "name": "nocha12",
+        "changes": {
+          "book": {
+            "before": 481565876,
+            "after": 527980688,
+            "delta": 46414812,
+            "per_hour": 2270236.665469088
+          },
+          "revenue": {
+            "before": 6967224902,
+            "after": 7387669697,
+            "delta": 420444795,
+            "per_hour": 20564753.971526034
+          },
+          "deals": {
+            "before": 44797,
+            "after": 47930,
+            "delta": 3133,
+            "per_hour": 153.24098421242454
+          },
+          "stars_rank": {
+            "before": 4.43,
+            "after": 4.43,
+            "delta": 0.0,
+            "per_hour": 0.0
+          },
+          "stock_units": {
+            "before": 663,
+            "after": 555,
+            "delta": -108,
+            "per_hour": -5.282485252135924
+          },
+          "stock_cost": {
+            "before": 165276449,
+            "after": 164148608,
+            "delta": -1127841,
+            "per_hour": -55164.84675235401
+          },
+          "all": {
+            "before": 0.855,
+            "after": 0.867,
+            "delta": 0.01200000000000001,
+            "per_hour": 0.000586942805792881
+          }
+        }
+      },
+      {
+        "name": "seochanit",
+        "changes": {
+          "book": {
+            "before": 812515473,
+            "after": 810285994,
+            "delta": -2229479,
+            "per_hour": -109048.05497635878
+          },
+          "revenue": {
+            "before": 5136937516,
+            "after": 5194570499,
+            "delta": 57632983,
+            "per_hour": 2818938.729019448
+          },
+          "deals": {
+            "before": 13799,
+            "after": 15433,
+            "delta": 1634,
+            "per_hour": 79.92204538879722
+          },
+          "stars_rank": {
+            "before": 4.3,
+            "after": 4.32,
+            "delta": 0.020000000000000462,
+            "per_hour": 0.0009782380096548234
+          },
+          "stock_units": {
+            "before": 967,
+            "after": 1019,
+            "delta": 52,
+            "per_hour": 2.543418825102482
+          },
+          "stock_cost": {
+            "before": 113032560,
+            "after": 116171496,
+            "delta": 3138936,
+            "per_hour": 153531.32525369007
+          },
+          "all": {
+            "before": 0.787,
+            "after": 0.776,
+            "delta": -0.01100000000000001,
+            "per_hour": -0.0005380309053101409
+          }
+        }
+      },
+      {
+        "name": "sergiobuilds",
+        "changes": {
+          "book": {
+            "before": 764891551,
+            "after": 886031947,
+            "delta": 121140396,
+            "per_hour": 5925206.993591719
+          },
+          "revenue": {
+            "before": 7781859019,
+            "after": 9041302849,
+            "delta": 1259443830,
+            "per_hour": 61601791.27656096
+          },
+          "deals": {
+            "before": 22854,
+            "after": 26220,
+            "delta": 3366,
+            "per_hour": 164.63745702490297
+          },
+          "stars_rank": {
+            "before": 4.52,
+            "after": 4.51,
+            "delta": -0.009999999999999787,
+            "per_hour": -0.0004891190048273899
+          },
+          "stock_units": {
+            "before": 622,
+            "after": 805,
+            "delta": 183,
+            "per_hour": 8.950877788341426
+          },
+          "stock_cost": {
+            "before": 324336825,
+            "after": 366493130,
+            "delta": 42156305,
+            "per_hour": 2061944.9948800362
+          },
+          "all": {
+            "before": 0.942,
+            "after": 0.952,
+            "delta": 0.010000000000000009,
+            "per_hour": 0.0004891190048274008
+          }
+        }
+      },
+      {
+        "name": "yms979",
+        "changes": {
+          "book": {
+            "before": 1219110198,
+            "after": 1220529715,
+            "delta": 1419517,
+            "per_hour": 69431.27423755769
+          },
+          "revenue": {
+            "before": 11553955227,
+            "after": 11977679641,
+            "delta": 423724414,
+            "per_hour": 20725166.36967534
+          },
+          "deals": {
+            "before": 38297,
+            "after": 40151,
+            "delta": 1854,
+            "per_hour": 90.68266349500003
+          },
+          "stars_rank": {
+            "before": 4.47,
+            "after": 4.46,
+            "delta": -0.009999999999999787,
+            "per_hour": -0.0004891190048273899
+          },
+          "stock_units": {
+            "before": 3085,
+            "after": 2990,
+            "delta": -95,
+            "per_hour": -4.646630545860304
+          },
+          "stock_cost": {
+            "before": 1180190723,
+            "after": 1207784235,
+            "delta": 27593512,
+            "per_hour": 1349651.112913293
+          },
+          "all": {
+            "before": 0.982,
+            "after": 0.979,
+            "delta": -0.0030000000000000027,
+            "per_hour": -0.00014673570144822025
+          }
+        }
+      }
+    ],
+    "buyers": [
+      {
+        "name": "11im",
+        "changes": {
+          "saved": {
+            "before": 0.8125,
+            "after": 0.8143,
+            "delta": 0.0018000000000000238,
+            "per_hour": 8.804142086893323e-05
+          },
+          "surplus": {
+            "before": 1474108314,
+            "after": 1558692592,
+            "delta": 84584278,
+            "per_hour": 4137177.7879404174
+          },
+          "deals": {
+            "before": 11333,
+            "after": 12403,
+            "delta": 1070,
+            "per_hour": 52.33573351653184
+          },
+          "forum": {
+            "before": 0.921,
+            "after": 0.923,
+            "delta": 0.0020000000000000018,
+            "per_hour": 9.782380096548015e-05
+          },
+          "posts": {
+            "before": 2253,
+            "after": 2429,
+            "delta": 176,
+            "per_hour": 8.608494484962247
+          },
+          "all": {
+            "before": 0.905,
+            "after": 0.898,
+            "delta": -0.007000000000000006,
+            "per_hour": -0.0003423833033791806
+          }
+        }
+      },
+      {
+        "name": "choo-chu",
+        "changes": {
+          "saved": {
+            "before": 0.808,
+            "after": 0.8123,
+            "delta": 0.0042999999999999705,
+            "per_hour": 0.00021032117207578073
+          },
+          "surplus": {
+            "before": 295624410,
+            "after": 346093747,
+            "delta": 50469337,
+            "per_hour": 2468551.1887738695
+          },
+          "deals": {
+            "before": 8025,
+            "after": 9309,
+            "delta": 1284,
+            "per_hour": 62.80288021983821
+          },
+          "forum": {
+            "before": 0.923,
+            "after": 0.924,
+            "delta": 0.0010000000000000009,
+            "per_hour": 4.891190048274008e-05
+          },
+          "posts": {
+            "before": 2425,
+            "after": 2667,
+            "delta": 242,
+            "per_hour": 11.836679916823089
+          },
+          "all": {
+            "before": 0.889,
+            "after": 0.885,
+            "delta": -0.0040000000000000036,
+            "per_hour": -0.0001956476019309603
+          }
+        }
+      },
+      {
+        "name": "dragonash",
+        "changes": {
+          "saved": {
+            "before": 0.8006,
+            "after": 0.8036,
+            "delta": 0.0030000000000000027,
+            "per_hour": 0.00014673570144822025
+          },
+          "surplus": {
+            "before": 681428305,
+            "after": 728028840,
+            "delta": 46600535,
+            "per_hour": 2279320.730362444
+          },
+          "deals": {
+            "before": 19474,
+            "after": 20787,
+            "delta": 1313,
+            "per_hour": 64.22132533383767
+          },
+          "forum": {
+            "before": 0.86,
+            "after": 0.86,
+            "delta": 0.0,
+            "per_hour": 0.0
+          },
+          "posts": {
+            "before": 2261,
+            "after": 2415,
+            "delta": 154,
+            "per_hour": 7.532432674341965
+          },
+          "all": {
+            "before": 0.898,
+            "after": 0.885,
+            "delta": -0.013000000000000012,
+            "per_hour": -0.000635854706275621
+          }
+        }
+      },
+      {
+        "name": "kimauve",
+        "changes": {
+          "saved": {
+            "before": 0.7697,
+            "after": 0.7742,
+            "delta": 0.0044999999999999485,
+            "per_hour": 0.00022010355217232764
+          },
+          "surplus": {
+            "before": 1617450647,
+            "after": 1750430702,
+            "delta": 132980055,
+            "per_hour": 6504307.216349296
+          },
+          "deals": {
+            "before": 19427,
+            "after": 20827,
+            "delta": 1400,
+            "per_hour": 68.47666067583606
+          },
+          "forum": {
+            "before": 0.904,
+            "after": 0.904,
+            "delta": 0.0,
+            "per_hour": 0.0
+          },
+          "posts": {
+            "before": 2581,
+            "after": 2795,
+            "delta": 214,
+            "per_hour": 10.467146703306367
+          },
+          "all": {
+            "before": 0.864,
+            "after": 0.873,
+            "delta": 0.009000000000000008,
+            "per_hour": 0.0004402071043446607
+          }
+        }
+      },
+      {
+        "name": "seochanit",
+        "changes": {
+          "saved": {
+            "before": 0.739,
+            "after": 0.7506,
+            "delta": 0.011600000000000055,
+            "per_hour": 0.0005673780455997871
+          },
+          "surplus": {
+            "before": 706096953,
+            "after": 847103338,
+            "delta": 141006385,
+            "per_hour": 6896890.270550927
+          },
+          "deals": {
+            "before": 19487,
+            "after": 21768,
+            "delta": 2281,
+            "per_hour": 111.56804500113003
+          },
+          "forum": {
+            "before": 0.906,
+            "after": 0.907,
+            "delta": 0.0010000000000000009,
+            "per_hour": 4.891190048274008e-05
+          },
+          "posts": {
+            "before": 2528,
+            "after": 2765,
+            "delta": 237,
+            "per_hour": 11.592120414409388
+          },
+          "all": {
+            "before": 0.812,
+            "after": 0.808,
+            "delta": -0.0040000000000000036,
+            "per_hour": -0.0001956476019309603
+          }
+        }
+      },
+      {
+        "name": "usagi",
+        "changes": {
+          "saved": {
+            "before": 0.7837,
+            "after": 0.7918,
+            "delta": 0.008099999999999996,
+            "per_hour": 0.0003961863939101941
+          },
+          "surplus": {
+            "before": 576918895,
+            "after": 648671776,
+            "delta": 71752881,
+            "per_hour": 3509569.774821888
+          },
+          "deals": {
+            "before": 15797,
+            "after": 17566,
+            "delta": 1769,
+            "per_hour": 86.52515195396712
+          },
+          "forum": {
+            "before": 0.933,
+            "after": 0.934,
+            "delta": 0.0010000000000000009,
+            "per_hour": 4.891190048274008e-05
+          },
+          "posts": {
+            "before": 2063,
+            "after": 2280,
+            "delta": 217,
+            "per_hour": 10.613882404754587
+          },
+          "all": {
+            "before": 0.868,
+            "after": 0.864,
+            "delta": -0.0040000000000000036,
+            "per_hour": -0.0001956476019309603
+          }
+        }
+      }
+    ]
+  },
+  "scoring_proxy": {
+    "before": {
+      "cohort_n": 68,
+      "components": {
+        "book": {
+          "percentile_proxy": 0.9338235294117647,
+          "rank": 5,
+          "value": 812515473
+        },
+        "revenue": {
+          "percentile_proxy": 0.875,
+          "rank": 9,
+          "value": 5136937516
+        },
+        "stars_rank": {
+          "percentile_proxy": 0.2647058823529412,
+          "rank": 50,
+          "value": 4.3
+        }
+      },
+      "all_proxy": 0.7823529411764707
+    },
+    "after": {
+      "cohort_n": 68,
+      "components": {
+        "book": {
+          "percentile_proxy": 0.9191176470588235,
+          "rank": 6,
+          "value": 810285994
+        },
+        "revenue": {
+          "percentile_proxy": 0.8602941176470589,
+          "rank": 10,
+          "value": 5194570499
+        },
+        "stars_rank": {
+          "percentile_proxy": 0.27205882352941174,
+          "rank": 49,
+          "value": 4.32
+        }
+      },
+      "all_proxy": 0.7720588235294118
+    }
+  },
+  "next_thresholds": {
+    "shops": {
+      "book": {
+        "own": 810285994,
+        "raw_rank": 6,
+        "registered_numeric_population": 92,
+        "next": [
+          {
+            "name": "sergiobuilds",
+            "value": 886031947,
+            "gap": 75745953
+          },
+          {
+            "name": "moss-and-oak",
+            "value": 901878413,
+            "gap": 91592419
+          }
+        ]
+      },
+      "revenue": {
+        "own": 5194570499,
+        "raw_rank": 10,
+        "registered_numeric_population": 92,
+        "next": [
+          {
+            "name": "ddolcom",
+            "value": 5281204698,
+            "gap": 86634199
+          },
+          {
+            "name": "Kiro729",
+            "value": 6574106965,
+            "gap": 1379536466
+          }
+        ]
+      },
+      "deals": {
+        "own": 15433,
+        "raw_rank": 25,
+        "registered_numeric_population": 92,
+        "next": [
+          {
+            "name": "YAHO1212",
+            "value": 15462,
+            "gap": 29
+          },
+          {
+            "name": "gom31-certified-goods",
+            "value": 16783,
+            "gap": 1350
+          }
+        ]
+      },
+      "stars_rank": {
+        "own": 4.32,
+        "raw_rank": 49,
+        "registered_numeric_population": 92,
+        "next": [
+          {
+            "name": "gom31-certified-goods",
+            "value": 4.33,
+            "gap": 0.009999999999999787
+          },
+          {
+            "name": "fair-furniture",
+            "value": 4.33,
+            "gap": 0.009999999999999787
+          }
+        ]
+      }
+    },
+    "buyers": {
+      "saved": {
+        "own": 0.7506,
+        "raw_rank": 20,
+        "registered_numeric_population": 138,
+        "next": [
+          {
+            "name": "25620027",
+            "value": 0.7526,
+            "gap": 0.0020000000000000018
+          },
+          {
+            "name": "Kiro729",
+            "value": 0.7527,
+            "gap": 0.0020999999999999908
+          }
+        ]
+      },
+      "surplus": {
+        "own": 847103338,
+        "raw_rank": 22,
+        "registered_numeric_population": 138,
+        "next": [
+          {
+            "name": "jiseokkk",
+            "value": 1000080103,
+            "gap": 152976765
+          },
+          {
+            "name": "lee-sungsoo",
+            "value": 1035143230,
+            "gap": 188039892
+          }
+        ]
+      },
+      "deals": {
+        "own": 21768,
+        "raw_rank": 6,
+        "registered_numeric_population": 138,
+        "next": [
+          {
+            "name": "sergiobuilds",
+            "value": 22919,
+            "gap": 1151
+          },
+          {
+            "name": "fair-furniture",
+            "value": 24203,
+            "gap": 2435
+          }
+        ]
+      },
+      "forum": {
+        "own": 0.907,
+        "raw_rank": 35,
+        "registered_numeric_population": 60,
+        "next": [
+          {
+            "name": "sergiobuilds",
+            "value": 0.908,
+            "gap": 0.0010000000000000009
+          },
+          {
+            "name": "Jaehoonang",
+            "value": 0.909,
+            "gap": 0.0020000000000000018
+          }
+        ]
+      },
+      "posts": {
+        "own": 2765,
+        "raw_rank": 11,
+        "registered_numeric_population": 138,
+        "next": [
+          {
+            "name": "jiseokkk",
+            "value": 2780,
+            "gap": 15
+          },
+          {
+            "name": "kimauve",
+            "value": 2795,
+            "gap": 30
+          }
+        ]
+      }
+    }
+  },
+  "shop": {
+    "settlements": 1626,
+    "cost_known_sales": 1626,
+    "settlement_gross_revenue": 64186652,
+    "known_gross_margin": 8530501,
+    "observed_refunds_all_sale_cohorts": 7096951,
+    "mix": {
+      "food": {
+        "sales": 1528,
+        "revenue": 24987373,
+        "cost": 21255136,
+        "gross_margin": 3732237,
+        "grades": {
+          "B": 802,
+          "C": 321,
+          "A": 405
+        }
+      },
+      "goods": {
+        "sales": 98,
+        "revenue": 39199279,
+        "cost": 34401015,
+        "gross_margin": 4798264,
+        "grades": {
+          "A": 88,
+          "B": 4,
+          "C": 6
+        }
+      }
+    },
+    "unpaid_stockout_tasks": 2332,
+    "stockout_reasons": {
+      "shelf_life": 1908,
+      "reserved_stock": 293,
+      "grade_requirement": 126,
+      "no_matching_stock": 5
+    },
+    "supply_statuses": {
+      "complete": 447,
+      "retryable": 340
+    },
+    "successful_supply_requested_units": 1904,
+    "supply_windows": [
+      {
+        "opens": 1794636211,
+        "lines": 7,
+        "units": 20
+      },
+      {
+        "opens": 1794637341,
+        "lines": 8,
+        "units": 10
+      },
+      {
+        "opens": 1794638695,
+        "lines": 5,
+        "units": 15
+      },
+      {
+        "opens": 1794639628,
+        "lines": 5,
+        "units": 13
+      },
+      {
+        "opens": 1794640974,
+        "lines": 5,
+        "units": 20
+      },
+      {
+        "opens": 1794642285,
+        "lines": 8,
+        "units": 45
+      },
+      {
+        "opens": 1794643410,
+        "lines": 10,
+        "units": 45
+      },
+      {
+        "opens": 1794644672,
+        "lines": 10,
+        "units": 14
+      },
+      {
+        "opens": 1794645891,
+        "lines": 6,
+        "units": 12
+      },
+      {
+        "opens": 1794647000,
+        "lines": 9,
+        "units": 10
+      },
+      {
+        "opens": 1794648085,
+        "lines": 8,
+        "units": 26
+      },
+      {
+        "opens": 1794649403,
+        "lines": 9,
+        "units": 65
+      },
+      {
+        "opens": 1794650609,
+        "lines": 6,
+        "units": 35
+      },
+      {
+        "opens": 1794651672,
+        "lines": 6,
+        "units": 10
+      },
+      {
+        "opens": 1794653078,
+        "lines": 6,
+        "units": 35
+      },
+      {
+        "opens": 1794654187,
+        "lines": 6,
+        "units": 14
+      },
+      {
+        "opens": 1794655483,
+        "lines": 10,
+        "units": 24
+      },
+      {
+        "opens": 1794656472,
+        "lines": 8,
+        "units": 43
+      },
+      {
+        "opens": 1794657886,
+        "lines": 6,
+        "units": 35
+      },
+      {
+        "opens": 1794658946,
+        "lines": 5,
+        "units": 36
+      },
+      {
+        "opens": 1794660216,
+        "lines": 5,
+        "units": 34
+      },
+      {
+        "opens": 1794661419,
+        "lines": 6,
+        "units": 31
+      },
+      {
+        "opens": 1794662619,
+        "lines": 10,
+        "units": 28
+      },
+      {
+        "opens": 1794663701,
+        "lines": 10,
+        "units": 53
+      },
+      {
+        "opens": 1794664803,
+        "lines": 10,
+        "units": 21
+      },
+      {
+        "opens": 1794666146,
+        "lines": 5,
+        "units": 18
+      },
+      {
+        "opens": 1794667381,
+        "lines": 3,
+        "units": 20
+      },
+      {
+        "opens": 1794668490,
+        "lines": 1,
+        "units": 4
+      },
+      {
+        "opens": 1794669675,
+        "lines": 10,
+        "units": 44
+      },
+      {
+        "opens": 1794671032,
+        "lines": 1,
+        "units": 4
+      },
+      {
+        "opens": 1794672064,
+        "lines": 10,
+        "units": 66
+      },
+      {
+        "opens": 1794673371,
+        "lines": 10,
+        "units": 60
+      },
+      {
+        "opens": 1794674521,
+        "lines": 10,
+        "units": 48
+      },
+      {
+        "opens": 1794675875,
+        "lines": 10,
+        "units": 25
+      },
+      {
+        "opens": 1794676925,
+        "lines": 7,
+        "units": 30
+      },
+      {
+        "opens": 1794678079,
+        "lines": 10,
+        "units": 38
+      },
+      {
+        "opens": 1794679380,
+        "lines": 9,
+        "units": 30
+      },
+      {
+        "opens": 1794680576,
+        "lines": 5,
+        "units": 27
+      },
+      {
+        "opens": 1794681602,
+        "lines": 10,
+        "units": 27
+      },
+      {
+        "opens": 1794683091,
+        "lines": 7,
+        "units": 20
+      },
+      {
+        "opens": 1794684243,
+        "lines": 10,
+        "units": 60
+      },
+      {
+        "opens": 1794685499,
+        "lines": 7,
+        "units": 54
+      },
+      {
+        "opens": 1794686587,
+        "lines": 10,
+        "units": 62
+      },
+      {
+        "opens": 1794687790,
+        "lines": 9,
+        "units": 60
+      },
+      {
+        "opens": 1794688986,
+        "lines": 4,
+        "units": 26
+      },
+      {
+        "opens": 1794690143,
+        "lines": 8,
+        "units": 15
+      },
+      {
+        "opens": 1794691471,
+        "lines": 8,
+        "units": 18
+      },
+      {
+        "opens": 1794692671,
+        "lines": 5,
+        "units": 32
+      },
+      {
+        "opens": 1794693732,
+        "lines": 8,
+        "units": 33
+      },
+      {
+        "opens": 1794694908,
+        "lines": 6,
+        "units": 13
+      },
+      {
+        "opens": 1794696135,
+        "lines": 9,
+        "units": 58
+      },
+      {
+        "opens": 1794697250,
+        "lines": 5,
+        "units": 19
+      },
+      {
+        "opens": 1794698677,
+        "lines": 4,
+        "units": 36
+      },
+      {
+        "opens": 1794699704,
+        "lines": 9,
+        "units": 12
+      },
+      {
+        "opens": 1794701013,
+        "lines": 8,
+        "units": 61
+      },
+      {
+        "opens": 1794702074,
+        "lines": 5,
+        "units": 17
+      },
+      {
+        "opens": 1794703299,
+        "lines": 10,
+        "units": 36
+      },
+      {
+        "opens": 1794704453,
+        "lines": 5,
+        "units": 13
+      },
+      {
+        "opens": 1794705741,
+        "lines": 7,
+        "units": 42
+      },
+      {
+        "opens": 1794706995,
+        "lines": 4,
+        "units": 22
+      },
+      {
+        "opens": 1794708228,
+        "lines": 10,
+        "units": 39
+      },
+      {
+        "opens": 1794709246,
+        "lines": 4,
+        "units": 21
+      }
+    ],
+    "control_samples": 393,
+    "control_states": {
+      "observe_and_trade": 218,
+      "defensive": 175
+    },
+    "control_reasons": {
+      "transport_unhealthy": 66,
+      "ledger_lag_or_unverified": 131,
+      "stale_board": 1
+    },
+    "inventory_decision_count": 989,
+    "inventory_selections": {
+      "baseline": 312,
+      "baseline_plus_robust_depth": 145,
+      "lot_risk_4": 124,
+      "lot_risk_6.0": 6,
+      "lot_risk_7.0": 7,
+      "lot_risk_5.5": 15,
+      "lot_risk_1": 256,
+      "lot_risk_0.25": 17,
+      "lot_risk_0": 13,
+      "lot_risk_8.0": 5,
+      "lot_risk_40.0": 4,
+      "lot_risk_30.0": 1,
+      "lot_risk_32.0": 3,
+      "lot_risk_28.0": 2,
+      "lot_risk_22.0": 1,
+      "lot_risk_14.0": 2,
+      "lot_risk_20.0": 1,
+      "lot_risk_12.0": 3,
+      "lot_risk_7.5": 7,
+      "lot_risk_6.5": 7,
+      "lot_risk_11.0": 5,
+      "lot_risk_9.0": 14,
+      "lot_risk_10.0": 15,
+      "lot_risk_5.0": 4,
+      "lot_risk_4.5": 20
+    },
+    "research_publications": 133,
+    "review_count": 1625,
+    "review_stars": {
+      "5": 1293,
+      "4": 179,
+      "2": 120,
+      "3": 33
+    },
+    "review_quality_by_sold_grade": {
+      "food:B": {
+        "n": 801,
+        "mean": 4.662921348314606,
+        "low": 62
+      },
+      "food:C": {
+        "n": 321,
+        "mean": 4.109034267912772,
+        "low": 83
+      },
+      "goods:A": {
+        "n": 88,
+        "mean": 4.863636363636363,
+        "low": 2
+      },
+      "food:A": {
+        "n": 405,
+        "mean": 4.911111111111111,
+        "low": 6
+      },
+      "goods:B": {
+        "n": 4,
+        "mean": 5.0,
+        "low": 0
+      },
+      "goods:C": {
+        "n": 6,
+        "mean": 4.833333333333333,
+        "low": 0
+      }
+    },
+    "low_review_reasons": {
+      "shelf_life": 129,
+      "failure_or_warranty": 2,
+      "unclassified": 22
+    },
+    "shelf_stockout_feasibility": {
+      "within_catalog_max": 1904,
+      "above_catalog_max": 4
+    }
+  },
+  "buyer": {
+    "food": {
+      "closed": 2072,
+      "paid": 1642,
+      "conversion": 0.7924710424710425,
+      "confirmed_results": 1643,
+      "known_initial_saved_n": 0,
+      "initial_saved_mean": null
+    },
+    "goods": {
+      "closed": 859,
+      "paid": 637,
+      "conversion": 0.7415599534342259,
+      "confirmed_results": 639,
+      "known_initial_saved_n": 0,
+      "initial_saved_mean": null
+    }
+  },
+  "bridge": {
+    "official_book_delta": -2229479,
+    "official_net_revenue_delta": 57632983,
+    "recorded_gross_margin": 8530501,
+    "observed_refunds": 7096951,
+    "unattributed_book_deductions": 3663029,
+    "gross_minus_official_net_revenue": 6553669,
+    "limitations": "Residual includes unrecorded refunds, expiry, storage, fees, timestamp/coverage mismatch; not classified wholly as waste."
+  },
+  "inventory": {
+    "at": "2026-11-15T11:24:09.960996+09:00",
+    "balance": 696071990,
+    "cost": 119220107,
+    "book_from_inventory": 810292097,
+    "before_units": 966,
+    "units": 1043,
+    "skus": 289,
+    "mix": {
+      "food": {
+        "units": 768,
+        "cost": 11408898
+      },
+      "goods": {
+        "units": 275,
+        "cost": 107811209
+      }
+    },
+    "before_stock_cost": 113024375,
+    "console_acquired_units": 1890,
+    "console_acquired_cost": 63913507,
+    "unexplained_net_unit_reduction": 187,
+    "limitation": "Private snapshot after board cutoff; unit residual is a reconciliation signal, not confirmed expiry."
+  },
+  "current_observation": {
+    "at": 1794709459.858502,
+    "rules": {
+      "at": 1794709269.5146787,
+      "sha256": "3de7d37ca3361ae7620fe873aebada513457cba30a705bb22927553c788045db",
+      "compatible": true,
+      "expected": "book/revenue/stars; surge<=1.5",
+      "source": "/agent.md",
+      "buyer_metric": "saved",
+      "buyer_saved_formula": "margin_share_v36",
+      "buyer_compatible": true,
+      "buyer_forum_metric": "raw",
+      "paid_dislike_power": true,
+      "paid_dislike_contract_known": true,
+      "forum_vote_min_deals": 50,
+      "stance_scoring": true,
+      "dislike_costs_shop_cash": true,
+      "buyer_score_epoch": 1794476243.8965197
+    },
+    "control": {
+      "at": 1794709269.7752228,
+      "epoch": 1793854431.985112,
+      "status": "observe_and_trade",
+      "book": 813697637,
+      "book_peak": 814118029,
+      "book_drawdown": 420392,
+      "drawdown_brake_until": 0,
+      "brake_drawdown": 0,
+      "capital_fraction": 1,
+      "cash_capacity": {
+        "spendable": 654018267.5105385,
+        "refund_liability": 42439432,
+        "storage_to_end": 2656798.4894615435,
+        "cash_floor": 0,
+        "remaining_days": 2.526275749736362,
+        "reserve_release_schedule": [
+          {
+            "at": 1794710400,
+            "amount": 671766
+          },
+          {
+            "at": 1794714000,
+            "amount": 85322
+          },
+          {
+            "at": 1794715200,
+            "amount": 986618
+          },
+          {
+            "at": 1794716400,
+            "amount": 438394
+          },
+          {
+            "at": 1794717600,
+            "amount": 413862
+          },
+          {
+            "at": 1794718800,
+            "amount": 915248
+          },
+          {
+            "at": 1794721200,
+            "amount": 1205089
+          },
+          {
+            "at": 1794722400,
+            "amount": 851670
+          },
+          {
+            "at": 1794723600,
+            "amount": 1399403
+          },
+          {
+            "at": 1794724800,
+            "amount": 686556
+          },
+          {
+            "at": 1794726000,
+            "amount": 1449912
+          },
+          {
+            "at": 1794728400,
+            "amount": 200000
+          },
+          {
+            "at": 1794729600,
+            "amount": 661388
+          },
+          {
+            "at": 1794730800,
+            "amount": 687329
+          },
+          {
+            "at": 1794741600,
+            "amount": 76726
+          },
+          {
+            "at": 1794745200,
+            "amount": 109554
+          },
+          {
+            "at": 1794746400,
+            "amount": 44812
+          },
+          {
+            "at": 1794756000,
+            "amount": 395192
+          },
+          {
+            "at": 1794758400,
+            "amount": 93282
+          },
+          {
+            "at": 1794760800,
+            "amount": 43500
+          },
+          {
+            "at": 1794762000,
+            "amount": 329491
+          },
+          {
+            "at": 1794768000,
+            "amount": 11178
+          },
+          {
+            "at": 1794775200,
+            "amount": 775862
+          },
+          {
+            "at": 1794781200,
+            "amount": 510430
+          },
+          {
+            "at": 1794787200,
+            "amount": 96064
+          },
+          {
+            "at": 1794788400,
+            "amount": 42634
+          },
+          {
+            "at": 1794790800,
+            "amount": 1864272
+          },
+          {
+            "at": 1794792000,
+            "amount": 863424
+          },
+          {
+            "at": 1794793200,
+            "amount": 1153419
+          },
+          {
+            "at": 1794795600,
+            "amount": 192691
+          },
+          {
+            "at": 1794796800,
+            "amount": 2460000
+          },
+          {
+            "at": 1794798000,
+            "amount": 434070
+          },
+          {
+            "at": 1794801600,
+            "amount": 2428116
+          },
+          {
+            "at": 1794804000,
+            "amount": 2530000
+          },
+          {
+            "at": 1794806400,
+            "amount": 1702777
+          },
+          {
+            "at": 1794812400,
+            "amount": 415184
+          },
+          {
+            "at": 1794816000,
+            "amount": 1649386
+          },
+          {
+            "at": 1794819600,
+            "amount": 71104
+          },
+          {
+            "at": 1794823200,
+            "amount": 93468
+          },
+          {
+            "at": 1794825600,
+            "amount": 395973
+          },
+          {
+            "at": 1794832800,
+            "amount": 46492
+          },
+          {
+            "at": 1794854400,
+            "amount": 285458
+          },
+          {
+            "at": 1794866400,
+            "amount": 49619
+          },
+          {
+            "at": 1794868800,
+            "amount": 655895
+          },
+          {
+            "at": 1794889200,
+            "amount": 1883895
+          },
+          {
+            "at": 1794897600,
+            "amount": 1519420
+          },
+          {
+            "at": 1794908400,
+            "amount": 442074
+          },
+          {
+            "at": 1794910800,
+            "amount": 1489112
+          },
+          {
+            "at": 1794913200,
+            "amount": 611036
+          },
+          {
+            "at": 1794914400,
+            "amount": 30573
+          },
+          {
+            "at": 1794931200,
+            "amount": 1091320
+          },
+          {
+            "at": 1794938400,
+            "amount": 95225
+          },
+          {
+            "at": 1794942000,
+            "amount": 363260
+          },
+          {
+            "at": 1794946800,
+            "amount": 891622
+          },
+          {
+            "at": 1794950400,
+            "amount": 74606
+          },
+          {
+            "at": 1794957600,
+            "amount": 314393
+          },
+          {
+            "at": 1794958800,
+            "amount": 319484
+          },
+          {
+            "at": 1794962400,
+            "amount": 295429
+          },
+          {
+            "at": 1794963600,
+            "amount": 649280
+          },
+          {
+            "at": 1794964800,
+            "amount": 7448
+          },
+          {
+            "at": 1794967200,
+            "amount": 1499612
+          },
+          {
+            "at": 1794968400,
+            "amount": 389013
+          }
+        ],
+        "discharged_refund_reserve": 6649467,
+        "reserve_release_before_next_supply": 0
+      },
+      "pause_restock": false,
+      "reasons": [],
+      "own_all": 1.584,
+      "leader_total": 1.805,
+      "leader_gap": 0.22099999999999986,
+      "sold_known_cost": 553,
+      "below_cost_sales": 2,
+      "shop_evidence_since": 1794635815.5145092,
+      "current_shop_known_cost": 553,
+      "current_shop_below_cost": 2,
+      "buyer_payment_failures": {
+        "stockout": 4,
+        "other": 3,
+        "shelf_life": 6
+      },
+      "opportunities": [
+        {
+          "sku": "G1dd63027",
+          "arrival_rate_scenario": 4.187301460560149,
+          "competition_sellers_plus_us": 3,
+          "lost_exact_requests": 6,
+          "available_hours_observed": 2.845993290543558
+        },
+        {
+          "sku": "G54563be7",
+          "arrival_rate_scenario": 3.8437901938645958,
+          "competition_sellers_plus_us": 3,
+          "lost_exact_requests": 0,
+          "available_hours_observed": 2.845993290543558
+        },
+        {
+          "sku": "G9df06998",
+          "arrival_rate_scenario": 3.4700773687172326,
+          "competition_sellers_plus_us": 7,
+          "lost_exact_requests": 2,
+          "available_hours_observed": 2.845993290543558
+        },
+        {
+          "sku": "G0260b9fc",
+          "arrival_rate_scenario": 3.445223333729254,
+          "competition_sellers_plus_us": 2,
+          "lost_exact_requests": 2,
+          "available_hours_observed": 2.7145157286855914
+        },
+        {
+          "sku": "Gfa3f40a4",
+          "arrival_rate_scenario": 2.996460018340271,
+          "competition_sellers_plus_us": 2,
+          "lost_exact_requests": 0,
+          "available_hours_observed": 1.186072933077811
+        },
+        {
+          "sku": "G5bdaf222",
+          "arrival_rate_scenario": 2.440649809492594,
+          "competition_sellers_plus_us": 5,
+          "lost_exact_requests": 8,
+          "available_hours_observed": 2.845993290543558
+        },
+        {
+          "sku": "G03aae7ca",
+          "arrival_rate_scenario": 2.329242084016687,
+          "competition_sellers_plus_us": 6,
+          "lost_exact_requests": 1,
+          "available_hours_observed": 2.845993290543558
+        },
+        {
+          "sku": "G281278fc",
+          "arrival_rate_scenario": 2.322540322815674,
+          "competition_sellers_plus_us": 4,
+          "lost_exact_requests": 0,
+          "available_hours_observed": 0.11525282892915933
+        },
+        {
+          "sku": "G8fbdd9c2",
+          "arrival_rate_scenario": 2.2848886962811554,
+          "competition_sellers_plus_us": 5,
+          "lost_exact_requests": 4,
+          "available_hours_observed": 2.845993290543558
+        },
+        {
+          "sku": "G44c9c1c6",
+          "arrival_rate_scenario": 2.1810050333179376,
+          "competition_sellers_plus_us": 2,
+          "lost_exact_requests": 0,
+          "available_hours_observed": 2.845993290543558
+        },
+        {
+          "sku": "G11ee03a7",
+          "arrival_rate_scenario": 2.0842316135511423,
+          "competition_sellers_plus_us": 2,
+          "lost_exact_requests": 4,
+          "available_hours_observed": 2.845993290543558
+        },
+        {
+          "sku": "G56b7eae7",
+          "arrival_rate_scenario": 2.0687472861509684,
+          "competition_sellers_plus_us": 9,
+          "lost_exact_requests": 0,
+          "available_hours_observed": 2.845993290543558
+        },
+        {
+          "sku": "G80fe5a1d",
+          "arrival_rate_scenario": 1.9735016115690969,
+          "competition_sellers_plus_us": 2,
+          "lost_exact_requests": 2,
+          "available_hours_observed": 1.3956573815478208
+        },
+        {
+          "sku": "Gf87084e2",
+          "arrival_rate_scenario": 1.9314329701544684,
+          "competition_sellers_plus_us": 2,
+          "lost_exact_requests": 0,
+          "available_hours_observed": 2.845993290543558
+        },
+        {
+          "sku": "Ge508020a",
+          "arrival_rate_scenario": 1.9143965178651807,
+          "competition_sellers_plus_us": 5,
+          "lost_exact_requests": 1,
+          "available_hours_observed": 2.845993290543558
+        },
+        {
+          "sku": "G7334a33d",
+          "arrival_rate_scenario": 1.8397890850545409,
+          "competition_sellers_plus_us": 3,
+          "lost_exact_requests": 0,
+          "available_hours_observed": 2.845993290543558
+        },
+        {
+          "sku": "Ge4a7efa2",
+          "arrival_rate_scenario": 1.8095147432971836,
+          "competition_sellers_plus_us": 2,
+          "lost_exact_requests": 3,
+          "available_hours_observed": 2.845993290543558
+        },
+        {
+          "sku": "G114aefb6",
+          "arrival_rate_scenario": 1.707532668351172,
+          "competition_sellers_plus_us": 7,
+          "lost_exact_requests": 0,
+          "available_hours_observed": 0.6107894904083672
+        },
+        {
+          "sku": "G06a54b11",
+          "arrival_rate_scenario": 1.391915872566448,
+          "competition_sellers_plus_us": 9,
+          "lost_exact_requests": 0,
+          "available_hours_observed": 1.0386488828394147
+        },
+        {
+          "sku": "G021aae64",
+          "arrival_rate_scenario": 1.3771602960076907,
+          "competition_sellers_plus_us": 27,
+          "lost_exact_requests": 0,
+          "available_hours_observed": 2.8143546101119803
+        }
+      ],
+      "suggestions": [
+        {
+          "role": "shop",
+          "field": "assortment_coverage_fraction",
+          "direction": 1,
+          "reason": "observed unserved external requests"
+        }
+      ],
+      "market_summary": {
+        "tracked_skus": 1500,
+        "observed_baskets": 100,
+        "top_unserved_categories": [
+          [
+            "식품>야채/과일>신선과일(부패주의)",
+            16.694252429455
+          ],
+          [
+            "식품>김치/반찬/즉석요리>김치",
+            9.502776871473225
+          ],
+          [
+            "식품>김치/반찬/즉석요리>즉석조리식품",
+            6.505299738482507
+          ],
+          [
+            "식품>야채/과일>신선야채(부패주의)",
+            4.6192172581825295
+          ],
+          [
+            "식품>조리/가공 과일/야채/견과류>조리/가공 견과류",
+            3.5141878476445902
+          ],
+          [
+            "가구/침구>가구>소파/의자/스툴",
+            3.2712344469296983
+          ],
+          [
+            "식품>계란/유제품>우유/두유",
+            3.13316632286737
+          ],
+          [
+            "식품>기타 가공식품>한과/떡",
+            2.9448817839964816
+          ],
+          [
+            "식품>음료>주스/코코아/생수",
+            2.9054893055625612
+          ],
+          [
+            "식품>김치/반찬/즉석요리>찌개/탕류/장류",
+            2.673466566533385
+          ]
+        ],
+        "exposure_started_at": 1794699002.4811606,
+        "context_note": "own buyer baskets have zero demand weight; external settlements only"
+      },
+      "note": "observational diagnosis; policy trials require mature own evidence and rollback checks",
+      "championship": {
+        "at": 1794709269.7752228,
+        "ranks": {
+          "shop": {
+            "rank": 12,
+            "population": 68
+          },
+          "buyer": {
+            "rank": 12,
+            "population": 68
+          }
+        },
+        "next_thresholds": {
+          "shop": {
+            "book": {
+              "current": 813697637,
+              "next_value": 885839928,
+              "gap": 72142291,
+              "weight": 0.5,
+              "cohort_size": 68,
+              "scale": "percentile"
+            },
+            "revenue": {
+              "current": 5197526086,
+              "next_value": 5279660903,
+              "gap": 82134817,
+              "weight": 0.3,
+              "cohort_size": 68,
+              "scale": "percentile"
+            },
+            "stars_rank": {
+              "current": 4.32,
+              "next_value": 4.33,
+              "gap": 0.009999999999999787,
+              "weight": 0.2,
+              "cohort_size": 68,
+              "scale": "percentile"
+            }
+          },
+          "buyer": {
+            "saved": {
+              "current": 0.7506,
+              "next_value": 0.7526,
+              "gap": 0.0020000000000000018,
+              "weight": 0.5,
+              "cohort_size": 68,
+              "scale": "percentile"
+            },
+            "forum": {
+              "current": 0.907,
+              "next_value": 0.908,
+              "gap": 0.0010000000000000009,
+              "weight": 0.3,
+              "cohort_size": 68,
+              "scale": "raw",
+              "all_gain_per_0_01": 0.003,
+              "next_value_is": "peer benchmark, not a percentile threshold"
+            },
+            "deals": {
+              "current": 21765,
+              "next_value": 22916,
+              "gap": 1151,
+              "weight": 0.1,
+              "cohort_size": 68,
+              "scale": "percentile"
+            },
+            "posts": {
+              "current": 2765,
+              "next_value": 2780,
+              "gap": 15,
+              "weight": 0.1,
+              "cohort_size": 68,
+              "scale": "percentile"
+            }
+          }
+        },
+        "pace": {
+          "shop": {
+            "metric": "book",
+            "hours": 5.958622166977988,
+            "own_per_hour": 199343.7352988634,
+            "fastest_matched": [
+              {
+                "name": "sergiobuilds",
+                "per_hour": 5185244.530392816
+              },
+              {
+                "name": "kcwarni",
+                "per_hour": 2668597.295549708
+              },
+              {
+                "name": "thisjonghoon",
+                "per_hour": 1839497.0670810265
+              }
+            ],
+            "note": "observational pace, not a forecast or causal estimate"
+          },
+          "buyer": {
+            "metric": "saved",
+            "hours": 5.958622166977988,
+            "own_per_hour": 0.00043634248441006267,
+            "fastest_matched": [
+              {
+                "name": "sohyunkim11",
+                "per_hour": 0.00748495184795709
+              },
+              {
+                "name": "helenjeon101",
+                "per_hour": 0.0036585639077458517
+              },
+              {
+                "name": "totato2203-r3",
+                "per_hour": 0.0013258098564767082
+              }
+            ],
+            "note": "observational pace, not a forecast or causal estimate"
+          }
+        },
+        "idle_spendable_fraction": 0.935495214848968,
+        "stock_cost": 116171496,
+        "scope": "everyone; student ranks remain separate in official board"
+      }
+    },
+    "feed_caught_up_at": 1794709451.1525369,
+    "feed_seq": 6756999,
+    "analytical_roles": {
+      "terminal_contract_observer": {
+        "at": 1794709425.1314936,
+        "status": "completed"
+      },
+      "service_region_observer": {
+        "at": 1794709433.0256052,
+        "status": "completed"
+      },
+      "negotiation_path_observer": {
+        "at": 1794709438.4870481,
+        "status": "completed"
+      },
+      "account_reputation_observer": {
+        "at": 1794709441.6361282,
+        "status": "completed"
+      },
+      "policy_learning_observer": {
+        "at": 1794709442.957994,
+        "status": "completed"
+      },
+      "buyer_cost_observer": {
+        "at": 1794709443.132999,
+        "status": "completed"
+      },
+      "shop_demand_observer": {
+        "at": 1794709444.2294705,
+        "status": "completed"
+      },
+      "inventory_opportunity_observer": {
+        "at": 1794709444.257129,
+        "status": "completed"
+      },
+      "forum_objective_observer": {
+        "at": 1794709444.3044095,
+        "status": "completed"
+      },
+      "quality_evaluator": {
+        "at": 1794709444.55067,
+        "status": "completed"
+      },
+      "market_observer": {
+        "at": 1794709444.7647324,
+        "status": "completed"
+      },
+      "policy_compiler": {
+        "at": 1794709447.7851305,
+        "status": "completed"
+      }
+    },
+    "research": {
+      "schema": 1,
+      "at": 1794709007.276637,
+      "expires_at": 1794710207.276637,
+      "rules_hash": "3de7d37ca3361ae7620fe873aebada513457cba30a705bb22927553c788045db",
+      "summary": "Market rate 1.048x; 13-unit lot forecasts 59,526 Book vs -118,874 stress. No deeper comparison; execution not permitted.",
+      "hypotheses": [
+        "175 stockouts and 90 sales support coverage; 18 supply windows succeeded, with 12 retryable statuses.",
+        "26 negotiations and 0/8 vs 10/12 owner-food positives suggest conditional recovery probes.",
+        "Food paid 46/81 vs goods 20/33; pending rewards and forum scores 0.605 vs 0.607 favor balance."
+      ],
+      "evidence_ids": [
+        "rules:3de7d37ca3361ae7620fe873aebada513457cba30a705bb22927553c788045db",
+        "ledger:6754166",
+        "kv:market_control",
+        "capability:20ee0f10dd535fc98fd767922c3e40e3774adb16b4dfe3a459490b5bbd9223db",
+        "kv:inventory-portfolio:v27",
+        "kv:service-policy:v26",
+        "kv:buyer-negotiation-path:v26",
+        "kv:feedback-last-policy"
+      ],
+      "skill_ids": [
+        "fbfe69bc5cf27116efc2c8be44723e4be60e8489c9464760ae29380c8eab771a",
+        "32e48c93d2674c6b20fc87917a6f13ac9b0c912da977a002464b3b20df3d19a5",
+        "882569721e15eaa085e3b1ff18cf9094f5c1419c2579f191301a6439e5746d9c",
+        "c9c7fb38955dd718bfe79dad9116ddf61ed981699052ff395bdfd5ad02aebf50"
+      ],
+      "queued_buyer_profile": null,
+      "trial_review_approved": false,
+      "economic_superiority_verified": false,
+      "shop_plan_recommendation": "cautious",
+      "operating_intents": [
+        "buyer_price_gap",
+        "stock_coverage"
+      ],
+      "operating_actions_reviewed": true,
+      "forum_focus": "balanced",
+      "objective_context_id": "18118082fc14c1dd46e1bea258dd81b9e8d7657322ef526599b8aaf7c2159f35",
+      "operating_policy": {
+        "cover_cycles": 1,
+        "initial_batch_limit": 6,
+        "frontier_min_orders": 8,
+        "recheck_seconds": 60
+      },
+      "policy_authority": "independent_agent_consensus_with_numeric_execution_guards"
+    },
+    "inventory_portfolio": {
+      "at": 1794709401.9070356,
+      "expires_at": 1794709581.9070356,
+      "rules_hash": "3de7d37ca3361ae7620fe873aebada513457cba30a705bb22927553c788045db",
+      "candidate_counts": {
+        "all": 1259,
+        "supported_goods": 47,
+        "supported_food": 116
+      },
+      "selection": "baseline",
+      "dominance_guard_passed": true,
+      "alternatives": {
+        "baseline": {
+          "book": 61140.16492897053,
+          "revenue": 1124231.1080089256,
+          "stress_book": -137252.6976125947,
+          "rank_progress": 6.318550970606517e-05,
+          "units": 13,
+          "lines": 10,
+          "capital": 3976062.025634336
+        },
+        "baseline_plus_robust_depth": {
+          "book": 61140.16492897053,
+          "revenue": 1124231.1080089256,
+          "stress_book": -137252.6976125947,
+          "rank_progress": 6.318550970606517e-05,
+          "units": 13,
+          "lines": 10,
+          "capital": 3976062.025634336
+        },
+        "lot_risk_0": {
+          "book": 67144.65300130619,
+          "revenue": 1080175.6433249083,
+          "stress_book": -181601.02381852845,
+          "rank_progress": 6.152490477755456e-05,
+          "units": 55,
+          "lines": 10,
+          "capital": 3444785.7902508974
+        },
+        "lot_risk_0.25": {
+          "book": 67144.65300130619,
+          "revenue": 1080175.6433249083,
+          "stress_book": -181601.02381852843,
+          "rank_progress": 6.152490477755456e-05,
+          "units": 55,
+          "lines": 10,
+          "capital": 3444785.7902508974
+        },
+        "lot_risk_1": {
+          "book": 67144.65300130619,
+          "revenue": 1080175.6433249083,
+          "stress_book": -181601.02381852843,
+          "rank_progress": 6.152490477755456e-05,
+          "units": 55,
+          "lines": 10,
+          "capital": 3444785.7902508974
+        },
+        "lot_risk_4": {
+          "book": 50309.49482952881,
+          "revenue": 413762.7324058282,
+          "stress_book": -36254.24129926777,
+          "rank_progress": 2.5954205743838886e-05,
+          "units": 44,
+          "lines": 10,
+          "capital": 970320.1285831094
+        },
+        "lot_risk_8.0": {
+          "book": 29964.462938250315,
+          "revenue": 184960.10706939426,
+          "stress_book": -8034.93213509233,
+          "rank_progress": 1.232768043011312e-05,
+          "units": 20,
+          "lines": 10,
+          "capital": 433461.2399608778
+        },
+        "lot_risk_6.0": {
+          "book": 37106.30117317562,
+          "revenue": 241367.34452130817,
+          "stress_book": -13359.826324117408,
+          "rank_progress": 1.589345046768553e-05,
+          "units": 30,
+          "lines": 10,
+          "capital": 547586.2399608778
+        },
+        "lot_risk_5.0": {
+          "book": 39383.42729364168,
+          "revenue": 258963.29147948723,
+          "stress_book": -15457.823544000737,
+          "rank_progress": 1.7010556532293108e-05,
+          "units": 33,
+          "lines": 10,
+          "capital": 582800.2399608778
+        },
+        "lot_risk_4.5": {
+          "book": 42834.61612401138,
+          "revenue": 320153.88275448274,
+          "stress_book": -22946.33696732592,
+          "rank_progress": 2.046164928811711e-05,
+          "units": 39,
+          "lines": 10,
+          "capital": 852115.3685439872
+        }
+      },
+      "goods_units": 6,
+      "selected": [
+        {
+          "sku": "Gc6315260",
+          "qty": 1,
+          "held": 0,
+          "book": 16750.65821755033,
+          "stress_book": -63417.1731912353
+        },
+        {
+          "sku": "Gd191c817",
+          "qty": 1,
+          "held": 0,
+          "book": 8647.509832335676,
+          "stress_book": -2362.954149383715
+        },
+        {
+          "sku": "G5f05bff9",
+          "qty": 1,
+          "held": 0,
+          "book": 6230.725749311576,
+          "stress_book": -1231.7389612284712
+        },
+        {
+          "sku": "Ga745334b",
+          "qty": 1,
+          "held": 0,
+          "book": 5849.517352407703,
+          "stress_book": 1506.3917870105759
+        },
+        {
+          "sku": "G5f5f42e0",
+          "qty": 4,
+          "held": 0,
+          "book": 7587.464561307172,
+          "stress_book": -16565.18959839188
+        },
+        {
+          "sku": "G281278fc",
+          "qty": 1,
+          "held": 0,
+          "book": 938.8727617240648,
+          "stress_book": -1052.6880316259642
+        },
+        {
+          "sku": "G51ca1147",
+          "qty": 1,
+          "held": 0,
+          "book": 3375.7026655498203,
+          "stress_book": -5077.7566278158265
+        },
+        {
+          "sku": "G196023bf",
+          "qty": 1,
+          "held": 0,
+          "book": 9746.238794693718,
+          "stress_book": -9420.718753222847
+        },
+        {
+          "sku": "G374f8060",
+          "qty": 1,
+          "held": 0,
+          "book": 1580.5493144997454,
+          "stress_book": -24587.626368267593
+        },
+        {
+          "sku": "Gc7d30e90",
+          "qty": 1,
+          "held": 0,
+          "book": 432.92567959072494,
+          "stress_book": -15043.243718433674
+        }
+      ],
+      "interpretation": "Shared-fact forecast dominance and explicit cost/demand sensitivity; not causal uplift or a competitor guarantee.",
+      "id": "d98549d11bd8a3288971f50addc953a7b8241aeff93403386382e0d9231c7d35"
+    },
+    "policy": {
+      "schema": 1,
+      "revision": "objective-feedback-v23-1",
+      "id": "f85ce32eafe84cebc92ccddb0b6a28d0c84ea702c9e2a70f26511c85c49b8116",
+      "at": 1794709444.7729056,
+      "expires_at": 1794709594.7729056,
+      "rules_hash": "3de7d37ca3361ae7620fe873aebada513457cba30a705bb22927553c788045db",
+      "status": "active",
+      "regime": "normal",
+      "patches": {
+        "shop": {
+          "shop_demand_horizon_cycles": 1,
+          "shop_public_demand_skus": [
+            "G021aae64",
+            "G0be9ed07",
+            "G1831f2c0",
+            "G200e39a3",
+            "G2560a8c9",
+            "G3434758a",
+            "G66ded25b",
+            "G7fa48eaa",
+            "G80435d53",
+            "Gdf79cd07",
+            "Ge62449c9",
+            "Gef4d3036"
+          ]
+        },
+        "buyer": {}
+      },
+      "reasons": [],
+      "objective": "maximize official Shop ALL + Buyer ALL",
+      "facts": {
+        "external_20min_vs_prior40_rate_ratio": 1.0262443438914026,
+        "external_trades_20min": 1124,
+        "stock_units": 1043,
+        "median_online_peer_stock": 335.0,
+        "own_paid_sales_60min": 90,
+        "own_gross_margin_60min": 424011,
+        "restock_block_reasons": {},
+        "stockouts_60min": 168,
+        "buyer_segments_60min": {
+          "food": {
+            "closed": 81,
+            "paid": 46,
+            "conversion": 0.5679012345679012,
+            "quotes": 198,
+            "above_cap": 6
+          },
+          "goods": {
+            "closed": 30,
+            "paid": 17,
+            "conversion": 0.5666666666666667,
+            "quotes": 131,
+            "above_cap": 6
+          }
+        },
+        "technical_attempts_60min": 11
+      },
+      "peer_trends": {
+        "shops": [
+          {
+            "name": "sergiobuilds",
+            "book_per_hour": 6285605.928757358,
+            "deals_per_hour": 152.54858535712123
+          },
+          {
+            "name": "nocha12",
+            "book_per_hour": 5450797.255559809,
+            "deals_per_hour": 218.35385747195787
+          },
+          {
+            "name": "choo-chu",
+            "book_per_hour": 4200903.881605532,
+            "deals_per_hour": 107.68135436973265
+          },
+          {
+            "name": "yms979",
+            "book_per_hour": 2904791.2774367803,
+            "deals_per_hour": 116.65480056721036
+          },
+          {
+            "name": "thisjonghoon",
+            "book_per_hour": 2334717.213957218,
+            "deals_per_hour": 155.5397340896138
+          },
+          {
+            "name": "seochanit",
+            "book_per_hour": -9872474.833961885,
+            "deals_per_hour": 98.70790817225492
+          }
+        ],
+        "buyers": [
+          {
+            "name": "sohyunkim11",
+            "deals_per_hour": 71.78756957982176,
+            "saved_per_hour": 0.029612372451676205
+          },
+          {
+            "name": "helenjeon101",
+            "deals_per_hour": 65.80527211483661,
+            "saved_per_hour": 0.01704954777520778
+          },
+          {
+            "name": "cheapest-in-town",
+            "deals_per_hour": 122.63709803219551,
+            "saved_per_hour": 0.0017946892394956784
+          },
+          {
+            "name": "chanarun",
+            "deals_per_hour": 140.58399042715095,
+            "saved_per_hour": 0.0014955743662464541
+          },
+          {
+            "name": "25512088",
+            "deals_per_hour": 122.63709803219551,
+            "saved_per_hour": 0.0011964594929972296
+          },
+          {
+            "name": "seochanit",
+            "deals_per_hour": 74.77871831231434,
+            "saved_per_hour": 0.0002991148732495565
+          }
+        ]
+      },
+      "research_at": 1794709007.276637,
+      "reviewed_intents": [
+        "buyer_price_gap",
+        "stock_coverage"
+      ],
+      "policy_authority": "agent_selected",
+      "source_times": {
+        "board": 1794709424.8729696,
+        "feed": 1794709438.5223947,
+        "analytics": 1794709444.5589857
+      },
+      "objective_targets": {
+        "shop": {
+          "book": {
+            "current": 810290914,
+            "next_value": 886111738,
+            "gap": 75820824,
+            "weight": 0.5,
+            "cohort_size": 68,
+            "scale": "percentile"
+          },
+          "revenue": {
+            "current": 5194161807,
+            "next_value": 5281131586,
+            "gap": 86969779,
+            "weight": 0.3,
+            "cohort_size": 68,
+            "scale": "percentile"
+          },
+          "stars_rank": {
+            "current": 4.32,
+            "next_value": 4.33,
+            "gap": 0.009999999999999787,
+            "weight": 0.2,
+            "cohort_size": 68,
+            "scale": "percentile"
+          }
+        },
+        "buyer": {
+          "saved": {
+            "current": 0.7506,
+            "next_value": 0.7527,
+            "gap": 0.0020999999999999908,
+            "weight": 0.5,
+            "cohort_size": 68,
+            "scale": "percentile"
+          },
+          "forum": {
+            "current": 0.907,
+            "next_value": 0.908,
+            "gap": 0.0010000000000000009,
+            "weight": 0.3,
+            "cohort_size": 68,
+            "scale": "raw",
+            "all_gain_per_0_01": 0.003,
+            "next_value_is": "peer benchmark, not a percentile threshold"
+          },
+          "deals": {
+            "current": 21770,
+            "next_value": 22923,
+            "gap": 1153,
+            "weight": 0.1,
+            "cohort_size": 68,
+            "scale": "percentile"
+          },
+          "posts": {
+            "current": 2766,
+            "next_value": 2780,
+            "gap": 14,
+            "weight": 0.1,
+            "cohort_size": 68,
+            "scale": "percentile"
+          }
+        }
+      },
+      "execution_feedback": {
+        "main_choices_by_policy": {
+          "ad311a17ab2a375ed1013861358cbe836d71b08812cb287785166d367cc50212": 2,
+          "0d457f36820d04d3a9b5f87b4d5e10b5fc1454e6f5c16f51e7340b9f83665c26": 64,
+          "0eb2898dadab364739c3571f85d4a20fdf0d85314beaa416fd62c8615b2dc0db": 70,
+          "3e4755e75a8eef6805871d256c6ebd86816a31ef3b85284108bce7002baccb37": 38,
+          "08fb041426efd3548868027243f0da6100decb7ef9c7b634cc8a94507661b6b5": 27,
+          "05edfddf7d552e9a5fe14b71add9cb0f6fb977153c5a6d96bc17277e921aec3b": 46,
+          "c44af389436b5de3163242b8d0a844be18bc2298ce4c2d6ce669a26916b2f9df": 18,
+          "c1199cbb2992b8d3c0ecbc2d49e195e339796a015e55181eae3e584c6af91e03": 34,
+          "768eb0fa1dc5142dec5fa4eb01dba1a4af95db54cdf375507b0fb42f1ff0ee2b": 30,
+          "92558a490b9c579763af761069df2db2f933f9fa706e960c59bd5288c3a84794": 42,
+          "3b4e63dd889eb4569ff24b5bdc604e66f8e440bbbfabc3d91899dcd3c267e16b": 24,
+          "cb2bdf570cae70e2d3a209d0419a82a11bdfbc16a72f72f9938929491704cec9": 42,
+          "2963f15ee8b2e0f07a3a6023c815ee372ef1a0d6f2a0837c2d974b22a0a8c0fd": 43,
+          "55ba2b23c3e864f9de3f717f5c1928de0fd1f32e8015a58636d266fae7ef76d5": 49,
+          "38aca78a5323e510e513ef64ab828cdb3d738fe401cfb8d247ccfe8341ad6756": 30,
+          "25f5c5141f19fedb8993d42b1550c26571e58e56a6d9c3051e18a2c5419bd8ea": 44,
+          "73481fd7c307730fc288fc79aee8c7bf8e89717d7fc00b144bcdd0d3adf44aa1": 25,
+          "668d957f3190cf141ee568c7004fbac6fa7deb00f4762f3caeafefc1b0511180": 50,
+          "a13eb3cc98b5194464075a466be9e367755d57fd5b0c081a0bc15473d01278ae": 72,
+          "f6b2f8ebd6abadfd98c1d4e7c22405602cd57f3c789338a766f36f60ea323c21": 36,
+          "692d19bdbd808b5e2269d5c7bab4ec9437b8db370aa5c4038942973670f7f01a": 34,
+          "b39ba3e6aec6d2605756dda939981cf387347e76ab605c7c05fcb8c8a0e20809": 39,
+          "ec37ad37e97004d559779820307fd979d7b21fc057e44e859da9863435e97404": 46,
+          "bf6f181a875bacdb570d6aaf6a4e401905b91e9acf3322b7213c401a811c803d": 63,
+          "44e28a06625eeeb47224866b2af690cc85d24d4b4ec76977190e3f29d05fffbe": 68,
+          "9127fcd1ab04bde4f93ce068a712f687969ec79b203d035d007f797eba6bd96a": 31,
+          "fe15e5a7df4b186ec0b7454c3c2c4ce8a259a0b775069ec0c7170b66e03a4492": 74,
+          "dc0d5ea79d3fce6038c7aa4c395e4f02f88dbab3960e8ae0f107a1d32974f189": 58,
+          "ba58a83c6f94aab9b0345b6e690d388c3cae475d5a4074e733f3c8327ba212fd": 39,
+          "b0ae4b07db2d8b73ec9249fb92f7e253bee62e822a163db6745038c104084e37": 54,
+          "e9b6daa946d84eca239a880410a7c70d91d1a650d169bcd48bc61d0248cd6d22": 54,
+          "d506da1de9725beaa8dc976f9d0cfbd6a4d1f9a22f37f53459366eb42f7c260e": 57,
+          "b5875af9386b7f9746089b4d5c27e8a730c346a7f44788561ef2190b418008b9": 39,
+          "79e97af76a6202f55d456d2667022d8c98161a99376e9066d5a26a247ec5ac31": 25,
+          "99acb6fd9cb415da0833ca164d29a8405ae9f28b3fd543ad945089223cf4c29c": 26,
+          "154e5046ae19497cb1219ac9afe0b9b13d01345a256cd8605e03eb8519722a88": 30,
+          "6747444397e598bfe622d09486f407729a353df8d547d4cee1550abc9e0f5a5c": 105,
+          "df4d94f9f5720c67d8e4273a7cfd152acdb9bb5fc7da67a5a3d2117304cb87b7": 17,
+          "a2579ac0df5789ee4cdc55290f4dfacd09fc361bb7c4a17eee46b90600435219": 99,
+          "4e8bdda170436aef289a9c55de8a698c702d170efcd3698225a7278c9c7cda7a": 17,
+          "237bbfabf02fa39c4e9606e9b2995519f0812fa1a74bb9ce422d0a4544cb4d61": 51,
+          "7069c0b02c0b7dcfa77ac0a6bcde6c596c912ae6ff7bdb5f129e88b0510833fb": 42,
+          "49f36c71eabafc9a3f6f4c75fe576b3279e7efea79991f701f0acad995d352c7": 28,
+          "2809bcbeddea86044702981797473ff8f960c9cf74c16110d33b0d1db4866f4b": 36,
+          "d59e033cf54cef00c50568d9dcddb22118a24c10a93e861ad3ca20c5a980b15f": 44,
+          "34b41aad54eb8800ecb2ef638541993541c0e21c7cb4d26a6806756d9332075d": 21,
+          "b03d74e6f2ed505d3075335a073243b9ddbd5e58fe8ca6e197f94c3a8d6c0bf5": 40
+        },
+        "buyer_closed_results_by_policy": {
+          "0d457f36820d04d3a9b5f87b4d5e10b5fc1454e6f5c16f51e7340b9f83665c26": {
+            "closed_orders": 3,
+            "paid": 2
+          },
+          "0eb2898dadab364739c3571f85d4a20fdf0d85314beaa416fd62c8615b2dc0db": {
+            "closed_orders": 5,
+            "paid": 4
+          },
+          "3e4755e75a8eef6805871d256c6ebd86816a31ef3b85284108bce7002baccb37": {
+            "closed_orders": 3,
+            "paid": 2
+          },
+          "08fb041426efd3548868027243f0da6100decb7ef9c7b634cc8a94507661b6b5": {
+            "closed_orders": 1,
+            "paid": 1
+          },
+          "05edfddf7d552e9a5fe14b71add9cb0f6fb977153c5a6d96bc17277e921aec3b": {
+            "closed_orders": 3,
+            "paid": 0
+          },
+          "768eb0fa1dc5142dec5fa4eb01dba1a4af95db54cdf375507b0fb42f1ff0ee2b": {
+            "closed_orders": 2,
+            "paid": 1
+          },
+          "92558a490b9c579763af761069df2db2f933f9fa706e960c59bd5288c3a84794": {
+            "closed_orders": 1,
+            "paid": 0
+          },
+          "cb2bdf570cae70e2d3a209d0419a82a11bdfbc16a72f72f9938929491704cec9": {
+            "closed_orders": 1,
+            "paid": 1
+          },
+          "2963f15ee8b2e0f07a3a6023c815ee372ef1a0d6f2a0837c2d974b22a0a8c0fd": {
+            "closed_orders": 2,
+            "paid": 1
+          },
+          "55ba2b23c3e864f9de3f717f5c1928de0fd1f32e8015a58636d266fae7ef76d5": {
+            "closed_orders": 2,
+            "paid": 0
+          },
+          "38aca78a5323e510e513ef64ab828cdb3d738fe401cfb8d247ccfe8341ad6756": {
+            "closed_orders": 2,
+            "paid": 2
+          },
+          "25f5c5141f19fedb8993d42b1550c26571e58e56a6d9c3051e18a2c5419bd8ea": {
+            "closed_orders": 2,
+            "paid": 2
+          },
+          "73481fd7c307730fc288fc79aee8c7bf8e89717d7fc00b144bcdd0d3adf44aa1": {
+            "closed_orders": 2,
+            "paid": 1
+          },
+          "668d957f3190cf141ee568c7004fbac6fa7deb00f4762f3caeafefc1b0511180": {
+            "closed_orders": 3,
+            "paid": 3
+          },
+          "a13eb3cc98b5194464075a466be9e367755d57fd5b0c081a0bc15473d01278ae": {
+            "closed_orders": 2,
+            "paid": 1
+          },
+          "f6b2f8ebd6abadfd98c1d4e7c22405602cd57f3c789338a766f36f60ea323c21": {
+            "closed_orders": 1,
+            "paid": 1
+          },
+          "692d19bdbd808b5e2269d5c7bab4ec9437b8db370aa5c4038942973670f7f01a": {
+            "closed_orders": 1,
+            "paid": 1
+          },
+          "b39ba3e6aec6d2605756dda939981cf387347e76ab605c7c05fcb8c8a0e20809": {
+            "closed_orders": 3,
+            "paid": 3
+          },
+          "ec37ad37e97004d559779820307fd979d7b21fc057e44e859da9863435e97404": {
+            "closed_orders": 3,
+            "paid": 2
+          },
+          "bf6f181a875bacdb570d6aaf6a4e401905b91e9acf3322b7213c401a811c803d": {
+            "closed_orders": 3,
+            "paid": 1
+          },
+          "44e28a06625eeeb47224866b2af690cc85d24d4b4ec76977190e3f29d05fffbe": {
+            "closed_orders": 3,
+            "paid": 2
+          },
+          "9127fcd1ab04bde4f93ce068a712f687969ec79b203d035d007f797eba6bd96a": {
+            "closed_orders": 2,
+            "paid": 2
+          },
+          "fe15e5a7df4b186ec0b7454c3c2c4ce8a259a0b775069ec0c7170b66e03a4492": {
+            "closed_orders": 6,
+            "paid": 3
+          },
+          "dc0d5ea79d3fce6038c7aa4c395e4f02f88dbab3960e8ae0f107a1d32974f189": {
+            "closed_orders": 3,
+            "paid": 2
+          },
+          "ba58a83c6f94aab9b0345b6e690d388c3cae475d5a4074e733f3c8327ba212fd": {
+            "closed_orders": 1,
+            "paid": 1
+          },
+          "b0ae4b07db2d8b73ec9249fb92f7e253bee62e822a163db6745038c104084e37": {
+            "closed_orders": 3,
+            "paid": 0
+          },
+          "e9b6daa946d84eca239a880410a7c70d91d1a650d169bcd48bc61d0248cd6d22": {
+            "closed_orders": 3,
+            "paid": 1
+          },
+          "d506da1de9725beaa8dc976f9d0cfbd6a4d1f9a22f37f53459366eb42f7c260e": {
+            "closed_orders": 3,
+            "paid": 2
+          },
+          "b5875af9386b7f9746089b4d5c27e8a730c346a7f44788561ef2190b418008b9": {
+            "closed_orders": 3,
+            "paid": 2
+          },
+          "79e97af76a6202f55d456d2667022d8c98161a99376e9066d5a26a247ec5ac31": {
+            "closed_orders": 2,
+            "paid": 1
+          },
+          "99acb6fd9cb415da0833ca164d29a8405ae9f28b3fd543ad945089223cf4c29c": {
+            "closed_orders": 3,
+            "paid": 2
+          },
+          "154e5046ae19497cb1219ac9afe0b9b13d01345a256cd8605e03eb8519722a88": {
+            "closed_orders": 2,
+            "paid": 2
+          },
+          "6747444397e598bfe622d09486f407729a353df8d547d4cee1550abc9e0f5a5c": {
+            "closed_orders": 6,
+            "paid": 4
+          },
+          "df4d94f9f5720c67d8e4273a7cfd152acdb9bb5fc7da67a5a3d2117304cb87b7": {
+            "closed_orders": 1,
+            "paid": 1
+          },
+          "a2579ac0df5789ee4cdc55290f4dfacd09fc361bb7c4a17eee46b90600435219": {
+            "closed_orders": 5,
+            "paid": 1
+          },
+          "4e8bdda170436aef289a9c55de8a698c702d170efcd3698225a7278c9c7cda7a": {
+            "closed_orders": 1,
+            "paid": 1
+          },
+          "237bbfabf02fa39c4e9606e9b2995519f0812fa1a74bb9ce422d0a4544cb4d61": {
+            "closed_orders": 2,
+            "paid": 1
+          },
+          "7069c0b02c0b7dcfa77ac0a6bcde6c596c912ae6ff7bdb5f129e88b0510833fb": {
+            "closed_orders": 2,
+            "paid": 1
+          },
+          "49f36c71eabafc9a3f6f4c75fe576b3279e7efea79991f701f0acad995d352c7": {
+            "closed_orders": 1,
+            "paid": 1
+          },
+          "2809bcbeddea86044702981797473ff8f960c9cf74c16110d33b0d1db4866f4b": {
+            "closed_orders": 2,
+            "paid": 2
+          },
+          "d59e033cf54cef00c50568d9dcddb22118a24c10a93e861ad3ca20c5a980b15f": {
+            "closed_orders": 3,
+            "paid": 2
+          },
+          "34b41aad54eb8800ecb2ef638541993541c0e21c7cb4d26a6806756d9332075d": {
+            "closed_orders": 2,
+            "paid": 0
+          },
+          "b03d74e6f2ed505d3075335a073243b9ddbd5e58fe8ca6e197f94c3a8d6c0bf5": {
+            "closed_orders": 1,
+            "paid": 0
+          }
+        },
+        "buyer_canonical_mature_results_by_policy": {
+          "9ab9d565a4f48e83ea444d5d672359bb6dd1208f558f25df6a364679b5edaf29": {
+            "mature_paid": 1,
+            "broken": 1,
+            "sum_final_saved_contribution": 0,
+            "saved_delta_at_assignment_sum": -3.510962956007324e-05
+          }
+        },
+        "shop_paid_results_by_policy": {
+          "0d457f36820d04d3a9b5f87b4d5e10b5fc1454e6f5c16f51e7340b9f83665c26": {
+            "paid": 4,
+            "gross_revenue": 35669,
+            "gross_margin": 4731
+          },
+          "0eb2898dadab364739c3571f85d4a20fdf0d85314beaa416fd62c8615b2dc0db": {
+            "paid": 3,
+            "gross_revenue": 43132,
+            "gross_margin": 2929
+          },
+          "3e4755e75a8eef6805871d256c6ebd86816a31ef3b85284108bce7002baccb37": {
+            "paid": 2,
+            "gross_revenue": 37485,
+            "gross_margin": 11611
+          },
+          "08fb041426efd3548868027243f0da6100decb7ef9c7b634cc8a94507661b6b5": {
+            "paid": 3,
+            "gross_revenue": 69314,
+            "gross_margin": 15081
+          },
+          "05edfddf7d552e9a5fe14b71add9cb0f6fb977153c5a6d96bc17277e921aec3b": {
+            "paid": 6,
+            "gross_revenue": 85093,
+            "gross_margin": 4790
+          },
+          "c44af389436b5de3163242b8d0a844be18bc2298ce4c2d6ce669a26916b2f9df": {
+            "paid": 1,
+            "gross_revenue": 5394,
+            "gross_margin": 106
+          },
+          "c1199cbb2992b8d3c0ecbc2d49e195e339796a015e55181eae3e584c6af91e03": {
+            "paid": 1,
+            "gross_revenue": 414155,
+            "gross_margin": 30154
+          },
+          "768eb0fa1dc5142dec5fa4eb01dba1a4af95db54cdf375507b0fb42f1ff0ee2b": {
+            "paid": 2,
+            "gross_revenue": 50763,
+            "gross_margin": 3757
+          },
+          "92558a490b9c579763af761069df2db2f933f9fa706e960c59bd5288c3a84794": {
+            "paid": 4,
+            "gross_revenue": 26625,
+            "gross_margin": 4315
+          },
+          "cb2bdf570cae70e2d3a209d0419a82a11bdfbc16a72f72f9938929491704cec9": {
+            "paid": 1,
+            "gross_revenue": 35450,
+            "gross_margin": 4380
+          },
+          "2963f15ee8b2e0f07a3a6023c815ee372ef1a0d6f2a0837c2d974b22a0a8c0fd": {
+            "paid": 2,
+            "gross_revenue": 11859,
+            "gross_margin": 2730
+          },
+          "55ba2b23c3e864f9de3f717f5c1928de0fd1f32e8015a58636d266fae7ef76d5": {
+            "paid": 1,
+            "gross_revenue": 42190,
+            "gross_margin": 10677
+          },
+          "38aca78a5323e510e513ef64ab828cdb3d738fe401cfb8d247ccfe8341ad6756": {
+            "paid": 2,
+            "gross_revenue": 13020,
+            "gross_margin": 3411
+          },
+          "25f5c5141f19fedb8993d42b1550c26571e58e56a6d9c3051e18a2c5419bd8ea": {
+            "paid": 1,
+            "gross_revenue": 7114,
+            "gross_margin": 517
+          },
+          "a13eb3cc98b5194464075a466be9e367755d57fd5b0c081a0bc15473d01278ae": {
+            "paid": 1,
+            "gross_revenue": 43269,
+            "gross_margin": 2958
+          },
+          "b39ba3e6aec6d2605756dda939981cf387347e76ab605c7c05fcb8c8a0e20809": {
+            "paid": 1,
+            "gross_revenue": 12767,
+            "gross_margin": 1491
+          },
+          "ec37ad37e97004d559779820307fd979d7b21fc057e44e859da9863435e97404": {
+            "paid": 1,
+            "gross_revenue": 14037,
+            "gross_margin": 1306
+          },
+          "bf6f181a875bacdb570d6aaf6a4e401905b91e9acf3322b7213c401a811c803d": {
+            "paid": 4,
+            "gross_revenue": 44651,
+            "gross_margin": 8515
+          },
+          "44e28a06625eeeb47224866b2af690cc85d24d4b4ec76977190e3f29d05fffbe": {
+            "paid": 5,
+            "gross_revenue": 1564932,
+            "gross_margin": 114796
+          },
+          "fe15e5a7df4b186ec0b7454c3c2c4ce8a259a0b775069ec0c7170b66e03a4492": {
+            "paid": 5,
+            "gross_revenue": 240079,
+            "gross_margin": 18691
+          },
+          "dc0d5ea79d3fce6038c7aa4c395e4f02f88dbab3960e8ae0f107a1d32974f189": {
+            "paid": 6,
+            "gross_revenue": 110737,
+            "gross_margin": 11168
+          },
+          "ba58a83c6f94aab9b0345b6e690d388c3cae475d5a4074e733f3c8327ba212fd": {
+            "paid": 1,
+            "gross_revenue": 11509,
+            "gross_margin": 670
+          },
+          "b0ae4b07db2d8b73ec9249fb92f7e253bee62e822a163db6745038c104084e37": {
+            "paid": 3,
+            "gross_revenue": 39441,
+            "gross_margin": 8777
+          },
+          "e9b6daa946d84eca239a880410a7c70d91d1a650d169bcd48bc61d0248cd6d22": {
+            "paid": 2,
+            "gross_revenue": 55351,
+            "gross_margin": 2613
+          },
+          "d506da1de9725beaa8dc976f9d0cfbd6a4d1f9a22f37f53459366eb42f7c260e": {
+            "paid": 1,
+            "gross_revenue": 6858,
+            "gross_margin": 2307
+          },
+          "b5875af9386b7f9746089b4d5c27e8a730c346a7f44788561ef2190b418008b9": {
+            "paid": 2,
+            "gross_revenue": 69055,
+            "gross_margin": 2858
+          },
+          "99acb6fd9cb415da0833ca164d29a8405ae9f28b3fd543ad945089223cf4c29c": {
+            "paid": 1,
+            "gross_revenue": 10305,
+            "gross_margin": 699
+          },
+          "154e5046ae19497cb1219ac9afe0b9b13d01345a256cd8605e03eb8519722a88": {
+            "paid": 1,
+            "gross_revenue": 4221,
+            "gross_margin": 950
+          },
+          "6747444397e598bfe622d09486f407729a353df8d547d4cee1550abc9e0f5a5c": {
+            "paid": 5,
+            "gross_revenue": 250058,
+            "gross_margin": 19256
+          },
+          "df4d94f9f5720c67d8e4273a7cfd152acdb9bb5fc7da67a5a3d2117304cb87b7": {
+            "paid": 2,
+            "gross_revenue": 14413,
+            "gross_margin": 2188
+          },
+          "a2579ac0df5789ee4cdc55290f4dfacd09fc361bb7c4a17eee46b90600435219": {
+            "paid": 3,
+            "gross_revenue": 21931,
+            "gross_margin": 2408
+          },
+          "237bbfabf02fa39c4e9606e9b2995519f0812fa1a74bb9ce422d0a4544cb4d61": {
+            "paid": 4,
+            "gross_revenue": 108925,
+            "gross_margin": 17743
+          },
+          "7069c0b02c0b7dcfa77ac0a6bcde6c596c912ae6ff7bdb5f129e88b0510833fb": {
+            "paid": 3,
+            "gross_revenue": 1086675,
+            "gross_margin": 92260
+          },
+          "49f36c71eabafc9a3f6f4c75fe576b3279e7efea79991f701f0acad995d352c7": {
+            "paid": 2,
+            "gross_revenue": 17478,
+            "gross_margin": 6114
+          },
+          "2809bcbeddea86044702981797473ff8f960c9cf74c16110d33b0d1db4866f4b": {
+            "paid": 1,
+            "gross_revenue": 3800,
+            "gross_margin": 951
+          },
+          "34b41aad54eb8800ecb2ef638541993541c0e21c7cb4d26a6806756d9332075d": {
+            "paid": 1,
+            "gross_revenue": 39000,
+            "gross_margin": 4920
+          },
+          "b03d74e6f2ed505d3075335a073243b9ddbd5e58fe8ca6e197f94c3a8d6c0bf5": {
+            "paid": 2,
+            "gross_revenue": 14088,
+            "gross_margin": 1183
+          }
+        },
+        "shop_unlinked_paid": 0,
+        "note": "Observed results, not randomized causal improvement. Gross margins precede future refunds/storage; no maturity claim."
+      },
+      "mature_promotion": {
+        "at": 1794709269.7752228,
+        "stats": {
+          "champion": {
+            "closed": 35,
+            "paid": 1,
+            "pending": 61,
+            "reward": -0.02136571428571428,
+            "standard_error": 0.021365714285714297,
+            "effective_samples": 34.999999999999986,
+            "seconds": 38.56638996260506,
+            "score_per_second": -0.0005539982950551247
+          },
+          "challenger": {
+            "closed": 1,
+            "paid": 0,
+            "pending": 7,
+            "reward": 0.0,
+            "standard_error": 1,
+            "effective_samples": 1.0,
+            "seconds": 25.137155532836914,
+            "score_per_second": 0.0
+          }
+        },
+        "ready": false,
+        "promote": false,
+        "rollback": false,
+        "note": "Saved uplift over assignment baseline; inverse assignment propensity weighting; completed 6h+10m cohorts, minimum effective samples and latency guard."
+      },
+      "constraints": [
+        "no_price_cap_change",
+        "full_refund_reserve",
+        "live_supply_checks",
+        "no_unverified_profile_promotion"
+      ],
+      "checksum": "ff7f941771810b321148f6ba377183e382e0107cb7b7c62fc26e90eaac04007f"
+    },
+    "reputation_summary": {
+      "mode": "shadow",
+      "train": 1768,
+      "tune": 590,
+      "test": 590,
+      "test_owners": 34,
+      "test_mse": 0.00012123713772992213,
+      "baseline_test_mse": 0.00011780883084727573,
+      "zero_change_test_mse": 0.0001176171236317708,
+      "covered_test": 590,
+      "fields": [
+        "kind",
+        "insured"
+      ],
+      "prior": 30,
+      "split": [
+        0.6,
+        0.2,
+        0.2
+      ],
+      "selection_uses_tune_only": true,
+      "official_account_count_complete": false,
+      "target": "next change in observed reviewer account mean; first three observations excluded"
+    }
+  },
+  "errors": {
+    "cycle_supply_error": 2,
+    "cycle_supervisor_error": 31,
+    "buyer_worker_error": 12,
+    "analytical_role_error": 25,
+    "market_control_error": 4,
+    "objective_context_error": 0,
+    "market_research_deferred": 7
+  },
+  "limitations": [
+    "Comparison may include deployment, downtime and settlement boundary effects; not a controlled treatment comparison.",
+    "Control/error sample counts are not outage durations or causal lost sales.",
+    "Rank thresholds use published numeric rows, not exact unpublished scoring eligibility/tie rules.",
+    "Buy-side initial Saved is not mature quality; no future payoff is inferred from predictions."
+  ]
+}
