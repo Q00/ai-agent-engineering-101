@@ -520,7 +520,8 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
             actual=holding.get(row['sku'],0)
             ordinary_room=max(0,sku_ceiling-actual)
             replacement_limit=max(0,int(policy.get('max_short_food_replacement_units',1)))
-            replacement_room=(replacement_limit if actual>=sku_ceiling and
+            replacement_room=(max(0,sku_ceiling+replacement_limit-actual)
+                              if actual>=sku_ceiling and
                               sellable_holding.get(row['sku'],0)==0 and
                               short_food_holding.get(row['sku'],0)>0 else 0)
             inventory_room=max(ordinary_room,replacement_room)

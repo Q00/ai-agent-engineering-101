@@ -249,6 +249,8 @@ class PurchaseTests(unittest.TestCase):
   self.assertEqual([(row['sku'],row['qty']) for row in plan],[('food',1)])
   self.assertTrue(plan[0]['evidence']['short_food_replacement'])
   self.assertEqual(plan[0]['evidence']['sellable_holding'],0)
+  failed_replacement={'units':[dict(short),dict(short),dict(short)]}
+  self.assertEqual(allocation_plan(ranked,failed_replacement,10000,policy=policy),[])
   mixed={'units':[dict(short),dict(short,expires_at=now+72*3600)]}
   self.assertEqual(allocation_plan(ranked,mixed,10000,policy=policy),[])
 
