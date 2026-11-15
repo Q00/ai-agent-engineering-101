@@ -21,15 +21,17 @@ MILESTONES=(
 
 def _score(row):
     # Class Player ranks students by the board's combined student score.  The
-    # legacy ``all`` fixture remains supported for replaying older snapshots.
-    value=row.get('student_total',row.get('all'))
+    # public Round 3 board currently exposes it as ``total``.  Keep the older
+    # names so archived snapshots and deterministic replays remain readable.
+    value=row.get('total',row.get('student_total',row.get('all')))
     return float(value) if isinstance(value,(int,float)) and math.isfinite(value) else None
 
 
 def _ours(row):
     owner=row.get('owner') or {}
     nested=(row.get('shop') or {}).get('name')=='25512088' or (row.get('buyer') or {}).get('name')=='25512088'
-    return str(row.get('name',''))=='25512088' or nested or owner.get('login')=='morethanwhatiwant'
+    player=str(row.get('player',row.get('name','')))
+    return player in ('25512088','morethanwhatiwant') or nested or owner.get('login')=='morethanwhatiwant'
 
 
 class RankController:
@@ -83,7 +85,8 @@ class RankController:
         now=time.time() if observed_at is None else observed_at
         if board.get('round')!=3 or not isinstance(board.get('players'),list):
             raise ValueError('round3_board_required')
-        players=[row for row in board['players'] if row.get('student') is not False and _score(row) is not None]
+        players=[row for row in board['players']
+            if not row.get('house') and row.get('student') is not False and _score(row) is not None]
         players.sort(key=lambda row:_score(row),reverse=True)
         own=[(index,row) for index,row in enumerate(players,1) if _ours(row)]
         if len(own)!=1:raise ValueError('unique_player_identity_required')
