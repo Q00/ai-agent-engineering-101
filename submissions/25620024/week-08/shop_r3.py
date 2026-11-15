@@ -602,8 +602,15 @@ class Shop(AgentExecutor):
                                     f" ask again after it. receipt=Ed25519 shop_fp={FP}" if sku in cat else
                                     f"Not in stock. Ask for a SKU from shops.json: 'I want to buy <name> (<sku>)'."))
                 return
-            who = buyer_of(fingerprint(text, u))
-            if who and who in set(promo.theta().get("block_buyers") or []):
+            fp_ = fingerprint(text, u)
+            who = buyer_of(fp_)
+            # HQ 11-15 16:00 "어뷰징 하는 바이어들 다 차단": the learned wording map missed half of a low rater's wordings
+            # (sergiobuilds still paid 41 deals in 36 h, mean 2.0 stars to us), so HQ also names the wordings directly
+            # (block_fps: only wordings that belong 100% to one low rater in our paid deals, never a shared one).
+            th_ = promo.theta()
+            if fp_ and fp_ in set(th_.get("block_fps") or []):
+                who = who or "block_fps"
+            if who and (who in set(th_.get("block_buyers") or []) or fp_ in set(th_.get("block_fps") or [])):
                 # MST TF 11-14 (HQ "Do 1 and 2"; inextro blocked 50 such buyers, stars 4.394 -> 4.452): buyers that
                 # rate every shop low (sergiobuilds 2.16 to all, 2.0 to us over 32 paid deals) cost the stars score
                 # 0.2 of shop ALL; paid reviews average 4.33 with them, 4.57 without. A refused talk has no receipt,

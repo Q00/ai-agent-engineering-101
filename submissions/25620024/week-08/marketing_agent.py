@@ -473,11 +473,21 @@ def ask_claude(text, role="sales"):
     with tempfile.TemporaryDirectory() as d:
         r = subprocess.run([CLAUDE, "-p", "--output-format", "text"], input=text, text=True, capture_output=True,
                            timeout=900, cwd=d, env={**os.environ, "CLAUDE_CONFIG_DIR": CLAUDE_CONFIG})
-    m = re.search(r"\{.*\}", r.stdout, re.S)
-    _log_usage("claude", role, text, t0, bool(m))
-    if not m:
+    # HQ 11-15 15:40: the greedy {.*} took everything from the first "{" to the last "}", so a note with braces after
+    # the JSON broke the sales plan ("Extra data", emergency meeting #4). Take the first complete JSON object instead.
+    obj, dec = None, json.JSONDecoder()
+    for m in re.finditer(r"\{", r.stdout):
+        try:
+            v, end = dec.raw_decode(r.stdout, m.start())
+        except ValueError:
+            continue
+        if isinstance(v, dict):
+            obj = r.stdout[m.start():end]
+            break
+    _log_usage("claude", role, text, t0, obj is not None)
+    if obj is None:
         raise RuntimeError(f"claude gave no JSON (exit {r.returncode}): {r.stdout[-400:]} {r.stderr[-400:]}")
-    return m.group(0)
+    return obj
 
 
 def report_md(b, research, plan, notes):
