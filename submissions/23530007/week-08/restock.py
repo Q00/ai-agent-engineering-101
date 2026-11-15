@@ -93,6 +93,7 @@ RIVAL_MIN, RIVAL_SHARE, RIVAL_COVER_H, RIVAL_LINES = 6, 0.5, 2.0, 5   # 11-12: t
 RIVAL_MIN_X, COST_LOT = 0.61, 0.59
 RIVAL_SHARE, RIVAL_LINES = 0.7, 8
 DEEP_OVER = 1.10             # a unit whose floor is over 1.10 x the SKU's market median counts 0 in the cover
+FOOD_KEEP_CASH = 5e6          # 11-15: least cash left after a food line (food is ~10 k a unit)
 COST_GUESS = 0.6             # cost as a share of list price before a unit arrives (A 55-75 %, B 40-60 %, C 25-45 %)
 
 
@@ -602,7 +603,13 @@ def main():
         unit = v["list_price"] * COST_GUESS
         # 11-06: a line that did not fit whole was skipped, so the top sellers (Plana 4 swing 11 % of revenue,
         # 20 x ~2.3M) got nothing for 2 h and sat at 0 stock while 64M cash waited; buy what fits instead
-        room = min(cash - spend - p["keep_cash"], max_stock - stock_cost - spend, WINDOW_MAX_COST - spend)
+        # 11-15 (user: 'why are we not selling more food to hold the stars?'): food has its own cash floor
+        # (FOOD_KEEP_CASH) and no stock-share cap: with cash 35 M against keep_cash 33 M the goods lines took the 2 M of
+        # room and food got nothing (42 fresh food units, ~160 food asks/h 'none in stock'; our food reviews A 4.81-4.95)
+        if v["kind"] == "food":
+            room = min(cash - spend - FOOD_KEEP_CASH, WINDOW_MAX_COST - spend)
+        else:
+            room = min(cash - spend - p["keep_cash"], max_stock - stock_cost - spend, WINDOW_MAX_COST - spend)
         qty = min(qty, int(room // unit), max(1, int(LINE_MAX_COST // unit))) if unit > 0 else qty
         if qty <= 0:
             continue
