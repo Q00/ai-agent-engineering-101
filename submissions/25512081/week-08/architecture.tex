@@ -33,11 +33,13 @@
   {\textbf{Market} (market.ourolabs.ai)\quad orders $\cdot$ supply windows (3 min / 20 min) $\cdot$ public ledger (supply, settle, result, broken) $\cdot$ board $\cdot$ forum};
 
 % ---------------- kit (unchanged) ----------------
-\node[kitbox, below=0.55cm of market, minimum width=17.2cm] (kit)
-  {\textbf{market\_kit.py v4} (course kit, unchanged): A2A proxy for the shop $\cdot$ ACP checkout and signatures $\cdot$ runs our hooks: seller, restock (60 s), market\_buyer (per order), review};
+\node[kitbox, anchor=north east, minimum width=13.3cm, text width=12.9cm, minimum height=1.25cm] (kit) at (8.6,-0.75)
+  {\textbf{market\_kit.py v4} (course kit, unchanged; runs the shop and buyer): A2A proxy for the shop $\cdot$ ACP checkout and signatures $\cdot$ runs our hooks: seller, restock (60 s), market\_buyer (per order), review};
+\node[codebox, anchor=north west, minimum width=3.7cm, text width=3.5cm, minimum height=1.25cm, fill=ours, font=\scriptsize] (acp) at (-8.6,-0.75)
+  {\textbf{acp\_shop.py} (ours, no kit): own acp.json, checkout sessions, join, supply; ran as the shop 11-14 19:49--19:53, settle \#6473176};
 
 % ---------------- shop column ----------------
-\node[codebox, anchor=north, text width=3.9cm] (seller) at (-6.3,-2.75)
+\node[codebox, anchor=north, text width=3.9cm] (seller) at (-6.3,-3.3)
   {\textbf{seller\_r3.py} \hfill\textcolor{code}{code}\\[1pt]
    per message, $\sim$1 s: picks the unit (shelf life, grade), opens under rivals, floors from cost and market,
    last-call close, warranty 72 h};
@@ -51,7 +53,7 @@
   {\textbf{lessons.py} \hfill\textcolor{model}{haiku}: what last plans did};
 
 % ---------------- buyer column ----------------
-\node[codebox, anchor=north, text width=3.9cm] (mbuyer) at (6.3,-2.75)
+\node[codebox, anchor=north, text width=3.9cm] (mbuyer) at (6.3,-3.3)
   {\textbf{market\_buyer.py} \hfill\textcolor{code}{code}\\[1pt]
    per order: shortlist from past deals, quotes from up to 6 shops, ranks on the expected Patch 3.6 score
    (share of the shop's margin kept, break risk)};
@@ -64,7 +66,7 @@
   {\textbf{forum.py} \hfill\textcolor{model}{haiku}: ledger-backed posts};
 
 % ---------------- shared memory (middle) ----------------
-\node[membox, text width=4.6cm, anchor=north] (m1) at (0,-3.0) {\texttt{competitors.json}, \texttt{unmet.jsonl}: rivals' asks and orders no shop filled, seen by our buyer};
+\node[membox, text width=4.6cm, anchor=north] (m1) at (0,-3.55) {\texttt{competitors.json}, \texttt{unmet.jsonl}: rivals' asks and orders no shop filled, seen by our buyer};
 \node[membox, text width=4.6cm, below=0.12cm of m1] (m2) {\texttt{fingerprints.jsonl}: first-message wording $\to$ reviewing account (91\%)};
 \node[membox, text width=4.6cm, below=0.12cm of m2] (m3) {\texttt{restock\_state.json}: demand, prices paid per SKU, break rates, surge};
 \node[membox, text width=4.6cm, below=0.12cm of m3] (m4) {\texttt{shop-metrics.json} (shop\_metrics.py, 5 min): our reviews per account, price, grade};
@@ -94,8 +96,10 @@
 \end{scope}
 
 % ---------------- arrows ----------------
-\draw[flow] (0,-0.45) -- node[lbl, right]{orders, supply, ledger} (kit.north);
-\draw[flow] (seller.north |- kit.south) -- node[lbl, right]{hooks} (seller.north);
+\draw[flow] (2,-0.45) -- node[lbl, right]{orders, supply, ledger} (kit.north);
+\draw[flow] ([xshift=-0.25cm]seller.north east |- kit.south) -- node[lbl, right]{hooks} ([xshift=-0.25cm]seller.north east);
+\draw[flow, dashed] (acp.south -| seller.north) -- node[lbl, left]{or} (seller.north);
+\draw[flow] (acp.north |- market.south) -- (acp.north);
 \draw[flow] (mbuyer.north |- kit.south) -- node[lbl, left]{hooks} (mbuyer.north);
 \draw[flow] (mbuyer) -- (nego);
 \draw[flow] (nego) -- (review);
