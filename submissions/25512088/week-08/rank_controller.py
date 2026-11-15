@@ -21,9 +21,10 @@ MILESTONES=(
 
 def _score(row):
     # Class Player ranks students by the board's combined student score.  The
-    # public Round 3 board currently exposes it as ``total``.  Keep the older
-    # names so archived snapshots and deterministic replays remain readable.
-    value=row.get('total',row.get('student_total',row.get('all')))
+    # public board exposes the class percentile score as ``student_total``;
+    # ``total`` is the separate all-player score and must never be substituted.
+    # ``all`` remains supported for deterministic archived fixtures.
+    value=row.get('student_total',row.get('all'))
     return float(value) if isinstance(value,(int,float)) and math.isfinite(value) else None
 
 
@@ -86,7 +87,9 @@ class RankController:
         if board.get('round')!=3 or not isinstance(board.get('players'),list):
             raise ValueError('round3_board_required')
         players=[row for row in board['players']
-            if not row.get('house') and row.get('student') is not False and _score(row) is not None]
+            if not row.get('house')
+            and ('student' not in row or row.get('student') is True)
+            and _score(row) is not None]
         players.sort(key=lambda row:_score(row),reverse=True)
         own=[(index,row) for index,row in enumerate(players,1) if _ours(row)]
         if len(own)!=1:raise ValueError('unique_player_identity_required')

@@ -12,7 +12,7 @@ def board(our,others):
 
 
 class RankControllerTests(unittest.TestCase):
-    def test_current_public_board_schema_uses_total_player_and_excludes_house(self):
+    def test_current_public_board_schema_uses_student_total_only(self):
         with tempfile.TemporaryDirectory() as state:
             controller=RankController(state)
             current={
@@ -20,18 +20,22 @@ class RankControllerTests(unittest.TestCase):
                 'players':[
                     {'player':'house','house':True,'total':99.0,
                      'shop':{'name':'house'},'buyer':{'name':'house'}},
-                    {'player':'leader','house':False,'total':1.5,
+                    {'player':'nonstudent','house':False,'total':9.0,
+                     'shop':{'name':'nonstudent'},'buyer':{'name':'nonstudent'}},
+                    {'player':'leader','house':False,'student':True,
+                     'total':1.5,'student_total':.9,
                      'shop':{'name':'leader'},'buyer':{'name':'leader'}},
-                    {'player':'morethanwhatiwant','house':False,'total':1.165,
+                    {'player':'morethanwhatiwant','house':False,'student':True,
+                     'total':1.165,'student_total':.8,
                      'shop':{'name':'25512088'},'buyer':{'name':'25512088'}},
                 ],
             }
             result=controller.observe(current,observed_at=1000)
             self.assertEqual(result['rank'],2)
-            self.assertEqual(result['our_score'],1.165)
+            self.assertEqual(result['our_score'],.8)
             row=controller.control.db.execute(
                 'SELECT top_score FROM rank_observations ORDER BY id DESC LIMIT 1').fetchone()
-            self.assertEqual(row[0],1.5)
+            self.assertEqual(row[0],.9)
             controller.close()
 
     def test_rate_requires_80_percent_coverage(self):
