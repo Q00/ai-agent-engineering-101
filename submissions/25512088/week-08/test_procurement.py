@@ -342,6 +342,18 @@ class PurchaseTests(unittest.TestCase):
   self.assertEqual((first['sku'],first['qty']),('new',1))
   policy['breadth_target_skus']=1
   self.assertEqual(allocation_plan(ranked,inv,10000,policy=policy)[0]['sku'],'hot')
+ def test_one_buyer_food_signal_opens_only_a_one_unit_breadth_canary(self):
+  ranked=[dict(sku='food-canary',kind='food',expected_net=100,score=10,
+               upper_cost=100,sales_1h=1,sales_6h=1,distinct_buyers_6h=1,
+               own_sales_total=0,estimated_sale_likelihood=.5)]
+  inventory={'units':[],'balance':10000}
+  guarded={'breadth_target_skus':10,'min_distinct_buyers_6h':2,
+           'max_food_units_per_sku':2,'max_breadth_trial_units':1,
+           'max_sku_capital_share':1}
+  self.assertEqual(allocation_plan(ranked,inventory,10000,policy=guarded),[])
+  guarded['min_distinct_buyers_6h']=1
+  plan=allocation_plan(ranked,inventory,10000,aggression=4,policy=guarded)
+  self.assertEqual([(row['sku'],row['qty']) for row in plan],[('food-canary',1)])
  def test_capital_risk_exponent_can_make_revenue_opportunity_compete(self):
   common=dict(kind='food',expected_net=1,sales_1h=8,sales_6h=12,
               distinct_buyers_6h=4,estimated_sale_likelihood=.8)
