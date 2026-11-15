@@ -361,6 +361,20 @@ class PurchaseTests(unittest.TestCase):
   policy={'max_units_per_sku':3,'initial_trial_units':3,'max_sku_capital_share':.08}
   plan=allocation_plan(ranked,{'units':[]},1000000,aggression=4,policy=policy)
   self.assertEqual(plan,[])
+ def test_only_proven_profitable_goods_receive_larger_capital_share(self):
+  common=dict(kind='goods',expected_net=100000,score=1000,upper_cost=900000,
+              sales_1h=3,sales_6h=6,distinct_buyers_6h=3,
+              estimated_sale_likelihood=1)
+  policy={'max_units_per_sku':3,'max_sku_capital_share':.10,
+          'max_proven_sku_capital_share':.20}
+  cold=allocation_plan([dict(common,sku='cold',own_sales_total=0)],
+                       {'units':[],'balance':10000000},10000000,policy=policy)
+  proven=allocation_plan([dict(common,sku='proven',own_sales_total=3,
+                               own_sales_1h=3,own_gross_total=300000,
+                               own_profitable_sales=3)],
+                         {'units':[],'balance':10000000},10000000,policy=policy)
+  self.assertEqual([(row['sku'],row['qty']) for row in cold],[('cold',1)])
+  self.assertEqual([(row['sku'],row['qty']) for row in proven],[('proven',2)])
  def test_active_unproven_good_blocks_another_cold_safe_trial(self):
   held=dict(sku='held',kind='goods',expected_net=0,score=0,upper_cost=100,
             sales_1h=0,sales_6h=1,own_sales_total=0,distinct_buyers_6h=2,
