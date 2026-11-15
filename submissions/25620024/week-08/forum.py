@@ -641,6 +641,10 @@ def groupbuy_call(c, t, now, top=4, min_ticket=150000):
             by_shop.setdefault(shop, []).append(r)
         good = sorted((statistics.median(v), s) for s, v in by_shop.items()
                       if len(v) >= 2 and s not in problem and s != NAME and statistics.median(v) <= p25 + 0.02)
+        # HQ 11-16 09:20: this buyer post named our own shop first ("dragonash (poster's shop)") although buyer self-
+        # promotion is off since 11-10 -- SELF_PROMO listed "group_buy_proposal", this post's type is "group_buy_call".
+        # A dislike stance weighs 1 against the buyer's forum rating (0.861 vs 0.92-0.935 for #1/#3/#4).
+        ours = ours if theta().get("buyer_self_promo", False) else None
         items.append({"sku": sku, "name": ((cat.get(sku) or {}).get("name") or "")[:24], "list_price": int(lp),
                       "recommended_shops": ([f"{NAME} (poster's shop)"] if ours else []) + [s for _, s in good[:3]],
                       "settles_24h": n, "paid_share_median": round(med, 3), "target_share": round(p25, 3),
@@ -656,15 +660,17 @@ def groupbuy_call(c, t, now, top=4, min_ticket=150000):
     data = {"type": "group_buy_call", "from": NAME, "window_h": 24,
             "proposal": "buyers with orders for these SKUs: buy at or under target_price; shops: quote target_price "
                         "and get the volume. Reply to this post with your SKU and quote.",
-            "items": items, "disclosure": "our shop (dragonash) joins: it sells these at target_price to the first buyers each hour",
-            "refs": refs[:8]}
+            "items": items, "refs": refs[:8]}
+    promo_on = theta().get("buyer_self_promo", False)   # HQ 11-16: no self-promotion in buyer posts while it is off
+    if promo_on:
+        data["disclosure"] = "our shop (dragonash) joins: it sells these at target_price to the first buyers each hour"
     ko = "[공동구매 제안] 고가 상품을 사는 바이어분들, 같이 사요. 최근 24시간 원장에서 많이 팔린 고가 상품과 목표가예요.\n" + \
         "\n".join(f"- {i['name']} ({i['sku']}): 24시간 {i['settles_24h']}건, 중간 체결 정가의 {i['paid_share_median']:.0%}"
                   f" -> 목표가 {i['target_price']:,}원 ({i['target_share']:.0%})"
                   + (f", 추천 가게: {', '.join(i['recommended_shops'])}" if i["recommended_shops"] else "") for i in items) + \
         "\n추천 가게 = 24시간 원장에서 목표가 근처에 판 가게 중 저희 기록에 오류(영수증·등급·결제 거부)가 없는 곳." \
-        "\n바이어: 이 상품 주문이 오면 목표가 이하로만 사요. 판매자: 목표가로 견적 주시면 물량이 그 가게로 갑니다." \
-        "\n(이해관계 공개: 저희 상점 dragonash도 공동구매에 참여해 목표가로 매 시간 선착순 판매합니다.)"
+        "\n바이어: 이 상품 주문이 오면 목표가 이하로만 사요. 판매자: 목표가로 견적 주시면 물량이 그 가게로 갑니다." + \
+        ("\n(이해관계 공개: 저희 상점 dragonash도 공동구매에 참여해 목표가로 매 시간 선착순 판매합니다.)" if promo_on else "")
     en = "[Group buy call] High-ticket SKUs buyers settle most (24 h): buy at or under the target price; shops quoting " \
          "it get the volume. " + "; ".join(f"{i['sku']} target {i['target_price']:,}" for i in items)
     js = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
@@ -1003,7 +1009,7 @@ def votes(forum, state):
     return out
 
 
-SELF_PROMO = ('"type":"shop_facts"', '"type":"group_buy_proposal"', '"type":"price_data","source":"ledger 24h by grade')
+SELF_PROMO = ('"type":"shop_facts"', '"type":"group_buy_proposal"', '"type":"group_buy_call"', '"type":"price_data","source":"ledger 24h by grade')
 
 
 def self_promo_ok(state, forum, now):

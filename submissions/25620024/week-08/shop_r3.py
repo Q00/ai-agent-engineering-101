@@ -666,6 +666,14 @@ class Shop(AgentExecutor):
             fp = fingerprint(text, u)
             declined = bool(need["warranty"] and u.get("kind") == "goods" and skip_warranty(fp, u.get("grade")))
             asked = need["warranty"] and not declined     # MST TF 11-14: per-buyer warranty (see fingerprint)
+            # HQ 11-16 09:10: goods A agreed in 12 h: with a warranty 259 of 259 paid, without one 62 of 136 -- mostly
+            # the kit's default wording (c95db274dc8a: 149 of 220), whose buyers never ask in words but pay only with
+            # one. Those wordings now count as asking; c_warranty_floor then prices the break risk.
+            th_w = promo.theta()
+            if not asked and u.get("kind") == "goods" and fp in set(th_w.get("warranty_fps") or []) \
+                    and u.get("grade") in th_w.get("warranty_grades", ("A", "B")) \
+                    and u.get("sku") not in set(th_w.get("no_warranty_skus") or []):
+                asked = True
             q = c_warranty_floor(u, q, asked)             # MST TF 11-13: a C unit with a warranty pays for its risk
             deal = self.open[task.id] = {"unit": u, "q": q, "ask": q["price"], "turns": 0, "code": code, "vip": vip,
                                          "ts": time.time(), "fp": fp, "w_declined": declined,
@@ -774,7 +782,7 @@ class Shop(AgentExecutor):
                 deal["w_declined"] = True                # MST TF 11-14: its record says it pays without one
             else:
                 deal["warranty_asked"] = deal.get("warranty_asked") or need["warranty"]
-            if deal["warranty_asked"] and c_warranty_ev(u):     # MST TF 11-13: the receipt gives C the warranty now
+            if deal["warranty_asked"]:     # MST TF 11-13 (C); HQ 11-16: big A/B too -- c_warranty_floor decides
                 q = deal["q"] = c_warranty_floor(u, q, True)
                 deal["ask"] = max(deal["ask"], q["floor"])
             vip = deal["vip"] or is_vip(self.c, text)
