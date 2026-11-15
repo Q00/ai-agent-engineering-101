@@ -425,25 +425,11 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
         is_food=row.get('kind')=='food'
         if is_food:
             unit_cap=policy.get('max_food_units_per_sku',2)
-            # A repeated, canonical stockout is stronger evidence than a broad
-            # market velocity threshold: buyers asked this shop for the exact
-            # SKU while it was unavailable.  Add only one unit and only while
-            # that six-hour evidence remains live; ordinary food stays capped
-            # at two and shelf-life checks still govern every eventual sale.
-            if row.get('own_stockouts_6h',0)>=policy.get('repeated_food_stockouts_6h',math.inf):
-                unit_cap=max(unit_cap,policy.get('max_repeated_stockout_food_units_per_sku',unit_cap))
-            if row.get('sales_1h',0)>=policy.get('fast_food_sales_1h',math.inf):
-                unit_cap=max(unit_cap,policy.get('max_fast_food_units_per_sku',unit_cap))
-            if row.get('sales_1h',0)>=policy.get('ultra_fast_food_sales_1h',math.inf):
-                unit_cap=max(unit_cap,policy.get('max_ultra_fast_food_units_per_sku',unit_cap))
         else:
             unit_cap=policy.get('max_units_per_sku',3)
-            # Preserve the normal three-unit diversity cap. Only a SKU that
-            # actually sold through two full normal lots in the last hour may
-            # hold a slightly deeper cohort between supply windows.
-            if (row.get('sku') not in policy.get('blocked_until_zero_skus',())
-                    and row.get('own_sales_1h',0)>=policy.get('fast_goods_sales_1h',math.inf)):
-                unit_cap=max(unit_cap,policy.get('max_fast_goods_units_per_sku',unit_cap))
+        # These are absolute per-SKU inventory ceilings. Demand velocity may
+        # move a SKU up the queue, but it must expand breadth rather than turn
+        # one fast seller into another concentrated inventory position.
         # Portfolio size is bounded by available capital and evidence-backed
         # SKU breadth.  A fixed global unit count used to strand growing cash.
         sku_ceiling=unit_cap

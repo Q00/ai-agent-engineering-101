@@ -228,36 +228,34 @@ class PurchaseTests(unittest.TestCase):
   plan=allocation_plan(ranked,{'units':[]},10000,policy=policy)
   self.assertIn('risky',[row['sku'] for row in plan])
   self.assertAlmostEqual(dominant_goods_profit_probability(10000,6969,0),.70)
- def test_fast_food_can_hold_three_units_only_with_hourly_sales_evidence(self):
+ def test_food_cap_remains_two_even_with_fast_hourly_sales(self):
   ranked=[dict(sku='food',kind='food',expected_net=50000,score=3,upper_cost=100,
                sales_1h=12,sales_6h=20,distinct_buyers_6h=4,estimated_sale_likelihood=.8)]
-  policy={'max_food_units_per_sku':2,'max_fast_food_units_per_sku':3,
-          'fast_food_sales_1h':12,'max_ultra_fast_food_units_per_sku':5,
-          'ultra_fast_food_sales_1h':30,'max_sku_capital_share':1}
-  self.assertEqual(allocation_plan(ranked,{'units':[]},10000,aggression=4,policy=policy)[0]['qty'],3)
+  policy={'max_food_units_per_sku':2,'max_sku_capital_share':1}
+  self.assertEqual(allocation_plan(ranked,{'units':[]},10000,aggression=4,policy=policy)[0]['qty'],2)
   ranked[0]['sales_1h']=30
-  self.assertEqual(allocation_plan(ranked,{'units':[]},10000,aggression=4,policy=policy)[0]['qty'],5)
+  self.assertEqual(allocation_plan(ranked,{'units':[]},10000,aggression=4,policy=policy)[0]['qty'],2)
   ranked[0]['sales_1h']=11
   self.assertEqual(allocation_plan(ranked,{'units':[]},10000,aggression=4,policy=policy)[0]['qty'],2)
- def test_repeated_own_food_stockouts_allow_one_extra_unit_only_while_evidenced(self):
+  over={'units':[{'sku':'food','kind':'food','cost':100} for _ in range(3)]}
+  self.assertEqual(allocation_plan(ranked,over,10000,aggression=4,policy=policy),[])
+ def test_repeated_own_food_stockouts_do_not_break_two_unit_cap(self):
   ranked=[dict(sku='food',kind='food',expected_net=50000,score=3,upper_cost=100,
                sales_1h=4,sales_6h=8,distinct_buyers_6h=4,
                own_stockouts_6h=2,estimated_sale_likelihood=.8)]
-  policy={'max_food_units_per_sku':2,
-          'max_repeated_stockout_food_units_per_sku':3,
-          'repeated_food_stockouts_6h':2,
-          'max_sku_capital_share':1}
-  self.assertEqual(allocation_plan(ranked,{'units':[]},10000,aggression=4,policy=policy)[0]['qty'],3)
+  policy={'max_food_units_per_sku':2,'max_sku_capital_share':1}
+  self.assertEqual(allocation_plan(ranked,{'units':[]},10000,aggression=4,policy=policy)[0]['qty'],2)
   ranked[0]['own_stockouts_6h']=1
   self.assertEqual(allocation_plan(ranked,{'units':[]},10000,aggression=4,policy=policy)[0]['qty'],2)
- def test_fast_goods_can_hold_five_only_after_two_normal_lots_sell_in_an_hour(self):
+ def test_fast_goods_remain_at_three_unit_absolute_cap(self):
   ranked=[dict(sku='goods',kind='goods',expected_net=50000,score=3,upper_cost=100,
                sales_1h=6,own_sales_1h=6,sales_6h=12,distinct_buyers_6h=4,estimated_sale_likelihood=.8)]
-  policy={'max_units_per_sku':3,'max_fast_goods_units_per_sku':5,
-          'fast_goods_sales_1h':6,'max_sku_capital_share':1}
-  self.assertEqual(allocation_plan(ranked,{'units':[]},10000,aggression=4,policy=policy)[0]['qty'],5)
+  policy={'max_units_per_sku':3,'max_sku_capital_share':1}
+  self.assertEqual(allocation_plan(ranked,{'units':[]},10000,aggression=4,policy=policy)[0]['qty'],3)
   ranked[0]['own_sales_1h']=5
   self.assertEqual(allocation_plan(ranked,{'units':[]},10000,aggression=4,policy=policy)[0]['qty'],3)
+  over={'units':[{'sku':'goods','kind':'goods','cost':100} for _ in range(5)]}
+  self.assertEqual(allocation_plan(ranked,over,10000,aggression=4,policy=policy),[])
  def test_cold_goods_capital_pauses_only_unproven_goods_trials(self):
   common=dict(expected_net=5000,score=3,upper_cost=100,sales_1h=8,sales_6h=12,
               distinct_buyers_6h=4,estimated_sale_likelihood=.8)
