@@ -38,13 +38,13 @@ def make_db(d):
             db.execute("INSERT INTO my_stock VALUES (?,?,?,?,?,?,?)", (u, sku, sku, 5000, "A", NOW - 5 * 3600, 0))
             db.execute("INSERT INTO settles (ts, buyer, shop, sku, amount, unit) VALUES (?,?,?,?,?,?)",
                        (NOW - 4.5 * 3600, "b", RB.ME, sku, 9000, u))
-    db.execute("CREATE TABLE shop_deals (task TEXT, ts REAL, unit TEXT, outcome TEXT, cost INTEGER)")
+    db.execute("CREATE TABLE shop_deals (task TEXT, ts REAL, unit TEXT, outcome TEXT, cost INTEGER, first_ask INTEGER)")
     db.execute("CREATE TABLE shop_msgs (task TEXT, ts REAL, who TEXT, sku TEXT, text TEXT)")
     # 11/15 ~15:00 items: inextro bought R1 from me 2 h ago (first reply 0.04 s) and Z9 / R2 at nocha12 (R2 held then)
     db.execute("INSERT INTO my_stock VALUES ('u-i', 'R1', 'r1', 5000, 'A', ?, 0)", (NOW - 3 * 3600,))
     db.execute("INSERT INTO settles (ts, buyer, shop, sku, amount, unit) VALUES (?, 'inextro', ?, 'R1', 9000, 'u-i')",
                (NOW - 2 * 3600, RB.ME))
-    db.execute("INSERT INTO shop_deals VALUES ('tk', ?, 'u-i', 'receipt', 5000)", (NOW - 2 * 3600 - 30,))
+    db.execute("INSERT INTO shop_deals VALUES ('tk', ?, 'u-i', 'receipt', 5000, 9000)", (NOW - 2 * 3600 - 30,))
     db.executemany("INSERT INTO shop_msgs VALUES ('tk', ?, ?, 'R1', 'x')", [(NOW - 2 * 3600 - 30, "buyer"),
                                                                             (NOW - 2 * 3600 - 29.96, "shop")])
     db.execute("INSERT INTO my_stock VALUES ('u-h', 'R2', 'r2', 5000, 'A', ?, 0)", (NOW - 3 * 3600,))
@@ -152,6 +152,8 @@ def test_report():
     assert "3) 요청 기반 줄: 계획 1번, 요청 줄 정식 5 / 시험 1 (5+1 다 찬 계획 1번), 새 SKU 1개 (N1)" in t, t
     assert "일반 SKU 수: 지금 3개 vs 기준 184개" in t and "다섯 buyer 우리 몫(시간당 건수) 합 0.2 vs" in t, t
     assert "추가 항목 계산 실패" not in t, t
+    assert "시험 3줄" in t and "새 SKU 1개 (N1), 들어온 0개 중 판매 0개" in t, t
+    assert "협상 왕복(성사 거래): 5 buyers 왕복 중앙 1 / 90% 1 (n 1) vs -" in t, t
     # not before 6 h
     _, _, _, r, sent = plan(6, 1, [], dict(ex, six_since=NOW - 5 * 3600))
     assert not r.get("six_reported") and not sent

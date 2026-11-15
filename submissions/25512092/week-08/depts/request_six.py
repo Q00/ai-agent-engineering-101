@@ -197,6 +197,73 @@ def normal_skus(units):
     return len({u["sku"] for u in units if u.get("grade") != "expired" and 0 < (u.get("cost") or 0) <= HIGH_MIN})
 
 
+def _plan_rows(t0, t1, path=None):
+    xs = []
+    try:
+        with open(path or PLANS, encoding="utf-8") as f:
+            for ln in f:
+                try:
+                    x = json.loads(ln)
+                except ValueError:
+                    continue
+                if t0 <= x.get("ts", 0) <= t1 + 60:
+                    xs.append(x)
+    except OSError:
+        pass
+    return xs
+
+
+def trial_effect(t0, t1, d, path=None):
+    """11/15 ~15:20 (person): the SKUs new on request lines since t0 (logs/request_plans.jsonl): how many, their units
+    supplied since t0, sold (my settles) and the supply -> sale median (unsold units count with their age)."""
+    import statistics
+    new = sorted({k for x in _plan_rows(t0, t1, path) for k in x.get("new") or []})
+    if not new:
+        return "새 SKU 0개"
+    q = ",".join("?" * len(new))
+    rows = d.execute(f"SELECT m.supplied_at, (SELECT MIN(x.ts) FROM settles x WHERE x.unit=m.unit AND x.shop=?) FROM "
+                     f"my_stock m WHERE m.sku IN ({q}) AND m.supplied_at>=?", (ME, *new, t0 - 600)).fetchall()
+    h = [((sold or t1) - sup) / 3600 for sup, sold in rows if sup]
+    sold = sum(1 for _, s_ in rows if s_)
+    return (f"새 SKU {len(new)}개 ({', '.join(new[:6])}), 들어온 {len(rows)}개 중 판매 {sold}개, 공급→판매 중앙 "
+            + (f"{statistics.median(h):.2f}h" if h else "-") + " (미판매는 지금까지 나이)")
+
+
+def round_trips(t0, t1, d):
+    """{'5 buyers' / 'others': (n, median, p90 of buyer messages, median our ask drop per round %)} on settled deals."""
+    import re
+    import statistics
+    from collections import defaultdict
+    deal = {u: (t, fa) for t, u, fa in d.execute("SELECT task, unit, first_ask FROM shop_deals WHERE outcome='receipt' "
+                                                 "AND ts>=? AND ts<?", (t0 - 600, t1))}
+    msgs = defaultdict(list)
+    for t, w, ts, x in d.execute("SELECT task, who, ts, text FROM shop_msgs WHERE ts>=? AND ts<?", (t0 - 600, t1 + 600)):
+        msgs[t].append((ts, w, x))
+    g = {"5 buyers": ([], []), "others": ([], [])}
+    for buyer, unit in d.execute("SELECT buyer, unit FROM settles WHERE shop=? AND ts>=? AND ts<?", (ME, t0, t1)):
+        x = deal.get(unit)
+        if not x or x[0] not in msgs:
+            continue
+        m = sorted(msgs[x[0]])
+        k = "5 buyers" if buyer in BUYERS else "others"
+        g[k][0].append(sum(1 for _, w, _ in m if w == "buyer"))
+        asks = [int(mm.group(1)) for _, w, t in m if w == "shop" for mm in [re.match(r"ask (\d+)", t or "")] if mm]
+        if len(asks) >= 2:
+            g[k][1].append((asks[0] - asks[-1]) / asks[0] / (len(asks) - 1) * 100)
+    out = {}
+    for k, (rt, st) in g.items():
+        rt.sort()
+        out[k] = (len(rt), statistics.median(rt) if rt else None, rt[int(0.9 * (len(rt) - 1))] if rt else None,
+                  statistics.median(st) if st else None)
+    return out
+
+
+def rt_text(a, b):
+    f = lambda x: (f"왕복 중앙 {x[1]:g} / 90% {x[2]:g}, 우리 양보/회 {x[3]:.2f}% (n {x[0]})" if x[0] and x[3] is not None
+                   else (f"왕복 중앙 {x[1]:g} / 90% {x[2]:g} (n {x[0]})" if x[0] else "-"))
+    return "; ".join(f"{k} {f(a[k])} vs {f(b[k])}" for k in a)
+
+
 def extra_lines(t0, t1, L, d, units, r, plans_path=None):
     iv = held_at(d, t0 - L - 7 * 86400)
     ea, eb = elsewhere_held(t0, t1, d, iv), elsewhere_held(t0 - L, t0, d, iv)
@@ -210,6 +277,9 @@ def extra_lines(t0, t1, L, d, units, r, plans_path=None):
         f"- 1) 다섯 buyer가 {'/'.join(SHOPS)}에서 산 저가 거래 중 그때 우리 재고에 있던 SKU: {pct(ea)} vs {pct(eb)}",
         f"- 2) 다섯 buyer 첫 메시지에 대한 우리 첫 응답(판매자 내부 기록): {sec(fa)} vs {sec(fb)}",
         f"- 3) 요청 기반 줄: {plans_text(t0, t1, plans_path)}",
+        f"- 시험 3줄 ({datetime.fromtimestamp(r.get('trial3_since') or t0):%H:%M}부터): "
+        f"{trial_effect(r.get('trial3_since') or t0, t1, d, plans_path)}",
+        f"- 협상 왕복(성사 거래): {rt_text(round_trips(t0, t1, d), round_trips(t0 - L, t0, d))}",
         f"- 일반 SKU 수: 지금 {normal_skus(units)}개 vs 기준 {r.get('base_skus', 184)}개",
         f"- 다섯 buyer 우리 몫(시간당 건수) 합 {sa:.1f} vs 11/14 09-15 {s0:.1f} "
         f"({'회복' if s0 and sa >= 0.9 * s0 else '미회복'}): {rec}"]
