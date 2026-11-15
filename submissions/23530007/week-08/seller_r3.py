@@ -917,7 +917,11 @@ class Shop(AgentExecutor):
         if offer >= ask or offer >= floor + (ask - floor) * d["meet"] or (n >= 3 and offer >= floor) or cheap_ok:
             # the buyer's own number, even above our ask: buyers check the receipt against what they agreed,
             # and 14 of our low reviews on 11-05 read "Agreed 57031, receipt says 33900" (we had charged the ask)
-            await self.close(up, say, task.id, d, offer)
+            # 11-15 BUG FIX: never above the list price: q00's category asks ('I want to buy a 침구') put a budget-like
+            # number in a later message (275,000 / 400,000 for a 7,900 pillow) and we 'agreed' at it, 8 times in 48 h
+            # (none paid); a number over the list closes at our ask, which the receipt states
+            price = offer if offer <= (u_.get("list_price") or offer) else d["ask"]
+            await self.close(up, say, task.id, d, price)
             return
         if n >= MAX_OFFERS:
             record(event="lost", sku=d["unit"]["sku"], category=d["unit"].get("category"), ask=ask, offers=d["offers"],
