@@ -470,6 +470,13 @@ def analyse(snap=None, log_=log, send=None, cmd=None):
         finally:
             d.close()
         quiet = QUIET[0] <= datetime.now().hour < QUIET[1]
+        from depts import auto_reject              # 11/15 ~14:20 (person): rejected in advance, summary once a day
+        ar = auto_reject.rule(k)
+        if ar:
+            record(kind, k, v, reason, ev, "auto_rejected", f"person: auto reject until {ar.get('until')}")
+            auto_reject.note(k, v, reason)
+            out.append((k, v, "auto rejected"))
+            continue
         if not send:
             record(kind, k, v, reason, ev, "recorded", "record-only day")
             out.append((k, v, "recorded"))
@@ -503,6 +510,10 @@ def release_queued(log_=log):
         if k in seen or n >= DAY_PROPOSALS:
             continue
         seen.add(k)
+        from depts import auto_reject              # 11/15 ~14:20 (person)
+        if auto_reject.rule(k):
+            auto_reject.note(k, json.loads(v), reason)
+            continue
         analyst.send_proposal(kind, k, json.loads(v), reason, ev)
         n += 1
     if n:
@@ -522,3 +533,8 @@ def tick(log_=log):
         meta_set("analyse_ts", now)
         analyse(log_=log_)
     release_queued(log_)
+    try:                                           # 11/15 ~14:20 (person): auto rejected proposals, once a day
+        from depts import auto_reject
+        auto_reject.summary_due(log=log_)
+    except Exception as e:
+        log_(f"auto reject summary failed: {type(e).__name__}: {e}")
