@@ -50,6 +50,7 @@ def sign_receipt(receipt):
 class Seller(AgentExecutor):
     def __init__(self, history_path=None):
         self.open = {}
+        self.receipts = {}
         self.held = {}  # unit id -> monotonic expiry; includes checkout handoff
         self.task_locks = {}
         self.history_path = (
@@ -194,6 +195,7 @@ class Seller(AgentExecutor):
             receipt = sign_receipt({"shop": SHOP_NAME, "item": unit["sku"],
                                     "unit": unit["unit"], "cert": True,
                                     "price": offer, "task": task_id})
+            self.receipts[task_id] = dict(receipt)
             await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
             await up.complete(say(f"Deal: {unit['sku']} at {offer}. Checkout confirms availability."))
             self.record(task_id, "agreement", deal, price=offer, unit=unit["unit"],
@@ -240,8 +242,13 @@ def build(port, history_path=None):
             description="Name an item, then send integer price offers on the same task.",
             tags=["shopping", "negotiation"])],
     )
-    handler = DefaultRequestHandler(agent_executor=Seller(history_path),
-                                   task_store=InMemoryTaskStore(), agent_card=card)
+    seller = Seller(history_path)
+
+    handler = DefaultRequestHandler(
+        agent_executor=seller,
+        task_store=InMemoryTaskStore(),
+        agent_card=card,
+    )
     routes = [
         Route(
             "/.well-known/acp.json",
@@ -252,7 +259,9 @@ def build(port, history_path=None):
     routes += create_agent_card_routes(card)
     routes += create_jsonrpc_routes(handler, "/")
 
-    return Starlette(routes=routes)
+    app = Starlette(routes=routes)
+    app.state.seller = seller
+    return app
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
