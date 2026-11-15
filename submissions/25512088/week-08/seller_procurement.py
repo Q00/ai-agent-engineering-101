@@ -482,8 +482,13 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
         unmet=trusted_stockouts*.5+trusted_inquiries*.2
         forecast=(velocity+unmet)*row.get('estimated_sale_likelihood',0)*max(1.0,float(aggression))
         is_food=row.get('kind')=='food'
-        effective_holding=(sellable_holding.get(row['sku'],0) if is_food
-                           else holding.get(row['sku'],0))
+        shelf_hours=row.get('shelf_hours')
+        freshness_replacement_supported=(is_food and
+            isinstance(shelf_hours,(int,float)) and
+            shelf_hours>food_sellable_seconds/3600)
+        effective_holding=(sellable_holding.get(row['sku'],0)
+                           if freshness_replacement_supported else
+                           holding.get(row['sku'],0))
         need=max(0,math.ceil(forecast)-effective_holding)
         food_scale_ready=False
         if is_food:
@@ -521,7 +526,8 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
             ordinary_room=max(0,sku_ceiling-actual)
             replacement_limit=max(0,int(policy.get('max_short_food_replacement_units',1)))
             replacement_room=(max(0,sku_ceiling+replacement_limit-actual)
-                              if actual>=sku_ceiling and
+                              if freshness_replacement_supported and
+                              actual>=sku_ceiling and
                               sellable_holding.get(row['sku'],0)==0 and
                               short_food_holding.get(row['sku'],0)>0 else 0)
             inventory_room=max(ordinary_room,replacement_room)
@@ -579,6 +585,7 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
                       sellable_holding=effective_holding,
                       short_food_holding=short_food_holding.get(row['sku'],0),
                       short_food_replacement=short_food_replacement,
+                      freshness_replacement_supported=freshness_replacement_supported,
                       cold_goods_cost=cold_goods_cost,cold_goods_limit=cold_goods_limit,
                       cold_goods_frozen=cold_goods_frozen,cold_safe_trial=cold_safe_trial,
                       own_profit_proven=own_profit_proven,
@@ -820,6 +827,7 @@ def main():
             sku=source.get('sku');conversion=a_conversion.get(sku,{})
             all_grades=all_conversion.get(sku,{})
             ranked.append(dict(source,kind=catalog.get(sku,{}).get('kind'),
+                shelf_hours=catalog.get(sku,{}).get('shelf_hours'),
                 own_sales_1h=own_sales_1h.get(sku,0),
                 own_sales_total=own_sales_total.get(sku,0),
                 own_gross_total=own_gross_total.get(sku,0),

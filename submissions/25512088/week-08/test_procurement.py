@@ -227,7 +227,8 @@ class PurchaseTests(unittest.TestCase):
   huge=allocation_plan(ranked,{'units':[]},10000000,aggression=100,policy=policy)
   self.assertEqual(huge[0]['qty'],3)
  def test_food_is_capped_at_two_units_per_sku(self):
-  ranked=[dict(sku='food',kind='food',expected_net=50000,score=3,upper_cost=100,
+  ranked=[dict(sku='food',kind='food',shelf_hours=96,
+               expected_net=50000,score=3,upper_cost=100,
                sales_1h=8,sales_6h=12,distinct_buyers_6h=4,estimated_sale_likelihood=.8)]
   plan=allocation_plan(ranked,{'units':[]},10000)
   self.assertEqual(plan[0]['qty'],2)
@@ -238,7 +239,8 @@ class PurchaseTests(unittest.TestCase):
 
  def test_short_food_allows_only_one_fresh_replacement(self):
   now=time.time()
-  ranked=[dict(sku='food',kind='food',expected_net=50000,score=3,upper_cost=100,
+  ranked=[dict(sku='food',kind='food',shelf_hours=96,
+               expected_net=50000,score=3,upper_cost=100,
                sales_1h=8,sales_6h=12,distinct_buyers_6h=4,
                own_stockouts_6h=8,estimated_sale_likelihood=.8)]
   policy={'max_food_units_per_sku':2,'food_sellable_min_hours':48,
@@ -253,6 +255,8 @@ class PurchaseTests(unittest.TestCase):
   self.assertEqual(allocation_plan(ranked,failed_replacement,10000,policy=policy),[])
   mixed={'units':[dict(short),dict(short,expires_at=now+72*3600)]}
   self.assertEqual(allocation_plan(ranked,mixed,10000,policy=policy),[])
+  ranked[0]['shelf_hours']=48
+  self.assertEqual(allocation_plan(ranked,full,10000,policy=policy),[])
 
  def test_goods_procurement_requires_dominant_a_grade_profit_evidence(self):
   base=dict(kind='goods',expected_net=50000,score=3,upper_cost=100,
