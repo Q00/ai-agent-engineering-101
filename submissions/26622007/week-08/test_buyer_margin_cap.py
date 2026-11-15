@@ -33,6 +33,12 @@ class Config(unittest.TestCase):
         for bad in (True, "0.8", 0.2, 1.5, float("nan")):
             self.assertIsNone(mc.config(switch({"enabled": True, "target": bad})), bad)
 
+    def test_take_is_on_only_when_the_switch_says_true(self):
+        self.assertFalse(mc.config(switch({"enabled": True}))["take"])
+        for v in ("true", 1, None, False):
+            self.assertFalse(mc.config(switch({"enabled": True, "take": v}))["take"], v)
+        self.assertTrue(mc.config(switch({"enabled": True, "take": True}))["take"])
+
     def test_env_zero_is_off(self):
         self.assertIsNone(mc.config(switch({"enabled": True}), env={"BUYER_MARGIN_CAP": "0"}))
 
@@ -161,12 +167,29 @@ class Limit(unittest.TestCase):
         self.assertIsNone(market_buyer.margin_limit(o, "food", {"text": "grade B"}, None))
 
 
-class Main(unittest.TestCase):
-    """market_buyer.main end to end: two shops quote a grade B unit of a 10,000 list at 6,500."""
+class TakeTop(unittest.TestCase):
+    ON, OFF = {"target": 0.75, "take": True}, {"target": 0.75, "take": False}
+
+    def test_the_cap_within_the_budget_and_deal_cap(self):
+        self.assertEqual(mc.take_top(self.ON, 7294, 6799, 16000), 7294)
+        self.assertEqual(mc.take_top(self.ON, 7294, 6799, 7000), 7000)     # value_limit (budget) under the cap
+
+    def test_none_when_off_or_nothing_over_the_limit(self):
+        self.assertIsNone(mc.take_top(self.OFF, 7294, 6799, 16000))
+        self.assertIsNone(mc.take_top(None, 7294, 6799, 16000))
+        self.assertIsNone(mc.take_top(self.ON, 6000, 6799, 16000))   # the cap lowered the limit: no band over it
+        self.assertIsNone(mc.take_top(self.ON, 6799, 6799, 16000))
+        self.assertIsNone(mc.take_top(self.ON, 7294, 6799, 6799))    # the budget is the limit
+        self.assertIsNone(mc.take_top(self.ON, None, 6799, 16000))
+        self.assertIsNone(mc.take_top(self.ON, float("nan"), 6799, 16000))
+
+
+class Run:
+    """market_buyer.main end to end: two shops quote a unit of a 10,000 list at 6,500."""
     TEXT = "컵 (G1), grade B, 6 h warranty: asking 6500"
     CATALOG = {"G1": {"kind": "goods", "category": "가전>컵", "list_price": 10000}}
 
-    def run_main(self, sw, kind="goods"):
+    def run_main(self, sw, kind="goods", receipt=None):
         printed, calls = [], []
         order = {"order": "o-1", "item": "컵", "budget": 16000, "acceptable": ["G1"], "kind": kind, "category": "가전>컵"}
         if kind == "food":
@@ -178,6 +201,9 @@ class Main(unittest.TestCase):
 
         def neg(*a, **k):
             calls.append((a, k))
+            if receipt is not None:
+                return {"state": "TASK_STATE_COMPLETED", "task": "t", "agreed": receipt["price"], "holds": 0,
+                        "history": [("shop asked", 6500), ("you offered", receipt["price"])], "receipt": receipt}
             return {"state": "TASK_STATE_CANCELED", "task": "t", "history": [("shop asked", 6500)], "agreed": None,
                     "holds": 0, "receipt": None}
         with tempfile.TemporaryDirectory() as d:
@@ -213,6 +239,10 @@ class Main(unittest.TestCase):
                 rows = [json.loads(x) for x in f]
         return rows[-1], calls
 
+
+class Main(Run, unittest.TestCase):
+    """Two shops quote a grade B unit of a 10,000 list at 6,500."""
+
     def test_off_the_limit_is_the_saved_cap_and_nothing_is_recorded(self):
         for sw in (None, {"enabled": False}):
             row, calls = self.run_main(sw)
@@ -243,6 +273,45 @@ class Main(unittest.TestCase):
         self.assertEqual(row["limit"], 6000)
         self.assertEqual(row["margin_cap"]["cap"], 6000)
         self.assertEqual(len(calls), 1)     # 6500 is within the talk band of 6000: the talk goes on, to the cap
+
+
+class MainTake(Run, unittest.TestCase):
+    """take on (W-20261115-1330): a grade A unit of a 10,000 list, cap 10000 (1 - .75 x .35 / .97) = 7293 over the
+    saved_cap limit 6799. My offers stay at 6799; the shop's final ask is taken up to 7293 (the talk's ceiling) and
+    a receipt at it is paid."""
+    TEXT = "컵 (G1), grade A, 6 h warranty: asking 6500"
+    REC = {"item": "G1", "price": 7200, "sig_seller": "s", "task": "t", "shop": "s", "order": "o-1", "warranty_hours": 6}
+
+    def test_take_off_is_as_before(self):
+        row, calls = self.run_main({"enabled": True})
+        self.assertEqual(row["limit"], 6799)
+        self.assertNotIn("take_top", row["margin_cap"])
+        self.assertIsNone(calls[0][1].get("ceiling"))
+        self.assertFalse(mc.lowered(row))
+
+    def test_take_on_the_ceiling_is_the_cap_and_my_limit_holds(self):
+        row, calls = self.run_main({"enabled": True, "take": True})
+        self.assertEqual(row["limit"], 6799)                 # my own offers: as before
+        self.assertEqual(row["margin_cap"]["cap"], 7293)
+        self.assertEqual(row["margin_cap"]["take_top"], 7293)
+        self.assertEqual(calls[0][1].get("ceiling"), 7293)
+        self.assertEqual(calls[0][0][2], 6799)               # negotiate(url, label, limit, ...)
+        self.assertFalse(mc.lowered(row))
+
+    def test_take_on_a_receipt_within_the_cap_is_not_over_my_limit(self):
+        off, _ = self.run_main({"enabled": True}, receipt=dict(self.REC))
+        on, _ = self.run_main({"enabled": True, "take": True}, receipt=dict(self.REC))
+        self.assertTrue(any("over my limit" in w for w in off["warnings"]), off["warnings"])
+        self.assertFalse(any("over my limit" in w for w in on["warnings"]), on["warnings"])
+        over, _ = self.run_main({"enabled": True, "take": True}, receipt=dict(self.REC, price=7294))
+        self.assertTrue(any("over my limit 7293" in w for w in over["warnings"]), over["warnings"])
+
+    def test_take_on_a_grade_b_cap_under_the_limit_gets_no_band(self):
+        with mock.patch.object(self, "TEXT", "컵 (G1), grade B, 6 h warranty: asking 6500"):
+            row, calls = self.run_main({"enabled": True, "target": 0.80, "take": True})
+        self.assertEqual(row["limit"], 5480)
+        self.assertNotIn("take_top", row["margin_cap"])
+        self.assertIsNone(calls[0][1].get("ceiling"))
 
 
 if __name__ == "__main__":

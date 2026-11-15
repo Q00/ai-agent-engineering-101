@@ -22,7 +22,13 @@ breaking (market_model.unit_break_chance, never under the SKU's), food none.
 Only ever lowers the limit (market_buyer takes the min with value_limit and saved_cap), so the budget, the hard
 limits, the warranty rules and the cash checks stay where they are; a lower limit can only mean fewer or cheaper deals.
 
-Switch: .market/buyer_margin_cap.json {"enabled": true, "target": 0.75}. Missing, unreadable or anything else is off,
+Take (11/15, W-20261115-1330-AX순위개선): with "take": true, the cap is also how far a shop's final ask is taken where
+the talk would walk away (market_buyer main: the accept band's top, and the receipt check of the asked SKU). My own
+offers stay at the limit as before, so a deal I closed already is not paid more; only a talk that ended on an ask over
+my limit and within the cap is closed at that ask. 24 h to 11/15 13:30: 708 goods and 87 food orders ended so (goods
+converted 7.7%, food 81%), their last asks keeping .81 of the margin on average against our Saved .739.
+
+Switch: .market/buyer_margin_cap.json {"enabled": true, "target": 0.75} (+ "take": true). Missing, unreadable or anything else is off,
 and off is the limit and the pick as before. BUYER_MARGIN_CAP=0 in the environment is off too. Read at every order (a
 buyer run is one order), so no restart either way. A talk whose limit the cap lowered (lowered()) has no accept band
 and stays out of buyer_shop_profile, so the lower limits do not widen the band of the talks the cap leaves alone.
@@ -65,7 +71,7 @@ def config(md, env=None):
     target = d.get("target", TARGET)
     if not _num(target) or not TARGET_MIN <= target <= TARGET_MAX:
         return None
-    return {"target": float(target)}
+    return {"target": float(target), "take": d.get("take") is True}
 
 
 def chance(kind, stats, sku, g, sku_chance):
@@ -104,6 +110,19 @@ def cap(cfg, list_price, g, b):
     if b >= 1 or cfg["target"] / (1 - b) > 1:
         return 0
     return int(round(list_price * (1 - cfg["target"] * (1 - MID[g]) / (1 - b)), 6))
+
+
+def take_top(cfg, cap, limit, most):
+    """take on: the most a shop's final ask is taken at where the talk would walk away. The cap is the price that still
+    keeps the target, so an ask over my limit and within it is a deal that keeps the target, not a walk. Never over
+    most (market_buyer.value_limit: the budget and the deal cap), and None when take is off, the cap is not over the
+    limit or a number is missing: the talk as before."""
+    if not cfg or cfg.get("take") is not True:
+        return None
+    if not all(_num(x) for x in (cap, limit, most)) or cap <= limit:
+        return None
+    top = int(min(cap, most))
+    return top if top > limit else None
 
 
 def lowered(row):

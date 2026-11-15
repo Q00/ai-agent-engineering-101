@@ -2699,6 +2699,14 @@ def main():
         if r3 and not zero else limit
     if order["_margin_cap"]:    # an accept band never goes over the cap
         top = min(top, max(limit, order["_margin_cap"]["cap"]))
+    # buyer_margin_cap take: a final ask over my limit and within the cap still keeps the target, so it is taken
+    take = buyer_margin_cap.take_top((MARGIN_CAP or {}).get("cfg"), order["_margin_cap"]["cap"], limit,
+                                     value_limit(offer, args.budget, chance, buyer_cfg())) \
+        if r3 and not zero and order["_margin_cap"] and not margin_bound and sw_h is None \
+        and not (order.get("_saved_floor") or {}).get("band_off") else None
+    if take is not None and take > top:
+        top = take
+        order["_margin_cap"]["take_top"] = take
     mine = my_history(memory, shop["name"])
     pattern = shop_pattern(ledger_rows(md), shop["url"], catalog) if r3 else None
     deals, low = item_stats(mine, key)
@@ -2894,9 +2902,12 @@ def main():
         lp = ((catalog or {}).get(rec.get("item")) or {}).get("list_price")   # over_limit uses it only with a list price
         order["_saved_floor"]["shipped"] = {"sku": rec.get("item"), "chance": round(shipped, 4),
                                          "applied": isinstance(lp, (int, float)) and not isinstance(lp, bool)}
-    over = over_limit(rec, offer, limit, catalog, args.budget,
-                      None if (order.get("_sw_buy") or {}).get("ok") else receipt_band(rec, offer, band_base, band_pct),
-                      shipped) \
+    r_limit, r_band = limit, None if (order.get("_sw_buy") or {}).get("ok") else receipt_band(rec, offer, band_base, band_pct)
+    m_take = (order.get("_margin_cap") or {}).get("take_top")
+    if m_take and rec is not None and (not rec.get("item") or rec.get("item") == offer["sku"]) \
+            and not (order.get("_sw_buy") or {}).get("ok"):
+        r_limit, r_band = max(limit, m_take), None     # buyer_margin_cap take: the asked SKU is paid up to the cap
+    over = over_limit(rec, offer, r_limit, catalog, args.budget, r_band, shipped) \
         if r3 and rec is not None and not problems and not short else None
     over = floor_problem or over  # a policy price refusal is not seller cheating
     if over:
