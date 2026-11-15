@@ -344,8 +344,10 @@ def _tail(path, n, max_bytes):
 
 def _warranted(path, now, inv):
     """The seller's warranted signs of the last WARRANTED_H hours, from the log's tail: n, sum_list_signed (their
-    list prices, what seller.warranty_cap_6h is compared with) and sum_list_paid (those whose unit has left the
-    inventory, so the sale went through; the seller itself also counts the ones still inside the promise TTL).
+    list prices) and sum_list_paid (what seller.warranty_cap_6h is compared with: a warranted sign that is its
+    unit's last sign, the unit gone from the inventory, so the warranted sale went through; the seller counts it
+    the same way since the 11-15 recreate, plus the ones still inside the promise TTL; before, every warranted
+    sign of a gone unit counted, 80.0M against the ledger's 54.5M on 11-15 01:18).
     sign_rate: the goods first replies of those hours by whether the buyer asked for a warranty and whether we
     offered one (asked_offered, asked_refused, unasked_offered, unasked_plain: first, signed, rate), the signs
     joined by task; the same table as the brief's 1 h seller.warranty.sign_rate, over hundreds of rows instead
@@ -358,8 +360,8 @@ def _warranted(path, now, inv):
     rows, cut = _tail(path, 10 ** 6, WARRANTED_TAIL_BYTES)
     since = now - WARRANTED_H * 3600
     held = {u.get("unit") for u in (inv.get("units") or []) if isinstance(u, dict)} if isinstance(inv, dict) else set()
-    n = signed = paid = 0
-    firsts, task_key, signs_by, every = Counter(), {}, Counter(), []
+    n = signed = 0
+    firsts, task_key, signs_by, every, warranted = Counter(), {}, Counter(), [], []
     for r in rows:
         if not isinstance(r, dict) or not isinstance(r.get("ts"), (int, float)) or r["ts"] < since:
             continue
@@ -387,8 +389,7 @@ def _warranted(path, now, inv):
             continue
         n += 1
         signed += lp
-        if c.get("unit") not in held:
-            paid += lp
+        warranted.append((r["ts"], c.get("unit"), lp))
     first = min((r["ts"] for r in rows if isinstance(r, dict) and isinstance(r.get("ts"), (int, float))), default=None)
     names = {(True, True): "asked_offered", (True, False): "asked_refused",
              (False, True): "unasked_offered", (False, False): "unasked_plain"}
@@ -398,6 +399,7 @@ def _warranted(path, now, inv):
     for ts, unit, _, _, _, _ in every:
         if unit is not None and ts >= last.get(unit, -math.inf):
             last[unit] = ts
+    paid = sum(lp for ts, unit, lp in warranted if unit is None or (unit not in held and last.get(unit) == ts))
     by = {}
     for ts, unit, price, big, asked, offered in every:
         row = by.setdefault(f"{'big' if big else 'small'}_{names[(asked, offered)]}",

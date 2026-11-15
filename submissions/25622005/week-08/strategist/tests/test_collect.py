@@ -323,6 +323,18 @@ class ReadOwnTest(unittest.TestCase):
         p.parent.mkdir(parents=True, exist_ok=True)
         p.write_text("".join(json.dumps(r) + "\n" for r in rows) + '{"truncated', encoding="utf-8")
 
+    def test_warranted_paid_counts_a_unit_once_and_only_its_last_receipt(self):
+        now = time.time()
+        sign = lambda age, unit, wh=6: {"ts": now - age, "kind": "sign", "ref": {},
+                                        "choice": {"price": 1, "unit": unit, "list_price": 1_000_000, "warranty_hours": wh}}
+        self.write("logs/decisions/seller.jsonl", [sign(3000, "u-twice"), sign(2000, "u-twice"),     # paid once
+                                                   sign(1500, "u-lost"), sign(1000, "u-lost", 0),    # went plain
+                                                   sign(500, "u-paid")])
+        (self.home / ".market").mkdir(parents=True)
+        (self.home / ".market" / "inventory.json").write_text(json.dumps({"balance": 1, "units": []}))
+        w = collect.read_own(self.home, now)["warranted_6h"]
+        self.assertEqual((w["n"], w["sum_list_signed"], w["sum_list_paid"]), (4, 4_000_000, 2_000_000))
+
     def test_warranted_signs_of_the_last_6_h_signed_and_paid(self):
         now = time.time()
         sign = lambda age, unit, lp, wh=6, task=None: {"ts": now - age, "kind": "sign", "ref": {"task": task},
