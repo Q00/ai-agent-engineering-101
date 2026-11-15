@@ -18,7 +18,7 @@ import uuid
 ROOT = Path(__file__).resolve().parents[1]
 REMOTE = "agent-market-week07/repo/submissions/26510124/week-08"
 CONFIGS = ("agent.json", "model-profile.json", "buyer-policy.json", "feedback-config.json", "advisor-config.json", "shop-policy.json",
-           "shop-adaptive.json", "shop-round2.json")
+           "shop-adaptive.json", "shop-round2.json", "shop-ops-config.json", "shop-ops-rules.json")
 
 
 def source_files(root):

@@ -2151,3 +2151,170 @@ submissions/26510124/week-07/.venv/bin/python submissions/26510124/week-08/prepa
 
 이 문서는 구현 설명이다. 실제 Round 3 실적과 학생의 실험 해석을 대신하는
 제출용 REPORT는 작성하지 않았다.
+
+## Shop 운영 에이전트 — 2026-11-15 로컬 구현
+
+이 절은 위의 과거 Round 2 설명과 구분되는 현재 구현이다. **서버 배포·서비스
+재시작·실제 모델 호출·거래는 이 작업에서 실행하지 않았다.** 기본 설정은
+`shop-ops-config.json`의 `mode: propose`다. 제안을 생성해도 가격이 자동으로 바뀌지 않는다.
+
+### 기존 기능과 세 역할
+
+| 역할 | 실행 경로 | 책임 |
+|---|---|---|
+| 거래 실행기 | `agent.json` → `shop_runtime.py` → `seller_r3.py` | 견적·협상·예약·서명·영수증, 기존 `receipt_leases`/`guarded_checkout` 유지 |
+| 운영 전략가 | `shop_runtime.py` → 별도 `shop_operations.py` 자식 프로세스 | 30분 간격 진단, 중요한 오류·사용자 요청·만료 확인, hold/제안 생성 |
+| 재고 분석가 | 전략가 내부 `shop_ops_evidence.py` 분석 단계 | 공급창까지 판매속도·판매 가능 수량·안전재고·제약 계산, 기존 restock 계산 재사용 |
+
+세 역할이지만 Shop에는 거래 실행기와 운영 전략가 **두 프로세스**만 필요하다.
+재고 분석을 별도 모델 프로세스로 중복 실행하지 않는다. Buyer는 기존 실행 경로를 유지한다.
+
+`restock.py`, `adaptive_stock.py`, `stock_budget.py`, `stock_lifecycle.py`,
+`sales_performance.py`, `shop_diagnostics.py`, `market_clock.py`는 재사용한다.
+재고 분석의 `restock.plan` 호출은 쓰기 없는 모의 계산이며 매입을 실행하지 않는다.
+재입고 우선순위·목표 수량과 제외 사유는 스냅샷/모델 문맥에 포함하지만, 초기 적용기는
+재고·보증 설정을 쓰지 않는다. 총재고 한도나 원가 하한도 변경하지 않았다.
+
+기존 `sales_advisor.py`는 카테고리 편향·협상 속도·집중 품목에 대한 조언을 직접
+게시하는 구조로, 이번 버전 검증·실험 평가 계약과 다르다. `advisor-config.json`의
+비활성 상태를 유지하고 동시에 활성화되면 새 운영 정책 적용을 차단한다.
+
+실제 거래 모델은 `model_backend.py`와 `model-profile.json`의 trading 선택 경로에
+따른다. 현재 로컬 설정은 Sol/low이며 `agent.json`의 과거 Opus 설명을 실행 증거로
+사용하지 않는다. 운영 모델은 `shop-ops-config.json`의 별도 `model_profile: sol`을
+사용한다. 공유 backend의 명령 생성 함수를 재사용하되 Buyer 프로필을 수정하지 않는다.
+운영 모델은 최대 48회/일, 45초 제한이며 실패한 호출도 예산에 포함한다.
+
+### 기준선과 아직 확인하지 못한 내용
+
+서버 사용자가 제공한 2026-11-15 13:49:28 UTC의 최근 6시간 자료를
+`logs/shop-ops-baseline-20261115/user-diagnostic-summary.json`에 기록했다.
+
+| 관측 | 값 | 해석 제한 |
+|---|---:|---|
+| 작업 / 열린 협상 | 924 / 732 | 보관된 로컬 로그 범위, 전체 방문 수와 같지 않음 |
+| 첫 응답 p50 / p95 | 5.732 / 7.873초 | 성공적으로 게시한 첫 견적 표본 |
+| 첫 견적 출처 | 모델 543, 동일 unit 재사용 121, 최신 근거 58, 포화 대체 11 | 합계 733; 지연 표본 739와 모집단이 다름 |
+| 구매자 취소 / 만료 | 557 / 99 | 취소 409건의 마지막 단계가 opening; 가격 원인으로 단정 불가 |
+| 영수증 / 확인 정산 | 70 / 19 | 미확인 51건을 결제 실패로 집계하지 않음 |
+| checkout 생성 / 취소 | 46 / 27 | 단계는 중복 가능; 시작·확인 정산 각각 19건 |
+| checkout 미관측 영수증 | 24 | 결제 여부 미확인 |
+| 재고 / 예약 중 거절 | 49개 / 185건 | 실제 품절과 예약 경합 구분 |
+| 명시적 가격 거절 / 모델 오류 | 11 / 0 | 일괄 할인이나 모델 장애를 정당화하지 않음 |
+
+공개 board 기준선의 ALL은 0.575, Book 64,971,003, 매출 478,787,841,
+비 house 표시 순위는 32/61이었다. 별도의 board 모집단에는 house도 포함되므로
+새 분석의 백분위 기회 추정치를 표시 순위와 동일시하지 않는다.
+이 수치는 조회 당시 기록이며 현재 서버 상태를 보장하지 않는다.
+
+11월 13일의 침구·매트리스 집중은 과거 관측이다. 최신 SKU별 집중도·가격 결렬·
+성숙 정산 이익은 서버에서 첫 스냅샷을 수집해야 확정할 수 있다. 현재 자료에서는
+응답 지연과 협상 이탈이 우선 조사 대상이며, 가격 인과관계나 매입 부족은 미확정이다.
+
+공식 규칙 원문과 board를 같은 로그 디렉터리에 보존했다. 확인한 규칙은
+[Patch 3.6, 11월 12일](https://market.ourolabs.ai/rules)이며 종료는
+2026-11-17 23:59 KST다. Shop은 Book·매출·별점 백분위에 50%·30%·20%를 적용하고,
+마감 재고는 원가로 장부에 남는다. Buyer의 변경된 margin-saved 규칙은 정보로만
+보관하며 Buyer를 수정하지 않는다. 운영자는 고정 URL의 규칙·board를 최대 6시간마다
+GET한다. 새 규칙을 인식하지 못하거나 검증 자료가 만료되면 적용을 차단한다.
+
+### 정책 적용과 첫 실험
+
+모델은 `hold` 또는 최대 두 대상의 `experiment`만 제안한다. `shop_ops_policy.PolicyStore`
+하나가 활성 오버레이를 쓴다. 기존 `shop-policy.json`을 덮어쓰지 않는다.
+허용 키·자료형·SKU·등급·보증 조건·변경 폭·15분 제안 TTL·관측 신선도·기준 정책
+해시·버전을 검증하고, 파일 잠금과 원자적 교체로 충돌을 막는다. 이전 버전은
+불변 history에 보존한다. 오래된 제안이나 실험 평가가 더 최신 설정을 덮어쓰지 못한다.
+
+첫 실험 후보는 동일 SKU·등급·보증 조건에서 판매 가능 재고 2개 이상,
+관측 작업 10건 이상과 명시적 가격 거절 3건 이상, 동일 조건 실제 정산가 근거,
+지난 24시간의 충분히 성숙한 이익 표본이 있는 A/B 상품이다. 오류·관측 환불·
+회계 불확실성이 있으면 제외한다. 상대 호가만으로 실험 가격을 정하지 않는다.
+최종 적용 직전 스냅샷으로 조건을 다시 확인한다. **현재 집계 자료만으로 특정 SKU를
+선정하지 않았으며 첫 판단은 근거 부족이면 hold다.**
+
+- 대상: 1~2 SKU의 기존 근거 기반 첫 견적 목표만 1% 낮추는 한 정책군 실험.
+- 기간: 6시간, 3시간에 중간 확인. 종료와 최대 6시간 보증 평가를 위한 시간을 확보한다.
+- 보호: 기존 원가·가격 범위 유지, C급·보증 확대·재고 한도 변경 제외.
+- 성공 검토: 최소 20작업·5확인 정산과 성숙·비교 가능한 표본에서 방문당 환불 차감
+  추정 이익 및 시간당 정산 매출이 모두 개선되는지 본다.
+- 중단: 해당 실험에 연결된 명확한 기술 오류, 사용자 복구, 예정된 TTL 만료.
+  예측 미달만으로 자동 원복하지 않는다. 공급창·수요·등급/구매자 구성·표본 범위를 함께 검토한다.
+
+새 오버레이는 새 협상부터 읽고, 진행 중 거래의 상품·보증·가격 범위는 거래별로
+유지한다. 견적 캐시 키에도 정책 버전을 넣었다. 운영 모델 지연·잘못된 JSON·운영
+프로세스 종료는 기존 거래 실행기를 정지시키지 않는다.
+
+만료 시 새 협상은 기준 정책으로 돌아간다. 이는 예정된 실험 종료이며 성과 실패 판정이
+아니다. 보증 기간이 지난 뒤 원래 실험 시간 구간의 늦은 정산·환불을 재평가한다.
+평가가 끝나기 전에는 다음 실험을 막는다. 전후 비교는 관찰 연구이며 인과 효과를
+보장하지 않는다. 원본 로그가 잘렸거나 표본이 부족하면 inconclusive로 기록한다.
+
+### 로컬 확인과 사용자 명령
+
+레포 루트에서 모델·네트워크 없이 현재 로컬 자료를 진단한다. 오래된 로컬 자료는
+hold가 정상이며, 서버 자료인 것처럼 취급하지 않는다.
+
+```bash
+submissions/26510124/week-07/.venv/bin/python submissions/26510124/week-08/shop_operations.py --once --no-model
+submissions/26510124/week-07/.venv/bin/python submissions/26510124/week-08/run_checks.py
+python3 submissions/26510124/week-08/deploy/deploy_v4.py --prepare-only
+```
+
+운영 명령은 소유자 전용 0600 키로 인증한다. 키는 소스/배포 패키지 밖에 두고
+출력·공유하지 않는다. 아래 `OPERATOR_KEY_PATH`는 운영자가 정하는 실제 경로의 자리표시자다.
+
+```bash
+python3 submissions/26510124/week-08/shop_operations.py --init-key OPERATOR_KEY_PATH
+python3 submissions/26510124/week-08/shop_operations.py --once --no-model --command status --key-file OPERATOR_KEY_PATH
+python3 submissions/26510124/week-08/shop_operations.py --once --command analyse --request-id review-001 --key-file OPERATOR_KEY_PATH
+```
+
+`analyse`는 조건이 충족되면 운영 모델 사용량을 소비한다. 제안은 `.market/shop-ops/decisions/`
+에서 확인한다. 적용하려면 해당 제안의 `decision_id`와 `base_version`을 사용한다.
+
+```bash
+python3 submissions/26510124/week-08/shop_operations.py --once --no-model --command apply --request-id apply-001 --decision-id DECISION_ID --expected-version BASE_VERSION --key-file OPERATOR_KEY_PATH
+python3 submissions/26510124/week-08/shop_operations.py --once --no-model --command rollback --request-id restore-001 --expected-version CURRENT_VERSION --key-file OPERATOR_KEY_PATH
+```
+
+명령은 status/analyse/apply/rollback/evaluate만 허용한다. 임의 자유문을 셸로 실행하지
+않는다. 서명·유효 시간·nonce·요청 ID 재사용을 검증한다. 적용 요청은 같은 요청 ID로
+received → analysing → applied → verifying → completed/rolled_back을 추적한다.
+제안 전용 요청은 제안을 기록하고 완료한다. 적용 후 검증은 운영 데몬이 이어서 수행한다.
+한 번 실행하는 `--once`만 사용하면 이후 평가를 위해 다시 실행하거나 데몬을 유지해야 한다.
+
+`.market/shop-ops/`에 snapshots, decisions, outcomes, history, evaluations, requests,
+verification, evaluation-control을 기록한다. 각 결정은 기준 버전·관측/규칙 버전·
+변경 전후·근거·예상 효과·평가 시점·최소 표본·중단 조건·결과를 연결한다.
+`outbox/`는 교체 가능한 알림 인터페이스의 로컬 메시지 저장소다. 기존 시장 포럼의
+`.market/outbox.jsonl`과 별개다. 외부 메시지는 전송하지 않으며 외부 채널 인증이 없어도
+진단·기록·거래는 동작한다.
+
+### 배포 변경 목록과 복구
+
+배포 대상은 새 `shop_operations.py`, `shop_ops_{evidence,policy,model,commands,notifications}.py`,
+`shop-ops-config.json`, `shop-ops-rules.json`과 변경한 `shop_runtime.py`, `seller_r3.py`,
+`opening_quote_cache.py`다. 두 deploy 스크립트는 새 설정 파일을 허용 목록에 포함한다.
+테스트와 문서도 소스 패키지에 포함된다. 키·로그·`.market` 상태는 포함하지 않는다.
+Buyer 코드·프롬프트·정책·공유 모델 설정·기억은 이번 변경 대상이 아니다.
+
+최초 코드 설치에는 기존 장기 실행 프로세스에 새 코드를 로드하는 절차가 필요하다.
+이는 별도 서버 적용 요청 이후에 수행한다. 기존 `deploy_v4.py`의 실제 배포 모드는
+전체 kit를 재시작하므로 **정책 변경 때 반복 실행하지 않는다**. 설치 후 운영 설정은
+재로딩되고 가격 오버레이는 새 협상에서 읽히므로 정책마다 kit를 재시작할 필요가 없다.
+
+실험 복구는 위의 버전 지정 rollback을 사용한다. 운영 기능 전체를 멈추려면
+`shop-ops-config.json`의 `enabled`를 false로 원자적으로 교체한다. 실행기는 기준 정책으로
+돌아가며 진행 중 약속은 유지한다. 잘못된 활성 파일은 새 가격을 적용하지 않고 기준
+정책으로 처리한다. 파일을 수동으로 덮어써 이전 실험을 살리지 말고 history와 오류 기록을
+확인한 뒤 검증된 적용기를 사용한다. 최초 코드 배포 자체를 되돌리는 작업은 별도
+서비스 작업이므로 정책 원복과 구분한다.
+
+검증은 모델 실패/잘못된 JSON, 오래된 관측·제안·정책, 동시 적용 충돌, 원자적 저장 실패,
+인증/재전송, 진행 중 협상 보존, 운영 재시작 격리, 만료 후 성숙 평가, 미확인 정산 구분을
+포함한다. 기존 restock 테스트 중 현재 날짜가 마감에 가까워져 정상 시나리오가 마감
+시나리오로 바뀐 fixture만 상대적 종료일로 수정했다. 실제 매입 제한은 완화하지 않았다.
+첫 실패 로그와 수정 후 전체 검사 로그를 모두 보존한다. 공식 week-08 검사 스크립트는
+저장소에 없어 실행하지 못했다. 서버 모델 인증·현재 SKU별 후보·실제 정책 재로딩·
+최신 정산/환불 기록과 운영 데몬 기동은 배포 후 별도로 확인해야 한다.
