@@ -37,11 +37,15 @@ CASH_FLOOR = 1_000_000
 # the top shops hold 20-480M. Raised 11-11 from 6M / 2.5M / 300k: more SKUs in stock, more orders reach the shop.
 STOCK_CAP = 15_000_000  # all stock at cost; expensive SKUs only below it
 CHEAP_CAP = 5_000_000   # cheap SKUs (list <= 100,000) at cost
-CHEAP_RUN = 600_000     # cheap SKUs a run
+CHEAP_RUN = 1_200_000   # cheap SKUs a run (600k until 11-15)
 SPEND_SHARE = 0.40
-MAX_LINES = 10            # cheap SKUs a run (food and goods with list <= 100,000)
+MAX_LINES = 16            # cheap SKUs a run (food and goods with list <= 100,000; 10 until 11-15)
 DEAR_LINES = 4            # expensive SKUs a run, counted apart (see below)
-CHEAP_TOP, DEAR_TOP = 45, 15   # candidates per ranking
+CHEAP_TOP, DEAR_TOP = 150, 15  # candidates per ranking (cheap 45 until 11-15)
+# 11-15 06:30: my food sales fell from ~80 to ~40 an hour while the market stayed at ~3,400. My food price was mid-pack
+# (1.17 x cost; the big shops 1.06-1.29), but they supplied 1,000-1,650 food units in 8 h and I supplied 394: sales
+# follow supply. One run bought 5 food units: 35 of the 45 cheap SKUs ranked were "stale" (one unit had waited over
+# 3 h), so the list ran dry. A longer ranking lets the fresh SKUs below them in; food expiring cost 9,546 in 8 h.
 MAX_LIST = 700_000
 EST_COST = 0.65            # expected cost as a share of list price (A 55-75%, B 40-60%, C 25-45%)
 LEAD = 60                  # start a run this many seconds before the window opens (the kit waits for it)
