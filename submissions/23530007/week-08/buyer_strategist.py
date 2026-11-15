@@ -52,7 +52,7 @@ GLOBAL = {                                    # role, bounds, step (11-12 patch 
     "take_v": ((0.80, 0.98), 0.02),           # an ask that already scores this v is taken at once (the next order waits)
     "open_v": ((0.85, 1.0), 0.02),            # our first counter, in v (1.0 = the unit's cost itself)
     "step_v": ((0.01, 0.10), 0.01),           # each later counter concedes this much v
-    "rounds": ((1, 6), 1),                    # counters before we take any ask at or under the cap (else walk)
+    "rounds": ((1, 8), 1),                    # counters before we take any ask at or under the cap (else walk); 11-15: 1-8, the A/B promoted 7 (.051 vs .030 per order)
     "soft_rounds": ((1, 4), 1),               # the same at shops that end talks on low offers (reject share >= 30%)
     "v_floor": ((0.70, 0.82), 0.01),          # 11-12: the price floor's base, the break-even v (not m*): floor = v_floor + delta
     "v_floor_rel": ((-0.05, 0.05), 0.01),     # 11-12 23:50: when set, the floor base is m* + this (follows saved live)
