@@ -30,8 +30,9 @@ def warranty_risk_reserve(amounts, policy=None):
     single claim is always covered.  Freezing every active warranty assumes a
     100% simultaneous break rate and eventually stops a successful shop from
     restocking.  The configured hazard deliberately exceeds our mature public
-    breakage cohort; four standard deviations retain a wide tail buffer while
-    allowing accumulated cash to keep earning Book and Revenue.
+    breakage cohort; the configured high-sigma tail buffer retains several
+    simultaneous large-claim equivalents while allowing accumulated cash to
+    keep earning Book and Revenue.
     """
     policy=policy or settings()
     clean=[int(value) for value in amounts
