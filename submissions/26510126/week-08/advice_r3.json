@@ -638,6 +638,10 @@
   {
    "t": 1794781642.096871,
    "text": "07:2x supervisor data: after floor_frac 0.62 (07:10), goods walks went 15/h -> 48/h and goods deals 61/h -> 20/h in the first 15 min (small sample, re-measured 07:45). step 0.5 (07:27) pushes the same way (higher prices) on the same goods talks, so the two cannot be told apart at 2 h. Do not stack another price-raising move (floor_frac, step, min_margin, market_ask) until floor_frac 0.62 has its 2 h verdict; if goods deals stay below half, take back the later one (step) first."
+  },
+  {
+   "t": 1794783272.508986,
+   "text": "07:5x supervisor correction to the 07:27 note: goods recovered after 07:27 (deals 64/h, walks 24/h vs 65/16 before 07:10), so the 07:10-07:27 dip (28 deals/h, 46 walks/h) was a 17-minute blip, not a verdict on floor_frac 0.62; judge it at 2 h as usual. Direction of step: the seller counters at ask - step*(ask - offer) (seller_r3.py:717), so a LOWER step concedes less and raises prices. step 0.4 is a further raise, not a take-back; taking back the 07:27 move means step 0.6. Goods deal value/h: 19.2M before 07:10, 12.9M since 07:27 (65 vs 64 deals/h), so the mix shifted to cheaper goods; watch that in the 2 h verdict."
   }
  ]
 }
