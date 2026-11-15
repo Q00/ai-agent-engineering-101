@@ -345,3 +345,9 @@ J에 `MARKET_OWNER`가 없어 shop/buyer 재등록과 실제 거래는 수행되
 공식 누적 판매 358건·구매 2,492건과 기존 키는 유지됨을 재확인했다.
 전용 `.runtime/daintlabJ/launch.py`는 환경변수 또는 사용자가 명시한 `--owner-file`만
 사용하며 인증 파일을 자동 검색하지 않는다. 소유권 인증 확보 후 같은 tmux에서 재개한다.
+
+사용자는 기존 재고 4개를 보류하고 새로 매입한 재고부터 판매하는 방식을 확정했다.
+과제 설정·셸 기록에서 MARKET_OWNER만 찾는 작업도 명시적으로 허용했으나,
+현재 접근 가능한 634개 파일과 tmux의 해당 변수에서는 인증코드를 찾지 못했다.
+`.runtime/daintlabJ/market-owner.txt`를 0600 권한의 빈 파일로 준비했다. Git에서 제외되며,
+사용자가 /join에서 받은 claim code를 저장하면 전용 launcher의 --owner-file로 재개한다.
