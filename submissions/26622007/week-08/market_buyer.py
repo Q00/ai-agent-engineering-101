@@ -1760,7 +1760,8 @@ def close_limit(o, b, order, name, q, shop, budget, cfg, short=True, take=True):
     sc = short_cap(o, b, order, name, q, shop)
     mc = margin_limit(o, k, q, b)
     if sc is not None:      # main: a short warranty expected has no take
-        return min(lim, *([sc] if short else []), *([mc["cap"]] if mc else []))
+        # a list: with short False and no margin cap, min() of one int raised TypeError (market-kit.log 11/15 17:33)
+        return min([lim] + ([sc] if short else []) + ([mc["cap"]] if mc else []))
     if not mc:
         return lim
     if mc["cap"] < lim:
