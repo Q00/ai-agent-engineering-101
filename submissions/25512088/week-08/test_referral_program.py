@@ -247,6 +247,17 @@ class ReferralTests(unittest.TestCase):
         self.assertNotIn('failed-unit',self.program.reserved_units())
         self.assertEqual(self.program.db.execute('SELECT COUNT(*) FROM failed_sales').fetchone()[0],1)
 
+    def test_worker_persists_cursor_once_per_ledger_page(self):
+        self.program.put('cursor',0)
+        rows=[dict(seq=n,ts=1000+n,kind='result',round=3,data={}) for n in (1,2)]
+        with patch.object(self.program,'put',wraps=self.program.put) as put, \
+                patch('seller_forum.fetch',side_effect=[rows,[]]), \
+                patch('seller_forum.time.time',return_value=1200):
+            self.assertTrue(sync(self.program,['https://ours']))
+        cursor_writes=[call for call in put.call_args_list if call.args[:1]==('cursor',)]
+        self.assertEqual(len(cursor_writes),1)
+        self.assertEqual(cursor_writes[0].args[1],2)
+
 
 if __name__ == '__main__':
     unittest.main()

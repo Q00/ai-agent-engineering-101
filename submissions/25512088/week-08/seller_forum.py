@@ -71,7 +71,10 @@ def sync(program, urls):
                 else:
                     raise ValueError('Unmapped refund event: reconciliation paused')
             cursor = row['seq']
-            program.put('cursor', cursor)
+        # All row handlers are idempotent. Persisting once per fetched page
+        # avoids hundreds of SQLite commits for unrelated market events while
+        # retaining crash safety: an interrupted page is simply replayed.
+        program.put('cursor', cursor)
     return False  # Backlog remains: never mature using wall-clock time alone.
 
 
