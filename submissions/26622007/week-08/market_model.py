@@ -151,7 +151,8 @@ def load_rows(md, name=ROWS):
     return rows
 
 
-ALWAYS = ("settle", "broken", "supply")     # kinds every keep() below takes on their first line
+ALWAYS = ("settle", "broken", "supply")     # kinds keep() is asked about even on a line added again (a repeat of a
+                                            # line keep() took is left out by its seq; one it did not take, it refuses again)
 
 
 def _load_some(md, keep, last_row=True):
@@ -212,7 +213,7 @@ def load_stock_rows(md, shops=None):
     shops = my_shops() if shops is None else set(shops)
     need, mine = set(), set()
 
-    def keep(r, before=frozenset()):
+    def keep(r):
         k = r.get("k")
         if k == "settle" and not r.get("shop") and r.get("order"):
             need.add(r["order"])
@@ -223,7 +224,7 @@ def load_stock_rows(md, shops=None):
         if r.get("seller") in shops and r.get("order"):
             mine.add(r["order"])
             return True
-        return r.get("order") in need or r.get("order") in mine or r.get("order") in before
+        return r.get("order") in need or r.get("order") in mine
 
     rows = _load_some(md, keep)
     late = need - {r.get("order") for r in rows if r.get("k") == "result"}

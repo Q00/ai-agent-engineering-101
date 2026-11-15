@@ -53,9 +53,12 @@ def main():
         forum = []
     # only the rows digest can use: the settle rows and the rows a post names by seq (not the 2.4 M rows)
     posts = forum.get('posts', forum.get('items', [])) if isinstance(forum, dict) else forum
-    named = {ref.get('seq') if isinstance(ref, dict) else ref for p in (posts if isinstance(posts, list) else [])
-             if isinstance(p, dict) and isinstance(p.get('refs'), list) for ref in p['refs'][:100]}
-    named = {s for s in named if type(s) is int}
+    named = set()
+    for p in posts if isinstance(posts, list) else []:
+        for ref in p.get('refs')[:100] if isinstance(p, dict) and isinstance(p.get('refs'), list) else []:
+            seq = ref.get('seq') if isinstance(ref, dict) else ref
+            if type(seq) is int:            # other participants' posts: a list or a dict here is no seq
+                named.add(seq)
     rows = market_model.load_rows_where(md, lambda r: r.get('k') == 'settle' or r.get('seq') in named)
     print(json.dumps(digest(forum, rows, args.get('limit', 20)), ensure_ascii=False))
 

@@ -215,7 +215,8 @@ class StockRowsTests(unittest.TestCase):
         with open(os.path.join(self.md, "loss_state.json"), "w", encoding="utf-8") as f:
             json.dump({"mine": {"81": {}, "83": {}}}, f)
         with open(os.path.join(self.md, "forum.json"), "w", encoding="utf-8") as f:
-            json.dump([{"id": "p1", "ts": 5, "refs": [1, 2, 80, 9999, {"seq": 4}]}], f)
+            json.dump([{"id": "p1", "ts": 5, "refs": [1, 2, 80, 9999, {"seq": 4}, [1, 2], {"seq": [1]}, {"seq": {"a": 1}}]},
+                       {"id": "p2", "ts": 6, "refs": {"seq": 3}}, "text"], f)
         tools = os.path.join(HERE, "tools")
         names = sorted(n for n in os.listdir(tools) if os.path.exists(os.path.join(tools, n, "tool.py")))
         old = os.path.join(self.md, "old")
