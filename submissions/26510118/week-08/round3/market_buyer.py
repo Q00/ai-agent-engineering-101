@@ -684,6 +684,43 @@ async def trade(client: A2A, c: dict, order: dict, catalog: dict, nb: dict, rule
             elif g in margin.RANGE and r.get("grade") != g:             # food: its grade's cost range once it is said
                 ceiling = r["cap"] = min(base, round(c["list"] * margin_cap("food", g, True, lam)))
                 r["grade"] = g
+            if c["kind"] == "goods" and ceiling <= 0:                   # 11/15: no price keeps our floor (a C under its
+                if not r.get("zero_asked"):                             # warranty keeps 0.71 at most, a B without one
+                    r["zero_asked"] = True                              # 0.70): 27% of orders in 14 h offered 0 two to
+                    if not covered:                                     # four times there, and none closed. One ask
+                        r["warranty"] = asked_warranty = True           # that could change it, then leave; the
+                        plea = (f"I can buy this unit only with a {WARRANTY_HOURS}-hour warranty. "   # payment then
+                                f"Please include a {WARRANTY_HOURS}-hour warranty.")                  # asks for it too
+                    elif ASK_BETTER and not r.get("asked_better"):
+                        r["asked_better"] = True
+                        plea = "Then please offer a grade A or B unit of this product instead."
+                    else:
+                        plea = None
+                    if plea:
+                        t = await client.send(plea, t["id"])
+                        if state(t) != "TASK_STATE_INPUT_REQUIRED":
+                            break
+                        covered = covered or warranty_shown(t)
+                        g2 = meta(t).get("grade") if meta(t).get("grade") in ("A", "B", "C") else \
+                            (None if REFURB.search(said(t)) else grade_of(t))
+                        if g2 in ("A", "B") and g2 != g:
+                            r["better"], refurb = g2, False
+                        g = g2 or g
+                        caps = [round(c["list"] * margin_cap("goods", g, covered, lam))]   # the ceiling afresh: it
+                        gm = grade_market(c, g, covered)                                   # only falls otherwise
+                        if gm is not None:
+                            caps.append(round(c["list"] * gm))
+                        top_cap = cap_of(c, order, steps[-1], lam)
+                        if min(caps) < top_cap:
+                            ceiling, scale = min(caps), (min(caps) / c["list"]) / steps[-1]
+                        else:
+                            ceiling, scale = top_cap, 1.0
+                        r["cap"], r["grade"] = ceiling, g
+                if ceiling <= 0:
+                    r["left"] = (f"no price keeps our margin floor {lam:.2f} on this unit (grade {g or '?'}, "
+                                 + ("with" if covered else "without") + " a warranty)")
+                    r["policy"] = True                                  # our own rule: no mark against the shop
+                    break
             ask = await asked(t)
             if ask is not None:
                 r["asks"].append(ask)

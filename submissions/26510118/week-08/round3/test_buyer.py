@@ -241,6 +241,50 @@ def test_terms():
           and r["cap"] == round(1_000_000 * mb.margin_cap("goods", "C", True, 0.6)) and r["min_share"] is None
           and r["probe"] is False, (r.get("cap"), r.get("margin_floor")))
     (common.MARKET_DIR / "analysis" / "objective.json").unlink()
+    # 11/15: a ceiling of 0 (no price keeps the floor): one ask that could change it, then leave; never an offer of 0
+    common.write_json(common.MARKET_DIR / "analysis" / "objective.json", {"at": time.time(), "margin_floor": 0.74})
+    plea = "I can buy this unit only with a 6-hour warranty. Please include a 6-hour warranty."
+    flow[:] = [reply("Bed (G1): grade B (opened box). Asking 60000.", {"ask": 60000, "grade": "B"}),
+               reply("Sorry, no warranty on this one. Asking 60000.", {"ask": 60000, "warranty_hours": 0})]
+    shop_ = Shop()
+    r = asyncio.run(mb.trade(shop_, cand, order(70000, ["G1"], "goods"), {}, {}, RULES, False))
+    nb_b = {}
+    mb.note_outcome(nb_b, cand, r, order(70000, ["G1"], "goods"))
+    check("11/15: a grade B without a warranty keeps 0.73 at most, under the floor 0.74 (ceiling 0): we ask once for the "
+          "warranty and, refused, leave before any offer (it offered 0 up to four times), no mark against the shop",
+          shop_.sent == ["I want to buy Bed (G1).", plea, "(cancel)"] and not r["offers"] and r["cap"] == 0
+          and "no price keeps our margin floor 0.74" in (r["left"] or "") and r.get("policy") and nb_b == {},
+          (shop_.sent, r.get("left"), r["offers"]))
+    flow[:] = [reply("Bed (G1): grade B (opened box). Asking 60000.", {"ask": 60000, "grade": "B"}),
+               reply("With a 6-hour warranty. Asking 60000.", {"ask": 60000, "grade": "B", "warranty_hours": 6}),
+               reply("Asking 58000.", {"ask": 58000, "warranty_hours": 6})]
+    shop_ = Shop()
+    r = asyncio.run(mb.trade(shop_, cand, order(70000, ["G1"], "goods"), {}, {}, RULES, False))
+    cap_b = round(80000 * mb.margin_cap("goods", "B", True, 0.74))
+    check(f"...the shop adds the warranty: the ceiling is set afresh for a covered B ({cap_b}), the talk goes on with "
+          "offers over 0, and the payment asks for the warranty",
+          shop_.sent[1] == plea and r["cap"] == cap_b > 0 and r["offers"] and min(r["offers"]) > 0 and r["warranty"]
+          and max(r["offers"]) <= cap_b, (shop_.sent, r.get("cap"), r["offers"]))
+    flow[:] = [reply("Sofa (G2): grade C (refurbished), with a 6-hour warranty. Asking 700000.", {"ask": 700000, "grade": "C",
+                                                                                                   "warranty_hours": 6}),
+               reply("Sorry, no grade A or B, only refurbished. Asking 700000.", {"ask": 700000, "warranty_hours": 6})]
+    shop_ = Shop()
+    r = asyncio.run(mb.trade(shop_, sofa, order(1_500_000, ["G2"], "goods"), {}, {}, RULES, False))
+    check("...a C under its warranty keeps 0.71 at most: we ask once for an A or B and, with none, leave before any offer",
+          shop_.sent[1:] == ["Then please offer a grade A or B unit of this product instead.", "(cancel)"]
+          and not r["offers"] and r["cap"] == 0 and "grade C, with a warranty" in (r["left"] or ""),
+          (shop_.sent, r.get("left")))
+    flow[:] = [reply("Sofa (G2): grade C (refurbished), with a 6-hour warranty. Asking 700000.", {"ask": 700000, "grade": "C",
+                                                                                                   "warranty_hours": 6}),
+               reply("Sofa (G2): grade A, with a 6-hour warranty. Asking 760000.", {"ask": 760000, "grade": "A",
+                                                                                    "warranty_hours": 6}),
+               reply("Asking 740000.", {"ask": 740000, "grade": "A", "warranty_hours": 6})]
+    shop_ = Shop()
+    r = asyncio.run(mb.trade(shop_, sofa, order(1_500_000, ["G2"], "goods"), {}, {}, RULES, False))
+    check("...the shop offers a grade A instead: the talk goes on for it with offers over 0",
+          r["better"] == "A" and r["grade"] == "A" and r["cap"] > 0 and r["offers"] and min(r["offers"]) > 0,
+          (shop_.sent, r.get("cap"), r["offers"]))
+    (common.MARKET_DIR / "analysis" / "objective.json").unlink()
     ka, kb, kc = (round(mb.margin.kept(0.66, g, "goods"), 3) for g in "ABC")
     check(f"Patch 3.6: at 0.66 of list grade A keeps {ka} of the margin, B {kb}, C {kc} (cost A 55-75%, B 40-60%, C 25-45%); "
           "a price under every cost keeps 1; the ceiling falls as the floor rises; A gets the highest ceiling",
