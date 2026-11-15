@@ -66,7 +66,9 @@ def theta():
     """The buyer's tunable numbers, merged in order: DEFAULTS < theta.json "buyer" (the meta-harness) <
     private/buyer_plan.json "theta" (the buyer team; its gate already clamped them). A missing file is skipped."""
     t = dict(DEFAULTS)
-    for path, key in ((THETA, "buyer"), (PLAN, "theta")):
+    # HQ 11-16 09:20: private/owner_override.json "buyer" is applied last, like the shop's owner_override (the buyer
+    # team rewrites buyer_plan.json theta every meeting, so an HQ setting there would not survive the next run)
+    for path, key in ((THETA, "buyer"), (PLAN, "theta"), (PLAN.parent / "owner_override.json", "buyer")):
         try:
             t.update(json.loads(path.read_text(encoding="utf-8")).get(key) or {})
         except (OSError, ValueError, AttributeError):

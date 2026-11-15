@@ -674,6 +674,12 @@ class Shop(AgentExecutor):
                     and u.get("grade") in th_w.get("warranty_grades", ("A", "B")) \
                     and u.get("sku") not in set(th_w.get("no_warranty_skus") or []):
                 asked = True
+            # HQ 11-16 09:10: clearance SKUs carry the warranty on every sale (clearance_warranty_all), so their quote
+            # must carry its break-risk floor too, asked or not
+            if not asked and u.get("kind") == "goods" and th_w.get("clearance_warranty_all", False) \
+                    and u.get("sku") in clearance_skus() and u.get("grade") in th_w.get("warranty_grades", ("A", "B")) \
+                    and u.get("sku") not in set(th_w.get("no_warranty_skus") or []):
+                asked = True
             q = c_warranty_floor(u, q, asked)             # MST TF 11-13: a C unit with a warranty pays for its risk
             deal = self.open[task.id] = {"unit": u, "q": q, "ask": q["price"], "turns": 0, "code": code, "vip": vip,
                                          "ts": time.time(), "fp": fp, "w_declined": declined,
