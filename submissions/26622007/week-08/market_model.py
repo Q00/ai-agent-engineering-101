@@ -17,6 +17,7 @@ import json
 import math
 import os
 import statistics
+import sys
 import time
 
 import httpx
@@ -123,6 +124,16 @@ def sync(md, get=ledger_get, max_pages=DEFAULTS["max_pages"]):
     return added
 
 
+SHARED = ("k", "buyer", "shop", "seller", "sku", "grade")   # values repeated across rows: one string each (_shared)
+
+
+def _shared(r):
+    """The same row with its keys and its repeated values (SHARED) interned. json.loads makes new key strings for every
+    line: the 2.4 M rows of the 526 MB file took ~1.0 kB each (2.4 GB) in seller.py and restock.py on 11/15, ~450 B shared."""
+    it = sys.intern
+    return {it(k): it(v) if k in SHARED and type(v) is str else v for k, v in r.items()}
+
+
 def load_rows(md, name=ROWS):
     seen, rows = set(), []
     try:
@@ -134,9 +145,36 @@ def load_rows(md, name=ROWS):
                     continue
                 if r.get("seq") not in seen:
                     seen.add(r.get("seq"))
-                    rows.append(r)
+                    rows.append(_shared(r))
     except OSError:
         pass
+    return rows
+
+
+def load_break_rows(md):
+    """What break_stats reads, without the result rows (two thirds of the ledger): the settle and broken rows, each seq
+    once, and one {"k": "last", "ts"} row with the latest time of any row, which mature_only measures from. seller.py
+    held the whole ledger every 10 min for this (11/15: 4-6.7 GB beside its task store)."""
+    seen, rows, last = set(), [], None
+    try:
+        with open(os.path.join(md, ROWS), encoding="utf-8") as f:
+            for line in f:
+                try:
+                    r = json.loads(line)
+                except ValueError:
+                    continue
+                if r.get("seq") in seen:
+                    continue
+                seen.add(r.get("seq"))
+                ts = r.get("ts")
+                if isinstance(ts, (int, float)) and (last is None or ts > last):
+                    last = ts
+                if r.get("k") in ("settle", "broken"):
+                    rows.append(_shared(r))
+    except OSError:
+        pass
+    if last is not None:
+        rows.append({"k": "last", "ts": last})
     return rows
 
 

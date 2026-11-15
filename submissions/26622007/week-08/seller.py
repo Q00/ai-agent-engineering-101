@@ -67,6 +67,7 @@ import seller_concession_trial
 import seller_late_concession
 import seller_opening_default
 import seller_drain
+import task_store_ttl
 import seller_opening_cue
 import seller_a_open
 import seller_floor_margin
@@ -340,7 +341,7 @@ def break_chance(sku, grade=None):
         md = os.environ.get("MARKET_DIR", ".market")
         try:
             with open(os.path.join(md, "catalog.json"), encoding="utf-8") as f:
-                _breaks["stats"] = market_model.break_stats(market_model.load_rows(md), json.load(f), mature_only=True)
+                _breaks["stats"] = market_model.break_stats(market_model.load_break_rows(md), json.load(f), mature_only=True)
         except (OSError, ValueError, KeyError, TypeError) as e:
             log(f"break rates unavailable: {type(e).__name__}: {e}")
             _breaks["stats"] = None
@@ -427,6 +428,30 @@ class Seller(AgentExecutor):
         self.margin_blocked = set()  # never reuse an aborted/unconfirmed prepared quote
         self._task_turns = {}  # same-task producers share a gate, including waiters
         self.open = {}  # task id -> {"id", "name", "reserve", "ask", "rounds", "history"}, plus "unit" from Round 3
+        self.touched = {}  # task id -> its last message (sweep_stale)
+        self.last_sweep = time.time()
+
+    def sweep_stale(self, now=None):
+        """Forget the talks silent task_store_ttl.IDLE_TTL whose hold ran out (Drain.census counts them as stale): a
+        buyer who stops answering leaves its talk in self.open for good, 4938 of them after three days (11/15), and they
+        kept the drain from ever being quiet. A talk that holds its unit, or waits for its payment, stays."""
+        now = time.time() if now is None else now
+        self.last_sweep = now
+        stock, gone = self.stock, 0
+        waiting = {i.get("task") for i in (*stock.agreed.values(), *stock.late.values()) if isinstance(i, dict)}
+        for task_id, deal in list(self.open.items()):
+            unit = deal.get("unit")
+            if not unit or (unit in stock.held and stock.owner.get(unit) == task_id) or task_id in waiting:
+                continue
+            if now - self.touched.get(task_id, now) >= task_store_ttl.IDLE_TTL:
+                del self.open[task_id]
+                self.touched.pop(task_id, None)
+                gone += 1
+        for task_id in [t for t in self.touched if t not in self.open and now - self.touched[t] >= task_store_ttl.IDLE_TTL]:
+            del self.touched[task_id]
+        if gone:
+            log(f"SWEEP {gone} talks silent {task_store_ttl.IDLE_TTL // 3600} h with no unit held left out ({len(self.open)} open)")
+        return gone
 
     @contextlib.asynccontextmanager
     async def _task_turn(self, task_id):
@@ -820,6 +845,9 @@ class Seller(AgentExecutor):
         full_text = get_message_text(context.message) or ""
         text = full_text[:MAX_TEXT]
         QUOTE_HOLD.touch(task.id)
+        self.touched[task.id] = time.time()
+        if self.touched[task.id] - self.last_sweep >= task_store_ttl.SWEEP_EVERY:
+            self.sweep_stale(self.touched[task.id])
         deal = self.open.get(task.id)
         if task.id in self.margin_blocked:
             await up.failed(say("The previous quote's publication is unconfirmed; please start a new task."))
@@ -1206,7 +1234,7 @@ def build(url, catalog, name):
     stock = StockBook()
     acp = AcpCheckout(url, load_shop_key, log, stock=stock, gate=acp_gate.Gate(log=log, warm=bool(os.environ.get("RENDER_EXTERNAL_URL"))))   # tunneled: the kit serves ACP
     shop = Seller(catalog, name, stock, acp)
-    handler = DefaultRequestHandler(agent_executor=shop, task_store=InMemoryTaskStore(), agent_card=card)
+    handler = DefaultRequestHandler(agent_executor=shop, task_store=task_store_ttl.ExpiringTaskStore(), agent_card=card)
 
     @contextlib.asynccontextmanager
     async def lifespan(app):

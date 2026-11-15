@@ -88,6 +88,10 @@ RECEIPT_KEYS = ("shop", "item", "price", "task")
 CHECKOUT_HOLD = int(os.environ.get("KIT_CHECKOUT_HOLD", "180"))   # seconds an unpaid checkout holds its unit, then a new deal
                                                     # may take it and the old checkout is canceled (a seller that resells an
                                                     # unpaid unit after 120 s got "not in stock" from the kit forever)
+SELLER_MEMORY_CAP = int(os.environ.get("KIT_SELLER_MEMORY_MB", "3072")) << 20   # the seller's footprint that starts a
+                                                    # restart: drain (seller_drain.py), then TERM once quiet. 0: off
+SELLER_DRAIN_WAIT = 1200                            # seconds the drain may take; then the restart is given up (no force)
+SELLER_CAP_RETRY = 1800                             # and tried again this long after
 LOG_FILE = None
 LOG_MAX = 20_000_000                                # bytes; then market-kit.log moves to market-kit.log.1
 LOG_LOCK = threading.Lock()
@@ -698,8 +702,11 @@ def wait_card(base, seconds=60):
 
 
 def open_tunnel(port):
+    # its own session, as start() does: stop() signals the process group, and without one the killpg failed and every
+    # replaced tunnel kept running (46 cloudflared beside the kit on 11/15)
+    kw = {"start_new_session": True} if os.name != "nt" else {}
     proc = subprocess.Popen(["cloudflared", "tunnel", "--no-autoupdate", "--url", f"http://127.0.0.1:{port}"],
-                            stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+                            stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, **kw)
     found = []
 
     def read():                                     # reads until cloudflared exits, so its pipe never fills
@@ -1277,15 +1284,76 @@ def card_ok(base):
         return False
 
 
+def footprint(pid):
+    """The memory a process holds, compressed pages included (macOS phys_footprint; ps's RSS leaves those out: 0.6 GB
+    for a seller at 4.7 GB on 11/15), else VmRSS on Linux; None when unreadable."""
+    try:
+        if sys.platform == "darwin":
+            import ctypes
+            buf = (ctypes.c_uint64 * 12)()         # rusage_info_v0: uuid (2 words), then 10 counters
+            if ctypes.CDLL("/usr/lib/libproc.dylib").proc_pid_rusage(int(pid), 0, buf) != 0:
+                return None
+            return int(buf[2 + 7])                 # user, system, pkg_idle, interrupt, pageins, wired, resident, footprint
+        with open(f"/proc/{int(pid)}/status") as f:
+            for line in f:
+                if line.startswith("VmRSS:"):
+                    return int(line.split()[1]) << 10
+    except (OSError, ValueError, AttributeError):
+        return None
+    return None
+
+
+def seller_cap(cap, proc, md, now, cap_bytes=None, log=log):
+    """One watchdog step of the memory cap; True when the seller is quiet and flushed and may be stopped now.
+    cap: {"since": drain start or None, "retry_at"}. Over the cap, .market/seller.drain gets the seller's pid: it refuses
+    new talks, the talks under way go on, and its status says when it is quiet. A drain longer than SELLER_DRAIN_WAIT
+    is given up (the marker goes, new talks are welcome again) and tried again SELLER_CAP_RETRY later: never a kill."""
+    cap_bytes = SELLER_MEMORY_CAP if cap_bytes is None else cap_bytes
+    marker = Path(md) / "seller.drain"
+    if cap.get("since") is None:
+        if not cap_bytes or now < cap.get("retry_at", 0):
+            return False
+        held = footprint(proc.pid)
+        if held is None or held <= cap_bytes:
+            return False
+        marker.write_text(str(proc.pid))
+        cap["since"] = now
+        log(f"[kit] your seller holds {held >> 20} MB (cap {cap_bytes >> 20} MB): draining it for a restart")
+        return False
+    try:
+        st = json.loads((Path(md) / "seller_drain_status.json").read_text())
+    except (OSError, ValueError):
+        st = {}
+    if st.get("pid") == proc.pid and (st.get("at") or 0) > cap["since"] and st.get("quiet") and st.get("flushed"):
+        cap["since"] = None
+        return True
+    if now - cap["since"] > SELLER_DRAIN_WAIT:
+        with contextlib.suppress(OSError):
+            marker.unlink()
+        log(f"[kit] the seller did not drain in {SELLER_DRAIN_WAIT} s (" + ", ".join(
+            f"{k} {st.get(k)}" for k in ("inflight", "open", "stale", "held", "agreed", "late")) + "): restart given up, "
+            f"new talks welcome again; next try in {SELLER_CAP_RETRY} s")
+        cap["since"], cap["retry_at"] = None, now + SELLER_CAP_RETRY
+    return False
+
+
 def watchdog(a, agent, d, market, keys, procs, proxy, sport, pport, state, every=60):
-    """Bring the shop back by itself: restart a crashed seller, and replace a dead quick tunnel
-    (join again with the new URL; the market moves the shop's history to it)."""
-    misses = 0
+    """Bring the shop back by itself: restart a crashed seller, restart a seller over SELLER_MEMORY_CAP once it has
+    drained, and replace a dead quick tunnel (join again with the new URL; the market moves the shop's history to it)."""
+    misses, cap, md = 0, {"since": None}, d / ".market"
+    with contextlib.suppress(OSError):
+        (md / "seller.drain").unlink()               # a marker from an earlier kit names a seller that is gone
     while True:
         time.sleep(every)
         try:
+            if procs[0].poll() is None and seller_cap(cap, procs[0], md, time.time()):
+                log(f"[kit] your seller (pid {procs[0].pid}) drained and flushed: restarting it to give its memory back")
+                stop(procs[0])
+                with contextlib.suppress(OSError):
+                    (md / "seller.drain").unlink()
             if procs[0].poll() is not None:
                 log(f"[kit] your seller exited (code {procs[0].returncode}), starting it again")
+                cap["since"] = None
                 procs[0] = start(fill(agent["seller"]["cmd"], port=sport), d)
                 pump(procs[0], "[seller]")
                 wait_card(f"http://127.0.0.1:{sport}")
