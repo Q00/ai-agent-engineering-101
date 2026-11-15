@@ -69,3 +69,13 @@ Validation: 613 tests pass in isolation, including integration verification that
 Evidence: `logs/progress-diagnosis-20261115T022420511260Z.json`, `logs/v28-cost-progress-20261115T023914031223Z.json`, `logs/stage-v281-full-regression-02.txt`, `logs/v281-cost-replay-20261115T024014860858Z.json`. SQL and filters are preserved in `audit_v28_cost_progress_20261115.py` and `diagnose_progress_20261114.py`.
 
 The next economic issue is net realized contract profit after refunds/storage/expiry, service-eligible inventory and account-balanced quality. A cheaper analysis loop alone is not a solution to the ranking shortfall.
+
+## Cost correction deployed
+
+v28.1 source promotion completed Nov15 11:45:31 KST, with a new runtime starting 11:45:35 (PID 38872, session `58d167b1440045868acd1d26738f1985`). Source hash verification passed. Shop/Buyer strategy revision epochs and the no-dollar-cap setting were preserved. Both roles registered at 11:46:46–47.
+
+An initial 11:46:45 public verification hit the retired tunnel before new registration and returned 530 on the card/ACP endpoints; this was not final deployment proof. At 11:49:44, all public checks confirmed both roles online. The fresh scheduler had recorded one Shop settlement, one Buyer purchase, one research publication and one review-cache entry. One supervisor OperationalError was caught without killing the loop; no analytical-role error was recorded in this short window.
+
+No critic skip had yet occurred in this initial window. The integration tests prove the gate's behavior, while actual skip counts and invoice/cost reduction still require subsequent observation. We did not run paid model calls solely to demonstrate a skip. The performance/financial comparison above remains the audited pre-cost-change window, not a claimed effect of v28.1.
+
+Deployment evidence: `logs/v281-source-promotion-20261115T024531312254Z.json`, `logs/v281-live-verification-20261115T024944002138Z.json`, `logs/v281-execution-proof-20261115T024944208913Z.json`. Source commit: `9eb08f8`; audit/candidate commit: `089130b`.
