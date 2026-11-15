@@ -2467,8 +2467,9 @@ def next_talk(nq, out, order, quotes, quotable, md, catalog, budget, memory, fir
     if time.time() - STARTED > buyer_next_quote.UNTIL:
         return skip("late")
     if order.get("_food_floor30_window") is not None or order.get("_goods_take30") or \
-            order.get(buyer_goods_risk_sku30.KEY) is not None:
-        return skip("study")
+            order.get(buyer_goods_risk_sku30.KEY) is not None or \
+            any(order.get(k) for k in ("_firm_trial", "_first95_trial", "_cap95_trial")):
+        return skip("study")    # the trials measure the order's one talk (review 8df06564 I2)
     s, q = next((x for x in quotable if x["name"] == nq["shop"]), None), quotes.get(nq["shop"])
     if s is None or not resumable(q) or not isinstance(q.get("ask"), (int, float)) or isinstance(q.get("ask"), bool):
         return skip("closed")
@@ -2510,9 +2511,10 @@ def next_talk(nq, out, order, quotes, quotable, md, catalog, budget, memory, fir
         "holds": out.get("holds", 0), "problems": [], "warnings": [], "why": no_deal_reason(asks, limit1),
         "signed": None}
     trade["warranty_said"] = buyer_warranty_said.trade_mark(order)    # short_warranty_shops leaves arm B out
-    memory["trades"].append(trade)
-    return {"shop": s, "offer": o, "key": k, "label": o["name"], "chance": c, "limit": lim, "top": top, "q": q,
-            "margin_cap": mc}
+    alt = {"shop": s, "offer": o, "key": k, "label": o["name"], "chance": c, "limit": lim, "top": top, "q": q,
+           "margin_cap": mc}
+    memory["trades"].append(trade)      # last: a raise above leaves main's own trade the only one
+    return alt
 
 
 def next_negotiate(alt, order, steps):
@@ -3044,13 +3046,16 @@ def main():
             # the second talk: every name the talk, the receipt checks and the record read is the next shop's now
             shop, offer, key, label, chance, limit, top, q = (alt[k] for k in (
                 "shop", "offer", "key", "label", "chance", "limit", "top", "q"))
+            # the first shop's study arms stay with its talk (nq["first"]["arms"], and its trade in memory); the second
+            # talk opens as the base oneshot with no study, so the row's arms are the second talk's (review 1680bcea
+            # I2); buyer_rank_pg reads the first talk's arms as a row's (review 8df06564 I1)
+            nq["first"]["arms"] = {k.lstrip("_"): order.get(k) for k in buyer_next_quote.FIRST_ARMS + (
+                "_goods_grade", "_margin_cap", "_accept_band", "_accept_band_top")}
+            nq["first"]["arms"]["moss_first"] = buyer_moss_first.measurement(order.get("_moss_first"))
+            nq["first"]["arms"]["one_won_probe"] = probe_arm
             band_base = band_pct = None
             order["_margin_cap"], order["_accept_band_top"], order["_goods_grade"] = alt["margin_cap"], None, None
             order.pop("_accept_band", None)
-            # the first shop's study arms stay with its talk (nq["first"]["arms"], and its trade in memory); the second
-            # talk opens as the base oneshot with no study, so the row's arms are the second talk's (review 1680bcea I2)
-            nq["first"]["arms"] = {k.lstrip("_"): order.get(k) for k in buyer_next_quote.FIRST_ARMS}
-            nq["first"]["arms"]["one_won_probe"] = probe_arm
             for k in buyer_next_quote.FIRST_ARMS:
                 order[k] = False if k == "_one_won_default" else None
             probe_arm = None

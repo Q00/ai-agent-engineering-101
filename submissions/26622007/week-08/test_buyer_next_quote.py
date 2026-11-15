@@ -108,6 +108,12 @@ class Main(Run, unittest.TestCase):
         self.assertNotIn(f"{row['next_quote']['first']['shop']}|goods", st["shops"])   # arm B's failure: not learned
 
 
+    def test_a_trial_keeps_the_one_talk(self):
+        got, nq = Unit().next_talk(order={"_cap95_trial": {"arm": "B"}})
+        self.assertIsNone(got)
+        self.assertEqual(nq["skip"], "study")
+
+
 class Unit(unittest.TestCase):
     def test_failed_talk(self):
         self.assertTrue(bnq.failed_talk(CANCELED))
@@ -168,6 +174,10 @@ class Unit(unittest.TestCase):
         self.assertEqual(st["shops"]["s|goods"]["failed"], 1)
         self.assertEqual(st["shops"]["t|goods"]["failed"], 1)
         self.assertEqual(st["pool"]["goods"]["n"], 2)
+        for arms in ({"goods_grade": {"arm": "B", "limit_a": 9999}}, {"margin_cap": {"cap": 5000, "limit_before": 6000}},
+                     {"moss_first": {"arm": "B", "applied": True}}, {"food_ladder": {"arm": "B"}}):
+            r = dict(row, next_quote=dict(row["next_quote"], first={"shop": "s", "state": "x", "limit": 6000, "arms": arms}))
+            self.assertNotIn("s|goods", buyer_rank_pg.stats_from_rows([r], {}, now)["shops"], arms)
         unused = dict(row, next_quote={"shop": "t", "skip": "over"})
         self.assertNotIn("s|goods", buyer_rank_pg.stats_from_rows([unused], {}, now)["shops"])
 
