@@ -1311,21 +1311,34 @@ def footprint(pid):
 
 def seller_cap(cap, proc, md, now, cap_bytes=None, log=log):
     """One watchdog step of the memory cap; True when the seller is quiet and flushed and may be stopped now.
-    cap: {"since": drain start or None, "retry_at"}. Over the cap, .market/seller.drain gets the seller's pid: it refuses
-    new talks, the talks under way go on, and its status says when it is quiet. A drain longer than SELLER_DRAIN_WAIT
-    is given up (the kit's marker goes, new talks are welcome again) and tried again SELLER_CAP_RETRY later. A marker
-    someone else wrote (an owner's drain for a deploy) is left alone: no cap drain starts while it is there. A seller
-    whose status never names its pid (a shell between the kit and it, or a seller without seller_drain) turns it off."""
+    cap: {"since": drain start or None, "retry_at", "started": the seller's start, "over": first check over the cap,
+    "restarts": cap restarts (kept across sellers), "no_status": this seller's status never named it}. A seller over the
+    cap at every check for SELLER_CAP_SUSTAIN, SELLER_CAP_GRACE after it started, gets .market/seller.drain with its
+    pid: it refuses new talks, the talks under way go on, and its status says when it is quiet. A drain longer than
+    SELLER_DRAIN_WAIT is given up (the kit's marker goes, new talks are welcome again); the next try needs RETRY and
+    then SUSTAIN again. A marker someone else wrote (an owner's drain for a deploy) is left alone. The cap rests while
+    SELLER_CAP_RESTARTS restarts lie within its window (it comes back when the oldest leaves it) and for a seller
+    whose status never names its pid; meanwhile a seller over the cap is logged every SELLER_CAP_RETRY."""
     cap_bytes = SELLER_MEMORY_CAP if cap_bytes is None else cap_bytes
     marker = Path(md) / "seller.drain"
     if cap.get("since") is None:
-        if not cap_bytes or cap.get("off") or now < cap.get("retry_at", 0) or marker.exists():
+        n, within = SELLER_CAP_RESTARTS
+        resting = cap.get("no_status") or len([t for t in cap.get("restarts", []) if now - t < within]) >= n
+        if not cap_bytes or now < cap.get("retry_at", 0) or marker.exists():
+            cap.pop("over", None)
             return False
         if now - cap.setdefault("started", now) < SELLER_CAP_GRACE:
             return False
         held = footprint(proc.pid)
         if held is None or held <= cap_bytes:
             cap.pop("over", None)
+            return False
+        if resting:
+            if now - cap.get("warned", -SELLER_CAP_RETRY) >= SELLER_CAP_RETRY:
+                cap["warned"] = now
+                log(f"[kit] your seller holds {held >> 20} MB, over the cap of {cap_bytes >> 20} MB, and the cap is "
+                    + ("off for this seller (its drain status never named it)" if cap.get("no_status") else
+                       f"resting after {n} restarts within {within // 3600} h") + ": look at its memory")
             return False
         if now - cap.setdefault("over", now) < SELLER_CAP_SUSTAIN:
             return False
@@ -1351,7 +1364,7 @@ def seller_cap(cap, proc, md, now, cap_bytes=None, log=log):
     if now - cap["since"] > SELLER_DRAIN_WAIT:
         drop_marker(cap, md)
         if not cap.get("seen"):
-            cap["off"] = True
+            cap["no_status"] = True
             log(f"[kit] your seller's drain status never named pid {proc.pid}: the memory cap is off for this seller")
         log(f"[kit] the seller did not drain in {SELLER_DRAIN_WAIT} s (" + ", ".join(
             f"{k} {st.get(k)}" for k in ("inflight", "open", "stale", "held", "agreed", "late")) + "): restart given up, "
@@ -1407,10 +1420,14 @@ def cap_restart(cap, proc, md, now, log=log, wait=SELLER_TERM_WAIT):
     n, within = SELLER_CAP_RESTARTS
     cap["restarts"] = [t for t in cap.get("restarts", []) if now - t < within] + [now]
     if len(cap["restarts"]) >= n:
-        cap["off"] = True
-        log(f"[kit] {len(cap['restarts'])} memory-cap restarts within {within // 3600} h: the cap is off until the kit "
-            f"restarts (the seller grows back too fast; look at its memory)")
+        log(f"[kit] {len(cap['restarts'])} memory-cap restarts within {within // 3600} h: the cap rests until the "
+            f"first of them is {within // 3600} h old (the seller grows back too fast; look at its memory)")
     return True
+
+
+def new_cap(cap, now):
+    """The cap state for a seller started now: its own grace and status, the kit's count of cap restarts."""
+    return {"since": None, "started": now, **({"restarts": list(cap["restarts"])} if cap.get("restarts") else {})}
 
 
 def watchdog(a, agent, d, market, keys, procs, proxy, sport, pport, state, every=60):
@@ -1425,8 +1442,7 @@ def watchdog(a, agent, d, market, keys, procs, proxy, sport, pport, state, every
             if procs[0].poll() is not None:
                 log(f"[kit] your seller exited (code {procs[0].returncode}), starting it again")
                 drop_marker(cap, md)
-                cap = {"since": None, "started": time.time(),     # a new seller: its own grace; the count stays
-                       **{k: cap[k] for k in ("restarts", "off") if k in cap}}
+                cap = new_cap(cap, time.time())
                 procs[0] = start(fill(agent["seller"]["cmd"], port=sport), d)
                 pump(procs[0], "[seller]")
                 wait_card(f"http://127.0.0.1:{sport}")

@@ -381,7 +381,7 @@ class KitSellerCapTests(unittest.TestCase):
             self.step(cap, 4100 + 1800, 101)
             self.assertTrue((self.md / "seller.drain").exists())
 
-    def test_two_cap_restarts_within_six_hours_turn_the_cap_off(self):
+    def test_two_cap_restarts_within_six_hours_rest_the_cap_until_the_first_is_six_hours_old(self):
         import subprocess
         cap = {"since": 5}
         for now in (100, 100 + 3600):
@@ -389,13 +389,35 @@ class KitSellerCapTests(unittest.TestCase):
             cap["marker"] = str(proc.pid)
             with mock.patch.object(self.kit, "seller_cap", return_value=True):
                 self.assertTrue(self.kit.cap_restart(cap, proc, self.md, now, log=self.logs.append, wait=10))
-        self.assertTrue(cap.get("off"))
-        self.assertIn("cap is off", self.logs[-1])
-        cap = {"since": 5, "restarts": [0]}
-        proc = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(30)"], start_new_session=True)
-        with mock.patch.object(self.kit, "seller_cap", return_value=True):
-            self.kit.cap_restart(cap, proc, self.md, 6 * 3600 + 1, log=self.logs.append, wait=10)
-        self.assertFalse(cap.get("off"))                                   # the earlier one is past the window
+        self.assertIn("cap rests", self.logs[-1])
+        cap = self.kit.new_cap(cap, 3700)                                  # the next seller keeps the count
+        self.assertEqual((cap["restarts"], cap["started"], cap["since"]), ([100, 3700], 3700, None))
+        self.assertFalse(self.step(cap, 3800, 10 ** 6))                    # resting: no drain, a warning
+        self.assertFalse((self.md / "seller.drain").exists())
+        self.assertIn("resting", self.logs[-1])
+        n = len(self.logs)
+        self.step(cap, 3900, 10 ** 6)                                      # warned once per RETRY
+        self.assertEqual(len(self.logs), n)
+        self.step(cap, 100 + 6 * 3600 - 1, 10 ** 6)
+        self.assertFalse((self.md / "seller.drain").exists())
+        self.step(cap, 100 + 6 * 3600, 10 ** 6)                            # the first restart left the window
+        self.assertTrue((self.md / "seller.drain").exists())
+
+    def test_new_cap_drops_the_sellers_own_state(self):
+        cap = {"since": 9, "retry_at": 9, "over": 9, "seen": True, "marker": "1", "no_status": True, "warned": 9}
+        self.assertEqual(self.kit.new_cap(cap, 50), {"since": None, "started": 50})
+
+    def test_the_over_clock_starts_again_after_a_check_skipped(self):
+        with mock.patch.object(self.kit, "SELLER_CAP_SUSTAIN", 1800):
+            cap = {"since": None, "started": 0}
+            self.step(cap, 10, 101)
+            (self.md / "seller.drain").write_text("999")                # an owner's drain for a while
+            self.step(cap, 1000, 101)
+            (self.md / "seller.drain").unlink()
+            self.step(cap, 1900, 101)
+            self.assertFalse((self.md / "seller.drain").exists())
+            self.step(cap, 1900 + 1800, 101)
+            self.assertTrue((self.md / "seller.drain").exists())
 
     def test_an_owners_marker_is_left_alone(self):
         (self.md / "seller.drain").write_text("4242")                   # seller_drain_wait.py, for a deploy
@@ -423,8 +445,9 @@ class KitSellerCapTests(unittest.TestCase):
         self.step(cap, 10, 101)
         self.status(pid=99, at=500)
         self.step(cap, 11 + self.kit.SELLER_DRAIN_WAIT, 101)
-        self.assertTrue(cap.get("off"))
+        self.assertTrue(cap.get("no_status"))
         self.assertFalse(self.step(cap, 20 + self.kit.SELLER_DRAIN_WAIT + self.kit.SELLER_CAP_RETRY, 101))
+        self.assertIn("never named it", self.logs[-1])
         self.assertFalse((self.md / "seller.drain").exists())
 
     def test_cap_restart_terms_a_quiet_seller_and_never_kills(self):
