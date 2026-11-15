@@ -178,7 +178,7 @@ def decide(item, budget, history, text, meta_ask, turn, note=""):
 
 
 def negotiate(card_url, item, budget, note="", request=None, resume=None, stop_if=None, take_at=None, reply_to=None,
-              ladder=None, ceiling=None, decision_guard=None):
+              ladder=None, ceiling=None, decision_guard=None, walk_take=None):
     """One A2A negotiation. Returns {"state", "task", "receipt", "history", "agreed"}.
 
     agreed is the last price we offered, which is what the shop accepted when the task completes.
@@ -190,13 +190,16 @@ def negotiate(card_url, item, budget, note="", request=None, resume=None, stop_i
     ladder(metadata ask, shop text, history): the turn priced by code (oneshot.turn), or None for the harness.
     ceiling: the band's turn (buyer_accept_band, plan A: "accept_band" in the code turn), and a FAST turn after it, may
     offer up to it instead of budget; every other turn, the harness and the holds keep budget.
+    walk_take(ask, metadata ask, shop text, history before the ask, turn kind): where a turn would walk away, the price
+    to offer instead (market_buyer: buyer_walk_take, up to ceiling) or None to walk; any turn, the harness's too.
     """
     out = {"state": "", "task": None, "receipt": None, "history": [], "agreed": None, "holds": 0}
     if resume:
         url, t = resume
         log(f"going on with task {str(t.get('id'))[:8]} at {url}; item {item}, budget {budget}")
         return talk(url, t, item, budget, note, out, stop_if, take_at, reply_to, ladder, ceiling,
-                    **({'decision_guard': decision_guard} if decision_guard is not None else {}))
+                    **({'decision_guard': decision_guard} if decision_guard is not None else {}),
+                    **({'walk_take': walk_take} if walk_take is not None else {}))
     try:
         r = httpx.get(card_url.rstrip("/") + "/.well-known/agent-card.json", headers=HEADERS, timeout=30)
         card = r.json()
@@ -222,15 +225,16 @@ def negotiate(card_url, item, budget, note="", request=None, resume=None, stop_i
         out["state"] = "ERROR"
         return out
     return talk(url, t, item, budget, note, out, stop_if, take_at, reply_to, ladder, ceiling,
-                **({'decision_guard': decision_guard} if decision_guard is not None else {}))
+                **({'decision_guard': decision_guard} if decision_guard is not None else {}),
+                **({'walk_take': walk_take} if walk_take is not None else {}))
 
 
 def talk(url, t, item, budget, note, out, stop_if=None, take_at=None, reply_to=None, ladder=None, ceiling=None,
-         decision_guard=None):
+         decision_guard=None, walk_take=None):
     """Keep task/offer evidence after an unreadable reply; never retry or cancel it."""
     try:
         return _talk(url, t, item, budget, note, out, stop_if, take_at, reply_to, ladder, ceiling,
-                     decision_guard)
+                     decision_guard, walk_take)
     except RpcReplyError as exc:
         return unknown_outcome(out, exc)
 
@@ -243,7 +247,7 @@ def unknown_outcome(out, exc):
 
 
 def _talk(url, t, item, budget, note, out, stop_if=None, take_at=None, reply_to=None, ladder=None, ceiling=None,
-          decision_guard=None):
+          decision_guard=None, walk_take=None):
     """reply_to(shop text) -> an answer to a question with no price in it ("use within 360h"), or None."""
     task_id, history = t["id"], out["history"]
     out["task"] = task_id
@@ -326,6 +330,14 @@ def _talk(url, t, item, budget, note, out, stop_if=None, take_at=None, reply_to=
             break
         log(f"shop price {ask_price} ({'metadata' if meta is not None else 'read by the harness'})")
         history.append(("shop asked", ask_price))
+        took = walk_take(ask_price, meta, text, history[:-1], kind) \
+            if walk_take and d["action"] == "walk_away" else None
+        if took is not None:
+            # the shop's own ask, checked against its message, is within the take ceiling: offered, not walked from
+            log(f"TAKE-WALK {kind} turn would walk away; the shop's ask {took} (checked in its message) is within the "
+                f"ceiling {ceiling} -> offering it")
+            kinds["walk_take"] = kinds.get("walk_take", 0) + 1
+            d = {"shop_price": ask_price, "action": "offer", "price": took}
         if d["action"] == "walk_away":
             asks = [p for who, p in history if who == "shop asked"]
             coming_down = len(asks) >= 2 and asks[-1] < asks[-2]
@@ -341,7 +353,8 @@ def _talk(url, t, item, budget, note, out, stop_if=None, take_at=None, reply_to=
                 break
         offer = d["price"]
         # the band's own turn, or a FAST turn after it (the shop came down under my band offer), may go up to ceiling
-        band = ceiling and ((code and not fast and code.get("accept_band")) or (fast and taken and taken[-1] > budget))
+        band = ceiling and ((code and not fast and code.get("accept_band")) or (fast and taken and taken[-1] > budget)
+                            or took is not None)
         top = max(budget, ceiling) if band else budget
         if offer > top:
             log(f"GUARD offer {offer} > {'ceiling' if band else 'budget'} {top} -> {top}")

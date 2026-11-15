@@ -189,7 +189,7 @@ class Run:
     TEXT = "컵 (G1), grade B, 6 h warranty: asking 6500"
     CATALOG = {"G1": {"kind": "goods", "category": "가전>컵", "list_price": 10000}}
 
-    def run_main(self, sw, kind="goods", receipt=None, agreed=True):
+    def run_main(self, sw, kind="goods", receipt=None, agreed=True, talk=None):
         printed, calls = [], []
         order = {"order": "o-1", "item": "컵", "budget": 16000, "acceptable": ["G1"], "kind": kind, "category": "가전>컵"}
         if kind == "food":
@@ -201,6 +201,8 @@ class Run:
 
         def neg(*a, **k):
             calls.append((a, k))
+            if talk is not None:
+                return talk(*a, **k)
             if receipt is not None:
                 return {"state": "TASK_STATE_COMPLETED", "task": "t", "agreed": receipt["price"] if agreed else None,
                         "holds": 0, "receipt": receipt,
