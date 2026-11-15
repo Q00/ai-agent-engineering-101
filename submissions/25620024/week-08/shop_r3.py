@@ -437,14 +437,30 @@ def c_warranty_ev(u):
 
 
 def c_warranty_floor(u, q, asked):
-    """The quote for a C unit whose buyer asked for a warranty: no price under cost / (1 - c_defect_p)."""
-    if not (asked and c_warranty_ev(u)):
+    """The quote for a goods unit whose buyer asked for a warranty: no price under cost / (1 - break risk).
+    C: c_defect_p (0.35). HQ 11-16 08:30 (meeting #5, sales + finance): big A/B goods too -- 15 of our big units broke
+    1-6 h after sale in 17.7 h and were refunded in full (11.4M, 0.64M/h, 4.8% of 236.6M warranty sales) against a
+    7-9% margin. Their risk is that SKU's market break rate over 48 h (broken / settles, ab_break_min_n settles or
+    more, else ab_break_p); a warranty sale that cannot pay its expected refund is not made."""
+    if not asked or not u or u.get("kind") != "goods":
         return q
-    f = int(u["cost"] / (1 - promo.theta().get("c_defect_p", 0.35))) + 1
+    t = promo.theta()
+    if c_warranty_ev(u):
+        p, label = t.get("c_defect_p", 0.35), "C warranty floor"
+    elif t.get("ab_warranty_ev", True) and (u.get("list_price") or 0) >= t.get("big_follow_list", 500000):
+        try:
+            p = market_model.break_rate(market_model.db(), u["sku"], min_n=t.get("ab_break_min_n", 20),
+                                        default=t.get("ab_break_p", 0.083))
+        except Exception:
+            p = t.get("ab_break_p", 0.083)
+        label = "warranty risk floor"
+    else:
+        return q
+    f = int(u["cost"] / (1 - min(p, 0.5))) + 1
     if q["floor"] >= f:
         return q
     return dict(q, floor=f, price=max(q["price"], f), least=max(q["least"], f),
-                why=q["why"] + f"; C warranty floor {f} (cost / 0.65)")
+                why=q["why"] + f"; {label} {f} (cost / {1 - min(p, 0.5):.2f})")
 
 
 def warranty_for(asked, u=None):
@@ -468,6 +484,8 @@ def warranty_for(asked, u=None):
     settles from 16:42 to 19:05: clearance paid 0 in the last hour while 73% agreed). 72 h settles (ours from 16:10,
     other shops'). The warranty is capped at theta warranty_max_h (72) whatever the other settings say."""
     t = promo.theta()
+    if u is not None and u.get("sku") in set(t.get("no_warranty_skus") or []):
+        return 0          # HQ 11-16 (meeting #5, sales + finance): SKUs that broke twice after our sales today
     if u is not None and u.get("kind") == "goods" and u.get("grade") not in t.get("warranty_grades", ("A", "B")) \
             and not c_warranty_ev(u):
         return 0          # MBT TF 11-12 (3rd): grade C hides a defect 35% of the time (market rule) and breaks within 6 h;

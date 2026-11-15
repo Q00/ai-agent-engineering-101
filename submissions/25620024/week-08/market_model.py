@@ -167,6 +167,18 @@ def ours(c):
 OURS_ROW = "select 1 from settle_units x join our_units o on o.unit = x.unit where x.seq = s.seq"
 
 
+@_ttl(300)
+def break_rate(c, sku, hours=48, min_n=20, default=0.083):
+    """HQ 11-16: the share of this SKU's market settles that broke after sale lately (broken / settles), or default
+    when it has fewer than min_n settles."""
+    since = time.time() - hours * 3600
+    n = c.execute("select count(*) from settles where sku=? and ts>?", (sku, since)).fetchone()[0]
+    if n < min_n:
+        return default
+    b = c.execute("select count(*) from broken where sku=? and ts>?", (sku, since)).fetchone()[0]
+    return b / n
+
+
 def market_low(c, sku, me=None, hours=12):
     """The lowest price another shop settled this SKU at lately, or None. Our own sales are left out: comparing
     with the name 'dragonash' against settles that carry a URL counted them as a competitor's, so each of our
