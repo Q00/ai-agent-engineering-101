@@ -116,7 +116,7 @@ OBJECTIVE_FRESH = 2 * 3600
 # 0.44 on 11/13), in expectation over the unit's cost (its grade's range, or the kind's supply mix before the grade is
 # known) and, for goods, its breaks (margin.cap). MIN_SHARE, min_share(), order_share() and share_cap() measured the
 # share of LIST kept and are no longer used by trade(): kept for the record and the tests.
-K_DEFAULT = 0.7           # the margin floor without a fresh objective.json (0.5 until 11/13 11:40: objective.K_CLAMP)
+K_DEFAULT = 0.76          # the margin floor without a fresh objective.json: objective.K_CLAMP's low end (0.7 until 11/15, 0.5 until 11/13 11:40)
 SHELF_SAID = re.compile(r"(\d+(?:\.\d+)?)\s*(?:h(?:ours?)?\s+(?:of shelf life|left)|시간\s*(?:남|의\s*유통|이\s*남))", re.I)
 GRADE_WORDS = (" I prefer grade A with the warranty; grade B with the warranty otherwise. Please state the grade and "
                "whether the warranty is included.")

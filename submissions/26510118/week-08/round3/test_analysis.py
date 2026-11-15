@@ -1369,10 +1369,12 @@ def test_objective_model():
               o["buyer_min_share"] is None and "probe" not in o and o.get("margin_floor") == k and k is not None, o)
         objective.MIN_DEALS = saved_min
         lam36 = {"saved": 1.466960352423, "deals": 2.9864253e-05}
-        check("11/13, the margin floor: a deal pays only over saved - lam_deals x (deals + 100) / lam_saved: 0.99 - 0.2884 "
-              "= 0.7016; the 11/13 numbers (0.7309 - 0.2884 = 0.4425) under K_CLAMP's 0.70 take 0.70; no prices: none",
-              objective.K_CLAMP[0] == 0.70 and objective.margin_floor(lam36, 0.99, 14066) == 0.7016
-              and objective.margin_floor(lam36, 0.7309, 14066) == 0.70 and objective.margin_floor({}, 0.7309, 14066) is None
+        check("11/13, the margin floor: a deal pays only over saved - lam_deals x (deals + 100) / lam_saved: 1.06 - 0.2884 "
+              "= 0.7716; 0.99 - 0.2884 = 0.7016 and the 11/13 numbers (0.7309 - 0.2884 = 0.4425) under K_CLAMP's 0.76 "
+              "(11/15) take 0.76; no prices: none",
+              objective.K_CLAMP[0] == 0.76 and objective.margin_floor(lam36, 1.06, 14066) == 0.7716
+              and objective.margin_floor(lam36, 0.99, 14066) == 0.76
+              and objective.margin_floor(lam36, 0.7309, 14066) == 0.76 and objective.margin_floor({}, 0.7309, 14066) is None
               and objective.margin_floor(lam36, 0.7309, 10**7) == objective.K_CLAMP[0]
               and objective.margin_floor(lam36, 0.99, 0) == objective.K_CLAMP[1])
         rec_o = MD / "records" / "orders.jsonl"
@@ -1388,8 +1390,8 @@ def test_objective_model():
             for i in range(90):
                 f.write(json.dumps({"ts": int(t) - 600, "order": f"r{i}", "deal": i < 80}) + "\n")
         o3 = objective.run(t, board)
-        check("...and 26.7 deals an hour (25 or more) keeps the floor at its 0.70",
-              o3.get("margin_floor") == k == 0.70 and "guard" not in o3["basis"], o3)
+        check("...and 26.7 deals an hour (25 or more) keeps the floor at its 0.76",
+              o3.get("margin_floor") == k == 0.76 and "guard" not in o3["basis"], o3)
         if kept_o is None:
             rec_o.unlink(missing_ok=True)
         else:

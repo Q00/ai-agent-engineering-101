@@ -189,7 +189,13 @@ def run(now: float | None = None, board: dict | None = None) -> dict:
 LEGACY = False           # 11/13: the threshold on the share of LIST kept (OPTIONS, choose(), the probe) judged deals by
                          # the old measure against the new saved after Patch 3.6 and went to its 0.45 clamp; with
                          # goods_floor (0.45 too) our buyer closed 21 deals an hour for 17 h (goods 0-7 of ~250 per 3 h)
-K_CLAMP = (0.70, 0.85)   # 0.35 until 11/13 11:40 (the person's call): saved is a mean, so a deal under it pulls it down.
+K_CLAMP = (0.76, 0.85)   # 0.70 until 11/15 11:30 (the person's call, "0.76으로 올리기"): the floor above is break-even
+                         # with a deal's value taken as a smooth price (lam_deals), but with 61 h left our deals crossings
+                         # no longer move with volume (we pass MJforge and thisjonghoon in 18-30 h at 63-90 deals an hour,
+                         # totato2203 passes us either way), so a deal under saved only pulls saved down. Replayed on 12 h
+                         # of our deals with the class projection (stars drift on): floor 0.7233 -> 7th (1.553), 0.75-0.78
+                         # -> 5th (1.562-1.564, saved stays over SungJinho's by a hair), 0.80 -> 8th (too few deals).
+                         # 0.35 until 11/13 11:40 (the person's call): saved is a mean, so a deal under it pulls it down.
                          # Our deals since Patch 3.6 keep ~0.84 of the margin (goods A 0.90, food A 0.95, B 0.85, C 0.75)
                          # and the board's next saved rows (+0.0104 -> +0.011, +0.0142 -> +0.033) are worth far more than
                          # the deals' (+273 -> +0.0066). Replayed over 48 h of our deals: a floor of 0.35-0.60 changes
