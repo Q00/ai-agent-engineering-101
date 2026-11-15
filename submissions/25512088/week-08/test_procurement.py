@@ -155,9 +155,12 @@ class PurchaseTests(unittest.TestCase):
    ('cheap-goods',400000,0,now-60),
    ('old-goods',800000,0,now-6*3600-1),
    ('refunded-goods',900000,1,now-60),
-   ('fresh-food',700000,0,now-60)])
+   ('fresh-food',700000,0,now-60),
+   ('proven-goods',800000,0,now-120),
+   ('proven-goods',800000,0,now-60)])
   catalog={sku:{'kind':'goods'} for sku in
-           ('fresh-goods','pending-goods','cheap-goods','old-goods','refunded-goods')}
+           ('fresh-goods','pending-goods','cheap-goods','old-goods',
+            'refunded-goods','proven-goods')}
   catalog['fresh-food']={'kind':'food'}
   self.assertEqual(active_high_value_warranty_skus(
    db,catalog,min_cost=500000,now=now,warranty_hours=6),

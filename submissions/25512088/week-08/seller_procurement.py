@@ -229,10 +229,13 @@ def active_high_value_warranty_skus(referrals, catalog, min_cost=500000,
     if threshold<=0 or hours<=0:return set()
     try:
         rows=referrals.execute('''
-            SELECT sku,MAX(cost) FROM sales
-            WHERE refunded=0 AND cost>=?
-              AND (settled IS NULL OR settled>?)
-            GROUP BY sku''',(threshold,now-hours*3600)).fetchall()
+            SELECT active.sku,MAX(active.cost) FROM sales AS active
+            WHERE active.refunded=0 AND active.cost>=?
+              AND (active.settled IS NULL OR active.settled>?)
+            GROUP BY active.sku
+            HAVING (SELECT COUNT(*) FROM sales AS history
+                    WHERE history.sku=active.sku)<=1''',
+            (threshold,now-hours*3600)).fetchall()
     except sqlite3.Error:
         return set()
     return {sku for sku,_ in rows
