@@ -96,6 +96,25 @@ class PurchaseTests(unittest.TestCase):
     local,path,now=1000,cooldown_hours=.05),{'ours'})
    self.assertEqual(recent_refund_cooldown_skus(
     local,path,now=1000,cooldown_hours=0),set())
+ def test_repeated_official_refunds_extend_only_that_skus_cooldown(self):
+  import sqlite3
+  local=sqlite3.connect(':memory:')
+  local.execute('create table sales(sku text,unit text,refunded integer)')
+  local.executemany('insert into sales values(?,?,?)',[
+   ('repeat','unit-a',1),('repeat','unit-b',1),
+   ('isolated','unit-c',1),('not-refunded','unit-d',0)])
+  with tempfile.TemporaryDirectory() as root:
+   path=root+'/intel.sqlite3';intel=sqlite3.connect(path)
+   intel.execute('create table breakages(unit text,refunded integer,ts real)')
+   # All events are older than the 180-second ordinary cooldown.  Only the
+   # SKU with two official failures remains blocked by the 24-hour window.
+   intel.executemany('insert into breakages values(?,?,?)',[
+    ('unit-a',100,700),('unit-b',100,710),
+    ('unit-c',100,720),('unit-d',100,730)])
+   intel.commit();intel.close()
+   self.assertEqual(recent_refund_cooldown_skus(
+    local,path,now=1000,cooldown_hours=.05,
+    repeat_cooldown_hours=24,repeat_refunds=2),{'repeat'})
  def test_mature_negative_local_goods_cohort_blocks_restock(self):
   ranked=[dict(sku='lossy',kind='goods',expected_net=500000,score=999,
                upper_cost=100000,sales_1h=20,sales_6h=50,distinct_buyers_6h=10,
