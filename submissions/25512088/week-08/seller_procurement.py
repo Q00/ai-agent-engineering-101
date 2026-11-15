@@ -527,9 +527,10 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
         # make broad expansion unsafe. Give a bounded number of sold-out,
         # previously profitable, grade-proven high-value SKUs the first slots
         # in a supply window. Every normal conversion, refund, concentration,
-        # cash and warranty guard above still applies. The live limit is two
-        # only after two successive guarded high-value lots sold profitably;
-        # callers without that explicit policy retain the original one slot.
+        # cash and warranty guard above still applies. The live limit is three
+        # only after five recent guarded high-value settlements remained
+        # positive and refund-free, including both lots in the first two-slot
+        # window; callers without that explicit policy retain one slot.
         high_value_priority=1
         high_value_min=policy.get('high_value_lane_min_unit_cost',math.inf)
         high_value_count=policy.get('high_value_window_count')
