@@ -8,7 +8,7 @@ from pathlib import Path
 import re
 import time
 from starlette.routing import Route
-from checkout import checkout_card
+from checkout import checkout_card, create_checkout_session
 
 from cryptography.hazmat.primitives import serialization
 import uvicorn
@@ -255,12 +255,19 @@ def build(port, history_path=None):
             checkout_card,
             methods=["GET"],
         ),
+        Route(
+            "/acp/checkout_sessions",
+            create_checkout_session,
+            methods=["POST"],
+        ),
     ]
     routes += create_agent_card_routes(card)
     routes += create_jsonrpc_routes(handler, "/")
 
+
     app = Starlette(routes=routes)
     app.state.seller = seller
+    app.state.checkout_sessions = {}
     return app
 
 if __name__ == "__main__":
