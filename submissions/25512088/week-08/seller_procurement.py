@@ -169,6 +169,30 @@ def recent_refund_cooldown_skus(referrals, intel_path, now=None, cooldown_hours=
     except sqlite3.Error:
         return set()
 
+def mature_refund_risk_skus(referrals, min_sales=20, min_refunds=2,
+                            min_book_margin=.03):
+    """Stop restocking a mature repeat-refund cohort with negligible Book yield.
+
+    Refunded units contribute negative principal, matching ``own_sales_evidence``.
+    A small or single-failure sample remains governed by the temporary cooldown;
+    this veto applies only after enough local settlements and repeated official
+    refunds make the opportunity cost measurable.  Held stock remains sellable.
+    """
+    samples=max(1,int(min_sales or 1));refunds=max(1,int(min_refunds or 1))
+    threshold=max(0.0,float(min_book_margin or 0))
+    try:
+        rows=referrals.execute('''
+            SELECT sku,COUNT(*),COALESCE(SUM(refunded),0),
+                   COALESCE(SUM(CASE WHEN refunded=1 THEN -cost
+                                     ELSE amount-cost-COALESCE(reward,0) END),0),
+                   COALESCE(SUM(cost),0)
+            FROM sales GROUP BY sku''').fetchall()
+    except sqlite3.Error:
+        return set()
+    return {sku for sku,count,failed,gross,capital in rows
+            if count>=samples and failed>=refunds and capital>0
+            and gross/capital<=threshold}
+
 def reserve_cash(inv,exposure=0):
     return max(settings()['cash_floor'],inv.get('bankrupt_line',500000))+exposure
 
@@ -537,6 +561,11 @@ def main():
                 cooldown_hours=policy.get('refund_restock_cooldown_hours',6),
                 repeat_cooldown_hours=policy.get('repeat_refund_cooldown_hours',24),
                 repeat_refunds=policy.get('repeat_refund_cooldown_count',2))
+            mature_refund_risks=mature_refund_risk_skus(
+                referrals,
+                min_sales=policy.get('mature_refund_veto_min_sales',20),
+                min_refunds=policy.get('mature_refund_veto_min_refunds',2),
+                min_book_margin=policy.get('mature_refund_veto_book_margin',.03))
         ranked=[dict(row,kind=catalog.get(row.get('sku'),{}).get('kind'),
                      own_sales_1h=own_sales_1h.get(row.get('sku'),0),
                      own_sales_total=own_sales_total.get(row.get('sku'),0),
@@ -563,7 +592,7 @@ def main():
         if target>0:runtime_policy['breadth_target_skus']=target
         window_blocks=breadth_window_blocks(rows,opening,inv,target)
         plan=allocation_plan(ranked,inv,available,
-                             set(blocked)|window_blocks|refund_cooldowns,
+                             set(blocked)|window_blocks|refund_cooldowns|mature_refund_risks,
                              slots,aggression,runtime_policy)
         if not plan:
             if blocked:time.sleep(10);continue

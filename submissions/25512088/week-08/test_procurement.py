@@ -3,7 +3,7 @@ import json
 import tempfile
 import unittest
 from network_reads import retry_read
-from seller_procurement import choose,allocation_plan,capital_available,supply_result,own_registration,own_board_registration,retry_join,join_current_registration,preserve_stale_pending,breadth_window_blocks,refresh_window_blocks,competitor_breadth_target,warranty_risk_reserve,observed_warranty_hazard,active_warranty_amounts,supply_interval_wait,own_sales_evidence,recent_refund_cooldown_skus
+from seller_procurement import choose,allocation_plan,capital_available,supply_result,own_registration,own_board_registration,retry_join,join_current_registration,preserve_stale_pending,breadth_window_blocks,refresh_window_blocks,competitor_breadth_target,warranty_risk_reserve,observed_warranty_hazard,active_warranty_amounts,supply_interval_wait,own_sales_evidence,recent_refund_cooldown_skus,mature_refund_risk_skus
 from seller_market import dominant_goods_profit_probability
 class PurchaseTests(unittest.TestCase):
  def test_successful_supply_cooldown_avoids_predictable_rate_limit(self):
@@ -115,6 +115,20 @@ class PurchaseTests(unittest.TestCase):
    self.assertEqual(recent_refund_cooldown_skus(
     local,path,now=1000,cooldown_hours=.05,
     repeat_cooldown_hours=24,repeat_refunds=2),{'repeat'})
+ def test_mature_repeat_refund_veto_requires_low_book_yield(self):
+  import sqlite3
+  db=sqlite3.connect(':memory:')
+  db.execute('create table sales(sku text,amount integer,cost integer,reward integer,refunded integer)')
+  # Both cohorts are mature and have repeated refunds. Only the cohort whose
+  # refund-aware Book yield has fallen below 3% of principal is vetoed.
+  for sku,normal_margin in [('thin',2),('healthy',20)]:
+   db.executemany('insert into sales values(?,?,?,?,?)',
+    [(sku,100+normal_margin,100,0,0) for _ in range(18)]+
+    [(sku,100,100,0,1) for _ in range(2)])
+  self.assertEqual(mature_refund_risk_skus(
+   db,min_sales=20,min_refunds=2,min_book_margin=.03),{'thin'})
+  self.assertEqual(mature_refund_risk_skus(
+   db,min_sales=21,min_refunds=2,min_book_margin=.03),set())
  def test_mature_negative_local_goods_cohort_blocks_restock(self):
   ranked=[dict(sku='lossy',kind='goods',expected_net=500000,score=999,
                upper_cost=100000,sales_1h=20,sales_6h=50,distinct_buyers_6h=10,
