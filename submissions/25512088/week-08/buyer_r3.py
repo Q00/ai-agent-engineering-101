@@ -90,6 +90,12 @@ def condition_suitable(order, fields):
             and warranty>=6)
 
 
+def condition_missing(order, fields):
+    """Distinguish an omitted condition from an explicitly unsafe one."""
+    key='hours' if order.get('kind')=='food' else 'warranty'
+    return fields.get(key) is None
+
+
 def estimated_margin_saved(product, price, grade=None):
     """Patch 3.6 Saved proxy using the official grade cost distribution.
 
@@ -378,6 +384,22 @@ class Buyer:
             if key:request+=' member='+key
             print('QUOTE_REQUEST',shop['name'],sku,flush=True)
             worker.send(session,request)
+            # Many otherwise usable sellers omit conditions from their first
+            # quote.  Ask once, without sending a numeric offer or reserving a
+            # unit, so checkout safety does not unnecessarily destroy Deals.
+            fields=quote_fields(session.get('last',{}))
+            if (task_state(session.get('last',{})).endswith('INPUT_REQUIRED')
+                    and fields['price'] and condition_missing(self.o,fields)):
+                if self.o.get('kind')=='food':
+                    clarification=("Before I can make an offer, state the exact numeric "
+                                   "shelf_life_hours remaining for this unit. It must be at "
+                                   f"least {self.o.get('use_within_hours',0)+FOOD_CHECKOUT_BUFFER_HOURS:.1f} hours.")
+                else:
+                    clarification=("Before I can make an offer, state the exact numeric "
+                                   "warranty_hours for this unit. I require at least 6 hours.")
+                memory.record(self.o['order'],shop['url'],sku,session.get('task'),
+                              'condition_clarification')
+                worker.send(session,clarification)
         except (httpx.TimeoutException,httpx.NetworkError) as exc:
             session['error']='network';session['error_type']=type(exc).__name__
         except Exception as exc:
