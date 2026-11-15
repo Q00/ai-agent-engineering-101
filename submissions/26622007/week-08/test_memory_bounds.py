@@ -128,6 +128,47 @@ class SweepStaleTests(unittest.TestCase):
         self.assertIn("fresh", shop.touched)
 
 
+class ShopMemoryParseOnceTests(unittest.TestCase):
+    def test_record_and_load_parse_the_file_once_while_it_is_unchanged(self):
+        import shop_memory
+        with tempfile.TemporaryDirectory() as td:
+            target = os.path.join(td, "m.json")
+            with open(target, "w", encoding="utf-8") as f:
+                json.dump({"negotiations": [{"task": "t0", "result": "deal", "sku": "G1", "price": 7}]}, f)
+            real, calls = json.load, []
+            def counting(f, *a, **kw):
+                calls.append(1)
+                return real(f, *a, **kw)
+            with mock.patch.object(shop_memory, "path", return_value=target), \
+                    mock.patch.object(shop_memory.json, "load", counting):
+                shop_memory._DOC.clear()
+                self.assertEqual(shop_memory.paid_prices("G1"), [7])
+                shop_memory.record({"task": "t1", "result": "deal", "sku": "G1", "price": 9})
+                shop_memory.record({"task": "t2", "result": "canceled"})
+                self.assertEqual(shop_memory.paid_prices("G1"), [7, 9])
+                self.assertEqual(len(calls), 1)
+                with open(target, encoding="utf-8") as f:          # what is on disk is what load() gives
+                    self.assertEqual(real(f), shop_memory.load())
+                with open(target, "w", encoding="utf-8") as f:      # another writer: read again
+                    json.dump({"negotiations": [{"task": "x", "result": "deal", "sku": "G1", "price": 1}]}, f)
+                os.utime(target, ns=(1, 1))
+                self.assertEqual(shop_memory.paid_prices("G1"), [1])
+                self.assertEqual(len(calls), 2)
+
+    def test_a_failed_write_reads_the_file_again(self):
+        import shop_memory
+        with tempfile.TemporaryDirectory() as td:
+            target = os.path.join(td, "m.json")
+            with open(target, "w", encoding="utf-8") as f:
+                json.dump({"negotiations": []}, f)
+            with mock.patch.object(shop_memory, "path", return_value=target):
+                shop_memory._DOC.clear()
+                with mock.patch.object(shop_memory.os, "replace", side_effect=OSError("disk")):
+                    with self.assertRaises(OSError):
+                        shop_memory.record({"task": "t1", "result": "deal"})
+                self.assertEqual(shop_memory.load(), {"negotiations": []})
+
+
 class KitSellerCapTests(unittest.TestCase):
     def setUp(self):
         import market_kit

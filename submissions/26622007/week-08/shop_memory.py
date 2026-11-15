@@ -57,25 +57,58 @@ def path():
     return MEMORY
 
 
-def load():
+_DOC = {}       # path -> ((size, mtime_ns), the file's document): load() and record() parse it once while it is unchanged
+
+
+def _stamp(target):
+    st = os.stat(target)
+    return st.st_size, st.st_mtime_ns
+
+
+def _load(target):
+    """The memory file, parsed once while its size and mtime stay (record() keeps the parsed copy current). The shop's
+    file is 99 MB, 198 k talks (11/15), ~1 s a parse: record() parsed it for every remembered talk (~880 an hour) and
+    paid_prices, note and choose_opening on the event loop, which kept seller.py at 85-100% of a core and its memory
+    churning. Read-only for the callers: only record() adds to it."""
     try:
-        with open(path(), encoding="utf-8") as f:
+        key = _stamp(target)
+    except OSError:
+        return {"negotiations": []}
+    hit = _DOC.get(target)
+    if hit is not None and hit[0] == key:
+        return hit[1]
+    try:
+        with open(target, encoding="utf-8") as f:
             m = json.load(f)
-        return m if isinstance(m.get("negotiations"), list) else {"negotiations": []}
     except (OSError, ValueError):
         return {"negotiations": []}
+    if not isinstance(m, dict) or not isinstance(m.get("negotiations"), list):
+        return {"negotiations": []}
+    _DOC.clear()
+    _DOC[target] = (key, m)
+    return m
+
+
+def load():
+    return _load(path())
 
 
 def record(entry):
     with _lock:
-        m = load()
-        m["negotiations"].append({"time": time.strftime("%Y-%m-%dT%H:%M:%S"), **entry})
         target = path()
-        os.makedirs(os.path.dirname(target) or ".", exist_ok=True)
-        tmp = target + ".tmp"
-        with open(tmp, "w", encoding="utf-8") as f:
-            json.dump(m, f, ensure_ascii=False, indent=1)
-        os.replace(tmp, target)
+        m = _load(target)
+        m["negotiations"].append({"time": time.strftime("%Y-%m-%dT%H:%M:%S"), **entry})
+        try:
+            os.makedirs(os.path.dirname(target) or ".", exist_ok=True)
+            tmp = target + ".tmp"
+            with open(tmp, "w", encoding="utf-8") as f:
+                json.dump(m, f, ensure_ascii=False, indent=1)
+            os.replace(tmp, target)
+            _DOC.clear()
+            _DOC[target] = (_stamp(target), m)
+        except BaseException:
+            _DOC.pop(target, None)      # the entry is not on disk: the next read is the file again, as before
+            raise
 
 
 def reviews():
