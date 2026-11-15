@@ -23,6 +23,9 @@ class AdaptiveStockTests(unittest.TestCase):
     def setUp(self):
         self.now = time.time()
         self.policy = policy_at()
+        # These fixtures exercise normal restocking, independently of the live round deadline.
+        self.policy["horizon"]["ends_at"] = datetime.fromtimestamp(
+            self.now + 30 * 86400, timezone.utc).isoformat()
         self.cfg, self.rules = self.policy["restock"], self.policy["restock"]["adaptive_goods"]
         # Earlier focus-first experiments; YMS turnover priority has separate integration tests.
         self.rules["turnover_goods"] = {"enabled": False}

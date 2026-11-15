@@ -1,6 +1,7 @@
 """Supply openings and profitable SKU depth, with no model/network purchases."""
 import json
 import os
+from datetime import datetime, timezone
 from pathlib import Path
 import tempfile
 import time
@@ -24,6 +25,9 @@ class SupplyWindowTests(unittest.TestCase):
         self.md = self.root / ".market"
         self.now = time.time()
         self.policy = policy_at()
+        # These fixtures exercise normal restocking, independently of the live round deadline.
+        self.policy["horizon"]["ends_at"] = datetime.fromtimestamp(
+            self.now + 30 * 86400, timezone.utc).isoformat()
         self.policy["restock"].update(max_units_per_run=5, max_units_per_sku=3,
             exploration_units=1, max_run_cost_percent=10, max_sku_cost_percent=10,
             max_category_cost_percent=25)
@@ -161,6 +165,9 @@ class ProvenDepthTests(unittest.TestCase):
     def setUp(self):
         self.now = time.time()
         self.policy = policy_at()
+        # These fixtures exercise normal restocking, independently of the live round deadline.
+        self.policy["horizon"]["ends_at"] = datetime.fromtimestamp(
+            self.now + 30 * 86400, timezone.utc).isoformat()
         self.policy["restock"].update(max_units_per_run=5, max_units_per_sku=3,
             exploration_units=1, max_run_cost_percent=10, max_sku_cost_percent=10,
             max_category_cost_percent=25)

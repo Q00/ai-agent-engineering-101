@@ -5,6 +5,7 @@ model or supply endpoint is called by these planner and hook regressions.
 """
 from copy import deepcopy
 import json
+from datetime import datetime, timezone
 from pathlib import Path
 import tempfile
 import time
@@ -28,6 +29,9 @@ class RestockCoverageTests(unittest.TestCase):
     def setUp(self):
         self.now = time.time()
         self.policy = policy_at()
+        # These fixtures exercise normal restocking, independently of the live round deadline.
+        self.policy["horizon"]["ends_at"] = datetime.fromtimestamp(
+            self.now + 30 * 86400, timezone.utc).isoformat()
         self.cfg = self.policy["restock"]
         self.rules = self.cfg["adaptive_goods"]
         self.inv = {"round": 3, "start": 5000000, "balance": 11695754, "injected": 0,

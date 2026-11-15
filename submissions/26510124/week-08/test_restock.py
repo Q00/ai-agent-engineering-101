@@ -4,6 +4,7 @@ import fcntl
 import io
 import json
 import os
+from datetime import datetime, timezone
 from pathlib import Path
 import tempfile
 import time
@@ -32,6 +33,9 @@ class RestockTests(unittest.TestCase):
         self.logs.mkdir()
         self.now = time.time()
         self.cfg = policy_at()
+        # These fixtures exercise normal restocking, independently of the live round deadline.
+        self.cfg["horizon"]["ends_at"] = datetime.fromtimestamp(
+            self.now + 30 * 86400, timezone.utc).isoformat()
         self.cfg["restock"].update(max_units_per_run=5, max_units_per_sku=3,
             exploration_units=1, max_run_cost_percent=10, max_sku_cost_percent=10,
             max_category_cost_percent=25)

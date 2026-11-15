@@ -2,6 +2,7 @@
 from copy import deepcopy
 import json
 import os
+from datetime import datetime, timezone
 from pathlib import Path
 import tempfile
 import time
@@ -23,6 +24,9 @@ class FocusTests(unittest.TestCase):
     def setUp(self):
         self.now = time.time()
         self.policy = policy_at()
+        # These fixtures exercise normal restocking, independently of the live round deadline.
+        self.policy["horizon"]["ends_at"] = datetime.fromtimestamp(
+            self.now + 30 * 86400, timezone.utc).isoformat()
         self.cfg = self.policy["restock"]
         # Keep the original focused-pilot cash/depth boundary scenarios.
         # Current higher buying limits have separate integration coverage.

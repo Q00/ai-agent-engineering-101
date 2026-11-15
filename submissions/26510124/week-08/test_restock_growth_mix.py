@@ -1,6 +1,7 @@
 """Planner and hook integration for reinvestment, proven depth, and food pilots."""
 from copy import deepcopy
 import json
+from datetime import datetime, timezone
 from pathlib import Path
 import tempfile
 import time
@@ -22,6 +23,9 @@ class RestockGrowthMixTests(unittest.TestCase):
     def setUp(self):
         self.now = time.time()
         self.policy = policy_at()
+        # These fixtures exercise normal restocking, independently of the live round deadline.
+        self.policy["horizon"]["ends_at"] = datetime.fromtimestamp(
+            self.now + 30 * 86400, timezone.utc).isoformat()
         self.cfg = self.policy["restock"]
         # Preserve the earlier Lee-inspired mix; current coverage is tested separately.
         self.cfg["max_units_per_sku"] = 2
