@@ -189,7 +189,7 @@ class Run:
     TEXT = "컵 (G1), grade B, 6 h warranty: asking 6500"
     CATALOG = {"G1": {"kind": "goods", "category": "가전>컵", "list_price": 10000}}
 
-    def run_main(self, sw, kind="goods", receipt=None):
+    def run_main(self, sw, kind="goods", receipt=None, agreed=True):
         printed, calls = [], []
         order = {"order": "o-1", "item": "컵", "budget": 16000, "acceptable": ["G1"], "kind": kind, "category": "가전>컵"}
         if kind == "food":
@@ -202,8 +202,9 @@ class Run:
         def neg(*a, **k):
             calls.append((a, k))
             if receipt is not None:
-                return {"state": "TASK_STATE_COMPLETED", "task": "t", "agreed": receipt["price"], "holds": 0,
-                        "history": [("shop asked", 6500), ("you offered", receipt["price"])], "receipt": receipt}
+                return {"state": "TASK_STATE_COMPLETED", "task": "t", "agreed": receipt["price"] if agreed else None,
+                        "holds": 0, "receipt": receipt,
+                        "history": [("shop asked", 6500)] + ([("you offered", receipt["price"])] if agreed else [])}
             return {"state": "TASK_STATE_CANCELED", "task": "t", "history": [("shop asked", 6500)], "agreed": None,
                     "holds": 0, "receipt": None}
         with tempfile.TemporaryDirectory() as d:
@@ -306,12 +307,51 @@ class MainTake(Run, unittest.TestCase):
         over, _ = self.run_main({"enabled": True, "take": True}, receipt=dict(self.REC, price=7294))
         self.assertTrue(any("over my limit 7293" in w for w in over["warnings"]), over["warnings"])
 
+    def test_take_on_a_receipt_with_no_offer_from_me_keeps_the_old_check(self):
+        row, _ = self.run_main({"enabled": True, "take": True}, receipt=dict(self.REC), agreed=None)
+        self.assertTrue(any("over my limit 6799" in w for w in row["warnings"]), row["warnings"])
+
     def test_take_on_a_grade_b_cap_under_the_limit_gets_no_band(self):
         with mock.patch.object(self, "TEXT", "컵 (G1), grade B, 6 h warranty: asking 6500"):
             row, calls = self.run_main({"enabled": True, "target": 0.80, "take": True})
         self.assertEqual(row["limit"], 5480)
         self.assertNotIn("take_top", row["margin_cap"])
         self.assertIsNone(calls[0][1].get("ceiling"))
+
+
+class TakeTurn(unittest.TestCase):
+    """The take ceiling goes through buyer_accept_band.turn: a final ask over my limit and within the cap is taken where
+    the talk would walk away, one over the cap still walks (review fcb5fc4 M5), and the row records what was taken (I1)."""
+    WALK = lambda self, ask: {"action": "walk_away", "shop_price": ask}   # noqa: E731
+    HIST = [("shop asked", 7500), ("you offered", 6120), ("shop asked", 7300), ("you offered", 6799)]
+
+    def test_within_the_cap_taken_over_it_walks(self):
+        import buyer_accept_band as band
+        d, note = band.turn(self.WALK(7200), self.HIST + [("shop asked", 7200)], 6799, 7293, (0.9,))
+        self.assertEqual((d["action"], d["price"], d.get("accept_band")), ("offer", 7200, True))
+        m = {"cap": 7293, "take_top": 7293}
+        mc.note_take(m, note)
+        self.assertEqual(m["taken"], 7200)
+        d, note = band.turn(self.WALK(7294), self.HIST + [("shop asked", 7294)], 6799, 7293, (0.9,))
+        self.assertEqual((d["action"], note), ("walk_away", None))
+
+    def test_note_take_only_under_a_take(self):
+        for m in ({"cap": 7293}, None, {"take_top": None}):
+            mc.note_take(m, {"taken": 7200})
+            self.assertFalse(isinstance(m, dict) and "taken" in m, m)
+        m = {"take_top": 7293}
+        mc.note_take(m, None)
+        self.assertNotIn("taken", m)
+
+
+class TakeReceipt(unittest.TestCase):
+    """market_buyer.over_limit under the take: the asked SKU to the cap; another SKU keeps its own saved cap."""
+
+    def test_another_sku_keeps_its_own_limit(self):
+        offer = {"sku": "G1", "list_price": 10000}
+        catalog = {"G2": {"list_price": 10000}}
+        why = market_buyer.over_limit({"item": "G2", "price": 7200}, offer, 6799, catalog, 16000, None)
+        self.assertIn("over my limit 6799", why)
 
 
 if __name__ == "__main__":

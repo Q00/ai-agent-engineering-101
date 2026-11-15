@@ -2723,7 +2723,8 @@ def main():
     if r3:
         log(f"[offer] {offer['sku']} {offer['name']}: list {offer['list_price']}, limit {limit}, {len(shop['usable'])} fit"
             + (f", breaks {chance:.1%} of the time in the ledger" if chance else "")
-            + (f", takes a counter up to {top} ({band_pct}%)" if top > limit else ""))
+            + (f", takes a counter up to {top} ({band_pct}%)" if top > limit and band_pct else
+               f", takes a counter up to {top} (margin cap take)" if top > limit else ""))
     talk_mode = None      # no talk (NO_VALUE, an error before it)
     probe_arm = None
     try:
@@ -2842,6 +2843,7 @@ def main():
                 result, note = buyer_accept_band.turn(result, history, limit, order["_accept_band_top"], steps)
                 if note:
                     order["_accept_band"] = note
+                    buyer_margin_cap.note_take(order.get("_margin_cap"), note)
                     log(f"[band] {shop['name']}: counter {note['taken']} is over my limit {limit} but within {note['ceiling']}: taken")
             taken_firm = firm_food_take_turn(result, meta, text, history, limit,
                                             order, offer, q, resume, shop["name"]) if (r3 and result is None and
@@ -2904,8 +2906,9 @@ def main():
                                          "applied": isinstance(lp, (int, float)) and not isinstance(lp, bool)}
     r_limit, r_band = limit, None if (order.get("_sw_buy") or {}).get("ok") else receipt_band(rec, offer, band_base, band_pct)
     m_take = (order.get("_margin_cap") or {}).get("take_top")
-    if m_take and rec is not None and (not rec.get("item") or rec.get("item") == offer["sku"]) \
-            and not (order.get("_sw_buy") or {}).get("ok"):
+    # only after a talk where I offered (review fcb5fc4 M4): a shop that sends a receipt at once keeps the old check
+    if m_take and rec is not None and out.get("agreed") is not None \
+            and (not rec.get("item") or rec.get("item") == offer["sku"]) and not (order.get("_sw_buy") or {}).get("ok"):
         r_limit, r_band = max(limit, m_take), None     # buyer_margin_cap take: the asked SKU is paid up to the cap
     over = over_limit(rec, offer, r_limit, catalog, args.budget, r_band, shipped) \
         if r3 and rec is not None and not problems and not short else None
@@ -2923,7 +2926,7 @@ def main():
     stars, review = rate(out, problems, args.item, args.budget, warnings, limit if r3 else None) if rec is not None or not problems \
         else (1, f"Said the deal was done but sent no receipt for {args.item}.")
     if over:
-        stars, review = 3, f"No deal on {args.item}: the receipt at {rec['price']:g} was over what I pay for it now ({limit:g})."
+        stars, review = 3, f"No deal on {args.item}: the receipt at {rec['price']:g} was over what I pay for it now ({r_limit:g})."
 
     member_offer = buyer_member.capture(shop["name"], out, order.get("order")) \
         if r3 and rec is not None and not (problems or short or over) else None

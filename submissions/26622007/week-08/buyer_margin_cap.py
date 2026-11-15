@@ -125,6 +125,14 @@ def take_top(cfg, cap, limit, most):
     return top if top > limit else None
 
 
+def note_take(m, note):
+    """The orders row's margin_cap records the ask a take closed at ("taken") when the band's turn fired under a take
+    ceiling (independent review fcb5fc4 I1: with plan A's band off the row had no other trace of it). m is
+    order["_margin_cap"], note buyer_accept_band.turn's note; anything else is left alone."""
+    if isinstance(m, dict) and m.get("take_top") and isinstance(note, dict) and _num(note.get("taken")):
+        m["taken"] = note["taken"]
+
+
 def lowered(row):
     """Whether an orders.jsonl row is a talk whose limit the cap lowered: it had no accept band, so the shop profile
     (the band's learning) leaves it out."""
