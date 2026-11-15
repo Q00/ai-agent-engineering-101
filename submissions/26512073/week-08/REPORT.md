@@ -46,11 +46,11 @@ Log examples show completed transactions.
 
 One supply refusal said `supply is closed; the next restock window opens in 573 s`. Buyer attempts also recorded `No deal within my budget`. Model allowance failures are recorded separately from seller reliability.
 
-All 69 offline tests passed. The repository has no `scripts/check_week08.py` at this checkout. Tests cover pricing, FIFO, buyer limits, receipts, stock accounting, cancellation, and model cooldown.
+All 80 offline tests passed after adding independent checkout handlers. The repository has no `scripts/check_week08.py` at this checkout. Tests cover pricing, FIFO, buyer limits, receipts, stock accounting, cancellation, model cooldown, and payment completion with a simulated market. The new checkout uses the seller's original receipt and signs its own checkout token. It sends signed mandates to the market, serializes completion and cancellation, and keeps uncertain payments pending.
 
 ## Remaining requirements
 
-This is a preparation draft. Independent ACP checkout still needs implementation and one real market settlement. My own one-page `architecture.tex` and compiled `architecture.pdf` are also pending. Forum posting is not implemented. The current architecture combines my negotiation, memory, inventory, and budget logic with the kit's payment layer. The final diagram must show those responsibilities accurately.
+This is a preparation draft. Independent ACP handlers are implemented and checked locally. Standalone registration, deployment, restart recovery, and one real market settlement through these handlers are pending. Receipts and sessions currently live in process memory. My own one-page `architecture.tex` and compiled `architecture.pdf` are also pending. Forum posting is not implemented. The deployed market runs described above used the kit's payment layer. The final diagram must show the implemented and deployed responsibilities accurately.
 
 ## How to run
 

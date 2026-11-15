@@ -858,6 +858,9 @@ class CheckoutLifecycleTests(unittest.TestCase):
         self.session = {
             "id": "cs_sample", "task": "sample-task", "unit": "sample-unit",
             "status": "ready_for_payment",
+            "checkout_jwt": "sample.signed.checkout",
+            "line_items": [{"id": "G0001", "quantity": 1}],
+            "totals": [{"type": "total", "amount": 105}],
         }
         self.app.state.checkout_sessions["cs_sample"] = self.session
         self.app.state.seller.held["sample-unit"] = 123
@@ -896,6 +899,124 @@ class CheckoutLifecycleTests(unittest.TestCase):
         self.assertEqual(self.client.post(self.url + "/cancel").status_code, 409)
         self.assertEqual(self.session["status"], "completed")
         self.assertIn("sample-unit", self.app.state.seller.held)
+
+    def payment_body(self, order="sample-order"):
+        return {"payment_data": {
+            "order": order,
+            "checkout_mandate": {"mandate": {"sample": "checkout"}, "sig": "sample"},
+            "payment_mandate": {"mandate": {"sample": "payment"}, "sig": "sample"},
+        }}
+
+    def test_creation_protects_pending_completed_and_negotiated_units(self):
+        receipt = {"task": "new-task", "shop": "Afford Shop", "item": "G0001",
+                   "unit": "sample-unit", "price": 105, "sig_seller": "sample-signature"}
+        self.app.state.seller.receipts["new-task"] = receipt
+        unit = {"sku": "G0001", "unit": "sample-unit", "cert": {"sample": True}}
+        body = {"receipt": receipt, "line_items": [{"id": "G0001", "quantity": 1}]}
+        with patch("checkout.available_units", return_value=[unit]), \
+                patch("checkout.sign_checkout", return_value="sample.signed.checkout"):
+            for status in ("ready_for_payment", "payment_pending", "completed"):
+                self.session["status"] = status
+                self.assertEqual(self.client.post("/acp/checkout_sessions", json=body).status_code, 409)
+            self.app.state.checkout_sessions.clear()
+            self.app.state.seller.open["other-task"] = {"unit": {"unit": "sample-unit"}}
+            self.assertEqual(self.client.post("/acp/checkout_sessions", json=body).status_code, 409)
+            self.app.state.seller.open.clear()
+            self.assertEqual(self.client.post("/acp/checkout_sessions", json=body).status_code, 201)
+
+    def test_completion_sends_original_checkout_and_retries_without_second_payment(self):
+        import httpx
+        market = httpx.Response(200, json={
+            "settled": True, "ledger": 123,
+            "mandate_receipt": {"ledger": 123, "unit": "sample-unit"},
+        })
+        with patch("checkout.submit_settlement", new_callable=AsyncMock, return_value=market) as submit:
+            body = self.payment_body()
+            response = self.client.post(self.url + "/complete", json=body)
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.json()["status"], "completed")
+            self.assertEqual(response.json()["order"]["mandate_receipt"]["ledger"], 123)
+            self.assertEqual(submit.call_args.args[0], {
+                **body["payment_data"], "checkout_jwt": "sample.signed.checkout",
+            })
+            self.assertEqual(self.client.post(self.url + "/complete", json=body).status_code, 200)
+            self.assertEqual(self.client.post(self.url + "/complete", json=self.payment_body("other")).status_code, 409)
+            submit.assert_awaited_once()
+
+    def test_market_refusal_preserves_unpaid_session(self):
+        import httpx
+        market = httpx.Response(400, json={
+            "settled": False, "checks": {"not_settled_before": True, "amount_in_range": False},
+        })
+        with patch("checkout.submit_settlement", new_callable=AsyncMock, return_value=market):
+            response = self.client.post(self.url + "/complete", json=self.payment_body())
+        self.assertEqual(response.status_code, 402)
+        self.assertEqual(self.session["status"], "ready_for_payment")
+        self.assertNotIn("order", self.session)
+
+    def test_lost_reply_keeps_payment_pending_and_blocks_cancel_and_resubmission(self):
+        import httpx
+        with patch("checkout.submit_settlement", new_callable=AsyncMock,
+                   side_effect=httpx.ReadTimeout("simulated lost reply")) as submit:
+            self.assertEqual(self.client.post(self.url + "/complete", json=self.payment_body()).status_code, 503)
+            self.assertEqual(self.session["status"], "payment_pending")
+            self.assertEqual(self.client.post(self.url + "/cancel").status_code, 409)
+            self.assertEqual(self.client.post(self.url + "/complete", json=self.payment_body()).status_code, 409)
+            self.assertIn("sample-unit", self.app.state.seller.held)
+            submit.assert_awaited_once()
+
+    def test_bad_input_and_canceled_sessions_do_not_contact_market(self):
+        with patch("checkout.submit_settlement", new_callable=AsyncMock) as submit:
+            self.assertEqual(self.client.post(self.url + "/complete", content="{").status_code, 400)
+            self.assertEqual(self.client.post(self.url + "/complete", json={}).status_code, 400)
+            self.assertEqual(self.client.post("/acp/checkout_sessions/missing/complete", json=self.payment_body()).status_code, 404)
+            self.session["status"] = "canceled"
+            self.assertEqual(self.client.post(self.url + "/complete", json=self.payment_body()).status_code, 409)
+            submit.assert_not_awaited()
+
+    def test_incomplete_confirmation_or_prior_settlement_remains_pending(self):
+        import httpx
+        responses = [
+            httpx.Response(200, json={"settled": True}),
+            httpx.Response(500, json={"error": "simulated failure"}),
+            httpx.Response(400, json={"checks": {"not_settled_before": False}}),
+        ]
+        for market in responses:
+            with self.subTest(status=market.status_code):
+                self.session["status"] = "ready_for_payment"
+                with patch("checkout.submit_settlement", new_callable=AsyncMock, return_value=market):
+                    response = self.client.post(self.url + "/complete", json=self.payment_body())
+                self.assertIn(response.status_code, (502, 503))
+                self.assertEqual(self.session["status"], "payment_pending")
+
+    def test_cancel_waits_for_inflight_payment(self):
+        import asyncio
+        import httpx
+
+        async def run():
+            started, release = asyncio.Event(), asyncio.Event()
+
+            async def settle(payload):
+                started.set()
+                await release.wait()
+                return httpx.Response(200, json={
+                    "ledger": 123, "mandate_receipt": {"ledger": 123},
+                })
+
+            async with httpx.AsyncClient(transport=httpx.ASGITransport(app=self.app),
+                                         base_url="http://sample") as client:
+                with patch("checkout.submit_settlement", side_effect=settle):
+                    complete = asyncio.create_task(client.post(self.url + "/complete", json=self.payment_body()))
+                    await asyncio.wait_for(started.wait(), timeout=2)
+                    cancel = asyncio.create_task(client.post(self.url + "/cancel"))
+                    await asyncio.sleep(0)
+                    self.assertFalse(cancel.done())
+                    release.set()
+                    completed, canceled = await asyncio.gather(complete, cancel)
+                    self.assertEqual(completed.status_code, 200)
+                    self.assertEqual(canceled.status_code, 409)
+
+        asyncio.run(run())
 
 
 if __name__ == "__main__":

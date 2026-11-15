@@ -11,6 +11,7 @@ from starlette.routing import Route
 from checkout import (
     checkout_card, create_checkout_session,
     get_checkout_session, cancel_checkout_session,
+    complete_checkout_session,
 )
 
 from cryptography.hazmat.primitives import serialization
@@ -54,6 +55,7 @@ class Seller(AgentExecutor):
     def __init__(self, history_path=None):
         self.open = {}
         self.receipts = {}
+        self.checkout_sessions = {}
         self.held = {}  # unit id -> monotonic expiry; includes checkout handoff
         self.task_locks = {}
         self.history_path = (
@@ -148,7 +150,11 @@ class Seller(AgentExecutor):
                 self.open.pop(old_task)
         deal = self.open.get(task_id)
         if deal is None:
-            units = available_units(text, self.held)
+            checkout_units = {
+                session["unit"] for session in self.checkout_sessions.values()
+                if session["status"] in {"ready_for_payment", "payment_pending", "completed"}
+            }
+            units = available_units(text, set(self.held) | checkout_units)
             if not units:
                 await up.reject(say("No matching unexpired unit is available in stock."))
                 return
@@ -273,6 +279,11 @@ def build(port, history_path=None):
             cancel_checkout_session,
             methods=["POST"],
         ),
+        Route(
+            "/acp/checkout_sessions/{session_id}/complete",
+            complete_checkout_session,
+            methods=["POST"],
+        ),
     ]
     routes += create_agent_card_routes(card)
     routes += create_jsonrpc_routes(handler, "/")
@@ -280,7 +291,8 @@ def build(port, history_path=None):
 
     app = Starlette(routes=routes)
     app.state.seller = seller
-    app.state.checkout_sessions = {}
+    app.state.checkout_sessions = seller.checkout_sessions
+    app.state.checkout_locks = {}
     return app
 
 if __name__ == "__main__":

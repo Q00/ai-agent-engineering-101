@@ -2,10 +2,14 @@
 
 from starlette.responses import JSONResponse
 import base64
+import asyncio
 import json
+import os
 from pathlib import Path
 import time
 import uuid
+
+import httpx
 
 from cryptography.hazmat.primitives import serialization
 
@@ -164,13 +168,18 @@ async def create_checkout_session(request):
 
     if any(
         session["unit"] == unit["unit"]
-        and session["status"] == "ready_for_payment"
+        and session["status"] in {"ready_for_payment", "payment_pending", "completed"}
         for session in sessions.values()
     ):
         return JSONResponse(
             {"error": "This unit already has an open checkout."},
             status_code=409,
         )
+
+    if any(deal.get("unit", {}).get("unit") == unit["unit"]
+           for deal in seller.open.values()):
+        return JSONResponse(
+            {"error": "This unit is being negotiated."}, status_code=409)
 
     public_url = str(request.base_url).rstrip("/")
     session_id = "cs_" + uuid.uuid4().hex
@@ -222,6 +231,13 @@ async def get_checkout_session(request):
 
 async def cancel_checkout_session(request):
     session_id = request.path_params["session_id"]
+    lock = request.app.state.checkout_locks.setdefault(session_id, asyncio.Lock())
+    async with lock:
+        return cancel_session(request)
+
+
+def cancel_session(request):
+    session_id = request.path_params["session_id"]
     sessions = request.app.state.checkout_sessions
     session = sessions.get(session_id)
     if session is None:
@@ -241,9 +257,92 @@ async def cancel_checkout_session(request):
         for deal in seller.open.values()
     )
     another_checkout = any(
-        other["unit"] == unit_id and other["status"] == "ready_for_payment"
+        other["unit"] == unit_id
+        and other["status"] in {"ready_for_payment", "payment_pending", "completed"}
         for other in sessions.values()
     )
     if not negotiating and not another_checkout:
         seller.held.pop(unit_id, None)
     return JSONResponse(session)
+
+
+async def submit_settlement(payload):
+    """Send signed mandates to the market without importing the course kit."""
+    market_url = os.environ.get("MARKET_URL", "https://market.ourolabs.ai").rstrip("/")
+    token = os.environ.get("MARKET_SHOP_TOKEN")
+    headers = {"Authorization": f"Bearer {token}"} if token else {}
+    async with httpx.AsyncClient(timeout=30) as client:
+        return await client.post(
+            market_url + "/api/settle", json=payload, headers=headers)
+
+
+async def complete_checkout_session(request):
+    session_id = request.path_params["session_id"]
+    try:
+        body = await request.json()
+    except ValueError:
+        return JSONResponse({"error": "Body must contain JSON."}, status_code=400)
+    payment = body.get("payment_data") if isinstance(body, dict) else None
+    if not isinstance(payment, dict) or not isinstance(payment.get("order"), str) \
+            or not payment["order"] or not all(
+                isinstance(payment.get(field), dict) and payment[field]
+                for field in ("checkout_mandate", "payment_mandate")):
+        return JSONResponse(
+            {"error": "Order and both signed mandates are required."}, status_code=400)
+
+    lock = request.app.state.checkout_locks.setdefault(session_id, asyncio.Lock())
+    async with lock:
+        session = request.app.state.checkout_sessions.get(session_id)
+        if session is None:
+            return JSONResponse({"error": "Checkout session was not found."}, status_code=404)
+        if session["status"] == "completed" \
+                and session.get("settlement_order") == payment["order"]:
+            return JSONResponse(session)
+        if session["status"] != "ready_for_payment":
+            return JSONResponse(
+                {"error": "This session cannot accept payment.", "status": session["status"]},
+                status_code=409)
+
+        payload = {
+            "order": payment["order"],
+            "checkout_jwt": session["checkout_jwt"],
+            "checkout_mandate": payment["checkout_mandate"],
+            "payment_mandate": payment["payment_mandate"],
+        }
+        session["status"] = "payment_pending"
+        session["settlement_order"] = payment["order"]
+        try:
+            response = await submit_settlement(payload)
+            result = response.json()
+        except (httpx.HTTPError, ValueError):
+            print("[acp] settlement outcome uncertain; payment remains pending", flush=True)
+            return JSONResponse(
+                {"error": "Settlement outcome is uncertain; verification is required."},
+                status_code=503)
+
+        if not isinstance(result, dict):
+            return JSONResponse({"error": "Unexpected market reply; payment remains pending."},
+                                status_code=502)
+        if response.status_code != 200:
+            checks = result.get("checks")
+            if 400 <= response.status_code < 500 and isinstance(checks, dict) \
+                    and checks and checks.get("not_settled_before") is not False:
+                session["status"] = "ready_for_payment"
+                session.pop("settlement_order", None)
+                print("[acp] settlement refused by market checks", flush=True)
+                return JSONResponse({"error": "Payment refused by the market.",
+                                     "market": result}, status_code=402)
+            return JSONResponse({"error": "Market outcome needs verification; payment remains pending."},
+                                status_code=503)
+
+        receipt = result.get("mandate_receipt")
+        if not isinstance(receipt, dict) or not receipt or result.get("settled") is False \
+                or result.get("ledger") is None:
+            return JSONResponse({"error": "Settlement confirmation is incomplete; payment remains pending."},
+                                status_code=502)
+        session["order"] = {"status": "confirmed", "mandate_receipt": receipt}
+        session["status"] = "completed"
+        print(f"[acp] settled {session['line_items'][0]['id']} "
+              f"at {session['totals'][0]['amount']}, ledger #{result['ledger']}, "
+              f"unit {session['unit']} via student checkout", flush=True)
+        return JSONResponse(session)
