@@ -610,6 +610,10 @@
   {
    "t": 1794725484.591601,
    "text": "Supervisor 15:5x, CORRECTION of leak audit #35: the refund constants are NOT too high. #35's 1.3/2.3/6.4% counted sales whose break window had not passed; on sales at least 4 h old (price-weighted) refunds run A 3.0%, B 7.5%, C 28%, so WARRANTY_Q / REFUND (A 0.03, B 0.13, C 0.35) are about right (B could be ~0.08). Do not lower them, and do not mark aged goods down toward the market median: both lower Book (a C sale at ~1.09x cost changes Book by about -0.21x cost). DEPLOYED (53d3cea, kit restarted 15:48, ~2.5 min down): a buyer whose last two offers rise and whose next two steps reach the floor gets up to 2 turns past max_turns (106 walks in 6 h met this; est. +0.7-1.4M Book, +25-60M revenue to round end). Seller numbers and sales move from 15:51: do not credit or blame a number for it. Note simulate_r3.py replays walks only up to max_turns, so its replays now understate deals."
+  },
+  {
+   "t": 1794727942.876458,
+   "text": "Supervisor 16:3x, DATA for MERCH (dear depth): our 150k+ goods bought vs sold per hour: 13h 38 vs 21, 14h 49 vs 43, 15h 63 vs 47, 16:00-16:31 30 vs 13. Dear stock grows ~15 units (~7M at cost) an hour; stock at cost went 58M (06:00) -> 92M (16:31); cash 140M. Book counts stock at cost, so the cost is storage (~0.9M/day now) and the share that never sells (audit #38/#39: C and dead-A units do not sell). dear_depth 5 -> 6 at 15:46 points the wrong way for this; consider depth/dear_depth steps that bring dear buys back to the sell rate (~45/h)."
   }
  ]
 }
