@@ -114,7 +114,8 @@ CAP_SELL_HOURS = 12
 CAP_MIN_RECEIVED = 30               # units received before a slow sell-through may shrink the cap
 CAP_MIN = 25_000_000                # not below the cap already proven to sell out, unless the balance says so
                                     # ceiling: STOCK_BUDGET_SHARE x balance (the rule since 11-04), over CAP_MIN
-CAP_CEILING_SHARE = 0.60            # the adaptive cap's ceiling as a share of the balance (STOCK_BUDGET_SHARE 0.40 until
+CAP_CEILING_SHARE = 0.70            # 0.70 since 2026-11-15 18:4x KST (S3 of 20261115_short_term_strategy.md: stock 196.8M at
+                                    #   the 186.9M ceiling, bedding stockouts 6.2/h, goods buying open until 11-17 11:59). The adaptive cap's ceiling as a share of the balance (STOCK_BUDGET_SHARE 0.40 until
                                     #   2026-11-11, the human's yes): in 36 h the cap asked to grow 29 times and shrink
                                     #   0 times (sell-through 0.78-1.0) and was clipped at 0.40 x balance every time,
                                     #   with ~200M idle. Unsold stock counts at cost, so the cost of more stock is the 1%/day
