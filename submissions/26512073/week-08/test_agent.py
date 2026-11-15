@@ -847,5 +847,56 @@ class HarnessCooldownTests(unittest.TestCase):
         self.assertTrue(harness.COOLDOWN_PATH.exists())
 
 
+class CheckoutLifecycleTests(unittest.TestCase):
+    def setUp(self):
+        from starlette.testclient import TestClient
+        from seller import build
+        self.folder = tempfile.TemporaryDirectory()
+        self.addCleanup(self.folder.cleanup)
+        self.app = build(9999, history_path=Path(self.folder.name) / "history.jsonl")
+        self.client = self.enterContext(TestClient(self.app))
+        self.session = {
+            "id": "cs_sample", "task": "sample-task", "unit": "sample-unit",
+            "status": "ready_for_payment",
+        }
+        self.app.state.checkout_sessions["cs_sample"] = self.session
+        self.app.state.seller.held["sample-unit"] = 123
+        self.url = "/acp/checkout_sessions/cs_sample"
+
+    def test_get_and_missing_sessions(self):
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), self.session)
+        self.assertEqual(self.client.get("/acp/checkout_sessions/missing").status_code, 404)
+        self.assertEqual(self.client.post("/acp/checkout_sessions/missing/cancel").status_code, 404)
+
+    def test_cancel_releases_hold_and_retry_preserves_later_hold(self):
+        response = self.client.post(self.url + "/cancel")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["status"], "canceled")
+        self.assertNotIn("sample-unit", self.app.state.seller.held)
+        self.app.state.seller.held["sample-unit"] = 456
+        self.assertEqual(self.client.post(self.url + "/cancel").status_code, 200)
+        self.assertEqual(self.app.state.seller.held["sample-unit"], 456)
+
+    def test_cancel_preserves_other_negotiation_or_checkout_hold(self):
+        self.app.state.seller.open["other-task"] = {"unit": {"unit": "sample-unit"}}
+        self.assertEqual(self.client.post(self.url + "/cancel").status_code, 200)
+        self.assertIn("sample-unit", self.app.state.seller.held)
+        self.app.state.seller.open.clear()
+        self.session["status"] = "ready_for_payment"
+        self.app.state.checkout_sessions["cs_other"] = {
+            **self.session, "id": "cs_other", "task": "other-task",
+        }
+        self.assertEqual(self.client.post(self.url + "/cancel").status_code, 200)
+        self.assertIn("sample-unit", self.app.state.seller.held)
+
+    def test_completed_session_cannot_be_canceled(self):
+        self.session["status"] = "completed"
+        self.assertEqual(self.client.post(self.url + "/cancel").status_code, 409)
+        self.assertEqual(self.session["status"], "completed")
+        self.assertIn("sample-unit", self.app.state.seller.held)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

@@ -8,7 +8,10 @@ from pathlib import Path
 import re
 import time
 from starlette.routing import Route
-from checkout import checkout_card, create_checkout_session
+from checkout import (
+    checkout_card, create_checkout_session,
+    get_checkout_session, cancel_checkout_session,
+)
 
 from cryptography.hazmat.primitives import serialization
 import uvicorn
@@ -258,6 +261,16 @@ def build(port, history_path=None):
         Route(
             "/acp/checkout_sessions",
             create_checkout_session,
+            methods=["POST"],
+        ),
+        Route(
+            "/acp/checkout_sessions/{session_id}",
+            get_checkout_session,
+            methods=["GET"],
+        ),
+        Route(
+            "/acp/checkout_sessions/{session_id}/cancel",
+            cancel_checkout_session,
             methods=["POST"],
         ),
     ]

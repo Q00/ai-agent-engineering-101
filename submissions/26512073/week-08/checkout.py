@@ -209,3 +209,41 @@ async def create_checkout_session(request):
 
     sessions[session_id] = session
     return JSONResponse(session, status_code=201)
+
+
+async def get_checkout_session(request):
+    session_id = request.path_params["session_id"]
+    session = request.app.state.checkout_sessions.get(session_id)
+    if session is None:
+        return JSONResponse(
+            {"error": "Checkout session was not found."}, status_code=404)
+    return JSONResponse(session)
+
+
+async def cancel_checkout_session(request):
+    session_id = request.path_params["session_id"]
+    sessions = request.app.state.checkout_sessions
+    session = sessions.get(session_id)
+    if session is None:
+        return JSONResponse(
+            {"error": "Checkout session was not found."}, status_code=404)
+    if session["status"] == "canceled":
+        return JSONResponse(session)
+    if session["status"] != "ready_for_payment":
+        return JSONResponse(
+            {"error": "This session cannot be canceled."}, status_code=409)
+
+    session["status"] = "canceled"
+    seller = request.app.state.seller
+    unit_id = session["unit"]
+    negotiating = any(
+        deal.get("unit", {}).get("unit") == unit_id
+        for deal in seller.open.values()
+    )
+    another_checkout = any(
+        other["unit"] == unit_id and other["status"] == "ready_for_payment"
+        for other in sessions.values()
+    )
+    if not negotiating and not another_checkout:
+        seller.held.pop(unit_id, None)
+    return JSONResponse(session)
