@@ -46,10 +46,14 @@ class Intel:
           ON trades(shop,ts,honest);
         CREATE INDEX IF NOT EXISTS trades_sku_grade_ts
           ON trades(sku,grade,ts);
+        CREATE INDEX IF NOT EXISTS trades_grade_ts
+          ON trades(grade,ts);
         CREATE INDEX IF NOT EXISTS breakages_shop_ts
           ON breakages(shop,ts);
         CREATE INDEX IF NOT EXISTS observations_shop_ts_kind
           ON observations(shop,ts,kind);
+        CREATE INDEX IF NOT EXISTS decisions_role_ts
+          ON decisions(role,ts);
         ''')
         columns={r[1] for r in self.db.execute('PRAGMA table_info(trades)')}
         if 'buyer' not in columns:

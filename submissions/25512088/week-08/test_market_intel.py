@@ -36,7 +36,9 @@ class IntelligenceTests(unittest.TestCase):
             "SELECT name FROM sqlite_master WHERE type='index'")}
         self.assertIn('trades_shop_ts_honest',indexes)
         self.assertIn('trades_sku_grade_ts',indexes)
+        self.assertIn('trades_grade_ts',indexes)
         self.assertIn('observations_shop_ts_kind',indexes)
+        self.assertIn('decisions_role_ts',indexes)
 
     def test_fresh_review_cache_fetches_only_new_shop(self):
         now=time.time();cached_at=now-60
