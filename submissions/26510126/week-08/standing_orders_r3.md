@@ -97,3 +97,7 @@ what it came from and when it is to be reviewed; a rule past its review conditio
    sku_depth 3->4 at 11/14 06:52, fresh_premium 0.18->0.15 at 10:13 and max_list 900k->1.2M at 15:02 were reverted
    for the same reason.
    [since 11/14 04:4x; from: the supervisor; review: never]
+15. market_ask stays at 1.0 for the rest of the round. From 11/14 03:48 to 11/15 18:32 it moved 1.0 <-> 1.03 / 1.05 / 1.08
+   more than eight times, often back within 16-50 min, so no value got a clean verdict; 1.0 is the only one with a closed
+   positive verdict (+63%). A change needs a closed A/B, not a play-mode step.
+   [since 11/15 18:3x; from: the supervisor; review: never]
