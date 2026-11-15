@@ -21,12 +21,13 @@ restock.settled = lambda: [{"item": "G1", "amount": 300}, {"item": "G1", "amount
 assert restock.settled_counts() == {"G1": 600, "G2": 900}                                             # revenue, not count
 restock.settled_counts = lambda: collections.Counter({"F1": 10, "G1": 4, "G2": 1, "ZZ": 9})
 restock.median_price = lambda sku: (200, 7) if sku == "G1" else (None, 0)
-restock.subprocess.Popen = lambda *a, **k: None          # the test must not launch the live tuner
+_popen, subprocess.Popen = subprocess.Popen, (lambda *a, **k: None)   # the test must not launch the live tuner
 sys.argv = ["restock", "--state", str(md)]
 import io, contextlib
 buf = io.StringIO()
 with contextlib.redirect_stdout(buf):
     restock.main()
+subprocess.Popen = _popen
 out = json.loads(buf.getvalue().strip().splitlines()[-1])
 buy = {b["sku"]: b["qty"] for b in out["buy"]}
 assert set(buy) <= set(cat) and "ZZ" not in buy, buy
