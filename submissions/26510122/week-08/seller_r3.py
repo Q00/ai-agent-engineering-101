@@ -434,7 +434,7 @@ class Seller(AgentExecutor):
             if ask != proposed:
                 audit.guard('price_range_or_type',proposed_price=proposed,effective_price=ask)
             if ask < required_floor:
-                audit.guard('selling_price_floor',price_floor=required_floor,policy=sale_policy)
+                audit.guard('warranty_price_floor' if warranty['price_floor']>=required_floor and warranty['price_floor']>0 else 'selling_price_floor',price_floor=required_floor,policy=sale_policy)
             ask = max(ask,required_floor)
             if ask != proposed or unit["unit"] != answer.get("unit_id"):
                 trace("decision_guard", phase="opening", proposed_price=proposed,
@@ -614,7 +614,10 @@ class Seller(AgentExecutor):
             await reject('That quote no longer has a viable unit. Please request a fresh quote.','promotion_below_selling_floor')
             return
         if action == 'accept' and offer < required_floor:
-            audit.guard('selling_price_floor',buyer_offer=offer,price_floor=required_floor,policy=sale_policy)
+            guard_reason='warranty_price_floor' if warranty_floor and offer<warranty_floor else 'selling_price_floor'
+            audit.guard(guard_reason,buyer_offer=offer,price_floor=required_floor,policy=sale_policy)
+            if guard_reason=='warranty_price_floor':
+                record('warranty_price_guard',task_id=task.id,buyer_offer=offer,price_floor=required_floor)
             record('selling_price_guard',task_id=task.id,unit=unit['unit'],sku=unit['sku'],buyer_offer=offer,**sale_policy)
             action='counter'
             answer={**answer,'price':required_floor}
