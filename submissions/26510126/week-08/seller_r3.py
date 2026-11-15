@@ -169,7 +169,9 @@ def log(msg):
 
 
 TALKS = Path(os.environ.get("TALKS_LOG") or HERE / "logs" / "talks_r3.jsonl")
-WARRANTY_WORDS = re.compile(r"warrant|guarantee|보증|보장|AS\b", re.I)
+# "AS" (after-service) must be capitals with a word edge on both sides: with re.I it matched "as", "has", "was" and
+# flagged 33% of talks (959 food talks) as warranty asks, which reorders units and switches off prefer_b (audit #46)
+WARRANTY_WORDS = re.compile(r"(?i:warrant|guarantee)|보증|보장|\bA/?S\b")
 
 
 def ab_end(task_id, deal, event, reward=0.0, price=None):

@@ -322,6 +322,10 @@ async def main():
         check("model and rule talks are compared side by side; fidelity leaves model talks out",
               mv["model"]["talks"] == 1 and mv["rule"]["talks"] == len(talks) - 1
               and simulate_r3.run(meta_r3.current(), meta_r3.BOUNDS)["fidelity"] == 1.0, mv)
+        W = seller_r3.WARRANTY_WORDS
+        check("warranty words: 'as/has/was' are not a warranty ask; AS, A/S, Warranty and 보증 are",
+              not any(W.search(t) for t in ("Send your offer as a number", "it has a lid", "was it fresh?"))
+              and all(W.search(t) for t in ("AS 되나요", "A/S 기간", "Warranty please", "보증 있나요")), "WARRANTY_WORDS")
     finally:
         p.terminate()
     print(f"\n{sum(ok)}/{len(ok)} passed")
