@@ -212,6 +212,9 @@ def make_plan(inv, units, catalog, budget, log, record=True):
         log(f"[low] {(c.get('name') or sku)[:40]}: request-based ({why}), held {held.get(sku, 0)} -> buy {qty}")
     if reqc:
         request_buy.bought([s for s, _, _, _ in reqc if s in line_of])
+    if record:                                   # 11/15 ~14:20 (person): 6 request lines, guard 10M + 6 h report
+        from depts import request_six
+        request_six.check(units, log=log)
     try:                                         # 11/08 ~20:35: hot SKUs that turn in <= 1 h get my_share 0.8
         from depts import hot_fast
         fast_share = hot_fast.shares(hot, MY_SHARE, log=log)

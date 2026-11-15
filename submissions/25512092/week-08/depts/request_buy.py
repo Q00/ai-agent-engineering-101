@@ -41,6 +41,17 @@ TRIAL_TARGET = 2
 TRIAL_H = 6                     # median <= FAST_H within 6 h of the first trial buy -> regular, else dropped
 DROP_AFTER_S = 86400
 ME = "choo-chu"
+LINES = os.path.join(HERE, "request_lines.json")     # 11/15 ~14:20 (person): the line counts are read from here
+
+
+def lines_cfg(path=None):
+    """(lines, trial lines) from request_lines.json ("lines", "trial"); MAX_LINES / TRIAL_LINES without it."""
+    try:
+        with open(path or LINES, encoding="utf-8") as f:
+            r = json.load(f)
+        return int(r.get("lines", MAX_LINES)), int(r.get("trial", TRIAL_LINES))
+    except (OSError, ValueError, TypeError):
+        return MAX_LINES, TRIAL_LINES
 
 
 def _state():
@@ -104,6 +115,7 @@ def candidates(catalog, held, surge, log=print, now=None):
     from market_db import sku_avg
     from depts.purchasing import COST_SHARE
     now = now or time.time()
+    ML, TL = lines_cfg()                               # 11/15 ~14:20: 4 -> 6 (5 + 1 trial)
     st = _state()
     db = sqlite3.connect(os.path.join(HERE, "market.db"), timeout=30)
     try:
@@ -155,7 +167,7 @@ def candidates(catalog, held, surge, log=print, now=None):
             in_trial = bool(s.get("trial")) and not s.get("trial_ok")
             new = sku not in turn and not s.get("trial")
             if in_trial or (new and FAST_ONLY):               # a trial line (running, or a new SKU to try)
-                if trials >= TRIAL_LINES:
+                if trials >= TL:
                     continue
                 trials += 1                                   # a running trial keeps its slot, bought up or not
                 qty = TRIAL_TARGET - held.get(sku, 0)
@@ -172,7 +184,7 @@ def candidates(catalog, held, surge, log=print, now=None):
                 continue
             tt = f", target {tgt} (supply->sale median {turn[sku]:.2f} h)" if sku in turn else ""
             out.append((sku, qty, round(avg), f"{n} requests in 24 h, avg {round(avg):,} (n {k}), est. cost {int(cost):,}{tt}"))
-        out = out[:MAX_LINES - min(trials, TRIAL_LINES)] + trial[:TRIAL_LINES]
+        out = out[:ML - min(trials, TL)] + trial[:TL]
     finally:
         db.close()
     _save(st)
