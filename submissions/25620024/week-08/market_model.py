@@ -19,6 +19,28 @@ from pathlib import Path
 
 import httpx
 
+def _ttl(seconds):
+    """HQ 11-15 12:10: remember a read-only ledger answer for a minute. One quote asked the ledger the same questions
+    (regulars 0.5 s, our_sales and market_price 0.15 s each, several times) and replies took 1.3-1.7 s; the ledger
+    moves every 5 min (sync), so a one-minute-old answer is the same answer. The connection is not part of the key."""
+    def wrap(f):
+        memo = {}
+
+        def g(c, *a, **k):
+            key = (a, tuple(sorted((n, tuple(sorted(v.items())) if isinstance(v, dict) else v) for n, v in k.items())))
+            hit = memo.get(key)
+            if hit and time.time() - hit[0] < seconds:
+                return hit[1]
+            v = f(c, *a, **k)
+            if len(memo) > 5000:
+                memo.clear()
+            memo[key] = (time.time(), v)
+            return v
+        g.__doc__, g.__name__ = f.__doc__, f.__name__
+        return g
+    return wrap
+
+
 MARKET = os.environ.get("MARKET_URL", "https://market.ourolabs.ai")
 SHOP_NAME = "dragonash"     # supply entries name the shop; settle entries carry its (changing) tunnel URL
 DB = Path(os.environ.get("MARKET_MODEL", Path(__file__).parent / "private" / "market.db"))
@@ -156,6 +178,7 @@ def market_low(c, sku, me=None, hours=12):
     return row[0] if row and row[0] else None
 
 
+@_ttl(60)
 def our_sales(c, sku=None, hours=6):
     """Our settled sales lately: per SKU per hour (sku=None gives a dict for all SKUs)."""
     q = (f"select s.sku, count(*) from settles s where s.ts>? and exists ({OURS_ROW})"   # HQ 11-15: was seq in
@@ -165,12 +188,13 @@ def our_sales(c, sku=None, hours=6):
     return rates.get(sku, 0.0) if sku else rates
 
 
+@_ttl(60)
 def regulars(c, min_buys=2, hours=48):
     """Our regular customers from the ledger: buyers who settled at least min_buys purchases with our shop lately.
     We cannot tell who is asking during a negotiation (the A2A request names no buyer), but the settles do, so
     the shop serves its regulars by stocking what they buy. Returns ({buyer: buys}, {category: {sku: buys}})."""
-    rows = c.execute(f"select buyer, category, sku from settles where ts>? and seq in ({ours(c)})",
-                     (time.time() - hours * 3600,)).fetchall()
+    rows = c.execute(f"select s.buyer, s.category, s.sku from settles s where s.ts>? and exists ({OURS_ROW})",
+                     (time.time() - hours * 3600,)).fetchall()   # HQ 11-15 12:00: was seq in (ours), 2.0 s
     buys = {}
     for b, _, _ in rows:
         buys[b] = buys.get(b, 0) + 1
@@ -252,17 +276,20 @@ def buyer_profile(c, buyer, hours=24):
             "top_shops": sorted(shops.items(), key=lambda kv: -kv[1])[:4]}
 
 
+@_ttl(60)
 def market_price(c, sku, hours=24, min_n=3, grade=None, grade_fallback=None):
     """The median price other shops settled this SKU at lately, with how many settles: (median, n), or (None, n).
     With a grade (11-07): that grade's median when it has min_n settles -- grade A furniture settles 5-9% above B
     (24 h), and one all-grade median priced our A units over it while B/C units sold under our cost."""
     import statistics
+    # HQ 11-15 12:00: "seq not in (ours)" rebuilt our 29k settle list on every call, 1.8 s; a quote calls this up to
+    # five times, so quotes took 4-10 s and buyers left (our deals 80/h -> 5-30/h from 02:00). Same answers, 0.15 s.
     if grade:
-        rows = [r[0] for r in c.execute(f"select amount from settles where sku=? and grade=? and ts>? and seq not in "
-                                         f"({ours(c)})", (sku, grade, time.time() - hours * 3600))]
+        rows = [r[0] for r in c.execute(f"select s.amount from settles s where s.sku=? and s.grade=? and s.ts>? and not "
+                                         f"exists ({OURS_ROW})", (sku, grade, time.time() - hours * 3600))]
         if len(rows) >= max(min_n, 10):
             return statistics.median(rows), len(rows)
-    rows = [r[0] for r in c.execute(f"select amount from settles where sku=? and ts>? and seq not in ({ours(c)})",
+    rows = [r[0] for r in c.execute(f"select s.amount from settles s where s.sku=? and s.ts>? and not exists ({OURS_ROW})",
                                      (sku, time.time() - hours * 3600))]
     k = (grade_fallback or {}).get(grade, 1.0) if grade else 1.0   # HQ 11-11: a thin grade is not the all-grade price
     return (statistics.median(rows) * k if len(rows) >= min_n else None), len(rows)
@@ -282,20 +309,20 @@ def leader_skus(c, leaders, hours=24, top=15):
 
 def big_buyers(c, min_amount, hours=48):
     """Buyers who settled a purchase of at least min_amount with our shop lately (the ledger names them)."""
-    return {b for (b,) in c.execute(f"select distinct buyer from settles where ts>? and amount>=? and seq in ({ours(c)})",
-                                    (time.time() - hours * 3600, min_amount)) if b}
+    return {b for (b,) in c.execute(f"select distinct s.buyer from settles s where s.ts>? and s.amount>=? and exists "
+                                    f"({OURS_ROW})", (time.time() - hours * 3600, min_amount)) if b}   # 11-15: 1.9 -> 0.3 s
 
 
 def credit_for(c, buyer, hours=48):
     """The lowest-price guarantee's coupon: for a buyer's latest purchase from us (not yet credited), how much more it
     paid than the lowest price another shop settled the same SKU at within 24 h of it. Returns (seq, amount) or None."""
-    row = c.execute(f"""select seq, sku, amount, ts from settles where buyer=? and ts>? and seq in ({ours(c)})
-                        and seq not in (select seq from credits_used) order by ts desc limit 1""",
-                    (buyer, time.time() - hours * 3600)).fetchone()
+    row = c.execute(f"""select s.seq, s.sku, s.amount, s.ts from settles s where s.buyer=? and s.ts>? and exists ({OURS_ROW})
+                        and s.seq not in (select seq from credits_used) order by s.ts desc limit 1""",
+                    (buyer, time.time() - hours * 3600)).fetchone()   # 11-15: 1.5 s -> 0.001 s, same row
     if not row:
         return None
     seq, sku, amount, ts = row
-    low = c.execute(f"select min(amount) from settles where sku=? and ts between ? and ? and seq not in ({ours(c)})",
+    low = c.execute(f"select min(s.amount) from settles s where s.sku=? and s.ts between ? and ? and not exists ({OURS_ROW})",
                     (sku, ts - 86400, ts + 86400)).fetchone()[0]
     return (seq, amount - low) if low and low < amount else None
 
