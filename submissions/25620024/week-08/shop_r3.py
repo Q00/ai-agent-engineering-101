@@ -200,6 +200,11 @@ def find_unit(text, taken=(), need=None):
     # 11-10 review mining: our agreed deals got paid A 97%, B 94%, C 64% -- the kit's example buyer policy pays for
     # A/B only. Goods (whose grade never changes) offer an A/B unit before a C one unless the buyer said C is fine.
     c_ok = bool(need.get("grades")) and "C" in need["grades"]
+    # HQ 11-15 16:30 (audit: agreed vs paid, 6 h): goods C 137 agreed, 2 paid; goods A 60/95, B 19/29, food C 124/175.
+    # Buyers agree to a C sofa or TV and never pay it (their kit pays A/B only), and the unit sits 'taken' meanwhile
+    # (G47788edd 1.70M, G8ec51935 1.24M, Ge5fe0d41 1.65M). A goods C unit now goes only to a buyer that said C is fine.
+    if promo.theta().get("c_goods_need_ok", True) and not c_ok:
+        fit = [u for u in fit if not (u.get("kind") == "goods" and u.get("grade") == "C")]
     # stars audit 11-11 (week-10 lecture: a first move must weigh the cost of a wrong guess): house buyers never say
     # how long their food must last, the market settles a unit that runs out before the order's use_within_hours at
     # value 0, and the buyer reviews "Only N h of shelf life left; I needed M h" with 2 stars -- 21 of 1,209 sampled

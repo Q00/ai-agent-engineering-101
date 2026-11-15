@@ -73,6 +73,11 @@ def audit(board=None, now=None, minutes=60):
 
     # --- buyer team ----------------------------------------------------------------------------------------------
     def close_at(m):
+        # HQ 11-15 16:40: the buyer's real close line is per order (price_plan: patch 3.6 walks away under r_min, the
+        # share of the shop's margin we keep) and memory.jsonl records it. The list-ratio line below flagged 86 "missed"
+        # orders in 6 h that the buyer walked away from on purpose; against the recorded close_at there were 0.
+        if m.get("close_at"):
+            return m["close_at"]
         r = T.get("close_ratio_big", 1.0) if m["list_price"] >= T.get("big_list", 100000) else T.get("close_ratio", 0.9)
         return min(m["budget"], int(m["list_price"] * r))
     walked = [m for m in orders if m["outcome"] == "no deal" and m.get("last_ask") is not None

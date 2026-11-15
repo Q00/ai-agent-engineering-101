@@ -351,9 +351,15 @@ def quote(c, unit, code=None, me=None, now=None, stock_n=1, vip=False):
         hrs_left = max(0.0, (t["round_end"] - now) / 3600)
         rate_s = market_model.our_sales(c, unit["sku"], hours=24)
         cover_s = stock_n / rate_s if rate_s > 0 else float("inf")
-        if cover_s > hrs_left:
+        # HQ 11-15 16:30 (audit: 347 of 489 big quotes in 3 h asked at or over the grade median, the cliff where big
+        # goods stop selling): a big unit whose ladder floor reaches 0.99 x its grade median asks max(hold line,
+        # cliff_clear_at x median) like a slow line -- the hold line already pays the storage left, so no Book is lost.
+        cliff = bool(t.get("cliff_clear") and unit.get("kind") == "goods" and lp >= t.get("big_follow_list", 500000)
+                     and gmk and max(price, floor) >= gmk * 0.99)
+        if cover_s > hrs_left or cliff:
             hold_s = int(cost * (1 - 0.01 * hrs_left / 24)) + 1
-            tgt_s = max(hold_s, int((gmk or median) * t.get("slow_clear_at", 0.97)))
+            at_s = t.get("slow_clear_at", 0.97) if cover_s > hrs_left else t.get("cliff_clear_at", 0.99)
+            tgt_s = max(hold_s, int((gmk or median) * at_s))
             if tgt_s < price:
                 price = tgt_s
             floor = max(hold_s, min(floor, int(tgt_s * (1 - t["haggle_room"]))))
