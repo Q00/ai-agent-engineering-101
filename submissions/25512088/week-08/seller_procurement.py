@@ -467,8 +467,24 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
         forecast=(velocity+unmet)*row.get('estimated_sale_likelihood',0)*max(1.0,float(aggression))
         need=max(0,math.ceil(forecast)-holding.get(row['sku'],0))
         is_food=row.get('kind')=='food'
+        food_scale_ready=False
         if is_food:
             unit_cap=policy.get('max_food_units_per_sku',2)
+            # Keep unproven/perishable food at the two-unit absolute cap.  A
+            # single extra unit is justified only by this shop's own settled
+            # profit, conversion and repeated stockout evidence; market-wide
+            # popularity alone cannot expand a short-lived SKU.
+            food_scale_ready=(
+                own_sales_total>=policy.get('min_proven_food_sales',5) and
+                row.get('own_gross_total',0)>0 and
+                local_quotes>=policy.get('min_proven_food_quote_samples',10) and
+                isinstance(local_rate,(int,float)) and
+                local_rate>=policy.get('min_proven_food_conversion_rate',.20) and
+                row.get('own_stockouts_6h',0)>=
+                    policy.get('min_proven_food_stockouts_6h',5))
+            if food_scale_ready:
+                unit_cap=max(unit_cap,
+                             policy.get('max_proven_food_units_per_sku',3))
         else:
             unit_cap=policy.get('max_units_per_sku',3)
             if row.get('upper_cost',0)>=policy.get('high_value_lane_min_unit_cost',math.inf):
@@ -528,6 +544,7 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
                 max(0,row.get('own_gross_total',0)/max(1,own_sales_total)))
         evidence=dict(row,trusted_inquiries_6h=trusted_inquiries,
                       trusted_stockouts_6h=trusted_stockouts,sku_inventory_ceiling=sku_ceiling,
+                      food_scale_ready=food_scale_ready,
                       cold_goods_cost=cold_goods_cost,cold_goods_limit=cold_goods_limit,
                       cold_goods_frozen=cold_goods_frozen,cold_safe_trial=cold_safe_trial,
                       own_profit_proven=own_profit_proven,
