@@ -28,6 +28,17 @@ class RolloutTests(unittest.TestCase):
   counter=negotiate(self.u,q,7999,{},self.p)
   self.assertGreaterEqual(counter['price'],self.u['cost'])
   self.assertGreater(counter['price'],7999)
+ def test_public_offer_just_below_score_floor_can_release_expected_positive_book(self):
+  q=dict(base=9000,price=9000,reward=0,spent=0,member=None,referrer=None,
+         benefit='none',warranty_hours=6,hazard_probability=.02,
+         hazard_basis='public-matured',loss_leader=False)
+  ordinary=score_floor(self.u,.02)
+  accepted=negotiate(self.u,q,ordinary-10,{},self.p)
+  self.assertEqual(accepted['price'],ordinary-10)
+  self.assertTrue(accepted['near_book_recovery'])
+  self.assertGreaterEqual(accepted['price']*.98,self.u['cost'])
+  rejected=negotiate(self.u,q,math.ceil(ordinary*.995)-1,{},self.p)
+  self.assertGreater(rejected['price'],math.ceil(ordinary*.995)-1)
  def test_mature_public_breakage_cohort_lowers_floor_without_removing_margin(self):
   class Evidence:
    def source(self,*args,**kwargs):return {'shops':[{'name':'25512088','claims':139,'broken':11}]}

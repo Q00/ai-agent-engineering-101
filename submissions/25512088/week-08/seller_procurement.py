@@ -427,9 +427,13 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
             unit_cap=policy.get('max_food_units_per_sku',2)
         else:
             unit_cap=policy.get('max_units_per_sku',3)
+            if row.get('upper_cost',0)>=policy.get('high_value_lane_min_unit_cost',math.inf):
+                unit_cap=min(unit_cap,policy.get('max_high_value_units_per_sku',1))
         # These are absolute per-SKU inventory ceilings. Demand velocity may
         # move a SKU up the queue, but it must expand breadth rather than turn
-        # one fast seller into another concentrated inventory position.
+        # one fast seller into another concentrated inventory position. High-
+        # value goods are additionally limited to one live unit per SKU so a
+        # slow quote cannot duplicate a six-figure capital position.
         # Portfolio size is bounded by available capital and evidence-backed
         # SKU breadth.  A fixed global unit count used to strand growing cash.
         sku_ceiling=unit_cap

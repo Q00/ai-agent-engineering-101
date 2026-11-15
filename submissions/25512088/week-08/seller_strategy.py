@@ -245,6 +245,19 @@ def negotiate(unit, current, offered, catalog, program, token='', ref=''):
     if public_cost_recovery:
         floor=min(floor,unit['cost'])
     minimum=program.quote(floor,unit['cost'],token=token,ref=ref)
+    # A numeric buyer offer just below the ordinary 1% expected-Book target is
+    # better than leaving expensive principal idle when it still preserves
+    # principal after measured breakage risk. Keep this exception extremely
+    # narrow (within 0.5% of the normal floor), public-only, and reward-free.
+    # Legacy promises and genuinely loss-making offers never use it.
+    survival=max(.5,1-max(0,min(.49,hazard))) if current.get('warranty_hours') else 1
+    principal_floor=math.ceil(unit['cost']/survival)
+    near_book_recovery=bool(
+        not legacy and not public_cost_recovery and
+        offered>=principal_floor and offered>=math.ceil(minimum['price']*.995))
+    if near_book_recovery:
+        floor=principal_floor
+        minimum=program.quote(floor,unit['cost'],token=token,ref=ref)
     if offered>=minimum['price']:
         lo,hi=floor,current['base']
         while lo<hi:
@@ -259,9 +272,12 @@ def negotiate(unit, current, offered, catalog, program, token='', ref=''):
     score_safe=q['price']*((1-hazard) if q['warranty_hours'] else 1)-q['reward'] >= required
     bounded_cost_recovery=(public_cost_recovery and q['reward']==0 and
                            q['price']>=unit['cost'])
-    if not (score_safe or bounded_cost_recovery):
+    bounded_book_recovery=(near_book_recovery and q['reward']==0 and
+                           q['price']*survival>=unit['cost'])
+    if not (score_safe or bounded_cost_recovery or bounded_book_recovery):
         return current
     q['hazard_probability']=hazard;q['hazard_basis']=current.get('hazard_basis','conservative-unmeasured')
+    q['near_book_recovery']=bounded_book_recovery
     return q if q['price']<current['price'] else current
 
 

@@ -405,6 +405,19 @@ class PurchaseTests(unittest.TestCase):
   self.assertEqual(allocation_plan(
       [cheap,high1,high2,high3],{'units':[],'balance':2500000},2500000,
       policy=policy)[0]['sku'],'cheap')
+ def test_high_value_sku_never_duplicates_while_one_unit_is_held(self):
+  high=dict(sku='high',kind='goods',expected_net=50000,score=1000,
+            upper_cost=600000,sales_1h=6,sales_6h=12,
+            distinct_buyers_6h=4,estimated_sale_likelihood=.8,
+            own_sales_total=3,own_gross_total=100000,own_profitable_sales=3,
+            dominant_grade_samples=4,dominant_grade_profit_probability=.75)
+  policy={'max_units_per_sku':3,'max_sku_capital_share':1,
+          'high_value_lane_min_unit_cost':500000,
+          'max_high_value_units_per_sku':1}
+  held={'units':[{'sku':'high','kind':'goods','cost':600000}],
+        'balance':2000000}
+  self.assertEqual(allocation_plan([high],held,2000000,aggression=4,
+                                   policy=policy),[])
  def test_sold_out_proven_sku_scales_during_breadth_expansion(self):
   ranked=[dict(sku='proven',kind='goods',expected_net=10000,score=100,upper_cost=100,
                sales_1h=12,sales_6h=24,own_sales_1h=2,own_sales_total=2,
