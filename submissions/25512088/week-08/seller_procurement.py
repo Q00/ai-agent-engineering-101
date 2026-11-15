@@ -193,6 +193,42 @@ def mature_refund_risk_skus(referrals, min_sales=20, min_refunds=2,
             if count>=samples and failed>=refunds and capital>0
             and gross/capital<=threshold}
 
+def own_a_conversion_evidence(adaptive_path, now=None, hours=6):
+    """Aggregate bounded A-grade quote-to-sign evidence by SKU.
+
+    Runtime events contain only structured numeric sale metadata. Matching by
+    task/correlation lets procurement distinguish a profitable market-wide SKU
+    from one whose dominant A arrivals repeatedly fail in this shop. The
+    rolling window automatically expires old strategy versions and retries a
+    SKU after its local evidence becomes stale.
+    """
+    now=time.time() if now is None else now;path=Path(adaptive_path)
+    if not path.exists() or hours<=0:return {}
+    try:
+        with sqlite3.connect('file:'+str(path)+'?mode=ro',uri=True) as db:
+            rows=db.execute("SELECT kind,body,correlation FROM runtime_events "
+                            "WHERE ts>? AND kind IN ('quote_created','sale_signed')",
+                            (now-float(hours)*3600,)).fetchall()
+    except sqlite3.Error:
+        return {}
+    quotes={};signed=set()
+    for kind,body,correlation in rows:
+        try:event=json.loads(body)
+        except (TypeError,ValueError):continue
+        task=str(event.get('task') or correlation or '')
+        if not task:continue
+        if kind=='quote_created' and event.get('grade')=='A' and event.get('sku'):
+            quotes[task]=str(event['sku'])
+        elif kind=='sale_signed':
+            signed.add(task)
+    result={}
+    for task,sku in quotes.items():
+        row=result.setdefault(sku,{'quotes':0,'signed':0})
+        row['quotes']+=1;row['signed']+=task in signed
+    for row in result.values():
+        row['rate']=row['signed']/row['quotes'] if row['quotes'] else 0.0
+    return result
+
 def reserve_cash(inv,exposure=0):
     return max(settings()['cash_floor'],inv.get('bankrupt_line',500000))+exposure
 
@@ -290,6 +326,12 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
         if row.get('kind')=='goods':
             min_samples=policy.get('min_goods_a_profit_samples',0)
             min_probability=policy.get('min_goods_a_profit_probability',0)
+            own_a_quotes=row.get('own_a_quotes',0)
+            own_a_rate=row.get('own_a_conversion_rate')
+            if (own_a_quotes>=policy.get('min_own_a_conversion_samples',10) and
+                    isinstance(own_a_rate,(int,float)) and
+                    own_a_rate<policy.get('min_own_a_conversion_rate',.10)):
+                continue
             own_sales_total=row.get('own_sales_total',row.get('own_sales_1h',0))
             own_profitable=row.get('own_profitable_sales',0)
             # Market-wide demand cannot rescue a product that has already
@@ -566,12 +608,19 @@ def main():
                 min_sales=policy.get('mature_refund_veto_min_sales',20),
                 min_refunds=policy.get('mature_refund_veto_min_refunds',2),
                 min_book_margin=policy.get('mature_refund_veto_book_margin',.03))
-        ranked=[dict(row,kind=catalog.get(row.get('sku'),{}).get('kind'),
-                     own_sales_1h=own_sales_1h.get(row.get('sku'),0),
-                     own_sales_total=own_sales_total.get(row.get('sku'),0),
-                     own_gross_total=own_gross_total.get(row.get('sku'),0),
-                     own_profitable_sales=own_profitable_sales.get(row.get('sku'),0))
-                for row in (strategy.get('candidates') or strategy.get('top10',[]))]
+        a_conversion=own_a_conversion_evidence(
+            state/'adaptive.sqlite3',hours=policy.get('own_a_conversion_window_hours',6))
+        ranked=[]
+        for source in (strategy.get('candidates') or strategy.get('top10',[])):
+            sku=source.get('sku');conversion=a_conversion.get(sku,{})
+            ranked.append(dict(source,kind=catalog.get(sku,{}).get('kind'),
+                own_sales_1h=own_sales_1h.get(sku,0),
+                own_sales_total=own_sales_total.get(sku,0),
+                own_gross_total=own_gross_total.get(sku,0),
+                own_profitable_sales=own_profitable_sales.get(sku,0),
+                own_a_quotes=conversion.get('quotes',0),
+                own_a_signed=conversion.get('signed',0),
+                own_a_conversion_rate=conversion.get('rate')))
         if not ranked:
             log(event='no_qualified_top10');time.sleep(20);continue
         ranked=[r for r in ranked if r.get('expected_net',0)>0]
