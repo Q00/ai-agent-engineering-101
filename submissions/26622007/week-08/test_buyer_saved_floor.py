@@ -488,7 +488,7 @@ class ShippedSku(unittest.TestCase):
             src = f.read()
         i = src.index("def main():")
         j = src.index("shipped = receipt_chance(order, offer, rec,", i)
-        k = src.index("over = over_limit(rec, offer, limit, catalog, args.budget,", j)
+        k = src.index("over = over_limit(rec, offer, r_limit, catalog, args.budget,", j)   # r_limit: margin cap take
         self.assertIn('order["_saved_floor"]["shipped"] = {"sku": rec.get("item")', src[j:k])
         self.assertIn('"applied": isinstance(lp, (int, float))', src[j:k])
         self.assertIn("shipped)", src[k:k + 300])
