@@ -489,8 +489,7 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
                       own_profit_proven=own_profit_proven,
                       proven_scale_ready=proven_scale_ready,
                       realized_hourly_contribution=realized_hourly_contribution)
-        breadth_priority=0 if breadth_expansion else 1
-        diversity=policy.get('new_sku_bonus',1) if is_new else 1
+        diversity=policy.get('new_sku_bonus',1) if breadth_expansion and is_new else 1
         # Official score contribution remains primary, with a sub-linear
         # capital-risk adjustment. This preserves high-value goods without
         # letting a handful of million-credit units consume an entire window.
@@ -509,13 +508,17 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
         # vetoes, and the cash/liability reserve remain unchanged.
         risk_exponent=max(.5,min(1.0,float(policy.get('capital_risk_exponent',.75))))
         risk_adjusted=contribution/max(1,row['upper_cost'])**risk_exponent
-        choices.append((breadth_priority,-(risk_adjusted*diversity),
-                        row['sku'],need,evidence))
+        # Breadth is a score bonus, not an absolute lane.  Giving every missing
+        # SKU unconditional precedence starved measured Revenue opportunities
+        # until the full competitor breadth target was reached.  The bonus
+        # still expands the catalogue when opportunities are comparable, while
+        # materially stronger proven contribution can now win the same window.
+        choices.append((-(risk_adjusted*diversity),row['sku'],need,evidence))
     # Each candidate is bounded by condition-specific per-SKU caps. When no
     # explicit test/canary slot limit is supplied, capital and those caps
     # determine the total portfolio instead of an arbitrary 250 units.
-    plan=[];slots=sum(row[3] for row in choices) if available_slots is None else available_slots
-    for _,_,sku,need,row in sorted(choices):
+    plan=[];slots=sum(row[2] for row in choices) if available_slots is None else available_slots
+    for _,sku,need,row in sorted(choices):
         # Official supply API accepts at most 20 units per call. Remaining
         # evidenced need is purchased on subsequent inventory refreshes.
         qty=min(policy.get('max_lot_units',20),need,int(available//row['upper_cost']),max(0,slots))
