@@ -388,11 +388,16 @@ class UnifiedBuyingTests(BuyingFixture, unittest.TestCase):
 
     def test_dead_history_bounded_without_eviction(self):
         self.hub["no_rebuy"] = {str(i): NOW-1 for i in range(500)}
-        sku = self.item()
+        sku = self.item("G12345678")
+        other = self.item("G12345679")
         self.stock(sku, age=14_400)
-        self.plan()
+        self.inquiry(other, 8)
+        plan = self.plan()
+        buys = {b["sku"]: b["qty"] for b in plan["buy"]}
         self.assertEqual(len(self.hub["no_rebuy"]), 500)
         self.assertTrue(self.hub["no_rebuy_overflow"])
+        self.assertNotIn("no_rebuy_history_full", self.diag()["excluded"])
+        self.assertGreater(buys.get(other, 0), 0)
 
     def test_no_demand_two_hour_gate_with_coverage(self):
         sku = self.item()

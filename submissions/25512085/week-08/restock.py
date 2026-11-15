@@ -246,8 +246,8 @@ def plan_with_hub(hub, market_dir, catalog, inv, rows, *, inventory_fresh=False,
                 cash_models[sku].update(estimate)
                 cash_models[sku]['score20'] = cash_models[sku]['prediction20']*margin
         reason = None
-        if sku in no_rebuy or hub.get("no_rebuy_overflow"):
-            reason = "no_rebuy" if sku in no_rebuy else "no_rebuy_history_full"
+        if sku in no_rebuy:
+            reason = "no_rebuy"
         elif covered and not any(0 <= now - t <= NO_DEMAND_S for t in sales) and not any(
                 0 <= now - e["ts"] <= NO_DEMAND_S for e in events):
             reason = "no_demand_2h"
