@@ -2496,15 +2496,49 @@ def next_talk(nq, out, order, quotes, quotable, md, catalog, budget, memory, fir
     shop1, offer1, key1, limit1 = first
     asks = [p for who, p in out["history"] if who == "shop asked"]
     nq["first"] = {"shop": shop1["name"], "state": out["state"], "asks": asks, "limit": limit1}
-    memory["trades"].append({
+    # the first talk as main writes a trade, with the studies' arms (hide_unmarked reads them), before they move on
+    trade = {
         "time": time.strftime("%Y-%m-%dT%H:%M:%S"), "shop": shop1["name"], "item": key1, "budget": budget,
         "order": order.get("order"), "category": order.get("category"), "list_price": offer1["list_price"],
+        "goods_ladder": buyer_goods_ladder.trade_arm(order),
+        "goods_grade": buyer_goods_grade.trade_mark(order, limit1),
+        "food_ladder": buyer_food_ladder.trade_arm(order),
+        "saved_floor": buyer_saved_floor.trade_arm(order),
+        "warranty_said": buyer_warranty_said.trade_mark(order),
+        "moss_first": buyer_moss_first.trade_mark(order),
         "next_quote_first": True,
         "result": out["state"].replace("TASK_STATE_", "").lower(), "price": None, "asks": asks,
         "holds": out.get("holds", 0), "problems": [], "warnings": [], "why": no_deal_reason(asks, limit1),
-        "signed": None})
+        "signed": None}
+    memory["trades"].append(trade)
     return {"shop": s, "offer": o, "key": k, "label": o["name"], "chance": c, "limit": lim, "top": top, "q": q,
             "margin_cap": mc}
+
+
+def next_negotiate(alt, order, steps):
+    """buyer_next_quote's second talk with next_talk's alt: the oneshot opening (no study's probe), walk_take up to its
+    take and the food take_at, as main's talk; a shop that went away is an ERROR state, as main's."""
+    shop, offer, key, label, limit, top, q = (alt[k] for k in ("shop", "offer", "key", "label", "limit", "top", "q"))
+    try:
+        out = negotiate(shop["url"], label, limit, f"it opened at {q['ask']}",
+                        request_text(label, key, order), resume=(q["url"], q["task"]),
+                        stop_if=lambda text, turn: (quote_refused(text, order, item=(label, key)) if turn == 1
+                                                    else None) or goods_text_refused(text, order),
+                        reply_to=lambda text: shop_question_reply(text, order),
+                        ladder=(lambda meta, text, history: opening_probe_turn(
+                            meta, text, history, limit, steps,
+                            q.get("ask") if q.get("ask_src") != "text_rank" else None,
+                            order.get("kind") == "goods", None)) if steps else None,
+                        ceiling=top if top > limit else None,
+                        **walk_take_kwargs(order, limit, shop["name"]),
+                        take_at=(min(limit, int(offer["list_price"] * FOOD_TAKE_SHARE))
+                                 if FOOD_TAKE_ASK and order.get("kind") == "food" else None))
+        out["asked"] = key
+        return out
+    except Exception as e:  # network errors from a shop that went away
+        log(f"trade failed: {type(e).__name__}: {e}")
+        return {"state": f"ERROR {type(e).__name__}", "task": None, "receipt": None, "history": [],
+                "agreed": None, "holds": 0}
 
 
 def negotiate(*args, goods_take_context=None, **kwargs):
@@ -3010,25 +3044,7 @@ def main():
             reason = f"next quote ({q['ask']}) after {nq['first']['shop']} ended {nq['first']['state']}"
             log(f"[next-quote] {shop['name']}: ask {q['ask']}, limit {limit}, take {top}: {reason}")
             talk_mode = f"next {list(steps)}" if steps else "next harness"
-            try:
-                out = negotiate(shop["url"], label, limit, f"it opened at {q['ask']}",
-                                request_text(label, key, order), resume=(q["url"], q["task"]),
-                                stop_if=lambda text, turn: (quote_refused(text, order, item=(label, key)) if turn == 1
-                                                            else None) or goods_text_refused(text, order),
-                                reply_to=lambda text: shop_question_reply(text, order),
-                                ladder=(lambda meta, text, history: opening_probe_turn(
-                                    meta, text, history, limit, steps,
-                                    q.get("ask") if q.get("ask_src") != "text_rank" else None,
-                                    order.get("kind") == "goods", None)) if steps else None,
-                                ceiling=top if top > limit else None,
-                                **walk_take_kwargs(order, limit, shop["name"]),
-                                take_at=(min(limit, int(offer["list_price"] * FOOD_TAKE_SHARE))
-                                         if FOOD_TAKE_ASK and order.get("kind") == "food" else None))
-                out["asked"] = key
-            except Exception as e:  # network errors from a shop that went away
-                log(f"trade failed: {type(e).__name__}: {e}")
-                out = {"state": f"ERROR {type(e).__name__}", "task": None, "receipt": None, "history": [],
-                       "agreed": None, "holds": 0}
+            out = next_negotiate(alt, order, steps)
             nq["used"] = True
     stages["talk"] = time.time()
     if order.get("_firm_trial"):

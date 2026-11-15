@@ -76,6 +76,7 @@ SWITCHES += (".market/restock_demand_catchup.json",)  # finite quantity allocati
 SWITCHES += (".market/restock_sellable_slots.json",)  # finite target-count study (W-20261115-1605-AX매입칸)
 SWITCHES += (".market/market_ref_read.json",)   # market_ref_read.py (지시23 11/10)
 SWITCHES += (".market/buyer_margin_cap.json",)  # buyer_margin_cap.py: the owner's limit policy (Patch 3.6 Saved)
+SWITCHES += (".market/buyer_next_quote.json",)  # buyer_next_quote.py: the next open quote after a failed talk
 
 
 # A study's root/"adopted" forces arm B and root/"disabled" stops it (late_concession, opening_cue, at_floor_exact, ...):
