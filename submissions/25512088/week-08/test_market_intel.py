@@ -235,6 +235,25 @@ class IntelligenceTests(unittest.TestCase):
         body=json.loads(self.i.db.execute(
             "SELECT body FROM decisions WHERE role='seller_quote' ORDER BY id DESC LIMIT 1").fetchone()[0])
         self.assertEqual(body['loss_leader_evidence'],'own_offer_near_raw_loss_floor')
+    def test_current_supply_cohort_is_not_masked_by_old_low_cost_sales(self):
+        now=time.time()
+        with self.p.db:
+            for n in range(10):
+                self.p.db.execute(
+                    'INSERT INTO sales(task,unit,sku,amount,cost,ledger,settled,refunded) '
+                    'VALUES(?,?,?,?,?,?,?,0)',
+                    (f'old-{n}',f'old-u-{n}','x',7000,5000,n+1,now-100))
+        for n in range(10):
+            self.i.decision('seller_quote',{'sku':'x','price':7000})
+            self.i.decision('seller_offer_received',{'sku':'x','offered':6000+n})
+        unit=dict(self.u,cost=6250,list_price=20000,supplied_at=now-1)
+        quote=sale_quote(unit,{},self.p,self.i)
+        self.assertEqual(quote['price'],6007)
+        self.assertTrue(quote['loss_leader'])
+        body=json.loads(self.i.db.execute(
+            "SELECT body FROM decisions WHERE role='seller_quote' ORDER BY id DESC LIMIT 1").fetchone()[0])
+        self.assertEqual(body['sales_6h'],0)
+        self.assertEqual(body['local_evidence_window'],'current_supply_cohort_or_6h')
     def test_food_comparison_life_and_expiry(self):
         self.i.ingest(self.rows(expiry=time.time()+12*3600))
         self.assertEqual(self.i.comparable('x','A',12)['count'],4)
