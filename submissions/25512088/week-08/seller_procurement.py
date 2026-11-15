@@ -435,11 +435,19 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
         # scale the portfolio, but it never waives this wealth-relative cap.
         capital_share=policy.get('max_sku_capital_share',1)
         # A proven, refund-aware positive cohort may hold two expensive units
-        # instead of repeatedly selling out after a one-unit restock.  New and
-        # unproven goods retain the original concentration limit; all normal
-        # unit, demand, cash, inventory-share and warranty-reserve caps still
-        # apply below.
-        if own_profit_proven:
+        # instead of repeatedly selling out after a one-unit restock, but only
+        # when the dominant A-grade acquisition is itself robustly profitable.
+        # An overall profitable history can be carried by cheap B/C arrivals;
+        # it must not enlarge the capital cap for a marginal high-cost A lot.
+        # New, unproven, and marginal-grade goods retain the original cap.
+        proven_scale_ready=(
+            own_profit_proven and
+            row.get('dominant_grade_samples',0)>=
+                policy.get('min_proven_scale_grade_samples',
+                           policy.get('min_goods_a_profit_samples',0)) and
+            row.get('dominant_grade_profit_probability',0)>=
+                policy.get('min_proven_scale_grade_profit_probability',.70))
+        if proven_scale_ready:
             capital_share=max(capital_share,
                               policy.get('max_proven_sku_capital_share',capital_share))
         capital_ceiling=portfolio_capital*capital_share
@@ -456,6 +464,7 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
                       cold_goods_cost=cold_goods_cost,cold_goods_limit=cold_goods_limit,
                       cold_goods_frozen=cold_goods_frozen,cold_safe_trial=cold_safe_trial,
                       own_profit_proven=own_profit_proven,
+                      proven_scale_ready=proven_scale_ready,
                       realized_hourly_contribution=realized_hourly_contribution)
         breadth_priority=0 if breadth_expansion else 1
         diversity=policy.get('new_sku_bonus',1) if is_new else 1

@@ -364,9 +364,12 @@ class PurchaseTests(unittest.TestCase):
  def test_only_proven_profitable_goods_receive_larger_capital_share(self):
   common=dict(kind='goods',expected_net=100000,score=1000,upper_cost=900000,
               sales_1h=3,sales_6h=6,distinct_buyers_6h=3,
-              estimated_sale_likelihood=1)
+              estimated_sale_likelihood=1,dominant_grade_samples=3,
+              dominant_grade_profit_probability=.8)
   policy={'max_units_per_sku':3,'max_sku_capital_share':.10,
-          'max_proven_sku_capital_share':.20}
+          'max_proven_sku_capital_share':.20,
+          'min_proven_scale_grade_samples':3,
+          'min_proven_scale_grade_profit_probability':.70}
   cold=allocation_plan([dict(common,sku='cold',own_sales_total=0)],
                        {'units':[],'balance':10000000},10000000,policy=policy)
   proven=allocation_plan([dict(common,sku='proven',own_sales_total=3,
@@ -375,6 +378,14 @@ class PurchaseTests(unittest.TestCase):
                          {'units':[],'balance':10000000},10000000,policy=policy)
   self.assertEqual([(row['sku'],row['qty']) for row in cold],[('cold',1)])
   self.assertEqual([(row['sku'],row['qty']) for row in proven],[('proven',2)])
+  marginal=dict(common,sku='marginal',own_sales_total=17,own_sales_1h=4,
+                own_gross_total=1853251,own_profitable_sales=16,
+                dominant_grade_samples=15,dominant_grade_profit_probability=.5313)
+  limited=allocation_plan([marginal],{'units':[],'balance':10000000},10000000,
+                          policy=policy)
+  self.assertEqual([(row['sku'],row['qty']) for row in limited],[('marginal',1)])
+  self.assertTrue(limited[0]['evidence']['own_profit_proven'])
+  self.assertFalse(limited[0]['evidence']['proven_scale_ready'])
  def test_active_unproven_good_blocks_another_cold_safe_trial(self):
   held=dict(sku='held',kind='goods',expected_net=0,score=0,upper_cost=100,
             sales_1h=0,sales_6h=1,own_sales_total=0,distinct_buyers_6h=2,
