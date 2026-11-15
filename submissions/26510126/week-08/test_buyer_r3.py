@@ -703,6 +703,23 @@ def main():
          [c[1]["name"] for _, c in quoted24] == ["paid"] and dropped24 == {("unpaid", "R1")}
          and len(quoted24b) == 2 and not dropped24b, str((quoted24, dropped24, len(quoted24b))))
 
+    # 25. every quote of the first wave over cap: a second wave is scouted, and the over-cap shop is left out (first ask
+    # 1.1-1.5x cap closed 19% of 206 talks, within-cap 87% of 371)
+    shops25 = [{"name": n, "url": f"http://{n}", "offers": [{"sku": "R1", "qty": 3}]} for n in ("a25", "b25", "c25", "d25")]
+    c25 = buyer_r3.candidates(o21, shops25, cat21, [], {})
+    wave25 = [c[1]["name"] for c in c25]
+    asks25 = {n: int(cap24 * 1.3) if i < 2 else 20000 for i, n in enumerate(wave25)}
+
+    async def fake_scout25(order, cat, s, off, lp):
+        return {"state": "TASK_STATE_INPUT_REQUIRED", "ask": asks25[s["name"]], "text": f"asking {asks25[s['name']]}"}
+    real_scouts = buyer_r3.SCOUTS
+    buyer_r3.scout, buyer_r3.SCOUTS = fake_scout25, 2
+    first25 = asyncio.run(buyer_r3.team(o21, cat21, c25))
+    buyer_r3.scout, buyer_r3.SCOUTS = real_scout, real_scouts
+    case("a first wave all over cap scouts a second wave; the over-cap shop goes out of the talks",
+         sorted(c[1]["name"] for c in first25) == sorted(wave25[2:]) and not buyer_r3._WAVE_OVER,
+         str([c[1]["name"] for c in first25]))
+
     print(f"\n{sum(RESULTS)}/{len(RESULTS)} passed")
     shutil.rmtree(TMP, ignore_errors=True)
 

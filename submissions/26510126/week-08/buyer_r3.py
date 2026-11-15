@@ -736,13 +736,20 @@ async def team(order, cat, cands):
             log("SCOUT", f"no quote from the first wave: asking {len(batch)} more shops")
         picked += batch
         await scout_wave(order, cat, batch, dropped, quoted)
-        if quoted:
+        # first ask 1.1-1.5x cap closed 19% of 206 talks, within-cap asks 87% of 371: when every quote of the first wave
+        # is over cap, scout other shops so the over-cap drop can leave the 19% closers out
+        if quoted and not (wave == 0 and all(q in _WAVE_OVER for q in quoted)
+                           and code_ab_r3.on("37b6db373762", order.get("order"))):
             break
     lead = [c for _, c in sorted(quoted, key=lambda x: -x[0])]
     rest = [c for c in cands if c not in picked and (c[1]["name"], c[2]["sku"]) not in dropped]
     # a shop too slow for the scouts is still a shop: it goes last, not out (screened-out shops stay out)
     slow = [c for c in picked if c not in lead and (c[1]["name"], c[2]["sku"]) not in dropped]
+    _WAVE_OVER.clear()
     return lead + rest + slow
+
+
+_WAVE_OVER = []   # quotes asking over 1.1x their cap, over all waves of the team() run in progress
 
 
 async def scout_wave(order, cat, picked, dropped, quoted):
@@ -773,11 +780,12 @@ async def scout_wave(order, cat, picked, dropped, quoted):
         value *= risk
         quoted.append((value, c))
         if isinstance(ask, (int, float)) and ask > 1.1 * cap:
-            over.append((value, c))
+            _WAVE_OVER.append((value, c))
         log("SCOUT", f"{c[1]['name']} {c[2]['sku']}: asks {ask} of list {c[3]} (surplus at the ask ~{value:.0f}"
                      + (f", x{risk:.2f} for the kit refusing, breaks or shelf life" if risk < 1 else "") + ")")
     # first ask 1.1-1.5x cap closed 22% of 266 talks (85 min, median 13 s), repeated above-cap asks 0% of 192, within-cap
     # asks 91% of 329: with a shop asking within its cap, the over-cap shops get no retry (order cycle ~35 s vs 5-9 s)
+    over = [q for q in quoted if q in _WAVE_OVER]    # the first wave's over-cap quotes count in the second wave
     if over and len(over) < len(quoted) and code_ab_r3.on("92c5ed5d93af", order.get("order")):
         for q in over:
             quoted.remove(q)
