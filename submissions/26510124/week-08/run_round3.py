@@ -63,11 +63,10 @@ def main():
                                              str(Path.home() / ".local/bin"), os.environ.get("PATH", "")])
         profile = load_profile(ROOT)
         active_advisor = profile["advisor"] if advisor_enabled(ROOT) else "disabled"
-        print(f"Model profile: shop/buyer={profile['trading']}; advisor={active_advisor}", flush=True)
-        if profile["trading"] == "opus5.5":
-            print(f"Pinned trading model: {CLAUDE_MODELS['opus5.5']}; effort=low; fallback disabled", flush=True)
-        elif profile["trading"] in CODEX_MODELS:
-            print(f"Pinned trading model: {CODEX_MODELS[profile['trading']]}; effort=low; fallback disabled", flush=True)
+        print(f"Model profile: shop={profile.get('shop', profile['trading'])}; buyer={profile['trading']}; advisor={active_advisor}", flush=True)
+        for role, selected in (("shop", profile.get("shop", profile["trading"])), ("buyer", profile["trading"])):
+            model = (CLAUDE_MODELS | CODEX_MODELS)[selected]
+            print(f"Trading model: role={role}; model={model}; effort={'default' if selected == 'haiku' else 'low'}; fallback disabled", flush=True)
         unavailable = []
         for executable in required_executables(ROOT):
             available = shutil.which(executable) is not None

@@ -98,7 +98,7 @@ def config_at(root=ROOT):
         raise ValueError('invalid shop operations config')
     if type(cfg['enabled']) is not bool or type(cfg['model_enabled']) is not bool:
         raise ValueError('explicit enable flags required')
-    if cfg['mode'] not in ('propose', 'auto') or cfg['model_profile'] not in ('sol', 'luna'):
+    if cfg['mode'] not in ('propose', 'auto') or cfg['model_profile'] not in ('sol', 'luna', 'opus5.5'):
         raise ValueError('invalid operations mode/profile')
     for key, lo, hi in (
         ('interval_seconds', 1800, 86400), ('event_min_seconds', 300, 1800),

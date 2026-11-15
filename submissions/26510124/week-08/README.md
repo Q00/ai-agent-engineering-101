@@ -2181,10 +2181,15 @@ submissions/26510124/week-07/.venv/bin/python submissions/26510124/week-08/prepa
 게시하는 구조로, 이번 버전 검증·실험 평가 계약과 다르다. `advisor-config.json`의
 비활성 상태를 유지하고 동시에 활성화되면 새 운영 정책 적용을 차단한다.
 
-실제 거래 모델은 `model_backend.py`와 `model-profile.json`의 trading 선택 경로에
-따른다. 현재 로컬 설정은 Sol/low이며 `agent.json`의 과거 Opus 설명을 실행 증거로
-사용하지 않는다. 운영 모델은 `shop-ops-config.json`의 별도 `model_profile: sol`을
-사용한다. 공유 backend의 명령 생성 함수를 재사용하되 Buyer 프로필을 수정하지 않는다.
+실제 거래 모델은 `model_backend.py`와 `model-profile.json`의 역할별 선택 경로에
+따른다. 11월 15일 후속 사용자 요청으로 Shop은 `shop: haiku`, Buyer는
+`trading: opus5.5`로 분리했다. 운영 모델은 `shop-ops-config.json`의 별도
+`model_profile: opus5.5`를 사용한다. Opus는 `claude-opus-5-5`, effort low로 고정하고,
+Haiku는 기존 Claude CLI의 `haiku` 별칭을 사용한다. 재고 계산 자체에는 모델이 없다.
+비활성 기존 advisor도 Opus 설정을 보관하지만 활성화하지 않았다.
+공유 backend의 명령 생성 함수를 재사용하며 역할별 설정은 서로 덮어쓰지 않는다.
+이 모델 변경은 최초 운영 구조 구현 당시 Buyer 불변 범위에 대한 사용자의 후속 변경 요청이다.
+Buyer 전략·프롬프트·정책·기억은 그대로 유지한다.
 운영 모델은 최대 48회/일, 45초 제한이며 실패한 호출도 예산에 포함한다.
 
 ### 기준선과 아직 확인하지 못한 내용
@@ -2299,7 +2304,17 @@ verification, evaluation-control을 기록한다. 각 결정은 기준 버전·�
 `shop-ops-config.json`, `shop-ops-rules.json`과 변경한 `shop_runtime.py`, `seller_r3.py`,
 `opening_quote_cache.py`다. 두 deploy 스크립트는 새 설정 파일을 허용 목록에 포함한다.
 테스트와 문서도 소스 패키지에 포함된다. 키·로그·`.market` 상태는 포함하지 않는다.
-Buyer 코드·프롬프트·정책·공유 모델 설정·기억은 이번 변경 대상이 아니다.
+후속 모델 분리에는 `model_backend.py`, `model-profile.json`, `shop_ops_model.py`,
+`shop_ops_policy.py`, `shop-ops-config.json`, `run_round3.py`, `agent.json`도 포함된다.
+Buyer 전략 코드·프롬프트·정책·기억은 변경하지 않았고, 요청에 따라 모델만 Opus로 바꿨다.
+
+`model_backend.py --shop-profile haiku`는 Shop만, `--profile opus5.5`는 Buyer/default만
+변경한다. Shop override가 없는 이전 설정 파일은 기존처럼 trading을 함께 사용한다.
+운영 모델 변경은 `shop-ops-config.json`에서 별도로 한다. `--check`는 모델을 호출하지 않고,
+`--preflight`는 실제 활성 모델마다 준비 응답을 검사하므로 Claude 사용량을 소비한다.
+활성 Shop·Buyer·운영 모델을 검사하고 비활성 advisor는 제외한다. 지원되지 않는 Opus
+응답이나 다른 모델로의 대체는 거부한다. 서버의 로그인·잔여 사용량·모델 접근 권한은
+로컬 테스트로 입증되지 않으므로 실제 배포 전 사전 검사를 통과해야 한다.
 
 최초 코드 설치에는 기존 장기 실행 프로세스에 새 코드를 로드하는 절차가 필요하다.
 이는 별도 서버 적용 요청 이후에 수행한다. 기존 `deploy_v4.py`의 실제 배포 모드는

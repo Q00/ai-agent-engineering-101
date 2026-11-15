@@ -32,15 +32,16 @@ def analyse(context, root, cfg):
     compact = json.dumps(context, ensure_ascii=False, allow_nan=False)
     if len(compact) > 24000:
         raise ValueError('operations context too large')
-    prompt = INSTRUCTION + '\nOBSERVATION:\n' + compact
+    prompt = INSTRUCTION + '\nOUTPUT SCHEMA:\n' + json.dumps(SCHEMA) + '\nOBSERVATION:\n' + compact
     logs = Path(root) / 'logs'
     logs.mkdir(exist_ok=True)
     path = logs / ('shop-ops-model-' + uuid.uuid4().hex + '.log')
     profile = cfg['model_profile']
     deadline = time.monotonic() + cfg['model_timeout_seconds']
     with path.open('x') as log, tempfile.TemporaryDirectory(prefix='shop-ops-model-') as folder:
-        # Uses existing ChatGPT authentication, no API key and no trading config write.
-        backend.ensure_chatgpt(timeout=min(8, cfg['model_timeout_seconds']), cwd=folder)
+        # Claude uses its existing login; never require Codex for a Claude profile.
+        if profile in backend.CODEX_MODELS:
+            backend.ensure_chatgpt(timeout=min(8, cfg['model_timeout_seconds']), cwd=folder)
         command = backend.command(profile, folder, 'shop_operations')
         (Path(folder) / 'schema.json').write_text(json.dumps(SCHEMA))
         remaining = deadline - time.monotonic()

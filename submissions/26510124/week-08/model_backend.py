@@ -2,7 +2,8 @@
 
 --check makes no model call. --preflight probes active Opus/GPT models.
 --profile sol|opus5.5|haiku|astra changes the trading profile, not a service.
---advisor-profile haiku|luna changes only the sales-strategy analyst's profile.
+--shop-profile overrides seller prompts; trading remains the buyer/default.
+--advisor-profile changes only the archived sales-strategy analyst's profile.
 """
 import argparse
 import json
@@ -38,10 +39,12 @@ def load_profile(root=ROOT):
     if path.is_symlink() or path.stat().st_size > 4096:
         raise ValueError("Invalid model profile file")
     cfg = json.loads(path.read_text())
-    if (not isinstance(cfg, dict) or set(cfg) != {"version", "trading", "advisor"}
+    if (not isinstance(cfg, dict) or set(cfg) not in ({"version", "trading", "advisor"}, {"version", "trading", "advisor", "shop"})
             or type(cfg["version"]) is not int or cfg["version"] != 1
-            or cfg["trading"] not in ("sol", "astra", *CLAUDE_MODELS) or cfg["advisor"] not in ("luna", "haiku")):
-        raise ValueError("Expected trading sol/opus5.5/astra/haiku and advisor luna/haiku")
+            or cfg["trading"] not in ("sol", "astra", *CLAUDE_MODELS)
+            or cfg.get("shop", cfg["trading"]) not in ("sol", "astra", *CLAUDE_MODELS)
+            or cfg["advisor"] not in ("luna", "haiku", "opus5.5")):
+        raise ValueError("Expected trading/shop sol/opus5.5/astra/haiku and advisor luna/haiku/opus5.5")
     return cfg
 
 
@@ -56,7 +59,11 @@ def for_prompt(prompt_name, root=ROOT):
     cfg = load_profile(root)
     if prompt_name == "sales_advisor.txt" and not advisor_enabled(root):
         raise ValueError("Sales advisor is disabled")
-    return cfg["advisor"] if prompt_name == "sales_advisor.txt" else cfg["trading"]
+    if prompt_name == "sales_advisor.txt":
+        return cfg["advisor"]
+    if prompt_name.startswith("seller_") or prompt_name == "seller.txt":
+        return cfg.get("shop", cfg["trading"])
+    return cfg["trading"]
 
 
 def advisor_enabled(root=ROOT):
@@ -79,7 +86,16 @@ def advisor_enabled(root=ROOT):
 
 def active_profiles(root=ROOT, cfg=None):
     cfg = load_profile(root) if cfg is None else cfg
-    return (cfg["trading"], cfg["advisor"]) if advisor_enabled(root) else (cfg["trading"],)
+    profiles = [cfg["trading"], cfg.get("shop", cfg["trading"])]
+    legacy = advisor_enabled(root)
+    if legacy:
+        profiles.append(cfg["advisor"])
+    elif (Path(root) / "shop-ops-config.json").exists():
+        from shop_ops_policy import config_at
+        ops = config_at(root)
+        if ops["enabled"] and ops["model_enabled"]:
+            profiles.append(ops["model_profile"])
+    return tuple(dict.fromkeys(profiles))
 
 
 def environment(profile):
@@ -284,27 +300,30 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--profile", choices=("sol", "opus5.5", "astra", "haiku"))
-    mode.add_argument("--advisor-profile", choices=("luna", "haiku"))
+    mode.add_argument("--shop-profile", choices=("sol", "opus5.5", "astra", "haiku"))
+    mode.add_argument("--advisor-profile", choices=("luna", "haiku", "opus5.5"))
     mode.add_argument("--preflight", action="store_true")
     mode.add_argument("--check", action="store_true")
     args = parser.parse_args(argv)
     try:
         cfg = load_profile(ROOT)
-        if args.profile or args.advisor_profile:
+        if args.profile or args.advisor_profile or args.shop_profile:
             if args.profile:
                 cfg["trading"] = args.profile
+            elif args.shop_profile:
+                cfg["shop"] = args.shop_profile
             else:
                 cfg["advisor"] = args.advisor_profile
             from feedback import atomic_json
             atomic_json(ROOT / "model-profile.json", cfg)
-            print(f"Local profile saved: trading={cfg['trading']}, advisor={cfg['advisor']}. Deploy/restart to apply.")
+            print(f"Local profile saved: buyer/default={cfg['trading']}, shop={cfg.get('shop', cfg['trading'])}, advisor={cfg['advisor']}. Server not changed.")
             return 0
         active_advisor = cfg["advisor"] if advisor_enabled(ROOT) else "disabled"
-        print(f"Model profile: trading={cfg['trading']}, advisor={active_advisor}")
+        print(f"Model profile: trading={cfg['trading']}, shop={cfg.get('shop', cfg['trading'])}, advisor={active_advisor}")
         for executable in required_executables(ROOT):
             if shutil.which(executable) is None:
                 raise ValueError(f"{executable} not found in service PATH; install it before deploying")
-        selected = [profile for profile in (*CODEX_MODELS, "opus5.5") if profile in active_profiles(ROOT, cfg)]
+        selected = [profile for profile in (*CODEX_MODELS, *CLAUDE_MODELS) if profile in active_profiles(ROOT, cfg)]
         if selected:
             if args.preflight:
                 logs = ROOT / "logs"
@@ -321,7 +340,8 @@ def main(argv=None):
                                     or not isinstance(result.get("reason"), str)):
                                 raise ValueError(f"{profile} preflight response did not match its contract")
                             model = CLAUDE_MODELS[profile] if profile in CLAUDE_MODELS else CODEX_MODELS[profile]
-                            print(f"{model} low: authenticated decision probe passed; no market trade made.")
+                            effort = "" if profile == "haiku" else " low"
+                            print(f"{model}{effort}: authenticated decision probe passed; no market trade made.")
                     except Exception as exc:
                         log.write(f"ERROR: {type(exc).__name__}: {exc}\n")
                         raise

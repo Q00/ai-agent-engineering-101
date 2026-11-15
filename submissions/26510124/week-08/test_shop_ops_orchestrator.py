@@ -193,7 +193,7 @@ class OperationsTests(unittest.TestCase):
              patch('shop_ops_model.backend.ensure_chatgpt'),patch('shop_ops_model.backend.execute') as run, \
              patch('shop_ops_model.backend.answer',return_value='{"action":"hold","targets":[],"diagnosis":"safe","expected_effect":"none"}'):
             run.return_value.returncode=0
-            answer=shop_ops_model.analyse({'test':True},self.root,self.cfg)
+            answer=shop_ops_model.analyse({'test':True},self.root,{**self.cfg,'model_profile':'sol'})
             self.assertEqual(answer['action'],'hold')
             self.assertIn('gpt-6.1-sol',run.call_args.args[0])
             self.assertNotIn('--yolo',run.call_args.args[0])

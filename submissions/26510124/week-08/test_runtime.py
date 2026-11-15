@@ -46,7 +46,7 @@ class RuntimeTests(unittest.TestCase):
     def test_check_reports_astra_and_advisor_cli_without_model_calls(self):
         result, output, errors = self.check_launcher({"version": 1, "trading": "astra", "advisor": "haiku"})
         self.assertEqual(result, 0, errors)
-        self.assertIn("shop/buyer=astra; advisor=haiku", output)
+        self.assertIn("shop=astra; buyer=astra; advisor=haiku", output)
         self.assertIn("gpt-6-astra; effort=low; fallback disabled", output)
         self.assertIn("codex CLI available: True", output)
         self.assertIn("claude CLI available: True", output)
@@ -63,7 +63,7 @@ class RuntimeTests(unittest.TestCase):
         result, output, errors = self.check_launcher(
             {"version": 1, "trading": "astra", "advisor": "luna"}, missing=("claude",))
         self.assertEqual(result, 0, errors)
-        self.assertIn("shop/buyer=astra; advisor=luna", output)
+        self.assertIn("shop=astra; buyer=astra; advisor=luna", output)
         self.assertIn("codex CLI available: True", output)
         self.assertNotIn("claude CLI", output)
 
@@ -78,7 +78,7 @@ class RuntimeTests(unittest.TestCase):
             {"version": 1, "trading": "haiku", "advisor": "luna"},
             advisor_enabled=False, missing=("codex",))
         self.assertEqual(result, 0, errors)
-        self.assertIn("shop/buyer=haiku; advisor=disabled", output)
+        self.assertIn("shop=haiku; buyer=haiku; advisor=disabled", output)
         self.assertIn("claude CLI available: True", output)
         self.assertNotIn("codex CLI", output)
 
@@ -87,7 +87,7 @@ class RuntimeTests(unittest.TestCase):
             {"version": 1, "trading": "opus5.5", "advisor": "haiku"},
             advisor_enabled=False, missing=("codex",))
         self.assertEqual(result, 0, errors)
-        self.assertIn("shop/buyer=opus5.5; advisor=disabled", output)
+        self.assertIn("shop=opus5.5; buyer=opus5.5; advisor=disabled", output)
         self.assertIn("claude-opus-5-5; effort=low; fallback disabled", output)
         self.assertIn("claude CLI available: True", output)
         self.assertNotIn("codex CLI", output)
@@ -95,7 +95,7 @@ class RuntimeTests(unittest.TestCase):
     def test_missing_profile_keeps_legacy_haiku_launcher(self):
         result, output, errors = self.check_launcher(missing=("codex",))
         self.assertEqual(result, 0, errors)
-        self.assertIn("shop/buyer=haiku; advisor=haiku", output)
+        self.assertIn("shop=haiku; buyer=haiku; advisor=haiku", output)
         self.assertNotIn("codex CLI", output)
 
     def test_sol_check_reports_exact_model_without_requiring_disabled_advisor_cli(self):
@@ -103,7 +103,7 @@ class RuntimeTests(unittest.TestCase):
             {"version": 1, "trading": "sol", "advisor": "haiku"},
             advisor_enabled=False, missing=("claude",))
         self.assertEqual(result, 0, errors)
-        self.assertIn("shop/buyer=sol; advisor=disabled", output)
+        self.assertIn("shop=sol; buyer=sol; advisor=disabled", output)
         self.assertIn("gpt-6.1-sol; effort=low; fallback disabled", output)
         self.assertIn("codex CLI available: True", output)
         self.assertNotIn("claude CLI", output)
@@ -111,6 +111,16 @@ class RuntimeTests(unittest.TestCase):
 
     def test_pinned_kit_exactly_matches_upstream_blob(self):
         self.assertTrue(verify_kit().is_file())
+
+    def test_mixed_claude_roles_are_reported_separately(self):
+        result, output, errors = self.check_launcher(
+            {"version": 1, "trading": "opus5.5", "shop": "haiku", "advisor": "opus5.5"},
+            advisor_enabled=False, missing=("codex",))
+        self.assertEqual(result, 0, errors)
+        self.assertIn("shop=haiku; buyer=opus5.5; advisor=disabled", output)
+        self.assertIn("role=shop; model=haiku", output)
+        self.assertIn("role=buyer; model=claude-opus-5-5; effort=low", output)
+        self.assertNotIn("codex CLI", output)
 
     def test_identity_copy_preserves_existing_keys_and_never_overwrites_mismatch(self):
         (ROOT / ".market").mkdir(exist_ok=True)

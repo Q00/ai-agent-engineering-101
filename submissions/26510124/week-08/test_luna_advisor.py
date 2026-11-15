@@ -136,8 +136,8 @@ class LunaAdvisorTests(unittest.TestCase):
         model.assert_not_called()
         auth.assert_called_once()
 
-    def test_preflight_probes_each_selected_codex_model(self):
-        for trading, expected in (("astra", ["astra", "luna"]), ("haiku", ["luna"])):
+    def test_preflight_probes_each_selected_model(self):
+        for trading, expected in (("astra", ["astra", "luna"]), ("haiku", ["luna", "haiku"])):
             self.write_profile(trading)
             with self.subTest(trading=trading), patch.object(backend, "ROOT", self.root), \
                     patch.object(backend.shutil, "which", return_value="/cli"), \

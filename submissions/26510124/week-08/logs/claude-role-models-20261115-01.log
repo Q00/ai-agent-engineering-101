@@ -1,0 +1,17 @@
+............F...............................
+======================================================================
+FAIL: test_check_does_not_make_model_call_and_preflight_is_explicit (test_model_backend.ModelBackendTests.test_check_does_not_make_model_call_and_preflight_is_explicit)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-08/test_model_backend.py", line 229, in test_check_does_not_make_model_call_and_preflight_is_explicit
+    model.assert_called_once()
+  File "/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/unittest/mock.py", line 926, in assert_called_once
+    raise AssertionError(msg)
+AssertionError: Expected 'call' to have been called once. Called 2 times.
+Calls: [call('astra', 'preflight', 'Return only {"ready":true,"reason":"ok"}. Do not use tools.', timeout=60, log=<_io.TextIOWrapper name='/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-08/.market/tmpqa9wa1l9/logs/model-preflight-5c214262fcc745b88a5db1ed7115cc84.log' mode='x' encoding='UTF-8'>),
+ call('haiku', 'preflight', 'Return only {"ready":true,"reason":"ok"}. Do not use tools.', timeout=60, log=<_io.TextIOWrapper name='/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-08/.market/tmpqa9wa1l9/logs/model-preflight-5c214262fcc745b88a5db1ed7115cc84.log' mode='x' encoding='UTF-8'>)].
+
+----------------------------------------------------------------------
+Ran 44 tests in 0.330s
+
+FAILED (failures=1)

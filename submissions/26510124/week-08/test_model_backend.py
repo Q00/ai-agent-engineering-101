@@ -57,12 +57,15 @@ class ModelBackendTests(unittest.TestCase):
         output = io.StringIO()
         with patch.object(backend, "ROOT", self.root), \
                 patch.object(backend.shutil, "which", side_effect=lambda name: "/cli/claude" if name == "claude" else None), \
-                patch.object(backend, "ensure_chatgpt") as auth, patch.object(backend, "call") as model, \
+                patch.object(backend, "ensure_chatgpt") as auth, \
+                patch.object(backend, "call", return_value='{"ready":true,"reason":"ok"}') as model, \
                 redirect_stdout(output):
             self.assertEqual(backend.main(["--check"]), 0)
+            model.assert_not_called()
             self.assertEqual(backend.main(["--preflight"]), 0)
         auth.assert_not_called()
-        model.assert_not_called()
+        model.assert_called_once()
+        self.assertEqual(model.call_args.args[0], "haiku")
         self.assertIn("advisor=disabled", output.getvalue())
 
     def test_disabled_or_missing_advisor_cannot_reactivate_through_harness(self):
@@ -223,8 +226,8 @@ class ModelBackendTests(unittest.TestCase):
             model.assert_not_called()
             auth.assert_called_once()
             self.assertEqual(backend.main(["--preflight"]), 0)
-            model.assert_called_once()
-            self.assertEqual(model.call_args.args[:2], ("astra", "preflight"))
+        self.assertEqual([c.args[:2] for c in model.call_args_list],
+                         [("astra", "preflight"), ("haiku", "preflight")])
         self.assertEqual(len(list((self.root / "logs").glob("model-preflight-*.log"))), 1)
 
     def test_failed_preflight_prints_exact_details_path(self):
