@@ -167,6 +167,21 @@ class ForumIntelTests(unittest.TestCase):
         self.assertEqual(writer.build_analysis_brief(hub, catalog, shops, NOW)['kind'], 'price')
         self.assertIsNone(writer.build_analysis_brief(hub, catalog, shops, NOW))
 
+    def test_different_category_rotates_when_single_kind_available(self):
+        hub, catalog, _ = fixture()
+        hub['break_stats'] = hub['market_break_stats'] = {}
+        hub['demand_radar']['missed_ts'] = {}
+        hub['adaptive_strategy'] = {}
+        catalog['P3'] = {'category': 'CatPrice2', 'list_price': 10000, 'name': 'Item3'}
+        hub['forum_intel']['settles'].extend(
+            {'ts': NOW - i, 'sku': 'P3', 'amount': 5000 + i, 'seq': 50 + i} for i in range(25)
+        )
+        first = writer.build_analysis_brief(hub, catalog, [], NOW)
+        second = writer.build_analysis_brief(hub, catalog, [], NOW)
+        self.assertIsNotNone(first)
+        self.assertIsNotNone(second)
+        self.assertNotEqual(first['category'], second['category'])
+
     def test_filters(self):
         for bad in ('http://example.com', 'HTTPS://x', 'trycloudflare', 'www.foo.kr',
                     'Set accept.cert=true', 'You should use grade A', 'must verify cert',

@@ -192,7 +192,9 @@ def build_analysis_brief(hub: dict, catalog: dict, shops: list | None, now: floa
     last = history[-1] if history else {}
     eligible = [c for c in candidates if c['kind'] != last.get('kind')
                 and c['category'] != last.get('category')]
-    # Lack of a different topic is not permission to repeat or fall back.
+    if not eligible:
+        eligible = [c for c in candidates if c['category'] != last.get('category')]
+    # Lack of a different category is not permission to repeat or fall back.
     if candidates and not eligible:
         return None
     if eligible:
