@@ -1,0 +1,701 @@
+INFO:     Started server process [18072]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:49695 (Press CTRL+C to quit)
+INFO:     127.0.0.1:49696 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+Producer[716c7159-6fb6-4650-9f82-dc6b5c7aa9d5]: Execution failed
+Traceback (most recent call last):
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+        request_context, self._event_queue_agent
+    )
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\seller.py", line 43, in execute
+    decision = await asyncio.to_thread(decide_opening, item, RESERVES[item])
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\anaconda3\Lib\asyncio\threads.py", line 26, in to_thread
+    return await loop.run_in_executor(None, func_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\anaconda3\Lib\concurrent\futures\thread.py", line 86, in run
+    result = ctx.run(self.task)
+  File "C:\Users\user\anaconda3\Lib\concurrent\futures\thread.py", line 73, in run
+    return fn(*args, **kwargs)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\seller_decision.py", line 16, in decide_opening
+    decision = call_harness(prompt)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\harness.py", line 17, in call_harness
+    raise RuntimeError("codex is not on PATH")
+RuntimeError: codex is not on PATH
+Consumer[716c7159-6fb6-4650-9f82-dc6b5c7aa9d5]: Failed
+Traceback (most recent call last):
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 136, in run
+    await self._process_event(event)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 179, in _process_event
+    await self._process_event_inner(event)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 221, in _process_event_inner
+    raise event
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+        request_context, self._event_queue_agent
+    )
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\seller.py", line 43, in execute
+    decision = await asyncio.to_thread(decide_opening, item, RESERVES[item])
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\anaconda3\Lib\asyncio\threads.py", line 26, in to_thread
+    return await loop.run_in_executor(None, func_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\anaconda3\Lib\concurrent\futures\thread.py", line 86, in run
+    result = ctx.run(self.task)
+  File "C:\Users\user\anaconda3\Lib\concurrent\futures\thread.py", line 73, in run
+    return fn(*args, **kwargs)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\seller_decision.py", line 16, in decide_opening
+    decision = call_harness(prompt)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\harness.py", line 17, in call_harness
+    raise RuntimeError("codex is not on PATH")
+RuntimeError: codex is not on PATH
+Unhandled exception
+Traceback (most recent call last):
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\routes\jsonrpc_dispatcher.py", line 325, in handle_requests
+    raw_result = await self._process_non_streaming_request(
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        specific_request, call_context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\utils\version_validator.py", line 126, in async_wrapper
+    return await func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\routes\jsonrpc_dispatcher.py", line 522, in _process_non_streaming_request
+    return await self._handle_send_message(request_obj, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\routes\jsonrpc_dispatcher.py", line 414, in _handle_send_message
+    task_or_message = await self.request_handler.on_message_send(
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        request_obj, context
+        ^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\request_handlers\request_handler.py", line 285, in async_wrapper
+    return await method(self, params, context, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\request_handlers\default_request_handler_v2.py", line 399, in on_message_send
+    async for raw_event in active_task.subscribe(
+    ...<30 lines>...
+            result = event
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 739, in subscribe
+    raise event
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 136, in run
+    await self._process_event(event)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 179, in _process_event
+    await self._process_event_inner(event)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 221, in _process_event_inner
+    raise event
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+        request_context, self._event_queue_agent
+    )
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\seller.py", line 43, in execute
+    decision = await asyncio.to_thread(decide_opening, item, RESERVES[item])
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\anaconda3\Lib\asyncio\threads.py", line 26, in to_thread
+    return await loop.run_in_executor(None, func_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\anaconda3\Lib\concurrent\futures\thread.py", line 86, in run
+    result = ctx.run(self.task)
+  File "C:\Users\user\anaconda3\Lib\concurrent\futures\thread.py", line 73, in run
+    return fn(*args, **kwargs)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\seller_decision.py", line 16, in decide_opening
+    decision = call_harness(prompt)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\harness.py", line 17, in call_harness
+    raise RuntimeError("codex is not on PATH")
+RuntimeError: codex is not on PATH
+Request Error (ID: 26253a4c): Code=-32603, Message='codex is not on PATH'
+INFO:     127.0.0.1:49713 - "POST / HTTP/1.1" 200 OK
+Dispatcher task was cancelled or finished. Events may be lost.
+Producer[488d0c37-436d-4fef-802c-c257660cfa48]: Execution failed
+Traceback (most recent call last):
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+        request_context, self._event_queue_agent
+    )
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\seller.py", line 43, in execute
+    decision = await asyncio.to_thread(decide_opening, item, RESERVES[item])
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\anaconda3\Lib\asyncio\threads.py", line 26, in to_thread
+    return await loop.run_in_executor(None, func_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\anaconda3\Lib\concurrent\futures\thread.py", line 86, in run
+    result = ctx.run(self.task)
+  File "C:\Users\user\anaconda3\Lib\concurrent\futures\thread.py", line 73, in run
+    return fn(*args, **kwargs)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\seller_decision.py", line 16, in decide_opening
+    decision = call_harness(prompt)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\harness.py", line 17, in call_harness
+    raise RuntimeError("codex is not on PATH")
+RuntimeError: codex is not on PATH
+Consumer[488d0c37-436d-4fef-802c-c257660cfa48]: Failed
+Traceback (most recent call last):
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 136, in run
+    await self._process_event(event)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 179, in _process_event
+    await self._process_event_inner(event)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 221, in _process_event_inner
+    raise event
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+        request_context, self._event_queue_agent
+    )
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\seller.py", line 43, in execute
+    decision = await asyncio.to_thread(decide_opening, item, RESERVES[item])
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\anaconda3\Lib\asyncio\threads.py", line 26, in to_thread
+    return await loop.run_in_executor(None, func_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\anaconda3\Lib\concurrent\futures\thread.py", line 86, in run
+    result = ctx.run(self.task)
+  File "C:\Users\user\anaconda3\Lib\concurrent\futures\thread.py", line 73, in run
+    return fn(*args, **kwargs)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\seller_decision.py", line 16, in decide_opening
+    decision = call_harness(prompt)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\harness.py", line 17, in call_harness
+    raise RuntimeError("codex is not on PATH")
+RuntimeError: codex is not on PATH
+Unhandled exception
+Traceback (most recent call last):
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\routes\jsonrpc_dispatcher.py", line 325, in handle_requests
+    raw_result = await self._process_non_streaming_request(
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        specific_request, call_context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\utils\version_validator.py", line 126, in async_wrapper
+    return await func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\routes\jsonrpc_dispatcher.py", line 522, in _process_non_streaming_request
+    return await self._handle_send_message(request_obj, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\routes\jsonrpc_dispatcher.py", line 414, in _handle_send_message
+    task_or_message = await self.request_handler.on_message_send(
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        request_obj, context
+        ^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\request_handlers\request_handler.py", line 285, in async_wrapper
+    return await method(self, params, context, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\request_handlers\default_request_handler_v2.py", line 399, in on_message_send
+    async for raw_event in active_task.subscribe(
+    ...<30 lines>...
+            result = event
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 739, in subscribe
+    raise event
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 136, in run
+    await self._process_event(event)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 179, in _process_event
+    await self._process_event_inner(event)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 221, in _process_event_inner
+    raise event
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+        request_context, self._event_queue_agent
+    )
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\seller.py", line 43, in execute
+    decision = await asyncio.to_thread(decide_opening, item, RESERVES[item])
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\anaconda3\Lib\asyncio\threads.py", line 26, in to_thread
+    return await loop.run_in_executor(None, func_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\anaconda3\Lib\concurrent\futures\thread.py", line 86, in run
+    result = ctx.run(self.task)
+  File "C:\Users\user\anaconda3\Lib\concurrent\futures\thread.py", line 73, in run
+    return fn(*args, **kwargs)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\seller_decision.py", line 16, in decide_opening
+    decision = call_harness(prompt)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\harness.py", line 17, in call_harness
+    raise RuntimeError("codex is not on PATH")
+RuntimeError: codex is not on PATH
+Request Error (ID: 552c885a): Code=-32603, Message='codex is not on PATH'
+INFO:     127.0.0.1:49714 - "POST / HTTP/1.1" 200 OK
+Dispatcher task was cancelled or finished. Events may be lost.
+Producer[ec4b327d-b06d-4f98-a271-3df3c1584d1d]: Execution failed
+Traceback (most recent call last):
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+        request_context, self._event_queue_agent
+    )
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\seller.py", line 43, in execute
+    decision = await asyncio.to_thread(decide_opening, item, RESERVES[item])
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\anaconda3\Lib\asyncio\threads.py", line 26, in to_thread
+    return await loop.run_in_executor(None, func_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\anaconda3\Lib\concurrent\futures\thread.py", line 86, in run
+    result = ctx.run(self.task)
+  File "C:\Users\user\anaconda3\Lib\concurrent\futures\thread.py", line 73, in run
+    return fn(*args, **kwargs)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\seller_decision.py", line 16, in decide_opening
+    decision = call_harness(prompt)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\harness.py", line 17, in call_harness
+    raise RuntimeError("codex is not on PATH")
+RuntimeError: codex is not on PATH
+Consumer[ec4b327d-b06d-4f98-a271-3df3c1584d1d]: Failed
+Traceback (most recent call last):
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 136, in run
+    await self._process_event(event)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 179, in _process_event
+    await self._process_event_inner(event)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 221, in _process_event_inner
+    raise event
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+        request_context, self._event_queue_agent
+    )
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\seller.py", line 43, in execute
+    decision = await asyncio.to_thread(decide_opening, item, RESERVES[item])
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\anaconda3\Lib\asyncio\threads.py", line 26, in to_thread
+    return await loop.run_in_executor(None, func_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\anaconda3\Lib\concurrent\futures\thread.py", line 86, in run
+    result = ctx.run(self.task)
+  File "C:\Users\user\anaconda3\Lib\concurrent\futures\thread.py", line 73, in run
+    return fn(*args, **kwargs)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\seller_decision.py", line 16, in decide_opening
+    decision = call_harness(prompt)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\harness.py", line 17, in call_harness
+    raise RuntimeError("codex is not on PATH")
+RuntimeError: codex is not on PATH
+Unhandled exception
+Traceback (most recent call last):
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\routes\jsonrpc_dispatcher.py", line 325, in handle_requests
+    raw_result = await self._process_non_streaming_request(
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        specific_request, call_context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\utils\version_validator.py", line 126, in async_wrapper
+    return await func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\routes\jsonrpc_dispatcher.py", line 522, in _process_non_streaming_request
+    return await self._handle_send_message(request_obj, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\routes\jsonrpc_dispatcher.py", line 414, in _handle_send_message
+    task_or_message = await self.request_handler.on_message_send(
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        request_obj, context
+        ^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\request_handlers\request_handler.py", line 285, in async_wrapper
+    return await method(self, params, context, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\request_handlers\default_request_handler_v2.py", line 399, in on_message_send
+    async for raw_event in active_task.subscribe(
+    ...<30 lines>...
+            result = event
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 739, in subscribe
+    raise event
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 136, in run
+    await self._process_event(event)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 179, in _process_event
+    await self._process_event_inner(event)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 221, in _process_event_inner
+    raise event
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+        request_context, self._event_queue_agent
+    )
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\seller.py", line 43, in execute
+    decision = await asyncio.to_thread(decide_opening, item, RESERVES[item])
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\anaconda3\Lib\asyncio\threads.py", line 26, in to_thread
+    return await loop.run_in_executor(None, func_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\anaconda3\Lib\concurrent\futures\thread.py", line 86, in run
+    result = ctx.run(self.task)
+  File "C:\Users\user\anaconda3\Lib\concurrent\futures\thread.py", line 73, in run
+    return fn(*args, **kwargs)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\seller_decision.py", line 16, in decide_opening
+    decision = call_harness(prompt)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\harness.py", line 17, in call_harness
+    raise RuntimeError("codex is not on PATH")
+RuntimeError: codex is not on PATH
+Request Error (ID: f2b03e46): Code=-32603, Message='codex is not on PATH'
+INFO:     127.0.0.1:49716 - "POST / HTTP/1.1" 200 OK
+Dispatcher task was cancelled or finished. Events may be lost.
+Producer[dd22501b-3cfd-4e8a-8634-780fb4ed4df3]: Execution failed
+Traceback (most recent call last):
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+        request_context, self._event_queue_agent
+    )
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\seller.py", line 43, in execute
+    decision = await asyncio.to_thread(decide_opening, item, RESERVES[item])
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\anaconda3\Lib\asyncio\threads.py", line 26, in to_thread
+    return await loop.run_in_executor(None, func_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\anaconda3\Lib\concurrent\futures\thread.py", line 86, in run
+    result = ctx.run(self.task)
+  File "C:\Users\user\anaconda3\Lib\concurrent\futures\thread.py", line 73, in run
+    return fn(*args, **kwargs)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\seller_decision.py", line 16, in decide_opening
+    decision = call_harness(prompt)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\harness.py", line 17, in call_harness
+    raise RuntimeError("codex is not on PATH")
+RuntimeError: codex is not on PATH
+Consumer[dd22501b-3cfd-4e8a-8634-780fb4ed4df3]: Failed
+Traceback (most recent call last):
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 136, in run
+    await self._process_event(event)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 179, in _process_event
+    await self._process_event_inner(event)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 221, in _process_event_inner
+    raise event
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+        request_context, self._event_queue_agent
+    )
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\seller.py", line 43, in execute
+    decision = await asyncio.to_thread(decide_opening, item, RESERVES[item])
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\anaconda3\Lib\asyncio\threads.py", line 26, in to_thread
+    return await loop.run_in_executor(None, func_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\anaconda3\Lib\concurrent\futures\thread.py", line 86, in run
+    result = ctx.run(self.task)
+  File "C:\Users\user\anaconda3\Lib\concurrent\futures\thread.py", line 73, in run
+    return fn(*args, **kwargs)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\seller_decision.py", line 16, in decide_opening
+    decision = call_harness(prompt)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\harness.py", line 17, in call_harness
+    raise RuntimeError("codex is not on PATH")
+RuntimeError: codex is not on PATH
+Unhandled exception
+Traceback (most recent call last):
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\routes\jsonrpc_dispatcher.py", line 325, in handle_requests
+    raw_result = await self._process_non_streaming_request(
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        specific_request, call_context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\utils\version_validator.py", line 126, in async_wrapper
+    return await func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\routes\jsonrpc_dispatcher.py", line 522, in _process_non_streaming_request
+    return await self._handle_send_message(request_obj, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\routes\jsonrpc_dispatcher.py", line 414, in _handle_send_message
+    task_or_message = await self.request_handler.on_message_send(
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        request_obj, context
+        ^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\request_handlers\request_handler.py", line 285, in async_wrapper
+    return await method(self, params, context, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\request_handlers\default_request_handler_v2.py", line 399, in on_message_send
+    async for raw_event in active_task.subscribe(
+    ...<30 lines>...
+            result = event
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 739, in subscribe
+    raise event
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 136, in run
+    await self._process_event(event)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 179, in _process_event
+    await self._process_event_inner(event)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 221, in _process_event_inner
+    raise event
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+        request_context, self._event_queue_agent
+    )
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\seller.py", line 43, in execute
+    decision = await asyncio.to_thread(decide_opening, item, RESERVES[item])
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\anaconda3\Lib\asyncio\threads.py", line 26, in to_thread
+    return await loop.run_in_executor(None, func_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\anaconda3\Lib\concurrent\futures\thread.py", line 86, in run
+    result = ctx.run(self.task)
+  File "C:\Users\user\anaconda3\Lib\concurrent\futures\thread.py", line 73, in run
+    return fn(*args, **kwargs)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\seller_decision.py", line 16, in decide_opening
+    decision = call_harness(prompt)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\harness.py", line 17, in call_harness
+    raise RuntimeError("codex is not on PATH")
+RuntimeError: codex is not on PATH
+Request Error (ID: 9cc775a2): Code=-32603, Message='codex is not on PATH'
+INFO:     127.0.0.1:49717 - "POST / HTTP/1.1" 200 OK
+Dispatcher task was cancelled or finished. Events may be lost.
+Producer[14e57071-2ba3-433e-8cc3-a16e4132e8a9]: Execution failed
+Traceback (most recent call last):
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+        request_context, self._event_queue_agent
+    )
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\seller.py", line 43, in execute
+    decision = await asyncio.to_thread(decide_opening, item, RESERVES[item])
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\anaconda3\Lib\asyncio\threads.py", line 26, in to_thread
+    return await loop.run_in_executor(None, func_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\anaconda3\Lib\concurrent\futures\thread.py", line 86, in run
+    result = ctx.run(self.task)
+  File "C:\Users\user\anaconda3\Lib\concurrent\futures\thread.py", line 73, in run
+    return fn(*args, **kwargs)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\seller_decision.py", line 16, in decide_opening
+    decision = call_harness(prompt)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\harness.py", line 17, in call_harness
+    raise RuntimeError("codex is not on PATH")
+RuntimeError: codex is not on PATH
+Consumer[14e57071-2ba3-433e-8cc3-a16e4132e8a9]: Failed
+Traceback (most recent call last):
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 136, in run
+    await self._process_event(event)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 179, in _process_event
+    await self._process_event_inner(event)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 221, in _process_event_inner
+    raise event
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+        request_context, self._event_queue_agent
+    )
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\seller.py", line 43, in execute
+    decision = await asyncio.to_thread(decide_opening, item, RESERVES[item])
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\anaconda3\Lib\asyncio\threads.py", line 26, in to_thread
+    return await loop.run_in_executor(None, func_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\anaconda3\Lib\concurrent\futures\thread.py", line 86, in run
+    result = ctx.run(self.task)
+  File "C:\Users\user\anaconda3\Lib\concurrent\futures\thread.py", line 73, in run
+    return fn(*args, **kwargs)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\seller_decision.py", line 16, in decide_opening
+    decision = call_harness(prompt)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\harness.py", line 17, in call_harness
+    raise RuntimeError("codex is not on PATH")
+RuntimeError: codex is not on PATH
+Unhandled exception
+Traceback (most recent call last):
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\routes\jsonrpc_dispatcher.py", line 325, in handle_requests
+    raw_result = await self._process_non_streaming_request(
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        specific_request, call_context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\utils\version_validator.py", line 126, in async_wrapper
+    return await func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\routes\jsonrpc_dispatcher.py", line 522, in _process_non_streaming_request
+    return await self._handle_send_message(request_obj, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\routes\jsonrpc_dispatcher.py", line 414, in _handle_send_message
+    task_or_message = await self.request_handler.on_message_send(
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        request_obj, context
+        ^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\request_handlers\request_handler.py", line 285, in async_wrapper
+    return await method(self, params, context, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\request_handlers\default_request_handler_v2.py", line 399, in on_message_send
+    async for raw_event in active_task.subscribe(
+    ...<30 lines>...
+            result = event
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 739, in subscribe
+    raise event
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 136, in run
+    await self._process_event(event)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 179, in _process_event
+    await self._process_event_inner(event)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 221, in _process_event_inner
+    raise event
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+        request_context, self._event_queue_agent
+    )
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\seller.py", line 43, in execute
+    decision = await asyncio.to_thread(decide_opening, item, RESERVES[item])
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\anaconda3\Lib\asyncio\threads.py", line 26, in to_thread
+    return await loop.run_in_executor(None, func_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\anaconda3\Lib\concurrent\futures\thread.py", line 86, in run
+    result = ctx.run(self.task)
+  File "C:\Users\user\anaconda3\Lib\concurrent\futures\thread.py", line 73, in run
+    return fn(*args, **kwargs)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\seller_decision.py", line 16, in decide_opening
+    decision = call_harness(prompt)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\harness.py", line 17, in call_harness
+    raise RuntimeError("codex is not on PATH")
+RuntimeError: codex is not on PATH
+Request Error (ID: 5d3392fb): Code=-32603, Message='codex is not on PATH'
+INFO:     127.0.0.1:49719 - "POST / HTTP/1.1" 200 OK
+Dispatcher task was cancelled or finished. Events may be lost.
+Producer[89ead957-aef8-4ed1-a22a-612ea3c88995]: Execution failed
+Traceback (most recent call last):
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+        request_context, self._event_queue_agent
+    )
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\seller.py", line 43, in execute
+    decision = await asyncio.to_thread(decide_opening, item, RESERVES[item])
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\anaconda3\Lib\asyncio\threads.py", line 26, in to_thread
+    return await loop.run_in_executor(None, func_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\anaconda3\Lib\concurrent\futures\thread.py", line 86, in run
+    result = ctx.run(self.task)
+  File "C:\Users\user\anaconda3\Lib\concurrent\futures\thread.py", line 73, in run
+    return fn(*args, **kwargs)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\seller_decision.py", line 16, in decide_opening
+    decision = call_harness(prompt)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\harness.py", line 17, in call_harness
+    raise RuntimeError("codex is not on PATH")
+RuntimeError: codex is not on PATH
+Consumer[89ead957-aef8-4ed1-a22a-612ea3c88995]: Failed
+Traceback (most recent call last):
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 136, in run
+    await self._process_event(event)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 179, in _process_event
+    await self._process_event_inner(event)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 221, in _process_event_inner
+    raise event
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+        request_context, self._event_queue_agent
+    )
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\seller.py", line 43, in execute
+    decision = await asyncio.to_thread(decide_opening, item, RESERVES[item])
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\anaconda3\Lib\asyncio\threads.py", line 26, in to_thread
+    return await loop.run_in_executor(None, func_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\anaconda3\Lib\concurrent\futures\thread.py", line 86, in run
+    result = ctx.run(self.task)
+  File "C:\Users\user\anaconda3\Lib\concurrent\futures\thread.py", line 73, in run
+    return fn(*args, **kwargs)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\seller_decision.py", line 16, in decide_opening
+    decision = call_harness(prompt)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\harness.py", line 17, in call_harness
+    raise RuntimeError("codex is not on PATH")
+RuntimeError: codex is not on PATH
+Unhandled exception
+Traceback (most recent call last):
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\routes\jsonrpc_dispatcher.py", line 325, in handle_requests
+    raw_result = await self._process_non_streaming_request(
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        specific_request, call_context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\utils\version_validator.py", line 126, in async_wrapper
+    return await func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\routes\jsonrpc_dispatcher.py", line 522, in _process_non_streaming_request
+    return await self._handle_send_message(request_obj, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\routes\jsonrpc_dispatcher.py", line 414, in _handle_send_message
+    task_or_message = await self.request_handler.on_message_send(
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        request_obj, context
+        ^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\request_handlers\request_handler.py", line 285, in async_wrapper
+    return await method(self, params, context, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\request_handlers\default_request_handler_v2.py", line 399, in on_message_send
+    async for raw_event in active_task.subscribe(
+    ...<30 lines>...
+            result = event
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 739, in subscribe
+    raise event
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 136, in run
+    await self._process_event(event)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 179, in _process_event
+    await self._process_event_inner(event)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 221, in _process_event_inner
+    raise event
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+        request_context, self._event_queue_agent
+    )
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\seller.py", line 43, in execute
+    decision = await asyncio.to_thread(decide_opening, item, RESERVES[item])
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\anaconda3\Lib\asyncio\threads.py", line 26, in to_thread
+    return await loop.run_in_executor(None, func_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\anaconda3\Lib\concurrent\futures\thread.py", line 86, in run
+    result = ctx.run(self.task)
+  File "C:\Users\user\anaconda3\Lib\concurrent\futures\thread.py", line 73, in run
+    return fn(*args, **kwargs)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\seller_decision.py", line 16, in decide_opening
+    decision = call_harness(prompt)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\harness.py", line 17, in call_harness
+    raise RuntimeError("codex is not on PATH")
+RuntimeError: codex is not on PATH
+Request Error (ID: 25d0b3d9): Code=-32603, Message='codex is not on PATH'
+INFO:     127.0.0.1:49720 - "POST / HTTP/1.1" 200 OK
+Dispatcher task was cancelled or finished. Events may be lost.

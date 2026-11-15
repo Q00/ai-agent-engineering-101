@@ -1,0 +1,88 @@
+{
+  "synthetic_evidence": true,
+  "outcomes": [
+    {
+      "scenario": "raise",
+      "synthetic_evidence": true,
+      "model_reply_is_real": true,
+      "expected_price": 118,
+      "observed": {
+        "action": "ask",
+        "price": 118,
+        "reason": "Four of six lamp sales reached 100% of the opening ask of 115, exceeding the 95% threshold, with no contrary review evidence."
+      },
+      "review": {
+        "previous_ask": 115,
+        "action": "raise",
+        "reason": "Four of six lamp sales reached 100% of the opening ask of 115, exceeding the 95% threshold, with no contrary review evidence.",
+        "tasks": [
+          "SYNTHETIC-raise-0",
+          "SYNTHETIC-raise-1",
+          "SYNTHETIC-raise-2",
+          "SYNTHETIC-raise-3",
+          "SYNTHETIC-raise-4",
+          "SYNTHETIC-raise-5"
+        ]
+      },
+      "no_model_call_before_six": true,
+      "no_reuse": true,
+      "matches_expectation": true
+    },
+    {
+      "scenario": "lower",
+      "synthetic_evidence": true,
+      "model_reply_is_real": true,
+      "expected_price": 112,
+      "observed": {
+        "action": "ask",
+        "price": 112,
+        "reason": "All six lamp sales closed at 100 against the current 115 ask, and three distinct reviewers cited comparable lamps offered at 105, supporting that 115 is too high."
+      },
+      "review": {
+        "previous_ask": 115,
+        "action": "lower",
+        "reason": "All six lamp sales closed at 100 against the current 115 ask, and three distinct reviewers cited comparable lamps offered at 105, supporting that 115 is too high.",
+        "tasks": [
+          "SYNTHETIC-lower-0",
+          "SYNTHETIC-lower-1",
+          "SYNTHETIC-lower-2",
+          "SYNTHETIC-lower-3",
+          "SYNTHETIC-lower-4",
+          "SYNTHETIC-lower-5"
+        ]
+      },
+      "no_model_call_before_six": true,
+      "no_reuse": true,
+      "matches_expectation": true
+    },
+    {
+      "scenario": "hold",
+      "synthetic_evidence": true,
+      "model_reply_is_real": true,
+      "expected_price": 115,
+      "observed": {
+        "action": "ask",
+        "price": 115,
+        "reason": "All six offers were 90, below the 100 reserve; these alone do not show that the current 115 ask is too high. No strong sales or reviews support a change."
+      },
+      "review": {
+        "previous_ask": 115,
+        "action": "hold",
+        "reason": "All six offers were 90, below the 100 reserve; these alone do not show that the current 115 ask is too high. No strong sales or reviews support a change.",
+        "tasks": [
+          "SYNTHETIC-hold-0",
+          "SYNTHETIC-hold-1",
+          "SYNTHETIC-hold-2",
+          "SYNTHETIC-hold-3",
+          "SYNTHETIC-hold-4",
+          "SYNTHETIC-hold-5"
+        ]
+      },
+      "no_model_call_before_six": true,
+      "no_reuse": true,
+      "matches_expectation": true
+    }
+  ],
+  "live_memory_unchanged": true,
+  "passed": true
+}
