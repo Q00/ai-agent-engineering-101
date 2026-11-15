@@ -2154,6 +2154,8 @@ submissions/26510124/week-07/.venv/bin/python submissions/26510124/week-08/prepa
 
 ## Shop 운영 에이전트 — 2026-11-15 로컬 구현
 
+보고서 작성용 변경 근거·검증 이력과 추후 비교 항목은 [REPORT-NOTES.md](REPORT-NOTES.md)에 기록했다.
+
 이 절은 위의 과거 Round 2 설명과 구분되는 현재 구현이다. **서버 배포·서비스
 재시작·실제 모델 호출·거래는 이 작업에서 실행하지 않았다.** 기본 설정은
 `shop-ops-config.json`의 `mode: propose`다. 제안을 생성해도 가격이 자동으로 바뀌지 않는다.
