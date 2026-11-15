@@ -41,10 +41,74 @@ def category_item(text, unit, named_sku):
 
 
 def claim_arm(unit):
-    share = float(rules().get("claim_share") or 0)
-    if not share or unit.get("kind") == "food":
+    """'claim' / 'none' for a negotiation (the grade itself is decided at the receipt, claim_now). 11/15 ~16:40
+    (person): food too while food_claim is on (every food unit gets the claim arm; claim_now decides)."""
+    r = rules()
+    if unit.get("kind") == "food":
+        return "claim" if r.get("food_claim") else None
+    share = float(r.get("claim_share") or 0)
+    if not share:
         return None
     return "claim" if random.random() < share else "none"
+
+
+STALE_S = 10                    # inventory.json can be 10 s old (agent.md): the grade is computed as of now + this
+FOOD_A, FOOD_B = 0.80, 0.45     # food grade = shelf life left / shelf_hours: A >= 80 %, B >= 45 %, else C (agent.md)
+_cat = {"mtime": None, "c": {}}
+CLAIM_LOG = HERE / "logs" / "claim_now.jsonl"
+
+
+def _shelf_hours(sku, catalog=None):
+    if catalog is not None:
+        return (catalog.get(sku) or {}).get("shelf_hours")
+    p = HERE / ".market" / "catalog.json"
+    try:
+        m = p.stat().st_mtime
+        if _cat["mtime"] != m:
+            _cat.update(mtime=m, c=json.loads(p.read_text(encoding="utf-8")))
+    except (OSError, ValueError):
+        return None
+    return (_cat["c"].get(sku) or {}).get("shelf_hours")
+
+
+def food_grade(unit, now=None, catalog=None):
+    """(grade, hours to the next grade drop) of a food unit as of now + STALE_S, from expires_at and the catalog's
+    shelf_hours (not the inventory's grade); (None, None) without them."""
+    S, E = _shelf_hours(unit.get("sku"), catalog), unit.get("expires_at")
+    if not S or not E:
+        return None, None
+    left = (E - (now or time.time()) - STALE_S) / 3600
+    f = left / S
+    if f >= FOOD_A:
+        return "A", left - FOOD_A * S
+    if f >= FOOD_B:
+        return "B", left - FOOD_B * S
+    return "C", None
+
+
+def claim_now(unit, now=None, r=None, catalog=None, task=None):
+    """11/15 ~16:40 (person): the grade to put in this receipt's claim, decided when the receipt is built (the last
+    moment before the checkout), or None. claim_grades (["A", "B"]): C never; goods: the unit's fixed grade; food (while
+    food_claim): the grade computed now (food_grade), only when the next drop is more than food_n_h (3) hours away."""
+    r = rules() if r is None else r
+    now = now or time.time()
+    grades = r.get("claim_grades") or ["A", "B", "C"]
+    if unit.get("kind") == "food":
+        if not r.get("food_claim"):
+            return None
+        g, nxt = food_grade(unit, now, catalog)
+        ok = g in grades and nxt is not None and nxt > float(r.get("food_n_h", 3))
+        try:
+            with open(CLAIM_LOG, "a", encoding="utf-8") as f:
+                f.write(json.dumps({"ts": round(now, 1), "task": task, "unit": unit.get("unit"), "sku": unit.get("sku"),
+                                    "grade": g, "inv_grade": unit.get("grade"),
+                                    "next_drop_h": None if nxt is None else round(nxt, 2), "claim": g if ok else None})
+                        + "\n")
+        except OSError:
+            pass
+        return g if ok else None
+    g = unit.get("grade")
+    return g if g in ("A", "B", "C") and g in grades else None
 
 
 def log(connect, task, unit, item, arm):

@@ -81,8 +81,10 @@ def build_receipt(deal, u, price, task_id):
     receipt = {"shop": NAME, "item": deal.get("receipt_item") or u["sku"], "price": price, "task": task_id}
     if u["unit"]:
         receipt["unit"] = u["unit"]
-    if deal.get("claim_arm") == "claim" and u.get("grade") in ("A", "B", "C"):   # goods only (receipt_exp)
-        receipt["claim"] = u["grade"]
+    if deal.get("claim_arm") == "claim":            # 11/15 ~16:40 (person): decided now, food too (receipt_exp)
+        g = receipt_exp.claim_now(u, time.time(), task=task_id)
+        if g:
+            receipt["claim"] = g
     if deal.get("warranty"):                        # [16] not under sig_seller; the kit puts it in the checkout
         receipt["warranty_hours"] = deal["warranty"]
     return receipt
