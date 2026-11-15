@@ -524,14 +524,19 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
         # still expands the catalogue when opportunities are comparable, while
         # materially stronger proven contribution can now win the same window.
         # The 500k+ market carries most live Revenue, but random supply costs
-        # make broad expansion unsafe.  Give at most one sold-out, previously
-        # profitable, grade-proven high-value SKU the first slot in a supply
-        # window.  Every normal conversion, refund, concentration, cash and
-        # warranty guard above still applies; the runtime closes this lane as
-        # soon as one qualifying purchase succeeds in the window.
+        # make broad expansion unsafe. Give a bounded number of sold-out,
+        # previously profitable, grade-proven high-value SKUs the first slots
+        # in a supply window. Every normal conversion, refund, concentration,
+        # cash and warranty guard above still applies. The live limit is two
+        # only after two successive guarded high-value lots sold profitably;
+        # callers without that explicit policy retain the original one slot.
         high_value_priority=1
         high_value_min=policy.get('high_value_lane_min_unit_cost',math.inf)
-        if (not policy.get('high_value_window_used',False) and
+        high_value_count=policy.get('high_value_window_count')
+        if high_value_count is None:
+            high_value_count=int(bool(policy.get('high_value_window_used',False)))
+        high_value_limit=max(0,int(policy.get('high_value_window_limit',1)))
+        if (high_value_count<high_value_limit and
                 row.get('kind')=='goods' and not holding.get(row['sku']) and
                 own_sales_total>=1 and row.get('own_gross_total',0)>0 and
                 row.get('upper_cost',0)>=high_value_min and
@@ -541,6 +546,8 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
                     policy.get('min_proven_scale_grade_profit_probability',.70)):
             high_value_priority=0
         evidence['high_value_priority']=(high_value_priority==0)
+        evidence['high_value_window_count']=high_value_count
+        evidence['high_value_window_limit']=high_value_limit
         choices.append((high_value_priority,-(risk_adjusted*diversity),
                         row['sku'],need,evidence))
     # Each candidate is bounded by condition-specific per-SKU caps. When no
@@ -741,10 +748,13 @@ def main():
         if target>0:runtime_policy['breadth_target_skus']=target
         ranked_by_sku={row.get('sku'):row for row in ranked if row.get('sku')}
         high_value_min=policy.get('high_value_lane_min_unit_cost',math.inf)
-        runtime_policy['high_value_window_used']=any(
+        high_value_window_count=sum(
             row['status']=='paid' and row['created']>=opening and
             ranked_by_sku.get(row['sku'],{}).get('upper_cost',0)>=high_value_min
             for row in rows)
+        runtime_policy['high_value_window_count']=high_value_window_count
+        runtime_policy['high_value_window_used']=(
+            high_value_window_count>=max(1,int(policy.get('high_value_window_limit',1))))
         window_blocks=breadth_window_blocks(rows,opening,inv,target)
         plan=allocation_plan(ranked,inv,available,
                              set(blocked)|window_blocks|refund_cooldowns|mature_refund_risks,

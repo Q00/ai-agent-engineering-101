@@ -380,6 +380,32 @@ class PurchaseTests(unittest.TestCase):
   self.assertEqual(allocation_plan(
       [cheap,high],{'units':[],'balance':1000000},1000000,
       policy=policy)[0]['sku'],'cheap')
+ def test_evidence_backed_policy_can_open_exactly_two_high_value_slots(self):
+  cheap=dict(sku='cheap',kind='food',expected_net=1000,score=100,
+             upper_cost=100,sales_1h=8,sales_6h=12,
+             distinct_buyers_6h=4,estimated_sale_likelihood=.8)
+  common=dict(kind='goods',expected_net=50000,sales_1h=1,sales_6h=6,
+              distinct_buyers_6h=4,estimated_sale_likelihood=.5,
+              own_sales_total=1,own_gross_total=100000,own_profitable_sales=1,
+              dominant_grade_samples=4,dominant_grade_profit_probability=.75,
+              upper_cost=600000)
+  high1=dict(common,sku='high1',score=1000)
+  high2=dict(common,sku='high2',score=900)
+  policy={'max_sku_capital_share':1,'high_value_lane_min_unit_cost':500000,
+          'high_value_window_limit':2,'high_value_window_count':0,
+          'min_proven_scale_grade_samples':3,
+          'min_proven_scale_grade_profit_probability':.70}
+  plan=allocation_plan([cheap,high1,high2],{'units':[],'balance':2000000},
+                       2000000,policy=policy)
+  self.assertEqual([row['sku'] for row in plan[:2]],['high1','high2'])
+  policy['high_value_window_count']=1
+  self.assertEqual(allocation_plan(
+      [cheap,high1,high2],{'units':[],'balance':2000000},2000000,
+      blocked={'high1'},policy=policy)[0]['sku'],'high2')
+  policy['high_value_window_count']=2
+  self.assertEqual(allocation_plan(
+      [cheap,high1,high2],{'units':[],'balance':2000000},2000000,
+      policy=policy)[0]['sku'],'cheap')
  def test_sold_out_proven_sku_scales_during_breadth_expansion(self):
   ranked=[dict(sku='proven',kind='goods',expected_net=10000,score=100,upper_cost=100,
                sales_1h=12,sales_6h=24,own_sales_1h=2,own_sales_total=2,
