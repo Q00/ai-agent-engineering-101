@@ -131,10 +131,38 @@ def buyer_samples(e, name, since):
     return out
 
 
+LAST_STARS = {}
+
+
+def _ledger_refunds_stars(since):
+    """unit -> refunded credits, task -> stars, from the archive (read-only)."""
+    import sqlite3
+    ref, stars = {}, {}
+    try:
+        db = sqlite3.connect(f"file:{HERE / 'data' / 'market_archive.db'}?mode=ro", uri=True, timeout=30)
+        for (d,) in db.execute("SELECT data FROM ledger WHERE kind='broken' AND ts > ?", (since,)):
+            x = json.loads(d).get("data") or {}
+            ref[x.get("unit")] = x.get("refunded") or 0
+        for (d,) in db.execute("SELECT data FROM ledger WHERE kind='result' AND ts > ? AND data LIKE '%\"task\"%'", (since,)):
+            x = json.loads(d).get("data") or {}
+            t = (x.get("receipt") or {}).get("task")
+            if t and x.get("stars") is not None and x.get("verified"):
+                stars[t] = x["stars"]
+    except Exception:  # noqa: BLE001
+        pass
+    return ref, stars
+
+
 def seller_samples(e, name, since):
-    """Per ask (a talk that got our price): price - cost - refunds + REVENUE_WEIGHT x price if it closed, else 0."""
+    """Per ask (a talk that got our price): price - cost - refunds + REVENUE_WEIGHT x price if it closed, else 0.
+    11-15: with 'mature_h' (warranty experiments) only talks older than mature_h count and the ACTUAL refund of the
+    unit is used (all breaks come within 6 h); the arms' mean stars go to LAST_STARS for the stars guard."""
     out = [[] for _ in e["arms"]]
     talks = {}
+    mature = e.get("mature_h")
+    cut = time.time() - (mature or 0) * 3600
+    ref, stars = _ledger_refunds_stars(since) if mature or e.get("stars_guard") else ({}, {})
+    st_arm = [[] for _ in e["arms"]]
     try:
         with open(HERE / "seller_r3_log.jsonl", "rb") as f:
             f.seek(0, 2)
@@ -151,9 +179,14 @@ def seller_samples(e, name, since):
                     continue
                 key = ev.get("task") or f"{ev.get('sku')}|{ev.get('t')}"
                 arm = ev["ab"][name][0] if isinstance(ev["ab"][name], list) else ev["ab"][name]
+                if mature and ev.get("t", 0) > cut:
+                    continue                                    # too young: its breaks have not all happened yet
                 if ev.get("event") == "deal" and ev.get("cost") is not None:
                     p = ev["price"]
-                    talks[key] = (arm, p - ev["cost"] - REFUND.get(ev.get("grade") or "A", 0.025) * p + REVENUE_WEIGHT * p)
+                    rf = ref.get(ev.get("unit"), 0) if mature else REFUND.get(ev.get("grade") or "A", 0.025) * p
+                    talks[key] = (arm, p - ev["cost"] - rf + REVENUE_WEIGHT * p)
+                    if ev.get("task") in stars and 0 <= arm < len(st_arm):
+                        st_arm[arm].append(stars[ev["task"]])
                 elif ev.get("event") in ("quote", "canceled", "lapsed") and key not in talks:
                     talks[key] = (arm, 0.0)
     except OSError:
@@ -161,6 +194,7 @@ def seller_samples(e, name, since):
     for arm, x in talks.values():
         if 0 <= arm < len(out):
             out[arm].append(x / 1e6)          # M credits per ask
+    LAST_STARS[name] = [(round(sum(v) / len(v), 3), len(v)) if v else (None, 0) for v in st_arm]
     return out
 
 
@@ -196,6 +230,12 @@ def update():
         timed = (now - since) >= e.get("max_h", 6) * 3600 and all(n >= 30 for n, _, _ in stats)
         if done or timed:
             i = pb.index(max(pb)) if (done or max(pb) >= 0.75) else 0
+            sg = e.get("stars_guard")
+            ls = LAST_STARS.get(name) or []
+            if sg and i != 0 and len(ls) > i and ls[i][0] is not None and ls[0][0] is not None and ls[i][1] >= 20 \
+                    and ls[i][0] < ls[0][0] - sg:
+                log(f"{name}: arm {i} wins on money but its stars {ls[i][0]} < control {ls[0][0]} - {sg}: control kept")
+                i = 0
             if timed and not done:
                 log(f"{name}: {e.get('max_h', 6)} h limit, P(best) {max(pb):.2f} -> arm {i}")
             promote(name, e, e["arms"][i])
@@ -209,7 +249,8 @@ def update():
                 cfg.setdefault("experiments", {})[n_name] = n_e
                 cfg["queue"] = nxt[1:]
                 log(f"started {n_name} from the queue")
-        log(f"{name}: n {[x[0] for x in stats]} mean {[round(x[1], 4) for x in stats]} p_best {s['p_best']} weights {s['weights']}")
+        log(f"{name}: n {[x[0] for x in stats]} mean {[round(x[1], 4) for x in stats]} p_best {s['p_best']} weights {s['weights']}"
+            + (f" stars {LAST_STARS[name]}" if LAST_STARS.get(name) else ""))
     STATE.write_text(json.dumps(st, ensure_ascii=False, indent=1))
     if changed_cfg:
         CONFIG.write_text(json.dumps(cfg, ensure_ascii=False, indent=1))

@@ -404,6 +404,11 @@ def pick_unit(text, held, now, asks=None, star=False, unpaid=None):
     # fair-furniture (A 5 / B 4) and dyishappy (A 3.0 / B 2.75) rate B lower, iyen-dori and real_yellow rate it higher
     if not shop_policy_now().get("sell_b", 1) or a_only(text):
         ab = [u for u in ab if (u.get("grade") or "A") == "A"]
+    # 11-15 (user, after the review): grade B of goods listed at b_max_list or more is not sold. 48 h: B >= 1 M list
+    # made 16.0% margin against 10.6% refunds, and one break refunds ~2 M (24 h refunds -59.6 M against +50.1 M margin)
+    bmax = shop_policy_now().get("b_max_list")
+    if bmax:
+        ab = [u for u in ab if (u.get("grade") or "A") != "B" or (u.get("list_price") or 0) < bmax]
     if star:
         # 11-13 (U4, S1, verified shop_stars): a price-rated star account (star_buyers.json) gets the grade A unit with
         # the lowest cost/list, so its star price (dyishappy x .55, iyen-dori x .64) clears the refund break-even
@@ -725,6 +730,19 @@ class Shop(AgentExecutor):
                 return
             grade = grade_now(u, now) or "A"
             regime, p, _, _ = self.policy(now)
+            # 11-15 (user: 'A/B the warranty too'): this ask's arms are drawn once, here; an arm on any knob other than
+            # the ask offsets replaces that knob in this ask's policy copy (e.g. warranty_default_h)
+            ab_arms = {}
+            if u.get("kind") == "goods" and u.get("unit"):
+                try:
+                    import ab as _ab
+                    ab_arms = _ab.assign("seller", grade=grade)
+                except Exception:   # noqa: BLE001 - an experiment never breaks a quote
+                    ab_arms = {}
+                ov = {v[2]: v[1] for v in ab_arms.values()
+                      if len(v) > 2 and v[2] and not str(v[2]).startswith("ask_offset_")}
+                if ov:
+                    p = dict(p, **ov)
             # 11-13 (U4, verified R4): the warranty is decided first, as the refund break-even floor depends on it. A goods
             # ask that mentions a warranty gets warranty_hours; a silent one gets warranty_default_h (77% of our refund
             # value, 12.9 of 16.72 M in 24 h, comes from breaks after 3 h). Every buyer is told how to get the full one
@@ -843,14 +861,8 @@ class Shop(AgentExecutor):
                 floor = max(floor, math.ceil(u["cost"] * be_mult(grade, wh)))
             # 11-13 (user: 'keep moving the strategy to the better side through A/B tests'): live arms (ab.py) on the
             # goods ask: the arm's offset replaces the knob ask_offset_<grade> for this ask; the floor is untouched
-            ab_arms = {}
             if u.get("kind") == "goods" and u.get("unit"):
                 off = p.get(f"ask_offset_{grade}", 0.0) or 0.0
-                try:
-                    import ab as _ab
-                    ab_arms = _ab.assign("seller", grade=grade)
-                except Exception:   # noqa: BLE001 - an experiment never breaks a quote
-                    ab_arms = {}
                 for _n, _v in ab_arms.items():
                     if len(_v) > 2 and _v[2] == f"ask_offset_{grade}":
                         off = _v[1]
