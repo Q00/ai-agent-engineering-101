@@ -343,6 +343,7 @@ PACE = {"under": ({"buyer": 25 / 60, "shop": 25 / 60}, {"buyer": 1.0, "shop": 1.
 # the credit left (minus a small reserve) over the days to the round end, and while the 24 h spend is within 115 %
 # of it both strategists run the model on every turn (run_gate); over 115 % they fall back to the gated setting
 ROUND_END = 1794927540        # 2026-11-17 14:59 UTC
+FREEZE_H = 6                  # 11-15: endgame freeze of routine strategist runs (see run_gate)
 RESERVE = 5.0
 
 
@@ -418,6 +419,10 @@ def run_gate(role, mem_d, woken=False, now=None):
     """(run?, effort, why). mem_d is the strategist's memory dict; it keeps gate_fp and model_t."""
     import time as _t
     now = now or _t.time()
+    # 11-15 (user: 'the scenario that makes 1st safely'): in the last FREEZE_H hours no routine model run moves a
+    # knob; only a guard wake (harm) still runs the model
+    if now >= ROUND_END - FREEZE_H * 3600 and not woken:
+        return False, "medium", f"endgame freeze: last {FREEZE_H} h, only guard wakes run"
     fp = _gate_state(role)
     old = mem_d.get("gate_fp") or {}
     if not old:                       # first gated run: compare with now, from the last real model call (spend ledger)

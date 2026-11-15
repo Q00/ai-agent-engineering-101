@@ -206,13 +206,23 @@ def promote(name, e, value):
     log(f"PROMOTED {name}: {e['knob']} = {value} ({p.name})")
 
 
+END = 1794927540               # 2026-11-17 14:59 UTC
+FINAL_H = 6                    # 11-15 (user: 'make 1st safe'): in the last FINAL_H hours every running experiment is
+                               # decided now (leader if P(best) >= timed_p, else control) and no new one starts
+
+
 def update():
     cfg = _read(CONFIG, {})
     st = _read(STATE, {})
     now = time.time()
     changed_cfg = False
+    final = now >= END - FINAL_H * 3600
+    if final:
+        cfg["queue"] = []
     for name, e in list((cfg.get("experiments") or {}).items()):
         s = st.setdefault(name, {"status": "running"})
+        if final and e.get("active", True) and not str(s.get("status")).startswith("promoted"):
+            e["max_h"] = 0                 # forces the timed decision below on this pass
         if not e.get("active", True) or str(s.get("status")).startswith("promoted"):
             continue
         since = e.get("start") or now
@@ -227,7 +237,7 @@ def update():
         # 11-14 (user: 'it takes too long'): decide at P(best) >= promote_p (.90) with min_n per arm, or when the
         # experiment is max_h old (6 h): then the leader if its P(best) >= .75, else the control arm (index 0)
         done = all(n >= e.get("min_n", 100) for n, _, _ in stats) and max(pb) >= e.get("promote_p", 0.90)
-        timed = (now - since) >= e.get("max_h", 6) * 3600 and all(n >= 30 for n, _, _ in stats)
+        timed = final or ((now - since) >= e.get("max_h", 6) * 3600 and all(n >= 30 for n, _, _ in stats))
         if done or timed:
             i = pb.index(max(pb)) if (done or max(pb) >= e.get("timed_p", 0.75)) else 0
             sg = e.get("stars_guard")
