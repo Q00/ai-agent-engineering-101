@@ -116,6 +116,10 @@ HIGH_A_MIN = 0.66
 # KST no new high-tier (list above TIER_HIGH) goods are bought; existing stock keeps selling. At 22:44 stock was 640 units,
 # 237.9M cost, 15.6 h of sales at the hour's pace with 49 h left. Mid, low and food lines go on until the 11-17 12:00 full stop.
 HIGH_STOP_TS = 1794754800      # 2026-11-16 00:00 KST
+# Claude (2026-11-16 05:44, hourly check, the same endgame plan: "전체 사입 중지 11-17 12:00"): from then on nothing is bought,
+# so the last 36 h sell down stock (672 units, 193.7M cost at 05:44) instead of adding to it. Set now, not on the day, so it
+# cannot be missed.
+ALL_STOP_TS = 1794884400       # 2026-11-17 12:00 KST
 BREAK_MIN_SETTLES = 100     # breaking above BREAK_MAX is not bought. 12 h ledger: goods break 0.090 on average and mostly evenly
 #   (chi2 50 on 28 df); only G07ec17d5 (29 of 163, 0.178) and G03cab593 (19 of 117, 0.162) stood out. A broken unit under warranty
 #   refunds the whole price, and a mid-tier A nets about 0.07 of list, so a 0.15+ break rate loses money on every sale
@@ -380,7 +384,9 @@ def main():
     except OSError as e:
         print(f"restock: shop_prices.json not written ({type(e).__name__})")
     window = inv.get("restock") or {}
-    if window.get("open") or (window.get("opens_at") or 0) - now <= EARLY:
+    if now >= ALL_STOP_TS:
+        buy = []
+    elif window.get("open") or (window.get("opens_at") or 0) - now <= EARLY:
         buy = plan(inv, catalog, load(state / "demand.json", []), mem, cu)
     else:
         buy = []
