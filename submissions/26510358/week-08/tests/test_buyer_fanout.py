@@ -124,6 +124,7 @@ def test_early_arm_stops_waiting_after_enough_quotes(monkeypatch, tmp_path):
     monkeypatch.setattr(config, "BUYER_QUOTE_TIMEOUT_S", 3.0)
     monkeypatch.setattr(config, "BUYER_QUOTE_ENOUGH", 2)
     monkeypatch.setattr(config, "BUYER_QUOTE_GRACE_S", 0.2)
+    monkeypatch.setattr(config, "BUYER_QUOTE_MIN_WAIT_S", 0.0)
     shops = [Shop("http://a", 60_000), Shop("http://b", 62_000), Shop("http://slow", 40_000, delay=1.5)]
     _wire(monkeypatch, tmp_path, shops)
     cands = [cand(s.url) for s in shops]
@@ -142,3 +143,20 @@ def test_early_arm_stops_waiting_after_enough_quotes(monkeypatch, tmp_path):
 def test_early_arm_is_a_stable_share_independent_of_cost_open():
     picks = [buyer_r3.quote_early_arm(f"o-{i:06x}") for i in range(4000)]
     assert abs(sum(picks) / len(picks) - config.BUYER_QUOTE_EARLY_SHARE) < 0.03
+
+
+def test_early_arm_still_waits_the_minimum(monkeypatch, tmp_path):
+    """The order gap is the market's (~20 s), so the early stop keeps waiting BUYER_QUOTE_MIN_WAIT_S for late quotes."""
+    monkeypatch.setattr(config, "BUYER_QUOTE_TIMEOUT_S", 3.0)
+    monkeypatch.setattr(config, "BUYER_QUOTE_ENOUGH", 2)
+    monkeypatch.setattr(config, "BUYER_QUOTE_GRACE_S", 0.1)
+    monkeypatch.setattr(config, "BUYER_QUOTE_MIN_WAIT_S", 1.0)
+    shops = [Shop("http://a", 60_000), Shop("http://b", 62_000), Shop("http://late", 40_000, delay=0.6),
+             Shop("http://never", 40_000, delay=5.0)]
+    _wire(monkeypatch, tmp_path, shops)
+    monkeypatch.setattr(buyer_r3, "quote_early_arm", lambda oid: True)
+    t0 = time.time()
+    quotes = buyer_r3.fanout_quotes([cand(s.url) for s in shops], dict(ORDER))
+    took = time.time() - t0
+    assert 0.9 < took < 1.6 and {c["shop"] for c, _, _ in quotes} == {"http://a", "http://b", "http://late"}
+    buyer_r3.close_quotes(quotes)

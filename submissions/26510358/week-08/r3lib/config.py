@@ -308,6 +308,9 @@ BUYER_QUOTE_EARLY_SHARE = 1.0       # 1.0 since 2026-11-15 19:5x KST (canary 1.3
                                     #   (36% of fan-outs waited the full 20 s; order starts are >= ~20 s apart). 0.0 rolls back
 BUYER_QUOTE_ENOUGH = 4
 BUYER_QUOTE_GRACE_S = 2.0
+BUYER_QUOTE_MIN_WAIT_S = 8.0       # 2026-11-15 20:4x KST: the early stop never comes before this. At 1.0 the order gap sits
+                                    #   at the market's ~20 s floor (p50 20.5 s) while an order took 8.5 s, and 16% of usable
+                                    #   quotes came after the 4th + 2 s (44 of 81 within 10 s). 0.0 = the plain early stop
 HOURS_MARGIN = 0.25                 # food must last use_within_hours + this (2 h refused 8 deals worth paying)
 
 

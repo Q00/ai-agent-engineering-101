@@ -354,7 +354,8 @@ def fanout_quotes(cands, order):
             with lock:
                 n = len(usable_at)
                 enough_at = usable_at[config.BUYER_QUOTE_ENOUGH - 1] if n >= config.BUYER_QUOTE_ENOUGH else None
-            if enough_at is not None and time.time() - t0 >= enough_at + config.BUYER_QUOTE_GRACE_S:
+            if enough_at is not None and time.time() - t0 >= max(enough_at + config.BUYER_QUOTE_GRACE_S,
+                                                                  config.BUYER_QUOTE_MIN_WAIT_S):
                 break
         time.sleep(0.1)
     with lock:

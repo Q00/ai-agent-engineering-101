@@ -39,3 +39,12 @@ S3 CORRECTION: the premise was wrong. kpi stock_cost 196.8M includes premium sto
   category target (192) is filled by 268 slower bedding units, so the SKU is never bought. Not fixed: market pays 0.64
   of list on a ~0.59 supply cost, ~1.9k margin per unit, ~8M revenue to the end (0.2% of ours).
 Buyer threshold not raised: deals at margin share 0.72-0.76 are 8% of deals and sit at the cumulative saved (0.7385).
+
+Update 2026-11-15 20:32 KST — minimum quote wait 8 s (epoch 1794742336, user's yes)
+  At 1.0 (19:49-20:30): 113 orders, 162.6 orders/h, 86.3 deals/h (12 h before: 119.2 / 77.2). Order gap p10 19.6,
+  p50 20.5 s: the market's floor, so time an order spends under ~20 s is free. Early stop finished at 8.5 s mean.
+  Wait-arm canary orders with >= 4 quotes: 81 of 520 usable quotes came after the 4th + 2 s (20 < 6 s, 24 < 10 s,
+  21 < 15 s, 16 >= 15 s). Rule now: stop at max(4th usable + 2 s, BUYER_QUOTE_MIN_WAIT_S 8 s), or when every shop
+  answered. Judge at +1.5 h: orders/h stays ~160, deals/order up from 0.53 (19:49-20:30). 0.0 rolls back.
+  Not done: raising goods max_pay. Goods walked 99 vs 41 deals with the last ask a median 3.7% over max_pay, but
+  those prices score margin share ~0.64 (A), under the cumulative saved 0.739.
