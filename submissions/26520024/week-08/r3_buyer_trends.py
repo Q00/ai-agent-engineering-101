@@ -5,7 +5,7 @@ from collections import defaultdict
 
 from r3_strategy import buyer_fallback, expected_saved, savings_ceiling
 
-VERSION = 'settled-trend-v1'
+VERSION = 'settled-trend-v2-margin-saved'
 WINDOW = 6 * 3600
 
 

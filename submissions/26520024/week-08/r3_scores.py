@@ -1,7 +1,7 @@
-"""Patch-3.5 scenario forecasts vs observed board results, never a grade guarantee."""
+"""Patch-3.6 scenario forecasts vs observed board results, never a grade guarantee."""
 import math
+from r3_savings import RULE
 
-RULE = 'announced_patch_3_5_raw_forum'
 WEIGHTS = {'shop': {'book': .5, 'revenue': .3, 'stars_rank': .2},
            'buyer': {'saved': .5, 'forum': .3, 'deals': .1, 'posts': .1}}
 
@@ -59,9 +59,15 @@ def score(own, cohorts):
 def compare_and_predict(current, previous, now, horizon=7200):
     if not current or not 0 <= now - current.get('at', 0) <= 900:
         return {'status': 'missing_or_stale_board', 'next_prediction': None}
+    if current.get('rule_scenario') != RULE:
+        return {'status': 'score_rule_changed', 'next_prediction': None}
     actual = score(current['own'], current['cohorts'])
     old = previous.get('score_observation') if previous else None
     forecast = previous.get('score_prediction') if previous else None
+    rule_changed = bool(old and (old.get('rule_scenario') != RULE or
+                                (forecast and forecast.get('rule') != RULE)))
+    if rule_changed:
+        old, forecast = None, None
     comparison = None
     if forecast and old and now >= forecast['due_at']:
         within = abs(now - forecast['due_at']) <= 900
@@ -95,6 +101,7 @@ def compare_and_predict(current, previous, now, horizon=7200):
                 row[field] = value + (delta if field == 'book' else max(0, delta))
     predicted = score(projected, current['cohorts'])
     return {'status': 'ok' if actual else 'incomplete_metrics', 'scenario_score': actual,
+            'baseline_reset_reason': 'score_rule_changed' if rule_changed else None,
             'previous_prediction_comparison': comparison,
             'next_prediction': {'made_at': now, 'due_at': now + horizon, 'rule': RULE,
                 'method': 'recent_metric_rates' if extrapolate else 'cold_start_persistence',

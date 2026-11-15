@@ -45,7 +45,7 @@ class Patch35Tests(unittest.TestCase):
         self.assertEqual(selection_fallback([costly, cheap], 10000)['shop_name'], 'cheap')
 
     def test_failed_purchase_penalty_is_minus_one_not_minus_price_ratio(self):
-        self.assertAlmostEqual(expected_saved(self.candidate(), 60), .9 * .4 - .1)
+        self.assertAlmostEqual(expected_saved(self.candidate(), 60), .9 * (40 / 41) - .1)
         self.assertEqual(expected_saved(self.candidate(risk=1), 0), -1)
 
     def test_ceiling_meets_target_over_risk_price_budget_grid(self):
@@ -242,10 +242,13 @@ class Patch35Tests(unittest.TestCase):
         fixture = BuyerTests()
         fixture.setUp()
         self.addCleanup(fixture.doCleanups)
-        atomic_json(fixture.md/'policy.json', {'buyer_min_saved': .5, 'fallback_enabled': False})
+        atomic_json(fixture.md/'policy.json', {'buyer_min_saved': .8, 'fallback_enabled': False})
         fixture.execute()
-        # List=150, target=.5 => 75; model's 100 is budget-valid but score-invalid.
-        self.assertEqual(fixture.inputs[1], ('75', 'task-1'))
+        # Food cost prior=78, margin=72: 150 - .8*72 => 92 whole credits.
+        # The model's 100 is budget-valid but exceeds the Patch 3.6 target ceiling.
+        # The validated fallback opens at 60% of list (90), below that ceiling.
+        self.assertEqual(fixture.states[1]['savings_ceiling'], 92)
+        self.assertEqual(fixture.inputs[1], ('90', 'task-1'))
 
     def test_coverage_redundancy_not_semantic_complements(self):
         rows = build_candidates(CATALOG, [event('order_seen','o1',
