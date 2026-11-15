@@ -160,11 +160,12 @@ FIRST_OFFER_MAX = 0.88   # the most our first offer is of a first ask that is wi
 
 
 async def shop(base, item, budget, memory="", max_raise=None, max_offers=MAX_OFFERS, opening=None, screen=None,
-               plan=False, take_second=False, close_gap=None, order_id=None):
+               plan=False, take_second=False, close_gap=None, order_id=None, market=None):
     """Negotiate one item. `memory` is what market_buyer.py remembers about this shop (empty in week 6).
     `take_second` (Round 3): a shop that ended earlier talks in rejection after two asks; take its second ask if within budget.
     `close_gap` (Round 3): CLOSE_GAP for this talk, wider for dear SKUs; default CLOSE_GAP.
     `order_id` (Round 3): the buyer order, for the walk-away trial below.
+    `market` (Round 3): our 24 h median paid price for this SKU or category, the plan's most when set (no plan model call).
     `max_raise` (market_buyer.py only): raise at most this share of the gap between our last offer and the ask.
     `opening` (Round 3): the first message, e.g. "I want to buy <name> (<sku>)"; default "I want to buy a <item>".
     `screen` (Round 3): a function of the shop's reply text that returns a reason to leave (the unit it names will not
@@ -225,8 +226,13 @@ async def shop(base, item, budget, memory="", max_raise=None, max_offers=MAX_OFF
                 # plan mode (a fast team member, 11/4): one model call fixes the opening and the most we pay, code
                 # concedes after that; an order took 36 s, 21 of them in per-offer model calls
                 if n == 1 or "most" not in result:
-                    p = await harness.ask(PLAN.format(item=item, budget=budget, memory=memory, ask=ask,
-                                                      quote=""), max_chars=8000) or {}
+                    # the plan call is ~10 s of a 42 s order (1.6 calls a deal) and deals/h is limited by our speed (66 against
+                    # 135-154 for the leaders): with the ledger's 24 h median paid for this SKU, code sets most and open
+                    if market and code_ab_r3.on("f6970f79d0d1", order_id):
+                        p = {"open": int(0.8 * market), "most": market, "why": "24 h median paid"}
+                    else:
+                        p = await harness.ask(PLAN.format(item=item, budget=budget, memory=memory, ask=ask,
+                                                          quote=""), max_chars=8000) or {}
                     o, most = as_int(p.get("open")), as_int(p.get("most"))
                     most = min(most if most else budget, budget)
                     result["most"] = most

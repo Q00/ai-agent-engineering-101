@@ -594,6 +594,16 @@ def main():
     case("plan mode: a whole talk takes one model call",
          len(plan_calls) == 1 and got.get("offers") and got["offers"][0] <= 40000, str((len(plan_calls), got.get("offers"))))
 
+    # 24b. plan mode with a 24 h median paid price: code sets most and open, no model call
+    plan_calls.clear()
+    harness.ask = planner
+    got = asyncio.run(buyer_r3.buyer.shop(base_p, "포기김치 5kg", 40000, opening="I want to buy 포기김치 5kg (F1)",
+                                         max_raise=0.4, order_id="o-plan", plan=True, market=30000))
+    harness.ask = scripted
+    case("plan mode with a market median: no model call, opens at 0.8 of it and never offers above it",
+         not plan_calls and got.get("offers") and got["offers"][0] <= 24000 and max(got["offers"]) <= 30000,
+         str((len(plan_calls), got.get("offers"))))
+
     # 20. pre-screen (11/10): the shop's words the old screen missed, each from a receipt the kit then refused to pay
     gs = buyer_r3.screen_for({"kind": "goods"}, 30000)
     fs = buyer_r3.screen_for({"kind": "food", "use_within_hours": 540}, 25800, 720)       # needs 621 h

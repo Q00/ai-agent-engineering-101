@@ -143,6 +143,13 @@ def read(md):
     return CACHE["data"]
 
 
+def median_share(md, sku, category):
+    """The 24 h median paid share of list for this SKU, else its category; None without settles."""
+    d = read(md)
+    s = (d.get("skus") or {}).get(sku) or ((d.get("categories") or {}).get(leaf(category)) or {}).get("h24")
+    return s.get("median") if s else None
+
+
 def line(md, sku, category):
     """One line for the seller's model: what this SKU and its category sold for lately, and what the forum says."""
     d = read(md)

@@ -848,6 +848,8 @@ async def attempt(order, cat, s, off, lp, note, remember, take_second=False, mor
     # 11/13: an order takes ~28 s and ~4.6 model calls, ~470 orders per 6 h against ~1,000 for the leaders; plan mode is one
     # call, then code concedes (within-cap talks close 87% in a median 12 s), so half the orders run it, not only a PLAN style
     plan = bool(style.get("PLAN")) or code_ab_r3.on("7e4b208ce50d", order.get("order"))
+    share = prices_r3.median_share(MD, sku, (cat.get(sku) or {}).get("category"))
+    market = int(share * lp) if share and lp else None
     t0 = time.time()
     try:
         log("TEAM", f"{member or 'no team'} haggles this one {json.dumps(style)}")
@@ -855,7 +857,7 @@ async def attempt(order, cat, s, off, lp, note, remember, take_second=False, mor
         result = await buyer.shop(s["url"], name, limit, memory=hint,
                                   max_raise=min(0.9, style.get("MAX_RAISE", MAX_RAISE) * raise_k),
                                   max_offers=MAX_OFFERS, plan=plan, take_second=take_second, close_gap=close_gap,
-                                  order_id=order.get("order"), opening=opening,
+                                  order_id=order.get("order"), opening=opening, market=market,
                                   screen=screen_for(order, lp, (cat.get(sku) or {}).get("shelf_hours")))
     except Exception as e:
         log("ERROR", f"trade with {s['name']} failed: {e!r}")
