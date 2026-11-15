@@ -216,6 +216,13 @@ def stats_from_rows(rows, paid, now):
                 _add(c, outcome, r.get('price'), first, talk)
         for c in (cell.setdefault((shop, kind), _new_cell()), pool.setdefault(kind, _new_cell())):
             _add(c, outcome, r.get('price'), first, talk)
+        # buyer_next_quote: the first talk of a row whose second talk went to another shop failed with that shop
+        nq = r.get('next_quote')
+        fs = (nq.get('first') or {}).get('shop') if isinstance(nq, dict) and nq.get('used') is True \
+            and isinstance(nq.get('first'), dict) else None
+        if isinstance(fs, str) and fs != shop:
+            for c in (cell.setdefault((fs, kind), _new_cell()), pool.setdefault(kind, _new_cell())):
+                _add(c, 'failed', None, None, None)
     pools = {k: _summarize(c) for k, c in pool.items()}
     shops = {f'{shop}|{kind}': _summarize(c, pools[kind]) for (shop, kind), c in cell.items()}
     npools = {k: _summarize(c) for k, c in npool.items()}

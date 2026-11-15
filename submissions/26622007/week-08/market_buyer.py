@@ -62,6 +62,7 @@ import buyer_goods_quote_probe
 import buyer_goods_first_one
 import buyer_quote_alignment
 import buyer_moss_first
+import buyer_next_quote
 import buyer_our_ask
 import buyer_stock_evidence
 import buyer_member
@@ -2001,9 +2002,18 @@ def best_quote(chosen, others, order, catalog, budget, chance_of, cfg, wait=QUOT
                       "scoring_exception" if rk.get("error") else "no_scores"))
         buyer_rank_pg.selection_recorded(rk)
     keep = best["name"] if best else chosen["name"] if resumable(got.get(chosen["name"])) else None
+    # buyer_next_quote on: the best other quote a talk can close stays open for a second talk if the first one fails
+    nxt = None
+    if best and order.get("_next_quote_on"):
+        alts = [x for x in scored if x[2]["name"] != best["name"] and normal(x[2]) and fits(x[2])
+                and resumable(got.get(x[2]["name"]))
+                and (x[2].get(buyer_goods_risk_sku30.KEY) or {}).get("mode", "default") == "default"]  # no study arm
+        if alts:
+            nxt = max(alts, key=lambda x: (x[0] - rival_deny.penalty(x[2]["name"], rival), meta(x[2]), -x[1]))[2]["name"]
+            order["_next_quote"] = {"shop": nxt, "ask": got[nxt]["ask"]}
     with ctl.get("lock") or contextlib.nullcontext():
         ctl.update(done=True, winner=keep)    # a late quote thread of the kept shop must not cancel it either
-        closing = [(name, q) for name, q in got.items() if name != keep and not q.get("closed")]
+        closing = [(name, q) for name, q in got.items() if name not in (keep, nxt) and not q.get("closed")]
         for name, q in closing:
             q["closed"] = True            # before the thread runs, so the trade can never go on with it
     for name, q in closing:
@@ -2443,6 +2453,60 @@ def walk_take_kwargs(order, limit, shop_name):
     return {"walk_take": buyer_walk_take.hook(limit, top, goods=order.get("kind") == "goods", record=record)}
 
 
+def next_talk(nq, out, order, quotes, quotable, md, catalog, budget, memory, first):
+    """buyer_next_quote: what main's second talk needs from the quote best_quote kept open (nq), or None with nq["skip"]
+    saying why (the first talk closed or may still close, too late, a study's treatment, the quote closed or priced as a
+    short warranty, its ask over what the talk can close at). The limit, margin cap and take are main's for the shop it
+    keeps, with the SKU's chance (best_quote's fit). The first talk is kept in memory as main keeps every talk, so the
+    shop's history still has it; nq["first"] goes on the orders row (buyer_rank_pg learns it as that shop's failure)."""
+    def skip(why):
+        nq["skip"] = why
+        return None
+    if not buyer_next_quote.failed_talk(out):
+        return skip(f"first talk {out.get('state')}")
+    if time.time() - STARTED > buyer_next_quote.UNTIL:
+        return skip("late")
+    if order.get("_food_floor30_window") is not None or order.get("_goods_take30") or \
+            order.get(buyer_goods_risk_sku30.KEY) is not None:
+        return skip("study")
+    s, q = next((x for x in quotable if x["name"] == nq["shop"]), None), quotes.get(nq["shop"])
+    if s is None or not resumable(q) or not isinstance(q.get("ask"), (int, float)) or isinstance(q.get("ask"), bool):
+        return skip("closed")
+    sw = order.get("_sw")
+    if buyer_short_warranty.zero_expected(sw, s["name"], q) or buyer_short_warranty.hours_for(sw, s["name"], q) is not None:
+        return skip("short warranty")
+    o = selected_offer(s, budget)
+    k = o["sku"]
+    c = market_model.break_chance(ledger_breaks(md, catalog), k) if order.get("kind") == "goods" else None
+    most = value_limit(o, budget, c, buyer_cfg())
+    lim = min(most, saved_cap(o, c))
+    mc = margin_limit(o, order.get("kind"), q, c)
+    take = None
+    if mc:
+        mc["limit_before"] = lim
+        bound = mc["cap"] < lim
+        lim = min(lim, mc["cap"])
+        if not bound and not (order.get("_saved_floor") or {}).get("band_off"):
+            take = buyer_margin_cap.take_top((MARGIN_CAP or {}).get("cfg"), mc["cap"], lim, most)
+            if take is not None:
+                mc["take_top"] = take
+    top = take if take is not None else lim
+    if lim <= 0 or q["ask"] > top:
+        return skip("over")
+    shop1, offer1, key1, limit1 = first
+    asks = [p for who, p in out["history"] if who == "shop asked"]
+    nq["first"] = {"shop": shop1["name"], "state": out["state"], "asks": asks, "limit": limit1}
+    memory["trades"].append({
+        "time": time.strftime("%Y-%m-%dT%H:%M:%S"), "shop": shop1["name"], "item": key1, "budget": budget,
+        "order": order.get("order"), "category": order.get("category"), "list_price": offer1["list_price"],
+        "next_quote_first": True,
+        "result": out["state"].replace("TASK_STATE_", "").lower(), "price": None, "asks": asks,
+        "holds": out.get("holds", 0), "problems": [], "warnings": [], "why": no_deal_reason(asks, limit1),
+        "signed": None})
+    return {"shop": s, "offer": o, "key": k, "label": o["name"], "chance": c, "limit": lim, "top": top, "q": q,
+            "margin_cap": mc}
+
+
 def negotiate(*args, goods_take_context=None, **kwargs):
     """Buyer-only policy adapter; the transport and food take_at stay in buyer.negotiate."""
     if goods_take_context is None:
@@ -2467,7 +2531,7 @@ def main():
         MEMORY = "memory/test_memory.json" if test else "memory/market_memory.json"
     order = load_json(args.order, {}) if args.order else {}
     if isinstance(order, dict):
-        for k in ("_sw", "_sw_buy", "_sw_h_est", "_sw_zero", "_rank_pg", "_rank_selection", "_saved_floor", "_food_floor30", "_food_floor30_window", "_food_floor30_disabled", "_member_offers", "_goods_take30", "_goods_take30_witness", "_goods_risk_sku30", "_goods_quote_yield30", "_goods_quote_inquiry30"):  # internal state, never read in
+        for k in ("_sw", "_sw_buy", "_sw_h_est", "_sw_zero", "_rank_pg", "_rank_selection", "_saved_floor", "_food_floor30", "_food_floor30_window", "_food_floor30_disabled", "_member_offers", "_goods_take30", "_goods_take30_witness", "_goods_risk_sku30", "_goods_quote_yield30", "_goods_quote_inquiry30", "_next_quote", "_next_quote_on"):  # internal state, never read in
             order.pop(k, None)
     md = os.path.dirname(args.shops) or "."
     rk = buyer_rank_pg.state(md, order) if args.order else None
@@ -2670,6 +2734,10 @@ def main():
 
     if r3:
         others = [s for s in quotable if s is not shop]
+        try:
+            order["_next_quote_on"] = buyer_next_quote.config(md, order.get("kind")) is not None and not gave_up
+        except Exception:  # noqa: BLE001 - the switch never ends the run: off
+            order["_next_quote_on"] = False
         # with quotes already asked, best_quote runs even late: it waits for them and closes every talk but the one kept
         try:
             order["_stock_phase"] = "best_quote"
@@ -2921,6 +2989,47 @@ def main():
         log(f"trade failed: {type(e).__name__}: {e}")
         out = {"state": f"ERROR {type(e).__name__}", "task": None, "receipt": None, "history": [], "agreed": None,
                "holds": 0}
+    nq = order.get("_next_quote") if r3 else None
+    if nq:
+        alt = next_talk(nq, out, order, quotes, quotable, md, catalog, args.budget, memory, (shop, offer, key, limit))
+        if alt is None:
+            log(f"[next-quote] {nq['shop']}: not needed or not usable ({nq.get('skip')}): closed")
+            q_alt = quotes.get(nq["shop"])
+            if resumable(q_alt):
+                th = threading.Thread(target=cancel_quietly, args=(dict(q_alt), nq["shop"]), daemon=True)
+                q_alt["closed"] = True
+                th.start()
+                th.join(5)
+        else:
+            # the second talk: every name the talk, the receipt checks and the record read is the next shop's now
+            shop, offer, key, label, chance, limit, top, q = (alt[k] for k in (
+                "shop", "offer", "key", "label", "chance", "limit", "top", "q"))
+            band_base = band_pct = None
+            order["_margin_cap"], order["_accept_band_top"], order["_goods_grade"] = alt["margin_cap"], None, None
+            order.pop("_accept_band", None)
+            reason = f"next quote ({q['ask']}) after {nq['first']['shop']} ended {nq['first']['state']}"
+            log(f"[next-quote] {shop['name']}: ask {q['ask']}, limit {limit}, take {top}: {reason}")
+            talk_mode = f"next {list(steps)}" if steps else "next harness"
+            try:
+                out = negotiate(shop["url"], label, limit, f"it opened at {q['ask']}",
+                                request_text(label, key, order), resume=(q["url"], q["task"]),
+                                stop_if=lambda text, turn: (quote_refused(text, order, item=(label, key)) if turn == 1
+                                                            else None) or goods_text_refused(text, order),
+                                reply_to=lambda text: shop_question_reply(text, order),
+                                ladder=(lambda meta, text, history: opening_probe_turn(
+                                    meta, text, history, limit, steps,
+                                    q.get("ask") if q.get("ask_src") != "text_rank" else None,
+                                    order.get("kind") == "goods", None)) if steps else None,
+                                ceiling=top if top > limit else None,
+                                **walk_take_kwargs(order, limit, shop["name"]),
+                                take_at=(min(limit, int(offer["list_price"] * FOOD_TAKE_SHARE))
+                                         if FOOD_TAKE_ASK and order.get("kind") == "food" else None))
+                out["asked"] = key
+            except Exception as e:  # network errors from a shop that went away
+                log(f"trade failed: {type(e).__name__}: {e}")
+                out = {"state": f"ERROR {type(e).__name__}", "task": None, "receipt": None, "history": [],
+                       "agreed": None, "holds": 0}
+            nq["used"] = True
     stages["talk"] = time.time()
     if order.get("_firm_trial"):
         log("[firm-history] " + json.dumps({"order": order.get("order"),
@@ -3040,6 +3149,8 @@ def main():
                                             if band_pct != band_base else {}),
                                          **({"saved_floor": order["_saved_floor"]}
                                             if order.get("_saved_floor") else {}),
+                                         **({"next_quote": order["_next_quote"]}
+                                            if order.get("_next_quote") else {}),
                                          **({"accept_band": {"pct": band_pct, "ceiling": top,
                                                              "taken": (order.get("_accept_band") or {}).get("taken")}}
                                             if band_pct else {})})
