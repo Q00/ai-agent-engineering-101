@@ -17,7 +17,7 @@
 | `recovered/market-kit.journal-1114.log.gz` | 11-14 00:00:00 → 06:12:28 | 53,760 | 〃 (여기서 `kept/` 파일로 이어짐) |
 | `recovered/market-team.journal-1108-1115.log.gz` | 11-08 → 11-15 | 11,016 | 팀 회의 서비스(marketing_agent.py)의 journald |
 
-journald 복구 방법: market-kit.service는 stdout을 파일과 journald 양쪽에 쓴다. `journalctl -u market-kit.service -o cat --since ... --until ...`로 하루씩 뽑으면 키트 로그와 같은 줄이 나온다. 검증: journald 11-14분과 `kept/` 파일이 겹치는 구간을 비교했더니, 줄 끝 공백 5줄을 빼면 똑같았다. journald는 VPS가 마지막으로 부팅된 11-08 12:06부터만 남아 있어서 그 전은 이 방법으로 살릴 수 없었다.
+journald 복구 방법: market-kit.service는 stdout을 파일과 journald 양쪽에 쓴다. `journalctl -u market-kit.service -o cat --since ... --until ...`로 하루씩 뽑으면 키트 로그와 같은 줄이 나온다. 검증: journald 11-14분과 `kept/` 파일이 겹치는 구간을 비교했더니, 줄 끝 공백 5줄을 빼면 똑같았다. 이 VPS의 journald는 7일치만 보관한다(`MaxRetentionSec=7day`). 그래서 복구하던 11-15에는 11-08 12:06 이후만 남아 있었고, 그 전은 이 방법으로 살릴 수 없었다. 이 창은 매일 하루씩 밀려나므로, 위 파일들은 지워지기 전에 뽑아 둔 것이다.
 
 ## 2. 11-03 ~ 11-08 공백을 메우는 기록
 
