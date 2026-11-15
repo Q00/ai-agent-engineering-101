@@ -55,6 +55,21 @@ class PurchaseTests(unittest.TestCase):
    self.assertEqual(observed_warranty_hazard(path,policy,now=1010),.15)
    write(900,1306,33)
    self.assertEqual(observed_warranty_hazard(path,policy,now=1010),.15)
+ def test_warranty_hazard_uses_fresh_official_intel_during_report_handoff(self):
+  import sqlite3
+  policy={'warranty_reserve_hazard':.15,'warranty_hazard_min_claims':200,
+          'warranty_hazard_max_age_seconds':90,'warranty_hazard_wilson_z':3.29,
+          'warranty_hazard_safety_multiplier':1.25,'warranty_hazard_floor':.04}
+  with tempfile.TemporaryDirectory() as root:
+   path=root+'/market-report.json'
+   with open(path,'w') as f:json.dump({'at':1000,'board':{'shops':[
+     {'name':'25512088','claims':0,'broken':0}]}},f)
+   db=sqlite3.connect(root+'/market_intel.sqlite3')
+   db.execute('create table sources(name text primary key,ts real,body text)')
+   board={'shops':[{'name':'25512088','claims':3304,'broken':72}]}
+   db.execute('insert into sources values(?,?,?)',('board',1005,json.dumps(board)))
+   db.commit();db.close()
+   self.assertEqual(observed_warranty_hazard(path,policy,now=1010),.04)
  def test_active_warranty_reconstructs_legacy_expansion_and_new_six_hours(self):
   import sqlite3
   db=sqlite3.connect(':memory:')

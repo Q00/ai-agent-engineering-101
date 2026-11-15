@@ -56,17 +56,40 @@ def observed_warranty_hazard(report_path, policy=None, now=None):
     """
     policy=policy or settings();now=time.time() if now is None else now
     prior=max(.01,min(1.0,float(policy.get('warranty_reserve_hazard',.15))))
-    try:report=read_json(Path(report_path),{})
+    report_path=Path(report_path)
+    try:report=read_json(report_path,{})
     except (OSError,ValueError,TypeError):return prior
     observed_at=report.get('at') if isinstance(report,dict) else None
     max_age=max(1.0,float(policy.get('warranty_hazard_max_age_seconds',90)))
-    if not isinstance(observed_at,(int,float)) or now-observed_at<0 or now-observed_at>max_age:
-        return prior
     shops=((report.get('board') or {}).get('shops') or [])
     own=next((row for row in shops if str(row.get('name'))=='25512088'),None)
-    if not isinstance(own,dict):return prior
-    claims,broken=own.get('claims'),own.get('broken')
+    fresh=(isinstance(observed_at,(int,float)) and 0<=now-observed_at<=max_age)
+    claims,broken=(own.get('claims'),own.get('broken')) if isinstance(own,dict) else (None,None)
     minimum=max(1,int(policy.get('warranty_hazard_min_claims',200)))
+    complete=(fresh and isinstance(claims,(int,float)) and not isinstance(claims,bool) and
+              isinstance(broken,(int,float)) and not isinstance(broken,bool) and
+              claims>=minimum and 0<=broken<=claims)
+    # The report and the scheduled strategy snapshot update independently.
+    # During their short hand-off the report can be fresh but contain an
+    # incomplete own-shop row. The strategy snapshot has already persisted the
+    # same official GET board in market_intel, so use that fresh copy only when
+    # the report cohort is unusable instead of restoring the 15% prior for a
+    # full loop and losing a third of the short supply window.
+    if not complete:
+        intel_path=report_path.parent/'market_intel.sqlite3'
+        try:
+            with sqlite3.connect('file:'+str(intel_path.resolve())+'?mode=ro',uri=True) as intel:
+                source=intel.execute("SELECT ts,body FROM sources WHERE name='board'").fetchone()
+            if source and 0<=now-source[0]<=max_age:
+                board=json.loads(source[1]);rows=board.get('shops',[]) if isinstance(board,dict) else []
+                own=next((row for row in rows if str(row.get('name'))=='25512088'),None)
+                claims,broken=(own.get('claims'),own.get('broken')) if isinstance(own,dict) else (None,None)
+                complete=(isinstance(claims,(int,float)) and not isinstance(claims,bool) and
+                          isinstance(broken,(int,float)) and not isinstance(broken,bool) and
+                          claims>=minimum and 0<=broken<=claims)
+        except (OSError,ValueError,TypeError,sqlite3.Error):
+            pass
+    if not complete:return prior
     if (not isinstance(claims,(int,float)) or isinstance(claims,bool) or
             not isinstance(broken,(int,float)) or isinstance(broken,bool) or
             claims<minimum or broken<0 or broken>claims):return prior
