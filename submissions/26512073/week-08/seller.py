@@ -4,6 +4,7 @@ import asyncio
 import base64
 from datetime import datetime, timezone
 import json
+import os
 from pathlib import Path
 import re
 import time
@@ -12,6 +13,7 @@ from checkout import (
     checkout_card, create_checkout_session,
     get_checkout_session, cancel_checkout_session,
     complete_checkout_session,
+    load_checkout_state, write_checkout_state, checkout_storage_error,
 )
 
 from cryptography.hazmat.primitives import serialization
@@ -52,15 +54,45 @@ def sign_receipt(receipt):
 
 
 class Seller(AgentExecutor):
-    def __init__(self, history_path=None):
+    def __init__(self, history_path=None, checkout_state_path=None):
         self.open = {}
-        self.receipts = {}
-        self.checkout_sessions = {}
+        if checkout_state_path is None:
+            state_dir = Path(history_path).parent if history_path is not None else Path(
+                os.environ.get("MARKET_DIR", str(Path(__file__).resolve().parent / ".market")))
+            checkout_state_path = state_dir / "checkout-state.json"
+        self.checkout_state_path = Path(checkout_state_path)
+        state = load_checkout_state(self.checkout_state_path)
+        self.receipts = state["receipts"]
+        self.checkout_sessions = state["sessions"]
+        self.receipt_expiry = state["receipt_expiry"]
+        self.checkout_storage_failed = False
         self.held = {}  # unit id -> monotonic expiry; includes checkout handoff
+        session_tasks = {session["task"] for session in self.checkout_sessions.values()}
+        for task, expiry in self.receipt_expiry.items():
+            unit = self.receipts.get(task, {}).get("unit")
+            if unit and task not in session_tasks and expiry > time.time():
+                self.held[unit] = time.monotonic() + expiry - time.time()
         self.task_locks = {}
         self.history_path = (
             Path(history_path) if history_path is not None else HISTORY_PATH
         )
+
+    def save_checkout_state(self):
+        if self.checkout_storage_failed:
+            raise OSError("Checkout storage requires recovery")
+        try:
+            write_checkout_state(self.checkout_state_path, {
+                "version": 1, "receipts": self.receipts,
+                "sessions": self.checkout_sessions, "receipt_expiry": self.receipt_expiry,
+            })
+        except (OSError, ValueError, TypeError):
+            self.checkout_storage_failed = True
+            raise
+
+    def remember_receipt(self, receipt):
+        self.receipts[receipt["task"]] = dict(receipt)
+        self.receipt_expiry[receipt["task"]] = time.time() + 300
+        self.save_checkout_state()
 
     def record(self, task_id, event, deal, **details):
         """Local seller observations, not proof of market-verified trades.
@@ -140,6 +172,9 @@ class Seller(AgentExecutor):
                         reason=decision.get("reason"))
 
     async def execute_stock(self, task_id, text, up, say):
+        if self.checkout_storage_failed:
+            await up.reject(say("Checkout storage requires recovery."))
+            return
         if not load_round3_rules().get("enabled"):
             await up.reject(say("Round 3 trading is not enabled yet."))
             return
@@ -204,7 +239,7 @@ class Seller(AgentExecutor):
             receipt = sign_receipt({"shop": SHOP_NAME, "item": unit["sku"],
                                     "unit": unit["unit"], "cert": True,
                                     "price": offer, "task": task_id})
-            self.receipts[task_id] = dict(receipt)
+            self.remember_receipt(receipt)
             await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
             await up.complete(say(f"Deal: {unit['sku']} at {offer}. Checkout confirms availability."))
             self.record(task_id, "agreement", deal, price=offer, unit=unit["unit"],
@@ -239,7 +274,7 @@ class Seller(AgentExecutor):
                 self.held.pop(deal["unit"]["unit"], None)
 
 
-def build(port, history_path=None):
+def build(port, history_path=None, checkout_state_path=None):
     card = AgentCard(
         name=SHOP_NAME, description=SHOP_DESCRIPTION,
         version="1.0.0", default_input_modes=["text/plain"],
@@ -251,7 +286,7 @@ def build(port, history_path=None):
             description="Name an item, then send integer price offers on the same task.",
             tags=["shopping", "negotiation"])],
     )
-    seller = Seller(history_path)
+    seller = Seller(history_path, checkout_state_path)
 
     handler = DefaultRequestHandler(
         agent_executor=seller,
@@ -289,7 +324,7 @@ def build(port, history_path=None):
     routes += create_jsonrpc_routes(handler, "/")
 
 
-    app = Starlette(routes=routes)
+    app = Starlette(routes=routes, exception_handlers={OSError: checkout_storage_error})
     app.state.seller = seller
     app.state.checkout_sessions = seller.checkout_sessions
     app.state.checkout_locks = {}

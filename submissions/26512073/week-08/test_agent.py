@@ -1018,6 +1018,121 @@ class CheckoutLifecycleTests(unittest.TestCase):
 
         asyncio.run(run())
 
+    def remember_sample_receipt(self):
+        self.app.state.seller.remember_receipt({
+            "shop": "Afford Shop", "item": "G0001", "price": 105,
+            "task": "sample-task", "unit": "sample-unit", "sig_seller": "sample",
+        })
+
+    def restart_app(self):
+        from seller import build
+        from starlette.testclient import TestClient
+        app = build(9999, history_path=Path(self.folder.name) / "history.jsonl")
+        return app, self.enterContext(TestClient(app))
+
+    def test_receipts_and_ready_sessions_survive_restart(self):
+        self.remember_sample_receipt()
+        app, client = self.restart_app()
+        self.assertEqual(app.state.seller.receipts["sample-task"]["price"], 105)
+        self.assertEqual(client.get(self.url).json()["status"], "ready_for_payment")
+        self.assertIs(app.state.checkout_sessions, app.state.seller.checkout_sessions)
+
+    def test_receipt_hold_survives_restart_without_extending_deadline(self):
+        self.app.state.checkout_sessions.clear()
+        self.remember_sample_receipt()
+        agent = self.app.state.seller
+        expiry = agent.receipt_expiry["sample-task"]
+        app, client = self.restart_app()
+        self.assertEqual(app.state.seller.receipt_expiry["sample-task"], expiry)
+        self.assertIn("sample-unit", app.state.seller.held)
+        with patch("seller.time.time", return_value=expiry + 1):
+            restored, client = self.restart_app()
+        self.assertNotIn("sample-unit", restored.state.seller.held)
+
+    def test_cancellation_survives_restart_without_restoring_released_hold(self):
+        self.remember_sample_receipt()
+        self.assertEqual(self.client.post(self.url + "/cancel").status_code, 200)
+        app, client = self.restart_app()
+        self.assertEqual(client.get(self.url).json()["status"], "canceled")
+        self.assertNotIn("sample-unit", app.state.seller.held)
+        self.assertEqual(client.post(self.url + "/complete", json=self.payment_body()).status_code, 409)
+
+    def test_pending_state_is_on_disk_before_market_request_and_survives_restart(self):
+        import httpx
+        self.remember_sample_receipt()
+        path = self.app.state.seller.checkout_state_path
+
+        async def lost_reply(payload):
+            saved = json.loads(path.read_text(encoding="utf-8"))
+            self.assertEqual(saved["sessions"]["cs_sample"]["status"], "payment_pending")
+            raise httpx.ReadTimeout("simulated lost reply")
+
+        with patch("checkout.submit_settlement", side_effect=lost_reply):
+            self.assertEqual(self.client.post(self.url + "/complete", json=self.payment_body()).status_code, 503)
+        app, client = self.restart_app()
+        self.assertEqual(client.get(self.url).json()["status"], "payment_pending")
+        with patch("checkout.submit_settlement", new_callable=AsyncMock) as submit:
+            self.assertEqual(client.post(self.url + "/complete", json=self.payment_body()).status_code, 409)
+            self.assertEqual(client.post(self.url + "/cancel").status_code, 409)
+            submit.assert_not_awaited()
+
+    def test_completed_receipt_is_returned_after_restart_without_resettling(self):
+        import httpx
+        self.remember_sample_receipt()
+        market = httpx.Response(200, json={"ledger": 123, "mandate_receipt": {"ledger": 123}})
+        with patch("checkout.submit_settlement", new_callable=AsyncMock, return_value=market):
+            self.assertEqual(self.client.post(self.url + "/complete", json=self.payment_body()).status_code, 200)
+        app, client = self.restart_app()
+        with patch("checkout.submit_settlement", new_callable=AsyncMock) as submit:
+            response = client.post(self.url + "/complete", json=self.payment_body())
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.json()["order"]["mandate_receipt"]["ledger"], 123)
+            submit.assert_not_awaited()
+
+    def test_failed_atomic_write_preserves_previous_file_and_prevents_payment(self):
+        self.remember_sample_receipt()
+        path = self.app.state.seller.checkout_state_path
+        before = path.read_bytes()
+        with patch("checkout.os.replace", side_effect=OSError("simulated disk failure")), \
+                patch("checkout.submit_settlement", new_callable=AsyncMock) as submit:
+            self.assertEqual(self.client.post(self.url + "/complete", json=self.payment_body()).status_code, 503)
+            submit.assert_not_awaited()
+        self.assertEqual(path.read_bytes(), before)
+        self.assertEqual(list(path.parent.glob("checkout-*.tmp")), [])
+        self.assertEqual(self.client.get(self.url).status_code, 503)
+        app, client = self.restart_app()
+        self.assertEqual(client.get(self.url).json()["status"], "ready_for_payment")
+
+    def test_save_failure_after_payment_recovers_as_pending(self):
+        import checkout
+        import httpx
+        self.remember_sample_receipt()
+        original_write = checkout.write_checkout_state
+        calls = 0
+
+        def fail_completion(path, state):
+            nonlocal calls
+            calls += 1
+            if calls == 2:
+                raise OSError("simulated failure after settlement")
+            original_write(path, state)
+
+        market = httpx.Response(200, json={"ledger": 123, "mandate_receipt": {"ledger": 123}})
+        with patch("seller.write_checkout_state", side_effect=fail_completion), \
+                patch("checkout.submit_settlement", new_callable=AsyncMock, return_value=market):
+            self.assertEqual(self.client.post(self.url + "/complete", json=self.payment_body()).status_code, 503)
+        app, client = self.restart_app()
+        self.assertEqual(client.get(self.url).json()["status"], "payment_pending")
+
+    def test_corrupt_saved_state_is_preserved_and_startup_fails(self):
+        from seller import build
+        path = self.app.state.seller.checkout_state_path
+        path.write_text('{"broken":', encoding="utf-8")
+        before = path.read_bytes()
+        with self.assertRaises(ValueError):
+            build(9999, history_path=Path(self.folder.name) / "history.jsonl")
+        self.assertEqual(path.read_bytes(), before)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

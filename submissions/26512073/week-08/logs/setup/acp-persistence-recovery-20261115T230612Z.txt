@@ -1,0 +1,27 @@
+Checkout persistence restart and disk-failure checks (offline)
+[acp] settled G0001 at 105, ledger #123, unit sample-unit via student checkout
+[acp] settled G0001 at 105, ledger #123, unit sample-unit via student checkout
+[acp] settled G0001 at 105, ledger #123, unit sample-unit via student checkout
+[acp] settlement outcome uncertain; payment remains pending
+[acp] settlement refused by market checks
+[acp] settlement outcome uncertain; payment remains pending
+[acp] settled G0001 at 105, ledger #123, unit sample-unit via student checkout
+[choose] {"shop_name": "Sample", "sku": "G2", "reason": "Simulated"}
+[choose] {"shop_name": "Sample", "sku": "F1", "reason": "Simulated"}
+C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-08\test_agent.py:852: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+  from starlette.testclient import TestClient
+======================================================================
+FAIL: test_save_failure_after_payment_recovers_as_pending (test_agent.CheckoutLifecycleTests.test_save_failure_after_payment_recovers_as_pending)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-08\test_agent.py", line 1123, in test_save_failure_after_payment_recovers_as_pending
+    self.assertEqual(self.client.post(self.url + "/complete", json=self.payment_body()).status_code, 503)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 200 != 503
+
+----------------------------------------------------------------------
+Ran 88 tests in 1.028s
+
+FAILED (failures=1)
+
+Exit code 1

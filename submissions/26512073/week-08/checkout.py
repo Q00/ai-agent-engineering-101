@@ -7,6 +7,7 @@ import json
 import os
 from pathlib import Path
 import time
+import tempfile
 import uuid
 
 import httpx
@@ -14,6 +15,58 @@ import httpx
 from cryptography.hazmat.primitives import serialization
 
 from seller_strategy import available_units
+
+
+def load_checkout_state(path):
+    if not path.exists():
+        return {"version": 1, "receipts": {}, "sessions": {}, "receipt_expiry": {}}
+    state = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(state, dict) or state.get("version") != 1:
+        raise ValueError("Unsupported checkout state format")
+    for field in ("receipts", "sessions"):
+        if not isinstance(state.get(field), dict):
+            raise ValueError(f"Invalid checkout state: {field}")
+    for task, receipt in state["receipts"].items():
+        if not isinstance(receipt, dict) or receipt.get("task") != task \
+                or type(receipt.get("price")) is not int or receipt["price"] < 0 \
+                or not all(isinstance(receipt.get(field), str)
+                           for field in ("shop", "item", "sig_seller")):
+            raise ValueError("Invalid saved receipt")
+    for sid, session in state["sessions"].items():
+        if not isinstance(session, dict) or session.get("id") != sid \
+                or session.get("status") not in {
+                    "ready_for_payment", "payment_pending", "completed", "canceled"} \
+                or not all(isinstance(session.get(field), str)
+                           for field in ("task", "unit", "checkout_jwt")):
+            raise ValueError("Invalid saved checkout session")
+    state.setdefault("receipt_expiry", {})
+    if not isinstance(state["receipt_expiry"], dict) or any(
+            type(expiry) not in (int, float) for expiry in state["receipt_expiry"].values()):
+        raise ValueError("Invalid receipt hold expiry")
+    return state
+
+
+def write_checkout_state(path, state):
+    """Replace the saved state only after the full JSON has reached disk."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = None
+    try:
+        with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", dir=path.parent,
+                                         prefix="checkout-", suffix=".tmp", delete=False) as stream:
+            temporary = Path(stream.name)
+            json.dump(state, stream, ensure_ascii=False, allow_nan=False)
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.replace(temporary, path)
+    finally:
+        if temporary is not None:
+            temporary.unlink(missing_ok=True)
+
+
+async def checkout_storage_error(request, error):
+    return JSONResponse(
+        {"error": "Checkout storage failed; recover saved state before continuing."},
+        status_code=503)
 
 
 async def checkout_card(request):
@@ -95,6 +148,8 @@ def sign_checkout(payload):
 
 
 async def create_checkout_session(request):
+    if request.app.state.seller.checkout_storage_failed:
+        return await checkout_storage_error(request, None)
     try:
         body = await request.json()
     except ValueError:
@@ -135,6 +190,9 @@ async def create_checkout_session(request):
             {"error": "Receipt does not match one issued by this shop."},
             status_code=400,
         )
+    expiry = seller.receipt_expiry.get(task_id)
+    if expiry is not None and expiry <= time.time():
+        return JSONResponse({"error": "The receipt's checkout hold expired."}, status_code=409)
 
     expected_items = [{"id": original["item"], "quantity": 1}]
     if body.get("line_items") != expected_items:
@@ -217,10 +275,13 @@ async def create_checkout_session(request):
     }
 
     sessions[session_id] = session
+    seller.save_checkout_state()
     return JSONResponse(session, status_code=201)
 
 
 async def get_checkout_session(request):
+    if request.app.state.seller.checkout_storage_failed:
+        return await checkout_storage_error(request, None)
     session_id = request.path_params["session_id"]
     session = request.app.state.checkout_sessions.get(session_id)
     if session is None:
@@ -230,6 +291,8 @@ async def get_checkout_session(request):
 
 
 async def cancel_checkout_session(request):
+    if request.app.state.seller.checkout_storage_failed:
+        return await checkout_storage_error(request, None)
     session_id = request.path_params["session_id"]
     lock = request.app.state.checkout_locks.setdefault(session_id, asyncio.Lock())
     async with lock:
@@ -251,6 +314,7 @@ def cancel_session(request):
 
     session["status"] = "canceled"
     seller = request.app.state.seller
+    seller.save_checkout_state()
     unit_id = session["unit"]
     negotiating = any(
         deal.get("unit", {}).get("unit") == unit_id
@@ -277,6 +341,8 @@ async def submit_settlement(payload):
 
 
 async def complete_checkout_session(request):
+    if request.app.state.seller.checkout_storage_failed:
+        return await checkout_storage_error(request, None)
     session_id = request.path_params["session_id"]
     try:
         body = await request.json()
@@ -311,6 +377,7 @@ async def complete_checkout_session(request):
         }
         session["status"] = "payment_pending"
         session["settlement_order"] = payment["order"]
+        request.app.state.seller.save_checkout_state()
         try:
             response = await submit_settlement(payload)
             result = response.json()
@@ -329,6 +396,7 @@ async def complete_checkout_session(request):
                     and checks and checks.get("not_settled_before") is not False:
                 session["status"] = "ready_for_payment"
                 session.pop("settlement_order", None)
+                request.app.state.seller.save_checkout_state()
                 print("[acp] settlement refused by market checks", flush=True)
                 return JSONResponse({"error": "Payment refused by the market.",
                                      "market": result}, status_code=402)
@@ -342,6 +410,7 @@ async def complete_checkout_session(request):
                                 status_code=502)
         session["order"] = {"status": "confirmed", "mandate_receipt": receipt}
         session["status"] = "completed"
+        request.app.state.seller.save_checkout_state()
         print(f"[acp] settled {session['line_items'][0]['id']} "
               f"at {session['totals'][0]['amount']}, ledger #{result['ledger']}, "
               f"unit {session['unit']} via student checkout", flush=True)
