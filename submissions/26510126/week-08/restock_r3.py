@@ -596,7 +596,8 @@ def main():
                 # and none once we hold 40 slow 300k+ units: 131 units of 300k+ (62.5M) sold 5.2 an hour, 1.0% of the market's
                 # 532, and 323 units sat unsold over a day, while the lines went to a fresh slow SKU instead of the hot ones
                 slow = (0 if slow_held >= 40 else 1) if c["list_price"] >= 300_000 else 2
-                depth = int(int(s.get("dear_depth", 4)) * heat) if full else min(slow, int(s.get("dear_depth", 4)))                # leak audit #21: 208 A units (84.5M) sit above the market and the pile grows by 45% of each A buy, as a line
+                depth = int(int(s.get("dear_depth", 4)) * heat) if full else min(slow, int(s.get("dear_depth", 4)))
+                # leak audit #21: 208 A units (84.5M) sit above the market and the pile grows by 45% of each A buy, as a line
                 # that passes the average-margin check was bought whole: depth times the share of A draws that can sell
                 if e is not None and depth:
                     depth = round(depth * e[2]) if e[2] <= 0 else max(1, round(depth * e[2]))
