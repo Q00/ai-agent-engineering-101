@@ -405,3 +405,20 @@ MARKET_OWNER 코드만 찾는 것을 명시적으로 허용했다. 허용 범위
 .runtime/daintlabJ/market-owner.txt를 빈 파일·0600 권한으로 준비하고 Git 제외를 확인했다.
 다른 경로의 인증 파일을 지정해도 된다고 안내했다. 이번 턴에는 재등록이나 거래를
 재시도하지 않았다. 현재 장애 원인은 검색 권한이 아니라 접근 가능한 인증코드의 부재다.
+
+사용자가 지정 파일에 코드를 저장했다고 알려줘 그 파일만 읽어 같은 전용 tmux를
+재개했다. 코드는 출력·명령행 인자·Git에 넣지 않았다. 기존 키의 해시와 DB의
+recovery_hold 364개(기존 재고와 판매 완료 unit의 재등장 차단)를 실행 전에 확인했다.
+18:02 호스트 표시 시각에 shop/buyer가 기존 leeuichann으로 등록됐다. 호스트와 시장의
+차이는 약 +396초로 앱 내부에서만 보정한다.
+
+시장 기준 18:12:27 KST 관측에서 Agent Card/ACP가 200이고 두 역할 online,
+공개 구매 2,493건을 확인했다. 로컬에는 새 paid 두 건(정산 ledger 6880493,
+6881170)이 기록됐다. 공개 board와 로컬 수집은 동시에 일어난 스냅샷이 아니다.
+실제 buyer_prediction의 전략 버전은 settled-trend-v2-margin-saved,
+saved_rule은 announced_patch_3_6_margin_saved였다. 기존 재고 4개·원가 100,415는
+계속 보류되고 새 매입은 시장 공급 창을 기다린다. 새 재고의 첫 판매는 아직 미확인이다.
+
+ai-week08-j:trend-watch에서 기존 2시간 점검을 복원했다. 첫 결과는 insufficient_data로
+정책을 유지했고 다음 점검을 예약했다. 다른 tmux는 변경하지 않았다.
+인증을 뺀 실측 증거를 logs/j-resume-20261115.json과 로그 발췌에 기록했다.

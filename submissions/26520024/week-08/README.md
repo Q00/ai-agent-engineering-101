@@ -339,15 +339,23 @@ J의 기존 Python 3.10과 남아 있던 패키지를 연결했고 터널 도구
 `logs/round3-offline/20261115T084405076272Z.*`에 원문을 보존했으며 앞선 실패도 남겼다.
 Luna의 도구 없는 연결 확인 1회는 성공했다. 이는 협상 품질/최종 순위 검증이 아니다.
 
-운영 재개는 아직 완료되지 않았다. `ai-week08-j:market`에서 키트·판매자·공개 터널의
-기동을 확인했지만 `/api/join`이 401로 GitHub claim code를 요구해 정상 정리 후 종료됐다.
-J에 `MARKET_OWNER`가 없어 shop/buyer 재등록과 실제 거래는 수행되지 않았다.
-공식 누적 판매 358건·구매 2,492건과 기존 키는 유지됨을 재확인했다.
+최초 재개 시도는 `MARKET_OWNER`가 없어 `/api/join`의 401에서 종료됐다.
+사용자가 소유권 코드를 전용 비공개 파일에 저장한 뒤 같은 키·이름으로 재개했다.
+`ai-week08-j:market`에서 shop/buyer 등록과 새 구매의 정산·후기 접수를 확인했다.
+2026-11-15 18:12 KST 공개 board에서 두 역할은 online이고 구매 2,493건을 확인했다.
+공개 Agent Card와 ACP 안내도 200으로 응답했다. 과거 누적 실적은 유지됐다.
 전용 `.runtime/daintlabJ/launch.py`는 환경변수 또는 사용자가 명시한 `--owner-file`만
-사용하며 인증 파일을 자동 검색하지 않는다. 소유권 인증 확보 후 같은 tmux에서 재개한다.
+사용하며 인증 파일을 자동 검색하지 않는다. 인증코드는 출력하거나 Git에 넣지 않았다.
 
 사용자는 기존 재고 4개를 보류하고 새로 매입한 재고부터 판매하는 방식을 확정했다.
 과제 설정·셸 기록에서 MARKET_OWNER만 찾는 작업도 명시적으로 허용했으나,
 현재 접근 가능한 634개 파일과 tmux의 해당 변수에서는 인증코드를 찾지 못했다.
-`.runtime/daintlabJ/market-owner.txt`를 0600 권한의 빈 파일로 준비했다. Git에서 제외되며,
-사용자가 /join에서 받은 claim code를 저장하면 전용 launcher의 --owner-file로 재개한다.
+`.runtime/daintlabJ/market-owner.txt`는 0600 권한이며 Git에서 제외된다.
+실제 주문의 전략 버전은 `settled-trend-v2-margin-saved`, 점수 규칙은
+`announced_patch_3_6_margin_saved`로 확인했다. 기존 재고 4개/원가 100,415는 계속 보류하고
+새 매입은 공급 창을 기다린다. 새 재고의 첫 판매는 아직 확인하지 않았다.
+`ai-week08-j:trend-watch`에서 2시간 점검도 실행 중이다. 첫 점검은 데이터 부족으로
+정책을 유지했다. 서버가 재부팅되면 자동 시작되는 구성은 아니다.
+비밀값 없는 재개 증거는 `logs/j-resume-20261115.json`에 보존했다.
+
+운영 화면 확인: `tmux attach -t ai-week08-j` (market, trend-watch 창).
