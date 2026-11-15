@@ -3023,15 +3023,23 @@ def main():
                "holds": 0}
     nq = order.get("_next_quote") if r3 else None
     if nq:
-        alt = next_talk(nq, out, order, quotes, quotable, md, catalog, args.budget, memory, (shop, offer, key, limit))
+        try:    # a failure here keeps the first talk's out and the order's record (review 1680bcea I1)
+            alt = next_talk(nq, out, order, quotes, quotable, md, catalog, args.budget, memory,
+                            (shop, offer, key, limit))
+        except Exception as e:
+            log(f"[next-quote] {nq['shop']}: failed: {type(e).__name__}: {e}")
+            nq["skip"], alt = f"error {type(e).__name__}", None
         if alt is None:
             log(f"[next-quote] {nq['shop']}: not needed or not usable ({nq.get('skip')}): closed")
             q_alt = quotes.get(nq["shop"])
             if resumable(q_alt):
-                th = threading.Thread(target=cancel_quietly, args=(dict(q_alt), nq["shop"]), daemon=True)
-                q_alt["closed"] = True
-                th.start()
-                th.join(5)
+                try:
+                    th = threading.Thread(target=cancel_quietly, args=(dict(q_alt), nq["shop"]), daemon=True)
+                    q_alt["closed"] = True
+                    th.start()
+                    th.join(5)
+                except Exception as e:
+                    log(f"[next-quote] {nq['shop']}: cancel failed: {type(e).__name__}: {e}")
         else:
             # the second talk: every name the talk, the receipt checks and the record read is the next shop's now
             shop, offer, key, label, chance, limit, top, q = (alt[k] for k in (
@@ -3039,6 +3047,14 @@ def main():
             band_base = band_pct = None
             order["_margin_cap"], order["_accept_band_top"], order["_goods_grade"] = alt["margin_cap"], None, None
             order.pop("_accept_band", None)
+            # the first shop's study arms stay with its talk (nq["first"]["arms"], and its trade in memory); the second
+            # talk opens as the base oneshot with no study, so the row's arms are the second talk's (review 1680bcea I2)
+            nq["first"]["arms"] = {k.lstrip("_"): order.get(k) for k in buyer_next_quote.FIRST_ARMS}
+            nq["first"]["arms"]["one_won_probe"] = probe_arm
+            for k in buyer_next_quote.FIRST_ARMS:
+                order[k] = False if k == "_one_won_default" else None
+            probe_arm = None
+            steps = oneshot.steps(buyer_cfg()) if oneshot.enabled(buyer_cfg()) else None
             reason = f"next quote ({q['ask']}) after {nq['first']['shop']} ended {nq['first']['state']}"
             log(f"[next-quote] {shop['name']}: ask {q['ask']}, limit {limit}, take {top}: {reason}")
             talk_mode = f"next {list(steps)}" if steps else "next harness"

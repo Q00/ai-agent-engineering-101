@@ -220,7 +220,9 @@ def stats_from_rows(rows, paid, now):
         nq = r.get('next_quote')
         fs = (nq.get('first') or {}).get('shop') if isinstance(nq, dict) and nq.get('used') is True \
             and isinstance(nq.get('first'), dict) else None
-        if isinstance(fs, str) and fs != shop:
+        arms = nq['first'].get('arms') if fs is not None and isinstance(nq['first'].get('arms'), dict) else {}
+        if isinstance(fs, str) and fs != shop and not buyer_goods_ladder.laddered(arms) \
+                and not buyer_food_ladder.laddered(arms):   # the first talk's arm B opening, as the rows above
             for c in (cell.setdefault((fs, kind), _new_cell()), pool.setdefault(kind, _new_cell())):
                 _add(c, 'failed', None, None, None)
     pools = {k: _summarize(c) for k, c in pool.items()}

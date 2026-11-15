@@ -75,6 +75,39 @@ class Main(Run, unittest.TestCase):
         self.assertIsNone(calls[1][1].get("ceiling"))
 
 
+    def test_an_unused_kept_quote_is_canceled(self):
+        started, real = [], market_buyer.threading.Thread
+
+        def thread(*a, **k):
+            started.append(k.get("args"))
+            return real(*a, **k)
+        with mock.patch.object(market_buyer.threading, "Thread", thread):
+            row, calls = self.run2(deal(6799))
+        self.assertEqual(len(calls), 1)
+        kept = row["next_quote"]["shop"]
+        self.assertTrue(any(isinstance(x, tuple) and len(x) == 2 and x[1] == kept for x in started), started)
+
+    def test_a_failure_in_the_next_quote_keeps_the_order(self):
+        def boom(*a, **k):
+            raise RuntimeError("x")
+        with mock.patch.object(market_buyer, "next_talk", boom):
+            row, calls = self.run2(CANCELED, deal(7200))
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(row["next_quote"]["skip"], "error RuntimeError")
+        self.assertEqual(row["state"], "TASK_STATE_CANCELED")
+
+    def test_the_first_talks_study_arms_stay_with_it(self):
+        def decide(md, order, q, steps, resume, **k):
+            return (.8, .9), {"arm": "B", "study": "x"}
+        with mock.patch.object(market_buyer.buyer_goods_ladder, "decide", decide):
+            row, calls = self.run2(CANCELED, deal(7200))
+        self.assertEqual(len(calls), 2)
+        self.assertIsNone(row["goods_ladder"])                                   # the second talk opened unladdered
+        self.assertEqual(row["next_quote"]["first"]["arms"]["goods_ladder"]["arm"], "B")
+        st = buyer_rank_pg.stats_from_rows([dict(row, ts=time.time(), passed_to_kit=False)], {}, time.time())
+        self.assertNotIn(f"{row['next_quote']['first']['shop']}|goods", st["shops"])   # arm B's failure: not learned
+
+
 class Unit(unittest.TestCase):
     def test_failed_talk(self):
         self.assertTrue(bnq.failed_talk(CANCELED))

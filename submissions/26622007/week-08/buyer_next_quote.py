@@ -42,3 +42,8 @@ def failed_talk(out):
     """The talk ended with no deal on the shop's side or mine, after at least one ask: nothing can still close it."""
     return isinstance(out, dict) and out.get("state") in FAILED and out.get("receipt") is None \
         and any(who == "shop asked" for who, _ in out.get("history") or [])
+
+# the order's study state of the first talk: kept under the row's next_quote.first.arms and reset for the second talk
+FIRST_ARMS = ("_goods_ladder", "_food_ladder", "_b3", "_opening_discount_probe", "_goods_first_one_probe",
+              "_one_won_default", "_goods_first_one_original", "_goods_first_one_price", "_moss_first", "_final_m1",
+              "_sw_h_est")
