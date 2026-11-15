@@ -22,7 +22,7 @@ from depts import deep_high, purchasing as PU, request_buy as RB, request_six as
 
 NOW = time.time()
 REG = [f"R{i}" for i in range(1, 8)]          # 7 fast regular SKUs
-NEW = ["N1", "N2"]                            # no turnover yet: trial
+NEW = ["N1", "N2", "N3", "N4"]                # no turnover yet: trial
 
 
 def make_db(d):
@@ -119,6 +119,17 @@ def test_six_lines():
     assert len(req) == 4 and sum("trial" in m for m in req) == 1, req
 
 
+def test_three_trials():
+    # 11/15 ~15:20 (person): 3 regular + 3 trial: three new SKUs on trial lines (target 2 each), the clock starts
+    _, req, logs, r, sent = plan(6, 3, [])
+    assert len(req) == 6 and sum("trial" in m for m in req) == 3 and sum("target 8" in m for m in req) == 3, (req, logs)
+    row = plan.rows[-1]
+    assert row["regular"] == 3 and row["trial"] == 3 and row["new"] == ["N1", "N2", "N3"], plan.rows
+    # the guard with 3 trials goes back to 3 + 1, not 1 + 3
+    _, _, _, r, sent = plan(6, 3, aged(99_999, 101), {"six_since": NOW - 3600, "max_aged": 10_000_000, "base_trial": 1})
+    assert r["lines"] == 4 and r["trial"] == 1 and r["regular"] == 3 and r["six"]["trial"] == 3, r
+
+
 def test_guard():
     # 12 h+ unsold normal: 101 x 99,999 = 10.1M > 10M -> back to 4, one urgent; this plan already took 6 (guard after)
     _, _, logs, r, sent = plan(6, 1, aged(99_999, 101), {"six_since": NOW - 3600, "max_aged": 10_000_000})
@@ -148,6 +159,7 @@ def test_report():
 
 if __name__ == "__main__":
     test_six_lines()
+    test_three_trials()
     test_guard()
     test_report()
     print("ok")

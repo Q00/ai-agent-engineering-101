@@ -62,8 +62,8 @@ def guard(units, now=None, send=None, path=None, log=print):
         return "ok"
     why = f"12시간+ 미판매 일반 재고 {n}개 원가 {cost:,} > 기준 {int(r.get('max_aged', 10_000_000)):,}"
     six = {k: r.get(k) for k in ("lines", "regular", "trial")}
-    r.update(lines=int(r.get("base_lines", 4)), regular=int(r.get("base_lines", 4)) - int(r.get("trial", 1)),
-             off_ts=round(now), off_why=why, six=six)
+    bl, bt = int(r.get("base_lines", 4)), int(r.get("base_trial", 1))     # 11/15: back to 3 + 1, whatever the trial
+    r.update(lines=bl, trial=bt, regular=bl - bt, off_ts=round(now), off_why=why, six=six)
     save(r, path)
     log(f"[request six] guard tripped: {why} -> request lines {r['lines']}")
     if send is None:
