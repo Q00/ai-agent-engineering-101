@@ -151,7 +151,7 @@ class PurchaseTests(unittest.TestCase):
             estimated_sale_likelihood=.8,dominant_grade_samples=10,
             dominant_grade_profit_probability=.9,own_sales_total=5,
             own_profitable_sales=5,own_gross_total=1000)
-  ranked=[dict(base,sku='low',own_a_quotes=10,own_a_conversion_rate=.09),
+  ranked=[dict(base,sku='low',kind='food',own_a_quotes=10,own_a_conversion_rate=.09),
           dict(base,sku='sample',own_a_quotes=9,own_a_conversion_rate=0)]
   policy={'max_sku_capital_share':1,'min_own_a_conversion_samples':10,
           'min_own_a_conversion_rate':.10}

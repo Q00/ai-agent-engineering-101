@@ -321,17 +321,23 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
     choices=[]
     for row in ranked:
         if row.get('sku') in blocked or row.get('expected_net',0)<=0:continue
+        # Repeated local quote rejection is product evidence, not a
+        # goods-only warranty signal.  Food can fail for the same practical
+        # reason (price or remaining-life requirements), and restocking it is
+        # even riskier because unsold units can spoil.  Keep selling held
+        # units, but stop every kind from restocking while this rolling cohort
+        # remains mature and below the conversion floor.
+        own_a_quotes=row.get('own_a_quotes',0)
+        own_a_rate=row.get('own_a_conversion_rate')
+        if (own_a_quotes>=policy.get('min_own_a_conversion_samples',10) and
+                isinstance(own_a_rate,(int,float)) and
+                own_a_rate<policy.get('min_own_a_conversion_rate',.10)):
+            continue
         cold_safe_trial=False
         own_profit_proven=False
         if row.get('kind')=='goods':
             min_samples=policy.get('min_goods_a_profit_samples',0)
             min_probability=policy.get('min_goods_a_profit_probability',0)
-            own_a_quotes=row.get('own_a_quotes',0)
-            own_a_rate=row.get('own_a_conversion_rate')
-            if (own_a_quotes>=policy.get('min_own_a_conversion_samples',10) and
-                    isinstance(own_a_rate,(int,float)) and
-                    own_a_rate<policy.get('min_own_a_conversion_rate',.10)):
-                continue
             own_sales_total=row.get('own_sales_total',row.get('own_sales_1h',0))
             own_profitable=row.get('own_profitable_sales',0)
             # Market-wide demand cannot rescue a product that has already
