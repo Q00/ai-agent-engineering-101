@@ -137,9 +137,10 @@ def asking_price(task):
         if found:
             m = found[-1]
             break
-    pick = m.group(1) if m and not re.search(r"^\s*(h\b|hours?|%)", text[m.end():m.end() + 8]) else None
+    # "[\s-]*": "6-hour warranty" is hours, not an ask of 6 (leak audit #45: 20 talks in ~5 h offered "6" three times)
+    pick = m.group(1) if m and not re.search(r"^[\s-]*(h\b|hours?|%)", text[m.end():m.end() + 8]) else None
     if pick is None:
-        cands = [n for n in nums if not re.search(re.escape(n) + r"\s*(h\b|hours?|%)", reply_text(task))]
+        cands = [n for n in nums if not re.search(re.escape(n) + r"[\s-]*(h\b|hours?|%)", reply_text(task))]
         pick = (cands or nums)[-1]
     return math.ceil(float(pick.replace(",", "")))
 

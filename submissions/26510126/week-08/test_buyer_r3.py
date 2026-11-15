@@ -739,6 +739,14 @@ def main():
          and buyer_r3.avoided(av40, "other", "G-any", o40) is None,
          str((want_cert, buyer_r3.avoided(av40, "elm", "G-any", o40))))
 
+    # leak audit #45: "6-hour warranty" is hours, not an ask of 6
+    import buyer as _b45
+    _m45 = lambda s: {"status": {"message": {"parts": [{"text": s}]}}}
+    case("an ask is not read from '6-hour warranty'",
+         _b45.asking_price(_m45("45000 is my best, with a 6-hour warranty.")) == 45000
+         and _b45.asking_price(_m45("Asking 52000, 72 h of shelf life left")) == 52000,
+         str(_b45.asking_price(_m45("45000 is my best, with a 6-hour warranty."))))
+
     print(f"\n{sum(RESULTS)}/{len(RESULTS)} passed")
     shutil.rmtree(TMP, ignore_errors=True)
 
