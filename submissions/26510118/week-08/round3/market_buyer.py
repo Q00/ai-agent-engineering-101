@@ -95,6 +95,16 @@ DEAR_ORDER = 500_000      # an order whose products list at this (median) or mor
                           # failure there costs seconds, a deal tens or hundreds of thousands)
 WARRANTY_HOURS = 6
 HOLDS = 2                 # asks above our ceiling that stopped falling before we leave
+PERSIST_SHARE = 0.5       # 11/15 (the person's call, "시험 적용"): orders of the "persist" arm (a hash of the order id) never
+# leave on HOLDS and make every offer of the ladder up to the ceiling, the last one said as final. Over 24 h 1,224 of 4,032
+# orders (30%) were lost to the ceiling, 900 of them after only 2 offers on HOLDS (the shop said the same ask twice), while
+# 1,230 of our 2,125 deals (58%) closed AT our own offer after the shop had asked over our ceiling, 426 at our 3rd or 4th;
+# 208 of the lost had a last ask within 4 points of list over our ceiling. A deal it adds keeps the margin floor (0.76).
+
+
+def persist_arm(order_id: str) -> bool:
+    """True for PERSIST_SHARE of the orders, by a hash of the order id."""
+    return int(hashlib.sha1(("persist:" + str(order_id)).encode()).hexdigest()[:8], 16) / 0x100000000 < PERSIST_SHARE
 # Grades (11/5 15:40, the person's call): the market values a settled deal at the list price whatever the grade
 # (/agent.md), so a B or C under the 6-hour warranty (which covers every break) is worth what an A is. Over Round 3
 # we paid a median 0.772 of list for A, 0.715 for B and 0.70 for C, keeping 0.206, 0.237 and 0.274 of list after
@@ -689,7 +699,7 @@ async def trade(client: A2A, c: dict, order: dict, catalog: dict, nb: dict, rule
                 r["asks"].append(ask)
                 if ask > ceiling:
                     holds = holds + 1 if prev is not None and ask >= prev else 0
-                    if holds >= HOLDS:
+                    if holds >= HOLDS and not rules.get("persist"):            # 11/15: the persist arm stays to the end
                         r["left"] = f"the ask stayed at {ask}, above our ceiling {ceiling}"
                         break
                 prev = ask
@@ -906,11 +916,13 @@ async def amain(a) -> dict:
     BUYER_BREAK.update(breakage.rates(common.read_json(breakage.path(), None), "ours"))   # 11/7: one table, from the ledger
     rules = common.rules()["buyer"]
     rules = dict(rules, haggle=experiments.haggle_arm(order.get("order") or "", time.time(),
-                                                     common.read_json(experiments.haggle_path(), None)))
+                                                     common.read_json(experiments.haggle_path(), None)),
+                 persist=persist_arm(order.get("order") or ""))
     nb = memory.load()
     memory.sync(nb)                                                 # B4: what the kit wrote since the last order
     base = {"order": order.get("order"), "category": category_of(order, catalog), "budget": a.budget, "kind": order.get("kind"),
-            "use_within_hours": order.get("use_within_hours"), "median_list": median_list(order, catalog)}
+            "use_within_hours": order.get("use_within_hours"), "median_list": median_list(order, catalog),
+            "persist": rules["persist"]}
     offering = [sh for sh in shops if sh["name"] not in BANNED
                 and any(o.get("sku") in (order.get("acceptable") or []) for o in sh.get("offers") or [])]
     odds = shop_odds(offering, common.read_json(md / "forum.json", []) or [], summary, nb) if offering else {}
