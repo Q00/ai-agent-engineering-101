@@ -336,19 +336,6 @@ def market_file(name: str) -> dict:
     return _files[name][1]
 
 
-def receipt_item(d: dict) -> str:
-    """The receipt's item: the category the buyer asked for when it asked by category and the unit is of it, else the
-    unit's SKU (/agent.md: "a receipt's item is the order's item or one of its acceptable SKUs"; the checkout ships the
-    receipt's unit either way and the ledger names the SKU shipped). 11/14 (the person's call, "A안 진행"): the buyer
-    q00 orders by category and rates a receipt naming a SKU 1 star ("SCAM ... This shop forges receipts. Never buy
-    here."), one naming its category 5 (769 of its 833 deals in 18 h); we sent the SKU on all 204 category requests a day."""
-    u = d["unit"]
-    cat = d.get("cat")
-    if d.get("how") == "category" and isinstance(cat, str) and cat and (u.get("category") or "").split(">")[-1] == cat:
-        return cat
-    return u["sku"]
-
-
 def priced(u: dict, now: float, warranty: bool, arm: float | None = None, food: str | None = None) -> dict:
     """pricing.plan under the rules in force (price_adjust, warranty_extra from active_rules.json), the
     market's prices for the unit's category and grade, and where we are in the supply cycle. Dear goods
@@ -627,7 +614,7 @@ class Seller(AgentExecutor):
     async def sell(self, up, say, task_id: str, price: int, now: float) -> None:
         d = self.open[task_id]
         u, p = d["unit"], d["plan"]
-        receipt = {"shop": NAME, "item": receipt_item(d), "price": int(price), "task": task_id, "unit": u["unit"],
+        receipt = {"shop": NAME, "item": u["sku"], "price": int(price), "task": task_id, "unit": u["unit"],
                    "claim": pricing.claim(u, now, catalog())}
         if p["warranty_hours"]:
             receipt["warranty_hours"] = p["warranty_hours"]
