@@ -114,8 +114,8 @@ CAP_SELL_HOURS = 12
 CAP_MIN_RECEIVED = 30               # units received before a slow sell-through may shrink the cap
 CAP_MIN = 25_000_000                # not below the cap already proven to sell out, unless the balance says so
                                     # ceiling: STOCK_BUDGET_SHARE x balance (the rule since 11-04), over CAP_MIN
-CAP_CEILING_SHARE = 0.70            # 0.70 since 2026-11-15 18:4x KST (S3 of 20261115_short_term_strategy.md: stock 196.8M at
-                                    #   the 186.9M ceiling, bedding stockouts 6.2/h, goods buying open until 11-17 11:59). The adaptive cap's ceiling as a share of the balance (STOCK_BUDGET_SHARE 0.40 until
+CAP_CEILING_SHARE = 0.60            # (0.70 on 2026-11-15 18:28-21:0x KST was reverted: it never bound, normal stock 86M under a
+                                    #   187M cap; kpi stock_cost includes premium, which misled S3.) The adaptive cap's ceiling as a share of the balance (STOCK_BUDGET_SHARE 0.40 until
                                     #   2026-11-11, the human's yes): in 36 h the cap asked to grow 29 times and shrink
                                     #   0 times (sell-through 0.78-1.0) and was clipped at 0.40 x balance every time,
                                     #   with ~200M idle. Unsold stock counts at cost, so the cost of more stock is the 1%/day
@@ -294,6 +294,12 @@ FIRST_OFFER_RATIO = 0.55            # first offer as a share of list price
 BUYER_COST_OPEN_SHARE = 1.0         # 2026-11-15 10:3x: widened after the canary (cost arm d/o 0.368 vs 0.351, saved 0.878 vs 0.860, goods 0.165 vs 0.100); 0.0 rolls back
                                     #   (COST_RATIO) when that is above FIRST_OFFER_RATIO (A 0.618, goods 0.594): under
                                     #   patch 3.6 a price below cost scores 1 like one at cost, so lower only adds turns
+BUYER_HAGGLE_SHARE = 0.5           # 2026-11-15 21:xx KST canary: orders in this share counter a first ask once when it
+                                    #   scores under BUYER_HAGGLE_MS margin share, then take the shop's next price if <= max_pay.
+                                    #   24 h before: 1,127 deals took the first ask as-is, 663 of them under 0.9 (the old
+                                    #   "ask <= 0.72 x list" accept is always true under max_pay since patch 3.6); shops
+                                    #   that were countered gave a median 4.4% of list. 0.0 rolls back
+BUYER_HAGGLE_MS = 0.90
 MAX_OFFERS = 6
 SHOPS_TO_TRY = 3
 BUYER_FANOUT_SHARE = 1.0           # 1.0 since 2026-11-13 16:40 KST (canary 0.20 from 11-12: fanout 0.542 vs serial 0.386

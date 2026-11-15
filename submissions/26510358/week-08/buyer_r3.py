@@ -222,9 +222,12 @@ def negotiate(c, order, deadline, opened=None):
                     c["hint"] = {"grade": grade, "warranty_hours": hours}
                     c["max_pay"] = limit_for(c, grade, hours)
             final = got is not None and is_final(a2a.said(t))
+            haggle = haggle_arm(order.get("order"))
+            counter_below = int(c["list"] * (1 - config.BUYER_HAGGLE_MS * (1 - open_floor(c)))) if haggle else None
             action, price = pricing.buyer_next_offer(c["list"], c["max_pay"], ask, offer, n, opening=c.get("opening"),
                                                      final=final,
-                                                     open_floor=open_floor(c) if cost_open_arm(order.get("order")) else None)
+                                                     open_floor=open_floor(c) if cost_open_arm(order.get("order")) else None,
+                                                     counter_below=counter_below, accept_after=1 if haggle else 3)
             if action == "walk":
                 break                                  # a final price over our limit: the next shop, not 6 more turns
             if offer is not None and price <= offer and action == "offer":
@@ -306,6 +309,12 @@ def quote_early_arm(order_id):
     are in (plus BUYER_QUOTE_GRACE_S); stable per order id, own salt."""
     h = int(hashlib.sha256(f"quote_early:{order_id}".encode()).hexdigest()[:8], 16)
     return h % 10_000 < config.BUYER_QUOTE_EARLY_SHARE * 10_000
+
+
+def haggle_arm(order_id):
+    """True for the BUYER_HAGGLE_SHARE of orders that counter a first ask under BUYER_HAGGLE_MS margin share; own salt."""
+    h = int(hashlib.sha256(f"haggle:{order_id}".encode()).hexdigest()[:8], 16)
+    return h % 10_000 < config.BUYER_HAGGLE_SHARE * 10_000
 
 
 def open_floor(c):
@@ -472,6 +481,7 @@ def main():
     cands = candidates(order, shops, mem, mem.my_shop_urls(), theta=theta)
     arm = "fanout" if fanout_arm(order.get("order")) else "serial"
     decision_log({"order": order.get("order"), "arm": arm, "open": "cost" if cost_open_arm(order.get("order")) else "base",
+                  "haggle": haggle_arm(order.get("order")),
                   "category": order.get("category"), "budget": a.budget,
                   "theta": round(theta, 4), "model_theta": model_theta and round(model_theta, 4),
                   "kind": order.get("kind"), "use_within_hours": order.get("use_within_hours"),
