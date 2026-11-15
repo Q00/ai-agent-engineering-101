@@ -33,6 +33,8 @@ class Intel:
         CREATE TABLE IF NOT EXISTS trades(seq INTEGER PRIMARY KEY, ts REAL, shop TEXT,
           sku TEXT, grade TEXT, hours REAL, warranty REAL, price INTEGER, honest INTEGER,
           buyer TEXT DEFAULT '');
+        CREATE TABLE IF NOT EXISTS breakages(seq INTEGER PRIMARY KEY, ts REAL, shop TEXT,
+          unit TEXT, sku TEXT, refunded INTEGER, warranty REAL, hours_after_sale REAL);
         CREATE TABLE IF NOT EXISTS sources(name TEXT PRIMARY KEY, ts REAL, body TEXT);
         CREATE TABLE IF NOT EXISTS observations(id INTEGER PRIMARY KEY, ts REAL, shop TEXT,
           sku TEXT, grade TEXT, hours REAL, warranty REAL, price INTEGER, kind TEXT);
@@ -44,6 +46,8 @@ class Intel:
           ON trades(shop,ts,honest);
         CREATE INDEX IF NOT EXISTS trades_sku_grade_ts
           ON trades(sku,grade,ts);
+        CREATE INDEX IF NOT EXISTS breakages_shop_ts
+          ON breakages(shop,ts);
         CREATE INDEX IF NOT EXISTS observations_shop_ts_kind
           ON observations(shop,ts,kind);
         ''')
@@ -71,11 +75,27 @@ class Intel:
             self.db.execute('INSERT OR REPLACE INTO sources VALUES(?,?,?)',(name,time.time(),json.dumps(body)))
 
     def ingest(self, rows):
+        refunded_units=[]
         with self.db:
             for r in rows:
-                if r.get('round') != 3 or r.get('kind') != 'settle':
+                if r.get('round') != 3:
                     continue
                 d = r.get('data', {})
+                if r.get('kind') == 'broken':
+                    unit=d.get('unit');refunded=d.get('refunded');sku=d.get('sku',d.get('item'))
+                    if (type(r.get('seq')) is not int or not isinstance(unit,str) or not unit or
+                            type(refunded) is not int or refunded<=0):
+                        continue
+                    self.db.execute('''INSERT OR IGNORE INTO breakages
+                        (seq,ts,shop,unit,sku,refunded,warranty,hours_after_sale)
+                        VALUES(?,?,?,?,?,?,?,?)''',
+                        (r['seq'],r.get('ts'),d.get('shop',''),unit,
+                         sku if isinstance(sku,str) else '',refunded,
+                         d.get('warranty_hours') or 0,d.get('hours_after_sale')))
+                    refunded_units.append(unit)
+                    continue
+                if r.get('kind') != 'settle':
+                    continue
                 price=d.get('amount'); grade=d.get('grade'); sku=d.get('sku',d.get('item'))
                 if type(price) is not int or price<=0 or grade not in ('A','B','C') or not isinstance(sku,str):
                     continue
@@ -86,6 +106,29 @@ class Intel:
                     VALUES(?,?,?,?,?,?,?,?,?,?)''',
                     (r['seq'],r['ts'],d.get('shop',''),sku,grade,hours,d.get('warranty_hours') or 0,
                      price,int(d.get('claim_honest') is True),d.get('buyer','')))
+        self.reconcile_refunds(refunded_units)
+
+    def reconcile_refunds(self, units):
+        """Apply official broken events to our local sale evidence by unit id.
+
+        Unit ids are globally unique market artifacts.  Updating only an
+        already-present local unit means a rival's public refund can never
+        affect our evidence.  The operation is idempotent so replaying a
+        ledger page after a restart is safe.
+        """
+        units={unit for unit in units if isinstance(unit,str) and unit}
+        path=self.root/'referrals.sqlite3'
+        if not units or not path.exists():return 0
+        with sqlite3.connect(path,timeout=5) as referrals:
+            if not referrals.execute(
+                    "SELECT 1 FROM sqlite_master WHERE type='table' AND name='sales'").fetchone():
+                return 0
+            changed=0
+            for unit in units:
+                cur=referrals.execute(
+                    'UPDATE sales SET refunded=1 WHERE unit=? AND refunded=0',(unit,))
+                changed+=cur.rowcount
+        return changed
 
     def refresh(self, market, client=None):
         if time.time()-self.get('last_attempt',0)<60:

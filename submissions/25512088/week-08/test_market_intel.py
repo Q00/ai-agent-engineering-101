@@ -63,6 +63,18 @@ class IntelligenceTests(unittest.TestCase):
         rows=self.rows();rows[0]['data']['buyer']='buyer-a'
         self.i.ingest(rows)
         self.assertEqual(self.i.db.execute('select buyer from trades where seq=1').fetchone()[0],'buyer-a')
+    def test_official_breakage_reconciles_local_sale_idempotently(self):
+        with self.p.db:
+            self.p.db.execute('''INSERT INTO sales
+                (task,unit,sku,amount,cost,ledger,settled,refunded)
+                VALUES(?,?,?,?,?,?,?,0)''',('broken-task','broken-unit','x',9500,8000,77,time.time()))
+        event=dict(seq=99,ts=time.time(),kind='broken',round=3,data=dict(
+            shop='https://shop',unit='broken-unit',item='x',refunded=9500,
+            warranty_hours=6,hours_after_sale=2.1))
+        self.i.ingest([event]);self.i.ingest([event])
+        self.assertEqual(self.i.db.execute('SELECT COUNT(*) FROM breakages').fetchone()[0],1)
+        self.assertEqual(self.p.db.execute(
+            "SELECT refunded FROM sales WHERE unit='broken-unit'").fetchone()[0],1)
     def test_price_requires_same_grade_warranty_and_enough_samples(self):
         self.i.ingest(self.rows())
         self.assertEqual(self.i.comparable('x','A')['median'],9500)

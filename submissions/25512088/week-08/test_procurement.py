@@ -3,7 +3,7 @@ import json
 import tempfile
 import unittest
 from network_reads import retry_read
-from seller_procurement import choose,allocation_plan,capital_available,supply_result,own_registration,own_board_registration,retry_join,join_current_registration,preserve_stale_pending,breadth_window_blocks,refresh_window_blocks,competitor_breadth_target,warranty_risk_reserve,observed_warranty_hazard,active_warranty_amounts,supply_interval_wait
+from seller_procurement import choose,allocation_plan,capital_available,supply_result,own_registration,own_board_registration,retry_join,join_current_registration,preserve_stale_pending,breadth_window_blocks,refresh_window_blocks,competitor_breadth_target,warranty_risk_reserve,observed_warranty_hazard,active_warranty_amounts,supply_interval_wait,own_sales_evidence
 from seller_market import dominant_goods_profit_probability
 class PurchaseTests(unittest.TestCase):
  def test_successful_supply_cooldown_avoids_predictable_rate_limit(self):
@@ -69,6 +69,25 @@ class PurchaseTests(unittest.TestCase):
   policy={'fixed_warranty_hours_at':1000}
   amounts=active_warranty_amounts(db,policy,now=100+10*3600)
   self.assertEqual(amounts,[1000])
+ def test_refunded_sale_is_negative_principal_in_own_evidence(self):
+  import sqlite3
+  db=sqlite3.connect(':memory:')
+  db.execute('create table sales(sku text,amount integer,cost integer,reward integer,settled real,refunded integer)')
+  db.executemany('insert into sales values(?,?,?,?,?,?)',[
+   ('x',120,100,0,1000,0),('x',120,100,0,1000,1)])
+  recent,total,gross,profitable=own_sales_evidence(db,now=1100)
+  self.assertEqual(recent,{'x':1})
+  self.assertEqual(total,{'x':2})
+  self.assertEqual(gross,{'x':-80})
+  self.assertEqual(profitable,{'x':1})
+ def test_mature_negative_local_goods_cohort_blocks_restock(self):
+  ranked=[dict(sku='lossy',kind='goods',expected_net=500000,score=999,
+               upper_cost=100000,sales_1h=20,sales_6h=50,distinct_buyers_6h=10,
+               own_sales_1h=5,own_sales_total=11,own_gross_total=-206555,
+               own_profitable_sales=9,dominant_grade_samples=50,
+               dominant_grade_profit_probability=.99,estimated_sale_likelihood=.9)]
+  policy={'max_sku_capital_share':1,'min_own_loss_veto_sales':5}
+  self.assertEqual(allocation_plan(ranked,{'units':[]},1000000,policy=policy),[])
  def test_allocation_uses_sellthrough_and_small_diversified_lots(self):
   ranked=[dict(sku='a',expected_net=50000,score=3,upper_cost=100000,sales_1h=8,sales_6h=12,
                distinct_buyers_6h=4,own_stockouts_6h=2,own_inquiries_6h=1,estimated_sale_likelihood=.8),

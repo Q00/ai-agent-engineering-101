@@ -108,6 +108,28 @@ def active_warranty_amounts(referrals, policy=None, now=None):
         if issued+hours*3600>now:active.append(int(amount))
     return active
 
+def own_sales_evidence(referrals, now=None):
+    """Return refund-aware local sell-through and realized Book contribution.
+
+    A refunded unit is gone and its sale price is returned, so its realized
+    contribution is negative principal, not zero.  Counting only successful
+    rows made a fast but failure-prone SKU look permanently profitable.
+    """
+    now=time.time() if now is None else now
+    recent={row[0]:row[1] for row in referrals.execute(
+        'SELECT sku,COUNT(*) FROM sales WHERE settled>? AND refunded=0 GROUP BY sku',
+        (now-3600,))}
+    rows=referrals.execute('''
+        SELECT sku,COUNT(*),
+               COALESCE(SUM(CASE WHEN refunded=1 THEN -cost
+                                 ELSE amount-cost-COALESCE(reward,0) END),0),
+               COALESCE(SUM(CASE WHEN refunded=0 AND amount>cost THEN 1 ELSE 0 END),0)
+        FROM sales GROUP BY sku''').fetchall()
+    return (recent,
+            {row[0]:row[1] for row in rows},
+            {row[0]:row[2] for row in rows},
+            {row[0]:row[3] for row in rows})
+
 def reserve_cash(inv,exposure=0):
     return max(settings()['cash_floor'],inv.get('bankrupt_line',500000))+exposure
 
@@ -207,6 +229,14 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
             min_probability=policy.get('min_goods_a_profit_probability',0)
             own_sales_total=row.get('own_sales_total',row.get('own_sales_1h',0))
             own_profitable=row.get('own_profitable_sales',0)
+            # Market-wide demand cannot rescue a product that has already
+            # produced a mature negative Book contribution in this shop.
+            # Keep selling held units, but stop restocking until later sales
+            # make the refund-aware local cohort positive again.
+            local_gross=row.get('own_gross_total')
+            if (own_sales_total>=policy.get('min_own_loss_veto_sales',5) and
+                    isinstance(local_gross,(int,float)) and local_gross<=0):
+                continue
             own_profit_proven=(
                 own_sales_total>=policy.get('min_own_profitable_goods_sales',3) and
                 row.get('own_gross_total',0)>0 and
@@ -461,16 +491,8 @@ def main():
             log(event='waiting_selection',select_at=opening-180,spent=spent)
             time.sleep(min(20,max(1,opening-180-time.time())));continue
         with sqlite3.connect(state/'referrals.sqlite3') as referrals:
-            own_sales_1h={row[0]:row[1] for row in referrals.execute(
-                'SELECT sku,COUNT(*) FROM sales WHERE settled>? AND refunded=0 GROUP BY sku',
-                (time.time()-3600,))}
-            own_rows=referrals.execute('''
-                SELECT sku,COUNT(*),COALESCE(SUM(amount-cost),0),
-                       SUM(CASE WHEN amount>cost THEN 1 ELSE 0 END)
-                FROM sales WHERE refunded=0 GROUP BY sku''').fetchall()
-            own_sales_total={row[0]:row[1] for row in own_rows}
-            own_gross_total={row[0]:row[2] for row in own_rows}
-            own_profitable_sales={row[0]:row[3] for row in own_rows}
+            (own_sales_1h,own_sales_total,own_gross_total,
+             own_profitable_sales)=own_sales_evidence(referrals)
         ranked=[dict(row,kind=catalog.get(row.get('sku'),{}).get('kind'),
                      own_sales_1h=own_sales_1h.get(row.get('sku'),0),
                      own_sales_total=own_sales_total.get(row.get('sku'),0),
