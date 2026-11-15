@@ -1,0 +1,29 @@
+Deploy note 2026-11-15 18:3x-18:48 KST — short-term strategy (20261115_short_term_strategy.md), S1 and S3 applied, S2 not
+
+S1 buyer early quote stop, 50% canary (227a839b; live from the file save, ~18:27 KST, commit epoch 1794734830)
+  - Evidence (12 h before, buyer-decisions.jsonl): 1,430 orders = 119/h; fan-out quote phase p50 14.7 s, p75 20.1 s;
+    36% waited the full BUYER_QUOTE_TIMEOUT_S 20 s; order starts never closer than ~20 s (market pace), p50 26.8 s.
+  - First 10 orders after: usable quotes nearly all arrive in < 1 s; the 20 s wait is for shops that never answer.
+    early arm quote phase 1.4-2.9 s, other arm up to 20 s.
+  - Change: orders with quote_early_arm (BUYER_QUOTE_EARLY_SHARE 0.5, salt "quote_early:") stop waiting
+    BUYER_QUOTE_GRACE_S 2 s after the BUYER_QUOTE_ENOUGH 4th usable (INPUT_REQUIRED) quote. The "quotes" row now logs
+    early, quote_s, usable_at. Tie-break: quotes tied on margin share (capped at 1) go to the lower ask/list.
+  - Judge at +2 h (~20:30 KST) by arm: order wall time (start row -> last row), deals/order, margin share per deal.
+    Widen to 1.0 if wall time is lower by 25%+ and margin share within -0.02; 0.0 rolls back.
+    Orders/h overall can only rise if the order gap was our time, not the market's pace: compare orders/h after
+    widening against 119/h.
+
+S2 accept the last counter-offer: NOT applied
+  - 12 h of walked "no receipt" negotiations: 0 had a last ask <= max_pay (2 were shop-side rejections). The rule
+    already exists (508ebdd: a final price <= max_pay is taken at once). The doc's ~200 orders at margin share >= 0.8
+    assumed cost = 0.55 x list; with our COST_RATIO (goods A 0.618) every one is above max_pay = theta 0.72, i.e.
+    under our cumulative saved 0.738. Taking them would lower saved.
+
+S3 CAP_CEILING_SHARE 0.60 -> 0.70 (3732ed5c, +17%, inside the 20% rule)
+  - Evidence (kpi.jsonl 18:24): stock_cost 196.8M over stock_ceiling 186.9M, premium_budget 0, bedding stockouts
+    6.17/h, coffee/tea 3.08/h. Goods buying open until 2026-11-17 11:59 KST; unsold stock counts at cost.
+  - Org server (pid 1303196) killed at epoch 1794734894; it respawns when restock_r3 runs (next supply window).
+  - Judge at +6 h: stock_ceiling ~218M, bedding stockouts/h, revenue/h, surge, refunds. Back to 0.60 if stock grows
+    but stockouts and revenue/h do not move.
+
+Freeze: no deploys after 2026-11-17 12:00 KST.
