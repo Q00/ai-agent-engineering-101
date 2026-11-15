@@ -1,5 +1,6 @@
 """Local kit adapter: role-isolated forum outboxes and buyer research worker."""
 import importlib.util
+import os
 import re
 import signal
 import subprocess
@@ -53,8 +54,12 @@ def install_parent_exit_handlers():
 
 
 def open_tunnel(port):
+    # The course kit stops tunnel processes with ``killpg(proc.pid)``.  Give
+    # each cloudflared its own process group so a tunnel rotation actually
+    # removes the stale process without signalling the market runtime itself.
+    group={'start_new_session':True} if os.name!='nt' else {}
     proc=subprocess.Popen(['cloudflared','tunnel','--no-autoupdate','--url',f'http://127.0.0.1:{port}'],
-        stdin=subprocess.DEVNULL,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True)
+        stdin=subprocess.DEVNULL,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,**group)
     urls=queue.Queue()
     def read():
         for line in proc.stdout:

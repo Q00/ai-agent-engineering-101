@@ -1,4 +1,5 @@
 import io
+import os
 import unittest
 from unittest.mock import patch,Mock
 from market_runtime import tunnel_url,open_tunnel,install_parent_exit_handlers
@@ -22,10 +23,12 @@ class TunnelTests(unittest.TestCase):
         proc=Mock()
         proc.stdout=io.StringIO('failed https://api.trycloudflare.com\nhttps://actual-shop-test-host.trycloudflare.com\n')
         proc.poll.return_value=None
-        with patch('market_runtime.subprocess.Popen',return_value=proc):
+        with patch('market_runtime.subprocess.Popen',return_value=proc) as popen:
             result,url=open_tunnel(9999)
         self.assertIs(result,proc)
         self.assertEqual(url,'https://actual-shop-test-host.trycloudflare.com')
+        if os.name!='nt':
+            self.assertIs(popen.call_args.kwargs.get('start_new_session'),True)
         proc.terminate.assert_not_called()
     def test_failed_process_reports_creation_failure(self):
         proc=Mock();proc.stdout=io.StringIO('failed https://api.trycloudflare.com\n');proc.poll.return_value=1
