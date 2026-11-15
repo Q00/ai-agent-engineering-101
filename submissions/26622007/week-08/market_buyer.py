@@ -1741,14 +1741,18 @@ def short_cap(o, b, order, name, q, shop=None):
         return 0
 
 
-def close_limit(o, b, order, name, q, shop, budget, cfg, short=True):
+def close_limit(o, b, order, name, q, shop, budget, cfg, short=True, take=True):
     """The most a talk with this quote can close at, as main works it out for the shop it keeps: value_limit and
     saved_cap, a short warranty's cap (no take there), the margin cap that only lowers it, and with the margin cap take
     on the take's top, min(cap, value_limit) over a limit the cap is above (buyer_margin_cap.take_top; buyer.talk
-    walk_take and buyer_accept_band close a final ask up to it). best_quote's fit, its talk band and the no-fit cap read
-    this, so a quote the talk would take is no longer ranked as one nothing can buy (11/15: 94.7% of goods orders were
-    no-fit by saved_cap). b is the SKU's chance (chance_of); the band of plan A is left out: never more than the cap.
-    short False leaves the short warranty's cap out (best_quote's reach, as before)."""
+    walk_take and buyer_accept_band close a final ask up to it). best_quote's fit and talk band read this, so a quote
+    the talk would take is no longer ranked as one nothing can buy (24 h to 11/15 16:4x, a replay upper bound: 1,164
+    of 2,237 no-fit goods orders had a quote within it; review/W-20261115-1530-AXtakeLLM경로/fitreplay.py).
+    Invariant with main: a quote that fits is talked to and one that reaches is within main's talk band, as main's
+    refusal reads the same take (max(limit, take) x (1 + TALK_OVER_SHARE)); b is the SKU's chance (chance_of), which is
+    main's while buyer_goods_grade's arm B is off. The band of plan A is left out: never more than the cap.
+    short False leaves the short warranty's cap out (best_quote's reach, as before); take False is the limit without
+    the take (the no-fit pick's P_nofit is of a shop coming down to my limit)."""
     k = order.get("kind")
     most = value_limit(o, budget, b or 0, cfg)
     lim = min(most, saved_cap(o, b or 0))
@@ -1762,8 +1766,8 @@ def close_limit(o, b, order, name, q, shop, budget, cfg, short=True):
         return mc["cap"]
     if (order.get("_saved_floor") or {}).get("band_off"):
         return lim
-    take = buyer_margin_cap.take_top((MARGIN_CAP or {}).get("cfg"), mc["cap"], lim, most)
-    return take if take is not None else lim
+    top = buyer_margin_cap.take_top((MARGIN_CAP or {}).get("cfg"), mc["cap"], lim, most) if take else None
+    return top if top is not None else lim
 
 
 def quotes_enough(shops, got, budget, cfg, order=None):
@@ -1774,9 +1778,7 @@ def quotes_enough(shops, got, budget, cfg, order=None):
         if not o or q.get("refused") or not isinstance(q.get("ask"), (int, float)) or isinstance(q.get("ask"), bool):
             continue
         asks += 1
-        b = s.get("_b") or 0
-        sc = short_cap(o, s.get("_b"), order, s["name"], q, s)
-        fit = fit or q["ask"] <= min(value_limit(o, budget, b, cfg), saved_cap(o, b), *([sc] if sc is not None else []))
+        fit = fit or q["ask"] <= close_limit(o, s.get("_b"), order or {}, s["name"], q, s, budget, cfg)
     return asks >= QUOTE_ENOUGH and fit
 
 
@@ -1934,7 +1936,8 @@ def best_quote(chosen, others, order, catalog, budget, chance_of, cfg, wait=QUOT
             try:
                 def cap(s):
                     o = s["_offer"]
-                    return close_limit(o, chance_of(o["sku"]), order, s["name"], got[s["name"]], s, budget, cfg)
+                    return close_limit(o, chance_of(o["sku"]), order, s["name"], got[s["name"]], s, budget, cfg,
+                                       take=False)
 
                 def keep_at(s, c):
                     o, b = s["_offer"], chance_of(s["_offer"]["sku"])
@@ -1973,9 +1976,11 @@ def best_quote(chosen, others, order, catalog, budget, chance_of, cfg, wait=QUOT
         elapsed = time.time() - STARTED
         rk["plain"] = best["name"]
         try:
-            # gain_base only where g is Patch 3.6's score (the margin cap on, not a short warranty's share of list)
-            base = lambda s: rk.get("gain_base") if MARGIN_CAP and buyer_short_warranty.hours_for(
-                order.get("_sw"), s["name"], got.get(s["name"])) is None else None
+            # gain_base only where g is Patch 3.6's score: the margin cap's margin_kept, not a short warranty's or the
+            # fallback share of list (review 1b86f962 M2)
+            base = lambda s: rk.get("gain_base") if buyer_short_warranty.hours_for(
+                order.get("_sw"), s["name"], got.get(s["name"])) is None and margin_kept(
+                s["_offer"], order.get("kind"), got.get(s["name"]), chance_of(s["_offer"]["sku"])) is not None else None
             pg = {s["name"]: buyer_rank_pg.score(rk, s["name"], order.get("kind"), got[s["name"]]["ask"],
                                                  s["_offer"]["list_price"], g_of(s), elapsed,
                                                  rival_deny.penalty(s["name"], rival), base(s)) for _, _, s in scored}
@@ -2777,8 +2782,11 @@ def main():
                     log(f"[quote] closing {shop['name']} failed: {type(e).__name__}: {e}")
             raise NoValue()
         best_ask = q.get("ask") if isinstance(q.get("ask"), (int, float)) and not isinstance(q.get("ask"), bool) else None
-        if r3 and best_ask is not None and best_ask > limit * (1 + TALK_OVER_SHARE):
-            log(f"[offer] the best ask {best_ask} is {best_ask / limit - 1:.0%} over my limit {limit}: no talk, on to the next order")
+        # the talk band is over what the talk can close at: with the margin cap take, the take (best_quote's close_limit,
+        # so a quote that fits or reaches there is always talked to; review 1b86f962 I1/I2). Off: my limit, as before
+        band_of = max(limit, take) if take is not None else limit
+        if r3 and best_ask is not None and best_ask > band_of * (1 + TALK_OVER_SHARE):
+            log(f"[offer] the best ask {best_ask} is {best_ask / band_of - 1:.0%} over {'the take' if band_of > limit else 'my limit'} {band_of}: no talk, on to the next order")
             if resumable(q):
                 q["closed"] = True
                 try:

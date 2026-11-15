@@ -5,7 +5,7 @@ import unittest
 from unittest import mock
 
 import market_buyer
-from test_buyer_margin_cap import shop
+from test_buyer_margin_cap import Run, shop
 
 TAKE = {"cfg": {"enabled": True, "target": 0.75, "take": True}, "stats": None}
 NO_TAKE = {"cfg": {"enabled": True, "target": 0.75}, "stats": None}
@@ -72,6 +72,16 @@ class CloseLimit(unittest.TestCase):
         self.assertEqual(self.lim(TAKE, sc=6000), 6000)
         self.assertEqual(self.lim(TAKE, sc=0), 0)
 
+    def test_a_food_quote_without_a_grade_keeps_the_limit(self):
+        q = {"ask": 7000, "text": "G1: asking 7000"}
+        with mock.patch.object(market_buyer, "MARGIN_CAP", TAKE):
+            self.assertEqual(market_buyer.close_limit(self.O, None, {"kind": "food"}, "a", q, None, 20000, {}), 6799)
+
+    def test_take_false_is_the_limit_without_the_take(self):
+        with mock.patch.object(market_buyer, "MARGIN_CAP", TAKE):
+            self.assertEqual(market_buyer.close_limit(self.O, None, {"kind": "goods"}, "a", self.QA, None, 20000, {},
+                                                      take=False), 6799)
+
     def test_a_cap_under_the_limit_lowers_it(self):
         q = {"ask": 5700, "text": "G1, grade B: asking 5700"}
         with mock.patch.object(market_buyer, "MARGIN_CAP", TAKE):
@@ -93,10 +103,12 @@ class GainBase(unittest.TestCase):
         self.assertAlmostEqual(self.s("sure", 0.75, 0.72), 0.9 * 0.03)
         self.assertGreater(self.s("good", 0.85, 0.72), self.s("sure", 0.75, 0.72))
 
-    def test_under_the_base_ranks_by_g_alone_below_any_over_it(self):
-        self.assertLess(self.s("sure", 0.70, 0.72), 0)
-        self.assertLess(self.s("sure", 0.70, 0.72), self.s("good", 0.71, 0.72))
+    def test_under_the_base_ranks_by_the_expected_change_below_any_over_it(self):
+        self.assertAlmostEqual(self.s("sure", 0.70, 0.72), 0.9 * -0.02)
+        self.assertLess(self.s("sure", 0.70, 0.72), self.s("good", 0.70, 0.72))     # the less likely harms less
         self.assertLess(self.s("good", 0.71, 0.72), self.s("sure", 0.73, 0.72))
+        self.assertEqual(self.s("good", -0.1, None), -0.1)                           # without base: g alone, as before
+        self.assertEqual(self.s("good", -0.1, None), self.s("sure", -0.1, None))
 
     def test_best_quote_passes_the_base_only_with_the_margin_cap(self):
         # A at 65% keeps .912 (P .5), B at 50% .846 (P .6): P x g picks b, P x (g - .72) picks a
@@ -111,12 +123,29 @@ class GainBase(unittest.TestCase):
 
     def test_switch_reads_a_sane_base_only(self):
         import json, os, tempfile, buyer_rank_pg
-        for v, want in ((0.72, 0.72), (1.5, None), ("0.72", None), (True, None), (None, None)):
+        for v, want in ((0.72, 0.72), (1.5, None), (0, None), (-0.1, None), ("0.72", None), (True, None), (None, None)):
             md = tempfile.mkdtemp()
             with open(os.path.join(md, buyer_rank_pg.SWITCH), "w") as f:
                 json.dump({"enabled": True, **({"gain_base": v} if v is not None else {})}, f)
             with mock.patch.object(buyer_rank_pg, "stats", lambda md, now: {}):
                 self.assertEqual(buyer_rank_pg.state(md, {"order": "o"}, env={}).get("gain_base"), want, v)
+
+
+class MainBand(Run, unittest.TestCase):
+    """main's talk band reads the take, as best_quote's reach (review 1b86f962 I1/I2): a grade A unit of a 7,600 list,
+    limit 5167, take 5543; the ask 6500 is over 1.2 x 5167 = 6200 and within 1.2 x 5543 = 6651."""
+    TEXT = "컵 (G1), grade A, 6 h warranty: asking 6500"
+    CATALOG = {"G1": {"kind": "goods", "category": "가전>컵", "list_price": 7600}}
+
+    def test_take_on_the_ask_within_the_takes_band_is_talked_to(self):
+        row, calls = self.run_main({"enabled": True, "take": True})
+        self.assertEqual((row["limit"], row["margin_cap"]["take_top"]), (5167, 5543))
+        self.assertEqual(len(calls), 1)
+
+    def test_take_off_it_is_not_as_before(self):
+        row, calls = self.run_main({"enabled": True})
+        self.assertEqual(calls, [])
+        self.assertEqual(row["state"], "NO_VALUE")
 
 
 if __name__ == "__main__":

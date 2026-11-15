@@ -23,7 +23,9 @@ A and B share adaptive statistics, so A is not a fixed holdout and this is not a
 
 Switch: .market/buyer_rank_pg.json {"enabled": true}; missing, unreadable or anything else is off, and off is the
 current order exactly. "gain_base": a number in (0, 1) ranks by P x (g - gain_base) where g is Patch 3.6's score
-(buyer_margin_cap on, a quote not priced as a short warranty); missing or anything else is P x g as before. BUYER_RANK_PG=0 in the environment is off too. Read at every order, so no restart either way.
+(buyer_margin_cap on, a quote not priced as a short warranty); missing or anything else is P x g as before. It is a
+set number (the board is not read here): "gain_base_from" keeps the S, deals and delta it came from, and it is reset
+when they move (S moves about .002 a day at our deal rate). BUYER_RANK_PG=0 in the environment is off too. Read at every order, so no restart either way.
 
 "ledger_cover": true in the switch (exactly true) reads the ledger back to the oldest paid seq of the order window
 (LEDGER_MAX_BYTES at most) instead of the fixed TAIL_BYTES tail. Every order and both arms of any study read the same
@@ -616,15 +618,22 @@ def nofit_p(rk, shop, kind):
 def score(rk, shop, kind, ask, list_price, g_of, quote_seconds, penalty=0.0, base=None):
     """P x (g - penalty - base) / T for one quote, or None when it cannot be scored (no P, no price). g_of(p): the share
     of list a deal at p = price / list keeps in expectation (the caller's, with the break chance and any short warranty).
-    base (the switch's gain_base, the caller passes it only where g is Patch 3.6's score): a deal moves Saved by
-    (g - S) / (deals + 101), so P x g ranked a likely deal that lowers Saved over a less likely one that raises it;
-    base = S less what one more deal is worth in the deals percentile, in units of Saved (see the switch's why)."""
+    base (the switch's gain_base, the caller passes it only where g is Patch 3.6's score): buyer ALL = 0.5 saved +
+    0.3 forum + 0.1 deals + 0.1 posts, each a percentile but forum (meta/terra.md 75-78, the patched rule that
+    reproduces the board; week-08-en.html's 0.2 deals is before Patch 3.4/3.5), Saved = the sum of deal scores /
+    (deals + 100), so a deal moves Saved by (g - S) / (deals + 101) and P x g ranked a likely deal that lowers Saved
+    over a less likely one that raises it. base = S - delta, delta = 0.1 dPct_deals / (0.5 dPct_saved / dS) /
+    (deals + 101): one more deal's worth in the deals percentile in units of Saved; the switch records S, deals and
+    delta it was set from. With base the score is the expected change P x (g - penalty - base) on both sides of 0
+    (no T on a negative, which would flip it; review 1b86f962 I3)."""
     if not (_num(ask) and _num(list_price) and list_price > 0):
         return None
     P, ratio, talk = cell(rk, shop, kind)
     if P is None:
         return None
     g = g_of(ask * ratio / list_price) - penalty - (base or 0.0)
+    if base is not None and g <= 0:     # a deal expected to lower my ALL: the least likely harms it least
+        return P * g
     if g <= 0:          # a deal that keeps nothing: ranked by g alone (P and T would flip it), under any that keeps some
         return g
     if talk is None or (rk or {}).get("per_time") is not True:
