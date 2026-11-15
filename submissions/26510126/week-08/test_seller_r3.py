@@ -246,6 +246,21 @@ async def main():
         await haggle(base, "Test Shelf (G4), with a warranty please", [40000, 41000, 42000, 43000, 44000, 45000, 46000])
         talks = [json.loads(l) for l in (md / "talks_r3.jsonl").read_text().splitlines()]
         deals = [x for x in talks if x["event"] == "deal"]
+        # leak audit #42: food clears under cost only if it expires before the round ends
+        import seller_r3 as _s42
+        s42 = dict(_s42.strategy(), clear_hours=10, clear_frac=0.6, min_margin=0.02, final_hours=0, endgame_hours=0)
+        u42 = {"unit": "u42", "sku": "F42", "kind": "food", "grade": "C", "list_price": 10000, "cost": 5000,
+               "expires_at": time.time() + 5 * 3600}
+        real_end = _s42.ROUND_END
+        try:
+            _s42.ROUND_END = time.time() + 10 * 3600          # expires before the end: cleared under cost
+            f_before = _s42.prices(u42, s42)[1]
+            _s42.ROUND_END = time.time() + 2 * 3600           # still good at the end: not cleared
+            f_after = _s42.prices(u42, s42)[1]
+        finally:
+            _s42.ROUND_END = real_end
+        check("food clears under cost only when it expires before the round ends", f_before < 5000 <= f_after,
+              (f_before, f_after))
         # leak audit #41: a buyer still raising within two steps of the floor gets up to 2 more turns
         import seller_r3 as _s41
         check("rising offers within two steps of the floor get more turns; flat, falling or far offers do not",

@@ -452,7 +452,10 @@ def prices(u, s):
     if cap:                                     # follow the market down, never under cost + min_margin
         floor = max(cost * (1 + s["min_margin"]), min(floor, cap))
     # clear food by the hours it has left, not by grade: a grade-C unit can still have days (review, 11/2)
-    if u.get("kind") == "food" and hours is not None and (hours < s["clear_hours"] or (grade == "C" and hours < 24)):
+    # only food that expires before the round ends: a unit still good at 23:59 11/17 counts in Book at cost, so clearing
+    # it under cost on the last day loses Book (leak audit #42: 14 units, 178k, expire within 24 h after the end)
+    if u.get("kind") == "food" and hours is not None and (hours < s["clear_hours"] or (grade == "C" and hours < 24)) \
+            and time.time() + hours * 3600 < ROUND_END:
         floor = cost * s["clear_frac"]
     # goods pay 1% of cost a day while they wait: past goods_age_days the floor drops to cost plus aged_margin, so a
     # slow unit goes before it eats its margin in storage
