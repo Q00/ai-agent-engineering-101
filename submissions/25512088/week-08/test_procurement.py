@@ -355,6 +355,31 @@ class PurchaseTests(unittest.TestCase):
       ranked,{'units':[]},30000,policy=conservative)[0]['sku'],'cheap')
   self.assertEqual(allocation_plan(
       ranked,{'units':[]},30000,policy=measured)[0]['sku'],'revenue')
+ def test_one_grade_proven_high_value_opportunity_gets_window_first_slot(self):
+  cheap=dict(sku='cheap',kind='food',expected_net=1000,score=100,
+             upper_cost=100,sales_1h=8,sales_6h=12,
+             distinct_buyers_6h=4,estimated_sale_likelihood=.8)
+  high=dict(sku='high',kind='goods',expected_net=50000,score=1000,
+            upper_cost=600000,sales_1h=1,sales_6h=6,
+            distinct_buyers_6h=4,estimated_sale_likelihood=.5,
+            own_sales_total=1,own_gross_total=100000,own_profitable_sales=1,
+            dominant_grade_samples=4,dominant_grade_profit_probability=.75)
+  policy={'max_sku_capital_share':1,'high_value_lane_min_unit_cost':500000,
+          'min_proven_scale_grade_samples':3,
+          'min_proven_scale_grade_profit_probability':.70}
+  plan=allocation_plan([cheap,high],{'units':[],'balance':1000000},1000000,
+                       policy=policy)
+  self.assertEqual(plan[0]['sku'],'high')
+  self.assertTrue(plan[0]['evidence']['high_value_priority'])
+  policy['high_value_window_used']=True
+  self.assertEqual(allocation_plan(
+      [cheap,high],{'units':[],'balance':1000000},1000000,
+      policy=policy)[0]['sku'],'cheap')
+  policy['high_value_window_used']=False
+  high['dominant_grade_profit_probability']=.69
+  self.assertEqual(allocation_plan(
+      [cheap,high],{'units':[],'balance':1000000},1000000,
+      policy=policy)[0]['sku'],'cheap')
  def test_sold_out_proven_sku_scales_during_breadth_expansion(self):
   ranked=[dict(sku='proven',kind='goods',expected_net=10000,score=100,upper_cost=100,
                sales_1h=12,sales_6h=24,own_sales_1h=2,own_sales_total=2,

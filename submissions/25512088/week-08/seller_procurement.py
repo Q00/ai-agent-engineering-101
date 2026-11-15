@@ -513,12 +513,31 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
         # until the full competitor breadth target was reached.  The bonus
         # still expands the catalogue when opportunities are comparable, while
         # materially stronger proven contribution can now win the same window.
-        choices.append((-(risk_adjusted*diversity),row['sku'],need,evidence))
+        # The 500k+ market carries most live Revenue, but random supply costs
+        # make broad expansion unsafe.  Give at most one sold-out, previously
+        # profitable, grade-proven high-value SKU the first slot in a supply
+        # window.  Every normal conversion, refund, concentration, cash and
+        # warranty guard above still applies; the runtime closes this lane as
+        # soon as one qualifying purchase succeeds in the window.
+        high_value_priority=1
+        high_value_min=policy.get('high_value_lane_min_unit_cost',math.inf)
+        if (not policy.get('high_value_window_used',False) and
+                row.get('kind')=='goods' and not holding.get(row['sku']) and
+                own_sales_total>=1 and row.get('own_gross_total',0)>0 and
+                row.get('upper_cost',0)>=high_value_min and
+                row.get('dominant_grade_samples',0)>=
+                    policy.get('min_proven_scale_grade_samples',0) and
+                row.get('dominant_grade_profit_probability',0)>=
+                    policy.get('min_proven_scale_grade_profit_probability',.70)):
+            high_value_priority=0
+        evidence['high_value_priority']=(high_value_priority==0)
+        choices.append((high_value_priority,-(risk_adjusted*diversity),
+                        row['sku'],need,evidence))
     # Each candidate is bounded by condition-specific per-SKU caps. When no
     # explicit test/canary slot limit is supplied, capital and those caps
     # determine the total portfolio instead of an arbitrary 250 units.
-    plan=[];slots=sum(row[2] for row in choices) if available_slots is None else available_slots
-    for _,sku,need,row in sorted(choices):
+    plan=[];slots=sum(row[3] for row in choices) if available_slots is None else available_slots
+    for _,_,sku,need,row in sorted(choices):
         # Official supply API accepts at most 20 units per call. Remaining
         # evidenced need is purchased on subsequent inventory refreshes.
         qty=min(policy.get('max_lot_units',20),need,int(available//row['upper_cost']),max(0,slots))
@@ -710,6 +729,12 @@ def main():
             for unit in inv.get('units',[]))
         target=competitor_breadth_target(strategy)
         if target>0:runtime_policy['breadth_target_skus']=target
+        ranked_by_sku={row.get('sku'):row for row in ranked if row.get('sku')}
+        high_value_min=policy.get('high_value_lane_min_unit_cost',math.inf)
+        runtime_policy['high_value_window_used']=any(
+            row['status']=='paid' and row['created']>=opening and
+            ranked_by_sku.get(row['sku'],{}).get('upper_cost',0)>=high_value_min
+            for row in rows)
         window_blocks=breadth_window_blocks(rows,opening,inv,target)
         plan=allocation_plan(ranked,inv,available,
                              set(blocked)|window_blocks|refund_cooldowns|mature_refund_risks,
