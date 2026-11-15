@@ -70,7 +70,7 @@ async def checkout_storage_error(request, error):
 
 
 async def checkout_card(request):
-    base_url = str(request.base_url).rstrip("/")
+    base_url = getattr(request.app.state, "public_url", str(request.base_url)).rstrip("/")
 
     tools = [
         {
@@ -239,7 +239,7 @@ async def create_checkout_session(request):
         return JSONResponse(
             {"error": "This unit is being negotiated."}, status_code=409)
 
-    public_url = str(request.base_url).rstrip("/")
+    public_url = getattr(request.app.state, "public_url", str(request.base_url)).rstrip("/")
     session_id = "cs_" + uuid.uuid4().hex
 
     payload = {
@@ -414,4 +414,10 @@ async def complete_checkout_session(request):
         print(f"[acp] settled {session['line_items'][0]['id']} "
               f"at {session['totals'][0]['amount']}, ledger #{result['ledger']}, "
               f"unit {session['unit']} via student checkout", flush=True)
+        refresh = getattr(request.app.state, "refresh_inventory", None)
+        if refresh is not None:
+            try:
+                await refresh()
+            except (httpx.HTTPError, OSError, ValueError):
+                print("[acp] settled; inventory refresh will retry in background", flush=True)
         return JSONResponse(session)

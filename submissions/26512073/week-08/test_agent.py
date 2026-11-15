@@ -1134,5 +1134,156 @@ class CheckoutLifecycleTests(unittest.TestCase):
         self.assertEqual(path.read_bytes(), before)
 
 
+class StandaloneShopTests(unittest.IsolatedAsyncioTestCase):
+    async def test_stopping_launcher_closes_server_and_tunnel(self):
+        import asyncio
+        import os
+        from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+        from standalone_shop import serve
+        ready, tunnel_stopped = asyncio.Event(), asyncio.Event()
+
+        class Server:
+            started = False
+            should_exit = False
+
+            async def serve(self):
+                self.started = True
+                while not self.should_exit:
+                    await asyncio.sleep(0.01)
+
+        server = Server()
+        tunnel = MagicMock(returncode=None)
+
+        def terminate():
+            tunnel.returncode = 0
+            tunnel_stopped.set()
+
+        tunnel.terminate.side_effect = terminate
+        tunnel.wait = AsyncMock(return_value=0)
+
+        async def publish(process, found):
+            found.set_result("https://sample.trycloudflare.com")
+            await tunnel_stopped.wait()
+
+        async def inventory():
+            ready.set()
+            return {"units": []}
+
+        market = MagicMock()
+        market.join = AsyncMock()
+        market.refresh_inventory = AsyncMock(side_effect=inventory)
+        with tempfile.TemporaryDirectory(dir=Path(__file__).resolve().parent) as folder, \
+                patch.dict(os.environ, {}, clear=False):
+            Path(folder, "shop_key.pem").write_bytes(Ed25519PrivateKey.generate().private_bytes(
+                serialization.Encoding.PEM, serialization.PrivateFormat.PKCS8,
+                serialization.NoEncryption()))
+            args = SimpleNamespace(dir=folder, market="https://market.example", name="Afford Shop",
+                                   port=8900, public_url=None, tunnel=True)
+            with patch("standalone_shop.check_port"), \
+                    patch("standalone_shop.uvicorn.Server", return_value=server), \
+                    patch("standalone_shop.shutil.which", return_value="sample-cloudflared"), \
+                    patch("standalone_shop.asyncio.create_subprocess_exec", new_callable=AsyncMock,
+                          return_value=tunnel), \
+                    patch("standalone_shop.read_tunnel", side_effect=publish), \
+                    patch("standalone_shop.wait_public", new_callable=AsyncMock), \
+                    patch("standalone_shop.ShopMarket", return_value=market):
+                task = asyncio.create_task(serve(args))
+                await asyncio.wait_for(ready.wait(), timeout=2)
+                task.cancel()
+                with self.assertRaises(asyncio.CancelledError):
+                    await task
+            self.assertTrue(server.should_exit)
+            tunnel.terminate.assert_called_once()
+            self.assertNotIn("MARKET_SHOP_TOKEN", os.environ)
+
+    async def test_signed_registration_and_authenticated_inventory_refresh(self):
+        import httpx
+        import os
+        from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+        from standalone_shop import ShopMarket
+        key = Ed25519PrivateKey.generate()
+        calls = []
+
+        def handle(request):
+            calls.append(request.url.path)
+            if request.url.path == "/api/join":
+                body = json.loads(request.content)
+                proof = {field: body[field] for field in ("name", "role", "url", "ts")}
+                key.public_key().verify(base64.b64decode(body["sig"]), canon(proof))
+                self.assertEqual(body["owner"], "sample-private-claim")
+                self.assertEqual(body["role"], "shop")
+                self.assertEqual(body["url"], "https://sample.example")
+                return httpx.Response(200, json={"token": "sample-token", "name": "Afford Shop", "round": 3})
+            self.assertEqual(request.headers["Authorization"], "Bearer sample-token")
+            return httpx.Response(200, json={"round": 3, "units": [], "balance": 5000000})
+
+        with tempfile.TemporaryDirectory(dir=Path(__file__).resolve().parent) as folder, \
+                patch.dict(os.environ, {}, clear=False):
+            async with httpx.AsyncClient(transport=httpx.MockTransport(handle)) as client:
+                market = ShopMarket(client, "https://market.example", folder,
+                                    "Afford Shop", key, "sample-private-claim", "https://sample.example")
+                await market.join()
+                inventory = await market.refresh_inventory()
+            saved = Path(folder, ".market", "inventory.json").read_text(encoding="utf-8")
+            self.assertEqual(json.loads(saved), inventory)
+            self.assertNotIn("sample-token", saved)
+            self.assertNotIn("sample-private-claim", saved)
+        self.assertEqual(calls, ["/api/join", "/api/inventory"])
+
+    async def test_expired_token_rejoins_before_refresh(self):
+        import httpx
+        import os
+        from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+        from standalone_shop import ShopMarket
+        joins = 0
+
+        def handle(request):
+            nonlocal joins
+            if request.url.path == "/api/join":
+                joins += 1
+                return httpx.Response(200, json={"token": f"sample-{joins}", "name": "Afford Shop", "round": 3})
+            if request.headers["Authorization"] == "Bearer sample-1":
+                return httpx.Response(401)
+            return httpx.Response(200, json={"round": 3, "units": []})
+
+        with tempfile.TemporaryDirectory(dir=Path(__file__).resolve().parent) as folder, \
+                patch.dict(os.environ, {}, clear=False):
+            async with httpx.AsyncClient(transport=httpx.MockTransport(handle)) as client:
+                market = ShopMarket(client, "https://market.example", folder,
+                                    "Afford Shop", Ed25519PrivateKey.generate(), None, "https://sample.example")
+                await market.join()
+                await market.refresh_inventory()
+            self.assertEqual(joins, 2)
+
+    async def test_invalid_inventory_preserves_previous_file(self):
+        import httpx
+        from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+        from standalone_shop import ShopMarket
+        with tempfile.TemporaryDirectory(dir=Path(__file__).resolve().parent) as folder:
+            path = Path(folder, ".market", "inventory.json")
+            path.parent.mkdir()
+            path.write_text('{"round":3,"units":[]}', encoding="utf-8")
+            before = path.read_bytes()
+            transport = httpx.MockTransport(lambda request: httpx.Response(200, json={"units": {}}))
+            async with httpx.AsyncClient(transport=transport) as client:
+                market = ShopMarket(client, "https://market.example", folder,
+                                    "Afford Shop", Ed25519PrivateKey.generate(), None, "https://sample.example")
+                market.token = "sample-token"
+                with self.assertRaises(ValueError):
+                    await market.refresh_inventory()
+            self.assertEqual(path.read_bytes(), before)
+
+    async def test_public_cards_use_configured_tunnel_address(self):
+        import httpx
+        from seller import build
+        from standalone_shop import wait_public
+        with tempfile.TemporaryDirectory(dir=Path(__file__).resolve().parent) as folder:
+            app = build(9999, history_path=Path(folder) / "history.jsonl")
+            app.state.public_url = "https://sample.example"
+            app.state.agent_card.supported_interfaces[0].url = "https://sample.example/"
+            async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app)) as client:
+                await wait_public(client, "https://sample.example", None)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

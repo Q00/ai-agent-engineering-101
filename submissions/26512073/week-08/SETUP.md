@@ -86,6 +86,33 @@ switches rounds, the kit uses Round 2; those results do not satisfy the assignme
 
 ## Verification and limits
 
+### Independent shop checkout
+
+The student server now serves A2A and ACP directly. Stop the old market kit
+before switching the shop's registered address. From the repository root:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File submissions/26512073/week-08/join_market.ps1 -Standalone -Check
+powershell -NoProfile -ExecutionPolicy Bypass -File submissions/26512073/week-08/join_market.ps1 -Standalone
+```
+
+`standalone_shop.py` starts one seller process, opens cloudflared, checks the
+public A2A and ACP cards, and registers the existing shop key. The claim code is
+entered privately. The market token stays in process memory. Inventory refreshes
+every ten seconds and after a confirmed payment. Ctrl+C stops the server and
+tunnel. Console output appends to `logs/standalone-shop.log` and
+`logs/market-kit.log`.
+
+This mode sells existing stock. Buyer operation and automatic restocking remain
+in the original kit launcher. Receipts and sessions are saved atomically under
+`.market/checkout-state.json`. Uncertain payments remain pending across restarts
+until their outcome is verified against the market. Run one server for this
+saved-state file. Public tunnel addresses change after a new quick tunnel starts.
+
+A real settlement through the student checkout still needs verification. Look
+for `[acp] settled ... via student checkout` in the deployment log. Offline test
+logs use simulated settlements and are labeled separately under `logs/setup/`.
+
 Offline checks and synthetic integration logs are under `logs/setup/`. Real
 model probes use synthetic offers/catalogs and are labeled; raw CLI attempts
 are under `development_logs/`. The first real market settlement is still to be

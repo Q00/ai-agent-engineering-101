@@ -326,6 +326,7 @@ def build(port, history_path=None, checkout_state_path=None):
 
     app = Starlette(routes=routes, exception_handlers={OSError: checkout_storage_error})
     app.state.seller = seller
+    app.state.agent_card = card
     app.state.checkout_sessions = seller.checkout_sessions
     app.state.checkout_locks = {}
     return app
