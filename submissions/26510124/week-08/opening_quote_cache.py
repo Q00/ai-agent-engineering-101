@@ -14,7 +14,8 @@ class OpeningQuoteCache:
         # Any stock identity, quality, certificate or policy/bounds change misses.
         facts = {k: product.get(k) for k in ('unit', 'sku', 'kind', 'grade', 'cost',
                     'list_price', 'supplied_at', 'expires_at', 'cert')}
-        payload = [deal['round'], facts, deal['terms'], deal['negotiation'], deal.get('advice')]
+        payload = [deal['round'], facts, deal['terms'], deal['negotiation'], deal.get('advice'),
+                   deal.get('ops_policy_version')]
         return hashlib.sha256(json.dumps(payload, sort_keys=True, separators=(',', ':'),
                                          allow_nan=False).encode()).hexdigest()
 

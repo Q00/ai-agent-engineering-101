@@ -267,7 +267,8 @@ class SupervisorTests(unittest.TestCase):
         stop, launch = Mock(), Mock(return_value=seller)
         stop.is_set.return_value = False
         with patch("shop_runtime.config_at", return_value={"enabled": False}), redirect_stdout(io.StringIO()):
-            result = shop_runtime.supervise(9999, stop=stop, launch=launch, cleanup=stopped)
+            result = shop_runtime.supervise(9999, stop=stop, launch=launch, cleanup=stopped,
+                                            ops_config=lambda: {"enabled": False})
         self.assertEqual(result, 7)
         launch.assert_called_once_with("seller_r3.py", "--port", "9999")
         stopped.assert_called_once_with([seller])
@@ -279,7 +280,8 @@ class SupervisorTests(unittest.TestCase):
         stop.is_set.return_value = False
         launch = Mock(side_effect=[seller, analyst])
         with patch("shop_runtime.config_at", return_value={"enabled": True}), redirect_stdout(io.StringIO()):
-            result = shop_runtime.supervise(9999, stop=stop, launch=launch, cleanup=stopped)
+            result = shop_runtime.supervise(9999, stop=stop, launch=launch, cleanup=stopped,
+                                            ops_config=lambda: {"enabled": False})
         self.assertEqual(result, 7)
         stopped.assert_called_once_with([seller, analyst])
         self.assertEqual(launch.call_args_list[1].args, ("sales_advisor.py",))
@@ -292,7 +294,8 @@ class SupervisorTests(unittest.TestCase):
         stop.is_set.side_effect = [False, False, False, True]
         launch = Mock(side_effect=[seller, analyst])
         with patch("shop_runtime.config_at", return_value={"enabled": True}), redirect_stdout(io.StringIO()):
-            result = shop_runtime.supervise(9999, stop=stop, launch=launch, cleanup=cleanup, clock=lambda: 100)
+            result = shop_runtime.supervise(9999, stop=stop, launch=launch, cleanup=cleanup, clock=lambda: 100,
+                                            ops_config=lambda: {"enabled": False})
         self.assertEqual(result, 0)
         self.assertEqual(launch.call_count, 2)
         self.assertEqual(cleanup.call_args_list[0].args, ([analyst],))

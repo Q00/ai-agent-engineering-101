@@ -1,8 +1,8 @@
-"""The kit starts this supervisor: seller plus an explicitly enabled analyst.
+"""The kit starts the seller and an independently supervised Shop operator.
 
-The current policy disables the analyst, so only the seller starts. The retained
-optional implementation shares the user-systemd service when enabled and stops
-with it; an analyst failure never stops serving the shop.
+Operations configuration reloads without restarting the seller or market kit.
+The archived advisor remains optional and takes precedence if explicitly
+enabled: two analysts never run together. Analyst failures do not stop trading.
 """
 import argparse
 import os
@@ -14,6 +14,7 @@ import threading
 import time
 
 from sales_advisor import config_at
+from shop_ops_policy import config_at as operations_config_at
 
 ROOT = Path(__file__).resolve().parent
 
@@ -44,13 +45,16 @@ def stop_children(children, grace=5):
         child.wait()
 
 
-def supervise(port, *, stop=None, launch=start, cleanup=stop_children, clock=time.monotonic):
+def supervise(port, *, stop=None, launch=start, cleanup=stop_children, clock=time.monotonic,
+              ops_config=None):
     stop = stop or threading.Event()
     enabled = config_at()["enabled"]
+    ops_config = ops_config or operations_config_at
     children = []
     seller = launch("seller_r3.py", "--port", str(port))
     children.append(seller)
     analyst, next_start = None, 0
+    operator, next_operator, ops_status = None, 0, None
     print("[shop-runtime] seller started; advisor " + ("enabled" if enabled else "disabled"), flush=True)
     try:
         while not stop.is_set():
@@ -70,6 +74,40 @@ def supervise(port, *, stop=None, launch=start, cleanup=stop_children, clock=tim
                 except OSError:
                     next_start = clock() + 60
                     print("[shop-runtime] advisor unavailable; retry after 60s", flush=True)
+            try:
+                requested = ops_config()["enabled"]
+                if type(requested) is not bool:
+                    raise ValueError("explicit operations enable flag required")
+                wanted = requested and not enabled
+                status = ("blocked_by_legacy_advisor" if requested and enabled else
+                          "enabled" if wanted else "disabled")
+            except Exception:
+                wanted, status = False, "invalid_config"
+            if status != ops_status:
+                print("[shop-runtime] operations " + status, flush=True)
+                ops_status = status
+            if operator is not None:
+                exited = operator.poll() is not None
+                if not wanted or exited:
+                    try:
+                        cleanup([operator])
+                    except (OSError, subprocess.SubprocessError):
+                        # Never start a second operator until the old child has
+                        # been cleaned up; trading in the seller keeps running.
+                        print("[shop-runtime] operations cleanup deferred", flush=True)
+                    else:
+                        children.remove(operator)
+                        operator = None
+                        next_operator = clock() + 60 if wanted and exited else 0
+                        if wanted and exited:
+                            print("[shop-runtime] operations exited; retry after 60s", flush=True)
+            if wanted and operator is None and clock() >= next_operator:
+                try:
+                    operator = launch("shop_operations.py")
+                    children.append(operator)
+                except OSError:
+                    next_operator = clock() + 60
+                    print("[shop-runtime] operations unavailable; retry after 60s", flush=True)
             stop.wait(1)
     finally:
         cleanup(children)

@@ -21,6 +21,7 @@ from opening_strategy import OpeningReader, bounds as opening_bounds
 from receipt_signing import sign_receipt
 from sales_advisor import AdviceReader, config_at
 from shop_policy import closing_context, policy_at, quote_copy, quote_fields, selling_terms, shop_copy
+from shop_ops_policy import digest as policy_digest, read_overlay
 from seller_agent import DEFAULT, ModelCapacityError, Seller, bounded_history, build
 from seller_context import inventory_context
 from warranty_trial import WarrantyTrial
@@ -118,6 +119,50 @@ class InventorySeller(Seller):
         self.advisor = (AdviceReader(self.inventory.folder)
                         if cfg.get("advisor_enabled") and config_at()["enabled"] else None)
 
+    def operations_opening(self, product, deal, reference, now):
+        """Read a bounded overlay only once, before this task publishes any quote.
+
+        Operational analysis never runs here. The reader can fail independently;
+        the existing opening, grade floors and warranty stay the baseline.
+        """
+        if (not deal.get("fresh_opening") or not isinstance(reference, dict)
+                or not isinstance(deal.get("opening_bounds"), dict)
+                or deal["opening_bounds"].get("source") not in
+                {"own_settled_sales", "comparable_market_sales"}):
+            return
+        try:
+            overlay = read_overlay(ROOT, now=now, rnd=deal["round"])
+            if overlay is None:
+                return
+            if (not isinstance(overlay, dict) or not isinstance(overlay.get("version"), str)
+                    or not 1 <= len(overlay["version"]) <= 128
+                    or overlay.get("baseline_hash") != policy_digest(self.policy)
+                    or not isinstance(overlay.get("changes"), list) or len(overlay["changes"]) > 2):
+                raise ValueError("Invalid operations overlay")
+            selected = [row for row in overlay["changes"] if isinstance(row, dict)
+                        and row.get("sku") == product["sku"] and row.get("grade") == product["grade"]
+                        and type(row.get("warranty_hours")) is int
+                        and row["warranty_hours"] == deal["terms"]["warranty_hours"]]
+            if not selected:
+                return
+            if (len(selected) != 1 or type(selected[0].get("before")) is not int
+                    or selected[0]["before"] != 0 or type(selected[0].get("after")) is not int
+                    or selected[0]["after"] not in (-1, -2)):
+                raise ValueError("Invalid operations opening change")
+            before = deepcopy(deal["opening_bounds"])
+            discount = selected[0]["after"]
+            # Re-run the original bounds calculation, never alter price floors.
+            adjusted = {**reference, "target": (reference["target"] * (100 + discount) + 99) // 100}
+            after = opening_bounds(product, deal["terms"], adjusted, self.policy, now, rnd=deal["round"])
+            if (not after or after["minimum"] < deal["terms"]["price_floor"]
+                    or any(after[k] > before[k] for k in ("minimum", "maximum", "target"))):
+                raise ValueError("Operations bounds did not preserve the baseline")
+            deal.update(opening_bounds=after, ops_policy_version=overlay["version"],
+                        ops_opening_before=before, ops_opening_after=deepcopy(after))
+        except Exception:
+            # Policy read/validation failure must not strand a reserved unit.
+            deal["ops_policy_status"] = "unavailable_or_invalid"
+
     async def public_card(self, card):
         self.expire_negotiations()
         advice = None
@@ -168,6 +213,10 @@ class InventorySeller(Seller):
                                       "active_floor": negotiation.get("price_floor"),
                                       "discount_reason": negotiation.get("discount_reason"),
                                       "decision_source": deal.get("decision_source"),
+                                      "ops_policy_version": deal.get("ops_policy_version"),
+                                      "ops_opening_before": deal.get("ops_opening_before"),
+                                      "ops_opening_after": deal.get("ops_opening_after"),
+                                      "ops_policy_status": deal.get("ops_policy_status"),
                                       "advisor_version": (deal.get("advice") or {}).get("version")})
         except OSError:
             print("[inventory] Could not append seller event", flush=True)
@@ -248,6 +297,7 @@ class InventorySeller(Seller):
                     and type(reference.get("created_at")) in (int, float)
                     and 0 <= now - reference["created_at"] <= 3600)
                 deal["opening_bounds"] = opening_bounds(product, deal["terms"], reference, self.policy, now, rnd=rnd)
+                self.operations_opening(product, deal, reference, now)
                 self.event(task.id, "opened", product, deal=deal)
             else:
                 if re.fullmatch(r"[0-9]{1,12}", text.strip()) is None:
