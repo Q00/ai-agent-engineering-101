@@ -193,14 +193,14 @@ def mature_refund_risk_skus(referrals, min_sales=20, min_refunds=2,
             if count>=samples and failed>=refunds and capital>0
             and gross/capital<=threshold}
 
-def own_a_conversion_evidence(adaptive_path, now=None, hours=6):
-    """Aggregate bounded A-grade quote-to-sign evidence by SKU.
+def own_quote_conversion_evidence(adaptive_path, now=None, hours=6, grade=None):
+    """Aggregate bounded quote-to-sign evidence by SKU and optional grade.
 
     Runtime events contain only structured numeric sale metadata. Matching by
     task/correlation lets procurement distinguish a profitable market-wide SKU
-    from one whose dominant A arrivals repeatedly fail in this shop. The
-    rolling window automatically expires old strategy versions and retries a
-    SKU after its local evidence becomes stale.
+    from one whose arrivals repeatedly fail in this shop. The rolling window
+    automatically expires old strategy versions and retries a SKU after its
+    local evidence becomes stale.
     """
     now=time.time() if now is None else now;path=Path(adaptive_path)
     if not path.exists() or hours<=0:return {}
@@ -217,7 +217,8 @@ def own_a_conversion_evidence(adaptive_path, now=None, hours=6):
         except (TypeError,ValueError):continue
         task=str(event.get('task') or correlation or '')
         if not task:continue
-        if kind=='quote_created' and event.get('grade')=='A' and event.get('sku'):
+        if (kind=='quote_created' and event.get('sku') and
+                (grade is None or event.get('grade')==grade)):
             quotes[task]=str(event['sku'])
         elif kind=='sale_signed':
             signed.add(task)
@@ -228,6 +229,10 @@ def own_a_conversion_evidence(adaptive_path, now=None, hours=6):
     for row in result.values():
         row['rate']=row['signed']/row['quotes'] if row['quotes'] else 0.0
     return result
+
+def own_a_conversion_evidence(adaptive_path, now=None, hours=6):
+    """Aggregate dominant A-grade conversion for durable goods policy."""
+    return own_quote_conversion_evidence(adaptive_path,now,hours,grade='A')
 
 def reserve_cash(inv,exposure=0):
     return max(settings()['cash_floor'],inv.get('bankrupt_line',500000))+exposure
@@ -321,17 +326,19 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
     choices=[]
     for row in ranked:
         if row.get('sku') in blocked or row.get('expected_net',0)<=0:continue
-        # Repeated local quote rejection is product evidence, not a
-        # goods-only warranty signal.  Food can fail for the same practical
-        # reason (price or remaining-life requirements), and restocking it is
-        # even riskier because unsold units can spoil.  Keep selling held
-        # units, but stop every kind from restocking while this rolling cohort
-        # remains mature and below the conversion floor.
-        own_a_quotes=row.get('own_a_quotes',0)
-        own_a_rate=row.get('own_a_conversion_rate')
-        if (own_a_quotes>=policy.get('min_own_a_conversion_samples',10) and
-                isinstance(own_a_rate,(int,float)) and
-                own_a_rate<policy.get('min_own_a_conversion_rate',.10)):
+        # Goods are dominated by A arrivals, so their A conversion is the
+        # relevant local veto. Food B/C arrivals can be both profitable and
+        # fast-selling even when A buyers reject the price; use all-grade food
+        # conversion rather than discarding that useful cohort.
+        if row.get('kind')=='food':
+            local_quotes=row.get('own_quotes',0)
+            local_rate=row.get('own_conversion_rate')
+        else:
+            local_quotes=row.get('own_a_quotes',0)
+            local_rate=row.get('own_a_conversion_rate')
+        if (local_quotes>=policy.get('min_own_a_conversion_samples',10) and
+                isinstance(local_rate,(int,float)) and
+                local_rate<policy.get('min_own_a_conversion_rate',.10)):
             continue
         cold_safe_trial=False
         own_profit_proven=False
@@ -616,9 +623,12 @@ def main():
                 min_book_margin=policy.get('mature_refund_veto_book_margin',.03))
         a_conversion=own_a_conversion_evidence(
             state/'adaptive.sqlite3',hours=policy.get('own_a_conversion_window_hours',6))
+        all_conversion=own_quote_conversion_evidence(
+            state/'adaptive.sqlite3',hours=policy.get('own_a_conversion_window_hours',6))
         ranked=[]
         for source in (strategy.get('candidates') or strategy.get('top10',[])):
             sku=source.get('sku');conversion=a_conversion.get(sku,{})
+            all_grades=all_conversion.get(sku,{})
             ranked.append(dict(source,kind=catalog.get(sku,{}).get('kind'),
                 own_sales_1h=own_sales_1h.get(sku,0),
                 own_sales_total=own_sales_total.get(sku,0),
@@ -626,7 +636,10 @@ def main():
                 own_profitable_sales=own_profitable_sales.get(sku,0),
                 own_a_quotes=conversion.get('quotes',0),
                 own_a_signed=conversion.get('signed',0),
-                own_a_conversion_rate=conversion.get('rate')))
+                own_a_conversion_rate=conversion.get('rate'),
+                own_quotes=all_grades.get('quotes',0),
+                own_signed=all_grades.get('signed',0),
+                own_conversion_rate=all_grades.get('rate')))
         if not ranked:
             log(event='no_qualified_top10');time.sleep(20);continue
         ranked=[r for r in ranked if r.get('expected_net',0)>0]

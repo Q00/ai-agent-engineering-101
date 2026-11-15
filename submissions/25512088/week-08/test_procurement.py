@@ -3,7 +3,7 @@ import json
 import tempfile
 import unittest
 from network_reads import retry_read
-from seller_procurement import choose,allocation_plan,capital_available,supply_result,own_registration,own_board_registration,retry_join,join_current_registration,preserve_stale_pending,breadth_window_blocks,refresh_window_blocks,competitor_breadth_target,warranty_risk_reserve,observed_warranty_hazard,active_warranty_amounts,supply_interval_wait,own_sales_evidence,recent_refund_cooldown_skus,mature_refund_risk_skus,own_a_conversion_evidence
+from seller_procurement import choose,allocation_plan,capital_available,supply_result,own_registration,own_board_registration,retry_join,join_current_registration,preserve_stale_pending,breadth_window_blocks,refresh_window_blocks,competitor_breadth_target,warranty_risk_reserve,observed_warranty_hazard,active_warranty_amounts,supply_interval_wait,own_sales_evidence,recent_refund_cooldown_skus,mature_refund_risk_skus,own_a_conversion_evidence,own_quote_conversion_evidence
 from seller_market import dominant_goods_profit_probability
 class PurchaseTests(unittest.TestCase):
  def test_successful_supply_cooldown_avoids_predictable_rate_limit(self):
@@ -142,21 +142,32 @@ class PurchaseTests(unittest.TestCase):
     db.execute('insert into runtime_events values(?,?,?,?)',('quote_created',body,task,1000))
     db.execute('insert into runtime_events values(?,?,?,?)',
                ('sale_signed',json.dumps({'task':task}),task,1001))
+   for n in range(2):
+    task=f'b{n}';body=json.dumps({'task':task,'sku':'low','grade':'B'})
+    db.execute('insert into runtime_events values(?,?,?,?)',('quote_created',body,task,1000))
+    db.execute('insert into runtime_events values(?,?,?,?)',
+               ('sale_signed',json.dumps({'task':task}),task,1001))
    db.commit();db.close()
    evidence=own_a_conversion_evidence(path,now=1100,hours=1)
    self.assertEqual(evidence['low'],{'quotes':10,'signed':0,'rate':0})
    self.assertEqual(evidence['sample'],{'quotes':2,'signed':2,'rate':1})
+   all_evidence=own_quote_conversion_evidence(path,now=1100,hours=1)
+   self.assertEqual(all_evidence['low'],{'quotes':12,'signed':2,'rate':1/6})
   base=dict(kind='goods',expected_net=50000,score=3,upper_cost=100,
             sales_1h=8,sales_6h=12,distinct_buyers_6h=4,
             estimated_sale_likelihood=.8,dominant_grade_samples=10,
             dominant_grade_profit_probability=.9,own_sales_total=5,
             own_profitable_sales=5,own_gross_total=1000)
-  ranked=[dict(base,sku='low',kind='food',own_a_quotes=10,own_a_conversion_rate=.09),
+  ranked=[dict(base,sku='foodkeep',kind='food',own_a_quotes=10,
+               own_a_conversion_rate=0,own_quotes=12,own_conversion_rate=1/6),
+          dict(base,sku='foodlow',kind='food',own_quotes=10,own_conversion_rate=.09),
+          dict(base,sku='goodslow',own_a_quotes=10,own_a_conversion_rate=.09,
+               own_quotes=20,own_conversion_rate=.8),
           dict(base,sku='sample',own_a_quotes=9,own_a_conversion_rate=0)]
   policy={'max_sku_capital_share':1,'min_own_a_conversion_samples':10,
           'min_own_a_conversion_rate':.10}
   self.assertEqual([x['sku'] for x in allocation_plan(
-   ranked,{'units':[]},10000,policy=policy)],['sample'])
+   ranked,{'units':[]},10000,policy=policy)],['foodkeep','sample'])
  def test_mature_negative_local_goods_cohort_blocks_restock(self):
   ranked=[dict(sku='lossy',kind='goods',expected_net=500000,score=999,
                upper_cost=100000,sales_1h=20,sales_6h=50,distinct_buyers_6h=10,
