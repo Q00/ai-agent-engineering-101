@@ -409,20 +409,23 @@ class PurchaseTests(unittest.TestCase):
             upper_cost=600000,sales_1h=1,sales_6h=6,
             distinct_buyers_6h=4,estimated_sale_likelihood=.5,
             own_sales_total=1,own_gross_total=100000,own_profitable_sales=1,
-            dominant_grade_samples=4,dominant_grade_profit_probability=.75)
+            dominant_grade_samples=4,dominant_grade_profit_probability=.65)
   policy={'max_sku_capital_share':1,'high_value_lane_min_unit_cost':500000,
           'min_proven_scale_grade_samples':3,
-          'min_proven_scale_grade_profit_probability':.70}
+          'min_proven_scale_grade_profit_probability':.70,
+          'min_high_value_restock_grade_samples':3,
+          'min_high_value_restock_grade_profit_probability':.60}
   plan=allocation_plan([cheap,high],{'units':[],'balance':1000000},1000000,
                        policy=policy)
   self.assertEqual(plan[0]['sku'],'high')
   self.assertTrue(plan[0]['evidence']['high_value_priority'])
+  self.assertFalse(plan[0]['evidence']['proven_scale_ready'])
   policy['high_value_window_used']=True
   self.assertEqual(allocation_plan(
       [cheap,high],{'units':[],'balance':1000000},1000000,
       policy=policy)[0]['sku'],'cheap')
   policy['high_value_window_used']=False
-  high['dominant_grade_profit_probability']=.69
+  high['dominant_grade_profit_probability']=.59
   self.assertEqual(allocation_plan(
       [cheap,high],{'units':[],'balance':1000000},1000000,
       policy=policy)[0]['sku'],'cheap')

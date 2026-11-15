@@ -593,9 +593,11 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
                 own_sales_total>=1 and row.get('own_gross_total',0)>0 and
                 row.get('upper_cost',0)>=high_value_min and
                 row.get('dominant_grade_samples',0)>=
-                    policy.get('min_proven_scale_grade_samples',0) and
+                    policy.get('min_high_value_restock_grade_samples',
+                               policy.get('min_goods_a_profit_samples',0)) and
                 row.get('dominant_grade_profit_probability',0)>=
-                    policy.get('min_proven_scale_grade_profit_probability',.70)):
+                    policy.get('min_high_value_restock_grade_profit_probability',
+                               policy.get('min_goods_a_profit_probability',0))):
             high_value_priority=0
         elif high_value_canary:
             high_value_priority=1
