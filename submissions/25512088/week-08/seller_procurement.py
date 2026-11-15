@@ -610,8 +610,19 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
     # Each candidate is bounded by condition-specific per-SKU caps. When no
     # explicit test/canary slot limit is supplied, capital and those caps
     # determine the total portfolio instead of an arbitrary 250 units.
+    ordered=sorted(choices)
+    # Revenue opportunities can require several minutes of cash accumulation.
+    # Spending every smaller remainder on cheap breadth made an already
+    # approved high-value restock permanently unaffordable.  If no priority
+    # high-value choice fits yet, preserve the bounded deployable amount; the
+    # next inventory refresh will buy it once ordinary sales close the gap.
+    high_value_choices=[choice for choice in ordered if choice[0]<2]
+    if (high_value_choices and
+            not any(choice[4]['upper_cost']<=available
+                    for choice in high_value_choices)):
+        return []
     plan=[];slots=sum(row[3] for row in choices) if available_slots is None else available_slots
-    for _,_,sku,need,row in sorted(choices):
+    for _,_,sku,need,row in ordered:
         # Official supply API accepts at most 20 units per call. Remaining
         # evidenced need is purchased on subsequent inventory refreshes.
         qty=min(policy.get('max_lot_units',20),need,int(available//row['upper_cost']),max(0,slots))

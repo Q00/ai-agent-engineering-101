@@ -424,6 +424,23 @@ class PurchaseTests(unittest.TestCase):
   self.assertEqual(allocation_plan(
       [cheap,high],{'units':[],'balance':1000000},1000000,
       policy=policy)[0]['sku'],'cheap')
+ def test_unaffordable_approved_high_value_preserves_cash_instead_of_buying_cheap(self):
+  cheap=dict(sku='cheap',kind='food',expected_net=1000,score=100,
+             upper_cost=100,sales_1h=8,sales_6h=12,
+             distinct_buyers_6h=4,estimated_sale_likelihood=.8)
+  high=dict(sku='high',kind='goods',expected_net=50000,score=1000,
+            upper_cost=600000,sales_1h=3,sales_6h=8,
+            distinct_buyers_6h=5,estimated_sale_likelihood=.6,
+            own_sales_total=2,own_gross_total=50000,own_profitable_sales=2,
+            dominant_grade_samples=5,dominant_grade_profit_probability=.65)
+  policy={'max_sku_capital_share':1,'high_value_lane_min_unit_cost':500000,
+          'min_high_value_restock_grade_samples':3,
+          'min_high_value_restock_grade_profit_probability':.60}
+  self.assertEqual(allocation_plan(
+      [cheap,high],{'units':[],'balance':1000000},500000,policy=policy),[])
+  self.assertEqual(allocation_plan(
+      [cheap,high],{'units':[],'balance':1000000},600000,policy=policy)[0]['sku'],
+      'high')
   policy['high_value_window_used']=False
   high['dominant_grade_profit_probability']=.59
   self.assertEqual(allocation_plan(
