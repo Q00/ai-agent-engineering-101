@@ -138,6 +138,7 @@ class PurchaseTests(unittest.TestCase):
               distinct_buyers_6h=4,estimated_sale_likelihood=.8)
   ranked=[dict(common,sku='cold-new',kind='goods',own_sales_1h=0),
           dict(common,sku='proven',kind='goods',own_sales_1h=2),
+          dict(common,sku='historical-proven',kind='goods',own_sales_1h=0,own_sales_total=1),
           dict(common,sku='food',kind='food',own_sales_1h=0)]
   inventory={'units':[{'sku':'old-cold','kind':'goods','cost':800}]}
   policy={'max_cold_goods_capital_share':.30,'cold_goods_min_own_sales_1h':1,
@@ -145,6 +146,7 @@ class PurchaseTests(unittest.TestCase):
   plan=allocation_plan(ranked,inventory,1000,policy=policy)
   self.assertNotIn('cold-new',[row['sku'] for row in plan])
   self.assertIn('proven',[row['sku'] for row in plan])
+  self.assertIn('historical-proven',[row['sku'] for row in plan])
   self.assertIn('food',[row['sku'] for row in plan])
   inventory={'units':[{'sku':'old-cold','kind':'goods','cost':100}]}
   plan=allocation_plan(ranked,inventory,1000,policy=policy)

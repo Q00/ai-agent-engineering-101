@@ -211,12 +211,15 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
                 row.get('sales_1h',0)>=policy.get('cold_safe_trial_sales_1h',math.inf) and
                 row.get('dominant_grade_profit_probability',0)>=
                     policy.get('cold_safe_trial_profit_probability',1.1))
+        own_sales_total=row.get('own_sales_total',row.get('own_sales_1h',0))
+        proven_good=row.get('kind')=='goods' and own_sales_total>=1
         # Supply calls and cash are both scarce.  Stop opening additional goods
         # trials while too much principal is already tied up in goods that have
         # not sold from our shop in the last hour. Proven goods keep restocking,
         # and trials reopen automatically as the cold cohort sells down.
         if (cold_goods_frozen and row.get('kind')=='goods' and
                 row.get('own_sales_1h',0)<policy.get('cold_goods_min_own_sales_1h',1) and
+                not proven_good and
                 not cold_safe_trial):
             continue
         velocity=row.get('sales_1h',0)+row.get('sales_6h',0)/6
@@ -263,7 +266,6 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
         # fastest sellers at one unit just when they needed replenishment.
         # ``own_sales_total`` survives a quiet hour; callers that have not yet
         # supplied it retain the conservative recent-sale fallback.
-        own_sales_total=row.get('own_sales_total',row.get('own_sales_1h',0))
         is_new=is_missing and own_sales_total<1
         breadth_target=max(0,policy.get('breadth_target_skus',0) or 0)
         breadth_expansion=len(holding)<breadth_target and is_missing
