@@ -203,8 +203,15 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
         if row.get('kind')=='goods':
             min_samples=policy.get('min_goods_a_profit_samples',0)
             min_probability=policy.get('min_goods_a_profit_probability',0)
+            own_sales_total=row.get('own_sales_total',row.get('own_sales_1h',0))
+            own_profitable=row.get('own_profitable_sales',0)
+            own_profit_proven=(
+                own_sales_total>=policy.get('min_own_profitable_goods_sales',3) and
+                row.get('own_gross_total',0)>0 and
+                own_profitable/own_sales_total>=
+                    policy.get('min_own_profitable_goods_share',.70))
             if (row.get('dominant_grade_samples',0)<min_samples or
-                    row.get('dominant_grade_profit_probability',0)<min_probability):
+                    row.get('dominant_grade_profit_probability',0)<min_probability) and not own_profit_proven:
                 continue
             cold_safe_trial=(cold_goods_frozen and not active_unproven_goods_present and
                 not holding.get(row['sku']) and
@@ -442,11 +449,18 @@ def main():
             own_sales_1h={row[0]:row[1] for row in referrals.execute(
                 'SELECT sku,COUNT(*) FROM sales WHERE settled>? AND refunded=0 GROUP BY sku',
                 (time.time()-3600,))}
-            own_sales_total={row[0]:row[1] for row in referrals.execute(
-                'SELECT sku,COUNT(*) FROM sales WHERE refunded=0 GROUP BY sku')}
+            own_rows=referrals.execute('''
+                SELECT sku,COUNT(*),COALESCE(SUM(amount-cost),0),
+                       SUM(CASE WHEN amount>cost THEN 1 ELSE 0 END)
+                FROM sales WHERE refunded=0 GROUP BY sku''').fetchall()
+            own_sales_total={row[0]:row[1] for row in own_rows}
+            own_gross_total={row[0]:row[2] for row in own_rows}
+            own_profitable_sales={row[0]:row[3] for row in own_rows}
         ranked=[dict(row,kind=catalog.get(row.get('sku'),{}).get('kind'),
                      own_sales_1h=own_sales_1h.get(row.get('sku'),0),
-                     own_sales_total=own_sales_total.get(row.get('sku'),0))
+                     own_sales_total=own_sales_total.get(row.get('sku'),0),
+                     own_gross_total=own_gross_total.get(row.get('sku'),0),
+                     own_profitable_sales=own_profitable_sales.get(row.get('sku'),0))
                 for row in (strategy.get('candidates') or strategy.get('top10',[]))]
         if not ranked:
             log(event='no_qualified_top10');time.sleep(20);continue

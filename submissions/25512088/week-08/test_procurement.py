@@ -102,6 +102,9 @@ class PurchaseTests(unittest.TestCase):
           'min_goods_a_profit_probability':.70}
   plan=allocation_plan(ranked,{'units':[]},10000,policy=policy)
   self.assertEqual([row['sku'] for row in plan],['safe'])
+  ranked[0].update(own_sales_total=10,own_profitable_sales=9,own_gross_total=1000)
+  plan=allocation_plan(ranked,{'units':[]},10000,policy=policy)
+  self.assertIn('risky',[row['sku'] for row in plan])
   self.assertAlmostEqual(dominant_goods_profit_probability(10000,6969,0),.70)
  def test_fast_food_can_hold_three_units_only_with_hourly_sales_evidence(self):
   ranked=[dict(sku='food',kind='food',expected_net=50000,score=3,upper_cost=100,
