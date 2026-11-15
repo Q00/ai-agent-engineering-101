@@ -1,7 +1,8 @@
 import json,math,tempfile,time,unittest
 from pathlib import Path
 from seller_ledger import Program
-from seller_strategy import sale_quote,negotiate,protected_floor,score_floor,observed_hazard
+from seller_strategy import (sale_quote,negotiate,protected_floor,score_floor,
+                             observed_hazard,class_book_cushion)
 from buyer_memory import Memory
 from seller_offers import offers
 from market_intel import Intel
@@ -39,6 +40,30 @@ class RolloutTests(unittest.TestCase):
   self.assertGreaterEqual(accepted['price']*.98,self.u['cost'])
   rejected=negotiate(self.u,q,math.ceil(ordinary*.995)-1,{},self.p)
   self.assertGreater(rejected['price'],math.ceil(ordinary*.995)-1)
+ def test_one_near_cost_sale_can_use_fresh_class_book_cushion(self):
+  class Evidence:
+   def source(inner,*args,**kwargs):
+    return {'players':[
+      {'student':True,'shop':{'name':'25512088'}},
+      {'student':True,'shop':{'name':'lower'}}],
+     'shops':[{'name':'25512088','book':21000},{'name':'lower','book':1000}]}
+  q=dict(base=9000,price=9000,reward=0,spent=0,member=None,referrer=None,
+         benefit='none',warranty_hours=6,hazard_probability=.04,
+         hazard_basis='public-matured:4000',loss_leader=False)
+  accepted=negotiate(self.u,q,8000,{},self.p,intel=Evidence())
+  self.assertEqual(accepted['price'],8000)
+  self.assertTrue(accepted['book_cushion_recovery'])
+  self.assertEqual(class_book_cushion(Evidence()),20000)
+  # One still-breakable near-cost sale consumes the reserved half-cushion.
+  with self.p.db:
+   self.p.db.execute('''INSERT INTO sales
+     (task,unit,sku,amount,cost,settled,refunded)
+     VALUES(?,?,?,?,?,?,0)''',('trial','v','other',8000,8000,time.time()))
+  rejected=negotiate(self.u,q,8000,{},self.p,intel=Evidence())
+  self.assertGreater(rejected['price'],8000)
+  # Missing official Class evidence never opens the exception.
+  rejected=negotiate(self.u,q,8000,{},self.p,intel=None)
+  self.assertGreater(rejected['price'],8000)
  def test_mature_public_breakage_cohort_lowers_floor_without_removing_margin(self):
   class Evidence:
    def source(self,*args,**kwargs):return {'shops':[{'name':'25512088','claims':139,'broken':11}]}

@@ -15,6 +15,41 @@ RATES={'goods':{'A':95,'B':80,'C':60},'food':{'A':95,'B':75,'C':45}}
 LOSS_LEADER_RATE=.04
 LOSS_LEADER_BUDGET=100_000
 LOSS_LEADER_TRIALS_PER_SKU=5
+BOOK_CUSHION_TRIAL_SHARE=.50
+BOOK_CUSHION_MARGIN_BPS=150
+
+
+def class_book_cushion(intel, own_name='25512088'):
+    """Return fresh Class Book headroom above the next lower shop."""
+    if intel is None:return 0
+    board=intel.source('board',None,max_age=300)
+    if not isinstance(board,dict):return 0
+    players=board.get('players')
+    if not isinstance(players,list):return 0
+    names={str(row.get('shop',{}).get('name')) for row in players
+           if isinstance(row,dict) and row.get('student') is True
+           and isinstance(row.get('shop'),dict)
+           and row.get('shop',{}).get('name') is not None}
+    rows=[row for row in board.get('shops',[]) if str(row.get('name')) in names]
+    own=next((row for row in rows if str(row.get('name'))==str(own_name)),None)
+    value=own.get('book') if isinstance(own,dict) else None
+    if not isinstance(value,(int,float)) or isinstance(value,bool):return 0
+    lower=[row.get('book') for row in rows if isinstance(row.get('book'),(int,float))
+           and not isinstance(row.get('book'),bool) and row.get('book')<value]
+    return max(0,value-max(lower)) if lower else 0
+
+
+def active_book_cushion_principal(program, now=None):
+    """Principal in still-breakable, near-cost public trial sales."""
+    now=time.time() if now is None else now
+    try:
+        return program.db.execute('''
+            SELECT COALESCE(SUM(cost),0) FROM sales
+            WHERE refunded=0 AND amount*10000<=cost*?
+              AND (settled IS NULL OR settled>?)''',
+            (10000+BOOK_CUSHION_MARGIN_BPS,now-6*3600)).fetchone()[0]
+    except Exception:
+        return 0
 
 
 def score_safe_loss_budget(intel, already_used, own_name='25512088'):
@@ -232,7 +267,7 @@ def liquidation_discount(unit, holdings, recent_sales_6h, now=None, failed_quote
     return .25
 
 
-def negotiate(unit, current, offered, catalog, program, token='', ref=''):
+def negotiate(unit, current, offered, catalog, program, token='', ref='', intel=None):
     hazard=current.get('hazard_probability',.15)
     legacy=bool(token or ref)
     floor=protected_floor(unit,program.p,hazard) if legacy else score_floor(unit,hazard)
@@ -243,6 +278,19 @@ def negotiate(unit, current, offered, catalog, program, token='', ref=''):
     # measured downside short-lived.  Legacy benefits never use this path.
     public_cost_recovery=bool(not legacy and current.get('loss_leader'))
     if public_cost_recovery:
+        floor=min(floor,unit['cost'])
+    cushion=class_book_cushion(intel,program.p.get('shop_name','25512088'))
+    active_cushion=active_book_cushion_principal(program)
+    cushion_cap=math.floor(cushion*BOOK_CUSHION_TRIAL_SHARE)
+    cushion_recovery=bool(
+        not legacy and unit.get('kind')=='goods' and
+        str(current.get('hazard_basis','')).startswith('public-matured') and
+        offered>=unit['cost'] and active_cushion+unit['cost']<=cushion_cap)
+    if cushion_recovery:
+        # The sale itself cannot lower Book.  Even if this single live trial
+        # later breaks, the reserved half-cushion keeps the current Class Book
+        # boundary intact.  The six-hour query above prevents overlapping
+        # near-cost trials from spending the same headroom twice.
         floor=min(floor,unit['cost'])
     minimum=program.quote(floor,unit['cost'],token=token,ref=ref)
     # A numeric buyer offer just below the ordinary 1% expected-Book target is
@@ -274,10 +322,16 @@ def negotiate(unit, current, offered, catalog, program, token='', ref=''):
                            q['price']>=unit['cost'])
     bounded_book_recovery=(near_book_recovery and q['reward']==0 and
                            q['price']*survival>=unit['cost'])
-    if not (score_safe or bounded_cost_recovery or bounded_book_recovery):
+    bounded_cushion_recovery=(cushion_recovery and q['reward']==0 and
+                              q['price']>=unit['cost'])
+    if not (score_safe or bounded_cost_recovery or bounded_book_recovery or
+            bounded_cushion_recovery):
         return current
     q['hazard_probability']=hazard;q['hazard_basis']=current.get('hazard_basis','conservative-unmeasured')
     q['near_book_recovery']=bounded_book_recovery
+    q['book_cushion_recovery']=bounded_cushion_recovery
+    q['book_cushion']=cushion
+    q['book_cushion_active_principal']=active_cushion
     return q if q['price']<current['price'] else current
 
 

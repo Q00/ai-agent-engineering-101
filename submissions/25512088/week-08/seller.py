@@ -291,7 +291,7 @@ class Seller(AgentExecutor):
                     control.event('seller','offer_received',dict(signal,task=task.id),task.id)
                 if offered is not None and offered < deal['quote']['price']:
                     deal['quote']=negotiate(unit,deal['quote'],offered,catalog,program,
-                        token=deal['credentials']['member'],ref='')
+                        token=deal['credentials']['member'],ref='',intel=intel)
                 if offered is not None and offered >= deal['quote']['price']:
                     q = deal['quote']
                     claim = receipt_grade(unit, catalog)
