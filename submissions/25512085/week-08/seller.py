@@ -632,19 +632,19 @@ def compute_unit_pricing_and_terms(unit: dict[str, Any], hub: dict[str, Any], *,
             # High anchor: 92~95% of list_price (gives buyer strong discount satisfaction)
             open_ask = max(int(cost * 1.24), min(int(list_price * 0.95), max(market_anchor, int(list_price * 0.90))))
             # Turn 1 target: around 84~86% of list_price
-            r1_target = max(hard_floor, int(round(cost + (open_ask - cost) * 0.50)))
+            r1_target = max(hard_floor, int(round(cost + (open_ask - cost) * 0.30)))
             # Turn 2 mid-step: steps down near floor (~81~82% of list_price) to close before walkaway
-            r2_target = max(hard_floor, int(round(cost + (open_ask - cost) * 0.18)))
+            r2_target = max(hard_floor, int(round(cost + (open_ask - cost) * 0.08)))
         elif grade == "B":
             # Grade B cost is 40-60% of list_price -> strong margin potential
             open_ask = max(int(cost * 1.30), int(list_price * 0.86))
-            r1_target = max(hard_floor, int(list_price * 0.75))
-            r2_target = max(hard_floor, int(list_price * 0.68))
+            r1_target = max(hard_floor, int(list_price * 0.66))
+            r2_target = max(hard_floor, int(list_price * 0.58))
         else:
             # Grade C (refurb): cost is 25-45% of list_price
             open_ask = max(int(cost * 1.38), int(list_price * 0.80))
-            r1_target = max(hard_floor, int(list_price * 0.68))
-            r2_target = max(hard_floor, int(list_price * 0.60))
+            r1_target = max(hard_floor, int(list_price * 0.56))
+            r2_target = max(hard_floor, int(list_price * 0.48))
 
         # Aged goods may soften targets, never the normal reserve: goods do not expire.
         if age_h >= 12.0:
@@ -722,7 +722,7 @@ def compute_unit_pricing_and_terms(unit: dict[str, Any], hub: dict[str, Any], *,
         break_rate=0.0
         if not first_quote:
             open_ask=max(cash_policy.profit_floor(unit,hub,catalog,now),
-                         int(list_price*cash_policy.config().get('c_fallback_list_fraction',.64)))
+                         int(list_price*cash_policy.config().get('c_fallback_list_fraction',.48)))
             hard_floor=cash_policy.profit_floor(unit,hub,catalog,now)
             r1_target=max(hard_floor,math.ceil(open_ask*.99))
             r2_target=r1_target

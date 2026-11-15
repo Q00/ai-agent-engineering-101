@@ -53,7 +53,7 @@ class DisposalPricingTests(unittest.TestCase):
     def test_goods_age_targets_keep_protected_floor(self):
         # Nov 6 intentional correction: age markdowns no longer reset the reserve;
         # accrued storage/current expected contribution also protect fresh goods.
-        for age, expected in [(7.9, (19_000, 14_500, 11_620, 10_859)),
+        for age, expected in [(7.9, (19_000, 12_700, 10_859, 10_859)),
                               (8, (17_600, 10_860, 10_860, 10_860)),
                               (11.9, (17_600, 10_876, 10_876, 10_876)),
                               (12, (16_400, 10_877, 10_877, 10_877))]:

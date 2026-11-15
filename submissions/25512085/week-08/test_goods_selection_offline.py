@@ -284,7 +284,7 @@ class GoodsSelectionTests(unittest.TestCase):
                                      (expected, chosen_q['open_ask'], {'A': 72, 'B': 6, 'C': 0}[grade]))
 
     def test_abc_eight_hour_branch_protected_floors_execute(self):
-        for grade, expected_ask in (('A', 2200000), ('B', 2150000), ('C', 1600000)):
+        for grade, expected_ask in (('A', 2200000), ('B', 2150000), ('C', 1200000)):
             with self.subTest(grade=grade):
                 hub = self.comparable_hub(grade)
                 old = self.goods('eight-hours', 100000, 8, grade=grade)
