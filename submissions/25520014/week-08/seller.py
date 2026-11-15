@@ -91,8 +91,13 @@ BLOCKED_LOG = policy.DATA / "blocked.jsonl"
 # buy attempts a day. Q00 gives 4.8-4.9 now and its mean here is 1.00 over 7 deals, the least there is, so it can
 # only rise: 50 deals at 5 stars take our board mean 4.394 -> 4.452. Block totato2203 again if it returns to 1 star.
 # shaun0927 has not traded since 11-10; its templates stay.
+# 11-14 15 h (owner): sergiobuilds rates us 2 whatever it buys (24 h: 28 deals, all 2, margin +0.09M); its mean here
+# (3.97 over 1,442) would fall to about 3.85 by 11-17 (-0.002 on the ranking). Its two templates were its alone among
+# our receipts in 72 h (152 + 80 receipts, no other buyer).
 BLOCKED = re.compile(r"Certificate attached, please\."
-                     r"|please ship a unit with at least [\d.]+ h of shelf life left, certificate attached\.", re.I)
+                     r"|please ship a unit with at least [\d.]+ h of shelf life left, certificate attached\."
+                     r"|\(G[0-9a-f]{8}\)\. What is your price\?$"
+                     r"|please offer only a unit with at least [\d.]+ hours of shelf life left, with the market.s certificate\.", re.I)
 TURNS = policy.DATA / "turns.jsonl"         # every message and reply, for the manager's hourly review
 REPLY_MODEL, REPLY_EFFORT, REPLY_TIMEOUT = "haiku", "medium", 20
 GRADE_WORDS = {
@@ -242,9 +247,30 @@ _ONE_GRADE = re.compile(r"(?<![A-Za-z])[ABCabc](?![A-Za-z])")
 def named_grades(text):
     """Every grade the buyer names, {"A", "B", "C"} or a part of it."""
     out = set()
-    for m in NAMED_GRADE.finditer(text or ""):
+    for m in NAMED_GRADE.finditer(drop_negated(text)):
         out |= {g.upper() for g in _ONE_GRADE.findall(next(x for x in m.groups() if x))}
     return out & set(RANK)
+
+
+def drop_negated(text):
+    """text with each grade named in a negation ("no grade C", "grade C is not acceptable") blanked (NOT_GRADE)."""
+    text = text or ""
+    if not NOT_GRADE:
+        return text
+    for m in reversed(list(NAMED_GRADE.finditer(text))):
+        if (NOT_BEFORE.search(text[max(0, m.start() - 16):m.start()])
+                or NOT_AFTER.match(text[m.end():m.end() + 30])):
+            text = text[:m.start()] + " " * (m.end() - m.start()) + text[m.end():]
+    return text
+
+
+# 11-15 02:48 (owner): a grade named in a negation is not named. "Grade A or B with a warranty of at least 6 hours on
+# the receipt, please (no grade C). Please quote your cheapest such unit" read as A, B and C named, so the lowest
+# held, C, was offered: 24 h to 11-15 03 h, 501 first replies of C to "no grade C" wordings, none closed (A or B
+# first: 63 of 272 closed). Seen on 시몬스 Gbec2b68f with 45 A held. Off: False.
+NOT_GRADE = True
+NOT_BEFORE = re.compile(r"\b(?:no|not|except|excluding|without|never)\s*\(?\s*$", re.I)
+NOT_AFTER = re.compile(r"\s*(?:is|are)?\s*(?:not\s+(?:acceptable|accepted|allowed|ok|okay)|unacceptable)\b", re.I)
 
 
 # 11-04 20:32: a goods B held is offered before A to a buyer who names no grade. 72% of goods supply is A and the
@@ -260,7 +286,7 @@ def offer_grade(text, opts):
     Goods B goes first (B_FIRST) to a buyer who names no grade and asks for no lower one."""
     held = sorted(opts, key=RANK.get)                    # lowest first
     named = named_grades(text)
-    if not LOWER_OK.search(text or "") and not named - {"A"}:   # "grades B/C fine" asks for a lower one too
+    if not LOWER_OK.search(drop_negated(text)) and not named - {"A"}:   # "grades B/C fine" asks for a lower one too
         if (B_FIRST and "B" in opts and opts["B"]["unit"].get("kind", "goods") == "goods"
                 and not named):
             return "B"
@@ -315,7 +341,19 @@ B_FALLBACK = True
 
 def wants_lower(text, g):
     """The buyer asks for the lower grade g: "refurbished", "cheaper one", "grade C" (LOWER_OK) or names g."""
-    return bool(LOWER_OK.search(text or "")) or g in named_grades(text)
+    if g in refused_grades(text):                        # "no grade C ... your cheapest": not C
+        return False
+    return bool(LOWER_OK.search(drop_negated(text))) or g in named_grades(text)
+
+
+def refused_grades(text):
+    """The grades named only in a negation (NOT_GRADE): {"C"} for "(no grade C)"."""
+    if not NOT_GRADE:
+        return set()
+    every = set()
+    for m in NAMED_GRADE.finditer(text or ""):
+        every |= {x.upper() for x in _ONE_GRADE.findall(next(x for x in m.groups() if x))}
+    return (every & set(RANK)) - named_grades(text)
 
 
 def find_units(text, taken):
@@ -569,15 +607,112 @@ STAR_CAP = 0.695
 # price). So for it: the ask is at least FAIR_ASK x list, which makes the bid 0.70 x list, and the talk is final
 # from the first reply, so that bid closes when it is at or over the floor. Other shops get 0.74-0.80 by countering;
 # the rule it accepts by is not known, so the sure close first.
+# 11-13 (owner): a buyer that orders a category and checks the receipt against its order. Q00 ("I want to buy a 침구
+# (buyer: q00)") gives 5 stars when the receipt's item is the category it asked for and 1 star ("This shop forges
+# receipts") when it is a SKU id: 72 h at nocha12 935 of 962 deals got 5, ours 9 of 9 got 1 (the account's mean at our
+# shop is 1.00, the lowest of 55 accounts). The kit's checkout takes a category as the item when it is the last
+# part of the unit's category (market_kit.AcpShop.pick_unit), and the unit and the claim stay in the receipt.
+CATEGORY_ORDER = re.compile(r"I want to buy an? (.+?) \(buyer: q00\)", re.I)
+
+
+def receipt_item(u, order_item):
+    """What the receipt names: the category the buyer ordered when the unit is of that category, else the SKU."""
+    last = (u.get("category") or "").split(">")[-1]
+    return last if order_item and last and order_item.strip().lower() == last.lower() else u["sku"]
+
+
 FAIR_BUYER = re.compile(r"Please quote a price in credits")
 FAIR_ASK = 0.78
+# 11-13 21 h (owner): its bid closes at the unit's cost, not at the cost plus the margin. It does not pick its shop by
+# price or stars (24 h, 2,631 goods, 761M: in 2,269 of 2,408 A purchases another shop sold the SKU's A cheaper within
+# the hour, ours 2-6% of list cheaper in 841; shops with more stars get none; 96% of it is SKU-grades we hold) but
+# goes back where its talks close: sergiobuilds 1,589 results and 2 without a deal, we 50 in 72 h and 49 without
+# ("No verified agreement"), and a shop it starts paying has half of its goods within 6 h (sergiobuilds 11-12 05 h,
+# dae-yangkim 11-11 13 h). Our floor (cost + 8-10%) refused its 0.70 x list: 11-13 12:57 a food unit that cost 16,640
+# got 16,730 and we held 17,971. At the cost a deal adds nothing to the book but turns the unit into cash, and a goods
+# A at 0.70 without a warranty is over what we sell A for (0.685 with one). The floor is the cost x (1 + FAIR_MARGIN)
+# plus the refund a warranty is expected to pay. Owner, 11-13 21 h: 1% under the cost is fine for this buyer (-0.01:
+# an A that cost up to 0.707 of list closes at its 0.70), the price of being a shop where its talks close. Whether
+# it comes more once we close is not known: it asks us for food about 45 times a day (116 of 134 in 72 h we had
+# none of) and for goods a few times.
+FAIR_MARGIN = -0.01
+# 11-14 00 h (owner): food down to 5% under its cost. Its bid is 0.70 x list for food too and a food unit's cost is
+# drawn up to 0.72 of list: 11-13 22:36 and 11-14 00:10 the same unit (cost 9,253, bid 9,030) was held at 9,160
+# twice, 130 won over the bid. Food not sold rots at its whole cost, and each talk without a deal counts against us.
+FAIR_MARGIN_FOOD = -0.05
+# 11-14 07 h (owner): 25620027's buyer ("..., please state this unit's certified grade and offered warranty duration
+# in hours", all 16 of our receipts from this wording are its) buys goods B only with a warranty across the market
+# (48 h: B with one 79 of 80 paid, B without one never) and turns ours down before taking the receipt ("receipt
+# expected credit below the line or quality (claim B, warranty 0 h)", 70 in 24 h). warranty_memo learns from receipts
+# only, so it never learned this buyer (B: None). Its B gets the warranty with the refund in the floor (as a memo 72 h:
+# our B with one broke 11.7% in 7 d, refunds 11.5% of revenue), so a sale clears its cost after the expected refund
+# or does not happen. Our B stock 211, 103 held over 12 h. Off: None.
+WARRANTY_B_BUYER = re.compile(r"please state this unit.s certified grade and offered warranty duration")
+# 11-14 07 h (owner): no C fallback for the wording "I want to buy <name> (<SKU>)" (template exactly that). 48 h, our
+# C fallbacks to it: iyen-dori 893 unpaid, YAHO1212 214 unpaid, nohaggle-hero 19 unpaid, lee-sungsoo 6 paid. Both
+# big ones pay C nowhere (iyen-dori 0 of 2,222, YAHO1212 0 of 338, with or without a warranty) and pay A and B; the
+# same C unit was signed 85 times and never paid, and the talk ends there instead of on our A or B. A C the talk
+# opens with (we hold only C) is kept. Off: None.
+NO_C_FALLBACK_TPL = "I want to buy <N> (<S>)"
+# 11-14 15 h (owner): one sale, even at a loss, to the buyer that has never bought here. junghoonwoo-agent-lab
+# (owner OpenFlow-JW) rates 4.99 over 4,637 deals elsewhere in 72 h and is not among the 56 accounts in our star
+# ranking: one paid deal at 5 adds a new account, about +0.009 on the board's stars. It comes about 40 times a day
+# ("Require grade A only, as quoted in the comparison. Include a six-hour warranty when offered.", 138 talks in 72 h,
+# none paid, our first reply said "no warranty") and pays about 0.51 of list elsewhere. For that wording, while fewer
+# than ONE_SALE_MAX such deals were signed (ONE_SALE_FILE), its A gets the warranty and is asked and held at
+# ONE_SALE_PRICE x list, final from the first reply; after that it gets the normal rules. Off: None.
+# 11-15 02:42: the wording was not junghoonwoo's but totato2203-r3's: the one deal (11-14 22:25 KST, G12b895c1 A at
+# 11,679 against a cost of 13,691) was paid by totato2203-r3 and the slot is used. Off. JW_BUYER below.
+ONE_SALE_BUYER = None
+# 11-15 02:42 (owner): junghoonwoo-agent-lab's wording is "Market certificate required. Do not overstate grade. Need
+# grade A or B with a 6-hour warranty included in total price." (its only receipt from us, 11-14 18:28 KST, task
+# 78548533: G3cbc56d1 B at 448,312 with no warranty, signed by both, never paid; it had offered 479,526). 48 h: 17
+# such talks here, 3 signed, none paid, each without a warranty; elsewhere it paid 28 goods (B with 72 h 24, B with
+# 6 h 3, A with 6 h 1). Its A and B get our warranty (72 h, the refund in the floor) and the normal prices; one paid
+# deal at 5 adds its owner to the star ranking (+0.009). Off: None.
+JW_BUYER = re.compile(r"Need grade A or B with a 6-hour warranty included in total price")
+ONE_SALE_PRICE = 0.51
+ONE_SALE_MAX = 1
+ONE_SALE_FILE = policy.DATA / "one_sale.json"
 
 
-def fair_lift(o, steps):
-    """Option o for a FAIR_BUYER: asked at FAIR_ASK x list or more, final from the first reply."""
+def one_sale_left():
+    """How many one-sale deals are still allowed (ONE_SALE_MAX less those signed, from ONE_SALE_FILE)."""
+    try:
+        done = len(json.loads(ONE_SALE_FILE.read_text()).get("deals", []))
+    except (FileNotFoundError, ValueError):
+        done = 0
+    return ONE_SALE_MAX - done
+
+
+def one_sale_signed(task_id, u, price):
+    try:
+        d = json.loads(ONE_SALE_FILE.read_text())
+    except (FileNotFoundError, ValueError):
+        d = {"deals": []}
+    d["deals"].append({"ts": time.time(), "task": task_id, "unit": u["unit"], "sku": u["sku"], "price": price,
+                       "cost": u["cost"]})
+    ONE_SALE_FILE.write_text(json.dumps(d))
+
+
+def one_sale_lift(o, steps):
+    """Option o for the ONE_SALE_BUYER: asked and held at ONE_SALE_PRICE x list, final from the first reply."""
     lp = o["unit"]["list_price"]
+    o["ask"] = o["floor"] = max(1, round(ONE_SALE_PRICE * lp))
+    o["step"] = steps
+
+
+def fair_lift(o, steps, p=None):
+    """Option o for a FAIR_BUYER: asked at FAIR_ASK x list or more, final from the first reply, and (with the policy
+    p) the floor at the unit's cost x (1 + FAIR_MARGIN) plus the warranty's expected refund at its bid (close_floor
+    takes such a floor as it is: no tolerance under it)."""
+    u = o["unit"]
+    lp = u["list_price"]
     o["ask"] = max(o["ask"], min(lp, -int(-FAIR_ASK * lp // 1)))
     o["step"] = steps
+    if p is not None and FAIR_MARGIN is not None:
+        margin = FAIR_MARGIN_FOOD if u.get("kind") == "food" else FAIR_MARGIN
+        o["floor"] = min(o["floor"], floor_price(u, dict(p, min_margin=margin), o.get("warranty"), 0.70 * lp))
 
 
 # 11-10 (owner): goods are priced from the market, not from the unit's cost. The market draws an A's cost anywhere in
@@ -615,7 +750,7 @@ MKT_FLOOR_BC = 0.98      # what a B's or C's floor is raised to, as a share of t
 def hold_floor(cost, warranty, now=None):
     """The lowest price an A may go at under MKT_HOLD_GUARD: what keeping it to the round's end is worth (its cost
     less the storage still to pay) plus the refund its warranty is expected to pay at that price."""
-    keep = cost * clearance.uw_floor_cost(now or time.time())
+    keep = cost * clearance.hold_share(now or time.time())    # 11-15: less what the cash earns (CASH_RETURN)
     return keep / (1 - (BREAK.get("A", 0.0) if warranty else 0.0))
 
 
@@ -933,7 +1068,7 @@ class Seller(AgentExecutor):
         u = o["unit"]
         units = inventory().get("units", [])
         lower = [g for g in (("B", "C") if B_FALLBACK else ("C",)) if RANK[g] < RANK[u.get("grade")]
-                 and g not in deal["opts"]]
+                 and g not in deal["opts"] and not (g == "C" and deal.get("no_c_fb"))]
         for g in lower:
             cs = [x for x in units if x["sku"] == u["sku"] and x.get("grade") == g and x["unit"] not in held]
             if not cs:
@@ -978,6 +1113,17 @@ class Seller(AgentExecutor):
         fair = bool(FAIR_BUYER.search(text or ""))
         tpl = warranty_memo.template(text, next(iter(by_grade.values())).get("name")) if WARRANTY_MEMO else None
         memo = {g: warranty_memo.MEMO.decide(tpl, g) for g in ("A", "B", "C")} if tpl else {}
+        if WARRANTY_B_BUYER is not None and WARRANTY_B_BUYER.search(text or ""):
+            memo["B"] = int(p["warranty_hours"])       # its B only with a warranty, the refund in the floor
+        if JW_BUYER is not None and JW_BUYER.search(text or ""):
+            memo["A"] = memo["B"] = int(p["warranty_hours"])   # it pays A and B only with a warranty
+        one_sale = (ONE_SALE_BUYER is not None and kind == "goods" and "A" in by_grade
+                    and bool(ONE_SALE_BUYER.search(text or "")) and one_sale_left() > 0)
+        if one_sale:
+            memo["A"] = int(p["warranty_hours"])       # it asks for a warranty; the reply must not say "no warranty"
+            by_grade = {"A": by_grade["A"]}            # grade A only, as it asked
+        no_c_fb = NO_C_FALLBACK_TPL is not None and warranty_memo.template(
+            text, next(iter(by_grade.values())).get("name")) == NO_C_FALLBACK_TPL
         opts = {g: option(u, p, arm, wants_w, capped, memo.get(g)) for g, u in by_grade.items()}
         if len(opts) > 1:
             # one grade, chosen by the code: the best we hold, since buyers' kits refuse to pay for low grades
@@ -992,15 +1138,21 @@ class Seller(AgentExecutor):
             g, alt = next(iter(opts)), None
         deal = self.open[task_id] = {"opts": opts, "cur": g, "alt": alt, "arm": arm,
                                      # a clearance price is not the arm's: the bandit must not learn from it
-                                     "log_arm": ("fair_bid" if fair else "clearance" if opts[g]["clearance"]
+                                     "one_sale": one_sale,
+                                     "log_arm": ("one_sale" if one_sale else "fair_bid" if fair
+                                                 else "clearance" if opts[g]["clearance"]
                                                  else "star_cap" if capped else arm),
                                      "capped": capped, "fair": fair,
+                                     "order_item": (CATEGORY_ORDER.search(text or "") or [None, None])[1],
                                      "steps": int(p["max_concessions"]), "lines": [], "t0": time.time(),
                                      "named": bool(NAMED_GRADE.search(text or "")), "wants_warranty": wants_w, "memo": memo,
+                                     "no_c_fb": no_c_fb,
                                      "pv": p.get("version"), "bv": policy.load_playbook().get("version")}
         for k, o in opts.items():
-            if fair:
-                fair_lift(o, deal["steps"])            # FAIR_BUYER: its bid closes when the floor allows
+            if one_sale:
+                one_sale_lift(o, deal["steps"])        # ONE_SALE_BUYER: one deal at its price, for its stars
+            elif fair:
+                fair_lift(o, deal["steps"], p)         # FAIR_BUYER: its bid closes from FAIR_MARGIN of the cost
             elif tight(o):
                 o["step"] = deal["steps"]              # TIGHT_GAP: final from the first reply
             u = o["unit"]
@@ -1062,7 +1214,8 @@ class Seller(AgentExecutor):
             if key == alt or not opening:    # chosen, or not asked for on the first reply: the talk has one unit
                 opts = deal["opts"] = {key: opts[key]}
                 deal["alt"] = None
-                deal["log_arm"] = ("fair_bid" if deal.get("fair") else "clearance" if opts[key]["clearance"]
+                deal["log_arm"] = ("one_sale" if deal.get("one_sale") else "fair_bid" if deal.get("fair")
+                                   else "clearance" if opts[key]["clearance"]
                                    else "star_cap" if deal.get("capped") else deal["arm"])
             u, m = opts[key]["unit"], moves[key]
             sit, tmpl = situation(m), template(u, m)
@@ -1148,6 +1301,7 @@ class Seller(AgentExecutor):
                                   # share_watch's warranty signal reads these two (11-06 11 h)
                                   "warranty": opts[key]["warranty"], "wants_warranty": deal["wants_warranty"],
                                   "wmemo": deal.get("memo", {}).get(u.get("grade")),
+                                  "no_c_fb": deal.get("no_c_fb", False),
                                   "policy": deal["pv"], "playbook": deal["bv"]})
         if m["close"]:
             await self.close(task_id, deal, m["price"], reply, up, say)
@@ -1163,7 +1317,7 @@ class Seller(AgentExecutor):
         claim = grade_now(u)
         if claim != u.get("grade"):
             log(f"[task {task_id[:8]}] {u['sku']} dropped to grade {claim} during the talk; the claim says {claim}")
-        receipt = {"shop": SHOP, "item": u["sku"], "price": price, "task": task_id, "unit": u["unit"],
+        receipt = {"shop": SHOP, "item": receipt_item(u, deal.get("order_item")), "price": price, "task": task_id, "unit": u["unit"],
                    "claim": claim}
         if o["warranty"]:
             receipt["warranty_hours"] = o["warranty"]
@@ -1176,6 +1330,8 @@ class Seller(AgentExecutor):
         log(f"[task {task_id[:8]}] DEAL {deal['cur']} {u['sku']} {u.get('grade')} at {price} "
             f"(cost {u['cost']}, step {o['step']})")
         self.sold[u["unit"]] = time.time()
+        if deal.get("one_sale"):
+            one_sale_signed(task_id, u, price)
         await up.complete(say(msg))
         del self.open[task_id]
 

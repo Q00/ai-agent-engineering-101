@@ -38,6 +38,7 @@ is left to sell (the kit stops filing by itself once a restock hook exists).
 import argparse
 import json
 import math
+import re
 import statistics
 import sys
 import time
@@ -151,7 +152,10 @@ STOCK_SKIP_KEPT = True
 # 11-13%; for B the SKUs held fell 48% -> 19%. What was bought sold: 59-75% of a 6 h cohort's cost within 6 h, net
 # +9-10% of the cost sold (~/wk8-test/verify1112.py, verify2.py). 0.65 is where 11-11 06-10 h stood (counted stock
 # 510-566M, cash 227-285M, net +2.4M an hour, 76% of the A volume); it is a level, not a replayed optimum.
-STOCK_MIN_SHARE = 0.65
+# 11-13 19 h (owner: the stock held sells or stays, the cash is played anew): 0.65 -> 0.85. The room under the target
+# fell 230M (12 h) -> 98M (18:23), about 20M an hour, and would be 0 near midnight with 320M of cash idle; past the
+# target a run buys only STOCK_REFILL of what sold. Same state at 0.85: 231M (~/wk8-test/bseek_dry.py). With B_SEEK.
+STOCK_MIN_SHARE = 0.85
 
 
 def kept_a(inv, est, now):
@@ -162,7 +166,7 @@ def kept_a(inv, est, now):
     except Exception as e:
         print(f"[restock] market grade prices unavailable: {type(e).__name__}: {str(e)[:120]}", file=sys.stderr)
         return set()
-    share = clearance.uw_floor_cost(now) / (1 - est.break_rate.get("A", 0.0))
+    share = clearance.hold_share(now) / (1 - est.break_rate.get("A", 0.0))     # as seller.hold_floor
     out = set()
     for u in inv.get("units", []):
         m = (mkt.get(u.get("sku")) or {}).get("A")
@@ -170,6 +174,19 @@ def kept_a(inv, est, now):
                 and (u.get("cost") or 0) * share > m * u["list_price"]):
             out.add(u.get("unit"))
     return out
+
+
+def market_rates(est, now):
+    """{goods sku: other shops' settles of it per hour over MARKET_RATE_H} (MARKET_DEMAND)."""
+    db = getattr(est, "db", None)
+    cat = est.cat or {}
+    ours = model.our_urls(db)
+    n = Counter()
+    for ts, d in model.entries(db, "settle", now - MARKET_RATE_H * 3600):
+        s = model.sku_of(d)
+        if d.get("shop") not in ours and (cat.get(s) or {}).get("kind", "goods") == "goods":
+            n[s] += 1
+    return {s: k / MARKET_RATE_H for s, k in n.items()}
 
 
 def stock_room(inv, est, now, every_min, runs=1.0):
@@ -215,6 +232,63 @@ A_RATES = {}
 # (1.1M) with 457M of cash idle; dry run on the same state (~/wk8-test/cap_dry.py): x2 15 units 7.3M, x3 41 units
 # 29.1M, x5 94 units 61.7M. What the extra units sell for is not replayed: judge by B and C sales and the A stock.
 GOODS_CAP_X = 3.0
+# 11-13 19 h (owner): a dear goods SKU with no B on the shelf is bought B_SEEK_QTY more units a run whatever A and C
+# it holds, while the cash is over B_SEEK_CASH. The profit of these SKUs is their B (list 2M+, since 11-11 16:10:
+# +297k a SKU-hour with a B in stock against +33k with A only, A sales the same) and they had no B 51% of the time
+# they had an A: the A held fills the cap and the k-th unit looks unsold. A B is 1 in 4.2 units; backtest
+# (~/wk8-test/bless.py): the gap is 1.9-2.4M an hour, the A and C that come with the B and stay are about 20M an
+# hour, so about 10% on the cash they take; unsold they cost 1% a day to the end. Market purchases of such a SKU in
+# an hour: median 5-7, 95% 21-31 (the surge starts past 50).
+B_SEEK = True
+B_SEEK_LIST = 2_000_000                         # list price from which a SKU is dear enough
+B_SEEK_RATE = 1.0                               # its demand to us per hour (sku_demand); the SKUs under it had 0-1 B arrive
+                                                # (~/wk8-test/barrive.py), over it every B of 40 sold (median 0.5-1.5 h)
+B_SEEK_QTY = 3                                  # units a run: a B in 56% of the runs
+B_SEEK_CASH = 100_000_000                       # not under this much cash
+# 11-15 02:42 (owner: "A 시세는 보고 사야지"): B_SEEK no longer skips the A price check. The A that came with the B were
+# bought at 0.72-0.745 of list (surge) against a market A of 0.65-0.70: at 11-15 02:30, 384 of 1,098 A (302M at
+# cost) had a floor over the market, most of them B_SEEK SKUs (Gbec2b68f, G24f5f979, G4a12722c, G8ec51935,
+# G47788edd, G6cd0e9d4), and the A sales of those SKUs stopped once the cheaper A of them were sold (플라나 A 41 sold
+# at 0.640 11-14 06-14 h, the 10 left cost 0.725+). Off: the 11-13 rule.
+B_SEEK_A_CHECK = True
+# 11-16 00 h (owner): not while the SKU's A held pass B_SEEK_A_H hours of our A sales of it (at least B_SEEK_A_MIN).
+# With CASH_RETURN the cash went 90 -> 131M, over B_SEEK_CASH again, and B_SEEK bought Gbec2b68f 3 a run without
+# a B ever arriving: 17 units 13:42-17:02, 47 A held at midnight against 6 of our sales of it in 6 h (~130M at
+# cost). The 420M of dear A of 11-15 came from the same rule. Off: B_SEEK_A_H = None.
+B_SEEK_A_H, B_SEEK_A_MIN = 6, 3
+
+
+def own_a_sales(est, now):
+    """{goods sku: our settles of grade A over the last B_SEEK_A_H hours} (B_SEEK_A_H)."""
+    db = getattr(est, "db", None)
+    cat = est.cat or {}
+    ours = model.our_urls(db)
+    n = Counter()
+    for ts, d in model.entries(db, "settle", now - B_SEEK_A_H * 3600):
+        s = model.sku_of(d)
+        if d.get("shop") in ours and d.get("grade") == "A" and (cat.get(s) or {}).get("kind", "goods") == "goods":
+            n[s] += 1
+    return n
+# 11-15 (owner): a goods SKU's demand is at least MARKET_SHARE of the market's settles of it per hour (other shops,
+# last MARKET_RATE_H hours), and the A that seller.MKT_HOLD_GUARD keeps (kept_a: floor over the market's A price) are
+# not counted against its cap up to one cap of them (KEPT_FREE caps). Our demand was made of our own sales, which stop
+# when what we hold is dear A, and those A filled the cap: G021aae64 held 14 such A (cost 0.725-0.771 of list),
+# read 0.48 an hour against 15+ A an hour in the market, last bought 11-14 15:24; G03d0199f 13:03. sergiobuilds bought
+# both every window at 0.46-0.66 and sold 185 + 82 A in 12 h (11-15 10 h, ~/wk8-test/why_skip.py, sergio2.py); our
+# goods sales 40-80M -> 12-19M an hour with the market flat. The KEPT_FREE bound is the 11-07 loop (UW_A_UNCOUNTED:
+# every A bought over the market left the count and the SKU was bought again). Off: MARKET_DEMAND = False.
+MARKET_DEMAND = True
+MARKET_SHARE = 0.08
+MARKET_RATE_H = 3
+KEPT_FREE = 1.0
+# 11-14 00 h (owner): a food SKU that fair-furniture asked us for and we had none of FAIR_FOOD_ASKS times in
+# FAIR_FOOD_H hours is kept at FAIR_FOOD_MIN units, whatever its units are worth. It goes back to shops where its
+# talks close, and "none in stock" is a result without a deal like a refused price (3 of its 6 results here since
+# 11-13 20:45, at the minutes of our no-stock answers); it asks us for food about 45 times a day, 128 in 72 h we had
+# none of, 39 of them one SKU (G1c373db9, which it buys 56 of a day in the market). The asked-recently rule buys one
+# unit after the miss. Food not sold is lost at its cost: a few SKUs x 4 units x 10-30k. Off: FAIR_FOOD_MIN = 0.
+FAIR_TEXT = "Please quote a price in credits"   # seller.FAIR_BUYER
+FAIR_FOOD_MIN, FAIR_FOOD_ASKS, FAIR_FOOD_H = 4, 3, 24
 GRADE_CAP = False                               # a goods SKU's B and C count only up to their share of its cap
 GRADE_SHARE_H = 6                               # our goods settles this recent give the grade shares
 # 11-04 21:15, offline only, not deployed (off): the seller sells the best grade first, so the cap filled with B and C left no room for A: 자코모 4인
@@ -599,6 +673,26 @@ def candidates(inv, cat, demand, est, p, now):
         for u in units:
             if not gone(u):
                 by_grade.setdefault(u.get("sku"), Counter())[u.get("grade")] += 1
+    mrates, kept_sku = {}, Counter()                    # MARKET_DEMAND
+    if MARKET_DEMAND:
+        try:
+            mrates = market_rates(est, now)
+            kept = kept_a(inv, est, now)
+            kept_sku = Counter(u.get("sku") for u in units if u.get("unit") in kept)
+        except Exception as e:                          # no market rates: the demand as before
+            print(f"[restock] market demand unavailable: {type(e).__name__}: {str(e)[:120]}", file=sys.stderr)
+    own_a = None                                        # B_SEEK_A_H: None = no cap (no ledger)
+    if B_SEEK and B_SEEK_A_H:
+        try:
+            own_a = own_a_sales(est, now)
+        except Exception as e:
+            print(f"[restock] own A sales unavailable: {type(e).__name__}: {str(e)[:120]}", file=sys.stderr)
+    fair_asks = Counter()                               # FAIR_FOOD_MIN: its requests we had none of, per SKU
+    if FAIR_FOOD_MIN:
+        for r in model.read_jsonl(model.MISSED, now - FAIR_FOOD_H * 3600):
+            m = re.search(r"G[0-9a-f]{8}", r.get("text") or "") if FAIR_TEXT in (r.get("text") or "") else None
+            if m:
+                fair_asks[m.group(0)] += 1
     out = {}
     for s, x in cat.items():
         c, lp, kind = x["category"], x["list_price"], x["kind"]
@@ -606,12 +700,15 @@ def candidates(inv, cat, demand, est, p, now):
         f = surge_factor(surge_u + 1)                   # the next unit; later ones cost more (unit_cost)
         if c in skip or WORST_COST * lp * f > unit_cap:
             continue
-        asked = s in est.asked_recent                   # a request we missed in the last 2 h (model.ASKED_RECENT_H)
+        keep = FAIR_FOOD_MIN if kind == "food" and fair_asks[s] >= FAIR_FOOD_ASKS else 0
+        asked = s in est.asked_recent or bool(keep)     # a request we missed in the last 2 h (model.ASKED_RECENT_H)
         if est.sku_rate(s) <= 0 and not asked:
             continue                                    # nobody buys it (11-04: 255 of 415 fruit sales one box)
         if not asked and not have_sku.get(s) and est.unproven(s) and not (SHORTAGE_ENTRY and s in est.shortage()):
             continue                                    # new to the market: wait for its first sales (not when short)
         rate = sku_demand(est, s)
+        if kind == "goods" and mrates:
+            rate = max(rate, MARKET_SHARE * mrates.get(s, 0.0))     # MARKET_DEMAND
         # continuous since 11-05 01:00: min(cap_h of demand, max(CAP_FLOOR, FAST_COVER_H of demand)); fast (a line
         # every window, P_k over FAST_COVER_H) once FAST_COVER_H of demand reaches CAP_FLOOR
         fast = rate * FAST_COVER_H >= CAP_FLOOR
@@ -631,12 +728,22 @@ def candidates(inv, cat, demand, est, p, now):
             else:
                 cap = max(cap, math.ceil(rate * SHORT_COVER_H - 1e-9))
         have = count_sku.get(s, 0)
+        if kind == "goods" and kept_sku.get(s):
+            # MARKET_DEMAND: the kept A do not sell; up to KEPT_FREE caps of them are not counted
+            have -= min(kept_sku[s], math.floor(KEPT_FREE * cap + 1e-9))
         if share and kind == "goods":
             g = by_grade.get(s, Counter())
             have = g["A"] + sum(min(g[k], math.ceil(cap * share[k] - 1e-9)) for k in "BC")
         if BOOK_NEWSVENDOR and kind == "goods":        # food past its date is lost: its caps stay
             cap = have + MAX_QTY                      # the units are where value_k turns negative (ranked)
         room = min(cap - have, MAX_QTY)
+        seek = (B_SEEK and kind == "goods" and lp >= B_SEEK_LIST and rate >= B_SEEK_RATE and balance > B_SEEK_CASH
+                and bool(have_sku.get(s)) and not by_grade.get(s, Counter())["B"]
+                and (own_a is None or by_grade.get(s, Counter())["A"] <= max(B_SEEK_A_MIN, own_a[s])))
+        if seek:
+            have, room = 0, B_SEEK_QTY                  # B_SEEK: the units held do not sell as the B would
+        if keep:
+            room = max(room, min(keep - have, MAX_QTY)) # FAIR_FOOD_MIN
         if room <= 0:
             continue
         price = est.price_ratio(c) * lp
@@ -646,9 +753,10 @@ def candidates(inv, cat, demand, est, p, now):
             margin = p["min_margin"] if A_CHECK_MARGIN else 0.0
             pays = lambda j: (A_COST * lp * surge_factor(surge_u + j) * (1 + margin) + premium_a * m["A"] * lp
                               <= m["A"] * lp)
-            if not pays(1):
+            free = seek and not B_SEEK_A_CHECK          # B_SEEK before 11-15: its A may stay (bless.py counts it so)
+            if not pays(1) and not free:
                 continue                                # an A of it would not pay its cost and breaks at the market
-            if A_CHECK_TOP:                             # each unit, up to the last (dearest) one bought
+            if A_CHECK_TOP and not free:                             # each unit, up to the last (dearest) one bought
                 while room > 1 and not pays(room):
                     room -= 1
             price = min(price, lp * sum(w * m.get(g, m["A"] * GRADE_REL[g]) for g, w in SUPPLY_MIX.items()))
@@ -666,6 +774,8 @@ def candidates(inv, cat, demand, est, p, now):
                   "have": have, "room": room, "a": a, "b": b}
         if fast:
             out[s]["h"] = FAST_COVER_H                  # ranked: P_k over this, not the refill cycle
+        if keep:
+            out[s]["keep"] = keep                       # ranked: its first `keep` units whatever their value
     return out, units, have_sku, by_cat, median, skip
 
 
@@ -686,6 +796,8 @@ def ranked(cands, p, hours, left):
                 co = 0.01 * cost * h / 24                        # storage
             pk = tail[k - 1]
             value = pk * cu - (1 - pk) * co
+            if k <= x.get("keep", 0):           # FAIR_FOOD_MIN: held for the buyer, ahead of the food lines
+                value = max(value, cost)
             if value <= 0:                      # P_k only falls with k and the cost only rises: the rest are worse
                 break
             out.append((value / cost, value, s, k))

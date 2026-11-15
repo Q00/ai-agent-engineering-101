@@ -67,6 +67,33 @@ UW_STORAGE_DAY = 0.01     # ... less the storage it would pay to the round's end
 def uw_floor_cost(now):
     """The share of its cost an underwater unit may sell at: UW_FLOOR_COST less the storage to the round's end."""
     return max(0.0, UW_FLOOR_COST - UW_STORAGE_DAY * policy.hours_left(now) / 24)
+
+
+# 11-15 (owner: "조금 손해보더라도 현금을 늘려서 회전력을"): a goods A over the market is held at what keeping it is
+# worth (uw_floor_cost) less what its cost earns as cash until restock stops (CASH_RETURN). The cash ran out: 455M
+# (11-13 11 h) -> 87M (11-14 05 h), 80-98M since, goods stock flat at ~860M of which 566 A over the market (420M) and
+# C 197M; restock buys what sold, so goods sales fell 657M -> 183M per 12 h (A 491 -> 132M, B_SEEK SKUs: G24f5f979
+# -102M, G47788edd -54M) with the market flat (~/wk8-test/drop_sku.py, cash48.py). A won bought 11-13 12 h - 11-14
+# 18 h earned 4.5-7.9% of its cost in 12 h and 46-55% of it came back as cash (~/wk8-test/cohort.py): r(h) =
+# CASH_K x CASH_R12 x (1 - CASH_TURN^n) / (1 - CASH_TURN), n = 12 h cycles left. CASH_K 0.75: the marginal won earns
+# less than the average one. With 60 h left the A is let go at up to ~10% under its cost (2.5% storage + 7.9%);
+# selling every A over the market at its median would lose 23.3M of 419M, those within 10% 14.8M of 347M
+# (~/wk8-test/thresh.py). At r 0.5x or 1x the average, 10% is within 1M of the best threshold either way.
+CASH_RETURN = True
+CASH_R12, CASH_TURN, CASH_K = 0.05, 0.55, 0.75
+
+
+def cash_return(now):
+    """What a won of cash earns from now until restock stops (CASH_RETURN), as a share of it."""
+    h = policy.hours_left(now) - policy.LAST_HOURS_NO_RESTOCK
+    if not CASH_RETURN or h <= 0:
+        return 0.0
+    return CASH_K * CASH_R12 * (1 - CASH_TURN ** (h / 12)) / (1 - CASH_TURN)
+
+
+def hold_share(now):
+    """The share of its cost a goods A over the market may sell at (seller.hold_floor, restock.kept_a)."""
+    return max(0.0, uw_floor_cost(now) - cash_return(now))
 UW_HELD_H = 1             # ... and only once held this long (11-05 01:40 review: 66 of 124 underwater opens were
                           # units under 3 h old, some 0.01 h; a fresh unit gets an hour at its usual floor first)
 # 11-05 03:45 KST the board's ALL moved from cash to book (cash + cost of unsold units): a sale under cost now lowers
