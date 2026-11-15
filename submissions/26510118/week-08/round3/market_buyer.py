@@ -88,6 +88,17 @@ MAX_TRIES, TRY_BUDGET, HARD_STOP = 6, 150, 240  # 3 and 90 until 11/7 02:10 (61%
                                                  # order; seconds from the order's start to begin
                                                  # another; seconds after which a trade is cut short
 RIVALS_FRESH = 2 * 3600                          # analysis/rivals.json older than this is ignored
+# 11/15 23:40, a trial (the user's call, "A안 시험"): the time-aware arm, for FAST_SHARE of the orders by a hash of the
+# order id. The buyer is bound by time: the market spaces orders 20 s apart, and orders took 25-29 s in the evening
+# (20.5 s in the morning), mostly in shops that answer slowly and rarely sell to us (9 h: orders touching fair-furniture
+# 32 s, 9 paid of 199; winun1127 36 s, 12 of 148; moss-and-oak 23 s, 81 of 301). The arm picks shops, and orders the
+# quoted ones, by expected value per second of talk: the score over TALK_BASE + TALK_REPLIES x the shop's answer time
+# (timed on every quote, both arms, kept as a moving average in buyer/latency.json). The other half keeps the score
+# and the lowest first ask. Judged on reward per second of the kit's order time.
+FAST_SHARE = 0.5
+LAT_DEFAULT = 2.0         # seconds a shop takes to answer before we have timed it (the median of those timed, if any)
+LAT_ALPHA = 0.2           # weight of a new timing in the moving average
+TALK_BASE, TALK_REPLIES = 2.0, 3   # a talk's seconds: what does not depend on the shop, and the answers it waits for
 LOW_STARS, MIN_REVIEWS = 2.5, 5
 EXPENSIVE = 100_000       # goods listed at this or more need a warranty
 DEAR_ORDER = 500_000      # an order whose products list at this (median) or more: a shop that failed us 3 times in a
@@ -402,19 +413,49 @@ def candidates(order: dict, shops: list, catalog: dict, nb: dict, summary: dict,
     return out
 
 
-def choose(cands: list, nb: dict, dear: bool = False):
+def fast_arm(order_id: str) -> bool:
+    """Whether this order is in the time-aware arm (FAST_SHARE of the orders, the same answer every time)."""
+    return int(hashlib.sha1(f"fast:{order_id}".encode()).hexdigest()[:8], 16) / 0xFFFFFFFF < FAST_SHARE
+
+
+def latency_path() -> Path:
+    return memory.folder() / "latency.json"
+
+
+def note_latency(lat: dict, shop: str, secs: float) -> None:
+    """A shop's answer time into the moving average."""
+    old = lat.get(shop)
+    lat[shop] = round(secs if not isinstance(old, (int, float)) else (1 - LAT_ALPHA) * old + LAT_ALPHA * secs, 2)
+
+
+def talk_secs(lat: dict, shop: str, live: float | None = None) -> float:
+    """The expected seconds of a talk with a shop: this order's timing of it if any, else its moving average, else
+    the median of the shops timed (LAT_DEFAULT with none)."""
+    known = sorted(v for v in lat.values() if isinstance(v, (int, float)))
+    d = known[len(known) // 2] if known else LAT_DEFAULT
+    one = live if live is not None else lat.get(shop) if isinstance(lat.get(shop), (int, float)) else d
+    return TALK_BASE + TALK_REPLIES * one
+
+
+def per_second(c: dict, lat: dict) -> float:
+    return c["score"] / talk_secs(lat, c["shop"]["name"], c.get("lat"))
+
+
+def choose(cands: list, nb: dict, dear: bool = False, lat: dict | None = None):
     """(the best candidate, every choice was poor) or (None, reason). dear: an order of DEAR_ORDER or more, where
-    a shop that failed us 3 times in a row is still tried (one that turns us away on most tries is not)."""
+    a shop that failed us 3 times in a row is still tried (one that turns us away on most tries is not). lat (the
+    time-aware arm): the best by score per second of talk instead of by score."""
     random.shuffle(cands)                                           # spread equal scores over shops
+    key = (lambda c: c["score"]) if lat is None else (lambda c: per_second(c, lat))
     clean = [c for c in cands if not c["flags"]]
     if clean:
-        return max(clean, key=lambda c: c["score"]), False
+        return max(clean, key=key), False
     hope = [c for c in cands if not memory.failed_in_a_row(nb, c["shop"]["name"]) and not memory.turns_away(nb, c["shop"]["name"])]
     if not hope and dear:
         hope = [c for c in cands if not memory.turns_away(nb, c["shop"]["name"])]
     if not hope:
         return None, "every shop left failed us 3 times in a row or turns us away on most tries"
-    return max(hope, key=lambda c: c["score"]), True
+    return max(hope, key=key), True
 
 
 def wants_warranty(c: dict, nb: dict, poor: bool, rules: dict) -> bool:
@@ -579,7 +620,10 @@ async def quote(factory, c: dict, order: dict, nb: dict, rules: dict, poor: bool
     cl = factory()
     try:
         await cl.open(c["shop"]["url"])
-        return cl, await cl.send(opener(c, order, wants_warranty(c, nb, poor, rules)))
+        t0 = time.time()
+        got = await cl.send(opener(c, order, wants_warranty(c, nb, poor, rules)))
+        c["lat"] = round(time.time() - t0, 2)                       # the shop's answer time (the time-aware arm)
+        return cl, got
     except Exception as e:                                       # noqa: BLE001  (a hung or broken shop)
         print(f"[buyer] quote from {c['shop']['name']} broke off: {type(e).__name__}: {e}", flush=True)
         return cl, None
@@ -833,29 +877,52 @@ def quote_rank(c: dict, t) -> tuple:
     return (1, ask / c["list"]) if isinstance(ask, (int, float)) and ask > 0 and c.get("list") else (2, 0.0)
 
 
+def quote_rank_fast(c: dict, t, lat: dict) -> tuple:
+    """quote_rank for the time-aware arm: among the asks we can read, the most value per second of talk first: the
+    candidate's score with its own first ask in place of the expected price, over the talk's seconds (this order's
+    timing of the shop)."""
+    first = quote_rank(c, t)
+    if first[0] != 1:
+        return first
+    lp = c["list"]
+    rest = c["score"] / max(0.01, 1 - c["expected"] / lp)         # trust x deal rate x the edges, without the price
+    return (1, -rest * max(0.0, 1 - first[1]) / talk_secs(lat, c["shop"]["name"], c.get("lat")))
+
+
 async def shop_around_parallel(factory, c: dict, poor, cands: list, order: dict, catalog: dict, nb: dict, rules: dict,
-                               clock=time.time, start: float | None = None, dear: bool = False):
+                               clock=time.time, start: float | None = None, dear: bool = False,
+                               store: dict | None = None, fast: bool = False):
     """shop_around with the openers sent at once (PARALLEL): QUOTES shops a batch, the first ask read from each reply,
     then a trade with one at a time, the lowest ask first; the talks not used are cancelled. Same return and the same
-    limits (MAX_TRIES shops, a new batch only within TRY_BUDGET, each trade cut at HARD_STOP)."""
+    limits (MAX_TRIES shops, a new batch only within TRY_BUDGET, each trade cut at HARD_STOP). store: the shops'
+    answer times, updated from every quote; fast (the time-aware arm): shops picked and ordered by value per second."""
     start = clock() if start is None else start
     clean_only = not poor
+    lat = store if fast and store is not None else None
     tries, used, batch, last = [], {c["shop"]["name"]}, [(c, poor)], None
     others = len({x["shop"]["name"] for x in cands}) > 1
     while batch:
         while len(batch) < QUOTES and len(tries) + len(batch) < MAX_TRIES:
             rest = [x for x in cands if x["shop"]["name"] not in used and (not clean_only or not x["flags"])]
-            nxt, nxt_poor = choose(rest, nb, dear) if rest else (None, None)
+            nxt, nxt_poor = choose(rest, nb, dear, lat) if rest else (None, None)
             if nxt is None:
                 break
             batch.append((nxt, nxt_poor))
             used.add(nxt["shop"]["name"])
-        got = await asyncio.gather(*[asyncio.wait_for(quote(factory, x, order, nb, rules, bool(p)), QUOTE_WAIT)
+        raw = await asyncio.gather(*[asyncio.wait_for(quote(factory, x, order, nb, rules, bool(p)), QUOTE_WAIT)
                                      for x, p in batch], return_exceptions=True)
-        got = [g if isinstance(g, tuple) else (None, None) for g in got]
+        got = [g if isinstance(g, tuple) else (None, None) for g in raw]
+        if store is not None:
+            for (x, _), g in zip(batch, raw):
+                if x.get("lat") is not None:
+                    note_latency(store, x["shop"]["name"], x["lat"])
+                elif isinstance(g, asyncio.TimeoutError):           # no answer within QUOTE_WAIT
+                    note_latency(store, x["shop"]["name"], QUOTE_WAIT)
         print("[buyer] quotes: " + "; ".join(f"{x['shop']['name']} {meta(t).get('ask') if t else None}"
                                              for (x, _), (_, t) in zip(batch, got)), flush=True)
-        ranked = sorted(range(len(batch)), key=lambda i: quote_rank(batch[i][0], got[i][1]))
+        rank = (lambda i: quote_rank_fast(batch[i][0], got[i][1], lat)) if lat is not None else \
+            (lambda i: quote_rank(batch[i][0], got[i][1]))
+        ranked = sorted(range(len(batch)), key=rank)
         try:
             for j, i in enumerate(ranked):
                 (x, p), (cl, t) = batch[i], got[i]
@@ -885,7 +952,7 @@ async def shop_around_parallel(factory, c: dict, poor, cands: list, order: dict,
                 batch = []
                 rest = [x for x in cands if x["shop"]["name"] not in used and (not clean_only or not x["flags"])]
                 if rest and len(tries) + 1 < MAX_TRIES and clock() - start <= TRY_BUDGET:
-                    nxt, nxt_poor = choose(rest, nb, dear)
+                    nxt, nxt_poor = choose(rest, nb, dear, lat)
                     if nxt is not None:
                         batch = [(nxt, nxt_poor)]
                         used.add(nxt["shop"]["name"])
@@ -899,14 +966,15 @@ async def shop_around_parallel(factory, c: dict, poor, cands: list, order: dict,
 
 async def shop_around(client, c: dict, poor, cands: list, order: dict, catalog: dict, nb: dict, rules: dict,
                       clock=time.time, start: float | None = None, dear: bool = False,
-                      factory=None) -> tuple[dict, dict, list, bool]:
+                      factory=None, store: dict | None = None, fast: bool = False) -> tuple[dict, dict, list, bool]:
     """(the last trade's result, its candidate, the earlier tries [{shop, sku, left, list, asks, offers}], whether
     that candidate was a poor choice): the best candidate first, then, while there is no deal, the next from a shop
     not yet tried (a clean one when the first was clean), up to MAX_TRIES. A new try starts only within
     TRY_BUDGET seconds of `start` (the order's start), and a trade is cut at HARD_STOP. With a client factory and
     PARALLEL, the openers go out at once (shop_around_parallel)."""
     if factory is not None and PARALLEL:
-        return await shop_around_parallel(factory, c, poor, cands, order, catalog, nb, rules, clock, start, dear)
+        return await shop_around_parallel(factory, c, poor, cands, order, catalog, nb, rules, clock, start, dear,
+                                          store, fast)
     start = clock() if start is None else start
     tries = []
     while True:
@@ -946,8 +1014,10 @@ async def amain(a) -> dict:
                                                      common.read_json(experiments.haggle_path(), None)))
     nb = memory.load()
     memory.sync(nb)                                                 # B4: what the kit wrote since the last order
+    fast = fast_arm(order.get("order") or "")                       # 11/15: the time-aware trial
+    store = common.read_json(latency_path(), {}) or {}
     base = {"order": order.get("order"), "category": category_of(order, catalog), "budget": a.budget, "kind": order.get("kind"),
-            "use_within_hours": order.get("use_within_hours"), "median_list": median_list(order, catalog)}
+            "use_within_hours": order.get("use_within_hours"), "median_list": median_list(order, catalog), "fast": fast}
     offering = [sh for sh in shops if sh["name"] not in BANNED
                 and any(o.get("sku") in (order.get("acceptable") or []) for o in sh.get("offers") or [])]
     odds = shop_odds(offering, common.read_json(md / "forum.json", []) or [], summary, nb) if offering else {}
@@ -957,7 +1027,7 @@ async def amain(a) -> dict:
     model = common.read_json(common.MARKET_DIR / "analysis" / "shop_model.json", {}) or {}
     cands = candidates(order, shops, catalog, nb, summary, rules, odds, rivals, bad, model) if order.get("acceptable") else []
     dear = (base["median_list"] or 0) >= DEAR_ORDER
-    c, poor = choose(cands, nb, dear) if cands else (None, "no shop has an acceptable product in stock")
+    c, poor = choose(cands, nb, dear, store if fast else None) if cands else (None, "no shop has an acceptable product in stock")
     if c is None:
         common.record("orders", **base, candidates=len(cands), deal=False, left=poor)
         if not cands and order.get("acceptable"):                      # a Round 3 order (Round 2 ones list no products)
@@ -972,10 +1042,11 @@ async def amain(a) -> dict:
     client = A2A()
     try:
         r, c, tries, poor = await shop_around(client, c, poor, cands, order, catalog, nb, rules, start=began, dear=dear,
-                                              factory=A2A)
+                                              factory=A2A, store=store, fast=fast)
     finally:
         await client.close()
     memory.save(nb)
+    common.write_json(latency_path(), store)
     common.record("orders", **base, candidates=len(cands), shop=c["shop"]["name"], sku=c["sku"], list_price=c["list"],
                   expected=c["expected"], trust=c["trust"], odds=c.get("odds"), flags=c["flags"], poor=bool(poor), warranty=r["warranty"],
                   switched=r["switched"], asks=r["asks"], offers=r["offers"], deal=r["deal"], price=r["price"],
@@ -985,7 +1056,8 @@ async def amain(a) -> dict:
                   could_counter=r.get("could_counter"), pushed=r.get("pushed"), pushes=r.get("pushes"),
                   asked_hours=r.get("asked_hours"),
                   asked_better=r.get("asked_better"), better=r.get("better"),
-                  margin_floor=r.get("margin_floor"), nohaggle=r.get("nohaggle"))     # 11/13: Patch 3.6's floor; B2
+                  margin_floor=r.get("margin_floor"), nohaggle=r.get("nohaggle"),     # 11/13: Patch 3.6's floor; B2
+                  secs=round(time.time() - began, 1))                 # 11/15: the order's seconds (the time-aware trial)
     if r["deal"]:
         review = f"Agreed {r['price']} for {c['name']} (list {c['list']}) after {len(r['offers'])} offer(s)."
         stars = 4                                                   # the review hook rewrites it once the deal settles
