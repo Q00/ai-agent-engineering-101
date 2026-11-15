@@ -246,6 +246,12 @@ async def main():
         await haggle(base, "Test Shelf (G4), with a warranty please", [40000, 41000, 42000, 43000, 44000, 45000, 46000])
         talks = [json.loads(l) for l in (md / "talks_r3.jsonl").read_text().splitlines()]
         deals = [x for x in talks if x["event"] == "deal"]
+        # leak audit #41: a buyer still raising within two steps of the floor gets up to 2 more turns
+        import seller_r3 as _s41
+        check("rising offers within two steps of the floor get more turns; flat, falling or far offers do not",
+              _s41.rising_within([40000, 45000, 50000], 60000) and not _s41.rising_within([40000, 45000, 46000], 60000)
+              and not _s41.rising_within([50000, 50000], 52000) and not _s41.rising_within([55000, 50000], 52000)
+              and not _s41.rising_within([50000], 51000) and _s41.rising_within([None, 40000, 50000], 70000), "rising_within")
         check("every ended negotiation is one raw line with the buyer's offers, ask, floor and outcome",
               deals and all(x["offers"] and x["ask0"] and x["floor"] and x["price"] for x in deals)
               and any(x["event"] == "walk" for x in talks), [(x["sku"], x["event"], x["offers"], x["price"]) for x in talks])

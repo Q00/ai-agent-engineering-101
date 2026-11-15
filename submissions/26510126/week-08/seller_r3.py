@@ -518,6 +518,12 @@ def prices(u, s):
     return int(round(ask)), int(round(min(floor, ask)))
 
 
+def rising_within(offers, floor):
+    """True when the buyer's last two offers rise and two more steps of that size reach the floor."""
+    o = [x for x in offers if isinstance(x, (int, float))]
+    return len(o) >= 2 and o[-1] > o[-2] and o[-1] + 2 * (o[-1] - o[-2]) >= floor
+
+
 def terms(u, s):
     """Receipt terms beyond shop/item/price/task, and how to say them."""
     if u.get("unit") is None:
@@ -692,7 +698,9 @@ class Seller(AgentExecutor):
             log(f"DEAL {task.id[:8]} {u['sku']} at {price} (cost {u['cost']}, list {u['list_price']}, turns {deal['turns']})")
             del self.open[task.id]
             return
-        if deal["turns"] >= s["max_turns"]:
+        # a buyer still raising gets up to 2 more turns when its next two steps reach the floor (leak audits #33 and
+        # #41: every walk ended at turn 6, 766 of 1,007 with the buyer still raising; 106 walks in 6 h met this rule)
+        if deal["turns"] >= s["max_turns"] + (2 if rising_within(deal["offers"], floor) else 0):
             await up.reject(say(f"Sorry, {floor} is as low as we go. No deal."))
             ab_end(task.id, deal, "walk")
             log(f"WALK {task.id[:8]} {u['sku']} offers {deal['offers']} floor {floor}")
