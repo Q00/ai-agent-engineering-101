@@ -257,6 +257,29 @@ class RestockNoticeBoundaryTests(BuyingFixture, unittest.TestCase):
         self.assertFalse(locked)
         self.assertEqual(self.diag()['stop'], 'outside_window')
 
+    def test_shop_availability_notice_attaches_ledger_refs(self):
+        sku = self.item('G00000001')
+        self.stock(sku)
+        self.inv['units'][0]['cert'] = True
+        self.hub['seller_cash'] = {
+            'sales': {
+                '101': {'ts': NOW - 50, 'sku': sku, 'amount': 18000, 'own': True},
+                '102': {'ts': NOW - 30, 'sku': 'G99999999', 'amount': 20000, 'own': True},
+            },
+            'market_sales': {
+                sku: {'201': NOW - 40, '101': NOW - 50},
+            },
+        }
+        self.hub['demand_radar'] = {
+            'sku_inquiries': {sku.lower(): [{'ts': NOW - 10}]},
+            'recent_refs': [301, 302, 303],
+        }
+        plan = restock.cash_policy.availability_plan(self.inv['units'], self.hub, self.catalog, NOW)
+        self.assertIsNotNone(plan)
+        self.assertEqual(plan['action']['refs'], [101, 201, 102, 303, 302])
+        self.assertIn('인증 A등급', plan['action']['post'])
+        self.assertIn('refs', plan['action']['post'])
+
 
 if __name__ == '__main__':
     unittest.main()
