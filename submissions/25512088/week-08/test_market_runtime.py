@@ -2,19 +2,9 @@ import io
 import os
 import unittest
 from unittest.mock import patch,Mock
-from market_runtime import (tunnel_url,open_tunnel,install_parent_exit_handlers,
-                            install_tunnel_recovery_interval)
+from market_runtime import tunnel_url,open_tunnel,install_parent_exit_handlers
 
 class TunnelTests(unittest.TestCase):
-    def test_existing_tunnel_recovery_keeps_three_strikes_but_polls_faster(self):
-        calls=[]
-        kit=Mock()
-        kit.watchdog=lambda *args,**kwargs:calls.append(kwargs['every'])
-        install_tunnel_recovery_interval(kit,seconds=20)
-        kit.watchdog('existing-runtime')
-        kit.watchdog('existing-runtime',every=60)
-        self.assertEqual(calls,[20.0,20.0])
-
     def test_tmux_hangup_uses_normal_exit_cleanup_path(self):
         registered={}
         with patch('market_runtime.signal.signal',side_effect=lambda sig,handler:registered.update({sig:handler})):

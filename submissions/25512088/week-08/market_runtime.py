@@ -53,21 +53,6 @@ def install_parent_exit_handlers():
         signal.signal(signal.SIGHUP,lambda *_:sys.exit(0))
 
 
-def install_tunnel_recovery_interval(kit, seconds=20):
-    """Shorten the kit's existing three-strike tunnel recovery cadence.
-
-    This does not create another watcher or process.  The course kit already
-    runs one in-process recovery thread; only its polling interval changes
-    from 60 seconds to 20, retaining the three consecutive failure gate.
-    """
-    original=kit.watchdog
-    def watchdog(*args,**kwargs):
-        requested=kwargs.get('every',seconds)
-        kwargs['every']=min(float(requested),float(seconds))
-        return original(*args,**kwargs)
-    kit.watchdog=watchdog
-
-
 def open_tunnel(port):
     # The course kit stops tunnel processes with ``killpg(proc.pid)``.  Give
     # each cloudflared its own process group so a tunnel rotation actually
@@ -102,7 +87,6 @@ def main():
     spec=importlib.util.spec_from_file_location('course_market_kit',root/'scripts/market_kit.py')
     kit=importlib.util.module_from_spec(spec);spec.loader.exec_module(kit)
     kit.open_tunnel=open_tunnel
-    install_tunnel_recovery_interval(kit)
     original=kit.outbox
     def outbox(market,md):
         # Buyer must never take a shop post and silently publish it as buyer.
