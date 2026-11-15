@@ -72,7 +72,7 @@
    "min_n": 150,
    "promote_p": 0.9,
    "floor": 0.15,
-   "active": true,
+   "active": false,
    "start": 1794653936.0854445,
    "max_h": 6
   },
@@ -87,30 +87,90 @@
    "min_n": 100,
    "promote_p": 0.9,
    "floor": 0.15,
-   "active": true,
+   "active": false,
    "start": 1794653936.0854445,
    "max_h": 6
+  },
+  "buyer_v_breakeven": {
+   "side": "buyer",
+   "kind": null,
+   "min_n": 100,
+   "promote_p": 0.9,
+   "max_h": 6,
+   "floor": 0.15,
+   "active": false,
+   "knob": "v_breakeven",
+   "arms": [
+    0.752,
+    0.77
+   ],
+   "start": 1794660324.822164
+  },
+  "buyer_dead_p": {
+   "side": "buyer",
+   "kind": null,
+   "min_n": 100,
+   "promote_p": 0.9,
+   "max_h": 6,
+   "floor": 0.15,
+   "active": false,
+   "knob": "dead_p",
+   "arms": [
+    0.03,
+    0.06
+   ],
+   "start": 1794663025.3644967
+  },
+  "buyer_near_v": {
+   "side": "buyer",
+   "kind": null,
+   "min_n": 100,
+   "promote_p": 0.9,
+   "max_h": 6,
+   "floor": 0.15,
+   "active": false,
+   "knob": "near_v",
+   "arms": [
+    0.02,
+    0.03
+   ],
+   "start": 1794681925.3718054
+  },
+  "buyer_v_floor": {
+   "side": "buyer",
+   "kind": null,
+   "min_n": 100,
+   "promote_p": 0.9,
+   "max_h": 6,
+   "floor": 0.15,
+   "active": true,
+   "knob": "v_floor",
+   "arms": [
+    0.775,
+    0.765
+   ],
+   "start": 1794709409.8507023
   }
  },
  "queue": [
   {
-   "buyer_v_breakeven": {
+   "buyer_skip_delta_goods": {
     "side": "buyer",
-    "kind": null,
+    "kind": "goods",
     "min_n": 100,
     "promote_p": 0.9,
     "max_h": 6,
     "floor": 0.15,
     "active": true,
-    "knob": "v_breakeven",
+    "knob": "skip_delta_goods",
     "arms": [
-     0.752,
-     0.77
+     -0.2,
+     -0.12
     ]
    }
   },
   {
-   "buyer_dead_p": {
+   "buyer_slot_value2": {
     "side": "buyer",
     "kind": null,
     "min_n": 100,
@@ -118,26 +178,10 @@
     "max_h": 6,
     "floor": 0.15,
     "active": true,
-    "knob": "dead_p",
+    "knob": "slot_value",
     "arms": [
      0.03,
-     0.06
-    ]
-   }
-  },
-  {
-   "buyer_near_v": {
-    "side": "buyer",
-    "kind": null,
-    "min_n": 100,
-    "promote_p": 0.9,
-    "max_h": 6,
-    "floor": 0.15,
-    "active": true,
-    "knob": "near_v",
-    "arms": [
-     0.02,
-     0.03
+     0.05
     ]
    }
   }
