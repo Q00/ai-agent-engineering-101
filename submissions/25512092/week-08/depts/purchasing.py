@@ -220,6 +220,8 @@ def make_plan(inv, units, catalog, budget, log, record=True):
         except Exception as e:
             log(f"[request six] plan note failed: {type(e).__name__}: {e}")
         request_six.check(units, log=log)
+        from depts import claim_full                # 11/15 ~16:00 (person): non-food claims 1.0, guard + 6 h report
+        claim_full.check(log=log)
     try:                                         # 11/08 ~20:35: hot SKUs that turn in <= 1 h get my_share 0.8
         from depts import hot_fast
         fast_share = hot_fast.shares(hot, MY_SHARE, log=log)
