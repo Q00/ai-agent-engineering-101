@@ -136,8 +136,8 @@ def warranty_hours(unit, program=None):
     """Use the market-compatible six-hour warranty for every good.
 
     Historical code expanded to 24/48/72 hours when the local sale row showed
-    no refund. Official refunds are not reconciled back into that local flag,
-    so the apparent zero-refund cohort was false evidence and kept extending
+    no refund, before official broken events were reconciled into local sale
+    evidence. Those historical sparse cohorts did not justify longer
     liabilities. Six hours satisfies the common buyer requirement without
     inventing safety evidence that the official ledger does not provide.
     """

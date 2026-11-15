@@ -85,8 +85,8 @@ def active_warranty_amounts(referrals, policy=None, now=None):
     not stored with the warranty row, so a six-hour lookback silently omitted
     valid 24/48/72-hour liabilities after the expansion code was removed.
     Replaying the same chronological thresholds restores those liabilities.
-    Official refunds are not reconciled into the local flag, so already-refunded
-    rows may remain reserved until expiry; that bias is deliberately safe.
+    Legacy refunds from before official broken-event ingestion may remain
+    reserved until expiry; that backward-looking bias is deliberately safe.
     """
     policy=policy or settings();now=time.time() if now is None else now
     fixed=float(policy.get('fixed_warranty_hours_at',0) or 0)
