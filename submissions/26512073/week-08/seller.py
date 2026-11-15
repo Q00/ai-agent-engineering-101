@@ -7,6 +7,8 @@ import json
 from pathlib import Path
 import re
 import time
+from starlette.routing import Route
+from checkout import checkout_card
 
 from cryptography.hazmat.primitives import serialization
 import uvicorn
@@ -240,8 +242,17 @@ def build(port, history_path=None):
     )
     handler = DefaultRequestHandler(agent_executor=Seller(history_path),
                                    task_store=InMemoryTaskStore(), agent_card=card)
-    return Starlette(routes=create_agent_card_routes(card) + create_jsonrpc_routes(handler, "/"))
+    routes = [
+        Route(
+            "/.well-known/acp.json",
+            checkout_card,
+            methods=["GET"],
+        ),
+    ]
+    routes += create_agent_card_routes(card)
+    routes += create_jsonrpc_routes(handler, "/")
 
+    return Starlette(routes=routes)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
