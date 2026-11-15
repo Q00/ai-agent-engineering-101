@@ -1,0 +1,17 @@
+2026-11-15 10:41 KST  commit 55909dc1  BUYER_COST_OPEN_SHARE 0.5 -> 1.0 (live on the next order, ts 1794705663)
+
+Canary (ts 1794667858 .. +10.4 h, 1,240 orders, candidates' list price):
+  base  orders 610  deal/order 0.351  saved 0.860  price/list 0.580  turns 2.31   goods 28/281 (0.100)
+  cost  orders 630  deal/order 0.368  saved 0.878  price/list 0.578  turns 2.26   goods 50/303 (0.165, z~2.3)
+Rule (cost >= base on deal/order, saved within -0.02): met. Rollback: set 0.0 and commit.
+Tests: 343 passed, 2 failed (test_restock_plan_evidence_then_coverage, test_review_applies_then_expires);
+  both fail with the change stashed too: the clock is past the food restock cutoff (72 h before the end).
+
+Board 10:12: 14th/71, 1.517 (shop 0.779, buyer 0.738); 13th Choo-chu 1.581 (+0.064); 10th DY-76 1.602.
+
+Also examined, no change:
+- saved is cumulative over 21,139 deals (0.7349). Deals added since 11-14 16:00 average ~0.83.
+  ~1,000 more deals before the end, even at 1.0 each, move it to at most ~0.747. Not a lever now.
+- goods over 3 days, 46.1M at cost: book = cash + unsold stock at cost, so they keep their score
+  minus 1%/day storage (~1.2M to the end, 0.24% of book 495M). Selling under cost costs more than that.
+  The clearance bandit (keep/cost/dump by board value, r3lib/markdown.py) already prices them. Leave it.
