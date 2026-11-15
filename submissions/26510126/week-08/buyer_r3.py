@@ -199,6 +199,10 @@ def avoid_add(shop, sku, why, secs, hours=None, floor=None):
 
 def avoided(avoid, shop, sku, order):
     """Why this pair waits for this order, or None."""
+    # a shop whose receipt came without the certificate the policy asks for waits, for every SKU, on orders that ask
+    # for one (leak audit #40: one shop 0 paid of 20 in 22 h, 5 refusals 12:14-12:38, as its talks never say "no cert")
+    if avoid.get(f"{shop}|*cert") and accept_policy(order).get("cert"):
+        return "sent no certificate lately"
     v = avoid.get(f"{shop}|{sku}")
     if not v:
         return None
@@ -250,6 +254,9 @@ def sync_kit_files(memory, remember):
         # one shop's unit refused 9 times): that pair waits an hour like a short shelf life
         if not p.get("paid") and "not in stock" in (p.get("reason") or "") and shop and p.get("item"):
             avoid_add(shop, p["item"], "unit not in stock at checkout", SHORT_SECS)
+        # a receipt without the certificate the policy asks for: the shop, not the SKU, waits (leak audit #40)
+        if not p.get("paid") and "no certificate" in (p.get("reason") or "") and shop:
+            avoid_add(shop, "*cert", "sent no certificate", GRADE_SECS)
         # a receipt without the warranty the policy asks for (audit #22: 8 of 10 such refusals in 14 h were one pair)
         if not p.get("paid") and re.search(r"warranty \d+ h, the policy asks", p.get("reason") or "") and shop and p.get("item"):
             avoid_add(shop, p["item"], "sent no warranty", GRADE_SECS)

@@ -720,6 +720,15 @@ def main():
          sorted(c[1]["name"] for c in first25) == sorted(wave25[2:]) and not buyer_r3._WAVE_OVER,
          str([c[1]["name"] for c in first25]))
 
+    # leak audit #40: a shop whose receipt came without a certificate waits for every SKU on orders that ask for one
+    av40 = {"elm|*cert": {"until": time.time() + 60, "why": "sent no certificate"}}
+    o40 = {"order": "o40", "kind": "goods", "budget": 100000}
+    want_cert = bool(buyer_r3.accept_policy(o40).get("cert"))
+    case("a shop that sent no certificate waits, on any SKU, when the order asks for one",
+         (buyer_r3.avoided(av40, "elm", "G-any", o40) == "sent no certificate lately") == want_cert
+         and buyer_r3.avoided(av40, "other", "G-any", o40) is None,
+         str((want_cert, buyer_r3.avoided(av40, "elm", "G-any", o40))))
+
     print(f"\n{sum(RESULTS)}/{len(RESULTS)} passed")
     shutil.rmtree(TMP, ignore_errors=True)
 
