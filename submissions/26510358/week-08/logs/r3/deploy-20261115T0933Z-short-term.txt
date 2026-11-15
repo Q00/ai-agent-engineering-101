@@ -48,3 +48,15 @@ Update 2026-11-15 20:32 KST — minimum quote wait 8 s (epoch 1794742336, user's
   answered. Judge at +1.5 h: orders/h stays ~160, deals/order up from 0.53 (19:49-20:30). 0.0 rolls back.
   Not done: raising goods max_pay. Goods walked 99 vs 41 deals with the last ask a median 3.7% over max_pay, but
   those prices score margin share ~0.64 (A), under the cumulative saved 0.739.
+
+Update 2026-11-15 20:43 KST — haggle canary 50% (5b164768, live from file save epoch 1794742982, user's yes)
+  Raw-trace read (Meta-harness style): of 24 h deals, 1,127 took the shop's first ask as-is (no counter); 663 of them
+  scored under 0.9 margin share (162 under 0.8). Cause: pricing.buyer_next_offer accepted any ask <= max_pay when
+  ask <= 0.72 x list, a pre-3.6 rule that is always true under max_pay now. Countered shops gave a median 4.4% of list.
+  Rule in haggle_arm orders (salt "haggle:"): a first ask above the price that scores BUYER_HAGGLE_MS 0.90 (by the
+  candidate's cost estimate) is countered once at the usual first offer; the next ask <= max_pay is taken. Final
+  first asks are still taken at once. Decision rows carry "haggle".
+  Judge at +2 h (~22:45) by arm: margin share per deal, deals/order, order wall time (must stay under the ~20 s gap).
+  Widen if margin share is up and deals/order within -0.03; 0.0 rolls back.
+CAP_CEILING_SHARE back to 0.60 in the same commit (S3 no-op; it also broke 3 cashflow/restock tests I had not rerun
+  at 18:28). Org server killed 20:45:19, back 20:46:00.
