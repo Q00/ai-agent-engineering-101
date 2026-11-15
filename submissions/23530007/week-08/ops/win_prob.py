@@ -13,6 +13,7 @@ each pace times a random 0.85-1.15. N runs; the class total is recomputed with s
     python ops/win_prob.py [--n 2000] [--print]      writes .market/win_prob.json (skips if under 30 min old)
 """
 import json
+import math
 import random
 import sqlite3
 import sys
@@ -61,11 +62,19 @@ def total(vals):
     return T
 
 
-def exact_stars(db, d, now, hours=(3, 6, 12)):
-    """11-15 21:00: the board shows stars_rank to 2 decimals, so one rounding tick in 3 h (SungJinho 4.42 -> 4.43, a
-    real +.0024) was extrapolated as +.14 over 42 h and the run put SungJinho above us in 100% of runs (P 72% -> 33%).
-    Rebuild each student shop's stars_rank from the ledger's verified reviews, (sum of per-account means + 15) / (n + 5),
-    now and h hours ago. Returns {player: {0: x, h: x, ...}} and the median board - exact offset."""
+def exact_stars(db, d, now, hours=(3, 6, 9, 12, 24)):
+    """Hidden (unrounded) stars_rank of every student shop, split into its two moving parts (user 11-15: 'simulate
+    with these things accounted for').
+
+    Why: the board shows stars_rank to 2 decimals and ranks on that, so one rounding tick (SungJinho 4.42 -> 4.43, a
+    real +.0024 in 3 h) was extrapolated as +.14 (P 72% -> 33%); and a step from one new 5-star account (jiseokkk
+    +.016 between 6 and 4 h ago) was extrapolated as a 42 h slope. Here stars_rank = (sum of per-account means + 15) /
+    (n + 5) is rebuilt from the ledger's verified reviews, and
+      drift   the change of the accounts already present h hours ago (their means moving), per hour
+      joins   accounts new to the shop in the last 12 / 24 h (a rate), and the pool of active accounts (reviewed any
+              shop in 24 h) that have not reviewed it yet, each with its mean at all shops (its rubric: sohyunkim11 4.0)
+    The rebuilt level is off from the board by a shop-specific constant (median -.01), bracketed by requiring
+    round(exact_t + off, 2) == board_t at every board snapshot of the last 24 h."""
     from collections import defaultdict
     import statistics
     st = {(p.get("shop") or {}).get("name"): p["player"] for p in d["players"] if p.get("student")}
@@ -74,26 +83,83 @@ def exact_stars(db, d, now, hours=(3, 6, 12)):
         x = json.loads(x).get("data") or {}
         if x.get("name") in st and x.get("url"):
             url[x["url"].rstrip("/")] = st[x["name"]]
-    rev = defaultdict(list)
-    for ts, x in db.execute("SELECT ts, data FROM ledger WHERE kind='result' AND round=3"):
+    snaps = []                                          # (ts, {player: board stars})
+    for ts, x in db.execute("SELECT ts, data FROM board WHERE ts > ? ORDER BY ts", (now - 24 * 3600,)):
+        x = json.loads(x)
+        snaps.append((ts, {st[s_["name"]]: s_.get("stars_rank") for s_ in x["shops"] if s_["name"] in st}))
+    snaps.append((now, {st[s_["name"]]: s_.get("stars_rank") for s_ in d["shops"] if s_["name"] in st}))
+    hmarks = {now - h * 3600: h for h in hours}
+    marks = sorted({ts for ts, _ in snaps} | set(hmarks))
+    acc = defaultdict(lambda: defaultdict(lambda: [0.0, 0]))     # player -> buyer -> [sum, n]
+    first = defaultdict(dict)                                     # player -> buyer -> first review ts
+    rub = defaultdict(lambda: [0.0, 0])                           # buyer -> stars at all shops, last 24 h
+    ex = defaultdict(dict)                                        # player -> mark -> exact
+    kept = {}                                                     # h -> {player: {buyer: (sum, n)}}
+    mi = 0
+
+    def V(A):
+        return (sum(a[0] / a[1] for a in A.values()) + 15) / (len(A) + 5)
+
+    def snap(t):
+        for k, A in acc.items():
+            ex[k][t] = V(A)
+        if t in hmarks:
+            kept[hmarks[t]] = {k: {b: tuple(a) for b, a in A.items()} for k, A in acc.items()}
+    for ts, x in db.execute("SELECT ts, data FROM ledger WHERE kind='result' AND round=3 ORDER BY ts"):
+        while mi < len(marks) and marks[mi] < ts:
+            snap(marks[mi])
+            mi += 1
         x = json.loads(x).get("data") or {}
         if x.get("stars") is None or not x.get("verified") or not x.get("receipt"):
             continue
+        if ts > now - 24 * 3600:
+            r = rub[x["buyer"]]
+            r[0] += x["stars"]
+            r[1] += 1
         k = url.get(str(x.get("shop")).rstrip("/"))
         if k:
-            rev[k].append((ts, x["buyer"], x["stars"]))
+            a = acc[k][x["buyer"]]
+            a[0] += x["stars"]
+            a[1] += 1
+            first[k].setdefault(x["buyer"], ts)
+    while mi < len(marks):
+        snap(marks[mi])
+        mi += 1
+    rubric = {b: r[0] / r[1] for b, r in rub.items() if r[1] >= 5}
     out = {}
-    for k, L in rev.items():
-        out[k] = {}
-        for h in (0,) + tuple(hours):
-            m = defaultdict(list)
-            for ts, b, s_ in L:
-                if ts <= now - h * 3600:
-                    m[b].append(s_)
-            out[k][h] = (sum(statistics.mean(v) for v in m.values()) + 15) / (len(m) + 5)
-    board = {st[s["name"]]: s.get("stars_rank") for s in d["shops"] if s["name"] in st}
-    offs = [board[k] - v[0] for k, v in out.items() if board.get(k)]
-    return out, (statistics.median(offs) if offs else 0.0)
+    for k, E in ex.items():
+        lo, hi, diffs = -9.0, 9.0, []
+        for ts, B in snaps:
+            if B.get(k) and ts in E:
+                lo, hi = max(lo, B[k] - 0.005 - E[ts]), min(hi, B[k] + 0.005 - E[ts])
+                diffs.append(B[k] - E[ts])
+        ok = lo <= hi + 1.5e-3                          # board snapshots lag the ledger by a few minutes
+        off = (lo + hi) / 2 if ok else (statistics.median(diffs) if diffs else 0.0)
+        A = acc[k]
+        drift = {}
+        for h in hours:
+            old = kept.get(h, {}).get(k) or {}
+            if old:
+                drift[h] = (V({b: A[b] for b in old}) - V({b: list(v) for b, v in old.items()})) / h
+        out[k] = {"now": E[now] + off, "at": {h: E[now - h * 3600] + off for h in hours}, "off": round(off, 4),
+                  "fit": round(hi - lo, 4) if ok else None, "n": len(A), "sum": sum(a[0] / a[1] for a in A.values()),
+                  "drift": drift,
+                  "joins": {h: sum(1 for t in first[k].values() if t > now - h * 3600) / h for h in (12, 24)},
+                  "pool": [rubric[b] for b in rubric if b not in A]}
+    return out
+
+
+def poisson(rnd, lam):
+    if lam <= 0:
+        return 0
+    if lam > 30:
+        return max(0, round(rnd.gauss(lam, lam ** 0.5)))
+    L, k_, p_ = math.exp(-lam), 0, 1.0
+    while True:
+        p_ *= rnd.random()
+        if p_ < L:
+            return k_
+        k_ += 1
 
 
 def rank(col, k):
@@ -107,9 +173,18 @@ def simulate(n=2000, seed=None):
     db = sqlite3.connect(f"file:{HERE / 'data' / 'market_archive.db'}?mode=ro", uri=True, timeout=30)
     d0 = board_api.fetch(timeout=20)
     R0 = rows_at(d0)
-    EX, OFF = exact_stars(db, d0, now)
+    EX = exact_stars(db, d0, now)
+    for k, x in EX.items():
+        # decay of the stars climb (a mean converges as its reviews pile up): tau from the slope over the last 3 h
+        # against 3-9 h ago (window centres 4.5 h apart); no slowdown seen -> a slow 24-96 h decay drawn per run
+        # (on the drift of the accounts present, not on the board level, which also jumps when an account joins)
+        s1, s2 = x["drift"].get(3, 0), x["drift"].get(9, 0)
+        s2 = (s2 * 9 - s1 * 3) / 6                      # drift 3-9 h ago
+        x["tau"] = (min(max(4.5 / math.log(s2 / s1), 4.0), 200.0) if s1 > 0 and s2 > s1 * 1.05 else None)
     W = {h: rows_at(json.loads(db.execute("SELECT data FROM board WHERE ts <= ? ORDER BY ts DESC LIMIT 1",
                                           (now - h * 3600,)).fetchone()[0])) for h in (1.5, 3, 6, 12, 24)}
+    T_ = total(R0)
+    CONTENDERS = {k for k, x in T_.items() if k != OURS and T_[OURS] - x <= 0.10}
     rnd = random.Random(seed)
     who, ev, margins = Counter(), Counter(), []
     cond = {}                           # 11-15 (user: steer toward the scenarios we win): event -> {on: [runs, wins]}
@@ -117,19 +192,40 @@ def simulate(n=2000, seed=None):
     cond = defaultdict(lambda: {True: [0, 0], False: [0, 0]})
     for _ in range(n):
         end = {}
+        pushed = False
         for k, v in R0.items():
             hb = rnd.choice((1.5, 3))
             m = rnd.uniform(0.85, 1.15)
+            # a contender answers (user 11-15: 'the rival will plan for your 20-30%'): in 25% of runs each student
+            # within .10 of our total runs its parts at its best recent pace, with no slowdown of its stars climb
+            push = k in CONTENDERS and rnd.random() < 0.25
+            pushed |= push
+            if push:
+                hb = max((1.5, 3), key=lambda h: (v["S"] - W[h][k]["S"]) / h if k in W[h] else 0)
             hs = {"book": rnd.choice((12, 24)), "revenue": rnd.choice((12, 24)), "stars": rnd.choice((3, 6, 12)),
                   "forum": rnd.choice((6, 12)), "S": hb, "deals": hb, "posts": hb}
+            if push and k in EX:
+                hs["stars"] = max((3, 6, 12), key=lambda h: EX[k]["drift"].get(h, 0))
             e = {}
             for f, h in hs.items():
                 if f == "stars" and k in EX:
-                    # slope from the exact ledger stars (not the 2-decimal board), anchored on the board value (the
-                    # rebuilt level is off by a shop-specific amount, median -.01, so only its slope is used)
-                    sl = (EX[k][0] - EX[k][h]) / h * rnd.uniform(0.85, 1.15)
-                    x = v["stars"] + sl * H
-                    e[f] = min(max(x, v["stars"] - 0.03), CEIL.get(k, v["stars"] + 0.04))
+                    # hidden (unrounded) value and its slope on a 3/6/12 h window, the climb decaying with tau; the
+                    # end value is rounded to 2 decimals in cols(), as the board ranks it (ties count half)
+                    X = EX[k]
+                    x0 = X["now"]
+                    sl = X["drift"].get(h, 0) * rnd.uniform(0.85, 1.15)
+                    # tau is a noisy fit: drawn 0.5-4x around it; no slowdown seen -> 24-96 h; a pushing rival: none
+                    tau = (X["tau"] * rnd.uniform(0.5, 4)) if X["tau"] else rnd.uniform(24, 96)
+                    x = x0 + (sl * H if push else sl * tau * (1 - math.exp(-H / tau)))
+                    x = min(max(x, x0 - 0.03), max(CEIL.get(k, x0 + 0.04), x0))
+                    # accounts that join: Poisson at the 12 or 24 h join rate (x1.5 for a pushing rival), drawn from
+                    # the active accounts that have not reviewed this shop, each at its mean at all shops
+                    lam = X["joins"][rnd.choice((12, 24))] * H * (1.5 if push else 1)
+                    j = min(poisson(rnd, lam), len(X["pool"]))
+                    if j:
+                        nb = X["n"] + 5
+                        x = (x * nb + sum(rnd.sample(X["pool"], j))) / (nb + j)
+                    e[f] = x
                     continue
                 if k not in W[h]:
                     e[f] = v[f]
@@ -157,7 +253,8 @@ def simulate(n=2000, seed=None):
                  "our_saved_top13": rank(c["saved"], OURS) <= 13,
                  "rival_saved_top10": rank(c["saved"], RIVAL) <= 10,
                  "our_deals_top8": rank(c["deals"], OURS) <= 8,
-                 "our_posts_1st": rank(c["posts"], OURS) == 1}
+                 "our_posts_1st": rank(c["posts"], OURS) == 1,
+                 "a_rival_pushes": pushed}
         for f_, on in flags.items():
             ev[f_] += on
             cond[f_][on][0] += 1
@@ -170,8 +267,14 @@ def simulate(n=2000, seed=None):
             "margin": {"p10": round(margins[int(.1 * n)], 3), "p50": round(margins[n // 2], 3),
                        "p90": round(margins[int(.9 * n)], 3)},
             "gap_now": round(T0[OURS] - second, 3),
-            "stars_exact": {k: {h: round(x, 4) for h, x in EX[k].items()} for k in (OURS, RIVAL) if k in EX},
-            "stars_offset": round(OFF, 4),
+            "stars_hidden": {k: {"now": round(EX[k]["now"], 4), "3h": round(EX[k]["at"][3], 4),
+                                 "12h": round(EX[k]["at"][12], 4), "tau": EX[k]["tau"] and round(EX[k]["tau"], 1),
+                                 "fit": EX[k]["fit"], "drift_3h_per_h": round(EX[k]["drift"].get(3, 0), 5),
+                                 "joins_24h_per_h": round(EX[k]["joins"][24], 3), "pool": len(EX[k]["pool"]),
+                                 "pool_mean": round(sum(EX[k]["pool"]) / len(EX[k]["pool"]), 2) if EX[k]["pool"] else None}
+                             for k in sorted(EX, key=lambda q: -EX[q]["now"])[:8] + [RIVAL] if k in EX},
+            "inputs": {k: {**{f: round(R0[k][f], 4) for f in ("book", "revenue", "stars", "deals", "posts", "forum")},
+                           "saved": round(R0[k]["S"] / (R0[k]["deals"] + 100), 4)} for k in (OURS, RIVAL)},
             "events": {k: round(v / n, 3) for k, v in ev.items()},
             # P(we finish 1st | the event happens) and | it does not: the levers that separate won and lost runs
             "win_if": {k: {"yes": round(v[True][1] / v[True][0], 3) if v[True][0] else None,
@@ -181,6 +284,7 @@ def simulate(n=2000, seed=None):
 
 def main():
     n = int(sys.argv[sys.argv.index("--n") + 1]) if "--n" in sys.argv else 2000
+    old = {}
     try:
         old = json.loads(OUT.read_text())
         if time.time() - old.get("t", 0) < MAX_AGE and "--force" not in sys.argv:
@@ -190,6 +294,16 @@ def main():
     except (OSError, ValueError):
         pass
     out = simulate(n)
+    # a jump of >= 10 points comes with the inputs that moved since the last run (user 11-15: a 72% -> 33% drop was a
+    # rounding artefact and nobody could say why)
+    try:
+        if abs(out["p_first"] - old["p_first"]) >= 0.10 and old.get("inputs"):
+            out["jump"] = {"from": old["p_first"], "to": out["p_first"],
+                           "moved": {k: {f: [old["inputs"][k].get(f), v] for f, v in out["inputs"][k].items()
+                                         if old["inputs"].get(k, {}).get(f) != v} for k in out["inputs"]},
+                           "stars_hidden_before": old.get("stars_hidden")}
+    except (NameError, KeyError, TypeError):
+        pass
     OUT.write_text(json.dumps(out, ensure_ascii=False, indent=1))
     if "--print" in sys.argv:
         print(json.dumps(out, ensure_ascii=False, indent=1))

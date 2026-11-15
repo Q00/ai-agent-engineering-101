@@ -371,7 +371,8 @@ def markdown(o):
 WP_NAMES = {"rival_stars_above": "SungJinho 별점이 우리 위", "our_saved_top12": "우리 saved 12위 이내",
             "our_saved_top13": "우리 saved 13위 이내", "rival_saved_top10": "SungJinho saved 10위 이내",
             "our_posts_1st": "우리 게시글 1위", "our_deals_top8": "우리 거래 수 8위 이내", "book_lost": "장부 1위 상실",
-            "revenue_lost": "매출 2위 상실", "our_stars_top3": "우리 별점 3위 이내"}
+            "revenue_lost": "매출 2위 상실", "our_stars_top3": "우리 별점 3위 이내",
+            "a_rival_pushes": "추격자가 최고 속도로 반격"}
 
 
 def winprob_lines():
@@ -392,6 +393,11 @@ def winprob_lines():
     w.sort(key=lambda kv: -abs(kv[1]["yes"] - kv[1]["no"]))
     for k, v in w[:3]:
         out.append(f"  승부처: {WP_NAMES.get(k, k)} ({v['freq']:.0%}) → 승률 {v['yes']:.0%}, 아니면 {v['no']:.0%}")
+    j = d.get("jump")                   # a >= 10-point move comes with the inputs that moved (user 11-15)
+    if j:
+        mv = [f"{k} {f} {a}→{b}" for k, F in (j.get("moved") or {}).items() for f, (a, b) in F.items()
+              if f in ("stars", "saved", "posts")]
+        out.append(f"  급변 {j['from']:.0%}→{j['to']:.0%}: " + ("; ".join(mv[:4]) or "입력 변화 없음(계산 변동)"))
     return out
 
 
