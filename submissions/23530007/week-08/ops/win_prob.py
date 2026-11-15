@@ -61,6 +61,41 @@ def total(vals):
     return T
 
 
+def exact_stars(db, d, now, hours=(3, 6, 12)):
+    """11-15 21:00: the board shows stars_rank to 2 decimals, so one rounding tick in 3 h (SungJinho 4.42 -> 4.43, a
+    real +.0024) was extrapolated as +.14 over 42 h and the run put SungJinho above us in 100% of runs (P 72% -> 33%).
+    Rebuild each student shop's stars_rank from the ledger's verified reviews, (sum of per-account means + 15) / (n + 5),
+    now and h hours ago. Returns {player: {0: x, h: x, ...}} and the median board - exact offset."""
+    from collections import defaultdict
+    import statistics
+    st = {(p.get("shop") or {}).get("name"): p["player"] for p in d["players"] if p.get("student")}
+    url = {}
+    for (x,) in db.execute("SELECT data FROM ledger WHERE kind='join'"):
+        x = json.loads(x).get("data") or {}
+        if x.get("name") in st and x.get("url"):
+            url[x["url"].rstrip("/")] = st[x["name"]]
+    rev = defaultdict(list)
+    for ts, x in db.execute("SELECT ts, data FROM ledger WHERE kind='result' AND round=3"):
+        x = json.loads(x).get("data") or {}
+        if x.get("stars") is None or not x.get("verified") or not x.get("receipt"):
+            continue
+        k = url.get(str(x.get("shop")).rstrip("/"))
+        if k:
+            rev[k].append((ts, x["buyer"], x["stars"]))
+    out = {}
+    for k, L in rev.items():
+        out[k] = {}
+        for h in (0,) + tuple(hours):
+            m = defaultdict(list)
+            for ts, b, s_ in L:
+                if ts <= now - h * 3600:
+                    m[b].append(s_)
+            out[k][h] = (sum(statistics.mean(v) for v in m.values()) + 15) / (len(m) + 5)
+    board = {st[s["name"]]: s.get("stars_rank") for s in d["shops"] if s["name"] in st}
+    offs = [board[k] - v[0] for k, v in out.items() if board.get(k)]
+    return out, (statistics.median(offs) if offs else 0.0)
+
+
 def rank(col, k):
     return 1 + sum(1 for q in col.values() if q > col[k])
 
@@ -70,7 +105,9 @@ def simulate(n=2000, seed=None):
     now = time.time()
     H = max(0.0, (END - now) / 3600)
     db = sqlite3.connect(f"file:{HERE / 'data' / 'market_archive.db'}?mode=ro", uri=True, timeout=30)
-    R0 = rows_at(board_api.fetch(timeout=20))
+    d0 = board_api.fetch(timeout=20)
+    R0 = rows_at(d0)
+    EX, OFF = exact_stars(db, d0, now)
     W = {h: rows_at(json.loads(db.execute("SELECT data FROM board WHERE ts <= ? ORDER BY ts DESC LIMIT 1",
                                           (now - h * 3600,)).fetchone()[0])) for h in (1.5, 3, 6, 12, 24)}
     rnd = random.Random(seed)
@@ -87,6 +124,13 @@ def simulate(n=2000, seed=None):
                   "forum": rnd.choice((6, 12)), "S": hb, "deals": hb, "posts": hb}
             e = {}
             for f, h in hs.items():
+                if f == "stars" and k in EX:
+                    # slope from the exact ledger stars (not the 2-decimal board), anchored on the board value (the
+                    # rebuilt level is off by a shop-specific amount, median -.01, so only its slope is used)
+                    sl = (EX[k][0] - EX[k][h]) / h * rnd.uniform(0.85, 1.15)
+                    x = v["stars"] + sl * H
+                    e[f] = min(max(x, v["stars"] - 0.03), CEIL.get(k, v["stars"] + 0.04))
+                    continue
                 if k not in W[h]:
                     e[f] = v[f]
                     continue
@@ -126,6 +170,8 @@ def simulate(n=2000, seed=None):
             "margin": {"p10": round(margins[int(.1 * n)], 3), "p50": round(margins[n // 2], 3),
                        "p90": round(margins[int(.9 * n)], 3)},
             "gap_now": round(T0[OURS] - second, 3),
+            "stars_exact": {k: {h: round(x, 4) for h, x in EX[k].items()} for k in (OURS, RIVAL) if k in EX},
+            "stars_offset": round(OFF, 4),
             "events": {k: round(v / n, 3) for k, v in ev.items()},
             # P(we finish 1st | the event happens) and | it does not: the levers that separate won and lost runs
             "win_if": {k: {"yes": round(v[True][1] / v[True][0], 3) if v[True][0] else None,
