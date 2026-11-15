@@ -301,6 +301,13 @@ def cost_open_arm(order_id):
     return h % 10_000 < config.BUYER_COST_OPEN_SHARE * 10_000
 
 
+def quote_early_arm(order_id):
+    """True for the BUYER_QUOTE_EARLY_SHARE of orders whose fan-out stops waiting once BUYER_QUOTE_ENOUGH usable quotes
+    are in (plus BUYER_QUOTE_GRACE_S); stable per order id, own salt."""
+    h = int(hashlib.sha256(f"quote_early:{order_id}".encode()).hexdigest()[:8], 16)
+    return h % 10_000 < config.BUYER_QUOTE_EARLY_SHARE * 10_000
+
+
 def open_floor(c):
     """Estimated cost / list of a candidate: the grade the shop named, else the kind's market mix."""
     return pricing.cost_ratio(c.get("kind"), (c.get("hint") or {}).get("grade"))
@@ -317,7 +324,9 @@ def fanout_quotes(cands, order):
             picked.append(c)
         if len(picked) >= config.BUYER_FANOUT_MAX:
             break
-    lock, closed, got = threading.Lock(), [False], []
+    lock, closed, got, usable_at = threading.Lock(), [False], [], []
+    early = quote_early_arm(order.get("order"))
+    t0 = time.time()
 
     def ask_one(c):
         client = a2a.Client(c["shop"], timeout=60)
@@ -330,6 +339,8 @@ def fanout_quotes(cands, order):
         with lock:
             if not closed[0]:
                 got.append((c, (client, t, want)))
+                if a2a.state(t) == "TASK_STATE_INPUT_REQUIRED":
+                    usable_at.append(round(time.time() - t0, 1))
                 return
         client.cancel(t.get("id"))                     # answered after the deadline: release the shop's unit
         client.close()
@@ -337,12 +348,19 @@ def fanout_quotes(cands, order):
     threads = [threading.Thread(target=ask_one, args=(c,), daemon=True) for c in picked]
     for th in threads:
         th.start()
-    end = time.time() + config.BUYER_QUOTE_TIMEOUT_S
-    for th in threads:
-        th.join(max(0.0, end - time.time()))
+    end = t0 + config.BUYER_QUOTE_TIMEOUT_S
+    while time.time() < end and any(th.is_alive() for th in threads):
+        if early:
+            with lock:
+                n = len(usable_at)
+                enough_at = usable_at[config.BUYER_QUOTE_ENOUGH - 1] if n >= config.BUYER_QUOTE_ENOUGH else None
+            if enough_at is not None and time.time() - t0 >= enough_at + config.BUYER_QUOTE_GRACE_S:
+                break
+        time.sleep(0.1)
     with lock:
         closed[0] = True
         answers = list(got)
+        fanout_quotes.last = {"early": early, "quote_s": round(time.time() - t0, 1), "usable_at": list(usable_at)}
     out, need = [], accept_policy(order).get("min_hours_left") if order.get("kind") == "food" else None
     for c, (client, t, want) in answers:
         said = a2a.said(t)
@@ -358,8 +376,9 @@ def fanout_quotes(cands, order):
         grade = quote_hints(said)[0] if c["kind"] == "goods" else None
         out.append((c, (client, t, want), ask, grade))
     # Highest expected margin share first (patch 3.6): the same discount on a grade C unit is worth less than on A.
-    key = lambda x: (-pricing.margin_share(x[2], x[0]["list"], x[0]["kind"], x[3]) * x[0].get("reliability", 1.0)
-                     if x[2] else 1.0)
+    # Ties (margin share capped at 1 below cost) go to the lower ask / list, not to whichever shop answered first.
+    key = lambda x: ((-pricing.margin_share(x[2], x[0]["list"], x[0]["kind"], x[3]) * x[0].get("reliability", 1.0),
+                      x[2] / x[0]["list"]) if x[2] else (1.0, 9.9))
     return [(c, op, ask) for c, op, ask, _ in sorted(out, key=key)]
 
 
@@ -374,7 +393,8 @@ def run_order(cands, order, mem, deadline, arm="serial"):
     quotes = fanout_quotes(cands, order) if arm == "fanout" else None
     if quotes is not None:
         decision_log({"order": order.get("order"), "arm": arm, "asked": min(len({c["shop"] for c in cands}),
-                      config.BUYER_FANOUT_MAX), "quotes": [(c["shop"], c["sku"], ask, c["list"]) for c, _, ask in quotes]})
+                      config.BUYER_FANOUT_MAX), "quotes": [(c["shop"], c["sku"], ask, c["list"]) for c, _, ask in quotes],
+                      **getattr(fanout_quotes, "last", {})})
         plan = [(c, op) for c, op, _ in quotes]
     else:
         plan = [(c, None) for c in cands]
