@@ -425,8 +425,21 @@ def update(journal, config, now=None, client=None, key=None):
     try:
         if config.get('reversal_v28_enabled'):journal.put('research-ready-status',{'at':time.time(),'status':'running'})
         analyst=call(journal,config,facts,evidence,'analyst',client=client,key=key)
+        if config.get('research_noop_gate_enabled'):
+            from .research_gate import reviewed
+            previous_review=reviewed(journal,config,facts,analyst,time.time())
+            if previous_review:
+                journal.add('research_critic_skipped',dict(previous_review,
+                    reason='same_recently_reviewed_non_trial_proposal',
+                    new_policy_published=False,policy_expiry_extended=False))
+                journal.put('research-ready-status',{'at':time.time(),'status':'no_new_executable_proposal',
+                    'previous_review_at':previous_review['reviewed_at']})
+                return None
         critic=call(journal,config,facts,evidence,'critic',proposal=analyst,client=client,key=key)
         result=publish(journal,config,facts,analyst,critic,rules['sha256'],time.time())
+        if result and config.get('research_noop_gate_enabled'):
+            from .research_gate import remember
+            remember(journal,facts,analyst,critic,time.time())
         if config.get('reversal_v28_enabled'):journal.put('research-ready-status',{'at':time.time(),'status':'published' if result else 'not_published'})
         return result
     except ModelError as exc:

@@ -40,6 +40,7 @@ def main():
                 'buyer_terms_confirmation','buyer_counter_route','buyer_negotiation_step','buyer_route_terminal']
         if cfg.get('inventory_portfolio_v27_enabled'):kinds+=['inventory_portfolio_prepared']
         if cfg.get('reversal_v28_enabled'):kinds+=['reversal_policy_prepared','buyer_economic_skip_v28','buyer_economic_routes_paused']
+        if cfg.get('research_noop_gate_enabled'):kinds+=['research_critic_skipped']
         if cfg.get('objective_decision_enabled'):
             kinds+=['objective_alternatives_prepared','objective_context_error','research_context_prepared',
                     'buyer_forum_policy_choice','forum_objective_observation']
@@ -55,6 +56,7 @@ def main():
     if cfg.get('inventory_portfolio_v27_enabled'):release='v27'
     if cfg.get('execution_revision','').startswith('v27.1-'):release='v271'
     if cfg.get('reversal_v28_enabled'):release='v28'
+    if cfg.get('research_noop_gate_enabled'):release='v281'
     promotion=sorted((ROOT/'logs').glob(release+'-source-promotion-*.json'))[-1]
     manifest=read_json(promotion,{})
     mismatches=[r['path'] for r in manifest['files'] if hashlib.sha256((ROOT/r['path']).read_bytes()).hexdigest()!=r['candidate_sha256']]
