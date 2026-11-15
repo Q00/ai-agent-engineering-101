@@ -59,6 +59,7 @@ class RolloutTests(unittest.TestCase):
    self.p.db.execute('''INSERT INTO sales
      (task,unit,sku,amount,cost,settled,refunded)
      VALUES(?,?,?,?,?,?,0)''',('trial','v','other',8000,8000,time.time()))
+  self.p.growth_event('trial','book_cushion_trial')
   rejected=negotiate(self.u,q,8000,{},self.p,intel=Evidence())
   self.assertGreater(rejected['price'],8000)
   # Missing official Class evidence never opens the exception.

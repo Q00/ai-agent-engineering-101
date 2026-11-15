@@ -311,6 +311,8 @@ class Seller(AgentExecutor):
                     try:
                         program.accept(task.id, unit['unit'], unit['sku'], unit['cost'], q,
                                        inventory=inv, enroll=False)
+                        if q.get('book_cushion_recovery'):
+                            program.growth_event(task.id,'book_cushion_trial')
                     except (ValueError, sqlite3.IntegrityError):
                         control.move_mutation(mutation_id,'REJECTED','reservation refused')
                         self.open.pop(task.id, None)

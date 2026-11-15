@@ -16,7 +16,6 @@ LOSS_LEADER_RATE=.04
 LOSS_LEADER_BUDGET=100_000
 LOSS_LEADER_TRIALS_PER_SKU=5
 BOOK_CUSHION_TRIAL_SHARE=.50
-BOOK_CUSHION_MARGIN_BPS=150
 
 
 def class_book_cushion(intel, own_name='25512088'):
@@ -44,10 +43,11 @@ def active_book_cushion_principal(program, now=None):
     now=time.time() if now is None else now
     try:
         return program.db.execute('''
-            SELECT COALESCE(SUM(cost),0) FROM sales
-            WHERE refunded=0 AND amount*10000<=cost*?
-              AND (settled IS NULL OR settled>?)''',
-            (10000+BOOK_CUSHION_MARGIN_BPS,now-6*3600)).fetchone()[0]
+            SELECT COALESCE(SUM(s.cost),0)
+            FROM sales s JOIN growth_events g ON g.task=s.task
+            WHERE g.event='book_cushion_trial' AND s.refunded=0
+              AND (s.settled IS NULL OR s.settled>?)''',
+            (now-6*3600,)).fetchone()[0]
     except Exception:
         return 0
 
