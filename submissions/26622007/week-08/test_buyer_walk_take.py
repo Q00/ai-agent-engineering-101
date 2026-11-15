@@ -164,10 +164,12 @@ class Main(test_buyer_margin_cap.Run, unittest.TestCase):
 
 
 class Template(unittest.TestCase):
-    def test_the_lowest_price_tail_is_a_template_text(self):
+    def test_the_lowest_price_tail_is_left_to_the_harness_and_read_here(self):
+        # oneshot's TEMPLATE stays as it was (buyer_firm_trial's tests and the expired firm study use this text as a
+        # harness turn); the hook reads it on its own
         h = [("shop asked", 231698), ("you offered", 208528)]
-        self.assertEqual(oneshot.text_price(LOWEST, h), 231698)
-        self.assertFalse(oneshot.final_text(LOWEST))
+        self.assertIsNone(oneshot.text_price(LOWEST, h))
+        self.assertEqual(wt.verified_ask(None, LOWEST, h, goods=True), 231698)
 
 
 if __name__ == "__main__":

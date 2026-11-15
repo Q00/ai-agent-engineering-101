@@ -2403,6 +2403,22 @@ def order_record(order, args, shops, quotes, first_choice, first_reason, shop, r
     }
 
 
+def walk_take_kwargs(order, limit, shop_name):
+    """{"walk_take": buyer.talk's hook} when the margin cap take is on for this talk (take_top), else {}: the take where any
+    turn walks away, the harness's included (W-20261115-1530). The receipt check after the talk is the take's (m_take)."""
+    m = order.get("_margin_cap") if isinstance(order, dict) else None
+    top = m.get("take_top") if isinstance(m, dict) else None
+    if not top:
+        return {}
+
+    def record(note):
+        m["walk_take"] = note
+        buyer_margin_cap.note_take(m, note)
+        log(f"[walk-take] {shop_name}: ask {note['taken']} over my limit {limit} within the take {note['ceiling']}"
+            f" ({note['turn']} turn): taken")
+    return {"walk_take": buyer_walk_take.hook(limit, top, goods=order.get("kind") == "goods", record=record)}
+
+
 def negotiate(*args, goods_take_context=None, **kwargs):
     """Buyer-only policy adapter; the transport and food take_at stay in buyer.negotiate."""
     if goods_take_context is None:
@@ -2856,23 +2872,13 @@ def main():
         if steps:
             log(f"[offer] oneshot: {', '.join(f'{s:.2f}' for s in steps)} of the first ask, then the counter, priced by code")
         talk_mode = f"oneshot {list(steps)}" if steps else "harness"
-
-        def took_walk(note):
-            order["_margin_cap"]["walk_take"] = note
-            buyer_margin_cap.note_take(order["_margin_cap"], note)
-            log(f"[walk-take] {shop['name']}: ask {note['taken']} over my limit {limit} within the take {note['ceiling']}"
-                f" ({note['turn']} turn): taken")
-        # the take where any turn walks away, the harness's included (W-20261115-1530); the receipt check below is the take's
-        m_take_top = (order.get("_margin_cap") or {}).get("take_top")
-        walk_take = buyer_walk_take.hook(limit, m_take_top, goods=order.get("kind") == "goods", record=took_walk) \
-            if r3 and m_take_top else None
         out = negotiate(shop["url"], label, limit, note, request_text(label, key, order) if r3 else None, resume=resume,
                         goods_take_context=(md, order, offer, q, steps, shop, key),
                         stop_if=(lambda text, turn: (quote_refused(text, order, item=(label, key)) if turn == 1 else None)
                                  or goods_text_refused(text, order)) if r3 else None,
                         reply_to=(lambda text: shop_question_reply(text, order)) if r3 else None,
                         ladder=price_ladder if steps else None, ceiling=top if top > limit else None,
-                        **({"walk_take": walk_take} if walk_take else {}),
+                        **(walk_take_kwargs(order, limit, shop["name"]) if r3 else {}),
                         take_at=(min(limit, int(offer["list_price"] * FOOD_TAKE_SHARE))
                         if r3 and FOOD_TAKE_ASK and order.get("kind") == "food" else None),
                         **({'decision_guard': lambda d, h: food_floor30_turn(d, h, limit, steps,

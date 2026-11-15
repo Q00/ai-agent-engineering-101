@@ -40,10 +40,7 @@ TEMPLATE = re.compile(
     r"(?:\s*SKU G[0-9a-f]{8}, grade [ABC]; market certificate at checkout\."
     r"(?:\s*Includes a [0-9]{1,3}-hour warranty: market-enforced full refund if the goods break during warranty; "
     r"the quote includes the warranty surcharge\.)?)?"
-    r"(?:\s*Reply ok to take it\.)?"
-    # usagi's tail since 11/15 ("Counteroffer: 231698. This is my lowest price.", logs/market-kit.log.1 151002): read
-    # by the harness, which walked from asks the margin cap take would pay (W-20261115-1530)
-    r"(?:\s*This is my lowest price\.)?\s*")
+    r"(?:\s*Reply ok to take it\.)?\s*")
 
 
 def final_text(text):
