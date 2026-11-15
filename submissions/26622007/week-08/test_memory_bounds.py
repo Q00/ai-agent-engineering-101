@@ -327,6 +327,10 @@ class KitSellerCapTests(unittest.TestCase):
         self.md = Path(self.td.name)
         self.proc = mock.Mock(pid=4242)
         self.logs = []
+        for name in ("SELLER_CAP_GRACE", "SELLER_CAP_SUSTAIN"):
+            p = mock.patch.object(market_kit, name, 0)
+            p.start()
+            self.addCleanup(p.stop)
 
     def tearDown(self):
         self.td.cleanup()
@@ -362,6 +366,36 @@ class KitSellerCapTests(unittest.TestCase):
         self.status(at=50, quiet=True, flushed=True)
         self.assertTrue(self.step(cap, 52, 101))
         self.assertIsNone(cap["since"])
+
+    def test_no_drain_in_the_grace_or_before_the_footprint_stays_over(self):
+        """11/15 09:43 and 09:54: a new seller peaked at 3.1-3.3 GB in its first minutes and fell to 1.2 GB."""
+        with mock.patch.object(self.kit, "SELLER_CAP_GRACE", 3600), mock.patch.object(self.kit, "SELLER_CAP_SUSTAIN", 1800):
+            cap = {"since": None, "started": 0}
+            self.assertFalse(self.step(cap, 3599, 10 ** 6))                 # in the grace
+            self.assertNotIn("over", cap)
+            self.step(cap, 3600, 101)                                      # over: the clock starts
+            self.step(cap, 4000, 100)                                      # back under: it starts again
+            self.step(cap, 4100, 101)
+            self.step(cap, 4100 + 1799, 101)
+            self.assertFalse((self.md / "seller.drain").exists())
+            self.step(cap, 4100 + 1800, 101)
+            self.assertTrue((self.md / "seller.drain").exists())
+
+    def test_two_cap_restarts_within_six_hours_turn_the_cap_off(self):
+        import subprocess
+        cap = {"since": 5}
+        for now in (100, 100 + 3600):
+            proc = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(30)"], start_new_session=True)
+            cap["marker"] = str(proc.pid)
+            with mock.patch.object(self.kit, "seller_cap", return_value=True):
+                self.assertTrue(self.kit.cap_restart(cap, proc, self.md, now, log=self.logs.append, wait=10))
+        self.assertTrue(cap.get("off"))
+        self.assertIn("cap is off", self.logs[-1])
+        cap = {"since": 5, "restarts": [0]}
+        proc = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(30)"], start_new_session=True)
+        with mock.patch.object(self.kit, "seller_cap", return_value=True):
+            self.kit.cap_restart(cap, proc, self.md, 6 * 3600 + 1, log=self.logs.append, wait=10)
+        self.assertFalse(cap.get("off"))                                   # the earlier one is past the window
 
     def test_an_owners_marker_is_left_alone(self):
         (self.md / "seller.drain").write_text("4242")                   # seller_drain_wait.py, for a deploy

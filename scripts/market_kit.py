@@ -92,6 +92,10 @@ SELLER_MEMORY_CAP = int(os.environ.get("KIT_SELLER_MEMORY_MB", "3072")) << 20   
                                                     # restart: drain (seller_drain.py), then TERM once quiet. 0: off
 SELLER_DRAIN_WAIT = 1200                            # seconds the drain may take; then the restart is given up (no force)
 SELLER_CAP_RETRY = 1800                             # and tried again this long after
+SELLER_CAP_GRACE = 3600                             # no cap drain this long after a seller starts: its first reads
+                                                    # peak at 3.1-3.3 GB and fall to ~1.2 GB in 10 min (11/15 09:43)
+SELLER_CAP_SUSTAIN = 1800                           # the footprint must stay over the cap this long, at every check
+SELLER_CAP_RESTARTS = (2, 6 * 3600)                 # this many cap restarts within this many s turn the cap off
 SELLER_STATUS_FRESH = 15                            # seconds a quiet drain status stays good (the seller writes it every 5)
 SELLER_TERM_WAIT = 60                               # seconds a quiet seller may take to exit after TERM; it is never killed
 LOG_FILE = None
@@ -1317,9 +1321,15 @@ def seller_cap(cap, proc, md, now, cap_bytes=None, log=log):
     if cap.get("since") is None:
         if not cap_bytes or cap.get("off") or now < cap.get("retry_at", 0) or marker.exists():
             return False
+        if now - cap.setdefault("started", now) < SELLER_CAP_GRACE:
+            return False
         held = footprint(proc.pid)
         if held is None or held <= cap_bytes:
+            cap.pop("over", None)
             return False
+        if now - cap.setdefault("over", now) < SELLER_CAP_SUSTAIN:
+            return False
+        cap.pop("over", None)
         marker.write_text(str(proc.pid))
         cap["since"], cap["marker"] = now, str(proc.pid)
         log(f"[kit] your seller holds {held >> 20} MB (cap {cap_bytes >> 20} MB): draining it for a restart")
@@ -1392,7 +1402,15 @@ def cap_restart(cap, proc, md, now, log=log, wait=SELLER_TERM_WAIT):
     except OSError as e:
         log(f"[kit] could not stop your seller: {e}")
     drop_marker(cap, md)
-    return proc.poll() is not None
+    if proc.poll() is None:
+        return False
+    n, within = SELLER_CAP_RESTARTS
+    cap["restarts"] = [t for t in cap.get("restarts", []) if now - t < within] + [now]
+    if len(cap["restarts"]) >= n:
+        cap["off"] = True
+        log(f"[kit] {len(cap['restarts'])} memory-cap restarts within {within // 3600} h: the cap is off until the kit "
+            f"restarts (the seller grows back too fast; look at its memory)")
+    return True
 
 
 def watchdog(a, agent, d, market, keys, procs, proxy, sport, pport, state, every=60):
@@ -1407,7 +1425,8 @@ def watchdog(a, agent, d, market, keys, procs, proxy, sport, pport, state, every
             if procs[0].poll() is not None:
                 log(f"[kit] your seller exited (code {procs[0].returncode}), starting it again")
                 drop_marker(cap, md)
-                cap = {"since": None}
+                cap = {"since": None, "started": time.time(),     # a new seller: its own grace; the count stays
+                       **{k: cap[k] for k in ("restarts", "off") if k in cap}}
                 procs[0] = start(fill(agent["seller"]["cmd"], port=sport), d)
                 pump(procs[0], "[seller]")
                 wait_card(f"http://127.0.0.1:{sport}")
