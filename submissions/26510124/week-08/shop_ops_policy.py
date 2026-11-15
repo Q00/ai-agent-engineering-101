@@ -322,6 +322,10 @@ class PolicyStore:
                 raise ValueError('only bounded opening-price experiments are enabled')
             if current['changes'] and now < current['expires_at']:
                 raise ValueError('another experiment is still active')
+            if current.get('reason') == 'expired':
+                evaluation = read_json(state_dir(self.root) / 'evaluation-control' / (current['decision_id'] + '.json'))
+                if evaluation.get('terminal') is not True:
+                    raise ValueError('previous experiment is awaiting mature evaluation')
             validate_snapshot(snapshot, now)
             # The original immutable snapshot must exist and have the same rules.
             original = read_json(state_dir(self.root) / 'snapshots' / (proposal['snapshot_id'] + '.json'))

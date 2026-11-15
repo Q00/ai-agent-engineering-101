@@ -1,0 +1,8 @@
+Validation: shop operations fixed-window evidence
+Command: ../week-07/.venv/bin/python -m unittest test_shop_ops_evidence -v
+Result: Ran 13 tests in 0.084s; OK (exit 0).
+Added cases: fixed baseline/experiment cohorts survive rolling-window expiry;
+same as-of refund maturity for both periods; late receipt joins preserve fixed
+exposure duration; truncated/missing settlement evidence stays unknown;
+invalid evaluation bounds rejected. Existing nine evidence tests also passed.
+No network, model call, reservation mutation, Buyer change or live deployment.
