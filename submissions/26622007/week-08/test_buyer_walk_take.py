@@ -84,6 +84,47 @@ class Talk(unittest.TestCase):
         self.assertEqual(sent, ["208528", "212055", "231698"])
         self.assertNotEqual(out["state"], "TASK_STATE_COMPLETED")
 
+    def test_a_hold_comes_first(self):
+        # review 576e714 I2: the ask is still coming down within 10% of my limit: HOLD repeats the limit, no take
+        reads = [{"shop_price": 220000, "action": "offer", "price": 212055},
+                 {"shop_price": 218000, "action": "walk_away", "price": 0}]
+        sent, out = self.run_talk([task("Counteroffer: 220000. This is my lowest price."),
+                                   task("Counteroffer: 218000. This is my lowest price."), task("x", state="TASK_STATE_CANCELED")],
+                                  reads, wt.hook(self.LIMIT, self.TOP, goods=True), first=task("Counteroffer: 231698."))
+        self.assertEqual(sent, ["208528", "212055", "212055"])
+        self.assertEqual(out["holds"], 1)
+
+    def test_a_harness_that_repeats_my_limit_to_a_held_ask_takes_it(self):
+        # review 576e714 I3: no walk, the talk would run out its turns and be cancelled
+        seen = []
+        reads = [self.READS[0], {"shop_price": 231698, "action": "offer", "price": 212055}]
+        sent, out = self.run_talk([task(LOWEST), task(LOWEST), done(231698)], reads,
+                                  wt.hook(self.LIMIT, self.TOP, goods=True, record=seen.append))
+        self.assertEqual(sent, ["208528", "212055", "231698"])
+        self.assertEqual(out["state"], "TASK_STATE_COMPLETED")
+        self.assertEqual(seen[0]["turn"], "stall")
+
+    def test_a_decision_guard_veto_records_nothing(self):
+        # review 576e714 M1: the row records the take only when its price goes on the wire
+        seen, sent = [], []
+        replies = [task(LOWEST), task(LOWEST)]
+        reads = list(self.READS)
+        out = {"state": "", "task": None, "receipt": None, "history": [], "agreed": None, "holds": 0}
+
+        def send(url, text, task_id=None):
+            sent.append(text)
+            return replies.pop(0)
+        guard = lambda d, h: d if d["price"] <= self.LIMIT else {"action": "walk_away"}  # noqa: E731
+        with mock.patch.object(buyer, "send", send), mock.patch.object(buyer, "decide", lambda *a, **k: reads.pop(0)), \
+                mock.patch.object(buyer, "log"), mock.patch.object(buyer, "rpc", lambda *a: None):
+            buyer.talk("u", task("Counteroffer: 231698."), "매트리스", self.LIMIT, "", out,
+                       ladder=lambda m, t, h: None if h else {"shop_price": 231698, "action": "offer", "price": 208528},
+                       ceiling=self.TOP, decision_guard=guard,
+                       walk_take=wt.hook(self.LIMIT, self.TOP, goods=True, record=seen.append))
+        self.assertEqual(sent, ["208528", "212055"])
+        self.assertEqual(seen, [])
+        self.assertNotIn("walk_take", out["turns"])
+
     def test_the_harness_number_must_be_the_one_the_text_holds(self):
         # the harness reads 220000 though the shop wrote 231698: the guard walks as before, nothing is taken
         reads = [self.READS[0], {"shop_price": 220000, "action": "walk_away", "price": 0}]
@@ -103,8 +144,13 @@ class Verified(unittest.TestCase):
         self.assertEqual(wt.verified_ask(231000, "whatever 5", self.H, goods=True), 231000)
 
     def test_one_price_left_after_the_fields_the_shops_write(self):
-        text = "We hold at 231698 for G1234abcd, grade A with a 6-hour warranty. 208528 is too low."
+        text = "208528 is too low. Counteroffer: 231698. Includes a 6-hour warranty. This is my lowest price."
         self.assertEqual(wt.verified_ask(None, text, self.H, goods=True), 231698)
+
+    def test_a_number_with_no_ask_word_or_another_unit_is_not_read(self):
+        for text in ("We hold at 231698. This is my lowest price.", "Counteroffer: 231698. Grade C refurbished.",
+                     "Counteroffer: 231698 for the box-damaged one."):
+            self.assertIsNone(wt.verified_ask(None, text, self.H, goods=True), text)
 
     def test_texts_that_can_mean_another_price_are_not_read(self):
         for text in ("Was 240000, now 231698.", "231698 minus 2000 if you pay today.", "Others ask 231698.",
@@ -135,6 +181,20 @@ class Decide(unittest.TestCase):
     def test_no_offer_of_mine_yet_is_none(self):
         self.assertIsNone(wt.decide(7200, None, "Counteroffer: 7200.", [("shop asked", 7500)], 6799, 7293))
 
+    def test_an_early_walk_before_i_offered_my_limit_is_none(self):
+        # review 576e714 I2: the harness may walk on any turn; my own steps up to the limit come first
+        self.assertIsNone(wt.decide(7200, None, "Counteroffer: 7200.", [("shop asked", 7500), ("you offered", 5000)],
+                                    6799, 7293))
+
+    def test_another_unit_is_none(self):
+        for text in ("Grade C unit at 7200.", "Counteroffer: 7200 for a grade C unit.", "7200 for the refurbished unit.",
+                     "Display model, 7200.", "Rent it for 7200.", "7200 for the empty box.", "Add 7200 to your offer.",
+                     "Starting from 7200", "Different unit G1234abcd at 7200.", "7200 gets you the floor sample."):
+            self.assertIsNone(wt.decide(7200, None, text, self.H, 6799, 7293), text)
+
+    def test_the_moss_final_price_is_taken(self):
+        self.assertEqual(wt.decide(7200, None, "Four offers left. Final price: 7200. ", self.H, 6799, 7293), 7200)
+
 
 class Main(test_buyer_margin_cap.Run, unittest.TestCase):
     """market_buyer.main: a grade A unit of a 10,000 list, limit 6799, take 7293 (test_buyer_margin_cap.MainTake)."""
@@ -151,6 +211,7 @@ class Main(test_buyer_margin_cap.Run, unittest.TestCase):
         def neg(*a, **k):
             got["over"] = k["walk_take"](7294, None, "Counteroffer: 7294. This is my lowest price.", self.HIST, "harness")
             got["in"] = k["walk_take"](7200, None, "Counteroffer: 7200. This is my lowest price.", self.HIST, "harness")
+            k["walk_take"].sent(7200, "harness")
             rec = {"item": "G1", "price": 7200, "sig_seller": "s", "task": "t", "shop": "s", "order": "o-1",
                    "warranty_hours": 6}
             return {"state": "TASK_STATE_COMPLETED", "task": "t", "agreed": 7200, "holds": 0, "receipt": rec,

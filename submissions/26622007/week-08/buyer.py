@@ -330,14 +330,10 @@ def _talk(url, t, item, budget, note, out, stop_if=None, take_at=None, reply_to=
             break
         log(f"shop price {ask_price} ({'metadata' if meta is not None else 'read by the harness'})")
         history.append(("shop asked", ask_price))
-        took = walk_take(ask_price, meta, text, history[:-1], kind) \
-            if walk_take and d["action"] == "walk_away" else None
-        if took is not None:
-            # the shop's own ask, checked against its message, is within the take ceiling: offered, not walked from
-            log(f"TAKE-WALK {kind} turn would walk away; the shop's ask {took} (checked in its message) is within the "
-                f"ceiling {ceiling} -> offering it")
-            kinds["walk_take"] = kinds.get("walk_take", 0) + 1
-            d = {"shop_price": ask_price, "action": "offer", "price": took}
+        took = None
+        # the harness repeats my last offer to an ask the shop holds: the talk only runs out its turns that way
+        stall = (kind == "harness" and d["action"] == "offer" and bool(taken) and d.get("price") is not None
+                 and d["price"] <= taken[-1] and [p for who, p in history[:-1] if who == "shop asked"][-1:] == [ask_price])
         if d["action"] == "walk_away":
             asks = [p for who, p in history if who == "shop asked"]
             coming_down = len(asks) >= 2 and asks[-1] < asks[-2]
@@ -349,8 +345,17 @@ def _talk(url, t, item, budget, note, out, stop_if=None, take_at=None, reply_to=
                     f"{HOLD_MARGIN:.0%} of the budget and still coming down -> repeat {budget} ({holds}/{MAX_HOLDS})")
                 d = {"action": "offer", "price": budget}
             else:
-                log("harness: walk away")
-                break
+                took = walk_take(ask_price, meta, text, history[:-1], kind) if walk_take else None
+                if took is None:
+                    log("harness: walk away")
+                    break
+        elif stall and walk_take:
+            took = walk_take(ask_price, meta, text, history[:-1], kind)
+        if took is not None:
+            # the shop's own ask, checked against its message, is within the take ceiling: offered, not walked from
+            log(f"TAKE-WALK {kind} turn would {'stall' if stall else 'walk away'}; the shop's ask {took} (checked in "
+                f"its message) is within the margin cap take -> offering it")
+            d = {"shop_price": ask_price, "action": "offer", "price": took}
         offer = d["price"]
         # the band's own turn, or a FAST turn after it (the shop came down under my band offer), may go up to ceiling
         band = ceiling and ((code and not fast and code.get("accept_band")) or (fast and taken and taken[-1] > budget)
@@ -378,6 +383,10 @@ def _talk(url, t, item, budget, note, out, stop_if=None, take_at=None, reply_to=
             except Exception as e:
                 log(f'final decision guard failed: {type(e).__name__}; walking away')
                 break
+        if took is not None and offer == took:
+            # recorded at the wire, after the clamps and the decision guard (review 576e714 M1)
+            kinds["walk_take"] = kinds.get("walk_take", 0) + 1
+            getattr(walk_take, "sent", lambda *a: None)(offer, "stall" if stall else kind)
         history.append(("you offered", offer))
         out["agreed"] = offer
         nt = send(url, str(offer), task_id)

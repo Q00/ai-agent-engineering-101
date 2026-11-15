@@ -2848,7 +2848,8 @@ def main():
                     goods_first_arm or order.get("_one_won_default") or
                     order.get("_goods_extra_quote_probe") or order.get("_quote_alignment") or
                     order.get("_food_quote_yield")), now=time.time(), log=log)
-            # a text-only "Final price: N" was a harness turn, which neither B3 nor the band ever moved: kept so
+            # a text-only "Final price: N" was a harness turn, which neither B3 nor the band ever moved: kept so here; with
+            # the margin cap take on, its walk is taken in buyer.talk (walk_take_kwargs, W-20261115-1530)
             final_text = meta is None and oneshot.final_text(text)
             if order.get("_b3") is not None and not final_text:
                 result, note = buyer_b3b1.b3_turn(result, history, limit, probe=bool(
