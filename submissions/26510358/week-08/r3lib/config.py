@@ -302,7 +302,8 @@ BUYER_FANOUT_SHARE = 1.0           # 1.0 since 2026-11-13 16:40 KST (canary 0.20
                                     #   median one on the same SKU and grade; we paid 8.8% over the cheapest)
 BUYER_FANOUT_MAX = 8               # shops asked at once (one best candidate each)
 BUYER_QUOTE_TIMEOUT_S = 20         # quotes not in by then are ignored and cancelled when they come
-BUYER_QUOTE_EARLY_SHARE = 0.5       # 2026-11-15 18:3x KST canary (S1 of 20261115_short_term_strategy.md): orders in this
+BUYER_QUOTE_EARLY_SHARE = 1.0       # 1.0 since 2026-11-15 19:5x KST (canary 1.3 h, 92 vs 91 orders: wall mean 8.5 vs 23.9 s,
+                                    #   margin share/deal 0.871 vs 0.871, deals/order 0.511 vs 0.549 (n.s.), orders/h 119 -> 135). Was a canary (S1 of 20261115_short_term_strategy.md): orders in this
                                     #   share stop waiting BUYER_QUOTE_GRACE_S after the BUYER_QUOTE_ENOUGH-th usable quote
                                     #   (36% of fan-outs waited the full 20 s; order starts are >= ~20 s apart). 0.0 rolls back
 BUYER_QUOTE_ENOUGH = 4

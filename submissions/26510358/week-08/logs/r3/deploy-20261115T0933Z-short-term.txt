@@ -27,3 +27,15 @@ S3 CAP_CEILING_SHARE 0.60 -> 0.70 (3732ed5c, +17%, inside the 20% rule)
     but stockouts and revenue/h do not move.
 
 Freeze: no deploys after 2026-11-17 12:00 KST.
+
+Update 2026-11-15 19:50 KST
+S1 widened to 1.0 (epoch 1794739742). Canary 18:25-19:46 KST, by arm (early / wait): 92 / 91 orders, order wall time
+  mean 8.5 / 23.9 s (p50 4.9 / 20.6), quote phase p50 2.5 / 18.0 s, deals/order 0.511 / 0.549 (difference inside noise
+  at n~90, SE ~0.07), margin share per deal 0.871 / 0.871 (44 / 46 deals). Orders/h overall 119.2 (12 h before) ->
+  135.3 with half the orders early. Next read: orders/h and deals/h at 1.0 against 135/h.
+S3 CORRECTION: the premise was wrong. kpi stock_cost 196.8M includes premium stock (111M); the normal stock the cap
+  governs was 86M against a 186.9M cap, and the 0.60 ceiling was already 253M. The ceiling never bound, so 0.70 changes
+  nothing (left in place, no restart for a no-op). Bedding stockouts are one SKU, G966ab0f3 (46 misses / 6 h): the
+  category target (192) is filled by 268 slower bedding units, so the SKU is never bought. Not fixed: market pays 0.64
+  of list on a ~0.59 supply cost, ~1.9k margin per unit, ~8M revenue to the end (0.2% of ours).
+Buyer threshold not raised: deals at margin share 0.72-0.76 are 8% of deals and sit at the cumulative saved (0.7385).
