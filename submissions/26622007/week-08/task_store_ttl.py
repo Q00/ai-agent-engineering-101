@@ -2,6 +2,7 @@
 its whole history, and nothing in the SDK deletes one: ~870 talks an hour, 13-26 kB each, so a seller up for three days
 held ~60 k tasks (11/15, seller.py at 5-6.7 GB). A finished task is dropped TERMINAL_TTL after its last save, any other
 IDLE_TTL after it (Seller.sweep_stale drops the shop's own record of such a talk at the same age)."""
+import sys
 import time
 
 from a2a.server.tasks import InMemoryTaskStore
@@ -22,6 +23,9 @@ class ExpiringTaskStore(InMemoryTaskStore):
         self.last_sweep = clock()
         impl = getattr(self, "_impl", None)     # the SDK's private store (a2a-sdk 1.2.2): without it, store as the SDK does
         self.on = all(hasattr(impl, a) for a in ("tasks", "lock", "owner_resolver"))
+        if not self.on:     # an a2a-sdk without these keeps every task again (5-6.7 GB in three days, 11/15)
+            print("[seller] task TTL is off: this a2a-sdk's InMemoryTaskStore has no _impl.tasks/lock/owner_resolver, "
+                  "every task is kept", file=sys.stderr, flush=True)
 
     async def save(self, task, context):
         await super().save(task, context)

@@ -86,6 +86,124 @@ class LedgerRowsTests(unittest.TestCase):
         self.assertEqual(market_model.load_rows(os.path.join(self.md, "none")), [])
 
 
+MINE = "Nocha Furniture"
+STOCK_CATALOG = {k: {**v, "category": f"c/{k}"} for k, v in CATALOG.items()}
+
+
+def stock_ledger():
+    """ledger() and three sales of mine: each settle names that day's tunnel URL, its result row my shop's name."""
+    rows = ledger()
+    seq, t = rows[-1]["seq"], 1_000_000.0
+    for i in range(3):
+        seq += 1
+        rows.append({"seq": seq, "k": "settle", "ts": t + 200 + i, "buyer": "b2", "order": f"m{i}", "sku": "G1",
+                     "amount": 950, "grade": "A", "honest": True, "shop": f"https://tunnel-{i}", "warranty": 12,
+                     "unit": f"mu{i}"})
+        seq += 1
+        rows.append({"seq": seq, "k": "result", "ts": t + 200 + i, "buyer": "b2", "order": f"m{i}",
+                     "shop": f"https://tunnel-{i}", "seller": MINE})
+    rows.append({"seq": seq + 1, "k": "broken", "ts": t + 300, "buyer": "b2", "order": "m0", "sku": "G1"})
+    return rows
+
+
+class StockRowsTests(unittest.TestCase):
+    """restock.py read every row (2.4 M, RSS 2.7-2.8 GB each run on 11/15 12:03-12:04) for what only needs the settle,
+    broken and supply rows and the result rows of my own shop."""
+    def setUp(self):
+        self.td = tempfile.TemporaryDirectory()
+        self.md = self.td.name
+        self.env = mock.patch.dict(os.environ, {"SHOP_CARD_NAME": MINE})
+        self.env.start()
+        os.environ.pop("SHOP_PUBLIC_URL", None)
+        self.write(stock_ledger())
+
+    def tearDown(self):
+        self.env.stop()
+        self.td.cleanup()
+
+    def write(self, rows):
+        with open(os.path.join(self.md, market_model.ROWS), "w", encoding="utf-8") as f:
+            for r in rows + rows[:5]:
+                f.write(json.dumps(r, ensure_ascii=False) + "\n")
+            f.write("{not json\n")
+
+    def same(self, full, slim):
+        import decision_memory
+        shops = market_model.my_shops()
+        for mature in (False, True):
+            self.assertEqual(market_model.break_stats(slim, STOCK_CATALOG, mature_only=mature),
+                             market_model.break_stats(full, STOCK_CATALOG, mature_only=mature))
+        self.assertEqual(market_model.estimate(slim, STOCK_CATALOG, {"b0"}, shops, now=1_030_000.0),
+                         market_model.estimate(full, STOCK_CATALOG, {"b0"}, shops, now=1_030_000.0))
+        self.assertEqual(market_model.link_broken(slim), market_model.link_broken(full))
+        self.assertEqual(decision_memory.my_sales(slim, shops), decision_memory.my_sales(full, shops))
+        kept = lambda rows: [r for r in rows if r["k"] in ("settle", "broken", "supply")]
+        self.assertEqual(kept(slim), kept(full))      # restock.pending, opening.revise, measure and the forums read these
+
+    def test_the_stock_rows_give_the_same_model_breaks_and_sales(self):
+        import decision_memory
+        full, slim = market_model.load_rows(self.md), market_model.load_stock_rows(self.md)
+        self.same(full, slim)
+        self.assertEqual(len(decision_memory.my_sales(slim, market_model.my_shops())), 3)
+        self.assertEqual({r["seller"] for r in slim if r["k"] == "result"}, {MINE})
+        self.assertEqual(slim[-1], {"k": "last", "ts": max(r["ts"] for r in full)})   # an other shop's result row
+        self.assertEqual(len(full) - len(slim), 41 - 1)     # 41 result rows of another shop out, the "last" row in
+
+    def test_a_settle_without_its_shop_keeps_the_result_that_names_it(self):
+        rows = stock_ledger()
+        seq = rows[-1]["seq"]
+        rows.append({"seq": seq + 1, "k": "result", "ts": 1_000_400.0, "buyer": "b3", "order": "n1",
+                     "shop": "https://s3", "seller": "Shop Three"})     # before its settle
+        for n, order in ((2, "n1"), (3, "n2")):
+            rows.append({"seq": seq + n, "k": "settle", "ts": 1_000_401.0, "buyer": "b3", "order": order, "sku": "G2",
+                         "amount": 1500, "grade": "B", "honest": True, "shop": None, "warranty": 12})
+        rows.append({"seq": seq + 4, "k": "result", "ts": 1_000_402.0, "buyer": "b3", "order": "n2",
+                     "shop": "https://s4", "seller": "Shop Four"})      # after it
+        self.write(rows)
+        full, slim = market_model.load_rows(self.md), market_model.load_stock_rows(self.md)
+        self.same(full, slim)
+        self.assertEqual({r["order"] for r in slim if r["k"] == "result"} - {"m0", "m1", "m2"}, {"n1", "n2"})
+
+    def test_missing_file(self):
+        self.assertEqual(market_model.load_stock_rows(os.path.join(self.md, "none")), [])
+
+    def test_restock_reads_the_stock_rows_once_for_all_its_readers(self):
+        import decision_memory, forum, restock, shop_forum
+        with open(os.path.join(self.md, "inventory.json"), "w", encoding="utf-8") as f:
+            json.dump({"round": market_model.ECON_ROUND, "units": []}, f)
+        restock._ROWS.clear()
+        try:
+            with mock.patch.object(market_model, "load_rows", side_effect=AssertionError("the whole ledger")), \
+                    mock.patch.object(market_model, "load_stock_rows", wraps=market_model.load_stock_rows) as load:
+                rows = restock.rows_of(self.md)
+                decision_memory.outcomes(self.md, {"units": []}, rows=rows)
+                shop_forum.maybe_run(self.md, rows=rows)
+                forum.maybe_run(self.md, decide=lambda *a, **k: None, rows=rows)
+                restock.read_breaks(self.md, STOCK_CATALOG)
+            self.assertEqual(load.call_count, 1)
+            self.assertIs(restock.rows_of(self.md), rows)
+        finally:
+            restock._ROWS.clear()
+
+    def test_a_changed_file_drops_the_old_rows_before_it_is_read_again(self):
+        import restock
+        restock._ROWS.clear()
+        try:
+            restock.rows_of(self.md)
+            with open(os.path.join(self.md, market_model.ROWS), "a", encoding="utf-8") as f:
+                f.write(json.dumps({"seq": 999, "k": "settle", "ts": 2_000_000.0, "sku": "G1", "shop": "x"}) + "\n")
+            held = []
+            real = market_model.load_stock_rows
+            def load(md):
+                held.append(len(restock._ROWS))            # one copy at a time: the old one is gone
+                return real(md)
+            with mock.patch.object(market_model, "load_stock_rows", side_effect=load):
+                self.assertEqual(restock.rows_of(self.md)[-1], {"k": "last", "ts": 2_000_000.0})
+            self.assertEqual(held, [0])
+        finally:
+            restock._ROWS.clear()
+
+
 class ExpiringTaskStoreTests(unittest.TestCase):
     def test_old_tasks_go_and_new_ones_stay(self):
         from a2a.server.context import ServerCallContext
@@ -139,10 +257,14 @@ class ExpiringTaskStoreTests(unittest.TestCase):
     def test_without_the_sdk_internals_it_stores_as_the_sdk_does(self):
         from a2a.server.context import ServerCallContext
         from a2a.types.a2a_pb2 import Task
+        import contextlib
+        import io
+        err = io.StringIO()
         with mock.patch.object(task_store_ttl.InMemoryTaskStore, "__init__",
-                               lambda self, **kw: setattr(self, "_impl", object())):
+                               lambda self, **kw: setattr(self, "_impl", object())), contextlib.redirect_stderr(err):
             store = task_store_ttl.ExpiringTaskStore()
         self.assertFalse(store.on)
+        self.assertIn("task TTL is off", err.getvalue())                  # a2a-sdk changed: the 5-6.7 GB come back
         async def run():
             with mock.patch.object(task_store_ttl.InMemoryTaskStore, "save", mock.AsyncMock()) as save:
                 await store.save(Task(id="t"), ServerCallContext())
@@ -369,7 +491,8 @@ class KitSellerCapTests(unittest.TestCase):
 
     def test_no_drain_in_the_grace_or_before_the_footprint_stays_over(self):
         """11/15 09:43 and 09:54: a new seller peaked at 3.1-3.3 GB in its first minutes and fell to 1.2 GB."""
-        with mock.patch.object(self.kit, "SELLER_CAP_GRACE", 3600), mock.patch.object(self.kit, "SELLER_CAP_SUSTAIN", 1800):
+        with mock.patch.object(self.kit, "SELLER_CAP_GRACE", 3600), mock.patch.object(self.kit, "SELLER_CAP_SUSTAIN", 1800), \
+                mock.patch.object(self.kit, "SELLER_CAP_GAP", 10 ** 9):    # these steps stand for checks a minute apart
             cap = {"since": None, "started": 0}
             self.assertFalse(self.step(cap, 3599, 10 ** 6))                 # in the grace
             self.assertNotIn("over", cap)
@@ -408,7 +531,7 @@ class KitSellerCapTests(unittest.TestCase):
         self.assertEqual(self.kit.new_cap(cap, 50), {"since": None, "started": 50})
 
     def test_the_over_clock_starts_again_after_a_check_skipped(self):
-        with mock.patch.object(self.kit, "SELLER_CAP_SUSTAIN", 1800):
+        with mock.patch.object(self.kit, "SELLER_CAP_SUSTAIN", 1800), mock.patch.object(self.kit, "SELLER_CAP_GAP", 10 ** 9):
             cap = {"since": None, "started": 0}
             self.step(cap, 10, 101)
             (self.md / "seller.drain").write_text("999")                # an owner's drain for a while
@@ -418,6 +541,79 @@ class KitSellerCapTests(unittest.TestCase):
             self.assertFalse((self.md / "seller.drain").exists())
             self.step(cap, 1900 + 1800, 101)
             self.assertTrue((self.md / "seller.drain").exists())
+
+    def test_the_over_clock_starts_again_after_a_gap_without_checks(self):
+        """A watchdog lap held up by a tunnel or seller replacement (wait_card up to 120 s) measured nothing meanwhile."""
+        with mock.patch.object(self.kit, "SELLER_CAP_SUSTAIN", 1800):
+            cap = {"since": None, "started": 0}
+            for now in range(10, 1210, 60):
+                self.step(cap, now, 101)
+            self.step(cap, 1150 + self.kit.SELLER_CAP_GAP + 1, 101)       # nothing measured for longer than the gap
+            for now in range(1150 + self.kit.SELLER_CAP_GAP + 61, 1150 + self.kit.SELLER_CAP_GAP + 1800, 60):
+                self.step(cap, now, 101)
+            self.assertFalse((self.md / "seller.drain").exists())
+            self.step(cap, 1150 + self.kit.SELLER_CAP_GAP + 1 + 1800, 101)
+            self.assertTrue((self.md / "seller.drain").exists())
+
+    def test_every_line_on_the_cap_resting_or_off_matches_one_watch_pattern(self):
+        import re
+        import subprocess
+        watch = re.compile(self.kit.CAP_WATCH)
+        cap = {"since": None, "no_status": True}
+        self.step(cap, 10, 101)                                            # off for this seller
+        cap = {"since": None, "restarts": [5, 6]}
+        self.step(cap, 10, 101)                                            # resting
+        cap = {"since": None}
+        self.step(cap, 10, 101)
+        self.status(pid=99, at=500)
+        self.step(cap, 11 + self.kit.SELLER_DRAIN_WAIT, 101)              # its status never named it
+        cap = {"since": 5, "restarts": [50]}
+        proc = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(30)"], start_new_session=True)
+        with mock.patch.object(self.kit, "seller_cap", return_value=True):
+            self.kit.cap_restart(cap, proc, self.md, 100, log=self.logs.append, wait=10)      # rests
+        hits = [line for line in self.logs if watch.search(line)]
+        self.assertEqual(len(hits), 4, self.logs)
+        self.assertFalse([line for line in self.logs if "cap" in line and "draining" not in line
+                          and "drained" not in line and "did not drain" not in line and not watch.search(line)])
+
+    def test_the_watchdog_starts_a_new_seller_after_a_cap_restart_with_the_count_kept(self):
+        class Stop(BaseException):
+            pass
+        sleeps = []
+        def sleep(s):
+            sleeps.append(s)
+            if len(sleeps) > 1:
+                raise Stop
+        gone = mock.Mock(pid=1, returncode=0)
+        gone.poll.return_value = 0
+        fresh = mock.Mock(pid=2)
+        procs = [gone, None]
+        def cap_restart(cap, proc, md, now, **kw):
+            cap["restarts"] = [now]
+            (md / "seller.drain").write_text(str(proc.pid))
+            cap["marker"] = str(proc.pid)
+            return True
+        a = mock.Mock(tunnel=False)
+        agent = {"seller": {"cmd": "python seller.py --port {port}"}}
+        d = Path(self.td.name)
+        (d / ".market").mkdir()
+        with mock.patch.object(self.kit.time, "sleep", side_effect=sleep), \
+                mock.patch.object(self.kit.time, "time", return_value=500.0), \
+                mock.patch.object(self.kit, "cap_restart", side_effect=cap_restart), \
+                mock.patch.object(self.kit, "start", return_value=fresh) as start, \
+                mock.patch.object(self.kit, "pump") as pump, \
+                mock.patch.object(self.kit, "wait_card") as wait_card, \
+                mock.patch.object(self.kit, "new_cap", wraps=self.kit.new_cap) as new_cap, \
+                mock.patch.object(self.kit, "log", side_effect=self.logs.append):
+            with self.assertRaises(Stop):
+                self.kit.watchdog(a, agent, d, None, {}, procs, None, 7000, 7001, {}, every=60)
+        self.assertIs(procs[0], fresh)
+        start.assert_called_once_with("python seller.py --port 7000", d)
+        pump.assert_called_once_with(fresh, "[seller]")
+        wait_card.assert_called_once_with("http://127.0.0.1:7000")
+        self.assertEqual(new_cap.call_args.args[0]["restarts"], [500.0])  # the count goes to the new seller's cap
+        self.assertFalse((d / ".market" / "seller.drain").exists())        # the kit's marker went before the start
+        self.assertIn("exited (code 0)", self.logs[0])
 
     def test_an_owners_marker_is_left_alone(self):
         (self.md / "seller.drain").write_text("4242")                   # seller_drain_wait.py, for a deploy

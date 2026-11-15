@@ -47,13 +47,14 @@ def unit_costs(path=None):
     return {k: sum(v) / len(v) for k, v in costs.items()}
 
 
-def outcomes(md, inv, last=5, top=10, now=None, me_shops=None, costs=None):
-    """{"decisions": newest few with their results, "skus": best and worst SKUs across all of them, "totals"}."""
+def outcomes(md, inv, last=5, top=10, now=None, me_shops=None, costs=None, rows=None):
+    """{"decisions": newest few with their results, "skus": best and worst SKUs across all of them, "totals"}. rows: the
+    ledger rows the caller already holds (restock.rows_of), else the whole file is read."""
     now = now or time.time()
     me_shops = me_shops if me_shops is not None else market_model.my_shops()
     decisions = [d for d in read_jsonl(os.path.join(md, "decisions.jsonl")) if d.get("agent") == "restock" and (d.get("final") or {}).get("buy")]
     sales = collections.defaultdict(list)
-    for s in my_sales(market_model.load_rows(md), me_shops):
+    for s in my_sales(market_model.load_rows(md) if rows is None else rows, me_shops):
         if s.get("sku") and s.get("ts"):
             sales[s["sku"]].append(s)
     costs = unit_costs() if costs is None else costs

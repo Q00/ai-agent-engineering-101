@@ -492,7 +492,9 @@ _ROWS = {}      # state -> ((size, mtime_ns), rows)
 def rows_of(state):
     """The ledger rows, read once a run while the file is unchanged (read_model, read_breaks and opening each read the
     143 MB file, ~0.8 s each and more beside the buyer: in the 08:23 window of 11/07 the run inside it printed its lines
-    ~12 s after the last supply and G2607d1f6 was held back at the close). A sync that adds rows changes the key."""
+    ~12 s after the last supply and G2607d1f6 was held back at the close). A sync that adds rows changes the key.
+    Only the rows its readers use (market_model.load_stock_rows; the whole ledger held 2.7-2.8 GB each run on 11/15), and
+    the old copy goes before the next is read. decision_memory, the forums and measure get these too."""
     try:
         st = os.stat(os.path.join(state, market_model.ROWS))
         key = (st.st_size, st.st_mtime_ns)
@@ -500,8 +502,8 @@ def rows_of(state):
         key = None
     if key is not None and state in _ROWS and _ROWS[state][0] == key:
         return _ROWS[state][1]
-    rows = market_model.load_rows(state)
     _ROWS.clear()
+    rows = market_model.load_stock_rows(state)
     if key is not None:
         _ROWS[state] = (key, rows)
     return rows
@@ -751,7 +753,7 @@ def agent_turn(state, inv, catalog, demand, cfg, model, decide=agent_loop.decide
     q = load(path, {"at": 0, "lines": []})
     if time.time() - q["at"] >= (cfg["agent_every_minutes"] if due_minutes is None else due_minutes) * 60:
         proposal = plan(inv, catalog, demand, {**cfg, "max_lines": cfg["agent_max_lines"], "demand_catchup": None}, model)
-        results = decision_memory.outcomes(state, inv)
+        results = decision_memory.outcomes(state, inv, rows=rows_of(state))
         agent_memory.learn_from_outcomes(state, results, catalog)
         try:
             final = decide(GOAL.format(ends=cfg.get("round_ends_at"), now=int(time.time()), lines=cfg["agent_max_lines"]), FINAL,
@@ -1014,7 +1016,7 @@ def forum_off_window(state, inv, now=None):
     r = inv.get("restock")
     if isinstance(r, dict) and r.get("open") is False and hard_limits.number(r.get("opens_at")) \
             and r["opens_at"] - now > 150:
-        return forum.maybe_run(state)
+        return forum.maybe_run(state, rows=rows_of(state))
     return None
 
 
@@ -1159,7 +1161,7 @@ def main():
         forum_off_window(args.state, inv)   # closed hooks keep the same due policy; no model wait during supply
         tool_forge.maybe_run(args.state)
         rival_vote.maybe_run(args.state)    # a free dislike stance on a tied Players rival's buyer, never a paid vote
-    shop_forum.maybe_run(args.state)    # the shop's own posts, written by code from its ledger rows and stock
+    shop_forum.maybe_run(args.state, rows=rows_of(args.state))    # the shop's own posts, from its ledger rows and stock
     # the last word, whatever came before. It keeps its own 0.75 x list (test_hard_limits pins it); the surge cost is
     # reserved by guard() and the waiting lines, and with the balance far above STOP_BUYING_BELOW the line does not bind
     slot = cfg["first_slot"]
@@ -1206,7 +1208,7 @@ def main():
     restock_first_slot.record(args.state, slot, out["buy"][:KIT_LINES])
     restock_first_stock.record(args.state, cfg["first_stock"], out["buy"][:KIT_LINES], inv, waiting)
     measure.tick(args.state, inv, out["buy"][:KIT_LINES], pricing,     # after the line the kit reads; local files only, never raises
-                 window_arm=window_arm)
+                 window_arm=window_arm, rows=rows_of(args.state))
     return 0
 
 

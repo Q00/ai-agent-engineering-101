@@ -75,8 +75,9 @@ def clean(final, posts, ledger_seqs, voted, cfg, me=ME, avoid=()):
     return lines, new_votes
 
 
-def maybe_run(md, decide=agent_loop.decide):
-    """One forum decision when it is due. Returns the lines written, or None when it was not due or nothing came of it."""
+def maybe_run(md, decide=agent_loop.decide, rows=None):
+    """One forum decision when it is due. Returns the lines written, or None when it was not due or nothing came of it.
+    rows: the ledger rows the caller already holds (restock.rows_of), else the whole file is read."""
     try:
         cfg = hard_limits.clamp_cfg("forum", {**DEFAULTS, **load("pricing.json", {}).get("forum", {})})
         path = os.path.join(md, STATE)
@@ -94,7 +95,7 @@ def maybe_run(md, decide=agent_loop.decide):
         if final is None:
             print("[forum] no evidenced decision", file=sys.stderr, flush=True)
             return None
-        seqs = {r["seq"] for r in market_model.load_rows(md) if r["k"] == "settle"}
+        seqs = {r["seq"] for r in (market_model.load_rows(md) if rows is None else rows) if r["k"] == "settle"}
         lines, voted = clean(final, posts if isinstance(posts, list) else [], seqs, set(state["voted"]), cfg,
                              avoid=rival_vote.avoid(md))     # a like would cancel a dislike stance
         if any("post" in x for x in lines) and not buyer_post.claim_slot(md):

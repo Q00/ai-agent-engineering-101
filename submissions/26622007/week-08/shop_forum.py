@@ -228,8 +228,9 @@ def card_text(md, now=None):
     return desc, skill, ["shopping", "negotiation", "food", "home goods"] + food[:6] + goods[:6], example
 
 
-def maybe_run(md, now=None):
-    """At most one shop post when one is due. Returns the line written, or None."""
+def maybe_run(md, now=None, rows=None):
+    """At most one shop post when one is due. Returns the line written, or None. rows: the ledger rows the caller already
+    holds (restock.rows_of), else the whole file is read."""
     try:
         now = now or time.time()
         inv = load(os.path.join(md, "inventory.json"), {})
@@ -240,7 +241,7 @@ def maybe_run(md, now=None):
         sent = [t for t in state.get("sent") or [] if num(t) and now - t < 86400]
         if (sent and now - max(sent) < MIN_GAP_MINUTES * 60) or len(sent) >= MAX_POSTS_PER_DAY:
             return None
-        rows = market_model.load_rows(md)
+        rows = market_model.load_rows(md) if rows is None else rows
         sales, broken = my_record(rows)
         on_hand = stock(inv, now)
         mark_warranty(on_hand, rows, md)

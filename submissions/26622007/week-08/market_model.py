@@ -151,10 +151,9 @@ def load_rows(md, name=ROWS):
     return rows
 
 
-def load_break_rows(md):
-    """What break_stats reads, without the result rows (two thirds of the ledger): the settle and broken rows, each seq
-    once, and one {"k": "last", "ts"} row with the latest time of any row, which mature_only measures from. seller.py
-    held the whole ledger every 10 min for this (11/15: 4-6.7 GB beside its task store)."""
+def _load_some(md, keep):
+    """The rows keep(row) takes, each seq once, then one {"k": "last", "ts"} row with the latest time of any row (what
+    break_stats' mature_only measures from). Every line is still parsed; only the rows kept are held."""
     seen, rows, last = set(), [], None
     try:
         with open(os.path.join(md, ROWS), encoding="utf-8") as f:
@@ -163,18 +162,57 @@ def load_break_rows(md):
                     r = json.loads(line)
                 except ValueError:
                     continue
-                if not isinstance(r, dict) or r.get("seq") in seen:
+                if not isinstance(r, dict):
                     continue
-                seen.add(r.get("seq"))
                 ts = r.get("ts")
                 if isinstance(ts, (int, float)) and (last is None or ts > last):
                     last = ts
-                if r.get("k") in ("settle", "broken"):
+                if keep(r) and r.get("seq") not in seen:      # a seq names one row: the rows left out need no seen
+                    seen.add(r.get("seq"))
                     rows.append(_shared(r))
     except OSError:
         pass
     if last is not None:
         rows.append({"k": "last", "ts": last})
+    return rows
+
+
+def load_break_rows(md):
+    """What break_stats reads, without the result rows (two thirds of the ledger): the settle and broken rows and the
+    "last" row (_load_some). seller.py held the whole ledger every 10 min for this (11/15: 4-6.7 GB beside its task store)."""
+    return _load_some(md, lambda r: r.get("k") in ("settle", "broken"))
+
+
+def load_stock_rows(md, shops=None):
+    """What restock.py and the readers it hands its rows to (estimate, break_stats, link_broken, decision_memory.my_sales,
+    opening, measure, loss_watch, the forums) read: the settle, broken and supply rows, the result rows of my shops
+    (my_shops(), as those readers use), every result row of an order whose settle names no shop (estimate's shop_of) or
+    that one of mine names (the last one wins in their dicts), and the "last" row. The 1.6 M result rows of other shops
+    were two thirds of the 2.4 M rows a restock run held on 11/15 (RSS 2.7-2.8 GB every minute). Two passes only when a
+    shop-less settle comes after its result (none in the ledger of 11/15 12:00: each settle is written before its result)."""
+    shops = my_shops() if shops is None else set(shops)
+    need, mine = set(), set()
+
+    def keep(r, before=frozenset()):
+        k = r.get("k")
+        if k == "settle" and not r.get("shop") and r.get("order"):
+            need.add(r["order"])
+        if k in ("settle", "broken", "supply"):
+            return True
+        if k != "result":
+            return False
+        if r.get("seller") in shops and r.get("order"):
+            mine.add(r["order"])
+            return True
+        return r.get("order") in need or r.get("order") in mine or r.get("order") in before
+
+    rows = _load_some(md, keep)
+    named = {r.get("order") for r in rows if r.get("k") == "result"}
+    late = frozenset(need - named)
+    if late:            # (also a shop-less settle with no result at all: a second pass each run, ~4 s on 11/15)
+        need.clear()
+        mine.clear()
+        rows = _load_some(md, lambda r: keep(r, late))
     return rows
 
 
@@ -312,7 +350,9 @@ def estimate(rows, catalog, me_buyers=(), me_shops=(), now=None, cfg=None):
     me_buyers, me_shops = set(me_buyers), set(me_shops)
     shop_of = {r["order"]: r["shop"] for r in rows if r["k"] == "result" and r.get("order")}
     mine = {r["order"]: r["seller"] for r in rows if r["k"] == "result" and r.get("seller") in me_shops}
-    settles = [dict(r, shop=mine.get(r.get("order")) or r.get("shop") or shop_of.get(r.get("order"))) for r in rows
+    shop = lambda r: mine.get(r.get("order")) or r.get("shop") or shop_of.get(r.get("order"))
+    # a copy only when the shop changes (read, never written): a copy of each of the 0.8 M settles took ~0.45 GB on 11/15
+    settles = [r if shop(r) == r.get("shop") else dict(r, shop=shop(r)) for r in rows
                if r["k"] == "settle" and r.get("sku") in catalog and r.get("ts")]
     captive = captive_buyers(settles, me_shops, cfg)
     hl = cfg["half_life_hours"] * 3600

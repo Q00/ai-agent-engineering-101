@@ -91,11 +91,15 @@ CHECKOUT_HOLD = int(os.environ.get("KIT_CHECKOUT_HOLD", "180"))   # seconds an u
 SELLER_MEMORY_CAP = int(os.environ.get("KIT_SELLER_MEMORY_MB", "3072")) << 20   # the seller's footprint that starts a
                                                     # restart: drain (seller_drain.py), then TERM once quiet. 0: off
 SELLER_DRAIN_WAIT = 1200                            # seconds the drain may take; then the restart is given up (no force)
-SELLER_CAP_RETRY = 1800                             # and tried again this long after
+SELLER_CAP_RETRY = 1800                             # and tried again this long after, then SUSTAIN over again
 SELLER_CAP_GRACE = 3600                             # no cap drain this long after a seller starts: its first reads
                                                     # peak at 3.1-3.3 GB and fall to ~1.2 GB in 10 min (11/15 09:43)
 SELLER_CAP_SUSTAIN = 1800                           # the footprint must stay over the cap this long, at every check
-SELLER_CAP_RESTARTS = (2, 6 * 3600)                 # this many cap restarts within this many s turn the cap off
+SELLER_CAP_GAP = 180                                # checks further apart than this (a lap held up by wait_card) start
+                                                    # the SUSTAIN clock again: nothing was measured in between
+SELLER_CAP_RESTARTS = (2, 6 * 3600)                 # this many cap restarts within this many s rest the cap until the
+                                                    # first of them leaves the window (then SUSTAIN over again)
+CAP_WATCH = r"the memory cap (rests|is resting|is off)"   # every kit line saying the cap does not act: one pattern to watch
 SELLER_STATUS_FRESH = 15                            # seconds a quiet drain status stays good (the seller writes it every 5)
 SELLER_TERM_WAIT = 60                               # seconds a quiet seller may take to exit after TERM; it is never killed
 LOG_FILE = None
@@ -1317,11 +1321,15 @@ def seller_cap(cap, proc, md, now, cap_bytes=None, log=log):
     pid: it refuses new talks, the talks under way go on, and its status says when it is quiet. A drain longer than
     SELLER_DRAIN_WAIT is given up (the kit's marker goes, new talks are welcome again); the next try needs RETRY and
     then SUSTAIN again. A marker someone else wrote (an owner's drain for a deploy) is left alone. The cap rests while
-    SELLER_CAP_RESTARTS restarts lie within its window (it comes back when the oldest leaves it) and for a seller
-    whose status never names its pid; meanwhile a seller over the cap is logged every SELLER_CAP_RETRY."""
+    SELLER_CAP_RESTARTS restarts lie within its window (it comes back when the oldest leaves it, and needs SUSTAIN over
+    again) and for a seller whose status never names its pid; meanwhile a seller over the cap is logged every
+    SELLER_CAP_RETRY. Checks more than SELLER_CAP_GAP apart start the SUSTAIN clock again."""
     cap_bytes = SELLER_MEMORY_CAP if cap_bytes is None else cap_bytes
     marker = Path(md) / "seller.drain"
     if cap.get("since") is None:
+        last, cap["checked"] = cap.get("checked"), now
+        if last is not None and now - last > SELLER_CAP_GAP:
+            cap.pop("over", None)
         n, within = SELLER_CAP_RESTARTS
         resting = cap.get("no_status") or len([t for t in cap.get("restarts", []) if now - t < within]) >= n
         if not cap_bytes or now < cap.get("retry_at", 0) or marker.exists():
@@ -1336,7 +1344,7 @@ def seller_cap(cap, proc, md, now, cap_bytes=None, log=log):
         if resting:
             if now - cap.get("warned", -SELLER_CAP_RETRY) >= SELLER_CAP_RETRY:
                 cap["warned"] = now
-                log(f"[kit] your seller holds {held >> 20} MB, over the cap of {cap_bytes >> 20} MB, and the cap is "
+                log(f"[kit] your seller holds {held >> 20} MB, over the cap of {cap_bytes >> 20} MB, and the memory cap is "
                     + ("off for this seller (its drain status never named it)" if cap.get("no_status") else
                        f"resting after {n} restarts within {within // 3600} h") + ": look at its memory")
             return False
@@ -1420,7 +1428,7 @@ def cap_restart(cap, proc, md, now, log=log, wait=SELLER_TERM_WAIT):
     n, within = SELLER_CAP_RESTARTS
     cap["restarts"] = [t for t in cap.get("restarts", []) if now - t < within] + [now]
     if len(cap["restarts"]) >= n:
-        log(f"[kit] {len(cap['restarts'])} memory-cap restarts within {within // 3600} h: the cap rests until the "
+        log(f"[kit] {len(cap['restarts'])} memory-cap restarts within {within // 3600} h: the memory cap rests until the "
             f"first of them is {within // 3600} h old (the seller grows back too fast; look at its memory)")
     return True
 

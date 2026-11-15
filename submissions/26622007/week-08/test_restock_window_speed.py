@@ -68,7 +68,7 @@ class LedgerRowsReadOnceTest(unittest.TestCase):
         self.dir.cleanup()
 
     def test_one_read_per_run_of_an_unchanged_file(self):
-        with mock.patch.object(market_model, "load_rows", wraps=market_model.load_rows) as load:
+        with mock.patch.object(market_model, "load_stock_rows", wraps=market_model.load_stock_rows) as load:
             a = restock.rows_of(self.dir.name)
             b = restock.rows_of(self.dir.name)
             restock.read_breaks(self.dir.name, {"A": {"kind": "goods"}})
@@ -76,14 +76,14 @@ class LedgerRowsReadOnceTest(unittest.TestCase):
                 json.dump({"round": market_model.ECON_ROUND, "units": []}, f)
             loss_watch.check(self.dir.name, root=self.dir.name, sold=[], emit=lambda line: None, rows=restock.rows_of(self.dir.name))
         self.assertEqual(load.call_count, 1)
-        self.assertEqual(a, [{"seq": 1, "k": "settle", "sku": "A", "ts": 1}])
+        self.assertEqual(a, [{"seq": 1, "k": "settle", "sku": "A", "ts": 1}, {"k": "last", "ts": 1}])
         self.assertIs(a, b)
 
     def test_rows_added_by_a_sync_are_read(self):
-        self.assertEqual(len(restock.rows_of(self.dir.name)), 1)
+        self.assertEqual(len(restock.rows_of(self.dir.name)), 1 + 1)          # and the "last" row
         with open(self.rows, "a", encoding="utf-8") as f:
             f.write(json.dumps({"seq": 2, "k": "settle", "sku": "A", "ts": 2}) + "\n")
-        self.assertEqual(len(restock.rows_of(self.dir.name)), 2)
+        self.assertEqual(len(restock.rows_of(self.dir.name)), 2 + 1)
 
     def test_read_model_reads_the_rows_after_its_sync(self):
         def sync(md, max_pages=None):
@@ -96,7 +96,7 @@ class LedgerRowsReadOnceTest(unittest.TestCase):
                 mock.patch.object(market_model, "estimate", side_effect=lambda rows, *a, **k: seen.append(len(rows))
                                   or {"skus": {}, "active": False, "n": 0, "captive": []}):
             restock.read_model(self.dir.name, {}, {})
-        self.assertEqual(seen, [2])
+        self.assertEqual(seen, [2 + 1])
 
 
 if __name__ == "__main__":
