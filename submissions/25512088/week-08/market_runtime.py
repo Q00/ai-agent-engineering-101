@@ -1,6 +1,7 @@
 """Local kit adapter: role-isolated forum outboxes and buyer research worker."""
 import importlib.util
 import re
+import signal
 import subprocess
 import queue
 from pathlib import Path
@@ -37,6 +38,20 @@ def tunnel_url(line):
     return None
 
 
+def install_parent_exit_handlers():
+    """Let the course kit unwind and stop its child process groups on tmux exit.
+
+    The upstream kit handles SIGTERM and KeyboardInterrupt, but a detached
+    tmux session is normally closed with SIGHUP.  Leaving the default SIGHUP
+    action in place terminates Python before ``cmd_join`` reaches its
+    ``finally`` block, orphaning the seller and tunnel.  Converting it to an
+    ordinary SystemExit preserves the kit's existing cleanup path without
+    adding a supervisor or restart loop.
+    """
+    if hasattr(signal,'SIGHUP'):
+        signal.signal(signal.SIGHUP,lambda *_:sys.exit(0))
+
+
 def open_tunnel(port):
     proc=subprocess.Popen(['cloudflared','tunnel','--no-autoupdate','--url',f'http://127.0.0.1:{port}'],
         stdin=subprocess.DEVNULL,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True)
@@ -62,6 +77,7 @@ def open_tunnel(port):
 
 
 def main():
+    install_parent_exit_handlers()
     root=Path(__file__).resolve().parents[3]
     spec=importlib.util.spec_from_file_location('course_market_kit',root/'scripts/market_kit.py')
     kit=importlib.util.module_from_spec(spec);spec.loader.exec_module(kit)
