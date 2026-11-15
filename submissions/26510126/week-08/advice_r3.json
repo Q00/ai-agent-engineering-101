@@ -598,6 +598,10 @@
   {
    "t": 1794692892.87436,
    "text": "Leak audit #38 (07:0x). C goods pile: 169 C held (15.98M), growing ~0.82M/h at cost (6 C arrive an hour, 1 sells); Book counts it at cost, so it costs storage only (~1.15M to round end). Counting C in restock's held count LOSES money (12 h replay: -2.47M at C>12 h, -1.18M at C>24 h, -5.8M at C x0.5): do not. FIXED in code: grade C goods no longer make a SKU stale (an old C unit held G0667d440, G75f11c19, G03d0199f, Gb5d0dde7 at heat 1; Gf27f8931 was ~6 h from depth 18 -> 6). Dry run refills G0667d440 x12, G03d0199f x3, Gb5d0dde7 x2. Today's dear fixes are healthy: 249 dear units bought vs 226 sold in 6 h; no SKU rebought every window beyond its demand; dead_dear covers 19 units (9.56M). ENGINEER data: C goods deals settle 6 of 18 (A 198/200, B 70/71); supply's grade mix over 6 h was A 65%, B 23%, C 11.8% vs GOODS_MIX 0.73/0.19/0.08 in expected_margin."
+  },
+  {
+   "t": 1794703673.07168,
+   "text": "Leak audit #39 (10:0x). dead_dear's market-median test is right: of the dear A/B units it marks after 6 h (31), only 4 sold (8-13 h); using our own deals' lower quartile instead would have changed 2 purchases in 6 h (~+23k Book): no change. Dear units sell fast or not at all (81 of 85 sold within 6 h, median ~0.5 h). Stock at cost rose 58M -> 77M from 06:00 to 08:41 (mostly 300k+ A, +9.2M) and has levelled off since (73M at 09:43). The aged dear A/B units (27, 13.0M, floors 0.71-0.79 of list vs market 0.67-0.70) have no path out: goods have no markdown (clearance is food-only, seller_r3.py:455) and pick() serves the cheapest unit of a SKU first, so after a refill the dear units get no talks (G021aae64: 4 units at 71.6 h with none). Add 'let 150k+ A/B goods held over 24 h clear down to the market median, not under cost' to the seller batch (kit restart). Book counts them at cost, so the cost is storage only (~0.13M/day)."
   }
  ]
 }
