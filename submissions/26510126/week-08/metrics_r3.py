@@ -14,8 +14,8 @@ window(t0, t1): the fixed metrics a hypothesis may name, from our own logs (code
   shop_margin_h         (price - cost) of those deals per hour
   forum_votes_post      net votes per post our buyer wrote in the window (forum.json keeps the newest 100 posts, so
                         only the last hours can be read; forum votes are 0.3 of the buyer's ALL)
-  buyer_saved_deal      mean of (list - price) / list over the paid deals: the board's saved term per deal (11/6 06:02
-                        rules), so a cheap order counts as much as a dear one; goods that break later count -1 on the
+  buyer_saved_deal      mean of (list - price) / (list - unit cost guess), capped at 1, over the paid deals: the board's
+                        saved term per deal since patch 3.6 (cost unknown to the buyer: buyer_r3.COST_GUESS), so a cheap order counts as much as a dear one; goods that break later count -1 on the
                         board, which this window cannot see yet
   buyer_dear_close      paid orders / orders among orders whose reference price is DEAR or more. 11/3 21:00-11/5 11:00:
                         the 216 orders of 300k or more (5%) gave 55% of our surplus, closing 61%; one more of them
@@ -341,6 +341,13 @@ def shop_points_h(margin_h, revenue_h, prices=None, reviews_h=0, stars_mean=None
     return round(pts, 6)
 
 
+COST_GUESS = 0.52                                     # a unit's cost as a share of list for the saved scale: calibrated so
+                                                      # the window's mean matches the board's gain per new deal (0.842 over
+                                                      # 11/14-15: deals 17,886 -> 19,331, saved 0.7185 -> 0.7277); 0.60 capped
+                                                      # most deals at 1 (mean 0.938)
+COST_GUESS_GRADE = {"A": 0.65, "B": 0.50, "C": 0.35}   # buyer_r3.COST_GUESS_GRADE
+
+
 def buyer_points_h(paid_h, saved_deal, prices=None):
     """The buyer's part of board points/h: saved per deal against our running mean, over deals + 100."""
     p = prices if prices is not None else lever_prices()
@@ -388,8 +395,12 @@ def window(t0, t1, base=HERE, keep=None):
                   if m.get("kind") == "trade" and m.get("order") in orders and _ts(m.get("time")))
     secs = [x for x in secs if 0 <= x < 600]
     dear_paid = sum(1 for m in paid if m.get("order") in dear)
-    rates = [(lists[m["order"]] - m["price"]) / lists[m["order"]] for m in paid
-             if lists.get(m.get("order")) and m.get("price") is not None]
+    # the board's saved per deal since patch 3.6: (list - price) / (list - unit cost), capped at 1; the unit's cost is
+    # unknown to the buyer, so it is taken as the buyer's COST_GUESS share of list (by grade when the entry has one).
+    # Leak audit #44: the old (list - price) / list (~0.40) was set against saved_now (~0.73, the new scale), so
+    # buyer_points_h read almost every paid deal as lost points
+    rates = [min(1.0, (lists[m["order"]] - m["price"]) / (lists[m["order"]] * (1 - COST_GUESS_GRADE.get(m.get("grade"), COST_GUESS))))
+             for m in paid if lists.get(m.get("order")) and m.get("price") is not None]
     stars = our_stars(t0, t1, base)
     surplus = sum((lists.get(m.get("order")) or 0) - (m.get("price") or 0) for m in paid if lists.get(m.get("order")))
     sold = settled_sales(t0, t1, base)
