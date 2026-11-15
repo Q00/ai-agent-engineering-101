@@ -229,7 +229,7 @@ def update():
         done = all(n >= e.get("min_n", 100) for n, _, _ in stats) and max(pb) >= e.get("promote_p", 0.90)
         timed = (now - since) >= e.get("max_h", 6) * 3600 and all(n >= 30 for n, _, _ in stats)
         if done or timed:
-            i = pb.index(max(pb)) if (done or max(pb) >= 0.75) else 0
+            i = pb.index(max(pb)) if (done or max(pb) >= e.get("timed_p", 0.75)) else 0
             sg = e.get("stars_guard")
             ls = LAST_STARS.get(name) or []
             if sg and i != 0 and len(ls) > i and ls[i][0] is not None and ls[0][0] is not None and ls[i][1] >= 20 \
