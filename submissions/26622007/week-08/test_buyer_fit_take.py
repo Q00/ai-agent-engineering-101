@@ -73,7 +73,14 @@ class CloseLimit(unittest.TestCase):
         self.assertEqual(self.lim(TAKE, sc=0), 0)
 
     def test_reach_of_a_short_warranty_without_a_margin_cap(self):
-        # market-kit.log 11/15 17:33:55, 17:48:48: min(lim) of one int raised TypeError and ended the order's run
+        # market-kit.log 11/15 17:33:55, 17:48:48: min(lim) of one int raised TypeError and ended the order's run; the
+        # input reach meets: the margin cap on, a quote naming no grade (no cap), a short warranty, short=False
+        q = {"ask": 7200, "text": "G1: asking 7200"}
+        with mock.patch.object(market_buyer, "MARGIN_CAP", TAKE), \
+                mock.patch.object(market_buyer, "short_cap", lambda *a, **k: 6000):
+            self.assertEqual(market_buyer.close_limit(self.O, None, {"kind": "goods"}, "a", q, None, 20000, {},
+                                                      short=False), 6799)
+        # pins (these passed before the fix too): short=True keeps the short cap, a grade's cap gives no take
         self.assertEqual(self.lim(None, sc=6000), 6000)
         with mock.patch.object(market_buyer, "MARGIN_CAP", None), \
                 mock.patch.object(market_buyer, "short_cap", lambda *a, **k: 6000):
