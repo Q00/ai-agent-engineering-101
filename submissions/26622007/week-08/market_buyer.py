@@ -2504,12 +2504,12 @@ def next_talk(nq, out, order, quotes, quotable, md, catalog, budget, memory, fir
         "goods_grade": buyer_goods_grade.trade_mark(order, limit1),
         "food_ladder": buyer_food_ladder.trade_arm(order),
         "saved_floor": buyer_saved_floor.trade_arm(order),
-        "warranty_said": buyer_warranty_said.trade_mark(order),
         "moss_first": buyer_moss_first.trade_mark(order),
         "next_quote_first": True,
         "result": out["state"].replace("TASK_STATE_", "").lower(), "price": None, "asks": asks,
         "holds": out.get("holds", 0), "problems": [], "warnings": [], "why": no_deal_reason(asks, limit1),
         "signed": None}
+    trade["warranty_said"] = buyer_warranty_said.trade_mark(order)    # short_warranty_shops leaves arm B out
     memory["trades"].append(trade)
     return {"shop": s, "offer": o, "key": k, "label": o["name"], "chance": c, "limit": lim, "top": top, "q": q,
             "margin_cap": mc}
@@ -2520,7 +2520,7 @@ def next_negotiate(alt, order, steps):
     take and the food take_at, as main's talk; a shop that went away is an ERROR state, as main's."""
     shop, offer, key, label, limit, top, q = (alt[k] for k in ("shop", "offer", "key", "label", "limit", "top", "q"))
     try:
-        out = negotiate(shop["url"], label, limit, f"it opened at {q['ask']}",
+        return dict(negotiate(shop["url"], label, limit, f"it opened at {q['ask']}",
                         request_text(label, key, order), resume=(q["url"], q["task"]),
                         stop_if=lambda text, turn: (quote_refused(text, order, item=(label, key)) if turn == 1
                                                     else None) or goods_text_refused(text, order),
@@ -2532,9 +2532,7 @@ def next_negotiate(alt, order, steps):
                         ceiling=top if top > limit else None,
                         **walk_take_kwargs(order, limit, shop["name"]),
                         take_at=(min(limit, int(offer["list_price"] * FOOD_TAKE_SHARE))
-                                 if FOOD_TAKE_ASK and order.get("kind") == "food" else None))
-        out["asked"] = key
-        return out
+                                 if FOOD_TAKE_ASK and order.get("kind") == "food" else None)), asked=key)
     except Exception as e:  # network errors from a shop that went away
         log(f"trade failed: {type(e).__name__}: {e}")
         return {"state": f"ERROR {type(e).__name__}", "task": None, "receipt": None, "history": [],
