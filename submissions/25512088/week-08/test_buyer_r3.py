@@ -9,7 +9,7 @@ import httpx
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from cryptography.hazmat.primitives import serialization
 from buyer_memory import Memory
-from buyer_r3 import Buyer, asking, candidates, diversify_shop_candidates, limit, stretch_limit, middle_limit, deals_cap, signed_receipt, exclude_own_shop, quote_rank, execution_order, expected_offer, EARLY_QUOTE_TARGET, QUOTE_WAVE_SIZE
+from buyer_r3 import Buyer, asking, candidates, diversify_shop_candidates, limit, stretch_limit, middle_limit, deals_cap, signed_receipt, exclude_own_shop, quote_rank, execution_order, expected_offer, condition_suitable, EARLY_QUOTE_TARGET, QUOTE_WAVE_SIZE
 from buyer_review import review
 
 
@@ -219,6 +219,15 @@ class BuyerTests(unittest.TestCase):
         self.assertIsNone(result['receipt'])
         self.assertEqual(len(sent),1)
 
+    def test_quote_condition_must_be_explicit_and_leave_checkout_time(self):
+        self.assertFalse(condition_suitable(self.o,{'hours':None,'warranty':None}))
+        self.assertFalse(condition_suitable(self.o,{'hours':48,'warranty':None}))
+        self.assertTrue(condition_suitable(self.o,{'hours':48.2,'warranty':None}))
+        goods=dict(self.o,kind='goods')
+        self.assertFalse(condition_suitable(goods,{'hours':None,'warranty':None}))
+        self.assertFalse(condition_suitable(goods,{'hours':None,'warranty':0}))
+        self.assertTrue(condition_suitable(goods,{'hours':None,'warranty':6}))
+
     def test_display_alias_requires_registered_key_and_unchanged_signature(self):
         receipt=dict(shop='Friendly Display Shop',item='SKU1',price=7000,task='t1')
         raw=json.dumps(receipt,sort_keys=True,separators=(',',':'),ensure_ascii=False).encode()
@@ -243,7 +252,7 @@ class BuyerTests(unittest.TestCase):
             if text=='6900':
                 task=dict(id='t1',status={'state':'TASK_STATE_COMPLETED'},artifacts=[{'parts':[{'data':self.receipt(6900)}]}])
             else:
-                task=dict(id='t1',status={'state':'TASK_STATE_INPUT_REQUIRED','message':{'parts':[{'text':'Grade A. Asking 7000'}]}})
+                task=dict(id='t1',status={'state':'TASK_STATE_INPUT_REQUIRED','message':{'parts':[{'text':'Grade A. 49 h of shelf life left. Asking 7000'}]}})
             return httpx.Response(200,json={'result':{'task':task}})
         self.m.begin(self.o)
         with httpx.Client(transport=httpx.MockTransport(handler)) as client:
@@ -292,7 +301,7 @@ class BuyerTests(unittest.TestCase):
                         if uncertain:raise httpx.ReadTimeout('lost',request=req)
                         task={'id':'t1','status':{'state':'TASK_STATE_REJECTED'}}
                     else:task={'id':'t1','status':{'state':'TASK_STATE_COMPLETED'},'artifacts':[{'parts':[{'data':self.receipt(int(text))}]}]}
-                else:task={'id':'t1','status':{'state':'TASK_STATE_INPUT_REQUIRED','message':{'parts':[{'text':'Grade A. Asking '+('6000' if req.url.host=='shop.test' else '6900')}]}}}
+                else:task={'id':'t1','status':{'state':'TASK_STATE_INPUT_REQUIRED','message':{'parts':[{'text':'Grade A. 49 h of shelf life left. Asking '+('6000' if req.url.host=='shop.test' else '6900')}]}}}
                 return httpx.Response(200,json={'result':task})
             with httpx.Client(transport=httpx.MockTransport(handler)) as c:
                 out=Buyer(order,self.m,c,self.cat).run([self.shop,other])
@@ -309,7 +318,7 @@ class BuyerTests(unittest.TestCase):
             if text.isdigit():amounts.append(int(text))
             if len(amounts)>=4:
                 task={'id':'t1','status':{'state':'TASK_STATE_COMPLETED'},'artifacts':[{'parts':[{'data':self.receipt(7000)}]}]}
-            else:task={'id':'t1','status':{'state':'TASK_STATE_INPUT_REQUIRED','message':{'parts':[{'text':'Grade A. Asking 12000'}]}}}
+            else:task={'id':'t1','status':{'state':'TASK_STATE_INPUT_REQUIRED','message':{'parts':[{'text':'Grade A. 49 h of shelf life left. Asking 12000'}]}}}
             return httpx.Response(200,json={'result':task})
         self.m.begin(self.o)
         with httpx.Client(transport=httpx.MockTransport(handler)) as c, patch('buyer_r3.time.sleep'):

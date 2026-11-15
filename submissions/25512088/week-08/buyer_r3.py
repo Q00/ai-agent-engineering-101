@@ -76,6 +76,18 @@ SAVED_STRETCH_TARGET = .95
 SAVED_MIDDLE_TARGET = .90
 EARLY_QUOTE_TARGET = 11
 QUOTE_WAVE_SIZE = 24
+FOOD_CHECKOUT_BUFFER_HOURS = .1
+
+
+def condition_suitable(order, fields):
+    """Require explicit conditions and enough time to survive checkout."""
+    if order.get('kind')=='food':
+        hours=fields.get('hours');required=order.get('use_within_hours',0)
+        return (isinstance(hours,(int,float)) and not isinstance(hours,bool)
+                and hours>=required+FOOD_CHECKOUT_BUFFER_HOURS)
+    warranty=fields.get('warranty')
+    return (isinstance(warranty,(int,float)) and not isinstance(warranty,bool)
+            and warranty>=6)
 
 
 def estimated_margin_saved(product, price, grade=None):
@@ -399,7 +411,7 @@ class Buyer:
                     if candidate.get('error') or not task_state(candidate.get('last',{})).endswith('INPUT_REQUIRED'):continue
                     fields=quote_fields(candidate['last'])
                     if not fields['price']:continue
-                    unsuitable=(self.o.get('kind')=='food' and fields['hours'] is not None and fields['hours']<self.o['use_within_hours']) or (self.o.get('kind')!='food' and fields['warranty'] is not None and fields['warranty']<6)
+                    unsuitable=not condition_suitable(self.o,fields)
                     usable+=not unsuitable
                 if usable>=EARLY_QUOTE_TARGET:break
             for s in self.sessions:
@@ -420,7 +432,7 @@ class Buyer:
                     self.m.record(self.o['order'],shop['url'],sku,s.get('task'),kind)
                     continue
                 hours,wh=fields['hours'],fields['warranty']
-                unsuitable=(self.o.get('kind')=='food' and hours is not None and hours<self.o['use_within_hours']) or (self.o.get('kind')!='food' and wh is not None and wh<6)
+                unsuitable=not condition_suitable(self.o,fields)
                 if self.intel:self.intel.observe(shop['url'],sku,'condition_rejected' if unsuitable else 'quote',fields['price'],s['grade'],hours,wh)
                 if unsuitable:
                     self.m.record(self.o['order'],shop['url'],sku,s.get('task'),'condition_rejected',details={'hours':hours,'warranty':wh})
