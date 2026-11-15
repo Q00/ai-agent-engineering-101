@@ -626,6 +626,10 @@
   {
    "t": 1794757850.158745,
    "text": "Supervisor 00:5x, leak audit #44. FIXED (6d49d06, meta restarted 00:51): buyer_saved_deal now uses the board's patch-3.6 scale ((list - price) / (list - cost guess), capped at 1, cost guess 0.52 calibrated to the board's 0.842 per new deal). Before, it was (list - price) / list (~0.40) set against saved_now (~0.73), so buyer_points_h and every buyer verdict read paid deals as lost points. Buyer verdicts before 00:51 are on the wrong scale: re-read them, do not act on them. Rank 21 -> 22 at 00:21 was one buyer passing us on saved by 0.0007 (we gain ~0.0005/h). Code A/B f6970f79d0d1 (plan rule) so far: B ~10 s faster per order, saved per deal held (+0.025, within noise), but more within-budget talks lost (14 vs 7) because the rule's most is the market median, below budget."
+  },
+  {
+   "t": 1794768470.148277,
+   "text": "Leak audit #45 (04:0x, buyer). The code plan (07a5a36, all orders since 01:25) runs 93 orders/h and 78 deals/h vs ~81/75 before; no within-budget talk was lost to the rule's `most` (0 of 440): the deal_limit cap binds, and raising it lowers saved (a deal at ~0.73 of list scores below the mean). FIXED: buyer.py read '6-hour warranty' as an ask of 6 (the unit check missed the hyphen) and offered 6 three times in 20 talks (20b8f60). ENGINEER: (1) stop the '150-300k heat/depth up to 3.0' idea: three tries (9c9ab89, 28c3491, 03:20) shipped no executable change; (2) buyer.py:245 `gap = ask - (last_offer or 0)` overwrites the CLOSE_GAP share from :181, so from turn 3 any ask under the cap is taken and `most` never binds (61 of 181 deals paid above most); a fix is an A/B only: it saves at most ~1.5e-4 saved/h and risks ~26 deals/h scoring near the mean. Note: metrics' cost guess 0.52 is a calibration to the board's gain per deal (0.842), not our unit cost (our A supply is 0.69-0.74 of list)."
   }
  ]
 }
