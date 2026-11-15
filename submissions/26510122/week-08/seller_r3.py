@@ -423,17 +423,19 @@ class Seller(AgentExecutor):
                 record('requirements_unmet', task_id=task.id, errors=errors)
                 await reject('That unit no longer meets the requested conditions. Please start a new request.','requirements_unmet')
                 return
+            sale_policy = seller_warranty.selling_floor(unit,now=time.time(),warranty_hours=warranty_hours)
+            required_floor = sale_policy['price_floor']
             proposed = answer.get("price")
             maximum = max(1, 2 * int(unit["list_price"]))
-            if warranty['price_floor'] > maximum:
+            if required_floor > maximum:
                 await reject('No viable covered quote is available for this unit.','warranty_floor_above_maximum')
                 return
             ask = min(maximum, max(1, int(proposed))) if type(proposed) is int else middle
             if ask != proposed:
                 audit.guard('price_range_or_type',proposed_price=proposed,effective_price=ask)
-            if ask < warranty['price_floor']:
-                audit.guard('warranty_price_floor',price_floor=warranty['price_floor'])
-            ask = max(ask,warranty['price_floor'])
+            if ask < required_floor:
+                audit.guard('selling_price_floor',price_floor=required_floor,policy=sale_policy)
+            ask = max(ask,required_floor)
             if ask != proposed or unit["unit"] != answer.get("unit_id"):
                 trace("decision_guard", phase="opening", proposed_price=proposed,
                       effective_price=ask, proposed_unit=answer.get("unit_id"),
@@ -445,8 +447,11 @@ class Seller(AgentExecutor):
             if public_request and promotion is None:
                 await reject('That public quote expired before a quote could be issued. Please request a new quote.','public_quote_expired')
                 return
-            if promotion is None:promotion = discount_quote(unit, ask,minimum_price=warranty['price_floor'])
+            if promotion is None:promotion = discount_quote(unit, ask,minimum_price=required_floor)
             if promotion:
+                if promotion['price'] < required_floor:
+                    await reject('That public quote no longer has a viable unit. Please request a fresh quote.','promotion_below_selling_floor')
+                    return
                 if promotion['price'] > maximum:
                     await reject('No suitable price for this unit.','promotion_above_maximum')
                     return
@@ -462,6 +467,7 @@ class Seller(AgentExecutor):
                 'buyer_identity':identity,'buyer_price_evidence':profiles_by_unit.get(unit['unit'], {}),
                 'last_activity_at':time.time() + quote_wait, 'requirements':requirements,
                 'warranty_hours':warranty_hours,'warranty_price_floor':warranty['price_floor'],
+                'selling_price_floor':required_floor,
                 'last_decision_id':audit.links().get('decision_id'),
             }
             if promotion: deal['promotion'] = promotion
@@ -547,6 +553,7 @@ class Seller(AgentExecutor):
             'purchase_requirements':deal['requirements'], 'buyer_message':message[:500],
             'warranty_policy':seller_warranty.POLICY,'agreed_warranty_hours':warranty_hours,
             'warranty_price_floor':warranty_floor,
+            'selling_policy':seller_warranty.selling_floor(unit,now=time.time(),warranty_hours=warranty_hours,agreed_warranty_floor=warranty_floor),
             'market_objective':operating_policy(time.time()),
             "objective": "Accept, counter or reject. Use the tool's estimated profit at the offered price and "
                          "comparable paid evidence. If near-expiry food is sold below the profit floor, treat it as "
@@ -594,6 +601,24 @@ class Seller(AgentExecutor):
             return
         action = answer["action"]
         promotion = deal.get('promotion')
+        sale_policy = seller_warranty.selling_floor(unit,now=time.time(),warranty_hours=warranty_hours,agreed_warranty_floor=warranty_floor)
+        required_floor = sale_policy['price_floor']
+        if required_floor > max(1,2*int(unit['list_price'])):
+            self.state.close_deal(task.id)
+            self.open.pop(task.id,None)
+            await reject('No viable quote is available for this unit.','selling_floor_above_maximum')
+            return
+        if promotion and required_floor > min(deal['ask'],promotion.get('public_price_ceiling',deal['ask'])):
+            self.state.close_deal(task.id)
+            self.open.pop(task.id,None)
+            await reject('That quote no longer has a viable unit. Please request a fresh quote.','promotion_below_selling_floor')
+            return
+        if action == 'accept' and offer < required_floor:
+            audit.guard('selling_price_floor',buyer_offer=offer,price_floor=required_floor,policy=sale_policy)
+            record('selling_price_guard',task_id=task.id,unit=unit['unit'],sku=unit['sku'],buyer_offer=offer,**sale_policy)
+            action='counter'
+            answer={**answer,'price':required_floor}
+
         if action == 'accept' and offer < warranty_floor:
             audit.guard('warranty_price_floor',buyer_offer=offer,price_floor=warranty_floor)
             action = 'counter'
@@ -659,6 +684,10 @@ class Seller(AgentExecutor):
             ask = min(deal['ask'], max(promotion['price_floor'],ask))
             if ask != before_promotion:
                 audit.guard('promotion_counter_bounds',before=before_promotion,effective_price=ask)
+        before_cost_floor=ask
+        ask=max(ask,required_floor)
+        if ask != before_cost_floor:
+            audit.guard('selling_price_floor',proposed_price=before_cost_floor,effective_price=ask,policy=sale_policy)
         if ask != proposed:
             trace("decision_guard", phase="follow_up", proposed_price=proposed, effective_price=ask)
         deal["ask"] = ask

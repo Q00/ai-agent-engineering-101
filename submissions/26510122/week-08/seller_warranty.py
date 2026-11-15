@@ -59,3 +59,21 @@ def exposure(history, now):
     return {'covered_sales':count,'covered_paid_amount':total,'refund_share_scenario':REFUND_SHARE,
             'cash_reserve':math.ceil(total*REFUND_SHARE),
             'source':'paid ledger matches within warranty; scenario reserve, not an observed failure rate'}
+
+
+NEAR_EXPIRY_HOURS = 3
+
+def selling_floor(unit, *, now=None, warranty_hours=0, agreed_warranty_floor=0):
+    """Only finite, unexpired food within three hours may be liquidated at a loss."""
+    now=time.time() if now is None else now
+    cost=unit.get('cost')
+    if type(cost) is not int or cost<=0:raise ValueError('verified positive acquisition cost required')
+    expiry=unit.get('expires_at')
+    remaining=(expiry-now)/3600 if type(expiry) in (int,float) and math.isfinite(expiry) else None
+    near=unit.get('kind')=='food' and remaining is not None and 0<remaining<=NEAR_EXPIRY_HOURS
+    economics_view=economics(unit,now=now,warranty_hours=warranty_hours)
+    acquisition_floor=0 if near else math.ceil(cost+economics_view['estimated_accrued_holding'])+1
+    return {'price_floor':max(acquisition_floor,economics_view['price_floor'],agreed_warranty_floor),
+            'acquisition_cost':cost,'near_expiry_loss_allowed':near,
+            'hours_left':remaining,'near_expiry_hours':NEAR_EXPIRY_HOURS,
+            'reason':'near_expiry_food_model_may_limit_loss' if near else 'protect_acquisition_cost_and_accrued_holding'}
