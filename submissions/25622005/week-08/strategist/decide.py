@@ -138,9 +138,14 @@ Supply and depth:
   the stars stay), so a warranty's expected cost is q x price and its premium is the fee for carrying that.
   Buyers score under the same Saved rule (a broken unit without a warranty is a -1 deal), so some ask for one
   and cap their price by the break rate without it. The brief's seller.warranty shows the window: goods_asked,
-  offered, refused by cause (grade: outside seller.warranty_grades; cap_6h: the sum of warranted sales of the
-  last 6 h would pass seller.warranty_cap_6h, the only cause left, and warranted_6h gives that sum, signed and
-  paid, with over_cap; near_end), sold, and
+  offered, refused by cause (grade: outside seller.warranty_grades; cap_6h: the warranted sales of the last 6 h
+  plus this unit would pass seller.warranty_cap_6h, the only cause left; near_end), sold, and warranted_6h.
+  The cap is compared with warranted_6h.sum_list_paid, and over_cap is that test: the list prices of the
+  warranted signs that were their unit's last sign with the unit gone, the warranted sales that went through
+  (the seller counts it this way since the 11-15 09:42 recreate; the old count of every warranted sign read
+  80.0M against 54.5M of real sales). sum_list_signed counts every warranted sign, the unpaid and the repeat
+  ones, and is far above it (11-15 10:16: 129M signed, 78.5M paid): never compare the cap with it. refused
+  counts the last hour, so a run soon after a cap change still shows refusals from before it. And
   sign_rate by asked x offered. A sign is not a sale: a buyer collects signs from several shops and pays one,
   and the board counts only the paid settle, so a sign rate says nothing about revenue (on 11-10 the sign
   rates read "refusing costs no sales" while big signs paid 15% when the warranty was refused and 91% when
@@ -148,10 +153,13 @@ Supply and depth:
   the stock after its last sign) by list band (big: 100k and over) x asked x offered, with the won signed and
   paid: judge the warranty on the big rows of paid_rate and won_paid, never on sign_rate or on one hour.
   market_window.warranted_big is the share of the market's settles over 100k that carry a warranty (0.86-0.89
-  on 11-10): while it is high, a big buyer refused a warranty pays elsewhere. While
-  over_cap, every ask is refused: a raise that leaves the cap under sum_list_signed changes nothing, so take the
-  cap above that sum (the step is 3M), and lower it on refunds against won_paid, not on sign rates: a refund
-  costs one price, a refused big sign costs the sale about three times in four. Levers:
+  on 11-10): while it is high, a big buyer refused a warranty pays elsewhere. Per ask, not per sign (11-14 16 h
+  to 11-15 01 h, the same hours): big A asks paid 19.5% when offered against 10.8% when refused at the cap;
+  small goods and B showed no difference. A big A warranty adds revenue and about nothing to Book (paid 0.719 of
+  list against cost 0.703 and a 2.8% break rate). Raise the cap one step (10M) when refused.cap_6h comes from
+  after the last change and sum_list_paid is within a step of the cap; the 6 h window slides, so the cap frees
+  room as the warranted sales of 6 h ago leave it and binds again when the busy hours fill it. Lower it on
+  refunds (refunds_24h) against won_paid, not on sign rates: a refund costs one price. Levers:
   seller.warranty_cap_6h, warranty_premium / premium_floor / q_mult; warranty_grades is fixed.
   economics.refunds_24h is what refunds paid back (refunded, of_rev, of_margin; on 11-14 16-23 h 3.8M, half the
   margin, 3.8M of it one-off B units), and outcome shop_rev_h is net of them. A warranted sale keeps
