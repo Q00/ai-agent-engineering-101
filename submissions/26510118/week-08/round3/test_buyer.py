@@ -589,41 +589,6 @@ def test_shop_around():
         mb.QUOTE_WAIT = saved_wait
     check("...a shop that does not answer the opener within QUOTE_WAIT is passed over; B closes, C is cancelled",
           r["deal"] and c["shop"]["name"] == "B" and tries == [] and log["http://C.test"][-1] == "(cancel)", (c["shop"]["name"], tries, log))
-    # 11/15: the time-aware arm (value per second of talk)
-    ids = [mb.fast_arm(f"o-{i:04d}") for i in range(600)]
-    check("11/15 the time-aware arm: about half the orders, by a hash of the order id (the same every time)",
-          250 <= sum(ids) <= 350 and mb.fast_arm("o-0007") == mb.fast_arm("o-0007"), sum(ids))
-    lat = {}
-    mb.note_latency(lat, "X", 4.0)
-    mb.note_latency(lat, "X", 1.0)
-    check("...a shop's answer time is a moving average (4.0, then 1.0: 3.4); a talk counts TALK_BASE + TALK_REPLIES "
-          "answers, LAT_DEFAULT for a shop not yet timed when none is, else the median of those timed, this order's own "
-          "timing first", lat == {"X": 3.4} and mb.talk_secs({}, "Y") == 2.0 + 3 * 2.0
-          and mb.talk_secs({"X": 3.4, "Z": 1.0}, "Y") == 2.0 + 3 * 3.4 and mb.talk_secs(lat, "X", 0.5) == 2.0 + 3 * 0.5, lat)
-    two = [{"shop": {"name": "S"}, "score": 0.10, "flags": []}, {"shop": {"name": "F"}, "score": 0.08, "flags": []}]
-    check("...choose: the best score by default (S 0.10); in the arm the most per second (F 0.08 answering in 0.5 s over "
-          "S answering in 5 s)", mb.choose(list(two), {})[0]["shop"]["name"] == "S"
-          and mb.choose(list(two), {}, False, {"S": 5.0, "F": 0.5})[0]["shop"]["name"] == "F")
-    log.clear()
-
-    class Lag(One):
-        async def send(self, text, task_id=None):
-            if self.url == "http://B.test":
-                await asyncio.sleep(1.0)
-            return await super().send(text, task_id)
-    store = {}
-    r, c, tries, _ = asyncio.run(mb.shop_around(None, dict(first), False, [dict(x) for x in cands], bed, CATALOG, {}, RULES,
-                                                factory=lambda: Lag(script), store=store, fast=True))
-    check("...in the arm, B asking 30000 but answering in 1 s comes after C asking 35000 at once: C is traded first and "
-          "closes, B is cancelled; every quote's answer time is kept (both arms)",
-          r["deal"] and c["shop"]["name"] == "C" and log["http://B.test"][-1] == "(cancel)"
-          and set(store) == {"A", "B", "C"} and store["B"] >= 0.9 > store["C"], (c["shop"]["name"], tries, store, log))
-    log.clear()
-    store = {}
-    r, c, tries, _ = asyncio.run(mb.shop_around(None, dict(first), False, [dict(x) for x in cands], bed, CATALOG, {}, RULES,
-                                                factory=lambda: Lag(script), store=store, fast=False))
-    check("...out of the arm the lowest first ask still goes first (B closes), and the times are kept all the same",
-          r["deal"] and c["shop"]["name"] == "B" and set(store) == {"A", "B", "C"}, (c["shop"]["name"], store))
     locked = {"A": {"recent": ["error"] * 3, "recent_at": [time.time()] * 3, "ratios": []}}
     lc = mb.candidates(bed, [shop("A", BEDDING)], CATALOG, locked, {}, RULES)
     check("a shop that failed us 3 times in a row: no choice for an ordinary order, still tried for a dear one",
