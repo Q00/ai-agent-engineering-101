@@ -216,6 +216,28 @@ def mature_refund_risk_skus(referrals, min_sales=20, min_refunds=2,
             if count>=samples and failed>=refunds and capital>0
             and gross/capital<=threshold}
 
+def active_high_value_warranty_skus(referrals, catalog, min_cost=500000,
+                                    now=None, warranty_hours=6):
+    """Do not repeat a costly goods trial before its warranty result matures.
+
+    The block is SKU-local: another evidence-backed high-value SKU may still be
+    tested, while food and lower-principal goods retain their normal cadence.
+    Pending settlements are conservatively treated as active.
+    """
+    now=time.time() if now is None else now
+    threshold=max(0,int(min_cost or 0));hours=max(0.0,float(warranty_hours or 0))
+    if threshold<=0 or hours<=0:return set()
+    try:
+        rows=referrals.execute('''
+            SELECT sku,MAX(cost) FROM sales
+            WHERE refunded=0 AND cost>=?
+              AND (settled IS NULL OR settled>?)
+            GROUP BY sku''',(threshold,now-hours*3600)).fetchall()
+    except sqlite3.Error:
+        return set()
+    return {sku for sku,_ in rows
+            if (catalog.get(sku,{}) or {}).get('kind')=='goods'}
+
 def own_quote_conversion_evidence(adaptive_path, now=None, hours=6, grade=None):
     """Aggregate bounded quote-to-sign evidence by SKU and optional grade.
 
@@ -722,6 +744,9 @@ def main():
                 min_sales=policy.get('mature_refund_veto_min_sales',20),
                 min_refunds=policy.get('mature_refund_veto_min_refunds',2),
                 min_book_margin=policy.get('mature_refund_veto_book_margin',.03))
+            active_high_value_warranties=active_high_value_warranty_skus(
+                referrals,catalog,
+                min_cost=policy.get('high_value_lane_min_unit_cost',500000))
         a_conversion=own_a_conversion_evidence(
             state/'adaptive.sqlite3',hours=policy.get('own_a_conversion_window_hours',6))
         all_conversion=own_quote_conversion_evidence(
@@ -770,7 +795,8 @@ def main():
             high_value_window_count>=max(1,int(policy.get('high_value_window_limit',1))))
         window_blocks=breadth_window_blocks(rows,opening,inv,target)
         plan=allocation_plan(ranked,inv,available,
-                             set(blocked)|window_blocks|refund_cooldowns|mature_refund_risks,
+                             set(blocked)|window_blocks|refund_cooldowns|
+                             mature_refund_risks|active_high_value_warranties,
                              slots,aggression,runtime_policy)
         if not plan:
             if blocked:time.sleep(10);continue

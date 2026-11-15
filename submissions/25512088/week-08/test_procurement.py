@@ -3,7 +3,7 @@ import json
 import tempfile
 import unittest
 from network_reads import retry_read
-from seller_procurement import choose,allocation_plan,capital_available,supply_result,own_registration,own_board_registration,retry_join,join_current_registration,preserve_stale_pending,breadth_window_blocks,refresh_window_blocks,competitor_breadth_target,warranty_risk_reserve,observed_warranty_hazard,active_warranty_amounts,supply_interval_wait,own_sales_evidence,recent_refund_cooldown_skus,mature_refund_risk_skus,own_a_conversion_evidence,own_quote_conversion_evidence
+from seller_procurement import choose,allocation_plan,capital_available,supply_result,own_registration,own_board_registration,retry_join,join_current_registration,preserve_stale_pending,breadth_window_blocks,refresh_window_blocks,competitor_breadth_target,warranty_risk_reserve,observed_warranty_hazard,active_warranty_amounts,supply_interval_wait,own_sales_evidence,recent_refund_cooldown_skus,mature_refund_risk_skus,active_high_value_warranty_skus,own_a_conversion_evidence,own_quote_conversion_evidence
 from seller_market import dominant_goods_profit_probability
 class PurchaseTests(unittest.TestCase):
  def test_successful_supply_cooldown_avoids_predictable_rate_limit(self):
@@ -144,6 +144,24 @@ class PurchaseTests(unittest.TestCase):
    db,min_sales=20,min_refunds=2,min_book_margin=.03),{'thin'})
   self.assertEqual(mature_refund_risk_skus(
    db,min_sales=21,min_refunds=2,min_book_margin=.03),set())
+ def test_high_value_goods_wait_for_warranty_maturity_before_repeat(self):
+  import sqlite3
+  db=sqlite3.connect(':memory:')
+  db.execute('create table sales(sku text,cost integer,refunded integer,settled real)')
+  now=100000
+  db.executemany('insert into sales values(?,?,?,?)',[
+   ('fresh-goods',600000,0,now-60),
+   ('pending-goods',700000,0,None),
+   ('cheap-goods',400000,0,now-60),
+   ('old-goods',800000,0,now-6*3600-1),
+   ('refunded-goods',900000,1,now-60),
+   ('fresh-food',700000,0,now-60)])
+  catalog={sku:{'kind':'goods'} for sku in
+           ('fresh-goods','pending-goods','cheap-goods','old-goods','refunded-goods')}
+  catalog['fresh-food']={'kind':'food'}
+  self.assertEqual(active_high_value_warranty_skus(
+   db,catalog,min_cost=500000,now=now,warranty_hours=6),
+   {'fresh-goods','pending-goods'})
  def test_a_conversion_evidence_and_veto_use_rolling_structured_events(self):
   import sqlite3
   with tempfile.TemporaryDirectory() as root:
