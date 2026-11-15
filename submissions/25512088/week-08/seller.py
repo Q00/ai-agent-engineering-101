@@ -342,11 +342,6 @@ class Seller(AgentExecutor):
             await up.requires_input(say(f"{deal['unit']['name']} ({deal['unit']['sku']}): grade {deal['unit']['grade']}; public price {q['base']}; benefit {q['benefit']}. "
                                        f"{conditions}Send a number to accept. Asking {q['price']}"))
         finally:
-            with program.db:
-                program.db.execute('CREATE TABLE IF NOT EXISTS quote_holds(task TEXT PRIMARY KEY, unit TEXT, until REAL)')
-                # Clear legacy hard holds. Open quotes are intentionally soft and
-                # are distributed in memory; accept() is the only reservation.
-                program.db.execute('DELETE FROM quote_holds')
             program.close()
             intel.close()
             control.close()
@@ -365,6 +360,18 @@ class Seller(AgentExecutor):
 def build(port, publish=True):
     @asynccontextmanager
     async def lifespan(app):
+        # Legacy versions wrote quote-only holds. Current quotes are soft and
+        # accept() is the only reservation, so clear the old table once at
+        # process startup instead of taking a SQLite write lock on every
+        # request.
+        legacy_program=Program(STATE)
+        try:
+            if legacy_program.db.execute(
+                    "SELECT 1 FROM sqlite_master WHERE name='quote_holds'").fetchone():
+                with legacy_program.db:
+                    legacy_program.db.execute('DELETE FROM quote_holds')
+        finally:
+            legacy_program.close()
         startup_control=Control(STATE)
         startup_control.event('seller','role_started',{'pid':os.getpid(),'publish':bool(publish)})
         startup_control.checkpoint('seller',{'seller_version':SELLER_VERSION},{'pid':os.getpid()})

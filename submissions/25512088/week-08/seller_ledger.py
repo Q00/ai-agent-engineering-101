@@ -183,9 +183,20 @@ class Program:
         return len(stale)
 
     def expire_stale(self, now=None):
+        now = time.time() if now is None else now
+        # This method is on every quote path.  Most calls have no expired
+        # signed receipt, so taking an unconditional write lock needlessly
+        # blocks live pricing while the ledger synchronizer is committing.
+        # Check under WAL's read snapshot first; the locked helper rechecks
+        # before changing anything, preserving the original race semantics.
+        stale=self.db.execute('''SELECT 1 FROM sales s LEFT JOIN growth_events g
+          ON g.task=s.task AND g.event='signed' WHERE s.ledger IS NULL
+          AND (g.ts IS NULL OR g.ts<=?) LIMIT 1''',(now-RESERVATION_LEASE_SECONDS,)).fetchone()
+        if stale is None:
+            return 0
         with self.db:
             self.db.execute('BEGIN IMMEDIATE')
-            return self._expire_stale_locked(time.time() if now is None else now)
+            return self._expire_stale_locked(now)
 
     def reserved_units(self, now=None):
         # Signed receipts exclusively reserve a unit only during checkout lease.

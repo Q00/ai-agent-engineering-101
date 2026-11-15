@@ -126,6 +126,13 @@ class ReferralTests(unittest.TestCase):
         self.program.accept('new-task','shared-unit','sku',8000,q,enroll=False)
         self.assertIn('shared-unit',self.program.reserved_units())
 
+    def test_expiry_check_without_stale_receipt_takes_no_write_lock(self):
+        statements=[]
+        self.program.db.set_trace_callback(statements.append)
+        self.assertEqual(self.program.expire_stale(time.time()),0)
+        self.program.db.set_trace_callback(None)
+        self.assertFalse(any('BEGIN IMMEDIATE' in sql.upper() for sql in statements))
+
     def test_late_official_settlement_restores_expired_receipt(self):
         q=self.program.quote(10000,8000)
         self.program.accept('old-task','shared-unit','sku',8000,q,enroll=False)
