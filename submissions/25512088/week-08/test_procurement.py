@@ -279,6 +279,17 @@ class PurchaseTests(unittest.TestCase):
   policy={'max_units_per_sku':3,'max_sku_capital_share':.10}
   plan=allocation_plan(ranked,inventory,1950000,aggression=2,policy=policy)
   self.assertEqual([(row['sku'],row['qty']) for row in plan],[('high',1)])
+ def test_recent_realized_profit_prioritizes_a_proven_sold_out_good(self):
+  common=dict(kind='goods',expected_net=1000,upper_cost=100,sales_1h=2,
+              sales_6h=6,distinct_buyers_6h=3,estimated_sale_likelihood=1,
+              dominant_grade_samples=3,dominant_grade_profit_probability=.8)
+  ranked=[dict(common,sku='market-prior',score=1000),
+          dict(common,sku='realized',score=100,own_sales_1h=2,own_sales_total=10,
+               own_gross_total=10000,own_profitable_sales=9)]
+  policy={'max_sku_capital_share':1,'max_units_per_sku':3}
+  plan=allocation_plan(ranked,{'units':[],'balance':10000},10000,policy=policy)
+  self.assertEqual(plan[0]['sku'],'realized')
+  self.assertEqual(plan[0]['evidence']['realized_hourly_contribution'],2000)
  def test_accepted_supply_records_actual_cost_even_above_estimate(self):
   self.assertEqual(supply_result(503,{},100),('uncertain',None))
   self.assertEqual(supply_result(200,{'total':101},100),('paid',101))

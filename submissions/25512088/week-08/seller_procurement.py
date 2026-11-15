@@ -200,6 +200,7 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
     for row in ranked:
         if row.get('sku') in blocked or row.get('expected_net',0)<=0:continue
         cold_safe_trial=False
+        own_profit_proven=False
         if row.get('kind')=='goods':
             min_samples=policy.get('min_goods_a_profit_samples',0)
             min_probability=policy.get('min_goods_a_profit_probability',0)
@@ -287,16 +288,29 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
         capital_room=max(0,capital_ceiling-holding_cost.get(row['sku'],0))
         need=min(need,int(capital_room//max(1,row['upper_cost'])))
         if need<=0:continue
+        realized_hourly_contribution=0
+        if own_profit_proven:
+            realized_hourly_contribution=(
+                row.get('own_sales_1h',0)*
+                max(0,row.get('own_gross_total',0)/max(1,own_sales_total)))
         evidence=dict(row,trusted_inquiries_6h=trusted_inquiries,
                       trusted_stockouts_6h=trusted_stockouts,sku_inventory_ceiling=sku_ceiling,
                       cold_goods_cost=cold_goods_cost,cold_goods_limit=cold_goods_limit,
-                      cold_goods_frozen=cold_goods_frozen,cold_safe_trial=cold_safe_trial)
+                      cold_goods_frozen=cold_goods_frozen,cold_safe_trial=cold_safe_trial,
+                      own_profit_proven=own_profit_proven,
+                      realized_hourly_contribution=realized_hourly_contribution)
         breadth_priority=0 if breadth_expansion else 1
         diversity=policy.get('new_sku_bonus',1) if is_new else 1
         # Official score contribution remains primary, with a sub-linear
         # capital-risk adjustment. This preserves high-value goods without
         # letting a handful of million-credit units consume an entire window.
-        risk_adjusted=row.get('score',0)/max(1,row['upper_cost'])**.75
+        # Market-wide expected contribution remains the prior. Once our own
+        # shop has a sufficiently large and mostly profitable cohort, add the
+        # realized hourly gross contribution once. This makes a just-sold-out
+        # proven item compete for scarce capital without granting any bonus to
+        # a new or historically loss-making SKU.
+        contribution=row.get('score',0)+realized_hourly_contribution
+        risk_adjusted=contribution/max(1,row['upper_cost'])**.75
         choices.append((breadth_priority,-(risk_adjusted*diversity),
                         row['sku'],need,evidence))
     # Each candidate is bounded by condition-specific per-SKU caps. When no
