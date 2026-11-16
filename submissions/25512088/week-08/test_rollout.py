@@ -59,6 +59,22 @@ class RolloutTests(unittest.TestCase):
    self.assertEqual(market_warranty_hours(self.u,intel,0),6)
    self.assertEqual(market_warranty_hours(self.u,intel,6),6)
   finally:intel.close()
+ def test_high_value_goods_never_add_six_hour_claim_exposure(self):
+  expensive=dict(self.u,cost=500000,list_price=900000)
+  intel=Intel(self.root)
+  try:
+   self.assertIsNone(market_warranty_hours(expensive,intel,6))
+   self.assertIsNone(market_warranty_hours(expensive,intel,0))
+   now=time.time()
+   with intel.db:
+    for i in range(8):
+     intel.db.execute('''INSERT INTO trades
+       (seq,ts,shop,sku,grade,hours,warranty,price,honest,buyer)
+       VALUES(?,?,?,?,?,?,?,?,?,?)''',
+       (200+i,now-7*3600-i,'shop','sku','B',None,0,600000,1,f'buyer-{i%4}'))
+   self.assertEqual(market_warranty_hours(expensive,intel,0),0)
+   self.assertIsNone(market_warranty_hours(expensive,intel,6))
+  finally:intel.close()
  def test_zero_warranty_near_cost_trial_uses_only_safe_class_headroom(self):
   class Evidence:
    def __init__(inner,revenue=1050000):inner.revenue=revenue

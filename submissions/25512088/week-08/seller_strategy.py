@@ -25,6 +25,7 @@ LOSS_LEADER_TRIALS_PER_SKU=5
 BOOK_CUSHION_TRIAL_SHARE=.90
 STAR_REVIEW_PRICE_RATE=.65
 STAR_REVIEW_PRICE_SKUS={'Ged5b1b82'}
+HIGH_VALUE_WARRANTY_CUTOFF=500_000
 
 
 def class_book_cushion(intel, own_name='25512088'):
@@ -251,8 +252,13 @@ def market_warranty_hours(unit, intel=None, required=0):
     try:required=float(required or 0)
     except (TypeError,ValueError):required=0
     if required>6:return None
-    if required>0:return 6
-    if intel is None:return 6
+    high_value=unit.get('cost',0)>=HIGH_VALUE_WARRANTY_CUTOFF
+    # A live cohort of three high-value six-hour claims refunded more than
+    # two million credits while outstanding high-value warranty principal
+    # exceeded current Book.  Existing promises remain funded, but do not add
+    # another claim: explicit warranty buyers cannot receive high-value stock.
+    if required>0:return None if high_value else 6
+    if intel is None:return None if high_value else 6
     no_warranty=intel.comparable(unit['sku'],unit.get('grade'),None,0)
     mature_day=(intel.comparable(unit['sku'],unit.get('grade'),None,0,24*3600)
                 if no_warranty.get('count',0)<5 or no_warranty.get('buyers',0)<3
@@ -260,7 +266,7 @@ def market_warranty_hours(unit, intel=None, required=0):
     if (no_warranty.get('count',0)>=5 and no_warranty.get('buyers',0)>=3) or (
             mature_day.get('count',0)>=8 and mature_day.get('buyers',0)>=4):
         return 0
-    return 6
+    return None if high_value else 6
 
 
 def protected_floor(unit, policy, hazard=.15, warranty=None):
