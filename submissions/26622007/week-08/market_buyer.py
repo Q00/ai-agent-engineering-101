@@ -2451,7 +2451,9 @@ def walk_take_kwargs(order, limit, shop_name):
         buyer_margin_cap.note_take(m, note)
         log(f"[walk-take] {shop_name}: ask {note['taken']} over my limit {limit} within the take {note['ceiling']}"
             f" ({note['turn']} turn): taken")
-    return {"walk_take": buyer_walk_take.hook(limit, top, goods=order.get("kind") == "goods", record=record)}
+    # the quote's grade the cap was priced for: a shop that names it again is no other unit (review c55c66e m2)
+    return {"walk_take": buyer_walk_take.hook(limit, top, goods=order.get("kind") == "goods", record=record,
+                                              grade=m.get("grade"))}
 
 
 def next_talk(nq, out, order, quotes, quotable, md, catalog, budget, memory, first):

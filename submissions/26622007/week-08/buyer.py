@@ -384,8 +384,10 @@ def _talk(url, t, item, budget, note, out, stop_if=None, take_at=None, reply_to=
                 log(f'final decision guard failed: {type(e).__name__}; walking away')
                 break
         if took is not None and offer == took:
-            # recorded at the wire, after the clamps and the decision guard (review 576e714 M1)
-            kinds["walk_take"] = kinds.get("walk_take", 0) + 1
+            # recorded at the wire, after the clamps and the decision guard (review 576e714 M1). Counted apart from the
+            # turns (out["walk_takes"]): the turn is already counted under the branch that priced it, so the turns
+            # still sum to the turns taken and keep only take, fast, code and harness (review c55c66e m4)
+            out["walk_takes"] = out.get("walk_takes", 0) + 1
             getattr(walk_take, "sent", lambda *a: None)(offer, "stall" if stall else kind)
         history.append(("you offered", offer))
         out["agreed"] = offer
