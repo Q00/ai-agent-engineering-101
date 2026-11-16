@@ -543,7 +543,10 @@ class PriceTest(unittest.TestCase):
         self.assertEqual((c["median_up"], c["high_median_up"]["factor"]), (1.0, 0.97))
         self.assertIs(profit_price.cfg_of(p)["paid_over_median"], False)
         # B 0.122 -> 0.15 (11/10): our own grade B breaks 14.3% over the round, 15.2% over the last 72 h (market 11.6-11.9%)
-        self.assertEqual(profit_price.cfg_of(p)["grade_break"], {"A": 0.03, "B": 0.15, "C": 0.344})
+        # C 0.344 -> 0.42 (11/16, W-20261116-1255-AX재고상한기본): our own grade C broke 53 of 127 (41.7%) over the 3 days
+        # to 11/16 01:00 and 39 of 88 (44.3%) over the last day, the other shops 34.8-35.1%; at 0.344 the floor sold C at
+        # break-even for the market's rate, so our C sales lost 3.57M (refunds 31.0M of 66.2M on 11% of goods sales)
+        self.assertEqual(profit_price.cfg_of(p)["grade_break"], {"A": 0.03, "B": 0.15, "C": 0.42})
         b_unit = {"sku": "G85a1a856", "unit": "u", "kind": "goods", "grade": "B", "cost": 500000, "list_price": 922000}
         # W-20261112-0815-AXbook레버: grade A's proven 8% becomes the default; B and C stay at break-even.
         self.assertEqual(profit_price.cfg_of(p)["grade_profit_share"], {"A": 0.08})
@@ -555,7 +558,7 @@ class PriceTest(unittest.TestCase):
         a_unit = {"sku": "G03d0199f", "unit": "u", "kind": "goods", "grade": "A", "cost": 575000, "list_price": 1000000}
         with mock.patch.object(profit_price.time, "time", return_value=until - 3600):
             self.assertEqual(profit_price.quote(c_unit, median=None, measured=None, pricing=p)["floor"],
-                             math.ceil((350000 + 875 + 1) / (1 - 0.344)))
+                             604959)     # (350,000 + 875 + 1) / 0.58 = 604,958.6 -> 604,959 (at 0.344: 534,872)
             # (500,000 + 1,250 + 1) / 0.85 = 589,707.06 -> 589,708 (at b 0.122: 570,900): grade B at break-even
             self.assertEqual(profit_price.quote(b_unit, median=None, measured=0.12, pricing=p)["floor"], 589708)
             # (575,000 + 1,437.5 + 80,000) / 0.965 = 680,246.1 -> 680,247 (break-even 597,346): 0.68 of list, what buyers pay
