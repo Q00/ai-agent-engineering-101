@@ -195,7 +195,7 @@ class IntelligenceTests(unittest.TestCase):
                  for name in ('below','25512088','above')]
         shops=[{'name':'below','book':900000,'revenue':900000,'house':False},
                {'name':'25512088','book':1000000,'revenue':1000000,'house':False},
-               {'name':'above','book':1100000,'revenue':3000000,'house':False}]
+               {'name':'above','book':1100000,'revenue':5000000,'house':False}]
         self.i.save_source('board',{'players':players,'shops':shops})
         # At the configured class-trial ceiling, crossing this Revenue gap would use
         # more than 75% of the 100k lower-Book cushion, so preserve Book.

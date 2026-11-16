@@ -13,7 +13,13 @@ from seller_procurement import settings
 
 RATES={'goods':{'A':95,'B':80,'C':60},'food':{'A':95,'B':75,'C':45}}
 LOSS_LEADER_RATE=.04
-CLASS_NEAR_COST_RATE=.20
+# Live offer evidence on 2026-11-16 showed that the broad 20% raw-loss band
+# disabled itself: funding the next Revenue percentile at that worst-case loss
+# would cross the lower Class Book boundary. The actually dense, useful cohort
+# was within 2% of raw cost (20 offers/hour, about 79.8k total loss). Keep this
+# as a narrow zero-warranty turnover lane; the fresh Class boundary and rolling
+# loss-budget checks below remain authoritative.
+CLASS_NEAR_COST_RATE=.02
 LOSS_LEADER_BUDGET=100_000
 LOSS_LEADER_TRIALS_PER_SKU=5
 BOOK_CUSHION_TRIAL_SHARE=.90
@@ -352,10 +358,10 @@ def negotiate(unit, current, offered, catalog, program, token='', ref='', intel=
         floor=min(floor,unit['cost'])
     # Recent live offers showed a separate, deterministic opportunity: public
     # buyers offered just below raw cost on inventory with no later refund
-    # liability. The 95% cohort
-    # raised the official Shop score without a refund. Once the live Revenue
-    # gap fell far enough, the live aggregate exposed distinct buyer demand
-    # down to the 80% cost band. The configured floor is only a maximum
+    # liability. Live offers now support only the dense cohort within 2% of
+    # raw cost. Wider bands either spend Book too quickly or make the
+    # worst-case Class boundary check disable every trial. The configured
+    # floor is only a maximum
     # allowance: fresh Class boundaries must still prove that reaching the next
     # Revenue percentile consumes no more than 75% of the lower Book cushion.
     # Those offers
