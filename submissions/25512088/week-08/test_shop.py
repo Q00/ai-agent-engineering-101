@@ -62,6 +62,21 @@ class ShopDiscoveryTests(unittest.TestCase):
         self.assertEqual(rank_products(catalog, profitable+premium, [], now=now), baseline)
         self.assertEqual(baseline[0]['exact_grade_warranty_trades'], 3)
 
+    def test_procurement_can_rank_mature_zero_warranty_lane_without_pooling(self):
+        now=100000
+        catalog={'sku':dict(kind='goods',list_price=100000,category='chairs')}
+        zero=[]
+        for grade,price in zip('ABC',(95000,80000,60000)):
+            zero.extend(dict(sku='sku',grade=grade,price=price,warranty=0,
+                honest=1,ts=now-10,buyer=f'zero-{i}') for i in range(5))
+        six=[dict(sku='sku',grade=grade,price=40000,warranty=6,
+                  honest=1,ts=now-10,buyer='six-'+grade) for grade in 'ABC']
+        ranked=rank_products(catalog,zero+six,[],now=now)
+        self.assertEqual(len(ranked),1)
+        self.assertEqual(ranked[0]['warranty_hours'],0)
+        self.assertEqual(ranked[0]['exact_grade_warranty_trades'],15)
+        self.assertEqual(rank_products(catalog,zero[:2],[],now=now),[])
+
     def test_discovery_does_not_inflate_inquiries_or_trigger_conversion_discount(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

@@ -316,9 +316,10 @@ def rank_products(catalog, trades, shops, own_name='25512088', local_demand=None
         row=dict(raw);product=catalog.get(row.get('sku'),{})
         kind=product.get('kind')
         condition_ok=(kind=='food' and isinstance(row.get('hours'),(int,float)) and row['hours']>2) or \
-                     (kind=='goods' and row.get('warranty',0)==6)
-        # New goods start with a six-hour warranty. Longer-warranty prices
-        # and volumes do not establish demand for that procurement cohort.
+                     (kind=='goods' and row.get('warranty',0) in (0,6))
+        # Goods now have two independently priced lanes: a requested six-hour
+        # warranty and a mature zero-hour public cohort.  Longer warranties
+        # never establish demand for either procurement condition.
         if kind not in ('goods','food') or not condition_ok or not row.get('honest'):continue
         # A recent purchase is activity evidence even if the board has already
         # marked that buyer offline. Missing buyer identity is never invented.
@@ -367,6 +368,34 @@ def rank_products(catalog, trades, shops, own_name='25512088', local_demand=None
         product=catalog.get(sku,{})
         if product.get('kind') not in ('goods','food') or not product.get('list_price'):continue
         observed=exact.get(sku,[]);cat=product.get('category');cat_rows=category.get(cat,[])
+        selected_warranty=0
+        if product.get('kind')=='goods':
+            lanes=[]
+            for warranty in (6,0):
+                lane=[r for r in observed if r.get('warranty',0)==warranty]
+                lane_buyers={r.get('buyer') for r in lane if r.get('buyer')}
+                # Zero-hour demand is useful only after several independent
+                # buyers prove that it is a real market, not one prolific
+                # account or a transient settlement.
+                if warranty==0 and (len(lane)<5 or len(lane_buyers)<3):continue
+                expected=0;expected_revenue=0
+                hazard=0 if warranty==0 else goods_hazard
+                for grade,(_,_,cost_mean,arrival) in GRADE_COSTS.items():
+                    prices=[r['price'] for r in lane if r.get('grade')==grade]
+                    typical=median(prices) if prices else None
+                    cost=product['list_price']*cost_mean
+                    expected+=arrival*((typical*(1-hazard)-cost*1.01) if typical else 0)
+                    expected_revenue+=arrival*(typical or 0)
+                recent=sum(r.get('ts',0)>=now-3600 for r in lane)
+                demand=recent*2+len(lane)+len(lane_buyers)*1.5
+                lane_score=(1+demand)*(.5*max(0,expected)+.3*expected_revenue)
+                lanes.append((expected>0,lane_score,warranty,lane))
+            if lanes:
+                positive=[lane for lane in lanes if lane[0]]
+                _,_,selected_warranty,observed=max(positive or lanes,
+                    key=lambda lane:(lane[1],lane[2]==6))
+            else:
+                observed=[];selected_warranty=6
         one_hour=[r for r in observed if r.get('ts',0)>=now-3600]
         buyers_1h={r.get('buyer') for r in one_hour if r.get('buyer')}
         buyers_6h={r.get('buyer') for r in observed if r.get('buyer')}
@@ -392,7 +421,8 @@ def rank_products(catalog, trades, shops, own_name='25512088', local_demand=None
             # 15% is a conservative unmeasured warranty hazard prior.  Benefit,
             # capital and referral reserves stay explicit; missing trade price
             # is treated as an unsold unit rather than fabricated demand.
-            hazard=.10 if product.get('kind')=='food' else goods_hazard
+            hazard=(.10 if product.get('kind')=='food' else
+                    (0 if selected_warranty==0 else goods_hazard))
             # Missing grade observations are uncertainty, not a guaranteed
             # total loss. Initial lots remain capped at 2/3 units and live
             # pricing still enforces the Book-preserving floor.
@@ -426,6 +456,7 @@ def rank_products(catalog, trades, shops, own_name='25512088', local_demand=None
         score=likelihood*(.5*contribution+.3*expected_revenue)*review_factor*verified_factor
         rows.append(dict(version=3,sku=sku,name=product.get('name',sku),category=cat,
             kind=product.get('kind'),
+            warranty_hours=selected_warranty,
             sales_1h=len(one_hour),sales_6h=len(observed),distinct_buyers_1h=len(buyers_1h),
             distinct_buyers_6h=len(buyers_6h),alive_recent_buyers_6h=len(active_6h),
             active_preference_buyers=len(active_preference_buyers),
@@ -523,8 +554,9 @@ def snapshot(state,catalog,opens_at,market):
                     competition_breadth=competitor_breadth(board,shop_rows),
                     fetch_bounds={'ledger_after':-1000,'ledger_rows':len(recent),'max_age_seconds':900},
                     goods_hazard={'probability':goods_hazard,'basis':hazard_basis},
-                    demand_basis=('48h buyer favourite categories weighted by current/recent activity; exact grade+6h '
-                                  'honest trades; verified product mentions in Round-3 reviews; bounded own inquiries/stockouts'))
+                    demand_basis=('48h buyer favourite categories weighted by current/recent activity; independently '
+                                  'priced exact-grade 6h and mature 0h honest trades; verified product mentions in '
+                                  'Round-3 reviews; bounded own inquiries/stockouts'))
         path=Path(state)/'strategy.json';tmp=path.with_suffix('.tmp')
         tmp.write_text(json.dumps(result,ensure_ascii=False));os.replace(tmp,path)
         intel.decision('strategy_snapshot',result)
