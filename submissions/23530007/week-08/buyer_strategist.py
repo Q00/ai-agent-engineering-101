@@ -68,7 +68,7 @@ GLOBAL = {                                    # role, bounds, step (11-12 patch 
     # x (expected v - v_breakeven) - slot_value x (seconds past the order's free 20 s)/20
     # 11-13: lower bound .73 (was .70): the end game sets .73 when a deals rank is in play; the rail keeps >= .745 before
     "v_breakeven": ((0.73, 0.80), 0.01),      # the v at which one more deal neither lifts nor lowers the final buyer score
-    "slot_value": ((0.0, 0.15), 0.02),        # one order's expected gain, charged per 20 s an order runs past its slot
+    "slot_value": ((0.02, 0.15), 0.02),  # 11-16: >= .02 (0 let slow shops eat ~50 orders/h)       # one order's expected gain, charged per 20 s an order runs past its slot
     "dead_p": ((0.0, 0.15), 0.02),            # a shop closing under this per visit (>= 10 visits of the kind, 6 h) is skipped
     "hurry_secs": ((8, 30), 2),               # past this many seconds into an order, an ask under the cap is taken at once
     "max_shops": ((1, 6), 1),                 # shops tried per order

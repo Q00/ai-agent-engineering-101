@@ -396,7 +396,9 @@ def main():
     # user 11-06 (post as many price reports as the market allows): the market takes one buyer post per 5 min (429
     # beyond, the kit keeps it and retries every ~10 s), and gaps ran 5.0-7.6 min. Keep exactly one post waiting in
     # the outbox, written from QUEUE_AFTER s on, so the kit sends it the moment the 5 minutes are up.
-    if now - st["last_post"] >= QUEUE_AFTER and not post_waiting(path.parent / "outbox.jsonl"):
+    # 11-16: no purchase post for a deal at a RIVAL_RATING shop (a praise-like record next to a 3-star rating); the
+    # next deal elsewhere posts, so the post rate holds
+    if now - st["last_post"] >= QUEUE_AFTER and not post_waiting(path.parent / "outbox.jsonl") and shop not in RIVAL_RATING:
         facts = [f"{shop}", f"{name} ({sku})", f"{price:,}원" + (f", 정가 {listp:,}원 대비 {off}% 저렴" if listp else ""),
                  f"등급 {s.get('grade')}" + (f" (주장 {s.get('claim')}, " + ("정직" if s.get("claim_honest") else "불일치!") + ")"
                                             if s.get("claim") else ""),

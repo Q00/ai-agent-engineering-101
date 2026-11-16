@@ -218,7 +218,7 @@ FINAL_H = 6                    # 11-15 (user: 'make 1st safe'): in the last FINA
 AUTO_ACTIVE = 4
 AUTO_KNOBS = {   # knob: (step, low, high, kind)
     "take_v": (0.02, 0.78, 0.95, None), "rounds": (1, 3, 8, None), "step_v": (0.01, 0.01, 0.08, None),
-    "near_v": (0.01, 0.0, 0.05, None), "slot_value": (0.01, 0.0, 0.08, None), "goods_delta": (0.01, -0.05, 0.05, "goods"),
+    "near_v": (0.01, 0.0, 0.05, None), "goods_delta": (0.01, -0.05, 0.05, "goods"),
     "food_delta": (0.01, -0.05, 0.05, "food"), "skip_delta_food": (0.03, -0.30, 0.0, "food"),
     "skip_delta_goods": (0.03, -0.30, 0.0, "goods"), "open_v": (0.02, 0.88, 0.99, None), "max_shops": (1, 3, 10, None),
     "hurry_secs": (5, 5, 30, None), "food_extra_hours": (0.25, 0.0, 1.0, "food"), "dead_p": (0.01, 0.0, 0.08, None),
