@@ -88,6 +88,17 @@ def probe_exploration_allowed(estimate):
             and estimate.get('probability',0)>=.50)
 
 
+def add_reference_step(steps, reference):
+    """Try a condition-matched paid price only when it improves on stretch."""
+    rows=list(steps)
+    stretch=next((amount for label,amount in rows if label=='stretch'),None)
+    if (type(reference) in (int,float) and reference>0 and
+            isinstance(stretch,(int,float)) and reference<stretch):
+        rows.append(('reference',math.floor(reference)))
+        rows.sort(key=lambda row:row[1])
+    return rows
+
+
 def condition_suitable(order, fields):
     """Require explicit conditions and enough time to survive checkout."""
     if order.get('kind')=='food':
@@ -445,6 +456,8 @@ class Buyer:
                     continue
                 task=s['last'];fields=quote_fields(task)
                 s['grade']=fields['grade'];s['cap']=deals_cap(self.o,self.catalog[sku],s['grade'],self.portfolio)
+                s['reference_cap']=self.m.condition_reference(
+                    s['shop']['url'],sku,self.o,s['grade'])
                 s['stretch_cap']=stretch_limit(self.o,self.catalog[sku],s['grade'])
                 s['probe_cap']=probe_limit(self.o,self.catalog[sku],s['grade'])
                 s['middle_cap']=middle_limit(self.o,self.catalog[sku],s['grade'])
@@ -503,6 +516,7 @@ class Buyer:
                         ('middle',s['middle_cap']),
                         ('upper_bridge',s['upper_bridge_cap']),
                         ('bridge',s['bridge_cap']),('fallback',s['cap'])))
+                candidate_steps=add_reference_step(candidate_steps,s.get('reference_cap'))
                 for label,ceiling in candidate_steps:
                     if negotiation_steps and negotiation_steps[-1][1]==ceiling:
                         # Grade-specific hard caps can make two Saved targets

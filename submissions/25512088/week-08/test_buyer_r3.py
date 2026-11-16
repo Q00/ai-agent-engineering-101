@@ -9,7 +9,7 @@ import httpx
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from cryptography.hazmat.primitives import serialization
 from buyer_memory import Memory
-from buyer_r3 import Buyer, asking, candidates, diversify_shop_candidates, limit, stretch_limit, middle_limit, upper_bridge_limit, bridge_limit, deals_cap, signed_receipt, exclude_own_shop, quote_rank, execution_order, expected_offer, condition_suitable, probe_exploration_allowed, EARLY_QUOTE_TARGET, QUOTE_WAVE_SIZE
+from buyer_r3 import Buyer, asking, candidates, diversify_shop_candidates, limit, stretch_limit, middle_limit, upper_bridge_limit, bridge_limit, deals_cap, signed_receipt, exclude_own_shop, quote_rank, execution_order, expected_offer, condition_suitable, probe_exploration_allowed, add_reference_step, EARLY_QUOTE_TARGET, QUOTE_WAVE_SIZE
 from buyer_review import review
 
 
@@ -34,6 +34,11 @@ class BuyerTests(unittest.TestCase):
             {'probability':.5,'trials':4,'wins':0}))
         self.assertFalse(probe_exploration_allowed(
             {'probability':.49,'trials':20,'wins':10}))
+
+    def test_condition_matched_reference_only_adds_a_better_offer(self):
+        steps=[('stretch',6500),('middle',6700),('fallback',7000)]
+        self.assertEqual(add_reference_step(steps,6400)[0],('reference',6400))
+        self.assertEqual(add_reference_step(steps,6600),steps)
 
     def receipt(self, price=7000, sku='SKU1'):
         r=dict(shop='shop',item=sku,price=price,task='t1')
