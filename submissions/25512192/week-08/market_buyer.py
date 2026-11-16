@@ -136,6 +136,15 @@ and whose goods did not break. A shop never tried is worth a try when the known 
 Answer: {{"line": <line number>, "reason": "<one sentence>"}}"""
 PICK_TOP = 6
 DEFAULT_RATIO = 0.85            # paid / list before we know anything about a shop
+# Saved (patch 3.6) scores a deal by (list - price) / (list - unit cost). The cost is hidden, but the market draws it
+# from the grade: A 55-75%, B 40-60%, C 25-45% of list. Midpoints below; a receipt without a claim counts as B.
+COST_SHARE = {"A": 0.65, "B": 0.50, "C": 0.35}
+MIN_SHARE = 0.7                 # 400 deals to 11-16: dropping those under 0.7 keeps 2/3 and lifts the mean 0.77 -> 0.84
+
+
+def est_share(price, list_price, claim):
+    cost = COST_SHARE.get(claim, COST_SHARE["B"]) * list_price
+    return min(1.0, (list_price - price) / (list_price - cost))
 MD = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".market")
 
 
@@ -270,6 +279,13 @@ def main_r3(args, order):
                      warranty_hours=(rec or {}).get("warranty_hours"))
         mem["trades"].append(trade)
         save_memory(args.memory, mem)
+        share = est_share(trade["price"], c["value"], rec.get("claim")) if rec and not problem else None
+        if share is not None and share < MIN_SHARE:
+            trade.update(result="low_share", share=round(share, 3))
+            save_memory(args.memory, mem)
+            log(f"[check] {c['shop']['name']}: {trade['price']:g} for grade {rec.get('claim') or '?'} keeps about "
+                f"{share:.2f} of the margin (< {MIN_SHARE}); not paying, next shop")
+            continue
         if rec and not problem:
             stars, text = review(res, None, c["value"])
             log(f"[memory] {c['shop']['name']}: deal at {trade['price']} (value {c['value']}); harness calls {harness.CALLS}")
