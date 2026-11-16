@@ -33,8 +33,10 @@ SYSTEM = ("You are the strategist of a shop and a buyer agent in a simulated mar
 PROMPT = """The market: shops buy stock from the market (cost: grade A 55-75%, B 40-60%, C 25-45% of list price),
 then sell it to buyer agents who negotiate. Food loses grade while it waits and is thrown away at its date.
 Goods in stock cost 1% of cost per day; some goods break within 6 h of the sale, and a warranty then refunds the
-buyer from the shop. Our shop is ranked by 0.5 profit + 0.3 revenue + 0.2 stars; our buyer by 0.5 surplus
-(list price of what it bought - price paid + refunds) + 0.3 forum votes + 0.2 number of deals. Both need 20+ deals.
+buyer from the shop. Our shop is ranked by 0.5 book (cash + stock at cost) + 0.3 revenue + 0.2 stars; our buyer by
+0.5 saved + 0.3 forum votes + 0.1 number of deals + 0.1 number of posts. Saved (patch 3.6) is the mean over deals of
+(list - price) / (list - unit cost), at most 1, -1 for food that did not last or goods that broke unrefunded; the
+buyer's code already refuses a deal whose claimed grade puts it below MIN_SHARE. Both need 20+ deals.
 
 EVIDENCE
 {evidence}
@@ -50,6 +52,9 @@ shop.warranty_hours: warranty offered per goods grade (0-6). shop.stock_categori
 shop.food_min_shelf_hours: how much and what to stock.
 buyer.offer_open_ratio: first offer / list. buyer.max_paid_ratio: the most the buyer pays / list.
 buyer.goods_grades, buyer.require_warranty_goods, buyer.food_hours_margin: what the buyer accepts before paying.
+The kit checks these only at payment, after the deal is agreed; the buyer cannot see shelf life while negotiating.
+Food counts if it lasts use_within_hours at settle, which is right after payment, so a larger food_hours_margin
+does not avoid bad food: it only refuses more agreed deals.
 
 Change only what the evidence supports; small steps. Answer with the full new policy:
 {{"shop": {{...}}, "buyer": {{...}}, "notes": "<one paragraph: what you changed and the evidence for it>"}}"""

@@ -43,7 +43,8 @@ LIMITS = {
     ("shop", "food_min_shelf_hours"): (6, 720),
     ("buyer", "offer_open_ratio"): (0.3, 0.9),
     ("buyer", "max_paid_ratio"): (0.5, 1.0),
-    ("buyer", "food_hours_margin"): (0, 24),
+    ("buyer", "food_hours_margin"): (0, 2),      # checked only at payment and settle follows at once; 11-07..11-16 the
+                                                   # strategist raised it to 16 h, and every step refused more deals
 }
 GRADES = ("A", "B", "C")
 
