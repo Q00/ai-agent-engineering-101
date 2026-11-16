@@ -22,7 +22,7 @@ code has already priced. Sonnet is on the slow clock (every 30 min), never trade
 
 - **`market_memory.py` → `state/market_stats.json`.** The public ledger is the only place that says what sells.
   Every Round 3 settle is folded into counters per category, SKU and shop (count, paid/list ratios, grade claims
-  true/false, volume per hour). Nothing raw is kept: 452,711 settles fit in 0.7 MB. Restock, the seller's ask,
+  true/false, volume per hour). Nothing raw is kept: 916,051 settles fit in 1.1 MB (11-16 20:29). Restock, the seller's ask,
   the buyer's expected price and the forum all read this one file.
 - **`buyer_memory.json`.** Our own trades keyed by shop name. The kit's `payments.jsonl` (paid, or why not) and
   `broken.jsonl` are folded in, and `review.py` adds the settled facts (was the grade claim true). The buyer
@@ -30,8 +30,8 @@ code has already priced. Sonnet is on the slow clock (every 30 min), never trade
 - **`state/sales.jsonl`.** Our shop's deals with cost, price and claim.
 - **Meta-harness: `strategist.py`.** Every 30 minutes sonnet gets one page of evidence (ledger stats, our stock,
   our sales, our buyer's payments and breakages) and the current policy, and answers with a full new policy and a
-  paragraph of reasons. 314 runs between 11-03 21:04 and 11-10 18:58, each in `state/policy_history.jsonl`
-  with its evidence. What it changed most: `buyer.offer_open_ratio` (142 runs), `shop.open_ratio` (118),
+  paragraph of reasons. 589 runs from 11-03 21:04 to 11-16 20:29, each in `state/policy_history.jsonl`
+  with its evidence. What it changed most in the first 314 runs (to 11-10): `buyer.offer_open_ratio` (142 runs), `shop.open_ratio` (118),
   `buyer.max_paid_ratio` (51), `shop.floor_margin` (18), `shop.units_per_sku` (15), `shop.stock_categories` (12).
 
 ### Tools
@@ -58,8 +58,8 @@ with the strategist's slow loop (evidence → sonnet → policy → logged), and
 bottom. Shaded boxes are what differs from the kit's default agent:
 
 - The default `seller_r3.py` sells from stock at no less than cost, makes no grade claim and gives no warranty. Mine
-  prices from the market's median paid/list for the category, claims the certified grade (2,285 of 2,289 claims
-  true on the board) and gives a warranty per grade.
+  prices from the market's median paid/list for the category, claims the certified grade (5,572 of 5,578 claims
+  true on the board, 11-16) and gives a warranty per grade.
 - The default restock does not read the ledger. Mine stocks the ledger's best sellers in categories the
   strategist picks.
 - The default buyer pays through a fixed checkout. Mine ranks every acceptable (shop, SKU) by expected surplus
@@ -68,28 +68,32 @@ bottom. Shaded boxes are what differs from the kit's default agent:
 
 ## 3. Round 3 results (at submission time; the final rank is the board at 11-17 23:59)
 
-Board, 2026-11-10 19:15 (`https://market.ourolabs.ai/api/board`):
+Board, 2026-11-16 20:30 (`https://market.ourolabs.ai/api/board`):
 
 | | settled deals | other |
 |---|---|---|
-| shop | 2,289 | revenue 158,527,386, profit 19,703,999, book 29,191,748, 4.51 stars, 40 refunds of 76 broken, ALL 0.463 |
-| buyer | 6,146 of 22,066 orders | saved 0.291, forum rating 0.926 on 477 posts, ALL 0.670 |
-| Players | total 1.133 | 31st of 46 students (student_pct 0.333) |
+| shop | 5,886 | revenue 314,887,813, profit 44,494,744, book 49,724,178, 4.58 stars, 68 refunds of 128 broken, ALL 0.434 |
+| buyer | 10,817 of 41,271 orders | saved 0.727, forum rating 0.932 on 888 posts, ALL 0.590 |
+| Players | total 1.024 (student_total 0.817) | 33rd of 46 students (student_pct 0.278) |
 
-Both are over the 20 settled deals of the base condition. In `logs/market-kit.log` a settled purchase reads:
+On 11-10 19:15 the same row read shop 2,289 deals (ALL 0.463), buyer 6,146 (ALL 0.670), 31st of 46
+(student_pct 0.333). Both are far over the 20 settled deals of the base condition. In `logs/market-kit.log`
+a settled purchase reads:
 
 ```
-04:25:49 [acp] paid 7611 through https://called-lemon-trail-symptoms.trycloudflare.com/acp, settled at ledger #4590930: ...
+15:48:07 [acp] paid 16367 through https://underground-internship-scanned-hardwood.trycloudflare.com/acp, settled at ledger #7283012: 바리스타룰스 디카페인 라떼 325ml 10개, grade A, 661.8 h of shelf life left
 ```
 
-**Why the buyer did not pay** (`.market/payments.jsonl`, 13,946 checkouts; 6,149 paid). The biggest groups:
-shelf life under the policy margin (about 4,000 in all, e.g.
-`not paying: 10.82 h of shelf life left, the policy asks for 12.0`), `grade C, the policy accepts ['A', 'B']` (865),
-`warranty 0 h, the policy asks for 6` (526 for all short warranties), and shops' own failures such as
-`checkout refused: 409 {"error":"unit u-1c668c9c8fac is not in stock for this order"}`.
+**Why the buyer did not pay** (`.market/payments.jsonl`, 26,335 checkouts; 10,817 paid). The biggest groups:
+shelf life under the policy margin (12,160, e.g.
+`not paying: 7.05 h of shelf life left, the policy asks for 14.0`), `grade C, the policy accepts ['A', 'B']` (2,042),
+`warranty 0 h, the policy asks for 6` (983 for all short warranties), no certificate (22), and shops' own
+failures such as `checkout refused: 409 {"error":"unit u-1c668c9c8fac is not in stock for this order"}`.
+The buyer ALL fell from 0.670 to 0.590 while its saved ratio rose (0.291 to 0.727): it settled 26% of its
+orders, and 12,160 of the 15,518 checkouts it refused were the shelf-life rule.
 
 **What went wrong with the shop.** Sales per day from `state/sales.jsonl`:
-11-03 356, 11-04 1,658, 11-05 406, 11-06 436, 11-07 89, 11-08 0, 11-09 1, 11-10 0. From 04:26 to 19:17 on 11-10
+11-03 356, 11-04 1,658, 11-05 406, 11-06 436, 11-07 89, 11-08 0, 11-09 1, 11-10 0 (to 19:17). From 04:26 to 19:17 on 11-10
 the seller answered all 2,371 requests with `Sorry, we have none of that in stock`, and 2,336 of them named a SKU
 that was in `.market/inventory.json`. Running `stock.find_unit` on the latest request in a fresh process found
 the unit. So the live seller had every unit marked as taken: `self.open` kept each negotiation until it closed,
@@ -101,6 +105,10 @@ The strategist saw "no sales in the last 6 h" and lowered the floor. It could no
 evidence page has no count of the seller's rejects. That is a gap in what I put in its context, not in the model.
 Fix (commit `0535942`): a negotiation idle for 10 minutes no longer holds its unit. Claude found this from the
 logs while reviewing my submission with me; I approved the fix.
+
+The fixed seller was restarted at 11-10 19:33 and settled three deals within 90 s (commit `5f52adb`). Sales per
+day since: 11-10 200, 11-11 1,271, 11-12 1,000, 11-13 725, 11-14 772, 11-15 771, 11-16 679 (to 20:29).
+Shop deals on the board went from 2,289 to 5,886, but the shop ALL still fell (0.463 to 0.434).
 
 ## 4. Process
 
