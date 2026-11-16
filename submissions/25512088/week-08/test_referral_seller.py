@@ -20,6 +20,17 @@ class SellerIntegrationTests(unittest.IsolatedAsyncioTestCase):
         ]
         self.assertEqual(seller.select_unit('Ged5b1b82',units,set())['unit'],'new-low')
 
+    def test_small_same_grade_lot_always_leads_with_lowest_cost(self):
+        units=[
+            dict(unit='high',sku='G00001',name='chair',grade='A',kind='goods',
+                 cost=690311,supplied_at=1),
+            dict(unit='low',sku='G00001',name='chair',grade='A',kind='goods',
+                 cost=563091,supplied_at=2),
+            dict(unit='middle',sku='G00001',name='chair',grade='A',kind='goods',
+                 cost=619176,supplied_at=3),
+        ]
+        self.assertEqual(seller.select_unit('G00001',units,set())['unit'],'low')
+
     def test_open_quotes_soft_distribute_without_hiding_units(self):
         units=[dict(unit='u1',sku='G00001',name='item',category='food',grade='A',expires_at=None,supplied_at=1),
                dict(unit='u2',sku='G00001',name='item',category='food',grade='A',expires_at=None,supplied_at=2)]

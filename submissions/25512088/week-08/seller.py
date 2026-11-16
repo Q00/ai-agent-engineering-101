@@ -40,7 +40,6 @@ STATE = Path(os.environ.get('MARKET_DIR', '.market'))
 CHECKOUT_CONDITION_BUFFER_SECONDS = 60
 DEFAULT_UNSPECIFIED_FOOD_HOURS = 48
 SELLER_VERSION = '1.3.2'
-PRICE_EXPERIMENT_SKUS = {'Ged5b1b82'}
 
 
 def sign(receipt):
@@ -141,10 +140,14 @@ def select_unit(text, units, reserved, soft_counts=None, prefer_c=False):
     # Lead with the grades that actually settle. The recent mature cohort has
     # B/C converting materially above high-cost A. Food that cannot satisfy a
     # requested remaining-life condition was already removed from ``valid``.
-    overstocked=bool(named and sum(u.get('sku')==named[0].get('sku') for u in valid)>=8)
     grade_order=({'C':0,'B':1,'A':2} if prefer_c else {'B':0,'C':1,'A':2})
+    # A quote floor is tied directly to unit cost. For the same SKU and grade,
+    # leading with the cheapest unit therefore improves both conversion and
+    # realized Book. The former eight-unit/experiment-only condition selected
+    # a 690k unit ahead of otherwise identical 563k stock and needlessly raised
+    # the buyer's opening price.
     return min(fits, key=lambda u: (grade_order.get(u.get('grade'),3),
-        u.get('cost',0) if overstocked or u.get('sku') in PRICE_EXPERIMENT_SKUS else 0,
+        u.get('cost',0),
         soft_counts.get(u['unit'],0),
         u.get('expires_at') or float('inf'),u.get('supplied_at',0)),default=None)
 
