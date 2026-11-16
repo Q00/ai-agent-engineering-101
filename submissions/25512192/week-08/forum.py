@@ -10,7 +10,7 @@ import time
 
 import market_memory as mm
 
-POST_EVERY = 20 * 60            # the market allows one per 5 minutes; fewer, better posts
+POST_EVERY = 5 * 60 + 10        # the market allows one per 5 minutes; post count is 0.1 of buyer ALL
 MIN_SETTLES = 30
 LAST = mm.STATE / "forum_last.json"
 
