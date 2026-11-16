@@ -2,6 +2,9 @@
 
     HARNESS_CMD   shell command to run. Default: Claude Code with haiku, no tools, no project settings.
 
+    HARNESS_CMD=off   no model at all: every call fails at once (no retry, no wait) and the callers' rules decide
+    HARNESS_CMD="python llm.py"   one small chat-completions call (~600 tokens) instead of an agent CLI (~16k)
+
 The harness runs in a fresh empty directory, so it never reads a project's CLAUDE.md / AGENTS.md,
 and the seller and the buyer never share a session (every call is a new `claude -p` process).
 """
@@ -20,6 +23,8 @@ CALLS = 0
 
 def ask(prompt: str, timeout: int = 90, retries: int = 1) -> str:
     global CALLS
+    if CMD.strip().lower() in ("off", "none", ""):
+        raise RuntimeError("harness off (HARNESS_CMD=off): rule mode")
     last = ""
     for attempt in range(retries + 1):
         CALLS += 1

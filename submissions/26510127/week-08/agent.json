@@ -1,6 +1,8 @@
 {
-  "harness": "Claude Code: claude -p --model haiku --tools \"\" --setting-sources \"\" --no-session-persistence (run in an empty temp dir)",
+  "harness": "Codex: HARNESS_CMD=\"codex exec --skip-git-repo-check -m gpt-5.6-luna -c model_reasoning_effort=low -\" (Claude Code subscription access is disabled for my organization; gpt-5.6-sol used ~16.6k tokens a call and ~1% of my quota a minute, gpt-5.6-luna ~3k a call); harness.py runs it in an empty temp dir",
   "seller": {"cmd": "python seller.py --port {port} --name chaewoonee"},
   "buyer": {"cmd": "python buyer.py --url {url} --item {item} --budget {budget}"},
-  "market_buyer": {"cmd": "python market_buyer.py --shops {shops} --item {item} --budget {budget}"}
+  "market_buyer": {"cmd": "python market_buyer.py --shops {shops} --item {item} --budget {budget} --order {order}"},
+  "restock": {"cmd": "python restock.py --state {state} --market https://market.ourolabs.ai --name chaewoonee"},
+  "review": {"cmd": "python review.py --deal {deal}"}
 }
