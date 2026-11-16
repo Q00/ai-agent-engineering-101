@@ -398,8 +398,10 @@ def negotiate(unit, current, offered, catalog, program, token='', ref='', intel=
     loss_budget=score_safe_loss_budget(intel,loss_used,program.p.get('shop_name','25512088'))
     raw_loss_floor=math.ceil(unit['cost']*(1-CLASS_NEAR_COST_RATE))
     projected_raw_loss=max(0,unit['cost']-offered)
+    low_value_rotation=unit.get('cost',0)<HIGH_VALUE_WARRANTY_CUTOFF
     class_near_cost_trial=bool(
-        not legacy and not warranty and unit.get('kind') in ('goods','food') and
+        low_value_rotation and not legacy and not warranty and
+        unit.get('kind') in ('goods','food') and
         raw_loss_floor<=offered<unit['cost'] and class_book_cushion(intel)>0 and
         loss_used+projected_raw_loss<=loss_budget)
     if class_near_cost_trial:
@@ -417,7 +419,8 @@ def negotiate(unit, current, offered, catalog, program, token='', ref='', intel=
     rotation_cap=min(LIQUIDITY_ROTATION_MAX_LOSS,
                      max(0,math.floor(cushion*LIQUIDITY_ROTATION_BOOK_SHARE)))
     liquidity_rotation=bool(
-        not legacy and not warranty and unit.get('kind') in ('goods','food') and
+        low_value_rotation and not legacy and not warranty and
+        unit.get('kind') in ('goods','food') and
         raw_loss_floor<=offered<unit['cost'] and
         loss_used+projected_raw_loss<=rotation_baseline+rotation_cap)
     if liquidity_rotation:
@@ -614,7 +617,8 @@ def sale_quote(unit, catalog, program, intel=None, token='', ref='', *, record=T
     score_evidence_floor=local_evidence if local_evidence is not None else (
         max(market_evidence) if market_evidence else None)
     projected_loss=max(0,unit['cost']-(score_evidence_floor or unit['cost']))
-    if (score_evidence_floor is not None and score_evidence_floor<protected
+    if (unit.get('cost',0)<HIGH_VALUE_WARRANTY_CUTOFF and
+            score_evidence_floor is not None and score_evidence_floor<protected
             and not token and not ref and score_evidence_floor>=cohort_floor
             and loss_used+projected_loss<=loss_budget
             and (not projected_loss or loss_trials<LOSS_LEADER_TRIALS_PER_SKU)):

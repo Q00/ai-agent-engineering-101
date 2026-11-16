@@ -114,6 +114,12 @@ class RolloutTests(unittest.TestCase):
   self.assertEqual(rotated['price'],7360)
   self.assertFalse(rotated['class_near_cost_trial'])
   self.assertTrue(rotated['liquidity_rotation'])
+  # Newly procured high-value stock must not burn a six-figure Book loss merely
+  # to rotate cash.  It has enough per-sale Revenue to wait for cost recovery.
+  expensive=dict(self.u,cost=600000,list_price=900000)
+  expensive_quote=dict(q,base=700000,price=700000)
+  self.assertGreater(negotiate(
+      expensive,expensive_quote,552000,{},self.p,intel=Evidence(6000000))['price'],552000)
   # The persisted baseline must not refill after a sale.
   # The live policy now permits at most 40% of the lower Book boundary.
   # A baseline already 40k behind this synthetic 100k cushion must not refill.
