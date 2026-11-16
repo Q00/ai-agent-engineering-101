@@ -60,6 +60,14 @@ OWN_RATE_SHORT_FLOOR = 0.15     # 11.1% deal rate over 6h, but it still got re-b
                                 # one cycle sooner to a SKU that is degrading fast, not just one that has
                                 # always been mediocre
 
+SHORT_SHELF_HOURS = 48      # a food SKU this short-lived loses most of its buyer pool to their own
+                            # min_hours_left filter well before it expires, independent of price -- measured
+                            # live: G022ce883 (shelf_hours=48) got 21 zero-offer cancels in one hour while
+                            # its ask was already a normal ~53% off list, purely because its remaining shelf
+                            # life had fallen under what most orders required. Capping how many units of such
+                            # a SKU we hold limits how much capital sits in stock that will go unsellable
+                            # before it expires, instead of trying to fix it with a lower price
+
 HELD_COST_MIN_SAMPLE = 2    # need at least this many currently-held units of a SKU before trusting their
                             # average cost -- a single unit's grade draw can be a fluke either way
 HELD_COST_SURPRISE = 0.10   # skip a SKU whose currently-held units cost this much more (as a share of
@@ -257,6 +265,9 @@ def plan(inv, d, policy, now, catalog, demand):
         if unit_cost <= 0 or unit_cost > budget:
             continue
         target = policy["goods_target"] if kind == "goods" else policy["food_target"]
+        shelf_hours = (catalog.get(sku) or {}).get("shelf_hours")
+        if kind == "food" and shelf_hours and shelf_hours <= SHORT_SHELF_HOURS:
+            target = min(target, 1)
         qty = target - held.get(sku, 0)
         qty = min(qty, int(budget // unit_cost))
         qty = min(qty, int(per_sku_cap // unit_cost))   # cap this SKU's TOTAL spend, not just its unit

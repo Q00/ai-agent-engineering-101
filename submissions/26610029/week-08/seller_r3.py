@@ -42,6 +42,13 @@ MARKET_REFRESH = 600                  # seconds between reads of the market's pr
 DEFAULT_RATIO = {("goods", "A"): 0.72, ("goods", "B"): 0.63, ("goods", "C"): 0.54,
                  ("food", "A"): 0.72, ("food", "B"): 0.62, ("food", "C"): 0.56}
 DEFAULT_BREAK = {"A": 0.005, "B": 0.013, "C": 0.035}
+SHORT_SHELF_HOURS = 48      # a food SKU this short-lived loses most of its buyer pool to their own
+                            # min_hours_left filter well before the flat clearance_hours window below would
+                            # ever trigger -- measured live: G022ce883 (shelf_hours=48) got 21 zero-offer
+                            # cancels in one hour because orders needing 24-36h+ left simply never engage,
+                            # regardless of price. Scaling the clearance window to half of a SKU this short
+                            # gets it discounted while shorter-window buyers can still find it, not only in
+                            # its last few hours once almost nobody's window still fits
 DEFAULT_POLICY = {"undercut": 0.02,           # price this far (share of list) under the market's going rate
                   "open_premium": 0.06,       # opening ask this far above the target
                   "min_margin": 0.05,         # never below cost * (1 + min_margin) ...
@@ -110,7 +117,12 @@ class Market:
         floor = cost * (1 + p["min_margin"])
         if u["kind"] == "food" and u.get("expires_at"):
             hours_left = (u["expires_at"] - time.time()) / 3600
-            if hours_left < p["clearance_hours"]:   # skew: it is worth nothing once it expires
+            clearance_hours = p["clearance_hours"]
+            if u.get("supplied_at"):
+                total_hours = (u["expires_at"] - u["supplied_at"]) / 3600
+                if total_hours <= SHORT_SHELF_HOURS:
+                    clearance_hours = max(clearance_hours, total_hours * 0.5)
+            if hours_left < clearance_hours:   # skew: it is worth nothing once it expires
                 floor = cost * p["clearance_floor"]
         target = max(floor, lp * (self.ratio.get((u["kind"], u["grade"]), 0.65) - p["undercut"]))
         # ask was lp * (ratio + open_premium) -- anchored on the raw market ratio, completely independent
