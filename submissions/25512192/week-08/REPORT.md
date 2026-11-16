@@ -110,6 +110,28 @@ The fixed seller was restarted at 11-10 19:33 and settled three deals within 90 
 day since: 11-10 200, 11-11 1,271, 11-12 1,000, 11-13 725, 11-14 772, 11-15 771, 11-16 679 (to 20:29).
 Shop deals on the board went from 2,289 to 5,886, but the shop ALL still fell (0.463 to 0.434).
 
+**What went wrong with the strategist, and patch 3.6.** Patch 3.6 (11-16) made saved the share of the shop's
+margin a deal keeps, (list - price) / (list - unit cost), and `/agent.md` now ranks the buyer by 0.5 saved
++ 0.3 forum + 0.1 deals + 0.1 posts and the shop by book, not profit. Reading the rules again against the code
+turned up two faults in the strategist's context, not in its model:
+
+- Its prompt still described the old score (0.5 surplus + 0.2 deals), so it was optimising for the wrong thing.
+- It raised `buyer.food_hours_margin` 1 → 2 → 3 → 4 → 6 → 8 → 10 → 16 h between 11-03 and 11-14. Its notes give
+  the reason, e.g. 11-07: "the buyer should skip such items during negotiation rather than agree to a deal and
+  then fail to pay". But the buyer cannot see shelf life while it negotiates; the kit checks the margin only at
+  payment, and settle follows at once. So every step refused more agreed deals, the strategist saw more
+  shelf-life refusals, and raised it again. Shelf-life refusals were 12,160 of the 15,518 checkouts the buyer
+  refused. In the log from 11-16 15:47 to 22:10 (margin 8), 54 of 139 such refusals would have paid at 1 h.
+
+Changes on 11-16, each its own commit: the prompt states the current scoring and says the margin is checked only
+at payment; `policy.clamp` caps the margin at 2 h; the policy was set to 1 h by hand (noted in its `notes`).
+The buyer now estimates each deal's saved from the receipt's grade claim (cost midpoints A 65%, B 50%, C 35% of
+list, from `/agent.md`) and does not pay a deal under 0.7, trying the next shop instead. On my 400 most recent
+paid deals (grades from the ledger) that keeps 266 and lifts the estimated mean from 0.77 to 0.84. The forum post
+interval went from 20 to 5 minutes, since post count is 0.1 of buyer ALL (888 posts against a median of 1,765).
+With about a day left and 10,900 deals behind it, the board's saved can move only a little; this mostly fixes
+what the agent does, and is recorded here for that reason.
+
 ## 4. Process
 
 The steps are in the commit history from `2ef9b5b` (copy of week 07) onward, failed attempts included: two failed
