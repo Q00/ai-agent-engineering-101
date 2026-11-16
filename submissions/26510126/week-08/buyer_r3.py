@@ -603,14 +603,20 @@ def policy_miss(receipt, order, lp=None):
     """The receipt's own grade claim or warranty against accept_policy, for goods: the kit refuses such a checkout,
     and a refused receipt ended the order with no other shop tried (leak audit #51, 11/16: 30 of 370 receipts went
     unpaid, 12 of them stating on the receipt a C with no warranty or a 0-1 h warranty). Checked only when the
-    receipt states the field, since the kit checks the seller's checkout copy, not ours."""
-    if order.get("kind") != "goods" or not isinstance(receipt, dict):
+    receipt states the field, since the kit checks the seller's checkout copy, not ours. Audit #52 (11/17 00:4x): all 4
+    unpaid goods receipts since were `cert: False` on the receipt, or a dear A whose receipt had no warranty_hours
+    key: the kit signs a shop's terms into the receipt, so a missing key means no warranty at checkout either."""
+    if not isinstance(receipt, dict):
         return None
     pol = accept_policy(order, receipt, lp)
+    if receipt.get("cert") is False and pol.get("cert"):
+        return "the receipt says the unit comes without the market's certificate"
+    if order.get("kind") != "goods":
+        return None
     claim = receipt.get("claim")
     if claim in ("A", "B", "C") and pol.get("grades") and claim not in pol["grades"]:
         return f"the receipt claims grade {claim}, we pay only for {'/'.join(pol['grades'])}"
-    if "warranty_hours" in receipt and pol.get("warranty_hours"):
+    if pol.get("warranty_hours"):
         try:
             wh = float(receipt.get("warranty_hours") or 0)
         except (TypeError, ValueError):

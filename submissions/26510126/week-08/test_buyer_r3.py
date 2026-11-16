@@ -773,6 +773,10 @@ def main():
     case("receipt: C with no warranty, B with a 1 h warranty are refused; B warranted, unstated, food pass",
          bool(c_none) and bool(c_short) and b_ok is None and plain is None and food is None,
          str((c_none, c_short, b_ok, plain, food)))
+    # audit #52: a receipt that says cert False is refused for goods and food alike
+    nc_g = buyer_r3.check_receipt(dict(base, claim="A", cert=False), g, 100_000, "t1", 200_000)
+    nc_f = buyer_r3.check_receipt(dict(base, cert=False), dict(g, kind="food"), 100_000, "t1", 200_000)
+    case("receipt: cert False is refused (goods and food)", bool(nc_g) and bool(nc_f), str((nc_g, nc_f)))
     print(f"\n{sum(RESULTS)}/{len(RESULTS)} passed")
     shutil.rmtree(TMP, ignore_errors=True)
 
