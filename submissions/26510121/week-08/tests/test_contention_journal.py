@@ -73,3 +73,25 @@ def test_worker_failure_keeps_safe_origin_without_exception_message(tmp_path):
  assert row['worker_error_type']=='OperationalError' and row['payment_started'] is False
  assert row['error_origin']==[{'module':'state.py','function':'put','line':114}]
  assert 'SECRET_VALUE' not in json.dumps(row)
+
+import pytest
+@pytest.mark.parametrize('term',[{}, {'warranty_hours':None}, {'warranty_hours':0}, {'warranty_hours':3}])
+def test_signed_missing_or_short_warranty_never_reaches_checkout_preparation(tmp_path,monkeypatch,term):
+ import market_buyer as buyer
+ from types import SimpleNamespace
+ from r3.state import policy
+ j=Journal(tmp_path);now=time.time()
+ cfg=dict(policy(),max_shop_candidates=1,buyer_contract_routing_enabled=True,service_contract_v26_enabled=False,
+     system_framework_enabled=False)
+ rec=dict(sig_seller='synthetic',claim='A',item='s',task='t',price=100,**term)
+ task={'id':'t','status':{'state':'TASK_STATE_COMPLETED'},'artifacts':[{'parts':[{'data':rec}]}]}
+ peer=SimpleNamespace(close=lambda:None,cancel=lambda t:None)
+ c={'id':'c','reference_price':100,'shop':'peer','sku':'s','product':{'kind':'goods','list_price':1000}}
+ chooser=SimpleNamespace(choose=lambda role,candidates,context,**kw:candidates[0])
+ monkeypatch.setattr(buyer,'buyer_assessment',lambda *a,**kw:{'cap':1000,'required_warranty':6,
+     'required_grade':'A','conditional_terms':['warranty_hours']})
+ monkeypatch.setattr(buyer,'verify_receipt',lambda *a,**kw:pytest.fail('must reject missing coverage before further checkout preparation'))
+ empty={'receipt':None}
+ out=buyer.execute({'order':'o','kind':'goods','budget':1000,'expires':now+60},j,chooser,lambda:peer,cfg,
+     {'version':1},{'peer':{'pubkey':'synthetic'}},[c],now+10,{'c':(peer,task)},1,empty)
+ assert out==empty and j.events('attempt')[0]['reason']=='quote_warranty_changed'

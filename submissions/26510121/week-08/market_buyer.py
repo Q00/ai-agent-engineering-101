@@ -4,7 +4,7 @@ import json
 import os
 import time
 import math
-from r3.state import Journal, read_json
+from r3.state import Journal, read_json, warranty_hours
 from r3.market_memory import buyer_price_actions, buyer_assessment
 from r3.economy import buyer_candidates
 from r3.model import Chooser
@@ -173,12 +173,15 @@ def execute(order, journal, chooser, peer_factory, cfg, strategy, registry, rank
                         actual_warranty=rec_terms.get('warranty_hours')
                         if required_grade and actual_grade in ('A','B','C') and actual_grade!=required_grade and 'grade' not in conditional_requirements:
                             raise ValueError('quote_grade_changed')
-                        if type(actual_warranty) in (int,float) and actual_warranty<required_warranty and 'warranty_hours' not in conditional_requirements:
+                        # A missing/null signed term supplies zero coverage.
+                        # Conditional discovery terms never authorize inventing
+                        # coverage on the final receipt sent to checkout.
+                        if warranty_hours(actual_warranty)<required_warranty:
                             raise ValueError('quote_warranty_changed')
                         final_terms=dict(rec_terms)
                         if actual_grade in ('A','B','C'):final_terms['grade']=actual_grade
                         final_terms.setdefault('grade',required_grade)
-                        final_terms.setdefault('warranty_hours',required_warranty)
+                        final_terms.setdefault('warranty_hours',0)
                         final=buyer_assessment(dict(c['product'],sku=c['sku']),order,final_terms,journal,cfg,shop=c['shop'])
                         price=rec_terms.get('price')
                         if type(price) not in (int,float) or price>agreed or price>final['cap']:
