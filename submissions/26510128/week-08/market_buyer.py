@@ -92,8 +92,20 @@ def choose_shop(shops: list[dict[str, Any]], order: dict[str, Any],
         if int(mem.get(name, {}).get("injection_attempts", 0)) > 0:
             blocked.append(name)
             continue
+        # Market's stock advertisement is a snapshot. Do not repeatedly call
+        # a shop/SKU pair that recently returned out-of-stock, as observed in
+        # actual Round 3 logs. Retry after a short cooldown.
+        last = mem.get(name, {}).get("last_trade", {})
+        recent_no_stock = False
+        if last.get("status") == "no-deal" and "stock" in str(last.get("reason", "")).lower():
+            try:
+                at = datetime.fromisoformat(last["at"]).timestamp()
+                recent_no_stock = time.time() - at < 20 * 60
+            except (ValueError, TypeError, KeyError):
+                recent_no_stock = False
         offers = [o for o in shop.get("offers", []) if isinstance(o, dict)
-                  and int(o.get("qty", 0)) > 0 and str(o.get("sku")) in allowed]
+                  and int(o.get("qty", 0)) > 0 and str(o.get("sku")) in allowed
+                  and not (recent_no_stock and str(o.get("sku")) == str(last.get("sku", "")))]
         for offer in offers:
             prod = products.get(str(offer.get("sku")), {})
             lp = int(prod.get("list_price") or order.get("budget") or 0)
