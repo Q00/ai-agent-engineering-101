@@ -1,0 +1,231 @@
+% Week 08 midterm, 25622005 (psyoung82): one-page architecture figure, Korean labels.
+% Same layout as architecture.tex. Build: pdflatex architecture-ko.tex   (TikZ + kotex; one run)
+\documentclass[10pt]{article}
+\usepackage[a4paper,landscape,margin=0.9cm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[scaled=0.92]{helvet}
+\renewcommand{\familydefault}{\sfdefault}
+\usepackage{kotex}
+% Helvetica's bold is series b; the Nanum Gothic of kotex declares only bx: map b to it so Korean bold works
+\makeatletter\input{lucnanumgt.fd}\makeatother
+\DeclareFontShape{LUC}{nanumgt}{b}{n}{<-> ssub * nanumgt/bx/n}{}
+\DeclareFontShape{LUC}{nanumgt}{b}{sl}{<-> ssub * nanumgt/bx/sl}{}
+\DeclareFontShape{LUC}{nanumgt}{b}{it}{<-> ssub * nanumgt/bx/sl}{}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,fit,backgrounds,calc}
+\pagestyle{empty}
+\setlength{\parindent}{0pt}
+
+\definecolor{rule}{HTML}{1F5FA8}     % my rule code
+\definecolor{rulebg}{HTML}{EAF2FB}
+\definecolor{model}{HTML}{B3261E}    % a model call
+\definecolor{modelbg}{HTML}{FCEDEA}
+\definecolor{pol}{HTML}{B26A00}      % the policy file and the path that writes it
+\definecolor{polbg}{HTML}{FFF3DC}
+\definecolor{mem}{HTML}{1E7B4A}      % memory and logs
+\definecolor{membg}{HTML}{E8F5EC}
+\definecolor{kit}{HTML}{555555}      % kit and market: not mine
+\definecolor{kitbg}{HTML}{EFEFEF}
+
+\begin{document}
+\vspace*{\fill}
+\begin{tikzpicture}[
+    x=1cm, y=1cm, font=\scriptsize,
+    box/.style={draw, rounded corners=2pt, align=left, inner sep=3.2pt, line width=0.5pt},
+    rule/.style={box, draw=rule, fill=rulebg},
+    model/.style={box, draw=model, fill=modelbg, line width=0.8pt},
+    pol/.style={box, draw=pol, fill=polbg, line width=0.9pt},
+    mem/.style={box, draw=mem, fill=membg},
+    ext/.style={box, draw=kit, fill=kitbg},
+    plain/.style={box, draw=black!45, fill=white},
+    loop/.style={draw=black!55, rounded corners=5pt, line width=0.7pt, inner sep=5pt},
+    tab/.style={font=\scriptsize\bfseries, anchor=west, fill=white, inner sep=2pt},
+    flow/.style={-{Latex[length=5pt]}, line width=0.6pt, draw=black!75},
+    both/.style={{Latex[length=5pt]}-{Latex[length=5pt]}, line width=0.6pt, draw=black!75},
+    readonly/.style={-{Latex[length=5pt]}, line width=0.6pt, dashed, draw=kit},
+    write/.style={-{Latex[length=7pt]}, line width=1.7pt, draw=pol},
+    lbl/.style={font=\tiny, inner sep=1pt, text=black!80},
+  ]
+
+  % ================================================================ title
+  \node[anchor=west, font=\large\bfseries, inner sep=0pt] at (0,18.95)
+    {Round 3 에이전트 (25622005, psyoung82): 거래는 규칙이 하고, 모델은 규칙의 숫자를 고친다};
+  \node[anchor=east, font=\footnotesize, text=black!70, inner sep=0pt] at (27.35,18.95)
+    {속도가 다른 고리 세 개가 정책 파일 하나로 맞물린다};
+
+  % ================================================================ outside world
+  \node[ext, text width=15.4cm, anchor=north west] (market) at (0,18.45)
+    {\textbf{시장} (market.ourolabs.ai, 내 것이 아님): \texttt{/agent.md}와 \texttt{/rules} (규칙. 라운드 중에 패치 노트
+     3.2\textasciitilde{}3.6이 나왔다) \textbar\ board \textbar\ 공개 ledger \textbar\ 공급 창 \textbar\
+     \texttt{/api/settle}이 모든 결제를 검사};
+  \node[ext, text width=9.95cm, anchor=north west] (others) at (16.95,18.45)
+    {\textbf{다른 학생의 가게와 buyer}: A2A 메시지, 서명된 영수증, 가게 카드, 게시판 글.
+     다른 에이전트가 쓴 글은 데이터로만 읽고 지시로 읽지 않는다};
+
+  % ================================================================ loop 3: strategist
+  \node[rule, text width=4.5cm, anchor=north west] (collect) at (0.3,15.9)
+    {\textbf{collect.py}\\ 시장의 공개 API와 내 로그.\\ \texttt{.market/}에서는 \texttt{inventory.json}만};
+  \node[rule, text width=4.5cm, below=4.4mm of collect] (facts)
+    {\textbf{facts.py}\\ 시장 규칙 원문과 패치 diff.\\ 문장이 바뀌면 \texttt{None}과 경고};
+  \node[rule, text width=4.5cm, below=4.4mm of facts] (brief)
+    {\textbf{analyze.py}: brief (16 KB)\\ 학생 순위와 격차, 점수 항목,\\ 가격, 거절 사유, 묶인 재고};
+  \node[rule, text width=4.5cm, below=4.4mm of brief] (decide)
+    {\textbf{decide.py}: 프롬프트 하나\\ 시장 규칙 + 키 설명 + 조정 가능한\\ 키 표 + brief + 실행 기록 + 메모};
+  \node[pol, text width=4.5cm, below=4.4mm of decide] (guard)
+    {\textbf{guard.py}: 모델은 제안하고\\ 코드가 정한다. 허용 키, 범위,\\ 한 번의 폭, 대기 시간, 묶인 키};
+  \node[pol, text width=4.5cm, below=4.4mm of guard] (skillfile)
+    {\textbf{skillfile.py}\\ 값의 바이트만 바꾼다. 충돌 검사,\\ 버전마다 사본 보관};
+
+  \node[rule, text width=4.3cm, anchor=north west] (mcp) at (5.75,15.9)
+    {\textbf{mcptools.py}: 읽기 전용 MCP 툴 5개\\ \texttt{board}, \texttt{ledger\_recent}, \texttt{price\_book},\\ \texttt{sku\_info}, \texttt{shop\_card}};
+  \node[model, text width=4.3cm, below=7.5mm of mcp] (opus)
+    {\textbf{모델 claude-opus-5-5}\\ 실행마다 한 번. 답은 JSON 하나:\\ 변경, 메모, 확신도.\\ 코드와 스위치는 못 바꾼다};
+  \node[rule, text width=4.3cm, below=5.5mm of opus] (outcome)
+    {\textbf{outcome.py}\\ 변경 1시간 뒤 같은 지표를 재서\\ 다음 프롬프트에 넣는다.\\ 식품 성사율 하락만 되돌린다};
+  \node[model, text width=4.3cm, below=8.5mm of outcome] (analyst)
+    {\textbf{모델 claude-sonnet-5-5}\\ \textbf{analyst.py}: SKU별 수요 배수\\ 0.5\textasciitilde{}2.0, 1시간 뒤 만료};
+
+  \begin{scope}[on background layer]
+    \node[loop, fit=(collect)(skillfile)(mcp)(analyst)] (L3) {};
+  \end{scope}
+  \node[tab] at ([xshift=3mm]L3.north west) {고리 3 $\cdot$ 30분 $\cdot$ strategist};
+
+  \draw[flow] (collect) -- (facts);
+  \draw[flow] (facts) -- (brief);
+  \draw[flow] (brief) -- (decide);
+  \draw[flow] (decide) -- (guard);
+  \draw[write] (guard) -- (skillfile);
+  \draw[both] ([yshift=4pt]decide.east) -- ++(0.42,0) |- (opus.west);
+  \draw[both] (opus) -- node[lbl, right=2pt] {실행당 8회까지} (mcp);
+  \draw[flow] (outcome.west) -- ++(-0.2,0) |- ([yshift=-4pt]decide.east);
+
+  % ================================================================ hub column
+  \node[mem, text width=4.1cm, anchor=north west] (declog) at (11.3,15.9)
+    {\textbf{logs/decisions/*.jsonl}\\ 모든 결정과 그 입력,\\ \texttt{memory\_refs}, \texttt{policy\_ver}\\ (906,337행)};
+  \node[pol, text width=4.1cm, anchor=north west] (skill) at (11.3,11.75)
+    {\textbf{strategy/SKILL.md}\\ 정책 숫자 (front matter)\\ + 전략 본문\\ + \emph{Strategist notes}\\[2pt]
+     \textbf{policy.py}: 읽을 때마다 검증.\\ 잘못된 파일은 쓰지 않는다\\ (마지막 통과 값, 다음은 기본값).\\ 버전 2 $\rightarrow$ 602};
+  \node[mem, text width=4.1cm, anchor=north west] (summary) at (11.3,8.3)
+    {\textbf{memory/summary.json}\\ 가게별 기록, 가게/등급별 가격 장부,\\ 고장률 표, 사용 기한,\\ SKU 판매 속도, 단골의 카테고리\\ (+ \texttt{demand\_forecast.json})};
+
+  % ================================================================ loop 1: trading
+  \node[rule, text width=4.6cm, anchor=north west] (seller) at (16.95,15.9)
+    {\textbf{seller.py} (A2A 가게)\\ \textbf{tools/pricing.py}: 하한, 첫 호가,\\ 양보 한 번, 좋은 등급 먼저,\\ 고장률 표로 값을 매긴 보증.\\ 답장 결정 13 ms (중앙값)};
+  \node[rule, text width=4.6cm, anchor=north west] (buyer) at (22.3,15.9)
+    {\textbf{market\_buyer.py}\\ \textbf{tools/buyer\_policy.py, negotiation.py}:\\ 정산가로 가게 순위, 3턴 협상,\\ 시간 제한, 영수증 직접 검사,\\ 안 되면 다음 가게 (10곳까지)};
+  \node[model, text width=3.75cm, anchor=north west] (fallback) at (16.95,13.6)
+    {\textbf{모델 claude-sonnet-5-5}\\ \textbf{tools/llm\_fallback.py}: 규칙이\\ 못 읽은 메시지를 읽는다.\\ 시간당 10회까지 (가게 + buyer)};
+  \node[rule, text width=3.75cm, anchor=north west] (review) at (23.15,13.6)
+    {\textbf{review.py}, \textbf{tools/forum.py}\\ 정산된 사실만으로 별점.\\ 거래마다 사실 글 하나,\\ 빈 칸에는 ledger 시세 글};
+  \node[ext, text width=9.95cm, anchor=north west] (kit) at (16.95,11.35)
+    {\textbf{키트 v4, 내가 패치한 복사본} (\texttt{market\_kit.py}): \textbf{결속 검사} (SKU, unit, 가격 상한)
+     $\rightarrow$ ACP checkout $\rightarrow$ AP2 mandate $\rightarrow$ 시장 \texttt{/api/settle}.
+     패치: cancel, hold TTL, acp-sessions 로그, 로그 보관, supply stop.
+     \texttt{.market/} (키, claim code)은 키트만 쓴다};
+
+  \begin{scope}[on background layer]
+    \node[loop, fit=(seller)(buyer)(fallback)(review)(kit)] (L1) {};
+  \end{scope}
+  \node[tab] at ([xshift=3mm]L1.north west) {고리 1 $\cdot$ 매 메시지 $\cdot$ 거래};
+
+  \draw[flow] (18.1,0 |- seller.south) -- node[lbl, left=1.5pt] {못 읽은 메시지} (18.1,0 |- fallback.north);
+  \draw[flow] (19.5,0 |- fallback.north) -- node[lbl, right=1.5pt] {\{kind, price, sku\}} (19.5,0 |- seller.south);
+  \draw[flow] (21.35,0 |- seller.south) -- (21.35,0 |- kit.north);
+  \node[lbl, anchor=east] at ($(21.3,0 |- kit.north)+(0,0.3)$) {서명한 영수증};
+  \draw[flow] (22.72,0 |- buyer.south) -- (22.72,0 |- kit.north);
+  \node[lbl, anchor=west] at ($(22.78,0 |- kit.north)+(0,0.3)$) {영수증 + accept 조건};
+  \draw[flow] (26.2,0 |- kit.north) -- (26.2,0 |- review.south);
+  \node[lbl, anchor=west] at ($(26.26,0 |- kit.north)+(0,0.3)$) {정산된 거래};
+
+  % ================================================================ loop 2: memory and stock
+  \node[rule, text width=4.6cm, anchor=north west] (restock) at (16.95,9.1)
+    {\textbf{restock.py}, \textbf{tools/stock.py}\\ 공급 창, surge 요금, SKU별 목표\\ 재고, focus/trend SKU,\\ 고가품 한도, 파산 규칙};
+  \node[rule, text width=4.6cm, anchor=north west] (ingest) at (22.3,9.1)
+    {\textbf{memory/ingest.py}\\ 키트 파일과 결정 로그는 offset으로,\\ ledger는 내 cursor로 읽는다.\\ 사건은 추가한 뒤 한 번만 접는다};
+  \node[rule, text width=4.6cm, anchor=north west] (demand) at (16.95,7.1)
+    {\textbf{memory/demand.py}\\ 재고가 있던 시간의 판매 속도,\\ 시장 점유, 시간대 (모델 없음)};
+  \node[rule, text width=3.75cm, anchor=north west] (query) at (23.15,7.1)
+    {\textbf{memory/query.py}\\ 읽기 전용 조회. 없는 데이터는\\ ``기억 없음''으로 읽는다};
+
+  \begin{scope}[on background layer]
+    \node[loop, fit=(restock)(ingest)(demand)(query)] (L2) {};
+  \end{scope}
+  \node[tab] at ([xshift=3mm]L2.north west) {고리 2 $\cdot$ 60초 $\cdot$ 기억과 재고};
+
+  \draw[flow] (demand) -- (restock);
+  \draw[flow] (21.5,0 |- restock.north) -- node[lbl, left=1.5pt] {매입 목록} (21.5,0 |- kit.south);
+  \draw[flow] (24.7,0 |- kit.south) -- node[lbl, right=1.5pt] {결제, 거절, 고장} (24.7,0 |- ingest.north);
+
+  \node[ext, text width=4.6cm, anchor=north west] (ledger) at (22.3,5.3)
+    {\textbf{시장}: 공개 ledger\\ \texttt{GET /api/ledger?after=N}};
+  \draw[readonly] (22.72,0 |- ledger.north) -- (22.72,0 |- ingest.south);
+
+  % ================================================================ arrows between the parts
+  % outside world
+  \draw[readonly] (4.6,0 |- market.south) -- node[lbl, right=1.5pt] {읽기만} (4.6,0 |- collect.north);
+  \draw[both] (21.45,0 |- others.south) -- node[lbl, left=1.5pt] {문의, 제안} (21.45,0 |- seller.north);
+  \draw[both] (24.7,0 |- others.south) -- node[lbl, right=1.5pt] {견적, 영수증} (24.7,0 |- buyer.north);
+
+  % the policy file: one thick path in, three thin paths out
+  \coordinate (corridor) at ($(outcome.south)!0.5!(analyst.north)$);
+  \draw[write] (skillfile.east) -- ++(0.36,0) |- node[lbl, pos=0.8, above=2pt] {숫자만, guard를 지난 뒤} (corridor -| skill.west);
+  \coordinate (p1) at ([yshift=-4mm]skill.north west);
+  \draw[flow] (p1) -- node[lbl, above=1pt] {메모} (p1 -| L3.east);
+  \coordinate (p2) at ([yshift=-4mm]skill.north east);
+  \draw[flow] (p2) -- node[lbl, above=1pt] {다시 읽음} (p2 -| L1.west);
+  \coordinate (p3) at ([yshift=3mm]skill.south east);
+  \draw[flow] (p3) -- node[lbl, above=1pt] {다시 읽음} ++(0.37,0) |- ([yshift=-5mm]L2.north west);
+
+  % memory
+  \draw[flow] (L1.west |- declog.east) -- node[lbl, above=1pt] {기록} (declog.east);
+  \draw[readonly] (declog.west) -- node[lbl, above=1pt] {끝부분} (declog.west -| L3.east);
+  \coordinate (m1) at ([yshift=-4mm]summary.north east);
+  \coordinate (bus) at ($(m1)+(0.77,0)$);
+  \draw[flow] (m1) -- node[lbl, above=1pt, pos=0.32] {읽기} (m1 -| L2.west);
+  \draw[flow] (bus) |- ([yshift=3.3mm]L1.south west);
+  \fill[black!75] (bus) circle (1.3pt);
+  \coordinate (m2) at ([yshift=4.5mm]summary.south east);
+  \draw[flow] (m2 -| L2.west) -- node[lbl, above=1pt] {쓰기} (m2);
+  \coordinate (m3) at ([yshift=-4mm]summary.north west);
+  \draw[readonly] (m3) -- node[lbl, above=1pt] {읽기} (m3 -| L3.east);
+  \draw[flow] ([xshift=-7mm]analyst.south) |- node[lbl, pos=0.72, below=1.5pt] {수요 배수 (파일, 1시간)} ([yshift=2mm]summary.south west);
+
+  % ================================================================ deployment
+  \node[plain, text width=10.2cm, anchor=north west] (deploy) at (11.3,5.3)
+    {\textbf{배포} (\texttt{docker/}, \texttt{compose.yaml}): 컨테이너 하나가 키트, hook 4개, strategist 루프를 돌린다.
+     터널은 컨테이너 밖에서 감시와 함께 돈다(\texttt{host\_tunnel.py}). 그래서 컨테이너를 다시 만들어도 다른 에이전트가
+     기억하는 URL이 유지된다. \texttt{hot\_update.sh}는 재시작 없이 hook 코드를 바꾼다};
+
+  % ================================================================ kit default, for contrast
+  \node[ext, text width=9.9cm, anchor=north west] (default) at (0.0,6.2)
+    {\textbf{키트 기본형} (\texttt{scripts/starter\_round3}), 대조용\\[2pt]
+     \begin{tabular}{@{}p{1.5cm}p{7.9cm}@{}}
+       모델 & 매 턴마다 묻는다: accept, counter, reject (haiku)\\
+       buyer & 재고가 있는 가게 중 무작위. accept 조건과 review 없음\\
+       재입고 & 재고가 20개 아래면 무작위 카테고리와 SKU\\
+       기억 & 한 프로세스의 진행 중인 대화뿐\\
+       설정 & 코드의 상수. 사람이 고치고 다시 띄운다\\
+     \end{tabular}};
+
+  % ================================================================ legend
+  \node[rule, anchor=west, minimum width=0.55cm, minimum height=0.28cm, inner sep=0pt] (lg1) at (0.0,3.7) {};
+  \node[anchor=west] at (lg1.east) {내 규칙 코드 (테스트 757개)};
+  \node[model, anchor=west, minimum width=0.55cm, minimum height=0.28cm, inner sep=0pt] (lg2) at (0.0,3.25) {};
+  \node[anchor=west] at (lg2.east) {모델 호출 (거래 경로에는 없음)};
+  \node[pol, anchor=west, minimum width=0.55cm, minimum height=0.28cm, inner sep=0pt] (lg3) at (0.0,2.8) {};
+  \node[anchor=west] at (lg3.east) {정책 파일과 그 파일을 쓰는 유일한 경로};
+  \node[mem, anchor=west, minimum width=0.55cm, minimum height=0.28cm, inner sep=0pt] (lg4) at (6.3,3.7) {};
+  \node[anchor=west] at (lg4.east) {기억과 로그};
+  \node[ext, anchor=west, minimum width=0.55cm, minimum height=0.28cm, inner sep=0pt] (lg5) at (6.3,3.25) {};
+  \node[anchor=west] at (lg5.east) {키트와 시장};
+  \draw[readonly] (6.3,2.8) -- (6.85,2.8);
+  \node[anchor=west] at (6.85,2.8) {읽기 전용 조회};
+
+  \node[anchor=north west, text=black!70, text width=15.4cm, align=left, inner sep=0pt] at (11.3,3.75)
+    {스냅샷 2026-11-16 22:10 KST. board: 가게 정산 61,296건(가게 61곳 중 거래 수 1위), buyer 정산 19,156건,
+     학생 46명 중 16위. strategist: 640회 실행, 모델의 변경 179건 적용. guard가 대기 시간으로 69건, 확신도 미달로
+     68건을 버렸다. 결과 점검 144건, 자동 되돌림 없음. 모델 예외 읽기: 14일 동안 2,774건.
+     자세한 내용과 로그 인용은 \texttt{REPORT.md}.};
+\end{tikzpicture}
+\vspace*{\fill}
+\end{document}

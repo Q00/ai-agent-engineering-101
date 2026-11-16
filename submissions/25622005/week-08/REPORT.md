@@ -192,7 +192,7 @@
 
 ## 2. 아키텍처 figure와 키트 기본형의 차이
 
-`architecture.pdf`는 `architecture.tex`(TikZ, A4 가로 한 쪽)를 `pdflatex architecture.tex`로 빌드한 것이다(TeX Live 2026). 주기가 다른 고리 세 개가 정책 파일 하나를 사이에 두고 맞물리는 구조를 그렸다. 색은 소유를 나눈다. 파랑은 내 규칙 코드, 빨강은 모델 호출, 주황은 정책 파일과 그 파일을 쓰는 유일한 경로, 초록은 기억과 로그, 회색은 키트와 시장이다. 아래는 같은 구조를 글자로 옮긴 것이다.
+`architecture.pdf`는 `architecture.tex`(TikZ, A4 가로 한 쪽)를 `pdflatex architecture.tex`로 빌드한 것이다(TeX Live 2026). 주기가 다른 고리 세 개가 정책 파일 하나를 사이에 두고 맞물리는 구조를 그렸다. 색은 소유를 나눈다. 파랑은 내 규칙 코드, 빨강은 모델 호출, 주황은 정책 파일과 그 파일을 쓰는 유일한 경로, 초록은 기억과 로그, 회색은 키트와 시장이다. 라벨을 한글로 옮긴 같은 그림이 `architecture-ko.pdf`(`architecture-ko.tex`, kotex)다. 아래는 같은 구조를 글자로 옮긴 것이다.
 
 ```text
 [시장] /agent.md, /rules, board, ledger        [다른 학생의 가게와 buyer] A2A 메시지, 영수증, 게시판 글
