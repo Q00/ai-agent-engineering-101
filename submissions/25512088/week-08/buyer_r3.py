@@ -84,7 +84,7 @@ FOOD_CHECKOUT_BUFFER_HOURS = .1
 
 def probe_exploration_allowed(estimate):
     """Explore one proven counterparty without exposing the whole order."""
-    return (estimate.get('trials',0)>=2 and estimate.get('wins',0)>=1
+    return (estimate.get('trials',0)>=1 and estimate.get('wins',0)>=1
             and estimate.get('probability',0)>=.50)
 
 

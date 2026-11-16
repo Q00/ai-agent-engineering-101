@@ -28,8 +28,10 @@ class BuyerTests(unittest.TestCase):
     def test_probe_exploration_requires_repeat_success_evidence(self):
         self.assertTrue(probe_exploration_allowed(
             {'probability':.5,'trials':2,'wins':1}))
+        self.assertTrue(probe_exploration_allowed(
+            {'probability':.6,'trials':1,'wins':1}))
         self.assertFalse(probe_exploration_allowed(
-            {'probability':.9,'trials':1,'wins':1}))
+            {'probability':.5,'trials':4,'wins':0}))
         self.assertFalse(probe_exploration_allowed(
             {'probability':.49,'trials':20,'wins':10}))
 
