@@ -60,7 +60,10 @@ def main():
     spec.loader.exec_module(kit)
     instrument(kit)
     instrument_registration(kit)
-    instrument_settlement(kit, SellerState())
+    state=SellerState()
+    instrument_settlement(kit,state)
+    from seller_checkout import install as install_checkout
+    install_checkout(kit,state)
     kit.main()
 
 

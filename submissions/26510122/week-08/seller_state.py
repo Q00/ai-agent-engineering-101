@@ -147,6 +147,17 @@ class SellerState:
                              (task, time.time())).fetchone()
         return json.loads(row[0]) if row and row[0] else None
 
+    def receipt_reservation(self, task):
+        """Original signed terms and deadline; never extend or recreate a lease."""
+        with self.connect() as db:
+            row=db.execute("""SELECT unit,until,receipt FROM leases WHERE task=?
+                AND kind='receipt' AND until>? AND receipt IS NOT NULL
+                AND unit NOT IN (SELECT unit FROM settled_units)""",(task,time.time())).fetchall()
+        if len(row)!=1:return None
+        row=row[0]
+        receipt=json.loads(row[2])
+        return {'unit':row[0],'until':row[1],'receipt':receipt}
+
     def import_receipt_holds(self, history, seconds=600):
         """One-time upgrade safety, also covering an old artifact/log crash gap."""
         now = time.time()
