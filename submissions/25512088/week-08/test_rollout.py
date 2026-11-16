@@ -43,6 +43,33 @@ class RolloutTests(unittest.TestCase):
    self.assertTrue(n['unwarranted_cost_recovery'])
    self.assertFalse(n['book_cushion_recovery'])
   finally:intel.close()
+ def test_zero_warranty_near_cost_trial_uses_only_safe_class_headroom(self):
+  class Evidence:
+   def __init__(inner,revenue=1050000):inner.revenue=revenue
+   def source(inner,*args,**kwargs):
+    return {'players':[
+      {'student':True,'shop':{'name':'lower'}},
+      {'student':True,'shop':{'name':'25512088'}},
+      {'student':True,'shop':{'name':'above'}}],
+     'shops':[{'name':'lower','book':900000,'revenue':900000},
+              {'name':'25512088','book':1000000,'revenue':1000000},
+              {'name':'above','book':1100000,'revenue':inner.revenue}]}
+  q=dict(base=9000,price=9000,reward=0,spent=0,member=None,referrer=None,
+         benefit='none',warranty_hours=0,hazard_probability=0,
+         hazard_basis='zero-warranty',loss_leader=False)
+  accepted=negotiate(self.u,q,7800,{},self.p,intel=Evidence())
+  self.assertEqual(accepted['price'],7800)
+  self.assertTrue(accepted['class_near_cost_trial'])
+  self.assertEqual(accepted['class_near_cost_projected_loss'],200)
+  # Below 96% of cost is never admitted.
+  self.assertGreater(negotiate(self.u,q,7679,{},self.p,intel=Evidence())['price'],7679)
+  # A warranty can still refund the full price, so the raw-loss path is closed.
+  warranted=dict(q,warranty_hours=6,hazard_probability=.04)
+  self.assertGreater(negotiate(
+      self.u,warranted,7800,{},self.p,intel=Evidence())['price'],7800)
+  # A distant Revenue boundary would consume too much of the lower Book gap.
+  self.assertGreater(negotiate(
+      self.u,q,7800,{},self.p,intel=Evidence(3000000))['price'],7800)
  def test_public_loss_leader_accepts_raw_cost_recovery_but_not_a_raw_loss(self):
   q=dict(base=9000,price=9000,reward=0,spent=0,member=None,referrer=None,
          benefit='none',warranty_hours=6,hazard_probability=.02,

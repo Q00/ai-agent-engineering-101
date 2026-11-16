@@ -78,19 +78,38 @@ def score_safe_loss_budget(intel, already_used, own_name='25512088'):
                         if isinstance(row,dict) and str(row.get('name')) in student_shops]
             own=next((row for row in class_rows
                       if str(row.get('name'))==str(own_name)),None)
-            def next_gap(metric):
+            def next_higher_gap(metric):
                 value=own.get(metric) if isinstance(own,dict) else None
                 if not isinstance(value,(int,float)) or isinstance(value,bool):return None
                 higher=[row.get(metric) for row in class_rows
                         if isinstance(row.get(metric),(int,float))
                         and not isinstance(row.get(metric),bool) and row.get(metric)>value]
                 return min(higher)-value if higher else None
-            book_gap=next_gap('book');revenue_gap=next_gap('revenue')
-            # Round 3 Shop ALL = .5 Book + .3 Revenue + .2 Stars.
-            # Compare currency needed per unit of score weight, not raw gaps.
-            if (revenue_gap is None or
-                    book_gap is not None and book_gap/.5<=revenue_gap/.3):
+            def next_lower_gap(metric):
+                value=own.get(metric) if isinstance(own,dict) else None
+                if not isinstance(value,(int,float)) or isinstance(value,bool):return None
+                lower=[row.get(metric) for row in class_rows
+                       if isinstance(row.get(metric),(int,float))
+                       and not isinstance(row.get(metric),bool) and row.get(metric)<value]
+                return value-max(lower) if lower else None
+            book_cushion=next_lower_gap('book')
+            revenue_gap=next_higher_gap('revenue')
+            # A four-percent raw-loss cohort needs at most this much Book to
+            # generate the Revenue required for the next Class percentile.
+            # Open only a small additional budget when that worst-case loss
+            # stays inside 75% of the fresh lower-Book boundary. This compares
+            # the actual direction of both movements: Revenue rises while Book
+            # can fall. The old comparison used the gap to the *higher* Book
+            # shop and disabled safe near-cost turnover despite 3M+ of lower
+            # boundary headroom.
+            max_loss_to_revenue=(
+                math.ceil(revenue_gap*LOSS_LEADER_RATE/(1-LOSS_LEADER_RATE))
+                if isinstance(revenue_gap,(int,float)) else None)
+            if (book_cushion is None or revenue_gap is None or
+                    max_loss_to_revenue>book_cushion*.75):
                 return max(0,int(already_used or 0))
+            extra=min(LOSS_LEADER_BUDGET,max(0,int(book_cushion//4)))
+            return max(0,int(already_used or 0))+extra
     rows=sorted((r for r in board.get('shops',[]) if not r.get('house') and
                  isinstance(r.get('book'),int)),key=lambda r:r['book'])
     index=next((n for n,row in enumerate(rows) if str(row.get('name'))==str(own_name)),None)
@@ -325,6 +344,25 @@ def negotiate(unit, current, offered, catalog, program, token='', ref='', intel=
         # boundary intact.  The six-hour query above prevents overlapping
         # near-cost trials from spending the same headroom twice.
         floor=min(floor,unit['cost'])
+    # Recent live offers showed a separate, deterministic opportunity: public
+    # buyers offered 96-100% of raw cost on zero-warranty goods. Those offers
+    # cannot later create a refund liability. Permit only that narrow cohort
+    # while fresh Class boundaries prove that the worst-case four-percent loss
+    # can reach the next Revenue percentile without crossing the next lower
+    # Book percentile. Historical losses are already reflected in Book; the
+    # budget function grants at most 100k of additional measured principal.
+    loss_used=program.db.execute(
+        'SELECT COALESCE(SUM(CASE WHEN cost>amount THEN cost-amount ELSE 0 END),0) '
+        'FROM sales WHERE refunded=0').fetchone()[0]
+    loss_budget=score_safe_loss_budget(intel,loss_used,program.p.get('shop_name','25512088'))
+    raw_loss_floor=math.ceil(unit['cost']*(1-LOSS_LEADER_RATE))
+    projected_raw_loss=max(0,unit['cost']-offered)
+    class_near_cost_trial=bool(
+        not legacy and not warranty and unit.get('kind')=='goods' and
+        raw_loss_floor<=offered<unit['cost'] and class_book_cushion(intel)>0 and
+        loss_used+projected_raw_loss<=loss_budget)
+    if class_near_cost_trial:
+        floor=min(floor,raw_loss_floor)
     minimum=program.quote(floor,unit['cost'],token=token,ref=ref)
     # A numeric buyer offer just below the ordinary 1% expected-Book target is
     # better than leaving expensive principal idle when it still preserves
@@ -359,13 +397,22 @@ def negotiate(unit, current, offered, catalog, program, token='', ref='', intel=
                               q['price']>=unit['cost'])
     bounded_unwarranted_recovery=(unwarranted_cost_recovery and q['reward']==0 and
                                   q['price']>=unit['cost'])
+    bounded_class_near_cost=(class_near_cost_trial and q['reward']==0 and
+                             not q.get('warranty_hours') and
+                             q['price']>=raw_loss_floor)
     if not (score_safe or bounded_cost_recovery or bounded_book_recovery or
-            bounded_cushion_recovery or bounded_unwarranted_recovery):
+            bounded_cushion_recovery or bounded_unwarranted_recovery or
+            bounded_class_near_cost):
         return current
     q['hazard_probability']=hazard;q['hazard_basis']=current.get('hazard_basis','conservative-unmeasured')
     q['near_book_recovery']=bounded_book_recovery
     q['book_cushion_recovery']=bounded_cushion_recovery
     q['unwarranted_cost_recovery']=bounded_unwarranted_recovery
+    q['class_near_cost_trial']=bounded_class_near_cost
+    q['class_near_cost_projected_loss']=(projected_raw_loss
+                                         if bounded_class_near_cost else 0)
+    q['class_near_cost_loss_budget_remaining']=max(
+        0,loss_budget-loss_used-projected_raw_loss)
     q['book_cushion']=cushion
     q['book_cushion_active_principal']=active_cushion
     return q if q['price']<current['price'] else current
