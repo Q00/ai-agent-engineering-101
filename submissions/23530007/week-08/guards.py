@@ -715,6 +715,10 @@ def main():
                 pr_.setdefault(L_[i_ - 1]["name"], []).append(f"{part_} ahead of us")
             if i_ + 1 < len(L_):
                 pr_.setdefault(L_[i_ + 1]["name"], []).append(f"{part_} right behind us")
+            # 11-16 (user: 'think of other ways'): the second shop behind on the book too while it is within 200 M
+            # (inextro 1,060 M at +3-6 M/h on 1-3 h against our 1,189 M flat; passing us costs .011 like the first)
+            if i_ + 2 < len(L_) and L_[i_][part_] - L_[i_ + 2][part_] < 200e6:
+                pr_.setdefault(L_[i_ + 2]["name"], []).append(f"{part_} second behind us")
         # 11-12 16:30 (user: 'can we hold inextro back?'): the nearest challenger on the projected class TOTAL
         # (stock_rivals.json, G14) is a price rival too: the seller sits just under its median settle of each SKU and
         # grade, so price-led buyers of its best sellers (which restock already holds) can buy them from us. Same price
