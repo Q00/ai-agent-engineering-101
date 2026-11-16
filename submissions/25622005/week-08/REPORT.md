@@ -1,7 +1,7 @@
 # Week 08 중간 평가 REPORT: Round 3 시장의 내 에이전트
 
 학번 25622005, GitHub `psyoung82`. 가게와 buyer를 11월 3일 00:05부터 운영했다(11-06까지 NAS, 그 뒤로 Mac의 컨테이너).
-이 문서의 수치는 **2026-11-16 22:01 KST** 스냅샷이다(Round 3 종료 약 26시간 전). 최종 순위는 종료 시각의 board가 정한다.
+이 문서의 수치는 **2026-11-16 22시 KST** 스냅샷이다(Round 3 종료 약 26시간 전). 키트 로그 수치는 22:18에 `logs/`로 복사한 파일에서, board 수치는 strategist의 22:10 실행에서, 결정 로그와 strategist 집계는 22:01에 배포 머신에서 셌다. 최종 순위는 종료 시각의 board가 정한다.
 
 ## 요약
 
@@ -11,10 +11,10 @@
 - **모델은 규칙의 숫자를 고친다.** 30분마다 큰 모델(strategist)이 지난 한 시간의 시장과 내 로그를 읽고, 규칙이 쓰는 정책 파일 `strategy/SKILL.md`의 숫자를 바꾸자고 제안한다. 제안은 코드(guard)가 범위, 한 번에 움직일 폭, 대기 시간으로 걸러서 적용하고, 한 시간 뒤 같은 지표를 다시 재서 기록한다.
 - **기억은 공개 ledger와 내 거래에서 만든다.** 60초마다 사건을 모아 요약 하나로 접고, 가게 순위·가격 상한·보증료·재입고량이 그 요약을 읽는다.
 
-| 항목 | 값 (11-16 22:01) |
+| 항목 | 값 (11-16 22시) |
 |---|---|
-| 가게 정산 | board 61,181건(순위에 든 가게 61곳 중 거래 수 1위), 키트 로그의 고유 ledger 번호 60,882건 |
-| buyer 정산 | board 19,115건, 키트 로그의 고유 ledger 번호 19,145건 |
+| 가게 정산 | board 61,296건(순위에 든 가게 61곳 중 거래 수 1위), 키트 로그의 고유 ledger 번호 60,952건 |
+| buyer 정산 | board 19,156건, 키트 로그의 고유 ledger 번호 19,170건 |
 | Players 표 Class 보기 | 학생 46명 중 **16위**, 합계 1.34 (가게 0.70 + buyer 0.64), 백분위 0.667 |
 | Players 표 전체 | 64명 중 18위, 합계 1.437 (가게 ALL 0.764 + buyer ALL 0.673) |
 | strategist 실행 | 639회 (11-04 01:16 ~ 11-16 21:40), 정책 버전 2 → 601 |
@@ -241,18 +241,18 @@ figure가 보여 주는 것은 네 가지다.
 
 ## 3. Round 3 결과
 
-스냅샷 시각은 2026-11-16 22:01 KST다. board 값은 strategist의 21:40 실행(`20261116-2140`)이 읽은 것이다.
+키트 로그는 2026-11-16 22:18 KST에 배포 머신에서 `logs/`로 복사한 파일이고, board 값은 strategist의 22:10 실행(`20261116-2210`)이 읽은 것이다.
 
 ### 3.1 정산 수와 기본 조건
 
 | 기본 조건 | 결과 | 근거 |
 |---|---|---|
-| 가게 정산 20건 이상 | board 61,181건. 로그의 고유 ledger 번호 60,882건 | `[acp] settled` 줄 |
-| buyer 정산 20건 이상 | board 19,115건. 로그의 고유 ledger 번호 19,145건 | `[acp] paid` 줄 |
+| 가게 정산 20건 이상 | board 61,296건. 로그의 고유 ledger 번호 60,952건 | `[acp] settled` 줄 |
+| buyer 정산 20건 이상 | board 19,156건. 로그의 고유 ledger 번호 19,170건 | `[acp] paid` 줄 |
 | open mandate 상한을 넘는 checkout을 complete하지 않는다 | 키트의 `above the mandate's limit` 줄이 0건 | buyer의 마지막 제안이 `min(상한 × 정가, 예산)`이라 그 전에 걸러진다 |
 | 키트 없이 배포한 가게 | 해당 없음. 키트 v4의 복사본으로 운영했다 | |
 
-로그는 세 파일로 이어진다(`logs/market-kit.20261107-184911.log`, `logs/market-kit.20261114-004437.log`, `logs/market-kit.log`). 가게 쪽 로그 수가 board보다 약 300건(0.5%) 적다. 원인은 확인하지 못했다. 로그에 키트 시작 줄이 56번 있으므로 재시작 사이의 정산으로 추정한다.
+Round 3 로그는 세 파일로 이어진다(`logs/market-kit.20261107-184911.log`, `logs/market-kit.20261114-004437.log`, `logs/market-kit.log`). `logs/market-kit.20261103-000500.log`는 Round 3을 시작하며 보관한 그 전(week-07, Round 2) 로그다. 가게 쪽 로그 수가 board보다 약 340건(0.6%) 적다. 원인은 확인하지 못했다. 로그에 키트 시작 줄이 54번 있으므로 재시작 사이의 정산으로 추정한다.
 
 정산 줄(`logs/market-kit.log`, 11-16):
 
@@ -265,12 +265,12 @@ figure가 보여 주는 것은 네 가지다.
 
 첫 줄은 내 buyer가 낸 결제, 둘째 줄은 내 가게가 받은 결제다.
 
-세는 명령(배포 머신의 `logs/`에서):
+세는 명령(제출 폴더의 `logs/`에서, bash):
 
 ```bash
 F="market-kit.20261107-184911.log market-kit.20261114-004437.log market-kit.log"
-cat $F | grep '\[acp\] settled ' | grep -oE 'ledger #[0-9]+' | sort -u | wc -l    # 가게 60882
-cat $F | grep '\[acp\] paid '    | grep -oE 'ledger #[0-9]+' | sort -u | wc -l    # buyer 19145
+cat $F | grep '\[acp\] settled ' | grep -oE 'ledger #[0-9]+' | sort -u | wc -l    # 가게 60952
+cat $F | grep '\[acp\] paid '    | grep -oE 'ledger #[0-9]+' | sort -u | wc -l    # buyer 19170
 cat $F | grep -c "above the mandate's limit"                                        # 0
 ```
 
@@ -278,26 +278,26 @@ cat $F | grep -c "above the mandate's limit"                                    
 
 | 표 | 순위 | 값 |
 |---|---|---|
-| Players, Class 보기 (학생끼리) | 46명 중 16위, 백분위 0.667 | 합계 1.34 = 가게 0.70 + buyer 0.64. 바로 위와 0.021, 바로 아래와 0.025 차이 |
+| Players, Class 보기 (학생끼리) | 46명 중 16위, 백분위 0.667 | 합계 1.34 = 가게 0.70 + buyer 0.64. 바로 위와 0.021, 바로 아래와 0.031 차이 |
 | Players, 전체 | 64명 중 18위 | 합계 1.437 = 가게 ALL 0.764 + buyer ALL 0.673 |
-| 가게 ALL | 61곳 중 13위 | Book 447,767,063(백분위 0.73), 매출 4,753,784,419(0.80), 별점 4.62(0.67) |
-| buyer ALL | 68명 중 32위 | Saved 0.7296(0.49), 게시판 평점 0.92(0.64), 거래 19,115(0.69), 글 3,062(0.82) |
+| 가게 ALL | 61곳 중 14위 | Book 445,150,921(백분위 0.73), 매출 4,764,293,966(0.80), 별점 4.62(0.67) |
+| buyer ALL | 68명 중 32위 | Saved 0.7299(0.49), 게시판 평점 0.92(0.64), 거래 19,156(0.69), 글 3,068(0.82) |
 
-가게는 거래 수가 시장 1위(시장 정산의 6.6%)이고, 등급을 주장한 57,112건이 모두 정직하다고 판정됐다. 판 물건 중 514개가 고장 나 128건을 환불했다.
+가게는 거래 수가 시장 1위(시장 정산의 6.6%)이고, 등급을 주장한 57,222건이 모두 정직하다고 판정됐다. 판 물건 중 518개가 고장 나 132건을 환불했다.
 
-약한 곳은 buyer의 Saved다. 가중치 0.5인 항목에서 백분위가 0.49다. 11-12의 패치 3.6이 Saved를 "가게 마진 중 깎아 낸 비율의 평균"으로 바꿨는데, 그 전 9일 동안 낮은 비율로 맺은 거래가 평균에 남아 있다. 최근 한 시간의 거래는 평균 0.84로 채점되지만 누적 평균은 30분에 0.0002씩만 오른다.
+약한 곳은 buyer의 Saved다. 가중치 0.5인 항목에서 백분위가 0.49다. 11-12의 패치 3.6이 Saved를 "가게 마진 중 깎아 낸 비율의 평균"으로 바꿨는데, 그 전 9일 동안 낮은 비율로 맺은 거래가 평균에 남아 있다. 최근 한 시간의 거래는 평균 0.84로 채점되지만 누적 평균은 30분에 0.0002 ~ 0.0003씩만 오른다.
 
 ### 3.3 거부 사유
 
-키트 로그의 거부 줄(11-03 00:05 ~ 11-16 22:01, 세 파일):
+키트 로그의 거부 줄(11-03 00:05 ~ 11-16 22:18, Round 3의 세 파일):
 
 | 로그 줄 | 수 | 뜻 |
 |---|---|---|
-| `[acp] not paying: N h of shelf life left, the policy asks for N` | 1,568 | 내 buyer의 결제 직전 거절. 가게가 보낸 unit의 남은 기한이 주문의 사용 기한에 못 미친다 |
+| `[acp] not paying: N h of shelf life left, the policy asks for N` | 1,569 | 내 buyer의 결제 직전 거절. 가게가 보낸 unit의 남은 기한이 주문의 사용 기한에 못 미친다 |
 | `[acp] not paying: no certificate, and the policy asks for one` | 57 | 내 buyer의 거절. 증명서가 없다 |
 | `[acp] checkout refused: 409 {"error":"unit … is not in stock for this order"}` | 403 | 상대 가게가 약속한 unit을 이미 다른 buyer에게 팔았다 |
-| `[acp] payment not completed: 402 {"error":"payment refused by the market", …}` | 25 | 시장이 내 buyer의 결제를 거절했다. 18건은 시장의 오류 응답(빈 오류 13, Internal Server Error 5)이고 7건은 시장의 정산 검사 실패다 |
-| `[acp] settle refused: ['not_settled_before']` | 94 | 내 가게 쪽. 같은 주문이 이미 정산됐다(buyer의 재시도) |
+| `[acp] payment not completed: …` | 26 | 내 buyer의 결제가 끝나지 않았다. 19건은 오류 응답(빈 오류 13, Internal Server Error 5, 502 페이지 1)이고 7건은 시장의 정산 검사 실패다 |
+| `[acp] settle refused: ['not_settled_before']` | 95 | 내 가게 쪽. 같은 주문이 이미 정산됐다(buyer의 재시도) |
 | `[acp] settle refused: ['unit_in_stock']` | 2 | 내 가게 쪽. 정산 시점에 unit이 없었다 |
 | `[acp] settle refused` (시장 오류 응답) | 74 | 시장의 5xx 또는 빈 오류 |
 
