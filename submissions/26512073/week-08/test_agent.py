@@ -10,10 +10,19 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 from seller import Seller, canon, sign_receipt
 import seller_strategy
 from seller_strategy import LEGACY_POLICY, POLICY, load_item_state, save_item_state
+
+
+def make_test_key(path):
+    key = Ed25519PrivateKey.generate()
+    path.write_bytes(key.private_bytes(
+        serialization.Encoding.PEM, serialization.PrivateFormat.PKCS8,
+        serialization.NoEncryption()))
+    return key
 
 
 class PricingStateTests(unittest.TestCase):
@@ -294,19 +303,21 @@ class SellerHistoryTests(unittest.IsolatedAsyncioTestCase):
 
 class ReceiptTests(unittest.TestCase):
     def test_valid_and_changed_receipt(self):
-        key_path = Path(__file__).resolve().parent / "shop_key.pem"
-        original_key = key_path.read_bytes()
-        public = serialization.load_pem_private_key(original_key, password=None).public_key()
-        body = {"shop": "Afford Shop", "item": "lamp", "price": 100, "task": "offline-test"}
-        signed = sign_receipt(dict(body))
-        signature = base64.b64decode(signed["sig_seller"])
-        public.verify(signature, canon(body))
-        with self.assertRaises(InvalidSignature):
-            public.verify(signature, canon(dict(body, price=120)))
-        with self.assertRaises(InvalidSignature):
-            public.verify(signature, canon(dict(body, task="another-task")))
-        self.assertEqual(original_key, key_path.read_bytes())
-        self.assertEqual(set(signed), {"shop", "item", "price", "task", "sig_seller"})
+        with tempfile.TemporaryDirectory(dir=Path(__file__).resolve().parent) as folder:
+            key_path = Path(folder) / "shop_key.pem"
+            public = make_test_key(key_path).public_key()
+            original_key = key_path.read_bytes()
+            body = {"shop": "Afford Shop", "item": "lamp", "price": 100, "task": "offline-test"}
+            with patch("seller.SHOP_KEY_PATH", key_path):
+                signed = sign_receipt(dict(body))
+            signature = base64.b64decode(signed["sig_seller"])
+            public.verify(signature, canon(body))
+            with self.assertRaises(InvalidSignature):
+                public.verify(signature, canon(dict(body, price=120)))
+            with self.assertRaises(InvalidSignature):
+                public.verify(signature, canon(dict(body, task="another-task")))
+            self.assertEqual(original_key, key_path.read_bytes())
+            self.assertEqual(set(signed), {"shop", "item", "price", "task", "sig_seller"})
 
 
 class InventoryTests(unittest.TestCase):
@@ -499,6 +510,9 @@ class StockSellerTests(unittest.IsolatedAsyncioTestCase):
 
     async def asyncSetUp(self):
         await SellerHistoryTests.asyncSetUp(self)
+        key_path = Path(self.temp.name) / "shop_key.pem"
+        make_test_key(key_path)
+        self.enterContext(patch("seller.SHOP_KEY_PATH", key_path))
         import time
         self.unit = {"unit": "sample-unit", "sku": "S1", "name": "Sample",
                      "cost": 10000, "kind": "food", "grade": "A",

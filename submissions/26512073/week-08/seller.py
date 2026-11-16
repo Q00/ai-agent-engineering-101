@@ -33,6 +33,7 @@ from seller_strategy import (HISTORY_PATH, POLICY, decide_opening, decide_offer,
 
 RESERVES = {"lamp": 100, "chair": 180, "bookshelf": 260}
 SHOP_NAME = "Afford Shop"
+SHOP_KEY_PATH = Path(__file__).resolve().parent / "shop_key.pem"
 SHOP_DESCRIPTION = (
     "Food and goods from available stock. Ask for a SKU, then negotiate a price. "
     "Checkout includes the market's product certificate."
@@ -46,8 +47,7 @@ def canon(data):
 
 def sign_receipt(receipt):
     # Use the same persistent identity that the market kit registered.
-    key_path = Path(__file__).resolve().parent / "shop_key.pem"
-    key = serialization.load_pem_private_key(key_path.read_bytes(), password=None)
+    key = serialization.load_pem_private_key(SHOP_KEY_PATH.read_bytes(), password=None)
     body = {field: receipt[field] for field in ("shop", "item", "price", "task")}
     receipt["sig_seller"] = base64.b64encode(key.sign(canon(body))).decode("ascii")
     return receipt
