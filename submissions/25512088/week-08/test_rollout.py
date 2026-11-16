@@ -43,7 +43,7 @@ class RolloutTests(unittest.TestCase):
    self.assertTrue(n['unwarranted_cost_recovery'])
    self.assertFalse(n['book_cushion_recovery'])
   finally:intel.close()
- def test_mature_day_zero_warranty_cohort_is_stricter_than_live_cohort(self):
+ def test_low_value_goods_use_unfunded_zero_warranty_lane(self):
   intel=Intel(self.root)
   try:
    now=time.time();older=now-7*3600
@@ -56,7 +56,7 @@ class RolloutTests(unittest.TestCase):
    self.assertEqual(intel.comparable('sku','B',None,0)['count'],0)
    self.assertEqual(market_warranty_hours(self.u,intel,0),0)
    with intel.db:intel.db.execute('DELETE FROM trades WHERE seq=107')
-   self.assertEqual(market_warranty_hours(self.u,intel,0),6)
+   self.assertEqual(market_warranty_hours(self.u,intel,0),0)
    self.assertEqual(market_warranty_hours(self.u,intel,6),6)
   finally:intel.close()
  def test_high_value_goods_never_add_six_hour_claim_exposure(self):

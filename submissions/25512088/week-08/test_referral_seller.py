@@ -189,7 +189,7 @@ class SellerIntegrationTests(unittest.IsolatedAsyncioTestCase):
                         if task:msg['taskId']=task
                         response=await c.post('/',headers={'A2A-Version':'1.0'},json=dict(jsonrpc='2.0',id='1',method='SendMessage',params=dict(message=msg)))
                         body=response.json()['result'];return body.get('task',body)
-                    quote=await send('G99999')
+                    quote=await send('G99999 warranty 6 h')
                     self.assertIn('warranty 6 h',json.dumps(quote))
                     # Repeated messages on one inquiry must not become extra
                     # procurement demand or failed conversion trials.
@@ -228,7 +228,7 @@ class SellerIntegrationTests(unittest.IsolatedAsyncioTestCase):
                         if task:msg['taskId']=task
                         response=await c.post('/',headers={'A2A-Version':'1.0'},json=dict(jsonrpc='2.0',id='1',method='SendMessage',params=dict(message=msg)))
                         body=response.json()['result'];return body.get('task',body)
-                    quote=await send('G99999')
+                    quote=await send('G99999 warranty 6 h')
                     self.assertIn('warranty 6 h',json.dumps(quote))
                     with patch.object(seller, 'receipt_grade', return_value=None):
                         done=await send('15000',quote['id'])

@@ -258,7 +258,13 @@ def market_warranty_hours(unit, intel=None, required=0):
     # exceeded current Book.  Existing promises remain funded, but do not add
     # another claim: explicit warranty buyers cannot receive high-value stock.
     if required>0:return None if high_value else 6
-    if intel is None:return None if high_value else 6
+    # Cash is currently below the reserve for the outstanding legacy claims,
+    # so a new optional six-hour promise cannot be funded at checkout.  Small
+    # goods instead use the honest zero-hour lane and never sell below the
+    # bounded Book floor.  This releases working capital without creating a
+    # later refund; high-value goods still require independent market proof.
+    if not high_value:return 0
+    if intel is None:return None
     no_warranty=intel.comparable(unit['sku'],unit.get('grade'),None,0)
     mature_day=(intel.comparable(unit['sku'],unit.get('grade'),None,0,24*3600)
                 if no_warranty.get('count',0)<5 or no_warranty.get('buyers',0)<3
