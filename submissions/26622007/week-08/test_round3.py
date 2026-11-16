@@ -781,7 +781,9 @@ class HooksTest(unittest.TestCase):
                "H1": {"kind": "goods", "category": "가전>컵", "list_price": 40000},
                "H2": {"kind": "goods", "category": "가구>소파", "list_price": 900000}}
     DEMAND = [{"category": c, "median_price": 20000} for c in ("식품>김치", "식품>우유", "가전>컵", "가구>소파")]
-    CFG = dict(restock.DEFAULTS)
+    # no round end: from 48 h before restock.DEFAULTS' round_ends_at (11/15 23:59) plan() buys no new lines, so these
+    # first-stock cases failed by the wall clock from then on, not by the code (fulltest 11/16 11:18, base 7a1ae29f too)
+    CFG = dict(restock.DEFAULTS, round_ends_at=None)
 
     def test_first_stock_is_long_shelf_food_and_cheap_goods_near_the_median(self):
         out = restock.plan({"balance": 5000000, "units": []}, self.CATALOG, self.DEMAND, self.CFG)
