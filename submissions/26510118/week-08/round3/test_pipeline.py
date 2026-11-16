@@ -554,6 +554,27 @@ def test_restock(fake: Fake):
     out, _ = restock.plan(rich(stale), cat2, DEMAND, {}, fast, [], rules, NOW, line={sofa: 3})
     check("...but one that sold half an hour ago is kept at 1 + its sales (3, one held: 2 more)",
           out["buy"][0] == {"sku": sofa, "qty": 2}, out["buy"][:2])
+    # 11/16: grade C units neither count toward a line product's target nor stop its buying; a grade refusal is demand
+    c_shelf = [dict(srow(f"u-c{i}"), grade="C", kind="goods") for i in range(3)]               # no C market known: sellable
+    mk_c = {"by_sku": {sofa: {"others_6h": {"C_w": {"n": 20, "median": 0.50}}}}}
+    c_dear = [dict(srow(f"u-d{i}"), grade="C", kind="goods") for i in range(2)]                # 0.60 + the C extra: over 0.50
+    new_gaps = (restock.line_gaps({sofa: 5}, cat2, c_shelf, [], NOW, mk), restock.line_gaps({sofa: 5}, cat2, c_dear, [], NOW, mk_c))
+    restock.LINE_C_COUNTS = True
+    try:
+        old_gaps = (restock.line_gaps({sofa: 5}, cat2, c_shelf, [], NOW, mk), restock.line_gaps({sofa: 5}, cat2, c_dear, [], NOW, mk_c))
+    finally:
+        restock.LINE_C_COUNTS = False
+    check("11/16: a line product holding only grade C units (3 it can sell, or 2 it cannot) still gets the two units it keeps "
+          "on hand (the A/B buyers ask for); as until 11/16 the Cs filled its target or stopped its buying",
+          new_gaps == ([(sofa, 2)], [(sofa, 2)]) and old_gaps == ([], []) and not restock.sellable(c_dear[0], mk_c),
+          (new_gaps, old_gaps))
+    asked = [{"sku": sofa, "reason": "need", "ts": NOW - 0.5 * H}]
+    old_ask = [{"sku": sofa, "reason": "need", "ts": NOW - 3 * H}]
+    out, _ = restock.plan(rich(stale), cat2, DEMAND, {}, [{"sku": sofa, "ts": NOW - 5 * H}], asked, rules, NOW, line={sofa: 3})
+    out_old, _ = restock.plan(rich(stale), cat2, DEMAND, {}, [{"sku": sofa, "ts": NOW - 5 * H}], old_ask, rules, NOW, line={sofa: 3})
+    check("...and one held 3 h with no sale is kept alive by a buyer turned away for its grade half an hour ago (two on hand: "
+          "one more); a refusal 3 h old does not", any(b == {"sku": sofa, "qty": 1} for b in out["buy"])
+          and all(b["sku"] != sofa for b in out_old["buy"]), (out["buy"][:3], out_old["buy"][:3]))
     out, _ = restock.plan(rich(shelf), cat2, DEMAND, {}, [], [], rules, common.ROUND_END - 29 * H, line={sofa: 3})
     check("line products are bought to the end (the book counts stock at cost)", any(b["sku"] == sofa for b in out["buy"]), out["buy"][:3])
     out, _ = restock.plan(rich(shelf), cat2, DEMAND, {}, fast, [], rules, NOW, line={})

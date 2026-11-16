@@ -158,8 +158,9 @@ def market(sku: str, settles: list, names: dict, lp: float, since: float) -> dic
 
 def ours(sku: str, units: list, sales: list, now: float) -> dict:
     """{held, sold_1h, idle}: units we hold, our sales in the last hour, and seconds since the later of our last
-    sale of it and the arrival of the oldest unit we hold (None when we hold none)."""
-    held = [u for u in units if u.get("sku") == sku]
+    sale of it and the arrival of the oldest unit we hold (None when we hold none). Grade C units do not count
+    (restock.LINE_C_COUNTS, 11/16): a C left on the shelf is not the A/B buyers ask for, so it does not take the product out."""
+    held = [u for u in units if u.get("sku") == sku and (restock.LINE_C_COUNTS or u.get("grade") != "C")]
     mine = [s for s in sales if s.get("sku") == sku]
     last = max((s.get("ts") or 0 for s in mine), default=0)
     first = min((u.get("supplied_at") or now for u in held), default=None)

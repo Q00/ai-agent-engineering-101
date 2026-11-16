@@ -111,6 +111,12 @@ LINE_PACE = 3600         # a line product is kept at 1 + what we sold of it in t
                          # minutes, so our sales count supply as much as demand: one more than they asks for more)
 LINE_MAX_UNITS = 24      # 16 until 11/6 15:40 (5 line products sat at 16 selling 5-8 an hour), 12 until 11/6 13:10, 10 until 11/6 (Kiro 2.0: deeper stock of what sells); 5 until 11/4 23:40 (the best seller sold 20 in 1.5 h at a cap of 5; others sold it 90 an hour)
 LINE_STALL = 2 * 3600    # held this long with no sale of the product: no more units
+LINE_C_COUNTS = False    # 11/16 (the user's call, "고치기"): a line product's grade C units neither count toward its target
+# nor stop its buying (as unsellable), and a buyer turned away for want of a grade we lacked ('need') within LINE_STALL
+# keeps the product alive. Buyers ask for "grade A with the warranty; grade B otherwise", and C units sat on the shelf in
+# place of the A/B they asked for: in 24 h the line turned buyers away 437 times, 318 for the grade (Gf6b70da8 29 times
+# holding 3 C units, G8ec51935 19 holding 2 C), up to 36.9M of margin at our mean margin a sale. Since the book counts an
+# unsold unit at its cost, a unit more costs only its storage (1% a day).
 LINE_TRY_FIRST = 5       # line products never sold nor held (just added) go first, this many a run (3 until 11/5 02:20):
                          # ordered by sales alone, one with none came after the best sellers and no run reached it
                          # (11/5 01:20: the three beds added at 01:09 were not bought; ranked as 3 sold an hour, at 01:40
@@ -341,17 +347,19 @@ def sellable(u: dict, summary: dict | None, extra: dict | None = None) -> bool:
 
 
 def line_gaps(line: dict | None, catalog: dict, units: list, sales: list, now: float, summary: dict | None = None,
-              extra: dict | None = None) -> list:
+              extra: dict | None = None, refusals: list | None = None) -> list:
     """[(sku, units to buy)] for the premium line: 1 + our sales of it in the last LINE_PACE seconds (one unit to
     start), up to the product's cap; nothing more for one held LINE_STALL seconds with no sale, nor for one holding a
-    unit it cannot sell at its market (LINE_STOP_UNSELLABLE), nor near the end.
+    unit it cannot sell at its market (LINE_STOP_UNSELLABLE), nor near the end. Grade C units count for neither, and a
+    grade refusal (refusals, reason 'need') within LINE_STALL counts as a sale would for the stall (LINE_C_COUNTS).
     (Until 21:45 on 11/4 the pace over 3 hours covered two cycles: 3 sold in half an hour still meant one unit.)"""
     line = {s: n for s, n in (line or {}).items()
             if s in catalog and isinstance(n, int) and not isinstance(n, bool) and 0 < n <= LINE_MAX_UNITS}
     if not line or common.ROUND_END - now <= LINE_STOP:
         return []
-    unsellable = Counter(u["sku"] for u in units if u.get("sku") in line and not sellable(u, summary, extra))
-    units = [u for u in units if u.get("sku") not in line or sellable(u, summary, extra)]   # 11/7: what it can sell
+    counts = lambda u: LINE_C_COUNTS or u.get("grade") != "C"                       # 11/16: what buyers ask for
+    unsellable = Counter(u["sku"] for u in units if u.get("sku") in line and counts(u) and not sellable(u, summary, extra))
+    units = [u for u in units if u.get("sku") not in line or (counts(u) and sellable(u, summary, extra))]   # 11/7: what it can sell
     held = Counter(u["sku"] for u in units if u.get("sku") in line)
     recent = Counter(s["sku"] for s in sales if s.get("sku") in line and s.get("ts", 0) >= now - LINE_PACE)
     alive = {}                                           # the last sale of it, or the arrival of the oldest unit held
@@ -362,6 +370,10 @@ def line_gaps(line: dict | None, catalog: dict, units: list, sales: list, now: f
         if u.get("sku") in line:
             first = min((x.get("supplied_at") or now) for x in units if x.get("sku") == u["sku"])
             alive[u["sku"]] = max(alive.get(u["sku"], 0), first)
+    if not LINE_C_COUNTS:                                   # 11/16: a buyer asking for a grade we lacked is demand
+        for r in refusals or []:
+            if r.get("sku") in line and r.get("reason") == "need" and (r.get("ts") or 0) >= now - LINE_STALL:
+                alive[r["sku"]] = max(alive.get(r["sku"], 0), r["ts"])
     out = []
     for sku, most in line.items():
         if held[sku] and now - alive.get(sku, now) > LINE_STALL:
@@ -477,7 +489,7 @@ def plan(inv: dict, catalog: dict, demand: list, summary: dict, sales: list, ref
                 buy.append({"sku": sku, "qty": qty})
                 spend += each * qty
                 room -= 1
-    premium = line_gaps(line, catalog, units, sales, now, summary, rules.get("warranty_extra"))
+    premium = line_gaps(line, catalog, units, sales, now, summary, rules.get("warranty_extra"), refusals)
     skipped += [s for s, _ in premium if thin(s)]
     premium = [(s, n) for s, n in premium if not thin(s)]
     # the premium line first, but leaving the shelf its lines, money and room under the cap, so the shelf's refills
