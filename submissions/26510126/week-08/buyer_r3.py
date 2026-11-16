@@ -203,6 +203,11 @@ def avoided(avoid, shop, sku, order):
     # for one (leak audit #40: one shop 0 paid of 20 in 22 h, 5 refusals 12:14-12:38, as its talks never say "no cert")
     if avoid.get(f"{shop}|*cert") and accept_policy(order).get("cert"):
         return "sent no certificate lately"
+    # a shop whose receipt claimed a grade we do not pay for waits on goods orders (leak audit #54: one shop that never
+    # states the grade, asks the lowest price and so is scouted first, sent C 19 times in 8.9 h; nothing remembered it)
+    g = avoid.get(f"{shop}|*grade")
+    if g and order.get("kind") == "goods" and g.get("until", 0) > time.time():
+        return "sent a grade we do not pay for lately"
     v = avoid.get(f"{shop}|{sku}")
     if not v:
         return None
@@ -909,6 +914,13 @@ async def attempt(order, cat, s, off, lp, note, remember, take_second=False, mor
     problem = check_receipt(receipt, order, agreed, result.get("task"), lp) if deal else None
     if problem:
         log("GUARD", f"receipt problem: {problem}")
+        # remember it (leak audit #54): the same shop was chosen again and again for the same refused receipt
+        if "certificate" in problem:
+            avoid_add(s["name"], "*cert", problem, DEAD_SECS)
+        elif "claims grade" in problem and order.get("kind") == "goods":
+            avoid_add(s["name"], "*grade", problem, 1800)
+        else:
+            avoid_add(s["name"], sku, problem, DEAD_SECS)
     stars, text = review(result, name, lp, problem)
     asked = [a for a in result.get("asks", []) if a is not None]
     if not deal and asked and min(asked) > limit:

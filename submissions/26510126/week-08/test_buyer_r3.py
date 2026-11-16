@@ -777,6 +777,13 @@ def main():
     nc_g = buyer_r3.check_receipt(dict(base, claim="A", cert=False), g, 100_000, "t1", 200_000)
     nc_f = buyer_r3.check_receipt(dict(base, cert=False), dict(g, kind="food"), 100_000, "t1", 200_000)
     case("receipt: cert False is refused (goods and food)", bool(nc_g) and bool(nc_f), str((nc_g, nc_f)))
+    # audit #54: a shop that sent a grade we do not pay for waits on goods orders, not on food
+    av = {"S|*grade": {"until": time.time() + 600, "why": "claims grade C"}}
+    w_g = buyer_r3.avoided(av, "S", "G9", g)
+    w_f = buyer_r3.avoided(av, "S", "G9", dict(g, kind="food", use_within_hours=10))
+    w_o = buyer_r3.avoided(av, "T", "G9", g)
+    case("avoid: a shop that sent an unpaid grade waits on goods orders only", bool(w_g) and w_f is None and w_o is None,
+         str((w_g, w_f, w_o)))
     # a warranted C above 0.55 of list is refused (13.9% break at -1), at 0.5 or as an A it passes
     c_dear = buyer_r3.check_receipt(dict(base, claim="C", price=120_000, warranty_hours=72), g, 120_000, "t1", 200_000)
     c_cheap = buyer_r3.check_receipt(dict(base, claim="C", warranty_hours=72), g, 100_000, "t1", 200_000)
