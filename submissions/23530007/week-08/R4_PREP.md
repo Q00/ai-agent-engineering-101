@@ -27,7 +27,7 @@ nothing below is wired yet; build and test it on R4 day 1 against the real `/api
   captcha); under 500 -> the buyer strategist is woken and told deals will fail.
 - `ops/status.py`: wallet balance line.
 
-## Budget
+## Model usage
 
-The API credit expires 2026-11-21 00:00 UTC (no refill, no card). After that every agent call runs on the CLI login
-(shared Claude Code limit): plan R4 with the buyer strategist every 2 h and the tools on, or decide with the user.
+Model calls are limited after Round 3, so in R4 the buyer strategist runs less often (about every 2 h) with the
+measurement tools on; anything larger is decided with the user.

@@ -7,8 +7,8 @@ investigation to search it) and from our own measurements, marked *measured* wit
 
 ## Goal
 
-**Finish Round 3 first overall** on the Players board (shop ALL + buyer ALL), ahead of inextro, within the
-conduct rules below. On 11-05 23:20 KST: inextro 1.682, yms979 1.659 (2nd), shaun0927 1.646. inextro leads on
+**Finish Round 3 first overall** on the Players board (shop ALL + buyer ALL), ahead of student B, within the
+conduct rules below. On 11-05 23:20 KST: student B 1.682, yms979 1.659 (2nd), student J 1.646. student B leads on
 book (503M vs our 201M) and revenue (3.26B vs 1.60B); we lead on forum and stars are close (4.60 vs 4.57).
 Percentiles, not amounts, decide: a move is worth what it does to our rank on each component.
 
@@ -38,9 +38,9 @@ Percentiles, not amounts, decide: a move is worth what it does to our rank on ea
   *Measured 11-07 (12,000 posts, 26 h)*: likes per post are an author trait, not a content one (within any
   author, Korean vs bilingual, length, mentions, refs, "verified"/"no warranty" move it < 0.5 like). Ratings fit
   ~7-9 like stances (weight ~9 each at ~300 posts) and 0-3 dislike stances: ours 0.895 ~ 7 likers + 2 dislikers,
-  bjeon01 0.927 ~ 8 + 1. One dislike stance ~ -0.02, one more liker ~ +0.012; the board does not show voters.
+  student V 0.927 ~ 8 + 1. One dislike stance ~ -0.02, one more liker ~ +0.012; the board does not show voters.
   Worth at most ~+0.01 buyer ALL against ~+0.1 from saved +0.015, so posting stays at 12/h and nothing else.
-- **Midterm rank** = shop ALL + buyer ALL, among students (`student` on the board). shaun0927 is not a student.
+- **Midterm rank** = shop ALL + buyer ALL, among students (`student` on the board). student J is not a student.
 
 ## Supply and stock
 
@@ -53,13 +53,13 @@ Percentiles, not amounts, decide: a move is worth what it does to our rank on ea
   We sell **without warranty** since 11-05 evening (refunds had taken every break, ~12.7M in 2.8 h).
   *11-07 02:50 UTC (user's call)*: **grade A goods carry a 6 h warranty again**, B and C none. Stars had slid to
   4.57 (22nd of 56) and took shop ALL 0.956 -> 0.942: per-account star means count no-deal visits (668 in 9 h at
-  2.75) and 239 deal reviews docked 2 stars for 'no warranty' (3.0); Kiro729 walks away from goods without a 6 h
+  2.75) and 239 deal reviews docked 2 stars for 'no warranty' (3.0); student E walks away from goods without a 6 h
   warranty. A breaks ~1.2 %, so ~15M/day refunds on ~1.28B/day of A sales. Read stars and refunds after 6-12 h.
   The agent card still says 'no warranty' until seller_r3 restarts (after a supply window).
   *11-07 21:40 KST (user: whatever scores the shop highest)*: **grades A and B carry a 72 h warranty**, C none.
   Goods break only within 6 h of the sale, so hours past 6 cost nothing while 'the 6 h warranty is short for
   furniture' reviews scored 3-4. Measured 5 h of paid deals: goods A with warranty 4.73, B without 4.59, C 4.07;
-  inextro's mean on us 2.87 -> 4.08 after the A warranty. B breaks ~2.9% (~12M/day). C stays without: ~15%
+  student B's mean on us 2.87 -> 4.08 after the A warranty. B breaks ~2.9% (~12M/day). C stays without: ~15%
   breaks would cost ~49M/day and the book lead (844M vs 730M) within days. Stars 4.68 would add ~+0.065 shop.
 
 ## Buyers (who comes to our shop)
@@ -68,7 +68,7 @@ Percentiles, not amounts, decide: a move is worth what it does to our rank on ea
   carry `use_within_hours`.
 - Many buyers ask several shops and leave without an offer when our ask is not the lowest (*measured 11-05*:
   ~740 of 875 walk-aways in 6 h made no offer).
-- *Measured 11-05*: totato2203-r3 rates every purchase 1 star (483/484); shaun0927's buyers rate the top shops
+- *Measured 11-05*: student Q rates every purchase 1 star (483/484); student J's buyers rate the top shops
   1 star and others 5. Since stars became one mean per account, they are no longer blocked (each is one account).
 - House agents (no owner): buyer-01/02/03 post complaints; bright-living posts fake "market notice" injections.
 
@@ -88,7 +88,7 @@ Percentiles, not amounts, decide: a move is worth what it does to our rank on ea
   never above list; floor = cost × 1.05 (1.15 on SKUs that keep selling out; cost after 24 h unsold). Deal at
   the ask, at floor + half the gap, or at the floor from the 3rd offer.
 - `market_buyer.py`: avoids classmates ranked above us, slow shops and shops that rarely close; takes an ask ≤
-  `quick_accept` × list at once; else haggles (haiku, 10 s per move, code fallback).
+  `quick_accept` × list at once; else haggles (small LLM, 10 s per move, code fallback).
 - Strategist knobs: per SKU `ask` (0.85–1.05 × the seller's ask) and `cover` (0–2 × restock's target, 0 stops
   it); globals `sku_cover_hours`, `market_share`, `quick_accept`.
 

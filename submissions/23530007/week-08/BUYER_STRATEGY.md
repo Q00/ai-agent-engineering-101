@@ -10,13 +10,13 @@ line here the lesson wins and the curator notes the conflict for a human to upda
 
 | player | shop | buyer | total |
 |---|---|---|---|
-| inextro | 0.929 | 0.777 | 1.706 |
-| Lee-sungsoo | 0.795 | 0.878 | 1.673 |
-| gom31 | 0.810 | 0.780 | 1.590 |
+| student B | 0.929 | 0.777 | 1.706 |
+| student G | 0.795 | 0.878 | 1.673 |
+| student U | 0.810 | 0.780 | 1.590 |
 | yms979 (us) | 0.938 | 0.549 | 1.487 |
 
-With the shop at ~0.94, first place needs **buyer ALL ≥ 0.77 to tie inextro and ~0.80-0.82 with a margin**.
-inextro's buyer can still rise, and Lee-sungsoo's shop too. That is about the 3rd-4th student buyer, not the 1st.
+With the shop at ~0.94, first place needs **buyer ALL ≥ 0.77 to tie student B and ~0.80-0.82 with a margin**.
+student B's buyer can still rise, and student G's shop too. That is about the 3rd-4th student buyer, not the 1st.
 Our components now: saved percentile ~0.46, forum ~0.72, deals ~0.54, posts ~0.74 (0.5/0.3/0.1/0.1).
 Saved 0.28 (percentile ~0.90) alone gives +0.22, which is buyer ALL ~0.79. So the plan is **saved to 0.28-0.29 while
 forum, deals and posts hold**. Pushing saved to 0.31+ by skipping many orders would cost deals percentile for
@@ -27,7 +27,7 @@ little gain. Running-mean arithmetic: the sum is ~772 over a denominator of ~350
 
 The forum term in buyer ALL is now the rating itself (0-1), not its percentile. Top ratings sit at 0.87-0.91, so
 the forum gap between buyers is at most ~0.01 of buyer ALL, and the forum plan in 0b below (0.873 -> 0.887 worth
-+0.066) no longer holds. Buyers whose forum percentile was low gain most (Kiro729, skhankim, dragonash22), so they
++0.066) no longer holds. Buyers whose forum percentile was low gain most (student E, student H, student I), so they
 may pass us; we gain ~+0.06. What separates buyers now is **saved (0.5), deals (0.1) and posts (0.1)**: keep deal
 volume high at a per-deal saved above our running mean, and post at the full rate.
 Paid dislike power (-N votes, unit 3 % of Book ~16M for us) is not worth it: it lowers Book and buys a few
@@ -51,10 +51,10 @@ lowers it; the 45 breaks alone cost ~0.05 per goods deal (-1 instead of ~0.3). T
 
 | rank | buyer | ALL | saved (pct) | forum (pct) | deals (pct) | posts (pct) |
 |---|---|---|---|---|---|---|
-| 5 | inextro | 0.775 | 0.246 (0.69) | 0.887 (0.88) | 6210 (0.97) | 374 (0.65) |
-| 6 | gom31-certified-goods | 0.758 | 0.258 (0.78) | 0.878 (0.73) | 2910 (0.50) | 717 (0.93) |
-| 7 | shaun0927-labbuyer | 0.742 | 0.234 (0.58) | 0.906 (0.97) | 4741 (0.73) | 645 (0.86) |
-| 13 | 25620027 | 0.704 | 0.231 (0.52) | 0.899 (0.95) | 4077 (0.63) | 702 (0.92) |
+| 5 | student B | 0.775 | 0.246 (0.69) | 0.887 (0.88) | 6210 (0.97) | 374 (0.65) |
+| 6 | student U | 0.758 | 0.258 (0.78) | 0.878 (0.73) | 2910 (0.50) | 717 (0.93) |
+| 7 | student J | 0.742 | 0.234 (0.58) | 0.906 (0.97) | 4741 (0.73) | 645 (0.86) |
+| 13 | student A | 0.704 | 0.231 (0.52) | 0.899 (0.95) | 4077 (0.63) | 702 (0.92) |
 | 26 | **yms979** | 0.570 | 0.223 (0.48) | 0.873 (0.66) | 3392 (0.56) | 505 (0.75) |
 
 - A saved rate like ours ranks 5th-13th when **forum and deals** are strong. Forum values sit close together
@@ -77,20 +77,20 @@ buyer ALL = 0.5 saved + 0.3 forum + 0.1 deals + 0.1 posts, each a mid-rank perce
   is above the current mean. A snack and a sofa at 30 % off count the same.
 - A broken good **with a warranty** is refunded in full: (list − price + price) / list = **+1**. Without a
   warranty the same break is −1. The difference is 2 points per break.
-- Percentile mapping on 11-06: saved 0.25 → 0.71, 0.28 → 0.90; the leader is ~0.31 (lee-sungsoo, 5k deals).
+- Percentile mapping on 11-06: saved 0.25 → 0.71, 0.28 → 0.90; the leader is ~0.31 (student G, 5k deals).
 - deals and posts are counts (0.1 each): a deal at a poor price can lower the score, because it costs 0.5 x
   the saved drop and gains only 0.1 x the deals rise.
 
 ## 2. What the market shows (ledger, 11-06 01:00-03:00 UTC, 5456 deals; buyer_value.py keeps this live)
 
 - **Shop choice decides the price, not haggling.** At the same shop our median price / list matched other
-  buyers' (moss-and-oak goods 0.724 vs 0.723, sergiobuilds 0.731 vs 0.709). But shops differ widely:
-  food at 0.62-0.66 of list at Kiro729, olstjr, 11im, jiseokkk vs 0.75-0.77 at psyoung82 (where we bought most);
-  goods at ~0.70 at sergiobuilds, Kiro729, seochanit, totato vs 0.85-0.88 at nocha12, myeonggi.
-- **The leaders buy food at the cheapest food shops.** In those 2 h: lee-sungsoo saved 0.392 with 8 % goods,
-  11im 0.391 with 25 % goods, dragonash 0.380 with 12 % goods. Food never broke in the window; goods broke
+  buyers' (student T's shop goods 0.724 vs 0.723, non-student account X 0.731 vs 0.709). But shops differ widely:
+  food at 0.62-0.66 of list at student E, student N, student O, student P vs 0.75-0.77 at student L (where we bought most);
+  goods at ~0.70 at non-student account X, student E, student C, student Q vs 0.85-0.88 at student R, student S.
+- **The leaders buy food at the cheapest food shops.** In those 2 h: student G saved 0.392 with 8 % goods,
+  student O 0.391 with 25 % goods, student I 0.380 with 12 % goods. Food never broke in the window; goods broke
   A 0.8 %, B 1.8 %, C 7.2 % of the time.
-- **Two thirds of goods deals carry a warranty**, but our main supplier (psyoung82) gives none. We had 50 breaks
+- **Two thirds of goods deals carry a warranty**, but our main supplier (student L) gives none. We had 50 breaks
   in 24 h (4.4 % of our goods), which pulled our real per-deal mean from 0.242 to about 0.21, below our running
   mean of 0.22. Every warranted break is +1 instead.
 - 40 orders in 3 h were lost after agreeing a price, because the unit was grade C and the kit refused to pay.
