@@ -54,6 +54,13 @@ class SellerIntegrationTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(seller.required_food_hours('price 99999, quantity 84'),0.0)
         self.assertEqual(seller.required_food_hours('use within 12 h; min_hours_left=36'),36.0)
 
+    def test_warranty_requirement_parser_is_explicit_and_bounded(self):
+        self.assertEqual(seller.required_warranty_hours('Require 6-hour warranty.'),6.0)
+        self.assertEqual(seller.required_warranty_hours('warranty_hours=12 h'),12.0)
+        self.assertEqual(seller.required_warranty_hours('보증 6시간 이상'),6.0)
+        self.assertEqual(seller.required_warranty_hours(
+            'price 600000; warranty available'),0.0)
+
     def test_unspecified_food_condition_uses_safe_default_but_explicit_shorter_wins(self):
         now=time.time()
         short=dict(unit='short',sku='FOOD1',name='food',category='food',kind='food',grade='C',

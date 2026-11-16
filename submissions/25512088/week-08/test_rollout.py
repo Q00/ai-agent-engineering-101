@@ -2,7 +2,8 @@ import json,math,tempfile,time,unittest
 from pathlib import Path
 from seller_ledger import Program
 from seller_strategy import (sale_quote,negotiate,protected_floor,score_floor,
-                             observed_hazard,class_book_cushion)
+                             observed_hazard,class_book_cushion,
+                             market_warranty_hours)
 from buyer_memory import Memory
 from seller_offers import offers
 from market_intel import Intel
@@ -20,6 +21,28 @@ class RolloutTests(unittest.TestCase):
    self.assertGreaterEqual(n['price']*.85-n['reward'],self.u['cost']+math.ceil(self.u['cost']*.01))
   self.assertLess(negotiate(self.u,q,14000,{},self.p)['price'],q['price'])
   self.assertGreaterEqual(q['base'],score_floor(self.u))
+ def test_market_supported_zero_warranty_preserves_book_and_explicit_requirements(self):
+  intel=Intel(self.root)
+  try:
+   now=time.time()
+   with intel.db:
+    for i in range(5):
+     intel.db.execute('''INSERT INTO trades
+       (seq,ts,shop,sku,grade,hours,warranty,price,honest,buyer)
+       VALUES(?,?,?,?,?,?,?,?,?,?)''',
+       (i+1,now-i,'shop','sku','B',None,0,9000,1,f'buyer-{i}'))
+   self.assertEqual(market_warranty_hours(self.u,intel,0),0)
+   self.assertEqual(market_warranty_hours(self.u,intel,6),6)
+   self.assertIsNone(market_warranty_hours(self.u,intel,12))
+   q=sale_quote(self.u,{},self.p,intel,record=False,warranty_override=0)
+   self.assertEqual(q['warranty_hours'],0)
+   self.assertGreaterEqual(q['price'],score_floor(self.u,warranty=0))
+   n=negotiate(self.u,q,self.u['cost'],{},self.p,intel=intel)
+   self.assertEqual(n['warranty_hours'],0)
+   self.assertEqual(n['price'],self.u['cost'])
+   self.assertTrue(n['unwarranted_cost_recovery'])
+   self.assertFalse(n['book_cushion_recovery'])
+  finally:intel.close()
  def test_public_loss_leader_accepts_raw_cost_recovery_but_not_a_raw_loss(self):
   q=dict(base=9000,price=9000,reward=0,spent=0,member=None,referrer=None,
          benefit='none',warranty_hours=6,hazard_probability=.02,

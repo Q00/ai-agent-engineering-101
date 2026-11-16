@@ -209,11 +209,34 @@ def warranty_hours(unit, program=None):
     return 6
 
 
-def protected_floor(unit, policy, hazard=.15):
+def market_warranty_hours(unit, intel=None, required=0):
+    """Choose only between the two conditions this seller can fund safely.
+
+    An explicit buyer requirement remains authoritative.  When no warranty is
+    requested, a mature exact-SKU/grade public cohort may select the zero-hour
+    lane.  Zero-hour sales cannot create a later refund liability, so their
+    lower Book-preserving floor can release costly inventory without spending
+    the active Class-Book warranty cushion.  Sparse or unavailable evidence
+    keeps the established six-hour default.
+    """
+    if unit.get('kind')!='goods':return 0
+    try:required=float(required or 0)
+    except (TypeError,ValueError):required=0
+    if required>6:return None
+    if required>0:return 6
+    if intel is None:return 6
+    no_warranty=intel.comparable(unit['sku'],unit.get('grade'),None,0)
+    if no_warranty.get('count',0)>=5 and no_warranty.get('buyers',0)>=3:
+        return 0
+    return 6
+
+
+def protected_floor(unit, policy, hazard=.15, warranty=None):
     # Cost + storage + profit / (1-breakage), using a matured public cohort
     # when available and the conservative 15% prior otherwise.
     floor=cost_floor(unit['cost'],policy)
-    if not warranty_hours(unit):return floor
+    warranty=warranty_hours(unit) if warranty is None else warranty
+    if not warranty:return floor
     cost=unit['cost'];reserve=math.ceil(cost*.09)
     acquisition=policy.get('acquisition_margin_percent',25)/100
     founder=policy.get('founder_percent',5)/100
@@ -222,7 +245,7 @@ def protected_floor(unit, policy, hazard=.15):
                math.ceil((cost*(1-acquisition)+reserve)/(survival-acquisition)))
 
 
-def score_floor(unit, hazard=.15):
+def score_floor(unit, hazard=.15, warranty=None):
     """Preserve expected Book for an ordinary public sale.
 
     New referral enrollment is closed. A buyer without a legacy credential
@@ -231,7 +254,8 @@ def score_floor(unit, hazard=.15):
     fully funded.
     """
     principal=unit['cost']+math.ceil(unit['cost']*.01)
-    if not warranty_hours(unit):return principal
+    warranty=warranty_hours(unit) if warranty is None else warranty
+    if not warranty:return principal
     survival=max(.5,1-max(0,min(.49,hazard)))
     return math.ceil(principal/survival)
 
@@ -270,7 +294,9 @@ def liquidation_discount(unit, holdings, recent_sales_6h, now=None, failed_quote
 def negotiate(unit, current, offered, catalog, program, token='', ref='', intel=None):
     hazard=current.get('hazard_probability',.15)
     legacy=bool(token or ref)
-    floor=protected_floor(unit,program.p,hazard) if legacy else score_floor(unit,hazard)
+    warranty=current.get('warranty_hours',warranty_hours(unit,program))
+    floor=(protected_floor(unit,program.p,hazard,warranty) if legacy else
+           score_floor(unit,hazard,warranty))
     # Once verified market evidence has already opened a bounded public
     # loss-leader cohort, do not reject a buyer merely because its offer is a
     # few won below that cohort's initial evidence price.  An offer at or above
@@ -279,11 +305,18 @@ def negotiate(unit, current, offered, catalog, program, token='', ref='', intel=
     public_cost_recovery=bool(not legacy and current.get('loss_leader'))
     if public_cost_recovery:
         floor=min(floor,unit['cost'])
+    unwarranted_cost_recovery=bool(
+        not legacy and not warranty and offered>=unit['cost'])
+    if unwarranted_cost_recovery:
+        # With no warranty there is no later refund event.  A sale at raw cost
+        # therefore preserves Book immediately and does not consume the Class
+        # Book cushion reserved for still-breakable warranty trials.
+        floor=min(floor,unit['cost'])
     cushion=class_book_cushion(intel,program.p.get('shop_name','25512088'))
     active_cushion=active_book_cushion_principal(program)
     cushion_cap=math.floor(cushion*BOOK_CUSHION_TRIAL_SHARE)
     cushion_recovery=bool(
-        not legacy and unit.get('kind')=='goods' and
+        not legacy and bool(warranty) and unit.get('kind')=='goods' and
         str(current.get('hazard_basis','')).startswith('public-matured') and
         offered>=unit['cost'] and active_cushion+unit['cost']<=cushion_cap)
     if cushion_recovery:
@@ -315,7 +348,7 @@ def negotiate(unit, current, offered, catalog, program, token='', ref='', intel=
         q=program.quote(lo,unit['cost'],token=token,ref=ref)
     else:
         q=program.quote(max(floor,(current['base']+floor)//2),unit['cost'],token=token,ref=ref)
-    q['warranty_hours']=warranty_hours(unit,program)
+    q['warranty_hours']=warranty
     required=unit['cost']+math.ceil(unit['cost']*(.09 if legacy else .01))
     score_safe=q['price']*((1-hazard) if q['warranty_hours'] else 1)-q['reward'] >= required
     bounded_cost_recovery=(public_cost_recovery and q['reward']==0 and
@@ -324,23 +357,30 @@ def negotiate(unit, current, offered, catalog, program, token='', ref='', intel=
                            q['price']*survival>=unit['cost'])
     bounded_cushion_recovery=(cushion_recovery and q['reward']==0 and
                               q['price']>=unit['cost'])
+    bounded_unwarranted_recovery=(unwarranted_cost_recovery and q['reward']==0 and
+                                  q['price']>=unit['cost'])
     if not (score_safe or bounded_cost_recovery or bounded_book_recovery or
-            bounded_cushion_recovery):
+            bounded_cushion_recovery or bounded_unwarranted_recovery):
         return current
     q['hazard_probability']=hazard;q['hazard_basis']=current.get('hazard_basis','conservative-unmeasured')
     q['near_book_recovery']=bounded_book_recovery
     q['book_cushion_recovery']=bounded_cushion_recovery
+    q['unwarranted_cost_recovery']=bounded_unwarranted_recovery
     q['book_cushion']=cushion
     q['book_cushion_active_principal']=active_cushion
     return q if q['price']<current['price'] else current
 
 
 def sale_quote(unit, catalog, program, intel=None, token='', ref='', *, record=True, holdings=1,
-               buyer_preferences=None):
+               buyer_preferences=None, warranty_override=None):
     now=time.time()
     base=public_price(unit,catalog)  # Also validates expiry and grade.
     hours=(unit['expires_at']-now)/3600 if unit.get('expires_at') else None
-    warranty=warranty_hours(unit,program)
+    warranty=(warranty_hours(unit,program) if warranty_override is None else
+              float(warranty_override))
+    if warranty not in (0,6):
+        raise ValueError('Unsupported warranty duration')
+    warranty=int(warranty)
     comp=intel.comparable(unit['sku'],unit['grade'],hours,warranty) if intel else {'count':0,'median':None,'p10':None}
     acceptance_first=comp.get('p10') is not None
     listed=unit.get('list_price') or catalog.get(unit['sku'],{}).get('list_price')
@@ -417,7 +457,8 @@ def sale_quote(unit, catalog, program, intel=None, token='', ref='', *, record=T
     markdown=liquidation_discount(unit,holdings,recent_sales,failed_quotes_6h=quotes)
     hazard,hazard_basis=observed_hazard(intel,program.p.get('shop_name','25512088'))
     legacy=bool(token or ref)
-    protected=protected_floor(unit,program.p,hazard) if legacy else score_floor(unit,hazard)
+    protected=(protected_floor(unit,program.p,hazard,warranty) if legacy else
+               score_floor(unit,hazard,warranty))
     offer_target=None;offer_target_applied=False
     poor_local_conversion=bool(not legacy and quotes>=10 and len(own_offers)>=10 and sold/quotes<.15)
     if poor_local_conversion:

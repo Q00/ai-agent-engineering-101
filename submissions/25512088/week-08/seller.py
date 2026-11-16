@@ -28,7 +28,8 @@ from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 from cryptography.hazmat.primitives import serialization
 from seller_ledger import Program, policy
 from seller_forum import tick
-from seller_strategy import sale_quote, negotiate, receipt_grade
+from seller_strategy import (sale_quote, negotiate, receipt_grade,
+                             market_warranty_hours)
 from market_intel import Intel, read_json_snapshot
 from shop_copy import SHOP_DESCRIPTION, SHOP_DISPLAY_NAME
 from seller_offers import offers
@@ -70,6 +71,24 @@ def required_food_hours(text):
         r'\bshelf\s*life(?:\s+left)?\s*(?:of|at\s+least|>=|:|=)\s*'
             r'(\d+(?:\.\d+)?)\s*(?:h|hours?)\b',
         r'(?:유통기한|최소)\s*(\d+(?:\.\d+)?)\s*시간(?:\s*이상)?',
+    )
+    values=[]
+    for pattern in patterns:
+        for match in re.finditer(pattern,text,flags=re.I):
+            try:value=float(match.group(1))
+            except ValueError:continue
+            if 0<=value<=8760:values.append(value)
+    return max(values,default=0.0)
+
+
+def required_warranty_hours(text):
+    """Parse only an explicit numeric warranty requirement from buyer text."""
+    patterns=(
+        r'\brequire(?:s|d)?\s+(?:at\s+least\s+)?(\d+(?:\.\d+)?)\s*[- ]*'
+            r'(?:h|hours?)\s+(?:of\s+)?warranty\b',
+        r'\bwarranty(?:_hours)?\s*(?:of|at\s+least|>=|:|=)?\s*'
+            r'(\d+(?:\.\d+)?)\s*(?:h|hours?)\b',
+        r'보증\s*(\d+(?:\.\d+)?)\s*시간(?:\s*이상)?',
     )
     values=[]
     for pattern in patterns:
@@ -225,14 +244,22 @@ class Seller(AgentExecutor):
                     await up.reject(say('No matching stock available. Alternatives: '+json.dumps(available,ensure_ascii=False)))
                     return
                 min_hours=food_hours_requirement(text,unit)
+                min_warranty=required_warranty_hours(text)
+                selected_warranty=market_warranty_hours(unit,intel,min_warranty)
+                if selected_warranty is None:
+                    await up.reject(say('Requested warranty exceeds the verified maximum of 6 hours.'))
+                    return
                 try:
                     q = sale_quote(unit, catalog, program, intel, token=cred['member'], ref='',
-                                   holdings=holdings[unit['sku']],buyer_preferences=preferences)
+                                   holdings=holdings[unit['sku']],buyer_preferences=preferences,
+                                   warranty_override=selected_warranty)
                 except ValueError:
                     await up.reject(say('Cannot verify this stock grade or expiry.'))
                     return
                 deal = dict(unit=unit, quote=q, credentials=cred, until=time.time()+120,
-                            required_food_hours=min_hours)
+                            required_food_hours=min_hours,
+                            required_warranty_hours=min_warranty,
+                            warranty_hours=selected_warranty)
                 arm,digest=control.assign('seller-quote-v1',str(task.id))
                 control.event('seller','quote_created',{
                     'task':task.id,'sku':unit['sku'],'price':q['price'],'cost':unit['cost'],
@@ -256,10 +283,18 @@ class Seller(AgentExecutor):
                     unit=min(alternatives,key=lambda u:(u.get('expires_at') or float('inf'),
                              u.get('supplied_at',0)),default=None)
                     if unit:
+                        selected_warranty=market_warranty_hours(
+                            unit,intel,deal.get('required_warranty_hours',0))
+                        if selected_warranty is None:
+                            self.open.pop(task.id,None)
+                            await up.reject(say('Requested warranty exceeds the verified maximum of 6 hours.'))
+                            return
+                        deal['warranty_hours']=selected_warranty
                         deal['unit']=unit
                         deal['quote']=sale_quote(unit,catalog,program,intel,
                             token=deal['credentials']['member'],ref='',record=False,
-                            holdings=holdings[unit['sku']],buyer_preferences=preferences)
+                            holdings=holdings[unit['sku']],buyer_preferences=preferences,
+                            warranty_override=selected_warranty)
                 if not unit or unit.get('grade') == 'expired' or (unit.get('expires_at') and unit['expires_at'] <= time.time()):
                     self.open.pop(task.id, None)
                     await up.reject(say('The quoted stock is no longer available.'))
@@ -275,7 +310,8 @@ class Seller(AgentExecutor):
                     # Refreshes must not inflate demand or conversion trials.
                     latest = sale_quote(unit, catalog, program, intel,
                                         token=deal['credentials']['member'], ref='', record=False,
-                                        holdings=holdings[unit['sku']],buyer_preferences=preferences)
+                                        holdings=holdings[unit['sku']],buyer_preferences=preferences,
+                                        warranty_override=deal.get('warranty_hours'))
                 except ValueError:
                     self.open.pop(task.id, None)
                     await up.reject(say('Cannot verify this stock grade or expiry.'))
