@@ -7,6 +7,7 @@ does not silently become a price or erase an earlier requirement.
 from __future__ import annotations
 
 import math
+import json
 import re
 
 
@@ -98,6 +99,18 @@ def update(previous, message):
         view['grades'] = None
     if re.search(r'(?:require|need|must have)\s+(?:a\s+)?cert|cert\s*[:=]\s*true|인증서\s*(?:필수|필요)', lower):
         view['cert_required'] = True
+    marker=re.search(r'(?:required checkout policy|checkout policy|accept policy)\s*:\s*',message,re.I)
+    if marker:
+        try:
+            policy,_=json.JSONDecoder().raw_decode(message[marker.end():])
+            if isinstance(policy,dict):
+                grades=policy.get('grades')
+                if isinstance(grades,list) and grades and all(g in ('A','B','C') for g in grades):view['grades']=sorted(set(grades))
+                for key,target in [('min_hours_left','min_hours_left'),('warranty_hours','warranty_hours')]:
+                    value=policy.get(key)
+                    if type(value) in (int,float) and math.isfinite(value) and value>=0:view[target]=float(value)
+                if policy.get('cert') is True:view['cert_required']=True
+        except (ValueError,TypeError):pass
     return view
 
 
