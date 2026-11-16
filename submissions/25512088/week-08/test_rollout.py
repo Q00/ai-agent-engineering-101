@@ -54,12 +54,20 @@ class RolloutTests(unittest.TestCase):
   self.assertEqual(accepted['price'],8000)
   self.assertTrue(accepted['book_cushion_recovery'])
   self.assertEqual(class_book_cushion(Evidence()),20000)
-  # One still-breakable near-cost sale consumes the reserved half-cushion.
+  # Keep accepting principal-preserving sales while their worst-case total
+  # remains inside 90% of the fresh Class Book cushion.
   with self.p.db:
    self.p.db.execute('''INSERT INTO sales
      (task,unit,sku,amount,cost,settled,refunded)
      VALUES(?,?,?,?,?,?,0)''',('trial','v','other',8000,8000,time.time()))
   self.p.growth_event('trial','book_cushion_trial')
+  second=negotiate(self.u,q,8000,{},self.p,intel=Evidence())
+  self.assertEqual(second['price'],8000)
+  with self.p.db:
+   self.p.db.execute('''INSERT INTO sales
+     (task,unit,sku,amount,cost,settled,refunded)
+     VALUES(?,?,?,?,?,?,0)''',('trial-2','w','other',8000,8000,time.time()))
+  self.p.growth_event('trial-2','book_cushion_trial')
   rejected=negotiate(self.u,q,8000,{},self.p,intel=Evidence())
   self.assertGreater(rejected['price'],8000)
   # Missing official Class evidence never opens the exception.
