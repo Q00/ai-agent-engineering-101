@@ -192,9 +192,9 @@ class Intel:
         finally:
             if own_client:client.close()
 
-    def comparable(self, sku, grade, hours=None, warranty=0):
+    def comparable(self, sku, grade, hours=None, warranty=0, seconds=WINDOW):
         rows=self.db.execute('SELECT * FROM trades WHERE sku=? AND grade=? AND ts>?',
-                             (sku,grade,time.time()-WINDOW)).fetchall()
+                             (sku,grade,time.time()-max(1,float(seconds)))).fetchall()
         prices=[];by_buyer={}
         for r in rows:
             if hours is None:

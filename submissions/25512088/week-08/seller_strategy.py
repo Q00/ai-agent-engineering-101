@@ -254,7 +254,11 @@ def market_warranty_hours(unit, intel=None, required=0):
     if required>0:return 6
     if intel is None:return 6
     no_warranty=intel.comparable(unit['sku'],unit.get('grade'),None,0)
-    if no_warranty.get('count',0)>=5 and no_warranty.get('buyers',0)>=3:
+    mature_day=(intel.comparable(unit['sku'],unit.get('grade'),None,0,24*3600)
+                if no_warranty.get('count',0)<5 or no_warranty.get('buyers',0)<3
+                else {})
+    if (no_warranty.get('count',0)>=5 and no_warranty.get('buyers',0)>=3) or (
+            mature_day.get('count',0)>=8 and mature_day.get('buyers',0)>=4):
         return 0
     return 6
 

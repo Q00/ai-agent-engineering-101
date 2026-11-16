@@ -43,6 +43,22 @@ class RolloutTests(unittest.TestCase):
    self.assertTrue(n['unwarranted_cost_recovery'])
    self.assertFalse(n['book_cushion_recovery'])
   finally:intel.close()
+ def test_mature_day_zero_warranty_cohort_is_stricter_than_live_cohort(self):
+  intel=Intel(self.root)
+  try:
+   now=time.time();older=now-7*3600
+   with intel.db:
+    for i in range(8):
+     intel.db.execute('''INSERT INTO trades
+       (seq,ts,shop,sku,grade,hours,warranty,price,honest,buyer)
+       VALUES(?,?,?,?,?,?,?,?,?,?)''',
+       (100+i,older-i,'shop','sku','B',None,0,9000,1,f'buyer-{i%4}'))
+   self.assertEqual(intel.comparable('sku','B',None,0)['count'],0)
+   self.assertEqual(market_warranty_hours(self.u,intel,0),0)
+   with intel.db:intel.db.execute('DELETE FROM trades WHERE seq=107')
+   self.assertEqual(market_warranty_hours(self.u,intel,0),6)
+   self.assertEqual(market_warranty_hours(self.u,intel,6),6)
+  finally:intel.close()
  def test_zero_warranty_near_cost_trial_uses_only_safe_class_headroom(self):
   class Evidence:
    def __init__(inner,revenue=1050000):inner.revenue=revenue
