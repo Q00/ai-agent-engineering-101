@@ -507,6 +507,7 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
                            holding.get(row['sku'],0))
         need=max(0,math.ceil(forecast)-effective_holding)
         food_scale_ready=False
+        strongly_proven_high_value=False
         if is_food:
             unit_cap=policy.get('max_food_units_per_sku',2)
             # Keep unproven/perishable food at the two-unit absolute cap.  A
@@ -529,10 +530,12 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
             if row.get('upper_cost',0)>=policy.get('high_value_lane_min_unit_cost',math.inf):
                 unit_cap=min(unit_cap,policy.get('max_high_value_units_per_sku',1))
                 profitable_share=own_profitable/max(1,own_sales_total)
-                if (own_sales_total>=policy.get('strongly_proven_high_value_min_own_sales',math.inf)
+                strongly_proven_high_value=(
+                    own_sales_total>=policy.get('strongly_proven_high_value_min_own_sales',math.inf)
                         and row.get('own_gross_total',0)>0
                         and profitable_share>=policy.get(
-                            'strongly_proven_high_value_min_profitable_share',1.1)):
+                            'strongly_proven_high_value_min_profitable_share',1.1))
+                if strongly_proven_high_value:
                     unit_cap=min(policy.get('max_units_per_sku',3),max(
                         unit_cap,policy.get(
                             'max_strongly_proven_high_value_units_per_sku',unit_cap)))
@@ -561,6 +564,17 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
             short_food_replacement=bool(replacement_room)
         else:
             inventory_room=max(0,sku_ceiling-holding.get(row['sku'],0))
+            # A repeatedly profitable high-value SKU that sells out in seconds
+            # should not be replenished one unit at a time merely because a
+            # conservative short-window likelihood rounded to one.  This is a
+            # target inventory floor, not a waiver: inventory, portfolio-
+            # capital, cash, warranty, grade and refund guards below still cap
+            # the actual purchase.  New/canary SKUs never enter this branch.
+            if strongly_proven_high_value and not holding.get(row['sku']):
+                need=max(need,min(
+                    unit_cap,
+                    int(policy.get(
+                        'strongly_proven_high_value_min_units_when_sold_out',1))))
         need=min(need,inventory_room)
         if cold_safe_trial:
             need=min(need,policy.get('max_cold_safe_trial_units',1))
