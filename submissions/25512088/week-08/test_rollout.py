@@ -64,6 +64,12 @@ class RolloutTests(unittest.TestCase):
   edge=negotiate(self.u,q,6800,{},self.p,intel=Evidence())
   self.assertEqual(edge['price'],6800)
   self.assertTrue(edge['class_near_cost_trial'])
+  # Food is verified against its required shelf life before checkout and has
+  # no post-settlement warranty liability, so the same Class guard applies.
+  food=dict(self.u,kind='food')
+  food_edge=negotiate(food,q,6800,{},self.p,intel=Evidence())
+  self.assertEqual(food_edge['price'],6800)
+  self.assertTrue(food_edge['class_near_cost_trial'])
   # Below 85% of cost is never admitted.
   self.assertGreater(negotiate(self.u,q,6799,{},self.p,intel=Evidence())['price'],6799)
   # A warranty can still refund the full price, so the raw-loss path is closed.

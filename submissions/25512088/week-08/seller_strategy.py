@@ -346,7 +346,8 @@ def negotiate(unit, current, offered, catalog, program, token='', ref='', intel=
         # near-cost trials from spending the same headroom twice.
         floor=min(floor,unit['cost'])
     # Recent live offers showed a separate, deterministic opportunity: public
-    # buyers offered just below raw cost on zero-warranty goods. The 95% cohort
+    # buyers offered just below raw cost on inventory with no later refund
+    # liability. The 95% cohort
     # raised the official Shop score without a refund. Once the live Revenue
     # gap fell far enough, the live aggregate exposed distinct buyer demand
     # down to the 85% cost band. The configured floor is only a maximum
@@ -365,7 +366,7 @@ def negotiate(unit, current, offered, catalog, program, token='', ref='', intel=
     raw_loss_floor=math.ceil(unit['cost']*(1-CLASS_NEAR_COST_RATE))
     projected_raw_loss=max(0,unit['cost']-offered)
     class_near_cost_trial=bool(
-        not legacy and not warranty and unit.get('kind')=='goods' and
+        not legacy and not warranty and unit.get('kind') in ('goods','food') and
         raw_loss_floor<=offered<unit['cost'] and class_book_cushion(intel)>0 and
         loss_used+projected_raw_loss<=loss_budget)
     if class_near_cost_trial:
