@@ -82,7 +82,7 @@ class RiskContextTests(unittest.TestCase):
   from market_scoring import buyer_candidate,buyer_cost_reference
   from buyer_policy import purchase_price_guidance,routing_evidence
   product={'kind':'goods','list_price':100000,'category':'가구/침구>침구'};cost=buyer_cost_reference(product)
-  evidence={'same_shop_sku':{'paid':100,'mature_paid':80,'early_broken':0,'broken':1,'refunded':0},'same_product':{'paid':200,'mature_paid':150,'early_broken':0,'broken':2,'refunded':0},'source':'own_paid_order+public_broken_ledger','censored':True}
+  evidence={'same_shop_sku':{'paid':100,'mature_paid':80,'early_broken':0,'unrefunded_within_6h':1,'broken':1,'refunded':0},'same_product':{'paid':200,'mature_paid':150,'early_broken':0,'unrefunded_within_6h':2,'broken':2,'refunded':0},'source':'own_paid_order+public_broken_ledger','censored':True}
   rows=[]
   for i in range(16):
    policy=b.purchase_policy(evidence,'goods',saving=.82,saved_baseline={'saved':.731});route=routing_evidence(None,.82,evidence);route['purchase_risk_policy']=policy

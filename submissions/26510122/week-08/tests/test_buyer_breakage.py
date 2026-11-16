@@ -19,7 +19,7 @@ class VerifiedBreakageTests(unittest.TestCase):
         rows=[self.sale()];proof=self.proof();facts=b.attach(rows,[proof,proof],now=self.now)
         self.assertEqual(len(facts),1);self.assertEqual(facts[0]['shop_name'],'shop')
         profile=b.profiles(PreparedHistory(rows+facts+facts),now=self.now)
-        self.assertEqual(profile['shop_sku'][('shop','G')],{'paid':1,'broken':1,'refunded':0,'mature_paid':0,'early_broken':1})
+        self.assertEqual(profile['shop_sku'][('shop','G')],{'paid':1,'broken':1,'refunded':0,'mature_paid':0,'early_broken':1,'unrefunded_within_6h':1})
     def test_other_buyer_sku_or_unpaid_receipt_cannot_label_shop(self):
         p=self.proof();p['data']['buyer']='someone else'
         self.assertFalse(b.attach([self.sale()],[p],now=self.now))

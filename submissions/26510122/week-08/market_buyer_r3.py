@@ -188,8 +188,7 @@ def selection_route(evidence):
     if quality:result['post_sale_breakage']={k:quality[k] for k in ('same_shop_sku','same_product') if k in quality}
     policy=(evidence or {}).get('purchase_risk_policy')
     if policy:result['purchase_risk_policy']={k:policy[k] for k in (
-        'required_warranty_hours','same_shop_sku_unrefunded','same_product_unrefunded',
-        'risk_adjusted_usable_saved_estimate','current_official_saved_reference')}
+        'required_warranty_hours','risk_adjusted_usable_saved_estimate','current_official_saved_reference')}
     return result
 
 
