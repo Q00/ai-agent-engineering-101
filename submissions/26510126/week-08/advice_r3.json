@@ -646,6 +646,10 @@
   {
    "t": 1794783515.311667,
    "text": "08:0x re-measure of audit #46: the warranty-word fix (5b73c2e) changed nothing measurable: warranty_ask 30.4% before vs 31.1% after (food 22.5 vs 23.5%), because buyers' own templates say 'warranty' (e.g. 'a grade B or C unit with at least a 6 h warranty'); the audit's as/has/was attribution was wrong. Treat warranty_ask as 'mentions warranty', as before. Revenue: our share of market paid value fell from ~4% (04:00-06:54) to 2.1% (07:00-07:30) and 2.9% (07:30-08:00); paid count held (97, 78 per 30 min). The drop is 300k+ goods: talks/h A 116->67, B 54->9 (B 300k+ held: 5 units), deals/h A 21->7, B 11->2, C 14->11. It started 06:56 (before floor_frac 0.62 at 07:10), so it is mostly stock (300k+ B ran out, A 48 units) and the post-restart reach dip, not the price moves alone. Buying 300k+ A/B where it sells (dear_depth/window_depth, within order 14) is the lever to look at; floor_frac/step get their normal 2 h verdicts."
+  },
+  {
+   "t": 1794787689.976935,
+   "text": "09:1x supervisor data on the 07:00 revenue drop: we hold 0 goods at 150-300k list and 300k+ only A 43 / B 4 / C 109. Restock buys no 150k+ goods line now, and it is the margin gate (restock_r3.py:560), not lines/window_depth: market A medians in 150-300k are 0.61-0.68 of list against A cost ~0.66, so A margin is -9%..+2% there (G07ec17d5, a top seller, loses money as A); 300k+ top lines fail by hair (G0667d440 e0 0.0295 vs 0.03) or have sellable 0.25 (G021aae64, G754bf0ca). So the drop is a thin market for A, not a bug; do not loosen min_margin for it (it also lowers every seller floor). lines/breadth cuts mostly drop food lines, since no dear line survives the gate anyway. Revenue is 0.3 of shop ALL and the next revenue rival is ~900M ahead (+0.005), so chasing it with thin-margin A is not worth Book risk."
   }
  ]
 }
