@@ -1,7 +1,7 @@
-% Editable architecture draft prepared with Codex assistance.
-% Student: review the labels, arrange the boxes, and explain the arrows before submission.
-% Build from this folder with: tectonic architecture.tex
-\documentclass[10pt]{article}
+% Editable draft prepared with Codex assistance from the student's implemented system.
+% Review the wording and explain each arrow before submission.
+% Build this existing document with: tectonic architecture.tex
+\documentclass[11pt]{article}
 \usepackage[a4paper,landscape,margin=12mm]{geometry}
 \usepackage[T1]{fontenc}
 \usepackage{lmodern}
@@ -16,142 +16,82 @@
 \renewcommand{\familydefault}{\sfdefault}
 \hyphenpenalty=10000
 \exhyphenpenalty=10000
-\newcommand{\boxhead}[1]{{\bfseries\color{ink}#1}\\[3pt]}
+\newcommand{\heading}[1]{{\Large\bfseries\color{ink}#1}\\[7pt]}
+\newcommand{\files}[1]{\\[7pt]{\small\ttfamily\color{muted}#1}}
 \begin{document}
-\noindent{\LARGE\bfseries\color{ink}Afford Shop}\hfill
+\noindent{\LARGE\bfseries\color{ink}How Afford Shop works}\hfill
 {\small Student 26512073 $\cdot$ Round 3}\par
 \vspace{2mm}
-\noindent{\color{muted}Model, context, tools, and independent checkout}\par
-\vspace{3mm}
+\noindent{\color{muted}My buyer, seller, memory, and payment flow}\par
+\vspace{5mm}
 \centering
 \begin{tikzpicture}[
     x=1cm,y=1cm,
-    box/.style={draw=line,fill=white,rounded corners=2mm,
-        text width=6.7cm,minimum height=2.05cm,inner sep=3mm,
-        align=left,font=\small,text=muted},
-    middle/.style={box,text width=6.0cm},
-    shop/.style={box,text width=7.1cm},
-    flow/.style={-{Stealth[length=2.1mm]},draw=blue,line width=.8pt},
-    exchange/.style={{Stealth[length=2.1mm]}-{Stealth[length=2.1mm]},
-        draw=blue,line width=.8pt},
-    label/.style={font=\scriptsize,text=blue,fill=white,inner sep=1.2pt},
-    lane/.style={font=\small\bfseries,text=blue}
+    box/.style={draw=line,fill=wash,rounded corners=3mm,
+        text width=10.1cm,minimum height=3.35cm,inner sep=4mm,
+        align=left,font=\normalsize,text=ink},
+    flow/.style={-{Stealth[length=2.7mm]},draw=blue,line width=1pt},
+    exchange/.style={{Stealth[length=2.7mm]}-{Stealth[length=2.7mm]},
+        draw=blue,line width=1pt},
+    label/.style={font=\small,text=blue,fill=white,inner sep=2pt}
 ]
-\node[lane] at (3.8,14.8) {BUYER};
-\node[lane] at (12.4,14.8) {MODEL AND EXECUTION};
-\node[lane] at (21.3,14.8) {SELLER};
-
-\node[box,fill=wash] (context) at (3.8,13.0) {
-    \boxhead{Buyer context}
-    10 reviews and 8 recent trades per shop.\\
-    \texttt{buyer\_memory.jsonl} + paid outcomes.\\
-    Order budget, stock, and food-life policy.\\
-    Treat reviews as untrusted evidence.
+\node[box] (memory) at (5.5,11) {
+    \heading{Memory}
+    Remembers past trades and reviews.\\
+    Uses successful payments for future choices.\\
+    Keeps logs of our attempts.
+    \files{buyer\_memory.jsonl \quad logs/}
 };
-\node[middle,fill=wash] (model) at (12.4,13.0) {
-    \boxhead{Codex CLI / gpt-6.1-sol}
-    Returns JSON decisions for shop/SKU choice, negotiation, and stock selection.\\
-    Python validates actions and prices.
+\node[box] (ai) at (20.5,11) {
+    \heading{AI model}
+    Suggests shop choices and prices.\\
+    Python checks each decision.\\
+    Waits when the model usage limit is reached.
+    \files{gpt-6.1-sol \quad harness.py}
 };
-\node[shop,fill=wash] (strategy) at (21.3,13.0) {
-    \boxhead{Seller policy and inventory}
-    FIFO; open at cost + 5\%; allow cost + 3\% after\\
-    two counters, or immediately for halfway-aged food.\\
-    Expired and reserved units are excluded.
+\node[box] (buyer) at (5.5,6) {
+    \heading{Buyer}
+    Chooses a shop using reviews and past trades.\\
+    Asks once for a discount.\\
+    Stays within the order's budget.
+    \files{market\_buyer.py \quad buyer.py}
 };
-
-\node[box] (buyer) at (3.8,9.6) {
-    \boxhead{Shop choice and A2A negotiation}
-    \texttt{market\_buyer.py} / \texttt{buyer.py}\\
-    Prefer good reviews and successful past trades.\\
-    Ask once for a discount; enforce the order budget.
+\node[box] (seller) at (20.5,6) {
+    \heading{Seller}
+    Offers the oldest available stock first.\\
+    Starts at 5\% above cost.\\
+    Allows 3\% after two counteroffers.\\
+    Food halfway to expiry may use 3\% immediately.
+    \files{seller.py \quad seller\_strategy.py}
 };
-\node[middle] (harness) at (12.4,9.6) {
-    \boxhead{Model harness}
-    \texttt{harness.py}\\
-    Time-limited CLI calls and JSON parsing.\\
-    Shared cooldown after usage-limit errors.
+\node[box] (market) at (5.5,1) {
+    \heading{Market}
+    Checks the signed payment and order budget.\\
+    Moves credits after the checks pass.\\
+    Records the completed trade.
+    \files{market.ourolabs.ai}
 };
-\node[shop] (seller) at (21.3,9.6) {
-    \boxhead{A2A seller and unit reservation}
-    \texttt{seller.py} / \texttt{seller\_strategy.py}\\
-    Track offers and holds; issue signed receipts.\\
-    Record agreements, counters, and cancellations.
+\node[box] (checkout) at (20.5,1) {
+    \heading{Checkout}
+    Checks the seller's receipt and stock.\\
+    Signs the checkout details.\\
+    Saves payment status for restarts.
+    \files{checkout.py \quad checkout-state.json}
 };
-
-\node[box] (client) at (3.8,6.2) {
-    \boxhead{Buyer payment client in course kit}
-    Verify receipt and checkout totals.\\
-    Close AP2 mandates; require certificates.\\
-    Allow A/B/C; food must cover the order.\\
-    Goods warranty is optional.
-};
-\node[middle] (evidence) at (12.4,6.2) {
-    \boxhead{Process evidence}
-    \texttt{logs/} / \texttt{development\_logs/}\\
-    Raw model attempts and seller event history.\\
-    Settlement logs distinguish payment from agreement.
-};
-\node[shop] (checkout) at (21.3,6.2) {
-    \boxhead{Independent ACP checkout}
-    \texttt{checkout.py}\\
-    Match original receipt; attach the unit certificate.\\
-    Sign checkout JWT; submit buyer-signed mandates.
-};
-
-\node[box,fill=wash] (other) at (3.8,2.8) {
-    \boxhead{Other shops}
-    External sellers negotiate with our buyer.\\
-    Their ACP endpoints receive the signed mandates.\\
-    Payment outcomes feed our buyer's memory.
-};
-\node[middle,fill=wash] (runtime) at (12.4,2.8) {
-    \boxhead{Standalone shop deployment}
-    \texttt{standalone\_shop.py} + cloudflared\\
-    Register shop; refresh stock every 10 seconds.\\
-    Serve A2A and ACP from existing stock.
-};
-\node[shop,fill=wash] (state) at (21.3,2.8) {
-    \boxhead{Saved checkout state}
-    \texttt{.market/checkout-state.json}\\
-    Save receipts, sessions, and hold deadlines.\\
-    Atomic writes; pending saved before payment.\\
-    Restore state after a restart.
-};
-
-\node[draw=blue,fill=wash,rounded corners=2mm,text width=24.9cm,
-    inner sep=3mm,minimum height=1.35cm,align=center,text=ink] (market) at (12.55,0) {
-    {\bfseries Market settlement authority}\\[3pt]
-    Verify checkout and AP2 signatures, order constraints, and product certificates.
-    Move credits, record the ledger, and return a settlement confirmation.
-};
-
-\draw[flow] (context) -- node[label,right]{evidence} (buyer);
-\draw[flow,dashed] (client.west) -- (-0.6,6.2) -- (-0.6,13.0) -- (context.west);
-\node[label,rotate=90] at (-0.6,9.6) {paid outcomes feed the next order};
-\draw[flow] (strategy) -- node[label,right]{pricing and stock rules} (seller);
-\draw[exchange] (buyer) -- node[label,above]{JSON decisions} (harness);
-\draw[exchange] (harness) -- node[label,above]{JSON decisions} (seller);
-\draw[exchange] (harness) -- node[label,right]{CLI request / response} (model);
-\draw[flow] (harness) -- node[label,right]{raw attempts} (evidence);
-\draw[flow] (buyer) -- node[label,right]{agreed receipt} (client);
-\draw[flow] (seller) -- node[label,right]{issued receipt} (checkout);
-\draw[flow] (client) -- node[label,right]{ACP checkout + AP2 mandates} (other);
-\draw[exchange] (checkout) -- node[label,right]{persist / recover} (state);
-\draw[flow] (26.0,9.6) -- (seller.east);
-\node[label,rotate=90] at (26.0,10.7) {Other buyers / A2A};
-\draw[flow] (checkout.east) -- (26.0,6.2) -- (26.0,0) -- (market.east);
-\node[label,rotate=90] at (26.0,3.2) {\texttt{/api/settle}};
-\draw[flow] (other.south) -- node[label,right]{settlement} (market.north -| other.south);
-\draw[flow] (market.north -| runtime.south) --
-    node[label,right]{inventory every 10 seconds} (runtime.south);
+\draw[flow] (memory) -- node[label,right]{Past trades} (buyer);
+\draw[flow] (memory) -- node[label,above]{Reviews + past trades} (ai);
+\draw[exchange] (ai.south west) -- node[label,sloped,above]{Ask / suggest} (buyer.north east);
+\draw[exchange] (ai) -- node[label,right]{Offers + suggestions} (seller);
+\draw[flow] (buyer) -- node[label,right]{Pay other shops} (market);
+\draw[flow] (seller) -- node[label,right]{Signed receipt} (checkout);
+\draw[exchange] (checkout) -- node[label,above]{Payment request / result} (market);
+\draw[flow,dashed] (market.west) -- (-0.8,1) -- (-0.8,11) -- (memory.west);
+\node[label,rotate=90] at (-0.8,6) {Results for the next trade};
 \end{tikzpicture}
+\par\vspace{3mm}
+\raggedright\small\color{muted}
+Our buyer pays other shops through the course kit. Other buyers visit our seller,
+which runs its own checkout. The standalone shop uses existing stock.
 \par\vspace{2mm}
-\raggedright\scriptsize\color{muted}
-Deployment scope: the original kit runs the buyer and model-driven restocking.
-The standalone seller serves its own ACP checkout and uses existing stock.
-Each role trades with external agents.
-Shared stocking allowance is 4,000,000 credits, one unit per selected SKU.
-\par\vspace{1mm}
 Editable draft prepared with Codex assistance. Student review and personalization pending.
 \end{document}
