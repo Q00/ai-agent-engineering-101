@@ -456,6 +456,12 @@ def guard(buy, inv, catalog, cfg, breaks=None, waiting=()):
         held += w["worst"] * w["qty"]
         food += w["worst"] * w["qty"] if kind(w["sku"]) == "food" else 0
     room = cfg.get("max_stock_cost", float("inf")) - held
+    # restock_sellable_slots stock_cap: the extras' stock room after the stock held, on its way and today's lines
+    stock_left = float("inf")
+    if sellable is not None and sellable.get("stock_cap") is not None:
+        stock_left = sellable["stock_cap"] - held - sum(
+            worst(x["sku"], x["qty"], catalog, surge(inv)) * x["qty"] for x in base
+            if (catalog.get(x["sku"]) or {}).get("list_price"))
     food_room = cfg.get("food_max_stock_cost", float("inf")) - food
     spare = min(balance - cfg["keep_cash"], hard_limits.spendable(balance, cfg.get("cash_buffer", hard_limits.STOP_BUYING_BELOW))) \
         - sum(w["worst"] * w.get("cash_qty", w["qty"]) for w in waiting)
@@ -504,11 +510,15 @@ def guard(buy, inv, catalog, cfg, breaks=None, waiting=()):
             each = worst(b["sku"], capped, catalog, factors) * (1 + hard_limits.BUY_STORAGE)
             free = balance - spent - sellable["cash_floor"]
             extra = min(capped - plain, max(0, int(free // each)) if each > 0 else 0)
+            stocked = worst(b["sku"], capped, catalog, factors)
+            if stock_left < float("inf"):
+                extra = min(extra, max(0, int(stock_left // stocked)) if stocked > 0 else 0)
             if extra < capped - plain:
                 print(f"[restock] guard: {b['sku']} sellable_slots {capped - plain} -> {extra} over today's room "
-                      f"(cash floor {sellable['cash_floor']:.0f})", file=sys.stderr)
+                      f"(cash floor {sellable['cash_floor']:.0f}, stock cap {sellable.get('stock_cap')})", file=sys.stderr)
             capped = plain + extra
             spent += each * extra       # today's part of the line is in spent already
+            stock_left -= stocked * extra
         # priced on the capped line, not the line the cash leaves: a few won high at most, never low
         unit = worst(b["sku"], capped, catalog, factors) if x.get("list_price") else float("inf")
         paid = unit * (1 + hard_limits.BUY_STORAGE)      # the cash a unit takes: its cost and the storage it adds

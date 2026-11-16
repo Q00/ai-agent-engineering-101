@@ -25,11 +25,18 @@ The rule (on: every listed goods SKU with a target, no arms; the trial is read a
   calls go to the lines that net most: unit_net = list x (market price ratio x (1 - break) - expected cost share) x
   fresh_sell (0.39: the share of A draws sold within 6 h above) for goods, list x (ratio - 0.50) for food (sold within
   its shelf, none expired). A refill the model has no row for goes after them in today's order.
+- stock_cap (optional, W-20261116-1105-AX재고): the extra units also stop where the stock cost held, on its way and in
+  the run's lines before them (today's lines first, at worst cost as guard counts them) reaches stock_cap; today's
+  room is not held to it. Why: sellable-slots-1115b (11/15 22:51 - 11/16 10:51) bought 42.2 goods units/h and sold
+  36.3/h, stock cost 3.29 -> 4.00억 (865 units), since the dear draws the rule leaves out of the count (A at 0.70+ of
+  list: 82 bought, 14 sold in the 12 h) never leave the shelf at their floor; a cap at the stock held lets the extras
+  replace what sells and no more. Absent or null: no cap, as the 11/15 runs.
 Only the target reads the count: max_units_per_sku and the high-price and surge caps still count every unit held, and
 the cash buffer, stock cost and break guards apply as before. Prices and floors are not touched: nothing sells cheaper.
 
 Switch: .market/restock_sellable_slots.json {"enabled": true, "study": "<id>", "hours": 6, "dear_share": 0.70,
-"dear_hours": 1, "hold_times": 3, "cash_floor": 100000000, "fresh_sell": 0.39, "start_at": <epoch>, "stop_at": <epoch>};
+"dear_hours": 1, "hold_times": 3, "cash_floor": 100000000, "fresh_sell": 0.39, "start_at": <epoch>, "stop_at": <epoch>,
+"stock_cap": <won or null>};
 on only in [start_at, stop_at), at most MAX_WINDOW_HOURS. Missing, unreadable, a bad value or time is off, and off is
 today's count exactly. RESTOCK_SELLABLE_SLOTS=0 in the environment is off too. Write it with switch_on(). Read at
 every restock run (a new process each time): no restart either way. With it on, restock_fresh_slots is not read.
@@ -53,6 +60,7 @@ EXPECTED_COST = {"food": 0.50, "goods": 0.59}           # restock.EXPECTED_COST
 MAX_SURGE = 1.05
 FAST_FOOD_HOURS = 0.5      # a held food lasting less goes before the goods refills (urgent_listed)
 MAX_WINDOW_HOURS = 12
+STOCK_CAP_HIGH = 10 ** 12  # stock_cap: the stock cost (held + on its way + this run, at worst cost) the extras stop at
 
 
 def _num(v):
@@ -66,6 +74,7 @@ def _valid(d, now):
     study, start, stop = d.get("study"), d.get("start_at"), d.get("stop_at")
     hours, dear, dear_h = g("hours", HOURS), g("dear_share", DEAR), g("dear_hours", DEAR_HOURS)
     hold, floor_, sell = g("hold_times", HOLD_TIMES), g("cash_floor", CASH_FLOOR), g("fresh_sell", FRESH_SELL)
+    cap = d.get("stock_cap")
     if not (isinstance(study, str) and study) \
             or not (_num(hours) and HOURS_LOW <= hours <= HOURS_HIGH) \
             or not (_num(dear) and DEAR_LOW <= dear <= DEAR_HIGH) \
@@ -73,11 +82,13 @@ def _valid(d, now):
             or not (type(hold) is int and HOLD_LOW <= hold <= HOLD_HIGH) \
             or not (_num(floor_) and floor_ >= CASH_FLOOR_LOW) \
             or not (_num(sell) and FRESH_LOW <= sell <= FRESH_HIGH) \
+            or not (cap is None or (_num(cap) and 0 < cap <= STOCK_CAP_HIGH)) \
             or not (_num(start) and _num(stop) and 0 < start < stop <= start + MAX_WINDOW_HOURS * 3600) \
             or not _num(now) or not start <= now < stop:
         return None
     return {"study": study, "hours": float(hours), "dear_share": float(dear), "dear_hours": float(dear_h),
-            "hold_times": hold, "cash_floor": float(floor_), "fresh_sell": float(sell), "start_at": start, "stop_at": stop}
+            "hold_times": hold, "cash_floor": float(floor_), "fresh_sell": float(sell), "start_at": start, "stop_at": stop,
+            "stock_cap": cap}
 
 
 def config(md=None, env=None, now=None):
@@ -97,12 +108,12 @@ def config(md=None, env=None, now=None):
 
 
 def switch_on(md, *, study, start_at, hours, stuck_hours=HOURS, dear_share=DEAR, dear_hours=DEAR_HOURS,
-              hold_times=HOLD_TIMES, cash_floor=CASH_FLOOR, fresh_sell=FRESH_SELL):
+              hold_times=HOLD_TIMES, cash_floor=CASH_FLOOR, fresh_sell=FRESH_SELL, stock_cap=None):
     """Write the switch for [start_at, start_at + hours) atomically (0600); ValueError leaves the old file as it was."""
     stop_at = start_at + hours * 3600 if _num(hours) and _num(start_at) else None
     d = {"enabled": True, "study": study, "hours": stuck_hours, "dear_share": dear_share, "dear_hours": dear_hours,
          "hold_times": hold_times, "cash_floor": cash_floor, "fresh_sell": fresh_sell, "start_at": start_at,
-         "stop_at": stop_at}
+         "stop_at": stop_at, "stock_cap": stock_cap}
     if _valid(d, start_at) is None:
         raise ValueError("restock_sellable_slots: bad switch")
     path = Path(md) / SWITCH
