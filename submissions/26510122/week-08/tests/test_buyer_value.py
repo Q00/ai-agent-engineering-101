@@ -51,3 +51,48 @@ class ValueTests(unittest.TestCase):
   self.assertEqual(row['unrefunded_within_6h'],1)
   later=dict(failure,at=now-3600)
   self.assertEqual(b.profiles([sale,later],now=now)['shop_sku'][('S','G')]['unrefunded_within_6h'],0)
+
+
+class ExecutionTests(unittest.TestCase):
+ def task(self,message='',receipt=None):
+  t={'id':'t','status':{'state':'TASK_STATE_COMPLETED' if receipt else 'TASK_STATE_INPUT_REQUIRED','message':{'parts':[{'text':message}]}}}
+  if receipt:t['artifacts']=[{'parts':[{'data':receipt}]}]
+  return t
+ def test_overpriced_uncovered_counter_walks_after_one_bounded_offer(self):
+  from unittest.mock import patch
+  import buyer_r3 as buyer
+  terms={'max_price_without_warranty':100,'max_price_with_6h_warranty':140}
+  replies=[self.task('asking 200; no warranty'),self.task('counteroffer 190; no warranty')]
+  with patch.object(buyer,'card_endpoint',return_value='endpoint'),patch.object(buyer,'send',side_effect=replies) as send,patch.object(buyer,'decide_json',side_effect=AssertionError('no extra model')):
+   result=buyer.negotiate('url','G','Goods',{'kind':'goods'},opening_offer=150,cap=250,list_price=500,memory={'purchase_value_terms':terms},deadline=time.monotonic()+200)
+  self.assertEqual(result['offers'],[100]);self.assertIsNone(result['receipt']);self.assertIn('terms unavailable',result['reason']);self.assertEqual(send.call_count,2)
+ def test_quoted_cover_cannot_substitute_for_actual_receipt_cover(self):
+  from unittest.mock import patch
+  import buyer_r3 as buyer
+  terms={'max_price_without_warranty':100,'max_price_with_6h_warranty':140}
+  receipt={'price':130,'item':'G','task':'t','unit':'u','claim':'A','cert':True,'sig_seller':'test'}
+  for hours,valid in [(0,False),(6,True)]:
+   replies=[self.task('asking 130; warranty 6 h'),self.task('Done',dict(receipt,warranty_hours=hours))]
+   with patch.object(buyer,'card_endpoint',return_value='endpoint'),patch.object(buyer,'send',side_effect=replies):
+    result=buyer.negotiate('url','G','Goods',{'kind':'goods'},opening_offer=130,cap=250,list_price=500,memory={'purchase_value_terms':terms},deadline=time.monotonic()+200)
+   self.assertEqual(result['receipt'] is not None,valid)
+ def test_caller_rechecks_value_and_fallback_gets_own_terms_and_time(self):
+  import tempfile,os
+  from pathlib import Path
+  from unittest.mock import patch
+  import market_buyer_r3 as buyer
+  from buyer_memory import PreparedHistory
+  base={'name':'Goods','sku':'G','cap':250,'list_price':500,'stock':1,'category':'goods','kind':'goods','listed_shelf_hours':None,'paid':10,'refusals':0,'score_evidence':{'saved_if_usable_at_cap':.8},'first_hand':{},'price_guidance':{},'routing_evidence':{},'risk_policy':{}}
+  first={**base,'id':'0','shop':'risk','url':'https://risk','value_terms':{'target_saved':.8,'max_price_without_warranty':100,'max_price_with_6h_warranty':140}}
+  other={**base,'id':'1','shop':'other','url':'https://other','value_terms':{}}
+  calls=[]
+  def negotiate(url,sku,name,order,**kw):
+   calls.append((url,dict(order),kw));return {'offers':[130],'task_id':'t','receipt':{'price':130,'item':'G','task':'t','unit':'u','claim':'A','cert':True,'sig_seller':'test'}}
+  with tempfile.TemporaryDirectory() as directory:
+   previous=Path.cwd();os.chdir(directory)
+   try:
+    with patch.object(buyer,'read_history',return_value=PreparedHistory([])),patch.object(buyer,'candidates',return_value=[first,other]),patch.object(buyer,'choose',return_value=(first,130)),patch.object(buyer,'negotiate',side_effect=negotiate),patch.object(buyer.buyer_forum_memory,'ingest'),patch.object(buyer.buyer_forum_memory,'retrieve',return_value={}):
+     result=buyer.run({'order':'o','item':'goods','kind':'goods','acceptable':['G'],'budget':500,'expires':time.time()+600},[],{'G':{'list_price':500}},'own',epsilon=0)
+   finally:os.chdir(previous)
+  self.assertEqual(result['shop'],'https://other');self.assertEqual(len(calls),2);self.assertNotIn('warranty_hours',result['accept'])
+  self.assertLessEqual(calls[0][2]['deadline']-time.monotonic(),80)

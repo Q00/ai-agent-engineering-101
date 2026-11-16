@@ -21,6 +21,7 @@ import buyer_exploration
 import buyer_forum_memory
 import buyer_checkout_memory
 import buyer_breakage
+import buyer_value
 from market_scoring import (buyer_candidate,buyer_cost_reference,BUYER_WEIGHTS,SAVED_CONTRACT,VERSION,
                             BUYER_RANKING_VERSION,BUYER_SCORE_SCALES,BUYER_ALL_CONTRACT)
 import decision_audit as audit
@@ -94,6 +95,12 @@ def candidates(order: dict, shops: list[dict], catalog: dict,
         choice['risk_policy']=buyer_breakage.purchase_policy(quality,order.get('kind'),
             saving=choice['price_guidance'].get('saved_if_usable_at_reference',choice['score_evidence']['saved_if_usable_at_cap']),
             saved_baseline=saved_baseline)
+        value=buyer_value.terms(order.get('kind'),choice['list_price'],choice['cap'],
+            choice['price_guidance'].get('cost_reference'),quality,saved_baseline)
+        choice['value_terms']=value
+        if value:
+            choice['risk_policy']={**choice['risk_policy'],'required_warranty_hours':value['required_warranty_hours']}
+            choice['price_guidance']['risk_price_terms']=buyer_value.summary(value)
     found, held, probe = buyer_checkout_memory.filter_candidates(found,order,history)
     record('checkout_cache_summary',order=order.get('order'),allowed=len(found),
            held=len(held),guarded_probe=probe is not None)
@@ -109,9 +116,6 @@ def candidates(order: dict, shops: list[dict], catalog: dict,
         saving=choice['price_guidance'].get('saved_if_usable_at_reference',
                                            choice['score_evidence']['saved_if_usable_at_cap'])
         quality=buyer_breakage.for_choice(history.breakage_profiles,choice['shop'],choice['sku']) if order.get('kind')=='goods' else None
-        choice['risk_policy']=buyer_breakage.purchase_policy(quality,order.get('kind'),
-            saving=choice['price_guidance'].get('saved_if_usable_at_reference',choice['score_evidence']['saved_if_usable_at_cap']),
-            saved_baseline=saved_baseline)
         choice['routing_evidence']=routing_evidence(routes.get((choice['shop'],choice['sku'])),saving,quality)
         if choice['risk_policy']:
             choice['routing_evidence']['purchase_risk_policy']=choice['risk_policy']
@@ -143,7 +147,7 @@ def selection_price_guidance(guidance):
     if not guidance:
         return None
     result={k:guidance[k] for k in ('paid_sample_72h','median_paid','suggested_maximum',
-            'reference_source','saved_if_usable_at_reference') if k in guidance}
+            'reference_source','saved_if_usable_at_reference','risk_price_terms') if k in guidance}
     cost=guidance.get('cost_reference') or {}
     if cost:
         result['cost_reference']={k:cost[k] for k in ('unit_cost','cost_share','estimated') if k in cost}
@@ -201,7 +205,7 @@ def choose(candidates_: list[dict], order: dict, *, forced_candidate_id: str | N
         candidates_=[c for c in candidates_ if c['id']==forced_candidate_id]
     if not candidates_:
         raise ValueError('no candidate is available for this selection')
-    audit.begin('buyer_selection',policy_version='buyer-saved-v6')
+    audit.begin('buyer_selection',policy_version='buyer-saved-v7')
     displayed = [{**{key: row[key] for key in ("id", "list_price",
                                               "cap", "stock")},
                   'shop':text(row['shop'],80),'sku':text(row['sku'],80),
@@ -252,7 +256,10 @@ def choose(candidates_: list[dict], order: dict, *, forced_candidate_id: str | N
         'the debit-adjusted usable Saved at the reference price is compared with the displayed score. '
         'These are conditional estimates, not known private costs or calibrated risks. Compare adjusted Saved and settlement chance '
         'across alternatives; do not prefer an unprotected cheap price merely for its discount. '
-        'Refunds prevent minus one but still contribute zero; current cover must be verified, not assumed.')
+        'Refunds prevent minus one but still contribute zero; current cover must be verified, not assumed. '
+        'risk_price_terms are operator stress bounds on conditional private-cost scenarios: compare the cheaper '
+        'no-cover price with the >=6h-cover price; do not exceed either applicable branch. The .80 target and '
+        '.05 cushion are policy hypotheses, not official score thresholds. An impossible branch requires another candidate.')
     commercial_objective = prompt['objective']
     if forum_context and (forum_context.get('posts') or forum_context.get('reference_prices')):
         prompt['public_forum_memory']=forum_context
@@ -414,7 +421,7 @@ def _run(order: dict, shops: list[dict], catalog: dict, own_shop_name: str, *,
            saved_if_usable_at_cap=chosen['score_evidence']['saved_if_usable_at_cap'],
            candidate_id=chosen['id'],shop_name=chosen['shop'],shop=chosen['url'],sku=chosen['sku'],
            opening_offer=first_offer,price_guidance=chosen.get('price_guidance'),
-           routing_evidence=chosen.get('routing_evidence'),routing_policy='buyer-routing-v5',
+           routing_evidence=chosen.get('routing_evidence'),routing_policy='buyer-routing-v6',
            note='A selected or signed receipt is not a paid purchase. Uniform exploration may pick a familiar candidate.')
     fallback = next((c for c in available if c["url"] != chosen["url"]), None)
     attempts = [(chosen, first_offer)]
@@ -468,7 +475,10 @@ def _run(order: dict, shops: list[dict], catalog: dict, own_shop_name: str, *,
             attempt_started=time.monotonic()
             attempt_deadline=deadline
             if index==0 and fallback and deadline-attempt_started>=160:
-                attempt_deadline=deadline-85
+                attempt_deadline=min(deadline-85,attempt_started+80)
+            if choice.get('value_terms'):
+                record('buyer_value_policy',order=order.get('order'),shop_name=choice['shop'],sku=choice['sku'],
+                       attempt_index=index,**choice['value_terms'])
             record('negotiation_budget',order=order.get('order'),attempt_index=index,
                    seconds=round(attempt_deadline-attempt_started,1),
                    fallback_reserved_seconds=round(deadline-attempt_deadline,1))
@@ -478,9 +488,11 @@ def _run(order: dict, shops: list[dict], catalog: dict, own_shop_name: str, *,
                                 deadline=attempt_deadline,on_message=log_message,
                                 buyer_name=own_shop_name,seller_name=choice['shop'])
             final_offer = outcome["offers"][-1] if outcome["offers"] else 0
+            attempt_order,value_problem=buyer_value.receipt_terms(choice.get('value_terms'),outcome.get('receipt'),attempt_order)
             problem = receipt_problem(outcome.get("receipt"), selected_sku=choice["sku"],
                                       order=attempt_order, final_offer=final_offer,
                                       task_id=outcome.get("task_id"), cap=choice["cap"])
+            problem=value_problem or problem
             record("negotiation", order=order.get("order"), shop=choice["url"],shop_name=choice['shop'],
                    selection_id=selection_id,attempt_index=index,policy_mode=policy_mode,
                    primary_policy_mode=policy['mode'],
@@ -494,6 +506,7 @@ def _run(order: dict, shops: list[dict], catalog: dict, own_shop_name: str, *,
                    duration_seconds=round(time.monotonic()-attempt_started,3),
                    order_kind=order.get('kind'),use_within_hours=order.get('use_within_hours'),
                    risk_required_warranty_hours=attempt_order.get('required_warranty_hours',0),
+                   risk_price_terms=buyer_value.summary(choice.get('value_terms') or {}),
                    receipt_warranty_hours=(outcome.get('receipt') or {}).get('warranty_hours',0),
                    last_seller_message=outcome.get('last_seller_message'),
                    transcript=outcome.get('transcript',[]))

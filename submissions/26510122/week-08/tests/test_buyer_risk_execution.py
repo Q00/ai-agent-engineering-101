@@ -87,6 +87,8 @@ class RiskContextTests(unittest.TestCase):
   for i in range(16):
    policy=b.purchase_policy(evidence,'goods',saving=.82,saved_baseline={'saved':.731});route=routing_evidence(None,.82,evidence);route['purchase_risk_policy']=policy
    rows.append({'id':str(i),'shop':f'shop-{i}','sku':f'G{i}','name':'침구 상품','list_price':100000,'cap':75000,'stock':3,'reviews':buyer.review_summary([]),'first_hand':{'shop_payment_count':100,'same_sku_payment_outcomes':{'paid':90,'refused':10},'verified_breakage_evidence':evidence,'cases':[]},'routing_evidence':route,'score_evidence':buyer_candidate(100000,75000,cost_reference=cost),'price_guidance':purchase_price_guidance(75000,(65000,68000,70000),list_price=100000,saved_baseline={'saved':.731,'observed_at':1000},cost_reference=cost)})
+  import buyer_value
+  for row in rows:row['price_guidance']['risk_price_terms']=buyer_value.summary(buyer_value.terms('goods',100000,75000,cost,evidence,{'saved':.731}))
   with patch.object(buyer,'decide_json',return_value={'candidate_id':'0','opening_offer':60000,'reason':'compare risk'}) as model:
    buyer.choose(rows,{'kind':'goods','item':'침구'})
   prompt=model.call_args.args[1]

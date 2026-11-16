@@ -13,6 +13,7 @@ from harness import decide_json, trace
 from context_compaction import MAX_TURNS, text
 import buyer_identity
 import buyer_breakage
+import buyer_value
 from buyer_policy import acceptance, quote_shelf_minimum
 from market_scoring import saved_at_price
 import decision_audit as audit
@@ -232,6 +233,7 @@ def negotiate(shop_url: str, sku: str, name: str, order: dict, *, opening_offer:
               buyer_name: str | None = None,seller_name: str | None = None) -> dict:
     """Return a received receipt and final offer, or a concrete failure reason."""
     offered: list[int] = []
+    value_terms=(memory or {}).get('purchase_value_terms') or {}
     transcript: list[dict] = []
     key=buyer_identity.load_key() if buyer_name and seller_name else None
     identity={'key':key,'name':buyer_name,'recipient':seller_name} if key is not None else None
@@ -253,6 +255,12 @@ def negotiate(shop_url: str, sku: str, name: str, order: dict, *, opening_offer:
                 break
             message = status_text(task)
             remember('seller',message,task.get('id'))
+            value_cap=buyer_value.quote_cap(value_terms,message,acceptance(order).get('warranty_hours',0))
+            if value_terms and (not value_cap or offered and offered[-1]>=value_cap and (asking_price(message) or 0)>value_cap):
+                trace('buyer_value_walk',sku=sku,reason='price/cover terms infeasible',value_cap=value_cap)
+                return {'receipt':None,'reason':'risk-adjusted price/warranty terms unavailable','offers':offered,
+                        'task_id':task.get('id'),'last_seller_message':message[:250],'transcript':transcript}
+            current_cap=min(cap,value_cap) if value_terms else cap
             problem=quoted_condition_problem(message,order)
             if problem:
                 if corrected or deadline-time.monotonic()<30:
@@ -272,8 +280,11 @@ def negotiate(shop_url: str, sku: str, name: str, order: dict, *, opening_offer:
                 offer = min(opening_offer, ask) if ask is not None and ask <= opening_offer else opening_offer
                 if offer != opening_offer:
                     audit.guard('seller_ask_below_opening_offer',selected_offer=opening_offer,effective_price=offer)
+                if offer>current_cap:
+                    audit.guard('risk_adjusted_price_ceiling',proposed_price=offer,effective_price=current_cap)
+                    offer=current_cap
             else:
-                offer = followup_offer(message=message, last_offer=offered[-1], cap=cap,
+                offer = followup_offer(message=message, last_offer=offered[-1], cap=current_cap,
                                        sku=sku, list_price=list_price, memory=memory, deadline=deadline,
                                        history=transcript,
                                        offers_remaining=3-turn)
@@ -283,7 +294,7 @@ def negotiate(shop_url: str, sku: str, name: str, order: dict, *, opening_offer:
                 audit.executed('walk',status='applied',reason='walked away or order deadline reached')
                 return {"receipt": None, "reason": "walked away or order deadline reached",
                         "offers": offered, "task_id": task.get("id"),'transcript':transcript}
-            offer = min(cap, max(1, int(offer)))
+            offer = min(current_cap, max(1, int(offer)))
             offered.append(offer)
             remember('buyer',str(offer),task.get('id'))
             trace("buyer_offer", sku=sku, shop=shop_url, offer=offer, turn=turn)
@@ -292,7 +303,9 @@ def negotiate(shop_url: str, sku: str, name: str, order: dict, *, opening_offer:
             turn+=1
         if status(task)=='TASK_STATE_INPUT_REQUIRED' and offered:
             message=status_text(task)
-            closing=final_price_review(message,offered[-1],cap,list_price,memory,order,deadline)
+            value_cap=buyer_value.quote_cap(value_terms,message,acceptance(order).get('warranty_hours',0))
+            closing=(final_price_review(message,offered[-1],min(cap,value_cap) if value_terms else cap,
+                                       list_price,memory,order,deadline) if not value_terms or value_cap else None)
             if closing is not None:
                 remember('seller',message,task.get('id'))
                 offered.append(closing)
@@ -300,7 +313,8 @@ def negotiate(shop_url: str, sku: str, name: str, order: dict, *, opening_offer:
                 task=send(client,endpoint,str(closing),deadline,task.get('id'),identity=identity)
                 audit.executed('offer',price=closing,turn='final_review')
         receipt = get_receipt(task) if status(task) == "TASK_STATE_COMPLETED" else None
-        preflight_problem=None
+        order,value_problem=buyer_value.receipt_terms(value_terms,receipt,order)
+        preflight_problem=value_problem
         if receipt:
             required=acceptance(order).get('warranty_hours',0)
             cover=receipt.get('warranty_hours',0)

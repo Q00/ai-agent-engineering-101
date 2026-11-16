@@ -12,7 +12,7 @@ import subprocess
 import time
 
 ROOT = Path(__file__).resolve().parents[1]
-FILES = ('buyer_breakage.py','market_buyer_r3.py', 'buyer_r3.py', 'buyer_policy.py', 'buyer_memory.py','market_scoring.py','decision_audit.py',
+FILES = ('buyer_value.py','buyer_breakage.py','market_buyer_r3.py', 'buyer_r3.py', 'buyer_policy.py', 'buyer_memory.py','market_scoring.py','decision_audit.py',
          'buyer_identity.py', 'buyer_exploration.py', 'harness.py', 'context_compaction.py', 'review_r3.py','buyer_forum_memory.py','buyer_checkout_memory.py')
 NAME = 'outseop-26510122'
 STOP = False
