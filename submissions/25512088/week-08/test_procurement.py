@@ -539,7 +539,7 @@ class PurchaseTests(unittest.TestCase):
               own_sales_total=0,dominant_grade_samples=5,
               dominant_grade_profit_probability=.65)
   policy={'max_sku_capital_share':1,'max_units_per_sku':3,
-          'max_high_value_units_per_sku':1,
+          'max_high_value_units_per_sku':2,
           'high_value_lane_min_unit_cost':500000,
           'high_value_canary_window_limit':1,
           'min_goods_a_profit_samples':3,
@@ -628,6 +628,22 @@ class PurchaseTests(unittest.TestCase):
         'balance':2000000}
   self.assertEqual(allocation_plan([high],held,2000000,aggression=4,
                                    policy=policy),[])
+ def test_proven_high_value_sku_can_scale_to_two_when_sold_out(self):
+  high=dict(sku='high',kind='goods',expected_net=200000,score=1000,
+            upper_cost=1500000,sales_1h=4,sales_6h=24,
+            distinct_buyers_6h=8,estimated_sale_likelihood=.43,
+            own_sales_1h=3,own_sales_total=5,own_gross_total=689570,
+            own_profitable_sales=5,dominant_grade_samples=13,
+            dominant_grade_profit_probability=.6825)
+  policy={'max_units_per_sku':3,'max_sku_capital_share':1,
+          'high_value_lane_min_unit_cost':500000,
+          'max_high_value_units_per_sku':2,
+          'high_value_window_limit':4,
+          'min_high_value_restock_grade_samples':3,
+          'min_high_value_restock_grade_profit_probability':.60}
+  plan=allocation_plan([high],{'units':[],'balance':5000000},5000000,
+                       aggression=4,policy=policy)
+  self.assertEqual([(row['sku'],row['qty']) for row in plan],[('high',2)])
  def test_sold_out_proven_sku_scales_during_breadth_expansion(self):
   ranked=[dict(sku='proven',kind='goods',expected_net=10000,score=100,upper_cost=100,
                sales_1h=12,sales_6h=24,own_sales_1h=2,own_sales_total=2,
