@@ -152,11 +152,13 @@ def reputation_risk(shop: dict[str, Any], memory: dict[str, Any]) -> float:
 
 def safe_accept_policy(order: dict[str, Any]) -> dict[str, Any]:
     """Kit v4 validates certificate, shelf life, grade and warranty at checkout."""
-    is_food = str(order.get("kind", "")).lower() == "food"
-    # For FOOD, market-verified shelf life is the relevant usability
-    # constraint. A C-grade unit is safe to consider when it demonstrably
-    # outlasts the buyer's use_within_hours requirement. Do not relax
-    # the expiration check to gain extra transactions.
+    # The real kit-v4 order.json contains category/item, acceptable SKUs,
+    # and use_within_hours; it does not reliably include a "kind" field.
+    # Identify perishable food from the expiry constraint, not only kind.
+    is_food = (str(order.get("kind", "")).lower() == "food"
+               or order.get("use_within_hours") is not None)
+    # Market checkout still independently verifies certificate, claimed
+    # grade, and usable shelf life. Never relax those checks to buy more.
     policy: dict[str, Any] = {"cert": True, "grades": ["A", "B", "C"] if is_food else ["A", "B"]}
     if is_food:
         needed = float(order.get("use_within_hours") or 0)
