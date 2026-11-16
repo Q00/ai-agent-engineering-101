@@ -11,6 +11,15 @@ from seller_ledger import Program
 
 
 class SellerIntegrationTests(unittest.IsolatedAsyncioTestCase):
+    def test_review_price_experiment_selects_lower_cost_same_grade_unit(self):
+        units=[
+            dict(unit='old-high',sku='Ged5b1b82',name='bed',grade='A',kind='goods',
+                 cost=180000,supplied_at=1),
+            dict(unit='new-low',sku='Ged5b1b82',name='bed',grade='A',kind='goods',
+                 cost=130000,supplied_at=2),
+        ]
+        self.assertEqual(seller.select_unit('Ged5b1b82',units,set())['unit'],'new-low')
+
     def test_open_quotes_soft_distribute_without_hiding_units(self):
         units=[dict(unit='u1',sku='G00001',name='item',category='food',grade='A',expires_at=None,supplied_at=1),
                dict(unit='u2',sku='G00001',name='item',category='food',grade='A',expires_at=None,supplied_at=2)]

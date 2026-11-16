@@ -40,6 +40,7 @@ STATE = Path(os.environ.get('MARKET_DIR', '.market'))
 CHECKOUT_CONDITION_BUFFER_SECONDS = 60
 DEFAULT_UNSPECIFIED_FOOD_HOURS = 48
 SELLER_VERSION = '1.3.1'
+PRICE_EXPERIMENT_SKUS = {'Ged5b1b82'}
 
 
 def sign(receipt):
@@ -143,7 +144,8 @@ def select_unit(text, units, reserved, soft_counts=None, prefer_c=False):
     overstocked=bool(named and sum(u.get('sku')==named[0].get('sku') for u in valid)>=8)
     grade_order=({'C':0,'B':1,'A':2} if prefer_c else {'B':0,'C':1,'A':2})
     return min(fits, key=lambda u: (grade_order.get(u.get('grade'),3),
-        u.get('cost',0) if overstocked else 0,soft_counts.get(u['unit'],0),
+        u.get('cost',0) if overstocked or u.get('sku') in PRICE_EXPERIMENT_SKUS else 0,
+        soft_counts.get(u['unit'],0),
         u.get('expires_at') or float('inf'),u.get('supplied_at',0)),default=None)
 
 
