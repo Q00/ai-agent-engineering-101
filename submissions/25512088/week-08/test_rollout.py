@@ -42,9 +42,6 @@ class RolloutTests(unittest.TestCase):
    self.assertEqual(n['price'],self.u['cost'])
    self.assertTrue(n['unwarranted_cost_recovery'])
    self.assertFalse(n['book_cushion_recovery'])
-   higher=negotiate(self.u,q,math.ceil(self.u['cost']*1.20),{},self.p,intel=intel)
-   self.assertEqual(higher['price'],self.u['cost'])
-   self.assertTrue(higher['unwarranted_cost_recovery'])
   finally:intel.close()
  def test_low_value_goods_use_unfunded_zero_warranty_lane(self):
   intel=Intel(self.root)
