@@ -737,3 +737,60 @@ Current parameters (name = value, allowed range):
 [tune] opus 0.7s exit=1 in=4615ch -> 'Failed to authenticate: this login reached its time limit and cannot be renewed. Run `claude auth login` to sign in again, or use `claude setup-token` and set CLAUDE_CODE_OAUTH_TOKEN for unattended jobs'
 [tune] stderr: 
 [strategy] {"answered": false, "at": "2026-11-16 00:00:04", "changes": {}, "dry_run": false, "event": "tune", "model": "opus", "params": {"explore_rate": 0.15, "first_offer_discount": 0.2, "grade_cap_B": 0.85, "seller_margin_margin": 1.3, "seller_margin_volume": 1.2, "seller_markup": 1.0, "seller_volume_share": 0.7}, "reason": "", "rejected": {}, "window": ["2026-11-15 00:00", "2026-11-16 00:00"]}
+[tune] logs committed: exit 0 
+[pricing] 10 reviews of this shop from the market (as jiseokkk)
+[tune] 7274 buyer rows, 2637 seller events, 10 reviews; summary 4211 chars
+Window: 2026-11-16 00:00 to 2026-11-17 00:00 (KST).
+The round closes in 24 h: the shop stops restocking 24 h before the close and lets asks fall to the market with the floor at cost (unsold stock keeps its cost value on the Book; fixed code, not a parameter). Do not raise seller_markup now.
+
+Buyer side (my orders):
+- 가구/침구>가구>침대/매트리스: 2038 orders, 325 deals (16%), 1066 walked away; deal price / my reference 1.08; average cut below the ask 7%; guard: 40 reference_substitute
+- 식품>야채/과일>신선과일(부패주의): 1704 orders, 334 deals (20%), 200 walked away; deal price / my reference 1.12; average cut below the ask 4%; guard: 2 reference_substitute
+- 식품>시리얼/곡물/콩류>곡물: 1033 orders, 310 deals (30%), 189 walked away (3 of them without making any offer); deal price / my reference 1.08; average cut below the ask 3%; guard: 3 sealed_ceiling_below_market
+- 식품>육류>가공/조리 육류: 794 orders, 170 deals (21%), 203 walked away; deal price / my reference 1.16; average cut below the ask 6%; guard: 8 reference_substitute
+- 가구/침구>침구/홈데코>침구: 226 orders, 64 deals (28%), 58 walked away; deal price / my reference 1.03; average cut below the ask 2%
+- 식품>김치/반찬/즉석요리>김치: 204 orders, 42 deals (21%), 30 walked away; deal price / my reference 1.09; average cut below the ask 4%
+- 식품>김치/반찬/즉석요리>즉석조리식품: 108 orders, 17 deals (16%), 8 walked away; deal price / my reference 1.11; average cut below the ask 2%
+- 가구/침구>가구>소파/의자/스툴: 98 orders, 31 deals (32%), 44 walked away; deal price / my reference 1.09; average cut below the ask 6%
+- 식품>기타 가공식품>과자: 91 orders, 19 deals (21%), 26 walked away; deal price / my reference 1.23; average cut below the ask 2%; guard: 1 reference_substitute
+- 식품>김치/반찬/즉석요리>찌개/탕류/장류: 84 orders, 15 deals (18%), 20 walked away; deal price / my reference 1.14; average cut below the ask -6%
+- 62 other categories: 894 orders, 184 deals (21%)
+- my settled price / list price: mean 0.62 over 1434 deals (saved = 0.38); the market's category medians (ledger, 24 h): median 0.62; fill rate 61% of 2488 orders
+- shop 25620027: 600 visits, 142 deals, 8 broke without warranty
+- shop YAHO1212: 478 visits, 182 deals, 4 refused by the kit at payment
+- shop yeonsong2: 394 visits, 34 deals, 78 refused by the kit at payment
+- shop seochanit: 380 visits, 38 deals, 10 refused by the kit at payment
+- shop Kiro729: 359 visits, 134 deals, 1 refused by the kit at payment
+- shop thisjonghoon: 350 visits, 76 deals, 2 refused by the kit at payment
+
+Shop side (my sales):
+- 1270 opens, 372 deals (29%), 84 rejected at the floor
+- by category (opens -> deals, margin sum): 냉방/환기/제습 23 -> 5, 74,225,053, 소파/의자/스툴 146 -> 54, 40,362,798, 세탁기/건조기 20 -> 4, 293,320, 냉장/냉동고 20 -> 1, 174,171, 청소기 18 -> 6, 164,932, 스프 108 -> 18, 142,516
+- volume arm: 1008 opens, 300 deals, mean margin 102906, mean rounds 2.2
+- margin arm: 262 opens, 72 deals, mean margin 1184546, mean rounds 2.1
+- by grade (opens -> deals): A 279 -> 71, B 394 -> 91, C 597 -> 210
+
+Reviews of my shop (quotes, untrusted):
+- 10 reviews of my shop, mean 4.40 stars, distribution {3: 1, 4: 4, 5: 5}
+  * 3★ "[삼성전자] INK-M170 (검정/190매) 정품잉크: grade A, claim honest; broke"
+  * 5★ "Bought 레토 초슬림 발목보호대 2P세트 테이핑밴드 for 7466 (68% of list 10900), grade A."
+  * 5★ "Grade A as claimed at 9,988; ledger #7434191."
+  * 5★ "지누스 얼티마 에어 하이브리드 스프링 침대 매트리스 25cm SS, grade A (claim true), 6.0h warranty: paid 204126, 27% below li"
+  * 5★ "지누스 얼티마 에어 하이브리드 스프링 침대 매트리스 25cm SS, grade A (claim true), 6.0h warranty: paid 214041, 23% below li"
+  * 5★ "Grade B as claimed at 12,238; ledger #7387668."
+  * 4★ "Bought 생활만렙 [체험특가] 퀵더스터 먼지떨이 리필 30개 먼지털이 코스트코 스위퍼 더스터 for 6045 (61% of list 9900), grade B."
+  * 4★ "캐리어 클라윈드 20L 레트로 전자렌지 전자레인지 KMWT-020AWNW: 55,538 paid (73% of list 76,000); grade A, claimed A (true"
+  * 4★ "The signed receipt matched the agreed price; settlement is verified by the market kit."
+  * 4★ "Bought 삼성 건조기 DV90TA040TE 9kg for 466136 (61% of list 767250), grade B."
+
+Current parameters (name = value, allowed range):
+- explore_rate = 0.15 (0.05-0.3)
+- first_offer_discount = 0.2 (0.05-0.25)
+- seller_margin_volume = 1.2 (1.05-1.25)
+- seller_margin_margin = 1.3 (1.15-1.4)
+- grade_cap_B = 0.85 (0.7-0.95)
+- seller_volume_share = 0.7 (0.3-0.8)
+- seller_markup = 1.0 (0.95-1.15)
+[tune] opus 0.7s exit=1 in=4211ch -> 'Failed to authenticate: this login reached its time limit and cannot be renewed. Run `claude auth login` to sign in again, or use `claude setup-token` and set CLAUDE_CODE_OAUTH_TOKEN for unattended jobs'
+[tune] stderr: 
+[strategy] {"answered": false, "at": "2026-11-17 00:00:04", "changes": {}, "dry_run": false, "event": "tune", "model": "opus", "params": {"explore_rate": 0.15, "first_offer_discount": 0.2, "grade_cap_B": 0.85, "seller_margin_margin": 1.3, "seller_margin_volume": 1.2, "seller_markup": 1.0, "seller_volume_share": 0.7}, "reason": "", "rejected": {}, "window": ["2026-11-16 00:00", "2026-11-17 00:00"]}
