@@ -115,7 +115,7 @@ class RolloutTests(unittest.TestCase):
   self.assertFalse(rotated['class_near_cost_trial'])
   self.assertTrue(rotated['liquidity_rotation'])
   # The persisted baseline must not refill after a sale.
-  self.p.put('liquidity_rotation_loss_baseline',-10000)
+  self.p.put('liquidity_rotation_loss_baseline',-20000)
   self.assertGreater(negotiate(
       self.u,q,7360,{},self.p,intel=Evidence(6000000))['price'],7360)
  def test_public_loss_leader_accepts_raw_cost_recovery_but_not_a_raw_loss(self):
