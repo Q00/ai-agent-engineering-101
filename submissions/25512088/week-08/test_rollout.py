@@ -57,28 +57,28 @@ class RolloutTests(unittest.TestCase):
   q=dict(base=9000,price=9000,reward=0,spent=0,member=None,referrer=None,
          benefit='none',warranty_hours=0,hazard_probability=0,
          hazard_basis='zero-warranty',loss_leader=False)
-  accepted=negotiate(self.u,q,7680,{},self.p,intel=Evidence())
-  self.assertEqual(accepted['price'],7680)
+  accepted=negotiate(self.u,q,7360,{},self.p,intel=Evidence())
+  self.assertEqual(accepted['price'],7360)
   self.assertTrue(accepted['class_near_cost_trial'])
-  self.assertEqual(accepted['class_near_cost_projected_loss'],320)
-  edge=negotiate(self.u,q,7680,{},self.p,intel=Evidence())
-  self.assertEqual(edge['price'],7680)
+  self.assertEqual(accepted['class_near_cost_projected_loss'],640)
+  edge=negotiate(self.u,q,7360,{},self.p,intel=Evidence())
+  self.assertEqual(edge['price'],7360)
   self.assertTrue(edge['class_near_cost_trial'])
   # Food is verified against its required shelf life before checkout and has
   # no post-settlement warranty liability, so the same Class guard applies.
   food=dict(self.u,kind='food')
-  food_edge=negotiate(food,q,7680,{},self.p,intel=Evidence())
-  self.assertEqual(food_edge['price'],7680)
+  food_edge=negotiate(food,q,7360,{},self.p,intel=Evidence())
+  self.assertEqual(food_edge['price'],7360)
   self.assertTrue(food_edge['class_near_cost_trial'])
-  # Below 96% of cost is never admitted.
-  self.assertGreater(negotiate(self.u,q,7679,{},self.p,intel=Evidence())['price'],7679)
+  # Below 92% of cost is never admitted.
+  self.assertGreater(negotiate(self.u,q,7359,{},self.p,intel=Evidence())['price'],7359)
   # A warranty can still refund the full price, so the raw-loss path is closed.
   warranted=dict(q,warranty_hours=6,hazard_probability=.04)
   self.assertGreater(negotiate(
-      self.u,warranted,7680,{},self.p,intel=Evidence())['price'],7680)
+      self.u,warranted,7360,{},self.p,intel=Evidence())['price'],7360)
   # A distant Revenue boundary would consume too much of the lower Book gap.
   self.assertGreater(negotiate(
-      self.u,q,7680,{},self.p,intel=Evidence(6000000))['price'],7680)
+      self.u,q,7360,{},self.p,intel=Evidence(6000000))['price'],7360)
  def test_public_loss_leader_accepts_raw_cost_recovery_but_not_a_raw_loss(self):
   q=dict(base=9000,price=9000,reward=0,spent=0,member=None,referrer=None,
          benefit='none',warranty_hours=6,hazard_probability=.02,

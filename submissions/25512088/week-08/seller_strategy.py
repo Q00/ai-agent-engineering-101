@@ -13,13 +13,13 @@ from seller_procurement import settings
 
 RATES={'goods':{'A':95,'B':80,'C':60},'food':{'A':95,'B':75,'C':45}}
 LOSS_LEADER_RATE=.04
-# Live offer evidence on 2026-11-16 showed that the broad 20% raw-loss band
-# disabled itself: funding the next Revenue percentile at that worst-case loss
-# would cross the lower Class Book boundary. The actually dense, useful cohort
-# was within 4% of raw cost (38 offers/hour, about 123.4k total loss). Keep this
-# as a narrow zero-warranty turnover lane; the fresh Class boundary and rolling
-# loss-budget checks below remain authoritative.
-CLASS_NEAR_COST_RATE=.04
+# Live offers on 2026-11-17 shifted below cost: the 8% band contained 23 offers
+# in 15 minutes versus 12 inside the old 4% band.  Keep public opening quotes at
+# the narrower LOSS_LEADER_RATE; this wider lane applies only to a buyer's
+# numeric offer with no warranty liability.  Fresh Class Revenue/Book boundary
+# math and the rolling loss budget below still disable it whenever the entire
+# Revenue step could consume more than 75% of lower-Book headroom.
+CLASS_NEAR_COST_RATE=.08
 LOSS_LEADER_BUDGET=100_000
 LOSS_LEADER_TRIALS_PER_SKU=5
 BOOK_CUSHION_TRIAL_SHARE=.90
@@ -358,9 +358,8 @@ def negotiate(unit, current, offered, catalog, program, token='', ref='', intel=
         floor=min(floor,unit['cost'])
     # Recent live offers showed a separate, deterministic opportunity: public
     # buyers offered just below raw cost on inventory with no later refund
-    # liability. Live offers now support only the dense cohort within 4% of
-    # raw cost. Wider bands either spend Book too quickly or make the
-    # worst-case Class boundary check disable every trial. The configured
+    # liability. Live offers now support the dense cohort within 8% of raw
+    # cost. The configured
     # floor is only a maximum
     # allowance: fresh Class boundaries must still prove that reaching the next
     # Revenue percentile consumes no more than 75% of the lower Book cushion.
