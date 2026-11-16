@@ -241,7 +241,7 @@
    "max_h": 3,
    "timed_p": 0.7,
    "floor": 0.15,
-   "active": true,
+   "active": false,
    "knob": "max_shops",
    "arms": [
     6,
@@ -257,7 +257,7 @@
    "max_h": 3,
    "timed_p": 0.7,
    "floor": 0.15,
-   "active": true,
+   "active": false,
    "knob": "skip_delta_food",
    "arms": [
     -0.15,
@@ -273,7 +273,7 @@
    "max_h": 3,
    "timed_p": 0.7,
    "floor": 0.15,
-   "active": true,
+   "active": false,
    "knob": "talk_share",
    "arms": [
     0.25,
@@ -289,18 +289,130 @@
    "max_h": 3,
    "timed_p": 0.7,
    "floor": 0.15,
-   "active": true,
+   "active": false,
    "knob": "open_v",
    "arms": [
     0.96,
     0.93
    ],
    "start": 1794753400.6611094
+  },
+  "buyer_step_v": {
+   "side": "buyer",
+   "kind": null,
+   "min_n": 80,
+   "promote_p": 0.85,
+   "max_h": 3,
+   "timed_p": 0.7,
+   "floor": 0.15,
+   "active": false,
+   "knob": "step_v",
+   "arms": [
+    0.03,
+    0.05
+   ],
+   "start": 1794763825.8881261
+  },
+  "buyer_hurry_secs": {
+   "side": "buyer",
+   "kind": null,
+   "min_n": 80,
+   "promote_p": 0.85,
+   "max_h": 3,
+   "timed_p": 0.7,
+   "floor": 0.15,
+   "active": false,
+   "knob": "hurry_secs",
+   "arms": [
+    15,
+    10
+   ],
+   "start": 1794763825.8881261
+  },
+  "buyer_food_extra_hours": {
+   "side": "buyer",
+   "kind": "food",
+   "min_n": 80,
+   "promote_p": 0.85,
+   "max_h": 3,
+   "timed_p": 0.7,
+   "floor": 0.15,
+   "active": false,
+   "knob": "food_extra_hours",
+   "arms": [
+    0.25,
+    0.0
+   ],
+   "start": 1794764725.3809369
+  },
+  "buyer_food_extra_hours_2": {
+   "side": "buyer",
+   "kind": "food",
+   "min_n": 80,
+   "promote_p": 0.85,
+   "max_h": 3,
+   "timed_p": 0.7,
+   "floor": 0.15,
+   "active": true,
+   "start": 1794802651.8572395,
+   "knob": "food_extra_hours",
+   "arms": [
+    0.25,
+    0.0
+   ]
+  },
+  "buyer_take_v_83": {
+   "side": "buyer",
+   "kind": null,
+   "min_n": 80,
+   "promote_p": 0.85,
+   "max_h": 3,
+   "timed_p": 0.7,
+   "floor": 0.15,
+   "active": true,
+   "start": 1794802651.8572395,
+   "knob": "take_v",
+   "arms": [
+    0.86,
+    0.83
+   ]
+  },
+  "buyer_rounds_8": {
+   "side": "buyer",
+   "kind": null,
+   "min_n": 80,
+   "promote_p": 0.85,
+   "max_h": 3,
+   "timed_p": 0.7,
+   "floor": 0.15,
+   "active": true,
+   "start": 1794802651.8572395,
+   "knob": "rounds",
+   "arms": [
+    7,
+    8
+   ]
+  },
+  "buyer_goods_delta_neg": {
+   "side": "buyer",
+   "kind": "goods",
+   "min_n": 80,
+   "promote_p": 0.85,
+   "max_h": 3,
+   "timed_p": 0.7,
+   "floor": 0.15,
+   "active": true,
+   "start": 1794802651.8572395,
+   "knob": "goods_delta",
+   "arms": [
+    0.01,
+    -0.01
+   ]
   }
  },
  "queue": [
   {
-   "buyer_step_v": {
+   "buyer_slot_value_0": {
     "side": "buyer",
     "kind": null,
     "min_n": 80,
@@ -309,44 +421,29 @@
     "timed_p": 0.7,
     "floor": 0.15,
     "active": true,
-    "knob": "step_v",
+    "start": 1794802651.8572395,
+    "knob": "slot_value",
     "arms": [
-     0.03,
-     0.05
-    ]
-   }
-  },
-  {
-   "buyer_hurry_secs": {
-    "side": "buyer",
-    "kind": null,
-    "min_n": 80,
-    "promote_p": 0.85,
-    "max_h": 3,
-    "timed_p": 0.7,
-    "floor": 0.15,
-    "active": true,
-    "knob": "hurry_secs",
-    "arms": [
-     15,
-     10
-    ]
-   }
-  },
-  {
-   "buyer_food_extra_hours": {
-    "side": "buyer",
-    "kind": "food",
-    "min_n": 80,
-    "promote_p": 0.85,
-    "max_h": 3,
-    "timed_p": 0.7,
-    "floor": 0.15,
-    "active": true,
-    "knob": "food_extra_hours",
-    "arms": [
-     0.25,
+     0.02,
      0.0
+    ]
+   }
+  },
+  {
+   "buyer_near_v_01": {
+    "side": "buyer",
+    "kind": null,
+    "min_n": 80,
+    "promote_p": 0.85,
+    "max_h": 3,
+    "timed_p": 0.7,
+    "floor": 0.15,
+    "active": true,
+    "start": 1794802651.8572395,
+    "knob": "near_v",
+    "arms": [
+     0.02,
+     0.01
     ]
    }
   }

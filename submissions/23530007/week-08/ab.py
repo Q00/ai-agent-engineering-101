@@ -211,6 +211,60 @@ FINAL_H = 6                    # 11-15 (user: 'make 1st safe'): in the last FINA
                                # decided now (leader if P(best) >= timed_p, else control) and no new one starts
 
 
+# 11-16 (user asked what A/B runs; nothing had run for 7.5 h): the queue ran dry on 11-15 20:45 and no strategist
+# knows ab_config.json. When fewer than AUTO_ACTIVE buyer experiments run and the queue is empty, start one on the
+# knob tested least recently: arms [current value, current +/- step], the side that last won kept, else the other
+# side tried; values clamped to the range.
+AUTO_ACTIVE = 4
+AUTO_KNOBS = {   # knob: (step, low, high, kind)
+    "take_v": (0.02, 0.78, 0.95, None), "rounds": (1, 3, 8, None), "step_v": (0.01, 0.01, 0.08, None),
+    "near_v": (0.01, 0.0, 0.05, None), "slot_value": (0.01, 0.0, 0.08, None), "goods_delta": (0.01, -0.05, 0.05, "goods"),
+    "food_delta": (0.01, -0.05, 0.05, "food"), "skip_delta_food": (0.03, -0.30, 0.0, "food"),
+    "skip_delta_goods": (0.03, -0.30, 0.0, "goods"), "open_v": (0.02, 0.88, 0.99, None), "max_shops": (1, 3, 10, None),
+    "hurry_secs": (5, 5, 30, None), "food_extra_hours": (0.25, 0.0, 1.0, "food"), "dead_p": (0.01, 0.0, 0.08, None),
+}
+
+
+def autofill(cfg, st, now):
+    exps = cfg.setdefault("experiments", {})
+    running = {e["knob"] for n, e in exps.items() if e.get("side") == "buyer" and e.get("active", True)
+               and not str((st.get(n) or {}).get("status")).startswith("promoted")}
+    if len(running) >= AUTO_ACTIVE or cfg.get("queue"):
+        return False
+    cur = (_read(TARGET["buyer"], {}).get("globals") or {})
+    last = {}                                  # knob -> (start, promoted arm, arms)
+    for n, e in exps.items():
+        if e.get("side") == "buyer" and e.get("knob") in AUTO_KNOBS:
+            stt = str((st.get(n) or {}).get("status"))
+            if (e.get("start") or 0) >= last.get(e["knob"], (0,))[0]:
+                last[e["knob"]] = (e.get("start") or 0, int(stt.split(":")[1]) if stt.startswith("promoted:") else None,
+                                   e.get("arms"))
+    added = False
+    for knob in sorted((k for k in AUTO_KNOBS if k not in running and k in cur), key=lambda k: last.get(k, (0,))[0]):
+        if len(running) >= AUTO_ACTIVE:
+            break
+        step, lo, hi, kind = AUTO_KNOBS[knob]
+        v0 = cur[knob]
+        d = 1
+        if knob in last and last[knob][2] and len(last[knob][2]) > 1:
+            tried = last[knob][2][1] - last[knob][2][0]
+            d = (1 if tried > 0 else -1) * (1 if last[knob][1] == 1 else -1)
+        v1 = round(min(max(v0 + d * step, lo), hi), 4)
+        if v1 == v0:
+            v1 = round(min(max(v0 - d * step, lo), hi), 4)
+        if v1 == v0:
+            continue
+        if isinstance(step, int) and not isinstance(step, bool):
+            v1 = int(v1)
+        name = f"auto_{knob}_{time.strftime('%m%d%H%M', time.gmtime(now))}"
+        exps[name] = {"side": "buyer", "knob": knob, "arms": [v0, v1], "kind": kind, "min_n": 80, "promote_p": 0.85,
+                      "max_h": 3, "timed_p": 0.7, "floor": 0.15, "active": True, "start": now}
+        running.add(knob)
+        added = True
+        log(f"auto-started {name}: {knob} {v0} vs {v1}")
+    return added
+
+
 def update():
     cfg = _read(CONFIG, {})
     st = _read(STATE, {})
@@ -261,6 +315,8 @@ def update():
                 log(f"started {n_name} from the queue")
         log(f"{name}: n {[x[0] for x in stats]} mean {[round(x[1], 4) for x in stats]} p_best {s['p_best']} weights {s['weights']}"
             + (f" stars {LAST_STARS[name]}" if LAST_STARS.get(name) else ""))
+    if not final:
+        changed_cfg |= autofill(cfg, st, now)
     STATE.write_text(json.dumps(st, ensure_ascii=False, indent=1))
     if changed_cfg:
         CONFIG.write_text(json.dumps(cfg, ensure_ascii=False, indent=1))
