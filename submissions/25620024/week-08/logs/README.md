@@ -1,13 +1,15 @@
 # logs/ — Round 3 기록과 복구 경위
 
-키트의 `logs/market-kit.log`는 20 MB가 되면 `.1`로 넘어가고 한 개만 남긴다. Round 3는 11-03 21시에 시작했는데, 11-14 15:32 KST에 마지막 회전이 일어나기 전까지 이 규칙을 몰랐고, 그 전 회전분들은 덮어써져 사라졌다. 11-14에 이걸 알고 나서 남아 있는 모든 출처를 찾아 아래처럼 대체했다. 원본 텍스트는 손대지 않았고, 열 수 있게 gzip으로만 묶었다. 시간은 모두 KST다.
+키트의 `logs/market-kit.log`는 20 MB가 되면 `.1`로 넘어가고 한 개만 남긴다. Round 3는 11-03 21시에 시작했는데, 11-14 저녁에야 이 규칙을 알았고 그 전 회전분들은 이미 덮어써져 사라진 뒤였다. 그때 남아 있던 `.1`(11-14 06:12부터)을 먼저 복사하고, 남아 있는 모든 출처를 찾아 아래처럼 대체했다. 원본 텍스트는 손대지 않았고, 열 수 있게 gzip으로만 묶었다. 시간은 모두 KST다.
 
 ## 1. 키트 콘솔 로그 (원본 형식 그대로)
 
 | 파일 | 구간 | 줄 수 | 출처 |
 |---|---|---|---|
-| `market-kit.log` | 11-14 15:32 → 복사 시점 | 계속 늘어남 | 키트가 쓰는 현재 파일. 마감 직전 최종본으로 다시 복사한다 |
-| `kept/market-kit.0612-1114-1532.log` | 11-14 06:12:29 → 15:32 | 20 MB | 회전된 `.1`을 사라지기 전에 복사. 이후 VPS cron(10분)이 새 `.1`을 `kept/`로 자동 복사한다 |
+| `kept/market-kit.0612-1114-1532.log` | 11-14 06:12:29 → 11-15 00:32:58 | 149,643 | 회전된 `.1`을 사라지기 전에 손으로 복사 |
+| `kept/market-kit.0032-1115-1208.log` | 11-15 00:32:58 → 21:08:58 | 143,919 | VPS cron(`private/keep_log.sh`, 10분)이 새 `.1`을 자동 보관 |
+| `kept/market-kit.2108-1116-0556.log` | 11-15 21:08:59 → 11-16 14:56:16 | 145,451 | 〃 |
+| `market-kit.log` | 11-16 14:56:17 → 복사 시점 | 141,157 (11-17 07:45 복사) | 키트가 쓰는 현재 파일. 마감 직전 최종본으로 다시 복사한다 |
 | `recovered/market-kit.journal-1108.log.gz` | 11-08 12:06:00 → 23:59:59 | 92,737 | systemd journald |
 | `recovered/market-kit.journal-1109.log.gz` | 11-09 하루 | 178,678 | 〃 |
 | `recovered/market-kit.journal-1110.log.gz` | 11-10 하루 | 191,926 | 〃 |
@@ -16,6 +18,8 @@
 | `recovered/market-kit.journal-1113.log.gz` | 11-13 하루 | 202,269 | 〃 |
 | `recovered/market-kit.journal-1114.log.gz` | 11-14 00:00:00 → 06:12:28 | 53,760 | 〃 (여기서 `kept/` 파일로 이어짐) |
 | `recovered/market-team.journal-1108-1115.log.gz` | 11-08 → 11-15 | 11,016 | 팀 회의 서비스(marketing_agent.py)의 journald |
+
+`kept/` 파일 이름은 `market-kit.<첫 줄 시각 HHMM, KST>-<회전 시각 mmdd-HHMM, VPS 시계 UTC>.log`이다. 네 파일은 끊김 없이 이어진다(앞 파일의 끝 줄 = 뒤 파일의 첫 줄 시각).
 
 journald 복구 방법: market-kit.service는 stdout을 파일과 journald 양쪽에 쓴다. `journalctl -u market-kit.service -o cat --since ... --until ...`로 하루씩 뽑으면 키트 로그와 같은 줄이 나온다. 검증: journald 11-14분과 `kept/` 파일이 겹치는 구간을 비교했더니, 줄 끝 공백 5줄을 빼면 똑같았다. 이 VPS의 journald는 7일치만 보관한다(`MaxRetentionSec=7day`). 그래서 복구하던 11-15에는 11-08 12:06 이후만 남아 있었고, 그 전은 이 방법으로 살릴 수 없었다. 이 창은 매일 하루씩 밀려나므로, 위 파일들은 지워지기 전에 뽑아 둔 것이다.
 
@@ -36,14 +40,14 @@ journald 복구 방법: market-kit.service는 stdout을 파일과 journald 양�
 
 | 파일 | 줄 수 | 구간 | 내용 |
 |---|---|---|---|
-| `payments.jsonl.gz` | 22,457 | Round 3 전체 | 구매자의 모든 결제. 시간 필드는 없고 `ledger` 번호로 원장 CSV와 이어진다 |
-| `outbox.sent.jsonl.gz` | 100,701 | Round 3 전체 | 게시판에 보낸 글과 투표 전부. `refs`에 근거 원장 번호 |
-| `broken.jsonl.gz` | 133 | 11-04 11:55 → | 산 물건이 고장 난 기록 |
-| `reserve.jsonl.gz` | 35,614 | 11-03 21:02 → | 가게가 재고를 잡아둔 기록 |
-| `hr-history.jsonl.gz` | 301 | 11-04 01:49 → | 인사팀 KPI 채점과 보상·강등 이력 |
-| `model_usage.jsonl.gz` | 671 | 11-07 17:01 → | 팀 회의별 모델 호출 (어느 모델, 역할, 토큰) |
-| `price_ab.jsonl.gz` | 3,650 | 11-11 08:26 → | 가격 A/B 실험 결과 |
-| `hq_decisions.md` | — | 11-03 → | HQ 결정 기록 |
+| `payments.jsonl.gz` | 25,334 | Round 3 전체 (11-17 07:45까지) | 구매자의 모든 결제. 시간 필드는 없고 `ledger` 번호로 원장 CSV와 이어진다 |
+| `outbox.sent.jsonl.gz` | 122,740 | Round 3 전체 (11-17 07:45까지) | 게시판에 보낸 글과 투표 전부. `refs`에 근거 원장 번호 |
+| `broken.jsonl.gz` | 155 | 11-04 11:55 → 11-17 | 산 물건이 고장 난 기록 |
+| `reserve.jsonl.gz` | 46,185 | 11-03 21:02 → 11-17 | 가게가 재고를 잡아둔 기록 |
+| `hr-history.jsonl.gz` | 318 | 11-04 01:49 → 11-17 | 인사팀 KPI 채점과 보상·강등 이력 |
+| `model_usage.jsonl.gz` | 791 | 11-07 17:01 → 11-17 | 팀 회의별 모델 호출 (어느 모델, 역할, 토큰) |
+| `price_ab.jsonl.gz` | 4,392 | 11-11 08:26 → 11-17 | 가격 A/B 실험 결과 |
+| `hq_decisions.md` | — | 11-03 → 11-17 | HQ 결정 기록 |
 
 그 밖에 `recovered/transcript-excerpts-1103-1107.log`는 이 기간 작업하면서 Claude Code 세션 기록에 찍혀 있던 키트 로그 줄 449개를 모은 것이다(11-03 56줄, 11-04 259줄, 11-05 24줄, 11-07 110줄). 원래 순서대로 중복만 뺐고, 키나 토큰이 섞인 줄은 넣지 않았다.
 

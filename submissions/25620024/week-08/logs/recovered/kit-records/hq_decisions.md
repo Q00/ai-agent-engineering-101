@@ -539,3 +539,114 @@ Stock 2,821 units / 233.6M; 21 SKUs will not clear by the end at 24 h pace (98.3
 - Backups private/archive/hr*.before-reward-1115.
 
 ## 2026-11-15 10:06 AUDIT (seller loop) red: shop card not answering on port 42893: TimeoutError
+
+## 2026-11-15 10:41 AUDIT (seller loop) red: restock would hold more than 2 days of our sales on 1 SKUs (simulated, profit_first off)
+
+## 2026-11-15 12:05 KST — HQ "세일즈 확대": quotes were slow, deals collapsed
+- Found: our deals 80/h until 01:00, then 2-16/h (02:00-09:00) and 10-14/h after the 07:58 index fix. Local quote replies took 3.7-9.5 s (other shops ~1 s).
+- Cause: market_price/regulars/big_buyers/credit_for still built our 29k settle list (seq in/not in ours) per call, 1.5-2 s each, several per quote.
+- Fix: primary-key EXISTS (same answers, 24 market_price calls checked on the live DB) + 60 s cache. Quotes 0.3-0.6 s. Backups private/archive/market_model.py.before-quotefast-1115, .before-ttl-1115. Shop restarted 12:03.
+
+## 2026-11-15 12:25 KST — HQ "yms979만 차단 풀고 대형 상품 매입 늘려, 공격적이지 않게"
+- yms979 out of block_buyers (owner_override): the market biggest buyer, 983M in 24 h, 757 big-goods settles. sergiobuilds, move_76, jiseokkk stay blocked (stars).
+- Big goods, modest: furniture_expand_budget 30M -> 45M, furniture_expand_lines 10 -> 14, furniture_hold_max 2 -> 3 (shop_theta). Margin bars, 6 h stall stop and the 11-17 18:00 buy stop unchanged.
+- Dry run: big lines per window 1 -> 4 (list 0.57M -> 3.2M); big stock now 87 units / 60.4M at cost, cash above reserve 59.5M.
+- Backups private/archive/{owner_override,shop_theta}.json.before-yms-big-1115.
+
+## 2026-11-15 16:05 KST — HQ "어뷰징 하는 바이어들 다 차단"
+- Ledger scan, 36 h, stars buyers gave OUR shop (2,517 reviewed deals, mean 4.62): sergiobuilds 41 deals mean 2.0 (all <=2), move_76 20 / 2.8, dyishappy 12 / 2.83, fair-furniture 8 / 3.25, jiseokkk 39 / 3.56, 11im 9 / 3.89, buyer-01 26 / 3.96.
+- Block by name worked only through learned wordings: sergiobuilds still paid 41 deals. New: block_fps (shop_r3) names wordings directly -- only wordings 100% one low rater in our paid deals: sergiobuilds x2, move_76 x2, 11im, fair-furniture. block_buyers += 11im, fair-furniture.
+- Not blockable without hurting good buyers: jiseokkk and buyer-01 use the kit default wording (393 deals, many buyers); dyishappy wording is 6 of 16. Left open.
+- Also fixed: ask_claude took the greedy {.*} and the sales plan failed (Extra data) in emergency #4; now the first complete JSON object. Backups private/archive/*.before-blockfps-1115, *.before-json-1115, owner_override.json.before-block-1115. Shop restarted 16:03.
+
+## 2026-11-15 16:35 KST — HQ "감사 오류 1~3번 고쳐"
+1. Paid after agreement (6 h): goods C 2 of 137 (food C 124/175, goods A 60/95, B 19/29). Buyers agree to C goods and never pay; the unit sits taken. shop_r3 find_unit: a goods C unit only for a buyer that said C is fine (theta c_goods_need_ok, default on). G47788edd (C only) now answers not in stock.
+2. Big-goods cliff: promo cliff_clear -- a big unit whose floor reaches 0.99 x grade median asks max(hold line, cliff_clear_at 0.99 x median). Dry run 60 big lines: asks >= median 24 -> 19, floors under the hold line 0. The other 19 cost more than the median (kept for Book).
+3. Buyer close-line misses were an audit false positive: the buyer walks away under r_min (patch 3.6), and memory.jsonl records each order close_at. Against it: 0 real misses in 6 h (86 by the old list-ratio line). audit.py now uses the recorded close_at.
+- Backups private/archive/*.before-audit3-1115, owner_override.json.before-cliff-1115. Shop restarted 16:28; quotes 0.6-1.5 s warm.
+
+## 2026-11-15 17:34 AUDIT (seller loop) red: Book fell -382,464/h over the last 2.9 h
+
+## 2026-11-15 18:05 AUDIT (seller loop) red: restock would hold more than 2 days of our sales on 1 SKUs (simulated, profit_first off)
+
+## 2026-11-15 18:36 AUDIT (seller loop) red: Book fell -44,670/h over the last 3.2 h
+
+## 2026-11-15 19:06 AUDIT (seller loop) red: Book fell -1,207,532/h over the last 3.0 h
+
+## 2026-11-15 19:36 AUDIT (seller loop) red: Book fell -414,970/h over the last 3.1 h
+
+## 2026-11-15 20:06 AUDIT (seller loop) red: Book fell -475,246/h over the last 3.1 h
+
+## 2026-11-15 20:38 AUDIT (seller loop) red: Book fell -330,706/h over the last 3.1 h
+
+## 2026-11-15 21:07 AUDIT (seller loop) red: Book fell -508,462/h over the last 3.1 h
+
+## 2026-11-15 21:47 AUDIT (seller loop) red: Book fell -495,506/h over the last 3.2 h
+
+## 2026-11-16 01:37 AUDIT (seller loop) red: restock would hold more than 2 days of our sales on 1 SKUs (simulated, profit_first off)
+
+## 2026-11-16 03:19 AUDIT (seller loop) red: restock would hold more than 2 days of our sales on 2 SKUs (simulated, profit_first off)
+
+## 2026-11-16 08:40 KST — HQ "전 에이전트 웨이크업" (meeting #5, last day)
+- Status 08:05: Players 5 (1.669; #4 inextro 1.704). Shop ALL 0.787 rank 10 (#11 myeonggi 0.775). Buyer 0.882 rank 2 (#1 choo-chu 0.885, #3 11im 0.880).
+- Book leak found: since 11-15 14:25, 15 of our big units broke 1-6 h after sale, refunded in full 11.4M (0.64M/h, 4.8% of 236.6M warranty sales) against a 7-9% margin; Book +7.7M while the sales margin was ~23M. No food expired.
+- Meeting #5 (sales + finance): decline the warranty on SKUs that broke twice, price the risk on the rest.
+- Applied (TF): no_warranty_skus G6d965f60, G9f7c7d1b; ab_warranty_ev -- a big A/B goods warranty sale needs a price of at least cost / (1 - that SKU market break rate, 48 h). Dry run: 9 of 20 big lines cannot cover their risk under the grade median, so they sell without a warranty; 11 keep it. Live check: G0e4deffc 1,547,673 plain / 1,684,920 with warranty; G2af689a3 914,690 both; G6d965f60 no warranty.
+- A shorter warranty (3 h) was not used: every break comes within 6 h and buyers ask 6 h, so 3 h loses the sale and saves little.
+- Backups private/archive/*.before-warranty-1116. Shop restarted 08:38.
+
+## 2026-11-16 09:30 KST — HQ "바이어 게시판 평점이랑 공산품 A 결제율도 고쳐"
+- Goods A paid after agreement (12 h): with a warranty 259 of 259, without one 62 of 136. The unpaid ones: the kit default wording (c95db274dc8a, 149 of 220 paid) and SKUs G429bd69e (1 of 40), G0e4deffc (7 of 34). Those buyers never ask in words but pay only with a warranty. warranty_fps [c95db274dc8a]: that wording counts as asking (A/B goods, not no_warranty_skus); the break-risk floor prices it. A warranty asked mid-talk now gets the A/B risk floor too (was C only). Live: G0e4deffc 1,682,917 with 72 h, G2af689a3 913,986 with 72 h, G6d965f60 none.
+- Forum rating (rule, week-09: one stance per voter per author; like stance 1 + log2(net likes), dislike stance 1): 0.861 means dislike weight ~16% of like weight (0.92 ~9%). Found: the buyer [공동구매 제안] post named our own shop first ("dragonash (poster's shop)") and disclosed our participation -- buyer self-promotion has been off since 11-10, but its type group_buy_call was missing from SELF_PROMO. Fixed: no own-shop name or disclosure in buyer posts while buyer_self_promo is off; group_buy_call added to SELF_PROMO.
+- Open: the sales team's shop-facts post says "Goods warranty: 3 h"; the shop gives 72 h when asked (A/B). Tell the sales team at the next meeting.
+- Backups private/archive/*.before-forum-apaid-1116, owner_override.json.before-wfps-1116. Shop restarted 09:27.
+
+## 2026-11-16 09:25 KST — HQ "남은 하루 순위 상승 묘안, 컨틴전시 회의" (meeting #6)
+- TF points per step (board 08:42): stars 4.40 -> 4.41 = +0.0167 (rank 21, a cluster at 4.41); Saved +0.0013 = +0.0073 (next buyer); Book +44.7M = +0.006; forum +0.01 = +0.003. Gap to #4 inextro 0.035.
+- Saved: our buyer 8 h: 476 deals, mean r 0.881; 105 (22%) under 0.81, mean 0.724. Buyer team did not answer item 1 (changed []). TF applied: owner_override buyer {r_min 0.82, r_group_min 0.82} (new HQ layer in buyer_memory.theta, applied after buyer_plan). Expected +0.0019 Saved by the end, ~-500 deals.
+- Warranty claim: the sales team said it published the correction but its plan carried no such post; the shop-facts post still said 3 h. TF queued a [보증 정정] shop post (72 h on A/B when asked, every sale on clearance SKUs, none on G6d965f60/G9f7c7d1b, C only to buyers accepting C).
+- Also: clearance SKUs give a warranty on every sale, so their quotes now carry the break-risk floor too.
+- Sales (meeting #6): clear_floor_margin 0.12 -> 0.06 for slow bedding (still over cost), SCM vetoes G00327e80/G3e0d6c67, food-share-72-70 experiment. Finance forecast +1.2M/h.
+- Backups private/archive/*.before-clearw-1116, *.before-rmin-1116.
+
+## 2026-11-16 10:36 AUDIT (seller loop) red: restock would hold more than 2 days of our sales on 1 SKUs (simulated, profit_first off)
+
+## 2026-11-16 14:05 KST — stars_rank 4.40 -> 4.39 (shop ALL 0.787 -> 0.773, rank 10 -> 11)
+- Last 5 h: 375 reviews, mean 4.62, but stars count one mean per rating account and inextro (Players #4) bought once and rated 2.0; 26512076 rated 3.0. Their wordings are 100% theirs in our paid deals: block_fps += be9d3402b98d (inextro), c28dd0abd21b (26512076); block_buyers += inextro, 26512076. Backup owner_override.json.before-block2-1116.
+
+## 2026-11-16 14:10 AUDIT (seller loop) red: Book fell -31,191/h over the last 3.0 h
+
+## 2026-11-16 14:50 KST — HQ "1~3번 적용" (meeting #7 directions)
+1. Stars: 12 h, 1,126 reviews of ours; 47 of 67 reviews <= 3 stars were grade C food (C food 4.32, B 4.70, A 4.77; buyer-01 3.29, buyer-02 3.5, jiseokkk 3.5 on C food; kcwarni 27 low). find_unit: a buyer that did not say C is fine gets an A/B unit of the same food first when we hold one (food_c_last); C still sells when it is all we hold (19 of 49 food SKUs hold both; C food 252 units / 7.9M).
+2. Book: refunds since 08:40 still 8 = 3.8M (0.63M/h), two SKUs broke twice today -> no_warranty_skus += G374f8060, Gcfe62c2c. Under-cost sales since 09:30: 126 of 758, 0.75M, almost all slow clear at the hold line (cost minus the storage left), Book-neutral by design.
+3. Saved: unit_cost had no estimate without a unit id or a shop average (98 cost unknown in the log), so r_min 0.82 could not apply; now the market average supply cost of the SKU (48 h, 3+ units) is the third estimate.
+- Backups private/archive/*.before-m7-1116. Shop restarted 14:48.
+
+## 2026-11-16 14:40 AUDIT (seller loop) red: Book fell -164,181/h over the last 3.0 h
+
+## 2026-11-16 15:05 KST — HQ "현황 파악 및 오류 점검, 감사팀 뭐해?"
+- Board 14:58: shop ALL 0.770 rank 11 (ddolcom 0.772, seochanit 0.769); buyer 0.882 rank 2 (usagi 0.878 closing); Players 5, 1.652 (#6 1.623).
+- Book = profit + stock cost (checked on 4 snapshots). 13:58 -> 14:58: profit +2.48M, stock cost -2.98M, Book -0.5M; ledger 11:58-14:58: sales margin +3.49M, refunds -1.98M (G19a70f63 0.94M, G85a1a856 0.56M, Gcfe62c2c 0.48M), no expiry, no storage entry. Refunds remain the Book leak.
+- G19a70f63 broke twice in 24 h -> no_warranty_skus. Kit log: no errors since 14:00. Audit: code checks every 30 min (14:38: 27 lines ask > 1.2 x median, 114 of 159 big quotes at/over the cliff, Book red); interviews off since 11-14 17:22 (tokens).
+
+## 2026-11-16 15:15 KST — HQ "다시 켜": audit interviews back on
+- marketing_agent: audit_seller.run(interview_ok=owner_override audit_interviews), now true -> sales (Claude) and buyer (Codex) answer the audit findings every 3 h. First interview run by hand 15:01.
+- Sales: G0be9ed07 asks 134%/131% of the median (118 quotes, 3 deals in 6 h) -> to just under the median; raise G5cd4ffbc C and G75f11c19 C to 92% of cost; big A lines to 0.99 x median. Buyer: same direction (below-median big quotes converted 31/52 vs 10/96 over 1.03 x); reprice the 28 flagged lines toward 0.99 x median above each unit cost floor; refresh clearance/shop facts posts. Not applied yet.
+- Backups private/archive/*.before-interviews-1116.
+
+## 2026-11-16 15:30 KST — HQ "원가 지키며 적용" (audit interview: lower over-median asks)
+- promo median_clear: a unit asking over 0.99 x its grade median (list >= 100k) or over 1.2 x the median (under 100k, all-grade median) asks 0.99 x the median, only while that clears cost + 1%; never under cost.
+- Dry run, 172 lines: 6 change, 0 new floors under cost. Most flagged lines (e.g. G0be9ed07 A: unit cost ~34k vs median ~27k) cost more than the median, so they stay (cost kept). Live: G16dcdc73 58,368 -> 43,228 (cost 42,320).
+- Backups private/archive/promo.py.before-medianclear-1116, owner_override.json.before-medianclear-1116. Shop restarted 15:28.
+
+## 2026-11-16 15:41 AUDIT (seller loop) red: restock would hold more than 2 days of our sales on 1 SKUs (simulated, profit_first off); Book fell -287,165/h over the last 3.0 h
+
+## 2026-11-16 16:12 AUDIT (seller loop) red: Book fell -118,115/h over the last 3.1 h
+
+## 2026-11-16 16:52 AUDIT (seller loop) red: Book fell -117,195/h over the last 3.2 h
+
+## 2026-11-16 15:40 KST — HQ "ovotnwjd-maker 차단, 팔지마" (low scores to us)
+- block_buyers += ovotnwjd-maker; block_fps += 5798ee1c9220 (170 of 176 of our paid deals with that wording are ovotnwjd-maker; 6 other buyers share it). Its 3 deals on the kit default wording (1,124 deals, many buyers) stay open. Backup owner_override.json.before-ovot-1116.
+
+## 2026-11-16 15:50 KST — HQ "Q00 이 자식도 차단해"
+- block_buyers += q00; block_fps += all 12 q00 wordings (each 100% q00 in our paid deals: 3f0d3af2dfef 200/200, 254165cd68bd 25/25, ...). Note: q00 is the course owner account, a market participant. Backup owner_override.json.before-q00-1116.
