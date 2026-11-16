@@ -80,7 +80,7 @@ class BuyerActivityTests(unittest.TestCase):
             {'id':'old','at':self.now-650,'status':'published','post_id':4,'refs':[99],'skus':['other'],'text':'old'}]})
         result=buyer.run_once(self.root,now=self.now,model=self.model)
         self.assertEqual(result['status'],'queued')
-        self.assertEqual(buyer.INTERVAL,600);self.assertEqual(buyer.DAILY_CAP,96)
+        self.assertEqual(buyer.INTERVAL,300);self.assertEqual(buyer.DAILY_CAP,288)
 
     def test_five_minute_market_spacing_is_not_bypassed(self):
         buyer.save(self.root/'state/buyer-forum.json',{'last_attempt':0,'posts':[

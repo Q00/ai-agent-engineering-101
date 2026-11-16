@@ -6,9 +6,10 @@ from market_memory import iter_events,record
 from inventory_observation import timestamp
 from seller_forum import handoff,read_json,save
 from market_scoring import BUYER_ALL_CONTRACT
-INTERVAL=600
+import buyer_breakage
+INTERVAL=300
 MODEL_RETRY_SECONDS=120
-DAILY_CAP=96
+DAILY_CAP=288
 SKU_COOLDOWN=2*3600
 SCHEMA={'type':'object','additionalProperties':False,'properties':{
  'action':{'type':'string','enum':['post','hold']},'ledger_refs':{'type':'array','items':{'type':'integer'},'maxItems':2},
@@ -16,15 +17,25 @@ SCHEMA={'type':'object','additionalProperties':False,'properties':{
  'required':['action','ledger_refs','headline','body','reason']}
 CHECK={'type':'object','additionalProperties':False,'properties':{'approve':{'type':'boolean'},'unsupported_claims':{'type':'array','items':{'type':'string'}}},'required':['approve','unsupported_claims']}
 
-def reconcile(runtime,state):
+def reconcile(runtime,state,now=None):
+    now=time.time() if now is None else now
     sent=events_ack(runtime/'.market/outbox.sent.jsonl')
+    latest=max(state['posts'],key=lambda p:p['at'],default=None)
     for p in state['posts']:
+        if p['status']=='published' and p is latest and not p.get('published_at'):
+            ack=next((r for r in sent if r.get('sent',{}).get('client_id')==p['id']),None)
+            if ack and 200<=ack.get('status',0)<300:
+                p['published_at']=max(p['at'],min(now,(runtime/'.market/outbox.sent.jsonl').stat().st_mtime))
         if p['status'] not in ('queued','handoff_failed'):continue
         ack=next((r for r in sent if r.get('sent',{}).get('client_id')==p['id']),None)
         if ack:
             p['status']='published' if 200<=ack.get('status',0)<300 else 'failed'
             m=re.search(r'"(?:id|post)"\s*:\s*(\d+)',ack.get('answer',''))
             p['post_id']=int(m[1]) if m else None;p['http_status']=ack.get('status')
+            if p['status']=='published':
+                # The sent-file append follows the server reply. Its mtime is
+                # a conservative ACK observation when the reply omits a time.
+                p['published_at']=max(p['at'],min(now,(runtime/'.market/outbox.sent.jsonl').stat().st_mtime))
             record('buyer_forum_ack',path=runtime/'logs/buyer-events.jsonl',**p)
 
 def events_ack(path):
@@ -41,9 +52,10 @@ def evidence(runtime,state,now):
     recent_skus={s for p in state['posts'] if now-p['at']<SKU_COOLDOWN for s in p.get('skus',[])}
     paid={e['ledger']:e for e in history if e.get('event')=='settled' and type(e.get('ledger')) is int
           and type(e.get('price')) is int and e['price']>0 and now-86400<=(timestamp(e.get('at')) or 0)<=now}
+    known_bad={e['settled_ledger'] for e in buyer_breakage.load(list(paid.values()),runtime/'logs/buyer-events.jsonl',now=now)}
     rows=[]
     for e in sorted(paid.values(),key=lambda e:timestamp(e['at']),reverse=True):
-        if e['ledger'] in used or e.get('sku') in recent_skus:continue
+        if e['ledger'] in used or e['ledger'] in known_bad or e.get('sku') in recent_skus:continue
         rows.append({'event':'settled','provenance':'kit review hook after successful paid settlement',
                      **{k:e.get(k) for k in ['at','ledger','sku','name','shop_name','price','list_price','grade','claim_honest','warranty_hours','hours_left_at_recording']}})
         if len(rows)>=20:break
@@ -83,10 +95,10 @@ def run_once(runtime,*,model=decide_json,now=None,dry_run=False):
     path=runtime/'state/buyer-forum.json';path.parent.mkdir(parents=True,exist_ok=True)
     with path.with_suffix('.lock').open('a') as lock:
         fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
-        state=read_json(path,{'posts':[],'last_attempt':0});reconcile(runtime,state);save(path,state)
+        state=read_json(path,{'posts':[],'last_attempt':0});reconcile(runtime,state,now);save(path,state)
         posts=state['posts']
         if any(p['status'] in ('queued','handoff_failed') for p in posts):return {'status':'pending'}
-        if now-max((p['at'] for p in posts),default=0)<INTERVAL or now-state.get('last_attempt',0)<MODEL_RETRY_SECONDS:return {'status':'cooldown'}
+        if now-max((max(p['at'],p.get('published_at',p['at'])) for p in posts),default=0)<INTERVAL or now-state.get('last_attempt',0)<MODEL_RETRY_SECONDS:return {'status':'cooldown'}
         if sum(0<=now-p['at']<86400 for p in posts)>=DAILY_CAP:return {'status':'daily_cap'}
         if (runtime/'.market/outbox.jsonl').exists() or (runtime/'.market/outbox.taking').exists():return {'status':'outbox_busy'}
         rows=evidence(runtime,state,now)
