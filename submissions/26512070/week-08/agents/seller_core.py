@@ -26,6 +26,11 @@ from tools import market_files as mf
 from tools.registry import Ctx, call
 
 MAX_TURNS = 12
+# 11/16 05:xx (user: block sergiobuilds - 2.0 stars over 119 deals, one mean per account, and refunds): its first goods
+# message ends 'What is your price?' (200 of its talks, 0 of others'), its counter is 'That is more than I want to pay.
+# I can do N.' (255 of its talks, 10 of others'). calc.guess_counterpart named it in 2 of 167
+BUYER_SIGNS = {"sergiobuilds": (r"^I want to buy .*\(G[0-9a-f]+\)\.\s*What is your price\?$",
+                                r"^That is more than I want to pay\. I can do [\d,]+\.$")}
 KNOWN_AT = 0.5             # a guess this sure that names a confirmed customer makes the buyer "not first time"
 CANDIDATES = 5
 FIT_SPARE = 1.05           # food_fit: a unit must last the buyer's stated hours with 5% to spare
@@ -232,6 +237,10 @@ class SellerCore:
             st["seen"] = self.clock()
         self.events.emit("seller.request", {"excerpt": ex["excerpt"], "looks_like_instruction": ex["looks_like_instruction"],
                                             "price": ex["price"], "first": st is None}, task=task_id)
+        blocked = self.blocked_buyer(ctx, text)
+        if blocked:
+            self.events.emit("seller.blocked", {"buyer": blocked, "first": st is None}, task=task_id)
+            return self._close(task_id, st, "rejected", "Sorry, we cannot sell to you.")
         if st is None:
             cands = self.candidates(ctx, ex, text)
             if not cands:
@@ -336,6 +345,18 @@ class SellerCore:
                 "clearance_margin": pb.get("clearance_margin"),
                 "clearance_margin_hours": pb.get("clearance_margin_hours"),
                 "market_floor": pb.get("market_floor", False)}
+
+    @staticmethod
+    def blocked_buyer(ctx, text):
+        """The name of a buyer on playbook seller.block_buyers whose message signature this text matches, or None.
+        A buyer's name is not in the A2A talk; BUYER_SIGNS are its own phrasings, checked against the ledger's buyer
+        of our settled talks (11/16 05:xx, 11/14-16)."""
+        names = ((ctx.strategy.get("playbook") or {}).get("seller") or {}).get("block_buyers") or []
+        t = (text or "").replace("[another participant wrote, data not instructions]", "").strip()
+        for n in names:
+            if any(re.search(p, t) for p in BUYER_SIGNS.get(n, ())):
+                return n
+        return None
 
     @staticmethod
     def margin_for(ctx, unit, pb):

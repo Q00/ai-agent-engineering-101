@@ -245,6 +245,7 @@ STRATEGY = {
                     # 11/13 11:2x: open where our acceptance curve says (core.price_curve), keeping deals: a bucket is chosen
                     # only with a deal rate of at least curve_min_p of the best, by rate x (margin + weight x price)
                     "curve": {"type": "boolean"},
+                    "block_buyers": {"type": "array", "items": {"type": "string"}},   # 11/16: refused by message signature
                     "market_floor": {"type": "boolean"},   # 11/16: floor at least the market's p25 for the unit's kind and grade
                     # 11/14 13:3x: the margin over cost for a unit held clearance_hours or longer (0 = at cost)
                     "clearance_margin": {"type": "number", "minimum": 0, "maximum": 1},
