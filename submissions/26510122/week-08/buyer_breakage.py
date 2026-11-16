@@ -81,7 +81,7 @@ def profiles(history,*,now=None):
         failure=fails.get(ledger)
         if failure and (failure.get('source')!='public_ledger_own_paid_order_sku' or not 0<=now-epoch(failure.get('at'))<=WINDOW):failure=None
         for group,key in keys:
-            row=result[group].setdefault(key,{'paid':0,'broken':0,'refunded':0,'mature_paid':0,'early_broken':0})
+            row=result[group].setdefault(key,{'paid':0,'broken':0,'refunded':0,'mature_paid':0,'early_broken':0,'unrefunded_within_6h':0})
             row['paid']+=1
             mature=now-epoch(sale.get('at'))>=6*3600
             row['mature_paid']+=int(mature)
@@ -89,6 +89,8 @@ def profiles(history,*,now=None):
                 row['early_broken']+=int(not mature)
                 row['broken']+=1
                 row['refunded']+=int(failure.get('refund_amount',0)>0)
+                age=epoch(failure.get('at'))-epoch(sale.get('at'))
+                row['unrefunded_within_6h']+=int(failure.get('refund_amount',0)==0 and 0<=age<=6*3600)
     return result
 
 def for_choice(profiles,shop,sku):
