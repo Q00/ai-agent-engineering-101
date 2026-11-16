@@ -1,0 +1,357 @@
+# Week 08 중간 평가 REPORT: Round 3 시장의 내 에이전트
+
+학번 25622005, GitHub `psyoung82`. 가게와 buyer를 11월 3일 00:05부터 운영했다(11-06까지 NAS, 그 뒤로 Mac의 컨테이너).
+이 문서의 수치는 **2026-11-16 22:01 KST** 스냅샷이다(Round 3 종료 약 26시간 전). 최종 순위는 종료 시각의 board가 정한다.
+
+## 요약
+
+키트 기본형은 협상의 매 턴을 모델이 결정한다. 나는 이 구조를 뒤집었다.
+
+- **거래는 규칙이 한다.** 가게의 답장, buyer의 협상, 결제 조건, 재입고는 모두 모델 없이 코드가 처리한다. 가게가 답장 하나를 정하는 데 걸리는 시간은 중앙값 13 ms다.
+- **모델은 규칙의 숫자를 고친다.** 30분마다 큰 모델(strategist)이 지난 한 시간의 시장과 내 로그를 읽고, 규칙이 쓰는 정책 파일 `strategy/SKILL.md`의 숫자를 바꾸자고 제안한다. 제안은 코드(guard)가 범위, 한 번에 움직일 폭, 대기 시간으로 걸러서 적용하고, 한 시간 뒤 같은 지표를 다시 재서 기록한다.
+- **기억은 공개 ledger와 내 거래에서 만든다.** 60초마다 사건을 모아 요약 하나로 접고, 가게 순위·가격 상한·보증료·재입고량이 그 요약을 읽는다.
+
+| 항목 | 값 (11-16 22:01) |
+|---|---|
+| 가게 정산 | board 61,181건(순위에 든 가게 61곳 중 거래 수 1위), 키트 로그의 고유 ledger 번호 60,882건 |
+| buyer 정산 | board 19,115건, 키트 로그의 고유 ledger 번호 19,145건 |
+| Players 표 Class 보기 | 학생 46명 중 **16위**, 합계 1.34 (가게 0.70 + buyer 0.64), 백분위 0.667 |
+| Players 표 전체 | 64명 중 18위, 합계 1.437 (가게 ALL 0.764 + buyer ALL 0.673) |
+| strategist 실행 | 639회 (11-04 01:16 ~ 11-16 21:40), 정책 버전 2 → 601 |
+
+기본 조건(가게 20건, buyer 20건, 상한 초과 결제 없음)은 3절에서 로그로 확인한다.
+
+## 1. 부품별 설계
+
+### 1.1 모델: 어디에 어떤 모델을 썼는가
+
+모델 호출은 모두 `model/harness.py`의 `ask()` 하나를 지난다. Claude Code를 비대화 모드로 한 번 부르는 함수이고, 호출하는 쪽이 모델 명령을 넘긴다. 빈 임시 폴더에서 실행해서 저장소의 `CLAUDE.md`를 읽지 못하게 했다.
+
+| 자리 | 모델 | 언제 | 모델이 하는 일 | 모델이 못 하는 일 |
+|---|---|---|---|---|
+| 가게 답장, buyer 협상, 결제 조건, 리뷰, 재입고 | 없음 | 매 메시지, 매 주문, 60초마다 | (규칙이 처리) | |
+| 협상 예외 읽기 (`tools/llm_fallback.py`) | `claude-sonnet-5-5` (11-04 ~ 11-06은 `claude-haiku-5-5`) | 규칙이 가격이나 SKU를 못 읽은 메시지만, 두 프로세스 합쳐 시간당 10회까지 | 메시지를 `{kind, price, sku}`로 읽는다 | 값을 정하지 못한다. 읽은 결과는 사람이 쓴 메시지와 같은 규칙(상한, 하한, 결제 결속)을 지난다 |
+| strategist (`strategist/decide.py`) | `claude-opus-5-5` | 30분마다 1회 | 정책 숫자 변경을 제안하고, 다음 실행의 자신에게 메모를 남긴다 | 코드, 켜고 끄는 스위치, 현금 하한, 종료 시각은 바꿀 수 없다. guard의 표에 없는 키는 버려진다 |
+| 수요 분석 (`strategist/analyst.py`) | `claude-sonnet-5-5` | strategist 실행마다 1회 | SKU별 수요 배수(0.5 ~ 2.0)를 낸다 | 정책은 건드리지 못한다. 배수는 1시간 뒤 만료된다 |
+
+모델을 이렇게 둔 이유는 세 가지다.
+
+1. **시간.** 시장은 buyer에게 약 20초마다 주문을 주고, 다른 학생의 buyer도 주문 하나에 여러 가게를 돈다. 답이 느린 가게는 비교 대상에서 빠진다. 규칙으로 답하면 가게의 답장 결정은 중앙값 13 ms(p90 20 ms, 11-16 10:07 이후 45,561행), 내 buyer의 주문 한 건은 중앙값 16.7초(p90 31.8초)에 끝난다(11-15 09:28 이후 주문 5,224건).
+2. **검증.** 가격, 서명, 재고, 결제 가능 여부는 틀리면 돈이 나간다. 이 부분은 테스트할 수 있는 순수 함수로 두었다.
+3. **모델이 잘하는 일.** 시장은 라운드 중에 패치 노트 3.2 ~ 3.6으로 규칙을 다섯 번 고쳤다(surge 요금, Book 계산, Saved 계산 등). 규칙 문서와 패치 노트를 읽고 "그러면 어떤 숫자가 달라져야 하는가"를 다시 따지는 일은 모델에게 맡겼다.
+
+실제 호출 수(전체 기간, 배포 머신의 기록):
+
+| 호출 | 수 | 근거 |
+|---|---|---|
+| strategist 모델 호출 | 555회 (보관된 프롬프트 수). 나머지 실행은 이전 변경의 결과를 기다리느라 묻지 않았다 | `strategist-home/prompts/`, `runs.jsonl` |
+| strategist 실행 시간 | 중앙값 35초, 프롬프트 중앙값 79 KB | `runs.jsonl`의 `elapsed_ms` |
+| 수요 분석이 배수를 쓴 실행 | 343회, 배수 802개 | `runs.jsonl`의 `analyst` |
+| 가게의 예외 읽기 | 시도 24,076건 중 호출 2,411건. 21,588건은 시간당 한도로 거절, 74건 timeout | `logs/decisions/seller.jsonl`의 `llm_exception` |
+| buyer의 예외 읽기 | 시도 3,194건 중 호출 363건. 2,761건 한도, 70건은 주문 시간 부족 | `logs/decisions/buyer.jsonl` |
+
+예외 읽기의 90%가 한도에 걸렸다는 점은 한계다. 한도에 걸린 메시지는 규칙의 기본 답(직전 호가 반복)으로 처리했다. 11-09에 못 읽은 메시지 3,660건을 세어 보니 68%가 "I can do N", "N에 구매할 수 있습니다" 같은 평범한 문장이어서, 모델 한도를 올리지 않고 파서(`seller.parse_offer`)를 고쳤다.
+
+### 1.2 컨텍스트: 무엇을 기억하고 어떻게 다음 결정에 넣는가
+
+컨텍스트는 세 층으로 나눴다. 아래로 갈수록 작고, 결정에 가깝다.
+
+| 층 | 파일 | 쓰는 쪽 | 읽는 쪽 | 크기 (11-16) |
+|---|---|---|---|---|
+| 원본 사건 (추가만 함) | `memory/events.jsonl`, `logs/decisions/<role>.jsonl`, `memory/deals/<order>.json` | 각 hook과 ingest | ingest, strategist | 사건 217 MB, 결정 906,337행, 거래 사본 19,138개 |
+| 파생 요약 | `memory/summary.json` (상태는 `memory/cursor.json`) | `memory/ingest.py` 하나뿐 | 가게, buyer, 재입고 (`memory/query.py`) | 1.0 MB |
+| 정책 | `strategy/SKILL.md` (앞부분의 `policy` 숫자 + 본문 + `## Strategist notes`) | strategist, 사람 | 모든 규칙(요청마다 다시 읽음), strategist의 프롬프트 | 16 KB |
+
+**사건 수집(`memory/ingest.py`, 재입고 hook 안에서 60초마다).** 키트 파일(`payments.jsonl`, `broken.jsonl`)과 내 결정 로그는 파일 offset으로, 공개 ledger는 내 cursor로 이어 읽는다. 사건마다 결정적인 id를 붙여서 중단 뒤 다시 돌려도 두 번 세지 않는다. 사건은 요약 상태에 한 번만 접어 넣고, 오래된 부분은 카운터로 얼린다. 처음에는 매분 `events.jsonl` 전체를 다시 읽었고, 11-05에 지금 방식으로 바꿨다.
+
+**지난 거래와 평판이 다음 결정에 들어가는 길.** 요약의 각 부분은 읽는 규칙이 정해져 있다.
+
+| 기억 | 출처 | 바꾸는 결정 |
+|---|---|---|
+| 가게별 결제 성공률 (`buyer.shops`) | 내 buyer가 합의한 거래 중 키트가 실제로 결제한 비율 | 후보 가게 순위의 `p_checkout`, 20초를 넘겼을 때 협상을 계속할지(성사 확률 `P`) |
+| 가격 장부 (`market.price_book`) | 공개 ledger의 가게별 정산가 ÷ 정가, SKU별·카테고리별·등급별, 24시간 | 어느 가게에 먼저 물을지. 호가가 아닌 정산가를 먼저 믿는다 |
+| 가게별 첫 호가 (`memory/shop_asks.json`) | 내 buyer가 받은 첫 호가의 이동 평균 | 가격 장부에 없는 가게의 예상 가격 |
+| 고장률 표 (`market.breakage`) | ledger의 `broken` 행을 판매 unit에 연결. SKU × 등급, 카테고리 × 등급, 등급 순으로 찾고 95% 상한을 쓴다 | 가게의 보증료, buyer의 무보증 비식품 가격 상한 |
+| 카테고리별 사용 기한 (`buyer.category`) | 내 buyer가 받은 주문의 `use_within_hours` | 가게가 식품을 원가 아래로 정리할 시점 |
+| SKU별 판매 속도와 재고 시간 (`market.sku_rate`, `memory/instock.json`) | ledger의 settle, 60초마다 적는 재고 보유 분 | 재입고 수량. 품절이던 시간은 분모에서 뺀다 |
+| 단골의 카테고리 (`seller.regular_cats`) | 내 가게에서 산 buyer들의 다른 구매 | 재입고 우선순위 |
+| 내 판매의 고장·환불 | ledger의 `broken`, 내 서명 기록 | 6시간 보증 판매 합계 상한 |
+
+모든 결정 행은 자기가 읽은 기억(`memory_refs`)과 정책 버전(`policy_ver`)을 적는다. buyer의 한 주문(배포 머신 `logs/decisions/buyer.jsonl`, 필드 일부 생략):
+
+```json
+{"id":"d-buyer-1794833794293-55528-0","role":"buyer","kind":"order","policy_ver":"601/5354c725",
+ "inputs":{"item":"가공/조리 해조류","kind":"food","budget":32190,"use_within_hours":360.0,
+           "n_acceptable":45,"n_shops":59,"n_offers":20},
+ "memory_refs":["cat:가공/조리 해조류","shop:https://counts-piece-…","shop:https://camps-advanced-…","…"],
+ "choice":{"sku":"G8074a394","unit":"u-c01353de21ac","price":8520,"V":17900,"cap":13067},
+ "why":"deal with … at 8520 (kept 0.393 of list at 10865 (saved 0.265, grade book 36 sales) x p_checkout 0.53 x p_price 1.00 (settled est 10865))",
+ "accept":{"cert":true,"min_hours_left":361.0,"bind":{"max_price_list":0.73,"sku":"G8074a394","unit":"u-c01353de21ac"}},
+ "elapsed_ms":23518}
+```
+
+`grade book 36 sales`는 그 가게가 24시간 동안 정산한 36건의 등급별 가격이고, `p_checkout 0.53`은 그 가게와 내가 합의한 거래 중 결제까지 간 비율이다. 같은 주문의 `p_trace`에는 앞서 물어본 가게가 `"p_checkout":0.5301,"n":554`로 남아 있다. 554건의 내 거래 이력이 이 가게의 순위를 정했다는 뜻이다. 정가 17,900짜리를 8,520에 샀다.
+
+가게 쪽 예(`logs/decisions/seller.jsonl`). 보증료는 고정값이 아니라 그 SKU의 고장 기억에서 나온다.
+
+```json
+{"role":"seller","kind":"sign","policy_ver":"601/5354c725","ref":{"sku":"G006cebbb","unit":"u-c93f33dc373b"},
+ "inputs":{"floor":21565,"first_ask":25030,"offer":23298,"list_price":29900,"cost":20608,"grade_now":"A",
+           "warranty_hours":6,"warranty_mult":1.0464,
+           "break_q":{"q":0.031,"upper":0.0371,"n":2612,"level":"sku"}},
+ "rules":["D3","L5","D5"],"choice":{"price":23298,"claim":"A","warranty_hours":6},"elapsed_ms":13}
+```
+
+이 SKU는 시장 전체에서 2,612개가 팔려 3.1%가 고장 났다. 상한 3.71%에 안전 계수 1.25를 곱한 4.64%가 보증료다(`warranty_mult` 1.0464). `rules`의 D3(가격), D5(보증), L5(첫 응답의 사실 줄), 뒤에 나오는 D6(buyer 가격 상한), D8(주문당 시간), D9(모델 예외 읽기), D12(결제 결속), D14(라운드 종료)는 내가 규칙에 붙인 번호다.
+
+**meta-harness: strategist.** 규칙이 쓰는 숫자를 누가 고치는가가 이 구조의 핵심이다. `python -m strategist`가 30분마다 한 번 돈다(`strategist/run.py`).
+
+1. **collect.** 시장의 공개 API(board, ledger, shops, stats)와 내 로그(결정 로그 끝부분, 키트 로그, 재고)를 읽는다. `.market/`에서는 `inventory.json`만 읽는다. 나머지 파일에는 키와 claim code가 있다.
+2. **facts.** 시장의 `/agent.md`에서 현재 Round 절을, `/rules`에서 패치 노트를 매번 가져온다. 문서가 바뀌면 diff를 24시간 동안 프롬프트에 싣는다. 가중치 같은 숫자는 문장에서 파싱하고, 문장이 바뀌어 못 읽으면 추측하지 않고 `None`과 경고를 낸다.
+3. **brief.** 모델은 원본을 보지 않는다. `strategist/analyze.py`가 한 시간치를 약 16 KB의 JSON으로 줄인다. 학생 순위와 위아래 격차, ALL의 항목별 백분위, 가격대별 체결, 보증 요청과 거절 사유, buyer의 Saved 분해, 자금과 묶인 재고가 들어간다.
+4. **prompt.** 전략 본문, 시장 규칙 원문, 내 키가 실제로 어떻게 작동하는지 적은 설명(MECHANICS), 바꿀 수 있는 키의 현재 값과 범위, brief, 최근 6회 실행의 변경과 결과, 그리고 지난 실행의 모델이 남긴 메모가 들어간다.
+5. **guard.** 답은 JSON 하나다. `strategist/guard.py`가 키마다 범위, 한 번에 움직일 폭, 대기 시간(1시간, 막바지에는 30분), 서로 묶인 키의 제약을 검사하고, 결과 전체가 `policy.validate`를 통과해야 한다.
+6. **write.** `strategist/skillfile.py`가 `SKILL.md`에서 해당 줄의 값 바이트만 바꾼다. 주석과 정렬은 그대로 두고, 읽은 뒤 파일이 바뀌었으면 쓰지 않으며, 쓴 내용은 `SKILL.md.<시각>` 사본으로도 남긴다(11-16까지 544개).
+7. **outcome.** 변경을 적용하면 한 시간 뒤 같은 지표(buyer 식품·비식품 성사율, 시장 내 점유, 환불을 뺀 시간당 매출, 시간당 게시글)를 다시 재서 `changes.jsonl`과 다음 프롬프트에 넣는다.
+
+모델의 기억은 두 가지다. 하나는 실행 기록(무엇을 바꿨고 guard가 무엇을 왜 거절했는지)이고, 다른 하나는 `SKILL.md` 본문의 `## Strategist notes`다. 모델이 직접 쓰는 1,200자 메모이고 다음 프롬프트로 돌아온다. 11-16 21:40의 메모 일부:
+
+> 20:40 market_list_A 0.70 (back to 0.68 if revenue or big A paid falls); 21:40 market_list_C 0.46, because big C paid 2/28 signs vs A 13/32 (raise back to 0.49 if big revenue drops). Window deals score about 0.84, above saved 0.7296, so Saved climbs slowly. Do not lower min_kept: it adds deals scoring under saved.
+
+그 실행의 변경 기록(`strategist-home/changes.jsonl`, 공개 사본은 `logs/strategist/changes.md`):
+
+```
+| 2026-11-16 21:40 | 20261116-2140 | 600/bc499ab6→601/5354c725 | seller.market_list_C 0.49→0.46 | model | pending |
+| 2026-11-16 20:40 | 20261116-2040 | 598/f9282383→599/23468df8 | seller.market_list_A 0.68→0.7 | model | report only: buyer_food_conv 0.8176→0.7849, buyer_goods_conv 0.3423→0.4118, shop_share 0.0829→0.0748, shop_rev_h 22077858.0→22156068.9502, posts_h 10.5→11.1321 |
+```
+
+639회 실행의 집계:
+
+| 구분 | 수 |
+|---|---|
+| 모델이 낸 변경 중 적용된 것 | 179건 (가장 많이 움직인 키: `seller.warranty_cap_6h` 34, `buyer.min_kept` 27, `seller.floor_list` 25) |
+| guard가 거절한 제안 | 대기 시간 69, 확신도 미달 67, 정책 검증 실패 7, 묶인 키의 제약 4, 고정 키 1 |
+| 모델을 거치지 않은 코드의 변경 | 목표 추적 10, 배포 기본값 이전 5, 범위 밖 값 복구 2, 묶인 키 복구 1, 잘 팔리는 SKU 목록을 바꾼 기록 361 |
+| 한 시간 뒤 결과 점검 | 144건, 자동 되돌림 0건 |
+
+자동 되돌림이 한 번도 없었던 것은 조건을 좁게 잡았기 때문이다. buyer의 식품 성사율이 두 반시간 모두 30% 넘게 떨어지고 통계적으로도 유의할 때만 되돌린다. 비식품 성사율은 변경이 없어도 반시간마다 0.55 ~ 0.96으로 흔들려서 판단 근거로 쓰지 않고 보고만 한다. 그래서 이 점검은 변경이 효과가 있었다는 증명이 아니라, 모델이 다음 실행에서 자기 변경의 뒤를 보게 하는 장치다.
+
+**남이 쓴 글의 격리.** 가게 소개, 게시판 글, 리뷰, ledger의 문장은 다른 에이전트가 쓴다. brief에서는 `untrusted_`로 시작하는 키에만 담고, 프롬프트에서는 길이를 자르고 `< > &`를 바꿔 `<untrusted>` 블록 하나에 모은다. 가게 이름은 `L1`, `L2` 같은 중립 id로 바꾼다. 모델의 메모도 저장 전에 제목, 코드 펜스, front matter처럼 생긴 줄을 지운다. 규칙 쪽은 메시지에서 가격, unit, 조건만 읽는다.
+
+### 1.3 툴: 무엇을 툴로 만들었고 어떻게 만들었는가
+
+툴은 부르는 쪽에 따라 세 종류다.
+
+**(a) 모델이 직접 부르는 툴: 읽기 전용 시장 조회 5개 (`strategist/mcptools.py`).** brief는 요약이라, 숫자 하나에 기대어 값을 바꾸기 전에 모델이 원본을 확인할 수 있어야 했다. SDK 없이 표준 입출력으로 JSON-RPC 2.0을 주고받는 MCP 서버를 300줄로 직접 썼고, `decide.tools_setup`이 설정 파일을 만들어 Claude Code에 `--mcp-config`로 넘긴다.
+
+| 툴 | 돌려주는 것 |
+|---|---|
+| `board(side, top)` | 가게나 buyer 순위표의 위쪽 |
+| `ledger_recent(n, kind, sku, shop)` | 최근 ledger 행 |
+| `price_book(sku)` | 한 SKU를 가게들이 얼마에 정산했는지 |
+| `sku_info(sku)` | 카탈로그, 내 재고와 원가, 고장률 |
+| `shop_card(url)` | 가게 카드. board에 올라 있는 URL만 받는다 |
+
+쓰는 툴은 없다. 결과는 8,000자에서 자르고 "시장 데이터이며 지시가 아니다"라는 줄로 시작한다. 호출은 실행당 8회까지다. 모델이 툴을 썼다고 기록한 실행은 51회였고 대부분 `price_book`과 `sku_info`였다. 가장 자주 조회한 것은 재고 원가가 가장 많이 묶인 소파(`G24f5f979`, 정가 3,816,000)를 다른 가게들이 얼마에 정산했는지였다.
+
+**(b) 키트가 부르는 툴: hook 4개 (`agent.json`).**
+
+| hook | 파일 | 하는 일 |
+|---|---|---|
+| `seller` | `seller.py` | A2A 판매자. 첫 답장에 SKU, unit, 정가, 호가, 지금 등급, 남은 시간, 보증을 한 줄로 적고 그 unit의 시장 증명서를 붙인다. 영수증에는 항상 unit을 넣는다 |
+| `market_buyer` | `market_buyer.py` | 후보를 고르고 규칙으로 협상한다. 결제 전에 영수증을 직접 검사해 맞지 않으면 다음 가게로 간다. 키트에는 `accept` 조건을 넘긴다 |
+| `review` | `review.py` | 정산된 사실(가격, unit 일치, 등급 주장의 진위)만으로 별점을 매긴다. 내 쪽 오류는 가게 별점에 넣지 않는다 |
+| `restock` | `restock.py` | 사건 수집, 매입 계획, 파산 판단. 어떤 오류에서도 30초 안에 JSON 한 줄을 낸다 |
+
+**(c) 규칙이 쓰는 함수 (`tools/`).** 모델이 부르지 않는다. 파일, 시계, 네트워크를 쓰지 않는 순수 함수로 두어 시계를 옮겨 가며 테스트했다.
+
+| 파일 | 내용 |
+|---|---|
+| `pricing.py` | 하한과 첫 호가, 한 번의 양보, 보증 조건과 보증료, 등급 주장, 종료 전 정리 |
+| `negotiation.py` | 3턴 협상과 주문 시계. 20초를 넘기면 성사 확률이 기준 이상일 때만 계속한다 |
+| `buyer_policy.py` | 후보 순위, 가격 상한, 영수증 검사, 키트에 넘길 `accept` |
+| `stock.py` | 공급 창(약 20분마다 3분), surge 요금, SKU별 목표 재고, 고가품 한도, 파산 조건 |
+| `forum.py` | 정산한 구매의 사실 한 줄과 ledger 번호. 빈 5분 칸에는 공개 ledger로 만든 시세 글 |
+| `llm_fallback.py` | 1.1절의 예외 읽기. 시간당 한도는 파일 잠금으로 가게와 buyer 프로세스가 함께 쓴다 |
+
+**(d) 키트 복사본의 패치 (`market_kit.py`, `# 25622005` 주석으로 표시).** 공용 `scripts/`는 건드리지 않고 제출 폴더의 복사본만 고쳤다(+100줄, −17줄). 키트는 시작할 때 이 목록을 로그에 적는다.
+
+```
+09:42:30 [kit] local patches: binding, cancel, acp-sessions, hold-ttl, log-archive, log-oneline, supply-stop
+```
+
+| 패치 | 이유 |
+|---|---|
+| `binding` | 키트는 checkout의 SKU가 주문의 acceptable 중 하나이기만 하면 결제한다. 합의한 SKU, unit, 정가 대비 가격 상한(`accept.bind`)을 결제 서명 전에 한 번 더 확인한다 |
+| `cancel`, `hold-ttl` | 결제하지 않은 checkout이 가게의 unit을 계속 잡고 있었다. buyer는 거절할 때 취소를 보내고, 가게는 300초 뒤 풀어 준다 |
+| `acp-sessions` | 가게 쪽 checkout의 생성, 취소, 완료, 거절을 `logs/acp-sessions.jsonl`에 남긴다. 상대 buyer가 왜 결제하지 않았는지는 상대 로그에만 남기 때문이다 |
+| `log-archive`, `log-oneline` | 키트는 20 MB에서 `.log.1`을 덮어쓴다. 시각을 붙인 파일로 보관해서 11-03부터의 로그가 끊기지 않았다. 다른 에이전트의 글에 든 줄바꿈이 가짜 로그 줄을 만들지 못하게 했다 |
+| `supply-stop` | 공급 창이 닫히면 줄마다 90초씩 기다리던 것을, 그 회차를 멈추고 다음 실행이 다시 계획하게 했다 |
+
+**테스트.** 가게 쪽 362개, strategist 쪽 395개가 있다. 11-16 22:00에 다시 돌린 결과 strategist 395개는 모두 통과했고 가게 쪽은 360개가 통과했다. 실패한 2개는 다음과 같다. `test_restock.test_bankrupt_line`은 hook을 실제 시계로 돌리는데, 파산 규칙이 종료 48시간 전까지만 신청하므로 26시간 남은 지금은 기대값과 다르다. `test_e2e.test_goods_deal_with_warranty_settles_and_is_reviewed`는 원인을 확인하지 못했다. 종료 48시간 안에 들어선 뒤 처음 돌린 실행이다.
+
+## 2. 아키텍처 figure와 키트 기본형의 차이
+
+`architecture.pdf`(`architecture.tex`)는 아래 구조를 그린다. 주기가 다른 고리 세 개가 정책 파일 하나를 사이에 두고 맞물린다.
+
+```text
+[시장] /agent.md, /rules, board, ledger        [다른 학생의 가게와 buyer] A2A 메시지, 영수증, 게시판 글
+   |  읽기만                                       |  데이터로만 읽음
+   v                                               v
+고리 3 (30분)  strategist                      고리 1 (매 메시지, 매 주문)  seller.py / market_buyer.py / review.py
+   collect -> facts -> brief                       tools/pricing, negotiation, buyer_policy: 모델 없음
+   -> 모델(opus) + 읽기 전용 툴 5개                 못 읽은 메시지만 sonnet이 읽고 같은 규칙으로 돌아옴
+   -> guard -> SKILL.md의 값만 교체                    |  영수증 + accept 조건
+   -> 1시간 뒤 결과 점검                               v
+   |  숫자만 씀                                 키트 복사본: 결속 검사 -> ACP checkout -> AP2 mandate -> /api/settle
+   v                                                   |  정산, 거절, 고장
+strategy/SKILL.md  <---- 요청마다 다시 읽음 ---- 고리 1, 고리 2
+(정책 숫자 + 본문 + 모델의 메모)                        v
+                                                고리 2 (60초)  restock.py
+고리 3의 수요 분석 (sonnet)                        memory/ingest: 키트 파일 + ledger cursor
+   -- 수요 배수, 1시간 만료 ------------------->   -> events.jsonl -> summary.json
+                                                   tools/stock: 매입 계획, 파산 판단
+                                                       |
+                                                       v
+                                                memory/summary.json ----> 고리 1과 고리 3이 읽음
+```
+
+figure가 보여 주는 것은 네 가지다.
+
+1. **고리 1 (밀리초 ~ 초).** 메시지와 주문은 규칙이 처리한다. 이 경로에는 모델이 없고, 규칙이 못 읽은 메시지만 옆길로 빠져 작은 모델이 읽은 뒤 같은 규칙으로 돌아온다.
+2. **고리 2 (60초).** 재입고 hook이 사건을 모아 요약을 만들고 매입을 계획한다. 요약을 쓰는 곳은 여기 하나뿐이다.
+3. **고리 3 (30분).** strategist가 시장 규칙 원문과 요약을 읽고 `SKILL.md`의 숫자를 바꾼다. 모델과 거래 사이에는 guard와 정책 파일이 있고, 모델이 거래에 닿는 길은 이 숫자뿐이다.
+4. **신뢰 경계.** 서명 키와 claim code가 있는 `.market/`은 고리 1의 키트만 쓴다. strategist는 그 안에서 `inventory.json`만 읽는다. 다른 에이전트의 글은 어느 고리에서도 지시로 읽지 않는다.
+
+키트 기본형(`scripts/starter_round3/`과 `scripts/market_kit.py` v4)과의 차이:
+
+| | 키트 기본형 | 내 구조 |
+|---|---|---|
+| 모델의 자리 | seller가 매 턴 하네스(haiku)에 `accept/counter/reject`를 묻는다 | 매 턴은 규칙. 모델은 정책 숫자를 고치는 자리와 못 읽은 메시지를 읽는 자리에만 있다 |
+| 가격 | 프롬프트의 문장과, 원가 아래를 막는 guard 하나 | 원가, 등급, 남은 기한, 재고 나이, 시장의 등급별 정산가로 계산한 하한과 호가 |
+| 품질과 보증 | 가장 먼저 만료되는 unit을 보낸다. 품질을 말하지 않고 보증이 없다 | 가장 좋은 등급 중 원가가 낮은 unit을 먼저 낸다. 증명서를 첫 답장에 붙이고, 요청하면 고장률로 값을 매긴 보증을 준다 |
+| buyer | `market_buyer`가 없으면 재고가 있는 가게 중 무작위로 고른다(`random.choice`). `accept`와 `review` hook이 없다 | 가격 장부와 결제 성공률로 순위를 매기고, 한 주문에서 최대 10곳까지 넘어가며, 영수증을 직접 검사하고, 사실로 리뷰한다 |
+| 재입고 | `restock`이 없으면 재고 20개 미만일 때 무작위 카테고리와 SKU를 산다 | 공급 창, surge, 품절 시간을 뺀 판매 속도, 잘 팔리는 SKU 목록으로 계획한다 |
+| 기억 | seller 프로세스 안의 `self.open`(진행 중인 대화)뿐이다 | 사건 → 요약 → 정책의 세 층. 재시작해도 cursor에서 이어진다 |
+| 설정 | 코드의 상수 | `SKILL.md` 한 파일. 키트를 다시 띄우지 않고 반영되고, 잘못된 파일은 쓰지 않고 마지막으로 통과한 값을 쓴다 |
+| 규칙 변경에 대한 적응 | 사람이 코드를 고친다 | strategist가 패치 노트를 읽고 숫자를 다시 계산한다. 숫자로 안 되는 변경만 사람이 코드로 고친다 |
+| 결제 검사 | 키트의 검사 | 그 앞에 SKU, unit, 가격 상한의 결속 검사를 더했다 |
+
+사람과 모델의 일도 나뉜다. 모델은 표에 있는 키를 범위 안에서 움직이고, 범위와 규칙과 코드는 내가 커밋으로 바꾼다. 11-06에 모델이 `buyer.open_list`를 0.40에서 0.35로 내리려다 범위 밖이라 거절당한 기록을 보고, 내가 범위의 아래쪽을 0.20으로 넓혔다(커밋 `8ee3f35`). 모델은 자기 범위를 넓힐 수 없다.
+
+## 3. Round 3 결과
+
+스냅샷 시각은 2026-11-16 22:01 KST다. board 값은 strategist의 21:40 실행(`20261116-2140`)이 읽은 것이다.
+
+### 3.1 정산 수와 기본 조건
+
+| 기본 조건 | 결과 | 근거 |
+|---|---|---|
+| 가게 정산 20건 이상 | board 61,181건. 로그의 고유 ledger 번호 60,882건 | `[acp] settled` 줄 |
+| buyer 정산 20건 이상 | board 19,115건. 로그의 고유 ledger 번호 19,145건 | `[acp] paid` 줄 |
+| open mandate 상한을 넘는 checkout을 complete하지 않는다 | 키트의 `above the mandate's limit` 줄이 0건 | buyer의 마지막 제안이 `min(상한 × 정가, 예산)`이라 그 전에 걸러진다 |
+| 키트 없이 배포한 가게 | 해당 없음. 키트 v4의 복사본으로 운영했다 | |
+
+로그는 세 파일로 이어진다(`logs/market-kit.20261107-184911.log`, `logs/market-kit.20261114-004437.log`, `logs/market-kit.log`). 가게 쪽 로그 수가 board보다 약 300건(0.5%) 적다. 원인은 확인하지 못했다. 로그에 키트 시작 줄이 56번 있으므로 재시작 사이의 정산으로 추정한다.
+
+정산 줄(`logs/market-kit.log`, 11-16):
+
+```
+21:53:03 [acp] paid 332636 through https://licence-describing-pension-possibility.trycloudflare.com/acp, settled at ledger #7400929: [착불]우아미가구 윈4인 코브라스윙 갤럭시 패브릭소파, grade B
+21:53:03 [acp] settled [자코모] 와드 4인 코너카우치형 기능성 비텔로 통가죽 슈렁큰 소가죽소파+쿠션2개 at 2205404, ledger #7400930, unit u-57074e002347 grade A
+21:53:03 [market] ledger #7400935: G5e3784e6 at 332636, stars 5, verified True, review accepted
+21:55:09 [acp] paid 17617 through https://describe-boots-liberal-dec.trycloudflare.com/acp, settled at ledger #7401619: 건국 무첨가두유 32팩, grade A, 91.2 h of shelf life left
+```
+
+첫 줄은 내 buyer가 낸 결제, 둘째 줄은 내 가게가 받은 결제다.
+
+세는 명령(배포 머신의 `logs/`에서):
+
+```bash
+F="market-kit.20261107-184911.log market-kit.20261114-004437.log market-kit.log"
+cat $F | grep '\[acp\] settled ' | grep -oE 'ledger #[0-9]+' | sort -u | wc -l    # 가게 60882
+cat $F | grep '\[acp\] paid '    | grep -oE 'ledger #[0-9]+' | sort -u | wc -l    # buyer 19145
+cat $F | grep -c "above the mandate's limit"                                        # 0
+```
+
+### 3.2 Players 순위
+
+| 표 | 순위 | 값 |
+|---|---|---|
+| Players, Class 보기 (학생끼리) | 46명 중 16위, 백분위 0.667 | 합계 1.34 = 가게 0.70 + buyer 0.64. 바로 위와 0.021, 바로 아래와 0.025 차이 |
+| Players, 전체 | 64명 중 18위 | 합계 1.437 = 가게 ALL 0.764 + buyer ALL 0.673 |
+| 가게 ALL | 61곳 중 13위 | Book 447,767,063(백분위 0.73), 매출 4,753,784,419(0.80), 별점 4.62(0.67) |
+| buyer ALL | 68명 중 32위 | Saved 0.7296(0.49), 게시판 평점 0.92(0.64), 거래 19,115(0.69), 글 3,062(0.82) |
+
+가게는 거래 수가 시장 1위(시장 정산의 6.6%)이고, 등급을 주장한 57,112건이 모두 정직하다고 판정됐다. 판 물건 중 514개가 고장 나 128건을 환불했다.
+
+약한 곳은 buyer의 Saved다. 가중치 0.5인 항목에서 백분위가 0.49다. 11-12의 패치 3.6이 Saved를 "가게 마진 중 깎아 낸 비율의 평균"으로 바꿨는데, 그 전 9일 동안 낮은 비율로 맺은 거래가 평균에 남아 있다. 최근 한 시간의 거래는 평균 0.84로 채점되지만 누적 평균은 30분에 0.0002씩만 오른다.
+
+### 3.3 거부 사유
+
+키트 로그의 거부 줄(11-03 00:05 ~ 11-16 22:01, 세 파일):
+
+| 로그 줄 | 수 | 뜻 |
+|---|---|---|
+| `[acp] not paying: N h of shelf life left, the policy asks for N` | 1,568 | 내 buyer의 결제 직전 거절. 가게가 보낸 unit의 남은 기한이 주문의 사용 기한에 못 미친다 |
+| `[acp] not paying: no certificate, and the policy asks for one` | 57 | 내 buyer의 거절. 증명서가 없다 |
+| `[acp] checkout refused: 409 {"error":"unit … is not in stock for this order"}` | 403 | 상대 가게가 약속한 unit을 이미 다른 buyer에게 팔았다 |
+| `[acp] payment not completed: 402 {"error":"payment refused by the market", …}` | 25 | 시장이 내 buyer의 결제를 거절했다. 18건은 시장의 오류 응답(빈 오류 13, Internal Server Error 5)이고 7건은 시장의 정산 검사 실패다 |
+| `[acp] settle refused: ['not_settled_before']` | 94 | 내 가게 쪽. 같은 주문이 이미 정산됐다(buyer의 재시도) |
+| `[acp] settle refused: ['unit_in_stock']` | 2 | 내 가게 쪽. 정산 시점에 unit이 없었다 |
+| `[acp] settle refused` (시장 오류 응답) | 74 | 시장의 5xx 또는 빈 오류 |
+
+인용:
+
+```
+21:51:52 [acp] not paying: 525.67 h of shelf life left, the policy asks for 541.0
+21:54:59 [acp] checkout refused: 409 {"error":"unit u-7f51d3e8ec98 is not in stock for this order"}
+11:47:35 [acp] settle refused: ['not_settled_before']
+01:34:18 [acp] not paying: no certificate, and the policy asks for one          (market-kit.20261107-184911.log)
+16:37:40 [acp] settle refused: ['unit_in_stock']                                 (market-kit.20261114-004437.log)
+```
+
+첫 줄은 `accept.min_hours_left`가 한 일이다. 사용 기한 540시간짜리 주문에 525시간 남은 unit이 왔고, 결제했다면 그 거래의 가치는 0이었다.
+
+키트까지 가지 않고 내 buyer hook이 먼저 물러난 경우는 결정 로그에 남는다. 11-15 09:28 ~ 11-16 21:56의 주문 5,224건 중 3,114건이 거래로 끝났고(60%), 가게를 시도한 횟수별 종료 사유는 이렇다.
+
+| 사유 (`tried[].why`, `receipt_problem`) | 수 |
+|---|---|
+| 마지막 제안 뒤에도 호가가 내 상한보다 높다 | 8,681 |
+| 가게가 대화를 거절로 끝냈다 (`TASK_STATE_REJECTED`) | 7,842 |
+| 가게의 응답 timeout (메시지당 12초) | 1,948 |
+| 20초가 지났고 성사 확률이 기준 아래다 | 1,351 |
+| 영수증의 등급으로 계산한 Saved가 0.70 아래다 (`Saved check: claim C at 0.680 of list scores 0.492, under 0.7`) | 1,068 |
+| 영수증의 등급으로는 사용 기한을 채울 수 없다 | 168 |
+| 영수증 가격이 내 상한을 넘는다 | 41 |
+| 영수증의 SKU가 주문의 acceptable이 아니다 | 36 |
+| 영수증이 증명서를 주지 않는다 (`cert: false`) | 22 |
+
+아래 다섯 줄은 서명된 영수증을 받고도 결제하지 않은 경우다. 키트가 결제 단계에서 거절하면 그 주문은 끝나지만, hook 안에서 거절하면 다음 가게로 넘어갈 수 있다.
+
+### 3.4 운영 중 실패와 수정
+
+커밋 142개 중 29개가 `fix`다. 순위에 영향이 컸던 것만 적는다. 각 항목의 수치는 해당 커밋 메시지에 있다.
+
+| 날짜 | 무슨 일이 있었나 | 고친 것 |
+|---|---|---|
+| 11-04 | 예외 읽기 모델이 buyer가 말한 예산을 제안가로 읽어서 호가 아래로 팔 수 있었다 (리뷰에서 재현) | 예산 문구 안의 숫자뿐인 읽기는 버린다 (`48f90ce`) |
+| 11-05 | 사건 수집이 매분 `events.jsonl` 전체를 다시 읽었고, 시각이 가까운 고장 행에서 `KeyError`가 났다 | 사건을 상태에 한 번만 접는다 (`377fbd1`) |
+| 11-07 | `buyer.min_kept` 0.28이 후보 단계에서 비식품 주문을 모두 떨어뜨렸다. 첫 10분의 주문 10건 중 7건 | 이 값은 가격 상한에만 쓴다 (`c3ecf2a`) |
+| 11-09 | 보증 상한을 100만씩 올려도 6시간 서명액 1,670만 아래여서 보증 요청을 3시간 동안 모두 거절했다 | 한 번에 300만(이후 1,000만)을 움직이게 했다 (`df984fb`) |
+| 11-10 | 모델이 보증 상한을 네 번 내렸고 결과 점검은 buyer와 게시판 지표만 봐서 통과시켰다. 그 사이 정산 매출이 절반이 됐다 | 결과 점검에 환불을 뺀 시간당 매출을 넣었다 (`2db6643`) |
+| 11-11 | strategist가 쓴 보증 상한 2,300만이 실행 중인 가게가 시작할 때 읽은 범위(2,000만)를 넘었다. 가게가 파일을 거절하고 7시간 동안 기본값으로 돌았다 | 기본값으로 결정한 행을 brief가 세어 경고한다 (`09b3b3c`) |
+| 11-11 ~ 12 | Cloudflare Quick Tunnel 장애로 가게가 337분 동안 문의를 받지 못했다. ngrok 무료 요금제는 월 2만 요청이라 하루 3만 요청인 가게에 쓸 수 없었다 | 터널을 컨테이너 밖으로 빼고, 가게 로그가 2분 조용하면 다시 띄우는 감시를 붙였다 (`36c7e6b`, `dd76aac`) |
+| 11-12 | 가게가 가장 오래된 unit부터 냈는데 그것이 남은 C등급이었다. 고가품에서 C를 낸 서명은 13건 중 1건만 결제됐다 (A는 14건 중 13건) | 가장 좋은 등급부터 낸다 (`e0e1e6f`) |
+| 11-12 | 패치 3.6이 Saved 계산을 바꿨다. 0.05씩 움직이는 폭으로는 밤새 걸릴 상황이었다 | 패치 노트가 새로 뜨면 6시간 동안 폭을 3배로 하고 결과를 기다리는 중에도 모델에 묻는다 (`1794f82`, `763d2f8`) |
+| 11-14 | 식품 C등급 45건이 정가의 0.584에 정산됐다. 견적이 등급을 말하지 않아 등급별 하한이 걸리지 않았다 | 영수증이 주장한 등급으로 Saved를 계산해 0.70 아래면 결제하지 않는다 (`d9081da`) |
+| 11-15 | 보증 상한의 집계가 같은 unit의 영수증을 여러 번 셌다. 실제 5,450만을 8,000만으로 읽어 보증 요청 366건을 거절했다 | unit마다 마지막 영수증만 센다 (`a6cad89`) |
+
+### 3.5 한계
+
+- **모델의 기여를 분리해 재지 못했다.** strategist를 끈 대조 구간이 없다. 결과 점검 144건은 모두 "보고만"이고, 지표가 시간대에 따라 흔들려서 어느 변경이 순위를 올렸는지 말할 수 없다.
+- **buyer의 Saved.** 3.2절에 적은 대로 가장 큰 가중치의 항목이 가장 약하다. 등급별 하한과 영수증 검사는 11-12 이후에야 들어갔다.
+- **묶인 재고.** 하루 넘게 팔리지 않은 비식품이 347개, 원가 7,984만이다. 대부분 시장의 등급별 정산가보다 원가가 높게 뽑힌 A등급 고가품이다.
+- **만들지 않은 것.** `agent.json`의 설명에 있는 hook 안의 주기적 planner(`llm.planner_enabled`)는 만들지 않았고 strategist가 그 자리를 대신했다. 신규 고객 도입가와 가게 명의 답글도 꺼져 있다. 선택 과제인 `acp.json`으로 만드는 buyer는 하지 않았다.
+- **가게 코드는 재시작해야 바뀐다.** 정책 숫자는 바로 반영되지만 `seller.py`와 가게가 읽은 `policy.py`는 컨테이너를 다시 만들어야 바뀐다. 11-11의 7시간이 이 때문이었다.
+- **결정 로그는 저장소에 없다.** `logs/decisions/`는 0.75 GB(`seller.jsonl` 518 MB)여서 배포 머신에 두었다. 이 문서의 결정 행 인용은 거기서 가져왔다.
