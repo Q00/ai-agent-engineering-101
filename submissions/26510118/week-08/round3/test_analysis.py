@@ -1452,6 +1452,11 @@ def test_stage2():
     lean = {"at": t, "weights": {"-0.03": 0.0667, "0.0": 0.0667, "0.03": 0.8, "0.06": 0.0667}}
     got = [experiments.arm(f"task-{i}", t, lean) for i in range(4000)]
     check("...the best arm at 0.8 gets about 80% of them", 0.77 < got.count(0.03) / len(got) < 0.83, got.count(0.03) / len(got))
+    check("...'fixed' to an arm overrides the weights; a value that is not an arm, or a boolean, is ignored; a stale or "
+          "stopped file still gives no arm", experiments.arm("task-7", t, dict(lean, fixed=0.0)) == 0.0
+          and experiments.arm("task-7", t, dict(lean, fixed=0.05)) == got[7] and experiments.arm("task-7", t, dict(lean, fixed=True)) == got[7]
+          and experiments.arm("task-7", t, dict(lean, fixed=0.0, on=False)) is None
+          and experiments.arm("task-7", t, dict(lean, fixed=0.0, at=t - 4 * 3600)) is None)
 
     def talks(a, n, deals, price, cost=600, lp=1000):
         return [{"ts": t - 600, "arm": a, "anchored": True, "outcome": "deal" if i < deals else "walked",
@@ -1496,6 +1501,13 @@ def test_stage2():
         e = common.read_json(experiments.path())
         check("...+0.03 at 0.128 a talk, 2 standard errors and more over the next: it gets 0.8 and every other 0.0667",
               e["best"] == "0.03" and e["z"] >= 2 and e["weights"] == {"-0.03": 0.0667, "0.0": 0.0667, "0.03": 0.8, "0.06": 0.0667}, e)
+        common.write_json(experiments.path(), dict(e, fixed=0.0))
+        note = experiments.run(t)
+        e = common.read_json(experiments.path())
+        got = {experiments.arm(f"task-{i}", t, e) for i in range(400)}
+        check("11/16: a person's 'fixed' 0.0 (a value, though falsy) survives run(), every talk takes it whatever the "
+              "weights say, and the note says so", e.get("fixed") == 0.0 and got == {0.0} and "fixed at 0.0" in note
+              and e["best"] == "0.03", (e.get("fixed"), got, note))
     finally:
         experiments.path().unlink(missing_ok=True)
         obj.unlink(missing_ok=True)

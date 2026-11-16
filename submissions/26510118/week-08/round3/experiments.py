@@ -16,6 +16,11 @@ Until every arm has MIN_TALKS talks, and until the best arm's reward is Z standa
 weights are even; then the best gets BEST and each other REST, so the others keep being measured (the buyers keep
 changing). analysis/experiments.json {"at", "on", "weights", "best", "z", "stats", "lambda"}; the seller reads it
 while it is FRESH, else asks at pricing.ASK_OVER as before. "on": false (a person) stops it.
+
+A person may set "fixed" to one of ARMS: every talk then takes it, and run() keeps it (11/16, the user's call, "기준
+호가로 정리"). In won, which is what the book counts, 0.0 led: over 48 h 2,165 a talk against 1,593 (-0.03), 1,994
+(+0.03) and 1,685 (+0.06), +407 over their mean (z 1.48; 24 h: +881, z 2.34), with the most revenue a talk (30,649)
+and the best close (19.9%), while per list price no arm led (z 0.35).
 """
 import hashlib
 import statistics as st
@@ -42,6 +47,9 @@ def arm(task_id: str, now: float | None = None, state: dict | None = None) -> fl
     now = now or time.time()
     if not isinstance(st, dict) or not st.get("on", True) or now - (st.get("at") or 0) > FRESH:
         return None
+    fixed = st.get("fixed")
+    if isinstance(fixed, (int, float)) and not isinstance(fixed, bool) and any(abs(fixed - a) < 1e-9 for a in ARMS):
+        return float(fixed)
     arms = sorted((float(a), float(w)) for a, w in (st.get("weights") or {}).items() if float(w) > 0)
     if not arms:
         return None
@@ -98,10 +106,13 @@ def run(now: float | None = None) -> str:
     best, z = leader(stats) if ready else (None, None)
     weights = {a: BEST if a == best else REST for a in stats} if best else {a: round(1 / len(ARMS), 4) for a in stats}
     common.write_json(path(), {"at": int(now), "on": old.get("on", True), "weights": weights, "best": best, "z": z,
-                               "stats": stats, "lambda": {"book": lam.get("book"), "revenue": lam.get("revenue")}})
+                               "stats": stats, "lambda": {"book": lam.get("book"), "revenue": lam.get("revenue")},
+                               **({"fixed": old["fixed"]} if "fixed" in old else {})})   # 0.0 is a value, not "unset"
     talks = ", ".join(f"{a}: {s['talks']} talks, close {s['close']}, {s['reward_per_talk']}/talk" for a, s in stats.items())
     why = (f"best {best} by {z} SE" if best else f"even: no arm {Z} SE ahead yet (z {z})" if ready
            else f"even until {MIN_TALKS} talks each")
+    if "fixed" in old:
+        why = f"fixed at {old['fixed']} by a person; " + why
     return f"first-ask arms ({why}): {talks}"
 
 
