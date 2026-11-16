@@ -6,8 +6,11 @@ Round 3 (week-08): the order names a category and the acceptable SKUs; each shop
 (sku, name, qty) for them. The buyer asks only shops that have a fitting offer, names one SKU per shop
 (choose_sku), compares the quotes by surplus (list price - ask: a settled deal is worth the SKU's list price),
 and adds "accept" to its last line so the kit pays only for a unit that meets it:
-  food  -> {"min_hours_left": use_within_hours, "grades": ["A", "B"]}     (value is 0 if it does not last)
-  goods -> {"grades": ["A", "B"]}
+  food  -> {"min_hours_left": use_within_hours + 0.5}        (a unit that does not last scores -1 in Saved)
+  goods -> {"grades": ["A", "B"]}, or A/B/C when the receipt carries a warranty of 6 h or more
+Scoring (Patch 3.4-3.6): Saved = sum of (list - price) / (list - cost) per deal, over deals + 100, so the buyer
+compares quotes by share off list, aims at the market median, and past the aim still takes any price clearly
+below list (a deal adds, a walk adds nothing).
 Before each order it reads the kit's .market/payments.jsonl (unpaid deals, with the reason) and
 .market/broken.jsonl (goods that broke) into the shop memory.
 
@@ -416,8 +419,9 @@ def main():
         return
 
     # choose: the lowest opening ask; on a tie, the shop I trust more (code rule, logged)
-    # Round 3: the biggest surplus (list price - ask); before Round 3: the lowest ask
-    live.sort(key=lambda q: ((-q["surplus"] if q.get("surplus") is not None else q["ask"]),
+    # Round 3: the biggest share off list (Saved scores the share, not the amount); before Round 3: the lowest ask
+    share_off = lambda q: q["surplus"] / q["shop"]["want"]["list_price"]
+    live.sort(key=lambda q: ((-share_off(q) if q.get("surplus") is not None else q["ask"]),
                              [-x for x in fallback_score(q["shop"], mem)]))
     best = live[0]
     say("[compare] " + "; ".join(f"{q['shop']['name']} {q['ask']}"
@@ -434,6 +438,7 @@ def main():
     shop, url = best["shop"], best["url"]
     want = shop.get("want") or {}
     aim = target_price(want["sku"], catalog, read_json(LEDGER, {})) if want.get("sku") else None
+    say(f"[mode] offers by {'harness' if 'offer' in HARNESS_STEPS else 'rule'}")   # for the rule-vs-model comparison
     if aim:
         say(f"[aim] {want['sku']}: I aim to pay at most {aim} (market median x 0.95, or 72% of list {want.get('list_price')})")
     others = [q["ask"] for q in live if q is not best]
@@ -461,9 +466,18 @@ def main():
             if move is None:                                  # rule: start at 70%, close half the gap, then meet it
                 ask = asks[-1] or a.budget
                 target = min(ask, a.budget, aim or a.budget)  # never above the market's usual price (surplus)
+                lp = (shop.get("want") or {}).get("list_price")
                 if aim and len(offers) >= 2 and offers[-1] == offers[-2] == target and ask > target:
-                    say(f"[aim] the shop stays at {ask}, above my aim {aim} -> walk")
-                    move = {"action": "walk"}
+                    # Patch 3.4/3.6: Saved = sum over deals of (list - price) / (list - cost), over deals + 100.
+                    # Every deal below list adds to it; walking adds nothing. So past my aim, take the shop's
+                    # price while it is still clearly below list, and walk only when it is not.
+                    if lp and ask <= min(a.budget, 0.97 * lp):
+                        say(f"[aim] the shop stays at {ask} above my aim {aim}, still {round(100 * (1 - ask / lp))}% "
+                            f"under list {lp} -> take it (any deal below list adds to Saved)")
+                        move = {"action": "offer", "price": ask}
+                    else:
+                        say(f"[aim] the shop stays at {ask}, at or near list {lp} -> walk")
+                        move = {"action": "walk"}
                 elif not offers:
                     price = int(target * 0.7)
                 elif len(offers) >= 3 or target - offers[-1] <= max(3, round(target * 0.05)):
@@ -481,6 +495,9 @@ def main():
             if offer > a.budget:
                 say(f"[guard] offer {offer} is above the budget {a.budget} -> {a.budget}")
                 offer = a.budget
+            if aim and offer > aim and "offer" in HARNESS_STEPS:   # the model may chase the shop's price
+                say(f"[guard] harness offer {offer} is above my aim {aim} -> {aim}")
+                offer = aim
             if offer >= a.budget and not held_back:          # Round 3 hides the budget from shops: do not hand
                 held_back = True                              # it over at once; go a little below it first
                 below = max(a.budget - max(2, round(a.budget * 0.03)), (offers[-1] + 1) if offers else 0)
@@ -582,12 +599,15 @@ def main():
     META.write_text(json.dumps(meta, ensure_ascii=False), encoding="utf-8")
     out = {"shop": shop["url"], "receipt": receipt, "stars": stars, "review": review}
     if order.get("acceptable") is not None:           # the kit pays only for a unit that meets this
+        # Patch 3.6: a deal that served nothing scores -1 (food that did not last, goods that broke), a refunded
+        # one 0. Goods break only within 6 h: with a warranty of 6 h or more a break is refunded (0, not -1), so
+        # grade C is fine then; without one, A and B only.
         grades = ["A", "B"]
-        lp = want.get("list_price")
-        if order.get("kind") != "food" and receipt and lp and receipt.get("price") and receipt["price"] <= 0.6 * lp:
-            grades = ["A", "B", "C"]                      # refurbished is fine at 60% of list or less
-            say(f"[accept] paid {receipt['price']} <= 60% of list {lp}: grade C accepted too")
-        out["accept"] = ({"min_hours_left": order["use_within_hours"], "grades": grades}
+        if order.get("kind") != "food" and receipt and (receipt.get("warranty_hours") or 0) >= 6:
+            grades = ["A", "B", "C"]
+            say(f"[accept] receipt has a {receipt['warranty_hours']:g} h warranty: a break is refunded, grade C ok")
+        # food: the shelf life left IS the grade, so only the hours matter (a C unit that lasts is a full deal)
+        out["accept"] = ({"min_hours_left": order["use_within_hours"] + 0.5}
                          if order.get("kind") == "food" and order.get("use_within_hours") else {"grades": grades})
     say(json.dumps(out, ensure_ascii=False))
 
