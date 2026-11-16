@@ -581,6 +581,11 @@ def main():
     trial.write_text("{}")
     buyer_r3.load_plan("o-1")
 
+    # 23. the retry cutoff: 60 s on the orders in the trial arm, RETRY_UNTIL on the rest
+    cuts = {buyer_r3.retry_until({"order": f"o-{i}"}) for i in range(40)}
+    case("the retry cutoff is 60 s or RETRY_UNTIL, never longer than RETRY_UNTIL",
+         cuts <= {60, buyer_r3.RETRY_UNTIL}, str(cuts))
+
     # 24. plan mode (11/13): one model call fixes the opening and the most we pay, code concedes after that
     plan_calls = []
     async def planner(prompt, **kw):

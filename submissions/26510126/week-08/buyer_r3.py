@@ -385,6 +385,12 @@ def favored(shop, name, now=None):
     return None
 
 
+def retry_until(order):
+    # seconds into the order after which no new shop is tried: 26% of orders try 4+ shops and take a median 46-64 s
+    # (576 orders in 6 h against ~1,000 for the top buyers); a talk that fails after 60 s rarely closes on a late retry
+    return 60 if code_ab_r3.on("cb28e41d75a7", order.get("order")) else RETRY_UNTIL
+
+
 def candidates(order, shops, cat, memory, claims):
     """(expected surplus, shop, offer, list price, note) for every listed offer that fits the order."""
     acceptable = set(order.get("acceptable") or [])
@@ -662,7 +668,7 @@ async def main(args, shops, memory, remember):
         # a shop that said "none in stock" for one SKU may still have another the order accepts: up to two SKUs a
         # shop, the second only after a quick reject (the meta-harness's code idea, 11/4: 714 of ~1,000 talks ended so)
         if (s["name"], off["sku"]) in tried or skus.get(s["name"], 0) >= (2 if s["name"] in quick_shops else 1) \
-                or talks >= MAX_TRIES or (tried and time.time() - started > RETRY_UNTIL):
+                or talks >= MAX_TRIES or (tried and time.time() - started > retry_until(order)):
             continue
         tried.add((s["name"], off["sku"]))
         skus[s["name"]] = skus.get(s["name"], 0) + 1
