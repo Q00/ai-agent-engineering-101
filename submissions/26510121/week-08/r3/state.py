@@ -59,6 +59,7 @@ class Journal:
         self.md.mkdir(parents=True, exist_ok=True)
         self.db = self.md / "r3.sqlite3"
         with self.connect() as c:
+            c.execute("PRAGMA journal_mode=WAL")
             c.executescript("""
             CREATE TABLE IF NOT EXISTS events(id TEXT PRIMARY KEY,kind TEXT,ts REAL,role TEXT,data TEXT);
             CREATE INDEX IF NOT EXISTS event_kind ON events(kind,ts);
@@ -69,11 +70,10 @@ class Journal:
             """)
 
     @contextmanager
-    def connect(self):
-        c = sqlite3.connect(self.db, timeout=15)
+    def connect(self, *, timeout=15):
+        c = sqlite3.connect(self.db, timeout=timeout)
         try:
-            c.execute("PRAGMA journal_mode=WAL")
-            c.execute("PRAGMA busy_timeout=15000")
+            c.execute("PRAGMA busy_timeout=" + str(max(0, int(timeout*1000))))
             with c:
                 yield c
         finally:
@@ -86,6 +86,46 @@ class Journal:
                             (eid, kind, time.time() if ts is None else ts, role,
                              json.dumps(data, ensure_ascii=False)))
             return cur.rowcount == 1
+
+    def observe(self, kind, data, *, eid=None, role="system", ts=None):
+        """Durable diagnostic evidence, with a short wait off the trading path.
+
+        Financial events and reservations must keep using add/connect. Pending
+        observations are invisible to learning until the background drain commits.
+        """
+        eid = eid or uuid.uuid4().hex
+        row = [eid, kind, time.time() if ts is None else ts, role,
+               json.dumps(data, ensure_ascii=False)]
+        try:
+            with self.connect(timeout=.05) as c:
+                c.execute('INSERT OR IGNORE INTO events VALUES(?,?,?,?,?)', row)
+        except sqlite3.OperationalError as exc:
+            if not any(s in str(exc).lower() for s in ('locked', 'busy')):
+                raise
+            # One immutable file per event; a crash cannot leave a half JSON.
+            atomic_json(self.md/'telemetry-pending'/(uuid.uuid4().hex+'.json'), row)
+        return True
+
+    def flush_observations(self, limit=100):
+        paths = list((self.md/'telemetry-pending').glob('*.json'))[:limit]
+        rows = []
+        for path in paths:
+            row = read_json(path)
+            if isinstance(row, list) and len(row) == 5:
+                rows.append((path, row))
+        if not rows:
+            return 0
+        try:
+            with self.connect(timeout=.05) as c:
+                c.executemany('INSERT OR IGNORE INTO events VALUES(?,?,?,?,?)', [r for _,r in rows])
+        except sqlite3.OperationalError as exc:
+            if any(s in str(exc).lower() for s in ('locked', 'busy')):
+                return 0
+            raise
+        # Delete only after commit. Replayed IDs are idempotent after a crash.
+        for path,_ in rows:
+            path.unlink(missing_ok=True)
+        return len(rows)
 
     def events(self, kind, limit=500):
         with self.connect() as c:

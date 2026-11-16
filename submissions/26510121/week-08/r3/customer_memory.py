@@ -39,16 +39,16 @@ def retain(journal, max_visits=MAX_VISITS, max_events=MAX_EVENTS):
             visit_data=json.loads(data);task=visit_data['task']
             from .long_memory import archive_customer
             archive_customer(connection,task,visit_data)
-            connection.execute("DELETE FROM events WHERE kind LIKE 'customer_%' AND json_extract(data,'$.task')=?", (task,))
+            connection.execute("DELETE FROM events WHERE kind GLOB 'customer_*' AND json_extract(data,'$.task')=?", (task,))
             connection.execute('DELETE FROM kv WHERE key IN (?,?)', ('customer-visit:' + task, 'customer-payer:' + task))
-            connection.execute("DELETE FROM kv WHERE key LIKE 'customer-ledger:%' AND value=?", (json.dumps(task),))
+            connection.execute("DELETE FROM kv WHERE key GLOB 'customer-ledger:*' AND value=?", (json.dumps(task),))
         # Actions/turns can also be numerous within one visit; enforce a total cap.
         connection.execute("DELETE FROM events WHERE rowid IN (SELECT rowid FROM events "
-                           "WHERE kind LIKE 'customer_%' AND kind!='customer_visit' "
+                           "WHERE kind GLOB 'customer_*' AND kind!='customer_visit' "
                            "ORDER BY ts DESC,rowid DESC LIMIT -1 OFFSET ?)",
                            (max(0, max_events - max_visits),))
         # Never evict an unexpired replay guard to make room for a new one.
-        connection.execute("DELETE FROM kv WHERE key LIKE 'customer-proof:%' "
+        connection.execute("DELETE FROM kv WHERE key GLOB 'customer-proof:*' "
                            "AND json_type(value)='object' AND json_extract(value,'$.expires') < ?", (time.time(),))
 
 
@@ -70,7 +70,7 @@ def signed_visitor(journal, task, message_id, text, metadata, now=None, expected
         replay_key = 'customer-proof:' + identity([subject, message_id])
         with journal.connect() as connection:
             connection.execute('BEGIN IMMEDIATE')
-            connection.execute("DELETE FROM kv WHERE key LIKE 'customer-proof:%' "
+            connection.execute("DELETE FROM kv WHERE key GLOB 'customer-proof:*' "
                                "AND json_type(value)='object' AND json_extract(value,'$.expires') < ?", (now,))
             row = connection.execute('SELECT value FROM kv WHERE key=?', (replay_key,)).fetchone()
             if row:
@@ -78,7 +78,7 @@ def signed_visitor(journal, task, message_id, text, metadata, now=None, expected
                 if (previous.get('task') if isinstance(previous, dict) else previous) != task:
                     return None
             else:
-                count = connection.execute("SELECT count(*) FROM kv WHERE key LIKE 'customer-proof:%'").fetchone()[0]
+                count = connection.execute("SELECT count(*) FROM kv WHERE key GLOB 'customer-proof:*'").fetchone()[0]
                 if count >= MAX_PROOFS:
                     return None
                 connection.execute('INSERT INTO kv VALUES(?,?)',

@@ -137,7 +137,7 @@ class Chooser:
             advice=research_context(self.j,self.config)
             if advice:
                 context['market_research']=advice
-                self.j.add('research_main_feedback',{'role':role,'research_at':advice['at'],
+                self.j.observe('research_main_feedback',{'role':role,'research_at':advice['at'],
                     'operation':context.get('operation'),'candidates':len(candidates)},role=role)
         if self.config.get('objective_feedback_enabled'):
             from .feedback import context as feedback_context
@@ -147,27 +147,39 @@ class Chooser:
             context['market_state']={k:diagnosis.get(k) for k in
                                     ['status','book_drawdown','leader_gap','buyer_payment_failures','market_summary']}
         decision_id = __import__("uuid").uuid4().hex
-        self.j.add("prediction", {"decision": decision_id, "role": role, "candidates": candidates,
-                                  "context": context}, role=role)
+        if self.config.get('llm_disabled'):
+            prediction = {'decision':decision_id,'role':role,'operation':context.get('operation'),
+                'order':(context.get('order') or {}).get('order'),'task':context.get('task'),
+                'policy_id':self.config.get('_feedback_policy_id'),
+                'context':{'order':{'order':(context.get('order') or {}).get('order')},
+                    'operation':context.get('operation'),'task':context.get('task'),
+                    'shop':context.get('shop'),'sku':context.get('sku'),
+                    'next_rank_thresholds':context.get('next_rank_thresholds'),
+                    'customer_memory':{'task':(context.get('customer_memory') or {}).get('task')}},
+                'candidates':[{k:c.get(k) for k in ('id','action','price','warranty_hours','score','expected_delta','objective_utility')} for c in candidates],
+                'schema':'compact-numeric-v31'}
+        else:
+            prediction = {'decision':decision_id,'role':role,'candidates':candidates,'context':context}
+        self.j.observe('prediction',prediction,role=role)
         bounded_restock=(context.get('operation')=='restock' and all(
             'buy' in c and 0<=c.get('capital_commitment',float('inf'))<=
                 context.get('cash_capacity',{}).get('spendable',-1) for c in candidates))
         if (role=='buyer' and context.get('buyer_execution') and self.config.get('buyer_patch34_enabled')
                 and current['metric']=='saved'):
-            self.j.add('decision',{'decision':decision_id,'chosen':best['id'],'mode':'fast_buyer_saved'},role=role)
-            self.j.add('buyer_saved_execution',{'decision':decision_id,'chosen':best['id'],
+            self.j.observe('decision',{'decision':decision_id,'chosen':best['id'],'mode':'fast_buyer_saved'},role=role)
+            self.j.observe('buyer_saved_execution',{'decision':decision_id,'chosen':best['id'],
                 'operation':context.get('operation'),'seconds':time.monotonic()-started},role=role)
             return finish(best)
         if (role=='shop' and context.get('shop_execution') and
                 self.config.get('shop_fast_execution_enabled') and (not critical or bounded_restock)):
-            self.j.add('decision',{'decision':decision_id,'chosen':best['id'],
+            self.j.observe('decision',{'decision':decision_id,'chosen':best['id'],
                 'mode':'fast_shop_numeric','reason':'feasible numeric trade; avoid negotiation latency'},role=role)
-            self.j.add('shop_fast_execution',{'decision':decision_id,'chosen':best['id'],
+            self.j.observe('shop_fast_execution',{'decision':decision_id,'chosen':best['id'],
                 'operation':context.get('operation','quote'),'seconds':time.monotonic()-started,
                 'bounded_restock':bounded_restock},role=role)
             return finish(best)
         if self.config.get("llm_disabled") or os.environ.get("R3_MODEL_MODE") == "offline" or len(candidates) == 1:
-            self.j.add("decision", {"decision": decision_id, "chosen": best["id"],
+            self.j.observe("decision", {"decision": decision_id, "chosen": best["id"],
                                     "mode": 'explicit_offline' if os.environ.get('R3_MODEL_MODE') == 'offline' else 'single_feasible'}, role=role)
             return finish(best)
         try:
@@ -181,13 +193,13 @@ class Chooser:
             # discard most of the numerical objective without a measurable basis.
             field = 'objective_utility' if best.get('objective_utility', 0) > 0 else 'score'
             if best.get(field, 0) > 0 and selected.get(field, 0) < .8 * best[field]:
-                self.j.add('critic_override', {'decision': decision_id, 'proposed': selected['id'],
+                self.j.observe('critic_override', {'decision': decision_id, 'proposed': selected['id'],
                            'chosen': best['id'], 'reason': 'below numerical objective floor'}, role=role)
                 selected = best
-            self.j.add("decision", {"decision": decision_id, "chosen": selected["id"], "mode": "model"}, role=role)
+            self.j.observe("decision", {"decision": decision_id, "chosen": selected["id"], "mode": "model"}, role=role)
             return finish(selected)
         except ModelError as exc:
-            self.j.add("decision", {"decision": decision_id, "chosen": best["id"], "mode": "numeric_fallback",
+            self.j.observe("decision", {"decision": decision_id, "chosen": best["id"], "mode": "numeric_fallback",
                                     "error": str(exc)}, role=role)
             return finish(best)
 

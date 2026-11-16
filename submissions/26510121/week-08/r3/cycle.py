@@ -63,6 +63,7 @@ class MarketCycle:
         from .prewindow import prepare
         from .research import analytics
         started=time.monotonic()
+        self.j.flush_observations()
         now=time.time()
         if now-self.last_analysis>=60:
             self.last_analysis=now

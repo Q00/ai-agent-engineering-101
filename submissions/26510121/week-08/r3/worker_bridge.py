@@ -3,6 +3,7 @@ import atexit
 import json
 import os
 import queue
+import re
 import subprocess
 import sys
 import threading
@@ -56,12 +57,14 @@ class BuyerBridge:
             if 'mandates' in order or 'nonce' in order:
                 raise ValueError('payment_material_must_stay_in_parent')
             started = time.monotonic()
+            worker_error = None
+            error_origin = []
             request_id = uuid.uuid4().hex
             # Reviews/prose are not candidate inputs; keep them out of worker context.
             routing_shops = [{key: row[key] for key in ('name', 'url', 'offers') if key in row} for row in shops]
             body = json.dumps({'id': request_id, 'order': order, 'shops': routing_shops}, ensure_ascii=False)
             if len(body.encode()) > 2_000_000:
-                self.journal.add('buyer_worker_error', {'order': order.get('order'),
+                self.journal.observe('buyer_worker_error', {'order': order.get('order'),
                     'reason': 'input_budget_exceeded', 'payment_started': False}, role='buyer')
                 return []  # Before dispatch; parent can submit one truthful failed result.
             try:
@@ -75,15 +78,31 @@ class BuyerBridge:
                 if response.get('id') != request_id or response.get('order') != order.get('order'):
                     raise ValueError('buyer_worker_response_identity_mismatch')
                 if response.get('error'):
+                    error = response['error']
+                    if isinstance(error,str) and re.fullmatch(r'[A-Za-z_]{1,64}',error):
+                        worker_error = error
+                    frames = response.get('error_origin')
+                    for frame in (frames if isinstance(frames,list) else [])[:3]:
+                        if (isinstance(frame,dict) and isinstance(frame.get('module'),str)
+                                and re.fullmatch(r'[A-Za-z0-9_.-]{1,100}',frame['module'])
+                                and isinstance(frame.get('function'),str)
+                                and re.fullmatch(r'[A-Za-z0-9_]{1,100}',frame['function'])
+                                and type(frame.get('line')) is int):
+                            error_origin.append({k:frame[k] for k in ('module','function','line')})
                     raise ValueError('buyer_worker_job_failed')
                 result = response.get('result')
                 if not isinstance(result, dict):
                     raise ValueError('buyer_worker_invalid_result')
-                self.journal.add('buyer_worker_execution', {'order': order['order'],
+                self.journal.observe('buyer_worker_execution', {'order': order['order'],
                     'seconds': time.monotonic() - started, 'request_id': request_id}, role='buyer')
                 return [json.dumps(result, ensure_ascii=False)]
             except (OSError, ValueError, queue.Empty) as exc:
                 self.close()
-                self.journal.add('buyer_worker_error', {'order': order.get('order'),
-                    'error_type': type(exc).__name__, 'payment_started': False}, role='buyer')
+                self.journal.observe('buyer_worker_error', {'order': order.get('order'),
+                    'error_type': type(exc).__name__, 'worker_error_type':worker_error,
+                    'error_origin':error_origin,
+                    'reason':str(exc) if type(exc) is ValueError and str(exc) in {
+                        'buyer_worker_invalid_envelope','buyer_worker_response_identity_mismatch',
+                        'buyer_worker_job_failed','buyer_worker_invalid_result'} else 'transport_or_worker_failure',
+                    'payment_started': False}, role='buyer')
                 return []  # Never accept a late/cross-order response or replay payment.

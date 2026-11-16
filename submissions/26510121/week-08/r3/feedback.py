@@ -285,6 +285,6 @@ def record_choice(journal, config, role, decision, selected, context):
             'objective_utility': selected.get('objective_utility'), 'preview': bool(context.get('preview')),
             'reason': 'selected_by_official_objective_surrogate_after_operating_policy'}
         if context.get('_feedback_policy_id'):row['policy_id']=context['_feedback_policy_id']
-        journal.add('feedback_main_choice', row, role=role)
+        journal.observe('feedback_main_choice', row, role=role)
     except Exception:
         pass  # Telemetry cannot change the selected trade.

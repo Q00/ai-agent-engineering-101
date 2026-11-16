@@ -2,6 +2,8 @@
 import json
 import os
 import sys
+import traceback
+from pathlib import Path
 
 from market_buyer import buy
 from .state import Journal
@@ -26,6 +28,9 @@ def main():
             response['result'] = buy(order, shops, journal)
         except Exception as exc:
             response['error'] = type(exc).__name__
+            # No exception message, source text, locals or payment material.
+            response['error_origin'] = [{'module':Path(f.filename).name,
+                'function':f.name,'line':f.lineno} for f in traceback.extract_tb(exc.__traceback__)[-3:]]
         print(json.dumps(response, ensure_ascii=False), flush=True)
 
 
