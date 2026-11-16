@@ -18,8 +18,8 @@ from typing import Any
 ROOT = Path(__file__).resolve().parent
 MARKET = Path(os.environ.get("MARKET_DIR", ROOT / ".market"))
 MIN_CASH = 1_300_000
-RESTOCK_BUDGET_FRACTION = 0.12
-MAX_STOCK_UNITS = 18
+RESTOCK_BUDGET_FRACTION = 0.06
+MAX_STOCK_UNITS = 10
 MAX_PER_SKU = 3
 FOOD_MAX_HOURS_STORED = 40
 SAFE_MARGIN = 0.16
@@ -77,7 +77,8 @@ def reserve_for_unit(unit: dict[str, Any], product: dict[str, Any] | None = None
     cost = money(unit.get("cost"), 0)
     list_price = money(unit.get("list_price") or product.get("list_price"), cost)
     storage = max(0, int(cost * .01 / 24 * min(24, max(0, (time.time() if now is None else now) - float(unit.get("supplied_at") or time.time())) / 3600)))
-    risk = .02 if food_like(unit, product) else .05
+    remaining = age_hours(unit)
+    risk = (.02 if remaining < 24 else .07) if food_like(unit, product) else .10
     floor = math.ceil((cost + storage) * (1 + risk))
     return max(cost, min(max(list_price, cost), floor)) if list_price >= cost else cost
 
@@ -88,8 +89,12 @@ def suggested_ask(unit: dict[str, Any], product: dict[str, Any] | None = None,
     cost = money(unit.get("cost"), 1)
     list_price = money(unit.get("list_price") or product.get("list_price"), cost)
     floor = reserve_for_unit(unit, product)
-    premium = max(.06, min(.22, SAFE_MARGIN + .015 * max(0, min(demand_score, 4))))
-    ask = max(floor, int(round(max(list_price, floor) * (1 - .09) + cost * premium)))
+    # A large markdown from list price can still yield a positive unit margin.
+    # Price near list price often means buyers never complete a purchase.
+    # Cap the opening ask by both list discount and a cost-based markup.
+    discount = max(.10, min(.20, .14 + .012 * max(0, 4-demand_score)))
+    upper_from_cost = int(math.ceil(cost * (1.24 if food_like(unit, product) else 1.30)))
+    ask = max(floor, min(int(list_price * (1-discount)), upper_from_cost))
     if food_like(unit, product):
         hours = age_hours(unit)
         if hours < 12:
@@ -147,8 +152,13 @@ def reputation_risk(shop: dict[str, Any], memory: dict[str, Any]) -> float:
 
 def safe_accept_policy(order: dict[str, Any]) -> dict[str, Any]:
     """Kit v4 validates certificate, shelf life, grade and warranty at checkout."""
-    policy: dict[str, Any] = {"cert": True, "grades": ["A", "B"]}
-    if str(order.get("kind", "")).lower() == "food":
+    is_food = str(order.get("kind", "")).lower() == "food"
+    # For FOOD, market-verified shelf life is the relevant usability
+    # constraint. A C-grade unit is safe to consider when it demonstrably
+    # outlasts the buyer's use_within_hours requirement. Do not relax
+    # the expiration check to gain extra transactions.
+    policy: dict[str, Any] = {"cert": True, "grades": ["A", "B", "C"] if is_food else ["A", "B"]}
+    if is_food:
         needed = float(order.get("use_within_hours") or 0)
         policy["min_hours_left"] = max(2, needed)
     else:
@@ -207,7 +217,6 @@ def plan_restock(inv: dict[str, Any], products: dict[str, dict[str, Any]],
     if not weights:
         return []
     by_sku = Counter(str(u.get("sku", "")) for u in units)
-    now_ts = time.time() if now is None else now
     # Stable ordering for reproducibility; avoid supply-crowding penalties
     # by restocking only 1-2 units of a SKU at a time.
     picks = []
@@ -241,7 +250,7 @@ def plan_restock(inv: dict[str, Any], products: dict[str, dict[str, Any]],
     picks.sort(key=lambda x: (-x[0], x[1]))
     result = []
     for _, sku, expense in picks:
-        if len(result) >= 6 or len(units) + len(result) >= MAX_STOCK_UNITS:
+        if len(result) >= 2 or len(units) + len(result) >= MAX_STOCK_UNITS:
             break
         if expense > funds:
             continue
