@@ -204,7 +204,7 @@ def simulate(n=2000, seed=None):
             pushed |= push
             if push:
                 hb = max((1.5, 3), key=lambda h: (v["S"] - W[h][k]["S"]) / h if k in W[h] else 0)
-            hs = {"book": rnd.choice((12, 24)), "revenue": rnd.choice((12, 24)), "stars": rnd.choice((3, 6, 12)),
+            hs = {"book": rnd.choice((3, 6, 12)), "revenue": rnd.choice((6, 12, 24)), "stars": rnd.choice((3, 6, 12)),
                   "forum": rnd.choice((6, 12)), "S": hb, "deals": hb, "posts": hb}
             if push and k in EX:
                 hs["stars"] = max((3, 6, 12), key=lambda h: EX[k]["drift"].get(h, 0))
