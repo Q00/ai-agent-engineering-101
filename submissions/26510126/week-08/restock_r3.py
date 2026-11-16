@@ -613,8 +613,9 @@ def main():
                 # on 2-3 times in 6 h
                 own_n = sum(len(v) for k, v in deals_mine.items() if k.split("|")[0] == c["sku"])
                 # a hot, unsurged, non-stale 300k+ SKU floors that cap at half its depth: 6 h: 300k+ settled 509 an hour and we
-                # got 7.2%, holding 0-9 of the top sellers (133, 100 and 310 sold), so own_n / 4 left them at 2
-                own_floor = math.ceil(depth / 2) if (full and c["list_price"] >= 300_000 and surge.get(c["sku"], 1.0) <= 1.05
+                # got 7.2%, holding 0-9 of the top sellers (133, 100 and 310 sold), so own_n / 4 left them at 2; likewise the
+                # 150-300k band: 208 units an hour settled and we sold 1.8 (0.9%) holding 15 units with 182M idle
+                own_floor = math.ceil(depth / 2) if (full and surge.get(c["sku"], 1.0) <= 1.05
                                                      and c["sku"] not in stale) else 2
                 if depth and own_n:
                     depth = min(depth, max(own_floor, math.ceil(own_n / 4)))
