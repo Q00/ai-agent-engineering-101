@@ -143,7 +143,7 @@ class Seller(AgentExecutor):
                 receipt["claim"] = u.get("grade")          # honest: the ledger shows claim_honest afterwards
                 receipt["cert"] = True
                 if u.get("kind") == "goods":
-                    receipt["warranty_hours"] = {"A": 6, "B": 6}.get(u.get("grade"), 0)   # agent.md's example policy asks 6 h; B at 3 h was refused
+                    receipt["warranty_hours"] = {"A": 72, "B": 72}.get(u.get("grade"), 0)  # goods break only within 6 h of sale (rules), so 72 h costs the same as 6 h and passes every buyer policy
             receipt = sign(receipt)
             await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
             print(f"[deal] {u['sku']} grade {u.get('grade')} at {price} (cost {u['cost']})", flush=True)

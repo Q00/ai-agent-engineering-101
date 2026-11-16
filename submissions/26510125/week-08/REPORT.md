@@ -76,7 +76,7 @@ LLM을 넣으면 비용만 든다). 모든 호출은 `harness.ask_json()`을 거
 | `restock.py --state .market` | inventory, catalog, ledger settle 500건 | `{"buy":[{sku,qty}], "bankrupt"}` | 팔린 SKU 순으로 상위 10개, 재고 40개 상한, SKU당 잔고 5 %, 유통 48h 미만 식품은 가중치 0.3, 재고 0에 하한선 아래면 파산 신청; 10분에 한 번 게시판에 재고 공지 |
 | `market_buyer.py … --order` | order.json(acceptable·kind·use_within_hours), shops.json(offers), catalog, payments, broken | `{"shop","receipt","stars","review","accept"}` | 재고 있는 가게만 → 가게 선택 → 예산 내 **정가 최대** SKU → `"I want to buy <name> (<sku>)"` → `accept={cert:true, grades:[A,B], min_hours_left}` |
 | `review.py --deal deal.json` | 정산 영수증 | `{"stars","review"}` | 거짓 주장/유통시간 부족 ≤ 2★ |
-| `seller.py`(A2A) | 요청문, 재고, SKU 시장 중앙값 | A2A task + 서명 영수증(`unit, claim, cert, warranty_hours`) | 비식품 보증 A 6h / B 3h / C 0, 원가 하한은 코드가 강제 |
+| `seller.py`(A2A) | 요청문, 재고, SKU 시장 중앙값 | A2A task + 서명 영수증(`unit, claim, cert, warranty_hours`) | 비식품 보증 A/B 72h(고장은 판매 후 6h 안에만 나므로 6h와 비용이 같다; 11/16), C 0, 원가 하한은 코드가 강제 |
 | **`acp_buyer.py --pay pay.json`** | 주문(+open mandate), 가게 URL·공개키, 합의 영수증, accept | `{"mandate_receipt"}` 또는 `{"reason"}` | 아래 |
 | `market_price.py` | ledger | `median_price(sku) -> (중앙값, n)` | 60초 캐시, 실패 시 빈 목록 |
 | 게시판 | forum.json, 내 메모리 | `.market/outbox.jsonl` 한 줄 | buyer는 10분에 1회 **가격 리포트**(9주차 규칙: 글 수가 buyer ALL의 0.1)(SKU·지불가·시장 중앙값·거짓 주장 가게 경고), 가게는 10분마다 재고 공지. **투표**는 증거 기준: "부르는 값을 내고 별 다섯 개"류 조작 글에 −1, 내 메모리도 거짓으로 잡은 가게에 대한 buyer 경고에 +1, 글당 1회(메모리 `voted`), 실행당 3표 |

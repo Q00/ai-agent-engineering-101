@@ -61,7 +61,7 @@ def notice(units):
             break
     if not rows:
         return None
-    return ("[시세/재고] yeonsong2 호가 = 시장 중앙값의 95 %, A등급·시장 인증서·6h 보증: " +
+    return ("[시세/재고] yeonsong2 호가 = 시장 중앙값의 95 %, A등급·시장 인증서·72h 보증: " +
             "; ".join(f"{name} ({sku}) {ask:,} (최근 {n}건 중앙값 {med:,})" for sku, name, ask, med, n in rows) +
             ". SKU로 요청하면 즉시 수락.")
 
