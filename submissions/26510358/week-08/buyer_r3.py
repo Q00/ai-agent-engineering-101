@@ -311,6 +311,13 @@ def quote_early_arm(order_id):
     return h % 10_000 < config.BUYER_QUOTE_EARLY_SHARE * 10_000
 
 
+def quote_short_arm(order_id):
+    """True for the BUYER_QUOTE_SHORT_SHARE of orders whose fan-out stops at BUYER_QUOTE_SHORT_S once at least one usable
+    quote is in (the next order waits for ours to end, so seconds past ~16 s cost orders); own salt."""
+    h = int(hashlib.sha256(f"quote_short:{order_id}".encode()).hexdigest()[:8], 16)
+    return h % 10_000 < config.BUYER_QUOTE_SHORT_SHARE * 10_000
+
+
 def haggle_arm(order_id):
     """True for the BUYER_HAGGLE_SHARE of orders that counter a first ask under BUYER_HAGGLE_MS margin share; own salt."""
     h = int(hashlib.sha256(f"haggle:{order_id}".encode()).hexdigest()[:8], 16)
@@ -358,7 +365,12 @@ def fanout_quotes(cands, order):
     for th in threads:
         th.start()
     end = t0 + config.BUYER_QUOTE_TIMEOUT_S
+    short = quote_short_arm(order.get("order"))
     while time.time() < end and any(th.is_alive() for th in threads):
+        if short and time.time() - t0 >= config.BUYER_QUOTE_SHORT_S:
+            with lock:
+                if usable_at:
+                    break
         if early:
             with lock:
                 n = len(usable_at)
@@ -370,7 +382,7 @@ def fanout_quotes(cands, order):
     with lock:
         closed[0] = True
         answers = list(got)
-        fanout_quotes.last = {"early": early, "quote_s": round(time.time() - t0, 1), "usable_at": list(usable_at)}
+        fanout_quotes.last = {"early": early, "short": short, "quote_s": round(time.time() - t0, 1), "usable_at": list(usable_at)}
     out, need = [], accept_policy(order).get("min_hours_left") if order.get("kind") == "food" else None
     for c, (client, t, want) in answers:
         said = a2a.said(t)

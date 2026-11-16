@@ -315,6 +315,12 @@ BUYER_QUOTE_EARLY_SHARE = 1.0       # 1.0 since 2026-11-15 19:5x KST (canary 1.3
                                     #   share stop waiting BUYER_QUOTE_GRACE_S after the BUYER_QUOTE_ENOUGH-th usable quote
                                     #   (36% of fan-outs waited the full 20 s; order starts are >= ~20 s apart). 0.0 rolls back
 BUYER_QUOTE_ENOUGH = 4
+BUYER_QUOTE_SHORT_SHARE = 0.5      # 2026-11-16 20:xx KST canary: orders in this share stop the quote wait at
+                                    #   BUYER_QUOTE_SHORT_S once one usable quote is in. 11-16 10:22-16:40: 20% of orders
+                                    #   waited past 10 s (1,374 s of quote wait); the next order starts ~4 s after ours ends,
+                                    #   so orders past ~16 s push it (orders/h 147). No deal came from an order with no
+                                    #   usable quote by 10 s. Judge at +4 h by arm: orders/h, deals/order, margin share. 0.0 rolls back
+BUYER_QUOTE_SHORT_S = 10.0
 BUYER_QUOTE_GRACE_S = 2.0
 BUYER_QUOTE_MIN_WAIT_S = 0.0       # 0.0 since 2026-11-16 10:2x KST: 8.0 failed. Over 13.5 h deals/order did not rise
                                     #   (0.53 -> 0.49-0.51) and orders past 20 s went 10% -> 22%, which pushes the next order

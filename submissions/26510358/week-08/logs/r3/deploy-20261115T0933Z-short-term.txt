@@ -69,3 +69,13 @@ Update 2026-11-16 10:2x KST — haggle to 1.0, minimum quote wait back to 0 (liv
   went 10% -> 22%, order gap p90 24.8 -> 33 s (the next order starts ~4 s after ours ends, p10 idle 3.8 s), orders/h
   162.4 -> 147.8. BUYER_QUOTE_MIN_WAIT_S 0.0 (plain early stop, 4th usable + 2 s). Next read at +2 h: orders/h back
   near 160, deals/h above 73.5, margin share per deal ~0.89. Rank 15 of 71, total 1.499 (leader 1.791).
+
+Update 2026-11-16 20:2x KST — quote short-stop canary 50% (live from file save epoch 1794829915, user's yes)
+  After 642d0135 orders/h stayed ~147 (not back to 162): the next order starts ~4 s after ours ends, and 29% of
+  orders still ran past 16 s (gap p50 26-39 s for them). Those orders: quote phase p50 15 s (fewer than 4 usable
+  quotes, so the early stop never fires), then 13 s of mostly failed haggling (deal 0.23). 10:22-16:40: 20% of
+  orders waited past 10 s for quotes (1,374 s); no deal came from an order with no usable quote by 10 s.
+  Rule in quote_short_arm orders (salt "quote_short:", BUYER_QUOTE_SHORT_SHARE 0.5): stop the quote wait at
+  BUYER_QUOTE_SHORT_S 10 s once one usable quote is in; with none, wait to 20 s as before. Quotes row logs "short".
+  Judge at +4 h (~00:30 KST 11-17) by arm: deals/order, margin share per deal, wall time; then orders/h after
+  widening. Widen if deals/order within -0.03 and wall lower; 0.0 rolls back. Rank 15, total 1.503 (14th 1.517).
