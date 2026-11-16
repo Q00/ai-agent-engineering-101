@@ -14,6 +14,19 @@ def load_policy():
     return json.loads((ROOT / "r3_policy.json").read_text(encoding="utf-8"))
 
 
+def round_end_hours(selling, key, shipped=24):
+    """Hours before selling.round_end that a round-end rule starts; 0 turns it off.
+
+    The user's 11-16 choice in the Orchestrator session (about 09:0x KST, "2시간 전까지 구매, 정리 판매 끔 (권장)"): the board
+    counts held stock at cost in Book (Book = profit + stock_cost, and shop ALL fits pct(Book) to .0005 over all 68 scored shops),
+    so the purchase stop moves from 24 h to 2 h before the end and the below-cost round-end clearance goes off. A missing or bad
+    value keeps the rule as it was before (24 h)."""
+    value = selling.get(key, shipped)
+    if type(value) in (int, float) and math.isfinite(value) and 0 <= value <= 24:
+        return value
+    return shipped
+
+
 def food_terms(cost, list_price, left, rule):
     """(floor, quote, reason, clearance) for food by the share of shelf life left, or None for ordinary pricing.
 
@@ -76,12 +89,15 @@ def selling_terms(unit, catalog=None, now=None, signals=None, runtime=None):
         loss_stage = sum(age >= h for h in config["goods_loss_hours"])
         end = datetime.fromisoformat(config["round_end"]).timestamp()
         hours_left = (end - now) / 3600
-        if 0 <= hours_left <= 24:
+        # Off at 0 (round_end_clearance_hours); the long-stock loss stages above still apply by age.
+        window = round_end_hours(config, "round_end_clearance_hours")
+        clearing = window > 0 and 0 <= hours_left <= window
+        if clearing:
             loss_stage = max(loss_stage, 2 if hours_left <= 6 else 1)
         if loss_stage:
             floor = max(1, math.ceil(cost * config["cost_multipliers"][loss_stage]))
             quote = floor
-            reason = "round_end_clearance" if 0 <= hours_left <= 24 else "long_stock_loss_clearance"
+            reason = "round_end_clearance" if clearing else "long_stock_loss_clearance"
             stage = 3 + loss_stage
     runtime = effective(now=now) if runtime is None else runtime
     multiplier = runtime["controls"]["quote_multipliers"].get(unit.get("sku"), 1)

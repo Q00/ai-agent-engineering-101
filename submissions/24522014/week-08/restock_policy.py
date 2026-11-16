@@ -9,7 +9,7 @@ import time
 import math
 from uuid import uuid4
 from market_intel import fresh
-from r3_policy import load_policy
+from r3_policy import load_policy, round_end_hours
 from forum_monitor import observe as observe_forum, REQUEST
 from purchase_monitor import observe as observe_purchases
 from strategy_policy import effective
@@ -55,8 +55,10 @@ def plan(inventory, catalog, demand, sales, cursor=0, *, hints=None, now=None, i
         return [], {"reason": "strategy_cash_or_data_guard", "strategy_version": runtime["version"]}
     units = [u for u in inventory.get("units", []) if u.get("grade") != "expired"]
     balance = max(0, inventory.get("balance", 0))
-    end = datetime.fromisoformat(load_policy()["selling"]["round_end"]).timestamp()
-    if now >= end - 86400:
+    selling = load_policy()["selling"]
+    end = datetime.fromisoformat(selling["round_end"]).timestamp()
+    # round_end_purchase_stop_hours (2 since the user's 11-16 choice; 24 before, and when the value is missing or bad).
+    if now >= end - round_end_hours(selling, "round_end_purchase_stop_hours") * 3600:
         return [], {"reason": "round_end_purchase_stop"}
     rate = inventory.get("storage_per_day", 0.01)
     if type(rate) not in (int, float) or not 0 <= rate <= 1:

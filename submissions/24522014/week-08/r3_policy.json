@@ -47,7 +47,10 @@
       336
     ],
     "ordinary_margin": 0.05,
-    "round_end": "2026-11-17T23:59:00+09:00"
+    "round_end": "2026-11-17T23:59:00+09:00",
+    "round_end_purchase_stop_hours": 2,
+    "round_end_clearance_hours": 0,
+    "round_end_note": "The user's 11-16 choice in the Orchestrator session (about 09:0x KST): \"2시간 전까지 구매, 정리 판매 끔 (권장)\". The board's Book is profit + stock_cost, so held stock counts at cost and a below-cost clearance only lowers Book. Before: buying stopped 24 h before round_end and goods sold at cost x .85, x .70 in the last 6 h. Now: restock runs until 2 h before round_end, goods keep their ordinary floor to the end; the 168 h / 336 h long-stock loss stages are unchanged. 0 turns a rule off; a missing or bad value means the old 24 h."
   },
   "buying": {
     "grades": [
