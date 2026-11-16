@@ -684,6 +684,15 @@ the code does, so the managers do not read a deliberate effect as a fault and un
   the other shops' rose 341 -> 382M; A margin stayed +1.02 -> +1.10M an hour (14.0k a deal against 9.2k). The book
   stall began at 11:04, before the deploy: its cause is still open (the talks' margin was ~11M an hour against book
   +0.9M after 12:16, refunds 0.33 -> 0.94M an hour, stock 2,502 -> 2,692 units).
+- Owner, 11-16 14:05 KST: restock.OWN_PASS. The 11:04 stall was restock's A check: G24f5f979's market A median fell
+  0.695 -> 0.641-0.669 (the check needs 0.680 at A_COST 0.66) and restock stopped buying it after 11:04, while in
+  24 h we had sold 124 of it at +27.2M (A cost 0.609 of list) - half our book growth; goods sales 68 -> 27M an hour.
+  Now a goods SKU we settled 10+ of in 24 h at a mean margin of 2%+ of list passes the check, unless its A held pass
+  6 h of our A sales of it (min 3). 72 h backtest: lines the check blocks but this lets through sold 78.6% at +104k
+  a unit (+70.7M), lines that pass 76.2% at +40k. Expected: G24f5f979, G00327e80, G2111d113, Gab622cab bought again
+  (own_pass in restock.jsonl buy lines), goods sales and book per hour back toward 11-16 07-10 h. Report every hour:
+  own_pass lines and units, their sales and margin, dear A of those SKUs (A held over the market). Alarm if their A
+  held pass 6 h of our A sales; do not turn it off yourself.
 
 ## buyer
 
