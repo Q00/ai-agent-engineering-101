@@ -4,7 +4,7 @@ import tempfile
 import time
 import unittest
 from network_reads import retry_read
-from seller_procurement import choose,allocation_plan,capital_available,supply_result,own_registration,own_board_registration,retry_join,join_current_registration,preserve_stale_pending,breadth_window_blocks,refresh_window_blocks,competitor_breadth_target,warranty_risk_reserve,observed_warranty_hazard,active_warranty_amounts,supply_interval_wait,capacity_recheck_wait,own_sales_evidence,recent_refund_cooldown_skus,mature_refund_risk_skus,active_high_value_warranty_skus,own_a_conversion_evidence,own_quote_conversion_evidence
+from seller_procurement import choose,allocation_plan,capital_available,supply_result,own_registration,own_board_registration,retry_join,join_current_registration,preserve_stale_pending,breadth_window_blocks,paid_bridge_used,refresh_window_blocks,competitor_breadth_target,warranty_risk_reserve,observed_warranty_hazard,active_warranty_amounts,supply_interval_wait,capacity_recheck_wait,own_sales_evidence,recent_refund_cooldown_skus,mature_refund_risk_skus,active_high_value_warranty_skus,own_a_conversion_evidence,own_quote_conversion_evidence
 from seller_market import dominant_goods_profit_probability
 class PurchaseTests(unittest.TestCase):
  def test_capacity_recheck_is_fast_only_during_open_supply(self):
@@ -710,6 +710,23 @@ class PurchaseTests(unittest.TestCase):
   inv={'units':[{'sku':'held'}]}
   self.assertEqual(breadth_window_blocks(rows,100,inv,3),{'new-a'})
   self.assertEqual(breadth_window_blocks(rows,100,inv,1),{'new-a'})
+ def test_only_an_actual_bridge_purchase_consumes_window_bridge_slot(self):
+  rows=[{'sku':'high','status':'paid','created':101,
+         'detail':'{"balance": 1000, "capital_bridge": false}'},
+        {'sku':'legacy','status':'paid','created':102,
+         'detail':'{"balance": 900}'},
+        {'sku':'old-bridge','status':'paid','created':99,
+         'detail':'{"capital_bridge": true}'}]
+  self.assertFalse(paid_bridge_used(rows,100))
+  rows.append({'sku':'bridge','status':'paid','created':103,
+               'detail':'{"balance": 700, "capital_bridge": true}'})
+  self.assertTrue(paid_bridge_used(rows,100))
+ def test_bridge_journal_ignores_missing_or_malformed_legacy_detail(self):
+  rows=[{'sku':'missing','status':'paid','created':101},
+        {'sku':'malformed','status':'paid','created':102,'detail':'not-json'},
+        {'sku':'refused','status':'refused','created':103,
+         'detail':'{"capital_bridge": true}'}]
+  self.assertFalse(paid_bridge_used(rows,100))
  def test_strong_refill_can_top_up_once_without_repeating_window_purchase(self):
   first=[{'sku':'high','qty':1,'status':'paid','created':101}]
   targets={'high':2}
