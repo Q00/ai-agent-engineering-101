@@ -1408,19 +1408,31 @@ def book_causes(hours=6, now=None):
                     if e.get("unit") and e.get("cost") is not None:
                         cost[e["unit"]] = e["cost"]
         out = {"margin": 0.0, "refunds": 0.0, "storage": 0.0, "expire": 0.0}
+        under, under_by = 0.0, {}
         sold = {}
         for ts, d in db.execute("SELECT ts, data FROM ledger WHERE kind='settle' AND ts > ?", (since - 7 * 3600,)):
             x = json.loads(d).get("data") or {}
             if str(x.get("shop")).rstrip("/") in urls:
                 sold[x.get("unit")] = x
                 if ts >= since and x.get("unit") in cost:
-                    out["margin"] += x["amount"] - cost[x["unit"]]
+                    m_ = x["amount"] - cost[x["unit"]]
+                    # 11-16 (user: 'how did all those reports miss it?'): sales under cost are their own line, by buyer;
+                    # the dyishappy star discount (-1.35 M/h) hid inside 'margin' for 15 h while the warning blamed refunds
+                    if m_ < 0:
+                        under += m_
+                        under_by[x.get("buyer")] = under_by.get(x.get("buyer"), 0) + m_
+                    else:
+                        out["margin"] += m_
         top = []
         for kind in ("broken", "storage", "expire"):
             for (d,) in db.execute("SELECT data FROM ledger WHERE kind=? AND ts > ?", (kind, since)):
                 if OURS not in d and not any(u in d for u in urls):
                     continue
                 x = json.loads(d).get("data") or {}
+                # 11-16: a break of a unit OUR BUYER bought elsewhere names yms979 too; it is not our shop's refund
+                # (it doubled 'refunds': 25.7 M in 12 h against 12.4 M paid by our shop)
+                if kind == "broken" and str(x.get("shop")).rstrip("/") not in urls:
+                    continue
                 if kind == "broken":
                     r = x.get("refunded") or 0
                     out["refunds"] -= r
@@ -1430,13 +1442,17 @@ def book_causes(hours=6, now=None):
                     out["storage"] -= x.get("fee") or 0
                 else:
                     out["expire"] -= x.get("cost") or 0
+        out["under_cost"] = under
         out = {k: round(v / 1e6, 2) for k, v in out.items()}
         out["net"] = round(sum(out.values()), 2)
+        out["under_cost_by"] = [(b, round(v / 1e6, 2)) for b, v in sorted(under_by.items(), key=lambda kv: kv[1])[:3]]
         out["top_refunds"] = sorted(top, key=lambda t: -t[0])[:3]
-        big = max(("margin", "refunds", "storage", "expire"), key=lambda k: abs(out[k]) if out[k] < 0 else 0)
-        out["line"] = (f"원인({hours}h): 마진 {out['margin']:+.1f}M, 환불 {out['refunds']:+.1f}M, 보관료 {out['storage']:+.1f}M, "
-                       f"폐기 {out['expire']:+.1f}M → 순 {out['net']:+.1f}M"
-                       + (f"; 가장 큰 손실은 {'환불' if big == 'refunds' else '보관료' if big == 'storage' else '폐기'}" if out[big] < 0 else ""))
+        names = {"under_cost": "원가 이하 판매", "refunds": "환불", "storage": "보관료", "expire": "폐기"}
+        big = max(names, key=lambda k: abs(out[k]) if out[k] < 0 else 0)
+        out["line"] = (f"원인({hours}h): 마진 {out['margin']:+.1f}M, 원가 이하 판매 {out['under_cost']:+.1f}M"
+                       + (f" ({', '.join(f'{b} {v:+.1f}M' for b, v in out['under_cost_by'])})" if out["under_cost_by"] else "")
+                       + f", 환불 {out['refunds']:+.1f}M, 보관료 {out['storage']:+.1f}M, 폐기 {out['expire']:+.1f}M → 순 {out['net']:+.1f}M"
+                       + (f"; 가장 큰 손실은 {names[big]}" if out[big] < 0 else ""))
         return out
     except Exception:  # noqa: BLE001
         return {}

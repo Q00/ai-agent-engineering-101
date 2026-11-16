@@ -553,6 +553,15 @@ def main():
         me_t = ch_["yms979"][0]
         contenders = {p_: v_ for p_, v_ in ch_.items() if p_ != "yms979" and me_t - v_[0] < 0.15}
         bname = {p_["player"]: (p_.get("buyer") or {}).get("name") for p_ in bd["players"]}
+        # 11-16 (user: our dyishappy discount lifted its buyer 11th -> 8th past ours, and nothing flagged it): also the
+        # students whose buyer board score is within .03 of ours
+        ball_ = {x_["name"]: x_.get("all") for x_ in bd.get("buyers", [])}
+        my_all = ball_.get(bname.get("yms979"))
+        if my_all is not None:
+            for p_ in bd["players"]:
+                a_ = ball_.get(bname.get(p_["player"]))
+                if p_.get("student") and p_["player"] != "yms979" and a_ is not None and abs(a_ - my_all) <= 0.03:
+                    contenders.setdefault(p_["player"], ch_.get(p_["player"]) or [None])
         cat21 = json.loads((MD / "catalog.json").read_text(encoding="utf-8"))
         rows21 = [(ts_, json.loads(d_).get("data") or {}) for ts_, d_ in db21.execute(
             "SELECT ts, data FROM ledger WHERE kind='settle' AND ts > ?", (now - 12 * 3600,))]
@@ -570,7 +579,7 @@ def main():
             us_ = [v_(r_) for r_ in L_ if str(r_.get("shop")).rstrip("/") in ours21]
             el_ = [v_(r_) for r_ in L_ if str(r_.get("shop")).rstrip("/") not in ours21]
             if len(us_) >= 0.2 * len(L_) and el_ and sum(us_) / len(us_) >= sum(el_) / len(el_) + 0.03:
-                why21.append(f"{p_} (buyer {bn_}, total {contenders[p_][0]}) bought {len(us_)} of its {len(L_)} deals in 3 h from us "
+                why21.append(f"{p_} (buyer {bn_}, total {contenders[p_][0]}, buyer board {ball_.get(bn_)} vs ours {my_all}) bought {len(us_)} of its {len(L_)} deals in 3 h from us "
                              f"at v {sum(us_) / len(us_):.3f} vs {sum(el_) / len(el_):.3f} elsewhere")
         if why21 and cooled(st, "G21", 3 * 3600, now):
             fired(st, "G21", now)
