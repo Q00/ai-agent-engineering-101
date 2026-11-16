@@ -2,6 +2,8 @@
 dear draw held past dear_hours, not a unit held past hours), held to 3 x the target and a cash floor, and the listed
 refills go by what one supply call is expected to net (W-20261115-1605-AX매입칸)."""
 import collections
+import contextlib
+import io
 import json
 import os
 import tempfile
@@ -269,7 +271,14 @@ class PlanGuardTest(unittest.TestCase):
         d = ss.config(tempfile.mkdtemp(), env={}, now=NOW)
         self.assertEqual(self.guard(d), [{"sku": "G1", "qty": 3}])             # 1 sellable of 4, as ON
         filler = [unit("G2", 0.90, 0.2)] * 940                                 # 940 x 450,000 = 4.23억 held
-        self.assertEqual(self.guard(d, held=self.held + filler), [])           # over 4.2억: no extras
+        err = io.StringIO()
+        with contextlib.redirect_stderr(err):
+            self.assertEqual(self.guard(d, held=self.held + filler), [])       # over 4.2억: no extras
+        self.assertIn("sellable_slots 3 -> 0 over today's room by stock cap", err.getvalue())    # review ef03713f m2
+        err = io.StringIO()
+        with contextlib.redirect_stderr(err):
+            self.assertEqual(self.guard(d, balance=99_000_000), [])
+        self.assertIn("by cash floor", err.getvalue())
         self.assertEqual(self.guard(d, held=self.held[:2] + filler), [{"sku": "G1", "qty": 2}])   # today's room stays
 
     def test_the_floor_holds_over_the_whole_run_with_todays_lines_behind_the_extras(self):

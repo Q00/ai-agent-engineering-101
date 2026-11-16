@@ -44,13 +44,15 @@ A live switch inside its window still wins over the default. Only JSON false is 
 Limits (review 4242d520 I1, I3): the keep rests on one hour (11:47-12:47, the stock refilling to the cap) and on C goods
 selling at their old floor; with price.grade_break C 0.42 (same push) unsold C stays in the stock the cap counts, so the
 extras can shrink to none as C waits (~15M a day by the 11/13-16 replay). That is no loss (stock counts at cost in Book)
-but then the rule buys as the 11/15 rule; watch "sellable_slots N -> 0 ... stock cap" in market-kit.log and the stock
+but then the rule buys as the 11/15 rule; watch "sellable_slots N -> 0 over today's room by stock cap" in market-kit.log and the stock
 cost, and read the whole study window again at 21:47 (W-20261116-1255).
 
 Switch: .market/restock_sellable_slots.json {"enabled": true, "study": "<id>", "hours": 6, "dear_share": 0.70,
 "dear_hours": 1, "hold_times": 3, "cash_floor": 100000000, "fresh_sell": 0.39, "start_at": <epoch>, "stop_at": <epoch>,
 "stock_cap": <won or null>};
-live only in [start_at, stop_at), at most MAX_WINDOW_HOURS; outside it, or missing, unreadable, a bad value: DEFAULT. Write it with switch_on(). Read at
+live only in [start_at, stop_at), at most MAX_WINDOW_HOURS; outside it, or missing, unreadable, a bad value: DEFAULT.
+Write it with switch_on(); switch_off() writes the off, which has no end: it holds until the file is written again.
+Read at
 every restock run (a new process each time): no restart either way. With it on, restock_fresh_slots is not read.
 Never raises.
 """

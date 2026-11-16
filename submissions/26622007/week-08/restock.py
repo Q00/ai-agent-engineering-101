@@ -510,12 +510,16 @@ def guard(buy, inv, catalog, cfg, breaks=None, waiting=()):
             each = worst(b["sku"], capped, catalog, factors) * (1 + hard_limits.BUY_STORAGE)
             free = balance - spent - sellable["cash_floor"]
             extra = min(capped - plain, max(0, int(free // each)) if each > 0 else 0)
+            by = "cash floor" if extra < capped - plain else None
             stocked = worst(b["sku"], capped, catalog, factors)
             if stock_left < float("inf"):
-                extra = min(extra, max(0, int(stock_left // stocked)) if stocked > 0 else 0)
-            if extra < capped - plain:
+                by_stock = max(0, int(stock_left // stocked)) if stocked > 0 else 0
+                if by_stock < extra:
+                    extra, by = by_stock, "stock cap"
+            if extra < capped - plain:      # by: which of the two held it (review ef03713f m2)
                 print(f"[restock] guard: {b['sku']} sellable_slots {capped - plain} -> {extra} over today's room "
-                      f"(cash floor {sellable['cash_floor']:.0f}, stock cap {sellable.get('stock_cap')})", file=sys.stderr)
+                      f"by {by} (cash floor {sellable['cash_floor']:.0f}, stock cap {sellable.get('stock_cap')})",
+                      file=sys.stderr)
             capped = plain + extra
             spent += each * extra       # today's part of the line is in spent already
             stock_left -= stocked * extra
