@@ -315,6 +315,7 @@ def voted_down(forum, st):
     return st.get("low", False)
 
 
+FIXED_STARS = {"sergiobuilds": 1}
 FIVE_STAR_SHARE = 0.65   # 11-09: was 0.9; one bar for every shop (over 0.8 of list: two stars off)
 
 
@@ -373,6 +374,11 @@ def main():
                   + (", claim honest" if s.get("claim_honest") else "") + ", certificate checked."
                   + (" Short of 5: " + "; ".join(why) + "." if why else ""))
 
+    # 11-16 (user): fixed ratings for named shops. sergiobuilds rates every shop a flat 2 whatever the price or grade
+    # (4,340 reviews in 36 h on 11-12, us included); the user asked for 1 star on any purchase there
+    if shop in FIXED_STARS:
+        stars = FIXED_STARS[shop]
+        review = f"{name}: {price} ({off}% under list). 1 star: this shop's buyer rates every shop a flat 2 whatever it is sold."
     st = json.loads(STATE.read_text()) if STATE.is_file() else {"last_post": 0}
     now = time.time()
     try:
