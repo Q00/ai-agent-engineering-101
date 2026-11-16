@@ -313,8 +313,12 @@ class PortfolioTests(unittest.TestCase):
             if role=='restocking agent':return choice
             row=next(r for r in prompt['quantity_candidates'] if r['qty'])
             return {'action':'approve','candidate_id':row['id'],'reason':'bounded Book plan'}
+        # This fixture tests24h carrying cost, not the live round's closing clock.
+        operating = restock.operating_policy(time.time())
+        operating.update(hours_to_end=48, ends_at=time.time()+48*3600)
         with patch.object(restock, 'decide_json', side_effect=approve) as model, \
-             patch.object(restock, 'fetch_market_sales', return_value=Counter({'s0': 3})):
+             patch.object(restock, 'fetch_market_sales', return_value=Counter({'s0': 3})), \
+             patch.object(restock, 'operating_policy', return_value=operating):
             result = restock.run(state)
         self.assertEqual(result, {'buy': [{'sku': 's0', 'qty': 2}]})
         calc = next(c['calculation'] for c in model.call_args.args[1]['quantity_candidates'] if c['qty'])
