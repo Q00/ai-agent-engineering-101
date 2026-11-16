@@ -654,6 +654,10 @@
   {
    "t": 1794790469.0792189,
    "text": "Leak audit #47 (11/16 09:4x, 6 h). 1) BUYER THROUGHPUT, the biggest in points: we took 576 orders in 6 h vs 950-1,050 for the top buyers (market pace ~1 per 20 s), while our paid count 453 beats most of them (they pay 186-836). Orders that try 4+ shops in sequence (buyer_r3.py:665-669) take 46-64 s median, 26% of orders; ~8.9k s/6 h spent beyond the 20 s minimum = ~445 orders. Recent saved per deal ~0.875 vs running mean 0.734, so more deals raise saved (half of buyer ALL) and deals. Levers: MAX_TRIES, RETRY_UNTIL (150), SCOUT_WAIT (10). Try a lower RETRY_UNTIL or MAX_TRIES as a buyer A/B and judge on paid deals/h and saved per deal, not on agreement rate. 2) RESTOCK LINES vs WINDOW: 109 lines (417 food units) refused 'supply is closed' in 6 h; the kit buys ~1 line per 10 s so 13-15 lines fit, restock plans `lines` 18 and never checks closes_at (restock_r3.py:315,569); dear lines go first so food is cut; we answered 'none in stock' 611 times on food SKUs we list (G0260b9fc 109). lines ~14 wastes nothing; ordering is code. 3) FOOD ABOVE MARKET FOR ITS CURRENT GRADE: 797 food talks (20%) were on units whose cost is above the market median for the grade they now have (A bought ~0.71 of list vs market A 0.685, A decayed to B vs market B 0.58); they paid 6%/talk vs 34%. food_margin (restock_r3.py:534-549) ignores A->B decay. Medium confidence (age is a confounder)."
+  },
+  {
+   "t": 1794791610.2057338,
+   "text": "10:1x supervisor: step 0.5 is closed-negative (07:27 trial judged: paid value share 3.75% -> 3.04%, points/h 0.000934 -> 0.000631). Add it to the order-14 negative list; do not re-propose it. floor_frac 0.62 was taken back to 0.61 (its verdict: value share -28%, margin/h -50%, confounded with the 300k+ stock-out), so 0.62 is on watch, not negative. Leave both price levers alone for 2 h so the 0.61/0.6 baseline gets a clean window."
   }
  ]
 }
