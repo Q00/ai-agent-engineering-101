@@ -36,6 +36,7 @@ import counterparty_memory
 from newsvendor_tool import GRADE_ANCHORS
 from seller_state import SellerState, SQLiteTaskStore, ResumingContextBuilder
 import seller_quality
+import seller_checkout_policy
 import seller_requirements
 import seller_warranty
 from seller_promotion import active_event, discount_quote
@@ -56,7 +57,7 @@ MARKET_DIR = Path(os.environ.get("MARKET_DIR", ".market"))
 RESERVE = {"lamp": 100, "chair": 180, "bookshelf": 260}  # pre-Round-3 compatibility
 HOLD_SECONDS = 600
 FIRST_QUOTE_IDLE_SECONDS = 90
-NEGOTIATION_IDLE_SECONDS = 300
+NEGOTIATION_IDLE_SECONDS = 90
 NEGOTIATION_MAX_SECONDS = 900
 QUOTE_SPEED_TRIAL = Path('state/seller-quote-speed-trial.json')
 QUOTE_SPEED_SKUS = frozenset({'G75f11c19', 'Gc2f7811b', 'Gbf98024f', 'G59e3e5ff'})
@@ -173,6 +174,15 @@ class Seller(AgentExecutor):
                        role='seller',episode_id=f'seller:{task_id}',decision_id=deal.get('last_decision_id'),
                        reason='negotiation reservation timed out; payment outcome unknown')
 
+    def release_unsigned(self, task_id, reason):
+        if not task_id:return
+        deal=self.open.pop(task_id,None)
+        self.state.close_deal(task_id)  # Deletes negotiation leases only; never receipts.
+        if deal:
+            record('negotiation_released',task_id=task_id,sku=deal['unit']['sku'],
+                   unit=deal['unit']['unit'],reason=reason,
+                   signed_hold_preserved=self.state.pending_receipt(task_id) is not None)
+
     def refresh_settlements(self):
         try:
             imported = sync_settlements(on_settled=self.state.mark_settled)
@@ -227,7 +237,12 @@ class Seller(AgentExecutor):
             with audit.scope('seller',record,score_version=VERSION,model=MODEL):
                 try:
                     await self._execute(context, event_queue)
+                except asyncio.CancelledError:
+                    self.release_unsigned(audit.links().get('task_id'),'request_execution_cancelled')
+                    audit.executed('unknown',status='cancelled',reason='request_execution_cancelled')
+                    raise
                 except Exception as error:
+                    self.release_unsigned(audit.links().get('task_id'),'request_execution_failed')
                     audit.executed('unknown',status='failed',reason=type(error).__name__)
                     raise
 
@@ -270,7 +285,7 @@ class Seller(AgentExecutor):
             deal['last_activity_at'] = time.time()
             deal['waiting_for_first_reply'] = False
             deal['requirements'] = seller_requirements.update(deal.get('requirements', seller_requirements.initial('')), message)
-            if not self.state.save_deal(task.id, deal, create=False):
+            if not self.state.save_deal(task.id, deal, idle=NEGOTIATION_IDLE_SECONDS, maximum=NEGOTIATION_MAX_SECONDS, create=False):
                 self.open.pop(task.id, None)
                 await up.reject(say('That reservation is no longer active. Please start a new request.'))
                 return
@@ -310,7 +325,7 @@ class Seller(AgentExecutor):
                        requested_skus=requested, expiry_shortfall=shortfall)
                 await up.reject(say('No available unit meets the requested expiry, grade or warranty.'))
                 return
-            choices = matching[:12]
+            choices = seller_checkout_policy.diverse_options(matching,public_quotes,limit=12)
             metadata=context.metadata or MessageToDict(context.message.metadata)
             proofs=counterparty_memory.load_cache().get('proofs',[])
             # The independent worker refreshes this cache. Public-network
@@ -361,6 +376,8 @@ class Seller(AgentExecutor):
                         profiles[key] = counterparty_memory.profile(
                             identity, unit, history=profile_history, attempts=attempts, now=now)
                     profiles_by_unit[unit['unit']]=profiles[key]
+                    tool['receipt_checkout_evidence']=seller_checkout_policy.checkout_evidence(
+                        attempts,unit['sku'],unit['grade'],now)
                     tool['buyer_evidence_key']=key
                     if profiles[key]['eligible_for_price_probe']:
                         tool['buyer_price_candidates']=profiles[key]['price_candidates']
@@ -393,6 +410,12 @@ class Seller(AgentExecutor):
                                         'maximizing one markup. Unsold inventory retains acquisition-cost Book credit at round end. '
                                         'Compare selling with holding after storage, spoilage and refund risk; credit is not a cash buyback. '
                                         'Buying inventory does not itself increase Book. Ranking weights are percentiles.')
+                prompt['objective'] += (' Compare receipt_checkout_evidence across available grades. '
+                    'When buyer grades are unspecified and C receipts repeatedly cancel or remain unpaid, '
+                    'consider a profitable A/B alternative before issuing another C receipt. '
+                    'Cancellation can mean private grade, shelf-life or certificate conditions; the exact reason is unknown. '
+                    'Never treat a numeric price as proof of the private checkout policy, invent a policy, '
+                    'mislabel C, or count signatures as paid. C remains available for compatible buyers.')
                 middle = tools[0]["candidates"][len(tools[0]["candidates"]) // 2]["price"]
                 answer = await self.choose(prompt, ["ask", "reject"],
                                            {"action": "ask", "price": middle, "unit_id": choices[0]["unit"]})
@@ -435,7 +458,8 @@ class Seller(AgentExecutor):
                 audit.guard('price_range_or_type',proposed_price=proposed,effective_price=ask)
             if ask < required_floor:
                 audit.guard('warranty_price_floor' if warranty['price_floor']>=required_floor and warranty['price_floor']>0 else 'selling_price_floor',price_floor=required_floor,policy=sale_policy)
-            ask = max(ask,required_floor)
+            ask = max(ask,required_floor,min(maximum,seller_warranty.quote_floor(unit,now=time.time(),
+                warranty_hours=warranty_hours,seconds=NEGOTIATION_IDLE_SECONDS+30)))
             if ask != proposed or unit["unit"] != answer.get("unit_id"):
                 trace("decision_guard", phase="opening", proposed_price=proposed,
                       effective_price=ask, proposed_unit=answer.get("unit_id"),
@@ -535,13 +559,13 @@ class Seller(AgentExecutor):
             await up.reject(say('This unit cannot meet your current requirements: '+ '; '.join(errors)+'. Please start a new request.'))
             return
         if offer is None:
-            self.state.save_deal(task.id, deal, create=False)
+            self.state.save_deal(task.id, deal, idle=NEGOTIATION_IDLE_SECONDS, maximum=NEGOTIATION_MAX_SECONDS, create=False)
             await up.requires_input(say(f"Conditions saved. Please send one clear price offer. Current ask: {deal['ask']}"))
             return
         record("offer", task_id=task.id, sku=unit["sku"], unit=unit["unit"], price=offer,
                grade=unit['grade'],cost=unit['cost'],expires_at=unit.get('expires_at'))
         deal["history"].append({"buyer_offer": offer, "seller_ask": deal["ask"]})
-        self.state.save_deal(task.id, deal, create=False)
+        self.state.save_deal(task.id, deal, idle=NEGOTIATION_IDLE_SECONDS, maximum=NEGOTIATION_MAX_SECONDS, create=False)
         attempts = trade_attempts({unit['sku']})
         memory = compact_context(unit["sku"], unit["grade"], attempts=attempts)
         guidance = price_guidance(unit, warranty_hours=warranty_hours, attempts=attempts, offered_price=offer)
@@ -574,9 +598,22 @@ class Seller(AgentExecutor):
                                     'Receipt price must exactly equal the buyer\'s acknowledged offer.')
         fallback_action = "accept" if offer >= int(unit["cost"]) else "counter"
         audit.bind(parent_decision_id=deal.get('last_decision_id'))
-        answer = await self.choose(prompt, ["accept", "counter", "reject"],
-                                   {"action": fallback_action, "price": deal["ask"],
-                                    "unit_id": unit["unit"]})
+        current_floor=seller_warranty.selling_floor(unit,now=time.time(),warranty_hours=warranty_hours,
+                                                    agreed_warranty_floor=warranty_floor)['price_floor']
+        if offer == deal['ask'] and offer >= current_floor:
+            # The model already chose this exact quote; fulfil the buyer's
+            # acknowledgement without another model delay or changing the price.
+            audit.begin('follow_up',policy_version='seller-quote-ack-v1')
+            answer={'action':'accept','price':offer,'unit_id':unit['unit'],
+                    'reason':'buyer acknowledged the existing seller quote; live floor rechecked'}
+            audit.proposed({'action':'accept','price':offer,'unit':unit['unit']},
+                           source='prior_seller_quote',reason=answer['reason'])
+            record('quote_acknowledged',task_id=task.id,sku=unit['sku'],unit=unit['unit'],price=offer,
+                   price_floor=current_floor)
+        else:
+            answer = await self.choose(prompt, ["accept", "counter", "reject"],
+                                       {"action": fallback_action, "price": deal["ask"],
+                                        "unit_id": unit["unit"]})
         deal['last_decision_id']=audit.links().get('decision_id')
         if answer.get('unit_id') != unit['unit']:
             audit.guard('unit_fixed_to_reservation',proposed_unit=answer.get('unit_id'),effective_unit=unit['unit'])
@@ -689,12 +726,15 @@ class Seller(AgentExecutor):
                 audit.guard('promotion_counter_bounds',before=before_promotion,effective_price=ask)
         before_cost_floor=ask
         ask=max(ask,required_floor)
+        if not promotion:
+            ask=max(ask,min(maximum,seller_warranty.quote_floor(unit,now=time.time(),warranty_hours=warranty_hours,
+                agreed_warranty_floor=warranty_floor,seconds=NEGOTIATION_IDLE_SECONDS+30)))
         if ask != before_cost_floor:
             audit.guard('selling_price_floor',proposed_price=before_cost_floor,effective_price=ask,policy=sale_policy)
         if ask != proposed:
             trace("decision_guard", phase="follow_up", proposed_price=proposed, effective_price=ask)
         deal["ask"] = ask
-        if not self.state.save_deal(task.id, deal, create=False):
+        if not self.state.save_deal(task.id, deal, idle=NEGOTIATION_IDLE_SECONDS, maximum=NEGOTIATION_MAX_SECONDS, create=False):
             self.open.pop(task.id, None)
             audit.guard('reservation_expired')
             audit.executed('counter',status='blocked',price=ask,unit=unit['unit'],reason='reservation_expired')

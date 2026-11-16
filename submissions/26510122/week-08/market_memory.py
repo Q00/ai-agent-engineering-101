@@ -33,7 +33,7 @@ EVENT_PREFIX = re.compile(rb'^\{"at":"[^"\\]*","event":"([a-z][a-z0-9_]*)"')
 RECEIPT_EVENTS = frozenset({'receipt_signed', 'settled'})
 ATTEMPT_EVENTS = RECEIPT_EVENTS | {
     'opening', 'offer', 'counter', 'checkout_unpaid', 'rejected', 'cancelled',
-    'negotiation_expired',
+    'negotiation_expired', 'checkout_cancelled',
 }
 
 
@@ -172,9 +172,12 @@ def _attempts(rows: Iterable[dict], *, skus: Set[str] | None = None) -> list[dic
             attempts[task]["outcome"] = "RECEIPT_PENDING"
             attempts[task]["agreed_price"] = row.get("price")
             attempts[task]['grade_at_receipt'] = row.get('grade')
+            attempts[task]['receipt_at'] = row.get('at')
             attempts[task]['warranty_hours_at_receipt'] = row.get('warranty_hours')
             expires=row.get('expires_at',attempts[task].get('expires_at'))
             attempts[task]['hours_left_at_receipt'] = hours_left(expires,row.get('at'))
+        elif task in attempts and kind=='checkout_cancelled':
+            attempts[task]['checkout_cancelled_at']=row.get('at')
         elif task in attempts and kind=='checkout_unpaid':
             attempts[task]['outcome']='CHECKOUT_UNPAID'
             attempts[task]['reason']=text(row.get('reason'))

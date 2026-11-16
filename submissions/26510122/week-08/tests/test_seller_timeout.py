@@ -10,7 +10,7 @@ import seller_r3
 
 
 class ReservationExpiryTests(unittest.TestCase):
-    def test_short_idle_applies_only_to_unanswered_first_quotes_after_restore(self):
+    def test_restored_unsigned_quotes_use_short_idle_even_for_legacy_rows(self):
         with tempfile.TemporaryDirectory() as directory:
             previous = Path.cwd()
             os.chdir(directory)
@@ -26,10 +26,12 @@ class ReservationExpiryTests(unittest.TestCase):
                     deadlines = dict(db.execute('SELECT task, until FROM leases'))
                 self.assertEqual(deadlines, {'initial': created+90, 'engaged': created+300, 'legacy': created+300})
                 seller.open = seller.state.restore_deals()
+                seller.expire_negotiations(seller.open['initial']['last_activity']+89)
+                self.assertEqual(set(seller.open), {'initial', 'engaged', 'legacy'})
                 seller.expire_negotiations(seller.open['initial']['last_activity']+91)
-                self.assertEqual(set(seller.open), {'engaged', 'legacy'})
+                self.assertFalse(seller.open)
                 with seller.state.connect() as db:
-                    self.assertEqual({row[0] for row in db.execute('SELECT task FROM leases')}, {'engaged', 'legacy'})
+                    self.assertEqual(list(db.execute('SELECT task FROM leases')), [])
             finally:
                 os.chdir(previous)
 

@@ -77,3 +77,12 @@ def selling_floor(unit, *, now=None, warranty_hours=0, agreed_warranty_floor=0):
             'acquisition_cost':cost,'near_expiry_loss_allowed':near,
             'hours_left':remaining,'near_expiry_hours':NEAR_EXPIRY_HOURS,
             'reason':'near_expiry_food_model_may_limit_loss' if near else 'protect_acquisition_cost_and_accrued_holding'}
+
+
+def quote_floor(unit, *, now=None, warranty_hours=0, agreed_warranty_floor=0, seconds=120):
+    """Carry a short goods-storage allowance in new quotes, never weaken live floors."""
+    now=time.time() if now is None else now
+    future=now+max(0,seconds) if unit.get('kind')=='goods' else now
+    return max(selling_floor(unit,now=t,warranty_hours=warranty_hours,
+                           agreed_warranty_floor=agreed_warranty_floor)['price_floor']
+               for t in (now,future))
