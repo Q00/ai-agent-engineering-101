@@ -60,3 +60,12 @@ Update 2026-11-15 20:43 KST — haggle canary 50% (5b164768, live from file save
   Widen if margin share is up and deals/order within -0.03; 0.0 rolls back.
 CAP_CEILING_SHARE back to 0.60 in the same commit (S3 no-op; it also broke 3 cashflow/restock tests I had not rerun
   at 18:28). Org server killed 20:45:19, back 20:46:00.
+
+Update 2026-11-16 10:2x KST — haggle to 1.0, minimum quote wait back to 0 (live from file save epoch 1794791733)
+  Haggle canary, 13.5 h since epoch 1794742982, by arm (haggle / control): 974 / 1,025 orders, margin share per deal
+  0.890 / 0.872 (se 0.004 each; food 0.889 / 0.874, goods 0.896 / 0.863), deals/order 0.506 / 0.489, wall mean
+  14.5 / 14.3 s. Last 4 h: 0.897 / 0.867. Meets the rule (margin share up, deals/order not down): BUYER_HAGGLE_SHARE 1.0.
+  Minimum wait 8 s failed its rule: deals/order did not rise (0.53 at 19:49-20:30 -> 0.49-0.51), orders over 20 s
+  went 10% -> 22%, order gap p90 24.8 -> 33 s (the next order starts ~4 s after ours ends, p10 idle 3.8 s), orders/h
+  162.4 -> 147.8. BUYER_QUOTE_MIN_WAIT_S 0.0 (plain early stop, 4th usable + 2 s). Next read at +2 h: orders/h back
+  near 160, deals/h above 73.5, margin share per deal ~0.89. Rank 15 of 71, total 1.499 (leader 1.791).

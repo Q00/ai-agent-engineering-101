@@ -294,7 +294,9 @@ FIRST_OFFER_RATIO = 0.55            # first offer as a share of list price
 BUYER_COST_OPEN_SHARE = 1.0         # 2026-11-15 10:3x: widened after the canary (cost arm d/o 0.368 vs 0.351, saved 0.878 vs 0.860, goods 0.165 vs 0.100); 0.0 rolls back
                                     #   (COST_RATIO) when that is above FIRST_OFFER_RATIO (A 0.618, goods 0.594): under
                                     #   patch 3.6 a price below cost scores 1 like one at cost, so lower only adds turns
-BUYER_HAGGLE_SHARE = 0.5           # 2026-11-15 21:xx KST canary: orders in this share counter a first ask once when it
+BUYER_HAGGLE_SHARE = 1.0           # 1.0 since 2026-11-16 10:2x KST (canary 13.5 h, 974 vs 1,025 orders: margin share/deal
+                                    #   0.890 vs 0.872 (se 0.004 each), deals/order 0.506 vs 0.489, wall mean 14.5 vs 14.3 s).
+                                    #   Was a 2026-11-15 21:xx KST canary: orders in this share counter a first ask once when it
                                     #   scores under BUYER_HAGGLE_MS margin share, then take the shop's next price if <= max_pay.
                                     #   24 h before: 1,127 deals took the first ask as-is, 663 of them under 0.9 (the old
                                     #   "ask <= 0.72 x list" accept is always true under max_pay since patch 3.6); shops
@@ -314,7 +316,10 @@ BUYER_QUOTE_EARLY_SHARE = 1.0       # 1.0 since 2026-11-15 19:5x KST (canary 1.3
                                     #   (36% of fan-outs waited the full 20 s; order starts are >= ~20 s apart). 0.0 rolls back
 BUYER_QUOTE_ENOUGH = 4
 BUYER_QUOTE_GRACE_S = 2.0
-BUYER_QUOTE_MIN_WAIT_S = 8.0       # 2026-11-15 20:4x KST: the early stop never comes before this. At 1.0 the order gap sits
+BUYER_QUOTE_MIN_WAIT_S = 0.0       # 0.0 since 2026-11-16 10:2x KST: 8.0 failed. Over 13.5 h deals/order did not rise
+                                    #   (0.53 -> 0.49-0.51) and orders past 20 s went 10% -> 22%, which pushes the next order
+                                    #   (gap p90 24.8 -> 33 s; it starts ~4 s after ours ends): orders/h 162 -> 148.
+                                    #   Was 8.0 from 2026-11-15 20:4x KST: the early stop never comes before this. At 1.0 the order gap sits
                                     #   at the market's ~20 s floor (p50 20.5 s) while an order took 8.5 s, and 16% of usable
                                     #   quotes came after the 4th + 2 s (44 of 81 within 10 s). 0.0 = the plain early stop
 HOURS_MARGIN = 0.25                 # food must last use_within_hours + this (2 h refused 8 deals worth paying)
