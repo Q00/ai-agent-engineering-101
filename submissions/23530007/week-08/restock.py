@@ -270,7 +270,7 @@ def sku_wants(catalog, have_sku, p, now, hours_left, market_sku, mkt_units=None,
     # sellable grade A units of the first and 5 of the second. A rival SKU is held for RIVAL_SHARE of the rival's
     # rate over RIVAL_COVER_H, when the rival's median price leaves SURGE_MARGIN over a typical grade A cost, and
     # at most RIVAL_LINES such lines a window go first (ranked by the margin the rival makes on them per hour).
-    rival_rate, rival_gain = {}, {}
+    rival_rate, rival_gain, rival_x = {}, {}, {}
     try:
         rv_ = set((json.loads((HERE / ".market" / "price_rivals.json").read_text()).get("shops") or {}).keys())
         try:                                    # 11-12: + the nearest challenger on the class total (guards.py)
@@ -288,13 +288,30 @@ def sku_wants(catalog, have_sku, p, now, hours_left, market_sku, mkt_units=None,
             if len(v_) >= RIVAL_MIN and k in catalog and x_ >= RIVAL_MIN_X:
                 rival_rate[k] = len(v_) / 6
                 rival_gain[k] = len(v_) / 6 * (x_ - COST_LOT) * catalog[k]["list_price"]
+                rival_x[k] = x_
     except (OSError, ValueError):
         pass
+    # 11-16 (user: 'buy what sells well and turn the cash over'): only units that can sell at the rival's price count
+    # as held: cost x 1.025 (the A break-even floor) at or under its median less .02. Counting every unit blocked the
+    # rival lines: 25620027 sold 121 Ge62449c9 in 6 h while we held 144, most of them the expensive cost tail that
+    # never sells at its .678, so qty = .7 x rate x 2 h - 144 < 0 and no fresh lot was bought
+    sellable_ = {}
+    try:
+        inv_ = json.loads((HERE / ".market" / "inventory.json").read_text())
+        units_ = inv_.get("units") if isinstance(inv_, dict) else inv_
+        for u_ in (units_.values() if isinstance(units_, dict) else units_ or []):
+            if isinstance(u_, dict) and u_.get("sku") in rival_x and u_.get("grade") in ("A", "B") and u_.get("cost"):
+                lp_ = catalog[u_["sku"]]["list_price"]
+                if u_["cost"] * 1.025 <= (rival_x[u_["sku"]] - 0.02) * lp_:
+                    sellable_[u_["sku"]] = sellable_.get(u_["sku"], 0) + 1
+    except (OSError, ValueError, KeyError):
+        sellable_ = None
     for sku in sorted(rival_gain, key=lambda k: -rival_gain[k]):
         v = catalog[sku]
         if v.get("kind") != "goods" or v["list_price"] > p["sku_max_price"]:
             continue
-        qty = min(MAX_QTY, math.ceil(RIVAL_SHARE * rival_rate[sku] * RIVAL_COVER_H) - have_sku.get(sku, 0))
+        held_ = sellable_.get(sku, 0) if sellable_ is not None else have_sku.get(sku, 0)
+        qty = min(MAX_QTY, math.ceil(RIVAL_SHARE * rival_rate[sku] * RIVAL_COVER_H) - held_)
         if qty > 0 and sum(1 for w in out if w[0][1] == -2) < RIVAL_LINES:
             out.append(((False, -2, -rival_gain[sku]), v["category"], v, qty))
     taken = {w[2]["sku"] for w in out}
