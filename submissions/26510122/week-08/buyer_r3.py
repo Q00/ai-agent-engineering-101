@@ -24,7 +24,10 @@ def opening_request(name: str, sku: str, order: dict, *, avoid_units=()) -> str:
         note += (f" The unit must have at least {quote_hours} hours of shelf life left when quoting "
                  f"(includes two minutes for checkout). Checkout requires {policy['min_hours_left']:g} hours.")
     else:
-        note += ' Only grade A or B is acceptable. A six-hour warranty is preferred, not required.'
+        note += ' Only grade A or B is acceptable.'
+        required=policy.get('warranty_hours',0)
+        note += (f' A {required:g} h market warranty is required at checkout.' if required else
+                 ' A six-hour warranty is preferred, not required.')
     avoid=[u for u in avoid_units if isinstance(u,str) and re.fullmatch(r'[A-Za-z0-9_-]{1,80}',u)]
     if avoid:note+=' Previously checkout-verified C units to avoid: '+', '.join(avoid[:5])+'. Choose another actual A/B unit.'
     return f'I want to buy {name} ({sku}). {note}'
@@ -55,6 +58,12 @@ def quoted_condition_problem(message,order):
         return 'seller explicitly quoted grade C; A/B required'
     if re.search(r'\bno certificate\b|certificate (?:is )?(?:unavailable|not available)',message,re.I):
         return 'seller explicitly reports no certificate'
+    required=acceptance(order).get('warranty_hours',0)
+    if required:
+        if re.search(r'\bno warranty\b',message,re.I):return 'seller explicitly reports no required warranty'
+        quoted=re.findall(r'\bwarranty\s*[:=]?\s*(\d+(?:\.\d+)?)\s*h|(?<![\d.])(\d+(?:\.\d+)?)\s*h(?:ours?)?\s+(?:market\s+)?warranty',message,re.I)
+        values=[float(a or b) for a,b in quoted]
+        if values and max(values)<required:return 'seller explicitly reports insufficient required warranty'
     if order.get('kind')=='food':
         hours=re.findall(r'(\d+(?:\.\d+)?)\s*h(?:ours)?\s+(?:of shelf life\s+)?left',message,re.I)
         if len(set(hours))==1 and float(hours[0])<float(order.get('use_within_hours') or 0):
@@ -73,6 +82,8 @@ def final_price_review(message,last_offer,cap,list_price,memory,order,deadline):
     prompt={'phase':'buyer_final_price','last_offer':last_offer,'seller_final_ask':ask,
             'maximum_authorized_price':cap,'seller_message':text(message,500),
             'price_guidance':guidance,'order_kind':order.get('kind'),
+            'post_sale_risk':(memory or {}).get('post_sale_risk'),
+            'required_warranty_hours':acceptance(order).get('warranty_hours',0),
             'use_within_hours':order.get('use_within_hours'),
             'conditional_margin_saved_at_ask':saved_at_price(list_price,ask,cost),
             'objective':'Accept this exact final ask or walk. Compare estimated margin Saved, recent real paid prices, '
@@ -159,6 +170,7 @@ def followup_offer(*, message: str, last_offer: int, cap: int, sku: str,
     prompt = {"phase": "buyer_counter", "sku": sku, "list_price": list_price,
               "seller_message": message[:350], "last_offer": last_offer,
               "maximum_authorized_price": cap, "recent_memory": memory,
+              'post_sale_risk':(memory or {}).get('post_sale_risk'),
               'recent_turns':[{'speaker':r['speaker'],'text':text(r['text'],180)}
                               for r in (history or [])[-MAX_TURNS:]],
               "objective": "Choose the next offer or walk away. Optimize normalized Saved, not absolute currency savings. "
@@ -282,7 +294,10 @@ def negotiate(shop_url: str, sku: str, name: str, order: dict, *, opening_offer:
         preflight_problem=None
         if receipt and (receipt.get('unit') in (memory or {}).get('known_refused_units',())
                         or order.get('kind')=='goods' and receipt.get('claim')=='C'
-                        or receipt.get('cert') is False):
+                        or receipt.get('cert') is False
+                        or acceptance(order).get('warranty_hours',0) and
+                           (type(receipt.get('warranty_hours',0)) not in (int,float) or
+                            receipt.get('warranty_hours',0)<acceptance(order)['warranty_hours'])):
             trace('buyer_ineligible_receipt_avoided',unit=receipt.get('unit'),claim=receipt.get('claim'))
             preflight_problem='receipt names a refused unit, unacceptable grade claim or no certificate'
             audit.guard('receipt_condition_preflight',problem=preflight_problem)

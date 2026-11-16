@@ -274,9 +274,12 @@ def acceptance(order: dict, receipt: dict | None = None) -> dict:
         policy["min_hours_left"] = shelf_minimum(order)
     else:
         policy["grades"] = ["A", "B"]
+        required=order.get('required_warranty_hours',0)
+        if type(required) in (int,float) and math.isfinite(required) and required>0:
+            policy['warranty_hours']=required
         if isinstance(receipt, dict) and isinstance(receipt.get("warranty_hours"), (int, float)) \
                 and receipt["warranty_hours"] >= 6:
-            policy["warranty_hours"] = 6
+            policy["warranty_hours"] = max(6,policy.get('warranty_hours',0))
     return policy
 
 
@@ -294,4 +297,8 @@ def receipt_problem(receipt: dict | None, *, selected_sku: str, order: dict,
         return "receipt task ID differs from the negotiation"
     if not receipt.get("sig_seller"):
         return "seller signature missing"
+    required=acceptance(order).get('warranty_hours',0)
+    offered=receipt.get('warranty_hours',0)
+    if required and (type(offered) not in (int,float) or not math.isfinite(offered) or offered<required):
+        return 'receipt lacks required risk protection warranty'
     return None

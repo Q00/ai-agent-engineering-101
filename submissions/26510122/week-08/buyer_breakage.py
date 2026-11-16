@@ -81,9 +81,12 @@ def profiles(history,*,now=None):
         failure=fails.get(ledger)
         if failure and (failure.get('source')!='public_ledger_own_paid_order_sku' or not 0<=now-epoch(failure.get('at'))<=WINDOW):failure=None
         for group,key in keys:
-            row=result[group].setdefault(key,{'paid':0,'broken':0,'refunded':0})
+            row=result[group].setdefault(key,{'paid':0,'broken':0,'refunded':0,'mature_paid':0,'early_broken':0})
             row['paid']+=1
+            mature=now-epoch(sale.get('at'))>=6*3600
+            row['mature_paid']+=int(mature)
             if failure:
+                row['early_broken']+=int(not mature)
                 row['broken']+=1
                 row['refunded']+=int(failure.get('refund_amount',0)>0)
     return result
@@ -102,5 +105,21 @@ def contribution_debit(evidence,saving):
     saving=max(0.,min(1.,saving));debits=[]
     for key in ('same_shop_sku','same_product'):
         row=evidence.get(key) or {};paid=row.get('paid',0);broken=row.get('broken',0);refunded=row.get('refunded',0)
-        debits.append(((broken-refunded)*(1+saving)+refunded*saving)/(paid+5))
+        observed=row.get('mature_paid',paid)+row.get('early_broken',0)
+        # Pending, still-intact purchases are not evidence of surviving 6h.
+        denominator=max(broken,observed)+(5 if key=='same_shop_sku' else 10)
+        debits.append(((broken-refunded)*(1+saving)+refunded*saving)/denominator)
     return min(1+saving,max(debits,default=0.)) # overlapping evidence is not charged twice
+
+
+def purchase_policy(evidence,kind):
+    """Known unrefunded failures change terms, not a permanent seller blacklist."""
+    if kind!='goods' or not evidence:return {}
+    local=evidence.get('same_shop_sku') or {};product=evidence.get('same_product') or {}
+    local_loss=max(0,local.get('broken',0)-local.get('refunded',0))
+    product_loss=max(0,product.get('broken',0)-product.get('refunded',0))
+    required=6 if local_loss>=1 or product_loss>=2 else 0
+    return {'required_warranty_hours':required,'same_shop_sku_unrefunded':local_loss,
+            'same_product_unrefunded':product_loss,'evidence_window_days':7,
+            'reason':'verified_unrefunded_breakage_requires_6h_cover' if required else 'observed_risk_only',
+            'note':'A/B and certificate checks still apply. Protection is a condition to negotiate and verify, not proof that this seller currently offers it. Refund avoids minus one, but a broken refunded purchase still contributes zero.'}

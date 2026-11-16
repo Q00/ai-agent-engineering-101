@@ -102,8 +102,11 @@ def candidates(order: dict, shops: list[dict], catalog: dict,
     for choice in found:
         saving=choice['price_guidance'].get('saved_if_usable_at_reference',
                                            choice['score_evidence']['saved_if_usable_at_cap'])
-        choice['routing_evidence']=routing_evidence(routes.get((choice['shop'],choice['sku'])),saving,
-            buyer_breakage.for_choice(history.breakage_profiles,choice['shop'],choice['sku']) if order.get('kind')=='goods' else None)
+        quality=buyer_breakage.for_choice(history.breakage_profiles,choice['shop'],choice['sku']) if order.get('kind')=='goods' else None
+        choice['risk_policy']=buyer_breakage.purchase_policy(quality,order.get('kind'))
+        choice['routing_evidence']=routing_evidence(routes.get((choice['shop'],choice['sku'])),saving,quality)
+        if choice['risk_policy']:
+            choice['routing_evidence']['purchase_risk_policy']=choice['risk_policy']
     # Compact model input while preserving different shops and SKUs when possible.
     found.sort(key=lambda c: (c['routing_evidence']['estimated_saved_per_attempt'], c['price_guidance'].get(
                                   'saved_if_usable_at_reference', c['score_evidence']['saved_if_usable_at_cap']) or 0,
@@ -163,11 +166,15 @@ def selection_reviews(reviews):
 
 
 def selection_route(evidence):
-    return {k:v for k,v in (evidence or {}).items() if k in (
+    result={k:v for k,v in (evidence or {}).items() if k in (
         'completed_orders_6h','paid_orders_6h','unusable_at_settlement_6h',
         'smoothed_paid_probability','smoothed_attempt_seconds',
         'median_observed_seconds','estimated_saved_per_minute','estimated_saved_per_attempt',
         'post_sale_breakage','post_sale_contribution_debit')}
+    policy=(evidence or {}).get('purchase_risk_policy')
+    if policy:result['purchase_risk_policy']={k:policy[k] for k in (
+        'required_warranty_hours','same_shop_sku_unrefunded','same_product_unrefunded')}
+    return result
 
 
 def selection_score_evidence(row):
@@ -182,7 +189,7 @@ def choose(candidates_: list[dict], order: dict, *, forced_candidate_id: str | N
         candidates_=[c for c in candidates_ if c['id']==forced_candidate_id]
     if not candidates_:
         raise ValueError('no candidate is available for this selection')
-    audit.begin('buyer_selection',policy_version='buyer-saved-v4')
+    audit.begin('buyer_selection',policy_version='buyer-saved-v5')
     displayed = [{**{key: row[key] for key in ("id", "list_price",
                                               "cap", "stock")},
                   'shop':text(row['shop'],80),'sku':text(row['sku'],80),
@@ -227,6 +234,11 @@ def choose(candidates_: list[dict], order: dict, *, forced_candidate_id: str | N
                            "heuristic, not your decision. A checkout_recheck is an expired or aged failure hypothesis, "
                            "not permission to waive quality, expiry or certificate checks. Read the first-hand counts, price conditions "
                            "and cases as evidence; do not turn a single past outcome into a permanent rule."}
+    prompt['objective'] += (' Risk debits exclude still-immature intact purchases from six-hour survival evidence. '
+        'A purchase_risk_policy with required_warranty_hours is a mandatory term for that candidate, '
+        'including exploration and fallback. Compare risk-adjusted expected Saved and settlement chance '
+        'across alternatives; do not prefer an unprotected cheap price merely for its discount. '
+        'Refunds prevent minus one but still contribute zero; current cover must be verified, not assumed.')
     commercial_objective = prompt['objective']
     if forum_context and (forum_context.get('posts') or forum_context.get('reference_prices')):
         prompt['public_forum_memory']=forum_context
@@ -388,7 +400,7 @@ def _run(order: dict, shops: list[dict], catalog: dict, own_shop_name: str, *,
            saved_if_usable_at_cap=chosen['score_evidence']['saved_if_usable_at_cap'],
            candidate_id=chosen['id'],shop_name=chosen['shop'],shop=chosen['url'],sku=chosen['sku'],
            opening_offer=first_offer,price_guidance=chosen.get('price_guidance'),
-           routing_evidence=chosen.get('routing_evidence'),routing_policy='buyer-routing-v3',
+           routing_evidence=chosen.get('routing_evidence'),routing_policy='buyer-routing-v4',
            note='A selected or signed receipt is not a paid purchase. Uniform exploration may pick a familiar candidate.')
     fallback = next((c for c in available if c["url"] != chosen["url"]), None)
     attempts = [(chosen, first_offer)]
@@ -427,7 +439,14 @@ def _run(order: dict, shops: list[dict], catalog: dict, own_shop_name: str, *,
                 record('dialogue_message',order=order.get('order'),shop=choice['url'],
                        shop_name=choice['shop'],sku=choice['sku'],selection_id=selection_id,
                        attempt_index=index,policy_mode=policy_mode,**row)
+            attempt_order=dict(order)
+            risk_policy=choice.get('risk_policy') or {}
+            if risk_policy.get('required_warranty_hours'):
+                attempt_order['required_warranty_hours']=max(attempt_order.get('required_warranty_hours',0),risk_policy['required_warranty_hours'])
+                record('buyer_risk_protection',order=order.get('order'),shop_name=choice['shop'],sku=choice['sku'],
+                       attempt_index=index,**risk_policy)
             negotiation_memory={**choice['first_hand'], 'price_guidance':choice.get('price_guidance'),
+                                'post_sale_risk':risk_policy,
                                 'known_refused_units':buyer_checkout_memory.refused_unit_ids(choice,order,history)}
             try:
                 negotiation_memory['public_forum']=buyer_forum_memory.retrieve([choice['sku']],budget=2400)
@@ -439,14 +458,14 @@ def _run(order: dict, shops: list[dict], catalog: dict, own_shop_name: str, *,
             record('negotiation_budget',order=order.get('order'),attempt_index=index,
                    seconds=round(attempt_deadline-attempt_started,1),
                    fallback_reserved_seconds=round(deadline-attempt_deadline,1))
-            outcome = negotiate(choice["url"], choice["sku"], choice["name"], order,
+            outcome = negotiate(choice["url"], choice["sku"], choice["name"], attempt_order,
                                 opening_offer=opening, cap=choice["cap"],
                                 list_price=choice["list_price"], memory=negotiation_memory,
                                 deadline=attempt_deadline,on_message=log_message,
                                 buyer_name=own_shop_name,seller_name=choice['shop'])
             final_offer = outcome["offers"][-1] if outcome["offers"] else 0
             problem = receipt_problem(outcome.get("receipt"), selected_sku=choice["sku"],
-                                      order=order, final_offer=final_offer,
+                                      order=attempt_order, final_offer=final_offer,
                                       task_id=outcome.get("task_id"), cap=choice["cap"])
             record("negotiation", order=order.get("order"), shop=choice["url"],shop_name=choice['shop'],
                    selection_id=selection_id,attempt_index=index,policy_mode=policy_mode,
@@ -460,12 +479,14 @@ def _run(order: dict, shops: list[dict], catalog: dict, own_shop_name: str, *,
                    receipt_problem=problem,terminal_reason=outcome.get('reason'),task_id=outcome.get('task_id'),
                    duration_seconds=round(time.monotonic()-attempt_started,3),
                    order_kind=order.get('kind'),use_within_hours=order.get('use_within_hours'),
+                   risk_required_warranty_hours=attempt_order.get('required_warranty_hours',0),
+                   receipt_warranty_hours=(outcome.get('receipt') or {}).get('warranty_hours',0),
                    last_seller_message=outcome.get('last_seller_message'),
                    transcript=outcome.get('transcript',[]))
             if problem is None:
                 return {"shop": choice["url"], "receipt": outcome["receipt"],
                         "stars": 4, "review": "Agreed receipt; awaiting checkout and settlement.",
-                        "accept": acceptance(order, outcome["receipt"])}
+                        "accept": acceptance(attempt_order, outcome["receipt"])}
         except Exception as error:
             audit.executed('negotiate',status='failed',reason=type(error).__name__)
             trace("buyer_shop_error", shop=choice["url"], error=type(error).__name__,
