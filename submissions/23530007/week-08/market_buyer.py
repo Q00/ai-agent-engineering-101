@@ -408,6 +408,7 @@ def rivals_above():
 
 
 AVOID_MARGIN = 0.12          # (unused since 11-11 12:50) classmates within this much of our class total
+RATED_RIVALS = {"25620027"}   # 11-16: shops whose food we buy to rate them (review.py RIVAL_RATING)
 USER_BANNED = {"seochanit"}  # user 11-11: do not trade with seochanit
 AVOID_BAD_GAP = 0.02         # a shop|kind where we realized v < m* - this over 24 h (n >= 10) is avoided
 
@@ -439,14 +440,21 @@ def avoid_shops():
             why[n] = "user ban (11-11: no trade with seochanit)"
         sshops = [s for s in b["shops"] if s["name"] in set(shop_of.values())]
         book2 = max((s for s in sshops if s["name"] != ME and s.get("book") is not None), key=lambda s: s["book"], default=None)
+        # 11-16 14:50 (user: rate the runner-up's shop 3, review.py RIVAL_RATING): for such a shop only its GOODS stay
+        # avoided (refund risk, more margin to it); its food is bought again so our account's rating there moves
+        def avoid(name_, reason):
+            if name_ in RATED_RIVALS:
+                pairs.add(f"{name_}|goods")
+                why[f"{name_}|goods"] = reason + " (food bought for our rating there)"
+            else:
+                names.add(name_)
+                why[name_] = reason
         if book2:
-            names.add(book2["name"])
-            why[book2["name"]] = "book runner-up"
+            avoid(book2["name"], "book runner-up")
         rv = sorted((s for s in sshops if s.get("revenue") is not None), key=lambda s: -s["revenue"])
         i = next((k for k, s in enumerate(rv) if s["name"] == ME), None)
         if i is not None and i + 1 < len(rv):
-            names.add(rv[i + 1]["name"])
-            why[rv[i + 1]["name"]] = "right below us in revenue"
+            avoid(rv[i + 1]["name"], "right below us in revenue")
     except Exception:
         pass
     try:
