@@ -395,9 +395,8 @@ def winprob_lines():
         out.append(f"  승부처: {WP_NAMES.get(k, k)} ({v['freq']:.0%}) → 승률 {v['yes']:.0%}, 아니면 {v['no']:.0%}")
     j = d.get("jump")                   # a >= 10-point move comes with the inputs that moved (user 11-15)
     if j:
-        mv = [f"{k} {f} {a}→{b}" for k, F in (j.get("moved") or {}).items() for f, (a, b) in F.items()
-              if f in ("stars", "saved", "posts")]
-        out.append(f"  급변 {j['from']:.0%}→{j['to']:.0%}: " + ("; ".join(mv[:4]) or "입력 변화 없음(계산 변동)"))
+        ev = [f"{WP_NAMES.get(k, k)} {a:.0%}→{b:.0%}" for k, a, b in j.get("events") or []]
+        out.append(f"  급변 {j['from']:.0%}→{j['to']:.0%}: " + ("; ".join(ev) or "최근 속도 변동(뚜렷한 원인 없음)"))
     return out
 
 

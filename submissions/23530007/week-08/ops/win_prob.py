@@ -301,7 +301,13 @@ def main():
             out["jump"] = {"from": old["p_first"], "to": out["p_first"],
                            "moved": {k: {f: [old["inputs"][k].get(f), v] for f, v in out["inputs"][k].items()
                                          if old["inputs"].get(k, {}).get(f) != v} for k in out["inputs"]},
-                           "stars_hidden_before": old.get("stars_hidden")}
+                           "stars_hidden_before": old.get("stars_hidden"),
+                           # 11-16: the input levels barely move between runs (posts 3289 -> 3295); what moves P is a
+                           # pace, which shows as an event's frequency: keep the events that moved most
+                           "events": sorted(([k, old.get("events", {}).get(k), v] for k, v in out["events"].items()
+                                             if old.get("events", {}).get(k) is not None
+                                             and abs(v - old["events"][k]) >= 0.05),
+                                            key=lambda e: -abs(e[2] - e[1]))[:3]}
     except (NameError, KeyError, TypeError):
         pass
     OUT.write_text(json.dumps(out, ensure_ascii=False, indent=1))
