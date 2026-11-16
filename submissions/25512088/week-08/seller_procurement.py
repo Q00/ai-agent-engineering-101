@@ -528,6 +528,14 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
             unit_cap=policy.get('max_units_per_sku',3)
             if row.get('upper_cost',0)>=policy.get('high_value_lane_min_unit_cost',math.inf):
                 unit_cap=min(unit_cap,policy.get('max_high_value_units_per_sku',1))
+                profitable_share=own_profitable/max(1,own_sales_total)
+                if (own_sales_total>=policy.get('strongly_proven_high_value_min_own_sales',math.inf)
+                        and row.get('own_gross_total',0)>0
+                        and profitable_share>=policy.get(
+                            'strongly_proven_high_value_min_profitable_share',1.1)):
+                    unit_cap=min(policy.get('max_units_per_sku',3),max(
+                        unit_cap,policy.get(
+                            'max_strongly_proven_high_value_units_per_sku',unit_cap)))
                 if high_value_canary:
                     unit_cap=min(unit_cap,1)
         # These are absolute per-SKU inventory ceilings. Demand velocity may
