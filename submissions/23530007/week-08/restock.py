@@ -98,7 +98,7 @@ RIVAL_SHARE, RIVAL_LINES = 0.7, 8
 # 'none in stock' to the same asks), G2698c6f8, G0667d440. A rival line whose rival median is at least
 # RIVAL_OVERRIDE_X now ignores cover 0: the rival lines already count only units that sell at the rival's price, and
 # the seller's floors keep every sale over cost, so an unsold fresh unit only waits in the book at cost
-RIVAL_OVERRIDE_X, OVERRIDE_LINE_COST = 0.63, 8e6
+RIVAL_OVERRIDE_X, OVERRIDE_LINE_COST, OVERRIDE_MAX_HELD = 0.63, 8e6, 12
 RIVAL_X_SEEN = {}
 DEEP_OVER = 1.10             # a unit whose floor is over 1.10 x the SKU's market median counts 0 in the cover
 FOOD_KEEP_CASH = 5e6          # 11-15: least cash left after a food line (food is ~10 k a unit)
@@ -632,6 +632,11 @@ def main():
             continue
         if (p.get("sku_auto", {}).get(v["sku"]) or {}).get("cover") == 0:   # the strategist stopped this SKU
             if not (_[1] == -2 and RIVAL_X_SEEN.get(v["sku"], 0) >= RIVAL_OVERRIDE_X):   # 11-16: rival lines pass
+                continue
+            # ... unless we already hold OVERRIDE_MAX_HELD units of it at any cost: the 13:20 window (before the cap)
+            # bought 10 x G24f5f979 at .647 of list against a .641 market; such a lot counts as 'not sellable', so
+            # without this every window would buy more of the same SKU
+            if have_sku.get(v["sku"], 0) >= OVERRIDE_MAX_HELD:
                 continue
             # ... at most OVERRIDE_LINE_COST a window each (the dry run wanted 10 x G24f5f979, 23 M of 60 M cash)
             qty = min(qty, max(1, int(OVERRIDE_LINE_COST // (v["list_price"] * COST_GUESS))))
