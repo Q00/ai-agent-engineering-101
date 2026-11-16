@@ -108,14 +108,14 @@ COST_GUESS_GRADE = {"A": 0.65, "B": 0.50, "C": 0.35}
 BOARD_TERMS = HERE / "logs" / "board_terms_r3.jsonl"
 PLAN = Path(os.environ.get("BUYER_PLAN") or Path(__file__).resolve().parent / "buyer_plan_r3.json")
 PLAN_KEYS = ("CAP", "FOOD_MARGIN", "C_CAP", "C_WARRANTY", "MAX_TRIES", "MAX_RAISE", "FIRM_GAP", "SCOUTS", "CLOSE_GAP",
-             "SKIP_BELOW", "RAISE_GOODS", "RAISE_FOOD")
+             "SKIP_BELOW", "RAISE_GOODS", "RAISE_FOOD", "SCOUT_WAIT")   # SCOUT_WAIT: leak audit #53, 11/17
 
 
 def set_number(k, v):
     if k in ("FIRM_GAP", "CLOSE_GAP"):
         setattr(buyer, k, v)
     else:
-        globals()[k] = int(v) if k in ("MAX_TRIES", "C_WARRANTY", "SCOUTS") else v
+        globals()[k] = int(v) if k in ("MAX_TRIES", "C_WARRANTY", "SCOUTS", "SCOUT_WAIT") else v
 
 
 def load_plan(order_id=None):
