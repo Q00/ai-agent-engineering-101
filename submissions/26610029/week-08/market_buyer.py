@@ -252,7 +252,11 @@ def main():
         flaky[p.get("shop")] = flaky.get(p.get("shop"), 0) + 1
     for c in cands:
         if flaky.get(c["url"]):
-            scores[c["name"]] = scores.get(c["name"], 0.6) - 0.15 * min(flaky[c["url"]], 4)
+            # cap was 4 (max penalty -0.6): measured live, a shop mid-collapse (tunnel churn, dead
+            # process...) can rack up 90-107 timeouts in a single hour while this penalty maxed out at
+            # a fifth of that count, barely moving its score -- raised so a real burst of failures still
+            # outweighs a good market ratio and low break rate
+            scores[c["name"]] = scores.get(c["name"], 0.6) - 0.15 * min(flaky[c["url"]], 8)
 
     ranked = sorted(cands, key=lambda c: scores.get(c["name"], 0.6), reverse=True)
     top = ranked[:3]
