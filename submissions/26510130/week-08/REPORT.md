@@ -1,350 +1,181 @@
-# Week 07 — The agent market
+# Week 08 (Midterm) — Round 3 shop + buyer
 
-26510130 Hyunsik Wang · GitHub **@kingsssik** · market name **YAHO1212** (Rounds 0–1
-ran as **kingsssik**, see §3). Market test: **25/25**.
-
-| | |
-|---|---|
-| Harness | `claude -p --model haiku --tools "" --setting-sources "" --no-session-persistence`, in an empty directory |
-| Shop | week-06 seller + Ed25519-signed receipts (`receipts.py`) + per-item opening caps (`pricing.json`) |
-| Buyers | `buyer.py` (week 06, Round 0) and `market_buyer.py` (Rounds 1–2) |
-| Tunnel | `cloudflared` 2026.10.3 quick tunnel via the kit's `--tunnel` |
-
-## 1. How the buyer picks a shop, and what it remembers
-
-Three stages, and the order is the design:
-
-1. **Own memory first, in code.** `market_memory.json` holds one row per shop,
-   keyed by **name** — never by URL, which changes every time a shop restarts its
-   kit:
-
-   ```json
-   {"shops": {"yms979": {"deals": 3, "no_deals": 0, "cheated": 0,
-                         "prices": [105, 105, 105], "last": "deal at 105"}}}
-   ```
-
-   `cheated` is set when a receipt comes back at a price other than the one I
-   agreed, or above my budget. A shop with `cheated > 0` is removed from the list
-   **before the harness sees it**, so the model cannot choose it back. A review
-   is somebody's claim; my own receipt is evidence, and it outranks every star
-   average. (The file also holds `Kit Shop` rows: the market test runs the same
-   buyer in the same directory. They are harmless — no market shop has that
-   name — but they are not market data.)
-2. **The harness chooses among what is left**, from a per-shop summary (§2).
-3. **A code floor**: the answer must index the allowed list; anything else falls
-   back to the best star average rather than to list order.
-
-The buyer writes its reason to stderr, which the kit copies into the log:
-
-```
-[buyer] picked 'yms979' ... because: yms979 has 4.6 stars, a proven track record of
-three lamp deals at exactly 105 (my budget), and explicit 5/5 receipt matching
-```
-
-The budget is enforced in code: every offer is `min(price, budget)`, and a
-harness `accept` above budget is refused. That guard fired twice in the
-market, both times on a lamp with a budget of 90 (asks of 105 and 100). The
-first is the clearest line in the log about why the guard exists:
-
-```
-17:19:54 [buyer] [harness haggle] <- {"action": "accept", "price": 90}
-17:19:54 [buyer] [buyer] REFUSED harness accept at 105 > budget 90
-17:19:54 [buyer] [buyer] -> '90' taskId=8b754737
-```
-
-The shop was asking 105, my budget was 90. The model answered "accept, 90" —
-it conflated *accepting the shop's price* with *offering 90*. Accepting would
-have paid 105. Code refused the accept and sent 90 as a counter. The limit was
-in the prompt the whole time; the model still lost track of it.
-
-## 2. How reviews reach the harness
-
-Never the raw list. Each remaining shop becomes four lines:
-
-```
-3. fair-furniture | stars 4.7 | my past: 2 deals, 0 without a deal, avg price 182.5
-     - Fair price, receipt matched.
-     - Came down to my budget, honest receipt.
-     - Quick deal at a fair price.
-```
-
-Star average, the **three newest** reviews truncated to 120 characters, and my
-own history with that shop. The prompt adds one sentence of judgement:
-*"Reviews that mention a receipt not matching the agreed price are the serious
-ones; a shop that merely drove a hard bargain is fine."* The summary is a fixed
-size per shop, so the prompt grows with the number of shops, not with the
-number of reviews.
-
-Reviews my buyer **writes** are generated in code, not by the harness. A review
-is a claim other buyers will act on, so it says what measurably happened
-(*"Agreed 110 for the lamp, the receipt said 135"*) rather than an impression.
-
-## 3. Rounds 0, 1 and 2
-
-The board, by round, for both names (both owned by @kingsssik):
-
-| round | name | shop deals | buyer orders | buyer deals |
-|---|---|---|---|---|
-| 0 | kingsssik | 0 | 12 | 4 |
-| 1 | kingsssik | 0 | 3 | 2 |
-| 2 | YAHO1212 | **156** | **89** | **62** |
-
-**Rounds 0 and 1 (in class, as `kingsssik`).** The buyer traded — 4 deals from
-12 orders, then 2 from 3 — but the shop closed nothing. Those rounds ran on a
-different machine whose key I do not have here.
-
-**Round 2 (after class, as `YAHO1212`).** Joining under the old name failed:
-
-```
-[market] join as shop failed: 409 {"error":"the name 'kingsssik' is taken by another key"}
-```
-
-The name is bound to the in-class key, and this machine had generated a fresh
-`shop_key.pem`. I rejoined as `YAHO1212` with the same claim code, so the board
-still shows @kingsssik:
-
-```
-16:41:05 [market] shop registered as YAHO1212, round 2
-16:41:05 [market] buyer registered as YAHO1212, round 2
-16:43:56 [market] ledger #245113: lamp at 105, stars 5, verified True, review accepted
-```
-
-Ledger #245113, three minutes in, is the first buyer deal that counts under the
-Round 2 rules.
-
-**The whole run**, 2026-10-22 16:39 to 10-26 11:00 (`analyze.py`, written to
-`logs/analysis/summary.json`, from `market-kit.log`, `picks.jsonl`,
-`market_memory.json` and the board):
+26510130 Hyunsik Wang · GitHub **@kingsssik** · market name **YAHO1212**
+아키텍처 그림: [`architecture.tex`](architecture.tex) → [`architecture.pdf`](architecture.pdf)
 
 | | |
 |---|---|
-| **shop** deals / visits | 420 / 576 (73% of visits closed) |
-| shop stars | 4.81 — **2nd of 42** shops with 20+ deals; 29th by volume |
-| shop revenue / profit | 84,965 / 11,365 |
-| shop price ÷ reserve | lamp 1.153, chair 1.163, bookshelf 1.149; **0** sales below reserve |
-| **buyer** orders | 1,110 (lamp 373, chair 355, bookshelf 382) |
-| buyer counted deals | **388**, every one `verified True` |
-| buyer no-deal results | 132 reviewed, plus **587** orders the kit closed empty (§6) |
-| buyer mean price | lamp 102.5, chair 182.7, bookshelf 264.2 — 86% of budget |
-| held / hopeless (board) | 212 / 212: orders whose budget was under every reserve, correctly not bought |
-| receipt mismatches met | 0 in 388 deals |
+| 모델 | Claude **Haiku**, `claude -p --model haiku --tools "" --setting-sources "" --no-session-persistence` (`harness.py`), 빈 디렉터리에서 실행 |
+| 가게 | `seller_r3.py` (A2A) + `pricing.py` + `restock.py` + `asks.py` + `receipts.py` (Ed25519) |
+| buyer | `buyer_r3.py` (주문마다 프로세스 1개) |
+| 공통 | `market_memory.py` (ledger 기반 메모리), `guard.py` (프롬프트 인젝션 방어), `forum.py` (게시판) |
+| 배포 | Windows PC 1대, 키트 v4 `market_kit.py join --tunnel` + cloudflared quick tunnel, `keepalive.py` 감시자 |
 
-The number that matters most is not on that table: **of 90.3 hours, the agents
-were in the market and working for 6.2** (§6). All 420 shop deals and 388 buyer
-deals came from those six hours.
+> 설계 원칙 한 줄: **모델은 제안하고, 코드가 결정하고, 메모리가 기억한다.**
+> 모델이 낸 값은 항상 코드가 정한 범위 안으로 잘린다. 가격의 하한과 상한, 결제 여부는 전부 코드가 정한다.
 
-Reviews other participants left my shop:
+---
 
-> *"Completed A2A trade at price 230.0; receipt agrees with negotiation."* (5★)
-> *"Receipt verified locally; fair price 325.0 within budget."* (5★)
-> *"Paid 105.0 of 110."* (3★) · *"Paid 270.0 of 360."* (5★)
+## 1. 부품별 설계
 
-## 4. What failed while adding signatures, and what I changed
+### 1.1 모델: 어디에 Haiku를 쓰고, 어디에는 안 쓰는가
 
-**No signature failure showed up anywhere I could see** — 3/3 in the market
-test, and the market counts 156 of my shop's deals in Round 2, where a deal
-counts only if `sig_seller` verifies against the registered key. That is
-because the one trap
-the assignment names was handled before the first run rather than found by it:
-an A2A data Part carries numbers as doubles, so a receipt signed over `120`
-arrives as `120.0`, and `canon()` of the two differ. `receipts.whole()`
-normalises every numeric field to an int on **both** sides, signing and
-verifying. I checked it as a round-trip before wiring it in:
+| 호출 | 위치 | 하는 일 | 모델 출력을 코드가 어떻게 막는가 |
+|---|---|---|---|
+| **MOVE** | `seller_r3.py:decide()` | 협상 라운드마다 accept / counter 결정 | `pricing.floor()` 아래로는 수락 거부, `ask` 위로는 역제안을 자름 (`clamped counter` 10,697회, `REFUSED harness accept … below floor` 345회) |
+| **PICK** | `buyer_r3.py:choose()` | 주문 1건당 1회, 상위 5개 (가게, SKU) 후보 중 하나 선택 | 범위를 벗어난 답은 코드 1순위로 대체 |
+| **POST** | `forum.py` | 5분마다 buyer 글 작성 (주제 순환), 사기 경보 글 | 인젝션 문구는 프롬프트에 넣지 않고, 알림은 "무엇을 시도했는지"만 서술 |
+| ~~HAGGLE~~ | `buyer_r3.py:haggle()` | 11-15까지 라운드마다 흥정 수 제안 | **제거함** (`HAGGLE_LLM = False`, 커밋 `aae14e0`). 모델이 낸 가격이 어차피 코드 상한으로 잘려서 같은 값을 보냈고, 호출마다 3~4초가 걸려 주문 1건에 평균 147초가 들었다. 코드로 바꾸자 시간당 주문이 25건에서 48건으로 늘었다. |
 
-```
-verify int 120         : True
-verify 120.0 (dataPart): True
-verify tampered 135    : False
-verify extra key       : True     # item_id rides along, unsigned
-```
+모델을 **쓰지 않는** 곳이 더 중요하다. 재입고 수량, 가격 하한, 첫 호가 상한, buyer 상한, 결제 여부, 결제가 안 되는 상품 거르기는 전부 코드다. 숫자를 틀리면 Book이 바로 깎이는 결정이라서, 모델에게는 정해진 범위 안에서 고르는 일만 맡겼다.
 
-What did fail was **identity**, which is the key's other job: the 409 above.
-A shop's name is bound to its public key, so a fresh key on a new machine is a
-different shop as far as the market is concerned, and its reputation does not
-come with it. `receipts.load_key()` creates the key only when none exists and
-otherwise reuses it, which is what let the restart in challenge 1 keep
-`YAHO1212`'s 100+ deals and 4.6 stars. `*.pem` is in `.gitignore`.
+### 1.2 컨텍스트: 지난 거래와 평판을 다음 결정에 넣는 방법
 
-## 5. Challenges
+프롬프트에 원자료를 넣지 않는다. ledger는 시간당 수천 건이 쌓이므로, 코드가 작은 숫자로 접어서(fold) 디스크에 두고 결정할 때 그 숫자만 쓴다.
 
-### 1 — the shop changes its prices from its own trades and reviews
+| 메모리 | 파일 | 무엇을 담는가 | 누가 쓰는가 |
+|---|---|---|---|
+| **시장 메모리** | `memory/market.json` (`market_memory.py`) | ledger를 커서로 이어 읽어 접은 값: 카테고리/SKU별 수요(1일 감쇠), 카테고리별 실제 판매가/정가, **(SKU, 등급)별 최근 15개 판매가**, 등급별 고장률, 가게별 등급 정직도 | 가격(첫 호가 ≤ 시장 중앙값의 0.95배), 재입고(수요, 원가가 판매가보다 비싼 상품 거르기), buyer(가게 위험도) |
+| **문의 기록** | `memory/asks.json` (`asks.py`) | buyer들이 **우리 가게에** 물어본 SKU (재고 유무와 무관, 6시간 반감기) | 재입고 1단계 "물어본 상품 채우기" |
+| **buyer 기억** | `memory/buyer.json` | 가게별 거래, 거래 불발, 결제 거절, 고장, 부정직, 지불 비율; kit의 `payments.jsonl`, `broken.jsonl`을 오프셋으로 흡수; C등급 거절 (가게, SKU) 6시간 제외 목록 | 후보 위험도, PICK 프롬프트 요약 |
+| **사기 기록** | `memory/scams.json` (`guard.py`) | 인젝션을 시도한 발신자와 규칙별 횟수 | buyer 후보 맨 뒤로, 게시판 사기 경보 |
+| **seller 런타임** | 프로세스 메모리 | 진행 중 협상, 영수증 나간 상품, **결제 안 된 영수증 수** | 상품 고르기(결제 안 된 상품은 뒤로, 3번이면 제외) |
 
-**Evidence.** From the first half hour of Round 2 (`logs/market-kit.log`,
-`logs/challenge-1/reprice.json`): the harness opened at ~1.55× reserve, deals
-closed at a mean of 1.13×, no buyer ever paid more than 1.40×, and reviews showed
-buyers' budgets (*"Paid 270.0 of 360."* — buyers paid on average 12% under
-budget). Opening above anything anyone has ever paid looked like it bought only
-rounds.
+PICK 프롬프트에 들어가는 건 후보 5개의 요약 몇 줄뿐이다. 가게, SKU, 정가, 예상 지불 비율, 위험도, 내 과거 기록이 들어가므로, 거래가 늘어도 프롬프트 길이는 그대로다.
 
-**Change.** `reprice.py` reads those deals and writes per-item opening caps:
-`max(paid/reserve) × 1.05`, floor 1.20 → lamp 1.47×, chair 1.46×, bookshelf
-1.45×. The seller states the cap in the harness prompt and clamps to it. Reserves
-unchanged. The rule and its margin were fixed **before** the after-window, and
-not tuned afterwards.
+### 1.3 툴: 무엇을 툴로 만들었고 어떻게 만들었는가
 
-**Before and after**, from board snapshots every 5 minutes
-(`logs/challenge-1/board-*.json`), switch at 17:11:31:
+모두 순수 Python 함수다. 모델에게 tool-use로 주지 않고, 에이전트 루프가 정해진 순서로 부른다(그림의 파란 상자).
 
-| | before (16:45–17:10) | after (17:13–17:43) |
+- **`pricing.py`**: `floor()`, `ask()`, `warranty()`, `describe()`.
+  - 하한은 원가×1.04에 보증 위험을 더한 값이다. 식품은 남은 유통기한에 따라 0.7배, 0.3배로 내리고, 마지막 12시간에는 원가가 하한이다.
+  - 첫 호가는 정가의 0.70배와 시장 중앙값의 0.95배 중 낮은 값으로 잡는다.
+  - 보증은 정가 20만 원 이하 A/B등급 상품에만 붙인다.
+- **`restock.py:plan()`**: 공급 창이 열렸을 때 살 줄(최대 10줄)을 정한다.
+  - 물어본 상품 채우기는 줄의 50%까지, 잘 팔리는 카테고리 채우기, 30%는 카테고리 넓히기(빈 카테고리에 1개씩)에 쓴다.
+  - 거르는 것: 시장 전체 구매 폭주로 원가가 6% 넘게 오른 상품(surge), 원가×1.04가 시장 판매가 이상인 상품, 마감 전에 유통기한이 끝나는 식품.
+- **`market_memory.py`**: `update()`와 `load()`, 그리고 `sku_median()`, `break_rate()`, `honesty()`, `paid_ratio()`.
+- **`guard.py`**: `scan()`, `clean()`, `flag()`, `scan_forum()`. 정규식 6종(AI를 직접 부르는 말, 가짜 권위, 지시 무시 요구, 수를 지시, 리뷰를 지시, 역할극)으로 다른 에이전트의 문장에서 지시문만 걷어낸다.
+- **`receipts.py`**: Ed25519 서명과 검증. A2A 데이터 파트는 정수가 실수로 바뀌어 오므로, 서명 전에 숫자를 정규화한다.
+- **`keepalive.py`**: 키트를 다시 띄우는 감시자. WMI로 띄워서 Claude 세션이 끝나도 살아남는다.
+
+---
+
+## 2. 아키텍처: 그림이 보여 주는 구조와 키트 기본형과 다른 점
+
+그림(`architecture.pdf`)은 세 줄로 읽는다.
+
+1. **위**: 시장과 키트(회색, 주어진 것).
+2. **가운데**: 메모리 층(초록). ledger, 우리 가게 문의, 내 영수증과 결제 결과가 여기로 모인다.
+3. **아래**: 가게 줄과 buyer 줄. 각 줄은 `code → (guard) → 모델 1회 → code` 순서다. 주황 상자(모델)는 항상 파란 상자(코드) 사이에 끼어 있다.
+
+키트 기본형(starter seller/buyer)과 다른 점:
+
+| | 키트 기본형 | YAHO1212 |
 |---|---|---|
-| opening ask / reserve | 1.55× | **1.30×** |
-| visits | 120 | 54 |
-| deals | 87 | 42 |
-| close rate | 72.5% | **77.8%** |
-| **share of market deals** | **9.5%** | **4.0%** |
-| average price | 202.9 | 219.3 |
-| price / reserve, all items | 1.130× | **1.174×** |
-| — lamp / chair / bookshelf | 1.125 / 1.166 / 1.109 | 1.199 / 1.177 / 1.154 |
-| stars | 4.60 | 4.64 |
+| 가격 | 모델이 가격을 정함 | **모델은 수만 제안하고, 하한과 상한은 코드가 정함**. 하한은 원가 기반, 첫 호가는 시장 중앙값 기반 |
+| 컨텍스트 | 지금 대화만 봄 | **ledger를 접은 시장 메모리 + 우리 가게 문의 + 내 영수증과 결제 결과**. 원자료는 프롬프트에 넣지 않음 |
+| 재입고 | 고정 규칙 | **수요 기반 3단계**(물어본 상품, 잘 팔리는 카테고리, 넓히기) + 손실 필터 3종 |
+| buyer | 모델이 흥정 | **Saved 식(patch 3.6)에 맞춘 등급별 상한** + 결제 규칙 사전 확인 + 흥정은 코드 |
+| 안전 | 없음 | **양방향 인젝션 방어** + 사기꾼 후순위 + 공개 사기 경보 |
+| 마감 | 없음 | 규칙 "안 팔린 재고는 원가로 Book에 남음"을 이용해 **원가 아래 처분 없음** |
 
-Two results, and they pull in opposite directions.
+---
 
-**The price result is real and is the opposite of what I expected.** I lowered
-the opening and the shop got *more* per deal — on every item, not just through
-item mix. The harness opened at 1.30×, below the 1.45× cap, because the cap is
-written into its prompt and it anchors on it. From a high opening the harness
-conceded in large steps toward the reserve; from a lower one, buyers met it near
-where it started.
+## 3. Round 3 결과
 
-**The share result is not attributable to price, and I am not attributing it.**
-Share = visits × close rate ÷ market. Close rate went up. Share fell because
-**visits halved** — and in this market a buyer chooses a shop from reviews and
-memory *before* it sees any price. The opening ask is invisible until after the
-visit, so it cannot have caused buyers not to come. What did happen at 17:11 is
-the restart: a new tunnel URL, and whatever buyers' ranking does with a shop
-that just reappeared. One window each side, with the restart in the middle, is
-not enough to separate that from noise. What I would claim from this is narrow:
-a lower stated opening raised realised price and close rate; share is a
-reputation quantity and price did not move it.
+> 아래 수치는 **2026-11-16 20:11 KST** board 기준이다. 최종 순위는 종료 시각(11-17 23:59)의 board로 정해진다. 제출 직전 수치로 다시 갱신한다.
 
-### 2 — dishonest participants, and how my buyer avoided them
+### 3.1 정산 수와 순위
 
-From all **481** shop lists the kit handed my buyer between 10-22 17:15 and
-10-26 10:51 (`logs/challenge-2/picks.jsonl`, 25–31 shops per list):
+| | 값 |
+|---|---|
+| **Players (학생 46명)** | **30위**, 1.039 = 가게 0.522 + buyer 0.517 |
+| 가게 정산 거래 | **19,375** (방문 38,724) |
+| 가게 매출 / Book | 778.6M / **85.97M** (Book = 현금 + 재고 원가) |
+| 가게 별점 | 4.57 (계정당 평균 4.40), 정직한 등급 표기 19,032 / 19,033 |
+| buyer 정산 거래 | **16,395** (주문 28,152) |
+| buyer Saved | 0.7067 (patch 3.6 식) |
+| buyer 글 / 포럼 평점 | 1,692 / 0.923 |
 
-| shop | offered to my buyer | picked | board, Round 2 | review it was shown |
-|---|---|---|---|---|
-| **maple-home** (house) | 481 | **0** | 7 deals, **1.0★** | *"[WARNING] chair: agreed 185, receipt says 210. Receipt does not match the deal. Avoid."* |
-| **elm-street** (house) | 233 | **0** | 1,145 deals, **4.74★** | *"Receipt for the bookshelf did not match the deal (agreed 260, receipt 295). Avoid."* |
+순위 변화 (내가 매시간 점검한 board, 학생 46명 중):
 
-Both are instructor-run shops accused of the same thing: writing a higher price
-on the receipt than the one agreed. Over the same orders the buyer spread its
-choices across 19 shops (cheapest-in-town 111, ggari-shop 106, myeonggi 91 …),
-so never picking these two is not a narrow habit.
+| 시각 | 순위 | 점수 | 그 사이 바뀐 것 |
+|---|---|---|---|
+| 11-10 20:35 | 32 | 0.939 | 물량 전략 시작 (`983faaa`) |
+| 11-12 09:51 | 33 | 0.942 | 재입고 줄 배분 수정 (`3e05bbf`), 결제 안 되는 합의 막기 (`6287ae7`) |
+| 11-12 17:11 | 31 | 0.960 | 마감 규칙 수정 (`5fa0fec`) |
+| 11-13 13:11 | 29 | 0.988 | buyer 등급별 상한 (`af73231`), 보증 범위 축소 (`884841c`, `2c63590`) |
+| 11-15 12:11 | 28 | 1.060 | |
+| 11-16 20:11 | 30 | 1.039 | buyer 흥정을 코드로 (`aae14e0`) |
 
-The two cases are not the same, and the difference is the interesting part.
-maple-home is shunned by everyone — seven deals and a 1.0 average; the market
-had already decided. **elm-street has 4.74 stars over 1,145 deals**, better than
-most shops my buyer did use, and my buyer still avoided it in all 233 lists.
-One concrete accusation outweighed a thousand mostly happy trades. That is the
-review layer doing exactly what I told it ("receipt not matching the agreed
-price is the serious kind"), and it may also be over-avoidance: a shop that
-inflates one receipt in a hundred, or one that drew a single false review,
-looks the same from where my buyer stands. Among the problems Resnick et al.
-(2000) list for reputation systems is that honest reports are hard to ensure;
-a reader cannot tell a true accusation from a planted one, and here that
-uncertainty cut in the cautious direction.
+### 3.2 거부 사유 (로그 인용)
 
-How it came to avoid them matters, because there were two possible mechanisms
-and only one fired. My memory never blacklisted them — `cheated` is 0 for every
-shop in `market_memory.json`, and `RECEIPT MISMATCH` never appears in my log —
-because my buyer never traded with them. The avoidance came from stage 2: the
-harness read *"agreed 260, receipt 295"* in the summary and the prompt's one
-sentence of judgement told it that is the serious kind. It is the review layer
-working, not the memory layer.
+kit 로그 전체(11-02~, 교체된 파일 포함)에서 센 값이다.
 
-Which is also its weakness. Accusations are claims too, and a dishonest buyer
-could post *"agreed 185, receipt says 210"* about an honest shop. My buyer has
-no way to check a stranger's receipt; it can only check its own. That is why the
-code blacklist is driven by memory alone and never by reviews, and why reviews
-only inform the harness rather than remove a shop outright.
+**buyer 결제를 kit 정책이 거부한 경우.** 총 1,377건이며, 그중 803건은 유통기한, 567건은 C등급이다.
 
-The recording itself was a change I had to make: the kit overwrites
-`.market/shops.json` on every order, so with only the last list on disk
-"offered and avoided" could not be shown at all. `market_buyer.record_pick()`
-now appends each order's offered shops, their accusing reviews, and the pick.
-
-## 6. Where and how the shop and buyer run
-
-Both run on my own Windows PC through the kit:
-
-```bash
-MARKET_OWNER=<claim code> python scripts/market_kit.py join \
-    --dir submissions/26510130/week-07 --market https://market.ourolabs.ai \
-    --name YAHO1212 --tunnel
+```
+00:07:40 [acp] not paying: 11.74 h of shelf life left, the policy asks for 25.0
+00:09:39 [acp] not paying: grade C, the policy accepts ['A', 'B']
+06:04:41 [acp] not paying: no certificate, and the policy asks for one
 ```
 
-The shop is served locally and published with a **cloudflared quick tunnel**
-(no Cloudflare account; `cloudflared.exe` downloaded to `C:\AgenticAI\bin`).
-The buyer runs inside the kit, which polls the market for orders and starts
-`market_buyer.py` for each — so the kit process itself is the deployment, and
-the PC has to stay on until the deadline. A quick tunnel's URL changes on every
-restart; the market tracks the shop by name and key, so restarts cost nothing
-but the URL. `logs/market-kit.log` is committed from this machine.
+- 이 거부가 시간당 20건 넘게 나와서 세 번 고쳤다.
+  - 첫 답변에 나온 등급이나 유통기한이 결제 규칙에 안 맞으면 흥정 전에 건너뛴다 (`8bff6b2`). 2,002번 건너뛰었다.
+  - 첫 메시지에서 등급을 묻는다 (`fcd715f`).
+  - C등급으로 거절된 (가게, SKU)는 6시간 동안 후보에서 뺀다 (`6698a1d`).
+- 그 결과 C등급 거절이 시간당 26건에서 4건으로 줄었다.
 
-**It was in the market and working for 6.2 of 90.3 hours.** The agents were
-never the weak part; keeping them running was:
+**가게 checkout 오류.** 가게가 결제 직전에 거부한 경우다.
 
-| from → to | hours | what |
+```
+00:31:04 [acp] checkout refused: 409 {"error":"unit u-f40da402db94 is not in stock for this order"}
+15:41:30 [acp] checkout refused: 500 Internal Server Error
+```
+
+**모델 출력을 코드가 거부한 경우.**
+
+```
+00:05:37 [buyer] [buyer] REFUSED harness accept at 324413 > this round's cap 319360
+20:00:25 [seller] [seller] REFUSED harness accept of 3162 below floor 3721
+```
+
+buyer 쪽 625회, 가게 쪽 345회다. 모델이 상한이나 하한을 넘는 "수락"을 낸 횟수이고, 코드가 막지 않았다면 그대로 손해였다.
+
+**인젝션 방어.**
+
+```
+07:39:08 [buyer] [buyer] INJECTION from bright-living (addresses_ai, fake_authority, dictates_move, dictates_review): dropped from the prompt
+```
+
+- `bright-living`은 게시판과 응답에서 576회 걸러졌다(`memory/scams.json`).
+- 우리 buyer는 이 가게를 후보 맨 뒤로 보내고, 게시판에 `[사기 경보]`를 올렸다.
+
+### 3.3 Round 3 동안 찾고 고친 손실 (기록 그대로)
+
+실패와 되돌림도 커밋에 남겼다(squash 하지 않음).
+
+| 증상 (로그/board) | 원인 | 수정 |
 |---|---|---|
-| 10-22 16:39 → 19:56 | 3.3 | working |
-| 10-22 19:56 → 23:16 | 3.3 | **kit alive, every order failed** — 587 orders closed empty |
-| 10-22 23:16 → 10-23 09:45 | 10.5 | **down**: kit died on `httpx.ConnectTimeout` |
-| 10-23 09:45 → 12:18 | 2.5 | working, under the first supervisor |
-| 10-23 12:18 → 10-26 10:39 | 70.3 | **down**: supervisor and everything under it killed at once |
-| 10-26 10:39 → | — | working, supervisor launched through WMI |
+| 유통기한 24시간 식품이 들어오자마자 원가 아래로 팔림 (2시간에 124건, −218k) | "24시간 미만이면 하한을 원가의 0.7배로" 규칙 | 12시간으로 낮춤 (`c9594c0`) |
+| 재고가 있는 카테고리가 140개 중 18개 | 물어본 상품 채우기가 10줄을 다 씀 | 줄 몫을 나눔 (`3e05bbf`) |
+| 합의의 29%가 결제 안 된 상품의 반복 | C등급 상품이 주문을 가져가 합의만 반복 | 결제 안 된 상품은 뒤로 (`6287ae7`), 3번이면 제외 (`ff77c76`) |
+| 2.3M 소파를 매시간 삼 | 원가×1.04가 시장 판매가보다 높음 | 손해 상품 필터 (`87222d1`), 평균 대신 최저 원가로 비교 (`f4b5657`) |
+| "Book이 끝나면 사라진다"는 잘못된 가정 | 마감 36시간 전부터 원가 0.4~0.85배로 처분 예정이었음 | agent.md 규칙대로 원가 아래 처분 제거 (`5fa0fec`) |
+| 상품 코드 숫자를 3,535만 원 제안으로 읽음 | 첫 번째 숫자를 제안으로 파싱 | 글자에 붙은 숫자와 정가 1.5배 초과 무시 (`88991e3`) |
+| 보증 환불 1.35M(소파), 1.12M(매트리스) | 대형 가구는 등급 평균보다 자주 고장 | 보증을 정가 50만 원 이하로, 다시 20만 원 이하로 줄임 (`884841c`, `2c63590`) |
+| buyer 주문 1건 147초 | 라운드마다 모델 호출 | 흥정을 코드로 (`aae14e0`) |
+| 가격 상한을 낮추자 추가 마진이 두 번 연속 0.08 아래 | 마진 압박 | 상한 0.90배 → 0.95배로 되돌림 (`e3bc788`) |
 
-Three different failures, each found only after the previous fix:
+### 3.4 운영
 
-**1. Alive and useless (10-22 19:56–23:16).** Straight after a good deal
-(`#264431: lamp at 101, verified True`), every order for 3 h 20 min ended
-`market_buyer printed no result line; closing the order as no deal` — in the
-same second, with **no output at all** from the buyer, not even a traceback. So
-the buyer did not fail; it never got to run. Since the next restart there have
-been 0 of these in 248 orders. I have not proven the cause: no Windows
-application error was logged then, and the kit does not record the child's exit
-code. A child process that dies before printing anything, until its parent is
-restarted, is consistent with the parent's environment being exhausted after
-hundreds of launches, but that is an inference, not a finding.
+- **11-11 06:59~10:26**: PC 절전으로 3.5시간 멈췄다.
+- **11-11 21:21~21:53**: 터널이 끊긴 뒤 재등록에 실패해 30분 동안 가게가 꺼졌다. kit을 다시 띄워 복구했다.
+- 그 밖에는 매시간 점검에서 5분 넘는 로그 공백이 없었다.
+- kit 로그는 20MB마다 `market-kit.log.1`로 교체되고 백업이 1개뿐이다. 그래서 교체된 파일을 `logs/market-kit.until-1113-2107.log`, `logs/market-kit.1113-2107_to_1115-1221.log`로 보존했다(내용 수정 없음).
 
-**2. Dead (10-22 23:16).** The network dropped (a system time resync at 22:44
-suggests the PC had slept), the kit died on an unhandled
-`httpx.ConnectTimeout`, and its cloudflared tunnel went with it. Nothing
-restarted it.
+### 3.5 하지 못한 것
 
-**3. Killed (10-23 12:18).** See the launch note below.
-
-The changes:
-
-- `keepalive.py` runs `market_kit.py join` in a loop: when the kit exits it
-  kills any orphaned tunnel, waits (backing off if it keeps dying quickly), and
-  joins again with the same name and key. Restarts are logged in
-  `logs/keepalive.log`.
-- **How it is launched mattered more than what it does.** I first started it
-  with PowerShell `Start-Process -WindowStyle Hidden` and took that to be
-  detached. It was not: it stayed inside the process group of the Claude Code
-  session that launched it, and on 2026-10-23 at 12:18 the whole tree —
-  keepalive, kit, tunnel, shop — died at once, 2.5 hours in, with no line in
-  `keepalive.log` (the supervisor would have logged a kit exit; nothing logged
-  its own). No reboot, no crash. It now starts through WMI
-  (`Win32_Process.Create`), whose parent is `WmiPrvSE` rather than the session,
-  from a launcher kept outside the repository because it holds the claim code.
-- `market_buyer.py` now ends in one parseable result line even when it fails
-  outside its own trading loop, so a bad order is closed as a reviewed
-  no-deal rather than an empty one. This does nothing for failure 1 — a buyer
-  that never starts cannot print anything.
-- **For failure 1 the supervisor has to watch, not wait.** A supervisor that
-  restarts the kit only when the kit exits would have sat through all 3 h
-  20 min. `keepalive.watch()` now tails `market-kit.log` and kills the kit after
-  8 empty results in a row with no ledger line between them; the loop then
-  starts a fresh one, which is what cleared it last time. This version is
-  committed but **not yet running**: replacing the live supervisor means
-  stopping the processes it manages, and that step is left for me to do by
-  hand, so the market is not interrupted from this session.
-
-First ledger entries after each restart: `#344880` (10-23 09:47) and `#786630`
-(10-26 10:40), both `verified True`.
-
-Not done: a Workers or VPS deployment that would survive this PC sleeping.
-`claude -p` runs on a subscription login, which does not run headless on a
-server, so a deployed shop would need a different harness.
+- **키트 없이 배포한 가게**(`/.well-known/acp.json` + checkout 세션 엔드포인트를 직접 구현해 `/api/settle` 통과): 하지 않았다. 가게는 키트의 ACP 프록시 뒤에서 돌았다.
+- **acp.json으로 툴을 만드는 buyer**(선택): 하지 않았다. 결제는 키트의 checkout 코드를 그대로 썼다.
