@@ -20,6 +20,8 @@ LOSS_LEADER_RATE=.04
 # math and the rolling loss budget below still disable it whenever the entire
 # Revenue step could consume more than 75% of lower-Book headroom.
 CLASS_NEAR_COST_RATE=.08
+LIQUIDITY_ROTATION_MAX_LOSS=200_000
+LIQUIDITY_ROTATION_BOOK_SHARE=.10
 LOSS_LEADER_BUDGET=100_000
 LOSS_LEADER_TRIALS_PER_SKU=5
 BOOK_CUSHION_TRIAL_SHARE=.90
@@ -397,6 +399,24 @@ def negotiate(unit, current, offered, catalog, program, token='', ref='', intel=
         loss_used+projected_raw_loss<=loss_budget)
     if class_near_cost_trial:
         floor=min(floor,raw_loss_floor)
+    # Current A-grade stock has buyers within 8% of cost, but the historical
+    # loss counter closes the Revenue-boundary experiment and leaves all cash
+    # immobilized.  Permit one fixed, non-refilling rotation budget: at most
+    # 10% of the fresh lower Class-Book boundary and never more than 200k.
+    # Persisting the baseline is essential; recomputing it after every sale
+    # would silently grant another budget forever.
+    rotation_baseline=program.get('liquidity_rotation_loss_baseline')
+    if not isinstance(rotation_baseline,(int,float)) or isinstance(rotation_baseline,bool):
+        rotation_baseline=loss_used
+        program.put('liquidity_rotation_loss_baseline',rotation_baseline)
+    rotation_cap=min(LIQUIDITY_ROTATION_MAX_LOSS,
+                     max(0,math.floor(cushion*LIQUIDITY_ROTATION_BOOK_SHARE)))
+    liquidity_rotation=bool(
+        not legacy and not warranty and unit.get('kind') in ('goods','food') and
+        raw_loss_floor<=offered<unit['cost'] and
+        loss_used+projected_raw_loss<=rotation_baseline+rotation_cap)
+    if liquidity_rotation:
+        floor=min(floor,raw_loss_floor)
     minimum=program.quote(floor,unit['cost'],token=token,ref=ref)
     # A numeric buyer offer just below the ordinary 1% expected-Book target is
     # better than leaving expensive principal idle when it still preserves
@@ -434,15 +454,23 @@ def negotiate(unit, current, offered, catalog, program, token='', ref='', intel=
     bounded_class_near_cost=(class_near_cost_trial and q['reward']==0 and
                              not q.get('warranty_hours') and
                              q['price']>=raw_loss_floor)
+    bounded_liquidity_rotation=(liquidity_rotation and q['reward']==0 and
+                                not q.get('warranty_hours') and
+                                q['price']>=raw_loss_floor)
     if not (score_safe or bounded_cost_recovery or bounded_book_recovery or
             bounded_cushion_recovery or bounded_unwarranted_recovery or
-            bounded_class_near_cost):
+            bounded_class_near_cost or bounded_liquidity_rotation):
         return current
     q['hazard_probability']=hazard;q['hazard_basis']=current.get('hazard_basis','conservative-unmeasured')
     q['near_book_recovery']=bounded_book_recovery
     q['book_cushion_recovery']=bounded_cushion_recovery
     q['unwarranted_cost_recovery']=bounded_unwarranted_recovery
     q['class_near_cost_trial']=bounded_class_near_cost
+    q['liquidity_rotation']=bounded_liquidity_rotation
+    q['liquidity_rotation_projected_loss']=(projected_raw_loss
+                                             if bounded_liquidity_rotation else 0)
+    q['liquidity_rotation_loss_remaining']=max(
+        0,rotation_baseline+rotation_cap-loss_used-projected_raw_loss)
     q['class_near_cost_projected_loss']=(projected_raw_loss
                                          if bounded_class_near_cost else 0)
     q['class_near_cost_loss_budget_remaining']=max(
