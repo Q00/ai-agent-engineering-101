@@ -213,6 +213,24 @@ class PurchaseTests(unittest.TestCase):
                dominant_grade_profit_probability=.99,estimated_sale_likelihood=.9)]
   policy={'max_sku_capital_share':1,'min_own_loss_veto_sales':5}
   self.assertEqual(allocation_plan(ranked,{'units':[]},1000000,policy=policy),[])
+ def test_one_negative_high_value_sale_blocks_restock_until_book_recovers(self):
+  high=dict(sku='high-loss',kind='goods',expected_net=500000,score=999,
+            upper_cost=600000,sales_1h=8,sales_6h=20,distinct_buyers_6h=8,
+            own_sales_1h=0,own_sales_total=1,own_gross_total=-600000,
+            own_profitable_sales=0,dominant_grade_samples=20,
+            dominant_grade_profit_probability=.90,estimated_sale_likelihood=.9)
+  cheap=dict(sku='cheap',kind='food',expected_net=1000,score=1,
+             upper_cost=100,sales_1h=2,sales_6h=4,distinct_buyers_6h=2,
+             estimated_sale_likelihood=.5)
+  policy={'max_sku_capital_share':1,'high_value_lane_min_unit_cost':500000,
+          'min_own_loss_veto_sales':5}
+  plan=allocation_plan([high,cheap],{'units':[],'balance':1000000},1000000,
+                       policy=policy)
+  self.assertEqual([row['sku'] for row in plan],['cheap'])
+  high.update(own_gross_total=1,own_profitable_sales=1)
+  self.assertEqual(allocation_plan(
+      [high,cheap],{'units':[],'balance':1000000},1000000,
+      policy=policy)[0]['sku'],'high-loss')
  def test_allocation_uses_sellthrough_and_small_diversified_lots(self):
   ranked=[dict(sku='a',expected_net=50000,score=3,upper_cost=100000,sales_1h=8,sales_6h=12,
                distinct_buyers_6h=4,own_stockouts_6h=2,own_inquiries_6h=1,estimated_sale_likelihood=.8),

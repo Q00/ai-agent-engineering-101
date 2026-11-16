@@ -423,11 +423,21 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
             min_probability=policy.get('min_goods_a_profit_probability',0)
             own_sales_total=row.get('own_sales_total',row.get('own_sales_1h',0))
             own_profitable=row.get('own_profitable_sales',0)
+            high_value_grade_guard=(
+                row.get('upper_cost',0)>=
+                policy.get('high_value_lane_min_unit_cost',math.inf))
             # Market-wide demand cannot rescue a product that has already
             # produced a mature negative Book contribution in this shop.
             # Keep selling held units, but stop restocking until later sales
             # make the refund-aware local cohort positive again.
             local_gross=row.get('own_gross_total')
+            # A single refunded high-value unit can erase many ordinary wins.
+            # Unlike cheap goods, require the SKU's complete local history to
+            # recover above zero before risking another expensive unit. Held
+            # stock remains sellable and can supply that recovery evidence.
+            if (high_value_grade_guard and own_sales_total>=1 and
+                    isinstance(local_gross,(int,float)) and local_gross<=0):
+                continue
             if (own_sales_total>=policy.get('min_own_loss_veto_sales',5) and
                     isinstance(local_gross,(int,float)) and local_gross<=0):
                 continue
@@ -444,9 +454,6 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
             # unfavorable draw can immobilize over 500k and the current market
             # may clear below its cost. Expensive goods therefore always pass
             # the same minimum grade-economics gate before procurement.
-            high_value_grade_guard=(
-                row.get('upper_cost',0)>=
-                policy.get('high_value_lane_min_unit_cost',math.inf))
             if weak_grade_economics and (high_value_grade_guard or not own_profit_proven):
                 continue
             # Revenue is the live seller bottleneck, but the old proven-only
