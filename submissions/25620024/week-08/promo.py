@@ -365,6 +365,21 @@ def quote(c, unit, code=None, me=None, now=None, stock_n=1, vip=False):
             floor = max(hold_s, min(floor, int(tgt_s * (1 - t["haggle_room"]))))
             why = why + [f"slow clear: {cover_s:.0f} h of stock vs {hrs_left:.0f} h left, "
                                         f"ask {tgt_s} floor hold {hold_s}"]
+    mc = t.get("median_clear_at")
+    # under 100k list the median is all grades together, so an A unit sits above it by nature: those clear only past
+    # median_clear_small_over (the audit's 1.2 x line)
+    mthr = mc if lp >= 100000 else t.get("median_clear_small_over", 1.2)
+    if mc and unit.get("kind") in ("goods", "food") and gmk and price > gmk * mthr:
+        # HQ 11-16 15:20 (audit interview, sales + buyer; HQ "원가 지키며 적용"): quotes under the grade median
+        # converted 31 of 52, over 1.03 x 10 of 96; 28 lines of 5+ units asked over 1.2 x the median (G0be9ed07: 118
+        # quotes, 3 deals in 6 h at 1.34 x). Any unit asking over median_clear_at x its grade median asks that much
+        # instead, only while it still clears cost x (1 + median_clear_margin): never under cost.
+        mf = int(cost * (1 + t.get("median_clear_margin", 0.01))) + 1
+        tgt_m = int(gmk * mc)
+        if tgt_m >= mf:
+            price = tgt_m
+            floor = max(mf, min(floor, int(tgt_m * (1 - t["haggle_room"]))))
+            why = why + [f"median clear: ask {tgt_m} ({mc:.2f} x grade median {gmk:.0f}), floor {floor} >= cost + 1%"]
     eg = t.get("endgame_at")
     if eg and now >= eg and unit.get("kind") in ("goods", "food"):
         # HQ 11-14 endgame: Book counts unsold stock at cost, so in the last hours a sale near cost loses no Book and
