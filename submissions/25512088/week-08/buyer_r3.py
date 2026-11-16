@@ -72,6 +72,7 @@ def quote_fields(task):
 GRADE_PRICE_CAP = {'A':69, 'B':60, 'C':48}
 GRADE_COST_MIDPOINT = {'A':.65, 'B':.50, 'C':.35}
 SAVED_TARGET = .80
+SAVED_PROBE_TARGET = 1.00
 SAVED_STRETCH_TARGET = .95
 SAVED_MIDDLE_TARGET = .90
 SAVED_UPPER_BRIDGE_TARGET = .875
@@ -123,6 +124,10 @@ def saved_target_limit(order, product, grade, target):
 def stretch_limit(order, product, grade=None):
     """First-offer ceiling targeting stronger Saved without losing fallback."""
     return saved_target_limit(order,product,grade,SAVED_STRETCH_TARGET)
+
+def probe_limit(order, product, grade=None):
+    """Probe the published grade-cost midpoint before proven fallbacks."""
+    return saved_target_limit(order,product,grade,SAVED_PROBE_TARGET)
 
 def middle_limit(order, product, grade=None):
     """One evidence-gathering step between the stretch and proven fallback."""
@@ -433,6 +438,7 @@ class Buyer:
                 task=s['last'];fields=quote_fields(task)
                 s['grade']=fields['grade'];s['cap']=deals_cap(self.o,self.catalog[sku],s['grade'],self.portfolio)
                 s['stretch_cap']=stretch_limit(self.o,self.catalog[sku],s['grade'])
+                s['probe_cap']=probe_limit(self.o,self.catalog[sku],s['grade'])
                 s['middle_cap']=middle_limit(self.o,self.catalog[sku],s['grade'])
                 s['upper_bridge_cap']=upper_bridge_limit(self.o,self.catalog[sku],s['grade'])
                 s['bridge_cap']=bridge_limit(self.o,self.catalog[sku],s['grade'])
@@ -458,6 +464,7 @@ class Buyer:
                 'eligible_skus':sorted(offered_skus),'quoted_pairs':len(self.sessions),
                 'parallel_limit':QUOTE_WAVE_SIZE,'early_quote_target':EARLY_QUOTE_TARGET,'deadline_seconds':85,
                 'saved_target':SAVED_TARGET,'saved_stretch_target':SAVED_STRETCH_TARGET,
+                'saved_probe_target':SAVED_PROBE_TARGET,
                 'saved_middle_target':SAVED_MIDDLE_TARGET,
                 'saved_upper_bridge_target':SAVED_UPPER_BRIDGE_TARGET,
                 'saved_bridge_target':SAVED_BRIDGE_TARGET,
@@ -473,7 +480,8 @@ class Buyer:
                 stop=min(self.deadline,time.time()+(self.deadline-time.time())/(len(quotes)-index))
                 negotiation_steps=[]
                 for label,ceiling in (
-                        ('stretch',s['stretch_cap']),('middle',s['middle_cap']),
+                        ('probe',s['probe_cap']),('stretch',s['stretch_cap']),
+                        ('middle',s['middle_cap']),
                         ('upper_bridge',s['upper_bridge_cap']),
                         ('bridge',s['bridge_cap']),('fallback',s['cap'])):
                     if negotiation_steps and negotiation_steps[-1][1]==ceiling:
