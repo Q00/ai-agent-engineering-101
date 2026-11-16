@@ -157,13 +157,24 @@ def observe():
     minutes = (time.time() - started) / 60
     obs["forum_posting"] = {"started": "2026-11-13 14:20 KST (review.py)", "posts_accepted": sum(r.get("status") == 200 for r in sent),
                             "posts_possible_at_cap": int(minutes // 5), "note": "the market allows one buyer post per 5 minutes"}
+    log = subprocess.run(["git", "log", "--since=24 hours ago", "--format=%cd|%s", "--date=format:%m-%d %H:%M"],
+                         cwd=ROOT, capture_output=True, text=True).stdout.splitlines()
+    obs["code_changes_24h"] = {"commits": log[:12],
+                               "new_knobs": [{k: r[k] for k in ("ts", "key", "rule", "default", "why")}
+                                             for r in read_jsonl(ROOT / "logs/envelope-additions.jsonl")[-8:]],
+                               "note": "fixes the code agent shipped and knobs it added to the envelope; a new knob can be tested right away"}
+    try:
+        import customers
+        obs["customers"] = customers.observe()
+    except Exception as exc:
+        obs["customers"] = {"error": f"{type(exc).__name__}: {str(exc)[:200]}"}
     obs["api_budget"] = {"spent_usd": round(spent(), 3), "limit_usd": read_json(ROOT / "envelope.json", {}).get("_api_budget_usd", 40)}
     return obs
 
 
 # ---------------------------------------------------------------- think
 SYSTEM = """You are the strategist of one student's shop and buyer agents in a two-week agent market (Round 3). \
-You run every two hours. Your job is a research loop: judge the running experiments from the numbers, then choose the \
+You run every hour. Your job is a research loop: judge the running experiments from the numbers, then choose the \
 single most valuable next experiment and express it as changes to params.json.
 
 How the score works (the student's rank is shop ALL + buyer ALL):
@@ -180,11 +191,18 @@ Rules you must follow:
 - Do not judge an experiment before its window has passed unless its reject_if condition is already met; say "running" and give the interim number.
 - Prefer reverting a rejected change to stacking a new one on top of it.
 - Every change is {key, value_json}: key is a dotted path in params.json such as "shop.max_list_price" or "buyer.anchor.A"; value_json is the JSON-encoded new value.
-- Changes inside the envelope are applied automatically. Anything outside it, anything the student could see as against market ethics (paid dislikes, lowering others' stars, untruthful posts or claims, text meant to manipulate other agents' instructions), bankruptcy, spending on the API beyond the budget, or selling below cost must go in approval_requests instead and will wait for the student. approval_requests is only for those decisions.
-- A suspected bug, a broken feature, or anything that needs a code change or an investigation goes in issues_for_claude, never in approval_requests. A code agent (code_agent.py) picks these up within 20 minutes, fixes them in a copy of the code, and ships the fix only if the tests pass; it rolls the fix back if the agents stop working. So write each issue as a precise bug report: the file or behaviour, the evidence (log lines, counts, times) and what should happen instead. The student is not asked to debug. Before filing one, check the observation: forum_posting shows how many posts the cap allowed since posting began.
+- Changes inside the envelope are applied automatically. Anything outside it, anything the student could see as against market ethics (paid dislikes, lowering others' stars, untruthful posts or claims, text meant to manipulate other agents' instructions), bankruptcy, or spending on the API beyond the budget must go in approval_requests instead and will wait for the student. approval_requests is only for those decisions. Stock size, clearing aged stock below cost, and buying C grade are your own calls inside the envelope; do not ask for them. Never repeat a request that is already in the open approval list you are given.
+- A suspected bug, a broken feature, or anything that needs a code change or an investigation goes in issues_for_claude, never in approval_requests. A code agent (code_agent.py) handles at most 4 items a day, oldest open item first, in practice right after midnight, so a new item waits behind everything already open. Your input lists the open queue and every answer the agent gave. Never file an item that is already open or already answered, even under a new name or with new numbers. An answer that says a request cannot be built is final (for example any grade or cost filter at buying time: restock sends only sku and qty, and the market assigns grade and cost after purchase). Code keeps at most one new item per run and none while 6 or more are open, so file only the single most valuable request that is not in the queue, or nothing. The agent fixes items in a copy of the code, and ships the fix only if the tests pass; it rolls the fix back if the agents stop working. So write each issue as a precise bug report: the file or behaviour, the evidence (log lines, counts, times) and what should happen instead. The student is not asked to debug. Before filing one, check the observation: forum_posting shows how many posts the cap allowed since posting began.
 - model.* chooses which model reads ambiguous messages for the shop and buyer ("local" is a free 4B model; "anthropic" costs money from the same budget). prompts.* are the instructions those models get, and shop.reply_note is one truthful sentence added to every quote. Treat these like any other experiment: change them only with a hypothesis about a measured failure (misread offers, lost haggles), and keep every statement true.
 - Shop pricing changes reach the running shop on its own; no restart is needed for any params.json change.
-- You run every hour and four days remain, so slow experiments are expensive. Give each experiment the shortest window that still yields a readable signal: about 30 new deals for the buyer, or three supply windows (one hour) plus selling time for the shop. Two hours is typical; six is the maximum. A big, clearly directional effect may be judged early.
+- Radical mode (다나, 2026-11-14): the round ends 2026-11-17 and the rank is far from the top 10, so cautious steps cannot win. Prefer large moves, up to the envelope bounds, over small nudges; run a shop and a buyer experiment at the same time; keep a change that helps and push it further next hour. The only hard limits are the approval categories above and not going bankrupt (keep cash above shop.cash_reserve).
+- You run every hour and little time remains, so slow experiments are expensive. Give each experiment the shortest window that still yields a readable signal: about 30 new deals for the buyer, or three supply windows (one hour) plus selling time for the shop. Two hours is typical; six is the maximum. A big, clearly directional effect may be judged early.
+- customers shows who buys from the shop (top customers, revenue concentration, list-price bands and price/list ratios), lost_to_rivals_6h (we quoted, no deal, and a rival sold the same SKU within 30 minutes, with the rival price over our ask), and unserved_demand_6h (SKUs the market bought that we hold none of). Use it to form hypotheses about what to stock and how to price, and report customer metrics (customers, top3_revenue_share, then_bought_elsewhere) in each shop experiment. last_24h fills in as the cache grows (cache_covers_hours).
+- Never stand still (다나, 2026-11-14). "It looks fine, keep it" is never a plan. After your judgements, the shop and the buyer must each have at least one running forward experiment. A revert is a decision, not an experiment: when you revert, start a new forward experiment for that agent in the same run (it may sit in the same experiment as the revert if it touches a different key). When a change is supported, the next experiment pushes the same lever further or opens a new lever; it does not just hold.
+- Before you propose a value, read the per-key history. Do not re-test a value that was already rejected or supported for that key unless conditions changed in a way you name (a new knob, a code fix, a different stock level) and say what changed. Flip-flopping between two values that were each tested is forbidden; try a third value or another lever.
+- hypothesis_backlog: every run, return 5 to 8 untested ideas ranked by expected rank gain, each with the lever (an envelope key, or "needs code"), the evidence from the observation, and the test. Your previous backlog is given to you; drop ideas that were tested or disproved, keep the rest, add new ones. Draw ideas from every part of the score: book, revenue, stars, saved, forum rating, deals, posts. Start the top idea that its agent has room for.
+- Widen the search space. When the best idea needs a lever the envelope lacks (for example per-category margins, a list of SKUs to stock from unserved_demand, a lower price for SKUs we lose to rivals, a warranty choice by grade, the wording of the buyer's factual forum posts), file it in issues_for_claude as a request for a new param in shop_strategy.DEFAULTS that keeps today's behaviour, plus new_knobs.json with its bounds. Once code_changes_24h shows the knob, test it. Money limits and anything that touches market ethics stay with 다나.
+- code_changes_24h lists the code agent's shipped fixes and the knobs it added to the envelope. When a fix you filed added a knob, test that knob instead of asking for it again; it starts at today's behaviour.
 - Facts about what already exists, so you do not ask for it again: the buyer already posts a factual purchase record on the forum after settled deals, at the market's own cap of one post per 5 minutes (review.py), and reviews every settled deal with stars. Post count cannot go faster than that cap. The shop does not post.
 - Write every human-facing string (result, decision, hypothesis, metric, reject_if, approval what/why, issues, summary_ko) in Korean. The student is called 다나.
 - How to write Korean for 다나: talk to her the way a helpful labmate texts, ending sentences in -요 (했어요, 늘었어요, 볼게요), never -습니다. One fact per sentence; sentences under about 40 characters. Use her everyday words: 가게, 바이어, 재고, 매출, Book, 깎은 비율(Saved), 실험, 판정. Give numbers with units and a before→after (매출 시간당 65만 → 1,000만 원). No translated phrasing, no hedging stacks, no English words where a Korean one exists.
@@ -194,7 +212,7 @@ Rules you must follow:
 
 SCHEMA = {
     "type": "object", "additionalProperties": False,
-    "required": ["judgements", "next_experiments", "approval_requests", "issues_for_claude", "summary_ko"],
+    "required": ["judgements", "next_experiments", "hypothesis_backlog", "approval_requests", "issues_for_claude", "summary_ko"],
     "properties": {
         "judgements": {"type": "array", "items": {"type": "object", "additionalProperties": False,
             "required": ["id", "status", "result", "decision"],
@@ -206,6 +224,9 @@ SCHEMA = {
                            "changes": {"type": "array", "items": {"type": "object", "additionalProperties": False, "required": ["key", "value_json"],
                                        "properties": {"key": {"type": "string"}, "value_json": {"type": "string"}}}},
                            "metric": {"type": "string"}, "window_h": {"type": "number"}, "reject_if": {"type": "string"}}}},
+        "hypothesis_backlog": {"type": "array", "items": {"type": "object", "additionalProperties": False,
+            "required": ["idea", "lever", "evidence", "test"],
+            "properties": {"idea": {"type": "string"}, "lever": {"type": "string"}, "evidence": {"type": "string"}, "test": {"type": "string"}}}},
         "approval_requests": {"type": "array", "items": {"type": "object", "additionalProperties": False, "required": ["what", "why"],
                               "properties": {"what": {"type": "string"}, "why": {"type": "string"}}}},
         "issues_for_claude": {"type": "array", "items": {"type": "object", "additionalProperties": False, "required": ["what", "evidence"],
@@ -215,16 +236,49 @@ SCHEMA = {
 }
 
 
-def think(obs, experiments, params, envelope, model, effort):
+def knob_history(experiments):
+    """Every experiment ever run, per key: which value was tried from what, and the verdict. Code, so nothing is forgotten."""
+    out = {}
+    for e in experiments:
+        verdict = (e.get("decision") or "").split(":")[0].strip() or e.get("status", "?")
+        for k, v in (e.get("change") or {}).items():
+            a, b = v if isinstance(v, list) and len(v) == 2 else (None, v)
+            out.setdefault(k, []).append(f"{e.get('id')} {json.dumps(a, ensure_ascii=False)}->{json.dumps(b, ensure_ascii=False)} {verdict}")
+    return out
+
+
+def code_queue():
+    """Open items in the code agent's queue (same key as code_agent.key_of) and every answer it gave."""
+    import hashlib
+    done = read_json(ROOT / "logs/code-agent-state.json", {}).get("done", {})
+    key = lambda i: hashlib.sha1((i.get("ts", "") + i.get("what", "")).encode()).hexdigest()[:10]
+    open_items = [{"ts": i.get("ts"), "what": i.get("what")} for i in read_jsonl(ROOT / "approvals/issues.jsonl") if key(i) not in done]
+    answers = [{"what": (a.get("what") or "")[:160], "result": a.get("result"), "answer": re.sub(r"\s+", " ", a.get("summary") or "")[:450]}
+               for a in read_jsonl(ROOT / "logs/code-agent.jsonl") if a.get("issue")]
+    return open_items, answers
+
+
+def think(obs, experiments, params, envelope, model, effort, extra=""):
     import anthropic
     client = anthropic.Anthropic()
     user = ("Observation (JSON):\n" + json.dumps(obs, ensure_ascii=False, indent=1)
             + "\n\nExperiment log, oldest first (JSON lines):\n" + "\n".join(json.dumps(e, ensure_ascii=False) for e in experiments[-14:])
+            + "\n\nHistory of every experiment since the start, per key (id old->new verdict, oldest first):\n"
+            + json.dumps(knob_history(experiments), ensure_ascii=False, indent=0)
+            + "\n\nCode agent queue, open items (handled oldest first, at most 4 a day; do not file these again):\n"
+            + (json.dumps(code_queue()[0], ensure_ascii=False, indent=0) if code_queue()[0] else "(none)")
+            + "\n\nCode agent answers so far (final; do not re-file a request it answered):\n"
+            + json.dumps(code_queue()[1], ensure_ascii=False, indent=0)
             + "\n\nNotes from the student (hypotheses to test and corrections of your earlier judgement; these outrank your own plan):\n"
             + ("\n".join(json.dumps(n, ensure_ascii=False) for n in read_jsonl(ROOT / "human-notes.jsonl", 12)) or "(none)")
+            + "\n\nOpen approval requests already waiting for the student (do not repeat these):\n"
+            + ("\n".join(json.dumps(p, ensure_ascii=False) for p in read_jsonl(ROOT / "approvals/pending.jsonl")) or "(none)")
             + "\n\nCurrent params.json:\n" + json.dumps(params, ensure_ascii=False, indent=1)
             + "\n\nEnvelope (what you may change without approval; [min, max] or a list of allowed values):\n"
-            + json.dumps(envelope, ensure_ascii=False, indent=1))
+            + json.dumps(envelope, ensure_ascii=False, indent=1)
+            + "\n\nYour hypothesis backlog from the last run:\n"
+            + json.dumps(read_json(ROOT / "logs/hypothesis-backlog.json", {}).get("backlog", []), ensure_ascii=False, indent=1)
+            + extra)
     with client.beta.messages.stream(
         model=model, max_tokens=32000, system=SYSTEM,
         thinking={"type": "adaptive"}, output_config={"effort": effort, "format": {"type": "json_schema", "schema": SCHEMA}},
@@ -236,6 +290,33 @@ def think(obs, experiments, params, envelope, model, effort):
     if response.stop_reason != "end_turn":
         raise RuntimeError(f"strategist stopped with {response.stop_reason}")
     return json.loads(next(b.text for b in response.content if b.type == "text")), usd
+
+
+def is_revert(change, experiments):
+    """A change that only puts back the old value of an earlier experiment."""
+    return bool(change) and all(any(e.get("change", {}).get(k) == [b, a] for e in experiments) for k, (a, b) in change.items())
+
+
+def idle_agents(plan, experiments, params):
+    """Shop and buyer each need a forward experiment still running after this plan. A pure revert does not count."""
+    status = {j["id"]: j["status"] for j in plan["judgements"]}
+    busy = set()
+    for i, e in enumerate(experiments):
+        if e.get("status") == "running" and status.get(e.get("id"), "running") == "running" and not is_revert(e.get("change", {}), experiments[:i]):
+            busy |= {k.split(".")[0] for k in e.get("change", {})}
+    for x in plan["next_experiments"]:
+        ch = {}
+        for c in x["changes"]:
+            try:
+                old = params
+                for part in c["key"].split("."):
+                    old = old[part]
+                ch[c["key"]] = [old, json.loads(c["value_json"])]
+            except (KeyError, TypeError, ValueError):
+                ch[c["key"]] = [None, c["value_json"]]
+        if not is_revert(ch, experiments):
+            busy |= {k.split(".")[0] for k in ch}
+    return [a for a in ("shop", "buyer") if a not in busy]
 
 
 # ---------------------------------------------------------------- gate
@@ -284,6 +365,7 @@ def main():
     report = [f"# 전략가 보고 {obs['now']}", ""]
     pending = []
     plan_summary, rolled_back, applied_lines, issues = "", "", [], []
+    plan_backlog = []
     # Rollback is code, not judgement: a dead service or a falling book restores the last good parameters first.
     book, last_book = obs["shop"]["book"]["mine"], state.get("book")
     dead = [k for k, v in obs["services"].items() if v != "active"]
@@ -300,10 +382,13 @@ def main():
         report += ["API 키가 없어서 모델을 부르지 않았어요 (runtime/strategist.env). 값은 그대로예요.", ""]
     elif spent() >= envelope.get("_api_budget_usd", 40):
         report += ["API 예산을 다 써서 이번에는 모델을 부르지 않았어요. 값은 그대로예요.", ""]
-        plan_summary = "API 예산($40)을 다 써서 모델을 부르지 않았어요. 값은 그대로예요."
+        plan_summary = f"API 예산(${envelope.get('_api_budget_usd', 40)})을 다 써서 모델을 부르지 않았어요. 값은 그대로예요."
     else:
         write_json(ROOT / "params.last-good.json", params)
         plan, usd = think(obs, experiments, params, envelope, conf["model"], conf["effort"])
+        idle = idle_agents(plan, experiments, params)
+        # One call per run (cost): an idle agent is reported, not re-asked.
+        write_json(ROOT / "logs/hypothesis-backlog.json", {"ts": obs["now"], "backlog": plan.get("hypothesis_backlog", [])})
         by_id = {e["id"]: e for e in experiments if "id" in e}
         for j in plan["judgements"]:
             if j["id"] in by_id:
@@ -334,6 +419,11 @@ def main():
                 applied.append((f"E{number}", exp["hypothesis"], changes))
         pending += plan["approval_requests"]
         issues = plan.get("issues_for_claude", [])
+        open_now = len(code_queue()[0])
+        kept = issues[:1] if open_now < 6 else []
+        if len(kept) < len(issues):
+            print(f"issues: kept {len(kept)} of {len(issues)} (open queue {open_now})")
+        issues = kept
         for issue in issues:
             (ROOT / "approvals").mkdir(exist_ok=True)
             with open(ROOT / "approvals/issues.jsonl", "a", encoding="utf-8") as f:
@@ -346,7 +436,11 @@ def main():
         applied_lines = [f"{i} " + ", ".join(f"{k} {a}→{b}" for k, (a, b) in ch.items()) for i, _, ch in applied]
         report += [plan["summary_ko"], "", "## 판정"] + [f"- {j['id']}: {j['status']}. {j['result']}" for j in plan["judgements"]]
         report += ["", "## 새 실험"] + ([f"- {i}: {h} / 바꾼 값: " + ", ".join(f"{k} {a}→{b}" for k, (a, b) in ch.items()) for i, h, ch in applied] or ["- 없음"])
+        report += ["", "## 다음 가설 후보"] + [f"- {h['idea']} ({h['lever']})" for h in plan.get("hypothesis_backlog", [])]
+        if idle:
+            report += ["", f"주의: 이번에 {', '.join(idle)} 실험이 없어요. 규칙 위반이에요."]
         report += ["", f"이번 호출 비용 ${usd:.3f}, 누적 ${spent():.2f}"]
+        plan_backlog = plan.get("hypothesis_backlog", [])
     if pending:
         (ROOT / "approvals").mkdir(exist_ok=True)
         with open(ROOT / "approvals/pending.jsonl", "a", encoding="utf-8") as f:
@@ -361,7 +455,7 @@ def main():
         f.write(json.dumps({"ts": time.time(), "report": text, "rank": r, "shop_all": s["all"], "buyer_all": b["all"]}, ensure_ascii=False) + "\n")
     write_json(ROOT / "logs/strategist-state.json", {"ts": time.time(), "book": book})
     print(text)
-    slack(obs, plan_summary, pending, rolled_back, applied_lines, issues)
+    slack(obs, plan_summary, pending, rolled_back, applied_lines, issues, plan_backlog)
 
 
 def clip(text, limit):
@@ -373,7 +467,7 @@ def clip(text, limit):
     return text[:cut + 2].strip() if cut > limit // 3 else text[:limit].rstrip() + "…"
 
 
-def slack(obs, summary, pending, rolled_back, applied, issues=()):
+def slack(obs, summary, pending, rolled_back, applied, issues=(), backlog=()):
     """One short message per run; approvals and rollbacks are marked so they stand out on a phone."""
     import notify
     r, s, b = obs["rank"], obs["shop"], obs["buyer"]
@@ -382,15 +476,19 @@ def slack(obs, summary, pending, rolled_back, applied, issues=()):
         lines.append(":rotating_light: *되돌림* " + rolled_back)
     open_items = read_jsonl(ROOT / "approvals/pending.jsonl")
     if pending and open_items:
-        lines.append(f":raising_hand: *승인할 일 {len(open_items)}건* · 앱을 열어 Claude에게 번호로 답해 주세요")
-        lines += [f"{i}. {clip(p['what'], 200)}" for i, p in enumerate(open_items, 1)][-5:]
+        unique = list(dict.fromkeys(p["what"].strip() for p in open_items))
+        lines.append(f":raising_hand: *승인할 일 {len(unique)}건* · 앱을 열어 Claude에게 번호로 답해 주세요")
+        lines += [f"{i}. {w}" for i, w in enumerate(unique, 1)]
     lines.append(f"*{obs['now'][11:16]}* 순위 {r['mine']}/{r['of']} · 합계 {r['my_total']} (가게 {s['all']} + 바이어 {b['all']})")
     if summary:
-        lines.append(clip(summary, 700))
+        lines.append(summary.strip())
     if applied:
-        lines.append("바꾼 값: " + clip(" / ".join(applied), 400))
+        lines.append("바꾼 값: " + " / ".join(applied))
+    if backlog:
+        lines.append("다음 가설: " + " / ".join(h["idea"].strip() for h in list(backlog)[:2]))
     if issues:
-        lines.append(f":wrench: 코드 에이전트에게 맡긴 일 {len(issues)}건 (다나가 할 일은 없어요): " + clip(issues[0]["what"], 150))
+        lines.append(f":wrench: 코드 에이전트에게 맡긴 일 {len(issues)}건 (다나가 할 일은 없어요)")
+        lines += [f"- {i['what'].strip()}" for i in issues]
     notify.send("\n".join(lines))
 
 

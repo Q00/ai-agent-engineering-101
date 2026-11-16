@@ -23,7 +23,8 @@ DEFAULTS = {
     "buyer": {"max_shops": 3, "max_bids": 3, "order_interval": 90, "ladder": False,
               "anchor": {"A": .60, "B": .46, "C": .32}, "step": .045,
               "ceiling": {"A": .85, "B": .80, "C": .80}, "ceiling_warranty": .95, "ceiling_food": .95, "warranty_bonus": .03,
-              "cost_mid": {"A": .65, "B": .50, "C": .35}, "no_warranty_penalty": .06},
+              "cost_mid": {"A": .65, "B": .50, "C": .35}, "no_warranty_penalty": .06,
+              "accept_grades": ["A", "B"]},
     # Which model reads the messages rules cannot parse: "local" (free qwen3:4b) or "anthropic" (paid, budgeted).
     "model": {"provider": "local", "name": "claude-haiku-5-5", "effort": "low"},
     "prompts": {
@@ -189,7 +190,7 @@ def restock_plan(state):
     observed = signals(state, refresh=True)
     units = inv.get("units", [])
     cost_held = sum(u.get("cost", 0) for u in units)
-    cap = min(p["stock_cost_cap"], (inv.get("balance", 0) + cost_held) * p["stock_cap_share"])
+    cap = min(p["stock_cost_cap"], inv.get("balance", 0) + cost_held) * p["stock_cap_share"]
     budget = min(p["per_run_spend"], inv.get("balance", 0) - p["cash_reserve"], cap - cost_held)
     if not inv.get("restock", {}).get("open") or budget <= 0 or len(units) >= p["max_units"]:
         return {"buy": []}

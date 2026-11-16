@@ -187,7 +187,7 @@ def accept_policy(order, quote, listed):
         ratio = p["ceiling"][grade] + (p["warranty_bonus"] if guaranteed else 0)
     else:
         ratio = p["ceiling_warranty"] if guaranteed else p["ceiling"][grade]
-    policy = {"cert": True, "grades": ["A", "B"], "max_price": min(order["budget"], int(listed * ratio))}
+    policy = {"cert": True, "grades": list(p["accept_grades"]), "max_price": min(order["budget"], int(listed * ratio))}
     if guaranteed:
         policy["warranty_hours"] = 6
     return policy
@@ -196,7 +196,7 @@ def accept_policy(order, quote, listed):
 def hint_fits(order, quote):
     if order.get("kind") == "food":
         return quote.get("hours_left") is None or quote["hours_left"] >= order.get("use_within_hours", 0) + .25
-    return quote.get("grade") != "C"
+    return quote.get("grade") not in {"A", "B", "C"} - set(params("buyer")["accept_grades"])
 
 
 class Visit:
@@ -241,7 +241,7 @@ class Visit:
         if order.get("kind") == "food":
             request += f" It must last at least {order.get('use_within_hours', 0) + .25} hours."
         else:
-            request += " Please state grade A/B and any breakage refund warranty."
+            request += f" Please state grade {'/'.join(params('buyer')['accept_grades'])} and any breakage refund warranty."
         self.send(request)
         if re.search(r"allowance unavailable|quota exceeded|model usage.*unavailable|rate limit", self.said, re.I):
             raise RuntimeError("merchant model currently unavailable")
@@ -254,7 +254,8 @@ class Visit:
         if self.task["status"]["state"] == "TASK_STATE_INPUT_REQUIRED" and not hint_fits(order, self.quote):
             self.send(f"Can you quote a qualifying unit of {offer['sku']} with the market certificate? "
                       + (f"Need at least {order.get('use_within_hours', 0) + .25} h remaining."
-                         if order.get("kind") == "food" else "Need grade A or B; state any warranty."))
+                         if order.get("kind") == "food"
+                         else f"Need grade {' or '.join(params('buyer')['accept_grades'])}; state any warranty."))
         if self.quote.get("ask") is None and self.task["status"]["state"] == "TASK_STATE_INPUT_REQUIRED":
             try:
                 schema = {"type": "object", "properties": {"ask": {"type": "integer", "minimum": 1}},
@@ -398,7 +399,7 @@ def run(order, shops, catalog):
                 if not quote.get("ask"):
                     raise ValueError("no readable asking price")
                 if not hint_fits(order, quote):
-                    raise ValueError("insufficient shelf life" if order.get("kind") == "food" else "goods grade outside A/B")
+                    raise ValueError("insufficient shelf life" if order.get("kind") == "food" else "goods grade outside " + "/".join(params("buyer")["accept_grades"]))
                 policy = accept_policy(order, quote, choice["product"]["list_price"])
                 bp = params("buyer")
                 potential = 1 - min(quote["ask"], policy["max_price"]) / choice["product"]["list_price"]

@@ -2,19 +2,19 @@
  "_note": "E1 (shop: expensive goods, bigger stock) and E2/E3 (buyer: bid ladder, faster orders) started 2026-11-13. Remove a key to fall back to the baseline in shop_strategy.DEFAULTS.",
  "shop": {
   "cash_reserve": 3000000,
-  "stock_cost_cap": 15000000,
-  "stock_cap_share": 0.85,
+  "stock_cost_cap": 40000000,
+  "stock_cap_share": 0.95,
   "max_units": 150,
-  "max_sku_units": 3,
-  "per_run_spend": 10000000,
+  "max_sku_units": 5,
+  "per_run_spend": 15000000,
   "food_cost_share": 0.1,
   "sku_cap_share": 0.3,
-  "max_list_price": 4500000,
+  "max_list_price": 6000000,
   "max_surge": 1.15,
-  "min_sales": 3,
-  "sales_exp": 1.0,
-  "price_exp": 1.0,
-  "category_penalty": 0.3,
+  "min_sales": 10,
+  "sales_exp": 1.5,
+  "price_exp": 1.5,
+  "category_penalty": 0,
   "share_divisor": 12,
   "max_line_qty": 3,
   "one_per_category_run": false,
@@ -29,24 +29,39 @@
   "aged_margin": 1.0,
   "aged_floor_cut": 0.97,
   "aged_ask_cut": 0.04,
-  "stale_minutes": 180,
-  "stale_margin": 1.0
+  "stale_minutes": 60,
+  "stale_margin": 0.85,
+  "concession": 0.05,
+  "max_counters": 6,
+  "warranty_exposure_cap": 1500000,
+  "min_list_price": 100000
  },
  "buyer": {
-  "order_interval": 45,
-  "max_bids": 4,
+  "order_interval": 20,
+  "max_bids": 5,
   "ladder": true,
   "anchor": {
-   "A": 0.6,
-   "B": 0.46,
-   "C": 0.32
+   "A": 0.52,
+   "B": 0.43,
+   "C": 0.25
   },
-  "step": 0.045,
+  "step": 0.076,
   "ceiling": {
-   "A": 0.78,
-   "B": 0.69,
-   "C": 0.6
+   "A": 0.75,
+   "B": 0.65,
+   "C": 0.45
   },
-  "warranty_bonus": 0.03
+  "warranty_bonus": 0.1,
+  "max_shops": 5,
+  "accept_grades": [
+   "A",
+   "B"
+  ],
+  "no_warranty_penalty": 0.1
+ },
+ "model": {
+  "provider": "anthropic",
+  "name": "claude-haiku-5-5",
+  "effort": "low"
  }
 }

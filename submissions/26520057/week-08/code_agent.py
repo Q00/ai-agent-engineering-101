@@ -11,6 +11,7 @@ Every 20 minutes (systemd timer):
   5. ship    files read fresh on every order, restock or review go live at once and are committed to git;
              files that need a shop restart wait for Dana's approval as a patch
 Never editable: the kit, keys, envelope.json (the gate's bounds), strategist.py, this file, existing tests.
+A new param can join the search space: the agent proposes bounds in new_knobs.json, and code (check_knob) decides.
 """
 import difflib
 import hashlib
@@ -135,6 +136,7 @@ def watch(state):
         for f in d["files"]:
             shutil.copy2(ROOT / "runtime/code-agent/before" / f, ROOT / f)
         git("add", *d["files"])
+        drop_knobs(d.get("knobs", []))
         git("commit", "-m", f"code-agent: roll back {d['commit'][:8]} ({'; '.join(problems)[:150]})\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>")
         d.update(verified=True, rolled_back=now(), problems=problems)
         state.setdefault("history", []).append(d)
@@ -197,7 +199,7 @@ def prepare():
 
 
 def editable(rel):
-    if rel in EDITABLE or (NEW_TEST.fullmatch(rel) and not (ROOT / rel).exists()):
+    if rel in EDITABLE or rel == "new_knobs.json" or (NEW_TEST.fullmatch(rel) and not (ROOT / rel).exists()):
         return True
     return False
 
@@ -255,6 +257,7 @@ Rules:
 - Keep every safety property the tests check: price floors, budget ceilings, capital limits, signature checks, honest grade claims.
 - Never add anything untruthful (claims, reviews, posts), anything aimed at manipulating other agents, paid dislikes, or new network endpoints.
 - Tunable numbers belong in params.json via shop_strategy.params(); do not hard-code new ones where a param would do.
+- If your fix adds a new param to shop_strategy.DEFAULTS that the strategist should tune, also create new_knobs.json: a JSON list of {{"key": "buyer.accept_grades", "rule": [min, max] or a list of allowed values, "why": "..."}}. The default must keep today's behaviour and lie inside the rule; a numeric range may span half to double the default. Money limits (cash, caps, spend, budget) are refused. Code checks this; once the fix ships, the strategist can use the knob.
 - If the problem is not a code problem, or you cannot find the cause, change nothing and say so.
 - Run run_checks before you finish. Finish with a short plain-Korean summary (2-4 sentences, -요 endings): what was wrong, what you changed."""
 
@@ -293,7 +296,7 @@ def fix(issue, state):
             break
     after = {p.relative_to(WORK).as_posix(): p.read_bytes() for p in WORK.rglob("*") if p.is_file()}
     changed = sorted(k for k in set(before) | set(after) if before.get(k) != after.get(k) and not k.startswith((".market/", "logs/"))
-                     and "__pycache__" not in k and not k.endswith(".aside"))
+                     and "__pycache__" not in k and not k.endswith(".aside") and k != KNOBS_FILE)
     return changed, summary, usd
 
 
@@ -371,10 +374,100 @@ def ship(issue, changed, summary, usd, state):
     msg = f"code-agent: {issue['what'][:60]}\n\n{summary[:800]}\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
     git("commit", "-m", msg)
     commit = git("rev-parse", "HEAD").stdout.strip()
-    state["deployed"] = {"ts": time.time(), "commit": commit, "files": changed, "summary": summary[:300], "issue": k}
-    record.update(result="deployed", commit=commit)
-    say(f":wrench: 코드 에이전트가 고쳐서 바로 반영했어요 ({', '.join(changed)}). 45분 동안 지켜보고 문제가 생기면 되돌려요. {summary[:300]}")
+    added, refused = add_knobs(commit)
+    state["deployed"] = {"ts": time.time(), "commit": commit, "files": changed, "summary": summary[:300], "issue": k, "knobs": added}
+    record.update(result="deployed", commit=commit, knobs=added, knobs_refused=refused)
+    extra = (f" 새 손잡이 {', '.join(added)}를 전략가가 쓸 수 있게 탐색 공간에 넣었어요." if added else "") + \
+            (f" 넣지 않은 손잡이: " + ", ".join(f"{a}({b})" for a, b in refused) if refused else "")
+    say(f":wrench: 코드 에이전트가 고쳐서 바로 반영했어요 ({', '.join(changed)}). 45분 동안 지켜보고 문제가 생기면 되돌려요. {summary}{extra}")
     return record
+
+
+# ---------------------------------------------------------------- 4b. new knobs join the search space
+KNOBS_FILE = "new_knobs.json"
+KNOB_KEY = re.compile(r"(shop|buyer)\.[a-z_]+(\.[A-Za-z_]+)?")
+MONEY = re.compile(r"cash|cap|spend|budget|reserve|exposure|price_max|max_list")
+
+
+def defaults_of(folder):
+    r = subprocess.run([PY, "-c", "import sys,json; sys.path.insert(0, sys.argv[1]); import shop_strategy as s; print(json.dumps(s.DEFAULTS))",
+                        str(folder)], cwd=folder, capture_output=True, text=True, timeout=60)
+    return json.loads(r.stdout) if r.returncode == 0 else {}
+
+
+def lookup(tree, key):
+    for part in key.split("."):
+        if not isinstance(tree, dict) or part not in tree:
+            raise KeyError(key)
+        tree = tree[part]
+    return tree
+
+
+def check_knob(k, defaults, envelope):
+    """The code agent may propose bounds; code decides. A new knob must start at its current behaviour and stay narrow."""
+    key, rule = k.get("key", ""), k.get("rule")
+    if not isinstance(key, str) or not KNOB_KEY.fullmatch(key):
+        return "key must be shop.* or buyer.* (no model, prompt or strategist settings)"
+    if key in envelope:
+        return "already in the envelope"
+    if MONEY.search(key):
+        return "money limits stay with 다나"
+    try:
+        default = lookup(defaults, key)
+    except KeyError:
+        return "no default in shop_strategy.DEFAULTS"
+    if isinstance(rule, list) and len(rule) == 2 and all(isinstance(x, (int, float)) and not isinstance(x, bool) for x in rule):
+        lo, hi = rule
+        if not (isinstance(default, (int, float)) and not isinstance(default, bool) and lo <= default <= hi):
+            return "default is outside the range"
+        if default <= 0 or lo < default / 2 or hi > default * 2:
+            return "range wider than half to double the default"
+        return ""
+    if isinstance(rule, list) and 2 <= len(rule) <= 6:
+        flat = lambda v: v if isinstance(v, list) else [v]
+        if any(isinstance(x, dict) or any(isinstance(y, (dict, list)) or (isinstance(y, str) and len(y) > 40) for y in flat(x)) for x in rule):
+            return "allowed values must be short plain values"
+        if default not in rule:
+            return "current default is not one of the allowed values"
+        return ""
+    return "rule must be [min, max] or a list of 2-6 allowed values"
+
+
+def add_knobs(commit):
+    path = WORK / KNOBS_FILE
+    if not path.exists():
+        return [], []
+    try:
+        proposed = json.loads(path.read_text(encoding="utf-8"))
+        proposed = proposed if isinstance(proposed, list) else []
+    except ValueError:
+        return [], [("new_knobs.json", "not valid JSON")]
+    envelope = read_json(ROOT / "envelope.json", {})
+    defaults = defaults_of(ROOT)
+    added, refused = [], []
+    for k in proposed[:5]:
+        why = check_knob(k if isinstance(k, dict) else {}, defaults, envelope)
+        if why:
+            refused.append((str(k.get("key") if isinstance(k, dict) else k), why))
+            continue
+        envelope[k["key"]] = k["rule"]
+        added.append(k["key"])
+        append_jsonl(ROOT / "logs/envelope-additions.jsonl", {"ts": now(), "commit": commit, "key": k["key"], "rule": k["rule"],
+                                                              "default": lookup(defaults, k["key"]), "why": str(k.get("why", ""))[:300]})
+    if added:
+        tmp = ROOT / "envelope.json.tmp"
+        tmp.write_text(json.dumps(envelope, ensure_ascii=False, indent=1), encoding="utf-8")
+        tmp.replace(ROOT / "envelope.json")
+        git("add", "envelope.json")
+        git("commit", "-m", f"code-agent: add {', '.join(added)} to the search space\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>")
+    return added, refused
+
+
+def drop_knobs(keys):
+    envelope = read_json(ROOT / "envelope.json", {})
+    if any(envelope.pop(k, None) is not None for k in keys):
+        (ROOT / "envelope.json").write_text(json.dumps(envelope, ensure_ascii=False, indent=1), encoding="utf-8")
+        git("add", "envelope.json")
 
 
 def main():

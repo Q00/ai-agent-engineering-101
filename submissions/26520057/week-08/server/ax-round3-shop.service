@@ -1,0 +1,22 @@
+[Unit]
+Description=AX Round 3 shop and ACP proxy using free local Qwen
+After=network-online.target ax-round3-ollama.service
+Wants=network-online.target ax-round3-ollama.service
+
+[Service]
+WorkingDirectory=%h/submissions/26520057/week-08
+EnvironmentFile=%h/submissions/26520057/week-08/.market/owner.env
+Environment=PYTHONUNBUFFERED=1
+UnsetEnvironment=OPENAI_API_KEY ANTHROPIC_API_KEY HARNESS_CMD
+ExecStart=%h/submissions/26520057/week-07/runtime/venv/bin/python -u run_shop.py
+Restart=on-failure
+RestartSec=20
+TimeoutStopSec=30
+CPUQuota=100%
+MemoryMax=768M
+UMask=0077
+StandardOutput=append:%h/submissions/26520057/week-08/logs/shop-console.log
+StandardError=append:%h/submissions/26520057/week-08/logs/shop-console.log
+
+[Install]
+WantedBy=default.target

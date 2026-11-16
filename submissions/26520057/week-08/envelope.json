@@ -1,17 +1,17 @@
 {
- "_note": "What the strategist may change without asking. [min, max] or a list of allowed values. Everything else goes to approvals/pending.jsonl and waits for the student.",
- "_api_budget_usd": 40,
+ "_note": "What the strategist may change without asking. [min, max] or a list of allowed values. Stock size, below-cost clearance of aged stock and C-grade buying were moved inside on 2026-11-14 by the student. API budget raised 40 -> 50 USD on 2026-11-16 by the student.",
+ "_api_budget_usd": 50,
  "shop.cash_reserve": [
   2000000,
   10000000
  ],
  "shop.stock_cost_cap": [
   1000000,
-  15000000
+  40000000
  ],
  "shop.stock_cap_share": [
   0.3,
-  0.9
+  0.95
  ],
  "shop.max_units": [
   30,
@@ -102,11 +102,11 @@
   600
  ],
  "shop.aged_margin": [
-  1.0,
+  0.9,
   1.1
  ],
  "shop.aged_floor_cut": [
-  0.9,
+  0.85,
   1.0
  ],
  "shop.aged_ask_cut": [
@@ -118,7 +118,7 @@
   2000
  ],
  "shop.stale_margin": [
-  1.0,
+  0.85,
   1.1
  ],
  "shop.concession": [
@@ -207,5 +207,16 @@
  },
  "prompts.buyer_extract": {
   "max_chars": 1200
- }
+ },
+ "buyer.accept_grades": [
+  [
+   "A",
+   "B"
+  ],
+  [
+   "A",
+   "B",
+   "C"
+  ]
+ ]
 }
