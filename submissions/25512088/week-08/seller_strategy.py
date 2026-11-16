@@ -13,6 +13,7 @@ from seller_procurement import settings
 
 RATES={'goods':{'A':95,'B':80,'C':60},'food':{'A':95,'B':75,'C':45}}
 LOSS_LEADER_RATE=.04
+CLASS_NEAR_COST_RATE=.05
 LOSS_LEADER_BUDGET=100_000
 LOSS_LEADER_TRIALS_PER_SKU=5
 BOOK_CUSHION_TRIAL_SHARE=.90
@@ -94,7 +95,7 @@ def score_safe_loss_budget(intel, already_used, own_name='25512088'):
                 return value-max(lower) if lower else None
             book_cushion=next_lower_gap('book')
             revenue_gap=next_higher_gap('revenue')
-            # A four-percent raw-loss cohort needs at most this much Book to
+            # A five-percent class-trial cohort needs at most this much Book to
             # generate the Revenue required for the next Class percentile.
             # Open only a small additional budget when that worst-case loss
             # stays inside 75% of the fresh lower-Book boundary. This compares
@@ -103,7 +104,7 @@ def score_safe_loss_budget(intel, already_used, own_name='25512088'):
             # shop and disabled safe near-cost turnover despite 3M+ of lower
             # boundary headroom.
             max_loss_to_revenue=(
-                math.ceil(revenue_gap*LOSS_LEADER_RATE/(1-LOSS_LEADER_RATE))
+                math.ceil(revenue_gap*CLASS_NEAR_COST_RATE/(1-CLASS_NEAR_COST_RATE))
                 if isinstance(revenue_gap,(int,float)) else None)
             if (book_cushion is None or revenue_gap is None or
                     max_loss_to_revenue>book_cushion*.75):
@@ -345,9 +346,13 @@ def negotiate(unit, current, offered, catalog, program, token='', ref='', intel=
         # near-cost trials from spending the same headroom twice.
         floor=min(floor,unit['cost'])
     # Recent live offers showed a separate, deterministic opportunity: public
-    # buyers offered 96-100% of raw cost on zero-warranty goods. Those offers
+    # buyers offered 95-100% of raw cost on zero-warranty goods. Three initial
+    # 96% trials all settled without a refund; the official Class score did
+    # not fall. The live Revenue gap can currently be crossed at the five-
+    # percent ceiling while retaining over 25% of the next lower Book gap.
+    # Those offers
     # cannot later create a refund liability. Permit only that narrow cohort
-    # while fresh Class boundaries prove that the worst-case four-percent loss
+    # while fresh Class boundaries prove that the worst-case five-percent loss
     # can reach the next Revenue percentile without crossing the next lower
     # Book percentile. Historical losses are already reflected in Book; the
     # budget function grants at most 100k of additional measured principal.
@@ -355,7 +360,7 @@ def negotiate(unit, current, offered, catalog, program, token='', ref='', intel=
         'SELECT COALESCE(SUM(CASE WHEN cost>amount THEN cost-amount ELSE 0 END),0) '
         'FROM sales WHERE refunded=0').fetchone()[0]
     loss_budget=score_safe_loss_budget(intel,loss_used,program.p.get('shop_name','25512088'))
-    raw_loss_floor=math.ceil(unit['cost']*(1-LOSS_LEADER_RATE))
+    raw_loss_floor=math.ceil(unit['cost']*(1-CLASS_NEAR_COST_RATE))
     projected_raw_loss=max(0,unit['cost']-offered)
     class_near_cost_trial=bool(
         not legacy and not warranty and unit.get('kind')=='goods' and

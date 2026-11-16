@@ -189,7 +189,7 @@ class IntelligenceTests(unittest.TestCase):
                {'name':'25512088','book':1000000,'revenue':1000000,'house':False},
                {'name':'above','book':1100000,'revenue':3000000,'house':False}]
         self.i.save_source('board',{'players':players,'shops':shops})
-        # At the four-percent loss ceiling, crossing this Revenue gap would use
+        # At the five-percent class-trial ceiling, crossing this Revenue gap would use
         # more than 75% of the 100k lower-Book cushion, so preserve Book.
         self.assertEqual(score_safe_loss_budget(self.i,99999),99999)
         shops[-1]['revenue']=1050000
