@@ -115,6 +115,17 @@ class Memory:
         won=sum(r['paid']==1 and r['shop']==shop for r in rows)
         return {'probability':(won+2)/(len(rows)+4),'trials':len(rows),'wins':won}
 
+    def accepted_offer_shops(self, ceiling, seconds=21600):
+        """Shops whose most recent offer before an agreement used this ceiling."""
+        rows=self.db.execute('''SELECT DISTINCT a.shop FROM events a
+          JOIN events o ON o.id=(SELECT o2.id FROM events o2
+            WHERE o2.order_id=a.order_id AND o2.shop=a.shop AND o2.sku=a.sku
+              AND o2.kind='offer' AND o2.ts<=a.ts
+            ORDER BY o2.ts DESC,o2.id DESC LIMIT 1)
+          WHERE a.kind='agreement' AND a.ts>? AND json_extract(o.details,'$.ceiling')=?''',
+          (time.time()-seconds,ceiling)).fetchall()
+        return {row['shop'] for row in rows}
+
     def saved_portfolio(self, catalog):
         """Estimate Patch-3.6 Saved with published grade cost midpoints.
 

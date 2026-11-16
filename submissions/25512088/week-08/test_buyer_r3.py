@@ -329,7 +329,7 @@ class BuyerTests(unittest.TestCase):
         self.m.begin(self.o)
         with httpx.Client(transport=httpx.MockTransport(handler)) as c, patch('buyer_r3.time.sleep'):
             out=Buyer(self.o,self.m,c,self.cat).run([self.shop])
-        self.assertEqual(amounts,[6500,6675,6850,6900])
+        self.assertEqual(amounts,[6675,6850,6900])
         self.assertTrue(all(a<=6900 for a in amounts))
         self.assertIsNone(out['receipt'])
 

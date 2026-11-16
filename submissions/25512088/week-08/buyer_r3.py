@@ -300,6 +300,8 @@ class Buyer:
         self.intel = intel
         self.control = control
         self.portfolio = portfolio if portfolio is not None else memory.saved_portfolio(catalog)
+        self.probe_shops = (memory.accepted_offer_shops('probe')
+                            if hasattr(memory,'accepted_offer_shops') else set())
         self.deadline = min(time.time()+85, order['expires']-3)
 
     def result(self, session=None, receipt=None, reason='No acceptable deal'):
@@ -479,11 +481,15 @@ class Buyer:
                 # Reserve time for other competitors; no fixed negotiation turn count.
                 stop=min(self.deadline,time.time()+(self.deadline-time.time())/(len(quotes)-index))
                 negotiation_steps=[]
-                for label,ceiling in (
-                        ('probe',s['probe_cap']),('stretch',s['stretch_cap']),
+                candidate_steps=[]
+                if s['shop']['url'] in self.probe_shops:
+                    candidate_steps.append(('probe',s['probe_cap']))
+                candidate_steps.extend((
+                        ('stretch',s['stretch_cap']),
                         ('middle',s['middle_cap']),
                         ('upper_bridge',s['upper_bridge_cap']),
-                        ('bridge',s['bridge_cap']),('fallback',s['cap'])):
+                        ('bridge',s['bridge_cap']),('fallback',s['cap'])))
+                for label,ceiling in candidate_steps:
                     if negotiation_steps and negotiation_steps[-1][1]==ceiling:
                         # Grade-specific hard caps can make two Saved targets
                         # identical.  Never waste a round trip repeating the
