@@ -487,6 +487,48 @@ class PurchaseTests(unittest.TestCase):
   self.assertEqual(allocation_plan(
       [cheap,high],{'units':[],'balance':1000000},1000000,
       policy=policy)[0]['sku'],'cheap')
+ def test_one_proven_capital_bridge_can_turn_cash_while_high_value_is_unaffordable(self):
+  high=dict(sku='high',kind='goods',expected_net=50000,score=1000,
+            upper_cost=1200000,sales_1h=8,sales_6h=30,
+            distinct_buyers_6h=10,estimated_sale_likelihood=.6,
+            own_sales_total=1,own_gross_total=50000,own_profitable_sales=1,
+            dominant_grade_samples=8,dominant_grade_profit_probability=.7)
+  bridge=dict(sku='bridge',kind='goods',expected_net=28000,score=300,
+              upper_cost=260000,sales_1h=5,sales_6h=22,
+              distinct_buyers_6h=13,estimated_sale_likelihood=.34,
+              own_sales_total=58,own_gross_total=400000,own_profitable_sales=50,
+              dominant_grade_samples=12,dominant_grade_profit_probability=.64)
+  policy={'max_sku_capital_share':1,'high_value_lane_min_unit_cost':500000,
+          'min_high_value_restock_grade_samples':3,
+          'min_high_value_restock_grade_profit_probability':.60,
+          'capital_bridge_max_available_share':.5}
+  plan=allocation_plan([bridge,high],{'units':[],'balance':3000000},630000,
+                       policy=policy)
+  self.assertEqual([(row['sku'],row['qty']) for row in plan],[('bridge',1)])
+  self.assertTrue(plan[0]['evidence']['capital_bridge'])
+  policy['capital_bridge_window_used']=True
+  self.assertEqual(allocation_plan(
+      [bridge,high],{'units':[],'balance':3000000},630000,policy=policy),[])
+ def test_capital_bridge_rejects_weak_or_cash_hungry_goods(self):
+  high=dict(sku='high',kind='goods',expected_net=50000,score=1000,
+            upper_cost=1200000,sales_1h=8,sales_6h=30,
+            distinct_buyers_6h=10,estimated_sale_likelihood=.6,
+            own_sales_total=1,own_gross_total=50000,own_profitable_sales=1,
+            dominant_grade_samples=8,dominant_grade_profit_probability=.7)
+  common=dict(kind='goods',expected_net=28000,score=300,upper_cost=260000,
+              sales_1h=5,sales_6h=22,distinct_buyers_6h=13,
+              estimated_sale_likelihood=.34,own_sales_total=5,
+              own_gross_total=40000,own_profitable_sales=4,
+              dominant_grade_samples=5,dominant_grade_profit_probability=.64)
+  policy={'max_sku_capital_share':1,'high_value_lane_min_unit_cost':500000,
+          'min_high_value_restock_grade_samples':3,
+          'min_high_value_restock_grade_profit_probability':.60,
+          'capital_bridge_max_available_share':.5}
+  weak=dict(common,sku='weak',own_profitable_sales=3)
+  expensive=dict(common,sku='expensive',upper_cost=320000)
+  self.assertEqual(allocation_plan(
+      [weak,expensive,high],{'units':[],'balance':3000000},630000,
+      policy=policy),[])
  def test_one_demanded_high_value_canary_can_precede_cheap_stock(self):
   cheap=dict(sku='cheap',kind='food',expected_net=1000,score=100000,
              upper_cost=100,sales_1h=20,sales_6h=40,

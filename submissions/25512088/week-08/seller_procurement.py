@@ -677,7 +677,45 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
     if (high_value_choices and
             not any(choice[4]['upper_cost']<=available
                     for choice in high_value_choices)):
-        return []
+        # Do not let one temporarily unaffordable Revenue opportunity idle all
+        # deployable cash. One sold-out, repeatedly profitable and currently
+        # demanded medium-cost good may bridge the gap by turning a minority
+        # of the cash into near-term sales. This is deliberately not a second
+        # general procurement lane: one unit is allowed per supply window,
+        # at least half the deployable cash remains reserved for the priority
+        # good, and weak/new/refund-negative cohorts cannot qualify.
+        bridge=[]
+        if not policy.get('capital_bridge_window_used',False):
+            max_bridge_cost=available*max(
+                0.0,min(1.0,float(policy.get('capital_bridge_max_available_share',.5))))
+            for choice in ordered:
+                priority,_,sku,need,row=choice
+                sales=max(0,int(row.get('own_sales_total',0) or 0))
+                profitable=max(0,int(row.get('own_profitable_sales',0) or 0))
+                profit_share=profitable/max(1,sales)
+                if (priority==2 and row.get('kind')=='goods' and
+                        not holding.get(sku) and need>0 and
+                        sales>=policy.get('capital_bridge_min_own_sales',5) and
+                        row.get('own_gross_total',0)>0 and
+                        profit_share>=policy.get('capital_bridge_min_profitable_share',.70) and
+                        row.get('sales_1h',0)>=
+                            policy.get('capital_bridge_min_market_sales_1h',3) and
+                        row.get('estimated_sale_likelihood',0)>=
+                            policy.get('capital_bridge_min_sale_likelihood',.30) and
+                        row.get('dominant_grade_samples',0)>=
+                            policy.get('capital_bridge_min_grade_samples',3) and
+                        row.get('dominant_grade_profit_probability',0)>=
+                            policy.get('capital_bridge_min_grade_profit_probability',.60) and
+                        row.get('upper_cost',math.inf)<=max_bridge_cost):
+                    evidence=dict(row,capital_bridge=True,
+                                  capital_bridge_profit_share=profit_share,
+                                  capital_bridge_max_cost=max_bridge_cost)
+                    bridge.append((priority,choice[1],sku,need,evidence))
+        if not bridge:
+            return []
+        _,_,sku,_,row=bridge[0]
+        return [{'sku':sku,'qty':1,'upper_unit_cost':row['upper_cost'],
+                 'capital':row['upper_cost'],'evidence':row}]
     plan=[];slots=sum(row[3] for row in choices) if available_slots is None else available_slots
     remaining_unproven=unproven_capacity
     remaining_canaries=max(0,high_value_canary_limit-high_value_count)
@@ -894,6 +932,12 @@ def main():
         runtime_policy['high_value_window_count']=high_value_window_count
         runtime_policy['high_value_window_used']=(
             high_value_window_count>=max(1,int(policy.get('high_value_window_limit',1))))
+        # The bridge is intentionally limited to one unit in a supply window.
+        # Treat any completed purchase in the window as consuming that slot;
+        # this conservative marker avoids reconstructing intent from mutable
+        # rankings and prevents a restart from spending the allowance twice.
+        runtime_policy['capital_bridge_window_used']=any(
+            row['status']=='paid' and row['created']>=opening for row in rows)
         window_blocks=breadth_window_blocks(rows,opening,inv,target)
         plan=allocation_plan(ranked,inv,available,
                              set(blocked)|window_blocks|refund_cooldowns|
