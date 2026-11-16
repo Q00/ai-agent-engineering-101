@@ -295,12 +295,15 @@ def observed_hazard(intel,shop_name='25512088'):
 def liquidation_discount(unit, holdings, recent_sales_6h, now=None, failed_quotes_6h=0):
     """Bounded markdown for capital trapped in evidenced excess stock.
 
-    A small or selling cohort is never discounted.  The ladder changes only
+    A partial or selling cohort is never discounted.  Procurement now caps a
+    normal goods SKU at three units, so the old eight-unit trigger could never
+    activate for newly purchased stock.  Treat a full three-unit cohort as
+    excess only after six hours without a local sale.  The ladder changes only
     the asking margin; ``protected_floor`` below still pays every obligation.
     """
     now=time.time() if now is None else now
     supplied=unit.get('supplied_at')
-    if holdings<8 or recent_sales_6h>0 or not isinstance(supplied,(int,float)):
+    if holdings<3 or recent_sales_6h>0 or not isinstance(supplied,(int,float)):
         return 0.0
     age=max(0,now-supplied)
     if age<6*3600:return 0.0

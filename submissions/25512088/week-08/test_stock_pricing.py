@@ -43,16 +43,16 @@ class StockPricingTests(unittest.TestCase):
 
     def test_liquidation_requires_excess_stock_age_and_no_recent_own_sale(self):
         now=100*3600;u=dict(self.unit(),supplied_at=now-13*3600)
-        self.assertEqual(liquidation_discount(u,66,0,now),.10)
-        self.assertEqual(liquidation_discount(u,7,0,now),0)
-        self.assertEqual(liquidation_discount(u,66,1,now),0)
+        self.assertEqual(liquidation_discount(u,3,0,now),.10)
+        self.assertEqual(liquidation_discount(u,2,0,now),0)
+        self.assertEqual(liquidation_discount(u,3,1,now),0)
         u['supplied_at']=now-5*3600
-        self.assertEqual(liquidation_discount(u,66,0,now),0)
+        self.assertEqual(liquidation_discount(u,3,0,now),0)
 
     def test_liquidation_reaches_protected_floor_after_two_failed_quotes(self):
         now=100*3600;u=dict(self.unit(),supplied_at=now-7*3600)
-        self.assertEqual(liquidation_discount(u,66,0,now,failed_quotes_6h=1),.05)
-        self.assertEqual(liquidation_discount(u,66,0,now,failed_quotes_6h=2),.25)
+        self.assertEqual(liquidation_discount(u,3,0,now,failed_quotes_6h=1),.05)
+        self.assertEqual(liquidation_discount(u,3,0,now,failed_quotes_6h=2),.25)
 
 
 if __name__ == '__main__':
