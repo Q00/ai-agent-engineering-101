@@ -71884,3 +71884,1511 @@
 20:15:27 [seller] Dispatcher task is not running. Cannot wait for event dispatch.
 20:15:27 [seller] Dispatcher task is not running. Cannot wait for event dispatch.
 20:15:27 [seller] Dispatcher task is not running. Cannot wait for event dispatch.
+08:19:22 [standalone] starting student shop without the course kit checkout
+INFO:     Started server process [21412]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8900 (Press CTRL+C to quit)
+08:19:24 [standalone] cloudflared 2026-11-15T23:19:24Z INF Thank you for trying Cloudflare Tunnel. Doing so, without a Cloudflare account, is a quick way to experiment and try it out. However, be aware that these account-less Tunnels have no uptime guarantee, are subject to the Cloudflare Online Services Terms of Use (https://www.cloudflare.com/website-terms/), and Cloudflare reserves the right to investigate your use of Tunnels for violations of such terms. If you intend to use Tunnels in production you should use a pre-created named tunnel by following: https://developers.cloudflare.com/cloudflare-one/connections/connect-apps
+08:19:24 [standalone] cloudflared 2026-11-15T23:19:24Z INF Requesting new quick Tunnel on trycloudflare.com...
+08:19:28 [standalone] cloudflared 2026-11-15T23:19:28Z INF +--------------------------------------------------------------------------------------------+
+08:19:28 [standalone] cloudflared 2026-11-15T23:19:28Z INF |  Your quick Tunnel has been created! Visit it at (it may take some time to be reachable):  |
+08:19:28 [standalone] cloudflared 2026-11-15T23:19:28Z INF |  https://alerts-rna-cassette-progress.trycloudflare.com                                    |
+08:19:28 [standalone] cloudflared 2026-11-15T23:19:28Z INF +--------------------------------------------------------------------------------------------+
+08:19:28 [standalone] student A2A and ACP server at https://alerts-rna-cassette-progress.trycloudflare.com
+08:19:28 [standalone] cloudflared 2026-11-15T23:19:28Z INF Cannot determine default configuration path. No file [config.yml config.yaml] in [~/.cloudflared ~/.cloudflare-warp ~/cloudflare-warp]
+08:19:28 [standalone] cloudflared 2026-11-15T23:19:28Z INF Version 2026.10.2 (Checksum 12c7c887f8aaab779aef1dfa9b60673530a5adb88ecc55dd6df8f56e0b70f199)
+08:19:28 [standalone] cloudflared 2026-11-15T23:19:28Z INF GOOS: windows, GOVersion: go1.27.3, GoArch: amd64
+08:19:28 [standalone] cloudflared 2026-11-15T23:19:28Z INF Settings: map[ha-connections:1 no-autoupdate:true protocol:quic url:http://127.0.0.1:8900]
+08:19:28 [standalone] cloudflared 2026-11-15T23:19:28Z INF cloudflared will not automatically update on Windows systems.
+08:19:28 [standalone] cloudflared 2026-11-15T23:19:28Z INF Generated Connector ID: fc6fb281-fbdb-4f09-8247-3d8440e6e3d7
+08:19:28 [standalone] cloudflared 2026-11-15T23:19:28Z INF Initial protocol quic
+08:19:28 [standalone] cloudflared 2026-11-15T23:19:28Z INF ICMP proxy will use 192.168.0.101 as source for IPv4
+08:19:28 [standalone] cloudflared 2026-11-15T23:19:28Z INF ICMP proxy will use fe80::5227:a6a:910f:687f in zone Wi-Fi as source for IPv6
+08:19:28 [standalone] cloudflared 2026-11-15T23:19:28Z INF cloudflared does not support loading the system root certificate pool on Windows. Please use --origin-ca-pool <PATH> to specify the path to the certificate pool
+08:19:28 [standalone] cloudflared 2026-11-15T23:19:28Z INF ICMP proxy will use 192.168.0.101 as source for IPv4
+08:19:28 [standalone] cloudflared 2026-11-15T23:19:28Z INF Tunnel connection curve preferences: [X25519MLKEM768 CurveID(65074) CurveP256] connIndex=0 event=0 ip=198.41.192.37
+08:19:28 [standalone] cloudflared 2026-11-15T23:19:28Z INF ICMP proxy will use fe80::5227:a6a:910f:687f in zone Wi-Fi as source for IPv6
+08:19:28 [standalone] cloudflared 2026-11-15T23:19:28Z INF Starting metrics server on 127.0.0.1:20241/metrics
+08:19:28 [standalone] cloudflared 2026-11-15T23:19:28Z INF +-------------------------------------------------------------------------------------+
+08:19:28 [standalone] cloudflared 2026-11-15T23:19:28Z INF |                               CONNECTIVITY PRE-CHECKS                               |
+08:19:28 [standalone] cloudflared 2026-11-15T23:19:28Z INF +-------------------------------------------------------------------------------------+
+08:19:28 [standalone] cloudflared 2026-11-15T23:19:28Z INF |  COMPONENT         TARGET                     STATUS  DETAILS                       |
+08:19:28 [standalone] cloudflared 2026-11-15T23:19:28Z INF |  DNS Resolution    region1.v2.argotunnel.com  PASS    DNS Resolved successfully     |
+08:19:28 [standalone] cloudflared 2026-11-15T23:19:28Z INF |  DNS Resolution    region2.v2.argotunnel.com  PASS    DNS Resolved successfully     |
+08:19:28 [standalone] cloudflared 2026-11-15T23:19:28Z INF |  UDP Connectivity  region1.v2.argotunnel.com  PASS    QUIC connection successful    |
+08:19:28 [standalone] cloudflared 2026-11-15T23:19:28Z INF |  UDP Connectivity  region2.v2.argotunnel.com  PASS    QUIC connection successful    |
+08:19:28 [standalone] cloudflared 2026-11-15T23:19:28Z INF |  TCP Connectivity  region1.v2.argotunnel.com  PASS    HTTP/2 connection successful  |
+08:19:28 [standalone] cloudflared 2026-11-15T23:19:28Z INF |  TCP Connectivity  region2.v2.argotunnel.com  PASS    HTTP/2 connection successful  |
+08:19:28 [standalone] cloudflared 2026-11-15T23:19:28Z INF |  Cloudflare API    api.cloudflare.com:443     PASS    API is reachable              |
+08:19:28 [standalone] cloudflared 2026-11-15T23:19:28Z INF |                                                                                     |
+08:19:28 [standalone] cloudflared 2026-11-15T23:19:28Z INF |  SUMMARY: Environment is healthy. cloudflared will use 'quic' as primary protocol.  |
+08:19:28 [standalone] cloudflared 2026-11-15T23:19:28Z INF +-------------------------------------------------------------------------------------+
+08:19:28 [standalone] cloudflared 2026-11-15T23:19:28Z INF precheck component="DNS Resolution" details="DNS Resolved successfully" run_id=b6eaa373-fefd-439a-8505-6ce69c7b2b8f status=pass target=region1.v2.argotunnel.com
+08:19:28 [standalone] cloudflared 2026-11-15T23:19:28Z INF precheck component="DNS Resolution" details="DNS Resolved successfully" run_id=b6eaa373-fefd-439a-8505-6ce69c7b2b8f status=pass target=region2.v2.argotunnel.com
+08:19:28 [standalone] cloudflared 2026-11-15T23:19:28Z INF precheck component="UDP Connectivity" details="QUIC connection successful" run_id=b6eaa373-fefd-439a-8505-6ce69c7b2b8f status=pass target=region1.v2.argotunnel.com
+08:19:28 [standalone] cloudflared 2026-11-15T23:19:28Z INF precheck component="UDP Connectivity" details="QUIC connection successful" run_id=b6eaa373-fefd-439a-8505-6ce69c7b2b8f status=pass target=region2.v2.argotunnel.com
+08:19:28 [standalone] cloudflared 2026-11-15T23:19:28Z INF precheck component="TCP Connectivity" details="HTTP/2 connection successful" run_id=b6eaa373-fefd-439a-8505-6ce69c7b2b8f status=pass target=region1.v2.argotunnel.com
+08:19:28 [standalone] cloudflared 2026-11-15T23:19:28Z INF precheck component="TCP Connectivity" details="HTTP/2 connection successful" run_id=b6eaa373-fefd-439a-8505-6ce69c7b2b8f status=pass target=region2.v2.argotunnel.com
+08:19:28 [standalone] cloudflared 2026-11-15T23:19:28Z INF precheck component="Cloudflare API" details="API is reachable" run_id=b6eaa373-fefd-439a-8505-6ce69c7b2b8f status=pass target=api.cloudflare.com:443
+08:19:28 [standalone] cloudflared 2026-11-15T23:19:28Z INF precheck complete hard_fail=false run_id=b6eaa373-fefd-439a-8505-6ce69c7b2b8f suggested_protocol=quic
+08:19:28 [standalone] cloudflared 2026-11-15T23:19:28Z INF Registered tunnel connection connIndex=0 connection=c1360de7-29b1-410a-8fc3-bf5fce3e685d event=0 ip=198.41.192.37 location=icn06 protocol=quic
+INFO:     116.255.92.195:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     116.255.92.195:0 - "GET /.well-known/acp.json HTTP/1.1" 200 OK
+08:19:35 [standalone] public A2A card and student ACP descriptor verified
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+08:19:37 [standalone] shop registered as Afford Shop, round 3
+08:19:38 [standalone] inventory ready: 49 units; selling existing stock
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     2a02:4780:5e:8925::1:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     2a02:4780:5e:8925::1:0 - "POST / HTTP/1.1" 200 OK
+INFO:     2a02:4780:5e:8925::1:0 - "POST / HTTP/1.1" 200 OK
+INFO:     2a02:4780:5e:8925::1:0 - "POST / HTTP/1.1" 200 OK
+INFO:     2a02:4780:5e:8925::1:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     2a02:4780:5e:8925::1:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     2a02:4780:5e:8925::1:0 - "POST / HTTP/1.1" 200 OK
+INFO:     2a02:4780:5e:8925::1:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     2a02:4780:5e:8925::1:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     219.250.191.191:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     219.250.191.191:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     219.250.191.191:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     219.250.191.191:0 - "POST / HTTP/1.1" 200 OK
+INFO:     219.250.191.191:0 - "POST / HTTP/1.1" 200 OK
+INFO:     219.250.191.191:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     219.250.191.191:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     114.71.19.62:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     114.71.19.62:0 - "POST / HTTP/1.1" 200 OK
+INFO:     114.71.19.62:0 - "POST / HTTP/1.1" 200 OK
+INFO:     114.71.19.62:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     114.71.19.62:0 - "POST / HTTP/1.1" 200 OK
+INFO:     114.71.19.62:0 - "POST / HTTP/1.1" 200 OK
+INFO:     114.71.19.62:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "GET /.well-known/acp.json HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "POST /acp/checkout_sessions HTTP/1.1" 201 Created
+INFO:     203.246.84.93:0 - "POST /acp/checkout_sessions/cs_8bae37d011f04986bfc3732f04f6e8e6/cancel HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     219.250.191.191:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     219.250.191.191:0 - "POST / HTTP/1.1" 200 OK
+INFO:     219.250.191.191:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     110.12.60.102:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     110.12.60.102:0 - "POST / HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     2a02:4780:5e:863::1:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     2a02:4780:5e:863::1:0 - "POST / HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     2a02:4780:5e:863::1:0 - "POST / HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     114.71.19.62:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     114.71.19.62:0 - "POST / HTTP/1.1" 200 OK
+INFO:     114.71.19.62:0 - "POST / HTTP/1.1" 200 OK
+INFO:     219.250.191.191:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     219.250.191.191:0 - "POST / HTTP/1.1" 200 OK
+INFO:     114.71.19.62:0 - "POST / HTTP/1.1" 200 OK
+INFO:     114.71.19.62:0 - "GET /.well-known/acp.json HTTP/1.1" 200 OK
+INFO:     114.71.19.62:0 - "POST /acp/checkout_sessions HTTP/1.1" 201 Created
+[acp] settled G10da0341 at 12083, ledger #7150122, unit u-04fa446c9e1d via student checkout
+INFO:     114.71.19.62:0 - "POST /acp/checkout_sessions/cs_ba85bf8da077444288aad73453c03b9d/complete HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     219.250.191.191:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.85.147:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.85.147:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.85.147:0 - "POST / HTTP/1.1" 200 OK
+INFO:     219.250.191.191:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     219.250.191.191:0 - "POST / HTTP/1.1" 200 OK
+INFO:     219.250.191.191:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.85.147:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.85.147:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.85.147:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     114.71.19.62:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     114.71.19.62:0 - "POST / HTTP/1.1" 200 OK
+INFO:     114.71.19.62:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     118.32.75.198:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     118.32.75.198:0 - "POST / HTTP/1.1" 200 OK
+INFO:     118.32.75.198:0 - "POST / HTTP/1.1" 200 OK
+INFO:     219.250.191.191:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     219.250.191.191:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.85.135:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.85.135:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "POST / HTTP/1.1" 200 OK
+INFO:     219.250.191.191:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     2a02:4780:5e:8925::1:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     2a02:4780:5e:8925::1:0 - "POST / HTTP/1.1" 200 OK
+INFO:     117.17.188.53:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     117.17.188.53:0 - "POST / HTTP/1.1" 200 OK
+INFO:     2a02:4780:5e:8925::1:0 - "POST / HTTP/1.1" 200 OK
+INFO:     117.17.188.53:0 - "POST / HTTP/1.1" 200 OK
+INFO:     117.17.188.53:0 - "GET /.well-known/acp.json HTTP/1.1" 200 OK
+INFO:     117.17.188.53:0 - "POST /acp/checkout_sessions HTTP/1.1" 201 Created
+[acp] settled G0168ffb1 at 8766, ledger #7153347, unit u-d1e6f49b4595 via student checkout
+INFO:     117.17.188.53:0 - "POST /acp/checkout_sessions/cs_d66397d59c0846bd9c9f9aa59bffc9d8/complete HTTP/1.1" 200 OK
+INFO:     114.71.19.62:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     114.71.19.62:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     117.17.185.28:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     117.17.185.28:0 - "POST / HTTP/1.1" 200 OK
+INFO:     219.250.191.191:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     219.250.191.191:0 - "POST / HTTP/1.1" 200 OK
+INFO:     2a02:4780:5e:8925::1:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     2a02:4780:5e:8925::1:0 - "POST / HTTP/1.1" 200 OK
+INFO:     117.17.185.28:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     219.250.191.191:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     219.250.191.191:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     210.99.13.35:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     210.99.13.35:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.85.147:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.85.147:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.85.147:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     85.211.194.195:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     85.211.194.195:0 - "POST / HTTP/1.1" 200 OK
+INFO:     85.211.194.195:0 - "POST / HTTP/1.1" 200 OK
+INFO:     219.250.191.191:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     219.250.191.191:0 - "POST / HTTP/1.1" 200 OK
+INFO:     85.211.194.195:0 - "POST / HTTP/1.1" 200 OK
+INFO:     85.211.194.195:0 - "POST / HTTP/1.1" 200 OK
+INFO:     85.211.194.195:0 - "POST / HTTP/1.1" 200 OK
+INFO:     85.211.194.195:0 - "POST / HTTP/1.1" 200 OK
+INFO:     85.211.194.195:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     219.250.191.191:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     219.250.191.191:0 - "POST / HTTP/1.1" 200 OK
+INFO:     219.250.191.191:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     219.250.191.191:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     219.250.191.191:0 - "POST / HTTP/1.1" 200 OK
+INFO:     85.211.194.195:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     85.211.194.195:0 - "POST / HTTP/1.1" 200 OK
+INFO:     85.211.194.195:0 - "POST / HTTP/1.1" 200 OK
+INFO:     114.71.19.62:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     114.71.19.62:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     219.250.191.191:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "POST / HTTP/1.1" 200 OK
+INFO:     85.211.194.195:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     85.211.194.195:0 - "POST / HTTP/1.1" 200 OK
+INFO:     85.211.194.195:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     85.211.194.195:0 - "POST / HTTP/1.1" 200 OK
+INFO:     85.211.194.195:0 - "POST / HTTP/1.1" 200 OK
+INFO:     85.211.194.195:0 - "POST / HTTP/1.1" 200 OK
+INFO:     85.211.194.195:0 - "POST / HTTP/1.1" 200 OK
+INFO:     85.211.194.195:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     219.250.191.191:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     219.250.191.191:0 - "POST / HTTP/1.1" 200 OK
+INFO:     114.71.19.62:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     114.71.19.62:0 - "POST / HTTP/1.1" 200 OK
+INFO:     85.211.194.195:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     85.211.194.195:0 - "POST / HTTP/1.1" 200 OK
+INFO:     85.211.194.195:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     219.250.191.191:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     85.211.194.195:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     85.211.194.195:0 - "POST / HTTP/1.1" 200 OK
+INFO:     85.211.194.195:0 - "POST / HTTP/1.1" 200 OK
+INFO:     85.211.194.195:0 - "POST / HTTP/1.1" 200 OK
+INFO:     85.211.194.195:0 - "POST / HTTP/1.1" 200 OK
+INFO:     85.211.194.195:0 - "POST / HTTP/1.1" 200 OK
+INFO:     85.211.194.195:0 - "POST / HTTP/1.1" 200 OK
+INFO:     85.211.194.195:0 - "POST / HTTP/1.1" 200 OK
+INFO:     85.211.194.195:0 - "POST / HTTP/1.1" 200 OK
+INFO:     85.211.194.195:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     85.211.194.195:0 - "POST / HTTP/1.1" 200 OK
+INFO:     85.211.194.195:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.85.147:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.85.147:0 - "POST / HTTP/1.1" 200 OK
+INFO:     85.211.194.195:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     85.211.194.195:0 - "POST / HTTP/1.1" 200 OK
+INFO:     85.211.194.195:0 - "POST / HTTP/1.1" 200 OK
+INFO:     85.211.194.195:0 - "POST / HTTP/1.1" 200 OK
+INFO:     85.211.194.195:0 - "POST / HTTP/1.1" 200 OK
+INFO:     85.211.194.195:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.85.147:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     85.211.194.195:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     85.211.194.195:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     85.211.194.195:0 - "POST / HTTP/1.1" 200 OK
+INFO:     85.211.194.195:0 - "POST / HTTP/1.1" 200 OK
+INFO:     85.211.194.195:0 - "POST / HTTP/1.1" 200 OK
+INFO:     85.211.194.195:0 - "POST / HTTP/1.1" 200 OK
+INFO:     85.211.194.195:0 - "POST / HTTP/1.1" 200 OK
+INFO:     85.211.194.195:0 - "POST / HTTP/1.1" 200 OK
+INFO:     85.211.194.195:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     85.211.194.195:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     85.211.194.195:0 - "POST / HTTP/1.1" 200 OK
+INFO:     85.211.194.195:0 - "POST / HTTP/1.1" 200 OK
+INFO:     85.211.194.195:0 - "POST / HTTP/1.1" 200 OK
+INFO:     85.211.194.195:0 - "POST / HTTP/1.1" 200 OK
+INFO:     85.211.194.195:0 - "POST / HTTP/1.1" 200 OK
+INFO:     85.211.194.195:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     114.71.51.61:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     114.71.51.61:0 - "POST / HTTP/1.1" 200 OK
+INFO:     114.71.51.61:0 - "POST / HTTP/1.1" 200 OK
+INFO:     114.71.51.61:0 - "GET /.well-known/acp.json HTTP/1.1" 200 OK
+INFO:     114.71.51.61:0 - "POST /acp/checkout_sessions HTTP/1.1" 201 Created
+[acp] settled G0e08efbd at 10868, ledger #7162892, unit u-1b009e4bc932 via student checkout
+INFO:     114.71.51.61:0 - "POST /acp/checkout_sessions/cs_738de0bfb9044fa992de10c38c38da8f/complete HTTP/1.1" 200 OK
+INFO:     219.250.191.191:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     219.250.191.191:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     219.250.191.191:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     114.71.51.61:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     114.71.51.61:0 - "POST / HTTP/1.1" 200 OK
+INFO:     114.71.51.61:0 - "POST / HTTP/1.1" 200 OK
+INFO:     117.17.188.53:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     117.17.188.53:0 - "POST / HTTP/1.1" 200 OK
+INFO:     114.71.51.61:0 - "POST / HTTP/1.1" 200 OK
+INFO:     114.71.51.61:0 - "GET /.well-known/acp.json HTTP/1.1" 200 OK
+INFO:     114.71.51.61:0 - "POST /acp/checkout_sessions HTTP/1.1" 201 Created
+[acp] settled Ge62449c9 at 65162, ledger #7163609, unit u-aa016a36f543 via student checkout
+INFO:     114.71.51.61:0 - "POST /acp/checkout_sessions/cs_cd0a4b8d98ed4122982b258572ecd4e4/complete HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     219.250.191.191:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     219.250.191.191:0 - "POST / HTTP/1.1" 200 OK
+INFO:     219.250.191.191:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     114.71.19.62:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     114.71.19.62:0 - "POST / HTTP/1.1" 200 OK
+INFO:     114.71.19.62:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     118.32.75.198:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     118.32.75.198:0 - "POST / HTTP/1.1" 200 OK
+INFO:     118.32.75.198:0 - "POST / HTTP/1.1" 200 OK
+INFO:     118.32.75.198:0 - "GET /.well-known/acp.json HTTP/1.1" 200 OK
+INFO:     118.32.75.198:0 - "POST /acp/checkout_sessions HTTP/1.1" 201 Created
+INFO:     118.32.75.198:0 - "POST /acp/checkout_sessions/cs_feacd90437114c148badd9e552d9c4b8/cancel HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.85.135:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.85.135:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.85.135:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.85.135:0 - "GET /.well-known/acp.json HTTP/1.1" 200 OK
+INFO:     203.246.85.135:0 - "POST /acp/checkout_sessions HTTP/1.1" 201 Created
+[acp] settled G512d2147 at 2306, ledger #7169992, unit u-d3c9d0fc8527 via student checkout
+INFO:     203.246.85.135:0 - "POST /acp/checkout_sessions/cs_4bd63d2d68e9460cb670a76e0a76424d/complete HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     110.12.60.102:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     110.12.60.102:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     104.30.167.164:0 - "HEAD / HTTP/1.1" 405 Method Not Allowed
+INFO:     104.30.167.164:0 - "HEAD / HTTP/1.1" 405 Method Not Allowed
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     220.149.124.73:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     220.149.124.73:0 - "POST / HTTP/1.1" 200 OK
+INFO:     220.149.124.73:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     117.17.188.53:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     117.17.188.53:0 - "POST / HTTP/1.1" 200 OK
+INFO:     117.17.188.53:0 - "POST / HTTP/1.1" 200 OK
+INFO:     117.17.188.53:0 - "POST / HTTP/1.1" 200 OK
+INFO:     117.17.188.53:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     34.177.85.118:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     34.177.85.118:0 - "POST / HTTP/1.1" 200 OK
+INFO:     34.177.85.118:0 - "POST / HTTP/1.1" 200 OK
+INFO:     34.177.85.118:0 - "POST / HTTP/1.1" 200 OK
+INFO:     34.177.85.118:0 - "POST / HTTP/1.1" 200 OK
+10:18:33 [standalone] cloudflared 2026-11-16T01:18:33Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:8900
+10:18:33 [standalone] cloudflared 2026-11-16T01:18:33Z ERR Request failed error="Incoming request ended abruptly: context canceled" connIndex=0 dest=https://alerts-rna-cassette-progress.trycloudflare.com/ event=0 ip=198.41.192.37 type=http
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     121.161.173.27:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     121.161.173.27:0 - "POST / HTTP/1.1" 200 OK
+INFO:     121.161.173.27:0 - "POST / HTTP/1.1" 200 OK
+INFO:     121.161.173.27:0 - "POST / HTTP/1.1" 200 OK
+INFO:     121.161.173.27:0 - "GET /.well-known/acp.json HTTP/1.1" 200 OK
+INFO:     121.161.173.27:0 - "POST /acp/checkout_sessions HTTP/1.1" 201 Created
+[acp] settled G4a99d47e at 2872, ledger #7178707, unit u-900de19e5f81 via student checkout
+INFO:     121.161.173.27:0 - "POST /acp/checkout_sessions/cs_470bf67d7a4a49ff823e05313d046db5/complete HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     210.99.13.35:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     210.99.13.35:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     104.30.167.164:0 - "HEAD / HTTP/1.1" 405 Method Not Allowed
+INFO:     104.30.167.164:0 - "HEAD / HTTP/1.1" 405 Method Not Allowed
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     110.12.60.102:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     110.12.60.102:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.85.147:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.85.147:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.85.147:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.85.147:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.85.188:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.85.188:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.85.188:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.85.188:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.85.188:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.85.188:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.85.188:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.85.188:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.85.188:0 - "GET /.well-known/acp.json HTTP/1.1" 200 OK
+INFO:     203.246.85.188:0 - "POST /acp/checkout_sessions HTTP/1.1" 201 Created
+[acp] settled G1a7fd329 at 3566, ledger #7196533, unit u-939f1bd6f2c1 via student checkout
+INFO:     203.246.85.188:0 - "POST /acp/checkout_sessions/cs_6209f1f7a8ad435face4945c14d7d2ff/complete HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     117.17.185.28:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     117.17.185.28:0 - "POST / HTTP/1.1" 200 OK
+INFO:     117.17.185.28:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     117.17.185.28:0 - "POST / HTTP/1.1" 200 OK
+INFO:     117.17.185.28:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     210.99.13.35:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     210.99.13.35:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     35.232.243.107:0 - "GET /.well-known/acp.json HTTP/1.1" 200 OK
+INFO:     35.232.243.107:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     35.232.243.107:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "POST / HTTP/1.1" 200 OK
+INFO:     35.232.243.107:0 - "POST / HTTP/1.1" 200 OK
+INFO:     35.232.243.107:0 - "POST / HTTP/1.1" 200 OK
+11:42:41 [standalone] cloudflared 2026-11-16T02:42:41Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:8900
+11:42:41 [standalone] cloudflared 2026-11-16T02:42:41Z ERR Request failed error="Incoming request ended abruptly: context canceled" connIndex=0 dest=https://alerts-rna-cassette-progress.trycloudflare.com/ event=0 ip=198.41.192.37 type=http
+INFO:     35.232.243.107:0 - "POST / HTTP/1.1" 200 OK
+INFO:     110.12.60.102:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     110.12.60.102:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     114.71.19.62:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     114.71.19.62:0 - "POST / HTTP/1.1" 200 OK
+INFO:     114.71.19.62:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     110.12.60.102:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     110.12.60.102:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.85.147:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.85.147:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.85.147:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     110.12.60.102:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     110.12.60.102:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.85.227:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.85.227:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "GET /.well-known/acp.json HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "POST /acp/checkout_sessions HTTP/1.1" 201 Created
+INFO:     203.246.84.93:0 - "POST /acp/checkout_sessions/cs_e204121e45ca4037be11edf238af8349/cancel HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.85.188:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.85.188:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.85.188:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.85.188:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.85.188:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.85.188:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.85.188:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.85.188:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.85.188:0 - "GET /.well-known/acp.json HTTP/1.1" 200 OK
+INFO:     203.246.85.188:0 - "POST /acp/checkout_sessions HTTP/1.1" 201 Created
+[acp] settled G07dd917d at 11178, ledger #7219713, unit u-024090b17c0d via student checkout
+INFO:     203.246.85.188:0 - "POST /acp/checkout_sessions/cs_237d0d77977e49f6af7cd0cc0033124c/complete HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     110.12.60.102:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     110.12.60.102:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     118.32.75.198:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     118.32.75.198:0 - "POST / HTTP/1.1" 200 OK
+INFO:     118.32.75.198:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     2a02:4780:5e:863::1:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     2a02:4780:5e:863::1:0 - "POST / HTTP/1.1" 200 OK
+INFO:     2a02:4780:5e:863::1:0 - "POST / HTTP/1.1" 200 OK
+INFO:     2a02:4780:5e:863::1:0 - "POST / HTTP/1.1" 200 OK
+INFO:     2a02:4780:5e:863::1:0 - "POST / HTTP/1.1" 200 OK
+INFO:     2a02:4780:5e:863::1:0 - "POST / HTTP/1.1" 200 OK
+INFO:     2a02:4780:5e:863::1:0 - "GET /.well-known/acp.json HTTP/1.1" 200 OK
+INFO:     2a02:4780:5e:863::1:0 - "POST /acp/checkout_sessions HTTP/1.1" 201 Created
+[acp] settled G012b4f5d at 11329, ledger #7223372, unit u-132edf8ea113 via student checkout
+INFO:     2a02:4780:5e:863::1:0 - "POST /acp/checkout_sessions/cs_7f2376822a6f4bdda5f7b9b4ec0ae64d/complete HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     114.71.51.61:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     114.71.51.61:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     114.71.51.61:0 - "POST / HTTP/1.1" 200 OK
+INFO:     114.71.51.61:0 - "POST / HTTP/1.1" 200 OK
+INFO:     114.71.51.61:0 - "POST / HTTP/1.1" 200 OK
+INFO:     114.71.51.61:0 - "GET /.well-known/acp.json HTTP/1.1" 200 OK
+INFO:     114.71.51.61:0 - "POST /acp/checkout_sessions HTTP/1.1" 201 Created
+[acp] settled G2d050ef2 at 3957, ledger #7224241, unit u-fd4493eb387d via student checkout
+INFO:     114.71.51.61:0 - "POST /acp/checkout_sessions/cs_960f470e53ca4bd7ad1a15cdd1b42368/complete HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.85.147:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.85.147:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.85.147:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.85.147:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.85.147:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.85.147:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.85.147:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.85.147:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.85.147:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     222.111.24.191:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     222.111.24.191:0 - "POST / HTTP/1.1" 200 OK
+INFO:     222.111.24.191:0 - "POST / HTTP/1.1" 200 OK
+INFO:     222.111.24.191:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     222.111.24.191:0 - "POST / HTTP/1.1" 200 OK
+INFO:     222.111.24.191:0 - "POST / HTTP/1.1" 200 OK
+INFO:     222.111.24.191:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     110.12.60.102:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     110.12.60.102:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.85.188:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.85.188:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.85.188:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.85.188:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.85.188:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.85.188:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.85.188:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.85.188:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.85.188:0 - "GET /.well-known/acp.json HTTP/1.1" 200 OK
+INFO:     203.246.85.188:0 - "POST /acp/checkout_sessions HTTP/1.1" 201 Created
+[acp] settled G05a64f22 at 20576, ledger #7236522, unit u-c51904cb3b04 via student checkout
+INFO:     203.246.85.188:0 - "POST /acp/checkout_sessions/cs_8a7627e32b4d45c2b573f90380a89ea0/complete HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "GET /.well-known/acp.json HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "POST /acp/checkout_sessions HTTP/1.1" 201 Created
+INFO:     203.246.84.93:0 - "POST /acp/checkout_sessions/cs_190dc22ee4b04f0bb9f31e8ac470cb11/cancel HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     117.17.185.28:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     117.17.185.28:0 - "POST / HTTP/1.1" 200 OK
+INFO:     117.17.185.28:0 - "POST / HTTP/1.1" 200 OK
+INFO:     117.17.185.28:0 - "POST / HTTP/1.1" 200 OK
+INFO:     117.17.185.28:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     117.17.185.28:0 - "POST / HTTP/1.1" 200 OK
+INFO:     117.17.185.28:0 - "POST / HTTP/1.1" 200 OK
+INFO:     117.17.185.28:0 - "POST / HTTP/1.1" 200 OK
+INFO:     117.17.185.28:0 - "POST / HTTP/1.1" 200 OK
+INFO:     117.17.185.28:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     117.17.185.28:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     117.17.185.28:0 - "POST / HTTP/1.1" 200 OK
+INFO:     117.17.185.28:0 - "POST / HTTP/1.1" 200 OK
+INFO:     117.17.188.53:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     117.17.188.53:0 - "POST / HTTP/1.1" 200 OK
+INFO:     117.17.185.28:0 - "POST / HTTP/1.1" 200 OK
+INFO:     117.17.188.53:0 - "POST / HTTP/1.1" 200 OK
+INFO:     117.17.188.53:0 - "GET /.well-known/acp.json HTTP/1.1" 200 OK
+INFO:     117.17.188.53:0 - "POST /acp/checkout_sessions HTTP/1.1" 201 Created
+INFO:     117.17.188.53:0 - "POST /acp/checkout_sessions/cs_982dde64e9fd4bc8809956447c6c656a/cancel HTTP/1.1" 200 OK
+INFO:     117.17.185.28:0 - "POST / HTTP/1.1" 200 OK
+INFO:     117.17.185.28:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     117.17.185.28:0 - "POST / HTTP/1.1" 200 OK
+INFO:     117.17.185.28:0 - "POST / HTTP/1.1" 200 OK
+INFO:     222.236.13.228:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     222.236.13.228:0 - "POST / HTTP/1.1" 200 OK
+INFO:     222.236.13.228:0 - "POST / HTTP/1.1" 200 OK
+INFO:     222.236.13.228:0 - "POST / HTTP/1.1" 200 OK
+INFO:     222.236.13.228:0 - "POST / HTTP/1.1" 200 OK
+INFO:     222.236.13.228:0 - "POST / HTTP/1.1" 200 OK
+INFO:     222.236.13.228:0 - "POST / HTTP/1.1" 200 OK
+INFO:     222.236.13.228:0 - "POST / HTTP/1.1" 200 OK
+INFO:     222.236.13.228:0 - "POST / HTTP/1.1" 200 OK
+INFO:     222.236.13.228:0 - "POST / HTTP/1.1" 200 OK
+INFO:     222.236.13.228:0 - "POST / HTTP/1.1" 200 OK
+INFO:     222.236.13.228:0 - "POST / HTTP/1.1" 200 OK
+INFO:     222.236.13.228:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.85.188:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.85.188:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.85.188:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.85.188:0 - "GET /.well-known/acp.json HTTP/1.1" 200 OK
+INFO:     203.246.85.188:0 - "POST /acp/checkout_sessions HTTP/1.1" 201 Created
+[acp] settled G134e3f9c at 4512, ledger #7262425, unit u-a0ce202f0a12 via student checkout
+INFO:     203.246.85.188:0 - "POST /acp/checkout_sessions/cs_5a02b6cddbba4676af67808c26be1c9f/complete HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     136.67.196.255:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     136.67.196.255:0 - "POST / HTTP/1.1" 200 OK
+INFO:     136.67.196.255:0 - "POST / HTTP/1.1" 200 OK
+INFO:     136.67.196.255:0 - "POST / HTTP/1.1" 200 OK
+INFO:     136.67.196.255:0 - "POST / HTTP/1.1" 200 OK
+INFO:     136.67.196.255:0 - "POST / HTTP/1.1" 200 OK
+INFO:     136.67.196.255:0 - "GET /.well-known/acp.json HTTP/1.1" 200 OK
+INFO:     136.67.196.255:0 - "POST /acp/checkout_sessions HTTP/1.1" 201 Created
+[acp] settled G33cead1a at 9392, ledger #7265915, unit u-650495e13c48 via student checkout
+INFO:     136.67.196.255:0 - "POST /acp/checkout_sessions/cs_6b1f09afd98b4460a08763b045f6d675/complete HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     136.67.196.255:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     136.67.196.255:0 - "POST / HTTP/1.1" 200 OK
+INFO:     136.67.196.255:0 - "POST / HTTP/1.1" 200 OK
+INFO:     136.67.196.255:0 - "POST / HTTP/1.1" 200 OK
+INFO:     136.67.196.255:0 - "POST / HTTP/1.1" 200 OK
+INFO:     136.67.196.255:0 - "POST / HTTP/1.1" 200 OK
+INFO:     136.67.196.255:0 - "POST / HTTP/1.1" 200 OK
+INFO:     136.67.196.255:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     136.67.196.255:0 - "POST / HTTP/1.1" 200 OK
+INFO:     136.67.196.255:0 - "POST / HTTP/1.1" 200 OK
+INFO:     136.67.196.255:0 - "POST / HTTP/1.1" 200 OK
+INFO:     117.17.185.28:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     117.17.185.28:0 - "POST / HTTP/1.1" 200 OK
+INFO:     117.17.185.28:0 - "POST / HTTP/1.1" 200 OK
+INFO:     117.17.185.28:0 - "POST / HTTP/1.1" 200 OK
+INFO:     117.17.185.28:0 - "GET /.well-known/acp.json HTTP/1.1" 200 OK
+INFO:     117.17.185.28:0 - "POST /acp/checkout_sessions HTTP/1.1" 201 Created
+INFO:     117.17.185.28:0 - "POST /acp/checkout_sessions/cs_034627297dad4e36878071c88734504c/cancel HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     117.17.185.28:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     117.17.185.28:0 - "POST / HTTP/1.1" 200 OK
+INFO:     117.17.185.28:0 - "POST / HTTP/1.1" 200 OK
+INFO:     117.17.185.28:0 - "GET /.well-known/acp.json HTTP/1.1" 200 OK
+INFO:     117.17.185.28:0 - "POST /acp/checkout_sessions HTTP/1.1" 201 Created
+[acp] settled G19511b7c at 18772, ledger #7274788, unit u-e309fb2e0f3d via student checkout
+INFO:     117.17.185.28:0 - "POST /acp/checkout_sessions/cs_365ce5e0db7340b4a21cfb9a89df9e7e/complete HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.85.227:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.85.227:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.85.227:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.85.227:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     114.71.19.62:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     114.71.19.62:0 - "POST / HTTP/1.1" 200 OK
+INFO:     114.71.19.62:0 - "POST / HTTP/1.1" 200 OK
+INFO:     114.71.19.62:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     114.71.19.62:0 - "POST / HTTP/1.1" 200 OK
+INFO:     114.71.19.62:0 - "POST / HTTP/1.1" 200 OK
+INFO:     114.71.19.62:0 - "POST / HTTP/1.1" 200 OK
+INFO:     114.71.19.62:0 - "GET /.well-known/acp.json HTTP/1.1" 200 OK
+INFO:     114.71.19.62:0 - "POST /acp/checkout_sessions HTTP/1.1" 201 Created
+[acp] settled G2ec386f3 at 8786, ledger #7280013, unit u-1d5467f49894 via student checkout
+INFO:     114.71.19.62:0 - "POST /acp/checkout_sessions/cs_b75d4cce209a4919a02f46ffa59d085f/complete HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     114.71.19.62:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     114.71.19.62:0 - "POST / HTTP/1.1" 200 OK
+INFO:     114.71.19.62:0 - "POST / HTTP/1.1" 200 OK
+INFO:     114.71.19.62:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     114.71.19.62:0 - "POST / HTTP/1.1" 200 OK
+INFO:     114.71.19.62:0 - "POST / HTTP/1.1" 200 OK
+INFO:     114.71.19.62:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.85.147:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.85.147:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.85.147:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     118.32.75.198:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.85.147:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.85.147:0 - "POST / HTTP/1.1" 200 OK
+INFO:     118.32.75.198:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.85.147:0 - "POST / HTTP/1.1" 200 OK
+INFO:     118.32.75.198:0 - "POST / HTTP/1.1" 200 OK
+INFO:     118.32.75.198:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.85.147:0 - "GET /.well-known/acp.json HTTP/1.1" 200 OK
+INFO:     203.246.85.147:0 - "POST /acp/checkout_sessions HTTP/1.1" 201 Created
+[acp] settled G0e083897 at 24362, ledger #7285871, unit u-0c9310f7be94 via student checkout
+INFO:     203.246.85.147:0 - "POST /acp/checkout_sessions/cs_205d26219c964db6935149f86cb178f6/complete HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     114.71.51.54:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     114.71.51.54:0 - "POST / HTTP/1.1" 200 OK
+INFO:     114.71.51.54:0 - "POST / HTTP/1.1" 200 OK
+INFO:     114.71.51.54:0 - "GET /.well-known/acp.json HTTP/1.1" 200 OK
+INFO:     114.71.51.54:0 - "POST /acp/checkout_sessions HTTP/1.1" 201 Created
+[acp] settled G0026722f at 2959, ledger #7286447, unit u-37367dc2db86 via student checkout
+INFO:     114.71.51.54:0 - "POST /acp/checkout_sessions/cs_8c49333c352c45639b74ed80c594525c/complete HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     114.71.19.62:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     114.71.19.62:0 - "POST / HTTP/1.1" 200 OK
+INFO:     114.71.19.62:0 - "POST / HTTP/1.1" 200 OK
+INFO:     114.71.19.62:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     114.71.19.62:0 - "POST / HTTP/1.1" 200 OK
+INFO:     114.71.19.62:0 - "POST / HTTP/1.1" 200 OK
+INFO:     114.71.19.62:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     117.17.185.28:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     117.17.185.28:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     117.17.185.28:0 - "POST / HTTP/1.1" 200 OK
+INFO:     117.17.185.28:0 - "POST / HTTP/1.1" 200 OK
+INFO:     117.17.185.28:0 - "POST / HTTP/1.1" 200 OK
+INFO:     117.17.185.28:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     211.104.13.129:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     211.104.13.129:0 - "POST / HTTP/1.1" 200 OK
+INFO:     211.104.13.129:0 - "POST / HTTP/1.1" 200 OK
+INFO:     211.104.13.129:0 - "POST / HTTP/1.1" 200 OK
+INFO:     211.104.13.129:0 - "POST / HTTP/1.1" 200 OK
+INFO:     211.104.13.129:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     110.12.60.102:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     110.12.60.102:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     35.232.243.107:0 - "GET /.well-known/acp.json HTTP/1.1" 200 OK
+INFO:     35.232.243.107:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     35.232.243.107:0 - "POST / HTTP/1.1" 200 OK
+INFO:     35.232.243.107:0 - "POST / HTTP/1.1" 200 OK
+INFO:     35.232.243.107:0 - "POST / HTTP/1.1" 200 OK
+17:04:16 [standalone] cloudflared 2026-11-16T08:04:16Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:8900
+17:04:16 [standalone] cloudflared 2026-11-16T08:04:16Z ERR Request failed error="Incoming request ended abruptly: context canceled" connIndex=0 dest=https://alerts-rna-cassette-progress.trycloudflare.com/ event=0 ip=198.41.192.37 type=http
+INFO:     35.232.243.107:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     117.17.185.28:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     117.17.185.28:0 - "POST / HTTP/1.1" 200 OK
+INFO:     117.17.185.28:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "GET /.well-known/acp.json HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "POST /acp/checkout_sessions HTTP/1.1" 201 Created
+INFO:     203.246.84.93:0 - "POST /acp/checkout_sessions/cs_0552877b6b434cf8939fd327322d2458/cancel HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     210.99.13.35:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     210.99.13.35:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.84.93:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.85.227:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.85.227:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     210.99.13.35:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     210.99.13.35:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.85.147:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.85.147:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.85.147:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.85.147:0 - "POST / HTTP/1.1" 200 OK
+17:39:52 [standalone] cloudflared 2026-11-16T08:39:52Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:8900
+17:39:52 [standalone] cloudflared 2026-11-16T08:39:52Z ERR Request failed error="Incoming request ended abruptly: context canceled" connIndex=0 dest=https://alerts-rna-cassette-progress.trycloudflare.com/ event=0 ip=198.41.192.37 type=http
+17:39:53 [standalone] cloudflared 2026-11-16T08:39:53Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:8900
+17:39:53 [standalone] cloudflared 2026-11-16T08:39:53Z ERR Request failed error="Incoming request ended abruptly: context canceled" connIndex=0 dest=https://alerts-rna-cassette-progress.trycloudflare.com/ event=0 ip=198.41.192.37 type=http
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     117.17.185.28:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     117.17.185.28:0 - "POST / HTTP/1.1" 200 OK
+INFO:     117.17.185.28:0 - "POST / HTTP/1.1" 200 OK
+INFO:     117.17.185.28:0 - "POST / HTTP/1.1" 200 OK
+INFO:     117.17.185.28:0 - "POST / HTTP/1.1" 200 OK
+INFO:     117.17.185.28:0 - "POST / HTTP/1.1" 200 OK
+INFO:     117.17.185.28:0 - "GET /.well-known/acp.json HTTP/1.1" 200 OK
+INFO:     117.17.185.28:0 - "POST /acp/checkout_sessions HTTP/1.1" 201 Created
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     117.17.185.28:0 - "GET /.well-known/acp.json HTTP/1.1" 200 OK
+INFO:     117.17.185.28:0 - "GET /acp/checkout_sessions/cs_d0e57836cf014ffcb43bb87988fcf60a HTTP/1.1" 200 OK
+[acp] settled G1d3e70e1 at 5074, ledger #7320775, unit u-18ac9bc04bea via student checkout
+INFO:     117.17.185.28:0 - "POST /acp/checkout_sessions/cs_d0e57836cf014ffcb43bb87988fcf60a/complete HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     2a02:4780:5e:8925::1:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     2a02:4780:5e:8925::1:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     39.125.253.24:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     39.125.253.24:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     39.125.253.24:0 - "POST / HTTP/1.1" 200 OK
+INFO:     39.125.253.24:0 - "POST / HTTP/1.1" 200 OK
+INFO:     39.125.253.24:0 - "POST / HTTP/1.1" 200 OK
+INFO:     39.125.253.24:0 - "POST / HTTP/1.1" 200 OK
+INFO:     39.125.253.24:0 - "POST / HTTP/1.1" 200 OK
+INFO:     39.125.253.24:0 - "POST / HTTP/1.1" 200 OK
+INFO:     39.125.253.24:0 - "POST / HTTP/1.1" 200 OK
+INFO:     39.125.253.24:0 - "GET /.well-known/acp.json HTTP/1.1" 200 OK
+INFO:     39.125.253.24:0 - "POST /acp/checkout_sessions HTTP/1.1" 201 Created
+[acp] settled G0cf961e9 at 3094, ledger #7324040, unit u-c51beac3c948 via student checkout
+INFO:     39.125.253.24:0 - "POST /acp/checkout_sessions/cs_3a146cffb7ff4f82bcc18642900c48cf/complete HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.85.147:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.85.147:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.85.147:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.85.147:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.85.147:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.85.147:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     110.15.181.85:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.85.227:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.85.227:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     117.17.185.28:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     117.17.185.28:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.85.227:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     203.246.85.227:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.85.227:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.85.227:0 - "POST / HTTP/1.1" 200 OK
+INFO:     203.246.85.227:0 - "GET /.well-known/acp.json HTTP/1.1" 200 OK
+INFO:     203.246.85.227:0 - "POST /acp/checkout_sessions HTTP/1.1" 201 Created
+INFO:     203.246.85.227:0 - "POST /acp/checkout_sessions/cs_e8ab3ffcd0cb421fbf32bbe9da274092/cancel HTTP/1.1" 200 OK
+Producer[18b8caf5-d045-41e2-97be-59df3194cf86]: Execution failed
+Traceback (most recent call last):
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-08\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+        request_context, self._event_queue_agent
+    )
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-08\seller.py", line 129, in execute
+    await self.execute_stock(task.id, text, up, say)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-08\seller.py", line 223, in execute_stock
+    decision = await asyncio.to_thread(decide_stock_offer, unit, offer, deal["counters"])
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\anaconda3\Lib\asyncio\threads.py", line 26, in to_thread
+    return await loop.run_in_executor(None, func_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\anaconda3\Lib\concurrent\futures\thread.py", line 86, in run
+    result = ctx.run(self.task)
+  File "C:\Users\user\anaconda3\Lib\concurrent\futures\thread.py", line 73, in run
+    return fn(*args, **kwargs)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-08\seller_strategy.py", line 78, in decide_stock_offer
+    decision = call_harness(prompt, timeout=35)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-08\harness.py", line 101, in call_harness
+    answer, delay = _run_attempt(command, prompt, remaining, log, attempt, deadline)
+                    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-08\harness.py", line 114, in _run_attempt
+    result = subprocess.run(command, input=prompt, text=True,
+                            encoding="utf-8", errors="replace",
+                            capture_output=True, cwd=work, timeout=remaining)
+  File "C:\Users\user\anaconda3\Lib\subprocess.py", line 557, in run
+    stdout, stderr = process.communicate(input, timeout=timeout)
+                     ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\anaconda3\Lib\subprocess.py", line 1221, in communicate
+    stdout, stderr = self._communicate(input, endtime, timeout)
+                     ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\anaconda3\Lib\subprocess.py", line 1664, in _communicate
+    raise TimeoutExpired(self.args, orig_timeout)
+subprocess.TimeoutExpired: Command '['C:\\Users\\user\\.vscode\\extensions\\openai.chatgpt-26.1111.21308-win32-x64\\bin\\windows-x86_64\\codex.exe', 'exec', '--skip-git-repo-check', '--ephemeral', '--sandbox', 'read-only', '--color', 'never', '-c', 'project_doc_max_bytes=0', '-']' timed out after 34.99948809994385 seconds
+Consumer[18b8caf5-d045-41e2-97be-59df3194cf86]: Failed
+Traceback (most recent call last):
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-08\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 136, in run
+    await self._process_event(event)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-08\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 179, in _process_event
+    await self._process_event_inner(event)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-08\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 221, in _process_event_inner
+    raise event
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-08\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+        request_context, self._event_queue_agent
+    )
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-08\seller.py", line 129, in execute
+    await self.execute_stock(task.id, text, up, say)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-08\seller.py", line 223, in execute_stock
+    decision = await asyncio.to_thread(decide_stock_offer, unit, offer, deal["counters"])
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\anaconda3\Lib\asyncio\threads.py", line 26, in to_thread
+    return await loop.run_in_executor(None, func_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\anaconda3\Lib\concurrent\futures\thread.py", line 86, in run
+    result = ctx.run(self.task)
+  File "C:\Users\user\anaconda3\Lib\concurrent\futures\thread.py", line 73, in run
+    return fn(*args, **kwargs)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-08\seller_strategy.py", line 78, in decide_stock_offer
+    decision = call_harness(prompt, timeout=35)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-08\harness.py", line 101, in call_harness
+    answer, delay = _run_attempt(command, prompt, remaining, log, attempt, deadline)
+                    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-08\harness.py", line 114, in _run_attempt
+    result = subprocess.run(command, input=prompt, text=True,
+                            encoding="utf-8", errors="replace",
+                            capture_output=True, cwd=work, timeout=remaining)
+  File "C:\Users\user\anaconda3\Lib\subprocess.py", line 557, in run
+    stdout, stderr = process.communicate(input, timeout=timeout)
+                     ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\anaconda3\Lib\subprocess.py", line 1221, in communicate
+    stdout, stderr = self._communicate(input, endtime, timeout)
+                     ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\anaconda3\Lib\subprocess.py", line 1664, in _communicate
+    raise TimeoutExpired(self.args, orig_timeout)
+subprocess.TimeoutExpired: Command '['C:\\Users\\user\\.vscode\\extensions\\openai.chatgpt-26.1111.21308-win32-x64\\bin\\windows-x86_64\\codex.exe', 'exec', '--skip-git-repo-check', '--ephemeral', '--sandbox', 'read-only', '--color', 'never', '-c', 'project_doc_max_bytes=0', '-']' timed out after 34.99948809994385 seconds
+Unhandled exception
+Traceback (most recent call last):
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-08\.venv\Lib\site-packages\a2a\server\routes\jsonrpc_dispatcher.py", line 325, in handle_requests
+    raw_result = await self._process_non_streaming_request(
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        specific_request, call_context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-08\.venv\Lib\site-packages\a2a\utils\version_validator.py", line 126, in async_wrapper
+    return await func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-08\.venv\Lib\site-packages\a2a\server\routes\jsonrpc_dispatcher.py", line 522, in _process_non_streaming_request
+    return await self._handle_send_message(request_obj, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-08\.venv\Lib\site-packages\a2a\server\routes\jsonrpc_dispatcher.py", line 414, in _handle_send_message
+    task_or_message = await self.request_handler.on_message_send(
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        request_obj, context
+        ^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-08\.venv\Lib\site-packages\a2a\server\request_handlers\request_handler.py", line 285, in async_wrapper
+    return await method(self, params, context, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-08\.venv\Lib\site-packages\a2a\server\request_handlers\default_request_handler_v2.py", line 399, in on_message_send
+    async for raw_event in active_task.subscribe(
+    ...<30 lines>...
+            result = event
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-08\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 739, in subscribe
+    raise event
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-08\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 136, in run
+    await self._process_event(event)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-08\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 179, in _process_event
+    await self._process_event_inner(event)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-08\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 221, in _process_event_inner
+    raise event
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-08\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+        request_context, self._event_queue_agent
+    )
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-08\seller.py", line 129, in execute
+    await self.execute_stock(task.id, text, up, say)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-08\seller.py", line 223, in execute_stock
+    decision = await asyncio.to_thread(decide_stock_offer, unit, offer, deal["counters"])
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\anaconda3\Lib\asyncio\threads.py", line 26, in to_thread
+    return await loop.run_in_executor(None, func_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\anaconda3\Lib\concurrent\futures\thread.py", line 86, in run
+    result = ctx.run(self.task)
+  File "C:\Users\user\anaconda3\Lib\concurrent\futures\thread.py", line 73, in run
+    return fn(*args, **kwargs)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-08\seller_strategy.py", line 78, in decide_stock_offer
+    decision = call_harness(prompt, timeout=35)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-08\harness.py", line 101, in call_harness
+    answer, delay = _run_attempt(command, prompt, remaining, log, attempt, deadline)
+                    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-08\harness.py", line 114, in _run_attempt
+    result = subprocess.run(command, input=prompt, text=True,
+                            encoding="utf-8", errors="replace",
+                            capture_output=True, cwd=work, timeout=remaining)
+  File "C:\Users\user\anaconda3\Lib\subprocess.py", line 557, in run
+    stdout, stderr = process.communicate(input, timeout=timeout)
+                     ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\anaconda3\Lib\subprocess.py", line 1221, in communicate
+    stdout, stderr = self._communicate(input, endtime, timeout)
+                     ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\anaconda3\Lib\subprocess.py", line 1664, in _communicate
+    raise TimeoutExpired(self.args, orig_timeout)
+subprocess.TimeoutExpired: Command '['C:\\Users\\user\\.vscode\\extensions\\openai.chatgpt-26.1111.21308-win32-x64\\bin\\windows-x86_64\\codex.exe', 'exec', '--skip-git-repo-check', '--ephemeral', '--sandbox', 'read-only', '--color', 'never', '-c', 'project_doc_max_bytes=0', '-']' timed out after 34.99948809994385 seconds
+Request Error (ID: b16b59c6): Code=-32603, Message='Command '['C:\\Users\\user\\.vscode\\extensions\\openai.chatgpt-26.1111.21308-win32-x64\\bin\\windows-x86_64\\codex.exe', 'exec', '--skip-git-repo-check', '--ephemeral', '--sandbox', 'read-only', '--color', 'never', '-c', 'project_doc_max_bytes=0', '-']' timed out after 34.99948809994385 seconds'
+INFO:     117.17.185.28:0 - "POST / HTTP/1.1" 200 OK
+Dispatcher task was cancelled or finished. Events may be lost.
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     34.177.85.118:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     34.177.85.118:0 - "POST / HTTP/1.1" 200 OK
+INFO:     34.177.85.118:0 - "POST / HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+18:18:25 [standalone] cloudflared 2026-11-16T09:18:25Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:8900
+18:18:25 [standalone] cloudflared 2026-11-16T09:18:25Z ERR Request failed error="Incoming request ended abruptly: context canceled" connIndex=0 dest=https://alerts-rna-cassette-progress.trycloudflare.com/ event=0 ip=198.41.192.37 type=http
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+18:21:31 [standalone] cloudflared 2026-11-16T09:21:30Z ERR Serve tunnel error error="accept stream listener error: failed to accept QUIC stream: write udp [::]:63756->198.41.192.37:7844: wsasendto: A socket operation was attempted to an unreachable network." connIndex=0 event=0 ip=198.41.192.37
+18:21:31 [standalone] cloudflared 2026-11-16T09:21:30Z INF Retrying connection in up to 2s connIndex=0 event=0 ip=198.41.192.37
+18:21:31 [standalone] inventory refresh failed (ConnectError); retrying
+18:21:32 [standalone] cloudflared 2026-11-16T09:21:32Z INF Tunnel connection curve preferences: [X25519MLKEM768 CurveID(65074) CurveP256] connIndex=0 event=0 ip=198.41.192.37
+18:21:32 [standalone] cloudflared 2026-11-16T09:21:32Z ERR Failed to dial a quic connection error="failed to dial to edge with quic: write udp [::]:63756->198.41.192.37:7844: wsasendto: A socket operation was attempted to an unreachable network." connIndex=0 event=0 ip=198.41.192.37
+18:21:32 [standalone] cloudflared 2026-11-16T09:21:32Z INF Retrying connection in up to 4s connIndex=0 event=0 ip=198.41.192.37
+18:21:35 [standalone] cloudflared 2026-11-16T09:21:35Z INF Tunnel connection curve preferences: [X25519MLKEM768 CurveID(65074) CurveP256] connIndex=0 event=0 ip=198.41.192.47
+18:21:35 [standalone] cloudflared 2026-11-16T09:21:35Z ERR Failed to dial a quic connection error="failed to dial to edge with quic: write udp [::]:63756->198.41.192.47:7844: wsasendto: A socket operation was attempted to an unreachable network." connIndex=0 event=0 ip=198.41.192.47
+18:21:35 [standalone] cloudflared 2026-11-16T09:21:35Z INF Retrying connection in up to 8s connIndex=0 event=0 ip=198.41.192.47
+18:21:40 [standalone] cloudflared 2026-11-16T09:21:40Z INF Tunnel connection curve preferences: [X25519MLKEM768 CurveID(65074) CurveP256] connIndex=0 event=0 ip=198.41.192.7
+18:21:40 [standalone] cloudflared 2026-11-16T09:21:40Z ERR Failed to dial a quic connection error="failed to dial to edge with quic: write udp [::]:63756->198.41.192.7:7844: wsasendto: A socket operation was attempted to an unreachable network." connIndex=0 event=0 ip=198.41.192.7
+18:21:40 [standalone] cloudflared 2026-11-16T09:21:40Z INF Retrying connection in up to 16s connIndex=0 event=0 ip=198.41.192.7
+18:21:41 [standalone] inventory refresh failed (ConnectError); retrying
+18:21:51 [standalone] cloudflared 2026-11-16T09:21:51Z INF Tunnel connection curve preferences: [X25519MLKEM768 CurveID(65074) CurveP256] connIndex=0 event=0 ip=198.41.200.53
+18:21:52 [standalone] cloudflared 2026-11-16T09:21:52Z INF Registered tunnel connection connIndex=0 connection=6950ccab-8f8b-47ba-afcb-b1dbbd6e2dc5 event=0 ip=198.41.200.53 location=icn05 protocol=quic
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     163.192.16.207:0 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+18:25:28 [standalone] cloudflared 2026-11-16T09:25:28Z INF Initiating graceful shutdown due to signal interrupt ...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [21412]
+18:25:28 [standalone] student shop stopped
+Dispatcher task is not running. Cannot wait for event dispatch.
+Dispatcher task is not running. Cannot wait for event dispatch.
+Dispatcher task is not running. Cannot wait for event dispatch.
+Dispatcher task is not running. Cannot wait for event dispatch.
+Dispatcher task is not running. Cannot wait for event dispatch.
+Dispatcher task is not running. Cannot wait for event dispatch.
+Dispatcher task is not running. Cannot wait for event dispatch.
+Dispatcher task is not running. Cannot wait for event dispatch.
+Dispatcher task is not running. Cannot wait for event dispatch.
+Dispatcher task is not running. Cannot wait for event dispatch.
+Dispatcher task is not running. Cannot wait for event dispatch.
+Dispatcher task is not running. Cannot wait for event dispatch.
+Dispatcher task is not running. Cannot wait for event dispatch.
