@@ -17,6 +17,8 @@ CLASS_NEAR_COST_RATE=.20
 LOSS_LEADER_BUDGET=100_000
 LOSS_LEADER_TRIALS_PER_SKU=5
 BOOK_CUSHION_TRIAL_SHARE=.90
+STAR_REVIEW_PRICE_RATE=.65
+STAR_REVIEW_PRICE_SKUS={'Ged5b1b82'}
 
 
 def class_book_cushion(intel, own_name='25512088'):
@@ -514,6 +516,18 @@ def sale_quote(unit, catalog, program, intel=None, token='', ref='', *, record=T
     legacy=bool(token or ref)
     protected=(protected_floor(unit,program.p,hazard,warranty) if legacy else
                score_floor(unit,hazard,warranty))
+    # Paired verified reviews on the same honest, six-hour-warranty SKU gave
+    # four stars at 68% of list and five stars at 64.3%.  Use that narrow
+    # boundary only when it remains above the normal expected-Book floor.
+    # Food, zero-warranty stock, legacy benefits, and loss-making goods never
+    # enter this experiment.
+    star_review_cap=(math.floor(listed*STAR_REVIEW_PRICE_RATE)
+                     if listed and unit.get('sku') in STAR_REVIEW_PRICE_SKUS and
+                     unit.get('kind')=='goods' and warranty and not legacy else None)
+    star_review_cap_applied=bool(
+        star_review_cap and protected<=star_review_cap<base)
+    if star_review_cap_applied:
+        base=star_review_cap
     offer_target=None;offer_target_applied=False
     poor_local_conversion=bool(not legacy and quotes>=10 and len(own_offers)>=10 and sold/quotes<.15)
     if poor_local_conversion:
@@ -579,6 +593,8 @@ def sale_quote(unit, catalog, program, intel=None, token='', ref='', *, record=T
                        'local_evidence_since':evidence_since,
                        'local_evidence_window':'current_supply_cohort_or_6h',
                        'warranty_hours':warranty,
+                       'star_review_price_cap':star_review_cap,
+                       'star_review_price_cap_applied':star_review_cap_applied,
                        'hazard_probability':hazard,'hazard_basis':hazard_basis,
                        'holdings':holdings,'recent_sales_6h':recent_sales,
                        'own_offer_target':offer_target,

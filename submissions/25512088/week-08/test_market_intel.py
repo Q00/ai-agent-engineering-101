@@ -26,6 +26,14 @@ class IntelligenceTests(unittest.TestCase):
     def rows(self,price=9500,grade='A',expiry=None,warranty=0):
         now=time.time()
         return [dict(seq=n,ts=now,kind='settle',round=3,data=dict(shop='https://shop',sku='x',grade=grade,amount=price,expires_at=expiry,warranty_hours=warranty,claim_honest=True)) for n in range(1,5)]
+
+    def test_star_review_cap_requires_warranty_and_preserves_book_floor(self):
+        safe=dict(self.u,sku='Ged5b1b82',cost=5000)
+        self.assertEqual(sale_quote(safe,{},self.p,self.i,record=False)['price'],6500)
+        self.assertGreater(
+            sale_quote(dict(self.u,cost=6000),{},self.p,self.i,record=False)['price'],6500)
+        self.assertGreater(
+            sale_quote(safe,{},self.p,self.i,record=False,warranty_override=0)['price'],6500)
     def test_json_snapshot_cache_invalidates_after_atomic_replace(self):
         path=self.root/'snapshot.json';path.write_text('{"version":1}')
         first=read_json_snapshot(path,{})
