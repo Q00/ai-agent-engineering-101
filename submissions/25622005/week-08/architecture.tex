@@ -95,10 +95,10 @@
 
   % ================================================================ hub column
   \node[mem, text width=4.1cm, anchor=north west] (declog) at (11.3,15.9)
-    {\textbf{logs/decisions/*.jsonl}\\ every decision with its inputs,\\ \texttt{memory\_refs} and \texttt{policy\_ver}\\ (906,337 rows)};
+    {\textbf{logs/decisions/*.jsonl}\\ every decision with its inputs,\\ \texttt{memory\_refs} and \texttt{policy\_ver}\\ (915,311 rows)};
   \node[pol, text width=4.1cm, anchor=north west] (skill) at (11.3,11.75)
     {\textbf{strategy/SKILL.md}\\ policy numbers (front matter)\\ + strategy prose\\ + \emph{Strategist notes}\\[2pt]
-     \textbf{policy.py}: validated on every\\ load; a bad file is never used\\ (last good values, then defaults).\\ Version 2 $\rightarrow$ 602};
+     \textbf{policy.py}: validated on every\\ load; a bad file is never used\\ (last good values, then defaults).\\ Version 2 $\rightarrow$ 605};
   \node[mem, text width=4.1cm, anchor=north west] (summary) at (11.3,8.3)
     {\textbf{memory/summary.json}\\ shop records, price book by shop\\ and grade, breakage table, use-within\\ hours, SKU rates, regular customers\\ (+ \texttt{demand\_forecast.json})};
 
@@ -216,10 +216,10 @@
   \node[anchor=west] at (6.85,2.8) {read-only fetch};
 
   \node[anchor=north west, text=black!70, text width=15.4cm, align=left, inner sep=0pt] at (11.3,3.75)
-    {Snapshot 2026-11-16 22:10 KST. Board: 61,296 shop settlements (most deals of 61 shops), 19,156 buyer
-     settlements, class rank 16 of 46. Strategist: 640 runs, 179 model changes applied; the guard dropped 69
-     for cooldown and 68 for low confidence; 144 outcome checks, no automatic revert.
-     Model fallback: 2,774 readings in 14 days. Details and log quotes: \texttt{REPORT.md}.};
+    {Snapshot 2026-11-16 KST. Board at 22:10: 61,296 shop settlements (most deals of 61 shops), 19,156 buyer
+     settlements, class rank 16 of 46. Logs at 23:53, strategist: 643 runs, 291 model changes applied; the guard
+     dropped 69 for cooldown and 68 for low confidence; 145 outcome checks, no automatic revert.
+     Model fallback: 2,792 readings in 14 days. All counts: \texttt{python report\_numbers.py}.};
 \end{tikzpicture}
 \vspace*{\fill}
 \end{document}
