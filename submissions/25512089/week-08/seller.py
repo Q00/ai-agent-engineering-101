@@ -4,6 +4,7 @@ import argparse
 import base64
 import json
 from typing import Any
+from round3_inventory import (read_inventory, is_round3_inventory, selection_from_stock, unit_still_available)
 
 from cryptography.hazmat.primitives import serialization
 
@@ -86,6 +87,20 @@ def sign_receipt(
     return receipt
 
 
+def choose_product(text: str) -> dict[str, Any] | None:
+    """Inventory first in Round 3, legacy static catalog only in older rounds."""
+    inventory = read_inventory()
+    if is_round3_inventory(inventory):
+        occupied = [x.get("unit") for x in SESSIONS.values() if x.get("unit")]
+        return selection_from_stock(text, occupied)
+    item = find_item(text)
+    if item is None:
+        return None
+    return {"item": item, "name": item, "unit": None,
+            "reserve": RESERVES[item], "list_price": None,
+            "price_ceiling": None, "round3": False}
+
+
 def find_item(text: str) -> str | None:
     text = text.lower()
 
@@ -151,22 +166,22 @@ class SellerExecutor(AgentExecutor):
         # -----------------------------------------
         if task.id not in SESSIONS:
 
-            item = find_item(user_text)
+            product = choose_product(user_text)
 
-            if item is None:
+            if product is None:
                 await updater.reject(
-                    message=new_text_message(
-                        "I only sell lamp, chair, "
-                        "and bookshelf."
-                    )
+                    message=new_text_message("That product is not available in my stock.")
                 )
                 return
 
-            reserve = RESERVES[item]
+            item = str(product["item"])
+            name = str(product["name"])
+            reserve = int(product["reserve"])
+            ceiling = product.get("price_ceiling")
 
             try:
                 decision = seller_opening(
-                    item=item,
+                    item=f"{name} ({item})",
                     reserve=reserve,
                 )
             except RuntimeError as exc:
@@ -195,10 +210,16 @@ class SellerExecutor(AgentExecutor):
                 asking_price,
             )
             asking_price, pricing_info = adjusted_ask(item, reserve, asking_price)
+            if ceiling is not None:
+                asking_price = min(int(ceiling), asking_price)
             print('[ADAPTIVE PRICE] ' + json.dumps(pricing_info), flush=True)
 
             SESSIONS[task.id] = {
                 "item": item,
+                "name": name,
+                "unit": product.get("unit"),
+                "round3": bool(product["round3"]),
+                "price_ceiling": ceiling,
                 "reserve": reserve,
                 "current_ask": asking_price,
                 "turn_number": 0,
@@ -217,7 +238,7 @@ class SellerExecutor(AgentExecutor):
 
             await updater.requires_input(
                 message=new_text_message(
-                    f"I can sell the {item}. "
+                    f"I can sell {name} ({item}). "
                     f"My asking price is "
                     f"{asking_price}. "
                     f"What is your offer?"
@@ -234,6 +255,7 @@ class SellerExecutor(AgentExecutor):
         item = str(
             session["item"]
         )
+        name = str(session.get("name") or item)
 
         reserve = int(
             session["reserve"]
@@ -272,7 +294,7 @@ class SellerExecutor(AgentExecutor):
         # -----------------------------------------
         try:
             decision = seller_turn(
-                item=item,
+                item=f"{name} ({item})",
                 reserve=reserve,
                 current_ask=current_ask,
                 buyer_offer=offer,
@@ -340,12 +362,21 @@ class SellerExecutor(AgentExecutor):
 
             # Week 07 requires the same task id and an Ed25519
             # signature over {shop, item, price, task}.
-            receipt = sign_receipt({
+            if session.get("round3") and not unit_still_available(str(session.get("unit") or "")):
+                await updater.reject(message=new_text_message("That unit is no longer in stock."))
+                SESSIONS.pop(task.id, None)
+                return
+
+            receipt_fields = {
                 "shop": "Arun A2A Seller",
                 "item": item,
                 "price": int(offer),
                 "task": task.id,
-            })
+            }
+            if session.get("unit"):
+                receipt_fields["unit"] = str(session["unit"])
+            # Certificate is shown by default. No warranty is promised.
+            receipt = sign_receipt(receipt_fields)
 
             print(
                 "[SELLER SIGNED RECEIPT] "
@@ -399,6 +430,8 @@ class SellerExecutor(AgentExecutor):
                 reserve,
                 counter_price,
             )
+            if session.get("price_ceiling") is not None:
+                counter_price = min(int(session["price_ceiling"]), counter_price)
 
             session[
                 "current_ask"
@@ -483,8 +516,7 @@ def build_app(
         id="negotiate_purchase",
         name="Negotiate a purchase",
         description=(
-            "Negotiate the purchase of a "
-            "lamp, chair, or bookshelf."
+            "Negotiate purchases from available market stock by name or SKU."
         ),
         tags=[
             "shopping",
@@ -492,9 +524,8 @@ def build_app(
             "seller",
         ],
         examples=[
-            "I want to buy a lamp",
-            "I want to buy a chair",
-            "I want to buy a bookshelf",
+            "I want to buy product (SKU)",
+            "What price for a stock item?",
         ],
     )
 
@@ -502,7 +533,7 @@ def build_app(
         name="Arun A2A Seller",
         description=(
             "A model-driven seller agent "
-            "for Week 07."
+            "with stock-aware Round 3 support."
         ),
         version="1.0.0",
         default_input_modes=[

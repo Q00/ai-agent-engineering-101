@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import sys
 import time
 from pathlib import Path
@@ -54,12 +55,78 @@ def load_shops(path: str) -> list[dict[str, Any]]:
             'name': name,
             'url': url,
             'reviews': reviews if isinstance(reviews, list) else [],
+            'offers': entry.get('offers', []) if isinstance(entry.get('offers'), list) else [],
         })
 
     if not shops:
         raise ValueError('No valid shops in shop list')
 
     return shops
+
+
+def load_order(path: str | None) -> dict[str, Any]:
+    if not path:
+        return {}
+    try:
+        value = json.loads(Path(path).read_text(encoding='utf-8'))
+        return value if isinstance(value, dict) else {}
+    except (OSError, ValueError, TypeError):
+        return {}
+
+
+def stocked_offers(shop: dict[str, Any], acceptable: set[str]) -> list[dict[str, Any]]:
+    """Only offers with stock and an SKU permitted by the order."""
+    return [o for o in shop.get('offers', [])
+            if isinstance(o, dict) and isinstance(o.get('sku'), str)
+            and o['sku'] in acceptable
+            and isinstance(o.get('qty'), (int, float)) and not isinstance(o['qty'], bool)
+            and o['qty'] > 0]
+
+
+def select_offer(shop: dict[str, Any], acceptable: set[str], budget: int) -> dict[str, Any] | None:
+    """Choose a permitted stocked SKU, using public list prices when available.
+
+    The SKU's cost and quality are not disclosed in shops.json.
+    """
+    offers = stocked_offers(shop, acceptable)
+    if not offers:
+        return None
+    try:
+        catalog = json.loads((Path('.market') / 'catalog.json').read_text(encoding='utf-8'))
+        if not isinstance(catalog, dict):
+            catalog = {}
+    except (OSError, ValueError):
+        catalog = {}
+
+    def price(o: dict[str, Any]) -> float:
+        c = catalog.get(o['sku'], {})
+        try:
+            return float(c.get('list_price') or budget)
+        except (TypeError, ValueError, AttributeError):
+            return float(budget)
+
+    # A reasonable candidate is close to the budget, but not so expensive
+    # that a typical seller's cost makes negotiation hopeless.
+    affordable = [o for o in offers if price(o) <= budget * 1.15]
+    pool = affordable if affordable else offers
+    return sorted(pool, key=lambda o: (-price(o) if affordable else price(o), o['sku']))[0]
+
+
+def acceptance_policy(order: dict[str, Any]) -> dict[str, Any]:
+    """Require a valid market-issued certificate, and useful shelf life for food."""
+    if not order.get('acceptable'):
+        return {}
+    policy: dict[str, Any] = {'cert': True}
+    if order.get('kind') == 'food':
+        needed = order.get('use_within_hours') or 0
+        try:
+            needed = max(0.0, float(needed))
+        except (TypeError, ValueError):
+            needed = 0.0
+        policy['min_hours_left'] = needed
+        # Shelf life itself determines fitness; a grade-C food may still
+        # be fine for a short consumption window, hence no fixed grade ban.
+    return policy
 
 
 def load_memory() -> list[dict[str, Any]]:
@@ -176,113 +243,276 @@ def reputation_summary(
     }
 
 
+# HISTORICAL_RISK_SELECTION_V3
+# The public shop offers disclose only sku/name/qty. Real unit expiry and
+# verification outcomes must never be inferred from the presence of an offer.
+# Kit logs contain the *post-payment* outcome, unlike buyer-memory.json,
+# whose "deal" field merely means that the A2A negotiation completed.
+_SHELF_REJECTION = re.compile(
+    r'not paying:\s*([0-9]+(?:\.[0-9]+)?)\s*h of shelf life left, '
+    r'the policy asks for\s*([0-9]+(?:\.[0-9]+)?)',
+    re.IGNORECASE,
+)
+_MARKET_LEDGER = re.compile(r'\[market\] ledger #\d+:')
+
+
+def recent_verified_outcomes(
+    path: Path | None = None,
+    *,
+    tail_bytes: int = 12_000_000,
+) -> list[dict[str, Any]]:
+    """Best-effort recent buyer outcomes, tied to the subsequent market ledger.
+
+    Reads a bounded tail so it is cheap even on long-running markets. Missing
+    logs, truncated records, and unpaired transactions are NOT positive evidence.
+    This is a selection heuristic, not a substitute for ACP verification.
+    """
+    log_path = path if path is not None else Path('logs') / 'market-kit.log'
+    try:
+        with log_path.open('rb') as file:
+            file.seek(0, os.SEEK_END)
+            length = file.tell()
+            file.seek(max(0, length - tail_bytes))
+            data = file.read().decode('utf-8', errors='replace')
+            if length > tail_bytes:
+                data = data.split('\n', 1)[-1]  # skip a partial line
+    except OSError:
+        return []
+
+    results: list[dict[str, Any]] = []
+    pending: dict[str, Any] | None = None
+    measured: tuple[float, float] | None = None
+
+    for line in data.splitlines():
+        if '[buyer] [MEMORY] ' in line:
+            pending, measured = None, None
+            try:
+                record = json.loads(line.split('[MEMORY] ', 1)[1].strip())
+                if (isinstance(record, dict)
+                        and isinstance(record.get('shop'), str)):
+                    pending = record
+            except (ValueError, TypeError):
+                pass
+            continue
+
+        if pending is None:
+            continue
+
+        if '[order ' in line:
+            # Never associate an orphaned buyer memory with a later order.
+            pending, measured = None, None
+            continue
+
+        if '[acp] not paying:' in line:
+            found = _SHELF_REJECTION.search(line)
+            if found:
+                measured = (float(found.group(1)), float(found.group(2)))
+
+        if not _MARKET_LEDGER.search(line):
+            continue
+
+        if 'verified True' in line:
+            outcome = 'verified'
+        elif 'no deal' in line:
+            outcome = 'no_deal'
+        elif measured is not None and 'verified False' in line:
+            outcome = 'shelf_rejected'
+        elif 'verified False' in line:
+            outcome = 'unverified'
+        else:
+            # Unrelated ledger / an incomplete market record.
+            pending, measured = None, None
+            continue
+
+        result = {
+            'shop': pending['shop'],
+            'sku': str(pending.get('requested_sku') or ''),
+            'order': str(pending.get('order') or ''),
+            'timestamp_utc': pending.get('timestamp_utc', 0),
+            'outcome': outcome,
+        }
+        if outcome == 'shelf_rejected' and measured is not None:
+            result['hours_left'], result['hours_required'] = measured
+        results.append(result)
+        pending, measured = None, None
+
+    return results[-400:]
+
+
+def _event_freshness(event: dict[str, Any], now: float) -> float:
+    """Recent evidence matters more, but older observations are not discarded."""
+    try:
+        age_hours = max(0.0, (now - float(event.get('timestamp_utc', 0))) / 3600)
+        return max(0.25, 1.0 / (1.0 + age_hours / 6.0))
+    except (TypeError, ValueError, OverflowError):
+        return 0.25
+
+
+def _candidate_risk(
+    summary: dict[str, Any],
+    sku: str,
+    needed_hours: float,
+    verified_outcomes: list[dict[str, Any]],
+    memory: list[dict[str, Any]],
+    now: float,
+) -> dict[str, Any]:
+    """A transparent ranking score, NOT an assertion of actual shelf life.
+
+    Public reviews contribute a prior; actual ACP results carry the strongest
+    SKU-specific signal. Seller refusals lower selection priority but are not
+    reported as dishonesty. Unknown/missing outcomes are not treated as wins.
+    """
+    name = summary['name']
+    # reputation_summary's A2A 'deals' have not yet passed ACP. Remove their
+    # small success bonus and replace it with confirmed market evidence below.
+    base = float(summary['risk_score']) - min(summary['past_deals'], 5) * 0.5
+
+    seen_order_ids = {
+        event['order'] for event in verified_outcomes if event['order']
+    }
+    matched = [e for e in verified_outcomes if e.get('shop') == name]
+
+    direct_good = direct_rejected = direct_shelf = 0.0
+    shop_good = shop_bad = 0.0
+    seen_direct_shelf = 0
+
+    for event in matched:
+        fresh = _event_freshness(event, now)
+        same = bool(sku) and event.get('sku') == sku
+        outcome = event['outcome']
+        if outcome == 'verified':
+            if same:
+                direct_good += fresh
+            else:
+                shop_good += fresh
+        elif outcome == 'no_deal':
+            if same:
+                direct_rejected += fresh
+            else:
+                shop_bad += fresh
+        elif outcome == 'shelf_rejected':
+            if same:
+                observed = event.get('hours_left')
+                if (needed_hours > 0 and isinstance(observed, (int, float))
+                        and observed < needed_hours):
+                    direct_shelf += fresh
+                    seen_direct_shelf += 1
+                else:
+                    # A past failure against a different use-within window
+                    # isn't proof this order would fail; still slight caution.
+                    shop_bad += fresh * 0.25
+            else:
+                shop_bad += fresh * 0.25
+        elif outcome == 'unverified':
+            if same:
+                direct_rejected += fresh * 0.7
+            else:
+                shop_bad += fresh * 0.3
+
+    # Own memory complements market outcomes, but A2A deals alone are not
+    # counted as verified; they cannot override an ACP shelf-life rejection.
+    provisional = no_deal_memory = 0.0
+    for event in memory[-1000:]:
+        if event.get('shop') != name or event.get('requested_sku') != sku:
+            continue
+        if event.get('order') and str(event['order']) in seen_order_ids:
+            continue
+        fresh = _event_freshness(event, now)
+        if event.get('result') == 'no_deal':
+            no_deal_memory += fresh
+        elif event.get('result') == 'deal':
+            provisional += fresh
+
+    # Caps prevent large shops / a long history from dominating indefinitely.
+    score = (
+        base
+        + 3.0 * min(direct_good, 3.0)
+        - 3.0 * min(direct_rejected, 3.0)
+        - 10.0 * min(direct_shelf, 2.0)
+        + 0.35 * min(shop_good, 5.0)
+        - 0.25 * min(shop_bad, 6.0)
+        + 0.15 * min(provisional, 3.0)
+        - 1.2 * min(no_deal_memory, 4.0)
+    )
+    return {
+        'score': round(score, 3),
+        'confirmed_same_sku': round(direct_good, 2),
+        'shelf_risk_same_sku': round(direct_shelf, 2),
+        'historical_shelf_failures': seen_direct_shelf,
+        'rejections_same_sku': round(direct_rejected + no_deal_memory, 2),
+        'confirmed_other_skus': round(shop_good, 2),
+    }
+
+
 def choose_shop(
     shops: list[dict[str, Any]],
     memory: list[dict[str, Any]],
     item: str,
-    budget: int
+    budget: int,
+    *,
+    acceptable: set[str] | None = None,
+    required_hours: float = 0.0,
 ) -> tuple[dict[str, Any], str]:
-    summaries = [
-        reputation_summary(shop, memory)
-        for shop in shops
+    """Select an available shop with the best *observed* risk-adjusted record."""
+    if not shops:
+        raise ValueError('No shops supplied')
+
+    valid_skus = acceptable or set()
+    candidates = [
+        shop for shop in shops
+        if stocked_offers(shop, valid_skus)
+    ] if valid_skus else [
+        shop for shop in shops
+        if any(isinstance(offer, dict)
+               and isinstance(offer.get('qty'), (int, float))
+               and not isinstance(offer.get('qty'), bool)
+               and offer['qty'] > 0
+               for offer in shop.get('offers', []))
     ]
+    if not candidates:
+        # When the market provides no usable stock snapshot, preserve the
+        # original best-effort behavior rather than pretending stock exists.
+        candidates = shops
 
-    for summary in summaries:
-        print(
-            '[REPUTATION] '
-            + json.dumps(summary, ensure_ascii=False),
-            flush=True,
+    verified_outcomes = recent_verified_outcomes()
+    now = time.time()
+    rankings = []
+    for shop in candidates:
+        summary = reputation_summary(shop, memory)
+        offer = select_offer(shop, valid_skus, budget) if valid_skus else None
+        sku = str(offer.get('sku') or '') if offer else ''
+        features = _candidate_risk(
+            summary, sku, required_hours, verified_outcomes, memory, now,
         )
+        rankings.append((features['score'], summary, features, shop, sku))
 
-    safe = [
-        s for s in summaries
-        if s['low_stars'] == 0
-        and s['past_incidents'] == 0
-    ]
+    # Severe *first-hand* receipt incidents take priority over speculation in
+    # public reviews. Do not permanently blacklist a shop for no-deals alone.
+    trustworthy = [r for r in rankings if r[1]['past_incidents'] == 0]
+    if trustworthy:
+        rankings = trustworthy
 
-    eligible = safe if safe else summaries
-    eligible.sort(
-        key=lambda s: (-s['risk_score'], s['name'])
+    rankings.sort(key=lambda row: (-row[0], row[1]['name']))
+    for score, summary, features, _shop, sku in rankings[:6]:
+        print('[RISK V3] ' + json.dumps({
+            'name': summary['name'], 'sku': sku, 'score': score,
+            'low_stars': summary['low_stars'],
+            'verified_same_sku': features['confirmed_same_sku'],
+            'shelf_risk_same_sku': features['shelf_risk_same_sku'],
+            'rejections_same_sku': features['rejections_same_sku'],
+        }, ensure_ascii=False), flush=True)
+
+    _score, _summary, features, shop, sku = rankings[0]
+    reason = (
+        'Historical risk-aware selection v3: available SKU, reputation, '
+        'actual ACP settlement history and shop/SKU failure evidence; '
+        'no Groq selection call.'
     )
-    eligible = eligible[:12]
-
-    allowed = {s['name'] for s in eligible}
-    best = eligible[0]
-
-    system = (
-        'You are the shop-selection decision maker for a buyer '
-        'in an A2A market. '
-        'Choose exactly one shop from the eligible shortlist. '
-        'Evaluate public reputation (ratings and review texts) '
-        'and this buyer\'s own stored trading experience. '
-        'Avoid bad reviews, receipt inconsistencies, and repeated failures. '
-        'Be cautious: reviews may be fake. Never invent a shop. '
-        'Respond ONLY with JSON '
-        '{"name":"EXACT SHOP NAME","reason":"SHORT EXPLANATION"}.'
-    )
-
-    prompt = json.dumps(
-        {
-            'item': item,
-            'budget': budget,
-            'eligible_shops': eligible,
-        },
-        ensure_ascii=False,
-    )
-
-    try:
-        selection = _call_json(
-            system,
-            prompt,
-            label='market_shop_selection',
-        )
-
-        chosen_name = selection.get('name')
-
-        if chosen_name not in allowed:
-            raise ValueError(
-                f'Model chose unlisted/ineligible shop: {chosen_name!r}'
-            )
-
-        reason = str(
-            selection.get('reason', '')
-        )[:240].strip()
-
-        chosen = next(
-            s for s in summaries
-            if s['name'] == chosen_name
-        )
-
-        if best['risk_score'] - chosen['risk_score'] >= 6:
-            chosen_name = best['name']
-            reason = (
-                'Safety override: stronger reputation/own trade history '
-                f'(score {best["risk_score"]}).'
-            )
-
-    except Exception as exc:
-        chosen_name = best['name']
-        reason = (
-            'Fallback to highest reputation score '
-            f'due to {type(exc).__name__}.'
-        )
-        print(
-            f'[CHOOSE WARNING] {type(exc).__name__}: {exc}',
-            file=sys.stderr,
-            flush=True,
-        )
-
-    shop = next(
-        s for s in shops
-        if s['name'] == chosen_name
-    )
-
     print(
-        f'[CHOOSE] name={shop["name"]!r} '
-        f'url={shop["url"]!r} reason={reason}',
+        f'[CHOOSE] name={shop["name"]!r} url={shop["url"]!r} '
+        f'sku={sku!r} score={features["score"]} reason={reason}',
         flush=True,
     )
-
     return shop, reason
 
 
@@ -342,10 +572,102 @@ def _fallback_buyer_turn(
     }
 
 
+# BUYER_HYBRID_NEGOTIATION_V2
+# Keep a small number of real LLM decisions as part of the AI-agent design,
+# while doing routine bargaining deterministically to conserve Groq quota.
+_BUYER_MODEL_THROTTLE_PATH = Path('.market') / 'buyer-model-throttle.json'
+
+
+def _buyer_rule_decision(*, seller_price: int, budget: int, turn_number: int) -> dict[str, Any]:
+    """Conservative budget-safe price offer, with optional small first counter."""
+    ask = max(0, int(seller_price))
+    cap = max(0, int(budget))
+    if cap == 0 and ask > 0:
+        return {'action': 'walk'}
+    offer = min(ask, cap)
+    # The default 2% first-turn counteroffer can be overridden with env var 0.
+    # A second turn uses seller's current ask (within budget) to protect deal rate.
+    if turn_number == 1 and ask <= cap and ask > 100:
+        try:
+            pct = float(os.environ.get('BUYER_NEGOTIATION_DISCOUNT_PCT', '0.02'))
+        except ValueError:
+            pct = 0.02
+        pct = max(0.0, min(pct, 0.05))
+        discount = min(5000, int(ask * pct))
+        offer = max(0, ask - discount)
+    return {'action': 'offer', 'price': offer}
+
+
+def _buyer_model_due() -> bool:
+    """Persist a throttle across the per-order Python subprocesses."""
+    try:
+        requested = int(os.environ.get('BUYER_MODEL_INTERVAL_SECONDS', '3600'))
+    except ValueError:
+        requested = 3600
+    interval = max(900, requested)
+    now = time.time()
+    try:
+        record = json.loads(_BUYER_MODEL_THROTTLE_PATH.read_text(encoding='utf-8'))
+        last = float(record.get('last_attempt', 0))
+    except (OSError, TypeError, ValueError):
+        last = 0.0
+    if now - last < interval:
+        return False
+    # Respect harness's own 429 cooldown state without touching it.
+    try:
+        cooldown = json.loads((Path('.market') / 'groq-cooldown.json').read_text(encoding='utf-8'))
+        if float(cooldown.get('until', 0)) > now:
+            return False
+    except (OSError, TypeError, ValueError):
+        pass
+    _BUYER_MODEL_THROTTLE_PATH.parent.mkdir(parents=True, exist_ok=True)
+    tmp = _BUYER_MODEL_THROTTLE_PATH.with_name(
+        _BUYER_MODEL_THROTTLE_PATH.name + f'.{os.getpid()}.tmp'
+    )
+    try:
+        tmp.write_text(json.dumps({'last_attempt': now}), encoding='utf-8')
+        os.replace(tmp, _BUYER_MODEL_THROTTLE_PATH)
+    finally:
+        if tmp.exists():
+            tmp.unlink()
+    return True
+
+
+def _hybrid_buyer_decision(
+    *, item: str, budget: int, seller_price: int, turn_number: int,
+    history: list[str], task_id: str = ''
+) -> dict[str, Any]:
+    """At most one model attempt per throttle interval; rules otherwise."""
+    if turn_number == 1 and _buyer_model_due():
+        try:
+            decision = buyer_turn(
+                item=item, budget=budget, seller_price=seller_price,
+                turn_number=turn_number, history=history,
+            )
+            print(f'[BUYER HYBRID TURN] model decision task={task_id}', flush=True)
+            return decision
+        except RuntimeError as exc:
+            if not _model_quota_error(exc):
+                raise
+            print(f'[BUYER HYBRID TURN] model quota unavailable: {type(exc).__name__}', flush=True)
+    decision = _buyer_rule_decision(
+        seller_price=seller_price, budget=budget, turn_number=turn_number
+    )
+    print(
+        f'[BUYER RULE TURN] task={task_id} turn={turn_number} '
+        f'seller_ask={seller_price} budget={budget} '
+        f'action={decision["action"]} offer={decision.get("price")}',
+        flush=True,
+    )
+    return decision
+
+
 def negotiate(
     shop: dict[str, Any],
     item: str,
-    budget: int
+    budget: int,
+    acceptable: set[str] | None = None,
+    requested_offer: dict[str, Any] | None = None,
 ) -> tuple[dict[str, Any] | None, str, str]:
     start = time.monotonic()
     history: list[str] = []
@@ -359,11 +681,15 @@ def negotiate(
 
         endpoint = get_jsonrpc_endpoint(card)
 
+        request_name = (requested_offer or {}).get('name') or item
+        request_sku = (requested_offer or {}).get('sku')
+        request = (f'I want to buy {request_name} ({request_sku})'
+                   if request_sku else f'I want to buy a {item}')
         task = get_task(
             send_message(
                 client,
                 endpoint,
-                f'I want to buy a {item}',
+                request,
             )
         )
 
@@ -410,11 +736,14 @@ def negotiate(
                         f'is outside budget {budget}.',
                     )
 
-                if (
-                    receipt.get('item') is not None
-                    and str(receipt.get('item')).lower()
-                    != item.lower()
-                ):
+                receipt_item = receipt.get('item')
+                item_ok = (
+                    isinstance(receipt_item, str)
+                    and (receipt_item in ({item} | acceptable)
+                         if acceptable is not None
+                         else receipt_item.casefold() == item.casefold())
+                )
+                if not item_ok:
                     return (
                         None,
                         'invalid_receipt',
@@ -478,31 +807,16 @@ def negotiate(
             ask = extract_last_price(seller_text)
             history.append(f'seller asked {ask}')
 
-            try:
-                decision = buyer_turn(
-                    item=item,
-                    budget=budget,
-                    seller_price=ask,
-                    turn_number=turn,
-                    history=list(history),
-                )
-
-            except RuntimeError as exc:
-                if not _model_quota_error(exc):
-                    raise
-
-                decision = _fallback_buyer_turn(
-                    seller_price=ask,
-                    budget=budget,
-                )
-
-                print(
-                    '[BUYER FALLBACK TURN] Groq rate-limited; '
-                    f'task={task_id} seller_ask={ask} '
-                    f'budget={budget} '
-                    f'offer={decision["price"]}',
-                    flush=True,
-                )
+            # BUYER_HYBRID_NEGOTIATION_V2: one throttled LLM opportunity
+            # per order; other turns use conservative rule-based negotiation.
+            decision = _hybrid_buyer_decision(
+                item=item,
+                budget=budget,
+                seller_price=ask,
+                turn_number=turn,
+                history=list(history),
+                task_id=task_id,
+            )
 
             print(
                 '[MARKET BUYER HARNESS] '
@@ -611,10 +925,19 @@ def make_review(
 def run_market_buyer(
     shops_path: str,
     item: str,
-    budget: int
+    budget: int,
+    order_path: str | None = None,
 ) -> dict[str, Any]:
 
     shops = load_shops(shops_path)
+    order = load_order(order_path)
+    acceptable = set(str(x) for x in (order.get('acceptable') or []) if isinstance(x, str))
+    policy = acceptance_policy(order)
+    if acceptable:
+        shops = [shop for shop in shops if stocked_offers(shop, acceptable)]
+        if not shops:
+            return {'shop': '', 'receipt': None, 'stars': 3,
+                    'review': 'No shop has a permitted SKU in stock.'}
     memory = load_memory()
 
     shop, reason = choose_shop(
@@ -622,17 +945,25 @@ def run_market_buyer(
         memory,
         item,
         budget,
+        acceptable=acceptable if acceptable else None,
+        required_hours=float(policy.get('min_hours_left', 0.0)),
     )
 
     receipt: dict[str, Any] | None = None
     result = 'error'
     detail = 'Unknown error.'
 
+    offer = select_offer(shop, acceptable, budget) if acceptable else None
+    if acceptable and not offer:
+        return {'shop': '', 'receipt': None, 'stars': 3,
+                'review': 'No acceptable stocked item at selected shop.'}
     try:
         receipt, result, detail = negotiate(
             shop,
             item,
             budget,
+            acceptable=acceptable if acceptable else None,
+            requested_offer=offer,
         )
 
     except Exception as exc:
@@ -674,6 +1005,8 @@ def run_market_buyer(
         'stars': stars,
         'review': review,
         'picked_because': reason,
+        'requested_sku': offer.get('sku') if offer else None,
+        'order': order.get('order'),
         'timestamp_utc': int(time.time()),
     }
 
@@ -697,12 +1030,15 @@ def run_market_buyer(
         flush=True,
     )
 
-    return {
+    output = {
         'shop': shop['url'],
         'receipt': receipt,
         'stars': stars,
         'review': review,
     }
+    if policy:
+        output['accept'] = policy
+    return output
 
 
 def main() -> None:
@@ -723,6 +1059,7 @@ def main() -> None:
         required=True,
         type=int,
     )
+    parser.add_argument('--order', default=None)
 
     args = parser.parse_args()
 
@@ -737,6 +1074,7 @@ def main() -> None:
             args.shops,
             args.item,
             args.budget,
+            args.order,
         )
 
     except Exception as exc:
