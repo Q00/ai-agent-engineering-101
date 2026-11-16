@@ -259,6 +259,12 @@ def market_warranty_hours(unit, intel=None, required=0):
     # another claim: explicit warranty buyers cannot receive high-value stock.
     if required>0:return None if high_value else 6
     if intel is None:return None if high_value else 6
+    # The latest matched official reviews show that zero-hour low-value goods
+    # earn materially worse ratings than six-hour goods (3.77 vs 4.29).  Their
+    # small refund principal is not worth the persistent Stars damage.  Keep
+    # zero-hour selling only as the evidence-backed escape lane for inventory
+    # whose individual claim would materially damage Book.
+    if not high_value:return 6
     no_warranty=intel.comparable(unit['sku'],unit.get('grade'),None,0)
     mature_day=(intel.comparable(unit['sku'],unit.get('grade'),None,0,24*3600)
                 if no_warranty.get('count',0)<5 or no_warranty.get('buyers',0)<3
