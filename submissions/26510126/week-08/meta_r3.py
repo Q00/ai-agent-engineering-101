@@ -439,7 +439,19 @@ def order9_hold(s, cur, now_t=None, hours=2):
             if not isinstance(r, dict) or now_t - (r.get("t") or 0) > hours * 3600:
                 break
             ch = (r.get("changes") or {}).get(k)
-            if not ch or str(r.get("reason", "")).startswith("supervisor"):
+            if not ch:
+                continue
+            if str(r.get("reason", "")).startswith("supervisor"):
+                # a number the supervisor set in the last `hours` and still in force does not move in either direction
+                # (11/16 15:32: the manager did not answer, the fallback took the sales proposal as is and undid the
+                # supervisor's c_first revert 10 minutes after it, on a closed -42% verdict)
+                try:
+                    if float(ch[1]) == float(cur[k]):
+                        held[k] = (s[k], cur[k])
+                        s[k] = cur[k]
+                        break
+                except (TypeError, ValueError, IndexError):
+                    pass
                 continue
             try:
                 same = (float(ch[1]) - float(ch[0])) * d > 0

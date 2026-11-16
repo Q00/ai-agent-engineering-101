@@ -148,6 +148,17 @@ def main():
         case("order 9: a step whose last team move is over 2 h old goes through", out["clear_hours"] == 10, out)
         out, held = mr.order9_hold(dict(c9, food_first=0.25), c9, now_t=t0)
         case("order 9: the opposite direction goes through", out["food_first"] == 0.25 and not held, held)
+        # 11/16 15:32: a supervisor's value still in force holds both directions for 2 h (the fallback undid c_first)
+        tmp.write_text(json.dumps([
+            {"t": t0 - 3 * 3600, "changes": {"lines": [20, 18]}, "reason": "supervisor: old"},
+            {"t": t0 - 600, "changes": {"c_first": [1, 0.0]}, "reason": "supervisor: closed -42% verdict"}]))
+        c9s = dict(c9, c_first=0.0, lines=18)
+        out, held = mr.order9_hold(dict(c9s, c_first=1, lines=20), c9s, now_t=t0)
+        case("order 9: a supervisor value set within 2 h is held against a move back",
+             out["c_first"] == 0.0 and "c_first" in held, held)
+        case("order 9: a supervisor value older than 2 h may move", out["lines"] == 20 and "lines" not in held, held)
+        out, held = mr.order9_hold(dict(c9s, c_first=0.0, lines=18), dict(c9s, c_first=1), now_t=t0)
+        case("order 9: a supervisor value no longer in force does not hold", "c_first" not in held, held)
     finally:
         mr.NUMBER_TRIALS = real
     return all(RESULTS)
