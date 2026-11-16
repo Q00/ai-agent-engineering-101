@@ -15,6 +15,7 @@ EXPIRY_UNCERTAINTY_SECONDS = 60
 
 
 def epoch(value):
+    if type(value) in (int,float):return float(value)
     try:return datetime.fromisoformat(str(value).replace('Z','+00:00')).timestamp()
     except (TypeError,ValueError):return 0.
 
@@ -31,7 +32,10 @@ def constraint(choice, order, history, now):
     for e in relevant:
         payment=e.get('event')=='payment' and e.get('paid') is False
         unavailable=e.get('event')=='negotiation' and e.get('result')=='no_receipt' and not e.get('offers')
-        if not (payment or unavailable) or e.get('sku')!=choice['sku']:
+        warranty_refusal=(e.get('event')=='negotiation' and e.get('result')=='no_receipt'
+            and e.get('reason') in ('seller explicitly reports no required warranty','seller explicitly reports insufficient required warranty','receipt lacks required risk protection warranty')
+            and e.get('risk_required_warranty_hours',0)>0)
+        if not (payment or unavailable or warranty_refusal) or e.get('sku')!=choice['sku']:
             continue
         at=epoch(e.get('at'))
         if not now-TTL_SECONDS <= at <= now:continue
@@ -43,12 +47,19 @@ def constraint(choice, order, history, now):
             if name != choice['shop']:continue
         elif aliases.get(e.get('shop')) or e.get('shop') != choice['url']:
             continue
-        if unavailable and now-at>STOCK_TTL_SECONDS:continue
+        if unavailable and not warranty_refusal and now-at>STOCK_TTL_SECONDS:continue
         matching.append((at,e))
     for at,e in sorted(matching,key=lambda x:x[0],reverse=True):
         reason=e.get('reason') or ''
         if not isinstance(reason,str):continue
-        if e.get('event')=='negotiation':
+        if e.get('event')=='negotiation' and e.get('reason') in (
+                'seller explicitly reports no required warranty','seller explicitly reports insufficient required warranty','receipt lacks required risk protection warranty'):
+            required=(choice.get('risk_policy') or {}).get('required_warranty_hours',order.get('required_warranty_hours',0))
+            observed=e.get('risk_required_warranty_hours',0)
+            if order.get('kind')!='goods' or not required or not observed or required<observed:continue
+            kind='required_warranty_unavailable';detail={'required_warranty_hours':required,
+                'observed_required_warranty_hours':observed};ttl=TTL_SECONDS
+        elif e.get('event')=='negotiation':
             terminal=e.get('last_seller_message') or next((r.get('text','') for r in reversed(e.get('transcript',[]))
                                                          if r.get('speaker')=='seller'),'')
             # Seller text is untrusted data. Match a narrow availability report

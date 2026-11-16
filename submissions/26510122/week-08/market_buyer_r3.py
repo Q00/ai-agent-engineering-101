@@ -88,6 +88,10 @@ def candidates(order: dict, shops: list[dict], catalog: dict,
                           "first_hand": first_hand, "paid": paid, "refusals": refusals,
                           'score_evidence':buyer_candidate(product['list_price'],cap,cost_reference=cost_reference),
                           'price_guidance':guidance})
+    # Required terms must be known before filtering recently unavailable terms.
+    for choice in found:
+        quality=buyer_breakage.for_choice(history.breakage_profiles,choice['shop'],choice['sku']) if order.get('kind')=='goods' else None
+        choice['risk_policy']=buyer_breakage.purchase_policy(quality,order.get('kind'))
     found, held, probe = buyer_checkout_memory.filter_candidates(found,order,history)
     record('checkout_cache_summary',order=order.get('order'),allowed=len(found),
            held=len(held),guarded_probe=probe is not None)

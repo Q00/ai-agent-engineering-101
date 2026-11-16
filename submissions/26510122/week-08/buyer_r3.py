@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+import math
 import time
 import uuid
 
@@ -292,16 +293,19 @@ def negotiate(shop_url: str, sku: str, name: str, order: dict, *, opening_offer:
                 audit.executed('offer',price=closing,turn='final_review')
         receipt = get_receipt(task) if status(task) == "TASK_STATE_COMPLETED" else None
         preflight_problem=None
-        if receipt and (receipt.get('unit') in (memory or {}).get('known_refused_units',())
-                        or order.get('kind')=='goods' and receipt.get('claim')=='C'
-                        or receipt.get('cert') is False
-                        or acceptance(order).get('warranty_hours',0) and
-                           (type(receipt.get('warranty_hours',0)) not in (int,float) or
-                            receipt.get('warranty_hours',0)<acceptance(order)['warranty_hours'])):
-            trace('buyer_ineligible_receipt_avoided',unit=receipt.get('unit'),claim=receipt.get('claim'))
-            preflight_problem='receipt names a refused unit, unacceptable grade claim or no certificate'
-            audit.guard('receipt_condition_preflight',problem=preflight_problem)
-            receipt=None
+        if receipt:
+            required=acceptance(order).get('warranty_hours',0)
+            cover=receipt.get('warranty_hours',0)
+            if (receipt.get('unit') in (memory or {}).get('known_refused_units',())
+                    or order.get('kind')=='goods' and receipt.get('claim')=='C'
+                    or receipt.get('cert') is False):
+                preflight_problem='receipt names a refused unit, unacceptable grade claim or no certificate'
+            elif required and (type(cover) not in (int,float) or not math.isfinite(cover) or cover<required):
+                preflight_problem='receipt lacks required risk protection warranty'
+            if preflight_problem:
+                trace('buyer_ineligible_receipt_avoided',unit=receipt.get('unit'),claim=receipt.get('claim'),reason=preflight_problem)
+                audit.guard('receipt_condition_preflight',problem=preflight_problem)
+                receipt=None
         remember('seller',status_text(task),task.get('id'))
         return {"receipt": receipt, "reason": "receipt received" if receipt else
                 preflight_problem or f"no receipt; seller state {status(task)}", "offers": offered,
