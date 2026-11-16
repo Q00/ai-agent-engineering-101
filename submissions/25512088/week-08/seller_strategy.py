@@ -20,8 +20,8 @@ LOSS_LEADER_RATE=.04
 # math and the rolling loss budget below still disable it whenever the entire
 # Revenue step could consume more than 75% of lower-Book headroom.
 CLASS_NEAR_COST_RATE=.08
-LIQUIDITY_ROTATION_MAX_LOSS=600_000
-LIQUIDITY_ROTATION_BOOK_SHARE=.30
+LIQUIDITY_ROTATION_MAX_LOSS=900_000
+LIQUIDITY_ROTATION_BOOK_SHARE=.40
 LOSS_LEADER_BUDGET=100_000
 LOSS_LEADER_TRIALS_PER_SKU=5
 BOOK_CUSHION_TRIAL_SHARE=.90
@@ -386,7 +386,12 @@ def negotiate(unit, current, offered, catalog, program, token='', ref='', intel=
     # while fresh Class boundaries prove that the worst-case configured loss
     # can reach the next Revenue percentile without crossing the next lower
     # Book percentile. Historical losses are already reflected in Book; the
-    # budget function grants at most 100k of additional measured principal.
+    # budget function grants only a fixed amount of additional measured
+    # principal.  The live 30-minute cohort recovered 683k of above-cost Book
+    # contribution for 122k of below-cost rotation (5.6x), while the fresh
+    # lower Class-Book boundary retained 2.24m of headroom.  Keep the baseline
+    # non-refilling, but allow one final 300k tranche bounded to 40% of that
+    # lower boundary so successful rotation does not stop at the old cap.
     loss_used=program.db.execute(
         'SELECT COALESCE(SUM(CASE WHEN cost>amount THEN cost-amount ELSE 0 END),0) '
         'FROM sales WHERE refunded=0').fetchone()[0]
