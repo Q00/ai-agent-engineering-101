@@ -82,6 +82,12 @@ QUOTE_WAVE_SIZE = 24
 FOOD_CHECKOUT_BUFFER_HOURS = .1
 
 
+def probe_exploration_allowed(estimate):
+    """Explore one proven counterparty without exposing the whole order."""
+    return (estimate.get('trials',0)>=2 and estimate.get('wins',0)>=1
+            and estimate.get('probability',0)>=.50)
+
+
 def condition_suitable(order, fields):
     """Require explicit conditions and enough time to survive checkout."""
     if order.get('kind')=='food':
@@ -476,14 +482,22 @@ class Buyer:
                   'deal_estimate':s['deal_estimate'],**s['expected']} for s in quotes]})
             if not quotes:
                 self.m.state(self.o['order'],'no_quote');return self.result()
+            probe_explored=False
             for index,s in enumerate(quotes):
                 if time.time()>=self.deadline:break
                 # Reserve time for other competitors; no fixed negotiation turn count.
                 stop=min(self.deadline,time.time()+(self.deadline-time.time())/(len(quotes)-index))
                 negotiation_steps=[]
                 candidate_steps=[]
-                if s['shop']['url'] in self.probe_shops:
+                proven_probe=s['shop']['url'] in self.probe_shops
+                exploratory_probe=(not proven_probe and not probe_explored
+                                   and probe_exploration_allowed(s['deal_estimate']))
+                if proven_probe or exploratory_probe:
                     candidate_steps.append(('probe',s['probe_cap']))
+                if exploratory_probe:
+                    probe_explored=True
+                    self.m.record(self.o['order'],s['shop']['url'],s['sku'],s.get('task'),
+                                  'probe_exploration_selected',details=s['deal_estimate'])
                 candidate_steps.extend((
                         ('stretch',s['stretch_cap']),
                         ('middle',s['middle_cap']),
