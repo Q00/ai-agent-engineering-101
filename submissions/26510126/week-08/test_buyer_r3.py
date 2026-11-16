@@ -777,6 +777,12 @@ def main():
     nc_g = buyer_r3.check_receipt(dict(base, claim="A", cert=False), g, 100_000, "t1", 200_000)
     nc_f = buyer_r3.check_receipt(dict(base, cert=False), dict(g, kind="food"), 100_000, "t1", 200_000)
     case("receipt: cert False is refused (goods and food)", bool(nc_g) and bool(nc_f), str((nc_g, nc_f)))
+    # a warranted C above 0.55 of list is refused (13.9% break at -1), at 0.5 or as an A it passes
+    c_dear = buyer_r3.check_receipt(dict(base, claim="C", price=120_000, warranty_hours=72), g, 120_000, "t1", 200_000)
+    c_cheap = buyer_r3.check_receipt(dict(base, claim="C", warranty_hours=72), g, 100_000, "t1", 200_000)
+    a_dear = buyer_r3.check_receipt(dict(base, claim="A", price=120_000, warranty_hours=72), g, 120_000, "t1", 200_000)
+    case("receipt: a warranted C above 0.55 of list is refused, C at 0.5 and A at 0.6 pass",
+         bool(c_dear) and c_cheap is None and a_dear is None, str((c_dear, c_cheap, a_dear)))
     print(f"\n{sum(RESULTS)}/{len(RESULTS)} passed")
     shutil.rmtree(TMP, ignore_errors=True)
 

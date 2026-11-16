@@ -616,6 +616,11 @@ def policy_miss(receipt, order, lp=None):
     claim = receipt.get("claim")
     if claim in ("A", "B", "C") and pol.get("grades") and claim not in pol["grades"]:
         return f"the receipt claims grade {claim}, we pay only for {'/'.join(pol['grades'])}"
+    # a warranted C breaks 13.9% of the time against 1.2% for A, and a break scores -1: a C deal above 0.55 of list saves
+    # ~0.2 against the 0.738 board mean, so the next shop is tried (the 0.68 bar for a dear A is the same idea)
+    price = buyer.as_int(receipt.get("price"))
+    if claim == "C" and lp and price and price > 0.55 * lp and code_ab_r3.on("f70a5768c42f", order.get("order")):
+        return f"the receipt claims grade C at {price / lp:.0%} of list, its 13.9% break rate makes that deal worth less than the next shop"
     if pol.get("warranty_hours"):
         try:
             wh = float(receipt.get("warranty_hours") or 0)
