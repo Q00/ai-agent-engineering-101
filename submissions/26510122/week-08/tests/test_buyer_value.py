@@ -95,4 +95,6 @@ class ExecutionTests(unittest.TestCase):
      result=buyer.run({'order':'o','item':'goods','kind':'goods','acceptable':['G'],'budget':500,'expires':time.time()+600},[],{'G':{'list_price':500}},'own',epsilon=0)
    finally:os.chdir(previous)
   self.assertEqual(result['shop'],'https://other');self.assertEqual(len(calls),2);self.assertNotIn('warranty_hours',result['accept'])
+  self.assertEqual(calls[0][2]['memory']['purchase_value_terms'],first['value_terms'])
+  self.assertFalse(calls[1][2]['memory']['purchase_value_terms'])
   self.assertLessEqual(calls[0][2]['deadline']-time.monotonic(),80)
