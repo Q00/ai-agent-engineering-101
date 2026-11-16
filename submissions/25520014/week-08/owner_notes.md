@@ -680,6 +680,10 @@ the code does, so the managers do not read a deliberate effect as a fault and un
   are expected and are not a fault: an unsold unit stays in book at its cost. Report every hour: A deals and margin,
   A sold under cost, book per hour against sergiobuilds and yms979. Alarm if A deals fall more than 20% and book per
   hour does not rise over 2 hours; then the owner goes back to 0.97. Do not change it yourself.
+- Owner, 11-16 13:53 KST: mkt_floor back to 0.95. In 1.3 h our goods settles fell 62.9 -> 35.7M an hour (-43%) while
+  the other shops' rose 341 -> 382M; A margin stayed +1.02 -> +1.10M an hour (14.0k a deal against 9.2k). The book
+  stall began at 11:04, before the deploy: its cause is still open (the talks' margin was ~11M an hour against book
+  +0.9M after 12:16, refunds 0.33 -> 0.94M an hour, stock 2,502 -> 2,692 units).
 
 ## buyer
 
