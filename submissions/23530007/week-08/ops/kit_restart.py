@@ -52,8 +52,15 @@ def public_url():
     return None
 
 
+FREEZE_END, FREEZE_S = 1794927540, 3 * 3600   # 11-16 (user: '12 h is too long, make it 3'): no routine restart
+                                               # in the last 3 h of Round 3; --now (shop already down) still runs
+
+
 def main():
     now_mode, dry = "--now" in sys.argv, "--dry" in sys.argv
+    if not now_mode and time.time() >= FREEZE_END - FREEZE_S:
+        say("last 3 h of the round: no routine restart (use --now only if the shop is down)")
+        return 2
     if not now_mode:
         t0 = time.time()
         while not shop_guard.after_supply_window():
