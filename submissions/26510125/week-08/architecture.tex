@@ -26,7 +26,7 @@
 \node[mine,text width=36mm] (mp) at (8.9,-9.2) {market\_price.py\\ledger \texttt{settle} entries, cached 60 s: what sold and at what price};
 
 \node[box,fill=orange!15,text width=100mm] (h) at (-1.5,-11.9) {harness.py: Claude Code headless (haiku), one JSON answer per decision, code fallback on a bad answer};
-\node[mine,text width=40mm] (tu) at (8.9,-12.3) {tuner.py (meta-harness)\\hourly: 12 metrics from the last hour of the log $\rightarrow$ LLM moves one of ask\_factor / first\_offer / price\_cap by $\le$ 0.05 inside bounds $\rightarrow$ params.json (read per request)};
+\node[mine,text width=40mm] (tu) at (8.9,-12.9) {tuner.py (meta-harness), hourly\\12 log metrics + its last decisions and what followed $\rightarrow$ opus moves one knob (ask\_factor / first\_offer / price\_cap) $\le$ 0.05 inside bounds; code rolls back a change that halved deals $\rightarrow$ params.json};
 \node[box,fill=gray!8,text width=40mm,font=\scriptsize] (wd) at (-9.3,-11.9) {watchdog.sh: restarts run\_kit.sh when the kit dies or its log goes silent 20 min};
 
 \draw[a] (market) -- (kitb) node[lbl,midway] {order};
@@ -40,7 +40,7 @@
 \draw[d] (fb) -- (h); \draw[d] (fs) -- (h);
 \draw[loop,draw=violet!70!black] (tu.north) -- (mp.south) node[lbl,midway,text=violet!70!black] {reads logs/market-kit.log};
 \draw[loop,draw=violet!70!black] (tu.west) -- (h.east);
-\node[lbl,text=violet!70!black] at (5.2,-11.9) {one LLM call/hour};
+\node[lbl,text=violet!70!black] at (5.4,-12.2) {one opus call/hour};
 \draw[loop] (market.east) to[out=0,in=90] (11.2,-5.6) to[out=-90,in=0] (mp.east);
 \node[rl] at (11.4,-2.4) {ledger};
 \draw[loop] (mp.north) -- (rs.south) node[rl,midway] {what sells};
@@ -51,6 +51,6 @@
 \begin{scope}[on background layer]
 \node[fit=(acp)(mb)(sl)(rs)(rev)(mp)(tu),draw=blue!40,rounded corners,inner sep=4pt] (frame) {};
 \end{scope}
-\node[blue!60!black,font=\scriptsize] at (0,-15.2) {blue = my code, grey = kit v4 (patched: \texttt{pay} hook, tunnel retries, outbox cap), dashed = files, red = market-price loop, violet = self-tuning loop};
+\node[blue!60!black,font=\scriptsize] at (0,-15.6) {blue = my code, grey = kit v4 (patched: \texttt{pay} hook, tunnel retries, outbox cap), dashed = files, red = market-price loop, violet = self-tuning loop};
 \end{tikzpicture}
 \end{document}

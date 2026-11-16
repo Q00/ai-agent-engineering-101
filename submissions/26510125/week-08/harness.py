@@ -46,9 +46,9 @@ def _empty_dir() -> str:
     return _EMPTY_DIR
 
 
-def ask_text(prompt: str, log=None) -> str:
-    """One harness call. Returns stdout text ('' on timeout/error)."""
-    cmd = [claude_bin(), "-p", "--model", MODEL, "--tools", "", "--setting-sources", "", "--no-session-persistence"]
+def ask_text(prompt: str, log=None, model: str = None) -> str:
+    """One harness call. Returns stdout text ('' on timeout/error). `model` overrides MODEL (the tuner uses opus)."""
+    cmd = [claude_bin(), "-p", "--model", model or MODEL, "--tools", "", "--setting-sources", "", "--no-session-persistence"]
     t0 = time.time()
     CALLS["n"] += 1
     try:
@@ -76,10 +76,10 @@ def parse_json(text: str):
         return None
 
 
-def ask_json(prompt: str, log=None, retries: int = 1):
+def ask_json(prompt: str, log=None, retries: int = 1, model: str = None):
     """Harness call expected to answer with one JSON object. None if it never does."""
     for attempt in range(retries + 1):
-        text = ask_text(prompt, log)
+        text = ask_text(prompt, log, model)
         data = parse_json(text)
         if log:
             log(f"    [harness] -> {text[:200]!r}" + ("" if data is not None else "  (no JSON)"))

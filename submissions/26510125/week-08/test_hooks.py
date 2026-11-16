@@ -126,6 +126,18 @@ harness.ask_json = lambda *a, **k: {"ask_factor": 0.5, "first_offer": 0.9, "pric
 d = tuner.decide(m, dict(tuner.DEFAULT), log=lambda s: None)
 assert (d["ask_factor"], d["first_offer"], d["price_cap"]) == (0.9, 0.9, 0.75), d           # one 0.05 step, bounded
 assert buyer.first_move(130, 120, 110, 0.8) == ("offer", 88) and mb.price_cap(400, 300, 0.7) == 210
+import os
+_cwd = os.getcwd(); os.chdir(md.parent); os.makedirs("logs", exist_ok=True)
+prev = {"t": "x", "metrics": {"deals": 100, "paid": 20, "margin_pct": 10, "walks": 5}, "from": dict(tuner.DEFAULT),
+        "to": dict(tuner.DEFAULT, ask_factor=0.9), "why": "w"}
+Path("logs/tuner.log").write_text(json.dumps(prev) + "\n")
+bad = {"deals": 30, "paid": 5, "margin_pct": 1, "walks": 50}
+assert tuner.rollback(bad, dict(tuner.DEFAULT, ask_factor=0.9))["ask_factor"] == 0.95          # halved: undo the change
+assert tuner.rollback({"deals": 90, "paid": 18, "margin_pct": 9, "walks": 5}, dict(tuner.DEFAULT, ask_factor=0.9)) is None
+assert tuner.rollback(bad, dict(tuner.DEFAULT)) is None                                         # knobs already differ: nothing to undo
+Path("logs/tuner.log").write_text(json.dumps(prev) + "\n" + json.dumps(dict(prev, metrics=bad, from_=None)) + "\n")
+assert tuner.history()[0]["changed"] == {"ask_factor": (0.95, 0.9)} and tuner.history()[0]["next_hour"]["deals"] == 30
+os.chdir(_cwd)
 print("ok: tuner")
 
 import acp_buyer
