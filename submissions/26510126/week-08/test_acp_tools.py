@@ -163,6 +163,22 @@ def main():
     case("terse-get", TerseGet, expect_in_log=["[acp-tools] paid 120"])
     case("endpoint-other-host", OtherHost, expect_paid=False, expect_settles=0,
          expect_in_log=["not on the shop's host"])
+    # blocked buyers (11/16): the order's buyer from the ledger cache; a missing list or unknown order lets the sale go
+    import tempfile
+    from pathlib import Path
+    real = mk.BLOCKED_BUYERS
+    mk.BLOCKED_BUYERS = Path(tempfile.mkdtemp(prefix="blk-")) / "b.json"
+    mk._ORDER_POLL["started"] = True                    # no ledger reader in the test
+    mk.ORDER_BUYER.update({"o-bad": "rater", "o-good": "fair"})
+    try:
+        none_file = mk.blocked_buyer(None, "o-bad", wait=0)
+        mk.BLOCKED_BUYERS.write_text('{"buyers": ["rater"]}')
+        ok = (none_file is None and mk.blocked_buyer(None, "o-bad", wait=0) == "rater"
+              and mk.blocked_buyer(None, "o-good", wait=0) is None and mk.blocked_buyer(None, "o-unknown", wait=0) is None)
+        print(("PASS" if ok else "FAIL") + " blocked-buyers: listed buyer refused, others and unknown orders pass")
+        results.append(ok)
+    finally:
+        mk.BLOCKED_BUYERS = real
     print(f"\n{sum(results)}/{len(results)} passed")
     return 0 if all(results) else 1
 

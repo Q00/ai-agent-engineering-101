@@ -378,6 +378,11 @@ class AcpShop:
             return JSONResponse(s)
         if parts[2] == "complete" and s["status"] == "ready_for_payment":
             pay = b.get("payment_data") or {}
+            who = await asyncio.to_thread(blocked_buyer, self.market, pay.get("order"))
+            if who:
+                s["status"] = "canceled"
+                log(f"[acp] checkout refused: buyer {who} is on blocked_buyers_r3.json")
+                return JSONResponse({"error": "this shop does not sell to this buyer"}, status_code=403)
             r = await asyncio.to_thread(self.market.call, "POST", "/api/settle", "shop",
                                         json={"order": pay.get("order"), "checkout_jwt": s["checkout_jwt"],
                                               "checkout_mandate": pay.get("checkout_mandate"),
@@ -457,6 +462,64 @@ class AcpShop:
         while len(self.sessions) > 500:
             self.sessions.popitem(last=False)
         return JSONResponse(s, status_code=201)
+
+
+# Buyers whose payments this shop refuses (the user, 11/16 18:0x): two buyers' review hooks rate our paid deals far
+# below their own reviews of the same deals - one gives every shop 2 stars, one gave us 5 stars until 16:40 and 1 star
+# since (31 of 37, 4.07 at other shops), at ~30 an hour, while the market's rules let a hook print any stars. Stars
+# count only for paid deals, and the shop learns who the buyer is only here, from the order in the public ledger.
+# The file is read on every checkout, so the list changes without a restart; a lookup that fails lets the sale go.
+BLOCKED_BUYERS = Path(__file__).resolve().parent / "blocked_buyers_r3.json"
+
+
+ORDER_BUYER = collections.OrderedDict()                 # order id -> buyer, from the ledger's order entries
+_ORDER_POLL = {"started": False, "last": None}
+
+
+def _poll_orders(base, every=3.0, keep=20_000):
+    """Background: read the public ledger's new entries every few seconds into ORDER_BUYER (a ledger call takes
+    0.4-1 s, too slow to make inside each checkout; an order settles a median 12 s after it is placed)."""
+    import threading
+
+    def run():
+        c = httpx.Client(timeout=10)
+        while True:
+            try:
+                last = _ORDER_POLL["last"]
+                rows = c.get(f"{base}/api/ledger", params={"after": -500 if last is None else last}).json()
+                rows = rows if isinstance(rows, list) else []
+                for e in rows:
+                    d = e.get("data") or {}
+                    if e.get("kind") == "order" and d.get("order"):
+                        ORDER_BUYER[d["order"]] = d.get("buyer")
+                    _ORDER_POLL["last"] = max(_ORDER_POLL["last"] or 0, e.get("seq", 0))
+                while len(ORDER_BUYER) > keep:
+                    ORDER_BUYER.popitem(last=False)
+                if len(rows) >= 500:
+                    continue                                 # behind: read the next page now
+            except Exception:
+                pass
+            time.sleep(every)
+    threading.Thread(target=run, daemon=True, name="order-buyers").start()
+
+
+def blocked_buyer(market, order, wait=6.0):
+    """The buyer of `order` when it is on BLOCKED_BUYERS, else None. Looks the order up in ORDER_BUYER, kept by a
+    background reader of the public ledger; waits up to `wait` s for an order not read yet, then lets the sale go."""
+    try:
+        names = set(json.loads(BLOCKED_BUYERS.read_text(encoding="utf-8")).get("buyers") or [])
+    except (OSError, ValueError, AttributeError):
+        return None
+    if not names or not order:
+        return None
+    if not _ORDER_POLL["started"]:
+        _ORDER_POLL["started"] = True
+        _poll_orders(getattr(market, "base", "https://market.ourolabs.ai"))
+    t_end = time.time() + wait
+    while order not in ORDER_BUYER and time.time() < t_end:
+        time.sleep(0.5)
+    b = ORDER_BUYER.get(order)
+    return b if b in names else None
 
 
 def check_accept(o, co, accept):
