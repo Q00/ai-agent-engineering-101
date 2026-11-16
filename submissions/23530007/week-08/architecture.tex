@@ -7,7 +7,7 @@
 \pagestyle{empty}
 \begin{document}
 \centering
-\begin{tikzpicture}[
+\begin{tikzpicture}[yscale=-1,
   font=\sffamily\scriptsize,
   >={Stealth[length=1.8mm]},
   box/.style={draw, rounded corners=2pt, align=center, inner sep=2.5pt, fill=white, text width=#1},
@@ -40,7 +40,7 @@
 \begin{scope}[on background layer]
 \node[lay, fit=(kit)(review)(policy)(haiku)] (L1) {};
 \end{scope}
-\node[ttl] at (L1.north west) {1\enspace Trading layer -- code, at order speed};
+\node[ttl] at (L1.north west) {Trading layer -- code, at order speed};
 
 % ---------- memory ----------
 \node[store=3.4cm] (bmem)  at (-10.4,6.35) {\textbf{buyer\_memory.json}\\every visit: shop, asks,\\outcome, A/B arm};
@@ -62,7 +62,7 @@
 \begin{scope}[on background layer]
 \node[lay, fit=(tools)(shop)(bstrat)] (L2) {};
 \end{scope}
-\node[ttl] at (L2.north west) {2\enspace Decision layer -- three LLM agents (no tools, JSON answers)};
+\node[ttl] at (L2.north west) {Decision layer -- three LLM agents (no tools, JSON answers)};
 
 % ---------- 3 watch & alert ----------
 \node[watch=3.5cm] (cron)    at (-10.5,-0.45) {\textbf{watch\_round.sh} (cron 15 min)\\upstream, kit health, starts all};
@@ -74,7 +74,7 @@
 \begin{scope}[on background layer]
 \node[lay, fit=(cron)(notify)] (L3) {};
 \end{scope}
-\node[ttl] at (L3.north west) {3\enspace Watch \& alert layer -- code};
+\node[ttl] at (L3.north west) {Watch \& alert layer -- code};
 
 % ---------- humans ----------
 \node[human=4.0cm] (chat)  at (-10.6,-2.9) {\textbf{User (chat)}\\goals, conduct rules, big calls};
@@ -82,39 +82,39 @@
 \node[human=4.4cm] (phone) at (8.8,-2.9)  {\textbf{User (phone, ntfy)}\\reads pushes; sends messages\\(prefix shop: / buyer: routes them)};
 
 % ---------- arrows ----------
-\draw[flow] (market.south -| kit.north) -- node[lbl,right,pos=0.75]{orders} (kit.north);
-\draw[flow, <->] (market.south -| seller.north) -- node[lbl,right]{settle} (seller.north);
-\draw[flow] (buyer.north) -- node[lbl,right]{checkout} (market.south -| buyer.north);
-\draw[flow] (restock.north) -- node[lbl,right]{supply} (market.south -| restock.north);
-\draw[flow] (review.north) -- node[lbl,right]{ratings, posts} (market.south -| review.north);
+\draw[flow] (market.north -| kit.south) -- node[lbl,right,pos=0.75]{orders} (kit.south);
+\draw[flow, <->] (market.north -| seller.south) -- node[lbl,right]{settle} (seller.south);
+\draw[flow] (buyer.south) -- node[lbl,right]{checkout} (market.north -| buyer.south);
+\draw[flow] (restock.south) -- node[lbl,right]{supply} (market.north -| restock.south);
+\draw[flow] (review.south) -- node[lbl,right]{ratings, posts} (market.north -| review.south);
 \draw[flow] (kit) -- (seller);
-\draw[flow] (policy.north -| seller.south) -- (seller.south);
-\draw[flow] (policy.north -| buyer.south) -- (buyer.south);
-\draw[flow] (buyer.south east) -- (haiku.north west);
+\draw[flow] (policy.south -| seller.north) -- (seller.north);
+\draw[flow] (policy.south -| buyer.north) -- (buyer.north);
+\draw[flow] (buyer.north east) -- (haiku.south west);
 % trading -> memory -> tools -> curator
-\draw[mem] (L1.south -| bmem.north) -- (bmem.north);
-\draw[mem] (L1.south -| slog.north) -- (slog.north);
-\draw[mem] (L1.south -| intel.north) -- (intel.north);
-\draw[mem] (LM.south -| tools.north) -- (tools.north);
-\draw[flow] (tools.south) -- node[lbl,right]{measures} (cur.north);
-\draw[mem, <->] (smem.south) -- (smem.south |- bstrat.north);
-\draw[mem, <->] (db.south) -- (db.south |- bstrat.north);
+\draw[mem] (L1.north -| bmem.south) -- (bmem.south);
+\draw[mem] (L1.north -| slog.south) -- (slog.south);
+\draw[mem] (L1.north -| intel.south) -- (intel.south);
+\draw[mem] (LM.north -| tools.south) -- (tools.south);
+\draw[flow] (tools.north) -- node[lbl,right]{measures} (cur.south);
+\draw[mem, <->] (smem.north) -- (smem.north |- bstrat.south);
+\draw[mem, <->] (db.north) -- (db.north |- bstrat.south);
 % decision
 \draw[ctrl, <->] (shop.east) -- node[lbl,above]{posts, requests} node[lbl,below]{digest, answers} (cur.west);
 \draw[ctrl, <->] (bstrat.west) -- node[lbl,above]{posts, requests} node[lbl,below]{digest, answers} (cur.east);
-\draw[ctrl] let \p1=(shop.north), \p2=(policy.south) in (\x1+1.6cm,\y1) -- node[lbl, pos=0.12]{knobs} (\x1+1.6cm,\y2);
-\draw[ctrl] let \p1=(bstrat.north west), \p2=(policy.south), \p3=(L2.north) in (\x1+0.5cm,\y1) -- node[lbl, pos=0.4]{knobs} (\x1+0.5cm,\y3+0.15cm) -| (4.15cm,\y2);
+\draw[ctrl] let \p1=(shop.south), \p2=(policy.north) in (\x1+1.6cm,\y1) -- node[lbl, pos=0.12]{knobs} (\x1+1.6cm,\y2);
+\draw[ctrl] let \p1=(bstrat.south west), \p2=(policy.north), \p3=(L2.south) in (\x1+0.5cm,\y1) -- node[lbl, pos=0.4]{knobs} (\x1+0.5cm,\y3-0.15cm) -| (4.15cm,\y2);
 % watch & alerts
-\draw[alert] (rules.north) -- node[lbl,right]{force run} (rules.north |- L2.south);
-\draw[alert] (shop.south) -- ++(0,-0.55) -| node[lbl, pos=0.12, above]{alert\_user} ($(notify.north)+(-0.8,0)$);
-\draw[alert] (bstrat.south) -- node[lbl,right]{alert\_user} (bstrat.south |- notify.north);
+\draw[alert] (rules.south) -- node[lbl,right]{force run} (rules.south |- L2.north);
+\draw[alert] (shop.north) -- ++(0,-0.25) -| node[lbl, pos=0.12, above]{alert\_user} ($(notify.south)+(-0.8,0)$);
+\draw[alert] (bstrat.north) -- node[lbl,right]{alert\_user} (bstrat.north |- notify.south);
 \draw[alert] (summary.east) -- (notify.west);
-\draw[alert] (inbox.south) to[out=-30,in=-150] node[lbl, below, pos=0.5]{ack} (notify.south west);
-\draw[alert] (notify.south) -- node[lbl,right]{push} (notify.south |- phone.north);
-\draw[alert] (phone.west) -| node[lbl, pos=0.25, above]{message} ($(inbox.south)+(0.5,0)$);
-\draw[ctrl] (inbox.north) -- node[lbl,right]{user notes} (inbox.north |- L2.south);
-\draw[alert] ($(inbox.south)+(-0.6,0)$) |- node[lbl, pos=0.75, above]{user\_inbox} (op.east);
-\draw[ctrl] ($(op.north)+(2.4,0)$) -- node[lbl, pos=0.5, right]{operator notes, code fixes} ($(op.north)+(2.4,0)$ |- L2.south);
+\draw[alert] (inbox.north) to[out=30,in=150] node[lbl, below, pos=0.5]{ack} (notify.north west);
+\draw[alert] (notify.north) -- node[lbl,right]{push} (notify.north |- phone.south);
+\draw[alert] (phone.west) -| node[lbl, pos=0.25, above]{message} ($(inbox.north)+(0.5,0)$);
+\draw[ctrl] (inbox.south) -- node[lbl,right]{user notes} (inbox.south |- L2.north);
+\draw[alert] ($(inbox.north)+(-0.6,0)$) |- node[lbl, pos=0.75, above]{user\_inbox} (op.east);
+\draw[ctrl] ($(op.south)+(2.4,0)$) -- node[lbl, pos=0.5, right]{operator notes, code fixes} ($(op.south)+(2.4,0)$ |- L2.north);
 \draw[alert, <->] (chat.east) -- node[lbl,above]{chat} (op.west);
 \end{tikzpicture}
 
