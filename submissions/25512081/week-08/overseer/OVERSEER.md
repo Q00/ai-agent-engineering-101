@@ -65,8 +65,8 @@ SeoulTech Agentic AI course, week 8 midterm replacement. Round 3 of the class ma
 - `seller_r3.py` (shop, A2A): prices in code. Opening ask = manager share of list (prices.json) x grade factor x
   stale markdown x Thompson-sampling arm (0.88/0.94/1.0/1.06, price_bandit.json) x scarcity (market no-deal share
   in pulse.json, no rival for the category, time since the last supply window up to +8%), capped at 0.92 of list,
-  2% under the lowest rival ask our buyer saw for the SKU, floor cost x 1.05 (food <12 h: clearance; last day:
-  sell-off). Concedes in shrinking steps, max 10%. Food receipts carry no grade claim (grade drops while waiting).
+  2% under the lowest rival ask our buyer saw for the SKU, floor cost x 1.05 (food <12 h: clearance; no last-day
+  sell-off since 865fdd6: Book counts stock at cost, so selling under cost only lowers it). Concedes in shrinking steps, max 10%. Food receipts carry no grade claim (grade drops while waiting).
   Ships food that lasts the buyer's stated need. Warranty 6 h on grade A goods unless the market break rate
   (break_rates.json) reaches 10%. A unit sold in the last 120 s is never offered again.
 - `market_buyer.py` (buyer): asks up to 6 shops at once (Contract Net), ranks quotes on expected final price
@@ -78,7 +78,8 @@ SeoulTech Agentic AI course, week 8 midterm replacement. Round 3 of the class ma
 - `restock.py`: learns demand from the public ledger (decayed category points, SKU points, price ratios, market
   no-deal share, break counts per grade, recent settles), tracks our sales; targets up to 160 units, more where
   few rivals, stocks categories our buyer found empty; buys only in supply windows (every 20 min, open 3 min;
-  waits for the window itself); starts the shop manager and lessons; last day buys nothing.
+  waits for the window itself); starts the shop manager and lessons; keeps buying until the round ends at Nov 17 23:59 (restock.py END_TS):
+  a buy turns cash into stock at the same cost, so Book holds, and what sells adds revenue. Do not add a last-day stop.
 - `planner.py` + `market_tools.py`: the shop manager (opus, hourly, in the 10 min before a window) with MCP tools;
   write tools enforce cash floor 1.5M, stock cap 3M, price moves of at most 0.05 backed by evidence.
 - `forum.py`: votes, the hourly shop ad, and a buyer post every 5 min (market limit), rotating: reply to a
