@@ -61,11 +61,11 @@ class RolloutTests(unittest.TestCase):
   self.assertEqual(accepted['price'],7800)
   self.assertTrue(accepted['class_near_cost_trial'])
   self.assertEqual(accepted['class_near_cost_projected_loss'],200)
-  edge=negotiate(self.u,q,7440,{},self.p,intel=Evidence())
-  self.assertEqual(edge['price'],7440)
+  edge=negotiate(self.u,q,7360,{},self.p,intel=Evidence())
+  self.assertEqual(edge['price'],7360)
   self.assertTrue(edge['class_near_cost_trial'])
-  # Below 93% of cost is never admitted.
-  self.assertGreater(negotiate(self.u,q,7439,{},self.p,intel=Evidence())['price'],7439)
+  # Below 92% of cost is never admitted.
+  self.assertGreater(negotiate(self.u,q,7359,{},self.p,intel=Evidence())['price'],7359)
   # A warranty can still refund the full price, so the raw-loss path is closed.
   warranted=dict(q,warranty_hours=6,hazard_probability=.04)
   self.assertGreater(negotiate(
