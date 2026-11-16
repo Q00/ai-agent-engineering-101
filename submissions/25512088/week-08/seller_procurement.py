@@ -712,6 +712,7 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
                       active_unproven_goods_count=active_unproven_count,
                       max_active_unproven_goods=max_active_unproven,
                       new_unproven_goods=(row.get('kind')=='goods' and is_new),
+                      breadth_expansion=breadth_expansion,
                       own_profit_proven=own_profit_proven,
                       local_grade_proven=local_grade_proven,
                       proven_scale_ready=proven_scale_ready,
@@ -799,6 +800,30 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
         if not policy.get('capital_bridge_window_used',False):
             max_bridge_cost=available*max(
                 0.0,min(1.0,float(policy.get('capital_bridge_max_available_share',.5))))
+            # Traffic share is materially constrained by catalogue breadth.
+            # When the normal high-value target is temporarily unaffordable,
+            # spend the existing one-unit bridge slot on a cheap, already
+            # screened new SKU before repeating another proven SKU. This does
+            # not add a second lane or relax any grade, demand, cold-stock,
+            # concentration, cash, or liability guard above.
+            breadth_cost=min(
+                max_bridge_cost,
+                max(0,int(policy.get('capital_bridge_max_new_breadth_cost',100000))))
+            breadth=[]
+            for choice in ordered:
+                priority,_,sku,need,row=choice
+                if (priority==2 and need>0 and
+                        row.get('new_unproven_goods') and
+                        row.get('breadth_expansion') and
+                        row.get('upper_cost',math.inf)<=breadth_cost):
+                    breadth.append(choice)
+            if breadth:
+                priority,_,sku,_,row=breadth[0]
+                evidence=dict(row,capital_bridge=True,
+                              capital_bridge_kind='new_breadth',
+                              capital_bridge_max_cost=breadth_cost)
+                return [{'sku':sku,'qty':1,'upper_unit_cost':row['upper_cost'],
+                         'capital':row['upper_cost'],'evidence':evidence}]
             for choice in ordered:
                 priority,_,sku,need,row=choice
                 sales=max(0,int(row.get('own_sales_total',0) or 0))

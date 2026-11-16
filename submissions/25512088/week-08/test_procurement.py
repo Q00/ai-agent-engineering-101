@@ -548,6 +548,39 @@ class PurchaseTests(unittest.TestCase):
   policy['capital_bridge_window_used']=True
   self.assertEqual(allocation_plan(
       [bridge,high],{'units':[],'balance':3000000},630000,policy=policy),[])
+ def test_capital_bridge_prefers_one_cheap_screened_new_breadth_sku(self):
+  high=dict(sku='high',kind='goods',expected_net=50000,score=1000,
+            upper_cost=1200000,sales_1h=8,sales_6h=30,
+            distinct_buyers_6h=10,estimated_sale_likelihood=.6,
+            own_sales_total=1,own_gross_total=50000,own_profitable_sales=1,
+            dominant_grade_samples=8,dominant_grade_profit_probability=.7)
+  proven=dict(sku='proven',kind='goods',expected_net=28000,score=300,
+              upper_cost=260000,sales_1h=5,sales_6h=22,
+              distinct_buyers_6h=13,estimated_sale_likelihood=.34,
+              own_sales_total=58,own_gross_total=400000,own_profitable_sales=50,
+              dominant_grade_samples=12,dominant_grade_profit_probability=.64)
+  new=dict(sku='new',kind='goods',expected_net=6000,score=200,
+           upper_cost=70000,sales_1h=5,sales_6h=18,
+           distinct_buyers_6h=7,estimated_sale_likelihood=.55,
+           own_sales_total=0,own_gross_total=0,own_profitable_sales=0,
+           dominant_grade_samples=8,dominant_grade_profit_probability=.72)
+  policy={'max_sku_capital_share':1,'max_units_per_sku':3,
+          'high_value_lane_min_unit_cost':500000,
+          'min_high_value_restock_grade_samples':3,
+          'min_high_value_restock_grade_profit_probability':.60,
+          'min_goods_a_profit_samples':3,'min_goods_a_profit_probability':.60,
+          'max_active_unproven_goods':3,'active_unproven_goods_count':0,
+          'breadth_target_skus':10,'max_breadth_trial_units':1,
+          'capital_bridge_max_available_share':.5,
+          'capital_bridge_max_new_breadth_cost':100000}
+  plan=allocation_plan([proven,new,high],{'units':[],'balance':3000000},630000,
+                       policy=policy)
+  self.assertEqual([(row['sku'],row['qty']) for row in plan],[('new',1)])
+  self.assertEqual(plan[0]['evidence']['capital_bridge_kind'],'new_breadth')
+  new['upper_cost']=100001
+  plan=allocation_plan([proven,new,high],{'units':[],'balance':3000000},630000,
+                       policy=policy)
+  self.assertEqual([(row['sku'],row['qty']) for row in plan],[('proven',1)])
  def test_capital_bridge_rejects_weak_or_cash_hungry_goods(self):
   high=dict(sku='high',kind='goods',expected_net=50000,score=1000,
             upper_cost=1200000,sales_1h=8,sales_6h=30,
