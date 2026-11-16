@@ -126,6 +126,16 @@ class Memory:
           (time.time()-seconds,ceiling)).fetchall()
         return {row['shop'] for row in rows}
 
+    def offer_tolerant_shops(self, ceiling, seconds=21600):
+        """Shops that completed an agreement after receiving this offer stage."""
+        rows=self.db.execute('''SELECT DISTINCT a.shop FROM events a
+          WHERE a.kind='agreement' AND a.ts>? AND EXISTS(
+            SELECT 1 FROM events o WHERE o.order_id=a.order_id
+              AND o.shop=a.shop AND o.sku=a.sku AND o.kind='offer' AND o.ts<=a.ts
+              AND json_extract(o.details,'$.ceiling')=?)''',
+          (time.time()-seconds,ceiling)).fetchall()
+        return {row['shop'] for row in rows}
+
     def saved_portfolio(self, catalog):
         """Estimate Patch-3.6 Saved with published grade cost midpoints.
 

@@ -300,8 +300,8 @@ class Buyer:
         self.intel = intel
         self.control = control
         self.portfolio = portfolio if portfolio is not None else memory.saved_portfolio(catalog)
-        self.probe_shops = (memory.accepted_offer_shops('probe')
-                            if hasattr(memory,'accepted_offer_shops') else set())
+        self.probe_shops = (memory.offer_tolerant_shops('probe')
+                            if hasattr(memory,'offer_tolerant_shops') else set())
         self.deadline = min(time.time()+85, order['expires']-3)
 
     def result(self, session=None, receipt=None, reason='No acceptable deal'):
