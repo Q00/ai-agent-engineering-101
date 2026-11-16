@@ -467,6 +467,7 @@ def _run(order: dict, shops: list[dict], catalog: dict, own_shop_name: str, *,
                        attempt_index=index,**risk_policy)
             negotiation_memory={**choice['first_hand'], 'price_guidance':choice.get('price_guidance'),
                                 'post_sale_risk':risk_policy,
+                                 'purchase_value_terms':choice.get('value_terms') or {},
                                 'known_refused_units':buyer_checkout_memory.refused_unit_ids(choice,order,history)}
             try:
                 negotiation_memory['public_forum']=buyer_forum_memory.retrieve([choice['sku']],budget=2400)
