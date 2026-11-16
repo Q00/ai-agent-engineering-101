@@ -13,7 +13,7 @@ from seller_procurement import settings
 
 RATES={'goods':{'A':95,'B':80,'C':60},'food':{'A':95,'B':75,'C':45}}
 LOSS_LEADER_RATE=.04
-CLASS_NEAR_COST_RATE=.10
+CLASS_NEAR_COST_RATE=.15
 LOSS_LEADER_BUDGET=100_000
 LOSS_LEADER_TRIALS_PER_SKU=5
 BOOK_CUSHION_TRIAL_SHARE=.90
@@ -348,10 +348,10 @@ def negotiate(unit, current, offered, catalog, program, token='', ref='', intel=
     # Recent live offers showed a separate, deterministic opportunity: public
     # buyers offered just below raw cost on zero-warranty goods. The 95% cohort
     # raised the official Shop score without a refund. Once the live Revenue
-    # gap fell far enough, the live one-hour aggregate exposed distinct buyer
-    # demand down to the 90% cost band. At the current Class boundaries a 90%
-    # floor consumes at most 65% of the lower Book cushion, inside the existing
-    # 75% guard.
+    # gap fell far enough, the live aggregate exposed distinct buyer demand
+    # down to the 85% cost band. The configured floor is only a maximum
+    # allowance: fresh Class boundaries must still prove that reaching the next
+    # Revenue percentile consumes no more than 75% of the lower Book cushion.
     # Those offers
     # cannot later create a refund liability. Permit only that narrow cohort
     # while fresh Class boundaries prove that the worst-case configured loss
