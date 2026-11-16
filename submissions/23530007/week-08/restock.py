@@ -287,7 +287,10 @@ def sku_wants(catalog, have_sku, p, now, hours_left, market_sku, mkt_units=None,
             x_ = sorted(v_)[len(v_) // 2]
             if len(v_) >= RIVAL_MIN and k in catalog and x_ >= RIVAL_MIN_X:
                 rival_rate[k] = len(v_) / 6
-                rival_gain[k] = len(v_) / 6 * (x_ - COST_LOT) * catalog[k]["list_price"]
+                # 11-16 (user: 'turn the cash over'): ranked by margin per won of stock per hour (rate x (x - cost
+                # share)), not by won of margin: with ~50 M of cash the old order put 3.8 M sofas first (x14, unaffordable)
+                # while 25620027's volume SKUs (Ge62449c9 121, G006cebbb 156 in 6 h) waited
+                rival_gain[k] = len(v_) / 6 * (x_ - COST_LOT)
                 rival_x[k] = x_
     except (OSError, ValueError):
         pass
@@ -314,6 +317,9 @@ def sku_wants(catalog, have_sku, p, now, hours_left, market_sku, mkt_units=None,
         qty = min(MAX_QTY, math.ceil(RIVAL_SHARE * rival_rate[sku] * RIVAL_COVER_H) - held_)
         if qty > 0 and sum(1 for w in out if w[0][1] == -2) < RIVAL_LINES:
             out.append(((False, -2, -rival_gain[sku]), v["category"], v, qty))
+    # 11-16: the rival lines of this run, for the log (which SKUs, how many, against how many sellable units held)
+    print("[restock] rival lines: " + (", ".join(f"{w[2]['sku']} x{w[3]}" for w in out if w[0][1] == -2) or "none")
+          + f" (rival SKUs {len(rival_gain)}, sellable held {sum((sellable_ or {}).values())})", file=sys.stderr)
     taken = {w[2]["sku"] for w in out}
     for sku in set(sold) | set(asked) | set(best) | scarce:
         if sku in taken:
