@@ -92,6 +92,14 @@ RIVAL_MIN, RIVAL_SHARE, RIVAL_COVER_H, RIVAL_LINES = 6, 0.5, 2.0, 5   # 11-12: t
 # ranked on COST_LOT, and more of the rival's rate held
 RIVAL_MIN_X, COST_LOT = 0.61, 0.59
 RIVAL_SHARE, RIVAL_LINES = 0.7, 8
+# 11-16 13:40 (user: 'book is priority one; review the strategy'): the strategist's per-SKU cover 0 (27 SKUs, set
+# when our EXPENSIVE old units of them sold under cost, e.g. G85a1a856 at x .581) also blocked fresh lots of
+# 25620027's best margin lines: G00327e80 (it made +0.65 M/h on 4 sales/h at x .645 from lots at .573; we answered
+# 'none in stock' to the same asks), G2698c6f8, G0667d440. A rival line whose rival median is at least
+# RIVAL_OVERRIDE_X now ignores cover 0: the rival lines already count only units that sell at the rival's price, and
+# the seller's floors keep every sale over cost, so an unsold fresh unit only waits in the book at cost
+RIVAL_OVERRIDE_X, OVERRIDE_LINE_COST = 0.63, 8e6
+RIVAL_X_SEEN = {}
 DEEP_OVER = 1.10             # a unit whose floor is over 1.10 x the SKU's market median counts 0 in the cover
 FOOD_KEEP_CASH = 5e6          # 11-15: least cash left after a food line (food is ~10 k a unit)
 COST_GUESS = 0.6             # cost as a share of list price before a unit arrives (A 55-75 %, B 40-60 %, C 25-45 %)
@@ -292,6 +300,7 @@ def sku_wants(catalog, have_sku, p, now, hours_left, market_sku, mkt_units=None,
                 # while 25620027's volume SKUs (Ge62449c9 121, G006cebbb 156 in 6 h) waited
                 rival_gain[k] = len(v_) / 6 * (x_ - COST_LOT)
                 rival_x[k] = x_
+                RIVAL_X_SEEN[k] = x_
     except (OSError, ValueError):
         pass
     # 11-16 (user: 'buy what sells well and turn the cash over'): only units that can sell at the rival's price count
@@ -622,7 +631,10 @@ def main():
         if v["kind"] == "goods" and goods_lines >= p["max_goods_lines"]:   # food keeps the rest of the lines
             continue
         if (p.get("sku_auto", {}).get(v["sku"]) or {}).get("cover") == 0:   # the strategist stopped this SKU
-            continue
+            if not (_[1] == -2 and RIVAL_X_SEEN.get(v["sku"], 0) >= RIVAL_OVERRIDE_X):   # 11-16: rival lines pass
+                continue
+            # ... at most OVERRIDE_LINE_COST a window each (the dry run wanted 10 x G24f5f979, 23 M of 60 M cash)
+            qty = min(qty, max(1, int(OVERRIDE_LINE_COST // (v["list_price"] * COST_GUESS))))
         unit = v["list_price"] * COST_GUESS
         # 11-06: a line that did not fit whole was skipped, so the top sellers (Plana 4 swing 11 % of revenue,
         # 20 x ~2.3M) got nothing for 2 h and sat at 0 stock while 64M cash waited; buy what fits instead

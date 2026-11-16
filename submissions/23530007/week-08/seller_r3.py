@@ -435,8 +435,19 @@ def pick_unit(text, held, now, asks=None, star=False, unpaid=None):
         return None
     fits = {id(u) for u in sellable_first(ab, asks)}      # units whose floor fits under the market price go first
     if shop_policy_now().get("grade_first"):
-        return min(ab, key=lambda u: (id(u) not in fits, GRADE_ORDER.get(u.get("grade") or "A", 1), u.get("supplied_at") or 0))
-    return min(ab, key=lambda u: (id(u) not in fits, u.get("supplied_at") or 0))
+        pick = min(ab, key=lambda u: (id(u) not in fits, GRADE_ORDER.get(u.get("grade") or "A", 1), u.get("supplied_at") or 0))
+    else:
+        pick = min(ab, key=lambda u: (id(u) not in fits, u.get("supplied_at") or 0))
+    # 11-16 13:40 (user: 'book is priority one'): book = cash + unsold units AT COST, so a sale adds price - cost of
+    # the unit handed over and every unit kept still counts at its cost. Oldest-first handed over the expensive tail:
+    # 6 h, 453 goods deals, 208 of them had a cheaper unit of the same SKU and grade on the shelf, 3.75 M of margin
+    # (~0.6 M/h) left out of the book. The grade and SKU stay as chosen above; inside them the cheapest unit goes
+    # (knob cheap_first, 0 = the old oldest-first)
+    if pick is not None and shop_policy_now().get("cheap_first", 1):
+        same = [u for u in ab if u["sku"] == pick["sku"] and (u.get("grade") or "A") == (pick.get("grade") or "A")
+                and (id(u) in fits) == (id(pick) in fits)]
+        pick = min(same, key=lambda u: (u.get("cost") or 0, u.get("supplied_at") or 0))
+    return pick
 
 
 CHEAP_LIST, CHEAP_SHARE = 50000, 0.58   # 11-11: concession on cheap items from the 3rd offer (<= ~1M/day)
