@@ -845,6 +845,14 @@ class Shop(AgentExecutor):
                     # (book thin)' while revenue fell 39.6 -> 10.5 M/h; it is no longer read. The params knob rival_under
                     # sets it (grade C sits at the reference: under 0), and the per-SKU adj is clamped to -.03..+.02
                     under = 0.0 if grade == "C" else p.get("rival_under", 0.0)
+                    # 11-16 (user: 'sell what the shop chasing our book sells, to slow its book'): a SKU the rival shop
+                    # (price_rivals.json: 25620027, book right behind us) sold >= 3 times in 6 h sits rival_under_hot
+                    # under its median: ask ref - .01, floor ref - .02, and never under cost x be_mult. Its shop made 3.7 M/h
+                    # of margin on 6 h, 60% from 15 goods SKUs at .63-.70 of list, while we held units of the same SKUs
+                    # costing under its price (Ge62449c9: it sold 121, we 9 of 144 in stock; G006cebbb 156 vs our 51
+                    # units at cost .57-.60). A sale taken from it moves the book gap by our margin plus its lost one
+                    if grade != "C" and u["sku"] in {k[1] for k in _RV.get("sku", {})}:
+                        under = max(under, float(p.get("rival_under_hot", 0.0)))
                     adj = max(-0.03, min(0.02, (ctl.get("sku") or {}).get(u["sku"], 0.0)))
                     level = ref - under + adj
                     floor = max(floor, round(u["list_price"] * level))
