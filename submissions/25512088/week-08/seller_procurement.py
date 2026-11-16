@@ -621,13 +621,17 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
         # An overall profitable history can be carried by cheap B/C arrivals;
         # it must not enlarge the capital cap for a marginal high-cost A lot.
         # New, unproven, and marginal-grade goods retain the original cap.
+        scale_grade_probability=(
+            policy.get('min_high_value_restock_grade_profit_probability',.60)
+            if strongly_proven_high_value else
+            policy.get('min_proven_scale_grade_profit_probability',.70))
         proven_scale_ready=(
             own_profit_proven and
             row.get('dominant_grade_samples',0)>=
                 policy.get('min_proven_scale_grade_samples',
                            policy.get('min_goods_a_profit_samples',0)) and
             row.get('dominant_grade_profit_probability',0)>=
-                policy.get('min_proven_scale_grade_profit_probability',.70))
+                scale_grade_probability)
         if proven_scale_ready:
             capital_share=max(capital_share,
                               policy.get('max_proven_sku_capital_share',capital_share))

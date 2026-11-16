@@ -650,7 +650,7 @@ class PurchaseTests(unittest.TestCase):
             distinct_buyers_6h=8,estimated_sale_likelihood=.7,
             own_sales_1h=5,own_sales_total=8,own_gross_total=550000,
             own_profitable_sales=8,dominant_grade_samples=13,
-            dominant_grade_profit_probability=.70)
+            dominant_grade_profit_probability=.62)
   policy={'max_units_per_sku':3,'max_sku_capital_share':1,
           'high_value_lane_min_unit_cost':500000,
           'max_high_value_units_per_sku':2,
@@ -669,7 +669,7 @@ class PurchaseTests(unittest.TestCase):
             distinct_buyers_6h=1,estimated_sale_likelihood=.10,
             own_sales_1h=0,own_sales_total=8,own_gross_total=550000,
             own_profitable_sales=8,dominant_grade_samples=13,
-            dominant_grade_profit_probability=.70)
+            dominant_grade_profit_probability=.62)
   policy={'max_units_per_sku':3,'max_sku_capital_share':1,
           'high_value_lane_min_unit_cost':500000,
           'max_high_value_units_per_sku':2,
@@ -717,8 +717,9 @@ class PurchaseTests(unittest.TestCase):
             distinct_buyers_6h=1,estimated_sale_likelihood=.10,
             own_sales_1h=0,own_sales_total=8,own_gross_total=550000,
             own_profitable_sales=8,dominant_grade_samples=13,
-            dominant_grade_profit_probability=.70)
-  policy={'max_units_per_sku':3,'max_sku_capital_share':1,
+            dominant_grade_profit_probability=.62)
+  policy={'max_units_per_sku':3,'max_sku_capital_share':.10,
+          'max_proven_sku_capital_share':.20,
           'high_value_lane_min_unit_cost':500000,
           'max_high_value_units_per_sku':2,
           'max_strongly_proven_high_value_units_per_sku':3,
@@ -729,7 +730,9 @@ class PurchaseTests(unittest.TestCase):
           'high_value_window_limit':4,
           'min_high_value_restock_grade_samples':3,
           'min_high_value_restock_grade_profit_probability':.60}
-  plan=allocation_plan([high],{'units':[],'balance':5000000},5000000,
+  inventory={'units':[{'sku':'high','kind':'goods','cost':1200000}],
+             'balance':10800000}
+  plan=allocation_plan([high],inventory,5000000,
                        aggression=1,policy=policy)
   self.assertEqual([(row['sku'],row['qty']) for row in plan],[('high',1)])
  def test_new_window_clears_old_blocks_but_never_pending_unknown_posts(self):
