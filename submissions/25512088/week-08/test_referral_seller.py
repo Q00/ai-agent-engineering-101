@@ -11,6 +11,11 @@ from seller_ledger import Program
 
 
 class SellerIntegrationTests(unittest.IsolatedAsyncioTestCase):
+    def test_repeated_low_review_sku_is_not_offered(self):
+        units=[dict(unit='bad',sku='G9df06998',name='rice ball',grade='B',kind='food',
+                    expires_at=time.time()+72*3600,supplied_at=1)]
+        self.assertIsNone(seller.select_unit('G9df06998',units,set()))
+
     def test_review_price_experiment_selects_lower_cost_same_grade_unit(self):
         units=[
             dict(unit='old-high',sku='Ged5b1b82',name='bed',grade='A',kind='goods',

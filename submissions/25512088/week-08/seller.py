@@ -39,8 +39,9 @@ from adaptive_control import Control
 STATE = Path(os.environ.get('MARKET_DIR', '.market'))
 CHECKOUT_CONDITION_BUFFER_SECONDS = 60
 DEFAULT_UNSPECIFIED_FOOD_HOURS = 48
-SELLER_VERSION = '1.3.1'
+SELLER_VERSION = '1.3.2'
 PRICE_EXPERIMENT_SKUS = {'Ged5b1b82'}
+REVIEW_VETO_SKUS = {'G9df06998'}
 
 
 def sign(receipt):
@@ -130,6 +131,7 @@ def select_unit(text, units, reserved, soft_counts=None, prefer_c=False):
         return explicit_hours or (float(DEFAULT_UNSPECIFIED_FOOD_HOURS)
                                   if unit.get('kind')=='food' else 0.0)
     valid = [u for u in units if u['unit'] not in reserved and u.get('grade') != 'expired'
+             and u.get('sku') not in REVIEW_VETO_SKUS
              and (not u.get('expires_at') or u['expires_at'] > now)
              and (not required_hours(u) or not is_food(u) or
                   (u.get('expires_at') and u['expires_at']-now >=
