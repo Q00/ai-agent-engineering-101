@@ -578,7 +578,9 @@ def main():
                 # the 100-300k band settled 183 units an hour and we sold 0.3 (0.2%) holding 16 units at depth 2 while 64M sat
                 # idle: a 150-300k SKU that reached DEAR_HOT gets the full depth too, with heat capped at 2x (margin there is
                 # 8.9k a unit, price 0.61 against cost 0.57)
-                full = sku_score.get(c["sku"], 0) >= DEAR_HOT
+                # the 100-300k band settled 195 units an hour and we sold 1.7 (0.9%) holding 16 units, against 7.2-7.4% in the
+                # bands around it: a 150-300k SKU at half the bar gets the full depth too (heat 1 below DEAR_HOT, margin 3.9k a unit)
+                full = sku_score.get(c["sku"], 0) >= (DEAR_HOT / 2 if c["list_price"] < 300_000 else DEAR_HOT)
                 # 6 h: the market sold 334-341 units of each top 300k+ SKU while we held 5-8, with 39.7M of cash idle: the
                 # depth grows with sku_score up to 5x dear_depth (goods_room and spend still bound it); 6 h: 300k+ settled
                 # 572 an hour and we got 2.8%, the top SKUs sold 158-398 units while we held 0-12, and the 3x cap (12) bound
