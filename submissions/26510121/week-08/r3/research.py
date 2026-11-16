@@ -449,7 +449,7 @@ def update(journal, config, now=None, client=None, key=None):
 
 
 def context(journal, config, now=None):
-    if not config.get('market_cycle_enabled'):
+    if not config.get('market_cycle_enabled') or config.get('llm_disabled'):
         return None
     now=time.time() if now is None else now
     row=journal.snapshot('market-research-v15.json',{})

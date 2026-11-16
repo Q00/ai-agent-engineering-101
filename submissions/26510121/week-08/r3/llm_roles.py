@@ -58,6 +58,7 @@ def decision_text(result, mode):
 
 
 def call_json(journal, config, role, schema, instructions, payload, client=None, key=None):
+    if config.get('llm_disabled'):raise ModelError('llm_disabled_by_owner_policy')
     settings=profile(config,role);model=settings['model']
     cap=config.get('daily_api_budget_usd')
     if not (cap is None and config.get('research_budget_mode')=='observe'

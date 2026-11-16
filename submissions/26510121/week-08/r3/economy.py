@@ -360,7 +360,7 @@ def cash_capacity(inv, journal, config, now=None):
 def restock_candidates(inv, catalog, demand, journal, config, now=None):
     now = time.time() if now is None else now
     velocity=config.get('shop_velocity_enabled',False)
-    strategic=bool(config.get('inventory_portfolio_v27_enabled') and velocity and config.get('shop_championship_enabled')
+    strategic=bool(not config.get('finalday_departments_enabled') and config.get('inventory_portfolio_v27_enabled') and velocity and config.get('shop_championship_enabled')
         and config.get('shop_inventory_caps_enabled') is False and config.get('shop_internal_capital_caps_enabled') is False)
     end = now + planning_hours(config, now)*3600
     if end - now < 3600 or not supply_open(inv, now):
@@ -586,6 +586,9 @@ def restock_candidates(inv, catalog, demand, journal, config, now=None):
         board = {}
     for c in candidates:
         c['rank_progress_surrogate'] = rank_progress(board, 'shop', 'seochanit', c['expected_delta'])
+    if config.get('finalday_departments_enabled'):
+        from .departments import procurement_department
+        return procurement_department(candidates,inv,capacity,config,journal,catalog,now)
     from .portfolio import allocate
     if strategic:
         from .inventory_portfolio import allocate as strategic_allocate

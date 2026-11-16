@@ -41,7 +41,7 @@ def fresh(journal,now):
 def mean_refund(risk,journal,config,now=None):
     now=time.time() if now is None else now
     mean=risk.get('refund_mean');upper=risk.get('refund_upper',1)
-    if (config.get('reversal_v28_enabled') and risk.get('warranty_hours',0)>=6 and fresh(journal,now) and risk.get('mean_validated') and risk.get('mature_samples',0)>=40
+    if (not config.get('finalday_departments_enabled') and config.get('reversal_v28_enabled') and risk.get('warranty_hours',0)>=6 and fresh(journal,now) and risk.get('mean_validated') and risk.get('mature_samples',0)>=40
             and type(mean) in (int,float) and math.isfinite(mean) and 0<=mean<=upper<=1):
         return mean
     return upper

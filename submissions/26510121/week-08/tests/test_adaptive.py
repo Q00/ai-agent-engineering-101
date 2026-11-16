@@ -50,7 +50,7 @@ def test_only_bounded_strategy_fields_can_override_policy(tmp_path):
             validate('shop', patch)
     j.put(KEY + 'buyer', {'version': 1, 'patch': {'buyer_counter_ratio': .94}})
     cfg, selected = effective(j, 'buyer')
-    assert cfg['daily_api_budget_usd'] == policy()['daily_api_budget_usd']
+    assert cfg['daily_api_budget_usd'] == dict(policy(),finalday_departments_enabled=False,llm_disabled=False,research_enabled=True,capability_llm_enabled=True)['daily_api_budget_usd']
     assert cfg['daily_api_budget_usd'] is None  # User requested observed spend without a cap.
     assert cfg['buyer_counter_ratio'] == .94 and selected['version'] == 1
 
@@ -144,7 +144,7 @@ def test_shop_category_allocation_requires_own_and_public_sales_and_affects_rest
     update(j, NOW)
     cfg, _ = effective(j, 'shop')
     assert cfg['category_weights'] == {'x': 1.1}
-    candidates = restock_candidates({'balance': 5000000, 'units': []}, cat, [], j, dict(cfg,shop_reputation_v24_enabled=False), now=NOW)
+    candidates = restock_candidates({'balance': 5000000, 'units': []}, cat, [], j, dict(cfg,finalday_departments_enabled=False,shop_reputation_v24_enabled=False), now=NOW)
     assert candidates[0]['evidence']['adaptive_category_weight'] == 1.1
     assert candidates[0]['max_cost'] <= 5000000 * .8
 
@@ -177,7 +177,7 @@ def test_inventory_target_changes_with_own_stock_and_conversion(tmp_path, stock,
     cfg, _ = effective(j, 'shop')
     assert cfg['inventory_target_units'] == target
     assert cfg['cash_reserve_fraction'] == .2
-    assert cfg['restock_max_lines'] == policy()['restock_max_lines']
+    assert cfg['restock_max_lines'] == dict(policy(),finalday_departments_enabled=False,llm_disabled=False,research_enabled=True,capability_llm_enabled=True)['restock_max_lines']
 
 
 def test_trial_without_enough_new_evidence_expires_and_restores_baseline(tmp_path):

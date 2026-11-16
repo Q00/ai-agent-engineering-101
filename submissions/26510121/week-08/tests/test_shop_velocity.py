@@ -10,7 +10,7 @@ from r3.model import Chooser
 
 
 def config(**kwargs):
-    return dict(policy(),**dict(shop_velocity_enabled=True,shop_fast_execution_enabled=True,
+    return dict(dict(policy(),finalday_departments_enabled=False,llm_disabled=False,research_enabled=True,capability_llm_enabled=True),**dict(shop_velocity_enabled=True,shop_fast_execution_enabled=True,
         restock_max_qty=12,shop_inventory_caps_enabled=True,**kwargs))
 
 

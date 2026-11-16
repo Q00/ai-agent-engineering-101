@@ -166,7 +166,7 @@ class Chooser:
                 'operation':context.get('operation','quote'),'seconds':time.monotonic()-started,
                 'bounded_restock':bounded_restock},role=role)
             return finish(best)
-        if os.environ.get("R3_MODEL_MODE") == "offline" or len(candidates) == 1:
+        if self.config.get("llm_disabled") or os.environ.get("R3_MODEL_MODE") == "offline" or len(candidates) == 1:
             self.j.add("decision", {"decision": decision_id, "chosen": best["id"],
                                     "mode": 'explicit_offline' if os.environ.get('R3_MODEL_MODE') == 'offline' else 'single_feasible'}, role=role)
             return finish(best)

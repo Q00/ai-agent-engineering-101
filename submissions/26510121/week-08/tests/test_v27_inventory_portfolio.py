@@ -20,7 +20,7 @@ def candidate(sku='G111',rate=3,cost=590,price=950,qty=20,baseline=2,kind='goods
 
 
 def run(cs,cash=10000000,held=None,**patch):
-    audit={};cfg=dict(policy(),restock_max_lines=2);cfg.update(patch)
+    audit={};cfg=dict(policy(),finalday_departments_enabled=False,llm_disabled=False,restock_max_lines=2);cfg.update(patch)
     rows=allocate(cs,{}, {'spendable':cash},cfg,held or [],{},audit=audit)
     return rows,audit
 
@@ -137,7 +137,7 @@ def test_economy_expands_supported_depth_without_changing_the_baseline_definitio
 
 
 def test_cost_routing_and_buyer_policy_remain_unchanged():
-    cfg=policy();expected='buyer-v28-all-progress-per-second' if cfg.get('reversal_v28_enabled') else 'buyer-v26-exact-contract-continuation'
+    cfg=policy();expected=('buyer-v30-adaptive-bid-frontier' if cfg.get('finalday_departments_enabled') else 'buyer-v28-all-progress-per-second' if cfg.get('reversal_v28_enabled') else 'buyer-v26-exact-contract-continuation')
     assert cfg['inventory_portfolio_v27_enabled'] and cfg['buyer_strategy_revision']==expected
     assert cfg['daily_api_budget_usd'] is None and not cfg['shop_inventory_caps_enabled'] and not cfg['shop_internal_capital_caps_enabled']
     assert cfg['background_llm_roles']['market_research_analyst']['model']=='gpt-6-luna'

@@ -200,7 +200,7 @@ def buyer_assessment(product, order, terms, journal, config, *, shop=None):
     if config.get('buyer_frontier_v23_enabled'):
         from .policy_learning import packet
         negotiation=packet(journal).get('counter_completion_by_kind',{}).get(product.get('kind'),{})
-    path=None;targets=None
+    path=None;targets=None;ahead=[]
     if config.get('service_contract_v26_enabled'):
         from .negotiation_path import context as path_context
         path=path_context(journal,product,declared,required)
@@ -213,6 +213,9 @@ def buyer_assessment(product, order, terms, journal, config, *, shop=None):
         targets=sorted(set(config.get('buyer_saved_bid_targets',[.8,.9])+[
             current.get('saved',0)+config.get('buyer_saved_target_margin',.002)]+
             ([min(ahead)+.00001] if ahead else [])))
+    if config.get('finalday_departments_enabled') and current.get('metric')=='saved':
+        from .departments import buyer_score_department
+        targets=buyer_score_department(journal,current,ahead,config)
     return {'cap': cap, 'required_warranty': required, 'failure': stress,
             'negotiation_model':negotiation,
             'required_grade':declared,'conditional_terms':conditional,

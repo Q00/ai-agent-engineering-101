@@ -17,7 +17,7 @@ def test_only_confirmed_matching_full_refund_releases_gross_reserve(tmp_path):
                                    ('other-sku', 'G2', 100, now - 10),
                                    ('future', 'G1', 100, now + 10)]:
         j.add('public_broken', {'unit': unit, 'item': sku, 'refunded': refund}, ts=ts)
-    result = cash_capacity({'balance': 1000000, 'units': []}, j, policy(), now)
+    result = cash_capacity({'balance': 1000000, 'units': []}, j, dict(policy(),finalday_departments_enabled=False,llm_disabled=False,research_enabled=True,capability_llm_enabled=True), now)
     assert result['refund_liability'] == 400
     assert result['discharged_refund_reserve'] == 100
     assert len(j.events('public_broken')) == 5  # Financial evidence stays immutable.
@@ -37,7 +37,7 @@ def test_matured_grade_risk_excludes_ambiguous_and_immature_purchases(tmp_path):
     row = quality_book(j, now)['A']
     assert {k:row[k] for k in ('n','broken','within3')} == {'n': 100, 'broken': 2, 'within3': 0}
     assert not row.get('mean_validation',{}).get('validated')  # Same-time purchases cannot create a temporal holdout.
-    assessment = goods_risk(j, 'A', 6, policy(), now)
+    assessment = goods_risk(j, 'A', 6, dict(policy(),finalday_departments_enabled=False,llm_disabled=False,research_enabled=True,capability_llm_enabled=True), now)
     assert .02 < assessment['failure_upper'] < .15
     assert assessment['covered_lower'] == assessment['failure_upper']
 
@@ -47,7 +47,7 @@ def test_partial_warranty_is_a_checkout_requirement_with_conservative_value(tmp_
     j, now = Journal(tmp_path), time.time()
     j.put('quality_risk_v4', {'at': now, 'grades': {'A': {'n': 100, 'broken': 10, 'within3': 7}}})
     p = {'kind': 'goods', 'list_price': 10000}
-    a = buyer_assessment(p, {'budget': 10000}, {'grade': 'A', 'warranty_hours': 3}, j, policy())
+    a = buyer_assessment(p, {'budget': 10000}, {'grade': 'A', 'warranty_hours': 3}, j, dict(policy(),finalday_departments_enabled=False,llm_disabled=False,research_enabled=True,capability_llm_enabled=True))
     assert a['required_warranty'] == 3
     assert 0 < a['covered_failure'] < a['failure'] < .3
     assert 7000 < a['cap'] < 10000
@@ -75,7 +75,7 @@ def test_public_price_above_budget_does_not_become_fake_affordable_offer(tmp_pat
 
 def test_core_capital_can_buy_hot_expensive_sku_without_breaching_gross_reserves(tmp_path):
     from r3.economy import restock_candidates
-    cfg=dict(policy(),shop_internal_capital_caps_enabled=True,shop_reputation_v24_enabled=False)
+    cfg=dict(dict(policy(),finalday_departments_enabled=False,llm_disabled=False,research_enabled=True,capability_llm_enabled=True),shop_internal_capital_caps_enabled=True,shop_reputation_v24_enabled=False)
     j, now = Journal(tmp_path), time.time()
     cat = {'G1': {'kind': 'goods', 'category': 'sofa', 'list_price': 2320000}}
     for n in range(80):
@@ -103,7 +103,7 @@ def test_seller_never_reduces_explicit_or_promised_warranty(tmp_path):
     j = Journal(tmp_path)
     for minimum, promised, expected in [(0, 0, 0), (6, 0, 6), (0, 6, 6)]:
         u = dict(unit(), minimum_warranty_hours=minimum, promised_warranty_hours=promised)
-        candidates = shop_candidates(u, {'balance': 5000000}, {'G111': {}}, j, policy())
+        candidates = shop_candidates(u, {'balance': 5000000}, {'G111': {}}, j, dict(policy(),finalday_departments_enabled=False,llm_disabled=False,research_enabled=True,capability_llm_enabled=True))
         assert all(c['warranty_hours'] == expected for c in candidates)
 
 
@@ -143,5 +143,5 @@ def test_high_value_rfq_compares_live_quotes_reuses_task_and_cancels_unused(tmp_
     assert cancelled == ['expensive'] and sorted(closed) == ['cheaper', 'expensive']
     comparisons=j.events('quote_comparison')
     assert len([r for r in comparisons if r.get('source')!='selected_live_contract'])==2
-    if policy().get('service_contract_v26_enabled'):
+    if dict(policy(),finalday_departments_enabled=False,llm_disabled=False,research_enabled=True,capability_llm_enabled=True).get('service_contract_v26_enabled'):
         assert any(r.get('source')=='selected_live_contract' and r['shop']=='cheaper' for r in comparisons)

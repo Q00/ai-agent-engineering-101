@@ -67,6 +67,9 @@ class MarketCycle:
         if now-self.last_analysis>=60:
             self.last_analysis=now
             roles={'market_observer':lambda:analytics(self.j,time.time())}
+            if self.cfg.get('finalday_departments_enabled'):
+                from .departments import accounting_department
+                roles['???????']=lambda:accounting_department(self.j,self.j.snapshot('catalog.json',{}),time.time())
             if self.cfg.get('reversal_v28_enabled'):
                 from .reversal import update as reversal_update
                 roles['terminal_contract_observer']=lambda:reversal_update(self.j,self.cfg,time.time())

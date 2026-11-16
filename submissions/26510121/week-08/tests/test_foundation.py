@@ -69,13 +69,13 @@ def test_food_grade_changes_without_rewriting_inventory():
 def test_already_owned_expiring_stock_can_be_sold_below_cost(tmp_path):
     now = time.time()
     u = {'unit': 'u', 'sku': 'a', 'kind': 'food', 'expires_at': now + 600, 'list_price': 10000, 'cost': 6000}
-    cs = shop_candidates(u, {}, {'a': {'shelf_hours': 24}}, Journal(tmp_path), policy(), offer=3000, now=now)
+    cs = shop_candidates(u, {}, {'a': {'shelf_hours': 24}}, Journal(tmp_path), dict(policy(),finalday_departments_enabled=False,llm_disabled=False,research_enabled=True,capability_llm_enabled=True), offer=3000, now=now)
     assert any(c['action'] == 'accept' and c['price'] == 3000 for c in cs)
 
 
 def test_restock_bounds_and_zero_capital(tmp_path):
     j = Journal(tmp_path)
-    cfg=dict(policy(),shop_reputation_v24_enabled=False)
+    cfg=dict(dict(policy(),finalday_departments_enabled=False,llm_disabled=False,research_enabled=True,capability_llm_enabled=True),shop_reputation_v24_enabled=False)
     cat = {'a': {'category': 'x', 'list_price': 10000, 'kind': 'goods'}}
     assert not restock_candidates({'balance': 0}, cat, [], j, cfg)
     cs = restock_candidates({'balance': 5000000}, cat, [], j, cfg)
@@ -91,7 +91,7 @@ def test_budget_and_transport_failure_do_not_leak_keys(tmp_path, monkeypatch):
                 status_code = 401
             return Response()
     j = Journal(tmp_path)
-    c = Chooser(j, client=BrokenClient())
+    c = Chooser(j, dict(policy(),llm_disabled=False), client=BrokenClient())
     chosen = c.choose('buyer', [{'id': 'a', 'score': 1}, {'id': 'b', 'score': .9}], {})
     assert chosen['id'] == 'a'
     assert 'PRIVATE_TEST_VALUE' not in json.dumps(j.events('decision'))
@@ -140,7 +140,7 @@ def test_cash_capacity_accepts_null_warranty_but_keeps_real_liability(tmp_path):
     now = time.time()
     j.add('shop_settled', {'price': 100, 'paid_at': now, 'warranty_hours': None})
     j.add('shop_settled', {'price': 200, 'paid_at': now, 'warranty_hours': 6})
-    assert cash_capacity({'balance': 5000000, 'units': []}, j, policy(), now)['refund_liability'] == 200
+    assert cash_capacity({'balance': 5000000, 'units': []}, j, dict(policy(),finalday_departments_enabled=False,llm_disabled=False,research_enabled=True,capability_llm_enabled=True), now)['refund_liability'] == 200
 
 
 def test_review_normalizes_nullable_warranty(tmp_path):

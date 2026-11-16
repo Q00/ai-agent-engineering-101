@@ -44,7 +44,7 @@ def test_actor_cannot_discard_numerical_all_for_unjustified_raw_money(tmp_path, 
     atomic_json(j.md / 'board.json', score_board())
     candidates = [dict(id='raw', score=10000, expected_delta={'surplus': 10000}),
                   dict(id='all', score=100, expected_delta={'surplus': 100, 'deals': 2})]
-    chooser = Chooser(j)
+    chooser = Chooser(j, dict(policy(),llm_disabled=False,finalday_departments_enabled=False))
     monkeypatch.setattr(chooser, '_call', lambda *a, **k: candidates[0])
     assert chooser.choose('buyer', candidates, {})['id'] == 'all'
     assert j.events('critic_override')
@@ -67,7 +67,7 @@ def test_concessions_are_monotone_and_last_turn_accepts_feasible_price():
 def test_uninsured_cap_and_risk_adjusted_surplus_stay_enforced(tmp_path):
     j = Journal(tmp_path)
     product = {'sku': 'G1', 'kind': 'goods', 'list_price': 10000}
-    cap, required, stress = buyer_terms(product, {'budget': 10000}, {'warranty_hours':0}, j, policy())
+    cap, required, stress = buyer_terms(product, {'budget': 10000}, {'warranty_hours':0}, j, dict(policy(),finalday_departments_enabled=False,llm_disabled=False,research_enabled=True,capability_llm_enabled=True))
     assert cap == 7000 and required == 0 and stress == .3
     actions = buyer_price_actions(7000, cap, product, 8000, .92, 3, 4,
                                   failure_stress=stress, covered=False)
@@ -91,13 +91,13 @@ def test_observed_high_value_goods_compete_with_food_without_relaxing_reserves(t
     j = Journal(tmp_path)
     cat = stocked_catalog(j, now)
     inv = {'balance': 5000000, 'units': []}
-    cfg=dict(policy(),shop_reputation_v24_enabled=False,shop_internal_capital_caps_enabled=True)
+    cfg=dict(dict(policy(),finalday_departments_enabled=False,llm_disabled=False,research_enabled=True,capability_llm_enabled=True),shop_reputation_v24_enabled=False,shop_internal_capital_caps_enabled=True)
     candidates = restock_candidates(inv, cat, [], j, cfg, now)
     assert candidates[0]['sku'] in {'G1', 'G3'}
     assert {'G1', 'G3'} <= {c['sku'] for c in candidates}  # Same category need not exclude another SKU.
     capacity = cash_capacity(inv, j, cfg, now)
     assert sum(c['capital_commitment'] for c in candidates) <= capacity['spendable']
-    assert all(c['capital_commitment'] <= policy()['max_sku_capital_fraction'] * inv['balance'] for c in candidates)
+    assert all(c['capital_commitment'] <= dict(policy(),finalday_departments_enabled=False,llm_disabled=False,research_enabled=True,capability_llm_enabled=True)['max_sku_capital_fraction'] * inv['balance'] for c in candidates)
     assert all(c['evidence']['expected_holding_hours'] < capacity['remaining_days'] * 24 for c in candidates)
 
 
@@ -145,7 +145,7 @@ def test_forum_comparison_is_sourced_and_caveated(tmp_path):
     j.put('board_round', 3)
     j.add('purchase', {'sku': 'G1', 'price': 230000, 'ledger': 999, 'paid_at': now,
                        'grade': 'A', 'warranty_hours': 6})
-    schedule(j, dict(policy(),buyer_patch34_enabled=False), now)
+    schedule(j, dict(dict(policy(),finalday_departments_enabled=False,llm_disabled=False,research_enabled=True,capability_llm_enabled=True),buyer_patch34_enabled=False), now)
     comparison = next(p for _, p in j.pending_posts() if p['priority'] == 4)
     assert comparison['refs'][0] == 999 and len(comparison['refs']) > 1
     assert 'median=240000' in comparison['post']

@@ -125,7 +125,7 @@ def update(journal, config, now=None, force=False):
                        and r.get('alive') is True and type(r.get('stock_units')) is int and r['stock_units'] > 0]
     median_stock = statistics.median(live_peer_stock) if live_peer_stock else None
     issued = journal.get('research-last-result', {})
-    reviewed = ((issued.get('operating_actions_reviewed') is True or issued.get('trial_review_approved') is True)
+    reviewed = (not config.get('llm_disabled') and (issued.get('operating_actions_reviewed') is True or issued.get('trial_review_approved') is True)
                 and issued.get('rules_hash') == rules.get('sha256')
                 and 0 <= now-issued.get('at', 0) < 1200 and now < issued.get('expires_at', 0))
     intents = issued.get('operating_intents', []) if reviewed else []
