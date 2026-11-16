@@ -91,7 +91,9 @@ def candidates(order: dict, shops: list[dict], catalog: dict,
     # Required terms must be known before filtering recently unavailable terms.
     for choice in found:
         quality=buyer_breakage.for_choice(history.breakage_profiles,choice['shop'],choice['sku']) if order.get('kind')=='goods' else None
-        choice['risk_policy']=buyer_breakage.purchase_policy(quality,order.get('kind'))
+        choice['risk_policy']=buyer_breakage.purchase_policy(quality,order.get('kind'),
+            saving=choice['price_guidance'].get('saved_if_usable_at_reference',choice['score_evidence']['saved_if_usable_at_cap']),
+            saved_baseline=saved_baseline)
     found, held, probe = buyer_checkout_memory.filter_candidates(found,order,history)
     record('checkout_cache_summary',order=order.get('order'),allowed=len(found),
            held=len(held),guarded_probe=probe is not None)
@@ -107,7 +109,9 @@ def candidates(order: dict, shops: list[dict], catalog: dict,
         saving=choice['price_guidance'].get('saved_if_usable_at_reference',
                                            choice['score_evidence']['saved_if_usable_at_cap'])
         quality=buyer_breakage.for_choice(history.breakage_profiles,choice['shop'],choice['sku']) if order.get('kind')=='goods' else None
-        choice['risk_policy']=buyer_breakage.purchase_policy(quality,order.get('kind'))
+        choice['risk_policy']=buyer_breakage.purchase_policy(quality,order.get('kind'),
+            saving=choice['price_guidance'].get('saved_if_usable_at_reference',choice['score_evidence']['saved_if_usable_at_cap']),
+            saved_baseline=saved_baseline)
         choice['routing_evidence']=routing_evidence(routes.get((choice['shop'],choice['sku'])),saving,quality)
         if choice['risk_policy']:
             choice['routing_evidence']['purchase_risk_policy']=choice['risk_policy']
@@ -150,15 +154,16 @@ def selection_price_guidance(guidance):
     return result
 
 
-def selection_memory(memory):
+def selection_memory(memory, *, include_breakage=True):
     result=brief(memory)
     result.pop('note',None)
     result.pop('shop_name',None)
+    if not include_breakage:result.pop('verified_breakage_evidence',None)
     result['cases']=[{k:(text(v,80) if k=='reason' else v) for k,v in case.items()
                       if k in ('at','outcome','price','grade','hours_left_at_recording',
                                'warranty_hours','offers','reason')}
                      for case in result.get('cases',[])]
-    return result
+    return {k:v for k,v in result.items() if v is not None}
 
 
 def selection_reviews(reviews):
@@ -175,9 +180,12 @@ def selection_route(evidence):
         'smoothed_paid_probability','smoothed_attempt_seconds',
         'median_observed_seconds','estimated_saved_per_minute','estimated_saved_per_attempt',
         'post_sale_breakage','post_sale_contribution_debit')}
+    quality=result.get('post_sale_breakage')
+    if quality:result['post_sale_breakage']={k:quality[k] for k in ('same_shop_sku','same_product') if k in quality}
     policy=(evidence or {}).get('purchase_risk_policy')
     if policy:result['purchase_risk_policy']={k:policy[k] for k in (
-        'required_warranty_hours','same_shop_sku_unrefunded','same_product_unrefunded')}
+        'required_warranty_hours','same_shop_sku_unrefunded','same_product_unrefunded',
+        'risk_adjusted_usable_saved_estimate','current_official_saved_reference')}
     return result
 
 
@@ -193,11 +201,11 @@ def choose(candidates_: list[dict], order: dict, *, forced_candidate_id: str | N
         candidates_=[c for c in candidates_ if c['id']==forced_candidate_id]
     if not candidates_:
         raise ValueError('no candidate is available for this selection')
-    audit.begin('buyer_selection',policy_version='buyer-saved-v5')
+    audit.begin('buyer_selection',policy_version='buyer-saved-v6')
     displayed = [{**{key: row[key] for key in ("id", "list_price",
                                               "cap", "stock")},
                   'shop':text(row['shop'],80),'sku':text(row['sku'],80),
-                  'name':text(row['name'],100),'first_hand':selection_memory(row['first_hand']),
+                  'name':text(row['name'],100),'first_hand':selection_memory(row['first_hand'],include_breakage=not bool((row.get('routing_evidence') or {}).get('post_sale_breakage'))),
                   'reviews':selection_reviews(row['reviews']),
                   'checkout_recheck':row.get('checkout_constraint'),
                   'score_evidence':selection_score_evidence(row),
@@ -240,7 +248,9 @@ def choose(candidates_: list[dict], order: dict, *, forced_candidate_id: str | N
                            "and cases as evidence; do not turn a single past outcome into a permanent rule."}
     prompt['objective'] += (' Risk debits exclude still-immature intact purchases from six-hour survival evidence. '
         'A purchase_risk_policy with required_warranty_hours is a mandatory term for that candidate, '
-        'including exploration and fallback. Compare risk-adjusted expected Saved and settlement chance '
+        'including exploration and fallback. A failure count alone does not make cover mandatory; '
+        'the debit-adjusted usable Saved at the reference price is compared with the displayed score. '
+        'These are conditional estimates, not known private costs or calibrated risks. Compare adjusted Saved and settlement chance '
         'across alternatives; do not prefer an unprotected cheap price merely for its discount. '
         'Refunds prevent minus one but still contribute zero; current cover must be verified, not assumed.')
     commercial_objective = prompt['objective']
@@ -404,7 +414,7 @@ def _run(order: dict, shops: list[dict], catalog: dict, own_shop_name: str, *,
            saved_if_usable_at_cap=chosen['score_evidence']['saved_if_usable_at_cap'],
            candidate_id=chosen['id'],shop_name=chosen['shop'],shop=chosen['url'],sku=chosen['sku'],
            opening_offer=first_offer,price_guidance=chosen.get('price_guidance'),
-           routing_evidence=chosen.get('routing_evidence'),routing_policy='buyer-routing-v4',
+           routing_evidence=chosen.get('routing_evidence'),routing_policy='buyer-routing-v5',
            note='A selected or signed receipt is not a paid purchase. Uniform exploration may pick a familiar candidate.')
     fallback = next((c for c in available if c["url"] != chosen["url"]), None)
     attempts = [(chosen, first_offer)]

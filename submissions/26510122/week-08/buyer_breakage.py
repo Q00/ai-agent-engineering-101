@@ -112,14 +112,26 @@ def contribution_debit(evidence,saving):
     return min(1+saving,max(debits,default=0.)) # overlapping evidence is not charged twice
 
 
-def purchase_policy(evidence,kind):
-    """Known unrefunded failures change terms, not a permanent seller blacklist."""
+def purchase_policy(evidence,kind,*,saving=None,saved_baseline=None):
+    """Use adverse magnitude at the reference price, not a failure-count ban."""
     if kind!='goods' or not evidence:return {}
     local=evidence.get('same_shop_sku') or {};product=evidence.get('same_product') or {}
     local_loss=max(0,local.get('broken',0)-local.get('refunded',0))
     product_loss=max(0,product.get('broken',0)-product.get('refunded',0))
-    required=6 if local_loss>=1 or product_loss>=2 else 0
-    return {'required_warranty_hours':required,'same_shop_sku_unrefunded':local_loss,
-            'same_product_unrefunded':product_loss,'evidence_window_days':7,
-            'reason':'verified_unrefunded_breakage_requires_6h_cover' if required else 'observed_risk_only',
-            'note':'A/B and certificate checks still apply. Protection is a condition to negotiate and verify, not proof that this seller currently offers it. Refund avoids minus one, but a broken refunded purchase still contributes zero.'}
+    meaningful=local_loss>=1 or product_loss>=2
+    estimate=saving if type(saving) in (int,float) and math.isfinite(saving) else None
+    baseline=(saved_baseline or {}).get('saved')
+    baseline=baseline if type(baseline) in (int,float) and math.isfinite(baseline) else None
+    debit=contribution_debit(evidence,estimate if estimate is not None else .8)
+    adjusted=estimate-debit if estimate is not None else None
+    # Both cost references and adverse debits are uncertain. If a live score or
+    # price estimate is absent, a .10 adverse-debit cushion is an operator stress
+    # fallback, never a fabricated official score or probability.
+    below=(adjusted<=baseline if adjusted is not None and baseline is not None else debit>=.10)
+    required=6 if meaningful and below else 0
+    return {'required_warranty_hours':required,'preferred_warranty_hours':6 if meaningful else 0,
+            'same_shop_sku_unrefunded':local_loss,'same_product_unrefunded':product_loss,
+            'risk_adjusted_usable_saved_estimate':round(adjusted,6) if adjusted is not None else None,
+            'current_official_saved_reference':baseline,'adverse_debit':round(debit,6),
+            'evidence_window_days':7,'reason':'adverse_saved_reference_requires_cover' if required else 'risk_adjusted_reference_still_viable',
+            'note':'Observed/censored risk and private-cost scenarios are uncertain. Cover is mandatory only when the adjusted reference fails to beat the displayed score, or the missing-reference stress rule binds. Strong paid histories are not vetoed for a failure count alone. A/B/certificate/cap checks remain.'}

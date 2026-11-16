@@ -12,6 +12,7 @@ import httpx
 from harness import decide_json, trace
 from context_compaction import MAX_TURNS, text
 import buyer_identity
+import buyer_breakage
 from buyer_policy import acceptance, quote_shelf_minimum
 from market_scoring import saved_at_price
 import decision_audit as audit
@@ -72,6 +73,11 @@ def quoted_condition_problem(message,order):
     return None
 
 
+def risk_adjusted_at_price(list_price,price,cost,evidence):
+    saving=saved_at_price(list_price,price,cost)
+    return round(saving-buyer_breakage.contribution_debit(evidence,saving),6) if saving is not None else None
+
+
 def final_price_review(message,last_offer,cap,list_price,memory,order,deadline):
     """One optional model decision at an explicit final quote; never auto-pay."""
     ask=asking_price(message)
@@ -87,6 +93,7 @@ def final_price_review(message,last_offer,cap,list_price,memory,order,deadline):
             'required_warranty_hours':acceptance(order).get('warranty_hours',0),
             'use_within_hours':order.get('use_within_hours'),
             'conditional_margin_saved_at_ask':saved_at_price(list_price,ask,cost),
+            'risk_adjusted_saved_at_ask':risk_adjusted_at_price(list_price,ask,cost,(memory or {}).get('verified_breakage_evidence')), 
             'objective':'Accept this exact final ask or walk. Compare estimated margin Saved, recent real paid prices, '
                         'quality, certificate, remaining time and settlement chance. Being within cap is not enough. '
                         'Cost and score references are uncertain; a stale official snapshot is not guaranteed improvement. '
@@ -190,6 +197,7 @@ def followup_offer(*, message: str, last_offer: int, cap: int, sku: str,
                                'at_seller_ask':saved_at_price(list_price,ask,cost) if ask is not None else None,
                                'cost_reference':cost_reference,
                                'note':'Conditional estimates if cost is estimated; unknown if cost is absent. Not realized final Saved.'}
+    prompt['risk_adjusted_saved_if_usable']={key:risk_adjusted_at_price(list_price,price,cost,(memory or {}).get('verified_breakage_evidence')) for key,price in [('at_last_offer',last_offer),('at_cap',cap),('at_seller_ask',ask)] if price is not None}
     prompt['seconds_until_deadline']=max(0,round(deadline-time.monotonic()))
     schema = {"type": "object", "properties": {
         "action": {"type": "string", "enum": ["offer", "walk"]},
