@@ -599,7 +599,28 @@ def screen_for(order, lp=None, shelf_hours=None):
     return screen
 
 
-def check_receipt(receipt, order, agreed, task_id):
+def policy_miss(receipt, order, lp=None):
+    """The receipt's own grade claim or warranty against accept_policy, for goods: the kit refuses such a checkout,
+    and a refused receipt ended the order with no other shop tried (leak audit #51, 11/16: 30 of 370 receipts went
+    unpaid, 12 of them stating on the receipt a C with no warranty or a 0-1 h warranty). Checked only when the
+    receipt states the field, since the kit checks the seller's checkout copy, not ours."""
+    if order.get("kind") != "goods" or not isinstance(receipt, dict):
+        return None
+    pol = accept_policy(order, receipt, lp)
+    claim = receipt.get("claim")
+    if claim in ("A", "B", "C") and pol.get("grades") and claim not in pol["grades"]:
+        return f"the receipt claims grade {claim}, we pay only for {'/'.join(pol['grades'])}"
+    if "warranty_hours" in receipt and pol.get("warranty_hours"):
+        try:
+            wh = float(receipt.get("warranty_hours") or 0)
+        except (TypeError, ValueError):
+            wh = 0.0
+        if wh < pol["warranty_hours"]:
+            return f"the receipt's warranty is {wh:g} h, we need {pol['warranty_hours']}"
+    return None
+
+
+def check_receipt(receipt, order, agreed, task_id, lp=None):
     if not isinstance(receipt, dict):
         return "no receipt"
     price = buyer.as_int(receipt.get("price"))
@@ -611,7 +632,7 @@ def check_receipt(receipt, order, agreed, task_id):
         return f"receipt price {price} above budget {order['budget']}"
     if receipt.get("task") != task_id:
         return f"receipt task {receipt.get('task')!r} is not this negotiation"
-    return None
+    return policy_miss(receipt, order, lp)
 
 
 def review(result, name, lp, problem):
@@ -874,7 +895,7 @@ async def attempt(order, cat, s, off, lp, note, remember, take_second=False, mor
     receipt = result.get("receipt")
     deal = result.get("state") == "TASK_STATE_COMPLETED"
     agreed = result["offers"][-1] if deal and result.get("offers") else None
-    problem = check_receipt(receipt, order, agreed, result.get("task")) if deal else None
+    problem = check_receipt(receipt, order, agreed, result.get("task"), lp) if deal else None
     if problem:
         log("GUARD", f"receipt problem: {problem}")
     stars, text = review(result, name, lp, problem)

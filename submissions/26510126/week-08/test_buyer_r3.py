@@ -761,6 +761,18 @@ def main():
          and _b45.asking_price(_m45("Asking 52000, 72 h of shelf life left")) == 52000,
          str(_b45.asking_price(_m45("45000 is my best, with a 6-hour warranty."))))
 
+    # leak audit #51 (11/16): a receipt whose own claim or warranty the kit will refuse is a problem, so the next
+    # shop is tried; a receipt that does not state the field passes as before; food is not checked here
+    g = {"kind": "goods", "item": "G1", "budget": 900_000, "acceptable": ["G1"]}
+    base = {"item": "G1", "price": 100_000, "task": "t1"}
+    c_none = buyer_r3.check_receipt(dict(base, claim="C"), g, 100_000, "t1", 200_000)
+    c_short = buyer_r3.check_receipt(dict(base, claim="B", warranty_hours=1), g, 100_000, "t1", 200_000)
+    b_ok = buyer_r3.check_receipt(dict(base, claim="B", warranty_hours=72), g, 100_000, "t1", 200_000)
+    plain = buyer_r3.check_receipt(dict(base), g, 100_000, "t1", 200_000)
+    food = buyer_r3.check_receipt(dict(base, claim="C"), dict(g, kind="food"), 100_000, "t1", 200_000)
+    case("receipt: C with no warranty, B with a 1 h warranty are refused; B warranted, unstated, food pass",
+         bool(c_none) and bool(c_short) and b_ok is None and plain is None and food is None,
+         str((c_none, c_short, b_ok, plain, food)))
     print(f"\n{sum(RESULTS)}/{len(RESULTS)} passed")
     shutil.rmtree(TMP, ignore_errors=True)
 
