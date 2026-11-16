@@ -315,7 +315,10 @@ BUYER_QUOTE_EARLY_SHARE = 1.0       # 1.0 since 2026-11-15 19:5x KST (canary 1.3
                                     #   share stop waiting BUYER_QUOTE_GRACE_S after the BUYER_QUOTE_ENOUGH-th usable quote
                                     #   (36% of fan-outs waited the full 20 s; order starts are >= ~20 s apart). 0.0 rolls back
 BUYER_QUOTE_ENOUGH = 4
-BUYER_QUOTE_SHORT_SHARE = 0.5      # 2026-11-16 20:xx KST canary: orders in this share stop the quote wait at
+BUYER_QUOTE_SHORT_SHARE = 0.0      # 0.0 since 2026-11-16 23:1x KST: failed at 2.2 h (174 / 166 orders): deals/order 0.540 vs
+                                    #   0.645; on the orders it cut (1-3 usable quotes by 10 s) 0.28 vs 0.53, late quotes
+                                    #   were the deals. Margin share 0.853 vs 0.857, wall 8.2 vs 11.3 s.
+                                    #   Was a 2026-11-16 20:xx KST canary: orders in this share stop the quote wait at
                                     #   BUYER_QUOTE_SHORT_S once one usable quote is in. 11-16 10:22-16:40: 20% of orders
                                     #   waited past 10 s (1,374 s of quote wait); the next order starts ~4 s after ours ends,
                                     #   so orders past ~16 s push it (orders/h 147). No deal came from an order with no
