@@ -204,9 +204,27 @@ def run_tunnel(args, private, logs, state):
     return code
 
 
+def data_dir(here=None, env=None):
+    """The data folder: MARKET_DATA_DIR from the environment, else from the .env next to compose.yaml (the one
+    compose reads; launchd passes no environment), else ./data there. A relative value is taken from that folder,
+    as compose does."""
+    here = Path(here or HERE)
+    value = (os.environ if env is None else env).get("MARKET_DATA_DIR")
+    if not value:
+        try:
+            for line in (here / ".env").read_text(encoding="utf-8").splitlines():
+                key, sep, val = line.strip().partition("=")
+                if sep and key.strip() == "MARKET_DATA_DIR":
+                    value = val.strip().strip('"').strip("'")
+        except OSError:
+            pass
+    path = Path(value or "data")
+    return path if path.is_absolute() else here / path
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--data", type=Path, default=Path(os.environ.get("MARKET_DATA_DIR", "/Users/psyoung82/docker/compose/term/data")))
+    ap.add_argument("--data", type=Path, default=data_dir())
     ap.add_argument("--port", type=int, default=8900)
     ap.add_argument("--once-url", action="store_true", help="exit after the first URL is written (setup check)")
     args = ap.parse_args()

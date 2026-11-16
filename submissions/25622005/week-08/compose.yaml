@@ -53,14 +53,16 @@ services:
       STRATEGIST_LOG_REPO: "${STRATEGIST_LOG_REPO:-}"
       STRATEGIST_LOG_BRANCH: main
       STRATEGIST_LOG_KEY: /data/home/.ssh/strategist_logs
-    # On this Mac the live data (shop keys, memory, logs, Claude login in home/, the tuned
-    # strategy/SKILL.md) is /Users/psyoung82/docker/compose/term/data. strategy/ lives inside it,
+    # The live data (shop keys, memory, logs, Claude login in home/, the tuned strategy/SKILL.md) is the
+    # folder MARKET_DATA_DIR names: set it in the environment or in a .env next to this file (compose,
+    # docker/hot_update.sh and docker/host_tunnel.py all read it there; .env is not committed). Without
+    # it the folder is ./data next to this file. strategy/ lives inside it,
     # so the repo's strategy/ is not mounted over the live, tuned SKILL.md.
     ports:
       - "127.0.0.1:8900:8900"
     volumes:
-      - /Users/psyoung82/docker/compose/term/data:/data
-      - /Users/psyoung82/docker/compose/term/claude:/home/node
+      - ${MARKET_DATA_DIR:-./data}:/data
+      - ${MARKET_CLAUDE_DIR:-./claude-home}:/home/node
 
     # cloudflared reaches the kit on localhost:8900 inside this container.
     # No host port or router port forwarding is required.

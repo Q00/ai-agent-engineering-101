@@ -1,8 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- launchd agent for docker/host_tunnel.py: install with
-       cp docker/com.psyoung82.market-tunnel.plist ~/Library/LaunchAgents/
+<!-- launchd agent for docker/host_tunnel.py. launchd takes absolute paths only, so this file is a template:
+     __WEEK08_DIR__ is this submission folder and __MARKET_DATA_DIR__ the data folder. Install from the
+     submission folder with
+       sed -e "s|__WEEK08_DIR__|$PWD|g" -e "s|__MARKET_DATA_DIR__|/path/to/data|g" \
+           docker/com.psyoung82.market-tunnel.plist > ~/Library/LaunchAgents/com.psyoung82.market-tunnel.plist
        launchctl load -w ~/Library/LaunchAgents/com.psyoung82.market-tunnel.plist
-     stop with launchctl unload -w ... ; logs in the data folder's logs/host-tunnel*.log -->
+     stop with launchctl unload -w ... ; logs in the data folder's logs/host-tunnel*.log.
+     host_tunnel.py finds the data folder itself (MARKET_DATA_DIR in .env next to compose.yaml). -->
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
@@ -10,13 +14,13 @@
   <key>ProgramArguments</key>
   <array>
     <string>/usr/bin/python3</string>
-    <string>/Users/psyoung82/workspaces/ai-agent-engineering-101/submissions/25622005/week-08/docker/host_tunnel.py</string>
+    <string>__WEEK08_DIR__/docker/host_tunnel.py</string>
   </array>
   <key>EnvironmentVariables</key>
   <dict><key>PATH</key><string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string></dict>
   <key>RunAtLoad</key><true/>
   <key>KeepAlive</key><true/>
-  <key>StandardOutPath</key><string>/Users/psyoung82/docker/compose/term/data/logs/host-tunnel.launchd.log</string>
-  <key>StandardErrorPath</key><string>/Users/psyoung82/docker/compose/term/data/logs/host-tunnel.launchd.log</string>
+  <key>StandardOutPath</key><string>__MARKET_DATA_DIR__/logs/host-tunnel.launchd.log</string>
+  <key>StandardErrorPath</key><string>__MARKET_DATA_DIR__/logs/host-tunnel.launchd.log</string>
 </dict>
 </plist>

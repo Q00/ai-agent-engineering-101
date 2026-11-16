@@ -14,7 +14,12 @@
 # only drift until then.
 set -eu
 HERE=$(cd "$(dirname "$0")/.." && pwd)
-DATA=${MARKET_DATA_DIR:-/Users/psyoung82/docker/compose/term/data}
+# The data folder: MARKET_DATA_DIR from the environment, else from the .env next to compose.yaml (the one
+# compose reads), else ./data there; a relative value is taken from that folder, as compose does.
+[ -z "${MARKET_DATA_DIR:-}" ] && [ -f "$HERE/.env" ] && \
+  MARKET_DATA_DIR=$(sed -n 's/^MARKET_DATA_DIR=//p' "$HERE/.env" | tail -1 | tr -d '"\r' | tr -d "'")
+DATA=${MARKET_DATA_DIR:-data}
+case "$DATA" in /*) ;; *) DATA="$HERE/$DATA" ;; esac
 COMPOSE="podman compose -f $HERE/compose.yaml --project-directory $HERE"
 DRY=""
 LIST=$(mktemp)

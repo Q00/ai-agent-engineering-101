@@ -37,5 +37,29 @@ class VerdictTest(unittest.TestCase):
         self.assertTrue(ht.verdict(NOW, NOW - 400, NOW - 30, 0, NOW - ht.COOLDOWN_S))
 
 
+class DataDirTest(unittest.TestCase):
+    """The data folder is never a path of one machine: environment, then .env next to compose.yaml, then ./data."""
+
+    def setUp(self):
+        import tempfile
+        self.tmp = tempfile.TemporaryDirectory()
+        self.here = Path(self.tmp.name)
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def test_default_is_data_next_to_compose(self):
+        self.assertEqual(ht.data_dir(self.here, {}), self.here / "data")
+
+    def test_dotenv_then_environment(self):
+        (self.here / ".env").write_text('OTHER=1\nMARKET_DATA_DIR="/srv/market data"\n', encoding="utf-8")
+        self.assertEqual(ht.data_dir(self.here, {}), Path("/srv/market data"))
+        self.assertEqual(ht.data_dir(self.here, {"MARKET_DATA_DIR": "/from/env"}), Path("/from/env"))
+
+    def test_relative_value_is_taken_from_the_compose_folder(self):
+        (self.here / ".env").write_text("MARKET_DATA_DIR=state/live\n", encoding="utf-8")
+        self.assertEqual(ht.data_dir(self.here, {}), self.here / "state" / "live")
+
+
 if __name__ == "__main__":
     unittest.main()
