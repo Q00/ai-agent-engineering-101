@@ -706,6 +706,32 @@ class PurchaseTests(unittest.TestCase):
   inv={'units':[{'sku':'held'}]}
   self.assertEqual(breadth_window_blocks(rows,100,inv,3),{'new-a'})
   self.assertEqual(breadth_window_blocks(rows,100,inv,1),{'new-a'})
+ def test_strong_refill_can_top_up_once_without_repeating_window_purchase(self):
+  first=[{'sku':'high','qty':1,'status':'paid','created':101}]
+  targets={'high':2}
+  self.assertEqual(breadth_window_blocks(first,100,{},0,targets),set())
+  complete=first+[{'sku':'high','qty':1,'status':'paid','created':102}]
+  self.assertEqual(breadth_window_blocks(complete,100,{},0,targets),{'high'})
+  high=dict(sku='high',kind='goods',expected_net=120000,score=1000,
+            upper_cost=1200000,sales_1h=1,sales_6h=1,
+            distinct_buyers_6h=1,estimated_sale_likelihood=.10,
+            own_sales_1h=0,own_sales_total=8,own_gross_total=550000,
+            own_profitable_sales=8,dominant_grade_samples=13,
+            dominant_grade_profit_probability=.70)
+  policy={'max_units_per_sku':3,'max_sku_capital_share':1,
+          'high_value_lane_min_unit_cost':500000,
+          'max_high_value_units_per_sku':2,
+          'max_strongly_proven_high_value_units_per_sku':3,
+          'strongly_proven_high_value_min_own_sales':5,
+          'strongly_proven_high_value_min_profitable_share':.80,
+          'strongly_proven_high_value_min_units_when_sold_out':2,
+          'window_purchased_units':{'high':1},
+          'high_value_window_limit':4,
+          'min_high_value_restock_grade_samples':3,
+          'min_high_value_restock_grade_profit_probability':.60}
+  plan=allocation_plan([high],{'units':[],'balance':5000000},5000000,
+                       aggression=1,policy=policy)
+  self.assertEqual([(row['sku'],row['qty']) for row in plan],[('high',1)])
  def test_new_window_clears_old_blocks_but_never_pending_unknown_posts(self):
   self.assertEqual(refresh_window_blocks({'old-refusal','pending'},100,200,{'pending'}),
                    {'pending'})

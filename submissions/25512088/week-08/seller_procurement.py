@@ -294,7 +294,19 @@ def capital_available(policy,inv,exposure=0,pending=0):
     capacity=max(0,inventory_ceiling-inventory_cost-pending)
     return max(0,min(liquid,capacity))
 
-def breadth_window_blocks(rows, opening, inventory, target):
+def paid_window_units(rows, opening):
+    """Return journaled paid units per SKU for one supply window."""
+    result={}
+    for row in rows:
+        if row['status']!='paid' or row['created']<opening:continue
+        keys=row.keys() if hasattr(row,'keys') else row
+        qty=row['qty'] if 'qty' in keys else 1
+        try:qty=max(1,int(qty or 1))
+        except (TypeError,ValueError):qty=1
+        result[row['sku']]=result.get(row['sku'],0)+qty
+    return result
+
+def breadth_window_blocks(rows, opening, inventory, target, refill_targets=None):
     """Avoid duplicate SKU buys while inventory reflection can lag.
 
     ``allocation_plan`` already fills the evidenced need for one supply cadence
@@ -302,8 +314,10 @@ def breadth_window_blocks(rows, opening, inventory, target):
     stale-inventory duplicate, wastes a rate-limited slot, and can exceed the
     per-SKU cap. The journal is authoritative regardless of breadth target.
     """
-    return {r['sku'] for r in rows
-            if r['status']=='paid' and r['created']>=opening and r['sku']}
+    paid=paid_window_units(rows,opening)
+    refill_targets=refill_targets or {}
+    return {sku for sku,qty in paid.items()
+            if sku and qty>=max(1,int(refill_targets.get(sku,1)))}
 
 def refresh_window_blocks(blocked, previous_window, current_window, pending_skus):
     """Clear old-window refusals without clearing unresolved POSTs.
@@ -344,6 +358,8 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
     policy=policy or settings()
     ranked_by_sku={row.get('sku'):row for row in ranked if row.get('sku')}
     holding={};sellable_holding={};short_food_holding={};holding_cost={}
+    journal_holding={sku:max(0,int(qty)) for sku,qty in
+                     (policy.get('window_purchased_units') or {}).items()}
     now=time.time()
     food_sellable_seconds=max(0.0,float(policy.get('food_sellable_min_hours',48)))*3600
     for unit in inventory.get('units',[]):
@@ -502,9 +518,12 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
         freshness_replacement_supported=(is_food and
             isinstance(shelf_hours,(int,float)) and
             shelf_hours>food_sellable_seconds/3600)
-        effective_holding=(sellable_holding.get(row['sku'],0)
+        effective_holding=max(journal_holding.get(row['sku'],0),
+                          (sellable_holding.get(row['sku'],0)
                            if freshness_replacement_supported else
-                           holding.get(row['sku'],0))
+                           holding.get(row['sku'],0)))
+        current_holding=max(holding.get(row['sku'],0),
+                            journal_holding.get(row['sku'],0))
         need=max(0,math.ceil(forecast)-effective_holding)
         food_scale_ready=False
         strongly_proven_high_value=False
@@ -563,18 +582,19 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
             inventory_room=max(ordinary_room,replacement_room)
             short_food_replacement=bool(replacement_room)
         else:
-            inventory_room=max(0,sku_ceiling-holding.get(row['sku'],0))
+            inventory_room=max(0,sku_ceiling-current_holding)
             # A repeatedly profitable high-value SKU that sells out in seconds
             # should not be replenished one unit at a time merely because a
             # conservative short-window likelihood rounded to one.  This is a
             # target inventory floor, not a waiver: inventory, portfolio-
             # capital, cash, warranty, grade and refund guards below still cap
             # the actual purchase.  New/canary SKUs never enter this branch.
-            if strongly_proven_high_value and not holding.get(row['sku']):
+            if strongly_proven_high_value:
                 need=max(need,min(
                     unit_cap,
                     int(policy.get(
-                        'strongly_proven_high_value_min_units_when_sold_out',1))))
+                        'strongly_proven_high_value_min_units_when_sold_out',1)))-
+                    current_holding)
         need=min(need,inventory_room)
         if cold_safe_trial:
             need=min(need,policy.get('max_cold_safe_trial_units',1))
@@ -670,8 +690,12 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
         high_value_priority=2
         high_value_min=policy.get('high_value_lane_min_unit_cost',math.inf)
         high_value_limit=max(0,int(policy.get('high_value_window_limit',1)))
+        high_value_restock_needed=(not holding.get(row['sku']) or
+            (strongly_proven_high_value and
+             current_holding<policy.get(
+                 'strongly_proven_high_value_min_units_when_sold_out',1)))
         if (high_value_count<high_value_limit and
-                row.get('kind')=='goods' and not holding.get(row['sku']) and
+                row.get('kind')=='goods' and high_value_restock_needed and
                 own_sales_total>=1 and row.get('own_gross_total',0)>0 and
                 row.get('upper_cost',0)>=high_value_min and
                 row.get('dominant_grade_samples',0)>=
@@ -824,7 +848,10 @@ def main():
     try:fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
     except BlockingIOError:raise SystemExit('Another campaign worker owns the lock')
     db=sqlite3.connect(state/'procurement.sqlite3');db.row_factory=sqlite3.Row
-    db.execute('CREATE TABLE IF NOT EXISTS purchases(id INTEGER PRIMARY KEY,campaign TEXT,sku TEXT,upper_cost INTEGER,cost INTEGER,status TEXT,created REAL,detail TEXT)');db.commit()
+    db.execute('CREATE TABLE IF NOT EXISTS purchases(id INTEGER PRIMARY KEY,campaign TEXT,sku TEXT,qty INTEGER,upper_cost INTEGER,cost INTEGER,status TEXT,created REAL,detail TEXT)')
+    if 'qty' not in {row[1] for row in db.execute('PRAGMA table_info(purchases)')}:
+        db.execute('ALTER TABLE purchases ADD COLUMN qty INTEGER')
+    db.commit()
     spec=importlib.util.spec_from_file_location('kit',ROOT.parents[2]/'scripts/market_kit.py');kit=importlib.util.module_from_spec(spec);spec.loader.exec_module(kit)
     assert (ROOT/'shop_key.pem').exists()
     key=kit.load_key(ROOT/'shop_key.pem');market=kit.Market('https://market.ourolabs.ai',os.environ.get('MARKET_OWNER'))
@@ -963,7 +990,19 @@ def main():
         # rankings and prevents a restart from spending the allowance twice.
         runtime_policy['capital_bridge_window_used']=any(
             row['status']=='paid' and row['created']>=opening for row in rows)
-        window_blocks=breadth_window_blocks(rows,opening,inv,target)
+        refill_targets={
+            row['sku']:int(policy.get(
+                'strongly_proven_high_value_min_units_when_sold_out',1))
+            for row in ranked
+            if row.get('kind')=='goods' and
+               row.get('upper_cost',0)>=high_value_min and
+               row.get('own_sales_total',0)>=policy.get(
+                   'strongly_proven_high_value_min_own_sales',math.inf) and
+               row.get('own_gross_total',0)>0 and
+               row.get('own_profitable_sales',0)/max(1,row.get('own_sales_total',0))>=
+                   policy.get('strongly_proven_high_value_min_profitable_share',1.1)}
+        runtime_policy['window_purchased_units']=paid_window_units(rows,opening)
+        window_blocks=breadth_window_blocks(rows,opening,inv,target,refill_targets)
         plan=allocation_plan(ranked,inv,available,
                              set(blocked)|window_blocks|refund_cooldowns|
                              mature_refund_risks|active_high_value_warranties,
@@ -986,7 +1025,7 @@ def main():
                 continue
             time.sleep(cooldown)
         with db:
-            cursor=db.execute('INSERT INTO purchases(campaign,sku,upper_cost,status,created) VALUES(?,?,?,?,?)',(policy['campaign'],sku,upper,'sent',time.time()));rid=cursor.lastrowid
+            cursor=db.execute('INSERT INTO purchases(campaign,sku,qty,upper_cost,status,created) VALUES(?,?,?,?,?,?)',(policy['campaign'],sku,qty,upper,'sent',time.time()));rid=cursor.lastrowid
         try:
             result=market.call('POST','/api/supply','shop',json={'sku':sku,'qty':qty})
         except Exception as exc:
