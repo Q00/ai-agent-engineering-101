@@ -1,6 +1,6 @@
 {
  "shop": {
-  "open_ratio": 0.68,
+  "open_ratio": 0.7,
   "floor_margin": 0.04,
   "clearance_hours": 72,
   "clearance_floor": 0.3,
@@ -28,11 +28,12 @@
   "max_paid_ratio": 0.74,
   "goods_grades": [
    "A",
-   "B"
+   "B",
+   "C"
   ],
   "require_warranty_goods": true,
-  "food_hours_margin": 8
+  "food_hours_margin": 1
  },
- "notes": "Shop: lowered open_ratio from 0.7 to 0.68. Our median paid/list is 0.64 with a 0.09 margin over cost, while the top shop by volume (43.6k deals) sells at about 0.60, so a slightly lower ask should win more deals while keeping the margin above the 0.04 floor. Raised units_per_sku from 5 to 6 because only 74 units are in stock and the stocked categories (김치, 침구, 침대/매트리스, 주스, 과자) have the highest 24 h volumes. No food expires within 12 h, so shelf-life and clearance settings stay. Buyer: unchanged. Most refusals come from sellers offering grade C or 0 h warranty, which the policy correctly reject",
- "updated": 1794828150.7877762
+ "notes": "Set by hand 11-16 22:20 (not the strategist): food_hours_margin 8 -> 1. The kit checks it only at payment, settle follows at once, and 54 of 139 shelf-life refusals 15:47-22:10 would have passed at 1. Previous notes: Shop policy is unchanged. It is profitable (balance 49.5M from a 5M start), the median sale is 0.64 of list with a 0.10 margin over cost, no food is about to expire, and the stock mix already follows the ledger's best sellers. The only change is on the buyer. Of the last 200 agreed deals only 73 were paid, and the largest cause of refusal was grade C (39 refusals), because the pol",
+ "updated": 1794834598.7862253
 }
