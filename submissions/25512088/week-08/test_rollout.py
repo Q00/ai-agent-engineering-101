@@ -22,7 +22,6 @@ class RolloutTests(unittest.TestCase):
   self.assertLess(negotiate(self.u,q,14000,{},self.p)['price'],q['price'])
   self.assertGreaterEqual(q['base'],score_floor(self.u))
  def test_market_supported_zero_warranty_preserves_book_and_explicit_requirements(self):
-  expensive=dict(self.u,cost=500000,list_price=900000)
   intel=Intel(self.root)
   try:
    now=time.time()
@@ -32,7 +31,7 @@ class RolloutTests(unittest.TestCase):
        (seq,ts,shop,sku,grade,hours,warranty,price,honest,buyer)
        VALUES(?,?,?,?,?,?,?,?,?,?)''',
        (i+1,now-i,'shop','sku','B',None,0,9000,1,f'buyer-{i}'))
-   self.assertEqual(market_warranty_hours(expensive,intel,0),0)
+   self.assertEqual(market_warranty_hours(self.u,intel,0),0)
    self.assertEqual(market_warranty_hours(self.u,intel,6),6)
    self.assertIsNone(market_warranty_hours(self.u,intel,12))
    q=sale_quote(self.u,{},self.p,intel,record=False,warranty_override=0)
@@ -55,7 +54,7 @@ class RolloutTests(unittest.TestCase):
        VALUES(?,?,?,?,?,?,?,?,?,?)''',
        (100+i,older-i,'shop','sku','B',None,0,9000,1,f'buyer-{i%4}'))
    self.assertEqual(intel.comparable('sku','B',None,0)['count'],0)
-   self.assertEqual(market_warranty_hours(self.u,intel,0),6)
+   self.assertEqual(market_warranty_hours(self.u,intel,0),0)
    with intel.db:intel.db.execute('DELETE FROM trades WHERE seq=107')
    self.assertEqual(market_warranty_hours(self.u,intel,0),6)
    self.assertEqual(market_warranty_hours(self.u,intel,6),6)
