@@ -439,7 +439,13 @@ def negotiate(unit, current, offered, catalog, program, token='', ref='', intel=
     if near_book_recovery:
         floor=principal_floor
         minimum=program.quote(floor,unit['cost'],token=token,ref=ref)
-    if offered>=minimum['price']:
+    if unwarranted_cost_recovery and offered>=minimum['price']:
+        # Public buyers commonly collect several signed receipts and settle
+        # only the cheapest one.  Taking their entire opening offer created
+        # signed-but-unpaid receipts even though a raw-cost sale would preserve
+        # Book exactly.  Win that comparison at the lowest Book-safe price.
+        q=minimum
+    elif offered>=minimum['price']:
         lo,hi=floor,current['base']
         while lo<hi:
             mid=(lo+hi+1)//2
