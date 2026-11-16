@@ -13,7 +13,7 @@ from seller_procurement import settings
 
 RATES={'goods':{'A':95,'B':80,'C':60},'food':{'A':95,'B':75,'C':45}}
 LOSS_LEADER_RATE=.04
-CLASS_NEAR_COST_RATE=.05
+CLASS_NEAR_COST_RATE=.06
 LOSS_LEADER_BUDGET=100_000
 LOSS_LEADER_TRIALS_PER_SKU=5
 BOOK_CUSHION_TRIAL_SHARE=.90
@@ -95,7 +95,7 @@ def score_safe_loss_budget(intel, already_used, own_name='25512088'):
                 return value-max(lower) if lower else None
             book_cushion=next_lower_gap('book')
             revenue_gap=next_higher_gap('revenue')
-            # A five-percent class-trial cohort needs at most this much Book to
+            # The current class-trial cohort needs at most this much Book to
             # generate the Revenue required for the next Class percentile.
             # Open only a small additional budget when that worst-case loss
             # stays inside 75% of the fresh lower-Book boundary. This compares
@@ -346,13 +346,13 @@ def negotiate(unit, current, offered, catalog, program, token='', ref='', intel=
         # near-cost trials from spending the same headroom twice.
         floor=min(floor,unit['cost'])
     # Recent live offers showed a separate, deterministic opportunity: public
-    # buyers offered 95-100% of raw cost on zero-warranty goods. Three initial
-    # 96% trials all settled without a refund; the official Class score did
-    # not fall. The live Revenue gap can currently be crossed at the five-
-    # percent ceiling while retaining over 25% of the next lower Book gap.
+    # buyers offered just below raw cost on zero-warranty goods. The 95% cohort
+    # raised the official Shop score without a refund. Once the live Revenue
+    # gap fell far enough, a 30-minute aggregate found five additional eligible
+    # goods offers in the 94-95% band (about 2.6M Revenue for 154k raw loss).
     # Those offers
     # cannot later create a refund liability. Permit only that narrow cohort
-    # while fresh Class boundaries prove that the worst-case five-percent loss
+    # while fresh Class boundaries prove that the worst-case configured loss
     # can reach the next Revenue percentile without crossing the next lower
     # Book percentile. Historical losses are already reflected in Book; the
     # budget function grants at most 100k of additional measured principal.
