@@ -366,16 +366,25 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
     # the denominator made a larger safety reserve paradoxically classify a
     # single sub-10%-of-wealth unit as over-concentrated.
     portfolio_capital=sum(holding_cost.values())+max(0,inventory.get('balance',available))
-    # Keep cold-goods experiments attributable and bounded.  A share cap alone
-    # still allowed one "safe" trial every supply window while earlier trials
-    # remained unsold.  Proven restocks continue, but another unproven good is
-    # not opened until every explicitly observed active trial has sold once.
-    active_unproven_goods_present=policy.get('active_unproven_goods_present')
-    if active_unproven_goods_present is None:
-        active_unproven_goods_present=any(
-            (unit.get('kind') or ranked_by_sku.get(unit.get('sku'),{}).get('kind'))=='goods'
-            and ranked_by_sku.get(unit.get('sku'),{}).get('own_sales_total')==0
-            for unit in inventory.get('units',[]))
+    # Keep cold-goods experiments attributable and bounded. After the first
+    # guarded high-value canary sold profitably, permit one additional distinct
+    # experiment while the first slow trial remains held. This is a count of
+    # SKUs, not units; every normal cash, concentration and one-unit high-value
+    # cap remains in force. Legacy boolean callers retain the old behaviour.
+    max_active_unproven=max(1,int(policy.get('max_active_unproven_goods',1)))
+    active_unproven_count=policy.get('active_unproven_goods_count')
+    if active_unproven_count is None:
+        legacy_active=policy.get('active_unproven_goods_present')
+        if legacy_active is not None:
+            active_unproven_count=max_active_unproven if legacy_active else 0
+        else:
+            active_unproven_count=len({
+                unit.get('sku') for unit in inventory.get('units',[])
+                if (unit.get('kind') or
+                    ranked_by_sku.get(unit.get('sku'),{}).get('kind'))=='goods'
+                and ranked_by_sku.get(unit.get('sku'),{}).get('own_sales_total')==0})
+    active_unproven_count=max(0,int(active_unproven_count))
+    unproven_capacity=max(0,max_active_unproven-active_unproven_count)
     high_value_count=policy.get('high_value_window_count')
     if high_value_count is None:
         high_value_count=int(bool(policy.get('high_value_window_used',False)))
@@ -442,12 +451,12 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
                 continue
             # Revenue is the live seller bottleneck, but the old proven-only
             # priority could leave every scarce supply slot to cheap stock.
-            # Admit at most one demanded, grade-supported high-value canary in
-            # a window. It remains one unit per SKU, and any unsold canary
-            # blocks another new-goods trial on later refreshes/windows.
+            # Admit only the configured number of demanded, grade-supported
+            # high-value canaries in a window. Each remains one unit per SKU,
+            # and the active-unproven ceiling bounds overlap across windows.
             high_value_canary=(
                 high_value_count<high_value_canary_limit and
-                own_sales_total==0 and not active_unproven_goods_present and
+                own_sales_total==0 and unproven_capacity>0 and
                 not holding.get(row['sku']) and high_value_grade_guard and
                 row.get('sales_1h',0)>=policy.get('high_value_canary_min_sales_1h',2) and
                 row.get('distinct_buyers_6h',0)>=
@@ -456,7 +465,7 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
                     policy.get('high_value_canary_min_sale_likelihood',.30) and
                 row.get('dominant_grade_samples',0)>=min_samples and
                 row.get('dominant_grade_profit_probability',0)>=min_probability)
-            cold_safe_trial=(cold_goods_frozen and not active_unproven_goods_present and
+            cold_safe_trial=(cold_goods_frozen and unproven_capacity>0 and
                 not holding.get(row['sku']) and
                 row.get('sales_1h',0)>=policy.get('cold_safe_trial_sales_1h',math.inf) and
                 row.get('dominant_grade_profit_probability',0)>=
@@ -588,6 +597,9 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
                       freshness_replacement_supported=freshness_replacement_supported,
                       cold_goods_cost=cold_goods_cost,cold_goods_limit=cold_goods_limit,
                       cold_goods_frozen=cold_goods_frozen,cold_safe_trial=cold_safe_trial,
+                      active_unproven_goods_count=active_unproven_count,
+                      max_active_unproven_goods=max_active_unproven,
+                      new_unproven_goods=(row.get('kind')=='goods' and is_new),
                       own_profit_proven=own_profit_proven,
                       proven_scale_ready=proven_scale_ready,
                       realized_hourly_contribution=realized_hourly_contribution)
@@ -660,13 +672,23 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
                     for choice in high_value_choices)):
         return []
     plan=[];slots=sum(row[3] for row in choices) if available_slots is None else available_slots
+    remaining_unproven=unproven_capacity
+    remaining_canaries=max(0,high_value_canary_limit-high_value_count)
+    remaining_high_value=max(0,max(0,int(policy.get('high_value_window_limit',1)))-
+                             high_value_count)
     for _,_,sku,need,row in ordered:
+        if row.get('new_unproven_goods') and remaining_unproven<=0:continue
+        if row.get('high_value_canary') and remaining_canaries<=0:continue
+        if row.get('high_value_priority') and remaining_high_value<=0:continue
         # Official supply API accepts at most 20 units per call. Remaining
         # evidenced need is purchased on subsequent inventory refreshes.
         qty=min(policy.get('max_lot_units',20),need,int(available//row['upper_cost']),max(0,slots))
         if qty<=0:continue
         plan.append({'sku':sku,'qty':qty,'upper_unit_cost':row['upper_cost'],
                      'capital':qty*row['upper_cost'],'evidence':row})
+        if row.get('new_unproven_goods'):remaining_unproven-=1
+        if row.get('high_value_canary'):remaining_canaries-=1
+        if row.get('high_value_priority'):remaining_high_value-=1
         available-=qty*row['upper_cost']
         slots-=qty
     return plan
@@ -850,10 +872,10 @@ def main():
         # Use the complete settled-sales history, not merely the current ranked
         # candidate list, to decide whether a cold-goods experiment is active.
         # This prevents a new expensive trial while any held good has never sold.
-        runtime_policy['active_unproven_goods_present']=any(
-            (unit.get('kind') or catalog.get(unit.get('sku'),{}).get('kind'))=='goods'
-            and unit.get('sku') not in own_sales_total
-            for unit in inv.get('units',[]))
+        runtime_policy['active_unproven_goods_count']=len({
+            unit.get('sku') for unit in inv.get('units',[])
+            if (unit.get('kind') or catalog.get(unit.get('sku'),{}).get('kind'))=='goods'
+            and unit.get('sku') not in own_sales_total})
         target=competitor_breadth_target(strategy)
         if target>0:runtime_policy['breadth_target_skus']=target
         ranked_by_sku={row.get('sku'):row for row in ranked if row.get('sku')}

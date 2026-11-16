@@ -499,6 +499,35 @@ class PurchaseTests(unittest.TestCase):
   self.assertEqual(allocation_plan(
       [cheap,canary],{'units':[],'balance':2000000},2000000,
       policy=policy)[0]['sku'],'cheap')
+ def test_second_unproven_canary_is_bounded_by_active_and_window_slots(self):
+  cheap=dict(sku='cheap',kind='food',expected_net=1000,score=100,
+             upper_cost=100,sales_1h=20,sales_6h=40,
+             distinct_buyers_6h=10,estimated_sale_likelihood=1)
+  common=dict(kind='goods',expected_net=60000,score=1000,
+              upper_cost=600000,sales_1h=3,sales_6h=9,
+              distinct_buyers_6h=6,estimated_sale_likelihood=.5,
+              own_sales_total=0,dominant_grade_samples=5,
+              dominant_grade_profit_probability=.70)
+  one=dict(common,sku='one');two=dict(common,sku='two',score=900)
+  policy={'max_sku_capital_share':1,'max_units_per_sku':3,
+          'max_high_value_units_per_sku':1,
+          'high_value_lane_min_unit_cost':500000,
+          'high_value_canary_window_limit':1,
+          'high_value_window_limit':3,
+          'min_goods_a_profit_samples':3,
+          'min_goods_a_profit_probability':.60,
+          'max_cold_goods_capital_share':0,
+          'max_active_unproven_goods':2,
+          'active_unproven_goods_count':1}
+  plan=allocation_plan([cheap,one,two],{'units':[],'balance':3000000},
+                       3000000,policy=policy)
+  self.assertEqual(sum(p['evidence']['high_value_canary'] for p in plan),1)
+  self.assertEqual(sum(p['evidence']['new_unproven_goods'] for p in plan),1)
+  policy['high_value_canary_window_limit']=2
+  policy['active_unproven_goods_count']=2
+  plan=allocation_plan([cheap,one,two],{'units':[],'balance':3000000},
+                       3000000,policy=policy)
+  self.assertFalse(any(p['evidence']['new_unproven_goods'] for p in plan))
  def test_evidence_backed_policy_can_open_exactly_three_high_value_slots(self):
   cheap=dict(sku='cheap',kind='food',expected_net=1000,score=100,
              upper_cost=100,sales_1h=8,sales_6h=12,
