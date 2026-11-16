@@ -43,6 +43,7 @@ LINE_MAX = 0.16                 # of the cash above the cushion, per line (was 0
 TARGET = {"food": 3, "goods": 3}            # base units per SKU to hold; a window lasts 20 minutes; storage is only 1% a day
 TARGET_MAX = 10                             # most units of one SKU, however fast it turns over (was 8: the best sofa earned 338,207 a unit, sold all 8 in 14-19.5 min of a 20 min cycle, and cash stayed 80M+ after buying)
 STALE_H = 6                                 # a unit unsold this long stops further buying of its SKU
+FOOD_USABLE_H = 36                          # food with less shelf life left neither counts as held nor makes its SKU stale (Nov 16: 243 of 319 food no-stock answers were SKUs we held but stale; asks that found no stock wanted a median 36 h)
 MAX_LINES = 10                 # the kit buys at most 10 lines per run, one call per 10 s
 COST = {"food": 0.50, "goods": 0.59}        # expected cost / list price of a random grade (agent.md supply odds)
 PRICE_DEFAULT = 0.70            # settled price / list price across the market in the first hour of Round 3
@@ -326,8 +327,9 @@ def main():
         print("[restock] no catalog yet", flush=True)
         print(json.dumps({"buy": []}))
         return
+    usable = [u for u in units if not (u.get("kind") == "food" and (u.get("expires_at") or now + 1e9) - now < FOOD_USABLE_H * 3600)]
     have = defaultdict(int)
-    for u in units:
+    for u in usable:
         have[u["sku"]] += 1
     free = max(0, balance - CUSHION)
     spent_window = mem.get("spent", 0) if mem.get("window") == key else 0
@@ -339,7 +341,7 @@ def main():
     shop_mem = read_json(shop_dir / "shop_memory.json", {}) or {}
     surge = {x["sku"]: float(x["factor"]) for x in inv.get("surge") or [] if isinstance(x, dict) and x.get("sku") and x.get("factor")}
     cands = candidates(cat, rows, shop_mem.get("cats", {}), forum_wants(md, cat), others_stock(), have, now, surge)
-    rate, stale = turnover(units, shop_mem.get("sold", {}), now)
+    rate, stale = turnover(usable, shop_mem.get("sold", {}), now)
     cands, capped = goods_cap(cands, have, units, shop_mem.get("sold", {}), now)
     lines, why = plan(cands, limit, int(free * LINE_MAX), have, not args.no_harness, rate, stale)
     why = capped + why
