@@ -140,8 +140,8 @@ def listed(cfg):
 
 
 def slot_count(live, cfg, catalog, factors, now):
-    """(Counter, changed): the units of each SKU as its sku_target_units counts them. restock_sellable_slots when its
-    switch is on (cfg["sellable_slots"]), else restock_fresh_slots (default off too: every live unit)."""
+    """(Counter, changed): the units of each SKU as its sku_target_units counts them. restock_sellable_slots when it
+    is on (cfg["sellable_slots"]: its live switch, else its DEFAULT), else restock_fresh_slots (every live unit)."""
     if restock_sellable_slots.on(cfg) is not None:
         return restock_sellable_slots.counted(live, cfg, catalog, factors, now)
     return restock_fresh_slots.counted(live, cfg, catalog, factors, now)
@@ -1093,7 +1093,8 @@ def main():
     cfg["demand_catchup"] = restock_demand_catchup.config(args.state, inv)
     cfg["fresh_slots"] = restock_fresh_slots.config(args.state)      # its own switch file, None when off: today's count
     cfg["fresh_now"] = time.time()                                   # the run's one clock for that count
-    cfg["sellable_slots"] = restock_sellable_slots.config(args.state)  # its own switch, None when off; over fresh_slots
+    # its live switch, else its DEFAULT (W-20261116-1255), None only when switched off; read at the run's clock; over fresh_slots
+    cfg["sellable_slots"] = restock_sellable_slots.config(args.state, now=cfg["fresh_now"])
     cfg["turnover_targets"] = restock_turnover_targets.config(args.state)
     if cfg["turnover_targets"]:
         cfg["sku_target_units"], raised = restock_turnover_targets.targets(cfg, cfg.get("sku_target_units"))
@@ -1117,6 +1118,9 @@ def main():
         print(f"[restock] sellable_slots {cfg['sellable_slots']['study']}: {len(moved)} listed goods SKUs count fewer "
               f"units than held ({sum(m['held'] - m['counted'] for m in moved.values())} stuck units left out): "
               + ", ".join(f"{k} {m['held']}->{m['counted']}" for k, m in sorted(moved.items())), file=sys.stderr, flush=True)
+        if cfg["fresh_slots"]:      # review 4242d520 M5: not read while this rule is on, said once a run
+            print(f"[restock] fresh_slots {cfg['fresh_slots'].get('study')} not read: sellable_slots is on",
+                  file=sys.stderr, flush=True)
     elif cfg["fresh_slots"]:
         _, moved = restock_fresh_slots.counted([u for u in inv.get("units") or [] if isinstance(u, dict)
                                                 and not gone(u, time.time())], cfg, catalog, surge(inv))

@@ -28,7 +28,7 @@ def cfg_of(pricing):
 def break_for(kind, measured, cfg, grade=None):
     """b for the floor: 0 for food; for goods the prior, or the ledger's rate when it is higher. price.grade_break (the
     market's rate per grade) is a floor under it too: without break stats, or with a grade too thin to measure, a C unit
-    (34% break) would otherwise be priced at the 8% prior. A unit with no rate and no known grade keeps 0.15."""
+    (34-44% break, 0.42 since 11/16) would otherwise be priced at the 8% prior. A unit with no rate and no known grade keeps 0.15."""
     if kind != "goods":
         return 0.0
     by_grade = cfg.get("grade_break") if isinstance(cfg.get("grade_break"), dict) else {}

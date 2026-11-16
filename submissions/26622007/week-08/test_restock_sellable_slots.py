@@ -68,6 +68,10 @@ class SwitchTest(unittest.TestCase):
         with open(os.path.join(md, ss.SWITCH), "w", encoding="utf-8") as f:
             f.write("{not json")
         self.assertEqual(ss.config(md, env={}, now=NOW)["study"], "sellable-default")
+        md = tempfile.mkdtemp()
+        ss.switch_off(md)
+        self.assertIsNone(ss.config(md, env={}, now=NOW))
+        self.assertEqual(os.stat(os.path.join(md, ss.SWITCH)).st_mode & 0o777, 0o600)
         # off stays off: the switch says enabled false, or the environment says 0
         self.assertIsNone(ss.config(switch(ON, enabled=False), env={}, now=NOW))
         self.assertIsNone(ss.config(tempfile.mkdtemp(), env={"RESTOCK_SELLABLE_SLOTS": "0"}, now=NOW))
@@ -259,6 +263,14 @@ class PlanGuardTest(unittest.TestCase):
         # today's room is not held to the floor: under it the old cap still buys
         self.assertEqual(self.guard(ON, balance=50_000_000, held=self.held[:2] + [unit("G1", 0.72, 3)]),
                          [{"sku": "G1", "qty": 1}])
+
+    def test_the_default_fills_as_the_study_and_stops_at_its_stock_cap(self):
+        # review 4242d520 M2: DEFAULT through restock.guard, not only counted()
+        d = ss.config(tempfile.mkdtemp(), env={}, now=NOW)
+        self.assertEqual(self.guard(d), [{"sku": "G1", "qty": 3}])             # 1 sellable of 4, as ON
+        filler = [unit("G2", 0.90, 0.2)] * 940                                 # 940 x 450,000 = 4.23억 held
+        self.assertEqual(self.guard(d, held=self.held + filler), [])           # over 4.2억: no extras
+        self.assertEqual(self.guard(d, held=self.held[:2] + filler), [{"sku": "G1", "qty": 2}])   # today's room stays
 
     def test_the_floor_holds_over_the_whole_run_with_todays_lines_behind_the_extras(self):
         # review ad9cee9 I2: extras on a listed line first, then a line of today's rule behind it; the run must leave

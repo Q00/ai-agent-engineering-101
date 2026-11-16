@@ -89,7 +89,11 @@ class TrialTest(unittest.TestCase):
         # grade_profit_share, 11/11, lifts a floor over 0.97 x this median and is pinned in test_profit_rules)
         cfg = {"price": {**shipped["price"], "ask_caps": {}, "scarce_asks": {}, "grade_profit_share": {}}}
         for key in keys:
-            self.assertEqual(pp.quote(unit(*key, cost=500000), 800001, None, (), cfg)["open"], 776001)
+            q = pp.quote(unit(*key, cost=500000), 800001, None, (), cfg)
+            if key[1] == "C":   # grade_break C 0.42 (11/16): (500,000 + 1,250 + 1) / 0.58 = 864,225.9 -> its floor wins
+                self.assertEqual((q["open"], q["floor"]), (864226, 864226))
+            else:
+                self.assertEqual(q["open"], 776001)
         dear = pp.quote(unit(*hold, cost=760000), 800000, None, (), cfg)
         self.assertEqual(dear["open"], dear["floor"])               # the floor still wins over 0.97 x
         self.assertGreaterEqual(dear["floor"], 776000)
@@ -99,7 +103,7 @@ class TrialTest(unittest.TestCase):
         self.assertEqual(pp.quote(unit(*hold, cost=500000), 800001, None, (), capped)["open"], 700000)   # caps after
         # Without a median the OFF baseline applies to kind ratio; grade C's higher floor still wins.
         self.assertEqual(pp.quote(unit(*hold, cost=500000), None, None, (), cfg)["open"], 732350)
-        self.assertEqual(pp.quote(unit(*up, cost=500000), None, None, (), cfg)["open"], 764103)
+        self.assertEqual(pp.quote(unit(*up, cost=500000), None, None, (), cfg)["open"], 864226)     # C at 0.42 (0.344: 764,103)
 
 
 if __name__ == "__main__":

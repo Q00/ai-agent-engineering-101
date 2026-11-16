@@ -39,7 +39,13 @@ on its target, book: its first hour +2.87M/h against +0.42M/h in the hour before
 the stock cost held at the cap (4.12억) and cash over the floor. So with no live switch the rule runs as DEFAULT (that
 study's numbers, no window): a missing, unreadable, bad or expired switch is the default, not off. Off is the switch
 with "enabled": false, or RESTOCK_SELLABLE_SLOTS=0; off is today's count exactly (the 11/15 rule before this study).
-A live switch inside its window still wins over the default.
+A live switch inside its window still wins over the default. Only JSON false is off: a file that cannot be read, or
+"enabled": "false" / 0, is the default (review 4242d520 M1), so write the off with switch_off().
+Limits (review 4242d520 I1, I3): the keep rests on one hour (11:47-12:47, the stock refilling to the cap) and on C goods
+selling at their old floor; with price.grade_break C 0.42 (same push) unsold C stays in the stock the cap counts, so the
+extras can shrink to none as C waits (~15M a day by the 11/13-16 replay). That is no loss (stock counts at cost in Book)
+but then the rule buys as the 11/15 rule; watch "sellable_slots N -> 0 ... stock cap" in market-kit.log and the stock
+cost, and read the whole study window again at 21:47 (W-20261116-1255).
 
 Switch: .market/restock_sellable_slots.json {"enabled": true, "study": "<id>", "hours": 6, "dear_share": 0.70,
 "dear_hours": 1, "hold_times": 3, "cash_floor": 100000000, "fresh_sell": 0.39, "start_at": <epoch>, "stop_at": <epoch>,
@@ -152,6 +158,22 @@ def switch_on(md, *, study, start_at, hours, stuck_hours=HOURS, dear_share=DEAR,
         tmp.unlink(missing_ok=True)
         raise
     return d
+
+
+def switch_off(md):
+    """Write {"enabled": false} atomically (0600): the 11/15 count, the default not read."""
+    path = Path(md) / SWITCH
+    tmp = path.with_name(f"{SWITCH}.tmp-{os.getpid()}")
+    fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    try:
+        with os.fdopen(fd, "w") as f:
+            json.dump({"enabled": False}, f)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp, path)
+    except BaseException:
+        tmp.unlink(missing_ok=True)
+        raise
 
 
 def on(cfg):
