@@ -80,6 +80,7 @@ SAVED_BRIDGE_TARGET = .85
 EARLY_QUOTE_TARGET = 11
 QUOTE_WAVE_SIZE = 24
 FOOD_CHECKOUT_BUFFER_HOURS = .1
+MAX_PROBE_EXPLORATIONS = 2
 
 
 def probe_exploration_allowed(estimate):
@@ -495,7 +496,7 @@ class Buyer:
                   'deal_estimate':s['deal_estimate'],**s['expected']} for s in quotes]})
             if not quotes:
                 self.m.state(self.o['order'],'no_quote');return self.result()
-            probe_explored=False
+            probe_explorations=0
             for index,s in enumerate(quotes):
                 if time.time()>=self.deadline:break
                 # Reserve time for other competitors; no fixed negotiation turn count.
@@ -503,12 +504,13 @@ class Buyer:
                 negotiation_steps=[]
                 candidate_steps=[]
                 proven_probe=s['shop']['url'] in self.probe_shops
-                exploratory_probe=(not proven_probe and not probe_explored
+                exploratory_probe=(not proven_probe
+                                   and probe_explorations<MAX_PROBE_EXPLORATIONS
                                    and probe_exploration_allowed(s['deal_estimate']))
                 if proven_probe or exploratory_probe:
                     candidate_steps.append(('probe',s['probe_cap']))
                 if exploratory_probe:
-                    probe_explored=True
+                    probe_explorations+=1
                     self.m.record(self.o['order'],s['shop']['url'],s['sku'],s.get('task'),
                                   'probe_exploration_selected',details=s['deal_estimate'])
                 candidate_steps.extend((
