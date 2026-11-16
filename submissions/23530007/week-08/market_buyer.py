@@ -1230,7 +1230,7 @@ def main():
                                  f"order's items; not paying, trying elsewhere")
                     outcome, rec, price = f"wrong item on receipt ({rec.get('item')})", None, None
                 elif acceptable and order.get("kind") == "goods" and warranty < WARRANTY_MIN and not (
-                        claim == "A" and (claim_honesty(pick["name"]) or 0) >= 0.99 and price
+                        bp.get("pay_unwarranted_A", 1) and claim == "A" and (claim_honesty(pick["name"]) or 0) >= 0.99 and price
                         and 0.97 * vprice.v_of(price, want["list_price"], cshare(item, "A", "goods")) - 0.03
                         >= 0.97 * vprice.floor_v("goods", "A", vctx["m_star"], bp)):
                     # 11-11: a goods receipt without a 6 h warranty is never paid (an unrefunded break scores -1;

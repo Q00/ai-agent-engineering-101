@@ -591,6 +591,52 @@ def main():
     except Exception as e:
         log(f"G21/G22 skipped: {e!r}")
 
+    # G23 unwarranted grade A (user 11-16: 'the warranty alerts keep coming, handle it yourself'). The buyer pays a
+    # goods receipt without a 6 h warranty only for an honest grade A claim whose price clears the floor after the
+    # break risk (market_buyer, 11-13). The agents kept reporting it as a defect. On the 72 h to 11-16 02:00 it was the
+    # best goods bucket: 796 deals, 14 breaks (1.8%, all unrefunded, -1 each), v .869 against .827 for warranted A.
+    # Checked every tick on deals 6-30 h old (every break happens within 6 h): if the unwarranted A mean, breaks at -1,
+    # falls .02 under the warranted A mean over >= 100 deals, pay_unwarranted_A goes to 0 for 12 h and the user is told
+    # why; otherwise nothing is sent.
+    try:
+        import sqlite3
+        import cost_model as _cm
+        db23 = sqlite3.connect(f"file:{HERE / 'data' / 'market_archive.db'}?mode=ro", uri=True, timeout=30)
+        cat23 = json.loads((MD / "catalog.json").read_text(encoding="utf-8"))
+        br23 = {}
+        for (d_,) in db23.execute("SELECT data FROM ledger WHERE kind='broken' AND buyer='yms979' AND ts > ?",
+                                  (now - 31 * 3600,)):
+            x_ = json.loads(d_).get("data") or {}
+            br23[x_.get("unit")] = x_
+        rows23 = [json.loads(d_).get("data") or {} for (d_,) in db23.execute(
+            "SELECT data FROM ledger WHERE kind='settle' AND buyer='yms979' AND ts > ? AND ts < ?",
+            (now - 30 * 3600, now - 6 * 3600))]
+        rows23 = [r_ for r_ in rows23 if (cat23.get(r_.get("sku")) or {}).get("kind") == "goods" and r_.get("claim") == "A"]
+        uc23 = _cm.unit_costs([r_["unit"] for r_ in rows23])
+        bk23 = {"none": [], "warr": []}
+        for r_ in rows23:
+            if r_["unit"] not in uc23:
+                continue
+            lp_, c_ = cat23[r_["sku"]]["list_price"], uc23[r_["unit"]]
+            b_ = br23.get(r_["unit"])
+            v_ = (-1.0 if b_ and not b_.get("refunded") else 0.0 if b_ else
+                  1.0 if lp_ <= c_ else min(1.0, (lp_ - r_["amount"]) / (lp_ - c_)))
+            bk23["warr" if (r_.get("warranty_hours") or 0) >= 6 else "none"].append((v_, bool(b_)))
+        N_, W_ = bk23["none"], bk23["warr"]
+        g23 = {"none_n": len(N_), "warr_n": len(W_)}
+        if N_ and W_:
+            mn_, mw_ = sum(v for v, _ in N_) / len(N_), sum(v for v, _ in W_) / len(W_)
+            g23.update(none_v=round(mn_, 3), warr_v=round(mw_, 3), none_breaks=sum(b for _, b in N_))
+            if len(N_) >= 100 and mn_ < mw_ - 0.02 and cooled(st, "G23", 12 * 3600, now):
+                fired(st, "G23", now)
+                override(ov, "pay_unwarranted_A", 0, 12, now)
+                alert([f"보증 없는 A등급 구매가 손해로 바뀜: 최근 24시간 {len(N_)}건 v {mn_:.3f} "
+                       f"(고장 {g23['none_breaks']}건, 건당 -1) < 보증 A {mw_:.3f} -> 12시간 동안 보증 없는 상품은 결제하지 않음"])
+                fires.append("G23")
+        st["g23"] = g23
+    except Exception as e:
+        log(f"G23 skipped: {e!r}")
+
     # G19 saved watch (user 11-12 23:50: 'saved changes in real time; when it moves past a threshold, wake the buyer
     # or adjust the negotiation'). The floors already follow m* every tick (vprice v_floor_rel); this wakes the buyer
     # strategist (no phone alert) when (a) our board-implied v over the last 2 h runs .03 under its 6 h value or
