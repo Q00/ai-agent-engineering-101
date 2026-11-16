@@ -63,3 +63,19 @@ class ServiceRecoveryTests(unittest.TestCase):
             result=portfolio._emit_approved(state,Path(directory)/'state.json',desired,{'reason':'approved'},inv['restock'],str(now),
                 operating_policy(now),now,10,1000000,lambda:(inv,now,True),{'G':self.product})
             self.assertEqual(result['buy'],[]);self.assertFalse(state['intents'])
+
+    def test_profitable_midprice_priority_survives_harvest_without_bulk_growth_buffer(self):
+        p={**self.product,'list_price':200000};rows=[]
+        for i in range(2):
+            rows += [{'event':'receipt_signed','sku':'G','unit':f'u{i}','cost':90000,'supplied_at':self.now-1000,'warranty_hours':6,'at':self.now-500},
+                     {'event':'settled','sku':'G','unit':f'u{i}','ledger':i+1,'price':180000,'at':self.now-400}]
+        result=replenishment_candidates({'G':p},self.inventory(),rows,self.now)
+        self.assertTrue(result[0]['midprice_priority']);self.assertIsNotNone(result[0]['upper_midprice'])
+        self.assertFalse(any(o['scenario'].startswith('cover_') for o in result[0]['target_options']))
+    def test_sparse_midprice_one_unit_recovery_is_allowed_in_harvest(self):
+        p={**self.product,'list_price':200000};rows=self.rows()
+        for e in rows:
+            if e['event']=='settled':e['price']=180000
+            if e['event']=='receipt_signed':e['cost']=90000
+        result=replenishment_candidates({'G':p},self.inventory(),rows,self.now)
+        self.assertTrue(result[0]['midprice_stockout_recovery']);self.assertEqual(result[0]['target_options'][0]['qty'],1)

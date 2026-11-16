@@ -257,7 +257,7 @@ def replenishment_candidates(catalog, inventory, history, now, blocked=(), trial
         upper = signal['upper_midprice_sales']
         recovery_margin = (projected_upper_midprice_margin(p,upper['median_paid'],surge.get(sku,1),now)
                            if upper['median_paid'] is not None and type(price) is int and price>0 else 0)
-        recovery = (operating.get('phase')=='growth' and not projected
+        recovery = (operating.get('phase') in ('growth','harvest') and operating['hours_to_end']>=3 and not projected
                     and upper['positive_12h']>=1 and upper['contribution_12h']>0
                     and upper['positive_12h']*2>=signal['settled_sales_12h']
                     and recovery_margin>0 and not signal['proven'])
@@ -304,7 +304,7 @@ def replenishment_candidates(catalog, inventory, history, now, blocked=(), trial
         options.sort(key=lambda option:option['qty'])
         upper = signal['upper_midprice_sales']
         upper_midprice = None
-        if (operating['phase'] == 'growth' and not options[0].get('expiry_trial')
+        if (operating['phase'] in ('growth','harvest') and not options[0].get('expiry_trial')
                 and (upper['positive_12h'] >= MIN_POSITIVE_SALES or recovery) and upper['contribution_12h'] > 0
                 and upper['positive_12h'] * 2 >= signal['settled_sales_12h']):
             margin = projected_upper_midprice_margin(p, upper['median_paid'], surge.get(sku, 1), now)
@@ -324,7 +324,7 @@ def replenishment_candidates(catalog, inventory, history, now, blocked=(), trial
             if not options:
                 continue
         rows.append({'sku': sku, 'name': p.get('name', sku), 'kind': p['kind'], 'category': p.get('category'),
-                     'midprice_priority': (operating['phase'] == 'growth' and
+                     'midprice_priority': (operating['phase'] in ('growth','harvest') and
                                            signal['midprice_contribution_sales_12h'] >= MIN_POSITIVE_SALES and
                                            signal['midprice_contribution_12h'] > 0),
                      'upper_midprice': upper_midprice,
