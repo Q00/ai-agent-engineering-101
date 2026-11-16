@@ -4,9 +4,13 @@ import tempfile
 import time
 import unittest
 from network_reads import retry_read
-from seller_procurement import choose,allocation_plan,capital_available,supply_result,own_registration,own_board_registration,retry_join,join_current_registration,preserve_stale_pending,breadth_window_blocks,refresh_window_blocks,competitor_breadth_target,warranty_risk_reserve,observed_warranty_hazard,active_warranty_amounts,supply_interval_wait,own_sales_evidence,recent_refund_cooldown_skus,mature_refund_risk_skus,active_high_value_warranty_skus,own_a_conversion_evidence,own_quote_conversion_evidence
+from seller_procurement import choose,allocation_plan,capital_available,supply_result,own_registration,own_board_registration,retry_join,join_current_registration,preserve_stale_pending,breadth_window_blocks,refresh_window_blocks,competitor_breadth_target,warranty_risk_reserve,observed_warranty_hazard,active_warranty_amounts,supply_interval_wait,capacity_recheck_wait,own_sales_evidence,recent_refund_cooldown_skus,mature_refund_risk_skus,active_high_value_warranty_skus,own_a_conversion_evidence,own_quote_conversion_evidence
 from seller_market import dominant_goods_profit_probability
 class PurchaseTests(unittest.TestCase):
+ def test_capacity_recheck_is_fast_only_during_open_supply(self):
+  self.assertEqual(capacity_recheck_wait({'open':True}),10)
+  self.assertEqual(capacity_recheck_wait({'open':False}),60)
+  self.assertEqual(capacity_recheck_wait({}),60)
  def test_successful_supply_cooldown_avoids_predictable_rate_limit(self):
   self.assertAlmostEqual(supply_interval_wait(100,101,10.05),9.05)
   self.assertEqual(supply_interval_wait(100,110.05,10.05),0)

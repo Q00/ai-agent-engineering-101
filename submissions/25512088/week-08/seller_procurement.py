@@ -21,6 +21,10 @@ def supply_interval_wait(last_success, now=None, interval=SUPPLY_INTERVAL_SECOND
     if not isinstance(last_success,(int,float)) or last_success<=0:return 0.0
     return max(0.0,last_success+max(0.0,float(interval))-now)
 
+def capacity_recheck_wait(restock):
+    """Recheck freed cash quickly only while the short supply window is open."""
+    return 10 if isinstance(restock,dict) and restock.get('open') else 60
+
 def settings():return json.loads((ROOT/'procurement_policy.json').read_text())
 
 def warranty_risk_reserve(amounts, policy=None):
@@ -1016,7 +1020,7 @@ def main():
             log(event='evidence_or_capacity_wait',lifetime_spent=spent,inventory_cost=inventory_cost,
                 deployable_capital=available,available_slots='capital_and_per_sku_bounded',protected_liabilities=exposure,
                 demand_windows=aggression)
-            time.sleep(60);continue
+            time.sleep(capacity_recheck_wait(restock));continue
         if not restock.get('open'):
             log(event='waiting_supply',opens_at=restock.get('opens_at'),spent=spent)
             time.sleep(min(20,max(2,restock.get('opens_at',time.time()+20)-time.time())));continue
