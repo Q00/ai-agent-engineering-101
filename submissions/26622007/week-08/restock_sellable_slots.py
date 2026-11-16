@@ -34,11 +34,17 @@ The rule (on: every listed goods SKU with a target, no arms; the trial is read a
 Only the target reads the count: max_units_per_sku and the high-price and surge caps still count every unit held, and
 the cash buffer, stock cost and break guards apply as before. Prices and floors are not touched: nothing sells cheaper.
 
+Default (W-20261116-1255-AX재고상한기본): sellable-cap-1116 (11/16 11:47:40 on, stock_cap 4.2억, cash floor 1억) was kept
+on its target, book: its first hour +2.87M/h against +0.42M/h in the hour before (same clock a day before +0.33M/h),
+the stock cost held at the cap (4.12억) and cash over the floor. So with no live switch the rule runs as DEFAULT (that
+study's numbers, no window): a missing, unreadable, bad or expired switch is the default, not off. Off is the switch
+with "enabled": false, or RESTOCK_SELLABLE_SLOTS=0; off is today's count exactly (the 11/15 rule before this study).
+A live switch inside its window still wins over the default.
+
 Switch: .market/restock_sellable_slots.json {"enabled": true, "study": "<id>", "hours": 6, "dear_share": 0.70,
 "dear_hours": 1, "hold_times": 3, "cash_floor": 100000000, "fresh_sell": 0.39, "start_at": <epoch>, "stop_at": <epoch>,
 "stock_cap": <won or null>};
-on only in [start_at, stop_at), at most MAX_WINDOW_HOURS. Missing, unreadable, a bad value or time is off, and off is
-today's count exactly. RESTOCK_SELLABLE_SLOTS=0 in the environment is off too. Write it with switch_on(). Read at
+live only in [start_at, stop_at), at most MAX_WINDOW_HOURS; outside it, or missing, unreadable, a bad value: DEFAULT. Write it with switch_on(). Read at
 every restock run (a new process each time): no restart either way. With it on, restock_fresh_slots is not read.
 Never raises.
 """
@@ -61,6 +67,10 @@ MAX_SURGE = 1.05
 FAST_FOOD_HOURS = 0.5      # a held food lasting less goes before the goods refills (urgent_listed)
 MAX_WINDOW_HOURS = 12
 STOCK_CAP_HIGH = 10 ** 12  # stock_cap: the stock cost (held + on its way + this run, at worst cost) the extras stop at
+DEFAULT_STOCK_CAP = 420_000_000     # sellable-cap-1116's cap, kept
+DEFAULT = {"study": "sellable-default", "hours": HOURS, "dear_share": DEAR, "dear_hours": DEAR_HOURS,
+           "hold_times": HOLD_TIMES, "cash_floor": float(CASH_FLOOR), "fresh_sell": FRESH_SELL, "start_at": None,
+           "stop_at": None, "stock_cap": DEFAULT_STOCK_CAP, "default": True}
 
 
 def _num(v):
@@ -70,7 +80,9 @@ def _num(v):
         return False
 
 
-def _valid(d, now):
+def _valid(d, now, window=True):
+    """The settings when d is sane (and, with window, now is inside its finite window), else None. window=False only
+    for DEFAULT (_live): a switch file is always read with its window."""
     if not isinstance(d, dict):
         return None
     g = lambda k, dflt: d.get(k, dflt)
@@ -86,28 +98,36 @@ def _valid(d, now):
             or not (_num(floor_) and floor_ >= CASH_FLOOR_LOW) \
             or not (_num(sell) and FRESH_LOW <= sell <= FRESH_HIGH) \
             or not (cap is None or (_num(cap) and 0 < cap <= STOCK_CAP_HIGH)) \
-            or not (_num(start) and _num(stop) and 0 < start < stop <= start + MAX_WINDOW_HOURS * 3600) \
-            or not _num(now) or not start <= now < stop:
+            or not (not window and start is None and stop is None
+                    or window and _num(start) and _num(stop) and 0 < start < stop <= start + MAX_WINDOW_HOURS * 3600) \
+            or not _num(now) or window and not start <= now < stop:
         return None
-    return {"study": study, "hours": float(hours), "dear_share": float(dear), "dear_hours": float(dear_h),
+    return {"default": not window, "study": study, "hours": float(hours), "dear_share": float(dear), "dear_hours": float(dear_h),
             "hold_times": hold, "cash_floor": float(floor_), "fresh_sell": float(sell), "start_at": start, "stop_at": stop,
             "stock_cap": cap}
 
 
+def _live(d, now):
+    """_valid for a run's settings: DEFAULT has no window, a switch's settings keep theirs."""
+    return _valid(d, now, window=not (isinstance(d, dict) and d.get("default") is True))
+
+
 def config(md=None, env=None, now=None):
-    """The switch's settings when it is on at now, else None."""
+    """The switch's settings when it is live at now; None when it is off ("enabled": false, or the environment);
+    else DEFAULT."""
+    env = os.environ if env is None else env
+    if str(env.get("RESTOCK_SELLABLE_SLOTS") or "").strip().lower() in ("0", "false", "no", "off"):
+        return None
     try:
-        env = os.environ if env is None else env
         now = time.time() if now is None else now
-        if str(env.get("RESTOCK_SELLABLE_SLOTS") or "").strip().lower() in ("0", "false", "no", "off"):
-            return None
         md = Path(md) if md is not None else Path(env.get("MARKET_DIR") or Path(__file__).parent / ".market")
         d = json.loads((md / SWITCH).read_text(encoding="utf-8"))
-        if not isinstance(d, dict) or d.get("enabled") is not True:
+        if isinstance(d, dict) and d.get("enabled") is False:
             return None
-        return _valid(d, now)
-    except (OSError, ValueError, TypeError, OverflowError, UnicodeError):
-        return None
+        got = _valid(d, now) if isinstance(d, dict) and d.get("enabled") is True else None
+        return got if got is not None else dict(DEFAULT)
+    except (OSError, ValueError, TypeError, OverflowError, UnicodeError, AttributeError):
+        return dict(DEFAULT)
 
 
 def switch_on(md, *, study, start_at, hours, stuck_hours=HOURS, dear_share=DEAR, dear_hours=DEAR_HOURS,
@@ -138,7 +158,7 @@ def on(cfg):
     """The settings when the run's cfg has the switch on at the run's clock (cfg["fresh_now"]), else None."""
     cfg = cfg if isinstance(cfg, dict) else {}
     at = cfg.get("fresh_now")
-    return _valid(cfg.get("sellable_slots"), at if _num(at) else time.time())
+    return _live(cfg.get("sellable_slots"), at if _num(at) else time.time())
 
 
 def stuck(u, s, now):
@@ -168,7 +188,7 @@ def counted(units, cfg, catalog, factors=None, now=None):
     try:
         at = (cfg or {}).get("fresh_now")
         now = at if _num(at) else time.time() if now is None else now
-        s = _valid((cfg or {}).get("sellable_slots"), now)
+        s = _live((cfg or {}).get("sellable_slots"), now)
         targets = (cfg or {}).get("sku_target_units")
         if s is None or not isinstance(targets, dict):
             return plain, {}

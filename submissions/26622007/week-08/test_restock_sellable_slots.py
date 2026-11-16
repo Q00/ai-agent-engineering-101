@@ -36,14 +36,15 @@ def switch(d, **over):
 
 
 class SwitchTest(unittest.TestCase):
-    def test_on_only_inside_a_finite_window_with_sane_numbers(self):
-        self.assertEqual(ss.config(switch(ON), env={}, now=NOW)["study"], "sellable-test")
-        self.assertIsNone(ss.config(tempfile.mkdtemp(), env={}, now=NOW))
-        self.assertIsNone(ss.config(switch(ON, enabled=False), env={}, now=NOW))
-        self.assertIsNone(ss.config(switch(ON, enabled="true"), env={}, now=NOW))
-        self.assertIsNone(ss.config(switch(ON), env={}, now=ON["start_at"] - 1))
-        self.assertIsNone(ss.config(switch(ON), env={}, now=ON["stop_at"]))
-        self.assertIsNone(ss.config(switch(ON), env={"RESTOCK_SELLABLE_SLOTS": "0"}, now=NOW))
+    def test_a_switch_is_live_only_inside_a_finite_window_with_sane_numbers(self):
+        live = lambda md, now=NOW, env=None: (ss.config(md, env=env or {}, now=now) or {}).get("study") == "sellable-test"
+        self.assertTrue(live(switch(ON)))
+        self.assertFalse(live(tempfile.mkdtemp()))
+        self.assertFalse(live(switch(ON, enabled=False)))
+        self.assertFalse(live(switch(ON, enabled="true")))
+        self.assertFalse(live(switch(ON), now=ON["start_at"] - 1))
+        self.assertFalse(live(switch(ON), now=ON["stop_at"]))
+        self.assertFalse(live(switch(ON), env={"RESTOCK_SELLABLE_SLOTS": "0"}))
         for bad in ({"stop_at": None}, {"start_at": "x"}, {"stop_at": float("inf")}, {"stop_at": NOW + 13 * 3600},
                     {"hours": 0}, {"hours": 100}, {"dear_share": 0.3}, {"dear_share": 1.2}, {"dear_hours": -1},
                     {"hold_times": 0}, {"hold_times": 2.5}, {"hold_times": True}, {"hold_times": 9},
@@ -51,11 +52,38 @@ class SwitchTest(unittest.TestCase):
                     {"stock_cap": 0}, {"stock_cap": -1}, {"stock_cap": "4e8"}, {"stock_cap": True},
                     {"stock_cap": float("inf")}, {"stock_cap": float("nan")}, {"stock_cap": 10 ** 13},
                     {"stock_cap": 10 ** 400}):
-            self.assertIsNone(ss.config(switch(ON, **bad), env={}, now=NOW), bad)
+            self.assertFalse(live(switch(ON, **bad)), bad)
+
+    def test_without_a_live_switch_the_rule_is_the_default_with_its_stock_cap(self):
+        # W-20261116-1255-AX재고상한기본: sellable-cap-1116 kept (first hour book +2.87M/h against +0.42M/h before)
+        for md, now in ((tempfile.mkdtemp(), NOW), (switch(ON), ON["start_at"] - 1), (switch(ON), ON["stop_at"]),
+                        (switch(ON, stop_at=NOW + 13 * 3600), NOW), (switch(ON, cash_floor=1000), NOW),
+                        (switch(ON, enabled="true"), NOW)):
+            got = ss.config(md, env={}, now=now)
+            self.assertEqual((got["study"], got["stock_cap"], got["cash_floor"], got["hold_times"], got["hours"],
+                              got["dear_share"], got["dear_hours"], got["fresh_sell"]),
+                             ("sellable-default", 420_000_000, 100_000_000, 3, 6.0, 0.70, 1.0, 0.39))
+            self.assertEqual(ss.on({"sellable_slots": got, "fresh_now": now + 10 * 86400})["study"], "sellable-default")
         md = tempfile.mkdtemp()
         with open(os.path.join(md, ss.SWITCH), "w", encoding="utf-8") as f:
             f.write("{not json")
-        self.assertIsNone(ss.config(md, env={}, now=NOW))
+        self.assertEqual(ss.config(md, env={}, now=NOW)["study"], "sellable-default")
+        # off stays off: the switch says enabled false, or the environment says 0
+        self.assertIsNone(ss.config(switch(ON, enabled=False), env={}, now=NOW))
+        self.assertIsNone(ss.config(tempfile.mkdtemp(), env={"RESTOCK_SELLABLE_SLOTS": "0"}, now=NOW))
+        # a live switch still wins inside its window
+        self.assertEqual(ss.config(switch(ON), env={}, now=NOW)["stock_cap"], None)
+        # a switch file cannot make itself the endless default
+        self.assertEqual(ss.config(switch(ON, default=True, start_at=None, stop_at=None, stock_cap=10 ** 12),
+                                   env={}, now=NOW)["stock_cap"], 420_000_000)
+        self.assertIsNone(ss.on({"sellable_slots": dict(ON, start_at=None, stop_at=None), "fresh_now": NOW}))
+
+    def test_the_default_counts_and_caps_as_the_kept_study(self):
+        d = ss.config(tempfile.mkdtemp(), env={}, now=NOW)
+        cfg = dict(CFG, sellable_slots=d, fresh_now=NOW)
+        units = [unit("G1", 0.75, 2)] * 3 + [unit("G1", 0.60, 0.2)]
+        got, changed = ss.counted(units, cfg, CATALOG)
+        self.assertEqual((got["G1"], changed["G1"]["stuck"]), (1, 3))
 
     def test_switch_on_writes_what_config_reads_and_refuses_a_bad_window(self):
         md = tempfile.mkdtemp()
