@@ -269,6 +269,49 @@ def own_a_sales(est, now):
         if d.get("shop") in ours and d.get("grade") == "A" and (cat.get(s) or {}).get("kind", "goods") == "goods":
             n[s] += 1
     return n
+# 11-16 (owner): a goods SKU we sold at a margin passes the A check. The check prices an A at A_COST of list plus its
+# break premium against the market's A median, so it holds from 0.680 of list; G24f5f979's market A median went
+# 0.695 -> 0.659 -> 0.641 at 11-13 h and restock stopped buying it after 11:04, while in 24 h we had sold 124 of it at
+# +27.2M (A 99 at +179k each, cost 0.609 of list; B 25 at +381k) - about half our book growth. Our goods sales fell
+# 68 -> 42 -> 27M an hour, book +4.5M -> 0. 10 of our 20 SKUs with the most margin in 24 h failed the check at 14 h.
+# Passes when, over the last OWN_PASS_H hours, we settled OWN_PASS_N+ of it at a mean margin of OWN_PASS_MIN of list
+# or more (each unit at its supply cost), and its A held do not pass B_SEEK_A_H hours of our A sales of it (the
+# 11-15 dear A: B_SEEK lines bought without the check). A_CHECK_TOP does not cut such a line. Off: OWN_PASS = False.
+OWN_PASS = True
+OWN_PASS_H, OWN_PASS_N, OWN_PASS_MIN = 24, 10, 0.02
+OWN_PASS_COST_H = 120                           # our supply entries this recent give the units' costs
+
+
+def own_margin(est, now):
+    """{goods sku: (units, mean margin / list)} of our settles over the last OWN_PASS_H hours, each unit at the
+    price its supply entry paid (units bought before OWN_PASS_COST_H hours are left out)."""
+    db = getattr(est, "db", None)
+    cat = est.cat or {}
+    ours = model.our_urls(db)
+    cost = {}
+    for (data,) in db.execute("SELECT data FROM ledger WHERE round >= 3 AND kind='supply' AND ts >= ? AND data LIKE ?",
+                              (now - OWN_PASS_COST_H * 3600, f'%"shop": "{model.SHOP_NAME}"%')):
+        d = json.loads(data)
+        if d.get("shop") == model.SHOP_NAME and d.get("qty"):
+            for u in d.get("units") or []:
+                cost[u] = d["total"] / d["qty"]
+    n, m = Counter(), Counter()
+    for ts, d in model.entries(db, "settle", now - OWN_PASS_H * 3600):
+        s, price = model.sku_of(d), model.amount_of(d)
+        x = cat.get(s) or {}
+        if (d.get("shop") not in ours or not price or x.get("kind", "goods") != "goods" or not x.get("list_price")
+                or d.get("unit") not in cost):
+            continue
+        n[s] += 1
+        m[s] += (price - cost[d["unit"]]) / x["list_price"]
+    return {s: (n[s], m[s] / n[s]) for s in n}
+
+
+def own_pass(s, own_m, a_held, own_a):
+    """The SKU passes the A check on our own sales of it (OWN_PASS)."""
+    k, margin = own_m.get(s, (0, 0.0))
+    return (k >= OWN_PASS_N and margin >= OWN_PASS_MIN
+            and (own_a is None or a_held <= max(B_SEEK_A_MIN, own_a.get(s, 0))))
 # 11-15 (owner): a goods SKU's demand is at least MARKET_SHARE of the market's settles of it per hour (other shops,
 # last MARKET_RATE_H hours), and the A that seller.MKT_HOLD_GUARD keeps (kept_a: floor over the market's A price) are
 # not counted against its cap up to one cap of them (KEPT_FREE caps). Our demand was made of our own sales, which stop
@@ -681,8 +724,14 @@ def candidates(inv, cat, demand, est, p, now):
             kept_sku = Counter(u.get("sku") for u in units if u.get("unit") in kept)
         except Exception as e:                          # no market rates: the demand as before
             print(f"[restock] market demand unavailable: {type(e).__name__}: {str(e)[:120]}", file=sys.stderr)
+    own_m = {}                                          # OWN_PASS
+    if OWN_PASS:
+        try:
+            own_m = own_margin(est, now)
+        except Exception as e:                          # no own margins: the A check as before
+            print(f"[restock] own margins unavailable: {type(e).__name__}: {str(e)[:120]}", file=sys.stderr)
     own_a = None                                        # B_SEEK_A_H: None = no cap (no ledger)
-    if B_SEEK and B_SEEK_A_H:
+    if (B_SEEK and B_SEEK_A_H) or OWN_PASS:
         try:
             own_a = own_a_sales(est, now)
         except Exception as e:
@@ -748,12 +797,15 @@ def candidates(inv, cat, demand, est, p, now):
             continue
         price = est.price_ratio(c) * lp
         m = mkt.get(s) if kind == "goods" else None
+        passed = False
         if m and "A" in m:
             # f is the forecast factor of our next unit (surge_counts), not the factor now
             margin = p["min_margin"] if A_CHECK_MARGIN else 0.0
             pays = lambda j: (A_COST * lp * surge_factor(surge_u + j) * (1 + margin) + premium_a * m["A"] * lp
                               <= m["A"] * lp)
             free = seek and not B_SEEK_A_CHECK          # B_SEEK before 11-15: its A may stay (bless.py counts it so)
+            if not free and not pays(1) and own_pass(s, own_m, by_grade.get(s, Counter())["A"], own_a):
+                free = passed = True                    # OWN_PASS: we sold it at a margin
             if not pays(1) and not free:
                 continue                                # an A of it would not pay its cost and breaks at the market
             if A_CHECK_TOP and not free:                             # each unit, up to the last (dearest) one bought
@@ -772,6 +824,8 @@ def candidates(inv, cat, demand, est, p, now):
                   "base_worst": WORST_COST * lp, "surge_u": surge_u,
                   "life": FOOD_LIFE * (x.get("shelf_hours") or 24) if kind == "food" else None,
                   "have": have, "room": room, "a": a, "b": b}
+        if passed:
+            out[s]["own_pass"] = True                   # OWN_PASS: in the restock log's buy lines
         if fast:
             out[s]["h"] = FAST_COVER_H                  # ranked: P_k over this, not the refill cycle
         if keep:
@@ -888,7 +942,8 @@ def decide(inv, cat, demand, est, p, now, lines=None, every=None):
             short_room -= exp                               # short goods stock at expected cost (SHORT_STOCK_MAX)
         buy[s] = {"sku": s, "qty": qty, "kind": x["kind"], "category": x["category"], "worst_cost": round(top / qty),
                   "k_first": x["have"] + 1, "value": round(value[s] * qty / target[s]),
-                  "surge_u": x["surge_u"], "surge_last": round(surge_factor(x["surge_u"] + qty), 3)}
+                  "surge_u": x["surge_u"], "surge_last": round(surge_factor(x["surge_u"] + qty), 3),
+                  **({"own_pass": True} if x.get("own_pass") else {})}
         spent += top
         if x["kind"] == "goods":
             spent_g += top
