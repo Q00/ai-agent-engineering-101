@@ -686,6 +686,10 @@
   {
    "t": 1794855050.2415,
    "text": "Leak audit #53 (11/16 21:41-11/17 03:41). NEW BUYER KNOB SCOUT_WAIT (BUYER_BOUNDS 4-12 s, step 2, default 10; meta restarted 03:5x): what limits our buyer's deals/h is time per order, not order supply (idle only 1,612 s in 6 h; paid orders take 31 s vs 10-23 s for the top buyers). 357 of 533 orders waited on a slow scout quote, 13.2 s before talking vs 5.9 s otherwise (~2,600 s per 6 h, 13% of busy time, up to ~+50 deals per 6 h). Counter-evidence: at 6 s (11/10) 2,732 slow shops were dropped and 230 orders got no quote. So run it as a buyer TRIAL (half the orders), e.g. 10 -> 6, judged on buyer points/h; our deals' saved averages 0.857 vs the board's 0.738, so every extra deal lifts saved. Other findings: (1) seller_r3.py:686 accepts a buyer's second offer once it clears the floor: 674 of 1,341 deals closed under the ask/floor midpoint while 659 of those buyers were still raising; upper bound ~5.9M over 20 h; a hard-coded rule needing a kit restart, so not now. (2) Restock in the last 6 h bought 109.5M (7.4M in the first hour, 29.1M in the sixth): food 7.9M (86% sold), 300k+ goods 100.4M (162 of 243 sold; 300k+ A runs out in ~4 h at this pace). C goods from the grade draw (113 units 300k+, 31.8M) will not sell; Book keeps them at cost, so the cost is storage only - but stock_value churn (100/105/110/115M five times today) adds nothing: pick one and hold. (3) Food shelf-life refusals end the order (n=9, 4 from one shop) - small. Our buyer: 545 orders, 400 paid (73%); 77 ended on an ask above our limit, 31 with no price named."
+  },
+  {
+   "t": 1794856119.943083,
+   "text": "04:1x supervisor: HOLD stock_value at 110M until the round ends; do not propose it again. It moved 100/105/110/115M six times since 11/16 18:08 with no verdict behind any step ('the opposite of the last move' is not evidence). Each move lands inside the next verdict's window as a confound. In the endgame unsold stock counts at cost in Book, so the cap only shifts storage cost; there is nothing to learn from it in the 20 h left."
   }
  ]
 }
