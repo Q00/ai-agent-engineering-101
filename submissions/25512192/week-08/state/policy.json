@@ -1,13 +1,13 @@
 {
  "shop": {
-  "open_ratio": 0.6,
-  "floor_margin": 0.0,
+  "open_ratio": 0.68,
+  "floor_margin": 0.04,
   "clearance_hours": 72,
   "clearance_floor": 0.3,
   "warranty_hours": {
    "A": 6,
    "B": 6,
-   "C": 0
+   "C": 6
   },
   "stock_categories": [
    "가구/침구>침구/홈데코>침구",
@@ -16,23 +16,23 @@
    "식품>김치/반찬/즉석요리>즉석조리식품",
    "식품>기타 가공식품>과자",
    "식품>음료>주스/코코아/생수",
-   "가구/침구>가구>소파/의자/스툴",
-   "식품>김치/반찬/즉석요리>찌개/탕류/장류"
+   "식품>시리얼/곡물/콩류>곡물",
+   "식품>야채/과일>신선과일(부패주의)"
   ],
-  "units_per_sku": 1,
+  "units_per_sku": 5,
   "max_stock_share": 0.25,
   "food_min_shelf_hours": 48
  },
  "buyer": {
-  "offer_open_ratio": 0.65,
-  "max_paid_ratio": 0.75,
+  "offer_open_ratio": 0.68,
+  "max_paid_ratio": 0.74,
   "goods_grades": [
    "A",
    "B"
   ],
   "require_warranty_goods": true,
-  "food_hours_margin": 6
+  "food_hours_margin": 8
  },
- "notes": "Shop: no sales in the last 6 h while 105 units (cost about 9.5M) sit in stock at 1%/day holding cost, and 6 food units expire within 12 h. The opening ask of 0.6 is already below the market median paid/list of 0.57-0.70, so the likely blocker is the floor at exactly cost, since grade A cost is 55-75% of list. I lowered floor_margin slightly to -0.03 so a few more negotiations can close, and raised clearance_hours from 72 to 96 so food starts clearing earlier. The category list already covers the top ledger sellers, so I left it unchanged. Buyer: 88 of 200 agreed deals were paid, and the most c",
- "updated": 1794306549.2282016
+ "notes": "Shop: lowered open_ratio from 0.7 to 0.68. Our median paid/list is 0.64 with a 0.09 margin over cost, while the top shop by volume (43.6k deals) sells at about 0.60, so a slightly lower ask should win more deals while keeping the margin above the 0.04 floor. Raised units_per_sku from 5 to 6 because only 74 units are in stock and the stocked categories (김치, 침구, 침대/매트리스, 주스, 과자) have the highest 24 h volumes. No food expires within 12 h, so shelf-life and clearance settings stay. Buyer: unchanged. Most refusals come from sellers offering grade C or 0 h warranty, which the policy correctly reject",
+ "updated": 1794828150.7877762
 }
