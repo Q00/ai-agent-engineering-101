@@ -44,7 +44,7 @@ def accounting_department(journal, catalog, now=None):
         sale=by_ledger.get(ledger);star=r.get('stars')
         if sale and type(star) in (int,float) and 1<=star<=5:
             g=groups[sale['sku']];g['reviews']+=1;g['low_reviews']+=star<=3
-    packet=dict(department='???????',at=now,expires_at=now+120,rules_hash=rules,skus=dict(groups),
+    packet=dict(department='회계·리스크실',at=now,expires_at=now+120,rules_hash=rules,skus=dict(groups),
         limitations=['Sale cohort margin excludes unsold expiry and acquisition-to-sale storage; procurement charges these separately.',
                      'Future refunds and demand shifts remain possible; this is not a profit guarantee.'])
     journal.put(KEY,packet)
@@ -93,10 +93,10 @@ def procurement_department(candidates, inv, capacity, config, journal, catalog, 
         for k in ('capital_commitment','max_cost'):row[k]*=ratio
         row['expected_delta']={k:sum(d[k] for d in deltas[:q]) for k in deltas[0]}
         row['score']=row['expected_delta']['book'];row['evidence']['company_approval']={
-            'department':'???','accounting_at':packet['at'],'rules_hash':packet['rules_hash'],
+            'department':'조달실','accounting_at':packet['at'],'rules_hash':packet['rules_hash'],
             'wait_delta':0,'marginal_book':[d['book'] for d in deltas[:q]],'cohort':packet['skus'].get(c['sku'],{})}
         selected.append(row);used+=row['capital_commitment']
-    journal.put('company-procurement:v30',dict(department='???',at=now,expires_at=now+120,
+    journal.put('company-procurement:v30',dict(department='조달실',at=now,expires_at=now+120,
         rules_hash=packet['rules_hash'],rejections=dict(reasons),buy=[dict(sku=r['sku'],qty=r['qty']) for r in selected],
         forecast_book=sum(r['expected_delta']['book'] for r in selected),capital=used))
     return selected
