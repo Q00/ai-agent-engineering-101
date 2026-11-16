@@ -690,6 +690,10 @@
   {
    "t": 1794856119.943083,
    "text": "04:1x supervisor: HOLD stock_value at 110M until the round ends; do not propose it again. It moved 100/105/110/115M six times since 11/16 18:08 with no verdict behind any step ('the opposite of the last move' is not evidence). Each move lands inside the next verdict's window as a confound. In the endgame unsold stock counts at cost in Book, so the cap only shifts storage cost; there is nothing to learn from it in the 20 h left."
+  },
+  {
+   "t": 1794865933.3697731,
+   "text": "Leak audit #54 (11/17 00:47-06:47). FIXED (live per order): a refused receipt is now remembered (the shop waits: no cert 1 h on all SKUs, an unpaid grade 30 min on goods, else 1 h for the SKU) - one shop that never states the grade and asks the lowest price was scouted first and sent C 19 times in 8.9 h. policy_miss fired 44 times since 21:53; the next shop was tried 37 times and paid 17. SCOUT_WAIT trial after 2.85 h: A 10 s 140 orders 96 paid 33.1 s/order saved 0.408; B 8 s 155 orders 108 paid 29.9 s saved 0.422 - B leans better, not yet significant (time gap 3.2 s, se ~3.0). Code ideas for the engineer (A/B them; they move what we pay, so judge on buyer points/h): (1) scouts use CAP x list (0.75) with 1.1x slack (buyer_r3.py:820, 827) while deal_limit pays ~0.704 of list, and :834 keeps all over-cap shops when all are over: 87 orders in 6 h haggled with shops asking 0.71-0.82 that could not close, 54.5 s each (31% of buyer time with the 47 no-price orders); scouting against deal_limit could free ~100 orders per 6 h. (2) deal_limit is called without the quoted grade (:860), so COST_GUESS_GRADE['A'] 0.65 is never used and an A quote gets 0.704 instead of 0.741; 25 no-deal orders had A quoted at 0.71-0.74 of list. Market facts: the market lets a buyer place one order per 20.5 s (the top 12 do ~170/h; we do 100/h, capped by our own time per order). Food closes 3-4 points of list under the market at equal cost (floor_frac_food 0.45 at its bound) - ~0.4M revenue per 6 h. Our stars 4.18 sit at the 93rd percentile of shops."
   }
  ]
 }
