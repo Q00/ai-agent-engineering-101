@@ -29,7 +29,10 @@ NUMBERS = {
     "liquidate_hours":   (24, 12, 48),         # from this many hours before the end the floor falls to cost
     "half_life_h":       (24, 6, 72),          # demand memory: weight of a sale halves every this many hours
     "prior_hours":       (2.0, 0.5, 8),          # cap on the demand prior's weight in hours; the market's spread sets it below
-    "mkt_floor":         (0.95, 0.93, 1.02),   # a goods A's floor as a share of the market's price for its SKU and grade
+    "mkt_floor":         (1.00, 0.93, 1.02),   # a goods A's floor as a share of the market's price for its SKU and grade
+                                               # 0.95 -> 1.00 (owner, 11-16): Book 1st is margin, not revenue (we sell
+                                               # A at 0.676 of list, the market 0.693); 11-15 11 h - 11-16 11 h replay
+                                               # (~/wk8-test/mktbt.py): 0.97 +0.76M/h, 1.00 +1.53M/h at 9% fewer sales
     "mkt_ask":           (1.04, 1.00, 1.10),   # its opening ask, same base (seller.MKT_PRICING, 11-10); OWNER_FIXED for now
     "warranty_hours":    (72, 72, 72),         # goods break within 6 h of the sale (agent.md), so 6 covered every
                                                # break; a longer one costs the same and is fixed (owner, 11-06 01 h):

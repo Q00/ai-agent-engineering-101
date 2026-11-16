@@ -673,6 +673,13 @@ the code does, so the managers do not read a deliberate effect as a fault and un
   with no B ever arriving: 47 A held at midnight against 6 of our sales of it in 6 h. The 11-15 dear A came from the
   same rule. CASH_RETURN and MARKET_DEMAND stay: since 16 h book +2.5M an hour, goods sales ~60M an hour, the
   purchases made after 10:38 have earned +17M against -14M on the dear A sold. Keep the hourly report of 10:38.
+- Owner, 11-16 12:16 KST: mkt_floor 0.95 -> 1.00 (still OWNER_FIXED). The goal is first place in book, and book grows
+  by margin only (book = profit + stock at cost): 24 h to 11 h our goods A sold 1,114M at 1.3% margin (0.676 of
+  list; the market and sergiobuilds 0.693), sergiobuilds made +112M of book on the same revenue, we +55M. Replay of
+  11-15 11 h - 11-16 11 h (~/wk8-test/mktbt.py): 0.97 +0.76M/h, 1.00 +1.53M/h at 9% fewer A sales. Fewer A sales
+  are expected and are not a fault: an unsold unit stays in book at its cost. Report every hour: A deals and margin,
+  A sold under cost, book per hour against sergiobuilds and yms979. Alarm if A deals fall more than 20% and book per
+  hour does not rise over 2 hours; then the owner goes back to 0.97. Do not change it yourself.
 
 ## buyer
 
