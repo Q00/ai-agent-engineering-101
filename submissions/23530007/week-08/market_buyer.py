@@ -1155,6 +1155,16 @@ def main():
                 ask = read_ask(t)[0]
                 if ask is not None:
                     asks.append(ask)
+                # 11-16 14:45 (user: 'widen the gap, every best move'): the market issues the next order only when this
+                # one ends, and since slot_value 0 slow shops became first picks: rounds-7 haggles there ran 35-50 s
+                # and ended 'too dear' (orders/h 145-171 -> 93-114, deals/h ~88 -> ~65). A haggle still above our cap
+                # after walk_secs at this shop walks, and the order moves on (knob walk_secs, 0 = off)
+                ws = float(bp.get("walk_secs", 15) or 0)
+                if (ws and vctx is not None and ask is not None and vp.get("cap") and ask > vp["cap"]
+                        and time.time() - t_shop > ws):
+                    log("buyer", f"{pick['name']} still asks {ask} over our cap {vp['cap']} after "
+                                 f"{time.time() - t_shop:.0f} s: walking to save the order's time")
+                    break
                 if vctx is not None and ask is not None:
                     # 11-12: one move in v (vprice.move): take an ask at take_v or better, else counter from open_v
                     # down by step_v, `rounds` times, then take any ask at or under the cap, else walk
