@@ -2,7 +2,7 @@
 
 **Student ID:** 25522018  
 **Course:** AI Agent Engineering 101 (Q00), Seoul National University of Science and Technology  
-**Status:** Implementation and offline validation completed **as of 2 November 2026**; Round 3 outcomes not yet reported  
+**Status:** Offline evaluation completed; live Round 3 results documented from a **13 November 2026 leaderboard snapshot** and **16 November 2026 log excerpts** (not final results)
 **LLM provider / model:** GroqCloud / `openai/gpt-oss-20b`  
 **Runtime:** Python, Windows PowerShell; instructor-provided Market Kit v4
 
@@ -92,20 +92,31 @@ In the synthetic buyer experiment, the seller reserves were 75, 80, 85, 90, 95 a
 
 **Observed reliability issue.** During the pre-Round-3 run, Groq returned HTTP 429 responses reporting an effective **2,000-token/day** limit on the selected model; repeated retries stalled negotiations. A logged, cross-process cooldown and bounded deterministic fallback were implemented and unit-tested. This is a model-availability mitigation, not evidence of successful live trade completion.
 
-## 5. Round 3 results and leaderboard evidence — to fill from actual logs
+## 5. Round 3 live observations and evaluation
 
-**As of 2 November 2026, Round 3 has not yet started; no Round 3 performance result is claimed here.** After the kit reports `round: 3`, record actual evidence below. The operational requirement is at least **20 settled seller** and **20 settled buyer** transactions during Round 3; the competition is scheduled to end **17 November 2026 at 23:59 KST**.
+**Evidence dates.** The market leaderboard snapshot provided on **13 November 2026** used the **Everyone** view, not the separate student-only Class view. The log output shared on **16 November 2026** contains newer buyer settlements. Therefore these figures describe a dated checkpoint, **not** the final competition outcome. The midterm deadline is **17 November 2026, 23:59 KST**.
 
-| Round 3 outcome (kit-confirmed only) | Measured value | Evidence location |
-|---|---|---|
-| Seller paid settlements | **PENDING** | `logs/market-kit.log`, `[acp] settled` and ledger IDs |
-| Buyer paid settlements | **PENDING** | `.market/payments.jsonl` / `[acp] paid` |
-| Seller net profit and revenue | **PENDING** | Market ledger / leaderboard |
-| Buyer realized surplus | **PENDING** | Settled item list price minus actually paid price |
-| Public rating / leaderboard percentile | **PENDING** | Dated market snapshot |
-| Model vs. fallback decision counts | **PENDING** | Agent/market logs, `[LLM]`, `[quota-guard]`, `[fallback]` |
+| Measure | Observed result | Source / caveat |
+|---|---:|---|
+| Everyone overall position | **48** | 13 Nov board; Class rank not independently checked |
+| Combined score | **62** | Displayed Shop ALL **32**, Buyer ALL **31** (rounding) |
+| Shop counted deals | **229** | 13 Nov board (settled market deals) |
+| Shop revenue | **5,444,675 credits** | Revenue, **not** net profit |
+| Shop Cash / Stock / Book | **622,680 / 341,802 / 964,482 credits** | Board-defined accounting; Book = Cash + Stock |
+| Shop stars | **4.37 / 5** | Public snapshot |
+| Buyer counted deals | **10,123** | 13 Nov board; Served: **9,802 / 10,123** |
+| Buyer Saved | **68.9%** | Market's **margin-normalized** saving measure; not a list-price discount |
+| Buyer realized surplus | **574,902,368 credits** | Board display; not an experiment-level counterfactual |
+| Buyer forum rating / posts | **No rating shown / 0 posts** | Before the new forum module's attempted posting |
+| LLM / deterministic fallback shares | **Not independently counted** | Rate-limiting observed; aggregate counts not verified |
 
-Keep the original logs, record the exact market round and snapshot time, and deduplicate paid ledger IDs. Compare adaptive vs. baseline on **settled** price, completion rate, turns and 429 incidence; never use negotiated-but-unpaid receipts as paid observations.
+**Direct paid-checkout evidence.** The `logs/market-kit.log` excerpts shared on 16 November contain successful ACP payments with ledger identifiers `#7363034`, `#7363881`, `#7363996`, `#7365180`, `#7365297`, and `#7366079`; respective paid amounts were 49,165, 12,276, 24,856, 11,816, 345,600, and 22,853 credits. These verify **buyer-side paid settlements**, not seller-side settlement counts. The **229 shop deals** come from the dated official leaderboard, not from independently deduplicated shop-specific log lines. This distinction avoids turning negotiated receipts or failed checkouts into claimed sales.
+
+**Proactive forum extension.** `forum_agent_r3.py` is a separately run, optional process that reads observed paid buyer transactions and queues factual SKU/price observations as JSONL in `.market/outbox.jsonl`, for Market Kit's forum synchronization. `test_forum_agent_r3.py` passed **5/5 offline tests**. A test invocation queued an observation for SKU `G75f11c19` (31 observed paid purchases; median 82,856 versus list 122,900 credits; **32.6% list-to-paid difference**; ledger references `5396252`, `5394217`, `5392899`). At the time of checking, **no `outbox.sent.jsonl` receipt existed**, and Market Kit had encountered `401` registration due to absent session credentials. **The post was queued, not proven published**, and no forum-score improvement is claimed. The forum agent is not a named hook in `agent.json`.
+
+**Failures and interpretation.** The live log showed buyer `409` ACP checkout refusals when a unit was not in stock for the order and Groq `429` rate limiting, with an explicitly labelled fallback. Both illustrate the difference between A2A negotiation and independent paid settlement. By the 13 Nov snapshot the market already showed more than the required 20 counted trades on each side. The low Shop ALL score and zero buyer forum posts were observable improvement targets; no causal attribution of score gain to a particular heuristic can be made from this observational record.
+
+**Reproduction limitation.** Unique current Round 3 paid and shop-settlement counts require an audit of the **full local market log** and/or market export. The final Class position should be rechecked when available. The snapshot above must not be mislabeled as the final score.
 
 ## 6. Reproducibility, failure modes, and provenance
 
@@ -117,12 +128,13 @@ python "$dir/test_buyer_adaptive.py"
 python "$dir/test_market_buyer_r3_v2.py"
 python "$dir/test_groq_quota_guard.py"
 python "$dir/test_restock_r3.py"
+python "$dir/test_forum_agent_r3.py"
 python "$dir/compare_buyer_policies.py"
 python -m compileall -q $dir
 python "$dir/install_groq_guard.py" --check
 ```
 
-To join **only after Round 3 is active**, use the existing kit entrypoint with private credentials in environment variables:
+To join during Round 3, use the kit with private `MARKET_OWNER` and `GROQ_API_KEY` environment variables set **in the same PowerShell terminal**:
 
 ```powershell
 $env:GROQ_RETRIES = "1"
@@ -132,6 +144,6 @@ python scripts/market_kit.py join --dir submissions/25522018/week-08 `
 
 **Security:** Never commit `shop_key.pem`, `buyer_key.pem`, API keys, `.market/` state, secrets, or virtual environments. Keep submitted code and architecture in `submissions/25522018/week-08/`, and include the required market log only after checking that it contains no secrets. The private-key exclusions were verified with `git check-ignore -v` in the local environment.
 
-**Limitations:** Heuristic scores are uncalibrated; the SKU inventory is cold-started before paid history exists; public reviews and forum mentions can be manipulated; the quota guard cannot create Groq capacity; strict A/B certificate filters can decrease purchase count; the 8% seller markup does not cover all economic costs; simulated buyer savings do not imply superior Round 3 rank. The instructor's Market Kit provides ACP/AP2 checkout and ledger semantics and is distinguished from student-created decision policies in the diagram.
+**Limitations:** Dated leaderboard values are not final Class values, and forum publication was unconfirmed; heuristic scores are uncalibrated; the SKU inventory is cold-started before paid history exists; public reviews and forum mentions can be manipulated; the quota guard cannot create Groq capacity; strict A/B certificate filters can decrease purchase count; the 8% seller markup does not cover all economic costs; simulated buyer savings do not imply superior Round 3 rank. The instructor's Market Kit provides ACP/AP2 checkout and ledger semantics and is distinguished from student-created decision policies in the diagram.
 
 **References:** Course Week 08 materials: <https://wpti.dev/ai-agent-engineering-101/week-08-en.html>. Market agent contract: <https://market.ourolabs.ai/agent.md>. The implemented behaviors above are grounded in the submitted Python modules and the tests named in this report.

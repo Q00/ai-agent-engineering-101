@@ -141,15 +141,15 @@ Implemented decision paths, bounded LLM harness, and verified settlement boundar
 \node[anchor=north west,align=left,text width=24.9cm] at (.24,2.56) {
   {\sffamily\bfseries\fontsize{8.8}{10.5}\selectfont\color{ink}Feedback / audit loop}\par\vspace{1.7pt}
   {\sffamily\color{secondary}\fontsize{8.5}{10.4}\selectfont
-  Paid seller and buyer ledger evidence informs subsequent restocking and shop selection.
-  Negotiated receipts and synthetic A/B comparisons are never counted as paid settlements.}
+  Paid ledger evidence informs restocking, buyer selection, and optional forum observations
+  from \texttt{forum\_agent\_r3.py}; unpaid negotiations never count as paid settlements.}
 };
 \draw[link] (.2,1.53) -- (25.52,1.53);
 \node[anchor=north west,align=left,text width=25.1cm] at (.24,1.35) {
   {\sffamily\color{secondary}\fontsize{8.1}{10.3}\selectfont
   \textbf{Evidence boundary.} The arrows show implemented agent decision paths; the instructor's
-  Market Kit validates payments and records ledgers. Local tests passed; Round 3 net profit,
-  surplus, and ranking remain unmeasured as of 2 November 2026.}
+  Market Kit validates payments and records ledgers. Round 3 payments were observed;
+  see the dated leaderboard snapshot in REPORT.md. Forum publication remains unverified.}
 };
 \end{tikzpicture}
 \end{center}
