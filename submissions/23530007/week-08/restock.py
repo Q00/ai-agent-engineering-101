@@ -99,6 +99,15 @@ RIVAL_SHARE, RIVAL_LINES = 0.7, 8
 # RIVAL_OVERRIDE_X now ignores cover 0: the rival lines already count only units that sell at the rival's price, and
 # the seller's floors keep every sale over cost, so an unsold fresh unit only waits in the book at cost
 RIVAL_OVERRIDE_X, OVERRIDE_LINE_COST, OVERRIDE_MAX_HELD = 0.63, 8e6, 12
+# 11-16 16:05 (user: 'anything more for the book?'): 42 h of our goods sales, margin minus warranty refunds by list
+# tier: >= 1.5 M A -1.7 M on 183 sales (3.3% breaks refund the full PRICE), B -0.4 M (23.5%); 0.5-1.5 M A +5.1 M,
+# B +2.3 M; < 0.5 M A +3.6 M furniture / +1.0 M bedding, B +1.9 M. Meanwhile 318 asks an hour got 'no stock' (191
+# goods, mostly 10-155 k bedding/home, 124 food) because goods lines were ranked by SALES VALUE (rate x list), the
+# revenue-race order, so big furniture took the lines. Now: no new lots at or over BIG_LIST, and goods lines are
+# ranked by expected BOOK per hour = rate x list x NET_SHARE of the tier
+BIG_LIST = 1.5e6
+def net_share(lp):
+    return 0.02 if lp >= 5e5 else 0.05
 RIVAL_X_SEEN = {}
 DEEP_OVER = 1.10             # a unit whose floor is over 1.10 x the SKU's market median counts 0 in the cover
 FOOD_KEEP_CASH = 5e6          # 11-15: least cash left after a food line (food is ~10 k a unit)
@@ -320,7 +329,7 @@ def sku_wants(catalog, have_sku, p, now, hours_left, market_sku, mkt_units=None,
         sellable_ = None
     for sku in sorted(rival_gain, key=lambda k: -rival_gain[k]):
         v = catalog[sku]
-        if v.get("kind") != "goods" or v["list_price"] > p["sku_max_price"]:
+        if v.get("kind") != "goods" or v["list_price"] > p["sku_max_price"] or v["list_price"] >= BIG_LIST:
             continue
         held_ = sellable_.get(sku, 0) if sellable_ is not None else have_sku.get(sku, 0)
         qty = min(MAX_QTY, math.ceil(RIVAL_SHARE * rival_rate[sku] * RIVAL_COVER_H) - held_)
@@ -334,7 +343,7 @@ def sku_wants(catalog, have_sku, p, now, hours_left, market_sku, mkt_units=None,
         if sku in taken:
             continue
         v = catalog.get(sku)
-        if not v or v["list_price"] > p["sku_max_price"]:
+        if not v or v["list_price"] > p["sku_max_price"] or (v["kind"] == "goods" and v["list_price"] >= BIG_LIST):
             continue
         if sku in scarce:
             cover = p["scarce_cover_hours"]
@@ -346,7 +355,7 @@ def sku_wants(catalog, have_sku, p, now, hours_left, market_sku, mkt_units=None,
                 # ranked with the proven SKUs by sales value per hour, not ahead of them: first in line, cheap
                 # near-monopolies filled the goods lines on 11-05 evening and the 2.32M Mate sofa went unbought
                 # (big sales fell from 55/h to 9/h)
-                out.append(((False, -1, -rate * v["list_price"]), v["category"], v, qty))
+                out.append(((False, -1, -rate * v["list_price"] * net_share(v["list_price"])), v["category"], v, qty))
             continue
         if v["kind"] != "goods":
             continue
@@ -360,7 +369,7 @@ def sku_wants(catalog, have_sku, p, now, hours_left, market_sku, mkt_units=None,
         target = math.ceil(target * (p.get("sku_auto", {}).get(sku) or {}).get("cover", 1.0))   # strategist.py
         qty = min(MAX_QTY, target - have_sku.get(sku, 0))
         if qty > 0:
-            out.append(((False, -1, -rate * v["list_price"]), v["category"], v, qty))
+            out.append(((False, -1, -rate * v["list_price"] * net_share(v["list_price"])), v["category"], v, qty))
     return sorted(out, key=lambda w: w[0])[:p["sku_lines"]]
 
 
