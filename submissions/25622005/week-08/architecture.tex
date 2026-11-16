@@ -115,7 +115,7 @@
     {\textbf{Kit v4, my patched copy} (\texttt{market\_kit.py}): \textbf{binding check} (SKU, unit, price cap)
      $\rightarrow$ ACP checkout $\rightarrow$ AP2 mandates $\rightarrow$ market \texttt{/api/settle}.
      Patches: cancel, hold TTL, acp-sessions log, log archive, supply stop.
-     Only the kit touches \texttt{.market/} (keys, claim code)};
+     Keys and claim code: used only here and by \texttt{seller.py}};
 
   \begin{scope}[on background layer]
     \node[loop, fit=(seller)(buyer)(fallback)(review)(kit)] (L1) {};

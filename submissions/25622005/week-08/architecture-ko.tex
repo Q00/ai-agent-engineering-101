@@ -121,7 +121,7 @@
     {\textbf{키트 v4, 내가 패치한 복사본} (\texttt{market\_kit.py}): \textbf{결속 검사} (SKU, unit, 가격 상한)
      $\rightarrow$ ACP checkout $\rightarrow$ AP2 mandate $\rightarrow$ 시장 \texttt{/api/settle}.
      패치: cancel, hold TTL, acp-sessions 로그, 로그 보관, supply stop.
-     \texttt{.market/} (키, claim code)은 키트만 쓴다};
+     서명 키와 claim code는 여기와 \texttt{seller.py}(영수증 서명)만 쓴다};
 
   \begin{scope}[on background layer]
     \node[loop, fit=(seller)(buyer)(fallback)(review)(kit)] (L1) {};
