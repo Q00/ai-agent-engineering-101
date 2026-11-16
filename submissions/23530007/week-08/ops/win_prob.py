@@ -185,6 +185,8 @@ def simulate(n=2000, seed=None):
                                           (now - h * 3600,)).fetchone()[0])) for h in (1.5, 3, 6, 12, 24)}
     T_ = total(R0)
     CONTENDERS = {k for k, x in T_.items() if k != OURS and T_[OURS] - x <= 0.10}
+    C0 = cols(R0)
+    lost, gaps = Counter(), []
     rnd = random.Random(seed)
     who, ev, margins = Counter(), Counter(), []
     cond = {}                           # 11-15 (user: steer toward the scenarios we win): event -> {on: [runs, wins]}
@@ -245,6 +247,18 @@ def simulate(n=2000, seed=None):
         who[max(T, key=T.get)] += 1
         win = max(T, key=T.get) == OURS
         margins.append(T[OURS] - max(v for kk, v in T.items() if kk != OURS))
+        if not win:
+            # 11-16 (user: 'what are the cases where we are not 1st?'): the rank moves, against now, that a lost run has
+            # for us and the winner (stars/saved/... ranks, posts 1st), kept as a pattern and counted
+            wnr = max(T, key=T.get)
+            mv = []
+            for f in ("book", "revenue", "stars", "saved", "deals", "posts"):
+                for who_, tag in ((OURS, "us"), (wnr, "them")):
+                    d_ = rank(C0[f], who_) - rank(c[f], who_)          # + = rank improved
+                    if d_ and (tag == "them") == (d_ > 0):
+                        mv.append(f"{tag} {f} {rank(C0[f], who_)}->{rank(c[f], who_)}")
+            lost[(wnr, tuple(mv))] += 1
+            gaps.append(T[wnr] - T[OURS])
         flags = {"book_lost": rank(c["book"], OURS) > 1,
                  "revenue_lost": rank(c["revenue"], OURS) > 2,
                  "rival_stars_above": c["stars"][RIVAL] > c["stars"][OURS],
@@ -277,6 +291,8 @@ def simulate(n=2000, seed=None):
                            "saved": round(R0[k]["S"] / (R0[k]["deals"] + 100), 4)} for k in (OURS, RIVAL)},
             "events": {k: round(v / n, 3) for k, v in ev.items()},
             # P(we finish 1st | the event happens) and | it does not: the levers that separate won and lost runs
+            "lose_patterns": [{"winner": k[0], "moves": list(k[1]), "share_of_runs": round(v / n, 3)}
+                              for k, v in lost.most_common(8)],
             "win_if": {k: {"yes": round(v[True][1] / v[True][0], 3) if v[True][0] else None,
                            "no": round(v[False][1] / v[False][0], 3) if v[False][0] else None,
                            "freq": round(v[True][0] / n, 3)} for k, v in cond.items()}}
