@@ -1,7 +1,8 @@
-% Week 08 (midterm) architecture, plan B: the same harness drawn as a LangGraph-style state graph.
+% Week 08 (midterm) architecture, plan B: the same harness drawn as a LangGraph-style state graph,
+% with every team of the two units as its own agent node.
 % Build: tectonic architecture-B.tex (or xelatex). Korean labels: Apple SD Gothic Neo on macOS.
 \documentclass[11pt]{article}
-\usepackage[a4paper,landscape,margin=7mm]{geometry}
+\usepackage[a4paper,landscape,margin=6mm]{geometry}
 \usepackage{fontspec}
 \usepackage{xeCJK}
 \setCJKmainfont{Apple SD Gothic Neo}
@@ -11,7 +12,7 @@
 \usepackage{newunicodechar}
 \newunicodechar{→}{\ensuremath{\rightarrow}}
 \usepackage{tikz}
-\usetikzlibrary{positioning,arrows.meta,shapes.geometric,calc}
+\usetikzlibrary{positioning,arrows.meta,shapes.geometric,calc,fit,backgrounds}
 \pagestyle{empty}
 \hyphenpenalty=10000 \exhyphenpenalty=10000
 
@@ -24,93 +25,127 @@
 \definecolor{mkt}{HTML}{DC2626}
 
 \tikzset{
-  agent/.style={circle, draw=#1, line width=1.4pt, fill=#1!6, align=center, minimum size=46mm, inner sep=1mm,
-                font=\scriptsize\linespread{1.05}\selectfont},
-  rbox/.style={draw=#1, line width=1.2pt, rounded corners=4pt, fill=#1!6, align=center, inner sep=2.5mm,
+  team/.style={draw=#1, line width=0.9pt, rounded corners=3pt, fill=white, align=center, text width=40mm,
+               minimum height=23mm, inner sep=1.8mm, font=\footnotesize\linespread{1.08}\selectfont},
+  lead/.style={team=#1, line width=2pt, fill=#1!8},
+  unit/.style={draw=#1, line width=1.6pt, rounded corners=14pt, fill=#1!4, inner sep=4mm},
+  utitle/.style={font=\normalsize\bfseries, text=#1, fill=white, inner sep=2pt},
+  rbox/.style={draw=#1, line width=1.2pt, rounded corners=4pt, fill=#1!6, align=center, inner sep=2.2mm,
                font=\scriptsize\linespread{1.05}\selectfont},
-  router/.style={diamond, aspect=1.5, draw=staff, line width=1.4pt, fill=staff!10, align=center, inner sep=0.6mm,
+  router/.style={diamond, aspect=1.45, draw=staff, line width=1.5pt, fill=staff!10, align=center, inner sep=0.4mm,
                  font=\scriptsize\linespread{1.0}\selectfont},
+  model/.style={font=\tiny\bfseries, text=white, fill=#1, rounded corners=1.5pt, inner sep=1.2pt},
   msg/.style={-{Stealth[length=2.6mm]}, line width=1pt, draw=#1},
   cond/.style={-{Stealth[length=2.6mm]}, line width=0.9pt, draw=#1, dashed},
+  inner/.style={-{Stealth[length=2mm]}, line width=0.8pt, draw=#1},
   lab/.style={font=\tiny\linespread{1.0}\selectfont, align=center, fill=white, inner sep=1pt, text=#1},
-  code/.style={font=\ttfamily\tiny},
 }
+% \agent{color}{name}{model}{lines}
+\newcommand{\mtag}[2]{{\setlength{\fboxsep}{1.3pt}\colorbox{#1}{\textcolor{white}{\tiny\bfseries #2}}}}
 
 \begin{document}
 \noindent
-\begin{tikzpicture}[x=1mm, y=1.18mm]
+\begin{tikzpicture}[x=1mm, y=1.12mm]
 
-% ---------------- nodes ----------------
-\node[rbox=hq, text width=86mm] (hq) at (140, 0)
-  {\textbf{HQ (사람, 루프 밖)}\\[0.6mm]
-   input: ``Round 3 막판 순위를 올려'' — 규칙·KPI·안건만 넣는다\\
-   \texttt{owner\_override.json} (설정 최종 우선) · \texttt{emergency\_agenda.json}};
+% ================= top: HQ, staff =================
+\node[rbox=hq, text width=84mm] (hq) at (141, 0)
+  {\textbf{HQ (사람, 루프 밖)}\quad input: ``Round 3 막판 순위를 올려''\\[0.4mm]
+   규칙·KPI·안건만 넣는다: \texttt{owner\_override.json} (설정 최종 우선) · \texttt{emergency\_agenda.json}};
 
-\node[router, text width=34mm] (router) at (140, -64)
-  {\textbf{Router}\\ \texttt{marketing\_agent.py}\\ 30분마다 깨어남:\\ 회의를 열까?\\ 누가 말할까?};
+\node[rbox=staff, text width=60mm] (staff) at (141, -24)
+  {\textbf{state를 채우는 HQ 직속 (코드)}\\
+   인사팀 \texttt{hr.py}: KPI 점수 → 팀별 레버 수 (보상·강등)\\
+   감사팀 \texttt{audit\_seller.py}: 30분 점검 · 3시간마다 인터뷰};
 
-\node[agent=seller] (seller) at (38, -64)
-  {\textbf{\normalsize Seller Unit}\\[1mm]
-   세일즈팀 (Claude, 대표)\\ 마케팅팀 (Codex) · 재경팀\\ SCM팀 (Codex)\\[1mm]
-   브리프를 읽고\\ JSON 계획을 낸다\\ (가격 밴드·매입·실험)};
+% ================= router =================
+\node[router, text width=27mm] (router) at (141, -72)
+  {\textbf{\small Router}\\ \texttt{marketing\_agent.py}\\ 30분마다 깨어남\\ 회의를 열까?\\ 누가 말할까?};
 
-\node[agent=buyer] (buyer) at (242, -64)
-  {\textbf{\normalsize Buyer Unit}\\[1mm]
-   바이어팀 (Codex, 대표)\\ 에누리팀 (Claude + 코드)\\ 리뷰팀 (코드)\\[1mm]
-   협상 파라미터·회피 규칙\\ (HQ층: \texttt{r\_min 0.82})};
+% ================= seller unit (4 agents) =================
+\node[lead=seller] (sales) at (21, -55)
+  {\textbf{\normalsize 세일즈팀} {\tiny (대표)}\\[0.4mm] \mtag{seller}{Claude}\\[0.4mm]
+   가격 밴드·마진·A/B 실험\\ → \texttt{marketing\_plan}};
+\node[team=seller] (mkt) at (67, -55)
+  {\textbf{\normalsize 마케팅팀}\\[0.4mm] \mtag{seller!70!black}{Codex}\\[0.4mm]
+   시장 조사·단독 상품 후보\\ 버그 리포트};
+\node[team=seller] (fin) at (21, -93)
+  {\textbf{\normalsize 재경팀}\\[0.4mm] \mtag{seller}{Claude}\\[0.4mm]
+   현금 하한·지출 한도\\ → \texttt{finance\_limits}};
+\node[team=seller] (scm) at (67, -93)
+  {\textbf{\normalsize SCM팀}\\[0.4mm] \mtag{seller!70!black}{Codex}\\[0.4mm]
+   매입 주문·가격 인하\\ → \texttt{scm\_plan}};
+\begin{scope}[on background layer]
+  \node[unit=seller, fit=(sales)(mkt)(fin)(scm), inner ysep=7mm] (sellerunit) {};
+\end{scope}
+\node[utitle=seller, anchor=center, font=\Large\bfseries] at (sellerunit.north) {Seller Unit};
+\draw[inner=seller] (mkt.west) -- node[lab=seller, above=0.3mm] {조사} (sales.east);
+\draw[inner=seller] (fin.north) -- node[lab=seller, right=0.3mm, pos=0.5] {한도} (sales.south);
+\draw[inner=seller] (sales.south east) -- node[lab=seller, pos=0.55] {픽·거부권} (scm.north west);
 
-\node[rbox=code, text width=92mm] (tool) at (140, -128)
-  {\textbf{\normalsize call\_tool = 빠른 코드 층} (모델 없이, 매 견적·매 주문)\\[0.8mm]
-   점원 \texttt{shop\_r3·promo} · 매입 \texttt{restock} (5분) · 구매 \texttt{market\_buyer} · 게시판 \texttt{forum}\\
+% ================= buyer unit (3 agents) =================
+\node[lead=buyer] (buy) at (215, -55)
+  {\textbf{\normalsize 바이어팀} {\tiny (대표)}\\[0.4mm] \mtag{buyer!70!black}{Codex}\\[0.4mm]
+   협상 파라미터·회피 규칙\\ → \texttt{buyer\_plan}\\ {\tiny HQ층: r\_min 0.82}};
+\node[team=buyer] (enuri) at (261, -55)
+  {\textbf{\normalsize 에누리팀}\\[0.4mm] \mtag{buyer}{Claude + 코드}\\[0.4mm]
+   가격·품질 장부\\ 다른 가게 견적 정찰};
+\node[team=buyer] (review) at (238, -93)
+  {\textbf{\normalsize 리뷰팀}\\[0.4mm] \mtag{code}{코드}\\[0.4mm]
+   게시글 형식 실험·투표\\ 확인 가능한 중립 글만};
+\begin{scope}[on background layer]
+  \node[unit=buyer, fit=(buy)(enuri)(review), inner ysep=7mm] (buyerunit) {};
+\end{scope}
+\node[utitle=buyer, anchor=center, font=\Large\bfseries] at (buyerunit.north) {Buyer Unit};
+\draw[inner=buyer] (enuri.west) -- node[lab=buyer, above=0.3mm] {장부} (buy.east);
+\draw[inner=buyer] (buy.south) |- node[lab=buyer, pos=0.75, below=0.2mm] {구매 기록} (review.west);
+
+% ================= bottom: tools, market, memory =================
+\node[rbox=code, text width=96mm] (tool) at (141, -140)
+  {\textbf{\normalsize call\_tool = 빠른 코드 층} (모델 없이, 매 견적·매 주문)\\[0.6mm]
+   점원 \texttt{shop\_r3}·\texttt{promo} · 매입 \texttt{restock} (5분) · 구매 \texttt{market\_buyer} · 게시판 \texttt{forum}\\
    가드: 원가 밑 판매 금지 · 보증 위험 가격 · C등급은 C 수락자에게만 · 차단 목록 · 인젝션 필터};
 
-\node[rbox=staff, text width=46mm] (staff) at (140, -30)
-  {\textbf{state를 채우는 HQ 직속 (코드)}\\ 인사팀 \texttt{hr.py}: KPI 점수 → 레버 수\\ 감사팀 \texttt{audit\_seller.py}: 30분 점검,\\ 3시간마다 두 유닛 인터뷰};
+\node[rbox=mkt, text width=40mm] (market) at (24, -146)
+  {\textbf{Market} (외부 환경)\\ A2A 협상 · ACP 결제\\ 원장 · 게시판};
+\node[rbox=mem, text width=40mm] (memory) at (258, -146)
+  {\textbf{Memory} \texttt{market.db}\\ 원장 사본 (5분 동기화)\\ 장부 · 레슨 · \texttt{hq\_decisions}};
 
-\node[rbox=mkt, text width=44mm] (market) at (38, -132)
-  {\textbf{Market} (외부 환경)\\ A2A 협상 · ACP 결제 · 원장 · 게시판};
+% ================= edges =================
+\draw[msg=hq] (hq.south) -- node[lab=hq, pos=0.45] {1. 규칙·안건으로 시작 (비상이면 \texttt{--emergency})} (staff.north);
+\draw[msg=staff] (staff.south) -- node[lab=staff, pos=0.42] {state: KPI·레버 수·감사 지적} (router.north);
+\draw[cond=hq] (router.north east) .. controls (178, -50) and (196, -10) .. node[lab=hq, pos=0.7]
+  {If 순위 정체 또는 빨간 경보\\ → ``HQ 개입''} (hq.east);
 
-\node[rbox=mem, text width=44mm] (memory) at (242, -132)
-  {\textbf{Memory} \texttt{market.db}\\ 원장 사본 (5분 동기화) · 장부 · 레슨\\ \texttt{hq\_decisions.md}};
-
-% ---------------- edges ----------------
-% HQ -> router (start), router -> HQ (escalation)
-\draw[msg=hq] (hq.south) -- node[lab=hq, pos=0.38] {1. 규칙·안건으로 시작\\(비상이면 \texttt{--emergency})} (staff.north);
-\draw[msg=staff] (staff.south) -- node[lab=staff, pos=0.5] {state: KPI·레버·감사 지적} (router.north);
-\draw[cond=hq] (router.north east) .. controls (190, -50) and (200, -8) .. node[lab=hq, pos=0.62]
-  {If 순위 정체 또는\\ 빨간 경보 → ``HQ 개입''} (hq.east);
-
-% agents <-> router
-\draw[msg=seller] (seller.north east) .. controls (75, -20) and (105, -30) .. node[lab=seller, pos=0.42] {message: JSON 계획} (router.north west);
+% units <-> router
+\draw[msg=seller] (sales.north) .. controls (30, -22) and (95, -30) .. node[lab=seller, pos=0.55] {message: JSON 계획\\(게이트 검사)} (router.north west);
 \draw[cond=seller] (router.west) -- node[lab=seller, pos=0.5]
-  {\texttt{if continue and}\\ \texttt{mode=="비상"} (30분)\\ 또는 평시 2시간 경과\\ \texttt{→ state["next"]="seller"}} (seller.east);
-
-\draw[msg=buyer] (buyer.north west) .. controls (205, -20) and (175, -30) .. node[lab=buyer, pos=0.42] {message: JSON 계획} (router.north east);
+  {\texttt{if continue}\\ 평시 2시간 / 비상 30분\\ \texttt{next="seller"}} (sellerunit.east |- router.west);
+\draw[msg=buyer] (buy.north) .. controls (214, -22) and (187, -30) .. node[lab=buyer, pos=0.55] {message: JSON 계획\\(게이트 검사)} (router.north east);
 \draw[cond=buyer] (router.east) -- node[lab=buyer, pos=0.5]
-  {\texttt{if continue and}\\ 셀러 계획 뒤 차례\\ \texttt{→ state["next"]="buyer"}} (buyer.west);
+  {\texttt{if continue}\\ 셀러 계획 뒤 차례\\ \texttt{next="buyer"}} (buyerunit.west |- router.east);
 
-% router -> tool (gate)
-\draw[cond=code] (router.south) -- node[lab=code, pos=0.45]
-  {게이트를 통과한 계획만\\ (JSON 스키마·범위 검사)\\ → 설정 겹치기, 뒤가 이김} (tool.north);
+% router -> tools
+\draw[cond=code] (router.south) -- node[lab=code, pos=0.42]
+  {게이트를 통과한 계획만 → 설정 겹치기\\ (\texttt{DEFAULTS → theta → 팀 계획 → 재경 → HQ})} (tool.north);
 
-% tool -> agents (results back)
-\draw[msg=code] (tool.west) .. controls (90, -128) and (60, -105) .. node[lab=code, pos=0.55]
-  {\texttt{if state["sender"]=="seller"}\\ 견적·매입 결과} (seller.south);
-\draw[msg=code] (tool.east) .. controls (190, -128) and (220, -105) .. node[lab=code, pos=0.55]
-  {\texttt{if state["sender"]=="buyer"}\\ 주문·협상 결과} (buyer.south);
+% tools -> units
+\draw[msg=code] (tool.west) .. controls (98, -140) and (60, -122) .. node[lab=code, pos=0.62]
+  {\texttt{if sender=="seller"}\\ 견적·매입 결과} (sellerunit.south);
+\draw[msg=code] (tool.east) .. controls (184, -140) and (222, -122) .. node[lab=code, pos=0.62]
+  {\texttt{if sender=="buyer"}\\ 주문·협상 결과} (buyerunit.south);
 
-% environment and memory
+% environment, memory
 \draw[{Stealth[length=2.4mm]}-{Stealth[length=2.4mm]}, line width=1pt, draw=mkt] (market.east) -- node[lab=mkt] {매 견적 · 매 주문} (tool.west |- market.east);
 \draw[msg=mem] (tool.east |- memory.west) -- node[lab=mem] {원장 동기화} (memory.west);
-\draw[cond=mem] (memory.north west) -- node[lab=mem, pos=0.45] {브리프 조립 (컨텍스트):\\ 원장 숫자·장부·레슨} (router.south east);
+\draw[cond=mem] (memory.north west) .. controls (205, -118) and (175, -100) .. node[lab=mem, pos=0.35] {브리프 조립 (컨텍스트)\\ 원장 숫자·장부·레슨} (router.south east);
 
-% ---------------- legend / caption ----------------
-\node[anchor=north west, text width=88mm, font=\tiny\linespread{1.1}\selectfont, align=left] at (-2, 4)
-  {\textbf{\small 회사처럼 일하는 하네스 — 상태 그래프로 본 구조}\\[0.8mm]
+% ================= caption =================
+\node[anchor=north west, text width=76mm, font=\tiny\linespread{1.12}\selectfont, align=left] at (-4, 6)
+  {\textbf{\small 회사처럼 일하는 하네스 — 상태 그래프}\\[0.6mm]
    dragonash (가게 + 구매자), Round 3, VPS 한 대.\\
+   팀 하나 = 에이전트 하나. 굵은 테두리 = 유닛 대표.\\
    실선 = 메시지, 점선 = 조건부 분기 (Router가 \texttt{state}를 보고 고른다).\\
-   메타 하네스: 회의 박자(평시 2시간 / 비상 30분), 실험 A/B, 감사 인터뷰, 인사 레버.\\
-   11-14부터 토큰 때문에 박자를 3시간으로 늦췄다.};
+   메타 하네스: 회의 박자 (평시 2시간 / 비상 30분), A/B 실험, 감사 인터뷰,\\ 인사 레버. 11-14부터 토큰 때문에 박자를 3시간으로 늦췄다.};
 
 \end{tikzpicture}
 \end{document}
