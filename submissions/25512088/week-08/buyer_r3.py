@@ -74,6 +74,7 @@ GRADE_COST_MIDPOINT = {'A':.65, 'B':.50, 'C':.35}
 SAVED_TARGET = .80
 SAVED_PROBE_TARGET = 1.00
 SAVED_STRETCH_TARGET = .95
+SAVED_HIGH_MIDDLE_TARGET = .925
 SAVED_MIDDLE_TARGET = .90
 SAVED_UPPER_BRIDGE_TARGET = .875
 SAVED_BRIDGE_TARGET = .85
@@ -147,6 +148,10 @@ def stretch_limit(order, product, grade=None):
 def probe_limit(order, product, grade=None):
     """Probe the published grade-cost midpoint before proven fallbacks."""
     return saved_target_limit(order,product,grade,SAVED_PROBE_TARGET)
+
+def high_middle_limit(order, product, grade=None):
+    """Test the measured acceptance gap between 0.95 and 0.90 Saved."""
+    return saved_target_limit(order,product,grade,SAVED_HIGH_MIDDLE_TARGET)
 
 def middle_limit(order, product, grade=None):
     """One evidence-gathering step between the stretch and proven fallback."""
@@ -462,6 +467,7 @@ class Buyer:
                     s['shop']['url'],sku,self.o,s['grade'])
                 s['stretch_cap']=stretch_limit(self.o,self.catalog[sku],s['grade'])
                 s['probe_cap']=probe_limit(self.o,self.catalog[sku],s['grade'])
+                s['high_middle_cap']=high_middle_limit(self.o,self.catalog[sku],s['grade'])
                 s['middle_cap']=middle_limit(self.o,self.catalog[sku],s['grade'])
                 s['upper_bridge_cap']=upper_bridge_limit(self.o,self.catalog[sku],s['grade'])
                 s['bridge_cap']=bridge_limit(self.o,self.catalog[sku],s['grade'])
@@ -488,6 +494,7 @@ class Buyer:
                 'parallel_limit':QUOTE_WAVE_SIZE,'early_quote_target':EARLY_QUOTE_TARGET,'deadline_seconds':85,
                 'saved_target':SAVED_TARGET,'saved_stretch_target':SAVED_STRETCH_TARGET,
                 'saved_probe_target':SAVED_PROBE_TARGET,
+                'saved_high_middle_target':SAVED_HIGH_MIDDLE_TARGET,
                 'saved_middle_target':SAVED_MIDDLE_TARGET,
                 'saved_upper_bridge_target':SAVED_UPPER_BRIDGE_TARGET,
                 'saved_bridge_target':SAVED_BRIDGE_TARGET,
@@ -520,6 +527,7 @@ class Buyer:
                                   'probe_exploration_selected',details=s['deal_estimate'])
                 candidate_steps.extend((
                         ('stretch',s['stretch_cap']),
+                        ('high_middle',s['high_middle_cap']),
                         ('middle',s['middle_cap']),
                         ('upper_bridge',s['upper_bridge_cap']),
                         ('bridge',s['bridge_cap']),('fallback',s['cap'])))

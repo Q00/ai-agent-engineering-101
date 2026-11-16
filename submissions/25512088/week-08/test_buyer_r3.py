@@ -9,7 +9,7 @@ import httpx
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from cryptography.hazmat.primitives import serialization
 from buyer_memory import Memory
-from buyer_r3 import Buyer, asking, candidates, diversify_shop_candidates, limit, stretch_limit, middle_limit, upper_bridge_limit, bridge_limit, deals_cap, signed_receipt, exclude_own_shop, quote_rank, execution_order, expected_offer, condition_suitable, probe_exploration_allowed, add_reference_step, EARLY_QUOTE_TARGET, QUOTE_WAVE_SIZE
+from buyer_r3 import Buyer, asking, candidates, diversify_shop_candidates, limit, stretch_limit, high_middle_limit, middle_limit, upper_bridge_limit, bridge_limit, deals_cap, signed_receipt, exclude_own_shop, quote_rank, execution_order, expected_offer, condition_suitable, probe_exploration_allowed, add_reference_step, EARLY_QUOTE_TARGET, QUOTE_WAVE_SIZE
 from buyer_review import review
 
 
@@ -67,6 +67,9 @@ class BuyerTests(unittest.TestCase):
         self.assertEqual(stretch_limit(self.o,self.cat['SKU1'],'A'),6675)
         self.assertEqual(stretch_limit(self.o,self.cat['SKU1'],'B'),5250)
         self.assertEqual(stretch_limit(self.o,self.cat['SKU1'],'C'),3825)
+        self.assertEqual(high_middle_limit(self.o,self.cat['SKU1'],'A'),6762)
+        self.assertEqual(high_middle_limit(self.o,self.cat['SKU1'],'B'),5375)
+        self.assertEqual(high_middle_limit(self.o,self.cat['SKU1'],'C'),3987)
         self.assertEqual(middle_limit(self.o,self.cat['SKU1'],'A'),6850)
         self.assertEqual(middle_limit(self.o,self.cat['SKU1'],'B'),5500)
         self.assertEqual(middle_limit(self.o,self.cat['SKU1'],'C'),4149)
@@ -344,7 +347,7 @@ class BuyerTests(unittest.TestCase):
         self.m.begin(self.o)
         with httpx.Client(transport=httpx.MockTransport(handler)) as c, patch('buyer_r3.time.sleep'):
             out=Buyer(self.o,self.m,c,self.cat).run([self.shop])
-        self.assertEqual(amounts,[6675,6850,6900])
+        self.assertEqual(amounts,[6675,6762,6850,6900])
         self.assertTrue(all(a<=6900 for a in amounts))
         self.assertIsNone(out['receipt'])
 
