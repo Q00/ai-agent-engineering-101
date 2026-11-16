@@ -49,6 +49,17 @@ class MoneySafetyTests(unittest.TestCase):
         bought = plan_restock(inv, products, [{"category": "furniture", "count": 20}])
         self.assertLessEqual(len(bought), 2)
 
+    def test_actual_kit_food_order_without_kind(self):
+        # Real Round 3 order.json omits kind but has use_within_hours.
+        policy = safe_accept_policy({"item": "김치", "use_within_hours": 180.0})
+        self.assertIn("C", policy["grades"])
+        self.assertEqual(policy["min_hours_left"], 180.0)
+        self.assertTrue(policy["cert"])
+
+    def test_nonfood_without_expiry_still_refuses_c(self):
+        policy = safe_accept_policy({"item": "가구"})
+        self.assertNotIn("C", policy["grades"])
+
     def test_nonfood_warranty_is_opt_in(self):
         a = safe_accept_policy({"kind": "goods"})
         self.assertNotIn("warranty_hours", a)
