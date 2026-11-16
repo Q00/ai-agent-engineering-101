@@ -632,8 +632,9 @@ def _star_loss_state():
     return st if st.get("day") == day else {"day": day, "loss": 0, "deals": 0}
 
 
-def star_loss_left():
-    return STAR_LOSS_DAY - _star_loss_state().get("loss", 0)
+def star_loss_left(tm=None):
+    # 11-16: the day's budget can be set per account in star_buyers.json ("loss_day") without a restart
+    return float((tm or {}).get("loss_day") or STAR_LOSS_DAY) - _star_loss_state().get("loss", 0)
 
 
 def star_loss_add(loss):
@@ -878,7 +879,7 @@ class Shop(AgentExecutor):
                 # max_loss under cost on goods listed <= max_list, while the day's loss stays under STAR_LOSS_DAY
                 tm = star_terms(star_who)
                 star_loss = bool(u.get("kind") == "goods" and tm.get("max_loss")
-                                 and (u.get("list_price") or 0) <= tm.get("max_list", 1e18) and star_loss_left() > 0)
+                                 and (u.get("list_price") or 0) <= tm.get("max_list", 1e18) and star_loss_left(tm) > 0)
                 if star_loss:
                     floor = max(round(u["list_price"] * star_x), int(u["cost"] * (1 - float(tm["max_loss"]))))
                     share = floor / u["list_price"]
