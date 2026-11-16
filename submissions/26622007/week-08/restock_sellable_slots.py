@@ -64,7 +64,10 @@ STOCK_CAP_HIGH = 10 ** 12  # stock_cap: the stock cost (held + on its way + this
 
 
 def _num(v):
-    return isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v)
+    try:     # math.isfinite(10 ** 400) raises OverflowError: such a number is not one (review 7b093767 M4)
+        return isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v)
+    except OverflowError:
+        return False
 
 
 def _valid(d, now):

@@ -49,7 +49,8 @@ class SwitchTest(unittest.TestCase):
                     {"hold_times": 0}, {"hold_times": 2.5}, {"hold_times": True}, {"hold_times": 9},
                     {"cash_floor": 1000}, {"cash_floor": None}, {"fresh_sell": 0}, {"fresh_sell": 1.5}, {"study": ""},
                     {"stock_cap": 0}, {"stock_cap": -1}, {"stock_cap": "4e8"}, {"stock_cap": True},
-                    {"stock_cap": float("inf")}, {"stock_cap": 10 ** 13}):
+                    {"stock_cap": float("inf")}, {"stock_cap": float("nan")}, {"stock_cap": 10 ** 13},
+                    {"stock_cap": 10 ** 400}):
             self.assertIsNone(ss.config(switch(ON, **bad), env={}, now=NOW), bad)
         md = tempfile.mkdtemp()
         with open(os.path.join(md, ss.SWITCH), "w", encoding="utf-8") as f:
@@ -70,6 +71,8 @@ class SwitchTest(unittest.TestCase):
         self.assertIsNotNone(ss.config(md, env={}, now=NOW + 1))     # the old file stays
         ss.switch_on(md, study="y", start_at=NOW, hours=6, stock_cap=400_000_000)
         self.assertEqual(ss.config(md, env={}, now=NOW + 1)["stock_cap"], 400_000_000)
+        with self.assertRaises(ValueError):
+            ss.switch_on(md, study="y", start_at=NOW, hours=6, stock_cap=10 ** 400)     # review 7b093767 M4
         ss.switch_on(md, study="z", start_at=NOW, hours=6)
         self.assertIsNone(ss.config(md, env={}, now=NOW + 1)["stock_cap"])      # no cap: as before (11/15 runs)
 
@@ -276,6 +279,19 @@ class PlanGuardTest(unittest.TestCase):
             got = restock.guard([{"sku": "G1", "qty": 10}, {"sku": "G4", "qty": 4}], inv, cat, {**cfg, "sellable_slots": on},
                                 None, waiting)
         self.assertEqual(got, [{"sku": "G4", "qty": 4}])       # 1 on its way + 4 of today's room: 0.5 left
+
+    def test_the_stock_cap_is_shared_by_every_line_of_the_run(self):
+        # review 7b093767 I1: two lines that both get extras; the cap is the run's, not each line's
+        cat = {**CATALOG, "G4": {"kind": "goods", "category": "가구>의자", "list_price": 1000000}}
+        cfg = {**self.cfg, "priority_skus": ["G1", "G4"], "sku_target_units": {"G1": 4, "G4": 4}}
+        worst = 1000000 * restock.WORST_COST
+        held = list(self.held) + [dict(u, sku="G4") for u in self.held]     # both: 1 sellable of 4 held
+        stock = sum(u["cost"] for u in held)
+        inv = {"balance": 400_000_000, "units": held}
+        on = dict(ON, stock_cap=stock + int(4.5 * worst))
+        with mock.patch.object(restock.time, "time", return_value=NOW):
+            got = restock.guard([{"sku": "G1", "qty": 10}, {"sku": "G4", "qty": 10}], inv, cat, {**cfg, "sellable_slots": on})
+        self.assertEqual(got, [{"sku": "G1", "qty": 3}, {"sku": "G4", "qty": 1}])     # 3 + 1 of the 4.5 left
 
     def test_plan_asks_the_sellable_gap_through_fill_listed(self):
         model = {"active": True, "skus": {"G1": {"rate": 2, "my_share": 0.1, "price_ratio": 0.70, "mine_rate": 0.2}},
