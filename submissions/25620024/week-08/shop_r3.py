@@ -226,7 +226,14 @@ def find_unit(text, taken=(), need=None):
         share = (exp - time.time()) / life if life > 0 else 1.0
         return (0, exp) if share >= keep else (1, -exp)
     wg = promo.theta().get("warranty_grades", ("A", "B"))   # review 11-12: a buyer who asks for a warranty gets a
-    gpen0 = lambda u: 1 if u.get("kind") == "goods" and u.get("grade") == "C" and (not c_ok or (need.get("warranty") and "C" not in wg)) else 0   # unit that carries one
+    # HQ 11-16 14:30 (meeting #7, stars): of 67 reviews <= 3 stars in 12 h, 47 were grade C food (C food averages 4.32
+    # stars, B 4.70, A 4.77; "grade outside approved A/B policy" from buyer-01, buyer-02, jiseokkk, kcwarni). Stars count
+    # one mean per rating account, so a buyer that did not say C is fine now gets an A/B unit of the same food when we
+    # hold one; C still sells when it is all we hold, and first to buyers that accept C.
+    food_c_last = promo.theta().get("food_c_last", True)
+    gpen0 = lambda u: 1 if u.get("grade") == "C" and (
+        (u.get("kind") == "goods" and (not c_ok or (need.get("warranty") and "C" not in wg)))
+        or (u.get("kind") == "food" and food_c_last and not c_ok)) else 0   # goods: a unit that carries one
     # HQ 11-14 agenda #2 (1): on a slow line, a buyer who named no grade and no warranty is offered the unit that
     # sells at a profit (cost + 3% <= 0.97 x its grade median) -- often grade C, stated as C, sold as is
     slow = slow_profit_grades(units) if promo.theta().get("slow_c_first") and not need.get("grades") \

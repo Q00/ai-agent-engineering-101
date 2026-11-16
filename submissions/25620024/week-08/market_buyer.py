@@ -663,6 +663,13 @@ def unit_cost(shop_name, sku, off, text):
                             (shop_name, sku, time.time() - 86400)).fetchone()
             if row and row[1] and row[1] >= 2:
                 return float(row[0]), "shop avg"
+            # HQ 11-16 14:40 (meeting #7, Saved): with no unit id and no shop average the cost was unknown and the
+            # r_min 0.82 walk-away could not apply (38 deals under r 0.82 in 4.5 h); the market's average supply
+            # cost for the SKU over 48 h is the next best estimate
+            row = c.execute("select avg(cost), count(*) from supply_units where sku = ? and ts > ? and cost > 0",
+                            (sku, time.time() - 2 * 86400)).fetchone()
+            if row and row[1] and row[1] >= 3:
+                return float(row[0]), "market avg"
         finally:
             c.close()
     except Exception:
