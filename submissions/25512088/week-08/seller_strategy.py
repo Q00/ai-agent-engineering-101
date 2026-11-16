@@ -17,7 +17,6 @@ CLASS_NEAR_COST_RATE=.08
 LOSS_LEADER_BUDGET=100_000
 LOSS_LEADER_TRIALS_PER_SKU=5
 BOOK_CUSHION_TRIAL_SHARE=.90
-PUBLIC_OPENING_MARGIN_CAP=1.45
 
 
 def class_book_cushion(intel, own_name='25512088'):
@@ -526,17 +525,6 @@ def sale_quote(unit, catalog, program, intel=None, token='', ref='', *, record=T
         offer_target=own_offers[math.ceil(.75*len(own_offers))-1]
         if offer_target<base:
             base=offer_target;offer_target_applied=True
-    # The live one-hour funnel showed that public opening quotes at 150% or
-    # more of unit cost signed only 17.6% of the time, versus 42.4% in the
-    # adjacent 125-150% band.  Keep ample positive Book contribution while
-    # avoiding a high initial anchor that prevents buyers from negotiating at
-    # all.  Legacy member promises are priced by their original benefit rules.
-    opening_margin_cap=math.ceil(unit['cost']*PUBLIC_OPENING_MARGIN_CAP)
-    opening_margin_cap_applied=bool(
-        not token and not ref and quotes>=5 and sold==0 and not own_offers and
-        base>opening_margin_cap)
-    if opening_margin_cap_applied:
-        base=opening_margin_cap
     floor=protected;loss_leader=False
     market_evidence=[price for price in (comp.get('p10'),grade_target_price)
                      if isinstance(price,(int,float)) and price>0]
@@ -596,8 +584,6 @@ def sale_quote(unit, catalog, program, intel=None, token='', ref='', *, record=T
                        'own_offer_samples':len(own_offers),
                        'own_offer_target_applied':offer_target_applied,
                        'poor_local_conversion':poor_local_conversion,
-                       'opening_margin_cap':opening_margin_cap,
-                       'opening_margin_cap_applied':opening_margin_cap_applied,
                        'liquidation':bool(markdown),'liquidation_discount':markdown,
                        'loss_leader':loss_leader,'projected_raw_loss':projected_loss,
                        'loss_budget':loss_budget,

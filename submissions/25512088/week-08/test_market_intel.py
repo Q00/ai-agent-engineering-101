@@ -128,17 +128,6 @@ class IntelligenceTests(unittest.TestCase):
         protected=sale_quote(expensive,{},self.p,self.i,buyer_preferences=prefs)
         self.assertGreater(protected['price'],13000)
 
-    def test_repeated_silent_public_quotes_cap_only_the_opening_margin(self):
-        self.i.save_source('shops', {'shops': []})
-        unit=dict(self.u,cost=1000,list_price=20000)
-        for _ in range(5):
-            self.assertEqual(sale_quote(unit,{},self.p,self.i)['price'],19000)
-        capped=sale_quote(unit,{},self.p,self.i)
-        self.assertEqual(capped['price'],1450)
-        body=json.loads(self.i.db.execute(
-            "SELECT body FROM decisions WHERE role='seller_quote' ORDER BY id DESC LIMIT 1").fetchone()[0])
-        self.assertTrue(body['opening_margin_cap_applied'])
-
     def test_top_seller_grade_target_lowers_sparse_initial_quote(self):
         now=time.time();leaders=[];shops=[];rows=[]
         for n in range(3):
