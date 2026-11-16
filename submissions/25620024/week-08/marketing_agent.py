@@ -641,7 +641,11 @@ def main():
                         f"{(t0 - last_ok) / 3600:.1f} h ({why}); code loops (restock, buyer, self-improvement) still run\n")
         try:                     # HQ 11-14 (HQ away): the audit team's code checks every 30 min, no model calls;
             import audit_seller      # new reds go to hq_decisions.md and Drive AUDIT_SELLER.md
-            audit_seller.run(interview_ok=False)
+            try:                     # HQ 11-16 15:10 "다시 켜": the 3 h team interviews follow owner_override
+                ov = json.loads((HERE / "private" / "owner_override.json").read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                ov = {}
+            audit_seller.run(interview_ok=bool(ov.get("audit_interviews", False)))
         except Exception as e:
             print(f"[audit] skipped: {type(e).__name__}: {e}")
         try:                     # the code-only self-improvement loop runs every tick, model cooldown or not (11-05:
