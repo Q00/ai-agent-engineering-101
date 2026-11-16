@@ -794,6 +794,16 @@ class Shop(AgentExecutor):
                     dflt = None if dflt is None else max(0, min(int(dflt), int(p["warranty_hours"])))
                 except (TypeError, ValueError):
                     dflt = None
+                # 11-16 16:10 (user: 'widen the book gap anyway'): goods listed >= big_list made -1.7 M (A) and -0.4 M (B)
+                # over 42 h after full-price refunds (A 3.3% breaks against ~2.3% of list margin), so a SILENT ask for
+                # one gets warranty_default_big_h (2 h; 67% of breaks land after hour 2). Asks that mention a warranty
+                # still get the full warranty_hours. Even if these sales halve, the book gains (they lose money now)
+                dbig = p.get("warranty_default_big_h")
+                if dbig is not None and dflt is not None and (u.get("list_price") or 0) >= p.get("big_list", 1.5e6):
+                    try:
+                        dflt = max(0, min(int(dbig), dflt))
+                    except (TypeError, ValueError):
+                        pass
                 wh = (p["warranty_hours"] if MENTIONS_WARRANTY.search(text) or dflt is None
                       else dflt)
             c = self.clear_factor(u, now)               # 1 = sells in time at full price; below 1 = clear it now
