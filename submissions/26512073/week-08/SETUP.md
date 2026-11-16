@@ -109,15 +109,15 @@ in the original kit launcher. Receipts and sessions are saved atomically under
 until their outcome is verified against the market. Run one server for this
 saved-state file. Public tunnel addresses change after a new quick tunnel starts.
 
-A real settlement through the student checkout still needs verification. Look
-for `[acp] settled ... via student checkout` in the deployment log. Offline test
-logs use simulated settlements and are labeled separately under `logs/setup/`.
+The November 16 standalone run completed 19 real settlements through the student
+checkout. Ledger IDs and amounts were checked against saved confirmations. See
+`logs/standalone-shop.log` and `logs/setup/standalone-real-settlements-20261116T093412Z.json`.
+Offline test logs use simulated settlements and are labeled under `logs/setup/`.
 
 Offline checks and synthetic integration logs are under `logs/setup/`. Real
 model probes use synthetic offers/catalogs and are labeled; raw CLI attempts
-are under `development_logs/`. The first real market settlement is still to be
-verified. Official Week 8 README/checker files were absent at setup; these checks
-are not a substitute for later course grading requirements.
+are under `development_logs/`. Real market results and 93 offline checks are summarized in `REPORT.md`.
+Official Week 8 README/checker files remain absent from the current class checkout.
 
 ```powershell
 Push-Location submissions/26512073/week-08
@@ -128,8 +128,8 @@ Pop-Location
 Identity keys are local and Git-ignored. The previously exposed buyer key was
 copied to retain identity, not rotated; that identity issue remains unresolved.
 No key, API token, or claim code belongs in commits. Existing Week 8 pricing
-migration notes and historical logs are preserved. The final report, student's
-LaTeX architecture figure, forum strategy, and market results remain future work.
+migration notes and historical logs are preserved. The final report, assisted LaTeX architecture figure, and verified market results
+are included. Forum posting remains unimplemented.
 
 ## Model allowance interruptions
 
