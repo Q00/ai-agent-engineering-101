@@ -1,69 +1,44 @@
 {
- "t": 1794134703.316044,
+ "t": 1794846636.5219958,
  "mode": "apply",
  "answer": {
-  "market_read": "No rule change this run. The shop race is the one that needs attention. Our class shop is 0.933 against inextro's 0.928, a gap of 0.005, which is under the 0.01 alert line. The gap hasn't grown, while the total lead widened to 0.020 only because Lee's shop dropped in the stars pool. By part: book is rank 1 with a lead of 149.3M that has been flat for an hour, so that percentile is already at its maximum. Revenue is rank 2, behind inextro by 2.20B and widening by about 12M per 15 min, so it can't be closed. Stars are rank 23 of 57 (4.60 vs inextro's 4.71), and that is the only part where our percentile can still rise, so it is the part I play for. Diagnosis of stars: after 22h of the A+B 72h warranty we are still at 4.60, so warranty alone isn't the lever (curator's cross-shop data agrees). Two measured causes remain. First, no-deal visits are rated (11-07: 668 visits at 2.75), and our walk-aways are large on price-competed sofas: Plana 4 had 216 in 6h, Agio 69, Goodmuse 66, Kiefer 45, Ward 44. Second, the settle gap: in 6h our seller closed 1518 deals but only 1171 settled, while the market refused just 3, so about 350 closes went unpaid. The curator's fit (0.21 × closes ≈ 323) points to grade C left unpaid by buyer kits. If those visits are rated, they cost stars and revenue together. Rivals: inextro sells warranted beds and sofas at x0.663, 98% warranted, 919 deals per 6h, and we supply 23% of its deals as a buyer. dragonash22's shop (0.749, 28% warranted, 4.39 stars) is the total-race threat if it adds a warranty; no jump this run. SKU level: there is no clear wrong setting. Kimchi G200e39a3 sold out (138/6h, 37% margin), but its surge of 1.106 fails L7's 1.08 limit. Apple is pinned at cover 2. The aged piles (Plana 3, Avenuel leather, Ace, Lumi) have restock targets below stock, so their covers don't bite, and cash of 489M is idle anyway. The Dahas bed fell from 43 per 24h to 3 per 6h with its ask already at the 0.85 floor, so per L108/L22 an ask move can't fix it. I hold all knobs. The 14:00 stars read and the C/unpaid split decide the real move: warranty_c or a price-for-stars change. The curator flags price vs stars as a human call, so it goes to the user.",
-  "moves": [],
-  "lessons": [
+  "market_read": "No target that can change our class rank is in play right now. race.json gives P(flip) 0.0 for book (we lead SungJinho by 111.9 M, he would need 42 h to close it), for revenue (inextro is 5.3 B ahead, SungJinho 1.87 B behind) and for stars (0.02 gap each way, sd .0004). Under the decided-part rule, none of these gets spent on. Three targets are OFF. book_projection is OFF because the 12 h fit leaves a 19.7 M end lead against a 50 M need, but the part is decided. refunds is OFF at 1.02 M/h against a 0.35 M need; the cause is breaks at about 6/h costing about 170 k each. Two refund changes are still inside their windows: the G24f5f979 ask move (refunds_h, due in 2.4 h) and the operator's 16:15 change giving silent big-ticket asks a 2 h warranty. With the ledger 18 min behind, no post-change rows exist yet, so I hold refunds. food_expiry is OFF at 1.08 M over 12 h against a 1.0 M need. The cause is in the funnel: expired cost is 130 k in w1 and 108 k/h in w3, above the w12 rate of 90 k/h, so food waste is speeding up. The playbook rule for food_expiry OFF applies, so I raise food_shelf_floor from .6 to .7 and keep restock_food on. That keeps food deals (33 paid/h in w1) and stops buying lots that are already close to expiry. Endgame: at T-24 the code set every goods floor to at least 1.0 x cost, set cover 0 on the 189 slow SKUs in endgame_cover_zero, and limited food buying to a shelf life of 30 h or more. I have not undone any of that.",
+  "moves": [
+   {
+    "knob": "food_shelf_floor",
+    "value": 0.7,
+    "why": "food_expiry is OFF (1.08 M over 12 h against 1.0 M; w3 108 k/h and w1 130 k/h, faster than w12's 90 k/h). The rule says raise the shelf floor or stop food restock. Raising the floor keeps food volume and cuts lots that are near expiry.",
+    "target": "food_expiry",
+    "prediction": {
+     "metric": "paid_deals_h",
+     "window_h": 3,
+     "op": ">=",
+     "value": 120
+    }
+   }
+  ],
+  "facts": [
    {
     "op": "add",
-    "id": "L109",
-    "text": "Pick the shop part by rank headroom. With book at rank 1 (lead >100M, flat) and revenue at rank 2 behind a >1B gap, neither percentile can rise. Only stars (rank ~20+) can move class shop. Before any price or warranty move for stars, get the split of ratings by visit type (deal / walk-away / unpaid close) and by grade. Do not cut prices on a guess while a stars read is pending.",
-    "why": "On 11-08 the A+B warranty left stars flat at 4.60 for 22h. Two causes remain open (rated walk-aways, unpaid C closes), and they need different knobs (ask vs warranty_c)."
+    "id": "F220",
+    "text": "16:31 11-16: all three race parts have p_flip 0.0 (book lead 111.9 M, eta 42 h; revenue 1.87 B over SungJinho and 5.3 B under inextro; stars ±0.02 with sd .0004). OFF: refunds 1.02 M/h (w3, 18 breaks, 3.05 M), held while the G24f5f979 ask and operator big-ticket 2 h warranty windows are open; food_expiry 1.08 M/12 h (w3 108 k/h, w1 130 k/h), so food_shelf_floor .6 -> .7 at 16:31.",
+    "query": "race.json parts; funnel w1/w3/w12",
+    "expires_h": 6
+   },
+   {
+    "op": "rewrite",
+    "id": "F219",
+    "text": "16:04 11-16: operator change at 16:15: warranty_default_big_h 2, big_list 1.5 M (silent asks on goods listed >= 1.5 M get a 2 h warranty). Judge it on big-ticket margin minus refunds, and on stars_new. Baseline: refunds w3 0.94-1.02 M/h, w1 1.03 M/h (7 breaks); stars_new 4.80 over 50 reviews at 16:31. Do not move warranty knobs while its window is open.",
+    "query": "evidence.from_operator; funnel w1/w3; targets.stars_new",
+    "expires_h": 5.6
    }
   ],
-  "requests": [
-   {
-    "kind": "question",
-    "text": "Our settle gap is 1518 seller closes vs 1171 settles in 6h, with 3 refusals. Split the ~350 unsettled closes by grade (A/B/C), by warranty on the offer, and by buyer. Do those buyers leave a star rating on the unpaid visit, and at what mean?"
-   },
-   {
-    "kind": "question",
-    "text": "Our star ratings over the last 24h by visit type: settled deal vs walk-away without an offer vs walk-away after an offer vs unpaid close. Give count and mean for each, and the 10 SKUs with the most low-star walk-away ratings. Is board stars lifetime or windowed?"
-   },
-   {
-    "kind": "knobs",
-    "knob": "warranty_c"
-   },
-   {
-    "kind": "shop",
-    "name": "inextro"
-   },
-   {
-    "kind": "sku_prices",
-    "sku": "Gf6b70da8"
-   }
-  ],
-  "watch": [
-   {
-    "metric": "surge",
-    "sku": "G200e39a3",
-    "op": "<=",
-    "value": 1.07,
-    "why": "Kimchi sells out (138/6h, 54 sold-out asks, ~37% margin). Once surge is under L7's 1.08, a cover raise is allowed."
-   },
-   {
-    "metric": "our_stock",
-    "sku": "G8ec51935",
-    "op": "<=",
-    "value": 30,
-    "why": "Mate is our top earner (106/6h, 197k/unit), holding 95 units (~5h). Under 30 means restock is falling behind the 6h rate."
-   },
-   {
-    "metric": "class_rank",
-    "op": ">=",
-    "value": 2,
-    "why": "Total lead is 0.020 over dragonash22. Wake me if we lose first."
-   }
-  ],
+  "requests": [],
   "notes_for_buyer": [
-   "Shop race gap to inextro is 0.005 (class shop 0.933 vs 0.928). Our buyer supplies 23% of inextro's deals (208 of 919 per 6h), and each one adds to its book (rank 2, 149M behind us) and its stars count. The price case for inextro is real (0.41/deal, 88% conversion). At the 12:30 read, weigh the +0.03 bias against the shop gap as well as the 3M/h book-slide line, and cut it to 0 if the per-deal edge over psyoung82/Kiro729 is under ~0.02.",
-   "Our shop's settle gap is ~350 unpaid closes per 6h, likely grade C. If your kit's grade-C unpaid logic (130/24h) matches other kits', tell me which conditions make it leave a C receipt unpaid (warranty missing? price above some x?). That decides warranty_c."
+   "Shop holds prices this run. The only change is food_shelf_floor .6 -> .7 (fresher food lots), so food stock may thin a little for the next hour or two. All race parts read as decided (p_flip 0)."
   ],
-  "alert_user": [
-   "샵 레이스 격차 0.005 (우리 0.933 vs inextro 0.928)로 0.01 미만입니다. 북 1위(149M 리드)·매출 2위(2.2B 열세)는 더 오를 수 없고, 별점(4.60, 23위)만 움직일 수 있습니다.",
-   "정산 누수: 6시간에 1518건 체결 중 1171건만 정산(거절 3건) → 약 350건 미지불, C등급 무보증으로 추정. 원인 분할을 요청했습니다. warranty_c 켜기 또는 별점을 위한 가격 인하는 사용자 결정이 필요합니다(14:00 별점 판독 후 제안 예정)."
-  ]
+  "answer_to_operator": "Your 16:15 big-ticket warranty change (2 h on silent asks for goods listed at 1.5 M or more) is in place, and I have not touched any warranty knob. The ledger runs about 18 min behind, so no settled rows from after the change have come in yet. Baseline for judging it: refunds 1.02 M/h over 3 h and 1.03 M/h in the last hour (7 breaks), new-review stars 4.80 over 50 reviews, and settle_health shows 0 refusals in 2 h. I will judge it on big-ticket margin minus refunds and on stars_new, as you asked. If short-warranty refusals go over 10%, or new stars fall under 4.3 over 20 or more reviews, the playbook sets warranty_default_h back to 72, and I will report it.",
+  "alert_user": []
  },
- "raw": "50 closes went unpaid. The curator's fit (0.21 × closes ≈ 323) points to grade C left unpaid by buyer kits. If those visits are rated, they cost stars and revenue together. Rivals: inextro sells warranted beds and sofas at x0.663, 98% warranted, 919 deals per 6h, and we supply 23% of its deals as a buyer. dragonash22's shop (0.749, 28% warranted, 4.39 stars) is the total-race threat if it adds a warranty; no jump this run. SKU level: there is no clear wrong setting. Kimchi G200e39a3 sold out (138/6h, 37% margin), but its surge of 1.106 fails L7's 1.08 limit. Apple is pinned at cover 2. The aged piles (Plana 3, Avenuel leather, Ace, Lumi) have restock targets below stock, so their covers don't bite, and cash of 489M is idle anyway. The Dahas bed fell from 43 per 24h to 3 per 6h with its ask already at the 0.85 floor, so per L108/L22 an ask move can't fix it. I hold all knobs. The 14:00 stars read and the C/unpaid split decide the real move: warranty_c or a price-for-stars change. The curator flags price vs stars as a human call, so it goes to the user.\",\n \"moves\": [],\n \"lessons\": [{\"op\": \"add\", \"id\": \"L109\", \"text\": \"Pick the shop part by rank headroom. With book at rank 1 (lead >100M, flat) and revenue at rank 2 behind a >1B gap, neither percentile can rise. Only stars (rank ~20+) can move class shop. Before any price or warranty move for stars, get the split of ratings by visit type (deal / walk-away / unpaid close) and by grade. Do not cut prices on a guess while a stars read is pending.\", \"why\": \"On 11-08 the A+B warranty left stars flat at 4.60 for 22h. Two causes remain open (rated walk-aways, unpaid C closes), and they need different knobs (ask vs warranty_c).\"}],\n \"requests\": [\n  {\"kind\": \"question\", \"text\": \"Our settle gap is 1518 seller closes vs 1171 settles in 6h, with 3 refusals. Split the ~350 unsettled closes by grade (A/B/C), by warranty on the offer, and by buyer. Do those buyers leave a star rating on the unpaid visit, and at what mean?\"},\n  {\"kind\": \"question\", \"text\": \"Our star ratings over the last 24h by visit type: settled deal vs walk-away without an offer vs walk-away after an offer vs unpaid close. Give count and mean for each, and the 10 SKUs with the most low-star walk-away ratings. Is board stars lifetime or windowed?\"},\n  {\"kind\": \"knobs\", \"knob\": \"warranty_c\"},\n  {\"kind\": \"shop\", \"name\": \"inextro\"},\n  {\"kind\": \"sku_prices\", \"sku\": \"Gf6b70da8\"}\n ],\n \"watch\": [\n  {\"metric\": \"surge\", \"sku\": \"G200e39a3\", \"op\": \"<=\", \"value\": 1.07, \"why\": \"Kimchi sells out (138/6h, 54 sold-out asks, ~37% margin). Once surge is under L7's 1.08, a cover raise is allowed.\"},\n  {\"metric\": \"our_stock\", \"sku\": \"G8ec51935\", \"op\": \"<=\", \"value\": 30, \"why\": \"Mate is our top earner (106/6h, 197k/unit), holding 95 units (~5h). Under 30 means restock is falling behind the 6h rate.\"},\n  {\"metric\": \"class_rank\", \"op\": \">=\", \"value\": 2, \"why\": \"Total lead is 0.020 over dragonash22. Wake me if we lose first.\"}\n ],\n \"notes_for_buyer\": [\n  \"Shop race gap to inextro is 0.005 (class shop 0.933 vs 0.928). Our buyer supplies 23% of inextro's deals (208 of 919 per 6h), and each one adds to its book (rank 2, 149M behind us) and its stars count. The price case for inextro is real (0.41/deal, 88% conversion). At the 12:30 read, weigh the +0.03 bias against the shop gap as well as the 3M/h book-slide line, and cut it to 0 if the per-deal edge over psyoung82/Kiro729 is under ~0.02.\",\n  \"Our shop's settle gap is ~350 unpaid closes per 6h, likely grade C. If your kit's grade-C unpaid logic (130/24h) matches other kits', tell me which conditions make it leave a C receipt unpaid (warranty missing? price above some x?). That decides warranty_c.\"\n ],\n \"alert_user\": [\n  \"샵 레이스 격차 0.005 (우리 0.933 vs inextro 0.928)로 0.01 미만입니다. 북 1위(149M 리드)·매출 2위(2.2B 열세)는 더 오를 수 없고, 별점(4.60, 23위)만 움직일 수 있습니다.\",\n  \"정산 누수: 6시간에 1518건 체결 중 1171건만 정산(거절 3건) → 약 350건 미지불, C등급 무보증으로 추정. 원인 분할을 요청했습니다. warranty_c 켜기 또는 별점을 위한 가격 인하는 사용자 결정이 필요합니다(14:00 별점 판독 후 제안 예정).\"\n ]}\n```"
+ "raw": "```json\n{\"market_read\": \"No target that can change our class rank is in play right now. race.json gives P(flip) 0.0 for book (we lead SungJinho by 111.9 M, he would need 42 h to close it), for revenue (inextro is 5.3 B ahead, SungJinho 1.87 B behind) and for stars (0.02 gap each way, sd .0004). Under the decided-part rule, none of these gets spent on. Three targets are OFF. book_projection is OFF because the 12 h fit leaves a 19.7 M end lead against a 50 M need, but the part is decided. refunds is OFF at 1.02 M/h against a 0.35 M need; the cause is breaks at about 6/h costing about 170 k each. Two refund changes are still inside their windows: the G24f5f979 ask move (refunds_h, due in 2.4 h) and the operator's 16:15 change giving silent big-ticket asks a 2 h warranty. With the ledger 18 min behind, no post-change rows exist yet, so I hold refunds. food_expiry is OFF at 1.08 M over 12 h against a 1.0 M need. The cause is in the funnel: expired cost is 130 k in w1 and 108 k/h in w3, above the w12 rate of 90 k/h, so food waste is speeding up. The playbook rule for food_expiry OFF applies, so I raise food_shelf_floor from .6 to .7 and keep restock_food on. That keeps food deals (33 paid/h in w1) and stops buying lots that are already close to expiry. Endgame: at T-24 the code set every goods floor to at least 1.0 x cost, set cover 0 on the 189 slow SKUs in endgame_cover_zero, and limited food buying to a shelf life of 30 h or more. I have not undone any of that.\", \"moves\": [{\"knob\": \"food_shelf_floor\", \"value\": 0.7, \"why\": \"food_expiry is OFF (1.08 M over 12 h against 1.0 M; w3 108 k/h and w1 130 k/h, faster than w12's 90 k/h). The rule says raise the shelf floor or stop food restock. Raising the floor keeps food volume and cuts lots that are near expiry.\", \"target\": \"food_expiry\", \"prediction\": {\"metric\": \"paid_deals_h\", \"window_h\": 3, \"op\": \">=\", \"value\": 120}}], \"facts\": [{\"op\": \"add\", \"id\": \"F220\", \"text\": \"16:31 11-16: all three race parts have p_flip 0.0 (book lead 111.9 M, eta 42 h; revenue 1.87 B over SungJinho and 5.3 B under inextro; stars ±0.02 with sd .0004). OFF: refunds 1.02 M/h (w3, 18 breaks, 3.05 M), held while the G24f5f979 ask and operator big-ticket 2 h warranty windows are open; food_expiry 1.08 M/12 h (w3 108 k/h, w1 130 k/h), so food_shelf_floor .6 -> .7 at 16:31.\", \"query\": \"race.json parts; funnel w1/w3/w12\", \"expires_h\": 6}, {\"op\": \"rewrite\", \"id\": \"F219\", \"text\": \"16:04 11-16: operator change at 16:15: warranty_default_big_h 2, big_list 1.5 M (silent asks on goods listed >= 1.5 M get a 2 h warranty). Judge it on big-ticket margin minus refunds, and on stars_new. Baseline: refunds w3 0.94-1.02 M/h, w1 1.03 M/h (7 breaks); stars_new 4.80 over 50 reviews at 16:31. Do not move warranty knobs while its window is open.\", \"query\": \"evidence.from_operator; funnel w1/w3; targets.stars_new\", \"expires_h\": 5.6}], \"requests\": [], \"notes_for_buyer\": [\"Shop holds prices this run. The only change is food_shelf_floor .6 -> .7 (fresher food lots), so food stock may thin a little for the next hour or two. All race parts read as decided (p_flip 0).\"], \"answer_to_operator\": \"Your 16:15 big-ticket warranty change (2 h on silent asks for goods listed at 1.5 M or more) is in place, and I have not touched any warranty knob. The ledger runs about 18 min behind, so no settled rows from after the change have come in yet. Baseline for judging it: refunds 1.02 M/h over 3 h and 1.03 M/h in the last hour (7 breaks), new-review stars 4.80 over 50 reviews, and settle_health shows 0 refusals in 2 h. I will judge it on big-ticket margin minus refunds and on stars_new, as you asked. If short-warranty refusals go over 10%, or new stars fall under 4.3 over 20 or more reviews, the playbook sets warranty_default_h back to 72, and I will report it.\", \"alert_user\": []}\n```"
 }
