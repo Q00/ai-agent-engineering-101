@@ -38,15 +38,16 @@
 
 % ---------------- kit row ----------------
 \node[ext=6.0cm, below=4mm of mkt.south west, anchor=north west] (kit) {\textbf{market\_kit.py} (given)\\ tunnel, A2A proxy, order loop $\rightarrow$ buyer,\\ restock hook, ACP payment policy (A/B goods, shelf life)};
-\node[code=4.7cm, right=4mm of kit] (keep) {\textbf{keepalive.py} supervisor\\ restarts the kit; launched via WMI so it outlives the session; hourly checks + log copies};
+\node[code=4.7cm, anchor=north west] (keep) at ($(kit.north east)+(4mm,0)$) {\textbf{keepalive.py} supervisor\\ restarts the kit; launched via WMI so it outlives the session; hourly checks + log copies};
 
 % ---------------- memory layer (middle band) ----------------
-\node[mem=4.9cm, right=6mm of keep] (mm) {\textbf{market\_memory.py} $\rightarrow$ \texttt{memory/market.json}\\ ledger folded with a cursor: demand per category/SKU (1-day decay), paid/list per category, last 15 prices per (SKU, grade), break rate per grade, shop honesty};
-\node[mem=4.3cm, right=3mm of mm] (asks) {\textbf{asks.py} $\rightarrow$ \texttt{asks.json}\\ every SKU buyers ask \emph{this} shop for, served or not (6 h half-life)};
-\node[mem=4.4cm, right=3mm of asks] (bmem) {\textbf{buyer memory} \texttt{buyer.json}\\ per shop: deals, no-deals, refused, broken, dishonest, paid ratios; payments + broken.jsonl absorbed; grade-C skips (6 h)};
+\node[mem=4.9cm, anchor=north west] (mm) at ($(keep.north east)+(6mm,0)$) {\textbf{market\_memory.py} $\rightarrow$ \texttt{memory/market.json}\\ ledger folded with a cursor: demand per category/SKU (1-day decay), paid/list per category, last 15 prices per (SKU, grade), break rate per grade, shop honesty};
+\node[mem=4.3cm, anchor=north west] (asks) at ($(mm.north east)+(3mm,0)$) {\textbf{asks.py} $\rightarrow$ \texttt{asks.json}\\ every SKU buyers ask \emph{this} shop for, served or not (6 h half-life)};
+\node[mem=4.4cm, anchor=north west] (bmem) at ($(asks.north east)+(3mm,0)$) {\textbf{buyer memory} \texttt{buyer.json}\\ per shop: deals, no-deals, refused, broken, dishonest, paid ratios; payments + broken.jsonl absorbed; grade-C skips (6 h)};
+\coordinate (rowb) at ($(mm.south)+(0,-15mm)$);   % the tallest box of the top row sets where the lanes start
 
 % ---------------- shop lane (left) ----------------
-\node[code=4.4cm, below=10mm of kit.south west, anchor=north west] (find) {\textbf{find\_unit} (code)\\ match SKU/name/category;\\ skip units with 3 unpaid receipts;\\ order: not busy, fewest unpaid, nearest expiry, cheapest};
+\node[code=4.4cm, anchor=north west] (find) at (rowb -| kit.west) {\textbf{find\_unit} (code)\\ match SKU/name/category;\\ skip units with 3 unpaid receipts;\\ order: not busy, fewest unpaid, nearest expiry, cheapest};
 \node[grd=4.4cm, below=of find] (sguard) {\textbf{guard.clean} on buyer text\\ drops sentences addressed to AI, fake authority, dictated moves};
 \node[code=4.4cm, below=of sguard] (price) {\textbf{pricing.py} (tool, code)\\ floor = cost$\times$1.04 (+ warranty risk); food: 0.7/0.3 near expiry; last 12 h: floor = cost\\ ask $\le$ min(0.70 list, 0.95 $\times$ market median)\\ warranty only $\le$ 200k list, A/B};
 \node[llm=4.4cm, below=of price] (move) {\textbf{Haiku: MOVE}\\ accept / counter, one call per round, sees unit, describe(), dialogue};
@@ -59,7 +60,7 @@
 \end{scope}
 
 % ---------------- buyer lane (right) ----------------
-\node[code=4.6cm, below=10mm of bmem.south east, anchor=north east] (cand) {\textbf{candidates} (code)\\ in-stock (shop, SKU) pairs; risk = my refusals + breaks + dishonesty, market honesty, walk rate; flagged scammers last; grade-C skips removed};
+\node[code=4.6cm, anchor=north east] (cand) at (rowb -| bmem.east) {\textbf{candidates} (code)\\ in-stock (shop, SKU) pairs; risk = my refusals + breaks + dishonesty, market honesty, walk rate; flagged scammers last; grade-C skips removed};
 \node[llm=4.6cm, below=of cand] (pick) {\textbf{Haiku: PICK}\\ one call per order: choose 1 of the top 5 pairs by expected gain; code falls back to rank 1};
 \node[grd=4.6cm, below=of pick] (bguard) {\textbf{guard.clean} on shop replies\\ flag sender $\rightarrow$ \texttt{scams.json}};
 \node[code=4.6cm, below=of bguard] (haggle) {\textbf{trade / haggle} (code)\\ opening asks the grade; skip if grade or shelf life fails the payment policy\\ cap by stated grade (Saved = (list$-$price)/(list$-$cost)): A 0.748, B 0.64, C 0.53\\ concede 0.56 + 0.04/round; walk on a repeated ``final'' above cap};
@@ -68,11 +69,11 @@
 \node[llm=4.0cm, below=of forum] (fllm) {\textbf{Haiku: POST}\\ writes the post from memory numbers (never repeats an injection)};
 
 \begin{scope}[on background layer]
-  \node[lane, fit=(cand)(pick)(bguard)(haggle)(forum)(fllm), label={[font=\small\bfseries, anchor=south east]north east:{BUYER \;(buyer\_r3.py, one process per order)}}] (buylane) {};
+  \node[lane, fit=(cand)(pick)(bguard)(haggle)(forum)(fllm), label={[font=\small\bfseries, anchor=north west]south west:{BUYER \;(buyer\_r3.py, one process per order)}}] (buylane) {};
 \end{scope}
 
 % ---------------- legend + differences ----------------
-\node[box=7.6cm, fill=white, below=4mm of shoplane.south west, anchor=north west] (diff) {\textbf{Different from the kit's starter}\\
+\node[box=7.6cm, fill=white, below=9mm of shoplane.south west, anchor=north west] (diff) {\textbf{Different from the kit's starter}\\
 1.~Model only proposes; every price bound is code (floor, ask cap, buyer cap).\\
 2.~Context = numbers folded from the public ledger + my own inbox + my own receipts; the raw ledger never enters a prompt.\\
 3.~Restock is demand-driven (asks, ledger demand, breadth) with loss filters.\\
@@ -95,23 +96,29 @@ solid: control flow \quad dashed: data / context};
 \draw[arr] (price) -- (move);
 \draw[arr] (move) -- (clamp);
 \draw[arr] (clamp.west) -- ++(-3mm,0) |- node[lbl, pos=0.25, left]{receipt} (kit.west);
-\draw[arr] (kit.south east) ++(-5mm,0) -- ++(0,-3mm) -| node[lbl, pos=0.75, right]{restock hook} (restock.north);
-\draw[arr] (restock.east) -- ++(3mm,0) |- node[lbl, pos=0.2, right]{buy lines} ($(kit.east)+(0,-2mm)$);
+\coordinate (rh) at ($(kit.south east)+(-9mm,0)$);
+\coordinate (bl) at ($(kit.south east)+(-3mm,0)$);
+\draw[arr] (rh) -- node[lbl, left]{restock hook} (rh |- restock.north);
+\draw[arr] (bl |- restock.north) -- node[lbl, right, pos=0.4]{buy lines} (bl);
 
 \draw[dat] (mkt.south -| mm.north) -- node[lbl, right]{ledger} (mm.north);
 \draw[dat] (mm.south) |- (price.east);
 \draw[dat] (mm.south) ++(-12mm,0) |- (restock.east);
-\draw[dat] (asks.south) |- ($(restock.north east)+(0,-3mm)$);
-\draw[dat] (find.east) ++(0,2mm) -- ++(2mm,0) |- node[lbl, pos=0.3, right]{record SKU} (asks.west);
+\draw[dat] (asks.south) |- node[lbl, pos=0.25, right]{SKUs asked of my shop} ($(restock.north east)+(0,-3mm)$);
 
-\draw[arr] ($(kit.north east)+(-8mm,0)$) |- ++(0,1.5mm) -| node[lbl, pos=0.85, left]{order} ($(cand.north)+(-10mm,0)$);
+\coordinate (ox) at ($(asks.north east)+(1.5mm,2mm)$);
+\coordinate (oy) at ($(rowb)+(0,5mm)$);
+\draw[arr] ($(kit.north east)+(-14mm,0)$) -- ++(0,2mm) -| (ox) -- (ox |- oy) -| node[lbl, pos=0.75, left]{order} (cand.north);
 \draw[dat] (bmem.south) -- (cand.north -| bmem.south);
 \draw[dat] (mm.south east) -- ++(0,-4mm) -| ($(cand.north)+(8mm,0)$);
 \draw[arr] (cand) -- (pick);
 \draw[arr] (pick) -- (bguard);
 \draw[arr] (bguard) -- (haggle);
-\draw[arr] (haggle.south) -- ++(0,-3mm) -| node[lbl, pos=0.25, below]{receipt $\rightarrow$ kit pays via ACP/AP2 if policy passes} ($(kit.south)+(-15mm,0)$);
-\draw[dat] (bguard.west) -| node[lbl, pos=0.7, left]{scams.json} (forum.south);
+\coordinate (by) at ($(shoplane.south)+(0,-3mm)$);
+\coordinate (bx) at ($(kit.west)+(-7mm,0)$);
+\coordinate (kw) at ($(kit.west)+(0,2.5mm)$);
+\draw[arr] (haggle.south) -- (haggle.south |- by) -- node[lbl, below, pos=0.3]{buyer receipt $\rightarrow$ kit pays via ACP/AP2 if the payment policy passes} (bx |- by) -- (bx |- kw) -- (kw);
+\draw[dat] (bguard.west) -| node[lbl, pos=0.25, below]{scams.json} (fllm.south);
 \draw[arr] (forum) -- (fllm);
 \draw[arr] (fllm.west) -- ++(-2mm,0) |- (mkt.south east);
 
