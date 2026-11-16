@@ -44,6 +44,12 @@ class Seller(AgentExecutor):
         self.locks = {}
         self.work_slots = asyncio.Semaphore(4)
 
+    def quality_safe(self, unit, catalog, spec):
+        if not (self.cfg.get('score_campaign_enabled') and self.cfg.get('finalday_departments_enabled')):
+            return True
+        from r3.score_campaign import context, safe_service
+        return safe_service(unit,catalog,spec,context(self.j))
+
     def select_unit(self, text, task, contract=None):
         inv = self.j.snapshot("inventory.json", {})
         if inv.get("round", 0) < 3:
@@ -80,6 +86,14 @@ class Seller(AgentExecutor):
         choices = [u for u in matching if grade(u, cat) != "expired" and
                    (not required_grades or grade(u,cat) in required_grades) and
                    (u.get('kind') != 'food' or remaining(u) >= min_hours + self.cfg['checkout_buffer_seconds'] / 3600)]
+        quality_filtered = 0
+        if self.cfg.get('score_campaign_enabled') and self.cfg.get('finalday_departments_enabled') and spec:
+            from r3.score_campaign import context as campaign_context, safe_service
+            campaign=campaign_context(self.j)
+            eligible_quality=[u for u in choices if safe_service(u,cat,spec,campaign)]
+            quality_filtered=len(choices)-len(eligible_quality)
+            choices=eligible_quality
+            spec=dict(spec,quality_preferred=True)
         if self.cfg.get('service_contract_v26_enabled'):
             from r3.service_contracts import priority,record
             from r3.service_policy import context as service_context
@@ -101,7 +115,8 @@ class Seller(AgentExecutor):
         live=[u for u in matching if grade(u,cat)!='expired']
         grade_ok=[u for u in live if not required_grades or grade(u,cat) in required_grades]
         reason=('no_matching_stock' if not matching else 'expired_stock' if not live else
-                'grade_requirement' if not grade_ok else 'shelf_life' if not choices else 'reserved_stock')
+                'grade_requirement' if not grade_ok else 'quality_contract' if quality_filtered and not choices else
+                'shelf_life' if not choices else 'reserved_stock')
         self.j.add("stockout", {"sku": skus[0] if skus else None, "request": text[:300],
             'task':task,'reason':reason,'physical_matching_units':len(matching),
             'eligible_units':len(choices),'required_use_hours':min_hours}, role="shop")
@@ -183,7 +198,8 @@ class Seller(AgentExecutor):
                 self.j.release(task.id);self.deals.pop(task.id,None)
                 await up.reject(say('Conflicting or unsupported requirements; request a new quote.'))
                 return
-            if current and not eligible(current,catalog,spec,buffer_seconds=self.cfg['checkout_buffer_seconds']):
+            if current and (not eligible(current,catalog,spec,buffer_seconds=self.cfg['checkout_buffer_seconds'])
+                            or not self.quality_safe(current,catalog,spec)):
                 self.j.release(task.id)
                 replacement=await self.reserve_unit(text,task.id,spec)
                 if replacement is None:
@@ -238,6 +254,7 @@ class Seller(AgentExecutor):
         if self.cfg.get('service_contract_v26_enabled') and selected['action']!='hold':
             from r3.service_contracts import eligible
             if (not eligible(unit,cat,deal['service_contract'],buffer_seconds=self.cfg['checkout_buffer_seconds']) or
+                    not self.quality_safe(unit,cat,deal['service_contract']) or
                     selected['warranty_hours']<deal['service_contract']['warranty_hours']):
                 self.j.release(task.id);self.deals.pop(task.id,None)
                 await up.reject(say('The current contract no longer meets the requested conditions.'))

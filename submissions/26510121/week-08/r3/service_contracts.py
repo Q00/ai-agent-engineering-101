@@ -86,5 +86,9 @@ def priority(unit,choices,catalog,spec,profiles,now=None):
                 regret+=bucket['weight']/max(1,count)
     # Cross-grade conservation needs an explicit permitted grade set. With no
     # declared grade preference, do not infer that lower quality is acceptable.
-    if spec.get('explicit_grade'):return (regret,quality,remaining(unit,now),unit.get('supplied_at',0))
+    if spec.get('quality_preferred'):
+        life=remaining(unit,now) if spec.get('explicit_use') else -remaining(unit,now)
+        return (quality,regret,life,unit.get('supplied_at',0))
+    if spec.get('explicit_grade') and not spec.get('quality_preferred'):
+        return (regret,quality,remaining(unit,now),unit.get('supplied_at',0))
     return (quality,regret,remaining(unit,now),unit.get('supplied_at',0))

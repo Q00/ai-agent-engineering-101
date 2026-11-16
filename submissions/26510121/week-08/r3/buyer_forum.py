@@ -67,8 +67,15 @@ def schedule(journal,config,book,catalog,now):
         def category_of(row):return next((ref_category[r] for r in row[2] if ref_category.get(r)),None)
         drafts.sort(key=lambda row:((row[3]!=effective_focus) if effective_focus!='balanced' else False,
             audience.get(category_of(row),0)))
+    requested=set()
+    if config.get('score_campaign_enabled') and config.get('finalday_departments_enabled'):
+        from .score_campaign import public_demand_categories
+        requested=public_demand_categories(journal,now)
+        drafts.sort(key=lambda row:not any(ref_category.get(ref) in requested for ref in row[2]))
     for signature,text,refs,information_kind in drafts:
         if journal.get('buyer_insight_used:'+signature):continue
+        if any(ref_category.get(ref) in requested for ref in refs):
+            text='[최근 공개 수요 관련] '+text
         journal.queue_post({'post':text,'refs':refs,'as':'buyer','priority':6,
                             'expires_at':now+interval,'information_kind':information_kind,
                             'policy_id':policy_id},'buyer-insight:'+str(bucket))

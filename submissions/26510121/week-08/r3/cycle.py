@@ -68,6 +68,9 @@ class MarketCycle:
         if now-self.last_analysis>=60:
             self.last_analysis=now
             roles={'market_observer':lambda:analytics(self.j,time.time())}
+            if self.cfg.get('score_campaign_enabled') and self.cfg.get('finalday_departments_enabled'):
+                from .score_campaign import update as campaign_update
+                roles['score_strategy_office']=lambda:campaign_update(self.j,self.cfg,time.time())
             if self.cfg.get('finalday_departments_enabled'):
                 from .departments import accounting_department
                 roles['회계·리스크실']=lambda:accounting_department(self.j,self.j.snapshot('catalog.json',{}),time.time())

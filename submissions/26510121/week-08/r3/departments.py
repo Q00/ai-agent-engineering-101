@@ -104,6 +104,11 @@ def procurement_department(candidates, inv, capacity, config, journal, catalog, 
 
 def buyer_score_department(journal, current, ahead, config, now=None):
     now=time.time() if now is None else now
+    from .score_campaign import enabled, context
+    if enabled(config):
+        packet=context(journal,now)
+        if packet.get('bid_targets'):
+            return packet['bid_targets']
     if not ahead:return [min(1,current.get('saved',0)+config.get('buyer_saved_target_margin',.002))]
     n=sum(0<=now-r['_ts']<3600 for r in journal.events('purchase',2000))
     if not config.get('market_end_at'):return [min(1,current['saved']+config.get('buyer_saved_target_margin',.002))]

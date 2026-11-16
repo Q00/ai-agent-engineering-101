@@ -105,6 +105,11 @@ def buyer_price_actions(ask, cap, product, reference, ratio, turn, max_turns, pr
         actions.append({'id': 'accept', 'price': ask, 'score': value + (0 if saved_state else 1),
                         'completion_probability': 1,
                         'expected_delta': change})
+        if (saved_state and saved_state.get('score_campaign_enabled')
+                and saved_state.get('metric')=='saved'
+                and abs(value-expected(0,1)[0])<1e-12):
+            actions[-1]['saturation_accept']=True
+            return actions
     if turn >= max_turns - 1:
         return actions
     opening = min(ask * ratio, reference * ratio / .92)
@@ -181,6 +186,8 @@ def buyer_assessment(product, order, terms, journal, config, *, shop=None):
             cap = min(cap, int(product['list_price'] * (1 - stress) / max(.000001, 1 - covered)))
     from .buyer_scoring import state,saved_price_cap,cost_scenario,MARGIN
     current=state(journal,config)
+    if config.get('score_campaign_enabled') and config.get('finalday_departments_enabled'):
+        current=dict(current,score_campaign_enabled=True)
     cost=None
     if current.get('score_formula')==MARGIN:
         # A plain peer cost field is never authoritative. Enforce any grade
