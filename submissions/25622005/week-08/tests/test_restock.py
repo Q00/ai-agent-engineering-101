@@ -640,8 +640,11 @@ class HookTest(unittest.TestCase):
         self.home = Path(self.tmp.name)
         (self.home / "strategy").mkdir()
         md = (W / "strategy" / "SKILL.md").read_text(encoding="utf-8")     # with POL's D2 line, whatever the file says
-        (self.home / "strategy" / "SKILL.md").write_text(
-            re.sub(r"goods_max_list: \d+", "goods_max_list: 50000", md, count=1), encoding="utf-8")
+        md = re.sub(r"goods_max_list: \d+", "goods_max_list: 50000", md, count=1)
+        # The hook runs on the real clock: keep the round's end 10 days away, or the D10 and D14 rules of the
+        # last 48 h change what it prints (2 tests failed from 11-15 23:59, 9 would after the round's end).
+        md = re.sub(r"end_ts: \d+", f"end_ts: {int(time.time()) + 10 * 86400}", md, count=1)
+        (self.home / "strategy" / "SKILL.md").write_text(md, encoding="utf-8")
         self.state = self.home / ".market"
         self.state.mkdir()
         (self.state / "catalog.json").write_text(json.dumps(CATALOG, ensure_ascii=False), encoding="utf-8")

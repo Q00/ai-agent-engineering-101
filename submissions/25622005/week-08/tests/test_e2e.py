@@ -9,6 +9,7 @@ import base64
 import importlib.util
 import json
 import os
+import re
 import shutil
 import socket
 import subprocess
@@ -86,7 +87,11 @@ class EndToEnd(unittest.TestCase):
         self.home = Path(tempfile.mkdtemp(prefix="r3-e2e-"))
         self.addCleanup(shutil.rmtree, self.home, True)
         (self.home / "strategy").mkdir()
-        shutil.copy(W / "strategy" / "SKILL.md", self.home / "strategy" / "SKILL.md")
+        md = (W / "strategy" / "SKILL.md").read_text(encoding="utf-8")
+        # seller.py runs on the real clock: keep the round's end 10 days away, or the D14 floor of the last
+        # 48 h changes the price path (the warranty deal failed from 11-15 23:59 on)
+        md = re.sub(r"end_ts: \d+", f"end_ts: {int(time.time()) + 10 * 86400}", md, count=1)
+        (self.home / "strategy" / "SKILL.md").write_text(md, encoding="utf-8")
         (self.home / "logs").mkdir()
         self.md = self.home / ".market"
         self.md.mkdir()
