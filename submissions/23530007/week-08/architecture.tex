@@ -36,7 +36,7 @@
 \node[code] (restock) at (5.1,9.6)   {\textbf{restock.py} (each supply window)\\demand-led SKUs, price tiers,\\surge stop, stock cap};
 \node[code] (review)  at (10.2,9.6)  {\textbf{review.py} (after each deal)\\stars from the settled record,\\forum posts, likes/dislikes};
 \node[code=12.2cm] (policy) at (-1.4,8.1) {\textbf{policy.py}: params.json (base) $\to$ situation regime $\to$ \textbf{params\_auto.json / params\_auto\_buyer.json} (the agents' knobs)};
-\node[code=5.2cm] (haiku)  at (9.1,8.1)  {\textbf{harness.py} -- \textbf{Haiku}: reads a shop's free-text reply (code first)};
+\node[code=5.2cm] (haiku)  at (9.1,8.1)  {\textbf{harness.py} -- \textbf{small LLM}: reads a shop's free-text reply (code first)};
 \begin{scope}[on background layer]
 \node[lay, fit=(kit)(review)(policy)(haiku)] (L1) {};
 \end{scope}
@@ -56,13 +56,13 @@
 
 % ---------- 2 decision layer ----------
 \node[code=7.4cm] (tools) at (0,4.55) {\textbf{measuring tools} (code): market\_picture.py, buyer\_value.py,\\probes (sku\_prices, shop, buyer, knobs, trades), settle\_health};
-\node[opus=5.4cm] (shop)   at (-8.7,2.55) {\textbf{Shop strategist} -- \textbf{Opus}\\strategist.py, every 30 min (:15, :45)\\owns 33 shop settings + per-SKU knobs\\goal: a growing lead over 2nd/3rd shop\\diagnose $\to$ move $\to$ 2 h prediction, scored};
-\node[opus=6.2cm] (cur)    at (0,2.55)    {\textbf{Memory curator} -- \textbf{Opus}\\memory\_curator.py, every 15 min + after posts\\measures: total / shop / buyer races, stars,\\first-place target, A/B results, rules diff\\writes the shared \textbf{digest}, answers requests};
-\node[opus=5.4cm] (bstrat) at (8.7,2.55)  {\textbf{Buyer strategist} -- \textbf{Opus}\\buyer\_strategist.py, every 30 min (:00, :30)\\owns caps, skip bars, A/B arms, shop bias\\goal: buyer score (saved 0.5) for 1st overall\\diagnose $\to$ move $\to$ 1--6 h prediction, scored};
+\node[opus=5.4cm] (shop)   at (-8.7,2.55) {\textbf{Shop strategist} -- \textbf{LLM agent}\\strategist.py, every 30 min (:15, :45)\\owns 33 shop settings + per-SKU knobs\\goal: a growing lead over 2nd/3rd shop\\diagnose $\to$ move $\to$ 2 h prediction, scored};
+\node[opus=6.2cm] (cur)    at (0,2.55)    {\textbf{Memory curator} -- \textbf{LLM agent}\\memory\_curator.py, every 15 min + after posts\\measures: total / shop / buyer races, stars,\\first-place target, A/B results, rules diff\\writes the shared \textbf{digest}, answers requests};
+\node[opus=5.4cm] (bstrat) at (8.7,2.55)  {\textbf{Buyer strategist} -- \textbf{LLM agent}\\buyer\_strategist.py, every 30 min (:00, :30)\\owns caps, skip bars, A/B arms, shop bias\\goal: buyer score (saved 0.5) for 1st overall\\diagnose $\to$ move $\to$ 1--6 h prediction, scored};
 \begin{scope}[on background layer]
 \node[lay, fit=(tools)(shop)(bstrat)] (L2) {};
 \end{scope}
-\node[ttl] at (L2.north west) {2\enspace Decision layer -- three Opus agents (claude -p, user's API key)};
+\node[ttl] at (L2.north west) {2\enspace Decision layer -- three LLM agents (no tools, JSON answers)};
 
 % ---------- 3 watch & alert ----------
 \node[watch=3.5cm] (cron)    at (-10.5,-0.45) {\textbf{watch\_round.sh} (cron 15 min)\\upstream, kit health, starts all};
@@ -78,7 +78,7 @@
 
 % ---------- humans ----------
 \node[human=4.0cm] (chat)  at (-10.6,-2.9) {\textbf{User (chat)}\\goals, conduct rules, big calls};
-\node[human=6.8cm] (op)    at (-4.4,-2.9) {\textbf{Operator = Claude Code (master agent)}\\talks with the user; fixes code, adds tools and levers;\\writes operator notes; applies the user's decisions};
+\node[human=6.8cm] (op)    at (-4.4,-2.9) {\textbf{Operator = coding agent (master agent)}\\talks with the user; fixes code, adds tools and levers;\\writes operator notes; applies the user's decisions};
 \node[human=4.4cm] (phone) at (8.8,-2.9)  {\textbf{User (phone, ntfy)}\\reads pushes; sends messages\\(prefix shop: / buyer: routes them)};
 
 % ---------- arrows ----------
@@ -120,6 +120,6 @@
 
 \vspace{1.5mm}
 \parbox{27.6cm}{\sffamily\scriptsize
-\textcolor{violet!70!black}{\textbf{Opus agents}} decide (shop, buyer) and interpret the market (curator); \textcolor{blue!60!black}{\textbf{code}} trades at order speed and measures; \textcolor{teal!60!black}{\textbf{memory}} is files reached through tools, the curator's digest and each strategist's scored episodes and lessons; \textcolor{orange!70!black}{\textbf{watchers}} push to the user's phone and bring the user's messages back; \textcolor{red!60!black}{\textbf{humans}}: the user sets goals and big calls (chat or ntfy), the operator (Claude Code) turns them into code and notes.\\
-\textbf{Kit base form vs this:} the kit runs one rule seller and one buyer per order. Here a code trading layer is steered through bounded knobs by two Opus strategists that diagnose before moving and are scored on their predictions (a miss reverts the move); a third Opus agent is the shared memory and market-intelligence hub; A/B arms are judged on score per order; and alerts plus a two-way phone channel tie the user and the operator into the loop.}
+\textcolor{violet!70!black}{\textbf{LLM agents}} decide (shop, buyer) and interpret the market (curator); \textcolor{blue!60!black}{\textbf{code}} trades at order speed and measures; \textcolor{teal!60!black}{\textbf{memory}} is files reached through tools, the curator's digest and each strategist's scored episodes and lessons; \textcolor{orange!70!black}{\textbf{watchers}} push to the user's phone and bring the user's messages back; \textcolor{red!60!black}{\textbf{humans}}: the user sets goals and big calls (chat or ntfy), the operator (coding agent) turns them into code and notes.\\
+\textbf{Kit base form vs this:} the kit runs one rule seller and one buyer per order. Here a code trading layer is steered through bounded knobs by two LLM strategists that diagnose before moving and are scored on their predictions (a miss reverts the move); a third LLM agent is the shared memory and market-intelligence hub; A/B arms are judged on score per order; and alerts plus a two-way phone channel tie the user and the operator into the loop.}
 \end{document}
