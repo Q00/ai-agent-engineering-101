@@ -37,6 +37,18 @@ class MoneySafetyTests(unittest.TestCase):
         self.assertGreaterEqual(a["min_hours_left"], 8)
         self.assertTrue(a["cert"])
 
+    def test_food_c_grade_requires_certified_shelf_life(self):
+        policy = safe_accept_policy({"kind": "food", "use_within_hours": 72})
+        self.assertTrue(policy["cert"])
+        self.assertIn("C", policy["grades"])
+        self.assertGreaterEqual(policy["min_hours_left"], 72)
+
+    def test_restock_is_limited_to_two_low_inventory_items(self):
+        inv = {"round": 3, "balance": 5_000_000, "units": []}
+        products = {f"G{i}": product(f"G{i}", 12000) for i in range(25)}
+        bought = plan_restock(inv, products, [{"category": "furniture", "count": 20}])
+        self.assertLessEqual(len(bought), 2)
+
     def test_nonfood_warranty_is_opt_in(self):
         a = safe_accept_policy({"kind": "goods"})
         self.assertNotIn("warranty_hours", a)
@@ -55,7 +67,7 @@ class MoneySafetyTests(unittest.TestCase):
         products = {f"S{i}": product(f"S{i}", 30_000+i*1000) for i in range(12)}
         buy = plan_restock(inv, products,
                            [{"category": "furniture", "count": 7}])
-        self.assertTrue(0 < len(buy) <= 6)
+        self.assertTrue(0 < len(buy) <= 2)
         self.assertTrue(all(x["qty"] == 1 for x in buy))
         estimated_max_cost = sum(products[x["sku"]]["list_price"]*.90 for x in buy)
         self.assertLessEqual(estimated_max_cost, inv["balance"]*.12)
