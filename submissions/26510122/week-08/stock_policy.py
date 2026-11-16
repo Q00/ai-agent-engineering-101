@@ -60,6 +60,7 @@ def sales_evidence(sku, history, now, *, kind=None):
         'median_paid': median(paid for paid, _ in upper_sales) if upper_sales else None,
     }
     return {'midprice_contribution_12h': round(midprice_contribution, 2), 'upper_midprice_sales': upper,
+            'median_positive_contribution_paid_12h':median(paid for paid,value in contributions if value>0) if any(value>0 for _,value in contributions) else None,
             'confirmed_positive_spread_sales_12h': len(positive), 'confirmed_positive_spread_sales_1h': len(recent),
             'midprice_positive_sales_12h': len(midprice),
             'positive_contribution_sales_12h': positive_contributions,
@@ -231,6 +232,14 @@ def replenishment_candidates(catalog, inventory, history, now, blocked=(), trial
     expiry_demand = expiry_shortfalls(history, catalog, units, now, outcomes=outcomes)
     surge = {r['sku']: r.get('factor', 1) for r in inventory.get('surge', [])
              if isinstance(r, dict) and r.get('sku')}
+    lost_tasks={}
+    for event in history:
+        task=event.get('task_id');requested=event.get('requested_skus') or []
+        at=timestamp(event.get('at'))
+        if (event.get('event')=='no_stock' and task and len(requested)==1 and at is not None
+                and now-3*3600<=at<=now and (task,requested[0]) not in outcomes['served_tasks']
+                and task not in outcomes['settled_tasks'].get(requested[0],set())):
+            lost_tasks.setdefault(requested[0],set()).add(task)
     rows = []
     for sku in sold_skus:
         p = catalog.get(sku)
@@ -252,7 +261,14 @@ def replenishment_candidates(catalog, inventory, history, now, blocked=(), trial
                     and upper['positive_12h']>=1 and upper['contribution_12h']>0
                     and upper['positive_12h']*2>=signal['settled_sales_12h']
                     and recovery_margin>0 and not signal['proven'])
-        if ((not signal['proven'] and not second_trial and not recovery) or projected >= PROVEN_STOCK or type(price) is not int
+        reference=signal['median_positive_contribution_paid_12h']
+        service_margin=(projected_upper_midprice_margin(p,reference,surge.get(sku,1),now)
+                        if reference is not None and type(price) is int and price>0 else 0)
+        service_recovery=(operating.get('phase') in ('growth','harvest') and operating['hours_to_end']>=3 and not projected and not signal['proven']
+                          and not second_trial and not recovery and len(lost_tasks.get(sku,()))>=2
+                          and signal['positive_contribution_sales_12h']>=1
+                          and signal['contribution_after_holding_refund_scenario_12h']>0 and service_margin>0)
+        if ((not signal['proven'] and not second_trial and not recovery and not service_recovery) or projected >= PROVEN_STOCK or type(price) is not int
                 or price <= 0 or acquisition_ceiling(p) > MAX_UNIT_COST):
             continue
         if p['kind'] == 'food' and (p.get('shelf_hours') or 0) < 48:
@@ -262,12 +278,12 @@ def replenishment_candidates(catalog, inventory, history, now, blocked=(), trial
         room = max(0, MAINTENANCE_CATEGORY_LIMIT-categories[p.get('category')]-reserved_category)
         forecast = demand_forecast(sku,p,inventory,history,now,outcomes=outcomes)
         options = []
-        if (second_trial or recovery) and room:
+        if (second_trial or recovery or service_recovery) and room:
             options = [{'target_stock':1, 'qty':1, 'forecast_target':None,
-                        'scenario':'profitable_midprice_stockout_recovery' if recovery else 'second_trial', 'service_level':None,
+                        'scenario':'profitable_midprice_stockout_recovery' if recovery else 'profitable_service_stockout_recovery' if service_recovery else 'second_trial', 'service_level':None,
                         'cost_ceiling':acquisition_ceiling(p)}]
         for scenario in forecast['scenarios']+forecast['growth_coverage_options']:
-            if second_trial or recovery: break
+            if second_trial or recovery or service_recovery: break
             target = scenario['target_stock']
             qty = min(max(0, target-projected),room)
             if qty > 0 and not any(o['qty']==qty for o in options):
@@ -313,13 +329,17 @@ def replenishment_candidates(catalog, inventory, history, now, blocked=(), trial
                                            signal['midprice_contribution_12h'] > 0),
                      'upper_midprice': upper_midprice,
                      'midprice_stockout_recovery':recovery,
+                     'service_stockout_recovery':service_recovery,
+                     'recent_unserved_stockout_tasks_3h':len(lost_tasks.get(sku,())),
+                     'projected_service_contribution_per_unit':service_margin if service_recovery else None,
                      'expiry_demand': expiry,
                      'currently_stocked': stocks[sku], 'pending_stock':reserved,
                      'second_trial':second_trial, 'evidence': signal, 'target_options': options,
                      'cost_ceiling_per_unit': acquisition_ceiling(p), 'forecast':forecast,
                      'budget_scope':'replenishment: shared window and cash/risk limits; NOT rolling novel-exploration budget',
                      'assumption':('One model-approved recovery unit after recent profitable paid100k-300k stockout; not proven deep stock.'
-                                   if recovery else 'One additional unit after exactly one positive-contribution settlement; not proven maintenance.'
+                                   if recovery else 'One model-approved recovery after repeated recent unserved requests, actual positive contribution and positive current-cost margin; not proven deep stock.'
+                                   if service_recovery else 'One additional unit after exactly one positive-contribution settlement; not proven maintenance.'
                                    if second_trial else 'Each target/quantity is forecast-derived; the model approves a candidate or holds.')})
     rows.sort(key=lambda r: (not r['upper_midprice'],
                              -(r['upper_midprice'] or {}).get('projected_contribution_12h', 0),
@@ -329,14 +349,15 @@ def replenishment_candidates(catalog, inventory, history, now, blocked=(), trial
                              -r['evidence']['confirmed_positive_spread_sales_1h'],
                              -r['evidence']['contribution_after_holding_refund_scenario_12h'], r['sku']))
     recoveries = [r for r in rows if r.get('midprice_stockout_recovery')][:2]
-    proven = [r for r in rows if not r['second_trial'] and not r.get('midprice_stockout_recovery')
+    service_recoveries=sorted((r for r in rows if r.get('service_stockout_recovery')),key=lambda r:(-r['recent_unserved_stockout_tasks_3h']*r['projected_service_contribution_per_unit'],r['sku']))[:2]
+    proven = [r for r in rows if not r['second_trial'] and not r.get('midprice_stockout_recovery') and not r.get('service_stockout_recovery')
               and not r['target_options'][0].get('expiry_trial')]
     trials = [r for r in rows if r['second_trial'] and not r.get('midprice_stockout_recovery')][:2]
     expiry_trials = sorted((r for r in rows if r['target_options'][0].get('expiry_trial')),
                            key=lambda r: (-r['expiry_demand']['unserved_tasks_12h'],
                                           -r['evidence']['contribution_after_holding_refund_scenario_12h'],
                                           r['sku']))[:MAX_EXPIRY_TRIALS]
-    return recoveries + proven[:12 - len(recoveries) - len(trials) - len(expiry_trials)] + expiry_trials + trials
+    return recoveries + service_recoveries + proven[:12 - len(recoveries) - len(service_recoveries) - len(trials) - len(expiry_trials)] + expiry_trials + trials
 
 
 def policy_view(sku, product, inventory, history, now):

@@ -16,7 +16,7 @@ def blocked(desired, reason):
 def select_lines(desired, *, stocks, categories, pending_stock, catalog,
                  unit_room, supply_lines, budget, allow_replenishment,
                  allow_new_skus, time_limited, exploration_budget=None, covered_expiry_trials=(),
-                 unprofitable_upper_midprice=()):
+                 unprofitable_upper_midprice=(), unprofitable_service_recovery=()):
     stocks=Counter(stocks);categories=Counter(categories)
     result=[];emitted=[]
     for index,row in enumerate(desired):
@@ -37,6 +37,7 @@ def select_lines(desired, *, stocks, categories, pending_stock, catalog,
             reasons=['supply_window_time' if time_limited else 'supply_line_limit']
         elif row.get('expiry_trial') and sku in covered_expiry_trials:reasons=['expiry_demand_already_covered']
         elif sku in unprofitable_upper_midprice:reasons=['upper_midprice_margin_no_longer_positive']
+        elif sku in unprofitable_service_recovery:reasons=['service_recovery_economics_changed']
         elif row['kind']=='exploration' and stocks[sku]:reasons=['already_stocked']
         elif row['kind']=='exploration' and product_signature(catalog[sku])!=row['signature']:
             reasons=['catalog_signature_changed']

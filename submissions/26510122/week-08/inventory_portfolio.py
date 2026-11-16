@@ -42,7 +42,7 @@ WINDOW_BUDGET = GROWTH_WINDOW_BUDGET
 ROLLING_BUDGET = GROWTH_EXPLORATION_BUDGET
 MAX_MAINTAINED_SKUS = 8
 STOCKOUT_TRIAL_CANDIDATES = 3
-POLICY_VERSION = 28
+POLICY_VERSION = 29
 GROWTH_SPEND_SHARE = .50
 DAY = 86400
 INFLOW_MIN_PUBLIC_DEALS = 5
@@ -594,6 +594,7 @@ def _run(inventory, catalog, history, now, model, refresh, rng, path,prepare_onl
             restock_orders.append({'sku':item['sku'], 'qty':option['qty'],
                                   'midprice_priority':winner.get('midprice_priority', False),
                                   **({'upper_midprice': winner['upper_midprice']} if winner.get('upper_midprice') else {}),
+                                  **({'service_recovery':{'median_paid':winner['evidence']['median_positive_contribution_paid_12h'], 'lost_tasks_3h':winner['recent_unserved_stockout_tasks_3h']}} if winner.get('service_stockout_recovery') else {}),
                                   'target_stock':option['target_stock'],
                                   'forecast_scenario':option['scenario'],
                                   'coverage_hours':option.get('coverage_hours'),
@@ -678,7 +679,7 @@ def _run(inventory, catalog, history, now, model, refresh, rng, path,prepare_onl
         estimated_spend_krw=sum(r['qty']*unit_costs[r['sku']] for r in desired),approved_lines=[
         {k:r.get(k) for k in ('sku','kind','qty','target_stock','cost_ceiling','second_trial','midprice_priority',
                              'forecast_scenario','coverage_hours','forecast_mean','demand_basis','forum_request_ids',
-                             'stockout_trial','inflow_trial','expiry_demand','expiry_trial','upper_midprice')} for r in desired],
+                             'stockout_trial','inflow_trial','expiry_demand','expiry_trial','upper_midprice','service_recovery')} for r in desired],
         model_choice=answer,allocation_review=allocation_review,
         allocation_behavior={'review_required':review_required,
             'offered_proven_skus':sum(not w['second_trial'] for w in winners),
@@ -768,11 +769,15 @@ def _emit_approved(state,path,desired,answer,window,key,operating,now,slots,budg
     unprofitable_upper_midprice = {
         r['sku'] for r in desired if r.get('upper_midprice') and projected_upper_midprice_margin(
             catalog[r['sku']], r['upper_midprice']['median_paid'], surge.get(r['sku'], 1), at) <= 0}
+    unprofitable_service_recovery={r['sku'] for r in desired if r.get('service_recovery') and (
+        current_operating['phase'] not in ('growth','harvest') or current_operating['hours_to_end']<3
+        or projected_upper_midprice_margin(catalog[r['sku']],r['service_recovery']['median_paid'],surge.get(r['sku'],1),at)<=0)}
     buy,execution=select_lines(desired,stocks=current_stocks,categories=categories,
         pending_stock=pending_stocks,catalog=catalog,unit_room=free_units,supply_lines=room,budget=cash,
         allow_replenishment=current_operating['allow_replenishment'],allow_new_skus=current_operating['allow_new_skus'],
         time_limited=time_slots<slots,exploration_budget=rolling_remaining,covered_expiry_trials=covered_expiry_trials,
-        unprofitable_upper_midprice=unprofitable_upper_midprice)
+        unprofitable_upper_midprice=unprofitable_upper_midprice,
+        unprofitable_service_recovery=unprofitable_service_recovery)
     by_sku={r['sku']:r for r in desired}
     for emitted in buy:
         sku,qty=emitted['sku'],emitted['qty'];row=by_sku[sku]
@@ -785,6 +790,7 @@ def _emit_approved(state,path,desired,answer,window,key,operating,now,slots,budg
                                 **({'inflow_trial': row['inflow_trial']} if row.get('inflow_trial') else {}),
                                 **({'expiry_trial': row['expiry_trial']} if row.get('expiry_trial') else {}),
                                 **({'upper_midprice': row['upper_midprice']} if row.get('upper_midprice') else {}),
+                                **({'service_recovery':row['service_recovery']} if row.get('service_recovery') else {}),
                                 **audit.links(),'intent_id':f"{audit.links()['decision_id']}:{sku}"})
     save(path, state)  # all reservations precede externally executed supply calls
     log_execution(execution,at,execution_supply_lines=room,time_limited_supply_lines=time_slots,
@@ -874,6 +880,13 @@ def execute_prepared(inventory,catalog,history,now,*,refresh,state_path=None,rea
                         or row['kind']=='exploration' and row['qty']!=1
                         or row['kind']=='replenishment' and not 1<=row['target_stock']<=PROVEN_STOCK):
                     raise ValueError('invalid_approved_line')
+                if row.get('service_recovery'):
+                    basis=row['service_recovery']
+                    if (row['kind']!='replenishment' or row['qty']!=1 or row['target_stock']!=1
+                            or not isinstance(basis,dict) or type(basis.get('median_paid')) not in (int,float)
+                            or not math.isfinite(basis['median_paid']) or basis['median_paid']<=0
+                            or type(basis.get('lost_tasks_3h')) is not int or basis['lost_tasks_3h']<2):
+                        raise ValueError('invalid_service_recovery_approval')
                 if 'upper_midprice' in row:
                     basis = row['upper_midprice']
                     if (row['kind'] != 'replenishment' or not isinstance(basis, dict)
