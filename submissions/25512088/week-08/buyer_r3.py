@@ -74,6 +74,7 @@ GRADE_COST_MIDPOINT = {'A':.65, 'B':.50, 'C':.35}
 SAVED_TARGET = .80
 SAVED_STRETCH_TARGET = .95
 SAVED_MIDDLE_TARGET = .90
+SAVED_UPPER_BRIDGE_TARGET = .875
 SAVED_BRIDGE_TARGET = .85
 EARLY_QUOTE_TARGET = 11
 QUOTE_WAVE_SIZE = 24
@@ -126,6 +127,10 @@ def stretch_limit(order, product, grade=None):
 def middle_limit(order, product, grade=None):
     """One evidence-gathering step between the stretch and proven fallback."""
     return saved_target_limit(order,product,grade,SAVED_MIDDLE_TARGET)
+
+def upper_bridge_limit(order, product, grade=None):
+    """Bisect the measured 0.90-to-0.85 acceptance interval."""
+    return saved_target_limit(order,product,grade,SAVED_UPPER_BRIDGE_TARGET)
 
 def bridge_limit(order, product, grade=None):
     """Preserve a higher-Saved acceptance step before the proven fallback."""
@@ -429,6 +434,7 @@ class Buyer:
                 s['grade']=fields['grade'];s['cap']=deals_cap(self.o,self.catalog[sku],s['grade'],self.portfolio)
                 s['stretch_cap']=stretch_limit(self.o,self.catalog[sku],s['grade'])
                 s['middle_cap']=middle_limit(self.o,self.catalog[sku],s['grade'])
+                s['upper_bridge_cap']=upper_bridge_limit(self.o,self.catalog[sku],s['grade'])
                 s['bridge_cap']=bridge_limit(self.o,self.catalog[sku],s['grade'])
                 if task_state(task).endswith('COMPLETED'):
                     # A certificate, not a parsed claim, enforces the actual grade at payment.
@@ -452,7 +458,9 @@ class Buyer:
                 'eligible_skus':sorted(offered_skus),'quoted_pairs':len(self.sessions),
                 'parallel_limit':QUOTE_WAVE_SIZE,'early_quote_target':EARLY_QUOTE_TARGET,'deadline_seconds':85,
                 'saved_target':SAVED_TARGET,'saved_stretch_target':SAVED_STRETCH_TARGET,
-                'saved_middle_target':SAVED_MIDDLE_TARGET,'saved_bridge_target':SAVED_BRIDGE_TARGET,
+                'saved_middle_target':SAVED_MIDDLE_TARGET,
+                'saved_upper_bridge_target':SAVED_UPPER_BRIDGE_TARGET,
+                'saved_bridge_target':SAVED_BRIDGE_TARGET,
                 'saved_portfolio':self.portfolio,
                 'breakage_prior':BREAKAGE_PRIORS['food' if self.o.get('kind')=='food' else 'goods'],
                 'ranked_quotes':[{'shop':s['shop']['name'],'sku':s['sku'],'ask':s['ask'],'cap':s['cap'],
@@ -466,6 +474,7 @@ class Buyer:
                 negotiation_steps=[]
                 for label,ceiling in (
                         ('stretch',s['stretch_cap']),('middle',s['middle_cap']),
+                        ('upper_bridge',s['upper_bridge_cap']),
                         ('bridge',s['bridge_cap']),('fallback',s['cap'])):
                     if negotiation_steps and negotiation_steps[-1][1]==ceiling:
                         # Grade-specific hard caps can make two Saved targets
