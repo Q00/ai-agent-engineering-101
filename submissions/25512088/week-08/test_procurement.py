@@ -4,7 +4,7 @@ import tempfile
 import time
 import unittest
 from network_reads import retry_read
-from seller_procurement import choose,allocation_plan,capital_available,supply_result,own_registration,own_board_registration,retry_join,join_current_registration,preserve_stale_pending,breadth_window_blocks,paid_bridge_used,refresh_window_blocks,competitor_breadth_target,warranty_risk_reserve,observed_warranty_hazard,active_warranty_amounts,supply_interval_wait,capacity_recheck_wait,own_sales_evidence,recent_refund_cooldown_skus,mature_refund_risk_skus,active_high_value_warranty_skus,own_a_conversion_evidence,own_quote_conversion_evidence
+from seller_procurement import choose,allocation_plan,capital_available,supply_result,own_registration,own_board_registration,retry_join,join_current_registration,preserve_stale_pending,breadth_window_blocks,paid_bridge_used,refresh_window_blocks,competitor_breadth_target,warranty_risk_reserve,observed_warranty_hazard,active_warranty_amounts,supply_interval_wait,capacity_recheck_wait,own_sales_evidence,own_grade_profit_evidence,recent_refund_cooldown_skus,mature_refund_risk_skus,active_high_value_warranty_skus,own_a_conversion_evidence,own_quote_conversion_evidence
 from seller_market import dominant_goods_profit_probability
 class PurchaseTests(unittest.TestCase):
  def test_capacity_recheck_is_fast_only_during_open_supply(self):
@@ -100,6 +100,20 @@ class PurchaseTests(unittest.TestCase):
   self.assertEqual(total,{'x':2})
   self.assertEqual(gross,{'x':-80})
   self.assertEqual(profitable,{'x':1})
+ def test_local_grade_evidence_joins_certified_grade_and_refund_aware_profit(self):
+  import sqlite3
+  local=sqlite3.connect(':memory:')
+  local.execute('create table sales(sku text,ledger integer,amount integer,cost integer,reward integer,refunded integer)')
+  local.executemany('insert into sales values(?,?,?,?,?,?)',[
+   ('x',1,120,100,0,0),('x',2,130,100,0,0),
+   ('x',3,140,100,0,1),('x',4,150,100,0,0)])
+  with tempfile.TemporaryDirectory() as root:
+   path=root+'/intel.sqlite3';intel=sqlite3.connect(path)
+   intel.execute('create table trades(seq integer,grade text)')
+   intel.executemany('insert into trades values(?,?)',[(1,'A'),(2,'A'),(3,'A'),(4,'B')])
+   intel.commit();intel.close()
+   evidence=own_grade_profit_evidence(local,path,'A')['x']
+  self.assertEqual(evidence,{'sales':3,'profitable':2,'gross':-50,'refunds':1})
  def test_recent_official_refund_cools_only_matching_local_sku(self):
   import sqlite3
   local=sqlite3.connect(':memory:')
@@ -469,6 +483,27 @@ class PurchaseTests(unittest.TestCase):
   self.assertEqual(allocation_plan(
       [cheap,high],{'units':[],'balance':1000000},1000000,
       policy=policy)[0]['sku'],'cheap')
+ def test_mature_local_a_grade_profit_can_override_weaker_market_prior(self):
+  high=dict(sku='high',kind='goods',expected_net=150000,score=1000,
+            upper_cost=900000,sales_1h=4,sales_6h=18,
+            distinct_buyers_6h=8,estimated_sale_likelihood=.6,
+            own_sales_total=12,own_gross_total=1600000,own_profitable_sales=12,
+            dominant_grade_samples=19,dominant_grade_profit_probability=.55,
+            own_dominant_grade_sales=7,own_dominant_grade_profitable=7,
+            own_dominant_grade_gross=220000,own_dominant_grade_refunds=0)
+  policy={'max_sku_capital_share':1,'high_value_lane_min_unit_cost':500000,
+          'min_goods_a_profit_samples':3,'min_goods_a_profit_probability':.60,
+          'min_high_value_restock_grade_samples':3,
+          'min_high_value_restock_grade_profit_probability':.60,
+          'min_local_high_value_grade_sales':5,
+          'min_local_high_value_grade_profitable_share':.80}
+  plan=allocation_plan([high],{'units':[],'balance':2000000},2000000,
+                       policy=policy)
+  self.assertEqual(plan[0]['sku'],'high')
+  self.assertTrue(plan[0]['evidence']['local_grade_proven'])
+  high['own_dominant_grade_refunds']=1
+  self.assertEqual(allocation_plan(
+      [high],{'units':[],'balance':2000000},2000000,policy=policy),[])
  def test_unaffordable_approved_high_value_preserves_cash_instead_of_buying_cheap(self):
   cheap=dict(sku='cheap',kind='food',expected_net=1000,score=100,
              upper_cost=100,sales_1h=8,sales_6h=12,

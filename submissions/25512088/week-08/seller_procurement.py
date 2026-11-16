@@ -157,6 +157,31 @@ def own_sales_evidence(referrals, now=None):
             {row[0]:row[2] for row in rows},
             {row[0]:row[3] for row in rows})
 
+def own_grade_profit_evidence(referrals, intel_path, grade='A'):
+    """Join local cost/refund truth to the official certified sale grade."""
+    path=Path(intel_path)
+    if not path.exists():return {}
+    alias='intel_grade'
+    try:
+        referrals.execute("ATTACH DATABASE ? AS "+alias,
+                          ('file:'+str(path.resolve())+'?mode=ro',))
+        rows=referrals.execute('''
+            SELECT s.sku,COUNT(*),
+                   COALESCE(SUM(CASE WHEN s.refunded=0 AND s.amount>s.cost
+                                     THEN 1 ELSE 0 END),0),
+                   COALESCE(SUM(CASE WHEN s.refunded=1 THEN -s.cost
+                                     ELSE s.amount-s.cost-COALESCE(s.reward,0) END),0),
+                   COALESCE(SUM(CASE WHEN s.refunded=1 THEN 1 ELSE 0 END),0)
+            FROM sales s JOIN intel_grade.trades t ON t.seq=s.ledger
+            WHERE t.grade=? GROUP BY s.sku''',(grade,)).fetchall()
+        return {row[0]:{'sales':row[1],'profitable':row[2],
+                        'gross':row[3],'refunds':row[4]} for row in rows}
+    except sqlite3.Error:
+        return {}
+    finally:
+        try:referrals.execute('DETACH DATABASE '+alias)
+        except sqlite3.Error:pass
+
 def recent_refund_cooldown_skus(referrals, intel_path, now=None, cooldown_hours=6,
                                 repeat_cooldown_hours=24, repeat_refunds=2):
     """Temporarily stop restocking a SKU after our own official breakage.
@@ -454,11 +479,21 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
         cold_safe_trial=False
         high_value_canary=False
         own_profit_proven=False
+        local_grade_proven=False
         if row.get('kind')=='goods':
             min_samples=policy.get('min_goods_a_profit_samples',0)
             min_probability=policy.get('min_goods_a_profit_probability',0)
             own_sales_total=row.get('own_sales_total',row.get('own_sales_1h',0))
             own_profitable=row.get('own_profitable_sales',0)
+            local_grade_sales=row.get('own_dominant_grade_sales',0)
+            local_grade_profitable=row.get('own_dominant_grade_profitable',0)
+            local_grade_proven=(
+                local_grade_sales>=policy.get(
+                    'min_local_high_value_grade_sales',5) and
+                row.get('own_dominant_grade_gross',0)>0 and
+                row.get('own_dominant_grade_refunds',0)==0 and
+                local_grade_profitable/max(1,local_grade_sales)>=policy.get(
+                    'min_local_high_value_grade_profitable_share',.80))
             high_value_grade_guard=(
                 row.get('upper_cost',0)>=
                 policy.get('high_value_lane_min_unit_cost',math.inf))
@@ -490,7 +525,8 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
             # unfavorable draw can immobilize over 500k and the current market
             # may clear below its cost. Expensive goods therefore always pass
             # the same minimum grade-economics gate before procurement.
-            if weak_grade_economics and (high_value_grade_guard or not own_profit_proven):
+            if (weak_grade_economics and not local_grade_proven and
+                    (high_value_grade_guard or not own_profit_proven)):
                 continue
             # Revenue is the live seller bottleneck, but the old proven-only
             # priority could leave every scarce supply slot to cheap stock.
@@ -677,6 +713,7 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
                       max_active_unproven_goods=max_active_unproven,
                       new_unproven_goods=(row.get('kind')=='goods' and is_new),
                       own_profit_proven=own_profit_proven,
+                      local_grade_proven=local_grade_proven,
                       proven_scale_ready=proven_scale_ready,
                       realized_hourly_contribution=realized_hourly_contribution)
         diversity=policy.get('new_sku_bonus',1) if breadth_expansion and is_new else 1
@@ -725,9 +762,10 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
                 row.get('dominant_grade_samples',0)>=
                     policy.get('min_high_value_restock_grade_samples',
                                policy.get('min_goods_a_profit_samples',0)) and
-                row.get('dominant_grade_profit_probability',0)>=
+                (row.get('dominant_grade_profit_probability',0)>=
                     policy.get('min_high_value_restock_grade_profit_probability',
-                               policy.get('min_goods_a_profit_probability',0))):
+                               policy.get('min_goods_a_profit_probability',0)) or
+                 local_grade_proven)):
             high_value_priority=0
         elif high_value_canary:
             high_value_priority=1
@@ -948,6 +986,8 @@ def main():
         with sqlite3.connect(state/'referrals.sqlite3') as referrals:
             (own_sales_1h,own_sales_total,own_gross_total,
              own_profitable_sales)=own_sales_evidence(referrals)
+            own_grade=own_grade_profit_evidence(
+                referrals,state/'market_intel.sqlite3','A')
             refund_cooldowns=recent_refund_cooldown_skus(
                 referrals,state/'market_intel.sqlite3',
                 cooldown_hours=policy.get('refund_restock_cooldown_hours',6),
@@ -975,6 +1015,10 @@ def main():
                 own_sales_total=own_sales_total.get(sku,0),
                 own_gross_total=own_gross_total.get(sku,0),
                 own_profitable_sales=own_profitable_sales.get(sku,0),
+                own_dominant_grade_sales=own_grade.get(sku,{}).get('sales',0),
+                own_dominant_grade_profitable=own_grade.get(sku,{}).get('profitable',0),
+                own_dominant_grade_gross=own_grade.get(sku,{}).get('gross',0),
+                own_dominant_grade_refunds=own_grade.get(sku,{}).get('refunds',0),
                 own_a_quotes=conversion.get('quotes',0),
                 own_a_signed=conversion.get('signed',0),
                 own_a_conversion_rate=conversion.get('rate'),
