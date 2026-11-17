@@ -150,6 +150,7 @@ nohup "$HERE/.venv/bin/python" "$HERE/ops/archive_db.py" >>"$HERE/logs/archive_d
 # 11-11 (user: balance book and revenue dynamically; some items may cost more): the goods price controller,
 # after guards.py (it reads the book history and the price rivals the guards write)
 timeout 60 "$HERE/.venv/bin/python" "$HERE/price_ctl.py" >/dev/null 2>&1 || true
+timeout 60 "$HERE/.venv/bin/python" "$HERE/ops/warranty_watch.py" >/dev/null 2>&1 || true   # 11-17: no default warranty while stars rank holds
 
 # 11-08: the user's phone messages (private ntfy topic) read every 30 s and passed to the agents
 nohup "$HERE/.venv/bin/python" "$HERE/inbox.py" --loop 14 30 >/dev/null 2>&1 &
