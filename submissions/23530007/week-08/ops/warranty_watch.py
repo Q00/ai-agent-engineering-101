@@ -41,6 +41,9 @@ def set_default(h, sell_c=None):
     if sell_c is not None:                      # 11-17 06:45 (user: 'sell grade C too, for the book')
         pa["globals"]["sell_c"] = sell_c
         pa["globals"]["b_first"] = sell_c       # 11-17 07:00: B before A goes off with them
+        if not sell_c:                          # 11-17 07:50: and the B rules come back
+            pa["globals"]["a_only_on"] = 1
+            pa["globals"]["b_max_list"] = 1000000
     PA.write_text(json.dumps(pa, ensure_ascii=False, indent=1), encoding="utf-8")
 
 

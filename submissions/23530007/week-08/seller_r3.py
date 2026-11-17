@@ -402,7 +402,9 @@ def pick_unit(text, held, now, asks=None, star=False, unpaid=None):
     # 11-13: grade B is sold again except to the accounts that rate B lower than A (a_only_buyers.json): 60% of our
     # 'none in stock' answers (157 an hour) came with B or C on the shelf; by account, only 25620027 (A 5 / B 4),
     # fair-furniture (A 5 / B 4) and dyishappy (A 3.0 / B 2.75) rate B lower, iyen-dori and real_yellow rate it higher
-    if not shop_policy_now().get("sell_b", 1) or a_only(text):
+    # 11-17 07:50 (user: 'remove the stock rules that stand in the way of the book'): a_only (14 of 37 A sales with B
+    # on the shelf after 07:13) is now the knob a_only_on; the stars watch turns it back on
+    if not shop_policy_now().get("sell_b", 1) or (shop_policy_now().get("a_only_on", 1) and a_only(text)):
         ab = [u for u in ab if (u.get("grade") or "A") == "A"]
     # 11-15 (user, after the review): grade B of goods listed at b_max_list or more is not sold. 48 h: B >= 1 M list
     # made 16.0% margin against 10.6% refunds, and one break refunds ~2 M (24 h refunds -59.6 M against +50.1 M margin)
@@ -438,7 +440,9 @@ def pick_unit(text, held, now, asks=None, star=False, unpaid=None):
         # 11-17 15:55 KST (user: 'find more ways to grow the book, apply now'): margin per paid unit in the 25 min after
         # the warranty change: A .033 of list (cost .639 vs .672), B .11 (cost .504 vs .613). With no default warranty
         # B no longer carries its 13% refund for silent asks, so where the buyer accepts B, B goes first
-        pick = min(ab, key=lambda u: (id(u) not in fits, 0 if (u.get("grade") or "A") == "B" else 1, u.get("supplied_at") or 0))
+        # 07:50: B ahead of the market-fit order too: 17 of 37 A sales after 07:13 went out with B of the SKU on the
+        # shelf because the fit key came first
+        pick = min(ab, key=lambda u: (0 if (u.get("grade") or "A") == "B" else 1, id(u) not in fits, u.get("supplied_at") or 0))
     elif shop_policy_now().get("grade_first"):
         pick = min(ab, key=lambda u: (id(u) not in fits, GRADE_ORDER.get(u.get("grade") or "A", 1), u.get("supplied_at") or 0))
     else:
