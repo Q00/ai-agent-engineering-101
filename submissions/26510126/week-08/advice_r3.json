@@ -718,6 +718,10 @@
   {
    "t": 1794886331.741188,
    "text": "12:3x supervisor: ask_frac_food above 0.70 is CLOSED-NEGATIVE - add raises of it to the order-14 negative list to the end of the round. Every closed verdict on it says lower is better (0.8->0.83 shop points/h -33%; cuts 0.8->0.78 +91%, 0.78->0.75 +134%); the supervisor reverted raises at 20:5x (11/16) and 11:4x (11/17), and 12:31 approved it again because 'the opposite of the last move' - a revert of a negative step is not evidence for repeating it. Also: our 300k+ goods sales fell 35 -> ~11 per hour after 11:40 while the market's held (our share 6.8% -> 1.9%); the largest 300k+ buyer is still active elsewhere but stopped buying from us right after the 11:10-11:37 checkout failures. Do not read that drop as a price signal."
+  },
+  {
+   "t": 1794887376.431226,
+   "text": "13:0x supervisor CORRECTION of the 12:3x note (audit #56): the 300k+ drop after 11:40 is NOT buyers avoiding us after the checkout outage; it is a cost wall. 64% of our pre-11:10 300k+ A settles went to one buyer; our cheap A units ran out about then, and the A units left cost 0.72-0.75 of list (floor ~0.754) against the market's A median ~0.695, so that buyer moved to cheaper shops (it still buys ~18/h of 300k+ elsewhere). 83 of our 91 300k+ A units (49.9M at cost) now sit above the market median: they stay in Book at cost unsold, which is the right outcome - selling them at the market median would be under cost. restock_r3.py:507/511 value a line at our own median when it beats the market's (audit #32), and that median came from the same buyer, so restock kept buying 300k+ A lines whose draws cost 0.72+; for the last 11 h prefer lines the market median alone clears. 2bd2771 caused no wrong refusals (1 'not in stock' after 11:39 vs ~2/h before). Our buyer is up: 128.7 orders/h, 106.5 deals/h, 99% paid since 11:39."
   }
  ]
 }
