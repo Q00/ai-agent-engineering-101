@@ -1,20 +1,35 @@
 {
  "on": false,
- "id": "market_ask-goods-11091551-paid",
+ "id": "market_ask-goods-11111029",
  "param": "market_ask",
  "kind": "goods",
  "arms": {
   "A": 0.95,
-  "B": 1.05
+  "B": 0.97
  },
  "min_n": 30,
  "p_win": 0.95,
- "started": 1794207091.8743942,
- "reward": "paid",
- "why": "supervisor 11/9 16:0x, toward the top 10: in the 0.75 vs 0.70 ask_frac A/B only 11 of 90 goods asks were list x ask_frac (47 sat on the warranty floor, ~32 on the market line list x p75 x market_ask), so ask_frac barely moves our price and that A/B (and the 0.80 vs 0.75 one replaced after 1 talk) read mostly noise; market_ask is the number that sets the ask; 1.05 vs 0.95 (now), judged on paid shop points per talk, same hours",
+ "started": 1794360558.714798,
  "result": {
   "winner": "stopped",
-  "time": 1794207177.058725,
-  "why": "user 11/9 16:0x: no A/B unless needed, top 10 first; market_ask stays 0.95"
+  "summary": {
+   "id": "market_ask-goods-11111029",
+   "param": "market_ask",
+   "kind": "goods",
+   "A": {
+    "value": 0.95,
+    "n": 93,
+    "deals": 10,
+    "mean_reward": 0.0072
+   },
+   "B": {
+    "value": 0.97,
+    "n": 89,
+    "deals": 9,
+    "mean_reward": 0.0074
+   },
+   "p_B_better": 0.514
+  },
+  "time": 1794365065.5995038
  }
 }
