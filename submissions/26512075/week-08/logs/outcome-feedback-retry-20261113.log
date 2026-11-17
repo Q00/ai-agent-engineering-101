@@ -1,0 +1,47 @@
+
+> week-08@1.0.0 test:buyer
+> node --import tsx --test buyer/round3_buyer_tests/*.test.ts buyer/round3_buyer_tests/*.test.mjs
+
+✔ food order requests acceptable in-stock SKU and emits policy (117.349517ms)
+✔ reject another acceptable receipt item before checkout (99.941696ms)
+✔ no valid offers returns no deal without contacting shop (77.722038ms)
+✔ malformed order returns no deal without contacting shop (70.760868ms)
+✔ Round 2 still works with and without --order (200.891392ms)
+✔ explicitly mismatched agreed price refuses receipt (77.110578ms)
+✔ medium-volume evidence chooses a specific shop and permitted SKU (1.866496ms)
+✔ incomplete coverage and unavailable SKUs fall back to existing shop scoring (12.011498ms)
+✔ price comps require a market-signed grade and exact known warranty (4.233852ms)
+✔ buyer's warranty requirement is independently configurable (1.096117ms)
+✔ real TypeScript bridge locates Python harness from an unrelated working directory (128.895909ms)
+✔ food use_within_hours maps to checkout policy (2.300318ms)
+✔ goods and Round 2 do not impose food policy (0.338341ms)
+✔ candidate SKUs must be both acceptable and in-stock with positive integer quantity (0.635615ms)
+✔ malformed or conflicting order does not fall back (0.557456ms)
+✔ receipt item and price must match selection and budget (0.485921ms)
+✔ payment reconciliation is idempotent and does not equate agreement with payment (2.807344ms)
+✔ unique breakage links only to a settled purchase; coverage does not assert refund (0.500758ms)
+✔ same-name purchases and incomplete six-hour history remain unresolved (0.442628ms)
+✔ conflicting payment records are not guessed (0.257097ms)
+✔ same discount has different margin scenarios, never an exact score (1.952905ms)
+✔ cap upside only; preserve above-list losses and unknown cost (0.331859ms)
+ℹ tests 22
+ℹ suites 0
+ℹ pass 22
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 795.77609
+..
+----------------------------------------------------------------------
+Ran 2 tests in 0.006s
+
+OK
+........./home/jeoni/miniconda3/lib/python3.13/pathlib/_local.py:289: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7409cee89e40>
+  @property
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+......................
+----------------------------------------------------------------------
+Ran 31 tests in 2.869s
+
+OK

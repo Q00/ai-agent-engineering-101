@@ -1,0 +1,220 @@
+{
+  "name": "sales_concentrated_in_fast_SKU",
+  "now": 1793775600,
+  "duration_seconds": 86400,
+  "seeds": [
+    7,
+    19,
+    41,
+    73,
+    101
+  ],
+  "config": {
+    "reserve_floor": 500,
+    "reserve_fraction": 0.5,
+    "spend_fraction": 0.2,
+    "exploration_fraction": 0.05,
+    "max_units": 20,
+    "max_sku_units": 4,
+    "max_category_units": 6,
+    "max_lines": 3,
+    "horizon_hours": 0.4166666666666667,
+    "lookback_hours": 6,
+    "safety_factor": 1.25,
+    "min_food_hours_left": 3,
+    "food_life_hours_by_sku": {},
+    "storage_days": 1,
+    "refund_risk_fraction": 0.1,
+    "max_snapshot_age": 60,
+    "close_guard_seconds": 3
+  },
+  "inventory": {
+    "round": 3,
+    "balance": 10000,
+    "units": [],
+    "restock": {
+      "open": true,
+      "opens_at": 1793775590,
+      "closes_at": 1793775770
+    }
+  },
+  "catalog": {
+    "fast": {
+      "sku": "fast",
+      "name": "fast goods",
+      "kind": "goods",
+      "category": "goods",
+      "list_price": 100
+    },
+    "slow": {
+      "sku": "slow",
+      "name": "slow goods",
+      "kind": "goods",
+      "category": "goods",
+      "list_price": 100
+    },
+    "food": {
+      "sku": "food",
+      "name": "food",
+      "kind": "food",
+      "category": "food",
+      "list_price": 100
+    }
+  },
+  "demand": [
+    {
+      "category": "goods"
+    },
+    {
+      "category": "food"
+    }
+  ],
+  "history": {
+    "market_run": "synthetic-run",
+    "observed_since": 1793772000,
+    "as_of": 1793775600,
+    "events": [
+      {
+        "id": "0",
+        "market_run": "synthetic-run",
+        "role": "seller",
+        "round": 3,
+        "settled": true,
+        "ts": 1793772200,
+        "sku": "fast",
+        "qty": 1,
+        "price": 100
+      },
+      {
+        "id": "1",
+        "market_run": "synthetic-run",
+        "role": "seller",
+        "round": 3,
+        "settled": true,
+        "ts": 1793772400,
+        "sku": "fast",
+        "qty": 1,
+        "price": 100
+      },
+      {
+        "id": "2",
+        "market_run": "synthetic-run",
+        "role": "seller",
+        "round": 3,
+        "settled": true,
+        "ts": 1793772600,
+        "sku": "fast",
+        "qty": 1,
+        "price": 100
+      },
+      {
+        "id": "3",
+        "market_run": "synthetic-run",
+        "role": "seller",
+        "round": 3,
+        "settled": true,
+        "ts": 1793772800,
+        "sku": "fast",
+        "qty": 1,
+        "price": 100
+      },
+      {
+        "id": "4",
+        "market_run": "synthetic-run",
+        "role": "seller",
+        "round": 3,
+        "settled": true,
+        "ts": 1793773000,
+        "sku": "fast",
+        "qty": 1,
+        "price": 100
+      },
+      {
+        "id": "5",
+        "market_run": "synthetic-run",
+        "role": "seller",
+        "round": 3,
+        "settled": true,
+        "ts": 1793773200,
+        "sku": "fast",
+        "qty": 1,
+        "price": 100
+      },
+      {
+        "id": "6",
+        "market_run": "synthetic-run",
+        "role": "seller",
+        "round": 3,
+        "settled": true,
+        "ts": 1793773400,
+        "sku": "fast",
+        "qty": 1,
+        "price": 100
+      },
+      {
+        "id": "7",
+        "market_run": "synthetic-run",
+        "role": "seller",
+        "round": 3,
+        "settled": true,
+        "ts": 1793773600,
+        "sku": "fast",
+        "qty": 1,
+        "price": 100
+      },
+      {
+        "id": "8",
+        "market_run": "synthetic-run",
+        "role": "seller",
+        "round": 3,
+        "settled": true,
+        "ts": 1793773800,
+        "sku": "fast",
+        "qty": 1,
+        "price": 100
+      },
+      {
+        "id": "9",
+        "market_run": "synthetic-run",
+        "role": "seller",
+        "round": 3,
+        "settled": true,
+        "ts": 1793774000,
+        "sku": "fast",
+        "qty": 1,
+        "price": 100
+      }
+    ]
+  },
+  "future_orders": [
+    {
+      "at": 100,
+      "sku": "fast",
+      "price": 100
+    },
+    {
+      "at": 200,
+      "sku": "fast",
+      "price": 100
+    },
+    {
+      "at": 300,
+      "sku": "fast",
+      "price": 100
+    },
+    {
+      "at": 400,
+      "sku": "fast",
+      "price": 100
+    }
+  ],
+  "assumptions": {
+    "cost_ratio": 0.65,
+    "food_life_hours_by_sku": {
+      "food": 2
+    },
+    "storage": "pro rata 1% per day",
+    "future_trace": "hypothetical, independent of policy output",
+    "refunds": "explicit future order fields only"
+  }
+}

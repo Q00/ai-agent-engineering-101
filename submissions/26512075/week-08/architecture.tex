@@ -1,0 +1,138 @@
+% 구현 근거는 REPORT.md에 기록하고 그림에서는 파일명을 생략한다.
+% 11/17 운영 seller의 Redis 선택 및 실제 저장·조회 성공을 앱 로그에서 확인.
+% 근거: logs/redis-app/2c2777b9363f4fdd951243cc3cd0b4ca-15663.jsonl
+% 재시작 전후 동일 상태의 복구는 별도 검증이며, 저장 성공과 혼동하지 않는다.
+% 빌드: XeLaTeX + ko.TeX + TikZ. 빌드 출력은 제출 폴더 내부에 보존한다.
+% xelatex -halt-on-error -interaction=nonstopmode architecture.tex
+\documentclass[10pt,a4paper,landscape]{article}
+\usepackage[margin=12mm]{geometry}
+\usepackage{kotex}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,calc}
+\pagestyle{empty}
+\setlength{\parindent}{0pt}
+\definecolor{ink}{HTML}{16324F}
+\definecolor{bluewash}{HTML}{EDF4FA}
+\definecolor{greenink}{HTML}{23634A}
+\definecolor{greenwash}{HTML}{EEF7F1}
+\definecolor{orange}{HTML}{FF2600}
+\definecolor{muted}{HTML}{526171}
+\begin{document}
+{\Large\bfseries\color{ink} npm 기반 구매 계층과 Python 검증 계층을 결합한 거래 에이전트}
+\hfill {\small 26512075 / helenjeon101}\par
+\vspace{2mm}
+{\small 실제 웹앱 서비스 배포를 위한 설계: 역할 분리 · 구조화된 입출력 · 상태 보존 · 결과 피드백}
+\hfill {\small 2026-11-17}\par
+{\footnotesize 여기서 전략은 시장 매매 전략이 아니라 웹앱 서비스의 실행·검증·저장 책임을 나누는 설계 원칙이다.}\par
+\vspace{3mm}
+\begin{center}
+\begin{tikzpicture}[
+  x=1cm,y=1cm,
+  box/.style={draw=ink,rounded corners=2mm,line width=.7pt,
+    fill=bluewash,align=left,inner sep=3mm,font=\small,anchor=north},
+  smallbox/.style={draw=orange,rounded corners=2mm,line width=.7pt,
+    fill=bluewash,align=left,inner sep=3mm,font=\small,anchor=north},
+  evidence/.style={box,draw=greenink,fill=greenwash},
+  flow/.style={-{Latex[length=2mm]},draw=ink,line width=.8pt},
+  floworange/.style={-{Latex[length=2mm]},draw=orange,line width=.8pt},
+  feedback/.style={flow,dashed,draw=greenink},
+  label/.style={font=\scriptsize,fill=white,inner sep=1mm,text=muted}
+]
+\node[box,text width=24.8cm,minimum height=1.35cm] (market) at (13,0) {
+  \textbf{시장과 기본 키트 — 거래 실행의 기준}\par
+  시장: 주문·예산·허용 상품·현재 재고·공개 원장 제공, 최종 정산과 순위 판정.\par
+  키트: 인증·판매 연결·결제·정산·스냅샷 갱신 담당. 협상 합의와 실제 결제 완료를 구분한다.
+};
+
+\node[box,text width=7.4cm,minimum height=3.05cm] (buyer) at (4.3,-2.15) {
+  \textbf{npm / TypeScript — 구매 실행 계층}\par\smallskip
+  의존성·타입 검사·테스트 명령을 일관되게 관리.
+  \par 주문에 맞는 재고와 평판으로 후보 선정.\par
+  명시적 재고 거절: 같은 상점·상품 5분 제외.\par
+  시간 여유가 있으면 최대 3개 상점 시도.\par
+  불확실한 응답·영수증 불일치에는 재시도 금지.\par
+  같은 조건의 정산 이력이 충분할 때만\par
+  동점 후보의 과거 가격 중앙값 비교.
+};
+\node[box,text width=7.4cm,minimum height=3.05cm] (seller) at (13,-2.15) {
+  \textbf{Python — 판매와 검증 계층}\par\smallskip
+  ASGI 진입점으로 협상 API 제공.\par
+  가격·보증 정책은 실행 검증과 분리.\par
+  현재 추가 재고 매입은 운영자 설정으로 중지.\par
+  상품·등급·가격·가용 재고 확인 후 협상.\par
+  규칙으로 가능한 판단은 모델 없이 처리.\par
+  시장 결제·정산은 키트가 담당.
+};
+\node[box,text width=7.4cm,minimum height=3.05cm] (tools) at (21.7,-2.15) {
+  \textbf{서비스 설계 — 근거 검증 후 실행}\par\smallskip
+  원장·게시판 분석으로 조건별 가격 비교.\par
+  cursor 추격과 3시간 관측 충족을 구분.\par
+  광고: 검토 $\rightarrow$ 검증 $\rightarrow$ 대기열 $\rightarrow$ 전송.\par
+  재고 최신성·게시 간격·중복 여부 검사.\par
+  매입안은 최신 상태로 재검증하되\par
+  운영자 중지 설정이 구매를 막는다.
+};
+\draw[flow,<->] (4.3,-1.35) -- (buyer.north);
+\draw[flow,<->] (13,-1.35) -- (seller.north);
+\draw[flow,<->] (21.7,-1.35) -- (tools.north);
+
+\node[smallbox,text width=7.4cm,minimum height=2.6cm] (model) at (4.3,-6.05) {
+  \textbf{Python 하네스 — 모델과 실행 분리}\par\smallskip
+  기본: Codex CLI / gpt-6.1-terra.\par
+  TypeScript가 JSON으로 협상 컨텍스트 전달.\par
+  구조화된 행동·가격을 하네스가 검증.\par
+  총 270초와 주문 만료를 고려해 시간 배분.\par
+  평균 원가는 참고이며 실제 원가로 단정하지 않음.
+};
+\node[smallbox,text width=7.4cm,minimum height=2.6cm] (state) at (13,-6.05) {
+  \textbf{상태 관리 — Redis 운영 적용 확인}\par\smallskip
+  11/17 seller의 Redis 저장소 선택 확인.\par
+  실제 task·협상 상태 저장과 조회 성공.\par
+  앱 로그에 작업 결과·세션·상태 식별자 기록.\par
+  식별자는 해시 처리; 접속 정보·본문 제외.\par
+  기존 메모리 상태의 자동 이전은 제공하지 않음.
+};
+\node[evidence,text width=7.4cm,minimum height=2.6cm] (records) at (21.7,-6.05) {
+  \textbf{장기 근거 — SQLite와 파일}\par\smallskip
+  SQLite: 원장 관측, 광고, 영수증 귀속.\par
+  파일: Buyer 기억, 결제, 재고, 실행 이력.\par
+  주문·상점·ledger로 실제 정산을 연결.\par
+  고장 연결이 불명확하면 미확인으로 유지.\par
+  성공뿐 아니라 거절·실패·재시도도 보존.
+};
+\draw[flow,<->] (buyer.south) -- (model.north);
+\draw[flow,<->] (seller.south) -- (state.north);
+\draw[feedback,<->] (tools.south) -- (records.north);
+\draw[flow] (seller.south west) -- (8.6,-5.55) -- (4.3,-5.55) -- (model.north);
+\node[label] at (6.6,-5.55) {필요한 협상만 모델 호출};
+
+\node[evidence,text width=15.85cm,minimum height=2.45cm] (learning) at (8.65,-9.5) {
+  \textbf{서비스 설계 — 결과를 다음 결정에 반영}\par\smallskip
+  실제 정산·재고 거절·고장 관측 $\rightarrow$ 기억 갱신 $\rightarrow$ 다음 주문의 후보와 협상 컨텍스트.\par
+  합의만 된 거래를 구매 성공으로 학습하지 않고, 확인되지 않은 원인을 만들어 넣지 않는다.\par
+  기본 키트 위에 추가한 차이: 결과 기억, 제한 재시도, 조건별 가격 근거, 운영자 매입 중지.\par
+  기능 작동 사례와 전체 성공률·순위 개선의 인과효과는 구분한다.
+};
+\node[smallbox,text width=7.4cm,minimum height=2.45cm] (redis) at (21.7,-9.5) {
+  \textbf{Redis — task·협상 상태 지속 저장}\par\smallskip
+  task 버전 충돌 검사, 기본 TTL 30일.\par
+  저장·조회 성공과 타임아웃을 앱 로그에 보존.\par
+  종료 작업의 협상 정리; 재고 예약은 메모리.\par
+  재고 예약·결제까지 묶는 전역 트랜잭션은 아님.
+};
+\draw[feedback] (records.south west) -- (17.1,-9.05) -- (8.65,-9.05) -- (learning.north);
+\draw[feedback] (learning.west) -- (.05,-10.65) -- (.05,-3.7) -- (buyer.west);
+\node[label,rotate=90] at (.05,-7.5) {다음 주문에 반영};
+\draw[floworange,<->] (state.east) -- (17.25,-7.3) -- (17.25,-10.1) -- (redis.west);
+\node[label,rotate=90] at (17.25,-8.7) {저장·조회};
+
+\node[align=left,anchor=north west,text width=25.8cm,font=\footnotesize,text=muted] at (0,-12.75) {
+  \textbf{범례:} 실선은 요청·판단·상태 저장 및 조회 흐름, 녹색 점선은 근거·기억 피드백. Redis 경로도 운영 적용을 확인해 실선으로 표시한다.\par
+  \textbf{11/17 확인:} 11:38까지 저장 40건·조회 59건·삭제 1건 성공. 같은 협상의 조회·저장 타임아웃 각 1건도 기록됐다.\par
+  \textbf{남은 한계:} 오래된 재고로 제외된 광고의 자동 재개는 미구현. 재고 갱신 지연의 근본 원인은 근거 없음.\par
+  \textbf{배포 경계:} ASGI 협상 API 제공과 전체 서비스 배포 완료는 구분한다. \par
+  상세 근거는 보고서·Redis 앱 로그를 참조한다. 에이전트 보조 초안이며 학생의 구조 이해와 검토 후 제출한다.
+};
+\end{tikzpicture}
+\end{center}
+\end{document}
