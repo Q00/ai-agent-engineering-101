@@ -343,7 +343,7 @@ PACE = {"under": ({"buyer": 25 / 60, "shop": 25 / 60}, {"buyer": 1.0, "shop": 1.
 # the credit left (minus a small reserve) over the days to the round end, and while the 24 h spend is within 115 %
 # of it both strategists run the model on every turn (run_gate); over 115 % they fall back to the gated setting
 ROUND_END = 1794927540        # 2026-11-17 14:59 UTC
-FREEZE_H = 6                  # 11-15: endgame freeze of routine strategist runs (see run_gate)
+FREEZE_H = 0                  # 11-15: endgame freeze of routine strategist runs (see run_gate)
 RESERVE = 5.0
 
 
