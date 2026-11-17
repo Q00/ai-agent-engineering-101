@@ -1,0 +1,41 @@
+
+### deal: {'item': 'lamp', 'budget': 120, 'ladder': [60, 80, 100, 110, 120]}
+    -> SendMessage "I want to buy a lamp"
+    <- TASK_STATE_INPUT_REQUIRED | Thanks for your interest! Our desk lamp is handmade from genuine solid brass with no plating, and it comes with a 2-year warranty, so it's built to last for dec
+    -> SendMessage "60" taskId=7f43f03c
+    <- TASK_STATE_INPUT_REQUIRED | I appreciate the offer, but 60 doesn't cover the solid brass and handwork in this lamp; I can come down a bit to meet you, and it still includes the full 2-year
+    -> SendMessage "80" taskId=7f43f03c
+    <- TASK_STATE_INPUT_REQUIRED | I see you moving up and I'll meet you partway, but this is solid brass shaped by hand with a 2-year warranty, and the price has to reflect that. Asking price: 2
+    -> SendMessage "100" taskId=7f43f03c
+    <- TASK_STATE_INPUT_REQUIRED | Thanks for coming up. 100 is the bare minimum, but solid hand-worked brass with a 2-year warranty is worth more, so I'm coming down again to meet you. Asking pr
+    -> SendMessage "110" taskId=7f43f03c
+    <- TASK_STATE_INPUT_REQUIRED | You're moving in good faith, so I'll make a real step toward you: solid hand-worked brass with a 2-year warranty, and I'm getting close to where I can't go lowe
+    -> SendMessage "120" taskId=7f43f03c
+    <- TASK_STATE_INPUT_REQUIRED | We're getting close; for genuine solid brass, handmade, with a full 2-year warranty, this is a smaller step because I'm near the lowest I can go. Asking price: 
+    -> SendMessage "120" taskId=7f43f03c
+    <- TASK_STATE_INPUT_REQUIRED | I've come down a long way for you, and this lamp is genuine solid brass, handmade, with a full 2-year warranty, so this is very close to the lowest I can go. As
+    -> SendMessage "120" taskId=7f43f03c
+    <- TASK_STATE_COMPLETED | You've been steady at 120, so let's close it: one genuine solid brass desk lamp, made by hand, with the full 2-year warranty. Thank you, and enjoy it. Deal: lam
+       artifact receipt [{"seller": "Oak & Brass Workshop", "price": 120.0, "item": "lamp"}]
+RESULT TASK_STATE_COMPLETED receipt=120.0 asks=[260, 235, 210, 190, 165, 150, 138]
+
+### nodeal: {'item': 'bookshelf', 'budget': 230, 'ladder': [140, 170, 200, 230]}
+    -> SendMessage "I want to buy a bookshelf"
+    <- TASK_STATE_INPUT_REQUIRED | Thanks for your interest! Our bookshelf is handmade in solid hardwood, with no veneer, and comes with a 2-year warranty; the price reflects the materials and th
+    -> SendMessage "140" taskId=9113f486
+    <- TASK_STATE_INPUT_REQUIRED | 140 doesn't cover the solid hardwood and hours of handwork, but I'd like to make this work, so I've come down. This piece is built to last decades and is backed
+    -> SendMessage "170" taskId=9113f486
+    <- TASK_STATE_INPUT_REQUIRED | I've come down again to meet you, but there's still a big gap; this is solid hardwood built by hand with a 2-year warranty, so I'd need a meaningful step up fro
+    -> SendMessage "200" taskId=9113f486
+    <- TASK_STATE_INPUT_REQUIRED | Thanks for moving up. 200 is still well short of what solid hardwood and handwork cost, but I've come down again, and a real step toward this price would let us
+    -> SendMessage "230" taskId=9113f486
+    <- TASK_STATE_INPUT_REQUIRED | Thanks for stepping up again; I've come down once more, but I'm getting close to what this solid hardwood piece and its 2-year warranty can support, so let's me
+    -> SendMessage "230" taskId=9113f486
+    <- TASK_STATE_INPUT_REQUIRED | You held at 230 this time, but I've still come down a little more as a good-faith gesture; for solid hardwood, built by hand and covered for 2 years, I need you
+    -> SendMessage "230" taskId=9113f486
+    <- TASK_STATE_INPUT_REQUIRED | I've made my biggest move yet to close this today; for a solid hardwood bookshelf built by hand with a 2-year warranty, this is about as far as I can go, so a s
+    -> SendMessage "230" taskId=9113f486
+    <- TASK_STATE_INPUT_REQUIRED | This is my final price for a solid hardwood bookshelf, handmade and backed by a 2-year warranty; I can't go lower, so say yes and it's yours today. Asking price
+    -> SendMessage "230" taskId=9113f486
+    <- TASK_STATE_INPUT_REQUIRED | I said 270 was final, but to close today I'll go to the absolute lowest I can sell this solid hardwood, handmade, 2-year-warranty bookshelf for; there is no low
+RESULT TASK_STATE_INPUT_REQUIRED receipt=None asks=[480, 430, 395, 370, 350, 335, 300, 270, 260]

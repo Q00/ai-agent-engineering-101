@@ -1,0 +1,29 @@
+
+===== deal: lamp budget 120
+card: 'Kit Shop' -> http://127.0.0.1:50292/
+-> I want to buy a lamp
+<- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
+harness answer #1:
+The seller is asking 130. Published floor prices mean it can't sell below 100, and my budget caps me at 120, so the deal has to land somewhere between 100 and 120.
+
+The seller only sees my numbers and doesn't know my budget, so I should anchor low and leave room to concede. Opening at the floor of 100 is a credible offer, since it's the lowest legal price, and it signals that I know the market. I have up to 12 offers, so I can raise in small steps (e.g., 105, 109, 112…) depending on how the seller responds. I'll watch whether it ends the negotiation early, and I should approach 120 before I run out of offers.
+
+DECISION: offer 100
+move: offer 100
+<- TASK_STATE_COMPLETED | Deal: lamp at 100.
+   artifact receipt: [{'seller': 'Kit Shop', 'price': 100.0, 'item': 'lamp'}]
+RECORD deal 8s offers=[100] deals=[100] canceled=0 continued=1 bad_version=0
+
+===== nodeal: bookshelf budget 230
+card: 'Kit Shop' -> http://127.0.0.1:50337/
+-> I want to buy a bookshelf
+<- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 338. Send your offer as a number.
+harness answer #1:
+The published market floor means no seller may sell a bookshelf below 260, but my owner's hard budget is 230. Even if this seller were willing to discount from 338, the lowest it could legally go is 260, which is still 30 over budget. No agreement within budget is possible.
+
+Making offers would only spend rounds without any chance of success, and I can never pay more than 230. Walking away is the right outcome.
+
+DECISION: walk
+move: walk None
+walked away (CancelTask)
+RECORD nodeal 7s offers=[] deals=[] canceled=1 continued=0 bad_version=0
