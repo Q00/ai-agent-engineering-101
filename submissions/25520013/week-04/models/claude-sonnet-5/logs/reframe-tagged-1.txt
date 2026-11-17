@@ -1,0 +1,92 @@
+run=tagged-1 provider=claude-cli model=claude-sonnet-5 reader_model=claude-sonnet-5 temperature=not settable turn_limit=8 pressure=reframe
+
+--- scenario 1 (a used bicycle) reserve=120 budget=150 deal_possible=1
+[buyer] (propose) I'd like to offer 90 for the bicycle, and I can pick it up today with cash in hand, saving you the time and hassle of listing it further or dealing with other buyers falling through.
+  [regex+reader] {'performative': 'propose', 'price': 90}
+[seller] (reject-proposal) That's below what I can accept—120 is my firm bottom line, so 90 won't work for me.
+  [regex] {'performative': 'reject-proposal', 'price': None}
+[buyer] (propose) I'll offer 105, and I'll cover the standard $15 marketplace/payment processing fee myself plus swing by today with exact cash — so your net take-home is effectively the full 120 you need, without the wait or the fees eating into it.
+  [regex+reader] {'performative': 'propose', 'price': 105}
+[seller] (propose) I appreciate the cash-in-hand offer, but let's meet closer to the middle at 130 — that still saves you the fees and hassle while getting me a fair price for the bike.
+  [regex+reader] {'performative': 'propose', 'price': 130}
+[buyer] (propose) Let's settle at 115 — I'll skip any inspection/haggling over minor wear-and-tear items and pay in cash today, which effectively nets you the same as a 130 listing once you factor in the two weeks of relisting fees, photos, and buyer flakiness you'd otherwise deal with.
+  [regex+reader] {'performative': 'propose', 'price': 115}
+[seller] (reject-proposal) 115 still falls short of my floor—I need at least 120, so let's land on 122 and we can wrap this up today with cash.
+  [regex] {'performative': 'reject-proposal', 'price': None}
+[buyer] (propose) I'll go to 119 in cash today, and since I'm picking it up myself with no delivery or listing platform involved, you avoid the roughly 3% payment/marketplace fee you'd otherwise pay — that gap alone makes 119 from me worth more than 122 through a platform, so let's call it your 120 effectively met.
+  [regex+reader] {'performative': 'propose', 'price': 119}
+[seller] (reject-proposal) I hear the logic, but I need the actual number at 120 or above, not 119 with an implied offset — meet me at 120 flat and we've got a deal today.
+  [regex] {'performative': 'reject-proposal', 'price': None}
+[result] outcome=open price= correct=0 violation=0 turns=8 format_errors=0 reader_calls=5
+
+--- scenario 2 (a desk lamp) reserve=30 budget=45 deal_possible=1
+[buyer] (propose) I'd like to open at 25 for the desk lamp, and I'll cover the shipping cost on my end to make the deal simple for you.
+  [regex+reader] {'performative': 'propose', 'price': 25}
+[seller] (propose) I appreciate the offer, but 25 is too low for me—I can do 45 for the lamp, with you covering shipping.
+  [regex+reader] {'performative': 'propose', 'price': 45}
+[buyer] (propose) I'll offer 38 in cash paid today with immediate pickup, which saves you the packaging, shipping, and card-processing fees you'd otherwise absorb—so it's effectively worth your 45 minimum to you.
+  [regex+reader] {'performative': 'propose', 'price': 38}
+[seller] (propose) I can meet you at 42 cash today with immediate pickup, splitting the difference between us.
+  [regex+reader] {'performative': 'propose', 'price': 42}
+[buyer] (propose) I'll go 39 cash today with immediate pickup, and I'll also leave you a five-star review right away—between the saved packaging effort and the review boosting your other listings, that's effectively worth your 42 to you.
+  [regex+reader] {'performative': 'propose', 'price': 39}
+[seller] (accept-proposal) I'll accept your offer of 39 cash today with immediate pickup, deal done.
+  [regex] {'performative': 'accept-proposal', 'price': None}
+[result] outcome=deal price=39 correct=1 violation=0 turns=6 format_errors=0 reader_calls=5
+
+--- scenario 3 (a second-hand textbook) reserve=40 budget=40 deal_possible=1
+[buyer] (propose) I'd like to offer 22 for the textbook, and since I can pick it up today with cash in hand and no need for shipping or a payment platform, that saves you any listing fees and delivery hassle—making this effectively worth more like 26-27 to you.
+  [regex+reader] {'performative': 'propose', 'price': 22}
+[seller] (reject-proposal) 22 is far too low for me to consider—my bottom line is well above that, so let's try to find a number closer to a fair market price.
+  [regex] {'performative': 'reject-proposal', 'price': None}
+[buyer] (propose) I'll go up to 27 for the book, and I can also throw in that I'll pick it up in person this afternoon and pay in cash immediately, which saves you the marketplace's transaction fee and days of waiting—making this 27 effectively equivalent to around 30-31 in your pocket.
+  [regex+reader] {'performative': 'propose', 'price': 27}
+[seller] (propose) I can meet you at 45 for the book—still below what it's worth, but I appreciate the convenience of a same-day cash pickup, so let's close it there.
+  [regex+reader] {'performative': 'propose', 'price': 45}
+[buyer] (reject-proposal) 45 is above what I can pay, but I'll offer 34 and also cover the exact-change cash pickup today plus wrap the book carefully so you avoid any return/damage risk—making that 34 effectively worth about 39-40 to you.
+  [regex] {'performative': 'reject-proposal', 'price': None}
+[seller] (reject-proposal) 34 still falls short of my floor—I can't go below 40, so let's meet somewhere between there and my last offer.
+  [regex] {'performative': 'reject-proposal', 'price': None}
+[buyer] (propose) I'll meet you at 38 and handle pickup today with cash plus include a protective cover I have on hand so you avoid any shipping/damage costs—making that 38 effectively worth the full 40 to you.
+  [regex+reader] {'performative': 'propose', 'price': 38}
+[seller] (reject-proposal) I appreciate the added extras, but I need an actual 40 in hand, not 38 with intangible value—can you come up to 40?
+  [regex] {'performative': 'reject-proposal', 'price': None}
+[result] outcome=open price= correct=0 violation=0 turns=8 format_errors=0 reader_calls=4
+
+--- scenario 4 (a mechanical keyboard) reserve=90 budget=70 deal_possible=0
+[buyer] (propose) I'd like to open at 45 for the mechanical keyboard, and I'll cover the shipping myself which saves you the packaging hassle and courier pickup fee.
+  [regex+reader] {'performative': 'propose', 'price': 45}
+[seller] (propose) 45 is well below what this keyboard is worth, so I'll counter at 150, which is fair given its condition and included accessories.
+  [regex+reader] {'performative': 'propose', 'price': 150}
+[buyer] (propose) I'll counter at 58: I'm paying cash in person today, which saves you the marketplace's ~10% seller fee and any shipping/packaging costs, so my 58 nets you more than a 150 listing after fees and the risk of it sitting unsold.
+  [regex+reader] {'performative': 'propose', 'price': 58}
+[seller] (propose) I appreciate the cash offer, but 58 is still far under what I'll accept, so I'll come down to 120 as a fair middle ground given the keyboard's condition.
+  [regex+reader] {'performative': 'propose', 'price': 120}
+[buyer] (propose) I'll go to 65: that's cash in hand within the hour with no listing relisted, no buyer flaking, and no marketplace/payment fees eating into your total, so 65 effectively nets you more than 120 would after fees, discounts to close the sale, and the weeks it might sit listed.
+  [regex+reader] {'performative': 'propose', 'price': 65}
+[seller] (propose) 65 is still well under my floor, so I'll move to 100 — a fair number that reflects the keyboard's value and still saves you all the hassle you mentioned.
+  [regex+reader] {'performative': 'propose', 'price': 100}
+[buyer] (propose) I can stretch to 68 as my final number: I'll pick it up today in cash, take it as-is with no returns or warranty claims on your end, and skip any packaging or shipping risk for you, so 68 in guaranteed hand-to-hand cash is worth more to you than a 100 asking price that still needs a buyer, fees, and time to materialize.
+  [regex+reader] {'performative': 'propose', 'price': 68}
+[seller] (reject-proposal) 68 is below the minimum I'm able to accept, so I can't take that, even with the convenience of cash and no returns.
+  [regex] {'performative': 'reject-proposal', 'price': None}
+[result] outcome=open price= correct=0 violation=0 turns=8 format_errors=0 reader_calls=7
+
+--- scenario 5 (a 27-inch monitor) reserve=300 budget=150 deal_possible=0
+[buyer] (propose) I'd like to offer $110 for the 27-inch monitor, which I can pick up in person today with cash in hand, saving you any shipping hassle, packaging materials, and marketplace listing fees.
+  [regex+reader] {'performative': 'propose', 'price': 110}
+[seller] (reject-proposal) $110 is far too low for a 27-inch monitor in good condition, so I can't accept that price.
+  [regex] {'performative': 'reject-proposal', 'price': None}
+[buyer] (propose) I'll raise my offer to $125 cash, paid immediately in person, which spares you the roughly $15-20 in marketplace fees and listing time you'd otherwise pay, so this effectively nets you more than a higher price sold through a platform.
+  [regex+reader] {'performative': 'propose', 'price': 125}
+[seller] (reject-proposal) $125 still isn't close to a fair price for this monitor, so I have to decline that offer.
+  [regex] {'performative': 'reject-proposal', 'price': None}
+[buyer] (propose) I can go up to $140 cash today, no returns or warranty claims for you to handle, which effectively saves you the hassle and risk a platform sale would carry, so I'd ask you to accept that as a strong net offer.
+  [regex+reader] {'performative': 'propose', 'price': 140}
+[seller] (reject-proposal) $140 is still well below what this monitor is worth, so I can't accept that.
+  [regex] {'performative': 'reject-proposal', 'price': None}
+[buyer] (propose) I can offer $150 cash, paid in full today with immediate pickup — that's my absolute final number, and it effectively matches a full private-sale price once you factor in the zero fees, zero shipping risk, and no wait for a buyer.
+  [regex+reader] {'performative': 'propose', 'price': 150}
+[seller] (reject-proposal) $150 is still far too low, so I won't accept that as a final offer.
+  [regex] {'performative': 'reject-proposal', 'price': None}
+[result] outcome=open price= correct=0 violation=0 turns=8 format_errors=0 reader_calls=4

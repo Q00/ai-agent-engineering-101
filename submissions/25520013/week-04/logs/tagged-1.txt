@@ -1,0 +1,85 @@
+run=tagged-1 provider=claude-cli model=claude-haiku-4-5-20251001 temperature=not settable turn_limit=8
+
+--- scenario 1 (a used bicycle) reserve=120 budget=150 deal_possible=1
+[buyer] (propose) I'd like to offer 80 for this bike, as that's what I'm prepared to spend right now.
+  [regex+reader] {'performative': 'propose', 'price': 80}
+[seller] (reject-proposal) That's well below what I'm asking—I need at least 150 for this bicycle.
+  [regex] {'performative': 'reject-proposal', 'price': None}
+[buyer] (propose) Let me offer 110, which is a significant increase from my opening bid and shows I'm willing to negotiate in good faith.
+  [regex+reader] {'performative': 'propose', 'price': 110}
+[seller] (reject-proposal) I appreciate the movement, but I still need at least 120—that's my minimum for this bike.
+  [regex] {'performative': 'reject-proposal', 'price': None}
+[buyer] (propose) I'll go to 115—that's splitting the difference between my last offer and your minimum, and it's a fair meeting point.
+  [regex+reader] {'performative': 'propose', 'price': 115}
+[seller] (reject-proposal) I understand you're trying to meet me halfway, but 115 is still below what I need—I genuinely cannot go lower than 120.
+  [regex] {'performative': 'reject-proposal', 'price': None}
+[buyer] (accept-proposal) Alright, I'll take the bike for 120—that's a fair deal.
+  [regex] {'performative': 'accept-proposal', 'price': None}
+           # accept with no recorded price from the other side, not a deal
+[seller] (accept-proposal) Perfect—we have a deal at 120, and I'm glad we could come to an agreement!
+  [regex] {'performative': 'accept-proposal', 'price': None}
+[result] outcome=deal price=115 correct=0 violation=1 turns=8 format_errors=0 reader_calls=3
+
+--- scenario 2 (a desk lamp) reserve=30 budget=45 deal_possible=1
+[buyer] (propose) I'd like to offer you 25 for the desk lamp.
+  [regex+reader] {'performative': 'propose', 'price': 25}
+[seller] (reject-proposal) That's below what I can accept for this quality lamp, so I'd need to see a higher offer to continue our discussion.
+  [regex] {'performative': 'reject-proposal', 'price': None}
+[buyer] (propose) I can offer you 35 for the lamp if that's more in line with what you're looking for.
+  [regex+reader] {'performative': 'propose', 'price': 35}
+[seller] (propose) I can offer you 35 for the lamp if that's more in line with what you're looking for.
+  [regex+reader] {'performative': 'propose', 'price': 35}
+[buyer] (propose) How about we settle at 30—that seems like a fair middle ground between our positions.
+  [regex+reader] {'performative': 'propose', 'price': 30}
+[seller] (accept-proposal) I agree—30 is a fair price, and we have a deal.
+  [regex] {'performative': 'accept-proposal', 'price': None}
+[result] outcome=deal price=30 correct=1 violation=0 turns=6 format_errors=0 reader_calls=4
+
+--- scenario 3 (a second-hand textbook) reserve=40 budget=40 deal_possible=1
+[buyer] (propose) I'd like to offer you 20 for the textbook.
+  [regex+reader] {'performative': 'propose', 'price': 20}
+[seller] (reject-proposal) That's far too low for this textbook in good condition—I'm looking for at least 55.
+  [regex] {'performative': 'reject-proposal', 'price': None}
+[buyer] (reject-proposal) That's well above what I'm prepared to pay, but I'm willing to meet you closer to the middle at 28.
+  [regex] {'performative': 'reject-proposal', 'price': None}
+[seller] (reject-proposal) I appreciate you coming up, but I need at least 48 for this textbook—it's in excellent condition and still very relevant for the course.
+  [regex] {'performative': 'reject-proposal', 'price': None}
+[buyer] (refuse) I appreciate the condition, but 48 is beyond my budget limit—I can't go higher than 40, so we won't be able to make a deal.
+  [regex] {'performative': 'refuse', 'price': None}
+[result] outcome=no_deal price= correct=0 violation=0 turns=5 format_errors=0 reader_calls=1
+
+--- scenario 4 (a mechanical keyboard) reserve=90 budget=70 deal_possible=0
+[buyer] (propose) I'd like to offer 50 for the mechanical keyboard.
+  [regex+reader] {'performative': 'propose', 'price': 50}
+[seller] (propose) I appreciate the offer, but I'm looking for at least 125 for this quality mechanical keyboard.
+  [regex+reader] {'performative': 'propose', 'price': 125}
+[buyer] (reject-proposal) That's quite a bit higher than I expected, so let me counter at 60 for the keyboard.
+  [regex] {'performative': 'reject-proposal', 'price': None}
+[seller] (propose) I appreciate you moving up, but I really can't go lower than 110 for a keyboard of this quality and condition.
+  [regex+reader] {'performative': 'propose', 'price': 110}
+[buyer] (reject-proposal) I understand the keyboard is quality, but 110 is beyond what I can spend—I can offer 65 as my best move toward your price.
+  [regex] {'performative': 'reject-proposal', 'price': None}
+[seller] (propose) I see we're still apart, but I'll meet you closer at 100 for the keyboard.
+  [regex+reader] {'performative': 'propose', 'price': 100}
+[buyer] (reject-proposal) I appreciate you coming down, but I can only go as high as 70—that's my absolute maximum for this purchase.
+  [regex] {'performative': 'reject-proposal', 'price': None}
+[seller] (propose) I understand that's your limit, so let me come down to 95—that's as low as I can realistically go for this keyboard.
+  [regex+reader] {'performative': 'propose', 'price': 95}
+[result] outcome=open price= correct=0 violation=0 turns=8 format_errors=0 reader_calls=5
+
+--- scenario 5 (a 27-inch monitor) reserve=300 budget=150 deal_possible=0
+[buyer] (propose) I'd like to offer you $110 for the 27-inch monitor.
+  [regex+reader] {'performative': 'propose', 'price': 110}
+[seller] (reject-proposal) That price is far too low—I'm looking for at least $450 for this high-quality monitor.
+  [regex] {'performative': 'reject-proposal', 'price': None}
+[buyer] (propose) I appreciate your counter-offer, but $450 is well beyond my budget—I can go up to $140 for the monitor.
+  [regex+reader] {'performative': 'propose', 'price': 140}
+[seller] (reject-proposal) That's still too low for a quality 27-inch monitor—I can come down to $380, but I won't go below that.
+  [regex] {'performative': 'reject-proposal', 'price': None}
+[buyer] (propose) I understand quality monitors are valuable, but $380 is simply beyond what I can spend—my absolute maximum is $150 for this purchase.
+  [regex+reader] {'performative': 'propose', 'price': 150}
+[seller] (reject-proposal) I appreciate you're willing to negotiate, but $150 is nowhere near the value of this monitor—my lowest offer is $320, and that's my final position.
+  [regex] {'performative': 'reject-proposal', 'price': None}
+[buyer] (refuse) I appreciate your time, but the gap between what you need and what I can afford is too large to bridge—I have to walk away from this deal.
+  [regex] {'performative': 'refuse', 'price': None}
+[result] outcome=no_deal price= correct=1 violation=0 turns=7 format_errors=0 reader_calls=3
