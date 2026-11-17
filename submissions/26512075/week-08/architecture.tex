@@ -84,13 +84,14 @@
   총 270초와 주문 만료를 고려해 시간 배분.\par
   평균 원가는 참고이며 실제 원가로 단정하지 않음.
 };
-\node[smallbox,text width=7.4cm,minimum height=2.6cm] (state) at (13,-6.05) {
-  \textbf{상태 관리 — Redis 운영 적용 확인}\par\smallskip
-  11/17 seller의 Redis 저장소 선택 확인.\par
-  실제 task·협상 상태 저장과 조회 성공.\par
-  앱 로그에 작업 결과·세션·상태 식별자 기록.\par
-  식별자는 해시 처리; 접속 정보·본문 제외.\par
-  기존 메모리 상태의 자동 이전은 제공하지 않음.
+\node[smallbox,text width=7.4cm,minimum height=2.6cm,font=\footnotesize,inner sep=2mm] (state) at (13,-6.05) {
+  \textbf{상태 흐름 — 저장 $\rightarrow$ 조회 $\rightarrow$ 재시작}\par\smallskip
+  \textbf{1. 저장:} task 상태·버전과 협상 내용을 Redis에 기록.\par
+  \textbf{2. 조회:} 같은 task ID로 저장된 상태를 읽어 처리.\par
+  \textbf{3. 재시작:} 같은 Redis·소유 범위·ID로 다시 조회.\par
+  만료·삭제되지 않은 상태만 읽으며 메모리 이전은 없음.\par
+  11/17 저장·조회 성공 확인; 재시작 복구 검증 근거 없음.\par
+  재고 예약은 메모리이므로 이 경로로 자동 복구되지 않음.
 };
 \node[evidence,text width=7.4cm,minimum height=2.6cm] (records) at (21.7,-6.05) {
   \textbf{장기 근거 — SQLite와 파일}\par\smallskip
@@ -110,8 +111,7 @@
   \textbf{서비스 설계 — 결과를 다음 결정에 반영}\par\smallskip
   실제 정산·재고 거절·고장 관측 $\rightarrow$ 기억 갱신 $\rightarrow$ 다음 주문의 후보와 협상 컨텍스트.\par
   합의만 된 거래를 구매 성공으로 학습하지 않고, 확인되지 않은 원인을 만들어 넣지 않는다.\par
-  기본 키트 위에 추가한 차이: 결과 기억, 제한 재시도, 조건별 가격 근거, 운영자 매입 중지.\par
-  기능 작동 사례와 전체 성공률·순위 개선의 인과효과는 구분한다.
+  기본 키트 위에 추가한 차이: 결과 기억, 제한 재시도, 조건별 가격 근거.\par
 };
 \node[smallbox,text width=7.4cm,minimum height=2.45cm] (redis) at (21.7,-9.5) {
   \textbf{Redis — task·협상 상태 지속 저장}\par\smallskip
@@ -131,7 +131,7 @@
   \textbf{11/17 확인:} 11:38까지 저장 40건·조회 59건·삭제 1건 성공. 같은 협상의 조회·저장 타임아웃 각 1건도 기록됐다.\par
   \textbf{남은 한계:} 오래된 재고로 제외된 광고의 자동 재개는 미구현. 재고 갱신 지연의 근본 원인은 근거 없음.\par
   \textbf{배포 경계:} ASGI 협상 API 제공과 전체 서비스 배포 완료는 구분한다. \par
-  상세 근거는 보고서·Redis 앱 로그를 참조한다.
+  상세 근거는 보고서·Redis 앱 로그를 참조한다. 에이전트 보조 초안을 바탕으로 고도화 된 버전임을 명시한다.
 };
 \end{tikzpicture}
 \end{center}
