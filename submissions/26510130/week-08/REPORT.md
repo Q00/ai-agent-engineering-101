@@ -1,7 +1,9 @@
 # Week 08 (Midterm) — Round 3 shop + buyer
 
 26510130 Hyunsik Wang · GitHub **@kingsssik** · market name **YAHO1212**
-아키텍처 그림: [`architecture.tex`](architecture.tex) → [`architecture.pdf`](architecture.pdf)
+아키텍처 그림: [`architecture.tex`](architecture.tex) → [`architecture.pdf`](architecture.pdf) (아래 PNG는 PDF를 그대로 렌더링한 것)
+
+![YAHO1212 architecture](architecture.png)
 
 | | |
 |---|---|
@@ -72,7 +74,7 @@ PICK 프롬프트에 들어가는 건 후보 5개의 요약 몇 줄뿐이다. �
 
 ## 2. 아키텍처: 그림이 보여 주는 구조와 키트 기본형과 다른 점
 
-그림(`architecture.pdf`)은 세 줄로 읽는다.
+그림(`architecture.pdf`, 문서 맨 위의 `architecture.png`)은 세 줄로 읽는다.
 
 1. **위**: 시장과 키트(회색, 주어진 것).
 2. **가운데**: 메모리 층(초록). ledger, 우리 가게 문의, 내 영수증과 결제 결과가 여기로 모인다.
