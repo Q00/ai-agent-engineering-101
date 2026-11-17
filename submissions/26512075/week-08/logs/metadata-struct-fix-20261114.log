@@ -1,0 +1,32 @@
+............./home/jeoni/miniconda3/lib/python3.13/linecache.py:184: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7f1230b2cb80>
+  def lazycache(filename, module_globals):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/home/jeoni/miniconda3/lib/python3.13/linecache.py:184: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7f1230b2ce50>
+  def lazycache(filename, module_globals):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+.............E....
+======================================================================
+ERROR: test_private_socket_preview_and_activation_survive_restart (test_seller_r3_offline.SellerStockFlow.test_private_socket_preview_and_activation_survive_restart)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/jeoni/miniconda3/lib/python3.13/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/home/jeoni/miniconda3/lib/python3.13/asyncio/base_events.py", line 725, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/tests/test_seller_r3_offline.py", line 310, in test_private_socket_preview_and_activation_survive_restart
+    server=await asyncio.start_unix_server(self.seller._ad_client,path=str(path))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jeoni/miniconda3/lib/python3.13/asyncio/streams.py", line 113, in start_unix_server
+    return await loop.create_unix_server(factory, path, **kwds)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jeoni/miniconda3/lib/python3.13/asyncio/unix_events.py", line 321, in create_unix_server
+    sock.bind(path)
+    ~~~~~~~~~^^^^^^
+PermissionError: [Errno 1] Operation not permitted
+
+----------------------------------------------------------------------
+Ran 31 tests in 1.087s
+
+FAILED (errors=1)

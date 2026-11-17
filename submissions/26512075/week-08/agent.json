@@ -1,0 +1,18 @@
+{
+  "review": {
+    "cmd": "python tracking/record_buyer_purchase.py --deal {deal}"
+  },
+  "restock": {
+    "cmd": "python restock/restock_policy.py --state {state} --config restock/small_batch.json --explain"
+  },
+  "harness": "Codex CLI (gpt-6.1-terra) for seller and buyer",
+  "seller": {
+    "cmd": "SELLER_POLICY=seller/turnover.json python seller/seller_r3.py --port {port}"
+  },
+  "buyer": {
+    "cmd": "npx --no-install tsx buyer/src/buyer.ts --url {url} --item {item} --budget {budget}"
+  },
+  "market_buyer": {
+    "cmd": "npx --no-install tsx buyer/src/market_buyer_r3.ts --shops {shops} --item {item} --budget {budget} --order {order}"
+  }
+}
