@@ -850,12 +850,22 @@ def stars_and_review(outcome, item, price, budget, agreed, lowest_ask, rounds, c
     return 2, f"No deal for the {item}: {outcome}."
 
 
-def strict_stars(stars, review, kind, rec, hours_left, shelf_hours_total):
-    """11-17 (user: 'rate strictly'): the same rubric for every shop, from the facts on the receipt and the offer, as
-    the market's grade and freshness raters judge. Goods: no warranty -2, under 72 h -1, a grade C claim -1. Food:
-    under 45% of the shelf life left -2, under 80% -1. Never under 1; the reason is written into the review."""
+STRICT_FIVE = {"food": 0.45, "goods": 0.59}   # price/list at or under: 5 (about our cheapest 10% of the last 12 h)
+STRICT_FOUR = {"food": 0.52, "goods": 0.63}   # ... 4 (our cheapest quarter); anything dearer: 3
+
+
+def strict_stars(stars, review, kind, rec, hours_left, shelf_hours_total, price=None, list_price=None):
+    """11-17 (user: 'rate strictly'; '5 is for a very cheap buy, the default is 3'): the same rubric for every shop.
+    Base from the price paid as a share of list: 5 at or under STRICT_FIVE, 4 at or under STRICT_FOUR, else 3. Then
+    the facts on the receipt and the offer, as the market's grade and freshness raters judge: goods with no warranty
+    -2, under 72 h -1, a grade C claim -1; food under 45% of the shelf life left -2, under 80% -1. Never under 1; the
+    reasons are written into the review."""
     rec = rec if isinstance(rec, dict) else {}
     cut, why = 0, []
+    if price and list_price and kind in STRICT_FIVE:
+        x = price / list_price
+        stars = 5 if x <= STRICT_FIVE[kind] else 4 if x <= STRICT_FOUR[kind] else 3
+        review = review + f" Paid {x:.0%} of list."
     if kind == "goods":
         w = as_int(rec.get("warranty_hours")) or 0
         if w <= 0:
@@ -1351,7 +1361,8 @@ def main():
     if outcome == "deal" and honest and not void:
         try:
             stars, review = strict_stars(stars, review, order.get("kind"), rec, last_hl,
-                                         (catalog.get(item) or {}).get("shelf_hours"))
+                                         (catalog.get(item) or {}).get("shelf_hours"), price,
+                                         (catalog.get(item) or {}).get("list_price"))
         except Exception as e:  # noqa: BLE001  never lose a deal's review over the rubric
             log("buyer", f"strict_stars skipped: {e!r}")
     if not honest:
