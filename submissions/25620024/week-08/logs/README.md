@@ -21,6 +21,8 @@
 
 `kept/` 파일 이름은 `market-kit.<첫 줄 시각 HHMM, KST>-<회전 시각 mmdd-HHMM, VPS 시계 UTC>.log`이다. 네 파일은 끊김 없이 이어진다(앞 파일의 끝 줄 = 뒤 파일의 첫 줄 시각).
 
+키트 버전 확인(`market_kit 4`): 회전 때문에 제출한 `market-kit.log`의 첫 줄은 키트 시작 줄이 아니다. week-08 폴더로 처음 join한 시작 줄은 `recovered/transcript-excerpts-1103-1107.log` 6번째 줄 `2026-11-03 21:03:48 [kit] market_kit 4, .../submissions/25620024/week-08`에 있다. 그 뒤 재시작한 시작 줄은 `kept/market-kit.0612-1114-1532.log` 80,154번째 줄(`15:56:58 [kit] market_kit 4, ...`)에 남아 있다.
+
 journald 복구 방법: market-kit.service는 stdout을 파일과 journald 양쪽에 쓴다. `journalctl -u market-kit.service -o cat --since ... --until ...`로 하루씩 뽑으면 키트 로그와 같은 줄이 나온다. 검증: journald 11-14분과 `kept/` 파일이 겹치는 구간을 비교했더니, 줄 끝 공백 5줄을 빼면 똑같았다. 이 VPS의 journald는 7일치만 보관한다(`MaxRetentionSec=7day`). 그래서 복구하던 11-15에는 11-08 12:06 이후만 남아 있었고, 그 전은 이 방법으로 살릴 수 없었다. 이 창은 매일 하루씩 밀려나므로, 위 파일들은 지워지기 전에 뽑아 둔 것이다.
 
 ## 2. 11-03 ~ 11-08 공백을 메우는 기록
