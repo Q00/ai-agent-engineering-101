@@ -65,6 +65,13 @@ def plan(journal, chooser=None):
     if not candidates:
         return {"buy": [], "bankrupt": inv.get("balance", 0) < inv.get("bankrupt_line", 0)
                 and not inv.get("units") and inv.get("bankruptcies_left", 0) > 0}
+    # Planning may span ledger updates and most of the short supply window.
+    # Recompute executable calls instead of spending the old line budget.
+    line_budget=min(line_budget,max(0,int((window.get('closes_at',time.time()+180)-time.time()-15)/12)))
+    if line_budget<=0:
+        journal.observe('restock_blocked',{'reason':'calculation_exceeded_supply_window'},role='shop')
+        return {'buy':[]}
+    candidates=candidates[:line_budget]
     # The actor chooses among transparent portfolio variants; every line has a conservative affordability bound.
     options = portfolios(candidates)
     selected = (chooser or Chooser(journal, cfg)).choose("shop", options,

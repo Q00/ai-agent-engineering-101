@@ -358,6 +358,7 @@ def cash_capacity(inv, journal, config, now=None):
 
 @decision
 def restock_candidates(inv, catalog, demand, journal, config, now=None):
+    started=time.monotonic()
     now = time.time() if now is None else now
     velocity=config.get('shop_velocity_enabled',False)
     strategic=bool(not config.get('finalday_departments_enabled') and config.get('inventory_portfolio_v27_enabled') and velocity and config.get('shop_championship_enabled')
@@ -588,7 +589,8 @@ def restock_candidates(inv, catalog, demand, journal, config, now=None):
         c['rank_progress_surrogate'] = rank_progress(board, 'shop', 'seochanit', c['expected_delta'])
     if config.get('finalday_departments_enabled'):
         from .departments import procurement_department
-        return procurement_department(candidates,inv,capacity,config,journal,catalog,now)
+        return procurement_department(candidates,inv,capacity,config,journal,catalog,now,
+                                      checked_at=now+max(0,time.monotonic()-started))
     from .portfolio import allocate
     if strategic:
         from .inventory_portfolio import allocate as strategic_allocate

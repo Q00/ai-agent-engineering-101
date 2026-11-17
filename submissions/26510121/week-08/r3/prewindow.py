@@ -69,6 +69,10 @@ def prepare(journal, config, strategy, now=None):
     catalog = journal.snapshot('catalog.json', {})
     candidates = restock_candidates(virtual, catalog,
                                     journal.snapshot('demand.json', []), preview, cfg, now)
+    if cfg.get('finalday_departments_enabled') and not candidates:
+        approval=journal.get('company-procurement:v30',{})
+        if approval.get('status')!='approved' or approval.get('snapshot_at')!=now:
+            return None  # Unavailable evidence is not an economic wait decision.
     options = portfolios(candidates)
     chosen = Chooser(preview, cfg).choose('shop', options,
         {'shop_execution': True, 'operation': 'restock', 'preview': True,

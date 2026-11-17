@@ -41,6 +41,42 @@ def test_stale_feed_cannot_authorize_new_purchase():
     j=Journal();j.data['public_feed_caught_up_at']=0
     assert allocate(j,candidate())==[]
 
+
+def test_feed_updated_during_planning_is_not_future_data():
+    j=Journal();j.data['public_feed_caught_up_at']=1002
+    rows=procurement_department([candidate()],{'units':[]},{'spendable':10000},
+        {'restock_max_lines':10},j,{'s':{'kind':'food'}},1000,checked_at=1003)
+    assert rows and rows[0]['qty']==1
+    approval=rows[0]['evidence']['company_approval']
+    assert approval['snapshot_at']==1000 and approval['checked_at']>=1003
+    assert j.get('company-procurement:v30')['status']=='approved'
+
+
+def test_accounting_elapsed_time_is_included_in_validation(monkeypatch):
+    from r3 import departments
+    ticks=iter([10,14])
+    monkeypatch.setattr(departments.time,'monotonic',lambda:next(ticks))
+    j=Journal()
+    original=departments.accounting_department
+    def accounting(*args):
+        j.put('public_feed_caught_up_at',1003)
+        return original(*args)
+    monkeypatch.setattr(departments,'accounting_department',accounting)
+    assert allocate(j,candidate())
+    assert j.get('company-procurement:v30')['at']==1004
+
+
+def test_expired_forecast_and_genuinely_future_ledger_stay_blocked():
+    for checked,feed,reason in [(1181,1180,'calculation_expired'),
+                                (1003,1005,'ledger_stale_or_future'),
+                                (1180,999,'calculation_expired'),
+                                (1003,800,'ledger_stale_or_future')]:
+        j=Journal();j.put('public_feed_caught_up_at',feed)
+        assert procurement_department([candidate()],{'units':[]},{'spendable':10000},
+            {'restock_max_lines':10},j,{'s':{'kind':'food'}},1000,checked_at=checked)==[]
+        packet=j.get('company-procurement:v30')
+        assert packet['status']=='blocked' and packet['rejections']=={reason:1}
+
 def test_buyer_target_adapts_to_distance_and_time():
     cfg={'market_end_at':'1970-01-01T01:16:40+00:00'}
     a=buyer_score_department(Journal(),{'saved':.75,'deals':100},[.76],cfg,1000)

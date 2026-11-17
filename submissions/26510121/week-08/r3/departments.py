@@ -51,13 +51,22 @@ def accounting_department(journal, catalog, now=None):
     return packet
 
 
-def procurement_department(candidates, inv, capacity, config, journal, catalog, now):
+def procurement_department(candidates, inv, capacity, config, journal, catalog, now, *, checked_at=None):
     from .shop_growth import poisson_tail
     from .meta import rank_progress
+    started=time.monotonic()
+    validation_base=now if checked_at is None else checked_at
     packet=accounting_department(journal,catalog,now)
     feed_at=journal.get('public_feed_caught_up_at',0)
-    if not 0<=now-feed_at<180:return []
-    held=Counter(u['sku'] for u in inv.get('units',[]) if not u.get('expires_at') or u['expires_at']>now)
+    checked=validation_base+max(0,time.monotonic()-started)
+    reason=('calculation_expired' if not 0<=checked-now<180 else
+            'ledger_stale_or_future' if type(feed_at) not in (int,float) or not 0<=checked-feed_at<180 else None)
+    if reason:
+        journal.put('company-procurement:v30',dict(at=checked,snapshot_at=now,status='blocked',
+            expires_at=checked,rules_hash=packet['rules_hash'],feed_at=feed_at,
+            rejections={reason:1},buy=[]))
+        return []
+    held=Counter(u['sku'] for u in inv.get('units',[]) if not u.get('expires_at') or u['expires_at']>checked)
     board=journal.snapshot('board.json',{})
     choices=[];reasons=Counter()
     for c in candidates:
@@ -67,7 +76,8 @@ def procurement_department(candidates, inv, capacity, config, journal, catalog, 
             reasons['unproven_or_negative_goods']+=1;continue
         if g.get('reviews',0)>=5 and g.get('low_reviews',0)/g['reviews']>.1:
             reasons['observed_low_review_cohort']+=1;continue
-        cost=e['scenario_unit_cost'];price=e['resale_price_scenario'];hours=e['planning_hours']
+        cost=e['scenario_unit_cost'];price=e['resale_price_scenario']
+        hours=max(0,e['planning_hours']-(checked-now)/3600)
         refund=max(e.get('refund_upper_scenario',e.get('refund_stress',0)),g.get('refunds',0)/max(1,g.get('price',0)))
         # Every unsold food unit is charged its full acquisition cost. This is
         # conservative even when it would still be on the terminal book.
@@ -94,9 +104,11 @@ def procurement_department(candidates, inv, capacity, config, journal, catalog, 
         row['expected_delta']={k:sum(d[k] for d in deltas[:q]) for k in deltas[0]}
         row['score']=row['expected_delta']['book'];row['evidence']['company_approval']={
             'department':'조달실','accounting_at':packet['at'],'rules_hash':packet['rules_hash'],
+            'checked_at':checked,'snapshot_at':now,'feed_at':feed_at,
             'wait_delta':0,'marginal_book':[d['book'] for d in deltas[:q]],'cohort':packet['skus'].get(c['sku'],{})}
         selected.append(row);used+=row['capital_commitment']
-    journal.put('company-procurement:v30',dict(department='조달실',at=now,expires_at=now+120,
+    journal.put('company-procurement:v30',dict(department='조달실',at=checked,expires_at=min(now+180,checked+120),
+        snapshot_at=now,status='approved',feed_at=feed_at,
         rules_hash=packet['rules_hash'],rejections=dict(reasons),buy=[dict(sku=r['sku'],qty=r['qty']) for r in selected],
         forecast_book=sum(r['expected_delta']['book'] for r in selected),capital=used))
     return selected

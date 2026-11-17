@@ -69,6 +69,63 @@ def test_preparation_during_outage_is_never_supply_authorization(tmp_path):
     assert j.get('market_control')['pause_restock'] is True
 
 
+def test_unavailable_procurement_evidence_is_not_cached_as_wait(tmp_path,monkeypatch):
+    from r3 import economy
+    j,cfg,now=fixture(tmp_path)
+    cfg=dict(cfg,finalday_departments_enabled=True)
+    def unavailable(*args):
+        j.put('company-procurement:v30',{'status':'blocked','snapshot_at':now})
+        return []
+    monkeypatch.setattr(economy,'restock_candidates',unavailable)
+    assert prewindow.prepare(j,cfg,{'version':1},now) is None
+    assert not j.snapshot('shop-plan-v15.json',{})
+    def economic_wait(*args):
+        j.put('company-procurement:v30',{'status':'approved','snapshot_at':now})
+        return []
+    monkeypatch.setattr(economy,'restock_candidates',economic_wait)
+    packet=prewindow.prepare(j,cfg,{'version':1},now)
+    assert packet and next(p for p in packet['options'] if p['id']==packet['selected'])['buy']==[]
+
+
+def test_forecast_builder_carries_elapsed_clock_to_procurement(tmp_path,monkeypatch):
+    from r3 import economy,market_memory
+    j,cfg,now=fixture(tmp_path)
+    cfg=dict(cfg,finalday_departments_enabled=True)
+    inv=j.snapshot('inventory.json')
+    inv['restock']={'open':True,'opens_at':now-1,'closes_at':now+180}
+    j.put('company-accounting:v30',{'at':now,'rules_hash':'official','skus':{}})
+    clock=[10.0]
+    monkeypatch.setattr(economy.time,'monotonic',lambda:clock[0])
+    original=market_memory.market_book
+    def book(*args):
+        result=original(*args)
+        clock[0]+=3
+        j.put('public_feed_caught_up_at',now+2)
+        return result
+    monkeypatch.setattr(market_memory,'market_book',book)
+    rows=economy.restock_candidates(inv,j.snapshot('catalog.json'),[],j,cfg,now)
+    assert rows and rows[0]['evidence']['company_approval']['checked_at']==now+3
+
+
+@pytest.mark.parametrize('remaining,expected',[(45,2),(10,0)])
+def test_slow_forecast_rechecks_remaining_supply_calls(tmp_path,monkeypatch,remaining,expected):
+    import restock
+    j,cfg,now=fixture(tmp_path)
+    cfg=dict(cfg,market_cycle_enabled=False)
+    inv=j.snapshot('inventory.json');inv['restock']={'open':True,'opens_at':now-1,'closes_at':now+180}
+    atomic_json(j.md/'inventory.json',inv)
+    monkeypatch.setattr(restock,'effective',lambda *a:(cfg,{'version':1}))
+    clock=[now]
+    monkeypatch.setattr(restock.time,'time',lambda:clock[0])
+    def forecast(*args):
+        clock[0]=now+180-remaining
+        return [dict(sku=str(i),qty=1,score=1,max_cost=100,capital_commitment=100,
+            expected_delta={'book':1,'profit':1,'revenue':101},evidence={}) for i in range(10)]
+    monkeypatch.setattr(restock,'restock_candidates',forecast)
+    chooser=SimpleNamespace(choose=lambda role,options,*a,**kw:options[0])
+    assert len(restock.plan(j,chooser)['buy'])==expected
+
+
 def test_route_preparation_is_identical_and_invalidates_on_new_execution_evidence(tmp_path):
     j,cfg,now=fixture(tmp_path)
     j.add('attempt',{'shop':'s','sku':'G111','order':'old','kind':'rfq_failed','seconds':1},ts=now-2)
