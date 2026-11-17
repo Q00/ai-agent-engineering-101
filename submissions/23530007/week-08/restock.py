@@ -115,6 +115,12 @@ def net_share(lp):
 CASH_BOUND = False
 HELD_ALL = {}                 # 11-17: every fresh unit we hold per SKU (set in main)
 OWN_COVER_H = 3.0
+# 11-17 02:30 (user: 'I want to keep the book'): 25620027 and inextro earn on BIG furniture at .61-.63 of list from
+# fresh lots at .55-.57 (25620027 +4.9-6.5 M/h overnight; inextro 36 big sales/h). Our held big units cost .69-.75 and
+# cannot sell there. A fresh big lot sold at their price makes ~.02-.03 of list for us AND takes a ~.06-of-list
+# sale from them; an unsold unit stays in the book at cost. So the rival's big SKUs get small fresh lots again:
+# at most BIG_PER_WINDOW units a SKU a window, until we hold BIG_SELLABLE_MAX units that can sell at its price
+BIG_PER_WINDOW, BIG_SELLABLE_MAX, BIG_LINES, BIG_MIN_X = 2, 3, 4, 0.60
 def line_value(rate, lp):
     return rate * net_share(lp) if CASH_BOUND else rate * lp * net_share(lp)
 RIVAL_X_SEEN = {}
@@ -344,6 +350,18 @@ def sku_wants(catalog, have_sku, p, now, hours_left, market_sku, mkt_units=None,
         qty = min(MAX_QTY, math.ceil(RIVAL_SHARE * rival_rate[sku] * RIVAL_COVER_H) - held_)
         if qty > 0 and sum(1 for w in out if w[0][1] == -2) < RIVAL_LINES:
             out.append(((False, -2, -rival_gain[sku]), v["category"], v, qty))
+    big_n = 0
+    for sku in sorted(rival_gain, key=lambda k: -rival_rate[k] * catalog[k]["list_price"] * (rival_x[k] - 0.57)):
+        v = catalog[sku]
+        if v.get("kind") != "goods" or v["list_price"] < BIG_LIST or v["list_price"] > p["sku_max_price"]:
+            continue
+        if rival_x[sku] < BIG_MIN_X or big_n >= BIG_LINES:
+            continue
+        held_ = sellable_.get(sku, 0) if sellable_ is not None else 0
+        qty = min(BIG_PER_WINDOW, BIG_SELLABLE_MAX - held_)
+        if qty > 0:
+            out.append(((False, -2, -rival_rate[sku] * (rival_x[sku] - 0.57)), v["category"], v, qty))
+            big_n += 1
     # 11-16: the rival lines of this run, for the log (which SKUs, how many, against how many sellable units held)
     print("[restock] rival lines: " + (", ".join(f"{w[2]['sku']} x{w[3]}" for w in out if w[0][1] == -2) or "none")
           + f" (rival SKUs {len(rival_gain)}, sellable held {sum((sellable_ or {}).values())})", file=sys.stderr)
@@ -390,6 +408,9 @@ def sku_wants(catalog, have_sku, p, now, hours_left, market_sku, mkt_units=None,
     # we have never sold or held gets a first lot of 2
     capped = []
     for key, catg, v, qty in out:
+        if key[1] == -2 and v["list_price"] >= BIG_LIST:     # big rival lines: capped above (sellable units)
+            capped.append((key, catg, v, qty))
+            continue
         held_all = HELD_ALL.get(v["sku"], 0)
         r = (sold[v["sku"]] + 0.3 * asked[v["sku"]]) / p["sku_hours"]
         cap = 2 if r == 0 and held_all == 0 else math.ceil(r * min(OWN_COVER_H, max(hours_left, 0.0))) - held_all
@@ -652,6 +673,7 @@ def main():
     surge = {x["sku"]: x.get("units") or 0 for x in inv.get("surge") or [] if x.get("sku")}
     mkt_x = market_p50_x()
     goods_lines = 0
+    big_spend = 0.0
     for _, cat, v, qty in wants:
         # rule seen 11-05: past 50 units of a SKU bought market-wide in an hour, each unit adds 0.2 % to its cost
         # (up to +50 %); we paid +13 % on the 424k mattress. Stop where the cost would pass +SURGE_MAX.
@@ -670,15 +692,23 @@ def main():
         if v["kind"] == "goods" and goods_lines >= p["max_goods_lines"]:   # food keeps the rest of the lines
             continue
         if (p.get("sku_auto", {}).get(v["sku"]) or {}).get("cover") == 0:   # the strategist stopped this SKU
-            if not (_[1] == -2 and RIVAL_X_SEEN.get(v["sku"], 0) >= RIVAL_OVERRIDE_X):   # 11-16: rival lines pass
+            big_ = _[1] == -2 and v["list_price"] >= BIG_LIST and RIVAL_X_SEEN.get(v["sku"], 0) >= BIG_MIN_X
+            if not big_ and not (_[1] == -2 and RIVAL_X_SEEN.get(v["sku"], 0) >= RIVAL_OVERRIDE_X):   # 11-16
                 continue
             # ... unless we already hold OVERRIDE_MAX_HELD units of it at any cost: the 13:20 window (before the cap)
             # bought 10 x G24f5f979 at .647 of list against a .641 market; such a lot counts as 'not sellable', so
             # without this every window would buy more of the same SKU
-            if have_sku.get(v["sku"], 0) >= OVERRIDE_MAX_HELD:
+            if not big_ and have_sku.get(v["sku"], 0) >= OVERRIDE_MAX_HELD:   # big lines are capped by sellable units
                 continue
             # ... at most OVERRIDE_LINE_COST a window each (the dry run wanted 10 x G24f5f979, 23 M of 60 M cash)
             qty = min(qty, max(1, int(OVERRIDE_LINE_COST // (v["list_price"] * COST_GUESS))))
+        if _[1] == -2 and v["list_price"] >= BIG_LIST:
+            # 11-17: big lots take at most half of this window's room, so the asked small lines still get cash
+            big_room = 0.5 * (cash - p["keep_cash"]) - big_spend
+            qty = min(qty, int(big_room // (v["list_price"] * COST_GUESS)))
+            if qty <= 0:
+                continue
+            big_spend += qty * v["list_price"] * COST_GUESS
         unit = v["list_price"] * COST_GUESS
         # 11-06: a line that did not fit whole was skipped, so the top sellers (Plana 4 swing 11 % of revenue,
         # 20 x ~2.3M) got nothing for 2 h and sat at 0 stock while 64M cash waited; buy what fits instead
