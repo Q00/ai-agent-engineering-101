@@ -783,6 +783,7 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
                       active_unproven_goods_count=active_unproven_count,
                       max_active_unproven_goods=max_active_unproven,
                       new_unproven_goods=(row.get('kind')=='goods' and is_new),
+                      new_unproven_sku=is_new,
                       breadth_expansion=breadth_expansion,
                       own_profit_proven=own_profit_proven,
                       local_grade_proven=local_grade_proven,
@@ -887,7 +888,7 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
             for choice in ordered:
                 priority,_,sku,need,row=choice
                 if (priority==2 and need>0 and
-                        row.get('new_unproven_goods') and
+                        row.get('new_unproven_sku') and
                         row.get('breadth_expansion') and
                         row.get('upper_cost',math.inf)<=breadth_cost):
                     breadth.append(choice)

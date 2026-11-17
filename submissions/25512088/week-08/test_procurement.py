@@ -581,6 +581,28 @@ class PurchaseTests(unittest.TestCase):
   plan=allocation_plan([proven,new,high],{'units':[],'balance':3000000},630000,
                        policy=policy)
   self.assertEqual([(row['sku'],row['qty']) for row in plan],[('proven',1)])
+
+ def test_capital_bridge_allows_one_fresh_food_breadth_sku(self):
+  high=dict(sku='high',kind='goods',expected_net=50000,score=1000,
+            upper_cost=1200000,sales_1h=8,sales_6h=30,
+            distinct_buyers_6h=10,estimated_sale_likelihood=.6,
+            own_sales_total=1,own_gross_total=50000,own_profitable_sales=1,
+            dominant_grade_samples=8,dominant_grade_profit_probability=.7)
+  food=dict(sku='food',kind='food',shelf_hours=96,expected_net=6000,score=200,
+            upper_cost=70000,sales_1h=5,sales_6h=18,
+            distinct_buyers_6h=7,estimated_sale_likelihood=.55,own_sales_total=0,
+            own_profitable_sales=0,own_gross_total=0)
+  policy={'breadth_target_skus':10,'max_food_units_per_sku':2,
+          'max_sku_capital_share':1,'high_value_lane_min_unit_cost':500000,
+          'min_high_value_restock_grade_samples':3,
+          'min_high_value_restock_grade_profit_probability':.60,
+          'capital_bridge_max_available_share':.5,
+          'capital_bridge_max_new_breadth_cost':100000,
+          'food_sellable_min_hours':48}
+  plan=allocation_plan([food,high],{'units':[],'balance':3000000},630000,
+                       policy=policy)
+  self.assertEqual([(row['sku'],row['qty']) for row in plan],[('food',1)])
+  self.assertEqual(plan[0]['evidence']['capital_bridge_kind'],'new_breadth')
  def test_capital_bridge_rejects_weak_or_cash_hungry_goods(self):
   high=dict(sku='high',kind='goods',expected_net=50000,score=1000,
             upper_cost=1200000,sales_1h=8,sales_6h=30,
