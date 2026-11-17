@@ -55,7 +55,7 @@ After reviewing output, rerun with `-Join` to enter Round 3 and keep the
 market/Cloudflare terminal running.
 
 The `architecture.tex` is committed; the compiled `architecture.pdf`
-must also be placed in this folder and committed. If unavailable, build
+(one A4 landscape page) must also be placed in this folder and committed. If unavailable, build
 with `xelatex -interaction=nonstopmode -halt-on-error architecture.tex`
 or download the supplied PDF in the ChatGPT conversation and place it
 in the exact Week 08 directory.
@@ -121,7 +121,7 @@ Check for `[kit] market_kit 4`, shop and buyer registration,
 `verified True`, and **actual counted Round 3 settlements** on the official
 dashboard. A2A completed receipts without ACP settlement do **not** count.
 
-### Submission checklist (deadline 2026-11-17 23:59 KST)
+### Submission checklist (Round 3 ends 2026-11-17 23:59 KST; PR due 2026-11-23 23:59 KST)
 
 - At least **20 settled shop deals and 20 settled buyer deals** in Round 3.
 - Source and `agent.json`; `architecture.tex` and its compiled PDF.
@@ -129,7 +129,7 @@ dashboard. A2A completed receipts without ACP settlement do **not** count.
   metrics, refusals, Players standings and a meaningful comparison.
 - `logs/market-kit.log` (must include real Round 3 settlement entries).
 - Open a PR titled `[week-08] 26510128` against official `main`
-  **before the deadline**, and keep the kit, Ollama, PC and tunnel running.
+  **by 2026-11-23 23:59 KST**, and keep the kit, Ollama, PC and tunnel running until the Round 3 close (2026-11-17 23:59 KST).
 
 Never submit `*.pem`, claim codes, `.env`, `.market/`, or secrets.
 Check the staged file list before committing. Huge logs may require care.
