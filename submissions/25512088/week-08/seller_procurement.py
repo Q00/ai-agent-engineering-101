@@ -520,12 +520,33 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
             weak_grade_economics=(
                 row.get('dominant_grade_samples',0)<min_samples or
                 row.get('dominant_grade_profit_probability',0)<min_probability)
+            # On the final-day Revenue bottleneck, a very broad and fast
+            # public-demand cohort may justify exactly one new high-value
+            # canary even when the random arrival-grade prior is only slightly
+            # better than even. Buying inventory preserves official Book at
+            # cost; the seller's cost floor still prevents an unbudgeted loss.
+            # This exception is not a restock rule and cannot scale a SKU.
+            relaxed_canary_grade_ready=(
+                high_value_grade_guard and own_sales_total==0 and
+                high_value_count<policy.get(
+                    'relaxed_high_value_canary_window_limit',0) and
+                row.get('sales_1h',0)>=policy.get(
+                    'high_value_canary_min_sales_1h',math.inf) and
+                row.get('distinct_buyers_6h',0)>=policy.get(
+                    'high_value_canary_min_distinct_buyers_6h',math.inf) and
+                row.get('estimated_sale_likelihood',0)>=policy.get(
+                    'high_value_canary_min_sale_likelihood',1.1) and
+                row.get('dominant_grade_samples',0)>=min_samples and
+                row.get('dominant_grade_profit_probability',0)>=policy.get(
+                    'min_relaxed_high_value_canary_grade_profit_probability',
+                    min_probability))
             # A few profitable local sales may rescue a cheap SKU whose grade
             # prior is still noisy. They must not rescue a high-value lot: one
             # unfavorable draw can immobilize over 500k and the current market
             # may clear below its cost. Expensive goods therefore always pass
             # the same minimum grade-economics gate before procurement.
-            if (weak_grade_economics and not local_grade_proven and
+            if (weak_grade_economics and not relaxed_canary_grade_ready and
+                    not local_grade_proven and
                     (high_value_grade_guard or not own_profit_proven)):
                 continue
             # Revenue is the live seller bottleneck, but the old proven-only
@@ -543,7 +564,8 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
                 row.get('estimated_sale_likelihood',0)>=
                     policy.get('high_value_canary_min_sale_likelihood',.30) and
                 row.get('dominant_grade_samples',0)>=min_samples and
-                row.get('dominant_grade_profit_probability',0)>=min_probability)
+                (row.get('dominant_grade_profit_probability',0)>=min_probability or
+                 relaxed_canary_grade_ready))
             cold_safe_trial=(cold_goods_frozen and unproven_capacity>0 and
                 not holding.get(row['sku']) and
                 row.get('sales_1h',0)>=policy.get('cold_safe_trial_sales_1h',math.inf) and
@@ -671,6 +693,9 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
         # recreates the historical concentrated-stock failure. Evidence may
         # scale the portfolio, but it never waives this wealth-relative cap.
         capital_share=policy.get('max_sku_capital_share',1)
+        if high_value_canary and relaxed_canary_grade_ready:
+            capital_share=max(capital_share,policy.get(
+                'max_relaxed_high_value_canary_capital_share',capital_share))
         # A proven, refund-aware positive cohort may hold two expensive units
         # instead of repeatedly selling out after a one-unit restock, but only
         # when the dominant A-grade acquisition is itself robustly profitable.

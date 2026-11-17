@@ -626,6 +626,37 @@ class PurchaseTests(unittest.TestCase):
   self.assertEqual(allocation_plan(
       [cheap,canary],{'units':[],'balance':2000000},2000000,
       policy=policy)[0]['sku'],'cheap')
+ def test_one_broad_demand_relaxed_grade_canary_gets_bounded_capital_slot(self):
+  cheap=dict(sku='cheap',kind='food',expected_net=1000,score=100000,
+             upper_cost=100,sales_1h=20,sales_6h=40,
+             distinct_buyers_6h=10,estimated_sale_likelihood=1)
+  canary=dict(sku='canary',kind='goods',expected_net=142000,score=578000,
+              upper_cost=2862000,sales_1h=16,sales_6h=100,
+              distinct_buyers_6h=13,estimated_sale_likelihood=.66,
+              own_sales_total=0,dominant_grade_samples=89,
+              dominant_grade_profit_probability=.51)
+  policy={'max_sku_capital_share':.10,
+          'max_relaxed_high_value_canary_capital_share':.15,
+          'max_units_per_sku':3,'max_high_value_units_per_sku':2,
+          'high_value_lane_min_unit_cost':500000,
+          'high_value_canary_window_limit':3,
+          'relaxed_high_value_canary_window_limit':1,
+          'min_goods_a_profit_samples':3,
+          'min_goods_a_profit_probability':.90,
+          'min_relaxed_high_value_canary_grade_profit_probability':.50,
+          'high_value_canary_min_sales_1h':2,
+          'high_value_canary_min_distinct_buyers_6h':5,
+          'high_value_canary_min_sale_likelihood':.30,
+          'max_cold_goods_capital_share':0,
+          'max_active_unproven_goods':5,
+          'active_unproven_goods_count':3}
+  inventory={'units':[],'balance':20000000}
+  plan=allocation_plan([cheap,canary],inventory,5000000,policy=policy)
+  self.assertEqual((plan[0]['sku'],plan[0]['qty']),('canary',1))
+  self.assertTrue(plan[0]['evidence']['high_value_canary'])
+  policy['high_value_window_count']=1
+  self.assertEqual(allocation_plan(
+      [cheap,canary],inventory,5000000,policy=policy)[0]['sku'],'cheap')
   policy['high_value_window_count']=0
   policy['active_unproven_goods_present']=True
   self.assertEqual(allocation_plan(
