@@ -12,7 +12,7 @@
 | 에이전트 | 역할별 LLM 운영자 2개 (가게, 구매자) | kernel/operator.py |
 | 상태 s | 깨어날 때 읽는 상태 카드: 순위표 항목별 값과 순위, 목표 진척, 재고, 잔고, 실험 진행, 직전 결과, 기억 | kernel/brief.py (build_compact) |
 | 행동 a | 정책 키 수정, 실험 시작, 재입고 계획, 훅 코드 수정 신청, 조사 질문, 다음 점검 시각 | kernel/policy_edit.py, kernel/experiments.py, kernel/restock.py, kernel/code_edit.py |
-| 정책 π | policy.json의 값들. 판매 훅과 구매 훅이 거래마다 이 값을 읽어 결정함 | policy.json, hooks/seller.py, hooks/market_buyer.py |
+| 정책 π | policy.json의 값들. 판매 훅과 구매 훅이 거래마다 이 값을 읽어 결정함 | 데이터 루트의 policy.json, hooks/seller.py, hooks/market_buyer.py (코드 원본은 ../r3/hooks) |
 | 보상 r | 순위표 점수. 가게 all = 0.5 pct(book) + 0.3 pct(revenue) + 0.2 pct(stars_rank), 구매자 all = 0.5 pct(saved) + 0.3 forum + 0.1 pct(deals) + 0.1 pct(posts) | MARKET_BRIEF.md 1절, kernel/brief.py |
 | 전이 P | 시장 자체. 다른 참가자와 손님의 반응이라 모르는 채로 둠 | 시장 서버 |
 | 시간 단계 | 운영자 한 번의 깨어남. 운영자가 다음 점검 시각을 정하고, 실험 판정, 순위 급변, 경보가 오면 그 전에 깨어남 | kernel/operator.py (next_wake_min) |

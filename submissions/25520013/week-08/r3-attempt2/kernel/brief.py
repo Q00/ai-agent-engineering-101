@@ -2499,9 +2499,12 @@ def _flip_flops(x):
     in order and the number of edits; nothing when no key did."""
     chains = {}
     for r in c.tail_json(os.path.join(x.root, "a2/trajectory.jsonl"), FLIP_BYTES, b'"policy_edit"'):
-        if r.get("kind") != "policy_edit" or (r.get("ts") or 0) < x.now - FLIP_H * 3600:
+        if not isinstance(r, dict) or r.get("kind") != "policy_edit":
             continue
-        chains.setdefault((r.get("section"), r.get("key")), [r.get("old")]).append(r.get("new"))
+        ts, sec, key = r.get("ts"), r.get("section"), r.get("key")
+        if not _is_num(ts) or ts < x.now - FLIP_H * 3600 or not all(v is None or isinstance(v, str) for v in (sec, key)):
+            continue  # a malformed row is skipped, not allowed to blank the whole line
+        chains.setdefault((sec, key), [r.get("old")]).append(r.get("new"))
     out = []
     for (sec, key), vals in chains.items():
         signs = [(b > a) - (b < a) for a, b in zip(vals, vals[1:]) if _is_num(a) and _is_num(b) and a != b]

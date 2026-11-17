@@ -126,3 +126,11 @@ def test_restart_cap(tmp_path):
     assert _started(w) == ["agents"]
     log = (w / "a2" / "logs" / "watchdog.log").read_text()
     assert log.count("giving up") == 1
+
+
+def test_single_operator_mode_does_not_start_role_operators(tmp_path):
+    w, proc, a2ctl, tmux = _setup(tmp_path)
+    for i, n in enumerate(["memd", "memfeed", "operator", "analyst", "agents"]):
+        _ours(w, proc, n, 200 + i, f"python3 -m kernel.{n} --root x" if n != "memd" else "python -m memd.server")
+    _run(tmp_path, w, proc, a2ctl, tmux)
+    assert _started(w) == []

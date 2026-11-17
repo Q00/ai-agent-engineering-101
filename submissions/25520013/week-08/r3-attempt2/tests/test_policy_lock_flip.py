@@ -159,3 +159,19 @@ def test_flip_on_the_card(tmp_path):
     _flip(tmp_path, e)
     t = brief.build_compact(str(tmp_path), NOW)
     assert "[키 왕복] 최근 2시간" in t and "만들지 못함" not in t
+
+
+def test_flip_skips_malformed_rows(tmp_path):
+    # a row with a text ts or a list section is skipped; the good rows still make the line (verifier 11-17)
+    e = [
+        (NOW - 3000, BED, "price_mult", 0.71, 0.66),
+        (NOW - 2000, BED, "price_mult", 0.66, 0.70),
+        (NOW - 1000, BED, "price_mult", 0.70, 0.65),
+    ]
+    _flip(tmp_path, e)
+    with open(tmp_path / "a2" / "trajectory.jsonl", "a", encoding="utf-8") as f:
+        f.write(json.dumps({"ts": "bad", "kind": "policy_edit", "section": BED, "key": "price_mult", "old": 1, "new": 2}) + "\n")
+        f.write(json.dumps({"ts": NOW - 10, "kind": "policy_edit", "section": [BED], "key": "k", "old": 1, "new": 2}) + "\n")
+        f.write(json.dumps(["not", "a", "dict"]) + "\n")
+    got = brief._flip_flops(SimpleNamespace(root=str(tmp_path), now=NOW))
+    assert got and "0.71→0.66→0.7→0.65 (3번 바꿈)" in got[0], got

@@ -2,7 +2,8 @@
 # Loop watchdog for attempt 2: every SLEEP_S seconds, starts the a2 processes that are not running (via a2ctl.sh)
 # and recreates the boardsnap window in tmux session "market". It never kills anything and never touches the
 # kit/forum/runner windows. Run it in its own tmux window:  bash live/watchdog.sh
-#   Stop switches: W/a2/WATCHDOG_OFF (everything), W/a2/stop/<name> (one name).
+#   Stop switches: W/a2/WATCHDOG_OFF (everything; deploy scripts hold it while they swap code), W/a2/stop/<name> (one
+#   name). A process stopped with plain `a2ctl.sh stop` comes back within SLEEP_S unless one of these is set.
 #   Cap: at most MAX_RESTARTS starts of one name per hour (W/a2/watchdog_state), then "giving up" for the hour.
 #   One line per action in W/a2/logs/watchdog.log; when all is well, only one heartbeat line per hour.
 #   Env overrides (for tests): W, CODE, A2CTL, TMUX_BIN, SLEEP_S, PROC, ONCE=1 (one pass, then exit).
@@ -58,6 +59,7 @@ check_procs() {
   st=$(W="$W" CODE="$CODE" bash "$A2CTL" status 2>&1)
   for n in $NAMES; do
     echo "$st" | grep -q "^$n running" && continue
+    case "$n" in operator-*) echo "$st" | grep -q "^operator running" && continue ;; esac  # single mode: a2ctl refuses both kinds
     [ -e "$W/a2/stop/$n" ] && continue
     allowed "$n" || continue
     out=$(W="$W" CODE="$CODE" A2_ANALYST_MIN_GAP_S="${A2_ANALYST_MIN_GAP_S:-600}" bash "$A2CTL" start "$n" 2>&1 | tr '\n' ' ')
