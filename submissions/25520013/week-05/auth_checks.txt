@@ -1,0 +1,4 @@
+1. no token: tools/call get_negotiation -> HTTP 401, WWW-Authenticate: Bearer error="invalid_token", error_description="Authentication required", resource_metadata="http://127.0.0.1:8001/.well-known/oauth-protected-resource/mcp"
+2. buyer token of neg-b1e672c3 on neg-5e476677: get_negotiation -> HTTP 200, isError=True Error executing tool get_negotiation: Your token is not a party to negotiation neg-5e476677.
+3. seller moves first in neg-b1e672c3 (buyer's turn): propose 140 -> HTTP 200, isError=True Error executing tool propose: It is not your turn; it is the buyer's turn.
+4. server_inject neg-80cc88d1 (scenario 4, budget 70): buyer propose 100 -> HTTP 200, isError=True Error executing tool propose: Refused: 100 is above your authorized limit of 70.
