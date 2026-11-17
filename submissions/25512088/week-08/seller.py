@@ -137,16 +137,12 @@ def select_unit(text, units, reserved, soft_counts=None, prefer_c=False):
     fits = named or [u for u in valid if any(str(v).lower() in want for v in
                     [u.get('name'), u.get('category', '').split('>')[-1]] if v)]
     soft_counts=soft_counts or {}
-    # Lead with the grades that actually settle. The recent mature cohort has
-    # B/C converting materially above high-cost A. Food that cannot satisfy a
-    # requested remaining-life condition was already removed from ``valid``.
-    # Prefer A over C when both can satisfy the exact request.  Do not hide a
-    # C-only SKU: the first live revision turned 33 of 38 recent stock misses
-    # into false negatives, while the larger official cohort showed only a
-    # small rating difference (C 4.0 versus A 4.2).  The deterministic drain
-    # lane still leads with C for a bounded share of otherwise substitutable
-    # quotes.
-    grade_order=({'C':0,'B':1,'A':2} if prefer_c else {'B':0,'A':1,'C':2})
+    # Lead with the grades that actually settle.  In the fresh six-hour live
+    # cohort B converted at 38.6%, C at 22.5%, and A at 18.7%, with no refunds
+    # in any grade.  Keep B first, but do not strand profitable C units behind
+    # a high-cost A unit that buyers repeatedly bid below cost.  The bounded
+    # deterministic drain lane can still put C ahead of B for attribution.
+    grade_order=({'C':0,'B':1,'A':2} if prefer_c else {'B':0,'C':1,'A':2})
     # A quote floor is tied directly to unit cost. For the same SKU and grade,
     # leading with the cheapest unit therefore improves both conversion and
     # realized Book. The former eight-unit/experiment-only condition selected

@@ -44,8 +44,8 @@ class SellerIntegrationTests(unittest.IsolatedAsyncioTestCase):
                dict(unit='b',sku='G00001',name='item',category='food',grade='B',expires_at=None,supplied_at=2),
                dict(unit='a',sku='G00001',name='item',category='food',grade='A',expires_at=None,supplied_at=3)]
         self.assertEqual(seller.select_unit('G00001',units,set(),{})['unit'],'b')
-        self.assertEqual(seller.select_unit('G00001',units,{'b'}, {})['unit'],'a')
-        self.assertEqual(seller.select_unit('G00001',units,{'b','a'}, {})['unit'],'c')
+        self.assertEqual(seller.select_unit('G00001',units,{'b'}, {})['unit'],'c')
+        self.assertEqual(seller.select_unit('G00001',units,{'b','c'}, {})['unit'],'a')
 
     def test_sale_selection_can_use_c_drain_lane(self):
         units=[dict(unit='c',sku='G00001',name='item',category='food',grade='C',expires_at=None,supplied_at=1),
