@@ -44,7 +44,7 @@ class HistoryRows(list):
     reader_source = 'raw_log'
 
 
-def read_history(path: Path = EVENTS, *, db_path=None, now=None):
+def read_history(path: Path = EVENTS, *, db_path=None, now=None, order_age_seconds=6*3600):
     """Read a consistent indexed prefix plus its fresh raw tail; never write the DB.
 
     The raw log remains authoritative. A missing/stale/rotated index falls back
@@ -69,7 +69,7 @@ def read_history(path: Path = EVENTS, *, db_path=None, now=None):
                 at = datetime.fromisoformat(event['at'].replace('Z','+00:00')).timestamp()
             except (KeyError,ValueError,TypeError,AttributeError):
                 at = now  # unknown age must not discard a possible checkout guard
-            if at >= now-6*3600:
+            if at >= now-order_age_seconds:
                 rows.append(event if at>=now-15*60 else {k:event.get(k) for k in (
                     'event','at','order','order_kind','use_within_hours','order_budget')})
         elif event.get('event') == 'buyer_policy_selection':
@@ -103,13 +103,15 @@ def read_history(path: Path = EVENTS, *, db_path=None, now=None):
                     raise ValueError('indexed prefix has no verifiable event')
                 query = """SELECT event,at,order_id,shop_url,shop_name,
                            CASE WHEN event IN ('shop_identity','payment','settled','negotiation','broken')
-                             OR event IN ('selection_opportunities','buyer_policy_selection') AND (at IS NULL OR at>=?)
+                             OR event='selection_opportunities' AND (at IS NULL OR at>=?)
+                              OR event='buyer_policy_selection' AND (at IS NULL OR at>=?)
                            THEN payload END
                            FROM events WHERE source=? AND generation=? AND byte_offset<?
                            ORDER BY byte_offset"""
                 cutoff=datetime.fromtimestamp(now-6*3600,timezone.utc).isoformat(timespec='seconds')
+                order_cutoff=datetime.fromtimestamp(now-order_age_seconds,timezone.utc).isoformat(timespec='seconds')
                 for kind,at,order,url,name,payload in db.execute(
-                        query,(cutoff,'logs/buyer-events.jsonl',generation,offset)):
+                        query,(order_cutoff,cutoff,'logs/buyer-events.jsonl',generation,offset)):
                     if name and url:
                         identities.add((order,url,name))
                     if payload is not None:
