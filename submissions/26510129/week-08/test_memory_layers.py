@@ -117,6 +117,17 @@ class ProfilesTest(unittest.TestCase):
             self.assertEqual((0.83, False), (prof["shops"]["haggler"]["theta"], prof["shops"]["haggler"]["fixed"]))
             self.assertEqual(0.6, prof["shops"]["fixed"]["p_deal"])
 
+    def test_refused_probes_keep_a_shop_fixed_and_accepted_probes_move_its_threshold(self):
+        at = "2026-11-17 19:00"
+        paid_ask = [row("s", at, price=700, ask=700, first=700)] * 12
+        refused = [row("s", at, price=700, ask=700, first=665)] * 4            # 0.95 of the ask, countered, ask paid
+        taken = [row("s", at, price=665, ask=700, first=665)] * 4              # the same probe, accepted
+        with tempfile.TemporaryDirectory() as d:
+            prof, _ = profiles.consolidate(paid_ask + refused, d, "margin_share", now=NOW)
+            self.assertEqual((1.0, True), (prof["shops"]["s"]["theta"], prof["shops"]["s"]["fixed"]))
+            prof, _ = profiles.consolidate(paid_ask + refused[:1] + taken, d, "margin_share", now=NOW)
+            self.assertEqual((0.95, False), (prof["shops"]["s"]["theta"], prof["shops"]["s"]["fixed"]))   # 4 of 5 at 0.95
+
     def test_steering_bad_deals_and_warranties_survive_compaction(self):
         rows = [row("pushy", "2026-11-09 10:00", manipulative=True),
                 row("breaks", "2026-11-09 10:00", broken=True, refunded=False), row("breaks", "2026-11-09 11:00", honest=False),

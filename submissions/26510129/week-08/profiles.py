@@ -36,6 +36,8 @@ HOT_HOURS = 48          # goods can break 6 h after a sale and a payment is refu
 MIN_SCORED = 5          # settled deals before a shop's mean score is believed
 MIN_ACCEPTED = 8        # accepted offers before a shop's acceptance threshold is believed
 FIXED_FROM = 0.97       # a threshold this close to the ask: the shop does not bargain
+BAND = 0.03             # offers are grouped in bands of this share of the ask
+MIN_BAND_OFFERS = 3     # offers in a band before its acceptance rate counts
 QUIET = ("no_stock", "stale", "unreachable")   # a visit that ended before any offer says nothing about how the shop trades
 COUNTERS = ("visits", "offers", "deals", "steer", "bad", "clean_deals", "unpaid", "w_n", "w_yes", "scored", "kept_sum")
 
@@ -98,25 +100,37 @@ def observations(row):
     return [(r, ok) for r, ok in pairs if 0.3 <= r <= 1.05]
 
 
-def threshold(accepted):
-    """The share of its ask at which the shop usually starts to accept: the 20th percentile of the accepted offers
-    (one old unit let go cheaply does not move it). None under MIN_ACCEPTED observations.
+def threshold(pairs):
+    """The share of its ask at which the shop starts to accept: the lowest band of offers (BAND wide, at least
+    MIN_BAND_OFFERS offers) of which it accepted half or more, as the mean accepted offer in that band. Without such
+    a band, the 20th percentile of the accepted offers. None under MIN_ACCEPTED accepted offers.
     11-17, 22,883 visits: YAHO1212, nocha12, bjeon01, 25620027 accept at 1.00 of the ask and nothing lower;
-    psyoung82 at 0.83, ddolcom at 0.70, outseop at 0.90, buzllightyear at 0.93, Kiro729 at 0.92-0.96."""
+    psyoung82 at 0.83, ddolcom at 0.70, outseop at 0.90, buzllightyear at 0.93, Kiro729 at 0.92-0.96.
+    Refusals count as much as acceptances, so a probe under the threshold (market_buyer.probe_now) can move it:
+    a belief the policy never tests is the cooling-off list of 11-11 again."""
+    accepted = sorted(min(r, 1.0) for r, ok in pairs if ok)
     if len(accepted) < MIN_ACCEPTED:
         return None
-    ordered = sorted(accepted)
-    return round(min(1.0, ordered[int(len(ordered) * 0.2)]), 3)
+    bands = {}
+    for r, ok in pairs:
+        r = min(r, 1.0)
+        n, a, total = bands.get(int(r / BAND + 1e-9), (0, 0, 0.0))
+        bands[int(r / BAND + 1e-9)] = (n + 1, a + bool(ok), total + (r if ok else 0.0))
+    for band in sorted(bands):
+        n, a, total = bands[band]
+        if n >= MIN_BAND_OFFERS and a / n >= 0.5:
+            return round(total / a, 3)
+    return round(accepted[int(len(accepted) * 0.2)], 3)
 
 
 def view(life, rows, formula):
     """The per-shop facts decisions read: lifetime counters plus the recent rows. Returns (shops, summary)."""
-    recent, accepted, grades = {}, {}, {}
+    recent, offers, grades = {}, {}, {}
     for row in rows:
         fold(recent, row, formula)
-        for ratio, ok in observations(row):
-            if ok:
-                accepted.setdefault(row.get("shop"), []).append(ratio)
+        pairs = observations(row)
+        if pairs:
+            offers.setdefault(row.get("shop"), []).extend(pairs)
         s = objective.outcome_score(row, formula)
         if s is not None:
             g = grades.setdefault(row.get("grade") or "?", {"n": 0, "score": 0.0, "paid": 0.0})
@@ -131,7 +145,7 @@ def view(life, rows, formula):
                 else total["kept_sum"] / total["scored"] if total["scored"] >= MIN_SCORED else None)
         p_deal = (new["deals"] / new["offers"] if new["offers"] >= MIN_SCORED
                   else total["deals"] / total["offers"] if total["offers"] >= MIN_SCORED else None)
-        theta = threshold(accepted.get(name, []))
+        theta = threshold(offers.get(name, []))
         shops[name] = {
             "attempts": total["offers"], "deals": total["deals"], "recent_offers": new["offers"],
             "p_deal": round(p_deal, 3) if p_deal is not None else None,

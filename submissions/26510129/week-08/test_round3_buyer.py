@@ -165,6 +165,20 @@ class Round3BuyerContextTest(unittest.TestCase):
         self.assertTrue(market_buyer.NO_WARRANTY.search("grade C, 155.2 h shelf life left, no warranty; the"))
         self.assertFalse(market_buyer.NO_WARRANTY.search("grade C, warranty 6 h, certificate attached"))
 
+    def test_a_probe_is_a_stable_draw_per_order_and_shop_at_the_explore_rate(self):
+        draws = [market_buyer.probe_now(f"o-{i}", "shop", 0.15) for i in range(2000)]
+        self.assertEqual(draws, [market_buyer.probe_now(f"o-{i}", "shop", 0.15) for i in range(2000)])
+        self.assertTrue(0.11 < sum(draws) / len(draws) < 0.19)
+        self.assertFalse(any(market_buyer.probe_now(f"o-{i}", "shop", 0.0) for i in range(200)))
+
+    def test_price_limits_follow_the_grade_under_the_margin_rule(self):
+        targets = {"formula": "margin_share", "pay": 0.78, "quick": 0.85, "kind": "goods"}
+        self.assertEqual((727, 702, 650), market_buyer.price_limits(1000, "A", targets))
+        self.assertEqual((493, 447, 350), market_buyer.price_limits(1000, "C", targets))
+        self.assertEqual((695, 668, 610), market_buyer.price_limits(1000, None, targets))     # unstated grade: goods average
+        self.assertEqual((None, None, None), market_buyer.price_limits(None, "A", targets))
+        self.assertEqual((220, 150, 650), market_buyer.price_limits(1000, "A", {**targets, "formula": "list_discount"}))
+
     def test_the_opener_is_no_lower_than_the_shops_usual_settle(self):
         self.assertEqual(51, market_buyer.opening_offer(72, 51, 0.25))                 # reference below ask x 0.75
         self.assertEqual(55, market_buyer.opening_offer(72, 51, 0.25, at_least=55))    # the shop settles at 0.55 of list

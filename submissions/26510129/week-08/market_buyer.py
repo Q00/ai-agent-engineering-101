@@ -9,6 +9,7 @@ The last stdout line is the result the kit sends to the market:
     {"shop": "<card URL from shops.json>", "receipt": {...} or null, "stars": 1-5, "review": "..."}
 """
 import argparse
+import hashlib
 import json
 import math
 import os
@@ -333,6 +334,17 @@ def steered(t):
     if hit:
         print(f"[guard] shop message tries to steer the buyer ({hit.group(0)!r}); remembered as manipulative", flush=True)
     return bool(hit)
+
+
+PROBE_STEP = 0.05   # a probe opens this far under the threshold the shop's profile remembers
+
+
+def probe_now(order_id, shop_name, rate):
+    """Whether this visit tests the shop's remembered threshold instead of using it: a stable draw per (order, shop)
+    at the tuner's explore_rate. Without it a shop once judged fixed-price is only ever paid its ask, every new
+    observation says 1.00, and the judgement can never change (the cooling-off list of 11-11 had the same shape)."""
+    seed = hashlib.sha256(f"probe:{order_id}:{shop_name}".encode()).digest()
+    return int.from_bytes(seed[:8], "big") / 2**64 < rate
 
 
 def price_limits(list_price, grade, targets):
@@ -765,6 +777,11 @@ def main():
         open_at_least = int(level * value_cap) if priced and isinstance(level, (int, float)) and level > 0 else None
         known = shop_profiles.get(pick["name"]) or {}
         haggle = {"theta": known.get("theta"), "fixed": known.get("fixed")}
+        probing = haggle["theta"] is not None and probe_now(order.get("order"), pick["name"], params["explore_rate"])
+        if probing:   # test the belief: open a step under the remembered threshold, as if the shop bargained
+            haggle = {"theta": round(haggle["theta"] - PROBE_STEP, 3), "fixed": False}
+            print(f"[buyer] probing {pick['name']}: opening {PROBE_STEP:.0%} under its remembered threshold "
+                  f"{known.get('theta')}", flush=True)
         reference = sku_reference(wanted, catalog, category_ref, stats)
         try:
             outcome, agreed, receipt, log, manip, info = negotiate(
@@ -801,6 +818,7 @@ def main():
                     # 11-17: what the shop said its unit was and what I was prepared to pay for it are remembered
                     # for every visit, not only for the deals the market later certifies
                     "unit_grade": info.get("grade"), "pay_cap": info.get("pay_cap"), "kept_est": info.get("kept_est"),
+                    "probe": probing or None,
                     **{k: info.get(k) for k in ("ask", "first_offer", "last_offer", "guard_decisions", "checkout_authorized")}})
         save_memory(mem)
         bargained += outcome in ("closed", "walked_away") and not no_offer
