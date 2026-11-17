@@ -4,7 +4,7 @@
 **Agent architecture:** CREDENCE — Contextual Risk and Economic Decision Engine  
 **Submission branch:** `week-08`  
 **Market period:** 2026-11-03 through 2026-11-17 23:59 KST  
-**Status:** code/design prepared; live-v4 deployment and final rank observations pending.
+**Status:** Round 3 kit v4 deployed and verified in local kit logs; final official Players standing, sale/purchase totals at cutoff, and PR submission remain to be confirmed.
 
 ## 1. Objective and evaluation criteria
 
@@ -92,9 +92,9 @@ goods; this is a deliberate service/risk tradeoff.
 **B. Cash-aware restock.** `restock.py` is an actual v4 restock hook,
 not the random kit default. It reads the observed demand and current
 inventory, limits each SKU to three units, holds total active inventory
-below 18 units, buys in one-unit increments, and reserves at least
-1,300,000 credits of cash. One restock decision spends at most 12% of
-cash. It avoids repeating perishable units and filters shorter shelf-life
+below 10 units, buys at most two one-unit SKU increments per restock cycle,
+and reserves at least 1,300,000 credits of cash. One restock decision
+spends at most 6% of cash. It avoids repeating perishable units and filters shorter shelf-life
 products when that metadata is present. The supply cost is probabilistic
 in the official market, so pre-purchase estimates intentionally include
 a conservative upper cost assumption. The supply API and server remain
@@ -107,13 +107,16 @@ seller/SKU pairs using genuine recent reviews, counted-paid historical
 observations and trust penalties; and passes only five candidates to the
 model. The buyer's numerical offer is **always bounded by the private
 budget** and generally targets 70–84% of list price before a small,
-controlled escalation. The buyer refuses unsupported items, reused task
-IDs, unsigned/mismatched receipts, and receipts that disagree with its
+controlled escalation. The buyer refuses unsupported items, recently out-of-stock shop/SKU
+pairs for a 20-minute cooldown, unsigned/mismatched receipts, and receipts that disagree with its
 latest numeric offer.
 
 **D. Checkout acceptance and review.** The buyer emits `accept` with
 certification, grade and (where appropriate) shelf-life and minimum
-warranty conditions. Kit v4 verifies the market certificate and signed
+warranty conditions. Round 3 food orders may omit a `kind` field but include
+`use_within_hours`; code checks this field and permits actual C-grade food
+only when certification and the full required remaining shelf life pass.
+Non-food goods retain A/B filtering. Kit v4 verifies the market certificate and signed
 AP2 mandates, and enforces the open mandate's maximum before payment.
 `review_hook.py` runs only after a genuinely settled purchase to choose
 a review based on observed receipt data; it may write a factual, rate-limited
@@ -173,36 +176,61 @@ No artificial manipulation of other students' forum reputation is
 performed. Paid dislike escalation has quadratic cost and is not a
 default trading tool.
 
-## 4. Empirical Round 3 results (30%) — EVIDENCE PENDING
+## 4. Empirical Round 3 results (30%) — OBSERVED, NOT FINAL
 
-**Do not replace pending observations with the prior Week 07 Round 2
-statistics.** Round 2 verified receipts do not count as Round 3 settled
-transactions.
+**Evidence status.** The student supplied the output of
+`python submissions/26510128/week-08/analyze_round3.py` run on
+**2026-11-16 at 13:45 KST** (UTC creation time
+`2026-11-16T04:45:29.142831+00:00`).
+That analysis examined local `market-kit.log` and deduplicated only
+ledger-numbered `[acp] paid ... settled at ledger` (buyer) and
+`[acp] settled ... ledger` (shop) events. It is **not** the official
+final leaderboard and predates the 17 November cutoff.
 
-| Metric | 2026-11-09 preparation | Final source |
+| Metric | Last observed local result | Verification needed |
 | --- | --- | --- |
-| v4 kit first log line | **Not observed on student's computer yet** | `logs/market-kit.log` |
-| Shop Round 3 settled transactions | **Pending live observation** | `[acp] settled`, market board |
-| Buyer Round 3 settled transactions | **Pending live observation** | `[acp] paid`, market board |
-| Shop ALL | **Pending public board value** | Players / Shops ALL |
-| Buyer ALL | **Pending public board value** | Players / Buyers ALL |
-| Players standing / class percentile | **Pending final board** | Players Class view |
-| Refused settlements and reasons | **Pending real log** | `[acp] ... refused` and `payments.jsonl` |
-| Average realized transaction discount | **Pending real receipts** | confirmed deal + official list price |
-| Inventory write-offs / refunds | **Pending inventory/ledger** | market kit, official board |
+| Kit and account registration | v4, shop and buyer as `JangSeongWoong` | Original `logs/market-kit.log` |
+| Shop Round 3 settled sales | **14** distinct ledger IDs | **20 required**; refresh from live log and dashboard |
+| Buyer Round 3 settled purchases | **591** distinct ledger IDs | **20 required**, observed threshold passed |
+| Seller pricing policy actions | 70 quoted-price log entries | Policy log and settled margins |
+| Model/harness actions | 2,809 log entries | Local running evidence |
+| Reputation safety exclusions | 2,617 logged exclusions | Local log |
+| ACP refusals: grade C with A/B-only policy | **558** historical entries | Compare timestamps to code update; do not attribute all to final policy |
+| ACP refusals: server 500 | 3 | Server-side response log |
+| Other ACP refusals | Insufficient shelf life or missing certificate, with many distinct hour limits | Preserve buyer requirements |
+| Final Shop ALL / Buyer ALL / Players Class percentile | **Not yet observed** | Official board at 2026-11-17 23:59 KST |
+| Realized discounts, inventory write-offs and refunds | **Not yet measured** | Settlement and dashboard evidence |
 
-At the official cutoff (2026-11-17 23:59 KST), the Players Class
-percentile alone determines the 30% rankings component. A momentary
-mid-round ranking is not the final score. Meeting the 20+20 settlement
-minimum should be verified separately.
+The local analysis reported **`shop_at_least_20=false`** and
+**`buyer_at_least_20=true`** as of this observation. The student must
+provide new evidence if the shop subsequently reaches 20 or more.
+The log includes 558 historical refusals that say grade C was outside
+the permitted A/B list. These could have occurred before subsequent
+policy revisions; the event aggregate contains no deployment-version
+segmentation. The final buyer policy also enforces the original
+`use_within_hours` mandate, verifies seller certificates, and guards
+the private budget. We do not claim settlement success from mere A2A
+completion or unsigned receipts.
 
-### Suggested experimental comparisons (only after live evidence)
+### Reproducible evidence collection
 
-Compare default random restock vs demand-aware restock on stock turnover,
-cash balance, write-offs and Book (using comparable windows). Compare
-buyer full-budget acceptance vs bounded discount negotiation on settled
-count, average discount, and rejection reasons. These are **test
-hypotheses**, not results established in this preparation.
+On the live host, after stopping the active kit at the Round 3 cutoff,
+run `python submissions/26510128/week-08/analyze_round3.py`.
+Retain the original `logs/market-kit.log` **with the actual ACP
+settlement lines** in the PR, excluding all private signing keys,
+claim codes, tokens and unrelated secrets. Copy the resulting counts,
+the public Shop ALL, Buyer ALL, and Players Class standing (with time)
+into this section **only after reading the real output**.
+
+### Design comparison: starter vs. CREDENCE
+
+The original kit supplies random or default shop behavior and transport;
+CREDENCE adds demand-weighted capped restocking, persistent named-shop
+trust memory, model-restricted supplier selection, per-unit economic
+floors, signed receipt cross-checks, an ACP certificate-grade-shelf-life
+acceptance policy, and a paid-only outcome memory loop. These are
+**implemented architectural differences**; their causal impact on Book,
+Saved or rank has not been isolated in a controlled A/B experiment.
 
 ## 5. Deployment, reproducibility and safety
 
@@ -222,7 +250,7 @@ archive privately and commit only genuine, secret-screened required
 logs. No synthetic market settlements, fabricated forum votes, invented
 public prices, or claims of future final ranking appear in this report.
 
-### Evidence to insert after deployment
+### Evidence to verify before submission
 
 Preserve in original `logs/market-kit.log`:
 `[kit] market_kit 4`, shop/buyer registration, `[supply]`,
