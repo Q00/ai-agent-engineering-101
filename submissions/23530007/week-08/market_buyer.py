@@ -1144,7 +1144,7 @@ def main():
         # In the "push" arm, an ask still above the shop's lower quartile + push_band gets one more counter
         # (halfway down to that quartile) before we take it; a rejection that names a floor reopens at it below.
         needwarr = order.get("kind") == "goods"     # every goods receipt must carry a 6 h warranty (11-11)
-        warr_ok, warr_asked = False, False
+        warr_ok, warr_asked = False, plain       # 11-17: no warranty question at a shop that blocks our wording
         graded = None     # (grade, warranty hours) read from the shop's first reply
         short = None      # food: the unit's shelf life is under the order's hours
         last_hl = None    # 11-17: shelf hours on the last offer seen (strict_stars)
@@ -1258,7 +1258,7 @@ def main():
                 if action == "walk":
                     break
                 accepting = ask2 is not None and offer >= ask2
-                if accepting or re.search(r"number|numeric", said(t), re.I):
+                if accepting or plain or re.search(r"number|numeric", said(t), re.I):
                     text = str(offer)        # 38 of 38 walk-aways on 11-05 had agreed, but the shop wanted the number
                 else:                        # alone ("send an unconditional numeric offer") and re-quoted until we left
                     text = f"{say + ' ' if say else ''}I can offer {offer}."
@@ -1286,7 +1286,7 @@ def main():
                     if ask is not None:
                         asks.append(ask)
                     agreed = min(floor, ask) if ask else floor
-                    t = seller.send(f"Deal, I will take it at {agreed}.", tid, ctx)
+                    t = seller.send(str(agreed) if plain else f"Deal, I will take it at {agreed}.", tid, ctx)
                     tid, ctx = t.get("id") or tid, t.get("contextId") or ctx
             if state(t) == "TASK_STATE_COMPLETED":
                 rec = receipt(t)
