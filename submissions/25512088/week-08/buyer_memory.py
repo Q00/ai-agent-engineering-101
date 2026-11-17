@@ -121,15 +121,30 @@ class Memory:
         # excluded.  Two or more resolved attempts with no recent success cap
         # the long-run estimate at a short-window Beta(1,1) posterior.  This is
         # a ranking penalty, not a ban; a subsequent success raises it again.
-        recent=self.db.execute("""SELECT DISTINCT a.order_id,p.paid,p.shop
-          FROM events a JOIN orders o ON o.id=a.order_id
-          LEFT JOIN payments p ON p.order_id=a.order_id
-          WHERE a.shop=? AND a.ts>? AND
-          ((a.kind='agreement' AND o.state IN ('paid','payment_failed')) OR
-           (a.kind='receipt_rejected' AND o.state='invalid_receipt'))""",
-          (shop,time.time()-900)).fetchall()
+        recent=self.db.execute("""WITH recent_attempts AS (
+          SELECT a.order_id,p.paid,p.shop
+            FROM events a JOIN orders o ON o.id=a.order_id
+            LEFT JOIN payments p ON p.order_id=a.order_id
+           WHERE a.shop=? AND a.kind='agreement' AND a.ts>? AND
+                 o.state IN ('paid','payment_failed')
+          UNION
+          SELECT a.order_id,NULL,NULL
+            FROM events a JOIN orders o ON o.id=a.order_id
+           WHERE a.shop=? AND a.kind='receipt_rejected' AND a.ts>? AND
+                 o.state='invalid_receipt'
+          UNION
+          SELECT a.order_id,NULL,NULL
+            FROM events a JOIN orders o ON o.id=a.order_id
+           WHERE a.shop=? AND a.kind='offer' AND a.ts>? AND
+                 o.state='uncertain' AND a.id=(
+                   SELECT MAX(last.id) FROM events last
+                    WHERE last.order_id=a.order_id AND last.kind='offer')
+        ) SELECT DISTINCT order_id,paid,shop FROM recent_attempts""",
+          (shop,time.time()-900,shop,time.time()-900,
+           shop,time.time()-900)).fetchall()
         recent_wins=sum(r['paid']==1 and r['shop']==shop for r in recent)
-        if len(recent)>=2 and recent_wins==0:
+        if ((len(recent)>=2 and recent_wins==0) or
+                (len(recent)>=3 and recent_wins<len(recent))):
             probability=min(probability,(recent_wins+1)/(len(recent)+2))
         return {'probability':probability,'trials':len(rows),'wins':won,
                 'recent_trials':len(recent),'recent_wins':recent_wins}

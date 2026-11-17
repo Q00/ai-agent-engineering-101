@@ -236,18 +236,44 @@ class RolloutTests(unittest.TestCase):
    self.assertEqual((x['recent_trials'],x['recent_wins']),(2,0))
    self.assertEqual(x['probability'],.25)
   finally:m.close()
- def test_model_penalizes_repeated_invalid_receipts_but_not_uncertain_offers(self):
+ def test_model_penalizes_repeated_invalid_receipts_without_cross_shop_leakage(self):
   m=Memory(self.root)
   try:
    for n in range(2):
     oid=f'invalid-{n}';m.begin(dict(order=oid));m.record(oid,'shop','sku','task','offer')
     m.record(oid,'shop','sku','task','receipt_rejected');m.state(oid,'invalid_receipt')
-   m.begin(dict(order='unknown'));m.record('unknown','shop','sku','task','offer')
+   m.begin(dict(order='unknown'));m.record('unknown','other','sku','task','offer')
    m.state('unknown','uncertain')
    x=m.deal_estimate('shop')
    self.assertEqual((x['trials'],x['wins']),(2,0))
    self.assertEqual((x['recent_trials'],x['recent_wins']),(2,0))
    self.assertEqual(x['probability'],.25)
+  finally:m.close()
+ def test_model_temporarily_penalizes_repeated_last_offer_uncertainty(self):
+  m=Memory(self.root)
+  try:
+   for n in range(3):
+    oid=f'unknown-{n}';m.begin(dict(order=oid))
+    m.record(oid,'other','sku','task','offer')
+    m.record(oid,'shop','sku','task','offer');m.state(oid,'uncertain')
+   x=m.deal_estimate('shop');other=m.deal_estimate('other')
+   self.assertEqual((x['recent_trials'],x['recent_wins']),(3,0))
+   self.assertEqual(x['probability'],.2)
+   self.assertEqual(other['recent_trials'],0)
+  finally:m.close()
+ def test_recent_one_success_does_not_hide_repeated_uncertain_outcomes(self):
+  m=Memory(self.root)
+  try:
+   for n in range(4):
+    oid=f'unknown-{n}';m.begin(dict(order=oid));m.record(oid,'shop','sku','task','offer')
+    m.state(oid,'uncertain')
+   oid='won';m.begin(dict(order=oid));m.record(oid,'shop','sku','task','offer')
+   m.record(oid,'shop','sku','task','agreement',8000);m.state(oid,'paid')
+   with m.db:m.db.execute('INSERT INTO payments VALUES(?,?,?,?,?,?,?)',
+                          (oid,'shop','sku',8000,1,1,None))
+   x=m.deal_estimate('shop')
+   self.assertEqual((x['recent_trials'],x['recent_wins']),(5,1))
+   self.assertAlmostEqual(x['probability'],2/7)
   finally:m.close()
  def test_conditions_do_not_learn_unwarranted_goods(self):
   m=Memory(self.root)
