@@ -211,16 +211,49 @@ phone, keep the `<head>` lines of the starter page: `viewport` (with `viewport-f
 
 ## MeshKit
 
-Copy `meshkit.example.json` to `meshkit.json` and point it at a MeshKit mini app (any app built on
-[meshkit-py](https://github.com/Q00/meshkit/tree/main/meshkit-py)):
+Your agent can use features of a mini app someone else built. List that app in `meshkit.json` and each feature it offers
+becomes a tool whose name starts with `mesh_`. When the agent calls one, a sheet asking permission appears on your phone,
+and the other app runs only after a person taps Allow. The other app returns the result with a receipt it signed, and
+the kit passes it to the agent only if the signature checks out. The agent's own tools cannot reach the app, so only a
+person can press Allow.
+
+Try it first with DailyMart, the example app in the MeshKit repository:
 
 ```bash
-pip install "git+https://github.com/Q00/meshkit.git#subdirectory=meshkit-py"
+# 1. start DailyMart in a new terminal
+git clone https://github.com/Q00/meshkit.git
+cd meshkit/meshkit-py
+pip install -e .
+python examples/miniapp_server.py          # mini-app app.dailymart on 127.0.0.1:8765
 ```
 
-Each of its capabilities becomes a tool for the agent (`mesh_<capability>`). The kit signs each call with your app's
-Ed25519 key (`seed_hex`), waits until a person approves it on the page, and returns the result only with a receipt the
-target signed. `meshkit.json` holds that key; `.gitignore` keeps it out of git.
+2. Put this in `submissions/<student-id>/round-4/meshkit.json` (demo keys the example app trusts; `receipt_pubkey` is the
+   value DailyMart prints when it starts):
+
+```json
+{
+  "caller": {"app_id": "app.hermes-chat", "bundle_id": "ai.meshkit.sample.hermeschat",
+             "key_id": "hermes-request-ed25519",
+             "seed_hex": "0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20"},
+  "targets": [{"url": "http://127.0.0.1:8765", "app_id": "app.dailymart",
+               "bundle_id": "ai.meshkit.sample.dailymart", "receipt_key_id": "target-receipt-ed25519",
+               "receipt_pubkey": "T9CZzNR9eJPf6ewkQU7LDZtUICMqrTDZHEZb4zy+ZcQ=", "consent": true}]
+}
+```
+
+3. Run the agent with `--app 8800`.
+4. In the app, send "Use the DailyMart tool to order 우유 with budget_krw 100." Tap Allow on the sheet. The answer comes
+   back with an order number and a receipt id.
+
+To connect your app to someone else's, make your own `seed_hex` (32 random bytes) and give the other app the public key
+derived from it; the example app reads the key to trust from `MESHKIT_CALLER_PUBKEY`.
+
+```bash
+python -c "import secrets; print(secrets.token_hex(32))"
+python -c "import base64,sys; from meshkit import ed25519; print(base64.b64encode(ed25519.public_key_raw(ed25519.private_key_from_seed(bytes.fromhex(sys.argv[1])))).decode())" <seed_hex>
+```
+
+`meshkit.json` holds the key; `.gitignore` keeps it out of git.
 
 ## When something goes wrong
 
