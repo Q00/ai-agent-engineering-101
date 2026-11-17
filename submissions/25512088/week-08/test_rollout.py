@@ -215,6 +215,27 @@ class RolloutTests(unittest.TestCase):
     m.begin(dict(order=oid));m.record(oid,'shop','sku','task',kind);m.state(oid,state)
    x=m.deal_estimate('shop');self.assertEqual(x['trials'],1);self.assertEqual(x['probability'],.4)
   finally:m.close()
+ def test_model_temporarily_penalizes_repeated_recent_checkout_failures(self):
+  m=Memory(self.root)
+  try:
+   # Long-run evidence remains strong, but two freshly signed receipts fail at
+   # checkout.  Quote-only alternatives must not trigger this outage guard.
+   for n in range(8):
+    oid=f'old-{n}';m.begin(dict(order=oid));m.record(oid,'shop','sku','task','offer')
+    m.state(oid,'paid')
+    with m.db:m.db.execute('INSERT INTO payments VALUES(?,?,?,?,?,?,?)',
+                           (oid,'shop','sku',8000,1,n,None))
+   for n in range(2):
+    oid=f'failed-{n}';m.begin(dict(order=oid));m.record(oid,'shop','sku','task','offer')
+    m.record(oid,'shop','sku','task','agreement',8000);m.state(oid,'payment_failed')
+    with m.db:m.db.execute('INSERT INTO payments VALUES(?,?,?,?,?,?,?)',
+                           (oid,'shop','sku',8000,0,None,'checkout failed'))
+   m.begin(dict(order='quote-only'));m.record('quote-only','shop','sku','task','response')
+   m.state('quote-only','no_deal')
+   x=m.deal_estimate('shop')
+   self.assertEqual((x['recent_trials'],x['recent_wins']),(2,0))
+   self.assertEqual(x['probability'],.25)
+  finally:m.close()
  def test_conditions_do_not_learn_unwarranted_goods(self):
   m=Memory(self.root)
   try:

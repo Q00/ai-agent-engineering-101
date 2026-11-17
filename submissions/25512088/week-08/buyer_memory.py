@@ -113,7 +113,23 @@ class Memory:
           WHERE e.shop=? AND e.kind='offer' AND e.ts>? AND
           o.state IN ('paid','payment_failed','no_deal')""",(shop,time.time()-21600)).fetchall()
         won=sum(r['paid']==1 and r['shop']==shop for r in rows)
-        return {'probability':(won+2)/(len(rows)+4),'trials':len(rows),'wins':won}
+        probability=(won+2)/(len(rows)+4)
+        # A six-hour average reacts too slowly to a seller whose checkout just
+        # failed repeatedly.  Count only signed agreements here: quote-only
+        # alternatives and uncertain outcomes remain excluded.  Two or more
+        # resolved agreements with no recent success cap the long-run estimate
+        # at a short-window Beta(1,1) posterior.  This is a ranking penalty, not
+        # a ban; a subsequent successful checkout raises it automatically.
+        recent=self.db.execute("""SELECT DISTINCT a.order_id,p.paid,p.shop
+          FROM events a JOIN orders o ON o.id=a.order_id
+          LEFT JOIN payments p ON p.order_id=a.order_id
+          WHERE a.shop=? AND a.kind='agreement' AND a.ts>? AND
+          o.state IN ('paid','payment_failed')""",(shop,time.time()-900)).fetchall()
+        recent_wins=sum(r['paid']==1 and r['shop']==shop for r in recent)
+        if len(recent)>=2 and recent_wins==0:
+            probability=min(probability,(recent_wins+1)/(len(recent)+2))
+        return {'probability':probability,'trials':len(rows),'wins':won,
+                'recent_trials':len(recent),'recent_wins':recent_wins}
 
     def accepted_offer_shops(self, ceiling, seconds=21600):
         """Shops whose most recent offer before an agreement used this ceiling."""
