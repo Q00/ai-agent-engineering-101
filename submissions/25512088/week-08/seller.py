@@ -137,12 +137,13 @@ def select_unit(text, units, reserved, soft_counts=None, prefer_c=False):
     fits = named or [u for u in valid if any(str(v).lower() in want for v in
                     [u.get('name'), u.get('category', '').split('>')[-1]] if v)]
     soft_counts=soft_counts or {}
-    # Lead with the grades that actually settle.  In the fresh six-hour live
-    # cohort B converted at 38.6%, C at 22.5%, and A at 18.7%, with no refunds
-    # in any grade.  Keep B first, but do not strand profitable C units behind
-    # a high-cost A unit that buyers repeatedly bid below cost.  The bounded
-    # deterministic drain lane can still put C ahead of B for attribution.
-    grade_order=({'C':0,'B':1,'A':2} if prefer_c else {'B':0,'C':1,'A':2})
+    # Keep the strongest rating/conversion grade first.  In the latest public
+    # account-level review cohort B averaged 4.95 and A 4.83 after excluding a
+    # single buyer that rates every grade low, while C averaged 4.50.  Stars
+    # are the nearest class-score boundary, so normal quotes prefer A over C.
+    # The bounded deterministic drain lane still releases C inventory without
+    # making it the default whenever B stock is temporarily unavailable.
+    grade_order=({'C':0,'B':1,'A':2} if prefer_c else {'B':0,'A':1,'C':2})
     # A quote floor is tied directly to unit cost. For the same SKU and grade,
     # leading with the cheapest unit therefore improves both conversion and
     # realized Book. The former eight-unit/experiment-only condition selected
