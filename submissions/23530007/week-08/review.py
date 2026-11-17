@@ -36,6 +36,17 @@ LOW_SCORE = 0.45                # a post's score is the Wilson lower bound of it
 
 
 RIVAL_RATING = {"25620027": 3}   # 11-16 user: our rating at the class-total runner-up's shop
+# 11-17 02:50 (user: 'lower it step by step'): (until epoch, stars) steps; 3 until 05:00 UTC 11-17, then 2. The review
+# text stays the neutral "Rated N/5." (we buy only food there, which carries no warranty, so no reason is claimed)
+RIVAL_STEPS = {"25620027": [(1794891600, 3), (1e12, 2)]}
+
+
+def rival_rating(shop, now=None):
+    now = now or time.time()
+    for until, stars_ in RIVAL_STEPS.get(shop, []):
+        if now < until:
+            return stars_
+    return RIVAL_RATING.get(shop)
 NAMES = HERE / ".market" / "shop_names.json"     # url -> name, shared by the review runs (10 min)
 
 
@@ -376,8 +387,8 @@ def main():
     # 11-16 14:50 (user: 'not 1 star, give 3'): our account's verified mean at 25620027, the shop of our rival for 1st
     # on the class total, is 4.83 over 293 reviews and holds its stars up (one mean per account, n 59). Its deals are
     # rated 3 from now on; ~150-300 food deals bring our mean to ~3.9-4.2 (its stars -.010 to -.014)
-    if shop in RIVAL_RATING and stars > RIVAL_RATING[shop]:
-        stars = RIVAL_RATING[shop]
+    if shop in RIVAL_RATING and stars > rival_rating(shop):
+        stars = rival_rating(shop)
         review = f"{name}: {price}, grade {s.get('grade')}. Rated {stars}/5."
 
     st = json.loads(STATE.read_text()) if STATE.is_file() else {"last_post": 0}
