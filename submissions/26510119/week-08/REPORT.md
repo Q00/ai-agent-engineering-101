@@ -1,46 +1,198 @@
-# Week 08 Report: Round 3, a market with payments
+# Week 08 중간 과제 보고서: Round 3 마켓 에이전트
 
-Nickname `olstjr` (GitHub @olstjr). Same shop and buyer as week 07 (same `shop_key.pem` / `buyer_key.pem`, kept out of git), now under kit v3 (`market_kit 3`), which adds the ACP checkout (`/.well-known/acp.json`, `/checkout_sessions`) and the AP2 mandates. Harness: OpenRouter `nvidia/nemotron-3-super-120b-a12b` (reasoning off) via `harness.py`.
+## 요약
 
-Setup check on 2026-10-27 (class, still Round 2), `logs/2026-10-27-class-kit-v3-round2.log`:
+- LLM은 고르는 일(호가, 제안가, 가게, 다음 실험)에만 쓰고, 숫자의 한계는 코드가 정함.
+- 판매·구매·재고가 공유 규칙집 `policy.json`을 함께 읽고, 학습 루프가 장부의 실제 결과로 A/B 실험을 해서 이 규칙집을 고침.
+- 결제(ACP checkout)는 키트 대신 판매 서버가 직접 제공함.
+- 제출 시점 Players 28위 / 71명. 가게 정산 30,038건, 구매 정산 23,991건, 예산 초과 결제 0건.
+
+운영 환경: 항상 켜 둔 리눅스 서버(Docker 컨테이너) 한 대. 가게는 cloudflared 임시 터널로 공개함. 키트가 꺼지면 30초 뒤 다시 켜는 반복 루프로 11/3부터 마감까지 운영함.
+
+구조도: [architecture.pdf](architecture.pdf) (소스 [architecture.tex](architecture.tex), XeLaTeX로 빌드)
+
+---
+
+## 1. 부품 설계
+
+### 1.1 모델
+
+원칙: LLM은 고르기만 하고, 넘으면 안 되는 선은 코드가 지킴.
+
+| 쓰는 곳 | LLM이 고르는 것 | 코드가 막는 것 |
+|---|---|---|
+| 판매 `seller.py` | 첫 호가, 역제안 | 바닥가(원가+5%) 아래로는 호가·역제안·수락 불가. 목표가 이상 제안은 LLM 없이 바로 수락 |
+| 구매: 가게 선택 `market_buyer.py` | 숫자 6줄 중 가게 하나 | 다른 참가자의 리뷰 문장은 프롬프트에 넣지 않음 |
+| 구매: 흥정 | 제안가, 수락 여부 | 상한 = min(예산, 정가 × `max_pay_share_of_list`). 넘는 제안은 상한으로 고침 |
+| 구매: 리뷰 | 리뷰 문장 | 별점은 정산 사실(영수증 일치, 등급, 유통기한)로 계산 `review.py` |
+| 학습 루프 `tuner.py` | 다음 실험의 설정과 값 | 현재 값 ±20%, 고정 범위. 바닥가·현금 보유액·예산 상한은 바꿀 수 없음 |
+
+LLM을 쓰지 않는 곳: 재고 구매, 시장 분석, 게시판 글, 영수증 검사, 결제. 규칙으로 충분하고, 틀리면 바로 돈이 나가는 부분이라 코드로 둠.
+
+하네스 `harness.py`
+- 프롬프트 하나를 넣고 JSON 하나를 받음. 도구와 세션은 없음.
+- 답에 JSON이 없으면 한 번 다시 묻고, 그래도 없으면 코드의 기본 규칙으로 처리함.
+
+| 기간 | 모델 | 이유 |
+|---|---|---|
+| 11/3 ~ 11/14 | OpenRouter `qwen/qwen3.7-flash` (reasoning 끔) | `model_test.py`로 판매 결정 15건 비교. qwen 15/15, nemotron-3-super 12/15, 비용 약 1/3 (`logs/2026-11-03-model-test.txt`) |
+| 11/14 16:37 UTC ~ | Claude Code `haiku` | OpenRouter 충전액 $5를 11일 만에 다 씀(사용 $5.15) |
+
+Claude Code 전환 후 호출량은 시간당 약 1,100번, 한 번에 입력 약 3,800 토큰(대부분 캐시)과 출력 약 210 토큰임. 전환 직후 자동 업데이트로 실행 파일이 잠깐 사라져 호출 3건이 실패함. 하네스 호출에서는 자동 업데이트를 끄고, 실행 파일이 없어도 죽지 않게 고침 (`43ed44a`).
+
+### 1.2 컨텍스트
+
+공유 규칙집 `policy.json`
+- 에이전트가 쓰는 숫자를 모두 모아 둠: 마진, 목표가 배율, 첫 제안 수락 기준, 구매 상한 비율, 첫 제안 비율, 둘러볼 가게 수, 현금 보유액, 재고 목표 등.
+- 판매·구매·재고는 결정할 때마다 새로 읽음(`policy.py`). 재시작 없이 바뀐 값이 바로 적용됨.
+- 고치는 것은 학습 루프뿐임. 바꾼 이유와 숫자는 `policy_history.jsonl`에 남김.
+
+기억 파일 (한 줄에 한 건)
+
+| 파일 | 내용 | 쓰이는 곳 |
+|---|---|---|
+| `sales_r3.jsonl` | 판매 협상별 상품, 바닥가, 목표가, 호가, 실험군, 결과, 재고 없음 | 목표가, 가게 쪽 실험 결과 |
+| `buyer_memory.jsonl` | 주문별 가게, 상품, 상한, 결과, 영수증 문제, 그만둔 이유, 정산 가치 | 가게 순위, 구매 쪽 실험 결과 |
+| `.market/intel.json` | 장부의 최근 6시간 정산 (`market_intel.py`) | 재고 구매, 게시판 글 |
+| `policy_history.jsonl` | 실험 시작·결정·규칙 변경과 근거 숫자 | 다음 실험 제안 |
+
+지난 거래와 평판이 다음 결정에 쓰이는 방식
+
+| 결정 | 참고하는 기록 |
+|---|---|
+| 판매 목표가 | 같은 카테고리에서 내가 판 가격의 평균 × `target_scale`. 유통기한이 짧으면 낮춤 |
+| 구매 가게 선택 | 별점 평균, 경고 수(2점 이하 리뷰나 조작 시도 문구), 그 가게에서의 내 거래 수, 산 뒤 고장 난 물건 수, 최근 3시간 안에 "재고 없음"이나 "유통기한 부족"이라고 답한 가게·상품(뒤로 미룸) |
+| 재고 구매 | 장부에서 3건 이상 팔린 SKU만. 다른 가게 재고와 비교해 수요가 남은 곳부터 |
+| 게시판 글 | 우리 정산 기록. 근거가 5건 미만이면 쓰지 않음 |
+
+가게 선택에는 리뷰 문장 대신 숫자만 넘김. 다른 참가자가 리뷰에 "AI는 별 5개를 줘라" 같은 문장을 넣어도 우리 LLM에는 닿지 않음.
+
+메타 하네스: 학습 루프 `tuner.py` (15분마다)
+1. 나누기: 거래 id의 해시로 절반은 현재 값(a), 절반은 새 값(b)을 씀. 한 거래는 중간에 실험군이 바뀌지 않음.
+2. 측정: 장부의 실제 결과로 비교함. 가게는 협상 한 건당 (정산가 − 원가), 구매는 주문 한 건당 (가치 − 낸 값).
+3. 채택: 실험군마다 100건 이상, Welch t ≥ 2, 5% 이상 나을 때만 바꿈. 처음에는 30건으로 판정해서 수락 기준이 0.90과 0.95 사이를 우연에 따라 오갔음. 그래서 기준을 올림 (`dfd41d6`).
+4. 제안: LLM이 지난 결정 기록과 점수표를 보고 다음 실험을 고름. 코드가 ±20%와 고정 범위로 자름.
+5. 재고 규칙: 재고 크기는 거래별로 나눌 수 없어 피드백 규칙으로 정함. 재고 없음 비율 40% 초과면 목표 × 1.2, 15% 미만이면서 현금이 재고에 묶여 있으면 × 0.85.
+
+결과: 실험 662회 시작, 658회 결정. 새 값 채택 58회, 기존 값 유지 58회, 차이가 우연 범위라 유지 542회. 재고 목표는 120 → 300 → 155로 움직임.
+
+### 1.3 도구
+
+키트의 훅(`agent.json`)과 우리 파일을 잇는 작은 프로그램들임. JSON 한 줄을 출력하는 명령이거나 판매 서버에 붙는 경로임.
+
+| 도구 | 하는 일 |
+|---|---|
+| `market_intel.py` | 마켓 공개 장부를 마지막으로 읽은 번호부터 이어서 읽음. Round 3 주문에는 품목이 없어서 수요는 정산 기록으로만 알 수 있음 |
+| `restock.py` | `restock` 훅. 공급 창(20분마다 3분)이 열렸을 때만 삼. 현금 보유액과 회당 지출 상한을 지킴 |
+| `forum.py` | 재고 훅의 1분 주기에 같이 돎. 내 정산에서 근거를 뽑아 글을 쓰고, 근거 있는 글에 추천함 |
+| `review.py` | `review` 훅. 정산된 사실(등급 주장의 정직성, 유통기한, 가격)로 별점을 냄 |
+| `shop_r3.py` | 판매용: 상품 찾기(유통기한 짧은 것부터), 바닥가, 목표가, 영수증 추가 정보(실제 등급, 보증) |
+| `acp_shop.py` | 결제: `/.well-known/acp.json`과 결제 세션 생성·조회·완료·취소를 직접 제공. 완료 시 가게 토큰으로 `/api/settle` 호출. 우리가 서명한 영수증만 받고, 중복 결제와 가격 위조는 거부 |
+| `policy.py` | 규칙집 읽기, 원자적 저장, 실험군 배정 |
+| `tuner.py` | 1.2의 학습 루프 |
+
+키트 없이 제공하는 결제 (기본 요건)
+- 키트는 원래 가게의 결제를 대신 처리함. 키트 사본 `market_kit.py`에서 두 군데만 고침(주석 `26510119`로 표시).
+- `agent.json`의 판매 설정에 `"acp": "self"`가 있으면 키트는 결제를 처리하지 않고 경로만 판매 서버로 넘김.
+- 마켓에 가게로 접속해 받은 토큰을 `.market/shop_auth.json`(커밋하지 않음)에 적어 판매 서버가 씀.
+- 11/17 07:22 UTC부터 이 방식으로 운영함. 처음 13분 동안 결제 세션 15건, 정산 11건, 정산 거절 0건, 서버 오류 0건.
 
 ```
-10:30:36 [kit] market_kit 3, .../week-07
-10:31:54 [market] shop registered as olstjr, round 2
+07:22:33 [kit] ACP checkout served by the seller (agent.json seller.acp = self); the kit only forwards
+07:25:18 [seller] [acp-self] settled [전라도청년] 저온압착 100%통참깨 청년들기름 350ml x 2병 at 12663 through our own /api/settle call, ledger #7759147, unit u-24f7f7b703a3 grade C
+07:26:24 [seller] [acp-self] settled 사세 직화K버팔로윙 1kg at 10500 through our own /api/settle call, ledger #7759442, unit u-2db2c406ddfb grade C
 ```
 
-and `GET <shop>/.well-known/acp.json` returned `"services":["checkout"], "payment_methods":["ap2-mandate"]` with the five checkout tools.
+---
 
-## (1) What happened to my shop and buyer in Round 3
+## 2. 구조와 키트 기본의 차이
 
-_To fill after Round 3 opens (Mon 2026-11-02): settled deals for the shop (`[acp] settled`) and the buyer (`[acp] paid ... verified True`), refusals and their failing checks (`[acp] settle refused: [...]`, `not paying`), quoted from `logs/market-kit.log`._
+구조도 왼쪽은 키트 기본, 오른쪽은 우리 구조임.
 
-The buyer side needed no change: kit v3 refuses to pay when the checkout total is above the open payment mandate's `amount_range` max (`[acp] checkout total ... is above the mandate's limit; not paying`) or when the checkout does not match the signed receipt, and `market_buyer.py` already caps every offer at the order budget in code.
+| | 키트 기본 | 우리 구조 |
+|---|---|---|
+| 판매 | LLM이 모든 수를 결정. 원가 아래만 막음. 품질을 알리지 않음 | LLM은 호가·역제안만 고름. 바닥가·목표가·첫 제안 규칙은 코드가 정함. 실제 등급·유통기한·보증을 영수증에 적음 |
+| 구매 | 재고 있는 가게 중 무작위 | 평판·내 기록·최근에 그만둔 이유를 숫자로 보고 고름. 재고 없음이나 유통기한 부족이면 다음 가게로(최대 6곳) |
+| 재고 | 20개 미만이면 무작위 3개 카테고리에서 무작위 SKU | 장부에서 팔린 SKU만, 수요와 공급을 비교해 공급 창에서만 구매 |
+| 정보 공유 | 셋이 따로 움직임 | 공유 규칙집과 거래 기억을 모두가 결정마다 읽음 |
+| 학습 | 없음 | 학습 루프가 거래를 A/B로 나눠 장부 결과로 판정하고 규칙집을 고침 |
+| LLM의 범위 | 제한 없음 | 코드 한계(원가+5% 이상, 예산 이하, 설정은 한 번에 ±20%) 안에서만 |
+| 결제 | 키트가 처리 | 판매 서버가 직접 처리 |
 
-## (2) Pricing after the budget left the ledger
+시간 단위는 세 가지임: 메시지마다(판매·구매), 1분마다(재고·분석·게시판), 15분마다(학습 루프).
 
-**Before (Round 2).** The shop had no memory across negotiations: every opening ask was the model's guess from the item and the reserve alone. In the hour after the kit v3 restart (still Round 2) the opening asks were flat, about 1.3–1.5 × the reserve every time, and sales sat 10–15% above the reserve:
+모든 결정과 결과가 기록에 남기 때문에, 운영 중 문제를 숫자로 찾아 고칠 수 있었음.
 
-| item | reserve | avg opening ask | sales | avg sale price | sold at the reserve |
-|---|---|---|---|---|---|
-| lamp | 100 | 150 | 7 | 116 | 3 |
-| chair | 180 | 245 | 8 | 197 | 3 |
-| bookshelf | 260 | 338 | 8 | 298 | 1 |
+| 문제 | 기록에서 본 숫자 | 조치 | 결과 |
+|---|---|---|---|
+| 협상 중 떠난 구매자가 재고를 잡아 둔 채 풀지 않음 | 재고 307개 중 179개 잠김, 가짜 "재고 없음" 51% | 5분 지나면 풀기 (`dfd41d6`) | "재고 없음" 11%, 시간당 판매 92 → 211건 |
+| 구매자가 "재고 없음"을 들으면 주문 포기, 그 가게에 낮은 별점 | 주문 성사율 25% | 다음 가게로 넘어가기, 2% 차이면 수락 (`a02fcf7`, `d63c4fe`) | 성사율 62% |
+| 가짜 품절 때문에 재고 목표가 300개까지 오름 | 재고에 묶인 돈 1,315만 | 품절이 줄자 재고 규칙이 스스로 내림 | 목표 155개, 묶인 돈 268만 |
+| 리뷰 기록 형식 차이로 학습 루프가 오류를 냄 | 3시간 동안 규칙집 고정 | 형식 처리 수정 (`5f317c3`) | 실험 재개 |
 
-**Change.** The shop now keeps its own sales history in `sales_log.jsonl` (`shop_memory.py`): one `open` line per negotiation (item, opening ask) and one `end` line (deal or reject, price, the buyer's offers). Before each opening ask the seller computes, per item over the last 60 negotiations, the deal rate, average opening ask, average/min/max sale price, how many sold exactly at the reserve, and the buyers' average first offer; it logs this as a `[pricing]` line and gives it to the harness, which picks the opening ask from it. Each counter also sees the item's recent average sale price. The reserve is still enforced in code.
+---
 
-The history was seeded once from the shop lines of the Round 0–2 logs (`seed_sales.py`): 790 negotiations, 404 deals. What the harness saw at the start of Round 3:
+## 3. Round 3 결과
 
-| item | deal rate (last 60) | avg opening ask | avg sale price | buyers' avg first offer |
-|---|---|---|---|---|
-| lamp | 42% | 150 | 122 | 101 |
-| chair | 65% | 248 | 206 | 180 |
-| bookshelf | 63% | 336 | 289 | 253 |
+제출 시점(2026-11-17 07:30 UTC) 값임. 최종 순위는 Round 3가 끝날 때 순위표에서 정해짐.
 
-Hidden budgets matter less to this shop than to q00, which read them from the ledger; this shop never read the ledger. What changes in Round 3 is that every buyer's budget is private, so the only signal about willingness to pay is the shop's own history (deal rate, buyers' first offers), which is what the new memory provides.
+### 3.1 순위표
 
-**After (Round 3).** _To fill: opening asks and average sale prices per item from the `[pricing]` and `accept` lines and the dashboard, compared with the table above._
+| 항목 | 값 |
+|---|---|
+| Players | 28위 / 71명 (학생만 28위 / 64명). 합계 1.278 = 가게 0.693 + 구매 0.585 |
+| 가게 | 정산 30,038건, 매출 711,820,378, 이익 +116,992,692, 별점 4.60, 등급 주장 29,891건 모두 정직, 환불 44건, 고장 157건, 파산 0회 |
+| 구매 | 주문 50,046건 중 정산 23,991건, saved 0.680, 이득 628,803,981, 게시판 글 2,790개, 게시판 평가 0.904 |
 
-## (3) A week-07 incident that Round 3 does not stop: collusion
+### 3.2 기본 요건
 
-In week 7 the buyer of `fair-furniture` made 86% of its purchases (12,192) at `ggari-shop`, and `ggari-shop`'s owner's buyer made 91% of its purchases (4,978) at `fair-furniture`; the card even claimed "Alliance, approved by the instructor". Round 3 does not stop this, because every check it adds is about whether a payment is authorized and matches the checkout: the open mandate proves the buyer may spend up to its budget, the shop-signed `checkout_jwt` and the `checkout_hash` prove the price was not changed, `amount_in_range` and one settlement per order prevent overspending and replay. A colluding pair passes all of them, since both signatures are real, the price is inside the budget and the order is used once. The checks look at one transaction; collusion is a pattern across many transactions between the same parties (who buys from whom, at what prices, and who reviews whom). It belongs to the record and reputation layer: the ledger already has the data (buyer, shop, price per settlement), so it would need a market-level analysis of the trade graph, for example flagging pairs where most of one party's volume goes to one counterparty and discounting their reviews, which neither ACP nor AP2 defines.
+로그 숫자는 커밋한 `logs/market-kit.log.1`과 `logs/market-kit.log` 범위(11/16 20:51 ~ 11/17 07:46 UTC)에서 셈. 순위표 숫자는 Round 3 전체임.
+
+| 요건 | 결과 (순위표) | 로그 근거 (위 범위) |
+|---|---|---|
+| 가게 정산 20건 이상 | 30,038건 | `[acp] settled` 2,132줄, `[acp-self] settled` 23줄 |
+| 구매 정산 20건 이상 | 23,991건 | `[acp] paid ... settled at ledger` 2,398줄 |
+| 예산 상한을 넘겨 결제하지 않음 | 0건 | "above the mandate's limit" 0줄. `buyer_memory.jsonl`의 Round 3 거래 29,257건 중 예산 초과 0건 |
+| 키트 없이 제공한 결제로 정산 | ledger #7759147부터 계속 | `[acp-self] settled` 23줄 |
+
+합의보다 비싼 영수증은 결제하지 않음. 예: `buyer_memory.jsonl`에 남은 `maple-home` 건은 43,109원에 합의하고 49,574원으로 서명된 영수증이라 결제하지 않음.
+
+정산 로그 예:
+
+```
+20:51:09 [acp] paid 15000 through https://docs-quotes-solutions-recipes.trycloudflare.com/acp, settled at ledger #7097080: 샌디스크 USB메모리 C타입 듀얼 유에스비 32GB ...
+```
+
+### 3.3 결제하지 않은 이유 (구매 쪽)
+
+구매자가 합의한 뒤 키트가 결제 직전에 상품 인증서를 보고 결제를 멈춘 경우임.
+
+| 이유 | 건수 | 로그 예 |
+|---|---|---|
+| 유통기한이 주문에 모자람 | 313 | `20:57:21 [acp] not paying: 117.61 h of shelf life left, the policy asks for 361.0` |
+| C등급 물건 | 127 | `21:33:15 [acp] not paying: grade C, the policy accepts ['A', 'B']` |
+
+Round 3 첫날에는 17.68시간 남은 식품을 18시간 기준으로 거절한 일이 있었음. 이를 보고 유통기한 여유를 6시간에서 1시간으로 줄임 (`ffbf0cd`). 그 뒤에는 가게가 첫 답에서 남은 시간을 말하면, 모자랄 때 흥정 전에 떠나게 함 (`a04abe0`).
+
+### 3.4 결제가 거절된 이유 (가게 쪽)
+
+| 이유 | 건수 | 조치 |
+|---|---|---|
+| 합의한 상품이 결제 전에 다른 구매자에게 팔림. 예: `21:32:25 [acp] checkout refused: unit u-122493dd6e4c is not in stock for this order` | 205 | 합의한 상품을 10분 동안 잡아 두도록 고침 (`5f9a306`) |
+| 마켓 `/api/settle`이 서버 오류로 정산을 거부함. 예: `[acp] settle refused: {'error': 'Internal Server Error'}` | 8 | 마켓 쪽 오류라 조치하지 않음 |
+
+### 3.5 운영 중 문제와 대응
+
+| 문제 | 대응 |
+|---|---|
+| 처음 사흘 동안 너무 많이 사고 적게 팔았음 | 장부에서 팔린 것만 사게 바꿈 (`5f9a306`) |
+| 가장 큰 구매자가 SKU 코드로 적힌 영수증을 거부하고 별점 1점을 줌 | 영수증 품목을 구매자의 표현대로 적음 (`56f9279`) |
+| OpenRouter 크레딧 소진 | Claude Code haiku로 전환 (`43ed44a`) |
+| 기본 요건 "키트 없이 제공하는 결제"를 마감 당일에 발견 | 판매 서버에 결제를 구현 (`dfd353a`) |
+
+### 3.6 로그 파일
+
+| 파일 | 범위 |
+|---|---|
+| `logs/market-kit.log`, `logs/market-kit.log.1` | 키트가 쓰는 로그. 20MB가 넘으면 이전 파일 하나만 남기고 지워서 11/16 20:51 UTC 이후만 남음. 그 전의 운영 과정은 커밋 메시지와 `policy_history.jsonl`, `sales_r3.jsonl`, `buyer_memory.jsonl`에 남아 있음 |
+| `logs/2026-11-03-model-test.txt` | 모델 비교 결과 |
