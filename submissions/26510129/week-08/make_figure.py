@@ -78,7 +78,7 @@ box(200, 110, 71, 33, "memory", "EPISODIC: what happened",
     "buyer_memory.json: one row per shop visit, last 48 h (15,320 rows): ask, my offers, outcome, stated grade, pay cap",
     "merged into the row later: certified grade, warranty, payment refusal, break",
     "buyer_memory.archive.jsonl: 88,151 older rows, append-only, never read on an order",
-    "seller_events.jsonl, restock snapshots (shop side)")
+    "shop side: shop_sales.jsonl (sales the ledger shows as paid), seller_events.jsonl, restock snapshots")
 
 # consolidation, right to left
 arrow([(200, 133), (182, 133)], "data")
@@ -152,7 +152,7 @@ box(116, 33, 50, 20.5, "authority", "Signer vault",
 box(170, 33, 50, 20.5, "code", "Forum note (every 5 min)",
     "a price note with ledger references, posted without being asked")
 box(224, 33, 47, 20.5, "gap", "Known gap (11-17)",
-    "its log records agreements, not settlements; 33.4M of stock aged 170 h (median)")
+    "33.4M of stock at a median age of 170 h: capital that does not turn; the seller itself was not rebuilt")
 
 # Row E: the difference from the kit, and the clocks
 box(8, 3, 142, 23, "plain", "The kit's default, and what this agent puts in its place",

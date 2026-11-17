@@ -81,7 +81,7 @@
 \draw[memory] (80,110) rectangle (182,143);
 \node[txt, anchor=north west, text width=101.6mm] at (81.2,141.8) {{\footnotesize\bfseries SEMANTIC: what the log adds up to (files a person can open)}\\ profiles.json, 75 shops: how often a visit ends in a deal, what a deal there\\ scores under the rule in force, the share of its ask where it accepts (YAHO1212\\ 1.00, psyoung82 0.83, ddolcom 0.70), warranty share, steering and bad deals\\[0.7mm] my running score: 0.7305 from 16,341 remembered deals (the board: 0.7346)\\[0.7mm] rulebook.json: the scoring formula as the rules page states it, and the lines\\ that changed\\[0.7mm] ledger\_stats.json, category\_pressure.json: what the market paid in 24 h; how my\\ shop's categories close};
 \draw[memory] (200,110) rectangle (271,143);
-\node[txt, anchor=north west, text width=70.6mm] at (201.2,141.8) {{\footnotesize\bfseries EPISODIC: what happened}\\ buyer\_memory.json: one row per shop visit, last 48 h\\ (15,320 rows): ask, my offers, outcome, stated grade,\\ pay cap\\[0.7mm] merged into the row later: certified grade, warranty,\\ payment refusal, break\\[0.7mm] buyer\_memory.archive.jsonl: 88,151 older rows, append-\\ only, never read on an order\\[0.7mm] seller\_events.jsonl, restock snapshots (shop side)};
+\node[txt, anchor=north west, text width=70.6mm] at (201.2,141.8) {{\footnotesize\bfseries EPISODIC: what happened}\\ buyer\_memory.json: one row per shop visit, last 48 h\\ (15,320 rows): ask, my offers, outcome, stated grade,\\ pay cap\\[0.7mm] merged into the row later: certified grade, warranty,\\ payment refusal, break\\[0.7mm] buyer\_memory.archive.jsonl: 88,151 older rows, append-\\ only, never read on an order\\[0.7mm] shop side: shop\_sales.jsonl (sales the ledger shows as\\ paid), seller\_events.jsonl, restock snapshots};
 \draw[model] (63,130.5) rectangle (79,142);
 \node[txt, anchor=north west, text width=15.6mm] at (64.2,140.8) {{\footnotesize\bfseries Opus}\\ once a\\ night};
 \draw[code] (8,68) rectangle (50,90);
@@ -105,7 +105,7 @@
 \draw[code] (170,33) rectangle (220,53.5);
 \node[txt, anchor=north west, text width=49.6mm] at (171.2,52.3) {{\footnotesize\bfseries Forum note (every 5 min)}\\ a price note with ledger references,\\ posted without being asked};
 \draw[gap] (224,33) rectangle (271,53.5);
-\node[txt, anchor=north west, text width=46.6mm] at (225.2,52.3) {{\footnotesize\bfseries Known gap (11-17)}\\ its log records agreements, not\\ settlements; 33.4M of stock aged\\ 170 h (median)};
+\node[txt, anchor=north west, text width=46.6mm] at (225.2,52.3) {{\footnotesize\bfseries Known gap (11-17)}\\ 33.4M of stock at a median age of\\ 170 h: capital that does not turn;\\ the seller itself was not rebuilt};
 \draw[plain] (8,3) rectangle (150,26);
 \node[txt, anchor=north west, text width=141.6mm] at (9.2,24.8) {{\footnotesize\bfseries The kit's default, and what this agent puts in its place}\\ no memory between orders $\rightarrow$ an order log, profiles consolidated from it, and lessons\\[0.7mm] the model decides every move $\rightarrow$ code decides; Haiku where a shop moves, Opus once a night with its own history\\[0.7mm] no notion of the score $\rightarrow$ one score function whose formula comes from the rules page; a changed page is\\ reported\\[0.7mm] restock: random SKUs when stock runs low $\rightarrow$ ledger revenue, caps on capital, a horizon rule for the last day};
 \draw[plain] (156,3) rectangle (271,26);
