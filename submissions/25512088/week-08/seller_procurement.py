@@ -519,6 +519,22 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
                 row.get('own_gross_total',0)>0 and
                 own_profitable/own_sales_total>=
                     policy.get('min_own_profitable_goods_share',.70))
+            # Mature high-value cohorts use the dedicated restock threshold.
+            # Without this exception, lowering graduation to three profitable
+            # sales created a dead zone: the guarded canary had ended, while
+            # the generic 60% goods-A gate rejected the configured 55%
+            # high-value restock rule before it could be evaluated below.
+            strongly_proven_high_value_grade_ready=(
+                high_value_grade_guard and
+                own_sales_total>=policy.get(
+                    'strongly_proven_high_value_min_own_sales',math.inf) and
+                isinstance(local_gross,(int,float)) and local_gross>0 and
+                own_profitable/max(1,own_sales_total)>=policy.get(
+                    'strongly_proven_high_value_min_profitable_share',1.1) and
+                row.get('dominant_grade_samples',0)>=policy.get(
+                    'min_high_value_restock_grade_samples',min_samples) and
+                row.get('dominant_grade_profit_probability',0)>=policy.get(
+                    'min_high_value_restock_grade_profit_probability',min_probability))
             weak_grade_economics=(
                 row.get('dominant_grade_samples',0)<min_samples or
                 row.get('dominant_grade_profit_probability',0)<min_probability)
@@ -574,6 +590,7 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
             # the same minimum grade-economics gate before procurement.
             if (weak_grade_economics and not relaxed_canary_grade_ready and
                     not guarded_canary_restock_ready and
+                    not strongly_proven_high_value_grade_ready and
                     not local_grade_proven and
                     (high_value_grade_guard or not own_profit_proven)):
                 continue

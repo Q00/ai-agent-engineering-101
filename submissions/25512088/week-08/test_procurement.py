@@ -812,6 +812,38 @@ class PurchaseTests(unittest.TestCase):
   plan=allocation_plan([high],{'units':[],'balance':5000000},5000000,
                        aggression=1,policy=policy)
   self.assertEqual([(row['sku'],row['qty']) for row in plan],[('high',2)])
+ def test_graduated_high_value_uses_dedicated_grade_threshold(self):
+  high=dict(sku='high',kind='goods',expected_net=50000,score=100000,
+            upper_cost=600000,sales_1h=4,sales_6h=20,
+            distinct_buyers_6h=8,estimated_sale_likelihood=.5,
+            dominant_grade_samples=10,dominant_grade_profit_probability=.56,
+            own_sales_total=3,own_sales_1h=2,own_profitable_sales=3,
+            own_gross_total=60000,own_dominant_grade_sales=3,
+            own_dominant_grade_profitable=3,own_dominant_grade_gross=60000,
+            own_dominant_grade_refunds=0,own_a_quotes=3,
+            own_a_conversion_rate=1.0,own_quotes=3,
+            own_conversion_rate=1.0)
+  policy={'max_units_per_sku':3,'max_high_value_units_per_sku':2,
+          'max_strongly_proven_high_value_units_per_sku':2,
+          'strongly_proven_high_value_min_own_sales':3,
+          'strongly_proven_high_value_min_profitable_share':.8,
+          'strongly_proven_high_value_min_units_when_sold_out':2,
+          'high_value_lane_min_unit_cost':500000,
+          'high_value_window_limit':4,'high_value_window_count':0,
+          'min_goods_a_profit_samples':3,
+          'min_goods_a_profit_probability':.60,
+          'min_high_value_restock_grade_samples':3,
+          'min_high_value_restock_grade_profit_probability':.55,
+          'max_sku_capital_share':1,'max_proven_sku_capital_share':1,
+          'min_own_profitable_goods_sales':3,
+          'min_own_profitable_goods_share':.7}
+  plan=allocation_plan([high],{'units':[],'balance':3000000},3000000,
+                       aggression=1,policy=policy)
+  self.assertEqual([(row['sku'],row['qty']) for row in plan],[('high',2)])
+  high['dominant_grade_profit_probability']=.54
+  self.assertEqual(allocation_plan(
+      [high],{'units':[],'balance':3000000},3000000,
+      aggression=1,policy=policy),[])
  def test_sold_out_proven_sku_scales_during_breadth_expansion(self):
   ranked=[dict(sku='proven',kind='goods',expected_net=10000,score=100,upper_cost=100,
                sales_1h=12,sales_6h=24,own_sales_1h=2,own_sales_total=2,
