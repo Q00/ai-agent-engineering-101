@@ -19,6 +19,9 @@ import time
 from pathlib import Path
 
 FORUM_GAP_S = 330
+# 11/06 (Patch 3.5): dislikes can be bought (paid from the shop's cash, lowering Book). Our agent never votes and never
+# buys dislikes: it gains our score nothing, costs Book, and bombing other authors is not how we want to compete.
+ALLOW_VOTES = False
 PAID = re.compile(r"\[acp\] paid (\d+) through (\S+), settled at ledger #(\d+): (.+?), grade (\w)\b")
 OWN_SHOPS = {"ggari-shop"}
 
@@ -138,6 +141,7 @@ def maybe_post(md: Path = Path(".market"), log: Path = Path("logs/market-kit.log
     post = compose(recent_deals(md, log), state)
     if post is None:
         return None
+    assert "vote" not in post or ALLOW_VOTES, "this agent does not vote"
     with box.open("a", encoding="utf-8") as f:
         f.write(json.dumps(post, ensure_ascii=False) + "\n")
     state["posted"] = (state.get("posted", []) + [r for r in post["refs"]])[-500:]

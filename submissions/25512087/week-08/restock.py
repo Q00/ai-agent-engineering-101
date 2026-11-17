@@ -7,7 +7,8 @@ be in many categories with a few units each, cheap goods first (no expiry; stora
 sold (a unit gone from inventory without expiring = sold). Position limits, as risk control:
 - never spend below CASH_FLOOR of the starting capital (no bankruptcy: its money counts against profit);
 - at most PER_SKU_CAP of the starting capital in one SKU, and OPENING_BUDGET in total during the opening;
-- no new stock in the last LAST_BUY_HOURS before the round ends (what is left at the end is a loss).
+- no new stock in the last LAST_BUY_HOURS before the round ends (11/06: 12 h; unsold stock now counts at cost);
+- no SKU whose market surge factor is above SURGE_MAX (11/06).
 Fix 3 (11/02): what sells. demand.json has no weights, so the market's own ledger is the demand signal: every
 `settle` entry names the SKU that sold. Each run reads the new ledger entries, adds them to a decaying count per
 SKU and per category (half-life HOT_HALF_LIFE_H), then
@@ -30,12 +31,20 @@ TARGET_CATEGORIES = 60     # coverage phase ends when this many categories are i
 EST_COST = 0.65            # estimated cost / list price before we know (grade A 55-75 %)
 LINES_PER_RUN = 10         # the kit buys at most 10 lines per run
 ROUND_END = 1794927599     # 2026-11-17 23:59:59 KST
-LAST_BUY_HOURS = 36
+LAST_BUY_HOURS = 12        # 11/06 (Patch 3.3): stock left at the end counts at cost in Book, so buy until 12 h before
+SURGE_MAX = 1.03           # 11/06: skip a SKU when the market's surge factor makes it more than 3 % dearer
 HOT_HALF_LIFE_H = 6.0      # fix 3: a sale seen 6 h ago counts half
 HOT_LINES = 3              # fix 3: market hot SKUs bought per run
 HOT_QTY = 3                # 11/04: units per hot market SKU (goods; food buys 1)
 REORDER_MULT = 1.5         # 11/04: keep REORDER_MULT x (our recent sales of a SKU, decayed) in stock
 FOOD_MAX = 4               # 11/04: never hold more than this many units of one food SKU (it spoils)
+HIGH_TICKET = 200_000      # 11/04 (2): a SKU at or above this list price is bought 1-2 units at a time
+STOCK_HOURS = 3.0          # 11/05: stock at cost may not exceed STOCK_HOURS x our cost of goods sold per hour
+COGS_WINDOW_H = 6.0        # 11/05: the selling rate is measured over our sales of the last 6 h
+COGS_MIN_H = 0.5           # 11/05: with less history than this, no total cap yet
+STOCK_FLOOR_SHARE = 0.0    # 11/06 fix: the cap never falls below this share of the shop's cash base (0 = off in code;
+                           # policy.json sets it). After the 11/05 outage the 6 h sales history was near empty, the cap
+                           # fell to 6 M against 16 M held, restock stopped, food ran out and sales fell further.
 MARKET = "https://market.ourolabs.ai"
 
 
@@ -129,11 +138,15 @@ def plan(inv: dict, demand: list, catalog: dict, memory: dict, now: float | None
     # what sold since the last run: units that left the inventory before expiring
     present = {u["unit"]: u["sku"] for u in units}
     sold = dict(memory.get("sold", {}))
+    seen_cost = memory.get("seen_cost") or {}
+    cogs = [x for x in (memory.get("cogs") or []) if now - x[0] <= COGS_WINDOW_H * 3600]   # [(ts, cost)] of our sales
     for unit, sku in memory.get("seen", {}).items():
         if unit not in present:
             gone = next((u for u in memory.get("expiring", []) if u == unit), None)
             if gone is None:
                 sold[sku] = sold.get(sku, 0) + 1
+                if unit in seen_cost:
+                    cogs.append([now, float(seen_cost[unit])])
     expiring = [u["unit"] for u in units if u.get("expires_at") and u["expires_at"] - now < 600]
     hot = update_hot(memory, settles or [], catalog, now, order_cats)
     k = 0.5 ** (max(0.0, now - float(memory.get("own_ts") or now)) / 3600 / HOT_HALF_LIFE_H)
@@ -144,28 +157,46 @@ def plan(inv: dict, demand: list, catalog: dict, memory: dict, now: float | None
         new = n - (memory.get("sold") or {}).get(sku, 0)
         if new > 0:
             own[sku] = own.get(sku, 0) + new
+    since = float(memory.get("cogs_since") or now)
     memory = {"seen": present, "sold": sold, "expiring": expiring, "hot": hot, "own": own, "own_ts": now,
+              "seen_cost": {u["unit"]: float(u.get("cost") or 0) for u in units}, "cogs": cogs, "cogs_since": since,
               "ledger_seq": memory.get("ledger_seq"), "orders_line": memory.get("orders_line", 0)}
     if inv.get("round", 0) < 3 or now > ROUND_END - LAST_BUY_HOURS * 3600:
         return [], memory
     spendable = balance - CASH_FLOOR * start
     if spendable <= 0:
         return [], memory
+    # 11/04 (2): caps follow what the shop has now (balance), not the 5 M it started with, so profit is reinvested.
+    # The cash floor stays on the start: CASH_FLOOR x 5 M is never spent.
+    base = max(start, balance)
     held_value = sum(float(u.get("cost") or 0) for u in units)
+    # 11/05 (approved): total stock follows the selling rate. Stock at cost may not exceed STOCK_HOURS x our cost of
+    # goods sold per hour (last COGS_WINDOW_H hours), so stock shrinks at night and grows when sales pick up.
+    hist_h = min(COGS_WINDOW_H, (now - since) / 3600)
+    if hist_h >= COGS_MIN_H:
+        cap = max(STOCK_HOURS * sum(c for _, c in cogs) / hist_h, STOCK_FLOOR_SHARE * base)
+        memory["stock_cap"] = round(cap)
+        spendable = min(spendable, cap - held_value)
+        if spendable <= 0:
+            return [], memory
     by_sku: dict[str, float] = {}
     for u in units:
         by_sku[u["sku"]] = by_sku.get(u["sku"], 0) + float(u.get("cost") or 0)
     in_stock_cats = {u.get("category") for u in units}
     buy: list[dict] = []
 
+    surge = {x.get("sku"): float(x.get("factor") or 1) for x in (inv.get("surge") or [])}
+
     def add(sku: str, qty: int) -> None:
         nonlocal spendable
         price = float(catalog.get(sku, {}).get("list_price") or 0)
         if price <= 0 or qty < 1 or price > MAX_LIST_PRICE:
             return
-        est = price * EST_COST
-        room = PER_SKU_CAP * start - by_sku.get(sku, 0)
-        qty = min(qty, int(room // est), int(spendable // est), 20)
+        if surge.get(sku, 1.0) > SURGE_MAX:             # 11/06: crowded product, cost already up (thin A margins)
+            return
+        est = price * EST_COST * surge.get(sku, 1.0)
+        room = PER_SKU_CAP * base - by_sku.get(sku, 0)
+        qty = min(qty, int(room // est), int(spendable // est), 20, 2 if price >= HIGH_TICKET else 20)
         if qty >= 1:
             buy.append({"sku": sku, "qty": qty})
             spendable -= qty * est
@@ -185,16 +216,19 @@ def plan(inv: dict, demand: list, catalog: dict, memory: dict, now: float | None
     # 1b. momentum (fix 3): the market's hot SKUs we do not hold, hottest first
     held = {u["sku"] for u in units}
     n0 = len(buy)
-    for sku, n in sorted(hot["sku"].items(), key=lambda kv: (-kv[1], kv[0])):
+    lp = lambda sku: float((catalog.get(sku) or {}).get("list_price") or 0)
+    for sku, n in sorted(hot["sku"].items(), key=lambda kv: (-kv[1] * lp(kv[0]), kv[0])):   # 11/04 (2): sales x price
         if len(buy) - n0 >= HOT_LINES or len(buy) >= LINES_PER_RUN:
             break
         if n >= 1 and sku not in held and sku not in {b["sku"] for b in buy}:
             add(sku, 1 if (catalog.get(sku) or {}).get("kind") == "food" else HOT_QTY)
     # 2. coverage: categories not in stock, hottest first (fix 3), then cheap goods first, while the opening budget lasts
-    if len(in_stock_cats) < TARGET_CATEGORIES and held_value < OPENING_BUDGET * start:
-        cats = sorted((d for d in demand if d.get("category") not in in_stock_cats),
-                      key=lambda d: (-hot["cat"].get(d.get("category"), 0), d.get("kind") == "food",
-                                     float(d.get("median_price") or 0)))
+    if len(in_stock_cats) < TARGET_CATEGORIES and held_value < OPENING_BUDGET * base:
+        # 11/04 (2): expected profit first: (demand seen + a small prior) x the category's median price, food halved
+        # (it spoils); before, cheap categories came first and big-ticket ones (mattresses, sofas) never did.
+        score = lambda d: ((hot["cat"].get(d.get("category"), 0) + 0.2) * float(d.get("median_price") or 0)
+                           * (0.5 if d.get("kind") == "food" else 1.0))
+        cats = sorted((d for d in demand if d.get("category") not in in_stock_cats), key=lambda d: -score(d))
         for d in cats:
             if len(buy) >= LINES_PER_RUN:
                 break
@@ -203,10 +237,13 @@ def plan(inv: dict, demand: list, catalog: dict, memory: dict, now: float | None
                 continue
             hot_skus = [s for s in skus if hot["sku"].get(s, 0) >= 1]
             if hot_skus:                                   # a SKU of this category that sold on the market
-                pick = max(hot_skus, key=lambda s: (hot["sku"][s], s))
-            else:
-                skus.sort(key=lambda s: float(catalog[s].get("list_price") or 0))
-                pick = rng.choice(skus[: max(1, len(skus) // 2)])
+                pick = max(hot_skus, key=lambda s: (hot["sku"][s] * lp(s), s))
+            else:                                          # 11/04 (2): the upper-middle of the affordable prices
+                fit = sorted((s for s in skus if 0 < lp(s) * EST_COST <= PER_SKU_CAP * base and lp(s) <= MAX_LIST_PRICE),
+                             key=lp)
+                if not fit:
+                    continue
+                pick = rng.choice(fit[len(fit) // 2: max(len(fit) // 2 + 1, len(fit) * 9 // 10)])
             if pick in {b["sku"] for b in buy}:
                 continue
             add(pick, 2 if d.get("kind") != "food" else 1)

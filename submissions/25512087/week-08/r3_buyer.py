@@ -100,6 +100,33 @@ def shortlist(shops: list[dict], order: dict, catalog: dict) -> list[dict]:
             and math.ceil(EST_PRICE * p["_pick"]["value"]) <= budget] or picked
 
 
+DISCOUNT_SHOPS = 3        # 11/06 (Patch 3.5, Saved): hand choose_shop only the shops that sell cheapest to us
+UNKNOWN_SHARE = 0.70      # a shop we have no deal with yet is assumed to sell at 70 % of list
+
+
+def shop_shares(memories: list[dict], last: int = 3000) -> dict[str, float]:
+    """11/06: what each shop made us pay, as the median share of list price, over our Round 3 deals.
+    Buyer ALL now scores Saved (the average share of list price kept per deal), so the shop's price level matters
+    more than how much money the deal is worth."""
+    by: dict[str, list[float]] = {}
+    for m in memories[-last:]:
+        if m.get("round") == 3 and m.get("outcome") == "deal" and m.get("price") and m.get("value"):
+            by.setdefault(str(m.get("shop")), []).append(float(m["price"]) / float(m["value"]))
+    out = {}
+    for shop, v in by.items():
+        v.sort()
+        out[shop] = v[len(v) // 2]
+    return out
+
+
+def cheapest_shops(cands: list[dict], memories: list[dict], k: int = DISCOUNT_SHOPS) -> list[dict]:
+    """The k candidates with the lowest learned price share (unknown shops count as UNKNOWN_SHARE, so new shops
+    still get tried). choose_shop then applies trust, blacklists and exploration among them."""
+    shares = shop_shares(memories)
+    ranked = sorted(cands, key=lambda c: (shares.get(str(c.get("name")), UNKNOWN_SHARE), str(c.get("name"))))
+    return ranked[:max(1, k)]
+
+
 STOCK_MISS = re.compile(r"none of that|no matching|not in stock|out of stock|unreserved|no stock|sold out|재고", re.I)
 
 

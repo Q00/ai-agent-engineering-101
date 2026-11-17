@@ -13,6 +13,10 @@ from unittest import mock
 
 import restock
 import seller_r3 as s
+import tuning
+
+# 11/05: tests run on the code's defaults, never on the live improve/policy.json the loop tunes
+tuning.POLICY_FILE = Path(__file__).resolve().parent / "improve" / "no-policy-in-tests.json"
 
 UNIT = {"unit": "u1", "sku": "G00001", "name": "포기김치 10kg", "category": "식품>김치", "list_price": 50000,
         "kind": "food", "cost": 30000, "grade": "A", "supplied_at": 1, "expires_at": time.time() + 40 * 3600}

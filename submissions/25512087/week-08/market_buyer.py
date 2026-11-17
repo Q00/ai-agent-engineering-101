@@ -667,6 +667,8 @@ def run_r3(shops: list[dict[str, Any]], order: dict, args: argparse.Namespace, m
                   f"{r3_buyer.SHELF_STRIKES}+ times", file=sys.stderr, flush=True)
         shops = kept
     cands = shortlist(shops, order, catalog)
+    if len(cands) > r3_buyer.DISCOUNT_SHOPS:            # 11/06: Saved — prefer the shops that sell cheapest to us
+        cands = r3_buyer.cheapest_shops(cands, memories)
     if not cands:
         print(f"[r3] no listed shop stocks a SKU of {clean(args.item, 60)}", file=sys.stderr, flush=True)
         print(json.dumps({"shop": "", "receipt": None}, ensure_ascii=True))
