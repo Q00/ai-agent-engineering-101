@@ -21,6 +21,10 @@ PARAMS = {   # name: (default, low, high)
     # the ask can rise is a close-rate question, so the arm split and the markup on the market price are the tuner's.
     "seller_volume_share": (0.60, 0.30, 0.80),    # seller: share of goods opens priced on the volume arm (food: +0.15)
     "seller_markup": (1.00, 0.95, 1.15),          # seller: multiplies the market-price target on both arms
+    # 11-17: the buyer's price limits are no longer shares of the list price (0.70 and 0.64, written for the patch 3.4
+    # score) but distances from its own running score under whatever rule is in force (objective.py, profiles.py):
+    "buyer_kept_slack": (0.02, 0.00, 0.15),       # buyer: pays when a deal's estimated score >= my average - this
+    "buyer_quick_gain": (0.12, 0.05, 0.25),       # buyer: takes an ask at once when its score >= my average + this
 }
 DEFAULTS = {name: spec[0] for name, spec in PARAMS.items()}
 

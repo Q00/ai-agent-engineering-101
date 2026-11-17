@@ -16,6 +16,7 @@ from pathlib import Path
 import forum_post
 import ledger
 import round_clock
+import rulebook
 
 
 MAX_LINES = 10               # the kit buys at most 10 lines per run
@@ -297,6 +298,10 @@ def main():
     memory_path = state / "restock_memory.json"
     memory = update_memory(read_json(memory_path, {}), inv.get("units") or [])
     stats = ledger.refresh(state, catalog)   # one ledger call per run; the seller reads the file this writes
+    try:
+        rulebook.refresh(state)   # the rules page, at most every 30 min: patch 3.6 changed the score and went unread 5 days
+    except Exception as e:        # never let the rules check stop the restock
+        print(f"[rulebook] check failed: {type(e).__name__}: {str(e)[:100]}", flush=True)
     pressure = write_pressure(state, catalog)   # and this one: buyers per unit by category, for the seller's markup
     try:
         posted = forum_post.maybe_market_post(state, catalog)   # the pro-active half of the forum: a price note

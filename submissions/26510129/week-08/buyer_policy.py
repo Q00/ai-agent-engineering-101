@@ -80,10 +80,15 @@ def item_reference(memory, item, recent=20, fallback=None):
     return int(round(fallback if fallback is not None else DEFAULT_REFERENCE.get(item, 100)))
 
 
-def blacklisted_names(memory):
+def blacklisted_names(memory, profiles=None):
     """Shops not to visit: one steering message is enough; dishonesty (a receipt that did not match, a false grade
     claim, goods that broke with no warranty) must be at least two rows and a tenth of the shop's deals. 11-05: one
-    mismatched row - my own category-vs-SKU bug - had blacklisted inextro (397 deals) and psyoung82 (570) for good."""
+    mismatched row - my own category-vs-SKU bug - had blacklisted inextro (397 deals) and psyoung82 (570) for good.
+    With `profiles` (profiles.py: lifetime counters plus the recent rows) the same rule reads the consolidated
+    counts, so a shop that steered a week ago stays out after its rows have moved to the archive."""
+    if profiles:
+        return {name for name, p in profiles.items()
+                if p.get("steer") or (p.get("bad", 0) >= 2 and p["bad"] >= 0.1 * (p["bad"] + p.get("clean_deals", 0)))}
     deals, bad, manip = Counter(), Counter(), set()
     for row in memory:
         shop = row.get("shop")
@@ -103,8 +108,11 @@ def _public_trust(shop):
     return _clamp((sum(stars) / len(stars)) / 5) if stars else 0.60
 
 
-def warranty_share(memory, shop_name):
-    """Of this shop's settled goods I bought, the share that came with a warranty (any hours). None without data."""
+def warranty_share(memory, shop_name, profiles=None):
+    """Of this shop's settled goods I bought, the share that came with a warranty (any hours). None without data.
+    With `profiles` the consolidated share is read (archived rows included)."""
+    if profiles is not None:
+        return (profiles.get(shop_name) or {}).get("warranty")
     rows = [r for r in memory if r.get("shop") == shop_name and r.get("settled") and r.get("warranty_hours") is not None
             and r.get("grade") in ("A", "B", "C") and not r.get("value") == 0 and (r.get("list_price") or 0) >= 50_000]
     if len(rows) < 3:
@@ -112,7 +120,7 @@ def warranty_share(memory, shop_name):
     return sum(1 for r in rows if (r.get("warranty_hours") or 0) > 0) / len(rows)
 
 
-def evidence(shop, memory, item, reference=None, available=0, prefer_warranty=False):
+def evidence(shop, memory, item, reference=None, available=0, prefer_warranty=False, profiles=None):
     """Normalized, explainable features for one shop and one item. `available` is how many units of the ordered
     category the shop lists right now: 11-05 00:30, 715 of 1,446 visits in 6 h found the listed unit already gone,
     and a shop with five units is less likely to be empty by the time I ask than one with one. `prefer_warranty`
@@ -155,15 +163,22 @@ def evidence(shop, memory, item, reference=None, available=0, prefer_warranty=Fa
     recent_visits = sum(1 for row in recent if row.get("shop") == shop.get("name") and row.get("outcome") not in ("no_stock", "stale"))
     concentration = _clamp(recent_visits / MAX_VISITS_PER_WINDOW)
     availability = _clamp(min(available, 5) / 5)
-    warranty = warranty_share(memory, shop.get("name")) if prefer_warranty else None
+    warranty = warranty_share(memory, shop.get("name"), profiles) if prefer_warranty else None
     # the shop's price level on the public ledger (settled / list, 24 h, set by market_buyer): a shop at 0.55 earns
     # the full 0.25, one at 0.80 nothing. 11-10: the board ranks buyers by the surplus ratio, the cheapest shops
     # settle at 0.56-0.60 of list and the top buyers live there; my favourite settled at 0.70.
     # 11-11 17:30: at the same shops the top buyers pay what I pay (Kiro729: they 0.57-0.61, I 0.62); they buy 50-80% at
     # shops settling under 0.62 of list, I bought 29%. Cheapness now outweighs the history terms: 0.54 of list earns
     # the full 0.45, 0.74 nothing. A warranty shop earns 0.25 for any goods order (a break is -1 whatever the price).
-    ratio = shop.get("_price_ratio")
-    cheapness = _clamp((0.74 - ratio) / 0.20) if _number(ratio) else 0.0
+    # 11-17: what a shop is worth is what a deal there scores under the rule in force (objective.py), read from my
+    # own settled deals in the shop's profile and measured against my running average: at the average 0.5, 0.15
+    # above it the full weight. The ledger's price level against list (below) stands in for a shop without a
+    # profile - under patch 3.6 a low price against list is a grade C unit as often as a thin margin.
+    ratio, kept, base = shop.get("_price_ratio"), shop.get("_kept"), shop.get("_kept_base")
+    if _number(kept) and _number(base):
+        cheapness = _clamp(0.5 + (kept - base) / 0.30)
+    else:
+        cheapness = _clamp((0.74 - ratio) / 0.20) if _number(ratio) else 0.0
     score = (0.35 * success + 0.25 * integrity + 0.20 * value + 0.20 * exploration - 0.20 * concentration
              + 0.10 * availability + 0.45 * cheapness + (0.25 * warranty if warranty is not None else 0.0))
     return {
@@ -172,6 +187,7 @@ def evidence(shop, memory, item, reference=None, available=0, prefer_warranty=Fa
         "bad": len(bad),
         "available": available,
         "price_ratio": round(ratio, 3) if _number(ratio) else None,
+        "kept": round(kept, 3) if _number(kept) else None,
         "warranty": round(warranty, 2) if warranty is not None else None,
         "success": round(success, 4),
         "integrity": round(integrity, 4),
@@ -189,23 +205,24 @@ def units_listed(shop):
     return sum(int(o.get("qty") or 0) for o in (shop.get("_eligible_offers") or shop.get("offers") or []))
 
 
-def rank_shops(shops, memory, item, reference=None, prefer_warranty=False):
+def rank_shops(shops, memory, item, reference=None, prefer_warranty=False, profiles=None):
     """Rank safe shops; enforce rolling concentration only when alternatives exist."""
-    bad = blacklisted_names(memory)
+    bad = blacklisted_names(memory, profiles)
     safe = [shop for shop in shops if shop.get("name") not in bad]
     if not safe:  # do not make a non-empty registry unusable; the auditor still checks the result
         safe = list(shops)
     reference = reference or item_reference(memory, item)
-    ranked = [(shop, evidence(shop, memory, item, reference, units_listed(shop), prefer_warranty)) for shop in safe]
+    ranked = [(shop, evidence(shop, memory, item, reference, units_listed(shop), prefer_warranty, profiles))
+              for shop in safe]
     under_cap = [pair for pair in ranked if pair[1]["recent_visits"] < MAX_VISITS_PER_WINDOW]
     if under_cap:
         ranked = under_cap
     return sorted(ranked, key=lambda pair: (-pair[1]["score"], pair[0].get("name", "")))
 
 
-def choose_shop(shops, memory, item, reference=None, explore_rate=EXPLORE_RATE, prefer_warranty=False):
+def choose_shop(shops, memory, item, reference=None, explore_rate=EXPLORE_RATE, prefer_warranty=False, profiles=None):
     """Deterministic exploit/explore choice, independent of the private budget. explore_rate is a tuner knob."""
-    ranked = rank_shops(shops, memory, item, reference, prefer_warranty)
+    ranked = rank_shops(shops, memory, item, reference, prefer_warranty, profiles)
     if not ranked:
         raise ValueError("no shops to choose from")
     seed = hashlib.sha256(f"{item}:{len(memory)}".encode()).digest()

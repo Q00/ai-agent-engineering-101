@@ -23,6 +23,9 @@ import buyer_policy
 import harness
 import ledger
 import memory_sync
+import objective
+import profiles
+import rulebook
 import strategy_params
 from buyer import HEADERS, MAX_ROUNDS, rpc, send, state, status_text
 
@@ -44,19 +47,22 @@ def save_memory(mem):
     memory_sync.save(mem, MEMORY)
 
 
-def blacklisted(shops, mem):
+def blacklisted(shops, mem, shop_profiles=None):
     """Shops my own memory marks as dishonest: a receipt that did not match, or messages that tried to steer me."""
-    bad = buyer_policy.blacklisted_names(mem)
+    bad = buyer_policy.blacklisted_names(mem, shop_profiles)
     return [s for s in shops if s["name"] in bad]
 
 
-def fallback_choice(shops, mem, item, reference=None, explore_rate=buyer_policy.EXPLORE_RATE, prefer_warranty=False):
+def fallback_choice(shops, mem, item, reference=None, explore_rate=buyer_policy.EXPLORE_RATE, prefer_warranty=False,
+                    shop_profiles=None):
     """The same budget-blind portfolio policy is used after an unreachable shop."""
-    return buyer_policy.choose_shop(shops, mem, item, reference, explore_rate, prefer_warranty)[0]
+    return buyer_policy.choose_shop(shops, mem, item, reference, explore_rate, prefer_warranty, shop_profiles)[0]
 
 
-def choose(shops, item, mem, reference=None, explore_rate=buyer_policy.EXPLORE_RATE, prefer_warranty=False):
-    pick, features, mode, top = buyer_policy.choose_shop(shops, mem, item, reference, explore_rate, prefer_warranty)
+def choose(shops, item, mem, reference=None, explore_rate=buyer_policy.EXPLORE_RATE, prefer_warranty=False,
+           shop_profiles=None):
+    pick, features, mode, top = buyer_policy.choose_shop(shops, mem, item, reference, explore_rate, prefer_warranty,
+                                                         shop_profiles)
     buyer_policy.emit("buyer_route", item=item, mode=mode, chosen=pick["name"], features=features, top=top)
     print(f"[choose] {pick['url']}: {pick['name']}. portfolio {mode}, score {features['score']}", flush=True)
     return pick
@@ -118,10 +124,12 @@ NO_WARRANTY = re.compile(r"warranty\s*:?\s*0\s*h|no warranty|without (?:a )?warr
 NICK = os.environ.get("MARKET_NICK", "jiseokkk")   # my market name, for shops that take a few percent off for regulars
 WARRANTY_MATTERS_FROM = 0         # 11-11 17:30: a break scores -1 whatever the price (agent.md: "a sofa and a snack at 30% off
                                   # score the same"; 62 of my 157 breaks had no warranty), so every goods order prefers warranty shops
-PAY_CAP_RATIO = 0.70              # 11-11 17:30: never pay over this share of list. Saved scores 1 - price/list per deal (0.30
-                                  # here, over my 0.257 average); the market's median settle is 0.63 of list
-QUICK_TAKE_RATIO = 0.64           # an ask at or under this share of list is paid at once: 61% of the market's settles are under
-                                  # 0.66, and at the same shops the top buyers pay what I pay - they just close 3-5x more orders
+DEFAULT_SCORE = 0.70              # my running score before any deal is remembered (profiles.py gives the real one)
+# 11-17: the two list-price shares that stood here (pay cap 0.70, quick take 0.64) were the patch 3.4 score written
+# into the code. The limits are now derived per unit, after the shop names its grade, from my own running score
+# under the rule in force: pay while the deal scores my average - buyer_kept_slack or better, take an ask at once
+# at my average + buyer_quick_gain. On 11-17 (average 0.73, patch 3.6) that is 0.75 of list for a grade A unit,
+# 0.64 for B, 0.54 for C; the flat 0.70 had bought C units scoring 0.63 and refused A units scoring 0.9.
 SHOPS_PER_ORDER = 3               # a close or walk-away moves the order to the next shop: 11-11, 47% of my orders ended at the
                                   # first shop's refusal (fill 18%); the top buyers fill 60-70% of theirs
 STEP_CAP = 1.06                   # a later offer may not jump more than this over my previous one (11-11: shops close
@@ -242,7 +250,7 @@ def order_goes_on(outcome, no_offer, bargained, attempt, shops_per_order=SHOPS_P
     ended the order: 639 + 289 of 1,958 orders that day."""
     if attempt >= 6 or outcome in ("deal", "rejected_checkout"):
         return False
-    if no_offer or outcome == "unreachable":
+    if no_offer or outcome in ("unreachable", "overpriced"):   # overpriced: a fixed-price shop left without an offer
         return True
     return outcome in ("closed", "walked_away") and bargained < shops_per_order
 
@@ -327,11 +335,24 @@ def steered(t):
     return bool(hit)
 
 
+def price_limits(list_price, grade, targets):
+    """(pay cap, quick take, estimated cost) for one unit: the prices at which a deal scores `targets["pay"]` and
+    `targets["quick"]` under `targets["formula"]`, with the unit's cost estimated from its grade (objective.py)."""
+    if not targets or not isinstance(list_price, (int, float)) or list_price <= 0:
+        return None, None, None
+    cost = objective.unit_cost(list_price, grade, targets.get("kind"))
+    return (objective.price_for(targets["pay"], list_price, cost, targets["formula"]),
+            objective.price_for(targets["quick"], list_price, cost, targets["formula"]), int(cost))
+
+
 def negotiate(url, item, budget, reference, record="", request=None, value_cap=None, food_need=None, shelf_hours=None,
-              grades=(), slack=1.05, discount=0.20, pay_cap=None, quick_take=None, open_at_least=None):
+              grades=(), slack=1.05, discount=0.20, targets=None, haggle=None, open_at_least=None):
     """A sealed-budget loop: the LLM proposes, then the mandate guardian authorizes.
-    `value_cap` is the SKU's list price (what a parsed ask is checked against); `pay_cap` (PAY_CAP_RATIO of it) is what
-    the guardian never pays above, whatever the budget; an ask at or under `quick_take` is paid at once.
+    `value_cap` is the SKU's list price (what a parsed ask is checked against). `targets` ({formula, pay, quick,
+    kind}) gives the scores a deal must reach; once the shop has named the unit's grade they become the pay cap the
+    guardian never exceeds, whatever the budget, and the ask that is paid at once. `haggle` is what the shop's
+    profile remembers of its bargaining: {"theta": the share of its ask where it starts to accept, "fixed": it
+    does not come down}; a fixed-price shop is paid its ask or left without an offer (outcome "overpriced").
     `food_need` (the order's use_within_hours) with the SKU's `shelf_hours`: a unit whose stated grade cannot last
     that long is cancelled before any offer (info["stale"] = grade) instead of being refused at checkout later.
 
@@ -383,9 +404,16 @@ def negotiate(url, item, budget, reference, record="", request=None, value_cap=N
         info["stale"] = grade
         return "closed", None, None, [("you", opening), ("shop", status_text(t))], manip, info
     log = [("you", opening), ("shop", status_text(t))]
+    pay_cap, quick_take, cost = price_limits(value_cap, grade, targets)
+    info.update({"pay_cap": pay_cap, "cost_est": cost})
+    haggle = haggle or {}
     guardian = buyer_policy.MandateGuardian(budget, reference, pay_cap or value_cap)
-    print(f"[buyer] first ask {ask0}, private ceiling sealed, personal reference {reference}, pay cap {pay_cap or value_cap}, "
-          f"quick take {quick_take}. {record}", flush=True)
+    print(f"[buyer] first ask {ask0}, private ceiling sealed, personal reference {reference}, grade {grade or 'not stated'}, "
+          f"estimated cost {cost}, pay cap {pay_cap or value_cap}, quick take {quick_take}, shop accepts at "
+          f"{haggle.get('theta') or 'unknown'} of its ask. {record}", flush=True)
+    buyer_policy.emit("buyer_objective", item=item, formula=(targets or {}).get("formula"), grade=grade, cost_est=cost,
+                      pay_target=(targets or {}).get("pay"), quick_target=(targets or {}).get("quick"),
+                      pay_cap=pay_cap, quick_take=quick_take, ask=ask0, theta=haggle.get("theta"), fixed=haggle.get("fixed"))
 
     offers = []   # (my offer, the ask the shop answered with): the harness gets this instead of the whole transcript
     for round_index in range(MAX_ROUNDS):
@@ -414,6 +442,18 @@ def negotiate(url, item, budget, reference, record="", request=None, value_cap=N
             # 11-11 17:30: shops concede 1-2% a round and close at my third or fourth offer (639 orders ended that way
             # today), so a counter already inside my pay cap is paid rather than bargained a few percent more and lost
             quick, why = int(round(ask)), "the counter, inside my pay cap,"
+        if quick is None and not offers and haggle.get("fixed") and isinstance(ask, (int, float)) and ask > 0:
+            # 11-17: a shop whose profile says it accepts at its ask and nothing lower (YAHO1212, nocha12, bjeon01,
+            # 25620027: 1.00 over hundreds of offers) is not bargained with: the ask is paid when it is inside my
+            # cap, and otherwise the order moves on without an offer (22,883 visits in five days: an opener under
+            # such a shop's ask was accepted 2% of the time and cost a round each)
+            if ask <= guardian.limit:
+                quick, why = int(round(ask)), "the ask of a shop that does not come down,"
+            else:
+                print(f"[buyer] the ask {ask} is over my cap {guardian.limit} and this shop does not come down "
+                      f"(accepts at {haggle.get('theta')} of its ask); leaving without an offer", flush=True)
+                rpc(rpc_url, "CancelTask", {"id": tid})
+                return "overpriced", None, None, log, manip, info
         if quick is not None:
             # 11-05 00:30: 45% of the market's orders go unfilled and a unit draws several buyers within minutes, so
             # a price already at or under my reference is taken at once (no model call) rather than haggled for a few
@@ -422,6 +462,18 @@ def negotiate(url, item, budget, reference, record="", request=None, value_cap=N
             d = {"action": "offer", "price": quick}
             buyer_policy.emit("buyer_quick_offer", item=item, task=tid[:8], round=round_index + 1, why=why, price=quick,
                               reference=reference)
+        elif not offers and haggle.get("theta") and isinstance(ask, (int, float)) and ask > 0:
+            # the shop's remembered threshold (profiles.threshold): open where it usually starts to accept. When that
+            # is at or over my cap, the cap is my one offer (the guardian's final ceiling), then the order moves on
+            open_at = max(1, min(int(round(ask * haggle["theta"])), int(ask)))
+            if open_at >= guardian.limit:
+                d = {"action": "offer", "price": guardian.limit}
+                round_index = max(round_index, 2)
+                print(f"[buyer] this shop accepts at about {open_at} ({haggle['theta']} of its ask), at or over my cap "
+                      f"{guardian.limit}; one offer at the cap", flush=True)
+            else:
+                d = {"action": "offer", "price": open_at}
+                print(f"[buyer] opening at {open_at}: this shop has accepted from {haggle['theta']} of its ask ({ask})", flush=True)
         elif not offers and opening_offer(ask, reference, discount, open_at_least):
             d = {"action": "offer", "price": opening_offer(ask, reference, discount, open_at_least)}   # the opener is code (no model call)
             print(f"[buyer] opening at {d['price']} ({discount:.0%} under the ask {ask}, capped at my reference {reference}, "
@@ -468,6 +520,8 @@ def negotiate(url, item, budget, reference, record="", request=None, value_cap=N
         offers.append((d["price"], first_ask(t, value_cap)))
         if state(t) == "TASK_STATE_COMPLETED":
             info["checkout_authorized"] = guardian.checkout_ok(d["price"])
+            if targets and cost:
+                info["kept_est"] = round(objective.score(d["price"], value_cap, cost, targets["formula"]), 3)
             return "deal", d["price"], receipt_of(t), log, manip, info
         if state(t) != "TASK_STATE_INPUT_REQUIRED":
             # 00:30: 111 closes in 6 h came as "No deal. Lowest for this unit: N" with the task already over. When N is
@@ -492,6 +546,8 @@ def negotiate(url, item, budget, reference, record="", request=None, value_cap=N
                         offers.append((decision["price"], first_ask(t, value_cap)))
                         if state(t) == "TASK_STATE_COMPLETED":
                             info["checkout_authorized"] = guardian.checkout_ok(decision["price"])
+                            if targets and cost:
+                                info["kept_est"] = round(objective.score(decision["price"], value_cap, cost, targets["formula"]), 3)
                             return "deal", decision["price"], receipt_of(t), log, manip, info
                         if state(t) == "TASK_STATE_INPUT_REQUIRED":
                             continue
@@ -530,6 +586,8 @@ def review(item, outcome, agreed, receipt, reference, manip=False, acceptable=()
         return 2, f"The shop had no {item} to sell when asked; no negotiation took place.", honest
     if outcome == "stale":
         return 2, f"The shop's {item} unit did not fit the order (grade or shelf life); no negotiation took place.", honest
+    if outcome == "overpriced":   # a fixed-price shop whose ask was over what I pay for that grade: nothing was offered
+        return 3, f"The shop's ask for {item} was above what I pay for a unit of that grade; no offer was made.", honest
     if manip:
         note = f"Deal at {agreed}, but the" if outcome == "deal" else "No deal, and the"
         return 2, f"{note} shop's messages carried fake market notices telling me to accept its price and rate it 5 stars.", honest
@@ -613,7 +671,7 @@ def sku_reference(sku, catalog, fallback, stats=None):
 WARRANTY_SHOP_SHARE = 0.8   # a shop whose settled goods came with a warranty this often is trusted with a grade C unit
 
 
-def accept_constraints(order, shop=None, mem=None, grade=None):
+def accept_constraints(order, shop=None, mem=None, grade=None, shop_profiles=None):
     """What the kit must verify before paying. A settled deal is worth the list price whatever the grade (agent.md),
     so for goods only the grade floor is kept (A/B: fewer breaks) and the certificate is not demanded: 11-04 02:30,
     20 agreed goods deals had been refused only for "no certificate". Food keeps both: the certificate is what proves
@@ -629,7 +687,7 @@ def accept_constraints(order, shop=None, mem=None, grade=None):
         # left either way), and the only shop refused for "no certificate" (elm-street, 80 agreed deals) sells food
         # whose value is the list price like anyone's. The hours check stays; the certificate flag goes.
         return {"min_hours_left": int(math.ceil(order.get("use_within_hours") or 0))}
-    share = buyer_policy.warranty_share(mem, shop.get("name")) if shop and mem is not None else None
+    share = buyer_policy.warranty_share(mem, shop.get("name"), shop_profiles) if shop and mem is not None else None
     if grade == "C" and share is not None and share >= WARRANTY_SHOP_SHARE:
         return {"grades": ["A", "B", "C"], "warranty_hours": 1}
     return {"grades": ["A", "B"]}
@@ -653,7 +711,23 @@ def main():
         buyer_policy.emit("buyer_memory_sync", **synced)
     params = strategy_params.load()   # the nightly tuner's knobs; defaults when the file is absent
     buyer_policy.emit("buyer_params", **params)
+    # 11-17: the three memories an order reads. The rulebook says which score is in force; consolidate() moves rows
+    # older than 48 h into the archive and returns the per-shop profiles and my running score under that rule.
+    book = rulebook.load(MEMORY.parent)
+    t0 = time.time()
+    prof, archived = profiles.consolidate(mem, MEMORY.parent, book["formula"])
+    if archived:
+        save_memory(mem)
+    shop_profiles = prof["shops"]
+    base = prof.get("saved") if prof.get("saved") is not None else DEFAULT_SCORE
     order, catalog = load_round3(a.order)
+    targets = {"formula": book["formula"], "kind": order.get("kind"),
+               "pay": round(max(0.0, base - params["buyer_kept_slack"]), 3),
+               "quick": round(base + params["buyer_quick_gain"], 3)}
+    buyer_policy.emit("buyer_memory", formula=book["formula"], rules_changed_at=book.get("changed_at"),
+                      named_formula=book.get("named_formula"), hot_rows=len(mem), archived_now=archived,
+                      archived_rows=prof.get("archived_rows"), shops=len(shop_profiles), saved=prof.get("saved"),
+                      pay_target=targets["pay"], quick_target=targets["quick"], ms=int((time.time() - t0) * 1000))
     category = order.get("category") or a.item
     reference = buyer_policy.item_reference(mem, category, fallback=category_reference(order, catalog))
     selector_guardian = buyer_policy.MandateGuardian(a.budget, reference)
@@ -662,6 +736,8 @@ def main():
     levels = shop_price_levels((ledger.load_json(MEMORY.parent / ledger.CACHE_FILE) or {}).get("rows"), catalog, names)
     for s in candidates:                      # what each shop's settles cost against list, for the router's cheapness
         s["_price_ratio"] = levels.get(s.get("name")) or levels.get((s.get("url") or "").rstrip("/"))
+        s["_kept"] = (shop_profiles.get(s.get("name")) or {}).get("kept")   # what a deal there scores for me, and
+        s["_kept_base"] = base                                              # my average to measure it against
     cooled = [s for s in candidates if cooling_off(mem, s.get("name"))]
     if cooled and len(cooled) < len(candidates):
         print(f"[choose] skipping {[s.get('name') for s in cooled]}: answered nothing on their last visits", flush=True)
@@ -669,13 +745,13 @@ def main():
     # 11-06 18:00: 32 goods broke with no warranty to refund them, 12.6M lost, 9.2M of it on eight units over
     # 500k; every break under a warranty was refunded (36 of 36). Dear goods go to shops that give one.
     prefer_warranty = order.get("kind") == "goods" and (reference or 0) >= WARRANTY_MATTERS_FROM
-    pick = choose(candidates, category, mem, reference, params["explore_rate"], prefer_warranty)
+    pick = choose(candidates, category, mem, reference, params["explore_rate"], prefer_warranty, shop_profiles)
     request = choose_request(pick, catalog, order)
     wanted = request["sku"] if request else a.item
 
     stats = ledger.load_stats(MEMORY.parent)   # what the market lately paid: the bargaining anchor per SKU
     food_need = order.get("use_within_hours") if order.get("kind") == "food" else None
-    grades = tuple((accept_constraints(order, pick, mem, "C") or {}).get("grades") or ())   # units worth negotiating at this shop
+    grades = tuple((accept_constraints(order, pick, mem, "C", shop_profiles) or {}).get("grades") or ())   # units worth negotiating at this shop
     sc = scarcity(mem, category)
     slack, discount, posture = regime(sc, params["first_offer_discount"])
     buyer_policy.emit("buyer_regime", item=category, scarcity=round(sc, 2) if sc is not None else None,
@@ -684,17 +760,18 @@ def main():
     for attempt in range(1, 7):   # day 1: 15 orders died on a shop whose card came back as an error page; now the order moves on
         tried.setdefault(pick["url"], set()).add(wanted)
         value_cap = catalog.get(wanted, {}).get("list_price")
-        pay_cap = int(value_cap * PAY_CAP_RATIO) if isinstance(value_cap, (int, float)) and value_cap > 0 else None
-        quick_take = int(value_cap * QUICK_TAKE_RATIO) if pay_cap else None
+        priced = isinstance(value_cap, (int, float)) and value_cap > 0
         level = pick.get("_price_ratio")   # what this shop's settles cost against list on the ledger (24 h)
-        open_at_least = int(level * value_cap) if pay_cap and isinstance(level, (int, float)) and level > 0 else None
+        open_at_least = int(level * value_cap) if priced and isinstance(level, (int, float)) and level > 0 else None
+        known = shop_profiles.get(pick["name"]) or {}
+        haggle = {"theta": known.get("theta"), "fixed": known.get("fixed")}
         reference = sku_reference(wanted, catalog, category_ref, stats)
         try:
             outcome, agreed, receipt, log, manip, info = negotiate(
                 pick["url"], wanted, a.budget, reference,
                 bargain_record(pick["name"], mem, discount), request, value_cap,
-                food_need, catalog.get(wanted, {}).get("shelf_hours"), grades, slack, discount, pay_cap, quick_take,
-                open_at_least
+                food_need, catalog.get(wanted, {}).get("shelf_hours"), grades, slack, discount,
+                targets if priced else None, haggle, open_at_least
             )
         except Exception as e:   # httpx errors, a card that is not JSON, a task without the fields we expect
             print(f"[buyer] shop unreachable: {type(e).__name__}: {str(e)[:120]}", flush=True)
@@ -715,8 +792,11 @@ def main():
         mem.append({"order": order.get("order"), "shop": pick["name"], "item": category, "sku": wanted,
                     "name": request["name"] if request else None, "outcome": outcome, "price": agreed,
                     "list_price": catalog.get(wanted, {}).get("list_price"), "honest": honest, "manipulative": manip,
-                    "stars": stars, "reference": reference, "policy": "sealed-budget-v1", "settled": False,
-                    "at": time.strftime("%Y-%m-%d %H:%M"),
+                    "stars": stars, "reference": reference, "policy": "memory-v2", "settled": False,
+                    "at": time.strftime("%Y-%m-%d %H:%M"), "kind": order.get("kind"),
+                    # 11-17: what the shop said its unit was and what I was prepared to pay for it are remembered
+                    # for every visit, not only for the deals the market later certifies
+                    "unit_grade": info.get("grade"), "pay_cap": info.get("pay_cap"), "kept_est": info.get("kept_est"),
                     **{k: info.get(k) for k in ("ask", "first_offer", "last_offer", "guard_decisions", "checkout_authorized")}})
         save_memory(mem)
         bargained += outcome in ("closed", "walked_away") and not no_offer
@@ -726,17 +806,17 @@ def main():
         if request is not None:
             print(f"[choose] same shop {pick['name']}, next SKU {request['sku']} after {outcome}", flush=True)
         else:
-            rest = [s for s in candidates if s.get("url") not in tried and s not in blacklisted(candidates, mem)]
+            rest = [s for s in candidates if s.get("url") not in tried and s not in blacklisted(candidates, mem, shop_profiles)]
             if not rest:
                 break
-            pick = fallback_choice(rest, mem, category, category_ref, params["explore_rate"], prefer_warranty)
+            pick = fallback_choice(rest, mem, category, category_ref, params["explore_rate"], prefer_warranty, shop_profiles)
             request = choose_request(pick, catalog, order)
             print(f"[choose] retry with {pick['url']}: {pick['name']}. picked by portfolio policy after the last shop "
-                  f"{'had no fitting stock' if no_offer else 'failed'}", flush=True)
+                  f"{'had no fitting stock' if no_offer else 'asked too much' if outcome == 'overpriced' else 'failed'}", flush=True)
         wanted = request["sku"] if request else a.item
-        grades = tuple((accept_constraints(order, pick, mem, "C") or {}).get("grades") or ())   # per shop: C only with a warranty
+        grades = tuple((accept_constraints(order, pick, mem, "C", shop_profiles) or {}).get("grades") or ())   # per shop: C only with a warranty
 
-    accept = accept_constraints(order, pick, mem, info.get("grade"))   # the warranty is demanded only for a grade C unit
+    accept = accept_constraints(order, pick, mem, info.get("grade"), shop_profiles)   # the warranty is demanded only for a grade C unit
     print(json.dumps({"shop": pick["url"], "receipt": receipt, "stars": stars, "review": text,
                       **({"accept": accept} if accept else {})}, ensure_ascii=False), flush=True)
 
