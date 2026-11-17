@@ -121,10 +121,12 @@ class RolloutTests(unittest.TestCase):
   self.assertGreater(negotiate(
       expensive,expensive_quote,552000,{},self.p,intel=Evidence(6000000))['price'],552000)
   near_cost=negotiate(
-      expensive,expensive_quote,597000,{},self.p,intel=Evidence())
-  self.assertEqual(near_cost['price'],597000)
+      expensive,expensive_quote,585000,{},self.p,intel=Evidence())
+  self.assertEqual(near_cost['price'],585000)
   self.assertTrue(near_cost['high_value_near_cost_trial'])
-  self.assertEqual(near_cost['high_value_near_cost_projected_loss'],3000)
+  self.assertEqual(near_cost['high_value_near_cost_projected_loss'],15000)
+  self.assertGreater(negotiate(
+      expensive,expensive_quote,584999,{},self.p,intel=Evidence())['price'],584999)
   # The persisted baseline must not refill after a sale.
   # The live policy now permits at most 40% of the lower Book boundary.
   # A baseline already 40k behind this synthetic 100k cushion must not refill.

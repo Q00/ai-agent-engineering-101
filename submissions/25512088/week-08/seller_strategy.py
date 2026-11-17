@@ -28,6 +28,12 @@ BOOK_CUSHION_TRIAL_SHARE=.90
 STAR_REVIEW_PRICE_RATE=.65
 STAR_REVIEW_PRICE_SKUS={'Ged5b1b82'}
 HIGH_VALUE_WARRANTY_CUTOFF=500_000
+# A high-value sale can move the Revenue percentile with one transaction.  Live
+# 2026-11-17 offers reached 97.63% of cost while the fresh Class Book cushion
+# funded the exact 2.37% loss more than twenty times over.  This is only an
+# eligibility floor: score_safe_loss_budget still rejects the sale whenever
+# the next lower Book boundary cannot fund its exact projected loss.
+HIGH_VALUE_NEAR_COST_RATE=.025
 
 
 def class_book_cushion(intel, own_name='25512088'):
@@ -402,14 +408,14 @@ def negotiate(unit, current, offered, catalog, program, token='', ref='', intel=
     high_value_near_cost_trial=bool(
         not low_value_rotation and not legacy and not warranty and
         unit.get('kind') in ('goods','food') and
-        math.ceil(unit['cost']*.995)<=offered<unit['cost'] and
+        math.ceil(unit['cost']*(1-HIGH_VALUE_NEAR_COST_RATE))<=offered<unit['cost'] and
         loss_used+projected_raw_loss<=loss_budget)
     if high_value_near_cost_trial:
         # A high-value unit creates substantial Revenue per transaction, but
-        # must never repeat the broad 8% rotation lane.  Admit only a measured
-        # offer within 0.5% of raw cost when the fresh Class Book boundary
-        # independently funds the exact projected loss.
-        floor=min(floor,math.ceil(unit['cost']*.995))
+        # must never repeat the broad 8% rotation lane.  Admit only the live
+        # measured 2.5% band when the fresh Class Book boundary independently
+        # funds the exact projected loss.
+        floor=min(floor,math.ceil(unit['cost']*(1-HIGH_VALUE_NEAR_COST_RATE)))
     class_near_cost_trial=bool(
         low_value_rotation and not legacy and not warranty and
         unit.get('kind') in ('goods','food') and
@@ -475,7 +481,8 @@ def negotiate(unit, current, offered, catalog, program, token='', ref='', intel=
                              q['price']>=raw_loss_floor)
     bounded_high_value_near_cost=(high_value_near_cost_trial and q['reward']==0 and
                                   not q.get('warranty_hours') and
-                                  q['price']>=math.ceil(unit['cost']*.995))
+                                  q['price']>=math.ceil(
+                                      unit['cost']*(1-HIGH_VALUE_NEAR_COST_RATE)))
     bounded_liquidity_rotation=(liquidity_rotation and q['reward']==0 and
                                 not q.get('warranty_hours') and
                                 q['price']>=raw_loss_floor)
