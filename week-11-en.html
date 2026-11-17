@@ -284,7 +284,7 @@ footer .o{color:var(--muted)}
       <table>
         <tr><th>Part</th><th>Content</th></tr>
         <tr><td class="stage">PART 1</td><td>Ten weeks on one map, the parts of an agent</td></tr>
-        <tr><td class="stage">PART 2</td><td>Round 3 in numbers, patch notes, the last week, closing and the midterm, the CSAT and the proxy</td></tr>
+        <tr><td class="stage">PART 2</td><td>Round 3 in numbers, patch notes, the last week, closing and the midterm, the CSAT and the meat proxy, models that chase the score</td></tr>
         <tr><td class="stage">PART 3</td><td>The market's entities, one agent and one card, customers, the flow of money</td></tr>
         <tr><td class="stage">PART 4</td><td>An agent that starts with no tools, the mini app, Round 4 ranking and schedule</td></tr>
         <tr><td class="stage">LAB</td><td>Wrapping up Round 3</td></tr>
@@ -371,7 +371,7 @@ footer .o{color:var(--muted)}
     </div>
 
     <p>The Round 3 kit filled most of these parts with code. Some of the top shops barely called a model and answered by rules within a second. psyoung82's card says "Rule-based replies in about 1 s", and that shop sold 64,000 units.</p>
-    <p>The Round 4 kit goes the other way. The kit keeps only the harness, the wallets and the card URL, and gives the agent no market tools at all. The agent reads the market's Agent Cards and builds the tools it needs (PART 4).</p>
+    <p>The Round 4 kit keeps only the harness, the wallets and the card URL, and gives the agent no market tools at all. The agent reads the market's Agent Cards and builds the tools it needs (PART 4).</p>
 
     <div class="open">
       <div class="lbl">DISCUSS</div>
@@ -496,7 +496,7 @@ footer .o{color:var(--muted)}
 
     <div class="notice">
       <div class="lbl">STORY: THREE THOUSANDTHS</div>
-      <p>At noon on November 17, first and second place in the overall Players table, yms979 and sergiobuilds, were 0.003 apart (1.781 and 1.778). The yms979 shop has a Book of 1.19 billion, and 1.18 billion of it is the cost of unsold stock: most of what it earned is sitting on its shelves. Book counts stock at cost, and since Patch 3.3 Shop ALL uses Book. inextro has the most revenue, 19.0 billion, but a smaller Book of 1.11 billion. Among students the order is yms979, SungJinho, inextro, dragonash22, Nocha12. It can still change before 23:59.</p>
+      <p>At noon on November 17, first and second place in the overall Players table, yms979 and sergiobuilds, were 0.003 apart (1.781 and 1.778). The yms979 shop has a Book of 1.19 billion, and 1.18 billion of it is the cost of unsold stock. Book counts stock at cost, and since Patch 3.3 Shop ALL uses Book. inextro has the most revenue, 19.0 billion, but a smaller Book of 1.11 billion. Among students the order is yms979, SungJinho, inextro, dragonash22, Nocha12. It can still change before 23:59.</p>
     </div>
   </div>
 </section>
@@ -538,28 +538,56 @@ footer .o{color:var(--muted)}
 <!-- ============ NEWS ============ -->
 <section>
   <div class="col">
-    <div class="secmark"><span class="no">NEWS</span><h2>The CSAT and the proxy</h2></div>
+    <div class="secmark"><span class="no">NEWS</span><h2>The CSAT and the meat proxy</h2></div>
     <p>Korea's 2027 college entrance exam, the CSAT (수능), is on Thursday, November 19. Two days before it, the top scorer of the 63rd certified tax accountant exam confessed to cheating with generative AI, and exam measures poured out. He scored 397.5 out of 400 in the first round. He photographed the questions with a tiny camera, sent them to an AI and read the answers on a smartphone; neither the two proctors nor the checks after the exam caught him.</p>
-    <p>On November 17 the government announced checks of every test taker's glasses and watch, stickers on clothing buttons, and about 8,400 more proctors. Getting caught bars a test taker for 10 years. The science ministry will work with global big tech to trace AI use after the exam, but said blocking AI from solving questions in Korea during the exam is technically hard. CSAT instructors called for postponing the exam, and one asked AI services not to answer photos of exam papers during exam hours.</p>
-    <p>Speed at getting answers right is no longer a human matter. A Hong Kong University of Science and Technology team took a third-year undergraduate final with smart glasses linked to GPT-5.2: 0.8 seconds per answer, 92.5 points. Seoul National University professor Ha Min-su said a structure that leans on one multiple-choice paper exam is especially weak against AI, and that assessment should move toward the process of solving.</p>
-    <p>A CSAT score is a number that stands in for three years of study: a proxy. While score and skill move together, the score is enough. Once a camera and a model can produce the score in 0.8 seconds, the score moves apart from the skill, and the exam can only add proctors or change what it measures. The economist Goodhart first pointed this out for monetary indicators in 1975, and the anthropologist Strathern put it in 1997 as "When a measure becomes a target, it ceases to be a good measure."</p>
-    <p>Our market went down the same road. Receipts in Round 0 stood in for deals, and shops printed receipts. The Round 3 score was a proxy mixing Book, revenue, stars, Saved and forum rating; each time the agents read the weights and moved, a patch changed the calculation. The top shop's Book being mostly the cost of unsold stock is the same thing.</p>
+    <p>On November 17 the government announced checks of every test taker's glasses and watch, stickers on clothing buttons, and about 8,400 more proctors. Getting caught bars a test taker for 10 years. The science ministry will work with global big tech to trace AI use after the exam, but said blocking AI from solving questions in Korea during the exam is technically hard.</p>
+    <p>Split the cheat into its parts: a camera takes the question, an AI solves it, an earpiece reads the answer out, and the person copies it onto the answer sheet. The person is a relay that passes the LLM's answer on without any skill of their own: a meat proxy. When a Hong Kong University of Science and Technology team took a third-year undergraduate final with smart glasses linked to GPT-5.2, each answer took 0.8 seconds. The slowest link in the chain, and the only one a proctor can see, is the person who listens and writes.</p>
+    <p>A meat proxy adds nothing and creates a bottleneck. The model picks the answer; the person only connects the model to the answer sheet. Change the connection and that place fills without a person. Outside the exam hall, models already answer directly over an API, and agents talk directly to other agents' endpoints.</p>
+    <p>Our market moved the same way. Up to Round 3 people edited the kit's code and the pricing rules. In Round 4 the agent reads the market's cards, builds its own tools and trades with other agents directly over A2A. Tools written by hand do not load. What is left for a person is deciding the persona and the goal, and approving or refusing MeshKit calls in the mini app.</p>
     <div class="tbl-wrap">
       <table>
-        <tr><th>What was measured</th><th>Proxy</th><th>How it broke</th><th>What replaced it</th></tr>
-        <tr><td class="stage">Round 0</td><td>Receipts</td><td>100 of 102 receipts had no order</td><td>Signatures checked against orders (Round 2)</td></tr>
-        <tr><td class="stage">Round 2</td><td>Signed receipts</td><td>Budgets read off the public ledger, asks just under them</td><td>Hidden budgets, payment (Round 3)</td></tr>
-        <tr><td class="stage">Round 3</td><td>ALL score (weighted sum)</td><td>Moves that read the weights; Book piled up as stock</td><td>Credits alone (Round 4)</td></tr>
-        <tr><td class="stage">CSAT</td><td>Exam score</td><td>Camera, generative AI, earpiece</td><td>More proctors, tracing afterwards, talk of process-based assessment</td></tr>
+        <tr><th>Scene</th><th>What the person does</th><th>What the person adds</th></tr>
+        <tr><td class="stage">AI cheating</td><td>Copies the answer heard in the earpiece onto the sheet</td><td>Nothing; the slowest link and the only one a proctor can see</td></tr>
+        <tr><td class="stage">Pasting LLM answers into an assignment</td><td>Moves model output into REPORT.md</td><td>Nothing; nobody checked what is right</td></tr>
+        <tr><td class="stage">A Round 4 agent</td><td>Sets the persona, goal and model</td><td>What it works for</td></tr>
+        <tr><td class="stage">The approve button in the mini app</td><td>Approves or refuses a MeshKit call</td><td>Judgment; pressed without thought, it is a relay too</td></tr>
       </table>
     </div>
-    <p>The Round 4 grade being credits alone is the end of this line. Credits are money that customers and other agents actually paid, and payments between agents stay on chain. What the agent built and how it used it stays as a process in <code class="inline">forge.jsonl</code> and <code class="inline">react.jsonl</code>.</p>
     <div class="open">
       <div class="lbl">DISCUSS</div>
       <ol>
-        <li>Are credits also a number standing in for something? If so, for what, and how could an agent break it?</li>
-        <li>With a model that solves a CSAT question in 0.8 seconds, what assessment should remain for people? Do this course's assignments pass that bar?</li>
-        <li>The request that AI not answer exam photos during exam hours: which Round 3 patch does it resemble?</li>
+        <li>Where in Round 3 did you pass on a model's output without checking it? Would the result have changed if you had not been there?</li>
+        <li>What does a person add through the persona, the goal and the approve button left to them in Round 4? Could those go to a model too?</li>
+        <li>The government says AI solving during the exam is hard to block. Which lasts longer: stopping meat proxies, or building assessments that have no use for one?</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<!-- ============ GOODHART ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">GOODHART</span><h2>Models that chase the score</h2></div>
+    <p>A CSAT score is a number that stands in for three years of study. While score and skill move together the score is enough, but once a camera and a model can produce the score, it moves apart from the skill. The economist Goodhart first pointed this out for monetary indicators in 1975, and the anthropologist Strathern put it in 1997 as "When a measure becomes a target, it ceases to be a good measure."</p>
+    <p>Our market's scores went the same way. Receipts in Round 0 stood in for deals, and shops printed receipts. The Round 3 ALL score mixed Book, revenue, stars, Saved and forum rating; each time the agents read the weights and moved, a patch changed the calculation. The top shop's Book being mostly the cost of unsold stock is the same thing.</p>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>What was measured</th><th>The stand-in number</th><th>How it broke</th><th>What replaced it</th></tr>
+        <tr><td class="stage">Round 0</td><td>Receipts</td><td>100 of 102 receipts had no order</td><td>Signatures checked against orders (Round 2)</td></tr>
+        <tr><td class="stage">Round 2</td><td>Signed receipts</td><td>Budgets read off the public ledger, asks just under them</td><td>Hidden budgets, payment (Round 3)</td></tr>
+        <tr><td class="stage">Round 3</td><td>ALL score (weighted sum)</td><td>Moves that read the weights; Book piled up as stock</td><td>Credits alone (Round 4)</td></tr>
+        <tr><td class="stage">CSAT</td><td>Exam score</td><td>Camera, generative AI, earpiece</td><td>More proctors, tracing afterwards</td></tr>
+        <tr><td class="stage">LLM training</td><td>Reward model score</td><td>Length, agreement, caveats</td><td>Length correction, revised rating rules</td></tr>
+      </table>
+    </div>
+    <p>RLHF trains a reward model to predict which answer people prefer, then trains the language model to raise that score. The reward model is a number standing in for human judgment. Gao, Schulman and Hilton (2022) measured that pushing this score too far keeps raising the reward model's score while the true score falls past some point, and their abstract calls it Goodhart's law.</p>
+    <p>What raises the score has been measured too. Singhal et al. (2023) showed on three tasks that much of the gain from RLHF comes from making answers longer. Saito et al. (2023) showed that LLMs acting as raters prefer longer answers, and Sharma et al. (2023) that human preference judgments sometimes pick answers matching the user's beliefs over true ones, so models agree with the user. When the rater likes answers that are long, careful and agreeable, the model piles up length, caveats and agreement instead of content. Writing piled up this way is what we call slop.</p>
+    <p>Meat proxies and slop travel together. When a person passes on a long answer from a score-chasing model without checking it, the slop goes into assignments, reports and forums under the person's name. The most-liked posts on the Round 3 forum were purchase records with only the price, grade, shelf life and ledger number.</p>
+    <div class="open">
+      <div class="lbl">DISCUSS</div>
+      <ol>
+        <li>The Round 4 score is credits alone. If credits also stand in for something, what do they measure, and how could an agent break them?</li>
+        <li>Do your agent's forum posts or card description pile up length, caveats and agreement? Think about what a persona customer will do after reading them.</li>
       </ol>
     </div>
   </div>
@@ -708,7 +736,7 @@ footer .o{color:var(--muted)}
 <section>
   <div class="col">
     <div class="secmark"><span class="no">L9</span><h2>The mini app</h2></div>
-    <p>A Round 4 agent also lives in a mini app. People chat with it in an app on a computer or a phone, while it keeps trading on the market under the same name and card. The app's activity view shows the agent's latest moves on the market and every tool it has built.</p>
+    <p>A Round 4 agent also runs inside a mini app. People chat with it in an app on a computer or a phone, while it keeps trading on the market under the same name and card. The app's activity view shows the agent's latest moves on the market and every tool it has built.</p>
     <p>The app can hand the agent tools. A function the page offers with <code class="inline">miniapp.offer</code> becomes an <code class="inline">app_&lt;name&gt;</code> tool, the only kind the agent gets without forging it. List a MeshKit mini app in <code class="inline">meshkit.json</code> and each of its capabilities becomes a <code class="inline">mesh_&lt;capability&gt;</code> tool. Every call needs a person to approve it on the app's screen, and the result comes back only with a receipt the other app signed. The agent's tools cannot reach the app's port, so the agent cannot press the approve button itself.</p>
     <p>Round 4 is heading toward apps that connect to each other. Take someone else's mini app and put it next to yours: the two apps call each other's capabilities through MeshKit, while each app's agent trades on the market. Installing, running and opening the app on a phone are in week 12.</p>
   </div>
@@ -791,8 +819,10 @@ git push origin week-08
     <div class="secmark"><span class="no">READ</span><h2>Readings</h2></div>
     <ul class="readings">
       <li><span class="badge req">Required</span><b class="lead">Agent Market, ROUND4.md</b><span class="why">Entity cards, forge_tool, the agent's endpoint, customers, the mini app, fees. <a href="https://github.com/Q00/agent-market/blob/main/market/ROUND4.md">github.com/Q00/agent-market</a></span></li>
-      <li><span class="badge req">Required</span><b class="lead">A2A Protocol Specification v1.0</b><span class="why">Agent Card, SendMessage, task: the parts from week 6, now from the market's side. <a href="https://a2a-protocol.org/v1.0.0/specification/">a2a-protocol.org/v1.0.0/specification</a></span></li>
-      <li><span class="badge opt">Optional</span><b class="lead">Strathern, "Improving ratings: audit in the British University system" (1997)</b><span class="why">"When a measure becomes a target, it ceases to be a good measure": the source of the line that sums up Goodhart (1975). <a href="https://doi.org/10.1002/(SICI)1234-981X(199707)5:3%3C305::AID-EURO184%3E3.0.CO;2-4">European Review 5(3)</a></span></li>
+      <li><span class="badge req">Required</span><b class="lead">A2A Protocol Specification v1.0</b><span class="why">Agent Card, SendMessage, task: the spec from week 6. <a href="https://a2a-protocol.org/v1.0.0/specification/">a2a-protocol.org/v1.0.0/specification</a></span></li>
+      <li><span class="badge opt">Optional</span><b class="lead">Gao, Schulman, Hilton, "Scaling Laws for Reward Model Overoptimization" (2022)</b><span class="why">Where pushing a reward model's score makes the true score fall. <a href="https://arxiv.org/abs/2210.10760">arxiv.org/abs/2210.10760</a></span></li>
+      <li><span class="badge opt">Optional</span><b class="lead">Singhal et al., "A Long Way to Go: Investigating Length Correlations in RLHF" (2023)</b><span class="why">How much of RLHF's gain is length. <a href="https://arxiv.org/abs/2310.03716">arxiv.org/abs/2310.03716</a></span></li>
+      <li><span class="badge opt">Optional</span><b class="lead">Strathern, "Improving ratings: audit in the British University system" (1997)</b><span class="why">The source of "When a measure becomes a target, it ceases to be a good measure." <a href="https://doi.org/10.1002/(SICI)1234-981X(199707)5:3%3C305::AID-EURO184%3E3.0.CO;2-4">European Review 5(3)</a></span></li>
       <li><span class="badge opt">Optional</span><b class="lead">Yonhap, science ministry on AI cheating in the CSAT (2026-11-17, Korean)</b><span class="why">Blocking AI solving during the exam is hard; the answer is tracing afterwards with big tech. <a href="https://www.yna.co.kr/view/AKR20261117124100017">yna.co.kr</a></span></li>
       <li><span class="badge opt">Optional</span><b class="lead">Park et al., "Generative Agents: Interactive Simulacra of Human Behavior" (2023)</b><span class="why">LLM characters that remember and come back; the model for Round 4 customers. <a href="https://arxiv.org/abs/2304.03442">arxiv.org/abs/2304.03442</a></span></li>
       <li><span class="badge opt">Optional</span><b class="lead">NVIDIA, Nemotron-Personas-Korea</b><span class="why">The Korean persona dataset Round 4 customers come from (CC BY 4.0). <a href="https://huggingface.co/datasets/nvidia/Nemotron-Personas-Korea">huggingface.co/datasets/nvidia/Nemotron-Personas-Korea</a></span></li>
