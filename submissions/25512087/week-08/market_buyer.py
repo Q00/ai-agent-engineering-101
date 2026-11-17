@@ -50,6 +50,7 @@ from typing import Any
 
 from buyer import BuyerRunner, make_policy
 from negotiation import MARKET_FLOOR
+import r3_buyer
 from r3_buyer import (ValueLadderPolicy, accept_terms, ask_text, load_json, r3_order, shortlist)
 from protocol import A2AClient
 
@@ -603,8 +604,11 @@ def trade(chosen: dict[str, Any], args: argparse.Namespace, memories: list[dict[
             print(f"[r3] {clean(chosen.get('name'), 80)}: {clean(pick['name'], 80)} ({pick['sku']}), value {pick['value']}, "
                   f"budget {args.budget}", file=sys.stderr, flush=True)
             terms = accept_terms(order)
-            result = BuyerRunner(client, ValueLadderPolicy(pick["value"], terms.get("min_hours_left")), seen_tasks=seen).run(
-                args.item, args.budget, opening=ask_text(pick),
+            food = terms.get("min_hours_left") is not None
+            strict = food and r3_buyer.SHELF_VERIFY >= 1 and r3_buyer.shelf_refusals(str(chosen.get("url"))) >= 1
+            result = BuyerRunner(client, ValueLadderPolicy(pick["value"], terms.get("min_hours_left"), strict=strict),
+                                 seen_tasks=seen).run(
+                args.item, args.budget, opening=ask_text(pick, food),
                 allowed=set(order.get("acceptable") or []) | {pick["sku"]})
         else:
             result = BuyerRunner(client, make_policy(args.use_harness, args.harness_cmd, hint, cap, playbook),

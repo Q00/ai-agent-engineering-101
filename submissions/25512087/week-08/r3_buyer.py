@@ -30,11 +30,12 @@ MAX_SHARE = 0.92          # never pay more than 92 % of the value (the deal must
 EST_PRICE = 0.70          # what a sale usually costs us, as a share of list price (grade A cost 55-75 % + margin)
 NEAR_BEST = 0.80
 FOOD_MARGIN_H = 0.5       # settle comes after checkout; keep half an hour in hand
+SHELF_VERIFY = 0           # 11/17 flag (policy.json): 1 = food from a shop with an earlier shelf refusal needs hours stated
 
 
 def apply_policy() -> dict:
     """The improvement loop's overrides (clamped by tuning.py): rungs, cap, SKU pick."""
-    global VALUE_RUNGS, MAX_SHARE, EST_PRICE, NEAR_BEST, SHELF_STRIKES
+    global VALUE_RUNGS, MAX_SHARE, EST_PRICE, NEAR_BEST, SHELF_STRIKES, SHELF_VERIFY
     import tuning
     over = tuning.load("buyer")
     r1, step = over.get("rung_1", VALUE_RUNGS[0]), over.get("rung_step", 0.10)
@@ -44,6 +45,7 @@ def apply_policy() -> dict:
     EST_PRICE = over.get("est_price", EST_PRICE)
     NEAR_BEST = over.get("near_best", NEAR_BEST)
     SHELF_STRIKES = int(over.get("shelf_strikes", SHELF_STRIKES))
+    SHELF_VERIFY = int(over.get("shelf_verify", SHELF_VERIFY))
     return over
 
 
@@ -171,6 +173,23 @@ def short_shelf_shops(path: Path = Path(".market/payments.jsonl"), strikes: int 
     return {u for u, k in n.items() if k >= strikes}
 
 
+def shelf_refusals(shop_url: str, path: Path = Path(".market/payments.jsonl"), last: int = 300) -> int:
+    """11/17: how often the kit refused to pay this shop for short-dated food in our last `last` payments."""
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()[-last:]
+    except OSError:
+        return 0
+    url, n = str(shop_url or "").rstrip("/"), 0
+    for raw in lines:
+        try:
+            r = json.loads(raw)
+        except ValueError:
+            continue
+        if not r.get("paid") and "shelf life" in str(r.get("reason") or "") and str(r.get("shop") or "").rstrip("/") == url:
+            n += 1
+    return n
+
+
 def accept_terms(order: dict) -> dict:
     terms: dict[str, Any] = {"cert": True}
     if order.get("kind") == "food" and order.get("use_within_hours"):
@@ -178,8 +197,11 @@ def accept_terms(order: dict) -> dict:
     return terms
 
 
-def ask_text(pick: dict) -> str:
-    return f"I want to buy {pick['name']} ({pick['sku']})"
+def ask_text(pick: dict, food: bool = False) -> str:
+    text = f"I want to buy {pick['name']} ({pick['sku']})"
+    if food:   # 11/17: no digits here, so no shop reads a number in it as our offer
+        text += ". Please tell me how many hours of shelf life the unit has left, and attach the market certificate"
+    return text
 
 
 class ValueLadderPolicy:
@@ -187,12 +209,19 @@ class ValueLadderPolicy:
 
     MAX_RUNGS = 6
     SHELF = re.compile(r"(\d+(?:\.\d+)?)\s*h(?:ours?)?\s+(?:of\s+)?shelf", re.I)
+    HOURS_LEFT = re.compile(r"(\d+(?:\.\d+)?)\s*(?:h|hrs?|hours?|시간)\s*(?:of\s+shelf\s+life\s+)?(?:left|remaining|남)", re.I)
 
-    def __init__(self, value: int, min_hours: float | None = None) -> None:
+    def __init__(self, value: int, min_hours: float | None = None, strict: bool = False) -> None:
         self.value = int(value)
         self.last_offer = 0
         self.min_hours = min_hours      # food: the shelf life the order needs (+ margin); the kit refuses less
         self.last_text = ""
+        self.strict = strict            # 11/17: this shop shipped short-dated food before: no stated hours, no deal
+        self.hours_seen: float | None = None
+
+    def shelf_hours(self, text: str) -> float | None:
+        m = self.SHELF.search(text or "") or self.HOURS_LEFT.search(text or "")
+        return float(m.group(1)) if m else None
 
     def ladder(self, budget: int) -> list[int]:
         cap = self.cap(budget)
@@ -211,9 +240,14 @@ class ValueLadderPolicy:
     def respond(self, item: str, budget: int, ask: int, rounds: int) -> Decision:
         if ask is None:
             return Decision("walk", None, "no ask to answer")
-        m = self.SHELF.search(self.last_text or "") if self.min_hours else None
-        if m and float(m.group(1)) < self.min_hours:      # 11/04: the kit would refuse to pay; leave now
-            return Decision("walk", None, f"shelf: {m.group(1)} h left, the order needs {self.min_hours}")
+        if self.min_hours:
+            h = self.shelf_hours(self.last_text)
+            if h is not None:
+                self.hours_seen = h
+            if self.hours_seen is not None and self.hours_seen < self.min_hours:   # 11/04: the kit would refuse to pay
+                return Decision("walk", None, f"shelf: {self.hours_seen:g} h left, the order needs {self.min_hours}")
+            if self.strict and self.hours_seen is None:   # 11/17: a refused shop must state the hours before we sign
+                return Decision("walk", None, "shelf: no hours stated by a shop whose food was refused before")
         ladder, cap = self.ladder(budget), self.cap(budget)
         if rounds >= len(ladder) and ask > cap:
             return Decision("walk", None, f"value: ask {ask} still above {cap} ({MAX_SHARE:.0%} of value {self.value})")
