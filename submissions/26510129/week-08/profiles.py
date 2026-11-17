@@ -38,6 +38,8 @@ MIN_ACCEPTED = 8        # accepted offers before a shop's acceptance threshold i
 FIXED_FROM = 0.97       # a threshold this close to the ask: the shop does not bargain
 BAND = 0.03             # offers are grouped in bands of this share of the ask
 MIN_BAND_OFFERS = 3     # offers in a band before its acceptance rate counts
+DEFAULT_BREAK = {"A": 0.044, "B": 0.080, "C": 0.050}   # goods that broke, by grade (11-11: 2,946 goods deals); used under MIN_BREAK_DEALS
+MIN_BREAK_DEALS = 50
 QUIET = ("no_stock", "stale", "unreachable")   # a visit that ended before any offer says nothing about how the shop trades
 COUNTERS = ("visits", "offers", "deals", "steer", "bad", "clean_deals", "unpaid", "w_n", "w_yes", "scored", "kept_sum")
 
@@ -156,9 +158,13 @@ def threshold(pairs):
 
 def view(life, rows, formula):
     """The per-shop facts decisions read: lifetime counters plus the recent rows. Returns (shops, summary)."""
-    recent, offers, grades, refused, food_paid, c_paid = {}, {}, {}, {}, {}, {}
+    recent, offers, grades, refused, food_paid, c_paid, goods = {}, {}, {}, {}, {}, {}, {}
     for row in rows:
         fold(recent, row, formula)
+        if row.get("outcome") == "deal" and row.get("settled") and objective.kind_of(row) == "goods" \
+                and row.get("grade") in objective.COST_SHARE:
+            n, broke = goods.get(row["grade"], (0, 0))
+            goods[row["grade"]] = (n + 1, broke + bool(row.get("broken")))
         pairs = observations(row)
         if pairs:
             offers.setdefault(row.get("shop"), []).extend(pairs)
@@ -203,6 +209,9 @@ def view(life, rows, formula):
     scored = sum(c["scored"] for c in life.values()) + sum(c["scored"] for c in recent.values())
     kept_sum = sum(c["kept_sum"] for c in life.values()) + sum(c["kept_sum"] for c in recent.values())
     summary = {
+        # how often goods of each grade broke within their six hours, over the recent rows (the market does not publish it)
+        "break_rate": {g: round(goods[g][1] / goods[g][0], 4) if goods.get(g, (0, 0))[0] >= MIN_BREAK_DEALS else DEFAULT_BREAK[g]
+                       for g in DEFAULT_BREAK},
         "deals_scored": scored,
         "saved": round(kept_sum / (scored + 100), 4) if scored else None,   # the board's Saved: sum / (deals + 100)
         "recent_by_grade": {g: {"n": v["n"], "score": round(v["score"] / v["n"], 3), "paid": round(v["paid"] / v["n"], 3)}

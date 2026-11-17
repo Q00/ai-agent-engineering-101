@@ -188,12 +188,26 @@ class Round3BuyerContextTest(unittest.TestCase):
         self.assertFalse(any(market_buyer.probe_now(f"o-{i}", "shop", 0.0) for i in range(200)))
 
     def test_price_limits_follow_the_grade_under_the_margin_rule(self):
-        targets = {"formula": "margin_share", "pay": 0.78, "quick": 0.85, "kind": "goods"}
+        targets = {"formula": "margin_share", "pay": 0.78, "quick": 0.85, "kind": "food"}
         self.assertEqual((727, 702, 650), market_buyer.price_limits(1000, "A", targets))
         self.assertEqual((493, 447, 350), market_buyer.price_limits(1000, "C", targets))
-        self.assertEqual((695, 668, 610), market_buyer.price_limits(1000, None, targets))     # unstated grade: goods average
+        self.assertEqual((625, 592, 520), market_buyer.price_limits(1000, None, targets))     # unnamed food: the kind's average
         self.assertEqual((None, None, None), market_buyer.price_limits(None, "A", targets))
         self.assertEqual((220, 150, 650), market_buyer.price_limits(1000, "A", {**targets, "formula": "list_discount"}))
+
+    def test_goods_are_priced_for_the_chance_they_break(self):
+        self.assertAlmostEqual(0.78, market_buyer.required_score(0.78, 0.0, False))
+        self.assertAlmostEqual(0.848, market_buyer.required_score(0.78, 0.08, True), places=3)    # a refunded break scores 0
+        self.assertAlmostEqual(0.935, market_buyer.required_score(0.78, 0.08, False), places=3)   # an unrefunded one -1
+        targets = {"formula": "margin_share", "pay": 0.78, "quick": 0.85, "kind": "goods", "break_rate": {"A": 0.044, "B": 0.08, "C": 0.05}}
+        covered = market_buyer.price_limits(1000, "B", targets, warranty=True)
+        bare = market_buyer.price_limits(1000, "B", targets, warranty=False)
+        self.assertEqual((576, 532), (covered[0], bare[0]))            # the same grade B unit: 0.58 of list with a warranty, 0.53 without
+        self.assertEqual(bare, market_buyer.price_limits(1000, None, targets, warranty=False))   # no grade named: priced as B
+        self.assertTrue(market_buyer.unit_warranty("grade B, warranty 6 h, certificate attached"))
+        self.assertFalse(market_buyer.unit_warranty("grade B. Market certificate included; warranty 0 h."))
+        self.assertFalse(market_buyer.unit_warranty("grade A, certificate attached", shop_share=0.3))
+        self.assertTrue(market_buyer.unit_warranty("grade A, certificate attached", shop_share=0.95))
 
     def test_the_opener_is_no_lower_than_the_shops_usual_settle(self):
         self.assertEqual(51, market_buyer.opening_offer(72, 51, 0.25))                 # reference below ask x 0.75

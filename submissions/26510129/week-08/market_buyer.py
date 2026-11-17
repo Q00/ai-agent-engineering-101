@@ -347,14 +347,50 @@ def probe_now(order_id, shop_name, rate):
     return int.from_bytes(seed[:8], "big") / 2**64 < rate
 
 
-def price_limits(list_price, grade, targets):
+UNNAMED_GOODS_GRADE = "B"   # goods whose shop names no grade are priced as grade B: 20:33, kcwarni named none, the
+                            # unit was certified B and the market-average cost (0.61 of list) had let me pay 0.68 for
+                            # a score of 0.63; a shop that leaves the grade out is not leaving out an A
+
+
+def required_score(target, break_rate, warranty):
+    """The score a goods deal must reach so that its expected score is still `target` after the chance that the unit
+    breaks: a break under a warranty is refunded and scores 0, without one it scores -1.
+    20:25 and 20:29: two grade B mattresses bought at 0.53 and 0.61 of list (scores 0.93 and 0.78) broke with no
+    warranty and scored -1 each - 2 of 50 deals took 0.07 off that hour's mean."""
+    b = min(max(break_rate or 0.0, 0.0), 0.5)
+    return (target + (0.0 if warranty else b)) / (1 - b)
+
+
+def price_limits(list_price, grade, targets, warranty=None):
     """(pay cap, quick take, estimated cost) for one unit: the prices at which a deal scores `targets["pay"]` and
-    `targets["quick"]` under `targets["formula"]`, with the unit's cost estimated from its grade (objective.py)."""
+    `targets["quick"]` under `targets["formula"]`, with the unit's cost estimated from its grade (objective.py).
+    For goods the two scores are first raised by what a break is expected to cost (required_score), with the break
+    rate of the grade from memory (`targets["break_rate"]`) and whether this unit carries a `warranty`."""
     if not targets or not isinstance(list_price, (int, float)) or list_price <= 0:
         return None, None, None
-    cost = objective.unit_cost(list_price, grade, targets.get("kind"))
-    return (objective.price_for(targets["pay"], list_price, cost, targets["formula"]),
-            objective.price_for(targets["quick"], list_price, cost, targets["formula"]), int(cost))
+    goods = targets.get("kind") == "goods"
+    priced_as = grade or (UNNAMED_GOODS_GRADE if goods else None)
+    cost = objective.unit_cost(list_price, priced_as, targets.get("kind"))
+    pay, quick = targets["pay"], targets["quick"]
+    if goods:
+        rate = (targets.get("break_rate") or {}).get(priced_as, 0.0)
+        pay, quick = required_score(pay, rate, warranty), required_score(quick, rate, warranty)
+    return (objective.price_for(min(pay, 1.0), list_price, cost, targets["formula"]),
+            objective.price_for(min(quick, 1.0), list_price, cost, targets["formula"]), int(cost))
+
+
+WARRANTY_HOURS = re.compile(r"warranty\s*:?\s*(\d+)\s*h", re.I)
+
+
+def unit_warranty(text, shop_share=None):
+    """Whether the unit on offer carries a warranty: what the shop's opening says ("warranty 6 h", "no warranty"),
+    else whether its settled goods usually did (the profile's warranty share against WARRANTY_SHOP_SHARE)."""
+    if NO_WARRANTY.search(text or ""):
+        return False
+    m = WARRANTY_HOURS.search(text or "")
+    if m:
+        return int(m.group(1)) > 0
+    return isinstance(shop_share, (int, float)) and shop_share >= WARRANTY_SHOP_SHARE
 
 
 def negotiate(url, item, budget, reference, record="", request=None, value_cap=None, food_need=None, shelf_hours=None,
@@ -424,14 +460,16 @@ def negotiate(url, item, budget, reference, record="", request=None, value_cap=N
         info["stale"] = grade
         return "closed", None, None, [("you", opening), ("shop", status_text(t))], manip, info
     log = [("you", opening), ("shop", status_text(t))]
-    pay_cap, quick_take, cost = price_limits(value_cap, grade, targets)
-    info.update({"pay_cap": pay_cap, "cost_est": cost})
+    warranty = unit_warranty(status_text(t), haggle.get("warranty")) if (targets or {}).get("kind") == "goods" else None
+    pay_cap, quick_take, cost = price_limits(value_cap, grade, targets, warranty)
+    info.update({"pay_cap": pay_cap, "cost_est": cost, "warranty_seen": warranty})
     guardian = buyer_policy.MandateGuardian(budget, reference, pay_cap or value_cap)
     print(f"[buyer] first ask {ask0}, private ceiling sealed, personal reference {reference}, grade {grade or 'not stated'}, "
           f"estimated cost {cost}, pay cap {pay_cap or value_cap}, quick take {quick_take}, shop accepts at "
           f"{haggle.get('theta') or 'unknown'} of its ask. {record}", flush=True)
     buyer_policy.emit("buyer_objective", item=item, formula=(targets or {}).get("formula"), grade=grade, cost_est=cost,
-                      pay_target=(targets or {}).get("pay"), quick_target=(targets or {}).get("quick"),
+                      pay_target=(targets or {}).get("pay"), quick_target=(targets or {}).get("quick"), warranty=warranty,
+                      break_rate=((targets or {}).get("break_rate") or {}).get(grade or UNNAMED_GOODS_GRADE) if warranty is not None else None,
                       pay_cap=pay_cap, quick_take=quick_take, ask=ask0, theta=haggle.get("theta"), fixed=haggle.get("fixed"))
 
     offers = []   # (my offer, the ask the shop answered with): the harness gets this instead of the whole transcript
@@ -744,7 +782,8 @@ def main():
     order, catalog = load_round3(a.order)
     targets = {"formula": book["formula"], "kind": order.get("kind"),
                "pay": round(max(0.0, base - params["buyer_kept_slack"]), 3),
-               "quick": round(base + params["buyer_quick_gain"], 3)}
+               "quick": round(base + params["buyer_quick_gain"], 3),
+               "break_rate": prof.get("break_rate") or {}}
     buyer_policy.emit("buyer_memory", formula=book["formula"], rules_changed_at=book.get("changed_at"),
                       named_formula=book.get("named_formula"), hot_rows=len(mem), archived_now=archived,
                       archived_rows=prof.get("archived_rows"), shops=len(shop_profiles), saved=prof.get("saved"),
@@ -787,7 +826,7 @@ def main():
         level = pick.get("_price_ratio")   # what this shop's settles cost against list on the ledger (24 h)
         open_at_least = int(level * value_cap) if priced and isinstance(level, (int, float)) and level > 0 else None
         known = shop_profiles.get(pick["name"]) or {}
-        flags = {"assume_c": known.get("assume_c"), "shelf_risk": known.get("shelf_risk")}
+        flags = {"assume_c": known.get("assume_c"), "shelf_risk": known.get("shelf_risk"), "warranty": known.get("warranty")}
         haggle = {"theta": known.get("theta"), "fixed": known.get("fixed"), **flags}
         probing = haggle["theta"] is not None and probe_now(order.get("order"), pick["name"], params["explore_rate"])
         if probing:   # test the belief: open a step under the remembered threshold, as if the shop bargained
