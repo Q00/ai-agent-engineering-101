@@ -100,11 +100,13 @@ def kit_evidence(root, output):
                 stat = os.fstat(source.fileno())
                 limit = stat.st_size
                 line_number = 0
+                captured = 0
                 while source.tell() < limit:
                     raw = source.readline()
                     if source.tell() > limit or not raw.endswith(b'\n'):
                         break
                     digest.update(raw)
+                    captured = source.tell()
                     line_number += 1
                     line = raw.decode('utf-8', errors='replace').rstrip('\n')
                     if not re.match(r'^\d\d:\d\d:\d\d \[(acp|market)\]', line):
@@ -118,7 +120,6 @@ def kit_evidence(root, output):
                                 examples[category].append({'role': role, 'category': category,
                                     'source': str(path.relative_to(root)), 'source_line': line_number,
                                     'text': line})
-                captured = source.tell()
             files.append({'source': str(path.relative_to(root)), 'device': stat.st_dev,
                           'inode': stat.st_ino, 'snapshot_size': limit, 'complete_line_prefix_bytes': captured,
                           'complete_line_prefix_sha256': digest.hexdigest(), 'lines': line_number})
@@ -136,6 +137,48 @@ def kit_evidence(root, output):
             'scope': 'Retained .log/.log.1 complete-line prefixes only, not cumulative round refusal counts. Multiple lines may describe one failed payment.'}
 
 
+def seller_evidence(root):
+    path = root/'state/seller-runtime/logs/shop-events.jsonl'
+    wanted = {'request_seen','opening','requirements_unmet','no_stock','rejected',
+              'negotiation_expired','receipt_signed','settled','checkout_unpaid',
+              'settled_unit_blocked','selling_price_guard','stale_inventory'}
+    counts = Counter()
+    examples = {}
+    paid = set()
+    digest = hashlib.sha256()
+    first = None
+    last = None
+    with path.open('rb') as source:
+        stat = os.fstat(source.fileno())
+        complete = 0
+        while source.tell() < stat.st_size:
+            offset = source.tell()
+            raw = source.readline()
+            if source.tell() > stat.st_size or not raw.endswith(b'\n'):
+                break
+            digest.update(raw)
+            complete = source.tell()
+            event = json.loads(raw)
+            first = first or event.get('at')
+            last = event.get('at') or last
+            kind = event.get('event')
+            if kind not in wanted:
+                continue
+            counts[kind] += 1
+            if kind == 'settled' and type(event.get('ledger')) is int:
+                paid.add(event['ledger'])
+            if kind not in examples:
+                examples[kind] = {'source': str(path.relative_to(root)), 'byte_offset': offset,
+                    'event': {k:v for k,v in event.items() if k in {
+                        'at','event','task_id','sku','unit','price','cost','ledger','reason',
+                        'source_commit','price_floor','near_expiry_loss_allowed'}}}
+    return {'source': str(path.relative_to(root)), 'snapshot_size':stat.st_size,
+            'complete_line_prefix_bytes':complete,'complete_line_prefix_sha256':digest.hexdigest(),
+            'first_event_at':first,'last_event_at':last,'event_counts':dict(counts),
+            'unique_settled_ledgers':len(paid),'examples':list(examples.values()),
+            'scope':'Complete captured append-only shop-events prefix. Event occurrences can overlap for one task; not disjoint rejected orders.'}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', required=True, type=Path)
@@ -149,6 +192,7 @@ def main():
     started = datetime.now(KST).isoformat()
     board = public_json('https://market.ourolabs.ai/api/board?round=3')
     board_at = datetime.now(KST).isoformat()
+    after_close = datetime.fromisoformat(board_at) >= datetime(2026, 11, 17, 23, 59, tzinfo=KST)
     owner = 'outseop'
     def owned(row):
         return str((row.get('owner') or {}).get('login', '')).lower() == owner
@@ -164,9 +208,10 @@ def main():
     for key in ['shops', 'buyers']:
         row = next(p for p in board[key] if owned(p))
         metric = row['all']
-        public[key] = {'row': row, 'rank': 1 + sum(p['all'] > metric for p in board[key]), 'count': len(board[key])}
+        public[key] = {'row': row, 'rank': 1 + sum(p.get('all', 0) > metric for p in board[key]), 'count': len(board[key])}
     buyer = buyer_evidence(root)
     kit = kit_evidence(root, output)
+    seller = seller_evidence(root)
     baseline_paths = {
         'buyer_week10': 'state/buyer-runtime/state/growth-baseline-BUYERSAVED20261110A.json',
         'buyer_week10_hour': 'state/buyer-runtime/state/growth-result-BUYERSAVED20261110A.json',
@@ -188,21 +233,26 @@ def main():
         data = json.loads((root / 'state' / (role+'-runtime') / 'running.json').read_text())
         running[role] = {k: v for k, v in data.items() if k.endswith('_pid') or k in ['source_commit','started_at','url']}
     report = {'schema': 'round3-report-evidence-v1', 'started_at': started,
-              'completed_at': datetime.now(KST).isoformat(), 'is_round_final': False,
+              'completed_at': datetime.now(KST).isoformat(), 'is_round_final': after_close,
               'official': public, 'buyer_current_generation': buyer, 'retained_kit_logs': kit,
+              'seller_captured_prefix': seller,
               'week10_baselines': baselines, 'fixed_hour_experiment': clean_hour,
               'runtime': running,
-              'limits': ['Observed before 2026-11-17 23:59 KST. Final Class rank is not yet known.',
+              'limits': [('Observed after the published Round3 close; use round3 board values.' if after_close else
+                          'Observed before 2026-11-17 23:59 KST. Final Class rank is not yet known.'),
                          'Official cumulative board numbers and local captured log counts have different update times.',
                          'Week10 Saved predates retroactive patch3.6; do not interpret its difference as a policy gain.']}
     (output/'snapshot.json').write_text(json.dumps(report, ensure_ascii=False, indent=2)+'\n', encoding='utf-8')
     with (output/'buyer-event-excerpts.jsonl').open('w', encoding='utf-8') as file:
         for row in buyer['examples']:
             file.write(json.dumps(row, ensure_ascii=False)+'\n')
+    with (output/'seller-event-excerpts.jsonl').open('w', encoding='utf-8') as file:
+        for row in seller['examples']:
+            file.write(json.dumps(row, ensure_ascii=False)+'\n')
     print(json.dumps({'output': str(output), 'official': public, 'buyer_events': buyer['event_counts'],
                       'negotiation_outcomes': buyer['negotiation_outcomes'],
                       'top_reasons': list(buyer['unsuccessful_attempt_reasons'].items())[:10],
-                      'kit_counts': kit['counts']}, ensure_ascii=False, indent=2))
+                      'kit_counts': kit['counts'], 'seller_counts': seller['event_counts']}, ensure_ascii=False, indent=2))
 
 
 if __name__ == '__main__':

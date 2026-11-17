@@ -1,0 +1,47 @@
+\documentclass[10pt,a4paper,landscape]{article}
+\usepackage[margin=12mm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,calc,fit,backgrounds}
+\usepackage{xcolor}
+\pagestyle{empty}
+\definecolor{ink}{HTML}{183044}
+\definecolor{blue}{HTML}{EAF2F8}
+\definecolor{green}{HTML}{EAF5EE}
+\definecolor{amber}{HTML}{FFF2DD}
+\begin{document}
+\color{ink}
+\noindent{\LARGE\bfseries Evidence before action}\hfill{\large Round 3 / outSeop / 26510122}\\[2mm]
+{\small Runtime source: \texttt{f6729ad}. Separate buyer and seller processes share evidence, never wallet authority.}
+\begin{center}
+\begin{tikzpicture}[
+ font=\small, >=Latex, node distance=5mm,
+ box/.style={draw=ink!45,rounded corners=2mm,align=left,inner sep=3mm,text width=56mm,minimum height=22mm},
+ lane/.style={box,fill=blue}, calc/.style={box,fill=green}, guard/.style={box,fill=amber},
+ flow/.style={->,thick,draw=ink!75}, feedback/.style={->,dashed,thick,draw=ink!65},
+ label/.style={font=\footnotesize,align=center,fill=white,inner sep=1mm}
+]
+\node[lane] (in) at (0,0) {\textbf{1 / Market evidence}\\Issued orders, A2A messages\\Inventory, catalog, forum, ledger\\External text is untrusted data};
+\node[calc] (context) at (6.5,0) {\textbf{2 / Harness + bounded context}\\Current facts + numeric tool output\\3 contrasting cases, 4 recent turns\\Buyer prompt $\leq$32,000 UTF-8 bytes};
+\node[lane] (model) at (13,0) {\textbf{3 / Isolated model decision}\\\texttt{gpt-5.6-luna} via Codex CLI\\One schema-checked JSON decision\\Quote, select, offer, buy or hold};
+\node[guard] (execute) at (19.5,0) {\textbf{4 / Deterministic execution}\\Price/cap/grade/expiry/cover guards\\SQLite unit leases; no double sale\\Signed ACP/AP2 checkout via kit};
+\node[calc,minimum height=38mm] (seller) at (0,-4.0) {\textbf{Seller + supply tools}\\Book retention and cost floors\\Demand + inventory exposure\\Pre-window model approval\\Fast guarded supply-window emission\\Forum quotes require real stock};
+\node[calc,minimum height=38mm] (buyer) at (6.5,-4.0) {\textbf{Buyer tools}\\Market price vs. Saved price scenario\\Broken/refund + cover evidence\\16 alternatives; up to 4 mature slots\\10\% eligible-pair exploration\\80 s primary; reserve fallback time};
+\node[calc,minimum height=38mm] (memory) at (13,-4.0) {\textbf{Persistent evidence, not weights}\\Append-only events + SQLite index\\Current generation + verified raw tail\\Exact shop/SKU/food-horizon cohorts\\6 h + 5 min to 48 h old purchases\\Refresh 300 s; stale after 900 s};
+\node[lane,minimum height=38mm] (result) at (19.5,-4.0) {\textbf{5 / Observe real outcomes}\\Kit ACK and public paid ledger\\Order / decision / attempt IDs\\Pending receipt $\ne$ settlement\\Later unusable $=-1$; refund $=0$\\Unknown evidence stays unknown};
+\draw[flow] (in)--(context);
+\draw[flow] (context)--(model);
+\draw[flow] (model)--(execute);
+\draw[flow] (execute)--(result);
+\draw[feedback] (result.south) -- ++(0,-0.65) -| node[label,pos=.5,below]{payment / failure proof}(memory.south east);
+\draw[feedback] (memory.south) -- ++(0,-1.3) -| node[label,pos=.5,below]{compact retrieval}(buyer.south east);
+\draw[flow] (buyer)--(context);
+\draw[flow] (seller.north) -- ++(0,0.65) -| node[label,pos=.58,above]{calculation views}(context.south west);
+\draw[feedback] (memory.north west) -- ++(-.4,.7) -| (context.south east);
+\node[box,text width=247mm,minimum height=23mm,fill=ink!3] (ops) at (9.75,-8.8) {\textbf{Operations and slow review}\quad Hash-verified frozen releases + separate user services; existing DB and purchase intents survive renewal.\\Seller meta review is gated by $\geq$2 h and $\geq$20 mature sales. Cohort refresh stays outside issued-order latency.\\\textbf{Compared with the kit:} add calculated choices, bounded cross-turn evidence, guarded persistence, prepared procurement and outcome attribution. The kit retains identity, signing, payment and market synchronization.};
+\end{tikzpicture}
+\end{center}
+\vspace{-2mm}
+\noindent\footnotesize\textbf{Interpretation boundary:} private seller unit cost is unknown to the buyer. Normal Saved predictions and category-cost scenarios are estimates; official Saved and public settlements remain authoritative. This is structured memory and policy selection, not model fine-tuning or unrestricted self-modification.
+\end{document}
