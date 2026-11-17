@@ -399,6 +399,17 @@ def negotiate(unit, current, offered, catalog, program, token='', ref='', intel=
     raw_loss_floor=math.ceil(unit['cost']*(1-CLASS_NEAR_COST_RATE))
     projected_raw_loss=max(0,unit['cost']-offered)
     low_value_rotation=unit.get('cost',0)<HIGH_VALUE_WARRANTY_CUTOFF
+    high_value_near_cost_trial=bool(
+        not low_value_rotation and not legacy and not warranty and
+        unit.get('kind') in ('goods','food') and
+        math.ceil(unit['cost']*.995)<=offered<unit['cost'] and
+        loss_used+projected_raw_loss<=loss_budget)
+    if high_value_near_cost_trial:
+        # A high-value unit creates substantial Revenue per transaction, but
+        # must never repeat the broad 8% rotation lane.  Admit only a measured
+        # offer within 0.5% of raw cost when the fresh Class Book boundary
+        # independently funds the exact projected loss.
+        floor=min(floor,math.ceil(unit['cost']*.995))
     class_near_cost_trial=bool(
         low_value_rotation and not legacy and not warranty and
         unit.get('kind') in ('goods','food') and
@@ -462,18 +473,25 @@ def negotiate(unit, current, offered, catalog, program, token='', ref='', intel=
     bounded_class_near_cost=(class_near_cost_trial and q['reward']==0 and
                              not q.get('warranty_hours') and
                              q['price']>=raw_loss_floor)
+    bounded_high_value_near_cost=(high_value_near_cost_trial and q['reward']==0 and
+                                  not q.get('warranty_hours') and
+                                  q['price']>=math.ceil(unit['cost']*.995))
     bounded_liquidity_rotation=(liquidity_rotation and q['reward']==0 and
                                 not q.get('warranty_hours') and
                                 q['price']>=raw_loss_floor)
     if not (score_safe or bounded_cost_recovery or bounded_book_recovery or
             bounded_cushion_recovery or bounded_unwarranted_recovery or
-            bounded_class_near_cost or bounded_liquidity_rotation):
+            bounded_class_near_cost or bounded_high_value_near_cost or
+            bounded_liquidity_rotation):
         return current
     q['hazard_probability']=hazard;q['hazard_basis']=current.get('hazard_basis','conservative-unmeasured')
     q['near_book_recovery']=bounded_book_recovery
     q['book_cushion_recovery']=bounded_cushion_recovery
     q['unwarranted_cost_recovery']=bounded_unwarranted_recovery
     q['class_near_cost_trial']=bounded_class_near_cost
+    q['high_value_near_cost_trial']=bounded_high_value_near_cost
+    q['high_value_near_cost_projected_loss']=(projected_raw_loss
+                                               if bounded_high_value_near_cost else 0)
     q['liquidity_rotation']=bounded_liquidity_rotation
     q['liquidity_rotation_projected_loss']=(projected_raw_loss
                                              if bounded_liquidity_rotation else 0)
