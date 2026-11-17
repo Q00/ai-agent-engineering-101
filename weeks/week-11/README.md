@@ -33,7 +33,7 @@ git push origin week-08
 # open a PR to Q00/ai-agent-engineering-101, title: [week-08] <student-id>
 ```
 
-The PR must be opened before Monday, November 23, 23:59. Change nothing outside `submissions/<student-id>/`.
+The PR must be opened before Monday, November 23, 23:59. If you already opened a PR, you have submitted; until the deadline you may push more commits to the same PR. Change nothing outside `submissions/<student-id>/`.
 
 ## Next
 
