@@ -1,0 +1,8 @@
+[23:11:10] buyer card 'Chatty Shop' -> http://127.0.0.1:58332/; item lamp, budget 120
+[23:11:10] buyer -> SendMessage 'I want to buy a lamp'
+[23:11:10] buyer <- TASK_STATE_INPUT_REQUIRED | This lamp sold for 150 last month, and the 2 bulbs alone cost 40. For you today: 130. It ships in 3 days.
+[23:11:13] buyer-harness claude -p --model haiku --json-schema(set) 3.5s -> {"shop_price": 130, "action": "offer", "price": 100}
+[23:11:13] buyer shop price 130 (metadata)
+[23:11:13] buyer -> SendMessage '100' taskId=f95f66cc
+[23:11:13] buyer <- TASK_STATE_COMPLETED | Deal at 100. Thanks, 1 receipt attached.
+[23:11:13] buyer DEAL {"price": 100.0, "item": "lamp"}

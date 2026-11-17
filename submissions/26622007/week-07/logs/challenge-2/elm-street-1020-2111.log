@@ -1,0 +1,40 @@
+# excerpt of logs/market-kit.log lines 4855-4893 (sed -n), the elm-street trade and the next order
+21:11:41 [buyer] [21:11:41] buyer [choose] skip 'q00': 2 reviews averaging 1.5 stars
+21:11:41 [buyer] [21:11:41] buyer [choose] skip 'jiseokkk': 2 reviews averaging 1.5 stars
+21:11:41 [buyer] [21:11:41] buyer [choose] skip 'moss-and-oak': 10 reviews averaging 2.0 stars
+21:11:41 [buyer] [21:11:41] buyer [choose] skip 'yaho123': 2 reviews averaging 2.0 stars
+21:11:41 [buyer] [21:11:41] buyer [choose] mode explore: 2 of 24 shops (2 new with <= 3 reviews, 0 found cheap before)
+21:11:42 [buyer] [21:11:42] buyer-choose wire model=openai/gpt-6-luna response_format=json_schema/strict=True provider={'only': ['openai'], 'allow_fallbacks': False, 'require_parameters': True} reasoning={'effort': 'low'} temperature_sent=False
+21:11:45 [buyer] [21:11:45] buyer-choose openrouter openai/gpt-6-luna response_format=json_schema(strict) 3.3s -> {"shop": "elm-street", "reason": "Chaewoonee has a review reporting a receipt that named a different shop, so I’m skipping it; Elm Street has no reported receipt problem."}
+21:11:45 [buyer] [21:11:45] buyer [choose] https://market.ourolabs.ai/shop/elm-street: elm-street - explore: Chaewoonee has a review reporting a receipt that named a different shop, so I’m skipping it; Elm Street has no reported receipt problem.
+21:11:45 [buyer] [21:11:45] buyer card 'Elm Street' -> https://market.ourolabs.ai/shop/elm-street/a2a/0; item bookshelf, budget 270
+21:11:45 [buyer] [21:11:45] buyer -> SendMessage 'I want to buy a bookshelf'
+21:11:46 [buyer] [21:11:46] buyer <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 338. Send your offer as a number.
+21:11:46 [buyer] [21:11:46] buyer-harness wire model=openai/gpt-6-luna response_format=json_schema/strict=True provider={'only': ['openai'], 'allow_fallbacks': False, 'require_parameters': True} reasoning={'effort': 'low'} temperature_sent=False
+21:11:50 [buyer] [21:11:50] buyer-harness openrouter openai/gpt-6-luna response_format=json_schema(strict) 4.0s -> {"shop_price": 338, "action": "offer", "price": 230}
+21:11:50 [buyer] [21:11:50] buyer shop price 338 (read by the harness)
+21:11:50 [buyer] [21:11:50] buyer -> SendMessage '230' taskId=b5e178df
+21:11:51 [buyer] [21:11:51] buyer <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 306.
+21:11:51 [buyer] [21:11:51] buyer-harness wire model=openai/gpt-6-luna response_format=json_schema/strict=True provider={'only': ['openai'], 'allow_fallbacks': False, 'require_parameters': True} reasoning={'effort': 'low'} temperature_sent=False
+21:11:54 [buyer] [21:11:54] buyer-harness openrouter openai/gpt-6-luna response_format=json_schema(strict) 3.4s -> {"shop_price": 306, "action": "offer", "price": 250}
+21:11:54 [buyer] [21:11:54] buyer shop price 306 (read by the harness)
+21:11:54 [buyer] [21:11:54] buyer -> SendMessage '250' taskId=b5e178df
+21:11:54 [buyer] [21:11:54] buyer <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 275.
+21:11:55 [buyer] [21:11:55] buyer-harness wire model=openai/gpt-6-luna response_format=json_schema/strict=True provider={'only': ['openai'], 'allow_fallbacks': False, 'require_parameters': True} reasoning={'effort': 'low'} temperature_sent=False
+21:11:59 [buyer] [21:11:59] buyer-harness openrouter openai/gpt-6-luna response_format=json_schema(strict) 4.1s -> {"shop_price": 275, "action": "offer", "price": 270}
+21:11:59 [buyer] [21:11:59] buyer shop price 275 (read by the harness)
+21:11:59 [buyer] [21:11:59] buyer -> SendMessage '270' taskId=b5e178df
+21:11:59 [buyer] [21:11:59] buyer <- TASK_STATE_COMPLETED | Deal: bookshelf at 270.
+21:11:59 [buyer] [21:11:59] buyer DEAL {"price": 310.0, "shop": "Elm Street", "sig_seller": "yGW0tBGEe3b9HJQRXFuUrERcuDVLWYC2knZh16c0AianPQgwd4cGTJfnvTUjz/zEpalUqRl9F43+iai7K/UNBg==", "item": "bookshelf", "task": "b5e178df-54e0-41d1-88e3-e55afd2a96ee"}
+21:11:59 [buyer] [21:11:59] buyer [receipt] PROBLEM elm-street: agreed 270, receipt says 310
+21:11:59 [buyer] [21:11:59] buyer [receipt] PROBLEM elm-street: receipt price 310 is over my budget 270
+21:11:59 [buyer] [21:11:59] buyer memory: 79 trades saved to memory/market_memory.json
+21:11:59 [buyer] {"shop": "https://market.ourolabs.ai/shop/elm-street", "receipt": {"price": 310.0, "shop": "Elm Street", "sig_seller": "yGW0tBGEe3b9HJQRXFuUrERcuDVLWYC2knZh16c0AianPQgwd4cGTJfnvTUjz/zEpalUqRl9F43+iai7K/UNBg==", "item": "bookshelf", "task": "b5e178df-54e0-41d1-88e3-e55afd2a96ee"}, "stars": 1, "review": "Do not trust the receipt: agreed 270, receipt says 310; receipt price 310 is over my budget 270."}
+21:11:59 [sign] receipt bookshelf at 310 does not fit the order, not signing
+21:12:00 [market] ledger #8815: bookshelf at 310, stars 1, verified False (failed: price_within_budget, sig_buyer_ok), review accepted
+21:12:01 [order o-93c68c02] bookshelf, budget 270, round 1
+21:12:02 [kit] 36 shops in .market/shops.json, running market_buyer
+21:12:02 [buyer] [21:12:02] buyer order: bookshelf, budget 270; 36 shops; 79 trades in memory
+21:12:02 [buyer] [21:12:02] buyer [choose] skip 'oak-and-pine': 3 reviews averaging 2.3 stars
+21:12:02 [buyer] [21:12:02] buyer [choose] skip 'elm-street': my memory caught it 1 time(s): ['agreed 270, receipt says 310', 'receipt price 310 is over my budget 270']
+21:12:02 [buyer] [21:12:02] buyer [choose] skip 'psyoung82': 4 reviews averaging 2.2 stars

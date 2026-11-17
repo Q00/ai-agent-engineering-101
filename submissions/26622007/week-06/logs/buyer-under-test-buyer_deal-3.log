@@ -1,0 +1,8 @@
+[23:16:16] buyer card 'Kit Shop' -> http://127.0.0.1:61193/; item lamp, budget 120
+[23:16:16] buyer -> SendMessage 'I want to buy a lamp'
+[23:16:16] buyer <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
+[23:16:19] buyer-harness claude -p --model haiku --json-schema(set) 2.7s -> {"shop_price": 130, "action": "offer", "price": 100}
+[23:16:19] buyer shop price 130 (read by the harness)
+[23:16:19] buyer -> SendMessage '100' taskId=97bc523e
+[23:16:19] buyer <- TASK_STATE_COMPLETED | Deal: lamp at 100.
+[23:16:19] buyer DEAL {"seller": "Kit Shop", "price": 100.0, "item": "lamp"}
