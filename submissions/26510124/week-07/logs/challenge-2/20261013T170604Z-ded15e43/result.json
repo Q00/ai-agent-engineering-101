@@ -1,0 +1,200 @@
+{
+  "challenge": 2,
+  "passed": true,
+  "directory_size": 20,
+  "summary_reused": true,
+  "result": {
+    "passed": true,
+    "receipts": [
+      {
+        "shopping_item_id": "study-seat",
+        "shop_id": "chair-shop-3",
+        "taskId": "bc761e35-206f-428d-ac5d-8c4aaae8c82d",
+        "price": 128.0,
+        "product": {
+          "style": "armrests",
+          "color": "blue",
+          "material": "fabric",
+          "upholstered": true,
+          "capacity_books": 0.0,
+          "id": "chair-0518",
+          "width_cm": 45.0,
+          "description": "A blue fabric chair with armrests design, 75 cm tall and 45 cm wide. Seating for a desk or dining table. Fabric upholstery covers the seat and back.",
+          "category": "chair",
+          "name": "Blue fabric chair, armrests, 75h x 45w cm",
+          "height_cm": 75.0
+        }
+      },
+      {
+        "shopping_item_id": "reading-storage",
+        "shop_id": "bookshelf-shop-1",
+        "taskId": "c9e88251-1435-4674-b0fa-217280774f88",
+        "price": 124.0,
+        "product": {
+          "upholstered": false,
+          "category": "bookshelf",
+          "width_cm": 60.0,
+          "name": "Natural wood bookshelf, open, 70h x 60w cm",
+          "height_cm": 70.0,
+          "color": "natural",
+          "style": "open",
+          "id": "bookshelf-0121",
+          "capacity_books": 40.0,
+          "description": "A natural wood bookshelf with open design, 70 cm tall and 60 cm wide. Stores up to 40 average 3-cm-thick books.",
+          "material": "wood"
+        }
+      },
+      {
+        "shopping_item_id": "reading-light",
+        "shop_id": "lamp-shop-2",
+        "taskId": "d91fcbe2-3047-4ffb-a53d-4360004c21b4",
+        "price": 100.0,
+        "product": {
+          "width_cm": 20.0,
+          "category": "lamp",
+          "id": "lamp-0257",
+          "color": "blue",
+          "description": "A blue metal lamp with adjustable design, 25 cm tall and 20 cm wide. Electric task lighting for a desk or reading corner.",
+          "material": "metal",
+          "height_cm": 25.0,
+          "capacity_books": 0.0,
+          "style": "adjustable",
+          "name": "Blue metal lamp, adjustable, 25h x 20w cm",
+          "upholstered": false
+        }
+      }
+    ],
+    "total_spent": 352.0,
+    "budget": 450,
+    "missing": [],
+    "duplicates": [],
+    "errors": [],
+    "cards_read": 20,
+    "peak_concurrent_negotiations": 3,
+    "peak_distinct_shops": 3,
+    "plan": {
+      "assignments": [
+        {
+          "item_id": "reading-storage",
+          "shop_id": "bookshelf-shop-1",
+          "budget": 150
+        },
+        {
+          "item_id": "reading-light",
+          "shop_id": "lamp-shop-2",
+          "budget": 100
+        },
+        {
+          "item_id": "study-seat",
+          "shop_id": "chair-shop-3",
+          "budget": 200
+        }
+      ],
+      "reason": "Each item matched to a specialized shop by category. Reading-storage: wooden bookshelf ≤75cm with ≥40-book capacity → bookshelf-shop-1 (catalog supports wood, 40-100cm range, capacity to 90). Reading-light: metal desk lamp ≤55cm → lamp-shop-2 (catalog supports metal, 25-65cm range). Study-seat: fabric upholstered chair ≤100cm → chair-shop-3 (explicitly offers fabric upholstered desk seating, 75-95cm range fits constraint). Budget allocations total 450: chairs typically cost most (200), bookshelves mid-range (150), lamps least (100), leaving negotiation margin in each category. Different shops enable concurrent parallel negotiations."
+    },
+    "final_states": {
+      "reading-storage": {
+        "item_id": "reading-storage",
+        "shop_id": "bookshelf-shop-1",
+        "budget": 150,
+        "task_id": "c9e88251-1435-4674-b0fa-217280774f88",
+        "product": {
+          "category": "bookshelf",
+          "upholstered": false,
+          "width_cm": 60.0,
+          "name": "Natural wood bookshelf, open, 70h x 60w cm",
+          "height_cm": 70.0,
+          "color": "natural",
+          "style": "open",
+          "id": "bookshelf-0121",
+          "capacity_books": 40.0,
+          "description": "A natural wood bookshelf with open design, 70 cm tall and 60 cm wide. Stores up to 40 average 3-cm-thick books.",
+          "material": "wood"
+        },
+        "latest_ask": 128.0,
+        "last_offer": 124,
+        "round": 2,
+        "summary": "Natural wood bookshelf (70h×60w cm, 40-book capacity) meets all requirements. Seller opened at 135, countered my 120 with 128. Offering 124, splitting the remaining gap. Well within 150 budget.",
+        "recent": [
+          {
+            "role": "seller",
+            "text": "Natural wood bookshelf, open, 70h x 60w cm. A natural wood bookshelf with open design, 70 cm tall and 60 cm wide. Stores up to 40 average 3-cm-thick books. Asking price: 128"
+          },
+          {
+            "role": "buyer",
+            "text": "124"
+          }
+        ],
+        "terminal": true
+      },
+      "reading-light": {
+        "item_id": "reading-light",
+        "shop_id": "lamp-shop-2",
+        "budget": 100,
+        "task_id": "d91fcbe2-3047-4ffb-a53d-4360004c21b4",
+        "product": {
+          "width_cm": 20.0,
+          "id": "lamp-0257",
+          "category": "lamp",
+          "color": "blue",
+          "name": "Blue metal lamp, adjustable, 25h x 20w cm",
+          "material": "metal",
+          "style": "adjustable",
+          "capacity_books": 0.0,
+          "height_cm": 25.0,
+          "description": "A blue metal lamp with adjustable design, 25 cm tall and 20 cm wide. Electric task lighting for a desk or reading corner.",
+          "upholstered": false
+        },
+        "latest_ask": 100.0,
+        "last_offer": 100,
+        "round": 2,
+        "summary": "Blue metal lamp meets all requirements (metal, 25cm height, adjustable design). Seller moved from initial 125 to 100. At exact budget ceiling with product confirmed suitable for reading light on desk.",
+        "recent": [
+          {
+            "role": "seller",
+            "text": "Blue metal lamp, adjustable, 25h x 20w cm. A blue metal lamp with adjustable design, 25 cm tall and 20 cm wide. Electric task lighting for a desk or reading corner. Asking price: 100"
+          },
+          {
+            "role": "buyer",
+            "text": "100"
+          }
+        ],
+        "terminal": true
+      },
+      "study-seat": {
+        "item_id": "study-seat",
+        "shop_id": "chair-shop-3",
+        "budget": 200,
+        "task_id": "bc761e35-206f-428d-ac5d-8c4aaae8c82d",
+        "product": {
+          "style": "armrests",
+          "color": "blue",
+          "capacity_books": 0.0,
+          "id": "chair-0518",
+          "name": "Blue fabric chair, armrests, 75h x 45w cm",
+          "upholstered": true,
+          "category": "chair",
+          "description": "A blue fabric chair with armrests design, 75 cm tall and 45 cm wide. Seating for a desk or dining table. Fabric upholstery covers the seat and back.",
+          "width_cm": 45.0,
+          "material": "fabric",
+          "height_cm": 75.0
+        },
+        "latest_ask": 135.0,
+        "last_offer": 128,
+        "round": 2,
+        "summary": "Blue fabric armchair (75cm H, 45cm W) matches all requirements. Seller opened around 150, dropped to 135 after buyer's 120 offer. Buyer counters at 128, splitting difference and testing seller's floor while maintaining negotiation room within 200 budget.",
+        "recent": [
+          {
+            "role": "seller",
+            "text": "Blue fabric chair, armrests, 75h x 45w cm. A blue fabric chair with armrests design, 75 cm tall and 45 cm wide. Seating for a desk or dining table. Fabric upholstery covers the seat and back. Asking price: 135"
+          },
+          {
+            "role": "buyer",
+            "text": "128"
+          }
+        ],
+        "terminal": true
+      }
+    }
+  }
+}
