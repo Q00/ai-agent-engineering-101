@@ -247,7 +247,20 @@ def warranty_hours(unit, program=None):
     return 6
 
 
-def market_warranty_hours(unit, intel=None, required=0):
+def local_sku_warranty_loss(program, sku, min_sales=12, min_refunds=2,
+                            min_refund_rate=.10):
+    """Return true only for a mature SKU whose paid warranty cohort lost money."""
+    if program is None or not sku:return False
+    row=program.db.execute('''SELECT COUNT(*), COALESCE(SUM(refunded),0),
+        COALESCE(SUM(amount-cost),0),
+        COALESCE(SUM(CASE WHEN refunded=1 THEN amount ELSE 0 END),0)
+        FROM sales WHERE sku=?''',(sku,)).fetchone()
+    sales,refunds,gross,refunded_amount=map(float,row)
+    return (sales>=min_sales and refunds>=min_refunds and
+            refunds/sales>=min_refund_rate and gross-refunded_amount<=0)
+
+
+def market_warranty_hours(unit, intel=None, required=0, program=None):
     """Choose only between the two conditions this seller can fund safely.
 
     An explicit buyer requirement remains authoritative.  When no warranty is
@@ -261,6 +274,11 @@ def market_warranty_hours(unit, intel=None, required=0):
     try:required=float(required or 0)
     except (TypeError,ValueError):required=0
     if required>6:return None
+    # Exact local settlement evidence overrides the shop-wide hazard.  A
+    # mature SKU that has already lost money after full refunds must not add
+    # another funded claim.  It remains available to zero-warranty buyers.
+    if local_sku_warranty_loss(program,unit.get('sku')):
+        return None if required>0 else 0
     high_value=unit.get('cost',0)>=HIGH_VALUE_WARRANTY_CUTOFF
     # A live cohort of three high-value six-hour claims refunded more than
     # two million credits while outstanding high-value warranty principal

@@ -253,7 +253,7 @@ class Seller(AgentExecutor):
                     return
                 min_hours=food_hours_requirement(text,unit)
                 min_warranty=required_warranty_hours(text)
-                selected_warranty=market_warranty_hours(unit,intel,min_warranty)
+                selected_warranty=market_warranty_hours(unit,intel,min_warranty,program)
                 if selected_warranty is None:
                     await up.reject(say('Requested warranty exceeds the verified maximum of 6 hours.'))
                     return
@@ -292,7 +292,7 @@ class Seller(AgentExecutor):
                              u.get('supplied_at',0)),default=None)
                     if unit:
                         selected_warranty=market_warranty_hours(
-                            unit,intel,deal.get('required_warranty_hours',0))
+                            unit,intel,deal.get('required_warranty_hours',0),program)
                         if selected_warranty is None:
                             self.open.pop(task.id,None)
                             await up.reject(say('Requested warranty exceeds the verified maximum of 6 hours.'))

@@ -3,7 +3,7 @@ from pathlib import Path
 from seller_ledger import Program
 from seller_strategy import (sale_quote,negotiate,protected_floor,score_floor,
                              observed_hazard,class_book_cushion,
-                             market_warranty_hours)
+                             market_warranty_hours,local_sku_warranty_loss)
 from buyer_memory import Memory
 from seller_offers import offers
 from market_intel import Intel
@@ -68,6 +68,18 @@ class RolloutTests(unittest.TestCase):
    def source(inner,*args,**kwargs):
     return {'shops':[{'name':'25512088','claims':1000,'broken':80}]}
   self.assertEqual(market_warranty_hours(self.u,RiskyEvidence(),0),0)
+ def test_mature_loss_making_sku_never_adds_another_warranty_claim(self):
+  with self.p.db:
+   for i in range(12):
+    self.p.db.execute('''INSERT INTO sales
+      (task,unit,sku,amount,cost,member,referrer,reward,spent,ledger,buyer,settled,refunded)
+      VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)''',
+      (f't{i}',f'u{i}','sku',10000,9000,None,None,0,0,i+1,f'b{i}',time.time(),
+       int(i<2)))
+  self.assertTrue(local_sku_warranty_loss(self.p,'sku'))
+  self.assertEqual(market_warranty_hours(self.u,None,0,self.p),0)
+  self.assertIsNone(market_warranty_hours(self.u,None,6,self.p))
+  self.assertFalse(local_sku_warranty_loss(self.p,'other'))
  def test_high_value_goods_never_add_six_hour_claim_exposure(self):
   expensive=dict(self.u,cost=500000,list_price=900000)
   intel=Intel(self.root)
