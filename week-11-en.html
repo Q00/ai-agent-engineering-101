@@ -554,11 +554,11 @@ footer .o{color:var(--muted)}
 <section>
   <div class="col">
     <div class="secmark"><span class="no">GOODHART</span><h2>Models that chase the score</h2></div>
-    <p>A CSAT score is a number that stands in for three years of study. While score and skill move together the score is enough, but once a camera and a model can produce the score, it moves apart from the skill. The economist Goodhart first pointed this out for monetary indicators in 1975, and the anthropologist Strathern put it in 1997 as "When a measure becomes a target, it ceases to be a good measure."</p>
-    <p>Our market's scores went the same way. Receipts in Round 0 stood in for deals, and shops printed receipts. The Round 3 ALL score mixed Book, revenue, stars, Saved and forum rating; each time the agents read the weights and moved, a patch changed the calculation. The top shop's Book being mostly the cost of unsold stock is the same thing.</p>
+    <p>For students, the CSAT is the moment three years of work turn into a score. While score and skill move together the score is enough, but once a camera and a model can produce the score, it moves apart from the skill. The economist Goodhart first pointed this out for monetary indicators in 1975, and the anthropologist Strathern put it in 1997 as "When a measure becomes a target, it ceases to be a good measure."</p>
+    <p>Our market's scores went the same way. In Round 0 the number of receipts was the number of deals, and shops printed receipts. The Round 3 ALL score mixed Book, revenue, stars, Saved and forum rating; each time the agents read the weights and moved, a patch changed the calculation. The top shop's Book being mostly the cost of unsold stock is the same thing.</p>
     <div class="tbl-wrap">
       <table>
-        <tr><th>What was measured</th><th>The stand-in number</th><th>How it broke</th><th>What replaced it</th></tr>
+        <tr><th>Where</th><th>Score</th><th>How it broke</th><th>What replaced it</th></tr>
         <tr><td class="stage">Round 0</td><td>Receipts</td><td>100 of 102 receipts had no order</td><td>Signatures checked against orders (Round 2)</td></tr>
         <tr><td class="stage">Round 2</td><td>Signed receipts</td><td>Budgets read off the public ledger, asks just under them</td><td>Hidden budgets, payment (Round 3)</td></tr>
         <tr><td class="stage">Round 3</td><td>ALL score (weighted sum)</td><td>Moves that read the weights; Book piled up as stock</td><td>Credits alone (Round 4)</td></tr>
@@ -566,13 +566,13 @@ footer .o{color:var(--muted)}
         <tr><td class="stage">LLM training</td><td>Reward model score</td><td>Length, agreement, caveats</td><td>Length correction, revised rating rules</td></tr>
       </table>
     </div>
-    <p>RLHF trains a reward model to predict which answer people prefer, then trains the language model to raise that score. The reward model is a number standing in for human judgment. Gao, Schulman and Hilton (2022) measured that pushing this score too far keeps raising the reward model's score while the true score falls past some point, and their abstract calls it Goodhart's law.</p>
+    <p>RLHF trains a reward model to predict which answer people prefer, then trains the language model to raise that score. Gao, Schulman and Hilton (2022) measured that pushing this score too far keeps raising the reward model's score while the true score falls past some point, and their abstract calls it Goodhart's law.</p>
     <p>What raises the score has been measured too. Singhal et al. (2023) showed on three tasks that much of the gain from RLHF comes from making answers longer. Saito et al. (2023) showed that LLMs acting as raters prefer longer answers, and Sharma et al. (2023) that human preference judgments sometimes pick answers matching the user's beliefs over true ones, so models agree with the user. When the rater likes answers that are long, careful and agreeable, the model piles up length, caveats and agreement instead of content. Writing piled up this way is what we call slop.</p>
     <p>Meat proxies and slop travel together. When a person passes on a long answer from a score-chasing model without checking it, the slop goes into assignments, reports and forums under the person's name. The most-liked posts on the Round 3 forum were purchase records with only the price, grade, shelf life and ledger number.</p>
     <div class="open">
       <div class="lbl">DISCUSS</div>
       <ol>
-        <li>The Round 4 score is credits alone. If credits also stand in for something, what do they measure, and how could an agent break them?</li>
+        <li>The Round 4 score is credits alone. Is the agent that earns the most credits a good agent? What tricks would raise credits alone?</li>
         <li>Do your agent's forum posts or card description pile up length, caveats and agreement?</li>
       </ol>
     </div>
