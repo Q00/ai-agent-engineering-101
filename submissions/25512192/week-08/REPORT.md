@@ -68,27 +68,29 @@ bottom. Shaded boxes are what differs from the kit's default agent:
 
 ## 3. Round 3 results (at submission time; the final rank is the board at 11-17 23:59)
 
-Board, 2026-11-16 20:30 (`https://market.ourolabs.ai/api/board`):
+Board, 2026-11-17 19:15 (`https://market.ourolabs.ai/api/board`):
 
 | | settled deals | other |
 |---|---|---|
-| shop | 5,886 | revenue 314,887,813, profit 44,494,744, book 49,724,178, 4.58 stars, 68 refunds of 128 broken, ALL 0.434 |
-| buyer | 10,817 of 41,271 orders | saved 0.727, forum rating 0.932 on 888 posts, ALL 0.590 |
-| Players | total 1.024 (student_total 0.817) | 33rd of 46 students (student_pct 0.278) |
+| shop | 6,427 | revenue 341,882,871, profit 48,397,006, book 53,566,779, 4.57 stars, 77 refunds of 137 broken, ALL 0.443 |
+| buyer | 11,267 of 43,741 orders | saved 0.7301, forum rating 0.935 on 1,079 posts, ALL 0.595 |
+| Players | student_total 0.803 | 33rd of 46 students (student_pct 0.289) |
 
-On 11-10 19:15 the same row read shop 2,289 deals (ALL 0.463), buyer 6,146 (ALL 0.670), 31st of 46
+On 11-16 20:30 (before the patch 3.6 changes below) the row read shop 5,886 deals (ALL 0.434), buyer 10,817
+(saved 0.7268, 888 posts, ALL 0.590), 33rd of 46 (student_pct 0.278). On 11-10 19:15 the same row read shop 2,289 deals (ALL 0.463), buyer 6,146 (ALL 0.670), 31st of 46
 (student_pct 0.333). Both are far over the 20 settled deals of the base condition. In `logs/market-kit.log`
-a settled purchase reads:
+a settled purchase, and a deal the buyer dropped for its margin share (11-17), read:
 
 ```
-15:48:07 [acp] paid 16367 through https://underground-internship-scanned-hardwood.trycloudflare.com/acp, settled at ledger #7283012: 바리스타룰스 디카페인 라떼 325ml 10개, grade A, 661.8 h of shelf life left
+14:32:36 [acp] paid 29500 through https://docs-quotes-solutions-recipes.trycloudflare.com/acp, settled at ledger #7722489: 2026년 햅쌀 백진주 경기미 쌀 10kg 단일품종, grade B, 342.2 h of shelf life left
+14:23:12 [buyer] 14:23:12 [check] buzllightyear: 50500 for grade ? keeps about 0.68 of the margin (< 0.7); not paying, next shop
 ```
 
-**Why the buyer did not pay** (`.market/payments.jsonl`, 26,335 checkouts; 10,817 paid). The biggest groups:
+**Why the buyer did not pay** (`.market/payments.jsonl` to 11-16 20:29, 26,335 checkouts; 10,817 paid). The biggest groups:
 shelf life under the policy margin (12,160, e.g.
-`not paying: 7.05 h of shelf life left, the policy asks for 14.0`), `grade C, the policy accepts ['A', 'B']` (2,042),
+`14:20:58 [acp] not paying: 10.57 h of shelf life left, the policy asks for 24.5`), `grade C, the policy accepts ['A', 'B']` (2,042),
 `warranty 0 h, the policy asks for 6` (983 for all short warranties), no certificate (22), and shops' own
-failures such as `checkout refused: 409 {"error":"unit u-1c668c9c8fac is not in stock for this order"}`.
+failures such as `14:24:51 [acp] checkout refused: unit u-ab14350b6fde is not in stock for this order`.
 The buyer ALL fell from 0.670 to 0.590 while its saved ratio rose (0.291 to 0.727): it settled 26% of its
 orders, and 12,160 of the 15,518 checkouts it refused were the shelf-life rule.
 
