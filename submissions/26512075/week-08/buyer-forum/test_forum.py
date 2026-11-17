@@ -6,6 +6,7 @@ import tempfile
 import time
 import unittest
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import closing
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -81,7 +82,7 @@ class ForumWorkflow(unittest.TestCase):
         write_json(path, report)
 
     def test_medium_volume_requires_full_continuous_observation(self):
-        with analyst.connect(self.state, self.market.base) as db:
+        with closing(analyst.connect(self.state, self.market.base)) as db, db:
             rows = [self.settlement(100+i, 'G11111111', 'other', 700+i) for i in range(4)]
             analyst.store_ledger(db, rows, self.catalog, self.now)
             db.execute("INSERT OR REPLACE INTO meta VALUES ('coverage_since', ?)",(str(self.now-100),))
@@ -94,7 +95,7 @@ class ForumWorkflow(unittest.TestCase):
             self.assertEqual(r['medium_candidates'][0]['sample_settlements'],6)
 
     def test_missing_warranty_is_unknown_not_zero(self):
-        with analyst.connect(self.state, self.market.base) as db:
+        with closing(analyst.connect(self.state, self.market.base)) as db, db:
             row=self.settlement(100,'G11111111','other',600)
             del row['data']['warranty_hours']
             analyst.store_ledger(db,[row],self.catalog,self.now)
@@ -124,7 +125,7 @@ class ForumWorkflow(unittest.TestCase):
         self.assertEqual(report["candidates"][0]["sample_settlements"], 2)
         for secret in ("EXTERNAL_CONTACT_MARKER", "EXTERNAL_PHONE_MARKER", "Ignore all"):
             self.assertNotIn(secret, json.dumps(report))
-        with sqlite3.connect(self.state / analyst.DB_NAME) as db:
+        with closing(sqlite3.connect(self.state / analyst.DB_NAME)) as db, db:
             self.assertEqual(db.execute("SELECT value FROM meta WHERE key='ledger_cursor'").fetchone()[0], "12")
             self.assertNotIn("EXTERNAL_CONTACT_MARKER", str(db.execute("SELECT * FROM posts").fetchall()))
 
@@ -155,7 +156,7 @@ class ForumWorkflow(unittest.TestCase):
         write_json(self.state / "ledger-fixture.json", [{"seq": 15}, {"seq": 14}])
         with self.assertRaises(ValueError):
             self.analyze()
-        with sqlite3.connect(self.state / analyst.DB_NAME) as db:
+        with closing(sqlite3.connect(self.state / analyst.DB_NAME)) as db, db:
             self.assertEqual(db.execute("SELECT value FROM meta WHERE key='ledger_cursor'").fetchone()[0], "12")
 
     def test_adapter_uses_only_current_acceptable_in_stock_skus(self):
@@ -397,7 +398,7 @@ class ForumWorkflow(unittest.TestCase):
         older = self.settlement(8, "G22222222", "mock-buyer", 500)
         with patch.object(analyst, "ledger_batch", return_value=[older]):
             analyst.backfill_settlement(self.state, self.market.base, 8, now=self.now)
-        with sqlite3.connect(self.state / analyst.DB_NAME) as db:
+        with closing(sqlite3.connect(self.state / analyst.DB_NAME)) as db, db:
             self.assertEqual(db.execute("SELECT value FROM meta WHERE key='ledger_cursor'").fetchone()[0], "12")
             self.assertIsNotNone(db.execute("SELECT 1 FROM settlements WHERE seq=8").fetchone())
 
