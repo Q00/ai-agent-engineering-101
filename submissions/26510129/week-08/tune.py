@@ -229,21 +229,29 @@ def review_summary(reviews, limit=12):
     return lines
 
 
-def day_metrics(rows, events, formula):
-    """One day in numbers: what the buyer filled and scored, what the shop opened and agreed."""
+SALES = Path(".market") / "shop_sales.jsonl"   # what the ledger says my shop sold (restock.record_sales), since 11-17 20:08
+
+
+def day_metrics(rows, events, formula, sales=None):
+    """One day in numbers: what the buyer filled and scored, what the shop opened and agreed, and - where the
+    ledger-verified sales file covers the day - what it was actually paid for."""
     orders = {r.get("order") for r in rows if r.get("order")}
     won = {r.get("order") for r in rows if r.get("order") and r.get("outcome") == "deal"}
     scores = [s for r in rows if (s := objective.outcome_score(r, formula)) is not None]
     opens = sum(1 for e in events if e.get("event") == "seller_open")
     deals = [e for e in events if e.get("event") == "seller_deal"]
     margins = sorted(e.get("margin") for e in deals if isinstance(e.get("margin"), (int, float)))
-    return {"orders": len(orders), "deals": len(won), "fill": round(len(won) / len(orders), 3) if orders else None,
-            "score": round(sum(scores) / len(scores), 3) if scores else None,
-            "shop_opens": opens, "shop_agreed": len(deals), "shop_close": round(len(deals) / opens, 3) if opens else None,
-            "shop_median_margin": margins[len(margins) // 2] if margins else None}
+    out = {"orders": len(orders), "deals": len(won), "fill": round(len(won) / len(orders), 3) if orders else None,
+           "score": round(sum(scores) / len(scores), 3) if scores else None,
+           "shop_opens": opens, "shop_agreed": len(deals), "shop_close": round(len(deals) / opens, 3) if opens else None,
+           "shop_median_margin": margins[len(margins) // 2] if margins else None}
+    if sales:
+        out.update({"shop_settled": len(sales), "shop_revenue": sum(r.get("price") or 0 for r in sales),
+                    "shop_margin": sum(r.get("margin") or 0 for r in sales)})
+    return out
 
 
-def trajectory(rows, events, history, formula, until, days=7):
+def trajectory(rows, events, history, formula, until, days=7, sales=()):
     """The last `days` days as one line each, with the knobs moved that night: what followed each change."""
     moved = {}
     for h in history:
@@ -253,13 +261,15 @@ def trajectory(rows, events, history, formula, until, days=7):
     for back in range(days, 0, -1):
         day = (until - timedelta(days=back)).strftime("%Y-%m-%d")
         m = day_metrics([r for r in rows if str(r.get("at", "")).startswith(day)],
-                        [e for e in events if str(e.get("at", "")).startswith(day)], formula)
+                        [e for e in events if str(e.get("at", "")).startswith(day)], formula,
+                        [r for r in sales if str(r.get("at", "")).startswith(day)])
         if not m["orders"] and not m["shop_opens"]:
             continue
         lines.append(f"- {day[5:]}: buyer {m['orders']} orders, fill {_pct(m['fill'])}, score "
                      + (f"{m['score']:.3f}" if m["score"] is not None else "n/a")
                      + f"; shop {m['shop_opens']} opens, {m['shop_agreed']} agreed ({_pct(m['shop_close'])})"
                      + (f", median margin {m['shop_median_margin']:,.0f}" if m["shop_median_margin"] is not None else "")
+                     + (f"; paid for {m['shop_settled']} on the ledger, margin {m['shop_margin']:,.0f}" if m.get("shop_settled") else "")
                      + (f"; that night's change: {moved[day]}" if day in moved else ""))
     return lines
 
@@ -424,10 +434,12 @@ def main():
     week_rows = [r for r in profiles.archived_rows(state_dir) if str(r.get("at", "")) >= week_since] + buyer_rows(until - timedelta(days=7), until)
     week_events = seller_events(until - timedelta(days=7), until)
     history = playbook.read_jsonl(HISTORY)
+    sales = playbook.read_jsonl(SALES)
     memory = {"book": book, "saved": (profiles.load(state_dir) or {}).get("saved"),
-              "trajectory": trajectory(week_rows, week_events, history, book["formula"], until),
+              "trajectory": trajectory(week_rows, week_events, history, book["formula"], until, sales=sales),
               "lessons": playbook.digest(playbook.load(state_dir))}
-    metrics = day_metrics(rows, events, book["formula"])
+    window = (since.strftime("%Y-%m-%d %H:%M"), until.strftime("%Y-%m-%d %H:%M"))
+    metrics = day_metrics(rows, events, book["formula"], [r for r in sales if window[0] <= str(r.get("at", ""))[:16] < window[1]])
     summary = summarize(rows, events, reviews, params, since, until, ledger.load_stats(MEMORY.parent),
                         ledger.load_json(MEMORY.parent / "catalog.json") or {}, round_clock.hours_left(), memory)
     print(f"[tune] {len(rows)} buyer rows, {len(events)} seller events, {len(reviews)} reviews; summary {len(summary)} chars", flush=True)

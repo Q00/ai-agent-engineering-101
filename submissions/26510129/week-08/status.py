@@ -46,7 +46,10 @@ def lines():
     out.append(f"my running score   {prof.get('saved')}   over {prof.get('deals_scored')} remembered deals")
     out.append(f"order log          {prof.get('hot_rows')} rows of the last {prof.get('hot_hours')} h, "
                f"{prof.get('archived_rows')} archived, {len(prof.get('shops') or {})} shop profiles")
-    out.append(f"today              {today(_json('buyer_memory.json', []), book['formula'])}")
+    out.append(f"today (buyer)      {today(_json('buyer_memory.json', []), book['formula'])}")
+    sales = [r for r in playbook.read_jsonl(STATE / "shop_sales.jsonl") if str(r.get("at", "")).startswith(time.strftime("%Y-%m-%d"))]
+    out.append(f"today (shop)       {len(sales)} units paid for on the ledger, revenue {sum(r.get('price') or 0 for r in sales):,}, "
+               f"margin {sum(r.get('margin') or 0 for r in sales):,}")
     params = strategy_params.load()
     out.append("knobs              " + ", ".join(f"{k}={v}" for k, v in params.items()))
     history = playbook.read_jsonl(STATE / "tune_history.jsonl")

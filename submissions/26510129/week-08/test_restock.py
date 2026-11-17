@@ -138,6 +138,21 @@ class RestockMemoryTest(unittest.TestCase):
         self.assertEqual("S2", buys[0]["sku"])
         self.assertEqual([{"sku": "S1", "crowded": 60}], report["skipped_below_cost"])
 
+    def test_a_settled_sale_is_recorded_once_with_its_margin_and_age(self):
+        import json, tempfile
+        from pathlib import Path
+        known = {"u1": {"unit": "u1", "sku": "S1", "category": "home>sofa", "kind": "goods", "cost": 600, "grade": "A", "supplied_at": 1000}}
+        sold = [{"unit": "u1", "sku": "S1", "price": 700, "grade": "A", "buyer": "b", "ts": 1000 + 7200, "seq": 9},
+                {"unit": "u-unknown", "sku": "S2", "price": 50, "ts": 1000 + 7200, "seq": 10}]
+        with tempfile.TemporaryDirectory() as d:
+            first = restock.record_sales(d, sold, known)
+            self.assertEqual((700, 600, 100, 2.0, "home>sofa"), tuple(first[0][k] for k in ("price", "cost", "margin", "age_h", "category")))
+            self.assertEqual((None, None), (first[1]["cost"], first[1]["margin"]))          # a unit I have no snapshot of
+            self.assertEqual([], restock.record_sales(d, sold, known))                      # the same page again: nothing new
+            self.assertEqual(2, len(Path(d, restock.SALES_FILE).read_text().splitlines()))
+        self.assertEqual({"unit", "sku", "category", "kind", "expires_at", "cost", "grade", "supplied_at"},
+                         set(restock.unit_snapshot({"unit": "u1"})))
+
     def test_forum_requires_ledger_reference(self):
         forum = [{"text": "kimchi wanted", "refs": []}, {"text": "kimchi bought", "refs": [10]}]
         self.assertEqual(restock.forum_scores(forum, ["food>kimchi"])["food>kimchi"], 1)

@@ -57,7 +57,47 @@ def read_json(path, default):
 
 
 def unit_snapshot(unit):
-    return {key: unit.get(key) for key in ("unit", "sku", "category", "kind", "expires_at")}
+    # cost, grade and supplied_at since 11-17: a sale is recorded with the margin and the age of the unit it sold
+    return {key: unit.get(key) for key in ("unit", "sku", "category", "kind", "expires_at", "cost", "grade", "supplied_at")}
+
+
+SALES_FILE = "shop_sales.jsonl"
+
+
+def record_sales(state, sold, known, now=None):
+    """Append what the market's ledger says my shop sold (ledger.refresh's "my_sales") to .market/shop_sales.jsonl:
+    one line per unit with its cost, price, margin and age. `known` maps a unit id to its inventory snapshot.
+    A unit is recorded once (a page read twice after a failed run does not double it). Returns the new records.
+
+    11-17: the shop's memory was the seller's event log, and a seller_deal there is an agreement, not a payment -
+    the night's arm comparison was built on it. The buyer's memory has had the market's certified facts written
+    back since 11-05; this is the same for the shop."""
+    path = Path(state) / SALES_FILE
+    try:
+        seen = {json.loads(line).get("unit") for line in path.read_text(encoding="utf-8").splitlines()[-500:]}
+    except (OSError, ValueError):
+        seen = set()
+    out = []
+    for sale in sold or []:
+        unit = known.get(sale.get("unit")) or {}
+        price = sale.get("price")
+        if sale.get("unit") in seen or not isinstance(price, (int, float)):
+            continue
+        seen.add(sale["unit"])
+        ts = sale.get("ts") or now or time.time()
+        cost = unit.get("cost")
+        out.append({"at": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(ts)), "unit": sale["unit"],
+                    "sku": sale.get("sku") or unit.get("sku"), "category": unit.get("category"), "kind": unit.get("kind"),
+                    "grade": sale.get("grade") or unit.get("grade"), "price": int(price),
+                    "cost": int(cost) if isinstance(cost, (int, float)) else None,
+                    "margin": int(price - cost) if isinstance(cost, (int, float)) else None,
+                    "age_h": round((ts - unit["supplied_at"]) / 3600, 1) if isinstance(unit.get("supplied_at"), (int, float)) else None,
+                    "buyer": sale.get("buyer"), "ledger": sale.get("seq")})
+    if out:
+        with path.open("a", encoding="utf-8") as f:
+            for record in out:
+                f.write(json.dumps(record, ensure_ascii=False) + "\n")
+    return out
 
 
 def update_memory(previous, units, now=None):
@@ -306,8 +346,16 @@ def main():
     demand = read_json(state / "demand.json", [])
     forum = read_json(state / "forum.json", [])
     memory_path = state / "restock_memory.json"
-    memory = update_memory(read_json(memory_path, {}), inv.get("units") or [])
-    stats = ledger.refresh(state, catalog)   # one ledger call per run; the seller reads the file this writes
+    previous = read_json(memory_path, {})
+    # every unit the shop held at the last run or holds now: the ledger's settles are matched against these ids
+    known = {u.get("unit"): u for u in list(previous.get("units") or []) + [unit_snapshot(u) for u in inv.get("units") or []]}
+    memory = update_memory(previous, inv.get("units") or [])
+    stats = ledger.refresh(state, catalog, my_units=set(known))   # one ledger call per run; the seller reads the file this writes
+    sales = record_sales(state, stats.pop("my_sales", None), known)
+    if sales:
+        print("[strategy] " + json.dumps({"event": "shop_settled", "n": len(sales), "revenue": sum(r["price"] for r in sales),
+                                          "margin": sum(r["margin"] or 0 for r in sales),
+                                          "units": [r["unit"] for r in sales][:5]}, ensure_ascii=False), flush=True)
     try:
         rulebook.refresh(state)   # the rules page, at most every 30 min: patch 3.6 changed the score and went unread 5 days
     except Exception as e:        # never let the rules check stop the restock

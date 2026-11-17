@@ -79,6 +79,10 @@ class TuneTest(unittest.TestCase):
         self.assertIn("11-02: buyer 2 orders, fill 50%, score 0.857", lines[0])           # a grade A unit at 0.70 of list
         self.assertIn("that night's change: {'seller_volume_share': 0.7}", lines[0])
         self.assertIn("11-03: buyer 1 orders, fill 100%, score 0.462; shop 2 opens, 1 agreed (50%)", lines[1])   # grade C
+        paid = [{"at": "2026-11-03 09:01:30", "price": 88, "margin": 18}]
+        lines = tune.trajectory(rows, EVENTS, history, "margin_share", UNTIL, days=3, sales=paid)
+        self.assertIn("paid for 1 on the ledger, margin 18", lines[1])        # what the ledger says, beside what was agreed
+        self.assertNotIn("paid for", lines[0])
 
     def test_the_summary_leads_with_the_rule_in_force_and_the_lines_that_changed(self):
         book = {"formula": "margin_share", "changed_at": "2026-11-12 17:50", "previous_formula": "list_discount",

@@ -98,15 +98,19 @@ def stats(rows, catalog, now=None, hours=WINDOW_HOURS):
     }
 
 
-def refresh(state_dir, catalog, now=None, max_pages=MAX_PAGES):
+def refresh(state_dir, catalog, now=None, max_pages=MAX_PAGES, my_units=None):
     """Fetch what the ledger added since the last run, keep a 24 h cache of settles, and rewrite the stats.
     11-04 17:30: one page of 500 entries is under two minutes of this market (40k entries in 2.3 h), so stats from
-    a single page saw sofas only now and then; the cache makes the window the full 24 h at one call a minute."""
+    a single page saw sofas only now and then; the cache makes the window the full 24 h at one call a minute.
+    `my_units` (unit ids of my shop's stock): the settle entries that name one of them are returned under
+    "my_sales" - what the market says my shop sold, as opposed to what my seller agreed to (11-17: the seller's own
+    log showed 167.9M of revenue on a day the Book rose 1.4M)."""
     now = now or time.time()
     state = Path(state_dir)
     cache = load_json(state / CACHE_FILE) or {"last_seq": None, "rows": []}
     rows, after, pages = list(cache.get("rows") or []), cache.get("last_seq") or -FIRST_FETCH, 0
     supply = list(cache.get("supply") or [])   # [{sku, qty, ts}] of the last hour
+    sold = []
     try:
         while pages < max_pages:
             page = fetch(after)
@@ -114,6 +118,10 @@ def refresh(state_dir, catalog, now=None, max_pages=MAX_PAGES):
             if not page:
                 break
             rows += settles(page, now)
+            if my_units:
+                sold += [{"unit": d["unit"], "sku": d.get("sku") or d.get("item"), "price": d.get("amount"),
+                          "grade": d.get("grade"), "buyer": d.get("buyer"), "ts": e.get("ts"), "seq": e.get("seq")}
+                         for e in page if e.get("kind") == "settle" and (d := e.get("data") or {}).get("unit") in my_units]
             supply += [{"sku": e["data"]["sku"], "qty": int(e["data"].get("qty") or 1), "ts": e.get("ts") or 0}
                        for e in page if e.get("kind") == "supply" and (e.get("data") or {}).get("sku")]
             after = page[-1]["seq"]
@@ -127,7 +135,7 @@ def refresh(state_dir, catalog, now=None, max_pages=MAX_PAGES):
         for s in supply:
             result["supplied_1h"][s["sku"]] = result["supplied_1h"].get(s["sku"], 0) + s["qty"]
         (state / STATS_FILE).write_text(json.dumps(result, ensure_ascii=False, indent=1), encoding="utf-8")
-        return result
+        return {**result, "my_sales": sold} if my_units is not None else result
     except Exception as e:   # market down, no network, odd body: keep the previous stats
         print(f"[ledger] refresh failed: {type(e).__name__}: {str(e)[:100]}; using the previous stats", flush=True)
         return load_stats(state_dir)

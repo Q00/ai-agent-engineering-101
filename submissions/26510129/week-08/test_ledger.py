@@ -61,6 +61,15 @@ class LedgerTest(unittest.TestCase):
             st = ledger.refresh(d, CATALOG, now=NOW)
             self.assertEqual((4, 9), (st["settles"], json.loads(Path(d, ledger.CACHE_FILE).read_text())["last_seq"]))
 
+    def test_refresh_reports_the_settles_of_my_own_units(self):
+        page = [{"seq": 11, "ts": NOW - 5, "kind": "settle", "data": {"sku": "S1", "amount": 950, "unit": "u-mine", "grade": "A", "buyer": "b"}},
+                {"seq": 12, "ts": NOW - 4, "kind": "settle", "data": {"sku": "S1", "amount": 900, "unit": "u-other"}}]
+        with tempfile.TemporaryDirectory() as d, unittest.mock.patch.object(ledger, "fetch", return_value=page):
+            st = ledger.refresh(d, CATALOG, now=NOW, my_units={"u-mine"})
+            self.assertEqual([{"unit": "u-mine", "sku": "S1", "price": 950, "grade": "A", "buyer": "b", "ts": NOW - 5, "seq": 11}], st["my_sales"])
+            self.assertNotIn("my_sales", json.loads(Path(d, ledger.STATS_FILE).read_text()))   # the seller's file is unchanged
+            self.assertNotIn("my_sales", ledger.refresh(d, CATALOG, now=NOW))                    # not asked: the old shape
+
     def test_refresh_keeps_the_old_stats_when_the_market_is_down(self):
         with tempfile.TemporaryDirectory() as d, unittest.mock.patch.object(ledger, "fetch", side_effect=OSError("down")):
             Path(d, ledger.STATS_FILE).write_text(json.dumps({"settles": 7}))
