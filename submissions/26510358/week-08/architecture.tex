@@ -1,13 +1,13 @@
 % Round 3 architecture, one page (A4 landscape). Build: xelatex architecture.tex
-% Icons: FontAwesome 4 (system font, /usr/share/fonts/opentype/font-awesome/FontAwesome.otf).
+% Images: figures/ (sources and licenses in figures/SOURCES.md).
 % Numbers: logs/r3/*.jsonl and the market board, 2026-11-17 10:50 KST. Details are in REPORT.md.
 \documentclass[10pt]{article}
 \usepackage[a4paper,landscape,margin=5mm]{geometry}
 \usepackage{fontspec}
 \setmainfont{Noto Sans CJK KR}
 \setmonofont{Noto Sans Mono CJK KR}[Scale=0.9]
-\newfontfamily\FA{FontAwesome}
 \usepackage{xcolor}
+\usepackage{graphicx}
 \usepackage{tikz}
 \usetikzlibrary{positioning,arrows.meta,calc}
 \pagestyle{empty}
@@ -22,21 +22,21 @@
 \definecolor{sc}{HTML}{B03A2E}
 \definecolor{ink}{HTML}{222222}
 
-% icons (FontAwesome 4 code points)
-\newcommand{\ic}[1]{{\FA\symbol{"#1}}}
-\def\iBag{F290}  \def\iCart{F07A} \def\iRandom{F074} \def\iSitemap{F0E8}
-\def\iComments{F086} \def\iBulb{F0EB} \def\iSearch{F002} \def\iPencil{F040}
-\def\iWrench{F0AD} \def\iFile{F15C} \def\iRocket{F135}
-\def\iFork{F126} \def\iScale{F24E} \def\iClone{F24D} \def\iDb{F1C0}
-\def\iCloud{F0C2} \def\iChart{F201} \def\iTrophy{F091} \def\iBook{F02D}
-\def\iUsers{F0C0} \def\iTruck{F0D1} \def\iBolt{F0E7}
-\def\iClock{F017} \def\iRefresh{F021} \def\iTerminal{F120} \def\iGlobe{F0AC}
+% images in figures/ (see figures/SOURCES.md)
+\newcommand{\img}[2][11mm]{\includegraphics[height=#1]{figures/#2}}
+\def\iBag{store.png} \def\iCart{cart.png} \def\iRandom{slot.png} \def\iSitemap{office.png}
+\def\iComments{ballot.png} \def\iBulb{bulb.png} \def\iSearch{magnifier.png} \def\iPencil{memo.png}
+\def\iWrench{tools.png} \def\iFile{page.png} \def\iRocket{rocket.png} \def\iClaude{claude.png}
+\def\iFork{bird.png} \def\iScale{scale.png} \def\iClone{mirror.png}
+\def\iChart{chart.png} \def\iTrophy{trophy.png} \def\iBook{ledger.png}
+\def\iUsers{robot.png} \def\iTruck{truck.png} \def\iBolt{bolt.png} \def\iForum{speech.png}
+\def\iClock{clock.png} \def\iHour{hourglass.png} \def\iCal{calendar.png} \def\iGlobe{globe.png}
 
-% card: icon in a colored circle + bold title + two short lines
+% card: image + bold title + two short lines
 \newcommand{\card}[6]{% name, position, color, icon, title, lines
   \node[card=#3] (#1) at (#2) {%
     \begin{tabular}{@{}c@{\hspace{7pt}}l@{}}
-      \tikz\node[circle, fill=#3, text=white, minimum size=10mm, inner sep=0pt, font=\Large]{\ic{#4}}; &
+      \raisebox{-0.05\height}{\img[12mm]{#4}} &
       \begin{tabular}{@{}l@{}}{\small\bfseries #5}\\[1pt]{\footnotesize\color{ink!80}\begin{tabular}{@{}l@{}}#6\end{tabular}}\end{tabular}
     \end{tabular}};}
 
@@ -63,13 +63,13 @@
 
 % ======== market (left) ========
 \draw[side=mk] (0,0) rectangle (3.5,17.9);
-\node[sidetitle=mk] at (0.15,17.75) {\ic{\iGlobe}\ 시장};
-\foreach \y/\i/\t/\s in {16.85/\iBook/원장/서명된 사실,
-                         14.55/\iUsers/다른 에이전트/A2A 흥정,
+\node[sidetitle=mk] at (0.15,17.75) {\raisebox{-0.3em}{\img[1.5em]{\iGlobe}}\ 시장};
+\foreach \y/\i/\t/\s in {16.5/\iBook/원장/서명된 사실,
+                         14.4/\iUsers/다른 에이전트/A2A 흥정,
                          12.15/\iTruck/공급 창구/15–20분마다 열림,
-                         8.25/\iComments/포럼/조작 글 포함,
+                         8.25/\iForum/포럼/조작 글 포함,
                          3.1/\iTrophy/보드/순위와 점수}{
-  \node[circle, fill=mk, text=white, minimum size=10mm, font=\Large] at (1.75,\y) {\ic{\i}};
+  \node[inner sep=0pt] at (1.75,\y) {\img[12mm]{\i}};
   \node[font=\small\bfseries, text=mk] at (1.75,\y-0.85) {\t};
   \node[font=\scriptsize, text=ink!70] at (1.75,\y-1.25) {\s};
 }
@@ -83,10 +83,10 @@
 \draw[lane=l3] (4.4,6.4)  rectangle (22.0,10.1);
 \draw[lane=l4] (4.4,0)    rectangle (22.0,6.2);
 
-\node[tag=l1] at (4.6,16.05) {{\Large\ic{\iBolt}}\\밀리초\\가격·흥정};
-\node[tag=l2] at (4.6,12.15) {{\Large\ic{\iClock}}\\1–10분\\매입·포럼};
-\node[tag=l3] at (4.6,8.25)  {{\Large\ic{\iSearch}}\\30분\\재고 검토};
-\node[tag=l4, minimum height=5.8cm] at (4.6,3.1)   {{\Large\ic{\iRefresh}}\\시간–일\\코드 개선};
+\node[tag=l1] at (4.6,16.05) {\img[10mm]{\iBolt}\\밀리초\\가격·흥정};
+\node[tag=l2] at (4.6,12.15) {\img[10mm]{\iClock}\\1–10분\\매입·포럼};
+\node[tag=l3] at (4.6,8.25)  {\img[10mm]{\iHour}\\30분\\재고 검토};
+\node[tag=l4, minimum height=5.8cm] at (4.6,3.1)   {\img[10mm]{\iCal}\\시간–일\\코드 개선};
 
 % lane 1: no LLM
 \card{shop}{7.05,16.05}{l1}{\iBag}{가게}{구매자별 선호 등급 제시\\원가 아래로는 안 팖}
@@ -106,14 +106,14 @@
 
 % lane 4: outer loop as a cycle
 \foreach \n/\x/\i/\t/\s in {tr/8.3/\iFile/판단 기록/주문별 jsonl,
-                           hc/11.5/\iTerminal/기록 분석/사람과 Claude Code,
+                           hc/11.5/\iClaude/기록 분석/사람과 Claude Code,
                            ci/14.7/\iRocket/배포/CI 실패 시 revert,
                            can/17.9/\iFork/canary/주문 절반에만 적용}{
-  \node[circle, fill=l4, text=white, minimum size=12mm, font=\LARGE] (\n) at (\x,4.4) {\ic{\i}};
+  \node[inner sep=1pt] (\n) at (\x,4.4) {\img[13mm]{\i}};
   \node[font=\small\bfseries, text=l4] at (\x,3.35) {\t};
   \node[font=\scriptsize, text=ink!70] at (\x,2.93) {\s};
 }
-\node[circle, fill=sc, text=white, minimum size=12mm, font=\LARGE] (jd) at (20.8,4.4) {\ic{\iScale}};
+\node[inner sep=1pt] (jd) at (20.8,4.4) {\img[13mm]{\iScale}};
 \node[font=\small\bfseries, text=sc] at (20.8,3.35) {비교};
 \node[font=\scriptsize, text=ink!70] at (20.8,2.93) {전체 적용 또는 롤백};
 \foreach \a/\b in {tr/hc, hc/ci, ci/can, can/jd} \draw[flow=l4] (\a) -- (\b);
@@ -126,11 +126,12 @@
   {\footnotesize 롤백 2건: 8초 최소 대기, 10초 견적 단축}};
 \node[draw=l4!55, fill=white, rounded corners=5pt, line width=0.8pt, inner sep=5pt, anchor=east, align=left]
   (tw) at (21.8,1.2) {%
-  {\color{l4}\Large\ic{\iClone}}\ \begin{tabular}{@{}l@{}}{\small\bfseries 디지털 트윈}\\[-1pt]{\footnotesize 과거 방문으로 미리 재실행}\end{tabular}};
+  \raisebox{-0.35\height}{\img[10mm]{\iClone}}\ \begin{tabular}{@{}l@{}}{\small\bfseries 디지털 트윈}\\[-1pt]{\footnotesize 과거 방문으로 미리 재실행}\end{tabular}};
 
 % ======== right column ========
 \draw[side=mem] (22.4,10.3) rectangle (28.3,17.9);
-\node[sidetitle=mem] at (22.55,17.75) {\ic{\iDb}\ 기억 (memory.sqlite)};
+\node[sidetitle=mem] at (22.55,17.75) {기억 (memory.sqlite)};
+\node[inner sep=0pt, anchor=north east] at (28.1,17.75) {\img[6.5mm]{sqlite.png}};
 \node[fill=mem!85, text=white, rounded corners=4pt, minimum width=5.3cm, minimum height=1.5cm, align=center]
   at (25.35,15.95) {{\small\bfseries 시장 원장}\\{\scriptsize 정산, 공급, 고장 기록}};
 \node[fill=mem!50, text=white, rounded corners=4pt, minimum width=5.3cm, minimum height=1.5cm, align=center]
@@ -140,26 +141,28 @@
 \node[font=\scriptsize, text=ink!65] at (25.35,11.1) {위쪽 기록을 더 믿음};
 
 \draw[side=md] (22.4,6.4) rectangle (28.3,10.1);
-\node[sidetitle=md] at (22.55,9.95) {\ic{\iCloud}\ 외부 모델};
-\node[fill=white, draw=md!55, rounded corners=4pt, minimum width=5.3cm, minimum height=1.25cm, align=center]
-  (dc) at (25.35,8.5) {{\small\bfseries Decisions API}\\{\scriptsize 포럼 글 판정 44,073회}};
-\node[fill=white, draw=md!55, rounded corners=4pt, minimum width=5.3cm, minimum height=1.25cm, align=center]
-  (cx) at (25.35,7.1) {{\small\bfseries Codex LLM}\\{\scriptsize 가격 문장 해석, 글 작성 9,242회}};
+\node[sidetitle=md] at (22.55,9.95) {외부 모델};
+\node[fill=white, draw=md!55, rounded corners=4pt, minimum width=5.3cm, minimum height=1.25cm, align=left]
+  (dc) at (25.35,8.5) {\begin{tabular}{@{}c@{\hspace{8pt}}l@{}}\raisebox{-0.4\height}{\img[8.5mm]{openai.png}} &
+     \begin{tabular}{@{}l@{}}{\small\bfseries OpenAI Decisions API}\\{\scriptsize 포럼 글 판정 44,073회}\end{tabular}\end{tabular}};
+\node[fill=white, draw=md!55, rounded corners=4pt, minimum width=5.3cm, minimum height=1.25cm, align=left]
+  (cx) at (25.35,7.1) {\begin{tabular}{@{}c@{\hspace{8pt}}l@{}}\raisebox{-0.4\height}{\img[9mm]{codex.jpg}} &
+     \begin{tabular}{@{}l@{}}{\small\bfseries Codex CLI}\\{\scriptsize 가격 문장 해석, 글 작성 9,242회}\end{tabular}\end{tabular}};
 
 \draw[side=sc] (22.4,0) rectangle (28.3,6.2);
-\node[sidetitle=sc] at (22.55,6.05) {\ic{\iChart}\ 점수 모델 (score\_model.py)};
+\node[sidetitle=sc] at (22.55,6.05) {\raisebox{-0.3em}{\img[1.5em]{\iChart}}\ 점수 모델 (score\_model.py)};
 \node[font=\small, align=center, text=ink] at (25.35,4.4)
   {{\small\bfseries 행동이 순위 점수를}\\{\small\bfseries 얼마나 바꾸는지 계산}\\[3pt]{\scriptsize bandit 보상, 선제 행동 판단,}\\{\scriptsize 구매 상한, canary 비교에 같은 값을 씀}};
-\node[circle, fill=sc, text=white, minimum size=11mm, font=\Large] at (23.4,1.6) {\ic{\iTrophy}};
+\node[inner sep=0pt] at (23.4,1.6) {\img[13mm]{\iTrophy}};
 \node[anchor=west, align=left, text=ink] at (24.15,1.6)
   {{\Large\bfseries 15위} {\small / 71}\\{\scriptsize 총점 1.499 (11-17 10:50)}\\{\scriptsize 가게 0.778, 구매자 0.721}};
 
 % ======== cross arrows ========
-\draw[flow=mk, <->] (2.3,14.55) -- (4.6,14.55);
+\draw[flow=mk, <->] (2.3,14.4) -- (4.6,14.4);
 \draw[flow=mk] (2.3,12.15) -- (4.6,12.15);
 \draw[flow=mk, <->] (2.3,8.25) -- (4.6,8.25);
 \draw[flow=mk] (2.3,3.1) -- node[lbl=mk, pos=0.45, font=\tiny] {30분} (4.6,3.1);
-\draw[flow=mem, rounded corners=8pt] (1.75,17.3) -- (1.75,18.15) -- node[lbl=mem, pos=0.5] {60초마다 원장 동기화} (27.7,18.15) -- (27.7,17.9);
+\draw[flow=mem, rounded corners=8pt] (1.75,17.15) -- (1.75,18.15) -- node[lbl=mem, pos=0.5] {60초마다 원장 동기화} (26.15,18.15) -- (26.15,17.9);
 \draw[flow=md, dashed] (22.0,12.15) -- (22.2,12.15) |- (dc.west);
 \draw[flow=md, dashed] (22.0,8.25) -- (22.2,8.25) |- (cx.west);
 \draw[flow=sc] (22.4,4.4) -- (jd.east);
