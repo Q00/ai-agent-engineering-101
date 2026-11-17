@@ -124,9 +124,12 @@ def plan(inv, catalog, demand, forum, memory, stats=None, report=None, pressure=
     report = report if report is not None else {}
     skipped = report.setdefault("skipped_below_cost", [])
     pressure = pressure or {}
-    if hours_to_end is not None and hours_to_end < round_clock.STOP_ALL_HOURS:
-        report["liquidation"] = f"{hours_to_end:.1f} h to the close: no more stock"   # worth nothing after the close
+    if hours_to_end is not None and hours_to_end <= 0:
+        report["liquidation"] = "the round has closed: no more stock"
         return []
+    last_day = hours_to_end is not None and hours_to_end < round_clock.LAST_DAY_HOURS
+    if last_day:   # unsold stock keeps its cost on the Book at the close (round_clock.py), so buying goes on, narrowed
+        report["liquidation"] = f"{hours_to_end:.1f} h to the close: only what sold here in the last six hours"
     stock_cost = sum(unit.get("cost") or 0 for unit in units)
     capital = balance + stock_cost
     stock_cap = STOCK_SHARE * capital
@@ -204,8 +207,15 @@ def plan(inv, catalog, demand, forum, memory, stats=None, report=None, pressure=
         if not choices:
             continue
         kind = choices[0][1].get("kind")
-        if kind == "food" and hours_to_end is not None and hours_to_end < round_clock.STOP_FOOD_HOURS:
-            continue   # it would not sell before it spoils or the close
+        if last_day:
+            # the agent's own log (category_pressure.json, six hours) is the evidence that a unit bought now still
+            # sells before the close; food must also be good at the close even as a grade C unit (22% of its shelf life)
+            if not (press.get("deals", 0) >= 2 and press.get("close_rate", 0) >= 0.5):
+                continue
+            if kind == "food":
+                choices = [(sku, row) for sku, row in choices if (row.get("shelf_hours") or 0) * 0.22 >= hours_to_end]
+                if not choices:
+                    continue
         target = FOOD_TARGET if kind == "food" else GOODS_TARGET
         sells_at = sells_at_of(category)
         comparable = comparable_of(category, sells_at)

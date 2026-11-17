@@ -11,18 +11,28 @@ class RoundClockTest(unittest.TestCase):
         self.assertAlmostEqual(47.98, round_clock.hours_left(datetime(2026, 11, 16, 0, 0, tzinfo=round_clock.KST)), places=2)
         self.assertLess(round_clock.hours_left(datetime(2026, 11, 18, 0, 0, tzinfo=round_clock.KST)), 0)
 
-    def test_restock_stops_food_then_everything_before_the_close(self):
-        catalog = {"K1": {"category": "food>kimchi", "kind": "food", "list_price": 20_000},
-                   "B1": {"category": "home>bed", "kind": "goods", "list_price": 300_000}}
-        demand = [{"category": "food>kimchi", "median_price": 20_000}, {"category": "home>bed", "median_price": 300_000}]
-        stats = {"categories": {"food>kimchi": {"n": 50, "median_ratio": 0.9, "revenue": 900_000, "median_amount": 18_000},
-                                "home>bed": {"n": 50, "median_ratio": 0.8, "revenue": 12_000_000, "median_amount": 240_000}}, "skus": {}}
+    def test_the_last_day_buys_only_what_still_sells_here_and_food_that_outlasts_the_close(self):
+        catalog = {"K1": {"category": "food>kimchi", "kind": "food", "list_price": 20_000, "shelf_hours": 720},
+                   "F1": {"category": "food>fruit", "kind": "food", "list_price": 20_000, "shelf_hours": 48},
+                   "B1": {"category": "home>bed", "kind": "goods", "list_price": 300_000},
+                   "D1": {"category": "home>desk", "kind": "goods", "list_price": 300_000}}
+        demand = [{"category": c, "median_price": 20_000} for c in ("food>kimchi", "food>fruit", "home>bed", "home>desk")]
+        cat = lambda n, amount: {"n": n, "median_ratio": 0.9, "revenue": n * amount, "median_amount": amount}
+        stats = {"categories": {"food>kimchi": cat(50, 18_000), "food>fruit": cat(50, 18_000),
+                                "home>bed": cat(50, 240_000), "home>desk": cat(50, 240_000)}, "skus": {}}
         inv = {"balance": 5_000_000, "units": []}
-        self.assertEqual({"K1", "B1"}, {b["sku"] for b in restock.plan(inv, catalog, demand, [], {}, stats, hours_to_end=100)})
-        self.assertEqual(["B1"], [b["sku"] for b in restock.plan(inv, catalog, demand, [], {}, stats, hours_to_end=30)])
+        selling = {c: {"opens": 10, "deals": 6, "close_rate": 0.6} for c in ("food>kimchi", "food>fruit", "home>bed")}
+        buy = lambda hours, report=None: {b["sku"] for b in restock.plan(inv, catalog, demand, [], {}, stats, report, selling, hours)}
+        self.assertEqual({"K1", "F1", "B1", "D1"}, buy(100))
+        # 20 h to the close: the desk has not sold here in six hours; the fruit (48 h shelf life, 10.6 h as grade C)
+        # would be past its date at the close; kimchi (158 h as grade C) and the bed are still bought
         report = {}
-        self.assertEqual([], restock.plan(inv, catalog, demand, [], {}, stats, report, hours_to_end=20))
-        self.assertIn("no more stock", report["liquidation"])
+        self.assertEqual({"K1", "B1"}, buy(20, report))
+        self.assertIn("only what sold here", report["liquidation"])
+        self.assertEqual({"K1", "F1", "B1"}, buy(4))        # 4 h: the fruit outlasts it
+        report = {}
+        self.assertEqual(set(), buy(-0.1, report))
+        self.assertIn("closed", report["liquidation"])
 
     def test_top_category_may_hold_more_when_it_closes_and_small_margins_are_not_topped_up(self):
         catalog = {"S1": {"category": "home>sofa", "kind": "goods", "list_price": 1_000_000},

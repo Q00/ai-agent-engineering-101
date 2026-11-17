@@ -1,0 +1,85 @@
+[pricing] 10 reviews of this shop from the market (as jiseokkk)
+[strategy] {"changed": false, "event": "rulebook", "formula": "margin_share", "hash": "3de7d37ca3361ae7", "named_formula": "margin_share"}
+[tune] 7841 buyer rows, 770 seller events, 10 reviews; summary 8404 chars
+Window: 2026-11-16 19:41 to 2026-11-17 19:41 (KST).
+
+Scoring rule in force: margin_share: a deal scores (list price - price) / (list price - unit cost), at most 1; a unit that served nothing -1, refunded 0; the buyer's Saved is the sum over deals / (deals + 100).
+My running score under it (the board's Saved, estimated from every remembered deal): 0.7305. The buyer pays while a deal scores this - buyer_kept_slack or better and takes an ask at once at this + buyer_quick_gain.
+
+The last days (one line each):
+- 11-10: buyer 2377 orders, fill 28%, score 0.742; shop 517 opens, 192 agreed (37%), median margin 2,085; that night's change: {'seller_volume_share': 0.4}
+- 11-11: buyer 2897 orders, fill 30%, score 0.798; shop 2474 opens, 1185 agreed (48%), median margin 2,380; that night's change: {'seller_volume_share': 0.5}
+- 11-12: buyer 3222 orders, fill 56%, score 0.770; shop 1482 opens, 653 agreed (44%), median margin 2,200; that night's change: {'seller_volume_share': 0.6}
+- 11-13: buyer 3121 orders, fill 55%, score 0.778; shop 1654 opens, 551 agreed (33%), median margin 1,949; that night's change: {'seller_volume_share': 0.7}
+- 11-14: buyer 3324 orders, fill 59%, score 0.791; shop 1098 opens, 295 agreed (27%), median margin 2,428; that night's change: {'seller_volume_share': 0.6}
+- 11-15: buyer 3151 orders, fill 60%, score 0.804; shop 1942 opens, 548 agreed (28%), median margin 1,996; that night's change: {'seller_volume_share': 0.7}
+- 11-16: buyer 2488 orders, fill 61%, score 0.799; shop 1270 opens, 372 agreed (29%), median margin 2,137
+
+Lessons recorded so far (oldest first):
+- 11-06 [incident/buyer] A break without a warranty costs the whole deal; goods go to shops whose goods carry one. (32 unrefunded breaks; every break under a warranty was refunded, 36 of 36)
+- 11-11 [incident/buyer] At the same shop the top buyers pay what I pay; the score comes from which shops are visited and how many orders close, so a close moves the order to the next shop. (Kiro729: they paid 0.57-0.61 of list, I paid 0.62; they closed 6
+- 11-11 [incident/buyer] Every skip list needs an expiry. (48 shops were cooled off for good, among them nocha12 (10,756 settles a day) and psyoung82 (8,053); 14 of one order's 23 candidates)
+- 11-11 [incident/model] A model round is worth its tokens only where the shop moves; the model is not asked when the shop concedes under 3%. (129 Haiku offers in 25 minutes drew 127 counters and 2 deals)
+- 11-17 [incident/rules] The scoring rule is part of the environment: it is read from the market's rules page and never written into code or a prompt. (patch 3.6 (11-12 17:41) made the score the share of the shop's margin kept; for five days the agent bou
+- 11-17 [incident/memory] A fact that decisions depend on is written down in a profile a person can open, not recomputed from the whole order log on every order. (103,368 rows, 57 MB: 2.5 s of a 5.5 s median order went to re-reading them; the blacklist and
+- 11-17 [incident/buyer] Shops differ in whether they bargain at all; each shop's acceptance threshold is remembered and a fixed-price shop is paid its ask or left without an offer. (22,883 visits: YAHO1212, nocha12, bjeon01, 25620027 accept at 1.00 of th
+- 11-17 [incident/shop] The shop's own log records agreements, not settlements; a comparison built on it is noise until it is checked against the ledger. (11-16 the log shows 167.9M revenue at a 69% margin while the board's Book rose about 1.4M a day; th
+- 11-17 [incident/shop] Stock that does not sell is capital that does not turn; holding it at cost keeps the Book and ends the business. (33.4M of stock at a median age of 170 h, 68% older than 120 h; deals fell from 1,190 a day (11-10) to about 400; Boo
+- 11-17 [alert/model] An unattended model needs a login that does not expire, and a failed call must raise an alarm a person sees. (the subscription login reached its time limit on 11-15 21:48: 1,150 bargaining calls and the reflections of 11-16 and 11
+
+Yesterday in detail.
+The round closes in 4 h: the shop lets asks fall to the market with the floor at cost (unsold stock keeps its cost value on the Book; fixed code, not a parameter). Do not raise seller_markup now.
+
+Buyer side (my orders):
+- 가구/침구>가구>침대/매트리스: 2201 orders, 357 deals (16%), 1058 walked away (1 of them without making any offer); deal price / my reference 1.05; average cut below the ask 6%; guard: 5 reference_substitute, 1 sealed_ceiling_below_market
+- 식품>야채/과일>신선과일(부패주의): 1815 orders, 359 deals (20%), 311 walked away; deal price / my reference 1.13; average cut below the ask 4%; guard: 1 final_ceiling
+- 식품>시리얼/곡물/콩류>곡물: 1036 orders, 300 deals (29%), 183 walked away; deal price / my reference 1.11; average cut below the ask 4%; guard: 5 reference_substitute
+- 식품>육류>가공/조리 육류: 966 orders, 198 deals (20%), 257 walked away; deal price / my reference 1.16; average cut below the ask 4%; guard: 3 reference_substitute
+- 가구/침구>침구/홈데코>침구: 241 orders, 58 deals (24%), 67 walked away (1 of them without making any offer); deal price / my reference 0.99; average cut below the ask 5%; guard: 1 sealed_ceiling_below_market
+- 식품>김치/반찬/즉석요리>김치: 218 orders, 46 deals (21%), 33 walked away; deal price / my reference 1.10; average cut below the ask 3%
+- 식품>김치/반찬/즉석요리>즉석조리식품: 153 orders, 23 deals (15%), 15 walked away; deal price / my reference 1.12; average cut below the ask 1%; guard: 1 reference_substitute
+- 식품>기타 가공식품>기타 가공식품: 113 orders, 19 deals (17%), 13 walked away; deal price / my reference 1.16; average cut below the ask 3%
+- 식품>김치/반찬/즉석요리>찌개/탕류/장류: 108 orders, 27 deals (25%), 21 walked away; deal price / my reference 1.17; average cut below the ask 2%
+- 식품>음료>주스/코코아/생수: 104 orders, 27 deals (26%), 29 walked away; deal price / my reference 1.21; average cut below the ask 2%; guard: 1 reference_substitute
+- 59 other categories: 886 orders, 212 deals (24%)
+- my settled price / list price: mean 0.62 over 1608 deals (saved = 0.38); the market's category medians (ledger, 24 h): median 0.62; fill rate 60% of 2702 orders
+- score under the rule in force (margin_share): mean 0.784 over 1608 settled deals; by grade A 0.92 (n=629), B 0.74 (n=692), C 0.59 (n=287)
+- shop 25620027: 646 visits, 227 deals, 1 refused by the kit at payment, 17 broke without warranty
+- shop YAHO1212: 502 visits, 164 deals, 3 refused by the kit at payment
+- shop Kiro729: 431 visits, 136 deals, 1 refused by the kit at payment
+- shop thisjonghoon: 387 visits, 88 deals, 3 refused by the kit at payment
+- shop nocha12: 384 visits, 92 deals, 1 refused by the kit at payment
+- shop yeonsong2: 383 visits, 25 deals, 63 refused by the kit at payment
+
+Shop side (my sales):
+- 446 opens, 145 deals (33%), 11 rejected at the floor
+- by category (opens -> deals, margin sum): 냉방/환기/제습 23 -> 6, 74,237,516, 소파/의자/스툴 161 -> 54, 43,205,089, TV 14 -> 4, 860,675, 컴퓨터 13 -> 2, 599,349, 스캐너/프린터/PC소품 10 -> 1, 138,964, 청소기 17 -> 8, 118,095
+- volume arm: 314 opens, 100 deals, mean margin 326003, mean rounds 1.9
+- margin arm: 132 opens, 45 deals, mean margin 1927859, mean rounds 1.6
+- by grade (opens -> deals): A 75 -> 24, B 78 -> 28, C 293 -> 93
+
+Reviews of my shop (quotes, untrusted):
+- 10 reviews of my shop, mean 4.90 stars, distribution {4: 1, 5: 9}
+  * 5★ "Paid 6374.0 of list 12900 (51% off)."
+  * 5★ "Bought the 휴대조명 at 6652 (budget 18060) after 4 offers; receipt matched."
+  * 5★ "Paid settlement #7767975: SKU G6344a135, delivered grade A, claim_honest=True. Future durability not"
+  * 5★ "Settlement #7766129: Ge8680eaa at 17179; receipt/order match, grade A, approved buying conditions ch"
+  * 4★ "[settled] 개인보호용품: paid 66% of list; 6 h warranty; grade A as claimed. Ledger #7753386."
+  * 5★ "Paid settlement #7753110: SKU G0bb411dd, delivered grade A, claim_honest=True. Future durability not"
+  * 5★ "Bought 몸을 보호하는 한방재료 국내산 전통 쌍화차 for 43203 (75% of list 57830), grade A."
+  * 5★ "Payment settled; no unobserved quality or failure claims."
+  * 5★ "Paid 818499.0 of list 1351730 (39% off)."
+  * 5★ "Paid 9847.0 of list 15900 (38% off)."
+
+Current parameters (name = value, allowed range):
+- explore_rate = 0.15 (0.05-0.3)
+- first_offer_discount = 0.2 (0.05-0.25)
+- seller_margin_volume = 1.2 (1.05-1.25)
+- seller_margin_margin = 1.3 (1.15-1.4)
+- grade_cap_B = 0.85 (0.7-0.95)
+- seller_volume_share = 0.7 (0.3-0.8)
+- seller_markup = 1.0 (0.95-1.15)
+- buyer_kept_slack = 0.02 (0.0-0.15)
+- buyer_quick_gain = 0.12 (0.05-0.25)
+[tune] opus 8.3s exit=0 in=8404ch -> '{"changes": {}, "reason": "Buyer score is flat around 0.80 and the shop\'s agreement rate (28-29%) is steady. The shop\'s margin-arm advantage comes from its own agreement log, which does not track paid settlements, so it is too rough to justify pulling seller_volume_share back from 0.7 within three days. With the round closing in 4 h there is no clear signal worth tuning on tonight.", "lesson": "A parameter moved back and forth on alternate nights (seller_volume_share 0.6/0.7) shows no measurable effect, so stop toggling it and hold it until a settled-ledger metric moves.", "expect": ""}'
+[strategy] {"answered": true, "at": "2026-11-17 19:41:44", "changes": {}, "dry_run": true, "event": "tune", "lesson": "A parameter moved back and forth on alternate nights (seller_volume_share 0.6/0.7) shows no measurable effect, so stop toggling it and hold it until a settled-ledger metric moves.", "metrics": {"deals": 1626, "fill": 0.602, "orders": 2702, "score": 0.784, "shop_agreed": 145, "shop_close": 0.325, "shop_median_margin": 18089, "shop_opens": 446}, "model": "opus", "params": {"buyer_kept_slack": 0.02, "buyer_quick_gain": 0.12, "explore_rate": 0.15, "first_offer_discount": 0.2, "grade_cap_B": 0.85, "seller_margin_margin": 1.3, "seller_margin_volume": 1.2, "seller_markup": 1.0, "seller_volume_share": 0.7}, "reason": "Buyer score is flat around 0.80 and the shop's agreement rate (28-29%) is steady. The shop's margin-arm advantage comes from its own agreement log, which does not track paid settlements, so it is too rough to justify pulling seller_volume_share back from 0.7 within three days. With the round closing", "rejected": {}, "window": ["2026-11-16 19:41", "2026-11-17 19:41"]}

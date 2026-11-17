@@ -784,6 +784,10 @@ def main():
         no_offer = outcome == "closed" and info.get("first_offer") is None
         if no_offer:
             outcome = "stale" if info.get("stale") else "no_stock"
+        elif outcome == "walked_away" and info.get("first_offer") is None and info.get("pay_cap"):
+            # 11-17 19:39 (usagi, a grade C unit asked at 0.67 of list against a cap of 0.54): even my opener was over
+            # the cap, the guardian refused it and no offer was made. That is an ask too high, not a bargain lost
+            outcome = "overpriced"
         stars, text, honest = review(wanted, outcome, agreed, receipt, reference, manip,
                                      set(order.get("acceptable") or ()), catalog)
         if outcome == "deal" and not info.get("checkout_authorized"):
