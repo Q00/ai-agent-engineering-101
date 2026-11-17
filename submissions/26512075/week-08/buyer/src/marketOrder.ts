@@ -3,6 +3,9 @@ import { readFileSync } from "node:fs";
 
 
 export type MarketOrder = {
+    orderId?: string;
+    expires?: number;
+    market_pubkey?: string;
     round: number;
     item: string; 
     budget: number;
@@ -23,14 +26,18 @@ export function parseOrder(value: unknown, expectedItem: string, expectedBudget:
     throw new Error("Round 3 order requires a nonempty acceptable SKU list");
   }
   if (x.kind !== "food" && x.kind !== "goods") throw new Error("invalid order kind");
+  if (x.expires !== undefined && (typeof x.expires !== "number" || !Number.isFinite(x.expires) || x.expires <= 0)) throw new Error("invalid order expiry");
   const h = x.use_within_hours;
   if (x.kind === "food" && (typeof h !== "number" || !Number.isFinite(h) || h < 0)) {
     throw new Error("food order requires valid use_within_hours");
   }
 
   return {
+    ...(typeof x.expires === "number" ? {expires: x.expires} : {}),
+    ...(typeof x.order === "string" ? {orderId: x.order} : {}),
     round: x.round as number, item: expectedItem, budget: expectedBudget,
     acceptable: [...new Set(x.acceptable as string[])], kind: x.kind,
+    ...(typeof x.market_pubkey === "string" ? {market_pubkey: x.market_pubkey} : {}),
     ...(x.kind === "food" ? {use_within_hours: h as number} : {})
   };
 }
@@ -63,7 +70,12 @@ export function receiptFitsBudget(receipt: Record<string, unknown>, budget: numb
   return typeof receipt.price === "number" && Number.isSafeInteger(receipt.price) && receipt.price > 0 && receipt.price <= budget;
 }
 
-export function acceptance(order: MarketOrder): {min_hours_left: number} | undefined {
-  return order.round >= 3 && order.kind === "food" && order.use_within_hours !== undefined
-    ? {min_hours_left: order.use_within_hours} : undefined;
+export function acceptance(order: MarketOrder): {min_hours_left?: number; warranty_hours?: number} | undefined {
+  if (order.round < 3) return undefined;
+  if (order.kind === "food" && order.use_within_hours !== undefined) return {min_hours_left: order.use_within_hours};
+  const raw = process.env.BUYER_MIN_WARRANTY_HOURS;
+  if (raw === undefined) return undefined;
+  const warranty = Number(raw);
+  if (!Number.isFinite(warranty) || warranty < 0 || warranty > 72) throw new Error("invalid BUYER_MIN_WARRANTY_HOURS");
+  return {warranty_hours: warranty};
 }

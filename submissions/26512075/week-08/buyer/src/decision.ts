@@ -14,6 +14,11 @@ export interface DecisionRequest {
         review: string;
         round: number;
     }>;
+    verifiedComps?: unknown;
+    listPrice?: number | undefined;
+    savedContext?: unknown;
+    pastOutcomes?: unknown;
+    acceptanceRequirements?: unknown;
     transcript: string[];
 }
 

@@ -26,6 +26,13 @@ export function reconcileOutcomes(memory: TradeRecord[], payments: any[], purcha
       trade.paymentStatus = "paid";
       trade.ledger = payment.ledger;
       trade.paymentReason = "";
+      const purchase = byLedger.get(payment.ledger);
+      if (purchase && purchase.orderId === trade.orderId && purchase.shopUrl === trade.shopUrl &&
+          purchase.sku === trade.sku && ["A", "B", "C"].includes(purchase.grade)) {
+        trade.settledGrade = purchase.grade;
+        if (typeof purchase.warrantyHours === "number" && Number.isFinite(purchase.warrantyHours) && purchase.warrantyHours >= 0)
+          trade.warrantyHours = purchase.warrantyHours;
+      }
     } else if (payment.paid === false) {
       trade.paymentStatus = "refused";
       trade.paymentReason = String(payment.reason ?? "unknown");

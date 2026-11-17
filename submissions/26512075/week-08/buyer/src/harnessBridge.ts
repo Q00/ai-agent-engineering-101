@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { delimiter, dirname, resolve } from "node:path";
@@ -5,7 +6,13 @@ import { delimiter, dirname, resolve } from "node:path";
 import { checkDecision, type Decision, type DecisionRequest } from "./decision.js";
 import process from "node:process";
 
-const pjRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+// Source and compiled dist/buyer/src entrypoints share the same project root.
+let pjRoot = dirname(fileURLToPath(import.meta.url));
+while (!existsSync(resolve(pjRoot, "harness", "decide.py"))) {
+    const parent = dirname(pjRoot);
+    if (parent === pjRoot) throw new Error("Cannot locate project harness/decide.py");
+    pjRoot = parent;
+}
 const script = resolve(pjRoot, "harness", "decide.py");
 
 /**
@@ -62,7 +69,7 @@ export async function askRawHarness(
     });
 }
 
-export async function askPythonHarness(request: DecisionRequest): Promise<Decision> {
-    const answer = await askRawHarness(request as unknown as Record<string, unknown>);
+export async function askPythonHarness(request: DecisionRequest, timeoutMs = 40_000): Promise<Decision> {
+    const answer = await askRawHarness(request as unknown as Record<string, unknown>, timeoutMs);
     return checkDecision(request, answer as unknown as Decision)
 }

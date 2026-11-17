@@ -14,7 +14,13 @@ import type { Task } from "@a2a-js/sdk"
 
 import { askPythonHarness } from "./harnessBridge.js"
 import { readOrder, matchingSkus, receiptFitsSku, receiptFitsBudget, acceptance } from "./marketOrder.js";
-import { chooseShop, loadMemory, loadShops, MEMORY_PATH, saveMemory } from "./marketSelection.js";
+import { chooseShop, loadMemory, loadShops, MEMORY_PATH, saveMemory, isStockRefusal } from "./marketSelection.js";
+
+import {readAnalysis, selectPair, verifiedComps, listPrice, availableShops} from "./forumSelection.js";
+import {readSavedContext} from "./savedContext.js";
+import {loadOutcomes} from "./outcomes.js";
+
+import {RuntimeBudget} from "./runtimeBudget.js";
 
 class RemoteShopError extends Error {}
 
@@ -162,11 +168,13 @@ function isState(state: string, name: string): boolean {
 }
 
 async function main(): Promise<void> {
+  const startedAt = Date.now();
   const shopsPath = arg("--shops");
   const item = arg("--item");
   const budget = Number(arg("--budget"));
-  const shops = loadShops(shopsPath);
-  const memory = loadMemory();
+  const shops = loadShops(shopsPath).filter(s =>
+    !process.env.OWN_SHOP_URL || s.url.replace(/\/$/, "") !== process.env.OWN_SHOP_URL.replace(/\/$/, ""));
+  const memory = loadOutcomes(loadMemory());
   if (!Number.isSafeInteger(budget) || budget <= 0) throw new Error("not valid budget");
 
   const orderFlag = process.argv.indexOf("--order");
@@ -183,13 +191,21 @@ async function main(): Promise<void> {
     return;
   }
   const r3 = order !== undefined && order.round >= 3;
-  const eligible = r3 ? shops.filter(s => matchingSkus(s, order!).length > 0) : shops;
-  if (eligible.length === 0) {
+  const runtime = new RuntimeBudget(startedAt, order?.expires);
+  const attempted = new Set<string>();
+  for (let attempt = 0; attempt < 3; attempt++) {
+  const remainingShops = shops.filter(s => !attempted.has(s.name));
+  const eligible = r3 ? availableShops(remainingShops, order!, memory) : remainingShops;
+  if (eligible.length === 0 || runtime.remaining() <= 5_000) {
     console.log(JSON.stringify({shop: "", receipt: null, stars: 3, review: "No matching stocked shop."}));
     return;
   }
-  const { shop, reason } = chooseShop(eligible, memory);
-  const selectedSku = r3 ? matchingSkus(shop, order!)[0]! : undefined;
+  const analysis = readAnalysis();
+  const pair = r3 ? selectPair(eligible, order!, memory, analysis) : null;
+  const { shop, reason } = pair ?? chooseShop(eligible, memory);
+  const selectedSku = pair?.sku;
+  attempted.add(shop.name);
+  let negotiationReason: "out_of_stock" | undefined;
   console.debug(`choose ${reason}`)
 
   
@@ -216,6 +232,8 @@ async function main(): Promise<void> {
   let lastOffer: number | null = null;
   let agreedPrice: number | null = null;
   let receiptMismatch: boolean | null = null;
+  let endpoint: string | undefined;
+  let latestTask: Task | undefined;
 
   try {
     const cardUrl = shopUrl.endsWith("/.well-known/agent-card.json")
@@ -223,7 +241,7 @@ async function main(): Promise<void> {
       : `${shopUrl.replace(/\/$/, "")}/.well-known/agent-card.json`;
 
     const cardResp = await fetch(cardUrl, {
-      signal: AbortSignal.timeout(10_000)
+      signal: AbortSignal.timeout(runtime.timeout(10_000))
     })
 
     if (!cardResp.ok) {
@@ -249,9 +267,9 @@ async function main(): Promise<void> {
       throw new Error("Agent card has no A2A 1.0 JSON-RPC endpoint")
     }
   
-    const endpoint = new URL(jsonRpcInterface.url, cardUrl).toString();
+    endpoint = new URL(jsonRpcInterface.url, cardUrl).toString();
 
-    console.log((`[card] ${shop.name}: JSON-RPC endpoint resolved`));
+    console.error((`[card] ${shop.name}: JSON-RPC endpoint resolved`));
 
     const send = async (txt: string): Promise<Task> => {
       
@@ -263,6 +281,7 @@ async function main(): Promise<void> {
             message: {
               messageId: randomUUID(),
               role: "ROLE_USER",
+              ...(order && acceptance(order) ? {metadata: {accept: acceptance(order)}} : {}),
               parts: [{ text:txt }],
               ...(taskId ? { taskId, contextId } : {}),
             },
@@ -271,11 +290,11 @@ async function main(): Promise<void> {
 
     transcript.push(`buyer: ${txt}`);
 
-    const resp = await fetch(endpoint, {
+    const resp = await fetch(endpoint!, {
       method: "POST",
       headers: { "Content-Type": "application/json", "A2A-Version": "1.0" },
       body: JSON.stringify(body),
-      signal: AbortSignal.timeout(200_000),
+      signal: AbortSignal.timeout(runtime.timeout(60_000)),
     });
 
     if (!resp.ok) {
@@ -298,6 +317,7 @@ async function main(): Promise<void> {
       throw new Error("A2A response has no task ID");
     }
 
+    latestTask = task;
     taskId = task.id;
     contextId = task.contextId ?? contextId;
     
@@ -391,6 +411,7 @@ async function main(): Promise<void> {
         isState(state, "CANCELED") ||
         isState(state, "FAILED")
       ) {
+        if (isState(state, "REJECTED") && !extractReceipt(task) && isStockRefusal(statusText(task))) negotiationReason = "out_of_stock";
         resultState = isState(state, "FAILED") ? "remote_error" : state.toLowerCase();
         review = `The negotiation ended with state ${state}.`;
         break;
@@ -429,7 +450,12 @@ async function main(): Promise<void> {
         sellerTxt: sellerText,
         shopReviews,
         transcript,
-      });
+        verifiedComps: r3 ? verifiedComps(task.status?.message?.metadata, selectedSku!, order!, analysis) : null,
+        listPrice: selectedSku ? listPrice(selectedSku) : undefined,
+        savedContext: r3 && selectedSku ? readSavedContext(selectedSku, ask) : null,
+        acceptanceRequirements: order ? acceptance(order) : undefined,
+        pastOutcomes: memory.filter(t => t.shopName === shop.name).slice(-10),
+      }, runtime.timeout(40_000));
 
       if (
         decision.action === "walk_away" ||
@@ -469,30 +495,8 @@ async function main(): Promise<void> {
       task = await send(String(offer));
     }
 
-    // A deliberate walk or turn limit can leave the remote task open.
-    if (isState(stateOf(task), "INPUT_REQUIRED") && taskId) {
-      try {
-        const cancelResponse = await fetch(endpoint, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "A2A-Version": "1.0" },
-          body: JSON.stringify({
-            jsonrpc: "2.0",
-            id: randomUUID(),
-            method: "CancelTask",
-            params: { id: taskId },
-          }),
-          signal: AbortSignal.timeout(10_000),
-        });
-        if (!cancelResponse.ok) throw new Error(`HTTP ${cancelResponse.status}`);
-        const cancelResult = (await cancelResponse.json()) as { error?: { message?: string } };
-        if (cancelResult.error) throw new Error(cancelResult.error.message ?? "CancelTask failed");
-        console.log(`[cancel] task=${taskId}`);
-      } catch (error) {
-        console.error("[cancel error]", error instanceof Error ? error.message : String(error));
-      }
-    }
   } catch (error) {
-    resultState = error instanceof RemoteShopError 
+    resultState = error instanceof RemoteShopError
         ? "remote_error" : "error";
 
     const message =
@@ -503,16 +507,43 @@ async function main(): Promise<void> {
     review = `The transaction result could not be confirmed: ${message}`;
   }
 
+    // A deliberate walk or turn limit can leave the remote task open.
+    if (latestTask && isState(stateOf(latestTask), "INPUT_REQUIRED") && taskId && endpoint) {
+      try {
+        const cancelResponse = await fetch(endpoint!, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "A2A-Version": "1.0" },
+          body: JSON.stringify({
+            jsonrpc: "2.0",
+            id: randomUUID(),
+            method: "CancelTask",
+            params: { id: taskId },
+          }),
+          signal: AbortSignal.timeout(runtime.cleanupTimeout()),
+        });
+        if (!cancelResponse.ok) throw new Error(`HTTP ${cancelResponse.status}`);
+        const cancelResult = (await cancelResponse.json()) as { error?: { message?: string } };
+        if (cancelResult.error) throw new Error(cancelResult.error.message ?? "CancelTask failed");
+        console.log(`[cancel] task=${taskId}`);
+      } catch (error) {
+        console.error("[cancel error]", error instanceof Error ? error.message : String(error));
+      }
+    }
+
   const price =
     receipt && typeof receipt.price === "number"
       ? receipt.price
       : null;
 
   memory.push({
+    ...(order?.orderId ? {orderId: order.orderId} : {}),
+    shopUrl,
+    ...(selectedSku ? {sku: selectedSku} : {}),
     shopName: shop.name,
     item,
     price,
     result: resultState,
+    ...(negotiationReason ? {negotiationReason} : {}),
     receiptMismatch,
     occurredAt: Date.now(),
   });
@@ -524,6 +555,13 @@ async function main(): Promise<void> {
     console.error("[memory error]", error);
   }
 
+  // Retry only an explicit terminal stock rejection: never after a timeout,
+  // ambiguous completion or receipt mismatch. Checkout remains the kit's job.
+  if (r3 && negotiationReason === "out_of_stock" && receipt === null && attempt < 2 && runtime.canRetry()) {
+    console.error(`[retry] stock unavailable shop=${shop.name} sku=${selectedSku}; trying another shop`);
+    continue;
+  }
+
   const result = {
     shop: shopUrl,
     receipt,
@@ -533,7 +571,8 @@ async function main(): Promise<void> {
   };
 
   console.log(JSON.stringify(result));
-
+  return;
+  }
   }
 
 main().catch((error) => { console.error(error); process.exitCode = 1; });
