@@ -127,6 +127,10 @@ buyer가 결제하지 않은 이유는 키트가 `.market/payments.jsonl`에 남
 ```
 거부의 대부분(478 + 14 + 3 = 495건)은 시장이 아니라 내 buyer가 먼저 막은 것이다. 유통기한과 등급이 주문에 쓸모없는 물건이면 잉여가 생기지 않기 때문이다.
 
+### 3.4 한계: 키트 없이 배포한 가게
+
+키트 없이 Render에 따로 배포한 가게(`acp_shop`, https://nocha-furniture-a2a.onrender.com)는 Round 3 정산 기록이 없어서 실제 거래로 동작했다고 말할 근거가 없다. 남은 근거는 Round 2 주문(o-8aeedd26)으로 `/api/settle`을 돌린 점검 하나뿐이다. 13개 검사 중 11개를 통과했고, 실패한 두 개는 `round_3_order`와 `bound_to_open_mandates`로 Round 3 주문의 open mandate가 있어야 통과하는 검사다(`logs/acp-render-check-1027.txt`, 커밋 13523c77). 즉 서명·금액·수취인 같은 가게 쪽 검사는 통과했지만, Round 3 주문으로 끝까지 정산되는지는 확인하지 못했다.
+
 ## 4. 시도했다가 버린 것
 
 - **codex 경로**: 11/06까지 거래 에이전트는 ChatGPT 구독의 `codex exec`를 썼다. 맥 미니에서 매 호출 429가 나서 OpenRouter로 옮겼다(`agent.json:2`, `harness.py:5-14`).
