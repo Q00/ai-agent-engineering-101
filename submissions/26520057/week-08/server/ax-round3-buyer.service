@@ -1,0 +1,22 @@
+[Unit]
+Description=AX Round 3 buyer using free local Qwen, one order per 90 seconds
+After=network-online.target ax-round3-ollama.service
+Wants=network-online.target ax-round3-ollama.service
+
+[Service]
+WorkingDirectory=%h/submissions/26520057/week-08
+EnvironmentFile=%h/submissions/26520057/week-08/.market/owner.env
+Environment=PYTHONUNBUFFERED=1
+UnsetEnvironment=OPENAI_API_KEY ANTHROPIC_API_KEY HARNESS_CMD
+ExecStart=%h/submissions/26520057/week-07/runtime/venv/bin/python -u run_buyer.py
+Restart=on-failure
+RestartSec=30
+TimeoutStopSec=30
+CPUQuota=100%
+MemoryMax=512M
+UMask=0077
+StandardOutput=append:%h/submissions/26520057/week-08/logs/buyer-console.log
+StandardError=append:%h/submissions/26520057/week-08/logs/buyer-console.log
+
+[Install]
+WantedBy=default.target
