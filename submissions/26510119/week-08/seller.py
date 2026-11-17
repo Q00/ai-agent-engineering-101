@@ -31,6 +31,7 @@ from cryptography.hazmat.primitives import serialization
 import harness
 import shop_memory
 import shop_r3
+import acp_shop
 import policy
 
 NAME = "Harness Shop"
@@ -192,6 +193,8 @@ class Seller(AgentExecutor):
                 receipt.update(shop_r3.receipt_extras(deal["unit"]))
                 self.promised[deal["unit"]["unit"]] = time.time()
             receipt = sign_receipt(receipt)
+            if acp_shop.CHECKOUT:              # our own ACP checkout ships what this receipt promised
+                acp_shop.CHECKOUT.remember(receipt)
             await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
             await up.complete(say(f"Deal: {deal.get('name', item)} at {offer}."))
             memory.record({"kind": "end", "task": task.id, "item": item, "category": deal.get("category"),
@@ -282,7 +285,8 @@ def build(port):
         )],
     )
     handler = DefaultRequestHandler(agent_executor=Seller(), task_store=InMemoryTaskStore(), agent_card=card)
-    return Starlette(routes=create_agent_card_routes(card) + create_jsonrpc_routes(handler, "/"))
+    acp = acp_shop.CHECKOUT.routes() if acp_shop.CHECKOUT else []   # /.well-known/acp.json and /acp/* (acp_shop.py)
+    return Starlette(routes=create_agent_card_routes(card) + create_jsonrpc_routes(handler, "/") + acp)
 
 
 if __name__ == "__main__":
