@@ -165,6 +165,22 @@ class Round3BuyerContextTest(unittest.TestCase):
         self.assertTrue(market_buyer.NO_WARRANTY.search("grade C, 155.2 h shelf life left, no warranty; the"))
         self.assertFalse(market_buyer.NO_WARRANTY.search("grade C, warranty 6 h, certificate attached"))
 
+    def test_a_shop_whose_payments_are_refused_ranks_below_one_whose_deals_are_paid(self):
+        base = {"reviews": [], "_kept_base": 0.73}
+        shops = [{**base, "name": "refused", "url": "u1", "_kept": 0.92, "_p_deal": 0.07, "_p_unpaid": 0.18},   # yeonsong2
+                 {**base, "name": "paid", "url": "u2", "_kept": 0.80, "_p_deal": 0.50, "_p_unpaid": 0.02}]
+        ranked = buyer_policy.rank_shops(shops, [], "valuable", 150)
+        self.assertEqual(["paid", "refused"], [s["name"] for s, _ in ranked])
+        self.assertEqual((0.5, 0.02), (ranked[0][1]["p_deal"], ranked[0][1]["p_unpaid"]))
+
+    def test_a_shop_whose_c_units_come_without_warranty_sells_me_no_c(self):
+        order = {"acceptable": ["g"], "kind": "goods"}
+        covered = [{"shop": "s", "settled": True, "warranty_hours": 6, "grade": "A", "list_price": 100_000, "value": 100_000}] * 5
+        self.assertEqual({"grades": ["A", "B", "C"], "warranty_hours": 1},
+                         market_buyer.accept_constraints(order, {"name": "s"}, covered, "C", {"s": {"warranty": 1.0}}))
+        self.assertEqual({"grades": ["A", "B"]},
+                         market_buyer.accept_constraints(order, {"name": "s"}, covered, "C", {"s": {"warranty": 1.0, "c_blocked": True}}))
+
     def test_a_probe_is_a_stable_draw_per_order_and_shop_at_the_explore_rate(self):
         draws = [market_buyer.probe_now(f"o-{i}", "shop", 0.15) for i in range(2000)]
         self.assertEqual(draws, [market_buyer.probe_now(f"o-{i}", "shop", 0.15) for i in range(2000)])

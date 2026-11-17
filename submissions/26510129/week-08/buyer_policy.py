@@ -18,6 +18,7 @@ RECENT_CONCENTRATION_WINDOW = 50
 MAX_VISITS_PER_WINDOW = 10
 EXPLORE_RATE = 0.15
 
+UNPAID_COST = 0.35   # what an order still expects to score when a refused payment ends it (fill about 0.5 x score 0.7)
 SHOP_MESSAGE_CHARS = 240   # a longer shop message is sales talk or a steering attempt; the code-side guard reads all of it
 
 NEGOTIATOR_SYSTEM = (
@@ -174,8 +175,15 @@ def evidence(shop, memory, item, reference=None, available=0, prefer_warranty=Fa
     # own settled deals in the shop's profile and measured against my running average: at the average 0.5, 0.15
     # above it the full weight. The ledger's price level against list (below) stands in for a shop without a
     # profile - under patch 3.6 a low price against list is a grade C unit as often as a thin margin.
+    # 20:15: a deal the kit refuses to pay ends the order (455 of 3,658 agreed deals in 48 h), and a shop's good
+    # scores are the scores of the deals that were paid. Where the profile has enough recent offers, the shop is
+    # worth what one visit is expected to score: paid deals per offer x their score, less what an order still had
+    # ahead of it (UNPAID_COST) for every refused payment. yeonsong2 scored 0.92 on 55 paid deals and had 139 refused.
     ratio, kept, base = shop.get("_price_ratio"), shop.get("_kept"), shop.get("_kept_base")
-    if _number(kept) and _number(base):
+    p_deal, p_unpaid = shop.get("_p_deal"), shop.get("_p_unpaid")
+    if _number(kept) and _number(base) and base > 0 and _number(p_deal):
+        cheapness = _clamp((p_deal * kept - UNPAID_COST * (p_unpaid or 0)) / (0.6 * base))
+    elif _number(kept) and _number(base):
         cheapness = _clamp(0.5 + (kept - base) / 0.30)
     else:
         cheapness = _clamp((0.74 - ratio) / 0.20) if _number(ratio) else 0.0
@@ -188,6 +196,8 @@ def evidence(shop, memory, item, reference=None, available=0, prefer_warranty=Fa
         "available": available,
         "price_ratio": round(ratio, 3) if _number(ratio) else None,
         "kept": round(kept, 3) if _number(kept) else None,
+        "p_deal": p_deal if _number(p_deal) else None,
+        "p_unpaid": p_unpaid if _number(p_unpaid) else None,
         "warranty": round(warranty, 2) if warranty is not None else None,
         "success": round(success, 4),
         "integrity": round(integrity, 4),

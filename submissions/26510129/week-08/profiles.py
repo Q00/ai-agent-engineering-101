@@ -80,6 +80,37 @@ def fold(shops, row, formula):
     c["last_at"] = max(c.get("last_at") or "", row.get("at") or "")
 
 
+def refusal_kind(reason):
+    """Why the kit refused to pay for an agreed deal, read off its reason in payments.jsonl."""
+    text = reason or ""
+    if "shelf life left" in text:
+        return "shelf"
+    if "warranty" in text:
+        return "warranty"
+    if "grade C" in text:
+        return "grade_c"
+    if "certificate" in text:
+        return "certificate"
+    if "not in stock" in text:
+        return "gone"
+    return "other"
+
+
+def refusal_flags(refused, paid, unpaid, food_paid, c_paid):
+    """What a shop's refused payments say about its stock, from the recent rows. A refused payment ends the order
+    (there is no next shop after a deal), so each of these is a reason not to start a bargain that will be refused.
+    11-17 20:15, 48 h: 455 of 3,658 agreed deals were refused at payment. yeonsong2 names no grade and 135 of its
+    units turned out grade C (55 paid); dragonash's "grade A" food had too little shelf life 31 times (28 paid);
+    chaewoonee, ddolcom, ggari-shop and myeonggi cover their A/B goods with a warranty but not their C units (75).
+      assume_c    it names no grade and its units keep being refused as grade C: an unnamed grade there is a C
+      shelf_risk  its food keeps being refused for shelf life: without stated hours it is not bargained for
+      c_blocked   its grade C goods come without the warranty I demand for them: C is not taken there"""
+    grade_c, shelf, warranty = refused.get("grade_c", 0), refused.get("shelf", 0), refused.get("warranty", 0)
+    return {"assume_c": grade_c >= 5 and grade_c >= 0.3 * (paid + unpaid),
+            "shelf_risk": shelf >= 5 and shelf >= 0.4 * (food_paid + shelf),
+            "c_blocked": warranty >= 3 and warranty > c_paid}
+
+
 def observations(row):
     """What one visit shows about where the shop accepts, as (offer / its first ask, accepted) pairs: my first offer,
     and the price it agreed to or my last offer it did not."""
@@ -125,12 +156,22 @@ def threshold(pairs):
 
 def view(life, rows, formula):
     """The per-shop facts decisions read: lifetime counters plus the recent rows. Returns (shops, summary)."""
-    recent, offers, grades = {}, {}, {}
+    recent, offers, grades, refused, food_paid, c_paid = {}, {}, {}, {}, {}, {}
     for row in rows:
         fold(recent, row, formula)
         pairs = observations(row)
         if pairs:
             offers.setdefault(row.get("shop"), []).extend(pairs)
+        shop = row.get("shop")
+        if row.get("outcome") == "unpaid":
+            kinds = refused.setdefault(shop, {})
+            kind = refusal_kind(row.get("unpaid_reason"))
+            kinds[kind] = kinds.get(kind, 0) + 1
+        elif row.get("outcome") == "deal" and row.get("settled"):
+            if objective.kind_of(row) == "food":
+                food_paid[shop] = food_paid.get(shop, 0) + 1
+            elif row.get("grade") == "C":
+                c_paid[shop] = c_paid.get(shop, 0) + 1
         s = objective.outcome_score(row, formula)
         if s is not None:
             g = grades.setdefault(row.get("grade") or "?", {"n": 0, "score": 0.0, "paid": 0.0})
@@ -149,6 +190,10 @@ def view(life, rows, formula):
         shops[name] = {
             "attempts": total["offers"], "deals": total["deals"], "recent_offers": new["offers"],
             "p_deal": round(p_deal, 3) if p_deal is not None else None,
+            # of my recent offers here, the share that ended in a deal the kit then refused to pay (the order's end)
+            "p_unpaid": round(new["unpaid"] / new["offers"], 3) if new["offers"] >= MIN_SCORED else None,
+            "refused": refused.get(name) or {},
+            **refusal_flags(refused.get(name) or {}, new["deals"], new["unpaid"], food_paid.get(name, 0), c_paid.get(name, 0)),
             "kept": round(kept, 3) if kept is not None else None,
             "theta": theta, "fixed": theta is not None and theta >= FIXED_FROM,
             "warranty": round(total["w_yes"] / total["w_n"], 3) if total["w_n"] >= 3 else None,

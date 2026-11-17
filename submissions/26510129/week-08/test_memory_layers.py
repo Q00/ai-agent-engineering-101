@@ -128,6 +128,23 @@ class ProfilesTest(unittest.TestCase):
             prof, _ = profiles.consolidate(paid_ask + refused[:1] + taken, d, "margin_share", now=NOW)
             self.assertEqual((0.95, False), (prof["shops"]["s"]["theta"], prof["shops"]["s"]["fixed"]))   # 4 of 5 at 0.95
 
+    def test_refused_payments_mark_what_not_to_bargain_for_at_a_shop(self):
+        at = "2026-11-17 19:00"
+        unpaid = lambda shop, reason, **more: row(shop, at, outcome="unpaid", unpaid_reason=reason, **more)
+        rows = ([unpaid("nograde", "not paying: grade C, the policy accepts ['A', 'B']")] * 6 + [row("nograde", at)] * 4
+                + [unpaid("oldfood", "not paying: 110.49 h of shelf life left, the policy asks for 540", item="식품>육류")] * 5
+                + [row("oldfood", at, item="식품>육류")] * 5
+                + [unpaid("bare-c", "not paying: warranty 0 h, the policy asks for 1")] * 3 + [row("bare-c", at)] * 9
+                + [unpaid("unlucky", "checkout refused: 409 unit is not in stock for this order")] * 6 + [row("unlucky", at)] * 4)
+        with tempfile.TemporaryDirectory() as d:
+            shops = profiles.consolidate(rows, d, "margin_share", now=NOW)[0]["shops"]
+        flags = lambda name: tuple(shops[name][k] for k in ("assume_c", "shelf_risk", "c_blocked"))
+        self.assertEqual((True, False, False), flags("nograde"))      # 6 of 10 agreed deals were unnamed grade C units
+        self.assertEqual((False, True, False), flags("oldfood"))      # 5 refused for shelf life against 5 paid food deals
+        self.assertEqual((False, False, True), flags("bare-c"))       # its C units came without the warranty, none paid
+        self.assertEqual((False, False, False), flags("unlucky"))     # a unit gone at checkout says nothing of its stock
+        self.assertEqual(({"grade_c": 6}, 0.6, 0.4), (shops["nograde"]["refused"], shops["nograde"]["p_unpaid"], shops["nograde"]["p_deal"]))
+
     def test_steering_bad_deals_and_warranties_survive_compaction(self):
         rows = [row("pushy", "2026-11-09 10:00", manipulative=True),
                 row("breaks", "2026-11-09 10:00", broken=True, refunded=False), row("breaks", "2026-11-09 11:00", honest=False),

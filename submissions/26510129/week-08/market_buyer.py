@@ -396,10 +396,18 @@ def negotiate(url, item, budget, reference, record="", request=None, value_cap=N
             t = named
             info["ask"] = ask0 = first_ask(t, value_cap)
     grade, hours_left = unit_grade(t), unit_hours_left(t)
+    haggle = haggle or {}
+    if grade is None and haggle.get("assume_c") and not food_need:
+        # the shop names no grade and its unnamed units keep turning out grade C at payment (profiles.refusal_flags):
+        # the unit is priced and accepted as a C, or left before a bargain the kit would refuse
+        grade = "C"
+        print("[buyer] the shop names no grade and its units have been refused as grade C lately; treated as grade C", flush=True)
     info["grade"], info["hours_left"] = grade, hours_left
     unfit = None
     if grade and grades and grade not in grades:   # 02:47: a 377,000 grade C unit was negotiated, then refused at checkout
         unfit = f"grade {grade} unit; the order accepts {'/'.join(grades)}"
+    elif food_need and hours_left is None and haggle.get("shelf_risk"):
+        unfit = "the shop states no shelf life and its food has been refused for it at payment lately"
     elif grade == "C" and grades and NO_WARRANTY.search(status_text(t)):
         # 19:50: a C unit is taken only under a warranty (the kit demands it at checkout); a shop that says "warranty
         # 0 h" in its opening (winun1127: its A/B units carry one, its C units do not) is left before any offer
@@ -418,7 +426,6 @@ def negotiate(url, item, budget, reference, record="", request=None, value_cap=N
     log = [("you", opening), ("shop", status_text(t))]
     pay_cap, quick_take, cost = price_limits(value_cap, grade, targets)
     info.update({"pay_cap": pay_cap, "cost_est": cost})
-    haggle = haggle or {}
     guardian = buyer_policy.MandateGuardian(budget, reference, pay_cap or value_cap)
     print(f"[buyer] first ask {ask0}, private ceiling sealed, personal reference {reference}, grade {grade or 'not stated'}, "
           f"estimated cost {cost}, pay cap {pay_cap or value_cap}, quick take {quick_take}, shop accepts at "
@@ -700,6 +707,8 @@ def accept_constraints(order, shop=None, mem=None, grade=None, shop_profiles=Non
         # whose value is the list price like anyone's. The hours check stays; the certificate flag goes.
         return {"min_hours_left": int(math.ceil(order.get("use_within_hours") or 0))}
     share = buyer_policy.warranty_share(mem, shop.get("name"), shop_profiles) if shop and mem is not None else None
+    if shop and ((shop_profiles or {}).get(shop.get("name")) or {}).get("c_blocked"):
+        share = None   # this shop's grade C goods have come without the warranty (refused payments): no C from it
     if grade == "C" and share is not None and share >= WARRANTY_SHOP_SHARE:
         return {"grades": ["A", "B", "C"], "warranty_hours": 1}
     return {"grades": ["A", "B"]}
@@ -748,8 +757,10 @@ def main():
     levels = shop_price_levels((ledger.load_json(MEMORY.parent / ledger.CACHE_FILE) or {}).get("rows"), catalog, names)
     for s in candidates:                      # what each shop's settles cost against list, for the router's cheapness
         s["_price_ratio"] = levels.get(s.get("name")) or levels.get((s.get("url") or "").rstrip("/"))
-        s["_kept"] = (shop_profiles.get(s.get("name")) or {}).get("kept")   # what a deal there scores for me, and
-        s["_kept_base"] = base                                              # my average to measure it against
+        seen = shop_profiles.get(s.get("name")) or {}
+        s["_kept"] = seen.get("kept")         # what a paid deal there scores for me, and
+        s["_kept_base"] = base                # my average to measure it against;
+        s["_p_deal"], s["_p_unpaid"] = seen.get("p_deal"), seen.get("p_unpaid")   # how often an offer there is paid or refused
     cooled = [s for s in candidates if cooling_off(mem, s.get("name"))]
     if cooled and len(cooled) < len(candidates):
         print(f"[choose] skipping {[s.get('name') for s in cooled]}: answered nothing on their last visits", flush=True)
@@ -776,10 +787,11 @@ def main():
         level = pick.get("_price_ratio")   # what this shop's settles cost against list on the ledger (24 h)
         open_at_least = int(level * value_cap) if priced and isinstance(level, (int, float)) and level > 0 else None
         known = shop_profiles.get(pick["name"]) or {}
-        haggle = {"theta": known.get("theta"), "fixed": known.get("fixed")}
+        flags = {"assume_c": known.get("assume_c"), "shelf_risk": known.get("shelf_risk")}
+        haggle = {"theta": known.get("theta"), "fixed": known.get("fixed"), **flags}
         probing = haggle["theta"] is not None and probe_now(order.get("order"), pick["name"], params["explore_rate"])
         if probing:   # test the belief: open a step under the remembered threshold, as if the shop bargained
-            haggle = {"theta": round(haggle["theta"] - PROBE_STEP, 3), "fixed": False}
+            haggle = {"theta": round(haggle["theta"] - PROBE_STEP, 3), "fixed": False, **flags}
             print(f"[buyer] probing {pick['name']}: opening {PROBE_STEP:.0%} under its remembered threshold "
                   f"{known.get('theta')}", flush=True)
         reference = sku_reference(wanted, catalog, category_ref, stats)
