@@ -82,11 +82,14 @@ def score_gap(board=None):
         if not mine:
             continue
         for term, w in terms.items():
+            # the shop's stars term is ranked on stars_rank (FIELD), as edges_r3 does; until 11/17 10:3x this read the raw
+            # stars (4.53, p0.46) while the board scored stars_rank (4.34, p0.31), so the gap shown understated the loss
+            f = FIELD.get(term, term) if side == "shop" else term
             # patch 3.5 (11/6 15:53): the forum rating counts as itself in the buyer's ALL, not as a percentile
-            p = mine.get(term) if (side, term) == ("buyer", "forum") and isinstance(mine.get(term), (int, float)) \
-                else pct([r.get(term) for r in rows], mine.get(term))
+            p = mine.get(f) if (side, term) == ("buyer", "forum") and isinstance(mine.get(f), (int, float)) \
+                else pct([r.get(f) for r in rows], mine.get(f))
             if p is not None:
-                out.append((side, term, w, mine.get(term), p, round(w * (1 - p), 3)))
+                out.append((side, term, w, mine.get(f), p, round(w * (1 - p), 3)))
     return sorted(out, key=lambda x: -x[5])
 
 
