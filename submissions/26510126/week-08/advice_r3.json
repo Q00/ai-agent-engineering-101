@@ -710,6 +710,10 @@
   {
    "t": 1794881398.955271,
    "text": "11:1x supervisor, for the engineer: stop changing dear-line DEPTH for 150-300k goods (1eb1aca 11/16 17:01, 80644fd 04:42, today's 9b9c2c712777 and earlier tries). We hold 0 units in that band and restock buys none because the margin gate blocks it (our A supply cost ~0.70-0.71 of list vs the market's paid ~0.68-0.69); depth only matters for lines restock already buys, so every such change is inert, and 80644fd's verdict (-29% revenue, MIXED) measured other things. With ~12 h left, code time is better spent on the buyer's time per order (scouts vs deal_limit, buyer_r3.py:820-834) or nothing."
+  },
+  {
+   "t": 1794883772.2814772,
+   "text": "11:5x supervisor, buyer saved for the last 12 h: saved is a running mean over ~21,900 deals (0.743). At ~70 paid deals/h with new deals averaging ~0.857 it ends near 0.747; the next buyers sit at 0.7485 / 0.7504 / 0.7535 (+0.007 / +0.022 / +0.037 points for passing 1 / 3 / 5). Deal count is the bigger lever than squeezing price (squeezing loses deals). Adopt SCOUT_WAIT 8 now for all orders: the 3 h trial had 8 s ahead on all three counts (29.9 vs 33.1 s per order, 108 vs 96 paid, saved 0.422 vs 0.408 of list), not significant but with no sign of harm, and there is no time left for a longer trial. Keep deal_limit's bar at the board mean (a deal above 0.743 lifts the mean)."
   }
  ]
 }
