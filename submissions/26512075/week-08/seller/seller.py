@@ -11,6 +11,11 @@ import logging
 import os
 import re
 from pathlib import Path
+import sys
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.append(str(PROJECT_ROOT))
 
 import uvicorn
 from starlette.applications import Starlette
@@ -25,6 +30,7 @@ from a2a.utils.errors import UnsupportedOperationError
 
 from catalog import load, search
 from storage import stores
+from offer_validation import OfferParsingError, negotiate_followup
 
 import base64
 from cryptography.hazmat.primitives import serialization
@@ -253,44 +259,9 @@ async def decide(req: dict) -> dict:
     return await asyncio.to_thread(decision_for, req)
 
 async def followup_decision(request: dict, incoming_text: str, reserve: int,
-                            current_ask: int) -> tuple[dict, int]:
-    """Ask the harness again if it contradicts an offer at the current ask."""
-    plain_offer = int(incoming_text) if re.fullmatch(r"\s*\d+\s*", incoming_text) else None
-    if plain_offer is not None:
-        request = {**request, "numericOffer": plain_offer}
-    for attempt in range(2):
-        choice = await decide(request)
-        try:
-            offer = _positive_int(choice.get("parsed_offer"))
-            if plain_offer is not None and offer != plain_offer:
-                raise ValueError(f"The numeric buyer offer is {plain_offer}, not {offer}")
-            action = choice.get("action")
-            if offer >= current_ask and offer >= reserve and action != "accept":
-                raise ValueError(
-                    f"Buyer offered {offer}, meeting your current ask {current_ask}; "
-                    f"return accept with price {offer} and parsed_offer {offer}"
-                )
-            if action == "accept":
-                price = _positive_int(choice.get("price"))
-                if price != offer or price < reserve:
-                    raise ValueError("Acceptance must equal the buyer offer and meet reserve")
-            elif action == "offer":
-                _positive_int(choice.get("price"))
-            elif action not in ("reject", "walk_away"):
-                raise ValueError("Unknown seller action")
-        except ValueError as exc:
-            LOG.warning("invalid harness decision attempt=%s action=%s price=%s "
-                        "parsed_offer=%s feedback=%s", attempt + 1,
-                        choice.get("action"), choice.get("price"),
-                        choice.get("parsed_offer"), exc)
-            if attempt == 1:
-                raise
-            request = {**request, "validationFeedback": str(exc)}
-            continue
-        LOG.info("decision action=%s price=%s parsed_offer=%s attempt=%s",
-                 action, choice.get("price"), offer, attempt + 1)
-        return choice, offer
-    raise AssertionError("Unreachable decision loop")
+                            current_ask: int) -> tuple[dict, int | None]:
+    return await negotiate_followup(request, incoming_text, reserve, current_ask, decide, LOG)
+
 
 class Seller(AgentExecutor):
 
@@ -395,7 +366,14 @@ class Seller(AgentExecutor):
             )
             deal["turn"] += 1
             deal["transcript"].append(f"buyer: {text}")
-            if choice.get("action") == "accept":
+            if choice.get("action") == "clarify":
+                clarification = "Please state your offer as a positive whole-number price."
+                deal["transcript"].append(f"seller: {clarification}")
+                await self.deals.save(task.id, deal)
+                await updater.requires_input(updater.new_agent_message(
+                    parts=[new_text_part(clarification)], metadata={"ask": deal["ask"], "reason": "missing_buyer_offer"}))
+            elif choice.get("action") == "accept":
+                _positive_int(offer)
                 price = _positive_int(choice.get("price"))
                 if price != offer or price < item["reserve"]:
                     raise ValueError("Acceptance must equal buyer offer and meet reserve")
@@ -424,7 +402,7 @@ class Seller(AgentExecutor):
                 raise ValueError("Unknown seller action")
         except Exception as exc:
             LOG.exception("follow-up decision failed")
-            await updater.failed(updater.new_agent_message(parts=[new_text_part("Seller could not process the request.")]))
+            await updater.failed(updater.new_agent_message(parts=[new_text_part("Seller could not parse or validate the buyer offer." if isinstance(exc, OfferParsingError) else "Seller could not complete the negotiation.")]))
             await self.deals.delete(task.id)
 
     async def cancel(self, context, event_queue) -> None:

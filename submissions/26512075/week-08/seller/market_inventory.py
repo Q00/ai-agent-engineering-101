@@ -39,6 +39,8 @@ class InventoryUnit:
     grade: str | None
     expires_at: int | float | None
     supplied_at: int | float | None
+    cert: dict | None = None
+    shelf_hours: int | float | None = None
 
 def _required_text(row: dict[str, Any], key: str, idx: int) -> str:
     value = row.get(key)
@@ -104,6 +106,8 @@ def parse_inventory(data: Any) -> list[InventoryUnit]:
             grade=_required_text(row, "grade", index),
             expires_at=_optional_time(row, "expires_at", index),
             supplied_at=_optional_time(row, "supplied_at", index),
+            cert=row.get("cert") if isinstance(row.get("cert"), dict) else None,
+            shelf_hours=row.get("shelf_hours"),
         )
         if unit.unit in seen:
             raise InventoryError(f"duplicate unit id: {unit.unit}")

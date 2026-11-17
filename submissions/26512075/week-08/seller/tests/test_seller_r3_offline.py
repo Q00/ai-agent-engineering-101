@@ -10,6 +10,7 @@ import unittest
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
+from google.protobuf.struct_pb2 import Struct
 
 
 def install_stubs():
@@ -69,14 +70,22 @@ class Queue:
 
 
 class SellerStockFlow(unittest.IsolatedAsyncioTestCase):
-    async def test_turnover_opens_at_one_percent_floor_without_model(self):
+    async def test_ad_accepts_explicit_json_at_fixed_price(self):
+        await self.make_ad()
+        for message in ('G12345678', '{"action":"buy","sku":"G12345678","price":200}'):
+            await self.seller.execute(SimpleNamespace(current_task=self.task, message=message), self.q)
+        self.assertEqual(self.q.events[-1][0], 'completed')
+        receipt = next(e[1]['parts'][0] for e in self.q.events if e[0] == 'artifact')
+        self.assertEqual(receipt['price'], 200)
+
+    async def test_turnover_respects_grade_floor_without_model(self):
         from strategy import Policy
         self.seller.policy = Policy(turnover_markup=.01)
         with patch.object(r3, 'decide', AsyncMock()) as decision:
             await self.seller.execute(SimpleNamespace(current_task=self.task, message='buy G12345678'), self.q)
         decision.assert_not_awaited()
         deal = await self.store.get('t1')
-        self.assertEqual((deal['ask'], deal['reserve']), (86, 86))
+        self.assertEqual((deal['ask'], deal['reserve']), (170, 170))
         self.assertGreater(deal['reserve'], self.row['cost'])
 
     def setUp(self):
@@ -108,9 +117,9 @@ class SellerStockFlow(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(deal['terms']['pricing_mode'], 'aged_floor')
 
     async def open_deal(self):
-        with patch.object(r3, 'decide', AsyncMock(return_value={'action': 'offer', 'price': 100})) as decision:
+        with patch.object(r3, 'decide', AsyncMock(return_value={'action': 'offer', 'price': 200})) as decision:
             await self.seller.execute(SimpleNamespace(current_task=self.task, message='buy G12345678'), self.q)
-        self.assertEqual(decision.await_args.args[0]['limit'], 90)
+        self.assertEqual(decision.await_args.args[0]['limit'], 170)
         self.assertTrue({'grade','remaining_shelf_life_hours','offered_warranty_hours','pricing_mode','comps'} <= decision.await_args.args[0].keys())
         self.assertEqual(self.store.data['t1']['stock']['unit'], 'u1')
         self.assertEqual(self.q.events[-1][0], 'input')
@@ -121,7 +130,7 @@ class SellerStockFlow(unittest.IsolatedAsyncioTestCase):
     async def test_repeated_offer_history_survives_deal_serialization(self):
         from offer_validation import negotiate_followup
         await self.open_deal()
-        model = AsyncMock(return_value={"action": "offer", "price": 95, "parsed_offer": 80})
+        model = AsyncMock(return_value={"action": "offer", "price": 180, "parsed_offer": 80})
         async def followup(request, text, reserve, ask):
             return await negotiate_followup(request, text, reserve, ask, model, r3.LOG)
         with patch.object(r3, 'followup_decision', followup):
@@ -129,7 +138,7 @@ class SellerStockFlow(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(self.store.data['t1']['seen_buyer_offers'], [80])
             self.store.data = json.loads(json.dumps(self.store.data))
             await self.seller.execute(SimpleNamespace(current_task=self.task, message='80'), self.q)
-        self.assertEqual(self.store.data['t1']['ask'], 95)
+        self.assertEqual(self.store.data['t1']['ask'], 180)
         model.assert_awaited_once()
 
     async def test_bc_and_old_open_at_floor_without_model(self):
@@ -144,20 +153,20 @@ class SellerStockFlow(unittest.IsolatedAsyncioTestCase):
                 model.assert_not_awaited()
                 deal = self.store.data['t1']
                 self.assertEqual(deal['ask'], deal['reserve'])
-                self.assertEqual(deal['reserve'], 88)
+                self.assertEqual(deal['reserve'], 170 if grade == 'A' else 91)
 
     async def test_cost_becomes_reserve_and_receipt_reuses_selected_unit(self):
         await self.open_deal()
-        with patch.object(r3, 'followup_decision', AsyncMock(return_value=({'action': 'accept', 'price': 100}, 100))):
-            await self.seller.execute(SimpleNamespace(current_task=self.task, message='100'), self.q)
+        with patch.object(r3, 'followup_decision', AsyncMock(return_value=({'action': 'accept', 'price': 200}, 200))):
+            await self.seller.execute(SimpleNamespace(current_task=self.task, message='200'), self.q)
         receipt = next(event[1]['parts'][0] for event in self.q.events if event[0] == 'artifact')
-        self.assertEqual((receipt['item'], receipt['unit'], receipt['price']), ('G12345678', 'u1', 100))
+        self.assertEqual((receipt['item'], receipt['unit'], receipt['price']), ('G12345678', 'u1', 200))
         self.assertEqual(self.q.events[-1][0], 'completed')
 
     async def test_missing_unit_cannot_complete(self):
         await self.open_deal()
         self.write([])
-        await self.seller.execute(SimpleNamespace(current_task=self.task, message='100'), self.q)
+        await self.seller.execute(SimpleNamespace(current_task=self.task, message='200'), self.q)
         self.assertEqual(self.q.events[-1][0], 'failed')
         self.assertNotIn('artifact', [name for name, _ in self.q.events])
 
@@ -166,24 +175,24 @@ class SellerStockFlow(unittest.IsolatedAsyncioTestCase):
         await self.open_deal()
         model = AsyncMock(side_effect=[
             {'action': 'offer', 'price': 95, 'parsed_offer': 0},
-            {'action': 'accept', 'price': 100, 'parsed_offer': 100}])
+            {'action': 'accept', 'price': 200, 'parsed_offer': 200}])
         async def followup(request, text, reserve, ask):
             return await negotiate_followup(request, text, reserve, ask, model, r3.LOG)
         with patch.object(r3, 'followup_decision', followup):
             await self.seller.execute(SimpleNamespace(current_task=self.task, message='Can you go lower?'), self.q)
             self.assertEqual(self.q.events[-1][0], 'input')
             self.assertEqual(self.q.events[-1][1]['metadata']['reason'], 'missing_buyer_offer')
-            self.assertEqual(self.store.data['t1']['ask'], 100)
+            self.assertEqual(self.store.data['t1']['ask'], 200)
             self.assertIn('u1', self.seller.holds)
             self.assertNotIn('artifact', [name for name, _ in self.q.events])
-            await self.seller.execute(SimpleNamespace(current_task=self.task, message='100'), self.q)
+            await self.seller.execute(SimpleNamespace(current_task=self.task, message='200'), self.q)
         self.assertEqual(self.q.events[-1][0], 'completed')
 
     async def test_parsing_failure_reports_correct_reason_and_releases_hold(self):
         from offer_validation import OfferParsingError
         await self.open_deal()
         with patch.object(r3, 'followup_decision', AsyncMock(side_effect=OfferParsingError('bad extraction'))):
-            await self.seller.execute(SimpleNamespace(current_task=self.task, message='100'), self.q)
+            await self.seller.execute(SimpleNamespace(current_task=self.task, message='200'), self.q)
         self.assertEqual(self.q.events[-1][0], 'failed')
         self.assertIn('parse or validate', self.q.events[-1][1]['parts'][0])
         self.assertNotIn('inventory', self.q.events[-1][1]['parts'][0])
@@ -193,7 +202,7 @@ class SellerStockFlow(unittest.IsolatedAsyncioTestCase):
 
     async def test_acceptance_without_verified_offer_cannot_issue_receipt(self):
         await self.open_deal()
-        with patch.object(r3, 'followup_decision', AsyncMock(return_value=({'action': 'accept', 'price': 100}, None))):
+        with patch.object(r3, 'followup_decision', AsyncMock(return_value=({'action': 'accept', 'price': 200}, None))):
             await self.seller.execute(SimpleNamespace(current_task=self.task, message='yes'), self.q)
         self.assertEqual(self.q.events[-1][0], 'failed')
         self.assertNotIn('artifact', [name for name, _ in self.q.events])
@@ -214,7 +223,7 @@ class SellerStockFlow(unittest.IsolatedAsyncioTestCase):
 
     async def test_food_grade_drop_during_model_call_cannot_issue_receipt(self):
         now = time.time()
-        self.row.update(kind='food', grade='A', expires_at=now+9*3600, supplied_at=now-100)
+        self.row.update(kind='food', grade='A', expires_at=now+9*3600, supplied_at=now-200)
         self.write([self.row])
         (self.market/'catalog.json').write_text(json.dumps({'G12345678':{'shelf_hours':10}}))
         await self.open_deal()
@@ -236,11 +245,50 @@ class SellerStockFlow(unittest.IsolatedAsyncioTestCase):
         decision.assert_not_awaited()
         self.assertEqual(self.q.events[-1][0],'rejected')
 
+    async def test_protobuf_acceptance_preserves_nested_constraints(self):
+        class Message(str): pass
+        message = Message('buy G12345678')
+        message.metadata = Struct()
+        message.metadata.update({'accept': {'grades': ['A'], 'min_hours_left': 3, 'warranty_hours': 0}})
+        with patch.object(r3, 'decide', AsyncMock(return_value={'action': 'offer', 'price': 200})):
+            await self.seller.execute(SimpleNamespace(current_task=self.task, message=message), self.q)
+        self.assertEqual(self.q.events[-1][0], 'input')
+        self.assertEqual(self.store.data['t1']['constraints'],
+                         {'grades': ['A'], 'min_hours_left': 3, 'warranty_hours': 0})
+
+    async def test_protobuf_warranty_requirement_is_not_dropped(self):
+        class Message(str): pass
+        message = Message('buy G12345678')
+        message.metadata = Struct()
+        message.metadata.update({'accept': {'warranty_hours': 6}})
+        with patch.object(r3, 'decide', AsyncMock()) as decision:
+            await self.seller.execute(SimpleNamespace(current_task=self.task, message=message), self.q)
+        decision.assert_not_awaited()
+        self.assertEqual(self.q.events[-1][0], 'rejected')
+
+    async def test_empty_protobuf_metadata_can_open(self):
+        class Message(str): pass
+        message = Message('buy G12345678')
+        message.metadata = Struct()
+        with patch.object(r3, 'decide', AsyncMock(return_value={'action': 'offer', 'price': 200})):
+            await self.seller.execute(SimpleNamespace(current_task=self.task, message=message), self.q)
+        self.assertEqual(self.q.events[-1][0], 'input')
+
+    async def test_invalid_protobuf_accept_fails_without_reserving_stock(self):
+        class Message(str): pass
+        message = Message('buy G12345678')
+        message.metadata = Struct()
+        message.metadata.update({'accept': ['invalid']})
+        with patch.object(self.seller, '_reserve', AsyncMock()) as reserve:
+            await self.seller.execute(SimpleNamespace(current_task=self.task, message=message), self.q)
+        reserve.assert_not_awaited()
+        self.assertEqual(self.q.events[-1][0], 'failed')
+
     async def make_ad(self, activate=True):
         self.row['cert'] = {'cert':{'shop':'helenjeon101'}}
         self.write([self.row])
         ad = await self.seller.advertisement({'action':'preview','market':'https://market.example',
-            'shop':'helenjeon101','unit':'u1','price':100,'ttl':1800})
+            'shop':'helenjeon101','unit':'u1','price':200,'ttl':1800})
         if activate:
             await self.seller.advertisement({'action':'activate','entry':ad})
         return ad
@@ -270,7 +318,7 @@ class SellerStockFlow(unittest.IsolatedAsyncioTestCase):
         server=await asyncio.start_unix_server(self.seller._ad_client,path=str(path))
         try:
             ad=await asyncio.to_thread(r3.shop_ads.request,self.market,'preview',
-                market='https://market.example',shop='helenjeon101',unit='u1',price=100,ttl=1800)
+                market='https://market.example',shop='helenjeon101',unit='u1',price=200,ttl=1800)
             await asyncio.to_thread(r3.shop_ads.request,self.market,'activate',entry=ad)
             restarted=r3.Round3Seller(self.store,'Shop',self.market)
             chosen=await restarted._reserve('restart','G12345678')
@@ -295,13 +343,13 @@ class SellerStockFlow(unittest.IsolatedAsyncioTestCase):
         ad = await self.make_ad()
         with patch.object(r3,'decide',AsyncMock(side_effect=AssertionError('model used'))), \
              patch.object(r3,'followup_decision',AsyncMock(side_effect=AssertionError('model used'))):
-            for message in ['G12345678','Can you go lower?','90','100']:
+            for message in ['G12345678','Can you go lower?','90','200']:
                 await self.seller.execute(SimpleNamespace(current_task=self.task,message=message),self.q)
         quoted = [e[1]['metadata']['ask'] for e in self.q.events if e[0]=='input']
-        self.assertEqual(quoted,[100,100,100])
+        self.assertEqual(quoted,[200,200,200])
         self.assertEqual(self.q.events[1][1]['metadata']['reason'], 'missing_buyer_offer')
         receipt = next(e[1]['parts'][0] for e in self.q.events if e[0]=='artifact')
-        self.assertEqual(receipt['price'],100)
+        self.assertEqual(receipt['price'],200)
         self.assertEqual(receipt['unit'],'u1')
         with r3.shop_ads.database(self.market) as db:
             self.assertEqual(db.execute('SELECT ad_id FROM receipts').fetchone()[0],ad['id'])
@@ -315,10 +363,10 @@ class SellerStockFlow(unittest.IsolatedAsyncioTestCase):
         def drifted(unit, policy, now):
             return {**original_pricing(unit, policy, now), "reserve": ad["floor"] + 1}
         with patch.object(r3, 'pricing', side_effect=drifted):
-            for message in ('G12345678', '90', '100'):
+            for message in ('G12345678', '90', '200'):
                 await self.seller.execute(SimpleNamespace(current_task=self.task, message=message), self.q)
         quotes = [value['metadata']['ask'] for event, value in self.q.events if event == 'input']
-        self.assertEqual(quotes, [100, 100])
+        self.assertEqual(quotes, [200, 200])
         receipt = next(value['parts'][0] for event, value in self.q.events if event == 'artifact')
         self.assertEqual(receipt['price'], ad['price'])
 
@@ -328,7 +376,7 @@ class SellerStockFlow(unittest.IsolatedAsyncioTestCase):
         with self.assertRaises(r3.InventoryError) as caught:
             self.seller._validate_ad_price(ad, ad['price'] + 1)
         for detail in ('sku=G12345678', f"ad_floor={ad['floor']}",
-                       'current_floor=101', 'ad_price=100'):
+                       'current_floor=201', 'ad_price=200'):
             self.assertIn(detail, str(caught.exception))
         with self.assertRaises(r3.InventoryError):
             self.seller._validate_ad_price({**ad, 'warranty_hours': 1}, ad['floor'])
@@ -351,10 +399,10 @@ class SellerStockFlow(unittest.IsolatedAsyncioTestCase):
 
     async def test_ad_higher_offer_honors_fixed_price(self):
         await self.make_ad()
-        for message in ('G12345678', '120'):
+        for message in ('G12345678', '220'):
             await self.seller.execute(SimpleNamespace(current_task=self.task, message=message), self.q)
         receipt = next(e[1]['parts'][0] for e in self.q.events if e[0] == 'artifact')
-        self.assertEqual(receipt['price'], 100)
+        self.assertEqual(receipt['price'], 200)
 
     async def test_ad_missing_price_repeats_ask_and_keeps_deal(self):
         await self.make_ad()
@@ -362,7 +410,7 @@ class SellerStockFlow(unittest.IsolatedAsyncioTestCase):
             await self.seller.execute(SimpleNamespace(current_task=self.task, message=message), self.q)
         event, message = self.q.events[-1]
         self.assertEqual(event, 'input')
-        self.assertIn('Current ask: 100', message['parts'][0])
+        self.assertIn('Current ask: 200', message['parts'][0])
         self.assertIn('등급 A', message['parts'][0])
         self.assertIn('t1', self.store.data)
         self.assertFalse(any(e[0] == 'artifact' for e in self.q.events))
@@ -372,12 +420,11 @@ class SellerStockFlow(unittest.IsolatedAsyncioTestCase):
         await self.seller.execute(SimpleNamespace(current_task=self.task,message='G12345678'),self.q)
         with patch.object(r3.time,'time',return_value=ad['expires_at']+1), \
              patch.object(r3,'read_fresh_stock',return_value=[r3.InventoryUnit(**self.row)]):
-            await self.seller.execute(SimpleNamespace(current_task=self.task,message='100'),self.q)
+            await self.seller.execute(SimpleNamespace(current_task=self.task,message='200'),self.q)
         self.assertEqual(self.q.events[-1][0],'failed')
         self.assertFalse(any(e[0]=='artifact' for e in self.q.events))
 
     async def test_ad_rejects_grade_cost_floor_or_owner_change(self):
-        from dataclasses import replace
         ad = await self.make_ad(False)
         for field,value in [('grade','B'),('cost',86),('cert',{'cert':{'shop':'other'}})]:
             with self.subTest(field=field):
@@ -385,9 +432,9 @@ class SellerStockFlow(unittest.IsolatedAsyncioTestCase):
                 with self.assertRaises(r3.InventoryError):
                     await self.seller.advertisement({'action':'activate','entry':ad})
         self.write([self.row])
-        self.seller.policy = replace(self.seller.policy,minimum_markup=.20,target_markup=.20)
-        with self.assertRaises(r3.InventoryError):
-            await self.seller.advertisement({'action':'activate','entry':ad})
+        with patch.object(r3, "pricing", return_value={"reserve": ad["price"] + 1}):
+            with self.assertRaises(r3.InventoryError):
+                await self.seller.advertisement({'action':'activate','entry':ad})
 
     async def test_ad_preview_fixed_timestamp_and_goods_only(self):
         ad = await self.make_ad(False)
@@ -399,18 +446,18 @@ class SellerStockFlow(unittest.IsolatedAsyncioTestCase):
         (self.market/'catalog.json').write_text(json.dumps({'G12345678':{'shelf_hours':10}}))
         with self.assertRaises(r3.InventoryError):
             await self.seller.advertisement({'action':'preview','market':'https://market.example',
-                'shop':'helenjeon101','unit':'u1','price':100,'ttl':1800})
+                'shop':'helenjeon101','unit':'u1','price':200,'ttl':1800})
 
     async def test_ad_receipt_exact_unit_settlement_attribution(self):
         ad = await self.make_ad()
         await self.seller.execute(SimpleNamespace(current_task=self.task,message='G12345678'),self.q)
-        await self.seller.execute(SimpleNamespace(current_task=self.task,message='100'),self.q)
+        await self.seller.execute(SimpleNamespace(current_task=self.task,message='200'),self.q)
         completion = {'status':'completed','order':{'mandate_receipt':{'ledger':123,'unit':'u1'}},
-                      'totals':[{'amount':100}]}
+                      'totals':[{'amount':200}]}
         r3.forum_effects.settled(self.market,{'units':[self.row]},completion,'https://shop.example')
         result = r3.shop_ads.effects(self.market)[0]
         self.assertEqual((result['ad_id'],result['unit'],result['ledger'],result['gross_spread']),
-                         (ad['id'],'u1',123,15))
+                         (ad['id'],'u1',123,115))
         self.assertIsNone(result['post_id'])
         self.assertIsNone(result['confirmed_net_margin'])
         (self.market/'forum-delivery.jsonl').write_text(json.dumps({**ad,'state':'sent','post_id':77,'sent_at':ad['checked_at']})+'\n')

@@ -23,6 +23,8 @@ import time
 from dataclasses import asdict
 from pathlib import Path
 import sys
+from google.protobuf.json_format import MessageToDict
+from google.protobuf.struct_pb2 import Struct
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
@@ -45,7 +47,7 @@ from storage import stores
 from strategy import Policy, pricing, eligible, stock_order, comps
 import forum_effects
 import shop_ads
-from offer_validation import OfferParsingError
+from offer_validation import OfferParsingError, explicit_offer
 
 
 LOG = logging.getLogger("seller_r3")
@@ -53,6 +55,18 @@ SKU_PATTERN = re.compile(r"(?<![A-Za-z0-9])G[0-9a-fA-F]{8}(?![A-Za-z0-9])", re.I
 MAX_SNAPSHOT_AGE = 60  # seconds; fail closed if the kit stops updating
 HOLD_SECONDS = 600
 AFTER_ACCEPT_HOLD_SECONDS = 600  # bounded local precaution, never a market reservation
+
+
+def acceptance_guidance(ask, reserve, ad=None):
+    if ad:
+        terms = "유효기간 내 광고 고정가입니다. / Fixed advertised price while the offer is valid. "
+    elif ask == reserve:
+        terms = "현재 최저 판매가이며 추가 할인은 어렵습니다. / Current minimum price; no further discount. "
+    else:
+        terms = "현재 제시 가격입니다. / Current asking price. "
+    return (terms + f"구매하려면 다음 메시지에 숫자 금액만 보내주세요. 예: {ask}. "
+            f"To accept, reply with only the number {ask}.")
+
 
 def read_fresh_stock(market_dir: Path, *, now: float | None = None) -> list[InventoryUnit]:
     """Require a recent, explicitly Round 3 snapshot; never fall back to old products."""
@@ -177,6 +191,10 @@ class Round3Seller(AgentExecutor):
                 ad.update(format_version=3, reference=reference,
                           refs=[reference["seq"]] if reference else [])
                 ad.update(shop_ads.limited_offer_fields(ad))
+                if unit.grade in ("B", "C"):
+                    ad["copy_style"] = "friendly_bc_v2"
+                elif unit.grade == "A":
+                    ad["copy_style"] = "offer_json_v1"
                 ad["post"] = shop_ads.post_text(ad)
                 ad["id"] = shop_ads.digest(ad)
             else:
@@ -298,7 +316,13 @@ class Round3Seller(AgentExecutor):
         if deal is None:
             unit = None
             try:
-                metadata = getattr(context.message, "metadata", None) or {}
+                metadata = getattr(context.message, "metadata", None)
+                if isinstance(metadata, Struct):
+                    metadata = MessageToDict(metadata)
+                elif metadata is None:
+                    metadata = {}
+                if not isinstance(metadata, dict):
+                    raise ValueError("invalid message metadata")
                 constraints = metadata.get("accept", {})
                 if not isinstance(constraints, dict):
                     raise ValueError("invalid acceptance constraints")
@@ -348,7 +372,7 @@ class Round3Seller(AgentExecutor):
                 except Exception:
                     LOG.exception("quote observation unavailable")
                 await updater.requires_input(updater.new_agent_message(
-                    parts=[new_text_part(f"{unit.name}: asking {ask}. 등급 {unit.grade} · 재고 1개 · 보증 없음 / No warranty (0 hours).")],
+                    parts=[new_text_part(f"{unit.name}: asking {ask}. 등급 {unit.grade} · 재고 1개 · 보증 없음 / No warranty (0 hours). " + acceptance_guidance(ask, reserve, ad))],
                     metadata={"ask": ask, "itemId": unit.sku, "unit": unit.unit, "cert": unit.cert,
                               "grade": unit.grade, "remaining_shelf_life_hours": terms["remaining_shelf_life_hours"],
                               "offered_warranty_hours": 0,
@@ -372,9 +396,8 @@ class Round3Seller(AgentExecutor):
             ad = deal.get("advertisement")
             if ad:
                 self._validate_ad_price(ad, terms["reserve"])
-                # Explicit number only; never let a model reinterpret fixed-price acceptance.
-                normalized = text.strip()
-                offer = int(normalized.replace(",", "")) if re.fullmatch(r"(?:[0-9]+|[0-9]{1,3}(?:,[0-9]{3})+)", normalized) else None
+                # Only explicit, unconditional offers can accept a fixed-price ad.
+                offer = explicit_offer(text, unit.sku)
                 choice = {"action": "clarify" if offer is None or offer <= 0 else
                           "accept" if offer >= ad["price"] else "offer", "price": ad["price"]}
             else:
@@ -400,8 +423,7 @@ class Round3Seller(AgentExecutor):
                 deal["ask"] = max(deal["ask"], deal["reserve"])
                 clarification = (f"현재 호가 / Current ask: {max(deal['ask'], deal['reserve']):,} credits. "
                                  f"등급 {unit.grade} · 보증 없음(0시간). "
-                                 f"구매하시려면 {deal['ask']} 또는 제안 금액을 양의 정수로 보내주세요. "
-                                 "Please state your offer as a positive whole-number price.")
+                                 + acceptance_guidance(deal['ask'], deal['reserve'], ad))
                 deal["transcript"].append(f"seller: {clarification}")
                 await self.deals.save(task.id, deal)
                 await updater.requires_input(updater.new_agent_message(
@@ -439,7 +461,7 @@ class Round3Seller(AgentExecutor):
                 except Exception:
                     LOG.exception("quote observation unavailable")
                 await updater.requires_input(updater.new_agent_message(
-                    parts=[new_text_part(f"Counteroffer: {ask}. 보증 없음 / No warranty (0 hours).")], metadata={"ask": ask, "itemId": unit.sku, "unit": unit.unit, "cert": unit.cert,
+                    parts=[new_text_part(f"Counteroffer: {ask}. 보증 없음 / No warranty (0 hours). " + acceptance_guidance(ask, deal['reserve'], ad))], metadata={"ask": ask, "itemId": unit.sku, "unit": unit.unit, "cert": unit.cert,
                               "grade": unit.grade, "remaining_shelf_life_hours": terms["remaining_shelf_life_hours"],
                               "offered_warranty_hours": 0,
                               "advertisement_id": ad["id"] if ad else None,

@@ -10,10 +10,21 @@ import argparse
 import hashlib
 import importlib.util
 import json
+import os
 import sys
 import threading
 import time
 from pathlib import Path
+
+import httpx
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.append(str(PROJECT_ROOT))
+import forum_effects
+import participation_evidence
+
+from restock_evidence import attach_pilot_state
 
 from restock_policy import Config, InputError, load_json, plan, read_inputs
 from restock_runtime import SalesStore, SupplyGuard
@@ -33,16 +44,30 @@ def observe_completion(store, before, completed):
     if before.get("round") != 3 or old.get("sku") != sku:
         raise InputError("settlement stock/round mapping missing; observation skipped")
     store.record(ledger=mr["ledger"], sku=sku, price=completed["totals"][0]["amount"],
-                 unit=unit, cost=old.get("cost"))
+                 unit=unit, cost=old.get("cost"), grade=mr.get("grade"))
 
 
 def install_runtime(kit, state, market_run, cfg):
+    # Retain ten times the official kit's 20 MB per-file log capacity.
+    # Both submission launchers install this runtime before kit.main().
+    kit.LOG_MAX = 200_000_000
     store = SalesStore(state / "restock_sales.json", market_run)
     guard = SupplyGuard(state, market_run, cfg)
     guard.read()  # Reject incompatible run before starting the official kit.
+    os.environ["RESTOCK_GUARDED_RUN"] = market_run
     original_restock = kit.restock
     original_acp = kit.AcpShop
     observation_lock = threading.RLock()
+    last_inventory = None
+
+    def capture(inventory, reason):
+        nonlocal last_inventory
+        payload = json.dumps(inventory, sort_keys=True)
+        with observation_lock:
+            if reason == "post_supply" or payload != last_inventory:
+                participation_evidence.snapshot(state, inventory, reason=reason, market_run=market_run)
+                last_inventory = payload
+
 
     class ObservedShop(original_acp):
         async def handle(self, req, path, body, public):
@@ -57,7 +82,20 @@ def install_runtime(kit, state, market_run, cfg):
             if observe and result.status_code == 200:
                 try:
                     with observation_lock:
-                        observe_completion(store, before, json.loads(result.body))
+                        completed = json.loads(result.body)
+                        # Read the task from the shop-signed checkout, never from buyer text.
+                        checkout = kit.jwt_payload(completed.get("checkout_jwt", ""), self.pub) or {}
+                        task_id = checkout.get("task")
+                        participation_evidence.completion(state, before, completed,
+                                                          market_run=market_run, task_id=task_id)
+                        if completed.get("status") == "completed":
+                            kit.log("[settlement] " + json.dumps({
+                                "task": task_id, "sku": completed["line_items"][0]["id"],
+                                "unit": completed["order"]["mandate_receipt"].get("unit"),
+                                "ledger": completed["order"]["mandate_receipt"]["ledger"],
+                                "price": completed["totals"][0]["amount"]}, ensure_ascii=False))
+                        observe_completion(store, before, completed)
+                        forum_effects.settled(state, before, completed, public)
                 except Exception as exc:
                     kit.log(f"[restock] sale observation skipped ({type(exc).__name__}); settlement unchanged")
             return result
@@ -65,6 +103,13 @@ def install_runtime(kit, state, market_run, cfg):
     kit.AcpShop = ObservedShop
 
     def guarded_restock(agent, d, market, md, inv, demand):
+        try:
+            if inv.get("round") == 3:
+                store.heartbeat()
+                capture(inv, "inventory_poll")
+                forum_effects.snapshot(state, inv)
+        except (OSError, ValueError) as exc:
+            kit.log(f"[observation] unavailable: {type(exc).__name__}")
         command = (agent.get("restock") or {}).get("cmd", "")
         if "restock_policy.py" not in command:
             # A hold/custom command remains authoritative. No surprise stock buying.
@@ -83,6 +128,7 @@ def install_runtime(kit, state, market_run, cfg):
                 # so a command returning [] (including invalid input) always vetoes buys.
                 now = time.time()
                 _, cat, dem, history = read_inputs(md, now=now, cfg=cfg)
+                attach_pilot_state(fresh, guard.read(), history, cfg)
                 latest = plan(fresh, cat, dem, history, now=now, cfg=cfg, window_remaining=remaining)
                 requested = output.get("buy")
                 if not isinstance(requested, list):
@@ -96,10 +142,22 @@ def install_runtime(kit, state, market_run, cfg):
             def window_budget(fresh):
                 now = time.time()
                 _, cat, dem, history = read_inputs(md, now=now, cfg=cfg)
+                attach_pilot_state(fresh, guard.read(), history, cfg)
                 return plan(fresh, cat, dem, history, now=now, cfg=cfg)["budget"]
 
             result = guard.step(market, proposed, catalog, window_budget, kit.log)
             kit.log(f"[restock] {result['reason']}")
+            if result["reason"] == "bought":
+                # Read immediately after supply; later polling cannot replace this evidence.
+                response = market.call("GET", "/api/inventory", "shop")
+                if response.status_code != 200:
+                    kit.log("[evidence] post-supply inventory unavailable; purchase remains confirmed")
+                else:
+                    capture(response.json(), "post_supply")
+        except httpx.RequestError as exc:
+            # GET failures may be retried on the next kit tick. Supply POST
+            # ambiguity remains protected by SupplyGuard's persisted intent.
+            kit.log(f"[restock] network unavailable ({type(exc).__name__}); deferred to next poll")
         except (OSError, ValueError, TypeError, KeyError) as exc:
             kit.log(f"[restock] stopped safely ({type(exc).__name__}: {exc})")
 

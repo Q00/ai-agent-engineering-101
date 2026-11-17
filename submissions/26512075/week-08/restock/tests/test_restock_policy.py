@@ -25,6 +25,9 @@ class PolicyTests(unittest.TestCase):
         self.f = f
         self.now, self.inv, self.cat, self.dem, self.hist = (f[k] for k in ("now", "inventory", "catalog", "demand", "history"))
         self.cfg = Config(**f["config"])
+        # Profitable stressed-price scenario; original replay fixtures remain unchanged.
+        for event in self.hist["events"]:
+            event["price"] = 160
 
     def result(self, **kw):
         return plan(self.inv, self.cat, self.dem, self.hist, now=self.now, cfg=kw.pop("cfg", self.cfg), **kw)
@@ -33,11 +36,41 @@ class PolicyTests(unittest.TestCase):
         return dict(unit=str(i), sku="fast", kind="goods", category="goods", grade="A", cost=65,
                     expires_at=None, supplied_at=self.now-100, **kw)
 
+    def test_recent_sales_only_blocks_unproven_skus_but_keeps_seller(self):
+        from dataclasses import replace
+        cfg = replace(self.cfg, require_recent_sales=True)
+        result = self.result(cfg=cfg)
+        self.assertEqual(result['buy'], [{'sku': 'fast', 'qty': 4}])
+        self.assertTrue(any(row['reason'] == 'no_recent_settled_sales' for row in result['skipped']))
+        self.hist = None
+        self.inv['surge'] = [{'sku': sku, 'factor': 1} for sku in self.cat]
+        result = self.result(cfg=cfg)
+        self.assertEqual(result['buy'], [])
+        self.assertFalse(result['exploration'])
+
+    def test_recent_sales_flag_requires_boolean(self):
+        with self.assertRaises(InputError):
+            Config(require_recent_sales='true')
+
     def test_sales_velocity_selects_exact_sku(self):
         r = self.result()
         self.assertEqual(r["buy"], [{"sku": "fast", "qty": 4}])
         self.assertEqual(r["evidence"]["eligible_sale_units"], 10)
         self.assertLessEqual(r["cash_commitment_upper"], r["budget"])
+
+    def test_restart_retains_recent_sales_without_inflating_rate(self):
+        history = {"market_run": "run", "observed_since": self.now - 60,
+                   "as_of": self.now, "events": [
+            {"id": "old", "market_run": "run", "role": "seller", "round": 3,
+             "settled": True, "sku": "sold", "price": 160, "ts": self.now - 7200},
+            {"id": "expired", "market_run": "run", "role": "seller", "round": 3,
+             "settled": True, "sku": "stale", "price": 160, "ts": self.now - 25200},
+            {"id": "other", "market_run": "other", "role": "seller", "round": 3,
+             "settled": True, "sku": "other", "price": 160, "ts": self.now - 60}]}
+        rates, prices, _, count = sale_stats(history, self.now, Config())
+        self.assertEqual(count, 1)
+        self.assertEqual(rates, {"sold": 0.5})
+        self.assertEqual(prices, {"sold": [160]})
 
     def test_closed_and_boundary_windows(self):
         for changes, reason in [({"open": False}, "supply_closed"),
@@ -56,10 +89,10 @@ class PolicyTests(unittest.TestCase):
         self.inv["round"] = 2
         with self.assertRaises(InputError): self.result()
 
-    def test_cold_start_one_probe_per_category(self):
+    def test_cold_start_without_surge_evidence_holds(self):
         self.hist = None
         r = self.result()
-        self.assertEqual(sum(b["qty"] for b in r["buy"]), 1)
+        self.assertEqual(r["buy"], [])  # missing fresh surge evidence must not authorize exploration
         self.assertEqual(r["evidence"]["sales"], "no_eligible_sales")
         self.assertNotIn("food", [b["sku"] for b in r["buy"]])
 
@@ -102,12 +135,13 @@ class PolicyTests(unittest.TestCase):
         self.assertEqual(self.result()["buy"], [])
         self.inv["balance"] = 10000
         self.assertEqual(self.result(window_remaining=74)["buy"], [])
-        r = self.result(window_remaining=172)
+        r = self.result(window_remaining=262)
         self.assertEqual(r["buy"], [{"sku":"fast", "qty":2}])
 
     def test_holding_cost_can_veto_buy(self):
         self.cat["fast"]["list_price"] = 120
         self.hist["events"] = self.hist["events"][:1]
+        self.hist["events"][0]["price"] = 100
         # Sale 100 - cost envelope 90 - refund buffer 10 - storage > 0 => veto.
         self.assertEqual(self.result()["buy"], [])
 
@@ -217,7 +251,7 @@ class RuntimeTests(unittest.TestCase):
         self.inv={'round':3,'balance':1000,'units':[], 'restock':{'open':True,'opens_at':990,'closes_at':1180}}
         self.cat={'x':{'list_price':100}}
         self.g=SupplyGuard(self.d,'run',self.cfg,clock=lambda:self.t)
-        self.proposal=lambda inv,remaining: {'buy':[{'sku':'x','qty':1}]} if remaining>=75 else {'buy':[]}
+        self.proposal=lambda inv,remaining: {'buy':[{'sku':'x','qty':1}]} if remaining>=113 else {'buy':[]}
     def tearDown(self): self.tmp.cleanup()
     def step(self,m,proposal=None):
         return self.g.step(m,proposal or self.proposal,self.cat,lambda inv:200)
@@ -238,9 +272,9 @@ class RuntimeTests(unittest.TestCase):
         m=FakeMarket(self.inv)
         self.assertEqual(self.step(m)['reason'],'bought')
         self.assertEqual(self.step(m)['reason'],'cooldown')
-        self.t+=10;self.assertEqual(self.step(m)['reason'],'bought')
         self.t+=10;self.assertNotEqual(self.step(m)['reason'],'bought')
-        self.assertEqual(len(m.posts),2)
+        self.t+=10;self.assertNotEqual(self.step(m)['reason'],'bought')
+        self.assertEqual(len(m.posts),1)
         self.inv['restock']={'open':True,'opens_at':2000,'closes_at':2180}
         m.inv=copy.deepcopy(self.inv);self.t=2001
         self.assertEqual(self.step(m)['reason'],'bought')
@@ -280,7 +314,7 @@ class RuntimeTests(unittest.TestCase):
         self.assertEqual(len(m.posts),1)
 
     def test_malformed_success_and_500_block_retries(self):
-        for reply in [Response(200,{}),Response(200,ValueError()),Response(503,{}),Response(200,{'total':100})]:
+        for reply in [Response(200,{}),Response(200,ValueError()),Response(503,{}),Response(200,{'total':114})]:
             with self.subTest(reply=reply.status_code):
                 self.g.path.unlink(missing_ok=True)
                 m=FakeMarket(self.inv,[reply]);self.step(m)

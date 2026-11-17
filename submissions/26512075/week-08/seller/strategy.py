@@ -51,19 +51,12 @@ def pricing(unit, policy, now):
     remaining = hours_left(unit, now)
     clearance = unit.grade in ("B", "C") or held >= policy.aged_a_hours
     storage = unit.cost * .01 * held / 24 if unit.kind == "goods" else 0
-    # Older stock and B/C units use exactly 3% cost markup, without storage.
-    # Keep storage as an observation, not an extra charge in this floor.
-    floor = unit.cost * 103 / 100 if clearance else unit.cost * (1 + policy.minimum_markup) + storage
-    # Move aging A stock to its existing floor before the 24-hour clearance.
+    # Grade-specific reserves exclude storage and do not fall with stock age.
+    floor = unit.cost * (200 if unit.grade == "A" else 106) / 100
     near_clearance = unit.grade == "A" and held >= 18
     target = floor if clearance or near_clearance else unit.cost * (1 + policy.target_markup) + storage
     if policy.turnover_markup is not None:
-        floor = target = max(unit.cost + 1, math.ceil(unit.cost * (1 + policy.turnover_markup)))
-    if unit.grade == "A":
-        # A-grade reserve is 8% over cost, independent of age and storage.
-        floor = unit.cost * 108 / 100
-        if clearance or near_clearance:
-            target = floor
+        target = max(floor, unit.cost + 1, math.ceil(unit.cost * (1 + policy.turnover_markup)))
     return {"reserve": max(1, math.ceil(floor)), "target_price": max(1, math.ceil(max(floor, target))),
             "pricing_mode": "turnover" if policy.turnover_markup is not None else "clearance" if clearance else "aged_floor" if near_clearance else "normal", "storage_cost": storage,
             "grade": unit.grade, "remaining_shelf_life_hours": remaining,

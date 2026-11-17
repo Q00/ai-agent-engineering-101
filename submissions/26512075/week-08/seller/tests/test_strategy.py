@@ -12,7 +12,7 @@ class StrategyTests(unittest.TestCase):
             for held in (0, 18, 24, 72):
                 unit = self.unit(grade=grade, cost=11580)
                 terms = pricing(unit, Policy(turnover_markup=.01), 1000 + held * 3600)
-                expected = 12507 if grade == 'A' else 11696
+                expected = 23160 if grade == 'A' else 12275
                 self.assertEqual((terms['reserve'], terms['target_price']), (expected, expected))
                 self.assertEqual(terms['pricing_mode'], 'turnover')
                 self.assertEqual(terms['offered_warranty_hours'], 0)
@@ -24,16 +24,16 @@ class StrategyTests(unittest.TestCase):
         return InventoryUnit(**dict(dict(unit="u", sku="G11111111", name="item", category="goods",
             kind="goods", cost=100, list_price=200, grade="B", expires_at=None, supplied_at=1000), **kw))
 
-    def test_fresh_a_has_eight_percent_floor(self):
+    def test_fresh_a_has_double_cost_floor(self):
         terms = pricing(self.unit(grade="A"), Policy(), 1000)
         self.assertEqual((terms["reserve"], terms["target_price"], terms["pricing_mode"]),
-                         (108, 115, "normal"))
+                         (200, 200, "normal"))
 
-    def test_old_or_bc_starts_at_three_percent_floor_without_storage(self):
+    def test_old_or_bc_starts_at_grade_specific_floor_without_storage(self):
         for grade, now in [("B", 1000), ("C", 1000), ("A", 87400), ("B", 87400), ("C", 87400)]:
             with self.subTest(grade=grade, now=now):
                 terms = pricing(self.unit(grade=grade), Policy(), now)
-                expected = 108 if grade == "A" else 103
+                expected = 200 if grade == "A" else 106
                 self.assertEqual((terms["reserve"], terms["target_price"], terms["pricing_mode"]),
                                  (expected, expected, "clearance"))
         self.assertEqual(pricing(self.unit(grade="A"), Policy(), 87399)["pricing_mode"], "aged_floor")
@@ -44,18 +44,18 @@ class StrategyTests(unittest.TestCase):
         aged = pricing(unit, Policy(), 1000 + 18 * 3600)
         self.assertEqual(before["pricing_mode"], "normal")
         self.assertEqual(aged["pricing_mode"], "aged_floor")
-        self.assertEqual(aged["reserve"], 10800)
+        self.assertEqual(aged["reserve"], 20000)
         self.assertEqual(aged["target_price"], aged["reserve"])
-        self.assertGreater(before["target_price"], aged["target_price"])
+        self.assertEqual(before["target_price"], aged["target_price"])
 
     def test_clearance_rounds_up_and_overrides_normal_minimum(self):
         terms = pricing(self.unit(cost=85), Policy(minimum_markup=.10), 87400)
-        self.assertEqual((terms['reserve'], terms['target_price']), (88, 88))
+        self.assertEqual((terms['reserve'], terms['target_price']), (91, 91))
         self.assertGreater(terms['storage_cost'], 0)
 
     def test_c_food_does_not_use_old_below_cost_clearance(self):
         terms = pricing(self.unit(grade="C", kind="food", expires_at=8200), Policy(), 1000)
-        self.assertEqual((terms["reserve"], terms["target_price"]), (103, 103))
+        self.assertEqual((terms["reserve"], terms["target_price"]), (106, 106))
         self.assertEqual(terms["storage_cost"], 0)
 
     def test_b_first_only_after_eligibility(self):

@@ -10,7 +10,7 @@ import json
 import os
 from pathlib import Path
 
-COMMAND = "python restock_policy.py --state {state} --config restock_config.json --explain"
+COMMAND = "python restock/restock_policy.py --state {state} --explain"
 
 
 def connect(path, *, apply=False, replace=False):
