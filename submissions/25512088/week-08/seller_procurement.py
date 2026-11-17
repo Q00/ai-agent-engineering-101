@@ -335,21 +335,28 @@ def paid_window_units(rows, opening):
         result[row['sku']]=result.get(row['sku'],0)+qty
     return result
 
-def paid_bridge_used(rows, opening):
-    """Return whether this supply window actually spent its bridge slot.
+def paid_bridge_count(rows, opening):
+    """Count bridge units actually bought in this supply window.
 
     A normal high-value purchase must not consume the separate, one-unit
-    medium-cost bridge allowance. Older rows did not persist allocation
+    bridge allowance. Older rows did not persist allocation
     intent; an absent or malformed marker is treated as a normal purchase.
     """
+    count=0
     for row in rows:
         if row['status']!='paid' or row['created']<opening:continue
         keys=row.keys() if hasattr(row,'keys') else row
         raw=row['detail'] if 'detail' in keys else None
         try:detail=json.loads(raw or '{}')
         except (TypeError,ValueError,json.JSONDecodeError):continue
-        if detail.get('capital_bridge') is True:return True
-    return False
+        if detail.get('capital_bridge') is True:
+            try:count+=max(1,int(row['qty'] or 1))
+            except (KeyError,TypeError,ValueError):count+=1
+    return count
+
+def paid_bridge_used(rows, opening):
+    """Backward-compatible boolean view of the bridge journal."""
+    return paid_bridge_count(rows,opening)>0
 
 def breadth_window_blocks(rows, opening, inventory, target, refill_targets=None):
     """Avoid duplicate SKU buys while inventory reflection can lag.
@@ -883,6 +890,8 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
             # concentration, cash, or liability guard above.
             breadth_cost=min(
                 max_bridge_cost,
+                available*max(0.0,min(1.0,float(policy.get(
+                    'capital_bridge_new_breadth_available_share',.5)))),
                 max(0,int(policy.get('capital_bridge_max_new_breadth_cost',100000))))
             breadth=[]
             for choice in ordered:
@@ -1155,7 +1164,10 @@ def main():
         # The bridge is intentionally limited to one unit in a supply window.
         # Replay the persisted allocation kind: a normal high-value purchase
         # does not consume the separate medium-cost bridge allowance.
-        runtime_policy['capital_bridge_window_used']=paid_bridge_used(rows,opening)
+        bridge_count=paid_bridge_count(rows,opening)
+        runtime_policy['capital_bridge_window_count']=bridge_count
+        runtime_policy['capital_bridge_window_used']=(
+            bridge_count>=max(1,int(policy.get('capital_bridge_window_limit',1))))
         refill_targets={
             row['sku']:int(policy.get(
                 'strongly_proven_high_value_min_units_when_sold_out',1))
