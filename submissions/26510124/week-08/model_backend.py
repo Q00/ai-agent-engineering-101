@@ -8,6 +8,7 @@
 import argparse
 import json
 import os
+import re
 from pathlib import Path
 import shlex
 import shutil
@@ -218,15 +219,25 @@ def answer(profile, result, folder):
             model = next(iter(usage))
             if not (model == "haiku" or model.startswith("claude-haiku-")):
                 raise ValueError("Claude result did not verify Haiku; no fallback")
+        # Claude reports a dated Haiku snapshot key with an undated canonical
+        # model. Permit only the same base model, never another family/version.
+        canonical_names = {model}
+        if profile == "haiku":
+            canonical_names.add(re.sub(r"-[0-9]{8}$", "", model))
         if (not isinstance(usage, dict) or set(usage) != {model}
                 or not isinstance(usage[model], dict)
                 or type(usage[model].get("outputTokens")) is not int or usage[model]["outputTokens"] <= 0
-                or usage[model].get("canonicalModel", model) != model):
+                or not isinstance(usage[model].get("canonicalModel", model), str)
+                or usage[model].get("canonicalModel", model) not in canonical_names):
             raise ValueError("Claude result did not verify the exact requested model; no fallback")
         text = output.get("result")
         if not isinstance(text, str) or not text.strip():
             raise ValueError("Claude returned no decision text")
-        return text
+        # Same complete-block convention as harness.parse_object. Do not
+        # extract JSON from prose or join multiple blocks. Keep raw stdout in logs.
+        fenced = re.fullmatch(r"```(?:json)?[ \t]*\r?\n(.*?)\r?\n```",
+                              text.strip(), re.DOTALL | re.IGNORECASE)
+        return fenced.group(1) if fenced else text
     # --json is a lifecycle stream, not the answer. Unexpected tools or failed
     # turns are rejected, even if a plausible final decision was also written.
     complete = False
