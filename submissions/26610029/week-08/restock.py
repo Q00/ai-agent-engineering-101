@@ -77,6 +77,12 @@ HELD_COST_SURPRISE = 0.10   # skip a SKU whose currently-held units cost this mu
                             # rating it "profitable" off the kind-wide average while our own actual cost
                             # basis for it left almost no room to negotiate (floor sat near 77% of list,
                             # well above what most buyers were offering -- mostly zero-offer cancels)
+HELD_COST_EXTREME_SURPRISE = 0.20   # fires even with only 1 held unit (below HELD_COST_MIN_SAMPLE) --
+                                    # measured live: Gef4d3036 drew a single grade-A unit at cost 20,798
+                                    # on a 28,900 list (72%, 26 points over EXPECTED_COST["food"]), which
+                                    # floor-locked its price and produced 70+ zero-offer cancels across 3
+                                    # hours before it finally expired into clearance. A unit this far over
+                                    # is not worth waiting for a second sample to confirm
 
 # Horvitz threshold for a shop promo post: post a "hot drop" at once when we just bought something
 # that is clearly selling fast elsewhere (high usefulness), otherwise only after staying quiet a while
@@ -257,9 +263,12 @@ def plan(inv, d, policy, now, catalog, demand):
         if short_n >= OWN_RATE_SHORT_MIN_SAMPLE and short_rate < OWN_RATE_SHORT_FLOOR:
             continue          # degrading fast enough that the main lookback_h window hasn't caught up yet
         costs = held_cost_ratios.get(sku)
-        if costs and len(costs) >= HELD_COST_MIN_SAMPLE and \
-           sum(costs) / len(costs) > EXPECTED_COST.get(kind, 0.6) + HELD_COST_SURPRISE:
-            continue          # our own held stock for this SKU costs far more than the kind-wide average
+        if costs:
+            avg_cost = sum(costs) / len(costs)
+            expected = EXPECTED_COST.get(kind, 0.6)
+            if (len(costs) >= HELD_COST_MIN_SAMPLE and avg_cost > expected + HELD_COST_SURPRISE) or \
+               avg_cost > expected + HELD_COST_EXTREME_SURPRISE:
+                continue      # our own held stock for this SKU costs far more than the kind-wide average
                               # the margin score above assumes -- that score is stale for this SKU specifically
         unit_cost = lp * 0.75                           # worst case: an A unit at the top of its range
         if unit_cost <= 0 or unit_cost > budget:
