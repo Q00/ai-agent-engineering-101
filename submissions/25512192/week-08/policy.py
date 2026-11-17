@@ -28,7 +28,7 @@ DEFAULT = {
         "max_paid_ratio": 0.92,         # never pay more than this share of the list price (surplus > 0)
         "goods_grades": ["A", "B"],
         "require_warranty_goods": False,
-        "food_hours_margin": 1,         # food must last use_within_hours + this
+        "food_hours_margin": 1.0,       # food must last use_within_hours + this (float: the floor is 0.5)
     },
     "notes": "default policy, before the first strategist run",
 }
@@ -43,8 +43,9 @@ LIMITS = {
     ("shop", "food_min_shelf_hours"): (6, 720),
     ("buyer", "offer_open_ratio"): (0.3, 0.9),
     ("buyer", "max_paid_ratio"): (0.5, 1.0),
-    ("buyer", "food_hours_margin"): (0, 2),      # checked only at payment and settle follows at once; 11-07..11-16 the
-                                                   # strategist raised it to 16 h, and every step refused more deals
+    ("buyer", "food_hours_margin"): (0.5, 2),    # checked only at payment and settle follows at once; 11-07..11-16 the
+                                                   # strategist raised it to 16 h, and every step refused more deals;
+                                                   # 11-17 it set 0, and inventory.json can be 10 s old, so keep 0.5
 }
 GRADES = ("A", "B", "C")
 
