@@ -158,13 +158,14 @@ mock 가게 테스트(`test_hooks.py`)로 정상 결제·등급 C 거부→cance
 429를 받고 있었다(초기 5분 간격 게시 시절의 잔재). 백로그를 최신 3개로 잘라 내고, 키트 `outbox()`에 "20줄 넘는 백로그는 버림"을
 패치했다(커밋 `74adfa2`). 시장 서버 부하를 내가 만들고 있었던 셈이라 바로 고쳤다.
 
-## 3. Round 3 결과 (11/16 07:42 조회; 최종 순위는 11/17 23:59 보드)
+## 3. Round 3 결과 (11/17 06:40 조회; 최종 순위는 11/17 23:59 보드)
 
 ### 3.1 제출 시점 숫자
 
-- **정산**: 가게 **9,864건**, buyer **6,302건** (기본 조건 각 20건). 매출 10.03억, Book 4,768만, 별점 4.43, 등급 주장 9,850/9,850 정직.
-  buyer 주문 20,530 중 정산 6,302(31 %), Saved 0.714, 게시판 평점 0.911, 글 3,274.
-- **Players(학생끼리) 32위 / 64** (합계 1.22; 중앙값 1.20, 20위 1.40, 1위 1.79). 가게 ALL 0.618, buyer ALL 0.599.
+- **정산**: 가게 **10,362건**, buyer **6,692건** (기본 조건 각 20건). 매출 10.66억, Book 4,619만, 별점 4.43, 등급 주장 10,343/10,343 정직.
+  buyer 주문 21,758 중 정산 6,692(31 %), Saved 0.721, 게시판 평점 0.912, 글 3,378.
+- **Players(학생끼리) 34위 / 64** (합계 1.20; 중앙값 1.21, 20위 1.39). 가게 ALL 0.604, buyer ALL 0.596.
+  (11/16 07:42에는 32위 1.22였다. 하루 사이 내 합계는 −0.02, 중앙값은 +0.01: 막판에 모두가 오르는 중이다.)
 - 로그 근거: `logs/market-kit.log`(라이브, 키트가 20 MB마다 회전해 `market-kit.log.1`에 직전분)의 정산 줄
   ```
   03:40:11 [acp] settled [선물가방] 박술녀 양모 순면 이불 겸 패드2장+베개커버2장 ... ledger #...
@@ -180,20 +181,21 @@ mock 가게 테스트(`test_hooks.py`)로 정상 결제·등급 C 거부→cance
 |---|---|---|---|---|---|---|---|---|
 | 1 | 6983 | 967 | 408 | 456 | 11% | 642 | 212 | 55 |
 | 2 | 10281 | 2287 | 788 | 1703 | 7% | 1328 | 471 | 124 |
-| 3 | 2410 | 493 | 166 | 307 | 13% | 378 | 119 | 36 |
+| 3 | 8358 | 1853 | 550 | 1104 | 6% | 1273 | 401 | 101 |
+| 4 | 2331 | 297 | 113 | 311 | 4% | 337 | 109 | 24 |
 
 ### 3.3 거부 사유 — 키트가 결제하지 않은 이유 (`.market/payments.jsonl`, 누적)
 
 | 키트가 결제를 거부한 이유 (payments.jsonl) | 건수 |
 |---|---|
-| not paying: grade C, the policy accepts ['A', 'B'] | 1356 |
-| not paying: N h of shelf life left < asked | 842 |
+| not paying: grade C, the policy accepts ['A', 'B'] | 1425 |
+| not paying: N h of shelf life left < asked | 861 |
 | not paying: -N h of shelf life left < asked | 102 |
-| not paying: no certificate, and the policy asks for one | 35 |
+| not paying: no certificate, and the policy asks for one | 36 |
 | checkout refused: 409 {'error': 'unit u-7c2ffc966de1 is not in stock f | 31 |
-| payment not completed: 402 {'error': 'payment refused by the market',  | 20 |
+| payment not completed: 402 {'error': 'payment refused by the market',  | 22 |
 | not paying: grade None, the policy accepts ['A', 'B'] | 9 |
-| checkout refused: 409 {'error': 'unit u-e38712db69d1 is not in stock f | 7 |
+| payment failed: TypeError: unhashable type: 'list' | 9 |
 
 C등급과 유통기한 부족이 거부의 93 %다. 둘 다 **내 accept 정책이 의도적으로 막은 것**(C는 고장 시 Saved −1, 식품은 `use_within_hours`
 못 채우면 가치 0). 요청문에 "grade A or B only, at least N hours"를 적어도 starter 가게들은 만료 임박 단위부터 내주기 때문에
@@ -216,7 +218,7 @@ C등급과 유통기한 부족이 거부의 93 %다. 둘 다 **내 accept 정책
 | 11/14 | 글 throttle이 mtime 기준인데 이 NFS는 mtime이 761초 늦어 **제한이 전혀 안 걸림**(24개/h 생성, 12개 버려짐) | 시계값을 파일에 저장 | 6개/h |
 | 11/15 | 손으로 하던 "지표 재고 상수 바꾸기"를 에이전트 루프로 | `tuner.py` meta-harness | 아래 3.5 |
 
-### 3.5 meta-harness 36시간 (`logs/tuner.log`, 36회 결정)
+### 3.5 meta-harness 60시간 (`logs/tuner.log`, 60회 결정; 11/16 07:50부터 opus·기억·되돌림)
 
 손잡이 변경 횟수: ask_factor 17, first_offer 8, price_cap 5, 유지 6. 시간당 마진 계열(%)은 `[5.2, 8.8, 1.2, 4.5, 3.2, 5.1, 1.6, 3.4, 4.1, 2.3, 70.9, 19.6, 11.9]`,
 시간당 결제는 13~29건 사이. 모델이 호가 배율을 하한(0.85)까지 내리고 첫 제안 비율을 0.95까지 올렸는데, 그 사이 buyer의 거래당
