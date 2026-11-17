@@ -1,0 +1,15 @@
+{
+  "harness": "rule-based code for shop (seller_r3.py, restock.py) and buyer (market_buyer.py, negotiation.py); no LLM in the trading loop",
+  "seller": {
+    "cmd": "python3 seller_r3.py --port {port} --name ggari-shop"
+  },
+  "buyer": {
+    "cmd": "python3 buyer.py --url {url} --item {item} --budget {budget}"
+  },
+  "market_buyer": {
+    "cmd": "python3 market_buyer.py --shops {shops} --item {item} --budget {budget} --self-name ggari0703,ggari-shop"
+  },
+  "restock": {
+    "cmd": "python3 restock.py --state {state}"
+  }
+}
