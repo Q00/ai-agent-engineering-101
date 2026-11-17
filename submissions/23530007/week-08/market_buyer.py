@@ -854,6 +854,13 @@ STRICT_FIVE = {"food": 0.45, "goods": 0.59}   # price/list at or under: 5 (about
 STRICT_FOUR = {"food": 0.52, "goods": 0.63}   # ... 4 (our cheapest quarter); anything dearer: 3
 
 
+def blocked_shop(mem, shop, last=5, hours=12):
+    """True when our last `last` visits to `shop` within `hours` all ended 'rejected' with no ask at all."""
+    now = time.time()
+    v = [t for t in mem.get("trades", []) if t.get("shop") == shop and now - t.get("t", 0) < hours * 3600][-last:]
+    return len(v) >= last and all(t.get("outcome") == "rejected" and not t.get("asks") for t in v)
+
+
 def strict_stars(stars, review, kind, rec, hours_left, shelf_hours_total, price=None, list_price=None):
     """11-17 (user: 'rate strictly'; '5 is for a very cheap buy, the default is 3'): the same rubric for every shop.
     Base from the price paid as a share of list: 5 at or under STRICT_FIVE, 4 at or under STRICT_FOUR, else 3. Then
@@ -1083,6 +1090,7 @@ def main():
 
         item, label, cap, accept, aim, p25 = a.item, f"a {a.item}", a.budget, None, "", None
         first = f"Hi! I'd like to buy a {a.item}. What's your best price?"
+        plain = False
         if acceptable:
             want = pick_sku(pick, acceptable, catalog, a.budget, share, cskip, stats=vctx["stats"] if skubest else None)
             item, label = want["sku"], f"{want['name']} ({want['sku']})"
@@ -1105,6 +1113,15 @@ def main():
             else:
                 first = (f"I want to buy {label}. Grade A or B with a warranty of at least {WARRANTY_MIN} hours on"
                          " the receipt, please (no grade C). Please quote your cheapest such unit and its price.")
+            # 11-17 (user: 'open the way the other buyers open'): a shop that has turned us away before any quote in
+            # its last visits (25620027: 14 of 14 in 6 h, 0 s, no ask, while 35 other buyers settled 2,994 there) gets
+            # the market's most common opening line, the one hundreds of buyers send (626 such openers reached our own
+            # shop in the last log window), not any one classmate's wording; price policy and checks are unchanged
+            plain = blocked_shop(mem, pick["name"])
+            if plain:
+                first = (f"I want to buy {label}." + (f" The unit must last at least {hours:g} hours."
+                                                      if order.get("kind") == "food" and hours else ""))
+                log("buyer", f"{pick['name']} turned me away before any quote in its last visits: plain opening line")
             accept = {"cert": True}
             if order.get("kind") == "food" and hours:
                 accept["min_hours_left"] = hours + bp["food_extra_hours"]
@@ -1133,6 +1150,7 @@ def main():
         last_hl = None    # 11-17: shelf hours on the last offer seen (strict_stars)
         n_off, last_off = 0, None                     # our counters so far (vprice.move)
         talk = vctx is not None and random.random() < bp.get("talk_share", 0)
+        talk = talk and not plain
         talked = False
         if vctx is None:
             soft = False
@@ -1341,7 +1359,7 @@ def main():
                                   "agreed": agreed, "honest": True, "signed": True, "void": "",
                                   "cap": cap if acceptable else None, "vplan": vplan_rec,
                                   "list": want.get("list_price") if acceptable else None, "expected": expected_in(why), "scale": 36,
-                                  "push": "v", "talk": talk, "soft": soft, "offers": n_off,
+                                  "push": "v", "talk": talk, "soft": soft, "plain": plain, "offers": n_off,
                                   "elapsed": int(time.time() - start)})
             log("buyer", f"{pick['name']} {'turned me away' if turned_away else 'did not meet my price'} ({outcome}); "
                          f"trying another shop ({attempt + 2}/{max_shops})")
@@ -1391,7 +1409,7 @@ def main():
                           "c": round(cshare(item, (rec or {}).get("claim") or (graded[0] if graded else None),
                                             order.get("kind") or "food"), 4) if acceptable and outcome == "deal" else None,
                           "graded": list(graded) if graded else None, "vplan": vplan_rec,
-                          "push": "v", "talk": talk, "soft": soft, "offers": n_off})
+                          "push": "v", "talk": talk, "soft": soft, "plain": plain, "offers": n_off})
     save_memory(mem)
     log("buyer", f"done: {outcome}" + (f" at {price}" if price is not None else "")
                  + f", {time.time() - start:.0f} s, harness calls {harness.CALLS['n']}")
