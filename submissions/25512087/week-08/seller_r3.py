@@ -38,6 +38,11 @@ PRICING = {
     "food_markdown_share": 0.5,  # ... may go down to half its cost (thrown away it returns nothing)
     "endgame_h": 24,             # 11/04: in the round's last 24 h the floor drops to cost (no margin) ...
     "endgame_floor": 0.8,        # ... and in its last 6 h to cost x 0.8: stock left at the end is a total loss
+    "warranty_hours": 6,         # 11/04 (2): A/B goods at or above warranty_min_list carry a 6 h warranty
+    "warranty_min_list": 100_000,
+    "value_floor": 0.0,          # 11/05: never sign under this share of the list price (the buyer's value), whatever
+                                 # the unit cost us: B/C units cost 25-60 % of list, so a cost-based floor gave them away.
+                                 # 0 in code (cost floor only); the live value comes from improve/policy.json (0.65)
 }
 ROUND_END = 1794927599           # 2026-11-17 23:59:59 KST (the board counts balance, not stock)
 PRICE = re.compile(r"(?<![\w.])(\d{1,9})(?![\w.])")
@@ -62,7 +67,11 @@ def floor_price(unit: dict, now: float | None = None) -> int:
     if 0 < left_h <= PRICING["endgame_h"]:
         return max(1, math.ceil(cost - 1e-9))
     held_days = max(0.0, (now - float(unit.get("supplied_at") or now)) / 86400) if unit.get("kind") != "food" else 0.0
-    return math.ceil(cost * (1 + PRICING["min_margin"] + PRICING["storage_per_day"] * held_days) - 1e-9)
+    by_cost = math.ceil(cost * (1 + PRICING["min_margin"] + PRICING["storage_per_day"] * held_days) - 1e-9)
+    # 11/05: price on value, not only on cost. A buyer's value is the list price whatever the grade; the market signs
+    # at a median 0.71-0.79 of list. Our B units sold at a median 0.65 of list and C at 0.67 (1.25x and 1.77x cost).
+    by_value = math.ceil(float(unit.get("list_price") or 0) * PRICING.get("value_floor", 0) - 1e-9)
+    return max(by_cost, by_value)
 
 
 def opening_ask(unit: dict, now: float | None = None) -> int:
@@ -106,25 +115,133 @@ def unit_line(unit: dict, now: float | None = None) -> str:
         bits.append(f"grade {unit['grade']}")
     if unit.get("expires_at"):
         bits.append(f"{max(0.0, (unit['expires_at'] - now) / 3600):.1f} h shelf life left")
+    if warranty_for(unit):
+        bits.append(f"{warranty_for(unit)} h warranty (full refund if it breaks)")
     bits.append("market certificate included")
     return ", ".join(bits)
 
 
-def find_unit(text: str, inv: dict, taken: set = frozenset()) -> dict | None:
+HOURS_ASKED = re.compile(r"(\d+(?:\.\d+)?)\s*(?:h\b|hrs?\b|hours?\b|시간)", re.I)
+REFUSED_LINE = re.compile(r"^(\d\d):(\d\d):(\d\d) \[acp\] checkout refused: (?:\d+ )?.*?unit (u-[0-9a-f]+) is not in stock")
+REFUSED_WINDOW_S = 3600          # 11/09 (approved): a unit the kit refused at checkout this often in this window...
+REFUSED_MAX = 2                  # ...is not offered again until the window passes (R3-24/25: 120+ refusals, 1 unit)
+KIT_LOG = Path(os.environ.get("KIT_LOG", MARKET_DIR.parent / "logs" / "market-kit.log"))
+_refused_cache: dict = {"at": 0.0, "units": frozenset()}
+
+
+def hours_asked(text: str) -> float | None:
+    """11/09: the shelf life a buyer says food must have left ("must last 40 h", "at least 24 hours", "48시간")."""
+    found = [float(x) for x in HOURS_ASKED.findall(text or "")]
+    return max(found) if found else None
+
+
+def refused_units(now: float | None = None, path: Path | None = None, tail_bytes: int = 3_000_000) -> frozenset:
+    """11/09: units the kit's checkout refused ("unit u-... is not in stock for this order": held by an unpaid
+    checkout, or not fitting the order) at least REFUSED_MAX times in the last REFUSED_WINDOW_S. Read from the end
+    of the kit log (local HH:MM:SS stamps; a stamp later than now is from yesterday). Cached for 30 s."""
+    now = time.time() if now is None else now
+    if path is None and now - _refused_cache["at"] < 30:
+        return _refused_cache["units"]
+    p = path or KIT_LOG
+    try:
+        with p.open("rb") as f:
+            f.seek(max(0, p.stat().st_size - tail_bytes))
+            text = f.read().decode("utf-8", "replace")
+    except OSError:
+        return frozenset()
+    lt = time.localtime(now)
+    now_s = lt.tm_hour * 3600 + lt.tm_min * 60 + lt.tm_sec
+    counts: dict = {}
+    for line in text.splitlines():
+        m = REFUSED_LINE.match(line)
+        if not m:
+            continue
+        age = now_s - (int(m.group(1)) * 3600 + int(m.group(2)) * 60 + int(m.group(3)))
+        if age < 0:
+            age += 86400
+        if age <= REFUSED_WINDOW_S:
+            counts[m.group(4)] = counts.get(m.group(4), 0) + 1
+    out = frozenset(u for u, n in counts.items() if n >= REFUSED_MAX)
+    if path is None:
+        _refused_cache.update(at=now, units=out)
+    return out
+
+
+def find_unit(text: str, inv: dict, taken: set = frozenset(), refused: set = frozenset(),
+              now: float | None = None) -> dict | None:
     """The in-stock unit that fits what the buyer asked for (SKU, name or category); a named SKU first, then the
-    unit that expires first (oldest first for goods), skipping units promised in another open negotiation."""
+    unit that expires first (oldest first for goods), skipping units promised in another open negotiation.
+    11/09 (approved): also skips units the kit keeps refusing at checkout (refused_units), and for food asked to
+    last N hours prefers the first-expiring unit with at least N h left (else the one with the most left)."""
     want = text.lower()
     if inv.get("round", 0) < 3:
         item = next((k for k in RESERVE if k in want), None)
         return item and {"sku": item, "name": item, "list_price": math.ceil(RESERVE[item] * PRICING["r2_markup"]),
                          "cost": RESERVE[item] / (1 + PRICING["min_margin"]), "unit": None, "expires_at": None,
                          "supplied_at": 0, "r2": True}
-    units = [u for u in inv.get("units", []) if u.get("grade") != "expired" and u["unit"] not in taken]
+    units = [u for u in inv.get("units", []) if u.get("grade") != "expired" and u["unit"] not in taken
+             and u["unit"] not in refused]
     fit = [u for u in units if u["sku"].lower() in want or (u.get("name") or "").lower() in want
            or (u.get("category") or "").split(">")[-1].strip().lower() in want]
-    named = [u for u in fit if u["sku"].lower() in want]
-    return min(named or fit, key=lambda u: (u.get("expires_at") or float("inf"), u.get("supplied_at", 0)),
-               default=None)
+    pool = [u for u in fit if u["sku"].lower() in want] or fit
+    need = hours_asked(text)
+    if need and any(u.get("expires_at") for u in pool):
+        now = time.time() if now is None else now
+        left = lambda u: ((u["expires_at"] - now) / 3600) if u.get("expires_at") else float("inf")
+        enough = [u for u in pool if left(u) >= need]
+        if not enough:
+            return max(pool, key=left)
+        pool = enough
+    return min(pool, key=lambda u: (u.get("expires_at") or float("inf"), u.get("supplied_at", 0)), default=None)
+
+
+FOOD_GRADE_CUTS = (0.8, 0.45)    # the market's food grades: share of shelf life left for A, B (market_kit.py)
+CLAIM_MARGIN_S = 900             # a food claim must hold this long after we sign (checkout and settle follow)
+_shelf: dict = {}
+
+
+def shelf_hours(sku: str) -> float | None:
+    """A food SKU's full shelf life in hours, from the market's catalog (cached)."""
+    if not _shelf:
+        try:
+            cat = json.loads((MARKET_DIR / "catalog.json").read_text(encoding="utf-8"))
+            _shelf.update({k: v.get("shelf_hours") for k, v in cat.items() if v.get("shelf_hours")})
+        except (OSError, ValueError):
+            return None
+    return _shelf.get(sku)
+
+
+def food_grade(left_s: float, shelf_h: float) -> str:
+    share = left_s / (shelf_h * 3600)
+    return "A" if share >= FOOD_GRADE_CUTS[0] else "B" if share >= FOOD_GRADE_CUTS[1] else "C"
+
+
+def claim_for(unit: dict, now: float | None = None, shelf_h: float | None = None) -> str | None:
+    """11/04: the grade we claim on the receipt, or None when we cannot be sure it is true when the market judges it.
+    Goods: the grade is fixed at arrival, so the unit's grade. Food: the grade from shelf life left, but only when the
+    grade is the same now and CLAIM_MARGIN_S later (a unit about to cross a cut gets no claim, never a wrong one)."""
+    if unit.get("r2") or not unit.get("unit"):
+        return None
+    if unit.get("kind") != "food":
+        g = unit.get("grade")
+        return g if g in ("A", "B", "C") else None
+    now = time.time() if now is None else now
+    shelf_h = shelf_h or shelf_hours(unit.get("sku", ""))
+    exp = unit.get("expires_at")
+    if not shelf_h or not exp or exp - now <= CLAIM_MARGIN_S:
+        return None
+    g_now, g_later = food_grade(exp - now, shelf_h), food_grade(exp - now - CLAIM_MARGIN_S, shelf_h)
+    return g_now if g_now == g_later else None
+
+
+def warranty_for(unit: dict) -> int | None:
+    """11/04 (2): hours of warranty for this unit, or None. Big-ticket buyers ask for one (top shops give it); a
+    break within it refunds the price from our balance, so only A/B goods at or above warranty_min_list get it."""
+    h = int(PRICING.get("warranty_hours") or 0)
+    if (h <= 0 or unit.get("r2") or not unit.get("unit") or unit.get("kind") == "food"
+            or unit.get("grade") not in ("A", "B") or float(unit.get("list_price") or 0) < PRICING["warranty_min_list"]):
+        return None
+    return h
 
 
 def read_inventory() -> dict:
@@ -177,7 +294,7 @@ def build(port: int, name: str):
             deal = self.open.get(task.id)
             if deal is None:
                 taken = {d["unit"]["unit"] for d in self.open.values() if d["unit"].get("unit")}
-                unit = find_unit(text, read_inventory(), taken)
+                unit = find_unit(text, read_inventory(), taken, refused_units())
                 if unit is None:
                     await up.reject(say("Sorry, we have none of that in stock right now."))
                     return
@@ -205,6 +322,14 @@ def build(port: int, name: str):
                 receipt = {"shop": name, "item": unit["sku"], "price": int(price), "task": task.id}
                 if unit.get("unit"):
                     receipt["unit"] = unit["unit"]                       # the unit the checkout ships
+                    claim = claim_for(unit)                              # 11/04: honest grade claim (or none)
+                    if claim:
+                        receipt["claim"] = claim
+                    warranty = warranty_for(unit)                        # 11/04 (2)
+                    if warranty:
+                        receipt["warranty_hours"] = warranty
+                    self.log("receipt", task=task.id, unit=unit["unit"], sku=unit["sku"], price=int(price),
+                             claim=claim, warranty=warranty, kind=unit.get("kind"), list_price=unit.get("list_price"))
                 await up.add_artifact(parts=[new_data_part(sign(receipt))], name="receipt")
                 await up.complete(say(f"Deal: {unit['name']} at {int(price)}. Signed receipt attached."))
                 self.open.pop(task.id, None)

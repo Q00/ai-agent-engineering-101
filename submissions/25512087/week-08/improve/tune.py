@@ -23,9 +23,12 @@ sys.path.insert(0, str(HERE.parent))
 import tuning  # noqa: E402
 
 DEFAULTS = {
-    "seller": {"ask_of_list": 0.92, "min_margin": 0.05, "max_rounds": 6, "food_markdown_h": 2.0, "food_markdown_share": 0.5, "endgame_h": 24, "endgame_floor": 0.8},
+    "seller": {"ask_of_list": 0.92, "min_margin": 0.05, "max_rounds": 6, "food_markdown_h": 2.0, "food_markdown_share": 0.5, "endgame_h": 24, "endgame_floor": 0.8, "warranty_hours": 6, "value_floor": 0.65,
+               "warranty_min_list": 100_000},
     "restock": {"CASH_FLOOR": 0.30, "PER_SKU_CAP": 0.05, "OPENING_BUDGET": 0.20, "TARGET_CATEGORIES": 60, "HOT_LINES": 3,
-                "MAX_LIST_PRICE": 3_000_000, "HOT_QTY": 3, "REORDER_MULT": 1.5, "FOOD_MAX": 4},
+                "MAX_LIST_PRICE": 3_000_000, "HOT_QTY": 3, "REORDER_MULT": 1.5, "FOOD_MAX": 4,
+                "HIGH_TICKET": 200_000, "STOCK_HOURS": 3.0,
+                "SURGE_MAX": 1.03, "LAST_BUY_HOURS": 12, "STOCK_FLOOR_SHARE": 0.0},
     "buyer": {"rung_1": 0.50, "rung_step": 0.10, "max_share": 0.92, "est_price": 0.70, "near_best": 0.80, "shelf_strikes": 2},
 }
 ROLLBACK_DROP = 0.40
@@ -63,11 +66,16 @@ def propose(m: dict, pol: dict) -> list[dict]:
             out.append({"section": sec, "key": key, "old": old, "new": new, "why": why})
 
     # seller: price against how readily buyers sign
-    if shop.get("openings", 0) >= MIN_EVENTS and shop.get("accept_rate") is not None:
-        if shop["accept_rate"] >= 0.80:
-            step("seller", "ask_of_list", +0.02, f"{shop['accept_rate']:.0%} of {shop['openings']} talks signed: room to ask more")
-        elif shop["accept_rate"] < 0.40:
-            step("seller", "ask_of_list", -0.03, f"only {shop['accept_rate']:.0%} of {shop['openings']} talks signed")
+    # 11/09 (approved): real talks only (measure.real_talks: no lowball probes, no repeat-SKU walk-aways); logs
+    # measured before 11/09 have no real_talks and fall back to all openings.
+    talks = shop.get("real_talks") if shop.get("real_talks") is not None else shop.get("openings", 0)
+    rate = shop.get("real_accept_rate") if shop.get("real_talks") is not None else shop.get("accept_rate")
+    kind = "real talks" if shop.get("real_talks") is not None else "talks"
+    if talks >= MIN_EVENTS and rate is not None:
+        if rate >= 0.80:
+            step("seller", "ask_of_list", +0.02, f"{rate:.0%} of {talks} {kind} signed: room to ask more")
+        elif rate < 0.40:
+            step("seller", "ask_of_list", -0.03, f"only {rate:.0%} of {talks} {kind} signed")
     # restock: traffic vs coverage, cash vs stock
     per_h = shop.get("openings", 0) / h
     if per_h < 10 and now.get("categories", 0) >= pol["restock"]["TARGET_CATEGORIES"] * 0.9 \
@@ -109,15 +117,26 @@ def main() -> None:
     changes = []
     log = HERE / "changes.jsonl"
     history = [json.loads(x) for x in log.read_text(encoding="utf-8").splitlines() if x.strip()] if log.exists() else []
-    last = [c for c in history if c.get("cycle") == (history[-1]["cycle"] if history else None) and not c.get("rollback")]
+    knobs = [c for c in history if c.get("source") != "code" and c.get("key") in tuning.BOUNDS.get(c.get("section"), {})]
+    # 11/04: only knob changes can be rolled back (code records in changes.jsonl are history, not knobs)
+    last = [c for c in knobs if c.get("cycle") == (knobs[-1]["cycle"] if knobs else None) and not c.get("rollback")]
     o_cur, n_cur = objective(cur)
     o_prev, n_prev = objective(prev) if prev else (None, 0)
-    if last and o_cur is not None and o_prev and o_prev > 0 and n_cur >= MIN_EVENTS and n_prev >= MIN_EVENTS \
+    outage = (cur["window"]["shop"].get("net_errors") or 0) > 20
+    if outage:                                        # 11/04: the Mac was offline; this window says nothing about knobs
+        print(f"[tune] window had {cur['window']['shop']['net_errors']} network errors: no rollback, no changes",
+              file=sys.stderr)
+        last = []
+    elif last and prev and last[0].get("cycle") != prev.get("kst"):
+        last = []                                     # only the changes made at the previous cycle can be blamed
+    if outage:
+        pass
+    elif last and o_cur is not None and o_prev and o_prev > 0 and n_cur >= MIN_EVENTS and n_prev >= MIN_EVENTS \
             and o_cur < (1 - ROLLBACK_DROP) * o_prev:
         for c in last:
             changes.append({"section": c["section"], "key": c["key"], "old": pol[c["section"]][c["key"]], "new": c["old"],
                             "why": f"rollback: objective {o_prev:,.0f}/h -> {o_cur:,.0f}/h after this change", "rollback": True})
-    elif (cur.get("window_hours") or 0) >= 1:          # a window under an hour is too thin to act on
+    elif not outage and (cur.get("window_hours") or 0) >= 1:          # a window under an hour is too thin to act on
         changes = propose(cur, pol)
     cycle = cur.get("kst")
     for c in changes:
