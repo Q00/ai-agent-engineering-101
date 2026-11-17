@@ -10,7 +10,7 @@
 | `kept/market-kit.0032-1115-1208.log` | 11-15 00:32:58 → 21:08:58 | 143,919 | VPS cron(`private/keep_log.sh`, 10분)이 새 `.1`을 자동 보관 |
 | `kept/market-kit.2108-1116-0556.log` | 11-15 21:08:59 → 11-16 14:56:16 | 145,451 | 〃 |
 | `kept/market-kit.1456-1116-2352.log` | 11-16 14:56:17 → 11-17 08:52:17 | 151,493 | 〃 |
-| `market-kit.log` | 11-17 08:52:17 → 복사 시점 | 82,249 (11-17 20:13 복사) | 키트가 쓰는 현재 파일. Round 3 종료(23:59) 뒤 최종본으로 다시 복사한다 |
+| `market-kit.log` | 11-17 08:52:17 → 복사 시점 | 83,167 (11-17 20:18 복사) | 키트가 쓰는 현재 파일. Round 3 종료(23:59) 뒤 최종본으로 다시 복사한다 |
 | `recovered/market-kit.journal-1108.log.gz` | 11-08 12:06:00 → 23:59:59 | 92,737 | systemd journald |
 | `recovered/market-kit.journal-1109.log.gz` | 11-09 하루 | 178,678 | 〃 |
 | `recovered/market-kit.journal-1110.log.gz` | 11-10 하루 | 191,926 | 〃 |
