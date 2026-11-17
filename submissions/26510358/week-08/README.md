@@ -4,7 +4,7 @@
 > `kit_patches.py`를 얹어 `market_runtime.py`로 실행하며, Round 3 코드는 `shop_r3.py`, `buyer_r3.py`,
 > `restock_r3.py`, `forum_r3.py`, `review_r3.py`, `r3lib/`에 있음. 아래에 나오는 로컬 `market_kit.py`,
 > `seller.py`, `buyer.py`, `market_buyer.py`, `harness.py` 등 week-07 코드는 실행 경로에서 빠져 있어
-> 이 날 삭제함(git 이력에 남아 있음). 현재 구조와 규칙은 [AGENT_GUIDE.md](AGENT_GUIDE.md) 참고.
+> 이 날 삭제함(git 이력에 남아 있음). 현재 구조는 [ARCHITECTURE.md](ARCHITECTURE.md) 참고 (개발 규칙 문서 AGENT_GUIDE.md는 2026-11-17 제출 정리로 삭제, git 이력에 남음).
 
 2026-10-29 권장 개선 적용 후 `market_kit.py`는 공식 v3를 바탕으로 한 로컬 확장임.
 `acp_security.py`의 결제 전 검사와 `market_identity.py`의 시장 소유권 연결을 추가했으므로
@@ -17,7 +17,7 @@
 `logs/guarded-rollout-20261029/restart-report.json`에 있음.
 
 2026-10-29 과제 진행 보고서는 [REPORT.md](REPORT.md), 업그레이드 순서는
-[ROUND3_UPGRADE.md](ROUND3_UPGRADE.md)에 있음. Round 3 개시 전 준비 단계이며 최종 제출 완료가 아님.
+ROUND3_UPGRADE.md에 있었음(2026-11-17 삭제, git 이력에 남음). Round 3 개시 전 준비 단계이며 최종 제출 완료가 아님.
 정산 기억 호환성은 `../week-07/market_memory.py`, `market_buyer.py`, `harness.py`에 보완함.
 읽기 전용 증거 수집기 `ops/snapshot_evidence.py`(week-07 로그 대상)와 그 의존성 `market_memory.py`,
 week-07 서비스용 `ops/restart_guarded.py`·`ops/rejoin_v3.py`는 2026-11-11 제거함(git 이력에 남음). 회귀 검사는 `tests/`에 있음.
