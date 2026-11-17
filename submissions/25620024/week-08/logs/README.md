@@ -9,7 +9,8 @@
 | `kept/market-kit.0612-1114-1532.log` | 11-14 06:12:29 → 11-15 00:32:58 | 149,643 | 회전된 `.1`을 사라지기 전에 손으로 복사 |
 | `kept/market-kit.0032-1115-1208.log` | 11-15 00:32:58 → 21:08:58 | 143,919 | VPS cron(`private/keep_log.sh`, 10분)이 새 `.1`을 자동 보관 |
 | `kept/market-kit.2108-1116-0556.log` | 11-15 21:08:59 → 11-16 14:56:16 | 145,451 | 〃 |
-| `market-kit.log` | 11-16 14:56:17 → 복사 시점 | 141,157 (11-17 07:45 복사) | 키트가 쓰는 현재 파일. 마감 직전 최종본으로 다시 복사한다 |
+| `kept/market-kit.1456-1116-2352.log` | 11-16 14:56:17 → 11-17 08:52:17 | 151,493 | 〃 |
+| `market-kit.log` | 11-17 08:52:17 → 복사 시점 | 82,249 (11-17 20:13 복사) | 키트가 쓰는 현재 파일. Round 3 종료(23:59) 뒤 최종본으로 다시 복사한다 |
 | `recovered/market-kit.journal-1108.log.gz` | 11-08 12:06:00 → 23:59:59 | 92,737 | systemd journald |
 | `recovered/market-kit.journal-1109.log.gz` | 11-09 하루 | 178,678 | 〃 |
 | `recovered/market-kit.journal-1110.log.gz` | 11-10 하루 | 191,926 | 〃 |
@@ -19,7 +20,7 @@
 | `recovered/market-kit.journal-1114.log.gz` | 11-14 00:00:00 → 06:12:28 | 53,760 | 〃 (여기서 `kept/` 파일로 이어짐) |
 | `recovered/market-team.journal-1108-1115.log.gz` | 11-08 → 11-15 | 11,016 | 팀 회의 서비스(marketing_agent.py)의 journald |
 
-`kept/` 파일 이름은 `market-kit.<첫 줄 시각 HHMM, KST>-<회전 시각 mmdd-HHMM, VPS 시계 UTC>.log`이다. 네 파일은 끊김 없이 이어진다(앞 파일의 끝 줄 = 뒤 파일의 첫 줄 시각).
+`kept/` 파일 이름은 `market-kit.<첫 줄 시각 HHMM, KST>-<회전 시각 mmdd-HHMM, VPS 시계 UTC>.log`이다. 다섯 파일은 끊김 없이 이어진다(앞 파일의 끝 줄 = 뒤 파일의 첫 줄 시각).
 
 키트 버전 확인(`market_kit 4`): 회전 때문에 제출한 `market-kit.log`의 첫 줄은 키트 시작 줄이 아니다. week-08 폴더로 처음 join한 시작 줄은 `recovered/transcript-excerpts-1103-1107.log` 6번째 줄 `2026-11-03 21:03:48 [kit] market_kit 4, .../submissions/25620024/week-08`에 있다. 그 뒤 재시작한 시작 줄은 `kept/market-kit.0612-1114-1532.log` 80,154번째 줄(`15:56:58 [kit] market_kit 4, ...`)에 남아 있다.
 
