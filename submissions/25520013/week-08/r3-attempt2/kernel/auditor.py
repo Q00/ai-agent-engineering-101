@@ -864,6 +864,48 @@ def _fit(head, blocks, tail, limit=PROMPT_CHARS, sizes=None):
     return "\n\n".join([head] + [f"{h}\n\n{b}" for h, b in blocks] + [tail])
 
 
+LIFE_STALE_H = 48  # a made tool unused this long is marked in the lifecycle block
+REPEAT_MIN = 3  # the same analyze code run this many times in 24 h is listed as a q_ tool candidate
+REPEAT_BYTES = 30_000_000
+
+
+def _lifecycle_block(root, now):
+    """Facts for managing tools over their life (2026-11-17): every made q_ tool with its maker, age, total uses and
+    hours since the last use (marked when over LIFE_STALE_H), then analyze code the operators ran REPEAT_MIN+ times in
+    24 h (a candidate to save as a q_ tool through the investigator). Counts only, no advice."""
+    out = []
+    for t in made_tools.load(root) if made_tools is not None else []:
+        if not isinstance(t, dict) or not isinstance(t.get("name"), str):
+            continue
+        made, last = t.get("created_ts"), t.get("last_used_ts")
+        age = f"{(now - made) / 3600:.0f}시간 전 만듦" if _num(made) else "만든 시각 없음"
+        idle = (now - last) / 3600 if _num(last) else None
+        used = f"마지막 사용 {idle:.0f}시간 전" if idle is not None else "쓴 적 없음"
+        mark = f" ({LIFE_STALE_H}시간 넘게 안 씀)" if idle is None or idle > LIFE_STALE_H else ""
+        out.append(f"{t['name']} | {t.get('by') or '?'} | {age} | {t.get('uses', 0)}번 | {used}{mark}")
+    runs = Counter()
+    first = {}
+    for r in c.tail_json(os.path.join(root, "a2/trajectory.jsonl"), REPEAT_BYTES, b'"analyze"'):
+        if not isinstance(r, dict) or r.get("kind") != "tool" or r.get("name") != "analyze":
+            continue
+        ts = r.get("ts")
+        if not _num(ts) or ts < now - 24 * 3600:
+            continue
+        a = r.get("args")
+        try:
+            code = (json.loads(a) if isinstance(a, str) else a or {}).get("code")
+        except (ValueError, AttributeError):
+            code = None
+        if not isinstance(code, str) or not code.strip():
+            continue
+        key = (r.get("role") or "?", " ".join(code.split()))
+        runs[key] += 1
+        first.setdefault(key, next((ln.strip() for ln in code.splitlines()[1:] if ln.strip()), "")[:80])
+    reps = [(k, n) for k, n in runs.most_common(5) if n >= REPEAT_MIN]
+    out += [f"같은 analyze 코드 {n}번 실행 ({role}): {first[(role, code)]}" for (role, code), n in reps]
+    return "\n".join(out) or "없음"
+
+
 def _role_tool_block(root, now, role):
     if audit is None:
         return "감사 모듈 없음"
@@ -926,6 +968,7 @@ def build_prompt(root, now, secrets=(), listed=None, roles=None, sizes=None):
         ("## 감사 보고 (최근 24시간, 커널이 셈)", audit_lines),
         (f"## 감사 숫자 (지난 감사 {c.kst(last)} 이후, 0 아닌 항목만)", rep),
         ("## 도구 표 (최근 24시간)", _tool_block(root, now, listed, ts)),
+        ("## 만든 도구의 수명과 반복 분석 (커널이 셈, 해석 없음)", _safe(lambda: _lifecycle_block(root, now))),
         ("## 정보 빈칸 (조사 결과에서 커널이 찾은 문장, 해석 없음)", _safe(lambda: _gaps_block(root, now))),
         ("## 다른 가게와 우리 (순위표의 가게 열, 커널이 셈. 해석 없음)", _safe(lambda: _board_block(root, now))),
         ("## 목표 진척 (순위표와 실험·코드 판정, 커널이 셈. 해석 없음)", _safe(lambda: _goal_block(root, now))),
