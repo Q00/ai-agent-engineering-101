@@ -23,7 +23,8 @@ PARAMS = {   # name: (default, low, high)
     "seller_markup": (1.00, 0.95, 1.15),          # seller: multiplies the market-price target on both arms
     # 11-17: the buyer's price limits are no longer shares of the list price (0.70 and 0.64, written for the patch 3.4
     # score) but distances from its own running score under whatever rule is in force (objective.py, profiles.py):
-    "buyer_kept_slack": (0.02, 0.00, 0.15),       # buyer: pays when a deal's estimated score >= my average - this
+    "buyer_kept_slack": (0.02, -0.10, 0.15),      # buyer: pays when a deal's estimated score >= my average - this
+                                                  # (negative: only deals that clearly beat the average; fewer of them)
     "buyer_quick_gain": (0.12, 0.05, 0.25),       # buyer: takes an ask at once when its score >= my average + this
 }
 DEFAULTS = {name: spec[0] for name, spec in PARAMS.items()}
