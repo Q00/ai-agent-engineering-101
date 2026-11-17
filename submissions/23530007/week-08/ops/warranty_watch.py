@@ -40,6 +40,7 @@ def set_default(h, sell_c=None):
     pa["globals"]["warranty_default_h"] = h
     if sell_c is not None:                      # 11-17 06:45 (user: 'sell grade C too, for the book')
         pa["globals"]["sell_c"] = sell_c
+        pa["globals"]["b_first"] = sell_c       # 11-17 07:00: B before A goes off with them
     PA.write_text(json.dumps(pa, ensure_ascii=False, indent=1), encoding="utf-8")
 
 

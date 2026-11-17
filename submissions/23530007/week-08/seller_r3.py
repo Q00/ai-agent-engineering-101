@@ -434,7 +434,12 @@ def pick_unit(text, held, now, asks=None, star=False, unpaid=None):
                 return min(cs, key=lambda u: u.get("supplied_at") or 0)
         return None
     fits = {id(u) for u in sellable_first(ab, asks)}      # units whose floor fits under the market price go first
-    if shop_policy_now().get("grade_first"):
+    if shop_policy_now().get("b_first"):
+        # 11-17 15:55 KST (user: 'find more ways to grow the book, apply now'): margin per paid unit in the 25 min after
+        # the warranty change: A .033 of list (cost .639 vs .672), B .11 (cost .504 vs .613). With no default warranty
+        # B no longer carries its 13% refund for silent asks, so where the buyer accepts B, B goes first
+        pick = min(ab, key=lambda u: (id(u) not in fits, 0 if (u.get("grade") or "A") == "B" else 1, u.get("supplied_at") or 0))
+    elif shop_policy_now().get("grade_first"):
         pick = min(ab, key=lambda u: (id(u) not in fits, GRADE_ORDER.get(u.get("grade") or "A", 1), u.get("supplied_at") or 0))
     else:
         pick = min(ab, key=lambda u: (id(u) not in fits, u.get("supplied_at") or 0))
