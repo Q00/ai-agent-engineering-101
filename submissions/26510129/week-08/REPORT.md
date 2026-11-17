@@ -8,7 +8,7 @@
 |---|---|
 | 구조 | 주문 로그 → 가게 프로파일 → 교훈·조절값, 세 층의 메모리. 점수식은 코드에 적지 않고 시장 규칙 페이지에서 읽는다 |
 | 모델 | 흥정 제안은 Haiku(가게가 3% 이상 움직일 때만), 하루 한 번의 반성은 Opus. 예산·서명·결제는 어떤 모델 컨텍스트에도 없다 |
-| 결과 | 3절. 마감 시각 board 기준 Players 학생 백분위 0.51 안팎 |
+| 결과 | 마감(11-17 23:59:41) board: 가게 29/86위, buyer 31/139위, Players 학생 백분위 0.511 |
 | 크게 잃은 곳 | 블랙리스트 버그 1.5일(11-05), 쿨오프 교착(11-11), 규칙 변경을 5일 동안 모름(11-12~17) |
 
 ## 1. 부품별 설계
@@ -176,10 +176,10 @@ buyer의 주문 한 건(그림의 가운데 줄):
 | 11-06 12:58 | 정산 3,271, 21/82위 | 결제 2,113, 30/123위 | |
 | 11-11 17:00 | Book 60.9M, 매출 458M, 정산 6,750, 22/83위 | 거래 5,774, Saved 0.257(패치 3.4 식), 34/131위 | |
 | 11-17 19:18 | Book 69.4M, 매출 573.7M, 정산 8,025, 별점 4.62, ALL 0.624, 29/86위 | 거래 16,335, Saved 0.7346(패치 3.6 식), 글 3,401, 포럼 평점 0.936, ALL 0.676, 31/139위 | 합 1.300, 학생 합 1.134, 학생 백분위 0.511 |
-| 11-17 23:59 (마감) | 마감 스냅샷으로 채움 | | |
+| **11-17 23:59:41 (마감)** | Book 69.3M, 매출 575.8M, 정산 8,034, 별점 4.62, ALL 0.628, **29/86위** | 거래 16,643, Saved 0.7358, 글 3,452, 포럼 평점 0.936, ALL 0.676, **31/139위** | 합 1.304, 학생 합 1.14, **학생 백분위 0.511** |
 
-순위는 house를 뺀 학생 계정 기준이다. 마감 스냅샷은 `snapshot_board.sh`가 `logs/board-1117-*.json`에 저장하고 한 줄
-요약을 `logs/board-snapshot.log`에 남긴다.
+순위는 house를 뺀 학생 계정 기준이다. 마감 스냅샷은 `snapshot_board.sh`가 23:50, 23:58:30, 23:59:40, 00:01에
+`logs/board-*.json`으로 저장했고 한 줄 요약은 `logs/board-snapshot.log`에 있다. 네 시점의 순위는 같다.
 
 buyer의 하루 단위 기록(`.market/buyer_memory.json`과 보관 파일; 점수는 패치 3.6 식, 원가는 등급 중간값 추정):
 
@@ -262,7 +262,9 @@ dragonash는 "A등급" 식품이 수명으로 31건 거부(결제 28건), chaewo
 - 고장 위험을 값에 넣은 뒤 한 시간(20:51~21:49)의 체결 점수는 0.883(A 0.887, B 0.888, C 0.811), 0.7 미만 거래는 없었다.
   같은 날 오후의 옛 규칙과 비교하면 덜 사고(0.64 → 0.44) 한 건마다 더 남긴다(0.764 → 0.883). 이 거래들의 고장은 6시간
   뒤까지 올 수 있어 점수는 더 내려갈 수 있다.
-- 마감까지의 결과는 이 아래에 적는다.
+- 마감 뒤 자정의 반성(Opus, 7.9초)은 변경 없이 다음 라운드를 위한 교훈을 남겼다: "Under margin_share the board's
+  score is a mean, so a deal only helps if it beats the running average: on 11-17 grade A scored 0.90 and grade C 0.58
+  (278 deals) ... The next round should start by reading the rules page" (`logs/tune.log`, `.market/lessons.jsonl`).
 
 ## 4. 마지막 날 다시 짠 이유 (11-17 19시 진단)
 
@@ -321,7 +323,7 @@ dragonash는 "A등급" 식품이 수명으로 31건 거부(결제 28건), chaewo
 
 ```bash
 cd submissions/26510129/week-08
-<kit venv>/bin/python -m unittest -q                 # 121개 테스트 (a2a 패키지는 kit의 venv에 있다)
+<kit venv>/bin/python -m unittest -q                 # 130개 테스트 (a2a 패키지는 kit의 venv에 있다)
 python tune.py --summary-only                        # 반성이 보는 요약 (모델 호출 없음)
 python tune.py --dry-run                             # Opus까지, 아무것도 쓰지 않음
 python restock.py --state .market                    # 지금 상태의 매입 계획 (사지 않음)
@@ -330,7 +332,7 @@ python make_figure.py && tectonic architecture.tex   # 그림: .tex 생성 후 P
 
 | 검증 | 결과 |
 |---|---|
-| 단위 테스트 | 121/121 (11-17, `test_*.py` 14개) |
+| 단위 테스트 | 130/130 (11-17) |
 | 공식 `market_test_week07.py` | 25/25 (11-03, `logs/market-test.log`) |
 | 실전 | 11-11 15:55 이후 kit 재시작 없이 마감까지, traceback 0건 |
 | 반성 시험 실행 | `logs/reflect-dryrun-2026-11-17.txt` (Opus 8.3초, 입력 8,404자) |
