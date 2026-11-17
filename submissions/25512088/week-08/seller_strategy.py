@@ -28,6 +28,7 @@ BOOK_CUSHION_TRIAL_SHARE=.90
 STAR_REVIEW_PRICE_RATE=.65
 STAR_REVIEW_PRICE_SKUS={'Ged5b1b82'}
 HIGH_VALUE_WARRANTY_CUTOFF=500_000
+OPTIONAL_WARRANTY_MAX_MATURE_HAZARD=.05
 # A high-value sale can move the Revenue percentile with one transaction.  Live
 # 2026-11-17 offers reached 97.63% of cost while the fresh Class Book cushion
 # funded the exact 2.37% loss more than twenty times over.  This is only an
@@ -266,12 +267,15 @@ def market_warranty_hours(unit, intel=None, required=0):
     # exceeded current Book.  Existing promises remain funded, but do not add
     # another claim: explicit warranty buyers cannot receive high-value stock.
     if required>0:return None if high_value else 6
-    # Cash is currently below the reserve for the outstanding legacy claims,
-    # so a new optional six-hour promise cannot be funded at checkout.  Small
-    # goods instead use the honest zero-hour lane and never sell below the
-    # bounded Book floor.  This releases working capital without creating a
-    # later refund; high-value goods still require independent market proof.
-    if not high_value:return 0
+    # Optional small-goods warranties used to be disabled while cash was below
+    # the legacy reserve.  That assumption is no longer true.  Re-enable the
+    # six-hour lane only from a mature, shop-local public cohort whose measured
+    # breakage stays below the bounded threshold; sparse/stale evidence keeps
+    # the zero-hour fallback.  The warranty-aware price floor funds the risk.
+    if not high_value:
+        hazard,basis=observed_hazard(intel)
+        return (6 if basis.startswith('public-matured:') and
+                hazard<=OPTIONAL_WARRANTY_MAX_MATURE_HAZARD else 0)
     if intel is None:return None
     no_warranty=intel.comparable(unit['sku'],unit.get('grade'),None,0)
     mature_day=(intel.comparable(unit['sku'],unit.get('grade'),None,0,24*3600)

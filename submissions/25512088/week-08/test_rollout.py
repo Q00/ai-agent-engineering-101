@@ -59,6 +59,15 @@ class RolloutTests(unittest.TestCase):
    self.assertEqual(market_warranty_hours(self.u,intel,0),0)
    self.assertEqual(market_warranty_hours(self.u,intel,6),6)
   finally:intel.close()
+ def test_mature_low_hazard_shop_reenables_small_goods_warranty(self):
+  class Evidence:
+   def source(inner,*args,**kwargs):
+    return {'shops':[{'name':'25512088','claims':1000,'broken':20}]}
+  self.assertEqual(market_warranty_hours(self.u,Evidence(),0),6)
+  class RiskyEvidence:
+   def source(inner,*args,**kwargs):
+    return {'shops':[{'name':'25512088','claims':1000,'broken':80}]}
+  self.assertEqual(market_warranty_hours(self.u,RiskyEvidence(),0),0)
  def test_high_value_goods_never_add_six_hour_claim_exposure(self):
   expensive=dict(self.u,cost=500000,list_price=900000)
   intel=Intel(self.root)
