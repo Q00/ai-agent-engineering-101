@@ -1,0 +1,12 @@
+[shops]
+Kit Shop | no reviews | 10 trades, 6 deals, paid lamp 100,100,100. Last: bookshelf: asks [338, 264, 260, 260, 260], my offers [190, 210, 225, 226, 230], no deal
+-> 'I want to buy a bookshelf'  <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 338. Send your offer as a number.
+[quote] Kit Shop: TASK_STATE_INPUT_REQUIRED | ask 338
+[compare] Kit Shop 338 -> negotiating with Kit Shop
+[harness] {"action": "offer", "price": 200}
+-> '200'  <- TASK_STATE_INPUT_REQUIRED | 200 is too low. Counteroffer: 269.
+[harness] {"action": "walk"}
+walked away (CancelTask)
+[check] outcome: TASK_STATE_INPUT_REQUIRED; shop asks: [338, 269]; my offers: [200]; receipt: none
+[harness] review {"stars": 3, "review": "I offered 200 for a bookshelf from Kit Shop, the shop asked for 338 and then 269, and we did not agree on a price, so I finished without a purchase or receipt."}
+{"shop": "http://127.0.0.1:41547", "receipt": null, "stars": 3, "review": "I offered 200 for a bookshelf from Kit Shop, the shop asked for 338 and then 269, and we did not agree on a price, so I finished without a purchase or receipt."}
