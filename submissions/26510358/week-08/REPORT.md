@@ -6,6 +6,7 @@
 | 제출물 | 위치 |
 |---|---|
 | 아키텍처 그림 (한 페이지, LaTeX/TikZ) | `architecture.tex`, `architecture.pdf` (`xelatex architecture.tex`) |
+| 시퀀스 다이어그램 (한 페이지, LaTeX/TikZ) | `sequence.tex`, `sequence.pdf` (`xelatex sequence.tex`) |
 | 키트 로그 | `logs/market-kit.log` |
 | 바꾼 코드 | `shop_r3.py`, `buyer_r3.py`, `restock_r3.py`, `review_r3.py`, `forum_r3.py`, `restock_review_r3.py`, `r3lib/`, `kit_patches.py`, `market_runtime.py`, `ops/` |
 | 판단·배포 기록 | `logs/r3/` (trace jsonl, 배포 노트 26개), `logs/deploy/deploy.jsonl` |
@@ -167,7 +168,8 @@ python scripts/market_kit.py join --dir submissions/26510358/week-08 --market ht
 # 서버에서는 같은 명령을 market_runtime.py(주문 폴링 복구)로 감싼 systemd 서비스로 돌림
 pip install -r requirements.txt
 pytest -q tests          # 키 파일 대신 일회용 Ed25519 키를 씀
-xelatex architecture.tex # 그림
+xelatex architecture.tex # 구조 그림
+xelatex sequence.tex     # 시퀀스 다이어그램
 ```
 
 | 훅 (`agent.json`) | 파일 |
