@@ -1,0 +1,26 @@
+# week-06 lab step 6 (lecture prompt, haiku): Claude Code wrapped as an A2A server with a2a server --exec
+# server, run from an empty folder (lecture command + --tools '' --setting-sources '' --no-session-persistence):
+#   a2a server --exec "claude -p --model haiku --tools '' --setting-sources '' --no-session-persistence
+#     --system-prompt 'You are a furniture shop. You sell lamps. Answer in English, in one short sentence.'"
+#     --name "Claude Shop" --port 8090
+# console output copied from the terminal pane; the same question sent twice
+
+===== try 1 =====
+Task:     01a13512-c893-7163-9780-c1abd32ae218
+Context:  01a13512-c893-7203-be2b-00574010d17f
+Status:   completed (2026-10-13T20:43:10+09:00)
+Artifacts:
+  [01a13512-d9f9-7ba8-91a2-3649ec002d08] Yes, we sell quality lamps ranging from $20 to $200 depending on the style and design!
+
+History:
+  [user] Do you sell lamps? How much?
+
+===== try 2 (same question) =====
+Task:     01a13512-da0e-7f3e-bc41-4cf4bcdb80d8
+Context:  01a13512-da0f-704a-95c3-c60af46157c4
+Status:   completed (2026-10-13T20:43:14+09:00)
+Artifacts:
+  [01a13512-e8e7-78ca-97b6-4b6f03b7526b] Yes, we sell a variety of lamps ranging from $25 to $150 depending on style and materials.
+
+History:
+  [user] Do you sell lamps? How much?

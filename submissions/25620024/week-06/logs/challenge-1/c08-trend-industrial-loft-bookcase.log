@@ -1,0 +1,11 @@
+
+### c08-trend-industrial-loft-bookcase [trend] budget 300
+    -> "I'm going for an industrial loft look. A tall bookcase in black metal."
+    <- TASK_STATE_INPUT_REQUIRED | I can offer the Black Metal Ladder Bookshelf 80 [BS-0252] (metal, books 160, W80 D30 H180 cm). The ladder bookshelf in black metal at 180 cm tall perfectly captures the industrial loft aesthetic with its exposed frame and lean-back style. Price: asking 155. Send your offer as a number.
+    [test] offered BS-0252: Black Metal Ladder Bookshelf 80 (reserve 105)
+    -> "150" taskId=940e49ab
+    <- TASK_STATE_INPUT_REQUIRED | 150 is too low. Counteroffer: 152.
+    -> "152" taskId=940e49ab
+    <- TASK_STATE_COMPLETED | Deal: Black Metal Ladder Bookshelf 80 [BS-0252] at 152.
+       artifact receipt [{"item": "Black Metal Ladder Bookshelf 80", "seller": "Harness Furniture Store (25620024)", "price": 152.0, "item_id": "BS-0252"}]
+  PASS  c08-trend-industrial-loft-bookcase: item BS-0252 (metal ladder bookshelf, reserve 105), asks [155, 152], 0 question(s), deal at 152.0 {'right_item': True, 'reserve': True, 'receipt': True} (31 s)

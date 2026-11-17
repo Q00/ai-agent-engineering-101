@@ -1,0 +1,7 @@
+card: Kit Shop | JSONRPC http://127.0.0.1:64291/ | buying lamp with budget 120
+-> I want to buy a lamp
+<- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
+   harness: {"action": "offer", "price": 105} (ask 130, budget 120)
+-> 105  (taskId aa4d45b9)
+<- TASK_STATE_COMPLETED | Deal: lamp at 105.
+result: TASK_STATE_COMPLETED, paid 105.0 (budget 120), 7 s

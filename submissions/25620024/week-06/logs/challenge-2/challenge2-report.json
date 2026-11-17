@@ -1,0 +1,97 @@
+{
+  "started": "2026-10-18T11:46:45+00:00",
+  "items": [
+    "a lamp to read in bed",
+    "a three-seat fabric sofa for the living room",
+    "something wooden to keep about 40 books, not taller than my desk",
+    "an office chair to sit in all day"
+  ],
+  "passed": 1,
+  "total": 2,
+  "results": [
+    {
+      "scenario": "normal",
+      "budget": 800,
+      "pass": true,
+      "checks": {
+        "every_item": true,
+        "budget": true,
+        "no_twice": true
+      },
+      "total": 701,
+      "seconds": 84,
+      "deals": {
+        "a lamp to read in bed": [
+          "LP-0360 at 25 from Lamp Corner"
+        ],
+        "a three-seat fabric sofa for the living room": [
+          "SF-0100 at 500 from Comfy Couches"
+        ],
+        "something wooden to keep about 40 books, not taller than my desk": [
+          "BS-0042 at 96 from Book Nook Shelving"
+        ],
+        "an office chair to sit in all day": [
+          "OC-0001 at 80 from Ergo Office"
+        ]
+      },
+      "stray_deals": [],
+      "buyer_guards": [
+        "GUARD schedule (offer 4): offer 427 raised to 471",
+        "GUARD schedule (offer 4): offer 86 raised to 96",
+        "GUARD schedule (offer 4): minimum 80 >= ask 80, taking the ask",
+        "GUARD schedule (offer 4): offer 23 raised to 25",
+        "GUARD deadline (offer 5 of 6): ask 500 is within the cap, taking it"
+      ],
+      "buyer_harness_turns": 17,
+      "prompt_chars": [
+        941,
+        1032
+      ]
+    },
+    {
+      "scenario": "tight",
+      "budget": 700,
+      "pass": false,
+      "checks": {
+        "every_item": false,
+        "budget": true,
+        "no_twice": true
+      },
+      "total": 196,
+      "seconds": 188,
+      "deals": {
+        "a lamp to read in bed": [
+          "LP-0360 at 23 from Lamp Corner"
+        ],
+        "a three-seat fabric sofa for the living room": [],
+        "something wooden to keep about 40 books, not taller than my desk": [
+          "BS-0042 at 96 from Book Nook Shelving"
+        ],
+        "an office chair to sit in all day": [
+          "OC-0181 at 77 from Ergo Office"
+        ]
+      },
+      "stray_deals": [],
+      "buyer_guards": [
+        "GUARD schedule (offer 4): offer 70 raised to 72",
+        "GUARD schedule (offer 4): offer 458 raised to 469",
+        "GUARD deadline (offer 5 of 6): ask 77 is within the cap, taking it",
+        "GUARD schedule (offer 5): offer 92 raised to 93",
+        "GUARD schedule (offer 5): offer 475 raised to 486",
+        "GUARD deadline (offer 6 of 6): ask 96 is within the cap, taking it",
+        "GUARD schedule (offer 6): offer 490 raised to 503",
+        "GUARD schedule (offer 4): offer 450 raised to 470",
+        "GUARD schedule (offer 5): offer 470 raised to 487",
+        "GUARD schedule (offer 6): offer 490 raised to 504",
+        "GUARD schedule (offer 4): offer 462 raised to 470",
+        "GUARD schedule (offer 5): walk_away 470 raised to 487",
+        "GUARD schedule (offer 6): offer 470 raised to 504"
+      ],
+      "buyer_harness_turns": 32,
+      "prompt_chars": [
+        941,
+        1055
+      ]
+    }
+  ]
+}

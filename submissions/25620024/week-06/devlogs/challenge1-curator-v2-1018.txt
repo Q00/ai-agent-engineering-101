@@ -1,0 +1,29 @@
+# challenge 1, part 4, catalog_curator.py v2 (commit 893580e), 2026-10-18
+# the curator now gets one line of conditions the search already applied; same three requests
+
+$ python catalog_curator.py "something wooden to keep about 40 books, not taller than my desk"
+(top of the output scrolled off the screen; same five candidates as v1)
+    BS-0116: Brown Walnut Open Bookshelf 60 -- walnut, brown, scandinavian, W60 D30 H72 cm, books 48
+    BS-0364: Light Oak Cube Bookshelf 60 -- oak, light, modern, W60 D30 H72 cm, books 48, cube shelves
+    BS-0232: Dark Walnut Closed-Door Bookshelf 60 -- walnut, dark, industrial, W60 D30 H72 cm, books 48, doors
+curator  : QUESTION Would you prefer open shelves for easy access to your books, or closed doors to keep them protected from dust?
+
+$ python catalog_curator.py "a light so I can read in bed"
+search   : 264 matches
+applied  : lamp; subtype clip/desk
+    (same five candidates as v1)
+curator  : PICK LP-0360 Clear Glass Clip Lamp 12 -- This clip lamp has the brightest output (1600 lumens) for reading and clips directly to your headboard or bedside table--perfect for bed-mounted lighting.
+           (code now locks this item; its reserve 25 goes to the negotiation guard)
+
+$ python catalog_curator.py "I need a lamp"
+search   : 450 matches, VAGUE
+applied  : lamp
+    (same five candidates as v1)
+curator  : QUESTION Where do you plan to use this lamp - on a desk, as a floor lamp, hanging from the ceiling, or somewhere else?
+
+# findings
+# - bookshelf: no longer asks about the desk height (the applied line settled it), but still asks
+#   (open vs closed doors) although the prompt says to ask only when the request is vague or nothing
+#   fits -- the third time a prompt-only rule was not followed by haiku (after the seller's 255 < 260
+#   and the buyer's 240/280 > 230)
+# - reading lamp: same pick as v1; vague lamp: still a question, so the change did not make it guess
