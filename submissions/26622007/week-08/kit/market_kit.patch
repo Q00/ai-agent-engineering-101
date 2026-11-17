@@ -1,0 +1,555 @@
+diff --git a/scripts/market_kit.py b/scripts/market_kit.py
+index aa218565..6085f519 100644
+--- a/scripts/market_kit.py
++++ b/scripts/market_kit.py
+@@ -85,6 +85,23 @@ SYNC_EVERY = 10                                     # seconds between refreshes
+ RESTOCK_EVERY = 60
+ RESTOCK_LOW = 20                                    # the default restock buys when fewer units than this are left
+ RECEIPT_KEYS = ("shop", "item", "price", "task")
++CHECKOUT_HOLD = int(os.environ.get("KIT_CHECKOUT_HOLD", "180"))   # seconds an unpaid checkout holds its unit, then a new deal
++                                                    # may take it and the old checkout is canceled (a seller that resells an
++                                                    # unpaid unit after 120 s got "not in stock" from the kit forever)
++SELLER_MEMORY_CAP = int(os.environ.get("KIT_SELLER_MEMORY_MB", "3072")) << 20   # the seller's footprint that starts a
++                                                    # restart: drain (seller_drain.py), then TERM once quiet. 0: off
++SELLER_DRAIN_WAIT = 1200                            # seconds the drain may take; then the restart is given up (no force)
++SELLER_CAP_RETRY = 1800                             # and tried again this long after, then SUSTAIN over again
++SELLER_CAP_GRACE = 3600                             # no cap drain this long after a seller starts: its first reads
++                                                    # peak at 3.1-3.3 GB and fall to ~1.2 GB in 10 min (11/15 09:43)
++SELLER_CAP_SUSTAIN = 1800                           # the footprint must stay over the cap this long, at every check
++SELLER_CAP_GAP = 180                                # checks further apart than this (a lap held up by wait_card) start
++                                                    # the SUSTAIN clock again: nothing was measured in between
++SELLER_CAP_RESTARTS = (2, 6 * 3600)                 # this many cap restarts within this many s rest the cap until the
++                                                    # first of them leaves the window (then SUSTAIN over again)
++CAP_WATCH = r"the memory cap (rests|is resting|is off)"   # every kit line saying the cap does not act: one pattern to watch
++SELLER_STATUS_FRESH = 15                            # seconds a quiet drain status stays good (the seller writes it every 5)
++SELLER_TERM_WAIT = 60                               # seconds a quiet seller may take to exit after TERM; it is never killed
+ LOG_FILE = None
+ LOG_MAX = 20_000_000                                # bytes; then market-kit.log moves to market-kit.log.1
+ LOG_LOCK = threading.Lock()
+@@ -324,7 +341,10 @@ class AcpShop:
+         self.key, self.market, self.md = key, market, md      # md: the .market folder whose inventory.json to refresh
+         self.pub = pub_b64(key)
+         self.sessions = collections.OrderedDict()
++        self.opened = {}                                 # session id -> when it was created (CHECKOUT_HOLD)
++        self.paying = set()                              # session ids whose payment is in flight
+         self.terms = collections.OrderedDict()           # task -> the receipt the seller sent (Proxy.observe)
++        self.gate = None        # optional: (order, session) -> message to refuse this payment with, or None (load_gate)
+ 
+     def card(self, public):
+         tools = [("create_checkout_session", "POST", "/checkout_sessions",
+@@ -354,39 +374,60 @@ class AcpShop:
+             return JSONResponse({"error": "no such checkout session"}, status_code=404)
+         if len(parts) == 2:
+             return JSONResponse(s)
+-        if parts[2] == "cancel" and s["status"] != "completed":
++        if parts[2] == "cancel" and s["status"] != "completed" and s["id"] not in self.paying:
+             s["status"] = "canceled"
+             return JSONResponse(s)
+-        if parts[2] == "complete" and s["status"] == "ready_for_payment":
+-            pay = b.get("payment_data") or {}
+-            r = await asyncio.to_thread(self.market.call, "POST", "/api/settle", "shop",
+-                                        json={"order": pay.get("order"), "checkout_jwt": s["checkout_jwt"],
+-                                              "checkout_mandate": pay.get("checkout_mandate"),
+-                                              "payment_mandate": pay.get("payment_mandate")})
+-            res = r.json() if r.headers.get("content-type", "").startswith("application/json") else {"error": r.text[:200]}
+-            if r.status_code != 200:
+-                log(f"[acp] settle refused: {[k for k, v in (res.get('checks') or {}).items() if not v] or res}")
+-                return JSONResponse({"error": "payment refused by the market", "market": res}, status_code=402)
+-            s["status"] = "completed"
+-            s["order"] = {"status": "confirmed", "mandate_receipt": res["mandate_receipt"]}
+-            if self.md:
+-                await asyncio.to_thread(refresh_inventory, self.market, self.md)
+-            mr = res["mandate_receipt"]
+-            log(f"[acp] settled {mr.get('name') or s['line_items'][0]['id']} at {s['totals'][0]['amount']}, "
+-                f"ledger #{res['ledger']}" + (f", unit {mr['unit']} grade {mr.get('grade')}" if mr.get("unit") else ""))
+-            return JSONResponse(s)
+-        return JSONResponse({"error": f"session is {s['status']}"}, status_code=409)
++        if parts[2] == "complete" and s["status"] == "ready_for_payment" and s["id"] not in self.paying:
++            self.paying.add(s["id"])                     # held while it is paid, however old (a new deal can't take it)
++            try:
++                return await self.complete(s, b)
++            finally:
++                self.paying.discard(s["id"])
++        return JSONResponse({"error": f"session is {s['status']}" + (" (being paid)" if s["id"] in self.paying else "")},
++                            status_code=409)
++
++    async def complete(self, s, b):
++        """Pay a ready session: the gate, then /api/settle (handle() marks it paying meanwhile)."""
++        pay = b.get("payment_data") or {}
++        if self.gate:
++            try:
++                no = await asyncio.to_thread(self.gate, pay.get("order"), s)
++            except Exception as e:                  # a broken gate never blocks a sale
++                log(f"[acp] gate failed: {type(e).__name__}: {e}")
++                no = None
++            if no:
++                s["status"] = "canceled"            # nothing goes to /api/settle; the unit is free again
++                return JSONResponse({"error": no}, status_code=409)
++        r = await asyncio.to_thread(self.market.call, "POST", "/api/settle", "shop",
++                                    json={"order": pay.get("order"), "checkout_jwt": s["checkout_jwt"],
++                                          "checkout_mandate": pay.get("checkout_mandate"),
++                                          "payment_mandate": pay.get("payment_mandate")})
++        res = r.json() if r.headers.get("content-type", "").startswith("application/json") else {"error": r.text[:200]}
++        if r.status_code != 200:
++            log(f"[acp] settle refused: {[k for k, v in (res.get('checks') or {}).items() if not v] or res}")
++            return JSONResponse({"error": "payment refused by the market", "market": res}, status_code=402)
++        s["status"] = "completed"
++        s["order"] = {"status": "confirmed", "mandate_receipt": res["mandate_receipt"]}
++        if self.md:
++            await asyncio.to_thread(refresh_inventory, self.market, self.md)
++        mr = res["mandate_receipt"]
++        log(f"[acp] settled {mr.get('name') or s['line_items'][0]['id']} at {s['totals'][0]['amount']}, "
++            f"ledger #{res['ledger']}" + (f", unit {mr['unit']} grade {mr.get('grade')}" if mr.get("unit") else ""))
++        return JSONResponse(s)
+ 
+     def pick_unit(self, rec, acceptable):
+         """Round 3: the unit to ship. The seller's choice ("unit") if it is in stock; else the in-stock unit of a
+-        fitting SKU that expires first (oldest first for goods). Units held by an open checkout are skipped."""
++        fitting SKU that expires first (oldest first for goods). Units held by an open checkout younger than
++        CHECKOUT_HOLD are skipped."""
+         r = self.market.call("GET", "/api/inventory", "shop")
+         if r.status_code != 200:
+             return None, f"inventory: {r.status_code}"
+         inv = r.json()
+         if inv.get("round", 0) < ECON_ROUND:
+             return False, None                          # no stock before Round 3
+-        held = {s["unit"] for s in self.sessions.values() if s.get("unit") and s["status"] == "ready_for_payment"}
++        now = time.time()
++        held = {s["unit"] for sid, s in self.sessions.items() if s.get("unit") and s["status"] == "ready_for_payment"
++                and (sid in self.paying or now - self.opened.get(sid, now) < CHECKOUT_HOLD)}
+         units = [u for u in inv["units"] if u["unit"] not in held and u["grade"] != "expired"]
+         want = rec.get("item")
+         fits = lambda u: (u["sku"] in acceptable if acceptable else
+@@ -417,6 +458,14 @@ class AcpShop:
+         if problem:
+             log(f"[acp] checkout refused: {problem}")
+             return JSONResponse({"error": problem}, status_code=409)
++        if u and any(x.get("unit") == u["unit"] and x["id"] in self.paying for x in self.sessions.values()):
++            log(f"[acp] checkout refused: unit {u['unit']} is being paid")    # its payment began while pick_unit ran
++            return JSONResponse({"error": f"unit {u['unit']} is not in stock for this order"}, status_code=409)
++        if u:
++            for x in self.sessions.values():             # an expired checkout on this unit can no longer be paid
++                if x.get("unit") == u["unit"] and x["status"] == "ready_for_payment" and x["id"] not in self.paying:
++                    x["status"] = "canceled"
++                    log(f"[acp] checkout {x['id']} on unit {u['unit']} canceled: a new deal took the unit")
+         sid = "cs_" + os.urandom(8).hex()
+         co = {"id": sid, "shop": rec["shop"], "shop_url": public, "item": u["sku"] if u else rec["item"],
+               "price": rec["price"], "task": rec["task"], "currency": "credits", "iat": int(time.time())}
+@@ -435,11 +484,31 @@ class AcpShop:
+             "capabilities": {"payment_methods": ["ap2-mandate"]},
+             "fulfillment": {k: co[k] for k in ("unit", "cert", "claim", "warranty_hours") if k in co},
+             "checkout_jwt": jwt_sign(self.key, co)}
++        self.opened[sid] = co["iat"]
+         while len(self.sessions) > 500:
+-            self.sessions.popitem(last=False)
++            self.opened.pop(self.sessions.popitem(last=False)[0], None)
+         return JSONResponse(s, status_code=201)
+ 
+ 
++def load_gate(d):
++    """The shop folder's optional acp_gate.py: start(log) returns gate(order, session) -> message to refuse the payment
++    with, or None to settle as usual."""
++    f = Path(d) / "acp_gate.py"
++    if not f.exists():
++        return None
++    try:
++        import importlib.util
++        spec = importlib.util.spec_from_file_location("shop_acp_gate", f)
++        m = importlib.util.module_from_spec(spec)
++        spec.loader.exec_module(m)
++        gate = m.start(log)
++        log(f"[acp] checkout gate {f.name} loaded")
++        return gate
++    except Exception as e:
++        log(f"[acp] {f.name} not loaded: {type(e).__name__}: {e}")
++        return None
++
++
+ def check_accept(o, co, accept):
+     """Round 3: the unit in the checkout against the buyer's accept policy. Returns the reason to refuse, or None."""
+     cert = co.get("cert")
+@@ -480,6 +549,31 @@ def check_accept(o, co, accept):
+     return None
+ 
+ 
++# Official check names observed in the market's ACP refusal response (Round 3).
++# Never log remote keys/values: even a check name is untrusted response data.
++ACP_FAILURE_CHECKS = frozenset({
++    "round_3_order", "not_expired", "not_settled_before", "checkout_signed_by_shop",
++    "checkout_matches_order", "checkout_mandate_signed_by_buyer",
++    "payment_mandate_signed_by_buyer", "closed_mandates_types",
++    "bound_to_open_mandates", "bound_to_this_checkout", "payee_is_this_shop",
++    "amount_is_checkout_total", "amount_in_range",
++})
++
++
++def failed_payment_checks(response):
++    """Read full JSON before selecting bounded, allowlisted names; never echo raw data."""
++    try:
++        body = response.json()
++    except (ValueError, RecursionError):
++        return "unavailable"
++    market = body.get("market") if isinstance(body, dict) else None
++    checks = market.get("checks") if isinstance(market, dict) else None
++    if not isinstance(checks, dict):
++        return "unavailable"
++    failed = sorted(name for name in ACP_FAILURE_CHECKS if checks.get(name) is False)
++    return ",".join(failed) or "unavailable"
++
++
+ def acp_pay(o, shop_url, shop_pub, receipt, buyer_key, accept=None, why=None):
+     """Round 3, buyer side: open an ACP checkout on the shop, check it against the agreed receipt, the open
+     mandates and the buyer's accept policy, sign the closed AP2 mandates, and complete.
+@@ -536,7 +630,7 @@ def acp_pay(o, shop_url, shop_pub, receipt, buyer_key, accept=None, why=None):
+         r = c.post(f"{base}/checkout_sessions/{s['id']}/complete",
+                    json={"payment_data": {"order": o["order"], "checkout_mandate": sign(cm), "payment_mandate": sign(pm)}})
+         if r.status_code != 200:
+-            log(f"[acp] payment not completed: {r.status_code} {r.text[:300]}")
++            log(f"[acp] payment not completed: {r.status_code} failed_checks={failed_payment_checks(r)}")
+             return None
+         mr = r.json()["order"]["mandate_receipt"]
+         got = ""
+@@ -618,8 +712,11 @@ def wait_card(base, seconds=60):
+ 
+ 
+ def open_tunnel(port):
++    # its own session, as start() does: stop() signals the process group, and without one the killpg failed and every
++    # replaced tunnel kept running (46 cloudflared beside the kit on 11/15)
++    kw = {"start_new_session": True} if os.name != "nt" else {}
+     proc = subprocess.Popen(["cloudflared", "tunnel", "--no-autoupdate", "--url", f"http://127.0.0.1:{port}"],
+-                            stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
++                            stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, **kw)
+     found = []
+ 
+     def read():                                     # reads until cloudflared exits, so its pipe never fills
+@@ -783,6 +880,12 @@ def handle_order(o, agent, d, market, proxy, own_shop, keys):
+ # --- Round 3: .market/ files, restock, forum outbox
+ 
+ CATALOG = {}
++MAX_SUPPLY_LINES = 20  # /rules: one call per 10 s in a 180 s window (~18 calls); was 10
++SUPPLY_EVERY = 10      # /rules: one supply call per 10 seconds
++SUPPLY_MARGIN = 0.2    # seconds added to a wait: a call that lands a moment early is refused
++SUPPLY_READ = 1        # the balance is read this long before a paced call goes (the read takes part of the wait)
++SUPPLY_AHEAD = 40      # a restock run starts this long before a window opens (the command takes 10-25 s)
++_supply_last = [None]  # time.monotonic() when the market last answered a supply call with anything but 429
+ 
+ 
+ def catalog_names(market, d):
+@@ -855,7 +958,7 @@ def sync_loop(a, agent, d, market, state):
+             outbox(market, md)
+             if "buyer" in market.token:
+                 broken_news(market, md, state)
+-            if shop and inv and inv.get("round", 0) >= ECON_ROUND and time.time() - last_restock > RESTOCK_EVERY \
++            if shop and inv and inv.get("round", 0) >= ECON_ROUND and restock_due(inv, last_restock, time.time()) \
+                     and not (state.get("restocking") and state["restocking"].is_alive()):
+                 last_restock = time.time()                # its own thread: supply waits must not stall the files
+                 state["restocking"] = threading.Thread(target=restock, daemon=True,
+@@ -884,6 +987,62 @@ def bankrupt(market):
+     return r.status_code == 200
+ 
+ 
++def _amount(v):
++    return isinstance(v, (int, float)) and not isinstance(v, bool) and v == v and v not in (float("inf"),) and v >= 0
++
++
++def restock_due(inv, last_restock, now):
++    """A restock run starts RESTOCK_EVERY after the last one started, and once SUPPLY_AHEAD seconds before a supply
++    window opens: on 11/11 a run ended 56 s before the 13:00:18 window (too early for restock.py to send lines) and
++    the next one had its lines 16 s after it opened."""
++    if now - last_restock > RESTOCK_EVERY:
++        return True
++    r = inv.get("restock")
++    if not isinstance(r, dict) or r.get("open") is not False or not _amount(r.get("opens_at")):
++        return False
++    ahead = r["opens_at"] - SUPPLY_AHEAD
++    return ahead <= now < r["opens_at"] and last_restock < ahead
++
++
++def until_open(inv):
++    """Seconds to wait for a supply window that inventory says opens within a minute; 0 when it is open, further
++    away or unknown (the market's 429 answers then decide, as before)."""
++    r = inv.get("restock") if isinstance(inv, dict) else None
++    if not isinstance(r, dict) or r.get("open") is not False or not _amount(r.get("opens_at")):
++        return 0
++    left = r["opens_at"] - time.time()
++    return left + SUPPLY_MARGIN if 0 < left <= 60 else 0
++
++
++def supply_pause():
++    """Seconds until the next supply call may go: SUPPLY_EVERY after the last one the market took."""
++    last = _supply_last[0]
++    return 0 if last is None else max(0, last + SUPPLY_EVERY + SUPPLY_MARGIN - time.monotonic())
++
++
++def cash_ok(market, cash, b, balance):
++    """(send it, the balance read, why not). cash: the restock command's {"floor": the balance a buy may not go under,
++    "unit": {sku: the most one unit can cost}}. balance: what the last supply call answered, or None to read
++    /api/inventory now. A floor, a unit cost or a balance that cannot be read sends nothing: the command's own check is
++    up to ~200 s old by the last of its twenty lines, and a refund or a retry's wait moves the balance meanwhile."""
++    floor, units = cash.get("floor"), cash.get("unit")
++    unit = units.get(b.get("sku")) if isinstance(units, dict) else None
++    qty = b.get("qty")
++    if not _amount(floor) or not _amount(unit) or not isinstance(qty, int) or isinstance(qty, bool) or qty < 1:
++        return False, balance, "no cash floor or unit cost for this line"
++    if balance is None:
++        try:
++            r = market.call("GET", "/api/inventory", "shop")
++            balance = r.json().get("balance") if r.status_code == 200 else None
++        except (httpx.HTTPError, ValueError, AttributeError):
++            balance = None
++        if not _amount(balance):
++            return False, None, "the balance could not be read"
++    if balance - unit * qty < floor:
++        return False, balance, f"balance {balance} less {unit * qty:.0f} would be under the cash floor {floor}"
++    return True, balance, ""
++
++
+ def restock(agent, d, market, md, inv, demand):
+     """The agent's restock command (it may also print "bankrupt": true), else the default. Without a command the
+     kit files for bankruptcy by itself when the shop is below the line and has nothing left to sell."""
+@@ -897,21 +1056,67 @@ def restock(agent, d, market, md, inv, demand):
+         if stuck and not inv["units"] and bankrupt(market):
+             return
+         buy = default_restock(inv, demand)
+-    for b in buy[:10]:
++    # the command's cash floor, when it prints one: read the balance again before every POST and before every retry
++    cash = out.get("cash") if "restock" in agent and isinstance(out.get("cash"), dict) else None
++    balance = None                                      # what the last supply answered; None: read it
++    lines = buy[:MAX_SUPPLY_LINES]
++    left = until_open(inv) if any(isinstance(b, dict) for b in lines) else 0
++    if left:                                            # the first call goes when the window opens, not 429 by 429
++        log(f"[supply] window opens in {left:.0f} s: {len(lines)} line(s) wait for it")
++        time.sleep(left)
++    for i, b in enumerate(lines):
+         if not isinstance(b, dict):
+             continue
+-        for _ in range(3):
++        r = None
++        for n in range(3):
++            pause = supply_pause()                      # the market takes one call per 10 s: wait it out here, a call
++            if pause:                                   # sent early is refused (429) and costs a round trip
++                time.sleep(max(0, pause - SUPPLY_READ))
++                balance = None                          # long enough for a refund: read it again, inside the wait
++            if cash is not None:
++                ok, balance, why = cash_ok(market, cash, b, balance)
++                if not ok:
++                    log(f"[supply] {b} held: {why}")
++                    r = None
++                    break
++            pause = supply_pause()                      # what the balance read left of the wait
++            if pause:
++                time.sleep(pause)
+             r = market.call("POST", "/api/supply", "shop", json={"sku": b.get("sku"), "qty": b.get("qty")})
+             if r.status_code == 429:
+-                time.sleep(min(float(r.json().get("wait", 10)), 30))
++                try:
++                    body = r.json()
++                except (ValueError, TypeError):
++                    body = {}
++                body = body if isinstance(body, dict) else {}
++                try:
++                    wait = float(body.get("wait", 10))
++                except (TypeError, ValueError):
++                    wait = 10
++                if not 0 <= wait < float("inf"):
++                    wait = 10
++                # closed until the next window. Up to 60 s is still tried as before (three tries, 30 s apart):
++                # restock.py sends lines up to 50 s before a window opens (opening.WINDOW_LEAD)
++                if wait > 60:
++                    log(f"[supply] window closed: {len(lines) - i} line(s) not sent")
++                    return
++                log(f"[supply] 429 for {b.get('sku')} (try {n + 1} of 3): wait {wait:.1f} s")
++                time.sleep(min(wait, 30) + SUPPLY_MARGIN)
++                balance = None                          # the wait is long enough for a refund: read it again
+                 continue
++            _supply_last[0] = time.monotonic()          # any other answer: the market counted this call
+             break
++        if r is None:
++            balance = None if cash is None else balance
++            continue
+         if r.status_code == 200:
+             j = r.json()
++            balance = j.get("balance") if _amount(j.get("balance")) else None
+             refresh_inventory(market, md)
+             log(f"[supply] {b.get('qty')} x {CATALOG.get(b.get('sku'), {}).get('name', b.get('sku'))} for {j['total']},"
+                 f" balance {j['balance']}")
+         else:
++            balance = None
+             log(f"[supply] {b} refused: {r.status_code} {r.text[:200]}")
+             if r.status_code == 402:
+                 break
+@@ -1010,6 +1215,7 @@ def cmd_join(a):
+                 proxy = Proxy(pport)
+                 proxy.target(f"http://127.0.0.1:{sport}")
+                 proxy.acp = AcpShop(keys["shop"], market, d / ".market")
++                proxy.acp.gate = load_gate(d)
+                 if a.tunnel:
+                     try:
+                         tp, url = open_tunnel(pport)
+@@ -1088,15 +1294,163 @@ def card_ok(base):
+         return False
+ 
+ 
++def footprint(pid):
++    """The memory a process holds, compressed pages included (macOS phys_footprint; ps's RSS leaves those out: 0.6 GB
++    for a seller at 4.7 GB on 11/15), else VmRSS on Linux; None when unreadable."""
++    try:
++        if sys.platform == "darwin":
++            import ctypes
++            buf = (ctypes.c_uint64 * 12)()         # rusage_info_v0: uuid (2 words), then 10 counters
++            if ctypes.CDLL("/usr/lib/libproc.dylib").proc_pid_rusage(int(pid), 0, buf) != 0:
++                return None
++            return int(buf[2 + 7])                 # user, system, pkg_idle, interrupt, pageins, wired, resident, footprint
++        with open(f"/proc/{int(pid)}/status") as f:
++            for line in f:
++                if line.startswith("VmRSS:"):
++                    return int(line.split()[1]) << 10
++    except (OSError, ValueError, AttributeError):
++        return None
++    return None
++
++
++def seller_cap(cap, proc, md, now, cap_bytes=None, log=log):
++    """One watchdog step of the memory cap; True when the seller is quiet and flushed and may be stopped now.
++    cap: {"since": drain start or None, "retry_at", "started": the seller's start, "over": first check over the cap,
++    "restarts": cap restarts (kept across sellers), "no_status": this seller's status never named it}. A seller over the
++    cap at every check for SELLER_CAP_SUSTAIN, SELLER_CAP_GRACE after it started, gets .market/seller.drain with its
++    pid: it refuses new talks, the talks under way go on, and its status says when it is quiet. A drain longer than
++    SELLER_DRAIN_WAIT is given up (the kit's marker goes, new talks are welcome again); the next try needs RETRY and
++    then SUSTAIN again. A marker someone else wrote (an owner's drain for a deploy) is left alone. The cap rests while
++    SELLER_CAP_RESTARTS restarts lie within its window (it comes back when the oldest leaves it, and needs SUSTAIN over
++    again) and for a seller whose status never names its pid; meanwhile a seller over the cap is logged every
++    SELLER_CAP_RETRY. Checks more than SELLER_CAP_GAP apart start the SUSTAIN clock again."""
++    cap_bytes = SELLER_MEMORY_CAP if cap_bytes is None else cap_bytes
++    marker = Path(md) / "seller.drain"
++    if cap.get("since") is None:
++        last, cap["checked"] = cap.get("checked"), now
++        if last is not None and now - last > SELLER_CAP_GAP:
++            cap.pop("over", None)
++        n, within = SELLER_CAP_RESTARTS
++        resting = cap.get("no_status") or len([t for t in cap.get("restarts", []) if now - t < within]) >= n
++        if not cap_bytes or now < cap.get("retry_at", 0) or marker.exists():
++            cap.pop("over", None)
++            return False
++        if now - cap.setdefault("started", now) < SELLER_CAP_GRACE:
++            return False
++        held = footprint(proc.pid)
++        if held is None or held <= cap_bytes:
++            cap.pop("over", None)
++            return False
++        if resting:
++            if now - cap.get("warned", -SELLER_CAP_RETRY) >= SELLER_CAP_RETRY:
++                cap["warned"] = now
++                log(f"[kit] your seller holds {held >> 20} MB, over the cap of {cap_bytes >> 20} MB, and the memory cap is "
++                    + ("off for this seller (its drain status never named it)" if cap.get("no_status") else
++                       f"resting after {n} restarts within {within // 3600} h") + ": look at its memory")
++            return False
++        if now - cap.setdefault("over", now) < SELLER_CAP_SUSTAIN:
++            return False
++        cap.pop("over", None)
++        marker.write_text(str(proc.pid))
++        cap["since"], cap["marker"] = now, str(proc.pid)
++        log(f"[kit] your seller holds {held >> 20} MB (cap {cap_bytes >> 20} MB): draining it for a restart")
++        return False
++    try:
++        st = json.loads((Path(md) / "seller_drain_status.json").read_text())
++    except (OSError, ValueError):
++        st = {}
++    if not isinstance(st, dict):
++        st = {}
++    at = st.get("at") if isinstance(st.get("at"), (int, float)) else 0
++    if st.get("pid") == proc.pid:
++        cap["seen"] = True
++    if (st.get("pid") == proc.pid and cap["since"] < at <= now + 1 and now - at <= SELLER_STATUS_FRESH
++            and st.get("quiet") is True and st.get("flushed") is True
++            and all(st.get(k) == 0 for k in ("inflight", "open", "held", "agreed", "late", "stale"))):
++        cap["since"] = None
++        return True
++    if now - cap["since"] > SELLER_DRAIN_WAIT:
++        drop_marker(cap, md)
++        if not cap.get("seen"):
++            cap["no_status"] = True
++            log(f"[kit] your seller's drain status never named pid {proc.pid}: the memory cap is off for this seller")
++        log(f"[kit] the seller did not drain in {SELLER_DRAIN_WAIT} s (" + ", ".join(
++            f"{k} {st.get(k)}" for k in ("inflight", "open", "stale", "held", "agreed", "late")) + "): restart given up, "
++            f"new talks welcome again; next try in {SELLER_CAP_RETRY} s")
++        cap["since"], cap["retry_at"] = None, now + SELLER_CAP_RETRY
++    return False
++
++
++def drop_marker(cap, md):
++    """Remove .market/seller.drain only when the kit wrote it (it still holds the pid the kit wrote)."""
++    marker, mine = Path(md) / "seller.drain", cap.pop("marker", None)
++    with contextlib.suppress(OSError, ValueError):
++        if mine is not None and marker.read_text().strip() == mine:
++            marker.unlink()
++
++
++def stale_marker(md):
++    """At the kit's start: remove a marker whose pid is no longer alive (it names a seller that is gone)."""
++    marker = Path(md) / "seller.drain"
++    try:
++        pid = int(marker.read_text().strip())
++        os.kill(pid, 0)
++    except ProcessLookupError:
++        with contextlib.suppress(OSError):
++            marker.unlink()
++    except (OSError, ValueError):
++        pass
++
++
++def cap_restart(cap, proc, md, now, log=log, wait=SELLER_TERM_WAIT):
++    """One watchdog step: when seller_cap says the seller is quiet, TERM it (its group) and wait for it to exit; True
++    when it exited (the watchdog starts the new one). A seller that does not exit in `wait` s is not killed: the kit's
++    marker goes, so it takes new talks again, and the cap tries again SELLER_CAP_RETRY later."""
++    if proc.poll() is not None or not seller_cap(cap, proc, md, now, log=log):
++        return False
++    log(f"[kit] your seller (pid {proc.pid}) drained and flushed: restarting it to give its memory back")
++    try:
++        if os.name != "nt":
++            os.killpg(proc.pid, signal.SIGTERM)
++        else:
++            proc.terminate()
++        proc.wait(timeout=wait)
++    except subprocess.TimeoutExpired:
++        drop_marker(cap, md)
++        cap["retry_at"] = now + SELLER_CAP_RETRY
++        log(f"[kit] your seller did not exit {wait} s after TERM: left running (no kill), new talks welcome again")
++        return False
++    except OSError as e:
++        log(f"[kit] could not stop your seller: {e}")
++    drop_marker(cap, md)
++    if proc.poll() is None:
++        return False
++    n, within = SELLER_CAP_RESTARTS
++    cap["restarts"] = [t for t in cap.get("restarts", []) if now - t < within] + [now]
++    if len(cap["restarts"]) >= n:
++        log(f"[kit] {len(cap['restarts'])} memory-cap restarts within {within // 3600} h: the memory cap rests until the "
++            f"first of them is {within // 3600} h old (the seller grows back too fast; look at its memory)")
++    return True
++
++
++def new_cap(cap, now):
++    """The cap state for a seller started now: its own grace and status, the kit's count of cap restarts."""
++    return {"since": None, "started": now, **({"restarts": list(cap["restarts"])} if cap.get("restarts") else {})}
++
++
+ def watchdog(a, agent, d, market, keys, procs, proxy, sport, pport, state, every=60):
+-    """Bring the shop back by itself: restart a crashed seller, and replace a dead quick tunnel
+-    (join again with the new URL; the market moves the shop's history to it)."""
+-    misses = 0
++    """Bring the shop back by itself: restart a crashed seller, restart a seller over SELLER_MEMORY_CAP once it has
++    drained, and replace a dead quick tunnel (join again with the new URL; the market moves the shop's history to it)."""
++    misses, cap, md = 0, {"since": None}, d / ".market"
++    stale_marker(md)
+     while True:
+         time.sleep(every)
+         try:
++            cap_restart(cap, procs[0], md, time.time())
+             if procs[0].poll() is not None:
+                 log(f"[kit] your seller exited (code {procs[0].returncode}), starting it again")
++                drop_marker(cap, md)
++                cap = new_cap(cap, time.time())
+                 procs[0] = start(fill(agent["seller"]["cmd"], port=sport), d)
+                 pump(procs[0], "[seller]")
+                 wait_card(f"http://127.0.0.1:{sport}")
