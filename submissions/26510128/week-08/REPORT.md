@@ -176,12 +176,12 @@ No artificial manipulation of other students' forum reputation is
 performed. Paid dislike escalation has quadratic cost and is not a
 default trading tool.
 
-## 4. Empirical Round 3 results (30%) — OBSERVED, NOT FINAL
+## 4. Empirical Round 3 results (30%) — UPDATED LOCAL OBSERVATION, NOT FINAL
 
 **Evidence status.** The student supplied the output of
 `python submissions/26510128/week-08/analyze_round3.py` run on
-**2026-11-16 at 13:45 KST** (UTC creation time
-`2026-11-16T04:45:29.142831+00:00`).
+**2026-11-17 at 19:03 KST** (UTC creation time
+`2026-11-17T10:03:33.181411+00:00`).
 That analysis examined local `market-kit.log` and deduplicated only
 ledger-numbered `[acp] paid ... settled at ledger` (buyer) and
 `[acp] settled ... ledger` (shop) events. It is **not** the official
@@ -190,21 +190,22 @@ final leaderboard and predates the 17 November cutoff.
 | Metric | Last observed local result | Verification needed |
 | --- | --- | --- |
 | Kit and account registration | v4, shop and buyer as `JangSeongWoong` | Original `logs/market-kit.log` |
-| Shop Round 3 settled sales | **14** distinct ledger IDs | **20 required**; refresh from live log and dashboard |
-| Buyer Round 3 settled purchases | **591** distinct ledger IDs | **20 required**, observed threshold passed |
-| Seller pricing policy actions | 70 quoted-price log entries | Policy log and settled margins |
-| Model/harness actions | 2,809 log entries | Local running evidence |
-| Reputation safety exclusions | 2,617 logged exclusions | Local log |
-| ACP refusals: grade C with A/B-only policy | **558** historical entries | Compare timestamps to code update; do not attribute all to final policy |
+| Shop Round 3 settled sales | **22** distinct ledger IDs | **20 required**, observed threshold passed; confirm on official dashboard |
+| Buyer Round 3 settled purchases | **2,404** distinct ledger IDs | **20 required**, observed threshold passed |
+| Seller pricing policy actions | 217 quoted-price log entries | Policy log and settled margins |
+| Model/harness actions | 7,123 log entries | Local running evidence |
+| Reputation safety exclusions | 6,662 logged exclusions | Local log |
+| ACP refusals: grade C with A/B-only policy | **732** historical entries | Compare timestamps to code update; do not attribute all to final policy |
 | ACP refusals: server 500 | 3 | Server-side response log |
 | Other ACP refusals | Insufficient shelf life or missing certificate, with many distinct hour limits | Preserve buyer requirements |
 | Final Shop ALL / Buyer ALL / Players Class percentile | **Not yet observed** | Official board at 2026-11-17 23:59 KST |
 | Realized discounts, inventory write-offs and refunds | **Not yet measured** | Settlement and dashboard evidence |
 
-The local analysis reported **`shop_at_least_20=false`** and
-**`buyer_at_least_20=true`** as of this observation. The student must
-provide new evidence if the shop subsequently reaches 20 or more.
-The log includes 558 historical refusals that say grade C was outside
+The local analysis reported **`shop_at_least_20=true`** and
+**`buyer_at_least_20=true`** at 19:03 KST on 2026-11-17. Both
+minimum settlement counts were met **in the local log analysis**;
+the official market dashboard remains the authority for evaluated totals.
+The log includes 732 historical refusals that say grade C was outside
 the permitted A/B list. These could have occurred before subsequent
 policy revisions; the event aggregate contains no deployment-version
 segmentation. The final buyer policy also enforces the original
