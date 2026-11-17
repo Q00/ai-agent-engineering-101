@@ -133,12 +133,6 @@ def select_unit(text, units, reserved, soft_counts=None, prefer_c=False):
              and (not required_hours(u) or not is_food(u) or
                   (u.get('expires_at') and u['expires_at']-now >=
                    required_hours(u)*3600+CHECKOUT_CONDITION_BUFFER_SECONDS))]
-    # Recent public trades showed that unrestricted C-only fallback was
-    # producing mostly three-star reviews and pushed the Class Stars rank down.
-    # C stock remains sellable, but only through the bounded deterministic
-    # drain lane selected by ``c_drain_slot``.
-    if not prefer_c:
-        valid = [u for u in valid if u.get('grade') != 'C']
     named = [u for u in valid if u['sku'].lower() in want]
     fits = named or [u for u in valid if any(str(v).lower() in want for v in
                     [u.get('name'), u.get('category', '').split('>')[-1]] if v)]
@@ -146,7 +140,13 @@ def select_unit(text, units, reserved, soft_counts=None, prefer_c=False):
     # Lead with the grades that actually settle. The recent mature cohort has
     # B/C converting materially above high-cost A. Food that cannot satisfy a
     # requested remaining-life condition was already removed from ``valid``.
-    grade_order=({'C':0,'B':1,'A':2} if prefer_c else {'B':0,'C':1,'A':2})
+    # Prefer A over C when both can satisfy the exact request.  Do not hide a
+    # C-only SKU: the first live revision turned 33 of 38 recent stock misses
+    # into false negatives, while the larger official cohort showed only a
+    # small rating difference (C 4.0 versus A 4.2).  The deterministic drain
+    # lane still leads with C for a bounded share of otherwise substitutable
+    # quotes.
+    grade_order=({'C':0,'B':1,'A':2} if prefer_c else {'B':0,'A':1,'C':2})
     # A quote floor is tied directly to unit cost. For the same SKU and grade,
     # leading with the cheapest unit therefore improves both conversion and
     # realized Book. The former eight-unit/experiment-only condition selected
@@ -268,7 +268,6 @@ class Seller(AgentExecutor):
                     await up.reject(say('Cannot verify this stock grade or expiry.'))
                     return
                 deal = dict(unit=unit, quote=q, credentials=cred, until=time.time()+120,
-                            allow_c=bool(drain_c),
                             required_food_hours=min_hours,
                             required_warranty_hours=min_warranty,
                             warranty_hours=selected_warranty)
@@ -287,7 +286,6 @@ class Seller(AgentExecutor):
                 if unit and unit['unit'] in accepted:
                     alternatives=[u for u in inv['units'] if u['unit'] not in accepted and
                                   u.get('sku')==unit.get('sku') and u.get('grade')==unit.get('grade') and
-                                  (deal.get('allow_c') or u.get('grade')!='C') and
                                   u.get('grade')!='expired' and
                                   (not u.get('expires_at') or u['expires_at']>time.time()) and
                                   (not deal.get('required_food_hours') or not is_food(u) or
