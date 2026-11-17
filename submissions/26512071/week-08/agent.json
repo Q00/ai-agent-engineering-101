@@ -1,0 +1,8 @@
+{
+  "harness": "Seller: direct OpenAI API gpt-6.1-terra none/256 (JSON chat, requested/returned model and usage logged; no nano retry); if unavailable, explicit deterministic fallback accepts only at/above quoted ask and unit cost. Buyer live decisions: explicit gpt-6.1-terra none/120 tool-free JSON counter/accept/leave, bounded 3 calls/shop and 6/order; compare up to two eligible signed candidates across at most three merchant attempts, with explicit deterministic bounded-v2 fallback on model errors. Restock/review remain deterministic bounded policies. Per-SKU holding/share limits retired under slot-recovery-v1; lifetime/concurrent/loss/cash-floor controls and history retained.",
+  "seller": {"cmd": "python seller_r3.py --port {port}"},
+  "buyer": {"cmd": "python buyer_r3.py --url {url} --item {item} --budget {budget}"},
+  "market_buyer": {"cmd": "python buyer_r3.py --shops {shops} --item {item} --budget {budget} --order {order}"},
+  "restock": {"cmd": "python restock_r3.py --state {state}"},
+  "review": {"cmd": "python review_r3.py --deal {deal}"}
+}
