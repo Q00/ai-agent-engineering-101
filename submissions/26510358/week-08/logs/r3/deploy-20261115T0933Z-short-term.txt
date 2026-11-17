@@ -1,0 +1,88 @@
+Deploy note 2026-11-15 18:3x-18:48 KST — short-term strategy (20261115_short_term_strategy.md), S1 and S3 applied, S2 not
+
+S1 buyer early quote stop, 50% canary (227a839b; live from the file save, ~18:27 KST, commit epoch 1794734830)
+  - Evidence (12 h before, buyer-decisions.jsonl): 1,430 orders = 119/h; fan-out quote phase p50 14.7 s, p75 20.1 s;
+    36% waited the full BUYER_QUOTE_TIMEOUT_S 20 s; order starts never closer than ~20 s (market pace), p50 26.8 s.
+  - First 10 orders after: usable quotes nearly all arrive in < 1 s; the 20 s wait is for shops that never answer.
+    early arm quote phase 1.4-2.9 s, other arm up to 20 s.
+  - Change: orders with quote_early_arm (BUYER_QUOTE_EARLY_SHARE 0.5, salt "quote_early:") stop waiting
+    BUYER_QUOTE_GRACE_S 2 s after the BUYER_QUOTE_ENOUGH 4th usable (INPUT_REQUIRED) quote. The "quotes" row now logs
+    early, quote_s, usable_at. Tie-break: quotes tied on margin share (capped at 1) go to the lower ask/list.
+  - Judge at +2 h (~20:30 KST) by arm: order wall time (start row -> last row), deals/order, margin share per deal.
+    Widen to 1.0 if wall time is lower by 25%+ and margin share within -0.02; 0.0 rolls back.
+    Orders/h overall can only rise if the order gap was our time, not the market's pace: compare orders/h after
+    widening against 119/h.
+
+S2 accept the last counter-offer: NOT applied
+  - 12 h of walked "no receipt" negotiations: 0 had a last ask <= max_pay (2 were shop-side rejections). The rule
+    already exists (508ebdd: a final price <= max_pay is taken at once). The doc's ~200 orders at margin share >= 0.8
+    assumed cost = 0.55 x list; with our COST_RATIO (goods A 0.618) every one is above max_pay = theta 0.72, i.e.
+    under our cumulative saved 0.738. Taking them would lower saved.
+
+S3 CAP_CEILING_SHARE 0.60 -> 0.70 (3732ed5c, +17%, inside the 20% rule)
+  - Evidence (kpi.jsonl 18:24): stock_cost 196.8M over stock_ceiling 186.9M, premium_budget 0, bedding stockouts
+    6.17/h, coffee/tea 3.08/h. Goods buying open until 2026-11-17 11:59 KST; unsold stock counts at cost.
+  - Org server (pid 1303196) killed at epoch 1794734894; it respawns when restock_r3 runs (next supply window).
+  - Judge at +6 h: stock_ceiling ~218M, bedding stockouts/h, revenue/h, surge, refunds. Back to 0.60 if stock grows
+    but stockouts and revenue/h do not move.
+
+Freeze: no deploys after 2026-11-17 12:00 KST.
+
+Update 2026-11-15 19:50 KST
+S1 widened to 1.0 (epoch 1794739742). Canary 18:25-19:46 KST, by arm (early / wait): 92 / 91 orders, order wall time
+  mean 8.5 / 23.9 s (p50 4.9 / 20.6), quote phase p50 2.5 / 18.0 s, deals/order 0.511 / 0.549 (difference inside noise
+  at n~90, SE ~0.07), margin share per deal 0.871 / 0.871 (44 / 46 deals). Orders/h overall 119.2 (12 h before) ->
+  135.3 with half the orders early. Next read: orders/h and deals/h at 1.0 against 135/h.
+S3 CORRECTION: the premise was wrong. kpi stock_cost 196.8M includes premium stock (111M); the normal stock the cap
+  governs was 86M against a 186.9M cap, and the 0.60 ceiling was already 253M. The ceiling never bound, so 0.70 changes
+  nothing (left in place, no restart for a no-op). Bedding stockouts are one SKU, G966ab0f3 (46 misses / 6 h): the
+  category target (192) is filled by 268 slower bedding units, so the SKU is never bought. Not fixed: market pays 0.64
+  of list on a ~0.59 supply cost, ~1.9k margin per unit, ~8M revenue to the end (0.2% of ours).
+Buyer threshold not raised: deals at margin share 0.72-0.76 are 8% of deals and sit at the cumulative saved (0.7385).
+
+Update 2026-11-15 20:32 KST — minimum quote wait 8 s (epoch 1794742336, user's yes)
+  At 1.0 (19:49-20:30): 113 orders, 162.6 orders/h, 86.3 deals/h (12 h before: 119.2 / 77.2). Order gap p10 19.6,
+  p50 20.5 s: the market's floor, so time an order spends under ~20 s is free. Early stop finished at 8.5 s mean.
+  Wait-arm canary orders with >= 4 quotes: 81 of 520 usable quotes came after the 4th + 2 s (20 < 6 s, 24 < 10 s,
+  21 < 15 s, 16 >= 15 s). Rule now: stop at max(4th usable + 2 s, BUYER_QUOTE_MIN_WAIT_S 8 s), or when every shop
+  answered. Judge at +1.5 h: orders/h stays ~160, deals/order up from 0.53 (19:49-20:30). 0.0 rolls back.
+  Not done: raising goods max_pay. Goods walked 99 vs 41 deals with the last ask a median 3.7% over max_pay, but
+  those prices score margin share ~0.64 (A), under the cumulative saved 0.739.
+
+Update 2026-11-15 20:43 KST — haggle canary 50% (5b164768, live from file save epoch 1794742982, user's yes)
+  Raw-trace read (Meta-harness style): of 24 h deals, 1,127 took the shop's first ask as-is (no counter); 663 of them
+  scored under 0.9 margin share (162 under 0.8). Cause: pricing.buyer_next_offer accepted any ask <= max_pay when
+  ask <= 0.72 x list, a pre-3.6 rule that is always true under max_pay now. Countered shops gave a median 4.4% of list.
+  Rule in haggle_arm orders (salt "haggle:"): a first ask above the price that scores BUYER_HAGGLE_MS 0.90 (by the
+  candidate's cost estimate) is countered once at the usual first offer; the next ask <= max_pay is taken. Final
+  first asks are still taken at once. Decision rows carry "haggle".
+  Judge at +2 h (~22:45) by arm: margin share per deal, deals/order, order wall time (must stay under the ~20 s gap).
+  Widen if margin share is up and deals/order within -0.03; 0.0 rolls back.
+CAP_CEILING_SHARE back to 0.60 in the same commit (S3 no-op; it also broke 3 cashflow/restock tests I had not rerun
+  at 18:28). Org server killed 20:45:19, back 20:46:00.
+
+Update 2026-11-16 10:2x KST — haggle to 1.0, minimum quote wait back to 0 (live from file save epoch 1794791733)
+  Haggle canary, 13.5 h since epoch 1794742982, by arm (haggle / control): 974 / 1,025 orders, margin share per deal
+  0.890 / 0.872 (se 0.004 each; food 0.889 / 0.874, goods 0.896 / 0.863), deals/order 0.506 / 0.489, wall mean
+  14.5 / 14.3 s. Last 4 h: 0.897 / 0.867. Meets the rule (margin share up, deals/order not down): BUYER_HAGGLE_SHARE 1.0.
+  Minimum wait 8 s failed its rule: deals/order did not rise (0.53 at 19:49-20:30 -> 0.49-0.51), orders over 20 s
+  went 10% -> 22%, order gap p90 24.8 -> 33 s (the next order starts ~4 s after ours ends, p10 idle 3.8 s), orders/h
+  162.4 -> 147.8. BUYER_QUOTE_MIN_WAIT_S 0.0 (plain early stop, 4th usable + 2 s). Next read at +2 h: orders/h back
+  near 160, deals/h above 73.5, margin share per deal ~0.89. Rank 15 of 71, total 1.499 (leader 1.791).
+
+Update 2026-11-16 20:2x KST — quote short-stop canary 50% (live from file save epoch 1794829915, user's yes)
+  After 642d0135 orders/h stayed ~147 (not back to 162): the next order starts ~4 s after ours ends, and 29% of
+  orders still ran past 16 s (gap p50 26-39 s for them). Those orders: quote phase p50 15 s (fewer than 4 usable
+  quotes, so the early stop never fires), then 13 s of mostly failed haggling (deal 0.23). 10:22-16:40: 20% of
+  orders waited past 10 s for quotes (1,374 s); no deal came from an order with no usable quote by 10 s.
+  Rule in quote_short_arm orders (salt "quote_short:", BUYER_QUOTE_SHORT_SHARE 0.5): stop the quote wait at
+  BUYER_QUOTE_SHORT_S 10 s once one usable quote is in; with none, wait to 20 s as before. Quotes row logs "short".
+  Judge at +4 h (~00:30 KST 11-17) by arm: deals/order, margin share per deal, wall time; then orders/h after
+  widening. Widen if deals/order within -0.03 and wall lower; 0.0 rolls back. Rank 15, total 1.503 (14th 1.517).
+
+Update 2026-11-16 23:1x KST — quote short-stop rolled back (BUYER_QUOTE_SHORT_SHARE 0.0, epoch 1794837856)
+  2.2 h, by arm (short / control): 174 / 166 orders, deals/order 0.540 / 0.645 (se ~0.037 each), margin share per
+  deal 0.853 / 0.857, wall mean 8.2 / 11.3 s, orders over 16 s 15% / 26%. On the orders the rule cuts (1-3 usable
+  quotes by 10 s): 39 / 51 orders, deal 0.28 / 0.53; control's were 23 quotes after 10 s. Late quotes win deals,
+  so the rule fails the -0.03 bar; rolled back at 2.2 h, not 4 h, since the loss is in the mechanism it changes.
+  Orders/h over the window 155 (both arms). Rank 15, total 1.503 (14th 1.517).

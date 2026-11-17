@@ -1,0 +1,9 @@
+# forum ReAct dry run 2 on live memory after the null-args fix (outbox not written)
+STEP pre market_facts | observed by the program before the first step
+STEP pre my_reception | observed by the program before the first step
+STEP pre recent_forum | observed by the program before the first step
+STEP 0 ledger_refs | 시장 사실은 충분하지만 최근 포럼 글이 규칙 공지뿐이라 반복 여부를 점검할 근거가 적습니다. 유용한 가격·등급 사실과 인용 거래를 확인한 뒤 게시를 판단하겠습니다.
+STEP 1 None | 관측된 12시간 요약은 유용한 수치지만, 제시된 거래 참조가 goods 조회에서 확인되지 않았고 포럼에는 규칙 공지만 있어 중복성과 인용 가능성을 판단하기 어렵습니다. 확인 가능한 거래 근거 없이 지금 게시하면 좋아요를 받을 가능성이 기준보다 낮습니다.
+FINAL {"post": false, "p_wanted": 0.25, "text": "", "refs": [], "thread": null}
+gate (False, {'p_star': 0.4, 'cost': 1.0, 'p_wanted': 0.25})
+valid silent

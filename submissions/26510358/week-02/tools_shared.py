@@ -20,7 +20,9 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
+# A week-local .env wins; the shared submissions/<id>/.env one level up fills the rest.
 load_dotenv(Path(__file__).with_name(".env"), override=False)
+load_dotenv(Path(__file__).resolve().parent.parent / ".env", override=False)
 
 # ---------------------------------------------------------------- tools
 

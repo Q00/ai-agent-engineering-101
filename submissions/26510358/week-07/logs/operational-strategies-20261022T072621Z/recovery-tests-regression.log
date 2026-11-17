@@ -1,0 +1,136 @@
+test_changed_task_and_rpc_ids_stop_reads_and_hold_reservation (test_task_recovery.RecoveryTests) ... ok
+test_dynamic_mock_get_task_cannot_fabricate_successful_recovery (test_task_recovery.RecoveryTests) ... ok
+test_expired_deadline_cannot_start_recovery_read (test_task_recovery.RecoveryTests) ... ok
+test_injected_pending_response_never_triggers_more_reads (test_task_recovery.RecoveryTests) ... ok
+test_lost_completed_response_recovers_same_task_without_replaying_offer (test_task_recovery.RecoveryTests) ... ok
+test_protocol_mismatch_in_send_response_is_never_treated_as_transient (test_task_recovery.RecoveryTests) ... ok
+test_recovered_completed_without_receipt_stays_unresolved (test_task_recovery.RecoveryTests) ... ok
+test_recovered_explicit_no_deal_releases_only_without_receipt_conflict (test_task_recovery.RecoveryTests) ... ok
+test_recovered_invalid_receipt_is_disputed_with_original_reservation (test_task_recovery.RecoveryTests) ... ok
+test_recovery_completion_received_after_deadline_is_still_validated (test_task_recovery.RecoveryTests) ... ok
+test_stale_input_required_snapshot_cannot_release_or_reoffer (test_task_recovery.RecoveryTests) ... ok
+test_still_pending_uses_bounded_reads_then_reports_unresolved (test_task_recovery.RecoveryTests) ... ok
+test_submitted_and_working_are_polled_until_receipt_arrives (test_task_recovery.RecoveryTests) ... ok
+test_transient_recovery_disconnect_and_http_503_only_retry_reads (test_task_recovery.RecoveryTests) ... ok
+test_unsupported_not_found_and_nontransient_http_hold_uncertain_funds (test_task_recovery.RecoveryTests) ... ok
+test_buyer_commits_received_completion_after_deadline_without_new_decision (test_protocol.ProtocolTests) ... ok
+test_buyer_does_not_authorize_price_from_quote_received_after_deadline (test_protocol.ProtocolTests) ... ok
+test_card_get_and_rpc_honor_remaining_deadline (test_protocol.ProtocolTests) ... ok
+test_card_received_after_deadline_remains_rejected (test_protocol.ProtocolTests) ... ok
+test_changed_response_id_version_and_shape_are_rejected (test_protocol.ProtocolTests) ... ok
+test_configured_timeout_also_bounds_rpc (test_protocol.ProtocolTests) ... ok
+test_deadline_crossing_response_still_requires_valid_rpc_evidence (test_protocol.ProtocolTests) ... ok
+test_expired_initial_deadline_closes_client_before_network (test_protocol.ProtocolTests) ... ok
+test_invalid_card_or_origin_closes_initialized_client (test_protocol.ProtocolTests) ... ok
+test_received_completion_crossing_deadline_is_parsed_but_next_rpc_is_blocked (test_protocol.ProtocolTests) ... ok
+test_eighth_ambiguous_working_response_is_disputed_not_released (test_buyer_round_boundary.BuyerRoundBoundaryTests) ... ok
+test_eighth_counter_has_no_ninth_decision_and_releases_unused_reservation (test_buyer_round_boundary.BuyerRoundBoundaryTests) ... ok
+test_eighth_explicit_failure_releases_without_committing (test_buyer_round_boundary.BuyerRoundBoundaryTests) ... ok
+test_eighth_lost_response_holds_funds_and_never_retries (test_buyer_round_boundary.BuyerRoundBoundaryTests) ... ok
+test_eighth_mismatched_receipt_keeps_disputed_funds (test_buyer_round_boundary.BuyerRoundBoundaryTests) ... ok
+test_eighth_offer_completion_commits_once_and_stops (test_buyer_round_boundary.BuyerRoundBoundaryTests) ... ok
+test_received_final_completion_is_checked_even_if_deadline_just_expired (test_buyer_round_boundary.BuyerRoundBoundaryTests) ... ok
+test_invalid_price_or_partial_named_receipt_is_still_purchase_evidence (test_terminal_receipt_conflict.TerminalReceiptConflictTests) ... ok
+test_plain_terminal_failure_and_diagnostic_artifacts_release_unspent_offer (test_terminal_receipt_conflict.TerminalReceiptConflictTests) ... ok
+test_receipt_in_any_no_deal_terminal_preserves_ambiguous_funds (test_terminal_receipt_conflict.TerminalReceiptConflictTests) ... ok
+test_unsolicited_conflicting_receipt_does_not_authorize_a_purchase (test_terminal_receipt_conflict.TerminalReceiptConflictTests) ... ok
+test_coordinator_budget_cannot_authorize_an_overbudget_offer (test_buyer_coordination.BuyerCoordinationTests) ... ok
+test_harness_mutation_does_not_change_original_nested_coordination (test_buyer_coordination.BuyerCoordinationTests) ... ok
+test_non_object_context_is_rejected_before_client_or_model_creation (test_buyer_coordination.BuyerCoordinationTests) ... ok
+test_none_keeps_basic_buyer_context_without_coordination_field (test_buyer_coordination.BuyerCoordinationTests) ... ok
+test_compatible_or_omitted_units_allow_existing_peer_receipts (test_quote_normalization.BuyerNormalizedObservationTests) ... ok
+test_datapart_exact_external_sku_reaches_receipt_guard_without_observer (test_quote_normalization.BuyerNormalizedObservationTests) ... ok
+test_incompatible_quote_units_stop_before_authorizing_a_bid (test_quote_normalization.BuyerNormalizedObservationTests) ... ok
+test_incompatible_receipt_units_dispute_and_preserve_reserved_funds (test_quote_normalization.BuyerNormalizedObservationTests) ... ok
+test_normalized_quote_is_preserved_in_next_round_history (test_quote_normalization.BuyerNormalizedObservationTests) ... ok
+test_receipt_mismatch_after_text_normalization_remains_disputed (test_quote_normalization.BuyerNormalizedObservationTests) ... ok
+test_text_observation_reaches_current_policy_and_decision_with_fixed_budget (test_quote_normalization.BuyerNormalizedObservationTests) ... ok
+test_unknown_ask_cannot_be_accepted_and_overbudget_offer_is_never_repaired (test_quote_normalization.BuyerNormalizedObservationTests) ... ok
+test_complete_decimal_and_grouped_price_allow_sentence_punctuation (test_quote_normalization.QuoteNormalizationTests) ... ok
+test_conflicting_structured_prices_products_or_quotes_fail_without_model_promotion (test_quote_normalization.QuoteNormalizationTests) ... ok
+test_datapart_product_sku_and_nested_amount_are_observations (test_quote_normalization.QuoteNormalizationTests) ... ok
+test_decimal_and_integer_substrings_cannot_ground_a_partial_price (test_quote_normalization.QuoteNormalizationTests) ... ok
+test_explicit_currency_and_quantity_conflicts_or_malformed_values_fail_closed (test_quote_normalization.QuoteNormalizationTests) ... ok
+test_invalid_or_missing_numeric_fields_use_actual_observer_or_remain_unknown (test_quote_normalization.QuoteNormalizationTests) ... ok
+test_many_numbers_are_interpreted_by_observer_not_last_number (test_quote_normalization.QuoteNormalizationTests) ... ok
+test_metadata_quote_needs_no_observer_and_never_mutates_remote_data (test_quote_normalization.QuoteNormalizationTests) ... ok
+test_missing_units_keep_implicit_course_contract_and_no_conversion_occurs (test_quote_normalization.QuoteNormalizationTests) ... ok
+test_observation_accounts_for_entire_call_time_under_the_existing_deadline (test_quote_normalization.QuoteNormalizationTests) ... ok
+test_observer_cannot_invent_a_number_or_identifier_or_replace_structured_sku (test_quote_normalization.QuoteNormalizationTests) ... ok
+test_punctuated_multi_number_quote_still_uses_the_observers_price (test_quote_normalization.QuoteNormalizationTests) ... ok
+test_receipt_artifacts_and_private_limits_are_not_quote_fields (test_quote_normalization.QuoteNormalizationTests) ... ok
+test_sentence_period_after_observed_price_does_not_discard_the_number (test_quote_normalization.QuoteNormalizationTests) ... ok
+test_task_metadata_and_datapart_aliases_share_one_normalized_contract (test_quote_normalization.QuoteNormalizationTests) ... ok
+test_ungrounded_observation_reenters_existing_harness_feedback_loop (test_quote_normalization.QuoteNormalizationTests) ... ok
+test_counteroffer_releases_old_reservation_and_uses_new_id (test_integrations.BuyerHTTPIntegrationTests) ... ok
+test_duplicate_artifact_and_changed_task_are_unresolved_not_rolled_back (test_integrations.BuyerHTTPIntegrationTests) ... ok
+test_every_named_catalog_id_rejects_initial_product_substitution (test_integrations.BuyerHTTPIntegrationTests) ... ok
+test_explicit_external_sku_prevents_substitution_for_descriptive_request (test_integrations.BuyerHTTPIntegrationTests) ... ok
+test_fractional_price_travels_without_six_digit_rounding (test_integrations.BuyerHTTPIntegrationTests) ... ok
+test_honest_receipt_commits_once_over_real_http (test_integrations.BuyerHTTPIntegrationTests) ... ok
+test_lost_completion_response_preserves_uncertain_payment (test_integrations.BuyerHTTPIntegrationTests) ... ----------------------------------------
+Exception occurred during processing of request from ('127.0.0.1', 45218)
+Traceback (most recent call last):
+  File "/usr/lib/python3.10/socketserver.py", line 683, in process_request_thread
+    self.finish_request(request, client_address)
+  File "/usr/lib/python3.10/socketserver.py", line 360, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+  File "/usr/lib/python3.10/socketserver.py", line 747, in __init__
+    self.handle()
+  File "/usr/lib/python3.10/http/server.py", line 433, in handle
+    self.handle_one_request()
+  File "/usr/lib/python3.10/http/server.py", line 421, in handle_one_request
+    method()
+  File "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/tests/test_integrations.py", line 114, in do_POST
+    response = peer.responses.pop(0)
+IndexError: pop from empty list
+----------------------------------------
+----------------------------------------
+Exception occurred during processing of request from ('127.0.0.1', 45222)
+Traceback (most recent call last):
+  File "/usr/lib/python3.10/socketserver.py", line 683, in process_request_thread
+    self.finish_request(request, client_address)
+  File "/usr/lib/python3.10/socketserver.py", line 360, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+  File "/usr/lib/python3.10/socketserver.py", line 747, in __init__
+    self.handle()
+  File "/usr/lib/python3.10/http/server.py", line 433, in handle
+    self.handle_one_request()
+  File "/usr/lib/python3.10/http/server.py", line 421, in handle_one_request
+    method()
+  File "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/tests/test_integrations.py", line 114, in do_POST
+    response = peer.responses.pop(0)
+IndexError: pop from empty list
+----------------------------------------
+----------------------------------------
+Exception occurred during processing of request from ('127.0.0.1', 45224)
+Traceback (most recent call last):
+  File "/usr/lib/python3.10/socketserver.py", line 683, in process_request_thread
+    self.finish_request(request, client_address)
+  File "/usr/lib/python3.10/socketserver.py", line 360, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+  File "/usr/lib/python3.10/socketserver.py", line 747, in __init__
+    self.handle()
+  File "/usr/lib/python3.10/http/server.py", line 433, in handle
+    self.handle_one_request()
+  File "/usr/lib/python3.10/http/server.py", line 421, in handle_one_request
+    method()
+  File "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/tests/test_integrations.py", line 114, in do_POST
+    response = peer.responses.pop(0)
+IndexError: pop from empty list
+----------------------------------------
+ok
+test_named_and_descriptive_requests_keep_correct_canonical_item (test_integrations.BuyerHTTPIntegrationTests) ... ok
+test_poison_quote_cannot_override_configured_budget (test_integrations.BuyerHTTPIntegrationTests) ... ok
+test_receipt_corruption_is_disputed_and_keeps_remote_spend_reserved (test_integrations.BuyerHTTPIntegrationTests) ... ok
+test_receipt_old_quote_id_is_disputed_with_funds_held (test_integrations.BuyerHTTPIntegrationTests) ... ok
+test_walk_away_after_counterquote_releases_only_uncommitted_offer (test_integrations.BuyerHTTPIntegrationTests) ... ok
+test_invalid_model_acceptance_fails_without_receipt (test_integrations.SellerHTTPIntegrationTests) ... ok
+test_real_sdk_routes_quote_complete_and_reject_terminal_replay (test_integrations.SellerHTTPIntegrationTests) ... ok
+test_seller_hostile_text_does_not_change_reserve (test_integrations.SellerHTTPIntegrationTests) ... Dispatcher task is not running. Cannot wait for event dispatch.
+ok
+
+----------------------------------------------------------------------
+Ran 79 tests in 5.242s
+
+OK

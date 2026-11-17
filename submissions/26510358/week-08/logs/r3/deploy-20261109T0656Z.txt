@@ -1,0 +1,12 @@
+deploy a4d22ca (warranty 6 h -> 72 h) + dae23e9 (kpi stars_rank), 2026-11-09 KST
+15:55:49 tunnel amanda-wrist-ips-market stopped answering (watchdog began a rotation, unrelated to this deploy)
+15:56:42 SIGTERM seller 259810 (shop_r3 since 11-07 22:44) and org server 3641278
+15:57:10 org server back (966074)
+16:00:38 watchdog: new tunnel blogging-down-michel-mpg did not answer within 120 s (seller was down)
+16:01:37 watchdog restarted the seller (992903); market still pointed at the dead 15:49 URL
+16:01:56 systemctl --user restart week08-myeonggi-market-v4 (applies 14a0954 stop() fix; drops the 5 cloudflared leaked since 10:00)
+16:04:17 shop registered at offerings-threats-any-thumbnail, card 200 in 0.1 s
+16:06:13 first terms after deploy carry "warranty": 72
+Shop unreachable ~15:55:49-16:04:17 (8.5 min): 1 min from the tunnel before the deploy, the rest from killing the
+seller during a tunnel rotation. Next time: restart the seller with systemctl restart of the whole kit, not a bare kill.
+Baseline for warranty: stars_rank 4.34 (percentile 0.47 of 58 shops), stars 4.61, our 72 h within-buyer effect unmeasured.

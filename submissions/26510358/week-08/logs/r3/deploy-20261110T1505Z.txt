@@ -1,0 +1,24 @@
+Deploy note, 2026-11-11 00:06 KST (15:06Z) - restock price gate by evidence (commit 32e9d34)
+
+Decision by the human, 2026-11-10 22:25 KST: RESTOCK_GATE_BY_EVIDENCE = True; E2 premium arms (1.0, 1.2, 1.5) not enabled.
+Org server restarted at 1794321915 (23:45 KST); the shop was not touched.
+
+First two plans after it (logs/r3/restock.jsonl):
+  23:45:46  kimchi 20, grain 20, processed meat 20, side dishes 20, sauces 12, other processed food 13, honey/jam 1, mattress 1
+  00:05:57  milk 20, kimchi 20, coffee/tea 20, grain 20, nuts 13, oil 8, stew/paste 2, sofa/chair 2, mattress 1
+  price-gated now: network equipment only (no cohorts of ours, market pays 0.64 of list). No errors.
+Before: kimchi had 0 buys for 17 h (last on 2026-11-10 05:44 KST) with 74 units on hand.
+
+Two hours before and after the earlier deploys (python3 -m r3lib.measure compare):
+  step 3   (1794314112)  shop_all 0.703 -> 0.698, buyer_all 0.750 -> 0.753, rank 18 -> 18, book +2.64M, revenue +19.5M,
+                         close rate 0.322 -> 0.390, book/h 1.49M -> 2.26M, stock cost -1.12M
+  steps 4-5 (1794315563) shop_all 0.706 -> 0.699, buyer_all 0.751 -> 0.754, rank 18 -> 18, book +2.91M, revenue +21.6M,
+                         close rate 0.333 -> 0.405, book/h 0.96M -> 1.61M
+  The shop_all dip is the stars part (0.100 -> 0.091 at 22:13, back to 0.102 at 23:44: total 1.466, shop 0.711).
+  Food expiring within 6 h: 1.13M at 21:12 -> 0.86M at 23:44. Two hours do not separate these changes from the
+  evening's drift; measure again after a day.
+
+Bandit after 1 h 50 min: ask x1.0 n=581 mean 1.43e-6, x0.9 n=32 mean 1.13e-6, x1.1 n=117 mean 7.8e-7;
+  premium x1.0 n=128 mean 7.6e-6, x0.9 n=4 and x1.1 n=5 with no deal. 0 abnormal offers in the period.
+
+Measure the gate: python3 -m r3lib.measure compare --at 1794321915 --hours 2   (from 01:45 KST)

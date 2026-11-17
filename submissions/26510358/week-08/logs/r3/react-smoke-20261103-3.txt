@@ -1,0 +1,34 @@
+# ReAct smoke test 3, after accepting an unwrapped final (Codex CLI gpt-6-luna). Raw output:
+{
+ "final": {
+  "adjustments": [
+   {
+    "category": "식품>김치",
+    "factor": 0.5,
+    "reason": "요청 20개 중 2개만 판매되어 판매율이 10%로 생수보다 낮습니다."
+   }
+  ]
+ },
+ "trace": [
+  {
+   "step": 0,
+   "thought": "I need the category-level units requested and sold before deciding; call the provided read-only tool.",
+   "action": "sell_through",
+   "args": {},
+   "observation": "{\"식품>김치\": {\"requested\": 20, \"sold\": 2, \"rate\": 0.1}, \"식품>생수\": {\"requested\": 10, \"sold\": 9, \"rate\": 0.9}}"
+  },
+  {
+   "step": 1,
+   "thought": "김치의 판매율은 0.1(요청 20개 중 2개 판매)로 생수의 0.9보다 낮으므로 김치를 덜 사야 합니다.",
+   "final": {
+    "adjustments": [
+     {
+      "category": "식품>김치",
+      "factor": 0.5,
+      "reason": "요청 20개 중 2개만 판매되어 판매율이 10%로 생수보다 낮습니다."
+     }
+    ]
+   }
+  }
+ ]
+}

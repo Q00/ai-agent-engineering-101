@@ -1,0 +1,12 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "action": {"type": "string", "enum": ["open", "counter", "accept", "reject"]},
+    "price": {"type": ["number", "null"], "description": "The asking or accepted price. Null only for reject."},
+    "item_id": {"type": "string"},
+    "offer": {"type": ["number", "null"], "description": "The buyer's actual current offer, or null for an opening request."},
+    "reason": {"type": "string"}
+  },
+  "required": ["action", "price", "item_id", "offer", "reason"]
+}

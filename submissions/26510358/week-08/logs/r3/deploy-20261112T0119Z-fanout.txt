@@ -1,0 +1,25 @@
+Deploy 2026-11-12 10:19 KST (01:19Z): E a8243b6, buyer fan-out quotes for a 20% canary (BUYER_FANOUT_SHARE).
+Human's yes: "E 시작해줘", 2026-11-12 ~10:15 KST. No restart: buyer_r3.py runs per order from this tree.
+
+Why (ledger, 24 h to 11-12 10:09): on the same SKU and grade the cheapest shop's median price is 9.3% of list under
+the median shop's (1,277 SKU-grade groups with 3+ shops, 60,054 of 64,410 deals); our 1,158 comparable buys were
+8.8% of list over the cheapest and at the median shop (dragonash 6.1%); we talked to 2.3 of ~8 candidate shops.
+
+What: arm = sha256(order id) < 20%. Fan-out asks each shop's best candidate (up to 8) at once, waits up to 20 s,
+drops shops that cannot sell (not INPUT_REQUIRED, or food shelf under the need), ranks by (1 - ask/list) x
+reliability, negotiates in the open task (SHOPS_TO_TRY 3), cancels every other task, late answers when they come.
+Each order logs "arm"; fan-out orders also log {"asked", "quotes": [shop, sku, ask, list]}.
+
+First live orders: 10:20:39 food, 3 asked, 0 could sell; 10:22:34 food, 8 asked, 4 quotes at 0.56/0.71/0.76/0.80 of
+list, bought at the 0.56 one (15,065); 10:23:49 food, 4 asked, 1 quote, no deal. Quote phase ~4 s.
+Errors since deploy: 1, serial arm, a shop tunnel 502 (pre-existing).
+
+Measure at 6 h and 12 h (from 1794453586): by arm, deals per order, mean discount (1 - price/list) per deal,
+seconds per order, saved-weighted r. Rollback: git revert a8243b6 or BUYER_FANOUT_SHARE = 0 (no restart).
+Widen to 100% only if fan-out's mean discount is higher and deals per order not lower.
+
+Correction 2026-11-12 16:15 KST: the deploy epoch above is wrong. 1794453586 is 12:19 KST; 10:19:46 KST is 1794446386.
+5.8 h by arm from 1794446386: serial 756 orders, 350 deals (46.3%), mean discount 0.394 (food 0.398, goods 0.360);
+fanout 178 orders, 93 deals (52.2%), mean discount 0.395 (food 0.409, goods 0.349); saved-sum per order 0.175 vs
+0.206. Bought at the cheapest quote in 74% of fan-out deals. The 0.088 cheapest-shop gap did not show up as a
+higher discount; the gain is more deals per order at the same discount.

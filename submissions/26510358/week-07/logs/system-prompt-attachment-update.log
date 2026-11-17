@@ -1,0 +1,26 @@
+Replaced system_prompt() with the attached function verbatim.
+Removed the now-unused textwrap.dedent import.
+All 9 role prompt outputs exactly match the attachment.
+All unrelated module code is unchanged.
+
+$ /home/myeonggi/ai-agent-engineering-101/.venv/bin/python -m py_compile submissions/26510358/week-07/harness.py
+exit_code=0
+
+$ /home/myeonggi/ai-agent-engineering-101/.venv/bin/python -m unittest discover -s submissions/26510358/week-07/tests -p test_market_week07.py
+..............
+----------------------------------------------------------------------
+Ran 14 tests in 0.288s
+
+OK
+exit_code=0
+
+$ /home/myeonggi/ai-agent-engineering-101/.venv/bin/python -m unittest discover -s submissions/26510358/week-07/tests -p test_quote_normalization.py
+........................
+----------------------------------------------------------------------
+Ran 24 tests in 0.024s
+
+OK
+exit_code=0
+
+$ git diff --check -- submissions/26510358/week-07/harness.py
+exit_code=0

@@ -1,0 +1,93 @@
+{
+  "completed_at": "2026-10-21T10:39:48.353606+00:00",
+  "scope": "TEST ONLY quote contexts with the real configured Codex model; no market registration, trade, or ranking mutation.",
+  "passed": 5,
+  "total": 5,
+  "results": [
+    {
+      "case": "acquisition_open",
+      "phase": "acquisition",
+      "expected": {
+        "action": "open",
+        "price": 100
+      },
+      "decision": {
+        "action": "open",
+        "price": 100,
+        "item_id": "lamp",
+        "offer": null,
+        "reason": "No bid was stated; opening at the configured cap."
+      },
+      "pass": true,
+      "seconds": 5.434
+    },
+    {
+      "case": "recovery_open",
+      "phase": "recovery",
+      "expected": {
+        "action": "open",
+        "price": 101
+      },
+      "decision": {
+        "action": "open",
+        "price": 101,
+        "item_id": "lamp",
+        "offer": null,
+        "reason": "No bid was made; opening at the configured maximum ask."
+      },
+      "pass": true,
+      "seconds": 4.194
+    },
+    {
+      "case": "recovery_counter",
+      "phase": "recovery",
+      "expected": {
+        "action": "counter",
+        "price": 101
+      },
+      "decision": {
+        "action": "counter",
+        "price": 101,
+        "item_id": "lamp",
+        "offer": 100,
+        "reason": "The bid is below the last ask; maintain the current quote."
+      },
+      "pass": true,
+      "seconds": 3.8
+    },
+    {
+      "case": "old_acquisition_quote",
+      "phase": "acquisition",
+      "expected": {
+        "action": "accept",
+        "price": 100
+      },
+      "decision": {
+        "action": "accept",
+        "price": 100,
+        "item_id": "lamp",
+        "offer": 100,
+        "reason": "Accept the buyer's bid at the current ask."
+      },
+      "pass": true,
+      "seconds": 4.47
+    },
+    {
+      "case": "recovery_accept",
+      "phase": "recovery",
+      "expected": {
+        "action": "accept",
+        "price": 101
+      },
+      "decision": {
+        "action": "accept",
+        "price": 101,
+        "item_id": "lamp",
+        "offer": 101,
+        "reason": "The bid meets the last valid ask."
+      },
+      "pass": true,
+      "seconds": 22.862
+    }
+  ]
+}

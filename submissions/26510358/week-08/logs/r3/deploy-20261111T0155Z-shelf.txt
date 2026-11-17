@@ -1,0 +1,31 @@
+Deploy note: grade C shown first by the CEO tick (r3lib/shelf.py) and grade C first ask anchored on the SKU's grade A market price
+Human's yes: 2026-11-11 ~10:45 KST ("진행해줘")
+
+Commits
+  23d4c90  markdown holds only for the grade it was judged on
+  e6f9325  shelf pass in the CEO tick + C anchor bandit (0.8 / 0.9 / 1.0 of the grade A median), star guard 4.3 over 30 reviews
+  4d9c7c6  a push goes on across windows: sales made while pushed do not count as the grade's own pace
+
+Restarts
+  shop + org server  1794362104 (2026-11-11 10:55 KST)  for e6f9325
+  org server         1794377585 (15:13 KST), respawned by restock_r3 at 15:18 for 4d9c7c6
+  meta `shelf`: the two pushes of 10:55 that the e6f9325 rule had ended (G021aae64, G75f11c19) were given since=1794362155
+                so the new rule judges them on their pace before the push
+
+Baseline (kpi 1794360313): rank 18, shop 0.712, buyer 0.748, book 312,560,626, revenue 2,118,154,476, stars 4.36
+
+First 4.2 h (10:55-15:08) against the 4.2 h before, our grade C goods only
+  sold                          21 -> 42
+  revenue                       4.70M -> 9.84M
+  price / market C median       0.743 -> 0.813   (still under the market: 2% of our C deals at or above it)
+  price / same SKU A median     0.621 -> 0.666
+  reviews of our C goods deals  153, mean 4.76 (all our reviews in the window 4.20 over 1,456)
+  anchored C quotes             456 (173 pushed): arm 0.8 close 0.52 final 0.570 of list, 0.9 close 0.40 final 0.671,
+                                1.0 close 0.50 final 0.697 (0.9 and 1.0 have 20 and 14 quotes: too few to say)
+  G021aae64 (NAMU couch) C      7 sold at 0.444 of list in the first 2 h push, then the push stopped (fixed by 4d9c7c6);
+                                29 C held at 15:13; 10 of 13 C deals were haggled down from the 0.585 ask toward the floor
+  G2cb8041b (office chair) C    pushed since 10:55, 0 sold (thin market: 11 C deals in 48 h)
+
+First decision after 4d9c7c6: 15:18 act G021aae64 C, held 29, sold_24h 7, sold_unpushed 0, p 0.98 > p* 0.12
+
+Re-measure: python3 -m r3lib.measure compare --at 1794362104 --hours 12

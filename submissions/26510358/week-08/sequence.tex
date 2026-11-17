@@ -1,0 +1,140 @@
+% Round 3 sequence diagram, one page (A4 landscape). Build: xelatex sequence.tex
+% Same images and colors as architecture.tex (figures/, sources in figures/SOURCES.md).
+% Message order follows the code: restock_r3.py, shop_r3.py, buyer_r3.py, forum_r3.py, restock_review_r3.py.
+\documentclass[10pt]{article}
+\usepackage[a4paper,landscape,margin=5mm]{geometry}
+\usepackage{fontspec}
+\setmainfont{Noto Sans CJK KR}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,calc,backgrounds}
+\pagestyle{empty}
+
+\definecolor{mk}{HTML}{3B5B92}
+\definecolor{l1}{HTML}{1F6FB2}
+\definecolor{l2}{HTML}{2E8B57}
+\definecolor{l3}{HTML}{C87A12}
+\definecolor{l4}{HTML}{7A3E9D}
+\definecolor{md}{HTML}{8A6D3B}
+\definecolor{ink}{HTML}{222222}
+
+\newcommand{\img}[2][9mm]{\includegraphics[height=#1]{figures/#2}}
+
+% lifeline x positions
+\def\pO{3.75}  \def\pM{7.2}  \def\pK{10.65} \def\pS{14.1}
+\def\pB{17.55} \def\pG{21.0} \def\pD{24.3} \def\pX{27.4}
+
+% running y: every message moves one step down
+\def\Y{15.85}
+\newcommand{\down}[1][0.5]{\pgfmathsetmacro{\tmp}{\Y-#1}\xdef\Y{\tmp}}
+% \msg[style]{from}{to}{label}
+\newcommand{\msg}[4][]{%
+  \draw[m, \cur, #1] (#2,\Y) -- node[lab] {#4} (#3,\Y);\down}
+% \self{x}{label}: a short loop on one lifeline
+\newcommand{\self}[2]{%
+  \draw[m, \cur] (#1,\Y) -- ++(0.55,0) -- ++(0,-0.28) -- ++(-0.55,0);
+  \node[lab, anchor=west] at ($(#1,\Y)+(0.6,-0.14)$) {#2};\down[0.6]}
+% phases: \phase{color}{title}{when} ... \done
+\newcommand{\phase}[3]{\xdef\cur{#1}\xdef\Ytop{\Y}\gdef\ptitle{#2}\gdef\pwhen{#3}}
+\newcommand{\done}{%
+  \pgfmathsetmacro{\yt}{\Ytop+0.32}\pgfmathsetmacro{\yb}{\Y+0.12}
+  \begin{scope}[on background layer]
+    \fill[\cur!7, draw=\cur!55, rounded corners=5pt, line width=0.8pt] (2.55,\yt) rectangle (28.6,\yb);
+  \end{scope}
+  \node[fill=\cur, text=white, rounded corners=4pt, font=\normalsize\bfseries, align=center,
+        minimum width=2.25cm, inner sep=3pt] at (1.3,{(\yt+\yb)/2})
+        {\ptitle\\[1pt]{\footnotesize\mdseries \pwhen}};
+  \pgfmathsetmacro{\tmp}{\Y-0.24}\xdef\Y{\tmp}}
+
+\begin{document}
+\centering
+\begin{tikzpicture}[
+  >={Stealth[length=2.3mm]},
+  m/.style={->, draw=#1, line width=1.1pt},
+  m/.default=ink,
+  back/.style={dashed},
+  both/.style={<->},
+  lab/.style={font=\small, text=ink, fill=white, fill opacity=0.85, text opacity=1, inner sep=0.6pt,
+              above=0.5pt},
+  life/.style={draw=ink!30, line width=1.2pt},
+]
+
+% ======== title ========
+\node[anchor=north west, font=\LARGE\bfseries, text=ink] at (0,19.75) {Ssadassa Shop Round 3 시퀀스 다이어그램};
+\node[anchor=north east, font=\normalsize, text=ink!60] at (28.6,19.6) {myeonggi (26510358)};
+\node[anchor=north west, font=\normalsize, text=ink!80] at (0,18.95)
+  {매입, 판매, 구매, 포럼, 학습과 배포가 시장과 우리 시스템 사이를 오가는 순서. 위에서 아래로 시간이 흐름. 점선은 응답.};
+
+% ======== participants ========
+\newcommand{\who}[5]{% x, image, name, sub, color
+  \node[inner sep=0pt] at (#1,17.75) {#2};
+  \node[font=\normalsize\bfseries, text=#5] at (#1,16.95) {#3};
+  \node[font=\footnotesize, text=ink!65] at (#1,16.57) {#4};
+  \draw[life] (#1,16.32) -- (#1,0.0);}
+\who{\pO}{\img{robot.png}}{다른 학생}{가게와 구매자}{mk}
+\who{\pM}{\img{globe.png}}{시장 서버}{원장, 공급, 주문, 보드}{mk}
+\who{\pK}{\img{tools.png}}{키트}{터널, 결제, 주기 실행}{ink}
+\who{\pS}{\img{store.png}}{우리 가게}{shop\_r3.py}{l1}
+\who{\pB}{\img{cart.png}}{우리 구매자}{buyer\_r3.py}{l2}
+\who{\pG}{\img{office.png}}{운영 두뇌}{restock\_r3.py, 내부 조직}{l3}
+\who{\pD}{\img[8mm]{sqlite.png}}{기억}{memory.sqlite}{ink}
+\who{\pX}{\img[7mm]{openai.png}\hspace{3pt}\img[7.5mm]{codex.jpg}}{외부 모델}{Decisions, Codex}{md}
+
+% ======== 1. buying stock ========
+\phase{l3}{매입}{60초마다}
+\msg{\pK}{\pG}{재입고 훅 실행}
+\msg{\pG}{\pM}{원장 새 항목 조회}
+\msg{\pG}{\pD}{원장 저장 (모든 가게의 거래, 공급, 만료)}
+\self{\pG}{선제 행동 판단: 할인, 진열, 글쓰기 (10분마다)}
+\msg[back]{\pG}{\pK}{살 목록, 최대 10줄 (공급 창구가 열렸을 때)}
+\msg{\pK}{\pM}{공급 요청, 입고 등급은 시장이 정함}
+\done
+
+% ======== 2. selling ========
+\phase{l1}{판매}{구매자가 올 때}
+\msg{\pO}{\pS}{견적 요청 (A2A, 키트 터널)}
+\msg{\pS}{\pD}{이 구매자가 별점을 잘 주는 등급의 단위 고르기}
+\msg[back]{\pS}{\pO}{제시가 = 규칙 가격 x bandit 배율}
+\msg[both]{\pO}{\pS}{흥정: 제안가와 역제안, 원가 아래로는 안 팖}
+\msg[back]{\pS}{\pO}{서명한 영수증 (등급 표시)}
+\msg{\pO}{\pM}{결제, 정산이 원장에 기록됨}
+\done
+
+% ======== 3. buying as a buyer ========
+\phase{l2}{구매}{주문마다}
+\msg{\pM}{\pK}{주문 (품목 후보, 예산)}
+\msg{\pK}{\pB}{buyer\_r3.py 실행}
+\msg{\pB}{\pD}{후보 점수와 구매 상한 조회}
+\msg{\pB}{\pO}{가게 8곳에 동시 견적 요청}
+\msg[back]{\pO}{\pB}{제시가, 4번째 견적 + 2초에 마감}
+\msg{\pB}{\pX}{가격 문장이 애매할 때만 해석 (Codex CLI)}
+\msg[both]{\pB}{\pO}{흥정: 마진 높은 가게부터, 상한 이하만 수락}
+\msg[back]{\pO}{\pB}{서명한 영수증}
+\msg{\pB}{\pD}{판단 기록 (buyer-decisions.jsonl)}
+\msg{\pK}{\pM}{결제와 결과 제출 (별점, 리뷰)}
+\done
+
+% ======== 4. forum ========
+\phase{md}{포럼}{10분마다}
+\msg{\pG}{\pX}{새 글 분류 (OpenAI Decisions API)}
+\msg[back]{\pX}{\pG}{조작 글일 확률}
+\msg{\pG}{\pM}{정한 기준으로 투표, 직접 산 기록으로 글 게시 (키트 경유)}
+\done
+
+% ======== 5. learning and deploy ========
+\phase{l4}{학습과 배포}{30분에서 며칠}
+\msg{\pG}{\pM}{보드 조회 (30분마다)}
+\msg{\pG}{\pX}{재고 검토 ReAct: 판매, 재고 툴 호출 (Codex CLI)}
+\msg{\pG}{\pD}{KPI와 점수 모델 갱신, 매입 배율 조정}
+\node[draw=l4!60, fill=white, rounded corners=4pt, inner sep=4pt, anchor=north west, font=\small]
+  at (3.2,\Y+0.12) {%
+  \raisebox{-0.3\height}{\img[6mm]{claude.png}}\ 사람과 Claude Code가 판단 기록을 읽고 코드를 고침
+  \quad\raisebox{-0.3\height}{\img[6mm]{rocket.png}}\ 커밋하면 바로 배포 (CI 실패 시 revert)
+  \quad\raisebox{-0.3\height}{\img[6mm]{bird.png}}\ 새 동작은 주문 절반에만 적용
+  \quad\raisebox{-0.3\height}{\img[6mm]{scale.png}}\ 비교 후 확대 또는 롤백};
+\down[0.9]
+\done
+
+\end{tikzpicture}
+\end{document}

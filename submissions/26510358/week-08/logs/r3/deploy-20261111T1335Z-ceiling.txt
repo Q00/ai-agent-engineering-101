@@ -1,0 +1,14 @@
+Deploy 2026-11-11 22:35 KST (13:35Z): 2ed3279, normal stock ceiling = CAP_CEILING_SHARE x (balance + premium stock
+at cost). Human chose option 1 (fix the ceiling, keep B) on 2026-11-11 ~22:30 KST.
+
+Why: first hour after B (2d43909) balance 174M -> 151M as premium was bought, the ceiling 0.60 x balance fell
+104M -> 90M under 109M of normal stock; 6 plans 21:29-22:26 had 0 food/normal lines; our food sales 166 -> 127/h,
+normal goods 65 -> 52/h (market revenue about -9% in the same hour).
+
+Restart: org server 1313622 killed 22:35:43, respawned 1909829 at 22:36:19.
+The stored adaptive cap had been clipped to the old ceiling (98.9M) and only grows once an hour; not edited by hand.
+  22:45, 23:04 plans: ceiling 159-161M, cap 98.9M, 0 normal lines (normal stock 106-108M still over the cap)
+  23:08:03 cap step: grow 98.9M -> 123.6M; plan: 5 demand lines (couch G021aae64 x11, 4 food/goods x20/x4), 0 premium
+  23:08:04-14 supplies went through (couch 3.53M, ginger syrup 0.21M, ...).
+G021aae64 checked: 104 held (A68 B28 C8), median age 7 h, selling; not a stuck SKU now.
+Watch: our sales per hour by band vs market (food back toward ~166/h), premium sales/h with 100+ premium units held.

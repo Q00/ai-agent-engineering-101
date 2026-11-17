@@ -1,0 +1,136 @@
+{
+  "deployed_code": "c1f3965 (benchmark-v1 price policy, lean seller prompt)",
+  "verification_before_deploy": {
+    "unit_tests": "173/173",
+    "live_model_probe": "6/6 (logs/benchmark-live-probe-2.json)",
+    "market_test": "25/25 (test-report.json)"
+  },
+  "sequence": [
+    {
+      "utc": "2026-10-21T08:48:54",
+      "action": "hot-swapped seller behind kit 3995333 on port 42143 (.market/hotswap_seller.sh); public card showed new description"
+    },
+    {
+      "utc": "2026-10-21T08:49:26",
+      "action": "kit 3995333 left the market and a new kit 2883567 started with join_market.sh (--name myeonggi --tunnel), launched outside this agent session; its seller run dd51d424d6a0 loads price_policy benchmark-v1"
+    },
+    {
+      "utc": "2026-10-21T09:05",
+      "action": "stopped the hot-swapped seller 2882061: it received no traffic after the kit restart"
+    }
+  ],
+  "profiles_before": {
+    "shops": [
+      {
+        "name": "myeonggi",
+        "alive": true,
+        "display_name": "Ssadassa Shop",
+        "url": "https://offline-inexpensive-mold-homeland.trycloudflare.com",
+        "deals": 654
+      },
+      {
+        "name": "SUNGMYEONGGI",
+        "alive": false,
+        "display_name": "Gacha shop",
+        "url": "https://hint-distributed-genes-way.trycloudflare.com",
+        "deals": 0
+      },
+      {
+        "name": "gacha-shop",
+        "alive": false,
+        "display_name": "Gacha shop",
+        "url": "https://impressed-border-barbie-commit.trycloudflare.com",
+        "deals": 0
+      }
+    ],
+    "buyers": [
+      {
+        "name": "myeonggi",
+        "alive": true,
+        "deals": 1840
+      },
+      {
+        "name": "SUNGMYEONGGI",
+        "alive": false,
+        "deals": 0
+      },
+      {
+        "name": "gacha-shop",
+        "alive": false,
+        "deals": 0
+      }
+    ]
+  },
+  "profiles_after": {
+    "shops": [
+      {
+        "name": "myeonggi",
+        "alive": true,
+        "display_name": "Ssadassa Shop",
+        "url": "https://latino-apparently-month-plot.trycloudflare.com",
+        "deals": 659
+      },
+      {
+        "name": "SUNGMYEONGGI",
+        "alive": false,
+        "display_name": "Gacha shop",
+        "url": "https://hint-distributed-genes-way.trycloudflare.com",
+        "deals": 0
+      },
+      {
+        "name": "gacha-shop",
+        "alive": false,
+        "display_name": "Gacha shop",
+        "url": "https://impressed-border-barbie-commit.trycloudflare.com",
+        "deals": 0
+      }
+    ],
+    "buyers": [
+      {
+        "name": "myeonggi",
+        "alive": true,
+        "deals": 1862
+      },
+      {
+        "name": "SUNGMYEONGGI",
+        "alive": false,
+        "deals": 0
+      },
+      {
+        "name": "gacha-shop",
+        "alive": false,
+        "deals": 0
+      }
+    ]
+  },
+  "profiles_unchanged": true,
+  "shop_deals_before_after": [
+    654,
+    659
+  ],
+  "first_live_window": {
+    "window_start": "2026-10-21T08:48:56+00:00",
+    "visits_seen": 12,
+    "sales": 5,
+    "conversion": 0.417,
+    "opening_ask_avg": {
+      "lamp": 101.0,
+      "chair": 183.0
+    },
+    "sale_price_avg": {
+      "chair": 180.6
+    },
+    "sale_count": {
+      "chair": 5
+    },
+    "extra_quotes_per_quoted_task": 1.25,
+    "events": {
+      "decision_rejected": 5,
+      "rate_limit_backoff": 5,
+      "negotiation_failed": 0,
+      "sale_canceled": 1,
+      "sale_rejected": 5,
+      "harness_timeout": 0
+    }
+  }
+}
