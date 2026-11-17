@@ -40,10 +40,12 @@ class BuyerTests(unittest.TestCase):
         self.assertEqual(add_reference_step(steps,6400)[0],('reference',6400))
         self.assertEqual(add_reference_step(steps,6600),steps)
 
-    def receipt(self, price=7000, sku='SKU1'):
+    def receipt(self, price=7000, sku='SKU1', claim=None):
         r=dict(shop='shop',item=sku,price=price,task='t1')
         raw=json.dumps(r,sort_keys=True,separators=(',',':'),ensure_ascii=False).encode()
-        return dict(r,sig_seller=base64.b64encode(self.key.sign(raw)).decode())
+        result=dict(r,sig_seller=base64.b64encode(self.key.sign(raw)).decode())
+        if claim is not None:result['claim']=claim
+        return result
 
     def test_restarts_never_repeat_an_order(self):
         self.assertTrue(self.m.begin(self.o))
@@ -228,6 +230,13 @@ class BuyerTests(unittest.TestCase):
         task['artifacts'][0]['parts'][0]['data']['price']=1
         self.assertIsNone(signed_receipt(task,self.shop,'SKU1',7000,'t1'))
 
+    def test_final_receipt_cannot_downgrade_quoted_grade(self):
+        task={'artifacts':[{'parts':[{'data':self.receipt(claim='C')}]}]}
+        failures=[]
+        self.assertIsNone(signed_receipt(task,self.shop,'SKU1',7000,'t1',failures,
+                                         expected_grade='B'))
+        self.assertIn('grade_changed',failures)
+
     def test_short_life_quote_is_not_bid_on(self):
         sent=[]
         def handler(req):
@@ -275,7 +284,7 @@ class BuyerTests(unittest.TestCase):
             b=json.loads(req.content); requests.append(b)
             text=b.get('params',{}).get('message',{}).get('parts',[{}])[0].get('text','')
             if text=='6900':
-                task=dict(id='t1',status={'state':'TASK_STATE_COMPLETED'},artifacts=[{'parts':[{'data':self.receipt(6900)}]}])
+                task=dict(id='t1',status={'state':'TASK_STATE_COMPLETED'},artifacts=[{'parts':[{'data':self.receipt(6900,claim='A')}]}])
             else:
                 task=dict(id='t1',status={'state':'TASK_STATE_INPUT_REQUIRED','message':{'parts':[{'text':'Grade A. 49 h of shelf life left. Asking 7000'}]}})
             return httpx.Response(200,json={'result':{'task':task}})
@@ -325,7 +334,7 @@ class BuyerTests(unittest.TestCase):
                     if req.url.host=='shop.test':
                         if uncertain:raise httpx.ReadTimeout('lost',request=req)
                         task={'id':'t1','status':{'state':'TASK_STATE_REJECTED'}}
-                    else:task={'id':'t1','status':{'state':'TASK_STATE_COMPLETED'},'artifacts':[{'parts':[{'data':self.receipt(int(text))}]}]}
+                    else:task={'id':'t1','status':{'state':'TASK_STATE_COMPLETED'},'artifacts':[{'parts':[{'data':self.receipt(int(text),claim='A')}]}]}
                 else:task={'id':'t1','status':{'state':'TASK_STATE_INPUT_REQUIRED','message':{'parts':[{'text':'Grade A. 49 h of shelf life left. Asking '+('6000' if req.url.host=='shop.test' else '6900')}]}}}
                 return httpx.Response(200,json={'result':task})
             with httpx.Client(transport=httpx.MockTransport(handler)) as c:

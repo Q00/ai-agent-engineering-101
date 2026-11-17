@@ -294,7 +294,7 @@ def quote_rank(session, catalog, intel=None, order=None):
             session['shop']['name'],session['sku'])
 
 
-def signed_receipt(task, shop, sku, maximum, task_id, failures=None):
+def signed_receipt(task, shop, sku, maximum, task_id, failures=None, expected_grade=None):
     failures=[] if failures is None else failures
     for artifact in task.get('artifacts',[]):
         for part in artifact.get('parts',[]):
@@ -310,6 +310,9 @@ def signed_receipt(task, shop, sku, maximum, task_id, failures=None):
                     not isinstance(r.get('shop'),str) or not r['shop'].strip() or
                     not 0<price<=maximum):
                 failures.append('sku' if r.get('item')!=sku else 'task' if r.get('task')!=task_id else 'amount_limit' if not 0<price<=maximum else 'display_name'); continue
+            final_grade=r.get('claim',r.get('grade'))
+            if expected_grade is not None and final_grade!=expected_grade:
+                failures.append('grade_changed');continue
             try:
                 # SDK Struct can turn integer amounts into floats; market signs integers.
                 normalized = dict(r, price=int(price))
@@ -395,7 +398,8 @@ class Buyer:
     def completed(self,s):
         self.m.defer_rival(s['shop']['url'],s['sku'],'receipt_pending',pending=self.o['order'])
         failures=[]
-        r=signed_receipt(s['last'],s['shop'],s['sku'],s['cap'],s['task'],failures)
+        r=signed_receipt(s['last'],s['shop'],s['sku'],s['cap'],s['task'],failures,
+                         expected_grade=s.get('grade'))
         if not r:
             self.m.record(self.o['order'],s['shop']['url'],s['sku'],s['task'],'receipt_rejected',details={'reasons':failures or ['missing_artifact']})
             self.m.state(self.o['order'],'invalid_receipt')
