@@ -850,6 +850,31 @@ def stars_and_review(outcome, item, price, budget, agreed, lowest_ask, rounds, c
     return 2, f"No deal for the {item}: {outcome}."
 
 
+def strict_stars(stars, review, kind, rec, hours_left, shelf_hours_total):
+    """11-17 (user: 'rate strictly'): the same rubric for every shop, from the facts on the receipt and the offer, as
+    the market's grade and freshness raters judge. Goods: no warranty -2, under 72 h -1, a grade C claim -1. Food:
+    under 45% of the shelf life left -2, under 80% -1. Never under 1; the reason is written into the review."""
+    rec = rec if isinstance(rec, dict) else {}
+    cut, why = 0, []
+    if kind == "goods":
+        w = as_int(rec.get("warranty_hours")) or 0
+        if w <= 0:
+            cut, why = cut + 2, why + ["no warranty"]
+        elif w < 72:
+            cut, why = cut + 1, why + [f"only a {w} h warranty"]
+        if str(rec.get("claim") or "").upper() == "C":
+            cut, why = cut + 1, why + ["grade C"]
+    elif kind == "food" and hours_left is not None and shelf_hours_total:
+        share = hours_left / shelf_hours_total
+        if share < 0.45:
+            cut, why = cut + 2, why + [f"only {share:.0%} of its shelf life left"]
+        elif share < 0.80:
+            cut, why = cut + 1, why + [f"{share:.0%} of its shelf life left"]
+    if not cut:
+        return stars, review
+    return max(1, stars - cut), review + " Marked down: " + ", ".join(why) + "."
+
+
 def note_broken(mem, md):
     """Round 3: broken.jsonl (name, broke_at), read from where I stopped. Each line marks my latest deal for that
     name sold within BREAK_WINDOW before the break, and counts it against the shop."""
@@ -1095,6 +1120,7 @@ def main():
         warr_ok, warr_asked = False, False
         graded = None     # (grade, warranty hours) read from the shop's first reply
         short = None      # food: the unit's shelf life is under the order's hours
+        last_hl = None    # 11-17: shelf hours on the last offer seen (strict_stars)
         n_off, last_off = 0, None                     # our counters so far (vprice.move)
         talk = vctx is not None and random.random() < bp.get("talk_share", 0)
         talked = False
@@ -1153,6 +1179,8 @@ def main():
                         log("buyer", f"{pick['name']} still states no warranty: next shop")
                         seller.cancel(tid)
                         raise ShortShelf("no warranty")
+                _hl = shelf_hours(t) if order.get("kind") == "food" else None
+                last_hl = _hl if _hl is not None else last_hl
                 if short is None and acceptable and order.get("kind") == "food" and accept.get("min_hours_left"):
                     hl = shelf_hours(t)
                     short = hl is not None and hl < accept["min_hours_left"]
@@ -1320,6 +1348,12 @@ def main():
     lowest = min(asks) if asks else None
     stars, review = stars_and_review(outcome, label if acceptable else a.item, price, cap, agreed, lowest,
                                      len([h for h in history if h[0] == "you offered"]), ceiling_note, honest, void, "; ".join(bad))
+    if outcome == "deal" and honest and not void:
+        try:
+            stars, review = strict_stars(stars, review, order.get("kind"), rec, last_hl,
+                                         (catalog.get(item) or {}).get("shelf_hours"))
+        except Exception as e:  # noqa: BLE001  never lose a deal's review over the rubric
+            log("buyer", f"strict_stars skipped: {e!r}")
     if not honest:
         mem["dishonest"][pick["name"]] = {"t": time.time(), "why": f"{'; '.join(bad)} ({label})"}
         log("buyer", f"DISHONEST: {pick['name']}: {'; '.join(bad)}; remembered")
