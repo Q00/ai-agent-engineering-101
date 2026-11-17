@@ -68,6 +68,50 @@ class TuneTest(unittest.TestCase):
         self.assertEqual(1, len(history))
         self.assertEqual({"explore_rate": "outside 0.05-0.3", "budget": "unknown parameter"}, json.loads(history[0])["rejected"])
 
+    def test_the_last_days_are_one_line_each_with_the_knob_moved_that_night(self):
+        deal = {"shop": "a", "item": "lamp", "order": "o1", "outcome": "deal", "settled": True, "price": 700, "list_price": 1000,
+                "grade": "A", "value": 1000, "at": "2026-11-02 10:00"}
+        rows = [deal, {**deal, "order": "o2", "outcome": "walked_away", "settled": False, "at": "2026-11-02 11:00"},
+                {**deal, "order": "o3", "grade": "C", "at": "2026-11-03 09:00"}]
+        history = [{"at": "2026-11-02 00:00:10", "changes": {"seller_volume_share": 0.7}}, {"at": "2026-11-03 00:00:10", "changes": {}}]
+        lines = tune.trajectory(rows, EVENTS, history, "margin_share", UNTIL, days=3)
+        self.assertEqual(2, len(lines))
+        self.assertIn("11-02: buyer 2 orders, fill 50%, score 0.857", lines[0])           # a grade A unit at 0.70 of list
+        self.assertIn("that night's change: {'seller_volume_share': 0.7}", lines[0])
+        self.assertIn("11-03: buyer 1 orders, fill 100%, score 0.462; shop 2 opens, 1 agreed (50%)", lines[1])   # grade C
+
+    def test_the_summary_leads_with_the_rule_in_force_and_the_lines_that_changed(self):
+        book = {"formula": "margin_share", "changed_at": "2026-11-12 17:50", "previous_formula": "list_discount",
+                "diff": ["-surplus / list price", "+(list price - price) / (list price - unit cost)"]}
+        memory = {"book": book, "saved": 0.7305, "trajectory": ["- 11-02: buyer ..."], "lessons": ["- 11-11 [incident/buyer] Every skip list needs an expiry."]}
+        text = tune.summarize(ROWS[:3], EVENTS, REVIEWS, strategy_params.DEFAULTS, SINCE, UNTIL, memory=memory)
+        head = text.split("Yesterday in detail.")[0]
+        self.assertIn("Scoring rule in force: margin_share", head)
+        self.assertIn("The rules page changed on 2026-11-12 17:50 (before: list_discount)", head)
+        self.assertIn("+(list price - price) / (list price - unit cost)", head)
+        self.assertIn("My running score under it", head)
+        self.assertIn("Every skip list needs an expiry", head)
+        self.assertLess(head.index("Scoring rule"), head.index("The last days"))
+        closed = tune.summarize([], [], [], strategy_params.DEFAULTS, SINCE, UNTIL, hours_to_end=-0.1)
+        self.assertIn("The round has closed", closed)
+
+    def test_a_lesson_is_stored_with_what_it_expects_and_a_silent_night_is_an_alert(self):
+        proposal = {"changes": {"buyer_kept_slack": 0.05}, "reason": "fill fell", "lesson": "Grade C units score least.",
+                    "expect": "score up, fill down"}
+        with tempfile.TemporaryDirectory() as d, patch.dict(os.environ, {"MARKET_DIR": d}), \
+                patch.object(tune, "HISTORY", Path(d, "h.jsonl")):
+            tune.apply(proposal, strategy_params.DEFAULTS, SINCE, UNTIL, dry_run=True)
+            self.assertFalse(Path(d, "lessons.jsonl").exists())                    # a dry run remembers nothing
+            tune.apply(proposal, strategy_params.DEFAULTS, SINCE, UNTIL, metrics={"fill": 0.6})
+            tune.apply(None, strategy_params.DEFAULTS, SINCE, UNTIL)
+            lessons = [json.loads(line) for line in Path(d, "lessons.jsonl").read_text().splitlines()]
+            history = [json.loads(line) for line in Path(d, "h.jsonl").read_text().splitlines()]
+        self.assertEqual(len(tune.playbook.read_jsonl(tune.playbook.SEED)) + 2, len(lessons))   # the seed, then the two
+        self.assertEqual(("reflection", "Grade C units score least.", "score up, fill down", {"buyer_kept_slack": 0.05}),
+                         tuple(lessons[-2][k] for k in ("source", "lesson", "expect", "changes")))
+        self.assertEqual("alert", lessons[-1]["source"])
+        self.assertEqual(({"fill": 0.6}, "Grade C units score least."), (history[0]["metrics"], history[0]["lesson"]))
+
     def test_no_answer_keeps_the_params(self):
         with tempfile.TemporaryDirectory() as d, patch.dict(os.environ, {"MARKET_DIR": d}), \
                 patch.object(tune, "HISTORY", Path(d, "h.jsonl")):
