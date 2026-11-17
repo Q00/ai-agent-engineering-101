@@ -1,0 +1,135 @@
+[run] number=5 condition=tagged repeat=2 provider=openai model=gpt-5.6-luna temperature=0.7 max_tokens=512 reasoning_effort=none turn_limit=8 python=3.13.15 openai=3.8.0 scenarios_sha256=277c73933f164d8ce9f686838391c845fe8d6d90fc8c8bb1c50c991acbaaac05
+[scenario] id=bike item=a used bicycle reserve=120 budget=180
+[api] id=chatcmpl-ERFkPkTsW0MpoQJKOsSkjYJdcAuUG finish=stop input=202 output=15
+[buyer turn=1] "(propose) I can offer 120 for the bicycle."
+[tag] propose
+[api] id=chatcmpl-ERFkQ5zAvUKKYWMjRbkwCsOqcSVIm finish=stop input=153 output=14
+[reader-raw] "{\"performative\":\"propose\",\"price\":120}"
+[reader] ('propose', 120)
+[api] id=chatcmpl-ERFkRA1XnkWyCAwJsqsIHwddE4s5K finish=stop input=208 output=15
+[seller turn=2] "(reject-proposal) I can’t accept that offer."
+[tag] reject-proposal
+[api] id=chatcmpl-ERFkSJYm8ZFHaQlFpw2o2e7hG55ml finish=stop input=236 output=15
+[buyer turn=3] "(propose) I can offer 130 for the bicycle."
+[tag] propose
+[api] id=chatcmpl-ERFkTwZN4s0YNXoDpkOCuLVNZz3ge finish=stop input=153 output=14
+[reader-raw] "{\"performative\":\"propose\",\"price\":130}"
+[reader] ('propose', 130)
+[api] id=chatcmpl-ERFkU2yVaMbvBuirrT0hnc1NRhpUo finish=stop input=242 output=16
+[seller turn=4] "(accept-proposal) I accept your offer of 130."
+[tag] accept-proposal
+[result] {"deal_possible": 1, "outcome": "deal", "price": 130, "correct": 1, "violation": 0, "turns": 4, "format_errors": 0, "reader_calls": 2}
+[scenario] id=textbook item=a second-hand textbook reserve=40 budget=45
+[api] id=chatcmpl-ERFkVZt2hfNOraRQGI7Omr4nuRm1i finish=stop input=203 output=15
+[buyer turn=1] "(propose) I can offer 25 for the textbook."
+[tag] propose
+[api] id=chatcmpl-ERFkWdyIq2iUWZfIlzlutPmjBheAF finish=stop input=153 output=14
+[reader-raw] "{\"performative\":\"propose\",\"price\":25}"
+[reader] ('propose', 25)
+[api] id=chatcmpl-ERFkXetGN48J1vm2GV08RfEa1jZQ2 finish=stop input=209 output=15
+[seller turn=2] "(reject-proposal) I can’t accept that offer."
+[tag] reject-proposal
+[api] id=chatcmpl-ERFkXrOqvUVGHO8Is89wrWd2COP2V finish=stop input=237 output=15
+[buyer turn=3] "(propose) I can offer 30 for the textbook."
+[tag] propose
+[api] id=chatcmpl-ERFkY7DnCuszu9ePzKdErP1kYDkM3 finish=stop input=153 output=14
+[reader-raw] "{\"performative\":\"propose\",\"price\":30}"
+[reader] ('propose', 30)
+[api] id=chatcmpl-ERFkZDZnZ3ZwqMkkzdkRSBpCuj3Yy finish=stop input=243 output=15
+[seller turn=4] "(propose) I can offer 50 for the textbook."
+[tag] propose
+[api] id=chatcmpl-ERFkaqxTCH3OtQQOLdT9YhfABVUES finish=stop input=153 output=14
+[reader-raw] "{\"performative\":\"propose\",\"price\":50}"
+[reader] ('propose', 50)
+[api] id=chatcmpl-ERFkbTsN0YdpJ4FuaxmRfHEIMpWEM finish=stop input=271 output=15
+[buyer turn=5] "(reject-proposal) I can’t accept that price."
+[tag] reject-proposal
+[api] id=chatcmpl-ERFkcAOG2fj92bRctoSEkEYAiaKs7 finish=stop input=277 output=15
+[seller turn=6] "(propose) I can offer 45 for the textbook."
+[tag] propose
+[api] id=chatcmpl-ERFkdTkhMlicNjFOT0qwha2PXoNxB finish=stop input=153 output=14
+[reader-raw] "{\"performative\":\"propose\",\"price\":45}"
+[reader] ('propose', 45)
+[api] id=chatcmpl-ERFkdyGq2PMdh47fPx4qNmUnTZpoT finish=stop input=305 output=19
+[buyer turn=7] "(accept-proposal) I accept your offer of 45 for the textbook."
+[tag] accept-proposal
+[result] {"deal_possible": 1, "outcome": "deal", "price": 45, "correct": 1, "violation": 0, "turns": 7, "format_errors": 0, "reader_calls": 4}
+[scenario] id=keyboard item=a mechanical keyboard reserve=90 budget=70
+[api] id=chatcmpl-ERFkfqPCTEVMvJS0oiovwl5BsjyQn finish=stop input=202 output=16
+[buyer turn=1] "(propose) I can offer $50 for the mechanical keyboard."
+[tag] propose
+[api] id=chatcmpl-ERFkgmRQYcyUVSivW1Y08yafbODoV finish=stop input=154 output=14
+[reader-raw] "{\"performative\":\"propose\",\"price\":50}"
+[reader] ('propose', 50)
+[api] id=chatcmpl-ERFkgCgxTWdiq3Prlr86SgqgU4JHG finish=stop input=209 output=15
+[seller turn=2] "(reject-proposal) I can’t accept $50."
+[tag] reject-proposal
+[api] id=chatcmpl-ERFkhzWHsD0sz1UODF2hi8YjkpNFM finish=stop input=237 output=16
+[buyer turn=3] "(propose) I can offer $55 for the mechanical keyboard."
+[tag] propose
+[api] id=chatcmpl-ERFkimGYkcPrlP0vf9HisZwVASV5P finish=stop input=154 output=14
+[reader-raw] "{\"performative\":\"propose\",\"price\":55}"
+[reader] ('propose', 55)
+[api] id=chatcmpl-ERFkj6Ye3Fi3BKsdaADZ5jJRL9MWV finish=stop input=244 output=15
+[seller turn=4] "(reject-proposal) I can’t accept $55."
+[tag] reject-proposal
+[api] id=chatcmpl-ERFkkcidWZzGyDtaSyEjUeS8JQdpB finish=stop input=272 output=16
+[buyer turn=5] "(propose) I can offer $60 for the mechanical keyboard."
+[tag] propose
+[api] id=chatcmpl-ERFklbpI763RyyTiDieha6s30Tgzc finish=stop input=154 output=14
+[reader-raw] "{\"performative\":\"propose\",\"price\":60}"
+[reader] ('propose', 60)
+[api] id=chatcmpl-ERFkmQ2gm2CMCMybYLy9yHaWcJbur finish=stop input=279 output=16
+[seller turn=6] "(propose) I can sell the mechanical keyboard for $120."
+[tag] propose
+[api] id=chatcmpl-ERFknIxSVmQOQfRAgIxWYiE1WmM7K finish=stop input=154 output=14
+[reader-raw] "{\"performative\":\"propose\",\"price\":120}"
+[reader] ('propose', 120)
+[api] id=chatcmpl-ERFkn52QcFyLa3QfKrBke9oq1teSg finish=stop input=308 output=15
+[buyer turn=7] "(reject-proposal) I can’t accept $120."
+[tag] reject-proposal
+[api] id=chatcmpl-ERFko9jppthA7rEE0gQcVU4HnDZE3 finish=stop input=314 output=16
+[seller turn=8] "(propose) I can sell the mechanical keyboard for $110."
+[tag] propose
+[api] id=chatcmpl-ERFkpWJNv4c0SxwNLJXIFnc6mR0OC finish=stop input=154 output=14
+[reader-raw] "{\"performative\":\"propose\",\"price\":110}"
+[reader] ('propose', 110)
+[result] {"deal_possible": 0, "outcome": "open", "price": null, "correct": 0, "violation": 0, "turns": 8, "format_errors": 0, "reader_calls": 5}
+[scenario] id=laptop item=a used laptop reserve=500 budget=420
+[api] id=chatcmpl-ERFkqYLuGwNfwEXvNmNUIrc9lsD0o finish=stop input=202 output=15
+[buyer turn=1] "(propose) I can offer $300 for the laptop."
+[tag] propose
+[api] id=chatcmpl-ERFkriTuncD0UMu5wioHgITvvzSJo finish=stop input=153 output=14
+[reader-raw] "{\"performative\":\"propose\",\"price\":300}"
+[reader] ('propose', 300)
+[api] id=chatcmpl-ERFksGalNbeq0ksmD7LnN6ZHArM5R finish=stop input=208 output=15
+[seller turn=2] "(reject-proposal) I can’t accept that offer."
+[tag] reject-proposal
+[api] id=chatcmpl-ERFktxa27xED7Kf1LhBo3ii16BaI3 finish=stop input=236 output=15
+[buyer turn=3] "(propose) I can offer $320 for the laptop."
+[tag] propose
+[api] id=chatcmpl-ERFktArFqop2JbvEl1uE53AFK4y4C finish=stop input=153 output=14
+[reader-raw] "{\"performative\":\"propose\",\"price\":320}"
+[reader] ('propose', 320)
+[api] id=chatcmpl-ERFkuNZDdRCHiMEmHKR2WZyu4KQE3 finish=stop input=242 output=15
+[seller turn=4] "(reject-proposal) I can’t accept that offer."
+[tag] reject-proposal
+[api] id=chatcmpl-ERFkvHvy6K6zSVFthcTHpzWbAXevu finish=stop input=270 output=15
+[buyer turn=5] "(propose) I can offer $340 for the laptop."
+[tag] propose
+[api] id=chatcmpl-ERFkv7Uwk9FxhuJMG0wBvBvMm17hi finish=stop input=153 output=14
+[reader-raw] "{\"performative\":\"propose\",\"price\":340}"
+[reader] ('propose', 340)
+[api] id=chatcmpl-ERFkwi1lO5zGjW07OM4CFNAygEiVw finish=stop input=276 output=15
+[seller turn=6] "(reject-proposal) I can’t accept that offer."
+[tag] reject-proposal
+[api] id=chatcmpl-ERFkxX9kUEnjNVVcmy2zZRxj3zGB9 finish=stop input=304 output=15
+[buyer turn=7] "(propose) I can offer $360 for the laptop."
+[tag] propose
+[api] id=chatcmpl-ERFky6KO0hsb47nE0umpsOQwQsTjZ finish=stop input=153 output=14
+[reader-raw] "{\"performative\":\"propose\",\"price\":360}"
+[reader] ('propose', 360)
+[api] id=chatcmpl-ERFky18UYHY9OZipNXNBYbjoPg27c finish=stop input=310 output=15
+[seller turn=8] "(reject-proposal) I can’t accept that offer."
+[tag] reject-proposal
+[result] {"deal_possible": 0, "outcome": "open", "price": null, "correct": 0, "violation": 0, "turns": 8, "format_errors": 0, "reader_calls": 4}
