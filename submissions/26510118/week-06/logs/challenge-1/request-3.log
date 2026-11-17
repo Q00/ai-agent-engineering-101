@@ -1,0 +1,22 @@
+request: a tall mirror for the hallway
+budget: 300
+
+[buyer] shopping for a tall mirror for the hallway, budget 300, at http://127.0.0.1:51773
+[buyer] card: 'Kiro Furniture' via JSONRPC http://127.0.0.1:51773/
+[buyer] skills: ['negotiate']
+[buyer] -> 'I want to buy a a tall mirror for the hallway'
+[buyer] <- TASK_STATE_INPUT_REQUIRED | The Industrial Walnut Mirror is 225
+[buyer] ask 225 budget 300 round 1: harness '160' -> 160
+[buyer] -> '160' taskId=fc867adc
+[buyer] <- TASK_STATE_INPUT_REQUIRED | Too low at 160. The Industrial Walnut Mirror is 205
+[buyer] ask 205 budget 300 round 2: harness '180' -> 180
+[buyer] -> '180' taskId=fc867adc
+[buyer] <- TASK_STATE_INPUT_REQUIRED | I can do better than 180. The Industrial Walnut Mirror is 192
+[buyer] ask 192 budget 300 round 3: harness '188' -> 188
+[buyer] -> '188' taskId=fc867adc
+[buyer] <- TASK_STATE_INPUT_REQUIRED | I can do better than 188. The Industrial Walnut Mirror is 189
+[buyer] last round and 189 fits 300; taking it
+[buyer] -> '189' taskId=fc867adc
+[buyer] <- TASK_STATE_COMPLETED | Deal: Industrial Walnut Mirror at 189.
+[buyer] bought a tall mirror for the hallway at 189.0
+[harness] 3 call(s), 0 failed, 12s total

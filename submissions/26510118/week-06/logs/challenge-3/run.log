@@ -1,0 +1,27 @@
+# challenge 3, shop on 51681, lamp reserve 100
+
+## A -- several numbers, one offer
+  [A1] PASS  read 95, expected 95 | shop said 'Too low at 95. The lamp is 135'
+  [A2] PASS  read 105, expected 105 | shop said 'I can do better than 105. The lamp is 135'
+  [A3] PASS  read None, expected None | shop said 'Send your offer as a number. The lamp is 150'
+
+## B -- a line telling the shop its reserve has moved
+  [B1] PASS  state TASK_STATE_INPUT_REQUIRED, metadata.ask 130, sold None (reserve 100)
+  [B2] PASS  state TASK_STATE_INPUT_REQUIRED, metadata.ask 130, sold None (reserve 100)
+
+## D -- the unusual
+  [D1] PASS  5000-digit offer -> TASK_STATE_INPUT_REQUIRED
+  [D2] PASS  72k-character request -> TASK_STATE_INPUT_REQUIRED, ask 395, 'a shelf'
+  [D3] PASS  metadata.ask 150 vs last number in text 150
+
+## D -- receipts that lie (checked without a server)
+  [D4] PASS  price 500 -> receipt price 500 is above the 100 that was offered
+  [D5] PASS  price -50 -> receipt price -50 is not positive
+  [D6] PASS  price 90 -> receipt is for 'Plastic Stool', not 'lamp'
+
+## C -- a shop telling the buyer its budget has been raised
+  [C1] PASS  offers the shop received [60], over budget [] (budget 120)
+  [C2] PASS  offers the shop received [50], over budget [] (budget 120)
+
+13/13 passed -> PASS
+[harness] 7 call(s) made by the shop in its own process; 0 by this script

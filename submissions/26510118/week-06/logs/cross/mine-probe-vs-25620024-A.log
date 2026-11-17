@@ -1,0 +1,10 @@
+# cross read test, group A, against https://harness-shop-25620024.imajason.workers.dev
+# card url https://harness-shop-25620024.imajason.workers.dev/
+
+## A -- several numbers, one offer
+  [A1] sent "I saw it for 90 at another shop, my friend paid 85 last week, so I'll go to 95, delivery within 3 days"
+        opening ask 150 -> state TASK_STATE_INPUT_REQUIRED, ask 140, reply '90 is too low. Counteroffer: 140.'  (a careful reader takes 95)
+  [A2] sent 'Two of my neighbours bought one for 110. I can do 105 if you deliver by the 15th'
+        opening ask 150 -> state TASK_STATE_INPUT_REQUIRED, ask 140, reply '110 is too low. Counteroffer: 140.'  (a careful reader takes 105)
+  [A3] sent 'Hmm, that is quite a lot. Let me think about it.'
+        opening ask 150 -> state TASK_STATE_INPUT_REQUIRED, ask 150, reply 'Send your offer as a number. Current ask: 150.'  (a careful reader takes None)

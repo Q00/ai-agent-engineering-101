@@ -1,0 +1,19 @@
+[buyer] shopping for lamp, budget 170, at https://harness-shop-25620024.imajason.workers.dev
+[buyer] card: 'Harness Shop, deployed (25620024)' via JSONRPC https://harness-shop-25620024.imajason.workers.dev/
+[buyer] skills: ['negotiate']
+[buyer] -> 'I want to buy a lamp'
+[buyer] <- TASK_STATE_INPUT_REQUIRED | lamp: asking 150. Send your offer as a number.
+[buyer] ask 150 budget 170 round 1: harness '125' -> 125
+[buyer] -> '125' taskId=a38a8e9c
+[buyer] <- TASK_STATE_INPUT_REQUIRED | 125 is too low. Counteroffer: 140.
+[buyer] ask 140 budget 170 round 2: harness '135' -> 135
+[buyer] -> '135' taskId=a38a8e9c
+[buyer] <- TASK_STATE_INPUT_REQUIRED | 135 is too low. Counteroffer: 137.
+[buyer] ask 137 budget 170 round 3: harness '136' -> 136
+[buyer] -> '136' taskId=a38a8e9c
+[buyer] <- TASK_STATE_INPUT_REQUIRED | 136 is too low. Counteroffer: 136.
+[buyer] last round and 136 fits 170; taking it
+[buyer] -> '136' taskId=a38a8e9c
+[buyer] <- TASK_STATE_COMPLETED | Deal: lamp at 136.
+[buyer] bought lamp at 136
+[harness] 3 call(s), 0 failed, 13s total

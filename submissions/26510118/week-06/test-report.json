@@ -1,0 +1,191 @@
+{
+  "kit_version": "1",
+  "kit_sha256": "8e00baa43b319e6c0067eab8eedc6834cbe4b9dc3e9e2ab5bd16e9572c99f120",
+  "started": "2026-10-19T08:42:15+00:00",
+  "harness": "Claude Code CLI 2.1.268 (claude -p), model claude-sonnet-5",
+  "seller_cmd": "python seller.py --port {port}",
+  "buyer_cmd": "python buyer.py {url} {item} {budget}",
+  "seller_card": {
+    "name": "Kiro Furniture",
+    "description": "Kiro Furniture. We sell bench, bookshelf, cabinet, chair, coffee table, desk, lamp, mirror, nightstand, rug, shelf, sofa, stool, table, wardrobe -- 3513 items in stock. Fair prices. Describe what you need and we will find it, then negotiate the price.",
+    "supportedInterfaces": [
+      {
+        "url": "http://127.0.0.1:61970/",
+        "protocolBinding": "JSONRPC",
+        "protocolVersion": "1.0"
+      }
+    ],
+    "version": "1.0.0",
+    "capabilities": {
+      "streaming": true
+    },
+    "defaultInputModes": [
+      "text/plain"
+    ],
+    "defaultOutputModes": [
+      "application/json",
+      "text/plain"
+    ],
+    "skills": [
+      {
+        "id": "negotiate",
+        "name": "Find an item and negotiate a purchase",
+        "description": "Name an item or describe what you need, then send a price. We carry bench, bookshelf, cabinet, chair, coffee table, desk, lamp, mirror, nightstand, rug, shelf, sofa, stool, table, wardrobe. The shop answers with a counteroffer or a receipt.",
+        "tags": [
+          "shopping",
+          "negotiation",
+          "furniture",
+          "bench",
+          "bookshelf",
+          "cabinet",
+          "chair",
+          "coffee table",
+          "desk",
+          "lamp",
+          "mirror",
+          "nightstand",
+          "rug",
+          "shelf",
+          "sofa",
+          "stool",
+          "table",
+          "wardrobe"
+        ],
+        "examples": [
+          "I want to buy a lamp",
+          "something wooden to keep about 40 books",
+          "90"
+        ]
+      }
+    ]
+  },
+  "results": [
+    {
+      "test": "seller_card",
+      "run": 1,
+      "pass": true,
+      "detail": "name='Kiro Furniture' binding=JSONRPC version=1.0 skills=1"
+    },
+    {
+      "test": "seller_opens",
+      "run": 1,
+      "pass": true,
+      "detail": "first message -> TASK_STATE_INPUT_REQUIRED, ask 150"
+    },
+    {
+      "test": "seller_deal",
+      "run": 1,
+      "pass": true,
+      "detail": "TASK_STATE_COMPLETED, receipt price 115.0, asks [150, 130, 115]"
+    },
+    {
+      "test": "seller_terminal",
+      "run": 1,
+      "pass": true,
+      "detail": "error returned"
+    },
+    {
+      "test": "seller_deal",
+      "run": 2,
+      "pass": true,
+      "detail": "TASK_STATE_COMPLETED, receipt price 115.0, asks [150, 130, 115]"
+    },
+    {
+      "test": "seller_deal",
+      "run": 3,
+      "pass": true,
+      "detail": "TASK_STATE_COMPLETED, receipt price 115.0, asks [150, 130, 115]"
+    },
+    {
+      "test": "seller_holds_reserve",
+      "run": 1,
+      "pass": true,
+      "detail": "TASK_STATE_REJECTED, asks [360, 320, 280, 260]"
+    },
+    {
+      "test": "seller_holds_reserve",
+      "run": 2,
+      "pass": true,
+      "detail": "TASK_STATE_REJECTED, asks [360, 320, 290, 270]"
+    },
+    {
+      "test": "seller_holds_reserve",
+      "run": 3,
+      "pass": true,
+      "detail": "TASK_STATE_REJECTED, asks [360, 320, 290, 270]"
+    },
+    {
+      "test": "buyer_deal",
+      "run": 1,
+      "pass": true,
+      "detail": "deals [100] (budget 120)"
+    },
+    {
+      "test": "buyer_protocol_deal",
+      "run": 1,
+      "pass": true,
+      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1"
+    },
+    {
+      "test": "buyer_deal",
+      "run": 2,
+      "pass": true,
+      "detail": "deals [100] (budget 120)"
+    },
+    {
+      "test": "buyer_protocol_deal",
+      "run": 2,
+      "pass": true,
+      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1"
+    },
+    {
+      "test": "buyer_deal",
+      "run": 3,
+      "pass": true,
+      "detail": "deals [100] (budget 120)"
+    },
+    {
+      "test": "buyer_protocol_deal",
+      "run": 3,
+      "pass": true,
+      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1"
+    },
+    {
+      "test": "buyer_holds_budget",
+      "run": 1,
+      "pass": true,
+      "detail": "deals [] (budget 230 < reserve 260)"
+    },
+    {
+      "test": "buyer_protocol_holds_budget",
+      "run": 1,
+      "pass": true,
+      "detail": "posts 4, without A2A-Version 1.0 0, follow-ups with taskId 2"
+    },
+    {
+      "test": "buyer_holds_budget",
+      "run": 2,
+      "pass": true,
+      "detail": "deals [] (budget 230 < reserve 260)"
+    },
+    {
+      "test": "buyer_protocol_holds_budget",
+      "run": 2,
+      "pass": true,
+      "detail": "posts 4, without A2A-Version 1.0 0, follow-ups with taskId 2"
+    },
+    {
+      "test": "buyer_holds_budget",
+      "run": 3,
+      "pass": true,
+      "detail": "deals [] (budget 230 < reserve 260)"
+    },
+    {
+      "test": "buyer_protocol_holds_budget",
+      "run": 3,
+      "pass": true,
+      "detail": "posts 4, without A2A-Version 1.0 0, follow-ups with taskId 2"
+    }
+  ],
+  "passed": true
+}
