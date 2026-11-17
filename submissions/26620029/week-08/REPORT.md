@@ -36,6 +36,10 @@
 
 ## 2. 아키텍처 figure와 키트 기본형의 차이
 
+![architecture](architecture.png)
+
+*그림: `architecture.pdf`(원본 `architecture.tex`)를 캡처한 것.*
+
 `architecture.tex`(`architecture.pdf`)는 세 층을 그린다. 시장(ACP checkout, AP2 mandate, `/api/settle`, ledger), GCP 컨테이너 안의 키트와 내 훅들, 그리고 그 위에서 1시간마다 도는 메타 하네스다.
 
 | | 키트 기본형 | 내 구조 |
