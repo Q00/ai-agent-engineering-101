@@ -24,6 +24,24 @@ class ModelError(RuntimeError):
     pass
 
 
+def threshold_delta(role,candidate,delta):
+    """A predicted rating change cannot prove an exact official rank crossing.
+
+    Published two-decimal stars contain ties. An arbitrarily small modeled
+    negative delta otherwise incurs a full tied-rank loss; the positive case
+    invents a full rank bonus. Keep both signs in continuous planning instead.
+    """
+    if role!='shop' or not delta.get('stars_rank'):
+        return delta
+    evidence=candidate.get('evidence')
+    evidence=evidence if isinstance(evidence,dict) else {}
+    account=evidence.get('account_reputation') or {}
+    rating=evidence.get('rating_model') or {}
+    verified=(isinstance(account,dict) and account.get('official_mapping_exact') is True or
+              isinstance(rating,dict) and rating.get('official_mapping_verified') is True)
+    return delta if verified else {k:v for k,v in delta.items() if k!='stars_rank'}
+
+
 def response_text(result):
     """Parse only the final assistant message, never concatenate commentary.
 
@@ -81,7 +99,7 @@ class Chooser:
                 delta = {"surplus": candidate["score"], "deals": candidate.get('completion_probability', 1)}
             else:
                 continue
-            candidate["rank_gain_approximation"] = rank_gain(board, role, "seochanit", delta)
+            candidate["rank_gain_approximation"] = rank_gain(board, role, "seochanit", threshold_delta(role,candidate,delta))
             candidate['rank_progress_surrogate'] = rank_progress(board, role, 'seochanit', delta)
             candidate['objective_utility'] = ((candidate['rank_gain_approximation'] or 0) +
                                               (candidate['rank_progress_surrogate'] or 0))
@@ -156,7 +174,8 @@ class Chooser:
                     'shop':context.get('shop'),'sku':context.get('sku'),
                     'next_rank_thresholds':context.get('next_rank_thresholds'),
                     'customer_memory':{'task':(context.get('customer_memory') or {}).get('task')}},
-                'candidates':[{k:c.get(k) for k in ('id','action','price','warranty_hours','score','expected_delta','objective_utility')} for c in candidates],
+                'candidates':[{k:c.get(k) for k in ('id','action','price','warranty_hours','score','expected_delta','objective_utility',
+                    'rank_gain_approximation','rank_progress_surrogate')} for c in candidates],
                 'schema':'compact-numeric-v31'}
         else:
             prediction = {'decision':decision_id,'role':role,'candidates':candidates,'context':context}
