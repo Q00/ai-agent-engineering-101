@@ -1,0 +1,50 @@
+C:\Users\12wkd\AppData\Local\Programs\Python\Python312\Lib\site-packages\fastapi\applications.py:18: StarletteDeprecationWarning: 'HTTP_422_UNPROCESSABLE_ENTITY' is deprecated. Use 'HTTP_422_UNPROCESSABLE_CONTENT' instead.
+  from fastapi.exception_handlers import (
+C:\Users\12wkd\AppData\Local\Programs\Python\Python312\Lib\site-packages\fastapi\applications.py:30: StarletteDeprecationWarning: 'HTTP_422_UNPROCESSABLE_ENTITY' is deprecated. Use 'HTTP_422_UNPROCESSABLE_CONTENT' instead.
+  from fastapi.openapi.utils import get_openapi
+Failed to detach context
+Traceback (most recent call last):
+  File "C:\Users\12wkd\AppData\Local\Programs\Python\Python312\Lib\site-packages\opentelemetry\trace\__init__.py", line 602, in use_span
+    yield span
+  File "C:\Users\12wkd\AppData\Local\Programs\Python\Python312\Lib\site-packages\opentelemetry\trace\__init__.py", line 504, in start_as_current_span
+    yield span
+  File "C:\Users\12wkd\AppData\Local\Programs\Python\Python312\Lib\site-packages\opentelemetry\trace\__init__.py", line 441, in start_as_current_span
+    yield span
+  File "C:\Users\12wkd\AppData\Local\Programs\Python\Python312\Lib\site-packages\a2a\utils\telemetry.py", line 250, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+GeneratorExit
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\12wkd\AppData\Local\Programs\Python\Python312\Lib\site-packages\opentelemetry\context\__init__.py", line 127, in detach
+    _RUNTIME_CONTEXT.detach(token)
+  File "C:\Users\12wkd\AppData\Local\Programs\Python\Python312\Lib\site-packages\opentelemetry\context\contextvars_context.py", line 40, in detach
+    self._current_context.reset(token)
+ValueError: <Token var=<ContextVar name='current_context' default={} at 0x00000184C4997A10> at 0x00000184C70C6780> was created in a different Context
+Task was destroyed but it is pending!
+task: <Task pending name='Task-60' coro=<EventQueueSource._dispatch_loop() done, defined at C:\Users\12wkd\AppData\Local\Programs\Python\Python312\Lib\site-packages\a2a\utils\telemetry.py:225> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+Failed to detach context
+Traceback (most recent call last):
+  File "C:\Users\12wkd\AppData\Local\Programs\Python\Python312\Lib\site-packages\opentelemetry\trace\__init__.py", line 602, in use_span
+    yield span
+  File "C:\Users\12wkd\AppData\Local\Programs\Python\Python312\Lib\site-packages\opentelemetry\trace\__init__.py", line 504, in start_as_current_span
+    yield span
+  File "C:\Users\12wkd\AppData\Local\Programs\Python\Python312\Lib\site-packages\opentelemetry\trace\__init__.py", line 441, in start_as_current_span
+    yield span
+  File "C:\Users\12wkd\AppData\Local\Programs\Python\Python312\Lib\site-packages\a2a\utils\telemetry.py", line 250, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+GeneratorExit
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\12wkd\AppData\Local\Programs\Python\Python312\Lib\site-packages\opentelemetry\context\__init__.py", line 127, in detach
+    _RUNTIME_CONTEXT.detach(token)
+  File "C:\Users\12wkd\AppData\Local\Programs\Python\Python312\Lib\site-packages\opentelemetry\context\contextvars_context.py", line 40, in detach
+    self._current_context.reset(token)
+ValueError: <Token var=<ContextVar name='current_context' default={} at 0x00000184C4997A10> at 0x00000184C70C5940> was created in a different Context
+Task was destroyed but it is pending!
+task: <Task pending name='Task-61' coro=<EventQueueSource._dispatch_loop() done, defined at C:\Users\12wkd\AppData\Local\Programs\Python\Python312\Lib\site-packages\a2a\utils\telemetry.py:225> wait_for=<Future pending cb=[Task.task_wakeup()]>>
