@@ -113,6 +113,8 @@ def net_share(lp):
 # worth its expected book PER WON spent per hour: rate x list x share / (qty x list x cost share) ~ rate x share
 # per unit of cash, so cheap fast sellers (5% net) go before 0.5-1.5 M goods (2%). CASH_BOUND is set in main()
 CASH_BOUND = False
+HELD_ALL = {}                 # 11-17: every fresh unit we hold per SKU (set in main)
+OWN_COVER_H = 3.0
 def line_value(rate, lp):
     return rate * net_share(lp) if CASH_BOUND else rate * lp * net_share(lp)
 RIVAL_X_SEEN = {}
@@ -372,12 +374,28 @@ def sku_wants(catalog, have_sku, p, now, hours_left, market_sku, mkt_units=None,
         # windows finds it; a share of the market's rate is only a guess, so it covers to the next window
         target = max(math.ceil(own * p["sku_cover_hours"]), math.ceil(p["market_share"] * mkt.get(sku, 0) * GAP_HOURS * 1.5))
         if hours_left <= p["clear_window_hours"]:          # near the end: only what sells before it
-            target = min(target, math.floor(sold[sku] / p["sku_hours"] * hours_left))
+            # 11-17 (bug found): this counted only SALES, so in the last 48 h a SKU buyers kept asking for but that we
+            # held only as grade C (not sold) got target 0 forever: G03cab593 70 asks / 6 h, G06f2c594 59, G81ade83e,
+            # Gefe070c7 ... all 'no stock' (340 asks/h). Turned-away asks count as demand here too
+            target = min(target, math.floor(own * hours_left))
         target = math.ceil(target * (p.get("sku_auto", {}).get(sku) or {}).get("cover", 1.0))   # strategist.py
         qty = min(MAX_QTY, target - have_sku.get(sku, 0))
         if qty > 0:
             out.append(((False, -1, -line_value(rate, v["list_price"])), v["category"], v, qty))
-    return sorted(out, key=lambda w: w[0])[:p["sku_lines"]]
+    # 11-17 02:10 (user: 'the stock-increase call was the problem'): since 11-16 10:30 we bought 412 M of stock and
+    # sold 194 M of it; 215 M is still held, about 2x what we sold of each SKU (G30604071: bought 317, sold 162 at
+    # 10.5/h, 165 left), while 340 asks/h got 'no stock'. The targets came from the market's or the rival's rate
+    # (market_share, RIVAL_SHARE x its sales) and counted only 'sellable' units as held. Every line is now capped
+    # at OUR rate (sales + .3 x turned-away asks, over sku_hours) x OWN_COVER_H less EVERY unit of it we hold; a SKU
+    # we have never sold or held gets a first lot of 2
+    capped = []
+    for key, catg, v, qty in out:
+        held_all = HELD_ALL.get(v["sku"], 0)
+        r = (sold[v["sku"]] + 0.3 * asked[v["sku"]]) / p["sku_hours"]
+        cap = 2 if r == 0 and held_all == 0 else math.ceil(r * min(OWN_COVER_H, max(hours_left, 0.0))) - held_all
+        if min(qty, cap) > 0:
+            capped.append((key, catg, v, min(qty, cap)))
+    return sorted(capped, key=lambda w: w[0])[:p["sku_lines"]]
 
 
 def main():
@@ -486,7 +504,10 @@ def main():
                        < needs.get(u.get("category"), NEED_SHARE * ((catalog.get(u["sku"]) or {}).get("shelf_hours") or 0)))
     fresh = [u for u in units if not stale(u)]             # stale food does not count as stock: buy fresh ones,
     have = Counter(u.get("category") for u in fresh)       # the seller ships the freshest to buyers who do not
-    have_sku = Counter(u["sku"] for u in fresh)            # say their need (stale units still count for cash)
+    have_sku = Counter(u["sku"] for u in fresh)
+    global HELD_ALL
+    # every unit we would actually sell: grade C goods are not sold (sell_c 0), so they do not cover demand
+    HELD_ALL = dict(Counter(u["sku"] for u in fresh if u.get("kind") == "food" or (u.get("grade") or "A") != "C"))            # say their need (stale units still count for cash)
     stock_cost = sum(u.get("cost") or 0 for u in units)
     cash = inv["balance"]
     global CASH_BOUND
