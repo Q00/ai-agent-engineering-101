@@ -1,0 +1,13 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "action": {"type": "string", "enum": ["offer", "accept", "walk_away"]},
+    "price": {"type": ["number", "null"], "description": "The amount sent for offer or accept. Null only for walk_away."},
+    "item_id": {"type": "string"},
+    "offer": {"type": "null"},
+    "stance": {"type": ["string", "null"], "enum": [null, "negotiable", "firm"], "description": "Optional public negotiation stance for a shopping-list offer; never disclose private reasoning or a budget."},
+    "reason": {"type": "string"}
+  },
+  "required": ["action", "price", "item_id", "offer", "stance", "reason"]
+}

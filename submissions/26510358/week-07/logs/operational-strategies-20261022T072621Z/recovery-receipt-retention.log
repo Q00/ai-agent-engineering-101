@@ -1,0 +1,47 @@
+test_changed_task_and_rpc_ids_stop_reads_and_hold_reservation (test_task_recovery.RecoveryTests) ... ok
+test_dynamic_mock_get_task_cannot_fabricate_successful_recovery (test_task_recovery.RecoveryTests) ... ok
+test_empty_named_pending_receipt_still_blocks_terminal_no_deal (test_task_recovery.RecoveryTests) ... ok
+test_expired_deadline_cannot_start_recovery_read (test_task_recovery.RecoveryTests) ... ok
+test_final_receipt_cannot_replace_changed_pending_receipt_data (test_task_recovery.RecoveryTests) ... ok
+test_injected_pending_response_never_triggers_more_reads (test_task_recovery.RecoveryTests) ... ok
+test_lost_completed_response_recovers_same_task_without_replaying_offer (test_task_recovery.RecoveryTests) ... ok
+test_matching_pending_receipt_requires_a_valid_final_receipt (test_task_recovery.RecoveryTests) ... ok
+test_pending_opening_can_obtain_its_first_quote_without_restarting_task (test_task_recovery.RecoveryTests) ... ok
+test_pending_receipt_cannot_be_erased_by_later_no_deal_state (test_task_recovery.RecoveryTests) ... ok
+test_protocol_mismatch_in_send_response_is_never_treated_as_transient (test_task_recovery.RecoveryTests) ... ok
+test_recovered_completed_without_receipt_stays_unresolved (test_task_recovery.RecoveryTests) ... ok
+test_recovered_explicit_no_deal_releases_only_without_receipt_conflict (test_task_recovery.RecoveryTests) ... ok
+test_recovered_invalid_receipt_is_disputed_with_original_reservation (test_task_recovery.RecoveryTests) ... ok
+test_recovery_completion_received_after_deadline_is_still_validated (test_task_recovery.RecoveryTests) ... ok
+test_slow_get_task_reads_obey_recovery_time_budget (test_task_recovery.RecoveryTests) ... ok
+test_stale_input_required_snapshot_cannot_release_or_reoffer (test_task_recovery.RecoveryTests) ... ok
+test_still_pending_uses_bounded_reads_then_reports_unresolved (test_task_recovery.RecoveryTests) ... ok
+test_submitted_and_working_are_polled_until_receipt_arrives (test_task_recovery.RecoveryTests) ... ok
+test_transient_recovery_disconnect_and_http_503_only_retry_reads (test_task_recovery.RecoveryTests) ... ok
+test_unsupported_not_found_and_nontransient_http_hold_uncertain_funds (test_task_recovery.RecoveryTests) ... ok
+test_invalid_price_or_partial_named_receipt_is_still_purchase_evidence (test_terminal_receipt_conflict.TerminalReceiptConflictTests) ... ok
+test_plain_terminal_failure_and_diagnostic_artifacts_release_unspent_offer (test_terminal_receipt_conflict.TerminalReceiptConflictTests) ... ok
+test_receipt_in_any_no_deal_terminal_preserves_ambiguous_funds (test_terminal_receipt_conflict.TerminalReceiptConflictTests) ... ok
+test_unsolicited_conflicting_receipt_does_not_authorize_a_purchase (test_terminal_receipt_conflict.TerminalReceiptConflictTests) ... ok
+test_buyer_commits_received_completion_after_deadline_without_new_decision (test_protocol.ProtocolTests) ... ok
+test_buyer_does_not_authorize_price_from_quote_received_after_deadline (test_protocol.ProtocolTests) ... ok
+test_card_get_and_rpc_honor_remaining_deadline (test_protocol.ProtocolTests) ... ok
+test_card_received_after_deadline_remains_rejected (test_protocol.ProtocolTests) ... ok
+test_changed_response_id_version_and_shape_are_rejected (test_protocol.ProtocolTests) ... ok
+test_configured_timeout_also_bounds_rpc (test_protocol.ProtocolTests) ... ok
+test_deadline_crossing_response_still_requires_valid_rpc_evidence (test_protocol.ProtocolTests) ... ok
+test_expired_initial_deadline_closes_client_before_network (test_protocol.ProtocolTests) ... ok
+test_invalid_card_or_origin_closes_initialized_client (test_protocol.ProtocolTests) ... ok
+test_received_completion_crossing_deadline_is_parsed_but_next_rpc_is_blocked (test_protocol.ProtocolTests) ... ok
+test_eighth_ambiguous_working_response_is_disputed_not_released (test_buyer_round_boundary.BuyerRoundBoundaryTests) ... ok
+test_eighth_counter_has_no_ninth_decision_and_releases_unused_reservation (test_buyer_round_boundary.BuyerRoundBoundaryTests) ... ok
+test_eighth_explicit_failure_releases_without_committing (test_buyer_round_boundary.BuyerRoundBoundaryTests) ... ok
+test_eighth_lost_response_holds_funds_and_never_retries (test_buyer_round_boundary.BuyerRoundBoundaryTests) ... ok
+test_eighth_mismatched_receipt_keeps_disputed_funds (test_buyer_round_boundary.BuyerRoundBoundaryTests) ... ok
+test_eighth_offer_completion_commits_once_and_stops (test_buyer_round_boundary.BuyerRoundBoundaryTests) ... ok
+test_received_final_completion_is_checked_even_if_deadline_just_expired (test_buyer_round_boundary.BuyerRoundBoundaryTests) ... ok
+
+----------------------------------------------------------------------
+Ran 42 tests in 4.469s
+
+OK

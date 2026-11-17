@@ -1,0 +1,58 @@
+{
+  "overall": "required_user_decisions_pending",
+  "checks": [
+    {
+      "requirement": "signed_receipts",
+      "status": "complete",
+      "evidence": "receipts.py; tests/test_market_week07.py; prior market test 3/3 seller_signed_receipt"
+    },
+    {
+      "requirement": "budget_task_protocol",
+      "status": "complete",
+      "evidence": "buyer.py; evidence.py; prior market test buyer cases; current regression 256/256"
+    },
+    {
+      "requirement": "reviews_and_memory",
+      "status": "complete",
+      "evidence": "market_buyer.py; market_memory.py; prior buyer_reads_reviews 3/3"
+    },
+    {
+      "requirement": "challenge_1",
+      "status": "complete",
+      "evidence": "required-challenges-audit.json"
+    },
+    {
+      "requirement": "challenge_2",
+      "status": "complete",
+      "evidence": "required-challenges-audit.json"
+    },
+    {
+      "requirement": "current_deployment",
+      "status": "running_at_observation",
+      "evidence": "deployment-summary.json"
+    },
+    {
+      "requirement": "report_six_sections",
+      "status": "complete",
+      "evidence": "REPORT.md front matter, historical original preserved"
+    },
+    {
+      "requirement": "current_source_model_test",
+      "status": "awaiting_user_rule_exception",
+      "evidence": "No API key; request sent to use existing Codex CLI authentication"
+    },
+    {
+      "requirement": "upstream_pr",
+      "status": "awaiting_user_history_exception",
+      "evidence": "Existing oversized history rejected by GitHub; original bundle and raw log archive prepared"
+    }
+  ],
+  "user_questions_pending": [
+    "Allow existing Codex login for official model test despite no API key",
+    "Allow changes only in a separate submission branch while preserving original history and logs"
+  ],
+  "safe_work_complete": true,
+  "history_rewritten": false,
+  "service_interrupted": false,
+  "unrelated_existing_changes_untouched": true
+}

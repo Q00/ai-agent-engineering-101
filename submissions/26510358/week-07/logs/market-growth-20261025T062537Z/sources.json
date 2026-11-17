@@ -1,0 +1,223 @@
+{
+  "schemaVersion": 1,
+  "items": [
+    {
+      "id": "current-rank",
+      "title": "현재 순위와 8위와의 거래 격차",
+      "queries": [
+        {
+          "id": "market-round-two",
+          "source": {
+            "label": "Ouro Market Round 2",
+            "links": [
+              {
+                "label": "공개 순위표",
+                "url": "https://market.ourolabs.ai/board"
+              }
+            ],
+            "files": [
+              {
+                "label": "board-final.json"
+              }
+            ],
+            "metricDefinitions": [
+              {
+                "label": "거래 순위",
+                "definition": "현재 Round 2에서 시장이 인정한 누적 거래 수 내림차순 순위."
+              }
+            ],
+            "filters": [
+              "Round: 2"
+            ],
+            "caveats": [
+              "실시간 순위는 이후 거래로 바뀔 수 있습니다. 다음 shop도 거래하므로 현재 격차는 도달 시간을 뜻하지 않습니다."
+            ],
+            "evidenceFlow": [
+              {
+                "kind": "validation",
+                "title": "수치 대조",
+                "detail": "61개 등록 shop 이름의 중복이 없고 shop별 거래 합계가 시장 전체 거래 수와 일치했습니다. 거래 수가 더 많은 shop 8개로 순위 9위를 재계산했습니다."
+              }
+            ]
+          },
+          "columns": [
+            "name",
+            "deals",
+            "share",
+            "stars"
+          ],
+          "rows": [
+            {
+              "name": "ggari-shop",
+              "deals": 26689,
+              "share": 0.12,
+              "stars": 4.56
+            },
+            {
+              "name": "lee-sungsoo",
+              "deals": 23984,
+              "share": 0.108,
+              "stars": 4.26
+            },
+            {
+              "name": "dragonash",
+              "deals": 23602,
+              "share": 0.106,
+              "stars": 4.38
+            },
+            {
+              "name": "mjforge",
+              "deals": 17866,
+              "share": 0.08,
+              "stars": 4.17
+            },
+            {
+              "name": "cheapest-in-town",
+              "deals": 17572,
+              "share": 0.079,
+              "stars": 4.39
+            },
+            {
+              "name": "11im",
+              "deals": 15266,
+              "share": 0.069,
+              "stars": 4.55
+            },
+            {
+              "name": "yms979",
+              "deals": 13807,
+              "share": 0.062,
+              "stars": 4.38
+            },
+            {
+              "name": "fair-furniture",
+              "deals": 12419,
+              "share": 0.056,
+              "stars": 4.57
+            },
+            {
+              "name": "myeonggi",
+              "deals": 10300,
+              "share": 0.046,
+              "stars": 4.51
+            },
+            {
+              "name": "JangSeongWoong",
+              "deals": 8510,
+              "share": 0.038,
+              "stars": 4.09
+            }
+          ],
+          "methods": [
+            {
+              "language": "calculation",
+              "code": "12419 - 10300 = 2119 deals to equal the current eighth-place count"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "executable-incident",
+      "title": "CLI 경로 오류와 거래 완료 관측",
+      "queries": [
+        {
+          "id": "own-seller-trace",
+          "source": {
+            "label": "자기 seller 운영 로그",
+            "files": [
+              {
+                "label": "seller JSONL 운영 기록"
+              },
+              {
+                "label": "analysis-final.json"
+              }
+            ],
+            "filters": [
+              "Side: seller",
+              "UTC: 2026-10-25 00:26:20 to 06:26:20"
+            ],
+            "caveats": [
+              "한 seller 프로세스의 관측입니다. 수락 가능한 금액 제안은 실제 주문 자금이나 최종 시장 검증을 보장하지 않습니다."
+            ],
+            "evidenceFlow": [
+              {
+                "kind": "calculation",
+                "title": "집계",
+                "detail": "negotiation_failed 이벤트의 원인별 개수를 셌습니다. 실제 후속 제안이 reserve 이상인 task 집합과 receipt_issued task 집합의 교집합을 구했습니다."
+              }
+            ]
+          },
+          "columns": [
+            "cli_missing_failures",
+            "feasible_offer_tasks",
+            "local_receipt_tasks"
+          ],
+          "rows": [
+            {
+              "cli_missing_failures": 88,
+              "feasible_offer_tasks": 869,
+              "local_receipt_tasks": 869
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "deployment-result",
+      "title": "반영 후 실제 거래의 시장 검증",
+      "queries": [
+        {
+          "id": "matching-market-task",
+          "source": {
+            "label": "Ouro Market 공개 원장과 배포 관측",
+            "links": [
+              {
+                "label": "공개 원장",
+                "url": "https://market.ourolabs.ai/api/ledger"
+              }
+            ],
+            "files": [
+              {
+                "label": "ledger-after.json"
+              },
+              {
+                "label": "deployment-observation.json"
+              },
+              {
+                "label": "unit-tests.log"
+              },
+              {
+                "label": "submission-check.log"
+              }
+            ],
+            "caveats": [
+              "자연 유입된 실제 거래 한 건을 확인했습니다. 이전 CLI 복구가 먼저 진행됐으므로 이 수정의 인과 효과나 순위 상승을 입증하지 않습니다."
+            ],
+            "evidenceFlow": [
+              {
+                "kind": "validation",
+                "title": "동일 거래 확인",
+                "detail": "배포 후 로컬 receipt의 task·item·price와 공개 원장 결과를 대조했습니다. 현재 등록 shop URL이 일치하며 주문·상품·예산·task 중복·양측 서명 검사가 모두 true였습니다. 단위 테스트 253개와 구조 검사가 통과했습니다."
+              }
+            ]
+          },
+          "columns": [
+            "ledger_sequence",
+            "item",
+            "price",
+            "market_verified"
+          ],
+          "rows": [
+            {
+              "ledger_sequence": 667364,
+              "item": "chair",
+              "price": 180,
+              "market_verified": true
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

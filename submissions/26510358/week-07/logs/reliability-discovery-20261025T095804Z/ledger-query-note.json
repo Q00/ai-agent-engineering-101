@@ -1,0 +1,10 @@
+{
+  "first_query": "/api/ledger?limit=500",
+  "first_query_range": [
+    1,
+    500
+  ],
+  "first_query_round": 0,
+  "corrected_query": "https://market.ourolabs.ai/api/ledger?after=-500",
+  "reason": "The public dashboard uses an after cursor; without it the API starts at the ledger beginning. The first capture was preserved."
+}

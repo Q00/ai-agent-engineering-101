@@ -1,0 +1,68 @@
+{
+  "case": "declared-owner",
+  "request": {
+    "jsonrpc": "2.0",
+    "id": "0f4c71acadeb47cb8a7ecafdca8fd249",
+    "method": "SendMessage",
+    "params": {
+      "message": {
+        "messageId": "90e65961b3184163a64304c6cdbf33f3",
+        "role": "ROLE_USER",
+        "parts": [
+          {
+            "text": "lamp"
+          }
+        ],
+        "metadata": {
+          "verificationOnly": true,
+          "probeLabel": "Operator access-policy test; self-declared identity, not a real market buyer."
+        }
+      },
+      "metadata": {
+        "buyerOwnerLogin": "danayoou"
+      }
+    }
+  },
+  "response": {
+    "result": {
+      "task": {
+        "id": "cd7d738b-4022-4003-bbd0-40ad1390d029",
+        "contextId": "93793c6f-deba-43ad-851d-51ad28a309f0",
+        "status": {
+          "state": "TASK_STATE_REJECTED",
+          "message": {
+            "messageId": "b3586563-2c55-49d8-926e-21bf26ef4b10",
+            "contextId": "93793c6f-deba-43ad-851d-51ad28a309f0",
+            "taskId": "cd7d738b-4022-4003-bbd0-40ad1390d029",
+            "role": "ROLE_AGENT",
+            "parts": [
+              {
+                "text": "This shop is unavailable to this buyer under its local access policy."
+              }
+            ]
+          },
+          "timestamp": "2026-10-21T11:59:06.226741Z"
+        },
+        "history": [
+          {
+            "messageId": "90e65961b3184163a64304c6cdbf33f3",
+            "contextId": "93793c6f-deba-43ad-851d-51ad28a309f0",
+            "taskId": "cd7d738b-4022-4003-bbd0-40ad1390d029",
+            "role": "ROLE_USER",
+            "parts": [
+              {
+                "text": "lamp"
+              }
+            ],
+            "metadata": {
+              "verificationOnly": true,
+              "probeLabel": "Operator access-policy test; self-declared identity, not a real market buyer."
+            }
+          }
+        ]
+      }
+    },
+    "id": "0f4c71acadeb47cb8a7ecafdca8fd249",
+    "jsonrpc": "2.0"
+  }
+}
