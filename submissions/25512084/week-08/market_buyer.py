@@ -325,8 +325,30 @@ def shop_score(shop, memory):
 
 
 def candidate_shops(shops, memory):
+    # In Round 3, shops.json contains "offers":
+    # only SKUs from this shop that are acceptable for the current order.
+    has_offer_metadata = any(
+        "offers" in shop
+        for shop in shops
+    )
+
+    if has_offer_metadata:
+        eligible = [
+            shop
+            for shop in shops
+            if shop.get("offers")
+        ]
+    else:
+        # Compatibility with older rounds/tests.
+        eligible = shops
+
+    print(
+        f"[shop-filter] compatible shops="
+        f"{len(eligible)}/{len(shops)}"
+    )
+
     ranked = sorted(
-        shops,
+        eligible,
         key=lambda s: shop_score(s, memory),
         reverse=True,
     )
@@ -518,11 +540,31 @@ def probe_shop(shop, item, memory):
     try:
         fetch_card(base_url)
 
+        acceptable_skus = [
+            str(o.get("sku"))
+            for o in shop.get("offers", [])
+            if o.get("sku")
+        ]
+
+        if acceptable_skus:
+            sku_text = ", ".join(acceptable_skus[:20])
+            request_text = (
+                f"I want to buy {item}. "
+                f"Quote your best price for ONE of these exact acceptable SKUs: "
+                f"{sku_text}. Do not offer any other SKU."
+            )
+        else:
+            request_text = (
+                f"I want to buy {item}. "
+                f"Please quote your best price for an item in exactly this category."
+            )
+
         task = send_message(
             a2a_url,
-            f"I want to buy {item}. Please quote your best price for an item in exactly this category.",
+            request_text,
         )
 
+    
     except Exception as exc:
         print(
             f"[probe] {shop['name']}: unreachable "

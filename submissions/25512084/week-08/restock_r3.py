@@ -14,11 +14,22 @@ catalog = json.loads(
     (MARKET / "catalog.json").read_text(encoding="utf-8")
 )
 
-current = Counter(
-    u["sku"]
-    for u in inventory.get("units", [])
-    if u.get("grade") != "expired"
+demand = json.loads(
+    (MARKET / "demand.json").read_text(encoding="utf-8")
 )
+
+units = [
+    u for u in inventory.get("units", [])
+    if u.get("grade") != "expired"
+]
+
+current = Counter(u["sku"] for u in units)
+
+current_categories = {
+    u.get("category")
+    for u in units
+    if u.get("category")
+}
 
 sales = Counter()
 profits = defaultdict(int)
@@ -47,74 +58,21 @@ if log_file.exists():
             sales[sku] += 1
             profits[sku] += profit
 
-MAX_TOTAL_UNITS = 24
 
-total_stock = sum(current.values())
+MAX_TOTAL_UNITS = 24
+MAX_PROVEN_SKUS = 4
+
+total_stock = len(units)
 max_new_units = max(0, MAX_TOTAL_UNITS - total_stock)
 
 if max_new_units <= 0:
     print(json.dumps({"buy": []}))
     raise SystemExit
 
-top_skus = sorted(
-    sales,
-    key=lambda sku: (sales[sku], profits[sku]),
-    reverse=True,
-)[:4]
-
-candidates = []
-
-for sku in top_skus:
-    sold_count = sales[sku]
-    product = catalog.get(sku)
-
-    if not product:
-        continue
-
-    kind = product.get("kind", "goods")
-
-    # Food is riskier because it expires.
-    # Goods can safely have a slightly larger stock.
-    target_stock = 2 if kind == "food" else 3
-
-    # Proven repeat sellers may get one extra unit.
-    if sold_count >= 3:
-        target_stock += 1
-
-    target_stock = min(target_stock, 4)
-
-    need = max(0, target_stock - current.get(sku, 0))
-
-    if need <= 0:
-        continue
-
-    try:
-        list_price = int(product.get("list_price", 0))
-    except (TypeError, ValueError):
-        continue
-
-    if list_price <= 0:
-        continue
-
-    candidates.append({
-        "sku": sku,
-        "need": need,
-        "sales": sold_count,
-        "profit": profits[sku],
-        "list_price": list_price,
-    })
-
-
-# Best proven sellers first.
-candidates.sort(
-    key=lambda x: (x["sales"], x["profit"]),
-    reverse=True,
-)
 
 balance = int(inventory.get("balance", 0))
 
-# Conservative restock:
-# max 10% of cash and never more than ~300k estimated cost.
+# Keep the experiment conservative.
 restock_budget = min(
     int(balance * 0.10),
     300_000,
@@ -122,22 +80,78 @@ restock_budget = min(
 
 buy = []
 units_planned = 0
+planned_categories = set(current_categories)
 
-for item in candidates:
+
+def product_price(product):
+    try:
+        return int(product.get("list_price", 0))
+    except (TypeError, ValueError):
+        return 0
+
+
+def estimated_cost(product):
+    price = product_price(product)
+    return max(1, int(price * 0.75))
+
+
+# --------------------------------------------------
+# 1. EXPLOIT:
+# Keep a small reserve of proven profitable sellers.
+# --------------------------------------------------
+
+top_skus = sorted(
+    sales,
+    key=lambda sku: (sales[sku], profits[sku]),
+    reverse=True,
+)[:MAX_PROVEN_SKUS]
+
+for sku in top_skus:
     if units_planned >= max_new_units or restock_budget <= 0:
         break
 
-    # Grade A can cost up to ~75% of list,
-    # so use that as a conservative estimate.
-    estimated_cost = max(
-        1,
-        int(item["list_price"] * 0.75),
+    product = catalog.get(sku)
+
+    if not product:
+        continue
+
+    # Proven goods can keep a small reserve.
+    # Short-lived food should stay at one unit even if it sold well.
+    kind = product.get("kind", "goods")
+    category = product.get("category")
+
+    row = next(
+        (
+            x for x in demand
+            if x.get("category") == category
+        ),
+        {}
     )
 
-    affordable = restock_budget // estimated_cost
+    shelf_hours = row.get("shelf_hours")
+
+    if (
+        kind == "food"
+        and shelf_hours is not None
+        and shelf_hours < 168
+    ):
+        target_stock = 1
+    else:
+        target_stock = 3 if sales[sku] >= 5 else 2
+
+    need = max(
+        0,
+        target_stock - current.get(sku, 0),
+    )
+
+    if need <= 0:
+        continue
+
+    cost = estimated_cost(product)
+    affordable = restock_budget // cost
 
     qty = min(
-        item["need"],
+        need,
         2,
         max_new_units - units_planned,
         affordable,
@@ -147,12 +161,142 @@ for item in candidates:
         continue
 
     buy.append({
-        "sku": item["sku"],
+        "sku": sku,
         "qty": int(qty),
     })
 
     units_planned += qty
-    restock_budget -= qty * estimated_cost
+    restock_budget -= qty * cost
+
+    category = product.get("category")
+    if category:
+        planned_categories.add(category)
+
+
+# --------------------------------------------------
+# 2. EXPLORE:
+# Fill remaining slots with categories that appear
+# most often in REAL observed orders.
+# --------------------------------------------------
+
+order_counts = Counter()
+
+if log_file.exists():
+    order_pattern = re.compile(
+        r"\[order [^\]]+\] (.*?), budget "
+    )
+
+    for line in log_file.read_text(
+        encoding="utf-8",
+        errors="ignore",
+    ).splitlines():
+        match = order_pattern.search(line)
+
+        if match:
+            order_counts[match.group(1)] += 1
+
+
+demand_by_item = {
+    row.get("item"): row
+    for row in demand
+    if row.get("item")
+}
+
+exploration = []
+
+for item, order_count in order_counts.most_common():
+    row = demand_by_item.get(item)
+
+    if not row:
+        continue
+
+    category = row.get("category")
+
+    if not category or category in planned_categories:
+        continue
+
+    kind = row.get("kind", "goods")
+    shelf_hours = row.get("shelf_hours")
+
+    # Do not experiment with fast-expiring food.
+    # Kimchi (168h) is allowed; 24/48/96h foods are not.
+    if (
+        kind == "food"
+        and shelf_hours is not None
+        and shelf_hours < 168
+    ):
+        continue
+
+    try:
+        median_price = int(row.get("median_price", 0))
+    except (TypeError, ValueError):
+        continue
+
+    if median_price <= 0:
+        continue
+
+    # Avoid expensive experimental inventory.
+    # This filters things like sofas and mattresses.
+    if median_price > 60_000:
+        continue
+
+    products = []
+
+    for sku, product in catalog.items():
+        if product.get("category") != category:
+            continue
+
+        price = product_price(product)
+
+        if price <= 0 or price > 60_000:
+            continue
+
+        products.append((sku, product))
+
+    if not products:
+        continue
+
+    # Pick a representative SKU around the category's
+    # normal price, but never target above 40k.
+    target_price = min(median_price, 40_000)
+
+    sku, product = min(
+        products,
+        key=lambda x: (
+            abs(product_price(x[1]) - target_price),
+            product_price(x[1]),
+        ),
+    )
+
+    exploration.append({
+        "sku": sku,
+        "item": item,
+        "category": category,
+        "orders": order_count,
+        "cost": estimated_cost(product),
+        "price": product_price(product),
+    })
+
+
+# Already ordered by REAL demand frequency.
+for item in exploration:
+    if units_planned >= max_new_units or restock_budget <= 0:
+        break
+
+    if item["category"] in planned_categories:
+        continue
+
+    if item["cost"] > restock_budget:
+        continue
+
+    buy.append({
+        "sku": item["sku"],
+        "qty": 1,
+    })
+
+    units_planned += 1
+    restock_budget -= item["cost"]
+    planned_categories.add(item["category"])
 
 
 print(json.dumps({"buy": buy}))

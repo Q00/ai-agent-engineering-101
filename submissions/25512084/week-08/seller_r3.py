@@ -289,6 +289,12 @@ class Seller(AgentExecutor):
 
             if u.get("unit"):
                 receipt["unit"] = u["unit"]
+            
+            receipt["cert"] = True
+            receipt["claim"] = p["grade"]
+
+            if p["kind"] == "goods":
+                receipt["warranty_hours"] = 6
 
             receipt = sign(receipt)
 
