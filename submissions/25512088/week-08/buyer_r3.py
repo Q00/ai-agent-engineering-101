@@ -172,8 +172,8 @@ def bridge_limit(order, product, grade=None):
 
 
 def deals_cap(order,product,grade,portfolio=None):
-    """Never spend a historical list-discount buffer under Patch 3.6."""
-    return limit(order,product,grade)
+    """Protect the measured minimum marginal Saved under Patch 3.6."""
+    return saved_target_limit(order,product,grade,SAVED_TARGET)
 
 
 def own_shop_identity():

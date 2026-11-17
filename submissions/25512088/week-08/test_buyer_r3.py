@@ -205,10 +205,11 @@ class BuyerTests(unittest.TestCase):
         self.assertEqual(asking('Counteroffer: 7,000.'),7000)
         self.assertEqual(asking('final total 7,100 KRW'),7100)
 
-    def test_deals_cap_does_not_spend_obsolete_list_discount_buffer(self):
+    def test_deals_cap_enforces_marginal_saved_floor(self):
         portfolio={'deals':1000,'discount_sum':340.0,'saved':340/1100}
-        cap=deals_cap(self.o,self.cat['SKU1'],'C',portfolio)
-        self.assertEqual(cap,limit(self.o,self.cat['SKU1'],'C'))
+        self.assertEqual(deals_cap(self.o,self.cat['SKU1'],'A',portfolio),6900)
+        self.assertEqual(deals_cap(self.o,self.cat['SKU1'],'B',portfolio),5875)
+        self.assertEqual(deals_cap(self.o,self.cat['SKU1'],'C',portfolio),4637)
 
     def test_saved_portfolio_uses_only_paid_catalogued_deals(self):
         with self.m.db:
