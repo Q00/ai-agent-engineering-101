@@ -1,0 +1,43 @@
+# The shop and the buyer on Cloudflare Workers. Build first, then deploy from this folder:
+#   python build.py && uv run pywrangler deploy
+# Secrets (put by hand, never in this file): SHOP_KEY (shop_key.pem), BUYER_KEY (buyer_key.pem),
+# MARKET_OWNER (the GitHub claim code), OPENAI_API_KEY (optional).
+name = "kiro-shop"
+main = "src/entry.py"
+compatibility_date = "2026-10-01"
+compatibility_flags = ["python_workers"]
+
+[vars]
+CF_MODEL = "@cf/meta/llama-3.1-8b-instruct-fp8"   # used when there is no OpenAI key, or it fails
+OPENAI_MODEL = "gpt-4o-mini"                                  # set to an OpenAI model name to use the API
+OPENAI_EXTRA = "{}"                                # extra JSON fields for the OpenAI request
+MARKET_URL = "https://market.ourolabs.ai"
+MARKET_NAME = "Kiro729"                            # the kit's --name: shop and buyer join under it
+SHOP_URL = "https://kiro-shop.kiro729.workers.dev" # my own shop, never shopped at
+BUYER_ENABLED = "1"                                # "1" once the PC kit is stopped: one buyer at a time
+
+[ai]
+binding = "AI"
+
+[[durable_objects.bindings]]
+name = "SHOP"
+class_name = "Shop"
+
+[[durable_objects.bindings]]
+name = "BUYER"
+class_name = "Buyer"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Shop"]
+
+[[migrations]]
+tag = "v2"
+new_sqlite_classes = ["Buyer"]
+
+# The kit's order loop, without the kit: every minute the buyer takes orders for ~50 s.
+[triggers]
+crons = ["* * * * *"]
+
+[observability]
+enabled = true
