@@ -1,0 +1,168 @@
+TC003 Move standard library import `pathlib.Path` into a type-checking block
+ --> market_a2a/memory_journal.py:7:21
+  |
+5 | import sqlite3
+6 | from contextlib import closing
+7 | from pathlib import Path
+  |                     ^^^^
+8 | from typing import Final
+  |
+help: Move into type-checking block
+   |
+6  | from contextlib import closing
+   - from pathlib import Path
+   - from typing import Final
+7  + from typing import Final, TYPE_CHECKING
+8  |
+--------------------------------------------------------------------------------
+15 |
+16 + if TYPE_CHECKING:
+17 +     from pathlib import Path
+18 +
+19 | EVENT_ROWS: Final = TypeAdapter(tuple[tuple[str, str], ...])
+   |
+note: This is an unsafe fix and may change runtime behavior
+
+E501 Line too long (89 > 88)
+  --> market_a2a/memory_journal.py:45:89
+   |
+43 |             _ = db.execute(
+44 |                 "CREATE TABLE IF NOT EXISTS revision "
+45 |                 "(id INTEGER PRIMARY KEY CHECK(id=1), current INTEGER, exported INTEGER)"
+   |                                                                                         ^
+46 |             )
+47 |             _ = db.execute("INSERT OR IGNORE INTO revision VALUES(1, 0, -1)")
+   |
+
+PLR2004 Magic value used in comparison, consider replacing `256` with a constant variable
+  --> market_a2a/memory_journal.py:53:76
+   |
+51 |         """Commit the event and per-shop aggregate once; no summary/model work."""
+52 |         payload = trade.model_dump_json()
+53 |         if len(payload.encode()) > MAX_EVENT_BYTES or len(name.encode()) > 256:
+   |                                                                            ^^^
+54 |             message = "Decision observation exceeds journal bounds; preserve raw transaction log"
+55 |             raise HarnessError(message)
+   |
+
+E501 Line too long (97 > 88)
+  --> market_a2a/memory_journal.py:54:89
+   |
+52 |         payload = trade.model_dump_json()
+53 |         if len(payload.encode()) > MAX_EVENT_BYTES or len(name.encode()) > 256:
+54 |             message = "Decision observation exceeds journal bounds; preserve raw transaction log"
+   |                                                                                         ^^^^^^^^^
+55 |             raise HarnessError(message)
+56 |         with closing(sqlite3.connect(self.path, timeout=0.05)) as db, db:
+   |
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> market_a2a/memory_repository.py:3:1
+   |
+ 1 |   """Choose file persistence or a fast journal without slowing negotiation on export."""
+ 2 |
+ 3 | / from __future__ import annotations
+ 4 | |
+ 5 | | import os
+ 6 | | import logging
+ 7 | | import sqlite3
+ 8 | | from dataclasses import dataclass
+ 9 | | from pathlib import Path
+10 | |
+11 | | from market_a2a.memory import Memory
+12 | | from market_a2a.memory_journal import MemoryJournal
+13 | | from market_a2a.memory_models import Trade
+14 | | from market_a2a.models import HarnessError
+   | |__________________________________________^
+15 |
+16 |   LOGGER = logging.getLogger(__name__)
+   |
+help: Organize imports
+  |
+4 |
+5 + import logging
+6 | import os
+  - import logging
+7 | import sqlite3
+  |
+
+TC001 Move application import `market_a2a.memory_models.Trade` into a type-checking block
+  --> market_a2a/memory_repository.py:13:38
+   |
+11 | from market_a2a.memory import Memory
+12 | from market_a2a.memory_journal import MemoryJournal
+13 | from market_a2a.memory_models import Trade
+   |                                      ^^^^^
+14 | from market_a2a.models import HarnessError
+   |
+help: Move into type-checking block
+   |
+12 | from market_a2a.memory_journal import MemoryJournal
+   - from market_a2a.memory_models import Trade
+13 | from market_a2a.models import HarnessError
+14 + from typing import TYPE_CHECKING
+15 +
+16 + if TYPE_CHECKING:
+17 +     from market_a2a.memory_models import Trade
+18 |
+   |
+note: This is an unsafe fix and may change runtime behavior
+
+D401 First line of docstring should be in imperative mood: "A journal commit does not render Markdown or compact old context."
+  --> market_a2a/memory_repository.py:39:9
+   |
+38 |     def record(self, name: str, trade: Trade) -> None:
+39 |         """A journal commit does not render Markdown or compact old context."""
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+40 |         try:
+41 |             if self.journal is not None:
+   |
+
+TC001 Move application import `market_a2a.memory_models.ShopKnowledge` into a type-checking block
+  --> market_a2a/memory_selection.py:10:38
+   |
+ 8 | from pydantic import Field, TypeAdapter, ValidationError
+ 9 |
+10 | from market_a2a.memory_models import ShopKnowledge
+   |                                      ^^^^^^^^^^^^^
+11 | from market_a2a.models import FrozenModel, ToolResult, json_value
+   |
+help: Move into type-checking block
+   |
+9  |
+   - from market_a2a.memory_models import ShopKnowledge
+10 | from market_a2a.models import FrozenModel, ToolResult, json_value
+11 |
+12 | if TYPE_CHECKING:
+13 +     from market_a2a.memory_models import ShopKnowledge
+14 |     from market_a2a.market_decision import Decision
+   |
+note: This is an unsafe fix and may change runtime behavior
+
+TC003 Move standard library import `pathlib.Path` into a type-checking block
+ --> r3/recorder.py:7:21
+  |
+5 | import logging
+6 | import sqlite3
+7 | from pathlib import Path
+  |                     ^^^^
+8 | from typing import Annotated, Final
+  |
+help: Move into type-checking block
+   |
+6  | import sqlite3
+   - from pathlib import Path
+   - from typing import Annotated, Final
+7  + from typing import Annotated, Final, TYPE_CHECKING
+8  |
+--------------------------------------------------------------------------------
+14 |
+15 + if TYPE_CHECKING:
+16 +     from pathlib import Path
+17 +
+18 | LOGGER: Final = logging.getLogger(__name__)
+   |
+note: This is an unsafe fix and may change runtime behavior
+
+Found 9 errors.
+[*] 1 fixable with `--fix` (4 unsafe fixes available with `--fix --unsafe-fixes`).

@@ -1,0 +1,1 @@
+The first read-only verifier incorrectly looked for host-only arm-r3.sh inside the runtime image. The image allowlist deliberately excludes shell scripts. Corrected verification reads the host arm path and preserves the baseline hash; no service change made for this diagnostic error.

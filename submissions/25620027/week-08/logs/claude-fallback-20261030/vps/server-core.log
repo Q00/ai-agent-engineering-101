@@ -1,0 +1,151 @@
+.................................................................F...... [ 62%]
+...........................................                              [100%]
+=================================== FAILURES ===================================
+_____________ test_stalled_sdk_response_is_cancelled_and_reported ______________
+
+    async def scenario() -> None:
+        async with (
+            httpx2.AsyncClient(transport=httpx2.MockTransport(stalled)) as http,
+            AsyncOpenAI(api_key="offline", max_retries=0, http_client=http) as client,
+        ):
+            harness = Harness(client, logs.append)
+            with anyio.fail_after(1), pytest.raises(HarnessError, match="response"):
+>               _ = await harness.complete([], [])
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_model_deadlines.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+market_a2a/harness.py:198: in complete
+    return await self._retry_complete(messages, tools)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+market_a2a/harness.py:215: in _retry_complete
+    completion = await self._complete_once(messages, tools, route)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+market_a2a/harness.py:262: in _complete_once
+    return await self.client.chat.completions.create(
+/usr/local/lib/python3.12/site-packages/openai/resources/chat/completions/completions.py:2907: in create
+    return await self._post(
+/usr/local/lib/python3.12/site-packages/openai/_base_client.py:1979: in post
+    return await self.request(cast_to, opts, stream=stream, stream_cls=stream_cls)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/openai/_base_client.py:1660: in request
+    self._platform = await asyncify(get_platform)()
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/openai/_utils/_sync.py:56: in wrapper
+    return await to_thread(function, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/openai/_utils/_sync.py:20: in to_thread
+    return await asyncio.to_thread(func, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+func = <function get_platform at 0x724ef0679300>, args = (), kwargs = {}
+
+    async def to_thread(func, /, *args, **kwargs):
+        """Asynchronously run function *func* in a separate thread.
+    
+        Any *args and **kwargs supplied for this function are directly passed
+        to *func*. Also, the current :class:`contextvars.Context` is propagated,
+        allowing context variables from the main thread to be accessed in the
+        separate thread.
+    
+        Return a coroutine that can be awaited to get the eventual result of *func*.
+        """
+        loop = events.get_running_loop()
+        ctx = contextvars.copy_context()
+        func_call = functools.partial(ctx.run, func, *args, **kwargs)
+>       return await loop.run_in_executor(None, func_call)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       asyncio.exceptions.CancelledError: Cancelled via cancel scope 724eee5cbf70; reason: deadline exceeded
+
+/usr/local/lib/python3.12/asyncio/threads.py:25: CancelledError
+
+During handling of the above exception, another exception occurred:
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x724eee77de50>
+
+    def test_stalled_sdk_response_is_cancelled_and_reported(
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        monkeypatch.setattr("market_a2a.harness.MODEL_WAIT_SECONDS", 0.02)
+        logs: list[str] = []
+    
+        async def scenario() -> None:
+            async with (
+                httpx2.AsyncClient(transport=httpx2.MockTransport(stalled)) as http,
+                AsyncOpenAI(api_key="offline", max_retries=0, http_client=http) as client,
+            ):
+                harness = Harness(client, logs.append)
+                with anyio.fail_after(1), pytest.raises(HarnessError, match="response"):
+                    _ = await harness.complete([], [])
+                assert harness.calls == 0
+                assert "MODEL_TIMEOUT stage=response" in logs
+    
+>       anyio.run(scenario)
+
+tests/test_model_deadlines.py:47: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/local/lib/python3.12/site-packages/anyio/_core/_eventloop.py:83: in run
+    return async_backend.run(func, args, {}, backend_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2548: in run
+    return runner.run(wrapper())
+           ^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2531: in wrapper
+    return await func(*args)
+           ^^^^^^^^^^^^^^^^^
+tests/test_model_deadlines.py:42: in scenario
+    with anyio.fail_after(1), pytest.raises(HarnessError, match="response"):
+         ^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/contextlib.py:158: in __exit__
+    self.gen.throw(value)
+/usr/local/lib/python3.12/site-packages/anyio/_core/_tasks.py:178: in fail_after
+    with fail_at(deadline, shield=shield, reason=reason) as scope:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/contextlib.py:158: in __exit__
+    self.gen.throw(value)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+deadline = 1135689.7762775, shield = False, reason = None
+
+    @contextmanager
+    def fail_at(
+        deadline: float | None, shield: bool = False, reason: str | None = None
+    ) -> Generator[CancelScope, None, None]:
+        """
+        Create a context manager which raises a :class:`TimeoutError` if the code in the
+        enclosing context does not finish by the given deadline.
+    
+        :param deadline: the deadline before raising the exception, or
+            ``None`` to disable the timeout
+        :param shield: ``True`` to shield the cancel scope from external cancellation
+        :param reason: explanation for timeout to add to the message of a raised `TimeoutError`
+        :return: a context manager that yields a cancel scope
+        :rtype: :class:`~typing.ContextManager`\\[:class:`~anyio.CancelScope`\\]
+        :raises NoEventLoopError: if no supported asynchronous event loop is running in the
+            current thread
+    
+        .. versionadded:: 4.15.0
+    
+        """
+        current_time = get_async_backend().current_time
+        effective_deadline = math.inf if deadline is None else deadline
+        with get_async_backend().create_cancel_scope(
+            deadline=effective_deadline, shield=shield
+        ) as cancel_scope:
+            yield cancel_scope
+    
+        if cancel_scope.cancelled_caught and current_time() >= cancel_scope.deadline:
+>           raise TimeoutError(reason) if reason else TimeoutError
+E           TimeoutError
+
+/usr/local/lib/python3.12/site-packages/anyio/_core/_tasks.py:155: TimeoutError
+=========================== short test summary info ============================
+FAILED tests/test_model_deadlines.py::test_stalled_sdk_response_is_cancelled_and_reported
+1 failed, 114 passed in 35.96s

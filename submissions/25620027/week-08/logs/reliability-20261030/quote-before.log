@@ -1,0 +1,1152 @@
+FFFFFF..                                                                 [100%]
+=================================== FAILURES ===================================
+_____ test_persisted_quote_executes_without_another_model_response[105-2] ______
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10e471f40>
+tmp_path = PosixPath('/private/var/folders/c5/ymn8pr5s1ts6q1_8zt7b_k480000gn/T/pytest-of-sungjinho/pytest-5/test_persisted_quote_executes_0')
+round_number = '2', acceptance = '105'
+
+    @pytest.mark.parametrize("round_number", ["2", "3"])
+    @pytest.mark.parametrize("acceptance", ["105", "I accept", "I can pay 110"])
+    def test_persisted_quote_executes_without_another_model_response(
+        monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+        round_number: str, acceptance: str,
+    ) -> None:
+        monkeypatch.setenv("AX_MARKET_ROUND", round_number)
+        monkeypatch.setenv("AX_PRICE_COMPARISON", "0")
+        monkeypatch.setenv("AX_SELLER_STATE_DB", str(tmp_path / "seller.sqlite3"))
+        calls = scripted(monkeypatch, [action("quote", 105)])
+        key = Ed25519PrivateKey.generate()
+        signer = ReceiptSigner(key)
+        price = 110 if acceptance.endswith("110") else 105
+        logs: list[str] = []
+    
+        async def scenario() -> None:
+            async with AsyncOpenAI(api_key="offline-placeholder") as client:
+                harness = Harness(client, logs.append)
+                async with fresh_client(harness, signer) as first:
+                    opened = task_from(await send(first, "lamp"))
+                # The restarted app has a valid quote, but no model replies remain.
+                async with fresh_client(harness, signer) as second:
+                    completed = task_from(await send(second, acceptance, opened.id))
+                async with fresh_client(harness, signer) as third:
+                    replay = await send(third, acceptance, opened.id)
+                assert completed.status.state == TaskState.TASK_STATE_COMPLETED
+                raw = TypeAdapter(dict[str, JsonValue]).validate_json(
+                    MessageToJson(completed.artifacts[0].parts[0].data)
+                )
+                receipt = SignedReceipt.model_validate({
+                    **{k: raw[k] for k in ("shop", "item", "task", "sig_seller")},
+                    "price": price,
+                })
+                assert raw["price"] == price
+                assert raw["sku"] == "lamp"
+                assert receipt.task == opened.id
+                key.public_key().verify(
+                    base64.b64decode(receipt.sig_seller), receipt.canonical()
+                )
+                assert "error" in replay
+                assert len(calls) == 1
+                assert any("seller.quote_execution " in line for line in logs)
+    
+>       anyio.run(scenario)
+
+tests/test_quote_execution.py:66: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/anyio/_core/_eventloop.py:83: in run
+    return async_backend.run(func, args, {}, backend_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2548: in run
+    return runner.run(wrapper())
+           ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2531: in wrapper
+    return await func(*args)
+           ^^^^^^^^^^^^^^^^^
+tests/test_quote_execution.py:45: in scenario
+    completed = task_from(await send(second, acceptance, opened.id))
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+response = {'error': {'code': -32603, 'message': 'coroutine raised StopIteration'}, 'id': '105', 'jsonrpc': '2.0'}
+
+    def task_from(response: JsonValue) -> Task:
+        assert isinstance(response, dict)
+>       result = response["result"]
+                 ^^^^^^^^^^^^^^^^^^
+E       KeyError: 'result'
+
+tests/test_signed_seller.py:192: KeyError
+------------------------------ Captured log call -------------------------------
+ERROR    a2a.server.agent_execution.active_task:active_task.py:629 Producer[8216c587-c316-4c5b-95f8-69a0941e74cb]: Execution failed
+Traceback (most recent call last):
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/tests/test_seller_offer_release.py", line 45, in complete
+    name, arguments = next(replies)
+                      ^^^^^^^^^^^^^
+StopIteration
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/market_a2a/seller.py", line 81, in execute
+    await self.negotiator.negotiate(task, context.get_user_input(), event_queue)
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/market_a2a/seller_turn.py", line 224, in negotiate
+    _ = await self.harness.run(
+        ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/market_a2a/harness.py", line 146, in run
+    reply = await self.complete(messages, advertised)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: coroutine raised StopIteration
+ERROR    a2a.server.agent_execution.active_task:active_task.py:144 Consumer[8216c587-c316-4c5b-95f8-69a0941e74cb]: Failed
+Traceback (most recent call last):
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/tests/test_seller_offer_release.py", line 45, in complete
+    name, arguments = next(replies)
+                      ^^^^^^^^^^^^^
+StopIteration
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 136, in run
+    await self._process_event(event)
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 179, in _process_event
+    await self._process_event_inner(event)
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 221, in _process_event_inner
+    raise event
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/market_a2a/seller.py", line 81, in execute
+    await self.negotiator.negotiate(task, context.get_user_input(), event_queue)
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/market_a2a/seller_turn.py", line 224, in negotiate
+    _ = await self.harness.run(
+        ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/market_a2a/harness.py", line 146, in run
+    reply = await self.complete(messages, advertised)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: coroutine raised StopIteration
+ERROR    a2a.server.routes.jsonrpc_dispatcher:jsonrpc_dispatcher.py:348 Unhandled exception
+Traceback (most recent call last):
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/tests/test_seller_offer_release.py", line 45, in complete
+    name, arguments = next(replies)
+                      ^^^^^^^^^^^^^
+StopIteration
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/routes/jsonrpc_dispatcher.py", line 325, in handle_requests
+    raw_result = await self._process_non_streaming_request(
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/utils/telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/utils/version_validator.py", line 126, in async_wrapper
+    return await func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/routes/jsonrpc_dispatcher.py", line 522, in _process_non_streaming_request
+    return await self._handle_send_message(request_obj, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/utils/telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/routes/jsonrpc_dispatcher.py", line 414, in _handle_send_message
+    task_or_message = await self.request_handler.on_message_send(
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/utils/telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/request_handlers/request_handler.py", line 285, in async_wrapper
+    return await method(self, params, context, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/request_handlers/default_request_handler_v2.py", line 399, in on_message_send
+    async for raw_event in active_task.subscribe(
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 739, in subscribe
+    raise event
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 136, in run
+    await self._process_event(event)
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 179, in _process_event
+    await self._process_event_inner(event)
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 221, in _process_event_inner
+    raise event
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/market_a2a/seller.py", line 81, in execute
+    await self.negotiator.negotiate(task, context.get_user_input(), event_queue)
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/market_a2a/seller_turn.py", line 224, in negotiate
+    _ = await self.harness.run(
+        ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/market_a2a/harness.py", line 146, in run
+    reply = await self.complete(messages, advertised)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: coroutine raised StopIteration
+ERROR    a2a.server.routes.jsonrpc_dispatcher:jsonrpc_dispatcher.py:198 Request Error (ID: 105): Code=-32603, Message='coroutine raised StopIteration'
+WARNING  a2a.server.events.event_queue_v2:event_queue_v2.py:206 Dispatcher task was cancelled or finished. Events may be lost.
+WARNING  a2a.server.events.event_queue_v2:event_queue_v2.py:172 Dispatcher task is not running. Cannot wait for event dispatch.
+WARNING  a2a.server.events.event_queue_v2:event_queue_v2.py:172 Dispatcher task is not running. Cannot wait for event dispatch.
+_____ test_persisted_quote_executes_without_another_model_response[105-3] ______
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f7273b0>
+tmp_path = PosixPath('/private/var/folders/c5/ymn8pr5s1ts6q1_8zt7b_k480000gn/T/pytest-of-sungjinho/pytest-5/test_persisted_quote_executes_1')
+round_number = '3', acceptance = '105'
+
+    @pytest.mark.parametrize("round_number", ["2", "3"])
+    @pytest.mark.parametrize("acceptance", ["105", "I accept", "I can pay 110"])
+    def test_persisted_quote_executes_without_another_model_response(
+        monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+        round_number: str, acceptance: str,
+    ) -> None:
+        monkeypatch.setenv("AX_MARKET_ROUND", round_number)
+        monkeypatch.setenv("AX_PRICE_COMPARISON", "0")
+        monkeypatch.setenv("AX_SELLER_STATE_DB", str(tmp_path / "seller.sqlite3"))
+        calls = scripted(monkeypatch, [action("quote", 105)])
+        key = Ed25519PrivateKey.generate()
+        signer = ReceiptSigner(key)
+        price = 110 if acceptance.endswith("110") else 105
+        logs: list[str] = []
+    
+        async def scenario() -> None:
+            async with AsyncOpenAI(api_key="offline-placeholder") as client:
+                harness = Harness(client, logs.append)
+                async with fresh_client(harness, signer) as first:
+                    opened = task_from(await send(first, "lamp"))
+                # The restarted app has a valid quote, but no model replies remain.
+                async with fresh_client(harness, signer) as second:
+                    completed = task_from(await send(second, acceptance, opened.id))
+                async with fresh_client(harness, signer) as third:
+                    replay = await send(third, acceptance, opened.id)
+                assert completed.status.state == TaskState.TASK_STATE_COMPLETED
+                raw = TypeAdapter(dict[str, JsonValue]).validate_json(
+                    MessageToJson(completed.artifacts[0].parts[0].data)
+                )
+                receipt = SignedReceipt.model_validate({
+                    **{k: raw[k] for k in ("shop", "item", "task", "sig_seller")},
+                    "price": price,
+                })
+                assert raw["price"] == price
+                assert raw["sku"] == "lamp"
+                assert receipt.task == opened.id
+                key.public_key().verify(
+                    base64.b64decode(receipt.sig_seller), receipt.canonical()
+                )
+                assert "error" in replay
+                assert len(calls) == 1
+                assert any("seller.quote_execution " in line for line in logs)
+    
+>       anyio.run(scenario)
+
+tests/test_quote_execution.py:66: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/anyio/_core/_eventloop.py:83: in run
+    return async_backend.run(func, args, {}, backend_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2548: in run
+    return runner.run(wrapper())
+           ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2531: in wrapper
+    return await func(*args)
+           ^^^^^^^^^^^^^^^^^
+tests/test_quote_execution.py:45: in scenario
+    completed = task_from(await send(second, acceptance, opened.id))
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+response = {'error': {'code': -32603, 'message': 'coroutine raised StopIteration'}, 'id': '105', 'jsonrpc': '2.0'}
+
+    def task_from(response: JsonValue) -> Task:
+        assert isinstance(response, dict)
+>       result = response["result"]
+                 ^^^^^^^^^^^^^^^^^^
+E       KeyError: 'result'
+
+tests/test_signed_seller.py:192: KeyError
+------------------------------ Captured log call -------------------------------
+ERROR    a2a.server.agent_execution.active_task:active_task.py:629 Producer[3b2d9e4a-3320-4e98-bfb9-ff54db995812]: Execution failed
+Traceback (most recent call last):
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/tests/test_seller_offer_release.py", line 45, in complete
+    name, arguments = next(replies)
+                      ^^^^^^^^^^^^^
+StopIteration
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/market_a2a/seller.py", line 81, in execute
+    await self.negotiator.negotiate(task, context.get_user_input(), event_queue)
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/market_a2a/seller_turn.py", line 224, in negotiate
+    _ = await self.harness.run(
+        ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/market_a2a/harness.py", line 146, in run
+    reply = await self.complete(messages, advertised)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: coroutine raised StopIteration
+ERROR    a2a.server.agent_execution.active_task:active_task.py:144 Consumer[3b2d9e4a-3320-4e98-bfb9-ff54db995812]: Failed
+Traceback (most recent call last):
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/tests/test_seller_offer_release.py", line 45, in complete
+    name, arguments = next(replies)
+                      ^^^^^^^^^^^^^
+StopIteration
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 136, in run
+    await self._process_event(event)
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 179, in _process_event
+    await self._process_event_inner(event)
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 221, in _process_event_inner
+    raise event
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/market_a2a/seller.py", line 81, in execute
+    await self.negotiator.negotiate(task, context.get_user_input(), event_queue)
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/market_a2a/seller_turn.py", line 224, in negotiate
+    _ = await self.harness.run(
+        ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/market_a2a/harness.py", line 146, in run
+    reply = await self.complete(messages, advertised)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: coroutine raised StopIteration
+ERROR    a2a.server.routes.jsonrpc_dispatcher:jsonrpc_dispatcher.py:348 Unhandled exception
+Traceback (most recent call last):
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/tests/test_seller_offer_release.py", line 45, in complete
+    name, arguments = next(replies)
+                      ^^^^^^^^^^^^^
+StopIteration
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/routes/jsonrpc_dispatcher.py", line 325, in handle_requests
+    raw_result = await self._process_non_streaming_request(
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/utils/telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/utils/version_validator.py", line 126, in async_wrapper
+    return await func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/routes/jsonrpc_dispatcher.py", line 522, in _process_non_streaming_request
+    return await self._handle_send_message(request_obj, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/utils/telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/routes/jsonrpc_dispatcher.py", line 414, in _handle_send_message
+    task_or_message = await self.request_handler.on_message_send(
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/utils/telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/request_handlers/request_handler.py", line 285, in async_wrapper
+    return await method(self, params, context, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/request_handlers/default_request_handler_v2.py", line 399, in on_message_send
+    async for raw_event in active_task.subscribe(
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 739, in subscribe
+    raise event
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 136, in run
+    await self._process_event(event)
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 179, in _process_event
+    await self._process_event_inner(event)
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 221, in _process_event_inner
+    raise event
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/market_a2a/seller.py", line 81, in execute
+    await self.negotiator.negotiate(task, context.get_user_input(), event_queue)
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/market_a2a/seller_turn.py", line 224, in negotiate
+    _ = await self.harness.run(
+        ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/market_a2a/harness.py", line 146, in run
+    reply = await self.complete(messages, advertised)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: coroutine raised StopIteration
+ERROR    a2a.server.routes.jsonrpc_dispatcher:jsonrpc_dispatcher.py:198 Request Error (ID: 105): Code=-32603, Message='coroutine raised StopIteration'
+WARNING  a2a.server.events.event_queue_v2:event_queue_v2.py:206 Dispatcher task was cancelled or finished. Events may be lost.
+WARNING  a2a.server.events.event_queue_v2:event_queue_v2.py:172 Dispatcher task is not running. Cannot wait for event dispatch.
+WARNING  a2a.server.events.event_queue_v2:event_queue_v2.py:172 Dispatcher task is not running. Cannot wait for event dispatch.
+WARNING  a2a.server.events.event_queue_v2:event_queue_v2.py:172 Dispatcher task is not running. Cannot wait for event dispatch.
+___ test_persisted_quote_executes_without_another_model_response[I accept-2] ___
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10e471fa0>
+tmp_path = PosixPath('/private/var/folders/c5/ymn8pr5s1ts6q1_8zt7b_k480000gn/T/pytest-of-sungjinho/pytest-5/test_persisted_quote_executes_2')
+round_number = '2', acceptance = 'I accept'
+
+    @pytest.mark.parametrize("round_number", ["2", "3"])
+    @pytest.mark.parametrize("acceptance", ["105", "I accept", "I can pay 110"])
+    def test_persisted_quote_executes_without_another_model_response(
+        monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+        round_number: str, acceptance: str,
+    ) -> None:
+        monkeypatch.setenv("AX_MARKET_ROUND", round_number)
+        monkeypatch.setenv("AX_PRICE_COMPARISON", "0")
+        monkeypatch.setenv("AX_SELLER_STATE_DB", str(tmp_path / "seller.sqlite3"))
+        calls = scripted(monkeypatch, [action("quote", 105)])
+        key = Ed25519PrivateKey.generate()
+        signer = ReceiptSigner(key)
+        price = 110 if acceptance.endswith("110") else 105
+        logs: list[str] = []
+    
+        async def scenario() -> None:
+            async with AsyncOpenAI(api_key="offline-placeholder") as client:
+                harness = Harness(client, logs.append)
+                async with fresh_client(harness, signer) as first:
+                    opened = task_from(await send(first, "lamp"))
+                # The restarted app has a valid quote, but no model replies remain.
+                async with fresh_client(harness, signer) as second:
+                    completed = task_from(await send(second, acceptance, opened.id))
+                async with fresh_client(harness, signer) as third:
+                    replay = await send(third, acceptance, opened.id)
+                assert completed.status.state == TaskState.TASK_STATE_COMPLETED
+                raw = TypeAdapter(dict[str, JsonValue]).validate_json(
+                    MessageToJson(completed.artifacts[0].parts[0].data)
+                )
+                receipt = SignedReceipt.model_validate({
+                    **{k: raw[k] for k in ("shop", "item", "task", "sig_seller")},
+                    "price": price,
+                })
+                assert raw["price"] == price
+                assert raw["sku"] == "lamp"
+                assert receipt.task == opened.id
+                key.public_key().verify(
+                    base64.b64decode(receipt.sig_seller), receipt.canonical()
+                )
+                assert "error" in replay
+                assert len(calls) == 1
+                assert any("seller.quote_execution " in line for line in logs)
+    
+>       anyio.run(scenario)
+
+tests/test_quote_execution.py:66: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/anyio/_core/_eventloop.py:83: in run
+    return async_backend.run(func, args, {}, backend_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2548: in run
+    return runner.run(wrapper())
+           ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2531: in wrapper
+    return await func(*args)
+           ^^^^^^^^^^^^^^^^^
+tests/test_quote_execution.py:45: in scenario
+    completed = task_from(await send(second, acceptance, opened.id))
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+response = {'error': {'code': -32603, 'message': 'coroutine raised StopIteration'}, 'id': 'I accept', 'jsonrpc': '2.0'}
+
+    def task_from(response: JsonValue) -> Task:
+        assert isinstance(response, dict)
+>       result = response["result"]
+                 ^^^^^^^^^^^^^^^^^^
+E       KeyError: 'result'
+
+tests/test_signed_seller.py:192: KeyError
+------------------------------ Captured log call -------------------------------
+ERROR    a2a.server.agent_execution.active_task:active_task.py:629 Producer[1d3486d5-9a6d-4b3a-b7f5-2df106e95215]: Execution failed
+Traceback (most recent call last):
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/tests/test_seller_offer_release.py", line 45, in complete
+    name, arguments = next(replies)
+                      ^^^^^^^^^^^^^
+StopIteration
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/market_a2a/seller.py", line 81, in execute
+    await self.negotiator.negotiate(task, context.get_user_input(), event_queue)
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/market_a2a/seller_turn.py", line 224, in negotiate
+    _ = await self.harness.run(
+        ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/market_a2a/harness.py", line 146, in run
+    reply = await self.complete(messages, advertised)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: coroutine raised StopIteration
+ERROR    a2a.server.agent_execution.active_task:active_task.py:144 Consumer[1d3486d5-9a6d-4b3a-b7f5-2df106e95215]: Failed
+Traceback (most recent call last):
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/tests/test_seller_offer_release.py", line 45, in complete
+    name, arguments = next(replies)
+                      ^^^^^^^^^^^^^
+StopIteration
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 136, in run
+    await self._process_event(event)
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 179, in _process_event
+    await self._process_event_inner(event)
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 221, in _process_event_inner
+    raise event
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/market_a2a/seller.py", line 81, in execute
+    await self.negotiator.negotiate(task, context.get_user_input(), event_queue)
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/market_a2a/seller_turn.py", line 224, in negotiate
+    _ = await self.harness.run(
+        ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/market_a2a/harness.py", line 146, in run
+    reply = await self.complete(messages, advertised)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: coroutine raised StopIteration
+ERROR    a2a.server.routes.jsonrpc_dispatcher:jsonrpc_dispatcher.py:348 Unhandled exception
+Traceback (most recent call last):
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/tests/test_seller_offer_release.py", line 45, in complete
+    name, arguments = next(replies)
+                      ^^^^^^^^^^^^^
+StopIteration
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/routes/jsonrpc_dispatcher.py", line 325, in handle_requests
+    raw_result = await self._process_non_streaming_request(
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/utils/telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/utils/version_validator.py", line 126, in async_wrapper
+    return await func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/routes/jsonrpc_dispatcher.py", line 522, in _process_non_streaming_request
+    return await self._handle_send_message(request_obj, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/utils/telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/routes/jsonrpc_dispatcher.py", line 414, in _handle_send_message
+    task_or_message = await self.request_handler.on_message_send(
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/utils/telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/request_handlers/request_handler.py", line 285, in async_wrapper
+    return await method(self, params, context, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/request_handlers/default_request_handler_v2.py", line 399, in on_message_send
+    async for raw_event in active_task.subscribe(
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 739, in subscribe
+    raise event
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 136, in run
+    await self._process_event(event)
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 179, in _process_event
+    await self._process_event_inner(event)
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 221, in _process_event_inner
+    raise event
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/market_a2a/seller.py", line 81, in execute
+    await self.negotiator.negotiate(task, context.get_user_input(), event_queue)
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/market_a2a/seller_turn.py", line 224, in negotiate
+    _ = await self.harness.run(
+        ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/market_a2a/harness.py", line 146, in run
+    reply = await self.complete(messages, advertised)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: coroutine raised StopIteration
+ERROR    a2a.server.routes.jsonrpc_dispatcher:jsonrpc_dispatcher.py:198 Request Error (ID: I accept): Code=-32603, Message='coroutine raised StopIteration'
+WARNING  a2a.server.events.event_queue_v2:event_queue_v2.py:206 Dispatcher task was cancelled or finished. Events may be lost.
+WARNING  a2a.server.events.event_queue_v2:event_queue_v2.py:172 Dispatcher task is not running. Cannot wait for event dispatch.
+WARNING  a2a.server.events.event_queue_v2:event_queue_v2.py:172 Dispatcher task is not running. Cannot wait for event dispatch.
+WARNING  a2a.server.events.event_queue_v2:event_queue_v2.py:172 Dispatcher task is not running. Cannot wait for event dispatch.
+___ test_persisted_quote_executes_without_another_model_response[I accept-3] ___
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10eab9a90>
+tmp_path = PosixPath('/private/var/folders/c5/ymn8pr5s1ts6q1_8zt7b_k480000gn/T/pytest-of-sungjinho/pytest-5/test_persisted_quote_executes_3')
+round_number = '3', acceptance = 'I accept'
+
+    @pytest.mark.parametrize("round_number", ["2", "3"])
+    @pytest.mark.parametrize("acceptance", ["105", "I accept", "I can pay 110"])
+    def test_persisted_quote_executes_without_another_model_response(
+        monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+        round_number: str, acceptance: str,
+    ) -> None:
+        monkeypatch.setenv("AX_MARKET_ROUND", round_number)
+        monkeypatch.setenv("AX_PRICE_COMPARISON", "0")
+        monkeypatch.setenv("AX_SELLER_STATE_DB", str(tmp_path / "seller.sqlite3"))
+        calls = scripted(monkeypatch, [action("quote", 105)])
+        key = Ed25519PrivateKey.generate()
+        signer = ReceiptSigner(key)
+        price = 110 if acceptance.endswith("110") else 105
+        logs: list[str] = []
+    
+        async def scenario() -> None:
+            async with AsyncOpenAI(api_key="offline-placeholder") as client:
+                harness = Harness(client, logs.append)
+                async with fresh_client(harness, signer) as first:
+                    opened = task_from(await send(first, "lamp"))
+                # The restarted app has a valid quote, but no model replies remain.
+                async with fresh_client(harness, signer) as second:
+                    completed = task_from(await send(second, acceptance, opened.id))
+                async with fresh_client(harness, signer) as third:
+                    replay = await send(third, acceptance, opened.id)
+                assert completed.status.state == TaskState.TASK_STATE_COMPLETED
+                raw = TypeAdapter(dict[str, JsonValue]).validate_json(
+                    MessageToJson(completed.artifacts[0].parts[0].data)
+                )
+                receipt = SignedReceipt.model_validate({
+                    **{k: raw[k] for k in ("shop", "item", "task", "sig_seller")},
+                    "price": price,
+                })
+                assert raw["price"] == price
+                assert raw["sku"] == "lamp"
+                assert receipt.task == opened.id
+                key.public_key().verify(
+                    base64.b64decode(receipt.sig_seller), receipt.canonical()
+                )
+                assert "error" in replay
+                assert len(calls) == 1
+                assert any("seller.quote_execution " in line for line in logs)
+    
+>       anyio.run(scenario)
+
+tests/test_quote_execution.py:66: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/anyio/_core/_eventloop.py:83: in run
+    return async_backend.run(func, args, {}, backend_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2548: in run
+    return runner.run(wrapper())
+           ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2531: in wrapper
+    return await func(*args)
+           ^^^^^^^^^^^^^^^^^
+tests/test_quote_execution.py:45: in scenario
+    completed = task_from(await send(second, acceptance, opened.id))
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+response = {'error': {'code': -32603, 'message': 'coroutine raised StopIteration'}, 'id': 'I accept', 'jsonrpc': '2.0'}
+
+    def task_from(response: JsonValue) -> Task:
+        assert isinstance(response, dict)
+>       result = response["result"]
+                 ^^^^^^^^^^^^^^^^^^
+E       KeyError: 'result'
+
+tests/test_signed_seller.py:192: KeyError
+------------------------------ Captured log call -------------------------------
+ERROR    a2a.server.agent_execution.active_task:active_task.py:629 Producer[56171313-dab8-4b2f-ad57-a10d0711c967]: Execution failed
+Traceback (most recent call last):
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/tests/test_seller_offer_release.py", line 45, in complete
+    name, arguments = next(replies)
+                      ^^^^^^^^^^^^^
+StopIteration
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/market_a2a/seller.py", line 81, in execute
+    await self.negotiator.negotiate(task, context.get_user_input(), event_queue)
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/market_a2a/seller_turn.py", line 224, in negotiate
+    _ = await self.harness.run(
+        ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/market_a2a/harness.py", line 146, in run
+    reply = await self.complete(messages, advertised)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: coroutine raised StopIteration
+ERROR    a2a.server.agent_execution.active_task:active_task.py:144 Consumer[56171313-dab8-4b2f-ad57-a10d0711c967]: Failed
+Traceback (most recent call last):
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/tests/test_seller_offer_release.py", line 45, in complete
+    name, arguments = next(replies)
+                      ^^^^^^^^^^^^^
+StopIteration
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 136, in run
+    await self._process_event(event)
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 179, in _process_event
+    await self._process_event_inner(event)
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 221, in _process_event_inner
+    raise event
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/market_a2a/seller.py", line 81, in execute
+    await self.negotiator.negotiate(task, context.get_user_input(), event_queue)
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/market_a2a/seller_turn.py", line 224, in negotiate
+    _ = await self.harness.run(
+        ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/market_a2a/harness.py", line 146, in run
+    reply = await self.complete(messages, advertised)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: coroutine raised StopIteration
+ERROR    a2a.server.routes.jsonrpc_dispatcher:jsonrpc_dispatcher.py:348 Unhandled exception
+Traceback (most recent call last):
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/tests/test_seller_offer_release.py", line 45, in complete
+    name, arguments = next(replies)
+                      ^^^^^^^^^^^^^
+StopIteration
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/routes/jsonrpc_dispatcher.py", line 325, in handle_requests
+    raw_result = await self._process_non_streaming_request(
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/utils/telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/utils/version_validator.py", line 126, in async_wrapper
+    return await func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/routes/jsonrpc_dispatcher.py", line 522, in _process_non_streaming_request
+    return await self._handle_send_message(request_obj, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/utils/telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/routes/jsonrpc_dispatcher.py", line 414, in _handle_send_message
+    task_or_message = await self.request_handler.on_message_send(
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/utils/telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/request_handlers/request_handler.py", line 285, in async_wrapper
+    return await method(self, params, context, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/request_handlers/default_request_handler_v2.py", line 399, in on_message_send
+    async for raw_event in active_task.subscribe(
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 739, in subscribe
+    raise event
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 136, in run
+    await self._process_event(event)
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 179, in _process_event
+    await self._process_event_inner(event)
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 221, in _process_event_inner
+    raise event
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/market_a2a/seller.py", line 81, in execute
+    await self.negotiator.negotiate(task, context.get_user_input(), event_queue)
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/market_a2a/seller_turn.py", line 224, in negotiate
+    _ = await self.harness.run(
+        ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/market_a2a/harness.py", line 146, in run
+    reply = await self.complete(messages, advertised)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: coroutine raised StopIteration
+ERROR    a2a.server.routes.jsonrpc_dispatcher:jsonrpc_dispatcher.py:198 Request Error (ID: I accept): Code=-32603, Message='coroutine raised StopIteration'
+WARNING  a2a.server.events.event_queue_v2:event_queue_v2.py:206 Dispatcher task was cancelled or finished. Events may be lost.
+WARNING  a2a.server.events.event_queue_v2:event_queue_v2.py:172 Dispatcher task is not running. Cannot wait for event dispatch.
+WARNING  a2a.server.events.event_queue_v2:event_queue_v2.py:172 Dispatcher task is not running. Cannot wait for event dispatch.
+_ test_persisted_quote_executes_without_another_model_response[I can pay 110-2] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10eab9b20>
+tmp_path = PosixPath('/private/var/folders/c5/ymn8pr5s1ts6q1_8zt7b_k480000gn/T/pytest-of-sungjinho/pytest-5/test_persisted_quote_executes_4')
+round_number = '2', acceptance = 'I can pay 110'
+
+    @pytest.mark.parametrize("round_number", ["2", "3"])
+    @pytest.mark.parametrize("acceptance", ["105", "I accept", "I can pay 110"])
+    def test_persisted_quote_executes_without_another_model_response(
+        monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+        round_number: str, acceptance: str,
+    ) -> None:
+        monkeypatch.setenv("AX_MARKET_ROUND", round_number)
+        monkeypatch.setenv("AX_PRICE_COMPARISON", "0")
+        monkeypatch.setenv("AX_SELLER_STATE_DB", str(tmp_path / "seller.sqlite3"))
+        calls = scripted(monkeypatch, [action("quote", 105)])
+        key = Ed25519PrivateKey.generate()
+        signer = ReceiptSigner(key)
+        price = 110 if acceptance.endswith("110") else 105
+        logs: list[str] = []
+    
+        async def scenario() -> None:
+            async with AsyncOpenAI(api_key="offline-placeholder") as client:
+                harness = Harness(client, logs.append)
+                async with fresh_client(harness, signer) as first:
+                    opened = task_from(await send(first, "lamp"))
+                # The restarted app has a valid quote, but no model replies remain.
+                async with fresh_client(harness, signer) as second:
+                    completed = task_from(await send(second, acceptance, opened.id))
+                async with fresh_client(harness, signer) as third:
+                    replay = await send(third, acceptance, opened.id)
+                assert completed.status.state == TaskState.TASK_STATE_COMPLETED
+                raw = TypeAdapter(dict[str, JsonValue]).validate_json(
+                    MessageToJson(completed.artifacts[0].parts[0].data)
+                )
+                receipt = SignedReceipt.model_validate({
+                    **{k: raw[k] for k in ("shop", "item", "task", "sig_seller")},
+                    "price": price,
+                })
+                assert raw["price"] == price
+                assert raw["sku"] == "lamp"
+                assert receipt.task == opened.id
+                key.public_key().verify(
+                    base64.b64decode(receipt.sig_seller), receipt.canonical()
+                )
+                assert "error" in replay
+                assert len(calls) == 1
+                assert any("seller.quote_execution " in line for line in logs)
+    
+>       anyio.run(scenario)
+
+tests/test_quote_execution.py:66: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/anyio/_core/_eventloop.py:83: in run
+    return async_backend.run(func, args, {}, backend_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2548: in run
+    return runner.run(wrapper())
+           ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2531: in wrapper
+    return await func(*args)
+           ^^^^^^^^^^^^^^^^^
+tests/test_quote_execution.py:45: in scenario
+    completed = task_from(await send(second, acceptance, opened.id))
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+response = {'error': {'code': -32603, 'message': 'coroutine raised StopIteration'}, 'id': 'I can pay 110', 'jsonrpc': '2.0'}
+
+    def task_from(response: JsonValue) -> Task:
+        assert isinstance(response, dict)
+>       result = response["result"]
+                 ^^^^^^^^^^^^^^^^^^
+E       KeyError: 'result'
+
+tests/test_signed_seller.py:192: KeyError
+------------------------------ Captured log call -------------------------------
+ERROR    a2a.server.agent_execution.active_task:active_task.py:629 Producer[b2e2583b-fb0c-4e0c-9755-9a6587791ff0]: Execution failed
+Traceback (most recent call last):
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/tests/test_seller_offer_release.py", line 45, in complete
+    name, arguments = next(replies)
+                      ^^^^^^^^^^^^^
+StopIteration
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/market_a2a/seller.py", line 81, in execute
+    await self.negotiator.negotiate(task, context.get_user_input(), event_queue)
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/market_a2a/seller_turn.py", line 224, in negotiate
+    _ = await self.harness.run(
+        ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/market_a2a/harness.py", line 146, in run
+    reply = await self.complete(messages, advertised)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: coroutine raised StopIteration
+ERROR    a2a.server.agent_execution.active_task:active_task.py:144 Consumer[b2e2583b-fb0c-4e0c-9755-9a6587791ff0]: Failed
+Traceback (most recent call last):
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/tests/test_seller_offer_release.py", line 45, in complete
+    name, arguments = next(replies)
+                      ^^^^^^^^^^^^^
+StopIteration
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 136, in run
+    await self._process_event(event)
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 179, in _process_event
+    await self._process_event_inner(event)
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 221, in _process_event_inner
+    raise event
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/market_a2a/seller.py", line 81, in execute
+    await self.negotiator.negotiate(task, context.get_user_input(), event_queue)
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/market_a2a/seller_turn.py", line 224, in negotiate
+    _ = await self.harness.run(
+        ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/market_a2a/harness.py", line 146, in run
+    reply = await self.complete(messages, advertised)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: coroutine raised StopIteration
+ERROR    a2a.server.routes.jsonrpc_dispatcher:jsonrpc_dispatcher.py:348 Unhandled exception
+Traceback (most recent call last):
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/tests/test_seller_offer_release.py", line 45, in complete
+    name, arguments = next(replies)
+                      ^^^^^^^^^^^^^
+StopIteration
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/routes/jsonrpc_dispatcher.py", line 325, in handle_requests
+    raw_result = await self._process_non_streaming_request(
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/utils/telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/utils/version_validator.py", line 126, in async_wrapper
+    return await func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/routes/jsonrpc_dispatcher.py", line 522, in _process_non_streaming_request
+    return await self._handle_send_message(request_obj, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/utils/telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/routes/jsonrpc_dispatcher.py", line 414, in _handle_send_message
+    task_or_message = await self.request_handler.on_message_send(
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/utils/telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/request_handlers/request_handler.py", line 285, in async_wrapper
+    return await method(self, params, context, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/request_handlers/default_request_handler_v2.py", line 399, in on_message_send
+    async for raw_event in active_task.subscribe(
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 739, in subscribe
+    raise event
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 136, in run
+    await self._process_event(event)
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 179, in _process_event
+    await self._process_event_inner(event)
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 221, in _process_event_inner
+    raise event
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/market_a2a/seller.py", line 81, in execute
+    await self.negotiator.negotiate(task, context.get_user_input(), event_queue)
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/market_a2a/seller_turn.py", line 224, in negotiate
+    _ = await self.harness.run(
+        ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/market_a2a/harness.py", line 146, in run
+    reply = await self.complete(messages, advertised)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: coroutine raised StopIteration
+ERROR    a2a.server.routes.jsonrpc_dispatcher:jsonrpc_dispatcher.py:198 Request Error (ID: I can pay 110): Code=-32603, Message='coroutine raised StopIteration'
+WARNING  a2a.server.events.event_queue_v2:event_queue_v2.py:206 Dispatcher task was cancelled or finished. Events may be lost.
+WARNING  a2a.server.events.event_queue_v2:event_queue_v2.py:172 Dispatcher task is not running. Cannot wait for event dispatch.
+WARNING  a2a.server.events.event_queue_v2:event_queue_v2.py:172 Dispatcher task is not running. Cannot wait for event dispatch.
+_ test_persisted_quote_executes_without_another_model_response[I can pay 110-3] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x111119c40>
+tmp_path = PosixPath('/private/var/folders/c5/ymn8pr5s1ts6q1_8zt7b_k480000gn/T/pytest-of-sungjinho/pytest-5/test_persisted_quote_executes_5')
+round_number = '3', acceptance = 'I can pay 110'
+
+    @pytest.mark.parametrize("round_number", ["2", "3"])
+    @pytest.mark.parametrize("acceptance", ["105", "I accept", "I can pay 110"])
+    def test_persisted_quote_executes_without_another_model_response(
+        monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+        round_number: str, acceptance: str,
+    ) -> None:
+        monkeypatch.setenv("AX_MARKET_ROUND", round_number)
+        monkeypatch.setenv("AX_PRICE_COMPARISON", "0")
+        monkeypatch.setenv("AX_SELLER_STATE_DB", str(tmp_path / "seller.sqlite3"))
+        calls = scripted(monkeypatch, [action("quote", 105)])
+        key = Ed25519PrivateKey.generate()
+        signer = ReceiptSigner(key)
+        price = 110 if acceptance.endswith("110") else 105
+        logs: list[str] = []
+    
+        async def scenario() -> None:
+            async with AsyncOpenAI(api_key="offline-placeholder") as client:
+                harness = Harness(client, logs.append)
+                async with fresh_client(harness, signer) as first:
+                    opened = task_from(await send(first, "lamp"))
+                # The restarted app has a valid quote, but no model replies remain.
+                async with fresh_client(harness, signer) as second:
+                    completed = task_from(await send(second, acceptance, opened.id))
+                async with fresh_client(harness, signer) as third:
+                    replay = await send(third, acceptance, opened.id)
+                assert completed.status.state == TaskState.TASK_STATE_COMPLETED
+                raw = TypeAdapter(dict[str, JsonValue]).validate_json(
+                    MessageToJson(completed.artifacts[0].parts[0].data)
+                )
+                receipt = SignedReceipt.model_validate({
+                    **{k: raw[k] for k in ("shop", "item", "task", "sig_seller")},
+                    "price": price,
+                })
+                assert raw["price"] == price
+                assert raw["sku"] == "lamp"
+                assert receipt.task == opened.id
+                key.public_key().verify(
+                    base64.b64decode(receipt.sig_seller), receipt.canonical()
+                )
+                assert "error" in replay
+                assert len(calls) == 1
+                assert any("seller.quote_execution " in line for line in logs)
+    
+>       anyio.run(scenario)
+
+tests/test_quote_execution.py:66: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/anyio/_core/_eventloop.py:83: in run
+    return async_backend.run(func, args, {}, backend_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2548: in run
+    return runner.run(wrapper())
+           ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2531: in wrapper
+    return await func(*args)
+           ^^^^^^^^^^^^^^^^^
+tests/test_quote_execution.py:45: in scenario
+    completed = task_from(await send(second, acceptance, opened.id))
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+response = {'error': {'code': -32603, 'message': 'coroutine raised StopIteration'}, 'id': 'I can pay 110', 'jsonrpc': '2.0'}
+
+    def task_from(response: JsonValue) -> Task:
+        assert isinstance(response, dict)
+>       result = response["result"]
+                 ^^^^^^^^^^^^^^^^^^
+E       KeyError: 'result'
+
+tests/test_signed_seller.py:192: KeyError
+------------------------------ Captured log call -------------------------------
+ERROR    a2a.server.agent_execution.active_task:active_task.py:629 Producer[285459be-e409-488d-a6b3-9d012e9556bc]: Execution failed
+Traceback (most recent call last):
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/tests/test_seller_offer_release.py", line 45, in complete
+    name, arguments = next(replies)
+                      ^^^^^^^^^^^^^
+StopIteration
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/market_a2a/seller.py", line 81, in execute
+    await self.negotiator.negotiate(task, context.get_user_input(), event_queue)
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/market_a2a/seller_turn.py", line 224, in negotiate
+    _ = await self.harness.run(
+        ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/market_a2a/harness.py", line 146, in run
+    reply = await self.complete(messages, advertised)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: coroutine raised StopIteration
+ERROR    a2a.server.agent_execution.active_task:active_task.py:144 Consumer[285459be-e409-488d-a6b3-9d012e9556bc]: Failed
+Traceback (most recent call last):
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/tests/test_seller_offer_release.py", line 45, in complete
+    name, arguments = next(replies)
+                      ^^^^^^^^^^^^^
+StopIteration
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 136, in run
+    await self._process_event(event)
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 179, in _process_event
+    await self._process_event_inner(event)
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 221, in _process_event_inner
+    raise event
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/market_a2a/seller.py", line 81, in execute
+    await self.negotiator.negotiate(task, context.get_user_input(), event_queue)
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/market_a2a/seller_turn.py", line 224, in negotiate
+    _ = await self.harness.run(
+        ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/market_a2a/harness.py", line 146, in run
+    reply = await self.complete(messages, advertised)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: coroutine raised StopIteration
+ERROR    a2a.server.routes.jsonrpc_dispatcher:jsonrpc_dispatcher.py:348 Unhandled exception
+Traceback (most recent call last):
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/tests/test_seller_offer_release.py", line 45, in complete
+    name, arguments = next(replies)
+                      ^^^^^^^^^^^^^
+StopIteration
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/routes/jsonrpc_dispatcher.py", line 325, in handle_requests
+    raw_result = await self._process_non_streaming_request(
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/utils/telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/utils/version_validator.py", line 126, in async_wrapper
+    return await func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/routes/jsonrpc_dispatcher.py", line 522, in _process_non_streaming_request
+    return await self._handle_send_message(request_obj, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/utils/telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/routes/jsonrpc_dispatcher.py", line 414, in _handle_send_message
+    task_or_message = await self.request_handler.on_message_send(
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/utils/telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/request_handlers/request_handler.py", line 285, in async_wrapper
+    return await method(self, params, context, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/request_handlers/default_request_handler_v2.py", line 399, in on_message_send
+    async for raw_event in active_task.subscribe(
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 739, in subscribe
+    raise event
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 136, in run
+    await self._process_event(event)
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 179, in _process_event
+    await self._process_event_inner(event)
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 221, in _process_event_inner
+    raise event
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/market_a2a/seller.py", line 81, in execute
+    await self.negotiator.negotiate(task, context.get_user_input(), event_queue)
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/market_a2a/seller_turn.py", line 224, in negotiate
+    _ = await self.harness.run(
+        ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/market_a2a/harness.py", line 146, in run
+    reply = await self.complete(messages, advertised)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: coroutine raised StopIteration
+ERROR    a2a.server.routes.jsonrpc_dispatcher:jsonrpc_dispatcher.py:198 Request Error (ID: I can pay 110): Code=-32603, Message='coroutine raised StopIteration'
+WARNING  a2a.server.events.event_queue_v2:event_queue_v2.py:206 Dispatcher task was cancelled or finished. Events may be lost.
+WARNING  a2a.server.events.event_queue_v2:event_queue_v2.py:172 Dispatcher task is not running. Cannot wait for event dispatch.
+WARNING  a2a.server.events.event_queue_v2:event_queue_v2.py:172 Dispatcher task is not running. Cannot wait for event dispatch.
+=========================== short test summary info ============================
+FAILED tests/test_quote_execution.py::test_persisted_quote_executes_without_another_model_response[105-2]
+FAILED tests/test_quote_execution.py::test_persisted_quote_executes_without_another_model_response[105-3]
+FAILED tests/test_quote_execution.py::test_persisted_quote_executes_without_another_model_response[I accept-2]
+FAILED tests/test_quote_execution.py::test_persisted_quote_executes_without_another_model_response[I accept-3]
+FAILED tests/test_quote_execution.py::test_persisted_quote_executes_without_another_model_response[I can pay 110-2]
+FAILED tests/test_quote_execution.py::test_persisted_quote_executes_without_another_model_response[I can pay 110-3]
+6 failed, 2 passed in 1.92s

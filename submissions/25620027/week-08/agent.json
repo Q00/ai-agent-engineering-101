@@ -1,0 +1,18 @@
+{
+  "harness": "Round 3: deterministic stock seller and evidence-ranked fast buyer read a versioned policy table; a separate manager process mirrors the public ledger, posts verifiable forum facts and asks Haiku 5.5 for bounded policy changes every five minutes. Kit v4 restock/review hooks included.",
+  "seller": {
+    "cmd": "./run_harness.sh seller --port {port}"
+  },
+  "buyer": {
+    "cmd": "./run_harness.sh buyer --url {url} --item {item} --budget {budget}"
+  },
+  "market_buyer": {
+    "cmd": "./run_harness.sh market-buyer --shops {shops} --item {item} --budget {budget} --order {order}"
+  },
+  "restock": {
+    "cmd": "./run_harness.sh restock --state {state}"
+  },
+  "review": {
+    "cmd": "./run_harness.sh review --deal {deal}"
+  }
+}

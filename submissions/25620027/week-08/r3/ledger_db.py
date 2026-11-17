@@ -1,0 +1,376 @@
+"""Incremental copy of the public market ledger, the agent's largest memory.
+
+The market publishes nothing about demand, but every settled deal, every broken
+good and every order appear on ``/api/ledger``. This module pulls the ledger forward
+from the last sequence number (500 rows a page), stores the rows in SQLite and
+answers the questions the policy loop and the restock hook ask: which categories
+and SKUs settle, at what share of list price, how often goods of each grade break,
+and how many settlements our own shop and buyer have.
+"""
+
+from __future__ import annotations
+
+import json
+import os
+import sqlite3
+import statistics
+import time
+from contextlib import closing
+from pathlib import Path
+from typing import TYPE_CHECKING, Final
+
+if TYPE_CHECKING:
+    from collections.abc import Collection, Iterable, Mapping
+
+    import httpx
+
+    from r3.market_files import CatalogItem
+
+LEDGER_ENV: Final = "AX_R3_LEDGER"
+LEDGER_FILE: Final = "r3-ledger.sqlite"
+PAGE: Final = 500
+BREAK_WINDOW: Final = 6 * 3600
+# Goods can break up to 6 h after a sale, so the quality cohort is settlements old
+# enough to have matured; the manager's 6 h trend window alone would hold none.
+MATURE_COHORT_HOURS: Final = 24
+
+
+def ledger_path(market_dir: Path | None = None) -> Path:
+    """Resolve the ledger database path: explicit env, else beside ``.market``."""
+    configured = os.environ.get(LEDGER_ENV)
+    if configured:
+        return Path(configured)
+    base = (
+        market_dir
+        if market_dir is not None
+        else Path(os.environ.get("MARKET_DIR", ".market"))
+    )
+    return base.resolve().parent / LEDGER_FILE
+
+
+def _data(raw: object) -> dict[str, object]:
+    """Return a row's JSON payload as a dict; anything unreadable is empty."""
+    try:
+        data = json.loads(str(raw or "{}"))
+    except ValueError:
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+class LedgerDB:
+    """SQLite mirror of the rows we have seen; ``cursor`` is the last seq ingested."""
+
+    def __init__(self, path: Path) -> None:
+        """Create the schema on first use."""
+        self.path: Path = path
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with closing(sqlite3.connect(path, timeout=2.0)) as db, db:
+            _ = db.execute("PRAGMA journal_mode=WAL")
+            _ = db.execute(
+                """CREATE TABLE IF NOT EXISTS rows (
+                    seq INTEGER PRIMARY KEY, ts REAL, kind TEXT, round INTEGER,
+                    buyer TEXT, shop TEXT, sku TEXT, amount INTEGER, grade TEXT,
+                    claim TEXT, claim_honest INTEGER, data TEXT)"""
+            )
+            _ = db.execute("CREATE INDEX IF NOT EXISTS rows_kind_ts ON rows(kind, ts)")
+            _ = db.execute("CREATE INDEX IF NOT EXISTS rows_sku ON rows(sku)")
+            _ = db.execute(
+                "CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT)"
+            )
+
+    @property
+    def cursor(self) -> int:
+        """The highest sequence number stored, or 0."""
+        with closing(sqlite3.connect(self.path, timeout=2.0)) as db:
+            row = db.execute("SELECT max(seq) FROM rows").fetchone()
+        return int(row[0]) if row and row[0] is not None else 0
+
+    def ingest(self, rows: Iterable[Mapping[str, object]]) -> int:
+        """Store ledger rows idempotently; return how many were new."""
+        added = 0
+        with closing(sqlite3.connect(self.path, timeout=2.0)) as db, db:
+            for row in rows:
+                data = row.get("data")
+                if not isinstance(data, dict):
+                    data = {}
+                honest = data.get("claim_honest")
+                cursor = db.execute(
+                    """INSERT OR IGNORE INTO rows
+                    (seq, ts, kind, round, buyer, shop, sku, amount, grade, claim,
+                     claim_honest, data) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)""",
+                    (
+                        int(str(row.get("seq", 0))),
+                        float(str(row.get("ts", 0.0))),
+                        str(row.get("kind", "")),
+                        int(str(row.get("round", 0) or 0)),
+                        str(data.get("buyer", "") or ""),
+                        str(data.get("shop", "") or ""),
+                        str(data.get("item", "") or ""),
+                        int(data["amount"])
+                        if isinstance(data.get("amount"), int)
+                        else None,
+                        str(data.get("grade", "") or ""),
+                        str(data.get("claim", "") or ""),
+                        None if honest is None else int(bool(honest)),
+                        json.dumps(data, ensure_ascii=False)[:4000],
+                    ),
+                )
+                added += cursor.rowcount
+        return added
+
+    def first_round_ts(self, market_round: int) -> float | None:
+        """Epoch of the earliest stored row of that market round, if any."""
+        with closing(sqlite3.connect(self.path, timeout=2.0)) as db:
+            row = db.execute(
+                "SELECT min(ts) FROM rows WHERE round = ?", (market_round,)
+            ).fetchone()
+        return float(row[0]) if row and row[0] is not None else None
+
+    def settles(self, since: float) -> list[tuple[float, str, str, str, int, str, str]]:
+        """Settle rows since ``since``: (ts, buyer, shop, sku, amount, grade, claim)."""
+        with closing(sqlite3.connect(self.path, timeout=2.0)) as db:
+            return [
+                (float(ts), str(b), str(s), str(k), int(a or 0), str(g), str(c))
+                for ts, b, s, k, a, g, c in db.execute(
+                    """SELECT ts, buyer, shop, sku, amount, grade, claim FROM rows
+                    WHERE kind='settle' AND ts >= ? ORDER BY ts""",
+                    (since,),
+                )
+            ]
+
+    def median_price(self, sku: str, since: float, min_count: int = 5) -> float | None:
+        """Median settled price of one SKU over all shops; None under ``min_count``."""
+        with closing(sqlite3.connect(self.path, timeout=2.0)) as db:
+            prices = [
+                int(a)
+                for (a,) in db.execute(
+                    """SELECT amount FROM rows WHERE kind='settle' AND sku = ?
+                    AND ts >= ? AND amount > 0""",
+                    (sku, since),
+                )
+            ]
+        return statistics.median(prices) if len(prices) >= min_count else None
+
+    def shop_breaks(
+        self, since: float, goods: Collection[str]
+    ) -> dict[str, tuple[int, int]]:
+        """Per shop URL: (broken, observed) goods sales since ``since``.
+
+        A broken row names only the buyer and the SKU, so it is matched to that
+        buyer's latest settlement of the SKU at most six hours before. A sale is
+        observed once its six hours are over, or as soon as it breaks.
+        """
+        now = time.time()
+        with closing(sqlite3.connect(self.path, timeout=2.0)) as db:
+            settled = db.execute(
+                """SELECT buyer, sku, shop, ts FROM rows
+                WHERE kind='settle' AND ts >= ? ORDER BY ts""",
+                (since - BREAK_WINDOW,),
+            ).fetchall()
+            broken = db.execute(
+                "SELECT buyer, sku, ts FROM rows WHERE kind='broken' AND ts >= ?",
+                (since,),
+            ).fetchall()
+        sales: dict[tuple[str, str], list[tuple[float, str]]] = {}
+        for buyer, sku, shop, ts in settled:
+            if str(sku) in goods and shop:
+                sales.setdefault((str(buyer), str(sku)), []).append(
+                    (float(ts), str(shop).rstrip("/"))
+                )
+        hit: set[tuple[str, str, float]] = set()
+        counts: dict[str, tuple[int, int]] = {}
+        for buyer, sku, ts in broken:
+            match = [
+                (t, shop)
+                for t, shop in sales.get((str(buyer), str(sku)), [])
+                if 0 <= float(ts) - t <= BREAK_WINDOW
+            ]
+            if not match:
+                continue
+            t, shop = match[-1]
+            if (str(buyer), str(sku), t) in hit:
+                continue
+            hit.add((str(buyer), str(sku), t))
+            b, o = counts.get(shop, (0, 0))
+            counts[shop] = (b + 1, o + 1)
+        for (buyer, sku), rows in sales.items():
+            for t, shop in rows:
+                if t < since or (buyer, sku, t) in hit or now - t < BREAK_WINDOW:
+                    continue
+                b, o = counts.get(shop, (0, 0))
+                counts[shop] = (b, o + 1)
+        return counts
+
+    def shop_warranties(self, since: float) -> dict[str, tuple[int, int]]:
+        """Per shop URL: (goods settled with warranty_hours > 0, goods settled)."""
+        out: dict[str, tuple[int, int]] = {}
+        with closing(sqlite3.connect(self.path, timeout=2.0)) as db:
+            for shop, raw in db.execute(
+                "SELECT shop, data FROM rows WHERE kind='settle' AND ts >= ?",
+                (since,),
+            ):
+                try:
+                    data = json.loads(raw or "{}")
+                except ValueError:
+                    continue
+                if not isinstance(data, dict) or data.get("expires_at"):
+                    continue  # food carries no warranty
+                key = str(shop).rstrip("/")
+                hours = data.get("warranty_hours")
+                covered, n = out.get(key, (0, 0))
+                out[key] = (
+                    covered + int(isinstance(hours, (int, float)) and hours > 0),
+                    n + 1,
+                )
+        return out
+
+    def break_rates(self, since: float) -> dict[str, tuple[int, int]]:
+        """Per grade: (broken, settled goods observed 6 h or older) since ``since``.
+
+        Each break counts once, against the unit that broke: the settle with the
+        same ``unit`` id, else that buyer's latest unmatched settle of the SKU in
+        the six hours before. Matching on (buyer, SKU) alone marked every repeat
+        purchase broken and reported grade A at 42% (one unit per unit: 3.1%).
+        Food is left out: it expires, it does not break.
+        """
+        now = time.time()
+        with closing(sqlite3.connect(self.path, timeout=2.0)) as db:
+            settled = db.execute(
+                """SELECT seq, buyer, sku, grade, ts, data FROM rows
+                WHERE kind='settle' AND ts >= ? AND ts <= ? ORDER BY ts""",
+                (since, now - BREAK_WINDOW),
+            ).fetchall()
+            broken = db.execute(
+                "SELECT buyer, sku, ts, data FROM rows WHERE kind='broken' AND ts >= ?",
+                (since,),
+            ).fetchall()
+        grade_of: dict[int, str] = {}
+        by_unit: dict[str, int] = {}
+        by_pair: dict[tuple[str, str], list[tuple[float, int]]] = {}
+        for seq, buyer, sku, grade, ts, raw in settled:
+            data = _data(raw)
+            if data.get("expires_at"):
+                continue
+            grade_of[int(seq)] = str(grade or "?")
+            unit = str(data.get("unit") or "")
+            if unit:
+                by_unit[unit] = int(seq)
+            by_pair.setdefault((str(buyer), str(sku)), []).append((float(ts), int(seq)))
+        hit: set[int] = set()
+        for buyer, sku, ts, raw in broken:
+            seq = by_unit.get(str(_data(raw).get("unit") or ""))
+            if seq is None:
+                earlier = [
+                    s
+                    for t, s in by_pair.get((str(buyer), str(sku)), [])
+                    if 0 <= float(ts) - t <= BREAK_WINDOW and s not in hit
+                ]
+                seq = earlier[-1] if earlier else None
+            if seq is not None:
+                hit.add(seq)
+        rates: dict[str, tuple[int, int]] = {}
+        for seq, grade in grade_of.items():
+            b, t = rates.get(grade, (0, 0))
+            rates[grade] = (b + int(seq in hit), t + 1)
+        return rates
+
+    def summary(
+        self,
+        catalog: Mapping[str, CatalogItem],
+        *,
+        hours: float,
+        our_shop: str = "",
+        our_buyer: str = "",
+    ) -> dict[str, object]:
+        """Compact market picture for the policy loop and the forum."""
+        since = time.time() - hours * 3600
+        rows = self.settles(since)
+        by_category: dict[str, list[float]] = {}
+        by_sku: dict[str, int] = {}
+        ratios: list[float] = []
+        our_shop_n = our_buyer_n = 0
+        dishonest = 0
+        for _, buyer, shop, sku, amount, grade, claim in rows:
+            item = catalog.get(sku)
+            category = item.category if item is not None else "?"
+            share = (
+                amount / item.list_price
+                if item is not None and item.list_price
+                else 0.0
+            )
+            by_category.setdefault(category, []).append(share)
+            by_sku[sku] = by_sku.get(sku, 0) + 1
+            if share:
+                ratios.append(share)
+            if our_shop and shop.rstrip("/") == our_shop.rstrip("/"):
+                our_shop_n += 1
+            if our_buyer and buyer == our_buyer:
+                our_buyer_n += 1
+            if claim and grade and claim != grade:
+                dishonest += 1
+        top_categories = sorted(
+            (
+                (len(v), statistics.median(v) if v else 0.0, k)
+                for k, v in by_category.items()
+            ),
+            reverse=True,
+        )[:12]
+        top_skus = sorted(by_sku.items(), key=lambda kv: -kv[1])[:20]
+        return {
+            "hours": hours,
+            "settles": len(rows),
+            "median_price_to_list": round(statistics.median(ratios), 3)
+            if ratios
+            else None,
+            "top_categories": [
+                {"category": k, "settles": n, "median_price_to_list": round(m, 3)}
+                for n, m, k in top_categories
+            ],
+            "top_skus": [{"sku": s, "settles": n} for s, n in top_skus],
+            "break_rates": {
+                g: {"broken": b, "observed": t}
+                for g, (b, t) in self.break_rates(
+                    since - BREAK_WINDOW - MATURE_COHORT_HOURS * 3600
+                ).items()
+            },
+            "dishonest_claims": dishonest,
+            "our_shop_settles": our_shop_n,
+            "our_buyer_settles": our_buyer_n,
+        }
+
+    def demand_counts(
+        self,
+        catalog: Mapping[str, CatalogItem],
+        hours: float,
+    ) -> tuple[dict[str, int], dict[str, int]]:
+        """(settles per category, settles per SKU) for the restock planner."""
+        since = time.time() - hours * 3600
+        by_category: dict[str, int] = {}
+        by_sku: dict[str, int] = {}
+        for _, _b, _s, sku, _a, _g, _c in self.settles(since):
+            item = catalog.get(sku)
+            if item is not None:
+                by_category[item.category] = by_category.get(item.category, 0) + 1
+            by_sku[sku] = by_sku.get(sku, 0) + 1
+        return by_category, by_sku
+
+
+def pull(
+    db: LedgerDB, market: str, client: httpx.Client, *, max_pages: int = 20
+) -> int:
+    """Fetch ledger rows after the stored cursor; return rows added."""
+    added = 0
+    after = db.cursor
+    for _ in range(max_pages):
+        reply = client.get(f"{market.rstrip('/')}/api/ledger", params={"after": after})
+        if reply.status_code != 200:  # noqa: PLR2004 - HTTP OK
+            break
+        rows = reply.json()
+        if not isinstance(rows, list) or not rows:
+            break
+        added += db.ingest(r for r in rows if isinstance(r, dict))
+        last = rows[-1]
+        after = int(str(last.get("seq", after))) if isinstance(last, dict) else after
+        if len(rows) < PAGE:
+            break
+    return added
