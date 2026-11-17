@@ -41,9 +41,9 @@ def extract_json(text):
 def _claude(prompt):
     with tempfile.TemporaryDirectory() as empty:
         try:
-            return subprocess.run(shlex.split(CMD), input=prompt, capture_output=True, text=True,
-                                  cwd=empty, timeout=TIMEOUT).stdout.strip()
-        except subprocess.TimeoutExpired:
+            return subprocess.run(shlex.split(CMD), input=prompt, capture_output=True, text=True, cwd=empty,
+                                  timeout=TIMEOUT, env={**os.environ, "DISABLE_AUTOUPDATER": "1"}).stdout.strip()
+        except (subprocess.TimeoutExpired, OSError):   # OSError: the binary was being replaced by an update
             return ""
 
 
