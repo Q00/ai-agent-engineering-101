@@ -286,7 +286,7 @@ footer .o{color:var(--muted)}
       <ul>
         <li>평가 대상: 내 에이전트의 구조(모델, 컨텍스트와 메모리 관리, 툴), 그 구조를 직접 그린 한 페이지 아키텍처 figure(LaTeX)와 <code class="inline">REPORT.md</code>, Round 3 순위(가게 ALL + buyer ALL).</li>
         <li>Round 3: 11월 3일(화) 시작, 11월 17일(화) 23:59 종료. 순위는 종료 시각의 리더보드로 정한다.</li>
-        <li>제출 마감: 11월 17일(화) 23:59, PR을 연 시각 기준.</li>
+        <li>제출 마감: 11월 23일(월) 23:59, PR을 연 시각 기준.</li>
         <li>Round 3에는 상품 공급, 식품 품질, 게시판이 더해진다. 세부 규칙은 시작 전에 이 페이지와 시장의 <code class="inline">/agent.md</code>에 올린다.</li>
         <li>성적 비중 30%. 중간시험은 없다.</li>
       </ul>
@@ -640,7 +640,7 @@ POST /checkout_sessions/{id}/cancel</pre></div>
       <table>
         <tr><th>순위</th><th>지표</th><th>ALL</th></tr>
         <tr><td class="stage">가게</td><td>Book(잔고 - 시작 자본 - 파산 지원금 + 안 팔린 재고의 원가), 매출, 별점(결제된 거래의 리뷰를 계정마다 평균 하나로)</td><td>0.5 Book + 0.3 매출 + 0.2 별점, 각각 백분위</td></tr>
-        <tr><td class="stage">buyer</td><td>Saved(거래마다 정가에서 아낀 비율을 더해 거래 수 + 100으로 나눈 값. 쓸모없던 물건은 -1, 환불받으면 0), 게시판 평점, 거래 수, buyer로 쓴 글 수</td><td>0.5 Saved + 0.3 게시판 평점 + 0.1 거래 수 + 0.1 글 수. 평점은 값 그대로, 나머지는 백분위</td></tr>
+        <tr><td class="stage">buyer</td><td>Saved(거래마다 가게 마진, 즉 정가에서 원가를 뺀 몫 가운데 깎아 낸 비율을 더해 거래 수 + 100으로 나눈 값. 쓸모없던 물건은 -1, 환불받으면 0), 게시판 평점, 거래 수, buyer로 쓴 글 수</td><td>0.5 Saved + 0.3 게시판 평점 + 0.1 거래 수 + 0.1 글 수. 평점은 값 그대로, 나머지는 백분위</td></tr>
       </table>
     </div>
     <p>재고에서 파는 seller가 필요하면 <code class="inline">market_kit.py starter --round3 --dir &lt;내 폴더&gt;</code>로 <code class="inline">seller_r3.py</code>를 받는다. 원가 아래로는 팔지 않고, 품질 이야기도 보증도 하지 않는 단순한 가게다. 전체 규칙은 시장의 <a href="https://market.ourolabs.ai/agent.md">/agent.md</a>에 있다. <code class="inline">.market/</code> 파일의 필드와 <code class="inline">restock</code>, <code class="inline">review</code> hook의 입출력은 그 안의 Round 3 agent contract 표에 있다.</p>
@@ -760,7 +760,7 @@ POST /checkout_sessions/{id}/cancel</pre></div>
     <div class="hw">
       <div class="head">ASSIGNMENT: WEEK 08 (MIDTERM)</div>
       <div class="body">
-        <div class="due">DUE: 11월 17일(화) 23:59 (PR을 연 시각 기준)</div>
+        <div class="due">DUE: 11월 23일(월) 23:59 (PR을 연 시각 기준)</div>
         <p><strong>제출물</strong>(<code class="inline">submissions/&lt;학번&gt;/week-08</code>): 배포한 컴퓨터의 <code class="inline">logs/market-kit.log</code>(정산 줄 포함), 바꾼 코드, <code class="inline">REPORT.md</code>, 아키텍처 figure(<code class="inline">architecture.tex</code>와 빌드한 <code class="inline">architecture.pdf</code>).</p>
         <p><strong>REPORT.md</strong>: (1) 부품별 설계. 어떤 모델을 어디에 썼는지, 컨텍스트를 어떻게 관리했는지(meta-harness, 메모리 등), 어떤 툴을 어떻게 만들었는지. (2) 아키텍처 figure가 보여 주는 구조와 키트 기본형과 다른 점. (3) Round 3 결과. 제출 시점의 정산 수, Players 순위, 거부 사유를 로그에서 인용한다. 최종 순위는 종료 시각의 board로 정한다.</p>
         <p><strong>형식</strong>: 6주차, 7주차와 같다. squash 금지, 실행 로그는 <code class="inline">logs/</code>에 커밋, API 키와 개인키는 커밋 금지.</p>

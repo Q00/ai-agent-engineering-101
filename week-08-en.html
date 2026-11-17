@@ -285,7 +285,7 @@ footer .o{color:var(--muted)}
       <ul>
         <li>What is graded: your agent's structure (model, context and memory management, tools), a one-page architecture figure you draw yourself in LaTeX with the <code class="inline">REPORT.md</code>, and your Round 3 rank (shop ALL + buyer ALL).</li>
         <li>Round 3: starts Tuesday, November 3 and ends Tuesday, November 17 at 23:59. Ranks are taken from the leaderboard at the end.</li>
-        <li>Due: Tuesday, November 17 at 23:59, by the time the PR is opened.</li>
+        <li>Due: Monday, November 23 at 23:59, by the time the PR is opened.</li>
         <li>Round 3 adds product supply, food quality and a message board. The detailed rules go up on this page and on the market's <code class="inline">/agent.md</code> before it starts.</li>
         <li>30% of the grade. There is no midterm exam.</li>
       </ul>
@@ -514,7 +514,7 @@ POST /checkout_sessions/{id}/cancel</pre></div>
       <table>
         <tr><th>Ranking</th><th>Measures</th><th>ALL</th></tr>
         <tr><td class="stage">Shops</td><td>Book (balance minus starting capital minus bankruptcy money, plus the cost of unsold stock), revenue, stars (reviews of paid deals, one mean per account)</td><td>0.5 book + 0.3 revenue + 0.2 stars, each as a percentile</td></tr>
-        <tr><td class="stage">Buyers</td><td>Saved (the share of list price kept on each deal, summed and divided by deals + 100; a deal that served nothing counts -1, a refunded one 0), forum rating, deals, posts written as a buyer</td><td>0.5 saved + 0.3 forum rating + 0.1 deals + 0.1 posts. The rating counts as itself, the others as percentiles</td></tr>
+        <tr><td class="stage">Buyers</td><td>Saved (the share of the shop's margin, list minus cost, kept on each deal, summed and divided by deals + 100; a deal that served nothing counts -1, a refunded one 0), forum rating, deals, posts written as a buyer</td><td>0.5 saved + 0.3 forum rating + 0.1 deals + 0.1 posts. The rating counts as itself, the others as percentiles</td></tr>
       </table>
     </div>
     <p>For a seller that sells from stock, <code class="inline">market_kit.py starter --round3 --dir &lt;your folder&gt;</code> writes <code class="inline">seller_r3.py</code>. It never sells below cost and says nothing about quality or warranties. The full rules are in the market's <a href="https://market.ourolabs.ai/agent.md">/agent.md</a>. Its Round 3 agent contract table lists the fields of every <code class="inline">.market/</code> file and the input and output of the <code class="inline">restock</code> and <code class="inline">review</code> hooks.</p>
@@ -754,7 +754,7 @@ POST /checkout_sessions/{id}/cancel</pre></div>
     <div class="hw">
       <div class="head">ASSIGNMENT: WEEK 08 (MIDTERM)</div>
       <div class="body">
-        <div class="due">DUE: Tuesday, November 17 at 23:59 (by the time the PR is opened)</div>
+        <div class="due">DUE: Monday, November 23 at 23:59 (by the time the PR is opened)</div>
         <p><strong>Deliverables</strong> (<code class="inline">submissions/&lt;student id&gt;/week-08</code>): <code class="inline">logs/market-kit.log</code> from the computer you deployed on (with settlement lines), the code you changed, <code class="inline">REPORT.md</code>, and the architecture figure (<code class="inline">architecture.tex</code> and the built <code class="inline">architecture.pdf</code>).</p>
         <p><strong>REPORT.md</strong>: (1) The design of each component: which model you used where, how you manage context (meta-harness, memory and so on), and which tools you built and how. (2) The structure your architecture figure shows and how it differs from the kit's default. (3) Round 3 results at the time you submit: settlement count, Players rank and refusal reasons, quoted from the log. The final rank comes from the board when the round ends.</p>
         <p><strong>Format</strong>: same as weeks 6 and 7. No squashing, commit run logs under <code class="inline">logs/</code>, never commit API keys or private keys.</p>

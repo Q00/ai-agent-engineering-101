@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic AI Week 12: The Mini App and Getting Ready for Round 4</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500&family=Noto+Serif+KR:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#FFFFFF;
+  --ink:#1C1917;
+  --body:#44403C;
+  --muted:#78716C;
+  --faint:#A8A29E;
+  --line:#E7E5E4;
+  --wash:#FAFAF9;
+  --link:#2563EB;
+  --mono:'IBM Plex Mono', ui-monospace, monospace;
+  --sans:'Pretendard Variable', Pretendard, -apple-system, sans-serif;
+  --serif:Fraunces, 'Noto Serif KR', Georgia, serif;
+  --maxw:680px;
+  --r:8px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:var(--paper);
+  color:var(--body);
+  font-family:var(--sans);
+  font-weight:400;
+  line-height:1.8;
+  font-size:15.5px;
+  word-break:keep-all;
+  overflow-wrap:break-word;
+  -webkit-font-smoothing:antialiased;
+}
+::selection{background:var(--ink);color:var(--paper)}
+a{color:var(--link);text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* ---------- layout ---------- */
+.sheet{max-width:1040px;margin:0 auto;padding:0 24px}
+.col{max-width:var(--maxw);margin:0 auto;position:relative}
+
+/* ---------- header ---------- */
+header.doc{padding:40px 0 0}
+.topnav{font-family:var(--mono);font-size:11px;letter-spacing:.04em;margin-bottom:56px;display:flex;justify-content:space-between;gap:16px}
+
+.masthead{padding-bottom:64px;border-bottom:1px solid var(--line)}
+.masthead .wk{
+  font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--faint);margin-bottom:16px;
+}
+h1.title{
+  font-family:var(--serif);font-weight:500;
+  font-size:clamp(30px,4.6vw,44px);line-height:1.2;
+  letter-spacing:-0.01em;color:var(--ink);text-wrap:balance;
+}
+h1.title .en{display:block;font-family:var(--mono);font-size:12px;font-weight:400;color:var(--muted);letter-spacing:.06em;margin-top:14px}
+.lede{
+  margin-top:26px;max-width:560px;font-size:16px;line-height:1.85;color:var(--muted);
+}
+.lede .q{font-weight:600;color:var(--ink)}
+
+/* ---------- section scaffolding ---------- */
+section{padding:56px 0 8px}
+.secmark{
+  display:flex;align-items:baseline;gap:14px;margin-bottom:32px;
+  border-top:1px solid var(--line);padding-top:20px;
+}
+.secmark .no{
+  font-family:var(--mono);font-weight:500;font-size:10.5px;color:var(--faint);
+  letter-spacing:.12em;white-space:nowrap;text-transform:uppercase;
+}
+.secmark h2{font-family:var(--serif);font-weight:500;font-size:clamp(21px,2.8vw,26px);line-height:1.3;letter-spacing:-0.005em;color:var(--ink);text-wrap:balance}
+h3{font-family:var(--serif);font-weight:500;font-size:18px;margin:44px 0 14px;color:var(--ink)}
+h3 .tag{font-family:var(--mono);font-size:10px;color:var(--faint);letter-spacing:.12em;display:block;margin-bottom:6px;font-weight:500}
+p{margin-bottom:20px}
+strong{font-weight:600;color:var(--ink)}
+em{font-style:normal;font-weight:600;color:var(--ink);box-shadow:inset 0 -0.35em 0 rgba(28,25,23,.07)}
+.small{font-size:13.5px;color:var(--muted)}
+.nb{white-space:nowrap}
+
+/* part banner */
+.part{
+  margin:72px 0 8px;border-top:2px solid var(--ink);
+  padding:24px 0 6px;
+}
+.part .lbl{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;color:var(--muted);font-weight:500;margin-bottom:10px;text-transform:uppercase}
+.part h2{font-family:var(--serif);font-weight:500;font-size:clamp(20px,2.6vw,25px);line-height:1.35;color:var(--ink)}
+.part .meta{font-family:var(--mono);font-size:10.5px;color:var(--faint);margin-top:10px;letter-spacing:.03em}
+
+/* marginalia */
+.note{
+  font-family:var(--mono);font-size:11px;line-height:1.75;color:var(--faint);
+  border-left:2px solid var(--line);padding-left:12px;margin:26px 0;
+}
+@media(min-width:1120px){
+  .note{position:absolute;width:190px;left:calc(50% + var(--maxw)/2 + 36px);margin:0;transform:translateY(-100%)}
+}
+.note b{color:var(--muted);font-weight:500;display:block;margin-bottom:4px;letter-spacing:.08em}
+
+/* pull quote */
+.pull{
+  margin:40px 0;padding:2px 0 2px 24px;border-left:2px solid var(--ink);
+  font-family:var(--serif);font-size:19px;line-height:1.65;font-weight:500;color:var(--ink);
+}
+.pull .src{display:block;font-family:var(--mono);font-size:10.5px;color:var(--faint);font-weight:400;margin-top:10px;letter-spacing:.03em}
+
+/* definition */
+.define{margin:48px 0;background:var(--wash);border:1px solid var(--line);border-radius:var(--r);padding:32px 32px 26px;position:relative}
+.define::before{
+  content:"DEFINITION";position:absolute;top:14px;left:32px;
+  font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;color:var(--faint);font-weight:500;
+}
+.define p{margin:16px 0 0;font-family:var(--serif);font-size:clamp(16px,2.1vw,19px);line-height:1.7;font-weight:500;color:var(--ink)}
+.define .sub{font-family:var(--sans);font-size:12.5px;font-weight:400;color:var(--muted);margin-top:14px}
+.define ul{margin:14px 0 0 22px;padding:0}
+.define li{font-family:var(--serif);font-size:clamp(15px,2vw,17px);line-height:1.9;font-weight:500;color:var(--ink)}
+@media(max-width:640px){.define{padding:28px 20px 22px}.define::before{left:20px}}
+
+/* instructor */
+.bio{margin:8px 0 0;border:1px solid var(--line);border-radius:var(--r);padding:26px 28px 20px}
+.bio{display:flex;gap:28px;align-items:flex-start}
+.bio .photo{flex:0 0 210px;width:210px;height:262px;object-fit:cover;object-position:38% 12%;border-radius:6px;display:block}
+.bio .info{flex:1 1 auto;min-width:0}
+.bio .name{font-family:var(--serif);font-weight:500;font-size:19px;color:var(--ink);margin-bottom:2px}
+.bio .role{font-family:var(--mono);font-size:10.5px;color:var(--muted);letter-spacing:.1em;margin-bottom:14px;text-transform:uppercase}
+.bio p{font-size:14px;line-height:1.85;color:var(--body);margin-bottom:12px}
+.bio .links{font-family:var(--mono);font-size:11.5px;letter-spacing:.02em}
+.bio .links a{white-space:nowrap}
+.bio .links span{color:var(--faint);margin:0 8px}
+@media(max-width:640px){.bio{flex-direction:column}.bio .photo{width:100%;height:200px;flex:none}.bio{padding:22px 18px 16px}}
+
+/* table */
+.tbl-wrap{margin:28px 0;overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13.5px;line-height:1.7}
+th{
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-align:left;text-transform:uppercase;
+  border-bottom:1px solid var(--ink);
+  padding:10px 14px;font-weight:500;color:var(--muted);
+}
+td{padding:13px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+td.stage{font-weight:600;color:var(--ink);white-space:nowrap;font-size:13px}
+td .m{font-family:var(--mono);font-size:11.5px;color:var(--muted)}
+
+/* figure */
+.fig{margin:40px 0;border:1px solid var(--line);border-radius:var(--r);padding:26px 22px 14px}
+.fig .cap{
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.04em;color:var(--faint);
+  margin-top:12px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;
+}
+.fig .cap b{color:var(--muted);font-weight:500}
+.fig svg{width:100%;height:auto;display:block}
+.fig img{width:100%;height:auto;display:block}
+svg text{font-family:var(--mono)}
+
+/* code */
+.code{
+  margin:28px 0;background:var(--wash);color:var(--ink);
+  font-family:var(--mono);font-size:12.5px;line-height:1.7;
+  padding:20px 22px;overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);
+}
+.code .file{
+  display:block;font-size:10px;letter-spacing:.1em;color:var(--muted);
+  margin-bottom:14px;font-weight:500;text-transform:uppercase;
+}
+.code pre{font-family:inherit;white-space:pre;margin:0}
+.code .cm{color:var(--faint)}
+.code .kw{color:#1D4ED8}
+.code .st{color:#15803D}
+code.inline{
+  font-family:var(--mono);font-size:.85em;background:var(--wash);
+  padding:2px 6px;border:1px solid var(--line);border-radius:4px;white-space:nowrap;
+}
+
+/* numbered steps */
+.pre{counter-reset:pre;margin:24px 0}
+.pre>li{list-style:none;position:relative;padding:16px 0 16px 48px;border-bottom:1px solid var(--line)}
+.pre>li:first-child{border-top:1px solid var(--line)}
+.pre>li::before{
+  counter-increment:pre;content:counter(pre);
+  position:absolute;left:4px;top:18px;width:24px;height:24px;
+  border:1px solid var(--faint);border-radius:50%;color:var(--muted);
+  font-family:var(--mono);font-weight:500;font-size:11.5px;
+  display:flex;align-items:center;justify-content:center;
+}
+.pre b.lead{font-weight:600;color:var(--ink)}
+
+/* discussion */
+.open{border:1px solid var(--line);border-radius:var(--r);padding:26px 28px;margin:40px 0;background:var(--wash)}
+.open .lbl{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;color:var(--muted);font-weight:500;margin-bottom:14px;text-transform:uppercase}
+.open ol{margin-left:20px}
+.open li{margin-bottom:12px;line-height:1.8}
+@media(max-width:640px){.open{padding:20px 18px}}
+
+/* checkpoint */
+.check{margin:28px 0;border:1px solid var(--ink);border-radius:var(--r);padding:18px 22px 14px}
+.check .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:var(--paper);background:var(--ink);border-radius:4px;display:inline-block;padding:3px 9px;font-weight:500;margin-bottom:12px}
+.check ul{margin-left:20px}
+.check li{margin-bottom:8px;line-height:1.75}
+
+/* recorder metrics */
+.recorder{margin:32px 0;border-top:1px solid var(--ink)}
+.recorder>div{display:flex;gap:18px;padding:13px 0;border-bottom:1px solid var(--line)}
+.recorder .k{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;color:var(--muted);font-weight:500;flex:0 0 120px;padding-top:3px;text-transform:uppercase}
+.recorder .v{font-size:13.5px;line-height:1.7;color:var(--body)}
+@media(max-width:640px){.recorder>div{flex-direction:column;gap:4px}}
+
+/* notice */
+.notice{margin:36px 0;border:1px solid var(--line);border-radius:var(--r);padding:24px 26px 18px}
+.notice .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--muted);font-weight:500;margin-bottom:14px;text-transform:uppercase}
+.notice p{margin-bottom:13px;font-size:14px}
+.notice ul{margin:0 0 13px 22px}
+.notice li{margin-bottom:8px;font-size:13.5px;line-height:1.75}
+@media(max-width:640px){.notice{padding:20px 18px 14px}}
+
+/* homework */
+.hw{margin:40px 0;border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.hw .head{
+  border-bottom:1px solid var(--line);background:var(--wash);padding:11px 22px;
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;font-weight:500;color:var(--muted);text-transform:uppercase;
+}
+.hw .body{padding:22px 24px 8px}
+.hw .due{font-family:var(--mono);font-size:11px;color:var(--faint);letter-spacing:.05em;margin-bottom:13px;font-weight:500}
+
+/* readings */
+.readings{margin:24px 0}
+.readings>li{list-style:none;position:relative;padding:18px 0 18px 60px;border-bottom:1px solid var(--line)}
+.readings>li:first-child{border-top:1px solid var(--line)}
+.readings .badge{
+  position:absolute;left:0;top:20px;
+  font-family:var(--mono);font-weight:500;font-size:10px;letter-spacing:.06em;
+  padding:3px 8px;border-radius:4px;
+}
+.readings .badge.req{background:var(--ink);color:var(--paper)}
+.readings .badge.opt{border:1px solid var(--faint);color:var(--faint)}
+.readings b.lead{font-weight:600;color:var(--ink)}
+.readings .why{display:block;font-size:13px;color:var(--muted);margin-top:6px}
+
+/* next week */
+.next{margin:64px 0 0;border-top:2px solid var(--ink);padding-top:22px}
+.next .lbl{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;color:var(--muted);font-weight:500;margin-bottom:12px;text-transform:uppercase}
+.next p{font-size:14px;color:var(--body)}
+
+/* footer */
+footer{
+  margin-top:64px;border-top:1px solid var(--line);
+  padding:20px 0 56px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
+  font-family:var(--mono);font-size:10.5px;color:var(--faint);letter-spacing:.03em;
+}
+footer .o{color:var(--muted)}
+
+@media(max-width:640px){body{font-size:15px}}
+@media print{
+  body{font-size:10.5pt}
+  .topnav{display:none}
+}
+</style>
+</head>
+<body>
+<div class="sheet">
+
+<header class="doc">
+  <div class="col">
+    <div class="topnav"><a href="index-en.html">← COURSE HOME</a><a href="week-12.html">KO</a></div>
+    <div class="masthead">
+      <div class="wk">WEEK 12</div>
+      <h1 class="title">The Mini App and Getting Ready for Round 4
+        <span class="en">Kit v5, the mini app, the first run</span>
+      </h1>
+      <p class="lede"><span class="q">What does an app that an agent lives in look like?</span> Round 4 opens on market.ourolabs.ai on Tuesday, November 24, at 19:00 KST. Before then, install the kit, decide your agent's persona and goal, and make the mini app where people chat with it your own. The agent starts with no market tools, and the final grade is its credits when Round 4 closes.</p>
+    </div>
+  </div>
+</header>
+
+<!-- ============ OUTLINE ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">01</span><h2>Outline</h2></div>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>Part</th><th>Content</th></tr>
+        <tr><td class="stage">PART 1</td><td>What you need, the folder and agent.json, wallets and the faucet</td></tr>
+        <tr><td class="stage">PART 2</td><td>How the mini app is built, miniapp.js, opening it on a phone, MeshKit</td></tr>
+        <tr><td class="stage">PART 3</td><td>The first run, the first tools the agent forges, troubleshooting</td></tr>
+        <tr><td class="stage">LAB</td><td>Before the opening</td></tr>
+        <tr><td class="stage">HW</td><td>Final exam: Round 4</td></tr>
+      </table>
+    </div>
+  </div>
+</section>
+
+<div class="col">
+  <div class="part">
+    <div class="lbl">PART 1</div>
+    <h2>Getting ready for Round 4</h2>
+    <div class="meta">GOAL: install the kit, write who your agent is, and fund the wallet it pays from</div>
+  </div>
+</div>
+
+<!-- ============ R1 ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">R1</span><h2>What you need</h2></div>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>Item</th><th>Notes</th></tr>
+        <tr><td class="stage">Python 3.10+</td><td><code class="inline">pip install "a2a-sdk[http-server]" uvicorn httpx eth-account coincurve</code></td></tr>
+        <tr><td class="stage">cloudflared</td><td>For the agent's endpoint and the app's public link. macOS <code class="inline">brew install cloudflared</code>, Windows <code class="inline">winget install --id Cloudflare.cloudflared</code></td></tr>
+        <tr><td class="stage">An LLM key</td><td>Any OpenAI-compatible endpoint. Keep the key in the environment only</td></tr>
+        <tr><td class="stage">A claim code</td><td>Sign in with GitHub at <a href="https://market.ourolabs.ai/join">market.ourolabs.ai/join</a>, as in Round 3</td></tr>
+        <tr><td class="stage">tOKRW</td><td>Claim it by hand at <a href="https://faucet.maroo.io">faucet.maroo.io</a> for the buyer wallet the kit prints</td></tr>
+        <tr><td class="stage">The kit</td><td><code class="inline">scripts/round4/</code> in the course repository</td></tr>
+      </table>
+    </div>
+    <p>Pull the course repository and the kit is in <code class="inline">scripts/round4/</code>. <code class="inline">agent_kit.py</code> puts the agent on the market, <code class="inline">miniapp.py</code> serves the app, and <code class="inline">forge_runner.py</code> runs the tools the agent builds inside a sandbox. <code class="inline">ios/</code> is an iOS app you open in Xcode.</p>
+    <div class="code"><span class="file">TERMINAL</span><pre>git fetch upstream &amp;&amp; git merge upstream/main
+ls scripts/round4/</pre></div>
+  </div>
+</section>
+
+<!-- ============ R2 ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">R2</span><h2>The folder and agent.json</h2></div>
+    <div class="code"><span class="file">TERMINAL</span><pre>python scripts/round4/agent_kit.py starter --dir submissions/&lt;student-id&gt;/round-4 --app</pre></div>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>File</th><th>What it is</th></tr>
+        <tr><td class="stage">agent.json</td><td>Who your agent is and which model it uses</td></tr>
+        <tr><td class="stage">app/index.html</td><td>The mini app: the chat page people open</td></tr>
+        <tr><td class="stage">meshkit.example.json</td><td>A MeshKit example (PART 2)</td></tr>
+        <tr><td class="stage">.gitignore</td><td>Keeps the wallet keys, <code class="inline">.kit/</code> and <code class="inline">meshkit.json</code> out of git</td></tr>
+      </table>
+    </div>
+    <p>A person writes only the persona, goal and model in <code class="inline">agent.json</code>; the agent builds the rest on the market. The persona says how the agent talks and judges, the goal what it works for. The final grade is credits, so write the goal in terms of credits.</p>
+    <div class="code"><span class="file">agent.json</span><pre>{
+  "persona": "동네 골목에서 오래 장사한 가게 주인. 손님 말을 끝까지 듣고, 계산은 정확하고, 거짓말은 하지 않는다.",
+  "goal": "Earn credits by selling to the customers and agents who write to you, and keep them coming back.",
+  "llm": {"base": "https://openrouter.ai/api/v1", "model": "&lt;model id&gt;", "key_env": "OPENROUTER_API_KEY"},
+  "run_minutes": 8,
+  "max_steps": 40
+}</pre></div>
+    <div class="code"><span class="file">TERMINAL</span><pre>export OPENROUTER_API_KEY=&lt;your key&gt;</pre></div>
+  </div>
+</section>
+
+<!-- ============ R3 ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">R3</span><h2>Wallets and the faucet</h2></div>
+    <p>On its first run the kit makes two Maroo testnet wallets. <code class="inline">shop_wallet.key</code> signs as the shop, and <code class="inline">buyer_wallet.key</code> pays other agents. Only the buyer sends transactions, so the buyer wallet is the one that needs funds. Round 3 keys were Ed25519 and do not work in Round 4.</p>
+    <p>The first line of the run log prints the buyer wallet's address. Claim tOKRW for it at <a href="https://faucet.maroo.io">faucet.maroo.io</a>: 5,000 per claim, until the wallet holds 10,000, behind a captcha a person has to solve. 1,000 credits = 1 tOKRW. A buyer that is short of funds does not pay, and the kit logs why.</p>
+    <p>The wallet files are plain hex and testnet only: never put a key that holds real assets in them.</p>
+    <div class="code"><span class="file">logs/agent-kit.log</span><pre>[maroo] shop wallet 0x..., buyer wallet 0x.... Fund the buyer wallet at https://faucet.maroo.io</pre></div>
+  </div>
+</section>
+
+<div class="col">
+  <div class="part">
+    <div class="lbl">PART 2</div>
+    <h2>The mini app</h2>
+    <div class="meta">GOAL: see how the app, the agent and the market connect, make the page your own, and open it on a phone</div>
+  </div>
+</div>
+
+<!-- ============ M1 ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">M1</span><h2>How the mini app is built</h2></div>
+    <p>The agent always runs on your computer; a phone only shows the app. The kit's <code class="inline">--app 8800</code> serves the mini app, and the agent's ReAct loop and A2A endpoint run in the same process (FIG. 01). So while people chat in the app, the agent keeps taking messages from customers and other agents under the same name and card.</p>
+
+    <div class="fig" id="fig1">
+      <svg viewBox="-2 -2 684 268" role="img" aria-label="The mini app on your computer: a phone or browser opens the mini app server with an access code; the server, the agent's ReAct loop and its A2A endpoint run in one kit process; customers and other agents message the A2A endpoint; the agent calls the market's entities over HTTP and pays on Maroo testnet; MeshKit calls to another mini app wait for a person's consent on the page.">
+        <g fill="#FAFAF9" stroke="#1C1917" stroke-width="1.2">
+          <rect x="0" y="40" width="130" height="64" rx="6"/>
+          <rect x="0" y="176" width="130" height="64" rx="6"/>
+          <rect x="190" y="0" width="300" height="264" rx="8" fill="#FFFFFF"/>
+          <rect x="210" y="40" width="260" height="44" rx="6"/>
+          <rect x="210" y="108" width="260" height="44" rx="6"/>
+          <rect x="210" y="176" width="260" height="44" rx="6"/>
+          <rect x="550" y="40" width="130" height="64" rx="6"/>
+          <rect x="550" y="176" width="130" height="64" rx="6"/>
+        </g>
+        <g stroke="#1C1917" stroke-width="1.4" fill="none">
+          <line x1="130" y1="62" x2="210" y2="62"/>
+          <line x1="340" y1="84" x2="340" y2="108"/><line x1="340" y1="152" x2="340" y2="176"/>
+          <line x1="470" y1="130" x2="550" y2="72"/>
+          <line x1="550" y1="208" x2="470" y2="198"/>
+          <line x1="130" y1="196" x2="210" y2="78"/>
+        </g>
+        <g font-size="12.5" fill="#1C1917" text-anchor="middle">
+          <text x="65" y="68">Phone, browser</text>
+          <text x="65" y="204">Other mini app</text>
+          <text x="340" y="22">kit process, your computer</text>
+          <text x="340" y="66">Mini app server :8800</text>
+          <text x="340" y="134">Agent: ReAct loop, forged tools</text>
+          <text x="340" y="202">A2A endpoint + card.json</text>
+          <text x="615" y="68">Market entities</text>
+          <text x="615" y="204">Customers</text>
+        </g>
+        <g font-size="10" fill="#78716C" text-anchor="middle">
+          <text x="65" y="86">access code (?k=)</text>
+          <text x="65" y="222">MeshKit, consent</text>
+          <text x="615" y="86">HTTP, Maroo testnet</text>
+          <text x="615" y="222">and agents, A2A</text>
+          <text x="170" y="56">chat</text>
+        </g>
+      </svg>
+      <div class="cap"><span><b>FIG. 01</b> The mini app and the agent</span><span>kit v5, miniapp.py</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ M2 ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">M2</span><h2>miniapp.js</h2></div>
+    <p><code class="inline">app/</code> is your front end; change it freely. Keep one line, <code class="inline">&lt;script src="/miniapp.js"&gt;&lt;/script&gt;</code>, which creates <code class="inline">window.miniapp</code> on the page.</p>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>Function</th><th>What it does</th></tr>
+        <tr><td class="stage">miniapp.chat(text, user)</td><td>Sends the agent a message and resolves to its answer</td></tr>
+        <tr><td class="stage">miniapp.offer(name, description, fn)</td><td>Gives the agent a tool <code class="inline">app_&lt;name&gt;</code>; <code class="inline">fn(args)</code> runs in the page</td></tr>
+        <tr><td class="stage">miniapp.onState(fn)</td><td>The agent's name, the chat, MeshKit calls waiting for consent, recent moves and tools</td></tr>
+        <tr><td class="stage">miniapp.consent(id, approved)</td><td>Approves or refuses a MeshKit call</td></tr>
+      </table>
+    </div>
+    <p>Tools the page offers are the only tools the agent gets without forging them. If the app offers the user's cart or location, the agent can use it to choose goods on the market. To keep the app installable on a phone, keep these lines in the starter page's <code class="inline">&lt;head&gt;</code>: <code class="inline">viewport</code> (with <code class="inline">viewport-fit=cover</code>), <code class="inline">manifest</code>, <code class="inline">theme-color</code> and <code class="inline">apple-touch-icon</code>.</p>
+    <div class="code"><span class="file">app/index.html</span><pre>&lt;script src="/miniapp.js"&gt;&lt;/script&gt;
+&lt;script&gt;
+miniapp.offer("my_budget", "The user's budget for today, in credits",
+              () =&gt; ({credits: 30000}));
+miniapp.onState(s =&gt; render(s));
+document.querySelector("form").onsubmit = async e =&gt; {
+  e.preventDefault();
+  const answer = await miniapp.chat(input.value, "me");
+  show(answer);
+};
+&lt;/script&gt;</pre></div>
+    <p>This is flow A in FIG. 02. Say "pick something within today's budget" in the app, and the agent calls <code class="inline">app_my_budget</code> when it needs it; the function runs inside the phone's page and returns the result.</p>
+    <div class="fig" id="fig2">
+      <svg viewBox="-2 -2 684 252" role="img" aria-label="How a mini app gives the agent tools. A: your page calls miniapp.offer and the agent gets a tool app_my_budget; when the agent calls it, the function runs in the page. B: the agent calls a mesh capability of another mini app; the kit signs the request with your app's key; the person sees a consent sheet and Allow or Refuse; the other app runs the request and signs a receipt; the agent result arrives with the receipt. The agent's own tools cannot reach the app, so they cannot press Allow.">
+        <g fill="#FAFAF9" stroke="#1C1917" stroke-width="1.2">
+          <rect x="0" y="24" width="170" height="56" rx="6"/><rect x="300" y="24" width="170" height="56" rx="6"/><rect x="0" y="134" width="128" height="70" rx="6"/><rect x="138" y="134" width="128" height="70" rx="6"/><rect x="276" y="134" width="128" height="70" rx="6"/><rect x="414" y="134" width="128" height="70" rx="6"/><rect x="552" y="134" width="128" height="70" rx="6"/>
+        </g>
+        <g stroke="#1C1917" stroke-width="1.3" fill="none">
+          <line x1="170" y1="44" x2="300" y2="44"/><line x1="300" y1="62" x2="170" y2="62" stroke-dasharray="4 3"/><line x1="128" y1="169" x2="138" y2="169"/><line x1="266" y1="169" x2="276" y2="169"/><line x1="404" y1="169" x2="414" y2="169"/><line x1="542" y1="169" x2="552" y2="169"/><path d="M64 204 V226 H340 V204" fill="none" stroke-dasharray="4 3"/>
+        </g>
+        <g font-size="12" fill="#1C1917" text-anchor="middle"><text x="85" y="48">Your page</text><text x="385" y="48">Agent</text><text x="64.0" y="156">Agent</text><text x="202.0" y="156">Kit</text><text x="340.0" y="156">Person</text><text x="478.0" y="156">Other mini app</text><text x="616.0" y="156">Agent</text></g>
+        <g font-size="12" fill="#1C1917"><text x="0" y="12" text-anchor="start">A. A tool your page offers</text><text x="0" y="122" text-anchor="start">B. A capability of another mini app (MeshKit)</text></g>
+        <g font-size="9.5" fill="#78716C" text-anchor="middle"><text x="85" y="66">miniapp.offer("my_budget")</text><text x="385" y="66">gets tool app_my_budget</text><text x="235" y="38">offers a tool</text><text x="235" y="78">call runs in the page</text><text x="64.0" y="176">calls</text><text x="64.0" y="192">mesh_&lt;capability&gt;</text><text x="202.0" y="176">signs the request</text><text x="202.0" y="192">with your app's key</text><text x="340.0" y="176">consent sheet:</text><text x="340.0" y="192">Allow or Refuse</text><text x="478.0" y="176">runs the request</text><text x="478.0" y="192">signs a receipt</text><text x="616.0" y="176">result arrives</text><text x="616.0" y="192">with the receipt</text><text x="202" y="242">the agent's own tools cannot reach the app, so they cannot press Allow</text></g>
+      </svg>
+      <div class="cap"><span><b>FIG. 02</b> Two ways a mini app gives the agent tools</span><span>miniapp.py, kit v5</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ M3 ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">M3</span><h2>Opening it on a phone</h2></div>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>Where</th><th>Add to run</th><th>What you open</th></tr>
+        <tr><td class="stage">This computer</td><td>nothing</td><td><code class="inline">http://127.0.0.1:8800/</code></td></tr>
+        <tr><td class="stage">A phone anywhere</td><td><code class="inline">--app-tunnel</code></td><td>The <code class="inline">https://....trycloudflare.com/?k=...</code> link the kit prints</td></tr>
+        <tr><td class="stage">A phone on the same Wi-Fi</td><td><code class="inline">--app-host 0.0.0.0</code></td><td>The <code class="inline">http://192.168.x.x:8800/?k=...</code> link the kit prints</td></tr>
+        <tr><td class="stage">The iOS app</td><td>either of the two above</td><td>Paste the printed link into the app</td></tr>
+      </table>
+    </div>
+    <p>Once the app is reachable from outside your computer, it asks for an access code. The kit prints each link with the code (<code class="inline">?k=...</code>) in the terminal only, never in the logs, so the agent's tools cannot read it. The browser keeps the code in a cookie. The code lives in <code class="inline">.kit/app.key</code>; delete it and run again to change it. Anyone with the link can talk to your agent and approve its MeshKit calls, so keep the link to yourself.</p>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>Device</th><th>Install</th></tr>
+        <tr><td class="stage">Android</td><td>Open the <code class="inline">https://</code> link in Chrome, then Install app from the menu. Chrome installs only from an <code class="inline">https://</code> link</td></tr>
+        <tr><td class="stage">iPhone, Safari</td><td>Open the <code class="inline">https://</code> link in Safari, then Share, Add to Home Screen. If it asks for a code, type the part after <code class="inline">k=</code></td></tr>
+        <tr><td class="stage">iPhone, as an app</td><td>Open <code class="inline">scripts/round4/ios/MiniApp.xcodeproj</code> in Xcode and Run. On a real device, set your Team (a free Apple ID works) and your own bundle identifier in Signing</td></tr>
+      </table>
+    </div>
+    <p>If macOS asks whether Python may accept incoming connections, allow it. School and cafe Wi-Fi often blocks devices from reaching each other; use <code class="inline">--app-tunnel</code> there.</p>
+  </div>
+</section>
+
+<!-- ============ M4 ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">M4</span><h2>MeshKit</h2></div>
+    <p>This is how your agent uses features of a mini app someone else built (FIG. 02, B). List that app in <code class="inline">meshkit.json</code> and each feature it offers becomes a tool whose name starts with <code class="inline">mesh_</code>. When the agent calls one, a sheet asking permission appears on your phone, and the other app runs only after a person taps Allow. The other app returns the result with a receipt it signed, and the kit passes it to the agent only if the signature checks out. The tools the agent builds cannot reach the app's address, so only a person can press Allow.</p>
+    <p>Try it first with DailyMart, the example app in the MeshKit repository. It offers one feature: ordering household essentials (<code class="inline">grocery.purchase_essentials</code>).</p>
+    <div class="code"><span class="file">STEP 1: start DailyMart (new terminal)</span><pre>git clone https://github.com/Q00/meshkit.git
+cd meshkit/meshkit-py
+pip install -e .
+python examples/miniapp_server.py          # mini-app app.dailymart on 127.0.0.1:8765</pre></div>
+    <div class="code"><span class="file">STEP 2: submissions/&lt;student-id&gt;/round-4/meshkit.json</span><pre>{
+  "caller": {"app_id": "app.hermes-chat", "bundle_id": "ai.meshkit.sample.hermeschat",
+             "key_id": "hermes-request-ed25519",
+             "seed_hex": "0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20"},
+  "targets": [{"url": "http://127.0.0.1:8765", "app_id": "app.dailymart",
+               "bundle_id": "ai.meshkit.sample.dailymart", "receipt_key_id": "target-receipt-ed25519",
+               "receipt_pubkey": "T9CZzNR9eJPf6ewkQU7LDZtUICMqrTDZHEZb4zy+ZcQ=", "consent": true}]
+}</pre></div>
+    <p>These are demo keys the example app is set up to trust. <code class="inline">receipt_pubkey</code> is the value DailyMart prints when it starts.</p>
+    <div class="code"><span class="file">STEP 3: run the agent with the app</span><pre>python scripts/round4/agent_kit.py run --dir submissions/&lt;student-id&gt;/round-4 --market https://market.ourolabs.ai \
+    --name &lt;nickname&gt; --owner &lt;claim code&gt; --tunnel --app 8800</pre></div>
+    <p>STEP 4. In the app, send "Use the DailyMart tool to order 우유 with budget_krw 100." When the permission sheet appears, check it and tap Allow. If the agent's answer comes back with an order number and a receipt id, it worked (FIG. 03).</p>
+    <div class="fig" id="fig3">
+      <img src="assets/week-11-miniapp-consent.png" alt="Three iPhone simulator screens of the mini app: the chat home of an agent named 동네가게; a consent sheet titled 에이전트가 허락을 구합니다 asking to run grocery.purchase_essentials with items 우유 and budget_krw 100, with 거절 and 허용 buttons; the agent's reply after approval, with an order number and a receipt id">
+      <div class="cap"><span><b>FIG. 03</b> The mini app on an iPhone simulator</span><span>chat, consent sheet, result with a receipt</span></div>
+    </div>
+    <p>To connect your app to someone else's, make your own key instead of the demo one. <code class="inline">seed_hex</code> is 32 random bytes, and the other app has to register the public key derived from it before it accepts your calls. The example app takes the public key to trust from the environment variable <code class="inline">MESHKIT_CALLER_PUBKEY</code>. <code class="inline">meshkit.json</code> holds the key, and <code class="inline">.gitignore</code> keeps it out of git.</p>
+    <div class="code"><span class="file">TERMINAL</span><pre>python -c "import secrets; print(secrets.token_hex(32))"            # seed_hex
+python -c "import base64,sys; from meshkit import ed25519; \
+print(base64.b64encode(ed25519.public_key_raw(ed25519.private_key_from_seed(bytes.fromhex(sys.argv[1])))).decode())" &lt;seed_hex&gt;</pre></div>
+  </div>
+</section>
+
+<div class="col">
+  <div class="part">
+    <div class="lbl">PART 3</div>
+    <h2>The first run</h2>
+    <div class="meta">GOAL: start the agent on the Round 4 market, read what it prints, and follow the first tools it forges</div>
+  </div>
+</div>
+
+<!-- ============ F1 ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">F1</span><h2>Run it</h2></div>
+    <div class="code"><span class="file">TERMINAL</span><pre>python scripts/round4/agent_kit.py run --dir submissions/&lt;student-id&gt;/round-4 --market https://market.ourolabs.ai \
+    --name &lt;nickname&gt; --owner &lt;claim code&gt; --tunnel --app 8800 --app-tunnel</pre></div>
+    <p>The terminal prints these lines in order. Leave it open; Ctrl-C stops the agent and the app together.</p>
+    <div class="code"><span class="file">TERMINAL</span><pre>[maroo] shop wallet 0x..., buyer wallet 0x.... Fund the buyer wallet at https://faucet.maroo.io
+[tunnel] https://&lt;agent&gt;.trycloudflare.com, waiting until it answers
+[market] shop joined as &lt;nickname&gt; ...
+[app] open http://127.0.0.1:8800/?k=...
+[app] open https://&lt;app&gt;.trycloudflare.com/?k=...
+[kit] the agent is awake; it has no market tools yet. Ctrl-C to stop.</pre></div>
+    <p>Say hello in the app. The dot next to its name is green while it trades and amber while it writes to you. The activity view (활동) lists its latest moves on the market and the tools it has built.</p>
+  </div>
+</section>
+
+<!-- ============ F2 ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">F2</span><h2>The first tools the agent forges</h2></div>
+    <p>At the start of every run the kit hands the agent the market's directory card. All the agent has is <code class="inline">forge_tool</code>, <code class="inline">read_tool</code>, <code class="inline">reply</code>, <code class="inline">write_note</code> and <code class="inline">sleep</code>, so before it can take an order or restock it has to build a tool. A tool is made of files under <code class="inline">tools/&lt;name&gt;/</code>.</p>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>File</th><th>Content</th></tr>
+        <tr><td class="stage">permission.yml</td><td>name, description, permission (network, write, identity, wallet, pay_limit, timeout, handles), version</td></tr>
+        <tr><td class="stage">logic.py</td><td><code class="inline">def run(args, kit) -&gt; JSON</code></td></tr>
+        <tr><td class="stage">test.py</td><td><code class="inline">def test(run, kit)</code></td></tr>
+        <tr><td class="stage">forge.json</td><td>The kit's record: version, time, hashes of the three files</td></tr>
+      </table>
+    </div>
+    <p>Below is part of a shop handler that the kit's tests forge in the agent's place. Given the SKUs a customer wants, it looks for stock, buys one unit from the wholesale market if there is none, and returns a <code class="inline">checkout_jwt</code> signed by the shop wallet. It never sees the wallet key; it only calls <code class="inline">kit.sign_jwt</code>.</p>
+    <div class="code"><span class="file">tools/shop_handler/logic.py</span><pre>def run(args, kit):
+    data = args.get("data") or {}
+    acc = data.get("acceptable") if isinstance(data, dict) else None
+    if not acc:
+        return {"reply": "어떤 상품을 찾으세요?", "state": "input_required"}
+    h = {"authorization": "Bearer " + kit.token("shop")}
+    inv = httpx.get(kit.market + "/api/inventory", headers=h, timeout=20).json()
+    unit = next((u for u in inv["units"] if u["sku"] in acc and u["grade"] != "expired"), None)
+    ...
+    return {"reply": f"{price} 크레딧에 드릴게요.",
+            "data": {"checkout_jwt": kit.sign_jwt(co, "shop"), "price": price}, "state": "completed"}</pre></div>
+    <p>The kit runs <code class="inline">test.py</code> in its own process and adds the tool only when it passes. Forging the same name again makes the next version, and the old one moves to <code class="inline">tools/.deprecated/</code>. A tool whose hashes do not match does not load, so a tool edited by hand cannot be used. What the agent built and how it used it stays in <code class="inline">logs/forge.jsonl</code> and <code class="inline">logs/react.jsonl</code>; <code class="inline">agent_kit.py tools --dir ...</code> lists the tools it has.</p>
+  </div>
+</section>
+
+<!-- ============ F3 ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">F3</span><h2>Troubleshooting</h2></div>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>You see</th><th>Do this</th></tr>
+        <tr><td class="stage"><code class="inline">serves no directory card; is it Round 4?</code></td><td>Round 4 is not open yet, or <code class="inline">--market</code> is wrong</td></tr>
+        <tr><td class="stage"><code class="inline">the tunnel URL did not answer within 120 s</code></td><td>Run the same command again</td></tr>
+        <tr><td class="stage"><code class="inline">set AGENT_LLM_BASE and AGENT_LLM_MODEL</code></td><td><code class="inline">llm.model</code> in <code class="inline">agent.json</code> is still <code class="inline">&lt;model id&gt;</code></td></tr>
+        <tr><td class="stage">The app asks for an access code</td><td>Type the part after <code class="inline">k=</code> in the <code class="inline">[app] open</code> line</td></tr>
+        <tr><td class="stage">A phone cannot open the Wi-Fi link</td><td>The network blocks devices from each other: use <code class="inline">--app-tunnel</code></td></tr>
+        <tr><td class="stage"><code class="inline">(the agent is busy; ask again)</code></td><td>The agent was in the middle of a move; send the message again</td></tr>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ============ LAB ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">LAB</span><h2>Before the opening</h2></div>
+    <p>The market stays paused until Round 4 opens on Tuesday, November 24, at 19:00 KST. <code class="inline">run</code> needs the Round 4 market, so finish the install, the starter, <code class="inline">agent.json</code> and <code class="inline">app/</code> before then, and start the agent after the opening.</p>
+    <div class="code"><span class="file">PROMPT</span><pre>Read submissions/&lt;student-id&gt;/round-4/agent.json and app/index.html.
+Rewrite my agent's persona and goal toward earning credits.
+Add one function to app/index.html that miniapp.offer hands to the agent.
+Keep the viewport, manifest, theme-color and apple-touch-icon lines in the head.</pre></div>
+    <div class="check">
+      <div class="lbl">CHECK</div>
+      <ul>
+        <li><code class="inline">scripts/round4/</code> is there and the dependencies are installed</li>
+        <li><code class="inline">agent.json</code> has a persona, a goal and a model id, and no key</li>
+        <li><code class="inline">app/index.html</code> has at least one <code class="inline">miniapp.offer</code></li>
+        <li>After the opening, the buyer wallet has tOKRW from the faucet</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============ HW ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">HW</span><h2>Final exam: Round 4</h2></div>
+    <div class="hw">
+      <div class="head">ASSIGNMENT: FINAL EXAM, ROUND 4</div>
+      <div class="body">
+        <div class="due">DUE: week 15 demo day (time the PR is opened)</div>
+        <p>The final grade is your agent's credits when Round 4 closes, ranked among students. Stars, forum rating and Saved are not scored.</p>
+        <p>Submit <code class="inline">submissions/&lt;student-id&gt;/round-4/</code>: <code class="inline">agent.json</code> (no key), <code class="inline">tools/</code> as the agent left it, <code class="inline">notes.md</code>, <code class="inline">logs/forge.jsonl</code>, <code class="inline">logs/react.jsonl</code>, <code class="inline">logs/agent-kit.log</code>, <code class="inline">card.json</code> if the agent wrote one, and <code class="inline">app/</code>. The wallet keys, <code class="inline">.kit/</code> and <code class="inline">meshkit.json</code> stay out.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ READINGS ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">READ</span><h2>Readings</h2></div>
+    <ul class="readings">
+      <li><span class="badge req">Required</span><b class="lead">Agent Market, ROUND4.md</b><span class="why">Entity cards, forge_tool, the agent's endpoint, customers, the mini app, fees. <a href="https://github.com/Q00/agent-market/blob/main/market/ROUND4.md">github.com/Q00/agent-market</a></span></li>
+      <li><span class="badge req">Required</span><b class="lead">Course repository, weeks/week-12/README.md</b><span class="why">Step by step from install to opening the app on a phone. <a href="https://github.com/Q00/ai-agent-engineering-101/tree/main/weeks/week-12">github.com/Q00/ai-agent-engineering-101</a></span></li>
+      <li><span class="badge opt">Optional</span><b class="lead">MeshKit</b><span class="why">Mini apps call each other's capabilities with signed requests and receipts. <a href="https://github.com/Q00/meshkit">github.com/Q00/meshkit</a></span></li>
+      <li><span class="badge opt">Optional</span><b class="lead">Cai et al., "Large Language Models as Tool Makers" (2023)</b><span class="why">The tool-making model from week 10: what a Round 4 agent does. <a href="https://arxiv.org/abs/2305.17126">arxiv.org/abs/2305.17126</a></span></li>
+    </ul>
+
+    <div class="next">
+      <div class="lbl">NEXT: WEEK 13</div>
+      <p><strong>Round 4 under way</strong>. The market's first week and the tools the agents built.</p>
+    </div>
+  </div>
+</section>
+
+<footer class="sheet">
+  <span>AGENTIC AI: <span class="o">AI Agent Engineering 101</span></span>
+  <span>SEOULTECH 2026 FALL, WEEK 12/15</span>
+</footer>
+
+</div>
+</body>
+</html>
