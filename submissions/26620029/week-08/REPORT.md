@@ -2,7 +2,7 @@
 
 가게 `ddolcom`과 바이어 `ddolcom`으로 Round 3(11-03 ~ 11-17 23:59)에 참여했다. 키트 v4를 GCP 서버의 Docker 컨테이너에서 돌렸고, 거래 루프는 코드가 맡았다. 모델은 두 곳에만 썼다. 하나는 바이어의 협상 수 결정과 포럼 글 문구에 쓰는 `claude -p --model haiku`이고, 다른 하나는 한 단계 위에서 1시간(초기에는 3시간)마다 로그를 읽고 정책을 고치는 Claude Code(Opus) 메타 하네스다.
 
-> 수치는 작성 시점(11-17 12:44 KST) 기준이다. 최종 순위는 종료 시각의 board로 정해진다.
+> 수치는 갱신 시점(11-17 15:44 KST, `logs/monitor-1117-1543.txt`) 기준이다. 최종 순위는 종료 시각의 board로 정해진다.
 
 ## 1. 부품별 설계
 
@@ -47,21 +47,24 @@
 | 운영 | 사람이 직접 | Claude Code 메타 하네스: 규칙 파일, 판단 일지, 실행당 한 가지 변경, 커밋마다 근거 기록 |
 | 배포 | 노트북에서 실행 | GCP VM + Docker(`restart: unless-stopped`), 비밀은 저장소 밖 |
 
-## 3. Round 3 결과 (작성 시점 11-17 12:44 KST, `logs/monitor-1117-1244.txt`)
+## 3. Round 3 결과 (11-17 15:44 KST, `logs/monitor-1117-1543.txt`)
 
-- 정산 수: 가게 30,449건, 바이어 18,040건(monitor의 `deals`). 이 커밋의 `logs/market-kit.log.1`과 `logs/market-kit.log`(11-16 07:49 ~ 11-17 13:13)에는 가게 `[acp] settled` 3,141줄과 바이어 `[acp] paid ... settled` 1,396줄이 있다. 예:
+- 정산 수: 가게 30,572건, 바이어 18,773건(monitor의 `deals`). 이 커밋의 `logs/market-kit.log.1`과 `logs/market-kit.log`(11-16 07:49 ~ 11-17 16:38)에는 가게 `[acp] settled` 3,280줄과 바이어 `[acp] paid ... settled` 1,573줄이 있다. 예:
   - `06:11:01 [acp] settled 맛있는 햇 부사 사과 가정용(흠과) 중대과 10kg at 17756, ledger #7564913, unit u-cbd17032a63f grade B`
   - `06:10:11 [acp] paid 10046 through https://describe-boots-liberal-dec.trycloudflare.com/acp, settled at ledger #7564673: [동원xGS] 양반 수라 왕갈비탕 460g x4개`
-- Players 순위: 10 / 71(total 1.519), Class 10 / 46(pct 0.800). 가게 all 0.711, 바이어 all 0.808.
-- 가게: 장부 4억 7,807만(16 / 92), 매출 60.9억(9 / 92), 별점 4.46(54 / 68), 파산 0.
-- 거부 사유(로그 인용):
-  - `06:12:17 [acp] checkout refused: unit u-070c8fd9be06 is not in stock for this order` (두 로그에 이 단위로 124회, 다른 단위까지 173회, 영수증에 적힌 단위가 이미 다른 주문으로 나간 뒤 들어온 checkout)
+- Players 순위: 9 / 71(total 1.585), Class 10 / 46(pct 0.800, total 1.519). 가게 all 0.773(12 / 68), 바이어 all 0.812(13 / 68).
+- 가게: 잔고 3억 7,536만, 장부 4억 7,657만(16 / 92), 매출 61.1억(9 / 92), 별점 4.46(53 / 68), 파손 1,117건, 환불 768건, 파산 0.
+- 바이어: saved 0.7852(13 / 138), 거래 18,773건(25 / 138), 글 2,966건(20 / 138), 포럼 0.885(50 / 60).
+- 거부 사유(로그 인용, 두 로그 합계):
+  - `06:12:17 [acp] checkout refused: unit u-070c8fd9be06 is not in stock for this order` (이 단위로 124회, 다른 단위까지 188회: 영수증에 적힌 단위가 이미 다른 주문으로 나간 뒤 들어온 checkout)
   - `[seller] [shelf] asked 41.4 h, freshest unit 17 h: declined` (손님이 요구한 유통기한을 못 맞춘 식품은 팔지 않음)
-  - `07:24:15 [acp] payment not completed: 402 {"error":"payment refused by the market","market":{"error":"Internal Server Error"}}` (2회, 시장 쪽 정산 오류)
-  - `11:32:15 [acp] checkout refused: 500 Internal Server Error`, `08:12:06 [acp] payment failed: ReadError: [Errno 104] Connection reset by peer` (각 2회, 터널이나 상대 가게 쪽 오류)
+  - `07:24:15 [acp] payment not completed: 402 {"error":"payment refused by the market","market":{"error":"Internal Server Error"}}` (5회), `[acp] settle refused: {'error': 'Internal Server Error'}` (2회): 시장 쪽 정산 오류
+  - `07:24:23 [acp] settle refused: ['not_settled_before']` (1회, 시장이 정산 조건을 거부)
+  - `11:32:15 [acp] checkout refused: 500 Internal Server Error` (3회), `08:12:06 [acp] payment failed: ReadError: [Errno 104] Connection reset by peer` (2회): 터널이나 상대 가게 쪽 오류
   - `[market] ledger #…: … stars 5, verified False (failed: settled), review not shown` (정산되지 않은 거래의 리뷰는 시장이 보여 주지 않음)
+- 마감 전략: 고가 사입은 11-16 00:00, 전체 사입은 11-17 12:00에 코드로 멈췄다. 12:02 이후 `[supply]` 줄은 0이다. 12:00:13 ~ 12:01:46의 10줄(251만)은 11:59:53 restock 결정을 키트가 이어서 실행한 것이다.
 
 ### 돌아보기
 
 - 장부 점수가 원가 기준이라, 마감 전 원가 아래 덤핑은 하지 않았다. 대신 사입을 코드 시각으로 단계적으로 멈췄다.
-- 약점은 별점(54 / 68)과 포럼 점수(학생 백분위 0.200)다. C등급 상품은 가격을 내려도 잘 안 팔렸다. 로그상 협상은 0.56 × 정가에서 합의됐는데 결제가 오지 않았으므로, 가격보다 보증과 별점의 문제로 본다.
+- 약점은 별점(53 / 68)과 포럼 점수(학생 백분위 0.200)다. C등급 상품은 가격을 내려도 잘 안 팔렸다. 로그상 협상은 0.56 × 정가에서 합의됐는데 결제가 오지 않았으므로, 가격보다 보증과 별점의 문제로 본다.
