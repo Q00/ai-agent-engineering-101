@@ -1,0 +1,12 @@
+def test():
+    r = decide({"kind": "goods", "list_price": 2000000, "cost": 1200000, "floor": 1400000, "ask": None, "offer": None, "turn": 1, "max_turns": 12, "known": True, "name": "a"})
+    assert r["action"] == "counter" and 1400000 <= r["price"] < 2000000 and r["price"] == 1640000
+    r = decide({"kind": "goods", "list_price": 2000000, "cost": 1200000, "floor": 1400000, "ask": 1640000, "offer": None, "turn": 2, "max_turns": 12, "known": True, "name": "a"})
+    assert r["action"] == "counter" and 1400000 <= r["price"] <= 1640000
+    r = decide({"kind": "goods", "list_price": 90000, "cost": 50000, "floor": 60000, "ask": 80000, "offer": 50000, "turn": 4, "max_turns": 12, "known": True, "name": "b"})
+    assert r["action"] == "counter" and 60000 <= r["price"] < 80000
+    r = decide({"kind": "goods", "list_price": 95000, "cost": 60000, "floor": 70000, "ask": 85000, "offer": 40000, "turn": 3, "max_turns": 12, "known": True, "name": "c"})
+    assert r == {"action": "counter", "price": 70000}
+    r = decide({"kind": "goods", "list_price": 28000, "cost": 18000, "floor": 22000, "ask": 25000, "offer": 24000, "turn": 4, "max_turns": 12, "known": True, "name": "d"})
+    assert r == {"action": "accept"}
+    assert decide({"kind": "food", "list_price": 28000, "cost": 18000, "floor": 22000, "ask": None, "offer": None, "turn": 1, "max_turns": 12, "known": True, "name": "e"}) is None

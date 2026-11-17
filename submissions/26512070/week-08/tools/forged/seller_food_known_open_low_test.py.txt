@@ -1,0 +1,17 @@
+def test():
+    base = {"kind": "food", "list_price": 12000, "cost": 8000, "floor": 9000, "ask": None, "offer": None, "turn": 1, "max_turns": 12, "known": True, "name": "kim"}
+    r = decide(dict(base))
+    assert r["action"] == "counter"
+    assert r["price"] >= base["floor"] and r["price"] <= base["list_price"]
+    assert r["price"] == 9600
+    r2 = decide(dict(base, list_price=10382, cost=7000, floor=7500))
+    assert r2["action"] == "counter" and 7500 <= r2["price"] <= 10382
+    r3 = decide(dict(base, offer=9500))
+    assert r3 == {"action": "accept"}
+    r4 = decide(dict(base, offer=8500))
+    assert r4 is None
+    assert decide(dict(base, kind="goods")) is None
+    assert decide(dict(base, known=False)) is None
+    assert decide(dict(base, turn=2)) is None
+    r5 = decide(dict(base, floor=12000, cost=8000))
+    assert r5["action"] == "counter" and r5["price"] >= 12000

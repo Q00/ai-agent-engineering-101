@@ -1,0 +1,14 @@
+def test():
+    base = {"kind": "goods", "cost": 30000, "max_turns": 12, "known": True, "name": "kim"}
+    v1 = dict(base, list_price=50000, floor=35000, ask=None, offer=None, turn=1)
+    assert decide(v1) == {"action": "counter", "price": 44000}
+    v2 = dict(base, list_price=200000, cost=120000, floor=140000, ask=160000, offer=150000, turn=4)
+    assert decide(v2) == {"action": "accept"}
+    v3 = dict(v2, offer=120000)
+    assert decide(v3) == {"action": "counter", "price": 140000}
+    v4 = dict(base, list_price=600000, cost=380000, floor=420000, ask=500000, offer=400000, turn=3)
+    assert decide(v4) == {"action": "counter", "price": 445000}
+    v5 = dict(v4, kind="food")
+    assert decide(v5) is None
+    v6 = dict(v4, known=False)
+    assert decide(v6) is None
