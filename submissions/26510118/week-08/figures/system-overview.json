@@ -1,0 +1,542 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Kiro729 Round 3 에이전트 전체 구조",
+    "output": ".archify/architecture-round3-final-20261117-122606/round3-final.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/Kiro729/ai-agent-engineering-101.git",
+      "provider": "github",
+      "link_mode": "web",
+      "revision": "81c70c97ed86378475629c9cb82c2708159c711b"
+    }
+  },
+  "components": [
+    {
+      "id": "market_public",
+      "type": "cloud",
+      "label": "장부·board·포럼",
+      "sublabel": "공개 기록·순위·게시글",
+      "pos": [
+        275,
+        40
+      ],
+      "size": [
+        150,
+        62
+      ],
+      "sources": [
+        {
+          "path": "submissions/26510118/week-08/round3/ledger.py",
+          "line": 38,
+          "end_line": 38,
+          "label": "market URL"
+        },
+        {
+          "path": "submissions/26510118/week-08/round3/ledger.py",
+          "line": 60,
+          "label": "collect"
+        }
+      ]
+    },
+    {
+      "id": "market_trade",
+      "type": "cloud",
+      "label": "A2A·ACP 결제",
+      "sublabel": "흥정·영수증·정산",
+      "pos": [
+        765,
+        40
+      ],
+      "size": [
+        150,
+        62
+      ],
+      "sources": [
+        {
+          "path": "submissions/26510118/week-08/round3/deploy/kiro-kit.service",
+          "line": 16,
+          "label": "kit join --market --tunnel"
+        }
+      ]
+    },
+    {
+      "id": "others",
+      "type": "external",
+      "label": "다른 가게·buyer",
+      "sublabel": "시장 buyer 3개 포함",
+      "pos": [
+        1010,
+        40
+      ],
+      "size": [
+        150,
+        62
+      ],
+      "sources": [
+        {
+          "path": "submissions/26510118/week-08/round3/market_buyer.py",
+          "line": 836,
+          "label": "quotes from other shops"
+        }
+      ]
+    },
+    {
+      "id": "fast",
+      "type": "backend",
+      "label": "빠른 루프",
+      "sublabel": "objective·실험·linewatch",
+      "tag": "kiro-analysis",
+      "pos": [
+        275,
+        200
+      ],
+      "size": [
+        150,
+        62
+      ],
+      "sources": [
+        {
+          "path": "submissions/26510118/week-08/round3/analysis.py",
+          "line": 70,
+          "label": "EVERY schedule"
+        },
+        {
+          "path": "submissions/26510118/week-08/round3/objective.py",
+          "line": 125,
+          "label": "objective.run"
+        },
+        {
+          "path": "submissions/26510118/week-08/round3/linewatch.py",
+          "line": 376,
+          "label": "linewatch.run"
+        }
+      ]
+    },
+    {
+      "id": "state",
+      "type": "database",
+      "label": "규칙·상태",
+      "sublabel": "기준선·실험·한도·사람 고정값",
+      "pos": [
+        520,
+        200
+      ],
+      "size": [
+        150,
+        62
+      ],
+      "sources": [
+        {
+          "path": "submissions/26510118/week-08/round3/analysts.py",
+          "line": 78,
+          "end_line": 90,
+          "label": "person_set"
+        },
+        {
+          "path": "submissions/26510118/week-08/round3/experiments.py",
+          "line": 98,
+          "label": "experiments.run"
+        }
+      ]
+    },
+    {
+      "id": "kit",
+      "type": "backend",
+      "label": "kiro-kit",
+      "sublabel": "seller·buyer·restock",
+      "tag": "systemd",
+      "pos": [
+        765,
+        200
+      ],
+      "size": [
+        150,
+        62
+      ],
+      "sources": [
+        {
+          "path": "submissions/26510118/week-08/round3/agent.json",
+          "line": 3,
+          "end_line": 6,
+          "label": "kit hooks"
+        },
+        {
+          "path": "submissions/26510118/week-08/round3/deploy/kiro-kit.service",
+          "line": 16,
+          "end_line": 17
+        }
+      ]
+    },
+    {
+      "id": "luna",
+      "type": "cloud",
+      "label": "luna·Decisions",
+      "sublabel": "OpenAI: 문장·확률",
+      "pos": [
+        1010,
+        200
+      ],
+      "size": [
+        150,
+        62
+      ],
+      "sources": [
+        {
+          "path": "submissions/26510118/week-08/round3/harness.py",
+          "line": 7,
+          "end_line": 8,
+          "label": "gpt-6-luna"
+        },
+        {
+          "path": "submissions/26510118/week-08/round3/harness.py",
+          "line": 19,
+          "end_line": 23,
+          "label": "Decisions API"
+        }
+      ]
+    },
+    {
+      "id": "person",
+      "type": "external",
+      "label": "운영자",
+      "sublabel": "승인·값 고정",
+      "pos": [
+        30,
+        360
+      ],
+      "size": [
+        150,
+        62
+      ],
+      "sources": [
+        {
+          "path": "submissions/26510118/week-08/round3/analysts.py",
+          "line": 63,
+          "end_line": 66,
+          "label": "person_rules"
+        }
+      ]
+    },
+    {
+      "id": "check",
+      "type": "security",
+      "label": "코드 검증",
+      "sublabel": "범위·단계·사람 고정값",
+      "tag": "kiro-analysis",
+      "pos": [
+        275,
+        360
+      ],
+      "size": [
+        150,
+        62
+      ],
+      "sources": [
+        {
+          "path": "submissions/26510118/week-08/round3/analysts.py",
+          "line": 100,
+          "label": "validate"
+        },
+        {
+          "path": "submissions/26510118/week-08/round3/analysts.py",
+          "line": 473,
+          "end_line": 482,
+          "label": "revert"
+        }
+      ]
+    },
+    {
+      "id": "records",
+      "type": "database",
+      "label": "거래 기록",
+      "sublabel": "records·notebook",
+      "pos": [
+        765,
+        360
+      ],
+      "size": [
+        150,
+        62
+      ],
+      "sources": [
+        {
+          "path": "submissions/26510118/week-08/round3/common.py",
+          "line": 184,
+          "label": "common.record"
+        },
+        {
+          "path": "submissions/26510118/week-08/round3/buyer_memory.py",
+          "line": 45,
+          "end_line": 50,
+          "label": "notebook"
+        }
+      ]
+    },
+    {
+      "id": "sol",
+      "type": "cloud",
+      "label": "gpt-6.1-sol",
+      "sublabel": "OpenAI: 통합 분석",
+      "pos": [
+        30,
+        520
+      ],
+      "size": [
+        150,
+        62
+      ],
+      "sources": [
+        {
+          "path": "submissions/26510118/week-08/round3/harness.py",
+          "line": 10,
+          "end_line": 11
+        }
+      ]
+    },
+    {
+      "id": "integ",
+      "type": "backend",
+      "label": "통합 분석",
+      "sublabel": "3시간: 채택·되돌림",
+      "tag": "kiro-analysis",
+      "pos": [
+        275,
+        520
+      ],
+      "size": [
+        150,
+        62
+      ],
+      "sources": [
+        {
+          "path": "submissions/26510118/week-08/round3/analysts.py",
+          "line": 438,
+          "end_line": 470,
+          "label": "integrated"
+        }
+      ]
+    },
+    {
+      "id": "role",
+      "type": "backend",
+      "label": "역할 분석 ×2",
+      "sublabel": "seller·buyer, 3시간",
+      "tag": "kiro-analysis",
+      "pos": [
+        520,
+        520
+      ],
+      "size": [
+        150,
+        62
+      ],
+      "sources": [
+        {
+          "path": "submissions/26510118/week-08/round3/analysts.py",
+          "line": 306,
+          "label": "role_analysis"
+        },
+        {
+          "path": "submissions/26510118/week-08/round3/context.py",
+          "line": 1,
+          "end_line": 15,
+          "label": "5-part briefing"
+        }
+      ]
+    },
+    {
+      "id": "mcp",
+      "type": "backend",
+      "label": "MCP 데이터룸",
+      "sublabel": "도구 4·자원 4",
+      "tag": "kiro-analysis",
+      "pos": [
+        275,
+        680
+      ],
+      "size": [
+        150,
+        62
+      ],
+      "sources": [
+        {
+          "path": "submissions/26510118/week-08/round3/data_room.py",
+          "line": 1,
+          "end_line": 12,
+          "label": "tools and resources"
+        },
+        {
+          "path": "submissions/26510118/week-08/round3/mcp_host.py",
+          "line": 111,
+          "label": "open_room"
+        }
+      ]
+    },
+    {
+      "id": "terra",
+      "type": "cloud",
+      "label": "gpt-6.1-terra",
+      "sublabel": "OpenAI: 역할 분석",
+      "pos": [
+        520,
+        840
+      ],
+      "size": [
+        150,
+        62
+      ],
+      "sources": [
+        {
+          "path": "submissions/26510118/week-08/round3/harness.py",
+          "line": 9
+        }
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "시장 market.ourolabs.ai (외부)",
+      "wraps": [
+        "market_public",
+        "market_trade",
+        "others"
+      ],
+      "pad": 18
+    },
+    {
+      "kind": "region",
+      "label": "Azure VM (우리 서버)",
+      "wraps": [
+        "fast",
+        "state",
+        "kit",
+        "check",
+        "records",
+        "integ",
+        "role",
+        "mcp"
+      ],
+      "pad": 20
+    }
+  ],
+  "connections": [
+    {
+      "from": "others",
+      "to": "market_trade",
+      "label": "흥정·결제"
+    },
+    {
+      "from": "market_trade",
+      "to": "kit",
+      "label": "A2A·ACP",
+      "variant": "emphasis"
+    },
+    {
+      "from": "kit",
+      "to": "luna",
+      "label": "문장·확률",
+      "variant": "dashed"
+    },
+    {
+      "from": "kit",
+      "to": "records",
+      "label": "거래 기록",
+      "variant": "emphasis"
+    },
+    {
+      "from": "records",
+      "to": "role",
+      "label": "브리핑",
+      "variant": "emphasis"
+    },
+    {
+      "from": "role",
+      "to": "integ",
+      "label": "보고서·제안",
+      "variant": "emphasis"
+    },
+    {
+      "from": "integ",
+      "to": "check",
+      "label": "변경안",
+      "variant": "emphasis"
+    },
+    {
+      "from": "check",
+      "to": "state",
+      "label": "적용·되돌림",
+      "variant": "emphasis"
+    },
+    {
+      "from": "state",
+      "to": "kit",
+      "label": "규칙·기준선",
+      "variant": "emphasis"
+    },
+    {
+      "from": "market_public",
+      "to": "fast",
+      "label": "장부·board"
+    },
+    {
+      "from": "fast",
+      "to": "state",
+      "label": "기준선·실험"
+    },
+    {
+      "from": "integ",
+      "to": "mcp",
+      "label": "도구 호출"
+    },
+    {
+      "from": "integ",
+      "to": "sol",
+      "label": "분석",
+      "variant": "dashed"
+    },
+    {
+      "from": "role",
+      "to": "terra",
+      "label": "분석",
+      "variant": "dashed"
+    },
+    {
+      "from": "person",
+      "to": "check",
+      "label": "값 고정",
+      "variant": "security"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "세 가지 흐름",
+      "items": [
+        "거래 → 기록: kit가 흥정·결제마다 사실을 남김",
+        "기록 → 분석 → 검증 → 규칙 → 거래: 3시간마다 도는 메타 하네스, 지표가 나빠지면 되돌림",
+        "장부·board → 빠른 루프 → 기준선·실험·한도: 20분마다 코드가 숫자를 다시 맞춤"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "기억과 도구",
+      "items": [
+        "사실은 코드만 기록하고, 모델은 보고서·인사이트·메모만 남김",
+        "MCP 데이터룸 도구: ledger_query, replay, shop_credit, leave_memo",
+        "자원: kiro://business, insights, reports, memos"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "안전장치",
+      "items": [
+        "모델은 가격을 정하지 않음: 제안한 숫자는 코드가 범위를 검사",
+        "다른 에이전트의 글은 데이터로만 전달하고 지시로 쓰지 않음",
+        "모델 호출이 실패하면 규칙만으로 계속 동작, 사람이 고정한 값은 모델이 못 바꿈"
+      ]
+    }
+  ]
+}
