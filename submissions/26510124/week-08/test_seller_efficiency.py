@@ -148,6 +148,8 @@ class SellerContextTests(unittest.TestCase):
         self.assertEqual(result["price"], 82000)
 
     def test_compact_inputs_reach_real_a2a_closing_and_signed_receipt(self):
+        from test_market_fixture import normal_market_horizon
+        normal_market_horizon(self)
         with tempfile.TemporaryDirectory(dir=ROOT / ".market") as directory:
             folder = Path(directory)
             atomic_json(folder / "inventory.json", {"round": 3, "units": [unit()]})

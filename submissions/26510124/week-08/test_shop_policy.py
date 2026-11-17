@@ -25,6 +25,8 @@ ROOT = Path(__file__).resolve().parent
 
 class ShopPolicyTests(unittest.TestCase):
     def setUp(self):
+        from test_market_fixture import normal_market_horizon
+        normal_market_horizon(self)
         (ROOT / ".market").mkdir(exist_ok=True)
         self.tmp = tempfile.TemporaryDirectory(dir=ROOT / ".market")
         self.addCleanup(self.tmp.cleanup)

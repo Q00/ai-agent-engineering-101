@@ -28,6 +28,8 @@ ROOT = Path(__file__).resolve().parent
 
 class AdvisorTests(unittest.TestCase):
     def setUp(self):
+        from test_market_fixture import normal_market_horizon
+        normal_market_horizon(self)
         (ROOT / ".market").mkdir(exist_ok=True)
         self.temp = tempfile.TemporaryDirectory(dir=ROOT / ".market")
         self.addCleanup(self.temp.cleanup)

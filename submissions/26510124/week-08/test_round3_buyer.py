@@ -75,6 +75,8 @@ class BuyerContractTests(unittest.TestCase):
         self.assertEqual(review(deal)["stars"], 1)
 
     def test_buyer_and_inventory_seller_trade_without_model_or_network(self):
+        from test_market_fixture import normal_market_horizon
+        normal_market_horizon(self)
         (ROOT / ".market").mkdir(exist_ok=True)
         with tempfile.TemporaryDirectory(dir=ROOT / ".market") as d:
             folder = Path(d)

@@ -27,6 +27,8 @@ def counter(price):
 
 class ClosingTests(unittest.TestCase):
     def setUp(self):
+        from test_market_fixture import normal_market_horizon
+        normal_market_horizon(self)
         self.tmp = tempfile.TemporaryDirectory(dir=ROOT / ".market")
         self.addCleanup(self.tmp.cleanup)
         self.root = Path(self.tmp.name)

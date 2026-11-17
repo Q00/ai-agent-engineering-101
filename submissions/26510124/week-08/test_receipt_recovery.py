@@ -105,6 +105,8 @@ class ReceiptRecoveryTests(unittest.TestCase):
                 server.stop_for_guarded_deployment()
 
     def test_recovered_inventory_can_issue_checkout_cancel_and_sell_again(self):
+        from test_market_fixture import normal_market_horizon
+        normal_market_horizon(self)
         atomic_json(self.md / "inventory.json", {"round": 3, "units": [unit()]})
         result = recover(self.root, self.card, self.now - 10, apply=True, now=self.now)
         self.assertEqual(result["count"], 1)

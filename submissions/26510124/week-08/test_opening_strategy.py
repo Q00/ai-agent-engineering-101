@@ -1,6 +1,6 @@
 """Evidence-driven opening experiments; real A2A transport, fake models."""
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 import tempfile
 import time
@@ -29,6 +29,7 @@ class OpeningTests(unittest.TestCase):
         self.root = Path(self.tmp.name)
         self.now = time.time()
         self.cfg = policy_at()
+        self.cfg["horizon"]["ends_at"] = datetime.fromtimestamp(self.now+30*86400, timezone.utc).isoformat()
         self.product = unit()
         self.inv = {"round": 3, "units": [self.product]}
         self.group = {"completed": 10, "rejected": 8, "settled": 0, "unknown_exit": 2,
@@ -158,7 +159,7 @@ class OpeningTests(unittest.TestCase):
         p = unit(sku="G8095ddd6", grade="A", cost=700000, list_price=851400)
         atomic_json(self.root / ".market/inventory.json", {"round": 3, "units": [p]})
         with patch("seller_agent.load_shop_key", return_value=Ed25519PrivateKey.generate()):
-            seller = InventorySeller({**DEFAULT, "market_dir": self.root / ".market"})
+            seller = InventorySeller({**DEFAULT, "market_dir": self.root / ".market", "shop_policy": self.cfg})
         seller.events = self.root / "events.jsonl"
         with patch("seller_r3.inventory_decision", return_value={"action": "counter", "price": 690000}) as model, \
                 TestClient(build(DEFAULT, seller)) as client:
@@ -180,7 +181,7 @@ class OpeningTests(unittest.TestCase):
                 atomic_json(self.root / ".market/inventory.json", self.inv)
                 key = Ed25519PrivateKey.generate()
                 with patch("seller_agent.load_shop_key", return_value=key):
-                    seller = InventorySeller({**DEFAULT, "market_dir": self.root / ".market"})
+                    seller = InventorySeller({**DEFAULT, "market_dir": self.root / ".market", "shop_policy": self.cfg})
                 seller.events = self.root / "events.jsonl"
                 with patch("seller_r3.inventory_decision", return_value={"action": "counter", "price": target}) as model, \
                         TestClient(build(DEFAULT, seller)) as client:
@@ -223,7 +224,7 @@ class OpeningTests(unittest.TestCase):
         self.update()
         atomic_json(self.root / ".market/inventory.json", self.inv)
         with patch("seller_agent.load_shop_key", return_value=Ed25519PrivateKey.generate()):
-            seller = InventorySeller({**DEFAULT, "market_dir": self.root / ".market"})
+            seller = InventorySeller({**DEFAULT, "market_dir": self.root / ".market", "shop_policy": self.cfg})
         seller.events = self.root / "events.jsonl"
         with patch("seller_r3.inventory_decision", return_value={"action": "counter", "price": 95000}) as model, \
                 TestClient(build(DEFAULT, seller)) as client:
@@ -236,7 +237,7 @@ class OpeningTests(unittest.TestCase):
         p = unit(grade="A", supplied_at=self.now - 90000)
         atomic_json(self.root / ".market/inventory.json", {"round": 3, "units": [p]})
         with patch("seller_agent.load_shop_key", return_value=Ed25519PrivateKey.generate()):
-            seller = InventorySeller({**DEFAULT, "market_dir": self.root / ".market"})
+            seller = InventorySeller({**DEFAULT, "market_dir": self.root / ".market", "shop_policy": self.cfg})
         seller.events = self.root / "events.jsonl"
         with patch("seller_r3.inventory_decision", return_value={"action": "counter", "price": 79000}) as model, \
                 TestClient(build(DEFAULT, seller)) as client:
