@@ -72,7 +72,21 @@ def call(system: str, situation: str) -> str:
           file=sys.stderr, flush=True)
     if result.returncode != 0:
         print(f"[harness] stderr: {result.stderr.strip()[:240]}", file=sys.stderr, flush=True)
+        _alarm(out or result.stderr.strip())
     return out
+
+
+def _alarm(reason):
+    """A model call that failed is recorded as an alert, at most once in six hours. 11-15 21:48 the subscription login
+    expired; 1,150 calls failed over two days, the code fallback kept trading, and nothing told anyone."""
+    try:
+        import playbook
+        entry = playbook.alert_once("model-call-failed", "A bargaining model call failed; the code fallback is trading "
+                                    "in its place until this is fixed.", scope="model", evidence=reason[:160])
+        if entry:
+            print(f"[alert] model call failed: {reason[:120]}", file=sys.stderr, flush=True)
+    except Exception as e:   # the alarm must never break an order
+        print(f"[harness] alert not recorded: {type(e).__name__}", file=sys.stderr, flush=True)
 
 
 def parse(text: str, need: str = "action"):

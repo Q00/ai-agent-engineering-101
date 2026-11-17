@@ -131,5 +131,22 @@ class ProfilesTest(unittest.TestCase):
             self.assertEqual(json.loads(Path(d, profiles.FILE).read_text())["shops"], prof["shops"])
 
 
+class PlaybookTest(unittest.TestCase):
+    def test_the_seed_is_the_starting_memory_and_an_outage_is_one_alert_not_a_flood(self):
+        import playbook
+        with tempfile.TemporaryDirectory() as d:
+            seed = playbook.load(d)
+            self.assertGreaterEqual(len(seed), 10)                       # nothing recorded here yet: the seed
+            self.assertFalse(Path(d, playbook.FILE).exists())
+            first = playbook.alert_once("model-call-failed", "no answer", d, now=NOW, evidence="exit 1")
+            again = playbook.alert_once("model-call-failed", "no answer", d, now=NOW + 3600)
+            later = playbook.alert_once("model-call-failed", "no answer", d, now=time.time() + 7 * 3600)
+            self.assertEqual(("alert", None), (first["source"], again))
+            self.assertIsNotNone(later)                                   # six hours on, it is said again
+            stored = playbook.load(d)
+            self.assertEqual(len(seed) + 2, len(stored))                  # the file now holds the seed and the alerts
+            self.assertIn("[alert/", playbook.digest(stored, 1)[0])
+
+
 if __name__ == "__main__":
     unittest.main()

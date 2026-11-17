@@ -59,6 +59,22 @@ def add(source, lesson, state_dir=None, **fields):
     return entry
 
 
+def alert_once(key, lesson, state_dir=None, hours=6, now=None, **fields):
+    """Record an alert unless one with the same `key` was recorded in the last `hours`. Returns the entry or None.
+    Called from places that run thousands of times a day (every model call), so an outage is one line, not a flood."""
+    now = now or time.time()
+    for e in reversed(load(state_dir)):
+        if e.get("source") == "alert" and e.get("key") == key:
+            try:
+                age = now - time.mktime(time.strptime(e.get("at", ""), "%Y-%m-%d %H:%M"))
+            except ValueError:
+                age = hours * 3600
+            if age < hours * 3600:
+                return None
+            break
+    return add("alert", lesson, state_dir, key=key, **fields)
+
+
 def digest(lessons, limit=10, chars=230):
     """The newest lessons as short lines for the reflection's context."""
     lines = []
