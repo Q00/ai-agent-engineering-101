@@ -24,6 +24,7 @@ BOUNDS = {
         "value_floor": (0.0, 0.85),         # 11/05: floor >= this share of list price (endgame and food markdown excepted)
         "warranty_hours": (0, 6),           # 11/04 (2): warranty on A/B goods at or above warranty_min_list (0 = none)
         "warranty_min_list": (30_000, 5_000_000),
+        "endgame_ask_mult": (0.0, 2.0),     # 11/17 flag: in the endgame the opening ask is at most floor x this (0 = off)
     },
     "restock": {
         "CASH_FLOOR": (0.15, 0.60),
@@ -48,9 +49,10 @@ BOUNDS = {
         "est_price": (0.45, 0.90),          # expected price share used to pick the SKU
         "near_best": (0.50, 1.00),
         "shelf_strikes": (1, 5),            # food orders skip a shop after this many short-dated units (11/04)
+        "shelf_verify": (0, 1),             # 11/17 flag: food from a shop with a shelf refusal needs stated hours first
     },
 }
-INTS = {"max_rounds", "TARGET_CATEGORIES", "HOT_LINES", "MAX_LIST_PRICE", "HOT_QTY", "FOOD_MAX", "endgame_h", "shelf_strikes", "HIGH_TICKET", "warranty_hours", "warranty_min_list", "LAST_BUY_HOURS"}
+INTS = {"max_rounds", "TARGET_CATEGORIES", "HOT_LINES", "MAX_LIST_PRICE", "HOT_QTY", "FOOD_MAX", "endgame_h", "shelf_strikes", "HIGH_TICKET", "warranty_hours", "warranty_min_list", "LAST_BUY_HOURS", "shelf_verify"}
 
 _cache: dict = {"mtime": None, "data": {}}
 

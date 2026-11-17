@@ -40,6 +40,7 @@ PRICING = {
     "endgame_floor": 0.8,        # ... and in its last 6 h to cost x 0.8: stock left at the end is a total loss
     "warranty_hours": 6,         # 11/04 (2): A/B goods at or above warranty_min_list carry a 6 h warranty
     "warranty_min_list": 100_000,
+    "endgame_ask_mult": 0.0,     # 11/17 flag (policy.json): in the endgame the ask is at most floor x this; 0 = off
     "value_floor": 0.0,          # 11/05: never sign under this share of the list price (the buyer's value), whatever
                                  # the unit cost us: B/C units cost 25-60 % of list, so a cost-based floor gave them away.
                                  # 0 in code (cost floor only); the live value comes from improve/policy.json (0.65)
@@ -77,7 +78,15 @@ def floor_price(unit: dict, now: float | None = None) -> int:
 def opening_ask(unit: dict, now: float | None = None) -> int:
     if unit.get("r2"):                                   # before Round 3: the week-07 ask (reserve x 1.05)
         return max(floor_price(unit, now), unit["list_price"])
-    return max(floor_price(unit, now), math.ceil(unit["list_price"] * PRICING["ask_of_list"] - 1e-9))
+    floor = floor_price(unit, now)
+    ask = math.ceil(unit["list_price"] * PRICING["ask_of_list"] - 1e-9)
+    now = time.time() if now is None else now
+    mult = PRICING.get("endgame_ask_mult", 0.0)
+    if mult > 0 and 0 < (ROUND_END - now) / 3600 <= PRICING["endgame_h"]:
+        # 11/17: every endgame deal closed at the floor (466/466) while the ask sat at 1.48x it and 344 buyers left
+        # without an offer: open near the floor so the remaining stock sells (it only counts at cost at the end).
+        ask = min(ask, math.ceil(floor * mult - 1e-9))
+    return max(floor, ask)
 
 
 def parse_offer(text: str) -> int | None:
