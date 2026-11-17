@@ -44,6 +44,7 @@ def set_default(h, sell_c=None):
         if not sell_c:                          # 11-17 07:50: and the B rules come back
             pa["globals"]["a_only_on"] = 1
             pa["globals"]["b_max_list"] = 1000000
+            pa["globals"]["c_fallback"] = 0
     PA.write_text(json.dumps(pa, ensure_ascii=False, indent=1), encoding="utf-8")
 
 

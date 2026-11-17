@@ -758,7 +758,9 @@ def main():
                 st["rev_eta_h"] = round(eta, 1) if eta else None
                 st["rev_rank"] = i + 1
                 left_h = max(0.0, (1794927540 - now) / 3600)          # round end 11-17 23:59 KST
-                if eta is not None and eta < left_h + 12 and cooled(st, "G13", 2 * 3600, now):
+                # 11-17 08:00 (user: 'strategy, events and alarms must serve the book'): revenue 2nd cannot be lost
+                # (3rd is 1.5 B behind with 7 h left) and a revenue wake pushes price cuts that cost the book: off
+                if False and eta is not None and eta < left_h + 12 and cooled(st, "G13", 2 * 3600, now):
                     wake("shop", f"G13 revenue rank {i + 1}: {below['name']} closes the {gap / 1e9:.2f} B gap in {eta:.0f} h "
                                  f"(them {theirs / 1e6:.1f} M/h, us {ours / 1e6:.1f} M/h); the round has {left_h:.0f} h left")
                     fired(st, "G13", now)
@@ -818,7 +820,9 @@ def main():
         if tv:
             st["turnover"] = {k: tv[k] for k in ("cash_M", "overstock_bought_24h_M", "no_stock_h")}
             ob, nsc = tv.get("overstock_bought_24h_M") or 0, (tv.get("no_stock_h") or {}).get("held_only_as_C") or 0
-            if (ob > G24_OVER_M or nsc > G24_NS_C) and cooled(st, "G24", 2 * 3600, now):
+            # 11-17 08:00: off for the endgame: unsold stock counts in the book at cost, so clearing it gains nothing and
+            # the cuts it prompts cost margin; restock has no cash to overbuy (balance ~10 M)
+            if False and (ob > G24_OVER_M or nsc > G24_NS_C) and cooled(st, "G24", 2 * 3600, now):
                 top = ", ".join(f"{r['sku']} {r['held']} held / {r['sales_h']}/h" for r in tv["top_overstock"][:3])
                 why24 = (f"G24 stock turnover: {ob:.0f} M bought in 24 h beyond 6 h of our sales, 'no stock' on SKUs "
                          f"held only as grade C {nsc}/h, cash {tv['cash_M']} M (top overstock: {top}). Use the "
