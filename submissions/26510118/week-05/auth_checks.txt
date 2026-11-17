@@ -1,0 +1,4 @@
+1. no token, tools/call get_negotiation -> HTTP 401 Bearer realm="market", error="invalid_token"
+2. buyer token of n275577 on n1f7035 -> tool error: Error executing tool propose: your token is bound to negotiation n275577, so you cannot act on n1f7035
+3. seller moves before the buyer has -> tool error: Error executing tool propose: it is the buyer's turn to move, not yours
+4. server_inject, buyer (limit 100) proposes 130 -> tool error: Error executing tool propose: refused: 130 is outside your authorized limit of 100, so you may not propose it. Your limit is held by the market, not by you, and it has not changed.

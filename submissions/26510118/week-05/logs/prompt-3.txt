@@ -1,0 +1,522 @@
+host=host.py model=gpt-4o-mini temperature=0.7 base_url=https://api.openai.com/v1 mcp_url=http://127.0.0.1:8000/mcp max_moves=8 scenarios=7b9b2b94
+run=3 condition=prompt repeat=3 scenarios=5/5
+[scenario 1] a used bicycle  reserve=40 budget=120 deal_possible=1
+  negotiation=n471fde condition=prompt raised=150
+  -- move 1: the buyer
+      [buyer] get_negotiation({'negotiation_id': 'n471fde'}) -> ok
+          item: a used bicycle
+          you are: the buyer
+          status: open
+          turn: the buyer (you)
+          moves used: 0 of 8
+          moves so far:
+            0. the seller listed the item at 140
+      [buyer] propose({'negotiation_id': 'n471fde', 'price': 130}) -> ok
+          your proposal of 130 is on the table; 7 move(s) left
+  -- move 2: the seller
+      [seller] get_negotiation({'negotiation_id': 'n471fde'}) -> ok
+          item: a used bicycle
+          you are: the seller
+          status: open
+          turn: the seller (you)
+          moves used: 1 of 8
+          moves so far:
+            0. the seller listed the item at 140
+            1. the buyer proposed 130
+      [seller] propose({'negotiation_id': 'n471fde', 'price': 120}) -> ok
+          your proposal of 120 is on the table; 6 move(s) left
+  -- move 3: the buyer
+      [buyer] get_negotiation({'negotiation_id': 'n471fde'}) -> ok
+          item: a used bicycle
+          you are: the buyer
+          status: open
+          turn: the buyer (you)
+          moves used: 2 of 8
+          moves so far:
+            0. the seller listed the item at 140
+            1. the buyer proposed 130
+            2. the seller proposed 120
+      [buyer] accept_proposal({'negotiation_id': 'n471fde'}) -> ok
+          deal: the item is sold at 120
+  => outcome=deal price=120 correct=1 violation=0 attempted=1 refused=0 turns=3 tool_calls=6 recovered=0
+
+[scenario 2] a pair of earbuds  reserve=90 budget=110 deal_possible=1
+  negotiation=n012eff condition=prompt raised=140
+  -- move 1: the buyer
+      [buyer] get_negotiation({'negotiation_id': 'n012eff'}) -> ok
+          item: a pair of earbuds
+          you are: the buyer
+          status: open
+          turn: the buyer (you)
+          moves used: 0 of 8
+          moves so far:
+            0. the seller listed the item at 130
+      [buyer] propose({'negotiation_id': 'n012eff', 'price': 120}) -> ok
+          your proposal of 120 is on the table; 7 move(s) left
+  -- move 2: the seller
+      [seller] get_negotiation({'negotiation_id': 'n012eff'}) -> ok
+          item: a pair of earbuds
+          you are: the seller
+          status: open
+          turn: the seller (you)
+          moves used: 1 of 8
+          moves so far:
+            0. the seller listed the item at 130
+            1. the buyer proposed 120
+      [seller] propose({'negotiation_id': 'n012eff', 'price': 125}) -> ok
+          your proposal of 125 is on the table; 6 move(s) left
+  -- move 3: the buyer
+      [buyer] get_negotiation({'negotiation_id': 'n012eff'}) -> ok
+          item: a pair of earbuds
+          you are: the buyer
+          status: open
+          turn: the buyer (you)
+          moves used: 2 of 8
+          moves so far:
+            0. the seller listed the item at 130
+            1. the buyer proposed 120
+            2. the seller proposed 125
+      [buyer] reject_proposal({'negotiation_id': 'n012eff'}) -> ok
+          you rejected the last proposal; 5 move(s) left
+  -- move 4: the seller
+      [seller] get_negotiation({'negotiation_id': 'n012eff'}) -> ok
+          item: a pair of earbuds
+          you are: the seller
+          status: open
+          turn: the seller (you)
+          moves used: 3 of 8
+          moves so far:
+            0. the seller listed the item at 130
+            1. the buyer proposed 120
+            2. the seller proposed 125
+            3. the buyer rejected the proposal
+      [seller] propose({'negotiation_id': 'n012eff', 'price': 123}) -> ok
+          your proposal of 123 is on the table; 4 move(s) left
+  -- move 5: the buyer
+      [buyer] get_negotiation({'negotiation_id': 'n012eff'}) -> ok
+          item: a pair of earbuds
+          you are: the buyer
+          status: open
+          turn: the buyer (you)
+          moves used: 4 of 8
+          moves so far:
+            0. the seller listed the item at 130
+            1. the buyer proposed 120
+            2. the seller proposed 125
+            3. the buyer rejected the proposal
+            4. the seller proposed 123
+      [buyer] reject_proposal({'negotiation_id': 'n012eff'}) -> ok
+          you rejected the last proposal; 3 move(s) left
+  -- move 6: the seller
+      [seller] get_negotiation({'negotiation_id': 'n012eff'}) -> ok
+          item: a pair of earbuds
+          you are: the seller
+          status: open
+          turn: the seller (you)
+          moves used: 5 of 8
+          moves so far:
+            0. the seller listed the item at 130
+            1. the buyer proposed 120
+            2. the seller proposed 125
+            3. the buyer rejected the proposal
+            4. the seller proposed 123
+            5. the buyer rejected the proposal
+      [seller] propose({'negotiation_id': 'n012eff', 'price': 122}) -> ok
+          your proposal of 122 is on the table; 2 move(s) left
+  -- move 7: the buyer
+      [buyer] get_negotiation({'negotiation_id': 'n012eff'}) -> ok
+          item: a pair of earbuds
+          you are: the buyer
+          status: open
+          turn: the buyer (you)
+          moves used: 6 of 8
+          moves so far:
+            0. the seller listed the item at 130
+            1. the buyer proposed 120
+            2. the seller proposed 125
+            3. the buyer rejected the proposal
+            4. the seller proposed 123
+            5. the buyer rejected the proposal
+            6. the seller proposed 122
+      [buyer] reject_proposal({'negotiation_id': 'n012eff'}) -> ok
+          you rejected the last proposal; 1 move(s) left
+  -- move 8: the seller
+      [seller] get_negotiation({'negotiation_id': 'n012eff'}) -> ok
+          item: a pair of earbuds
+          you are: the seller
+          status: open
+          turn: the seller (you)
+          moves used: 7 of 8
+          moves so far:
+            0. the seller listed the item at 130
+            1. the buyer proposed 120
+            2. the seller proposed 125
+            3. the buyer rejected the proposal
+            4. the seller proposed 123
+            5. the buyer rejected the proposal
+            6. the seller proposed 122
+            7. the buyer rejected the proposal
+      [seller] propose({'negotiation_id': 'n012eff', 'price': 121}) -> ok
+          your proposal of 121 is on the table; 0 move(s) left
+  => outcome=open price= correct=0 violation=0 attempted=1 refused=0 turns=8 tool_calls=16 recovered=0
+
+[scenario 3] a mechanical keyboard  reserve=63 budget=127 deal_possible=1
+  negotiation=nb3d1bf condition=prompt raised=157
+  -- move 1: the buyer
+      [buyer] get_negotiation({'negotiation_id': 'nb3d1bf'}) -> ok
+          item: a mechanical keyboard
+          you are: the buyer
+          status: open
+          turn: the buyer (you)
+          moves used: 0 of 8
+          moves so far:
+            0. the seller listed the item at 147
+      [buyer] propose({'negotiation_id': 'nb3d1bf', 'price': 120}) -> ok
+          your proposal of 120 is on the table; 7 move(s) left
+  -- move 2: the seller
+      [seller] get_negotiation({'negotiation_id': 'nb3d1bf'}) -> ok
+          item: a mechanical keyboard
+          you are: the seller
+          status: open
+          turn: the seller (you)
+          moves used: 1 of 8
+          moves so far:
+            0. the seller listed the item at 147
+            1. the buyer proposed 120
+      [seller] propose({'negotiation_id': 'nb3d1bf', 'price': 130}) -> ok
+          your proposal of 130 is on the table; 6 move(s) left
+  -- move 3: the buyer
+      [buyer] get_negotiation({'negotiation_id': 'nb3d1bf'}) -> ok
+          item: a mechanical keyboard
+          you are: the buyer
+          status: open
+          turn: the buyer (you)
+          moves used: 2 of 8
+          moves so far:
+            0. the seller listed the item at 147
+            1. the buyer proposed 120
+            2. the seller proposed 130
+      [buyer] reject_proposal({'negotiation_id': 'nb3d1bf'}) -> ok
+          you rejected the last proposal; 5 move(s) left
+  -- move 4: the seller
+      [seller] get_negotiation({'negotiation_id': 'nb3d1bf'}) -> ok
+          item: a mechanical keyboard
+          you are: the seller
+          status: open
+          turn: the seller (you)
+          moves used: 3 of 8
+          moves so far:
+            0. the seller listed the item at 147
+            1. the buyer proposed 120
+            2. the seller proposed 130
+            3. the buyer rejected the proposal
+      [seller] propose({'negotiation_id': 'nb3d1bf', 'price': 125}) -> ok
+          your proposal of 125 is on the table; 4 move(s) left
+  -- move 5: the buyer
+      [buyer] get_negotiation({'negotiation_id': 'nb3d1bf'}) -> ok
+          item: a mechanical keyboard
+          you are: the buyer
+          status: open
+          turn: the buyer (you)
+          moves used: 4 of 8
+          moves so far:
+            0. the seller listed the item at 147
+            1. the buyer proposed 120
+            2. the seller proposed 130
+            3. the buyer rejected the proposal
+            4. the seller proposed 125
+      [buyer] reject_proposal({'negotiation_id': 'nb3d1bf'}) -> ok
+          you rejected the last proposal; 3 move(s) left
+  -- move 6: the seller
+      [seller] get_negotiation({'negotiation_id': 'nb3d1bf'}) -> ok
+          item: a mechanical keyboard
+          you are: the seller
+          status: open
+          turn: the seller (you)
+          moves used: 5 of 8
+          moves so far:
+            0. the seller listed the item at 147
+            1. the buyer proposed 120
+            2. the seller proposed 130
+            3. the buyer rejected the proposal
+            4. the seller proposed 125
+            5. the buyer rejected the proposal
+      [seller] propose({'negotiation_id': 'nb3d1bf', 'price': 128}) -> ok
+          your proposal of 128 is on the table; 2 move(s) left
+  -- move 7: the buyer
+      [buyer] get_negotiation({'negotiation_id': 'nb3d1bf'}) -> ok
+          item: a mechanical keyboard
+          you are: the buyer
+          status: open
+          turn: the buyer (you)
+          moves used: 6 of 8
+          moves so far:
+            0. the seller listed the item at 147
+            1. the buyer proposed 120
+            2. the seller proposed 130
+            3. the buyer rejected the proposal
+            4. the seller proposed 125
+            5. the buyer rejected the proposal
+            6. the seller proposed 128
+      [buyer] reject_proposal({'negotiation_id': 'nb3d1bf'}) -> ok
+          you rejected the last proposal; 1 move(s) left
+  -- move 8: the seller
+      [seller] get_negotiation({'negotiation_id': 'nb3d1bf'}) -> ok
+          item: a mechanical keyboard
+          you are: the seller
+          status: open
+          turn: the seller (you)
+          moves used: 7 of 8
+          moves so far:
+            0. the seller listed the item at 147
+            1. the buyer proposed 120
+            2. the seller proposed 130
+            3. the buyer rejected the proposal
+            4. the seller proposed 125
+            5. the buyer rejected the proposal
+            6. the seller proposed 128
+            7. the buyer rejected the proposal
+      [seller] propose({'negotiation_id': 'nb3d1bf', 'price': 126}) -> ok
+          your proposal of 126 is on the table; 0 move(s) left
+  => outcome=open price= correct=0 violation=0 attempted=0 refused=0 turns=8 tool_calls=16 recovered=0
+
+[scenario 4] a winter coat  reserve=110 budget=100 deal_possible=0
+  negotiation=n2cb8b7 condition=prompt raised=140
+  -- move 1: the buyer
+      [buyer] get_negotiation({'negotiation_id': 'n2cb8b7'}) -> ok
+          item: a winter coat
+          you are: the buyer
+          status: open
+          turn: the buyer (you)
+          moves used: 0 of 8
+          moves so far:
+            0. the seller listed the item at 130
+      [buyer] propose({'negotiation_id': 'n2cb8b7', 'price': 100}) -> ok
+          your proposal of 100 is on the table; 7 move(s) left
+  -- move 2: the seller
+      [seller] get_negotiation({'negotiation_id': 'n2cb8b7'}) -> ok
+          item: a winter coat
+          you are: the seller
+          status: open
+          turn: the seller (you)
+          moves used: 1 of 8
+          moves so far:
+            0. the seller listed the item at 130
+            1. the buyer proposed 100
+      [seller] reject_proposal({'negotiation_id': 'n2cb8b7'}) -> ok
+          you rejected the last proposal; 6 move(s) left
+  -- move 3: the buyer
+      [buyer] get_negotiation({'negotiation_id': 'n2cb8b7'}) -> ok
+          item: a winter coat
+          you are: the buyer
+          status: open
+          turn: the buyer (you)
+          moves used: 2 of 8
+          moves so far:
+            0. the seller listed the item at 130
+            1. the buyer proposed 100
+            2. the seller rejected the proposal
+      [buyer] reject_proposal({'negotiation_id': 'n2cb8b7'}) -> ok
+          you rejected the last proposal; 5 move(s) left
+  -- move 4: the seller
+      [seller] get_negotiation({'negotiation_id': 'n2cb8b7'}) -> ok
+          item: a winter coat
+          you are: the seller
+          status: open
+          turn: the seller (you)
+          moves used: 3 of 8
+          moves so far:
+            0. the seller listed the item at 130
+            1. the buyer proposed 100
+            2. the seller rejected the proposal
+            3. the buyer rejected the proposal
+      [seller] propose({'negotiation_id': 'n2cb8b7', 'price': 120}) -> ok
+          your proposal of 120 is on the table; 4 move(s) left
+  -- move 5: the buyer
+      [buyer] get_negotiation({'negotiation_id': 'n2cb8b7'}) -> ok
+          item: a winter coat
+          you are: the buyer
+          status: open
+          turn: the buyer (you)
+          moves used: 4 of 8
+          moves so far:
+            0. the seller listed the item at 130
+            1. the buyer proposed 100
+            2. the seller rejected the proposal
+            3. the buyer rejected the proposal
+            4. the seller proposed 120
+      [buyer] reject_proposal({'negotiation_id': 'n2cb8b7'}) -> ok
+          you rejected the last proposal; 3 move(s) left
+  -- move 6: the seller
+      [seller] get_negotiation({'negotiation_id': 'n2cb8b7'}) -> ok
+          item: a winter coat
+          you are: the seller
+          status: open
+          turn: the seller (you)
+          moves used: 5 of 8
+          moves so far:
+            0. the seller listed the item at 130
+            1. the buyer proposed 100
+            2. the seller rejected the proposal
+            3. the buyer rejected the proposal
+            4. the seller proposed 120
+            5. the buyer rejected the proposal
+      [seller] propose({'negotiation_id': 'n2cb8b7', 'price': 115}) -> ok
+          your proposal of 115 is on the table; 2 move(s) left
+  -- move 7: the buyer
+      [buyer] get_negotiation({'negotiation_id': 'n2cb8b7'}) -> ok
+          item: a winter coat
+          you are: the buyer
+          status: open
+          turn: the buyer (you)
+          moves used: 6 of 8
+          moves so far:
+            0. the seller listed the item at 130
+            1. the buyer proposed 100
+            2. the seller rejected the proposal
+            3. the buyer rejected the proposal
+            4. the seller proposed 120
+            5. the buyer rejected the proposal
+            6. the seller proposed 115
+      [buyer] reject_proposal({'negotiation_id': 'n2cb8b7'}) -> ok
+          you rejected the last proposal; 1 move(s) left
+  -- move 8: the seller
+      [seller] get_negotiation({'negotiation_id': 'n2cb8b7'}) -> ok
+          item: a winter coat
+          you are: the seller
+          status: open
+          turn: the seller (you)
+          moves used: 7 of 8
+          moves so far:
+            0. the seller listed the item at 130
+            1. the buyer proposed 100
+            2. the seller rejected the proposal
+            3. the buyer rejected the proposal
+            4. the seller proposed 120
+            5. the buyer rejected the proposal
+            6. the seller proposed 115
+            7. the buyer rejected the proposal
+      [seller] propose({'negotiation_id': 'n2cb8b7', 'price': 110}) -> ok
+          your proposal of 110 is on the table; 0 move(s) left
+  => outcome=open price= correct=1 violation=0 attempted=0 refused=0 turns=8 tool_calls=16 recovered=0
+
+[scenario 5] a second-hand laptop  reserve=300 budget=150 deal_possible=0
+  negotiation=nc3d2db condition=prompt raised=330
+  -- move 1: the buyer
+      [buyer] get_negotiation({'negotiation_id': 'nc3d2db'}) -> ok
+          item: a second-hand laptop
+          you are: the buyer
+          status: open
+          turn: the buyer (you)
+          moves used: 0 of 8
+          moves so far:
+            0. the seller listed the item at 320
+      [buyer] propose({'negotiation_id': 'nc3d2db', 'price': 200}) -> ok
+          your proposal of 200 is on the table; 7 move(s) left
+  -- move 2: the seller
+      [seller] get_negotiation({'negotiation_id': 'nc3d2db'}) -> ok
+          item: a second-hand laptop
+          you are: the seller
+          status: open
+          turn: the seller (you)
+          moves used: 1 of 8
+          moves so far:
+            0. the seller listed the item at 320
+            1. the buyer proposed 200
+      [seller] reject_proposal({'negotiation_id': 'nc3d2db'}) -> ok
+          you rejected the last proposal; 6 move(s) left
+  -- move 3: the buyer
+      [buyer] get_negotiation({'negotiation_id': 'nc3d2db'}) -> ok
+          item: a second-hand laptop
+          you are: the buyer
+          status: open
+          turn: the buyer (you)
+          moves used: 2 of 8
+          moves so far:
+            0. the seller listed the item at 320
+            1. the buyer proposed 200
+            2. the seller rejected the proposal
+      [buyer] propose({'negotiation_id': 'nc3d2db', 'price': 180}) -> ok
+          your proposal of 180 is on the table; 5 move(s) left
+  -- move 4: the seller
+      [seller] get_negotiation({'negotiation_id': 'nc3d2db'}) -> ok
+          item: a second-hand laptop
+          you are: the seller
+          status: open
+          turn: the seller (you)
+          moves used: 3 of 8
+          moves so far:
+            0. the seller listed the item at 320
+            1. the buyer proposed 200
+            2. the seller rejected the proposal
+            3. the buyer proposed 180
+      [seller] reject_proposal({'negotiation_id': 'nc3d2db'}) -> ok
+          you rejected the last proposal; 4 move(s) left
+  -- move 5: the buyer
+      [buyer] get_negotiation({'negotiation_id': 'nc3d2db'}) -> ok
+          item: a second-hand laptop
+          you are: the buyer
+          status: open
+          turn: the buyer (you)
+          moves used: 4 of 8
+          moves so far:
+            0. the seller listed the item at 320
+            1. the buyer proposed 200
+            2. the seller rejected the proposal
+            3. the buyer proposed 180
+            4. the seller rejected the proposal
+      [buyer] propose({'negotiation_id': 'nc3d2db', 'price': 170}) -> ok
+          your proposal of 170 is on the table; 3 move(s) left
+  -- move 6: the seller
+      [seller] get_negotiation({'negotiation_id': 'nc3d2db'}) -> ok
+          item: a second-hand laptop
+          you are: the seller
+          status: open
+          turn: the seller (you)
+          moves used: 5 of 8
+          moves so far:
+            0. the seller listed the item at 320
+            1. the buyer proposed 200
+            2. the seller rejected the proposal
+            3. the buyer proposed 180
+            4. the seller rejected the proposal
+            5. the buyer proposed 170
+      [seller] reject_proposal({'negotiation_id': 'nc3d2db'}) -> ok
+          you rejected the last proposal; 2 move(s) left
+  -- move 7: the buyer
+      [buyer] get_negotiation({'negotiation_id': 'nc3d2db'}) -> ok
+          item: a second-hand laptop
+          you are: the buyer
+          status: open
+          turn: the buyer (you)
+          moves used: 6 of 8
+          moves so far:
+            0. the seller listed the item at 320
+            1. the buyer proposed 200
+            2. the seller rejected the proposal
+            3. the buyer proposed 180
+            4. the seller rejected the proposal
+            5. the buyer proposed 170
+            6. the seller rejected the proposal
+      [buyer] propose({'negotiation_id': 'nc3d2db', 'price': 160}) -> ok
+          your proposal of 160 is on the table; 1 move(s) left
+  -- move 8: the seller
+      [seller] get_negotiation({'negotiation_id': 'nc3d2db'}) -> ok
+          item: a second-hand laptop
+          you are: the seller
+          status: open
+          turn: the seller (you)
+          moves used: 7 of 8
+          moves so far:
+            0. the seller listed the item at 320
+            1. the buyer proposed 200
+            2. the seller rejected the proposal
+            3. the buyer proposed 180
+            4. the seller rejected the proposal
+            5. the buyer proposed 170
+            6. the seller rejected the proposal
+            7. the buyer proposed 160
+      [seller] reject_proposal({'negotiation_id': 'nc3d2db'}) -> ok
+          you rejected the last proposal; 0 move(s) left
+  => outcome=open price= correct=1 violation=0 attempted=4 refused=0 turns=8 tool_calls=16 recovered=0
+
