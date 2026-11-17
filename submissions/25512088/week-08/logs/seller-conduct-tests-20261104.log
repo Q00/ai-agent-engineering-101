@@ -1,0 +1,34 @@
+...E.....QUOTE_REQUEST shop SKU1
+OFFER shop SKU1 7000
+.....QUOTE_REQUEST shop SKU1
+OFFER shop SKU1 9500
+OFFER shop SKU1 9500
+OFFER shop SKU1 9500
+OFFER shop SKU1 9500
+.....QUOTE_REQUEST shop SKU1
+QUOTE_REQUEST second SKU1
+..QUOTE_REQUEST shop SKU1
+QUOTE_REQUEST other SKU1
+OFFER shop SKU1 6000
+OFFER other SKU1 7000
+QUOTE_REQUEST other SKU1
+QUOTE_REQUEST shop SKU1
+OFFER shop SKU1 6000
+.....QUOTE_REQUEST shop SKU1
+...............................
+======================================================================
+ERROR: test_reward_and_warranty_liabilities_limit_cash (test_procurement.PurchaseTests.test_reward_and_warranty_liabilities_limit_cash)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/ohhyunsoo/Documents/ChatGPT/AX이해와활용/ai-agent-engineering-101-week08/submissions/25512088/week-08/test_procurement.py", line 23, in test_reward_and_warranty_liabilities_limit_cash
+    self.assertIsNone(choose(self.p,self.cat,0,0,1000000,300000,0,0))
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ohhyunsoo/Documents/ChatGPT/AX이해와활용/ai-agent-engineering-101-week08/submissions/25512088/week-08/procurement_campaign.py", line 21, in choose
+    if sku in blocked or product.get('kind')!='goods':continue
+       ^^^^^^^^^^^^^^
+TypeError: argument of type 'int' is not iterable
+
+----------------------------------------------------------------------
+Ran 57 tests in 0.327s
+
+FAILED (errors=1)

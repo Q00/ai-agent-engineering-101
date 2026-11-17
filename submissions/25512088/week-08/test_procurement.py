@@ -1,0 +1,1066 @@
+import math
+import json
+import tempfile
+import time
+import unittest
+from network_reads import retry_read
+from seller_procurement import choose,allocation_plan,capital_available,supply_result,own_registration,own_board_registration,retry_join,join_current_registration,preserve_stale_pending,breadth_window_blocks,paid_bridge_count,paid_bridge_used,refresh_window_blocks,competitor_breadth_target,warranty_risk_reserve,observed_warranty_hazard,active_warranty_amounts,supply_interval_wait,capacity_recheck_wait,own_sales_evidence,own_grade_profit_evidence,recent_refund_cooldown_skus,mature_refund_risk_skus,active_high_value_warranty_skus,own_a_conversion_evidence,own_quote_conversion_evidence
+from seller_market import dominant_goods_profit_probability
+class PurchaseTests(unittest.TestCase):
+ def test_capacity_recheck_is_fast_only_during_open_supply(self):
+  self.assertEqual(capacity_recheck_wait({'open':True}),10)
+  self.assertEqual(capacity_recheck_wait({'open':False}),60)
+  self.assertEqual(capacity_recheck_wait({}),60)
+ def test_successful_supply_cooldown_avoids_predictable_rate_limit(self):
+  self.assertAlmostEqual(supply_interval_wait(100,101,10.05),9.05)
+  self.assertEqual(supply_interval_wait(100,110.05,10.05),0)
+  self.assertEqual(supply_interval_wait(0,101,10.05),0)
+ def setUp(self):
+  self.p={'budget':2500000,'cash_floor':500000,'priority':['a','b','c','d']}
+  self.cat={k:dict(kind='goods',list_price=400000) for k in 'abcd'}
+ def test_cash_and_cumulative_budget_not_stock_count(self):
+  self.assertEqual(choose(self.p,self.cat,0,0,4782055,0,0),('a',300000))
+  self.assertIsNone(choose(self.p,self.cat,2300000,0,4782055,0,0))
+  self.assertIsNone(choose(self.p,self.cat,0,2300000,4782055,0,0))
+  self.assertIsNone(choose(self.p,self.cat,0,0,700000,0,0))
+ def test_priority_rotation_and_food_exclusion(self):
+  self.assertEqual(choose(self.p,self.cat,0,0,4782055,0,1)[0],'b')
+  self.cat['b']['kind']='food'
+  self.assertEqual(choose(self.p,self.cat,0,0,4782055,0,1)[0],'c')
+ def test_refund_exposure_preserved(self):
+  self.assertIsNone(choose(self.p,self.cat,0,0,1000000,250000,0))
+ def test_sale_releases_inventory_budget_without_resetting_lifetime_spend(self):
+  # Current inventory falls after settlement even if historical spend exceeds budget.
+  self.assertIsNone(choose(self.p,self.cat,2400000,0,5000000,0,0))
+  self.assertEqual(choose(self.p,self.cat,1900000,0,5000000,0,0),('a',300000))
+ def test_reward_and_warranty_liabilities_limit_cash(self):
+  self.assertIsNone(choose(self.p,self.cat,0,0,1000000,300000,0))
+ def test_warranty_reserve_covers_single_claim_and_bounded_tail(self):
+  policy={'warranty_reserve_hazard':.15,'warranty_reserve_sigma':4}
+  self.assertEqual(warranty_risk_reserve([2000000],policy),2000000)
+  amounts=[2000000,1000000]+[200000 for _ in range(50)]
+  reserve=warranty_risk_reserve(amounts,policy)
+  self.assertGreaterEqual(reserve,max(amounts))
+  self.assertLess(reserve,sum(amounts))
+  expected=.15*sum(amounts)
+  deviation=(.15*.85*sum(value*value for value in amounts))**.5
+  self.assertEqual(reserve,math.ceil(expected+4*deviation))
+ def test_warranty_hazard_uses_only_fresh_mature_official_cohort(self):
+  policy={'warranty_reserve_hazard':.15,'warranty_hazard_min_claims':200,
+          'warranty_hazard_max_age_seconds':90,'warranty_hazard_wilson_z':3.29,
+          'warranty_hazard_safety_multiplier':1.5,'warranty_hazard_floor':.08}
+  with tempfile.TemporaryDirectory() as root:
+   path=root+'/report.json'
+   def write(at,claims,broken):
+    with open(path,'w') as f:json.dump({'at':at,'board':{'shops':[
+      {'name':'25512088','claims':claims,'broken':broken}]}},f)
+   write(1000,1306,33)
+   self.assertEqual(observed_warranty_hazard(path,policy,now=1010),.08)
+   write(1000,199,0)
+   self.assertEqual(observed_warranty_hazard(path,policy,now=1010),.15)
+   write(900,1306,33)
+   self.assertEqual(observed_warranty_hazard(path,policy,now=1010),.15)
+ def test_warranty_hazard_uses_fresh_official_intel_during_report_handoff(self):
+  import sqlite3
+  policy={'warranty_reserve_hazard':.15,'warranty_hazard_min_claims':200,
+          'warranty_hazard_max_age_seconds':90,'warranty_hazard_wilson_z':3.29,
+          'warranty_hazard_safety_multiplier':1.25,'warranty_hazard_floor':.04}
+  with tempfile.TemporaryDirectory() as root:
+   path=root+'/market-report.json'
+   with open(path,'w') as f:json.dump({'at':1000,'board':{'shops':[
+     {'name':'25512088','claims':0,'broken':0}]}},f)
+   db=sqlite3.connect(root+'/market_intel.sqlite3')
+   db.execute('create table sources(name text primary key,ts real,body text)')
+   board={'shops':[{'name':'25512088','claims':3304,'broken':72}]}
+   db.execute('insert into sources values(?,?,?)',('board',1005,json.dumps(board)))
+   db.commit();db.close()
+   self.assertEqual(observed_warranty_hazard(path,policy,now=1010),.04)
+ def test_active_warranty_reconstructs_legacy_expansion_and_new_six_hours(self):
+  import sqlite3
+  db=sqlite3.connect(':memory:')
+  db.execute('create table sales(task text,sku text,settled real,refunded integer)')
+  db.execute('create table warranties(task text,amount integer,issued real)')
+  # The sixth old sale had five predecessors, so the old code granted 24 h.
+  for n in range(6):
+   db.execute('insert into sales values(?,?,?,0)',(f'old{n}','sku',100+n))
+   db.execute('insert into warranties values(?,?,?)',(f'old{n}',1000,100+n))
+  db.execute('insert into sales values(?,?,?,0)',('new','sku',1001))
+  db.execute('insert into warranties values(?,?,?)',('new',2000,1001))
+  policy={'fixed_warranty_hours_at':1000}
+  amounts=active_warranty_amounts(db,policy,now=100+10*3600)
+  self.assertEqual(amounts,[1000])
+ def test_refunded_sale_is_negative_principal_in_own_evidence(self):
+  import sqlite3
+  db=sqlite3.connect(':memory:')
+  db.execute('create table sales(sku text,amount integer,cost integer,reward integer,settled real,refunded integer)')
+  db.executemany('insert into sales values(?,?,?,?,?,?)',[
+   ('x',120,100,0,1000,0),('x',120,100,0,1000,1)])
+  recent,total,gross,profitable=own_sales_evidence(db,now=1100)
+  self.assertEqual(recent,{'x':1})
+  self.assertEqual(total,{'x':2})
+  self.assertEqual(gross,{'x':-80})
+  self.assertEqual(profitable,{'x':1})
+ def test_local_grade_evidence_joins_certified_grade_and_refund_aware_profit(self):
+  import sqlite3
+  local=sqlite3.connect(':memory:')
+  local.execute('create table sales(sku text,ledger integer,amount integer,cost integer,reward integer,refunded integer)')
+  local.executemany('insert into sales values(?,?,?,?,?,?)',[
+   ('x',1,120,100,0,0),('x',2,130,100,0,0),
+   ('x',3,140,100,0,1),('x',4,150,100,0,0)])
+  with tempfile.TemporaryDirectory() as root:
+   path=root+'/intel.sqlite3';intel=sqlite3.connect(path)
+   intel.execute('create table trades(seq integer,grade text)')
+   intel.executemany('insert into trades values(?,?)',[(1,'A'),(2,'A'),(3,'A'),(4,'B')])
+   intel.commit();intel.close()
+   evidence=own_grade_profit_evidence(local,path,'A')['x']
+  self.assertEqual(evidence,{'sales':3,'profitable':2,'gross':-50,'refunds':1})
+ def test_recent_official_refund_cools_only_matching_local_sku(self):
+  import sqlite3
+  local=sqlite3.connect(':memory:')
+  local.execute('create table sales(sku text,unit text,refunded integer)')
+  local.executemany('insert into sales values(?,?,?)',[
+   ('ours','unit-ours',1),('old','unit-old',1),('not-refunded','unit-safe',0)])
+  with tempfile.TemporaryDirectory() as root:
+   path=root+'/intel.sqlite3';intel=sqlite3.connect(path)
+   intel.execute('create table breakages(unit text,refunded integer,ts real)')
+   intel.executemany('insert into breakages values(?,?,?)',[
+    ('unit-ours',100,990),('unit-foreign',100,995),('unit-old',100,700)])
+   intel.commit();intel.close()
+   self.assertEqual(recent_refund_cooldown_skus(
+    local,path,now=1000,cooldown_hours=.05),{'ours'})
+   self.assertEqual(recent_refund_cooldown_skus(
+    local,path,now=1000,cooldown_hours=0),set())
+ def test_repeated_official_refunds_extend_only_that_skus_cooldown(self):
+  import sqlite3
+  local=sqlite3.connect(':memory:')
+  local.execute('create table sales(sku text,unit text,refunded integer)')
+  local.executemany('insert into sales values(?,?,?)',[
+   ('repeat','unit-a',1),('repeat','unit-b',1),
+   ('isolated','unit-c',1),('not-refunded','unit-d',0)])
+  with tempfile.TemporaryDirectory() as root:
+   path=root+'/intel.sqlite3';intel=sqlite3.connect(path)
+   intel.execute('create table breakages(unit text,refunded integer,ts real)')
+   # All events are older than the 180-second ordinary cooldown.  Only the
+   # SKU with two official failures remains blocked by the 24-hour window.
+   intel.executemany('insert into breakages values(?,?,?)',[
+    ('unit-a',100,700),('unit-b',100,710),
+    ('unit-c',100,720),('unit-d',100,730)])
+   intel.commit();intel.close()
+   self.assertEqual(recent_refund_cooldown_skus(
+    local,path,now=1000,cooldown_hours=.05,
+    repeat_cooldown_hours=24,repeat_refunds=2),{'repeat'})
+ def test_mature_repeat_refund_veto_requires_low_book_yield(self):
+  import sqlite3
+  db=sqlite3.connect(':memory:')
+  db.execute('create table sales(sku text,amount integer,cost integer,reward integer,refunded integer)')
+  # Both cohorts are mature and have repeated refunds. Only the cohort whose
+  # refund-aware Book yield has fallen below 3% of principal is vetoed.
+  for sku,normal_margin in [('thin',2),('healthy',20)]:
+   db.executemany('insert into sales values(?,?,?,?,?)',
+    [(sku,100+normal_margin,100,0,0) for _ in range(18)]+
+    [(sku,100,100,0,1) for _ in range(2)])
+  self.assertEqual(mature_refund_risk_skus(
+   db,min_sales=20,min_refunds=2,min_book_margin=.03),{'thin'})
+  self.assertEqual(mature_refund_risk_skus(
+   db,min_sales=21,min_refunds=2,min_book_margin=.03),set())
+ def test_high_value_goods_wait_for_warranty_maturity_before_repeat(self):
+  import sqlite3
+  db=sqlite3.connect(':memory:')
+  db.execute('create table sales(sku text,cost integer,refunded integer,settled real)')
+  now=100000
+  db.executemany('insert into sales values(?,?,?,?)',[
+   ('fresh-goods',600000,0,now-60),
+   ('pending-goods',700000,0,None),
+   ('cheap-goods',400000,0,now-60),
+   ('old-goods',800000,0,now-6*3600-1),
+   ('refunded-goods',900000,1,now-60),
+   ('fresh-food',700000,0,now-60),
+   ('proven-goods',800000,0,now-120),
+   ('proven-goods',800000,0,now-60)])
+  catalog={sku:{'kind':'goods'} for sku in
+           ('fresh-goods','pending-goods','cheap-goods','old-goods',
+            'refunded-goods','proven-goods')}
+  catalog['fresh-food']={'kind':'food'}
+  self.assertEqual(active_high_value_warranty_skus(
+   db,catalog,min_cost=500000,now=now,warranty_hours=6),
+   {'fresh-goods','pending-goods'})
+ def test_a_conversion_evidence_and_veto_use_rolling_structured_events(self):
+  import sqlite3
+  with tempfile.TemporaryDirectory() as root:
+   path=root+'/adaptive.sqlite3';db=sqlite3.connect(path)
+   db.execute('create table runtime_events(kind text,body text,correlation text,ts real)')
+   for n in range(10):
+    task=f'q{n}';body=json.dumps({'task':task,'sku':'low','grade':'A'})
+    db.execute('insert into runtime_events values(?,?,?,?)',('quote_created',body,task,1000))
+   for n in range(2):
+    task=f'h{n}';body=json.dumps({'task':task,'sku':'sample','grade':'A'})
+    db.execute('insert into runtime_events values(?,?,?,?)',('quote_created',body,task,1000))
+    db.execute('insert into runtime_events values(?,?,?,?)',
+               ('sale_signed',json.dumps({'task':task}),task,1001))
+   for n in range(2):
+    task=f'b{n}';body=json.dumps({'task':task,'sku':'low','grade':'B'})
+    db.execute('insert into runtime_events values(?,?,?,?)',('quote_created',body,task,1000))
+    db.execute('insert into runtime_events values(?,?,?,?)',
+               ('sale_signed',json.dumps({'task':task}),task,1001))
+   db.commit();db.close()
+   evidence=own_a_conversion_evidence(path,now=1100,hours=1)
+   self.assertEqual(evidence['low'],{'quotes':10,'signed':0,'rate':0})
+   self.assertEqual(evidence['sample'],{'quotes':2,'signed':2,'rate':1})
+   all_evidence=own_quote_conversion_evidence(path,now=1100,hours=1)
+   self.assertEqual(all_evidence['low'],{'quotes':12,'signed':2,'rate':1/6})
+  base=dict(kind='goods',expected_net=50000,score=3,upper_cost=100,
+            sales_1h=8,sales_6h=12,distinct_buyers_6h=4,
+            estimated_sale_likelihood=.8,dominant_grade_samples=10,
+            dominant_grade_profit_probability=.9,own_sales_total=5,
+            own_profitable_sales=5,own_gross_total=1000)
+  ranked=[dict(base,sku='foodkeep',kind='food',own_a_quotes=10,
+               own_a_conversion_rate=0,own_quotes=12,own_conversion_rate=1/6),
+          dict(base,sku='foodlow',kind='food',own_quotes=10,own_conversion_rate=.09),
+          dict(base,sku='goodslow',own_a_quotes=10,own_a_conversion_rate=.09,
+               own_quotes=20,own_conversion_rate=.8),
+          dict(base,sku='sample',own_a_quotes=9,own_a_conversion_rate=0)]
+  policy={'max_sku_capital_share':1,'min_own_a_conversion_samples':10,
+          'min_own_a_conversion_rate':.10}
+  self.assertEqual([x['sku'] for x in allocation_plan(
+   ranked,{'units':[]},10000,policy=policy)],['foodkeep','sample'])
+ def test_mature_negative_local_goods_cohort_blocks_restock(self):
+  ranked=[dict(sku='lossy',kind='goods',expected_net=500000,score=999,
+               upper_cost=100000,sales_1h=20,sales_6h=50,distinct_buyers_6h=10,
+               own_sales_1h=5,own_sales_total=11,own_gross_total=-206555,
+               own_profitable_sales=9,dominant_grade_samples=50,
+               dominant_grade_profit_probability=.99,estimated_sale_likelihood=.9)]
+  policy={'max_sku_capital_share':1,'min_own_loss_veto_sales':5}
+  self.assertEqual(allocation_plan(ranked,{'units':[]},1000000,policy=policy),[])
+ def test_one_negative_high_value_sale_blocks_restock_until_book_recovers(self):
+  high=dict(sku='high-loss',kind='goods',expected_net=500000,score=999,
+            upper_cost=600000,sales_1h=8,sales_6h=20,distinct_buyers_6h=8,
+            own_sales_1h=0,own_sales_total=1,own_gross_total=-600000,
+            own_profitable_sales=0,dominant_grade_samples=20,
+            dominant_grade_profit_probability=.90,estimated_sale_likelihood=.9)
+  cheap=dict(sku='cheap',kind='food',expected_net=1000,score=1,
+             upper_cost=100,sales_1h=2,sales_6h=4,distinct_buyers_6h=2,
+             estimated_sale_likelihood=.5)
+  policy={'max_sku_capital_share':1,'high_value_lane_min_unit_cost':500000,
+          'min_own_loss_veto_sales':5}
+  plan=allocation_plan([high,cheap],{'units':[],'balance':1000000},1000000,
+                       policy=policy)
+  self.assertEqual([row['sku'] for row in plan],['cheap'])
+  high.update(own_gross_total=1,own_profitable_sales=1)
+  self.assertEqual(allocation_plan(
+      [high,cheap],{'units':[],'balance':1000000},1000000,
+      policy=policy)[0]['sku'],'high-loss')
+ def test_allocation_uses_sellthrough_and_small_diversified_lots(self):
+  ranked=[dict(sku='a',expected_net=50000,score=3,upper_cost=100000,sales_1h=8,sales_6h=12,
+               distinct_buyers_6h=4,own_stockouts_6h=2,own_inquiries_6h=1,estimated_sale_likelihood=.8),
+          dict(sku='b',expected_net=-1,score=99,upper_cost=1,sales_1h=100,sales_6h=100,
+               distinct_buyers_6h=4,own_stockouts_6h=0,own_inquiries_6h=0,estimated_sale_likelihood=1)]
+  policy={'max_sku_capital_share':1}
+  plan=allocation_plan(ranked,{'units':[{'sku':'a'}]},900000,policy=policy)
+  self.assertEqual(plan[0]['sku'],'a');self.assertEqual(plan[0]['qty'],2)
+  self.assertNotIn('b',[r['sku'] for r in plan])
+  aggressive=allocation_plan(ranked,{'units':[{'sku':'a'}]},900000,aggression=3,policy=policy)
+  self.assertEqual(aggressive[0]['qty'],2)
+  huge=allocation_plan(ranked,{'units':[]},10000000,aggression=100,policy=policy)
+  self.assertEqual(huge[0]['qty'],3)
+ def test_food_is_capped_at_two_units_per_sku(self):
+  ranked=[dict(sku='food',kind='food',shelf_hours=96,
+               expected_net=50000,score=3,upper_cost=100,
+               sales_1h=8,sales_6h=12,distinct_buyers_6h=4,estimated_sale_likelihood=.8)]
+  plan=allocation_plan(ranked,{'units':[]},10000)
+  self.assertEqual(plan[0]['qty'],2)
+  one={'units':[{'sku':'food','kind':'food','cost':100}]}
+  self.assertEqual(allocation_plan(ranked,one,10000)[0]['qty'],1)
+  full={'units':[{'sku':'food','kind':'food','cost':100} for _ in range(2)]}
+  self.assertEqual(allocation_plan(ranked,full,10000),[])
+
+ def test_short_food_allows_only_one_fresh_replacement(self):
+  now=time.time()
+  ranked=[dict(sku='food',kind='food',shelf_hours=96,
+               expected_net=50000,score=3,upper_cost=100,
+               sales_1h=8,sales_6h=12,distinct_buyers_6h=4,
+               own_stockouts_6h=8,estimated_sale_likelihood=.8)]
+  policy={'max_food_units_per_sku':2,'food_sellable_min_hours':48,
+          'max_short_food_replacement_units':1,'max_sku_capital_share':1}
+  short={'sku':'food','kind':'food','cost':100,'expires_at':now+4*3600}
+  full={'units':[dict(short),dict(short)]}
+  plan=allocation_plan(ranked,full,10000,policy=policy)
+  self.assertEqual([(row['sku'],row['qty']) for row in plan],[('food',1)])
+  self.assertTrue(plan[0]['evidence']['short_food_replacement'])
+  self.assertEqual(plan[0]['evidence']['sellable_holding'],0)
+  failed_replacement={'units':[dict(short),dict(short),dict(short)]}
+  self.assertEqual(allocation_plan(ranked,failed_replacement,10000,policy=policy),[])
+  mixed={'units':[dict(short),dict(short,expires_at=now+72*3600)]}
+  self.assertEqual(allocation_plan(ranked,mixed,10000,policy=policy),[])
+  ranked[0]['shelf_hours']=48
+  self.assertEqual(allocation_plan(ranked,full,10000,policy=policy),[])
+
+ def test_goods_procurement_requires_dominant_a_grade_profit_evidence(self):
+  base=dict(kind='goods',expected_net=50000,score=3,upper_cost=100,
+            sales_1h=8,sales_6h=12,distinct_buyers_6h=4,
+            estimated_sale_likelihood=.8,dominant_grade_samples=10)
+  ranked=[dict(base,sku='risky',dominant_grade_profit_probability=.69),
+          dict(base,sku='safe',dominant_grade_profit_probability=.70)]
+  policy={'max_sku_capital_share':1,'min_goods_a_profit_samples':3,
+          'min_goods_a_profit_probability':.70}
+  plan=allocation_plan(ranked,{'units':[]},10000,policy=policy)
+  self.assertEqual([row['sku'] for row in plan],['safe'])
+  ranked[0].update(own_sales_total=10,own_profitable_sales=9,own_gross_total=1000)
+  plan=allocation_plan(ranked,{'units':[]},10000,policy=policy)
+  self.assertIn('risky',[row['sku'] for row in plan])
+  self.assertAlmostEqual(dominant_goods_profit_probability(10000,6969,0),.70)
+ def test_food_cap_remains_two_even_with_fast_hourly_sales(self):
+  ranked=[dict(sku='food',kind='food',expected_net=50000,score=3,upper_cost=100,
+               sales_1h=12,sales_6h=20,distinct_buyers_6h=4,estimated_sale_likelihood=.8)]
+  policy={'max_food_units_per_sku':2,'max_sku_capital_share':1}
+  self.assertEqual(allocation_plan(ranked,{'units':[]},10000,aggression=4,policy=policy)[0]['qty'],2)
+  ranked[0]['sales_1h']=30
+  self.assertEqual(allocation_plan(ranked,{'units':[]},10000,aggression=4,policy=policy)[0]['qty'],2)
+  ranked[0]['sales_1h']=11
+  self.assertEqual(allocation_plan(ranked,{'units':[]},10000,aggression=4,policy=policy)[0]['qty'],2)
+  over={'units':[{'sku':'food','kind':'food','cost':100} for _ in range(3)]}
+  self.assertEqual(allocation_plan(ranked,over,10000,aggression=4,policy=policy),[])
+ def test_locally_proven_profitable_food_keeps_hard_two_unit_cap(self):
+  ranked=[dict(sku='food',kind='food',expected_net=50000,score=3,upper_cost=100,
+               sales_1h=12,sales_6h=20,distinct_buyers_6h=4,
+               estimated_sale_likelihood=.8,own_sales_total=8,
+               own_gross_total=1000,own_quotes=20,own_conversion_rate=.4,
+               own_stockouts_6h=8)]
+  policy={'max_food_units_per_sku':2,'max_proven_food_units_per_sku':3,
+          'max_sku_capital_share':1}
+  plan=allocation_plan(ranked,{'units':[]},10000,aggression=4,policy=policy)
+  self.assertEqual(plan[0]['qty'],2)
+  self.assertTrue(plan[0]['evidence']['food_scale_ready'])
+  ranked[0]['own_stockouts_6h']=4
+  plan=allocation_plan(ranked,{'units':[]},10000,aggression=4,policy=policy)
+  self.assertEqual(plan[0]['qty'],2)
+  self.assertFalse(plan[0]['evidence']['food_scale_ready'])
+ def test_repeated_own_food_stockouts_do_not_break_two_unit_cap(self):
+  ranked=[dict(sku='food',kind='food',expected_net=50000,score=3,upper_cost=100,
+               sales_1h=4,sales_6h=8,distinct_buyers_6h=4,
+               own_stockouts_6h=2,estimated_sale_likelihood=.8)]
+  policy={'max_food_units_per_sku':2,'max_sku_capital_share':1}
+  self.assertEqual(allocation_plan(ranked,{'units':[]},10000,aggression=4,policy=policy)[0]['qty'],2)
+  ranked[0]['own_stockouts_6h']=1
+  self.assertEqual(allocation_plan(ranked,{'units':[]},10000,aggression=4,policy=policy)[0]['qty'],2)
+ def test_fast_goods_remain_at_three_unit_absolute_cap(self):
+  ranked=[dict(sku='goods',kind='goods',expected_net=50000,score=3,upper_cost=100,
+               sales_1h=6,own_sales_1h=6,sales_6h=12,distinct_buyers_6h=4,estimated_sale_likelihood=.8)]
+  policy={'max_units_per_sku':3,'max_sku_capital_share':1}
+  self.assertEqual(allocation_plan(ranked,{'units':[]},10000,aggression=4,policy=policy)[0]['qty'],3)
+  ranked[0]['own_sales_1h']=5
+  self.assertEqual(allocation_plan(ranked,{'units':[]},10000,aggression=4,policy=policy)[0]['qty'],3)
+  over={'units':[{'sku':'goods','kind':'goods','cost':100} for _ in range(5)]}
+  self.assertEqual(allocation_plan(ranked,over,10000,aggression=4,policy=policy),[])
+ def test_cold_goods_capital_pauses_only_unproven_goods_trials(self):
+  common=dict(expected_net=5000,score=3,upper_cost=100,sales_1h=8,sales_6h=12,
+              distinct_buyers_6h=4,estimated_sale_likelihood=.8)
+  ranked=[dict(common,sku='cold-new',kind='goods',own_sales_1h=0),
+          dict(common,sku='proven',kind='goods',own_sales_1h=2),
+          dict(common,sku='historical-proven',kind='goods',own_sales_1h=0,own_sales_total=1),
+          dict(common,sku='food',kind='food',own_sales_1h=0)]
+  inventory={'units':[{'sku':'old-cold','kind':'goods','cost':800}]}
+  policy={'max_cold_goods_capital_share':.30,'cold_goods_min_own_sales_1h':1,
+          'max_sku_capital_share':1}
+  plan=allocation_plan(ranked,inventory,1000,policy=policy)
+  self.assertNotIn('cold-new',[row['sku'] for row in plan])
+  self.assertIn('proven',[row['sku'] for row in plan])
+  self.assertIn('historical-proven',[row['sku'] for row in plan])
+  self.assertIn('food',[row['sku'] for row in plan])
+  inventory={'units':[{'sku':'old-cold','kind':'goods','cost':100}]}
+  plan=allocation_plan(ranked,inventory,1000,policy=policy)
+  self.assertIn('cold-new',[row['sku'] for row in plan])
+ def test_cold_goods_allows_one_new_dominant_safe_market_trial(self):
+  common=dict(expected_net=100,score=100,upper_cost=100,sales_1h=3,sales_6h=9,
+              distinct_buyers_6h=3,estimated_sale_likelihood=1,own_sales_1h=0,
+              dominant_grade_samples=3,dominant_grade_profit_probability=.7)
+  ranked=[dict(common,sku='safe-new',kind='goods'),
+          dict(common,sku='unsafe-new',kind='goods',dominant_grade_profit_probability=.69)]
+  inventory={'units':[{'sku':'old','kind':'goods','cost':900}]}
+  policy={'max_cold_goods_capital_share':.30,'cold_goods_min_own_sales_1h':1,
+          'min_goods_a_profit_samples':3,'min_goods_a_profit_probability':.65,
+          'cold_safe_trial_sales_1h':3,'cold_safe_trial_profit_probability':.7,
+          'max_cold_safe_trial_units':1,'max_sku_capital_share':1,
+          'max_units_per_sku':3}
+  plan=allocation_plan(ranked,inventory,1000,aggression=4,policy=policy)
+  self.assertEqual([(r['sku'],r['qty']) for r in plan],[('safe-new',1)])
+  inventory['units'].append({'sku':'safe-new','kind':'goods','cost':100})
+  self.assertEqual(allocation_plan(ranked,inventory,1000,aggression=4,policy=policy),[])
+ def test_sofa_is_blocked_until_zero_then_returns_under_normal_cap(self):
+  ranked=[dict(sku='Gc2f7811b',expected_net=999999,score=99,upper_cost=100000,sales_1h=20,sales_6h=20,
+               distinct_buyers_6h=10,estimated_sale_likelihood=1),
+          dict(sku='fresh',expected_net=50000,score=3,upper_cost=100000,sales_1h=8,sales_6h=12,
+               distinct_buyers_6h=4,own_stockouts_6h=0,own_inquiries_6h=0,estimated_sale_likelihood=.8)]
+  inv={'units':[{'sku':'Gc2f7811b','cost':100000}]+[{'sku':'fresh','cost':100000} for _ in range(2)]}
+  plan=allocation_plan(ranked,inv,10000000)
+  self.assertEqual([(x['sku'],x['qty']) for x in plan],[('fresh',1)])
+  inv={'units':[{'sku':'Gc2f7811b','cost':100000}]+[{'sku':'fresh','cost':100000} for _ in range(5)]}
+  self.assertEqual(allocation_plan(ranked,inv,10000000),[])
+  plan=allocation_plan(ranked,{'units':[]},10000000)
+  self.assertEqual((plan[0]['sku'],plan[0]['qty']),('Gc2f7811b',3))
+ def test_capital_scales_with_balance_but_preserves_floor_liabilities_and_slots(self):
+  policy={'cash_floor':500000,'max_inventory_share':.7}
+  low={'balance':5000000,'bankrupt_line':500000,'units':[{'cost':1000000}]}
+  high={'balance':11000000,'bankrupt_line':500000,'units':[{'cost':1000000}]}
+  self.assertGreater(capital_available(policy,high,300000),capital_available(policy,low,300000))
+  ranked=[dict(sku='a',expected_net=1,score=1,upper_cost=100,sales_1h=20,sales_6h=20,
+               distinct_buyers_6h=3,own_stockouts_6h=0,own_inquiries_6h=0,estimated_sale_likelihood=1)]
+  self.assertEqual(allocation_plan(ranked,{'units':[]},10000,available_slots=2)[0]['qty'],2)
+ def test_anonymous_quote_flood_and_single_sku_concentration_are_bounded(self):
+  ranked=[dict(sku='a',expected_net=5000,score=3,upper_cost=100,sales_1h=0,sales_6h=2,
+               distinct_buyers_6h=1,own_stockouts_6h=0,own_inquiries_6h=10000,
+               estimated_sale_likelihood=.8)]
+  policy={'max_exposed_units':20,'max_sku_share':.2,'max_anonymous_inquiries':10,'min_trial_units':2}
+  plan=allocation_plan(ranked,{'units':[]},10000,aggression=4,policy=policy)
+  self.assertLessEqual(plan[0]['qty'],4)
+  self.assertEqual(plan[0]['evidence']['trusted_inquiries_6h'],2)
+  full={'units':[{'sku':'a'} for _ in range(4)]}
+  self.assertEqual(allocation_plan(ranked,full,10000,aggression=4,policy=policy),[])
+ def test_portfolio_breadth_scales_past_old_fixed_250_unit_limit(self):
+  ranked=[dict(sku=f's{i}',expected_net=5000,score=3,upper_cost=100,
+               sales_1h=8,sales_6h=12,distinct_buyers_6h=4,
+               own_stockouts_6h=0,own_inquiries_6h=0,estimated_sale_likelihood=.8)
+          for i in range(100)]
+  plan=allocation_plan(ranked,{'units':[]},100000,aggression=100)
+  self.assertEqual(len(plan),100)
+  self.assertEqual(sum(row['qty'] for row in plan),300)
+ def test_live_competitor_breadth_is_bonus_not_absolute_lane(self):
+  ranked=[dict(sku='hot',expected_net=10000,score=100,upper_cost=100,
+               sales_1h=20,sales_6h=30,distinct_buyers_6h=5,estimated_sale_likelihood=1),
+          dict(sku='new',expected_net=100,score=1,upper_cost=100,
+               sales_1h=2,sales_6h=4,distinct_buyers_6h=2,estimated_sale_likelihood=.5)]
+  inv={'units':[{'sku':'hot','cost':100}]}
+  policy={'breadth_target_skus':2,'max_units_per_sku':3,'new_sku_bonus':5}
+  first=allocation_plan(ranked,inv,10000,policy=policy)[0]
+  self.assertEqual(first['sku'],'hot')
+  ranked[0]['score']=2
+  first=allocation_plan(ranked,inv,10000,policy=policy)[0]
+  self.assertEqual((first['sku'],first['qty']),('new',1))
+  policy['breadth_target_skus']=1
+  self.assertEqual(allocation_plan(ranked,inv,10000,policy=policy)[0]['sku'],'hot')
+ def test_one_buyer_food_signal_opens_only_a_one_unit_breadth_canary(self):
+  ranked=[dict(sku='food-canary',kind='food',expected_net=100,score=10,
+               upper_cost=100,sales_1h=1,sales_6h=1,distinct_buyers_6h=1,
+               own_sales_total=0,estimated_sale_likelihood=.5)]
+  inventory={'units':[],'balance':10000}
+  guarded={'breadth_target_skus':10,'min_distinct_buyers_6h':2,
+           'max_food_units_per_sku':2,'max_breadth_trial_units':1,
+           'max_sku_capital_share':1}
+  self.assertEqual(allocation_plan(ranked,inventory,10000,policy=guarded),[])
+  guarded['min_distinct_buyers_6h']=1
+  plan=allocation_plan(ranked,inventory,10000,aggression=4,policy=guarded)
+  self.assertEqual([(row['sku'],row['qty']) for row in plan],[('food-canary',1)])
+ def test_capital_risk_exponent_can_make_revenue_opportunity_compete(self):
+  common=dict(kind='food',expected_net=1,sales_1h=8,sales_6h=12,
+              distinct_buyers_6h=4,estimated_sale_likelihood=.8)
+  ranked=[dict(common,sku='cheap',score=1,upper_cost=100),
+          dict(common,sku='revenue',score=28,upper_cost=10000)]
+  conservative={'max_sku_capital_share':1,'capital_risk_exponent':.75}
+  measured={'max_sku_capital_share':1,'capital_risk_exponent':.70}
+  self.assertEqual(allocation_plan(
+      ranked,{'units':[]},30000,policy=conservative)[0]['sku'],'cheap')
+  self.assertEqual(allocation_plan(
+      ranked,{'units':[]},30000,policy=measured)[0]['sku'],'revenue')
+ def test_one_grade_proven_high_value_opportunity_gets_window_first_slot(self):
+  cheap=dict(sku='cheap',kind='food',expected_net=1000,score=100,
+             upper_cost=100,sales_1h=8,sales_6h=12,
+             distinct_buyers_6h=4,estimated_sale_likelihood=.8)
+  high=dict(sku='high',kind='goods',expected_net=50000,score=1000,
+            upper_cost=600000,sales_1h=1,sales_6h=6,
+            distinct_buyers_6h=4,estimated_sale_likelihood=.5,
+            own_sales_total=1,own_gross_total=100000,own_profitable_sales=1,
+            dominant_grade_samples=4,dominant_grade_profit_probability=.65)
+  policy={'max_sku_capital_share':1,'high_value_lane_min_unit_cost':500000,
+          'min_proven_scale_grade_samples':3,
+          'min_proven_scale_grade_profit_probability':.70,
+          'min_high_value_restock_grade_samples':3,
+          'min_high_value_restock_grade_profit_probability':.60}
+  plan=allocation_plan([cheap,high],{'units':[],'balance':1000000},1000000,
+                       policy=policy)
+  self.assertEqual(plan[0]['sku'],'high')
+  self.assertTrue(plan[0]['evidence']['high_value_priority'])
+  self.assertFalse(plan[0]['evidence']['proven_scale_ready'])
+  policy['high_value_window_used']=True
+  self.assertEqual(allocation_plan(
+      [cheap,high],{'units':[],'balance':1000000},1000000,
+      policy=policy)[0]['sku'],'cheap')
+ def test_mature_local_a_grade_profit_can_override_weaker_market_prior(self):
+  high=dict(sku='high',kind='goods',expected_net=150000,score=1000,
+            upper_cost=900000,sales_1h=4,sales_6h=18,
+            distinct_buyers_6h=8,estimated_sale_likelihood=.6,
+            own_sales_total=12,own_gross_total=1600000,own_profitable_sales=12,
+            dominant_grade_samples=19,dominant_grade_profit_probability=.55,
+            own_dominant_grade_sales=7,own_dominant_grade_profitable=7,
+            own_dominant_grade_gross=220000,own_dominant_grade_refunds=0)
+  policy={'max_sku_capital_share':1,'high_value_lane_min_unit_cost':500000,
+          'min_goods_a_profit_samples':3,'min_goods_a_profit_probability':.60,
+          'min_high_value_restock_grade_samples':3,
+          'min_high_value_restock_grade_profit_probability':.60,
+          'min_local_high_value_grade_sales':5,
+          'min_local_high_value_grade_profitable_share':.80}
+  plan=allocation_plan([high],{'units':[],'balance':2000000},2000000,
+                       policy=policy)
+  self.assertEqual(plan[0]['sku'],'high')
+  self.assertTrue(plan[0]['evidence']['local_grade_proven'])
+  high['own_dominant_grade_refunds']=1
+  self.assertEqual(allocation_plan(
+      [high],{'units':[],'balance':2000000},2000000,policy=policy),[])
+ def test_unaffordable_approved_high_value_preserves_cash_instead_of_buying_cheap(self):
+  cheap=dict(sku='cheap',kind='food',expected_net=1000,score=100,
+             upper_cost=100,sales_1h=8,sales_6h=12,
+             distinct_buyers_6h=4,estimated_sale_likelihood=.8)
+  high=dict(sku='high',kind='goods',expected_net=50000,score=1000,
+            upper_cost=600000,sales_1h=3,sales_6h=8,
+            distinct_buyers_6h=5,estimated_sale_likelihood=.6,
+            own_sales_total=2,own_gross_total=50000,own_profitable_sales=2,
+            dominant_grade_samples=5,dominant_grade_profit_probability=.65)
+  policy={'max_sku_capital_share':1,'high_value_lane_min_unit_cost':500000,
+          'min_high_value_restock_grade_samples':3,
+          'min_high_value_restock_grade_profit_probability':.60}
+  self.assertEqual(allocation_plan(
+      [cheap,high],{'units':[],'balance':1000000},500000,policy=policy),[])
+  self.assertEqual(allocation_plan(
+      [cheap,high],{'units':[],'balance':1000000},600000,policy=policy)[0]['sku'],
+      'high')
+  policy['high_value_window_used']=False
+  high['dominant_grade_profit_probability']=.59
+  self.assertEqual(allocation_plan(
+      [cheap,high],{'units':[],'balance':1000000},1000000,
+      policy=policy)[0]['sku'],'cheap')
+ def test_one_proven_capital_bridge_can_turn_cash_while_high_value_is_unaffordable(self):
+  high=dict(sku='high',kind='goods',expected_net=50000,score=1000,
+            upper_cost=1200000,sales_1h=8,sales_6h=30,
+            distinct_buyers_6h=10,estimated_sale_likelihood=.6,
+            own_sales_total=1,own_gross_total=50000,own_profitable_sales=1,
+            dominant_grade_samples=8,dominant_grade_profit_probability=.7)
+  bridge=dict(sku='bridge',kind='goods',expected_net=28000,score=300,
+              upper_cost=260000,sales_1h=5,sales_6h=22,
+              distinct_buyers_6h=13,estimated_sale_likelihood=.34,
+              own_sales_total=58,own_gross_total=400000,own_profitable_sales=50,
+              dominant_grade_samples=12,dominant_grade_profit_probability=.64)
+  policy={'max_sku_capital_share':1,'high_value_lane_min_unit_cost':500000,
+          'min_high_value_restock_grade_samples':3,
+          'min_high_value_restock_grade_profit_probability':.60,
+          'capital_bridge_max_available_share':.5}
+  plan=allocation_plan([bridge,high],{'units':[],'balance':3000000},630000,
+                       policy=policy)
+  self.assertEqual([(row['sku'],row['qty']) for row in plan],[('bridge',1)])
+  self.assertTrue(plan[0]['evidence']['capital_bridge'])
+  policy['capital_bridge_window_used']=True
+  self.assertEqual(allocation_plan(
+      [bridge,high],{'units':[],'balance':3000000},630000,policy=policy),[])
+ def test_capital_bridge_prefers_one_cheap_screened_new_breadth_sku(self):
+  high=dict(sku='high',kind='goods',expected_net=50000,score=1000,
+            upper_cost=1200000,sales_1h=8,sales_6h=30,
+            distinct_buyers_6h=10,estimated_sale_likelihood=.6,
+            own_sales_total=1,own_gross_total=50000,own_profitable_sales=1,
+            dominant_grade_samples=8,dominant_grade_profit_probability=.7)
+  proven=dict(sku='proven',kind='goods',expected_net=28000,score=300,
+              upper_cost=260000,sales_1h=5,sales_6h=22,
+              distinct_buyers_6h=13,estimated_sale_likelihood=.34,
+              own_sales_total=58,own_gross_total=400000,own_profitable_sales=50,
+              dominant_grade_samples=12,dominant_grade_profit_probability=.64)
+  new=dict(sku='new',kind='goods',expected_net=6000,score=200,
+           upper_cost=70000,sales_1h=5,sales_6h=18,
+           distinct_buyers_6h=7,estimated_sale_likelihood=.55,
+           own_sales_total=0,own_gross_total=0,own_profitable_sales=0,
+           dominant_grade_samples=8,dominant_grade_profit_probability=.72)
+  policy={'max_sku_capital_share':1,'max_units_per_sku':3,
+          'high_value_lane_min_unit_cost':500000,
+          'min_high_value_restock_grade_samples':3,
+          'min_high_value_restock_grade_profit_probability':.60,
+          'min_goods_a_profit_samples':3,'min_goods_a_profit_probability':.60,
+          'max_active_unproven_goods':3,'active_unproven_goods_count':0,
+          'breadth_target_skus':10,'max_breadth_trial_units':1,
+          'capital_bridge_max_available_share':.5,
+          'capital_bridge_max_new_breadth_cost':100000}
+  plan=allocation_plan([proven,new,high],{'units':[],'balance':3000000},630000,
+                       policy=policy)
+  self.assertEqual([(row['sku'],row['qty']) for row in plan],[('new',1)])
+  self.assertEqual(plan[0]['evidence']['capital_bridge_kind'],'new_breadth')
+  new['upper_cost']=100001
+  plan=allocation_plan([proven,new,high],{'units':[],'balance':3000000},630000,
+                       policy=policy)
+  self.assertEqual([(row['sku'],row['qty']) for row in plan],[('proven',1)])
+
+ def test_capital_bridge_allows_one_fresh_food_breadth_sku(self):
+  high=dict(sku='high',kind='goods',expected_net=50000,score=1000,
+            upper_cost=1200000,sales_1h=8,sales_6h=30,
+            distinct_buyers_6h=10,estimated_sale_likelihood=.6,
+            own_sales_total=1,own_gross_total=50000,own_profitable_sales=1,
+            dominant_grade_samples=8,dominant_grade_profit_probability=.7)
+  food=dict(sku='food',kind='food',shelf_hours=96,expected_net=6000,score=200,
+            upper_cost=70000,sales_1h=5,sales_6h=18,
+            distinct_buyers_6h=7,estimated_sale_likelihood=.55,own_sales_total=0,
+            own_profitable_sales=0,own_gross_total=0)
+  policy={'breadth_target_skus':10,'max_food_units_per_sku':2,
+          'max_sku_capital_share':1,'high_value_lane_min_unit_cost':500000,
+          'min_high_value_restock_grade_samples':3,
+          'min_high_value_restock_grade_profit_probability':.60,
+          'capital_bridge_max_available_share':.5,
+          'capital_bridge_max_new_breadth_cost':100000,
+          'food_sellable_min_hours':48}
+  plan=allocation_plan([food,high],{'units':[],'balance':3000000},630000,
+                       policy=policy)
+  self.assertEqual([(row['sku'],row['qty']) for row in plan],[('food',1)])
+  self.assertEqual(plan[0]['evidence']['capital_bridge_kind'],'new_breadth')
+ def test_capital_bridge_rejects_weak_or_cash_hungry_goods(self):
+  high=dict(sku='high',kind='goods',expected_net=50000,score=1000,
+            upper_cost=1200000,sales_1h=8,sales_6h=30,
+            distinct_buyers_6h=10,estimated_sale_likelihood=.6,
+            own_sales_total=1,own_gross_total=50000,own_profitable_sales=1,
+            dominant_grade_samples=8,dominant_grade_profit_probability=.7)
+  common=dict(kind='goods',expected_net=28000,score=300,upper_cost=260000,
+              sales_1h=5,sales_6h=22,distinct_buyers_6h=13,
+              estimated_sale_likelihood=.34,own_sales_total=5,
+              own_gross_total=40000,own_profitable_sales=4,
+              dominant_grade_samples=5,dominant_grade_profit_probability=.64)
+  policy={'max_sku_capital_share':1,'high_value_lane_min_unit_cost':500000,
+          'min_high_value_restock_grade_samples':3,
+          'min_high_value_restock_grade_profit_probability':.60,
+          'capital_bridge_max_available_share':.5}
+  weak=dict(common,sku='weak',own_profitable_sales=3)
+  expensive=dict(common,sku='expensive',upper_cost=320000)
+  self.assertEqual(allocation_plan(
+      [weak,expensive,high],{'units':[],'balance':3000000},630000,
+      policy=policy),[])
+ def test_one_demanded_high_value_canary_can_precede_cheap_stock(self):
+  cheap=dict(sku='cheap',kind='food',expected_net=1000,score=100000,
+             upper_cost=100,sales_1h=20,sales_6h=40,
+             distinct_buyers_6h=10,estimated_sale_likelihood=1)
+  canary=dict(sku='canary',kind='goods',expected_net=60000,score=1000,
+              upper_cost=1200000,sales_1h=3,sales_6h=9,
+              distinct_buyers_6h=6,estimated_sale_likelihood=.33,
+              own_sales_total=0,dominant_grade_samples=5,
+              dominant_grade_profit_probability=.65)
+  policy={'max_sku_capital_share':1,'max_units_per_sku':3,
+          'max_high_value_units_per_sku':2,
+          'high_value_lane_min_unit_cost':500000,
+          'high_value_canary_window_limit':1,
+          'min_goods_a_profit_samples':3,
+          'min_goods_a_profit_probability':.60,
+          'max_cold_goods_capital_share':0,
+          'active_unproven_goods_present':False}
+  plan=allocation_plan([cheap,canary],{'units':[],'balance':2000000},
+                       2000000,policy=policy)
+  self.assertEqual((plan[0]['sku'],plan[0]['qty']),('canary',1))
+  self.assertTrue(plan[0]['evidence']['high_value_canary'])
+  policy['high_value_window_count']=1
+  self.assertEqual(allocation_plan(
+      [cheap,canary],{'units':[],'balance':2000000},2000000,
+      policy=policy)[0]['sku'],'cheap')
+  policy['high_value_window_count']=0
+  policy['active_unproven_goods_present']=True
+  self.assertEqual(allocation_plan(
+      [cheap,canary],{'units':[],'balance':2000000},2000000,
+      policy=policy)[0]['sku'],'cheap')
+ def test_one_broad_demand_relaxed_grade_canary_gets_bounded_capital_slot(self):
+  cheap=dict(sku='cheap',kind='food',expected_net=1000,score=100000,
+             upper_cost=100,sales_1h=20,sales_6h=40,
+             distinct_buyers_6h=10,estimated_sale_likelihood=1)
+  canary=dict(sku='canary',kind='goods',expected_net=142000,score=578000,
+              upper_cost=2862000,sales_1h=16,sales_6h=100,
+              distinct_buyers_6h=13,estimated_sale_likelihood=.66,
+              own_sales_total=0,dominant_grade_samples=89,
+              dominant_grade_profit_probability=.51)
+  policy={'max_sku_capital_share':.10,
+          'max_relaxed_high_value_canary_capital_share':.15,
+          'max_units_per_sku':3,'max_high_value_units_per_sku':2,
+          'high_value_lane_min_unit_cost':500000,
+          'high_value_canary_window_limit':3,
+          'relaxed_high_value_canary_window_limit':1,
+          'min_goods_a_profit_samples':3,
+          'min_goods_a_profit_probability':.90,
+          'min_relaxed_high_value_canary_grade_profit_probability':.50,
+          'high_value_canary_min_sales_1h':2,
+          'high_value_canary_min_distinct_buyers_6h':5,
+          'high_value_canary_min_sale_likelihood':.30,
+          'max_cold_goods_capital_share':0,
+          'max_active_unproven_goods':5,
+          'active_unproven_goods_count':3}
+  inventory={'units':[],'balance':20000000}
+  plan=allocation_plan([cheap,canary],inventory,5000000,policy=policy)
+  self.assertEqual((plan[0]['sku'],plan[0]['qty']),('canary',1))
+  self.assertTrue(plan[0]['evidence']['high_value_canary'])
+  policy['high_value_window_count']=1
+  self.assertEqual(allocation_plan(
+      [cheap,canary],inventory,5000000,policy=policy)[0]['sku'],'cheap')
+ def test_profitable_relaxed_canary_restock_stays_one_unit_until_mature(self):
+  row=dict(sku='canary',kind='goods',expected_net=140000,score=578000,
+           upper_cost=2862000,sales_1h=15,sales_6h=100,
+           distinct_buyers_6h=13,estimated_sale_likelihood=.65,
+           own_sales_total=1,own_sales_1h=1,own_gross_total=25840,
+           own_profitable_sales=1,own_dominant_grade_refunds=0,
+           dominant_grade_samples=78,dominant_grade_profit_probability=.51)
+  policy={'max_sku_capital_share':.10,
+          'max_relaxed_high_value_canary_capital_share':.15,
+          'max_units_per_sku':3,'max_high_value_units_per_sku':2,
+          'high_value_lane_min_unit_cost':500000,
+          'high_value_window_limit':3,'high_value_window_count':0,
+          'relaxed_high_value_canary_window_limit':1,
+          'strongly_proven_high_value_min_own_sales':5,
+          'guarded_canary_restock_min_profitable_share':1.0,
+          'min_goods_a_profit_samples':3,'min_goods_a_profit_probability':.90,
+          'min_relaxed_high_value_canary_grade_profit_probability':.50,
+          'high_value_canary_min_sales_1h':2,
+          'high_value_canary_min_distinct_buyers_6h':5,
+          'high_value_canary_min_sale_likelihood':.30}
+  plan=allocation_plan([row],{'units':[],'balance':20000000},5000000,policy=policy)
+  self.assertEqual((plan[0]['sku'],plan[0]['qty']),('canary',1))
+  self.assertTrue(plan[0]['evidence']['guarded_canary_restock'])
+  policy['high_value_window_count']=1
+  self.assertEqual(allocation_plan(
+      [row],{'units':[],'balance':20000000},5000000,policy=policy),[])
+ def test_second_unproven_canary_is_bounded_by_active_and_window_slots(self):
+  cheap=dict(sku='cheap',kind='food',expected_net=1000,score=100,
+             upper_cost=100,sales_1h=20,sales_6h=40,
+             distinct_buyers_6h=10,estimated_sale_likelihood=1)
+  common=dict(kind='goods',expected_net=60000,score=1000,
+              upper_cost=600000,sales_1h=3,sales_6h=9,
+              distinct_buyers_6h=6,estimated_sale_likelihood=.5,
+              own_sales_total=0,dominant_grade_samples=5,
+              dominant_grade_profit_probability=.70)
+  one=dict(common,sku='one');two=dict(common,sku='two',score=900)
+  policy={'max_sku_capital_share':1,'max_units_per_sku':3,
+          'max_high_value_units_per_sku':1,
+          'high_value_lane_min_unit_cost':500000,
+          'high_value_canary_window_limit':1,
+          'high_value_window_limit':3,
+          'min_goods_a_profit_samples':3,
+          'min_goods_a_profit_probability':.60,
+          'max_cold_goods_capital_share':0,
+          'max_active_unproven_goods':2,
+          'active_unproven_goods_count':1}
+  plan=allocation_plan([cheap,one,two],{'units':[],'balance':3000000},
+                       3000000,policy=policy)
+  self.assertEqual(sum(p['evidence']['high_value_canary'] for p in plan),1)
+  self.assertEqual(sum(p['evidence']['new_unproven_goods'] for p in plan),1)
+  policy['high_value_canary_window_limit']=2
+  policy['active_unproven_goods_count']=2
+  plan=allocation_plan([cheap,one,two],{'units':[],'balance':3000000},
+                       3000000,policy=policy)
+  self.assertFalse(any(p['evidence']['new_unproven_goods'] for p in plan))
+ def test_evidence_backed_policy_can_open_exactly_three_high_value_slots(self):
+  cheap=dict(sku='cheap',kind='food',expected_net=1000,score=100,
+             upper_cost=100,sales_1h=8,sales_6h=12,
+             distinct_buyers_6h=4,estimated_sale_likelihood=.8)
+  common=dict(kind='goods',expected_net=50000,sales_1h=1,sales_6h=6,
+              distinct_buyers_6h=4,estimated_sale_likelihood=.5,
+              own_sales_total=1,own_gross_total=100000,own_profitable_sales=1,
+              dominant_grade_samples=4,dominant_grade_profit_probability=.75,
+              upper_cost=600000)
+  high1=dict(common,sku='high1',score=1000)
+  high2=dict(common,sku='high2',score=900)
+  high3=dict(common,sku='high3',score=800)
+  policy={'max_sku_capital_share':1,'high_value_lane_min_unit_cost':500000,
+          'high_value_window_limit':3,'high_value_window_count':0,
+          'min_proven_scale_grade_samples':3,
+          'min_proven_scale_grade_profit_probability':.70}
+  plan=allocation_plan([cheap,high1,high2,high3],{'units':[],'balance':2500000},
+                       2500000,policy=policy)
+  self.assertEqual([row['sku'] for row in plan[:3]],['high1','high2','high3'])
+  policy['high_value_window_count']=2
+  self.assertEqual(allocation_plan(
+      [cheap,high1,high2,high3],{'units':[],'balance':2500000},2500000,
+      blocked={'high1','high2'},policy=policy)[0]['sku'],'high3')
+  policy['high_value_window_count']=3
+  self.assertEqual(allocation_plan(
+      [cheap,high1,high2,high3],{'units':[],'balance':2500000},2500000,
+      policy=policy)[0]['sku'],'cheap')
+ def test_high_value_sku_never_duplicates_while_one_unit_is_held(self):
+  high=dict(sku='high',kind='goods',expected_net=50000,score=1000,
+            upper_cost=600000,sales_1h=6,sales_6h=12,
+            distinct_buyers_6h=4,estimated_sale_likelihood=.8,
+            own_sales_total=3,own_gross_total=100000,own_profitable_sales=3,
+            dominant_grade_samples=4,dominant_grade_profit_probability=.75)
+  policy={'max_units_per_sku':3,'max_sku_capital_share':1,
+          'high_value_lane_min_unit_cost':500000,
+          'max_high_value_units_per_sku':1}
+  held={'units':[{'sku':'high','kind':'goods','cost':600000}],
+        'balance':2000000}
+  self.assertEqual(allocation_plan([high],held,2000000,aggression=4,
+                                   policy=policy),[])
+ def test_proven_high_value_sku_can_scale_to_two_when_sold_out(self):
+  high=dict(sku='high',kind='goods',expected_net=200000,score=1000,
+            upper_cost=1500000,sales_1h=4,sales_6h=24,
+            distinct_buyers_6h=8,estimated_sale_likelihood=.43,
+            own_sales_1h=3,own_sales_total=5,own_gross_total=689570,
+            own_profitable_sales=5,dominant_grade_samples=13,
+            dominant_grade_profit_probability=.6825)
+  policy={'max_units_per_sku':3,'max_sku_capital_share':1,
+          'high_value_lane_min_unit_cost':500000,
+          'max_high_value_units_per_sku':2,
+          'high_value_window_limit':4,
+          'min_high_value_restock_grade_samples':3,
+          'min_high_value_restock_grade_profit_probability':.60}
+  plan=allocation_plan([high],{'units':[],'balance':5000000},5000000,
+                       aggression=4,policy=policy)
+  self.assertEqual([(row['sku'],row['qty']) for row in plan],[('high',2)])
+ def test_strongly_proven_high_value_sku_can_scale_to_three(self):
+  high=dict(sku='high',kind='goods',expected_net=200000,score=1000,
+            upper_cost=1200000,sales_1h=8,sales_6h=30,
+            distinct_buyers_6h=8,estimated_sale_likelihood=.7,
+            own_sales_1h=5,own_sales_total=8,own_gross_total=550000,
+            own_profitable_sales=8,dominant_grade_samples=13,
+            dominant_grade_profit_probability=.62)
+  policy={'max_units_per_sku':3,'max_sku_capital_share':1,
+          'high_value_lane_min_unit_cost':500000,
+          'max_high_value_units_per_sku':2,
+          'max_strongly_proven_high_value_units_per_sku':3,
+          'strongly_proven_high_value_min_own_sales':5,
+          'strongly_proven_high_value_min_profitable_share':.80,
+          'high_value_window_limit':4,
+          'min_high_value_restock_grade_samples':3,
+          'min_high_value_restock_grade_profit_probability':.60}
+  plan=allocation_plan([high],{'units':[],'balance':5000000},5000000,
+                       aggression=4,policy=policy)
+  self.assertEqual([(row['sku'],row['qty']) for row in plan],[('high',3)])
+ def test_strongly_proven_sold_out_high_value_refills_two_despite_low_forecast(self):
+  high=dict(sku='high',kind='goods',expected_net=120000,score=1000,
+            upper_cost=1200000,sales_1h=1,sales_6h=1,
+            distinct_buyers_6h=1,estimated_sale_likelihood=.10,
+            own_sales_1h=0,own_sales_total=8,own_gross_total=550000,
+            own_profitable_sales=8,dominant_grade_samples=13,
+            dominant_grade_profit_probability=.62)
+  policy={'max_units_per_sku':3,'max_sku_capital_share':1,
+          'high_value_lane_min_unit_cost':500000,
+          'max_high_value_units_per_sku':2,
+          'max_strongly_proven_high_value_units_per_sku':3,
+          'strongly_proven_high_value_min_own_sales':5,
+          'strongly_proven_high_value_min_profitable_share':.80,
+          'strongly_proven_high_value_min_units_when_sold_out':2,
+          'high_value_window_limit':4,
+          'min_high_value_restock_grade_samples':3,
+          'min_high_value_restock_grade_profit_probability':.60}
+  plan=allocation_plan([high],{'units':[],'balance':5000000},5000000,
+                       aggression=1,policy=policy)
+  self.assertEqual([(row['sku'],row['qty']) for row in plan],[('high',2)])
+ def test_graduated_high_value_uses_dedicated_grade_threshold(self):
+  high=dict(sku='high',kind='goods',expected_net=50000,score=100000,
+            upper_cost=600000,sales_1h=4,sales_6h=20,
+            distinct_buyers_6h=8,estimated_sale_likelihood=.5,
+            dominant_grade_samples=10,dominant_grade_profit_probability=.56,
+            own_sales_total=3,own_sales_1h=2,own_profitable_sales=3,
+            own_gross_total=60000,own_dominant_grade_sales=3,
+            own_dominant_grade_profitable=3,own_dominant_grade_gross=60000,
+            own_dominant_grade_refunds=0,own_a_quotes=3,
+            own_a_conversion_rate=1.0,own_quotes=3,
+            own_conversion_rate=1.0)
+  policy={'max_units_per_sku':3,'max_high_value_units_per_sku':2,
+          'max_strongly_proven_high_value_units_per_sku':2,
+          'strongly_proven_high_value_min_own_sales':3,
+          'strongly_proven_high_value_min_profitable_share':.8,
+          'strongly_proven_high_value_min_units_when_sold_out':2,
+          'high_value_lane_min_unit_cost':500000,
+          'high_value_window_limit':4,'high_value_window_count':0,
+          'min_goods_a_profit_samples':3,
+          'min_goods_a_profit_probability':.60,
+          'min_high_value_restock_grade_samples':3,
+          'min_high_value_restock_grade_profit_probability':.55,
+          'max_sku_capital_share':1,'max_proven_sku_capital_share':1,
+          'min_own_profitable_goods_sales':3,
+          'min_own_profitable_goods_share':.7}
+  plan=allocation_plan([high],{'units':[],'balance':3000000},3000000,
+                       aggression=1,policy=policy)
+  self.assertEqual([(row['sku'],row['qty']) for row in plan],[('high',2)])
+  high['dominant_grade_profit_probability']=.54
+  self.assertEqual(allocation_plan(
+      [high],{'units':[],'balance':3000000},3000000,
+      aggression=1,policy=policy),[])
+ def test_sold_out_proven_sku_scales_during_breadth_expansion(self):
+  ranked=[dict(sku='proven',kind='goods',expected_net=10000,score=100,upper_cost=100,
+               sales_1h=12,sales_6h=24,own_sales_1h=2,own_sales_total=2,
+               distinct_buyers_6h=5,estimated_sale_likelihood=1)]
+  inv={'units':[{'sku':'held','cost':100}]}
+  policy={'breadth_target_skus':5,'max_units_per_sku':3,
+          'max_breadth_trial_units':1,'max_sku_capital_share':1}
+  plan=allocation_plan(ranked,inv,10000,aggression=4,policy=policy)
+  self.assertEqual([(row['sku'],row['qty']) for row in plan],[('proven',3)])
+
+  ranked[0]['own_sales_1h']=0;ranked[0]['own_sales_total']=0
+  self.assertEqual(allocation_plan(ranked,inv,10000,aggression=4,policy=policy)[0]['qty'],1)
+ def test_competitor_breadth_target_uses_leader_median(self):
+  self.assertEqual(competitor_breadth_target({'competition_breadth':{
+      'top10_min_skus':61,'top10_median_skus':131.5}}),132)
+  self.assertEqual(competitor_breadth_target({}),0)
+ def test_breadth_expansion_blocks_paid_sku_for_same_supply_window(self):
+  rows=[{'sku':'new-a','status':'paid','created':101},
+        {'sku':'old','status':'paid','created':99},
+        {'sku':'refused','status':'refused','created':102}]
+  inv={'units':[{'sku':'held'}]}
+  self.assertEqual(breadth_window_blocks(rows,100,inv,3),{'new-a'})
+  self.assertEqual(breadth_window_blocks(rows,100,inv,1),{'new-a'})
+ def test_only_an_actual_bridge_purchase_consumes_window_bridge_slot(self):
+  rows=[{'sku':'high','status':'paid','created':101,
+         'detail':'{"balance": 1000, "capital_bridge": false}'},
+        {'sku':'legacy','status':'paid','created':102,
+         'detail':'{"balance": 900}'},
+        {'sku':'old-bridge','status':'paid','created':99,
+         'detail':'{"capital_bridge": true}'}]
+  self.assertFalse(paid_bridge_used(rows,100))
+  rows.append({'sku':'bridge','status':'paid','created':103,
+               'detail':'{"balance": 700, "capital_bridge": true}'})
+  self.assertTrue(paid_bridge_used(rows,100))
+  self.assertEqual(paid_bridge_count(rows,100),1)
+  rows.append({'sku':'bridge-2','qty':2,'status':'paid','created':104,
+               'detail':'{"balance": 600, "capital_bridge": true}'})
+  self.assertEqual(paid_bridge_count(rows,100),3)
+ def test_bridge_journal_ignores_missing_or_malformed_legacy_detail(self):
+  rows=[{'sku':'missing','status':'paid','created':101},
+        {'sku':'malformed','status':'paid','created':102,'detail':'not-json'},
+        {'sku':'refused','status':'refused','created':103,
+         'detail':'{"capital_bridge": true}'}]
+  self.assertFalse(paid_bridge_used(rows,100))
+ def test_strong_refill_can_top_up_once_without_repeating_window_purchase(self):
+  first=[{'sku':'high','qty':1,'status':'paid','created':101}]
+  targets={'high':2}
+  self.assertEqual(breadth_window_blocks(first,100,{},0,targets),set())
+  complete=first+[{'sku':'high','qty':1,'status':'paid','created':102}]
+  self.assertEqual(breadth_window_blocks(complete,100,{},0,targets),{'high'})
+  high=dict(sku='high',kind='goods',expected_net=120000,score=1000,
+            upper_cost=1200000,sales_1h=1,sales_6h=1,
+            distinct_buyers_6h=1,estimated_sale_likelihood=.10,
+            own_sales_1h=0,own_sales_total=8,own_gross_total=550000,
+            own_profitable_sales=8,dominant_grade_samples=13,
+            dominant_grade_profit_probability=.62)
+  policy={'max_units_per_sku':3,'max_sku_capital_share':.10,
+          'max_proven_sku_capital_share':.20,
+          'high_value_lane_min_unit_cost':500000,
+          'max_high_value_units_per_sku':2,
+          'max_strongly_proven_high_value_units_per_sku':3,
+          'strongly_proven_high_value_min_own_sales':5,
+          'strongly_proven_high_value_min_profitable_share':.80,
+          'strongly_proven_high_value_min_units_when_sold_out':2,
+          'window_purchased_units':{'high':1},
+          'high_value_window_limit':4,
+          'min_high_value_restock_grade_samples':3,
+          'min_high_value_restock_grade_profit_probability':.60}
+  inventory={'units':[{'sku':'high','kind':'goods','cost':1200000}],
+             'balance':10800000}
+  plan=allocation_plan([high],inventory,5000000,
+                       aggression=1,policy=policy)
+  self.assertEqual([(row['sku'],row['qty']) for row in plan],[('high',1)])
+ def test_new_window_clears_old_blocks_but_never_pending_unknown_posts(self):
+  self.assertEqual(refresh_window_blocks({'old-refusal','pending'},100,200,{'pending'}),
+                   {'pending'})
+  self.assertEqual(refresh_window_blocks({'same-window'},200,200,{'pending'}),
+                   {'same-window','pending'})
+ def test_expensive_single_unit_cannot_bypass_portfolio_share(self):
+  ranked=[dict(sku='expensive',expected_net=500000,expected_revenue=1000000,score=999,
+               upper_cost=600000,sales_1h=8,sales_6h=12,distinct_buyers_6h=4,
+               estimated_sale_likelihood=.8)]
+  policy={'max_units_per_sku':3,'initial_trial_units':3,'max_sku_capital_share':.08}
+  plan=allocation_plan(ranked,{'units':[]},1000000,aggression=4,policy=policy)
+  self.assertEqual(plan,[])
+ def test_only_proven_profitable_goods_receive_larger_capital_share(self):
+  common=dict(kind='goods',expected_net=100000,score=1000,upper_cost=900000,
+              sales_1h=3,sales_6h=6,distinct_buyers_6h=3,
+              estimated_sale_likelihood=1,dominant_grade_samples=3,
+              dominant_grade_profit_probability=.8)
+  policy={'max_units_per_sku':3,'max_sku_capital_share':.10,
+          'max_proven_sku_capital_share':.20,
+          'min_goods_a_profit_samples':3,
+          'min_goods_a_profit_probability':.60,
+          'min_proven_scale_grade_samples':3,
+          'min_proven_scale_grade_profit_probability':.70}
+  cold=allocation_plan([dict(common,sku='cold',own_sales_total=0)],
+                       {'units':[],'balance':10000000},10000000,policy=policy)
+  proven=allocation_plan([dict(common,sku='proven',own_sales_total=3,
+                               own_sales_1h=3,own_gross_total=300000,
+                               own_profitable_sales=3)],
+                         {'units':[],'balance':10000000},10000000,policy=policy)
+  self.assertEqual([(row['sku'],row['qty']) for row in cold],[('cold',1)])
+  self.assertEqual([(row['sku'],row['qty']) for row in proven],[('proven',2)])
+  marginal=dict(common,sku='marginal',own_sales_total=17,own_sales_1h=4,
+                own_gross_total=1853251,own_profitable_sales=16,
+                dominant_grade_samples=15,dominant_grade_profit_probability=.5313)
+  policy['high_value_lane_min_unit_cost']=500000
+  limited=allocation_plan([marginal],{'units':[],'balance':10000000},10000000,
+                          policy=policy)
+  self.assertEqual(limited,[])
+  marginal['upper_cost']=400000
+  limited=allocation_plan([marginal],{'units':[],'balance':10000000},10000000,
+                          policy=policy)
+  self.assertEqual([(row['sku'],row['qty']) for row in limited],[('marginal',2)])
+  self.assertTrue(limited[0]['evidence']['own_profit_proven'])
+  self.assertFalse(limited[0]['evidence']['proven_scale_ready'])
+ def test_active_unproven_good_blocks_another_cold_safe_trial(self):
+  held=dict(sku='held',kind='goods',expected_net=0,score=0,upper_cost=100,
+            sales_1h=0,sales_6h=1,own_sales_total=0,distinct_buyers_6h=2,
+            dominant_grade_samples=3,dominant_grade_profit_probability=.8,
+            estimated_sale_likelihood=.5)
+  candidate=dict(sku='candidate',kind='goods',expected_net=100,score=100,upper_cost=100,
+                 sales_1h=3,sales_6h=6,own_sales_total=0,distinct_buyers_6h=3,
+                 dominant_grade_samples=3,dominant_grade_profit_probability=.8,
+                 estimated_sale_likelihood=.5)
+  inventory={'balance':1000,'units':[{'sku':'held','kind':'goods','cost':100}]}
+  policy={'max_cold_goods_capital_share':0,'cold_safe_trial_sales_1h':3,
+          'cold_safe_trial_profit_probability':.7,'max_units_per_sku':3,
+          'max_sku_capital_share':1}
+  self.assertEqual(allocation_plan([held,candidate],inventory,1000,policy=policy),[])
+  held['own_sales_total']=1
+  self.assertEqual(allocation_plan([held,candidate],inventory,1000,policy=policy)[0]['sku'],
+                   'candidate')
+ def test_concentration_uses_total_wealth_not_cash_after_liability_reserve(self):
+  ranked=[dict(sku='high',kind='goods',expected_net=500000,score=999,
+               upper_cost=1749000,sales_1h=3,sales_6h=20,distinct_buyers_6h=8,
+               own_sales_1h=1,estimated_sale_likelihood=.6)]
+  inventory={'balance':6500000,'units':[{'sku':'old','cost':13000000}]}
+  policy={'max_units_per_sku':3,'max_sku_capital_share':.10}
+  plan=allocation_plan(ranked,inventory,1950000,aggression=2,policy=policy)
+  self.assertEqual([(row['sku'],row['qty']) for row in plan],[('high',1)])
+ def test_recent_realized_profit_prioritizes_a_proven_sold_out_good(self):
+  common=dict(kind='goods',expected_net=1000,upper_cost=100,sales_1h=2,
+              sales_6h=6,distinct_buyers_6h=3,estimated_sale_likelihood=1,
+              dominant_grade_samples=3,dominant_grade_profit_probability=.8)
+  ranked=[dict(common,sku='market-prior',score=1000),
+          dict(common,sku='realized',score=100,own_sales_1h=2,own_sales_total=10,
+               own_gross_total=10000,own_profitable_sales=9)]
+  policy={'max_sku_capital_share':1,'max_units_per_sku':3}
+  plan=allocation_plan(ranked,{'units':[],'balance':10000},10000,policy=policy)
+  self.assertEqual(plan[0]['sku'],'realized')
+  self.assertEqual(plan[0]['evidence']['realized_hourly_contribution'],2000)
+ def test_accepted_supply_records_actual_cost_even_above_estimate(self):
+  self.assertEqual(supply_result(503,{},100),('uncertain',None))
+  self.assertEqual(supply_result(200,{'total':101},100),('paid',101))
+  self.assertEqual(supply_result(200,{'total':90},100),('paid',90))
+  self.assertEqual(supply_result(200,{},100),('reconcile',None))
+ def test_stale_unknown_is_preserved_once_and_never_retried(self):
+  import sqlite3
+  db=sqlite3.connect(':memory:');db.row_factory=sqlite3.Row
+  db.execute('CREATE TABLE purchases(id INTEGER PRIMARY KEY,campaign TEXT,sku TEXT,upper_cost INTEGER,cost INTEGER,status TEXT,created REAL,detail TEXT)')
+  db.executemany('INSERT INTO purchases(campaign,sku,upper_cost,status,created,detail) VALUES(?,?,?,?,?,?)',[
+   ('c','old',100,'uncertain',100,'timeout'),('c','fresh',200,'sent',390,None)])
+  rows=preserve_stale_pending(db,'c',now=400,hold=300)
+  self.assertEqual([r['sku'] for r in rows],['old'])
+  self.assertEqual(db.execute("SELECT status FROM purchases WHERE sku='old'").fetchone()[0],'preserved')
+  self.assertEqual(db.execute("SELECT status FROM purchases WHERE sku='fresh'").fetchone()[0],'sent')
+  self.assertEqual(preserve_stale_pending(db,'c',now=800,hold=300)[0]['sku'],'fresh')
+ def test_missing_registration_snapshot_is_retryable_read_failure(self):
+  attempts=[]
+  def registration():
+   attempts.append(1)
+   return own_registration([] if len(attempts)<3 else [{'name':'25512088'}])
+  self.assertEqual(retry_read(registration,attempts=3,sleep=lambda _:None)['name'],'25512088')
+  self.assertEqual(len(attempts),3)
+ def test_board_card_is_authoritative_registration_url(self):
+  body={'shops':[{'name':'25512088','url':'stale','card':{'url':'https://live.example'}}]}
+  self.assertEqual(own_board_registration(body)['url'],'https://live.example')
+ def test_join_card_timeout_system_exit_is_retried(self):
+  attempts=[]
+  def join():
+   attempts.append(1)
+   if len(attempts)<2:raise SystemExit('card timeout')
+   return {'round':3}
+  self.assertEqual(retry_join(join,attempts=2,sleep=lambda _:None)['round'],3)
+  self.assertEqual(len(attempts),2)
+ def test_join_retry_refreshes_changed_seller_tunnel(self):
+  class Market:
+   def __init__(self):self.urls=[]
+   def join(self,role,name,key,url):
+    self.urls.append(url)
+    if len(self.urls)==1:raise SystemExit('stale tunnel')
+    return {'round':3}
+  market=Market();registrations=iter([{'url':'old'},{'url':'new'}])
+  result=retry_join(lambda:join_current_registration(market,'key',lambda:next(registrations)),attempts=2,sleep=lambda _:None)
+  self.assertEqual(result['round'],3);self.assertEqual(market.urls,['old','new'])
+if __name__=='__main__':unittest.main()

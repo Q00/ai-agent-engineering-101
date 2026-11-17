@@ -1,0 +1,76 @@
+QUOTE_REQUEST shop SKU1
+OFFER shop SKU1 7000
+QUOTE_REQUEST shop SKU1
+OFFER shop SKU1 9500
+OFFER shop SKU1 9500
+OFFER shop SKU1 9500
+OFFER shop SKU1 9500
+QUOTE_REQUEST shop SKU1
+QUOTE_REQUEST second SKU1
+QUOTE_REQUEST other SKU1
+QUOTE_REQUEST shop SKU1
+OFFER shop SKU1 6000
+OFFER other SKU1 7000
+QUOTE_REQUEST shop SKU1
+QUOTE_REQUEST other SKU1
+OFFER shop SKU1 6000
+QUOTE_REQUEST shop SKU1
+CHOOSE a full-market rotation; low offer=66
+PROBE a 
+CHOOSE b full-market rotation; low offer=66
+PROBE b Counteroffer: 90
+CHOOSE c full-market rotation; low offer=66
+PROBE c Counteroffer: 100
+CHOOSE a full-market rotation; low offer=66
+PROBE a Counteroffer: 110
+SELECT b lowest observed affordable counter: 90
+CHOOSE b full-market rotation; low offer=66
+PROBE b 
+CHOOSE a full-market rotation; low offer=66
+PROBE a Counteroffer: 180
+CHOOSE b full-market rotation; low offer=66
+PROBE b Counteroffer: 260
+CHOOSE a full-market rotation; low offer=66
+ERROR a ReadTimeout response lost
+CHOOSE b full-market rotation; low offer=66
+PROBE b 
+...............................................F.F....F..............................................
+======================================================================
+FAIL: test_bad_reviews_prevent_contact (test_market_strategy.StrategyTests.test_bad_reviews_prevent_contact)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/ohhyunsoo/Documents/ChatGPT/AX이해와활용/ai-agent-engineering-101-week08/submissions/25512088/week-08/test_market_strategy.py", line 88, in test_bad_reviews_prevent_contact
+    self.assertNotIn('a', self.calls)
+AssertionError: 'a' unexpectedly found in ['a', 'a', 'a']
+
+======================================================================
+FAIL: test_low_offer_accepted_stops_all_other_shops (test_market_strategy.StrategyTests.test_low_offer_accepted_stops_all_other_shops)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/ohhyunsoo/Documents/ChatGPT/AX이해와활용/ai-agent-engineering-101-week08/submissions/25512088/week-08/test_market_strategy.py", line 67, in test_low_offer_accepted_stops_all_other_shops
+    self.assertEqual(self.buys, ['a'])
+AssertionError: Lists differ: ['b'] != ['a']
+
+First differing element 0:
+'b'
+'a'
+
+- ['b']
+?   ^
+
++ ['a']
+?   ^
+
+
+======================================================================
+FAIL: test_wrong_receipt_stops_and_is_not_price_evidence (test_market_strategy.StrategyTests.test_wrong_receipt_stops_and_is_not_price_evidence)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/ohhyunsoo/Documents/ChatGPT/AX이해와활용/ai-agent-engineering-101-week08/submissions/25512088/week-08/test_market_strategy.py", line 93, in test_wrong_receipt_stops_and_is_not_price_evidence
+    self.assertEqual(out['stars'], 1)
+AssertionError: 5 != 1
+
+----------------------------------------------------------------------
+Ran 101 tests in 0.780s
+
+FAILED (failures=3)

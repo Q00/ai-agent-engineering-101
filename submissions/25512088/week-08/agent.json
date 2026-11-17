@@ -1,0 +1,18 @@
+{
+  "harness": "Round-3 seller and buyer: deterministic price/condition policies with separate persistent SQLite ledgers; kit verifies certificates and makes payments.",
+  "seller": {
+    "cmd": "python seller.py --port {port}"
+  },
+  "buyer": {
+    "cmd": "python buyer_agent.py --url {url} --item {item} --budget {budget}"
+  },
+  "market_buyer": {
+    "cmd": "python buyer_r3.py --shops {shops} --order {order}"
+  },
+  "review": {
+    "cmd": "python buyer_review.py --deal {deal}"
+  },
+  "restock": {
+    "cmd": "python seller_strategy.py --state {state}"
+  }
+}
