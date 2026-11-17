@@ -114,6 +114,11 @@
    bounded falls in \texttt{pricing.json}\\
    the tool sandbox rules};
 
+% ---------- row 7: the loop after the meta-harness ----------
+\node[box,fill=violet!8,align=left] (ab) at (-1.2,-16.8)
+  {\textbf{after 11/11 20:27: timed A/B trials decided outside this folder} \; (a person with reviewing agents; \texttt{*\_TRIAL.md})\\
+   a change goes in with its switch OFF $\rightarrow$ runs for a set window on one arm $\rightarrow$ kept as the default only on its pre-set measure, otherwise switched back};
+
 % ---------- arrows ----------
 \draw[a] (market.south -| kitb.north) -- node[lbl,right]{order, open mandates} (kitb.north);
 \draw[a] (kits.north) -- node[lbl,right]{mandates $\rightarrow$ settle} (market.south -| kits.north);
@@ -138,10 +143,11 @@
 \draw[m] ($(mh.north)+(3.2,0)$) |- ($(tools.south)+(-2.5,-0.6)$) -- node[lbl,right,text=red!60!black]{repairs, removes} ($(tools.south)+(-2.5,0)$);
 \draw[m] ($(mh.north)+(1.0,0)$) -- ++(0,0.45) -- ++(12.4,0) node[lbl,pos=0.6,above,text=red!60!black]{settings} |- (pj.east);
 \draw[a] (hl.west) -- node[lbl,above]{rejects} (hl.west -| mh.east);
+\draw[d] (ab.east) -| node[lbl,pos=0.25,above]{switches} ($(pj.south)+(0.6,0)$);
 
 % ---------- legend ----------
-\node[font=\scriptsize,align=left,anchor=north west] at (-10.6,-16.6)
-  {\tikz\node[kit,anchor=center,inner sep=2pt]{kit};\ course kit (\emph{italics}: my patches in \texttt{scripts/market\_kit.py}) \qquad
+\node[font=\scriptsize,align=left,anchor=north west] at (-10.6,-18.3)
+  {\tikz\node[kit,anchor=center,inner sep=2pt]{kit};\ course kit (\emph{italics}: my patches to \texttt{scripts/market\_kit.py}, copy in \texttt{kit/}) \qquad
    \tikz\node[mine,anchor=center,inner sep=2pt]{agent};\ my agents \qquad
    \tikz\node[ctx,anchor=center,inner sep=2pt]{context};\ context \qquad
    \tikz\node[tool,anchor=center,inner sep=2pt]{tools};\ tools \qquad
