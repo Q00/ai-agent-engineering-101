@@ -1,0 +1,21 @@
+15:49:15 Harness Furniture Shop: 3 items, price factor 1.0
+15:49:18 [5e16be4c] <- buyer: 'I want to buy 아이엠듀 충전식 보풀제거기 (Gbee915fd)'
+15:49:18 [5e16be4c] unit u1 Gbee915fd grade A cost 7735 list 11900 -> floor 8508, ask 11305, claim A, warranty 6
+15:49:18 [5e16be4c] -> input-required, ask 11305: In stock: 아이엠듀 충전식 보풀제거기 세탁소 업소용 니트 옷 코트 보풀제거 (Gbee915fd), grade A, 6 h warranty, market certificate included. Send your offer as a number. Asking price: 11305
+15:49:22 [5e16be4c] <- buyer: '8000'
+15:49:25 [5e16be4c negotiate] call #1 (3.9s) prompt:
+You are selling: 아이엠듀 충전식 보풀제거기 세탁소 업소용 니트 옷 코트 보풀제거 (Gbee915fd).
+Your reserve (lowest price you may accept): 8508. Your opening ask was 11305. Your current ask: 11305.
+History (round: your ask -> buyer's offer): none
+Round 1. The buyer now offers 8000.
+
+Decide:
+- "accept": sell at the buyer's offer (only if the offer is at or above your reserve).
+- "counter": a new asking price between your reserve and your current ask. Come down step by step;
+  a buyer who keeps raising the offer is worth closing with.
+- "reject": end the negotiation (when the buyer is far below your reserve and not moving).
+Never mention the reserve. Answer: {"action": "accept|counter|reject", "price": N, "message": "<one short sentence, no numbers in it>"}
+[5e16be4c negotiate] raw answer: {"action": "counter", "price": 10000, "message": "제안해 주셔서 감사합니다. 업소용으로 튼튼하게 쓰실 수 있는 제품이라 조금만 맞춰 주시면 바로 진행하겠습니다."}
+15:49:26 [5e16be4c] -> input-required, ask 10000:   .           . 8000 is too low. Counteroffer: 10000
+15:49:29 [5e16be4c] <- buyer: '10000'
+15:49:29 [5e16be4c] -> completed, receipt {"shop": "Harness Furniture Shop", "item": "Gbee915fd", "price": 10000, "task": "5e16be4c-1dc3-4149-9f2c-0b696174e494", "sig_seller": "B8pvklXFoeUGHnVY/S6GTCmygUeAyfAIJ8ieWM4uPIqL2H5pWdVXooT+OKsaYOlyFj3fmrP8WbP6gaYAnttFBQ==", "unit": "u1", "claim": "A", "warranty_hours": 6}
