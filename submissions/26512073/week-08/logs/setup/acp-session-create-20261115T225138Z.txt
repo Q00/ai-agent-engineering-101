@@ -1,0 +1,21 @@
+Local ACP session creation checks; synthetic requests, no settlement
+Malformed JSON: PASS (HTTP 400)
+Non-object body: PASS (HTTP 400)
+Missing receipt: PASS (HTTP 400)
+Altered agreed price: PASS (HTTP 400)
+Wrong line item: PASS (HTTP 400)
+Unavailable unit: PASS (HTTP 409)
+Expired unit: PASS (HTTP 409)
+Valid issued receipt with buyer-edited extra fields: PASS (HTTP 201)
+Checkout JWT signature, price, unit, certificate source: PASS
+Duplicate receipt: PASS (HTTP 409)
+Same unit in another checkout: PASS (HTTP 409)
+
+[choose] {"shop_name": "Sample", "sku": "G2", "reason": "Simulated"}
+[choose] {"shop_name": "Sample", "sku": "F1", "reason": "Simulated"}
+----------------------------------------------------------------------
+Ran 69 tests in 0.449s
+
+OK
+
+Exit code 0
