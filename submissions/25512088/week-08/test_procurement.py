@@ -626,6 +626,11 @@ class PurchaseTests(unittest.TestCase):
   self.assertEqual(allocation_plan(
       [cheap,canary],{'units':[],'balance':2000000},2000000,
       policy=policy)[0]['sku'],'cheap')
+  policy['high_value_window_count']=0
+  policy['active_unproven_goods_present']=True
+  self.assertEqual(allocation_plan(
+      [cheap,canary],{'units':[],'balance':2000000},2000000,
+      policy=policy)[0]['sku'],'cheap')
  def test_one_broad_demand_relaxed_grade_canary_gets_bounded_capital_slot(self):
   cheap=dict(sku='cheap',kind='food',expected_net=1000,score=100000,
              upper_cost=100,sales_1h=20,sales_6h=40,
@@ -657,11 +662,32 @@ class PurchaseTests(unittest.TestCase):
   policy['high_value_window_count']=1
   self.assertEqual(allocation_plan(
       [cheap,canary],inventory,5000000,policy=policy)[0]['sku'],'cheap')
-  policy['high_value_window_count']=0
-  policy['active_unproven_goods_present']=True
+ def test_profitable_relaxed_canary_restock_stays_one_unit_until_mature(self):
+  row=dict(sku='canary',kind='goods',expected_net=140000,score=578000,
+           upper_cost=2862000,sales_1h=15,sales_6h=100,
+           distinct_buyers_6h=13,estimated_sale_likelihood=.65,
+           own_sales_total=1,own_sales_1h=1,own_gross_total=25840,
+           own_profitable_sales=1,own_dominant_grade_refunds=0,
+           dominant_grade_samples=78,dominant_grade_profit_probability=.51)
+  policy={'max_sku_capital_share':.10,
+          'max_relaxed_high_value_canary_capital_share':.15,
+          'max_units_per_sku':3,'max_high_value_units_per_sku':2,
+          'high_value_lane_min_unit_cost':500000,
+          'high_value_window_limit':3,'high_value_window_count':0,
+          'relaxed_high_value_canary_window_limit':1,
+          'strongly_proven_high_value_min_own_sales':5,
+          'guarded_canary_restock_min_profitable_share':1.0,
+          'min_goods_a_profit_samples':3,'min_goods_a_profit_probability':.90,
+          'min_relaxed_high_value_canary_grade_profit_probability':.50,
+          'high_value_canary_min_sales_1h':2,
+          'high_value_canary_min_distinct_buyers_6h':5,
+          'high_value_canary_min_sale_likelihood':.30}
+  plan=allocation_plan([row],{'units':[],'balance':20000000},5000000,policy=policy)
+  self.assertEqual((plan[0]['sku'],plan[0]['qty']),('canary',1))
+  self.assertTrue(plan[0]['evidence']['guarded_canary_restock'])
+  policy['high_value_window_count']=1
   self.assertEqual(allocation_plan(
-      [cheap,canary],{'units':[],'balance':2000000},2000000,
-      policy=policy)[0]['sku'],'cheap')
+      [row],{'units':[],'balance':20000000},5000000,policy=policy),[])
  def test_second_unproven_canary_is_bounded_by_active_and_window_slots(self):
   cheap=dict(sku='cheap',kind='food',expected_net=1000,score=100,
              upper_cost=100,sales_1h=20,sales_6h=40,

@@ -478,6 +478,8 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
             continue
         cold_safe_trial=False
         high_value_canary=False
+        relaxed_canary_grade_ready=False
+        guarded_canary_restock_ready=False
         own_profit_proven=False
         local_grade_proven=False
         if row.get('kind')=='goods':
@@ -540,12 +542,38 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
                 row.get('dominant_grade_profit_probability',0)>=policy.get(
                     'min_relaxed_high_value_canary_grade_profit_probability',
                     min_probability))
+            # A profitable one-unit canary must be able to gather the rest of
+            # its own-shop cohort.  Keep it at one unit per window until the
+            # normal mature/high-value gates take over; otherwise requiring
+            # five local sales while refusing every post-canary restock makes
+            # graduation impossible.
+            guarded_canary_restock_ready=(
+                high_value_grade_guard and
+                1<=own_sales_total<policy.get(
+                    'strongly_proven_high_value_min_own_sales',math.inf) and
+                isinstance(local_gross,(int,float)) and local_gross>0 and
+                own_profitable/max(1,own_sales_total)>=policy.get(
+                    'guarded_canary_restock_min_profitable_share',1.0) and
+                row.get('own_dominant_grade_refunds',0)==0 and
+                high_value_count<policy.get(
+                    'relaxed_high_value_canary_window_limit',0) and
+                row.get('sales_1h',0)>=policy.get(
+                    'high_value_canary_min_sales_1h',math.inf) and
+                row.get('distinct_buyers_6h',0)>=policy.get(
+                    'high_value_canary_min_distinct_buyers_6h',math.inf) and
+                row.get('estimated_sale_likelihood',0)>=policy.get(
+                    'high_value_canary_min_sale_likelihood',1.1) and
+                row.get('dominant_grade_samples',0)>=min_samples and
+                row.get('dominant_grade_profit_probability',0)>=policy.get(
+                    'min_relaxed_high_value_canary_grade_profit_probability',
+                    min_probability))
             # A few profitable local sales may rescue a cheap SKU whose grade
             # prior is still noisy. They must not rescue a high-value lot: one
             # unfavorable draw can immobilize over 500k and the current market
             # may clear below its cost. Expensive goods therefore always pass
             # the same minimum grade-economics gate before procurement.
             if (weak_grade_economics and not relaxed_canary_grade_ready and
+                    not guarded_canary_restock_ready and
                     not local_grade_proven and
                     (high_value_grade_guard or not own_profit_proven)):
                 continue
@@ -638,6 +666,8 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
                             'max_strongly_proven_high_value_units_per_sku',unit_cap)))
                 if high_value_canary:
                     unit_cap=min(unit_cap,1)
+                if guarded_canary_restock_ready:
+                    unit_cap=min(unit_cap,1)
         # These are absolute per-SKU inventory ceilings. Demand velocity may
         # move a SKU up the queue, but it must expand breadth rather than turn
         # one fast seller into another concentrated inventory position. High-
@@ -693,7 +723,8 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
         # recreates the historical concentrated-stock failure. Evidence may
         # scale the portfolio, but it never waives this wealth-relative cap.
         capital_share=policy.get('max_sku_capital_share',1)
-        if high_value_canary and relaxed_canary_grade_ready:
+        if ((high_value_canary and relaxed_canary_grade_ready) or
+                guarded_canary_restock_ready):
             capital_share=max(capital_share,policy.get(
                 'max_relaxed_high_value_canary_capital_share',capital_share))
         # A proven, refund-aware positive cohort may hold two expensive units
@@ -795,8 +826,11 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
             high_value_priority=0
         elif high_value_canary:
             high_value_priority=1
+        elif guarded_canary_restock_ready:
+            high_value_priority=1
         evidence['high_value_priority']=(high_value_priority<2)
         evidence['high_value_canary']=high_value_canary
+        evidence['guarded_canary_restock']=guarded_canary_restock_ready
         evidence['high_value_window_count']=high_value_count
         evidence['high_value_window_limit']=high_value_limit
         choices.append((high_value_priority,-(risk_adjusted*diversity),
