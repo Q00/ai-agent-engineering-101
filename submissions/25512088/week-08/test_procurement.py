@@ -319,7 +319,7 @@ class PurchaseTests(unittest.TestCase):
   self.assertEqual(allocation_plan(ranked,{'units':[]},10000,aggression=4,policy=policy)[0]['qty'],2)
   over={'units':[{'sku':'food','kind':'food','cost':100} for _ in range(3)]}
   self.assertEqual(allocation_plan(ranked,over,10000,aggression=4,policy=policy),[])
- def test_locally_proven_profitable_food_with_stockouts_scales_to_three(self):
+ def test_locally_proven_profitable_food_keeps_hard_two_unit_cap(self):
   ranked=[dict(sku='food',kind='food',expected_net=50000,score=3,upper_cost=100,
                sales_1h=12,sales_6h=20,distinct_buyers_6h=4,
                estimated_sale_likelihood=.8,own_sales_total=8,
@@ -328,7 +328,7 @@ class PurchaseTests(unittest.TestCase):
   policy={'max_food_units_per_sku':2,'max_proven_food_units_per_sku':3,
           'max_sku_capital_share':1}
   plan=allocation_plan(ranked,{'units':[]},10000,aggression=4,policy=policy)
-  self.assertEqual(plan[0]['qty'],3)
+  self.assertEqual(plan[0]['qty'],2)
   self.assertTrue(plan[0]['evidence']['food_scale_ready'])
   ranked[0]['own_stockouts_6h']=4
   plan=allocation_plan(ranked,{'units':[]},10000,aggression=4,policy=policy)

@@ -652,10 +652,11 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
         strongly_proven_high_value=False
         if is_food:
             unit_cap=policy.get('max_food_units_per_sku',2)
-            # Keep unproven/perishable food at the two-unit absolute cap.  A
-            # single extra unit is justified only by this shop's own settled
-            # profit, conversion and repeated stockout evidence; market-wide
-            # popularity alone cannot expand a short-lived SKU.
+            # Food remains at the hard two-unit ceiling even when it is locally
+            # proven.  Fast sell-through changes queue priority, not exposure:
+            # expiry and freshness-request risk make a third live unit an
+            # unnecessary concentration when the next supply window can
+            # replenish the SKU.
             food_scale_ready=(
                 own_sales_total>=policy.get('min_proven_food_sales',5) and
                 row.get('own_gross_total',0)>0 and
@@ -664,9 +665,6 @@ def allocation_plan(ranked, inventory, available, blocked=(), available_slots=No
                 local_rate>=policy.get('min_proven_food_conversion_rate',.20) and
                 row.get('own_stockouts_6h',0)>=
                     policy.get('min_proven_food_stockouts_6h',5))
-            if food_scale_ready:
-                unit_cap=max(unit_cap,
-                             policy.get('max_proven_food_units_per_sku',3))
         else:
             unit_cap=policy.get('max_units_per_sku',3)
             if row.get('upper_cost',0)>=policy.get('high_value_lane_min_unit_cost',math.inf):
