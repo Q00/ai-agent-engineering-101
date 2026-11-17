@@ -44,8 +44,8 @@ class SellerIntegrationTests(unittest.IsolatedAsyncioTestCase):
                dict(unit='b',sku='G00001',name='item',category='food',grade='B',expires_at=None,supplied_at=2),
                dict(unit='a',sku='G00001',name='item',category='food',grade='A',expires_at=None,supplied_at=3)]
         self.assertEqual(seller.select_unit('G00001',units,set(),{})['unit'],'b')
-        self.assertEqual(seller.select_unit('G00001',units,{'b'}, {})['unit'],'c')
-        self.assertEqual(seller.select_unit('G00001',units,{'b','c'}, {})['unit'],'a')
+        self.assertEqual(seller.select_unit('G00001',units,{'b'}, {})['unit'],'a')
+        self.assertIsNone(seller.select_unit('G00001',units,{'b','a'}, {}))
 
     def test_sale_selection_can_use_c_drain_lane(self):
         units=[dict(unit='c',sku='G00001',name='item',category='food',grade='C',expires_at=None,supplied_at=1),
@@ -88,10 +88,10 @@ class SellerIntegrationTests(unittest.IsolatedAsyncioTestCase):
         long=dict(unit='long',sku='FOOD1',name='food',category='food',kind='food',grade='C',
                   expires_at=now+80*3600,supplied_at=2)
         self.assertEqual(seller.food_hours_requirement('I want FOOD1',long),48.0)
-        self.assertEqual(seller.select_unit('I want FOOD1',[short,long],set(),{})['unit'],'long')
-        self.assertIsNone(seller.select_unit('I want FOOD1',[short],set(),{}))
+        self.assertEqual(seller.select_unit('I want FOOD1',[short,long],set(),{},prefer_c=True)['unit'],'long')
+        self.assertIsNone(seller.select_unit('I want FOOD1',[short],set(),{},prefer_c=True))
         self.assertEqual(seller.food_hours_requirement('use within 12 h',short),12.0)
-        self.assertEqual(seller.select_unit('FOOD1; use within 12 h',[short],set(),{})['unit'],'short')
+        self.assertEqual(seller.select_unit('FOOD1; use within 12 h',[short],set(),{},prefer_c=True)['unit'],'short')
 
     def test_overstocked_exact_sku_leads_with_low_cost_b(self):
         units=[]
