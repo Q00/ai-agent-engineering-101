@@ -225,8 +225,9 @@ def run(args):
                 worker_specs={
                     'meta_pid':('seller_meta.py',runtime,meta_log),
                     'procurement_pid':('procurement_scheduler.py',runtime,procurement_log),
-                    'buyer_forum_pid':('buyer_forum.py',ROOT/'state/buyer-runtime',buyer_forum_log),
-                     'buyer_cohort_pid':('buyer_cohort.py',ROOT/'state/buyer-runtime',buyer_cohort_log)}
+                    'buyer_forum_pid':('buyer_forum.py',ROOT/'state/buyer-runtime',buyer_forum_log)}
+                if 'buyer_cohort.py' in manifest.get('sha256',{}):
+                    worker_specs['buyer_cohort_pid']=('buyer_cohort.py',ROOT/'state/buyer-runtime',buyer_cohort_log)
                 def worker(spec):
                     script,working,output=spec
                     return subprocess.Popen([str(ROOT/'.venv/bin/python'),str(runtime/'release'/script),
