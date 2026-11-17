@@ -156,10 +156,10 @@ box(224, 33, 47, 20.5, "gap", "Known gap (11-17)",
 
 # Row E: the difference from the kit, and the clocks
 box(8, 3, 142, 23, "plain", "The kit's default, and what this agent puts in its place",
-    "one trades file -> an order log, profiles consolidated from it, and lessons",
-    "a price rule written into code -> a score function chosen by the rules page; a changed page is reported",
-    "a model call on every turn -> code first, Haiku where a shop moves, Opus once a night with its own history",
-    "restock from demand.json -> ledger revenue, caps on capital, a horizon rule for the last day")
+    "no memory between orders -> an order log, profiles consolidated from it, and lessons",
+    "the model decides every move -> code decides; Haiku where a shop moves, Opus once a night with its own history",
+    "no notion of the score -> one score function whose formula comes from the rules page; a changed page is reported",
+    "restock: random SKUs when stock runs low -> ledger revenue, caps on capital, a horizon rule for the last day")
 box(156, 3, 115, 23, "plain", "Five clocks",
     "per turn: code, or one Haiku call (about 1,000 characters in)",
     "per order: recall and consolidate, 30 ms (it was 2.5 s of re-reading 103,368 rows)",
