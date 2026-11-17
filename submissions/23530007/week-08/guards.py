@@ -55,7 +55,7 @@ FOOD_LOSS_24H = 6e6        # G17: food bought minus paid food sales, credits, in
 FOOD_LOSS_TOTAL = 25e6     # G17: ... and since the wide food programme started
 FOOD_LOSS_HARD = 50e6      # G17: the loss at which food restock stops even while the stars rise
 STAR_HOURS = 24            # G16: hours to wait for a paid review from them before food restock is switched off
-DAILY_CAP = 18.5           # $/24 h: (credit - 60 for Round 4) / days left on 11-11
+DAILY_CAP = 1000.0         # 11-17 12:05 UTC user: "just run it, Round 4 is far off": no daily cap (was 18.5, (credit - 60 for Round 4) / days left on 11-11)
 try:                       # 11-11 (user: use nearly all of the credit before it expires): 1.4 x the paced daily budget
     import strategist_memory as _sm
     _b = _sm.pace()[2]
