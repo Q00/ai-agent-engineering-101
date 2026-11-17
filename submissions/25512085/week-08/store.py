@@ -63,7 +63,7 @@ BUYER_SHOP_METADATA_MAX_BYTES = 128
 # that never sells is a loss"), so restock stops buying near the end and seller.py clears stock in the last day.
 # MARKET_ROUND_END (epoch seconds) overrides it, for tests.
 ROUND_END_TS = float(os.environ.get("MARKET_ROUND_END") or
-                     datetime(2026, 11, 17, 23, 59, tzinfo=timezone(timedelta(hours=9))).timestamp())
+                     datetime(2026, 11, 24, 23, 59, tzinfo=timezone(timedelta(hours=9))).timestamp())
 # Our agents' market name (the kit's --name): settle entries name the buyer by it, e.g. "buyer": "11im"
 OWN_NAME = os.environ.get("MARKET_AGENT_NAME", "mjforge")
 
