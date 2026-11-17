@@ -108,6 +108,13 @@ RIVAL_OVERRIDE_X, OVERRIDE_LINE_COST, OVERRIDE_MAX_HELD = 0.63, 8e6, 12
 BIG_LIST = 1.5e6
 def net_share(lp):
     return 0.02 if lp >= 5e5 else 0.05
+# 11-17 01:55 (user: 'stop just watching, act'): cash is the binding limit (8.4 M; every window spends all but
+# keep_cash, ~3-5 M), while 340 asks/h get 'no stock' (food 153, goods < 0.5 M 138). With cash bound, a line is
+# worth its expected book PER WON spent per hour: rate x list x share / (qty x list x cost share) ~ rate x share
+# per unit of cash, so cheap fast sellers (5% net) go before 0.5-1.5 M goods (2%). CASH_BOUND is set in main()
+CASH_BOUND = False
+def line_value(rate, lp):
+    return rate * net_share(lp) if CASH_BOUND else rate * lp * net_share(lp)
 RIVAL_X_SEEN = {}
 DEEP_OVER = 1.10             # a unit whose floor is over 1.10 x the SKU's market median counts 0 in the cover
 FOOD_KEEP_CASH = 5e6          # 11-15: least cash left after a food line (food is ~10 k a unit)
@@ -355,7 +362,7 @@ def sku_wants(catalog, have_sku, p, now, hours_left, market_sku, mkt_units=None,
                 # ranked with the proven SKUs by sales value per hour, not ahead of them: first in line, cheap
                 # near-monopolies filled the goods lines on 11-05 evening and the 2.32M Mate sofa went unbought
                 # (big sales fell from 55/h to 9/h)
-                out.append(((False, -1, -rate * v["list_price"] * net_share(v["list_price"])), v["category"], v, qty))
+                out.append(((False, -1, -line_value(rate, v["list_price"])), v["category"], v, qty))
             continue
         if v["kind"] != "goods":
             continue
@@ -369,7 +376,7 @@ def sku_wants(catalog, have_sku, p, now, hours_left, market_sku, mkt_units=None,
         target = math.ceil(target * (p.get("sku_auto", {}).get(sku) or {}).get("cover", 1.0))   # strategist.py
         qty = min(MAX_QTY, target - have_sku.get(sku, 0))
         if qty > 0:
-            out.append(((False, -1, -rate * v["list_price"] * net_share(v["list_price"])), v["category"], v, qty))
+            out.append(((False, -1, -line_value(rate, v["list_price"])), v["category"], v, qty))
     return sorted(out, key=lambda w: w[0])[:p["sku_lines"]]
 
 
@@ -482,6 +489,8 @@ def main():
     have_sku = Counter(u["sku"] for u in fresh)            # say their need (stale units still count for cash)
     stock_cost = sum(u.get("cost") or 0 for u in units)
     cash = inv["balance"]
+    global CASH_BOUND
+    CASH_BOUND = cash - p["keep_cash"] < 20e6       # 11-17: rank goods lines per won when cash cannot fund them all
 
     if (cash < (inv.get("bankrupt_line") or 500_000) and stock_cost < 100_000
             and (inv.get("bankruptcies_left") or 0) > 0):
