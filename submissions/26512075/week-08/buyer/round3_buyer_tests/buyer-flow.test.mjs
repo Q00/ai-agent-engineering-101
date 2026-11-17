@@ -7,13 +7,14 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 
-const root = process.cwd();
+const root = resolve(new URL("..", import.meta.url).pathname);
 const invoke = (order, shops, expectedSku, receiptSku = expectedSku, includeOrder = true, agreedPrice = "70") => {
   const tmp = mkdtempSync(join(tmpdir(), 'buyer-r3-'));
   try {
     writeFileSync(join(tmp,'order.json'), JSON.stringify(order));
     writeFileSync(join(tmp,'shops.json'), JSON.stringify(shops));
-    const p = spawnSync(process.execPath, ['--no-warnings','--experimental-strip-types','--loader',resolve(root,'round3_buyer_tests/ts-loader.mjs'),'--import',resolve(root,'round3_buyer_tests/mock-fetch.mjs'),resolve(root,'src/market_buyer_r3.ts'),'--shops',join(tmp,'shops.json'),'--item',order.item,'--budget',String(order.budget),...(includeOrder ? ['--order',join(tmp,'order.json')] : [])], {encoding:'utf8', cwd:tmp, env:{...process.env, EXPECT_SKU:expectedSku, RECEIPT_SKU:receiptSku, AGREED_PRICE:agreedPrice}});
+    const p = spawnSync(process.execPath, ['--no-warnings','--import',resolve(root,'../node_modules/tsx/dist/loader.mjs'),'--import',resolve(root,'round3_buyer_tests/mock-fetch.mjs'),resolve(root,'src/market_buyer_r3.ts'),'--shops',join(tmp,'shops.json'),'--item',order.item,'--budget',String(order.budget),...(includeOrder ? ['--order',join(tmp,'order.json')] : [])], {encoding:'utf8', cwd:tmp, env:{...process.env, EXPECT_SKU:expectedSku, RECEIPT_SKU:receiptSku, AGREED_PRICE:agreedPrice}});
+    assert.ifError(p.error);
     assert.equal(p.status, 0, p.stderr);
     return JSON.parse(p.stdout.trim().split('\n').at(-1));
   } finally { rmSync(tmp, {recursive:true,force:true}); }

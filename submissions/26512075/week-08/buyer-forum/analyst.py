@@ -76,6 +76,23 @@ def ledger_batch(market, after):
     return rows
 
 
+def catch_up_ledger(market, after, max_pages=20):
+    """Bounded pagination; do not mistake a full page for the latest ledger."""
+    combined = []
+    for page_index in range(max_pages):
+        page = ledger_batch(market, after)
+        sequences = [r.get("seq") for r in page if isinstance(r, dict)]
+        if (len(sequences) != len(page) or any(type(s) is not int for s in sequences)
+                or any(b <= a for a, b in zip(sequences, sequences[1:]))
+                or (after >= 0 and sequences and sequences[0] <= after)):
+            raise ValueError("ledger pagination did not advance monotonically")
+        combined.extend(page)
+        if len(page) < 500:
+            return combined, True, page_index + 1
+        after = sequences[-1]
+    return combined, False, max_pages
+
+
 def store_forum(db, posts, catalog, now):
     if not isinstance(posts, list):
         raise ValueError("forum.json must contain an array")
@@ -157,7 +174,7 @@ def store_ledger(db, rows, catalog, now, advance_cursor=True):
                    (str(sequences[-1]),))
 
 
-def create_report(db, catalog, now, forum_mtime, hours, min_settles, max_mentions, market):
+def create_report(db, catalog, now, forum_mtime, hours, min_settles, max_mentions, market, volume_min=3, volume_max=8):
     since = now - hours * 3600
     mentions = dict(db.execute("""SELECT m.sku, COUNT(*) FROM mentions m JOIN posts p ON p.id=m.post_id
                                  WHERE p.ts >= ? AND p.ts <= ? GROUP BY m.sku""", (since, now + 60)))
@@ -172,7 +189,7 @@ def create_report(db, catalog, now, forum_mtime, hours, min_settles, max_mention
     candidates = []
     for sku, deals in grouped.items():
         count = mentions.get(sku, 0)
-        if len(deals) < min_settles or count > max_mentions:
+        if len(deals) < min_settles:
             continue
         product = catalog[sku]
         candidates.append({
@@ -195,11 +212,11 @@ def create_report(db, catalog, now, forum_mtime, hours, min_settles, max_mention
     condition_candidates = []
     for (sku, grade, warranty), deals in grouped_conditions.items():
         count = condition_mentions.get((sku, grade, warranty), 0)
-        if len(deals) < min_settles or count > max_mentions:
+        if len(deals) < min_settles:
             continue
         condition_candidates.append({
             "sku": sku, "grade": grade, "warranty_hours": None if warranty == -1 else warranty,
-            "warranty_is_null": warranty == -1,
+            "warranty_is_null": warranty == -1, "warranty_status": "unknown" if warranty == -1 else "known",
             "sample_settlements": len(deals), "posts_with_matching_settlement_ref": count,
             "sample_median_settled_price": median([row[2] for row in deals]),
         })
@@ -208,7 +225,19 @@ def create_report(db, catalog, now, forum_mtime, hours, min_settles, max_mention
                                                 row["grade"], row["warranty_hours"] or 0))
     ledger_span = db.execute("SELECT MIN(ts), MAX(ts), COUNT(*) FROM settlements").fetchone()
     forum_span = db.execute("SELECT MIN(ts), MAX(ts), COUNT(*) FROM posts").fetchone()
+    observation = dict(db.execute("SELECT key, value FROM meta"))
+    started = float(observation.get("coverage_since", now))
+    coverage_ready = now - started >= hours * 3600
+    medium = [row for row in candidates if volume_min <= row["sample_settlements"] <= volume_max] if coverage_ready else []
+    # Volume band first, forum mentions only a tie-breaker. No popularity cutoff.
+    medium.sort(key=lambda row: (abs(row["sample_settlements"] - (volume_min + volume_max) / 2),
+                                 row["forum_posts_mentioning_sku"], row["sku"]))
+    unknown = [{"sku": sku, "grade": grade, "warranty_status": "unknown", "sample_settlements": count}
+               for sku, grade, count in db.execute("SELECT sku, grade, COUNT(*) FROM settlements WHERE ts >= ? AND (warranty IS NULL OR warranty=-1) GROUP BY sku, grade", (since,))]
     return {
+        "coverage_since": started, "coverage_ready": coverage_ready,
+        "volume_band": {"min": volume_min, "max": volume_max, "hours": hours},
+        "medium_candidates": medium, "unknown_conditions": unknown,
         "market": market, "generated_at": now, "forum_snapshot_mtime": forum_mtime,
         "window_hours": hours, "minimum_sample_settlements": min_settles,
         "maximum_forum_mentions": max_mentions,
@@ -231,10 +260,10 @@ def prune_old_data(db, cutoff):
                (cutoff,))
 
 
-def run_once(state, market, hours=3, min_settles=2, max_mentions=1, ledger_file=None, now=None):
+def run_once(state, market, hours=3, min_settles=2, max_mentions=1, ledger_file=None, now=None, volume_min=3, volume_max=8):
     state = Path(state)
     now = time.time() if now is None else now
-    if hours <= 0 or min_settles < 1 or max_mentions < 0:
+    if hours <= 0 or min_settles < 1 or max_mentions < 0 or not 1 <= volume_min <= volume_max:
         raise ValueError("invalid analysis thresholds")
     catalog = read_json(state / "catalog.json")
     forum_path = state / "forum.json"
@@ -245,17 +274,30 @@ def run_once(state, market, hours=3, min_settles=2, max_mentions=1, ledger_file=
     with closing(connect(state, market)) as db:
         cursor = db.execute("SELECT value FROM meta WHERE key = 'ledger_cursor'").fetchone()
         after = int(cursor[0]) if cursor else -500
-        rows = read_json(ledger_file) if ledger_file else ledger_batch(market, after)
+        if ledger_file:
+            rows = read_json(ledger_file)
+            caught_up, pages = isinstance(rows, list) and len(rows) < 500, 1
+        else:
+            rows, caught_up, pages = catch_up_ledger(market, after)
         if not isinstance(rows, list):
             raise ValueError("ledger must contain an array")
         if cursor and rows and (not isinstance(rows[0], dict) or rows[0].get("seq", -1) <= after):
             raise ValueError("ledger batch must start after the saved cursor")
         with db:
+            meta = dict(db.execute("SELECT key, value FROM meta"))
+            # Truncated batches or long polling gaps cannot certify a full observation window.
+            lagging = not caught_up
+            started = float(meta.get("coverage_since", now))
+            if now - float(meta.get("last_poll", now)) > 90 or lagging:
+                started = now
+            db.execute("INSERT OR REPLACE INTO meta VALUES ('coverage_since', ?)", (str(started),))
+            db.execute("INSERT OR REPLACE INTO meta VALUES ('last_poll', ?)", (str(now),))
             store_forum(db, posts, catalog, now)
             store_ledger(db, rows, catalog, now)
             prune_old_data(db, now - max(24, hours * 2) * 3600)
             report = create_report(db, catalog, now, forum_path.stat().st_mtime,
-                                   hours, min_settles, max_mentions, market)
+                                   hours, min_settles, max_mentions, market, volume_min, volume_max)
+            report.update(ledger_caught_up=caught_up, ledger_pages_fetched=pages)
     write_json(state / REPORT_NAME, report)
     return report
 
@@ -287,7 +329,9 @@ def main():
     parser.add_argument("--state", type=Path, default=Path(".market"))
     parser.add_argument("--market", default="https://market.ourolabs.ai")
     parser.add_argument("--window-hours", type=float, default=3)
-    parser.add_argument("--min-settles", type=int, default=2)
+    parser.add_argument("--min-settles", type=int, default=3)
+    parser.add_argument("--volume-min", type=int, default=3)
+    parser.add_argument("--volume-max", type=int, default=8)
     parser.add_argument("--max-mentions", type=int, default=1)
     parser.add_argument("--interval", type=int, default=30, help="watch interval in seconds, at least 30")
     parser.add_argument("--once", action="store_true")
@@ -306,7 +350,7 @@ def main():
     while True:
         try:
             report = run_once(args.state, args.market, args.window_hours, args.min_settles,
-                              args.max_mentions, args.ledger_file)
+                              args.max_mentions, args.ledger_file, volume_min=args.volume_min, volume_max=args.volume_max)
             print(f"forum analyst: {len(report['candidates'])} candidates", flush=True)
         except (OSError, ValueError, sqlite3.Error) as exc:
             print(f"forum analyst: {exc}", file=sys.stderr, flush=True)
