@@ -1,0 +1,74 @@
+[host] 2 tools: ['calculator', 'read_file']
+  + Exception Group Traceback (most recent call last):
+  |   File "/home/iai4/Desktop/han/ai-agent-engineering-101/submissions/26510129/week-05/mcp_agent.py", line 54, in <module>
+  |     print(asyncio.run(run(goal)))
+  |           ~~~~~~~~~~~^^^^^^^^^^^
+  |   File "/home/iai4/miniconda3/lib/python3.13/asyncio/runners.py", line 195, in run
+  |     return runner.run(main)
+  |            ~~~~~~~~~~^^^^^^
+  |   File "/home/iai4/miniconda3/lib/python3.13/asyncio/runners.py", line 118, in run
+  |     return self._loop.run_until_complete(task)
+  |            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  |   File "/home/iai4/miniconda3/lib/python3.13/asyncio/base_events.py", line 725, in run_until_complete
+  |     return future.result()
+  |            ~~~~~~~~~~~~~^^
+  |   File "/home/iai4/Desktop/han/ai-agent-engineering-101/submissions/26510129/week-05/mcp_agent.py", line 28, in run
+  |     async with Client(SERVER) as mcp:
+  |                ~~~~~~^^^^^^^^
+  |   File "/tmp/claude-1001/-home-iai4-Desktop-han-ai-agent-engineering-101/bdb5aa82-37fc-4b60-950b-1297757e1e01/scratchpad/venv/lib/python3.13/site-packages/mcp/client/client.py", line 475, in __aexit__
+  |     await self._exit_stack.__aexit__(exc_type, exc_val, exc_tb)
+  |   File "/home/iai4/miniconda3/lib/python3.13/contextlib.py", line 768, in __aexit__
+  |     raise exc
+  |   File "/home/iai4/miniconda3/lib/python3.13/contextlib.py", line 751, in __aexit__
+  |     cb_suppress = await cb(*exc_details)
+  |                   ^^^^^^^^^^^^^^^^^^^^^^
+  |   File "/home/iai4/miniconda3/lib/python3.13/contextlib.py", line 235, in __aexit__
+  |     await self.gen.athrow(value)
+  |   File "/tmp/claude-1001/-home-iai4-Desktop-han-ai-agent-engineering-101/bdb5aa82-37fc-4b60-950b-1297757e1e01/scratchpad/venv/lib/python3.13/site-packages/mcp/client/streamable_http.py", line 736, in streamable_http_client
+  |     anyio.create_task_group() as tg,
+  |     ~~~~~~~~~~~~~~~~~~~~~~~^^
+  |   File "/tmp/claude-1001/-home-iai4-Desktop-han-ai-agent-engineering-101/bdb5aa82-37fc-4b60-950b-1297757e1e01/scratchpad/venv/lib/python3.13/site-packages/anyio/_backends/_asyncio.py", line 847, in __aexit__
+  |     raise BaseExceptionGroup(
+  |         "unhandled errors in a TaskGroup", self._exceptions
+  |     ) from None
+  | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+  +-+---------------- 1 ----------------
+    | Exception Group Traceback (most recent call last):
+    |   File "/tmp/claude-1001/-home-iai4-Desktop-han-ai-agent-engineering-101/bdb5aa82-37fc-4b60-950b-1297757e1e01/scratchpad/venv/lib/python3.13/site-packages/mcp/client/streamable_http.py", line 753, in streamable_http_client
+    |     yield read_stream, write_stream
+    |   File "/home/iai4/miniconda3/lib/python3.13/contextlib.py", line 751, in __aexit__
+    |     cb_suppress = await cb(*exc_details)
+    |                   ^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/tmp/claude-1001/-home-iai4-Desktop-han-ai-agent-engineering-101/bdb5aa82-37fc-4b60-950b-1297757e1e01/scratchpad/venv/lib/python3.13/site-packages/mcp/client/session.py", line 514, in __aexit__
+    |     result = await self._task_group.__aexit__(exc_type, exc_val, exc_tb)
+    |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/tmp/claude-1001/-home-iai4-Desktop-han-ai-agent-engineering-101/bdb5aa82-37fc-4b60-950b-1297757e1e01/scratchpad/venv/lib/python3.13/site-packages/anyio/_backends/_asyncio.py", line 847, in __aexit__
+    |     raise BaseExceptionGroup(
+    |         "unhandled errors in a TaskGroup", self._exceptions
+    |     ) from None
+    | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+    +-+---------------- 1 ----------------
+      | Traceback (most recent call last):
+      |   File "/home/iai4/Desktop/han/ai-agent-engineering-101/submissions/26510129/week-05/mcp_agent.py", line 33, in run
+      |     resp = client.chat.completions.create(
+      |         model=MODEL, tools=tools, messages=messages,
+      |         extra_body={"reasoning": {"enabled": False}})
+      |   File "/tmp/claude-1001/-home-iai4-Desktop-han-ai-agent-engineering-101/bdb5aa82-37fc-4b60-950b-1297757e1e01/scratchpad/venv/lib/python3.13/site-packages/openai/_utils/_utils.py", line 298, in wrapper
+      |     return func(*args, **kwargs)
+      |   File "/tmp/claude-1001/-home-iai4-Desktop-han-ai-agent-engineering-101/bdb5aa82-37fc-4b60-950b-1297757e1e01/scratchpad/venv/lib/python3.13/site-packages/openai/resources/chat/completions/completions.py", line 1318, in create
+      |     return self._post(
+      |            ~~~~~~~~~~^
+      |         "/chat/completions",
+      |         ^^^^^^^^^^^^^^^^^^^^
+      |     ...<53 lines>...
+      |         stream_cls=Stream[ChatCompletionChunk],
+      |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      |     )
+      |     ^
+      |   File "/tmp/claude-1001/-home-iai4-Desktop-han-ai-agent-engineering-101/bdb5aa82-37fc-4b60-950b-1297757e1e01/scratchpad/venv/lib/python3.13/site-packages/openai/_base_client.py", line 1440, in post
+      |     return cast(ResponseT, self.request(cast_to, opts, stream=stream, stream_cls=stream_cls))
+      |                            ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      |   File "/tmp/claude-1001/-home-iai4-Desktop-han-ai-agent-engineering-101/bdb5aa82-37fc-4b60-950b-1297757e1e01/scratchpad/venv/lib/python3.13/site-packages/openai/_base_client.py", line 1213, in request
+      |     raise self._make_status_error_from_response(err.response) from None
+      | openai.AuthenticationError: Error code: 401 - {'error': {'message': 'User not found.', 'code': 401}}
+      +------------------------------------
