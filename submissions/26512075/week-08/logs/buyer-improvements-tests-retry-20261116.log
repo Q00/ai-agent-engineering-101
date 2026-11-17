@@ -1,0 +1,42 @@
+
+> week-08@1.0.0 test:buyer
+> node --import tsx --test buyer/round3_buyer_tests/*.test.ts buyer/round3_buyer_tests/*.test.mjs
+
+✔ food order requests acceptable in-stock SKU and emits policy (201.112463ms)
+✔ reject another acceptable receipt item before checkout (160.725093ms)
+✔ no valid offers returns no deal without contacting shop (152.928736ms)
+✔ malformed order returns no deal without contacting shop (147.34057ms)
+✔ Round 2 still works with and without --order (315.915974ms)
+✔ explicitly mismatched agreed price refuses receipt (168.19559ms)
+✔ medium-volume evidence chooses a specific shop and permitted SKU (3.281241ms)
+✔ incomplete coverage and unavailable SKUs fall back to existing shop scoring (17.25804ms)
+✔ price comps require a market-signed grade and exact known warranty (10.874103ms)
+✔ buyer's warranty requirement is independently configurable (2.799923ms)
+✔ real TypeScript bridge locates Python harness from an unrelated working directory (220.622322ms)
+✔ stock cooldown is SKU-specific, expires, and does not rescue excluded candidates (4.551275ms)
+✔ deadline bounds network and model time, preserves cleanup, and respects order expiry (2.311647ms)
+✔ cheaper confirmed cohort breaks equal shop scores; mismatched or sparse evidence does not (19.106653ms)
+✔ settlement conditions are attached only with matching ledger/order/shop/SKU (1.129924ms)
+✔ food use_within_hours maps to checkout policy (4.274286ms)
+✔ goods and Round 2 do not impose food policy (0.650224ms)
+✔ candidate SKUs must be both acceptable and in-stock with positive integer quantity (0.902783ms)
+✔ malformed or conflicting order does not fall back (1.359163ms)
+✔ receipt item and price must match selection and budget (0.786061ms)
+✔ payment reconciliation is idempotent and does not equate agreement with payment (4.191824ms)
+✔ unique breakage links only to a settled purchase; coverage does not assert refund (0.723473ms)
+✔ same-name purchases and incomplete six-hour history remain unresolved (0.663188ms)
+✔ conflicting payment records are not guessed (0.336609ms)
+✔ explicit stock rejection retries another shop and retains both outcomes (212.787416ms)
+✔ stock retries stop after three shops (178.165755ms)
+✔ uncertain network, generic rejection, and mismatched receipt never retry (522.773949ms)
+✔ expired orders perform no network requests (167.974947ms)
+✔ same discount has different margin scenarios, never an exact score (2.712126ms)
+✔ cap upside only; preserve above-list losses and unknown cost (0.471334ms)
+ℹ tests 30
+ℹ suites 0
+ℹ pass 30
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1429.10017
