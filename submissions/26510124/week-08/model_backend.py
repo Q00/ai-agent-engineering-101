@@ -22,7 +22,7 @@ CODEX_MODELS = {"sol": "gpt-6.1-sol", "astra": "gpt-6-astra", "luna": "gpt-6-lun
 CLAUDE_MODELS = {"haiku": "haiku", "opus5.5": "claude-opus-5-5"}
 CLAUDE_COMMAND = ["claude", "-p", "--model", "haiku", "--tools", "",
                   "--setting-sources", "", "--no-session-persistence",
-                  "--strict-mcp-config", "--disable-slash-commands"]
+                  "--strict-mcp-config", "--disable-slash-commands", "--output-format", "json"]
 DISABLED_FEATURES = ("shell_tool", "view_image", "apps", "plugins", "hooks", "multi_agent",
                      "browser_use", "computer_use", "image_generation", "code_mode",
                      "code_mode_host", "memories", "shell_snapshot")
@@ -179,7 +179,7 @@ def command(profile, folder, prompt_name):
             # Pin the requested model rather than the floating 'opus' alias.
             # JSON is the CLI result envelope, not --json-schema, which can
             # require an additional structured-output tool/model turn.
-            args.extend(["--effort", "low", "--output-format", "json"])
+            args.extend(["--effort", "low"])
         return args
     if profile not in CODEX_MODELS:
         raise ValueError("Unknown model profile")
@@ -201,9 +201,7 @@ def command(profile, folder, prompt_name):
 
 
 def answer(profile, result, folder):
-    if profile == "haiku":
-        return result.stdout
-    if profile == "opus5.5":
+    if profile in CLAUDE_MODELS:
         if not isinstance(result.stdout, str) or len(result.stdout.encode()) > 65536:
             raise ValueError("Claude did not produce a bounded JSON result")
         try:
@@ -216,11 +214,15 @@ def answer(profile, result, folder):
                 or output.get("permission_denials") != [] or output.get("deferred_tool_use") is not None):
             raise ValueError("Claude did not complete one successful tool-free decision")
         model, usage = CLAUDE_MODELS[profile], output.get("modelUsage")
+        if profile == "haiku" and isinstance(usage, dict) and len(usage) == 1:
+            model = next(iter(usage))
+            if not (model == "haiku" or model.startswith("claude-haiku-")):
+                raise ValueError("Claude result did not verify Haiku; no fallback")
         if (not isinstance(usage, dict) or set(usage) != {model}
                 or not isinstance(usage[model], dict)
                 or type(usage[model].get("outputTokens")) is not int or usage[model]["outputTokens"] <= 0
                 or usage[model].get("canonicalModel", model) != model):
-            raise ValueError("Claude result did not verify the exact requested claude-opus-5-5 model; no fallback")
+            raise ValueError("Claude result did not verify the exact requested model; no fallback")
         text = output.get("result")
         if not isinstance(text, str) or not text.strip():
             raise ValueError("Claude returned no decision text")
@@ -266,6 +268,22 @@ def answer(profile, result, folder):
     return path.read_text()
 
 
+def measured_execute(cmd, *, profile, prompt_name, log, prompt, **kwargs):
+    from model_usage import record
+    started, stdout, status = time.monotonic(), None, 'process_error'
+    try:
+        result = execute(cmd, prompt=prompt, **kwargs)
+        stdout = result.stdout
+        status = 'process_success' if result.returncode == 0 else 'process_error'
+        return result
+    except subprocess.TimeoutExpired as exc:
+        stdout, status = exc.stdout, 'timeout'
+        raise
+    finally:
+        record(log, profile=profile, prompt_name=prompt_name, prompt=prompt,
+               started=started, stdout=stdout, status=status)
+
+
 def call(profile, prompt_name, prompt, *, timeout, log):
     deadline = time.monotonic() + timeout
     with tempfile.TemporaryDirectory(prefix="week08-model-") as folder:
@@ -278,7 +296,8 @@ def call(profile, prompt_name, prompt, *, timeout, log):
         if remaining <= 0:
             raise ValueError("Model deadline expired during authentication check")
         try:
-            result = execute(cmd, prompt=prompt, cwd=folder, timeout=remaining, env=environment(profile))
+            result = measured_execute(cmd, profile=profile, prompt_name=prompt_name, log=log,
+                                      prompt=prompt, cwd=folder, timeout=remaining, env=environment(profile))
         except subprocess.TimeoutExpired as exc:
             log.write("TIMEOUT: model process and children stopped\n")
             for label, content in (("STDOUT", exc.stdout), ("STDERR", exc.stderr)):

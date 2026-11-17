@@ -21,7 +21,7 @@ from harness import HarnessError, buyer_decision, decide, parse_object
 from inventory import read_json
 from payment_memory import recent_jsonl, reconcile, attach_reviews
 from buyer_policy import buying_terms, checkout_policy, load_policy, negotiation_policy
-from buyer_selection import shortlist, offer_fingerprint, reuse_failures, compatibility_fingerprint
+from buyer_selection import selection_pool, shortlist, offer_fingerprint, reuse_failures, compatibility_fingerprint
 from buyer_context import compact_dialogue
 from buyer_fast_selection import recent_success_choice, timeout_choice, value_choice
 from buyer_value_memory import build_value_evidence
@@ -125,9 +125,31 @@ def choose_shop(shops, memory, *, item, budget, deadline, policy=None, order=Non
     # Discovery lacks expiry evidence: selection only, never negotiation references.
     selection_values = merge_price_evidence(values, food_discovery)
     selection_values = prioritize_history(selection_values, order, policy)
+    pool = selection_pool(shops, memory, seed=seed, round_number=order.get("round"),
+                          value_evidence=selection_values)
+    choice = value_choice(pool, values=selection_values, budget=budget, config=policy,
+                          order=order, catalog=catalog, seed=seed)
+    method = "repeated_value" if choice is not None else "model"
+    if choice is not None and order.get("kind") == "food" and food_discovery:
+        method = "food_bargain_scan"
+    if choice is None:
+        choice = recent_success_choice(pool, memory, budget=budget, config=policy,
+                                       order=order, catalog=catalog, seed=seed)
+        if choice is not None:
+            method = "recent_settlement"
     candidates = shortlist(shops, memory, seed=seed,
                            limit=policy.get("selection_max_candidates", 6),
-                           round_number=order.get("round"), value_evidence=selection_values)
+                           round_number=order.get("round"), value_evidence=selection_values, pool=pool)
+    if choice is not None:
+        # A strict historical reuse hit must not disappear at the six-shop/five-SKU prompt boundary.
+        source = next(c for c in pool if c["name"] == choice["name"])
+        selected = next((c for c in candidates if c["name"] == choice["name"]), None)
+        if selected is None:
+            selected = {**source, "offers": source["offers"][:5], "selection_role": "evidence"}
+            candidates[-1:] = [selected]
+        if choice["sku"] not in {o["sku"] for o in selected["offers"]}:
+            selected["offers"] = selected["offers"][:4] + [
+                next(o for o in source["offers"] if o["sku"] == choice["sku"])]
     if not candidates:
         raise BuyerError("No eligible candidate shops after current-stock and recent-refusal checks")
     names = {s["name"] for s in candidates}
@@ -169,16 +191,6 @@ def choose_shop(shops, memory, *, item, budget, deadline, policy=None, order=Non
                                   g.get("source") == "public_ledger" for o in c["offers"]
                                   for g in o.get("price_history", [])) for c in candidates),
                               "exploration": [c["name"] for c in candidates if c["selection_role"] == "exploration"]})
-    choice = value_choice(candidates, values=selection_values, budget=budget, config=policy,
-                          order=order, catalog=catalog, seed=seed)
-    method = "repeated_value" if choice is not None else "model"
-    if choice is not None and order.get("kind") == "food" and food_discovery:
-        method = "food_bargain_scan"
-    if choice is None:
-        choice = recent_success_choice(candidates, memory, budget=budget, config=policy,
-                                       order=order, catalog=catalog, seed=seed)
-        if choice is not None:
-            method = "recent_settlement"
     if choice is None:
         try:
             choice = decide("market_select.txt", context, validate, timeout=min(timeout, remaining),

@@ -29,7 +29,7 @@ Use only provided eligible target keys. Explain evidence, expected effect and un
 
 
 def analyse(context, root, cfg):
-    compact = json.dumps(context, ensure_ascii=False, allow_nan=False)
+    compact = json.dumps(context, ensure_ascii=False, allow_nan=False, separators=(',', ':'))
     if len(compact) > 24000:
         raise ValueError('operations context too large')
     prompt = INSTRUCTION + '\nOUTPUT SCHEMA:\n' + json.dumps(SCHEMA) + '\nOBSERVATION:\n' + compact
@@ -49,7 +49,7 @@ def analyse(context, root, cfg):
             raise ValueError('operations authentication deadline')
         log.write('PROFILE: ' + profile + '\nCONTEXT:\n' + compact + '\n')
         log.flush()
-        result = backend.execute(command, prompt=prompt, cwd=folder, timeout=remaining,
+        result = backend.measured_execute(command, profile=profile, prompt_name='shop_operations', log=log, prompt=prompt, cwd=folder, timeout=remaining,
                                  env=backend.environment(profile))
         log.write('EXIT: ' + str(result.returncode) + '\n')
         if result.returncode:

@@ -83,7 +83,7 @@ def decide(prompt_name, context, validate, *, timeout=90, prefix="decision", max
     except (ValueError, OSError) as exc:
         raise HarnessError("Invalid model profile") from exc
     prompt = (ROOT / "prompts" / prompt_name).read_text(encoding="utf-8")
-    prompt += "\n" + json.dumps(context, ensure_ascii=False)
+    prompt += "\n" + json.dumps(context, ensure_ascii=False, separators=(",", ":"))
     # Each challenge run keeps its own original calls beside its wire logs.
     logs = Path(os.environ.get("WEEK06_LOG_DIR", ROOT / "logs")).resolve()
     if not logs.is_relative_to((ROOT / "logs").resolve()):

@@ -94,14 +94,15 @@ def atomic_write(path, value):
 
 def config_at(root=ROOT):
     cfg = read_json(Path(root) / 'shop-ops-config.json', 8192)
-    if not isinstance(cfg, dict) or set(cfg) != CONFIG_KEYS or type(cfg['schema']) is not int or cfg['schema'] != 1:
+    if not isinstance(cfg, dict) or set(cfg) - {'model_interval_seconds'} != CONFIG_KEYS or type(cfg['schema']) is not int or cfg['schema'] != 1:
         raise ValueError('invalid shop operations config')
+    cfg.setdefault('model_interval_seconds', 7200)
     if type(cfg['enabled']) is not bool or type(cfg['model_enabled']) is not bool:
         raise ValueError('explicit enable flags required')
     if cfg['mode'] not in ('propose', 'auto') or cfg['model_profile'] not in ('sol', 'luna', 'opus5.5'):
         raise ValueError('invalid operations mode/profile')
     for key, lo, hi in (
-        ('interval_seconds', 1800, 86400), ('event_min_seconds', 300, 1800),
+        ('interval_seconds', 1800, 86400), ('model_interval_seconds', 1800, 86400), ('event_min_seconds', 300, 1800),
         ('model_timeout_seconds', 10, 60), ('max_calls_per_day', 1, 48),
         ('proposal_ttl_seconds', 60, 900), ('experiment_seconds', 3600, 21600),
         ('evaluation_seconds', 1800, 10800), ('min_tasks', 20, 200), ('min_settlements', 5, 100)):

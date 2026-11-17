@@ -83,9 +83,10 @@ class OperationsTests(unittest.TestCase):
                 def model(*args):
                     if isinstance(bad,Exception):raise bad
                     return bad
-                result=self.tick(now=self.NOW+index*1800,model=model)
+                self.obs['current']['observed_tasks'] = 30+index
+                result=self.tick(now=self.NOW+index*7200,model=model)
                 self.assertEqual(result['status'],'hold')
-                self.assertIsNone(read_overlay(self.root,now=self.NOW+index*1800))
+                self.assertIsNone(read_overlay(self.root,now=self.NOW+index*7200))
                 self.assertNotIn('private failure',json.dumps(self.proposal(result)))
 
     def test_stale_evidence_prevents_model_call_and_experiment(self):
@@ -181,10 +182,11 @@ class OperationsTests(unittest.TestCase):
     def test_old_evaluation_cannot_restore_new_policy(self):
         self.auto();p=self.proposal(self.tick());old=current_state(self.root)
         PolicyStore(self.root).restore(old['version'],now=self.NOW+1,authorized=True)
-        newer=self.proposal(self.tick(now=self.NOW+1800))
+        newer=self.proposal(self.tick(now=self.NOW+7200))
         state=current_state(self.root)
-        obs=ops.snapshot(self.root,self.NOW+1801,self.collector)
-        self.assertEqual(ops.evaluate(self.root,p,obs,now=self.NOW+1801)['status'],'superseded')
+        obs=ops.snapshot(self.root,self.NOW+7201,self.collector)
+        self.assertNotEqual(state['version'],old['version'])
+        self.assertEqual(ops.evaluate(self.root,p,obs,now=self.NOW+7201)['status'],'superseded')
         self.assertEqual(current_state(self.root)['version'],state['version'])
 
     def test_model_settings_and_command_never_read_trading_profile(self):

@@ -7,7 +7,7 @@ from buyer_policy import buying_terms
 from payment_memory import acceptance_refusal, record_time
 
 
-def shop_evidence(shop, memory, *, value_evidence=None, seed=""):
+def shop_evidence(shop, memory, *, value_evidence=None, seed="", offer_limit=5):
     """Keep aggregates and two short excerpts; source logs remain untouched."""
     reviews = [r for r in shop.get("reviews", [])[:10] if isinstance(r, dict)]
     own = [r for r in memory if r["name"] == shop["name"]]
@@ -29,7 +29,7 @@ def shop_evidence(shop, memory, *, value_evidence=None, seed=""):
             value_evidence.get((shop["name"], offer["sku"]), {}).get("best_price_to_list", float("inf")),
             hashlib.sha256((str(seed) + "\0" + shop["name"] + "\0" + offer["sku"]).encode()).hexdigest()))
     offers = [{"sku": o["sku"], "name": str(o.get("name", ""))[:80], "qty": o["qty"]}
-              for o in offers[:5]]
+              for o in offers[:offer_limit]]
     # Only one SKU's two quality-specific summaries per shop go to the model.
     for offer in offers:
         history = value_evidence.get((shop["name"], offer["sku"]))
@@ -40,6 +40,8 @@ def shop_evidence(shop, memory, *, value_evidence=None, seed=""):
         if history:
             offer["price_history"] = history["groups"]
             break
+    offered_skus = {offer["sku"] for offer in offers}
+    relevant = [r for r in own if r.get("item") in offered_skus]
     return {
         "name": shop["name"],
         "offers": offers,
@@ -61,7 +63,7 @@ def shop_evidence(shop, memory, *, value_evidence=None, seed=""):
                 {"item": r.get("item"), "price": r.get("price"), "result": r.get("result"),
                  "stars": r.get("stars"), "reasons": r.get("review_reasons", [])[:4],
                  "detail": str(r.get("detail", ""))[:120]}
-                for r in reversed(own[-2:])],
+                for r in reversed(relevant[-2:])],
         },
     }
 
@@ -75,7 +77,18 @@ def value_ratio(candidate):
     return min(ratios) if ratios else None
 
 
-def shortlist(shops, memory, *, seed, limit=6, round_number=None, value_evidence=None):
+def selection_pool(shops, memory, *, seed, round_number=None, value_evidence=None):
+    """Scan current filtered stock locally; no offer limit until model projection."""
+    if round_number is not None:
+        memory = [r for r in memory if r.get("round", 2) == round_number]
+    by_name = {}
+    for row in memory:
+        by_name.setdefault(row["name"], []).append(row)
+    return [shop_evidence(s, by_name.get(s["name"], []), value_evidence=value_evidence, seed=seed, offer_limit=None)
+                  for s in shops]
+
+
+def shortlist(shops, memory, *, seed, limit=6, round_number=None, value_evidence=None, pool=None):
     """Reserve up to two verified value slots and one untested shop.
 
     Review volume only adjusts confidence in the small public sample. It is
@@ -84,13 +97,9 @@ def shortlist(shops, memory, *, seed, limit=6, round_number=None, value_evidence
     """
     if type(limit) is not int or not 2 <= limit <= 6:
         raise ValueError("Buyer selection limit must be between 2 and 6")
-    if round_number is not None:
-        memory = [r for r in memory if r.get("round", 2) == round_number]
-    by_name = {}
-    for row in memory:
-        by_name.setdefault(row["name"], []).append(row)
-    candidates = [shop_evidence(s, by_name.get(s["name"], []), value_evidence=value_evidence, seed=seed)
-                  for s in shops]
+    pool = pool if pool is not None else selection_pool(shops, memory, seed=seed,
+        round_number=round_number, value_evidence=value_evidence)
+    candidates = [{**c, "offers": c["offers"][:5]} for c in pool]
 
     def rotation(candidate):
         return hashlib.sha256((str(seed) + "\0" + candidate["name"]).encode()).hexdigest()

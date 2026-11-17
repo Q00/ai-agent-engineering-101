@@ -1,0 +1,136 @@
+test_new_tasks_wait_two_hours_even_when_counts_unchanged (test_token_efficiency.GateTests.test_new_tasks_wait_two_hours_even_when_counts_unchanged) ... ok
+test_no_eligible_experiment_skips_model_and_policy_change_invalidates_digest (test_token_efficiency.GateTests.test_no_eligible_experiment_skips_model_and_policy_change_invalidates_digest) ... ok
+test_technical_events_bypass_regular_interval_but_not_minimum_spacing (test_token_efficiency.GateTests.test_technical_events_bypass_regular_interval_but_not_minimum_spacing) ... ok
+test_unchanged_snapshot_clock_and_storage_do_not_call_again (test_token_efficiency.GateTests.test_unchanged_snapshot_clock_and_storage_do_not_call_again) ... ok
+test_verified_sku_beyond_five_offer_projection_skips_selection_model (test_token_efficiency.RetrievalTests.test_verified_sku_beyond_five_offer_projection_skips_selection_model) ... SELECTION CONTEXT: {"eligible_shops": 1, "candidates": 1, "context_chars": 1746, "cooldown_skipped_offers": 0, "all_cooling_reconsidered": false, "incompatible_skipped_offers": 0, "incompatible_grade_offers": 0, "incompatible_warranty_offers": 0, "all_incompatible": false, "certified_short_life_skipped_offers": 0, "food_discovery_pairs": 0, "stocked_offers_scanned": 20, "value_candidates": [], "public_price_candidates": 0, "exploration": []}
+SELECTION METHOD: {"method": "recent_settlement", "model_timeout_seconds": 15}
+SHOP SELECTION: {"name": "proven", "sku": "G00020", "reason": "Recent confirmed same-SKU settlement (ledger 17) met the same checkout minimums; negotiate and verify this unit anew."}
+ok
+test_claude_cache_counts_are_not_double_counted_and_absence_is_unknown (test_token_efficiency.UsageTests.test_claude_cache_counts_are_not_double_counted_and_absence_is_unknown) ... ok
+test_codex_input_already_includes_cache (test_token_efficiency.UsageTests.test_codex_input_already_includes_cache) ... ok
+test_concurrent_records_are_distinct_and_private_content_is_omitted (test_token_efficiency.UsageTests.test_concurrent_records_are_distinct_and_private_content_is_omitted) ... ok
+test_haiku_json_unwrap_and_tool_rejection (test_token_efficiency.UsageTests.test_haiku_json_unwrap_and_tool_rejection) ... ok
+test_timeout_is_metered_without_changing_exception (test_token_efficiency.UsageTests.test_timeout_is_metered_without_changing_exception) ... ok
+test_unwritable_telemetry_does_not_interrupt_model_result (test_token_efficiency.UsageTests.test_unwritable_telemetry_does_not_interrupt_model_result) ... ok
+test_api_env_is_removed_without_repurposing_home_or_cli_auth (test_model_backend.ModelBackendTests.test_api_env_is_removed_without_repurposing_home_or_cli_auth) ... ok
+test_astra_command_is_readonly_ephemeral_low_and_uses_stdin (test_model_backend.ModelBackendTests.test_astra_command_is_readonly_ephemeral_low_and_uses_stdin) ... ok
+test_auth_requires_chatgpt_and_never_prints_or_changes_credentials (test_model_backend.ModelBackendTests.test_auth_requires_chatgpt_and_never_prints_or_changes_credentials) ... ok
+test_bad_profile_never_silently_falls_back (test_model_backend.ModelBackendTests.test_bad_profile_never_silently_falls_back) ... ok
+test_call_timeout_keeps_partial_diagnostics_without_retry (test_model_backend.ModelBackendTests.test_call_timeout_keeps_partial_diagnostics_without_retry) ... ok
+test_call_uses_same_timeout_and_logs_raw_stream_and_final (test_model_backend.ModelBackendTests.test_call_uses_same_timeout_and_logs_raw_stream_and_final) ... ok
+test_check_does_not_make_model_call_and_preflight_is_explicit (test_model_backend.ModelBackendTests.test_check_does_not_make_model_call_and_preflight_is_explicit) ... ok
+test_disabled_advisor_is_excluded_from_cli_auth_and_paid_preflight (test_model_backend.ModelBackendTests.test_disabled_advisor_is_excluded_from_cli_auth_and_paid_preflight) ... ok
+test_disabled_or_missing_advisor_cannot_reactivate_through_harness (test_model_backend.ModelBackendTests.test_disabled_or_missing_advisor_cannot_reactivate_through_harness) ... ok
+test_failed_preflight_prints_exact_details_path (test_model_backend.ModelBackendTests.test_failed_preflight_prints_exact_details_path) ... ok
+test_final_file_is_used_and_tools_fail_even_with_valid_json (test_model_backend.ModelBackendTests.test_final_file_is_used_and_tools_fail_even_with_valid_json) ... ok
+test_harness_auth_or_process_failure_never_retries_or_changes_model (test_model_backend.ModelBackendTests.test_harness_auth_or_process_failure_never_retries_or_changes_model) ... ok
+test_harness_retries_invalid_decision_only_and_keeps_advisor_haiku (test_model_backend.ModelBackendTests.test_harness_retries_invalid_decision_only_and_keeps_advisor_haiku) ... ok
+test_interruption_reaps_the_cli_children_without_starting_a_retry (test_model_backend.ModelBackendTests.test_interruption_reaps_the_cli_children_without_starting_a_retry) ... ok
+test_missing_oversized_and_incomplete_final_outputs_fail (test_model_backend.ModelBackendTests.test_missing_oversized_and_incomplete_final_outputs_fail) ... ok
+test_schema_preserves_selection_and_opening_contracts (test_model_backend.ModelBackendTests.test_schema_preserves_selection_and_opening_contracts) ... ok
+test_scope_and_reversible_local_profile_do_not_start_a_service (test_model_backend.ModelBackendTests.test_scope_and_reversible_local_profile_do_not_start_a_service) ... ok
+test_timeout_kills_process_group_and_preserves_output (test_model_backend.ModelBackendTests.test_timeout_kills_process_group_and_preserves_output) ... ok
+test_both_trading_roles_use_exact_opus_profile_and_keep_advisor_disabled (test_opus_model.OpusModelTests.test_both_trading_roles_use_exact_opus_profile_and_keep_advisor_disabled) ... ok
+test_check_is_model_free_but_preflight_probes_opus_once_and_records_exact_model (test_opus_model.OpusModelTests.test_check_is_model_free_but_preflight_probes_opus_once_and_records_exact_model) ... ok
+test_command_pins_model_low_effort_and_preserves_tool_isolation (test_opus_model.OpusModelTests.test_command_pins_model_low_effort_and_preserves_tool_isolation) ... ok
+test_error_truncated_tools_and_malformed_results_are_rejected (test_opus_model.OpusModelTests.test_error_truncated_tools_and_malformed_results_are_rejected) ... ok
+test_haiku_rollback_changes_only_local_profile_without_model_calls (test_opus_model.OpusModelTests.test_haiku_rollback_changes_only_local_profile_without_model_calls) ... ok
+test_normal_harness_unwraps_opus_json_and_preserves_deadline (test_opus_model.OpusModelTests.test_normal_harness_unwraps_opus_json_and_preserves_deadline) ... ok
+test_success_returns_only_decision_text_after_model_verification (test_opus_model.OpusModelTests.test_success_returns_only_decision_text_after_model_verification) ... ok
+test_unavailable_or_mismatched_model_fails_preflight_without_retry_or_profile_change (test_opus_model.OpusModelTests.test_unavailable_or_mismatched_model_fails_preflight_without_retry_or_profile_change) ... ok
+test_wrong_missing_or_mixed_model_never_silently_falls_back (test_opus_model.OpusModelTests.test_wrong_missing_or_mixed_model_never_silently_falls_back) ... ok
+test_current_roles_use_haiku_shop_and_opus_buyer_and_operations (test_role_models.RoleModelTests.test_current_roles_use_haiku_shop_and_opus_buyer_and_operations) ... ok
+test_enabled_operations_model_is_part_of_preflight_even_if_trading_is_haiku (test_role_models.RoleModelTests.test_enabled_operations_model_is_part_of_preflight_even_if_trading_is_haiku) ... ok
+test_invalid_shop_override_fails_instead_of_using_buyer (test_role_models.RoleModelTests.test_invalid_shop_override_fails_instead_of_using_buyer) ... ok
+test_ops_claude_uses_schema_in_prompt_and_no_codex_auth (test_role_models.RoleModelTests.test_ops_claude_uses_schema_in_prompt_and_no_codex_auth) ... ok
+test_ops_wrong_claude_model_is_rejected_without_fallback (test_role_models.RoleModelTests.test_ops_wrong_claude_model_is_rejected_without_fallback) ... ok
+test_shop_profile_edit_does_not_change_buyer_or_ops (test_role_models.RoleModelTests.test_shop_profile_edit_does_not_change_buyer_or_ops) ... ok
+test_evidence_is_bounded_keeps_negative_excerpt_and_does_not_mutate (test_buyer_selection.BuyerSelectionTests.test_evidence_is_bounded_keeps_negative_excerpt_and_does_not_mutate) ... ok
+test_exploration_rotates_and_registry_order_does_not_change_it (test_buyer_selection.BuyerSelectionTests.test_exploration_rotates_and_registry_order_does_not_change_it) ... ok
+test_large_registry_calls_model_once_with_six_candidates (test_buyer_selection.BuyerSelectionTests.test_large_registry_calls_model_once_with_six_candidates) ... SELECTION CONTEXT: {"eligible_shops": 80, "candidates": 6, "context_chars": 4686, "cooldown_skipped_offers": 0, "all_cooling_reconsidered": false, "incompatible_skipped_offers": 0, "incompatible_grade_offers": 0, "incompatible_warranty_offers": 0, "all_incompatible": false, "certified_short_life_skipped_offers": 0, "food_discovery_pairs": 0, "stocked_offers_scanned": 80, "value_candidates": [], "public_price_candidates": 0, "exploration": ["shop-26"]}
+SELECTION METHOD: {"method": "model", "model_timeout_seconds": 9.999008833023254}
+SHOP SELECTION: {"name": "shop-26", "sku": "G00001", "reason": "stock and review evidence"}
+ok
+test_legacy_round_and_pending_receipt_are_not_current_settlements (test_buyer_selection.BuyerSelectionTests.test_legacy_round_and_pending_receipt_are_not_current_settlements) ... ok
+test_many_bad_reviews_do_not_beat_good_evidence (test_buyer_selection.BuyerSelectionTests.test_many_bad_reviews_do_not_beat_good_evidence) ... ok
+test_model_cannot_select_outside_candidate_or_stock (test_buyer_selection.BuyerSelectionTests.test_model_cannot_select_outside_candidate_or_stock) ... SELECTION CONTEXT: {"eligible_shops": 1, "candidates": 1, "context_chars": 1047, "cooldown_skipped_offers": 0, "all_cooling_reconsidered": false, "incompatible_skipped_offers": 0, "incompatible_grade_offers": 0, "incompatible_warranty_offers": 0, "all_incompatible": false, "certified_short_life_skipped_offers": 0, "food_discovery_pairs": 0, "stocked_offers_scanned": 1, "value_candidates": [], "public_price_candidates": 0, "exploration": ["shop"]}
+SELECTION CONTEXT: {"eligible_shops": 1, "candidates": 1, "context_chars": 1047, "cooldown_skipped_offers": 0, "all_cooling_reconsidered": false, "incompatible_skipped_offers": 0, "incompatible_grade_offers": 0, "incompatible_warranty_offers": 0, "all_incompatible": false, "certified_short_life_skipped_offers": 0, "food_discovery_pairs": 0, "stocked_offers_scanned": 1, "value_candidates": [], "public_price_candidates": 0, "exploration": ["shop"]}
+ok
+test_receipt_mismatch_outweighs_public_five_stars (test_buyer_selection.BuyerSelectionTests.test_receipt_mismatch_outweighs_public_five_stars) ... ok
+test_zero_review_shop_keeps_one_slot_among_established_shops (test_buyer_selection.BuyerSelectionTests.test_zero_review_shop_keeps_one_slot_among_established_shops) ... ok
+test_all_incompatible_offers_and_expired_deadline_never_call_model (test_buyer_fast_selection.FastSelectionTests.test_all_incompatible_offers_and_expired_deadline_never_call_model) ... ok
+test_cache_keeps_new_shop_comparison_opportunities_and_can_be_disabled (test_buyer_fast_selection.FastSelectionTests.test_cache_keeps_new_shop_comparison_opportunities_and_can_be_disabled) ... ok
+test_changed_checkout_policy_or_price_cap_cannot_reuse_past_acceptance (test_buyer_fast_selection.FastSelectionTests.test_changed_checkout_policy_or_price_cap_cannot_reuse_past_acceptance) ... ok
+test_changed_tunnel_does_not_drop_same_shop_selection_evidence (test_buyer_fast_selection.FastSelectionTests.test_changed_tunnel_does_not_drop_same_shop_selection_evidence) ... ok
+test_current_low_rating_or_own_receipt_mismatch_disables_shortcut (test_buyer_fast_selection.FastSelectionTests.test_current_low_rating_or_own_receipt_mismatch_disables_shortcut) ... ok
+test_integrated_cache_skips_model_and_preserves_live_shop_and_sku (test_buyer_fast_selection.FastSelectionTests.test_integrated_cache_skips_model_and_preserves_live_shop_and_sku) ... SELECTION CONTEXT: {"eligible_shops": 2, "candidates": 2, "context_chars": 1975, "cooldown_skipped_offers": 0, "all_cooling_reconsidered": false, "incompatible_skipped_offers": 0, "incompatible_grade_offers": 0, "incompatible_warranty_offers": 0, "all_incompatible": false, "certified_short_life_skipped_offers": 0, "food_discovery_pairs": 0, "stocked_offers_scanned": 2, "value_candidates": [], "public_price_candidates": 0, "exploration": ["new"]}
+SELECTION METHOD: {"method": "recent_settlement", "model_timeout_seconds": 15}
+SHOP SELECTION: {"name": "proven", "sku": "G00001", "reason": "Recent confirmed same-SKU settlement (ledger 17) met the same checkout minimums; negotiate and verify this unit anew."}
+ok
+test_invalid_model_outputs_and_auth_errors_do_not_trigger_fallback (test_buyer_fast_selection.FastSelectionTests.test_invalid_model_outputs_and_auth_errors_do_not_trigger_fallback) ... SELECTION CONTEXT: {"eligible_shops": 2, "candidates": 2, "context_chars": 1856, "cooldown_skipped_offers": 0, "all_cooling_reconsidered": false, "incompatible_skipped_offers": 0, "incompatible_grade_offers": 0, "incompatible_warranty_offers": 0, "all_incompatible": false, "certified_short_life_skipped_offers": 0, "food_discovery_pairs": 0, "stocked_offers_scanned": 2, "value_candidates": [], "public_price_candidates": 0, "exploration": ["new"]}
+SELECTION CONTEXT: {"eligible_shops": 2, "candidates": 2, "context_chars": 1856, "cooldown_skipped_offers": 0, "all_cooling_reconsidered": false, "incompatible_skipped_offers": 0, "incompatible_grade_offers": 0, "incompatible_warranty_offers": 0, "all_incompatible": false, "certified_short_life_skipped_offers": 0, "food_discovery_pairs": 0, "stocked_offers_scanned": 2, "value_candidates": [], "public_price_candidates": 0, "exploration": ["new"]}
+SELECTION CONTEXT: {"eligible_shops": 2, "candidates": 2, "context_chars": 1856, "cooldown_skipped_offers": 0, "all_cooling_reconsidered": false, "incompatible_skipped_offers": 0, "incompatible_grade_offers": 0, "incompatible_warranty_offers": 0, "all_incompatible": false, "certified_short_life_skipped_offers": 0, "food_discovery_pairs": 0, "stocked_offers_scanned": 2, "value_candidates": [], "public_price_candidates": 0, "exploration": ["new"]}
+SELECTION CONTEXT: {"eligible_shops": 2, "candidates": 2, "context_chars": 1856, "cooldown_skipped_offers": 0, "all_cooling_reconsidered": false, "incompatible_skipped_offers": 0, "incompatible_grade_offers": 0, "incompatible_warranty_offers": 0, "all_incompatible": false, "certified_short_life_skipped_offers": 0, "food_discovery_pairs": 0, "stocked_offers_scanned": 2, "value_candidates": [], "public_price_candidates": 0, "exploration": ["new"]}
+ok
+test_model_selected_invented_sku_is_rejected (test_buyer_fast_selection.FastSelectionTests.test_model_selected_invented_sku_is_rejected) ... SELECTION CONTEXT: {"eligible_shops": 2, "candidates": 2, "context_chars": 1856, "cooldown_skipped_offers": 0, "all_cooling_reconsidered": false, "incompatible_skipped_offers": 0, "incompatible_grade_offers": 0, "incompatible_warranty_offers": 0, "all_incompatible": false, "certified_short_life_skipped_offers": 0, "food_discovery_pairs": 0, "stocked_offers_scanned": 2, "value_candidates": [], "public_price_candidates": 0, "exploration": ["new"]}
+ok
+test_model_timeout_has_one_bounded_attempt_then_local_stock_selection (test_buyer_fast_selection.FastSelectionTests.test_model_timeout_has_one_bounded_attempt_then_local_stock_selection) ... SELECTION CONTEXT: {"eligible_shops": 2, "candidates": 2, "context_chars": 1856, "cooldown_skipped_offers": 0, "all_cooling_reconsidered": false, "incompatible_skipped_offers": 0, "incompatible_grade_offers": 0, "incompatible_warranty_offers": 0, "all_incompatible": false, "certified_short_life_skipped_offers": 0, "food_discovery_pairs": 0, "stocked_offers_scanned": 2, "value_candidates": [], "public_price_candidates": 0, "exploration": ["new"]}
+SELECTION TIMEOUT: "Harness timed out; see fixture.log"
+SELECTION METHOD: {"method": "timeout_local_comparison", "model_timeout_seconds": 15}
+SHOP SELECTION: {"name": "proven", "reason": "Selection model timed out; locally compared confirmed settlements, contract faults and bounded public reviews; purchase checks remain unchanged.", "sku": "G00001"}
+SELECTION CONTEXT: {"eligible_shops": 2, "candidates": 2, "context_chars": 1856, "cooldown_skipped_offers": 0, "all_cooling_reconsidered": false, "incompatible_skipped_offers": 0, "incompatible_grade_offers": 0, "incompatible_warranty_offers": 0, "all_incompatible": false, "certified_short_life_skipped_offers": 0, "food_discovery_pairs": 0, "stocked_offers_scanned": 2, "value_candidates": [], "public_price_candidates": 0, "exploration": ["new"]}
+SELECTION TIMEOUT: "Harness deadline expired; see fixture.log"
+SELECTION METHOD: {"method": "timeout_local_comparison", "model_timeout_seconds": 15}
+SHOP SELECTION: {"name": "proven", "reason": "Selection model timed out; locally compared confirmed settlements, contract faults and bounded public reviews; purchase checks remain unchanged.", "sku": "G00001"}
+ok
+test_newer_refusal_or_unknown_result_prevents_older_success_reuse (test_buyer_fast_selection.FastSelectionTests.test_newer_refusal_or_unknown_result_prevents_older_success_reuse) ... ok
+test_pending_unreviewed_wrong_ledger_and_bad_contract_are_never_cache_hits (test_buyer_fast_selection.FastSelectionTests.test_pending_unreviewed_wrong_ledger_and_bad_contract_are_never_cache_hits) ... ok
+test_recent_confirmed_tradeoff_reuses_selection_not_authorization (test_buyer_fast_selection.FastSelectionTests.test_recent_confirmed_tradeoff_reuses_selection_not_authorization) ... ok
+test_stale_future_unknown_timezone_and_other_round_never_cache (test_buyer_fast_selection.FastSelectionTests.test_stale_future_unknown_timezone_and_other_round_never_cache) ... ok
+test_timeout_fallback_uses_evidence_not_candidate_array_position (test_buyer_fast_selection.FastSelectionTests.test_timeout_fallback_uses_evidence_not_candidate_array_position) ... ok
+test_authenticated_apply_resumes_after_commit_before_acknowledgement (test_shop_ops_orchestrator.OperationsTests.test_authenticated_apply_resumes_after_commit_before_acknowledgement) ... ok
+test_auto_applies_and_cadence_does_not_call_model_or_flood_outbox (test_shop_ops_orchestrator.OperationsTests.test_auto_applies_and_cadence_does_not_call_model_or_flood_outbox) ... ok
+test_checkout_refusal_wakes_but_only_matched_cohort_can_rollback (test_shop_ops_orchestrator.OperationsTests.test_checkout_refusal_wakes_but_only_matched_cohort_can_rollback) ... ok
+test_error_cohort_stops_only_current_experiment (test_shop_ops_orchestrator.OperationsTests.test_error_cohort_stops_only_current_experiment) ... ok
+test_insufficient_observations_never_performance_rollback (test_shop_ops_orchestrator.OperationsTests.test_insufficient_observations_never_performance_rollback) ... ok
+test_model_failure_bad_json_and_unverified_targets_hold_baseline (test_shop_ops_orchestrator.OperationsTests.test_model_failure_bad_json_and_unverified_targets_hold_baseline) ... ok
+test_model_settings_and_command_never_read_trading_profile (test_shop_ops_orchestrator.OperationsTests.test_model_settings_and_command_never_read_trading_profile) ... ok
+test_new_experiment_reserves_six_hours_for_last_sale_maturity (test_shop_ops_orchestrator.OperationsTests.test_new_experiment_reserves_six_hours_for_last_sale_maturity) ... ok
+test_old_evaluation_cannot_restore_new_policy (test_shop_ops_orchestrator.OperationsTests.test_old_evaluation_cannot_restore_new_policy) ... ok
+test_proposal_mode_does_not_change_active_policy_or_buyer (test_shop_ops_orchestrator.OperationsTests.test_proposal_mode_does_not_change_active_policy_or_buyer) ... ok
+test_stale_evidence_prevents_model_call_and_experiment (test_shop_ops_orchestrator.OperationsTests.test_stale_evidence_prevents_model_call_and_experiment) ... ok
+test_authentication_permissions_age_and_replay (test_shop_ops_store.OperationsCommandTests.test_authentication_permissions_age_and_replay) ... ok
+test_durable_request_preserves_nonce_after_index_write_failure (test_shop_ops_store.OperationsCommandTests.test_durable_request_preserves_nonce_after_index_write_failure) ... ok
+test_state_and_decision_cannot_regress_and_final_result_is_immutable (test_shop_ops_store.OperationsCommandTests.test_state_and_decision_cannot_regress_and_final_result_is_immutable) ... ok
+test_atomic_replace_failure_keeps_old_active_then_retry_succeeds (test_shop_ops_store.OperationsStoreTests.test_atomic_replace_failure_keeps_old_active_then_retry_succeeds) ... ok
+test_concurrent_proposals_from_same_base_apply_only_once (test_shop_ops_store.OperationsStoreTests.test_concurrent_proposals_from_same_base_apply_only_once) ... ok
+test_policy_validation_prevents_traversal_warranty_expansion_and_weak_evaluation (test_shop_ops_store.OperationsStoreTests.test_policy_validation_prevents_traversal_warranty_expansion_and_weak_evaluation) ... ok
+test_propose_mode_and_legacy_advisor_block_automatic_apply (test_shop_ops_store.OperationsStoreTests.test_propose_mode_and_legacy_advisor_block_automatic_apply) ... ok
+test_restore_is_version_checked_and_atomic (test_shop_ops_store.OperationsStoreTests.test_restore_is_version_checked_and_atomic) ... ok
+test_snapshot_content_and_original_time_are_bound_to_proposal (test_shop_ops_store.OperationsStoreTests.test_snapshot_content_and_original_time_are_bound_to_proposal) ... ok
+test_stale_proposal_observation_and_changed_baseline_are_rejected (test_shop_ops_store.OperationsStoreTests.test_stale_proposal_observation_and_changed_baseline_are_rejected) ... ok
+test_symlinked_market_and_collection_are_rejected (test_shop_ops_store.OperationsStoreTests.test_symlinked_market_and_collection_are_rejected) ... ok
+test_cancellation_and_unconfirmed_receipt_never_become_price_or_failure (test_shop_ops_evidence.EvidenceTests.test_cancellation_and_unconfirmed_receipt_never_become_price_or_failure) ... ok
+test_explicit_settlement_refusal_blocks_experiment_not_missing_checkout (test_shop_ops_evidence.EvidenceTests.test_explicit_settlement_refusal_blocks_experiment_not_missing_checkout) ... ok
+test_first_quote_source_timing_never_borrows_later_row_latency (test_shop_ops_evidence.EvidenceTests.test_first_quote_source_timing_never_borrows_later_row_latency) ... ok
+test_fixed_cohort_joins_late_receipt_without_extending_exposure (test_shop_ops_evidence.EvidenceTests.test_fixed_cohort_joins_late_receipt_without_extending_exposure) ... ok
+test_fixed_cohorts_preserve_mature_sales_after_rolling_window_and_share_refund_cutoff (test_shop_ops_evidence.EvidenceTests.test_fixed_cohorts_preserve_mature_sales_after_rolling_window_and_share_refund_cutoff) ... ok
+test_fixed_missing_settlement_and_source_coverage_are_unknown_not_failure (test_shop_ops_evidence.EvidenceTests.test_fixed_missing_settlement_and_source_coverage_are_unknown_not_failure) ... ok
+test_fixed_windows_reject_unbounded_and_future_cutoffs (test_shop_ops_evidence.EvidenceTests.test_fixed_windows_reject_unbounded_and_future_cutoffs) ... ok
+test_known_receipt_hold_and_grade_mismatch_block_stock_experiment (test_shop_ops_evidence.EvidenceTests.test_known_receipt_hold_and_grade_mismatch_block_stock_experiment) ... ok
+test_read_only_safe_snapshot_candidates_and_version_cohorts (test_shop_ops_evidence.EvidenceTests.test_read_only_safe_snapshot_candidates_and_version_cohorts) ... ok
+test_six_hour_candidate_uses_separate_historical_maturity_not_false_current_profit (test_shop_ops_evidence.EvidenceTests.test_six_hour_candidate_uses_separate_historical_maturity_not_false_current_profit) ... ok
+test_stale_clock_rules_and_inventory_block_application (test_shop_ops_evidence.EvidenceTests.test_stale_clock_rules_and_inventory_block_application) ... ok
+test_stock_targets_keep_caps_and_unknown_stockouts_out_of_forecast (test_shop_ops_evidence.EvidenceTests.test_stock_targets_keep_caps_and_unknown_stockouts_out_of_forecast) ... ok
+test_stockout_without_unit_grade_is_retained_without_inventing_conditions (test_shop_ops_evidence.EvidenceTests.test_stockout_without_unit_grade_is_retained_without_inventing_conditions) ... ok
+test_wrong_unit_checkout_and_duplicate_sales_do_not_prove_additional_sale (test_shop_ops_evidence.EvidenceTests.test_wrong_unit_checkout_and_duplicate_sales_do_not_prove_additional_sale) ... ok
+test_crashed_operator_waits_sixty_seconds_without_restarting_seller (test_shop_ops_runtime.OperationsSupervisorTests.test_crashed_operator_waits_sixty_seconds_without_restarting_seller) ... ok
+test_enable_disable_enable_restarts_only_operator (test_shop_ops_runtime.OperationsSupervisorTests.test_enable_disable_enable_restarts_only_operator) ... ok
+test_invalid_config_stops_only_operator_and_recovers_on_valid_config (test_shop_ops_runtime.OperationsSupervisorTests.test_invalid_config_stops_only_operator_and_recovers_on_valid_config) ... ok
+test_launch_failure_backoff_and_bad_enable_flag_never_stop_seller (test_shop_ops_runtime.OperationsSupervisorTests.test_launch_failure_backoff_and_bad_enable_flag_never_stop_seller) ... ok
+test_legacy_and_operations_analysts_never_start_together (test_shop_ops_runtime.OperationsSupervisorTests.test_legacy_and_operations_analysts_never_start_together) ... ok
+
+----------------------------------------------------------------------
+Ran 107 tests in 0.405s
+
+OK

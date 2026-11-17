@@ -146,10 +146,20 @@ def model_context(obs, state):
         'eligible_targets': {target_key(r): r for r in candidates},
         'inventory': obs.get('inventory_analysis'), 'public_score': obs.get('public_score'),
         'limits': obs.get('limits', [])}
+    # Inventory quantities remain code-computed; keep top eight priorities in the prompt.
+    inventory = context.get('inventory')
+    if isinstance(inventory, dict):
+        context['inventory'] = dict(inventory)
+        targets = inventory.get('targets')
+        if isinstance(targets, list):
+            context['inventory']['targets'] = sorted(targets, key=lambda r: (
+                -(r.get('needed_units') or 0), -(r.get('stockout_requests_observed') or 0),
+                -(r.get('confirmed_sales_last_hour') or 0), r.get('sku', '')))[:8]
+            context['inventory']['omitted_targets'] = max(0, len(targets)-8)
     # Remove optional detail, never truncate JSON or mandatory guards.
-    if len(json.dumps(context, ensure_ascii=False)) > 24000:
+    if len(json.dumps(context, ensure_ascii=False)) > 10000:
         context['inventory'] = {k:v for k,v in (obs.get('inventory_analysis') or {}).items() if k != 'targets'}
-    if len(json.dumps(context, ensure_ascii=False)) > 24000:
+    if len(json.dumps(context, ensure_ascii=False)) > 10000:
         context['inventory'] = {'status': 'details_omitted_for_budget'}
         context['eligible_targets'] = dict(list(context['eligible_targets'].items())[:2])
     return context
@@ -414,12 +424,16 @@ def tick(root=ROOT, *, now=None, model=analyse, no_model=False, collector=collec
                 if not pending_eval.get('terminal'):
                     context['active_experiment']=True
             except (OSError,ValueError): context['active_experiment']=True
-        control.update(last_decision=now)
+        from shop_ops_efficiency import model_gate
+        permitted, gate_reason, fingerprint = model_gate(obs, state, control, cfg, now=now,
+                                                        event=event, requested=bool(request_id))
+        control.update(last_decision=now, model_gate_reason=gate_reason)
         attempts=[t for t in control.get('model_attempts',[]) if numeric(t) and 0<=now-t<86400]
         decision={'action':'hold','targets':[], 'diagnosis':'Hold: observations unavailable or model not requested.',
                   'expected_effect':'Keep validated trading policy; collect enough fresh evidence.'}
-        if cfg['model_enabled'] and not no_model and not obs['blockers'] and not context['active_experiment'] and len(attempts)<cfg['max_calls_per_day']:
+        if cfg['model_enabled'] and not no_model and not obs['blockers'] and not context['active_experiment'] and len(attempts)<cfg['max_calls_per_day'] and permitted:
             control['model_attempts']=attempts+[now]
+            control.update(last_model_at=now, last_model_evidence=fingerprint)
             atomic_write(folder/'control.json',control) # failed calls also consume the budget
             try: decision=validate_decision(model(context,root,cfg),context)
             except Exception as exc:
@@ -427,7 +441,7 @@ def tick(root=ROOT, *, now=None, model=analyse, no_model=False, collector=collec
         else:
             control['model_attempts']=attempts
             decision['diagnosis']='Hold: '+(', '.join(obs['blockers']) if obs['blockers'] else
-                'existing experiment/evaluation pending' if context['active_experiment'] else 'model disabled/no-model or daily call budget')
+                'existing experiment/evaluation pending' if context['active_experiment'] else gate_reason if not permitted else 'model disabled/no-model or daily call budget')
         atomic_write(folder/'control.json',control)
         proposal=make_proposal(root,obs,state,decision,cfg,request_id)
         action='hold' if proposal['action']=='hold' else 'proposed'
@@ -446,7 +460,7 @@ def tick(root=ROOT, *, now=None, model=analyse, no_model=False, collector=collec
         if request_id:
             commands.transition(root,request_id,'verifying',now=now,result=action)
             if action!='applied': commands.transition(root,request_id,'completed',now=now,result=action)
-        return {'status':action,'decision_id':proposal['decision_id'],'snapshot_id':obs['snapshot_id']}
+        return {'status':action,'decision_id':proposal['decision_id'],'snapshot_id':obs['snapshot_id'],'model_gate':gate_reason}
 
 
 def main(argv=None):
