@@ -27,6 +27,11 @@ HERE = Path(__file__).resolve().parent
 SELF = "real_yellow"                      # same owner: our own shop can never settle with us
 BLACKLIST_PATH = HERE / "market_buyer_blacklist.json"
 HAGGLE_ERRORS_PATH = HERE / ".market" / "haggle_errors.jsonl"
+ZERO_OFFER_PATH = HERE / ".market" / "zero_offer.jsonl"
+ZERO_OFFER_SKIP_MIN = 3    # skip a (shop, sku) pair after this many zero-offer failures -- measured live:
+                           # (seochanit, G615a122d) went 20+ attempts in a row with offers=[] (never even
+                           # made a first offer, not a price disagreement) while every other SKU from the
+                           # same shop negotiated normally, so the fix targets the pair, not the whole shop
 DEFAULT_POLICY = {"target_ratio": 0.55,   # first offer, as a share of list price (goods)
                   "food_target_ratio": 0.50,  # lower than goods: Round 3 patch 3.6 moved the buyer
                                               # "saved" score from discount-ratio to margin-based
@@ -200,12 +205,18 @@ def main():
         shelf = (catalog.get(sku) or {}).get("shelf_hours")
         return not need_h or not shelf or shelf * 0.8 >= need_h
 
+    zero_offer = {}
+    for p in load_jsonl(ZERO_OFFER_PATH):
+        key = (p.get("shop"), p.get("sku"))
+        zero_offer[key] = zero_offer.get(key, 0) + 1
+
     cands = []
     for s in shops:
         if s["name"] == SELF or s["name"] in blacklist:
             continue
         offers = [o for o in s.get("offers") or [] if o.get("qty", 0) > 0
-                  and (not acceptable or o["sku"] in acceptable) and lasts(o["sku"])]
+                  and (not acceptable or o["sku"] in acceptable) and lasts(o["sku"])
+                  and zero_offer.get((s["url"], o["sku"]), 0) < ZERO_OFFER_SKIP_MIN]
         if offers:
             cands.append(dict(s, offers=offers))
 
@@ -277,6 +288,12 @@ def main():
             try:
                 with open(HAGGLE_ERRORS_PATH, "a", encoding="utf-8") as f:
                     f.write(json.dumps({"shop": shop["url"], "error": type(e).__name__}, ensure_ascii=False) + "\n")
+            except OSError:
+                pass
+        if not result["deal"] and not result.get("offers"):
+            try:
+                with open(ZERO_OFFER_PATH, "a", encoding="utf-8") as f:
+                    f.write(json.dumps({"shop": shop["url"], "sku": sku}, ensure_ascii=False) + "\n")
             except OSError:
                 pass
         if result["deal"]:
