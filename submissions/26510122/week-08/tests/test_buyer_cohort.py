@@ -76,6 +76,14 @@ class CohortTests(unittest.TestCase):
    context=next(x for x in extended if x['event']=='selection_opportunities')
    self.assertEqual(context['use_within_hours'],72);self.assertNotIn('eligible_candidates',context)
 
+ def test_nonfinite_value_is_unknown(self):
+  g=self.build([self.sale(1,value=float('nan'))])['groups'][0]
+  self.assertEqual(g['unknown'],1);self.assertIsNone(g['net_scenario'])
+ def test_mature_reference_can_be_used_without_a_fresh_price_sample(self):
+  r=self.build([self.sale(i) for i in range(1,7)])
+  e=c.for_choice(r,{'shop':'S','sku':'G','price_guidance':{},'risk_policy':{}},{'kind':'goods'},{'saved':.7})
+  self.assertEqual(e['preference'],'positive');self.assertEqual(e['median_paid'],500)
+
 
 class SelectionIntegrationTests(unittest.TestCase):
  def row(self,i,**kw):
@@ -114,7 +122,7 @@ class SelectionIntegrationTests(unittest.TestCase):
   with patch('market_buyer_r3.decide_json',return_value={'candidate_id':'0','opening_offer':600,'reason':'mature outcomes'}) as model:
    telemetry={};choose(rows,{'kind':'goods','item':'Goods'},telemetry=telemetry)
   prompt=model.call_args.args[1];self.assertEqual(len(prompt['candidate_shop_skus']),16)
-  e=prompt['candidate_shop_skus'][0]['routing_evidence']['mature_6h'];self.assertEqual(e['net_scenario'],.7);self.assertEqual(e['net_lower'],.5)
+  e=prompt['candidate_shop_skus'][0]['routing_evidence']['mature_6h'];self.assertEqual(e['net_scenario'],.7);self.assertEqual(e['net_range'][0],.5)
   self.assertEqual(len(telemetry['mature_displayed_candidate_ids']),16)
  def test_malformed_cohort_does_not_block_a_candidate(self):
   self.assertEqual(c.for_choice({'groups':[{'broken':'row'}]},self.row(1),{'kind':'goods'}),{})

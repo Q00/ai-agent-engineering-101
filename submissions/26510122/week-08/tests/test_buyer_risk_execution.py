@@ -94,3 +94,7 @@ class RiskContextTests(unittest.TestCase):
   prompt=model.call_args.args[1]
   self.assertEqual(len(prompt['candidate_shop_skus']),16)
   self.assertIn('post_sale_breakage',prompt['candidate_shop_skus'][0]['routing_evidence'])
+  for row in rows:row['routing_evidence']['mature_6h']={'n':12,'unrefunded':1,'refunded':1,'unknown':0,'net_lower':.5,'net_upper':.9,'net_scenario':.8,'median_paid':65000,'cover_share':.5}
+  with patch.object(buyer,'decide_json',return_value={'candidate_id':'0','opening_offer':60000,'reason':'mature comparison'}) as model:
+   buyer.choose(rows,{'kind':'goods','item':'침구'})
+  self.assertEqual(len(model.call_args.args[1]['candidate_shop_skus']),16)

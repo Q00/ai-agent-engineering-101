@@ -203,8 +203,8 @@ def selection_route(evidence):
     if mature:
         result['mature_6h']=buyer_cohort.compact(mature)
         if quality:
-            result['post_sale_breakage']={key:{k:v for k,v in row.items() if k in ('broken','refunded','mature_paid')}
-                for key,row in quality.items() if isinstance(row,dict)}
+            result['post_sale_breakage']={label:max(0,(quality.get(key) or {}).get('broken',0)-(quality.get(key) or {}).get('refunded',0))
+                for label,key in [('shop_unrefunded','same_shop_sku'),('product_unrefunded','same_product')]}
     return result
 
 
@@ -265,22 +265,17 @@ def choose(candidates_: list[dict], order: dict, *, forced_candidate_id: str | N
                            "heuristic, not your decision. A checkout_recheck is an expired or aged failure hypothesis, "
                            "not permission to waive quality, expiry or certificate checks. Read the first-hand counts, price conditions "
                            "and cases as evidence; do not turn a single past outcome into a permanent rule."}
-    prompt['objective'] += (' Risk debits exclude still-immature intact purchases from six-hour survival evidence. '
-        'A purchase_risk_policy with required_warranty_hours is a mandatory term for that candidate, '
-        'including exploration and fallback. A failure count alone does not make cover mandatory; '
-        'the debit-adjusted usable Saved at the reference price is compared with the displayed score. '
-        'These are conditional estimates, not known private costs or calibrated risks. Compare adjusted Saved and settlement chance '
-        'across alternatives; do not prefer an unprotected cheap price merely for its discount. '
-        'Refunds prevent minus one but still contribute zero; current cover must be verified, not assumed. '
-        'risk_price_terms are operator stress bounds on conditional private-cost scenarios: compare the cheaper '
-        'no-cover price with the >=6h-cover price; do not exceed either applicable branch. The .80 target and '
-        '.05 cushion are policy hypotheses, not official score thresholds. An impossible branch requires another candidate.')
-    prompt['objective'] += (' mature_6h groups unique own settlements only after6h+5m, matching shop/SKU and exact food horizon. '
-        'unrefunded and refunded losses are observed -1 and0. net_lower/net_upper bound historical deal contributions; '
-        'net_scenario uses estimated private cost and is NOT official realized Saved. Sparse/unknown outcomes earn no priority. '
-        'Compare the actual current price/grade/cover with median_paid and cover_share; historical success does not certify current stock. '
-        'Do not subtract the same failures twice: the cohort net values already contain those losses. '
-        'Up to4 empirically promising candidates are included alongside ordinary alternatives; you still choose.')
+    prompt['objective'] += (' Verified risk excludes immature intact purchases from survival evidence. '
+        'required_warranty_hours and risk_price_terms bind every candidate, exploration and fallback. '
+        'Their price/cover branches use uncertain private-cost scenarios and operator targets, not guaranteed scores. '
+        'Never waive issued certificate/grade/expiry/cap terms. Refunds contribute0; unrefunded unusable purchases -1. '
+        'Compare adjusted savings and settlement chance across available alternatives.')
+    if any((r.get('routing_evidence') or {}).get('mature_6h') for r in displayed):
+        prompt['objective'] += (' mature_6h uses unique paid orders aged6h+5m, exact shop/SKU/food horizon. '
+            'Loss counts are observed; net_range bounds historical Saved and net_scenario estimates private cost. '
+            'Neither estimates nor historical grades/cover certify current stock. Compare new terms with median_paid/cover_share. '
+            'Unknown/sparse outcomes earn no priority. Net values already contain losses: do not subtract them twice. '
+            'Up to4 promising cohorts appear alongside ordinary alternatives; you choose.')
     commercial_objective = prompt['objective']
     if forum_context and (forum_context.get('posts') or forum_context.get('reference_prices')):
         prompt['public_forum_memory']=forum_context

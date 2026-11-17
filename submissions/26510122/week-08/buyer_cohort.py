@@ -19,7 +19,7 @@ def outcome_bounds(sale,product,failure,observed):
     if failure:return (0.,0.,0.) if failure.get('refund_amount',0)>0 else (-1.,-1.,-1.)
     if sale.get('value')==0:return (-1.,-1.,-1.) if product.get('kind')=='food' else None
     price=sale.get('price');listing=product.get('list_price');kind=product.get('kind')
-    if (not observed or type(sale.get('value')) not in (int,float) or sale['value']<=0
+    if (not observed or type(sale.get('value')) not in (int,float) or not math.isfinite(sale['value']) or sale['value']<=0
         or type(price) is not int or type(listing) is not int or not 0<price<=listing):return None
     # Goods grade and acquisition cost are fixed at arrival. Food's current
     # grade can change as it ages, so its original cost may be from any grade.
@@ -119,6 +119,7 @@ def for_choice(cache,choice,order,baseline=None):
         if not row:return {}
         result=dict(row);reference=(baseline or {}).get('saved');reference=reference if type(reference) in (int,float) else None
         price=(choice.get('price_guidance') or {}).get('median_paid')
+        if type(price) is not int:price=row.get('median_paid')  # historical reference, never a current quote
         comparable=type(price) is int and type(row.get('q75_paid')) is int and price<=row['q75_paid']
         qualified=row['n']>=MIN_COUNT and row['unknown']==0
         better_cover=max(order.get('required_warranty_hours',0),(choice.get('risk_policy') or {}).get('required_warranty_hours',0))>=6 and row['unrefunded']>0 and row['cover_share']<1
@@ -134,7 +135,11 @@ def for_choice(cache,choice,order,baseline=None):
 
 def compact(row):
     if not row:return None
-    return {k:row[k] for k in ('n','unrefunded','refunded','unknown','net_lower','net_upper','net_scenario','median_paid','cover_share','use_within_hours') if k in row and row[k] is not None}
+    result={k:row[k] for k in ('n','unrefunded','refunded','net_scenario','median_paid','cover_share') if k in row and row[k] is not None}
+    result['net_range']=[row.get('net_lower'),row.get('net_upper')]
+    if row.get('unknown'):result['unknown']=row['unknown']
+    return result
+
 
 
 def refresh(runtime,*,now=None):
