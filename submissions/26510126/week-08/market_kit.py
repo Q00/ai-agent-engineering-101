@@ -80,6 +80,7 @@ from starlette.routing import Route
 KIT_VERSION = "4"
 BUYER_TIMEOUT = 300
 ECON_ROUND = 3
+INV_FRESH = 60       # seconds: pick_unit reads the local inventory.json when it is fresher (11/17: /api/inventory timed out)
 FOOD_GRADE_CUTS = (0.8, 0.45)                        # share of shelf life left for food grade A, B (the market's)
 SYNC_EVERY = 10                                     # seconds between refreshes of .market/
 RESTOCK_EVERY = 60
@@ -403,11 +404,21 @@ class AcpShop:
 
     def pick_unit(self, rec, acceptable):
         """Round 3: the unit to ship. The seller's choice ("unit") if it is in stock; else the in-stock unit of a
-        fitting SKU that expires first (oldest first for goods). Units held by an open checkout are skipped."""
-        r = self.market.call("GET", "/api/inventory", "shop")
-        if r.status_code != 200:
-            return None, f"inventory: {r.status_code}"
-        inv = r.json()
+        fitting SKU that expires first (oldest first for goods). Units held by an open checkout are skipped.
+        The stock is read from .market/inventory.json when it is under INV_FRESH s old (the kit rewrites it every 10 s
+        and after each sale); the market's /api/inventory only when it is older (11/17 11:1x: that call timed out at
+        30 s on ~60 checkouts in 20 min while the file stayed fresh, and our settles fell from 35 to 5 per 10 min)."""
+        inv = None
+        if self.md:
+            p = Path(self.md) / "inventory.json"
+            with contextlib.suppress(OSError, ValueError):
+                if time.time() - p.stat().st_mtime < INV_FRESH:
+                    inv = json.loads(p.read_text(encoding="utf-8"))
+        if not isinstance(inv, dict) or "units" not in inv:
+            r = self.market.call("GET", "/api/inventory", "shop")
+            if r.status_code != 200:
+                return None, f"inventory: {r.status_code}"
+            inv = r.json()
         if inv.get("round", 0) < ECON_ROUND:
             return False, None                          # no stock before Round 3
         held = {s["unit"] for s in self.sessions.values() if s.get("unit") and s["status"] == "ready_for_payment"}
