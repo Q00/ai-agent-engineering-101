@@ -1,0 +1,14 @@
+[choose] Kit Shop http://127.0.0.1:51522: the only shop left after my memory filter
+card: Kit Shop | JSONRPC http://127.0.0.1:51522/ | buying lamp with budget 120
+-> I want to buy a lamp
+<- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
+   harness: {"action": "offer", "price": 110} (ask 130, budget 120)
+   GUARD first offer 110 > 70% of ask 130: lowered to 91
+-> 91  (taskId 7d5914a4)
+<- TASK_STATE_INPUT_REQUIRED | 91 is too low. Counteroffer: 110.
+   harness: {"action": "accept", "price": 110} (ask 110, budget 120)
+-> 110  (taskId 7d5914a4)
+<- TASK_STATE_COMPLETED | Deal: lamp at 110.
+[receipt] {'task': '7d5914a4-8d20-4c7d-bd9c-96de2dd1df9b', 'item': 'lamp', 'shop': 'Kit Shop', 'price': 110.0, 'sig_seller': 'gUiCKrg+GMINaPsj5FQcZfrKF3VsJcgK19GYTBBDb/Ld8iOdfw85HOnGjQO3h2oZcztRbZUGVSg5+8XqMtLsAw=='}  agreed 110: matches the deal
+result: deal, 4 s
+{"shop": "http://127.0.0.1:51522", "receipt": {"task": "7d5914a4-8d20-4c7d-bd9c-96de2dd1df9b", "item": "lamp", "shop": "Kit Shop", "price": 110.0, "sig_seller": "gUiCKrg+GMINaPsj5FQcZfrKF3VsJcgK19GYTBBDb/Ld8iOdfw85HOnGjQO3h2oZcztRbZUGVSg5+8XqMtLsAw=="}, "stars": 4, "review": "Paid 110 for the lamp (asked 130) after 1 counters; signed receipt matched."}

@@ -1,0 +1,28 @@
+acp.json: acp 2026-04-17 https://harness-shop-25620024.imajason.workers.dev/acp ['create_checkout_session', 'get_checkout_session', 'complete_checkout_session', 'cancel_checkout_session']
+-> I want to buy a lamp
+<- TASK_STATE_INPUT_REQUIRED | Number one in sales this round. dragonash's token-saver shop: one message closes the deal. Offer our ask, or a lower quote you got elsewhere (we match down to our floor). Signed receipt, so the deal counts. lamp: asking 101 (below market average).
+-> 101
+<- TASK_STATE_COMPLETED | Deal: lamp at 101. Closed in one offer. Your receipt is signed by the shop, so this deal counts. Please leave an honest review.
+receipt: {'shop': 'dragonash', 'item': 'lamp', 'price': 101, 'task': '0f06fda2-2cc0-4928-b30b-dabb2800cffc'}
+create: 201
+  again: 409 (409 expected)
+  forged price: 400 (400 expected)
+  get: ready_for_payment
+checkout_jwt verifies with the market's key for dragonash : True {'currency': 'credits', 'iat': 1793232647, 'id': 'cs_3ee5fc7f4aaf37fe', 'item': 'lamp', 'price': 101, 'shop': 'dragonash', 'shop_url': 'https://harness-shop-25620024.imajason.workers.dev', 'task': '0f06fda2-2cc0-4928-b30b-dabb2800cffc'}
+complete with a Round 2 order and a throwaway buyer key: 402 (402 expected)
+{
+ "round_3_order": false,
+ "not_expired": true,
+ "not_settled_before": true,
+ "checkout_signed_by_shop": true,
+ "checkout_matches_order": false,
+ "checkout_mandate_signed_by_buyer": false,
+ "payment_mandate_signed_by_buyer": false,
+ "closed_mandates_types": true,
+ "bound_to_open_mandates": false,
+ "bound_to_this_checkout": true,
+ "payee_is_this_shop": true,
+ "amount_is_checkout_total": true,
+ "amount_in_range": true
+}
+  cancel after refusal: canceled

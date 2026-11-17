@@ -1,0 +1,90 @@
+Harness Shop (25620024) on http://127.0.0.1:49342  (harness: claude -p --model haiku)
+[949d34e6] harness opening ask 160 for lamp (reserve 100)
+[949d34e6] offer 60 -> harness {"action": "counter", "price": 150}
+[949d34e6] offer 80 -> harness {"action": "counter", "price": 125}
+[949d34e6] offer 100 -> harness {"action": "accept", "price": 100}
+[949d34e6] DEAL lamp at 100 (reserve 100)
+[2cf15f91] harness opening ask 150 for lamp (reserve 100)
+[2cf15f91] offer 60 -> harness {"action": "counter", "price": 140}
+[2cf15f91] offer 80 -> harness {"action": "counter", "price": 120}
+[2cf15f91] offer 120 >= current ask 120: accept without asking the harness
+[2cf15f91] DEAL lamp at 120 (reserve 100)
+[f7c28274] harness opening ask 150 for lamp (reserve 100)
+[f7c28274] offer 60 -> harness {"action": "counter", "price": 140}
+[f7c28274] offer 80 -> harness {"action": "counter", "price": 120}
+[f7c28274] offer 120 >= current ask 120: accept without asking the harness
+[f7c28274] DEAL lamp at 120 (reserve 100)
+Failed to detach context
+Traceback (most recent call last):
+  File "/Users/dragonash/dev/ai-agent-engineering-101/.venv/lib/python3.13/site-packages/opentelemetry/trace/__init__.py", line 602, in use_span
+    yield span
+  File "/Users/dragonash/dev/ai-agent-engineering-101/.venv/lib/python3.13/site-packages/opentelemetry/trace/__init__.py", line 504, in start_as_current_span
+    yield span
+  File "/Users/dragonash/dev/ai-agent-engineering-101/.venv/lib/python3.13/site-packages/opentelemetry/trace/__init__.py", line 441, in start_as_current_span
+    yield span
+  File "/Users/dragonash/dev/ai-agent-engineering-101/.venv/lib/python3.13/site-packages/a2a/utils/telemetry.py", line 250, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+GeneratorExit
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/dragonash/dev/ai-agent-engineering-101/.venv/lib/python3.13/site-packages/opentelemetry/context/__init__.py", line 127, in detach
+    _RUNTIME_CONTEXT.detach(token)
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "/Users/dragonash/dev/ai-agent-engineering-101/.venv/lib/python3.13/site-packages/opentelemetry/context/contextvars_context.py", line 40, in detach
+    self._current_context.reset(token)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+ValueError: <Token var=<ContextVar name='current_context' default={} at 0x10af362a0> at 0x10ba1cb00> was created in a different Context
+Task was destroyed but it is pending!
+task: <Task pending name='Task-58' coro=<EventQueueSource._dispatch_loop() done, defined at /Users/dragonash/dev/ai-agent-engineering-101/.venv/lib/python3.13/site-packages/a2a/utils/telemetry.py:225> wait_for=<Future cancelled>>
+Failed to detach context
+Traceback (most recent call last):
+  File "/Users/dragonash/dev/ai-agent-engineering-101/.venv/lib/python3.13/site-packages/opentelemetry/trace/__init__.py", line 602, in use_span
+    yield span
+  File "/Users/dragonash/dev/ai-agent-engineering-101/.venv/lib/python3.13/site-packages/opentelemetry/trace/__init__.py", line 504, in start_as_current_span
+    yield span
+  File "/Users/dragonash/dev/ai-agent-engineering-101/.venv/lib/python3.13/site-packages/opentelemetry/trace/__init__.py", line 441, in start_as_current_span
+    yield span
+  File "/Users/dragonash/dev/ai-agent-engineering-101/.venv/lib/python3.13/site-packages/a2a/utils/telemetry.py", line 250, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+GeneratorExit
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/dragonash/dev/ai-agent-engineering-101/.venv/lib/python3.13/site-packages/opentelemetry/context/__init__.py", line 127, in detach
+    _RUNTIME_CONTEXT.detach(token)
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "/Users/dragonash/dev/ai-agent-engineering-101/.venv/lib/python3.13/site-packages/opentelemetry/context/contextvars_context.py", line 40, in detach
+    self._current_context.reset(token)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+ValueError: <Token var=<ContextVar name='current_context' default={} at 0x10af362a0> at 0x10ba1df80> was created in a different Context
+Task was destroyed but it is pending!
+task: <Task pending name='Task-59' coro=<EventQueueSource._dispatch_loop() done, defined at /Users/dragonash/dev/ai-agent-engineering-101/.venv/lib/python3.13/site-packages/a2a/utils/telemetry.py:225> wait_for=<Future cancelled>>
+[69df19b0] harness opening ask 380 for bookshelf (reserve 260)
+[69df19b0] offer 140 -> harness {"action": "counter", "price": 340}
+[69df19b0] offer 170 -> harness {"action": "counter", "price": 320}
+[69df19b0] offer 200 -> harness {"action": "counter", "price": 295}
+[69df19b0] offer 230 -> harness {"action": "counter", "price": 280}
+[69df19b0] offer 230 -> harness {"action": "counter", "price": 270}
+[69df19b0] offer 230 -> harness {"action": "counter", "price": 265}
+[69df19b0] REJECT after 6 offers (last offer 230)
+[2adddfc0] harness opening ask 340 for bookshelf (reserve 260)
+[2adddfc0] offer 140 -> harness {"action": "counter", "price": 310}
+[2adddfc0] offer 170 -> harness {"action": "counter", "price": 290}
+[2adddfc0] offer 200 -> harness {"action": "counter", "price": 270}
+[2adddfc0] offer 230 -> harness {"action": "counter", "price": 265}
+[2adddfc0] offer 230 -> harness {"action": "counter", "price": 262}
+[2adddfc0] offer 230 -> harness {"action": "counter", "price": 260}
+[2adddfc0] REJECT after 6 offers (last offer 230)
+[3a871445] harness opening ask 340 for bookshelf (reserve 260)
+[3a871445] offer 140 -> harness {"action": "counter", "price": 320}
+[3a871445] offer 170 -> harness {"action": "counter", "price": 290}
+[3a871445] offer 200 -> harness {"action": "counter", "price": 275}
+[3a871445] offer 230 -> harness {"action": "counter", "price": 265}
+[3a871445] offer 230 -> harness {"action": "counter", "price": 262}
+[3a871445] offer 230 -> harness {"action": "counter", "price": 260}
+[3a871445] REJECT after 6 offers (last offer 230)

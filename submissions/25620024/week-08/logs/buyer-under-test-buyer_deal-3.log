@@ -1,0 +1,11 @@
+[choose] Kit Shop http://127.0.0.1:55897: the only shop left after my memory filter
+card: Kit Shop | JSONRPC http://127.0.0.1:55897/ | buying lamp with budget 120
+-> I want to buy a lamp
+<- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
+   harness: {"action": "offer", "price": 100} (ask 130, budget 120)
+-> 100  (taskId 6b8c1f50)
+<- TASK_STATE_COMPLETED | Deal: lamp at 100.
+[receipt] {'shop': 'Kit Shop', 'sig_seller': 'U9dCPIuLiX1QPh2wqMnMce5x8M/c/uu2siAD+c9gWE0knWz/tN4dgh5erTmS5SYgaFjuG6d0i+d78jxOXSHADQ==', 'price': 100.0, 'item': 'lamp', 'task': '6b8c1f50-c3aa-447f-9c46-451684b3fcf4'}  agreed 100: matches the deal
+[review] 5 stars: The lamp was listed at 130 but I got it for 100; the receipt matches the agreed price and is signed.
+result: deal, 11 s
+{"shop": "http://127.0.0.1:55897", "receipt": {"shop": "Kit Shop", "sig_seller": "U9dCPIuLiX1QPh2wqMnMce5x8M/c/uu2siAD+c9gWE0knWz/tN4dgh5erTmS5SYgaFjuG6d0i+d78jxOXSHADQ==", "price": 100.0, "item": "lamp", "task": "6b8c1f50-c3aa-447f-9c46-451684b3fcf4"}, "stars": 5, "review": "The lamp was listed at 130 but I got it for 100; the receipt matches the agreed price and is signed."}

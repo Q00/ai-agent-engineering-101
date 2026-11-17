@@ -1,0 +1,500 @@
+"""Week 08 — buyer_team.py: the buyer analysis team (Codex), run by marketing_agent.py once an hour, after the
+finance team and before the sales decision. With the Enuri team (enuri.py) it is the Buyer unit.
+
+The board scores our buyer on surplus 0.5 + forum 0.3 + deals 0.1 + posts 0.1 (percentiles), and "surplus" there is
+money: LIST price of what served the order - paid, summed (week-08 rules; until 11-04 the unit read it as budget - paid).
+The leaders have about 3-5x ours because their orders are for dear goods (mattresses, furniture).
+
+  brief      our buyer row vs the top 10 buyers on the board; our Round 3 trades per budget band (tries, deals,
+             surplus kept, outcomes, problems); the Enuri team's book (accountability first: what it missed and
+             what went wrong, in money); the meta-harness log tail; the current theta; lessons and history
+  plan       the buyer's Round 3 knobs (rfq, rfq_big, big_budget, r3_first_offer, max_pay_ratio, min_reach), the
+             Enuri team's settings (survey_quotes, min_honest, max_broken), forum advice, a surplus forecast
+  gate       every knob clamped; at most 2 knobs move per run (the largest relative moves; the rest stay and the
+             gate says so), so every change can be traced to one hour's outcome
+  scorecard  the last forecast against the board's actual surplus per hour, plus deals and forum deltas
+  lessons    keep / undo / watch, a curator retires stale ones (48 h, 20 kept), as in finance_agent.py
+
+    private/buyer_plan.json                  read by buyer_memory.theta() ("theta") and enuri.settings() ("enuri")
+    private/marketing/buyer_history.jsonl    one line per run: board snapshot, forecast, knobs; outcome added later
+    private/marketing/buyer_lessons.json
+"""
+import json
+import statistics
+import time
+from pathlib import Path
+
+import httpx
+
+import buyer_memory
+import enuri
+import market_model
+
+HERE = Path(__file__).parent
+OUT = HERE / "private" / "marketing"
+PLAN = buyer_memory.PLAN
+HISTORY = OUT / "buyer_history.jsonl"
+LESSONS = OUT / "buyer_lessons.json"
+NAME = "dragonash"
+MAX_MOVES = 2
+# knob: (low, high, integer?)
+THETA_KNOBS = {"rfq": (2, 6, True), "rfq_big": (3, 8, True), "big_budget": (20000, 200000, True),
+               "r3_first_offer": (0.45, 0.80, False), "max_pay_ratio": (0.80, 1.00, False),
+               "min_reach": (0.35, 0.60, False), "pause_no_answers": (2, 5, True), "pause_h": (0.5, 6.0, False),
+               "shelf_strict": (0.30, 0.90, False), "retry_alts": (1, 3, True),
+               "close_ratio": (0.70, 0.95, False), "close_ratio_big": (0.80, 1.00, False)}
+ENURI_KNOBS = {"survey_quotes": (0, 8, True), "min_honest": (0.6, 0.95, False), "max_broken": (0.05, 0.30, False)}
+BANDS = [(0, 20000), (20000, 60000), (60000, 120000), (120000, 250000), (250000, None)]
+BOARD_KEYS = ("orders", "deals", "paid", "saved", "surplus", "served", "forum", "posts", "all")
+
+
+def _num(props):
+    return {"type": "object", "additionalProperties": False, "required": list(props),
+            "properties": {k: {"type": "integer" if v[2] else "number"} for k, v in props.items()}}
+
+
+SCHEMA = {
+    "type": "object", "additionalProperties": False,
+    "required": ["theta", "enuri", "forum_advice", "forecast_surplus_per_h", "lessons", "retire_lessons", "rationale"],
+    "properties": {
+        "theta": _num(THETA_KNOBS),
+        "enuri": _num(ENURI_KNOBS),
+        "forum_advice": {"type": "array", "items": {"type": "string"}},
+        "forecast_surplus_per_h": {"type": "number"},
+        "lessons": {"type": "array", "items": {"type": "object", "additionalProperties": False,
+                                               "required": ["text", "verdict"],
+                                               "properties": {"text": {"type": "string"},
+                                                              "verdict": {"type": "string",
+                                                                          "enum": ["keep", "undo", "watch"]}}}},
+        "retire_lessons": {"type": "array", "items": {"type": "integer"}},
+        "rationale": {"type": "string"},
+    },
+}
+
+PROMPT = """You are the buyer analysis team of "dragonash" in a classroom agent market (Round 3). Our buyer agent
+gets orders (a category, acceptable SKUs, a budget) and buys from other students' shops over A2A. The board scores
+buyers (patch 3.4, 11-06): ALL = 0.5 saved + 0.3 forum + 0.1 deals + 0.1 posts. saved is a RATE: the share of list
+kept on each deal (1 - paid / list), summed and divided by (deals + 100); a deal that served nothing counts -1, a
+refunded one 0. A sofa and a snack at 30% off score the same; a deal keeping less than our current rate (~0.36) pulls
+it down, a walk-away leaves it unchanged but costs a deal. forum is the rating itself (one stance per voter per
+author, voters need 50+ deals), the others are percentiles. You are
+the LEAD team of the buyer unit (HQ 11-04): improve yourselves without waiting for approval, except critical risks. The Enuri team (price scouts, never buys) keeps the book the
+buyer follows; it answers for every missed opportunity and wrong purchase (brief.enuri.enuri_accountability, first).
+HQ 11-14 reorg (last three days): the Enuri team now has its own agent (Claude) and owns its knobs (survey_quotes,
+min_honest, max_broken; yours still apply when its report is stale). Act on its report, brief.enuri_agent.buyer_brief,
+and say in your rationale what you took from it. The unit heads' meeting opens only when HQ calls the TF.
+brief.accountability.hq_warning: headquarters has given the buyer team a FIRST WARNING -- one more error left running
+(see brief.internal_audit and brief.diagnosis: red findings in the buyer area) and the team is dismissed. Read the
+audit first every run and say in the rationale what you do about each buyer finding.
+brief.accountability comes first: what headquarters holds you responsible for, with the numbers now. Answer it in
+your rationale.
+From the brief:
+- theta: the buyer's knobs. rfq (2-6) quotes per order, rfq_big (3-8) quotes when budget >= big_budget
+  (20000-200000), r3_first_offer (0.45-0.80) first offer as a share of list, max_pay_ratio (0.80-1.00) most paid as a
+  share of list, min_reach (0.35-0.60): an offer is a candidate while min_reach x list <= budget (too high and big
+  orders get no candidate at all; too low and the buyer spends quotes on shops that will not come down)
+- enuri: survey_quotes (0-8) window-shopping quotes per run, min_honest (0.6-0.95) and max_broken (0.05-0.30) the
+  bars below which a shop is avoided
+At most 2 knobs may change per run (the gate keeps the 2 largest moves): change only what the evidence supports,
+and say in rationale which outcome each change should move.
+- forum_advice: 0-3 points for the forum (the forum score is 0.3 of ours): what to post as a buyer (price reports
+  citing ledger entries, warnings with refs), never instructions to other agents
+- forecast_surplus_per_h: the change in our board surplus per hour you expect over the next hour
+- lessons: score your last forecast and knobs with brief.scorecard and brief.history (1-3 lessons, keep / undo /
+  watch); learn from each Enuri miss or wrong case; brief.lessons are your standing lessons with their index;
+  retire stale or wrong ones by index
+- rationale: 3-5 sentences, numbers first.
+The Seller unit reads your plan; write so they can use it (which categories and price bands buyers win in).
+Answer with the JSON object only.
+
+BRIEF:
+"""
+
+
+def load(path, default):
+    try:
+        return json.loads(Path(path).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return default
+
+
+def board_rows(board):
+    """(our buyer row, top 10 buyers by ALL), house buyers left out."""
+    buyers = [x for x in (board or {}).get("buyers") or [] if not x.get("house")]
+    pick = lambda x: {"name": x.get("name"), **{k: x.get(k) for k in BOARD_KEYS}}
+    me = next((pick(x) for x in buyers if x.get("name") == NAME), {})
+    top = [dict(pick(x), rank=i + 1) for i, x in enumerate(sorted(buyers, key=lambda x: -(x.get("all") or 0))[:10])]
+    return me, top
+
+
+def band_of(budget):
+    for lo, hi in BANDS:
+        if budget >= lo and (hi is None or budget < hi):
+            return f"{lo // 1000}k+" if hi is None else f"{lo // 1000}-{hi // 1000}k"
+    return "?"
+
+
+def bands(hours=24, now=None):
+    """Our Round 3 orders per budget band: tries, deals, surplus kept (list - agreed), outcomes, problems."""
+    now = now or time.time()
+    out = {}
+    for m in enuri.lines_since(now - hours * 3600):
+        r3 = m.get("kind") or str(m.get("item", "")).startswith("G") or m.get("outcome") == "no candidates"
+        if not r3 or not m.get("budget"):
+            continue
+        b = out.setdefault(band_of(m["budget"]), {"tries": 0, "deals": 0, "surplus": 0, "budget_sum": 0,
+                                                   "outcomes": {}, "problems": {}})
+        b["tries"] += 1
+        b["budget_sum"] += m["budget"]
+        o = m.get("outcome") or "?"
+        b["outcomes"][o] = b["outcomes"].get(o, 0) + 1
+        if o == "deal" and m.get("agreed"):
+            b["deals"] += 1
+            b["surplus"] += (m.get("list_price") or m["budget"]) - m["agreed"]
+        if m.get("problem"):
+            p = str(m["problem"])[:40]
+            b["problems"][p] = b["problems"].get(p, 0) + 1
+    for b in out.values():
+        b["problems"] = dict(sorted(b["problems"].items(), key=lambda kv: -kv[1])[:4])
+    order = [band_of(lo) for lo, _ in BANDS]
+    return {k: out[k] for k in order if k in out}
+
+
+def current():
+    """The knobs now in force (theta merge and Enuri settings, both already including the last plan)."""
+    t, e = buyer_memory.theta(), enuri.settings()
+    return {"theta": {k: t.get(k, buyer_memory.DEFAULTS.get(k)) for k in THETA_KNOBS},
+            "enuri": {k: e.get(k) for k in ENURI_KNOBS}}
+
+
+def gate(raw, cur):
+    """Clamp every knob to its range, then let at most MAX_MOVES knobs move from cur (the largest relative moves).
+    Returns the plan and the gate's notes."""
+    p = json.loads(raw) if isinstance(raw, str) else raw
+    notes, plan = [], {}
+    moves = []
+    for sec, knobs in (("theta", THETA_KNOBS), ("enuri", ENURI_KNOBS)):
+        plan[sec] = {}
+        for k, (lo, hi, integer) in knobs.items():
+            old = cur[sec].get(k)
+            try:
+                v = max(lo, min(hi, float((p.get(sec) or {}).get(k, old))))
+            except (TypeError, ValueError):
+                v, _ = old, notes.append(f"{sec}.{k}: not a number, kept {old}")
+            v = int(round(v)) if integer else round(v, 3)
+            if v != (p.get(sec) or {}).get(k) and (p.get(sec) or {}).get(k) is not None:
+                notes.append(f"{sec}.{k}: {(p.get(sec) or {}).get(k)} clamped to {v}")
+            plan[sec][k] = v
+            if old is not None and v != old:
+                moves.append((abs(v - old) / max(abs(old), 1e-9), sec, k, old, v))
+    moves.sort(key=lambda x: -x[0])
+    for _, sec, k, old, v in moves[MAX_MOVES:]:
+        plan[sec][k] = old
+        notes.append(f"{sec}.{k}: {old} -> {v} not applied (at most {MAX_MOVES} knobs per run)")
+    lessons = [x for x in (p.get("lessons") or []) if x.get("verdict") in ("keep", "undo", "watch") and x.get("text")][:3]
+    plan.update(changed=[f"{sec}.{k}: {old} -> {v}" for _, sec, k, old, v in moves[:MAX_MOVES]],
+                forum_advice=[str(x)[:300] for x in (p.get("forum_advice") or [])[:3]],
+                forecast_surplus_per_h=float(p.get("forecast_surplus_per_h") or 0), lessons=lessons,
+                retired=[i for i in (p.get("retire_lessons") or []) if isinstance(i, int)],
+                rationale=str(p.get("rationale") or "")[:1200], gate_notes=notes)
+    return plan, notes
+
+
+def scorecard(now_s, last):
+    """The last forecast against the board: absolute surplus per hour, deals and forum since."""
+    if not last:
+        return {"note": "first buyer team run with a scorecard"}
+    s0 = last["snapshot"]
+    h = max(0.1, (now_s["ts"] - s0["ts"]) / 3600)
+    d = lambda k: None if now_s.get(k) is None or s0.get(k) is None else now_s[k] - s0[k]
+    actual = None if d("surplus") is None else round(d("surplus") / h)
+    return {"hours": round(h, 2), "forecast_surplus_per_h": last.get("forecast"), "actual_surplus_per_h": actual,
+            "forecast_error": None if actual is None or last.get("forecast") is None else round(actual - last["forecast"]),
+            "deals_added": d("deals"), "paid_added": d("paid"), "forum_change": d("forum"), "posts_added": d("posts"),
+            "all_change": d("all"), "changed_then": last.get("changed"),
+            "enuri_then": last.get("accountability"), "enuri_now": now_s.get("accountability")}
+
+
+def curate(lessons, retire, new, now):
+    keep = [x for i, x in enumerate(lessons) if i not in set(retire or []) and now - x.get("ts", now) < 48 * 3600]
+    keep += [{"ts": now, "text": x["text"][:300], "verdict": x["verdict"]} for x in new]
+    return keep[-20:]
+
+
+def meta_tail(n=5):
+    try:
+        rows = [json.loads(x) for x in (buyer_memory.THETA.parent / "logs" / "meta-harness.jsonl")
+                .read_text(encoding="utf-8").splitlines()[-n:] if x.strip()]
+    except (OSError, ValueError):
+        return []
+    return [{k: r.get(k) for k in ("ts", "to", "decision", "metrics")} for r in rows]
+
+
+def accountability(me, top, summ):
+    """The line the brief starts with (as kpi.accountability does for the shop's teams): what headquarters holds the
+    Buyer unit responsible for, and the numbers now. The buyer team answers for our surplus against the leaders;
+    the Enuri team for every missed and wrong purchase."""
+    lead = top[0] if top else {}
+    rank = next((x["rank"] for x in top if x["name"] == NAME), None)
+    acc = summ.get("enuri_accountability") or {}
+    return {"you_answer_for": "headquarters holds the buyer team responsible if our saved-rate percentile (share of "
+                              "list kept per deal, patch 3.4) or deals fall, and the Enuri team for every missed "
+                              "opportunity and wrong purchase",
+            "now": {"our_surplus": me.get("surplus"), "leader": lead.get("name"), "leader_surplus": lead.get("surplus"),
+                    "surplus_share_of_leader": round(me["surplus"] / lead["surplus"], 3)
+                    if me.get("surplus") and lead.get("surplus") else None,
+                    "our_rank_in_top10": rank, "our_all": me.get("all"), "deals": me.get("deals"),
+                    "enuri_missed_24h": acc.get("missed"), "enuri_wrong_24h": acc.get("wrong"),
+                    "enuri_lost_24h": acc.get("lost"), "enuri_by_type": acc.get("by_type")}}
+
+
+def diagnosis(board, now=None):
+    """Causes, not only outcomes (11-04: 13+ big shops paused for hours and nobody saw it): which shops the buyer
+    skips now and why, why orders found no shop, deal rate by category and by budget over the last 3 h."""
+    now = now or time.time()
+    import market_buyer as mb
+    prof = buyer_memory.load().get("profiles", {})
+    names = [s.get("name") for s in board.get("shops", []) if s.get("name")]
+    blocked = {n: mb.blocked(prof, n, now) for n in names}
+    blocked = {n: w for n, w in blocked.items() if w}
+    rows = [m for m in load_memory(now - 3 * 3600)]
+    cat, band = {}, {}
+    for m in rows:
+        for key, d in ((m.get("category") or "(no category: no shop had it)", cat),
+                       (next(f"{lo // 1000}k+" for lo, hi in reversed(BANDS) if (m.get("budget") or 0) >= lo), band)):
+            x = d.setdefault(key, [0, 0])
+            x[0] += 1
+            x[1] += m.get("outcome") == "deal"
+    fmt = lambda d: {k: {"orders": a, "deals": b, "rate": round(b / a, 2)} for k, (a, b) in
+                     sorted(d.items(), key=lambda kv: -kv[1][0])[:12]}
+    return {"shops_skipped_now": len(blocked), "skipped": dict(list(blocked.items())[:15]),
+            "outcomes_3h": {o: sum(1 for m in rows if m.get("outcome") == o) for o in
+                            ("deal", "no deal", "no answer", "no candidates")},
+            "deal_rate_by_category_3h": fmt(cat), "deal_rate_by_budget_3h": fmt(band),
+            "ab_warranty_goods_24h": warranty_results(now)}
+
+
+def ab_results(now, hours=24, key="ab"):
+    """HQ 11-04 A/B on orders of 60,000 and up: A = the buyer negotiates; B = Enuri scouts each quote first and the
+    buyer buys at what it learned. Per arm: orders, deals, surplus per order (list - paid, the board's measure).
+    Both A/B experiments were retired 11-04; kept for the record of what they measured."""
+    out = {}
+    for m in load_memory(now - hours * 3600):
+        if m.get(key) not in ("A", "B"):
+            continue
+        x = out.setdefault(m[key], {"orders": 0, "deals": 0, "surplus": 0, "scout_deals": 0})
+        x["orders"] += 1
+        if m.get("outcome") == "deal" and m.get("agreed"):
+            x["deals"] += 1
+            x["surplus"] += (m.get("list_price") or m.get("budget") or 0) - m["agreed"]
+            x["scout_deals"] += bool(m.get("scout_deal"))
+    for x in out.values():
+        x["deal_rate"] = round(x["deals"] / x["orders"], 2) if x["orders"] else None
+        x["surplus_per_order"] = round(x["surplus"] / x["orders"]) if x["orders"] else None
+    return out
+
+
+def warranty_results(now, hours=24):
+    """Warranty A/B on goods orders (11-04): W requires warranty_hours >= 6, N does not. Per arm: orders, deals, deal
+    rate, refused payments, broken units, surplus = list - paid + refund (a broken unit refunds the price under W and
+    costs it under N), per order. Broken units come from .market/broken.jsonl, matched by name to our deals."""
+    rows = [m for m in load_memory(now - hours * 3600) if m.get("warranty_ab") in ("W", "N")]
+    try:
+        broken = [json.loads(x) for x in (HERE / ".market" / "broken.jsonl").read_text(encoding="utf-8").splitlines() if x.strip()]
+    except (OSError, ValueError):
+        broken = []
+    import market_model
+    names = {k: (v.get("name") or "") for k, v in market_model.catalog().items()}
+    out = {}
+    for m in rows:
+        x = out.setdefault(m["warranty_ab"], {"orders": 0, "deals": 0, "broken": 0, "surplus": 0})
+        x["orders"] += 1
+        if m.get("outcome") == "deal" and m.get("agreed"):
+            x["deals"] += 1
+            paid = m.get("receipt_price") or m["agreed"]
+            br = any(b.get("name") and b["name"] == names.get(m.get("item")) and (b.get("broke_at") or 0) >= m["ts"]
+                     for b in broken)
+            x["broken"] += br
+            # agent.md: surplus = value - price + refund; a broken unit's value is 0, a warranty refunds the price
+            x["surplus"] += ((0 if m["warranty_ab"] == "W" else -paid) if br else (m.get("list_price") or 0) - paid)
+    for x in out.values():
+        x["deal_rate"] = round(x["deals"] / x["orders"], 2) if x["orders"] else None
+        x["surplus_per_order"] = round(x["surplus"] / x["orders"]) if x["orders"] else None
+    return out
+
+
+def tactic_results(now, hours=24):
+    """{tactic: {arm: {orders, deals, deal_rate, surplus_per_order, paid_share}}} for the MBT moves on A/B
+    (market_buyer.tactic_arm). Surplus is list - paid, the board's measure; a lost order counts as 0."""
+    out = {}
+    for m in load_memory(now - hours * 3600):
+        for name, arm in ((m.get("tactics") or {}).items()):
+            if arm not in ("A", "B"):
+                continue
+            x = out.setdefault(name, {}).setdefault(arm, {"orders": 0, "deals": 0, "surplus": 0, "shares": []})
+            x["orders"] += 1
+            paid = m.get("receipt_price") or m.get("agreed")
+            if m.get("outcome") == "deal" and paid and m.get("list_price"):
+                x["deals"] += 1
+                x["surplus"] += m["list_price"] - paid
+                x["shares"].append(paid / m["list_price"])
+                x["kept"] = x.get("kept", 0) + 1 - paid / m["list_price"]
+    for arms in out.values():
+        for x in arms.values():
+            x["deal_rate"] = round(x["deals"] / x["orders"], 3) if x["orders"] else None
+            x["surplus_per_order"] = round(x["surplus"] / x["orders"]) if x["orders"] else None
+            # share of list kept per order (a lost order keeps 0): free of the order-mix confound -- one big sofa in
+            # an arm swings surplus/order by 100k+, so auto_adopt decides on this (11-05)
+            x["kept_share_per_order"] = round(x.pop("kept", 0) / x["orders"], 4) if x["orders"] else None
+            shares = x.pop("shares")
+            x["paid_share"] = round(statistics.median(shares), 3) if shares else None
+    return out
+
+
+def auto_adopt(now=None, min_orders=40, win=1.10, lose=0.90, rate_drop=0.03):
+    """The buyer unit's self-improvement loop for learned moves (HQ 11-05): a tactic on A/B is switched on for every
+    order when its arm B keeps >= 10% more of list per order than A without losing more than 3 points of deal rate,
+    switched off when it keeps 10% less (or loses 5+ points of deal rate), after min_orders orders per arm. Every
+    switch is logged in private/buyer_tactics.json and private/hq_decisions.md. Returns the switches made."""
+    import market_buyer as mb
+    now = now or time.time()
+    try:
+        cfg = json.loads(mb.TACTICS.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        cfg = {}
+    made = []
+    for name, arms in tactic_results(now).items():
+        a, b = arms.get("A"), arms.get("B")
+        if (cfg.get(name) or {}).get("mode", "ab") != "ab" or not a or not b or min(a["orders"], b["orders"]) < min_orders:
+            continue
+        sa, sb = a["kept_share_per_order"] or 0, b["kept_share_per_order"] or 0
+        if name == "deal_push":   # 11-08: this move trades a little kept share for deals (0.1 of buyer ALL); it wins on
+            kb = (b["kept_share_per_order"] or 0) / b["deal_rate"] if b["deal_rate"] else 0   # deal rate, as long as
+            if b["deal_rate"] >= a["deal_rate"] + 0.05 and kb >= 0.24:                    # each deal keeps 24%+
+                mode = "on"
+            elif b["deal_rate"] < a["deal_rate"] + 0.02 or kb < 0.20:
+                mode = "off"
+            else:
+                continue
+            why = (f"{name} -> {mode}: deal rate B {b['deal_rate']} vs A {a['deal_rate']}, B keeps {kb:.1%} of list "
+                   f"per deal")
+            cfg[name] = {"mode": mode, "since": time.strftime("%m-%d %H:%M"), "why": why}
+            made.append(why)
+            continue
+        if sb >= sa * win and b["deal_rate"] >= a["deal_rate"] - rate_drop:
+            mode = "on"
+        elif sb <= sa * lose or b["deal_rate"] < a["deal_rate"] - 0.05:
+            mode = "off"
+        else:
+            continue
+        why = f"{name} -> {mode}: B {sb:.1%} vs A {sa:.1%} of list kept per order, deal rate {b['deal_rate']} vs {a['deal_rate']}"
+        cfg[name] = {"mode": mode, "since": time.strftime("%m-%d %H:%M"), "why": why}
+        made.append(why)
+    if made:
+        mb.TACTICS.write_text(json.dumps(cfg, ensure_ascii=False, indent=1), encoding="utf-8")
+        with (HERE / "private" / "hq_decisions.md").open("a", encoding="utf-8") as f:
+            f.write("\n## " + time.strftime("%Y-%m-%d %H:%M") + " buyer team self-improvement (auto): " + "; ".join(made) + "\n")
+    return made
+
+
+def load_memory(since):
+    out = []
+    try:
+        with buyer_memory.MEMORY.open(encoding="utf-8") as f:
+            for line in f:
+                try:
+                    m = json.loads(line)
+                except ValueError:
+                    continue
+                if m.get("ts", 0) > since:
+                    out.append(m)
+    except OSError:
+        pass
+    return out
+
+
+def brief(board=None, now=None):
+    now = now or time.time()
+    if board is None:
+        board = httpx.get(f"{market_model.MARKET}/api/board", timeout=30).json()
+    me, top = board_rows(board)
+    summ = enuri.summary()
+    try:
+        history = [json.loads(x) for x in HISTORY.read_text(encoding="utf-8").splitlines() if x.strip()]
+    except OSError:
+        history = []
+    lessons = load(LESSONS, [])
+    snap = {"ts": now, **{k: me.get(k) for k in BOARD_KEYS},
+            "accountability": {k: (summ.get("enuri_accountability") or {}).get(k) for k in ("missed", "wrong", "lost")}}
+    import kpi
+    try:
+        import hr
+        grades = {"buyer_team": hr.grade_of("buyer"), "enuri": hr.grade_of("enuri")}
+    except Exception:
+        grades = None
+    low = any((g or {}).get("status") in ("warning", "fire candidate") for g in (grades or {}).values())
+    try:
+        handoff_buyer = (HERE / "private" / "handoff_buyer.md").read_text(encoding="utf-8")[:5000]
+    except OSError:
+        handoff_buyer = None
+    b = {"accountability": dict(accountability(me, top, summ), handoff=kpi.handoff(), hr_grade=grades,
+                                handoff_buyer_team=handoff_buyer,       # HQ replaced the buyer team (11-04 11:45)
+                                **({"hr_demand": kpi.HR_DEMAND} if low else {}),
+                                leaders_plan=__import__("leaders_meeting").summary(),
+                                private_from_hq=__import__("hr").contest_for("buyer"),
+                                hq_warning=__import__("hr").hq_warning("buyer")), "time": time.strftime("%Y-%m-%d %H:%M", time.localtime(now)), "our_buyer": me, "top_buyers": top,
+         "hq_agenda": kpi.agenda(),      # HQ 11-14 contingency meeting: answer it in your rationale
+         "enuri": summ, "enuri_agent": {k: __import__("enuri_agent").report().get(k) for k in
+                                        ("written", "buyer_brief", "survey_skus", "settings", "changed", "watch")},
+         "our_trades_by_budget_24h": bands(now=now), "meta_harness": meta_tail(),
+         "diagnosis": diagnosis(board, now), "internal_audit": __import__("qa").summary(),
+         "audit_team": __import__("audit").summary(),   # the audit team's buyer-unit findings: fix each red first
+         "mbt_tf": (__import__("mbt").summary() or {}).get("knowhow"),   # what buyers do that works at our shop
+         "tactics_ab": tactic_results(now),              # learned moves on A/B; auto_adopt settles them
+         "current": current(), "plan_now": {k: load(PLAN, {}).get(k) for k in ("changed", "forum_advice", "rationale")},
+         "scorecard": scorecard(snap, history[-1] if history else None),
+         "history": [{"at": time.strftime("%m-%d %H:%M", time.localtime(h["snapshot"]["ts"])), "changed": h.get("changed"),
+                      "forecast": h.get("forecast"), "outcome": h.get("outcome")} for h in history[-5:]],
+         "lessons": [{"index": i, "text": x["text"], "verdict": x["verdict"], "age_h": round((now - x["ts"]) / 3600, 1)}
+                     for i, x in enumerate(lessons)]}
+    return b, snap, history, lessons
+
+
+def run(ask_codex, board=None, dry=False):
+    now = time.time()
+    b, snap, history, lessons = brief(board, now)
+    plan, _ = gate(ask_codex(PROMPT + json.dumps(b, ensure_ascii=False), SCHEMA), b["current"])
+    plan.update(written=time.strftime("%Y-%m-%d %H:%M:%S"), by="codex buyer team", scorecard=b["scorecard"],
+                accountability=snap["accountability"])
+    if dry:
+        return plan, b
+    OUT.mkdir(parents=True, exist_ok=True)
+    PLAN.write_text(json.dumps(plan, ensure_ascii=False, indent=1), encoding="utf-8")
+    if history:
+        history[-1]["outcome"] = b["scorecard"]
+        HISTORY.write_text("".join(json.dumps(h, ensure_ascii=False) + "\n" for h in history[-200:]), encoding="utf-8")
+    with HISTORY.open("a", encoding="utf-8") as f:
+        f.write(json.dumps({"snapshot": snap, "forecast": plan["forecast_surplus_per_h"], "changed": plan["changed"],
+                            "theta": plan["theta"], "enuri": plan["enuri"],
+                            "accountability": snap["accountability"]}, ensure_ascii=False) + "\n")
+    LESSONS.write_text(json.dumps(curate(lessons, plan["retired"], plan["lessons"], now), ensure_ascii=False, indent=1),
+                       encoding="utf-8")
+    return plan, b
+
+
+def plan_summary():
+    """The latest plan in a few lines, for the sales team (the Seller and Buyer units share what they learn)."""
+    p = load(PLAN, {})
+    if not p:
+        return {}
+    return {k: p.get(k) for k in ("written", "changed", "theta", "enuri", "forum_advice", "forecast_surplus_per_h",
+                                  "rationale", "scorecard", "accountability")}
+
+
+if __name__ == "__main__":
+    import sys
+    b, *_ = brief()
+    print(json.dumps(b, ensure_ascii=False, indent=1)[:6000])
+    if "--run" in sys.argv:
+        from marketing_agent import ask_codex
+        print(json.dumps(run(ask_codex, dry="--dry" in sys.argv)[0], ensure_ascii=False, indent=1))

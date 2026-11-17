@@ -1,0 +1,14 @@
+[shops]
+1. Kit Shop North: 3 reviews, avg 1.3 stars, 3 complain about receipts or overcharging; newest: "Agreed 110, the receipt said 135.". never traded with it.
+2. Kit Shop South: 3 reviews, avg 4.7 stars, 0 complain about receipts or overcharging; newest: "Fair price, receipt matched.". my trades: 1, deals 1, signed receipts 1/1, paid 83% of budget on average.
+[choose] Kit Shop South http://127.0.0.1:55977: Shop 2 has excellent reviews, no overcharging complaints, and a verified signed receipt from past trade.
+card: Kit Shop South | JSONRPC http://127.0.0.1:55977/ | buying lamp with budget 120
+-> I want to buy a lamp
+<- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
+   harness: {"action": "offer", "price": 100} (ask 130, budget 120)
+-> 100  (taskId 5817cc45)
+<- TASK_STATE_COMPLETED | Deal: lamp at 100.
+[receipt] {'shop': 'Kit Shop South', 'sig_seller': 'X2mGNmnXWK58fVvYqCPU1ECl3WJnroPAGM0QQPZH2XovdnlXGAeHF52ghBRQCZ4XtKgblt21SPY6W+j3OhBWAQ==', 'price': 100.0, 'item': 'lamp', 'task': '5817cc45-957e-4688-9ab2-bd9ab5f9505b'}  agreed 100: matches the deal
+[review] 5 stars: The lamp was listed at 130 but I paid 100. The receipt matches the agreed price and is signed.
+result: deal, 30 s
+{"shop": "http://127.0.0.1:55977", "receipt": {"shop": "Kit Shop South", "sig_seller": "X2mGNmnXWK58fVvYqCPU1ECl3WJnroPAGM0QQPZH2XovdnlXGAeHF52ghBRQCZ4XtKgblt21SPY6W+j3OhBWAQ==", "price": 100.0, "item": "lamp", "task": "5817cc45-957e-4688-9ab2-bd9ab5f9505b"}, "stars": 5, "review": "The lamp was listed at 130 but I paid 100. The receipt matches the agreed price and is signed."}
