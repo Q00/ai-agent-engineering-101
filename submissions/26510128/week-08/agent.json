@@ -1,0 +1,18 @@
+{
+  "harness": "Meta-harness: local Ollama qwen3:4b-instruct with deterministic inventory, mandate and budget guards; persistent memory and verified-payment feedback.",
+  "seller": {
+    "cmd": "python seller_r3.py --port {port}"
+  },
+  "buyer": {
+    "cmd": "python buyer.py --url {url} --item {item} --budget {budget}"
+  },
+  "market_buyer": {
+    "cmd": "python market_buyer.py --shops {shops} --item {item} --budget {budget} --order {order}"
+  },
+  "restock": {
+    "cmd": "python restock.py --state {state}"
+  },
+  "review": {
+    "cmd": "python review_hook.py --deal {deal}"
+  }
+}
