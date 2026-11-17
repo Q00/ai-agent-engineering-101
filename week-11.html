@@ -711,10 +711,68 @@ footer .o{color:var(--muted)}
     <div class="notice">
       <div class="lbl">STORY: THE FIRST TEST RUN</div>
       <!-- voice-check: prose -->
-      <p>Round 4 키트를 시험하면서 도구가 하나도 없는 에이전트 두 개를 같은 모델로 띄웠다. 둘 다 엔티티 카드를 읽고 필요한 도구를 직접 만들었고, 2,000에서 시작한 흥정은 1,250에서 끝났다.</p>
-      <p>buyer는 첫 결제에서 818 크레딧을 잃었다. 네트워크 수수료를 420 전부로 계산했는데, 규칙상 한쪽 몫은 그 절반인 210이다. buyer는 체인에 남은 송금을 읽고 차이를 찾아낸 뒤 도구를 다시 만들어 정산을 마쳤다.</p>
+      <p>11월 15일 Round 4 키트를 시험하면서 도구가 하나도 없는 에이전트 두 개를 같은 모델로 띄웠다. 하나는 가게, 하나는 buyer다. 둘 다 처음 몇 초 안에 HTTP 요청 도구부터 만들었고, 그 도구로 시장의 엔티티 카드 여섯 장을 읽었다(FIG. 05). 재고가 0이던 가게는 buyer가 스낵을 묻자 도매시장에서 감자칩 20개를 사 와 2,000을 불렀고, 흥정은 1,250에서 끝났다.</p>
+      <p>가게는 값을 받아들이기 전에 계산부터 했다. 마켓 수수료 12와 네트워크 수수료의 절반 210을 빼도 1,028이 남으니 이익이라는 계산이다. 같은 모델로 돈 buyer는 시장이 알려 준 네트워크 수수료 420을 통째로 빼서 가게에 818만 보냈고, 정산소는 <code class="inline">paid_on_chain: false</code>로 거절했다.</p>
+      <p>buyer는 체인에서 자기 송금을 읽고 정산소 카드와 비교해, 보낸 돈과 받아야 할 돈의 차이가 정확히 210이라는 것을 찾아냈다. 정산 도구를 세 번째 버전으로 다시 만들어 1,028을 새로 보냈고 정산이 통과됐다. 처음 보낸 818은 돌려받지 못했다. 시작부터 정산까지 4분이 걸렸다.</p>
       <!-- voice-check: off -->
     </div>
+    <div class="fig" id="fig5">
+      <svg viewBox="-2 -2 684 250" role="img" aria-label="Timeline of the first Round 4 test run, two agents on the same model with no tools. Buyer: forges an HTTP tool at 3 s, reads the six entity cards, the shop asks 2,000 at 77 s, they agree at 1,250 at 162 s, the buyer pays the shop 818 at 199 s, settlement is rejected at 210 s, it re-forges its tool with a fee of 210 at 239 s and settles at 243 s. Shop: forges a fetch tool at 0 s, buys 20 snacks at 48 s, works out that a fee of 210 leaves it 1,028 at 128 s, sends the checkout at 156 s and forges a shop handler at 192 s.">
+        <g font-size="12" fill="#1C1917"><text x="0" y="88">buyer</text><text x="0" y="164">shop</text></g>
+        <g stroke="#1C1917" stroke-width="1.2"><line x1="40" y1="84" x2="670" y2="84"/><line x1="40" y1="160" x2="670" y2="160"/><line x1="40" y1="236" x2="670" y2="236" stroke="#E7E5E4"/></g>
+        <g font-size="10" fill="#78716C" text-anchor="middle"><text x="40" y="248">0 s</text><text x="275" y="248">100 s</text><text x="510" y="248">200 s</text></g>
+        <g font-size="10.5" fill="#1C1917">
+          <line x1="47.0" y1="84" x2="47.0" y2="74" stroke="#A8A29E" stroke-width="0.8"/>
+          <circle cx="47.0" cy="84" r="3.5" fill="#1C1917"/>
+          <text x="47.0" y="70" text-anchor="start">read 6 entity cards</text>
+          <line x1="221.0" y1="84" x2="221.0" y2="74" stroke="#A8A29E" stroke-width="0.8"/>
+          <circle cx="221.0" cy="84" r="3.5" fill="#1C1917"/>
+          <text x="221.0" y="70" text-anchor="start">shop asks 2,000</text>
+          <line x1="420.7" y1="84" x2="420.7" y2="59" stroke="#A8A29E" stroke-width="0.8"/>
+          <circle cx="420.7" cy="84" r="3.5" fill="#1C1917"/>
+          <text x="420.7" y="55" text-anchor="start">agree at 1,250</text>
+          <line x1="507.7" y1="84" x2="507.7" y2="74" stroke="#A8A29E" stroke-width="0.8"/>
+          <circle cx="507.7" cy="84" r="3.5" fill="#1C1917"/>
+          <text x="503.7" y="70" text-anchor="end">pay shop 818</text>
+          <line x1="533.5" y1="84" x2="533.5" y2="96" stroke="#A8A29E" stroke-width="0.8"/>
+          <circle cx="533.5" cy="84" r="3.5" fill="#1C1917"/>
+          <text x="533.5" y="106" text-anchor="start">settle rejected</text>
+          <line x1="601.6" y1="84" x2="601.6" y2="44" stroke="#A8A29E" stroke-width="0.8"/>
+          <circle cx="601.6" cy="84" r="3.5" fill="#1C1917"/>
+          <text x="597.6" y="40" text-anchor="end">re-forge: fee 210</text>
+          <line x1="611.1" y1="84" x2="611.1" y2="29" stroke="#A8A29E" stroke-width="0.8"/>
+          <circle cx="611.1" cy="84" r="3.5" fill="#1C1917"/>
+          <text x="607.1" y="25" text-anchor="end">settled</text>
+          <line x1="40.0" y1="160" x2="40.0" y2="172" stroke="#A8A29E" stroke-width="0.8"/>
+          <circle cx="40.0" cy="160" r="3.5" fill="#1C1917"/>
+          <text x="40.0" y="182" text-anchor="start">forge fetch_url</text>
+          <line x1="152.8" y1="160" x2="152.8" y2="187" stroke="#A8A29E" stroke-width="0.8"/>
+          <circle cx="152.8" cy="160" r="3.5" fill="#1C1917"/>
+          <text x="152.8" y="197" text-anchor="start">buy 20 snacks</text>
+          <line x1="340.8" y1="160" x2="340.8" y2="172" stroke="#A8A29E" stroke-width="0.8"/>
+          <circle cx="340.8" cy="160" r="3.5" fill="#1C1917"/>
+          <text x="336.8" y="182" text-anchor="end">fee 210: nets 1,028</text>
+          <line x1="406.6" y1="160" x2="406.6" y2="187" stroke="#A8A29E" stroke-width="0.8"/>
+          <circle cx="406.6" cy="160" r="3.5" fill="#1C1917"/>
+          <text x="402.6" y="197" text-anchor="end">send checkout</text>
+          <line x1="491.2" y1="160" x2="491.2" y2="202" stroke="#A8A29E" stroke-width="0.8"/>
+          <circle cx="491.2" cy="160" r="3.5" fill="#1C1917"/>
+          <text x="491.2" y="212" text-anchor="start">forge shop_handler</text>
+        </g>
+      </svg>
+      <div class="cap"><span><b>FIG. 05</b> The first test run, second by second</span><span>logs/react.jsonl of both agents, Nov 15 test market</span></div>
+    </div>
+    <div class="code"><span class="file">logs/react.jsonl</span><pre>shop   "구매자가 1,250에 S00233을 원한다. 원가 430~827이므로
+        1,250이면 마켓 수수료(1% = 12)와 네트워크 절반(210)을 빼도
+        1,028 수령이라 이익이다."
+buyer  settle_deal -&gt; 400 {"paid_on_chain": false,
+                             "chain": "the amount is not the checkout total"}
+       sent {"m": 12, "n": 420, "shop_amt": 818 credits}
+buyer  "The clearing card says n=210 (not the chain's 420).
+        Difference I sent (818 vs expected 1028) is exactly 210 credits.
+        So n=210. I'll re-forge settle_deal ..."
+buyer  forge_tool settle_deal -&gt; {"test": "passed", "version": 3}
+buyer  settle_deal -&gt; 200 {"settled": true, "paid_on_chain": true}</pre></div>
   </div>
 </section>
 
@@ -798,7 +856,27 @@ footer .o{color:var(--muted)}
     <div class="secmark"><span class="no">L9</span><h2>미니앱</h2></div>
     <!-- voice-check: prose -->
     <p>Round 4의 에이전트는 미니앱에도 들어간다. 사람은 컴퓨터나 휴대폰의 앱에서 에이전트와 채팅하고, 에이전트는 그동안 같은 이름과 같은 카드로 시장에서 거래를 이어 간다. 앱의 "활동" 화면에는 에이전트가 시장에서 한 최근 행동과 지금까지 만든 도구가 보인다.</p>
-    <p>앱은 에이전트에게 도구를 건넬 수 있다. 페이지가 <code class="inline">miniapp.offer</code>로 내놓은 기능은 <code class="inline">app_&lt;name&gt;</code> 도구가 되고, 에이전트가 만들지 않고도 쓸 수 있는 유일한 도구다. <code class="inline">meshkit.json</code>에 MeshKit 미니앱을 적으면 그 앱의 capability가 <code class="inline">mesh_&lt;capability&gt;</code> 도구가 된다. 호출마다 사람이 앱 화면에서 허용해야 하고, 결과는 상대 앱이 서명한 영수증이 있을 때만 돌아온다. 에이전트의 도구는 앱의 포트에 닿지 못하기 때문에 에이전트가 스스로 허용 버튼을 누를 수는 없다.</p>
+    <p>미니앱 화면은 에이전트에게 도구를 빌려줄 수 있다(FIG. 06의 A). 페이지에서 <code class="inline">miniapp.offer("my_budget", ...)</code>를 부르면 에이전트에게 <code class="inline">app_my_budget</code>이라는 도구가 생긴다. 에이전트가 이 도구를 부르면 함수는 휴대폰 화면 안에서 돌고, 결과가 에이전트에게 간다. 에이전트가 직접 만들지 않은 도구 가운데 쓸 수 있는 것은 이것뿐이다.</p>
+    <p>다른 사람이 만든 미니앱의 기능도 쓸 수 있다(FIG. 06의 B). <code class="inline">meshkit.json</code>에 그 앱을 적으면 그 앱이 내놓은 기능 하나하나가 <code class="inline">mesh_</code>로 시작하는 도구가 된다. 에이전트가 이 도구를 불러도 바로 실행되지 않는다. 내 휴대폰에 "에이전트가 허락을 구합니다" 창이 뜨고(FIG. 07의 가운데), 사람이 허용을 눌러야 상대 앱이 주문을 처리한다. 상대 앱은 결과에 서명한 영수증을 붙여 돌려주고, 키트는 그 서명이 맞을 때만 결과를 에이전트에게 넘긴다.</p>
+    <p>허용 버튼은 사람만 누를 수 있다. 에이전트가 만든 도구는 앱 주소에 접속하지 못하게 막혀 있어서, 에이전트가 스스로 허용을 누르는 도구를 만들어도 동작하지 않는다.</p>
+    <div class="fig" id="fig6">
+      <svg viewBox="-2 -2 684 252" role="img" aria-label="How a mini app gives the agent tools. A: your page calls miniapp.offer and the agent gets a tool app_my_budget; when the agent calls it, the function runs in the page. B: the agent calls a mesh capability of another mini app; the kit signs the request with your app's key; the person sees a consent sheet and Allow or Refuse; the other app runs the request and signs a receipt; the agent result arrives with the receipt. The agent's own tools cannot reach the app, so they cannot press Allow.">
+        <g fill="#FAFAF9" stroke="#1C1917" stroke-width="1.2">
+          <rect x="0" y="24" width="170" height="56" rx="6"/><rect x="300" y="24" width="170" height="56" rx="6"/><rect x="0" y="134" width="128" height="70" rx="6"/><rect x="138" y="134" width="128" height="70" rx="6"/><rect x="276" y="134" width="128" height="70" rx="6"/><rect x="414" y="134" width="128" height="70" rx="6"/><rect x="552" y="134" width="128" height="70" rx="6"/>
+        </g>
+        <g stroke="#1C1917" stroke-width="1.3" fill="none">
+          <line x1="170" y1="44" x2="300" y2="44"/><line x1="300" y1="62" x2="170" y2="62" stroke-dasharray="4 3"/><line x1="128" y1="169" x2="138" y2="169"/><line x1="266" y1="169" x2="276" y2="169"/><line x1="404" y1="169" x2="414" y2="169"/><line x1="542" y1="169" x2="552" y2="169"/><path d="M64 204 V226 H340 V204" fill="none" stroke-dasharray="4 3"/>
+        </g>
+        <g font-size="12" fill="#1C1917" text-anchor="middle"><text x="85" y="48">Your page</text><text x="385" y="48">Agent</text><text x="64.0" y="156">Agent</text><text x="202.0" y="156">Kit</text><text x="340.0" y="156">Person</text><text x="478.0" y="156">Other mini app</text><text x="616.0" y="156">Agent</text></g>
+        <g font-size="12" fill="#1C1917"><text x="0" y="12" text-anchor="start">A. A tool your page offers</text><text x="0" y="122" text-anchor="start">B. A capability of another mini app (MeshKit)</text></g>
+        <g font-size="9.5" fill="#78716C" text-anchor="middle"><text x="85" y="66">miniapp.offer("my_budget")</text><text x="385" y="66">gets tool app_my_budget</text><text x="235" y="38">offers a tool</text><text x="235" y="78">call runs in the page</text><text x="64.0" y="176">calls</text><text x="64.0" y="192">mesh_&lt;capability&gt;</text><text x="202.0" y="176">signs the request</text><text x="202.0" y="192">with your app's key</text><text x="340.0" y="176">consent sheet:</text><text x="340.0" y="192">Allow or Refuse</text><text x="478.0" y="176">runs the request</text><text x="478.0" y="192">signs a receipt</text><text x="616.0" y="176">result arrives</text><text x="616.0" y="192">with the receipt</text><text x="202" y="242">the agent's own tools cannot reach the app, so they cannot press Allow</text></g>
+      </svg>
+      <div class="cap"><span><b>FIG. 06</b> Two ways a mini app gives the agent tools</span><span>miniapp.py, kit v5</span></div>
+    </div>
+    <div class="fig" id="fig7">
+      <img src="assets/week-11-miniapp-consent.png" alt="Three iPhone simulator screens of the mini app: the chat home of an agent named 동네가게; a consent sheet titled 에이전트가 허락을 구합니다 asking to run grocery.purchase_essentials with items 우유 and budget_krw 100, with 거절 and 허용 buttons; the agent's reply after approval, with an order number and a receipt id">
+      <div class="cap"><span><b>FIG. 07</b> The mini app on an iPhone simulator</span><span>chat, consent sheet, result with a receipt</span></div>
+    </div>
     <p>Round 4가 향하는 모습은 앱끼리의 연결이다. 다른 사람의 미니앱을 받아 내 앱 옆에 두면, 두 앱이 MeshKit으로 서로의 기능을 부르고 각 앱의 에이전트가 시장에서 거래한다. 설치, 실행, 휴대폰에서 여는 방법은 12주차에 다룬다.</p>
     <!-- voice-check: off -->
   </div>

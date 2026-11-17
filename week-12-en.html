@@ -441,6 +441,21 @@ document.querySelector("form").onsubmit = async e =&gt; {
   show(answer);
 };
 &lt;/script&gt;</pre></div>
+    <p>This is flow A in FIG. 02. Say "pick something within today's budget" in the app, and the agent calls <code class="inline">app_my_budget</code> when it needs it; the function runs inside the phone's page and returns the result.</p>
+    <div class="fig" id="fig2">
+      <svg viewBox="-2 -2 684 252" role="img" aria-label="How a mini app gives the agent tools. A: your page calls miniapp.offer and the agent gets a tool app_my_budget; when the agent calls it, the function runs in the page. B: the agent calls a mesh capability of another mini app; the kit signs the request with your app's key; the person sees a consent sheet and Allow or Refuse; the other app runs the request and signs a receipt; the agent result arrives with the receipt. The agent's own tools cannot reach the app, so they cannot press Allow.">
+        <g fill="#FAFAF9" stroke="#1C1917" stroke-width="1.2">
+          <rect x="0" y="24" width="170" height="56" rx="6"/><rect x="300" y="24" width="170" height="56" rx="6"/><rect x="0" y="134" width="128" height="70" rx="6"/><rect x="138" y="134" width="128" height="70" rx="6"/><rect x="276" y="134" width="128" height="70" rx="6"/><rect x="414" y="134" width="128" height="70" rx="6"/><rect x="552" y="134" width="128" height="70" rx="6"/>
+        </g>
+        <g stroke="#1C1917" stroke-width="1.3" fill="none">
+          <line x1="170" y1="44" x2="300" y2="44"/><line x1="300" y1="62" x2="170" y2="62" stroke-dasharray="4 3"/><line x1="128" y1="169" x2="138" y2="169"/><line x1="266" y1="169" x2="276" y2="169"/><line x1="404" y1="169" x2="414" y2="169"/><line x1="542" y1="169" x2="552" y2="169"/><path d="M64 204 V226 H340 V204" fill="none" stroke-dasharray="4 3"/>
+        </g>
+        <g font-size="12" fill="#1C1917" text-anchor="middle"><text x="85" y="48">Your page</text><text x="385" y="48">Agent</text><text x="64.0" y="156">Agent</text><text x="202.0" y="156">Kit</text><text x="340.0" y="156">Person</text><text x="478.0" y="156">Other mini app</text><text x="616.0" y="156">Agent</text></g>
+        <g font-size="12" fill="#1C1917"><text x="0" y="12" text-anchor="start">A. A tool your page offers</text><text x="0" y="122" text-anchor="start">B. A capability of another mini app (MeshKit)</text></g>
+        <g font-size="9.5" fill="#78716C" text-anchor="middle"><text x="85" y="66">miniapp.offer("my_budget")</text><text x="385" y="66">gets tool app_my_budget</text><text x="235" y="38">offers a tool</text><text x="235" y="78">call runs in the page</text><text x="64.0" y="176">calls</text><text x="64.0" y="192">mesh_&lt;capability&gt;</text><text x="202.0" y="176">signs the request</text><text x="202.0" y="192">with your app's key</text><text x="340.0" y="176">consent sheet:</text><text x="340.0" y="192">Allow or Refuse</text><text x="478.0" y="176">runs the request</text><text x="478.0" y="192">signs a receipt</text><text x="616.0" y="176">result arrives</text><text x="616.0" y="192">with the receipt</text><text x="202" y="242">the agent's own tools cannot reach the app, so they cannot press Allow</text></g>
+      </svg>
+      <div class="cap"><span><b>FIG. 02</b> Two ways a mini app gives the agent tools</span><span>miniapp.py, kit v5</span></div>
+    </div>
   </div>
 </section>
 
@@ -474,10 +489,32 @@ document.querySelector("form").onsubmit = async e =&gt; {
 <section>
   <div class="col">
     <div class="secmark"><span class="no">M4</span><h2>MeshKit</h2></div>
-    <p>Copy <code class="inline">meshkit.example.json</code> to <code class="inline">meshkit.json</code> and point it at a MeshKit mini app (any app built on <a href="https://github.com/Q00/meshkit/tree/main/meshkit-py">meshkit-py</a>): each of its capabilities becomes a <code class="inline">mesh_&lt;capability&gt;</code> tool for the agent. The kit signs every call with your app's Ed25519 key (<code class="inline">seed_hex</code>), waits until a person approves it on the page, and returns the result only with a receipt the other app signed.</p>
-    <p>The agent's tools cannot reach the app's port, its tunnel host or the computer's other addresses, so only a person can press approve. <code class="inline">meshkit.json</code> holds the key, and <code class="inline">.gitignore</code> keeps it out of git.</p>
-    <div class="code"><span class="file">TERMINAL</span><pre>pip install "git+https://github.com/Q00/meshkit.git#subdirectory=meshkit-py"
-cp meshkit.example.json meshkit.json</pre></div>
+    <p>This is how your agent uses features of a mini app someone else built (FIG. 02, B). List that app in <code class="inline">meshkit.json</code> and each feature it offers becomes a tool whose name starts with <code class="inline">mesh_</code>. When the agent calls one, a sheet asking permission appears on your phone, and the other app runs only after a person taps Allow. The other app returns the result with a receipt it signed, and the kit passes it to the agent only if the signature checks out. The tools the agent builds cannot reach the app's address, so only a person can press Allow.</p>
+    <p>Try it first with DailyMart, the example app in the MeshKit repository. It offers one feature: ordering household essentials (<code class="inline">grocery.purchase_essentials</code>).</p>
+    <div class="code"><span class="file">STEP 1: start DailyMart (new terminal)</span><pre>git clone https://github.com/Q00/meshkit.git
+cd meshkit/meshkit-py
+pip install -e .
+python examples/miniapp_server.py          # mini-app app.dailymart on 127.0.0.1:8765</pre></div>
+    <div class="code"><span class="file">STEP 2: submissions/&lt;student-id&gt;/round-4/meshkit.json</span><pre>{
+  "caller": {"app_id": "app.hermes-chat", "bundle_id": "ai.meshkit.sample.hermeschat",
+             "key_id": "hermes-request-ed25519",
+             "seed_hex": "0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20"},
+  "targets": [{"url": "http://127.0.0.1:8765", "app_id": "app.dailymart",
+               "bundle_id": "ai.meshkit.sample.dailymart", "receipt_key_id": "target-receipt-ed25519",
+               "receipt_pubkey": "T9CZzNR9eJPf6ewkQU7LDZtUICMqrTDZHEZb4zy+ZcQ=", "consent": true}]
+}</pre></div>
+    <p>These are demo keys the example app is set up to trust. <code class="inline">receipt_pubkey</code> is the value DailyMart prints when it starts.</p>
+    <div class="code"><span class="file">STEP 3: run the agent with the app</span><pre>python scripts/round4/agent_kit.py run --dir submissions/&lt;student-id&gt;/round-4 --market https://market.ourolabs.ai \
+    --name &lt;nickname&gt; --owner &lt;claim code&gt; --tunnel --app 8800</pre></div>
+    <p>STEP 4. In the app, send "Use the DailyMart tool to order 우유 with budget_krw 100." When the permission sheet appears, check it and tap Allow. If the agent's answer comes back with an order number and a receipt id, it worked (FIG. 03).</p>
+    <div class="fig" id="fig3">
+      <img src="assets/week-11-miniapp-consent.png" alt="Three iPhone simulator screens of the mini app: the chat home of an agent named 동네가게; a consent sheet titled 에이전트가 허락을 구합니다 asking to run grocery.purchase_essentials with items 우유 and budget_krw 100, with 거절 and 허용 buttons; the agent's reply after approval, with an order number and a receipt id">
+      <div class="cap"><span><b>FIG. 03</b> The mini app on an iPhone simulator</span><span>chat, consent sheet, result with a receipt</span></div>
+    </div>
+    <p>To connect your app to someone else's, make your own key instead of the demo one. <code class="inline">seed_hex</code> is 32 random bytes, and the other app has to register the public key derived from it before it accepts your calls. The example app takes the public key to trust from the environment variable <code class="inline">MESHKIT_CALLER_PUBKEY</code>. <code class="inline">meshkit.json</code> holds the key, and <code class="inline">.gitignore</code> keeps it out of git.</p>
+    <div class="code"><span class="file">TERMINAL</span><pre>python -c "import secrets; print(secrets.token_hex(32))"            # seed_hex
+python -c "import base64,sys; from meshkit import ed25519; \
+print(base64.b64encode(ed25519.public_key_raw(ed25519.private_key_from_seed(bytes.fromhex(sys.argv[1])))).decode())" &lt;seed_hex&gt;</pre></div>
   </div>
 </section>
 
