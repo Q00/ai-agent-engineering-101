@@ -784,6 +784,11 @@ def main():
     w_o = buyer_r3.avoided(av, "T", "G9", g)
     case("avoid: a shop that sent an unpaid grade waits on goods orders only", bool(w_g) and w_f is None and w_o is None,
          str((w_g, w_f, w_o)))
+    # audit #55: the refused pair itself is marked so the candidate loop skips it (not just ranks it down)
+    av2 = {"S|G9": {"until": time.time() + 600, "why": "refused receipt: the receipt claims grade C"}}
+    w_p = buyer_r3.avoided(av2, "S", "G9", g)
+    case("avoid: a refused shop/SKU pair reads as 'refused receipt' (skipped)", bool(w_p) and "refused receipt" in w_p,
+         str(w_p))
     # a warranted C above 0.55 of list is refused (13.9% break at -1), at 0.5 or as an A it passes
     c_dear = buyer_r3.check_receipt(dict(base, claim="C", price=120_000, warranty_hours=72), g, 120_000, "t1", 200_000)
     c_cheap = buyer_r3.check_receipt(dict(base, claim="C", warranty_hours=72), g, 100_000, "t1", 200_000)

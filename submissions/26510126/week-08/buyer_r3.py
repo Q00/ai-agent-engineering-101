@@ -466,7 +466,7 @@ def candidates(order, shops, cat, memory, claims):
                 risk *= 0.05 if code_ab_r3.on("a9d6314e01de", order.get("order")) else 0.3
             surplus *= risk
             wait = avoided(avoid, s["name"], sku, order)
-            if wait and "shipped" in wait:
+            if wait and ("shipped" in wait or "refused receipt" in wait):
                 # the same pair shipped too short a unit again and again within the hour (11/4 15:47-16:18:
                 # 25620027 G476cc094 three times, 355-431 h against 594 asked): the kit would refuse it again
                 skipped.append(s["name"])
@@ -918,9 +918,12 @@ async def attempt(order, cat, s, off, lp, note, remember, take_second=False, mor
         if "certificate" in problem:
             avoid_add(s["name"], "*cert", problem, DEAD_SECS)
         elif "claims grade" in problem and order.get("kind") == "goods":
-            avoid_add(s["name"], "*grade", problem, 1800)
+            # leak audit #55: the *grade key alone (30 min, a soft 0.05 rank) let the same pair come back ~35 min
+            # later (gom31 G3ffdfc44 refused 6 times on 11/17); keep the shop soft for 1 h and skip the pair itself
+            avoid_add(s["name"], "*grade", problem, DEAD_SECS)
+            avoid_add(s["name"], sku, "refused receipt: " + problem, DEAD_SECS)
         else:
-            avoid_add(s["name"], sku, problem, DEAD_SECS)
+            avoid_add(s["name"], sku, "refused receipt: " + problem, DEAD_SECS)
     stars, text = review(result, name, lp, problem)
     asked = [a for a in result.get("asks", []) if a is not None]
     if not deal and asked and min(asked) > limit:
