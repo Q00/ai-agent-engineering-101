@@ -19,7 +19,7 @@ import time
 import urllib.request
 
 ROOT=Path(__file__).resolve().parents[1]
-FILES=('buyer_value.py','seller_checkout.py','seller_checkout_policy.py','buyer_breakage.py','seller_r3.py','harness.py','market_memory.py','market_scoring.py','decision_audit.py','newsvendor_tool.py','context_compaction.py',
+FILES=('buyer_cohort.py','buyer_memory.py','buyer_value.py','seller_checkout.py','seller_checkout_policy.py','buyer_breakage.py','seller_r3.py','harness.py','market_memory.py','market_scoring.py','decision_audit.py','newsvendor_tool.py','context_compaction.py',
        'inventory_observation.py','inventory_exploration.py','inventory_portfolio.py','procurement_strategy.py','procurement_audit.py','procurement_scheduler.py','procurement_transport.py','procurement_monitor.py','seller_kit.py','supply_reconciliation.py','stock_policy.py',
        'seller_state.py','seller_quality.py','seller_requirements.py','seller_warranty.py','seller_demand.py','seller_featured.py','replenishment_plan.py','restock.py','buyer_identity.py','counterparty_memory.py','seller_forum.py','seller_promotion.py','capital_policy.py','procurement_cost.py','seller_meta_policy.py','seller_meta.py','meta_effects.py','buyer_forum.py')
 STOP=False
@@ -181,6 +181,7 @@ def run(args):
             with (ROOT/'logs/seller-meta-console.log').open('a') as meta_log, \
                  (ROOT/'logs/procurement-console.log').open('a') as procurement_log, \
                  (ROOT/'state/buyer-runtime/logs/forum-console.log').open('a') as buyer_forum_log, \
+                 (ROOT/'state/buyer-runtime/logs/cohort-console.log').open('a') as buyer_cohort_log, \
                  (ROOT/'logs/seller-r3-tunnel.log').open('a') as ssh_log, \
                  (ROOT/'logs/seller-r3-kit-console.log').open('a') as kit_log, \
                  (ROOT/'logs/seller-forum-console.log').open('a') as forum_log:
@@ -224,7 +225,8 @@ def run(args):
                 worker_specs={
                     'meta_pid':('seller_meta.py',runtime,meta_log),
                     'procurement_pid':('procurement_scheduler.py',runtime,procurement_log),
-                    'buyer_forum_pid':('buyer_forum.py',ROOT/'state/buyer-runtime',buyer_forum_log)}
+                    'buyer_forum_pid':('buyer_forum.py',ROOT/'state/buyer-runtime',buyer_forum_log),
+                     'buyer_cohort_pid':('buyer_cohort.py',ROOT/'state/buyer-runtime',buyer_cohort_log)}
                 def worker(spec):
                     script,working,output=spec
                     return subprocess.Popen([str(ROOT/'.venv/bin/python'),str(runtime/'release'/script),

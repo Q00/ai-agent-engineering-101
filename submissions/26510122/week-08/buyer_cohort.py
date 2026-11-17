@@ -113,20 +113,23 @@ def load(runtime,*,now=None):
 
 
 def for_choice(cache,choice,order,baseline=None):
-    hours=order.get('use_within_hours') if order.get('kind')=='food' else None
-    row=next((r for r in cache.get('groups',[]) if r['shop']==choice['shop'] and r['sku']==choice['sku'] and r.get('use_within_hours')==hours),None)
-    if not row:return {}
-    result=dict(row);reference=(baseline or {}).get('saved');reference=reference if type(reference) in (int,float) else None
-    price=(choice.get('price_guidance') or {}).get('median_paid')
-    comparable=type(price) is int and type(row.get('q75_paid')) is int and price<=row['q75_paid']
-    qualified=row['n']>=MIN_COUNT and row['unknown']==0
-    better_cover=max(order.get('required_warranty_hours',0),(choice.get('risk_policy') or {}).get('required_warranty_hours',0))>=6 and row['unrefunded']>0 and row['cover_share']<1
-    improved_price=type(price) is int and type(row.get('median_paid')) is int and price<row['median_paid']
-    result.update(qualified=qualified,reference_price_comparable=comparable,
-        preference='positive' if qualified and comparable and reference is not None and row['net_scenario']>reference and row['net_upper']>=reference else 'ordinary',
-        historical_below_current=bool(qualified and reference is not None and row['net_upper']<reference and not better_cover and not improved_price),
-        as_of=cache.get('as_of'))
-    return result
+    try:
+        hours=order.get('use_within_hours') if order.get('kind')=='food' else None
+        row=next((r for r in cache.get('groups',[]) if r['shop']==choice['shop'] and r['sku']==choice['sku'] and r.get('use_within_hours')==hours),None)
+        if not row:return {}
+        result=dict(row);reference=(baseline or {}).get('saved');reference=reference if type(reference) in (int,float) else None
+        price=(choice.get('price_guidance') or {}).get('median_paid')
+        comparable=type(price) is int and type(row.get('q75_paid')) is int and price<=row['q75_paid']
+        qualified=row['n']>=MIN_COUNT and row['unknown']==0
+        better_cover=max(order.get('required_warranty_hours',0),(choice.get('risk_policy') or {}).get('required_warranty_hours',0))>=6 and row['unrefunded']>0 and row['cover_share']<1
+        improved_price=type(price) is int and type(row.get('median_paid')) is int and price<row['median_paid']
+        selection_estimate=((row['n']*row['net_scenario']+10*reference)/(row['n']+10) if qualified and reference is not None else None)
+        result.update(selection_estimate=selection_estimate,qualified=qualified,reference_price_comparable=comparable,
+            preference='positive' if qualified and comparable and reference is not None and selection_estimate>reference+.015 and row['net_upper']>=reference else 'ordinary',
+            historical_below_current=bool(qualified and reference is not None and row['net_upper']<reference and not better_cover and not improved_price),
+            as_of=cache.get('as_of'))
+        return result
+    except (KeyError,TypeError,ValueError,OverflowError):return {}
 
 
 def compact(row):

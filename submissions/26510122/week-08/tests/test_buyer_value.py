@@ -83,7 +83,7 @@ class ExecutionTests(unittest.TestCase):
   import market_buyer_r3 as buyer
   from buyer_memory import PreparedHistory
   base={'name':'Goods','sku':'G','cap':250,'list_price':500,'stock':1,'category':'goods','kind':'goods','listed_shelf_hours':None,'paid':10,'refusals':0,'score_evidence':{'saved_if_usable_at_cap':.8},'first_hand':{},'price_guidance':{},'routing_evidence':{},'risk_policy':{}}
-  first={**base,'id':'0','shop':'risk','url':'https://risk','value_terms':{'target_saved':.8,'max_price_without_warranty':100,'max_price_with_6h_warranty':140}}
+  first={**base,'id':'0','shop':'risk','url':'https://risk','value_terms':{'target_saved':.8,'max_price_without_warranty':100,'max_price_with_6h_warranty':140},'mature_outcomes':{'n':8,'net_scenario':.82}}
   other={**base,'id':'1','shop':'other','url':'https://other','value_terms':{}}
   calls=[]
   def negotiate(url,sku,name,order,**kw):
@@ -97,4 +97,6 @@ class ExecutionTests(unittest.TestCase):
   self.assertEqual(result['shop'],'https://other');self.assertEqual(len(calls),2);self.assertNotIn('warranty_hours',result['accept'])
   self.assertEqual(calls[0][2]['memory']['purchase_value_terms'],first['value_terms'])
   self.assertFalse(calls[1][2]['memory']['purchase_value_terms'])
+  self.assertEqual(calls[0][2]['memory']['mature_outcomes'],first['mature_outcomes'])
+  self.assertFalse(calls[1][2]['memory']['mature_outcomes'])
   self.assertLessEqual(calls[0][2]['deadline']-time.monotonic(),80)

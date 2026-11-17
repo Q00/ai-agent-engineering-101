@@ -22,6 +22,7 @@ import buyer_forum_memory
 import buyer_checkout_memory
 import buyer_breakage
 import buyer_value
+import buyer_cohort
 from market_scoring import (buyer_candidate,buyer_cost_reference,BUYER_WEIGHTS,SAVED_CONTRACT,VERSION,
                             BUYER_RANKING_VERSION,BUYER_SCORE_SCALES,BUYER_ALL_CONTRACT)
 import decision_audit as audit
@@ -41,7 +42,7 @@ def review_summary(reviews: list[dict]) -> dict:
 
 
 def candidates(order: dict, shops: list[dict], catalog: dict,
-               own_shop_name: str, *, full_pool: bool = False, saved_baseline=None, history=None) -> list[dict]:
+               own_shop_name: str, *, full_pool: bool = False, saved_baseline=None, history=None, cohort_cache=None) -> list[dict]:
     acceptable = set(order.get("acceptable") or [])
     history=read_events() if history is None else history
     history=history if isinstance(history,PreparedHistory) else PreparedHistory(history)
@@ -119,8 +120,11 @@ def candidates(order: dict, shops: list[dict], catalog: dict,
         choice['routing_evidence']=routing_evidence(routes.get((choice['shop'],choice['sku'])),saving,quality)
         if choice['risk_policy']:
             choice['routing_evidence']['purchase_risk_policy']=choice['risk_policy']
+        choice['mature_outcomes']=buyer_cohort.for_choice(cohort_cache or {},choice,order,saved_baseline)
+        if choice['mature_outcomes']:
+            choice['routing_evidence']['mature_6h']=choice['mature_outcomes']
     # Compact model input while preserving different shops and SKUs when possible.
-    found.sort(key=lambda c: (c['routing_evidence']['estimated_saved_per_attempt'], c['price_guidance'].get(
+    found.sort(key=lambda c: (not c.get('mature_outcomes',{}).get('historical_below_current',False),c['routing_evidence']['estimated_saved_per_attempt'], c['price_guidance'].get(
                                   'saved_if_usable_at_reference', c['score_evidence']['saved_if_usable_at_cap']) or 0,
                               -c['routing_evidence']['smoothed_attempt_seconds'],c["paid"] - c["refusals"],c["reviews"]["average"] or 3), reverse=True)
     for index,choice in enumerate(found):
@@ -130,16 +134,22 @@ def candidates(order: dict, shops: list[dict], catalog: dict,
 
 def shortlist(found: list[dict]) -> list[dict]:
     """The existing model-policy shortlist; exploration bypasses this ranking cut."""
-    selected = []
-    per_shop = {}
+    selected=[];per_shop={};seen=set()
+    def add(choice):
+        key=(choice['url'],choice.get('sku',choice.get('id')))
+        if key in seen or per_shop.get(choice['url'],0)>=2:return False
+        selected.append(choice);seen.add(key);per_shop[choice['url']]=per_shop.get(choice['url'],0)+1
+        return True
+    preferred=[c for c in found if c.get('mature_outcomes',{}).get('preference')=='positive']
+    preferred.sort(key=lambda c:(c['mature_outcomes'].get('selection_estimate',0),c['mature_outcomes']['n']),reverse=True)
+    for choice in preferred:
+        add(choice)
+        if len(selected)>=4:break
     for choice in found:
-        if per_shop.get(choice["url"], 0) >= 2:
-            continue
-        selected.append(choice)
-        per_shop[choice["url"]] = per_shop.get(choice["url"], 0) + 1
-        if len(selected) == 16:
-            break
+        add(choice)
+        if len(selected)>=16:break
     return selected
+
 
 
 def selection_price_guidance(guidance):
@@ -189,6 +199,12 @@ def selection_route(evidence):
     policy=(evidence or {}).get('purchase_risk_policy')
     if policy:result['purchase_risk_policy']={k:policy[k] for k in (
         'required_warranty_hours','risk_adjusted_usable_saved_estimate','current_official_saved_reference')}
+    mature=(evidence or {}).get('mature_6h')
+    if mature:
+        result['mature_6h']=buyer_cohort.compact(mature)
+        if quality:
+            result['post_sale_breakage']={key:{k:v for k,v in row.items() if k in ('broken','refunded','mature_paid')}
+                for key,row in quality.items() if isinstance(row,dict)}
     return result
 
 
@@ -204,7 +220,7 @@ def choose(candidates_: list[dict], order: dict, *, forced_candidate_id: str | N
         candidates_=[c for c in candidates_ if c['id']==forced_candidate_id]
     if not candidates_:
         raise ValueError('no candidate is available for this selection')
-    audit.begin('buyer_selection',policy_version='buyer-saved-v7')
+    audit.begin('buyer_selection',policy_version='buyer-saved-v8')
     displayed = [{**{key: row[key] for key in ("id", "list_price",
                                               "cap", "stock")},
                   'shop':text(row['shop'],80),'sku':text(row['sku'],80),
@@ -259,6 +275,12 @@ def choose(candidates_: list[dict], order: dict, *, forced_candidate_id: str | N
         'risk_price_terms are operator stress bounds on conditional private-cost scenarios: compare the cheaper '
         'no-cover price with the >=6h-cover price; do not exceed either applicable branch. The .80 target and '
         '.05 cushion are policy hypotheses, not official score thresholds. An impossible branch requires another candidate.')
+    prompt['objective'] += (' mature_6h groups unique own settlements only after6h+5m, matching shop/SKU and exact food horizon. '
+        'unrefunded and refunded losses are observed -1 and0. net_lower/net_upper bound historical deal contributions; '
+        'net_scenario uses estimated private cost and is NOT official realized Saved. Sparse/unknown outcomes earn no priority. '
+        'Compare the actual current price/grade/cover with median_paid and cover_share; historical success does not certify current stock. '
+        'Do not subtract the same failures twice: the cohort net values already contain those losses. '
+        'Up to4 empirically promising candidates are included alongside ordinary alternatives; you still choose.')
     commercial_objective = prompt['objective']
     if forum_context and (forum_context.get('posts') or forum_context.get('reference_prices')):
         prompt['public_forum_memory']=forum_context
@@ -294,6 +316,7 @@ def choose(candidates_: list[dict], order: dict, *, forced_candidate_id: str | N
         displayed.pop()
     if telemetry is not None:
         telemetry['model_displayed_candidate_ids']=[c['id'] for c in displayed]
+        telemetry['mature_displayed_candidate_ids']=[c['id'] for c in displayed if (c.get('routing_evidence') or {}).get('mature_6h')]
         telemetry['public_forum_context_bytes']=size(forum_context) if forum_context else 0
     trace('buyer_context_compacted',candidate_count=len(displayed),prompt_bytes=size(prompt),
           memory_source='name-keyed facts and bounded cases')
@@ -379,7 +402,13 @@ def _run(order: dict, shops: list[dict], catalog: dict, own_shop_name: str, *,
         saved_baseline={**saved_baseline,'official_score_status':'behind_local_paid_evidence'}
         record('buyer_official_score_stale',order=order.get('order'),
                official_deals=saved_baseline['deals'],local_paid_ledgers=len(confirmed))
-    available = candidates(order, shops, catalog, own_shop_name, full_pool=True, saved_baseline=saved_baseline,history=history)
+    cohort_cache=buyer_cohort.load(Path.cwd())
+    available = candidates(order, shops, catalog, own_shop_name, full_pool=True, saved_baseline=saved_baseline,history=history,cohort_cache=cohort_cache)
+    record('buyer_cohort_used',order=order.get('order'),cache_generated_at=cohort_cache.get('generated_at'),
+           as_of=cohort_cache.get('as_of'),groups=len(cohort_cache.get('groups',[])),
+           matched_candidates=sum(bool(c.get('mature_outcomes')) for c in available),
+           preferred_candidates=sum(c.get('mature_outcomes',{}).get('preference')=='positive' for c in available),
+           weak_historical_candidates=sum(c.get('mature_outcomes',{}).get('historical_below_current',False) for c in available))
     if not available:
         record("no_candidate", order=order.get("order"), item=order.get("item"))
         return {"shop": "", "receipt": None, "stars": 3,
@@ -420,9 +449,10 @@ def _run(order: dict, shops: list[dict], catalog: dict, own_shop_name: str, *,
            saved_if_usable_at_cap=chosen['score_evidence']['saved_if_usable_at_cap'],
            candidate_id=chosen['id'],shop_name=chosen['shop'],shop=chosen['url'],sku=chosen['sku'],
            opening_offer=first_offer,price_guidance=chosen.get('price_guidance'),
-           routing_evidence=chosen.get('routing_evidence'),routing_policy='buyer-routing-v6',
+           routing_evidence=chosen.get('routing_evidence'),routing_policy='buyer-routing-v7',
            note='A selected or signed receipt is not a paid purchase. Uniform exploration may pick a familiar candidate.')
-    fallback = next((c for c in available if c["url"] != chosen["url"]), None)
+    fallback_pool=[c for c in available if c.get('mature_outcomes',{}).get('preference')=='positive']+available
+    fallback = next((c for c in fallback_pool if c["url"] != chosen["url"]), None)
     attempts = [(chosen, first_offer)]
     if fallback:
         guidance = fallback.get('price_guidance') or {}
@@ -468,6 +498,7 @@ def _run(order: dict, shops: list[dict], catalog: dict, own_shop_name: str, *,
             negotiation_memory={**choice['first_hand'], 'price_guidance':choice.get('price_guidance'),
                                 'post_sale_risk':risk_policy,
                                  'purchase_value_terms':choice.get('value_terms') or {},
+                                 'mature_outcomes':choice.get('mature_outcomes') or {},
                                 'known_refused_units':buyer_checkout_memory.refused_unit_ids(choice,order,history)}
             try:
                 negotiation_memory['public_forum']=buyer_forum_memory.retrieve([choice['sku']],budget=2400)

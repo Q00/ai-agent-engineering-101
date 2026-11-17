@@ -75,3 +75,46 @@ class CohortTests(unittest.TestCase):
    self.assertFalse(any(x['event']=='selection_opportunities' for x in default))
    context=next(x for x in extended if x['event']=='selection_opportunities')
    self.assertEqual(context['use_within_hours'],72);self.assertNotIn('eligible_candidates',context)
+
+
+class SelectionIntegrationTests(unittest.TestCase):
+ def row(self,i,**kw):
+  return {'id':str(i),'shop':f'S{i}','url':f'https://S{i}','sku':'G','stock':1,'list_price':1000,'cap':750,
+   'name':'Goods','first_hand':{},'reviews':{'count':0,'average':None,'low_rating_count':0,'examples':[]},
+   'score_evidence':{'saved_if_usable_at_cap':.8},'price_guidance':{},'routing_evidence':{},**kw}
+ def test_promising_mature_candidates_are_visible_without_deleting_ordinary_pool(self):
+  from market_buyer_r3 import shortlist
+  rows=[self.row(i) for i in range(20)]
+  for row in rows[-4:]:row['mature_outcomes']={'preference':'positive','selection_estimate':.85,'n':10}
+  selected=shortlist(rows)
+  self.assertEqual(len(selected),16);self.assertEqual({r['id'] for r in selected[:4]},{str(i) for i in range(16,20)})
+  self.assertTrue(any(int(r['id'])<16 for r in selected));self.assertEqual(len(rows),20)
+ def test_real_candidate_builder_uses_cohort_after_all_existing_checkout_guards(self):
+  import tempfile,os,time
+  from unittest.mock import patch
+  from market_buyer_r3 import candidates
+  now=time.time();rows=[{'event':'settled','ledger':i,'order':str(i),'sku':'G','shop_name':'S','at':now-7*3600,'price':500,'grade':'A','value':1000} for i in range(1,7)]
+  cache=c.build(PreparedHistory(rows),{'G':{'kind':'goods','name':'Goods','list_price':1000}},[],now=now,coverage={'trusted':True,'since':0,'as_of':now})
+  shops=[{'name':'S','url':'https://new','offers':[{'sku':'G','qty':1}]},{'name':'Other','url':'https://other','offers':[{'sku':'G','qty':1}]}]
+  order={'order':'new','kind':'goods','acceptable':['G'],'budget':1000}
+  with tempfile.TemporaryDirectory() as d:
+   previous=Path.cwd();os.chdir(d)
+   try:found=candidates(order,shops,{'G':{'kind':'goods','name':'Goods','list_price':1000}},'own',history=PreparedHistory(rows),cohort_cache=cache,full_pool=True,saved_baseline={'saved':.7,'observed_at':now})
+   finally:os.chdir(previous)
+  own=next(x for x in found if x['shop']=='S');self.assertEqual(own['mature_outcomes']['preference'],'positive');self.assertEqual(own['mature_outcomes']['n'],6)
+  self.assertIn('mature_6h',own['routing_evidence']);self.assertEqual(len(found),2)
+ def test_sixteen_mature_candidates_fit_and_model_sees_realized_vs_estimated_fields(self):
+  from market_buyer_r3 import choose
+  from unittest.mock import patch
+  rows=[]
+  for i in range(16):
+   mature={'n':12,'unrefunded':1,'refunded':1,'unknown':0,'net_lower':.5,'net_upper':.75,'net_scenario':.7,'median_paid':600,'cover_share':.5,'use_within_hours':None}
+   route={'estimated_saved_per_attempt':.7,'post_sale_breakage':{'same_shop_sku':{'paid':100,'mature_paid':80,'early_broken':0,'broken':1,'refunded':0,'unrefunded_within_6h':1}},'mature_6h':mature}
+   rows.append(self.row(i,mature_outcomes=mature,routing_evidence=route))
+  with patch('market_buyer_r3.decide_json',return_value={'candidate_id':'0','opening_offer':600,'reason':'mature outcomes'}) as model:
+   telemetry={};choose(rows,{'kind':'goods','item':'Goods'},telemetry=telemetry)
+  prompt=model.call_args.args[1];self.assertEqual(len(prompt['candidate_shop_skus']),16)
+  e=prompt['candidate_shop_skus'][0]['routing_evidence']['mature_6h'];self.assertEqual(e['net_scenario'],.7);self.assertEqual(e['net_lower'],.5)
+  self.assertEqual(len(telemetry['mature_displayed_candidate_ids']),16)
+ def test_malformed_cohort_does_not_block_a_candidate(self):
+  self.assertEqual(c.for_choice({'groups':[{'broken':'row'}]},self.row(1),{'kind':'goods'}),{})
