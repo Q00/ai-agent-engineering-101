@@ -1,0 +1,55 @@
+[DF] discovered shop-00: Furniture Shop 00
+[DF] discovered shop-01: Furniture Shop 01
+[DF] discovered shop-02: Furniture Shop 02
+[DF] discovered shop-03: Furniture Shop 03
+[DF] discovered shop-04: Furniture Shop 04
+[DF] discovered shop-05: Furniture Shop 05
+[DF] discovered shop-06: Furniture Shop 06
+[DF] discovered shop-07: Furniture Shop 07
+[DF] discovered shop-08: Furniture Shop 08
+[DF] discovered shop-09: Furniture Shop 09
+[DF] discovered shop-10: Furniture Shop 10
+[DF] discovered shop-11: Furniture Shop 11
+[DF] discovered shop-12: Furniture Shop 12
+[DF] discovered shop-13: Furniture Shop 13
+[DF] discovered shop-14: Furniture Shop 14
+[DF] discovered shop-15: Furniture Shop 15
+[DF] discovered shop-16: Furniture Shop 16
+[DF] discovered shop-17: Furniture Shop 17
+[DF] discovered shop-18: Furniture Shop 18
+[DF] discovered shop-19: Furniture Shop 19
+[DF shortlist] item=lamp skill=specialist-lamp candidates=['shop-00', 'shop-03', 'shop-06', 'shop-09', 'shop-12', 'shop-15', 'shop-18']
+[harness] model=qwen3:4b-instruct action=select price=None
+[DF decision] item=lamp selected=shop-00
+[DF shortlist] item=chair skill=specialist-chair candidates=['shop-01', 'shop-04', 'shop-07', 'shop-10', 'shop-13', 'shop-16', 'shop-19']
+[harness] model=qwen3:4b-instruct action=select price=None
+[DF decision] item=chair selected=shop-01
+[DF shortlist] item=bookshelf skill=specialist-bookshelf candidates=['shop-02', 'shop-05', 'shop-08', 'shop-11', 'shop-14', 'shop-17']
+[harness] model=qwen3:4b-instruct action=select price=None
+[DF decision] item=bookshelf selected=shop-02
+[buyer] card='Furniture Shop 02' url=http://127.0.0.1:65188/ item=bookshelf budget=300
+[a2a send] text='I want to buy a bookshelf' taskId=- version=1.0
+[buyer] card='Furniture Shop 00' url=http://127.0.0.1:65186/ item=lamp budget=130
+[a2a send] text='I want to buy a lamp' taskId=- version=1.0
+[buyer] card='Furniture Shop 01' url=http://127.0.0.1:65187/ item=chair budget=220
+[a2a send] text='I want to buy a chair' taskId=- version=1.0
+[a2a recv] taskId=cac7ab59-a720-4526-a205-c94892ba8054 state=TASK_STATE_INPUT_REQUIRED text='bookshelf: asking price 270'
+[a2a recv] taskId=3ec551d0-3848-4b80-b6cf-ee3483a714d9 state=TASK_STATE_INPUT_REQUIRED text='lamp: asking price 110'
+[a2a recv] taskId=e3748e2d-a15a-4fdf-b860-189d4e34c505 state=TASK_STATE_INPUT_REQUIRED text='chair: asking price 191'
+[harness] model=qwen3:4b-instruct action=accept price=None
+[a2a send] text='270' taskId=cac7ab59-a720-4526-a205-c94892ba8054 version=1.0
+[harness] model=qwen3:4b-instruct action=accept price=None
+[a2a send] text='110' taskId=3ec551d0-3848-4b80-b6cf-ee3483a714d9 version=1.0
+[harness] model=qwen3:4b-instruct action=accept price=None
+[a2a send] text='191' taskId=e3748e2d-a15a-4fdf-b860-189d4e34c505 version=1.0
+[a2a recv] taskId=cac7ab59-a720-4526-a205-c94892ba8054 state=TASK_STATE_COMPLETED text='Deal accepted. Receipt price 270'
+[buyer deal] item=bookshelf price=270 budget=300 taskId=cac7ab59-a720-4526-a205-c94892ba8054
+[STATE] {"shop": "shop-02", "item": "bookshelf", "taskId": "cac7ab59-a720-4526-a205-c94892ba8054", "history": [{"seller_ask": 270, "offer": 270}], "outcome": "deal", "price": 270}
+[a2a recv] taskId=3ec551d0-3848-4b80-b6cf-ee3483a714d9 state=TASK_STATE_COMPLETED text='Deal accepted. Receipt price 110'
+[buyer deal] item=lamp price=110 budget=130 taskId=3ec551d0-3848-4b80-b6cf-ee3483a714d9
+[STATE] {"shop": "shop-00", "item": "lamp", "taskId": "3ec551d0-3848-4b80-b6cf-ee3483a714d9", "history": [{"seller_ask": 110, "offer": 110}], "outcome": "deal", "price": 110}
+[a2a recv] taskId=e3748e2d-a15a-4fdf-b860-189d4e34c505 state=TASK_STATE_COMPLETED text='Deal accepted. Receipt price 191'
+[buyer deal] item=chair price=191 budget=220 taskId=e3748e2d-a15a-4fdf-b860-189d4e34c505
+[STATE] {"shop": "shop-01", "item": "chair", "taskId": "e3748e2d-a15a-4fdf-b860-189d4e34c505", "history": [{"seller_ask": 191, "offer": 191}], "outcome": "deal", "price": 191}
+[LEDGER] {"bookshelf": {"shop": "shop-02", "price": 270}, "lamp": {"shop": "shop-00", "price": 110}, "chair": {"shop": "shop-01", "price": 191}}
+[TOTAL] bought=3/3 spent=571 budget=650 distinct_shops=3 passed=True

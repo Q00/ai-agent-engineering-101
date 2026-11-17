@@ -1,0 +1,132 @@
+# week-06 trade test, kit v1, 2026-10-14T08:07:52+00:00
+harness: Custom Python OpenAI-compatible decision loop; local Ollama qwen3:4b-instruct (temperature 0.2)
+
+## seller tests: python seller.py --port 59063
+  PASS  seller_card #1: name='Week06 Furniture Market' binding=JSONRPC version=1.0 skills=1
+
+### seller_deal #1: lamp, kit budget 120, reserve 100
+    -> SendMessage "I want to buy a lamp"
+    <- TASK_STATE_INPUT_REQUIRED | lamp: asking price 115
+    -> SendMessage "115" taskId=b3c1ea68
+    <- TASK_STATE_COMPLETED | Deal accepted. Receipt price 115
+       artifact receipt [{"item": "lamp", "price": 115.0, "seller": "Week06 Furniture Market"}]
+  PASS  seller_opens #1: first message -> TASK_STATE_INPUT_REQUIRED, ask 115
+  PASS  seller_deal #1: TASK_STATE_COMPLETED, receipt price 115.0, asks [115]
+
+### seller_terminal: one more message to the finished task
+    -> SendMessage "110" taskId=b3c1ea68
+    <- error -32004 Task b3c1ea68-eac1-40d4-957a-a3b09836ed94 is in terminal state: TASK_STATE_COMPLETED
+  PASS  seller_terminal #1: error returned
+
+### seller_deal #2: lamp, kit budget 120, reserve 100
+    -> SendMessage "I want to buy a lamp"
+    <- TASK_STATE_INPUT_REQUIRED | lamp: asking price 115
+    -> SendMessage "115" taskId=cbaf5f12
+    <- TASK_STATE_COMPLETED | Deal accepted. Receipt price 115
+       artifact receipt [{"item": "lamp", "price": 115.0, "seller": "Week06 Furniture Market"}]
+  PASS  seller_deal #2: TASK_STATE_COMPLETED, receipt price 115.0, asks [115]
+
+### seller_deal #3: lamp, kit budget 120, reserve 100
+    -> SendMessage "I want to buy a lamp"
+    <- TASK_STATE_INPUT_REQUIRED | lamp: asking price 115
+    -> SendMessage "115" taskId=2a4982d5
+    <- TASK_STATE_COMPLETED | Deal accepted. Receipt price 115
+       artifact receipt [{"item": "lamp", "price": 115.0, "seller": "Week06 Furniture Market"}]
+  PASS  seller_deal #3: TASK_STATE_COMPLETED, receipt price 115.0, asks [115]
+
+### seller_holds_reserve #1: bookshelf, kit budget 230, reserve 260
+    -> SendMessage "I want to buy a bookshelf"
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking price 275
+    -> SendMessage "140" taskId=7217005c
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer asking price 260
+    -> SendMessage "170" taskId=7217005c
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer asking price 260
+    -> SendMessage "200" taskId=7217005c
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer asking price 260
+    -> SendMessage "230" taskId=7217005c
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer asking price 260
+    -> SendMessage "230" taskId=7217005c
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer asking price 260
+    -> SendMessage "230" taskId=7217005c
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer asking price 260
+    -> SendMessage "230" taskId=7217005c
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer asking price 260
+    -> SendMessage "230" taskId=7217005c
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer asking price 260
+  PASS  seller_holds_reserve #1: TASK_STATE_INPUT_REQUIRED, asks [275, 260, 260, 260, 260, 260, 260, 260, 260]
+
+### seller_holds_reserve #2: bookshelf, kit budget 230, reserve 260
+    -> SendMessage "I want to buy a bookshelf"
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking price 275
+    -> SendMessage "140" taskId=5245d7c5
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer asking price 260
+    -> SendMessage "170" taskId=5245d7c5
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer asking price 260
+    -> SendMessage "200" taskId=5245d7c5
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer asking price 260
+    -> SendMessage "230" taskId=5245d7c5
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer asking price 260
+    -> SendMessage "230" taskId=5245d7c5
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer asking price 260
+    -> SendMessage "230" taskId=5245d7c5
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer asking price 260
+    -> SendMessage "230" taskId=5245d7c5
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer asking price 260
+    -> SendMessage "230" taskId=5245d7c5
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer asking price 260
+  PASS  seller_holds_reserve #2: TASK_STATE_INPUT_REQUIRED, asks [275, 260, 260, 260, 260, 260, 260, 260, 260]
+
+### seller_holds_reserve #3: bookshelf, kit budget 230, reserve 260
+    -> SendMessage "I want to buy a bookshelf"
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking price 275
+    -> SendMessage "140" taskId=6e4d8dd5
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer asking price 260
+    -> SendMessage "170" taskId=6e4d8dd5
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer asking price 260
+    -> SendMessage "200" taskId=6e4d8dd5
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer asking price 260
+    -> SendMessage "230" taskId=6e4d8dd5
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer asking price 260
+    -> SendMessage "230" taskId=6e4d8dd5
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer asking price 260
+    -> SendMessage "230" taskId=6e4d8dd5
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer asking price 260
+    -> SendMessage "230" taskId=6e4d8dd5
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer asking price 260
+    -> SendMessage "230" taskId=6e4d8dd5
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer asking price 260
+  PASS  seller_holds_reserve #3: TASK_STATE_INPUT_REQUIRED, asks [275, 260, 260, 260, 260, 260, 260, 260, 260]
+
+## buyer tests: your buyer against the kit's rule-based seller
+
+### buyer_deal #1: python buyer.py --url http://127.0.0.1:62691 --item lamp --budget 120
+    kit seller saw: offers [120], deals [120], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+  PASS  buyer_deal #1: deals [120] (budget 120)
+  PASS  buyer_protocol_deal #1: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1
+
+### buyer_deal #2: python buyer.py --url http://127.0.0.1:62711 --item lamp --budget 120
+    kit seller saw: offers [120], deals [120], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+  PASS  buyer_deal #2: deals [120] (budget 120)
+  PASS  buyer_protocol_deal #2: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1
+
+### buyer_deal #3: python buyer.py --url http://127.0.0.1:62728 --item lamp --budget 120
+    kit seller saw: offers [120], deals [120], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+  PASS  buyer_deal #3: deals [120] (budget 120)
+  PASS  buyer_protocol_deal #3: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1
+
+### buyer_holds_budget #1: python buyer.py --url http://127.0.0.1:62747 --item bookshelf --budget 230
+    kit seller saw: offers [230, 230, 230, 230, 230], deals [], canceled 0, continued 5, posts without A2A-Version 1.0: 0
+  PASS  buyer_holds_budget #1: deals [] (budget 230 < reserve 260)
+  PASS  buyer_protocol_holds_budget #1: posts 6, without A2A-Version 1.0 0, follow-ups with taskId 5
+
+### buyer_holds_budget #2: python buyer.py --url http://127.0.0.1:62800 --item bookshelf --budget 230
+    kit seller saw: offers [230, 230, 230, 230, 230], deals [], canceled 0, continued 5, posts without A2A-Version 1.0: 0
+  PASS  buyer_holds_budget #2: deals [] (budget 230 < reserve 260)
+  PASS  buyer_protocol_holds_budget #2: posts 6, without A2A-Version 1.0 0, follow-ups with taskId 5
+
+### buyer_holds_budget #3: python buyer.py --url http://127.0.0.1:62854 --item bookshelf --budget 230
+    kit seller saw: offers [230, 230, 230, 230, 230], deals [], canceled 0, continued 5, posts without A2A-Version 1.0: 0
+  PASS  buyer_holds_budget #3: deals [] (budget 230 < reserve 260)
+  PASS  buyer_protocol_holds_budget #3: posts 6, without A2A-Version 1.0 0, follow-ups with taskId 5
+
+21/21 passed -> PASS
