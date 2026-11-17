@@ -1,0 +1,17 @@
+Soft Ground: 285 items, port 45351, chatty=False
+[seller 6a2fa258] <- 'a rug about 140 by 200 cm'
+[seller 91f8f8ff] <- 'a dimmable desk lamp'
+[seller 91f8f8ff] call 2 (7.3s) -> '{"categories": ["desk lamp"], "materials": [], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": null, "size": null, "features": ["dimmable"], "keywords": ["desk", "lamp", "dimmable", "led", "task lighting"]}'
+[seller 91f8f8ff] query {"categories": ["desk lamp"], "materials": [], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": null, "size": null, "features": ["dimmable"], "keywords": ["desk", "lamp", "dimmable", "led", "task lighting"]} -> 8 candidates
+[seller 6a2fa258] call 3 (7.5s) -> '{"categories": ["rug"], "materials": [], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": null, "size": "140x200", "features": [], "keywords": ["area rug", "140 x 200 cm", "140x200"]}'
+[seller 6a2fa258] query {"categories": ["rug"], "materials": [], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": null, "size": "140x200", "features": [], "keywords": ["area rug", "140 x 200 cm", "140x200"]} -> 8 candidates
+[seller 91f8f8ff] call 4 (8.1s) -> '{"sku": "DES-01114", "price": 49, "say": "Our Industrial Plastic Desk Lamp is dimmable and comes in white, and I can offer it at list price."}'
+[seller 91f8f8ff] -> item DES-01114 (search+pick), reserve 37, open ask 49
+[seller 6a2fa258] call 4 (8.0s) -> '{"sku": "RUG-09097", "price": 150, "say": "Yes, we have a 140 by 200 cm rug, the Nordic Synthetic Rug G20 in oak beige, which is machine washable."}'
+[seller 6a2fa258] -> item RUG-09097 (search+pick), reserve 112, open ask 150
+[seller 91f8f8ff] <- '28'
+[seller 91f8f8ff] call 5 (4.9s) -> '{"buyer_offer": 28, "action": "counter", "price": 40, "say": "Our price for this lamp is a bit higher than that, but we can meet you partway at this new figure."}'
+[seller 91f8f8ff] -> counter 40
+[seller 91f8f8ff] <- '40.0'
+[seller 91f8f8ff] call 6 (4.5s) -> '{"buyer_offer": 40, "action": "accept", "price": 40, "say": "Deal, we\'ll sell you the lamp at your offer."}'
+[deal] Soft Ground | DES-01114 | 40 | task 91f8f8ff-0ca5-4b84-9e53-f469205862df

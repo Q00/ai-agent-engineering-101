@@ -1,0 +1,36 @@
+Book Nook: 296 items, port 49341, chatty=False
+[seller 6460dbba] <- 'a wooden bookshelf for about 60 books'
+[seller fbe1db0a] <- 'a rug about 140 by 200 cm'
+[seller 6460dbba] call 2 (7.4s) -> '{"categories": ["bookshelf"], "materials": ["wood"], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": 60, "size": null, "features": [], "keywords": ["wooden", "bookcase", "shelving", "book storage"]}'
+[seller 6460dbba] query {"categories": ["bookshelf"], "materials": ["wood"], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": 60, "size": null, "features": [], "keywords": ["wooden", "bookcase", "shelving", "book storage"]} -> 8 candidates
+[seller fbe1db0a] call 3 (7.7s) -> '{"categories": ["rug"], "materials": [], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": null, "size": "140x200", "features": [], "keywords": ["area rug"]}'
+[seller fbe1db0a] query {"categories": ["rug"], "materials": [], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": null, "size": "140x200", "features": [], "keywords": ["area rug"]} -> 8 candidates
+[seller 6460dbba] call 4 (6.1s) -> '{"sku": "BOO-00092", "price": 210, "say": "This white pine shelf holds about sixty books and is a solid wooden piece that fits your space."}'
+[seller 6460dbba] -> item BOO-00092 (search+pick), reserve 142, open ask 210
+[seller fbe1db0a] call 4 (8.3s) -> '{"sku": "RUG-09097", "price": 136, "say": "The Nordic Synthetic Rug G20 is a 140x200 cm machine-washable rug in oak beige, and I can offer it at list price."}'
+[seller fbe1db0a] -> item RUG-09097 (search+pick), reserve 102, open ask 136
+[seller 6460dbba] <- '130'
+[seller fbe1db0a] <- '80'
+[seller 6460dbba] call 6 (5.2s) -> '{"buyer_offer": 130, "action": "counter", "price": 170, "say": "Thanks for your offer; I can come down meaningfully from my asking price, but 130 is below what I can accept, so here is a revised figure for this well-made pine bookshelf."}'
+[seller 6460dbba] -> counter 170
+[seller fbe1db0a] call 6 (5.9s) -> '{"buyer_offer": 80, "action": "counter", "price": 115, "say": "That\'s below what this rug is worth to us, but we can meet you partway on price."}'
+[seller fbe1db0a] -> counter 115
+[seller 6460dbba] <- '145'
+[seller fbe1db0a] <- '90'
+[seller 6460dbba] call 8 (4.8s) -> '{"buyer_offer": 145, "action": "accept", "price": 145, "say": "Thanks, that works for us, and we\'ll get the Industrial Pine Bookshelf B23 ready for you."}'
+[deal] Book Nook | BOO-00092 | 145 | task 6460dbba-db11-4c17-a0a3-b83da04e4e2a
+[seller fbe1db0a] call 8 (7.4s) -> '{"buyer_offer": 90, "action": "counter", "price": 104, "say": "I can come down a fair bit from my last price, and this is about as low as I can go on this rug."}'
+[seller fbe1db0a] -> counter 104
+[seller fbe1db0a] <- '96'
+[seller fbe1db0a] call 9 (5.8s) -> '{"buyer_offer": 96, "action": "counter", "price": 102, "say": "We\'re close, and this is the lowest I can go on the rug, so I can meet you at this price today."}'
+[seller fbe1db0a] -> counter 102
+[seller fbe1db0a] <- '99'
+[seller fbe1db0a] call 10 (6.9s) -> '{"buyer_offer": 99, "action": "counter", "price": 102, "say": "We\'re close, and this is as low as I can go on this rug, so let\'s settle at this price."}'
+[seller fbe1db0a] -> counter 102
+[seller fbe1db0a] <- '100'
+[seller fbe1db0a] call 11 (6.1s) -> '{"buyer_offer": 100, "action": "counter", "price": 101, "say": "I can\'t go quite that low, but I\'m willing to meet you closer to close this deal today."}'
+[guard] ask 101 below reserve 102 -> 102
+[seller fbe1db0a] -> counter 102
+[seller fbe1db0a] <- '100'
+[seller fbe1db0a] call 12 (6.0s) -> '{"buyer_offer": 100, "action": "counter", "price": 102, "say": "We\'re very close, but 102 is the lowest I can go on this rug, and I can hold that price for you."}'
+[seller fbe1db0a] -> counter 102
