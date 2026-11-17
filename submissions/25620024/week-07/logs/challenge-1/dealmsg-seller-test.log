@@ -1,0 +1,91 @@
+# seller tests only (market_test_week07.py, kit v1); market_buyer not written yet
+harness: OpenRouter free models via the chat-completions API, temperature 0, JSON answer: minimax/minimax-m3.1-flash:free first, then google/gemma-4-26b-a4b-it:free, google/gemma-4-31b-it:free (a busy or missing model is skipped at once); HARNESS=claude switches back to claude -p --model haiku (week 06)
+
+## seller tests: python seller.py --port 53770
+  PASS  seller_card #1: name="dragonash's GRAND SALE - TEN-TEN CHANCE" binding=JSONRPC version=1.0 skills=1
+
+### seller_deal #1: lamp, kit budget 120, reserve 100
+    -> SendMessage "I want to buy a lamp"
+    <- TASK_STATE_INPUT_REQUIRED | dragonash's token-saver shop: one message closes the deal. Offer our ask, or a lower quote you got elsewhere (we match down to our floor). Signed receipt, so th
+    -> SendMessage "104" taskId=fd0e1b62
+    <- TASK_STATE_COMPLETED | Deal: lamp at 104. Closed in one offer. Your receipt is signed by the shop, so this deal counts. Please leave an honest review.
+       artifact receipt [{"shop": "dragonash", "task": "fd0e1b62-dc02-4f50-b975-91b77e5e547f", "price": 104.0, "item": "lamp", "sig_seller": "qOgQwWlzjLXUo/+pIGUuEeWgCXNWCcGKUtsfRp7qk7GHOFqFbbiU0DKU9bxjeNUG8MrzGenfZKc2dwD10RXaDA=="}]
+  PASS  seller_opens #1: first message -> TASK_STATE_INPUT_REQUIRED, ask 104
+  PASS  seller_deal #1: TASK_STATE_COMPLETED, receipt price 104.0, asks [104]
+  PASS  seller_signed_receipt #1: sig_seller verifies with shop_key.pem
+
+### seller_terminal: one more message to the finished task
+    -> SendMessage "110" taskId=fd0e1b62
+    <- error -32004 Task fd0e1b62-dc02-4f50-b975-91b77e5e547f is in terminal state: TASK_STATE_COMPLETED
+  PASS  seller_terminal #1: error returned
+
+### seller_deal #2: lamp, kit budget 120, reserve 100
+    -> SendMessage "I want to buy a lamp"
+    <- TASK_STATE_INPUT_REQUIRED | dragonash's token-saver shop: one message closes the deal. Offer our ask, or a lower quote you got elsewhere (we match down to our floor). Signed receipt, so th
+    -> SendMessage "104" taskId=0b1b9bfc
+    <- TASK_STATE_COMPLETED | Deal: lamp at 104. Closed in one offer. Your receipt is signed by the shop, so this deal counts. Please leave an honest review.
+       artifact receipt [{"shop": "dragonash", "task": "0b1b9bfc-8e04-4017-bd7e-a3632a1c5e99", "price": 104.0, "item": "lamp", "sig_seller": "Ujr+9jqFMIx0o2Fdq7cerdZrGh1T/sUTh/qUsqTCIN9sj2ZL2F7dSZ9I8lDjg7Jhin5M6II3lpr6x/Zi5pm6AQ=="}]
+  PASS  seller_deal #2: TASK_STATE_COMPLETED, receipt price 104.0, asks [104]
+  PASS  seller_signed_receipt #2: sig_seller verifies with shop_key.pem
+
+### seller_deal #3: lamp, kit budget 120, reserve 100
+    -> SendMessage "I want to buy a lamp"
+    <- TASK_STATE_INPUT_REQUIRED | dragonash's token-saver shop: one message closes the deal. Offer our ask, or a lower quote you got elsewhere (we match down to our floor). Signed receipt, so th
+    -> SendMessage "104" taskId=b599b4af
+    <- TASK_STATE_COMPLETED | Deal: lamp at 104. Closed in one offer. Your receipt is signed by the shop, so this deal counts. Please leave an honest review.
+       artifact receipt [{"shop": "dragonash", "task": "b599b4af-709a-4651-9ecd-37802d74c6c1", "price": 104.0, "item": "lamp", "sig_seller": "9MhqZ4doI88Th3Dynj/smizDKfSqU1yS9WJTZ5alE/9zzWFbGpRs4cfF+ZLA7Sc59Un+uGsVu0tLJx4YCkk1Dw=="}]
+  PASS  seller_deal #3: TASK_STATE_COMPLETED, receipt price 104.0, asks [104]
+  PASS  seller_signed_receipt #3: sig_seller verifies with shop_key.pem
+
+### seller_holds_reserve #1: bookshelf, kit budget 230, reserve 260
+    -> SendMessage "I want to buy a bookshelf"
+    <- TASK_STATE_INPUT_REQUIRED | dragonash's token-saver shop: one message closes the deal. Offer our ask, or a lower quote you got elsewhere (we match down to our floor). Signed receipt, so th
+    -> SendMessage "140" taskId=c8a2e1d1
+    <- TASK_STATE_INPUT_REQUIRED | 140 is too low. Counteroffer: 260.
+    -> SendMessage "170" taskId=c8a2e1d1
+    <- TASK_STATE_INPUT_REQUIRED | 170 is too low. Counteroffer: 260.
+    -> SendMessage "200" taskId=c8a2e1d1
+    <- TASK_STATE_INPUT_REQUIRED | 200 is too low. Counteroffer: 260.
+    -> SendMessage "230" taskId=c8a2e1d1
+    <- TASK_STATE_INPUT_REQUIRED | 230 is too low. Counteroffer: 260.
+    -> SendMessage "230" taskId=c8a2e1d1
+    <- TASK_STATE_INPUT_REQUIRED | 230 is too low. Counteroffer: 260.
+    -> SendMessage "230" taskId=c8a2e1d1
+    <- TASK_STATE_REJECTED | No deal for the bookshelf at that price.
+  PASS  seller_holds_reserve #1: TASK_STATE_REJECTED, asks [260, 260, 260, 260, 260, 260]
+
+### seller_holds_reserve #2: bookshelf, kit budget 230, reserve 260
+    -> SendMessage "I want to buy a bookshelf"
+    <- TASK_STATE_INPUT_REQUIRED | dragonash's token-saver shop: one message closes the deal. Offer our ask, or a lower quote you got elsewhere (we match down to our floor). Signed receipt, so th
+    -> SendMessage "140" taskId=95b400f9
+    <- TASK_STATE_INPUT_REQUIRED | 140 is too low. Counteroffer: 260.
+    -> SendMessage "170" taskId=95b400f9
+    <- TASK_STATE_INPUT_REQUIRED | 170 is too low. Counteroffer: 260.
+    -> SendMessage "200" taskId=95b400f9
+    <- TASK_STATE_INPUT_REQUIRED | 200 is too low. Counteroffer: 260.
+    -> SendMessage "230" taskId=95b400f9
+    <- TASK_STATE_INPUT_REQUIRED | 230 is too low. Counteroffer: 260.
+    -> SendMessage "230" taskId=95b400f9
+    <- TASK_STATE_INPUT_REQUIRED | 230 is too low. Counteroffer: 260.
+    -> SendMessage "230" taskId=95b400f9
+    <- TASK_STATE_REJECTED | No deal for the bookshelf at that price.
+  PASS  seller_holds_reserve #2: TASK_STATE_REJECTED, asks [260, 260, 260, 260, 260, 260]
+
+### seller_holds_reserve #3: bookshelf, kit budget 230, reserve 260
+    -> SendMessage "I want to buy a bookshelf"
+    <- TASK_STATE_INPUT_REQUIRED | dragonash's token-saver shop: one message closes the deal. Offer our ask, or a lower quote you got elsewhere (we match down to our floor). Signed receipt, so th
+    -> SendMessage "140" taskId=91f7ab4a
+    <- TASK_STATE_INPUT_REQUIRED | 140 is too low. Counteroffer: 260.
+    -> SendMessage "170" taskId=91f7ab4a
+    <- TASK_STATE_INPUT_REQUIRED | 170 is too low. Counteroffer: 260.
+    -> SendMessage "200" taskId=91f7ab4a
+    <- TASK_STATE_INPUT_REQUIRED | 200 is too low. Counteroffer: 260.
+    -> SendMessage "230" taskId=91f7ab4a
+    <- TASK_STATE_INPUT_REQUIRED | 230 is too low. Counteroffer: 260.
+    -> SendMessage "230" taskId=91f7ab4a
+    <- TASK_STATE_INPUT_REQUIRED | 230 is too low. Counteroffer: 260.
+    -> SendMessage "230" taskId=91f7ab4a
+    <- TASK_STATE_REJECTED | No deal for the bookshelf at that price.
+  PASS  seller_holds_reserve #3: TASK_STATE_REJECTED, asks [260, 260, 260, 260, 260, 260]
+
+12/12 seller checks passed
