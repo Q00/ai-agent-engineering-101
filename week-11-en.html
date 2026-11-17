@@ -284,7 +284,7 @@ footer .o{color:var(--muted)}
       <table>
         <tr><th>Part</th><th>Content</th></tr>
         <tr><td class="stage">PART 1</td><td>Ten weeks on one map, the parts of an agent</td></tr>
-        <tr><td class="stage">PART 2</td><td>Round 3 in numbers, patch notes, the last week, closing and the midterm</td></tr>
+        <tr><td class="stage">PART 2</td><td>Round 3 in numbers, patch notes, the last week, closing and the midterm, the CSAT and the proxy</td></tr>
         <tr><td class="stage">PART 3</td><td>The market's entities, one agent and one card, customers, the flow of money</td></tr>
         <tr><td class="stage">PART 4</td><td>An agent that starts with no tools, the mini app, Round 4 ranking and schedule</td></tr>
         <tr><td class="stage">LAB</td><td>Wrapping up Round 3</td></tr>
@@ -535,6 +535,36 @@ footer .o{color:var(--muted)}
   </div>
 </section>
 
+<!-- ============ NEWS ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">NEWS</span><h2>The CSAT and the proxy</h2></div>
+    <p>Korea's 2027 college entrance exam, the CSAT (수능), is on Thursday, November 19. Two days before it, the top scorer of the 63rd certified tax accountant exam confessed to cheating with generative AI, and exam measures poured out. He scored 397.5 out of 400 in the first round. He photographed the questions with a tiny camera, sent them to an AI and read the answers on a smartphone; neither the two proctors nor the checks after the exam caught him.</p>
+    <p>On November 17 the government announced checks of every test taker's glasses and watch, stickers on clothing buttons, and about 8,400 more proctors. Getting caught bars a test taker for 10 years. The science ministry will work with global big tech to trace AI use after the exam, but said blocking AI from solving questions in Korea during the exam is technically hard. CSAT instructors called for postponing the exam, and one asked AI services not to answer photos of exam papers during exam hours.</p>
+    <p>Speed at getting answers right is no longer a human matter. A Hong Kong University of Science and Technology team took a third-year undergraduate final with smart glasses linked to GPT-5.2: 0.8 seconds per answer, 92.5 points. Seoul National University professor Ha Min-su said a structure that leans on one multiple-choice paper exam is especially weak against AI, and that assessment should move toward the process of solving.</p>
+    <p>A CSAT score is a number that stands in for three years of study: a proxy. While score and skill move together, the score is enough. Once a camera and a model can produce the score in 0.8 seconds, the score moves apart from the skill, and the exam can only add proctors or change what it measures. The economist Goodhart first pointed this out for monetary indicators in 1975, and the anthropologist Strathern put it in 1997 as "When a measure becomes a target, it ceases to be a good measure."</p>
+    <p>Our market went down the same road. Receipts in Round 0 stood in for deals, and shops printed receipts. The Round 3 score was a proxy mixing Book, revenue, stars, Saved and forum rating; each time the agents read the weights and moved, a patch changed the calculation. The top shop's Book being mostly the cost of unsold stock is the same thing.</p>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>What was measured</th><th>Proxy</th><th>How it broke</th><th>What replaced it</th></tr>
+        <tr><td class="stage">Round 0</td><td>Receipts</td><td>100 of 102 receipts had no order</td><td>Signatures checked against orders (Round 2)</td></tr>
+        <tr><td class="stage">Round 2</td><td>Signed receipts</td><td>Budgets read off the public ledger, asks just under them</td><td>Hidden budgets, payment (Round 3)</td></tr>
+        <tr><td class="stage">Round 3</td><td>ALL score (weighted sum)</td><td>Moves that read the weights; Book piled up as stock</td><td>Credits alone (Round 4)</td></tr>
+        <tr><td class="stage">CSAT</td><td>Exam score</td><td>Camera, generative AI, earpiece</td><td>More proctors, tracing afterwards, talk of process-based assessment</td></tr>
+      </table>
+    </div>
+    <p>The Round 4 grade being credits alone is the end of this line. Credits are money that customers and other agents actually paid, and payments between agents stay on chain. What the agent built and how it used it stays as a process in <code class="inline">forge.jsonl</code> and <code class="inline">react.jsonl</code>.</p>
+    <div class="open">
+      <div class="lbl">DISCUSS</div>
+      <ol>
+        <li>Are credits also a number standing in for something? If so, for what, and how could an agent break it?</li>
+        <li>With a model that solves a CSAT question in 0.8 seconds, what assessment should remain for people? Do this course's assignments pass that bar?</li>
+        <li>The request that AI not answer exam photos during exam hours: which Round 3 patch does it resemble?</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
 <div class="col">
   <div class="part">
     <div class="lbl">PART 3</div>
@@ -749,7 +779,7 @@ git add submissions/&lt;student-id&gt;/week-08
 git commit -m "week-08 &lt;student-id&gt;"
 git push origin week-08
 # open a PR to Q00/ai-agent-engineering-101, title: [week-08] &lt;student-id&gt;</pre></div>
-        <p>The PR must be opened before Monday, November 23, 23:59. Change nothing outside <code class="inline">submissions/&lt;student-id&gt;/</code>.</p>
+        <p>The PR must be opened before Monday, November 23, 23:59. If you already opened a PR, you have submitted; until the deadline you may push more commits to the same PR to add the final Round 3 results. Change nothing outside <code class="inline">submissions/&lt;student-id&gt;/</code>.</p>
       </div>
     </div>
   </div>
@@ -762,6 +792,8 @@ git push origin week-08
     <ul class="readings">
       <li><span class="badge req">Required</span><b class="lead">Agent Market, ROUND4.md</b><span class="why">Entity cards, forge_tool, the agent's endpoint, customers, the mini app, fees. <a href="https://github.com/Q00/agent-market/blob/main/market/ROUND4.md">github.com/Q00/agent-market</a></span></li>
       <li><span class="badge req">Required</span><b class="lead">A2A Protocol Specification v1.0</b><span class="why">Agent Card, SendMessage, task: the parts from week 6, now from the market's side. <a href="https://a2a-protocol.org/v1.0.0/specification/">a2a-protocol.org/v1.0.0/specification</a></span></li>
+      <li><span class="badge opt">Optional</span><b class="lead">Strathern, "Improving ratings: audit in the British University system" (1997)</b><span class="why">"When a measure becomes a target, it ceases to be a good measure": the source of the line that sums up Goodhart (1975). <a href="https://doi.org/10.1002/(SICI)1234-981X(199707)5:3%3C305::AID-EURO184%3E3.0.CO;2-4">European Review 5(3)</a></span></li>
+      <li><span class="badge opt">Optional</span><b class="lead">Yonhap, science ministry on AI cheating in the CSAT (2026-11-17, Korean)</b><span class="why">Blocking AI solving during the exam is hard; the answer is tracing afterwards with big tech. <a href="https://www.yna.co.kr/view/AKR20261117124100017">yna.co.kr</a></span></li>
       <li><span class="badge opt">Optional</span><b class="lead">Park et al., "Generative Agents: Interactive Simulacra of Human Behavior" (2023)</b><span class="why">LLM characters that remember and come back; the model for Round 4 customers. <a href="https://arxiv.org/abs/2304.03442">arxiv.org/abs/2304.03442</a></span></li>
       <li><span class="badge opt">Optional</span><b class="lead">NVIDIA, Nemotron-Personas-Korea</b><span class="why">The Korean persona dataset Round 4 customers come from (CC BY 4.0). <a href="https://huggingface.co/datasets/nvidia/Nemotron-Personas-Korea">huggingface.co/datasets/nvidia/Nemotron-Personas-Korea</a></span></li>
       <li><span class="badge opt">Optional</span><b class="lead">MeshKit</b><span class="why">Mini apps call each other's capabilities with signed requests and receipts. <a href="https://github.com/Q00/meshkit">github.com/Q00/meshkit</a></span></li>
