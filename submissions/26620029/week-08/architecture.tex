@@ -16,7 +16,7 @@
   mem/.style={box, fill=green!10, dashed},
   mkt/.style={box, fill=gray!12},
   layer/.style={draw, rounded corners=4pt, inner sep=8pt},
-  lbl/.style={font=\sffamily\bfseries\footnotesize, anchor=north west},
+  lbl/.style={font=\sffamily\bfseries\footnotesize, anchor=south west, inner sep=2pt},
   flow/.style={->, thick},
   note/.style={font=\sffamily\scriptsize, align=center},
 ]
@@ -40,23 +40,23 @@
 \node[code, below right=10mm and 6mm of kit] (buyer) {\texttt{market\_buyer.py}\\ \scriptsize shop score from reviews + memory,\\ \scriptsize budget cap in code};
 \node[code, right=6mm of buyer] (forumpy) {\texttt{forum.py}, \texttt{promo.py}\\ \scriptsize post only with ledger refs;\\ \scriptsize half of SKUs as control};
 
-\node[llm, below=8mm of buyer] (haiku) {\texttt{claude -p --model haiku}\\ \scriptsize buyer offers, post wording\\ \scriptsize (shop wording off)};
+\node[llm, below=8mm of buyer] (haiku) {\texttt{claude -p -{}-model haiku}\\ \scriptsize buyer offers, post wording\\ \scriptsize (shop wording off)};
 
 \node[mem, below=8mm of restock] (mems) {JSON memory\\ \scriptsize \texttt{restock\_memory}, \texttt{buyer\_memory},\\ \scriptsize \texttt{forum\_memory}, \texttt{promo\_memory}};
-\node[mem, right=6mm of mems] (logs) {\texttt{logs/market-kit.log}\\ \scriptsize settle / refuse lines};
+\node[mem, below=40mm of kit] (logs) {\texttt{logs/market-kit.log}\\ \scriptsize settle / refuse lines};
 
 \begin{scope}[on background layer]
-  \node[layer, fill=blue!2, fit=(kit)(restock)(forumpy)(haiku)(mems)] (K) {};
+  \node[layer, fill=blue!2, fit=(kit)(restock)(forumpy)(haiku)(mems)(logs)] (K) {};
 \end{scope}
 \node[lbl] at (K.north west) {GCP VM, Docker \texttt{market-kit} (restart: unless-stopped); keys in /srv/market/secrets, outside git};
 
 % ---------------- meta-harness (bottom) ----------------
-\node[llm, below=16mm of mems, xshift=30mm, minimum width=50mm] (cc) {Claude Code (Opus) meta-harness\\ \scriptsize hourly cron; one change per run; goal: student percentile};
-\node[code, left=6mm of cc] (mon) {\texttt{monitor.py}, \texttt{trend.py}\\ \scriptsize ranks, sales, breaks, stock vs top SKUs};
-\node[mem, right=6mm of cc] (rules) {\texttt{MONITOR\_RULES.md} (read once, hash check)\\ \texttt{MONITOR\_JOURNAL.md} (tail 30)};
-\node[box, right=6mm of rules] (git) {git commit\\ \scriptsize logs + journal + code};
+\node[code, below=22mm of logs] (mon) {\texttt{monitor.py}, \texttt{trend.py}\\ \scriptsize ranks, sales, breaks, stock vs top SKUs};
+\node[llm, left=8mm of mon, minimum width=50mm] (cc) {Claude Code (Opus) meta-harness\\ \scriptsize hourly cron; one change per run; goal: student percentile};
+\node[mem, left=8mm of cc] (rules) {\texttt{MONITOR\_RULES.md} (read once, hash check)\\ \texttt{MONITOR\_JOURNAL.md} (tail 30)};
+\node[box, right=8mm of mon] (git) {git commit\\ \scriptsize logs + journal + code};
 \begin{scope}[on background layer]
-  \node[layer, fill=orange!4, fit=(mon)(git)] (H) {};
+  \node[layer, fill=orange!4, fit=(rules)(git)] (H) {};
 \end{scope}
 \node[lbl] at (H.north west) {META-HARNESS: context = rules + journal tail + saved reports, not raw logs};
 
@@ -65,7 +65,7 @@
 \draw[flow] (settle) -- (ledger);
 \draw[flow] (ledger.east) -- (supply.west);
 \draw[flow, <->] (kit.north east) -- node[note, right, pos=0.6]{buy lines} (supply.south west);
-\draw[flow] (forumpy.north) |- ([yshift=4mm]kit.north east) -| (forum.south);
+\draw[flow] (forumpy.north) to[out=90, in=-90] (forum.south);
 
 \draw[flow, <->] (seller.north) |- (kit.west);
 \draw[flow] (restock.north) |- node[note, above, pos=0.75]{\{"buy": [...]\}} ([yshift=-3mm]kit.west);
@@ -82,7 +82,7 @@
 \draw[flow] (logs.south) -- (mon.north);
 \draw[flow] (mon) -- (cc);
 \draw[flow, <->] (cc) -- (rules);
-\draw[flow] (rules) -- (git);
-\draw[flow, very thick, orange!70!black] (cc.north) to[bend right=25] node[note, right, pos=0.45, text=orange!50!black]{edit constants / logic\\ (restock runs fresh,\\ seller needs restart)} (seller.south);
+\draw[flow] (cc.south) -- ++(0,-5mm) -| node[note, below, pos=0.25]{commit by name, no push} (git.south);
+\draw[flow, very thick, orange!70!black] (cc.north) -- node[note, right, pos=0.35, text=orange!50!black]{edit constants / logic\\ of restock.py, seller\_r3.py\\ (restock runs fresh,\\ seller needs restart)} (seller.south);
 \end{tikzpicture}
 \end{document}
