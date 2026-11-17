@@ -10,6 +10,9 @@ A night without an answer is recorded as an alert.
     python tune.py                 summarize the last 24 h, ask the model, write .market/strategy_params.json
     python tune.py --dry-run       same, but write nothing
     python tune.py --summary-only  print the summary and stop (no model call, no tokens)
+    python tune.py --set buyer_kept_slack=-0.05 --reason "..." [--expect "..."]
+                                   a person moves a knob: validated against the same ranges and written to the same
+                                   history and lessons as the model's changes, so the next reflection sees it
 
 cron: 0 0 * * *  (KST midnight) -> logs/tune.log.  Why once a day and only parameters: the call is ~1.3k tokens
 (under 1% of an hour of bargaining) and a parameter change is explainable in one log line; a model editing code
@@ -326,7 +329,7 @@ def propose(summary):
     return proposal
 
 
-def apply(proposal, params, since, until, dry_run=False, metrics=None):
+def apply(proposal, params, since, until, dry_run=False, metrics=None, source=MODEL):
     """Validate and store the night's answer: the knobs, the reason, the day's numbers (`metrics`) and, when the model
     left one, a lesson with the number it expects to move. A night without an answer is stored as an alert."""
     changes = (proposal or {}).get("changes") or {}
@@ -337,7 +340,7 @@ def apply(proposal, params, since, until, dry_run=False, metrics=None):
     accepted = {k: v for k, v in accepted.items() if v != params.get(k)}
     merged = {**params, **accepted}
     record = {"event": "tune", "at": time.strftime("%Y-%m-%d %H:%M:%S"), "window": [since.strftime("%Y-%m-%d %H:%M"), until.strftime("%Y-%m-%d %H:%M")],
-              "model": MODEL, "changes": accepted, "rejected": rejected, "reason": reason, "params": merged,
+              "model": source, "changes": accepted, "rejected": rejected, "reason": reason, "params": merged,
               "dry_run": dry_run, "answered": proposal is not None,
               **({"lesson": lesson} if lesson else {}), **({"expect": expect} if expect else {}),
               **({"metrics": metrics} if metrics else {})}
@@ -356,7 +359,8 @@ def apply(proposal, params, since, until, dry_run=False, metrics=None):
                      state_dir, scope="model", evidence=LAST_ERROR or "no parsable answer")
         print(f"[alert] the nightly reflection got no answer ({LAST_ERROR or 'no parsable answer'}); see .market/lessons.jsonl", flush=True)
     elif lesson:
-        playbook.add("reflection", lesson, state_dir, scope="strategy", expect=expect, changes=accepted or None)
+        playbook.add("reflection" if source == MODEL else source, lesson, state_dir, scope="strategy", expect=expect,
+                     changes=accepted or None)
     return merged
 
 
@@ -384,10 +388,26 @@ def main():
     ap.add_argument("--hours", type=float, default=24)
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--summary-only", action="store_true")
+    ap.add_argument("--set", action="append", default=[], metavar="NAME=VALUE", help="a person moves a knob (no model call)")
+    ap.add_argument("--reason", default="")
+    ap.add_argument("--expect", default="")
     a = ap.parse_args()
     until = datetime.now().replace(second=0, microsecond=0)
     since = until - timedelta(hours=a.hours)
     params = strategy_params.load()
+    if a.set:   # an operator's change goes through the same validation, history and lessons as the model's
+        changes = {}
+        for pair in a.set:
+            name, _, value = pair.partition("=")
+            try:
+                changes[name.strip()] = float(value)
+            except ValueError:
+                changes[name.strip()] = value
+        formula = rulebook.load(MEMORY.parent)["formula"]
+        apply({"changes": changes, "reason": a.reason, "lesson": a.reason, "expect": a.expect}, params, since, until,
+              dry_run=a.dry_run, metrics=day_metrics(buyer_rows(since, until), seller_events(since, until), formula),
+              source="operator")
+        return
     rows, events = buyer_rows(since, until), seller_events(since, until)
     try:
         reviews = pricing.reviews()

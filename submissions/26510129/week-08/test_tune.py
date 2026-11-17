@@ -112,6 +112,18 @@ class TuneTest(unittest.TestCase):
         self.assertEqual("alert", lessons[-1]["source"])
         self.assertEqual(({"fill": 0.6}, "Grade C units score least."), (history[0]["metrics"], history[0]["lesson"]))
 
+    def test_a_persons_change_is_validated_and_remembered_like_the_models(self):
+        with tempfile.TemporaryDirectory() as d, patch.dict(os.environ, {"MARKET_DIR": d}), \
+                patch.object(tune, "HISTORY", Path(d, "h.jsonl")):
+            tune.apply({"changes": {"buyer_kept_slack": -0.05, "buyer_quick_gain": 9}, "reason": "score flat", "lesson": "score flat",
+                        "expect": "score up"}, strategy_params.DEFAULTS, SINCE, UNTIL, source="operator")
+            record = json.loads(Path(d, "h.jsonl").read_text().splitlines()[0])
+            lesson = json.loads(Path(d, "lessons.jsonl").read_text().splitlines()[-1])
+            self.assertEqual(-0.05, strategy_params.load()["buyer_kept_slack"])
+        self.assertEqual(("operator", {"buyer_kept_slack": -0.05}, {"buyer_quick_gain": "outside 0.05-0.25"}),
+                         (record["model"], record["changes"], record["rejected"]))
+        self.assertEqual(("operator", "score up"), (lesson["source"], lesson["expect"]))
+
     def test_no_answer_keeps_the_params(self):
         with tempfile.TemporaryDirectory() as d, patch.dict(os.environ, {"MARKET_DIR": d}), \
                 patch.object(tune, "HISTORY", Path(d, "h.jsonl")):
