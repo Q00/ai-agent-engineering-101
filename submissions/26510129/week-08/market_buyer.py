@@ -396,7 +396,7 @@ def negotiate(url, item, budget, reference, record="", request=None, value_cap=N
             t = named
             info["ask"] = ask0 = first_ask(t, value_cap)
     grade, hours_left = unit_grade(t), unit_hours_left(t)
-    info["grade"] = grade
+    info["grade"], info["hours_left"] = grade, hours_left
     unfit = None
     if grade and grades and grade not in grades:   # 02:47: a 377,000 grade C unit was negotiated, then refused at checkout
         unfit = f"grade {grade} unit; the order accepts {'/'.join(grades)}"
@@ -819,6 +819,11 @@ def main():
                     # for every visit, not only for the deals the market later certifies
                     "unit_grade": info.get("grade"), "pay_cap": info.get("pay_cap"), "kept_est": info.get("kept_est"),
                     "probe": probing or None,
+                    # what a food order needed against what the product can last and what the shop said was left:
+                    # 493 payments since 11-12 were refused for shelf life (198 of them on 540 h orders), and the
+                    # rows did not hold what is needed to learn which of those visits were worth making
+                    "need_h": food_need, "shelf_h": catalog.get(wanted, {}).get("shelf_hours") if food_need else None,
+                    "hours_left": info.get("hours_left"),
                     **{k: info.get(k) for k in ("ask", "first_offer", "last_offer", "guard_decisions", "checkout_authorized")}})
         save_memory(mem)
         bargained += outcome in ("closed", "walked_away") and not no_offer
