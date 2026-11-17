@@ -1,0 +1,152 @@
+% nocha12 (26622007), Round 3: the shop and the buyer, what the kit does and what this folder adds.
+% Build: tectonic architecture.tex   (or pdflatex architecture.tex)
+\documentclass[tikz,border=8pt]{standalone}
+\usetikzlibrary{positioning,arrows.meta,calc}
+\begin{document}
+\begin{tikzpicture}[font=\footnotesize, x=1cm, y=1cm,
+  box/.style={draw,rounded corners=2pt,align=left,inner sep=4pt,anchor=north},
+  ext/.style={box,fill=green!10,align=center},
+  kit/.style={box,fill=gray!15},
+  mine/.style={box,fill=blue!10,thick},
+  ctx/.style={box,fill=yellow!18,dashed},
+  tool/.style={box,fill=teal!10},
+  meta/.style={box,fill=red!8,thick,draw=red!60!black},
+  lim/.style={box,fill=black!80,text=white,thick},
+  llm/.style={box,fill=orange!18,align=center},
+  a/.style={-{Stealth},thick},
+  d/.style={-{Stealth},dashed},
+  m/.style={-{Stealth},thick,draw=red!60!black},
+  lbl/.style={font=\scriptsize,fill=white,inner sep=1pt}]
+
+% ---------- row 1: market ----------
+\node[ext] (market) at (0,0)
+  {\textbf{market.ourolabs.ai} \; (Trusted Surface, Credential Provider, Network)\\
+   orders + open mandates to the buyer only \;|\; \texttt{/api/settle} checks the mandate chain \;|\; public ledger \;|\; forum \;|\; board};
+
+% ---------- row 2: kit ----------
+\node[kit] (kitb) at (-5.2,-2.0)
+  {\textbf{kit v4, buyer side}\\
+   reads the shop's \texttt{acp.json}, opens a checkout,\\
+   signs the closed Checkout + Payment mandates,\\
+   checks my \texttt{accept} before it pays;\\
+   a refusal and its reason $\rightarrow$ \texttt{.market/payments.jsonl}\\
+   \emph{patched: names the market check that failed}};
+\node[kit] (kits) at (5.2,-2.0)
+  {\textbf{kit v4, shop side}\\
+   serves \texttt{acp.json} + checkout, signs \texttt{checkout\_jwt},\\
+   sends the mandates to \texttt{/api/settle},\\
+   calls my restock hook every 60\,s, posts \texttt{outbox.jsonl}\\
+   \emph{patched: buyer refusal at checkout, cash re-read before}\\
+   \emph{each supply buy, paced supply (20 lines), 180\,s unpaid hold,}\\
+   \emph{seller restart over 3\,GB only after a drain}};
+
+% ---------- row 3: my agents ----------
+\node[mine] (mb) at (-9.3,-5.2)
+  {\textbf{market\_buyer.py}\\
+   Luna picks the shop,\\
+   citing its tool calls\\
+   code: SKU that fits, budget,\\
+   never over list price,\\
+   receipt check, \texttt{accept}:\\
+   food: cert. + hours left\\
+   goods: warranty (+ grade)};
+\node[mine] (sl) at (-3.6,-5.2)
+  {\textbf{seller.py} (A2A)\\
+   Luna answers the talk\\
+   code: never under the\\
+   unit's floor; real grade,\\
+   certificate, warranty\\
+   \texttt{acp\_gate.py}: refuses\\
+   listed / 1-star buyers};
+\node[mine] (rs) at (1.4,-5.2)
+  {\textbf{restock.py}\\
+   formula proposal from\\
+   \texttt{market\_model.py}\\
+   (ledger demand per SKU)\\
+   then a Luna decision\\
+   \texttt{guard()} on every line};
+\node[mine] (fo) at (5.9,-5.2)
+  {\textbf{forum.py}\\
+   Luna writes a post\\
+   and votes\\
+   forum text is data,\\
+   not orders};
+\node[box,fill=white] (pj) at (9.6,-5.2)
+  {\texttt{pricing.json}\\
+   settings every\\
+   part reads};
+
+% ---------- row 4: harness ----------
+\node[llm] (h) at (0,-8.6)
+  {\textbf{harness.py} \;\; \texttt{openai/gpt-6-luna} on OpenRouter, OpenAI endpoint only, strict \texttt{json\_schema}, effort low (buyer offers: none)\\
+   \textbf{agent\_loop.py} \;\; a decision may call tools first and must cite the calls it used; uncited answers go back $\rightarrow$ \texttt{decisions.jsonl}};
+
+% ---------- row 5: context + tools ----------
+\node[ctx] (ctx) at (-5.0,-10.3)
+  {\textbf{context (memory)}\\
+   \texttt{agent\_memory.py}: MEMORY.md (long term), daily notes,\\
+   \quad strategies/ (lessons with triggers)\\
+   \quad \texttt{select()}: only the matching lines, 2{,}500 chars\\
+   \quad (forum decisions 1{,}500)\\
+   \texttt{shop\_memory.py}, buyer memory by SKU and shop\\
+   \texttt{decision\_memory.py}: asked / sold / left / thrown away\\
+   \texttt{profit\_cohorts.py}, \texttt{scorecard.py}: paid-sale cohorts};
+\node[tool] (tools) at (5.0,-10.3)
+  {\textbf{tools/\textless name\textgreater/} \; manifest.json + tool.py (18 now)\\
+   ledger\_search, my\_state, my\_customers, cohort\_profit,\\
+   \quad market\_opportunity, supply\_audit, forum\_read, \dots\\
+   \texttt{agent\_tools.py}: sandbox-exec, no network, no keys,\\
+   \quad writes to a fresh folder only; failing tools dropped\\
+   \texttt{tool\_forge.py}: every 6\,h Luna writes \texttt{auto\_*} tools\\
+   \quad for repeated work; selftest before first use};
+
+% ---------- row 6: meta ----------
+\node[meta] (mh) at (-2.2,-14.0)
+  {\textbf{meta\_harness.py} \; (ran 11/03 21:05 -- 11/11 20:27)\\
+   \textbf{Terra} (\texttt{gpt-6.1-terra}), every hour: settings, memory, broken tools\\
+   \textbf{Astra} (\texttt{gpt-6-astra}), every 12\,h: strategy, new tools, grades Terra\\
+   scorecard $\rightarrow$ change $\rightarrow$ citations + tests $\rightarrow$ commit $\rightarrow$ 10 min watch\\
+   a failed change is committed, then reverted (kept in history)};
+\node[lim] (hl) at (6.6,-14.0)
+  {\textbf{hard\_limits.py} \; (only a person edits it)\\
+   no buy may take cash under the\\
+   \quad bankruptcy line + refunds still owed\\
+   bounded falls in \texttt{pricing.json}\\
+   the tool sandbox rules};
+
+% ---------- arrows ----------
+\draw[a] (market.south -| kitb.north) -- node[lbl,right]{order, open mandates} (kitb.north);
+\draw[a] (kits.north) -- node[lbl,right]{mandates $\rightarrow$ settle} (market.south -| kits.north);
+
+\draw[a] (kitb.south -| mb.north) -- node[lbl,left]{order, shops} (mb.north);
+\draw[a] ($(mb.north)+(0.9,0)$) -- node[lbl,right]{\texttt{accept}} (kitb.south -| {$(mb.north)+(0.9,0)$});
+\draw[a] ($(kits.south)+(-3.5,0)$) -- node[lbl,above,sloped]{starts, tunnel} (sl.north east);
+\draw[a] (kits.south -| rs.north) -- node[lbl,left]{state} (rs.north);
+\draw[a] (kits.south -| fo.north) -- node[lbl,right]{outbox} (fo.north);
+\draw[a] ($(mb.east)+(0,0.5)$) -- ++(0.55,0) node[lbl,right,align=left,font=\tiny]{other\\shops};
+\draw[a] ($(sl.west)+(-0.55,-0.5)$) node[lbl,left,align=right,font=\tiny]{other\\buyers} -- ($(sl.west)+(0,-0.5)$);
+
+\draw[a] (mb.south) |- (h.west);
+\foreach \n in {sl,rs,fo} \draw[a] (\n.south) -- (\n.south |- h.north);
+
+\draw[a] (h.south -| ctx.north) -- node[lbl,right]{\texttt{select()}} (ctx.north);
+\draw[a] (h.south -| tools.north) -- node[lbl,right]{tool calls} (tools.north);
+\draw[d] (tools.west) -- node[lbl,above]{read} (tools.west -| ctx.east);
+\draw[d] (pj.south) |- node[lbl,pos=0.3,right]{read} (h.east);
+
+\draw[m] (mh.west) -| ($(ctx.west)+(-0.5,0)$) node[lbl,pos=0.75,left,text=red!60!black]{edits} -- (ctx.west);
+\draw[m] ($(mh.north)+(3.2,0)$) |- ($(tools.south)+(-2.5,-0.6)$) -- node[lbl,right,text=red!60!black]{repairs, removes} ($(tools.south)+(-2.5,0)$);
+\draw[m] ($(mh.north)+(1.0,0)$) -- ++(0,0.45) -- ++(12.4,0) node[lbl,pos=0.6,above,text=red!60!black]{settings} |- (pj.east);
+\draw[a] (hl.west) -- node[lbl,above]{rejects} (hl.west -| mh.east);
+
+% ---------- legend ----------
+\node[font=\scriptsize,align=left,anchor=north west] at (-10.6,-16.6)
+  {\tikz\node[kit,anchor=center,inner sep=2pt]{kit};\ course kit (\emph{italics}: my patches in \texttt{scripts/market\_kit.py}) \qquad
+   \tikz\node[mine,anchor=center,inner sep=2pt]{agent};\ my agents \qquad
+   \tikz\node[ctx,anchor=center,inner sep=2pt]{context};\ context \qquad
+   \tikz\node[tool,anchor=center,inner sep=2pt]{tools};\ tools \qquad
+   \tikz\node[meta,anchor=center,inner sep=2pt]{meta};\ meta-harness (red arrows: what it changes) \qquad
+   \tikz\node[lim,anchor=center,inner sep=2pt]{limits};\ fixed by a person\\[2pt]
+   kit default (\texttt{seller\_r3.py}, no restock hook): random restock, never sells under cost, no quality talk, no warranty, no memory, no tools};
+\end{tikzpicture}
+\end{document}
