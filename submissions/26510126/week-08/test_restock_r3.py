@@ -299,6 +299,14 @@ with contextlib.redirect_stdout(out):
     restock_r3.main()
 q = {b["sku"]: b["qty"] for b in json.loads(out.getvalue().splitlines()[-1])["buy"]}
 case("a 200,000 SKU at half of DEAR_HOT (120) is held 4 deep, not 2", q.get("SM", 0) == 4, q)
+# the 100-300k band settled 201 units an hour and we sold 0.8: a 200,000 SKU at a quarter of DEAR_HOT (60) is held 4 deep too, not 2
+(md / "restock_state.json").write_text(json.dumps({"after": 1, "seen": [], "t": time.time() - 30, "score": {}, "sku_score": {"SM": 60, "SC": 53}}),
+                                       encoding="utf-8")
+out = io.StringIO()
+with contextlib.redirect_stdout(out):
+    restock_r3.main()
+q = {b["sku"]: b["qty"] for b in json.loads(out.getvalue().splitlines()[-1])["buy"]}
+case("a 200,000 SKU at a quarter of DEAR_HOT (60) is held 4 deep, not 2", q.get("SM", 0) == 4, q)
 restock_r3.strategy = real
 # goods listed 100-150k are held at 2 units like the 150-300k band (6 h: 100-300k sold 1.0 an hour, 46 h of stock)
 cat6 = {"SL": {"category": "G>low", "kind": "goods", "list_price": 120000, "name": "low"}}
