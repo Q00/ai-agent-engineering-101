@@ -409,7 +409,7 @@ def rivals_above():
 
 AVOID_MARGIN = 0.12          # (unused since 11-11 12:50) classmates within this much of our class total
 RATED_RIVALS = {"25620027"}   # 11-16: shops whose food we buy to rate them (review.py RIVAL_RATING)
-USER_BANNED = {"seochanit"}  # user 11-11: do not trade with seochanit
+USER_BANNED = {"seochanit", "25620027"}  # user 11-11: do not trade with seochanit; 11-17: 25620027 (SungJinho) catches our book: every unit we buy there is margin on its book
 AVOID_BAD_GAP = 0.02         # a shop|kind where we realized v < m* - this over 24 h (n >= 10) is avoided
 
 
