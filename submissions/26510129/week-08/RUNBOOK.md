@@ -43,6 +43,7 @@ kill $(cat ~/Desktop/han/agent-market/kit.pid)      # 멈추기
 ## 매일 확인
 
 - `ps -p $(cat ~/Desktop/han/agent-market/kit.pid)`, `tail ~/Desktop/han/agent-market/join.log`
+- `python status.py` — 한 화면: 지금 쓰는 점수식, 내 누적 점수, 메모리 크기, 오늘의 체결률과 점수, 조절값, 마지막 변경, 경보.
 - `tail -2 logs/tune.log` — 자정 반성의 `[strategy] {"event": "tune", ...}` 한 줄. `changes`가 비어 있으면 그날은 변경 없음, `answered: false`면 모델이 답하지 않은 밤이다.
 - `grep '"source": "alert"' .market/lessons.jsonl | tail -3` — 경보. 모델 호출 실패(6시간에 한 번), 답 없는 반성. 11-15 21:48에 구독 로그인이 만료된 것을 이틀 동안 아무도 몰랐다. 로그인이 끊겼으면 `claude auth login`(무인 실행용은 `claude setup-token`).
 - `python3 -c "import json;p=json.load(open('.market/profiles.json'));print(p['formula'],p['saved'],p['hot_rows'],p['archived_rows'])"` — 지금 쓰는 점수식, 내 누적 점수, 최근 48시간 줄 수, 보관된 줄 수.

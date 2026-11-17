@@ -83,7 +83,8 @@ review(정산마다), 그리고 cron이 자정에 부르는 `tune.py`. 아래는
 | `seller_r3.py`, `seller_guard.py` | 가격 계획, 영수증 서명 | **서명 키** |
 | `forum_post.py` | ledger 번호를 단 시세 글 | |
 | `tune.py`, `playbook.py`, `strategy_params.py` | 야간 반성, 교훈, 조절값(운영자 변경도 같은 경로: `tune.py --set`) | 조절값(범위 안) |
-| `harness.py` | 모델을 부르는 유일한 곳 | |
+| `harness.py` | 모델을 부르는 유일한 곳. 실패한 호출은 경보로 남긴다 | |
+| `status.py` | 운영자용 한 화면: 지금 쓰는 점수식, 누적 점수, 메모리 크기, 오늘의 체결률, 조절값, 경보 | 없음(읽기만) |
 
 buyer의 주문 한 건(그림의 가운데 줄):
 
