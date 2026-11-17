@@ -1,4 +1,4 @@
-\documentclass[9pt]{article}
+\documentclass[10pt]{article}
 \usepackage[a4paper,landscape,margin=10mm]{geometry}
 \usepackage{fontspec}
 \setmainfont{DejaVu Sans}
@@ -30,7 +30,7 @@
 \draw[teal,line width=1.2pt] (.25,17.05)--(27.3,17.05);
 \node[box,fill=softblue,text width=23.6cm,minimum height=1.3cm] (market) at (13.8,15.85)
  {\textbf{ROUND 3 MARKET / KIT v4} \quad Signed ACP checkout \(\to\) AP2 mandates \(\to\) verified settlement\\
-  \scriptsize 5,629 real SKUs \(\cdot\) private buyer budget \(\cdot\) inventory and demand streams \(\cdot\) reputation forum \(\cdot\) settlement ledger};
+  \scriptsize Catalog SKUs \(\cdot\) private buyer budget \(\cdot\) inventory and demand streams \(\cdot\) reputation forum \(\cdot\) settlement ledger};
 \node[box,fill=softgray,text width=7.5cm,minimum height=2.5cm] (context) at (4.85,12.65)
  {\textbf{CONTEXT \& PERSISTENT MEMORY}\\
  \scriptsize \texttt{inventory.json}, \texttt{catalog.json}, \texttt{demand.json},\\
@@ -55,7 +55,7 @@
 \draw[data] (market.south east) ++(-3,0) |- node[label,right]{kit hooks} (tools.north);
 \node[box,fill=softgold,text width=11cm,minimum height=2.2cm] (seller) at (7.1,9.0)
  {\textbf{SELLER: demand-informed stock and guarded negotiation}\\
- \scriptsize Weighted demand \(\to\) diversified one-unit restock \(\to\) stocked SKU\\
+ \scriptsize Weighted demand \(\to\) limited one-unit restock \(\to\) stocked SKU\\
  \scriptsize Unit cost + risk buffer \(\to\) bounded price \(\to\) signed A2A receipt};
 \node[box,fill=softmint,text width=11cm,minimum height=2.2cm] (buyer) at (20.5,9.0)
  {\textbf{BUYER: reputation, SKU match and negotiation}\\
