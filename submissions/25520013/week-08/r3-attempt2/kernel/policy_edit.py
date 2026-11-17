@@ -8,17 +8,22 @@ file under a2/policy_bak/ and swaps the new one in with one rename. Attempt 1's 
 bytes change; its restock hook reads it on every run. Each edit writes one trajectory row of kind "policy_edit".
 """
 
+import contextlib
 import copy
+import fcntl
+import functools
 import importlib.util
 import json
 import math
 import os
 import shutil
 import tempfile
+import threading
 
 from kernel import common as c
 
 POLICY = "policy.json"
+LOCK = "policy.json.lock"  # other tools on the box take the same lock file
 BAK_DIR = os.path.join("a2", "policy_bak")
 # key -> (lowest, highest, unused): the third number was the largest change in one edit and limits nothing since 11-11
 # (strategy belongs to the operator); the policy file's own "bounds" apply as well
@@ -106,6 +111,41 @@ WHERE = {
 
 def path(root):
     return os.path.join(root, POLICY)
+
+
+_HELD = threading.local()  # this thread's depth inside write_lock, so a writer called under another does not lock again
+
+
+@contextlib.contextmanager
+def write_lock(root):
+    """Exclusive fcntl.flock on <root>/policy.json.lock held across a read-modify-write of policy.json, so two writers
+    (two operator processes, the kernel tick) do not write over each other. Re-entrant within one thread."""
+    if getattr(_HELD, "n", 0):
+        _HELD.n += 1
+        try:
+            yield
+        finally:
+            _HELD.n -= 1
+        return
+    with open(os.path.join(root, LOCK), "a") as f:
+        fcntl.flock(f, fcntl.LOCK_EX)
+        _HELD.n = 1
+        try:
+            yield
+        finally:
+            _HELD.n = 0
+            fcntl.flock(f, fcntl.LOCK_UN)
+
+
+def _locked(fn):
+    """Run a policy.json writer (root its first argument) under write_lock."""
+
+    @functools.wraps(fn)
+    def run(root, *a, **k):
+        with write_lock(root):
+            return fn(root, *a, **k)
+
+    return run
 
 
 def attempt1_validate(root):
@@ -275,6 +315,7 @@ def recent(traj, now, hours=24):
     return [r for r in traj.since(now - hours * 3600) if r.get("kind") == "policy_edit"]
 
 
+@_locked
 def apply(root, items, traj, now, categories=(), validate=None):
     """items: [{"section", "key", "value", "reason"}] -> [{"ok", ...}] one per item; a refused item changes nothing."""
     if not isinstance(items, list):
@@ -504,6 +545,7 @@ def _prepare(root, it, now, categories):
     }
 
 
+@_locked
 def apply_many(root, items, traj, now, categories=(), validate=None, tag=None, by=None):
     """Write any number of operator edits as one change: every item gets the checks of an edit (_prepare), the items
     that pass go into one copy of policy.json, which attempt 1's validate checks once before one backup and one
@@ -558,6 +600,7 @@ def kernel_tag(now, eid=None):
     return f"{int(now)}-k{'' if eid is None else eid}-{_SEQ[0]}"
 
 
+@_locked
 def kernel_set(
     root,
     section,
@@ -709,6 +752,7 @@ def _restore_sub(pol, blk, section, base, sub, present, value, inherited=None):
     return True
 
 
+@_locked
 def kernel_restore(
     root,
     section,

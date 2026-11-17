@@ -2490,6 +2490,27 @@ def _alerts(x):
     return ["[알림]"] + out if out else []
 
 
+FLIP_H = 2  # [키 왕복]: window of policy edits
+FLIP_BYTES = 20_000_000  # trajectory tail read for it
+
+
+def _flip_flops(x):
+    """[키 왕복]: policy keys whose edited value changed direction 2+ times in the last FLIP_H hours, with the values
+    in order and the number of edits; nothing when no key did."""
+    chains = {}
+    for r in c.tail_json(os.path.join(x.root, "a2/trajectory.jsonl"), FLIP_BYTES, b'"policy_edit"'):
+        if r.get("kind") != "policy_edit" or (r.get("ts") or 0) < x.now - FLIP_H * 3600:
+            continue
+        chains.setdefault((r.get("section"), r.get("key")), [r.get("old")]).append(r.get("new"))
+    out = []
+    for (sec, key), vals in chains.items():
+        signs = [(b > a) - (b < a) for a, b in zip(vals, vals[1:]) if _is_num(a) and _is_num(b) and a != b]
+        if sum(s != t for s, t in zip(signs, signs[1:])) >= 2:
+            shown = "→".join(f"{v:g}" if _is_num(v) else str(v) for v in vals)
+            out.append(f"{_leaf(sec)} {key} {shown} ({len(vals) - 1}번 바꿈)")
+    return [f"[키 왕복] 최근 {FLIP_H}시간 방향을 2번 이상 바꾼 키: " + "; ".join(out)] if out else []
+
+
 def build_compact(root=None, now=None, last_brief_ts=None, extra=None, role=None, off=()):
     """Always-on brief (DESIGN 14.2): time, standing, score position, changes since the last wake, `extra` (caller's
     lines), net profit, shop state, alerts, then an index of the registry sections for the brief_section tool.
@@ -2515,6 +2536,7 @@ def build_compact(root=None, now=None, last_brief_ts=None, extra=None, role=None
         ("돈이 있는 곳", lambda: _money_compact(x, "묶인 돈 수익" not in off) if role != "buyer" else []),
         ("구매 시도", lambda: _buy_compact(x) if role != "shop" else []),
         ("사람이 적은 것", lambda: _human_notes(x)),
+        ("키 왕복", lambda: _flip_flops(x)),
         ("알림", lambda: _alerts(x)),
     ]
     out = []
