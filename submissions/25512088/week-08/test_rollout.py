@@ -236,6 +236,19 @@ class RolloutTests(unittest.TestCase):
    self.assertEqual((x['recent_trials'],x['recent_wins']),(2,0))
    self.assertEqual(x['probability'],.25)
   finally:m.close()
+ def test_model_penalizes_repeated_invalid_receipts_but_not_uncertain_offers(self):
+  m=Memory(self.root)
+  try:
+   for n in range(2):
+    oid=f'invalid-{n}';m.begin(dict(order=oid));m.record(oid,'shop','sku','task','offer')
+    m.record(oid,'shop','sku','task','receipt_rejected');m.state(oid,'invalid_receipt')
+   m.begin(dict(order='unknown'));m.record('unknown','shop','sku','task','offer')
+   m.state('unknown','uncertain')
+   x=m.deal_estimate('shop')
+   self.assertEqual((x['trials'],x['wins']),(2,0))
+   self.assertEqual((x['recent_trials'],x['recent_wins']),(2,0))
+   self.assertEqual(x['probability'],.25)
+  finally:m.close()
  def test_conditions_do_not_learn_unwarranted_goods(self):
   m=Memory(self.root)
   try:
