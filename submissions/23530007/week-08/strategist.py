@@ -124,6 +124,11 @@ GLOBAL = {                            # whitelisted shared parameters: role, bou
     "max_goods_price": ("shop", (200000, 6000000), 5800000),        # live 5 M since 11-13 18:01
     "max_goods_price_hot": ("shop", (300000, 6000000), 5700000),
     "sku_cover_hours": ("shop", (2, 24), 22),      # live 12 since 11-13 18:01
+    # 11-17 (G24 / stock_turnover): restock caps every line at our rate x own_cover_h less the A/B units held; the
+    # rivals' big SKUs get fresh lots of big_per_window a window within big_room_share of the window's cash room
+    "own_cover_h": ("shop", (1, 6), 1),
+    "big_per_window": ("shop", (0, 4), 1),
+    "big_room_share": ("shop", (0.0, 0.8), 0.2),
     "sku_lines": ("shop", (6, 30), 24),
     "max_goods_lines": ("shop", (6, 30), 24),
     "market_top": ("shop", (5, 30), 25),

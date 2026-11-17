@@ -99,6 +99,9 @@ def alert(items):
         log(f"alert failed: {e!r}")
 
 
+G24_OVER_M, G24_NS_C = 30.0, 60      # 11-17: fresh overstock (M) / 'no stock' on C-only SKUs per hour
+
+
 def wake(role, why):
     p = BUYER_WAKE if role == "buyer" else SHOP_WAKE
     log(f"wake {role}: {why}")
@@ -804,6 +807,31 @@ def main():
                 fires.append("G12")
     except Exception as e:
         log(f"G12 skipped: {e!r}")
+
+    # G24 stock turnover (user 11-17: 'shouldn't the periodic agents catch this?'): restock overbought for 15 h
+    # (412 M bought, 194 M sold) while 340 asks/h got 'no stock' because the most-asked SKUs were held only as
+    # grade C; nothing measured it. Wake the shop with the numbers when fresh overstock (bought in 24 h, beyond 6 h
+    # of our sales) passes G24_OVER_M or 'no stock' on SKUs held only as C passes G24_NS_C an hour
+    try:
+        import market_picture
+        tv = market_picture.stock_turnover()
+        if tv:
+            st["turnover"] = {k: tv[k] for k in ("cash_M", "overstock_bought_24h_M", "no_stock_h")}
+            ob, nsc = tv.get("overstock_bought_24h_M") or 0, (tv.get("no_stock_h") or {}).get("held_only_as_C") or 0
+            if (ob > G24_OVER_M or nsc > G24_NS_C) and cooled(st, "G24", 2 * 3600, now):
+                top = ", ".join(f"{r['sku']} {r['held']} held / {r['sales_h']}/h" for r in tv["top_overstock"][:3])
+                why24 = (f"G24 stock turnover: {ob:.0f} M bought in 24 h beyond 6 h of our sales, 'no stock' on SKUs "
+                         f"held only as grade C {nsc}/h, cash {tv['cash_M']} M (top overstock: {top}). Use the "
+                         f"stock_turnover tool; the knobs are own_cover_h, big_per_window, big_room_share")
+                wake("shop", why24)
+                if cooled(st, "G24a", 6 * 3600, now):
+                    alert([f"G24 재고 회전: 24시간 안에 산 재고 중 {ob:.0f}M이 6시간 판매분을 넘음, C등급만 있어 품절 {nsc}건/시, "
+                           f"현금 {tv['cash_M']}M → 상점 에이전트를 깨웠습니다"])
+                    fired(st, "G24a", now)
+                fired(st, "G24", now)
+                fires.append("G24")
+    except Exception as e:
+        log(f"G24 skipped: {e!r}")
 
     # G11 skip share
     ss = (sc.get("skips") or {}).get("share_of_orders_6h")

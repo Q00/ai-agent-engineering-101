@@ -269,6 +269,12 @@ def book_race():
     return strategist.book_race()
 
 
+def stock_turnover():
+    """11-17: per SKU A/B units held vs our sales per hour, fresh overstock, 'no stock' split by cause, cash."""
+    import market_picture
+    return market_picture.stock_turnover()
+
+
 def stock_feasibility():
     """Goods units whose floor (cost x floor_mult) is above the market median price: stock that will not sell."""
     import strategist
@@ -460,6 +466,7 @@ TOOLS = {
     "unpaid_closes": (unpaid_closes, "Our shop's closes that never settled (last hours), by grade and SKU.", {"hours": "number"}, []),
     "stars_accounts": (stars_accounts, "Accounts rating our shop below 5 (paid, 24 h): n, mean, mean elsewhere, claims, x, reasons.", {}, []),
     "stars_ladder": (stars_ladder, "Student shops' stars_rank ladder around us and the value of one rank.", {}, []),
+    "stock_turnover": (stock_turnover, "Stock turnover: A/B units held per SKU vs our sales per hour (hours of cover), overstock bought in 24 h beyond 6 h of sales, 'no stock' answers per hour split into SKUs held only as grade C vs not held, cash. Use it before any restock or cover move.", {}, []),
     "book_race": (book_race, "Books, our lead, 6 h slopes, closure ETA, revenue neighbours.", {}, []),
     "stock_feasibility": (stock_feasibility, "Goods units whose floor is above the market median price (will not sell), top SKUs.", {}, []),
     "live_terms": (live_terms, "The ask shares and terms the seller really uses now (regime, rep step, warranty, floors).", {}, []),

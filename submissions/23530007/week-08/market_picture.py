@@ -1456,3 +1456,69 @@ def book_causes(hours=6, now=None):
         return out
     except Exception:  # noqa: BLE001
         return {}
+
+
+def stock_turnover(hours=6, now=None):
+    """11-17 (user: 'shouldn't the periodic agents do this?'): restock overbought for 15 h (412 M bought, 194 M of it
+    sold, 2x our sales per SKU) while 340 asks/h got 'no stock', and no agent saw it: no tool measured turnover.
+    Per SKU: A/B units we hold (grade C is not sold), our sales per hour over `hours` (seller log deals), hours of
+    cover, cost held; overstock = cost of units beyond OVER_H hours of our sales; 'no stock' answers per hour over
+    2 h, split into SKUs held only as grade C and SKUs not held at all; cash. Never raises (returns {} on error)."""
+    OVER_H = 6.0
+    try:
+        now = now or time.time()
+        inv = json.loads((HERE / ".market" / "inventory.json").read_text())
+        held, cost_held, c_only = {}, {}, set()
+        allc, recent = {}, {}
+        for u in inv.get("units") or []:
+            if u.get("expires_at") and u["expires_at"] < now:
+                continue
+            allc[u["sku"]] = allc.get(u["sku"], 0) + 1
+            if u.get("kind") != "food" and (u.get("grade") or "A") == "C":
+                continue
+            held[u["sku"]] = held.get(u["sku"], 0) + 1
+            cost_held[u["sku"]] = cost_held.get(u["sku"], 0) + (u.get("cost") or 0)
+            if (u.get("supplied_at") or 0) >= now - 24 * 3600:
+                recent[u["sku"]] = recent.get(u["sku"], 0) + 1
+        c_only = {k for k in allc if k not in held}
+        sold, ns_c, ns_none = {}, 0, 0
+        with open(HERE / "seller_r3_log.jsonl", "rb") as f:
+            f.seek(0, 2)
+            f.seek(max(0, f.tell() - 40_000_000))
+            f.readline()
+            for line in f:
+                if b'"deal"' not in line and b'"no_stock"' not in line:
+                    continue
+                try:
+                    e = json.loads(line)
+                except ValueError:
+                    continue
+                t = e.get("t") or 0
+                if e.get("event") == "deal" and t >= now - hours * 3600 and e.get("sku"):
+                    sold[e["sku"]] = sold.get(e["sku"], 0) + 1
+                elif e.get("event") == "no_stock" and t >= now - 2 * 3600:
+                    k = (e.get("skus") or [None])[0]
+                    if k in c_only:
+                        ns_c += 1
+                    elif k not in held:
+                        ns_none += 1
+        rows, over, over_recent = [], 0.0, 0.0
+        for k, n in held.items():
+            r = sold.get(k, 0) / hours
+            cov = n / r if r else None
+            unit = cost_held[k] / n
+            ex = n - (r * OVER_H if r else 0)
+            if ex > 0:
+                over += ex * unit
+                over_recent += min(ex, recent.get(k, 0)) * unit     # the part bought in the last 24 h
+            rows.append({"sku": k, "held": n, "bought_24h": recent.get(k, 0), "sales_h": round(r, 2),
+                         "cover_h": round(cov, 1) if cov else None, "cost_held_M": round(cost_held[k] / 1e6, 2),
+                         "over_M": round(max(0, ex) * unit / 1e6, 2),
+                         "over_bought_24h_M": round(min(max(0, ex), recent.get(k, 0)) * unit / 1e6, 2)})
+        rows.sort(key=lambda x: (-x["over_bought_24h_M"], -x["over_M"]))
+        return {"cash_M": round((inv.get("balance") or 0) / 1e6, 1), "overstock_M": round(over / 1e6, 1),
+                "overstock_bought_24h_M": round(over_recent / 1e6, 1),
+                "over_h": OVER_H, "no_stock_h": {"held_only_as_C": round(ns_c / 2), "not_held": round(ns_none / 2)},
+                "top_overstock": rows[:10]}
+    except Exception:  # noqa: BLE001
+        return {}

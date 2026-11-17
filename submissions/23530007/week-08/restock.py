@@ -358,7 +358,7 @@ def sku_wants(catalog, have_sku, p, now, hours_left, market_sku, mkt_units=None,
         if rival_x[sku] < BIG_MIN_X or big_n >= BIG_LINES:
             continue
         held_ = sellable_.get(sku, 0) if sellable_ is not None else 0
-        qty = min(BIG_PER_WINDOW, BIG_SELLABLE_MAX - held_)
+        qty = min(int(p.get("big_per_window", BIG_PER_WINDOW)), BIG_SELLABLE_MAX - held_)
         if qty > 0:
             out.append(((False, -2, -rival_rate[sku] * (rival_x[sku] - 0.57)), v["category"], v, qty))
             big_n += 1
@@ -413,7 +413,7 @@ def sku_wants(catalog, have_sku, p, now, hours_left, market_sku, mkt_units=None,
             continue
         held_all = HELD_ALL.get(v["sku"], 0)
         r = (sold[v["sku"]] + 0.3 * asked[v["sku"]]) / p["sku_hours"]
-        cap = 2 if r == 0 and held_all == 0 else math.ceil(r * min(OWN_COVER_H, max(hours_left, 0.0))) - held_all
+        cap = 2 if r == 0 and held_all == 0 else math.ceil(r * min(float(p.get("own_cover_h", OWN_COVER_H)), max(hours_left, 0.0))) - held_all
         if min(qty, cap) > 0:
             capped.append((key, catg, v, min(qty, cap)))
     return sorted(capped, key=lambda w: w[0])[:p["sku_lines"]]
@@ -704,7 +704,7 @@ def main():
             qty = min(qty, max(1, int(OVERRIDE_LINE_COST // (v["list_price"] * COST_GUESS))))
         if _[1] == -2 and v["list_price"] >= BIG_LIST:
             # 11-17: big lots take at most half of this window's room, so the asked small lines still get cash
-            big_room = 0.5 * (cash - p["keep_cash"]) - big_spend
+            big_room = float(p.get("big_room_share", 0.5)) * (cash - p["keep_cash"]) - big_spend
             qty = min(qty, int(big_room // (v["list_price"] * COST_GUESS)))
             if qty <= 0:
                 continue
