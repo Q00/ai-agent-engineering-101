@@ -1,0 +1,272 @@
+% Round 3 architecture, one page (A4 landscape). Build: xelatex architecture.tex
+% Numbers: logs/r3/*.jsonl and the market board, read 2026-11-17 10:50 KST.
+\documentclass[10pt]{article}
+\usepackage[a4paper,landscape,margin=6mm]{geometry}
+\usepackage{fontspec}
+\setmainfont{Noto Sans CJK KR}
+\setmonofont{Noto Sans Mono CJK KR}[Scale=0.92]
+\usepackage{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{positioning,fit,arrows.meta,calc}
+\pagestyle{empty}
+
+\definecolor{mk}{HTML}{3B5B92}   % market
+\definecolor{l1}{HTML}{1F6FB2}   % milliseconds
+\definecolor{l2}{HTML}{2E8B57}   % minutes
+\definecolor{l3}{HTML}{C87A12}   % 30 min
+\definecolor{l4}{HTML}{7A3E9D}   % outer loop
+\definecolor{mem}{HTML}{555555}
+\definecolor{sc}{HTML}{B03A2E}
+\definecolor{md}{HTML}{8A6D3B}
+
+\newcommand{\cc}[1]{\texttt{#1}}
+\newcommand{\ok}{\textcolor{l2}{\textbf{채택}}}
+\newcommand{\no}{\textcolor{sc}{\textbf{롤백}}}
+
+\begin{document}
+\centering
+\begin{tikzpicture}[
+  font=\scriptsize, line width=0.5pt, >={Stealth[length=2mm]},
+  lane/.style={draw=#1, fill=#1!6, rounded corners=3pt, line width=0.9pt},
+  lanetitle/.style={font=\footnotesize\bfseries, text=#1, anchor=north west, inner sep=2pt},
+  bx/.style 2 args={draw=#1!85!black, fill=white, rounded corners=2pt, align=left, inner sep=3pt, text width=#2},
+  dp/.style={draw=l2!85!black, fill=white, rounded corners=2pt, align=center, inner sep=2pt, text width=1.75cm},
+  flow/.style={->, draw=#1, line width=0.8pt},
+  lbl/.style={font=\tiny, text=#1, fill=white, inner sep=1pt},
+  note/.style={font=\tiny, text=black!70, align=left},
+]
+
+% ================= title =================
+\node[anchor=north west, font=\large\bfseries] at (0,19.75)
+  {Ssadassa Shop · myeonggi — Round 3 에이전트 구조 (26510358)};
+\node[anchor=north west, font=\footnotesize, text=black!75] at (0,19.15)
+  {설계 원칙: \textbf{돈은 코드가, 확률은 판단 모델이, 말은 LLM이} 정한다.
+   결정은 걸리는 시간에 따라 네 층으로 나누고, 모든 판단과 실험은 \textbf{보드 점수 한 가지 단위}로 잰다.};
+
+% ================= lanes =================
+\draw[lane=l1] (4.95,15.35) rectangle (21.75,18.15);
+\node[lanetitle=l1] at (5.0,18.13) {① 밀리초 · 돈 결정 (LLM 0회, 규칙 + 숫자 하나만 학습)};
+\draw[lane=l2] (4.95,10.75) rectangle (21.75,15.15);
+\node[lanetitle=l2] at (5.0,15.13) {② 60초–10분 · 서명된 내부 A2A 조직 + 확률 판단};
+\draw[lane=l3] (4.95,6.95) rectangle (21.75,10.55);
+\node[lanetitle=l3] at (5.0,10.53) {③ 30분 · ReAct 판단 (읽기 전용 툴, 결과는 코드가 범위 제한)};
+\draw[lane=l4] (4.95,0.0) rectangle (21.75,6.75);
+\node[lanetitle=l4] at (5.0,6.73) {④ 시간–일 · 바깥 루프 (meta-harness): 커밋 = 배포 = 실험};
+
+% speed axis between market and lanes
+\draw[->, line width=1.1pt, black!40] (4.55,17.9) -- (4.55,0.3);
+\node[font=\tiny, text=black!55, fill=white, inner sep=1pt, align=center] at (4.55,18.0) {빠름};
+\node[font=\tiny, text=black!55, fill=white, inner sep=1pt, align=center] at (4.55,0.15) {느림};
+
+% ================= market (left) =================
+\draw[lane=mk] (0,0.0) rectangle (4.2,18.15);
+\node[lanetitle=mk] at (0.05,18.13) {시장 market.ourolabs.ai};
+\node[bx={mk}{3.6cm}, anchor=north west] (mkt) at (0.15,17.6) {
+  \textbf{서명·공개된 사실}\\
+  원장: 정산·공급·만료·고장\\
+  상점 목록·재고};
+\node[bx={mk}{3.6cm}, anchor=north west] (oth) at (0.15,16.45) {
+  \textbf{다른 학생 에이전트} (A2A)\\
+  그쪽 구매자 → 우리 가게\\
+  우리 구매자 → 가게 최대 8곳};
+\node[bx={mk}{3.6cm}, anchor=north west] (kit) at (0.15,14.6) {
+  \textbf{키트 v4} \cc{market\_runtime.py}\\
+  터널 · 결제(ACP) · 훅 실행\\
+  restock 훅 60초마다};
+\node[bx={mk}{3.6cm}, anchor=north west] (sup) at (0.15,13.15) {
+  \textbf{공급 창구}\\
+  15–20분마다 3분 열림\\
+  등급은 시장이 무작위 (A·B·C)};
+\node[bx={mk}{3.6cm}, anchor=north west] (frm) at (0.15,11.4) {
+  \textbf{포럼} (하루 약 254글)\\
+  조작(주입) 글이 섞인 텍스트};
+\node[bx={mk}{3.6cm}, anchor=north west] (brd) at (0.15,6.1) {
+  \textbf{보드 = 평가}\\
+  가게: 0.5 book + 0.3 매출\\
+  \quad + 0.2 별점\\
+  구매자: 0.5 saved + 0.3 포럼\\
+  \quad + 0.1 거래 수 + 0.1 글 수};
+\node[note, anchor=north west, text width=3.7cm] at (0.15,4.2) {
+  모든 숫자는 \cc{logs/r3/*.jsonl}과 보드에서 셈 (11-17 10:50 KST).};
+
+% ================= lane 1 =================
+\node[bx={l1}{4.6cm}, anchor=north west] (shop) at (5.2,17.6) {
+  \textbf{가게} \cc{shop\_r3.py}\\
+  · 이 구매자가 별점을 잘 주는 등급 먼저 (\cc{taste})\\
+  · 첫 호가 = 규칙 가격 × bandit arm\\
+  · 원가 하한(L0)은 학습이 못 건드림\\
+  · 서명 영수증 · 등급 정직 표시 29,076/29,078};
+\node[bx={l1}{5.35cm}, anchor=north west] (buy) at (10.1,17.6) {
+  \textbf{구매자} \cc{buyer\_r3.py} (주문마다 새 프로세스)\\
+  · 8곳 \textbf{동시 견적}, 쓸 수 있는 4번째 + 2초에 마감\\
+  · 마진 점유율 (정가−값)/(정가−원가) 순으로 흥정\\
+  · 상한 θ ∈ [0.72, 0.85] = 점수 손익분기 + 0.03\\
+  · 첫 호가 마진 0.9 미만이면 원가로 1회 역제안};
+\node[bx={l1}{5.6cm}, anchor=north west] (ban) at (15.75,17.6) {
+  \textbf{L1 bandit} \cc{bandit.py}\\
+  · 규칙의 \textbf{숫자 하나}만 고름 (상수 ±20\% 안)\\
+  · Thompson · 반감기 8시간 · 탐색 15\%\\
+  · 보상 = 보드 점수 변화 · 선택 80,703회\\
+  · propensity 기록 → IPS로 오프라인 평가};
+
+% ================= lane 2 =================
+\node[dp, anchor=north west, text width=1.45cm] (ceo) at (5.2,13.9) {\textbf{CEO}\\tick · kpi};
+\node[dp, anchor=north west] (pur) at (7.45,14.55) {\textbf{구매}\\propose};
+\node[dp, anchor=north west] (lgs) at (9.55,14.55) {\textbf{물류}\\window · approve\\health};
+\node[dp, anchor=north west] (qua) at (7.45,13.25) {\textbf{품질}\\harsh · refunds};
+\node[dp, anchor=north west] (mkg) at (9.55,13.25) {\textbf{마케팅}\\markdown · shelf\\taste · stats};
+\draw[flow=l2] (pur.east) -- (lgs.west);
+\node[draw=l2, dashed, rounded corners=3pt, inner sep=4pt, fit=(pur)(lgs)(qua)(mkg)] (org) {};
+\draw[flow=l2] (ceo.east) -- (org.west |- ceo.east);
+\node[note, anchor=north west, text width=6.45cm] at (5.15,11.95) {
+  \cc{r3lib/org}: 부서마다 127.0.0.1의 A2A 에이전트. 호출 = Ed25519 서명 봉투
+  (nonce · ±60초 · 수신자 확인) → 서명 영수증 (req/res sha256). 하나라도 틀리면 거절 (fail-closed).
+  서버가 죽으면 같은 스킬을 프로세스 안에서 실행. 내부 호출 76,564회.};
+\node[bx={l2}{4.35cm}, anchor=north west] (fo) at (11.95,14.55) {
+  \textbf{포럼} \cc{forum\_r3.py} (10분)\\
+  · 판단 모델은 \textbf{확률}만 냄: 조작 글인가,\\
+  \quad 우리 초안이 쓸모 있나\\
+  · 문턱값은 코드가 적용, LLM 라벨만으로\\
+  \quad 비추천하지 않음\\
+  · 원장 seq 근거가 맞는 글만 추천};
+\node[bx={l2}{4.75cm}, anchor=north west] (hz) at (16.7,14.55) {
+  \textbf{먼저 행동할까?} \cc{initiative.py} (Horvitz)\\
+  · p > C / (B + C) 일 때만 실행\\
+  · B, C = 보드 점수로 잰 이득·손실\\
+  · 과잉 재고 할인(\cc{markdown}), 안 팔리는 등급\\
+  \quad 먼저 보이기(\cc{shelf}), 먼저 글쓰기\\
+  · 판단 8,974건, 실행 전에 기록};
+\draw[flow=l2] (fo.east) -- (hz.west |- fo.east);
+
+% ================= lane 3 =================
+\node[bx={l3}{5.85cm}, anchor=north west] (rr) at (5.2,10.0) {
+  \textbf{재고 검토} \cc{restock\_review\_r3.py} (634회)\\
+  Thought → Action → Observation 반복\\
+  툴 호출: \cc{category\_evidence} 1,103\\
+  \quad \cc{sell\_through} 817 · \cc{stock\_on\_hand} 808\\
+  \quad \cc{plan\_preview} 642 · \cc{recall} 463 · \cc{scout} 76\\
+  출력 = 카테고리 수요 배율 → 코드가 범위 제한\\
+  \quad (342회 중 287회 적용)};
+\node[bx={l3}{3.85cm}, anchor=north west] (fb) at (11.4,10.0) {
+  \textbf{구매자 글} (ReAct 90회)\\
+  툴: \cc{our\_experience}\\
+  \quad \cc{market\_facts} · \cc{recent\_forum}\\
+  \quad \cc{my\_reception} · \cc{ledger\_refs}\\
+  우리가 겪은 사실만, 원장 seq 인용};
+\node[bx={l3}{5.7cm}, anchor=north west] (fg) at (15.65,10.0) {
+  \textbf{툴 제작 (LATM)} \cc{forge.py}: 제안 → 검증 → 등록\\
+  · 정적 검사 (허용 import만) + 격리 테스트\\
+  \quad (키 없음 · 소켓 없음 · 시간 제한)\\
+  · 시장을 움직이는 툴은 shadow gate PASS 필요\\
+  · sha256이 맞는 툴만 다음 ReAct에 제공\\
+  예: \cc{tools/forged/ledger\_query}};
+\node[note, anchor=north west, text width=16cm] at (5.15,7.28) {
+  지식: \cc{primer.py} = 시장학개론 16원칙 위의 BM25 검색 (작은 RAG). 툴로 줬을 때 0회 호출되어, 상황에 맞는 절을 프롬프트에 미리 넣는 방식으로 바꿈.};
+
+% ================= lane 4 (outer loop) =================
+\node[bx={l4}{2.8cm}, anchor=north west] (tr) at (5.2,6.1) {
+  \textbf{원본 trace}\\
+  주문 판단 13만 줄\\
+  모델 호출 · ReAct 단계\\
+  내부 호출 · kpi\\
+  요약이 아닌 원문 jsonl};
+\node[bx={l4}{2.75cm}, anchor=north west] (hc) at (8.55,6.1) {
+  \textbf{제안자}\\
+  사람 + Claude Code가\\
+  trace를 읽고 원인을\\
+  찾아 코드 수정};
+\node[bx={l4}{2.95cm}, anchor=north west] (ci) at (11.85,6.1) {
+  \textbf{커밋 = 배포}\\
+  CI: 범위 · 비밀 · 컴파일\\
+  \quad · lint · import · pytest\\
+  헬스 실패 → 자동 revert\\
+  (이력은 지우지 않음)};
+\node[bx={l4}{2.8cm}, anchor=north west] (can) at (15.35,6.1) {
+  \textbf{canary}\\
+  sha256(salt:주문 id)\\
+  로 주문 절반만 새 동작\\
+  스위치 \cc{*\_SHARE}};
+\node[bx={l4}{2.35cm}, anchor=north west] (jd) at (18.7,6.1) {
+  \textbf{arm별 판정}\\
+  미리 정한 규칙으로\\
+  → 1.0 넓힘\\
+  → 0.0 롤백};
+\draw[flow=l4] (tr.east |- hc.east) -- (hc.west);
+\draw[flow=l4] (hc.east) -- (ci.west |- hc.east);
+\draw[flow=l4] (ci.east |- hc.east) -- (can.west |- hc.east);
+\draw[flow=l4] (can.east |- hc.east) -- (jd.west |- hc.east);
+\draw[flow=l4] (jd.south) -- (jd.south |- 0,3.85) -- node[lbl=l4, pos=0.5] {배포 노트 26개 (\cc{logs/r3/deploy-*.txt}) · 새 trace} (tr.south |- 0,3.85) -- (tr.south);
+\node[bx={l4}{7.75cm}, anchor=north west] (res) at (5.2,3.45) {
+  \textbf{판정 기록 (구매자 canary)}\\[1pt]
+  \begin{tabular}{@{}l@{\hspace{3pt}}l@{}}
+  \ok & 동시 견적: 거래/주문 0.542 vs 순차 0.386 \\
+  \ok & 원가에서 출발: saved 0.878 vs 0.860 \\
+  \ok & 견적 조기 마감: 주문 시간 8.5 vs 23.9초 \\
+  \ok & 역제안 1회: 마진 점유율 0.890 vs 0.872 \\
+  \no & 최소 8초 대기: 시간당 주문 162 → 148 \\
+  \no & 10초 견적 단축: 거래/주문 0.540 vs 0.645 \\
+  \end{tabular}};
+\node[bx={l4}{8.0cm}, anchor=north west] (tw) at (13.45,3.45) {
+  \textbf{디지털 트윈 + shadow gate} (\cc{twin.py}, \cc{shadow\_gate.py})\\
+  · 실제로 온 구매자 방문을 후보 정책에 다시 돌림\\
+  · 같은 창 · 같은 seed로 짝 비교 → 차이만 남음\\
+  · PASS = Δbook ≥ 0, ΔALL ≥ 0, 체결률 하락 ≤ 0.05\\
+  · 가게 ALL 추정식이 보드를 53개 가게에서 오차 0.0024로 재현\\
+  · 라이브 경로는 import하지 않음 (오프라인 사전 검사)};
+
+% ================= right column =================
+\draw[lane=mem] (22.05,13.05) rectangle (28.35,18.15);
+\node[lanetitle=mem] at (22.1,18.13) {기억 \cc{memory.sqlite} (가게·구매자 공유)};
+\node[bx={mem}{5.85cm}, anchor=north west] (m1) at (22.2,17.6) {
+  \textbf{층 1 · 시장이 서명한 사실}\\ \cc{ledger settles breaks shops shop\_stock}};
+\node[bx={mem}{5.85cm}, anchor=north west] (m2) at (22.2,16.65) {
+  \textbf{층 2 · 우리 기록}\\ \cc{purchases negotiations restocks members}\\ \cc{stockouts notes}};
+\node[bx={mem}{5.85cm}, anchor=north west] (m3) at (22.2,15.35) {
+  \textbf{층 3 · 약한 증거}: \cc{forum} (조작 확률을 붙여 저장)};
+\node[note, anchor=north west, text width=5.95cm] at (22.15,14.75) {
+  뷰: 카테고리 수요 · 정가 대비 시세 (\cc{oracle}) · 고장률 · 가게 평판 ·
+  경쟁 공급 압력 (\cc{scout}) · 구매자별 취향.
+  층 번호가 낮을수록 강한 근거로 씀. 가게·구매자·훅·포럼·조직 서버가 같은 파일을 씀.};
+
+\draw[lane=md] (22.05,6.95) rectangle (28.35,12.85);
+\node[lanetitle=md] at (22.1,12.83) {외부 모델 (말과 확률만)};
+\node[bx={md}{5.85cm}, anchor=north west] (dc) at (22.2,12.25) {
+  \textbf{OpenAI Decisions API} \cc{gpt-6-luna} · 44,073회\\
+  · 보정된 확률만 받음 (라벨·문장이 아님)\\
+  · 포럼 조작 판정 41,117 · 우리 글 자가 점검 2,947\\
+  · 돈과 투표는 확률만으로 정하지 않음};
+\node[bx={md}{5.85cm}, anchor=north west] (cx) at (22.2,10.05) {
+  \textbf{Codex CLI} \cc{gpt-6.1-sol} · 9,242회\\
+  · 가격 문장 읽기 3,413 (정규식이 실패할 때만)\\
+  · 포럼 분류 3,058 · 글쓰기 213\\
+  · ReAct 단계 2,558 (재고 검토 2,357)\\
+  · 읽기 전용 sandbox, JSON 출력};
+\node[note, anchor=north west, text width=5.95cm] at (22.15,7.85) {
+  모델이 실패하거나 늦어도 거래는 멈추지 않음: 모든 호출에 결정적 fallback이 있음.};
+
+\draw[lane=sc] (22.05,0.0) rectangle (28.35,6.75);
+\node[lanetitle=sc] at (22.1,6.73) {한 가지 단위 \cc{score\_model.delta}};
+\node[bx={sc}{5.85cm}, anchor=north west] (smd) at (22.2,6.1) {
+  행동 → (Δ가게 ALL, Δ구매자 ALL)\\
+  백분위 계단을 이웃 사이 직선으로 이어\\
+  작은 변화에도 부호 있는 값을 줌\\
+  쓰는 곳: bandit 보상 · Horvitz B, C\\
+  \quad · 구매 상한 θ · canary 판정};
+\node[bx={sc}{5.85cm}, anchor=north west] (fin) at (22.2,3.45) {
+  \textbf{결과} (11-17 10:50, 71명 중 15위, 총점 1.499)\\
+  가게 ALL 0.778: 거래 29,113 · book 5.62억\\
+  \quad · 매출 42.2억 · 별점 4.59\\
+  구매자 ALL 0.721: 거래 24,815 · saved 0.750\\
+  \quad · 포럼 0.891 · 글 2,954};
+
+% ================= cross arrows =================
+\draw[flow=mk, <->] (oth.east) -- node[lbl=mk, pos=0.45] {A2A} (shop.west |- oth.east);
+\draw[flow=mk] (kit.east) -- node[lbl=mk, pos=0.45] {훅} (ceo.west |- kit.east);
+\draw[flow=mk] (frm.east) -- node[lbl=mk, pos=0.06] {글 · 투표} (11.75,0 |- frm.east) |- (fo.west);
+\draw[flow=mem] (3.7,18.15) -- (3.7,18.45) -- node[lbl=mem, pos=0.5] {원장 · 상점 동기화 (60초마다 증분)} (27.7,18.45) -- (27.7,18.15);
+\draw[flow=md, dashed] (21.75,13.6) -- (22.05,13.6) |- (dc.west);
+\draw[flow=md, dashed] (21.75,9.2) -- (cx.west |- 0,9.2);
+\draw[flow=sc] (smd.west |- jd.east) -- (jd.east);
+\draw[flow=mk] (brd.east |- tr.west) -- node[lbl=mk, pos=0.4] {kpi 30분} (tr.west);
+\end{tikzpicture}
+\end{document}
