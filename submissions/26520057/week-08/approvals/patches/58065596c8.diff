@@ -1,0 +1,184 @@
+--- a/shop_strategy.py
++++ b/shop_strategy.py
+@@ -20,7 +20,8 @@
+              "ledger_pages": 1, "margin": {"A": 1.15, "B": 1.10, "C": 1.08},
+              "aged_minutes": 1e9, "aged_margin": 1.0, "aged_floor_cut": 1.0, "aged_ask_cut": 0.0,
+              "stale_minutes": 1e9, "stale_margin": 1.0, "concession": .03, "max_counters": 4, "reply_note": "",
+-             "unserved_boost": 1.0},  # score x this for SKUs settled in the market in the last 6 h that we hold 0 of
++             "unserved_boost": 1.0,  # score x this for SKUs settled in the market in the last 6 h that we hold 0 of
++             "rival_follow": 0.0},   # move a SKU's ask this share of the way to what rivals got after our quote (0 = off)
+     "buyer": {"max_shops": 3, "max_bids": 3, "order_interval": 90, "ladder": False,
+               "anchor": {"A": .60, "B": .46, "C": .32}, "step": .045,
+               "ceiling": {"A": .85, "B": .80, "C": .80}, "ceiling_warranty": .95, "ceiling_food": .95, "warranty_bonus": .03,
+@@ -37,6 +38,7 @@
+ }
+ _params = {"mtime": None, "data": {}}
+ UNSERVED_WINDOW = 6 * 3600   # the observation's unserved_demand_6h window
++RIVAL_WINDOW = 1800          # lost_to_rivals_6h: another shop sold the SKU within 30 min after our quote
+ 
+ 
+ def params(section):
+@@ -63,6 +65,30 @@
+     temp = path.with_suffix(".next")
+     temp.write_text(json.dumps(obj, ensure_ascii=False))
+     temp.replace(path)
++
++
++def lost_quotes(offset):
++    """(sku, market ts, first ask) of our quotes of the last 6 h that ended without our deal."""
++    first, agreed = {}, set()
++    try:
++        with (ROOT / "logs/shop-decisions.jsonl").open(encoding="utf-8") as log:
++            for line in log:
++                if '"quote"' not in line and '"agreed"' not in line:
++                    continue
++                try:
++                    e = json.loads(line)
++                except ValueError:
++                    continue
++                if e.get("event") == "agreed":
++                    agreed.add(e.get("task"))
++                elif e.get("event") == "quote" and e.get("task") not in first:
++                    first[e.get("task")] = (e.get("sku"), e.get("ts"), e.get("ask"))
++    except OSError:
++        return []
++    since = time.time() - UNSERVED_WINDOW
++    return [(sku, ts + offset, ask) for task, (sku, ts, ask) in first.items()
++            if task not in agreed and isinstance(ts, (int, float)) and ts > since
++            and isinstance(ask, (int, float)) and ask > 0]
+ 
+ 
+ def signals(state, refresh=False):
+@@ -92,6 +118,9 @@
+             catalog = read_json(state / "catalog.json", {})
+             ratios = collections.defaultdict(list)
+             recent = data.get("recent_settles", {})     # sku -> market ts of settles (catalog SKUs only)
++            quotes = lost_quotes(data.get("market_offset", 0))
++            quoted = {q[0] for q in quotes}
++            rival = data.get("rival_settles", {})       # sku -> [market ts, amount] of other shops' settles
+             for row in rows:
+                 if row.get("round") != 3 or row.get("kind") != "settle" or row["seq"] <= data.get("cursor", 0):
+                     continue
+@@ -100,6 +129,10 @@
+                 counts[sku] = counts.get(sku, 0) + 1
+                 if sku in catalog and isinstance(row.get("ts"), (int, float)):
+                     recent.setdefault(sku, []).append(row["ts"])
++                seller = item.get("shop", item.get("seller"))
++                if (sku in quoted and seller and seller != "cheapest-in-town" and isinstance(row.get("ts"), (int, float))
++                        and isinstance(item.get("amount"), (int, float))):
++                    rival.setdefault(sku, []).append([row["ts"], item["amount"]])
+                 product = catalog.get(sku, {})
+                 if product.get("list_price"):
+                     ratios[product["category"]].append(item["amount"] / product["list_price"])
+@@ -109,6 +142,14 @@
+             since = time.time() + data.get("market_offset", 0) - UNSERVED_WINDOW
+             recent = {k: [t for t in v if t > since] for k, v in recent.items()}
+             data["recent_settles"] = {k: v for k, v in recent.items() if v}
++            rival = {k: [s for s in v if s[0] > since] for k, v in rival.items() if k in quoted}
++            data["rival_settles"] = {k: v for k, v in rival.items() if v}
++            lost = collections.defaultdict(list)
++            for sku, at, ask in quotes:
++                hit = min((s for s in data["rival_settles"].get(sku, []) if at <= s[0] <= at + RIVAL_WINDOW), default=None)
++                if hit:
++                    lost[sku].append(hit[1] / ask)
++            data["rival_ratio"] = {k: statistics.median(v) for k, v in lost.items()}   # rival price / our first ask
+             data.update(sku_sales=counts, updated=time.time(), cursor=max((r["seq"] for r in rows), default=0))
+             atomic_json(path, data)
+             try:
+@@ -167,7 +208,11 @@
+     if age > p["aged_minutes"]:
+         ask_ratio -= p["aged_ask_cut"]
+     floor = max(math.ceil(cost * margin), math.ceil(listed * floor_ratio))
+-    return {"ask": max(floor, math.ceil(listed * ask_ratio)), "floor": floor, "cost": cost}
++    ask = listed * ask_ratio
++    rival = observations.get("rival_ratio", {}).get(unit.get("sku"))
++    if p["rival_follow"] and rival:
++        ask *= 1 + p["rival_follow"] * (rival - 1)   # toward the rivals' price; the floor below still holds
++    return {"ask": max(floor, math.ceil(ask)), "floor": floor, "cost": cost}
+ 
+ 
+ def reserve_warranty(state, task, unit, price, commit=False):
+--- a/tests/agent_rival_follow.py
++++ b/tests/agent_rival_follow.py
+@@ -0,0 +1,81 @@
++"""rival_follow: rival price / our first ask for quotes lost within 30 min; 0 keeps today's prices; floor holds."""
++import io
++import json
++import os
++import sys
++import tempfile
++import time
++from pathlib import Path
++from unittest.mock import patch
++
++SOURCE = Path(os.environ.get("AX_TEST_SOURCE", str(Path(__file__).resolve().parent.parent)))
++sys.path.insert(0, str(SOURCE))
++import shop_strategy as strategy
++
++
++class Resp(io.BytesIO):
++    headers = {}
++
++    def __enter__(self):
++        return self
++
++    def __exit__(self, *a):
++        return False
++
++
++with tempfile.TemporaryDirectory() as tmp:
++    root, state = Path(tmp), Path(tmp) / "state"
++    (root / "logs").mkdir()
++    state.mkdir()
++    catalog = {s: {"sku": s, "category": "c", "kind": "goods", "list_price": 100000}
++               for s in ["G00000001", "G00000002", "G00000003", "G00000004"]}
++    (state / "catalog.json").write_text(json.dumps(catalog))
++    (state / "shop-signals.json").write_text(json.dumps(
++        {"sku_sales": {}, "category_ratio": {}, "market_offset": 0, "updated": 0, "cursor": 0}))
++    now = time.time()
++    log = [{"ts": now - 3000, "event": "quote", "task": "t1", "sku": "G00000001", "ask": 100000},
++           {"ts": now - 2990, "event": "quote", "task": "t1", "sku": "G00000001", "ask": 90000},   # not the first ask
++           {"ts": now - 3000, "event": "quote", "task": "t2", "sku": "G00000002", "ask": 100000},
++           {"ts": now - 3000, "event": "quote", "task": "t3", "sku": "G00000003", "ask": 100000},
++           {"ts": now - 2990, "event": "agreed", "task": "t3", "sku": "G00000003", "price": 100000},  # we sold: not lost
++           {"ts": now - 3000, "event": "quote", "task": "t4", "sku": "G00000004", "ask": 100000}]
++    (root / "logs/shop-decisions.jsonl").write_text("\n".join(json.dumps(e) for e in log) + "\n")
++    settle = lambda seq, sku, ts, amount, shop: {"seq": seq, "round": 3, "kind": "settle", "ts": ts,
++                                                 "data": {"sku": sku, "amount": amount, "shop": shop}}
++    rows = [settle(1, "G00000001", now - 2000, 130000, "rival"),
++            settle(2, "G00000002", now - 2000, 90000, "rival"),
++            settle(3, "G00000003", now - 2000, 120000, "rival"),
++            settle(4, "G00000004", now - 2000, 150000, "cheapest-in-town"),   # our own sale is no loss
++            settle(5, "G00000004", now - 100, 150000, "rival")]               # 48 min after the quote: too late
++
++    def fake(url, timeout=None):
++        if "/api/ledger" in url:
++            return Resp(json.dumps(rows).encode())
++        raise OSError("no network in tests")
++
++    with patch.object(strategy, "ROOT", root), patch.object(strategy.urllib.request, "urlopen", side_effect=fake):
++        obs = strategy.signals(state, refresh=True)
++    assert obs["rival_ratio"] == {"G00000001": 1.3, "G00000002": .9}, obs["rival_ratio"]
++    print("PASS lost quotes: rival price over our first ask, other shops within 30 min, sold quotes skipped")
++
++    real = strategy.params
++    unit = {"sku": "G00000001", "cost": 50000, "list_price": 100000, "category": "c"}
++    cheap = dict(unit, sku="G00000002")
++    view = {"category_ratio": {"c": .72}, "rival_ratio": {"G00000001": 1.3, "G00000002": .5}}
++
++    def price(u, follow=None, extra=None):
++        cfg = lambda s: ({**real(s), **(extra or {}), **({"rival_follow": follow} if follow is not None else {})}
++                         if s == "shop" else real(s))
++        with patch.object(strategy, "params", side_effect=cfg):
++            return strategy.prices(u, view, "B")
++
++    assert strategy.DEFAULTS["shop"]["rival_follow"] == 0
++    base = price(unit, extra={"rival_follow": 0})
++    with patch.object(strategy, "params", side_effect=lambda s: dict(strategy.DEFAULTS[s])):
++        assert strategy.prices(unit, view, "B") == strategy.prices(unit, {"category_ratio": {"c": .72}}, "B")
++    up = price(unit, 0.5)
++    assert up["floor"] == base["floor"] and up["ask"] > base["ask"], (base, up)
++    assert abs(up["ask"] - base["ask"] * 1.15) <= 1, (base, up)
++    down = price(cheap, 1.0)
++    assert down["ask"] == down["floor"] >= cheap["cost"] * real("shop")["margin"]["B"], down
++    print("PASS rival_follow 0 keeps today's ask; >0 moves it toward the rivals' price, never below the floor")

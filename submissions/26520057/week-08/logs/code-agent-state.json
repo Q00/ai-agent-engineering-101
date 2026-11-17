@@ -144,7 +144,19 @@
   "c98d52952b": "superseded (merged 2026-11-16)",
   "7c6cd32cf5": "superseded (merged 2026-11-16)",
   "ad71c11e97": "superseded (merged 2026-11-16)",
-  "4a42bd0c86": "superseded (merged 2026-11-16)"
+  "4a42bd0c86": "superseded (merged 2026-11-16)",
+  "587460908a": "rejected by gate",
+  "e886c42c0a": "rejected by gate",
+  "76e6146de2": "rejected by gate",
+  "ef66c78b04": "deployed",
+  "5996c9fd20": "superseded (sprint 2026-11-17)",
+  "0bcea41a21": "superseded (sprint 2026-11-17)",
+  "7e47d60c39": "superseded (sprint 2026-11-17)",
+  "ad00f25d87": "superseded (tested by hand 11-17: the market hands out one order per 20-40 s, so parallel slots add nothing)",
+  "a5fc389c44": "deployed",
+  "51621f7ff0": "deployed",
+  "58065596c8": "deployed",
+  "7bbe94aefd": "no change"
  },
  "history": [
   {
@@ -327,6 +339,184 @@
    "result": "rejected by gate",
    "bad_files": [],
    "checks": "igits or warranty hours as offers\nPASS stock/cash/food bounds, closed supply window, surge and expiry guards\nPASS quoted and committed warranty exposure cannot exceed 500,000 credits\nPASS tests/verify_buyer_policy.py:  [acp] paid 7000 through https://shop.test/acp, settled at ledger #123: Test product, grade A\nPASS legacy checkout path remains compatible when no prepared session is supplied\nPASS invalid cert/grade/expiry/ceiling rejected and unused reservations canceled before payment\nPASS food grade C is acceptable only with verified adequate shelf life; goods C remains refused\n01:19:41 [acp] not paying: checkout exceeds the buyer's explicit price ceiling\nPASS kit independently rechecks the helper's hard price ceiling\nPASS same-order fallback from an unsuitable candidate without additional payment attempts\nFAIL tests/verify_guardrails.py: Traceback (most recent call last):\n  File \"/home/danayou/submissions/26520057/week-08/runtime/code-agent/work/tests/verify_guardrails.py\", line 40, in <module>\n    raise AssertionError(\"Unsafe model result was accepted\")\nAssertionError: Unsafe model result was accepted\nPASS tests/agent_accept_grades.py: PASS buyer.accept_grades defaults to A/B and only the key widens goods grades\nPASS tests/agent_paid_sales.py: PASS sales are logged only for settled deals; unpaid agreements stay out of the sales record\nPASS tests/agent_stock_cap.py: PASS restock keeps held + planned stock cost within stock_cost_cap x stock_cap_share\nPASS smoke: smoke ok 0 5"
+  },
+  {
+   "issue": "587460908a",
+   "what": "새 손잡이 shop.unserved_boost를 shop_strategy.DEFAULTS에 넣어 주세요. 기본 1.0이면 지금 동작과 같아요. 시장에서 팔렸는데 우리 재고가 0인 인기 SKU(관측의 unserved_demand_6h와 같은 계산, customers.py 참고)는 공급 매입 점수에 이 배수를 곱해요. restock이 그 목록을 직접 못 보면 shop_strategy가 이미 읽는 공개 장부(/api/ledger)로 같은 방식으로 계산해 주세요. SKU가 카탈로그에 없는 줄(예: sku 칸이 '소파/의자/스툴')은 건너뛰",
+   "summary": "요청하신 `shop.unserved_boost` 손잡이를 추가했어요. 다만 범위는 요청하신 [1.0, 3.0]이 아니라 [1.0, 2.0]으로 넣었어요. 새 손잡이 범위는 기본값의 절반~두 배까지만 허용돼서, 기본 1.0이면 3.0은 들어갈 수 없어요.\n\n**바꾼 내용:** 이건 버그가 아니라 기능 요청이었고, `restock`은 \"시장에서 팔렸는데 우리 재고가 0인 SKU\"를 볼 방법이 없었어요. 그래서 `shop_strategy`가 이미 읽는 공개 장부(/api/ledger)에서 최근 6시간 안에 정산된 판매를 SKU별로 기록하게 했어요. sku 칸이 카탈로그에 없는 줄(예: '소파/의자/스툴')은 건너뛰어요. 그런 SKU 중 우리 재고가 0이면 매입 점수에 `unserved_boost`를 곱해요. 기본값 1.0에서는 지금과 똑같이 동작하고, 점수 순서만 바뀌어서 예산·재고 한도는 그대로 지켜져요.\n\n**참고:** `customers.py`가 이 폴더에 없어서 `unserved_demand_6h`의 정확한 계산은 확인하지 못했어요. \"최근 6시간 안에 정산된 판매, 그리고 우리 재고 0\"으로 직접 구현했어요. 그래서 우리 가게 판매를 빼는지 같은 세부는 ",
+   "changed": [
+    "shop_strategy.py",
+    "tests/agent_unserved_boost.py"
+   ],
+   "usd": 1.443,
+   "ts": "2026-11-17 00:18 KST",
+   "result": "rejected by gate",
+   "bad_files": [],
+   "checks": "its or warranty hours as offers\nPASS stock/cash/food bounds, closed supply window, surge and expiry guards\nPASS quoted and committed warranty exposure cannot exceed 500,000 credits\nPASS tests/verify_buyer_policy.py:  [acp] paid 7000 through https://shop.test/acp, settled at ledger #123: Test product, grade A\nPASS legacy checkout path remains compatible when no prepared session is supplied\nPASS invalid cert/grade/expiry/ceiling rejected and unused reservations canceled before payment\nPASS food grade C is acceptable only with verified adequate shelf life; goods C remains refused\n00:18:45 [acp] not paying: checkout exceeds the buyer's explicit price ceiling\nPASS kit independently rechecks the helper's hard price ceiling\nPASS same-order fallback from an unsuitable candidate without additional payment attempts\nFAIL tests/verify_guardrails.py: Traceback (most recent call last):\n  File \"/home/danayou/submissions/26520057/week-08/runtime/code-agent/work/tests/verify_guardrails.py\", line 40, in <module>\n    raise AssertionError(\"Unsafe model result was accepted\")\nAssertionError: Unsafe model result was accepted\nPASS tests/agent_accept_grades.py: PASS buyer.accept_grades defaults to A/B and only the key widens goods grades\nPASS tests/agent_stock_cap.py: PASS restock keeps held + planned stock cost within stock_cost_cap x stock_cap_share\nPASS tests/agent_unserved_boost.py: PASS shop.unserved_boost defaults to 1.0 and only lifts recently sold SKUs we hold none of\nPASS smoke: smoke ok 0 5"
+  },
+  {
+   "issue": "e886c42c0a",
+   "what": "새 손잡이 shop.rival_follow를 shop_strategy.DEFAULTS에 넣어 주세요. 기본 0이면 지금 동작과 같아요. 최근 6시간 우리가 견적을 냈는데 30분 안에 다른 가게가 같은 SKU를 판 경우(관측 lost_to_rivals_6h와 같은 계산), 그 SKU의 요구가를 상대 판매가 쪽으로 이 비율만큼 옮겨요. 상대가 더 비싸게 팔았으면 올리고, 싸게 팔았으면 내려요. 가격 하한(원가 위)은 그대로 지켜야 해요. new_knobs.json 범위는 [0, 1]이에요.",
+   "summary": "`shop.rival_follow` 손잡이를 추가했어요. 기본값은 0이라 지금 가격은 그대로예요. 제 테스트와 기존 테스트는 통과했는데, `tests/verify_guardrails.py` 하나는 실패했어요.\n\n**바꾼 것 (`shop_strategy.py`):** 시장 기록을 새로 읽을 때마다 최근 6시간 우리 견적 중 30분 안에 다른 가게가 같은 SKU를 판 경우를 찾아요. 비교 기준은 견적마다 처음 낸 호가예요. SKU별로 \"상대 판매가 ÷ 우리 호가\"의 중앙값을 저장해요. 손잡이가 0보다 크면 요구가를 그 차이의 그 비율만큼 상대 가격 쪽으로 옮겨요. 상대가 비싸게 팔았으면 올리고 싸게 팔았으면 내려요. 원가 위 가격 하한은 그대로 지켜요. 범위 [0, 1]을 적은 `new_knobs.json`과 테스트 `tests/agent_rival_follow.py`도 만들었어요.\n\n**알아 두실 점:**\n- 시장 기록에 판매 가게가 어느 이름(`shop`/`seller`)으로 적혀 있는지 확인하지 못해서 두 이름을 다 봐요. 둘 다 없으면 그 판매는 세지 않아서, 손잡이를 켜도 가격이 바뀌지 않을 수 있어요.\n- 한 번에 읽는 기록이 짧아서(약 1~2분 분량",
+   "changed": [
+    "shop_strategy.py",
+    "tests/agent_rival_follow.py"
+   ],
+   "usd": 1.604,
+   "ts": "2026-11-17 00:39 KST",
+   "result": "rejected by gate",
+   "bad_files": [],
+   "checks": "its or warranty hours as offers\nPASS stock/cash/food bounds, closed supply window, surge and expiry guards\nPASS quoted and committed warranty exposure cannot exceed 500,000 credits\nPASS tests/verify_buyer_policy.py:  [acp] paid 7000 through https://shop.test/acp, settled at ledger #123: Test product, grade A\nPASS legacy checkout path remains compatible when no prepared session is supplied\nPASS invalid cert/grade/expiry/ceiling rejected and unused reservations canceled before payment\nPASS food grade C is acceptable only with verified adequate shelf life; goods C remains refused\n00:39:21 [acp] not paying: checkout exceeds the buyer's explicit price ceiling\nPASS kit independently rechecks the helper's hard price ceiling\nPASS same-order fallback from an unsuitable candidate without additional payment attempts\nFAIL tests/verify_guardrails.py: Traceback (most recent call last):\n  File \"/home/danayou/submissions/26520057/week-08/runtime/code-agent/work/tests/verify_guardrails.py\", line 40, in <module>\n    raise AssertionError(\"Unsafe model result was accepted\")\nAssertionError: Unsafe model result was accepted\nPASS tests/agent_accept_grades.py: PASS buyer.accept_grades defaults to A/B and only the key widens goods grades\nPASS tests/agent_rival_follow.py: PASS shop.rival_follow defaults off, follows rival prices both ways and keeps the cost floor\nPASS tests/agent_stock_cap.py: PASS restock keeps held + planned stock cost within stock_cost_cap x stock_cap_share\nPASS smoke: smoke ok 0 5"
+  },
+  {
+   "issue": "76e6146de2",
+   "what": "바이어가 가게에 견적·주문을 보낼 때 'The read operation timed out'이나 probe_failed가 나면 짧게 한 번 다시 시도하고, 또 실패하면 다음 가게로 넘어가게 해 주세요. 실패 이유별 개수를 로그에 남겨 주세요.",
+   "summary": "문제는 바이어가 가게에 견적을 요청하다가 읽기 시간 초과 같은 네트워크 오류가 나면 다시 시도하지 않고 그 가게를 바로 실패로 넘겼고, 실패 이유별 개수도 로그에 남지 않았던 거예요. 이제 `buyer_policy.py`가 시간 초과·연결 오류·5xx일 때만 잠깐(새 param `buyer.probe_retry_pause`, 기본 1초) 쉬고 한 번 다시 시도하고, 또 실패하면 다음 가게로 넘어가요. 각 주문의 `order_finished` 로그에는 `fail_reasons`로 이유별 개수(retry/probe/reject)가 남아요. 새 테스트 `tests/agent_probe_retry.py`는 통과했지만 `tests/verify_guardrails.py`는 실패했어요. 이 테스트는 이 사본이 아니라 고정 경로의 harness를 불러와 모델 설정 경로를 검사하고, 이번 수정은 그 부분을 건드리지 않아서 원래부터 있던 실패로 보여요.\n\nprobe_failed 141건은 대부분 \"merchant rejected request or has no fitting stock\"이라 다시 시도해도 결과가 같고, 'no readable asking price'도 마찬가지",
+   "changed": [
+    "buyer_policy.py",
+    "shop_strategy.py",
+    "tests/agent_probe_retry.py"
+   ],
+   "usd": 0.772,
+   "ts": "2026-11-17 00:58 KST",
+   "result": "rejected by gate",
+   "bad_files": [],
+   "checks": "s or warranty hours as offers\nPASS stock/cash/food bounds, closed supply window, surge and expiry guards\nPASS quoted and committed warranty exposure cannot exceed 500,000 credits\nPASS tests/verify_buyer_policy.py:  [acp] paid 7000 through https://shop.test/acp, settled at ledger #123: Test product, grade A\nPASS legacy checkout path remains compatible when no prepared session is supplied\nPASS invalid cert/grade/expiry/ceiling rejected and unused reservations canceled before payment\nPASS food grade C is acceptable only with verified adequate shelf life; goods C remains refused\n00:58:52 [acp] not paying: checkout exceeds the buyer's explicit price ceiling\nPASS kit independently rechecks the helper's hard price ceiling\nPASS same-order fallback from an unsuitable candidate without additional payment attempts\nFAIL tests/verify_guardrails.py: Traceback (most recent call last):\n  File \"/home/danayou/submissions/26520057/week-08/runtime/code-agent/work/tests/verify_guardrails.py\", line 40, in <module>\n    raise AssertionError(\"Unsafe model result was accepted\")\nAssertionError: Unsafe model result was accepted\nPASS tests/agent_accept_grades.py: PASS buyer.accept_grades defaults to A/B and only the key widens goods grades\nPASS tests/agent_probe_retry.py: PASS probe retries once on timeout, skips refusals, moves on, and logs failure reasons by count\nPASS tests/agent_stock_cap.py: PASS restock keeps held + planned stock cost within stock_cost_cap x stock_cap_share\nPASS smoke: smoke ok 0 5"
+  },
+  {
+   "issue": "ef66c78b04",
+   "what": "review.py가 포럼 글을 5분 상한보다 적게 올려요. 직전 글이 받아들여진 뒤 5분이 지나면 바로 다음 글을 올리고, 거절·오류면 다음 루프에서 곧바로 다시 시도하게 해 주세요. 빈 칸이 생기는 이유(재시작, 시간 초과, 거부 응답)를 로그로 남겨 주세요. 글은 지금처럼 사실 그대로의 구매 기록이어야 해요.",
+   "summary": "포럼 글이 늦게 올라간 원인은 review.py가 5분을 '시장이 글을 받아들인 때'가 아니라 '글을 대기열에 넣은 때'부터 310초로 셌고, 그것도 결제된 거래가 생겨야만 돌아서 글마다 평균 40초쯤 늦어졌기 때문이에요. 이제는 outbox.sent.jsonl에서 받아들여진 시각을 읽어 300초를 세고, 슬롯이 열리기 조금 전(새 값 `buyer.forum_lead`, 기본 60초)에 글을 미리 넣어 둬요. 너무 이르면 시장이 429로 거절하는데, 그러면 키트가 글을 보관했다가 10초마다 다시 보내니 5분이 차면 바로 올라가요. 거절되거나 응답 없이 사라진 글(재시작·시간 초과)은 그 거래 기록을 되돌려 다음 실행 때 곧바로 다시 올리고, 받아들여짐·거절·분실·늦음의 이유는 logs/forum-posts.jsonl에 남겨요.\n\n글 내용은 지금처럼 원장 번호가 달린 사실 그대로의 구매 기록이에요. 다만 새 기본값 60초는 오늘과 다르게 동작해요. 이 값을 바꾸는 것이 이번 수정의 내용이라서, 허용 범위 30~120초로 new_knobs.json에 적어 뒀어요. 일부러 일찍 넣기 때문에 글마다 429 거절 몇 번은 정상이에요.\n\n새 테스트 tests/agent",
+   "changed": [
+    "review.py",
+    "shop_strategy.py",
+    "tests/agent_forum_gap.py"
+   ],
+   "usd": 1.179,
+   "ts": "2026-11-17 01:21 KST",
+   "result": "rejected by gate",
+   "bad_files": [],
+   "checks": "rranty hours as offers\nPASS stock/cash/food bounds, closed supply window, surge and expiry guards\nPASS quoted and committed warranty exposure cannot exceed 500,000 credits\nPASS tests/verify_buyer_policy.py:  [acp] paid 7000 through https://shop.test/acp, settled at ledger #123: Test product, grade A\nPASS legacy checkout path remains compatible when no prepared session is supplied\nPASS invalid cert/grade/expiry/ceiling rejected and unused reservations canceled before payment\nPASS food grade C is acceptable only with verified adequate shelf life; goods C remains refused\n01:21:36 [acp] not paying: checkout exceeds the buyer's explicit price ceiling\nPASS kit independently rechecks the helper's hard price ceiling\nPASS same-order fallback from an unsuitable candidate without additional payment attempts\nFAIL tests/verify_guardrails.py: Traceback (most recent call last):\n  File \"/home/danayou/submissions/26520057/week-08/runtime/code-agent/work/tests/verify_guardrails.py\", line 40, in <module>\n    raise AssertionError(\"Unsafe model result was accepted\")\nAssertionError: Unsafe model result was accepted\nPASS tests/agent_accept_grades.py: PASS buyer.accept_grades defaults to A/B and only the key widens goods grades\nPASS tests/agent_forum_gap.py: PASS forum posts: clock from acceptance, lead window, immediate retry after refusal or loss, gaps logged\nPASS tests/agent_stock_cap.py: PASS restock keeps held + planned stock cost within stock_cost_cap x stock_cap_share\nPASS smoke: smoke ok 0 5"
+  },
+  {
+   "ts": 1794889047.7553654,
+   "commit": "9cea202b3ba66985f1870d803ff281e34bb59ace",
+   "files": [
+    "review.py",
+    "shop_strategy.py",
+    "tests/agent_forum_gap.py"
+   ],
+   "summary": "포럼 글이 늦게 올라간 원인은 review.py가 5분을 '시장이 글을 받아들인 때'가 아니라 '글을 대기열에 넣은 때'부터 310초로 셌고, 그것도 결제된 거래가 생겨야만 돌아서 글마다 평균 40초쯤 늦어졌기 때문이에요. 이제는 outbox.sent.jsonl에서 받아들여진 시각을 읽어 300초를 세고, 슬롯이 열리기 조금 전(새 값 `buyer.forum_lead`, 기본 60초)에 글을 미리 넣어 둬요. 너무 이르면 시장이 429로 거절하는데, 그러면 키트가 글을 보관했다가 10초마다 다시 보내니 5분이 차면 바로 올라가요. ",
+   "issue": "ef66c78b04",
+   "knobs": [
+    "buyer.forum_lead"
+   ],
+   "verified": "2026-11-17 14:17 KST"
+  },
+  {
+   "issue": "a5fc389c44",
+   "what": "새 손잡이 shop.unserved_boost를 shop_strategy.DEFAULTS에 넣어 주세요. 기본 1.0이면 지금 동작과 같아요. 시장에서 팔렸는데 우리 재고가 0인 인기 SKU(관측의 unserved_demand_6h와 같은 계산, customers.py 참고)는 공급 매입 점수에 이 배수를 곱해요. restock이 그 목록을 직접 못 보면 shop_strategy가 이미 읽는 공개 장부(/api/ledger)로 같은 방식으로 계산해 주세요. SKU가 카탈로그에 없는 줄(예: sku 칸이 '소파/의자/스툴')은 건너뛰",
+   "summary": "`shop.unserved_boost`를 추가했어요. 범위는 요청하신 [1.0, 3.0]이 아니라 [1.0, 2.0]으로 넣었고, 확인 시험 하나(verify_guardrails)는 여전히 실패해요. 새 손잡이 범위는 기본값의 절반~두 배까지만 허용돼서, 기본 1.0이면 3.0은 거부돼요.\n\n- **바꾼 내용:** restock은 \"시장에서 팔렸는데 우리 재고가 0인 SKU\" 목록을 볼 방법이 없었어요. `customers.py`도 이 폴더에 없어서 계산 방식은 요청 설명대로 따랐어요. `shop_strategy`가 이미 읽는 공개 장부(/api/ledger)에서 최근 6시간 안에 정산된 판매를 SKU별로 기록하게 했어요. 카탈로그에 없는 줄('소파/의자/스툴' 등)은 건너뛰어요. 그런 SKU를 우리가 0장 갖고 있으면 매입 점수에 이 배수를 곱해요.\n- **안전성:** 기본값 1.0이면 지금과 똑같이 동작해요. 배수는 점수 순서만 바꾸므로 예산·재고·현금 한도는 그대로 지켜져요.\n- **한계:** 장부는 `ledger_pages`(지금 3, 한 번에 1,500줄)만큼만 읽어요. 그래서 거래가 많으면 6시간 전체가 다 잡히지 않을 수 있어요.\n- **추가 파",
+   "changed": [
+    "shop_strategy.py",
+    "tests/agent_unserved_boost.py"
+   ],
+   "usd": 1.3,
+   "ts": "2026-11-17 14:18 KST",
+   "result": "deployed",
+   "commit": "fdd1ee79cfafc4d925ce43be35f6655aab2cd863",
+   "knobs": [
+    "shop.unserved_boost"
+   ],
+   "knobs_refused": []
+  },
+  {
+   "ts": 1794892736.136719,
+   "commit": "fdd1ee79cfafc4d925ce43be35f6655aab2cd863",
+   "files": [
+    "shop_strategy.py",
+    "tests/agent_unserved_boost.py"
+   ],
+   "summary": "`shop.unserved_boost`를 추가했어요. 범위는 요청하신 [1.0, 3.0]이 아니라 [1.0, 2.0]으로 넣었고, 확인 시험 하나(verify_guardrails)는 여전히 실패해요. 새 손잡이 범위는 기본값의 절반~두 배까지만 허용돼서, 기본 1.0이면 3.0은 거부돼요.\n\n- **바꾼 내용:** restock은 \"시장에서 팔렸는데 우리 재고가 0인 SKU\" 목록을 볼 방법이 없었어요. `customers.py`도 이 폴더에 없어서 계산 방식은 요청 설명대로 따랐어요. `shop_strategy`가 이미 읽는 공개",
+   "issue": "a5fc389c44",
+   "knobs": [
+    "shop.unserved_boost"
+   ],
+   "verified": "2026-11-17 15:17 KST"
+  },
+  {
+   "issue": "51621f7ff0",
+   "what": "바이어가 가게에 견적·주문을 보낼 때 'The read operation timed out'이나 probe_failed가 나면 짧게 한 번 다시 시도하고, 또 실패하면 다음 가게로 넘어가게 해 주세요. 실패 이유별 개수를 로그에 남겨 주세요.",
+   "summary": "요청하신 재시도와 실패 이유 기록을 넣었지만, `run_checks`에서 `tests/verify_guardrails.py`가 아직 실패해요(\"Unsafe model result was accepted\"). 이 시험은 이 사본이 아니라 고정된 라이브 폴더의 `harness.py`와 라이브 `params.json`(모델 `provider: \"anthropic\"`)을 읽어서 이번 수정과는 상관없고, 판정을 고치셨다고 했는데 여기서는 아직 실패하니 확인이 필요해요.\n\n원래 문제는 견적 요청 중 읽기 시간 초과 같은 네트워크 오류가 나면 바이어가 다시 시도하지 않고 그 가게를 바로 실패로 넘긴 거예요. 그리고 실패 이유별 개수가 로그에 남지 않았어요.\n\n이제 `buyer_policy.py`는 시간 초과·연결 오류·5xx일 때만 새 param `buyer.probe_retry_pause`(기본 1초, `new_knobs.json`에 0.5~2초로 등록)만큼 쉬고, 새 연결로 한 번 더 시도해요. 또 실패하면 다음 가게로 넘어가요. 각 주문의 `order_finished` 로그에는 `fail_reasons`(이유별 개수)와 `probe_retries`가 남아요. 다만 ",
+   "changed": [
+    "buyer_policy.py",
+    "shop_strategy.py",
+    "tests/agent_probe_retry.py"
+   ],
+   "usd": 0.598,
+   "ts": "2026-11-17 15:18 KST",
+   "result": "deployed",
+   "commit": "4a151aa6906dd7dd61ed00761fb2e67b54983169",
+   "knobs": [
+    "buyer.probe_retry_pause"
+   ],
+   "knobs_refused": []
+  },
+  {
+   "ts": 1794896336.7371364,
+   "commit": "4a151aa6906dd7dd61ed00761fb2e67b54983169",
+   "files": [
+    "buyer_policy.py",
+    "shop_strategy.py",
+    "tests/agent_probe_retry.py"
+   ],
+   "summary": "요청하신 재시도와 실패 이유 기록을 넣었지만, `run_checks`에서 `tests/verify_guardrails.py`가 아직 실패해요(\"Unsafe model result was accepted\"). 이 시험은 이 사본이 아니라 고정된 라이브 폴더의 `harness.py`와 라이브 `params.json`(모델 `provider: \"anthropic\"`)을 읽어서 이번 수정과는 상관없고, 판정을 고치셨다고 했는데 여기서는 아직 실패하니 확인이 필요해요.\n\n원래 문제는 견적 요청 중 읽기 시간 초과 같은 네트워크 오류가 나면 ",
+   "issue": "51621f7ff0",
+   "knobs": [
+    "buyer.probe_retry_pause"
+   ],
+   "verified": "2026-11-17 16:17 KST"
+  },
+  {
+   "issue": "58065596c8",
+   "what": "새 손잡이 shop.rival_follow를 shop_strategy.DEFAULTS에 넣어 주세요. 기본 0이면 지금 동작과 같아요. 최근 6시간 우리가 견적을 냈는데 30분 안에 다른 가게가 같은 SKU를 판 경우(관측 lost_to_rivals_6h와 같은 계산), 그 SKU의 요구가를 상대 판매가 쪽으로 이 비율만큼 옮겨요. 상대가 더 비싸게 팔았으면 올리고, 싸게 팔았으면 내려요. 가격 하한(원가 위)은 그대로 지켜야 해요. new_knobs.json 범위는 [0, 1]이에요.",
+   "summary": "요청하신 `shop.rival_follow` 손잡이를 `shop_strategy.py`에 넣었어요. 기본값이 0이라 지금 가격은 그대로예요. 시장 기록을 새로 읽을 때 최근 6시간 동안 우리가 처음 낸 호가 뒤 30분 안에 다른 가게가 같은 SKU를 판 경우만 골라요. 우리가 직접 판 견적은 빼고, SKU마다 \"상대 판매가 ÷ 우리 첫 호가\"의 중앙값을 저장해요. 손잡이가 0보다 크면 요구가를 그 차이의 그 비율만큼 상대 가격 쪽으로 옮기고, 원가 위 가격 하한은 그대로 지켜요. `new_knobs.json`(범위 [0, 1])과 테스트 `tests/agent_rival_follow.py`도 만들었어요.\n\n검사에서 `tests/verify_guardrails.py` 하나는 여전히 실패해요. 고쳤다고 하셨지만 지금도 통과하지 않아요.\n- **제 수정 때문은 아니에요.** 이 시험은 작업 사본이 아니라 `~/submissions/.../week-08`에 있는 라이브 코드를 불러와 `harness.ask`를 시험해요. 저는 `harness.py`를 건드리지 않았어요.\n- **실제 원인은 따로 있을 가능성이 커요.** `params.json`의 `model.prov",
+   "changed": [
+    "shop_strategy.py",
+    "tests/agent_rival_follow.py"
+   ],
+   "usd": 1.78,
+   "ts": "2026-11-17 16:19 KST",
+   "result": "deployed",
+   "commit": "f2a52cef382df3264019c23643a9f1ed71e07f41",
+   "knobs": [],
+   "knobs_refused": [
+    [
+     "shop.rival_follow",
+     "range wider than half to double the default"
+    ]
+   ]
+  },
+  {
+   "ts": 1794899983.0713449,
+   "commit": "f2a52cef382df3264019c23643a9f1ed71e07f41",
+   "files": [
+    "shop_strategy.py",
+    "tests/agent_rival_follow.py"
+   ],
+   "summary": "요청하신 `shop.rival_follow` 손잡이를 `shop_strategy.py`에 넣었어요. 기본값이 0이라 지금 가격은 그대로예요. 시장 기록을 새로 읽을 때 최근 6시간 동안 우리가 처음 낸 호가 뒤 30분 안에 다른 가게가 같은 SKU를 판 경우만 골라요. 우리가 직접 판 견적은 빼고, SKU마다 \"상대 판매가 ÷ 우리 첫 호가\"의 중앙값을 저장해요. 손잡이가 0보다 크면 요구가를 그 차이의 그 비율만큼 상대 가격 쪽으로 옮기고, 원가 위 가격 하한은 그대로 지켜요. `new_knobs.json`(범위 [0, 1])과 ",
+   "issue": "58065596c8",
+   "knobs": [],
+   "verified": "2026-11-17 17:17 KST"
+  },
+  {
+   "issue": "7bbe94aefd",
+   "what": "새 손잡이 shop.max_plan_lines를 shop_strategy.DEFAULTS에 넣어 주세요. 기본 10이면 지금과 같아요. restock_plan이 한 번에 내는 매입 줄 수 상한(지금 코드에 10으로 고정)을 이 값으로 바꿔 주세요. new_knobs.json 범위는 [5, 20]이에요. 예산·재고 상한·상품당 장수 검사는 그대로 지켜야 해요.",
+   "summary": "I didn't change any code. Adding a `shop.max_plan_lines` setting wouldn't get you the extra purchase lines you're after, so this isn't a code problem I can fix in the files I'm allowed to edit.\n\n- **The kit only reads the first 10 lines.** The kit (`market_kit.py`), which I can't edit, runs only the first 10 lines of any restock plan (`for b in buy[:10]`). Any setting from 11 to 20 would quietly drop the extra lines, so the top half of the [5, 20] range would do nothing.\n- **The time window runs out first.** In `logs/market-kit.log`, each supply purchase takes about 10 seconds, and each restoc",
+   "changed": [],
+   "usd": 0.484,
+   "ts": "2026-11-17 17:18 KST",
+   "result": "no change"
   }
  ],
  "deployed": null

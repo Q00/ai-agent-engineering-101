@@ -19,12 +19,16 @@ DEFAULTS = {
              "max_line_qty": 4, "one_per_category_run": True, "food_min_shelf_hours": 720, "worst_surge": 1.5,
              "ledger_pages": 1, "margin": {"A": 1.15, "B": 1.10, "C": 1.08},
              "aged_minutes": 1e9, "aged_margin": 1.0, "aged_floor_cut": 1.0, "aged_ask_cut": 0.0,
-             "stale_minutes": 1e9, "stale_margin": 1.0, "concession": .03, "max_counters": 4, "reply_note": ""},
+             "stale_minutes": 1e9, "stale_margin": 1.0, "concession": .03, "max_counters": 4, "reply_note": "",
+             "unserved_boost": 1.0,  # score x this for SKUs settled in the market in the last 6 h that we hold 0 of
+             "rival_follow": 0.0},   # move a SKU's ask this share of the way to what rivals got after our quote (0 = off)
     "buyer": {"max_shops": 3, "max_bids": 3, "order_interval": 90, "ladder": False,
               "anchor": {"A": .60, "B": .46, "C": .32}, "step": .045,
               "ceiling": {"A": .85, "B": .80, "C": .80}, "ceiling_warranty": .95, "ceiling_food": .95, "warranty_bonus": .03,
               "cost_mid": {"A": .65, "B": .50, "C": .35}, "no_warranty_penalty": .06,
-              "accept_grades": ["A", "B"]},
+              "accept_grades": ["A", "B"],
+              "probe_retry_pause": 1.0,   # s to wait before the single retry of a quote after a timeout/connection error/5xx
+              "forum_lead": 60},     # s before the 5-minute forum slot opens that review.py may queue the next post
     # Which model reads the messages rules cannot parse: "local" (free qwen3:4b) or "anthropic" (paid, budgeted).
     "model": {"provider": "local", "name": "claude-haiku-5-5", "effort": "low"},
     "prompts": {
@@ -33,6 +37,8 @@ DEFAULTS = {
     "strategist": {"model": "claude-opus-5-5", "effort": "high"},
 }
 _params = {"mtime": None, "data": {}}
+UNSERVED_WINDOW = 6 * 3600   # the observation's unserved_demand_6h window
+RIVAL_WINDOW = 1800          # lost_to_rivals_6h: another shop sold the SKU within 30 min after our quote
 
 
 def params(section):
@@ -61,6 +67,30 @@ def atomic_json(path, obj):
     temp.replace(path)
 
 
+def lost_quotes(offset):
+    """(sku, market ts, first ask) of our quotes of the last 6 h that ended without our deal."""
+    first, agreed = {}, set()
+    try:
+        with (ROOT / "logs/shop-decisions.jsonl").open(encoding="utf-8") as log:
+            for line in log:
+                if '"quote"' not in line and '"agreed"' not in line:
+                    continue
+                try:
+                    e = json.loads(line)
+                except ValueError:
+                    continue
+                if e.get("event") == "agreed":
+                    agreed.add(e.get("task"))
+                elif e.get("event") == "quote" and e.get("task") not in first:
+                    first[e.get("task")] = (e.get("sku"), e.get("ts"), e.get("ask"))
+    except OSError:
+        return []
+    since = time.time() - UNSERVED_WINDOW
+    return [(sku, ts + offset, ask) for task, (sku, ts, ask) in first.items()
+            if task not in agreed and isinstance(ts, (int, float)) and ts > since
+            and isinstance(ask, (int, float)) and ask > 0]
+
+
 def signals(state, refresh=False):
     path = state / "shop-signals.json"
     data = read_json(path, {})
@@ -87,18 +117,39 @@ def signals(state, refresh=False):
             counts = {k: float(v) * .95 for k, v in data.get("sku_sales", {}).items()}
             catalog = read_json(state / "catalog.json", {})
             ratios = collections.defaultdict(list)
+            recent = data.get("recent_settles", {})     # sku -> market ts of settles (catalog SKUs only)
+            quotes = lost_quotes(data.get("market_offset", 0))
+            quoted = {q[0] for q in quotes}
+            rival = data.get("rival_settles", {})       # sku -> [market ts, amount] of other shops' settles
             for row in rows:
                 if row.get("round") != 3 or row.get("kind") != "settle" or row["seq"] <= data.get("cursor", 0):
                     continue
                 item = row["data"]
                 sku = item.get("sku", item.get("item"))
                 counts[sku] = counts.get(sku, 0) + 1
+                if sku in catalog and isinstance(row.get("ts"), (int, float)):
+                    recent.setdefault(sku, []).append(row["ts"])
+                seller = item.get("shop", item.get("seller"))
+                if (sku in quoted and seller and seller != "cheapest-in-town" and isinstance(row.get("ts"), (int, float))
+                        and isinstance(item.get("amount"), (int, float))):
+                    rival.setdefault(sku, []).append([row["ts"], item["amount"]])
                 product = catalog.get(sku, {})
                 if product.get("list_price"):
                     ratios[product["category"]].append(item["amount"] / product["list_price"])
             for category, values in ratios.items():
                 old = data["category_ratio"].get(category, .72)
                 data["category_ratio"][category] = .8 * old + .2 * statistics.median(values)
+            since = time.time() + data.get("market_offset", 0) - UNSERVED_WINDOW
+            recent = {k: [t for t in v if t > since] for k, v in recent.items()}
+            data["recent_settles"] = {k: v for k, v in recent.items() if v}
+            rival = {k: [s for s in v if s[0] > since] for k, v in rival.items() if k in quoted}
+            data["rival_settles"] = {k: v for k, v in rival.items() if v}
+            lost = collections.defaultdict(list)
+            for sku, at, ask in quotes:
+                hit = min((s for s in data["rival_settles"].get(sku, []) if at <= s[0] <= at + RIVAL_WINDOW), default=None)
+                if hit:
+                    lost[sku].append(hit[1] / ask)
+            data["rival_ratio"] = {k: statistics.median(v) for k, v in lost.items()}   # rival price / our first ask
             data.update(sku_sales=counts, updated=time.time(), cursor=max((r["seq"] for r in rows), default=0))
             atomic_json(path, data)
             try:
@@ -157,7 +208,11 @@ def prices(unit, observations, current_grade):
     if age > p["aged_minutes"]:
         ask_ratio -= p["aged_ask_cut"]
     floor = max(math.ceil(cost * margin), math.ceil(listed * floor_ratio))
-    return {"ask": max(floor, math.ceil(listed * ask_ratio)), "floor": floor, "cost": cost}
+    ask = listed * ask_ratio
+    rival = observations.get("rival_ratio", {}).get(unit.get("sku"))
+    if p["rival_follow"] and rival:
+        ask *= 1 + p["rival_follow"] * (rival - 1)   # toward the rivals' price; the floor below still holds
+    return {"ask": max(floor, math.ceil(ask)), "floor": floor, "cost": cost}
 
 
 def reserve_warranty(state, task, unit, price, commit=False):
@@ -201,6 +256,8 @@ def restock_plan(state):
     categories = collections.Counter(u.get("category") for u in units)
     food_held = sum(u.get("cost", 0) for u in units if u.get("kind") == "food")
     surge = {x["sku"]: x.get("factor", 1) for x in inv.get("surge", [])}
+    since = time.time() + observed.get("market_offset", 0) - UNSERVED_WINDOW
+    unserved = {k for k, v in observed.get("recent_settles", {}).items() if any(t > since for t in v)}
     candidates = []
     for sku, product in catalog.items():
         n = observed.get("sku_sales", {}).get(sku, 0)
@@ -214,6 +271,8 @@ def restock_plan(state):
         deficit = target - owned[sku]
         if deficit > 0:
             score = n ** p["sales_exp"] * listed ** p["price_exp"] / (1 + categories[product["category"]]) ** p["category_penalty"]
+            if sku in unserved and owned[sku] == 0:
+                score *= p["unserved_boost"]
             candidates.append((score, sku, product, deficit))
     candidates.sort(reverse=True)
     selected, spent, added, planned_categories, food_spend = [], 0, 0, set(), 0

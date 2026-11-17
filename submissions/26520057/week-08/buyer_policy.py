@@ -379,6 +379,19 @@ class Visit:
         self.client.close()
 
 
+def transient(exc):
+    """Network trouble worth one more try: timeouts, connection errors and 5xx answers."""
+    if isinstance(exc, httpx.HTTPStatusError):
+        return exc.response.status_code >= 500
+    return isinstance(exc, (httpx.TransportError, TimeoutError))
+
+
+def fail_reason(exc):
+    if isinstance(exc, httpx.HTTPStatusError):
+        return f"HTTP {exc.response.status_code}"
+    return str(exc)[:80] or type(exc).__name__
+
+
 def run(order, shops, catalog):
     log_event(order=order["order"], event="order_start", kind=order.get("kind"),
               acceptable_skus=len(order.get("acceptable", [])))
@@ -388,6 +401,7 @@ def run(order, shops, catalog):
     visits = []
     deadline = time.monotonic() + min(175, max(0, order["expires"] - market_now(ROOT / ".market") - 20))
     result = {"shop": "", "receipt": None}
+    fail_reasons, retries = collections.Counter(), 0
     try:
         for choice in selected:
             if time.monotonic() >= deadline:
@@ -395,7 +409,21 @@ def run(order, shops, catalog):
             visit = Visit(choice)
             visits.append(visit)
             try:
-                quote = visit.probe(order)
+                try:
+                    quote = visit.probe(order)
+                except Exception as exc:
+                    pause = params("buyer")["probe_retry_pause"]
+                    if not transient(exc) or time.monotonic() + pause >= deadline:
+                        raise
+                    # One short retry on a fresh connection and task; a second failure moves on to the next shop.
+                    retries += 1
+                    log_event(order=order["order"], event="probe_retry", shop=choice["shop"]["name"],
+                              sku=choice["offer"]["sku"], reason=fail_reason(exc))
+                    visit.close()
+                    time.sleep(pause)
+                    visit = Visit(choice)
+                    visits[-1] = visit
+                    quote = visit.probe(order)
                 if not quote.get("ask"):
                     raise ValueError("no readable asking price")
                 if not hint_fits(order, quote):
@@ -420,6 +448,7 @@ def run(order, shops, catalog):
                 key = choice["shop"]["name"] + "|" + choice["offer"]["sku"]
                 unavailable = "model currently unavailable" in str(exc)
                 cooldowns[choice["shop"]["name"] + "|*" if unavailable else key] = time.time() + (900 if unavailable else 300)
+                fail_reasons["probe: " + fail_reason(exc)] += 1
                 log_event(order=order["order"], event="probe_failed", shop=choice["shop"]["name"],
                           sku=choice["offer"]["sku"], reason=str(exc)[:180])
         for visit in sorted(visits, key=lambda v: v.expected, reverse=True):
@@ -440,6 +469,7 @@ def run(order, shops, catalog):
             except Exception as exc:
                 key = visit.choice["shop"]["name"] + "|" + visit.choice["offer"]["sku"]
                 cooldowns[key] = time.time() + 180
+                fail_reasons["reject: " + fail_reason(exc)] += 1
                 log_event(order=order["order"], event="candidate_rejected", shop=visit.choice["shop"]["name"],
                           sku=visit.choice["offer"]["sku"], reason=str(exc)[:180])
     finally:
@@ -447,5 +477,5 @@ def run(order, shops, catalog):
         for visit in visits:
             visit.close()
         log_event(order=order["order"], event="order_finished", receipt_ready=bool(result.get("receipt")),
-                  shops_probed=len(visits))
+                  shops_probed=len(visits), probe_retries=retries, fail_reasons=dict(fail_reasons))
     return result

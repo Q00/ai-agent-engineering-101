@@ -258,6 +258,39 @@ def code_queue():
     return open_items, answers
 
 
+def think_cli(user, model, effort):
+    """One call through Claude Code with 다나's plan login (11-17). No tools, same system prompt and schema.
+    Returns the plan, or raises so the caller falls back to the API."""
+    exe = sorted(Path.home().glob(".vscode-server/extensions/anthropic.claude-code-*-linux-x64/resources/native-binary/claude"))
+    if not exe:
+        raise RuntimeError("claude CLI not found")
+    env = {k: v for k, v in os.environ.items() if k not in ("ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN")}   # use the plan, not the key
+    sp = ROOT / "runtime/strategist-system.txt"
+    sp.write_text(SYSTEM, encoding="utf-8")
+    t0 = time.time()
+    r = subprocess.run([str(exe[-1]), "-p", "--output-format", "json", "--model", model, "--effort", effort,
+                        "--system-prompt-file", str(sp), "--tools", "", "--strict-mcp-config", "--no-session-persistence",
+                        "--json-schema", json.dumps(SCHEMA)],
+                       input=user, capture_output=True, text=True, timeout=1200, env=env, cwd="/tmp")
+    out = json.loads(r.stdout or "{}")
+    if r.returncode or out.get("is_error") or out.get("subtype") != "success":
+        raise RuntimeError(f"claude -p failed: rc={r.returncode} {str(out.get('result') or r.stderr)[:200]}")
+    plan = out.get("structured_output") or json.loads(out["result"])
+    sk = plan.get("summary_ko")
+    if isinstance(sk, list) or (isinstance(sk, str) and sk.strip().startswith("[")):
+        try:
+            plan["summary_ko"] = "\n".join(json.loads(sk) if isinstance(sk, str) else sk)
+        except ValueError:
+            pass
+    for k in SCHEMA["required"]:
+        if k not in plan:
+            raise RuntimeError(f"claude -p plan misses {k}")
+    with open(ROOT / "logs/api-cost.jsonl", "a", encoding="utf-8") as f:
+        f.write(json.dumps({"ts": time.time(), "who": "strategist (plan)", "model": model, "usd": 0.0,
+                            "list_price_usd": round(out.get("total_cost_usd", 0), 4), "seconds": round(time.time() - t0, 1)}) + "\n")
+    return plan
+
+
 def think(obs, experiments, params, envelope, model, effort, extra=""):
     import anthropic
     client = anthropic.Anthropic()
@@ -279,6 +312,10 @@ def think(obs, experiments, params, envelope, model, effort, extra=""):
             + "\n\nYour hypothesis backlog from the last run:\n"
             + json.dumps(read_json(ROOT / "logs/hypothesis-backlog.json", {}).get("backlog", []), ensure_ascii=False, indent=1)
             + extra)
+    try:
+        return think_cli(user, model, effort), 0.0
+    except Exception as exc:   # plan limit, login expired, timeout: pay with the API as before
+        print(f"plan call failed, using the API: {exc}")
     with client.beta.messages.stream(
         model=model, max_tokens=32000, system=SYSTEM,
         thinking={"type": "adaptive"}, output_config={"effort": effort, "format": {"type": "json_schema", "schema": SCHEMA}},

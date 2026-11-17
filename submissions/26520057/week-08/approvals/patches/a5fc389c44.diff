@@ -1,0 +1,131 @@
+--- a/shop_strategy.py
++++ b/shop_strategy.py
+@@ -19,7 +19,8 @@
+              "max_line_qty": 4, "one_per_category_run": True, "food_min_shelf_hours": 720, "worst_surge": 1.5,
+              "ledger_pages": 1, "margin": {"A": 1.15, "B": 1.10, "C": 1.08},
+              "aged_minutes": 1e9, "aged_margin": 1.0, "aged_floor_cut": 1.0, "aged_ask_cut": 0.0,
+-             "stale_minutes": 1e9, "stale_margin": 1.0, "concession": .03, "max_counters": 4, "reply_note": ""},
++             "stale_minutes": 1e9, "stale_margin": 1.0, "concession": .03, "max_counters": 4, "reply_note": "",
++             "unserved_boost": 1.0},  # score x this for SKUs settled in the market in the last 6 h that we hold 0 of
+     "buyer": {"max_shops": 3, "max_bids": 3, "order_interval": 90, "ladder": False,
+               "anchor": {"A": .60, "B": .46, "C": .32}, "step": .045,
+               "ceiling": {"A": .85, "B": .80, "C": .80}, "ceiling_warranty": .95, "ceiling_food": .95, "warranty_bonus": .03,
+@@ -34,6 +35,7 @@
+     "strategist": {"model": "claude-opus-5-5", "effort": "high"},
+ }
+ _params = {"mtime": None, "data": {}}
++UNSERVED_WINDOW = 6 * 3600   # the observation's unserved_demand_6h window
+ 
+ 
+ def params(section):
+@@ -88,18 +90,24 @@
+             counts = {k: float(v) * .95 for k, v in data.get("sku_sales", {}).items()}
+             catalog = read_json(state / "catalog.json", {})
+             ratios = collections.defaultdict(list)
++            recent = data.get("recent_settles", {})     # sku -> market ts of settles (catalog SKUs only)
+             for row in rows:
+                 if row.get("round") != 3 or row.get("kind") != "settle" or row["seq"] <= data.get("cursor", 0):
+                     continue
+                 item = row["data"]
+                 sku = item.get("sku", item.get("item"))
+                 counts[sku] = counts.get(sku, 0) + 1
++                if sku in catalog and isinstance(row.get("ts"), (int, float)):
++                    recent.setdefault(sku, []).append(row["ts"])
+                 product = catalog.get(sku, {})
+                 if product.get("list_price"):
+                     ratios[product["category"]].append(item["amount"] / product["list_price"])
+             for category, values in ratios.items():
+                 old = data["category_ratio"].get(category, .72)
+                 data["category_ratio"][category] = .8 * old + .2 * statistics.median(values)
++            since = time.time() + data.get("market_offset", 0) - UNSERVED_WINDOW
++            recent = {k: [t for t in v if t > since] for k, v in recent.items()}
++            data["recent_settles"] = {k: v for k, v in recent.items() if v}
+             data.update(sku_sales=counts, updated=time.time(), cursor=max((r["seq"] for r in rows), default=0))
+             atomic_json(path, data)
+             try:
+@@ -202,6 +210,8 @@
+     categories = collections.Counter(u.get("category") for u in units)
+     food_held = sum(u.get("cost", 0) for u in units if u.get("kind") == "food")
+     surge = {x["sku"]: x.get("factor", 1) for x in inv.get("surge", [])}
++    since = time.time() + observed.get("market_offset", 0) - UNSERVED_WINDOW
++    unserved = {k for k, v in observed.get("recent_settles", {}).items() if any(t > since for t in v)}
+     candidates = []
+     for sku, product in catalog.items():
+         n = observed.get("sku_sales", {}).get(sku, 0)
+@@ -215,6 +225,8 @@
+         deficit = target - owned[sku]
+         if deficit > 0:
+             score = n ** p["sales_exp"] * listed ** p["price_exp"] / (1 + categories[product["category"]]) ** p["category_penalty"]
++            if sku in unserved and owned[sku] == 0:
++                score *= p["unserved_boost"]
+             candidates.append((score, sku, product, deficit))
+     candidates.sort(reverse=True)
+     selected, spent, added, planned_categories, food_spend = [], 0, 0, set(), 0
+--- a/tests/agent_unserved_boost.py
++++ b/tests/agent_unserved_boost.py
+@@ -0,0 +1,65 @@
++"""unserved_boost: ledger settles of the last 6 h (catalog SKUs only) are recorded; boost 1.0 keeps the plan."""
++import io
++import json
++import os
++import sys
++import tempfile
++import time
++from pathlib import Path
++from unittest.mock import patch
++
++SOURCE = Path(os.environ.get("AX_TEST_SOURCE", str(Path(__file__).resolve().parent.parent)))
++sys.path.insert(0, str(SOURCE))
++import shop_strategy as strategy
++
++
++class Resp(io.BytesIO):
++    headers = {}
++
++    def __enter__(self):
++        return self
++
++    def __exit__(self, *a):
++        return False
++
++
++with tempfile.TemporaryDirectory() as tmp:
++    state = Path(tmp)
++    catalog = {f"G{i:08x}": {"sku": f"G{i:08x}", "category": f"c{i}", "kind": "goods", "list_price": 100000}
++               for i in range(4)}
++    (state / "catalog.json").write_text(json.dumps(catalog))
++    (state / "shop-signals.json").write_text(json.dumps(
++        {"sku_sales": {}, "category_ratio": {}, "market_offset": 0, "updated": 0, "cursor": 0}))
++    now = time.time()
++    rows = [{"seq": 1, "round": 3, "kind": "settle", "ts": now - 100, "data": {"sku": "G00000001", "amount": 70000}},
++            {"seq": 2, "round": 3, "kind": "settle", "ts": now - 7 * 3600, "data": {"sku": "G00000002", "amount": 70000}},
++            {"seq": 3, "round": 3, "kind": "settle", "ts": now - 50, "data": {"sku": "소파/의자/스툴", "amount": 70000}}]
++
++    def fake(url, timeout=None):
++        if "/api/ledger" in url:
++            return Resp(json.dumps(rows).encode())
++        raise OSError("no network in tests")
++
++    with patch.object(strategy.urllib.request, "urlopen", side_effect=fake):
++        obs = strategy.signals(state, refresh=True)
++    assert set(obs["recent_settles"]) == {"G00000001"}, obs["recent_settles"]
++    print("PASS recent settles keep only catalog SKUs inside the 6 h window")
++
++    real = strategy.params
++    obs = {"sku_sales": {"G00000000": 40, "G00000001": 30, "G00000002": 20, "G00000003": 10},
++           "category_ratio": {}, "market_offset": 0, "recent_settles": {"G00000001": [now - 100]}}
++    inv = {"balance": 50000000, "units": [], "restock": {"open": True}, "surge": []}
++    (state / "inventory.json").write_text(json.dumps(inv))
++
++    def plan(boost=None):
++        cfg = lambda s: ({**real(s), "max_line_qty": 1, "per_run_spend": 120000, "stock_cost_cap": 50000000,
++                          "cash_reserve": 0, "min_sales": 1, "min_list_price": 1000,
++                          **({"unserved_boost": boost} if boost is not None else {})} if s == "shop" else real(s))
++        with patch.object(strategy, "params", side_effect=cfg), patch.object(strategy, "signals", return_value=obs):
++            return strategy.restock_plan(state)["buy"]
++
++    base = plan()
++    assert strategy.DEFAULTS["shop"]["unserved_boost"] == 1.0
++    assert plan(1.0) == base and base[0]["sku"] == "G00000000", base
++    assert plan(2.0)[0]["sku"] == "G00000001", plan(2.0)
++    print("PASS unserved_boost 1.0 keeps today's plan; a higher boost moves the unserved SKU up")

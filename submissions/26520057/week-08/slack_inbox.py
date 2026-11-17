@@ -141,7 +141,7 @@ def main():
         now = time.strftime("%Y-%m-%d %H:%M KST")
         reply = handle(msg.get("text", ""), now)
         append_jsonl(ROOT / "logs/slack-inbox.jsonl", {"ts": now, "text": msg.get("text", "")[:500], "reply": reply})
-        notify.send(reply)
+        notify.send(reply, force=True)   # a reply to 다나's own message
     STATE.write_text(json.dumps(state))
 
 

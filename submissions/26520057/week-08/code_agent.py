@@ -37,7 +37,7 @@ CONTEXT_FILES = ["shop_strategy.py", "seller_r3.py", "buyer_policy.py", "review.
                  "harness.py", "run_buyer.py", "run_shop.py", "agent.json", "params.json", "envelope.json"]
 TESTS = ["tests/verify_shop_strategy.py", "tests/verify_buyer_policy.py", "tests/verify_guardrails.py"]
 MARKET_SAMPLE = ["catalog.json", "inventory.json", "shop-signals.json", "shops.json", "order.json", "demand.json"]
-MODEL, MAX_TURNS, MAX_USD_PER_TRY, TRIES_PER_DAY = "claude-opus-5-5", 30, 3.0, 4
+MODEL, MAX_TURNS, MAX_USD_PER_TRY, TRIES_PER_DAY = "claude-opus-5-5", 30, 3.0, 9   # 9 on the last day (다나, 11-17)
 PRICE = {"in": 4.0, "out": 20.0, "cache_write": 5.0, "cache_read": 0.20}   # $/MTok, Claude Opus 5.5
 
 
@@ -178,7 +178,7 @@ print("smoke ok", len(plan["buy"]), len(picked))
 """
 
 
-def prepare():
+def prepare(WORK=WORK):
     shutil.rmtree(WORK, ignore_errors=True)
     (WORK / "tests").mkdir(parents=True)
     (WORK / ".market").mkdir()
@@ -335,6 +335,15 @@ def run_tool(name, args):
 
 
 # ---------------------------------------------------------------- 4-5. gate and ship
+def baseline_failures():
+    """Run the same checks on an untouched copy of the live code; return the names that fail there too."""
+    base = ROOT / "runtime/code-agent/base"
+    prepare(base)
+    _, report = run_checks(base)
+    return {l.split(":")[0][5:] for l in report.splitlines() if l.startswith("FAIL ")}
+
+
+
 def ship(issue, changed, summary, usd, state):
     k = key_of(issue)
     record = {"issue": k, "what": issue["what"][:300], "summary": summary[:600], "changed": changed, "usd": round(usd, 3), "ts": now()}
@@ -344,6 +353,14 @@ def ship(issue, changed, summary, usd, state):
         return record
     bad = [c for c in changed if not editable(c)]
     ok, report = run_checks(WORK)
+    if not ok and not bad:
+        # A pre-existing test that fails the same way on the unchanged code is not the fix's fault (11-17:
+        # verify_guardrails reads the live folder, so it failed for every fix while params used a paid model).
+        lines = report.splitlines()
+        fails = {l.split(":")[0][5:] for l in lines if l.startswith("FAIL ")}
+        forgiven = fails & set(TESTS) & baseline_failures()
+        if fails and fails == forgiven and not any(l.startswith("COMPILE FAIL") for l in lines):
+            ok, report = True, report + "\nNOTE also fails on the unchanged code: " + ", ".join(sorted(forgiven))
     if bad or not ok:
         record.update(result="rejected by gate", bad_files=bad, checks=report[-1500:])
         say(f":no_entry: 코드 에이전트의 수정이 문에서 막혀 반영하지 않았어요 ({'허용 안 된 파일 ' + ', '.join(bad) if bad else '시험 실패'}). 가게는 그대로예요.")
