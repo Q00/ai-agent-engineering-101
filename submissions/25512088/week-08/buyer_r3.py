@@ -71,7 +71,12 @@ def quote_fields(task):
 
 GRADE_PRICE_CAP = {'A':69, 'B':60, 'C':48}
 GRADE_COST_MIDPOINT = {'A':.65, 'B':.50, 'C':.35}
-SAVED_TARGET = .80
+# In the latest mature one-hour cohort, only 15/93 agreements needed the final
+# fallback and their quoted Saved estimate had a 0.756 median; just 2/15 were
+# at least 0.825.  Saved carries five times the weight of Deals, so stop buying
+# the weakest tail while retaining a measured midpoint below the proven 0.85
+# bridge instead of removing fallback entirely.
+SAVED_TARGET = .825
 SAVED_PROBE_TARGET = 1.00
 SAVED_STRETCH_TARGET = .95
 SAVED_HIGH_MIDDLE_TARGET = .925
