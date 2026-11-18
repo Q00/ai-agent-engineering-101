@@ -1,0 +1,8 @@
+PASS  category median from settles of the last 24 h only: {'h6': {'n': 3, 'median': 0.8, 'p25': 0.7, 'p75': 0.9}, 'h24': {'n': 3, 'median': 0.8, 'p25': 0.7, 'p75': 0.9}}
+PASS  a settle 8 h ago counts for 24 h, not 6 h: {'h6': None, 'h24': {'n': 1, 'median': 0.6, 'p25': 0.6, 'p75': 0.6}}
+PASS  forum price claims are checked against the ledger: {('honest', '패드'): {'id': 1, 'author': 'honest', 'role': 'buyer', 'category': '패드', 'claim': 0.79, 'ledger': 0.8, 'ledger_n': 3, 'gap': -0.01}, ('pumper', '패드'): {'id': 2, 'author': 'pumper', 'role': 'shop', 'category': '패드', 'claim': 1.2, 'ledger': 0.8, 'ledger_n': 3, 'gap': 0.4}, ('x', '스프링 매트리스'): {'id': 3, 'author': 'x', 'role': 'buyer', 'category': '스프링 매트리스', 'claim': 0.7, 'ledger': 0.6, 'ledger_n': 1, 'gap': 0.1}}
+PASS  a category name inside a longer word is not a claim (스프 in 스프링), a post with no price words is skipped: [('honest', '패드'), ('pumper', '패드'), ('x', '스프링 매트리스')]
+PASS  per author, the mean gap where the ledger has 3+ settles: {'honest': {'claims': 1, 'mean_gap': 0.01}, 'pumper': {'claims': 1, 'mean_gap': 0.4}}
+PASS  one line for a model: SKU, category and the forum, the ledger first: this SKU settled 3 times in 24 h at 80% of list (median); its category 패드: 3 settles, median 80% of list (middle half 70%-90%); forum posts claim 100% (unchecked; the ledger above is the record)
+
+6/6 passed

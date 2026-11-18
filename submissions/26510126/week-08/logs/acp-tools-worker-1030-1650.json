@@ -1,0 +1,76 @@
+{
+ "endpoint": "https://fair-price-signed-receipts.thisjonghoon.workers.dev/acp",
+ "tools": [
+  {
+   "name": "create_checkout_session",
+   "description": "POST /checkout_sessions on the shop's ACP endpoint",
+   "input_schema": {
+    "type": "object",
+    "required": [
+     "line_items",
+     "receipt"
+    ],
+    "properties": {
+     "line_items": {
+      "description": "[{id: item, quantity: 1}]"
+     },
+     "receipt": {
+      "description": "the receipt the shop signed over A2A"
+     }
+    }
+   }
+  },
+  {
+   "name": "get_checkout_session",
+   "description": "GET /checkout_sessions/{id} on the shop's ACP endpoint",
+   "input_schema": {
+    "type": "object",
+    "required": [
+     "id"
+    ],
+    "properties": {
+     "id": {
+      "type": "string",
+      "description": "id in the path"
+     }
+    }
+   }
+  },
+  {
+   "name": "complete_checkout_session",
+   "description": "POST /checkout_sessions/{id}/complete on the shop's ACP endpoint",
+   "input_schema": {
+    "type": "object",
+    "required": [
+     "payment_data",
+     "id"
+    ],
+    "properties": {
+     "payment_data": {
+      "description": "{order, checkout_mandate, payment_mandate}"
+     },
+     "id": {
+      "type": "string",
+      "description": "id in the path"
+     }
+    }
+   }
+  },
+  {
+   "name": "cancel_checkout_session",
+   "description": "POST /checkout_sessions/{id}/cancel on the shop's ACP endpoint",
+   "input_schema": {
+    "type": "object",
+    "required": [
+     "id"
+    ],
+    "properties": {
+     "id": {
+      "type": "string",
+      "description": "id in the path"
+     }
+    }
+   }
+  }
+ ]
+}

@@ -1,0 +1,50 @@
+[13:41:17] CARD: 'thisjonghoon' at http://127.0.0.1:50149/, protocol 1.0
+[13:41:17] SEND: 'I want to buy Test Lamp (G1)'
+[13:41:17] OPEN 36659c39 G1 Test Lamp list 100000 cost 60000 ask 95000 floor 78000
+[13:41:17] RECV: TASK_STATE_INPUT_REQUIRED | 'Test Lamp (G1): grade A, market certificate attached. List price 100000, asking 95000. Send your offer as a number.'
+[13:41:17] SEND: '50000' taskId=36659c39
+[13:41:17] RECV: TASK_STATE_INPUT_REQUIRED | 'Counteroffer: 78000.'
+[13:41:17] SEND: '70000' taskId=36659c39
+[13:41:17] RECV: TASK_STATE_INPUT_REQUIRED | 'Counteroffer: 78000.'
+[13:41:17] SEND: '76000' taskId=36659c39
+[13:41:17] RECV: TASK_STATE_INPUT_REQUIRED | 'Counteroffer: 78000.'
+[13:41:17] SEND: '79000' taskId=36659c39
+[13:41:17] DEAL 36659c39 G1 at 78000 (cost 60000, list 100000, turns 4)
+[13:41:17] RECV: TASK_STATE_COMPLETED | 'Deal: Test Lamp at 78000.'
+PASS  goods floor, no warranty by default: {'price': 78000.0, 'item': 'G1', 'claim': 'A', 'unit': 'u-goods', 'task': '36659c39-aeaf-4c89-8eea-aa42b96e4cc1', 'shop': 'thisjonghoon', 'sig_seller': 'C5bB1DX+6TbwJl0Wv3p0n7sG++iskCRrBbIoWU+9DrRymP+09rtU7I5tes+qqRKY3nwx0boFk5ytGrUyoUQtAQ=='}
+[13:41:17] CARD: 'thisjonghoon' at http://127.0.0.1:50149/, protocol 1.0
+[13:41:17] SEND: 'I want to buy Test Kimchi (F1)'
+[13:41:17] OPEN d793f943 F1 Test Kimchi list 30000 cost 18000 ask 28500 floor 23400
+[13:41:17] RECV: TASK_STATE_INPUT_REQUIRED | 'Test Kimchi (F1): grade A, market certificate attached, 150 h of shelf life left. List price 30000, asking 28500. Send your offer as a number.'
+[13:41:17] SEND: '29000' taskId=d793f943
+[13:41:17] DEAL d793f943 F1 at 28500 (cost 18000, list 30000, turns 1)
+[13:41:17] RECV: TASK_STATE_COMPLETED | 'Deal: Test Kimchi at 28500.'
+PASS  food at the ask, honest claim: {'price': 28500.0, 'item': 'F1', 'claim': 'A', 'unit': 'u-food', 'task': 'd793f943-9610-42a7-98f4-69f441de5ce5', 'shop': 'thisjonghoon', 'sig_seller': 'hXLQi4Vs9ezQUdwl6ZTepTn3CQ4Mm8hWY8QrdkWPepBvbLvo5TDj1QL6Tvu8F6RQAPJPqcQ9r4O28OdwLkFlAQ=='}
+[13:41:17] CARD: 'thisjonghoon' at http://127.0.0.1:50149/, protocol 1.0
+[13:41:17] SEND: 'I want to buy Old Kimchi (F2)'
+[13:41:17] OPEN fd9161e0 F2 Old Kimchi list 30000 cost 18000 ask 28500 floor 10800
+[13:41:17] RECV: TASK_STATE_INPUT_REQUIRED | 'Old Kimchi (F2): grade C, market certificate attached, 3 h of shelf life left. List price 30000, asking 28500. Send your offer as a number.'
+[13:41:17] SEND: '9000' taskId=fd9161e0
+[13:41:17] RECV: TASK_STATE_INPUT_REQUIRED | 'Counteroffer: 20700.'
+[13:41:17] SEND: '11000' taskId=fd9161e0
+[13:41:17] DEAL fd9161e0 F2 at 11000 (cost 18000, list 30000, turns 2)
+[13:41:17] RECV: TASK_STATE_COMPLETED | 'Deal: Old Kimchi at 11000.'
+PASS  near-date food cleared under cost: {'price': 11000.0, 'item': 'F2', 'claim': 'C', 'unit': 'u-old', 'task': 'fd9161e0-fea1-4ea0-9218-abeb4576458e', 'shop': 'thisjonghoon', 'sig_seller': 'pOOvjQKovs5vXNKWpXOnI59+h0x86rWogsYMw3wKvXyFFJBO1BYDvryU35yv2nNYR0TG0jSRPnc39c1bIahIDA=='}
+[13:41:17] CARD: 'thisjonghoon' at http://127.0.0.1:50149/, protocol 1.0
+[13:41:17] SEND: 'I want to buy Test Chair (G2)'
+[13:41:17] OPEN e5e72581 G2 Test Chair list 100000 cost 60000 ask 95000 floor 78000
+[13:41:17] RECV: TASK_STATE_INPUT_REQUIRED | 'Test Chair (G2): grade B, market certificate attached. List price 100000, asking 95000. Send your offer as a number.'
+[13:41:17] SEND: 'For G2 I offer 79,000' taskId=e5e72581
+[13:41:17] RECV: TASK_STATE_INPUT_REQUIRED | 'Counteroffer: 88600.'
+[13:41:17] SEND: 'OK, 79,000 for G2 then' taskId=e5e72581
+[13:41:17] DEAL e5e72581 G2 at 79000 (cost 60000, list 100000, turns 2)
+[13:41:17] RECV: TASK_STATE_COMPLETED | 'Deal: Test Chair at 79000.'
+PASS  offer read past the SKU's digits: {'price': 79000.0, 'item': 'G2', 'claim': 'B', 'unit': 'u-goods2', 'task': 'e5e72581-aec8-45cb-a1fe-8317e1c64dd7', 'shop': 'thisjonghoon', 'sig_seller': 'JEIgtH9pmBDGUlaoSB/Bcaj0U4urYArPjL7/+ta8pGb+CYdnPIYfts7aQQtH379iXG0XYqm1gA9YqLwW7c3hAw=='}
+[13:41:17] CARD: 'thisjonghoon' at http://127.0.0.1:50149/, protocol 1.0
+[13:41:17] SEND: 'I want to buy Test Lamp (G1)'
+[13:41:17] RECV: TASK_STATE_REJECTED | 'Sorry, we have none of that in stock.'
+PASS  a sold unit is not offered again within 60 s: TASK_STATE_REJECTED
+PASS  an abandoned negotiation frees its unit: ['u-y']
+PASS  no grade claim within an hour of a line: ('A', 134.89999998390675, None)
+
+7/7 passed

@@ -1,0 +1,40 @@
+PASS  food: picks F1 (biggest surplus with enough shelf life), not F3 (20 h shelf life < 24 h needed): receipt {'shop': 'good-shop', 'item': 'F1', 'price': 22051, 'task': '7ad6596d-c342-4e0d-9129-f53167f6e415', 'sig_seller': 'x'}
+PASS  price under 0.9 x list and within budget: paid 22051
+PASS  accept: certificate and 24 x 1.1 h of shelf life: {'cert': True, 'min_hours_left': 26.4}
+PASS  opens with the product name and SKU, asks for shelf life: I want to buy 포기김치 5kg (F1). I need it to last 24 hours: please ship a unit with at least 26.4 hours of shelf life left, with the market's certificate.
+PASS  leaves out the shop that claimed false grades: http://127.0.0.1:62465
+PASS  no stock anywhere: empty result line: {'shop': '', 'receipt': None, 'stars': None, 'review': None}
+PASS  review: false grade claim is 1 star with the ledger ref: 포기김치 5kg: the shop claimed grade A but shipped grade B (ledger #777). Paid 70% of list 30000.
+PASS  review: settled facts recorded for the shop
+PASS  payments.jsonl refusal recorded once: [{'time': '2026-11-04 12:33:10', 'kind': 'payment', 'round': 3, 'order': 'o-2', 'shop': 'good-shop', 'sku': 'F1', 'price': 20000, 'paid': False, 'ledger': None, 'reason': 'no certificate, and the policy asks for one'}]
+PASS  broken.jsonl matched to our purchase and shop: [{'time': '2026-11-04 12:33:10', 'kind': 'broken', 'round': 3, 'name': '포기김치 5kg', 'broke_at': 1793763195.757109, 'shop': 'good-shop', 'order': 'o-1', 'price': 21000, 'warranty_hours': None, 'covered': False, 'ambiguous': True}]
+PASS  sync is idempotent
+PASS  forum: case 2's run queued one note with that shop's false claims: [직접 사봤습니다] Buyer notes from our own settled deals (check the refs): liar-shop: 2 settled, paid 50% of list price (median), grade claims true 0/2; claimed A ship
+PASS  forum: no second post within 5 minutes
+PASS  forum: right after an our_deals post, the next turn is not another our_deals post
+PASS  forum note: only new facts, with ledger refs: [직접 사봤습니다] Buyer notes from our own settled deals (check the refs): good-shop: 1 settled, paid 70% of list price (median), grade claims true 0/1; claimed A shipped B (#777)
+— 직접 사본 리뷰어 @ 장보기 레이더 📡 숫자는
+PASS  ledger: per-shop settle share of list (3 or more settles): {'cheap-shop': (4, 0, 0.55), 'dear-shop': (4, 0, 0.92), 'http://new': (1, 0, None)}
+PASS  never-paid shops ranked by their market price: cheap first, unknown in the middle, dear last: ['cheap-shop', 'new', 'dear-shop']
+PASS  old two-number ledger records still read
+PASS  context bomb: the shop's 60k-character reply reaches our prompt as 300 characters at most: 1 prompts, longest 1172
+PASS  context bomb: the catalog's product name is used, not the shop's bait: You are a buyer negotiating the price of a 포기김치 5kg with a shop, over several messages.
+Your budget, the most you may ev
+PASS  context bomb: nothing paid: {'shop': 'http://127.0.0.1:62471', 'receipt': None, 'stars': 2, 'review': 'No deal on 포기김치 5kg: the shop named no price.
+[12:33:10] HARNESS: prompt of 70000 characters is over 60000: not sent
+PASS  harness: a prompt over the cap is not sent
+PASS  clip: no control characters, collapsed, 300 characters: 'a b [31m c a b [31m c a b [31m c a b [31'
+PASS  no new deal and the last post under an hour old: nothing posted
+PASS  an hour without news: a ledger claim check with the false claims' refs: [정직 가게 명예의 전당] Grade-claim check from the public ledger, last 14 settled claims (check the refs): liar-x: 4 of 7 claims false (#901, #905, #909, #913) | all cla
+PASS  hidden demand: each order is logged with its category, reference price and nearest SKU: {'event': 'order', 'order': 'o-1', 'category': '식품>김치', 'kind': 'food', 'ref': 26000, 'near': 'F1', 'n_acceptable': 3, 'shops': 2, 'held': 4, 't': 1793763190.7}
+PASS  a shop's stated shelf life or grade under our payment policy ends the talk before a deal: the shop says 286 h of shelf life left, we need 594
+PASS  grade C without a warranty: keep talking but pay at most 65% of list; with a 6 h warranty: no cap: {'cap': 65000, 'why': 'the shop says grade C with no 6 h warranty'}
+PASS  the kit pays for C only at 65% of list or less, or with a 6 h warranty: [['A', 'B', 'C'], ['A', 'B']]
+PASS  the buyer reads its numbers from the meta-harness's plan: (0.55, 4)
+PASS  a malformed shop card is an error the buyer catches, not an exit
+[12:33:10] SCOUT: A GA: dropped (TASK_STATE_REJECTED)
+[12:33:10] SCOUT: B GB: asks 90000 of list 100000 (surplus at the ask ~10000)
+[12:33:10] SCOUT: C GC: asks 60000 of list 100000 (surplus at the ask ~40000)
+PASS  buyer team: out-of-stock shop dropped, cheapest quote negotiated first, unscouted shops kept after: ['C', 'B', 'D']
+
+32/32 passed

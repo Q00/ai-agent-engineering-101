@@ -1,0 +1,6 @@
+1. A2A deal: TASK_STATE_COMPLETED, receipt lamp at 110, task 1e5527e5
+2. acp.json endpoint https://fair-price-signed-receipts.thisjonghoon.workers.dev/acp; create session: 201 cs_bd414b2d3470eb0f ready_for_payment, total [{'type': 'total', 'amount': 110}]
+3. checkout_jwt signed by the market's key for thisjonghoon: True; matches the receipt: True; payload {'currency': 'credits', 'iat': 1793101066, 'id': 'cs_bd414b2d3470eb0f', 'item': 'lamp', 'price': 110, 'shop': 'thisjonghoon', 'shop_url': 'https://fair-price-signed-receipts.thisjonghoon.workers.dev', 'task': '1e5527e5-6c3e-4d1c-9826-eef29e840fcc'}
+4. same receipt again: 409 {'error': 'this receipt already has a checkout session'}
+5. complete with someone else's order o-a327a02f: 402; market says False; failed checks ['round_3_order', 'checkout_mandate_signed_by_buyer', 'payment_mandate_signed_by_buyer', 'closed_mandates_types', 'bound_to_open_mandates', 'bound_to_this_checkout']
+6. cancel: 200 canceled

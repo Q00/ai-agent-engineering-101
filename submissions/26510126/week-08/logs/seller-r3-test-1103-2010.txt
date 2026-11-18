@@ -1,0 +1,65 @@
+[20:10:59] CARD: 'thisjonghoon' at http://127.0.0.1:57485/, protocol 1.0
+[20:10:59] SEND: 'I want to buy Test Lamp (G1)'
+[20:10:59] OPEN dd59ede7 G1 Test Lamp list 100000 cost 60000 ask 95000 floor 78000
+[20:10:59] RECV: TASK_STATE_INPUT_REQUIRED | 'Test Lamp (G1): grade A, market certificate attached. List price 100000, asking 95000. Send your offer as a number.'
+[20:10:59] SEND: '50000' taskId=dd59ede7
+[20:10:59] RECV: TASK_STATE_INPUT_REQUIRED | 'Counteroffer: 78000.'
+[20:10:59] SEND: '70000' taskId=dd59ede7
+[20:10:59] RECV: TASK_STATE_INPUT_REQUIRED | 'Counteroffer: 78000.'
+[20:10:59] SEND: '76000' taskId=dd59ede7
+[20:10:59] RECV: TASK_STATE_INPUT_REQUIRED | 'Counteroffer: 78000.'
+[20:10:59] SEND: '79000' taskId=dd59ede7
+[20:10:59] DEAL dd59ede7 G1 at 78000 (cost 60000, list 100000, turns 4)
+[20:10:59] RECV: TASK_STATE_COMPLETED | 'Deal: Test Lamp at 78000.'
+PASS  goods floor, no warranty by default: {'unit': 'u-goods', 'task': 'dd59ede7-1d53-4ecb-a594-a3e87a1a74ae', 'item': 'G1', 'price': 78000.0, 'claim': 'A', 'shop': 'thisjonghoon', 'sig_seller': '7hxG97g/vRja1w72hC5/qzusH6AWkkZyhNCMYhcJSQ8rC3XRKpbAZyig99ZUkKoHf42L/ZOYztiEVBmuBI2GCw=='}
+[20:10:59] CARD: 'thisjonghoon' at http://127.0.0.1:57485/, protocol 1.0
+[20:10:59] SEND: 'I want to buy Test Kimchi (F1)'
+[20:10:59] OPEN b677c73a F1 Test Kimchi list 30000 cost 18000 ask 30000 floor 23400
+[20:10:59] RECV: TASK_STATE_INPUT_REQUIRED | 'Test Kimchi (F1): grade A, market certificate attached, 150 h of shelf life left. List price 30000, asking 30000. Send your offer as a number.'
+[20:10:59] SEND: '29000' taskId=b677c73a
+[20:10:59] DEAL b677c73a F1 at 29000 (cost 18000, list 30000, turns 1)
+[20:10:59] RECV: TASK_STATE_COMPLETED | 'Deal: Test Kimchi at 29000.'
+PASS  fresh food: the ask carries the freshness premium, so 29000 is accepted; honest claim: {'unit': 'u-food', 'task': 'b677c73a-7356-4bd4-8f92-d9aea67bf43f', 'item': 'F1', 'price': 29000.0, 'claim': 'A', 'shop': 'thisjonghoon', 'sig_seller': 'RgQhzQ1+e9pOKmnZiywDPMYttLbB4YWWImtZNJ0fHcdd4SKP1Ekqa8HT1VqtkbaEp0aad4WuAmxFV6DiVy/+Dg=='}
+[20:10:59] CARD: 'thisjonghoon' at http://127.0.0.1:57485/, protocol 1.0
+[20:10:59] SEND: 'I want to buy Old Kimchi (F2)'
+[20:10:59] OPEN 4a3dd706 F2 Old Kimchi list 30000 cost 18000 ask 25752 floor 10800
+[20:10:59] RECV: TASK_STATE_INPUT_REQUIRED | 'Old Kimchi (F2): grade C, market certificate attached, 3 h of shelf life left. List price 30000, asking 25752. Send your offer as a number.'
+[20:10:59] SEND: '9000' taskId=4a3dd706
+[20:10:59] RECV: TASK_STATE_INPUT_REQUIRED | 'Counteroffer: 19051.'
+[20:10:59] SEND: '11000' taskId=4a3dd706
+[20:10:59] DEAL 4a3dd706 F2 at 11000 (cost 18000, list 30000, turns 2)
+[20:10:59] RECV: TASK_STATE_COMPLETED | 'Deal: Old Kimchi at 11000.'
+PASS  near-date food cleared under cost: {'unit': 'u-old', 'task': '4a3dd706-5e43-441d-b6e1-b29e9cd07c67', 'item': 'F2', 'price': 11000.0, 'claim': 'C', 'shop': 'thisjonghoon', 'sig_seller': 'W84xsq3yZBFw5OyqXGDv9zT4E3oENUQmO3/QlUvetAW/f8tVggyM8InKvKeyqUofqb0vq20WZupsftyh4dpbCg=='}
+[20:10:59] CARD: 'thisjonghoon' at http://127.0.0.1:57485/, protocol 1.0
+[20:10:59] SEND: 'I want to buy Test Chair (G2)'
+[20:10:59] OPEN 503c83a2 G2 Test Chair list 100000 cost 60000 ask 95000 floor 78000
+[20:10:59] RECV: TASK_STATE_INPUT_REQUIRED | 'Test Chair (G2): grade B, market certificate attached. List price 100000, asking 95000. Send your offer as a number.'
+[20:10:59] SEND: 'For G2 I offer 79,000' taskId=503c83a2
+[20:10:59] RECV: TASK_STATE_INPUT_REQUIRED | 'Counteroffer: 88600.'
+[20:10:59] SEND: 'OK, 79,000 for G2 then' taskId=503c83a2
+[20:10:59] DEAL 503c83a2 G2 at 79000 (cost 60000, list 100000, turns 2)
+[20:10:59] RECV: TASK_STATE_COMPLETED | 'Deal: Test Chair at 79000.'
+PASS  offer read past the SKU's digits: {'unit': 'u-goods2', 'task': '503c83a2-3a1c-4f5c-af0a-9b9aaf9d5013', 'item': 'G2', 'price': 79000.0, 'claim': 'B', 'shop': 'thisjonghoon', 'sig_seller': 'TNNwASe3C9CKZ+I4CkH915AzqSYdFsfWvo1gufjPAQeD2LGGs568ieeE3fm7e+ihoGQ+MMFubFmxA8z5rZ89DA=='}
+[20:10:59] CARD: 'thisjonghoon' at http://127.0.0.1:57485/, protocol 1.0
+[20:10:59] SEND: 'I want to buy Test Lamp (G1)'
+[20:10:59] RECV: TASK_STATE_REJECTED | 'Sorry, we have none of that in stock.'
+PASS  a sold unit is not offered again within 60 s: TASK_STATE_REJECTED
+PASS  an abandoned negotiation frees its unit: ['u-y']
+PASS  no grade claim within an hour of a line: ('A', 134.89999998225107, None)
+PASS  goods past goods_age_days may go down to cost + 3%: ((95000, 61800), (95000, 78000))
+PASS  no experiment file: the seller logs no A/B events: /tmp/claude-501/r3md-3t478t3_/logs/ab_r3.jsonl
+PASS  an experiment on goods leaves food alone: (None, None)
+[20:10:59] CARD: 'thisjonghoon' at http://127.0.0.1:57485/, protocol 1.0
+[20:10:59] SEND: 'I want to buy Test Desk (G3)'
+[20:10:59] OPEN 238f9aee G3 Test Desk list 100000 cost 50000 ask 95000 floor 78000 ab t1:A
+[20:10:59] RECV: TASK_STATE_INPUT_REQUIRED | 'Test Desk (G3): grade B, market certificate attached. List price 100000, asking 95000. Send your offer as a number.'
+[20:10:59] SEND: '80000' taskId=238f9aee
+[20:10:59] RECV: TASK_STATE_INPUT_REQUIRED | 'Counteroffer: 89000.'
+[20:10:59] SEND: '80000' taskId=238f9aee
+[20:10:59] DEAL 238f9aee G3 at 80000 (cost 50000, list 100000, turns 2)
+[20:10:59] RECV: TASK_STATE_COMPLETED | 'Deal: Test Desk at 80000.'
+PASS  a negotiation draws an arm, asks with it and logs open and deal with the margin: {'receipt': 80000.0, 'events': [{'id': 't1', 'arm': 'A', 'task': '238f9aee-6d23-480f-b6ab-a6c725437484', 'event': 'open', 'sku': 'G3', 'kind': 'goods', 'list_price': 100000, 'cost': 50000, 'ask': 95000, 'floor': 78000, 't': 1793704259.5}, {'id': 't1', 'arm': 'A', 'task': '238f9aee-6d23-480f-b6ab-a6c725437484', 'event': 'deal', 'reward': 0.3, 't': 1793704259.5}]}
+PASS  the arm with fewer negotiations is drawn first: ['B']
+PASS  the bandit leans to the arm that earns more, and a winner is called: {'B share': 1.0, 'summary': {'id': 't1', 'param': 'ask_frac', 'kind': 'goods', 'A': {'value': 0.95, 'n': 41, 'deals': 21, 'mean_reward': 0.0349}, 'B': {'value': 0.7, 'n': 40, 'deals': 26, 'mean_reward': 0.0976}, 'p_B_better': 1.0}}
+
+13/13 passed
