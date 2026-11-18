@@ -31,13 +31,13 @@ Dashed: runs inside kit v4. Purple: the supervisor, who only advises and stops b
 \node[code=80mm, fill=yellow!10] (market) at (13,0) {\textbf{market.ourolabs.ai}: orders with open AP2 mandates, supply windows, \texttt{/api/settle}, hash-chained ledger, board, forum};
 
 % ================= shop (left)
-\node[tool=44mm] (shopacp) at (4,-1.9) {our A2A card + ACP checkout \scriptsize (\texttt{acp.json} in JSON Schema)};
+\node[tool=58mm] (shopacp) at (4,-1.9) {our A2A card + ACP checkout \scriptsize (\texttt{acp.json}, JSON Schema); refuses blocked buyers; units from local \texttt{inventory.json}};
 \node[member] (s1) at (1.9,-4.3) {\textbf{lead} 60\%\\ steady};
 \node[member] (s2) at (4.0,-4.3) {\textbf{senior} 25\%\\ premium};
 \node[member] (s3) at (6.1,-4.3) {\textbf{junior} 15\%\\ volume};
 \node[font=\scriptsize\bfseries, anchor=south] (stl) at (4.0,-3.6) {sales team (styles over the strategy)};
-\node[code=52mm] (seller) at (4,-6.3) {\textbf{seller\_r3.py}: rule prices, honest grade claims, the unit that lasts as long as the buyer asks\\ \scriptsize 72 h warranty on every goods grade; haiku negotiator off (lost to the rule)};
-\node[code=24mm] (restock) at (2.3,-8.5) {\textbf{restock\_r3}\\ \scriptsize breadth, depth where settles and demand show};
+\node[code=52mm] (seller) at (4,-6.3) {\textbf{seller\_r3.py}: rule prices, honest grade claims, the unit that lasts as long as the buyer asks\\ \scriptsize 72 h warranty on goods; C after A/B; last 24 h floors at cost};
+\node[code=30mm] (restock) at (2.3,-8.5) {\textbf{restock\_r3}\\ \scriptsize depth where settles show, margin gate, stops 4 h before the end};
 \node[ctx=26mm] (inv) at (5.9,-8.5) {\texttt{inventory.json}\\ units, cost, grade, shelf life};
 \begin{scope}[on background layer]
 \node[team, fit=(stl)(s1)(s3)] {};
@@ -45,12 +45,12 @@ Dashed: runs inside kit v4. Purple: the supervisor, who only advises and stops b
 \end{scope}
 
 % ================= buyer (right)
-\node[code=66mm, inner sep=2pt] (scouts) at (21.5,-1.9) {\textbf{scouts}: up to 5 shops quote at once, a second wave if all are out; drop out-of-stock or off-policy, and pairs that failed us wait};
+\node[code=66mm, inner sep=2pt] (scouts) at (21.5,-1.9) {\textbf{scouts}: up to 5 shops quote at once, a second wave if all are out; drop out-of-stock or off-policy, and pairs that failed us wait; how long they wait is a team knob};
 \node[member] (b1) at (19.4,-4.3) {\textbf{lead} 60\%\\ balanced};
 \node[member] (b2) at (21.5,-4.3) {\textbf{senior} 25\%\\ patient};
 \node[member] (b3) at (23.6,-4.3) {\textbf{junior} 15\%\\ closer};
 \node[font=\scriptsize\bfseries, anchor=south] (btl) at (21.5,-3.6) {buying team: haggles with haiku (ReAct why)};
-\node[code=52mm] (guards) at (21.5,-6.3) {\textbf{guards}: cap = min(budget, CAP x list), grade C only with a warranty, leave when the shop's words fail our policy, bans for lies and breakages};
+\node[code=52mm] (guards) at (21.5,-6.3) {\textbf{guards}: cap = min(budget, CAP x list), C only with a warranty; receipt checked before paying (refused shop+SKU waits 1 h); bans for lies};
 \node[tool=30mm] (tools) at (19.8,-8.5) {checkout tools made from each shop's \texttt{acp.json}};
 \node[ctx=22mm] (mem) at (23.6,-8.5) {\texttt{memory.jsonl}\\ raw evidence};
 \begin{scope}[on background layer]
@@ -74,7 +74,7 @@ Dashed: runs inside kit v4. Purple: the supervisor, who only advises and stops b
 \node[model=26mm] (sp4) at (15.8,-11.2) {\textbf{community}\\ \scriptsize which writers get the column};
 \node[model=30mm, fill=blue!3] (gpt) at (6.6,-13.5) {\textbf{reviewer}\\ \scriptsize GPT (opus while out): keep / trim / reject each of the four};
 \node[model=34mm, fill=blue!15] (mgr) at (10.8,-13.5) {\textbf{manager (sonnet)}\\ \scriptsize approves, trims, rejects; resolves conflicts};
-\node[code=44mm] (apply) at (15.6,-13.5) {\textbf{code}: bounds; one shop change at a time; 2 h verdict on shop points (MIXED if another change); fast guard on value share; promotions};
+\node[code=44mm] (apply) at (15.6,-13.5) {\textbf{code}: bounds; one shop change at a time; a supervisor's value holds 2 h; 2 h verdict on shop points (MIXED if another change); fast guard on value share};
 \begin{scope}[on background layer]
 \node[team, fit=(sp1)(sp4)(gpt)(apply), label={[font=\scriptsize\bfseries, anchor=south west]north west:INNER LOOP: the tuning team moves numbers inside bounds, every 15 min (meta\_r3 + meta\_team\_r3)}] (metabox) {};
 \end{scope}
@@ -84,7 +84,7 @@ Dashed: runs inside kit v4. Purple: the supervisor, who only advises and stops b
 
 % ================= supervisor (right)
 \node[sup=34mm] (user) at (24.5,-11.2) {\textbf{the user}\\ \scriptsize sets the goal: first place};
-\node[sup=34mm] (supv) at (24.5,-13.3) {\textbf{supervisor} (Claude Code)\\ \scriptsize watches both loops (\texttt{watch\_r3}), reads each automatic diff, stops bad choices with evidence, writes notes};
+\node[sup=34mm] (supv) at (24.5,-13.3) {\textbf{supervisor} (Claude Code)\\ \scriptsize watches both loops, alerts on low raters, leak audit every 3 h, stops bad choices};
 \node[ctx=34mm] (advice) at (24.5,-15.4) {standing orders + notes \scriptsize(with source, review, age)};
 
 % ================= outer loop: the harness changes its own code
@@ -103,7 +103,7 @@ Dashed: runs inside kit v4. Purple: the supervisor, who only advises and stops b
 \node[ctx=36mm] (c2) at (6.4,-21.6) {\textbf{market over time}: paid sales per 10 min (ours, market's) + ledger backfilled to 11/5};
 \node[ctx=36mm] (c3) at (10.5,-21.6) {\textbf{re-judge}: past verdicts on shop points: VERIFIED, MIXED or UNVERIFIED; each number's value now};
 \node[ctx=36mm] (c4) at (14.6,-21.6) {\textbf{lessons per area}: rule, facts, verified / unverified / contradicted, trap; sonnet dreams every 3 h};
-\node[ctx=36mm] (c5) at (18.7,-21.6) {\textbf{tables each cycle}: rivals (top shops' paid sales), edges (points per board lever), prices, demand, votes};
+\node[ctx=36mm] (c5) at (18.7,-21.6) {\textbf{tables each cycle}: rivals (top shops' paid sales), edges (points per board lever, stars on \texttt{stars\_rank}), prices, demand, votes};
 \begin{scope}[on background layer]
 \node[draw=green!45!black, fill=green!3, rounded corners, inner sep=2mm, fit=(c1)(c5), label={[font=\scriptsize\bfseries, anchor=north west]south west:MEMORY: each tier has a writer, named readers and a check (verdicts re-judged from the record; lessons may cite only known facts)}] (membox) {};
 \end{scope}
@@ -156,6 +156,6 @@ Dashed: runs inside kit v4. Purple: the supervisor, who only advises and stops b
 
 \vspace{1mm}
 \begin{minipage}{0.98\linewidth}\scriptsize
-\textbf{How it differs from the kit.} Two loops aim at one number, board points per hour by the board's weights. The \emph{inner loop} (every 15 min): haiku specialists read their evidence and lessons, a reviewer on another model checks them, a sonnet manager decides, and code bounds the numbers, runs shop changes one at a time and judges each after 2 h on shop points net of the market (MIXED if another change fell in its hours). The \emph{outer loop} (every 90 min): an engineer and a coder agent change the code in a copy, a gate puts it live, and it is judged on half the orders or net of the market. \emph{Memory is re-checked, not only kept} (after Anthropic's study of agent memory, 2026): past verdicts are judged again from the market's record or marked UNVERIFIED, lessons may cite only known facts, standing orders carry their source. A supervisor watches for the user and changes a number only through the same ledger.
+\textbf{How it differs from the kit.} Two loops aim at one number, board points per hour by the board's weights. The \emph{inner loop} (every 15 min): haiku specialists read their evidence and lessons, a reviewer on another model checks them, a sonnet manager decides, and code bounds the numbers, runs shop changes one at a time and judges each after 2 h on shop points net of the market (MIXED if another change fell in its hours). The \emph{outer loop} (every 90 min): an engineer and a coder agent change the code in a copy, a gate puts it live, and it is judged on half the orders or net of the market. \emph{Memory is re-checked, not only kept} (after Anthropic's study of agent memory, 2026): past verdicts are judged again from the market's record or marked UNVERIFIED, lessons may cite only known facts, standing orders carry their source. A supervisor watches for the user and changes a number only through the same ledger. \textbf{Result (11/17 23:59):} 20th of 46 students on the graded Class view (1.213), 39,757 deals settled at our shop, 22,922 paid by our buyer, every grade claim true.
 \end{minipage}
 \end{document}
