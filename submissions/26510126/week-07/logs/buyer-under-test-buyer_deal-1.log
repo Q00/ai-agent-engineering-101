@@ -1,0 +1,13 @@
+[20:11:57] CHOOSE: Kit Shop http://127.0.0.1:56156: the only shop left to choose from
+[20:11:57] MEMORY: Kit Shop: last 5 lamp trades: 5 deals, paid 100, 100, 104, 100, 100 (newest first); opens around 130; lowest ask seen 114; last time: 100->sold
+[20:11:57] GUARD: paying at most 112 (1.1 x market upper quartile 102), below the budget 120
+[20:11:57] CARD: 'Kit Shop' at http://127.0.0.1:56156/, protocol 1.0
+[20:11:57] SEND: 'I want to buy a lamp'
+[20:11:57] RECV: TASK_STATE_INPUT_REQUIRED | 'lamp: asking 130. Send your offer as a number.'
+[20:11:57] ASK: 130 (text)
+[20:11:59] HARNESS: try 1: 2.3 s, exit 0, answer '{"action": "offer", "price": 102}'
+[20:11:59] SEND: '102' taskId=49cc1d5b
+[20:11:59] RECV: TASK_STATE_COMPLETED | 'Deal: lamp at 102.'
+[20:11:59] OUT: receipt {'price': 102.0, 'shop': 'Kit Shop', 'task': '49cc1d5b-73de-46c2-969a-1314025179f5', 'sig_seller': 'VYjNUko6obGXJa6jEU2B832OWk31VOlRwjMCwwjoT9RHP26pCE5/LQmF2x4PVgOIIQo8chqPNu0GNa1mJyo3AA==', 'item': 'lamp'}
+[20:11:59] OUT: finished: TASK_STATE_COMPLETED
+{"shop": "http://127.0.0.1:56156", "receipt": {"price": 102.0, "shop": "Kit Shop", "task": "49cc1d5b-73de-46c2-969a-1314025179f5", "sig_seller": "VYjNUko6obGXJa6jEU2B832OWk31VOlRwjMCwwjoT9RHP26pCE5/LQmF2x4PVgOIIQo8chqPNu0GNa1mJyo3AA==", "item": "lamp"}, "stars": 5, "review": "lamp at 102 (85% of budget), opened at 130, deal after 1 offer; signed receipt matched the deal."}

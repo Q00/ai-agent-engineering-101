@@ -1,0 +1,35 @@
+Proxy environment variables detected. We'll use your proxy for fetch requests.
+
+ ⛅️ wrangler 4.40.0
+───────────────────
+Your Worker has access to the following bindings:
+Binding                     Resource            Mode
+env.TASKS (TaskObject)      Durable Object      local
+env.AI                      AI                  remote
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mAI bindings always access remote resources, and so may incur usage charges even in local dev. To suppress this warning, set `remote: true` for the binding definition in your configuration file.[0m
+
+
+⎔ Starting local server...
+[wrangler:info] Ready on http://127.0.0.1:8787
+[wrangler:info] GET /.well-known/agent-card.json 200 OK (3ms)
+[wrangler:info] GET /.well-known/agent-card.json 200 OK (0ms)
+IN: task 6da5560b "I want to buy a lamp"
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mError while creating remote dev session: TypeError: fetch failed[0m
+
+      at fetch (/Users/hoon/Developer/ai-agent-engineering-101/submissions/26510126/week-06/deploy/node_modules/wrangler/wrangler-dist/cli.js:24050:17)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async createPreviewSession (/Users/hoon/Developer/ai-agent-engineering-101/submissions/26510126/week-06/deploy/node_modules/wrangler/wrangler-dist/cli.js:244844:28)
+      at async #previewSession (/Users/hoon/Developer/ai-agent-engineering-101/submissions/26510126/week-06/deploy/node_modules/wrangler/wrangler-dist/cli.js:245228:18)
+      at async #onBundleComplete (/Users/hoon/Developer/ai-agent-engineering-101/submissions/26510126/week-06/deploy/node_modules/wrangler/wrangler-dist/cli.js:245328:29)
+      at async Mutex.runWith (/Users/hoon/Developer/ai-agent-engineering-101/submissions/26510126/week-06/deploy/node_modules/miniflare/dist/src/index.js:38857:48) {
+    [cause]: [Error: 807F55EE01000000:error:0A000410:SSL routines:ssl3_read_bytes:tls alert handshake failure:ssl/record/rec_layer_s3.c:923:SSL alert number 40
+    ] {
+      library: 'SSL routines',
+      reason: 'tls alert handshake failure',
+      code: 'ERR_SSL_TLS_ALERT_HANDSHAKE_FAILURE'
+    }
+  }
+
+
+🪵  Logs were written to "/Users/hoon/Library/Preferences/.wrangler/logs/wrangler-2026-10-13_13-20-00_623.log"
