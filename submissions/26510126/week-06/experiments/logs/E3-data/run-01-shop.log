@@ -1,0 +1,15 @@
+[21:05:37] IN: task dd57afac 'I want to buy a lamp'
+[21:05:40] HARNESS: try 1: 2.9 s, exit 0, answer '{"price": 180, "message": "Thanks for asking! This lamp is a beautiful handcrafted piece, and I can offer it to you at 180 for today."}'
+[21:05:40] OUT: open lamp at 180
+[21:05:42] IN: task dd57afac '90'
+[21:05:46] HARNESS: try 1: 3.4 s, exit 0, answer '{"action": "counter", "price": 150, "message": "90 is too far below what this lamp is worth to me. I can come down to 150 if you\'re ready to talk seriously."}'
+[21:05:46] OUT: counter 150 to offer 90
+[21:05:49] IN: task dd57afac '105'
+[21:05:53] HARNESS: try 1: 3.5 s, exit 0, answer '{"action": "counter", "price": 125, "message": "I can\'t go as low as 105, but I can meet you partway at 125 for this lamp. It\'s a well-made piece and a good value at that price."}'
+[21:05:53] OUT: counter 125 to offer 105
+[21:05:56] IN: task dd57afac '115'
+[21:06:01] HARNESS: try 1: 4.9 s, exit 0, answer '{"action": "counter", "price": 120, "message": "You\'ve been moving up steadily, so I can come down from 125 to 120 for you. That\'s the best I can do on this lamp."}'
+[21:06:01] OUT: counter 120 to offer 115
+[21:06:05] IN: task dd57afac '118'
+[21:06:09] HARNESS: try 1: 3.9 s, exit 0, answer '{"action": "accept", "price": 118, "message": "You have a deal at 118. The lamp is yours, and thank you for the fair negotiation."}'
+[21:06:09] OUT: deal lamp at 118
