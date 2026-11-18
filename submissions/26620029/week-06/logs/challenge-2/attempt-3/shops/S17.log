@@ -1,0 +1,17 @@
+Book Nook: 296 items, port 57805, chatty=False
+[seller 03aeafc3] <- 'a wooden bookshelf for about 60 books'
+[seller 60fe665e] <- 'a rug about 140 by 200 cm'
+[seller 60fe665e] call 2 (9.4s) -> '{"categories": ["rug"], "materials": [], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": null, "size": "140x200", "features": [], "keywords": ["area rug", "140 x 200 cm", "carpet"]}'
+[seller 60fe665e] query {"categories": ["rug"], "materials": [], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": null, "size": "140x200", "features": [], "keywords": ["area rug", "140 x 200 cm", "carpet"]} -> 8 candidates
+[seller 03aeafc3] call 3 (9.7s) -> '{"categories": ["bookshelf"], "materials": ["wood"], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": 60, "size": null, "features": [], "keywords": ["wooden", "book storage", "shelving"]}'
+[seller 03aeafc3] query {"categories": ["bookshelf"], "materials": ["wood"], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": 60, "size": null, "features": [], "keywords": ["wooden", "book storage", "shelving"]} -> 8 candidates
+[seller 03aeafc3] call 4 (8.2s) -> '{"sku": "BOO-00092", "price": 210, "say": "Our white pine bookshelf with three shelves is a good match and holds about sixty books."}'
+[seller 03aeafc3] -> item BOO-00092 (search+pick), reserve 142, open ask 210
+[seller 60fe665e] call 4 (9.5s) -> '{"sku": "RUG-09097", "price": 136, "say": "We have a rug in that size that would suit you well, and we\'d be happy to show it to you."}'
+[seller 60fe665e] -> item RUG-09097 (search+pick), reserve 102, open ask 136
+[seller 60fe665e] <- '105'
+[seller 03aeafc3] <- '150'
+[seller 03aeafc3] call 6 (4.4s) -> '{"buyer_offer": 150, "action": "accept", "price": 150, "say": "Thanks for the offer, we have a deal on the Industrial Pine Bookshelf B23 at this price."}'
+[deal] Book Nook | BOO-00092 | 150 | task 03aeafc3-59b7-46ab-b0c6-f66b1d333ccc
+[seller 60fe665e] call 6 (5.0s) -> '{"buyer_offer": 105, "action": "accept", "price": 105, "say": "Your offer works for me, so the Nordic Synthetic Rug G20 is yours at that price."}'
+[deal] Book Nook | RUG-09097 | 105 | task 60fe665e-bbde-43de-8b5b-e51a3e1f5a64
