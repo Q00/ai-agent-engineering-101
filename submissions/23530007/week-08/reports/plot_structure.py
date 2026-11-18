@@ -1,13 +1,14 @@
-"""REPORT 5.1: the agent hierarchy as one clean picture (user and observers, analyst, buy/sell judgment, buyer/seller)."""
+"""REPORT 5.1: the agent hierarchy as one clean picture (user and observers, analyst, buy/sell judgment, buyer/seller),
+with the archive DB as its own column on the right: the market ledger and our logs go in, the analyst and observers read it."""
 import sys
-from matplotlib.patches import FancyBboxPatch, FancyArrowPatch
+from matplotlib.patches import FancyBboxPatch, FancyArrowPatch, Ellipse, Rectangle, Arc
 from chart_style import fig, save, US, AQUA, INK, INK2, GRID, SURF
 
 OUT = sys.argv[1] if len(sys.argv) > 1 else "reports/structure.png"
 BUY_FILL, SELL_FILL, NEU_FILL = "#e3f4ec", "#fbe6dc", "#f1f0ec"
 
-f, ax = fig(6.4, 4.6)
-ax.set_xlim(0, 100); ax.set_ylim(0, 100); ax.axis("off")
+f, ax = fig(6.9, 4.6)
+ax.set_xlim(0, 116); ax.set_ylim(0, 100); ax.axis("off")
 
 
 def box(cx, cy, w, h, name, sub, fill, edge):
@@ -27,7 +28,7 @@ rows = [(88, "사람 · 감시"), (68, "분석"), (48, "판단"), (28, "실행")
 for y, t in rows:
     ax.text(2, y, t, ha="left", va="center", fontsize=8.5, color=INK2)
 for y in (78, 58, 38, 18):
-    ax.plot([2, 98], [y, y], color=GRID, lw=0.8)
+    ax.plot([2, 95], [y, y], color=GRID, lw=0.8)
 
 L, R, BW, BH = 41, 77, 30, 13
 box(L, 88, BW, BH, "사용자", "목표 · 휴대폰 지시", NEU_FILL, INK2)
@@ -51,10 +52,27 @@ arrow(L, 28 - BH / 2, L, 14)
 arrow(R, 28 - BH / 2, R, 14)
 ax.text(L + 1.5, 38, "파라미터", fontsize=7, color=INK2, va="center")
 ax.text(R + 1.5, 38, "파라미터", fontsize=7, color=INK2, va="center")
-# feedback: market ledger back to the observers
-ax.plot([92, 96, 96], [9, 9, 88], color=INK2, lw=1, linestyle=(0, (3, 2)))
-arrow(96, 88, R + BW / 2, 88, dashed=True)
-ax.text(97.8, 50, "원장 · 로그", rotation=-90, fontsize=7, color=INK2, ha="center", va="center")
+# the archive DB: a column of its own on the right
+DX, DW, DY0, DY1, E = 106, 16, 4, 76, 3.2
+ax.add_patch(Rectangle((DX - DW / 2, DY0 + E / 2), DW, DY1 - DY0 - E, fc=NEU_FILL, ec="none", zorder=1))
+ax.plot([DX - DW / 2] * 2, [DY0 + E / 2, DY1 - E / 2], color=INK2, lw=1.2, zorder=2)
+ax.plot([DX + DW / 2] * 2, [DY0 + E / 2, DY1 - E / 2], color=INK2, lw=1.2, zorder=2)
+ax.add_patch(Ellipse((DX, DY0 + E / 2), DW, E, fc=NEU_FILL, ec="none", zorder=1))
+ax.add_patch(Arc((DX, DY0 + E / 2), DW, E, theta1=180, theta2=360, color=INK2, lw=1.2, zorder=2))
+ax.add_patch(Ellipse((DX, DY1 - E / 2), DW, E, fc=NEU_FILL, ec=INK2, lw=1.2, zorder=3))
+ax.text(DX, 47, "보관 DB", ha="center", va="center", fontsize=10, color=INK, fontweight="bold", zorder=4)
+ax.text(DX, 40, "market_archive.db", ha="center", va="center", fontsize=6.3, color=INK2, zorder=4)
+ax.text(DX, 30, "원장\n보드 스냅숏\n우리 로그", ha="center", va="center", fontsize=7.2, color=INK2, linespacing=1.6,
+        zorder=4)
+# in: the market's public ledger and board, our programs' logs
+arrow(92, 9, DX - DW / 2, 9)
+ax.text(95, 11.5, "원장", fontsize=6.8, color=INK2, ha="center")
+arrow(R + BW / 2, 28, DX - DW / 2, 28)
+ax.text(95, 30.5, "로그", fontsize=6.8, color=INK2, ha="center")
+# out: the analyst and the observers read it
+arrow(DX - DW / 2, 68, 92, 68)
+ax.plot([DX, DX], [DY1, 88], color=INK2, lw=1)
+arrow(DX, 88, R + BW / 2, 88)
 
 # ntfy: the user and the observers talk through phone pushes (light dashed, both ways)
 ax.annotate("", xy=(L + BW / 2, 88), xytext=(R - BW / 2, 88),
