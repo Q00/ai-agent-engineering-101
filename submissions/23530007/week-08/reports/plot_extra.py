@@ -140,29 +140,8 @@ def cash_stock(rows):
     f.tight_layout(); cs.save(f, f"{OUT}/cash_stock.png")
 
 
-def ledger_kinds():
-    c = sqlite3.connect(f"file:{DB}?mode=ro", uri=True)
-    names = {"result": "주문 결과", "order": "주문", "settle": "결제", "supply": "공급(매입)", "broken": "고장",
-             "expire": "폐기", "storage": "보관료", "join": "가입"}
-    rows = sorted(((names[k], n) for k, n in c.execute("select kind,count(*) from ledger where round=3 group by kind")
-                   if k in names), key=lambda x: x[1])
-    f, ax = cs.fig(h=3.0)
-    y = range(len(rows))
-    ax.hlines(y, 0, [n for _, n in rows], color=cs.OTHER, lw=2)
-    ax.plot([n for _, n in rows], list(y), "o", color=cs.US, ms=7)
-    for i, (_, n) in enumerate(rows):
-        ax.text(n * 1.25, i, f"{n:,}", va="center", color=cs.INK, fontsize=8.5)
-    ax.set_xscale("log"); ax.set_xlim(1e3, 2e7)
-    ax.set_yticks(list(y)); ax.set_yticklabels([r[0] for r in rows]); ax.tick_params(axis="y", length=0)
-    ax.spines["left"].set_visible(False); ax.grid(axis="x", color=cs.GRID, lw=0.8); ax.set_axisbelow(True)
-    ax.set_xlabel("건수 (로그 눈금)")
-    cs.title(ax, f"보관한 Round 3 공개 원장: {sum(n for _, n in rows):,}건")
-    f.tight_layout(); cs.save(f, f"{OUT}/ledger.png")
-
-
 if __name__ == "__main__":
     results(); preopen()
     rows = list(board_rows())
     gap = book_gap(rows)
     defence(gap); endgame(gap); cash_stock(rows)
-    ledger_kinds()
