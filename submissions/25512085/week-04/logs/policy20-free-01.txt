@@ -1,0 +1,3 @@
+provider=LM Studio model=qwen/qwen3.8-27b temperature=0.2 max_turns=8 condition=free run=policy20-free-01 agent_endpoint=/v1/chat/completions reader_endpoint=/api/v1/chat policy=20percent quota=2per-role-per-run reason_max_chars=30
+[start] scenario=S01 quota={'buyer': 2, 'seller': 2}
+[crash] {"crash": "RuntimeError: LM Studio response has no message content", "quota_remaining": {"buyer": 2, "seller": 2}}
