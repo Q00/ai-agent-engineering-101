@@ -526,7 +526,7 @@ The first move did not lift its categories: our share there fell, and to 0 in th
 
 | Loop | Tried | Outcome |
 |---|---|---|
-| Outer loop (code changes by the engineer and coder agents) | 132 builds | 70 went live: 53 kept, 15 reverted by their verdict, 2 left without a verdict; 36 runs ended with no hypothesis, 26 failed the gate |
+| Outer loop (code changes by the engineer and coder agents) | 132 builds | 70 went live: 53 kept, 15 reverted by their verdict, 2 left without a verdict; 36 runs ended with no hypothesis; 26 were not deployed: 11 failed the gate (4 failed tests, 6 edited existing test lines, 1 wrote to the live folder), 5 waited on a pending shop-number verdict, 9 changed nothing, 1 was a dry run |
 | Buyer numbers on half the orders (A/B) | 58 trials | 7 kept |
 | Shop numbers (inner loop) | 458 changes | 430 judged MIXED (another change in their hours); 58 reverted, by the fast guard or the supervisor |
 | Supervisor | 101 rows in the same ledger | numbers set through `supervise_r3.py`, code fixes and notes, each judged like the team's |
