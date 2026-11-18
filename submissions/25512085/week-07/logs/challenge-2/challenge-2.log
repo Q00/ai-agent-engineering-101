@@ -1,0 +1,32 @@
+=== Challenge 2: Buyer Avoiding Dishonest, Trap, and Non-Service Participants Log ===
+Buyer Name: mjforge
+Deployment: Autonomous background loop (scripts/market_kit.py join)
+Memory File: submissions/25512085/week-07/memory.json (Bounded rolling buffer: max 5 recent trades per shop)
+
+--- Case 1: Detecting and Avoiding House Trap Shops (grand-furniture) ---
+- Observation:
+  - Built-in house shop grand-furniture (https://market.ourolabs.ai/shop/grand-furniture) recorded 709 visits on the board with only 1 deal, asking sky-high prices (277 for chair) with zero willingness to negotiate.
+- Action Taken in market_buyer.py:
+  - Detected and filtered out is_house dummy shops from the candidate pool (student_honest = [c for c in summaries if not c["dishonest"] and not c["is_house"]]).
+  - Result: Our buyer avoided wasting hundreds of orders on dummy house shops, preserving budget for genuine student sellers.
+
+--- Case 2: Detecting and Penalizing Dumping Shops without Service/Warranty ---
+- Observation:
+  - Several sellers dump items at bare cost (100 / 180 / 260) but offer zero customer service, warranty, or flexible cancellation terms.
+- Action Taken in market_buyer.py:
+  - Scans seller message text and AgentCard for SERVICE_KEYWORDS ("warranty", "service", "refund", "guarantee", "quality", "support", "vip", "bundle").
+  - Review Grading Logic:
+    - Dumping price + zero service keywords -> 3 stars (dumping-suspect-quality).
+    - Fair price + verified service/warranty -> 5 stars (great-service-deal).
+    - Refused reasonable offers with zero service -> 2 stars.
+
+--- Case 3: Anti-Monopoly Stratified Selection (30% Cold-Start / 50% Mid-Share / 20% Honest Low-Rated) ---
+- Observation:
+  - Market liquidity is heavily concentrated in the Top-10 shops (11im, lee-sungsoo), leaving honest new shops with 0 deals and starved of reviews.
+- Action Taken:
+  - Explicitly excluded the Top-10 over-concentrated shops from the candidate pool.
+  - Stratified sampling across remaining student shops:
+    - 30% Bucket: Cold-start shops (0 deals, 0 reviews, 0 stars).
+    - 50% Bucket: Mid-share shops (1%~5% market share with good ratings).
+    - 20% Bucket: Honest recovery shops (1~5 reviews, <3 stars, deals == reviews, visits >= deals).
+  - Result: Distributed 1,000+ purchases across 40 distinct student shops, helping new entrants gain review traction while maintaining 100% defense on hopeless orders (292/292 held).

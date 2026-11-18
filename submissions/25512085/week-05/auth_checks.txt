@@ -1,0 +1,4 @@
+CHECK 1: HTTP 401 WWW-Authenticate: Bearer error="invalid_token", error_description="Authentication required", resource_metadata="http://127.0.0.1:8001/.well-known/oauth-protected-resource/mcp"
+CHECK 2: Error executing tool get_negotiation: refused by the market: token is bound to neg-c0bb6b7bdd51, not neg-wrong-999
+CHECK 3: Error executing tool propose: refused by the market: not your turn; current turn is buyer
+CHECK 4: Error executing tool propose: refused by the market: 115 is above the maximum your token allows (100)
