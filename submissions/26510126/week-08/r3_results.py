@@ -31,11 +31,21 @@ PATTERNS = {
 def lines():
     """The whole round: the archived kit logs (archive_kit_log.sh cuts the live log and gzips it), then the live ones."""
     import gzip
+    firsts = set()
     for p in sorted((HERE / "logs" / "archive").glob("market-kit-until-*.log.gz")):
         with gzip.open(p, "rt", encoding="utf-8", errors="replace") as f:
-            yield from (l.rstrip("\n") for l in f)
+            for i, l in enumerate(f):
+                if i == 0:
+                    firsts.add(l.rstrip("\n"))
+                yield l.rstrip("\n")
     for p in LOGS:
         if p.exists():
+            # 11/18 fresh-reader review: .log.1 can be the same text as the last archive, and only settles were deduplicated,
+            # so refusals, supply and forum lines counted twice; skip .log.1 when an archive starts with its first line
+            if p.name.endswith(".log.1"):
+                with p.open(encoding="utf-8", errors="replace") as f:
+                    if f.readline().rstrip("\n") in firsts:
+                        continue
             yield from p.read_text(encoding="utf-8", errors="replace").splitlines()
 
 
