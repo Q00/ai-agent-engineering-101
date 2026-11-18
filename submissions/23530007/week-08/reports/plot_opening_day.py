@@ -18,7 +18,7 @@ ME = "yms979"
 total = sum(len(v) for v in ts_by.values())
 fp = [f for f in fm.findSystemFonts() if "UnDotum" in f]
 if fp: fm.fontManager.addfont(fp[0]); plt.rcParams["font.family"] = fm.FontProperties(fname=fp[0]).get_name()
-INK, INK2, GRID, SURF, ME_C, OTHER = "#0b0b0b", "#52514e", "#e6e5e0", "#fcfcfb", "#2a78d6", "#c9c8c2"
+INK, INK2, GRID, SURF, ME_C, OTHER = "#0b0b0b", "#52514e", "#e6e5e0", "#fcfcfb", "#d95926", "#c9c8c2"
 plt.rcParams.update({"axes.edgecolor": GRID, "xtick.color": INK2, "ytick.color": INK2, "font.size": 11,
                      "axes.spines.top": False, "axes.spines.right": False})
 fig, ax = plt.subplots(figsize=(8.5, 4.6), facecolor=SURF); ax.set_facecolor(SURF)

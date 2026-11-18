@@ -29,7 +29,7 @@ for title, a, b in WIN:
 fp = [f for f in fm.findSystemFonts() if "UnDotum" in f]
 if fp: fm.fontManager.addfont(fp[0]); plt.rcParams["font.family"] = fm.FontProperties(fname=fp[0]).get_name()
 INK, INK2, SURF = "#0b0b0b", "#52514e", "#fcfcfb"
-COLORS = ["#b7d3f6", "#5598e7", "#184f95"]          # one hue, light -> dark = cheap -> dear
+COLORS = ["#f6c7ae", "#ec8a5d", "#a8401a"]          # one hue (orange), light -> dark = cheap -> dear
 plt.rcParams.update({"font.size": 9})
 fig, axes = plt.subplots(1, 2, figsize=(6.4, 3.7), facecolor=SURF)
 for ax, (title, vals, n) in zip(axes, res):
@@ -43,7 +43,7 @@ for ax, (title, vals, n) in zip(axes, res):
         import math
         r = 0.79
         ax.text(r * math.cos(math.radians(ang)), r * math.sin(math.radians(ang)), f"{share:.0%}",
-                ha="center", va="center", fontsize=10, color="#ffffff" if wedge.get_facecolor()[0] < 0.5 else INK, fontweight="bold")
+                ha="center", va="center", fontsize=10, color=INK, fontweight="bold")
     dear = vals[2] / tot
     ax.text(0, 0.1, f"{dear:.0%}", ha="center", va="center", fontsize=17, color=INK, fontweight="bold")
     ax.text(0, -0.22, "30만 원 이상", ha="center", va="center", fontsize=8.5, color=INK2)
