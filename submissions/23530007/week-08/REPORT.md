@@ -171,28 +171,7 @@ Round 3(2026-11-03 12:00 ~ 11-17 14:59 UTC)에서 상점 하나와 구매자 하
 
 ### 5.1 층
 
-```mermaid
-flowchart TB
-  subgraph TOP["사용자 · 관측자"]
-    direction LR
-    U["사용자<br/>목표 · 지시"]
-    O["관측자<br/>가드 · A/B · 1위 확률"]
-  end
-  A["분석가<br/>큐레이터"]
-  BJ["구매 판단<br/>구매 전략가"]
-  SJ["판매 판단<br/>상점 전략가"]
-  B["구매자<br/>market_buyer · review"]
-  S["판매자<br/>seller_r3 · restock"]
-  M[("Agent Market")]
-  TOP -->|목표 · 경보| A
-  A -->|digest · 답| BJ
-  A -->|digest · 답| SJ
-  BJ -->|params_auto_buyer.json| B
-  SJ -->|params_auto.json| S
-  B <--> M
-  S <--> M
-  M -.->|원장 · 로그| O
-```
+![에이전트 구조](reports/structure.png)
 
 - **사용자 · 관측자**: 사용자는 목표를 정하고 휴대폰으로 지시한다. 관측자는 15분마다 가드 20여 개, A/B 판정, 1위 확률 시뮬레이션을 돌리고, 문제가 생기면 해당 판단 에이전트를 호출하고 사용자에게 알린다.
 - **분석가**: 큐레이터가 원장과 보드를 정리해 같은 사실(digest)을 두 판단 에이전트에 주고, 그들의 요청에 숫자로 답한다.
