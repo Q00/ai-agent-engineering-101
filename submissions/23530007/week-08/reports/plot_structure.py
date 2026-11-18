@@ -7,7 +7,7 @@ OUT = sys.argv[1] if len(sys.argv) > 1 else "reports/structure.png"
 BUY_FILL, SELL_FILL, NEU_FILL = "#e3f4ec", "#fbe6dc", "#f1f0ec"
 
 f, ax = fig(6.4, 4.6)
-ax.set_xlim(0, 100); ax.set_ylim(0, 100); ax.axis("off")
+ax.set_xlim(0, 100); ax.set_ylim(0, 101.5); ax.axis("off")
 
 
 def box(cx, cy, w, h, name, sub, fill, edge):
@@ -51,10 +51,19 @@ arrow(L, 28 - BH / 2, L, 14)
 arrow(R, 28 - BH / 2, R, 14)
 ax.text(L + 1.5, 38, "파라미터", fontsize=7, color=INK2, va="center")
 ax.text(R + 1.5, 38, "파라미터", fontsize=7, color=INK2, va="center")
-# feedback: market ledger back to the observers
-ax.plot([92, 96, 96], [9, 9, 88], color=INK2, lw=1, linestyle=(0, (3, 2)))
-arrow(96, 88, R + BW / 2, 88, dashed=True)
-ax.text(97.8, 50, "원장 · 로그", rotation=-90, fontsize=7, color=INK2, ha="center", va="center")
+# ntfy: the user talks with the observers and both strategists through phone pushes (dashed, both ways)
+def ntfy(pts, lx, ly, **kw):
+    xs, ys = zip(*pts)
+    ax.plot(xs, ys, color=INK, lw=1, linestyle=(0, (3, 2)))
+    for a, b in ((pts[-2], pts[-1]), (pts[1], pts[0])):
+        ax.add_patch(FancyArrowPatch(a, b, arrowstyle="-|>", mutation_scale=9, lw=0, color=INK, shrinkA=0, shrinkB=0))
+    ax.text(lx, ly, "ntfy", fontsize=7, color=INK, ha="center", va="center",
+            bbox=dict(boxstyle="round,pad=0.2", fc=SURF, ec="none"), **kw)
+
+
+ntfy([(R - BW / 2, 88), (L + BW / 2, 88)], 59, 91.5)                                   # observers <-> user
+ntfy([(L - BW / 2, 48), (21, 48), (21, 88), (L - BW / 2, 88)], 21, 68, rotation=90)    # buy judgment <-> user
+ntfy([(R + BW / 2, 48), (96, 48), (96, 99), (L, 99), (L, 88 + BH / 2)], 96, 68, rotation=-90)  # sell judgment <-> user
 
 f.subplots_adjust(left=0.01, right=0.99, top=0.99, bottom=0.01)
 save(f, OUT)
