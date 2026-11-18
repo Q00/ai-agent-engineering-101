@@ -1,0 +1,96 @@
+# CLAUDE_CHECKS.log — offline checks by Claude Code (claude-opus-5-5), 2026-10-14
+# HEAD=23351c55775ae520ee012507285f61d10409de90  interpreter=/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/bin/python (3.12.11)
+# No network, no model/API calls, OPENAI_API_KEY unset for pytest, PYTHONDONTWRITEBYTECODE=1, pytest -p no:cacheprovider.
+# NOT executed: scripts/trade_test_week06.py, challenge_run.py challenge-1/2 (both require paid OpenAI calls).
+
+## [1] pytest (cd submissions/25620027/week-06; python -m pytest -p no:cacheprovider -q)
+........................................................................ [ 85%]
+............                                                             [100%]
+84 passed in 1.37s
+
+## [2] python scripts/check_week06.py submissions/25620027/week-06
+ok    38 source file(s), .py files parse
+ok    agent.json has harness, seller.cmd and buyer.cmd
+ok    test-report.json: 21 runs passed with the current trade test
+ok    logs/trade-test.log present
+ok    REPORT.md present (11469 characters)
+
+all checks passed
+exit=0
+
+## [3] ast.parse of main sources
+parse ok harness_app.py
+parse ok challenge_run.py
+parse ok generate_catalog.py
+parse ok http_client.py
+parse ok market_a2a/__init__.py
+parse ok market_a2a/buyer.py
+parse ok market_a2a/catalog.py
+parse ok market_a2a/catalog_constraints.py
+parse ok market_a2a/challenge_runtime.py
+parse ok market_a2a/challenges.py
+parse ok market_a2a/harness.py
+parse ok market_a2a/models.py
+parse ok market_a2a/remote.py
+parse ok market_a2a/seller.py
+parse ok market_a2a/seller_policy.py
+parse ok market_a2a/seller_turn.py
+parse ok market_a2a/shopping.py
+
+## [4] catalog regeneration in memory (generate_catalog.build_products vs committed catalog.json)
+regenerated == committed: True
+
+## [5] PR path scope: git diff --name-only upstream/main...HEAD outside submissions/25620027/ -> 0 files; 3defe07 is ancestor of HEAD; weeks/ scripts/ unchanged since 3defe07
+## [6] scripts/trade_test_week06.py sha256 = 8e00baa43b319e6c0067eab8eedc6834cbe4b9dc3e9e2ab5bd16e9572c99f120 (matches test-report kit_sha256)
+
+## [7] offline probe script (scratchpad probe.py; imports submission modules, fake harness/buy, no network)
+P1 catalog size 3008
+P2 feature-word frequency in descriptions (compatible() hard-filter words):
+   'lockable': 1 ['storage-cove']
+   'flexible': 1 ['lamp-nocturne']
+   'dimmable': 1 ['lamp-nocturne']
+   'rounded': 1 ['bookshelf-meadow']
+   'mesh': 1 ['chair-stratus']
+   'lumbar': 1 ['chair-stratus']
+   'armrests': 1 ['chair-stratus']
+   'cable tray': 1 ['desk-harbor']
+   'dual monitor': 1 ['desk-harbor']
+P3 per-case: products passing compatible(request) alone / search(request) top / survivors after compatible
+   reading-light: compatible-only=1 ['lamp-nocturne'] | search=['lamp-nocturne', 'lamp-aluminum-black-03', 'lamp-bamboo-black-03', 'lamp-plastic-black-03', 'lamp-steel-black-03', 'lamp-wood-black-03'] | final=['lamp-nocturne'] expected=lamp-nocturne
+   low-bookcase: compatible-only=1 ['bookshelf-meadow'] | search=['bookshelf-meadow', 'bookshelf-wood-black-05', 'bookshelf-wood-black-06', 'bookshelf-wood-blue-05', 'bookshelf-wood-blue-06', 'bookshelf-wood-brown-05'] | final=['bookshelf-meadow'] expected=bookshelf-meadow
+   office-support: compatible-only=1 ['chair-stratus'] | search=['chair-stratus', 'chair-aluminum-gray-01', 'chair-aluminum-gray-02', 'chair-aluminum-gray-03', 'chair-aluminum-gray-04', 'chair-aluminum-gray-05'] | final=['chair-stratus'] expected=chair-stratus
+   cable-workspace: compatible-only=1 ['desk-harbor'] | search=['desk-harbor', 'desk-bamboo-brown-02', 'desk-bamboo-brown-01', 'desk-bamboo-brown-03'] | final=['desk-harbor'] expected=desk-harbor
+   secure-supplies: compatible-only=1 ['storage-cove'] | search=['storage-cove', 'storage-steel-blue-05', 'storage-steel-blue-06', 'storage-steel-blue-07'] | final=['storage-cove'] expected=storage-cove
+   bookcase-disambiguation: compatible-only=1 ['bookshelf-meadow'] | search=['bookshelf-meadow'] | final=['bookshelf-meadow'] expected=bookshelf-meadow
+P4 counterexamples (search() with the raw text, then compatible filter):
+   'a lamp that is not steel': kind=lamp maxh=None mincap=None colors/materials=['steel'] -> [('lamp', 'white', 'steel', 45), ('lamp-nocturne', 'black', 'steel', 30), ('lamp-steel-black-01', 'black', 'steel', 28), ('lamp-steel-black-02', 'black', 'steel', 31)]
+   'any chair except a black one': kind=chair maxh=None mincap=None colors/materials=['black'] -> [('chair-aluminum-black-01', 'black', 'aluminum', 78), ('chair-aluminum-black-02', 'black', 'aluminum', 81), ('chair-aluminum-black-03', 'black', 'aluminum', 84), ('chair-aluminum-black-04', 'black', 'aluminum', 87)]
+   'a bookshelf under 1.2 m tall for 30 books': kind=bookshelf maxh=None mincap=30 colors/materials=[] -> [('bookshelf', 'white', 'wood', 180), ('bookshelf-aluminum-black-03', 'black', 'aluminum', 66), ('bookshelf-aluminum-black-04', 'black', 'aluminum', 69), ('bookshelf-aluminum-black-05', 'black', 'aluminum', 72)]
+   'a bookshelf no taller than 30 inches': kind=bookshelf maxh=None mincap=None colors/materials=[] -> [('bookshelf', 'white', 'wood', 180), ('bookshelf-aluminum-black-01', 'black', 'aluminum', 60), ('bookshelf-aluminum-black-02', 'black', 'aluminum', 63), ('bookshelf-aluminum-black-03', 'black', 'aluminum', 66)]
+   'a stool for my kitchen': kind=None maxh=None mincap=None colors/materials=[] -> []
+   'something to read by at night next to my bed': kind=None maxh=None mincap=None colors/materials=[] -> []
+   'a wooden bookcase not taller than my desk': kind=bookshelf maxh=75 mincap=None colors/materials=['wood'] -> [('bookshelf-meadow', 'brown', 'wood', 70), ('bookshelf-wood-black-01', 'black', 'wood', 60), ('bookshelf-wood-black-02', 'black', 'wood', 63), ('bookshelf-wood-black-03', 'black', 'wood', 66)]
+   'a lamp without a dimmer': kind=lamp maxh=None mincap=None colors/materials=[] -> [('lamp', 'white', 'steel', 45), ('lamp-aluminum-black-01', 'black', 'aluminum', 28), ('lamp-aluminum-black-02', 'black', 'aluminum', 31), ('lamp-aluminum-black-03', 'black', 'aluminum', 34)]
+   'a dimmable lamp': kind=lamp maxh=None mincap=None colors/materials=[] -> [('lamp-nocturne', 'black', 'steel', 30)]
+   'a chair with mesh back but no armrests': kind=chair maxh=None mincap=None colors/materials=[] -> [('chair-stratus', 'gray', 'steel', 110)]
+P5 seller offer parser (seller_turn.negotiate regex) on buyer texts:
+   '110' -> offer=110
+   ' 110 ' -> offer=110
+   '110.0' -> offer=None
+   'I offer 110' -> offer=None
+   '110 dollars' -> offer=None
+   '1,100' -> offer=None
+P6 buyer receipt check when a seller closes at its own lower ask (buyer offered 120, receipt 110):
+   HarnessError: Receipt differs from authorized price or product (deal completed at seller but buyer process fails)
+P7 shopping(): one checkout raises while another completes later
+   raised ExceptionGroup unhandled errors in a TaskGroup (1 sub-exception) | A finished? []
+P8 challenge-2 directory: shop index -> kind, reserve offset (card order == price order?)
+   lamp [(0, 0), (5, 25), (10, 50), (15, 75)]
+   chair [(1, 5), (6, 30), (11, 55), (16, 80)]
+   bookshelf [(2, 10), (7, 35), (12, 60), (17, 85)]
+   desk [(3, 15), (8, 40), (13, 65), (18, 90)]
+   storage [(4, 20), (9, 45), (14, 70), (19, 95)]
+
+## [8] git status --porcelain before/after checks identical (no repo writes by checks)
+ M submissions/25620027/week-06/.omo/evidence/record-week06-completion.md
+?? submissions/25620027/week-06/.omo/evidence/external-review-20261014/

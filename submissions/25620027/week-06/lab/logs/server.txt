@@ -1,0 +1,109 @@
+INFO:     Started server process [30095]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:9999 (Press CTRL+C to quit)
+INFO:     127.0.0.1:64661 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64662 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64663 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64663 - "POST / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64688 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64688 - "POST / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64712 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+Consumer[de70362c-7485-42e3-a6a2-7cf52ca42a3a]: Failed
+Traceback (most recent call last):
+  File "/Users/sungjinho/.cache/uv/environments-v2/seller-agent-4d0d9c4ec4de71d6/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 136, in run
+    await self._process_event(event)
+  File "/Users/sungjinho/.cache/uv/environments-v2/seller-agent-4d0d9c4ec4de71d6/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 179, in _process_event
+    await self._process_event_inner(event)
+  File "/Users/sungjinho/.cache/uv/environments-v2/seller-agent-4d0d9c4ec4de71d6/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 231, in _process_event_inner
+    updated_task = await self._handle_task_event(event)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/.cache/uv/environments-v2/seller-agent-4d0d9c4ec4de71d6/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 266, in _handle_task_event
+    await self._handle_task_modification_event(event)
+  File "/Users/sungjinho/.cache/uv/environments-v2/seller-agent-4d0d9c4ec4de71d6/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 318, in _handle_task_modification_event
+    await self.active_task._task_manager.save_task_event(
+  File "/Users/sungjinho/.cache/uv/environments-v2/seller-agent-4d0d9c4ec4de71d6/lib/python3.12/site-packages/a2a/server/tasks/task_manager.py", line 236, in save_task_event
+    raise InvalidParamsError(
+a2a.utils.errors.InvalidParamsError: Context in event doesn't match TaskManager 5e267976-4814-4f76-bda1-2bdb48852768 : fff98187-bd52-4f44-8d90-205c3d4e0c70
+INFO:     127.0.0.1:64712 - "POST / HTTP/1.1" 200 OK
+Dispatcher task was cancelled or finished. Events may be lost.
+INFO:     Started server process [32488]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:9999 (Press CTRL+C to quit)
+INFO:     127.0.0.1:64795 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64880 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+Version mismatch: actual='0.3', expected='1.0'
+INFO:     127.0.0.1:64881 - "POST / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64882 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64882 - "POST / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64883 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64883 - "POST / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64884 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64884 - "POST / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64885 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64885 - "POST / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64886 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64886 - "POST / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64887 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+Failed to detach context
+Traceback (most recent call last):
+  File "/Users/sungjinho/.cache/uv/environments-v2/seller-agent-4d0d9c4ec4de71d6/lib/python3.12/site-packages/opentelemetry/trace/__init__.py", line 602, in use_span
+    yield span
+  File "/Users/sungjinho/.cache/uv/environments-v2/seller-agent-4d0d9c4ec4de71d6/lib/python3.12/site-packages/opentelemetry/trace/__init__.py", line 504, in start_as_current_span
+    yield span
+  File "/Users/sungjinho/.cache/uv/environments-v2/seller-agent-4d0d9c4ec4de71d6/lib/python3.12/site-packages/opentelemetry/trace/__init__.py", line 441, in start_as_current_span
+    yield span
+  File "/Users/sungjinho/.cache/uv/environments-v2/seller-agent-4d0d9c4ec4de71d6/lib/python3.12/site-packages/a2a/utils/telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+GeneratorExit
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/sungjinho/.cache/uv/environments-v2/seller-agent-4d0d9c4ec4de71d6/lib/python3.12/site-packages/opentelemetry/context/__init__.py", line 127, in detach
+    _RUNTIME_CONTEXT.detach(token)
+  File "/Users/sungjinho/.cache/uv/environments-v2/seller-agent-4d0d9c4ec4de71d6/lib/python3.12/site-packages/opentelemetry/context/contextvars_context.py", line 40, in detach
+    self._current_context.reset(token)
+ValueError: <Token var=<ContextVar name='current_context' default={} at 0x1099e6200> at 0x10a2f16c0> was created in a different Context
+Task was destroyed but it is pending!
+task: <Task pending name='Task-58' coro=<EventQueueSource._dispatch_loop() done, defined at /Users/sungjinho/.cache/uv/environments-v2/seller-agent-4d0d9c4ec4de71d6/lib/python3.12/site-packages/a2a/utils/telemetry.py:225> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+Failed to detach context
+Traceback (most recent call last):
+  File "/Users/sungjinho/.cache/uv/environments-v2/seller-agent-4d0d9c4ec4de71d6/lib/python3.12/site-packages/opentelemetry/trace/__init__.py", line 602, in use_span
+    yield span
+  File "/Users/sungjinho/.cache/uv/environments-v2/seller-agent-4d0d9c4ec4de71d6/lib/python3.12/site-packages/opentelemetry/trace/__init__.py", line 504, in start_as_current_span
+    yield span
+  File "/Users/sungjinho/.cache/uv/environments-v2/seller-agent-4d0d9c4ec4de71d6/lib/python3.12/site-packages/opentelemetry/trace/__init__.py", line 441, in start_as_current_span
+    yield span
+  File "/Users/sungjinho/.cache/uv/environments-v2/seller-agent-4d0d9c4ec4de71d6/lib/python3.12/site-packages/a2a/utils/telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+GeneratorExit
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/sungjinho/.cache/uv/environments-v2/seller-agent-4d0d9c4ec4de71d6/lib/python3.12/site-packages/opentelemetry/context/__init__.py", line 127, in detach
+    _RUNTIME_CONTEXT.detach(token)
+  File "/Users/sungjinho/.cache/uv/environments-v2/seller-agent-4d0d9c4ec4de71d6/lib/python3.12/site-packages/opentelemetry/context/contextvars_context.py", line 40, in detach
+    self._current_context.reset(token)
+ValueError: <Token var=<ContextVar name='current_context' default={} at 0x1099e6200> at 0x10a2f1f40> was created in a different Context
+Task was destroyed but it is pending!
+task: <Task pending name='Task-59' coro=<EventQueueSource._dispatch_loop() done, defined at /Users/sungjinho/.cache/uv/environments-v2/seller-agent-4d0d9c4ec4de71d6/lib/python3.12/site-packages/a2a/utils/telemetry.py:225> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+INFO:     127.0.0.1:64887 - "POST / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64888 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64888 - "POST / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64889 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64889 - "POST / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64890 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64890 - "POST / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64892 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64892 - "POST / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64893 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64893 - "POST / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64895 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64895 - "POST / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64896 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64896 - "POST / HTTP/1.1" 200 OK
