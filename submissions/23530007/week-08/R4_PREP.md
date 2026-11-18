@@ -1,33 +1,33 @@
-# Round 4 preparation (written 2026-11-11, from market/ROUND4.md)
+# Round 4 준비 (2026-11-11 작성, market/ROUND4.md 기준)
 
-Round 4 = Round 3 + real transfers on Maroo testnet + fees. `/api/chain` and the R4 kit were not live on 11-11, so
-nothing below is wired yet; build and test it on R4 day 1 against the real `/api/chain`.
+Round 4 = Round 3 + Maroo 테스트넷의 실제 송금 + 수수료. 11-11에는 `/api/chain`과 R4 키트가 열려 있지 않았으므로
+아래는 아직 연결되지 않았다. R4 첫날 실제 `/api/chain`에 대고 만들고 시험한다.
 
-## What changes for us
+## 우리에게 바뀌는 것
 
-| Rule | Effect on our agents |
+| 규칙 | 우리 에이전트에 미치는 영향 |
 |---|---|
-| Each side pays 1% of the price + 210 credits | buyer's cost in score = `P + m + 210` (m = 1% of P); shop receives `P - m - 210` |
-| Only the buyer's wallet sends; 5,000 tOKRW per faucet claim (captcha) until it holds 10,000 | a human must claim; an empty wallet means the buyer silently stops paying |
-| Fees are not returned when goods break | a refunded break now scores slightly below 0 for the buyer |
+| 양쪽이 각각 가격의 1% + 210 크레딧을 낸다 | 점수에서 구매자 비용 = `P + m + 210` (m = P의 1%); 상점이 받는 돈 = `P - m - 210` |
+| 구매자 지갑만 송금한다; 10,000을 가질 때까지 faucet 한 번(captcha)에 5,000 tOKRW | 사람이 받아야 한다; 지갑이 비면 구매자가 아무 말 없이 결제를 멈춘다 |
+| 물건이 고장 나도 수수료는 돌려받지 못한다 | 환불된 고장이 이제 구매자 점수에서 0보다 조금 낮다 |
 
-## Code changes to make on R4 day 1
+## R4 첫날 고칠 코드
 
-1. Fee-aware buyer value: `v = 1 - (P + 0.01P + 210) / list` in `buyer_score.score`, `buyer_value._saved`, `market_buyer`
-   caps and the goods ceilings `x_bar_g` (the 210-credit part costs 2% on a 10k snack, 0.02% on a 1M sofa: cheap food
-   loses most). Recompute m* after the change.
-2. Fee-aware shop floor: `floor >= cost x floor_mult + 0.01P + 210`; items with list under ~20k may stop paying.
-3. `RULES_THAT_SCORE.md`: add the fee table so the strategists read it.
+1. 수수료를 반영한 구매자 가치: `buyer_score.score`, `buyer_value._saved`, `market_buyer`의 상한과
+   공산품 상한 `x_bar_g`에서 `v = 1 - (P + 0.01P + 210) / list` (210 크레딧 부분은 1만 원 간식에는 2%, 100만 원 소파에는 0.02%다:
+   싼 식품이 가장 많이 잃는다). 바꾼 뒤 m*를 다시 계산한다.
+2. 수수료를 반영한 상점 하한: `floor >= cost x floor_mult + 0.01P + 210`; 정가 ~2만 원 미만 품목은 이익이 안 날 수 있다.
+3. `RULES_THAT_SCORE.md`: 전략가가 읽도록 수수료 표를 추가한다.
 
-## Tools to add (market_tools.py, read-only) and guards
+## 추가할 툴 (market_tools.py, 읽기 전용)과 가드
 
-- `chain_status()`: `/api/chain` (network, fees, market address) + our buyer wallet balance and pending payments.
-- `fees_paid(hours)`: fees per deal and their share of saved, by kind.
-- Guard G13 (guards.py): buyer wallet under 3,000 tOKRW -> phone alert "faucet claim needed" (only the user can pass the
-  captcha); under 500 -> the buyer strategist is woken and told deals will fail.
-- `ops/status.py`: wallet balance line.
+- `chain_status()`: `/api/chain` (네트워크, 수수료, 시장 주소) + 우리 구매자 지갑 잔고와 대기 중인 결제.
+- `fees_paid(hours)`: 거래당 수수료와 그것이 saved에서 차지하는 비중, 종류별.
+- 가드 G13 (guards.py): 구매자 지갑이 3,000 tOKRW 미만이면 휴대폰 알림 "faucet 받기 필요"(captcha는 사용자만
+  통과할 수 있다); 500 미만이면 구매 전략가를 깨워 거래가 실패할 것이라고 알린다.
+- `ops/status.py`: 지갑 잔고 줄.
 
-## Model usage
+## 모델 사용
 
-Model calls are limited after Round 3, so in R4 the buyer strategist runs less often (about every 2 h) with the
-measurement tools on; anything larger is decided with the user.
+Round 3 이후 모델 호출이 제한되므로, R4에서 구매 전략가는 측정 툴을 켠 채 더 드물게(약 2시간마다) 돈다.
+그보다 큰 것은 사용자와 정한다.

@@ -1,55 +1,55 @@
-# Buyer strategy (Round 3, from 11-06)
+# 구매자 전략 (Round 3, 11-06부터)
 
-Goal (user, 11-06, revised): **our player first on the midterm rank** (student_total = shop ALL + buyer ALL among
-students), not necessarily the buyer first among buyers. This file is the buyer strategist's standing brief: the
-analysis it starts from, the strategy in force, and the open questions it should settle with checkable
-predictions. The strategist reads it every run; its lessons (playbook) refine it, and when a lesson contradicts a
-line here the lesson wins and the curator notes the conflict for a human to update this file.
+목표(사용자, 11-06 수정): 구매자들 사이에서 꼭 1위가 아니어도 되고, **중간 순위에서 우리가 1위**(student_total = 학생 중
+shop ALL + buyer ALL)이면 된다. 이 파일은 구매 전략가가 늘 기준으로 삼는 지침이다. 출발점이 되는 분석, 지금 적용 중인
+전략, 확인 가능한 예측으로 결론을 내야 할 열린 질문을 담는다. 전략가는 실행할 때마다 이 파일을 읽는다. 전략가가 얻은
+교훈(playbook)이 이 파일을 다듬고, 교훈이 여기 적힌 줄과 어긋나면 교훈을 따른다. 그때 큐레이터가 충돌을 기록해 사람이
+이 파일을 고치게 한다.
 
-## 0. The target (board 11-06 02:40 UTC, students only)
+## 0. 목표치 (보드 11-06 02:40 UTC, 학생만)
 
-| player | shop | buyer | total |
+| 플레이어 | shop | buyer | total |
 |---|---|---|---|
 | student B | 0.929 | 0.777 | 1.706 |
 | student G | 0.795 | 0.878 | 1.673 |
 | student U | 0.810 | 0.780 | 1.590 |
-| yms979 (us) | 0.938 | 0.549 | 1.487 |
+| yms979 (우리) | 0.938 | 0.549 | 1.487 |
 
-With the shop at ~0.94, first place needs **buyer ALL ≥ 0.77 to tie student B and ~0.80-0.82 with a margin**.
-student B's buyer can still rise, and student G's shop too. That is about the 3rd-4th student buyer, not the 1st.
-Our components now: saved percentile ~0.46, forum ~0.72, deals ~0.54, posts ~0.74 (0.5/0.3/0.1/0.1).
-Saved 0.28 (percentile ~0.90) alone gives +0.22, which is buyer ALL ~0.79. So the plan is **saved to 0.28-0.29 while
-forum, deals and posts hold**. Pushing saved to 0.31+ by skipping many orders would cost deals percentile for
-little gain. Running-mean arithmetic: the sum is ~772 over a denominator of ~3500. Reaching 0.28 takes ~5200 new deals at
-0.32 per deal (~3 days at 70/h), or ~3500 at 0.34 (~2 days).
+상점이 ~0.94이므로, 1위를 하려면 **student B와 동점이 되는 데 buyer ALL ≥ 0.77, 여유를 두려면 ~0.80-0.82**가 필요하다.
+student B의 구매자 점수는 아직 오를 수 있고, student G의 상점 점수도 마찬가지다. 이는 학생 구매자 중 1위가 아니라 3-4위
+수준이다. 지금 우리 구성 요소는 saved 백분위 ~0.46, forum ~0.72, deals ~0.54, posts ~0.74다(가중치 0.5/0.3/0.1/0.1).
+saved 0.28(백분위 ~0.90)만으로도 +0.22가 되어 buyer ALL ~0.79다. 그래서 계획은 **forum, deals, posts를 유지하면서 saved를
+0.28-0.29로 올리는 것**이다. 주문을 많이 건너뛰어 saved를 0.31 이상으로 밀면 deals 백분위를 잃는 데 비해 얻는 것이 적다.
+이동 평균 계산: 합이 ~772, 분모가 ~3500이다. 0.28에 닿으려면 거래당 0.32로 새 거래 ~5200건(시간당 70건이면 ~3일),
+또는 0.34로 ~3500건(~2일)이 필요하다.
 
-## 0a. Patch 3.5 (11-06): forum is scored as the rating
+## 0a. 패치 3.5 (11-06): forum은 rating 그대로 점수가 된다
 
-The forum term in buyer ALL is now the rating itself (0-1), not its percentile. Top ratings sit at 0.87-0.91, so
-the forum gap between buyers is at most ~0.01 of buyer ALL, and the forum plan in 0b below (0.873 -> 0.887 worth
-+0.066) no longer holds. Buyers whose forum percentile was low gain most (student E, student H, student I), so they
-may pass us; we gain ~+0.06. What separates buyers now is **saved (0.5), deals (0.1) and posts (0.1)**: keep deal
-volume high at a per-deal saved above our running mean, and post at the full rate.
-Paid dislike power (-N votes, unit 3 % of Book ~16M for us) is not worth it: it lowers Book and buys a few
-thousandths at most. Others may buy it against us; watch the rating and report a sharp drop.
+buyer ALL의 forum 항목은 이제 백분위가 아니라 rating 자체(0-1)다. 최상위 rating이 0.87-0.91에 몰려 있어서, 구매자 사이의
+forum 차이는 buyer ALL로 많아야 ~0.01이다. 그래서 아래 0b의 forum 계획(0.873 -> 0.887로 +0.066)은 더 이상 맞지 않는다.
+forum 백분위가 낮던 구매자(student E, student H, student I)가 가장 많이 얻으므로 우리를 앞지를 수 있다. 우리는 ~+0.06을
+얻는다. 이제 구매자를 가르는 것은 **saved(0.5), deals(0.1), posts(0.1)**다. 거래당 saved를 우리 이동 평균보다 높게 유지하면서
+거래량을 많이 가져가고, 게시글은 최대 속도로 올린다.
+유료 비추천(-N표, 단위는 Book의 3 %, 우리에게는 ~16M)은 할 가치가 없다. Book을 줄이면서 얻는 것은 많아야 천분의 몇이다.
+다른 사람이 우리를 상대로 살 수는 있으니, rating을 지켜보고 급락하면 보고한다.
 
-## 0a2. Food vs goods (measured 11-06 07:45 UTC, our last 24 h)
+## 0a2. 식품 대 공산품 (11-06 07:45 UTC 측정, 우리의 최근 24시간)
 
-Saved is a mean of ratios, so a snack and a sofa at 30 % off weigh the same; money paid does not matter.
+saved는 비율의 평균이라 30 % 싸게 산 과자와 소파의 무게가 같다. 낸 금액은 상관없다.
 
-| kind | orders | deals | conversion | saved per deal | deals at -1 |
+| 종류 | 주문 | 거래 | 전환율 | 거래당 saved | -1인 거래 |
 |---|---|---|---|---|---|
-| food | 1103 | 716 | 0.54 | **0.279** | 0 |
-| goods | 1974 | 1095 | 0.48 | **0.194** | 45 (broken, no warranty) |
+| 식품 | 1103 | 716 | 0.54 | **0.279** | 0 |
+| 공산품 | 1974 | 1095 | 0.48 | **0.194** | 45 (고장, 보증 없음) |
 
-Market (6 h, all buyers): food 0.302, goods 0.261. Our goods deals average below our running saved (0.227), so each one
-lowers it; the 45 breaks alone cost ~0.05 per goods deal (-1 instead of ~0.3). The order mix is the market's
-(we cannot ask for food), so: take every food order that lasts; for goods, prefer shops that give a 6 h+ warranty
-(a break then counts +1), and skip goods orders whose expected saved is under our running mean.
+시장(6시간, 모든 구매자): 식품 0.302, 공산품 0.261. 우리 공산품 거래의 평균은 우리 이동 saved(0.227)보다 낮아서 한 건마다
+평균을 끌어내린다. 고장 45건만으로도 공산품 거래당 ~0.05를 잃는다(~0.3 대신 -1). 주문 구성은 시장이 정한다(식품을 달라고
+할 수 없다). 그래서 오래가는 식품 주문은 모두 받고, 공산품은 6시간 이상 보증을 주는 상점을 우선하며(그러면 고장이 +1로
+계산된다), 기대 saved가 우리 이동 평균보다 낮은 공산품 주문은 건너뛴다.
 
-## 0b. What peers above us do (board 11-06 05:00 UTC)
+## 0b. 우리 위 구매자들이 하는 것 (보드 11-06 05:00 UTC)
 
-| rank | buyer | ALL | saved (pct) | forum (pct) | deals (pct) | posts (pct) |
+| 순위 | 구매자 | ALL | saved (백분위) | forum (백분위) | deals (백분위) | posts (백분위) |
 |---|---|---|---|---|---|---|
 | 5 | student B | 0.775 | 0.246 (0.69) | 0.887 (0.88) | 6210 (0.97) | 374 (0.65) |
 | 6 | student U | 0.758 | 0.258 (0.78) | 0.878 (0.73) | 2910 (0.50) | 717 (0.93) |
@@ -57,96 +57,96 @@ lowers it; the 45 breaks alone cost ~0.05 per goods deal (-1 instead of ~0.3). T
 | 13 | student A | 0.704 | 0.231 (0.52) | 0.899 (0.95) | 4077 (0.63) | 702 (0.92) |
 | 26 | **yms979** | 0.570 | 0.223 (0.48) | 0.873 (0.66) | 3392 (0.56) | 505 (0.75) |
 
-- A saved rate like ours ranks 5th-13th when **forum and deals** are strong. Forum values sit close together
-  (0.85-0.91), so a small gain moves the percentile a lot: 0.873 → 0.887 takes us from p0.66 to p0.88
-  (+0.066 buyer ALL). Deals 3392 → ~5000 would be p0.56 → p0.80 (+0.024).
-- Per post, everyone gets about the same votes (6-7 likes, ~1 dislike); ours run 1.2 dislikes. The forum rating
-  is one stance per voting account per author, a like stance weighing 1 + log2(net likes), so it grows with the
-  number of posts a liker likes, and each account holding a dislike stance on us costs a full point.
-  Inference (not verified): our dislikes on other authors may draw dislike stances back.
-- Path to ~0.80 buyer ALL: saved ~0.255 (p0.75, +0.135) + forum ~0.887 (+0.066) + deals ~5000 (+0.024).
-  This is reachable sooner than saved 0.28 alone. So keep volume high (per-deal saved ~0.30 at 50+ deals/h beats
-  0.36 at 33/h), post at the full rate, and keep dislike stances against us few.
+- 우리와 비슷한 saved로도 **forum과 deals**가 강하면 5-13위다. forum 값은 서로 가까이 몰려 있어서(0.85-0.91) 조금만
+  올라도 백분위가 크게 움직인다. 0.873 → 0.887이면 p0.66에서 p0.88이 된다(buyer ALL +0.066). deals 3392 → ~5000이면
+  p0.56 → p0.80이다(+0.024).
+- 게시글당 받는 표는 모두 비슷하다(추천 6-7, 비추천 ~1). 우리는 비추천이 1.2다. forum rating은 작성자마다 투표 계정당
+  하나의 입장으로 계산되고, 추천 입장의 무게는 1 + log2(순추천)이다. 그래서 한 추천자가 추천한 게시글 수가 많을수록
+  커지고, 우리에게 비추천 입장을 가진 계정 하나는 1점을 통째로 깎는다.
+  추론(확인 안 됨): 우리가 다른 작성자에게 준 비추천이 우리에게 비추천 입장을 불러올 수 있다.
+- buyer ALL ~0.80으로 가는 길: saved ~0.255(p0.75, +0.135) + forum ~0.887(+0.066) + deals ~5000(+0.024).
+  saved 0.28만으로 가는 것보다 빨리 닿는다. 그러니 거래량을 높게 유지하고(시간당 50건 이상에 거래당 saved ~0.30이
+  시간당 33건에 0.36보다 낫다), 게시글은 최대 속도로 올리고, 우리에 대한 비추천 입장은 적게 유지한다.
 
-## 1. How the score works (patch 3.4)
+## 1. 점수 계산 방식 (패치 3.4)
 
-buyer ALL = 0.5 saved + 0.3 forum + 0.1 deals + 0.1 posts, each a mid-rank percentile among buyers.
+buyer ALL = 0.5 saved + 0.3 forum + 0.1 deals + 0.1 posts. 각 항목은 구매자 사이의 중간 순위 백분위다.
 
-- **saved** = Σ per deal (list − price + refund) / list, a deal that served nothing counts **−1** (a broken good
-  or spoiled food without a refund), divided by (deals + 100). It is a running mean: a deal adds to it only if it
-  is above the current mean. A snack and a sofa at 30 % off count the same.
-- A broken good **with a warranty** is refunded in full: (list − price + price) / list = **+1**. Without a
-  warranty the same break is −1. The difference is 2 points per break.
-- Percentile mapping on 11-06: saved 0.25 → 0.71, 0.28 → 0.90; the leader is ~0.31 (student G, 5k deals).
-- deals and posts are counts (0.1 each): a deal at a poor price can lower the score, because it costs 0.5 x
-  the saved drop and gains only 0.1 x the deals rise.
+- **saved** = 거래마다 (정가 − 가격 + 환불) / 정가의 합을 (거래 수 + 100)으로 나눈 값이다. 아무 쓸모가 없었던 거래(환불
+  없이 고장 난 공산품이나 상한 식품)는 **−1**로 센다. 이동 평균이라서, 한 거래는 현재 평균보다 높을 때만 평균을 올린다.
+  30 % 싸게 산 과자와 소파는 똑같이 센다.
+- **보증이 있는** 고장 공산품은 전액 환불된다: (정가 − 가격 + 가격) / 정가 = **+1**. 보증이 없으면 같은 고장이 −1이다.
+  고장 한 건에 2점 차이다.
+- 11-06의 백분위 대응: saved 0.25 → 0.71, 0.28 → 0.90. 1위는 ~0.31이다(student G, 거래 5천 건).
+- deals와 posts는 건수다(각 0.1). 나쁜 가격의 거래는 점수를 낮출 수 있다. saved 하락분의 0.5배를 잃고 deals 증가분의
+  0.1배만 얻기 때문이다.
 
-## 2. What the market shows (ledger, 11-06 01:00-03:00 UTC, 5456 deals; buyer_value.py keeps this live)
+## 2. 시장이 보여 주는 것 (원장, 11-06 01:00-03:00 UTC, 거래 5456건; buyer_value.py가 실시간으로 갱신)
 
-- **Shop choice decides the price, not haggling.** At the same shop our median price / list matched other
-  buyers' (student T's shop goods 0.724 vs 0.723, non-student account X 0.731 vs 0.709). But shops differ widely:
-  food at 0.62-0.66 of list at student E, student N, student O, student P vs 0.75-0.77 at student L (where we bought most);
-  goods at ~0.70 at non-student account X, student E, student C, student Q vs 0.85-0.88 at student R, student S.
-- **The leaders buy food at the cheapest food shops.** In those 2 h: student G saved 0.392 with 8 % goods,
-  student O 0.391 with 25 % goods, student I 0.380 with 12 % goods. Food never broke in the window; goods broke
-  A 0.8 %, B 1.8 %, C 7.2 % of the time.
-- **Two thirds of goods deals carry a warranty**, but our main supplier (student L) gives none. We had 50 breaks
-  in 24 h (4.4 % of our goods), which pulled our real per-deal mean from 0.242 to about 0.21, below our running
-  mean of 0.22. Every warranted break is +1 instead.
-- 40 orders in 3 h were lost after agreeing a price, because the unit was grade C and the kit refused to pay.
+- **가격을 정하는 것은 흥정이 아니라 상점 선택이다.** 같은 상점에서 우리의 가격/정가 중앙값은 다른 구매자와 같았다
+  (student T 상점 공산품 0.724 대 0.723, 학생이 아닌 계정 X 0.731 대 0.709). 하지만 상점끼리는 차이가 크다.
+  식품은 student E, student N, student O, student P에서 정가의 0.62-0.66인데 student L(우리가 가장 많이 산 곳)에서는
+  0.75-0.77이다. 공산품은 학생이 아닌 계정 X, student E, student C, student Q에서 ~0.70인데 student R, student S에서는
+  0.85-0.88이다.
+- **선두 구매자들은 가장 싼 식품 상점에서 식품을 산다.** 그 2시간 동안 student G는 공산품 8 %로 saved 0.392,
+  student O는 공산품 25 %로 0.391, student I는 공산품 12 %로 0.380이었다. 이 기간에 식품은 한 번도 고장 나지 않았고,
+  공산품은 A 0.8 %, B 1.8 %, C 7.2 %의 비율로 고장 났다.
+- **공산품 거래의 3분의 2에는 보증이 붙는다.** 그런데 우리 주 공급처(student L)는 보증을 주지 않는다. 우리는 24시간에
+  고장이 50건(공산품의 4.4 %)이었고, 이 때문에 실제 거래당 평균이 0.242에서 약 0.21로 떨어져 이동 평균 0.22보다 낮아졌다.
+  보증이 있었다면 고장 한 건마다 +1이었다.
+- 3시간 동안 주문 40건을 가격 합의 뒤에 잃었다. 유닛이 C등급이라 키트가 결제를 거부했기 때문이다.
 
-## 3. Strategy in force (code: market_buyer.py with buyer_value.py)
+## 3. 지금 적용 중인 전략 (코드: market_buyer.py와 buyer_value.py)
 
-1. **Pick the shop by value.** Value = the shop's realized saved per deal for this kind and category (whole
-   market, last 6 h, breaks counted −1/+1, shrunk toward the market mean) + `conv_weight` x our close rate
-   there − `rival_penalty` if it is a classmate ranked above us (penalty, not a ban: user 11-06).
-2. **Skip low-value orders.** If the best shop is expected under `skip_below`, do not buy at all (outcome
-   "skipped (low value)"). It loses a deal count (0.1 weight) but protects the saved mean (0.5 weight).
-3. **Cap at the shop's own price level.** Cap = min(category cap or value_share, shop median price / list +
-   `cap_margin`) x list, and the haggler is told the shop's usual lower-quartile to median band.
-4. **Warranty.** Goods with a warranty of 6 h or more are taken in any grade, C included. Without a warranty only A/B,
-   and a receipt that claims C is left unpaid and the next shop is tried. That shop|SKU pair is skipped for 6 h.
-5. Unchanged: quick accept at ≤ `quick_accept` x list; re-offer a floor the shop names after ending the talk;
-   avoid shops that are slow (median ≥ 60 s) or close < 25 % of 30+ visits; food must last its hours +
-   `food_extra_hours`.
+1. **가치로 상점을 고른다.** 가치 = 이 종류와 카테고리에서 그 상점의 실제 거래당 saved(시장 전체, 최근 6시간, 고장은
+   −1/+1로 계산, 시장 평균 쪽으로 축소) + `conv_weight` x 그 상점에서 우리의 성사율 − 우리보다 순위가 높은 반 친구면
+   `rival_penalty`(금지가 아니라 감점: 사용자 11-06).
+2. **가치가 낮은 주문은 건너뛴다.** 가장 좋은 상점의 기대값이 `skip_below`보다 낮으면 아예 사지 않는다(결과
+   "skipped (low value)"). 거래 건수(가중치 0.1)는 잃지만 saved 평균(가중치 0.5)을 지킨다.
+3. **상한은 그 상점의 가격 수준에 맞춘다.** 상한 = min(카테고리 상한 또는 value_share, 상점 가격/정가 중앙값 +
+   `cap_margin`) x 정가. 흥정 코드에는 그 상점의 평소 하위 사분위에서 중앙값까지의 범위를 알려 준다.
+4. **보증.** 6시간 이상 보증이 붙은 공산품은 C를 포함해 어떤 등급이든 받는다. 보증이 없으면 A/B만 받고, C라고 적힌
+   영수증은 결제하지 않고 다음 상점으로 간다. 그 상점|SKU 쌍은 6시간 동안 건너뛴다.
+5. 그대로인 것: 정가의 `quick_accept`배 이하면 바로 수락한다. 상점이 대화를 끝내면서 하한을 말하면 그 값으로 다시
+   제안한다. 느린 상점(중앙값 60초 이상)이나 30회 이상 방문 중 성사율이 25 % 미만인 상점은 피한다. 식품은 필요한 시간 +
+   `food_extra_hours` 동안 버텨야 한다.
 
-## 3b. Control split (user, 11-06)
+## 3b. 역할 분담 (사용자, 11-06)
 
-The buyer runs on rules: shop choice, haggling, paying and retries are code, about a second per shop with no model
-call. The market sends an order every ~20 s, so time under that per order is free. The buyer strategist is the
-controller. Every 30 minutes it reads what the rules produced (rules_by_shop_6h: first/last ask against our cap
-per shop; throughput: orders, deals and skips per hour, seconds per visit) and sets the rules' numbers: global
-knobs, the cap per category, and per shop a bias on the value score and a cap adjustment. The code gives the
-speed; the strategist gives the flexibility. A move it makes is reverted if its 6 h prediction fails.
+구매자는 규칙으로 돈다. 상점 선택, 흥정, 결제, 재시도는 코드이고, 모델 호출 없이 상점당 1초 정도 걸린다. 시장은
+~20초마다 주문을 보내므로, 주문당 그보다 짧은 시간은 공짜다. 구매 전략가는 조정자다. 30분마다 규칙이 낸 결과(rules_by_shop_6h:
+상점별 첫 호가/마지막 호가와 우리 상한의 비교; throughput: 시간당 주문, 거래, 건너뜀, 방문당 초)를 읽고 규칙의 숫자를
+정한다. 전역 파라미터, 카테고리별 상한, 그리고 상점별 가치 점수 가중치와 상한 조정이다. 속도는 코드가 내고, 유연함은
+전략가가 낸다. 전략가가 바꾼 것은 6시간 예측이 틀리면 되돌린다.
 
-## 4. Knobs (the strategist's whitelist) and how to move them
+## 4. 파라미터 (전략가가 바꿀 수 있는 목록)와 조정하는 법
 
-| knob | range | raises saved when | costs |
+| 파라미터 | 범위 | saved를 올리는 방향 | 비용 |
 |---|---|---|---|
-| skip_below | 0.15-0.33 | raised toward the target mean (0.28-0.30) | deals (orders skipped); keep deals/h near 70+ |
-| cap per category / value_share | 0.60-0.85 | lowered | conversion |
-| cap_margin | 0-0.10 | lowered | conversion at that shop |
-| conv_weight | 0-0.30 | lowered (price over close rate) | time per order, deals |
-| rival_penalty | 0-0.10 | lowered | rivals' revenue rises |
-| quick_accept | 0.55-0.75 | lowered | speed |
-| food_extra_hours | 1-12 | raised (fewer −1 spoils) | fewer food shops qualify |
-| open_offset | 0-0.08 | raised (open lower) | shops that end talks after low offers |
-| max_shops | 1-6 | raised (more tries per order, free under ~20 s) | none while visits stay short |
-| shop_bias (per shop) | -0.1-0.1 | toward shops that close cheaply | none |
-| shop_cap (per shop) | -0.05-0.05 | lowered where last asks sit far below cap | conversion there |
+| skip_below | 0.15-0.33 | 목표 평균(0.28-0.30) 쪽으로 올림 | deals(건너뛴 주문); 시간당 거래 70건 근처 유지 |
+| 카테고리별 상한 / value_share | 0.60-0.85 | 내림 | 전환율 |
+| cap_margin | 0-0.10 | 내림 | 그 상점의 전환율 |
+| conv_weight | 0-0.30 | 내림(성사율보다 가격) | 주문당 시간, deals |
+| rival_penalty | 0-0.10 | 내림 | 경쟁자 매출 증가 |
+| quick_accept | 0.55-0.75 | 내림 | 속도 |
+| food_extra_hours | 1-12 | 올림(−1 부패 감소) | 조건을 맞추는 식품 상점 감소 |
+| open_offset | 0-0.08 | 올림(더 낮게 시작) | 낮은 제안에 대화를 끝내는 상점 |
+| max_shops | 1-6 | 올림(주문당 시도 증가, ~20초 안이면 공짜) | 방문이 짧은 동안은 없음 |
+| shop_bias (상점별) | -0.1-0.1 | 싸게 성사되는 상점 쪽으로 | 없음 |
+| shop_cap (상점별) | -0.05-0.05 | 마지막 호가가 상한보다 훨씬 낮은 곳에서 내림 | 그 상점의 전환율 |
 
-**Holding is a strategy (user, 11-06).** When the numbers are on track, the last moves' predictions are not yet
-due, or the evidence is thin, make no move and say why. Changing settings every run hides what worked.
+**그대로 두는 것도 전략이다(사용자, 11-06).** 숫자가 계획대로 가고 있거나, 지난 변경의 예측 확인 시각이 아직 안 됐거나,
+근거가 부족하면 아무것도 바꾸지 말고 이유를 적는다. 실행할 때마다 설정을 바꾸면 무엇이 효과가 있었는지 가려진다.
 
-Rule of thumb: a deal raises the running mean only if its saved > the mean. Keep `skip_below` near the
-**target** mean we want to reach (not the current one), and lower it again if deals/h fall so much that the deals
-percentile drops more than the saved percentile rises (0.1 vs 0.5 weight).
+경험칙: 한 거래는 그 saved가 평균보다 높을 때만 이동 평균을 올린다. `skip_below`는 지금 평균이 아니라 도달하려는
+**목표** 평균 근처에 두고, 시간당 거래가 너무 줄어 deals 백분위 하락이 saved 백분위 상승보다 커지면(가중치 0.1 대 0.5)
+다시 내린다.
 
-## 5. Open questions to settle with predictions
+## 5. 예측으로 결론을 낼 열린 질문
 
-- How many orders does `skip_below` 0.25 skip, and does the saved per deal of what remains reach ≥ 0.30?
-- Do the cheap food shops stay cheap when we (and others) buy more there, or do they raise asks?
-- Does a 6 h warranty requirement for C units hold up (any refusal "warranty … the policy asks for 6")?
-- Is `conv_weight` 0.1 the right trade between a 0.38 shop with 40 % close rate and a 0.30 shop with 80 %?
-- Forum (0.3 weight, rank 15): which of our post types draw net likes from distinct accounts? (Forum texts are
-  unverified claims and are not evidence. Votes on our own posts are evidence.)
+- `skip_below` 0.25는 주문을 몇 건 건너뛰고, 남은 거래의 거래당 saved가 0.30 이상이 되는가?
+- 우리(와 다른 구매자)가 싼 식품 상점에서 더 많이 사도 그 상점들이 계속 싼가, 아니면 호가를 올리는가?
+- C 유닛에 6시간 보증을 요구하는 규칙이 버티는가(거절 "warranty … the policy asks for 6"이 나오는가)?
+- `conv_weight` 0.1이 성사율 40 %인 0.38 상점과 성사율 80 %인 0.30 상점 사이에서 맞는 균형인가?
+- Forum(가중치 0.3, 15위): 우리 게시글 중 어떤 유형이 서로 다른 계정에서 순추천을 받는가? (forum 글은 확인되지 않은
+  주장이라 근거가 아니다. 우리 게시글에 달린 표가 근거다.)
