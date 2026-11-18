@@ -293,6 +293,42 @@ against what the main session knew, one gap was fixed (`cc2afca`): it cancelled 
 `checkout_jwt` or named its status differently, which shops built without the kit may do and the kit's `acp_pay` would
 have paid. Moving it to kit v4 was a mechanical patch of the same diff plus kit v4's new checks.
 
+**The tool maker (forge): added, never used.** On 11/11 (`3c8e9a7` 11:44, `95fb887` 13:29) the outer loop got a
+second hand: when the engineer judges a hypothesis `"kind": "tool"`, a forge agent writes `tools_r3/<name>.py` with
+its own `tools_r3/test_<name>.py`, under the same gate (300 added lines, its own suite, the forbidden words). The
+tuning team was told to ask for tools with ideas that start `tool:`. **Result: no tool was ever built.** From 11/11
+13:30 to the end the tuning team wrote 121 distinct `tool:` requests in 63 of its 582 cycles (table below), and the
+outer loop ran 63 times: 42 proposed a change to the existing files,
+21 found no change worth making, 0 judged `"kind": "tool"`, so the forge was called 0 times (`logs/meta-code-r3.log`,
+`logs/code_attempts_r3.jsonl`; there is no `tools_r3/` folder). Three causes, read in `meta_code_r3.py`: the
+engineer's prompt says "most fixes change the existing files" and "a request is not a verdict; the counts decide",
+which leans every borderline case to `change`; the engineer sees only the last 6 code ideas of the last 3 cycles, cut
+at 300 characters, so most requests never reached it; and nothing counted unanswered requests, so neither the loop nor
+the supervisor noticed for six days (the user did, on 11/17, from the figure). Two of the requested tools were built
+by hand instead, as code changes: the review watcher (`review_anomalies`, 11/16) and the pre-checkout stock read
+(`2bd2771`, 11/17). The lesson for week 12's `forge_tool`: a capability the agent may use is not one it will use;
+the route to it needs its own count (requests, answered, built) and a reason logged each time it is not taken.
+
+What the team asked for, grouped from `logs/strategies_r3.jsonl` (`code_ideas` starting `tool:`, 11/11 13:30 to
+11/17 23:59; each request counted once):
+
+| Tool asked for | Requests | First, last | A typical request, in the team's words | Built by hand instead? |
+|---|---|---|---|---|
+| Clearance pricer for stuck stock | 31 | 11/13 08:14, 11/17 20:44 | "a clearance rule for grade-A goods priced above the market line, with the floor at cost, so stuck units clear without lowering market_ask"; also C first only on SKUs whose C sits unsold | Partly: floors at cost in the last 24 h only (11/16-11/17); at 20:44 on the last day 83 grade-A units above the market median (49.9M at cost) were still held |
+| Checkout and settle hardening | 22 | 11/11 23:35, 11/17 22:52 | "reserve the unit at quote time and hold it through checkout so 'unit not in stock' refusals stop; retry 5xx with the same idempotency key" | Partly: checkout reads the local `inventory.json` (11/17, `2bd2771`); no reservation, no retry on 5xx |
+| Measurement tools for verdicts | 16 | 11/11 15:34, 11/17 05:32 | "a dry-run that replays recent buyer talks at a candidate number value and reports points/h with its sd"; per-talk offer logs; same-hour buyer arm split | Partly: `SCOUT_WAIT` exposed as a buyer knob (11/17); no replay, no per-talk offer log |
+| Tunnel watchdog and standby | 11 | 11/11 15:34, 11/12 07:20 | "an external reachability probe of the public shop URL each cycle that tells tunnel, kit and listing failures apart, and restarts only the tunnel" | Outside the loops: the supervisor's tunnel guard process and the 11/7 listed-URL check; the requests stopped after 11/12 |
+| Refund and warranty ledger | 11 | 11/11 14:49, 11/17 23:41 | "a refund-net Book ledger per grade and per warranty ask"; "a priced warranty add-on line" | No new tool; refunds were already netted in the metrics (11/9) |
+| Per-SKU stock age and sell-through report | 8 | 11/11 14:49, 11/17 02:58 | "a per-SKU sell-through report from the ledger (units sold per SKU per 6 h and age of unsold units)" | No (the supervisor's dashboard tab only, 11/11) |
+| Buy-side price check | 8 | 11/11 16:43, 11/17 00:47 | "a pre-buy cost check that flags units whose cost is above the SKU's market median" | Yes, as a change to restock: the margin gate per SKU and grade |
+| Per-buyer guards | 8 | 11/13 20:04 (refund exposure per buyer), 11/16 19:14 (stars) | "a per-buyer stars history visible at quote time, so we can decline repeat 1-2 star raters"; "a grade-match guard that offers grade B only to buyers whose words do not ask for A" | Yes, after the user asked: blocked buyers at checkout and `review_anomalies` (11/16) |
+| Forum dislike attribution | 6 | 11/11 22:59, 11/17 20:44 | "a per-kind count of unique dislike-stance accounts, because the forum rating counts accounts" | No |
+
+Two of the nine were asked for days before anyone acted on them: checkout hardening from 11/11 (built in part on
+11/17) and the clearance pricer from 11/13 (floors at cost only in the last 24 h). The team saw the gap; the route
+from its request to a tool did not carry it. The per-buyer star guards came the other way: asked for only after the
+block of 11/16.
+
 ### 1.4 Round 2 to Round 3: the Worker shop
 
 The Worker (`deploy/src/index.ts`) served A2A with Llama 3.1 8B and code guards, a strategy API for the meta-harness,
@@ -556,6 +592,25 @@ on the wrong field: its rank explanations read the raw paid-review mean through 
 `stars_rank`, a field the team had itself identified on 11/9. A known fact that lives in one function and not in its
 sibling is not known to the reader of the sibling. The rule taken: before explaining a board term, recompute the
 board's own number (here shop ALL from the three percentiles) and check it matches; if it does not, the field is wrong.
+
+### 3.y Our failures by type
+
+The rows of 3.x and the supervisor's own mistakes fall into seven types. "Found by" says who caught them first; the
+two found by the user are the ones no check of ours was looking at.
+
+| Type | What it is | Cases (3.x and above) | Found by | What the structure does now |
+|---|---|---|---|---|
+| 1. The loop's number is not the board's | A metric the loops optimise drifts from the term the board scores, and every verdict on it is wrong in the same direction | Agreed, not paid, deals (11/4-11/7); raw margin/h that read the hour of day (11/9 10:48); the coder judging its own metric (11/9 11:15); board points/h that were 82-91% buyer saved (11/9 13:xx); refunds left out of margin (11/9 13:41); A/B on margin per talk opened (11/9 06:43); `stars` in place of `stars_rank` (11/17) | Supervisor (4), fresh reviewer (2), user (1) | Metrics count ledger settles net of refunds; verdicts use market share and shop points net of the market; `claims_r3.reconcile` checks margin against Book hourly; `score_gap` on `stars_rank`. Rule: recompute the board's number before explaining it |
+| 2. Memory read as fact | Notes, verdicts and lessons carried forward without a source, an age or a re-check | 89 verdicts held as "judged both ways" (11/5-11/9); standing order 2 without expiry; a stale "CAP 0.7" note; a misread lesson rewrite and a rewrite that overwrote another area (11/9 12:0x); "pending" read as unfinished (11/7-11/8) | Supervisor, memory study | Re-judge against the market's record (VERIFIED / MIXED / UNVERIFIED); orders carry since-when and review-by; notes show their age; a rewrite re-reads before saving |
+| 3. Silent failure | A part fails and the rest carries on as if it had answered | GPT reviewer over its usage limit, manager alone for 2.5 h (11/9); the manager's answer dropped and the fallback undoing a supervisor revert (11/16); the market listing an old tunnel (11/7); new knobs without values (KeyError, 11/11) | Supervisor, a Codex test, rate alert | Failed reviews are logged and opus stands in; supervisor values hold 2 h in code (order 9); the watch compares the listed URL; values registered only through `supervise_r3` |
+| 4. Money in the wrong place | A cap or price that is right alone but starves something else | Slow dear goods filling the stock cap (11/7); 200M stock cap draining cash for food (11/10); deep buying at surged cost (11/11); warranty on grade C (11/9 13:41); floors above what buyers pay (11/7) | Supervisor, fresh reviewer, dashboard | Margin gate per SKU and grade; broad and shallow buying; expected refund in the floor; C without warranty; rule: when lifting a cap, trace where the money goes |
+| 5. Other agents' inputs unwatched | Our score moved by what others did, while every check watched our own levers | Forum scoring changed (11/6); a 2-star buyer on our cheap C (11/16); a buyer rating us 1 star on clean deals (11/16); the undocumented `stars_rank` (11/17) | Rank alert, leak audit, **user** (2) | Blocked-buyer list at checkout; `review_anomalies` every 30 min; a fall in a term is split by counterparty before a cause is named; formula asked in #378 |
+| 6. Too slow, or never used | The structure held, waited or ignored a route it had | 59 of 96 cycles changing nothing (11/9); one number at a time until its 2 h verdict (11/11); engineers skipping `restock_r3.py` (11/11); the forge, 121 tool requests in nine kinds and 0 tools (11/11-11/17) | Fresh reviewer, user | Play mode without slot or hold; the engineer must read restock every build. Not fixed: the forge route (1.3) |
+| 7. The supervisor's own errors | Claude Code relayed or acted before checking | The inflated margin relayed as a win (11/7); an unfinished 10-min bucket read (11/9 07:01); `review_r3.py` deployed over a live file (11/9 11:57); hypotheses relayed before testing ("14 to 6" receipts, unpaid results in `stars_rank`, 300k+ outage claim); `rm` used 12 times before the Trash rule | Supervisor later, the user | Judge only closed windows; check a file name is free before deploying; a hypothesis is tested on all shops before it is told; corrections are written into this report, not removed |
+
+Across the types, the same pattern repeats: a check existed for what we changed, not for what we had not thought of
+(the board's own field, other agents' reviews, a route never taken). The two failures the user found first (types 5
+and 6) were the ones where the gap was not in a number but in what was being watched at all.
 
 ## Appendix A. How the structure got here (11/3-11/6)
 
