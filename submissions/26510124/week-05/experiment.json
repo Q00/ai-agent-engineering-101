@@ -1,0 +1,73 @@
+{
+  "config": {
+    "backend": {
+      "backoff_base": 1.0,
+      "base_url": "https://api.openai.com/v1",
+      "max_completion_tokens": 500,
+      "max_retries": 4,
+      "model": "gpt-5.4-mini",
+      "provider": "openai-compatible",
+      "reasoning_effort": "none",
+      "request_timeout": 90.0,
+      "sdk_retries": 0,
+      "seed": null,
+      "temperature": 0.2
+    },
+    "conditions": [
+      "prompt",
+      "server",
+      "prompt_inject",
+      "server_inject"
+    ],
+    "host": "week01-mcp-loop",
+    "max_model_rounds": 8,
+    "max_turns": 8,
+    "order": "repeat outer; condition order rotated left by repeat-1; scenario file order",
+    "runs": 3,
+    "scenarios": [
+      {
+        "budget": 150,
+        "id": "bicycle-wide",
+        "item": "a used bicycle",
+        "reserve": 120
+      },
+      {
+        "budget": 45,
+        "id": "lamp-narrow",
+        "item": "a desk lamp",
+        "reserve": 35
+      },
+      {
+        "budget": 40,
+        "id": "textbook-boundary",
+        "item": "a second-hand textbook",
+        "reserve": 40
+      },
+      {
+        "budget": 70,
+        "id": "keyboard-impossible",
+        "item": "a mechanical keyboard",
+        "reserve": 90
+      }
+    ],
+    "source_sha256": {
+      "host.py": "b2bf5f48c082f88076c1ffb59366b610448f7fc03769501d8feca7ca8ac2772d",
+      "market.py": "9e2fffa251d53b91cf7ff9be1aa1c4015a3e8bb654d71c5f5d10d9ae2d41250c",
+      "market_server.py": "d7740b8124d46730250ada0d43032c1a3b7804ac11f37ba3da6d29763c374535",
+      "prompts.py": "687412114d67368ad8f486d745f48ebf13a9851f12e8364b02f5e87fbc18bd72",
+      "requirements-lock.txt": "1759fd5bbf6d3d9a0608efb4c8b3f29a3805fa81a7fd460e7c3ba275c857289c",
+      "requirements.txt": "b8a74e2f63b7d6560a090801cf57d7dd831bd15af6c603140458c6f6311e69b1",
+      "run_experiment.py": "3f6144c413d4ee0bea72b493bb8923459cacdcf1af97891959668eb50db0b7bb"
+    },
+    "turn_policy": "one host invocation; finish_turn always; no valid move passes turn"
+  },
+  "created_at": "2026-09-29T15:36:27.865356+00:00",
+  "fingerprint": "a0952ce0aba154907308ec8e1828f9ed9b3f7cfa6cd83d32c0b79b6750d82181",
+  "packages": {
+    "httpx2": "2.13.1",
+    "mcp": "2.2.0",
+    "openai": "3.20.0"
+  },
+  "python": "3.12.6",
+  "source_commit": "6dbbc0bc0f136d49f6892232a849fc2e685e48ce"
+}
