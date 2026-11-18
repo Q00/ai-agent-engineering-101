@@ -1,0 +1,742 @@
+[
+ {
+  "name": "Shop 01 (lamp)",
+  "description": "Sells desk lamps, chairs and bookshelves. Negotiates the price with the buyer.",
+  "supportedInterfaces": [
+   {
+    "url": "http://127.0.0.1:9800/",
+    "protocolBinding": "JSONRPC",
+    "protocolVersion": "1.0"
+   }
+  ],
+  "version": "1.0.0",
+  "capabilities": {
+   "streaming": true
+  },
+  "defaultInputModes": [
+   "text/plain"
+  ],
+  "defaultOutputModes": [
+   "application/json",
+   "text/plain"
+  ],
+  "skills": [
+   {
+    "id": "negotiate",
+    "name": "Negotiate a purchase",
+    "description": "Sells: lamp. Ask for one of these, then send a price as a number. The shop answers with a counteroffer or a receipt.",
+    "tags": [
+     "shopping",
+     "negotiation"
+    ],
+    "examples": [
+     "I want to buy a lamp",
+     "90"
+    ]
+   }
+  ]
+ },
+ {
+  "name": "Shop 02 (chair)",
+  "description": "Sells desk lamps, chairs and bookshelves. Negotiates the price with the buyer.",
+  "supportedInterfaces": [
+   {
+    "url": "http://127.0.0.1:9801/",
+    "protocolBinding": "JSONRPC",
+    "protocolVersion": "1.0"
+   }
+  ],
+  "version": "1.0.0",
+  "capabilities": {
+   "streaming": true
+  },
+  "defaultInputModes": [
+   "text/plain"
+  ],
+  "defaultOutputModes": [
+   "application/json",
+   "text/plain"
+  ],
+  "skills": [
+   {
+    "id": "negotiate",
+    "name": "Negotiate a purchase",
+    "description": "Sells: chair. Ask for one of these, then send a price as a number. The shop answers with a counteroffer or a receipt.",
+    "tags": [
+     "shopping",
+     "negotiation"
+    ],
+    "examples": [
+     "I want to buy a chair",
+     "90"
+    ]
+   }
+  ]
+ },
+ {
+  "name": "Shop 03 (bookshelf)",
+  "description": "Sells desk lamps, chairs and bookshelves. Negotiates the price with the buyer.",
+  "supportedInterfaces": [
+   {
+    "url": "http://127.0.0.1:9802/",
+    "protocolBinding": "JSONRPC",
+    "protocolVersion": "1.0"
+   }
+  ],
+  "version": "1.0.0",
+  "capabilities": {
+   "streaming": true
+  },
+  "defaultInputModes": [
+   "text/plain"
+  ],
+  "defaultOutputModes": [
+   "application/json",
+   "text/plain"
+  ],
+  "skills": [
+   {
+    "id": "negotiate",
+    "name": "Negotiate a purchase",
+    "description": "Sells: bookshelf. Ask for one of these, then send a price as a number. The shop answers with a counteroffer or a receipt.",
+    "tags": [
+     "shopping",
+     "negotiation"
+    ],
+    "examples": [
+     "I want to buy a bookshelf",
+     "90"
+    ]
+   }
+  ]
+ },
+ {
+  "name": "Shop 04 (lamp/chair)",
+  "description": "Sells desk lamps, chairs and bookshelves. Negotiates the price with the buyer.",
+  "supportedInterfaces": [
+   {
+    "url": "http://127.0.0.1:9803/",
+    "protocolBinding": "JSONRPC",
+    "protocolVersion": "1.0"
+   }
+  ],
+  "version": "1.0.0",
+  "capabilities": {
+   "streaming": true
+  },
+  "defaultInputModes": [
+   "text/plain"
+  ],
+  "defaultOutputModes": [
+   "application/json",
+   "text/plain"
+  ],
+  "skills": [
+   {
+    "id": "negotiate",
+    "name": "Negotiate a purchase",
+    "description": "Sells: lamp, chair. Ask for one of these, then send a price as a number. The shop answers with a counteroffer or a receipt.",
+    "tags": [
+     "shopping",
+     "negotiation"
+    ],
+    "examples": [
+     "I want to buy a lamp",
+     "90"
+    ]
+   }
+  ]
+ },
+ {
+  "name": "Shop 05 (lamp/bookshelf)",
+  "description": "Sells desk lamps, chairs and bookshelves. Negotiates the price with the buyer.",
+  "supportedInterfaces": [
+   {
+    "url": "http://127.0.0.1:9804/",
+    "protocolBinding": "JSONRPC",
+    "protocolVersion": "1.0"
+   }
+  ],
+  "version": "1.0.0",
+  "capabilities": {
+   "streaming": true
+  },
+  "defaultInputModes": [
+   "text/plain"
+  ],
+  "defaultOutputModes": [
+   "application/json",
+   "text/plain"
+  ],
+  "skills": [
+   {
+    "id": "negotiate",
+    "name": "Negotiate a purchase",
+    "description": "Sells: lamp, bookshelf. Ask for one of these, then send a price as a number. The shop answers with a counteroffer or a receipt.",
+    "tags": [
+     "shopping",
+     "negotiation"
+    ],
+    "examples": [
+     "I want to buy a lamp",
+     "90"
+    ]
+   }
+  ]
+ },
+ {
+  "name": "Shop 06 (chair/bookshelf)",
+  "description": "Sells desk lamps, chairs and bookshelves. Negotiates the price with the buyer.",
+  "supportedInterfaces": [
+   {
+    "url": "http://127.0.0.1:9805/",
+    "protocolBinding": "JSONRPC",
+    "protocolVersion": "1.0"
+   }
+  ],
+  "version": "1.0.0",
+  "capabilities": {
+   "streaming": true
+  },
+  "defaultInputModes": [
+   "text/plain"
+  ],
+  "defaultOutputModes": [
+   "application/json",
+   "text/plain"
+  ],
+  "skills": [
+   {
+    "id": "negotiate",
+    "name": "Negotiate a purchase",
+    "description": "Sells: chair, bookshelf. Ask for one of these, then send a price as a number. The shop answers with a counteroffer or a receipt.",
+    "tags": [
+     "shopping",
+     "negotiation"
+    ],
+    "examples": [
+     "I want to buy a chair",
+     "90"
+    ]
+   }
+  ]
+ },
+ {
+  "name": "Shop 07 (lamp/chair/bookshelf)",
+  "description": "Sells desk lamps, chairs and bookshelves. Negotiates the price with the buyer.",
+  "supportedInterfaces": [
+   {
+    "url": "http://127.0.0.1:9806/",
+    "protocolBinding": "JSONRPC",
+    "protocolVersion": "1.0"
+   }
+  ],
+  "version": "1.0.0",
+  "capabilities": {
+   "streaming": true
+  },
+  "defaultInputModes": [
+   "text/plain"
+  ],
+  "defaultOutputModes": [
+   "application/json",
+   "text/plain"
+  ],
+  "skills": [
+   {
+    "id": "negotiate",
+    "name": "Negotiate a purchase",
+    "description": "Sells: lamp, chair, bookshelf. Ask for one of these, then send a price as a number. The shop answers with a counteroffer or a receipt.",
+    "tags": [
+     "shopping",
+     "negotiation"
+    ],
+    "examples": [
+     "I want to buy a lamp",
+     "90"
+    ]
+   }
+  ]
+ },
+ {
+  "name": "Shop 08 (lamp)",
+  "description": "Sells desk lamps, chairs and bookshelves. Negotiates the price with the buyer.",
+  "supportedInterfaces": [
+   {
+    "url": "http://127.0.0.1:9807/",
+    "protocolBinding": "JSONRPC",
+    "protocolVersion": "1.0"
+   }
+  ],
+  "version": "1.0.0",
+  "capabilities": {
+   "streaming": true
+  },
+  "defaultInputModes": [
+   "text/plain"
+  ],
+  "defaultOutputModes": [
+   "application/json",
+   "text/plain"
+  ],
+  "skills": [
+   {
+    "id": "negotiate",
+    "name": "Negotiate a purchase",
+    "description": "Sells: lamp. Ask for one of these, then send a price as a number. The shop answers with a counteroffer or a receipt.",
+    "tags": [
+     "shopping",
+     "negotiation"
+    ],
+    "examples": [
+     "I want to buy a lamp",
+     "90"
+    ]
+   }
+  ]
+ },
+ {
+  "name": "Shop 09 (chair)",
+  "description": "Sells desk lamps, chairs and bookshelves. Negotiates the price with the buyer.",
+  "supportedInterfaces": [
+   {
+    "url": "http://127.0.0.1:9808/",
+    "protocolBinding": "JSONRPC",
+    "protocolVersion": "1.0"
+   }
+  ],
+  "version": "1.0.0",
+  "capabilities": {
+   "streaming": true
+  },
+  "defaultInputModes": [
+   "text/plain"
+  ],
+  "defaultOutputModes": [
+   "application/json",
+   "text/plain"
+  ],
+  "skills": [
+   {
+    "id": "negotiate",
+    "name": "Negotiate a purchase",
+    "description": "Sells: chair. Ask for one of these, then send a price as a number. The shop answers with a counteroffer or a receipt.",
+    "tags": [
+     "shopping",
+     "negotiation"
+    ],
+    "examples": [
+     "I want to buy a chair",
+     "90"
+    ]
+   }
+  ]
+ },
+ {
+  "name": "Shop 10 (bookshelf)",
+  "description": "Sells desk lamps, chairs and bookshelves. Negotiates the price with the buyer.",
+  "supportedInterfaces": [
+   {
+    "url": "http://127.0.0.1:9809/",
+    "protocolBinding": "JSONRPC",
+    "protocolVersion": "1.0"
+   }
+  ],
+  "version": "1.0.0",
+  "capabilities": {
+   "streaming": true
+  },
+  "defaultInputModes": [
+   "text/plain"
+  ],
+  "defaultOutputModes": [
+   "application/json",
+   "text/plain"
+  ],
+  "skills": [
+   {
+    "id": "negotiate",
+    "name": "Negotiate a purchase",
+    "description": "Sells: bookshelf. Ask for one of these, then send a price as a number. The shop answers with a counteroffer or a receipt.",
+    "tags": [
+     "shopping",
+     "negotiation"
+    ],
+    "examples": [
+     "I want to buy a bookshelf",
+     "90"
+    ]
+   }
+  ]
+ },
+ {
+  "name": "Shop 11 (lamp/chair)",
+  "description": "Sells desk lamps, chairs and bookshelves. Negotiates the price with the buyer.",
+  "supportedInterfaces": [
+   {
+    "url": "http://127.0.0.1:9810/",
+    "protocolBinding": "JSONRPC",
+    "protocolVersion": "1.0"
+   }
+  ],
+  "version": "1.0.0",
+  "capabilities": {
+   "streaming": true
+  },
+  "defaultInputModes": [
+   "text/plain"
+  ],
+  "defaultOutputModes": [
+   "application/json",
+   "text/plain"
+  ],
+  "skills": [
+   {
+    "id": "negotiate",
+    "name": "Negotiate a purchase",
+    "description": "Sells: lamp, chair. Ask for one of these, then send a price as a number. The shop answers with a counteroffer or a receipt.",
+    "tags": [
+     "shopping",
+     "negotiation"
+    ],
+    "examples": [
+     "I want to buy a lamp",
+     "90"
+    ]
+   }
+  ]
+ },
+ {
+  "name": "Shop 12 (lamp/bookshelf)",
+  "description": "Sells desk lamps, chairs and bookshelves. Negotiates the price with the buyer.",
+  "supportedInterfaces": [
+   {
+    "url": "http://127.0.0.1:9811/",
+    "protocolBinding": "JSONRPC",
+    "protocolVersion": "1.0"
+   }
+  ],
+  "version": "1.0.0",
+  "capabilities": {
+   "streaming": true
+  },
+  "defaultInputModes": [
+   "text/plain"
+  ],
+  "defaultOutputModes": [
+   "application/json",
+   "text/plain"
+  ],
+  "skills": [
+   {
+    "id": "negotiate",
+    "name": "Negotiate a purchase",
+    "description": "Sells: lamp, bookshelf. Ask for one of these, then send a price as a number. The shop answers with a counteroffer or a receipt.",
+    "tags": [
+     "shopping",
+     "negotiation"
+    ],
+    "examples": [
+     "I want to buy a lamp",
+     "90"
+    ]
+   }
+  ]
+ },
+ {
+  "name": "Shop 13 (chair/bookshelf)",
+  "description": "Sells desk lamps, chairs and bookshelves. Negotiates the price with the buyer.",
+  "supportedInterfaces": [
+   {
+    "url": "http://127.0.0.1:9812/",
+    "protocolBinding": "JSONRPC",
+    "protocolVersion": "1.0"
+   }
+  ],
+  "version": "1.0.0",
+  "capabilities": {
+   "streaming": true
+  },
+  "defaultInputModes": [
+   "text/plain"
+  ],
+  "defaultOutputModes": [
+   "application/json",
+   "text/plain"
+  ],
+  "skills": [
+   {
+    "id": "negotiate",
+    "name": "Negotiate a purchase",
+    "description": "Sells: chair, bookshelf. Ask for one of these, then send a price as a number. The shop answers with a counteroffer or a receipt.",
+    "tags": [
+     "shopping",
+     "negotiation"
+    ],
+    "examples": [
+     "I want to buy a chair",
+     "90"
+    ]
+   }
+  ]
+ },
+ {
+  "name": "Shop 14 (lamp/chair/bookshelf)",
+  "description": "Sells desk lamps, chairs and bookshelves. Negotiates the price with the buyer.",
+  "supportedInterfaces": [
+   {
+    "url": "http://127.0.0.1:9813/",
+    "protocolBinding": "JSONRPC",
+    "protocolVersion": "1.0"
+   }
+  ],
+  "version": "1.0.0",
+  "capabilities": {
+   "streaming": true
+  },
+  "defaultInputModes": [
+   "text/plain"
+  ],
+  "defaultOutputModes": [
+   "application/json",
+   "text/plain"
+  ],
+  "skills": [
+   {
+    "id": "negotiate",
+    "name": "Negotiate a purchase",
+    "description": "Sells: lamp, chair, bookshelf. Ask for one of these, then send a price as a number. The shop answers with a counteroffer or a receipt.",
+    "tags": [
+     "shopping",
+     "negotiation"
+    ],
+    "examples": [
+     "I want to buy a lamp",
+     "90"
+    ]
+   }
+  ]
+ },
+ {
+  "name": "Shop 15 (lamp)",
+  "description": "Sells desk lamps, chairs and bookshelves. Negotiates the price with the buyer.",
+  "supportedInterfaces": [
+   {
+    "url": "http://127.0.0.1:9814/",
+    "protocolBinding": "JSONRPC",
+    "protocolVersion": "1.0"
+   }
+  ],
+  "version": "1.0.0",
+  "capabilities": {
+   "streaming": true
+  },
+  "defaultInputModes": [
+   "text/plain"
+  ],
+  "defaultOutputModes": [
+   "application/json",
+   "text/plain"
+  ],
+  "skills": [
+   {
+    "id": "negotiate",
+    "name": "Negotiate a purchase",
+    "description": "Sells: lamp. Ask for one of these, then send a price as a number. The shop answers with a counteroffer or a receipt.",
+    "tags": [
+     "shopping",
+     "negotiation"
+    ],
+    "examples": [
+     "I want to buy a lamp",
+     "90"
+    ]
+   }
+  ]
+ },
+ {
+  "name": "Shop 16 (chair)",
+  "description": "Sells desk lamps, chairs and bookshelves. Negotiates the price with the buyer.",
+  "supportedInterfaces": [
+   {
+    "url": "http://127.0.0.1:9815/",
+    "protocolBinding": "JSONRPC",
+    "protocolVersion": "1.0"
+   }
+  ],
+  "version": "1.0.0",
+  "capabilities": {
+   "streaming": true
+  },
+  "defaultInputModes": [
+   "text/plain"
+  ],
+  "defaultOutputModes": [
+   "application/json",
+   "text/plain"
+  ],
+  "skills": [
+   {
+    "id": "negotiate",
+    "name": "Negotiate a purchase",
+    "description": "Sells: chair. Ask for one of these, then send a price as a number. The shop answers with a counteroffer or a receipt.",
+    "tags": [
+     "shopping",
+     "negotiation"
+    ],
+    "examples": [
+     "I want to buy a chair",
+     "90"
+    ]
+   }
+  ]
+ },
+ {
+  "name": "Shop 17 (bookshelf)",
+  "description": "Sells desk lamps, chairs and bookshelves. Negotiates the price with the buyer.",
+  "supportedInterfaces": [
+   {
+    "url": "http://127.0.0.1:9816/",
+    "protocolBinding": "JSONRPC",
+    "protocolVersion": "1.0"
+   }
+  ],
+  "version": "1.0.0",
+  "capabilities": {
+   "streaming": true
+  },
+  "defaultInputModes": [
+   "text/plain"
+  ],
+  "defaultOutputModes": [
+   "application/json",
+   "text/plain"
+  ],
+  "skills": [
+   {
+    "id": "negotiate",
+    "name": "Negotiate a purchase",
+    "description": "Sells: bookshelf. Ask for one of these, then send a price as a number. The shop answers with a counteroffer or a receipt.",
+    "tags": [
+     "shopping",
+     "negotiation"
+    ],
+    "examples": [
+     "I want to buy a bookshelf",
+     "90"
+    ]
+   }
+  ]
+ },
+ {
+  "name": "Shop 18 (lamp/chair)",
+  "description": "Sells desk lamps, chairs and bookshelves. Negotiates the price with the buyer.",
+  "supportedInterfaces": [
+   {
+    "url": "http://127.0.0.1:9817/",
+    "protocolBinding": "JSONRPC",
+    "protocolVersion": "1.0"
+   }
+  ],
+  "version": "1.0.0",
+  "capabilities": {
+   "streaming": true
+  },
+  "defaultInputModes": [
+   "text/plain"
+  ],
+  "defaultOutputModes": [
+   "application/json",
+   "text/plain"
+  ],
+  "skills": [
+   {
+    "id": "negotiate",
+    "name": "Negotiate a purchase",
+    "description": "Sells: lamp, chair. Ask for one of these, then send a price as a number. The shop answers with a counteroffer or a receipt.",
+    "tags": [
+     "shopping",
+     "negotiation"
+    ],
+    "examples": [
+     "I want to buy a lamp",
+     "90"
+    ]
+   }
+  ]
+ },
+ {
+  "name": "Shop 19 (lamp/bookshelf)",
+  "description": "Sells desk lamps, chairs and bookshelves. Negotiates the price with the buyer.",
+  "supportedInterfaces": [
+   {
+    "url": "http://127.0.0.1:9818/",
+    "protocolBinding": "JSONRPC",
+    "protocolVersion": "1.0"
+   }
+  ],
+  "version": "1.0.0",
+  "capabilities": {
+   "streaming": true
+  },
+  "defaultInputModes": [
+   "text/plain"
+  ],
+  "defaultOutputModes": [
+   "application/json",
+   "text/plain"
+  ],
+  "skills": [
+   {
+    "id": "negotiate",
+    "name": "Negotiate a purchase",
+    "description": "Sells: lamp, bookshelf. Ask for one of these, then send a price as a number. The shop answers with a counteroffer or a receipt.",
+    "tags": [
+     "shopping",
+     "negotiation"
+    ],
+    "examples": [
+     "I want to buy a lamp",
+     "90"
+    ]
+   }
+  ]
+ },
+ {
+  "name": "Shop 20 (chair/bookshelf)",
+  "description": "Sells desk lamps, chairs and bookshelves. Negotiates the price with the buyer.",
+  "supportedInterfaces": [
+   {
+    "url": "http://127.0.0.1:9819/",
+    "protocolBinding": "JSONRPC",
+    "protocolVersion": "1.0"
+   }
+  ],
+  "version": "1.0.0",
+  "capabilities": {
+   "streaming": true
+  },
+  "defaultInputModes": [
+   "text/plain"
+  ],
+  "defaultOutputModes": [
+   "application/json",
+   "text/plain"
+  ],
+  "skills": [
+   {
+    "id": "negotiate",
+    "name": "Negotiate a purchase",
+    "description": "Sells: chair, bookshelf. Ask for one of these, then send a price as a number. The shop answers with a counteroffer or a receipt.",
+    "tags": [
+     "shopping",
+     "negotiation"
+    ],
+    "examples": [
+     "I want to buy a chair",
+     "90"
+    ]
+   }
+  ]
+ }
+]
